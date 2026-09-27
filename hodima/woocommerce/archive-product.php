@@ -1,7 +1,17 @@
 <?php
 /**
  * Product archive — Shop page, product tags, product search
- * Version: 2.0.0
+ *
+ * بازنویسی قالب archive-product.php ووکامرس. شماره @version همان نسخه
+ * قالب اصلی ووکامرس است که این فایل با آن هماهنگ شده؛ اگر ووکامرس قالب را
+ * به‌روز کند، «ووکامرس ← وضعیت ← قالب‌ها» این فایل را «قدیمی» نشان می‌دهد.
+ *
+ * تفاوت عمدی با قالب اصلی: هوک woocommerce_sidebar صدا زده نمی‌شود (قالب
+ * سایدبار فروشگاه ندارد و get_sidebar( 'shop' ) هشدار منسوخ‌شدن می‌داد).
+ *
+ * @see     https://woocommerce.com/document/template-structure/
+ * @package Hodima\WooCommerce
+ * @version 8.6.0
  *
  * هوک‌های پیش از کوئری (۳۶ محصول در صفحه، عنوان صفحات بعدی، اعداد انگلیسی
  * صفحه‌بندی) در inc/woocommerce/category-archive.php هستند و روی فروشگاه،
@@ -34,13 +44,17 @@ remove_action( 'woocommerce_before_shop_loop', 'woocommerce_catalog_ordering', 3
  * می‌شود. نسخه قبلی h1 ثابت «فروشگاه بازرگانی هدهد» داشت؛ صفحه برچسب
  * «گل سر» یا نتیجه جستجوی «کش مو» هم همین h1 را داشت.
  */
-if ( $hodima_is_search ) {
-	$hodima_h1 = sprintf( 'نتایج جستجو برای «%s»', get_search_query() );
-} elseif ( $hodima_is_shop ) {
-	$hodima_h1 = 'فروشگاه بازرگانی هدهد';
-} else {
-	$hodima_h1 = woocommerce_page_title( false );
-}
+// متن‌های سربرگ فروشگاه از «نمایش ← تنظیمات هدیما» (قبلا ثابت در همین فایل)
+$hodima_setting = static fn( string $key ): string => function_exists( 'hodima_setting' ) ? (string) hodima_setting( $key ) : '';
+
+$hodima_h1 = match ( true ) {
+	$hodima_is_search => sprintf( 'نتایج جستجو برای «%s»', get_search_query() ),
+	$hodima_is_shop   => $hodima_setting( 'shop_title' ) ?: get_the_title( wc_get_page_id( 'shop' ) ),
+	default           => (string) woocommerce_page_title( false ),
+};
+
+$hodima_shop_subtitle = $hodima_setting( 'shop_subtitle' );
+$hodima_shop_features = array_values( array_filter( array_map( 'trim', explode( "\n", $hodima_setting( 'shop_features' ) ) ) ) );
 
 get_header( 'shop' );
 ?>
@@ -59,12 +73,16 @@ get_header( 'shop' );
 		<section class="hodima-section-box shop-custom-header">
 			<div class="shop-header-content">
 				<h1><?php echo esc_html( $hodima_h1 ); ?></h1>
-				<p>عرضه مستقیم کالاهای وارداتی بدون واسطه</p>
-				<ul class="shop-features" aria-label="ویژگی‌های فروشگاه">
-					<li>اصالت کالا</li>
-					<li>قیمت رقابتی</li>
-					<li>ارسال سریع</li>
-				</ul>
+				<?php if ( '' !== $hodima_shop_subtitle ) : ?>
+					<p><?php echo esc_html( $hodima_shop_subtitle ); ?></p>
+				<?php endif; ?>
+				<?php if ( $hodima_shop_features ) : ?>
+					<ul class="shop-features" aria-label="ویژگی‌های فروشگاه">
+						<?php foreach ( $hodima_shop_features as $hodima_feature ) : ?>
+							<li><?php echo esc_html( $hodima_feature ); ?></li>
+						<?php endforeach; ?>
+					</ul>
+				<?php endif; ?>
 			</div>
 		</section>
 
@@ -94,6 +112,15 @@ get_header( 'shop' );
 	 * صفحه‌بندی و اسکریپت مرتب‌سازی (taxonomy-product_cat.js) مشترک باشند.
 	 */
 	?>
+	<?php
+	/*
+	 * ووکامرس ۸.۶+: افزونه‌ها (فیلتر، بنر و...) بالای فهرست محصولات.
+	 * خروجی پیش‌فرض خود ووکامرس روی این هوک در inc/woocommerce/category-archive.php
+	 * حذف شده است، چون عنوان بالاتر چاپ شده.
+	 */
+	do_action( 'woocommerce_shop_loop_header' );
+	?>
+
 	<section class="hodima-section-box shop-content-area section-products product-card-scope" aria-label="محصولات">
 
 		<?php if ( woocommerce_product_loop() ) : ?>

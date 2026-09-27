@@ -69,13 +69,13 @@ $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'log
                     <!-- منوی اصلی (یکپارچه برای دسکتاپ و موبایل) -->
                     <nav class="main-nav" id="mainNavWrapper" aria-label="منوی اصلی سایت">
                         <?php
-                        wp_nav_menu([
-                            'menu'        => 'منوی اصلی',
-                            'menu_class'  => 'main-menu',
-                            'container'   => false,
-                            'echo'        => true,
-                            'fallback_cb' => false,
-                        ]);
+                        // مکان «منوی اصلی (هدر)» در «نمایش ← فهرست‌ها»؛ قبلا منو با نامش صدا زده می‌شد
+                        wp_nav_menu( [
+                            'theme_location' => HODIMA_MENU_PRIMARY,
+                            'menu_class'     => 'main-menu',
+                            'container'      => false,
+                            'fallback_cb'    => false,
+                        ] );
                         ?>
                     </nav>
                 </div>

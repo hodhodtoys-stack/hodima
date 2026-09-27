@@ -29,7 +29,7 @@ const HODIMA_SETTINGS_PAGE   = 'hodima-settings';
 /**
  * تعریف همه فیلدها: نوع، مقدار پیش‌فرض، برچسب و بخش.
  *
- * @return array<string, array{section:string, type:string, label:string, default:mixed, help?:string, placeholder?:string}>
+ * @return array<string, array{section:string, type:string, label:string, default:mixed, help?:string, placeholder?:string, wide?:bool}>
  */
 function hodima_settings_fields(): array {
 	return [
@@ -61,7 +61,48 @@ function hodima_settings_fields(): array {
 		'ga_id'            => [ 'section' => 'analytics', 'type' => 'ga', 'label' => 'شناسه Google Analytics 4', 'default' => '', 'placeholder' => 'G-XXXXXXXXXX' ],
 		'ga_skip_editors'  => [ 'section' => 'analytics', 'type' => 'toggle', 'label' => 'بازدید مدیران و نویسندگان ثبت نشود', 'default' => true ],
 		'ga_production'    => [ 'section' => 'analytics', 'type' => 'toggle', 'label' => 'فقط روی سایت اصلی (Production) فعال باشد', 'default' => true, 'help' => 'روی استیجینگ یا لوکال (WP_ENVIRONMENT_TYPE) کد آمار چاپ نمی‌شود تا آمار واقعی آلوده نشود.' ],
+
+		// ── صفحه فروشگاه ─────────────────────────────────────────────
+		'shop_title'       => [ 'section' => 'shop', 'type' => 'text', 'label' => 'عنوان سربرگ فروشگاه', 'default' => '', 'help' => 'اگر خالی بماند عنوان برگه فروشگاه ووکامرس نمایش داده می‌شود.' ],
+		'shop_subtitle'    => [ 'section' => 'shop', 'type' => 'text', 'label' => 'زیرعنوان', 'default' => '' ],
+		'shop_features'    => [ 'section' => 'shop', 'type' => 'textarea', 'label' => 'ویژگی‌ها (هر خط یک مورد)', 'default' => '', 'help' => 'مثلا: اصالت کالا، قیمت رقابتی، ارسال سریع — هر کدام در یک خط.' ],
+
+		// ── شبکه‌های اجتماعی ─────────────────────────────────────────
+		'social_title'     => [ 'section' => 'social', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'شبکه‌های اجتماعی' ],
+		...hodima_social_fields(),
 	];
+}
+
+/**
+ * شبکه‌های اجتماعی قابل تنظیم (ترتیب نمایش در صفحه اصلی).
+ *
+ * @return array<string, string> شناسه => نام نمایشی
+ */
+function hodima_social_networks(): array {
+	return (array) apply_filters( 'hodima_social_networks', [
+		'instagram' => 'اینستاگرام',
+		'telegram'  => 'تلگرام',
+		'whatsapp'  => 'واتس‌اپ',
+		'rubika'    => 'روبیکا',
+		'aparat'    => 'آپارات',
+		'eitaa'     => 'ایتا',
+		'bale'      => 'بله',
+		'youtube'   => 'یوتیوب',
+		'linkedin'  => 'لینکدین',
+	] );
+}
+
+/** برای هر شبکه دو فیلد: آدرس صفحه و آیکون (اختیاری). */
+function hodima_social_fields(): array {
+
+	$fields = [];
+
+	foreach ( hodima_social_networks() as $key => $label ) {
+		$fields[ "social_{$key}_url" ]  = [ 'section' => 'social', 'type' => 'url', 'label' => $label, 'default' => '', 'placeholder' => 'https://' ];
+		$fields[ "social_{$key}_icon" ] = [ 'section' => 'social', 'type' => 'image', 'label' => 'آیکون ' . $label, 'default' => 0, 'wide' => false ];
+	}
+
+	return $fields;
 }
 
 /** @return array<string, array{title:string, description:string}> */
@@ -71,6 +112,8 @@ function hodima_settings_sections(): array {
 		'contact'   => [ 'title' => 'اطلاعات تماس', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی، نمایش داده نمی‌شود.' ],
 		'footer'    => [ 'title' => 'فوتر', 'description' => 'ستون‌های فوتر. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود.' ],
 		'analytics' => [ 'title' => 'Google Analytics', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
+		'shop'      => [ 'title' => 'صفحه فروشگاه', 'description' => 'سربرگ صفحه اول فروشگاه. زیرعنوان و ویژگی‌های خالی نمایش داده نمی‌شوند.' ],
+		'social'    => [ 'title' => 'شبکه‌های اجتماعی', 'description' => 'بخش شبکه‌های اجتماعی صفحه اصلی. شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود.' ],
 	];
 }
 
@@ -276,14 +319,14 @@ function hodima_settings_render_page(): void {
 }
 
 /**
- * @param array{section:string, type:string, label:string, default:mixed, help?:string, placeholder?:string} $field
+ * @param array{section:string, type:string, label:string, default:mixed, help?:string, placeholder?:string, wide?:bool} $field
  */
 function hodima_settings_render_field( string $key, array $field, mixed $value ): void {
 
 	$id   = 'hodima-setting-' . $key;
 	$name = HODIMA_SETTINGS_OPTION . '[' . $key . ']';
 	$help = $field['help'] ?? '';
-	$wide = in_array( $field['type'], [ 'textarea', 'image' ], true ) ? ' hodima-field--wide' : '';
+	$wide = in_array( $field['type'], [ 'textarea', 'image' ], true ) && ( $field['wide'] ?? true ) ? ' hodima-field--wide' : '';
 	?>
 	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">
 		<?php if ( 'toggle' === $field['type'] ) : ?>
@@ -392,6 +435,30 @@ function hodima_contact_channels(): array {
 	}
 
 	return $channels;
+}
+
+/**
+ * شبکه‌های اجتماعی پیکربندی‌شده، به ترتیب hodima_social_networks().
+ *
+ * @return list<array{key:string, label:string, url:string, icon_id:int}>
+ */
+function hodima_social_links(): array {
+
+	$links = [];
+
+	foreach ( hodima_social_networks() as $key => $label ) {
+		$url = (string) hodima_setting( "social_{$key}_url" );
+		if ( '' !== $url ) {
+			$links[] = [
+				'key'     => $key,
+				'label'   => $label,
+				'url'     => $url,
+				'icon_id' => (int) hodima_setting( "social_{$key}_icon" ),
+			];
+		}
+	}
+
+	return $links;
 }
 
 /* =========================================================================

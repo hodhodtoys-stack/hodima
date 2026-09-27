@@ -234,7 +234,7 @@ add_action('init', function() {
                 'link'     => 'latest-products',
                 'category' => '',
                 'limit'    => $atts['limit'],
-                'bg_color' => 'rgba(193, 200, 236, 0.25)',
+                'bg_color' => 'rgba(182, 194, 243, 0.25)',
             ]);
         });
     }
@@ -245,7 +245,7 @@ add_action('init', function() {
         $brand_colors = [
             'rgba(37, 49, 106, 0.08)',   // رنگ اصلی
             'rgba(96, 123, 189, 0.1)',   // رنگ ثانویه
-            'rgba(193, 200, 236, 0.25)', // رنگ سوم
+            'rgba(182, 194, 243, 0.25)', // رنگ سوم
         ];
 
         $color_index = 0;

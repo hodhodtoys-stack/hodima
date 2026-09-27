@@ -1,59 +1,56 @@
 <?php
 /**
- * Social Networks Section – Final Optimized Version
- * Uses WordPress Media Library for automatic WebP and optimization.
+ * Social Networks Section
+ * آدرس‌ها و آیکون‌ها از «نمایش ← تنظیمات هدیما ← شبکه‌های اجتماعی».
+ * (قبلا آدرس‌ها و شناسه تصاویر مستقیم در همین فایل نوشته شده بودند.)
  */
-if ( ! defined('ABSPATH') ) exit;
+if ( ! defined( 'ABSPATH' ) ) exit;
 
-// ✅ مرحله ۱: ID هر تصویر را از کتابخانه رسانه جایگزین کنید
-$socials = [
-    [ "url" => "https://instagram.com/hodimahli", "id" => 6371, "alt" => "اینستاگرام" ],
-    [ "url" => "https://rubika.ir/hodhodli",    "id" => 6372, "alt" => "روبیکا" ],
-    [ "url" => "https://www.aparat.com/hodhodli","id" => 6369, "alt" => "آپارات" ],
-    [ "url" => "https://t.me/hodhodaccessory",  "id" => 6374, "alt" => "تلگرام" ],
-    [ "url" => "https://wa.me/989124093140",    "id" => 6375, "alt" => "واتس‌اپ" ],
-];
+$hodima_socials = function_exists( 'hodima_social_links' ) ? hodima_social_links() : [];
+
+// بدون هیچ شبکه‌ای، بخش اصلا چاپ نمی‌شود
+if ( ! $hodima_socials ) {
+    return;
+}
+
+$hodima_social_title = function_exists( 'hodima_setting' ) ? (string) hodima_setting( 'social_title' ) : '';
 ?>
 
 <section class="arian-section section-socials" aria-labelledby="arian-social-title">
     <div class="arian-container">
         <div class="arian-header social-header">
             <div class="arian-title-group">
-                <h2 id="arian-social-title" class="arian-title">شبکه های اجتماعی</h2>
+                <h2 id="arian-social-title" class="arian-title"><?php echo esc_html( $hodima_social_title ); ?></h2>
                 <div class="arian-line"></div>
             </div>
         </div>
 
-        <div class="social-grid">
-            <?php foreach ( $socials as $s ): ?>
-                <a
-                    href="<?php echo esc_url($s['url']); ?>"
-                    target="_blank"
-                    rel="nofollow noopener noreferrer"
-                    class="modern-social-item"
-                    title="<?php echo esc_attr($s['alt']); ?>"
-                    aria-label="<?php echo esc_attr($s['alt']); ?>"
-                >
-                    <span class="social-icon-wrapper">
-                        <?php
-                        // ✅ مرحله ۲: اجازه دهید وردپرس تگ <img> را بهینه تولید کند
-                        if ( ! empty( $s['id'] ) ) {
-                            echo wp_get_attachment_image(
-                                $s['id'],
-                                'full', // برای آیکون‌های کوچک، سایز کامل مناسب است
-                                false,
-                                [
-                                    'alt'      => esc_attr($s['alt']),
+        <ul class="social-grid" role="list">
+            <?php foreach ( $hodima_socials as $hodima_social ) : ?>
+                <li>
+                    <a
+                        href="<?php echo esc_url( $hodima_social['url'] ); ?>"
+                        target="_blank"
+                        rel="nofollow noopener noreferrer"
+                        class="modern-social-item modern-social-item--<?php echo esc_attr( $hodima_social['key'] ); ?>"
+                        aria-label="<?php echo esc_attr( $hodima_social['label'] ); ?>"
+                    >
+                        <span class="social-icon-wrapper">
+                            <?php if ( $hodima_social['icon_id'] && wp_attachment_is_image( $hodima_social['icon_id'] ) ) : ?>
+                                <?php
+                                echo wp_get_attachment_image( $hodima_social['icon_id'], 'full', false, [
+                                    'alt'      => '', // نام شبکه در aria-label لینک آمده است
                                     'loading'  => 'lazy',
-                                    'decoding' => 'async'
-                                    // width و height به صورت خودکار توسط وردپرس اضافه می‌شود
-                                ]
-                            );
-                        }
-                        ?>
-                    </span>
-                </a>
+                                    'decoding' => 'async',
+                                ] );
+                                ?>
+                            <?php else : ?>
+                                <span class="social-icon-text"><?php echo esc_html( $hodima_social['label'] ); ?></span>
+                            <?php endif; ?>
+                        </span>
+                    </a>
+                </li>
             <?php endforeach; ?>
-        </div>
+        </ul>
     </div>
 </section>

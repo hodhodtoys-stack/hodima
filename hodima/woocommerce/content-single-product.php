@@ -1,7 +1,19 @@
 <?php
 /**
  * Single product content
- * Version: 2.0.0
+ *
+ * بازنویسی قالب content-single-product.php ووکامرس با چیدمان اختصاصی.
+ * شماره @version همان نسخه قالب اصلی است که این فایل بر پایه آن است؛
+ * «ووکامرس ← وضعیت ← قالب‌ها» با تغییر آن در آینده هشدار می‌دهد.
+ *
+ * تفاوت‌های عمدی با قالب اصلی: هوک‌های woocommerce_single_product_summary و
+ * woocommerce_after_single_product_summary صدا زده نمی‌شوند؛ قیمت، دکمه
+ * افزودن به سبد، مشخصات و محصولات مرتبط مستقیم در همین قالب چیده شده‌اند.
+ * افزونه‌ای که فقط به این دو هوک وصل می‌شود، در صفحه محصول دیده نمی‌شود.
+ *
+ * @see     https://woocommerce.com/document/template-structure/
+ * @package Hodima\WooCommerce
+ * @version 3.6.0
  *
  * منطق مشترک (موجودی، حداقل سفارش، LCP، ساختار) در
  * inc/woocommerce/product-page.php است و اسکیمای محصول هم از همان توابع

@@ -1,7 +1,13 @@
 <?php
 /**
  * Template: taxonomy-product_cat
- * Version: 2.0.0
+ *
+ * بازنویسی قالب taxonomy-product-cat.php ووکامرس (که فقط archive-product.php
+ * را صدا می‌زند). ووکامرس هر دو نام (با _ و -) را جستجو می‌کند.
+ *
+ * @see     https://woocommerce.com/document/template-structure/
+ * @package Hodima\WooCommerce
+ * @version 4.7.0
  *
  * هوک‌های پیش از کوئری (تعداد در صفحه، عنوان صفحات بعدی، اعداد انگلیسی
  * صفحه‌بندی، اسکیمای صفحه اول) در inc/woocommerce/category-archive.php هستند.
@@ -89,6 +95,11 @@ get_header( 'shop' );
 		</header>
 
 	<?php endif; ?>
+
+	<?php
+	// ووکامرس ۸.۶+: افزونه‌ها بالای فهرست محصولات (خروجی پیش‌فرض در category-archive.php حذف شده)
+	do_action( 'woocommerce_shop_loop_header' );
+	?>
 
 	<main id="main-content" class="hodima-section-box section-products product-card-scope">
 
