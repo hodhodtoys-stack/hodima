@@ -83,7 +83,10 @@ $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'log
                 <!-- مرکز: جستجو با ساختار فلکس و منعطف -->
                 <div class="header__center">
                     <search class="header__search" role="search" aria-label="جستجوی محصولات">
-                        <?php echo do_shortcode('[woo_live_search]'); ?>
+                        <?php
+                        // جستجوی زنده محصولات از افزونه Hodima Commerce؛ بدون آن فرم جستجوی وردپرس
+                        echo shortcode_exists( 'woo_live_search' ) ? do_shortcode( '[woo_live_search]' ) : get_search_form( [ 'echo' => false ] );
+                        ?>
                     </search>
                 </div>
 

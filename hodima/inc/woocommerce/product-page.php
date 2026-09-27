@@ -16,41 +16,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /* =====================================================================
  * ۱. موجودی
+ * ---------------------------------------------------------------------
+ * hodima_product_stock_location() و hodima_product_schema_availability()
+ * به افزونه Hodima Commerce منتقل شدند (فیلد «وضعیت موجودی» همان‌جاست).
  * ===================================================================== */
-
-/**
- * وضعیت انبار: 'iran' | 'china' | 'out' | ''
- * ترکیب فیلد سفارشی «وضعیت موجودی» و موجودی خود ووکامرس.
- */
-function hodima_product_stock_location( WC_Product $product ): string {
-
-	$meta = (string) get_post_meta( $product->get_id(), '_stock_location_status', true );
-
-	if ( 'out_of_stock' === $meta || ! $product->is_in_stock() ) {
-		return 'out';
-	}
-
-	return [ 'iran_stock' => 'iran', 'china_stock' => 'china' ][ $meta ] ?? '';
-}
-
-/**
- * availability در اسکیما — دقیقا همان چیزی که بازدیدکننده می‌بیند.
- *
- * نسخه قبلی فقط is_in_stock() ووکامرس را می‌خواند. روی همین سایت محصولی
- * با «موجود در انبار چین» در اسکیما InStock با ارسال ۱ تا ۴ روزه بود.
- * ناهمخوانی availability بین صفحه و داده ساختاریافته از دلایل رد شدن
- * در Merchant Listings گوگل است.
- *
- *   انبار چین → BackOrder (موجود، ولی با تاخیر ارسال می‌شود)
- */
-function hodima_product_schema_availability( WC_Product $product ): string {
-	$map = [
-		'out'   => 'OutOfStock',
-		'china' => 'BackOrder',
-	];
-
-	return 'https://schema.org/' . ( $map[ hodima_product_stock_location( $product ) ] ?? 'InStock' );
-}
 
 /* =====================================================================
  * ۲. حداقل سفارش

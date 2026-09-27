@@ -53,13 +53,13 @@ get_header();
                 
                 <!-- ستون اول (سمت راست): هوک متن معرفی -->
                 <div class="intro-content">
-                    <?php echo do_shortcode('[hook_intro id="' . $post_id . '" context="post"]'); ?>
+                    <?php echo hodima_shortcode( 'hook_intro', [ 'id' => $post_id, 'context' => 'post' ] ); // خروجی افزونه Hodima Media ?>
                 </div>
 
                 <!-- ستون دوم (سمت چپ): ویدیو یا تصویر شاخص -->
                 <div class="video-content">
                     <?php 
-                    $video_output = do_shortcode('[hook_video id="' . $post_id . '" context="post"]');
+                    $video_output = hodima_shortcode( 'hook_video', [ 'id' => $post_id, 'context' => 'post' ] );
                     // اگر هوک ویدیو چیزی برگرداند، آن را نمایش بده، در غیر این صورت تصویر شاخص
                     if ( ! empty( trim( $video_output ) ) && strpos( $video_output, '<' ) !== false ) {
                         echo $video_output;
@@ -89,20 +89,31 @@ get_header();
             </div>
         </section>
 
+        <?php
+        // بدون افزونه Hodima Media (یا بدون محتوا) کل بخش نمایش داده نمی‌شود
+        $hodima_voice = hodima_shortcode( 'hook_voice', [ 'id' => $post_id, 'context' => 'post' ] );
+        $hodima_faq   = hodima_shortcode( 'hook_faq', [ 'id' => $post_id, 'context' => 'post' ] );
+        ?>
+        <?php if ( '' !== $hodima_voice || '' !== $hodima_faq ) : ?>
         <!-- 4. بخش پادکست و سوالات متداول (FAQ) -->
         <section class="hodima-section-box section-voice-faq">
             <div class="voice-faq-wrapper">
+                <?php if ( '' !== $hodima_voice ) : ?>
                 <!-- بخش پادکست -->
                 <div class="voice-content">
-                    <?php echo do_shortcode('[hook_voice id="' . $post_id . '" context="post"]'); ?>
+                    <?php echo $hodima_voice; // خروجی شورت‌کد افزونه ?>
                 </div>
-                
+                <?php endif; ?>
+
+                <?php if ( '' !== $hodima_faq ) : ?>
                 <!-- بخش سوالات متداول (FAQ) -->
                 <div class="faq-content">
-                    <?php echo do_shortcode('[hook_faq id="' . $post_id . '" context="post"]'); ?>
+                    <?php echo $hodima_faq; // خروجی شورت‌کد افزونه ?>
                 </div>
+                <?php endif; ?>
             </div>
         </section>
+        <?php endif; ?>
 
         <!-- 5. بخش دیدگاه‌ها (کاملا مجزا) -->
         <section class="hodima-section-box section-comments">

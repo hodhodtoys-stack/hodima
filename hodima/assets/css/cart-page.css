@@ -59,11 +59,7 @@
             transform: translateY(-2px);
         }
 
-        /* مخفی‌سازی دکمه در صورت عدم رسیدن به حد نصاب */
-        body.min-order-not-met .checkout-button, 
-        body.min-order-not-met .wc-proceed-to-checkout {
-            display: none !important;
-        }
+        /* پنهان‌سازی دکمه تا رسیدن به حداقل سفارش: افزونه Hodima Commerce (cart-progress.css) */
 
         /* ریسپانسیو و اصلاحات موبایل */
         @media (max-width: 768px) {

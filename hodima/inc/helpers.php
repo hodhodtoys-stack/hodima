@@ -86,3 +86,24 @@ if ( ! function_exists( 'hodima_wc_active' ) ) {
         return $active ??= class_exists( 'WooCommerce' );
     }
 }
+
+/* ============================================================
+ * ۴. شورت‌کد افزونه‌ها در قالب
+ * ------------------------------------------------------------
+ * اگر افزونه صاحب شورت‌کد فعال نباشد، do_shortcode متن خام
+ * «[hook_faq ...]» را در صفحه چاپ می‌کند. این تابع در آن حالت رشته
+ * خالی برمی‌گرداند تا قالب بتواند بخش مربوط را کلا نمایش ندهد.
+ * ============================================================ */
+function hodima_shortcode( string $tag, array $atts = [] ): string {
+
+    if ( ! shortcode_exists( $tag ) ) {
+        return '';
+    }
+
+    $attr = '';
+    foreach ( $atts as $name => $value ) {
+        $attr .= sprintf( ' %s="%s"', sanitize_key( (string) $name ), esc_attr( (string) $value ) );
+    }
+
+    return trim( (string) do_shortcode( "[{$tag}{$attr}]" ) );
+}
