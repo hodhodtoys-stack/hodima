@@ -12,7 +12,7 @@ add_action( 'wp_enqueue_scripts', 'hook_register_media_assets' );
 
 function hook_register_media_assets(): void {
 
-	$url = get_template_directory_uri() . '/media-system';
+	$url = HODIMA_MEDIA_URL . '/media-system';
 
 	// نسخه از زمان تغییر فایل؛ نسخه ثابت «1.0.1» به‌روزرسانی را از مرورگر
 	// و کش لایت‌اسپید پنهان می‌کرد.

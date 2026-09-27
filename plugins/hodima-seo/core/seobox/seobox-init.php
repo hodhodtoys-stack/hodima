@@ -11,8 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SEOBOX_DIR', get_template_directory() . '/core/seobox/' );
-define( 'SEOBOX_URL', get_template_directory_uri() . '/core/seobox/' );
+define( 'SEOBOX_DIR', HODIMA_SEO_DIR . '/core/seobox/' );
+define( 'SEOBOX_URL', HODIMA_SEO_URL . '/core/seobox/' );
 define( 'SEOBOX_VERSION', '4.0.0' );
 
 require_once SEOBOX_DIR . 'core-variables.php';

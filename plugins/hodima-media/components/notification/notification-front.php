@@ -66,10 +66,10 @@ final class HodimaNotificationFront
 
         if (!empty($this->notificationsToRender)) {
             $base = '/components/notification/assets/';
-            $ver  = static fn(string $f): string => (string) (@filemtime(get_template_directory() . $base . $f) ?: '3.0.0');
+            $ver  = static fn(string $f): string => (string) (@filemtime(HODIMA_MEDIA_DIR . $base . $f) ?: '3.0.0');
             // نسخه ثابت «2.0.4» به‌روزرسانی را از مرورگر و کش پنهان می‌کرد
-            wp_enqueue_style('hd-notification-front-css', get_template_directory_uri() . $base . 'css/notification-front.css', [], $ver('css/notification-front.css'));
-            wp_enqueue_script('hd-notification-front-js', get_template_directory_uri() . $base . 'js/notification-front.js', [], $ver('js/notification-front.js'), true);
+            wp_enqueue_style('hd-notification-front-css', HODIMA_MEDIA_URL . $base . 'css/notification-front.css', [], $ver('css/notification-front.css'));
+            wp_enqueue_script('hd-notification-front-js', HODIMA_MEDIA_URL . $base . 'js/notification-front.js', [], $ver('js/notification-front.js'), true);
         }
     }
 

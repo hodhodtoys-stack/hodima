@@ -35,7 +35,7 @@ final class Hodima_GI_Admin_UI {
 			return;
 		}
 
-		$uri = get_template_directory_uri() . '/components/google-indexing-api/admin';
+		$uri = HODIMA_SEO_URL . '/components/google-indexing-api/admin';
 
 		wp_enqueue_style( 'hodima-gi-css', $uri . '/admin-style.css', [], HODIMA_GI_VERSION );
 		wp_enqueue_script( 'hodima-gi-js', $uri . '/admin-script.js', [], HODIMA_GI_VERSION, true );

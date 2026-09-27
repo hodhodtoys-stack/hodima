@@ -1,4 +1,4 @@
-/* Path: /wp-content/themes/hodima/inc/manual_related_link/admin-script.js */
+/* Path: wp-content/plugins/hodima-seo/inc/manual_related_link/admin-script.js */
 
 (function () {
     'use strict';

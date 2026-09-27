@@ -1,7 +1,7 @@
 <?php
 /**
  * Corporate & Contact Schema (E-E-A-T Booster for Wholesale)
- * Path: /wp-content/themes/hodima/schema/corporate-schema.php
+ * Path: wp-content/plugins/hodima-seo/schema/corporate-schema.php
  *
  * توضیح مهم (رفع تکرار کد): این فایل دیگر مجموعه‌ی جداگانه‌ای از گزینه‌های
  * hodima_corp_* (نام شرکت، لوگو، تلفن‌ها، آدرس، شبکه‌های اجتماعی) نمی‌سازد.

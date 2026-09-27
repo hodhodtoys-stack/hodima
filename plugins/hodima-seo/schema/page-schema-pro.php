@@ -1,7 +1,7 @@
 <?php
 /**
  * HOOK PAGE SCHEMA PRO
- * Path: /wp-content/themes/hodima/schema/page-schema-pro.php
+ * Path: wp-content/plugins/hodima-seo/schema/page-schema-pro.php
  * Status: Display Only (UI Only)
  */
 

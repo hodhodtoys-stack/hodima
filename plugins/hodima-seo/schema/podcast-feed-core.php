@@ -1,7 +1,7 @@
 <?php
 /**
  * HOOK PODCAST RSS ENGINE - Apple & Google Podcast Standard
- * Path: wp-content/themes/hodima/schema/podcast-feed-core.php
+ * Path: wp-content/plugins/hodima-seo/schema/podcast-feed-core.php
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

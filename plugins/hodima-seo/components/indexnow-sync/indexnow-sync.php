@@ -2,14 +2,14 @@
 /**
  * Hodima Core - ماژول ادغام‌شده سئوی هوش مصنوعی (AEO) + سینک بینگ (IndexNow)
  *
- * مسیر نصب: wp-content/themes/hodima/components/indexnow-sync/indexnow-sync.php
+ * مسیر نصب: wp-content/plugins/hodima-seo/components/indexnow-sync/indexnow-sync.php
  */
 
 declare(strict_types=1);
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'HODIMA_CORE_DIR', __DIR__ );
-define( 'HODIMA_CORE_URL', get_template_directory_uri() . '/components/indexnow-sync' );
+define( 'HODIMA_CORE_URL', HODIMA_SEO_URL . '/components/indexnow-sync' );
 define( 'HODIMA_CORE_VERSION', '1.0.0' );
 define( 'HODIMA_CORE_DB_VERSION', '1.0.0' ); 
 

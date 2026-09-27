@@ -1,6 +1,6 @@
 /**
  * Phase 2.4: Media System Admin UI - Scripts
- * File: wp-content/themes/hodima/media-system/js/media-admin.js
+ * File: wp-content/plugins/hodima-media/media-system/js/media-admin.js
  * Version: 1.2.0
  */
 jQuery(document).ready(function($) {

@@ -55,7 +55,7 @@ function hook_get_supported_taxonomies(): array {
 
 /** نسخه دارایی = زمان تغییر فایل (نسخه ثابت، به‌روزرسانی را پنهان می‌کرد). */
 function hook_media_asset_version( string $relative ): string {
-	$path = get_template_directory() . '/media-system/' . ltrim( $relative, '/' );
+	$path = HODIMA_MEDIA_DIR . '/media-system/' . ltrim( $relative, '/' );
 	return file_exists( $path ) ? (string) filemtime( $path ) : HOOK_MEDIA_VERSION;
 }
 

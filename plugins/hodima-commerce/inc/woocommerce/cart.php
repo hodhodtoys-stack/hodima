@@ -1,122 +1,151 @@
 <?php
 /**
- * ماژول اختصاصی مدیریت سبد خرید ووکامرس (hodima)
- * هماهنگ شده برای نمایش نوار پیشرفت، کنترل حداقل سفارش، و اصلاحات UI
+ * Hodima Commerce — حداقل مبلغ سفارش و نوار پیشرفت سبد خرید
+ * Path: plugins/hodima-commerce/inc/woocommerce/cart.php
+ *
+ * بازنویسی نسخه قالب:
+ *   - مبلغ حداقل سفارش قبلا ثابت (۱۰ میلیون) در کد بود؛ حالا در
+ *     «ووکامرس ← پیکربندی ← عمومی» قابل تنظیم است (صفر = غیرفعال).
+ *   - اسکریپت jQuery حذف شد؛ پنهان کردن دکمه تسویه حساب با CSS
+ *     (:has) و ویژگی data-met انجام می‌شود و بعد از به‌روزرسانی AJAX
+ *     سبد هم خودبه‌خود درست است. بدون JavaScript.
+ *   - استایل‌های inline به فایل CSS با پالت سازمانی منتقل شد و نوار از
+ *     المان بومی <progress> استفاده می‌کند.
  */
 
-if (!defined('ABSPATH')) {
+declare(strict_types=1);
+
+if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// ۱. تعریف مبلغ حداقل سفارش (10 میلیون تومان)
-define('hodima_MIN_ORDER_AMOUNT', 10000000);
+const HODIMA_MIN_ORDER_OPTION = 'hodima_min_order_amount';
 
-/**
- * بررسی حداقل مبلغ سفارش در سبد خرید و تسویه حساب
- */
-add_action('woocommerce_check_cart_items', 'hodima_enforce_min_order_amount');
-function hodima_enforce_min_order_amount() {
-    if (is_cart() || is_checkout()) {
-        $cart_total = WC()->cart->get_subtotal();
+/** حداقل مبلغ سفارش (به واحد پول فروشگاه). صفر یعنی غیرفعال. */
+function hodima_min_order_amount(): float {
+    $amount = get_option( HODIMA_MIN_ORDER_OPTION, 10000000 );
+    return max( 0.0, (float) apply_filters( 'hodima_min_order_amount', is_numeric( $amount ) ? (float) $amount : 0.0 ) );
+}
 
-        if ($cart_total < hodima_MIN_ORDER_AMOUNT) {
-            if (is_checkout()) {
-                wc_add_notice(
-                    sprintf(
-                        '<strong>توجه:</strong> حداقل مبلغ برای ثبت سفارش عمده <strong>%s</strong> می‌باشد. مبلغ فعلی سبد خرید شما <strong>%s</strong> است.',
-                        wc_price(hodima_MIN_ORDER_AMOUNT),
-                        wc_price($cart_total)
-                    ),
-                    'error'
-                );
-            }
-            // حذف دکمه تسویه حساب در PHP برای امنیت بیشتر
-            remove_action('woocommerce_proceed_to_checkout', 'woocommerce_button_proceed_to_checkout', 20);
-        }
+/** جمع جزء سبد خرید فعلی، یا null اگر سبد در دسترس نباشد. */
+function hodima_cart_subtotal(): ?float {
+    return ( function_exists( 'WC' ) && WC()->cart ) ? (float) WC()->cart->get_subtotal() : null;
+}
+
+/* =========================================================================
+ * ۱. تنظیم در پیکربندی ووکامرس
+ * ========================================================================= */
+
+add_filter( 'woocommerce_general_settings', static function ( array $settings ): array {
+
+    $field = [
+        [
+            'title' => 'سفارش عمده',
+            'type'  => 'title',
+            'id'    => 'hodima_min_order_section',
+        ],
+        [
+            'title'             => 'حداقل مبلغ سفارش',
+            'desc'              => 'بدون رسیدن به این مبلغ، دکمه تسویه حساب نمایش داده نمی‌شود. صفر یعنی بدون محدودیت.',
+            'id'                => HODIMA_MIN_ORDER_OPTION,
+            'type'              => 'number',
+            'default'           => '10000000',
+            'custom_attributes' => [ 'min' => '0', 'step' => '1' ],
+            'desc_tip'          => true,
+        ],
+        [
+            'type' => 'sectionend',
+            'id'   => 'hodima_min_order_section',
+        ],
+    ];
+
+    return [ ...$settings, ...$field ];
+} );
+
+/* =========================================================================
+ * ۲. اعمال سمت سرور
+ * ========================================================================= */
+
+add_action( 'woocommerce_check_cart_items', 'hodima_enforce_min_order_amount' );
+
+function hodima_enforce_min_order_amount(): void {
+
+    $minimum = hodima_min_order_amount();
+    $total   = hodima_cart_subtotal();
+
+    if ( $minimum <= 0 || null === $total || $total >= $minimum || ! ( is_cart() || is_checkout() ) ) {
+        return;
     }
-}
 
-/**
- * ساخت نوار پیشرفت (Progress Bar) داینامیک
- */
-add_action('woocommerce_before_cart_table', 'hodima_cart_progress_bar');
-function hodima_cart_progress_bar() {
-    $cart_total = WC()->cart->get_subtotal();
-    $minimum    = hodima_MIN_ORDER_AMOUNT;
-    $percentage = ($cart_total / $minimum) * 100;
-    $percentage = $percentage > 100 ? 100 : $percentage;
-    $remaining  = $minimum - $cart_total;
-
-    // کانتینر اصلی با ID برای هماهنگی با JS و AJAX
-    echo '<div id="hodima-progress-wrapper" data-min="' . esc_attr($minimum) . '" data-total="' . esc_attr($cart_total) . '">';
-    
-    if ($cart_total < $minimum) {
-        ?>
-        <div class="hodima-cart-progress-wrapper" style="background: #fff; padding: 25px 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid #e1e8ed; box-shadow: 0 4px 15px rgba(0,0,0,0.02); text-align: center;">
-            <h4 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 1.15rem; font-weight: 800;">
-                فقط <span id="hodima-remaining-text" style="color: #FF9800;"><?php echo wc_price($remaining); ?></span> دیگر تا فعال‌سازی سفارش عمده فاصله دارید!
-            </h4>
-            <div style="background: #EEF5F2; border-radius: 50px; height: 12px; width: 100%; overflow: hidden; position: relative;">
-                <div id="hodima-progress-bar" style="background: linear-gradient(90deg, #FF9800, #F57C00, #FFB74D); width: <?php echo $percentage; ?>%; height: 100%; border-radius: 50px; transition: width 0.6s ease;"></div>
-            </div>
-            <p style="margin: 12px 0 0 0; font-size: 0.9rem; color: #7f8c8d; font-weight: 600;">حداقل خرید عمده: <?php echo wc_price($minimum); ?></p>
-        </div>
-        <?php
-    } else {
-        ?>
-        <div class="hodima-cart-progress-success" style="background: #f0fdf4; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; border: 1px solid #bbf7d0;">
-            <h3 style="color: #15803d; margin: 0 0 8px 0; font-size: 1.35rem; font-weight: 900;">🎉 تبریک</h3>
-            <p style="color: #166534; margin: 0; font-size: 1.05rem;">سبد خرید شما به حد نصاب رسید. می‌توانید سفارش را نهایی کنید.</p>
-        </div>
-        <?php
+    if ( is_checkout() ) {
+        wc_add_notice(
+            sprintf(
+                '<strong>توجه:</strong> حداقل مبلغ برای ثبت سفارش عمده <strong>%1$s</strong> است. مبلغ فعلی سبد خرید شما <strong>%2$s</strong> است.',
+                wc_price( $minimum ),
+                wc_price( $total )
+            ),
+            'error'
+        );
     }
-    echo '</div>';
+
+    // دکمه تسویه حساب سمت سرور هم حذف می‌شود، نه فقط با CSS
+    remove_action( 'woocommerce_proceed_to_checkout', 'woocommerce_button_proceed_to_checkout', 20 );
 }
 
-/**
- * آپدیت ایجکسی نوار پیشرفت با استفاده از WooCommerce Fragments
- */
-add_filter('woocommerce_add_to_cart_fragments', 'hodima_update_progress_bar_ajax');
-function hodima_update_progress_bar_ajax($fragments) {
-    ob_start();
-    hodima_cart_progress_bar();
-    $fragments['div#hodima-progress-wrapper'] = ob_get_clean();
-    return $fragments;
-}
+/* =========================================================================
+ * ۳. نوار پیشرفت
+ * ========================================================================= */
 
-/**
- * تزریق CSS و JavaScript به فوتر سایت
- */
-add_action('wp_footer', 'hodima_inject_custom_assets');
-function hodima_inject_custom_assets() {
-    if (!is_cart() && !is_checkout()) return;
+add_action( 'woocommerce_before_cart_table', 'hodima_cart_progress_bar' );
+
+function hodima_cart_progress_bar(): void {
+
+    $minimum = hodima_min_order_amount();
+    $total   = hodima_cart_subtotal();
+
+    if ( $minimum <= 0 || null === $total ) {
+        return;
+    }
+
+    $met     = $total >= $minimum;
+    $percent = min( 100, (int) floor( $total / $minimum * 100 ) );
     ?>
-    
-
-    <script>
-    jQuery(document).ready(function($) {
-        function updatehodimaUI() {
-            var wrapper = $('#hodima-progress-wrapper');
-            if (!wrapper.length) return;
-
-            var minAmount = parseInt(wrapper.attr('data-min'));
-            var currentTotal = parseInt(wrapper.attr('data-total'));
-
-            if (currentTotal < minAmount) {
-                $('body').addClass('min-order-not-met');
-            } else {
-                $('body').removeClass('min-order-not-met');
-            }
-        }
-
-        // اجرای اولیه برای بررسی وضعیت دکمه
-        updatehodimaUI();
-
-        // آپدیت وضعیت دکمه بعد از درخواست‌های ایجکس ووکامرس
-        $(document.body).on('updated_cart_totals', function() {
-            updatehodimaUI(); // بررسی مجدد مقادیر پس از جایگزینی ایجکسی فرگمنت
-        });
-    });
-    </script>
+    <div id="hodima-progress-wrapper" class="hodima-cart-progress" data-met="<?php echo $met ? 'true' : 'false'; ?>">
+        <?php if ( $met ) : ?>
+            <p class="hodima-cart-progress__done" role="status">
+                <strong>سبد خرید شما به حد نصاب رسید.</strong>
+                می‌توانید سفارش را نهایی کنید.
+            </p>
+        <?php else : ?>
+            <p class="hodima-cart-progress__title" id="hodima-cart-progress-label">
+                فقط <strong class="hodima-cart-progress__remaining"><?php echo wp_kses_post( wc_price( $minimum - $total ) ); ?></strong>
+                دیگر تا فعال‌سازی سفارش عمده فاصله دارید.
+            </p>
+            <progress class="hodima-cart-progress__bar" max="100" value="<?php echo esc_attr( (string) $percent ); ?>" aria-labelledby="hodima-cart-progress-label">
+                <?php echo esc_html( $percent . '%' ); ?>
+            </progress>
+            <p class="hodima-cart-progress__note">
+                حداقل خرید عمده: <?php echo wp_kses_post( wc_price( $minimum ) ); ?>
+            </p>
+        <?php endif; ?>
+    </div>
     <?php
 }
+
+/** به‌روزرسانی نوار بعد از افزودن محصول با AJAX (fragments ووکامرس). */
+add_filter( 'woocommerce_add_to_cart_fragments', static function ( array $fragments ): array {
+    ob_start();
+    hodima_cart_progress_bar();
+    $fragments['div#hodima-progress-wrapper'] = (string) ob_get_clean();
+    return $fragments;
+} );
+
+add_action( 'wp_enqueue_scripts', static function (): void {
+
+    if ( ! ( is_cart() || is_checkout() ) || hodima_min_order_amount() <= 0 ) {
+        return;
+    }
+
+    $rel = 'assets/css/cart-progress.css';
+    wp_enqueue_style( 'hodima-cart-progress', HODIMA_COMMERCE_URL . '/' . $rel, [], hodima_commerce_asset_version( $rel ) );
+} );

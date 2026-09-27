@@ -1,7 +1,7 @@
 <?php
 /**
  * HOOK BLOG POSTING SCHEMA - GRAPH LINKED & AI EDITION
- * Path: wp-content/themes/hodima/schema/blog-schema.php
+ * Path: wp-content/plugins/hodima-seo/schema/blog-schema.php
  */
 
 if (!defined('ABSPATH')) exit;

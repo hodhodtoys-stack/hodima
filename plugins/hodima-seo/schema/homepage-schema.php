@@ -1,7 +1,7 @@
 <?php
 /**
  * HOOK MASTER SCHEMA SYSTEM PRO - Global Knowledge Graph V2
- * Path: wp-content/themes/hodima/schema/homepage-schema.php
+ * Path: wp-content/plugins/hodima-seo/schema/homepage-schema.php
  * Description: تولید گراف دانش یکپارچه برای کل سایت (سازمان، وب‌سایت و صفحه جاری) با پشتیبانی از AI GEO Signals
  */
 

@@ -1,7 +1,7 @@
 <?php
 /**
  * HOOK XML SITEMAP PRO - Ultimate Engine V8 (Fixed Product Indexing & SEOBox Logic)
- * Path: wp-content/themes/hodima/schema/sitemap-core.php
+ * Path: wp-content/plugins/hodima-seo/schema/sitemap-core.php
  */
 
 declare(strict_types=1);

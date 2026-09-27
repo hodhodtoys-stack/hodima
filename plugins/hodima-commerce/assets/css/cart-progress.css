@@ -1,0 +1,100 @@
+/* =========================================================================
+ * Hodima Commerce — نوار پیشرفت حداقل سفارش
+ * Path: plugins/hodima-commerce/assets/css/cart-progress.css
+ * پالت: #25316a · #607bbd · #b6c2f3 · #6a2b9a · #a341c8
+ * ========================================================================= */
+
+.hodima-cart-progress {
+	--hcp-primary: var(--hodima-primary, #25316a);
+	--hcp-secondary: var(--hodima-secondary, #607bbd);
+	--hcp-third: var(--hodima-third, #b6c2f3);
+	--hcp-accent: var(--hodima-accent, #6a2b9a);
+	--hcp-accent-light: var(--hodima-accent-light, #a341c8);
+
+	margin-block-end: 1.5rem;
+	padding: 1.5rem 1.25rem;
+	border: 1px solid color-mix(in srgb, var(--hcp-third) 70%, #ffffff);
+	border-radius: 1rem;
+	background: #ffffff;
+	box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--hcp-primary) 6%, transparent);
+	text-align: center;
+
+	& p {
+		margin: 0;
+	}
+
+	&[data-met="true"] {
+		border-color: color-mix(in srgb, var(--hcp-secondary) 45%, #ffffff);
+		background: color-mix(in srgb, var(--hcp-third) 18%, #ffffff);
+	}
+}
+
+.hodima-cart-progress__title {
+	margin-block-end: 1rem !important;
+	color: var(--hcp-primary);
+	font-size: 1.05rem;
+	font-weight: 700;
+}
+
+.hodima-cart-progress__remaining {
+	color: var(--hcp-accent);
+	white-space: nowrap;
+}
+
+/* <progress> بومی با ظاهر برند */
+.hodima-cart-progress__bar {
+	appearance: none;
+	display: block;
+	inline-size: 100%;
+	block-size: 0.75rem;
+	border: 0;
+	border-radius: 999px;
+	overflow: hidden;
+	background: color-mix(in srgb, var(--hcp-third) 45%, #ffffff);
+
+	&::-webkit-progress-bar {
+		background: color-mix(in srgb, var(--hcp-third) 45%, #ffffff);
+		border-radius: 999px;
+	}
+
+	&::-webkit-progress-value {
+		background: linear-gradient(90deg, var(--hcp-secondary), var(--hcp-accent), var(--hcp-accent-light));
+		border-radius: 999px;
+		transition: inline-size 0.6s ease;
+	}
+
+	&::-moz-progress-bar {
+		background: linear-gradient(90deg, var(--hcp-secondary), var(--hcp-accent), var(--hcp-accent-light));
+		border-radius: 999px;
+	}
+}
+
+.hodima-cart-progress__note {
+	margin-block-start: 0.75rem !important;
+	color: color-mix(in srgb, var(--hcp-primary) 65%, #ffffff);
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+
+.hodima-cart-progress__done {
+	color: var(--hcp-primary);
+	font-size: 1rem;
+
+	& strong {
+		display: block;
+		margin-block-end: 0.25rem;
+		color: var(--hcp-accent);
+		font-size: 1.15rem;
+	}
+}
+
+/* پنهان کردن دکمه تسویه حساب تا رسیدن به حد نصاب — بدون JavaScript */
+body:has(.hodima-cart-progress[data-met="false"]) :is(.checkout-button, .wc-proceed-to-checkout) {
+	display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-cart-progress__bar::-webkit-progress-value {
+		transition: none;
+	}
+}

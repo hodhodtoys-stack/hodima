@@ -1,7 +1,7 @@
 <?php
 /**
  * HOOK SCHEMA CLEANER PRO - SURGEON EDITION V5.2 (Deep Node Sweeper)
- * Path: wp-content/themes/hodima/schema/schema-cleaner.php
+ * Path: wp-content/plugins/hodima-seo/schema/schema-cleaner.php
  * جراحی و مهار هوشمند اسکیماهای افزونه‌ها در کل سایت (رفع تداخل سرچ کنسول)
  */
 

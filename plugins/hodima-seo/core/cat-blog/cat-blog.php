@@ -1,6 +1,6 @@
 <?php
 /**
- * مسیر: /themes/hodima/core/cat-blog/cat-blog.php
+ * مسیر: wp-content/plugins/hodima-seo/core/cat-blog/cat-blog.php
  * پشتیبانی اختصاصی برای دسته‌بندی مقالات (وبلاگ) + رابط کاربری بهینه‌شده
  */
 declare(strict_types=1);

@@ -36,9 +36,9 @@ class Core {
 
     /** آدرس و نسخه یک فایل (نسخه = زمان تغییر؛ نسخه ثابت به‌روزرسانی را پنهان می‌کرد). */
     public static function asset( string $relative ): array {
-        $path = get_template_directory() . '/components/hodima-Stories/' . $relative;
+        $path = HODIMA_MEDIA_DIR . '/components/hodima-Stories/' . $relative;
         return [
-            get_template_directory_uri() . '/components/hodima-Stories/' . $relative,
+            HODIMA_MEDIA_URL . '/components/hodima-Stories/' . $relative,
             file_exists( $path ) ? (string) filemtime( $path ) : self::VERSION,
         ];
     }

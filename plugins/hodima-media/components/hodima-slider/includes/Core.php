@@ -56,11 +56,11 @@ final class Core {
 
     public static function asset_url(string $file): string {
         // مسیر قالب اصلی (مثل بقیه قالب)، نه قالب فرزند
-        return get_template_directory_uri() . '/components/hodima-slider/assets/' . ltrim($file, '/');
+        return HODIMA_MEDIA_URL . '/components/hodima-slider/assets/' . ltrim($file, '/');
     }
 
     public static function asset_path(string $file): string {
-        return get_template_directory() . '/components/hodima-slider/assets/' . ltrim($file, '/');
+        return HODIMA_MEDIA_DIR . '/components/hodima-slider/assets/' . ltrim($file, '/');
     }
 
     private static array $versionCache = [];

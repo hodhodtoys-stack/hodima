@@ -1,7 +1,7 @@
 <?php
 /**
  * Hodima Dynamic Table
- * Path: wp-content/themes/hodima/inc/hodima-table/hodima-table.php
+ * Path: wp-content/plugins/hodima-media/inc/hodima-table/hodima-table.php
  * Version: 2.3.0
  */
 
@@ -112,14 +112,14 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 
 			wp_enqueue_style(
 				'hodima-table-admin-css',
-				get_theme_file_uri( 'inc/hodima-table/hodima-admin.css' ),
+				HODIMA_MEDIA_URL . '/inc/hodima-table/hodima-admin.css',
 				[],
 				self::VERSION
 			);
 
 			wp_enqueue_script(
 				'hodima-table-admin-js',
-				get_theme_file_uri( 'inc/hodima-table/hodima-admin.js' ),
+				HODIMA_MEDIA_URL . '/inc/hodima-table/hodima-admin.js',
 				[ 'jquery', 'jquery-ui-sortable' ],
 				self::VERSION,
 				true
@@ -140,7 +140,7 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 		public function register_front_assets(): void {
 			wp_register_style(
 				'hodima-table-front-css',
-				get_theme_file_uri( 'inc/hodima-table/hodima-front.css' ),
+				HODIMA_MEDIA_URL . '/inc/hodima-table/hodima-front.css',
 				[],
 				self::VERSION
 			);

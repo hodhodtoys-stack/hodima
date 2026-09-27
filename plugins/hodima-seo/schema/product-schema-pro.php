@@ -1,7 +1,7 @@
 <?php
 /**
  * HOOK PRODUCT SCHEMA PRO - Single Source of Truth Updated
- * Path: wp-content/themes/hodima/schema/product-schema-pro.php
+ * Path: wp-content/plugins/hodima-seo/schema/product-schema-pro.php
  */
 
 if (!defined('ABSPATH')) exit;

@@ -64,7 +64,7 @@ function hodima_schema_assets($hook) {
     $allowed_pages = array('post.php', 'post-new.php', 'edit-tags.php', 'term.php');
 
     if (strpos($hook, 'hodima') !== false || in_array($hook, $allowed_pages)) {
-        $schema_uri  = get_template_directory_uri() . '/schema';
+        $schema_uri  = HODIMA_SEO_URL . '/schema';
         $schema_path = HODIMA_SCHEMA_PATH;
 
         $css_file = $schema_path . '/admin/assets/css/init.css';

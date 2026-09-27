@@ -51,7 +51,7 @@ function hook_enqueue_admin_media_assets( string $hook ): void {
 
 	wp_enqueue_media();
 
-	$url = get_template_directory_uri() . '/media-system';
+	$url = HODIMA_MEDIA_URL . '/media-system';
 
 	wp_enqueue_style( 'hook-media-admin-css', $url . '/css/media-admin.css', [], hook_media_asset_version( 'css/media-admin.css' ) );
 	wp_enqueue_script( 'hook-media-admin-js', $url . '/js/media-admin.js', [ 'jquery' ], hook_media_asset_version( 'js/media-admin.js' ), true );

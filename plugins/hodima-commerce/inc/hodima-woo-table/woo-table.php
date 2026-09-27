@@ -77,14 +77,14 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 		public function register_assets(): void {
 			wp_register_style(
 				'hodima-woo-specs-table',
-				get_theme_file_uri( 'inc/hodima-woo-table/woo-table.css' ),
+				HODIMA_COMMERCE_URL . '/inc/hodima-woo-table/woo-table.css',
 				[],
 				/*
 				 * نسخه = زمان تغییر فایل. با نسخه ثابت (self::VERSION) آدرس CSS
 				 * بعد از تغییر فایل عوض نمی‌شد و مرورگر و لایت‌اسپید همان نسخه
 				 * قدیمی را سرو می‌کردند — تغییر ۳۰/۷۰ جدول دیده نمی‌شد.
 				 */
-				(string) filemtime( get_theme_file_path( 'inc/hodima-woo-table/woo-table.css' ) )
+				(string) filemtime( HODIMA_COMMERCE_DIR . '/inc/hodima-woo-table/woo-table.css' )
 			);
 		}
 

@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) {
 }
 
 define('HOD_VIDEO_WATCH_PATH', trailingslashit(__DIR__));
-define('HOD_VIDEO_WATCH_URL', trailingslashit(get_template_directory_uri() . '/components/video-watch'));
+define('HOD_VIDEO_WATCH_URL', trailingslashit(HODIMA_MEDIA_URL . '/components/video-watch'));
 
 /** نسخه دارایی = زمان تغییر فایل (نسخه ثابت «1.2.2» به‌روزرسانی را پنهان می‌کرد). */
 function hod_video_watch_ver(string $file): string

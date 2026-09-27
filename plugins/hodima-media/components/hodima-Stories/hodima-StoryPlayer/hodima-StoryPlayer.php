@@ -22,7 +22,7 @@ class Core {
     }
 
     public static function register_assets(): void {
-        $base_url  = get_template_directory_uri() . '/components/hodima-Stories/hodima-StoryPlayer/';
+        $base_url  = HODIMA_MEDIA_URL . '/components/hodima-Stories/hodima-StoryPlayer/';
 
         wp_register_style('hodima-story-player', $base_url . 'hodima-player.css', [], self::file_version('hodima-player.css'));
         wp_register_script('hodima-story-player', $base_url . 'hodima-player.js', [], self::file_version('hodima-player.js'), true);
@@ -58,7 +58,7 @@ class Core {
     }
 
     private static function file_version(string $file): string {
-        $path = get_template_directory() . '/components/hodima-Stories/hodima-StoryPlayer/' . $file;
+        $path = HODIMA_MEDIA_DIR . '/components/hodima-Stories/hodima-StoryPlayer/' . $file;
         return file_exists($path) ? (string) filemtime($path) : self::VERSION;
     }
 
@@ -75,7 +75,7 @@ class Core {
     public static function print_mini_player_bootstrap(): void {
         if (is_admin()) return;
 
-        $base = get_template_directory_uri() . '/components/hodima-Stories/hodima-StoryPlayer/';
+        $base = HODIMA_MEDIA_URL . '/components/hodima-Stories/hodima-StoryPlayer/';
         $css  = $base . 'hodima-mini-player.css?ver=' . self::file_version('hodima-mini-player.css');
         $js   = $base . 'hodima-mini-player.js?ver=' . self::file_version('hodima-mini-player.js');
         $str  = wp_json_encode(['close' => __('بستن', 'hodima')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG);

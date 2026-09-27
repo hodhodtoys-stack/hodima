@@ -11,8 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TOPICCLUSTER_DIR', get_template_directory() . '/core/topiccluster/' );
-define( 'TOPICCLUSTER_URL', get_template_directory_uri() . '/core/topiccluster/' );
+define( 'TOPICCLUSTER_DIR', HODIMA_SEO_DIR . '/core/topiccluster/' );
+define( 'TOPICCLUSTER_URL', HODIMA_SEO_URL . '/core/topiccluster/' );
 define( 'TOPICCLUSTER_VERSION', '3.0.0' );
 
 require_once TOPICCLUSTER_DIR . 'helper.php';

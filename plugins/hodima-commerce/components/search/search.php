@@ -569,7 +569,7 @@ add_filter( 'posts_orderby', static function ( string $orderby, WP_Query $query 
 
 function hodima_woo_live_search_assets(): void {
 
-	$base = get_template_directory_uri() . '/components/search/';
+	$base = HODIMA_COMMERCE_URL . '/components/search/';
 
 	wp_enqueue_style( 'hodima-woo-live-search', $base . 'search.css', [], HODIMA_SEARCH_ASSET_VERSION );
 	wp_enqueue_script( 'hodima-woo-live-search', $base . 'search.js', [], HODIMA_SEARCH_ASSET_VERSION, true );

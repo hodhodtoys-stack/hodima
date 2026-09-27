@@ -27,7 +27,7 @@ function enqueue_assets( string $hook ): void {
     if ( 'toplevel_page_hodima-redirects' === $hook ) {
         wp_enqueue_style( 
             'hodima-redirects-css', 
-            get_theme_file_uri( 'core/redirects/admin-redirects.css' ), 
+            HODIMA_SEO_URL . '/core/redirects/admin-redirects.css', 
             [],
             (string) filemtime( __DIR__ . '/admin-redirects.css' ) // نسخه ثابت، به‌روزرسانی را پنهان می‌کرد
         );

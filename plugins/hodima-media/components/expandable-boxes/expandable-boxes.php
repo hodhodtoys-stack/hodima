@@ -69,8 +69,8 @@ final class Arian_Expandable_Boxes {
 
         $base = '/components/expandable-boxes/';
 
-        wp_enqueue_style( 'arian-expandable-style', get_theme_file_uri( $base . 'expandable-boxes.css' ), [], $this->asset_version( $base . 'expandable-boxes.css' ) );
-        wp_enqueue_script( 'arian-expandable-script', get_theme_file_uri( $base . 'expandable-boxes.js' ), [], $this->asset_version( $base . 'expandable-boxes.js' ), true );
+        wp_enqueue_style( 'arian-expandable-style', HODIMA_MEDIA_URL . '/' . ltrim( $base . 'expandable-boxes.css', '/' ), [], $this->asset_version( $base . 'expandable-boxes.css' ) );
+        wp_enqueue_script( 'arian-expandable-script', HODIMA_MEDIA_URL . '/' . ltrim( $base . 'expandable-boxes.js', '/' ), [], $this->asset_version( $base . 'expandable-boxes.js' ), true );
 
         wp_localize_script( 'arian-expandable-script', 'ArianExpandableBoxesData', [
             'transitionMs'        => 600,
@@ -88,7 +88,7 @@ final class Arian_Expandable_Boxes {
     }
 
     private function asset_version( string $relative ): string {
-        $path = get_theme_file_path( $relative );
+        $path = HODIMA_MEDIA_DIR . '/' . ltrim( $relative, '/' );
         return file_exists( $path ) ? (string) filemtime( $path ) : self::VERSION;
     }
 

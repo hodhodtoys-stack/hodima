@@ -1,7 +1,7 @@
 <?php
 /**
  * Admin View: XML Sitemap Settings
- * Path: wp-content/themes/hodima/schema/views/view-sitemap.php
+ * Path: wp-content/plugins/hodima-seo/schema/admin/views/view-sitemap.php
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;

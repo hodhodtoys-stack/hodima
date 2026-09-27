@@ -32,9 +32,9 @@ final class HodimaNotificationSettings
         if ($typenow === self::POST_TYPE) {
             wp_enqueue_media();
             $base = '/components/notification/assets/';
-            $ver  = static fn(string $f): string => (string) (@filemtime(get_template_directory() . $base . $f) ?: '3.0.0');
-            wp_enqueue_style('hd-notification-metabox-css', get_template_directory_uri() . $base . 'css/notification-metabox.css', [], $ver('css/notification-metabox.css'));
-            wp_enqueue_script('hd-notification-metabox-js', get_template_directory_uri() . $base . 'js/notification-metabox.js', [], $ver('js/notification-metabox.js'), true);
+            $ver  = static fn(string $f): string => (string) (@filemtime(HODIMA_MEDIA_DIR . $base . $f) ?: '3.0.0');
+            wp_enqueue_style('hd-notification-metabox-css', HODIMA_MEDIA_URL . $base . 'css/notification-metabox.css', [], $ver('css/notification-metabox.css'));
+            wp_enqueue_script('hd-notification-metabox-js', HODIMA_MEDIA_URL . $base . 'js/notification-metabox.js', [], $ver('js/notification-metabox.js'), true);
         }
     }
 

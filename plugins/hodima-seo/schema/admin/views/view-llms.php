@@ -1,7 +1,7 @@
 <?php
 /**
  * Admin View: LLMs.txt Configuration (Display Only Version)
- * Path: wp-content/themes/hodima/schema/views/view-llms.php
+ * Path: wp-content/plugins/hodima-seo/schema/admin/views/view-llms.php
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;

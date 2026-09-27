@@ -11,8 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'hodima_PHONE_URI', hodima_URI . '/components/phone' );
-define( 'hodima_PHONE_DIR', hodima_DIR . '/components/phone' );
+define( 'hodima_PHONE_URI', HODIMA_COMMERCE_URL . '/components/phone' );
+define( 'hodima_PHONE_DIR', HODIMA_COMMERCE_DIR . '/components/phone' );
 
 /* =====================================================================
  * دارایی‌ها و امنیت

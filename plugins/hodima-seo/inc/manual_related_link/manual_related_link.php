@@ -1,7 +1,7 @@
 <?php
 /**
  * Manual Related Links (Products + Posts + Categories)
- * Path: /wp-content/themes/hodima/inc/manual_related_link/manual_related_link.php
+ * Path: wp-content/plugins/hodima-seo/inc/manual_related_link/manual_related_link.php
  *
  * @version 1.8.0
  */
@@ -289,7 +289,7 @@ if ( ! class_exists( 'Hodima_Manual_Related_Link' ) ) {
 
             wp_enqueue_style(
                 'hodima-mrl-admin-css',
-                get_theme_file_uri( '/inc/manual_related_link/admin-style.css' ),
+                HODIMA_SEO_URL . '/inc/manual_related_link/admin-style.css',
                 array(),
                 self::VERSION
             );
@@ -302,7 +302,7 @@ if ( ! class_exists( 'Hodima_Manual_Related_Link' ) ) {
              */
             wp_enqueue_script(
                 'hodima-mrl-admin-js',
-                get_theme_file_uri( '/inc/manual_related_link/admin-script.js' ),
+                HODIMA_SEO_URL . '/inc/manual_related_link/admin-script.js',
                 array( 'media-editor' ),
                 self::VERSION,
                 true
@@ -317,7 +317,7 @@ if ( ! class_exists( 'Hodima_Manual_Related_Link' ) ) {
         public function register_frontend_assets() {
             wp_register_style(
                 'hodima-related-products',
-                get_theme_file_uri( '/inc/manual_related_link/frontend-style.css' ),
+                HODIMA_SEO_URL . '/inc/manual_related_link/frontend-style.css',
                 array(),
                 self::VERSION
             );

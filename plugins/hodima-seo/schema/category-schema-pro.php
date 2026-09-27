@@ -1,7 +1,7 @@
 <?php
 /**
  * Category Schema Pro — B2B CollectionPage Schema
- * Path: /wp-content/themes/hodima/schema/category-schema-pro.php
+ * Path: wp-content/plugins/hodima-seo/schema/category-schema-pro.php
  *
  * تولید اسکیمای CollectionPage/OfferCatalog برای صفحات آرشیو دسته‌بندی محصولات
  * (product_cat) و دسته‌بندی مقالات (category)، مطابق با تنظیمات پنل ادمین
