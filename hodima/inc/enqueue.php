@@ -51,73 +51,46 @@ function hodima_enqueue_scripts() {
     // 1. استایل اصلی سایت
     wp_enqueue_style( 'hodima-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
 
-    // 2. استایل کارت محصول (در تمام صفحات فروشگاهی)
-    if ( is_shop() || is_product_category() || is_product_tag() || is_product() || is_search() ) {
-        wp_enqueue_style( 
-            'hodima-product-card', 
-            get_template_directory_uri() . '/assets/css/product-card.css', 
-            array(), 
-            hodima_asset_version( 'assets/css/product-card.css' ) 
-        );
+    /*
+     * صفحات فروشگاهی.
+     * توابع is_shop() و مشابه را ووکامرس تعریف می‌کند؛ بدون گارد، غیرفعال
+     * شدن ووکامرس کل سایت را با Fatal Error از کار می‌انداخت.
+     */
+    $wc          = hodima_wc_active();
+    $is_product  = $wc && is_product();
+    $is_shop     = $wc && is_shop();
+    $is_cat_tag  = $wc && ( is_product_category() || is_product_tag() );
+    $is_prod_src = is_search() && 'product' === get_query_var( 'post_type' );
+
+    $theme_uri = get_template_directory_uri();
+
+    // 2. کارت محصول (همه صفحات فروشگاهی و نتایج جستجو)
+    if ( $is_shop || $is_cat_tag || $is_product || is_search() ) {
+        wp_enqueue_style( 'hodima-product-card', $theme_uri . '/assets/css/product-card.css', [], hodima_asset_version( 'assets/css/product-card.css' ) );
     }
 
-    // 3. استایل اختصاصی "صفحه اصلی فروشگاه" (Shop Page)
-    if ( is_shop() && !is_product_category() && !is_product_tag() ) {
-        wp_enqueue_style( 
-            'hodima-shop-page', 
-            get_template_directory_uri() . '/assets/css/shop-page.css', 
-            array(), 
-            hodima_asset_version( 'assets/css/shop-page.css' ) 
-        );
+    // 3. صفحه اصلی فروشگاه
+    if ( $is_shop && ! $is_cat_tag ) {
+        wp_enqueue_style( 'hodima-shop-page', $theme_uri . '/assets/css/shop-page.css', [], hodima_asset_version( 'assets/css/shop-page.css' ) );
     }
 
- // 4. استایل اختصاصی "دسته‌بندی‌ها" (با نام جدید شما)
-    // دسته، برچسب، فروشگاه و جستجوی محصول: نوار مرتب‌سازی و صفحه‌بندی مشترک
-    if ( is_product_category() || is_product_tag() || is_shop() || ( is_search() && 'product' === get_query_var( 'post_type' ) ) ) {
-        // اطمینان از لود شدن جی‌کوئری
-        wp_enqueue_script( 'jquery' );
-
-        wp_enqueue_style( 
-            'hodima-taxonomy-cat', 
-            get_template_directory_uri() . '/assets/css/taxonomy-product_cat.css', 
-            array(), 
-            hodima_asset_version( 'assets/css/taxonomy-product_cat.css' ) 
-        );
-
-        // لود کردن فایل جاوااسکریپت مرتب‌سازی (نام و مسیر فایل JS خود را جایگزین کنید)
-        wp_enqueue_script( 
-            'hodima-taxonomy-js', 
-            get_template_directory_uri() . '/assets/js/taxonomy-product_cat.js', 
-            array( 'jquery' ), 
-            hodima_asset_version( 'assets/js/taxonomy-product_cat.js' ), 
-            true
-        );
+    // 4. دسته، برچسب، فروشگاه و جستجوی محصول: نوار مرتب‌سازی و صفحه‌بندی مشترک
+    // اسکریپت Vanilla JS است و به jQuery وابستگی ندارد.
+    if ( $is_cat_tag || $is_shop || $is_prod_src ) {
+        wp_enqueue_style( 'hodima-taxonomy-cat', $theme_uri . '/assets/css/taxonomy-product_cat.css', [], hodima_asset_version( 'assets/css/taxonomy-product_cat.css' ) );
+        wp_enqueue_script( 'hodima-taxonomy-js', $theme_uri . '/assets/js/taxonomy-product_cat.js', [], hodima_asset_version( 'assets/js/taxonomy-product_cat.js' ), [ 'in_footer' => true ] );
     }
 
-    // 5. استایل و اسکریپت صفحه محصول
-    if ( is_product() ) {
-        // نسخه هر فایل از زمان تغییر *خودش* (قبلا از style.css؛ تغییر این فایل‌ها
-        // تا وقتی style.css عوض نمی‌شد به مرورگر نمی‌رسید)
-        wp_enqueue_style( 'hodima-single-product', get_template_directory_uri() . '/assets/css/single-product.css', array(), hodima_asset_version( 'assets/css/single-product.css' ) );
-        wp_enqueue_script( 'hodima-single-product-js', get_template_directory_uri() . '/assets/js/single-product.js', array(), hodima_asset_version( 'assets/js/single-product.js' ), true );
+    // 5. صفحه محصول
+    if ( $is_product ) {
+        wp_enqueue_style( 'hodima-single-product', $theme_uri . '/assets/css/single-product.css', [], hodima_asset_version( 'assets/css/single-product.css' ) );
+        wp_enqueue_script( 'hodima-single-product-js', $theme_uri . '/assets/js/single-product.js', [], hodima_asset_version( 'assets/js/single-product.js' ), [ 'in_footer' => true ] );
     }
 
-    // 6. استایل و اسکریپت اختصاصی صفحه سبد خرید (Cart Page)
-    if ( is_cart() ) {
-        wp_enqueue_style( 
-            'hodima-cart-page', 
-            get_template_directory_uri() . '/assets/css/cart-page.css', 
-            array(), 
-            hodima_asset_version( 'assets/css/cart-page.css' ) 
-        );
-
-        wp_enqueue_script( 
-            'hodima-cart-js', 
-            get_template_directory_uri() . '/assets/js/cart-page.js', 
-            array( 'jquery' ),
-            hodima_asset_version( 'assets/js/cart-page.js' ), 
-            true
-        );
+    // 6. سبد خرید (اسکریپت Vanilla JS)
+    if ( $wc && is_cart() ) {
+        wp_enqueue_style( 'hodima-cart-page', $theme_uri . '/assets/css/cart-page.css', [], hodima_asset_version( 'assets/css/cart-page.css' ) );
+        wp_enqueue_script( 'hodima-cart-js', $theme_uri . '/assets/js/cart-page.js', [], hodima_asset_version( 'assets/js/cart-page.js' ), [ 'in_footer' => true ] );
     }
 
     // 7. استایل اختصاصی صفحه نوشته‌های وبلاگ (Single Post)
@@ -207,7 +180,7 @@ function add_placeholder_to_comment_textarea($comment_field) {
  * ============================================================ */
 add_action( 'wp_enqueue_scripts', 'suspended_enqueue_custom_gallery', 20 );
 function suspended_enqueue_custom_gallery() {
-    if ( ! is_product() ) {
+    if ( ! hodima_wc_active() || ! is_product() ) {
         return;
     }
 

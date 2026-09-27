@@ -69,6 +69,21 @@ function arian_resolve_path( $path, array $segments ) {
     $single = ( count( $segments ) === 1 );
     if ( empty( $leaf ) ) return array();
 
+    /*
+     * برگه تودرتو با مسیر کامل.
+     * جستجوی نامک آخر به‌تنهایی، دو برگه هم‌نام زیر والدهای مختلف
+     * (مثلا /خدمات/درباره/ و /شرکت/درباره/) را از هم تشخیص نمی‌داد و
+     * همیشه اولی را نشان می‌داد.
+     */
+    if ( ! $single ) {
+        $page = get_page_by_path( implode( '/', $segments ) );
+        if ( $page instanceof WP_Post
+            && ( 'publish' === $page->post_status
+                || ( 'private' === $page->post_status && current_user_can( 'read_post', $page->ID ) ) ) ) {
+            return [ 'page_id' => $page->ID ];
+        }
+    }
+
     $query = $wpdb->prepare( "
         SELECT 'post' AS type, p.ID as id, p.post_type as subtype, p.post_status as status, p.post_name as slug
         FROM {$wpdb->posts} p
@@ -251,20 +266,21 @@ add_filter( 'redirect_canonical', function ( $redirect_url, $requested_url ) {
  * باید زنجیره‌ای از والدین واقعی همان شیء باشند. هر چیز دیگری
  * زباله است. این تابع دقیقا همین را بررسی می‌کند.
  *
- * با این حال به صورت پیش‌فرض خاموش است. ریسک شکستن ناوبری سایت
- * از سود سئویی بستن آدرس‌های زباله بیشتر است، و تگ canonical که
- * core/seobox چاپ می‌کند از قبل به گوگل آدرس درست را می‌گوید.
+ * این بررسی حالا به‌صورت پیش‌فرض روشن است. تگ canonical به تنهایی
+ * کافی نبود: فضای بی‌نهایت آدرس‌های ۲۰۰، بودجه خزش را هدر می‌داد و
+ * کش صفحه برای هر مسیر زباله یک نسخه جدا می‌ساخت. آدرس نامعتبر با
+ * ۳۰۱ به شکل درست هدایت می‌شود (برگه: مسیر کامل والدین؛ ترم: نامک)
+ * و صفحه‌بندی/اندپوینت انتهای آدرس حفظ می‌شود.
  *
- * برای روشن کردن (بعد از تست روی استیجینگ) این خط را در
- * functions.php اضافه کنید:
+ * برای خاموش کردن در صورت بروز مشکل:
  *
- *     add_filter( 'arian_router_enforce_path', '__return_true' );
+ *     add_filter( 'arian_router_enforce_path', '__return_false' );
  * ============================================================ */
 add_action( 'template_redirect', 'arian_router_enforce_canonical_path', 2 );
 
 function arian_router_enforce_canonical_path() {
 
-    if ( ! apply_filters( 'arian_router_enforce_path', false ) ) {
+    if ( ! apply_filters( 'arian_router_enforce_path', true ) ) {
         return;
     }
 
@@ -299,9 +315,8 @@ function arian_router_enforce_canonical_path() {
         return;
     }
 
-    // مسیر زباله است → به کوتاه‌ترین شکل معتبر (فقط نامک) هدایت شود
-    // نکته: end() آرگومان را با ارجاع می‌گیرد، پس نمی‌توان خروجی
-    // explode() را مستقیم به آن داد.
+    // مسیر زباله است → هدایت به شکلی که طبق همین قاعده معتبر است:
+    // برگه با زنجیره کامل والدین (همان پیوند یکتای وردپرس)، ترم با نامک.
     $all_segments = explode( '/', $matched );
     $leaf         = (string) array_pop( $all_segments );
 
@@ -309,7 +324,19 @@ function arian_router_enforce_canonical_path() {
         return;
     }
 
-    $target = home_url( user_trailingslashit( $leaf ) );
+    $target_path = is_page()
+        ? implode( '/', [ ...array_reverse( $ancestor_slugs ), $leaf ] )
+        : $leaf;
+
+    // صفحه‌بندی و اندپوینت (مثل /page/2/ یا /feed/) که روتر جدا کرده بود
+    $full   = arian_get_request_path();
+    $suffix = str_starts_with( $full, $matched . '/' ) ? substr( $full, strlen( $matched ) ) : '';
+
+    $target = home_url( user_trailingslashit( $target_path . $suffix ) );
+
+    if ( untrailingslashit( $target ) === untrailingslashit( home_url( $full ) ) ) {
+        return; // جلوگیری از حلقه ریدایرکت
+    }
 
     $qs = isset( $_SERVER['QUERY_STRING'] ) ? (string) $_SERVER['QUERY_STRING'] : '';
     if ( $qs !== '' ) {

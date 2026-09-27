@@ -5,14 +5,14 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-// دریافت عنوان هوشمند:
-if ( is_shop() && ! is_search() ) {
-    $page_title = get_the_title( wc_get_page_id( 'shop' ) );
-} elseif ( is_page() || is_front_page() ) {
-    $page_title = get_the_title();
-} else {
-    $page_title = woocommerce_page_title( false );
-}
+// دریافت عنوان هوشمند (بدون ووکامرس هم نباید Fatal Error بدهد)
+$hodima_wc  = function_exists( 'hodima_wc_active' ) && hodima_wc_active();
+$page_title = match ( true ) {
+    $hodima_wc && is_shop() && ! is_search() => get_the_title( wc_get_page_id( 'shop' ) ),
+    is_page() || is_front_page()             => get_the_title(),
+    $hodima_wc                               => (string) woocommerce_page_title( false ),
+    default                                  => wp_strip_all_tags( get_the_archive_title() ),
+};
 ?>
 
 <?php if ( shortcode_exists( 'hook_intro' ) || shortcode_exists( 'hook_video' ) ) : ?>

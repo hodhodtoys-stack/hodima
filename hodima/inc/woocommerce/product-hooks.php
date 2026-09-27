@@ -204,21 +204,15 @@ function hodima_dequeue_woo_heavy_assets() {
 add_action( 'wp_enqueue_scripts', 'hodima_dequeue_woo_heavy_assets', 99 );
 
 /* ==========================================================
-   ۷. حذف jQuery (اصلاح شده)
+   ۷. jQuery
+   ----------------------------------------------------------
+   این بخش jQuery را deregister و یک handle خالی جایش ثبت می‌کرد.
+   هر افزونه‌ای (درگاه پرداخت، فرم تماس، چت آنلاین) که در صفحه
+   اصلی، فروشگاه، دسته‌بندی یا وبلاگ به jQuery نیاز داشت بی‌صدا از
+   کار می‌افتاد. حذف امن در inc/performance/woo-optimizer.php انجام
+   می‌شود: jQuery فقط وقتی بارگذاری نمی‌شود که هیچ اسکریپتی به آن
+   وابسته نباشد. اسکریپت‌های خود قالب همه Vanilla JS هستند.
    ========================================================== */
-
-function hodima_remove_jquery_frontend() {
-    if ( is_admin() ) return;
-
-    // در صفحه محصول به هیچ وجه jQuery نباید حذف شود (برای ستاره‌ها و افزودن به سبد)
-    if ( is_product() || is_checkout() || is_cart() || is_account_page() ) {
-        return;
-    }
-
-    wp_deregister_script( 'jquery' );
-    wp_register_script( 'jquery', '', array(), '', true );
-}
-add_action( 'wp_enqueue_scripts', 'hodima_remove_jquery_frontend', 1 );
 
 /* ==========================================================
    ۸. حذف photoswipe HTML

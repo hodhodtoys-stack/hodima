@@ -115,7 +115,8 @@ if ( is_dir( $performance_dir ) ) {
 
 $woo_dir = hodima_DIR . '/inc/woocommerce/';
 
-if ( is_dir( $woo_dir ) ) {
+// بدون ووکامرس این ماژول‌ها فقط Fatal Error تولید می‌کنند
+if ( hodima_wc_active() && is_dir( $woo_dir ) ) {
 
     foreach ( glob( $woo_dir . '*.php' ) as $module ) {
         require_once $module;
@@ -226,7 +227,9 @@ if ( file_exists( $manual_related_link_file ) ) {
  * 12 .hodima-table  .hodima-woo-table
  * ============================================================ */
    require_once get_template_directory() . '/inc/hodima-table/hodima-table.php';
-   require_once get_theme_file_path( 'inc/hodima-woo-table/woo-table.php' );
+   if ( hodima_wc_active() ) {
+       require_once get_theme_file_path( 'inc/hodima-woo-table/woo-table.php' );
+   }
 
 /* ============================================================
  * 13 .video-watch
@@ -312,7 +315,7 @@ if ( file_exists( $topiccluster_path ) ) {
  // Load Hodima Core: Unified WooCommerce Engine
 $hodima_localizer_path = get_theme_file_path( 'core/time-jalali/time-jalali.php' );
 
-if ( file_exists( $hodima_localizer_path ) ) {
+if ( hodima_wc_active() && file_exists( $hodima_localizer_path ) ) {
     require_once $hodima_localizer_path;
     \Hodima\Core\Time_Jalali\Hodima_Localizer_WC::get_instance();
 }

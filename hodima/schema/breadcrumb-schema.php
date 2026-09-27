@@ -120,7 +120,7 @@ function hodima_breadcrumb_items(): array {
         return false;
     };
 
-    if (is_product()) {
+    if (function_exists('is_product') && is_product()) {
         $product_id = get_the_ID();
         if ( function_exists('wc_get_product_terms') ) {
             $main_term = $get_primary_term($product_id, 'product_cat');

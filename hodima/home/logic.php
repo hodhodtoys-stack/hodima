@@ -332,7 +332,7 @@ add_action( 'wp_enqueue_scripts', function() {
         wp_enqueue_script(
             'hodima-home-js',
             $base_uri . 'home.js',
-            ['jquery'],
+            [], // Vanilla JS؛ وابستگی jQuery لازم نیست
             filemtime( $base_path . 'home.js' ),
             true
         );
