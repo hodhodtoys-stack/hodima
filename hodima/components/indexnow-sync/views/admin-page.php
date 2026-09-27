@@ -126,7 +126,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <?php foreach ( $queue_pending as $row ) : ?>
                 <tr>
                     <td dir="ltr" style="text-align:left; font-family:monospace;"><a href="<?php echo esc_url($row->url_path); ?>" target="_blank" style="color:#607bbd; text-decoration:none;"><?php echo esc_html( $row->url_path ); ?></a></td>
-                    <td><span style="background:rgba(193, 200, 236, 0.3); color:#25316a; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:12px; border:1px solid #c1c9ec;"><?php echo esc_html( $row->action ); ?></span></td>
+                    <td><span style="background:rgba(193, 200, 236, 0.3); color:#25316a; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:12px; border:1px solid #b6c2f3;"><?php echo esc_html( $row->action ); ?></span></td>
                     <td><span style="color:#607bbd; font-weight:bold;">در حال انتظار (<?php echo esc_html( $row->status ); ?>)</span></td>
                     <td dir="ltr" style="text-align:right;"><?php echo esc_html( $row->updated_at ); ?></td>
                 </tr>
@@ -142,7 +142,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <?php foreach ( $queue_history as $row ) : ?>
                 <tr>
                     <td dir="ltr" style="text-align:left; font-family:monospace; color:#25316a;"><?php echo esc_html( $row->url_path ); ?></td>
-                    <td><span style="background:rgba(193, 200, 236, 0.3); color:#25316a; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:12px; border:1px solid #c1c9ec;"><?php echo esc_html( $row->action ); ?></span></td>
+                    <td><span style="background:rgba(193, 200, 236, 0.3); color:#25316a; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:12px; border:1px solid #b6c2f3;"><?php echo esc_html( $row->action ); ?></span></td>
                     <td>
                         <?php if($row->status === 'synced'): ?>
                             <span style="color:#25316a; font-weight:bold;">موفقیت‌آمیز</span>
@@ -232,7 +232,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <?php foreach ( $search_bot_logs as $row ) : ?>
                 <tr>
                     <td><strong style="color:#25316a;"><?php echo esc_html( $row['bot_name'] ); ?></strong></td>
-                    <td><span style="background:rgba(193, 200, 236, 0.2); padding:4px 10px; border-radius:4px; font-weight:bold; border:1px solid #c1c9ec;"><?php echo (int) $row['visit_count']; ?></span></td>
+                    <td><span style="background:rgba(193, 200, 236, 0.2); padding:4px 10px; border-radius:4px; font-weight:bold; border:1px solid #b6c2f3;"><?php echo (int) $row['visit_count']; ?></span></td>
                     <td dir="ltr" style="text-align:right; font-family:monospace;"><?php echo esc_html( $row['last_visit'] ); ?></td>
                 </tr>
             <?php endforeach; ?>
@@ -246,8 +246,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <input type="hidden" name="hodima_action" value="save_settings">
             <input type="hidden" name="active_tab" value="settings">
 
-            <div style="background:#ffffff; border:1px solid #c1c9ec; padding:25px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 15px rgba(37, 47, 106, 0.02);">
-                <h3 style="margin-top:0; color:#25316a; border-bottom:1px dashed #c1c9ec; padding-bottom:12px;">پیکربندی IndexNow (مایکروسافت / یاندکس)</h3>
+            <div style="background:#ffffff; border:1px solid #b6c2f3; padding:25px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 15px rgba(37, 47, 106, 0.02);">
+                <h3 style="margin-top:0; color:#25316a; border-bottom:1px dashed #b6c2f3; padding-bottom:12px;">پیکربندی IndexNow (مایکروسافت / یاندکس)</h3>
                 <table class="form-table">
                     <tr>
                         <th style="width:250px;">وضعیت ماژول</th>
@@ -265,7 +265,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                                 <input type="text" name="bing_api_key" value="<?php echo esc_attr( $bing_key ); ?>" style="width:400px; font-family:monospace;" dir="ltr">
                                 <button type="submit" name="hodima_action" value="test_bing" formnovalidate class="hodima-btn hodima-btn-secondary">تست اتصال (Ping)</button>
                             </div>
-                            <p class="description" style="margin-top:8px;">موقعیت فایل تاییدیه در سرور: <code dir="ltr" style="background:rgba(193, 200, 236, 0.2); padding:3px 6px; border-radius:4px; border:1px solid #c1c9ec;"><?php echo esc_html( home_url( '/' . $bing_key . '.txt' ) ); ?></code></p>
+                            <p class="description" style="margin-top:8px;">موقعیت فایل تاییدیه در سرور: <code dir="ltr" style="background:rgba(193, 200, 236, 0.2); padding:3px 6px; border-radius:4px; border:1px solid #b6c2f3;"><?php echo esc_html( home_url( '/' . $bing_key . '.txt' ) ); ?></code></p>
                         </td>
                     </tr>
                     <tr>
@@ -273,7 +273,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                         <td>
                             <div style="display:flex; gap:15px; flex-wrap:wrap;">
                             <?php foreach ( $content_types as $slug => $label ) : ?>
-                                <label style="background:rgba(193, 200, 236, 0.1); border:1px solid #c1c9ec; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">
+                                <label style="background:rgba(193, 200, 236, 0.1); border:1px solid #b6c2f3; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">
                                     <input type="checkbox" name="allowed_content[]" value="<?php echo esc_attr( $slug ); ?>" <?php checked( in_array( $slug, $selected_content, true ) ); ?>>
                                     <?php echo esc_html( $label ); ?>
                                 </label>
@@ -284,8 +284,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 </table>
             </div>
 
-            <div style="background:#ffffff; border:1px solid #c1c9ec; padding:25px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 15px rgba(37, 47, 106, 0.02);">
-                <h3 style="margin-top:0; color:#25316a; border-bottom:1px dashed #c1c9ec; padding-bottom:12px;">پیکربندی ارزی و B2B</h3>
+            <div style="background:#ffffff; border:1px solid #b6c2f3; padding:25px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 15px rgba(37, 47, 106, 0.02);">
+                <h3 style="margin-top:0; color:#25316a; border-bottom:1px dashed #b6c2f3; padding-bottom:12px;">پیکربندی ارزی و B2B</h3>
                 <table class="form-table">
                     <tr>
                         <th style="width:250px;">نرخ تبدیل پایه (تومان به دلار)</th>
@@ -297,8 +297,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 </table>
             </div>
 
-            <div style="background:#ffffff; border:1px solid #c1c9ec; padding:25px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 15px rgba(37, 47, 106, 0.02);">
-                <h3 style="margin-top:0; color:#25316a; border-bottom:1px dashed #c1c9ec; padding-bottom:12px;">تنظیمات امنیتی و دسترسی API</h3>
+            <div style="background:#ffffff; border:1px solid #b6c2f3; padding:25px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 15px rgba(37, 47, 106, 0.02);">
+                <h3 style="margin-top:0; color:#25316a; border-bottom:1px dashed #b6c2f3; padding-bottom:12px;">تنظیمات امنیتی و دسترسی API</h3>
                 <table class="form-table">
                     <tr>
                         <th style="width:250px;">محدودیت نرخ پردازش (Rate Limit)</th>
@@ -318,7 +318,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                         <td>
                             <div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:5px;">
                             <?php foreach ( Hodima_Bot_Shield::BOTS as $sig => $label ) : ?>
-                                <label style="background:rgba(193, 200, 236, 0.1); border:1px solid #c1c9ec; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">
+                                <label style="background:rgba(193, 200, 236, 0.1); border:1px solid #b6c2f3; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">
                                     <input type="checkbox" name="bot_<?php echo esc_attr( $sig ); ?>" <?php checked( ( $ai_bot_settings[ $sig ] ?? '1' ) === '1' ); ?>>
                                     <span style="color:#25316a;"><?php echo esc_html( $label ); ?></span> 
                                     <span style="color:#607bbd; font-size:11px; direction:ltr; display:inline-block; font-family:monospace;">(<?php echo esc_html($sig); ?>)</span>
@@ -330,8 +330,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 </table>
             </div>
 
-            <div style="background:#ffffff; border:1px solid #c1c9ec; padding:25px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 15px rgba(37, 47, 106, 0.02);">
-                <h3 style="margin-top:0; color:#25316a; border-bottom:1px dashed #c1c9ec; padding-bottom:12px;">پیکربندی رادار شبکه</h3>
+            <div style="background:#ffffff; border:1px solid #b6c2f3; padding:25px; border-radius:8px; margin-bottom:25px; box-shadow:0 2px 15px rgba(37, 47, 106, 0.02);">
+                <h3 style="margin-top:0; color:#25316a; border-bottom:1px dashed #b6c2f3; padding-bottom:12px;">پیکربندی رادار شبکه</h3>
                 <table class="form-table">
                     <tr>
                         <th style="width:250px;">احراز هویت سرور مبدا</th>

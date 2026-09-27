@@ -1,8 +1,8 @@
 .in-admin {
     --in-primary: var(--hodima-primary, #25316a);
     --in-primary-hover: var(--hodima-secondary, #607bbd);
-    --in-gradient: linear-gradient(90deg, #25316a, #607bbd, #c1c9ec);
-    --in-border: var(--hodima-third, #c1c9ec);
+    --in-gradient: linear-gradient(90deg, #25316a, #607bbd, #b6c2f3);
+    --in-border: var(--hodima-third, #b6c2f3);
     --in-text: var(--hodima-text-dark, #111111);
     --in-bg: var(--hodima-surface-soft, #f7f9fd);
     --in-soft-bg: var(--hodima-bg-gray, #eef2f8);

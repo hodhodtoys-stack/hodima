@@ -7,7 +7,7 @@
     --media-primary: var(--hodima-primary, #25316a);
     --media-primary-hover: var(--hodima-primary-hover, #1b244d);
     --media-secondary: var(--hodima-secondary, #607bbd);
-    --media-accent: var(--hodima-third, #c1c9ec);
+    --media-accent: var(--hodima-third, #b6c2f3);
     --media-text: var(--hodima-text-dark, #111111);
     --media-text-soft: var(--hodima-text-muted, #5d6785);
     --media-text-muted: var(--hodima-text-muted, #5d6785);

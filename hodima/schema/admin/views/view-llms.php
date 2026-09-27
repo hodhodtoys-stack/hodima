@@ -23,15 +23,15 @@ hodima_view_header(
 
     <style>
         .aeo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-top: 20px; }
-        .aeo-card { background: #ffffff; border: 1px solid #c1c9ec; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(37,49,106,.05); }
-        .aeo-card-header { background: linear-gradient(90deg, #25316a, #607bbd, #c1c9ec); padding: 4px; }
+        .aeo-card { background: #ffffff; border: 1px solid #b6c2f3; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(37,49,106,.05); }
+        .aeo-card-header { background: linear-gradient(90deg, #25316a, #607bbd, #b6c2f3); padding: 4px; }
         .aeo-card-body { padding: 20px; }
         .aeo-card-title { color: #25316a; font-size: 17px; font-weight: bold; margin: 0 0 15px 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; display: flex; align-items: center; gap: 8px; }
         .aeo-list { list-style: none; padding: 0; margin: 0; }
         .aeo-list li { margin-bottom: 15px; }
         .aeo-list strong { color: #25316a; display: block; margin-bottom: 4px; font-size: 14px; }
         .aeo-list p { color: #607bbd; font-size: 13px; margin: 0 0 5px 0; line-height: 1.5; }
-        .aeo-code-box { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #c1c9ec; border-radius: 4px; padding: 6px 10px; font-family: monospace; font-size: 13px; color: #25316a; direction: ltr; text-align: left; }
+        .aeo-code-box { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #b6c2f3; border-radius: 4px; padding: 6px 10px; font-family: monospace; font-size: 13px; color: #25316a; direction: ltr; text-align: left; }
         .aeo-link { color: #607bbd; text-decoration: none; font-weight: bold; font-family: 'Vazirmatn', sans-serif; }
         .aeo-link:hover { color: #25316a; text-decoration: underline; }
         .aeo-tag { display: inline-block; background: #25316a; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 5px; }
@@ -44,15 +44,15 @@ hodima_view_header(
         <div>
             <h3 style="margin: 0 0 5px 0; color: #25316a; font-size: 15px;">۱. دروازه ورود اصلی (Global Discovery Tag)</h3>
             <p style="color: #607bbd; font-size: 13px; margin: 0 0 8px 0;">این تگ به هوش مصنوعی نقشه راه کل سایت (<code>llms.txt</code>) را معرفی می‌کند.</p>
-            <code style="display: block; background: #f8fafc; border: 1px solid #c1c9ec; padding: 10px; border-radius: 4px; color: #25316a; direction: ltr; text-align: left;">
+            <code style="display: block; background: #f8fafc; border: 1px solid #b6c2f3; padding: 10px; border-radius: 4px; color: #25316a; direction: ltr; text-align: left;">
                 &lt;link rel="llms" href="<?php echo esc_url($base_url); ?>/llms.txt"&gt;
             </code>
         </div>
 
-        <div style="border-top: 1px dashed #c1c9ec; padding-top: 15px;">
+        <div style="border-top: 1px dashed #b6c2f3; padding-top: 15px;">
             <h3 style="margin: 0 0 5px 0; color: #25316a; font-size: 15px;">۲. کشف سطح صفحه (Page-Level Discovery Tag)</h3>
             <p style="color: #607bbd; font-size: 13px; margin: 0 0 8px 0;">این تگ به صورت داینامیک در محصولات/مقالات چاپ می‌شود تا نسخه مارک‌داونِ همان صفحه را به ماشین معرفی کند.</p>
-            <code style="display: block; background: #f8fafc; border: 1px solid #c1c9ec; padding: 10px; border-radius: 4px; color: #25316a; direction: ltr; text-align: left;">
+            <code style="display: block; background: #f8fafc; border: 1px solid #b6c2f3; padding: 10px; border-radius: 4px; color: #25316a; direction: ltr; text-align: left;">
                 &lt;link rel="alternate" type="text/markdown" href="<?php echo esc_url($base_url); ?>/product-url.md"&gt;
             </code>
         </div>

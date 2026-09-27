@@ -3,7 +3,7 @@
  * File: wp-content/themes/hodima/media-system/css/media-admin.css 
  * Version: 2.1.0 (Font Updated & Resized)
  *
- * پالت رسمی پروژه: اصلی #25316a / ثانویه #607bbd / مکمل #c1c9ec
+ * پالت رسمی پروژه: اصلی #25316a / ثانویه #607bbd / مکمل #b6c2f3
  * فونت: Vazirmatn 
  */
 
@@ -11,7 +11,7 @@
     --hook-primary: var(--hodima-primary, #25316a);
     --hook-primary-dark: var(--hodima-primary-dark, #1b244d);
     --hook-secondary: var(--hodima-secondary, #607bbd);
-    --hook-accent: var(--hodima-third, #c1c9ec);
+    --hook-accent: var(--hodima-third, #b6c2f3);
     --hook-accent-light: var(--hodima-bg-gray, #eef2f8);
     --hook-text-main: var(--hodima-text-dark, #111111);
     --hook-text-muted: var(--hodima-text-muted, #5d6785);

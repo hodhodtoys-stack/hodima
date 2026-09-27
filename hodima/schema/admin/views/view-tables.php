@@ -21,7 +21,7 @@ if (function_exists('hodima_view_header')) {
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 25px;">
         
         <!-- کارت 1: جدول داینامیک (Hodima_Dynamic_Table) -->
-        <div class="h-table-card" style="border: 1px solid #c1c9ec; border-radius: 8px; padding: 25px; background: #fff; box-shadow: 0 4px 6px rgba(37,49,106,0.05);">
+        <div class="h-table-card" style="border: 1px solid #b6c2f3; border-radius: 8px; padding: 25px; background: #fff; box-shadow: 0 4px 6px rgba(37,49,106,0.05);">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;">
                 <span style="font-size: 28px;">📝</span>
                 <div>
@@ -40,24 +40,24 @@ if (function_exists('hodima_view_header')) {
                 <li><span style="font-weight: inherit; color:#25316a;">قدم سوم:</span> شورت‌کد مربوطه را در متن محتوا قرار دهید تا جدول به کاربر هم نمایش داده شود.</li>
             </ul>
             
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #c1c9ec;">
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #b6c2f3;">
                 <span style="display: block; margin-bottom: 10px; font-size: 13px; color: #25316a; font-weight: inherit;">شورت‌کدهای نمایش جدول:</span>
                 
                 <div style="margin-bottom: 10px;">
                     <span style="font-size: 12px; color: #607bbd; display: block; margin-bottom: 4px;">نمایش خودکار (برای پست جاری):</span>
-                    <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #c1c9ec; user-select: all; cursor: pointer; display: block; font-size: 14px; color: #25316a;">[hodima_table]</code>
+                    <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #b6c2f3; user-select: all; cursor: pointer; display: block; font-size: 14px; color: #25316a;">[hodima_table]</code>
                 </div>
 
                 <div>
                     <span style="font-size: 12px; color: #607bbd; display: block; margin-bottom: 4px;">نمایش پیشرفته (فراخوانی پست یا دسته دیگر با تغییر عنوان):</span>
-                    <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #c1c9ec; user-select: all; cursor: pointer; display: block; margin-bottom: 5px; font-size: 13px; color: #25316a;">[hodima_table title="مشخصات فنی"]</code>
-                    <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #c1c9ec; user-select: all; cursor: pointer; display: block; font-size: 13px; color: #25316a;">[hodima_table id="123" type="post"]</code>
+                    <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #b6c2f3; user-select: all; cursor: pointer; display: block; margin-bottom: 5px; font-size: 13px; color: #25316a;">[hodima_table title="مشخصات فنی"]</code>
+                    <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #b6c2f3; user-select: all; cursor: pointer; display: block; font-size: 13px; color: #25316a;">[hodima_table id="123" type="post"]</code>
                 </div>
             </div>
         </div>
 
         <!-- کارت 2: جدول مشخصات ووکامرس (Hodima_Product_Specs_Table) -->
-        <div class="h-table-card" style="border: 1px solid #c1c9ec; border-radius: 8px; padding: 25px; background: #fff; box-shadow: 0 4px 6px rgba(37,49,106,0.05);">
+        <div class="h-table-card" style="border: 1px solid #b6c2f3; border-radius: 8px; padding: 25px; background: #fff; box-shadow: 0 4px 6px rgba(37,49,106,0.05);">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;">
                 <span style="font-size: 28px;">🛍️</span>
                 <div>
@@ -82,9 +82,9 @@ if (function_exists('hodima_view_header')) {
                 </p>
             </div>
             
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #c1c9ec;">
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #b6c2f3;">
                 <span style="display: block; margin-bottom: 10px; font-size: 13px; color: #25316a; font-weight: inherit;">شورت‌کد نمایش جدول در محصول:</span>
-                <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #c1c9ec; user-select: all; cursor: pointer; display: block; font-size: 14px; color: #25316a;">[woo_specs_table]</code>
+                <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #b6c2f3; user-select: all; cursor: pointer; display: block; font-size: 14px; color: #25316a;">[woo_specs_table]</code>
                 <p style="font-size: 11px; color: #64748b; margin: 8px 0 0 0; line-height: 1.5;">این شورت‌کد را می‌توانید در بخش "توضیحات کوتاه محصول"، داخل متن اصلی، یا با استفاده از ابزارک شورت‌کد در المنتور قرار دهید.</p>
             </div>
         </div>

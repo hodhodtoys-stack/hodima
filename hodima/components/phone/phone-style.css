@@ -6,7 +6,7 @@
     --hodima-phone-primary: var(--hodima-primary, #25316a);
     --hodima-phone-primary-hover: var(--hodima-primary-dark, #1b244d);
     --hodima-phone-secondary: var(--hodima-secondary, #607bbd);
-    --hodima-phone-third: var(--hodima-third, #c1c9ec);
+    --hodima-phone-third: var(--hodima-third, #b6c2f3);
 
     --hodima-phone-surface: var(--hodima-surface-soft, #f7f9fd);
     --hodima-phone-surface-strong: #ffffff;
@@ -123,7 +123,7 @@
             &:focus-visible {
                 outline: none;
                 box-shadow:
-                    0 0 0 0.1875rem rgba(193, 201, 236, 0.65),
+                    0 0 0 0.1875rem rgba(182, 194, 243, 0.65),
                     0 0.5rem 1rem rgba(37, 49, 106, 0.24);
             }
 
@@ -182,7 +182,7 @@
 
 .footer-form-col .hodima-phone-wrapper {
     background: rgba(255, 255, 255, 0.96);
-    border-color: rgba(193, 201, 236, 0.55);
+    border-color: rgba(182, 194, 243, 0.55);
 }
 
 .hodima-footer-top-form {

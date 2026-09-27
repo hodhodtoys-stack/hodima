@@ -3,7 +3,7 @@
 .woo-live-search {
     --wls-primary-color: var(--hodima-primary, #25316a);
     --wls-secondary-color: var(--hodima-secondary, #607bbd);
-    --wls-third-color: var(--hodima-third, #c1c9ec);
+    --wls-third-color: var(--hodima-third, #b6c2f3);
 
     --wls-border-radius: 0.5rem;
     --wls-border-color: var(--hodima-border-light, #d9e1f0);
@@ -74,7 +74,7 @@
 
 .woo-live-search__clear:hover {
     color: var(--wls-primary-color);
-    background-color: rgba(193, 201, 236, 0.32);
+    background-color: rgba(182, 194, 243, 0.32);
 }
 
 .woo-live-search__spinner {
@@ -254,7 +254,7 @@
 .woo-search-results__all:hover,
 .woo-search-results__all:focus {
     background-color: var(--wls-third-color);
-    border-color: var(--hodima-third, #c1c9ec);
+    border-color: var(--hodima-third, #b6c2f3);
     color: var(--wls-primary-color);
     transform: translateY(-0.0625rem);
     box-shadow: 0 0.25rem 0.75rem rgba(37, 49, 106, 0.08);
@@ -264,7 +264,7 @@
 /* --- اسکرولبار --- */
 .woo-search-results::-webkit-scrollbar { width: 0.3125rem; }
 .woo-search-results::-webkit-scrollbar-track { background: var(--hodima-bg-gray, #eef2f8); }
-.woo-search-results::-webkit-scrollbar-thumb { background: var(--hodima-third, #c1c9ec); border-radius: 0.625rem; }
+.woo-search-results::-webkit-scrollbar-thumb { background: var(--hodima-third, #b6c2f3); border-radius: 0.625rem; }
 .woo-search-results::-webkit-scrollbar-thumb:hover { background: var(--hodima-secondary, #607bbd); }
 
 /* =========================================

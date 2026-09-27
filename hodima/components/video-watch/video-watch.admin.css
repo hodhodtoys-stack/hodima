@@ -7,7 +7,7 @@
     --hvw-card: #fff;
     --hvw-text: var(--hodima-text-dark, #111111);
     --hvw-muted: var(--hodima-text-muted, #5d6785);
-    --hvw-border: var(--hodima-third, #c1c9ec);
+    --hvw-border: var(--hodima-third, #b6c2f3);
     --hvw-shadow: 0 4px 12px rgba(37, 49, 106, 0.05);
 }
 

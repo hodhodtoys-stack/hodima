@@ -91,104 +91,104 @@ final class Hodima_AEO_Admin {
         $units_fa = ['کیلوگرم', 'کارتن', 'بسته', 'جین'];
         $units_en = ['kg', 'Carton', 'Pack', 'Dozen'];
         ?>
-        <div style="background:#f8fafc; padding:20px; direction:rtl; text-align:right; border-radius:4px; border:1px solid #c1c9ec; font-family: 'Vazirmatn', sans-serif;">
+        <div style="background:#f8fafc; padding:20px; direction:rtl; text-align:right; border-radius:4px; border:1px solid #b6c2f3; font-family: 'Vazirmatn', sans-serif;">
 
-            <div style="background:#ffffff; padding:15px; border:1px solid #c1c9ec; border-right:4px solid #25316a; border-radius:8px; margin-bottom:20px;">
-                <h4 style="margin:0 0 15px 0; padding-bottom:5px; border-bottom:1px solid #c1c9ec; color:#25316a;">۱. مفاهیم بنیادین (Core Semantics)</h4>
+            <div style="background:#ffffff; padding:15px; border:1px solid #b6c2f3; border-right:4px solid #25316a; border-radius:8px; margin-bottom:20px;">
+                <h4 style="margin:0 0 15px 0; padding-bottom:5px; border-bottom:1px solid #b6c2f3; color:#25316a;">۱. مفاهیم بنیادین (Core Semantics)</h4>
                 <table style="width:100%; border-collapse:collapse;">
                     <tr>
-                        <td style="width:50%; padding:10px; border-left:1px solid #c1c9ec;">
+                        <td style="width:50%; padding:10px; border-left:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">موجودیت اصلی</label>
-                            <input type="text" disabled value="<?php echo esc_attr($main_title ?: 'نام محصول/نوشته'); ?>" style="width:100%; padding:8px; border:1px solid #c1c9ec; border-radius:4px; background:#f1f5f9; color:#607bbd; cursor:not-allowed;">
+                            <input type="text" disabled value="<?php echo esc_attr($main_title ?: 'نام محصول/نوشته'); ?>" style="width:100%; padding:8px; border:1px solid #b6c2f3; border-radius:4px; background:#f1f5f9; color:#607bbd; cursor:not-allowed;">
                         </td>
                         <td style="width:50%; padding:10px;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; direction:ltr; text-align:left;">Global Entity Name</label>
-                            <input type="text" name="h_ai_en_entity" value="<?php echo esc_attr($en_entity); ?>" placeholder="e.g. Mini Hair Ties" style="width:100%; padding:8px; direction:ltr; border:1px solid #c1c9ec; border-radius:4px;">
+                            <input type="text" name="h_ai_en_entity" value="<?php echo esc_attr($en_entity); ?>" placeholder="e.g. Mini Hair Ties" style="width:100%; padding:8px; direction:ltr; border:1px solid #b6c2f3; border-radius:4px;">
                         </td>
                     </tr>
                     
                     <tr>
-                        <td style="width:50%; padding:10px; border-left:1px solid #c1c9ec; background:#f4f6f8;">
+                        <td style="width:50%; padding:10px; border-left:1px solid #b6c2f3; background:#f4f6f8;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">نام‌های مستعار</label>
-                            <input type="text" name="h_ai_fa_aliases" value="<?php echo esc_attr($fa_aliases); ?>" placeholder="مثال: کش چهل گیس، کش مو ریز" style="width:100%; padding:8px; border:1px solid #c1c9ec; border-radius:4px;">
+                            <input type="text" name="h_ai_fa_aliases" value="<?php echo esc_attr($fa_aliases); ?>" placeholder="مثال: کش چهل گیس، کش مو ریز" style="width:100%; padding:8px; border:1px solid #b6c2f3; border-radius:4px;">
                         </td>
                         <td style="width:50%; padding:10px; background:#f4f6f8;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; direction:ltr; text-align:left;">Aliases</label>
-                            <input type="text" name="h_ai_en_aliases" value="<?php echo esc_attr($en_aliases); ?>" placeholder="e.g. Mini Elastic Bands, Clear Hair Elastics" style="width:100%; padding:8px; direction:ltr; border:1px solid #c1c9ec; border-radius:4px;">
+                            <input type="text" name="h_ai_en_aliases" value="<?php echo esc_attr($en_aliases); ?>" placeholder="e.g. Mini Elastic Bands, Clear Hair Elastics" style="width:100%; padding:8px; direction:ltr; border:1px solid #b6c2f3; border-radius:4px;">
                         </td>
                     </tr>
 
                     <tr>
-                        <td style="width:50%; padding:10px; border-left:1px solid #c1c9ec;">
+                        <td style="width:50%; padding:10px; border-left:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">هدف جستجو</label>
-                            <input type="text" name="h_ai_entities" value="<?php echo esc_attr($fa_entities); ?>" placeholder="مثال: خرید عمده کش چهل‌گیس، پخش کش مو" style="width:100%; padding:8px; border:1px solid #c1c9ec; border-radius:4px;">
+                            <input type="text" name="h_ai_entities" value="<?php echo esc_attr($fa_entities); ?>" placeholder="مثال: خرید عمده کش چهل‌گیس، پخش کش مو" style="width:100%; padding:8px; border:1px solid #b6c2f3; border-radius:4px;">
                         </td>
                         <td style="width:50%; padding:10px;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; direction:ltr; text-align:left;">Search Intent</label>
-                            <input type="text" name="h_ai_en_synonyms" value="<?php echo esc_attr($en_synonyms); ?>" placeholder="e.g. Wholesale TPU Elastics, Buy bulk hair ties" style="width:100%; padding:8px; direction:ltr; border:1px solid #c1c9ec; border-radius:4px;">
+                            <input type="text" name="h_ai_en_synonyms" value="<?php echo esc_attr($en_synonyms); ?>" placeholder="e.g. Wholesale TPU Elastics, Buy bulk hair ties" style="width:100%; padding:8px; direction:ltr; border:1px solid #b6c2f3; border-radius:4px;">
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding:10px; border-left:1px solid #c1c9ec;">
+                        <td style="padding:10px; border-left:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">زمینه معنایی</label>
-                            <textarea name="h_ai_text" style="width:100%; height:80px; padding:8px; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($fa_context); ?></textarea>
+                            <textarea name="h_ai_text" style="width:100%; height:80px; padding:8px; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($fa_context); ?></textarea>
                         </td>
                         <td style="padding:10px;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; direction:ltr; text-align:left;">Semantic Context</label>
-                            <textarea name="h_ai_en_context" style="width:100%; height:80px; padding:8px; font-family:monospace; direction:ltr; text-align:left; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($en_context); ?></textarea>
+                            <textarea name="h_ai_en_context" style="width:100%; height:80px; padding:8px; font-family:monospace; direction:ltr; text-align:left; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($en_context); ?></textarea>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding:10px; border-left:1px solid #c1c9ec;">
+                        <td style="padding:10px; border-left:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">کاربردها</label>
-                            <textarea name="h_ai_usecases" style="width:100%; height:60px; padding:8px; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($fa_usecases); ?></textarea>
+                            <textarea name="h_ai_usecases" style="width:100%; height:60px; padding:8px; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($fa_usecases); ?></textarea>
                         </td>
                         <td style="padding:10px;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; direction:ltr; text-align:left;">Use Cases</label>
-                            <textarea name="h_ai_en_usecases" style="width:100%; height:60px; padding:8px; direction:ltr; text-align:left; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($en_usecases); ?></textarea>
+                            <textarea name="h_ai_en_usecases" style="width:100%; height:60px; padding:8px; direction:ltr; text-align:left; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($en_usecases); ?></textarea>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding:10px; border-left:1px solid #c1c9ec;">
+                        <td style="padding:10px; border-left:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">مناسب برای</label>
-                            <textarea name="h_ai_audience" style="width:100%; height:60px; padding:8px; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($fa_audience); ?></textarea>
+                            <textarea name="h_ai_audience" style="width:100%; height:60px; padding:8px; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($fa_audience); ?></textarea>
                         </td>
                         <td style="padding:10px;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; direction:ltr; text-align:left;">Target Audience</label>
-                            <textarea name="h_ai_en_audience" style="width:100%; height:60px; padding:8px; direction:ltr; text-align:left; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($en_audience); ?></textarea>
+                            <textarea name="h_ai_en_audience" style="width:100%; height:60px; padding:8px; direction:ltr; text-align:left; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($en_audience); ?></textarea>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding:10px; border-left:1px solid #c1c9ec;">
+                        <td style="padding:10px; border-left:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">مقایسه</label>
-                            <textarea name="h_ai_comparison" style="width:100%; height:60px; padding:8px; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($fa_comparison); ?></textarea>
+                            <textarea name="h_ai_comparison" style="width:100%; height:60px; padding:8px; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($fa_comparison); ?></textarea>
                         </td>
                         <td style="padding:10px;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; direction:ltr; text-align:left;">Comparison</label>
-                            <textarea name="h_ai_en_comparison" style="width:100%; height:60px; padding:8px; direction:ltr; text-align:left; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($en_comparison); ?></textarea>
+                            <textarea name="h_ai_en_comparison" style="width:100%; height:60px; padding:8px; direction:ltr; text-align:left; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($en_comparison); ?></textarea>
                         </td>
                     </tr>
                     
                     <tr>
-                        <td style="padding:10px; background:#f4f6f8; border-top:1px solid #c1c9ec; border-left:1px solid #c1c9ec;">
+                        <td style="padding:10px; background:#f4f6f8; border-top:1px solid #b6c2f3; border-left:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">خلاصه بُرداری / Embedding Summary</label>
                             <p style="font-size:12px; color:#607bbd; margin:0 0 8px 0;">یک پاراگراف چکیده (مخصوص دیتابیس‌های برداری) از کل ماهیت محصول، سایزها، و کاربرد بنویسید.</p>
-                            <textarea name="h_ai_fa_embedding_summary" style="width:100%; height:80px; padding:8px; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($fa_embedding); ?></textarea>
+                            <textarea name="h_ai_fa_embedding_summary" style="width:100%; height:80px; padding:8px; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($fa_embedding); ?></textarea>
                         </td>
-                        <td style="padding:10px; background:#f4f6f8; border-top:1px solid #c1c9ec;">
+                        <td style="padding:10px; background:#f4f6f8; border-top:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; direction:ltr; text-align:left;">Embedding Summary</label>
                             <p style="font-size:12px; color:#607bbd; margin:0 0 8px 0; direction:ltr; text-align:left;">A short, dense paragraph summarizing the entity for Vector DBs.</p>
-                            <textarea name="h_ai_en_embedding_summary" style="width:100%; height:80px; padding:8px; direction:ltr; text-align:left; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($en_embedding); ?></textarea>
+                            <textarea name="h_ai_en_embedding_summary" style="width:100%; height:80px; padding:8px; direction:ltr; text-align:left; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($en_embedding); ?></textarea>
                         </td>
                     </tr>
                 </table>
             </div>
 
             <?php if ( $object_type !== 'term' ) : ?>
-            <div style="background:#ffffff; padding:15px; border:1px solid #c1c9ec; border-right:4px solid #607bbd; border-radius:8px; margin-bottom:20px;">
-                <h4 style="margin:0 0 15px 0; padding-bottom:5px; border-bottom:1px solid #c1c9ec; color:#25316a;">۲. اطلاعات تجاری و فروش (B2B Commercial Data)</h4>
+            <div style="background:#ffffff; padding:15px; border:1px solid #b6c2f3; border-right:4px solid #607bbd; border-radius:8px; margin-bottom:20px;">
+                <h4 style="margin:0 0 15px 0; padding-bottom:5px; border-bottom:1px solid #b6c2f3; color:#25316a;">۲. اطلاعات تجاری و فروش (B2B Commercial Data)</h4>
                 
-                <div style="background:#f4f6f8; padding:10px 15px; border-radius:6px; margin-bottom:15px; border:1px solid #c1c9ec; display:flex; align-items:center; gap:20px;">
+                <div style="background:#f4f6f8; padding:10px 15px; border-radius:6px; margin-bottom:15px; border:1px solid #b6c2f3; display:flex; align-items:center; gap:20px;">
                     <label style="font-weight:bold; color:#25316a;">نوع مدل فروش</label>
                     <label style="cursor:pointer; color:#25316a;"><input type="radio" name="h_ai_biz_model" value="both" <?php checked($biz_model, 'both'); ?>> هر دو پلن</label>
                     <label style="cursor:pointer; color:#25316a;"><input type="radio" name="h_ai_biz_model" value="tier_a" <?php checked($biz_model, 'tier_a'); ?>> پلن A عمده</label>
@@ -196,23 +196,23 @@ final class Hodima_AEO_Admin {
                 </div>
 
                 <!-- پلن فروش A -->
-                <div id="wrap_tier_a" style="background:#f8fafc; padding:10px; border:1px dashed #c1c9ec; border-radius:6px; margin-bottom:15px;">
+                <div id="wrap_tier_a" style="background:#f8fafc; padding:10px; border:1px dashed #b6c2f3; border-radius:6px; margin-bottom:15px;">
                     <h5 style="margin:0 0 10px 0; color:#25316a; font-size:16px;">پلن فروش A (فروش عمده)</h5>
                     <table style="width:100%; border-collapse:collapse;">
                         <tr>
-                            <td style="width:50%; padding:5px 10px; border-left:1px solid #c1c9ec;">
+                            <td style="width:50%; padding:5px 10px; border-left:1px solid #b6c2f3;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#b91c1c; font-size:13px;">قیمت دستی عمده (تومان)</label>
-                                <input type="number" name="h_ai_fa_price_t1" value="<?php echo esc_attr($fa_price_t1); ?>" placeholder="مثال: 550000" style="width:100%; padding:6px; border:1px solid #c1c9ec; border-radius:4px; font-weight:bold;">
+                                <input type="number" name="h_ai_fa_price_t1" value="<?php echo esc_attr($fa_price_t1); ?>" placeholder="مثال: 550000" style="width:100%; padding:6px; border:1px solid #b6c2f3; border-radius:4px; font-weight:bold;">
                             </td>
                             <td style="width:50%; padding:5px 10px;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#b91c1c; font-size:13px; direction:rtl; text-align:right;">مبنای این قیمت / Price Basis</label>
                                 <div style="display:flex; gap:10px;">
-                                    <select name="h_ai_fa_price_basis" style="flex:1; padding:6px; border:1px solid #c1c9ec; border-radius:4px; font-weight:bold;">
+                                    <select name="h_ai_fa_price_basis" style="flex:1; padding:6px; border:1px solid #b6c2f3; border-radius:4px; font-weight:bold;">
                                         <?php foreach($units_fa as $u): ?>
                                             <option value="<?php echo esc_attr($u); ?>" <?php selected($fa_price_basis, $u); ?>><?php echo esc_html($u); ?></option>
                                         <?php endforeach; ?>
                                     </select>
-                                    <select name="h_ai_en_price_basis" style="flex:1; padding:6px; border:1px solid #c1c9ec; border-radius:4px; direction:ltr; font-weight:bold;">
+                                    <select name="h_ai_en_price_basis" style="flex:1; padding:6px; border:1px solid #b6c2f3; border-radius:4px; direction:ltr; font-weight:bold;">
                                         <?php foreach($units_en as $u): ?>
                                             <option value="<?php echo esc_attr($u); ?>" <?php selected($en_price_basis, $u); ?>><?php echo esc_html($u); ?></option>
                                         <?php endforeach; ?>
@@ -221,56 +221,56 @@ final class Hodima_AEO_Admin {
                             </td>
                         </tr>
                         <tr>
-                            <td style="width:50%; padding:5px 10px; border-left:1px solid #c1c9ec;">
+                            <td style="width:50%; padding:5px 10px; border-left:1px solid #b6c2f3;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px;">واحد فروش دلخواه (متن آزاد برای کاربر)</label>
-                                <input type="text" name="h_ai_fa_sale_unit" value="<?php echo esc_attr($fa_sale_unit); ?>" placeholder="مثال: گونی ۳۰ کیلویی" style="width:100%; padding:6px; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_fa_sale_unit" value="<?php echo esc_attr($fa_sale_unit); ?>" placeholder="مثال: گونی ۳۰ کیلویی" style="width:100%; padding:6px; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                             <td style="width:50%; padding:5px 10px;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px; direction:ltr; text-align:left;">Sales Unit (Free Text)</label>
-                                <input type="text" name="h_ai_en_sale_unit" value="<?php echo esc_attr($en_sale_unit); ?>" placeholder="e.g. 30kg Sack" style="width:100%; padding:6px; direction:ltr; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_en_sale_unit" value="<?php echo esc_attr($en_sale_unit); ?>" placeholder="e.g. 30kg Sack" style="width:100%; padding:6px; direction:ltr; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                         </tr>
                         <tr>
-                            <td style="width:50%; padding:5px 10px; border-left:1px solid #c1c9ec;">
+                            <td style="width:50%; padding:5px 10px; border-left:1px solid #b6c2f3;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px;">بسته‌بندی (مثال: ۱ کارتن ۵۰ عددی)</label>
-                                <input type="text" name="h_ai_fa_packaging" value="<?php echo esc_attr($fa_packaging); ?>" style="width:100%; padding:6px; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_fa_packaging" value="<?php echo esc_attr($fa_packaging); ?>" style="width:100%; padding:6px; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                             <td style="width:50%; padding:5px 10px;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px; direction:ltr; text-align:left;">Packaging</label>
-                                <input type="text" name="h_ai_en_packaging" value="<?php echo esc_attr($en_packaging); ?>" placeholder="e.g. 1 Carton (50 pcs)" style="width:100%; padding:6px; direction:ltr; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_en_packaging" value="<?php echo esc_attr($en_packaging); ?>" placeholder="e.g. 1 Carton (50 pcs)" style="width:100%; padding:6px; direction:ltr; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                         </tr>
                         <tr>
-                            <td style="width:50%; padding:5px 10px; border-left:1px solid #c1c9ec;">
+                            <td style="width:50%; padding:5px 10px; border-left:1px solid #b6c2f3;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px;">حداقل سفارش / MOQ (مثال: ۵ کارتن، ۲۰ کیلو)</label>
-                                <input type="text" name="h_ai_fa_moq" value="<?php echo esc_attr($fa_moq); ?>" style="width:100%; padding:6px; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_fa_moq" value="<?php echo esc_attr($fa_moq); ?>" style="width:100%; padding:6px; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                             <td style="width:50%; padding:5px 10px;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px; direction:ltr; text-align:left;">MOQ</label>
-                                <input type="text" name="h_ai_en_moq" value="<?php echo esc_attr($en_moq); ?>" placeholder="e.g. 5 Cartons, 20 kg" style="width:100%; padding:6px; direction:ltr; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_en_moq" value="<?php echo esc_attr($en_moq); ?>" placeholder="e.g. 5 Cartons, 20 kg" style="width:100%; padding:6px; direction:ltr; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                         </tr>
                     </table>
                 </div>
 
                 <!-- پلن فروش B -->
-                <div id="wrap_tier_b" style="background:#f8fafc; padding:10px; border:1px dashed #c1c9ec; border-radius:6px;">
+                <div id="wrap_tier_b" style="background:#f8fafc; padding:10px; border:1px dashed #b6c2f3; border-radius:6px;">
                     <h5 style="margin:0 0 10px 0; color:#25316a; font-size:16px;">پلن فروش B (فروش خرد)</h5>
                     <table style="width:100%; border-collapse:collapse;">
                         <tr>
-                            <td style="width:50%; padding:5px 10px; border-left:1px solid #c1c9ec;">
+                            <td style="width:50%; padding:5px 10px; border-left:1px solid #b6c2f3;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#b91c1c; font-size:13px;">قیمت دستی خرد (تومان)</label>
-                                <input type="number" name="h_ai_fa_price_t2" value="<?php echo esc_attr($fa_price_t2); ?>" placeholder="مثال: 650000" style="width:100%; padding:6px; border:1px solid #c1c9ec; border-radius:4px; font-weight:bold;">
+                                <input type="number" name="h_ai_fa_price_t2" value="<?php echo esc_attr($fa_price_t2); ?>" placeholder="مثال: 650000" style="width:100%; padding:6px; border:1px solid #b6c2f3; border-radius:4px; font-weight:bold;">
                             </td>
                             <td style="width:50%; padding:5px 10px;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#b91c1c; font-size:13px; direction:rtl; text-align:right;">مبنای این قیمت / Price Basis</label>
                                 <div style="display:flex; gap:10px;">
-                                    <select name="h_ai_fa_price_basis_t2" style="flex:1; padding:6px; border:1px solid #c1c9ec; border-radius:4px; font-weight:bold;">
+                                    <select name="h_ai_fa_price_basis_t2" style="flex:1; padding:6px; border:1px solid #b6c2f3; border-radius:4px; font-weight:bold;">
                                         <?php foreach($units_fa as $u): ?>
                                             <option value="<?php echo esc_attr($u); ?>" <?php selected($fa_price_basis_t2, $u); ?>><?php echo esc_html($u); ?></option>
                                         <?php endforeach; ?>
                                     </select>
-                                    <select name="h_ai_en_price_basis_t2" style="flex:1; padding:6px; border:1px solid #c1c9ec; border-radius:4px; direction:ltr; font-weight:bold;">
+                                    <select name="h_ai_en_price_basis_t2" style="flex:1; padding:6px; border:1px solid #b6c2f3; border-radius:4px; direction:ltr; font-weight:bold;">
                                         <?php foreach($units_en as $u): ?>
                                             <option value="<?php echo esc_attr($u); ?>" <?php selected($en_price_basis_t2, $u); ?>><?php echo esc_html($u); ?></option>
                                         <?php endforeach; ?>
@@ -279,33 +279,33 @@ final class Hodima_AEO_Admin {
                             </td>
                         </tr>
                         <tr>
-                            <td style="width:50%; padding:5px 10px; border-left:1px solid #c1c9ec;">
+                            <td style="width:50%; padding:5px 10px; border-left:1px solid #b6c2f3;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px;">واحد فروش دلخواه (متن آزاد برای کاربر)</label>
-                                <input type="text" name="h_ai_fa_sale_unit_t2" value="<?php echo esc_attr($fa_sale_unit_t2); ?>" placeholder="مثال: بسته ۱۰ عددی" style="width:100%; padding:6px; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_fa_sale_unit_t2" value="<?php echo esc_attr($fa_sale_unit_t2); ?>" placeholder="مثال: بسته ۱۰ عددی" style="width:100%; padding:6px; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                             <td style="width:50%; padding:5px 10px;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px; direction:ltr; text-align:left;">Sales Unit (Free Text)</label>
-                                <input type="text" name="h_ai_en_sale_unit_t2" value="<?php echo esc_attr($en_sale_unit_t2); ?>" placeholder="e.g. 10-piece Pack" style="width:100%; padding:6px; direction:ltr; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_en_sale_unit_t2" value="<?php echo esc_attr($en_sale_unit_t2); ?>" placeholder="e.g. 10-piece Pack" style="width:100%; padding:6px; direction:ltr; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                         </tr>
                         <tr>
-                            <td style="width:50%; padding:5px 10px; border-left:1px solid #c1c9ec;">
+                            <td style="width:50%; padding:5px 10px; border-left:1px solid #b6c2f3;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px;">بسته‌بندی (مثال: ۱ بسته، ۱ جین)</label>
-                                <input type="text" name="h_ai_fa_packaging_t2" value="<?php echo esc_attr($fa_packaging_t2); ?>" style="width:100%; padding:6px; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_fa_packaging_t2" value="<?php echo esc_attr($fa_packaging_t2); ?>" style="width:100%; padding:6px; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                             <td style="width:50%; padding:5px 10px;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px; direction:ltr; text-align:left;">Packaging</label>
-                                <input type="text" name="h_ai_en_packaging_t2" value="<?php echo esc_attr($en_packaging_t2); ?>" placeholder="e.g. 1 Pack, 1 Dozen" style="width:100%; padding:6px; direction:ltr; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_en_packaging_t2" value="<?php echo esc_attr($en_packaging_t2); ?>" placeholder="e.g. 1 Pack, 1 Dozen" style="width:100%; padding:6px; direction:ltr; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                         </tr>
                         <tr>
-                            <td style="width:50%; padding:5px 10px; border-left:1px solid #c1c9ec;">
+                            <td style="width:50%; padding:5px 10px; border-left:1px solid #b6c2f3;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px;">حداقل سفارش / MOQ (مثال: ۲ بسته، ۵ جین)</label>
-                                <input type="text" name="h_ai_fa_moq_t2" value="<?php echo esc_attr($fa_moq_t2); ?>" style="width:100%; padding:6px; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_fa_moq_t2" value="<?php echo esc_attr($fa_moq_t2); ?>" style="width:100%; padding:6px; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                             <td style="width:50%; padding:5px 10px;">
                                 <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; font-size:13px; direction:ltr; text-align:left;">MOQ</label>
-                                <input type="text" name="h_ai_en_moq_t2" value="<?php echo esc_attr($en_moq_t2); ?>" placeholder="e.g. 2 Packs, 5 Dozens" style="width:100%; padding:6px; direction:ltr; border:1px solid #c1c9ec; border-radius:4px;">
+                                <input type="text" name="h_ai_en_moq_t2" value="<?php echo esc_attr($en_moq_t2); ?>" placeholder="e.g. 2 Packs, 5 Dozens" style="width:100%; padding:6px; direction:ltr; border:1px solid #b6c2f3; border-radius:4px;">
                             </td>
                         </tr>
                     </table>
@@ -314,7 +314,7 @@ final class Hodima_AEO_Admin {
             </div>
             <?php endif; ?>
 
-            <div style="background:#ffffff; padding:15px; border:1px solid #c1c9ec; border-right:4px solid #25316a; border-radius:8px; margin-bottom:20px; direction:ltr; text-align:left;">
+            <div style="background:#ffffff; padding:15px; border:1px solid #b6c2f3; border-right:4px solid #25316a; border-radius:8px; margin-bottom:20px; direction:ltr; text-align:left;">
                 <h4 style="margin:0 0 5px 0; color:#25316a;">3. English Technical Specifications</h4>
                 <p style="font-size:13px; color:#607bbd; margin:0 0 15px 0;">Add English translations for your product attributes (e.g., Material: Plastic).</p>
                 <div id="h_ai_en_specs_container"></div>
@@ -322,41 +322,41 @@ final class Hodima_AEO_Admin {
                 <input type="hidden" name="h_ai_en_specs" id="h_ai_en_specs_input" value="<?php echo esc_attr( $en_specs ); ?>">
             </div>
 
-            <div style="background:#ffffff; padding:15px; border:1px solid #c1c9ec; border-right:4px solid #607bbd; border-radius:8px; margin-bottom:20px;">
-                <h4 style="margin:0 0 15px 0; padding-bottom:5px; border-bottom:1px solid #c1c9ec; color:#25316a;">۴. مدیریت رسانه‌ها (Audio & Video)</h4>
+            <div style="background:#ffffff; padding:15px; border:1px solid #b6c2f3; border-right:4px solid #607bbd; border-radius:8px; margin-bottom:20px;">
+                <h4 style="margin:0 0 15px 0; padding-bottom:5px; border-bottom:1px solid #b6c2f3; color:#25316a;">۴. مدیریت رسانه‌ها (Audio & Video)</h4>
                 <table style="width:100%; border-collapse:collapse;">
                     <tr>
-                        <td style="width:50%; padding:10px; border-left:1px solid #c1c9ec;">
+                        <td style="width:50%; padding:10px; border-left:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">عنوان ویدیو</label>
-                            <input type="text" name="h_ai_fa_vid_title" value="<?php echo esc_attr($fa_vid_title); ?>" placeholder="مثال: ویدیوی معرفی" style="width:100%; padding:8px; border:1px solid #c1c9ec; border-radius:4px;">
+                            <input type="text" name="h_ai_fa_vid_title" value="<?php echo esc_attr($fa_vid_title); ?>" placeholder="مثال: ویدیوی معرفی" style="width:100%; padding:8px; border:1px solid #b6c2f3; border-radius:4px;">
                         </td>
                         <td style="width:50%; padding:10px;">
                             <div style="display:flex; gap:10px; direction:ltr; text-align:left;">
                                 <div style="flex:2;">
                                     <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">Video URL (.mp4)</label>
-                                    <input type="text" name="h_ai_vid_url" value="<?php echo esc_attr($vid_url); ?>" placeholder="https://..." style="width:100%; padding:8px; border:1px solid #c1c9ec; border-radius:4px;">
+                                    <input type="text" name="h_ai_vid_url" value="<?php echo esc_attr($vid_url); ?>" placeholder="https://..." style="width:100%; padding:8px; border:1px solid #b6c2f3; border-radius:4px;">
                                 </div>
                                 <div style="flex:1;">
                                     <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">Title</label>
-                                    <input type="text" name="h_ai_en_vid_title" value="<?php echo esc_attr($en_vid_title); ?>" placeholder="e.g. Intro Video" style="width:100%; padding:8px; border:1px solid #c1c9ec; border-radius:4px;">
+                                    <input type="text" name="h_ai_en_vid_title" value="<?php echo esc_attr($en_vid_title); ?>" placeholder="e.g. Intro Video" style="width:100%; padding:8px; border:1px solid #b6c2f3; border-radius:4px;">
                                 </div>
                             </div>
                         </td>
                     </tr>
                     <tr>
-                        <td style="padding:10px; border-left:1px solid #c1c9ec;">
+                        <td style="padding:10px; border-left:1px solid #b6c2f3;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">عنوان پادکست</label>
-                            <input type="text" name="h_ai_fa_pod_title" value="<?php echo esc_attr($fa_pod_title); ?>" placeholder="مثال: پادکست بررسی" style="width:100%; padding:8px; border:1px solid #c1c9ec; border-radius:4px;">
+                            <input type="text" name="h_ai_fa_pod_title" value="<?php echo esc_attr($fa_pod_title); ?>" placeholder="مثال: پادکست بررسی" style="width:100%; padding:8px; border:1px solid #b6c2f3; border-radius:4px;">
                         </td>
                         <td style="padding:10px;">
                             <div style="display:flex; gap:10px; direction:ltr; text-align:left;">
                                 <div style="flex:2;">
                                     <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">Podcast URL (.mp3)</label>
-                                    <input type="text" name="h_ai_pod_url" value="<?php echo esc_attr($pod_url); ?>" placeholder="https://..." style="width:100%; padding:8px; border:1px solid #c1c9ec; border-radius:4px;">
+                                    <input type="text" name="h_ai_pod_url" value="<?php echo esc_attr($pod_url); ?>" placeholder="https://..." style="width:100%; padding:8px; border:1px solid #b6c2f3; border-radius:4px;">
                                 </div>
                                 <div style="flex:1;">
                                     <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a;">Title</label>
-                                    <input type="text" name="h_ai_en_pod_title" value="<?php echo esc_attr($en_pod_title); ?>" placeholder="e.g. Audio Review" style="width:100%; padding:8px; border:1px solid #c1c9ec; border-radius:4px;">
+                                    <input type="text" name="h_ai_en_pod_title" value="<?php echo esc_attr($en_pod_title); ?>" placeholder="e.g. Audio Review" style="width:100%; padding:8px; border:1px solid #b6c2f3; border-radius:4px;">
                                 </div>
                             </div>
                         </td>
@@ -365,28 +365,28 @@ final class Hodima_AEO_Admin {
             </div>
 
             <div style="display:flex; gap:20px;">
-                <div style="flex:1; background:#ffffff; padding:15px; border:1px solid #c1c9ec; border-radius:8px;">
+                <div style="flex:1; background:#ffffff; padding:15px; border:1px solid #b6c2f3; border-radius:8px;">
                     <h4 style="margin:0 0 10px 0; color:#25316a;">۵. پرسش و پاسخ فارسی</h4>
                     <div id="h_ai_fa_faq_container"></div>
                     <button type="button" id="h_ai_add_fa_faq" style="background:#25316a; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold; margin-top:8px;">+ افزودن پرسش فارسی</button>
                     <input type="hidden" name="h_ai_faqs" id="h_ai_faqs_input" value="<?php echo esc_attr( $fa_faqs ); ?>">
                     
                     <h4 style="margin:20px 0 10px 0; color:#25316a;">پرسش‌های پیشنهادی فارسی (هر سوال در یک خط)</h4>
-                    <textarea name="h_ai_prompts" style="width:100%; height:70px; padding:8px; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($fa_prompts); ?></textarea>
+                    <textarea name="h_ai_prompts" style="width:100%; height:70px; padding:8px; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($fa_prompts); ?></textarea>
                 </div>
-                <div style="flex:1; background:#ffffff; padding:15px; border:1px solid #c1c9ec; border-radius:8px; direction:ltr; text-align:left;">
+                <div style="flex:1; background:#ffffff; padding:15px; border:1px solid #b6c2f3; border-radius:8px; direction:ltr; text-align:left;">
                     <h4 style="margin:0 0 10px 0; color:#25316a;">5. English FAQs</h4>
                     <div id="h_ai_en_faq_container"></div>
                     <button type="button" id="h_ai_add_en_faq" style="background:#25316a; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold; margin-top:8px;">+ Add FAQ</button>
                     <input type="hidden" name="h_ai_en_faqs" id="h_ai_en_faqs_input" value="<?php echo esc_attr( $en_faqs ); ?>">
                     
                     <h4 style="margin:20px 0 10px 0; color:#25316a;">Suggested Prompts (One per line)</h4>
-                    <textarea name="h_ai_en_prompts" style="width:100%; height:70px; padding:8px; border:1px solid #c1c9ec; border-radius:4px;"><?php echo esc_textarea($en_prompts); ?></textarea>
+                    <textarea name="h_ai_en_prompts" style="width:100%; height:70px; padding:8px; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($en_prompts); ?></textarea>
                 </div>
             </div>
 
-            <div style="margin-top:20px; padding: 15px; background: #ffffff; border: 1px solid #c1c9ec; border-right: 4px solid #25316a; border-radius: 4px; color: #25316a; font-size: 14px; font-weight: bold; display: flex; align-items: center;">
-                راهنما: افزودن پسوند <code style="margin: 0 5px; padding: 2px 6px; background: #f8fafc; border: 1px solid #c1c9ec; border-radius: 4px; color: #607bbd;">.md</code> به انتهای آدرس صفحه (در زیرپوشه‌های /fa/ و /en/) جهت مشاهده خروجی ماشین
+            <div style="margin-top:20px; padding: 15px; background: #ffffff; border: 1px solid #b6c2f3; border-right: 4px solid #25316a; border-radius: 4px; color: #25316a; font-size: 14px; font-weight: bold; display: flex; align-items: center;">
+                راهنما: افزودن پسوند <code style="margin: 0 5px; padding: 2px 6px; background: #f8fafc; border: 1px solid #b6c2f3; border-radius: 4px; color: #607bbd;">.md</code> به انتهای آدرس صفحه (در زیرپوشه‌های /fa/ و /en/) جهت مشاهده خروجی ماشین
             </div>
 
         </div>
@@ -421,18 +421,18 @@ final class Hodima_AEO_Admin {
                     container.innerHTML = '';
                     data.forEach(function (item, i) {
                         var box = document.createElement('div');
-                        box.style.cssText = 'background:#f8fafc; padding:10px; margin-top:8px; border:1px solid #c1c9ec; border-radius:6px; display:flex; flex-direction:column; gap:8px;';
+                        box.style.cssText = 'background:#f8fafc; padding:10px; margin-top:8px; border:1px solid #b6c2f3; border-radius:6px; display:flex; flex-direction:column; gap:8px;';
                         
                         var q = document.createElement('input');
                         q.type = 'text'; q.placeholder = isEnglish ? 'Question...' : 'پرسش...'; q.value = item.q || '';
                         q.style.cssText = isEnglish ? 'direction:ltr; text-align:left;' : 'direction:rtl;';
-                        q.style.padding = '8px'; q.style.border = '1px solid #c1c9ec'; q.style.borderRadius = '4px'; q.style.fontWeight = 'bold';
+                        q.style.padding = '8px'; q.style.border = '1px solid #b6c2f3'; q.style.borderRadius = '4px'; q.style.fontWeight = 'bold';
                         q.addEventListener('input', function () { data[i].q = q.value; input.value = JSON.stringify(data); });
 
                         var a = document.createElement('textarea');
                         a.placeholder = isEnglish ? 'Answer...' : 'پاسخ...'; a.value = item.a || '';
                         a.style.cssText = isEnglish ? 'direction:ltr; text-align:left; height:60px;' : 'direction:rtl; height:60px;';
-                        a.style.padding = '8px'; a.style.border = '1px solid #c1c9ec'; a.style.borderRadius = '4px';
+                        a.style.padding = '8px'; a.style.border = '1px solid #b6c2f3'; a.style.borderRadius = '4px';
                         a.addEventListener('input', function () { data[i].a = a.value; input.value = JSON.stringify(data); });
 
                         var del = document.createElement('button');
@@ -462,16 +462,16 @@ final class Hodima_AEO_Admin {
                     container.innerHTML = '';
                     data.forEach(function (item, i) {
                         var box = document.createElement('div');
-                        box.style.cssText = 'background:#f8fafc; padding:10px; margin-top:8px; border:1px solid #c1c9ec; border-radius:6px; display:flex; gap:10px; align-items:center;';
+                        box.style.cssText = 'background:#f8fafc; padding:10px; margin-top:8px; border:1px solid #b6c2f3; border-radius:6px; display:flex; gap:10px; align-items:center;';
                         
                         var k = document.createElement('input');
                         k.type = 'text'; k.placeholder = 'Feature (e.g. Material)'; k.value = item.k || '';
-                        k.style.cssText = 'flex:1; padding:8px; border:1px solid #c1c9ec; border-radius:4px;';
+                        k.style.cssText = 'flex:1; padding:8px; border:1px solid #b6c2f3; border-radius:4px;';
                         k.addEventListener('input', function() { data[i].k = k.value; input.value = JSON.stringify(data); });
 
                         var v = document.createElement('input');
                         v.type = 'text'; v.placeholder = 'Value (e.g. Plastic)'; v.value = item.v || '';
-                        v.style.cssText = 'flex:2; padding:8px; border:1px solid #c1c9ec; border-radius:4px;';
+                        v.style.cssText = 'flex:2; padding:8px; border:1px solid #b6c2f3; border-radius:4px;';
                         v.addEventListener('input', function() { data[i].v = v.value; input.value = JSON.stringify(data); });
 
                         var del = document.createElement('button');
@@ -506,7 +506,7 @@ final class Hodima_AEO_Admin {
         ?>
         <tr class="form-field">
             <td colspan="2" style="padding: 20px 0;">
-                <h3 style="font-size: 18px; color: #25316a; border-bottom: 2px solid #c1c9ec; padding-bottom: 10px; margin-bottom: 15px;">تنظیمات پیشرفته AEO * GEO</h3>
+                <h3 style="font-size: 18px; color: #25316a; border-bottom: 2px solid #b6c2f3; padding-bottom: 10px; margin-bottom: 15px;">تنظیمات پیشرفته AEO * GEO</h3>
                 <?php self::render_ui_fields( $term->term_id, 'term' ); ?>
             </td>
         </tr>

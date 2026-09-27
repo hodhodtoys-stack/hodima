@@ -98,7 +98,7 @@ function hodima_print_critical_css(): void {
 
     $critical_css  = '.btn-primary,.button{background-color:#25316a!important;color:#fff!important;border-color:#25316a!important}';
     $critical_css .= '.btn-primary:hover,.button:hover{background-color:#607bbd!important;border-color:#607bbd!important}';
-    $critical_css .= '.card-top-line{background:linear-gradient(90deg,#25316a,#607bbd,#c1c9ec)!important}';
+    $critical_css .= '.card-top-line{background:linear-gradient(90deg,#25316a,#607bbd,#b6c2f3)!important}';
 
     if ( function_exists( 'is_woocommerce' ) && is_woocommerce() ) {
         $critical_css .= '.single_add_to_cart_button{background-color:#25316a!important;color:#fff!important;border-color:#25316a!important}';

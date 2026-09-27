@@ -20,7 +20,7 @@
 .htc-empty { color: var(--hodima-text-muted, #5d6785); font-size: 12px; margin: 0; }
 
 /* راهنماها و کد باکس‌ها */
-.htc-code-box { margin-top: 15px; padding: 12px; background: var(--hodima-surface-soft, #f7f9fd); border-radius: 4px; border: 1px dashed #c1c9ec; text-align: center; }
+.htc-code-box { margin-top: 15px; padding: 12px; background: var(--hodima-surface-soft, #f7f9fd); border-radius: 4px; border: 1px dashed #b6c2f3; text-align: center; }
 .htc-code-box p { margin: 0 0 8px; color: var(--hodima-text-muted, #5d6785); font-size: 12px; }
 .htc-code-box code { display: block; background: #ffffff; padding: 6px; border: 1px solid var(--hodima-border-light, #d9e1f0); color: #25316a; font-weight: 600; border-radius: 4px; user-select: all; font-size: 13px; }
 .htc-seo-guide { margin-top: 15px; padding: 12px; background: #ffffff; border: 1px solid var(--hodima-border-light, #d9e1f0); border-right: 3px solid #607bbd; border-radius: 4px; font-size: 12px; line-height: 1.6; }
@@ -37,7 +37,7 @@
 .htc-notice { color: var(--hodima-text-dark, #111111); font-size: 13px; margin-bottom: 20px; background: #ffffff; padding: 12px 15px; border-right: 3px solid #607bbd; border-radius: 4px; border: 1px solid var(--hodima-border-light, #d9e1f0); display: inline-block; line-height: 1.6; }
 .htc-table-wrap { border: 1px solid var(--hodima-border-light, #d9e1f0); border-radius: 6px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 .htc-badge { background: var(--hodima-surface-soft, #f7f9fd); padding: 4px 8px; border-radius: 4px; font-size: 12px; color: var(--hodima-text-muted, #5d6785); border: 1px solid var(--hodima-border-light, #d9e1f0); }
-.htc-btn-edit { background: #ffffff !important; color: var(--hodima-text-dark, #111111) !important; border-color: #c1c9ec !important; box-shadow: none !important; font-size: 12px !important; }
+.htc-btn-edit { background: #ffffff !important; color: var(--hodima-text-dark, #111111) !important; border-color: #b6c2f3 !important; box-shadow: none !important; font-size: 12px !important; }
 .htc-btn-edit:hover { background: var(--hodima-surface-soft, #f7f9fd) !important; border-color: #607bbd !important; color: #25316a !important; }
 
 
@@ -106,7 +106,7 @@
 
 .htc-pagination .page-numbers {
     padding: 4px 10px;
-    border: 1px solid var(--hodima-third, #c1c9ec);
+    border: 1px solid var(--hodima-third, #b6c2f3);
     border-radius: 4px;
     color: var(--hodima-primary, #25316a);
     text-decoration: none;
@@ -155,7 +155,7 @@
     min-height: 36px;
     padding: 4px 6px;
     background: var(--hodima-surface, #ffffff);
-    border: 1px solid var(--hodima-third, #c1c9ec);
+    border: 1px solid var(--hodima-third, #b6c2f3);
     border-radius: 6px;
     cursor: text;
     box-sizing: border-box;
@@ -201,7 +201,7 @@
     padding: 0;
     font-size: 15px;
     line-height: 1;
-    color: var(--hodima-third, #c1c9ec);
+    color: var(--hodima-third, #b6c2f3);
     background: none;
     border: 0;
     border-radius: 3px;
@@ -237,7 +237,7 @@
     max-height: 240px;
     overflow-y: auto;
     background: var(--hodima-surface, #ffffff);
-    border: 1px solid var(--hodima-third, #c1c9ec);
+    border: 1px solid var(--hodima-third, #b6c2f3);
     border-radius: 6px;
     box-shadow: 0 8px 22px rgba(37, 49, 106, .14);
 }

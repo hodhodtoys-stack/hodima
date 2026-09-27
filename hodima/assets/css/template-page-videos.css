@@ -70,7 +70,7 @@
 .videos-page-card:hover{
     transform:translateY(-3px) !important;
     box-shadow:0 8px 18px rgba(37,49,106,.09) !important;
-    border-color:var(--hodima-border,var(--hodima-third,#c1c9ec)) !important;
+    border-color:var(--hodima-border,var(--hodima-third,#b6c2f3)) !important;
 }
 .videos-page-thumbnail,
 .videos-page-thumbnail--empty{

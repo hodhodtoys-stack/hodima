@@ -2,7 +2,7 @@
  * Manual Related Links — Admin styles
  * Path: /wp-content/themes/hodima/inc/manual_related_link/admin-style.css
  *
- * پالت سازمانی: اصلی #25316a / ثانویه #607bbd / مکمل #c1c9ec
+ * پالت سازمانی: اصلی #25316a / ثانویه #607bbd / مکمل #b6c2f3
  * مقادیر از assets/css/tokens.css می‌آیند؛ hex فقط به عنوان fallback.
  */
 
@@ -13,7 +13,7 @@
 
 .hodima-mrl-postbox {
     margin-top: 30px;
-    border-color: var(--hodima-third, #c1c9ec);
+    border-color: var(--hodima-third, #b6c2f3);
 }
 
 .hodima-mrl-hndle {
@@ -84,7 +84,7 @@
     width: 100%;
     box-sizing: border-box;
     margin-bottom: 8px;
-    border-color: var(--hodima-third, #c1c9ec);
+    border-color: var(--hodima-third, #b6c2f3);
 }
 
 .hodima-mrl-item input[type="url"]:focus,
@@ -103,7 +103,7 @@
     max-width: 100%;
     height: auto;
     margin-bottom: 5px;
-    border: 1px solid var(--hodima-third, #c1c9ec);
+    border: 1px solid var(--hodima-third, #b6c2f3);
     border-radius: 4px;
 }
 
@@ -136,8 +136,8 @@
 }
 
 .hodima-mrl-actions .hodima_upload_image:disabled {
-    background: var(--hodima-third, #c1c9ec);
-    border-color: var(--hodima-third, #c1c9ec);
+    background: var(--hodima-third, #b6c2f3);
+    border-color: var(--hodima-third, #b6c2f3);
     color: var(--hodima-primary, #25316a);
 }
 
@@ -145,7 +145,7 @@
 .hodima-mrl-actions .hodima_remove_image {
     color: var(--hodima-primary, #25316a);
     background: transparent;
-    border-color: var(--hodima-third, #c1c9ec);
+    border-color: var(--hodima-third, #b6c2f3);
 }
 
 .hodima-mrl-actions .hodima_remove_image:hover,

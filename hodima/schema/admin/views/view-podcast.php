@@ -88,7 +88,7 @@ hodima_view_header(
     <!-- نمایش آدرس فید -->
     <div class="notice notice-info" style="border-right: 4px solid #25316a; background: #fff; padding: 15px; margin-bottom: 20px; border-left: none; border-top: none; border-bottom: none;">
         <h3 style="margin-top: 0; color: #25316a; font-size: 15px; font-weight: inherit;">آدرس فید پادکست:</h3>
-        <code style="font-size: 14px; padding: 6px 10px; display: inline-block; background: #f8fafc; border-radius: 4px; border: 1px solid #c1c9ec; color: #25316a; direction: ltr;">
+        <code style="font-size: 14px; padding: 6px 10px; display: inline-block; background: #f8fafc; border-radius: 4px; border: 1px solid #b6c2f3; color: #25316a; direction: ltr;">
             <a href="<?php echo esc_url($feed_url); ?>" target="_blank" style="text-decoration: none; color: inherit;"><?php echo esc_html($feed_url); ?></a>
         </code>
         <?php if ( ! empty( $permalink_structure ) ) : ?>
@@ -158,7 +158,7 @@ hodima_view_header(
 
             <div class="h-form-group">
                 <label style="display:block; margin-bottom: 10px; font-weight: inherit;">پست‌تایپ‌های دارای فایل صوتی</label>
-                <div style="display: flex; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 15px; border: 1px dashed #c1c9ec; border-radius: 6px;">
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 15px; border: 1px dashed #b6c2f3; border-radius: 6px;">
                     <?php foreach ($all_post_types as $pt) : if ($pt->name === 'attachment') continue; ?>
                         <label style="display: flex; align-items: center; gap: 5px; min-width: 170px; cursor: pointer;">
                             <input type="checkbox" name="hodima_podcast_post_types[]" value="<?php echo esc_attr($pt->name); ?>" <?php checked(in_array($pt->name, $saved_types, true)); ?>>

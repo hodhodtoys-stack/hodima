@@ -1,10 +1,10 @@
 .h-admin {
     --h-primary-brand: var(--hodima-primary, #25316a);
     --h-secondary-brand: var(--hodima-secondary, #607bbd);
-    --h-third-brand: var(--hodima-third, #c1c9ec);
+    --h-third-brand: var(--hodima-third, #b6c2f3);
     --h-primary-hover: var(--hodima-primary-dark, #1b244d);
     --h-secondary-hover: var(--hodima-secondary, #607bbd);
-    --h-border: var(--hodima-third, #c1c9ec);
+    --h-border: var(--hodima-third, #b6c2f3);
     --h-text: var(--hodima-text-dark, #111111);
     --h-bg: var(--hodima-surface-soft, #f7f9fd);
 

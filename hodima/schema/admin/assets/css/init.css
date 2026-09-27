@@ -3,7 +3,7 @@
     --h-primary: var(--hodima-primary, #25316a);
     --h-primary-hover: var(--hodima-primary-dark, #1b244d);
     --h-secondary: var(--hodima-secondary, #607bbd);
-    --h-third: var(--hodima-third, #c1c9ec);
+    --h-third: var(--hodima-third, #b6c2f3);
 
     /* رنگ‌های عملکردی دکمه‌ها و کلیدهای روشن/خاموش (طبق درخواست شما) */
     --h-success: #16a34a;

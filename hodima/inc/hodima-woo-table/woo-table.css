@@ -1,6 +1,6 @@
 /* ==========================================================================
    جدول مشخصات محصول — Hodima Theme
-   پالت سازمانی: اصلی #25316a / ثانویه #607bbd / مکمل #c1c9ec
+   پالت سازمانی: اصلی #25316a / ثانویه #607bbd / مکمل #b6c2f3
    مقادیر از assets/css/tokens.css می‌آیند؛ hex فقط به عنوان fallback.
    ========================================================================== */
 
@@ -8,7 +8,7 @@
     --hodima-specs-primary:        var(--hodima-primary, #25316a);
     --hodima-specs-primary-soft:   rgba(37, 49, 106, 0.06);
     --hodima-specs-border:         var(--hodima-border-light, #d9e1f0);
-    --hodima-specs-border-strong:  var(--hodima-third, #c1c9ec);
+    --hodima-specs-border-strong:  var(--hodima-third, #b6c2f3);
     --hodima-specs-text:           var(--hodima-text-dark, #111111);
     --hodima-specs-text-soft:      var(--hodima-text-muted, #5d6785);
     --hodima-specs-surface:        var(--hodima-surface, #ffffff);

@@ -1,7 +1,7 @@
 :root {
   --hs-primary: var(--hodima-primary, #25316a);
   --hs-hover: var(--hodima-secondary, #607bbd);
-  --hs-grad: linear-gradient(90deg, #25316a, #607bbd, #c1c9ec);
+  --hs-grad: linear-gradient(90deg, #25316a, #607bbd, #b6c2f3);
   --hs-bg: #000;
   --hs-overlay: rgba(0, 0, 0, 0.72);
   --hs-text: #fff;

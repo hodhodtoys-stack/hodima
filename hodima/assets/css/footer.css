@@ -10,15 +10,15 @@
     --footer-primary: var(--hodima-primary, #25316a);
     --footer-primary-hover: var(--hodima-primary-dark, #1b244d);
     --footer-secondary: var(--hodima-secondary, #607bbd);
-    --footer-third: var(--hodima-third, #c1c9ec);
+    --footer-third: var(--hodima-third, #b6c2f3);
 
     --footer-bg: linear-gradient(135deg, #25316a 0%, #344483 55%, #607bbd 100%);
     --footer-surface: rgba(255, 255, 255, 0.08);
     --footer-surface-hover: rgba(255, 255, 255, 0.14);
-    --footer-border: rgba(193, 201, 236, 0.22);
+    --footer-border: rgba(182, 194, 243, 0.22);
     --footer-text: rgba(255, 255, 255, 0.82);
     --footer-heading: #ffffff;
-    --footer-link-hover: var(--hodima-third, #c1c9ec);
+    --footer-link-hover: var(--hodima-third, #b6c2f3);
     --footer-note-text: rgba(255, 255, 255, 0.78);
     --footer-copyright-text: rgba(255, 255, 255, 0.7);
 
@@ -51,7 +51,7 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(circle at top right, rgba(193, 201, 236, 0.16) 0, transparent 28%),
+        radial-gradient(circle at top right, rgba(182, 194, 243, 0.16) 0, transparent 28%),
         radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.08) 0, transparent 26%);
     pointer-events: none;
 }
@@ -110,7 +110,7 @@
     height: 0.1875rem;
     background: linear-gradient(90deg, var(--footer-third), var(--footer-secondary));
     border-radius: 0.125rem;
-    box-shadow: 0 0 0.75rem rgba(193, 201, 236, 0.35);
+    box-shadow: 0 0 0.75rem rgba(182, 194, 243, 0.35);
 }
 
 .footer-content {

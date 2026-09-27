@@ -76,7 +76,7 @@
     gap: 30px;
     padding: var(--section-padding, 30px) !important;
     background: var(--hodima-bg-gray, #eef2f8) !important;
-    border: 1px solid var(--hodima-border, var(--hodima-third, #c1c9ec)) !important;
+    border: 1px solid var(--hodima-border, var(--hodima-third, #b6c2f3)) !important;
     border-radius: 12px !important;
     box-shadow: none !important;
     box-sizing: border-box;
@@ -647,7 +647,7 @@
 .custom-product-summary .stock-status-iran_stock {
     background: var(--hodima-surface-soft, #f7f9fd);
     color: var(--hodima-primary);
-    border: 1px solid var(--hodima-third, #c1c9ec);
+    border: 1px solid var(--hodima-third, #b6c2f3);
 }
 
 .custom-product-summary .stock-status-china_stock {
@@ -703,7 +703,7 @@
 
 .custom-stock-notice-iran {
     background: var(--hodima-surface-soft, #f7f9fd);
-    border: 1px solid var(--hodima-third, #c1c9ec);
+    border: 1px solid var(--hodima-third, #b6c2f3);
     color: var(--hodima-primary);
 }
 
@@ -1002,7 +1002,7 @@
     top: 0;
     left: 0;
     font-size: 24px;
-    color: var(--hodima-third, #c1c9ec);
+    color: var(--hodima-third, #b6c2f3);
     text-indent: 0;
     transition: color 0.2s;
 }
@@ -1014,7 +1014,7 @@
 
 .woocommerce #review_form .stars span a:hover ~ a:before,
 .woocommerce #review_form .stars.selected a.active ~ a:before {
-    color: var(--hodima-third, #c1c9ec) !important;
+    color: var(--hodima-third, #b6c2f3) !important;
 }
 
 .woocommerce #review_form input[type=text],

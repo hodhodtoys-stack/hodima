@@ -5,7 +5,7 @@
     --hdn-card: #ffffff;
     --hdn-text: var(--hodima-text-dark, #111111);
     --hdn-muted: var(--hodima-text-muted, #5d6785);
-    --hdn-border: var(--hodima-third, #c1c9ec);
+    --hdn-border: var(--hodima-third, #b6c2f3);
     --hdn-shadow: 0 10px 25px rgba(37, 49, 106, 0.14);
 }
 
@@ -22,7 +22,7 @@
 }
 
 .hdn-header {
-    background: linear-gradient(90deg, #25316a, #607bbd, #c1c9ec);
+    background: linear-gradient(90deg, #25316a, #607bbd, #b6c2f3);
     color: #fff;
     padding: 25px 30px;
     border-radius: 16px;

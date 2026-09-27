@@ -2,7 +2,7 @@
     --hdn-primary: var(--hodima-primary, #25316a);
     --hdn-primary-hover: var(--hodima-primary-dark, #1b244d);
     --hdn-secondary: var(--hodima-secondary, #607bbd);
-    --hdn-light: var(--hodima-third, #c1c9ec);
+    --hdn-light: var(--hodima-third, #b6c2f3);
     --hdn-bg: var(--hodima-surface-soft, #f7f9fd);
     --hdn-card: #ffffff;
     --hdn-text: var(--hodima-text-dark, #111111);

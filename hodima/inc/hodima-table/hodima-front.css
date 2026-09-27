@@ -7,7 +7,7 @@
     --hodima-table-primary-soft: rgba(37, 49, 106, 0.08);
     --hodima-table-primary-border: rgba(37, 49, 106, 0.16);
     --hodima-table-border: var(--hodima-border-light, #d9e1f0);
-    --hodima-table-border-strong: var(--hodima-third, #c1c9ec);
+    --hodima-table-border-strong: var(--hodima-third, #b6c2f3);
     --hodima-table-text: var(--hodima-text-dark, #111111);
     --hodima-table-text-soft: var(--hodima-text-muted, #5d6785);
     --hodima-table-surface: #ffffff;
@@ -21,7 +21,7 @@
     margin-bottom: 20px;
     overflow-x: auto;
     border: 1px solid var(--hodima-table-border-strong);
-    border-bottom: 3px solid var(--hodima-third, #c1c9ec);
+    border-bottom: 3px solid var(--hodima-third, #b6c2f3);
     border-radius: 10px;
     background: var(--hodima-table-surface);
     box-shadow: var(--hodima-table-shadow);

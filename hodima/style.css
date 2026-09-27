@@ -23,7 +23,9 @@ Text Domain: hodima
     --hodima-primary: #25316a;
     --hodima-primary-hover: #1b244d;
     --hodima-secondary: #607bbd;
-    --hodima-third: #c1c9ec;
+    --hodima-third: #b6c2f3;
+    --hodima-accent: #6a2b9a;
+    --hodima-accent-light: #a341c8;
 
     --hodima-gradient-main: linear-gradient(135deg, #25316a 0%, #3b4d8f 55%, #607bbd 100%);
     --hodima-gradient-alt: linear-gradient(135deg, #607bbd 0%, #25316a 100%);

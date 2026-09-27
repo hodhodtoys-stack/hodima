@@ -75,14 +75,14 @@ hodima_view_header(
         
         <div style="margin-bottom: 12px;">
             <span style="display:inline-block; min-width: 170px; font-weight: bold;">نقشه سایت یکپارچه (Index):</span>
-            <code style="font-size: 14px; padding: 6px 10px; display: inline-block; background: #f8fafc; border-radius: 4px; border: 1px solid #c1c9ec; color: #25316a; direction: ltr;">
+            <code style="font-size: 14px; padding: 6px 10px; display: inline-block; background: #f8fafc; border-radius: 4px; border: 1px solid #b6c2f3; color: #25316a; direction: ltr;">
                 <a href="<?php echo esc_url($sitemap_url); ?>" target="_blank" style="text-decoration: none; color: inherit;">
                     <?php echo esc_html($sitemap_url); ?>
                 </a>
             </code>
         </div>
         
-        <p class="description" style="margin-top: 12px; border-top: 1px solid #c1c9ec; padding-top: 10px;">
+        <p class="description" style="margin-top: 12px; border-top: 1px solid #b6c2f3; padding-top: 10px;">
             ویدیوهای سیستم فروشگاهی اختصاصی شما و مقالات، اکنون به صورت کاملاً ساختاریافته درون همین نقشه سایت یکپارچه (تگ‌های &lt;video:video&gt;) به موتورهای جستجو معرفی می‌شوند. نیازی به ثبت آدرس مجزا نیست.
         </p>
     </div>
@@ -102,7 +102,7 @@ hodima_view_header(
                 </label>
             </div>
 
-            <div class="h-separator dashed" style="border-top: 1px dashed #c1c9ec; margin: 15px 0;"></div>
+            <div class="h-separator dashed" style="border-top: 1px dashed #b6c2f3; margin: 15px 0;"></div>
 
             <div class="h-form-group">
                 <label for="sitemap_links_limit" style="display:block; margin-bottom: 5px; font-weight: inherit;">
@@ -116,7 +116,7 @@ hodima_view_header(
                     value="<?php echo esc_attr($limit); ?>"
                     min="100"
                     max="5000"
-                    style="border: 1px solid #c1c9ec; outline-color: #25316a;"
+                    style="border: 1px solid #b6c2f3; outline-color: #25316a;"
                 >
                 <p class="description">
                     جهت جلوگیری از فشار به سرور، لینک‌ها صفحه‌بندی می‌شوند. مقدار پیشنهادی: <strong>1000</strong>
@@ -131,7 +131,7 @@ hodima_view_header(
                 آیتم‌هایی که به صورت دستی Noindex شده باشند یا دارای کلمه عبور باشند، به طور خودکار فیلتر می‌شوند. (شامل بخش‌های سیستم فروشگاهی اختصاصی شما)
             </p>
 
-            <div style="display: flex; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 15px; border: 1px dashed #c1c9ec; border-radius: 6px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 15px; border: 1px dashed #b6c2f3; border-radius: 6px;">
                 <?php foreach ( $all_post_types as $pt ) : ?>
                     <?php if ( $pt->name === 'attachment' ) continue; ?>
                     <label style="display: flex; align-items: center; gap: 5px; min-width: 170px; cursor: pointer;">
@@ -157,7 +157,7 @@ hodima_view_header(
                 Taxonomyهایی که انتخاب شوند، به صورت صفحه‌بندی شده همراه با رسانه‌های زیرمجموعه در سایت‌مپ لود می‌شوند.
             </p>
 
-            <div style="display: flex; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 15px; border: 1px dashed #c1c9ec; border-radius: 6px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 15px; border: 1px dashed #b6c2f3; border-radius: 6px;">
                 <?php foreach ( $all_taxonomies as $tax ) : ?>
                     <label style="display: flex; align-items: center; gap: 5px; min-width: 170px; cursor: pointer;">
                         <input

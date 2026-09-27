@@ -122,7 +122,7 @@ hodima_view_header(
         display: flex; 
         align-items: center; 
         gap: 8px; 
-        border-bottom: 2px dashed #c1c9ec; 
+        border-bottom: 2px dashed #b6c2f3; 
         padding-bottom: 12px; 
         padding-top: 25px; 
     }
@@ -130,7 +130,7 @@ hodima_view_header(
         padding: 10px; 
         line-height: 1.6; 
         border-radius: 6px; 
-        border: 1px solid #c1c9ec; 
+        border: 1px solid #b6c2f3; 
         transition: all 0.3s ease;
     }
     .hodima-textarea { width: 100%; }

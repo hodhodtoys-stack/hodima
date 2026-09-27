@@ -117,7 +117,7 @@
     border-radius: 50%;
     overflow: hidden;
     transform: translateZ(0);
-    background: linear-gradient(135deg, #25316a 0%, #607bbd 55%, #c1c9ec 100%);
+    background: linear-gradient(135deg, #25316a 0%, #607bbd 55%, #b6c2f3 100%);
     box-shadow: 0 6px 16px rgba(37,49,106,.12);
 }
 
@@ -127,7 +127,7 @@
     inset: 0;
     padding: 3px;
     border-radius: inherit;
-    background: linear-gradient(135deg, #25316a 0%, #607bbd 55%, #c1c9ec 100%);
+    background: linear-gradient(135deg, #25316a 0%, #607bbd 55%, #b6c2f3 100%);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
@@ -183,7 +183,7 @@
 }
 
 .story-item.is-seen .story-ring::before {
-    background: #c1c9ec;
+    background: #b6c2f3;
 }
 
 .story-item.is-seen .story-text {

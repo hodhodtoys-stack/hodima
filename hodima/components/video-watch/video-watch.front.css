@@ -1,7 +1,7 @@
 :root {
   --color-primary: var(--hodima-primary, #25316a);
   --color-secondary: var(--hodima-secondary, #607bbd);
-  --color-third: var(--hodima-third, #c1c9ec);
+  --color-third: var(--hodima-third, #b6c2f3);
   --color-text: var(--hodima-text-dark, #111111);
   --cat-max-width: 1440px;
   --cat-gap: 8px;

@@ -1,26 +1,26 @@
-.seobox-wrapper-card { background: #fff; border: 1px solid #c1c9ec; border-radius: 10px; padding: 20px; box-shadow: 0 4px 15px rgba(37, 49, 106, .06); margin-top: 10px; }
+.seobox-wrapper-card { background: #fff; border: 1px solid #b6c2f3; border-radius: 10px; padding: 20px; box-shadow: 0 4px 15px rgba(37, 49, 106, .06); margin-top: 10px; }
 .seobox-container, .seobox-container * { box-sizing: border-box; font-family: inherit; }
-.seobox-tabs { border-bottom: 2px solid #c1c9ec; margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+.seobox-tabs { border-bottom: 2px solid #b6c2f3; margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
 .seobox-tab-btn { background: var(--hodima-surface-soft, #f7f9fd); border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0; padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: #25316a; margin-bottom: -2px; }
-.seobox-tab-btn.active, .seobox-tab-btn:hover { background: #fff; color: #607bbd; border-color: #c1c9ec; border-bottom-color: #fff; }
+.seobox-tab-btn.active, .seobox-tab-btn:hover { background: #fff; color: #607bbd; border-color: #b6c2f3; border-bottom-color: #fff; }
 .seobox-tab-content { display: none; }
 .seobox-tab-content.active { display: block; }
 
 .seobox-field-group { margin-bottom: 16px; width: 100%; }
 .seobox-field-group > label { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px; color: #25316a; font-size: 13px; }
 
-.seobox-field-group input[type="text"], .seobox-field-group input[type="number"], .seobox-field-group textarea, .seobox-select { width: 100% !important; max-width: 100% !important; height: 40px !important; min-height: 40px !important; padding: 0 12px !important; border: 1px solid #c1c9ec !important; border-radius: 6px !important; background: #fff !important; font-size: 13px; line-height: 38px; }
+.seobox-field-group input[type="text"], .seobox-field-group input[type="number"], .seobox-field-group textarea, .seobox-select { width: 100% !important; max-width: 100% !important; height: 40px !important; min-height: 40px !important; padding: 0 12px !important; border: 1px solid #b6c2f3 !important; border-radius: 6px !important; background: #fff !important; font-size: 13px; line-height: 38px; }
 .seobox-field-group textarea { height: auto !important; min-height: 90px !important; padding: 10px 12px !important; line-height: normal; resize: vertical; }
 .seobox-field-group input:focus, .seobox-field-group textarea:focus, .seobox-select:focus { border-color: #607bbd !important; outline: none !important; box-shadow: 0 0 0 1px #607bbd !important; }
 
-.seobox-divider { border-top: 1px solid #c1c9ec; margin: 20px 0; }
+.seobox-divider { border-top: 1px solid #b6c2f3; margin: 20px 0; }
 
 /* برگشت به گرید ۳ ستونه برای فیلدهای پیشرفته */
 .seobox-advanced-grid { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 12px; }
 @media (max-width: 900px) { .seobox-advanced-grid { grid-template-columns: 1fr; } }
 
 /* باکس نگه‌دارنده تیک‌ها */
-.seobox-robot-checks, .form-field .seobox-robot-checks { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: center !important; gap: 25px !important; padding: 10px 15px !important; border: 1px solid #c1c9ec !important; border-radius: 8px !important; background: var(--hodima-surface-soft, #f7f9fd) !important; width: 100% !important; }
+.seobox-robot-checks, .form-field .seobox-robot-checks { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: center !important; gap: 25px !important; padding: 10px 15px !important; border: 1px solid #b6c2f3 !important; border-radius: 8px !important; background: var(--hodima-surface-soft, #f7f9fd) !important; width: 100% !important; }
 .seobox-check-item, .form-field .seobox-check-item { display: inline-flex !important; align-items: center !important; margin: 0 !important; padding: 0 !important; width: auto !important; max-width: fit-content !important; }
 
 /* فاصله بین متن و چک‌باکس در اینجا با margin تنظیم شد */
@@ -81,7 +81,7 @@
     background: var(--hodima-surface-soft, #f7f9fd);
     padding: 3px 8px;
     border-radius: 12px;
-    border: 1px solid #c1c9ec;
+    border: 1px solid #b6c2f3;
     margin-right: auto; /* انتقال شمارشگر به سمت چپ لیبل */
     transition: all 0.3s ease;
 }
@@ -114,7 +114,7 @@
 /* نوار طول بر اساس پیکسل */
 .seobox-meter { height: 4px; margin-top: 6px; overflow: hidden; background: var(--hodima-bg-gray, #eef2f8); border-radius: 4px; }
 .seobox-meter span { display: block; height: 100%; width: 0; border-radius: 4px; transition: width .15s ease, background-color .15s ease; }
-.seobox-meter span.is-short { background: var(--hodima-third, #c1c9ec); }
+.seobox-meter span.is-short { background: var(--hodima-third, #b6c2f3); }
 .seobox-meter span.is-good  { background: var(--hodima-secondary, #607bbd); }
 .seobox-meter span.is-over  { background: var(--hodima-state-danger, #a32a2a); }
 
