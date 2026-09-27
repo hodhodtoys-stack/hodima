@@ -29,6 +29,9 @@ PHP 8.4، HTML5، CSS مدرن، JavaScript خالص (بدون jQuery).
 
 پالت رنگ: `#25316a` · `#607bbd` · `#b6c2f3` · `#6a2b9a` · `#a341c8` (توکن‌ها در `hodima/assets/css/tokens.css`).
 
+## تست
+`tools/wp-harness/` — تست روی وردپرس واقعی (قبل/بعد اسکیما در ۲۴ نوع صفحه، صفحه‌های پیشخوان). راهنما: `tools/wp-harness/README.md`. قوانین کار روی پروژه: `CLAUDE.md`.
+
 ## ساخت فایل‌های نصب
 ```bash
 bin/build.sh   # خروجی: dist/hodima.zip و dist/hodima-*.zip
