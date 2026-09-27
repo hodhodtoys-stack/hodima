@@ -34,6 +34,26 @@ class Core {
         return wp_parse_args( is_array( $saved ) ? $saved : [], [ 'seen_to_end' => false ] );
     }
 
+    /**
+     * فهرست استوری‌ها، همیشه به شکل آرایه‌ای از آرایه‌ها.
+     *
+     * get_option() فقط وقتی مقدار پیش‌فرض را برمی‌گرداند که گزینه اصلا
+     * وجود نداشته باشد. اگر مقدار ذخیره‌شده آرایه نباشد (false، رشته خالی،
+     * یا داده خراب از مهاجرت و بکاپ)، همان برمی‌گشت و foreach پنل استوری
+     * هشدار «foreach() argument must be of type array|object» می‌داد.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function items(): array {
+        $items = get_option( self::OPTION_NAME, [] );
+
+        if ( ! is_array( $items ) ) {
+            return [];
+        }
+
+        return array_values( array_filter( $items, 'is_array' ) );
+    }
+
     /** آدرس و نسخه یک فایل (نسخه = زمان تغییر؛ نسخه ثابت به‌روزرسانی را پنهان می‌کرد). */
     public static function asset( string $relative ): array {
         $path = HODIMA_MEDIA_DIR . '/components/hodima-Stories/' . $relative;
@@ -295,11 +315,12 @@ class Admin {
     }
 
     public static function render_page(): void {
-        $items  = get_option( Core::OPTION_NAME, [] );
+        $items  = Core::items();
         $notice = get_transient( self::notice_key() );
-        if ( $notice ) {
+        if ( false !== $notice ) {
             delete_transient( self::notice_key() );
         }
+        $notice = is_array( $notice ) && isset( $notice['type'], $notice['message'] ) ? $notice : null;
         ?>
         <div class="wrap hdn-admin-wrapper anim-fade_in">
             <div class="hdn-header hd-shadow-soft">
@@ -413,8 +434,8 @@ class Frontend {
         self::enqueue_assets();
         \Hodima\Stories\StoryPlayer\Core::enable();
 
-        $items = get_option( Core::OPTION_NAME, [] );
-        if ( empty( $items ) || ! is_array( $items ) ) return '';
+        $items = Core::items();
+        if ( ! $items ) return '';
 
         // Bug fix: shuffle() used to randomize order on every render. Combined
         // with this project's full-page caching (Cloudflare/WP Rocket), that
