@@ -193,8 +193,25 @@ require_once get_stylesheet_directory() . '/media-system/media-init.php';
 /* ============================================================
  * 9 .user-panel
  * ============================================================ */
-// لود تمام بخش‌های پنل کاربری هدهد از فایل لودر اختصاصی
-require_once get_template_directory() . '/user-panel/loader.php';
+// ماژول پنل کاربری اختیاری است و در نسخه عمومی قالب همراه نیست.
+// فقط وقتی پوشه user-panel وجود داشته باشد لود می‌شود؛ برای خاموش کردن
+// دستی: add_filter( 'hodima_enable_user_panel', '__return_false' );
+$user_panel_loader = hodima_DIR . '/user-panel/loader.php';
+
+define(
+    'HODIMA_USER_PANEL_ENABLED',
+    is_file( $user_panel_loader ) && (bool) apply_filters( 'hodima_enable_user_panel', true )
+);
+
+if ( HODIMA_USER_PANEL_ENABLED ) {
+    require_once $user_panel_loader;
+} else {
+    // بدون ماژول، تمپلیت «User Panel» در فهرست قالب‌های برگه نمایش داده نشود.
+    add_filter( 'theme_page_templates', static function ( array $templates ): array {
+        unset( $templates['page-user-panel.php'] );
+        return $templates;
+    } );
+}
 
 /* ============================================================
  * 11 .Manual Related Links Module
