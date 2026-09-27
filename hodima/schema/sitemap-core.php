@@ -476,12 +476,11 @@ function hodima_sitemap_render() {
     // ==========================================
     if ( $sitemap_type === 'index' ) {
         echo '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-        // 🛠️ رفع‌شده: date('c') از تایم‌زون سیستم/PHP سرور استفاده می‌کند که
-        // لزوماً با تایم‌زون تنظیم‌شده در «تنظیمات وردپرس ← عمومی» یکی نیست
-        // (مثلاً سرور روی UTC و سایت روی Asia/Tehran). current_time('c') از
-        // همان تایم‌زونی استفاده می‌کند که بقیه‌ی این فایل (get_post_modified_time)
-        // هم استفاده می‌کنند، تا آفست ساعت در <lastmod> با بقیه ناسازگار نباشد.
-        $now = current_time('c');
+        /*
+         * lastmod هر زیرسایت‌مپ = زمان آخرین ویرایش واقعی محتوای همان بخش.
+         * قبلا برای همه «همین الان» چاپ می‌شد؛ گوگل lastmod‌ای را که همیشه
+         * تغییر می‌کند غیرقابل‌اعتماد می‌داند و کلا نادیده می‌گیرد.
+         */
 
         foreach ( $enabled_post_types as $pt ) {
             $query_args = ['post_type' => $pt, 'post_status' => 'publish', 'has_password' => false, 'posts_per_page' => 1, 'fields' => 'ids', 'no_found_rows' => false, 'update_post_meta_cache' => false, 'update_post_term_cache' => false];
@@ -494,7 +493,12 @@ function hodima_sitemap_render() {
             if ($pages < 1) $pages = 1;
 
             for ( $i = 1; $i <= $pages; $i++ ) {
-                echo "\t<sitemap>\n\t\t<loc>" . esc_url( home_url( "/{$pt}-sitemap-{$i}.xml" ) ) . "</loc>\n\t\t<lastmod>" . esc_html( $now ) . "</lastmod>\n\t</sitemap>\n";
+                $chunk_newest = hodima_sitemap_newest_post( [
+                    'post_type'    => $pt,
+                    'offset'       => ( $i - 1 ) * $limit,
+                    'post__not_in' => $noindex_post_ids,
+                ] );
+                echo "\t<sitemap>\n\t\t<loc>" . esc_url( home_url( "/{$pt}-sitemap-{$i}.xml" ) ) . "</loc>\n" . hodima_sitemap_lastmod_tag( $chunk_newest, "\t\t" ) . "\t</sitemap>\n";
             }
         }
 
@@ -513,8 +517,14 @@ function hodima_sitemap_render() {
             
             if ($pages < 1) $pages = 1;
 
+            // آخرین محتوای ویرایش‌شده در هر ترمی از این تکسونومی
+            $tax_newest = hodima_sitemap_newest_post( [
+                'post_type' => 'any',
+                'tax_query' => [ [ 'taxonomy' => $tax, 'operator' => 'EXISTS' ] ],
+            ] );
+
             for ( $i = 1; $i <= $pages; $i++ ) {
-                echo "\t<sitemap>\n\t\t<loc>" . esc_url( home_url( "/{$tax}-sitemap-{$i}.xml" ) ) . "</loc>\n\t\t<lastmod>" . esc_html( $now ) . "</lastmod>\n\t</sitemap>\n";
+                echo "\t<sitemap>\n\t\t<loc>" . esc_url( home_url( "/{$tax}-sitemap-{$i}.xml" ) ) . "</loc>\n" . hodima_sitemap_lastmod_tag( $tax_newest, "\t\t" ) . "\t</sitemap>\n";
             }
         }
         echo '</sitemapindex>';
@@ -617,9 +627,12 @@ function hodima_sitemap_render() {
                     'update_post_term_cache'  => false,
                 ]);
                 
-                // ⚠️ آپدیت مهم برای جلوگیری از تاریخ شمسی
-                $lastmod_date = !empty($latest_post) ? get_post_modified_time('c', false, $latest_post[0], false) : current_time('c');
-                echo "\t\t<lastmod>" . esc_html($lastmod_date) . "</lastmod>\n";
+                // ترم بدون محتوای منتشرشده تاریخ واقعی ندارد؛ lastmod چاپ نمی‌شود
+                // (قبلا «همین الان» چاپ می‌شد که در هر بار ساخت سایت‌مپ عوض می‌شد).
+                $lastmod_date = ! empty( $latest_post ) ? (string) get_post_modified_time( 'c', false, $latest_post[0], false ) : '';
+                if ( '' !== $lastmod_date ) {
+                    echo "\t\t<lastmod>" . esc_html( $lastmod_date ) . "</lastmod>\n";
+                }
 
                 $radar = hodima_sitemap_deep_radar($term->term_id, 'term');
 
@@ -641,7 +654,7 @@ function hodima_sitemap_render() {
                     echo "\t\t\t<video:title><![CDATA[" . hodima_sitemap_cdata( $vid['title'] ) . "]]></video:title>\n";
                     echo "\t\t\t<video:description><![CDATA[" . hodima_sitemap_cdata( trim($v_desc) ) . "]]></video:description>\n";
                     echo "\t\t\t<{$loc_tag}>" . esc_url($vid['url']) . "</{$loc_tag}>\n";
-                    echo "\t\t\t<video:publication_date>" . esc_html($v_date) . "</video:publication_date>\n";
+                    if ( '' !== (string) $v_date ) echo "\t\t\t<video:publication_date>" . esc_html($v_date) . "</video:publication_date>\n"; // اختیاری در استاندارد
                     if ( $vid['duration'] > 0 ) echo "\t\t\t<video:duration>" . esc_html($vid['duration']) . "</video:duration>\n";
                     echo "\t\t\t<video:family_friendly>yes</video:family_friendly>\n";
                     echo "\t\t\t<video:live>no</video:live>\n";
@@ -669,4 +682,71 @@ add_action('created_term', 'hodima_sitemap_clear_cache');
 
 function hodima_sitemap_clear_cache() {
     update_option('hodima_sitemap_cache_ver', time(), false);
+}// ==========================================
+// ۵. lastmod واقعی برای ایندکس سایت‌مپ
+// ==========================================
+
+/**
+ * شناسه تازه‌ترین نوشته منتشرشده با شرط‌های داده‌شده (مرتب بر اساس ویرایش).
+ *
+ * @param array<string, mixed> $args آرگومان‌های اضافه WP_Query.
+ */
+function hodima_sitemap_newest_post( array $args ): int {
+
+	if ( empty( $args['post__not_in'] ) ) {
+		unset( $args['post__not_in'] );
+	}
+
+	$ids = get_posts( [
+		...$args,
+		'post_status'            => 'publish',
+		'has_password'           => false,
+		'posts_per_page'         => 1,
+		'orderby'                => 'modified',
+		'order'                  => 'DESC',
+		'fields'                 => 'ids',
+		'no_found_rows'          => true,
+		'update_post_meta_cache' => false,
+		'update_post_term_cache' => false,
+	] );
+
+	return (int) ( $ids[0] ?? 0 );
 }
+
+/** تگ <lastmod>؛ بدون محتوا، رشته خالی (تاریخ ساختگی چاپ نمی‌شود). */
+function hodima_sitemap_lastmod_tag( int $post_id, string $indent = '' ): string {
+
+	if ( $post_id <= 0 ) {
+		return '';
+	}
+
+	$date = (string) get_post_modified_time( 'c', false, $post_id, false );
+
+	return '' === $date ? '' : $indent . '<lastmod>' . esc_html( $date ) . "</lastmod>\n";
+}
+
+// ==========================================
+// ۶. یک سایت‌مپ، نه دو تا
+// ==========================================
+// وقتی سایت‌مپ قالب فعال است، سایت‌مپ داخلی وردپرس (wp-sitemap.xml) هم
+// همزمان فعال بود: دو فهرست موازی با قواعد متفاوت (مثلا بدون فیلتر noindex
+// و بدون تصاویر). سایت‌مپ داخلی خاموش و آدرس‌های قدیمی‌اش — که ممکن است
+// در Search Console ثبت شده باشند — با ۳۰۱ به سایت‌مپ قالب هدایت می‌شوند.
+
+add_filter( 'wp_sitemaps_enabled', static function ( bool $enabled ): bool {
+	return '1' === (string) get_option( 'hodima_sitemap_status', '1' ) ? false : $enabled;
+} );
+
+add_action( 'template_redirect', static function (): void {
+
+	if ( '1' !== (string) get_option( 'hodima_sitemap_status', '1' ) ) {
+		return;
+	}
+
+	$path = (string) wp_parse_url( (string) ( $_SERVER['REQUEST_URI'] ?? '' ), PHP_URL_PATH );
+
+	if ( preg_match( '#/wp-sitemap(?:-[a-z0-9_-]+)?\.(?:xml|xsl)$#i', $path ) ) {
+		wp_safe_redirect( home_url( '/sitemap.xml' ), 301, 'Hodima Sitemap' );
+		exit;
+	}
+}, 0 );

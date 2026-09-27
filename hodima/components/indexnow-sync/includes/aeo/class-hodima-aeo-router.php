@@ -7,34 +7,7 @@ final class Hodima_AEO_Router {
     public static function init(): void {
         add_action( 'template_redirect', [ __CLASS__, 'handle_edge_endpoints' ], 0 );
         add_action( 'rest_api_init', [ __CLASS__, 'register_rest' ] );
-        add_filter( 'robots_txt', [ __CLASS__, 'auto_robots_txt' ], 99, 2 );
-    }
-
-    public static function auto_robots_txt( $output, $public ): string {
-        $rules  = "\n\n# --- Hodima AEO Shield (Bilingual) ---\n";
-        $rules .= "User-agent: *\nDisallow: /*/*.md$\nDisallow: /*/llm-search\nDisallow: /*/ai-feed.json\nDisallow: /ai-analytics.json\nDisallow: /*ai-internal-data.md\n\n";
-
-        $settings = get_option( 'hodima_ai_bot_settings', [] );
-        foreach ( Hodima_Bot_Shield::BOTS as $sig => $name ) {
-            if ( ( $settings[ $sig ] ?? '1' ) === '1' ) {
-                $rules .= "User-agent: {$sig}\nAllow: /*/*.md$\nAllow: /*/llm-search\nDisallow: /*ai-internal-data.md\n\n";
-            }
-        }
-        
-        // اگر ایندکس شدن فایل‌های .md فعال شده باشد، باید قانون Disallow
-        // عمومی هم برای موتورهای جستجوی معمولی برداشته شود؛ وگرنه ثبت
-        // سایت‌مپ در بینگ هیچ اثری ندارد چون خزش اصلا مجاز نیست.
-        if ( self::md_indexing_enabled() ) {
-            $rules .= "User-agent: bingbot\nAllow: /*/*.md$\nDisallow: /*ai-internal-data.md\n\n";
-            $rules .= "User-agent: BingPreview\nAllow: /*/*.md$\nDisallow: /*ai-internal-data.md\n\n";
-        }
-
-        $rules .= 'Sitemap: ' . home_url( '/fa/llms.txt' ) . "\n";
-        $rules .= 'Sitemap: ' . home_url( '/en/llms.txt' ) . "\n";
-        $rules .= 'Sitemap: ' . home_url( '/fa/sitemap-md.xml' ) . "\n";
-        $rules .= 'Sitemap: ' . home_url( '/en/sitemap-md.xml' ) . "\n";
-
-        return (string) $output . $rules;
+        // robots.txt حالا کامل در core/seobox/robots-txt.php ساخته می‌شود
     }
 
     public static function register_rest(): void {

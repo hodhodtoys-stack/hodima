@@ -16,6 +16,7 @@ define( 'SEOBOX_URL', get_template_directory_uri() . '/core/seobox/' );
 define( 'SEOBOX_VERSION', '4.0.0' );
 
 require_once SEOBOX_DIR . 'core-variables.php';
+require_once SEOBOX_DIR . 'robots-txt.php';
 
 if ( is_admin() ) {
 
