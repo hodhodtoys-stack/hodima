@@ -7,8 +7,9 @@
  */
 if ( ! defined('ABSPATH') ) exit;
 
-// لینک صفحه بلاگ
-$blog_url = 'https://hodhodli.com/blog/';
+// لینک صفحه بلاگ: برگه «نوشته‌ها» در «تنظیمات ← خواندن» (قبلا آدرس ثابت دامنه اصلی)
+$blog_page_id = (int) get_option( 'page_for_posts' );
+$blog_url     = $blog_page_id ? (string) get_permalink( $blog_page_id ) : home_url( '/blog/' );
 
 // نام Transient
 $transient_name = 'arian_latest_blog_posts_hyper_v2';

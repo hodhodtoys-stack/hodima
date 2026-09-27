@@ -755,3 +755,57 @@ img.popup__icon {
         margin-inline: auto !important;
     }
 }
+/* ==========================================================
+   لینک «پرش به محتوای اصلی» (WCAG 2.4.1) و لوگو از تنظیمات قالب
+========================================================== */
+.skip-link {
+    position: fixed;
+    inset-block-start: 0.75rem;
+    inset-inline-start: 0.75rem;
+    z-index: 100000;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    background: var(--clr-white);
+    color: var(--clr-primary);
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: var(--shadow-dropdown);
+    translate: 0 -200%;
+    transition: translate var(--transition-fast);
+}
+
+.skip-link:focus-visible {
+    translate: 0 0;
+    outline: 2px solid var(--hodima-accent-light, #a341c8);
+    outline-offset: 2px;
+}
+
+.skip-link-target:focus {
+    outline: none;
+}
+
+/* لوگوی رنگی روی پس‌زمینه تیره هدر (گزینه «نمایش لوگو به رنگ سفید») */
+.header__logo--invert img {
+    filter: brightness(0) invert(1);
+}
+
+/* بدون لوگو: نام سایت */
+.header__logo-text {
+    display: block;
+    color: var(--clr-white);
+    font-size: 1.25rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.header__logo-img {
+    block-size: auto;
+    inline-size: auto;
+}
+
+/* رنگ دکمه روبیکا در پنجره پشتیبانی (قبلا به صورت inline در header.php) */
+.popup__link--rubika { background: linear-gradient(135deg, #d82b7e, #f25000); }
+
+@media (prefers-reduced-motion: reduce) {
+    .skip-link { transition: none; }
+}

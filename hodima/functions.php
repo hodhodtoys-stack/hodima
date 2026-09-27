@@ -71,6 +71,7 @@ foreach ( $home_modules as $module ) {
 
 $inc_files = [
     'inc/helpers.php',
+    'inc/theme-settings/theme-settings.php', // برند، تماس، فوتر و Google Analytics
     'inc/setup.php',
     'inc/enqueue.php',
     'inc/header.php',
@@ -241,21 +242,11 @@ if ( file_exists( $manual_related_link_file ) ) {
 
 /* ============================================================
  * 14 .Google Analytics Code (GA4)
+ * ------------------------------------------------------------
+ * شناسه قبلا اینجا ثابت نوشته شده بود و برای مدیران و روی استیجینگ هم
+ * بارگذاری می‌شد. حالا از «نمایش ← تنظیمات هدیما» خوانده می‌شود
+ * (inc/theme-settings/theme-settings.php).
  * ============================================================ */
-add_action('wp_head', 'add_google_analytics_to_header');
-function add_google_analytics_to_header() {
-?>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8E2X0RQX77"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-8E2X0RQX77');
-    </script>
-<?php
-}
 
 /* ============================================================
  * 15 . برسی وبلاگ برای مدیا

@@ -337,3 +337,59 @@
         overflow: visible;
     }
 }
+
+/* ==========================================================
+   ۸. آدرس، نماد اعتماد و کپی‌رایت
+   (قبلا به صورت style و onmouseover داخل footer.php)
+   ========================================================== */
+.footer-content p {
+    margin-block: 0 0.75rem;
+}
+
+.footer-address {
+    margin-block-start: 1rem;
+}
+
+.footer-address__link {
+    transition: opacity 0.3s ease;
+}
+
+.footer-address__link:hover,
+.footer-address__link:focus-visible {
+    opacity: 0.7;
+}
+
+.footer-address__link:focus-visible,
+.footer-trust__link:focus-visible {
+    outline: 2px solid var(--footer-third);
+    outline-offset: 3px;
+    border-radius: 0.25rem;
+}
+
+.footer-trust {
+    text-align: center;
+}
+
+.footer-trust__img {
+    display: inline-block;
+    max-inline-size: 6.875rem;
+    block-size: auto;
+    border-radius: 0.75rem;
+    transition: transform 0.3s ease;
+}
+
+.footer-trust__link:hover .footer-trust__img,
+.footer-trust__link:focus-visible .footer-trust__img {
+    transform: scale(1.05);
+}
+
+p.footer-copyright {
+    margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .footer-address__link,
+    .footer-trust__img {
+        transition: none;
+    }
+}

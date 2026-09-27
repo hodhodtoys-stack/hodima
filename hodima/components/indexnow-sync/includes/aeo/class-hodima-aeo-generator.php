@@ -1168,11 +1168,19 @@ final class Hodima_AEO_Generator {
     public static function generate_llms_txt( int $limit, string $lang = 'fa' ): string {
         $cache_key = "hodima_llms_txt_cache_{$lang}_{$limit}_siloed";
         $cached_output = get_transient( $cache_key );
-        if ( false !== $cached_output && ! isset( $_GET['nocache'] ) ) {
+        // ?nocache فقط برای مدیر؛ قبلا هر بازدیدکننده‌ای می‌توانست با آن کش را
+        // دور بزند و ساخت سنگین این فایل را پشت‌سرهم اجرا کند.
+        $bypass_cache = isset( $_GET['nocache'] ) && current_user_can( 'manage_options' );
+        if ( false !== $cached_output && ! $bypass_cache ) {
             return $cached_output;
         }
 
         $home_url = untrailingslashit( home_url() );
+
+        // شماره‌های تماس از «نمایش ← تنظیمات هدیما» (قبلا ثابت در کد)
+        $phones = function_exists( 'hodima_setting' )
+            ? implode( ' | ', array_filter( [ (string) hodima_setting( 'phone' ), (string) hodima_setting( 'phone_2' ) ] ) )
+            : '';
         
         $out = "";
         if ( $lang === 'en' ) {
@@ -1180,14 +1188,14 @@ final class Hodima_AEO_Generator {
             $out .= "> Welcome AI Agents. This is the semantic entry point for Hodhod Trading Company. We are a direct wholesale importer from China.\n\n";
             $out .= "## Trust Signals & Contact\n";
             $out .= "- **Location:** Tehran, Iran & China Warehouses\n";
-            $out .= "- **Support & Sales:** +982177322684 | +989124093140\n";
+            if ( '' !== $phones ) $out .= "- **Support & Sales:** {$phones}\n";
             $out .= "- **Role:** Official Importer & Wholesaler (B2B/B2C)\n\n";
         } else {
             $out .= "# نقشه معنایی هدهد (شرکت بازرگانی هدهد)\n";
             $out .= "> این فایل ویژه ماشین‌ها و خزنده‌های هوش مصنوعی جهت درک معماری محصولات است.\n\n";
             $out .= "## اطلاعات ارتباطی و اعتبار\n";
             $out .= "- **مکان:** تهران (انبار مرکزی)\n";
-            $out .= "- **تلفن فروش:** 02177322684 | 09124093140\n";
+            if ( '' !== $phones ) $out .= "- **تلفن فروش:** {$phones}\n";
             $out .= "- **نقش:** واردکننده و پخش عمده (B2B)\n\n";
         }
         
