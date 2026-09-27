@@ -1,0 +1,129 @@
+.hd-notif-wrapper { position: fixed; z-index: 9999998; opacity: 0; visibility: hidden; pointer-events: none; display: none; }
+.hd-notif-wrapper.hd-show { opacity: 1; visibility: visible; }
+
+.hd-wrap-center { top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; transition: all 0.3s ease; pointer-events: auto; }
+.hd-wrap-bottom_right { bottom: 20px; right: 20px; pointer-events: none; }
+.hd-wrap-bottom_left { bottom: 20px; left: 20px; pointer-events: none; }
+
+.hd-notification-popup { 
+    display: flex; 
+    flex-direction: column;
+    position: relative; 
+    direction: rtl; 
+    overflow: visible;
+    pointer-events: auto; 
+    opacity: 0; 
+    padding: 15px; 
+    border-radius: 12px;
+    box-sizing: border-box;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15); /* پیشفرض ملایم اگر ترنسپرنت نبود */
+}
+
+/* باکس اصلی حاوی عکس و لینک */
+.hd-notif-main-area {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+}
+
+.hd-notif-main-area img {
+    width: 100%;
+    height: 100%; 
+    object-fit: cover;
+    display: block;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* لینک نامرئی که دقیقا ۵۰ درصد پایین تصویر را می‌پوشاند */
+.hd-notif-half-link {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    z-index: 5;
+    display: block;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.hd-pos-center[style*="height: auto"] .hd-notif-main-area img,
+.hd-pos-center:not([style*="height"]) .hd-notif-main-area img {
+    height: auto;
+}
+
+/* دکمه بستن پاپ آپ */
+.hd-notif-close { 
+    background: transparent !important; 
+    border: none !important; 
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent;
+    font-size: 32px; 
+    font-weight: bold;
+    cursor: pointer; 
+    opacity: 0.9; 
+    transition: opacity 0.3s, transform 0.3s; 
+    position: absolute; 
+    padding: 0 !important; 
+    line-height: 1; 
+    z-index: 10;
+    top: 35px; 
+    right: 35px; 
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4); 
+}
+
+/* رفع قطعی هاله آبی قالب یا وردپرس در فوکوس */
+.hd-notif-close:focus,
+.hd-notif-close:active {
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.hd-notif-close:hover { 
+    opacity: 1; 
+    transform: scale(1.15);
+}
+
+/* انیمیشن‌ها */
+@keyframes hdFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hdSlideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hdBounce { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes hdZoomIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+@keyframes hdFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes hdSlideDown { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(50px); } }
+
+.anim-in-fade_in { animation: hdFadeIn 0.5s ease forwards; }
+.anim-in-slide_up { animation: hdSlideUp 0.5s ease forwards; }
+.anim-in-bounce { animation: hdBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.anim-in-zoom_in { animation: hdZoomIn 0.4s ease forwards; }
+.anim-out-fade_out { animation: hdFadeOut 0.4s ease forwards; }
+.anim-out-slide_down { animation: hdSlideDown 0.4s ease forwards; }
+
+.hd-pos-center { width: 400px; max-width: 95vw; }
+.hd-pos-bottom_right, .hd-pos-bottom_left { width: 350px; max-width: 90vw; }
+
+@media (max-width: 768px) {
+    .hd-pos-center { width: 90vw; }
+    .hd-pos-bottom_right, .hd-pos-bottom_left { width: 90vw !important; max-width: 90vw !important; bottom: 20px; left: 5%; right: 5%; }
+}
+
+/* نسخه ۳ — دسترس‌پذیری */
+.hd-notification-popup:focus { outline: none; }
+.hd-notif-close:focus-visible,
+.hd-notif-half-link:focus-visible {
+    outline: 2px solid var(--hodima-secondary, #607bbd);
+    outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+    .hd-notif-wrapper,
+    .hd-notification-popup {
+        animation: none !important;
+        transition: none !important;
+    }
+}

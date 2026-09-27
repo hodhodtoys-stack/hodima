@@ -1,0 +1,235 @@
+/* 
+ * Phase 2.4: Media System Admin UI - Stylesheet
+ * File: wp-content/themes/hodima/media-system/css/media-admin.css 
+ * Version: 2.1.0 (Font Updated & Resized)
+ *
+ * پالت رسمی پروژه: اصلی #25316a / ثانویه #607bbd / مکمل #c1c9ec
+ * فونت: Vazirmatn 
+ */
+
+:root {
+    --hook-primary: var(--hodima-primary, #25316a);
+    --hook-primary-dark: var(--hodima-primary-dark, #1b244d);
+    --hook-secondary: var(--hodima-secondary, #607bbd);
+    --hook-accent: var(--hodima-third, #c1c9ec);
+    --hook-accent-light: var(--hodima-bg-gray, #eef2f8);
+    --hook-text-main: var(--hodima-text-dark, #111111);
+    --hook-text-muted: var(--hodima-text-muted, #5d6785);
+    --hook-bg-light: var(--hodima-surface-soft, #f7f9fd);
+    --hook-danger: var(--hodima-state-danger, #a32a2a);
+    --hook-danger-dark: var(--hodima-primary-dark, #1b244d);
+    --hook-font: 'Vazirmatn';
+}
+
+.hook-admin-box,
+.hook-term-wrapper {
+    font-family: var(--hook-font);
+    box-sizing: border-box;
+}
+
+.hook-admin-box { 
+    width: 100%;
+    background: var(--hodima-surface, #ffffff); 
+    border: 1px solid var(--hook-accent-light); 
+    padding: 24px; 
+    margin: 0 0 20px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 12px rgba(37, 49, 106, 0.04); 
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.hook-admin-box:hover {
+    box-shadow: 0 6px 18px rgba(37, 49, 106, 0.08);
+    border-color: var(--hook-accent);
+}
+
+.hook-admin-box-primary {
+    background: linear-gradient(135deg, rgba(37, 49, 106, 0.03) 0%, rgba(96, 123, 189, 0.03) 100%);
+    border-left: 4px solid var(--hook-primary);
+    border-right: 4px solid var(--hook-primary);
+}
+
+.hook-admin-box-primary label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px; 
+    color: var(--hook-primary-dark);
+    font-weight: 600;
+}
+
+.hook-section-title { 
+    font-weight: 700; 
+    font-size: 15px; 
+    border-bottom: 2px solid var(--hook-accent-light); 
+    padding-bottom: 12px; 
+    margin: 0;
+    color: var(--hook-primary); 
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hook-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hook-field-group label, 
+.hook-label-title {
+    font-weight: 600;
+    color: var(--hook-text-main);
+    font-size: 13px; 
+}
+
+.hook-admin-box input[type="text"], 
+.hook-admin-box input[type="url"], 
+.hook-admin-box input[type="date"],
+.hook-admin-box textarea,
+.hook-admin-box select { 
+    width: 100%; 
+    box-sizing: border-box; 
+    padding: 10px 14px;
+    font-family: var(--hook-font);
+    font-size: 13px; 
+    color: var(--hook-text-main);
+    border: 1.5px solid var(--hodima-border-light, #d9e1f0);
+    background-color: #fff;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+}
+
+.hook-admin-box textarea {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.6;
+}
+
+.hook-admin-box input:focus,
+.hook-admin-box textarea:focus,
+.hook-admin-box select:focus {
+    border-color: var(--hook-secondary);
+    box-shadow: 0 0 0 4px rgba(96, 123, 189, 0.15);
+    outline: none;
+}
+
+.hook-admin-box .description {
+    color: var(--hook-text-muted);
+    font-size: 12px; 
+    line-height: 1.7;
+    margin: 0;
+}
+
+.hook-video-cover-wrap {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap; 
+}
+
+.hook-video-cover-input {
+    flex: 1 1 250px;
+}
+
+.hook-faq-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hook-faq-item { 
+    border: 1.5px dashed var(--hook-accent); 
+    padding: 16px; 
+    background: var(--hook-bg-light); 
+    border-radius: 10px; 
+    position: relative; 
+    box-sizing: border-box; 
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.hook-faq-item:hover {
+    background: var(--hodima-surface, #ffffff);
+    border-color: var(--hook-secondary);
+    box-shadow: 0 2px 8px rgba(37, 49, 106, 0.05);
+}
+
+.hook-faq-item input { 
+    font-weight: 600; 
+}
+
+.hook-faq-item textarea { 
+    height: 80px; 
+    min-height: 80px; 
+}
+
+.hook-remove-faq { 
+    color: var(--hook-danger); 
+    cursor: pointer;
+    font-size: 13px; 
+    font-weight: 500;
+    align-self: flex-start;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.hook-remove-faq:hover { 
+    color: var(--hook-danger-dark); 
+}
+
+.hook-add-faq { 
+    background: var(--hodima-surface, #ffffff); 
+    border: 2px solid var(--hook-primary); 
+    color: var(--hook-primary); 
+    padding: 10px 20px; 
+    cursor: pointer; 
+    border-radius: 8px; 
+    font-weight: 700; 
+    font-size: 13px; 
+    font-family: var(--hook-font);
+    transition: all 0.2s ease;
+    display: inline-flex; 
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    gap: 6px;
+}
+
+.hook-add-faq:hover { 
+    background: var(--hook-primary); 
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(37, 49, 106, 0.2);
+}
+
+.hook-term-wrapper .hook-admin-box {
+    margin-top: 0; 
+}
+
+#hook_term_media_box .hndle,
+#hook_term_media_box_add .hndle {
+    font-family: var(--hook-font);
+    color: var(--hook-primary);
+    font-weight: 700;
+}
+
+/* نسخه ۳ */
+.hook-textarea { width: 100%; }
+.hook-duration { max-width: 260px; direction: ltr; text-align: left; }
+.hook-video-cover-preview {
+    display: block;
+    max-width: 240px;
+    max-height: 140px;
+    margin-top: 8px;
+    object-fit: cover;
+    border: 1px solid var(--hodima-border-light, #d9e1f0);
+    border-radius: 6px;
+}
+.hook-video-cover-preview[hidden] { display: none; }

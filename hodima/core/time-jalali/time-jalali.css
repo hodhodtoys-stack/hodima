@@ -1,0 +1,235 @@
+/* مخفی کردن اعلان‌های تکراری پیش‌فرض وردپرس در این صفحه تا فقط نوتیفیکیشن هدیما نمایش داده شود */
+.settings_page_hodima-woocommerce .notice:not(.hodima-loc-notice),
+.settings_page_hodima-woocommerce .updated:not(.hodima-loc-notice),
+.settings_page_hodima-woocommerce .error:not(.hodima-loc-notice) {
+    display: none !important;
+}
+
+/* ========================================================= */
+/* 1. GLOBAL CSS VARIABLES (Hodima Unified Colors)           */
+/* ========================================================= */
+:root {
+    --hodima-loc-primary-brand: #25316a;
+    --hodima-loc-secondary-brand: #607bbd;
+    --hodima-loc-third-brand: #c1c9ec;
+    --hodima-loc-primary-hover: #1f2a5b;
+    --hodima-loc-secondary-hover: #4e67a1;
+    --hodima-loc-border: #c1c9ec;
+    --hodima-loc-text: #111111;
+    --hodima-loc-bg: #f8f9fc;
+}
+
+/* ========================================================= */
+/* 2. HODIMA ADMIN FRAMEWORK (Settings Page UI)              */
+/* ========================================================= */
+.hodima-loc-admin {
+    max-inline-size: 95%; /* عرض بهینه و ریسپانسیو تنظیم شد */
+    margin-inline: auto;
+    margin-block: 2rem;
+    direction: rtl;
+    color: var(--hodima-loc-text);
+
+    & *,
+    & *::before,
+    & *::after { 
+        box-sizing: border-box; 
+    }
+
+    .hodima-loc-header {
+        background: var(--hodima-loc-primary-brand);
+        color: #fff;
+        padding: 1.5rem;
+        border-radius: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 4px 15px rgba(37, 49, 106, 0.2);
+
+        .hodima-title {
+            margin: 0;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .hodima-version-badge {
+            font-size: 13px; 
+            font-weight: 600; 
+            background: rgba(255, 255, 255, 0.15); 
+            padding: 4px 10px; 
+            border-radius: 6px;
+        }
+    }
+
+    .hodima-loc-card {
+        background: #fff;
+        margin-block-start: 1.25rem;
+        padding: 1.5rem;
+        border: 1px solid var(--hodima-loc-border);
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset-block-start: 0; 
+            inset-inline: 0;
+            block-size: 4px;
+            background: linear-gradient(90deg, var(--hodima-loc-primary-brand), var(--hodima-loc-secondary-brand));
+        }
+    }
+
+    .hodima-loc-notice {
+        background: #eef1fb;
+        color: var(--hodima-loc-primary-brand);
+        border: 1px solid var(--hodima-loc-border);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-block: 1rem;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 5px rgba(37,49,106,0.05);
+    }
+
+    .hodima-loc-notice-close {
+        background: transparent;
+        border: none;
+        color: currentColor;
+        font-size: 1.4rem;
+        cursor: pointer;
+        line-height: 1;
+        padding-inline: 5px;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+
+        &:hover { opacity: 1; }
+    }
+
+    .hodima-loc-table-wrapper { 
+        background: #fff; 
+        border: 1px solid var(--hodima-loc-border); 
+        border-radius: 8px; 
+        overflow: hidden; 
+        margin-block-start: 1rem; 
+    }
+
+    .hodima-loc-table { 
+        inline-size: 100%; 
+        border-collapse: collapse; 
+        text-align: start; 
+
+        th, td { 
+            padding: 12px 15px; 
+            border-block-end: 1px solid var(--hodima-loc-border); 
+        }
+
+        th { 
+            background: var(--hodima-loc-bg); 
+            font-weight: 700; 
+            color: var(--hodima-loc-primary-brand); 
+            border-block-end: 2px solid var(--hodima-loc-third-brand); 
+        }
+
+        tr:hover td { background: #f8fafc; }
+    }
+
+    .hodima-loc-btn { 
+        cursor: pointer; 
+        padding: .7rem 1.2rem; 
+        border-radius: 6px; 
+        border: none; 
+        font-weight: 700; 
+        transition: all 0.3s ease; 
+        display: inline-block; 
+        text-align: center; 
+        text-decoration: none; 
+
+        &.hodima-loc-btn-primary { 
+            background: var(--hodima-loc-secondary-brand); 
+            color: #fff; 
+
+            &:hover { 
+                background: var(--hodima-loc-primary-brand); 
+                transform: translateY(-1px); 
+            }
+        }
+    }
+}
+
+/* ========================================================= */
+/* 3. FRONT-END DATE COMPONENT                               */
+/* ========================================================= */
+.hodima-wc-date {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--hodima-loc-primary-brand);
+    background-color: var(--hodima-loc-third-brand);
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    transition: all 0.3s ease;
+
+    &.is-new-order {
+        border-inline-end: 3px solid var(--hodima-loc-secondary-brand);
+        background-color: rgba(96, 123, 189, 0.15);
+    }
+}
+
+/* ========================================================= */
+/* 4. ADMIN DATE PICKER WRAPPER                              */
+/* ========================================================= */
+.hodima-admin-datepicker-wrapper {
+    position: relative;
+    display: inline-block;
+
+    input[type="date"] {
+        border: 1px solid var(--hodima-loc-border);
+        border-radius: 6px;
+        color: var(--hodima-loc-primary-brand);
+
+        &:focus {
+            border-color: var(--hodima-loc-secondary-brand);
+            box-shadow: 0 0 0 3px rgba(96, 123, 189, 0.1);
+            outline: none;
+        }
+
+        &::-webkit-calendar-picker-indicator {
+            filter: invert(18%) sepia(43%) saturate(1636%) hue-rotate(203deg) brightness(97%) contrast(98%);
+            cursor: pointer;
+        }
+    }
+}
+
+/* ========================================================= */
+/* 5. CHECKOUT FORM VALIDATION                               */
+/* ========================================================= */
+.woocommerce-checkout {
+    input.hodima-input-error {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        transition: all 0.3s ease;
+    }
+
+    input.hodima-input-success {
+        border-color: var(--hodima-loc-secondary-brand);
+        box-shadow: 0 0 0 3px rgba(96, 123, 189, 0.1);
+        color: var(--hodima-loc-text);
+        transition: all 0.3s ease;
+    }
+}
+
+#billing_phone, 
+#billing_postcode, 
+#shipping_postcode {
+    direction: ltr;
+    text-align: start;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+}

@@ -1,0 +1,185 @@
+/* =========================================================================
+ * Expandable Boxes — v3.0.0 (Modern CSS)
+ * ========================================================================= */
+
+.arian-expandable-box {
+    --arian-bg: var(--bg-color, #ffffff);
+    --arian-fade-height: 80px;
+    --arian-collapsed-height: 600px; 
+
+    --arian-btn-bg: var(--hodima-primary, #25316a);
+    --arian-btn-bg-hover: var(--hodima-secondary, #607bbd);
+    --arian-btn-color: #ffffff;
+    --arian-btn-radius: 999px;
+    --arian-btn-height: 40px;
+    --arian-btn-padding-x: 18px;
+    --arian-btn-font-size: 14px;
+    --arian-btn-font-weight: 600;
+
+    --arian-transition-duration: 0.6s;
+    --arian-transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+    --arian-shadow: 0 4px 14px rgba(37, 49, 106, 0.16);
+    --arian-shadow-hover: 0 8px 22px rgba(37, 49, 106, 0.22);
+    --arian-focus-ring: 0 0 0 3px rgba(96, 123, 189, 0.35);
+
+    position: relative;
+    inline-size: 100%;
+
+    /* ── جعبه ── */
+    .arian-expandable-wrapper {
+        position: relative;
+        inline-size: 100%;
+        max-height: var(--arian-collapsed-height);
+        margin-block-end: 10px;
+        overflow: hidden;
+        scroll-margin-block-start: 120px;
+        transition: max-height var(--arian-transition-duration) var(--arian-transition-ease);
+
+        &:focus { outline: none; }
+        &:focus-visible { box-shadow: var(--arian-focus-ring); border-radius: 6px; }
+        &.arian-animating { will-change: max-height; }
+
+        &:not(.arian-expanded) {
+            -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--arian-fade-height)), transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 calc(100% - var(--arian-fade-height)), transparent 100%);
+        }
+
+        &.arian-expanded {
+            -webkit-mask-image: none;
+            mask-image: none;
+        }
+    }
+
+    &.arian-no-gradient .arian-expandable-wrapper {
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+
+    /* ── محتوا ── */
+    .arian-expandable-inner {
+        inline-size: 100%;
+        max-inline-size: 100%;
+        min-inline-size: 0;
+        overflow-wrap: break-word;
+
+        img, video, iframe, embed, object, canvas {
+            max-inline-size: 100%;
+            block-size: auto;
+        }
+
+        img:not(.avatar):not(.emoji):not(.wp-smiley),
+        video, iframe, embed, object, canvas {
+            display: block;
+            margin-block: 10px;
+            margin-inline: auto;
+        }
+
+        iframe, video { inline-size: 100%; }
+
+        iframe[src*="aparat"],
+        iframe[src*="youtube"],
+        iframe[src*="youtu.be"] {
+            aspect-ratio: 16 / 9;
+            block-size: auto;
+        }
+
+        figure, .wp-block-image, .wp-block-video, .wp-block-embed {
+            max-inline-size: 100%;
+            margin-inline: auto;
+        }
+
+        a, code { overflow-wrap: anywhere; }
+
+        pre, .wp-block-table {
+            max-inline-size: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        pre { white-space: pre; }
+
+        blockquote { margin-inline: 0; }
+
+        input, select, textarea { max-inline-size: 100%; }
+    }
+
+    /* ── دکمه ── */
+    .arian-expand-toggle-btn {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        inline-size: fit-content;
+        min-block-size: var(--arian-btn-height);
+        margin-block-start: 12px;
+        margin-inline: auto 0;
+        margin-inline: auto;
+        padding-inline: var(--arian-btn-padding-x);
+        font: inherit;
+        font-size: var(--arian-btn-font-size);
+        font-weight: var(--arian-btn-font-weight);
+        line-height: 1;
+        white-space: nowrap;
+        color: var(--arian-btn-color);
+        background: var(--arian-btn-bg);
+        border: none;
+        border-radius: var(--arian-btn-radius);
+        box-shadow: var(--arian-shadow);
+        cursor: pointer;
+        transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+
+        &:hover {
+            background: var(--arian-btn-bg-hover);
+            box-shadow: var(--arian-shadow-hover);
+            transform: translateY(-1px);
+        }
+
+        &:active { transform: translateY(0); }
+        &:focus { outline: none; }
+        &:focus-visible { box-shadow: var(--arian-shadow), var(--arian-focus-ring); }
+        
+        /* وزن [hidden] به صورت طبیعی از خود کلاس بالاتر است، نیازی به !important نیست */
+        &[hidden] { display: none; }
+    }
+}
+
+/* ── موبایل ── */
+@media (max-width: 767px) {
+    .arian-expandable-box {
+        --arian-fade-height: 64px;
+        --arian-btn-font-size: 13px;
+        --arian-btn-height: 38px;
+        --arian-btn-padding-x: 16px;
+
+        .arian-expandable-inner table:not(.hodima-dynamic-table):not(.hodima-specs-table) {
+            display: block;
+            max-inline-size: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+}
+
+/* ── دسترس‌پذیری و چاپ ── */
+@media (prefers-reduced-motion: reduce) {
+    /* با افزودن والد، وزن کلاس با کدهای بالا برابر شده و !important حذف می‌شود */
+    .arian-expandable-box .arian-expandable-wrapper,
+    .arian-expandable-box .arian-expand-toggle-btn {
+        transition: none;
+    }
+}
+
+@media print {
+    /* هم‌تراز کردن وزن کلاس‌ها برای لغو استایل‌های قبلی بدون !important */
+    .arian-expandable-box .arian-expandable-wrapper {
+        max-height: none;
+        overflow: visible;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+    .arian-expandable-box .arian-expand-toggle-btn {
+        display: none;
+    }
+}

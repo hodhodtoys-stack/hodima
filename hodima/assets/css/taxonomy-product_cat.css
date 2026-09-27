@@ -1,0 +1,488 @@
+:root {
+    --cat-max-width: 1440px;
+    --cat-gap: 10px;
+    --cat-radius: 12px;
+    --cat-shadow: 0 2px 10px rgba(37, 49, 106, .04);
+    --cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
+    --cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
+    --cat-grid-gap: 1px;
+    --cat-grid-gap-mobile: 8px;
+    --section-gap: 10px;
+}
+
+.hodima-page-wrapper {
+    max-width: var(--cat-max-width);
+    margin: 5px auto;
+    padding: 0 10px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--cat-gap);
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.hodima-section-box {
+    width: 100%;
+    border-radius: var(--cat-radius);
+    box-shadow: var(--cat-shadow);
+    box-sizing: border-box;
+    padding: 10px;
+    background: #fff;
+}
+
+/* --- تنظیمات جدید بردکرامب --- */
+.section-breadcrumb {
+    background-color: var(--cat-bg-light-blue) !important;
+    padding: 6px 15px !important; 
+    border-radius: 10px !important;
+    margin: 0 auto !important;
+    font-size: .85rem !important;
+    color: var(--hodima-text-muted, #5d6785) !important;
+    display: flex !important; 
+    align-items: center !important; 
+    flex-wrap: wrap; 
+    border: 1px solid var(--hodima-border-light, #d9e1f0) !important;
+    max-width: var(--cat-max-width) !important;
+    box-sizing: border-box;
+    font-family: inherit !important;
+    line-height: 1.5 !important;
+    min-height: 35px !important; 
+}
+
+/* حذف مارجین تگ‌های داخلی که باعث کش آمدن ارتفاع می‌شوند */
+.section-breadcrumb p,
+.section-breadcrumb ul,
+.section-breadcrumb li,
+.section-breadcrumb span {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.5 !important;
+}
+
+.section-breadcrumb a {
+    color: var(--hodima-text-dark, #111111) !important;
+    text-decoration: none !important;
+    transition: color .25s ease !important;
+    font-weight: 500 !important;
+    font-family: inherit !important;
+}
+
+.section-breadcrumb a:hover {
+    color: var(--hodima-primary, #25316a) !important;
+}
+/* ------------------------------- */
+
+.section-intro-video {
+    background: var(--cat-bg-light-blue);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.section-intro-video .intro-box,
+.section-intro-video .video-box {
+    flex: 1;
+    min-width: 300px;
+}
+
+.intro-box .category-title {
+    margin: 0 0 15px;
+    text-align: right;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--hodima-text-dark, #111111);
+    line-height: 1.4;
+    font-family: inherit;
+}
+
+.section-products,
+.section-voice,
+.section-faq {
+    background: var(--cat-bg-light-green);
+}
+
+.section-description {
+    background: var(--cat-bg-light-blue);
+}
+
+.section-voice {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.section-voice + .section-faq {
+    margin-top: calc(var(--cat-gap) * -1) !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    box-shadow: var(--cat-shadow) !important;
+}
+
+.section-ai-box {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.section-ai-box > *:first-child {
+    margin-top: 0 !important;
+}
+
+.section-intro-video > div > *:last-child,
+.section-description > *:last-child,
+.section-voice > *:last-child,
+.section-faq > *:last-child,
+.section-ai-box > *:last-child {
+    margin-bottom: 0 !important;
+}
+
+.product-card-scope ul.products {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: var(--cat-grid-gap) !important;
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.product-card-scope ul.products::before,
+.product-card-scope ul.products::after {
+    display: none !important;
+}
+
+.woocommerce-ordering {
+    display: none !important;
+}
+
+.hodima-custom-sort-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #fff;
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid var(--hodima-border-light, #d9e1f0);
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    position: relative;
+    z-index: 10 !important; 
+    overflow: visible !important;
+}
+
+.sort-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sort-title-box {
+    margin-left: 5px;
+    flex-shrink: 0;
+}
+
+.sort-title-box,
+.sort-title-box * {
+    color: #111111 !important;
+}
+
+.sort-title-box svg {
+    color: #111111 !important;
+    display: block;
+}
+
+.sort-options-box {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.hodima-sort-btn {
+    background: var(--hodima-surface-soft, #f7f9fd);
+    border: 1px solid #d9e1f0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    color: #111111;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .25s ease;
+    font-family: inherit;
+    flex-shrink: 0;
+}
+
+.hodima-sort-btn:hover {
+    background: #eef2f8;
+}
+
+.hodima-sort-btn.active {
+    background: var(--hodima-surface-soft, #f7f9fd) !important; 
+    border-color: var(--hodima-third, #c1c9ec) !important; 
+    color: #111111 !important; 
+    box-shadow: 0 2px 8px rgba(37, 49, 106, .05);
+}
+
+.price-sort-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.hodima-sort-btn.has-dropdown {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dropdown-icon {
+    transition: transform .25s ease;
+}
+
+.price-sort-wrapper.open .dropdown-icon {
+    transform: rotate(180deg);
+}
+
+.sort-sub-options-box.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    right: auto;
+    background: #fff;
+    border: 1px solid #d9e1f0;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(37, 49, 106, .08);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    z-index: 20 !important; 
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(-10px);
+    transition: all .25s ease;
+    min-width: 105px;
+}
+
+.price-sort-wrapper.open .sort-sub-options-box.dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.hodima-sort-sub-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 8px;
+    border-radius: 6px;
+    color: #111111;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .25s ease;
+    font-family: inherit;
+    text-align: center;
+    width: 100%;
+}
+
+.hodima-sort-sub-btn:hover {
+    background: var(--hodima-bg-gray, #eef2f8);
+}
+
+.hodima-sort-sub-btn.active {
+    background: var(--hodima-surface-soft, #f7f9fd) !important; 
+    color: #111111 !important; 
+    font-weight: 700;
+}
+
+@media (max-width: 1140px) {
+    .section-breadcrumb {
+        width: 100% !important;
+    }
+    .product-card-scope ul.products {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+}
+
+@media (max-width: 992px) {
+    .product-card-scope ul.products {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    .hodima-custom-sort-wrapper {
+        justify-content: flex-start;
+        padding: 10px;
+        gap: 10px;
+    }
+    .sort-options-box {
+        flex-grow: 1;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .product-card-scope ul.products {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: var(--cat-grid-gap-mobile) !important;
+    }
+    .section-intro-video {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .section-intro-video .intro-box,
+    .section-intro-video .video-box {
+        min-width: unset;
+        width: 100%;
+    }
+}
+
+.hodima-custom-sort-wrapper .hodima-sort-btn,
+.hodima-custom-sort-wrapper .hodima-sort-btn *,
+.hodima-custom-sort-wrapper .hodima-sort-sub-btn,
+.hodima-custom-sort-wrapper .hodima-sort-sub-btn *,
+.hodima-custom-sort-wrapper .sort-title-box,
+.hodima-custom-sort-wrapper .sort-title-box * {
+    color: #111111 !important;
+    fill: #111111 !important;
+    stroke: #111111 !important;
+}
+
+.hodima-custom-sort-wrapper .hodima-sort-btn.active,
+.hodima-custom-sort-wrapper .hodima-sort-btn.active *,
+.hodima-custom-sort-wrapper .hodima-sort-sub-btn.active,
+.hodima-custom-sort-wrapper .hodima-sort-sub-btn.active * {
+    color: #111111 !important;
+}
+
+/* =========================================================================
+ * نسخه ۲ — صفحه‌بندی استاندارد (۳۶ محصول در هر صفحه)
+ * ========================================================================= */
+
+/* سربرگ صفحات ۲ به بعد (معرفی و ویدیو فقط در صفحه اول‌اند) */
+.section-paged-head .category-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--hodima-text-dark, #111111);
+}
+.category-title__page {
+    margin-inline-start: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--hodima-text-muted, #5d6785);
+}
+
+/* قبلا style درون‌خطی */
+.faq-inner-wrapper { margin-top: 15px; }
+.voice-inner-wrapper + .faq-inner-wrapper { margin-top: 15px; }
+.faq-inner-wrapper:first-child { margin-top: 0; }
+
+/* بارگذاری مرتب‌سازی */
+.section-products.is-loading ul.products {
+    opacity: .5;
+    pointer-events: none;
+    transition: opacity .2s ease;
+}
+
+/* ── صفحه‌بندی ─────────────────────────────────────────────────────── */
+.section-products .woocommerce-pagination {
+    display: flex;
+    justify-content: center;
+    margin: 28px 0 6px;
+    padding: 0;
+    border: 0;
+}
+.section-products .woocommerce-pagination ul.page-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 0 !important;
+    background: none;
+    white-space: normal;
+}
+.section-products .woocommerce-pagination ul.page-numbers li {
+    display: block;
+    margin: 0;
+    border: 0 !important;
+    overflow: visible;
+    float: none;
+}
+.section-products .woocommerce-pagination .page-numbers:not(ul) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 14px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    color: var(--hodima-primary, #25316a);
+    background: #fff;
+    border: 1px solid var(--hodima-border-light, #d9e1f0);
+    border-radius: 21px;
+    box-sizing: border-box;
+    transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.section-products .woocommerce-pagination a.page-numbers:hover,
+.section-products .woocommerce-pagination a.page-numbers:focus-visible {
+    color: #fff;
+    background: var(--hodima-secondary, #607bbd);
+    border-color: var(--hodima-secondary, #607bbd);
+    outline: none;
+}
+.section-products .woocommerce-pagination .page-numbers.current {
+    color: #fff;
+    background: var(--hodima-primary, #25316a);
+    border-color: var(--hodima-primary, #25316a);
+}
+.section-products .woocommerce-pagination .page-numbers.dots {
+    min-width: auto;
+    padding: 0 4px;
+    background: none;
+    border: 0;
+}
+
+/*
+ * شماره‌ها با ارقام انگلیسی. PHP رقم‌ها را لاتین می‌کند؛ این فونت تضمین
+ * می‌کند که حتی اگر فونت فارسی ارقام لاتین را فارسی رسم کند، انگلیسی بمانند.
+ */
+.hodima-num {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-variant-numeric: lining-nums tabular-nums;
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
+@media (max-width: 480px) {
+    .section-products .woocommerce-pagination .page-numbers:not(ul) {
+        min-width: 38px;
+        height: 38px;
+        padding: 0 10px;
+        font-size: 14px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .section-products.is-loading ul.products { transition: none; }
+}
+
+/* سربرگ فشرده archive-product.php (برچسب‌های محصول و جستجو هم از این قالب استفاده می‌کنند) */
+.shop-custom-header--compact { padding: 14px 20px; }
+.shop-compact-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--hodima-text-dark, #111111);
+}
+.shop-compact-page {
+    margin-inline-start: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--hodima-text-muted, #5d6785);
+}

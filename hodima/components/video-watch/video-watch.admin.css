@@ -1,0 +1,141 @@
+.post-type-video {
+    --hvw-primary: var(--hodima-primary, #25316a);
+    --hvw-primary-hover: var(--hodima-secondary, #607bbd);
+    --hvw-primary-soft: rgba(37, 49, 106, 0.12);
+    --hvw-grad: linear-gradient(45deg, #25316a, #607bbd);
+    --hvw-bg: var(--hodima-surface-soft, #f7f9fd);
+    --hvw-card: #fff;
+    --hvw-text: var(--hodima-text-dark, #111111);
+    --hvw-muted: var(--hodima-text-muted, #5d6785);
+    --hvw-border: var(--hodima-third, #c1c9ec);
+    --hvw-shadow: 0 4px 12px rgba(37, 49, 106, 0.05);
+}
+
+.post-type-video .hvw-metabox {
+    direction: rtl;
+    color: var(--hvw-text);
+}
+
+.post-type-video .hvw-card {
+    padding: 20px;
+    border: 1px solid var(--hvw-border);
+    border-radius: 12px;
+    background: var(--hvw-card);
+    box-shadow: var(--hvw-shadow);
+}
+
+.post-type-video .hvw-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+}
+
+.post-type-video .hvw-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.post-type-video .hvw-field--full { grid-column: 1 / -1; }
+.post-type-video .hvw-label { font-size: 13px; font-weight: 600; color: var(--hvw-text); }
+
+.post-type-video .hvw-input, .post-type-video .hvw-textarea {
+    width: 100%;
+    border: 1px solid var(--hvw-border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    color: var(--hvw-text);
+    background: #fff;
+}
+
+.post-type-video .hvw-input:focus, .post-type-video .hvw-textarea:focus {
+    border-color: var(--hvw-primary);
+    box-shadow: 0 0 0 2px var(--hvw-primary-soft);
+    outline: none;
+}
+
+.post-type-video .hvw-repeater-row {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #fdfdfd;
+    border: 1px dashed var(--hvw-border);
+    border-radius: 8px;
+}
+
+.post-type-video .hvw-repeater-row .hvw-field {
+    flex: 1;
+    margin: 0;
+}
+
+.post-type-video .hvw-remove-row {
+    background: var(--hvw-primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: filter 0.2s;
+    flex-shrink: 0;
+}
+
+.post-type-video .hvw-remove-row:hover { filter: brightness(0.8); }
+
+.post-type-video .hvw-add-row-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--hvw-primary);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background 0.2s;
+    box-shadow: 0 2px 6px rgba(37, 49, 106, 0.18);
+}
+
+.post-type-video .hvw-add-row-btn:hover { background: var(--hvw-primary-hover); }
+
+/* منتقل‌شده از <style> درون‌خطی متاباکس */
+.post-type-video .hvw-metabox h3 {
+    margin-top: 30px;
+    padding-bottom: 10px;
+    color: var(--hvw-primary) !important;
+    border-bottom: 1px solid var(--hvw-border);
+}
+.post-type-video .hvw-subtitle {
+    margin-top: 30px;
+    padding-bottom: 8px;
+    font-size: 15px;
+    color: var(--hvw-primary-hover);
+    border-bottom: 1px dashed var(--hvw-border);
+}
+.post-type-video .hvw-btn-action {
+    color: #fff !important;
+    background-color: var(--hvw-primary-hover) !important;
+    border: none !important;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+.post-type-video .hvw-btn-action:hover { background-color: var(--hvw-primary) !important; }
+.post-type-video .hvw-add-btn { margin-top: 10px; padding: 8px 16px !important; }
+.post-type-video .hvw-inline { display: flex; gap: 10px; width: 100%; }
+.post-type-video .hvw-inline .button { height: auto; white-space: nowrap; }
+.post-type-video .hvw-flex-1 { flex: 1; }
+.post-type-video .hvw-flex-15 { flex: 1.5; }
+.post-type-video .hvw-input--short { max-width: 220px; }
+.post-type-video .hvw-textarea--tall { min-height: 150px; }

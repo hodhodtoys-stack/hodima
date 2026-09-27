@@ -1,0 +1,245 @@
+.h-admin {
+    --h-primary: var(--hodima-primary, #25316a);
+    --h-primary-hover: var(--hodima-secondary, #607bbd);
+    --h-header-bg: linear-gradient(90deg, #25316a, #607bbd, #c1c9ec);
+    --h-border: var(--hodima-third, #c1c9ec);
+    --h-text: var(--hodima-text-dark, #111111);
+    --h-bg: #f8f9fc;
+    --h-surface: #ffffff;
+    --h-soft: #eef1fb;
+    --h-font: 'Vazirmatn', Tahoma, sans-serif;
+
+    /* ۹۵٪ عرض: با ۱۰۰٪ به‌علاوه padding و حاشیه، محتوا از کادر پیشخوان بیرون می‌زد */
+    width: 95%;
+    max-width: 95%;
+    box-sizing: border-box;
+    margin: 1.5rem 0;
+    direction: rtl;
+    color: var(--h-text);
+    font-family: var(--h-font);
+}
+
+.h-admin * { box-sizing: border-box; font-family: inherit; }
+
+.h-admin .h-header {
+    background: var(--h-header-bg) !important;
+    color: #fff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    box-shadow: 0 8px 24px rgba(37, 49, 106, 0.14);
+}
+
+.h-admin .h-header h1 {
+    margin: 0;
+    color: #fff !important;
+    font-size: 1.5rem;
+}
+
+.h-header-help {
+    margin-top: .4rem;
+    font-size: .9rem;
+    color: rgba(255,255,255,.92);
+    line-height: 1.7;
+    background: rgba(37, 49, 106, .18);
+    padding: .35rem .6rem;
+    border-radius: 8px;
+}
+
+.h-version { font-size: 1.1rem; font-weight: bold; }
+
+.h-card {
+    background: #fff;
+    margin-top: 1.25rem;
+    padding: 1.25rem;
+    border: 1px solid var(--h-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(37, 49, 106, 0.05);
+}
+
+.h-notice {
+    background: var(--h-soft);
+    color: var(--h-primary);
+    border: 1px solid var(--h-border);
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.h-error {
+    background: #fee2e2;
+    color: #7f1d1d;
+    border: 1px solid #fecaca;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.h-close-btn { cursor: pointer; font-weight: bold; font-size: 1.2rem; line-height: 1; padding: 0 10px; }
+
+.h-section {
+    background: var(--h-bg);
+    border: 1px solid var(--h-border);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.h-section-title {
+    margin: 0 0 .75rem;
+    font-weight: 800;
+    font-size: 1.05rem;
+    border-right: 4px solid var(--h-primary);
+    padding-right: .6rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.h-shortcode-tag {
+    background: var(--h-soft);
+    color: var(--h-primary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: normal;
+    font-size: 0.95rem;
+}
+
+.h-sub-title {
+    margin: 1rem 0 .5rem;
+    font-weight: 700;
+    font-size: .95rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--h-border);
+}
+
+.h-sub-title--spaced { margin-top: 2rem; }
+
+.h-grid {
+    display: grid;
+    grid-template-columns: auto 180px 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--h-border);
+    border-radius: 8px;
+    margin-bottom: .75rem;
+    background: #fff;
+    width: 100%;
+}
+
+.h-images-wrapper { display: flex; flex-direction: column; gap: 10px; }
+.h-img-box { position: relative; border: 1px solid var(--h-border); border-radius: 6px; padding: 5px; background: #fafafa; }
+.h-img-label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: #64748b; }
+.h-preview { width: 100%; aspect-ratio: auto; min-height: 60px; max-height: 100px; object-fit: contain; border-radius: 4px; border: 2px dashed var(--h-border); cursor: pointer; background: #fff; }
+
+.h-input {
+    width: 100%;
+    padding: .6rem;
+    border: 1px solid var(--h-border);
+    border-radius: 6px;
+    font-family: inherit;
+}
+.h-input:focus { outline: 1px solid var(--h-primary); border-color: var(--h-primary); }
+.h-input-dim { width: 80px; }
+
+.h-btn { cursor: pointer; padding: .6rem 1rem; border-radius: 6px; border: none; font-weight: 700; transition: background 0.3s; }
+.h-btn-primary { background: var(--h-primary); color: #fff; }
+.h-btn-primary:hover { background: var(--h-primary-hover); }
+.h-btn-danger { background: #ef4444; color: #fff; }
+.h-btn-danger:hover { background: #dc2626; }
+
+.h-dim-row { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--h-border); padding: 10px; border-radius: 8px; background: #fff; }
+.h-dim-input-group { display: flex; gap: 10px; align-items: center; }
+.h-dim-label { min-width: 60px; font-weight: 500; font-size: 0.9em; }
+.h-mobile-toggle { font-weight: normal; font-size: 0.9em; display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--h-primary); }
+.h-effect-select { padding: 4px; border: 1px solid var(--h-border); border-radius: 4px; font-size: 0.9em; font-family: inherit; }
+.h-settings-hint { margin-top: 5px; font-size: 0.9em; color: #64748b; }
+.h-dim-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 1rem; }
+.h-dim-header { font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; }
+.h-actions { display: flex; justify-content: flex-end; margin-top: 1rem; }
+.h-grid-fields { display: flex; flex-direction: column; justify-content: center; gap: .8rem; width: 100%; }
+
+@media (max-width: 782px) {
+    .h-grid { grid-template-columns: 1fr; }
+    .h-images-wrapper { flex-direction: row; }
+    .h-img-box { flex: 1; }
+}
+
+/* ── ترتیب اسلایدها ─────────────────────────────────────────────── */
+.h-order {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.h-drag {
+    cursor: grab;
+    padding: 4px 6px;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--h-muted, #5d6785);
+    border-radius: 6px;
+    touch-action: none;
+    user-select: none;
+}
+.h-drag:hover { background: var(--h-soft); color: var(--h-primary, #25316a); }
+.h-num {
+    min-width: 26px;
+    padding: 2px 6px;
+    font-weight: 700;
+    font-size: 13px;
+    text-align: center;
+    color: #fff;
+    background: var(--h-primary, #25316a);
+    border-radius: 999px;
+}
+.h-move {
+    width: 28px;
+    height: 22px;
+    padding: 0;
+    font-size: 10px;
+    line-height: 1;
+    color: var(--h-primary, #25316a);
+    background: #fff;
+    border: 1px solid var(--h-border);
+    border-radius: 6px;
+    cursor: pointer;
+}
+.h-move:hover:not(:disabled) { color: #fff; background: var(--h-primary, #25316a); }
+.h-move:disabled { opacity: .35; cursor: default; }
+.h-grid.is-dragging {
+    position: fixed;
+    z-index: 100000;
+    margin: 0;
+    background: var(--h-surface);
+    box-shadow: 0 18px 40px rgba(37, 49, 106, 0.28);
+    cursor: grabbing;
+}
+.h-drop-placeholder {
+    margin-bottom: .75rem;
+    border: 2px dashed var(--h-primary, #25316a);
+    border-radius: 8px;
+    background: rgba(96, 123, 189, 0.06);
+}
+.h-grid.is-moved { animation: hMoved .6s ease; }
+@keyframes hMoved { from { background: rgba(96, 123, 189, 0.14); } to { background: transparent; } }
+
+@media (max-width: 782px) {
+    .h-order { flex-direction: row; justify-content: flex-start; }
+}

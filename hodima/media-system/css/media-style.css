@@ -1,0 +1,327 @@
+/* 
+ * Phase 2.3: Media System Front-End - Stylesheet
+ * File: wp-content/themes/hodima/media-system/css/media-style.css
+ */
+
+:root {
+    --media-primary: var(--hodima-primary, #25316a);
+    --media-primary-hover: var(--hodima-primary-hover, #1b244d);
+    --media-secondary: var(--hodima-secondary, #607bbd);
+    --media-accent: var(--hodima-third, #c1c9ec);
+    --media-text: var(--hodima-text-dark, #111111);
+    --media-text-soft: var(--hodima-text-muted, #5d6785);
+    --media-text-muted: var(--hodima-text-muted, #5d6785);
+    --media-surface: var(--hodima-surface, #ffffff);
+    --media-surface-soft: var(--hodima-surface-soft, #f7f9fd);
+    --media-border: rgba(37, 49, 106, 0.10);
+    --media-border-strong: rgba(37, 49, 106, 0.18);
+    --media-shadow: 0 4px 14px rgba(37, 49, 106, 0.08);
+    --media-shadow-hover: 0 8px 22px rgba(37, 49, 106, 0.12);
+    --media-radius-sm: 8px;
+    --media-radius-md: 12px;
+    --media-radius-lg: 14px;
+    --media-transition: 0.25s ease;
+    --media-font: 'Vazirmatn', Tahoma, sans-serif;
+}
+
+.hook-video-wrapper,
+.hook-voice-wrapper,
+.hook-faq,
+.hook-intro-wrapper,
+.hodima-ai-summary-wrapper {
+    font-family: var(--media-font);
+}
+
+.hook-video-wrapper {
+    margin: 30px auto;
+    width: 100%;
+    max-width: 650px;
+}
+
+.hook-media-title {
+    position: relative;
+    margin-bottom: 15px;
+    padding-right: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--media-text);
+}
+
+.hook-media-title::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--media-primary);
+    transform: translateY(-50%);
+    box-shadow: 0 0 0 4px rgba(37, 49, 106, 0.10);
+}
+
+.hook-video-container {
+    overflow: hidden !important;
+    border: 2px solid var(--media-secondary) !important;
+    border-radius: 14px !important;
+    background: #ffffff !important;
+    box-shadow: 0 6px 18px rgba(37, 49, 106, 0.12) !important;
+}
+
+.hook-video-inner {
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    background: var(--media-primary) !important;
+    line-height: 0;
+}
+
+.hook-video-inner video {
+    display: block;
+    width: 100%;
+    height: auto;
+    /*
+     * ارتفاع رزروشده پیش از بارگذاری.
+     * <video> بدون ابعاد با ارتفاع پیش‌فرض ۱۵۰ پیکسل رندر می‌شد و بعد از
+     * خواندن اطلاعات فایل بزرگ می‌شد — جابه‌جایی صفحه (CLS) روی هر محصول.
+     */
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    border-radius: 0 !important;
+}
+
+/* کانتینر امبد — قبلا style درون‌خطی در PHP */
+.hook-oembed-container {
+    position: relative;
+    height: 0;
+    padding-bottom: 56.25%;
+    overflow: hidden;
+}
+
+.hook-oembed-container iframe {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    border: 0;
+}
+
+.hook-audio-el {
+    flex-grow: 1;
+    width: 100%;
+}
+
+.hook-voice-wrapper {
+    margin: 30px auto;
+    max-width: 650px;
+}
+
+.hook-voice-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 18px;
+    border: 1px solid var(--media-border-strong);
+    border-radius: 999px;
+    background: var(--media-surface-soft);
+    box-shadow: var(--media-shadow);
+}
+
+.hook-voice-label {
+    margin: 0;
+    white-space: nowrap;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--media-primary);
+}
+
+.hook-voice-container audio {
+    width: 100%;
+    height: 36px;
+    flex-grow: 1;
+}
+
+.hook-faq {
+    margin: 20px auto;
+    max-width: 800px;
+}
+
+.hook-faq-item {
+    overflow: hidden;
+    margin-bottom: 12px;
+    border: 1px solid var(--media-border);
+    border-radius: var(--media-radius-md);
+    background: var(--media-surface);
+    box-shadow: 0 2px 10px rgba(37, 49, 106, 0.04);
+    transition: border-color var(--media-transition), box-shadow var(--media-transition), transform var(--media-transition);
+}
+
+.hook-faq-item[open] {
+    border-color: var(--media-border-strong);
+    box-shadow: var(--media-shadow);
+}
+
+.hook-faq-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    list-style: none;
+    cursor: pointer;
+    background: var(--media-surface-soft);
+    color: var(--media-text);
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 1.6;
+}
+
+.hook-faq-summary::-webkit-details-marker {
+    display: none;
+}
+
+.hook-faq-summary::after {
+    content: "+";
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(37, 49, 106, 0.08);
+    color: var(--media-primary);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    transition: background var(--media-transition), color var(--media-transition), transform var(--media-transition);
+}
+
+.hook-faq-item[open] .hook-faq-summary::after {
+    content: "−";
+    background: var(--media-primary);
+    color: #ffffff;
+}
+
+.hook-faq-content {
+    padding: 15px 16px;
+    border-top: 1px solid rgba(37, 49, 106, 0.06);
+    color: var(--media-text-soft);
+    font-size: 14px;
+    line-height: 1.9;
+}
+
+.hook-intro-wrapper {
+    margin: 25px 0;
+    padding: 20px;
+    border-right: 4px solid var(--media-primary);
+    border-radius: 8px 12px 12px 8px;
+    background: linear-gradient(135deg, rgba(37, 49, 106, 0.04) 0%, rgba(37, 49, 106, 0.01) 100%);
+    color: var(--media-text-soft);
+    font-size: 15px;
+    line-height: 1.9;
+    box-shadow: var(--media-shadow);
+}
+
+.hook-intro-wrapper p:first-child {
+    margin-top: 0;
+}
+
+.hook-intro-wrapper p:last-child {
+    margin-bottom: 0;
+}
+
+.hodima-ai-summary-wrapper {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    margin: 25px 0;
+    padding: 20px !important;
+    border-right: 4px solid var(--media-primary) !important;
+    border-radius: 8px 12px 12px 8px;
+    background: #ffffff !important;
+    box-shadow: var(--media-shadow);
+}
+
+.hodima-ai-summary-wrapper::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 8px 12px 12px 8px;
+    background: linear-gradient(135deg, rgba(37, 49, 106, 0.05) 0%, rgba(37, 49, 106, 0) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.hodima-ai-summary-wrapper > * {
+    position: relative;
+    z-index: 1;
+}
+
+.hodima-ai-summary-wrapper .hodima-ai-title {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--media-text);
+}
+
+.hodima-ai-summary-wrapper .hodima-ai-text {
+    margin-bottom: 15px;
+    color: var(--media-text-soft);
+    font-size: 15px;
+    line-height: 1.9;
+}
+
+.hodima-ai-summary-wrapper .hodima-ai-text:last-child {
+    margin-bottom: 0;
+}
+
+.hodima-ai-summary-wrapper .hodima-ai-entities {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(37, 49, 106, 0.14);
+    color: var(--media-text-muted);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.hodima-ai-summary-wrapper .hodima-ai-entities strong {
+    color: var(--media-primary);
+}
+
+@media (max-width: 767px) {
+    .hook-video-wrapper,
+    .hook-voice-wrapper,
+    .hook-faq {
+        margin-top: 24px;
+        margin-bottom: 24px;
+    }
+
+    .hook-voice-container {
+        align-items: stretch;
+        flex-direction: column;
+        border-radius: 16px;
+        padding: 14px;
+    }
+
+    .hook-voice-label {
+        white-space: normal;
+    }
+
+    .hook-media-title,
+    .hodima-ai-summary-wrapper .hodima-ai-title {
+        font-size: 16px;
+    }
+
+    .hook-intro-wrapper,
+    .hodima-ai-summary-wrapper {
+        padding: 16px !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hook-faq-summary::after { transition: none !important; }
+}

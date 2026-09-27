@@ -1,0 +1,145 @@
+/* ==========================================================================
+   جدول مشخصات محصول — Hodima Theme
+   پالت سازمانی: اصلی #25316a / ثانویه #607bbd / مکمل #c1c9ec
+   مقادیر از assets/css/tokens.css می‌آیند؛ hex فقط به عنوان fallback.
+   ========================================================================== */
+
+:root {
+    --hodima-specs-primary:        var(--hodima-primary, #25316a);
+    --hodima-specs-primary-soft:   rgba(37, 49, 106, 0.06);
+    --hodima-specs-border:         var(--hodima-border-light, #d9e1f0);
+    --hodima-specs-border-strong:  var(--hodima-third, #c1c9ec);
+    --hodima-specs-text:           var(--hodima-text-dark, #111111);
+    --hodima-specs-text-soft:      var(--hodima-text-muted, #5d6785);
+    --hodima-specs-surface:        var(--hodima-surface, #ffffff);
+    --hodima-specs-row-alt:        var(--hodima-surface-soft, #f7f9fd);
+    --hodima-specs-row-hover:      var(--hodima-bg-gray, #eef2f8);
+    --hodima-specs-accent:         var(--hodima-secondary, #607bbd);
+    --hodima-specs-shadow:         0 6px 18px rgba(37, 49, 106, 0.05);
+}
+
+/* کانتینر: روی موبایل به جای فشرده شدن ستون‌ها، افقی اسکرول می‌شود */
+.hodima-specs-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.hodima-specs-wrap:focus-visible {
+    outline: 2px solid var(--hodima-specs-accent);
+    outline-offset: 2px;
+}
+
+.hodima-specs-table {
+    width: 100%;
+    margin: 10px 0 20px;
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--hodima-specs-surface);
+    border: 1px solid var(--hodima-specs-border-strong);
+    box-shadow: var(--hodima-specs-shadow);
+    font-family: var(--hodima-font, 'Vazirmatn', Tahoma, sans-serif);
+    font-size: 0.95rem;
+    /*
+     * table-layout: fixed تا تقسیم ۳۰/۷۰ دقیقا رعایت شود. بدون آن، عرض
+     * ستون‌ها فقط «پیشنهاد» است و مرورگر بر اساس محتوا دوباره حساب می‌کند
+     * (مثلا فهرست طولانی رنگ‌ها تقسیم را به هم می‌زد).
+     */
+    table-layout: fixed !important;
+}
+
+.hodima-specs-table th,
+.hodima-specs-table td {
+    padding: 12px 15px;
+    text-align: center;
+    vertical-align: middle;
+    border: 1px solid var(--hodima-specs-border);
+    color: var(--hodima-specs-text-soft);
+    line-height: 1.7;
+    background: transparent;
+}
+
+/* ستون نام ویژگی ۳۰٪ ، ستون توضیح ۷۰٪ */
+.hodima-specs-table th[scope="row"] {
+    width: 30% !important;
+    color: var(--hodima-specs-primary);
+    font-weight: 600;
+    background: var(--hodima-specs-row-alt);
+}
+
+.hodima-specs-table tbody tr:nth-of-type(odd) {
+    background-color: var(--hodima-specs-row-alt);
+}
+
+.hodima-specs-table tbody tr:nth-of-type(even) {
+    background-color: var(--hodima-specs-surface);
+}
+
+.hodima-specs-table tbody tr:hover {
+    background-color: var(--hodima-specs-row-hover);
+}
+
+/* خط پایانی — نسخه قبلی #8ec5ff بود که خارج از پالت است */
+.hodima-specs-table tbody tr:last-of-type {
+    border-bottom: 3px solid var(--hodima-specs-accent);
+}
+
+/* عنوان جدول برای صفحه‌خوان‌ها */
+.hodima-specs-table .screen-reader-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 768px) {
+    .hodima-specs-table th,
+    .hodima-specs-table td {
+        padding: 10px 8px;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .hodima-specs-table th[scope="row"] {
+        width: 30% !important;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .hodima-specs-table tbody tr {
+        transition: background-color .18s ease;
+    }
+}
+
+.hodima-specs-table td {
+    width: 70% !important;
+    overflow-wrap: anywhere;
+}
+
+/* ستون‌های colgroup (عرض در HTML هم هست؛ این برای اطمینان) */
+.hodima-specs-table col.hodima-specs-col-label { width: 30% !important; }
+.hodima-specs-table col.hodima-specs-col-value { width: 70% !important; }
+
+/* =========================================================================
+ * ارتفاع کمتر ردیف‌ها (هم‌ترازی ستون خلاصه با گالری در دسکتاپ)
+ * ========================================================================= */
+.hodima-specs-table th,
+.hodima-specs-table td {
+    padding: 7px 12px !important;
+    line-height: 1.55 !important;
+}
+
+/* =========================================================================
+ * ردیف «بروزرسانی»: ردیف عادی آخر جدول. خط رنگی پایین جدول با همان
+ * قانون «tbody tr:last-of-type» بالا زیر این ردیف می‌آید (فقط یک خط).
+ * ========================================================================= */
+.hodima-specs-table tr.hodima-specs-updated td {
+    font-size: 0.85rem;
+    color: var(--hodima-text-muted, #5d6785);
+}

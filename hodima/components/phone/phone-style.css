@@ -1,0 +1,199 @@
+/* ==========================================================
+   hodima Phone Form — Footer Version (Modern CSS)
+   ========================================================== */
+
+:root {
+    --hodima-phone-primary: var(--hodima-primary, #25316a);
+    --hodima-phone-primary-hover: var(--hodima-primary-dark, #1b244d);
+    --hodima-phone-secondary: var(--hodima-secondary, #607bbd);
+    --hodima-phone-third: var(--hodima-third, #c1c9ec);
+
+    --hodima-phone-surface: var(--hodima-surface-soft, #f7f9fd);
+    --hodima-phone-surface-strong: #ffffff;
+    --hodima-phone-border: var(--hodima-border-light, #d9e1f0);
+    --hodima-phone-border-focus: var(--hodima-secondary, #607bbd);
+
+    --hodima-phone-text: var(--hodima-text-dark, #111111);
+    --hodima-phone-text-soft: var(--hodima-text-muted, #5d6785);
+    --hodima-phone-placeholder: var(--hodima-text-muted, #5d6785);
+
+    --hodima-phone-shadow: 0 0.25rem 0.875rem rgba(37, 49, 106, 0.08);
+    --hodima-phone-focus-shadow: 0 0 0 0.1875rem rgba(96, 123, 189, 0.18);
+
+    --hodima-phone-success-bg: rgba(47, 122, 85, 0.1);
+    --hodima-phone-success-text: var(--hodima-state-success, #2f7a55);
+    --hodima-phone-error-bg: var(--hodima-state-danger-bg, #f8ecec);
+    --hodima-phone-error-text: var(--hodima-state-danger, #a32a2a);
+}
+
+.hodima-phone-wrapper {
+    inline-size: 100%;
+    max-inline-size: 100%;
+    margin: 0;
+    background: var(--hodima-phone-surface);
+    padding: 0.875rem 0.875rem 1rem;
+    border-radius: 0.625rem;
+    border: 1px solid var(--hodima-phone-border);
+    box-shadow: var(--hodima-phone-shadow);
+    direction: rtl;
+
+    .hodima-phone-title {
+        text-align: center;
+        font-size: 0.8125rem;
+        color: var(--hodima-phone-text-soft);
+        margin-block: 0 0.625rem;
+        line-height: 1.8;
+    }
+
+    form.hodima-phone-form {
+        position: relative;
+        inline-size: 100%;
+
+        .hodima-phone-sr {
+            position: absolute;
+            inline-size: 1px;
+            block-size: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .hodima-phone-hp {
+            position: absolute;
+            inset-inline-start: -9999px;
+            inline-size: 1px;
+            block-size: 1px;
+            overflow: hidden;
+        }
+
+        .hodima-phone-input {
+            inline-size: 100%;
+            block-size: 2.625rem;
+            border-radius: 1.875rem;
+            border: 1px solid var(--hodima-phone-border);
+            background: var(--hodima-phone-surface-strong);
+            padding-inline: 1.125rem 7.5rem; /* Logical equivalent of padding: 0 1.125rem 0 7.5rem based on direction */
+            font-size: 0.8125rem;
+            color: var(--hodima-phone-text);
+            outline: none;
+            text-align: center;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+
+            &:focus {
+                border-color: var(--hodima-phone-border-focus);
+                box-shadow: var(--hodima-phone-focus-shadow);
+                background: #ffffff;
+            }
+
+            &::placeholder {
+                color: var(--hodima-phone-placeholder);
+            }
+
+            &[aria-invalid="true"] {
+                border-color: var(--hodima-state-danger, #a32a2a);
+                box-shadow: 0 0 0 0.1875rem rgba(163, 42, 42, 0.14);
+            }
+        }
+
+        .hodima-phone-submit {
+            position: absolute;
+            inset-inline-start: 0.375rem;
+            inset-block-start: 0.3125rem;
+            block-size: 2rem;
+            padding-inline: 1.125rem;
+            border-radius: 1.875rem;
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--hodima-phone-secondary) 0%, var(--hodima-phone-primary) 100%);
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+            box-shadow: 0 0.375rem 0.875rem rgba(37, 49, 106, 0.18);
+
+            &:hover {
+                transform: translateY(-0.0625rem);
+                box-shadow: 0 0.5rem 1rem rgba(37, 49, 106, 0.24);
+                filter: brightness(1.02);
+            }
+
+            &:focus-visible {
+                outline: none;
+                box-shadow:
+                    0 0 0 0.1875rem rgba(193, 201, 236, 0.65),
+                    0 0.5rem 1rem rgba(37, 49, 106, 0.24);
+            }
+
+            &[aria-busy="true"],
+            &:disabled {
+                cursor: progress;
+                opacity: 0.75;
+                transform: none;
+            }
+        }
+    }
+
+    .hodima-phone-msg {
+        margin-block-start: 0.5rem;
+        padding: 0.4375rem;
+        border-radius: 0.5rem;
+        text-align: center;
+        font-size: 0.75rem;
+
+        &[hidden] {
+            display: none;
+        }
+
+        &.hodima-msg-success {
+            background: var(--hodima-phone-success-bg);
+            color: var(--hodima-phone-success-text);
+            border: 1px solid rgba(47, 122, 85, 0.2);
+        }
+
+        &.hodima-msg-error {
+            background: var(--hodima-phone-error-bg);
+            color: var(--hodima-phone-error-text);
+            border: 1px solid rgba(163, 42, 42, 0.18);
+        }
+    }
+}
+
+/* mobile */
+@media (max-width: 48rem) {
+    .hodima-phone-wrapper {
+        padding: 0.75rem;
+
+        form.hodima-phone-form {
+            .hodima-phone-input {
+                block-size: 2.5rem;
+                padding-inline: 1rem 6.875rem;
+            }
+            .hodima-phone-submit {
+                block-size: 1.875rem;
+                padding-inline: 1rem;
+                font-size: 0.6875rem;
+            }
+        }
+    }
+}
+
+.footer-form-col .hodima-phone-wrapper {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(193, 201, 236, 0.55);
+}
+
+.hodima-footer-top-form {
+    margin-block-end: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hodima-phone-wrapper form.hodima-phone-form {
+        .hodima-phone-submit,
+        .hodima-phone-input {
+            transition: none;
+        }
+    }
+}

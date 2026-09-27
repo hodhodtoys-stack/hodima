@@ -1,0 +1,98 @@
+.in-admin {
+    --in-primary: var(--hodima-primary, #25316a);
+    --in-primary-hover: var(--hodima-secondary, #607bbd);
+    --in-gradient: linear-gradient(90deg, #25316a, #607bbd, #c1c9ec);
+    --in-border: var(--hodima-third, #c1c9ec);
+    --in-text: var(--hodima-text-dark, #111111);
+    --in-bg: var(--hodima-surface-soft, #f7f9fd);
+    --in-soft-bg: var(--hodima-bg-gray, #eef2f8);
+    max-width: 95% !important; 
+    width: 95%;
+    margin: 1rem 0; 
+    padding: 0 10px; 
+    direction: rtl; 
+    color: var(--in-text);
+    font-size: 14px; /* +1px Base */
+}
+.in-admin * { box-sizing: border-box; }
+.in-admin .in-header { background: #fff; padding: 1.2rem; border-radius: 8px; text-align: center; border: 1px solid var(--in-border); position: relative; margin-bottom: 1rem; }
+.in-admin .in-header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--in-gradient); border-radius: 8px 8px 0 0; }
+.in-admin .in-header h1 { font-size: 19px; margin: 0; padding: 0; }
+.in-tabs { display: flex; gap: 5px; border-bottom: 1px solid var(--in-border); margin-top: 1rem;}
+.in-tab-btn { background: transparent; border: none; padding: 10px 18px; font-weight: bold; cursor: pointer; border-radius: 6px 6px 0 0; font-size: 13px;}
+.in-tab-btn.active { color: var(--in-primary); background: #fff; border: 1px solid var(--in-border); border-bottom: 2px solid #fff; margin-bottom: -1px; }
+.in-tab-content { display: none; background: #fff; padding: 1.5rem; border: 1px solid var(--in-border); border-top: none; border-radius: 0 0 8px 8px; }
+.in-tab-content.active { display: block; }
+.in-section { background: var(--in-bg); border: 1px solid var(--in-border); border-radius: 8px; padding: 1.2rem; margin-bottom: 1.2rem; }
+.in-section-title { font-size: 15px; margin-top:0; border-right: 4px solid var(--in-primary); padding-right: 10px; font-weight: bold;}
+.in-btn { cursor: pointer; padding: 6px 14px; border-radius: 5px; border: none; font-weight: bold; transition: all 0.2s ease; font-size: 13px; }
+.in-btn-primary { background: var(--in-primary); color: #fff; }
+.in-btn-primary:hover { background: var(--in-primary-hover); color:#fff; }
+.in-btn-outline { background: #fff; border: 1px solid var(--in-border); color: var(--in-text); }
+.in-btn-danger { background: #fff; color: var(--hodima-state-danger, #a32a2a); border: 1px solid var(--hodima-state-danger-bg, #f8ecec); }
+.in-btn-danger:hover { background: var(--hodima-state-danger-bg, #f8ecec); }
+.in-table { width: 100%; border-collapse: collapse; }
+.in-table th, .in-table td { padding: 10px; border-bottom: 1px solid var(--in-border); text-align: right; font-size: 13px; }
+.in-table th { background: var(--in-bg); font-weight: bold;}
+th.col-url { text-align: left; direction: ltr; width: 50%; padding-left: 15px;}
+.in-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; border: none !important; }
+.in-badge-auto { background: var(--in-soft-bg); color: var(--in-primary); }
+.in-badge-queue { background: var(--hodima-bg-gray, #eef2f8); color: var(--hodima-text-muted, #5d6785); }
+
+/* Changed grid to single row */
+.in-checkbox-row { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 15px; padding-bottom: 8px; }
+.in-checkbox-label { background: #fff; padding: 8px 12px; border: 1px solid var(--in-border); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size:13px; font-weight:bold; white-space: nowrap; }
+
+#g-json, #b-url { width:100%; direction:ltr; text-align:left; padding:10px; border:1px solid var(--in-border); border-radius:6px; font-size: 13px; font-family: monospace;}
+.in-cell-url { direction: ltr; text-align: left !important; font-size:13px; word-break: break-all;}
+.in-field-label { display: block; font-weight: bold; font-size: 14px; margin: 12px 0 6px;}
+.in-upload-row { margin-top:10px; border: 1px dashed var(--in-border); padding: 10px; border-radius: 6px; background: #fff;}
+.in-quota-wrap { padding: 15px; background: #fff; border: 1px solid var(--in-border); border-radius: 6px; margin-bottom: 15px;}
+
+#hodima-notices { margin-bottom: 15px; }
+.hodima-notice { padding: 12px 15px; border-radius: 6px; margin-bottom: 10px; font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.3s ease; border-right: 4px solid transparent; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.hodima-notice.success { border-color: var(--hodima-state-success, #2f7a55); color: var(--hodima-state-success, #2f7a55); }
+.hodima-notice.error { border-color: var(--hodima-state-danger, #a32a2a); color: var(--hodima-state-danger, #a32a2a); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Pagination Styles */
+.in-pagination { margin-top: 15px; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; direction: rtl; }
+.in-pagination .in-page-link, .in-pagination .page-numbers { padding: 6px 12px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 13px; background: #fff; color: var(--in-text); border: 1px solid var(--in-border); display: inline-block; transition: all 0.2s; }
+.in-pagination .in-page-link.active, .in-pagination .page-numbers.current { background: var(--in-primary); color: #fff; border-color: var(--in-primary); }
+.in-pagination .in-page-link:hover:not(.active), .in-pagination .page-numbers:hover:not(.current) { background: var(--in-soft-bg); }
+.in-pagination .dots { padding: 6px 12px; color: var(--in-text); font-weight: bold; background: transparent; border: none; }
+
+
+/* =========================================================================
+ * نسخه ۱۱ — کلاس‌های جدید (جایگزین style درون‌خطی)
+ * ========================================================================= */
+.in-quota-head { display:flex; justify-content:space-between; margin-bottom:10px; font-weight:700; }
+.in-quota-track { height:12px; overflow:hidden; background:var(--in-border); border-radius:10px; }
+.in-quota-bar { height:100%; background:var(--in-gradient); border-radius:10px; transition:width .3s ease; }
+.in-quota-wrap.is-exhausted .in-quota-bar { background:var(--hodima-state-danger, #a32a2a); }
+
+.in-hint { margin:10px 0 0; font-size:12.5px; line-height:1.8; color:var(--hodima-text-muted, #5d6785); }
+.in-hint--warn { padding:8px 12px; color:var(--hodima-state-warning, #8a6116); background:var(--hodima-state-warning-bg, #fbf4e6); border-radius:6px; }
+
+.in-key-status { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 10px; font-size:13px; }
+.in-key-status code { direction:ltr; }
+.in-key-status--missing { color:var(--hodima-state-danger, #a32a2a); }
+.in-btn-sm { padding:4px 12px !important; font-size:12px !important; }
+
+.in-health-title { margin-top:0; color:var(--in-primary); }
+.in-health-value { margin:0; font-weight:700; line-height:1.9; }
+
+.in-code {
+    margin:6px 0 12px; padding:10px 12px; overflow-x:auto;
+    font:12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color:var(--hodima-text-dark, #111111); background:var(--hodima-surface-soft, #f7f9fd);
+    border:1px solid var(--hodima-border-light, #d9e1f0); border-radius:6px; white-space:pre;
+}
+
+.hodima-notice-close { margin-inline-start:8px; padding:0; font-size:16px; line-height:1; color:inherit; background:none; border:0; opacity:.7; cursor:pointer; }
+.hodima-notice-close:hover { opacity:1; }
+
+/* متاباکس «سیگنال گوگل» در ویرایشگر */
+.hodima-gi-pingbox { display:flex; align-items:flex-start; gap:8px; font-size:13px; line-height:1.7; }
+.hodima-gi-pingbox input { margin-top:3px; }
+.hodima-gi-pingbox small { display:block; margin-top:4px; color:var(--hodima-text-muted, #5d6785); }

@@ -1,0 +1,91 @@
+/* =========================================================================
+ * استایل صفحه سبد خرید
+ * -------------------------------------------------------------------------
+ * این فایل از قبل در inc/enqueue.php ثبت شده بود ولی صفر بایت بود، و
+ * ۸۴ خط CSS واقعی به صورت inline داخل inc/woocommerce/cart.php چاپ
+ * می‌شد. یعنی روی هر بازدید سبد خرید یک فایل خالی دانلود می‌شد و
+ * استایل واقعی هیچ‌وقت کش نمی‌شد.
+ * ========================================================================= */
+/* استایل‌های اختصاصی سبد خرید هدهدلی */
+        .woocommerce-cart .woocommerce {
+            direction: rtl;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        /* اصلاح فاصله پیام‌های ووکامرس (مثل "سبد خرید بروز شد") */
+        .woocommerce-notices-wrapper,
+        .woocommerce-message,
+        .woocommerce-error,
+        .woocommerce-info {
+            margin-bottom: 15px !important;
+        }
+
+        .woocommerce-cart-form {
+            flex: 2;
+            background: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #e1e8ed;
+        }
+        .cart-collaterals {
+            flex: 1;
+        }
+        .cart_totals {
+            background: #EEF5F2 !important;
+            border-radius: 15px !important;
+            padding: 20px !important;
+            border: 2px solid #8F9EAD !important;
+        }
+        
+        /* استایل دکمه تسویه حساب */
+        .wc-proceed-to-checkout a.checkout-button {
+            background: linear-gradient(90deg, #FF9800, #F57C00, #FFB74D) !important;
+            color: #fff !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+            font-weight: 800 !important;
+            text-align: center;
+            display: block;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3) !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        /* رنگ هاور دکمه تسویه حساب */
+        .wc-proceed-to-checkout a.checkout-button:hover {
+            background: #E08600 !important;
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4) !important;
+            transform: translateY(-2px);
+        }
+
+        /* مخفی‌سازی دکمه در صورت عدم رسیدن به حد نصاب */
+        body.min-order-not-met .checkout-button, 
+        body.min-order-not-met .wc-proceed-to-checkout {
+            display: none !important;
+        }
+
+        /* ریسپانسیو و اصلاحات موبایل */
+        @media (max-width: 768px) {
+            .woocommerce-cart .woocommerce { flex-direction: column; }
+            .woocommerce-cart-form, .cart-collaterals { width: 100%; flex: none; }
+            
+            /* نمایش عکس محصول در موبایل و استایل‌دهی آن */
+            .woocommerce-page table.cart .product-thumbnail {
+                display: block !important;
+                text-align: center;
+                border: none !important;
+                padding-bottom: 10px !important;
+            }
+            .woocommerce-page table.cart .product-thumbnail img {
+                max-width: 80px !important;
+                height: auto;
+                margin: 0 auto;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            }
+            /* مخفی کردن لیبل پیش‌فرض ووکامرس کنار عکس در موبایل */
+            .woocommerce-page table.cart .product-thumbnail::before {
+                display: none !important;
+            }
+        }

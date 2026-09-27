@@ -1,0 +1,143 @@
+/* =========================================================
+   Hodima Admin Table CSS
+   ========================================================= */
+
+.hodima-wrap { 
+    box-sizing: border-box; 
+}
+
+.hodima-toolbar { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    flex-wrap: wrap; 
+    gap: 15px; 
+    background: var(--hodima-surface-soft, #f7f9fd); 
+    padding: 12px 15px; 
+    border: 1px solid var(--hodima-third, #c1c9ec); 
+    border-radius: 4px 4px 0 0; 
+    border-bottom: none; 
+}
+
+.hodima-toolbar-group { 
+    display: flex; 
+    gap: 10px; 
+    align-items: center; 
+}
+
+#hodima-admin-table-wrapper { 
+    width: 100%; 
+    overflow-x: auto; 
+    border: 1px solid var(--hodima-third, #c1c9ec); 
+    border-radius: 0 0 4px 4px; 
+    background: #fff; 
+    margin-bottom: 15px; 
+}
+
+.hodima-admin-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    text-align: center; 
+}
+
+.hodima-admin-table th, 
+.hodima-admin-table td { 
+    padding: 12px; 
+    border-bottom: 1px solid var(--hodima-border-light, #d9e1f0); 
+    border-left: 1px solid var(--hodima-border-light, #d9e1f0); /* در محیط راست‌چین وردپرس (RTL)، خطوط جداکننده معمولاً در سمت چپ قرار می‌گیرند */
+    vertical-align: middle; 
+    min-width: 150px; 
+}
+
+.hodima-admin-table th:last-child, 
+.hodima-admin-table td:last-child { 
+    border-left: none; 
+}
+
+.hodima-admin-table th.hodima-col-ops, 
+.hodima-admin-table td.hodima-col-ops { 
+    width: 60px; 
+    min-width: 60px; 
+    background: var(--hodima-surface-soft, #f7f9fd); 
+}
+
+.hodima-admin-table thead th { 
+    background: var(--hodima-bg-gray, #eef2f8); 
+    font-weight: 600; 
+}
+
+/* استایل ورودی‌ها و هماهنگی با کلاس جدید hodima-cell-textarea */
+.hodima-admin-table input[type="text"], 
+.hodima-admin-table textarea,
+.hodima-cell-textarea { 
+    width: 100%; 
+    box-sizing: border-box; 
+    border: 1px solid var(--hodima-text-muted, #5d6785); 
+    border-radius: 4px; 
+    padding: 8px; 
+    font-size: 13px; 
+    text-align: center; 
+    transition: 0.2s ease; 
+    box-shadow: none; 
+}
+
+.hodima-admin-table input[type="text"]:focus, 
+.hodima-admin-table textarea:focus,
+.hodima-cell-textarea:focus { 
+    border-color: var(--hodima-primary, #25316a); 
+    box-shadow: 0 0 0 1px var(--hodima-primary, #25316a); 
+    outline: none; 
+    background-color: var(--hodima-surface, #ffffff);
+}
+
+.hodima-admin-table textarea,
+.hodima-cell-textarea { 
+    resize: vertical; 
+    min-height: 45px; 
+}
+
+.hodima-col-header-inner { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px; 
+}
+
+.hodima-col-actions { 
+    display: flex; 
+    justify-content: flex-end; 
+}
+
+.hodima-row-actions { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 12px; 
+}
+
+.hodima-icon-btn { 
+    cursor: pointer; 
+    color: var(--hodima-text-muted, #5d6785); 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    transition: color 0.2s; 
+}
+
+.hodima-icon-btn:hover { 
+    color: var(--hodima-state-danger, #a32a2a); 
+}
+
+.hodima-drag-handle { 
+    cursor: grab; 
+    color: var(--hodima-text-muted, #5d6785); 
+}
+
+.hodima-drag-handle:active { 
+    cursor: grabbing; 
+}
+
+.ui-sortable-helper { 
+    background: #fff; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+    display: table-row; 
+}

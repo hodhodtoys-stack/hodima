@@ -1,0 +1,223 @@
+<?php
+declare(strict_types=1);
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+final class Hodima_Bot_Shield {
+
+    public const BOTS = [
+        'GPTBot'            => 'OpenAI (آموزش و دیتا)',
+        'ChatGPT-User'      => 'ChatGPT (سرچ زنده)',
+        'OAI-SearchBot'     => 'SearchGPT',
+        'ClaudeBot'         => 'Anthropic Claude',
+        'Claude-Web'        => 'Claude (سرچ زنده)',
+        'Google-Extended'   => 'Google Gemini (آموزش)',
+        'PerplexityBot'     => 'Perplexity AI',
+        'Applebot-Extended' => 'Apple Intelligence',
+        'Amazonbot'         => 'Amazon AI',
+        'FacebookBot'       => 'Meta Llama',
+        'Bytespider'        => 'ByteDance (TikTok AI)',
+        'CCBot'             => 'CommonCrawl (دیتاست)',
+        'Cohere-ai'         => 'Cohere AI',
+        'YouBot'            => 'You.com AI',
+        'Diffbot'           => 'Diffbot AI',
+        'PetalBot'          => 'Petal Search AI',
+    ];
+
+    public static function init(): void {
+        add_action( 'init', [ __CLASS__, 'scan' ], 1 );
+
+        add_action( 'admin_post_hodima_clear_ai_logs', [ __CLASS__, 'clear_logs' ] );
+        add_action( 'admin_post_hodima_export_ai_logs', [ __CLASS__, 'export_logs' ] );
+        add_action( 'admin_post_hodima_unban_ip', [ __CLASS__, 'unban_ip' ] );
+    }
+
+    public static function ban_ip( string $ip, string $reason = '' ): void {
+        global $wpdb;
+        $wpdb->query( $wpdb->prepare(
+            "INSERT INTO {$wpdb->prefix}hodima_banned_ips (ip_address, reason) VALUES (%s, %s)
+             ON DUPLICATE KEY UPDATE reason = VALUES(reason)",
+            $ip, $reason
+        ) );
+    }
+
+    public static function unban_ip(): void {
+        if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'hodima_unban_ip' ) ) {
+            wp_die( 'دسترسی غیرمجاز.' );
+        }
+        global $wpdb;
+        $ip = sanitize_text_field( wp_unslash( $_GET['ip'] ?? '' ) );
+        if ( $ip ) {
+            $wpdb->delete( $wpdb->prefix . 'hodima_banned_ips', [ 'ip_address' => $ip ] );
+        }
+        wp_safe_redirect( admin_url( 'admin.php?page=hodima-core&tab=ai-shield&msg=unbanned' ) );
+        exit;
+    }
+
+    public static function is_ip_banned( string $ip ): bool {
+        global $wpdb;
+        return (bool) $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM {$wpdb->prefix}hodima_banned_ips WHERE ip_address = %s LIMIT 1", $ip
+        ) );
+    }
+
+    public static function get_banned_ips( int $limit = 100 ): array {
+        global $wpdb;
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT ip_address, reason, created_at FROM {$wpdb->prefix}hodima_banned_ips ORDER BY created_at DESC LIMIT %d", $limit
+        ), ARRAY_A ) ?? [];
+    }
+
+    public static function block_ip_cloudflare( string $ip ): void {
+        $token = get_option( 'hodima_cf_token' );
+        $zone  = get_option( 'hodima_cf_zone_id' );
+        if ( empty( $token ) || empty( $zone ) ) return;
+
+        wp_remote_post( "https://api.cloudflare.com/client/v4/zones/{$zone}/firewall/access_rules/rules", [
+            'headers'  => [ 'Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json' ],
+            'body'     => wp_json_encode( [
+                'mode'          => 'block',
+                'configuration' => [ 'target' => 'ip', 'value' => $ip ],
+                'notes'         => 'Blocked by Hodima AEO Shield',
+            ] ),
+            'blocking' => false,
+        ] );
+    }
+
+    public static function check_rate_limit( string $ip, int $limit ): bool {
+        $key     = 'hodima_rl_' . md5( $ip );
+        $current = get_transient( $key );
+
+        if ( $current === false ) {
+            set_transient( $key, 1, MINUTE_IN_SECONDS );
+            return true;
+        }
+        if ( (int) $current >= $limit ) return false;
+
+        set_transient( $key, (int) $current + 1, MINUTE_IN_SECONDS );
+        return true;
+    }
+
+    public static function scan(): void {
+        if ( is_admin() || wp_doing_ajax() || wp_doing_cron() ) return;
+
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $ip = Hodima_Core_Helpers::get_client_ip();
+        if ( ! $ua || ! $ip ) return;
+
+        if ( self::is_ip_banned( $ip ) ) {
+            header( 'HTTP/1.1 403 Forbidden' );
+            exit( 'دسترسی مسدود شده است. IP شما بن شده است.' );
+        }
+
+        $settings  = get_option( 'hodima_ai_bot_settings', [] );
+        $rl_limit  = (int) get_option( 'hodima_ai_rl_limit', 50 );
+
+        foreach ( self::BOTS as $sig => $name ) {
+            if ( stripos( $ua, $sig ) === false ) continue;
+
+            if ( isset( $settings[ $sig ] ) && $settings[ $sig ] === '0' ) {
+                header( 'HTTP/1.1 403 Forbidden' );
+                exit( 'دسترسی این ربات هوش مصنوعی طبق سیاست سایت مسدود شده است.' );
+            }
+
+            if ( ! self::check_rate_limit( $ip, $rl_limit ) ) {
+                self::ban_ip( $ip, "عبور از سقف نرخ درخواست ({$name})" );
+                self::block_ip_cloudflare( $ip );
+                header( 'HTTP/1.1 429 Too Many Requests' );
+                header( 'Retry-After: 60' );
+                exit( 'محدودیت تعداد درخواست رد شد. IP شما مسدود شد.' );
+            }
+
+            $raw_path   = (string) ( $_SERVER['REQUEST_URI'] ?? '/' );
+            $clean_path = Hodima_Core_Helpers::clean_url( rtrim( home_url(), '/' ) . '/' . ltrim( $raw_path, '/' ) );
+            self::log_bot( $name, $ip, $ua, $clean_path );
+            break;
+        }
+    }
+
+    public static function log_bot( string $bot, string $ip, string $ua, string $url ): void {
+        global $wpdb;
+        $wpdb->insert( $wpdb->prefix . 'hodima_ai_bot_logs', [
+            'bot_name'   => $bot,
+            'ip_address' => $ip,
+            'user_agent' => substr( $ua, 0, 250 ),
+            'url_path'   => $url,
+        ] );
+    }
+
+    public static function get_stats(): array {
+        global $wpdb;
+        return $wpdb->get_results(
+            "SELECT bot_name, COUNT(*) as hits FROM {$wpdb->prefix}hodima_ai_bot_logs GROUP BY bot_name ORDER BY hits DESC"
+        , ARRAY_A ) ?? [];
+    }
+
+    public static function get_chart_data( string $timeframe = '7d' ): array {
+        global $wpdb;
+        if ( $timeframe === '24h' ) {
+            return $wpdb->get_results(
+                "SELECT DATE_FORMAT(created_at, '%H:00') as label, COUNT(*) as count
+                 FROM {$wpdb->prefix}hodima_ai_bot_logs
+                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+                 GROUP BY HOUR(created_at) ORDER BY created_at ASC"
+            , ARRAY_A ) ?? [];
+        }
+        return $wpdb->get_results(
+            "SELECT DATE(created_at) as label, COUNT(*) as count
+             FROM {$wpdb->prefix}hodima_ai_bot_logs
+             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+             GROUP BY DATE(created_at) ORDER BY label ASC"
+        , ARRAY_A ) ?? [];
+    }
+
+    public static function get_dashboard_summary(): array {
+        global $wpdb;
+        return [
+            'logs'   => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}hodima_ai_bot_logs" ),
+            'banned' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}hodima_banned_ips" ),
+        ];
+    }
+
+    public static function get_bot_console_data( string $bot_name ): array {
+        global $wpdb;
+        $last_visit = $wpdb->get_var( $wpdb->prepare(
+            "SELECT created_at FROM {$wpdb->prefix}hodima_ai_bot_logs WHERE bot_name = %s ORDER BY created_at DESC LIMIT 1", $bot_name
+        ) );
+        $top_urls = $wpdb->get_results( $wpdb->prepare(
+            "SELECT url_path, COUNT(*) as hits FROM {$wpdb->prefix}hodima_ai_bot_logs WHERE bot_name = %s GROUP BY url_path ORDER BY hits DESC LIMIT 5", $bot_name
+        ), ARRAY_A );
+        return [
+            'last_visit' => $last_visit ? (string) $last_visit : 'تاکنون رصدی ثبت نشده',
+            'top_urls'   => is_array( $top_urls ) ? $top_urls : [],
+        ];
+    }
+
+    public static function prune_old_logs(): void {
+        global $wpdb;
+        $wpdb->query( "DELETE FROM {$wpdb->prefix}hodima_ai_bot_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)" );
+    }
+
+    public static function clear_logs(): void {
+        if ( ! current_user_can( 'manage_options' ) || ! wp_verify_nonce( $_GET['_wpnonce'] ?? '', 'hodima_clear_ai' ) ) {
+            wp_die( 'دسترسی غیرمجاز.' );
+        }
+        global $wpdb;
+        $wpdb->query( "TRUNCATE TABLE {$wpdb->prefix}hodima_ai_bot_logs" );
+        wp_safe_redirect( admin_url( 'admin.php?page=hodima-core&tab=ai-shield&msg=cleared' ) );
+        exit;
+    }
+
+    public static function export_logs(): void {
+        Hodima_Core_Helpers::assert_export_access( 'hodima_export_ai' );
+        global $wpdb;
+        $rows = $wpdb->get_results(
+            "SELECT bot_name, ip_address, url_path, created_at FROM {$wpdb->prefix}hodima_ai_bot_logs ORDER BY created_at DESC LIMIT 5000"
+        , ARRAY_A ) ?? [];
+        Hodima_Core_Helpers::export_csv(
+            'hodima_export_ai',
+            [ 'نام ربات', 'آی‌پی', 'مسیر URL', 'تاریخ' ],
+            $rows,
+            'hodima-ai-bots'
+        );
+    }
+}

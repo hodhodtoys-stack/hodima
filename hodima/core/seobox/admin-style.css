@@ -1,0 +1,151 @@
+.seobox-wrapper-card { background: #fff; border: 1px solid #c1c9ec; border-radius: 10px; padding: 20px; box-shadow: 0 4px 15px rgba(37, 49, 106, .06); margin-top: 10px; }
+.seobox-container, .seobox-container * { box-sizing: border-box; font-family: inherit; }
+.seobox-tabs { border-bottom: 2px solid #c1c9ec; margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+.seobox-tab-btn { background: var(--hodima-surface-soft, #f7f9fd); border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0; padding: 10px 16px; cursor: pointer; font-size: 13px; font-weight: 600; color: #25316a; margin-bottom: -2px; }
+.seobox-tab-btn.active, .seobox-tab-btn:hover { background: #fff; color: #607bbd; border-color: #c1c9ec; border-bottom-color: #fff; }
+.seobox-tab-content { display: none; }
+.seobox-tab-content.active { display: block; }
+
+.seobox-field-group { margin-bottom: 16px; width: 100%; }
+.seobox-field-group > label { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px; color: #25316a; font-size: 13px; }
+
+.seobox-field-group input[type="text"], .seobox-field-group input[type="number"], .seobox-field-group textarea, .seobox-select { width: 100% !important; max-width: 100% !important; height: 40px !important; min-height: 40px !important; padding: 0 12px !important; border: 1px solid #c1c9ec !important; border-radius: 6px !important; background: #fff !important; font-size: 13px; line-height: 38px; }
+.seobox-field-group textarea { height: auto !important; min-height: 90px !important; padding: 10px 12px !important; line-height: normal; resize: vertical; }
+.seobox-field-group input:focus, .seobox-field-group textarea:focus, .seobox-select:focus { border-color: #607bbd !important; outline: none !important; box-shadow: 0 0 0 1px #607bbd !important; }
+
+.seobox-divider { border-top: 1px solid #c1c9ec; margin: 20px 0; }
+
+/* برگشت به گرید ۳ ستونه برای فیلدهای پیشرفته */
+.seobox-advanced-grid { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .seobox-advanced-grid { grid-template-columns: 1fr; } }
+
+/* باکس نگه‌دارنده تیک‌ها */
+.seobox-robot-checks, .form-field .seobox-robot-checks { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: center !important; gap: 25px !important; padding: 10px 15px !important; border: 1px solid #c1c9ec !important; border-radius: 8px !important; background: var(--hodima-surface-soft, #f7f9fd) !important; width: 100% !important; }
+.seobox-check-item, .form-field .seobox-check-item { display: inline-flex !important; align-items: center !important; margin: 0 !important; padding: 0 !important; width: auto !important; max-width: fit-content !important; }
+
+/* فاصله بین متن و چک‌باکس در اینجا با margin تنظیم شد */
+.seobox-check-item label, .form-field .seobox-check-item label { display: inline !important; margin: 0 10px 0 10px !important; padding: 0 !important; font-size: 13px !important; font-weight: normal !important; color: #25316a !important; cursor: pointer !important; width: auto !important; }
+
+/* خنثی‌سازی ۱۰۰٪ استایل رادیوباتن وردپرس و مرورگر */
+.seobox-check-item input[type="checkbox"], .form-field .seobox-check-item input[type="checkbox"] { 
+    all: unset !important; 
+    display: inline-block !important; 
+    box-sizing: border-box !important; 
+    width: 16px !important; 
+    min-width: 16px !important; 
+    max-width: 16px !important; 
+    height: 16px !important; 
+    min-height: 16px !important; 
+    max-height: 16px !important; 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    border: 1px solid var(--hodima-text-muted, #5d6785) !important; 
+    border-radius: 3px !important; 
+    background-color: #fff !important; 
+    cursor: pointer !important; 
+    vertical-align: middle !important; 
+    flex-shrink: 0 !important; 
+    /* جلوگیری از ساخت تیک پیش‌فرض توسط مرورگر */
+    appearance: none !important; 
+    -webkit-appearance: none !important; 
+    -moz-appearance: none !important; 
+}
+
+/* جلوگیری از تیک زدن مزاحمِ استایل‌های پیش‌فرض ادمین وردپرس */
+.seobox-check-item input[type="checkbox"]::before, .form-field .seobox-check-item input[type="checkbox"]::before {
+    display: none !important;
+}
+
+/* استایل تیک اختصاصی شما */
+.seobox-check-item input[type="checkbox"]:checked, .form-field .seobox-check-item input[type="checkbox"]:checked { 
+    background-color: #607bbd !important; 
+    border-color: #607bbd !important; 
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23fff' d='M14.83 4.89l1.34.94-5.81 8.38H9.02L5.78 9.67l1.34-1.25 2.57 2.4z'/%3E%3C/svg%3E") !important; 
+    background-size: 100% 100% !important; 
+    background-position: center !important; 
+    background-repeat: no-repeat !important; 
+}
+
+.seobox-check-item input[type="checkbox"]:focus, .form-field .seobox-check-item input[type="checkbox"]:focus { 
+    box-shadow: 0 0 0 1px #607bbd !important; 
+    border-color: #607bbd !important; 
+}
+
+/* --------------------------------- */
+/* استایل‌های اضافه شده برای شمارشگر */
+/* --------------------------------- */
+.seobox-counter {
+    font-size: 11px;
+    font-weight: normal;
+    color: #607bbd;
+    background: var(--hodima-surface-soft, #f7f9fd);
+    padding: 3px 8px;
+    border-radius: 12px;
+    border: 1px solid #c1c9ec;
+    margin-right: auto; /* انتقال شمارشگر به سمت چپ لیبل */
+    transition: all 0.3s ease;
+}
+
+/* حالت هشدار (زمانی که کاراکترها از حد مجاز عبور کنند) */
+.seobox-counter.over-limit {
+    color: #fff !important;
+    background: var(--hodima-state-danger, #a32a2a) !important;
+    border-color: var(--hodima-state-danger, #a32a2a) !important;
+}
+
+/* =========================================================================
+ * SeoBox 4.0 — کلاس‌های جدید
+ * ========================================================================= */
+
+/* پیش‌نمایش نتیجه گوگل */
+.seobox-serp {
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    font-family: Arial, Tahoma, sans-serif;
+    background: var(--hodima-surface, #ffffff);
+    border: 1px solid var(--hodima-border-light, #d9e1f0);
+    border-radius: 8px;
+}
+.seobox-serp-url { font-size: 12px; line-height: 1.5; color: #202124; opacity: .75; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.seobox-serp-title { margin: 4px 0 3px; font-size: 20px; line-height: 1.35; color: #1a0dab; }
+.seobox-serp-desc { font-size: 14px; line-height: 1.6; color: #4d5156; }
+/* رنگ‌های بالا عمدا رنگ‌های خود گوگل‌اند، چون پیش‌نمایش باید شبیه نتیجه واقعی باشد */
+
+/* نوار طول بر اساس پیکسل */
+.seobox-meter { height: 4px; margin-top: 6px; overflow: hidden; background: var(--hodima-bg-gray, #eef2f8); border-radius: 4px; }
+.seobox-meter span { display: block; height: 100%; width: 0; border-radius: 4px; transition: width .15s ease, background-color .15s ease; }
+.seobox-meter span.is-short { background: var(--hodima-third, #c1c9ec); }
+.seobox-meter span.is-good  { background: var(--hodima-secondary, #607bbd); }
+.seobox-meter span.is-over  { background: var(--hodima-state-danger, #a32a2a); }
+
+.seobox-hint { margin: 4px 0 0; font-size: 12px; color: var(--hodima-text-muted, #5d6785); }
+.seobox-hint code { font-size: 11px; }
+
+.seobox-field-group small { display: block; margin-top: 4px; font-size: 11.5px; color: var(--hodima-text-muted, #5d6785); }
+
+/* گروه‌های رادیویی ربات */
+.seobox-radio-set { display: inline-flex; flex-wrap: wrap; gap: 12px; margin: 0 0 8px 24px; padding: 0; border: 0; }
+.seobox-radio-set legend { width: 100%; margin-bottom: 4px; font-size: 12px; font-weight: 600; color: var(--hodima-primary, #25316a); }
+.seobox-check-item { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+
+.seobox-ltr { direction: ltr; text-align: left; }
+
+/* ردیف فرم دسته‌بندی (جایگزین style درون‌خطی) */
+.seobox-term-row > td { padding: 15px 0; }
+.seobox-term-title { margin-bottom: 15px; color: var(--hodima-primary, #25316a); }
+
+/* نشان ستون فهرست — قبلا سبز #288534 خارج از پالت، درون‌خطی */
+.seobox-badge {
+    display: inline-block;
+    min-width: 50px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+    color: #ffffff;
+    border-radius: 6px;
+    user-select: none;
+}
+.seobox-badge--index   { background: var(--hodima-primary, #25316a); }
+.seobox-badge--noindex { background: var(--hodima-state-danger, #a32a2a); }

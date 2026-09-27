@@ -1,0 +1,522 @@
+:root {
+  --hs-primary: var(--hodima-primary, #25316a);
+  --hs-hover: var(--hodima-secondary, #607bbd);
+  --hs-grad: linear-gradient(90deg, #25316a, #607bbd, #c1c9ec);
+  --hs-bg: #000;
+  --hs-overlay: rgba(0, 0, 0, 0.72);
+  --hs-text: #fff;
+  --hs-radius: 18px;
+}
+
+/* --- Utilities --- */
+.hs-flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* --- Main Modal --- */
+#hs-video-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  direction: rtl;
+}
+
+.hs-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--hs-overlay);
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+
+.hs-modal__content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 430px;
+  transform: scale(.96);
+  opacity: 0;
+  transition: transform .25s ease, opacity .25s ease;
+  outline: none;
+}
+
+#hs-video-modal.is-open .hs-modal__overlay,
+#hs-video-modal.is-open .hs-modal__content {
+  opacity: 1;
+}
+
+#hs-video-modal.is-open .hs-modal__content {
+  transform: scale(1);
+}
+
+.hs-modal__close {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(20, 20, 20, .9);
+  color: var(--hs-text);
+  font-size: 26px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  transition: all .2s ease;
+}
+
+.hs-modal__close:hover,
+.hs-modal__close:focus-visible {
+  transform: scale(1.08);
+  background: var(--hs-hover);
+  outline: none;
+}
+
+/* --- Player Container --- */
+.hs-player {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--hs-radius);
+  background: var(--hs-bg);
+  border: 1px solid rgba(37, 47, 106, .35);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+}
+
+.hs-topbar,
+.hs-bottombar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 4;
+}
+
+.hs-topbar {
+  top: 0;
+  padding: 12px 12px 10px;
+  background: linear-gradient(to bottom, rgba(0,0,0,.58), transparent);
+}
+
+.hs-bottombar {
+  bottom: 0;
+  padding: 14px 12px 16px;
+  background: linear-gradient(to top, rgba(0,0,0,.72), transparent);
+}
+
+/* --- Progress Bar --- */
+.hs-progress-wrap {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.hs-progress-item {
+  flex: 1;
+  height: 4px;
+  padding: 0;
+  border: 0;
+  background: rgba(255,255,255,.22);
+  border-radius: 999px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.hs-progress-fill {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: var(--hs-grad);
+  border-radius: inherit;
+}
+
+/* --- Meta Info --- */
+.hs-meta {
+  color: var(--hs-text);
+}
+
+.hs-title {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.hs-subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: .82;
+}
+
+.hs-message {
+  min-height: 22px;
+  color: var(--hs-text);
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* --- Video Stage --- */
+.hs-stage {
+  position: relative;
+  background: var(--hs-bg);
+  min-height: min(72vh, 640px);
+}
+
+#hs-modal-video {
+  display: block;
+  width: 100%;
+  height: min(78vh, 680px);
+  max-height: 78vh;
+  object-fit: cover;
+  background: var(--hs-bg);
+}
+
+/* --- Controls & Navigation --- */
+.hs-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,.46);
+  color: var(--hs-text);
+  cursor: pointer;
+  font-size: 22px;
+  transition: all .2s ease;
+}
+
+.hs-nav:hover,
+.hs-nav:focus-visible {
+  background: rgba(96, 123, 189, .9);
+  transform: translateY(-50%) scale(1.06);
+  outline: none;
+}
+
+.hs-nav:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.hs-nav--prev {
+  right: 10px;
+}
+
+.hs-nav--next {
+  left: 10px;
+}
+
+/* --- Tap Zones --- */
+.hs-tap-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+}
+
+.hs-tap-zone--left {
+  left: 0;
+  width: 32%;
+}
+
+.hs-tap-zone--center {
+  left: 32%;
+  width: 36%;
+}
+
+.hs-tap-zone--right {
+  right: 0;
+  width: 32%;
+}
+
+.hs-center-control {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.hs-play-toggle {
+  pointer-events: auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0,0,0,.45);
+  color: var(--hs-text);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all .2s ease;
+}
+
+.hs-play-toggle:hover,
+.hs-play-toggle:focus-visible {
+  transform: scale(1.08);
+  background: rgba(96, 123, 189, .88);
+  outline: none;
+}
+
+.hs-play-icon {
+  display: none;
+  font-size: 22px;
+}
+
+#hs-video-modal.is-paused .hs-icon-play,
+#hs-video-modal.is-playing .hs-icon-pause {
+  display: inline;
+}
+
+#hs-video-modal.is-paused .hs-play-toggle {
+  opacity: 1;
+}
+
+#hs-video-modal.is-playing .hs-play-toggle {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.85);
+}
+
+/* --- CTA "chip" (optional product link) — now sits inline in the same
+   row as the view-count and share buttons (.hs-actions), not on its own
+   row above them. --- */
+.hs-cta-box {
+  display: inline-flex; /* تغییر به inline-flex برای جلوگیری از کش آمدن */
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  
+  /* کلید حل مشکل شما اینجاست: عرض فقط به اندازه محتوا باشد */
+  width: fit-content; 
+  
+  max-width: 100%;
+  margin: 0;
+  
+  /* هم‌قد کردن با .hs-action-item: همون min-height ثابت، بدون padding عمودی
+     (که باعث بلندتر شدن نسبت به دکمه‌های بازدید/اشتراک می‌شد) */
+  min-height: 40px;
+  padding: 0 16px; 
+  
+  border-radius: 999px;
+  background: rgba(15, 15, 15, .72);
+  color: var(--hs-text);
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  transition: transform .2s ease, background .2s ease;
+}
+
+.hs-cta-box:hover,
+.hs-cta-box:focus-visible {
+  transform: translateY(-1px);
+  background: var(--hs-hover);
+  color: var(--hs-text);
+  outline: none;
+}
+
+.hs-cta-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  
+  /* فضای کافی به متن می‌دهیم تا راحت نمایش داده شود */
+  max-width: 200px; 
+  
+  /* افزایش ۱ پیکسلی سایز متن که خواسته بودی */
+  font-size: 14.5px; 
+}
+
+.hs-cta-arrow {
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+/* --- Actions --- */
+.hs-actions {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hs-action-item {
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(15, 15, 15, .72);
+  color: var(--hs-text);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.hs-action-item:hover,
+.hs-action-item:focus-visible {
+  transform: translateY(-1px);
+  background: var(--hs-hover);
+  outline: none;
+}
+
+.hs-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.hs-share-icon {
+  font-size: 15px;
+  transform: translateY(-1px);
+}
+
+.hs-view-stat {
+  cursor: default;
+}
+
+.hs-view-stat:hover {
+  transform: none;
+  background: rgba(15, 15, 15, .72);
+}
+
+/* --- Loader --- */
+.hs-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+
+.hs-loader::before {
+  content: "";
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.22);
+  border-top-color: var(--hs-primary);
+  animation: hsSpin .8s linear infinite;
+}
+
+.hs-player.is-loading .hs-loader {
+  opacity: 1;
+}
+
+@keyframes hsSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Toast --- */
+.hs-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 10000;
+  max-width: 280px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(18,18,18,.96);
+  color: var(--hs-text);
+  font-size: 13px;
+  line-height: 1.6;
+  box-shadow: 0 16px 36px rgba(0,0,0,.35);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: all .22s ease;
+}
+
+.hs-toast.is-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hs-toast.is-success {
+  background: rgba(96, 123, 189, .96);
+}
+
+.hs-toast.is-error {
+  background: rgba(37, 47, 106, .96);
+}
+
+/* --- Responsive --- */
+@media (max-width: 767px) {
+  #hs-video-modal {
+    padding: 10px;
+  }
+
+  .hs-modal__content {
+    max-width: 100%;
+  }
+
+  .hs-modal__close {
+    top: 8px;
+    left: 8px;
+    width: 38px;
+    height: 38px;
+    font-size: 24px;
+  }
+
+  .hs-stage {
+    min-height: 62vh;
+  }
+
+  #hs-modal-video {
+    height: 72vh;
+    max-height: 72vh;
+  }
+
+  .hs-nav {
+    width: 38px;
+    height: 38px;
+    font-size: 20px;
+  }
+
+  .hs-bottombar {
+    padding-bottom: 18px;
+  }
+
+  .hs-actions {
+    gap: 8px;
+  }
+
+  .hs-action-item {
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .hs-share-icon {
+    font-size: 14px;
+  }
+
+  .hs-play-toggle {
+    width: 58px;
+    height: 58px;
+  }
+}
+
+@media (max-width: 480px) {
+  #hs-modal-video {
+    height: 68vh;
+    max-height: 68vh;
+  }
+
+  .hs-title {
+    font-size: 13px;
+  }
+
+  .hs-subtitle,
+  .hs-message,
+  .hs-action-item {
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,393 @@
+:root {
+    /* رنگ‌های سازمانی جدید */
+    --h-primary: var(--hodima-primary, #25316a);
+    --h-primary-hover: var(--hodima-primary-dark, #1b244d);
+    --h-secondary: var(--hodima-secondary, #607bbd);
+    --h-third: var(--hodima-third, #c1c9ec);
+
+    /* رنگ‌های عملکردی دکمه‌ها و کلیدهای روشن/خاموش (طبق درخواست شما) */
+    --h-success: #16a34a;
+    --h-success-hover: #15803d;
+    --h-danger: #dc2626;
+    --h-danger-hover: #b91c1c;
+    
+    --h-bg: #f9fafb;
+    --h-card: #ffffff;
+    --h-text: #1f2937;
+    --h-muted: #6b7280;
+    --h-border: #e5e7eb;
+    --h-shadow: 0 10px 25px rgba(37, 49, 106, 0.08); /* همگام‌سازی سایه با رنگ اصلی */
+}
+
+/* انیمیشن لود صفحه */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.hodima-wrapper {
+    width: 100%;
+    max-width: none;
+    margin: 30px 0;
+    padding: 0 30px;
+    box-sizing: border-box;
+    direction: rtl;
+    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    padding-bottom: 0;
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+.hodima-wrapper * {
+    box-sizing: border-box;
+}
+
+/* ==============================================
+   هدر مدرن با گرادیانت سازمانی
+   ============================================== */
+.h-header {
+    background: linear-gradient(135deg, var(--h-primary) 0%, var(--h-secondary) 100%);
+    color: white;
+    padding: 35px 40px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    box-shadow: var(--h-shadow);
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    position: relative;
+    overflow: hidden;
+}
+
+.h-header::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -10%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    filter: blur(40px);
+}
+
+.h-header h1 {
+    color: #fff !important;
+    margin: 0 !important;
+    font-size: 18px;
+    font-weight: inherit; /* ارث‌بری وزن فونت از قالب */
+    letter-spacing: -0.5px;
+}
+
+.h-header p {
+    margin: 8px 0 0;
+    opacity: 0.9;
+    font-size: 14px;
+    font-weight: inherit;
+}
+
+.h-icon {
+    font-size: 45px;
+    background: rgba(255, 255, 255, 0.15);
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 1;
+}
+
+/* ==============================================
+   کارت محتوا و فرم‌ها
+   ============================================== */
+.h-card-container {
+    padding-bottom: 20px;
+}
+
+.h-card {
+    background: var(--h-card);
+    padding: 40px;
+    border-radius: 20px;
+    border: 1px solid var(--h-border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
+.form-table th {
+    font-weight: inherit;
+    color: var(--h-text);
+    width: 240px;
+    padding: 25px 10px 25px 0;
+}
+
+.form-table td {
+    padding: 20px 10px;
+}
+
+.form-table input[type="text"], 
+.form-table input[type="number"], 
+.form-table select, 
+.form-table textarea {
+    width: 100%;
+    max-width: 450px;
+    border-radius: 10px;
+    border: 1px solid var(--h-border);
+    padding: 12px 15px;
+    background: #fdfdfd;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    color: var(--h-text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02) inset;
+}
+
+.form-table input:focus, 
+.form-table select:focus,
+.form-table textarea:focus {
+    border-color: var(--h-primary);
+    box-shadow: 0 0 0 4px rgba(37, 49, 106, 0.15);
+    background: #fff;
+    outline: none;
+}
+
+/* لیبل چک‌باکس‌های سراسری پنل (قبلاً به‌صورت inline در ۴ فایل جدا تکرار می‌شد) */
+.h-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.form-table input[type="checkbox"] {
+    appearance: none;
+    width: 44px;
+    height: 24px;
+    background: var(--h-danger); /* حالت خاموش/غیرفعال: قرمز */
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    transition: 0.3s;
+    border: none;
+    margin-top: 5px;
+}
+
+.form-table input[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.form-table input[type="checkbox"]:checked {
+    background: var(--h-success); /* حالت روشن/فعال: سبز */
+}
+
+.form-table input[type="checkbox"]:checked::after {
+    transform: translateX(-20px);
+}
+
+.description {
+    color: var(--h-muted);
+    font-size: 13px;
+    margin-top: 8px;
+    display: block;
+    line-height: 1.6;
+}
+
+/* ==============================================
+   داشبورد و کارت‌ها
+   ============================================== */
+.h-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 25px;
+    margin-top: 10px;
+}
+
+.h-dash-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 25px 25px 50px 25px; 
+    text-decoration: none;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.h-dash-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--h-primary);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.4s ease;
+}
+
+.h-dash-card:hover {
+    box-shadow: 0 15px 35px -10px rgba(37, 49, 106, 0.15);
+    transform: translateY(-5px);
+    border-color: #cbd5e1;
+}
+
+.h-dash-card:hover::before {
+    transform: scaleX(1);
+}
+
+.h-card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.h-dash-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: var(--h-third);
+    color: var(--h-primary);
+    transition: 0.3s;
+}
+
+.h-dash-card:hover .h-dash-icon-wrap {
+    background: var(--h-primary);
+    color: white;
+}
+
+.h-dash-title {
+    font-size: 16px;
+    font-weight: inherit;
+    color: var(--h-text);
+    margin: 0; 
+}
+
+.h-dash-desc {
+    font-size: 13px;
+    color: var(--h-muted);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.h-dash-arrow {
+    position: absolute;
+    bottom: 20px;
+    left: 25px;
+    color: #cbd5e1;
+    transition: 0.3s;
+    font-size: 18px;
+}
+
+.h-dash-card:hover .h-dash-arrow {
+    color: var(--h-primary);
+    transform: translateX(-5px);
+}
+
+/* ==============================================
+   فوتر فرم (ثابت داخل صفحه، بدون شناوری)
+   ============================================== */
+.h-form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: static;
+    margin-top: 10px;
+    padding: 14px 20px;
+    background: #f8fafc;
+    border: 1px solid var(--h-border);
+    border-radius: 16px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+    gap: 15px;
+}
+
+/* استایل دکمه ذخیره وردپرس در فوتر */
+.h-form-footer .button-primary {
+    background: var(--h-success) !important;
+    color: #fff !important;
+    border: none !important;
+    padding: 10px 35px !important;
+    border-radius: 10px !important;
+    font-weight: inherit !important;
+    font-size: 14px !important;
+    cursor: pointer;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25) !important;
+    height: auto !important;
+    line-height: normal !important;
+}
+
+.h-form-footer .button-primary:hover {
+    background: var(--h-success-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(22, 163, 74, 0.35) !important;
+}
+
+/* ==============================================
+   ریسپانسیو (موبایل و تبلت)
+   ============================================== */
+@media screen and (max-width: 782px) {
+    .hodima-wrapper {
+        padding: 0 12px;
+    }
+
+    .h-header {
+        flex-direction: column;
+        text-align: center;
+        padding: 25px;
+    }
+    
+    .h-header::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .form-table th {
+        width: 100%;
+        display: block;
+        padding-bottom: 5px;
+    }
+
+    .form-table td {
+        display: block;
+        padding-top: 0;
+    }
+
+    .form-table input[type="text"], 
+    .form-table input[type="number"], 
+    .form-table select, 
+    .form-table textarea {
+        max-width: 100%;
+    }
+
+    .h-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .h-form-footer {
+        flex-direction: column-reverse;
+        gap: 12px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .h-form-footer .button-primary {
+        width: 100%;
+    }
+}

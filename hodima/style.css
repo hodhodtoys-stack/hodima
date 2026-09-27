@@ -1,0 +1,299 @@
+/*
+Theme Name: Hodima
+Theme URI: https://hodima.com
+Author: آرین فتحی
+Author URI: https://hodima.com
+Description: قالب اختصاصی
+Version: 1.0.7
+Text Domain: hodima
+*/
+
+/* ==========================================================
+   1. Local fonts
+========================================================== */
+@font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-Black.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+
+/* ==========================================================
+   2. Global tokens
+========================================================== */
+:root {
+    --hodima-primary: #25316a;
+    --hodima-primary-hover: #1b244d;
+    --hodima-secondary: #607bbd;
+    --hodima-third: #c1c9ec;
+
+    --hodima-gradient-main: linear-gradient(135deg, #25316a 0%, #3b4d8f 55%, #607bbd 100%);
+    --hodima-gradient-alt: linear-gradient(135deg, #607bbd 0%, #25316a 100%);
+
+    --hodima-bg-light: #f6f8fc;
+    --hodima-bg-gray: #eef2f8;
+    --hodima-surface: #ffffff;
+    --hodima-surface-soft: #f7f9fd;
+
+    --hodima-text-dark: #111111;
+    --hodima-text-muted: #5d6785;
+
+    --hodima-border: #b8c4de;
+    --hodima-border-light: #d9e1f0;
+
+    --hodima-shadow-soft: 0 0.25rem 1rem rgba(37, 49, 106, 0.06);
+    --hodima-shadow-medium: 0 0.625rem 1.875rem rgba(37, 49, 106, 0.1);
+
+    --woo-primary: var(--hodima-primary);
+    --woo-primary-hover: var(--hodima-primary-hover);
+    --woo-secondary: var(--hodima-secondary);
+    --woo-border: var(--hodima-border-light);
+
+    --radius: 8px;
+    --space-s: 8px;
+    --space-m: 15px;
+    --space-l: 25px;
+}
+
+/* ==========================================================
+   3. Base reset and typography
+========================================================== */
+html { font-size: 14px; }
+
+@media (min-width: 768px) {
+    html { font-size: 15px; }
+}
+
+@media (min-width: 1024px) {
+    html { font-size: 16px; }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body,
+h1, h2, h3, h4, h5, h6,
+p, a, span, div,
+input, button, textarea, select, form, label, ul, li {
+    font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+}
+
+body {
+    line-height: 1.8;
+    color: var(--hodima-text-dark);
+    background-color: var(--hodima-bg-light);
+    direction: rtl;
+    text-align: right;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    color: #0d6efd; /* آبی استاندارد و مدرن وب */
+    text-decoration: none;
+    transition: color .25s ease;
+}
+
+a:hover {
+    color: #0a58ca; /* آبی تیره‌تر برای حالت هاور (وقتی موس روی لینک می‌رود) */
+}
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid rgba(96, 123, 189, 0.35);
+    outline-offset: 2px;
+}
+
+/* ==========================================================
+   4. Headings
+========================================================== */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.5;
+    margin: 0 0 12px;
+    color: var(--hodima-text-dark);
+}
+
+h1 { font-size: 1.7rem; }
+h2 { font-size: 1rem; }
+h3 { font-size: 1.1rem; }
+h4 { font-size: 1.1rem; }
+h5 { font-size: 1.1rem; }
+h6 { font-size: 1rem; }
+
+/* ==========================================================
+   5. Global UI elements
+========================================================== */
+button,
+input[type="submit"],
+input[type="button"],
+.wp-element-button,
+.wp-block-button__link,
+.woocommerce button.button,
+.woocommerce a.button,
+.woocommerce input.button,
+.woocommerce #respond input#submit {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: var(--hodima-gradient-main);
+    color: #ffffff !important;
+    box-shadow: var(--hodima-shadow-soft);
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+}
+
+button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+.wp-element-button:hover,
+.wp-block-button__link:hover,
+.woocommerce button.button:hover,
+.woocommerce a.button:hover,
+.woocommerce input.button:hover,
+.woocommerce #respond input#submit:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--hodima-shadow-medium);
+    background: var(--hodima-gradient-alt);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+input[type="number"],
+textarea,
+select {
+    border: 1px solid var(--hodima-border-light);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--hodima-text-dark);
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="tel"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+input[type="url"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--hodima-secondary);
+    box-shadow: 0 0 0 3px rgba(96, 123, 189, 0.15);
+    outline: none;
+}
+
+::selection {
+    background: rgba(96, 123, 189, 0.22);
+    color: var(--hodima-text-dark);
+}
+
+/* ==========================================================
+   6. Layout containers
+========================================================== */
+.hodima-container,
+.custom-product-page-container {
+    max-width: 1440px !important;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 10px !important;
+}
+
+@media (min-width: 768px) {
+    .hodima-container,
+    .custom-product-page-container {
+        padding: 0 20px !important;
+    }
+}
+
+.alignfull {
+    width: 100%;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* ==========================================================
+   7. WooCommerce typography
+========================================================== */
+.woocommerce div.product .product_title {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: var(--hodima-text-dark);
+}
+
+.woocommerce div.product p.price,
+.woocommerce div.product span.price {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--hodima-primary);
+}
+
+.woocommerce div.product .woocommerce-tabs ul.tabs li a {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--hodima-text-dark);
+}
+
+.woocommerce div.product .woocommerce-tabs h2,
+.woocommerce #reviews h2,
+.woocommerce .related.products h2 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: var(--hodima-text-dark);
+}
+
+.woocommerce .related.products h2 {
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+}
+
+.woocommerce ul.products li.product .woocommerce-loop-product__title {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--hodima-text-dark);
+}
+
+/* ==========================================================
+   8. Archive and general helpers
+========================================================== */
+.woocommerce ul.products li.product .button {
+    display: none !important;
+}
+
+a,
+button,
+input,
+textarea {
+    -webkit-tap-highlight-color: transparent;
+}
+
+a:focus,
+a:active,
+button:focus,
+button:active {
+    outline: none;
+    box-shadow: none;
+}
+
+html,
+body {
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.user-panel-wrapper {
+    min-height: 100vh;
+}
+
+

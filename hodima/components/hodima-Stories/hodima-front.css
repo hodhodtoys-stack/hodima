@@ -1,0 +1,203 @@
+/* ================= Shared Stories ================= */
+.section-stories {
+    padding-top: 2px;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    background: transparent;
+    position: relative;
+}
+
+.section-stories::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 36px;
+    background: linear-gradient(to right, rgba(255,255,255,.95), rgba(255,255,255,0));
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+.hs-scroll-indicator {
+    position: absolute;
+    left: 8px;
+    top: calc(50% - 12px);
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    z-index: 3;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease;
+}
+
+.section-stories.is-scrolled::before,
+.section-stories.is-scrolled .hs-scroll-indicator {
+    opacity: 0 !important;
+    pointer-events: none;
+}
+
+.hs-scroll-indicator__circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 2px 8px rgba(37,49,106,.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border: 1px solid rgba(193,200,236,.55);
+}
+
+.hs-scroll-indicator__arrow {
+    width: 7px;
+    height: 7px;
+    border-top: 2px solid #25316a;
+    border-right: 2px solid #25316a;
+    transform: rotate(225deg);
+    display: block;
+    position: relative;
+    right: 1px;
+}
+
+/* hs-loading دیگر در HTML استفاده نمی‌شود (نوار از ابتدا دیده می‌شود).
+   این قانون فقط برای HTML کش‌شده قدیمی نگه داشته شده که ممکن است هنوز
+   کلاس را داشته باشد؛ opacity صفر نمی‌شود. */
+.section-stories.hs-loading {
+    opacity: 1;
+}
+
+.section-stories.is-ready {
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.story-wrapper {
+    display: flex;
+    gap: 5px;
+    padding-inline: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 1px;
+    position: relative;
+    justify-content: flex-start;
+}
+
+.story-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.story-item {
+    flex: 0 0 72px;
+    text-align: center;
+    transition: transform .25s ease;
+    cursor: pointer;
+}
+
+.story-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    outline: none;
+}
+
+.story-ring {
+    position: relative;
+    inline-size: 66px;
+    block-size: 66px;
+    margin-inline: auto;
+    margin-block-end: 4px;
+    border-radius: 50%;
+    overflow: hidden;
+    transform: translateZ(0);
+    background: linear-gradient(135deg, #25316a 0%, #607bbd 55%, #c1c9ec 100%);
+    box-shadow: 0 6px 16px rgba(37,49,106,.12);
+}
+
+.story-ring::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 3px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #25316a 0%, #607bbd 55%, #c1c9ec 100%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+.story-ring img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    background: #fff;
+}
+
+.story-text {
+    display: block;
+    font-size: .85rem;
+    color: var(--hodima-text-dark, #111111);
+    padding-block-end: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color .2s ease;
+}
+
+.story-item:hover {
+    transform: translateY(-3px);
+}
+
+.story-item:hover .story-ring {
+    transform: scale(1.06);
+}
+
+.story-item:hover .story-text {
+    color: #25316a;
+    font-weight: 600;
+}
+
+.story-link:focus-visible .story-ring {
+    outline: 2px solid #607bbd;
+    outline-offset: 2px;
+}
+
+/* New: dimmed state for stories the visitor has already watched (see the
+   seen/unseen reordering in hodima-front.js). Uses only brand-palette
+   colors — a flat accent tone instead of the gradient ring, plus a lower
+   opacity, so already-seen stories read as visually secondary. */
+.story-item.is-seen .story-ring {
+    opacity: .55;
+}
+
+.story-item.is-seen .story-ring::before {
+    background: #c1c9ec;
+}
+
+.story-item.is-seen .story-text {
+    color: #607bbd;
+}
+
+/* ================= Desktop/Mobile ================= */
+@media (max-width: 768px) {
+    .story-item {
+        flex-basis: 68px;
+    }
+
+    .story-ring {
+        inline-size: 62px;
+        block-size: 62px;
+    }
+}
