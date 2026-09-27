@@ -34,6 +34,10 @@ final class Hodima_Core_Helpers {
     }
 
     public static function get_client_ip(): string {
+        // منبع واحد حقیقت در inc/helpers.php (با اعتبارسنجی فرمت IP)
+        if ( function_exists( 'hodima_get_client_ip' ) ) {
+            return hodima_get_client_ip();
+        }
         $real_ip = $_SERVER['REMOTE_ADDR'] ?? '';
         if ( $real_ip && self::is_cloudflare_ip( $real_ip ) ) {
             if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {

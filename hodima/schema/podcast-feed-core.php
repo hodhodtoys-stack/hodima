@@ -113,6 +113,7 @@ function hodima_render_podcast_feed() {
             $args = [
                 'post_type'      => $post_types,
                 'post_status'    => 'publish',
+                'has_password'   => false, // فایل صوتی نوشته رمزدار نباید در فید عمومی بیاید
                 'posts_per_page' => 50,
                 'meta_query'     => [
                     [

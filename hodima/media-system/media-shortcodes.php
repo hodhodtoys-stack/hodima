@@ -70,6 +70,13 @@ function hook_get_shortcode_context( $atts ): array {
 		$context = 'post';
 	}
 
+	// بلوک رسانه نوشته رمزدار یا منتشرنشده نباید بدون رمز/دسترسی نمایش
+	// داده شود؛ شناسه دلخواه در شورت‌کد هم نباید آن را دور بزند.
+	if ( $object_id && 'post' === $context && function_exists( 'hodima_post_content_is_visible' )
+		&& ! hodima_post_content_is_visible( $object_id ) ) {
+		return [ 0, '' ];
+	}
+
 	return [ $object_id, $context ];
 }
 

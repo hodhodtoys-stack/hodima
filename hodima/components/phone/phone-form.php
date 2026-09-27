@@ -91,29 +91,43 @@ function hodima_phone_normalize( string $raw ): string {
     return (bool) preg_match( '/^0\d{9,10}$/', $digits ) ? $digits : '';
 }
 
+/**
+ * نسخه قبلی به CF-Connecting-IP و X-Forwarded-For از *هر* درخواستی اعتماد
+ * می‌کرد؛ با عوض کردن این هدرها در هر درخواست، محدودیت نرخ کاملا دور زده
+ * می‌شد. حالا از تابع مرکزی قالب استفاده می‌شود که فقط پشت Cloudflare
+ * واقعی به این هدرها اعتماد می‌کند.
+ */
 function hodima_get_real_ip(): string {
-    foreach ( [ 'HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR' ] as $key ) {
-        if ( ! empty( $_SERVER[ $key ] ) ) {
-            return trim( explode( ',', $_SERVER[ $key ] )[0] );
-        }
-    }
-    return '';
+    return function_exists( 'hodima_get_client_ip' )
+        ? hodima_get_client_ip()
+        : (string) filter_var( $_SERVER['REMOTE_ADDR'] ?? '', FILTER_VALIDATE_IP );
 }
 
+/**
+ * یک ارسال در هر ۱۵ ثانیه برای هر بازدیدکننده.
+ *
+ * قبلا همه IPها در یک option مشترک نگه داشته می‌شدند: خواندن-تغییر-نوشتن
+ * غیراتمیک (دو درخواست همزمان هر دو رد می‌شدند) و یک UPDATE روی
+ * wp_options در هر ارسال. ترنزینت جداگانه هر بازدیدکننده هر دو را حل می‌کند.
+ * ($ip برای سازگاری امضای تابع نگه داشته شده است.)
+ */
 function hodima_is_rate_limited( string $ip ): bool {
-    $limits = get_option( 'hodima_phone_limits', [] );
-    if ( ! is_array( $limits ) ) $limits = [];
-    
-    $now = time();
-    $limits = array_filter($limits, fn($timestamp) => ($now - $timestamp) <= 15);
+    $key = function_exists( 'hodima_rate_limit_key' )
+        ? hodima_rate_limit_key( 'hodima_phone_rl_' )
+        : 'hodima_phone_rl_' . md5( $ip );
 
-    if ( isset( $limits[ $ip ] ) ) {
+    if ( false !== get_transient( $key ) ) {
         return true;
     }
 
-    $limits[ $ip ] = $now;
-    update_option( 'hodima_phone_limits', $limits, false );
+    set_transient( $key, 1, (int) apply_filters( 'hodima_phone_rate_window', 15 ) );
     return false;
+}
+
+/** مقدار رشته‌ای از $_POST؛ آرایه (مثل phone[]=) رشته خالی می‌شود نه TypeError. */
+function hodima_phone_post_string( string $key ): string {
+    $value = $_POST[ $key ] ?? '';
+    return is_string( $value ) ? wp_unslash( $value ) : '';
 }
 
 /* =====================================================================
@@ -198,18 +212,23 @@ add_action( 'admin_post_nopriv_submit_hodima_phone', 'hodima_phone_handle_nojs' 
 function hodima_phone_process( bool $is_ajax ): string {
     if ( ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) return 'err';
 
-    if ( $is_ajax && ! wp_verify_nonce( $_POST['security_token'] ?? '', 'hodima_phone_secure' ) ) return 'err';
+    if ( $is_ajax && ! wp_verify_nonce( hodima_phone_post_string( 'security_token' ), 'hodima_phone_secure' ) ) return 'err';
     if ( ! empty( $_POST['website'] ) ) return 'spam';
     if ( $is_ajax && empty( $_POST['js_time'] ) ) return 'spam';
 
     $ip = hodima_get_real_ip();
     if ( hodima_is_rate_limited( $ip ) ) return 'wait';
 
-    $phone = hodima_phone_normalize( wp_unslash( $_POST['phone'] ?? '' ) );
+    $phone = hodima_phone_normalize( hodima_phone_post_string( 'phone' ) );
     if ( $phone === '' ) return 'bad';
 
-    $page_url   = esc_url_raw( wp_unslash( $_POST['page_url'] ?? wp_get_raw_referer() ?? '' ) );
-    $page_title = sanitize_text_field( wp_unslash( $_POST['page_title'] ?? '' ) );
+    $page_url   = hodima_phone_post_string( 'page_url' );
+    $page_url   = esc_url_raw( '' !== $page_url ? $page_url : (string) wp_get_raw_referer(), [ 'http', 'https' ] );
+    // این آدرس در پیشخوان لینک‌شدنی است؛ آدرس سایت دیگر (فیشینگ) پذیرفته نمی‌شود.
+    if ( wp_parse_url( $page_url, PHP_URL_HOST ) !== wp_parse_url( home_url(), PHP_URL_HOST ) ) {
+        $page_url = '';
+    }
+    $page_title = mb_substr( sanitize_text_field( hodima_phone_post_string( 'page_title' ) ), 0, 200 );
     $time       = current_time( 'Y-m-d H:i' );
 
     $existing = get_posts( [
@@ -289,7 +308,7 @@ function hodima_phone_handle_nojs(): void {
     $result = hodima_phone_process( false );
     $result = ( $result === 'spam' ) ? 'ok' : $result;
     
-    $uid  = sanitize_key( $_POST['form_uid'] ?? 'hodima-phone-1' );
+    $uid  = sanitize_key( hodima_phone_post_string( 'form_uid' ) ) ?: 'hodima-phone-1';
     $back = wp_get_raw_referer() ?: home_url( '/' );
     $back = add_query_arg( [ 'hodima_phone' => $result, 'form_id' => $uid ], remove_query_arg( [ 'hodima_phone', 'form_id' ], $back ) );
 

@@ -14,9 +14,9 @@ final class Hodima_GI_Tools {
 
 	public static function cloudflare_purge( string $url ): bool {
 
-		$settings = Hodima_GI_Helper::get_settings();
-		$token    = (string) ( $settings['cf_token'] ?? '' );
-		$zone     = strtolower( (string) ( $settings['cf_zone_id'] ?? '' ) );
+		$cf    = Hodima_GI_Helper::cloudflare_credentials();
+		$token = $cf['token'];
+		$zone  = strtolower( $cf['zone'] );
 
 		if ( '' === $token || '' === $zone ) {
 			return false;

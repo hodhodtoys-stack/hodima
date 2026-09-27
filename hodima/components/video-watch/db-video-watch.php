@@ -343,11 +343,20 @@ add_action('rest_api_init', function (): void {
     register_rest_route('video-watch/v1', '/cron', [
         'methods'             => 'GET',
         'callback'            => function (WP_REST_Request $request) {
-            // در صورت تعریف کلید امنیتی در wp-config.php، فراخوانی بدون کلید معتبر رد می‌شود (اختیاری و سازگار با نسخه قبل)
-            if (defined('HOD_VIDEO_WATCH_CRON_KEY') && HOD_VIDEO_WATCH_CRON_KEY !== '') {
-                if (!hash_equals((string) HOD_VIDEO_WATCH_CRON_KEY, (string) $request->get_param('key'))) {
-                    return new WP_Error('forbidden', __('دسترسی غیرمجاز.', 'hod-video'), ['status' => 403]);
-                }
+            /*
+             * این مسیر قبلا بدون کلید برای همه باز بود و هر کسی می‌توانست
+             * پردازش صف و قفل دیتابیس را بی‌وقفه اجرا کند. Flush از طریق
+             * WP-Cron هر ۵ دقیقه خودکار انجام می‌شود؛ این مسیر فقط برای کران
+             * بیرونی سرور است و حالا یکی از این دو را لازم دارد:
+             *   ۱. کلید تعریف‌شده در wp-config.php:
+             *      define( 'HOD_VIDEO_WATCH_CRON_KEY', 'یک-رشته-طولانی-تصادفی' );
+             *      و فراخوانی ‎/wp-json/video-watch/v1/cron?key=...
+             *   ۲. مدیر واردشده.
+             */
+            $has_key   = defined('HOD_VIDEO_WATCH_CRON_KEY') && (string) HOD_VIDEO_WATCH_CRON_KEY !== ''
+                && hash_equals((string) HOD_VIDEO_WATCH_CRON_KEY, (string) $request->get_param('key'));
+            if (!$has_key && !current_user_can('manage_options')) {
+                return new WP_Error('forbidden', __('دسترسی غیرمجاز.', 'hod-video'), ['status' => 403]);
             }
             Video_Watch_Analytics::flush_counters();
             return rest_ensure_response(['success' => true, 'message' => 'Queue processed.']);

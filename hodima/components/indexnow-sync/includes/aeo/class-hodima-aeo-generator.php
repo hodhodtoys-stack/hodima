@@ -878,6 +878,7 @@ final class Hodima_AEO_Generator {
                         'post_type'      => $pt,
                         'posts_per_page' => 15,
                         'post_status'    => 'publish',
+                        'has_password'   => false,
                         'tax_query'      => [ [ 'taxonomy' => $term_obj->taxonomy, 'field' => 'term_id', 'terms' => $id, 'include_children' => false ] ]
                     ]);
                     foreach ( $term_posts as $tp ) {
@@ -1018,7 +1019,7 @@ final class Hodima_AEO_Generator {
         $md = "# Hodima AI Agent Search Results\n\n> Query: `{$q}`\n\n";
         if ( empty( $q ) ) return $md . 'No query provided.';
 
-        $posts = new WP_Query( [ 's' => $q, 'post_type' => [ 'product', 'post' ], 'posts_per_page' => 3, 'post_status' => 'publish' ] );
+        $posts = new WP_Query( [ 's' => $q, 'post_type' => [ 'product', 'post' ], 'posts_per_page' => 3, 'post_status' => 'publish', 'has_password' => false ] );
         if ( ! $posts->have_posts() ) return $md . 'No exact match found.';
 
         foreach ( $posts->posts as $p ) {
@@ -1050,6 +1051,7 @@ final class Hodima_AEO_Generator {
         $posts = get_posts( [ 
             'post_type'      => [ 'product', 'post' ], 
             'post_status'    => 'publish', 
+            'has_password'   => false,
             'posts_per_page' => 100, 
             'orderby'        => 'modified', 
             'order'          => 'DESC' 
@@ -1202,6 +1204,7 @@ final class Hodima_AEO_Generator {
         $posts = get_posts( [ 
             'post_type'      => [ 'product', 'post', 'page' ], 
             'post_status'    => 'publish', 
+            'has_password'   => false,
             'posts_per_page' => $limit, 
             'orderby'        => 'modified', 
             'order'          => 'DESC' 
@@ -1277,6 +1280,7 @@ final class Hodima_AEO_Generator {
                         'post_type'              => $post_type,
                         'posts_per_page'         => 10,
                         'post_status'            => 'publish',
+                        'has_password'           => false,
                         'orderby'                => 'modified',
                         'order'                  => 'DESC',
                         'no_found_rows'          => true,
@@ -1378,6 +1382,7 @@ final class Hodima_AEO_Generator {
         $post_ids = get_posts( [
             'post_type'              => [ 'product', 'post', 'page' ],
             'post_status'            => 'publish',
+            'has_password'           => false,
             'posts_per_page'         => 1500,
             'orderby'                => 'modified',
             'order'                  => 'DESC',
@@ -1509,6 +1514,7 @@ final class Hodima_AEO_Generator {
         $latest = get_posts( [
             'post_type'              => 'product_cat' === $term->taxonomy ? 'product' : 'post',
             'post_status'            => 'publish',
+            'has_password'           => false,
             'posts_per_page'         => 1,
             'orderby'                => 'modified',
             'order'                  => 'DESC',

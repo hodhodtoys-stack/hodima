@@ -41,7 +41,8 @@ function hook_generate_imageobject_schema() {
             $post_id   = get_the_ID();
             $page_name = get_the_title($post_id);
             $page_url  = get_permalink($post_id);
-            $content   = get_post_field('post_content', $post_id);
+            // تصاویر داخل متن نوشته رمزدار نباید در اسکیما فهرست شوند
+            $content   = post_password_required( $post_id ) ? '' : get_post_field('post_content', $post_id);
             $thumb_id  = get_post_thumbnail_id($post_id);
         }
     } 

@@ -205,9 +205,38 @@ final class Hodima_GI_Helper {
 		return [ 'ok' => true, 'message' => '', 'email' => sanitize_email( $key['client_email'] ) ];
 	}
 
+	/**
+	 * JSON حساب سرویس گوگل.
+	 *
+	 * کلید خصوصی در دیتابیس (wp_options) به‌صورت متن ساده ذخیره می‌شد و با
+	 * هر نشت یا بکاپ دیتابیس لو می‌رفت. اگر در wp-config.php تعریف شود،
+	 * همان استفاده می‌شود و مقدار دیتابیس نادیده گرفته می‌شود:
+	 *     define( 'HODIMA_GI_SERVICE_ACCOUNT_JSON', '{"type":"service_account",...}' );
+	 */
+	public static function service_account_json(): string {
+		if ( defined( 'HODIMA_GI_SERVICE_ACCOUNT_JSON' ) && '' !== (string) HODIMA_GI_SERVICE_ACCOUNT_JSON ) {
+			return (string) HODIMA_GI_SERVICE_ACCOUNT_JSON;
+		}
+		return (string) get_option( HODIMA_GI_OPTION_JSON, '' );
+	}
+
+	/**
+	 * توکن و Zone کلادفلر؛ ثابت‌های wp-config.php بر تنظیمات پنل مقدم‌اند:
+	 *     define( 'HODIMA_CF_API_TOKEN', '...' ); define( 'HODIMA_CF_ZONE_ID', '...' );
+	 *
+	 * @return array{token:string, zone:string}
+	 */
+	public static function cloudflare_credentials(): array {
+		$settings = self::get_settings();
+		return [
+			'token' => defined( 'HODIMA_CF_API_TOKEN' ) ? (string) HODIMA_CF_API_TOKEN : (string) ( $settings['cf_token'] ?? '' ),
+			'zone'  => defined( 'HODIMA_CF_ZONE_ID' ) ? (string) HODIMA_CF_ZONE_ID : (string) ( $settings['cf_zone_id'] ?? '' ),
+		];
+	}
+
 	/** ایمیل حساب سرویس ذخیره‌شده، برای نمایش بدون افشای کلید. */
 	public static function configured_account_email(): string {
-		$key = json_decode( (string) get_option( HODIMA_GI_OPTION_JSON, '' ), true );
+		$key = json_decode( self::service_account_json(), true );
 		return is_array( $key ) && ! empty( $key['client_email'] ) ? sanitize_email( (string) $key['client_email'] ) : '';
 	}
 

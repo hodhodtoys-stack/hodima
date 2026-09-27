@@ -31,13 +31,36 @@ final class Hodima_Bot_Shield {
         add_action( 'admin_post_hodima_unban_ip', [ __CLASS__, 'unban_ip' ] );
     }
 
+    /**
+     * مدت مسدودیت IP (ثانیه).
+     *
+     * مسدودیت قبلا دائمی بود. در ایران اپراتورهای همراه با CGNAT هزاران
+     * کاربر را پشت یک IP عمومی می‌برند؛ بن دائمی یک IP یعنی بستن سایت
+     * روی همه آن مشتری‌ها برای همیشه. حالا مسدودیت خودبه‌خود منقضی می‌شود.
+     */
+    public static function ban_duration(): int {
+        return max( 60, (int) apply_filters( 'hodima_bot_shield_ban_seconds', HOUR_IN_SECONDS ) );
+    }
+
     public static function ban_ip( string $ip, string $reason = '' ): void {
         global $wpdb;
+        // created_at با هر بن دوباره تازه می‌شود تا شروع مهلت از آخرین تخلف باشد
         $wpdb->query( $wpdb->prepare(
             "INSERT INTO {$wpdb->prefix}hodima_banned_ips (ip_address, reason) VALUES (%s, %s)
-             ON DUPLICATE KEY UPDATE reason = VALUES(reason)",
+             ON DUPLICATE KEY UPDATE reason = VALUES(reason), created_at = CURRENT_TIMESTAMP",
             $ip, $reason
         ) );
+    }
+
+    /**
+     * مسدودسازی موقت IP و — فقط اگر صراحتا فعال شده باشد — ارسال به فایروال Cloudflare.
+     */
+    public static function penalize( string $ip, string $reason ): void {
+        if ( '' === $ip ) {
+            return;
+        }
+        self::ban_ip( $ip, $reason );
+        self::block_ip_cloudflare( $ip );
     }
 
     public static function unban_ip(): void {
@@ -56,21 +79,45 @@ final class Hodima_Bot_Shield {
     public static function is_ip_banned( string $ip ): bool {
         global $wpdb;
         return (bool) $wpdb->get_var( $wpdb->prepare(
-            "SELECT id FROM {$wpdb->prefix}hodima_banned_ips WHERE ip_address = %s LIMIT 1", $ip
+            "SELECT id FROM {$wpdb->prefix}hodima_banned_ips
+             WHERE ip_address = %s AND created_at >= DATE_SUB(NOW(), INTERVAL %d SECOND) LIMIT 1",
+            $ip, self::ban_duration()
         ) );
     }
 
+    /** فقط مسدودیت‌های فعال (منقضی‌نشده) */
     public static function get_banned_ips( int $limit = 100 ): array {
         global $wpdb;
         return $wpdb->get_results( $wpdb->prepare(
-            "SELECT ip_address, reason, created_at FROM {$wpdb->prefix}hodima_banned_ips ORDER BY created_at DESC LIMIT %d", $limit
+            "SELECT ip_address, reason, created_at FROM {$wpdb->prefix}hodima_banned_ips
+             WHERE created_at >= DATE_SUB(NOW(), INTERVAL %d SECOND)
+             ORDER BY created_at DESC LIMIT %d",
+            self::ban_duration(), $limit
         ), ARRAY_A ) ?? [];
     }
 
+    /**
+     * قانون مسدودسازی در Cloudflare.
+     *
+     * قوانین Cloudflare خودبه‌خود منقضی نمی‌شوند؛ پس این کار به‌صورت
+     * پیش‌فرض خاموش است و فقط با فیلتر زیر روشن می‌شود:
+     *     add_filter( 'hodima_bot_shield_cloudflare_block', '__return_true' );
+     * توکن و Zone ID ترجیحا در wp-config.php تعریف شوند:
+     *     define( 'HODIMA_CF_API_TOKEN', '...' ); define( 'HODIMA_CF_ZONE_ID', '...' );
+     */
     public static function block_ip_cloudflare( string $ip ): void {
-        $token = get_option( 'hodima_cf_token' );
-        $zone  = get_option( 'hodima_cf_zone_id' );
-        if ( empty( $token ) || empty( $zone ) ) return;
+        if ( ! apply_filters( 'hodima_bot_shield_cloudflare_block', false, $ip ) ) return;
+
+        // همان اعتبارنامه‌ای که ماژول Google Indexing برای پاکسازی کش استفاده می‌کند
+        if ( class_exists( 'Hodima_GI_Helper' ) ) {
+            $cf    = Hodima_GI_Helper::cloudflare_credentials();
+            $token = $cf['token'];
+            $zone  = $cf['zone'];
+        } else {
+            $token = defined( 'HODIMA_CF_API_TOKEN' ) ? (string) HODIMA_CF_API_TOKEN : (string) get_option( 'hodima_cf_token' );
+            $zone  = defined( 'HODIMA_CF_ZONE_ID' ) ? (string) HODIMA_CF_ZONE_ID : (string) get_option( 'hodima_cf_zone_id' );
+        }
+        if ( '' === $token || '' === $zone || ! preg_match( '/^[a-f0-9]{32}$/i', $zone ) ) return;
 
         wp_remote_post( "https://api.cloudflare.com/client/v4/zones/{$zone}/firewall/access_rules/rules", [
             'headers'  => [ 'Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json' ],
@@ -83,8 +130,15 @@ final class Hodima_Bot_Shield {
         ] );
     }
 
-    public static function check_rate_limit( string $ip, int $limit ): bool {
-        $key     = 'hodima_rl_' . md5( $ip );
+    /**
+     * محدودیت نرخ به ازای «IP + نام ربات».
+     *
+     * کلید قبلا فقط IP بود و عبور از سقف به بن کل IP می‌انجامید؛ با
+     * جعل User-Agent می‌شد IP مشترک مشتریان واقعی را بست. حالا فقط
+     * درخواست‌های همان ربات از همان IP محدود می‌شوند.
+     */
+    public static function check_rate_limit( string $ip, int $limit, string $bot = '' ): bool {
+        $key     = 'hodima_rl_' . md5( $ip . '|' . $bot );
         $current = get_transient( $key );
 
         if ( $current === false ) {
@@ -106,7 +160,8 @@ final class Hodima_Bot_Shield {
 
         if ( self::is_ip_banned( $ip ) ) {
             header( 'HTTP/1.1 403 Forbidden' );
-            exit( 'دسترسی مسدود شده است. IP شما بن شده است.' );
+            header( 'Retry-After: ' . self::ban_duration() );
+            exit( 'دسترسی موقتا مسدود شده است. لطفا بعدا تلاش کنید.' );
         }
 
         $settings  = get_option( 'hodima_ai_bot_settings', [] );
@@ -120,12 +175,11 @@ final class Hodima_Bot_Shield {
                 exit( 'دسترسی این ربات هوش مصنوعی طبق سیاست سایت مسدود شده است.' );
             }
 
-            if ( ! self::check_rate_limit( $ip, $rl_limit ) ) {
-                self::ban_ip( $ip, "عبور از سقف نرخ درخواست ({$name})" );
-                self::block_ip_cloudflare( $ip );
+            // عبور از سقف فقط همین درخواست ربات را رد می‌کند؛ IP بن نمی‌شود
+            if ( ! self::check_rate_limit( $ip, $rl_limit, $sig ) ) {
                 header( 'HTTP/1.1 429 Too Many Requests' );
                 header( 'Retry-After: 60' );
-                exit( 'محدودیت تعداد درخواست رد شد. IP شما مسدود شد.' );
+                exit( 'محدودیت تعداد درخواست رد شد. لطفا یک دقیقه بعد تلاش کنید.' );
             }
 
             $raw_path   = (string) ( $_SERVER['REQUEST_URI'] ?? '/' );
@@ -195,6 +249,11 @@ final class Hodima_Bot_Shield {
     public static function prune_old_logs(): void {
         global $wpdb;
         $wpdb->query( "DELETE FROM {$wpdb->prefix}hodima_ai_bot_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)" );
+        // مسدودیت‌های منقضی‌شده
+        $wpdb->query( $wpdb->prepare(
+            "DELETE FROM {$wpdb->prefix}hodima_banned_ips WHERE created_at < DATE_SUB(NOW(), INTERVAL %d SECOND)",
+            self::ban_duration()
+        ) );
     }
 
     public static function clear_logs(): void {

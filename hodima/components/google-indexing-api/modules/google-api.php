@@ -39,7 +39,7 @@ final class Hodima_Google_API {
 			}
 		}
 
-		$key = json_decode( (string) get_option( HODIMA_GI_OPTION_JSON, '' ), true );
+		$key = json_decode( Hodima_GI_Helper::service_account_json(), true );
 
 		if ( ! is_array( $key ) || empty( $key['client_email'] ) || empty( $key['private_key'] ) || empty( $key['token_uri'] ) ) {
 			return false;

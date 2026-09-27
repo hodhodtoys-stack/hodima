@@ -56,6 +56,30 @@ final class Hodima_AEO_Router {
         }
     }
 
+    /**
+     * آیا مرورگر یک کاربر واقعی به این درخواست «وادار» شده است؟
+     *
+     * هانی‌پات قبلا هر درخواستی را بن می‌کرد. کافی بود کسی
+     * <img src=".../ai-internal-data.md"> را در یک انجمن یا ایمیل بگذارد
+     * یا لینکش را بفرستد تا IP هر بیننده (و در CGNAT همه همسایه‌هایش)
+     * مسدود شود. مرورگرهای امروزی هدرهای Sec-Fetch-* را می‌فرستند؛ منبع
+     * جاسازی‌شده (تصویر، اسکریپت، iframe) یا ناوبری از سایت دیگر را
+     * بن نمی‌کنیم. خزنده‌هایی که robots.txt را نادیده می‌گیرند این
+     * هدرها را نمی‌فرستند و همچنان گرفتار می‌شوند.
+     */
+    private static function is_induced_browser_request(): bool {
+        $dest = strtolower( (string) ( $_SERVER['HTTP_SEC_FETCH_DEST'] ?? '' ) );
+        $site = strtolower( (string) ( $_SERVER['HTTP_SEC_FETCH_SITE'] ?? '' ) );
+
+        if ( '' !== $dest && 'document' !== $dest ) {
+            return true;
+        }
+
+        // هر ناوبری با کلیک (حتی از لینکی در دیدگاه‌های خود سایت) مقدار
+        // غیر از none دارد؛ فقط آدرس تایپ‌شده/مستقیم «none» است.
+        return '' !== $site && 'none' !== $site;
+    }
+
     /** هدرهای سخت‌گیرانه CORS و امنیت محتوا */
     private static function set_global_security_headers(): void {
         header( 'Access-Control-Allow-Origin: *' );
@@ -91,9 +115,8 @@ final class Hodima_AEO_Router {
                 exit( 'دسترسی این ربات هوش مصنوعی مسدود شده است.' );
             }
 
-            if ( ! Hodima_Bot_Shield::check_rate_limit( $ip, $rl_limit ) ) {
-                Hodima_Bot_Shield::ban_ip( $ip, "عبور از سقف نرخ درخواست ({$name})" );
-                Hodima_Bot_Shield::block_ip_cloudflare( $ip );
+            // مثل Hodima_Bot_Shield::scan(): فقط ردِ همین درخواست، بدون بن IP
+            if ( ! Hodima_Bot_Shield::check_rate_limit( $ip, $rl_limit, $sig ) ) {
                 header( 'HTTP/1.1 429 Too Many Requests' );
                 header( 'Retry-After: 60' );
                 exit( 'محدودیت تعداد درخواست رد شد.' );
@@ -127,12 +150,11 @@ final class Hodima_AEO_Router {
         // 1. Honeypot (امنیتی)
         if ( str_ends_with( $path, 'ai-internal-data.md' ) ) {
             $ip = class_exists('Hodima_Core_Helpers') ? Hodima_Core_Helpers::get_client_ip() : '';
-            if ( $ip && class_exists('Hodima_Bot_Shield') ) {
-                Hodima_Bot_Shield::ban_ip( $ip, 'برخورد با هانی‌پات ai-internal-data.md' );
-                Hodima_Bot_Shield::block_ip_cloudflare( $ip );
+            if ( $ip && class_exists('Hodima_Bot_Shield') && ! self::is_induced_browser_request() ) {
+                Hodima_Bot_Shield::penalize( $ip, 'برخورد با هانی‌پات ai-internal-data.md' );
             }
             status_header( 403 );
-            exit( 'شکار شدید. آی‌پی شما به‌طور دائم ثبت و مسدود شد.' );
+            exit( 'دسترسی به این مسیر مجاز نیست.' );
         }
 
         // 2. مسیرهای تحلیلی
@@ -397,7 +419,9 @@ final class Hodima_AEO_Router {
             $auth    = $headers['Authorization'] ?? $headers['authorization'] ?? '';
         }
 
-        $is_valid = current_user_can( 'manage_options' ) || ( ! empty( $token ) && trim( $auth ) === "Bearer {$token}" );
+        // مقایسه در زمان ثابت تا توکن با اندازه‌گیری زمان پاسخ حدس زده نشود
+        $is_valid = current_user_can( 'manage_options' )
+            || ( '' !== (string) $token && hash_equals( 'Bearer ' . $token, trim( (string) $auth ) ) );
         if ( ! $is_valid ) {
             status_header( 401 );
             header( 'Content-Type: application/json; charset=utf-8' );

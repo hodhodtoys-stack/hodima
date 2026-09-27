@@ -126,7 +126,9 @@ function seobox_fallback_description( array $context ): string {
 
     if ( $context['is_singular'] && $context['object_id'] ) {
         $post = get_post( (int) $context['object_id'] );
-        if ( $post instanceof WP_Post ) {
+        // توضیحات خودکار از متن نوشته رمزدار، همان متن را بدون رمز در
+        // متاتگ description و og:description منتشر می‌کرد.
+        if ( $post instanceof WP_Post && ! post_password_required( $post ) ) {
             $text = '' !== trim( (string) $post->post_excerpt ) ? (string) $post->post_excerpt : (string) $post->post_content;
         }
     } elseif ( $context['is_term'] && $context['object_id'] ) {

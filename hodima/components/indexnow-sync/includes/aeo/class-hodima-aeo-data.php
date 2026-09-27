@@ -118,6 +118,12 @@ final class Hodima_AEO_Data {
             return false;
         }
 
+        // نسخه مارک‌داون کل متن را بدون فرم رمز چاپ می‌کند؛ نوشته رمزدار
+        // هیچ‌وقت نسخه ماشین‌خوان ندارد.
+        if ( '' !== (string) $post->post_password ) {
+            return false;
+        }
+
         if ( 'publish' === $post->post_status ) {
             return true;
         }
@@ -195,6 +201,12 @@ final class Hodima_AEO_Data {
      * فقط برای پیام خطا استفاده می‌شود تا اشکال‌زدایی حدسی نباشد.
      */
     public static function describe_numeric_id( int $id ): string {
+
+        // این گزارش نوع و وضعیت هر شناسه (پیش‌نویس، خصوصی، سفارش، لید و...)
+        // را فاش می‌کند؛ با شمردن شناسه‌ها کل دیتابیس قابل نقشه‌برداری بود.
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return '- جزئیات این شناسه فقط برای مدیر سایت نمایش داده می‌شود.';
+        }
 
         $lines = [];
 
@@ -351,6 +363,7 @@ final class Hodima_AEO_Data {
             "SELECT ID FROM {$wpdb->posts}
              WHERE post_name IN (%s, %s, %s) AND post_type = %s
                AND post_status IN ('publish','private')
+               AND post_password = ''
              LIMIT 1",
             $slug, $decoded, $encoded, $post_type
         ) );
@@ -404,7 +417,7 @@ final class Hodima_AEO_Data {
             UNION ALL
             SELECT 'post' AS kind, p.ID AS id, p.post_type AS subtype
             FROM {$wpdb->posts} p
-            WHERE p.post_name IN (%s, %s, %s) AND p.post_status = 'publish' AND p.post_type IN ('product','page','post')
+            WHERE p.post_name IN (%s, %s, %s) AND p.post_status = 'publish' AND p.post_password = '' AND p.post_type IN ('product','page','post')
         ", $raw, $decoded, $encoded, $raw, $decoded, $encoded ) );
 
         if ( empty( $rows ) ) {
@@ -505,11 +518,11 @@ final class Hodima_AEO_Data {
             if ( $product ) {
                 $manual_ids = array_unique( array_merge( $product->get_upsell_ids(), $product->get_cross_sell_ids() ) );
                 if ( ! empty( $manual_ids ) ) {
-                    $clusters = get_posts( [ 'post_type' => 'product', 'post__in' => $manual_ids, 'posts_per_page' => 5 ] );
+                    $clusters = get_posts( [ 'post_type' => 'product', 'post__in' => $manual_ids, 'posts_per_page' => 5, 'has_password' => false ] );
                 } else {
                     $related_ids = wc_get_related_products( $id, 5 );
                     if ( ! empty( $related_ids ) ) {
-                        $clusters = get_posts( [ 'post_type' => 'product', 'post__in' => $related_ids, 'posts_per_page' => 5 ] );
+                        $clusters = get_posts( [ 'post_type' => 'product', 'post__in' => $related_ids, 'posts_per_page' => 5, 'has_password' => false ] );
                     }
                 }
             }
@@ -517,7 +530,7 @@ final class Hodima_AEO_Data {
             $tax   = 'category';
             $terms = wp_get_post_terms( $id, $tax, [ 'fields' => 'ids' ] );
             if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
-                $clusters = get_posts( [ 'post_type' => $post_type, 'posts_per_page' => 5, 'post__not_in' => [ $id ], 'tax_query' => [ [ 'taxonomy' => $tax, 'field' => 'term_id', 'terms' => $terms ] ] ] );
+                $clusters = get_posts( [ 'post_type' => $post_type, 'posts_per_page' => 5, 'has_password' => false, 'post__not_in' => [ $id ], 'tax_query' => [ [ 'taxonomy' => $tax, 'field' => 'term_id', 'terms' => $terms ] ] ] );
             }
         }
         

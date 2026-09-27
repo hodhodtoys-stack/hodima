@@ -477,3 +477,37 @@ function hodima_table_exists( string $table ): bool {
 
     return $memo[ $table ] = $found;
 }
+
+/* ============================================================
+ * ۷. محتوای محافظت‌شده
+ * ------------------------------------------------------------
+ * وردپرس فقط the_content را پشت فرم رمز پنهان می‌کند. هر ماژولی
+ * که مستقیم post_content یا متای نوشته را بخواند (توضیحات متا، بلوک
+ * رسانه، اسکیما، نسخه مارک‌داون) باید قبلش همین را بپرسد، وگرنه
+ * محتوای نوشته رمزدار یا منتشرنشده بدون رمز منتشر می‌شود.
+ * ============================================================ */
+
+/**
+ * آیا محتوای این نوشته برای بازدیدکننده جاری قابل نمایش است؟
+ *
+ * false یعنی: نوشته وجود ندارد، رمز دارد و بازدیدکننده رمز را وارد
+ * نکرده، یا منتشر نشده و بازدیدکننده اجازه خواندنش را ندارد.
+ */
+function hodima_post_content_is_visible( $post ): bool {
+
+    $post = get_post( $post );
+
+    if ( ! ( $post instanceof WP_Post ) ) {
+        return false;
+    }
+
+    if ( post_password_required( $post ) ) {
+        return false;
+    }
+
+    if ( is_post_status_viewable( $post->post_status ) ) {
+        return true;
+    }
+
+    return current_user_can( 'read_post', $post->ID );
+}

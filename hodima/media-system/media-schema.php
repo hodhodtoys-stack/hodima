@@ -279,6 +279,10 @@ function hook_auto_inject_head_schema() {
 	$queried = get_queried_object();
 
 	if ( $queried instanceof WP_Post && in_array( $queried->post_type, hook_get_supported_post_types(), true ) ) {
+		// FAQ و متن رسانه نوشته رمزدار نباید در اسکیما منتشر شود.
+		if ( function_exists( 'hodima_post_content_is_visible' ) && ! hodima_post_content_is_visible( $queried ) ) {
+			return;
+		}
 		$object_id = (int) $queried->ID;
 		$context   = 'post';
 	} elseif ( $queried instanceof WP_Term && in_array( $queried->taxonomy, hook_get_supported_taxonomies(), true ) ) {
