@@ -83,6 +83,7 @@ function hodima_schema_assets($hook) {
 function hodima_view_header($title, $desc, $icon = '🚀') {
     ?>
     <div class="hodima-wrapper">
+        <?php hodima_schema_admin_nav(); ?>
         <div class="h-header">
             <div class="h-icon"><?php echo esc_html($icon); ?></div>
             <div>
@@ -110,36 +111,118 @@ function hodima_view_form_footer() {
 
 // ==============================================================
 // ۳. ثبت منوها و زیرمنوها
+// --------------------------------------------------------------
+// «اسکیما» دیگر آیکون جداگانه در منوی اصلی پیشخوان ندارد؛ یک زیرمنو
+// در پنل «هدیما» (hodima-core) است، کنار «ماژول‌های سئو».
+//
+// سیزده صفحه تنظیمات همان آدرس‌های قبلی (admin.php?page=…) را دارند —
+// لینک‌ها و بوک‌مارک‌ها خراب نمی‌شوند — ولی فقط «اسکیما» در منو دیده
+// می‌شود؛ بقیه از کارت‌های پیشخوان اسکیما و نوار بالای هر صفحه باز
+// می‌شوند. اگر Hodima Core فعال نباشد، منوی سطح بالای قبلی ساخته می‌شود.
 // ==============================================================
-add_action('admin_menu', 'hodima_register_schema_menus');
+
+/**
+ * صفحه‌های تنظیمات اسکیما: اسلاگ => [عنوان صفحه، عنوان کوتاه، callback].
+ * اولی صفحه اصلی (پیشخوان اسکیما) است.
+ */
+function hodima_schema_admin_pages(): array {
+    return [
+        'hodima-schema'            => [ 'پیشخوان اسکیما', 'پیشخوان', 'hodima_schema_dashboard_callback' ],
+        'hodima-schema-homepage'   => [ 'اسکیمای صفحه اصلی', 'صفحه اصلی', 'hodima_schema_homepage_callback' ],
+        'hodima-schema-breadcrumb' => [ 'اسکیمای بردکرامب', 'بردکرامب', 'hodima_schema_breadcrumb_callback' ],
+        'hodima-schema-blog'       => [ 'اسکیمای بلاگ', 'بلاگ', 'hodima_schema_blog_callback' ],
+        'hodima-schema-category'   => [ 'اسکیمای دسته‌بندی', 'دسته‌بندی', 'hodima_schema_category_callback' ],
+        'hodima-schema-product'    => [ 'اسکیمای محصولات', 'محصولات', 'hodima_schema_product_callback' ],
+        'hodima-schema-image'      => [ 'اسکیمای تصاویر', 'تصاویر', 'hodima_schema_image_callback' ],
+        'hodima-schema-page'       => [ 'اسکیمای برگه‌ها', 'برگه‌ها', 'hodima_schema_page_callback' ],
+        'hodima-sitemap'           => [ 'نقشه سایت (XML)', 'نقشه سایت', 'hodima_sitemap_callback' ],
+        'hodima-podcast'           => [ 'فید پادکست (RSS)', 'فید پادکست', 'hodima_podcast_callback' ],
+        'hodima-schema-tables'     => [ 'جداول هدیما', 'جداول', 'hodima_schema_tables_callback' ],
+        'hodima-llms'              => [ 'هوش مصنوعی (LLMs)', 'هوش مصنوعی', 'hodima_llms_callback' ],
+        'hodima-schema-cleaner'    => [ 'پاکسازی هوشمند اسکیما', 'پاکسازی', 'hodima_schema_cleaner_callback' ],
+    ];
+}
+
+/** والد منو: پنل «هدیما» اگر Hodima Core فعال است، وگرنه منوی سطح بالای «اسکیما». */
+function hodima_schema_menu_parent(): string {
+    return defined( 'Hodima\Core\Admin\HUB_SLUG' ) ? \Hodima\Core\Admin\HUB_SLUG : 'hodima-schema';
+}
+
+/** آیا صفحه فعلی پیشخوان یکی از صفحه‌های تنظیمات اسکیما است؟ */
+function hodima_schema_current_admin_page(): string {
+    $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تشخیص صفحه
+    return isset( hodima_schema_admin_pages()[ $page ] ) ? $page : '';
+}
+
+add_action( 'admin_menu', 'hodima_register_schema_menus' );
 
 function hodima_register_schema_menus() {
-    $emoji = '🧩';
-    $menu_icon = 'data:image/svg+xml;base64,' . base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><text x="0" y="16" font-size="16">' . $emoji . '</text></svg>');
+    $parent = hodima_schema_menu_parent();
+    $pages  = hodima_schema_admin_pages();
 
-    add_menu_page(
-        'مدیریت اسکیمای حرفه‌ای',
-        'اسکیما',
-        'manage_options',
-        'hodima-schema',
-        'hodima_schema_dashboard_callback',
-        $menu_icon,
-        41
-    );
+    if ( 'hodima-schema' === $parent ) {
+        // بدون Hodima Core: منوی سطح بالای قبلی
+        add_menu_page( 'مدیریت اسکیمای حرفه‌ای', 'اسکیما', 'manage_options', 'hodima-schema', 'hodima_schema_dashboard_callback', 'dashicons-networking', 41 );
+    }
 
-    add_submenu_page('hodima-schema', 'پیشخوان هدیما', 'پیشخوان', 'manage_options', 'hodima-schema', 'hodima_schema_dashboard_callback');
-    add_submenu_page('hodima-schema', 'اسکیمای صفحه اصلی', 'صفحه اصلی', 'manage_options', 'hodima-schema-homepage', 'hodima_schema_homepage_callback');
-    add_submenu_page('hodima-schema', 'اسکیمای بردکرامب', 'بردکرامب', 'manage_options', 'hodima-schema-breadcrumb', 'hodima_schema_breadcrumb_callback');
-    add_submenu_page('hodima-schema', 'اسکیمای بلاگ', 'بلاگ', 'manage_options', 'hodima-schema-blog', 'hodima_schema_blog_callback');
-    add_submenu_page('hodima-schema', 'اسکیمای دسته‌بندی', 'دسته‌بندی ', 'manage_options', 'hodima-schema-category', 'hodima_schema_category_callback');
-    add_submenu_page('hodima-schema', 'اسکیمای محصولات', 'محصولات ', 'manage_options', 'hodima-schema-product', 'hodima_schema_product_callback');
-    add_submenu_page('hodima-schema', 'اسکیمای تصاویر', 'تصاویر', 'manage_options', 'hodima-schema-image', 'hodima_schema_image_callback');
-    add_submenu_page('hodima-schema', 'اسکیمای برگه‌ها', 'برگه‌ها ', 'manage_options', 'hodima-schema-page', 'hodima_schema_page_callback');
-    add_submenu_page('hodima-schema', 'نقشه سایت (XML)', 'نقشه سایت', 'manage_options', 'hodima-sitemap', 'hodima_sitemap_callback');
-    add_submenu_page('hodima-schema', 'فید پادکست (RSS)', 'فید پادکست', 'manage_options', 'hodima-podcast', 'hodima_podcast_callback');
-    add_submenu_page('hodima-schema', 'جداول هدیما', 'جداول هدیما', 'manage_options', 'hodima-schema-tables', 'hodima_schema_tables_callback'); 
-    add_submenu_page('hodima-schema', 'هوش مصنوعی (LLMs)', 'هوش مصنوعی', 'manage_options', 'hodima-llms', 'hodima_llms_callback');
-    add_submenu_page('hodima-schema', 'پاکسازی هوشمند اسکیما', 'پاکسازی اسکیما', 'manage_options', 'hodima-schema-cleaner', 'hodima_schema_cleaner_callback');
+    foreach ( $pages as $slug => [ $title, $menu_title, $callback ] ) {
+        add_submenu_page(
+            $parent,
+            $title,
+            'hodima-schema' === $slug && 'hodima-schema' !== $parent ? 'اسکیما' : $menu_title,
+            'manage_options',
+            $slug,
+            $callback
+        );
+    }
+}
+
+/*
+ * زیر پنل «هدیما» فقط «اسکیما» در منو بماند.
+ *
+ * زمان‌بندی مهم است: وردپرس دسترسی به صفحه، هوک صفحه و عنوان آن را از
+ * همین فهرست زیرمنو پیدا می‌کند. اگر در admin_menu حذف شوند، صفحه‌ها
+ * «اجازه دسترسی ندارید» می‌دهند. admin_head بعد از همه این‌ها و درست
+ * پیش از چاپ منو اجرا می‌شود؛ پس فقط از *نمایش* منو برداشته می‌شوند
+ * تا پنل هدیما با ۱۳ زیرمنو شلوغ نشود.
+ */
+add_action( 'admin_head', static function (): void {
+    $parent = hodima_schema_menu_parent();
+    if ( 'hodima-schema' === $parent ) {
+        return;
+    }
+    foreach ( array_keys( hodima_schema_admin_pages() ) as $slug ) {
+        if ( 'hodima-schema' !== $slug ) {
+            remove_submenu_page( $parent, $slug );
+        }
+    }
+} );
+
+// روی صفحه‌های پنهان، «هدیما ← اسکیما» در منو فعال دیده شود
+add_filter( 'parent_file', static function ( $parent_file ) {
+    return '' !== hodima_schema_current_admin_page() ? hodima_schema_menu_parent() : $parent_file;
+} );
+
+add_filter( 'submenu_file', static function ( $submenu_file ) {
+    return '' !== hodima_schema_current_admin_page() ? 'hodima-schema' : $submenu_file;
+} );
+
+/** نوار ناوبری بین صفحه‌های اسکیما (بالای هر صفحه). */
+function hodima_schema_admin_nav(): void {
+    $current = hodima_schema_current_admin_page();
+    if ( '' === $current ) {
+        return;
+    }
+    echo '<nav class="h-schema-nav" aria-label="صفحه‌های اسکیما">';
+    foreach ( hodima_schema_admin_pages() as $slug => [ , $menu_title ] ) {
+        printf(
+            '<a href="%s"%s>%s</a>',
+            esc_url( admin_url( 'admin.php?page=' . $slug ) ),
+            $slug === $current ? ' aria-current="page"' : '',
+            esc_html( $menu_title )
+        );
+    }
+    echo '</nav>';
 }
 
 // ==============================================================

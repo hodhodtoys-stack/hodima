@@ -259,9 +259,9 @@ function hook_print_schema( $type, $data, $object_id, $context ) {
 		return;
 	}
 
-	echo "\n" . '<script type="application/ld+json">'
-		. wp_json_encode( [ '@context' => 'https://schema.org' ] + $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP )
-		. "</script>\n";
+	// گراف واحد صفحه (hodima-core)؛ نودهای هم‌شناسه (مثلا FAQPage «#faq» که
+	// ماژول AEO هم می‌سازد) ادغام می‌شوند.
+	hodima_schema_add( $schema, 'hodima-media: media-schema (' . $type . ')' );
 }
 
 /* =====================================================================

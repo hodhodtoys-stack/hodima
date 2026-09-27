@@ -345,7 +345,5 @@ add_action('wp_head', static function (): void {
         ];
     }
 
-    echo "\n" . '<script type="application/ld+json">'
-        . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP)
-        . "</script>\n";
+    hodima_schema_add($schema, 'hodima-media: video-watch');
 }, 20);

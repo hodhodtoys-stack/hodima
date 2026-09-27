@@ -306,14 +306,9 @@ function hook_generate_breadcrumb_schema() {
 
     if ( empty( $items ) ) return;
 
-    $breadcrumb_schema = [
-        '@context'        => 'https://schema.org',
+    hodima_schema_add( [
         '@type'           => 'BreadcrumbList',
         '@id'             => hodima_breadcrumb_id(),
         'itemListElement' => $items
-    ];
-
-    echo "\n\n<!-- HOOK Breadcrumb Schema -->\n";
-    echo '<script type="application/ld+json" id="hook-breadcrumb-schema">' . wp_json_encode($breadcrumb_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n";
-    echo "\n";
+    ], 'hodima-seo: breadcrumb-schema' );
 }

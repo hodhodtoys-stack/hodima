@@ -436,22 +436,16 @@ function hodima_shop_collection_itemlist_schema() {
 
     $site_url = trailingslashit( home_url() );
 
-    $schema = array(
-        '@context' => 'https://schema.org',
-        '@graph'   => array( array(
-            '@type'      => 'CollectionPage',
-            '@id'        => $page_url . '#webpage',
-            'url'        => $page_url,
-            'name'       => function_exists( 'hodima_schema_page_name' ) ? hodima_schema_page_name() : '',
-            'inLanguage' => 'fa-IR',
-            'isPartOf'   => array( '@id' => $site_url . '#website' ),
-            'about'      => array( '@id' => $site_url . '#organization' ),
-            'mainEntity' => $list,
-        ) ),
-    );
-
-    echo "\n<!-- Hodima Shop CollectionPage Schema -->\n";
-    echo '<script type="application/ld+json" id="hodima-shop-collection">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . "</script>\n";
+    hodima_schema_add( array(
+        '@type'      => 'CollectionPage',
+        '@id'        => $page_url . '#webpage',
+        'url'        => $page_url,
+        'name'       => function_exists( 'hodima_schema_page_name' ) ? hodima_schema_page_name() : '',
+        'inLanguage' => 'fa-IR',
+        'isPartOf'   => array( '@id' => $site_url . '#website' ),
+        'about'      => array( '@id' => $site_url . '#organization' ),
+        'mainEntity' => $list,
+    ), 'theme: inc/enqueue.php (shop fallback)' );
 }
 
 

@@ -65,13 +65,7 @@ function hook_render_category_schema() {
         'inLanguage' => 'fa-IR',
     ], $fields );
 
-    $schema = [
-        '@context' => 'https://schema.org',
-        '@graph'   => [ $node ],
-    ];
-
-    echo "\n<!-- HOOK Category CollectionPage Schema (B2B) -->\n";
-    echo '<script type="application/ld+json" id="hook-category-schema">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . "</script>\n";
+    hodima_schema_add( $node, 'hodima-seo: category-schema-pro (fallback)' );
 }
 
 /**

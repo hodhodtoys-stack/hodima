@@ -671,18 +671,60 @@ function arian_add_homepage_schema_extra() {
         return;
     }
 
-    $schema = [
-        '@context' => 'https://schema.org',
-        '@graph'   => $graph,
-    ];
+    /*
+     * ویدیوی hero تکراری نشود.
+     * این ویدیو از متای «_hook_video_url» همان برگه صفحه اصلی خوانده می‌شود —
+     * دقیقا همان متایی که سیستم رسانه (hodima-media/media-system) وقتی برای
+     * این برگه فعال است، با شناسه «#video» به گراف می‌دهد. نتیجه دو
+     * VideoObject متفاوت (#hero-video و #video) برای یک فایل ویدیو بود.
+     * سیستم رسانه نسخه کامل‌تر (isPartOf، توضیح، کلمات کلیدی) را می‌سازد؛
+     * پس فقط وقتی او ویدیو را نمی‌سازد، #hero-video چاپ می‌شود.
+     * (بررسی هنگام چاپ، نه در کش ۱۲ ساعته گراف، تا با روشن/خاموش شدن
+     * سیستم رسانه بلافاصله درست شود.)
+     */
+    if ( arian_media_system_owns_front_video() ) {
+        $graph = array_values( array_filter(
+            $graph,
+            static fn( array $node ): bool => ! str_ends_with( (string) ( $node['@id'] ?? '' ), '#hero-video' )
+        ) );
+    }
 
-    echo "\n<!-- HOOK Smart Homepage Schema (Single Hero Video Edition) -->\n";
-    echo '<script type="application/ld+json">' .
-        wp_json_encode(
-            $schema,
-            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP
-        ) .
-        "</script>\n";
+    if ( empty( $graph ) ) {
+        return;
+    }
+
+    // گراف واحد صفحه (hodima-core)
+    hodima_schema_add( [ '@graph' => $graph ], 'theme: home/logic.php' );
+}
+
+/**
+ * آیا سیستم رسانه برای برگه صفحه اصلی VideoObject می‌سازد؟
+ * همان شرط‌های hook_auto_inject_head_schema() و hook_print_schema('video').
+ */
+function arian_media_system_owns_front_video(): bool {
+
+    $front_id = (int) get_option( 'page_on_front' );
+
+    if ( $front_id <= 0 || ! function_exists( 'hook_get_media_data' ) || ! function_exists( 'hook_print_schema' ) ) {
+        return false;
+    }
+
+    if ( ! in_array( 'page', function_exists( 'hook_get_supported_post_types' ) ? hook_get_supported_post_types() : [], true ) ) {
+        return false;
+    }
+
+    if ( function_exists( 'hodima_post_content_is_visible' ) && ! hodima_post_content_is_visible( $front_id ) ) {
+        return false;
+    }
+
+    $data = hook_get_media_data( $front_id, 'post' );
+
+    if ( 'yes' !== ( $data['enabled'] ?? '' ) || empty( $data['video_url'] ) ) {
+        return false;
+    }
+
+    // بدون تصویر، سیستم رسانه ویدیو را چاپ نمی‌کند (thumbnailUrl الزامی است)
+    return '' !== (string) ( $data['video_thumb'] ?? '' ) || has_post_thumbnail( $front_id );
 }
 add_action( 'wp_head', 'arian_add_homepage_schema_extra', 30 );
 

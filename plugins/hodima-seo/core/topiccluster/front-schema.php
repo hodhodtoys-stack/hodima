@@ -16,7 +16,8 @@
  *
  * نسخه قبلی یک نود جزئی جداگانه با همان @id چاپ می‌کرد و برای اینکه
  * گارد حذف تکراری schema-cleaner.php آن را حذف نکند، عمدا @type
- * نمی‌گذاشت. آن ترفند شکننده دیگر لازم نیست.
+ * نمی‌گذاشت. آن ترفند شکننده دیگر لازم نیست؛ خروجی این فایل هم مثل
+ * بقیه به گراف واحد hodima-core (hodima_schema_add) می‌رود.
  *
  * ─────────────────────────────────────────────────────────────────────
  * باگ رفع‌شده: isPartOf روی ItemList
@@ -184,8 +185,5 @@ function hodima_tc_print_schema(): void {
 		return;
 	}
 
-	echo "\n<!-- Hodima Topic Cluster Schema -->\n";
-	echo '<script type="application/ld+json" id="hodima-tc-schema">'
-		. wp_json_encode( [ '@context' => 'https://schema.org', '@graph' => $graph ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP )
-		. "</script>\n";
+	hodima_schema_add( [ '@graph' => $graph ], 'hodima-seo: topiccluster' );
 }

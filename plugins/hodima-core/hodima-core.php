@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Hodima Core
  * Plugin URI:        https://hodima.com
- * Description:       کتابخانه مشترک افزونه‌های هدیما: تشخیص IP واقعی (سازگار با Cloudflare)، محدودیت نرخ، تشخیص ربات موتور جستجو، موتور Canonical و بررسی محتوای محافظت‌شده. پیش‌نیاز Hodima SEO، Hodima Commerce و Hodima Media.
+ * Description:       کتابخانه مشترک افزونه‌های هدیما: تشخیص IP واقعی (سازگار با Cloudflare)، محدودیت نرخ، تشخیص ربات موتور جستجو، موتور Canonical، گراف واحد اسکیما (JSON-LD) و بررسی محتوای محافظت‌شده. پیش‌نیاز Hodima SEO، Hodima Commerce و Hodima Media.
  * Version:           1.0.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
@@ -28,6 +28,9 @@ require_once HODIMA_CORE_PLUGIN_DIR . '/includes/helpers.php';
 
 // مدیریت ماژول‌ها (هر افزونه ماژول‌هایش را در plugins_loaded ثبت می‌کند)
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/modules.php';
+
+// گراف واحد اسکیما: همه JSON-LDهای صفحه در یک @graph (hodima_schema_add)
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/schema-graph.php';
 
 // پنل «هدیما» در پیشخوان: وضعیت و روشن/خاموش کردن ماژول‌ها
 if ( is_admin() ) {

@@ -42,6 +42,50 @@
 }
 
 /* ==============================================
+   نوار ناوبری صفحه‌های اسکیما
+   (منوی «اسکیما» حالا زیر پنل «هدیما» است و فقط یک
+   زیرمنو دارد؛ جابه‌جایی بین ۱۳ صفحه از این نوار)
+   ============================================== */
+.h-schema-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-block-end: 16px;
+    padding: 6px;
+    background: var(--h-card);
+    border: 1px solid var(--h-border);
+    border-radius: 14px;
+}
+
+.h-schema-nav a {
+    padding: 6px 14px;
+    border-radius: 10px;
+    color: var(--h-primary);
+    font-size: 13px;
+    text-decoration: none;
+    transition: background-color .2s, color .2s;
+}
+
+.h-schema-nav a:hover {
+    background: color-mix(in srgb, var(--h-third) 35%, transparent);
+}
+
+.h-schema-nav a:focus-visible {
+    outline: 2px solid var(--h-secondary);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+.h-schema-nav a[aria-current="page"] {
+    background: var(--h-primary);
+    color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .h-schema-nav a { transition: none; }
+}
+
+/* ==============================================
    هدر مدرن با گرادیانت سازمانی
    ============================================== */
 .h-header {

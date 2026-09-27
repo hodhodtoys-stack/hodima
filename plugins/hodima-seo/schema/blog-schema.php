@@ -132,16 +132,6 @@ function hook_render_blog_schema() {
         }
     }
 
-    // 3. تعریف ساختار اصلی اسکیما گراف
-    $schema = array(
-        '@context' => 'https://schema.org',
-        '@graph' => array(
-            $blog_posting
-        )
-    );
-
-    // چاپ خروجی نهایی با بالاترین سطح امنیت XSS
-    echo "\n\n<!-- HOOK Blog Posting Schema (AI & Discover Enhanced) -->\n";
-    echo '<script type="application/ld+json" id="hook-blog-schema">' . wp_json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n";
-    echo "\n";
+    // 3. افزودن به گراف واحد صفحه (hodima-core)
+    hodima_schema_add( $blog_posting, 'hodima-seo: blog-schema' );
 }

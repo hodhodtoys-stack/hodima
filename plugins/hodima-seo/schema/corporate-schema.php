@@ -136,22 +136,30 @@ function hook_render_corporate_schema() {
         $organization_node['alternateName'] = $alt_names;
     }
 
-    $schema = [
-        '@context' => 'https://schema.org',
-        '@graph'   => [
-            $organization_node,
-            [
-                '@type'       => $page_type,
-                '@id'         => $page_url . '#webpage', // بدون trailingslashit — دقیقا مثل homepage-schema
-                'url'         => $page_url,
-                'name'        => $page_name,
-                'isPartOf'    => [ '@id' => $site_url . '#website' ],
-                'about'       => [ '@id' => $site_url . '#organization' ],
-                'description' => get_the_excerpt(),
-            ],
-        ],
+    $webpage_node = [
+        '@type'       => $page_type,
+        '@id'         => $page_url . '#webpage', // بدون trailingslashit — دقیقا مثل homepage-schema
+        'url'         => $page_url,
+        'name'        => $page_name,
+        'isPartOf'    => [ '@id' => $site_url . '#website' ],
+        'about'       => [ '@id' => $site_url . '#organization' ],
+        'inLanguage'  => 'fa-IR',
     ];
 
-    echo "\n<!-- Corporate & Contact Schema for hodima.com -->\n";
-    echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . "</script>\n";
+    // توضیح خالی ("") ویژگی بی‌معنا است؛ فقط وقتی متنی هست
+    $excerpt = wp_strip_all_tags( (string) get_the_excerpt() );
+    if ( '' !== $excerpt ) {
+        $webpage_node['description'] = $excerpt;
+    }
+
+    /*
+     * همان نقطه غنی‌سازی homepage-schema.php. قبلا نود صفحه درباره‌ما/تماس
+     * از این فیلتر رد نمی‌شد، پس بردکرامب همین صفحه (#breadcrumb) به هیچ
+     * نودی وصل نبود و رابطه‌های خوشه محتوایی به صورت نود جزئی جداگانه
+     * چاپ می‌شد.
+     */
+    $webpage_node = (array) apply_filters( 'hodima_schema_webpage_node', $webpage_node, $page_url );
+    $GLOBALS['hodima_schema_webpage_emitted'] = true;
+
+    hodima_schema_add( [ '@graph' => [ $organization_node, $webpage_node ] ], 'hodima-seo: corporate-schema' );
 }

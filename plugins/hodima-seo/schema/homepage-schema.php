@@ -7,7 +7,10 @@
 
 if (!defined('ABSPATH')) exit;
 
-add_action('wp_head', 'hook_render_master_schema', 5);
+// اولویت ۰: نودهای هویتی (Organization، WebSite، صفحه) اولین نودهای گراف
+// واحد باشند و پرچم hodima_schema_webpage_emitted() پیش از همه سازنده‌ها
+// (قبلا ۵ بود؛ هیچ سازنده‌ای پیش از ۵ به این پرچم نیاز نداشت) ست شود.
+add_action('wp_head', 'hook_render_master_schema', 0);
 
 function hook_render_master_schema() {
     if (is_admin()) return;
@@ -300,13 +303,9 @@ function hook_render_master_schema() {
         $graph_nodes = [ $organization_schema, $website_schema ];
     }
 
-    $final_graph = [
-        '@context' => 'https://schema.org',
-        '@graph'   => $graph_nodes
-    ];
-
-    echo "\n<!-- HOOK MASTER SCHEMA GRAPH (Validated) -->\n";
-    echo '<script type="application/ld+json" id="hook-master-graph">' . wp_json_encode($final_graph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n\n";
+    // گراف واحد (hodima-core): این سه نود اولین نودهای گراف صفحه‌اند و
+    // بقیه سازنده‌ها با @id به آن‌ها ارجاع می‌دهند یا ادغام می‌شوند.
+    hodima_schema_add( [ '@graph' => $graph_nodes ], 'hodima-seo: homepage-schema' );
 }
 
 /**

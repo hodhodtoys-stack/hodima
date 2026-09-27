@@ -107,3 +107,26 @@ function hodima_shortcode( string $tag, array $atts = [] ): string {
 
     return trim( (string) do_shortcode( "[{$tag}{$attr}]" ) );
 }
+
+/* ============================================================
+ * گراف واحد اسکیما — فالبک
+ * ------------------------------------------------------------
+ * hodima_schema_add() را افزونه Hodima Core تعریف می‌کند: همه JSON-LDهای
+ * صفحه (قالب و افزونه‌ها) در یک @graph ادغام و یک بار در فوتر چاپ
+ * می‌شوند. افزونه‌ها قبل از قالب لود می‌شوند، پس اگر Hodima Core فعال
+ * باشد این تعریف نادیده گرفته می‌شود. بدون آن، هر payload مثل قبل در
+ * یک تگ جداگانه چاپ می‌شود تا هیچ اسکیمایی گم نشود.
+ * ============================================================ */
+if ( ! function_exists( 'hodima_schema_add' ) ) {
+    function hodima_schema_add( array $payload, string $source = '' ): void {
+        if ( empty( $payload ) ) {
+            return;
+        }
+        if ( ! isset( $payload['@context'] ) && ! array_is_list( $payload ) ) {
+            $payload = [ '@context' => 'https://schema.org' ] + $payload;
+        } elseif ( array_is_list( $payload ) ) {
+            $payload = [ '@context' => 'https://schema.org', '@graph' => $payload ];
+        }
+        echo '<script type="application/ld+json">' . wp_json_encode( $payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . "</script>\n";
+    }
+}

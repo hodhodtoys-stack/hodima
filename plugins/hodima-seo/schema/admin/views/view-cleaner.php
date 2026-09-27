@@ -17,19 +17,20 @@ if ( isset( $_POST['hodima_save_schema_cleaner'] ) ) {
     $cleaner_rm     = isset( $_POST['hodima_cleaner_rm'] ) ? sanitize_text_field( wp_unslash( $_POST['hodima_cleaner_rm'] ) ) : 'yes';
     $cleaner_woo    = isset( $_POST['hodima_cleaner_woo'] ) ? sanitize_text_field( wp_unslash( $_POST['hodima_cleaner_woo'] ) ) : 'yes';
     $cleaner_hentry = isset( $_POST['hodima_cleaner_hentry'] ) ? sanitize_text_field( wp_unslash( $_POST['hodima_cleaner_hentry'] ) ) : 'yes';
-    $dedupe_guard   = isset( $_POST['hodima_cleaner_dedupe_guard'] ) ? sanitize_text_field( wp_unslash( $_POST['hodima_cleaner_dedupe_guard'] ) ) : 'yes';
+    $graph_debug    = isset( $_POST['hodima_schema_graph_debug'] ) ? sanitize_text_field( wp_unslash( $_POST['hodima_schema_graph_debug'] ) ) : 'no';
 
     $allowed = array( 'yes', 'no' );
 
     $cleaner_rm     = in_array( $cleaner_rm, $allowed, true ) ? $cleaner_rm : 'yes';
     $cleaner_woo    = in_array( $cleaner_woo, $allowed, true ) ? $cleaner_woo : 'yes';
     $cleaner_hentry = in_array( $cleaner_hentry, $allowed, true ) ? $cleaner_hentry : 'yes';
-    $dedupe_guard   = in_array( $dedupe_guard, $allowed, true ) ? $dedupe_guard : 'yes';
+    $graph_debug    = in_array( $graph_debug, $allowed, true ) ? $graph_debug : 'no';
 
     update_option( 'hodima_cleaner_rm', $cleaner_rm );
     update_option( 'hodima_cleaner_woo', $cleaner_woo );
     update_option( 'hodima_cleaner_hentry', $cleaner_hentry );
-    update_option( 'hodima_cleaner_dedupe_guard', $dedupe_guard );
+    update_option( 'hodima_schema_graph_debug', $graph_debug );
+    delete_option( 'hodima_cleaner_dedupe_guard' ); // گارد قدیمی حذف شد (گراف واحد جایگزین آن است)
 
     $notice_msg = '<div class="notice notice-success is-dismissible" style="margin-bottom:20px; border-radius:8px; border-right: 4px solid #25316a; background: #fff;"><p style="font-weight: inherit;">✅ تنظیمات پاکسازی اسکیما با موفقیت به‌روزرسانی شد.</p></div>';
 }
@@ -50,7 +51,7 @@ $orphan_meta_total  = $orphan_meta_counts['postmeta'] + $orphan_meta_counts['ter
 $cleaner_rm     = get_option( 'hodima_cleaner_rm', 'yes' );
 $cleaner_woo    = get_option( 'hodima_cleaner_woo', 'yes' );
 $cleaner_hentry = get_option( 'hodima_cleaner_hentry', 'yes' );
-$dedupe_guard   = get_option( 'hodima_cleaner_dedupe_guard', 'yes' );
+$graph_debug    = get_option( 'hodima_schema_graph_debug', 'no' );
 
 // هدر
 hodima_view_header(
@@ -117,14 +118,21 @@ hodima_view_header(
             </tr>
 
             <tr valign="top" style="border-top:1px dashed #e2e8f0;">
-                <th scope="row" style="padding-top:20px; font-weight: inherit;">نگهبان سراسری تکرار اسکیما</th>
+                <th scope="row" style="padding-top:20px; font-weight: inherit;">گراف واحد اسکیما</th>
                 <td style="padding-top:20px;">
-                    <select name="hodima_cleaner_dedupe_guard" style="min-width:150px; border-radius: 6px;" class="hodima-input">
-                        <option value="yes" <?php selected( $dedupe_guard, 'yes' ); ?>>✅ فعال (پیشنهادی)</option>
-                        <option value="no" <?php selected( $dedupe_guard, 'no' ); ?>>❌ غیرفعال</option>
+                    <p style="margin-top:0;">
+                        همه اسکیماهای سایت (قالب و افزونه‌های هدیما) در <strong>یک</strong> تگ و یک <code>@graph</code> در انتهای صفحه چاپ می‌شوند — همیشه فعال است.
+                        نودهای هم‌شناسه (<code>@id</code> یکسان) <strong>ادغام</strong> می‌شوند، نه حذف؛ پس دیگر هیچ اسکیمایی به اشتباه دور ریخته نمی‌شود
+                        (این همان کاری است که «نگهبان سراسری تکرار» قبلی با regex انجام می‌داد).
+                    </p>
+                    <label for="hodima_schema_graph_debug" style="display:block; margin-bottom:6px;">گزارش گراف برای مدیر</label>
+                    <select id="hodima_schema_graph_debug" name="hodima_schema_graph_debug" style="min-width:150px; border-radius: 6px;" class="hodima-input">
+                        <option value="no" <?php selected( $graph_debug, 'no' ); ?>>❌ غیرفعال (پیشنهادی)</option>
+                        <option value="yes" <?php selected( $graph_debug, 'yes' ); ?>>✅ فعال</option>
                     </select>
                     <p class="description">
-                        کل خروجی &lt;head&gt; صفحه را — صرف‌نظر از این‌که هر بلوک اسکیما از کجا آمده (این پوشه، قالب، یا افزونه‌ی دیگری) — درست قبل از ارسال به مرورگر اسکن می‌کند و هر نود دقیقاً تکراری (همان @type + همان شناسه/آدرس) را حذف می‌کند. این همان چیزی است که خطای «CollectionPage: 2 ITEMS» یا مشابه آن در اعتبارسنج schema.org را رفع می‌کند. کاملاً ایمن (در صورت هر خطایی، خروجی اصلی دست‌نخورده باقی می‌ماند) — اگر با این حال به مشکلی برخوردید، از همین‌جا غیرفعالش کنید.
+                        وقتی فعال است و با حساب مدیر وارد شده‌اید، در سورس هر صفحه (کنار اسکیما) یک کامنت HTML می‌بینید: هر نود از کدام بخش آمده، کدام مقادیر با هم تعارض داشتند و کدام ارجاع‌ها نود مقصد ندارند.
+                        بازدیدکنندگان و گوگل این گزارش را نمی‌بینند.
                     </p>
                 </td>
             </tr>

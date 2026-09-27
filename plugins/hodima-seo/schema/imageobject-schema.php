@@ -148,8 +148,11 @@ function hook_generate_imageobject_schema() {
         if (empty($html)) return;
         
         $html = wp_specialchars_decode($html);
-        if (function_exists('mb_convert_encoding')) {
-            $html = mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8');
+        // DOMDocument ورودی را Latin-1 فرض می‌کند؛ نویسه‌های غیر ASCII به
+        // موجودیت عددی تبدیل می‌شوند. (mb_convert_encoding با «HTML-ENTITIES»
+        // از PHP 8.2 منسوخ است و در PHP 8.4 هشدار Deprecated می‌دهد.)
+        if (function_exists('mb_encode_numericentity')) {
+            $html = mb_encode_numericentity($html, [0x80, 0x10FFFF, 0, 0x1FFFFF], 'UTF-8');
         }
         
         $dom = new DOMDocument();
@@ -221,8 +224,8 @@ function hook_generate_imageobject_schema() {
         // یعنی تصاویر واقعی گالری/دسته‌بندی که قبلاً درست چاپ می‌شدند، حذف
         // شدند. آن تغییر اشتباه بود؛ رفتار قبلی (سقف فقط روی اسکن HTML
         // محتوا، نه روی تصویر شاخص/گالری/دسته‌بندی) برگردانده شد.
-        echo "\n\n<!-- HOOK ImageObject Schema (Hybrid Dynamic Extractor - Optimized) | creator-fix-v3 -->\n";
-        echo '<script type="application/ld+json" id="hook-imageobject-schema">' . wp_json_encode($final_schemas, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . "</script>\n";
-        echo "\n";
+        // گراف واحد (hodima-core). ImageObjectها عمدا @id ندارند (توضیح
+        // creator بالا)؛ گراف فقط نسخه‌ی *دقیقا* تکراری را حذف می‌کند.
+        hodima_schema_add( $final_schemas, 'hodima-seo: imageobject-schema' );
     }
 }

@@ -111,8 +111,17 @@ get_header(); ?>
                     <?php endwhile; ?>
                     
                     <?php 
+                    /*
+                     * پایه شناسه از موتور canonical مشترک — همان آدرسی که
+                     * homepage-schema.php برای «#webpage» به کار می‌برد.
+                     * نسخه قبلی home_url($wp->request) بود که با canonical
+                     * دستی یا ساختار پیوند بدون اسلش پایانی یکی نمی‌شد.
+                     */
                     global $wp;
-                    $current_url = trailingslashit( home_url( $wp->request ) );
+                    $current_url = function_exists( 'hodima_get_canonical_url' ) ? hodima_get_canonical_url() : '';
+                    if ( '' === $current_url ) {
+                        $current_url = trailingslashit( home_url( $wp->request ) );
+                    }
                     
                     // استخراج نام برای اسکیما (با تغییر مدنظر شما)
                     $archive_name = 'وبلاگ';
@@ -123,7 +132,6 @@ get_header(); ?>
                     }
 
                     $item_list_schema = array(
-                        '@context'         => 'https://schema.org',
                         '@type'            => 'ItemList',
                         '@id'              => $current_url . '#itemlist',
                         'mainEntityOfPage' => array( '@id' => $current_url . '#webpage' ),
@@ -132,8 +140,8 @@ get_header(); ?>
                         'itemListElement'  => $schema_items
                     );
                     
-                    echo "\n" . '<!-- Linked ItemList Schema -->' . "\n";
-                    echo '<script type="application/ld+json">' . wp_json_encode( $item_list_schema, JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
+                    // گراف واحد صفحه (hodima-core) — در فوتر با بقیه نودها چاپ می‌شود
+                    hodima_schema_add( $item_list_schema, 'theme: archive-blog.php' );
                     ?>
 
                 <?php else : ?>

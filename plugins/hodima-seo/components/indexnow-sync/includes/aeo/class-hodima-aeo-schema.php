@@ -71,11 +71,18 @@ final class Hodima_AEO_Schema {
         return home_url( '/' );
     }
 
+    /**
+     * نودها به گراف واحد صفحه (hodima-core) می‌روند.
+     *
+     * نسخه قبلی یک تگ جداگانه چاپ می‌کرد. FAQPage این کلاس و FAQPage سیستم
+     * رسانه هر دو شناسه «#faq» دارند؛ گارد حذف تکراری schema-cleaner.php
+     * دومی را *کامل* دور می‌انداخت و سوال‌های AEO هرگز به گوگل نمی‌رسید.
+     * گراف واحد این دو را ادغام می‌کند (سوال تکراری یک بار).
+     */
     public static function render(): void {
         if ( empty( self::$graph ) ) return;
-        $schema = [ '@context' => 'https://schema.org', '@graph' => self::$graph ];
-        echo "<!-- Hodima Schema -->\n";
-        echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE ) . "</script>\n";
+        hodima_schema_add( [ '@graph' => self::$graph ], 'hodima-seo: aeo-schema' );
+        self::$graph = [];
     }
 
     public static function register_schemas(): void {
@@ -104,8 +111,15 @@ final class Hodima_AEO_Schema {
         // media-system/media-schema.php هم روی همین URL یک FAQPage با
         // شناسه #faq و homepage-schema.php یک WebPage با شناسه #webpage
         // می‌سازد، خروجی این کلاس بدون @id باعث ایجاد موجودیت تکراری
-        // می‌شد. با دادن همان شناسه‌ها، گوگل نودها را ادغام می‌کند.
-        $page_url = trailingslashit( self::current_url() );
+        // می‌شد. با دادن همان شناسه‌ها، گراف واحد نودها را ادغام می‌کند.
+        //
+        // پایه شناسه از موتور canonical مشترک — همان آدرسی که
+        // homepage-schema.php برای «#webpage» به کار می‌برد. نسخه قبلی
+        // trailingslashit(permalink) بود: در صفحه دوم آرشیو، یا با canonical
+        // دستی، یا با ساختار پیوند بدون اسلش پایانی، شناسه‌ها به نودی
+        // می‌رسیدند که وجود نداشت (نود جزئی بی‌نوع و آویزان).
+        $canonical = function_exists( 'hodima_get_canonical_url' ) ? hodima_get_canonical_url() : '';
+        $page_url  = '' !== $canonical ? $canonical : trailingslashit( self::current_url() );
 
         if ( ! empty( $all_faqs ) ) {
             $schema = [

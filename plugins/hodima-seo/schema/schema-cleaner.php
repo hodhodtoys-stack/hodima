@@ -332,137 +332,19 @@ function hodima_purge_orphan_seo_meta() {
 }
 
 /* =========================================================
- * 5. نگهبان سراسری تکرار اسکیما (Universal Duplicate Guard)
+ * 5. نگهبان سراسری تکرار اسکیما — حذف شد
  * ---------------------------------------------------------
- * چرا لازم شد: تست schema.org/validator.schema.org چند نوع تکراری نشان
- * داد — مثلاً «CollectionPage: 2 ITEMS» روی صفحه‌ی دسته‌بندی. بررسی کامل
- * تک‌تک فایل‌های این پوشه (category-schema-pro.php و بقیه) نشان داد که
- * هیچ‌کدام بیش از یک CollectionPage/... تولید نمی‌کنند. همچنین انواعی مثل
- * ItemList، FAQPage و AudioObject که در نتیجه‌ی اعتبارسنج دیده شدند، اصلاً
- * در هیچ‌کدام از فایل‌های این پوشه ساخته نمی‌شوند — طبق مستندات پنل ادمین
- * (admin/views/view-tables.php)، اسکیمای ItemList توسط یک ماژول کاملاً
- * جدا («جدول داینامیک» / Hodima_Dynamic_Table، با شورت‌کد [hodima_table])
- * تولید می‌شود که در قالب سایت شما پیاده‌سازی شده، نه در این پوشه‌ی schema؛
- * FAQPage/AudioObject هم احتمالاً از یک بلوک گوتنبرگ (FAQ یا پخش‌کننده‌ی
- * صوتی) در متن توضیحات همان دسته‌بندی می‌آیند. یعنی نمی‌توانستیم منبع دقیق
- * تکرار را در همین فایل‌ها اصلاح کنیم — چون خودِ آن فایل‌ها اینجا نیستند.
+ * این بخش قبلا کل خروجی <head> را با ob_start بافر می‌کرد و با regex
+ * هر بلوک JSON-LD را می‌خواند؛ هر نودی که @type و @id/url/name آن قبلا
+ * دیده شده بود *کامل* حذف می‌شد. دو ایراد داشت:
  *
- * راه‌حل این بخش: به‌جای وصله‌زدن منبع نامعلوم، کل خروجی <head> صفحه، درست
- * قبل از ارسال به مرورگر، اسکن می‌شود؛ هر بلوک <script type="application/
- * ld+json"> (از هر فایل/افزونه/قالبی که آمده باشد) خوانده می‌شود و اگر دو
- * نود دقیقاً با همان @type + همان @id/url/name قبلاً دیده شده باشند، نسخه‌ی
- * تکراری (دومی به بعد) حذف می‌شود. این یعنی صرف‌نظر از این‌که تکرار از کجا
- * می‌آید (قالب، این پوشه، یا یک افزونه‌ی دیگر)، خروجی نهایی همیشه تمیز است.
+ *   - حذف اشتباه: دو نود هم‌شناسه با محتوای متفاوت (مثلا FAQPage «#faq»
+ *     سیستم رسانه و FAQPage «#faq» ماژول AEO) تکراری فرض می‌شدند و
+ *     سوال‌های دومی هرگز به گوگل نمی‌رسید.
+ *   - فقط <head> را می‌دید؛ اسکیمای فوتر و بدنه بررسی نمی‌شد.
  *
- * ایمنی: این بخش کاملاً defensive نوشته شده — اگر JSON قابل‌خواندن نباشد،
- * همان بلوک دست‌نخورده باقی می‌ماند؛ اگر هر خطای غیرمنتظره‌ای رخ دهد، کل
- * خروجی اصلی و دست‌نخورده برگردانده می‌شود (هیچ‌وقت صفحه را خراب نمی‌کند).
- * یک سوییچ روشن/خاموش هم در پنل «پاکسازی اسکیما» اضافه شده تا در صورت بروز
- * هر مشکلی، بدون نیاز به ویرایش کد، بتوان این بخش را غیرفعال کرد.
+ * جایگزین: گراف واحد hodima-core (includes/schema-graph.php). همه
+ * سازنده‌ها نودهایشان را با hodima_schema_add() می‌دهند؛ نودهای هم‌شناسه
+ * *ادغام* می‌شوند (نه حذف) و یک @graph در انتهای صفحه چاپ می‌شود.
+ * گزینه hodima_cleaner_dedupe_guard دیگر خوانده نمی‌شود.
  * ========================================================= */
-if ( get_option( 'hodima_cleaner_dedupe_guard', 'yes' ) === 'yes' && ! is_admin() ) {
-
-    add_action( 'wp_head', function() {
-        ob_start();
-    }, -999999 );
-
-    add_action( 'wp_head', function() {
-        $html = ob_get_clean();
-        if ( empty( $html ) || strpos( $html, 'application/ld+json' ) === false ) {
-            echo $html;
-            return;
-        }
-
-        try {
-            $seen = [];
-
-            $result = preg_replace_callback(
-                '/<script\b([^>]*type=["\']application\/ld\+json["\'][^>]*)>(.*?)<\/script>/is',
-                function( $m ) use ( &$seen ) {
-                    $attrs     = $m[1];
-                    $json_text = trim( $m[2] );
-                    $data      = json_decode( $json_text, true );
-
-                    if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $data ) ) {
-                        return $m[0]; // اگر JSON قابل‌خواندن نبود، دست‌نخورده برگردان
-                    }
-
-                    $filtered = hodima_dedupe_jsonld_payload( $data, $seen );
-
-                    if ( $filtered === null ) {
-                        return ''; // کل این نود، تکراریِ چیزی بود که قبلاً دیده شده
-                    }
-
-                    $new_json = wp_json_encode( $filtered, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP );
-                    if ( $new_json === false ) {
-                        return $m[0]; // encode شکست خورد، ریسک نکن و اصل را نگه دار
-                    }
-
-                    return '<script' . $attrs . '>' . $new_json . '</script>';
-                },
-                $html
-            );
-
-            echo ( $result !== null ) ? $result : $html; // اگر preg شکست خورد، اصل را برگردان
-        } catch ( \Throwable $e ) {
-            echo $html; // هر خطای پیش‌بینی‌نشده، خروجی اصلی دست‌نخورده برمی‌گردد
-        }
-    }, 999999 );
-}
-
-// امضای هر نود بر اساس @type + (@id یا url یا name) — برای تشخیص «همان چیز، دوباره»
-function hodima_jsonld_node_signature( $node ) {
-    if ( ! is_array( $node ) || ! isset( $node['@type'] ) ) {
-        return null;
-    }
-    $type = is_array( $node['@type'] ) ? implode( ',', $node['@type'] ) : (string) $node['@type'];
-    $key  = $node['@id'] ?? $node['url'] ?? $node['name'] ?? '';
-    if ( ! is_scalar( $key ) ) {
-        $key = wp_json_encode( $key );
-    }
-    return $type . '|' . (string) $key;
-}
-
-// یک payload کامل JSON-LD (که می‌تواند @graph، آرایه‌ی نودها، یا یک نود تکی باشد) را پالایش می‌کند
-function hodima_dedupe_jsonld_payload( $data, &$seen ) {
-    // حالت ۱: {"@context":..., "@graph":[...]}
-    if ( isset( $data['@graph'] ) && is_array( $data['@graph'] ) ) {
-        $new_graph = [];
-        foreach ( $data['@graph'] as $node ) {
-            if ( ! is_array( $node ) ) { $new_graph[] = $node; continue; }
-            $sig = hodima_jsonld_node_signature( $node );
-            if ( $sig !== null ) {
-                if ( isset( $seen[ $sig ] ) ) continue; // تکراری، حذف شود
-                $seen[ $sig ] = true;
-            }
-            $new_graph[] = $node;
-        }
-        if ( empty( $new_graph ) ) return null;
-        $data['@graph'] = $new_graph;
-        return $data;
-    }
-
-    // حالت ۲: آرایه‌ی مسطح از چند نود (مثل خروجی imageobject-schema.php)
-    $is_list = is_array( $data ) && array_keys( $data ) === range( 0, count( $data ) - 1 );
-    if ( $is_list ) {
-        $new_list = [];
-        foreach ( $data as $node ) {
-            if ( ! is_array( $node ) ) { $new_list[] = $node; continue; }
-            $sig = hodima_jsonld_node_signature( $node );
-            if ( $sig !== null ) {
-                if ( isset( $seen[ $sig ] ) ) continue;
-                $seen[ $sig ] = true;
-            }
-            $new_list[] = $node;
-        }
-        return empty( $new_list ) ? null : $new_list;
-    }
-
-    // حالت ۳: یک نود تکی با @type مستقیم روی سطح اول
-    $sig = hodima_jsonld_node_signature( $data );
-    if ( $sig !== null ) {
-        if ( isset( $seen[ $sig ] ) ) return null; // کل این بلوک، تکراری است
-        $seen[ $sig ] = true;
-    }
-    return $data;
-}

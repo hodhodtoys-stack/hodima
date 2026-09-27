@@ -471,3 +471,26 @@ function hodima_post_content_is_visible( $post ): bool {
 
     return current_user_can( 'read_post', $post->ID );
 }
+
+/* ============================================================
+ * ۹. گراف واحد اسکیما (JSON-LD)
+ * ------------------------------------------------------------
+ * همه سازنده‌های اسکیما (قالب و افزونه‌ها) نودهایشان را اینجا
+ * می‌دهند و در انتهای صفحه یک @graph واحد چاپ می‌شود.
+ * پیاده‌سازی: includes/schema-graph.php
+ * ============================================================ */
+
+/**
+ * افزودن اسکیما به گراف واحد صفحه.
+ *
+ * @param array  $payload {@graph:[…]}، فهرست نودها، یا یک نود تکی.
+ * @param string $source  نام سازنده (فقط در گزارش مدیر دیده می‌شود).
+ */
+function hodima_schema_add( array $payload, string $source = '' ): void {
+    \Hodima\Core\Schema_Graph::add( $payload, $source );
+}
+
+/** آیا نودی با این @id تا این لحظه در گراف صفحه هست؟ */
+function hodima_schema_has( string $id ): bool {
+    return \Hodima\Core\Schema_Graph::has( $id );
+}

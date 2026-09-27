@@ -149,6 +149,11 @@ add_action( 'plugins_loaded', static function (): void {
 		return;
 	}
 
+	// بدون Hodima Core، اسکیما مثل قبل در تگ جداگانه چاپ می‌شود
+	if ( ! function_exists( 'hodima_schema_add' ) ) {
+		require_once __DIR__ . '/inc/schema-fallback.php';
+	}
+
 	$specs = hodima_seo_modules();
 
 	// مسیر عادی: ثبت در Hodima Core و بارگذاری ماژول‌های روشن

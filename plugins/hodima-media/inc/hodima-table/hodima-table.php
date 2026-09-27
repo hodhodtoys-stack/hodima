@@ -620,7 +620,10 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 				return [];
 			}
 
-			$page_url = trailingslashit( $page_url );
+			// بدون trailingslashit: پایه شناسه باید *دقیقا* همان آدرسی باشد که
+			// homepage-schema.php برای «#webpage» به کار می‌برد (موتور canonical).
+			// نسخه قبلی با ساختار پیوند بدون اسلش پایانی یا صفحه‌بندی با کوئری،
+			// isPartOf را به نودی می‌فرستاد که وجود نداشت.
 
 			$node = [
 				'@type'      => 'Table',
@@ -645,16 +648,9 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 				return;
 			}
 
-			$graph = array_values( $this->queued_schemas );
-
-			$payload = [
-				'@context' => 'https://schema.org',
-				'@graph'   => $graph,
-			];
-
-			echo "\n" . '<script type="application/ld+json" id="hodima-table-schema">'
-				. wp_json_encode( $payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP )
-				. '</script>' . "\n";
+			// گراف واحد صفحه (hodima-core) — پیش از چاپ آن در wp_footer
+			hodima_schema_add( [ '@graph' => array_values( $this->queued_schemas ) ], 'hodima-media: hodima-table' );
+			$this->queued_schemas = [];
 		}
 
 		/*--------------------------------------------------------------
@@ -710,7 +706,18 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 			$cached = get_transient( $cache_key );
 
 			if ( is_array( $cached ) && isset( $cached['html'] ) ) {
-				$this->queue_schema( $cached['schema'] ?? [] );
+				/*
+				 * نود اسکیما از کش خوانده نمی‌شود: @id آن به آدرس *صفحه جاری*
+				 * بستگی دارد ولی کلید کش فقط شیء جدول را می‌شناسد؛ جدولی که
+				 * اول در صفحه الف کش شده بود، در صفحه ب (یا صفحه دوم همان
+				 * آرشیو) با شناسه صفحه الف چاپ می‌شد. ساختن نود فقط یک
+				 * خواندن متا است.
+				 */
+				$this->queue_schema( $this->build_schema_node(
+					$object_id,
+					$context_enum,
+					(string) ( '' !== $atts['caption'] ? $atts['caption'] : $atts['title'] )
+				) );
 				if ( '' !== $cached['html'] ) {
 					wp_enqueue_style( 'hodima-table-front-css' );
 				}
@@ -740,7 +747,7 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 
 			$this->queue_schema( $schema );
 
-			set_transient( $cache_key, [ 'html' => $html, 'schema' => $schema ], 12 * HOUR_IN_SECONDS );
+			set_transient( $cache_key, [ 'html' => $html ], 12 * HOUR_IN_SECONDS );
 
 			if ( '' !== $html ) {
 				wp_enqueue_style( 'hodima-table-front-css' );

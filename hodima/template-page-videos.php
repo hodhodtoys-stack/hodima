@@ -226,39 +226,32 @@ get_header(); ?>
 					? hodima_get_canonical_url()
 					: $hvp_page_url;
 
-				add_action( 'wp_footer', static function () use ( $hvp_base, $hvp_list, $hvp_page_title, $video_query ): void {
+				// گراف واحد صفحه (hodima-core) — در فوتر با بقیه نودها چاپ می‌شود.
+				// نود صفحه با همان شناسه «#webpage» گراف اصلی ادغام می‌شود.
+				$hvp_master_ran = function_exists( 'hodima_schema_webpage_emitted' ) && hodima_schema_webpage_emitted();
 
-					$master_ran = function_exists( 'hodima_schema_webpage_emitted' ) && hodima_schema_webpage_emitted();
-
-					$page_node = $master_ran
-						? [ '@id' => $hvp_base . '#webpage', 'mainEntity' => [ '@id' => $hvp_base . '#itemlist' ] ]
-						: [
-							'@type'      => 'CollectionPage',
-							'@id'        => $hvp_base . '#webpage',
-							'url'        => $hvp_base,
-							'name'       => $hvp_page_title,
-							'isPartOf'   => [ '@id' => trailingslashit( home_url() ) . '#website' ],
-							'mainEntity' => [ '@id' => $hvp_base . '#itemlist' ],
-							'inLanguage' => 'fa-IR',
-						];
-
-					$graph = [
-						'@context' => 'https://schema.org',
-						'@graph'   => [
-							$page_node,
-							[
-								'@type'            => 'ItemList',
-								'@id'              => $hvp_base . '#itemlist',
-								'mainEntityOfPage' => [ '@id' => $hvp_base . '#webpage' ],
-								'numberOfItems'    => (int) $video_query->found_posts,
-								'itemListElement'  => $hvp_list,
+				hodima_schema_add( [
+					'@graph' => [
+						$hvp_master_ran
+							? [ '@id' => $hvp_base . '#webpage', 'mainEntity' => [ '@id' => $hvp_base . '#itemlist' ] ]
+							: [
+								'@type'      => 'CollectionPage',
+								'@id'        => $hvp_base . '#webpage',
+								'url'        => $hvp_base,
+								'name'       => $hvp_page_title,
+								'isPartOf'   => [ '@id' => trailingslashit( home_url() ) . '#website' ],
+								'mainEntity' => [ '@id' => $hvp_base . '#itemlist' ],
+								'inLanguage' => 'fa-IR',
 							],
+						[
+							'@type'            => 'ItemList',
+							'@id'              => $hvp_base . '#itemlist',
+							'mainEntityOfPage' => [ '@id' => $hvp_base . '#webpage' ],
+							'numberOfItems'    => (int) $video_query->found_posts,
+							'itemListElement'  => $hvp_list,
 						],
-					];
-
-					echo "\n<!-- Hodima Videos List Schema -->\n";
-					echo '<script type="application/ld+json">' . wp_json_encode( $graph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . "</script>\n";
-				}, 99 );
+					],
+				], 'theme: template-page-videos.php' );
 				?>
 
 			<?php else : ?>

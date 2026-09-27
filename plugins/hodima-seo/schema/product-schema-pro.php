@@ -485,13 +485,7 @@ function hook_generate_custom_product_schema() {
         $graph[] = $video_node;
     }
 
-    $payload = [
-        '@context' => 'https://schema.org',
-        '@graph'   => $graph,
-    ];
-
-    echo "\n<!-- HOOK Smart Product Schema (Unified) | video-graph-v3 -->\n";
-    echo '<script type="application/ld+json">' . wp_json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . '</script>' . "\n";
+    hodima_schema_add( [ '@graph' => $graph ], 'hodima-seo: product-schema-pro' );
 }
 
 /**
