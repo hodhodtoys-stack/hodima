@@ -20,10 +20,19 @@ defined( 'ABSPATH' ) || exit;
 const HODIMA_CORE_PLUGIN_VERSION = '1.0.0';
 define( 'HODIMA_CORE_PLUGIN_FILE', __FILE__ );
 define( 'HODIMA_CORE_PLUGIN_DIR', __DIR__ );
+define( 'HODIMA_CORE_PLUGIN_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
 
 // بلافاصله لود می‌شود (نه در plugins_loaded) تا توابع برای افزونه‌های دیگر و
 // قالب، مستقل از ترتیب الفبایی بارگذاری افزونه‌ها، در دسترس باشند.
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/helpers.php';
+
+// مدیریت ماژول‌ها (هر افزونه ماژول‌هایش را در plugins_loaded ثبت می‌کند)
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/modules.php';
+
+// پنل «هدیما» در پیشخوان: وضعیت و روشن/خاموش کردن ماژول‌ها
+if ( is_admin() ) {
+	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-hub.php';
+}
 
 /**
  * آیا نسخه ۱ قالب هدیما (که همین ماژول‌ها را داخل خودش دارد) فعال است؟

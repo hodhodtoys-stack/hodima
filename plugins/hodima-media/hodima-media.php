@@ -22,6 +22,68 @@ define( 'HODIMA_MEDIA_FILE', __FILE__ );
 define( 'HODIMA_MEDIA_DIR', __DIR__ );
 define( 'HODIMA_MEDIA_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
 
+/**
+ * ماژول‌های افزونه. کلیدهای هر آرایه همان پارامترهای Hodima\Core\Module هستند.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function hodima_media_modules(): array {
+	return [
+		'expandable-boxes' => [
+			'title'       => 'باکس‌های بازشونده',
+			'description' => 'کوتاه کردن متن‌های بلند با دکمه «نمایش بیشتر» در محصول، دسته و نوشته.',
+			'files'       => [ 'components/expandable-boxes/expandable-boxes.php' ],
+			'icon'        => 'dashicons-editor-expand',
+		],
+		'slider' => [
+			'title'       => 'اسلایدر',
+			'description' => 'اسلایدرهای صفحه اصلی با preload تصویر اول (شورت‌کدهای hodima-slider).',
+			'files'       => [ 'components/hodima-slider/hodima-slider.php' ],
+			'settings'    => 'admin.php?page=hodima-slider',
+			'icon'        => 'dashicons-images-alt2',
+		],
+		'stories' => [
+			'title'       => 'استوری',
+			'description' => 'استوری‌های ویدیویی با پخش‌کننده، آمار بازدید و اشتراک‌گذاری.',
+			'files'       => [ 'components/hodima-Stories/hodima-Stories.php' ],
+			'settings'    => 'admin.php?page=hodima-stories',
+			'icon'        => 'dashicons-format-gallery',
+		],
+		'notifications' => [
+			'title'       => 'اعلان‌ها',
+			'description' => 'نوار و پنجره اعلان با زمان‌بندی و هدف‌گیری (صفحه، UTM، ارجاع‌دهنده).',
+			'files'       => [
+				'components/notification/notification-cpt.php',
+				'components/notification/notification-metabox.php',
+				'components/notification/notification-front.php',
+			],
+			'settings'    => 'edit.php?post_type=hd_notification',
+			'icon'        => 'dashicons-megaphone',
+		],
+		'video' => [
+			'title'       => 'ویدیوها',
+			'description' => 'پست‌تایپ ویدیو با پخش‌کننده، زیرنویس، شمارش بازدید و اسکیمای VideoObject.',
+			'files'       => [ 'components/video-watch/video-watch.php' ],
+			'settings'    => 'edit.php?post_type=video',
+			'recommends'  => [ 'media-system' ],
+			'icon'        => 'dashicons-video-alt3',
+		],
+		'media-system' => [
+			'title'       => 'سیستم رسانه',
+			'description' => 'ویدیو، پادکست، FAQ، متن معرفی و خلاصه AI برای نوشته‌ها، محصولات و دسته‌ها (شورت‌کدهای hook_*).',
+			'files'       => [ 'media-system/media-init.php' ],
+			'warning'     => 'بلوک‌های ویدیو، پادکست و FAQ صفحات محصول، دسته و نوشته نمایش داده نمی‌شوند.',
+			'icon'        => 'dashicons-format-video',
+		],
+		'dynamic-table' => [
+			'title'       => 'جدول داینامیک',
+			'description' => 'جدول قابل ویرایش در ویرایشگر با اسکیمای ItemList (شورت‌کد hodima_table).',
+			'files'       => [ 'inc/hodima-table/hodima-table.php' ],
+			'icon'        => 'dashicons-grid-view',
+		],
+	];
+}
+
 add_action( 'plugins_loaded', static function (): void {
 
 	if ( function_exists( 'hodima_legacy_theme_active' ) && hodima_legacy_theme_active() ) {
@@ -29,39 +91,55 @@ add_action( 'plugins_loaded', static function (): void {
 		return;
 	}
 
-	foreach ( [
-		'components/expandable-boxes/expandable-boxes.php',
-		'components/hodima-slider/hodima-slider.php',
-		'components/hodima-Stories/hodima-Stories.php',
-		'components/notification/notification-cpt.php',
-		'components/notification/notification-metabox.php',
-		'components/notification/notification-front.php',
-		'components/video-watch/video-watch.php',
-		'media-system/media-init.php',
-		'inc/hodima-table/hodima-table.php',
-	] as $module ) {
-		require_once HODIMA_MEDIA_DIR . '/' . $module;
+	$specs = hodima_media_modules();
+
+	if ( class_exists( \Hodima\Core\Modules::class ) ) {
+		\Hodima\Core\Modules::register(
+			'media',
+			'رسانه',
+			'استوری، ویدیو، اسلایدر، سیستم رسانه، اعلان‌ها، باکس‌های بازشونده و جدول داینامیک.',
+			HODIMA_MEDIA_FILE,
+			HODIMA_MEDIA_VERSION,
+			...array_map(
+				static fn( string $id, array $spec ): \Hodima\Core\Module => new \Hodima\Core\Module( $id, ...$spec ),
+				array_keys( $specs ),
+				$specs
+			)
+		);
+		\Hodima\Core\Modules::load( 'media' );
+		$video_loaded = \Hodima\Core\Modules::is_loaded( 'media', 'video' );
+	} else {
+		foreach ( array_merge( ...array_column( $specs, 'files' ) ) as $file ) {
+			require_once HODIMA_MEDIA_DIR . '/' . $file;
+		}
+		$video_loaded = true;
+	}
+
+	if ( $video_loaded ) {
+		hodima_media_video_tweaks();
 	}
 }, 5 );
 
-/* =========================================================================
- * پست‌تایپ «ویدیو» (منتقل‌شده از functions.php قالب)
- * ========================================================================= */
+/**
+ * پست‌تایپ «ویدیو» (منتقل‌شده از functions.php قالب)؛ فقط وقتی ماژول ویدیو روشن است.
+ */
+function hodima_media_video_tweaks(): void {
 
-// زیرنویس ویدیو (WebVTT)
-add_filter( 'upload_mimes', static function ( array $mimes ): array {
-	$mimes['vtt'] = 'text/vtt';
-	return $mimes;
-} );
+	// زیرنویس ویدیو (WebVTT)
+	add_filter( 'upload_mimes', static function ( array $mimes ): array {
+		$mimes['vtt'] = 'text/vtt';
+		return $mimes;
+	} );
 
-// فهرست ویدیوها یک «برگه» است؛ آرشیو پیش‌فرض با نامک آن برگه تداخل داشت و ۴۰۴ می‌داد
-add_filter( 'register_post_type_args', static function ( array $args, string $post_type ): array {
-	if ( 'video' === $post_type ) {
-		$args['public']      = true;
-		$args['has_archive'] = false;
-	}
-	return $args;
-}, 99, 2 );
+	// فهرست ویدیوها یک «برگه» است؛ آرشیو پیش‌فرض با نامک آن برگه تداخل داشت و ۴۰۴ می‌داد
+	add_filter( 'register_post_type_args', static function ( array $args, string $post_type ): array {
+		if ( 'video' === $post_type ) {
+			$args['public']      = true;
+			$args['has_archive'] = false;
+		}
+		return $args;
+	}, 99, 2 );
+}
 
 register_activation_hook( __FILE__, static fn() => delete_option( 'rewrite_rules' ) );
 register_deactivation_hook( __FILE__, static fn() => delete_option( 'rewrite_rules' ) );

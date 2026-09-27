@@ -22,6 +22,121 @@ define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
 
+/**
+ * ماژول‌های افزونه (به ترتیب بارگذاری functions.php قالب قبلی).
+ * کلیدهای هر آرایه همان پارامترهای Hodima\Core\Module هستند.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function hodima_seo_modules(): array {
+
+	$schema_admin = 'schema/admin/init.php'; // پنل «پیشخوان هدیما» مشترک اسکیما، سایت‌مپ و پادکست
+
+	return [
+		'google-indexing' => [
+			'title'       => 'Google Indexing API',
+			'description' => 'ارسال خودکار صفحات جدید و تغییرکرده به گوگل با صف و سهمیه روزانه، سایت‌مپ خوشه‌ها، ETag و هرس آدرس‌های زباله (replytocom، پیوست‌ها، فیدها).',
+			'files'       => [ 'components/google-indexing-api/main.php' ],
+			'settings'    => 'admin.php?page=hodima-google',
+			'recommends'  => [ 'topic-cluster' ],
+			'icon'        => 'dashicons-google',
+		],
+		'indexnow' => [
+			'title'       => 'IndexNow، AEO و ربات‌گیر',
+			'description' => 'ارسال آدرس‌ها به بینگ و Yandex، نسخه‌های ماشین‌خوان (llms.txt، Markdown، ai-feed) و کنترل و محدودسازی ربات‌های هوش مصنوعی.',
+			'files'       => [ 'components/indexnow-sync/indexnow-sync.php' ],
+			'settings'    => 'admin.php?page=hodima-core',
+			'recommends'  => [ 'router', 'topic-cluster' ],
+			'icon'        => 'dashicons-shield',
+		],
+		'schema' => [
+			'title'       => 'اسکیما (JSON-LD)',
+			'description' => 'داده ساختاریافته صفحه اصلی، سازمان، محصول، دسته، بلاگ، برگه، تصاویر و بردکرامب، به‌همراه حذف اسکیمای تکراری.',
+			'files'       => [
+				'schema/blog-schema.php',
+				'schema/breadcrumb-schema.php',
+				'schema/category-schema-pro.php',
+				'schema/corporate-schema.php',
+				'schema/homepage-schema.php',
+				'schema/imageobject-schema.php',
+				'schema/page-schema-pro.php',
+				'schema/product-schema-pro.php',
+				'schema/schema-cleaner.php',
+				$schema_admin,
+			],
+			'settings'    => 'admin.php?page=hodima-schema',
+			'warning'     => 'داده‌های ساختاریافته همه صفحات حذف می‌شوند و نتایج غنی (قیمت، امتیاز، بردکرامب) در گوگل از بین می‌رود.',
+			'recommends'  => [ 'seobox' ],
+			'icon'        => 'dashicons-editor-code',
+		],
+		'podcast' => [
+			'title'       => 'فید پادکست',
+			'description' => 'فید RSS پادکست در /feed/podcast/ از فایل‌های صوتی نوشته‌ها و محصولات.',
+			'files'       => [ 'schema/podcast-feed-core.php', $schema_admin ],
+			'settings'    => 'admin.php?page=hodima-podcast',
+			'icon'        => 'dashicons-microphone',
+		],
+		'sitemap' => [
+			'title'       => 'نقشه سایت XML',
+			'description' => 'sitemap.xml با تصاویر و ویدیوها، lastmod واقعی و حذف صفحات noindex. سایت‌مپ داخلی وردپرس را خاموش می‌کند.',
+			'files'       => [ 'schema/sitemap-core.php', $schema_admin ],
+			'settings'    => 'admin.php?page=hodima-sitemap',
+			'warning'     => 'آدرس sitemap.xml از کار می‌افتد و سایت‌مپ داخلی وردپرس (wp-sitemap.xml) دوباره فعال می‌شود؛ سایت‌مپ ثبت‌شده در Search Console را به‌روز کنید.',
+			'icon'        => 'dashicons-networking',
+		],
+		'manual-links' => [
+			'title'       => 'لینک‌های مرتبط دستی',
+			'description' => 'انتخاب دستی محصولات و نوشته‌های مرتبط در ویرایشگر (شورت‌کدهای manual_related_products و manual_related_links).',
+			'files'       => [ 'inc/manual_related_link/manual_related_link.php' ],
+			'icon'        => 'dashicons-admin-links',
+		],
+		'router' => [
+			'title'       => 'آدرس تمیز (بدون پایه)',
+			'description' => 'حذف /product/ و /product-category/ و /category/ از آدرس‌ها، با ریدایرکت ۳۰۱ آدرس‌های قدیمی و بستن مسیرهای تکراری.',
+			'files'       => [ 'core/router/router.php' ],
+			'settings'    => 'options-permalink.php',
+			'warning'     => 'آدرس همه محصولات و دسته‌ها به حالت پیش‌فرض (با /product/ و /product-category/) برمی‌گردد؛ لینک‌های فعلی و ایندکس‌شده گوگل ۴۰۴ می‌شوند.',
+			'icon'        => 'dashicons-admin-site-alt3',
+		],
+		'redirects' => [
+			'title'       => 'ریدایرکت‌ها',
+			'description' => 'مدیریت ریدایرکت‌های ۳۰۱/۳۰۲/۴۱۰ و ثبت خودکار ریدایرکت هنگام تغییر نامک.',
+			'files'       => [ 'core/redirects/init.php' ],
+			'settings'    => 'admin.php?page=hodima-redirects',
+			'warning'     => 'همه ریدایرکت‌های تعریف‌شده غیرفعال می‌شوند و آدرس‌های قدیمی ۴۰۴ می‌دهند.',
+			'icon'        => 'dashicons-randomize',
+		],
+		'seobox' => [
+			'title'       => 'متاباکس سئو',
+			'description' => 'عنوان، توضیحات، canonical، robots و تگ‌های Open Graph و Twitter برای نوشته‌ها، محصولات و دسته‌ها.',
+			'files'       => [ 'core/seobox/seobox-init.php' ],
+			'warning'     => 'عنوان سفارشی، توضیحات متا، canonical و تگ‌های شبکه‌های اجتماعی همه صفحات حذف می‌شوند.',
+			'icon'        => 'dashicons-search',
+		],
+		'robots' => [
+			'title'       => 'robots.txt هوشمند',
+			'description' => 'ساخت کامل robots.txt هماهنگ با ووکامرس، سایت‌مپ و تنظیمات ربات‌گیر (هر گروه ربات قوانین پایه را هم دارد).',
+			'files'       => [ 'core/seobox/robots-txt.php' ],
+			'recommends'  => [ 'indexnow', 'sitemap' ],
+			'icon'        => 'dashicons-privacy',
+		],
+		'topic-cluster' => [
+			'title'       => 'خوشه‌های موضوعی',
+			'description' => 'تعریف صفحات ستون (Pillar) و زیرمجموعه‌ها، نقشه خوشه‌ها، محتوای یتیم و لینک‌سازی داخلی خودکار.',
+			'files'       => [ 'core/topiccluster/topiccluster-init.php' ],
+			'settings'    => 'admin.php?page=hodima-tc-orphans',
+			'icon'        => 'dashicons-networking',
+		],
+		'cat-blog' => [
+			'title'       => 'دسته‌های وبلاگ',
+			'description' => 'ویرایشگر پیشرفته و تصویر برای دسته‌بندی‌های نوشته‌ها.',
+			'files'       => [ 'core/cat-blog/cat-blog.php' ],
+			'settings'    => 'edit-tags.php?taxonomy=category',
+			'icon'        => 'dashicons-category',
+		],
+	];
+}
+
 /*
  * ماژول‌ها در plugins_loaded لود می‌شوند، نه هنگام include این فایل:
  * افزونه‌ها به ترتیب الفبا لود می‌شوند و Hodima Core (پیش‌نیاز) و ووکامرس
@@ -34,28 +149,29 @@ add_action( 'plugins_loaded', static function (): void {
 		return;
 	}
 
-	$modules = [
-		// همان ترتیب بارگذاری functions.php قالب قبلی
-		'components/google-indexing-api/main.php',
-		'components/indexnow-sync/indexnow-sync.php',
-		...array_map(
-			static fn( string $file ): string => 'schema/' . basename( $file ),
-			glob( HODIMA_SEO_DIR . '/schema/*.php' ) ?: []
-		),
-		'schema/admin/init.php',
-		'inc/manual_related_link/manual_related_link.php',
-		'core/router/router.php',
-		'core/redirects/init.php',
-		'core/seobox/seobox-init.php',
-		'core/topiccluster/topiccluster-init.php',
-		'core/cat-blog/cat-blog.php',
-	];
+	$specs = hodima_seo_modules();
 
-	foreach ( $modules as $module ) {
-		$path = HODIMA_SEO_DIR . '/' . $module;
-		if ( is_file( $path ) ) {
-			require_once $path;
-		}
+	// مسیر عادی: ثبت در Hodima Core و بارگذاری ماژول‌های روشن
+	if ( class_exists( \Hodima\Core\Modules::class ) ) {
+		\Hodima\Core\Modules::register(
+			'seo',
+			'سئو',
+			'متاباکس سئو، اسکیما، سایت‌مپ، robots.txt، ریدایرکت‌ها، آدرس تمیز، خوشه‌های موضوعی، IndexNow و Google Indexing.',
+			HODIMA_SEO_FILE,
+			HODIMA_SEO_VERSION,
+			...array_map(
+				static fn( string $id, array $spec ): \Hodima\Core\Module => new \Hodima\Core\Module( $id, ...$spec ),
+				array_keys( $specs ),
+				$specs
+			)
+		);
+		\Hodima\Core\Modules::load( 'seo' );
+		return;
+	}
+
+	// بدون Hodima Core (نباید رخ دهد؛ Requires Plugins): همه ماژول‌ها مثل قبل
+	foreach ( array_unique( array_merge( ...array_column( $specs, 'files' ) ) ) as $file ) {
+		require_once HODIMA_SEO_DIR . '/' . $file;
 	}
 }, 5 );
 

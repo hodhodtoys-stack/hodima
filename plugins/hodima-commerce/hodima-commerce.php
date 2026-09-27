@@ -36,6 +36,62 @@ add_action( 'before_woocommerce_init', static function (): void {
 	}
 } );
 
+/**
+ * ماژول‌های افزونه. کلیدهای هر آرایه همان پارامترهای Hodima\Core\Module هستند.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function hodima_commerce_modules(): array {
+	return [
+		'phone' => [
+			'title'       => 'فرم لید تلفنی',
+			'description' => 'فرم «شماره تماس» (شورت‌کد hodima_phone_form) با ضد اسپم، فهرست لیدها در پیشخوان و خروجی CSV.',
+			'files'       => [ 'components/phone/phone-form.php' ],
+			'settings'    => 'edit.php?post_type=hodima_phone_lead',
+			'icon'        => 'dashicons-phone',
+		],
+		'search' => [
+			'title'       => 'جستجوی زنده محصولات',
+			'description' => 'جستجوی فوری با ایندکس FULLTEXT، یکسان‌سازی حروف و اعداد فارسی و جستجو با SKU.',
+			'files'       => [ 'components/search/search.php' ],
+			'requires_wc' => true,
+			'icon'        => 'dashicons-search',
+		],
+		'product-fields' => [
+			'title'       => 'فیلدهای محصول عمده',
+			'description' => 'حداقل مبلغ هر محصول، حداقل تعداد، وضعیت موجودی (انبار ایران/چین) و کشور سازنده.',
+			'files'       => [ 'inc/woocommerce/product-fields.php' ],
+			'requires_wc' => true,
+			'settings'    => 'edit.php?post_type=product',
+			'icon'        => 'dashicons-products',
+		],
+		'min-order' => [
+			'title'       => 'حداقل مبلغ سفارش',
+			'description' => 'نوار پیشرفت در سبد خرید و قفل تسویه‌حساب تا رسیدن به حداقل مبلغ سفارش عمده.',
+			'files'       => [ 'inc/woocommerce/cart.php' ],
+			'requires_wc' => true,
+			'settings'    => 'admin.php?page=wc-settings&tab=general',
+			'icon'        => 'dashicons-cart',
+		],
+		'specs-table' => [
+			'title'       => 'جدول مشخصات محصول',
+			'description' => 'جدول مشخصات فنی از ویژگی‌ها و فیلدهای محصول (شورت‌کد woo_specs_table).',
+			'files'       => [ 'inc/hodima-woo-table/woo-table.php' ],
+			'requires_wc' => true,
+			'recommends'  => [ 'product-fields' ],
+			'icon'        => 'dashicons-editor-table',
+		],
+		'jalali' => [
+			'title'       => 'بومی‌سازی (جلالی و شهرها)',
+			'description' => 'تاریخ شمسی در ووکامرس، استان‌ها و شهرهای ایران و اعتبارسنجی موبایل و کد پستی در تسویه‌حساب.',
+			'files'       => [ 'core/time-jalali/time-jalali.php' ],
+			'requires_wc' => true,
+			'settings'    => 'options-general.php?page=hodima-woocommerce',
+			'icon'        => 'dashicons-calendar-alt',
+		],
+	];
+}
+
 add_action( 'plugins_loaded', static function (): void {
 
 	if ( function_exists( 'hodima_legacy_theme_active' ) && hodima_legacy_theme_active() ) {
@@ -43,28 +99,31 @@ add_action( 'plugins_loaded', static function (): void {
 		return;
 	}
 
-	// فرم لید تلفنی به ووکامرس وابسته نیست
-	require_once HODIMA_COMMERCE_DIR . '/components/phone/phone-form.php';
+	$specs = hodima_commerce_modules();
 
-	// بقیه ماژول‌ها بدون ووکامرس فقط Fatal Error تولید می‌کنند
-	if ( ! class_exists( 'WooCommerce' ) ) {
-		add_action( 'admin_notices', static function (): void {
-			if ( current_user_can( 'activate_plugins' ) ) {
-				echo '<div class="notice notice-warning"><p>' . esc_html( 'Hodima Commerce: ووکامرس فعال نیست؛ فقط فرم لید تلفنی فعال است.' ) . '</p></div>';
-			}
-		} );
+	if ( class_exists( \Hodima\Core\Modules::class ) ) {
+		\Hodima\Core\Modules::register(
+			'commerce',
+			'فروشگاه',
+			'امکانات فروشگاهی برای ووکامرس. ماژول‌هایی که «نیاز به ووکامرس» دارند بدون آن اجرا نمی‌شوند.',
+			HODIMA_COMMERCE_FILE,
+			HODIMA_COMMERCE_VERSION,
+			...array_map(
+				static fn( string $id, array $spec ): \Hodima\Core\Module => new \Hodima\Core\Module( $id, ...$spec ),
+				array_keys( $specs ),
+				$specs
+			)
+		);
+		\Hodima\Core\Modules::load( 'commerce' );
 		return;
 	}
 
-	foreach ( [
-		'components/search/search.php',
-		'inc/woocommerce/product-fields.php',
-		'inc/woocommerce/cart.php',
-		'inc/hodima-woo-table/woo-table.php',
-		'core/time-jalali/time-jalali.php',
-	] as $module ) {
-		require_once HODIMA_COMMERCE_DIR . '/' . $module;
+	// بدون Hodima Core: همه ماژول‌های قابل اجرا مثل قبل
+	foreach ( $specs as $spec ) {
+		if ( empty( $spec['requires_wc'] ) || class_exists( 'WooCommerce' ) ) {
+			foreach ( $spec['files'] as $file ) {
+				require_once HODIMA_COMMERCE_DIR . '/' . $file;
+			}
+		}
 	}
-
-	\Hodima\Core\Time_Jalali\Hodima_Localizer_WC::get_instance();
 }, 20 );

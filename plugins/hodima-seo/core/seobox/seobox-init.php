@@ -16,7 +16,7 @@ define( 'SEOBOX_URL', HODIMA_SEO_URL . '/core/seobox/' );
 define( 'SEOBOX_VERSION', '4.0.0' );
 
 require_once SEOBOX_DIR . 'core-variables.php';
-require_once SEOBOX_DIR . 'robots-txt.php';
+// robots-txt.php حالا ماژول جداگانه «robots.txt» در افزونه SEO است
 
 if ( is_admin() ) {
 

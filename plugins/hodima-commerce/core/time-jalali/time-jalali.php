@@ -164,3 +164,5 @@ final class Hodima_Localizer_WC {
         }
     }
 }
+// ماژول خودش را راه‌اندازی می‌کند (مثل بقیه ماژول‌ها)؛ قبلا از functions.php قالب صدا زده می‌شد
+Hodima_Localizer_WC::get_instance();
