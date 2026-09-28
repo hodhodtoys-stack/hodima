@@ -72,7 +72,6 @@ $logs_pages = $logs_data['max_pages'];
     ] );
     ?>
 
-    <div id="hodima-notices"></div>
 
     <form id="hodima-form">
         <div class="in-tabs">
@@ -84,6 +83,8 @@ $logs_pages = $logs_data['max_pages'];
             <button type="button" class="in-tab-btn" data-tab="l">تاریخچه عملیات</button>
             <button type="button" class="in-tab-btn" data-tab="c">تنظیمات</button>
         </div>
+        <?php // پیام نتیجه ذخیره زیر تب‌ها (مثل بقیه صفحه‌های هدیما) ?>
+        <div id="hodima-notices" class="hd-notices"></div>
         
         <div class="in-tab-content" id="in-tab-g">
             <div class="in-section">

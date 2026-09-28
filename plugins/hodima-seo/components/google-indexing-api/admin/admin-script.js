@@ -16,24 +16,55 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
+    /*
+     * پیام هم‌شکل پیام‌های وردپرس (notice + دکمه X). قبلا کادر اختصاصی بالای
+     * صفحه بود (دکمه ذخیره پایین صفحه است، پس دیده نمی‌شد)، بعد از ۵ ثانیه
+     * خودش پاک می‌شد و در ذخیره موفق ۱.۵ ثانیه بعد صفحه از نو بارگذاری
+     * می‌شد. حالا پیام موفق را سرور بعد از بارگذاری مجدد زیر هدر نشان می‌دهد
+     * و پیام خطا تا بستن می‌ماند و به آن اسکرول می‌شود.
+     */
     const showHodimaNotice = (message, type = 'success') => {
         const container = document.getElementById('hodima-notices');
         if(!container) return;
         const el = document.createElement('div');
-        el.className = `hodima-notice ${type}`;
+        // inline: common.js وردپرس پیام را از زیر تب‌ها بالا نبرد
+        el.className = `notice notice-${type === 'success' ? 'success' : 'error'} is-dismissible inline hd-notice`;
+        el.setAttribute('role', type === 'success' ? 'status' : 'alert');
         // textContent به جای innerHTML: پیام ممکن است آدرس یا متن خطای
         // گوگل را در خود داشته باشد و نباید به عنوان HTML تفسیر شود.
-        const span = document.createElement('span');
-        span.textContent = String(message ?? '');
+        const p = document.createElement('p');
+        p.textContent = String(message ?? '');
         const close = document.createElement('button');
         close.type = 'button';
-        close.className = 'hodima-notice-close';
-        close.setAttribute('aria-label', 'بستن');
-        close.textContent = '×';
-        close.onclick = () => el.remove();
-        el.append(span, close);
-        container.appendChild(el);
-        setTimeout(() => el.remove(), 5000);
+        close.className = 'notice-dismiss';
+        const label = document.createElement('span');
+        label.className = 'screen-reader-text';
+        label.textContent = 'بستن این اعلان';
+        close.append(label);
+        close.addEventListener('click', () => el.remove());
+        el.append(p, close);
+        container.replaceChildren(el);
+        el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    };
+
+    // پیامی که باید بعد از بارگذاری مجدد صفحه دیده شود (نه اینکه با رفرش پاک شود)
+    const FLASH_KEY = 'hodima_gi_flash';
+    const reloadWithNotice = (message, type) => {
+        try { sessionStorage.setItem(FLASH_KEY, JSON.stringify({ message, type })); } catch (e) {}
+        location.reload();
+    };
+    try {
+        const flash = JSON.parse(sessionStorage.getItem(FLASH_KEY) || 'null');
+        sessionStorage.removeItem(FLASH_KEY);
+        if (flash) showHodimaNotice(flash.message, flash.type);
+    } catch (e) {}
+
+    /** نتیجه یک عملیات: موفق و نیازمند رفرش → پیام بعد از رفرش؛ وگرنه همین حالا. */
+    const report = (r, reload = false) => {
+        const message = r.data?.message || r.message || 'انجام شد';
+        const type = r.success ? 'success' : 'error';
+        if (reload && r.success) reloadWithNotice(message, type);
+        else showHodimaNotice(message, type);
     };
 
     const activeTab = localStorage.getItem('hodima_active_tab') || 'g';
@@ -68,16 +99,14 @@ document.addEventListener("DOMContentLoaded", () => {
         b.disabled = true;
         const r = await req(d);
         b.disabled = false;
-        showHodimaNotice(r.data?.message || 'انجام شد', r.success ? 'success' : 'error');
         b.innerText = orig;
-        if(r.success) setTimeout(()=>location.reload(), 1500);
+        report(r, true);
     });
 
     q('#g-key-remove')?.addEventListener('click', async () => {
         if (!confirm('کلید حساب سرویس حذف شود؟ تا تنظیم کلید جدید هیچ لینکی به گوگل ارسال نمی‌شود.')) return;
         const r = await req({ action: 'hodima_remove_key', nonce: hodimaObj.nonce });
-        showHodimaNotice(r.data?.message || 'انجام شد', r.success ? 'success' : 'error');
-        if (r.success) setTimeout(() => location.reload(), 1200);
+        report(r, true);
     });
 
     q('#t-api')?.addEventListener('click', async () => {
@@ -99,8 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if(!checked.length) return alert('هیچ موردی انتخاب نشده است.');
         q('#q-process-sel').innerText = 'درحال پردازش...';
         const r = await req({action:'hodima_process_selected_queue', nonce:hodimaObj.nonce, ids: checked});
-        showHodimaNotice(r.data?.message || 'انجام شد', r.success ? 'success' : 'error'); 
-        setTimeout(()=>location.reload(), 1500);
+        report(r, true);
     });
     
     q('#q-delete-sel')?.addEventListener('click', async () => {
@@ -129,8 +157,8 @@ document.addEventListener("DOMContentLoaded", () => {
     q('#f-q')?.addEventListener('click', async () => { 
         const b = q('#f-q'); const orig = b.innerText; b.innerText = 'درحال اجرا...';
         const r = await req({action:'hodima_force_process_queue', nonce:hodimaObj.nonce}); 
-        showHodimaNotice(r.data?.message || 'انجام شد', r.success ? 'success' : 'error');
-        setTimeout(()=>location.reload(), 2500); 
+        b.innerText = orig;
+        report(r, true);
     });
     
     q('#c-l')?.addEventListener('click', async () => { if(confirm('پاکسازی تاریخچه؟')) { await req({action:'hodima_clear_log', nonce:hodimaObj.nonce}); location.reload(); } });

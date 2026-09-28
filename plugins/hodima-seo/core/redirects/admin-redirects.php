@@ -236,20 +236,21 @@ function render_page(): void {
 		] );
 		?>
 
-		<?php if ( is_array( $msg ) ) : ?>
-			<div class="h-notice h-notice--<?php echo esc_attr( $msg[0] ); ?>" role="status">
-				<span><?php echo esc_html( (string) $msg[1] ); ?></span>
-			</div>
-		<?php endif; ?>
+		<?php
+		// پیام استاندارد وردپرس (زیر هدر، با دکمه X)؛ قبلا کادر اختصاصی بدون دکمه بستن بود
+		if ( is_array( $msg ) ) {
+			hodima_admin_notice( esc_html( (string) $msg[1] ), 'success' === $msg[0] ? 'success' : 'error' );
+		}
+		?>
 
 		<?php if ( ! empty( $suspicious ) && '' === $search ) : ?>
-			<div class="h-notice h-notice--error" role="alert">
-				<span>
-					<?php echo esc_html( sprintf( '%s قانون مشکوک پیدا شد (با نشان «مشکوک» در فهرست).', number_format_i18n( count( $suspicious ) ) ) ); ?>
-					نسخه قبلی آدرس‌های فارسی کپی‌شده از مرورگر را هنگام ذخیره خراب می‌کرد و این قوانین هرگز اجرا نمی‌شدند.
-					آن‌ها را حذف و با آدرس درست دوباره بسازید.
-				</span>
-			</div>
+			<?php
+			hodima_admin_notice(
+				esc_html( sprintf( '%s قانون مشکوک پیدا شد (با نشان «مشکوک» در فهرست).', number_format_i18n( count( $suspicious ) ) ) )
+				. ' نسخه قبلی آدرس‌های فارسی کپی‌شده از مرورگر را هنگام ذخیره خراب می‌کرد و این قوانین هرگز اجرا نمی‌شدند. آن‌ها را حذف و با آدرس درست دوباره بسازید.',
+				'warning'
+			);
+			?>
 		<?php endif; ?>
 
 		<div class="h-section h-card">

@@ -82,6 +82,17 @@ final class Admin {
         ];
         update_option(Core::OPTION_S2_MOBILE, $mobile_settings, false);
 
+        /*
+         * Post/Redirect/Get با پیام استاندارد. قبلا پیام در همان درخواست POST
+         * چاپ می‌شد و دکمه X آن کار نمی‌کرد (hidden در برابر display:flex)؛
+         * رفرش صفحه هم فرم را دوباره ارسال می‌کرد.
+         */
+        if (function_exists('hodima_admin_flash')) {
+            hodima_admin_flash(__('تنظیمات اسلایدر با موفقیت ذخیره شد.', 'hodima'));
+            wp_safe_redirect(admin_url('admin.php?page=hodima-slider'));
+            exit;
+        }
+
         self::$saved = true;
     }
 
@@ -111,9 +122,12 @@ final class Admin {
             ]);
             ?>
 
-            <?php if (self::$saved): ?>
-                <div class="h-notice"><span><?php esc_html_e('تنظیمات با موفقیت ذخیره شد.', 'hodima'); ?></span><button type="button" class="h-close-btn" aria-label="بستن" onclick="this.parentElement.hidden=true"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button></div>
-            <?php endif; ?>
+            <?php
+            if (self::$saved) {
+                // فقط وقتی ریدایرکت ممکن نبود (نبود تابع پیام مشترک)
+                echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('تنظیمات اسلایدر با موفقیت ذخیره شد.', 'hodima') . '</p></div>';
+            }
+            ?>
 
             <form method="post" class="h-card">
                 <?php wp_nonce_field('h_save', 'h_nonce'); ?>

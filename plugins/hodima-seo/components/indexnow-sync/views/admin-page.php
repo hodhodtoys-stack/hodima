@@ -29,20 +29,25 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     ] );
     ?>
 
-    <?php if ( isset( $_GET['msg'] ) || isset( $_GET['updated'] ) || isset( $_GET['synced'] ) || isset( $_GET['queued'] ) || isset( $_GET['test_status'] ) ) : ?>
-        <div class="notice is-dismissible hodima-notice">
-            <?php
-            if ( isset( $_GET['updated'] ) )  echo 'تنظیمات با موفقیت ذخیره شد.';
-            elseif ( isset( $_GET['synced'] ) ) echo 'درخواست همگام‌سازی با بینگ با موفقیت ارسال شد.';
-            elseif ( isset( $_GET['queued'] ) ) echo 'آدرس با موفقیت به صف انتظار افزوده شد.';
-            elseif ( ( $_GET['msg'] ?? '' ) === 'cleared' ) echo 'عملیات پاکسازی لاگ‌ها با موفقیت انجام شد.';
-            elseif ( ( $_GET['msg'] ?? '' ) === 'unbanned' ) echo 'آی‌پی مورد نظر از لیست سیاه خارج شد.';
-            elseif ( ( $_GET['test_status'] ?? '' ) === 'success' ) echo 'اتصال به API بینگ موفقیت‌آمیز بود.';
-            elseif ( ( $_GET['test_status'] ?? '' ) === 'failed' ) echo 'خطا در برقراری ارتباط با بینگ: ' . esc_html( $_GET['test_error'] ?? '' );
-            else echo 'عملیات با موفقیت انجام شد.';
-            ?>
-        </div>
-    <?php endif; ?>
+    <?php
+    /*
+     * پیام نتیجه با نشانه‌گذاری استاندارد (زیر هدر، رنگ موفق/خطا، دکمه X).
+     * قبلا نوع نداشت و پیام خطای بینگ هم با ظاهر موفق نمایش داده می‌شد.
+     */
+    if ( isset( $_GET['msg'] ) || isset( $_GET['updated'] ) || isset( $_GET['synced'] ) || isset( $_GET['queued'] ) || isset( $_GET['test_status'] ) ) {
+        $hodima_in_msg = match ( true ) {
+            isset( $_GET['updated'] )                          => [ 'success', 'تنظیمات با موفقیت ذخیره شد.' ],
+            isset( $_GET['synced'] )                           => [ 'success', 'درخواست همگام‌سازی با بینگ با موفقیت ارسال شد.' ],
+            isset( $_GET['queued'] )                           => [ 'success', 'آدرس با موفقیت به صف انتظار افزوده شد.' ],
+            ( $_GET['msg'] ?? '' ) === 'cleared'               => [ 'success', 'عملیات پاکسازی لاگ‌ها با موفقیت انجام شد.' ],
+            ( $_GET['msg'] ?? '' ) === 'unbanned'              => [ 'success', 'آی‌پی مورد نظر از لیست سیاه خارج شد.' ],
+            ( $_GET['test_status'] ?? '' ) === 'success'       => [ 'success', 'اتصال به API بینگ موفقیت‌آمیز بود.' ],
+            ( $_GET['test_status'] ?? '' ) === 'failed'        => [ 'error', 'خطا در برقراری ارتباط با بینگ: ' . esc_html( sanitize_text_field( wp_unslash( $_GET['test_error'] ?? '' ) ) ) ],
+            default                                            => [ 'success', 'عملیات با موفقیت انجام شد.' ],
+        };
+        hodima_admin_notice( $hodima_in_msg[1], $hodima_in_msg[0] );
+    }
+    ?>
 
     <div class="hodima-panel">
 
@@ -247,6 +252,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
     <?php elseif ( $active_tab === 'settings' ) : ?>
         <form method="post" class="hodima-settings-form">
+            <?php
+            /*
+             * دکمه پیش‌فرض فرم (Enter در یک فیلد) اولین دکمه submit است. قبلا
+             * «تست اتصال» بود و Enter به جای ذخیره، بینگ را تست می‌کرد. این
+             * دکمه ذخیره نامرئی (نه display:none) اولین دکمه فرم است.
+             */
+            ?>
+            <button type="submit" class="screen-reader-text" tabindex="-1" aria-hidden="true">اعمال تنظیمات</button>
             <?php wp_nonce_field( 'hodima_core_action' ); ?>
             <input type="hidden" name="hodima_action" value="save_settings">
             <input type="hidden" name="active_tab" value="settings">
@@ -350,7 +363,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 </table>
             </div>
 
-            <button type="submit" class="hodima-btn hodima-btn-primary" style="padding:0 30px;">اعمال تنظیمات</button>
+            <div class="hd-actions">
+                <button type="submit" class="button button-primary">اعمال تنظیمات</button>
+            </div>
         </form>
     <?php endif; ?>
 

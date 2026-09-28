@@ -38,25 +38,7 @@
 		}
 	}
 
-	& .h-notice {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-block: 1rem 0;
-		padding: 0.875rem 1rem;
-		border: 1px solid var(--h-border);
-		border-inline-start: 4px solid var(--h-secondary-brand);
-		border-radius: var(--hd-radius-sm, 0.5rem);
-		background: #ffffff;
-		color: var(--h-primary-brand);
-		font-weight: 600;
-	}
-
-	& .h-notice--success { border-inline-start-color: var(--h-ok); }
-	& .h-notice--error {
-		border-inline-start-color: var(--h-danger);
-		background: color-mix(in srgb, var(--h-danger) 6%, #ffffff);
-	}
+	/* پیام‌ها: notice استاندارد وردپرس (Hodima Core → hodima_admin_notice) */
 
 	& .h-section-title {
 		margin: 0 0 1.25rem;

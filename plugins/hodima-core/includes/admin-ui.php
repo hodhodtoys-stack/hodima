@@ -162,6 +162,65 @@ function hodima_admin_page_close(): void {
 	echo '</div>';
 }
 
+/* =========================================================================
+ * پیام‌های نتیجه (ذخیره شد / خطا)
+ * -------------------------------------------------------------------------
+ * پیش از این هر صفحه پیام خودش را داشت: بعضی بدون دکمه بستن (ریدایرکت‌ها)،
+ * بعضی با دکمه‌ای که کار نمی‌کرد (اسلایدر: hidden در برابر display:flex)،
+ * بعضی اصلا چیزی نشان نمی‌دادند (تنظیمات قالب، ایندکس گوگل که پیام را
+ * بالای صفحه نشان می‌داد و ۱.۵ ثانیه بعد صفحه را از نو بارگذاری می‌کرد).
+ * حالا همه یک نشانه‌گذاری استاندارد وردپرس دارند: زیر هدر و تب‌ها جابه‌جا
+ * می‌شود و دکمه X خود وردپرس (common.js) آن را می‌بندد.
+ * ========================================================================= */
+
+/** نوع مجاز پیام. */
+function hodima_admin_notice_type( string $type ): string {
+	return in_array( $type, [ 'success', 'error', 'warning', 'info' ], true ) ? $type : 'info';
+}
+
+/**
+ * نشانه‌گذاری یک پیام قابل بستن. متن با wp_kses_post (strong، code، a و...) پاک می‌شود.
+ */
+function hodima_admin_notice( string $message, string $type = 'success', bool $echo = true ): string {
+	$html = sprintf(
+		'<div class="notice notice-%1$s is-dismissible hd-notice" role="%2$s"><p>%3$s</p></div>',
+		esc_attr( hodima_admin_notice_type( $type ) ),
+		'error' === $type ? 'alert' : 'status',
+		wp_kses_post( $message )
+	);
+	if ( $echo ) {
+		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above
+	}
+	return $html;
+}
+
+/** کلید ذخیره پیام‌های درخواست بعدی (برای هر کاربر جدا). */
+function hodima_admin_flash_key(): string {
+	return 'hodima_admin_flash_' . get_current_user_id();
+}
+
+/**
+ * پیامی برای بارگذاری بعدی صفحه (الگوی Post/Redirect/Get): بعد از ذخیره و
+ * ریدایرکت، یا بعد از ذخیره AJAX و بارگذاری مجدد، زیر هدر نمایش داده می‌شود.
+ */
+function hodima_admin_flash( string $message, string $type = 'success' ): void {
+	$queue   = get_transient( hodima_admin_flash_key() );
+	$queue   = is_array( $queue ) ? $queue : [];
+	$queue[] = [ hodima_admin_notice_type( $type ), $message ];
+	set_transient( hodima_admin_flash_key(), array_slice( $queue, -5 ), 5 * MINUTE_IN_SECONDS );
+}
+
+add_action( 'admin_notices', static function (): void {
+	$queue = get_transient( hodima_admin_flash_key() );
+	if ( ! is_array( $queue ) || ! $queue ) {
+		return;
+	}
+	delete_transient( hodima_admin_flash_key() );
+	foreach ( $queue as [ $type, $message ] ) {
+		hodima_admin_notice( (string) $message, (string) $type );
+	}
+} );
+
 /** والد منوی مشترک: زیرمنوهای افزونه‌ها زیر «ابزارهای هدیما» می‌روند. */
 function hodima_admin_menu_parent(): string {
 	return \Hodima\Core\Admin\HUB_SLUG;
