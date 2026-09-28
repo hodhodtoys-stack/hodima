@@ -73,7 +73,16 @@ final class Jalali_Date {
 
     public function convert_wp_date_globally( string $date, string $format, int $timestamp, mixed $timezone ): string {
         try { 
-            return $this->to_persian_numbers( $this->format_jalali_date( $timestamp, $format ) ); 
+            /*
+             * باگ قبلی: wp_date یک timestamp واقعی (UTC) می‌دهد ولی format_jalali_date
+             * با gmdate می‌سازد؛ پس ساعت به وقت UTC (۳:۳۰ عقب‌تر از تهران) و بین
+             * ۰۰:۰۰ تا ۰۳:۳۰ روز هم اشتباه بود. حالا اختلاف منطقه زمانی مقصد در همان
+             * لحظه اضافه می‌شود. date_i18n هم از همین مسیر با منطقه UTC رد می‌شود
+             * (اختلاف صفر)، پس دوبار جابه‌جا نمی‌شود.
+             */
+            $tz    = $timezone instanceof \DateTimeZone ? $timezone : wp_timezone();
+            $local = $timestamp + $tz->getOffset( new \DateTimeImmutable( '@' . $timestamp ) );
+            return $this->to_persian_numbers( $this->format_jalali_date( $local, $format ) ); 
         } catch ( \Throwable $e ) { 
             return $date; 
         }
