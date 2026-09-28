@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'HODIMA_GI_VERSION', '11.0.0' );
+define( 'HODIMA_GI_VERSION', '11.1.0' );
 define( 'HODIMA_GI_OPTION_JSON', 'hodima_gi_json_key' );
 define( 'HODIMA_GI_OPTION_SETTINGS', 'hodima_gi_settings' );
 define( 'HODIMA_GI_DIR', __DIR__ );

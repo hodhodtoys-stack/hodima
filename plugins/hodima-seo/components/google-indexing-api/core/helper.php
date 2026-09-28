@@ -202,6 +202,16 @@ final class Hodima_GI_Helper {
 			return [ 'ok' => false, 'message' => 'کلید خصوصی در فایل معتبر نیست.', 'email' => '' ];
 		}
 
+		// کلید خراب (مثلا \n حذف‌شده هنگام کپی) قبلا ذخیره می‌شد و فقط هنگام
+		// اولین ارسال با «امضای JWT ناموفق» در تاریخچه معلوم می‌شد.
+		if ( function_exists( 'openssl_pkey_get_private' ) && false === @openssl_pkey_get_private( $key['private_key'] ) ) {
+			return [ 'ok' => false, 'message' => 'کلید خصوصی فایل قابل خواندن نیست؛ فایل JSON را دوباره از Google Cloud دانلود کنید.', 'email' => '' ];
+		}
+
+		if ( ! is_email( $key['client_email'] ) ) {
+			return [ 'ok' => false, 'message' => 'ایمیل حساب سرویس (client_email) معتبر نیست.', 'email' => '' ];
+		}
+
 		return [ 'ok' => true, 'message' => '', 'email' => sanitize_email( $key['client_email'] ) ];
 	}
 

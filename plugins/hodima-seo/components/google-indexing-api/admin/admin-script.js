@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const q = (s) => document.querySelector(s), qa = (s) => document.querySelectorAll(s);
-    
+
     // پاسخ غیر JSON (مثلا خطای کشنده PHP یا انقضای نشست) قبلا یک
     // استثنای مدیریت‌نشده می‌داد و دکمه در حالت «در حال ذخیره...» می‌ماند.
     const req = async (data) => {
@@ -61,105 +61,187 @@ document.addEventListener("DOMContentLoaded", () => {
 
     /** نتیجه یک عملیات: موفق و نیازمند رفرش → پیام بعد از رفرش؛ وگرنه همین حالا. */
     const report = (r, reload = false) => {
-        const message = r.data?.message || r.message || 'انجام شد';
+        const message = r.data?.message || r.message || (r.success ? 'انجام شد' : 'خطا در انجام عملیات');
         const type = r.success ? 'success' : 'error';
         if (reload && r.success) reloadWithNotice(message, type);
         else showHodimaNotice(message, type);
     };
 
-    const activeTab = localStorage.getItem('hodima_active_tab') || 'g';
-    qa('.in-tab-btn').forEach(b => { if(b.dataset.tab === activeTab) b.classList.add('active'); else b.classList.remove('active'); });
-    qa('.in-tab-content').forEach(c => { if(c.id === 'in-tab-' + activeTab) c.classList.add('active'); else c.classList.remove('active'); });
+    /*
+     * اجرای یک درخواست با دکمه قفل‌شده.
+     * قبلا دکمه‌ها هنگام درخواست فعال می‌ماندند (دو کلیک = دو درخواست) و
+     * در خطا متن «در حال...» روی دکمه می‌ماند.
+     */
+    const run = async (btn, busyText, data) => {
+        const orig = btn?.innerHTML;
+        if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); if (busyText) btn.textContent = busyText; }
+        const r = await req(data);
+        if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.innerHTML = orig; }
+        return r;
+    };
+
+    const checkedValues = (sel) => [...qa(sel + ':checked')].map(c => c.value);
+
+    // تب فعال (همان منطق اسکریپت درون‌خطی قالب؛ تب ناموجود → تب اول)
+    let activeTab = 'g';
+    try { activeTab = localStorage.getItem('hodima_active_tab') || 'g'; } catch (e) {}
+    if (!q('#in-tab-' + activeTab)) activeTab = 'g';
+    qa('.in-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === activeTab));
+    qa('.in-tab-content').forEach(c => c.classList.toggle('active', c.id === 'in-tab-' + activeTab));
 
     qa('.in-tab-btn').forEach(b => b.addEventListener('click', () => {
         qa('.in-tab-btn').forEach(x => x.classList.remove('active')); qa('.in-tab-content').forEach(x => x.classList.remove('active'));
-        b.classList.add('active'); q('#in-tab-'+b.dataset.tab).classList.add('active');
-        localStorage.setItem('hodima_active_tab', b.dataset.tab);
+        b.classList.add('active'); q('#in-tab-'+b.dataset.tab)?.classList.add('active');
+        try { localStorage.setItem('hodima_active_tab', b.dataset.tab); } catch (e) {}
     }));
 
-    qa('.btn-export').forEach(b => b.addEventListener('click', async () => {
-        window.location.href = hodimaObj.ajax_url + '?action=hodima_export_csv&nonce=' + hodimaObj.nonce + '&type=' + b.dataset.type;
+    qa('.btn-export').forEach(b => b.addEventListener('click', () => {
+        window.location.href = hodimaObj.ajax_url + '?action=hodima_export_csv&nonce=' + encodeURIComponent(hodimaObj.nonce) + '&type=' + encodeURIComponent(b.dataset.type);
     }));
 
-    q('#g-up')?.addEventListener('change', (e) => {
-        const f = e.target.files[0]; if(!f) return;
-        const r = new FileReader(); r.onload = ev => q('#g-json').value = ev.target.result; r.readAsText(f);
+    /* =================================================================
+     * کلید Service Account — پنجره افزودن/جایگزینی
+     * ================================================================= */
+    const keyDialog = q('#g-key-dialog'), keyText = q('#g-json'), keyFile = q('#g-up');
+    const keySave = q('#g-key-save'), keyPreview = q('#g-key-preview'), keyFileName = q('#g-key-file');
+
+    /** بررسی سریع در مرورگر تا کاربر قبل از ذخیره بداند فایل درست است. */
+    const previewKey = () => {
+        const raw = (keyText?.value || '').trim();
+        keyPreview.className = 'in-key-preview';
+        if (!raw) { keyPreview.textContent = ''; keySave.disabled = true; return; }
+        let data = null;
+        try { data = JSON.parse(raw); } catch (e) {}
+        if (!data || typeof data !== 'object') {
+            keyPreview.textContent = 'این متن JSON معتبر نیست.';
+            keyPreview.classList.add('is-error'); keySave.disabled = true; return;
+        }
+        if (data.type !== 'service_account' || !data.client_email || !data.private_key) {
+            keyPreview.textContent = 'این فایل کلید Service Account نیست (باید type برابر service_account و client_email و private_key داشته باشد).';
+            keyPreview.classList.add('is-error'); keySave.disabled = true; return;
+        }
+        keyPreview.textContent = 'حساب: ' + data.client_email;
+        keyPreview.classList.add('is-ok'); keySave.disabled = false;
+    };
+
+    const resetKeyDialog = () => {
+        if (keyText) keyText.value = '';
+        if (keyFile) keyFile.value = '';
+        if (keyFileName) keyFileName.textContent = '';
+        previewKey();
+    };
+
+    q('#g-key-open')?.addEventListener('click', () => { resetKeyDialog(); keyDialog?.showModal(); });
+    q('#g-key-cancel')?.addEventListener('click', () => keyDialog?.close());
+    q('#g-key-pick')?.addEventListener('click', () => keyFile?.click());
+    keyText?.addEventListener('input', previewKey);
+
+    keyFile?.addEventListener('change', () => {
+        const f = keyFile.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = ev => {
+            keyText.value = String(ev.target.result || '');
+            keyFileName.textContent = f.name;
+            previewKey();
+        };
+        r.readAsText(f);
     });
 
+    keySave?.addEventListener('click', async () => {
+        const r = await run(keySave, 'در حال ذخیره...', { action: 'hodima_save_key', nonce: hodimaObj.nonce, json_data: keyText.value });
+        if (r.success) { keyDialog.close(); report(r, true); return; }
+        keyPreview.className = 'in-key-preview is-error';
+        keyPreview.textContent = r.data?.message || 'ذخیره کلید ناموفق بود.';
+    });
+
+    q('#g-key-remove')?.addEventListener('click', async (e) => {
+        if (!confirm('کلید حساب سرویس حذف شود؟ تا تنظیم کلید جدید هیچ لینکی به گوگل ارسال نمی‌شود.')) return;
+        report(await run(e.currentTarget, 'در حال حذف...', { action: 'hodima_remove_key', nonce: hodimaObj.nonce }), true);
+    });
+
+    /* =================================================================
+     * ذخیره پیکربندی (کلید دیگر از اینجا ارسال نمی‌شود)
+     * ================================================================= */
     q('#hodima-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const b = q('#save-all'); const orig = b.innerText; b.innerText = 'در حال ذخیره...';
-        const d = { 
-            action: 'hodima_save_all_settings', nonce: hodimaObj.nonce, 
-            json_data: q('#g-json')?.value, enable_google: q('#g-en')?.checked?1:0, 
-            debounce: q('#c-db')?.value, penalty: q('#c-pn')?.value, 
-            cf_token: q('#cf-tok')?.value, cf_zone_id: q('#cf-zon')?.value, 
-            stale_days: q('#c-stale')?.value, google_post_types: [...qa('.g-pt:checked')].map(x=>x.value) 
-        };
-        b.disabled = true;
-        const r = await req(d);
-        b.disabled = false;
-        b.innerText = orig;
+        const r = await run(q('#save-all'), 'در حال ذخیره...', {
+            action: 'hodima_save_all_settings', nonce: hodimaObj.nonce,
+            enable_google: q('#g-en')?.checked ? 1 : 0,
+            debounce: q('#c-db')?.value, penalty: q('#c-pn')?.value,
+            cf_token: q('#cf-tok')?.value, cf_zone_id: q('#cf-zon')?.value,
+            stale_days: q('#c-stale')?.value, google_post_types: checkedValues('.g-pt')
+        });
         report(r, true);
     });
 
-    q('#g-key-remove')?.addEventListener('click', async () => {
-        if (!confirm('کلید حساب سرویس حذف شود؟ تا تنظیم کلید جدید هیچ لینکی به گوگل ارسال نمی‌شود.')) return;
-        const r = await req({ action: 'hodima_remove_key', nonce: hodimaObj.nonce });
-        report(r, true);
+    q('#t-api')?.addEventListener('click', async (e) => {
+        report(await run(e.currentTarget, 'در حال تست...', { action: 'hodima_test_google_api', nonce: hodimaObj.nonce }));
     });
 
-    q('#t-api')?.addEventListener('click', async () => {
-        const r = await req({action:'hodima_test_google_api', nonce:hodimaObj.nonce});
-        showHodimaNotice(r.data?.message || r.message, r.success ? 'success' : 'error');
+    // قبلا نتیجه این دکمه‌ها نادیده گرفته می‌شد و در خطا هم صفحه بی‌پیام رفرش می‌شد
+    q('#c-crawls')?.addEventListener('click', async (e) => {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید کل گزارش‌های خزش ربات را حذف کنید؟')) return;
+        report(await run(e.currentTarget, 'در حال پاکسازی...', { action: 'hodima_clear_crawls', nonce: hodimaObj.nonce }), true);
     });
 
-    q('#c-crawls')?.addEventListener('click', async () => { 
-        if(confirm('آیا مطمئن هستید که می‌خواهید کل گزارش‌های خزش ربات را حذف کنید؟')) { 
-            await req({action:'hodima_clear_crawls', nonce:hodimaObj.nonce}); 
-            location.reload(); 
-        } 
+    q('#c-l')?.addEventListener('click', async (e) => {
+        if (!confirm('پاکسازی تاریخچه؟')) return;
+        report(await run(e.currentTarget, 'در حال پاکسازی...', { action: 'hodima_clear_log', nonce: hodimaObj.nonce }), true);
     });
 
+    /* =================================================================
+     * صف
+     * ================================================================= */
     q('#q-sel-all')?.addEventListener('change', (e) => { qa('.q-chk').forEach(c => c.checked = e.target.checked); });
-    
-    q('#q-process-sel')?.addEventListener('click', async () => {
-        const checked = [...qa('.q-chk:checked')].map(c => c.value);
-        if(!checked.length) return alert('هیچ موردی انتخاب نشده است.');
-        q('#q-process-sel').innerText = 'درحال پردازش...';
-        const r = await req({action:'hodima_process_selected_queue', nonce:hodimaObj.nonce, ids: checked});
-        report(r, true);
-    });
-    
-    q('#q-delete-sel')?.addEventListener('click', async () => {
-        const checked = [...qa('.q-chk:checked')].map(c => c.value);
-        if(!checked.length) return alert('هیچ موردی انتخاب نشده است.');
-        if(!confirm('حذف شوند؟')) return;
-        await req({action:'hodima_delete_selected_queue', nonce:hodimaObj.nonce, ids: checked}); location.reload();
-    });
-    
-    q('#s-bulk')?.addEventListener('click', async () => {
-        const b = q('#s-bulk'); const orig = b.innerText; b.innerText = 'در حال اجرا...';
-        const r = await req({action:'hodima_send_bulk_urls', nonce:hodimaObj.nonce, urls:q('#b-url').value, bulk_action_type:q('#b-act').value});
-        showHodimaNotice(r.data?.message || 'انجام شد', r.success ? 'success' : 'error'); 
-        b.innerText = orig; q('#b-url').value = '';
-    });
-    
-    q('#m-prune')?.addEventListener('click', async () => {
-        if(confirm('دیتابیس پاکسازی شود؟')) {
-            const b = q('#m-prune'); const orig = b.innerText; b.innerText = 'در حال پاکسازی...';
-            const r = await req({action:'hodima_manual_prune', nonce:hodimaObj.nonce});
-            showHodimaNotice(r.data?.message || 'انجام شد', r.success ? 'success' : 'error'); 
-            b.innerText = orig;
-        }
+
+    q('#q-process-sel')?.addEventListener('click', async (e) => {
+        const ids = checkedValues('.q-chk');
+        if (!ids.length) return showHodimaNotice('هیچ موردی انتخاب نشده است.', 'error');
+        report(await run(e.currentTarget, 'در حال پردازش...', { action: 'hodima_process_selected_queue', nonce: hodimaObj.nonce, ids }), true);
     });
 
-    q('#f-q')?.addEventListener('click', async () => { 
-        const b = q('#f-q'); const orig = b.innerText; b.innerText = 'درحال اجرا...';
-        const r = await req({action:'hodima_force_process_queue', nonce:hodimaObj.nonce}); 
-        b.innerText = orig;
-        report(r, true);
+    q('#q-delete-sel')?.addEventListener('click', async (e) => {
+        const ids = checkedValues('.q-chk');
+        if (!ids.length) return showHodimaNotice('هیچ موردی انتخاب نشده است.', 'error');
+        if (!confirm('حذف شوند؟')) return;
+        report(await run(e.currentTarget, 'در حال حذف...', { action: 'hodima_delete_selected_queue', nonce: hodimaObj.nonce, ids }), true);
     });
-    
-    q('#c-l')?.addEventListener('click', async () => { if(confirm('پاکسازی تاریخچه؟')) { await req({action:'hodima_clear_log', nonce:hodimaObj.nonce}); location.reload(); } });
+
+    q('#f-q')?.addEventListener('click', async (e) => {
+        report(await run(e.currentTarget, 'در حال اجرا...', { action: 'hodima_force_process_queue', nonce: hodimaObj.nonce }), true);
+    });
+
+    /* =================================================================
+     * محتوای راکد
+     * ================================================================= */
+    q('#st-sel-all')?.addEventListener('change', (e) => { qa('.st-chk').forEach(c => c.checked = e.target.checked); });
+
+    const queuePosts = async (btn, ids) => {
+        if (!ids.length) return showHodimaNotice('هیچ موردی انتخاب نشده است.', 'error');
+        const r = await run(btn, 'در حال افزودن...', { action: 'hodima_queue_posts', nonce: hodimaObj.nonce, ids });
+        report(r);
+        if (r.success) {
+            ids.forEach(id => {
+                const one = q('.st-queue-one[data-id="' + CSS.escape(String(id)) + '"]');
+                if (one) { one.disabled = true; one.textContent = 'در صف گوگل'; }
+            });
+        }
+    };
+
+    q('#st-queue-sel')?.addEventListener('click', (e) => queuePosts(e.currentTarget, checkedValues('.st-chk')));
+    qa('.st-queue-one').forEach(b => b.addEventListener('click', () => queuePosts(b, [b.dataset.id])));
+
+    /* =================================================================
+     * عملیات
+     * ================================================================= */
+    q('#s-bulk')?.addEventListener('click', async (e) => {
+        const r = await run(e.currentTarget, 'در حال اجرا...', { action: 'hodima_send_bulk_urls', nonce: hodimaObj.nonce, urls: q('#b-url').value, bulk_action_type: q('#b-act').value });
+        report(r);
+        if (r.success) q('#b-url').value = ''; // در خطا آدرس‌های واردشده پاک نشوند
+    });
+
+    q('#m-prune')?.addEventListener('click', async (e) => {
+        if (!confirm('دیتابیس پاکسازی شود؟')) return;
+        report(await run(e.currentTarget, 'در حال پاکسازی...', { action: 'hodima_manual_prune', nonce: hodimaObj.nonce }));
+    });
 });

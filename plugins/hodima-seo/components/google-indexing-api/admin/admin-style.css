@@ -43,15 +43,10 @@ th.col-url { text-align: left; direction: ltr; width: 50%; padding-left: 15px;}
 #g-json, #b-url { width:100%; direction:ltr; text-align:left; padding:10px; border:1px solid var(--in-border); border-radius:6px; font-size: 13px; font-family: inherit;}
 .in-cell-url { direction: ltr; text-align: left !important; font-size:13px; word-break: break-all;}
 .in-field-label { display: block; font-weight: bold; font-size: 14px; margin: 12px 0 6px;}
-.in-upload-row { margin-top:10px; border: 1px dashed var(--in-border); padding: 10px; border-radius: 6px; background: #fff;}
 .in-quota-wrap { padding: 15px; background: #fff; border: 1px solid var(--in-border); border-radius: 6px; margin-bottom: 15px;}
 
 #hodima-notices:empty { display: none; }
 #hodima-notices .notice { display: block; margin: 0.75rem 0; }
-.hodima-notice { padding: 12px 15px; border-radius: 6px; margin-bottom: 10px; font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.3s ease; border-right: 4px solid transparent; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.hodima-notice.success { border-color: var(--hodima-state-success, #2f7a55); color: var(--hodima-state-success, #2f7a55); }
-.hodima-notice.error { border-color: var(--hodima-state-danger, #a32a2a); color: var(--hodima-state-danger, #a32a2a); }
-@keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Pagination Styles */
 .in-pagination { margin-top: 15px; display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; direction: rtl; }
@@ -72,9 +67,6 @@ th.col-url { text-align: left; direction: ltr; width: 50%; padding-left: 15px;}
 .in-hint { margin:10px 0 0; font-size:12.5px; line-height:1.8; color:var(--hodima-text-muted, #5d6785); }
 .in-hint--warn { padding:8px 12px; color:var(--hodima-state-warning, #8a6116); background:var(--hodima-state-warning-bg, #fbf4e6); border-radius:6px; }
 
-.in-key-status { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 10px; font-size:13px; }
-.in-key-status code { direction:ltr; }
-.in-key-status--missing { color:var(--hodima-state-danger, #a32a2a); }
 .in-btn-sm { padding:4px 12px !important; font-size:12px !important; }
 
 .in-health-title { margin-top:0; color:var(--in-primary); }
@@ -88,10 +80,66 @@ th.col-url { text-align: left; direction: ltr; width: 50%; padding-left: 15px;}
     border:1px solid var(--hodima-border-light, #d9e1f0); border-radius:6px; white-space:pre;
 }
 
-.hodima-notice-close { margin-inline-start:8px; padding:0; font-size:16px; line-height:1; color:inherit; background:none; border:0; opacity:.7; cursor:pointer; }
-.hodima-notice-close:hover { opacity:1; }
 
 /* متاباکس «سیگنال گوگل» در ویرایشگر */
 .hodima-gi-pingbox { display:flex; align-items:flex-start; gap:8px; font-size:13px; line-height:1.7; }
 .hodima-gi-pingbox input { margin-top:3px; }
 .hodima-gi-pingbox small { display:block; margin-top:4px; color:var(--hodima-text-muted, #5d6785); }
+
+/* =========================================================================
+ * نسخه ۱۱.۱ — کلید با پنجره، عیب‌یابی خزش، اقدام روی محتوای راکد
+ * ========================================================================= */
+.in-admin {
+    & .in-btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; line-height: 1.6; }
+    & .in-btn:focus-visible { outline: 2px solid var(--hd-accent-light, #a341c8); outline-offset: 2px; }
+    & .in-btn:disabled { opacity: .6; cursor: default; }
+    & .in-btn .dashicons { inline-size: 16px; block-size: 16px; font-size: 16px; }
+    & a.in-btn-primary:is(:hover, :focus) { color: #fff; }
+
+    & .in-muted { color: var(--hd-muted, #5d6785); }
+    & .in-ago { display: block; margin-block-start: 2px; font-size: 11.5px; color: var(--hd-muted, #5d6785); }
+    & .in-cell-center { text-align: center; }
+    & .in-cell-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    & .in-col-check { inline-size: 30px; }
+    & .in-table-wrap { overflow-x: auto; margin-block-start: 15px; }
+    & .in-empty { padding: 20px; text-align: center; color: var(--hd-muted, #5d6785); }
+    & .in-empty--ok { font-weight: 700; color: var(--hd-ok, #1f7a4d); }
+    & .in-badge-error { background: color-mix(in srgb, var(--hd-error, #b3261e) 10%, #fff); color: var(--hd-error, #b3261e); }
+    & .in-badge-success { background: color-mix(in srgb, var(--hd-ok, #1f7a4d) 12%, #fff); color: var(--hd-ok, #1f7a4d); }
+
+    /* نوار عنوان + دکمه‌ها */
+    & .in-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-block: 20px 0; }
+    & .in-toolbar .in-section-title { margin: 0; }
+    & .in-toolbar__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    & .in-legend { margin: 0; padding-inline-start: 1.2em; list-style: disc; }
+
+    /* کلید Service Account */
+    & .in-key-card { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; background: #fff; border: 1px solid var(--in-border); border-radius: 8px; }
+    & .in-key-email { direction: ltr; unicode-bidi: isolate; }
+    & .in-key-note { color: var(--hd-muted, #5d6785); font-size: 13px; }
+    & .in-key-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-inline-start: auto; }
+
+    /* عیب‌یابی گزارش خزش */
+    & .in-crawl-status { margin-block-start: 15px; }
+    & .in-crawl-status .hd-callout { margin-block-end: 12px; }
+    & .in-diag { margin: 0; padding: 10px 14px; background: #fff; border: 1px solid var(--in-border); border-radius: 8px; font-size: 13px; line-height: 2; list-style: none; }
+    & .in-diag code { direction: ltr; unicode-bidi: isolate; }
+}
+
+/* پنجره کلید (در لایه بالا ولی توکن‌ها از .in-admin ارث می‌برد) */
+.in-key-dialog {
+    inline-size: min(34rem, 92vw);
+    max-inline-size: none;
+    color: var(--in-text);
+
+    & .in-section-title { margin-block-end: 12px; }
+    & .in-key-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block: 16px 12px; }
+    & .in-key-file { direction: ltr; unicode-bidi: isolate; font-size: 12.5px; color: var(--hd-muted, #5d6785); }
+    & .in-key-paste summary { cursor: pointer; font-size: 13px; color: var(--in-primary); }
+    & .in-key-paste summary:focus-visible { outline: 2px solid var(--hd-accent-light, #a341c8); outline-offset: 2px; }
+    & .in-key-paste textarea { margin-block-start: 8px; }
+    & .in-key-preview { min-block-size: 1.5em; margin: 10px 0 0; font-size: 13px; }
+    & .in-key-preview.is-ok { color: var(--hd-ok, #1f7a4d); }
+    & .in-key-preview.is-error { color: var(--hd-error, #b3261e); }
+    & .in-key-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: 16px; }
+}

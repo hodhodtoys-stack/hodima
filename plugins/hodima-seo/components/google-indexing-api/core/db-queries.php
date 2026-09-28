@@ -78,7 +78,8 @@ class Hodima_Crawler_DB_Queries {
         global $wpdb; $table = Hodima_Crawler_DB_Schema::get_table_name();
         $offset = ($page - 1) * $per_page;
         $total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE crawl_count > 0");
-        $items = $wpdb->get_results( $wpdb->prepare( "SELECT url_path, crawl_count, last_crawled_at, api_sync_status FROM {$table} WHERE crawl_count > 0 ORDER BY last_crawled_at DESC LIMIT %d OFFSET %d", $per_page, $offset ), ARRAY_A ) ?? [];
+        // زمان آخرین ارسال (last_modified_at) و زمان واکنش هم برای ستون‌های پنل
+        $items = $wpdb->get_results( $wpdb->prepare( "SELECT url_path, crawl_count, last_crawled_at, api_sync_status, last_modified_at, reaction_time FROM {$table} WHERE crawl_count > 0 ORDER BY last_crawled_at DESC LIMIT %d OFFSET %d", $per_page, $offset ), ARRAY_A ) ?? [];
         return [ 'items' => $items, 'total' => $total, 'max_pages' => (int) ceil($total / max(1, $per_page)) ];
     }
     
@@ -161,27 +162,93 @@ class Hodima_Crawler_DB_Queries {
         return $deleted;
     }
 
-    public static function get_stale_posts( int $days = 60 ): array {
+    /**
+     * شرط مشترک «محتوای راکد».
+     *
+     * اصلاح‌ها نسبت به نسخه قبلی:
+     *   - صفحه اصلی، صفحه نوشته‌ها و برگه‌های سیستمی ووکامرس (فروشگاه، سبد،
+     *     تسویه، حساب کاربری) کنار گذاشته می‌شوند؛ این‌ها «محتوا» نیستند و
+     *     فهرست را پر می‌کردند.
+     *   - صفحه‌های noindex (سئوباکس) و رمزدار کنار گذاشته می‌شوند؛ گوگل
+     *     نباید آن‌ها را ببیند.
+     *   - مقایسه با post_modified_gmt و مرز محاسبه‌شده در PHP؛ NOW() ساعت
+     *     سرور دیتابیس است و با post_modified (ساعت سایت) چند ساعت فرق داشت.
+     *   - نوع‌های پست با placeholder، نه چسباندن رشته.
+     *
+     * @return array{0:string, 1:array<int, mixed>}|null
+     */
+    private static function stale_where( int $days ): ?array {
         global $wpdb;
-        $types = Hodima_GI_Helper::get_settings()['google_post_types'] ?? ['post', 'product'];
-        if(empty($types)) return [];
-        $in_clause = "'" . implode("','", array_map('esc_sql', $types)) . "'";
-        $sql = $wpdb->prepare("SELECT ID, post_title, post_type, post_modified FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_type IN ({$in_clause}) AND post_modified < DATE_SUB(NOW(), INTERVAL %d DAY) ORDER BY post_modified ASC LIMIT 100", $days);
-        return $wpdb->get_results( $sql, ARRAY_A ) ?? [];
+
+        $types = array_values( array_filter( array_map( 'sanitize_key', (array) ( Hodima_GI_Helper::get_settings()['google_post_types'] ?? [ 'post', 'product' ] ) ) ) );
+        if ( empty( $types ) ) {
+            return null;
+        }
+
+        $exclude = [ (int) get_option( 'page_on_front' ), (int) get_option( 'page_for_posts' ) ];
+        foreach ( [ 'shop', 'cart', 'checkout', 'myaccount' ] as $wc_page ) {
+            $exclude[] = (int) get_option( "woocommerce_{$wc_page}_page_id" );
+        }
+        $exclude = array_values( array_filter( array_map( 'intval', (array) apply_filters( 'hodima_gi_stale_exclude_ids', $exclude ) ) ) ) ?: [ 0 ];
+
+        $cutoff = gmdate( 'Y-m-d H:i:s', time() - max( 1, $days ) * DAY_IN_SECONDS );
+
+        $sql = "p.post_status = 'publish' AND p.post_password = ''"
+            . ' AND p.post_type IN (' . implode( ',', array_fill( 0, count( $types ), '%s' ) ) . ')'
+            . ' AND p.ID NOT IN (' . implode( ',', array_fill( 0, count( $exclude ), '%d' ) ) . ')'
+            . ' AND p.post_modified_gmt < %s'
+            . " AND NOT EXISTS (SELECT 1 FROM {$wpdb->postmeta} m WHERE m.post_id = p.ID AND m.meta_key = '_seobox_robots' AND m.meta_value LIKE '%%noindex%%')"; // %% = درصد واقعی در prepare
+
+        return [ $sql, array_merge( $types, $exclude, [ $cutoff ] ) ];
+    }
+
+    public static function get_stale_posts( int $days = 60 ): array {
+        return self::get_stale_posts_paginated( $days, 1, 100 )['items'];
     }
 
     public static function get_stale_posts_paginated( int $days = 60, int $page = 1, int $per_page = 15 ): array {
         global $wpdb;
-        $types = Hodima_GI_Helper::get_settings()['google_post_types'] ?? ['post', 'product'];
-        if(empty($types)) return [ 'items' => [], 'total' => 0, 'max_pages' => 0 ];
-        $in_clause = "'" . implode("','", array_map('esc_sql', $types)) . "'";
-        
-        $sql_where = "post_status = 'publish' AND post_type IN ({$in_clause}) AND post_modified < DATE_SUB(NOW(), INTERVAL %d DAY)";
-        $total = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE " . $sql_where, $days) );
-        $offset = ($page - 1) * $per_page;
-        $items = $wpdb->get_results( $wpdb->prepare("SELECT ID, post_title, post_type, post_modified FROM {$wpdb->posts} WHERE " . $sql_where . " ORDER BY post_modified ASC LIMIT %d OFFSET %d", $days, $per_page, $offset), ARRAY_A ) ?? [];
-        
-        return [ 'items' => $items, 'total' => $total, 'max_pages' => (int) ceil($total / max(1, $per_page)) ];
+
+        $where = self::stale_where( $days );
+        if ( null === $where ) {
+            return [ 'items' => [], 'total' => 0, 'max_pages' => 0 ];
+        }
+
+        [ $sql, $args ] = $where;
+        $page     = max( 1, $page );
+        $per_page = max( 1, $per_page );
+
+        $total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} p WHERE {$sql}", $args ) );
+        $items = $wpdb->get_results( $wpdb->prepare(
+            "SELECT p.ID, p.post_title, p.post_type, p.post_modified, p.post_modified_gmt FROM {$wpdb->posts} p WHERE {$sql} ORDER BY p.post_modified_gmt ASC LIMIT %d OFFSET %d",
+            array_merge( $args, [ $per_page, ( $page - 1 ) * $per_page ] )
+        ), ARRAY_A ) ?? [];
+
+        return [ 'items' => $items, 'total' => $total, 'max_pages' => (int) ceil( $total / $per_page ) ];
+    }
+
+    /**
+     * آخرین بازدید گوگل‌بات برای چند آدرس (کلید: همان url_hash جدول).
+     *
+     * @param list<string> $urls
+     * @return array<string, string> url_hash => last_crawled_at
+     */
+    public static function get_last_crawls_for_urls( array $urls ): array {
+        global $wpdb;
+
+        $hashes = array_values( array_unique( array_map( [ 'Hodima_GI_Helper', 'url_hash' ], array_filter( $urls ) ) ) );
+        if ( empty( $hashes ) ) {
+            return [];
+        }
+
+        $table = Hodima_Crawler_DB_Schema::get_table_name();
+        $in    = implode( ',', array_fill( 0, count( $hashes ), '%s' ) );
+        $rows  = $wpdb->get_results( $wpdb->prepare(
+            "SELECT url_hash, last_crawled_at FROM {$table} WHERE url_hash IN ({$in}) AND last_crawled_at IS NOT NULL",
+            $hashes
+        ), ARRAY_A ) ?? [];
+
+        return array_column( $rows, 'last_crawled_at', 'url_hash' );
     }
 
     public static function insert_log( string $url, string $message, string $status, string $data ): void {

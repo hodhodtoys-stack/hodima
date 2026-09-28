@@ -22,7 +22,23 @@ final class Hodima_GI_Hooks {
 		add_action( 'woocommerce_product_set_stock_status', [ __CLASS__, 'stock_ping' ], 10, 2 );
 		add_action( 'update_post_meta', [ __CLASS__, 'price_drop_ping' ], 10, 4 );
 		add_action( 'save_post', [ __CLASS__, 'auto_cf_purge' ], 99, 2 );
-		add_action( 'hodima_gi_daily_pruning', [ 'Hodima_Crawler_DB_Queries', 'prune_old_records' ] );
+		add_action( 'hodima_gi_daily_pruning', [ __CLASS__, 'daily_maintenance' ] );
+	}
+
+	/**
+	 * کار روزانه کرون.
+	 *
+	 * باگ نسخه قبلی: prune_old_records مستقیم به هوک وصل بود. do_action
+	 * بدون آرگومان یک رشته خالی به کال‌بک می‌دهد و پارامتر int $days با
+	 * آن TypeError می‌داد — هرس شبانه هرگز اجرا نشده بود و جدول‌ها فقط
+	 * با دکمه دستی کوچک می‌شدند.
+	 */
+	public static function daily_maintenance(): void {
+		Hodima_Crawler_DB_Queries::prune_old_records();
+
+		if ( class_exists( 'Hodima_Bot_Detector' ) ) {
+			Hodima_Bot_Detector::maybe_refresh_ranges();
+		}
 	}
 
 	private static function tracked( string $post_type ): bool {

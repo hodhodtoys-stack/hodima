@@ -18,7 +18,7 @@ final class Hodima_GI_Admin_UI {
 		add_action( 'admin_enqueue_scripts', [ $this, 'assets' ] );
 		add_action( 'add_meta_boxes', [ $this, 'register_meta_box' ] );
 
-		foreach ( [ 'save_all_settings', 'test_google_api', 'send_bulk_urls', 'force_process_queue', 'process_selected_queue', 'delete_selected_queue', 'clear_log', 'manual_prune', 'clear_crawls', 'remove_key' ] as $action ) {
+		foreach ( [ 'save_all_settings', 'test_google_api', 'send_bulk_urls', 'force_process_queue', 'process_selected_queue', 'delete_selected_queue', 'clear_log', 'manual_prune', 'clear_crawls', 'remove_key', 'save_key', 'queue_posts' ] as $action ) {
 			add_action( "wp_ajax_hodima_{$action}", [ $this, "ajax_{$action}" ] );
 		}
 
@@ -49,6 +49,15 @@ final class Hodima_GI_Admin_UI {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
+
+		// فهرست IP گوگل‌بات اگر هنوز دریافت نشده (هفته‌ای یک بار؛ نه در سایت)
+		Hodima_Bot_Detector::maybe_refresh_ranges();
+
+		// صف کار دارد ولی رویدادی نیست (مثلا بعد از غیرفعال/فعال کردن افزونه)
+		if ( ! wp_next_scheduled( Hodima_GI_Queue::HOOK ) && Hodima_GI_Queue::count() > 0 ) {
+			Hodima_GI_Queue::schedule_next();
+		}
+
 		include HODIMA_GI_DIR . '/admin/ui-template.php';
 	}
 
@@ -65,9 +74,12 @@ final class Hodima_GI_Admin_UI {
 
 	public function render_ping_box( WP_Post $post ): void {
 		wp_nonce_field( 'hodima_manual_ping_' . $post->ID, 'hodima_ping_nonce' );
+
+		// «ویرایش و احیا» در تب محتوای راکد: تیک از قبل زده است تا ذخیره بعدی واقعا به گوگل برود
+		$revive = ! empty( $_GET['hodima_gi_revive'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط پیش‌فرض تیک
 		?>
 		<label class="hodima-gi-pingbox">
-			<input type="checkbox" name="hodima_manual_ping" value="1">
+			<input type="checkbox" name="hodima_manual_ping" value="1" <?php checked( $revive ); ?>>
 			<span>
 				ارسال سیگنال به‌روزرسانی به گوگل پس از این ذخیره
 				<small>
@@ -122,13 +134,45 @@ final class Hodima_GI_Admin_UI {
 		$settings['enable_google']       = ! empty( $_POST['enable_google'] ) ? 1 : 0;
 		$settings['cf_token']            = sanitize_text_field( wp_unslash( (string) ( $_POST['cf_token'] ?? '' ) ) );
 		$settings['cf_zone_id']          = sanitize_text_field( wp_unslash( (string) ( $_POST['cf_zone_id'] ?? '' ) ) );
-		$settings['queue_debounce_time'] = isset( $_POST['debounce'] ) ? max( 1, absint( $_POST['debounce'] ) ) : 15;
-		$settings['queue_penalty_time']  = isset( $_POST['penalty'] ) ? max( 1, absint( $_POST['penalty'] ) ) : 3;
-		$settings['stale_content_days']  = isset( $_POST['stale_days'] ) ? max( 10, absint( $_POST['stale_days'] ) ) : 60;
+		// سقف‌ها: عدد خیلی بزرگ صف را عملا متوقف می‌کرد (مثلا تنفس ۹۹۹۹۹ دقیقه)
+		$settings['queue_debounce_time'] = isset( $_POST['debounce'] ) ? min( 1440, max( 1, absint( $_POST['debounce'] ) ) ) : 15;
+		$settings['queue_penalty_time']  = isset( $_POST['penalty'] ) ? min( 72, max( 1, absint( $_POST['penalty'] ) ) ) : 3;
+		$settings['stale_content_days']  = isset( $_POST['stale_days'] ) ? min( 3650, max( 10, absint( $_POST['stale_days'] ) ) ) : 60;
 
 		update_option( HODIMA_GI_OPTION_SETTINGS, $settings, false );
 
 		wp_send_json_success( [ 'message' => 'پیکربندی ذخیره شد.' ] );
+	}
+
+	/**
+	 * ذخیره کلید از دکمه «ذخیره کلید» (جدا از ذخیره پیکربندی).
+	 * همان اعتبارسنجی ajax_save_all_settings.
+	 */
+	public function ajax_save_key(): void {
+
+		$this->verify_access();
+
+		$json = isset( $_POST['json_data'] ) ? trim( (string) wp_unslash( $_POST['json_data'] ) ) : '';
+
+		if ( '' === $json ) {
+			wp_send_json_error( [ 'message' => 'محتوای فایل JSON خالی است؛ فایل را انتخاب کنید یا متن آن را بچسبانید.' ] );
+		}
+
+		$check = Hodima_GI_Helper::validate_service_account( $json );
+		if ( ! $check['ok'] ) {
+			wp_send_json_error( [ 'message' => $check['message'] ] );
+		}
+
+		update_option( HODIMA_GI_OPTION_JSON, $json, false );
+		delete_transient( 'hodima_gi_token' );
+
+		$message = sprintf( 'کلید حساب سرویس %s ذخیره شد. برای اطمینان «تست اتصال گوگل» را بزنید.', $check['email'] );
+
+		if ( defined( 'HODIMA_GI_SERVICE_ACCOUNT_JSON' ) && '' !== (string) HODIMA_GI_SERVICE_ACCOUNT_JSON ) {
+			$message .= ' توجه: کلید تعریف‌شده در wp-config.php مقدم است و همان استفاده می‌شود.';
+		}
+
+		wp_send_json_success( [ 'message' => $message ] );
 	}
 
 	public function ajax_remove_key(): void {
@@ -209,7 +253,7 @@ final class Hodima_GI_Admin_UI {
 
 		global $wpdb;
 
-		if ( ! $wpdb->get_var( "SELECT GET_LOCK('hodima_gi_queue_mysql_lock', 2)" ) ) {
+		if ( ! $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 2)', Hodima_GI_Queue::LOCK ) ) ) {
 			wp_send_json_error( [ 'message' => 'صف در حال پردازش توسط سیستم است؛ چند لحظه دیگر تلاش کنید.' ] );
 		}
 
@@ -229,7 +273,7 @@ final class Hodima_GI_Admin_UI {
 				$result['quota'] = true;
 			}
 		} finally {
-			$wpdb->query( "SELECT RELEASE_LOCK('hodima_gi_queue_mysql_lock')" );
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', Hodima_GI_Queue::LOCK ) );
 			Hodima_GI_Queue::schedule_next();
 		}
 
@@ -309,6 +353,10 @@ final class Hodima_GI_Admin_UI {
 				break;
 
 			case 'cf_purge':
+				$cf = Hodima_GI_Helper::cloudflare_credentials();
+				if ( '' === $cf['token'] || '' === $cf['zone'] ) {
+					wp_send_json_error( [ 'message' => 'Token و Zone ID کلادفلر در تب «تنظیمات» وارد نشده‌اند.' ] );
+				}
 				foreach ( array_slice( $urls, 0, 20 ) as $url ) {
 					if ( Hodima_GI_Tools::cloudflare_purge( Hodima_GI_Helper::clean_url( $url ) ) ) {
 						$count++;
@@ -324,6 +372,58 @@ final class Hodima_GI_Admin_UI {
 
 		if ( $count > Hodima_GI_Helper::quota_remaining() && 'cf_purge' !== $action ) {
 			$message .= sprintf( ' توجه: سهمیه باقی‌مانده امروز %s است؛ بقیه در روزهای بعد ارسال می‌شوند.', number_format_i18n( Hodima_GI_Helper::quota_remaining() ) );
+		}
+
+		wp_send_json_success( [ 'message' => $message ] );
+	}
+
+	/**
+	 * افزودن نوشته‌ها/محصولات (تب محتوای راکد) به صف گوگل.
+	 * فقط منتشرشده و از نوع‌های مجاز؛ آدرس مثل انتشار عادی ساخته و در جدول
+	 * ثبت می‌شود تا بازدید بعدی گوگل‌بات زمان واکنش را بسازد.
+	 */
+	public function ajax_queue_posts(): void {
+
+		$this->verify_access();
+
+		$ids = isset( $_POST['ids'] ) ? array_values( array_unique( array_filter( array_map( 'absint', (array) $_POST['ids'] ) ) ) ) : [];
+
+		if ( empty( $ids ) ) {
+			wp_send_json_error( [ 'message' => 'موردی انتخاب نشده.' ] );
+		}
+
+		$types = (array) ( Hodima_GI_Helper::get_settings()['google_post_types'] ?? [] );
+		$count = 0;
+
+		foreach ( array_slice( $ids, 0, 100 ) as $id ) {
+
+			$post = get_post( $id );
+
+			if ( ! ( $post instanceof WP_Post ) || 'publish' !== $post->post_status || ! in_array( $post->post_type, $types, true ) ) {
+				continue;
+			}
+
+			$url = get_permalink( $post );
+			if ( ! $url ) {
+				continue;
+			}
+
+			$url = Hodima_GI_Helper::clean_url( (string) $url );
+
+			if ( Hodima_GI_Queue::push( $url, 'URL_UPDATED', 'stale_revive' ) ) {
+				Hodima_Crawler_DB_Queries::upsert_url_data( $url, [ 'object_id' => (int) $post->ID, 'object_type' => $post->post_type ] );
+				$count++;
+			}
+		}
+
+		if ( 0 === $count ) {
+			wp_send_json_error( [ 'message' => 'هیچ‌کدام از موارد انتخابی قابل ارسال نبود (منتشر نشده یا نوع آن در «محتوای مجاز برای ارسال» نیست).' ] );
+		}
+
+		$message = sprintf( '%s آدرس به صف گوگل اضافه شد و بعد از «زمان تنفس» ارسال می‌شود.', number_format_i18n( $count ) );
+
+		if ( empty( Hodima_GI_Helper::get_settings()['enable_google'] ) ) {
+			$message .= ' توجه: ارسال به گوگل در تب Google API خاموش است.';
 		}
 
 		wp_send_json_success( [ 'message' => $message ] );
