@@ -1,27 +1,24 @@
+/* هدر، عرض ۹۵٪ و فوتر از سیستم طراحی مشترک (Hodima Core → admin-ui.css).
+ * تب‌ها زیر هدر و هم‌شکل تب‌های بقیه صفحه‌های هدیما؛ فونت فقط از قالب. */
 .in-admin {
-    --in-primary: var(--hodima-primary, #25316a);
-    --in-primary-hover: var(--hodima-secondary, #607bbd);
-    --in-gradient: linear-gradient(90deg, #25316a, #607bbd, #b6c2f3);
-    --in-border: var(--hodima-third, #b6c2f3);
-    --in-text: var(--hodima-text-dark, #111111);
-    --in-bg: var(--hodima-surface-soft, #f7f9fd);
-    --in-soft-bg: var(--hodima-bg-gray, #eef2f8);
-    max-width: 95% !important; 
-    width: 95%;
-    margin: 1rem 0; 
-    padding: 0 10px; 
-    direction: rtl; 
+    --in-primary: var(--hd-primary, #25316a);
+    --in-primary-hover: var(--hd-secondary, #607bbd);
+    --in-gradient: var(--hd-gradient, linear-gradient(90deg, #25316a, #607bbd, #b6c2f3));
+    --in-border: var(--hd-border, #b6c2f3);
+    --in-text: var(--hd-text, #1d2340);
+    --in-bg: var(--hd-softer, #f7f9fd);
+    --in-soft-bg: var(--hd-soft, #eef2f8);
     color: var(--in-text);
-    font-size: 14px; /* +1px Base */
 }
 .in-admin * { box-sizing: border-box; }
-.in-admin .in-header { background: #fff; padding: 1.2rem; border-radius: 8px; text-align: center; border: 1px solid var(--in-border); position: relative; margin-bottom: 1rem; }
-.in-admin .in-header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--in-gradient); border-radius: 8px 8px 0 0; }
-.in-admin .in-header h1 { font-size: 19px; margin: 0; padding: 0; }
-.in-tabs { display: flex; gap: 5px; border-bottom: 1px solid var(--in-border); margin-top: 1rem;}
-.in-tab-btn { background: transparent; border: none; padding: 10px 18px; font-weight: bold; cursor: pointer; border-radius: 6px 6px 0 0; font-size: 13px;}
-.in-tab-btn.active { color: var(--in-primary); background: #fff; border: 1px solid var(--in-border); border-bottom: 2px solid #fff; margin-bottom: -1px; }
-.in-tab-content { display: none; background: #fff; padding: 1.5rem; border: 1px solid var(--in-border); border-top: none; border-radius: 0 0 8px 8px; }
+.in-admin :is(input, select, textarea, button) { font-family: inherit; }
+.in-tabs { display: flex; gap: 4px; margin: 0.875rem 0 0; padding: 6px; overflow-x: auto; background: #fff; border: 1px solid var(--in-border); border-radius: var(--hd-radius, 12px) var(--hd-radius, 12px) 0 0; box-shadow: var(--hd-shadow, none); }
+.in-tab-btn { flex-shrink: 0; background: transparent; border: none; padding: 8px 14px; color: var(--in-primary); font-weight: 600; cursor: pointer; border-radius: 10px; font-size: 13px; white-space: nowrap; }
+.in-tab-btn:hover { background: var(--in-soft-bg); }
+.in-tab-btn:focus-visible { outline: 2px solid var(--hd-accent-light, #a341c8); outline-offset: 1px; }
+.in-tab-btn.active { color: #fff; background: var(--in-primary); }
+.in-tab-content { display: none; background: #fff; padding: 1.5rem; border: 1px solid var(--in-border); border-top: none; border-radius: 0 0 var(--hd-radius, 12px) var(--hd-radius, 12px); box-shadow: var(--hd-shadow, none); }
+@media (width < 783px) { .in-tab-content { padding: 1rem; } }
 .in-tab-content.active { display: block; }
 .in-section { background: var(--in-bg); border: 1px solid var(--in-border); border-radius: 8px; padding: 1.2rem; margin-bottom: 1.2rem; }
 .in-section-title { font-size: 15px; margin-top:0; border-right: 4px solid var(--in-primary); padding-right: 10px; font-weight: bold;}
@@ -43,7 +40,7 @@ th.col-url { text-align: left; direction: ltr; width: 50%; padding-left: 15px;}
 .in-checkbox-row { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 15px; padding-bottom: 8px; }
 .in-checkbox-label { background: #fff; padding: 8px 12px; border: 1px solid var(--in-border); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size:13px; font-weight:bold; white-space: nowrap; }
 
-#g-json, #b-url { width:100%; direction:ltr; text-align:left; padding:10px; border:1px solid var(--in-border); border-radius:6px; font-size: 13px; font-family: monospace;}
+#g-json, #b-url { width:100%; direction:ltr; text-align:left; padding:10px; border:1px solid var(--in-border); border-radius:6px; font-size: 13px; font-family: inherit;}
 .in-cell-url { direction: ltr; text-align: left !important; font-size:13px; word-break: break-all;}
 .in-field-label { display: block; font-weight: bold; font-size: 14px; margin: 12px 0 6px;}
 .in-upload-row { margin-top:10px; border: 1px dashed var(--in-border); padding: 10px; border-radius: 6px; background: #fff;}
@@ -84,7 +81,8 @@ th.col-url { text-align: left; direction: ltr; width: 50%; padding-left: 15px;}
 
 .in-code {
     margin:6px 0 12px; padding:10px 12px; overflow-x:auto;
-    font:12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family:inherit; /* فقط فونت قالب */
+    font-size:12.5px; line-height:1.6;
     color:var(--hodima-text-dark, #111111); background:var(--hodima-surface-soft, #f7f9fd);
     border:1px solid var(--hodima-border-light, #d9e1f0); border-radius:6px; white-space:pre;
 }

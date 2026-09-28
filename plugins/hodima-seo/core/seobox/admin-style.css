@@ -101,7 +101,7 @@
 .seobox-serp {
     margin: 0 0 18px;
     padding: 14px 16px;
-    font-family: Arial, Tahoma, sans-serif;
+    font-family: inherit;
     background: var(--hodima-surface, #ffffff);
     border: 1px solid var(--hodima-border-light, #d9e1f0);
     border-radius: 8px;

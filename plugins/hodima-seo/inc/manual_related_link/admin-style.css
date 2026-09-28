@@ -8,7 +8,7 @@
 
 .hodima-mrl-postbox,
 .hodima-mrl-grid {
-    font-family: var(--hodima-font, 'Vazirmatn', Tahoma, sans-serif);
+    font-family: inherit;
 }
 
 .hodima-mrl-postbox {

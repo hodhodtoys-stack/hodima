@@ -99,6 +99,11 @@ add_action( 'plugins_loaded', static function (): void {
 		return;
 	}
 
+	// بدون Hodima Core، هدر/تب مشترک پیشخوان نسخه ساده می‌گیرد
+	if ( is_admin() && ! function_exists( 'hodima_admin_header' ) ) {
+		require_once __DIR__ . '/inc/admin-ui-fallback.php';
+	}
+
 	$specs = hodima_commerce_modules();
 
 	if ( class_exists( \Hodima\Core\Modules::class ) ) {

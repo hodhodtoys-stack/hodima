@@ -61,9 +61,10 @@ foreach ( $hodima_all_schema_files as $hodima_schema_file ) {
 add_action('admin_enqueue_scripts', 'hodima_schema_assets');
 
 function hodima_schema_assets($hook) {
-    $allowed_pages = array('post.php', 'post-new.php', 'edit-tags.php', 'term.php');
-
-    if (strpos($hook, 'hodima') !== false || in_array($hook, $allowed_pages)) {
+    // فقط صفحه‌های تنظیمات اسکیما. قبلا روی هر صفحه‌ای که «hodima» در نامش بود
+    // (اسلایدر، استوری، ریدایرکت، بومی‌سازی...) و حتی ویرایش نوشته و دسته لود
+    // می‌شد و با :root و قوانین سراسری .form-table ظاهر آن‌ها را به هم می‌ریخت.
+    if ( '' !== hodima_schema_current_admin_page() ) {
         $schema_uri  = HODIMA_SEO_URL . '/schema';
         $schema_path = HODIMA_SCHEMA_PATH;
 
@@ -73,38 +74,60 @@ function hodima_schema_assets($hook) {
         // این کار کش مرورگر را فقط زمانی باطل می‌کند که فایل واقعاً تغییر کرده باشد
         $css_ver = file_exists( $css_file ) ? filemtime( $css_file ) : false;
 
-        wp_enqueue_style('hodima-init-css', $schema_uri . '/admin/assets/css/init.css', array(), $css_ver);
+        wp_enqueue_style('hodima-init-css', $schema_uri . '/admin/assets/css/init.css', wp_style_is( 'hodima-admin-ui', 'registered' ) ? array( 'hodima-admin-ui' ) : array(), $css_ver);
     }
 }
 
 // ==============================================================
 // ۲. توابع کمکی برای قالب‌بندی صفحات (Header & Footer)
 // ==============================================================
-function hodima_view_header($title, $desc, $icon = '🚀') {
-    ?>
-    <div class="hodima-wrapper">
-        <?php hodima_schema_admin_nav(); ?>
-        <div class="h-header">
-            <div class="h-icon"><?php echo esc_html($icon); ?></div>
-            <div>
-                <h1 style="font-weight: inherit;"><?php echo esc_html($title); ?></h1>
-                <p style="font-weight: inherit;"><?php echo esc_html($desc); ?></p>
-            </div>
-        </div>
-        <div class="h-card-container">
-    <?php
+/**
+ * هدر یکسان صفحه‌های اسکیما: هدر ← نوار صفحه‌ها (زیر هدر) ← اعلان‌ها ← محتوا.
+ *
+ * باگ قبلی: نوار ناوبری ۱۳ صفحه *بالای* هدر چاپ می‌شد و اعلان‌های وردپرس
+ * داخل هدر رنگی می‌افتادند. آیکون‌ها ایموجی بودند که اسکریپت ایموجی وردپرس
+ * از CDN خارجی تصویرشان را می‌گرفت؛ حالا Dashicons داخلی.
+ *
+ * @param string $icon نام Dashicon (مثلا dashicons-admin-home)؛ خالی = آیکون همان صفحه
+ */
+function hodima_view_header($title, $desc, $icon = '') {
+    $current = hodima_schema_current_admin_page();
+    $pages   = hodima_schema_admin_pages();
+
+    if ( ! is_string( $icon ) || ! str_starts_with( $icon, 'dashicons-' ) ) {
+        $icon = $pages[ $current ][3] ?? 'dashicons-editor-code';
+    }
+
+    $tabs = array();
+    foreach ( $pages as $slug => $page ) {
+        $tabs[ $slug ] = array(
+            'label' => $page[1],
+            'url'   => admin_url( 'admin.php?page=' . $slug ),
+            'icon'  => $page[3] ?? '',
+        );
+    }
+
+    echo '<div class="wrap hd-wrap hodima-wrapper">';
+    hodima_admin_header( array(
+        'title'       => $title,
+        'description' => $desc,
+        'icon'        => $icon,
+        'tabs'        => '' !== $current ? $tabs : array(),
+        'current'     => $current,
+        'tabs_label'  => 'صفحه‌های اسکیما',
+    ) );
+    echo '<div class="hd-body h-card-container">';
 }
 
 function hodima_view_footer() {
     echo '</div></div>';
 }
 
+/** نوار ذخیره پایین فرم (چسبان به پایین صفحه). */
 function hodima_view_form_footer() {
     ?>
-    <div class="h-form-footer">
-        <div class="h-submit-wrapper">
-            <?php submit_button('ذخیره تنظیمات', 'primary', 'submit', false); ?>
-        </div>
+    <div class="hd-actions">
+        <?php submit_button('ذخیره تنظیمات', 'primary', 'submit', false); ?>
     </div>
     <?php
 }
@@ -122,24 +145,24 @@ function hodima_view_form_footer() {
 // ==============================================================
 
 /**
- * صفحه‌های تنظیمات اسکیما: اسلاگ => [عنوان صفحه، عنوان کوتاه، callback].
+ * صفحه‌های تنظیمات اسکیما: اسلاگ => [عنوان صفحه، عنوان کوتاه، callback، آیکون Dashicons].
  * اولی صفحه اصلی (پیشخوان اسکیما) است.
  */
 function hodima_schema_admin_pages(): array {
     return [
-        'hodima-schema'            => [ 'پیشخوان اسکیما', 'پیشخوان', 'hodima_schema_dashboard_callback' ],
-        'hodima-schema-homepage'   => [ 'اسکیمای صفحه اصلی', 'صفحه اصلی', 'hodima_schema_homepage_callback' ],
-        'hodima-schema-breadcrumb' => [ 'اسکیمای بردکرامب', 'بردکرامب', 'hodima_schema_breadcrumb_callback' ],
-        'hodima-schema-blog'       => [ 'اسکیمای بلاگ', 'بلاگ', 'hodima_schema_blog_callback' ],
-        'hodima-schema-category'   => [ 'اسکیمای دسته‌بندی', 'دسته‌بندی', 'hodima_schema_category_callback' ],
-        'hodima-schema-product'    => [ 'اسکیمای محصولات', 'محصولات', 'hodima_schema_product_callback' ],
-        'hodima-schema-image'      => [ 'اسکیمای تصاویر', 'تصاویر', 'hodima_schema_image_callback' ],
-        'hodima-schema-page'       => [ 'اسکیمای برگه‌ها', 'برگه‌ها', 'hodima_schema_page_callback' ],
-        'hodima-sitemap'           => [ 'نقشه سایت (XML)', 'نقشه سایت', 'hodima_sitemap_callback' ],
-        'hodima-podcast'           => [ 'فید پادکست (RSS)', 'فید پادکست', 'hodima_podcast_callback' ],
-        'hodima-schema-tables'     => [ 'جداول هدیما', 'جداول', 'hodima_schema_tables_callback' ],
-        'hodima-llms'              => [ 'هوش مصنوعی (LLMs)', 'هوش مصنوعی', 'hodima_llms_callback' ],
-        'hodima-schema-cleaner'    => [ 'پاکسازی هوشمند اسکیما', 'پاکسازی', 'hodima_schema_cleaner_callback' ],
+        'hodima-schema'            => [ 'پیشخوان اسکیما', 'پیشخوان', 'hodima_schema_dashboard_callback', 'dashicons-dashboard' ],
+        'hodima-schema-homepage'   => [ 'اسکیمای صفحه اصلی', 'صفحه اصلی', 'hodima_schema_homepage_callback', 'dashicons-admin-home' ],
+        'hodima-schema-breadcrumb' => [ 'اسکیمای بردکرامب', 'بردکرامب', 'hodima_schema_breadcrumb_callback', 'dashicons-editor-ol' ],
+        'hodima-schema-blog'       => [ 'اسکیمای بلاگ', 'بلاگ', 'hodima_schema_blog_callback', 'dashicons-edit-page' ],
+        'hodima-schema-category'   => [ 'اسکیمای دسته‌بندی', 'دسته‌بندی', 'hodima_schema_category_callback', 'dashicons-category' ],
+        'hodima-schema-product'    => [ 'اسکیمای محصولات', 'محصولات', 'hodima_schema_product_callback', 'dashicons-products' ],
+        'hodima-schema-image'      => [ 'اسکیمای تصاویر', 'تصاویر', 'hodima_schema_image_callback', 'dashicons-format-image' ],
+        'hodima-schema-page'       => [ 'اسکیمای برگه‌ها', 'برگه‌ها', 'hodima_schema_page_callback', 'dashicons-admin-page' ],
+        'hodima-sitemap'           => [ 'نقشه سایت (XML)', 'نقشه سایت', 'hodima_sitemap_callback', 'dashicons-networking' ],
+        'hodima-podcast'           => [ 'فید پادکست (RSS)', 'فید پادکست', 'hodima_podcast_callback', 'dashicons-microphone' ],
+        'hodima-schema-tables'     => [ 'جداول هدیما', 'جداول', 'hodima_schema_tables_callback', 'dashicons-editor-table' ],
+        'hodima-llms'              => [ 'هوش مصنوعی (LLMs)', 'هوش مصنوعی', 'hodima_llms_callback', 'dashicons-lightbulb' ],
+        'hodima-schema-cleaner'    => [ 'پاکسازی هوشمند اسکیما', 'پاکسازی', 'hodima_schema_cleaner_callback', 'dashicons-shield' ],
     ];
 }
 
@@ -207,23 +230,7 @@ add_filter( 'submenu_file', static function ( $submenu_file ) {
     return '' !== hodima_schema_current_admin_page() ? 'hodima-schema' : $submenu_file;
 } );
 
-/** نوار ناوبری بین صفحه‌های اسکیما (بالای هر صفحه). */
-function hodima_schema_admin_nav(): void {
-    $current = hodima_schema_current_admin_page();
-    if ( '' === $current ) {
-        return;
-    }
-    echo '<nav class="h-schema-nav" aria-label="صفحه‌های اسکیما">';
-    foreach ( hodima_schema_admin_pages() as $slug => [ , $menu_title ] ) {
-        printf(
-            '<a href="%s"%s>%s</a>',
-            esc_url( admin_url( 'admin.php?page=' . $slug ) ),
-            $slug === $current ? ' aria-current="page"' : '',
-            esc_html( $menu_title )
-        );
-    }
-    echo '</nav>';
-}
+// نوار ناوبری صفحه‌های اسکیما حالا تب‌های زیر هدر است (hodima_view_header).
 
 // ==============================================================
 // ۴. توابع Callbacks برای منوها (همه از پوشه views لود می‌شوند)

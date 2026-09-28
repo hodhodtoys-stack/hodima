@@ -18,12 +18,12 @@
     --hook-bg-light: var(--hodima-surface-soft, #f7f9fd);
     --hook-danger: var(--hodima-state-danger, #a32a2a);
     --hook-danger-dark: var(--hodima-primary-dark, #1b244d);
-    --hook-font: 'Vazirmatn';
+    --hook-font: inherit;
 }
 
 .hook-admin-box,
 .hook-term-wrapper {
-    font-family: var(--hook-font);
+    font-family: inherit;
     box-sizing: border-box;
 }
 
@@ -94,7 +94,7 @@
     width: 100%; 
     box-sizing: border-box; 
     padding: 10px 14px;
-    font-family: var(--hook-font);
+    font-family: inherit;
     font-size: 13px; 
     color: var(--hook-text-main);
     border: 1.5px solid var(--hodima-border-light, #d9e1f0);
@@ -194,7 +194,7 @@
     border-radius: 8px; 
     font-weight: 700; 
     font-size: 13px; 
-    font-family: var(--hook-font);
+    font-family: inherit;
     transition: all 0.2s ease;
     display: inline-flex; 
     align-items: center;
@@ -215,7 +215,7 @@
 
 #hook_term_media_box .hndle,
 #hook_term_media_box_add .hndle {
-    font-family: var(--hook-font);
+    font-family: inherit;
     color: var(--hook-primary);
     font-weight: 700;
 }

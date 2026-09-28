@@ -6,94 +6,70 @@ if ( ! current_user_can( 'manage_options' ) ) {
 }
 
 
-// استفاده از توابع هدر و فوتر اختصاصی شما (در صورت وجود)
-if (function_exists('hodima_view_header')) {
-    hodima_view_header(
-        'مدیریت جداول هدیما',
-        'راهنمای جامع استفاده از جداول مشخصات و داینامیک برای تولید خودکار اسکیمای گوگل.',
-        '📊'
-    );
-}
+hodima_view_header(
+    'جداول هدیما',
+    'راهنمای جداول مشخصات و داینامیک برای تولید خودکار اسکیمای گوگل.',
+    'dashicons-editor-table'
+);
 ?>
 
-<div class="h-dashboard-wrapper" style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 25px; background: #f8fafc; margin-top: 10px;">
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 25px;">
-        
-        <!-- کارت 1: جدول داینامیک (Hodima_Dynamic_Table) -->
-        <div class="h-table-card" style="border: 1px solid #b6c2f3; border-radius: 8px; padding: 25px; background: #fff; box-shadow: 0 4px 6px rgba(37,49,106,0.05);">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;">
-                <span style="font-size: 28px;">📝</span>
-                <div>
-                    <h3 style="margin: 0; font-size: 17px; color: #25316a; font-weight: inherit;">جدول داینامیک (پست‌ها، برگه‌ها و دسته‌ها)</h3>
-                    <span style="font-size: 12px; color: #607bbd;">تولیدکننده اسکیمای ItemList</span>
-                </div>
-            </div>
-            
-            <p style="font-size: 13px; color: #475569; line-height: 1.7; margin-bottom: 15px; font-weight: inherit;">
-                این ماژول یک باکس (متاباکس) در انتهای صفحه ویرایش نوشته‌ها، برگه‌ها و دسته‌بندی‌ها ایجاد می‌کند. شما می‌توانید بی‌نهایت ردیف (ویژگی و مقدار) به آن اضافه کنید. اطلاعات وارد شده به صورت خودکار به اسکیما <span style="font-weight: inherit; color:#25316a;">ItemList</span> تبدیل شده و به گوگل کمک می‌کند تا ساختار اطلاعات صفحه شما را بهتر درک کند.
-            </p>
+<div class="hd-grid hd-grid--wide">
 
-            <ul style="font-size: 13px; color: #475569; line-height: 1.6; padding-right: 20px; margin-bottom: 20px;">
-                <li><span style="font-weight: inherit; color:#25316a;">قدم اول:</span> در صفحه ویرایش نوشته/دسته، به پایین صفحه (بخش "جدول مشخصات") اسکرول کنید.</li>
-                <li><span style="font-weight: inherit; color:#25316a;">قدم دوم:</span> روی "افزودن ردیف" کلیک کرده و عنوان و مقدار را وارد کنید.</li>
-                <li><span style="font-weight: inherit; color:#25316a;">قدم سوم:</span> شورت‌کد مربوطه را در متن محتوا قرار دهید تا جدول به کاربر هم نمایش داده شود.</li>
-            </ul>
-            
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #b6c2f3;">
-                <span style="display: block; margin-bottom: 10px; font-size: 13px; color: #25316a; font-weight: inherit;">شورت‌کدهای نمایش جدول:</span>
-                
-                <div style="margin-bottom: 10px;">
-                    <span style="font-size: 12px; color: #607bbd; display: block; margin-bottom: 4px;">نمایش خودکار (برای پست جاری):</span>
-                    <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #b6c2f3; user-select: all; cursor: pointer; display: block; font-size: 14px; color: #25316a;">[hodima_table]</code>
-                </div>
+    <?php // جدول داینامیک (Hodima_Dynamic_Table) ?>
+    <section class="hd-card">
+        <header class="hd-card__head">
+            <?php echo hodima_admin_icon( 'dashicons-edit-page' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+            <h2 class="hd-card__title">جدول داینامیک (نوشته‌ها، برگه‌ها و دسته‌ها)</h2>
+            <p class="hd-card__desc">تولیدکننده اسکیمای ItemList</p>
+        </header>
 
-                <div>
-                    <span style="font-size: 12px; color: #607bbd; display: block; margin-bottom: 4px;">نمایش پیشرفته (فراخوانی پست یا دسته دیگر با تغییر عنوان):</span>
-                    <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #b6c2f3; user-select: all; cursor: pointer; display: block; margin-bottom: 5px; font-size: 13px; color: #25316a;">[hodima_table title="مشخصات فنی"]</code>
-                    <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #b6c2f3; user-select: all; cursor: pointer; display: block; font-size: 13px; color: #25316a;">[hodima_table id="123" type="post"]</code>
-                </div>
-            </div>
+        <p class="hd-text">
+            یک متاباکس در پایین صفحه ویرایش نوشته‌ها، برگه‌ها و دسته‌بندی‌ها اضافه می‌شود که می‌توانید هر تعداد ردیف (ویژگی و مقدار) به آن بدهید.
+            اطلاعات خودکار به اسکیمای <strong>ItemList</strong> تبدیل می‌شود و به گوگل در درک ساختار صفحه کمک می‌کند.
+        </p>
+
+        <ol class="hd-list">
+            <li>در صفحه ویرایش نوشته یا دسته، به بخش «جدول مشخصات» بروید.</li>
+            <li>روی «افزودن ردیف» بزنید و عنوان و مقدار را وارد کنید.</li>
+            <li>شورت‌کد را در متن بگذارید تا جدول به کاربر هم نمایش داده شود.</li>
+        </ol>
+
+        <span class="hd-field__label">نمایش خودکار (برای همین نوشته)</span>
+        <div class="hd-code">[hodima_table]</div>
+
+        <span class="hd-field__label">نمایش پیشرفته (نوشته یا دسته دیگر، با عنوان دلخواه)</span>
+        <div class="hd-code">[hodima_table title="مشخصات فنی"]</div>
+        <div class="hd-code">[hodima_table id="123" type="post"]</div>
+    </section>
+
+    <?php // جدول مشخصات ووکامرس (Hodima_Product_Specs_Table) ?>
+    <section class="hd-card">
+        <header class="hd-card__head">
+            <?php echo hodima_admin_icon( 'dashicons-products' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+            <h2 class="hd-card__title">جدول مشخصات ووکامرس</h2>
+            <p class="hd-card__desc">تولیدکننده اسکیمای PropertyValue</p>
+        </header>
+
+        <p class="hd-text">
+            ویژگی‌های محصول (Attributes) مانند جنس، سایز، رنگ و برند خودکار خوانده می‌شوند. اسکیمای <strong>PropertyValue</strong>
+            مستقیم به اسکیمای اصلی محصول (Product) وصل می‌شود و شانس نمایش نتایج غنی را بیشتر می‌کند.
+        </p>
+
+        <ul class="hd-list">
+            <li>ویژگی‌ها را از «محصولات ← ویژگی‌ها» تعریف کنید یا در تب «ویژگی‌ها»ی صفحه محصول وارد کنید.</li>
+            <li>گزینه «نمایش در برگه محصول» را برای ویژگی‌ها فعال کنید.</li>
+        </ul>
+
+        <div class="hd-callout">
+            <?php echo hodima_admin_icon( 'dashicons-info-outline' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+            <p><strong>وزن محصول</strong> برای آمدن در جدول و اسکیما باید در «اطلاعات محصول ← حمل و نقل ← وزن» وارد شده باشد.</p>
         </div>
 
-        <!-- کارت 2: جدول مشخصات ووکامرس (Hodima_Product_Specs_Table) -->
-        <div class="h-table-card" style="border: 1px solid #b6c2f3; border-radius: 8px; padding: 25px; background: #fff; box-shadow: 0 4px 6px rgba(37,49,106,0.05);">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;">
-                <span style="font-size: 28px;">🛍️</span>
-                <div>
-                    <h3 style="margin: 0; font-size: 17px; color: #25316a; font-weight: inherit;">جدول مشخصات ووکامرس</h3>
-                    <span style="font-size: 12px; color: #607bbd;">تولیدکننده اسکیمای PropertyValue</span>
-                </div>
-            </div>
-            
-            <p style="font-size: 13px; color: #475569; line-height: 1.7; margin-bottom: 15px; font-weight: inherit;">
-                این جدول برای محصولات ووکامرس طراحی شده است. سیستم به صورت خودکار ویژگی‌های محصول (Attributes) مانند جنس، سایز، رنگ و برند را می‌خواند. اسکیمای تولید شده <span style="font-weight: inherit; color:#25316a;">PropertyValue</span> است که مستقیماً به اسکیمای اصلی محصول (Product) متصل می‌شود و شانس نمایش در نتایج غنی (Rich Snippets) را افزایش می‌دهد.
-            </p>
+        <span class="hd-field__label">شورت‌کد نمایش جدول در محصول</span>
+        <div class="hd-code">[woo_specs_table]</div>
+        <p class="description">در توضیحات کوتاه محصول، متن اصلی یا ابزارک شورت‌کد صفحه‌ساز قرار دهید.</p>
+    </section>
 
-            <ul style="font-size: 13px; color: #475569; line-height: 1.6; padding-right: 20px; margin-bottom: 20px;">
-                <li>ویژگی‌ها را از مسیر <span style="font-weight: inherit; color:#25316a;">محصولات > ویژگی‌ها</span> تعریف کنید یا مستقیماً در تب "ویژگی‌ها" در صفحه محصول وارد کنید.</li>
-                <li>حتماً تیک <span style="font-weight: inherit; color:#25316a;">"نمایش در برگه محصول"</span> را برای ویژگی‌ها بزنید.</li>
-            </ul>
-
-            <div style="background: #f8fafc; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; border-right: 4px solid #607bbd;">
-                <p style="margin: 0; font-size: 12px; color: #25316a; line-height: 1.6;">
-                    <span style="font-weight: inherit; font-size: 13px;">نکته مهم در مورد وزن:</span><br>
-                    برای اینکه وزن محصول در جدول و اسکیما لحاظ شود، حتماً باید مقدار آن را در صفحه ویرایش محصول بخش <span style="font-weight: inherit;">"اطلاعات محصول > حمل و نقل > وزن"</span> وارد کنید.
-                </p>
-            </div>
-            
-            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #b6c2f3;">
-                <span style="display: block; margin-bottom: 10px; font-size: 13px; color: #25316a; font-weight: inherit;">شورت‌کد نمایش جدول در محصول:</span>
-                <code style="background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #b6c2f3; user-select: all; cursor: pointer; display: block; font-size: 14px; color: #25316a;">[woo_specs_table]</code>
-                <p style="font-size: 11px; color: #64748b; margin: 8px 0 0 0; line-height: 1.5;">این شورت‌کد را می‌توانید در بخش "توضیحات کوتاه محصول"، داخل متن اصلی، یا با استفاده از ابزارک شورت‌کد در المنتور قرار دهید.</p>
-            </div>
-        </div>
-
-    </div>
 </div>
 
-<?php 
-if (function_exists('hodima_view_footer')) {
-    hodima_view_footer(); 
-}
-?>
+<?php hodima_view_footer(); ?>

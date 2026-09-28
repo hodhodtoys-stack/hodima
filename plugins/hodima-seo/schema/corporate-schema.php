@@ -30,7 +30,7 @@ function hook_render_corporate_schema() {
         return;
     }
 
-    // 👈 خواندن اسلاگ برگه‌ها از همان تنظیمات مشترک (view-homepage.php)
+    // خواندن اسلاگ برگه‌ها از همان تنظیمات مشترک (view-homepage.php)
     $about_slug   = get_option( 'hodima_corp_about_slug', 'about-us' );
     $contact_slug = get_option( 'hodima_corp_contact_slug', 'contact-us' );
 
@@ -74,7 +74,7 @@ function hook_render_corporate_schema() {
         'addressCountry'  => 'IR',
         'streetAddress'   => get_option( 'hodima_schema_homepage_street_address', 'تهرانپارس، خیابان احسان، پلاک ۸۴' ),
         'addressLocality' => get_option( 'hodima_schema_homepage_address_locality', 'تهران' ),
-        // 🛠️ همان باگ homepage-schema.php: قبلاً اینجا هم دوباره همان
+        // همان باگ homepage-schema.php: قبلاً اینجا هم دوباره همان
         // متغیر شهر خوانده می‌شد. حالا از گزینه‌ی جداگانه‌ی استان می‌خواند.
         'addressRegion'   => get_option( 'hodima_schema_homepage_address_region', 'تهران' ),
         'postalCode'      => get_option( 'hodima_schema_homepage_postal_code', '1657883361' ),

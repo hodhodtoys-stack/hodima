@@ -133,7 +133,7 @@ function hod_video_watch_render_meta_box(WP_Post $post): void
                                         <button type="button" class="button hvw-btn-action hvw-media-upload-btn">انتخاب</button>
                                     </div>
                                 </div>
-                                <button type="button" class="hvw-remove-row" aria-label="حذف">✕</button>
+                                <button type="button" class="hvw-remove-row" aria-label="حذف"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>
                             </div>
                         <?php endforeach;
                     endif; ?>

@@ -10,10 +10,55 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/*
+ * منو: «خوشه‌بندی» زیر «ابزارهای هدیما». دو صفحه (محتوای یتیم و نقشه) با
+ * همان آدرس‌های قبلی ثبت می‌شوند ولی فقط یکی در منو دیده می‌شود؛ جابه‌جایی
+ * بین آن‌ها با تب‌های زیر هدر است. بدون Hodima Core منوی سطح اول قبلی.
+ */
+function hodima_tc_menu_parent(): string {
+	$parent = function_exists( 'hodima_admin_menu_parent' ) ? hodima_admin_menu_parent() : '';
+	return '' !== $parent ? $parent : 'hodima-tc-orphans';
+}
+
 add_action( 'admin_menu', static function (): void {
-	add_menu_page( 'مدیریت خوشه‌های محتوایی', 'خوشه‌بندی', 'manage_options', 'hodima-tc-orphans', 'hodima_tc_render_orphan_page', 'dashicons-networking', 25 );
-	add_submenu_page( 'hodima-tc-orphans', 'محتواهای یتیم', 'محتواهای یتیم', 'manage_options', 'hodima-tc-orphans', 'hodima_tc_render_orphan_page' );
+
+	$parent = hodima_tc_menu_parent();
+
+	if ( 'hodima-tc-orphans' === $parent ) {
+		add_menu_page( 'مدیریت خوشه‌های محتوایی', 'خوشه‌بندی', 'manage_options', 'hodima-tc-orphans', 'hodima_tc_render_orphan_page', 'dashicons-networking', 25 );
+	}
+
+	add_submenu_page( $parent, 'محتواهای یتیم', 'hodima-tc-orphans' === $parent ? 'محتواهای یتیم' : 'خوشه‌بندی', 'manage_options', 'hodima-tc-orphans', 'hodima_tc_render_orphan_page' );
+	add_submenu_page( $parent, 'نقشه خوشه‌ها', 'نقشه خوشه‌ها', 'manage_options', 'hodima-tc-map', 'hodima_tc_render_visual_map' );
 } );
+
+// زیر «ابزارهای هدیما» فقط «خوشه‌بندی» در منو بماند (فقط از نمایش حذف می‌شود؛
+// حذف در admin_menu دسترسی صفحه را از بین می‌برد — همان الگوی صفحه‌های اسکیما)
+add_action( 'admin_head', static function (): void {
+	if ( 'hodima-tc-orphans' !== hodima_tc_menu_parent() ) {
+		remove_submenu_page( hodima_tc_menu_parent(), 'hodima-tc-map' );
+	}
+} );
+
+add_filter( 'submenu_file', static function ( $submenu_file ) {
+	$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	return ( 'hodima-tc-map' === $page && 'hodima-tc-orphans' !== hodima_tc_menu_parent() ) ? 'hodima-tc-orphans' : $submenu_file;
+} );
+
+/** هدر و تب‌های مشترک دو صفحه خوشه‌بندی. */
+function hodima_tc_admin_header( string $current, string $title, string $description ): void {
+	hodima_admin_header( [
+		'title'       => $title,
+		'description' => $description,
+		'icon'        => 'dashicons-networking',
+		'current'     => $current,
+		'tabs_label'  => 'بخش‌های خوشه‌بندی',
+		'tabs'        => [
+			'hodima-tc-orphans' => [ 'label' => 'محتواهای یتیم', 'url' => admin_url( 'admin.php?page=hodima-tc-orphans' ), 'icon' => 'dashicons-warning' ],
+			'hodima-tc-map'     => [ 'label' => 'نقشه خوشه‌ها', 'url' => admin_url( 'admin.php?page=hodima-tc-map' ), 'icon' => 'dashicons-networking' ],
+		],
+	] );
+}
 
 /**
  * گره‌هایی که نه پیلارند و نه والد دارند.
@@ -134,16 +179,17 @@ function hodima_tc_render_orphan_page(): void {
 	$post_labels = [ 'post' => 'نوشته وبلاگ', 'page' => 'برگه', 'product' => 'محصول' ];
 	$term_labels = [ 'category' => 'دسته‌بندی مقالات', 'product_cat' => 'دسته‌بندی محصولات' ];
 	?>
-	<div class="wrap htc-wrap">
-		<h1 class="htc-header">
-			<span class="dashicons dashicons-networking"></span> محتواهای یتیم (بدون خوشه)
-		</h1>
-		<p class="htc-notice">
-			مقالات، برگه‌ها، محصولات و <strong>دسته‌بندی‌هایی</strong> که هنوز نه پیلارند و نه والدی دارند.
-			(تعداد کل: <?php echo esc_html( number_format_i18n( $total_items ) ); ?> مورد)
-		</p>
+	<div class="wrap hd-wrap htc-wrap">
+		<?php hodima_tc_admin_header( 'hodima-tc-orphans', 'محتواهای یتیم (بدون خوشه)', 'مقالات، برگه‌ها، محصولات و دسته‌بندی‌هایی که هنوز نه پیلارند و نه والدی دارند.' ); ?>
 
-		<div class="htc-table-wrap">
+		<div class="hd-grid hd-grid--stats htc-stats">
+			<div class="hd-stat">
+				<span class="hd-stat__label">محتوای یتیم</span>
+				<span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $total_items ) ); ?></span>
+			</div>
+		</div>
+
+		<div class="htc-table-wrap hd-table-wrap">
 			<table class="wp-list-table widefat fixed striped htc-orphan-table">
 				<thead>
 					<tr>

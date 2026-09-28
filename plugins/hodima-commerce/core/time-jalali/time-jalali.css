@@ -1,9 +1,5 @@
-/* مخفی کردن اعلان‌های تکراری پیش‌فرض وردپرس در این صفحه تا فقط نوتیفیکیشن هدیما نمایش داده شود */
-.settings_page_hodima-woocommerce .notice:not(.hodima-loc-notice),
-.settings_page_hodima-woocommerce .updated:not(.hodima-loc-notice),
-.settings_page_hodima-woocommerce .error:not(.hodima-loc-notice) {
-    display: none !important;
-}
+/* صفحه تنظیمات «بومی‌سازی» حالا هدر، سوییچ و اعلان‌هایش را از سیستم طراحی مشترک
+ * (Hodima Core → admin-ui.css) می‌گیرد؛ اعلان‌های وردپرس دیگر پنهان نمی‌شوند. */
 
 /* ========================================================= */
 /* 1. GLOBAL CSS VARIABLES (Hodima Unified Colors)           */
@@ -23,10 +19,6 @@
 /* 2. HODIMA ADMIN FRAMEWORK (Settings Page UI)              */
 /* ========================================================= */
 .hodima-loc-admin {
-    max-inline-size: 95%; /* عرض بهینه و ریسپانسیو تنظیم شد */
-    margin-inline: auto;
-    margin-block: 2rem;
-    direction: rtl;
     color: var(--hodima-loc-text);
 
     & *,

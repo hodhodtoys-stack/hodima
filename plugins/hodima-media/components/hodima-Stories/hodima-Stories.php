@@ -322,17 +322,16 @@ class Admin {
         }
         $notice = is_array( $notice ) && isset( $notice['type'], $notice['message'] ) ? $notice : null;
         ?>
-        <div class="wrap hdn-admin-wrapper anim-fade_in">
-            <div class="hdn-header hd-shadow-soft">
-                <div class="hdn-header-info">
-                    <div class="hdn-icon"><span class="dashicons dashicons-format-gallery hdn-header-icon"></span></div>
-                    <div>
-                        <h1><?php esc_html_e( 'تنظیمات استوری‌های ویدیویی', 'hodima' ); ?></h1>
-                        <p><?php esc_html_e( 'لینک ویدیوها (mp4) و تصویر کاور را برای نمایش پاپ‌آپ استوری وارد کنید.', 'hodima' ); ?></p>
-                    </div>
-                </div>
-                <div class="hdn-version-badge">V <?php echo esc_html( Core::VERSION ); ?></div>
-            </div>
+        <div class="wrap hd-wrap hdn-admin-wrapper">
+            <?php
+            // هدر مشترک «ابزارهای هدیما» (قبلا هدر اختصاصی با ساختار و رنگ متفاوت)
+            hodima_admin_header( [
+                'title'       => __( 'تنظیمات استوری‌های ویدیویی', 'hodima' ),
+                'description' => __( 'لینک ویدیوها (mp4) و تصویر کاور را برای نمایش پاپ‌آپ استوری وارد کنید.', 'hodima' ),
+                'icon'        => 'dashicons-format-gallery',
+                'badge'       => 'ابزارهای هدیما · نسخه ' . Core::VERSION,
+            ] );
+            ?>
 
             <form method="post" id="hodima-stories-form">
                 <?php wp_nonce_field( 'hodima_stories_save', 'hodima_stories_nonce' ); ?>
@@ -340,7 +339,7 @@ class Admin {
                     <h2 class="hdn-card-title"><?php esc_html_e( 'پنل تنظیمات', 'hodima' ); ?></h2>
 
                     <div class="hdn-actions-bar">
-                        <button type="button" class="hdn-btn hdn-btn-outline" id="hs-add-new">+ <?php esc_html_e( 'افزودن استوری جدید', 'hodima' ); ?></button>
+                        <button type="button" class="hdn-btn hdn-btn-outline" id="hs-add-new"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> <?php esc_html_e( 'افزودن استوری جدید', 'hodima' ); ?></button>
                         <?php if ( $notice ) : ?>
                             <div class="hdn-actions-msg">
                                 <span class="hdn-msg <?php echo esc_attr( $notice['type'] ); ?>">

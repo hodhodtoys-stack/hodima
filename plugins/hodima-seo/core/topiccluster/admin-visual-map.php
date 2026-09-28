@@ -10,9 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-add_action( 'admin_menu', static function (): void {
-	add_submenu_page( 'hodima-tc-orphans', 'نقشه خوشه‌ها', 'نقشه خوشه‌ها', 'manage_options', 'hodima-tc-map', 'hodima_tc_render_visual_map' );
-} );
+// ثبت منوی این صفحه در admin-orphan.php است (هر دو صفحه زیر «خوشه‌بندی»)
 
 /**
  * نقشه همه پیلارها و فرزندانشان.
@@ -65,13 +63,14 @@ function hodima_tc_render_visual_map(): void {
 		}
 	}
 	?>
-	<div class="wrap htc-wrap">
-		<h1 class="htc-header">
-			<span class="dashicons dashicons-networking"></span> نقشه خوشه‌های محتوایی
-		</h1>
+	<div class="wrap hd-wrap htc-wrap">
+		<?php hodima_tc_admin_header( 'hodima-tc-map', 'نقشه خوشه‌های محتوایی', 'همه صفحه‌های ستون (پیلار) و زیرمجموعه‌هایشان، همان‌طور که بازدیدکننده می‌بیند.' ); ?>
 
 		<?php if ( empty( $pillars ) ) : ?>
-			<p class="htc-notice">هنوز هیچ پیلاری تعریف نشده است.</p>
+			<div class="hd-card hd-empty htc-map-empty">
+				<?php echo hodima_admin_icon( 'dashicons-networking' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+				<p>هنوز هیچ پیلاری تعریف نشده است.</p>
+			</div>
 		<?php else : ?>
 			<div class="htc-grid">
 				<?php foreach ( $pillars as [ $pillar_id, $kind ] ) :

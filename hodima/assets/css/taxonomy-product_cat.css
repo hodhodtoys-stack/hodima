@@ -452,7 +452,7 @@
  * می‌کند که حتی اگر فونت فارسی ارقام لاتین را فارسی رسم کند، انگلیسی بمانند.
  */
 .hodima-num {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-family: inherit;
     font-variant-numeric: lining-nums tabular-nums;
     direction: ltr;
     unicode-bidi: isolate;

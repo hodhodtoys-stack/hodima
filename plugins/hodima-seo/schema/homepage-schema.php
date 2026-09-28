@@ -90,7 +90,7 @@ function hook_render_master_schema() {
         'addressCountry'  => 'IR',
         'streetAddress'   => get_option('hodima_schema_homepage_street_address', 'تهرانپارس، خیابان احسان، پلاک ۸۴'),
         'addressLocality' => get_option('hodima_schema_homepage_address_locality', 'تهران'),
-        // 🛠️ باگ رفع‌شده: قبلاً این خط هم از get_option('..._address_locality')
+        // باگ رفع‌شده: قبلاً این خط هم از get_option('..._address_locality')
         // می‌خواند، یعنی addressRegion همیشه دقیقاً همان مقدار addressLocality
         // بود. حالا از گزینه‌ی جداگانه‌ی «استان» می‌خواند.
         'addressRegion'   => get_option('hodima_schema_homepage_address_region', 'تهران'),
@@ -122,7 +122,7 @@ function hook_render_master_schema() {
     if (!empty($knows_about)) $organization_schema['knowsAbout'] = array_values($knows_about);
     if (!empty($social_links)) $organization_schema['sameAs'] = array_values($social_links);
 
-    // 🛠️ باگ رفع‌شده: پنل ادمین (view-homepage.php) این چهار فیلد را ذخیره
+    // باگ رفع‌شده: پنل ادمین (view-homepage.php) این چهار فیلد را ذخیره
     // می‌کرد («شعار تجاری»، «نام کاتالوگ خدمات»، «کشورهای تحت پوشش
     // areaServed» و «زبان‌های قابل پشتیبانی knowsLanguage») ولی هیچ‌کدام
     // در خروجی JSON-LD خوانده نمی‌شدند — یعنی هرچه ادمین در این فیلدها

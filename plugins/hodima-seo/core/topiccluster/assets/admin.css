@@ -3,7 +3,8 @@
 ================================ */
 
 /* ساختارهای پایه و باکس‌ها */
-.htc-wrap { margin-top: 15px; }
+.htc-wrap .htc-table-wrap { margin-top: 1.25rem; }
+.htc-wrap .htc-stats { margin-top: 1.25rem; }
 .htc-header { color: #25316a; font-size: 20px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
 .htc-admin-box { background: #ffffff; border: 1px solid var(--hodima-border-light, #d9e1f0); border-right: 3px solid #25316a; padding: 15px 20px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 20px; }
 .htc-admin-box-title { margin-bottom: 15px; display: block; font-weight: 600; color: #25316a; font-size: 15px; border-bottom: 1px dashed var(--hodima-border-light, #d9e1f0); padding-bottom: 10px; }
@@ -144,7 +145,7 @@
     position: relative;
     width: 100%;
     max-width: 640px;
-    font-family: var(--hodima-font, 'Vazirmatn', Tahoma, sans-serif);
+    font-family: inherit; /* فقط فونت قالب */
 }
 
 .hodima-ms__control {

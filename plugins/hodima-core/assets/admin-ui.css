@@ -1,0 +1,1147 @@
+/* =========================================================================
+ * Hodima Core — سیستم طراحی مشترک پیشخوان («ابزارهای هدیما»)
+ * Path: plugins/hodima-core/assets/admin-ui.css
+ *
+ * فقط روی صفحه‌های هدیما لود می‌شود (body.hodima-admin) و همه قوانین زیر
+ * همان کلاس یا .hd-wrap محدودند تا صفحه‌های دیگر پیشخوان دست نخورند.
+ *
+ * - پالت برند: #25316a · #607bbd · #b6c2f3 · #6a2b9a · #a341c8
+ * - فونت: هیچ font-family تعریف نمی‌شود؛ همه‌چیز از قالب ارث می‌برد
+ *   (قالب Vazirmatn محلی را روی کل پیشخوان اعمال می‌کند).
+ * - آیکون‌ها: Dashicons خود وردپرس؛ هیچ فونت، تصویر یا CSS خارجی.
+ * - عرض: ۹۵٪ در دسکتاپ؛ در تبلت و موبایل تمام‌عرض با فاصله کناری کم.
+ * ========================================================================= */
+
+.hodima-admin {
+	--hd-primary: #25316a;
+	--hd-secondary: #607bbd;
+	--hd-third: #b6c2f3;
+	--hd-accent: #6a2b9a;
+	--hd-accent-light: #a341c8;
+
+	--hd-bg: #f4f6fb;
+	--hd-surface: #ffffff;
+	--hd-soft: color-mix(in srgb, var(--hd-third) 14%, #ffffff);
+	--hd-softer: color-mix(in srgb, var(--hd-third) 7%, #ffffff);
+	--hd-border: color-mix(in srgb, var(--hd-third) 55%, #ffffff);
+	--hd-border-strong: color-mix(in srgb, var(--hd-secondary) 45%, #ffffff);
+	--hd-text: #1d2340;
+	--hd-muted: #5d6785;
+	--hd-ok: #1f7a4d;
+	--hd-warn: #9a5b00;
+	--hd-error: #b3261e;
+	--hd-info: var(--hd-secondary);
+
+	--hd-radius: 0.875rem;
+	--hd-radius-sm: 0.5rem;
+	--hd-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--hd-primary) 7%, transparent);
+	--hd-shadow-lg: 0 0.75rem 2rem color-mix(in srgb, var(--hd-primary) 12%, transparent);
+	--hd-gradient: linear-gradient(135deg, var(--hd-primary) 0%, var(--hd-secondary) 62%, var(--hd-accent) 100%);
+	--hd-gradient-accent: linear-gradient(135deg, var(--hd-accent), var(--hd-accent-light));
+	--hd-gutter: 2.5%;
+
+	background: var(--hd-bg);
+}
+
+/* ── چیدمان: عرض ۹۵٪ دسکتاپ، واکنش‌گرا ─────────────────────────────── */
+.hodima-admin #wpbody-content > .wrap,
+.hodima-admin .hd-wrap {
+	box-sizing: border-box;
+	inline-size: 95%;
+	max-inline-size: none;
+	margin-block: 1.25rem 0;
+	margin-inline: auto;
+	color: var(--hd-text);
+
+	& *,
+	& *::before,
+	& *::after {
+		box-sizing: border-box;
+	}
+
+	/* فرم‌ها فونت قالب را بگیرند (مرورگر برای input فونت سیستم می‌گذارد) */
+	& :is(input, select, textarea, button, .button) {
+		font-family: inherit;
+	}
+
+	@media (width < 783px) {
+		inline-size: auto;
+		margin-inline: 0.625rem;
+	}
+}
+
+.hodima-admin #wpbody-content {
+	padding-block-end: 5.5rem; /* جا برای فوتر */
+}
+
+/* ── هدر ────────────────────────────────────────────────────────── */
+.hd-header {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 1.125rem;
+	margin: 0;
+	padding: 1.5rem 1.75rem;
+	overflow: hidden;
+	border-radius: var(--hd-radius);
+	background: var(--hd-gradient);
+	color: #ffffff;
+	box-shadow: var(--hd-shadow-lg);
+	isolation: isolate;
+
+	/* هاله تزئینی، بدون تصویر */
+	&::after {
+		content: "";
+		position: absolute;
+		inset-block-start: -40%;
+		inset-inline-end: -6%;
+		z-index: -1;
+		inline-size: 16rem;
+		aspect-ratio: 1;
+		border-radius: 50%;
+		background: radial-gradient(circle, rgb(255 255 255 / 0.18), transparent 70%);
+	}
+
+	@media (width < 783px) {
+		flex-wrap: wrap;
+		padding: 1.125rem 1.25rem;
+	}
+}
+
+.hd-header__icon.dashicons {
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	inline-size: 3.5rem;
+	block-size: 3.5rem;
+	border: 1px solid rgb(255 255 255 / 0.25);
+	border-radius: 1rem;
+	background: rgb(255 255 255 / 0.14);
+	color: #ffffff;
+	font-size: 1.75rem;
+	line-height: 1;
+
+	&::before {
+		inline-size: auto;
+		block-size: auto;
+	}
+
+	@media (width < 783px) {
+		inline-size: 2.75rem;
+		block-size: 2.75rem;
+		font-size: 1.375rem;
+	}
+}
+
+.hd-header__body {
+	flex: 1;
+	min-inline-size: 0;
+}
+
+.hd-header__badge {
+	display: inline-block;
+	margin-block-end: 0.375rem;
+	padding: 0.125rem 0.625rem;
+	border-radius: 999px;
+	background: rgb(255 255 255 / 0.16);
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0;
+}
+
+.hodima-admin .hd-header .hd-header__title {
+	margin: 0;
+	padding: 0;
+	color: #ffffff;
+	font-size: clamp(1.125rem, 1rem + 0.5vw, 1.5rem);
+	font-weight: 800;
+	line-height: 1.6;
+}
+
+.hd-header__desc {
+	margin: 0.25rem 0 0;
+	max-inline-size: 60rem;
+	opacity: 0.92;
+	font-size: 0.8125rem;
+	line-height: 1.9;
+}
+
+.hd-header__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+
+	& .button {
+		border-color: rgb(255 255 255 / 0.5);
+		background: rgb(255 255 255 / 0.14);
+		color: #ffffff;
+
+		&:hover,
+		&:focus-visible {
+			background: #ffffff;
+			color: var(--hd-primary);
+		}
+	}
+}
+
+/* ── تب‌ها (همیشه زیر هدر) ─────────────────────────────────────────── */
+.hd-tabs {
+	display: flex;
+	flex-wrap: wrap; /* دسکتاپ: همه تب‌ها دیده شوند (اسکیما ۱۳ تب دارد) */
+	gap: 0.25rem;
+	margin-block: 0.875rem 0;
+	padding: 0.375rem;
+	overflow-x: auto;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+	scrollbar-width: thin;
+	overscroll-behavior-inline: contain;
+	scroll-snap-type: x proximity;
+
+	/* موبایل و تبلت: یک ردیف با اسکرول افقی داخل نوار (صفحه اسکرول افقی نمی‌گیرد) */
+	@media (width < 783px) {
+		flex-wrap: nowrap;
+	}
+}
+
+.hd-tabs__item {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	gap: 0.375rem;
+	padding: 0.5rem 0.875rem;
+	border-radius: 0.625rem;
+	color: var(--hd-primary);
+	font-size: 0.8125rem;
+	font-weight: 600;
+	white-space: nowrap;
+	text-decoration: none;
+	scroll-snap-align: start;
+	transition: background-color 0.2s ease, color 0.2s ease;
+
+	& .dashicons {
+		inline-size: 1.125rem;
+		block-size: 1.125rem;
+		font-size: 1.125rem;
+		opacity: 0.8;
+	}
+
+	&:hover {
+		background: var(--hd-soft);
+		color: var(--hd-primary);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hd-accent-light);
+		outline-offset: 1px;
+		box-shadow: none;
+	}
+
+	&[aria-current="page"],
+	&[aria-selected="true"] {
+		background: var(--hd-primary);
+		color: #ffffff;
+
+		& .dashicons {
+			opacity: 1;
+		}
+	}
+}
+
+.hd-wrap .wp-header-end {
+	margin: 0;
+	border: 0;
+	visibility: hidden;
+}
+
+/* اعلان‌ها: زیر تب‌ها و هم‌شکل کارت‌ها */
+.hodima-admin .wrap > .notice,
+.hodima-admin .wrap > .updated,
+.hodima-admin .wrap > .error,
+.hd-wrap .notice {
+	margin-block: 1rem 0;
+	margin-inline: 0;
+	border-radius: var(--hd-radius-sm);
+	box-shadow: var(--hd-shadow);
+}
+
+/* ── بخش‌ها و کارت‌ها ─────────────────────────────────────────────── */
+.hd-body {
+	display: grid;
+	gap: 1.25rem;
+	margin-block-start: 1.25rem;
+}
+
+.hd-card {
+	min-inline-size: 0;
+	padding: 1.5rem;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+
+	& + & {
+		margin-block-start: 0;
+	}
+
+	@media (width < 783px) {
+		padding: 1rem;
+	}
+}
+
+.hd-card--accent {
+	border-block-start: 4px solid var(--hd-secondary);
+}
+
+.hd-card--danger {
+	border-block-start: 4px solid var(--hd-error);
+}
+
+.hd-card__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.625rem 0.75rem;
+	margin-block-end: 1.125rem;
+	padding-block-end: 0.875rem;
+	border-block-end: 1px solid var(--hd-border);
+
+	& > .dashicons {
+		display: grid;
+		place-items: center;
+		inline-size: 2.25rem;
+		block-size: 2.25rem;
+		border-radius: 0.625rem;
+		background: var(--hd-soft);
+		color: var(--hd-primary);
+		font-size: 1.25rem;
+	}
+}
+
+.hodima-admin .hd-card__title {
+	flex: 1;
+	margin: 0;
+	padding: 0;
+	color: var(--hd-primary);
+	font-size: 1rem;
+	font-weight: 700;
+	line-height: 1.7;
+}
+
+.hd-card__desc {
+	flex-basis: 100%;
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+	line-height: 1.9;
+}
+
+.hd-card__head > .hd-card__desc {
+	margin-block-start: -0.375rem;
+}
+
+.hd-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+	gap: 1.25rem;
+}
+
+.hd-grid--wide {
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+}
+
+.hd-grid--stats {
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+	gap: 1rem;
+}
+
+.hd-muted {
+	color: var(--hd-muted);
+}
+
+.hd-text {
+	margin-block: 0 0.75rem;
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	line-height: 2;
+}
+
+.hd-list {
+	margin: 0 0 1rem;
+	padding-inline-start: 1.25rem;
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	line-height: 2;
+	list-style: disc;
+}
+
+.hd-divider {
+	margin-block: 1.25rem;
+	border: 0;
+	border-block-start: 1px dashed var(--hd-border);
+}
+
+/* ── کارت‌های لینک (پیشخوان‌ها) ───────────────────────────────────── */
+.hd-link-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding: 1.25rem;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+	color: inherit;
+	text-decoration: none;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease, translate 0.2s ease;
+
+	&:hover {
+		border-color: var(--hd-border-strong);
+		box-shadow: var(--hd-shadow-lg);
+		color: inherit;
+		translate: 0 -2px;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hd-accent-light);
+		outline-offset: 2px;
+		box-shadow: none;
+	}
+
+	& > .dashicons {
+		display: grid;
+		place-items: center;
+		inline-size: 2.75rem;
+		block-size: 2.75rem;
+		border-radius: 0.75rem;
+		background: var(--hd-soft);
+		color: var(--hd-primary);
+		font-size: 1.375rem;
+		transition: background-color 0.2s ease, color 0.2s ease;
+	}
+
+	&:hover > .dashicons {
+		background: var(--hd-primary);
+		color: #ffffff;
+	}
+}
+
+.hd-link-card__title {
+	margin: 0;
+	color: var(--hd-primary);
+	font-size: 0.9375rem;
+	font-weight: 700;
+}
+
+.hd-link-card__desc {
+	flex: 1;
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+	line-height: 1.9;
+}
+
+.hd-link-card__more {
+	color: var(--hd-accent);
+	font-size: 0.75rem;
+	font-weight: 700;
+}
+
+/* ── آمار ────────────────────────────────────────────────────────── */
+.hd-stat {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 1rem 1.125rem;
+	border: 1px solid var(--hd-border);
+	border-inline-start: 4px solid var(--hd-secondary);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+}
+
+.hd-stat__label {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hd-stat__value {
+	color: var(--hd-primary);
+	font-size: 1.5rem;
+	font-weight: 800;
+	line-height: 1.4;
+}
+
+/* ── هشدار / راهنما ────────────────────────────────────────────── */
+.hd-callout {
+	--hd-callout: var(--hd-info);
+
+	display: flex;
+	gap: 0.75rem;
+	margin-block: 0 1.25rem;
+	padding: 0.875rem 1rem;
+	border: 1px solid color-mix(in srgb, var(--hd-callout) 30%, #ffffff);
+	border-inline-start: 4px solid var(--hd-callout);
+	border-radius: var(--hd-radius-sm);
+	background: color-mix(in srgb, var(--hd-callout) 7%, #ffffff);
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	line-height: 1.9;
+
+	& > .dashicons {
+		flex-shrink: 0;
+		color: var(--hd-callout);
+	}
+
+	& p {
+		margin: 0;
+		font-size: inherit;
+		line-height: inherit;
+	}
+
+	& p + p {
+		margin-block-start: 0.5rem;
+	}
+
+	& strong:first-child {
+		display: block;
+		margin-block-end: 0.125rem;
+		color: color-mix(in srgb, var(--hd-callout) 80%, #000000);
+	}
+
+	&:last-child {
+		margin-block-end: 0;
+	}
+}
+
+.hd-callout--success { --hd-callout: var(--hd-ok); }
+.hd-callout--warning { --hd-callout: var(--hd-warn); }
+.hd-callout--danger { --hd-callout: var(--hd-error); }
+
+/* ── برچسب وضعیت ───────────────────────────────────────────────────── */
+.hd-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	padding: 0.125rem 0.625rem;
+	border-radius: 999px;
+	background: var(--hd-soft);
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	font-weight: 700;
+	white-space: nowrap;
+
+	&::before {
+		content: "";
+		inline-size: 0.4375rem;
+		block-size: 0.4375rem;
+		border-radius: 50%;
+		background: currentColor;
+	}
+}
+
+.hd-pill--ok { background: color-mix(in srgb, var(--hd-ok) 12%, #ffffff); color: var(--hd-ok); }
+.hd-pill--warn { background: color-mix(in srgb, var(--hd-warn) 12%, #ffffff); color: var(--hd-warn); }
+.hd-pill--error { background: color-mix(in srgb, var(--hd-error) 10%, #ffffff); color: var(--hd-error); }
+.hd-pill--info { background: color-mix(in srgb, var(--hd-accent) 10%, #ffffff); color: var(--hd-accent); }
+
+/* ── فیلدهای فرم (چیدمان عمودی کارت‌ها) ─────────────────────────────── */
+.hd-fields {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+	gap: 1.25rem 1.5rem;
+}
+
+.hd-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+	min-inline-size: 0;
+
+	&.hd-field--wide {
+		grid-column: 1 / -1;
+	}
+}
+
+.hd-field__label {
+	color: var(--hd-primary);
+	font-size: 0.8125rem;
+	font-weight: 700;
+}
+
+.hd-field__help,
+.hd-wrap .description {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	font-style: normal;
+	line-height: 1.9;
+}
+
+.hd-inline {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 0.75rem 1rem;
+
+	& > label,
+	& > .hd-inline__item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		color: var(--hd-muted);
+		font-size: 0.75rem;
+	}
+}
+
+/* ورودی‌ها داخل هر صفحه هدیما */
+.hd-wrap :is(
+	input[type="text"],
+	input[type="url"],
+	input[type="email"],
+	input[type="tel"],
+	input[type="number"],
+	input[type="search"],
+	input[type="password"],
+	input[type="time"],
+	input[type="date"],
+	select,
+	textarea
+) {
+	min-block-size: 2.5rem;
+	padding: 0.4375rem 0.75rem;
+	border: 1px solid var(--hd-border-strong);
+	border-radius: var(--hd-radius-sm);
+	background: var(--hd-softer);
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	line-height: 1.8;
+	box-shadow: none;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+	&:focus {
+		border-color: var(--hd-secondary);
+		background: #ffffff;
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--hd-secondary) 22%, transparent);
+		outline: none;
+	}
+
+	&:user-invalid {
+		border-color: var(--hd-error);
+	}
+}
+
+.hd-wrap select {
+	padding-inline-end: 2rem;
+}
+
+.hd-wrap textarea {
+	inline-size: 100%;
+	resize: vertical;
+}
+
+.hd-field :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select, textarea) {
+	inline-size: 100%;
+	max-inline-size: 100%;
+}
+
+.hd-wrap input.small-text {
+	inline-size: 6rem;
+}
+
+.hd-wrap :is(.ltr, [dir="ltr"]) {
+	direction: ltr;
+	text-align: start;
+}
+
+/* ── سوییچ روشن/خاموش (checkbox با کلاس hd-switch) ─────────────────── */
+.hd-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.75rem;
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.hd-wrap input[type="checkbox"].hd-switch,
+.hd-metabox input[type="checkbox"].hd-switch {
+	appearance: none;
+	position: relative;
+	flex-shrink: 0;
+	inline-size: 2.75rem;
+	block-size: 1.5rem;
+	margin: 0;
+	border: 0;
+	border-radius: 999px;
+	background: var(--hd-border-strong);
+	box-shadow: none;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset-block-start: 0.1875rem;
+		inset-inline-start: 0.1875rem;
+		inline-size: 1.125rem;
+		block-size: 1.125rem;
+		margin: 0;
+		border-radius: 50%;
+		background: #ffffff;
+		box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+		transition: inset-inline-start 0.2s ease;
+	}
+
+	&:checked {
+		background: linear-gradient(135deg, var(--hd-primary), var(--hd-accent));
+
+		&::before {
+			inset-inline-start: 1.4375rem;
+		}
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hd-accent-light);
+		outline-offset: 2px;
+	}
+}
+
+/* گروه چک‌باکس‌ها (پست‌تایپ‌ها، طبقه‌بندی‌ها و...) */
+.hd-choices {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 12.5rem), 1fr));
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0.75rem;
+	border: 1px dashed var(--hd-border-strong);
+	border-radius: var(--hd-radius-sm);
+	background: var(--hd-softer);
+
+	& label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.375rem 0.5rem;
+		border-radius: 0.375rem;
+		color: var(--hd-primary);
+		font-size: 0.8125rem;
+		cursor: pointer;
+
+		&:hover {
+			background: #ffffff;
+		}
+	}
+
+	& input[type="checkbox"] {
+		margin: 0;
+	}
+
+	& code {
+		padding: 0;
+		background: transparent;
+		color: var(--hd-secondary);
+		font-size: 0.6875rem;
+	}
+}
+
+/* ── کد و آدرس‌ها ──────────────────────────────────────────────────── */
+.hd-wrap code,
+.hd-metabox code {
+	padding: 0.0625rem 0.375rem;
+	border-radius: 0.3125rem;
+	background: var(--hd-soft);
+	color: var(--hd-primary);
+	font-family: inherit;
+	font-size: 0.75rem;
+	direction: ltr;
+	unicode-bidi: isolate;
+}
+
+.hd-code {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-block: 0.375rem 0;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius-sm);
+	background: var(--hd-softer);
+	color: var(--hd-primary);
+	font-size: 0.8125rem;
+	direction: ltr;
+	text-align: start;
+	overflow-wrap: anywhere;
+	user-select: all;
+
+	& a {
+		color: var(--hd-accent);
+		font-weight: 700;
+		text-decoration: none;
+		user-select: none;
+		direction: rtl;
+
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+
+	& .hd-code__tag {
+		color: var(--hd-secondary);
+		font-size: 0.6875rem;
+		direction: rtl;
+		user-select: none;
+	}
+}
+
+/* ── دکمه‌ها ───────────────────────────────────────────────────────── */
+.hd-wrap .button,
+.hd-metabox .button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	min-block-size: 2.25rem;
+	padding-inline: 1rem;
+	border-color: var(--hd-border-strong);
+	border-radius: var(--hd-radius-sm);
+	background: #ffffff;
+	color: var(--hd-primary);
+	font-weight: 600;
+	line-height: 1.4;
+
+	&:hover {
+		border-color: var(--hd-secondary);
+		background: var(--hd-soft);
+		color: var(--hd-primary);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hd-accent-light);
+		outline-offset: 2px;
+		box-shadow: none;
+	}
+
+	& .dashicons {
+		inline-size: 1.125rem;
+		block-size: 1.125rem;
+		font-size: 1.125rem;
+		line-height: 1;
+	}
+}
+
+.hd-wrap .button-primary,
+.hd-metabox .button-primary {
+	border: 0;
+	background: var(--hd-gradient-accent);
+	color: #ffffff;
+	box-shadow: 0 0.375rem 1rem color-mix(in srgb, var(--hd-accent) 28%, transparent);
+
+	&:hover,
+	&:focus {
+		border: 0;
+		background: linear-gradient(135deg, var(--hd-primary), var(--hd-accent));
+		color: #ffffff;
+	}
+}
+
+.hd-wrap .button.hd-button--danger,
+.hd-wrap .button.button-link-delete {
+	border-color: color-mix(in srgb, var(--hd-error) 40%, #ffffff);
+	background: #ffffff;
+	color: var(--hd-error);
+
+	&:hover {
+		background: color-mix(in srgb, var(--hd-error) 8%, #ffffff);
+		color: var(--hd-error);
+	}
+}
+
+/* نوار ذخیره پایین فرم */
+.hd-actions {
+	position: sticky;
+	inset-block-end: 0;
+	z-index: 5;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.75rem;
+	margin-block-start: 1.25rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: color-mix(in srgb, #ffffff 92%, transparent);
+	box-shadow: var(--hd-shadow-lg);
+	backdrop-filter: blur(8px);
+
+	& .button-primary {
+		min-inline-size: 10rem;
+	}
+
+	@media (width < 600px) {
+		& .button {
+			flex: 1;
+		}
+	}
+}
+
+.hd-actions__note {
+	margin-inline-end: auto;
+	color: var(--hd-accent);
+	font-size: 0.75rem;
+	font-weight: 700;
+}
+
+/* ── جدول تنظیمات وردپرس (form-table) داخل صفحه‌های هدیما ─────────── */
+.hd-wrap .form-table {
+	margin: 0;
+
+	& th {
+		inline-size: 15rem;
+		padding-block: 1.125rem;
+		padding-inline: 0 1.25rem;
+		color: var(--hd-primary);
+		font-size: 0.8125rem;
+		font-weight: 700;
+		line-height: 1.8;
+		vertical-align: top;
+	}
+
+	& td {
+		padding: 1rem 0;
+		vertical-align: top;
+	}
+
+	& tr + tr {
+		border-block-start: 1px solid var(--hd-softer);
+	}
+
+	& td :is(input[type="text"], input[type="url"], input[type="number"]:not(.small-text), select, textarea):not(.small-text) {
+		inline-size: 100%;
+		max-inline-size: 36rem;
+	}
+
+	& th small {
+		display: block;
+		color: var(--hd-muted);
+		font-weight: 400;
+	}
+
+	@media (width < 783px) {
+		& th,
+		& td {
+			display: block;
+			inline-size: 100%;
+			padding-inline: 0;
+		}
+
+		& th {
+			padding-block-end: 0.25rem;
+		}
+
+		& td {
+			padding-block-start: 0.25rem;
+		}
+	}
+}
+
+.hd-section-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0;
+	padding-block: 1.5rem 0.625rem;
+	border-block-end: 2px dashed var(--hd-border);
+	color: var(--hd-primary);
+	font-size: 0.9375rem;
+	font-weight: 700;
+
+	& .dashicons {
+		color: var(--hd-accent);
+	}
+}
+
+/* ── جدول داده (widefat / wp-list-table) ─────────────────────────────── */
+.hd-table-wrap {
+	overflow-x: auto;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+}
+
+.hodima-admin .wrap :is(.widefat, .wp-list-table) {
+	border-color: var(--hd-border);
+	border-radius: var(--hd-radius-sm);
+	overflow: hidden;
+
+	& thead th,
+	& thead td,
+	& tfoot th,
+	& tfoot td {
+		border-color: var(--hd-border);
+		background: var(--hd-soft);
+		color: var(--hd-primary);
+		font-weight: 700;
+	}
+
+	& tbody tr:hover {
+		background: var(--hd-softer);
+	}
+}
+
+.hd-table-wrap :is(.widefat, .wp-list-table) {
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+/* ── صفحه‌های فهرست وردپرس (پست‌تایپ‌های هدیما) ─────────────────────── */
+.hodima-admin #wpbody-content > .wrap > h1.wp-heading-inline {
+	color: var(--hd-primary);
+	font-weight: 800;
+}
+
+.hodima-admin #wpbody-content > .wrap > .page-title-action {
+	border-color: var(--hd-accent);
+	border-radius: var(--hd-radius-sm);
+	color: var(--hd-accent);
+}
+
+.hodima-admin .postbox {
+	border-color: var(--hd-border);
+	border-radius: var(--hd-radius);
+	box-shadow: var(--hd-shadow);
+	overflow: hidden;
+
+	& .postbox-header {
+		border-color: var(--hd-border);
+		background: var(--hd-softer);
+
+		& h2 {
+			color: var(--hd-primary);
+			font-weight: 700;
+		}
+	}
+}
+
+/* ── خالی ──────────────────────────────────────────────────────────── */
+.hd-empty {
+	display: grid;
+	place-items: center;
+	gap: 0.5rem;
+	padding: 2.5rem 1rem;
+	color: var(--hd-muted);
+	text-align: center;
+
+	& .dashicons {
+		inline-size: 2.5rem;
+		block-size: 2.5rem;
+		color: var(--hd-third);
+		font-size: 2.5rem;
+	}
+}
+
+/* ── فوتر یکسان همه صفحه‌های هدیما ───────────────────────────────────── */
+.hodima-admin #wpfooter {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem 1rem;
+	padding: 0.875rem var(--hd-gutter);
+	border-block-start: 1px solid var(--hd-border);
+	background: var(--hd-surface);
+	color: var(--hd-muted);
+
+	& p {
+		float: none;
+		margin: 0;
+	}
+
+	@media (width < 783px) {
+		padding-inline: 0.625rem;
+	}
+}
+
+.hd-footer {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 1rem;
+	font-style: normal;
+}
+
+.hd-footer__brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--hd-primary);
+	font-weight: 800;
+}
+
+.hd-footer__mark {
+	display: grid;
+	place-items: center;
+	inline-size: 1.75rem;
+	block-size: 1.75rem;
+	border-radius: 0.5rem;
+	background: var(--hd-gradient);
+	color: #ffffff;
+	font-weight: 900;
+	line-height: 1;
+}
+
+.hd-footer__links {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.875rem;
+}
+
+.hd-footer__link {
+	color: var(--hd-secondary);
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-decoration: none;
+
+	&:hover,
+	&:focus-visible {
+		color: var(--hd-accent);
+		text-decoration: underline;
+	}
+}
+
+.hd-footer__meta {
+	color: var(--hd-muted);
+	font-size: 0.6875rem;
+}
+
+/* ── دیالوگ ─────────────────────────────────────────────────────────── */
+.hd-dialog {
+	max-inline-size: min(28rem, 92vw);
+	padding: 1.5rem;
+	border: 0;
+	border-radius: var(--hd-radius);
+	box-shadow: 0 1.5rem 3rem rgb(0 0 0 / 0.25);
+
+	&::backdrop {
+		background: color-mix(in srgb, #25316a 45%, transparent);
+		backdrop-filter: blur(2px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-admin *,
+	.hodima-admin *::before,
+	.hodima-admin *::after {
+		transition: none !important;
+		animation: none !important;
+	}
+}

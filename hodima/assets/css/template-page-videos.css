@@ -221,7 +221,7 @@
  * کند، اعداد انگلیسی نمایش داده شوند. «قبلی» و «بعدی» همان وزیرمتن می‌مانند.
  */
 .hvp-num{
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-family: inherit;
     font-variant-numeric:lining-nums tabular-nums;
     direction:ltr;
     unicode-bidi:isolate;

@@ -98,7 +98,7 @@ function hook_generate_custom_product_schema() {
         : ( $_product->is_in_stock() ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' );
     $stock_location = function_exists( 'hodima_product_stock_location' ) ? hodima_product_stock_location( $_product ) : '';
     $offer_url      = function_exists( 'hodima_product_schema_page_url' ) ? hodima_product_schema_page_url( $url ) : $url;
-    // 🛠️ باگ واقعی و تأییدشده (دقیقاً همان چیزی که ابزار Rich Results گوگل
+    // باگ واقعی و تأییدشده (دقیقاً همان چیزی که ابزار Rich Results گوگل
     // با خطای «Date/time not in ISO 8601 format in field priceValidUntil»
     // گزارش داد): wp_date() روی این سایت از تبدیل‌کننده‌ی تقویم شمسی وردپرس
     // عبور می‌کند (طبق کامنت خود پروژه در sitemap-core.php)، پس خروجی‌اش
@@ -188,7 +188,7 @@ function hook_generate_custom_product_schema() {
         $max_price = ! empty( $prices['price'] ) ? max( $prices['price'] ) : 0;
 
         if ( $is_irt ) {
-            // 🛠️ باگ رفع‌شده: ضرب مستقیم فلوت در ۱۰ می‌تواند نویز اعشاری تولید
+            // باگ رفع‌شده: ضرب مستقیم فلوت در ۱۰ می‌تواند نویز اعشاری تولید
             // کند (مثلاً 123456.70000000001) که وارد JSON-LD می‌شد و در
             // اعتبارسنج‌های schema.org به‌عنوان قیمت نامعتبر/عجیب گزارش می‌شد.
             $min_price = round( (float) $min_price * 10, 2 );
@@ -355,7 +355,7 @@ function hook_generate_custom_product_schema() {
         $seen  = [];
         $clean = [];
 
-        // ⚠ نام متغیرها عمدا $prop_name / $prop_value است. نسخه قبلی از
+        // نام متغیرها عمدا $prop_name / $prop_value است. نسخه قبلی از
         // $name استفاده می‌کرد و نام *محصول* را بازنویسی می‌کرد؛ توضیح ویدیو
         // (پایین‌تر) نام آخرین مشخصه جدول را می‌گرفت: «کیفیت آسیب به مو».
         foreach ( $additional_properties as $property ) {
@@ -395,11 +395,11 @@ function hook_generate_custom_product_schema() {
         $video_thumb = ! empty( $media_data['video_thumb'] ) ? $media_data['video_thumb'] : $image_url;
         $video_title = ! empty( $media_data['video_title'] ) ? sanitize_text_field( $media_data['video_title'] ) : 'فیلم معرفی ' . $name;
         
-        // 🛠️ همان دو باگ رفع‌شده‌ی category-schema-pro.php: date('c') تایم‌زون
+        // همان دو باگ رفع‌شده‌ی category-schema-pro.php: date('c') تایم‌زون
         // سرور را به‌جای تایم‌زون سایت به کار می‌برد، و strtotime() نامعتبر
         // بی‌سروصدا تاریخ را به ۱۹۷۰ سقوط می‌داد.
         $video_ts    = ! empty( $media_data['video_date'] ) ? strtotime( $media_data['video_date'] ) : false;
-        // 🛠️ همان باگ Jalali/locale که در category-schema-pro.php رفع شد —
+        // همان باگ Jalali/locale که در category-schema-pro.php رفع شد —
         // اینجا هم wp_date() جای خودش را به DateTime بومی PHP + wp_timezone()
         // می‌دهد تا لایه‌ی تقویم شمسی وردپرس این سایت اصلاً درگیر نشود.
         $upload_date = null;

@@ -28,12 +28,19 @@ function hodima_register_notification_cpt(): void {
         'not_found_in_trash' => 'در زباله‌دان چیزی یافت نشد.'
     );
 
+    // زیر «ابزارهای هدیما» (آدرس edit.php?post_type=hd_notification همان قبلی است)؛
+    // بدون Hodima Core مثل قبل منوی سطح اول
+    $menu_parent = function_exists( 'hodima_admin_menu_parent' ) ? hodima_admin_menu_parent() : '';
+    if ( '' !== $menu_parent ) {
+        $labels['all_items'] = 'نوتیفیکیشن‌ها'; // عنوان زیرمنو
+    }
+
     $args = array(
         'labels'             => $labels,
         'public'             => false,
         'publicly_queryable' => false,
         'show_ui'            => true,
-        'show_in_menu'       => true,
+        'show_in_menu'       => '' !== $menu_parent ? $menu_parent : true,
         'query_var'          => false,
         'rewrite'            => false,
         'capability_type'    => 'post',

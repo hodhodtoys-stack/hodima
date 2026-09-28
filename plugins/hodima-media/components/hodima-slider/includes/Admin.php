@@ -14,6 +14,14 @@ final class Admin {
     }
 
     public static function add_menu(): void {
+        // زیر «ابزارهای هدیما» (آدرس admin.php?page=hodima-slider تغییری نکرده)؛
+        // بدون Hodima Core مثل قبل منوی سطح اول
+        $parent = function_exists('hodima_admin_menu_parent') ? hodima_admin_menu_parent() : '';
+        if ($parent !== '') {
+            add_submenu_page($parent, __('اسلایدر صفحه اصلی', 'hodima'), __('اسلایدر صفحه اصلی', 'hodima'), 'manage_options', 'hodima-slider', [self::class, 'render']);
+            return;
+        }
+
         add_menu_page(
             __('اسلایدر صفحه اصلی', 'hodima'),
             __('اسلایدر صفحه اصلی', 'hodima'),
@@ -26,7 +34,7 @@ final class Admin {
     }
 
     public static function assets(string $hook): void {
-        if ($hook !== 'toplevel_page_hodima-slider') return;
+        if (!str_ends_with($hook, '_page_hodima-slider')) return;
 
         wp_enqueue_media();
 
@@ -93,20 +101,18 @@ final class Admin {
             'd' => ['label' => __('بخش D (ستون چهارم)', 'hodima'), 'items' => Helpers::get_items(Core::OPTION_S2D), 'opt' => 'hodima_slider2d'],
         ];
         ?>
-        <div class="h-admin">
-            <header class="h-header">
-                <div>
-                    <h1><?php esc_html_e('اسلایدر صفحه اصلی', 'hodima'); ?></h1>
-                    <div class="h-header-help">
-                        راهنما: دسکتاپ 1920×533 — موبایل 1920×190 (اسلایدر 1 و 3) |
-                        اسلایدر 2: حداکثر 600×600 و حداقل 400×400
-                    </div>
-                </div>
-                <div class="h-version" dir="ltr">V : <?php echo Core::VERSION; ?></div>
-            </header>
+        <div class="wrap hd-wrap h-admin">
+            <?php
+            hodima_admin_header([
+                'title'       => __('اسلایدر صفحه اصلی', 'hodima'),
+                'description' => 'اندازه پیشنهادی: دسکتاپ 1920×533 و موبایل 1920×190 (اسلایدر ۱ و ۳) — اسلایدر ۲: حداکثر 600×600 و حداقل 400×400.',
+                'icon'        => 'dashicons-images-alt2',
+                'badge'       => 'ابزارهای هدیما · نسخه ' . Core::VERSION,
+            ]);
+            ?>
 
             <?php if (self::$saved): ?>
-                <div class="h-notice"><span><?php esc_html_e('تنظیمات با موفقیت ذخیره شد.', 'hodima'); ?></span><span class="h-close-btn" onclick="this.parentElement.style.display='none'">&times;</span></div>
+                <div class="h-notice"><span><?php esc_html_e('تنظیمات با موفقیت ذخیره شد.', 'hodima'); ?></span><button type="button" class="h-close-btn" aria-label="بستن" onclick="this.parentElement.hidden=true"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button></div>
             <?php endif; ?>
 
             <form method="post" class="h-card">
@@ -114,9 +120,9 @@ final class Admin {
 
                 <section class="h-section">
                     <h2 class="h-section-title"><?php esc_html_e('تنظیمات پایه و افکت‌ها', 'hodima'); ?></h2>
-                    <div style="margin-bottom: 15px;">
-                        <label><strong><?php esc_html_e('زمان کش مرورگر (ساعت):', 'hodima'); ?></strong></label>
-                        <input type="number" name="h_settings[cache_time]" value="<?php echo esc_attr((string)$cache_time); ?>" min="1" max="72" class="h-input h-input-dim" style="display:inline-block; width:100px;">
+                    <div class="h-cache-field">
+                        <label for="h-cache-time"><?php esc_html_e('زمان کش مرورگر (ساعت):', 'hodima'); ?></label>
+                        <input type="number" id="h-cache-time" name="h_settings[cache_time]" value="<?php echo esc_attr((string)$cache_time); ?>" min="1" max="72" class="h-input h-input-dim">
                     </div>
                     <div class="h-dim-wrap">
                         <?php foreach(['s1'=>__('اسلایدر 1', 'hodima'), 's2'=>__('اسلایدر 2', 'hodima'), 's3'=>__('اسلایدر 3', 'hodima')] as $k => $label): 
@@ -150,7 +156,7 @@ final class Admin {
                 <section class="h-section">
                     <h2 class="h-section-title"><?php esc_html_e('اسلایدر 1 : نمایش در فرانت', 'hodima'); ?><span class="h-shortcode-tag" dir="ltr">[hodima-slider1]</span></h2>
                     <div id="h-list-s1"><?php foreach ($itemsS1 as $i => $item) self::row($i, $item, 'hodima_slider1', true); ?></div>
-                    <button type="button" class="h-btn h-btn-primary" data-h-add data-list="h-list-s1" data-template="h-template-s1">+ <?php esc_html_e('افزودن اسلاید', 'hodima'); ?></button>
+                    <button type="button" class="h-btn h-btn-add" data-h-add data-list="h-list-s1" data-template="h-template-s1"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> <?php esc_html_e('افزودن اسلاید', 'hodima'); ?></button>
                 </section>
 
                 <section class="h-section">
@@ -162,17 +168,17 @@ final class Admin {
                             <label class="h-mobile-toggle"><input type="checkbox" name="s2_mobile[<?php echo $col_id; ?>]" value="1" <?php checked($s2_mobile[$col_id], 1); ?>> <?php esc_html_e('نمایش در موبایل', 'hodima'); ?></label>
                         </div>
                         <div id="h-list-<?php echo $col_id; ?>"><?php foreach ($col_data['items'] as $i => $item) self::row($i, $item, $col_data['opt']); ?></div>
-                        <button type="button" class="h-btn h-btn-primary" data-h-add data-list="h-list-<?php echo $col_id; ?>" data-template="h-template-<?php echo $col_id; ?>">+ <?php esc_html_e('افزودن اسلاید', 'hodima'); ?></button>
+                        <button type="button" class="h-btn h-btn-add" data-h-add data-list="h-list-<?php echo $col_id; ?>" data-template="h-template-<?php echo $col_id; ?>"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> <?php esc_html_e('افزودن اسلاید', 'hodima'); ?></button>
                     <?php endforeach; ?>
                 </section>
 
                 <section class="h-section">
                     <h2 class="h-section-title"><?php esc_html_e('اسلایدر 3 : نمایش در فرانت', 'hodima'); ?><span class="h-shortcode-tag" dir="ltr">[hodima-slider3]</span></h2>
                     <div id="h-list-s3"><?php foreach ($itemsS3 as $i => $item) self::row($i, $item, 'hodima_slider3', true); ?></div>
-                    <button type="button" class="h-btn h-btn-primary" data-h-add data-list="h-list-s3" data-template="h-template-s3">+ <?php esc_html_e('افزودن اسلاید', 'hodima'); ?></button>
+                    <button type="button" class="h-btn h-btn-add" data-h-add data-list="h-list-s3" data-template="h-template-s3"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> <?php esc_html_e('افزودن اسلاید', 'hodima'); ?></button>
                 </section>
 
-                <div class="h-actions">
+                <div class="hd-actions h-actions">
                     <button type="submit" class="h-btn h-btn-primary"><?php esc_html_e('ذخیره همه تغییرات', 'hodima'); ?></button>
                 </div>
             </form>
@@ -194,10 +200,10 @@ final class Admin {
         <div class="h-grid">
             <?php // ترتیب: دستگیره کشیدن، شماره، بالا/پایین — ترتیب ذخیره = ترتیب همین فهرست ?>
             <div class="h-order">
-                <span class="h-drag" title="برای جابه‌جایی بکشید" aria-hidden="true">⋮⋮</span>
+                <span class="h-drag dashicons dashicons-move" title="برای جابه‌جایی بکشید" aria-hidden="true"></span>
                 <span class="h-num">1</span>
-                <button type="button" class="h-move h-move-up" aria-label="انتقال به بالا">▲</button>
-                <button type="button" class="h-move h-move-down" aria-label="انتقال به پایین">▼</button>
+                <button type="button" class="h-move h-move-up" aria-label="انتقال به بالا"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
+                <button type="button" class="h-move h-move-down" aria-label="انتقال به پایین"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
             </div>
             <div class="h-images-wrapper">
                 <div class="h-img-box">

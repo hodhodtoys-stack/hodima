@@ -30,7 +30,7 @@ function hodima_sitemap_query_vars( $vars ) {
 }
 
 // ==========================================
-// 🛡️ توابع فیلتر فوق‌عمیق Noindex (یکپارچه با SEOBox)
+// توابع فیلتر فوق‌عمیق Noindex (یکپارچه با SEOBox)
 // ==========================================
 function hodima_get_noindex_post_ids() {
     global $wpdb;
@@ -49,7 +49,7 @@ function hodima_get_noindex_post_ids() {
         return $cached;
     }
 
-    // 🛠️ باگ مهم رفع‌شده (باعث افت ناگهانی شمارش سایت‌مپ می‌شد):
+    // باگ مهم رفع‌شده (باعث افت ناگهانی شمارش سایت‌مپ می‌شد):
     // نسخه‌ی قبلی از «meta_key LIKE '%noindex%'» استفاده می‌کرد؛ یعنی هر
     // متاکی‌ای در کل جدول wp_postmeta که کلمه‌ی noindex در هر جایی از اسمش
     // بود (نه فقط فیلدهای واقعی سئو)، با هر مقدار '1'/'yes'/'true'/'on'
@@ -84,7 +84,7 @@ function hodima_get_noindex_post_ids() {
 }
 
 function hodima_is_term_noindex( $term_id ) {
-    // 🛠️ باگ رفع‌شده: این تابع همان باگ hodima_get_noindex_post_ids() را
+    // باگ رفع‌شده: این تابع همان باگ hodima_get_noindex_post_ids() را
     // داشت (که در همین فایل رفع شد) ولی خودش هیچ‌وقت اصلاح نشده بود —
     // str_contains($key, 'noindex') یعنی هر متاکیِ ترم که این ساب‌استرینگ
     // را هر جای اسمش داشت (نه فقط فیلد واقعی noindex)، آن دسته‌بندی را از
@@ -113,7 +113,7 @@ function hodima_is_term_noindex( $term_id ) {
 }
 
 // ==========================================
-// 🛠️ توابع اختصاصی و جدید کمکی ویدیو
+// توابع اختصاصی و جدید کمکی ویدیو
 // ==========================================
 function hodima_sitemap_clean_url( $url ) {
     $url = trim( (string) $url );
@@ -217,7 +217,7 @@ function hodima_sitemap_normalize_iso_date( $date, $post_id = 0 ) {
 }
 
 // ==========================================
-// 🚀 موتور استخراج عمیق (عکس و فیلم + متادیتاها)
+// موتور استخراج عمیق (عکس و فیلم + متادیتاها)
 // ==========================================
 function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
     $data = [ 'images' => [], 'videos' => [] ];
@@ -242,7 +242,7 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
                     'title'    => $att->post_title ?: $title,
                     'thumb'    => '',
                     'duration' => 0,
-                    // ⚠️ ترفند مهم: چهارمین پارامتر 'false' باعث می‌شود افزونه‌های شمسی ساز این خط را فیلتر نکنند
+                    // ترفند مهم: چهارمین پارامتر 'false' باعث می‌شود افزونه‌های شمسی ساز این خط را فیلتر نکنند
                     'date'     => get_post_time( 'c', false, $att->ID, false ) 
                 ];
             }
@@ -376,7 +376,10 @@ function hodima_sitemap_render() {
                     <head>
                         <title>نقشه سایت هدیما (XML Sitemap)</title>
                         <style>
-                            body { font-family: Tahoma, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; line-height: 1.5; }
+                            <?php // فقط فونت قالب (فایل محلی)، نه Tahoma/Arial؛ این صفحه XSL استایل قالب را ندارد ?>
+                            @font-face { font-family: 'Vazirmatn'; src: url('<?php echo esc_url( get_template_directory_uri() . '/assets/fonts/Vazirmatn-Regular.woff2' ); ?>') format('woff2'); font-weight: 400; font-display: swap; }
+                            @font-face { font-family: 'Vazirmatn'; src: url('<?php echo esc_url( get_template_directory_uri() . '/assets/fonts/Vazirmatn-Bold.woff2' ); ?>') format('woff2'); font-weight: 700; font-display: swap; }
+                            body { font-family: 'Vazirmatn', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; line-height: 1.5; }
                             .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 20px; border: 1px solid #e2e8f0; }
                             .header { border-bottom: 2px solid #25316a; padding-bottom: 15px; margin-bottom: 20px; }
                             .header h1 { margin: 0 0 10px 0; font-size: 22px; color: #25316a; font-weight: normal; }
@@ -434,7 +437,7 @@ function hodima_sitemap_render() {
 
     $paged = max( 1, absint( get_query_var( 'hodima_smpage' ) ) ?: 1 );
     $limit = (int) get_option('hodima_sitemap_links_limit', 1000);
-    // 🛠️ باگ رفع‌شده: اگر این تنظیم به هر دلیلی (مقدار دستی در دیتابیس،
+    // باگ رفع‌شده: اگر این تنظیم به هر دلیلی (مقدار دستی در دیتابیس،
     // باگ در فرم ذخیره و...) صفر یا منفی شود، تمام محاسبات ceil(x/$limit)
     // پایین‌تر در PHP 8 با DivisionByZeroError کرش می‌کنند و کل سایت‌مپ
     // (و هر صفحه‌ای که آن را include می‌کند) سفید می‌شود. فرم ادمین همین
@@ -556,7 +559,7 @@ function hodima_sitemap_render() {
                 if ( !$url || isset( $printed_urls[ $url ] ) ) continue;
                 $printed_urls[ $url ] = true;
 
-                // ⚠️ آپدیت مهم برای جلوگیری از تاریخ شمسی
+                // آپدیت مهم برای جلوگیری از تاریخ شمسی
                 echo "\t<url>\n\t\t<loc>" . esc_url($url) . "</loc>\n\t\t<lastmod>" . esc_html(get_post_modified_time('c', false, $pid, false)) . "</lastmod>\n";
 
                 $radar = hodima_sitemap_deep_radar($pid, 'post');
@@ -573,7 +576,7 @@ function hodima_sitemap_render() {
                     $v_desc = wp_trim_words( wp_strip_all_tags( strip_shortcodes($raw_content) ), 30, '...' );
                     if(empty($v_desc)) $v_desc = 'ویدیوی معرفی محصول ' . $vid['title'];
                     
-                    // ⚠️ آپدیت مهم برای جلوگیری از تاریخ شمسی
+                    // آپدیت مهم برای جلوگیری از تاریخ شمسی
                     $v_date = !empty($vid['date']) ? $vid['date'] : get_post_modified_time('c', false, $pid, false);
 
                     echo "\t\t<video:video>\n";

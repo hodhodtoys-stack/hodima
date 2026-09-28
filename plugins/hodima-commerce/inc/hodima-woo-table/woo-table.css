@@ -39,7 +39,7 @@
     background: var(--hodima-specs-surface);
     border: 1px solid var(--hodima-specs-border-strong);
     box-shadow: var(--hodima-specs-shadow);
-    font-family: var(--hodima-font, 'Vazirmatn', Tahoma, sans-serif);
+    font-family: inherit;
     font-size: 0.95rem;
     /*
      * table-layout: fixed تا تقسیم ۳۰/۷۰ دقیقا رعایت شود. بدون آن، عرض

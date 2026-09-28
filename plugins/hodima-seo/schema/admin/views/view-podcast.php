@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hodima_podcast_schema
         // دقیقاً همان مشکلی که گزارش داده بودید.
         flush_rewrite_rules();
 
-        $message = '<div class="notice notice-success is-dismissible" style="border-right: 4px solid #25316a; background: #fff;"><p style="font-weight: inherit;">تنظیمات فید پادکست با موفقیت ذخیره شد.</p></div>';
+        $message = '<div class="notice notice-success is-dismissible"><p>تنظیمات فید پادکست با موفقیت ذخیره شد.</p></div>';
     }
 }
 
@@ -59,119 +59,112 @@ $feed_url        = site_url('/feed/podcast/');
 $permalink_structure = get_option('permalink_structure');
 
 hodima_view_header(
-    'تنظیمات فید پادکست (Apple & Google Podcast)',
-    'مدیریت خروجی استاندارد RSS 2.0 برای فایل‌های صوتی متصل به نوشته‌ها یا محصولات، سازگار با اپل پادکست و گوگل پادکست.',
-    '🎙️'
+    'فید پادکست (Apple & Google Podcast)',
+    'خروجی استاندارد RSS 2.0 برای فایل‌های صوتی نوشته‌ها و محصولات، سازگار با اپل پادکست و گوگل پادکست.',
+    'dashicons-microphone'
 );
 ?>
 
-<div class="h-card">
-    <?php echo $message; ?>
+<?php echo $message; ?>
 
-    <?php if ( empty( $permalink_structure ) ) : ?>
-        <!-- هشدار حیاتی: پرمالینک روی «Plain» است -->
-        <div class="notice notice-error" style="border-right: 4px solid #dc2626; background: #fef2f2; padding: 15px; margin-bottom: 20px; border-left: none; border-top: none; border-bottom: none;">
-            <h3 style="margin-top: 0; color: #b91c1c; font-size: 15px; font-weight: inherit;">⚠️ ساختار پیوند یکتای سایت روی «Plain» (ساده) تنظیم شده</h3>
-            <p style="font-weight: inherit;">
-                در این حالت، آدرس‌های زیبا مثل <code dir="ltr">/feed/podcast/</code> اصلاً توسط وردپرس شناخته نمی‌شوند و
-                به صفحه اصلی هدایت می‌شوید — این دقیقاً همان چیزی است که تجربه می‌کنید، و ربطی به تنظیمات این افزونه ندارد.
-            </p>
-            <p style="font-weight: inherit;">
-                راه‌حل: به <strong>Settings → Permalinks</strong> بروید، هر گزینه‌ای غیر از «Plain» را انتخاب کنید (مثلاً «Post name»)
-                و «Save Changes» را بزنید. تا آن زمان، می‌توانید موقتاً از این آدرس جایگزین استفاده کنید:
-                <br>
-                <code style="direction: ltr; display:inline-block; margin-top:6px; background:#fff; padding:4px 8px; border-radius:4px; border:1px solid #fecaca;"><?php echo esc_html( site_url( '/?feed=podcast' ) ); ?></code>
-            </p>
+<?php if ( empty( $permalink_structure ) ) : ?>
+    <div class="hd-callout hd-callout--danger">
+        <?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+        <div>
+            <strong>ساختار پیوند یکتای سایت روی «ساده» (Plain) است</strong>
+            <p>در این حالت آدرس‌هایی مثل <code>/feed/podcast/</code> شناخته نمی‌شوند و به صفحه اصلی هدایت می‌شوید؛ ربطی به تنظیمات این بخش ندارد.</p>
+            <p>راه‌حل: در «تنظیمات ← پیوندهای یکتا» هر گزینه‌ای غیر از «ساده» را انتخاب و ذخیره کنید. تا آن زمان از این آدرس استفاده کنید:</p>
+            <div class="hd-code"><?php echo esc_html( site_url( '/?feed=podcast' ) ); ?></div>
         </div>
-    <?php endif; ?>
-
-    <!-- نمایش آدرس فید -->
-    <div class="notice notice-info" style="border-right: 4px solid #25316a; background: #fff; padding: 15px; margin-bottom: 20px; border-left: none; border-top: none; border-bottom: none;">
-        <h3 style="margin-top: 0; color: #25316a; font-size: 15px; font-weight: inherit;">آدرس فید پادکست:</h3>
-        <code style="font-size: 14px; padding: 6px 10px; display: inline-block; background: #f8fafc; border-radius: 4px; border: 1px solid #b6c2f3; color: #25316a; direction: ltr;">
-            <a href="<?php echo esc_url($feed_url); ?>" target="_blank" style="text-decoration: none; color: inherit;"><?php echo esc_html($feed_url); ?></a>
-        </code>
-        <?php if ( ! empty( $permalink_structure ) ) : ?>
-            <p class="description" style="margin-top: 10px;">
-                اگر همچنان به صفحه اصلی هدایت می‌شوید، یک‌بار به Settings → Permalinks بروید و بدون تغییر چیزی «Save Changes» را بزنید
-                (این کار قوانین بازنویسی آدرس را دوباره می‌سازد).
-            </p>
-        <?php endif; ?>
     </div>
+<?php endif; ?>
 
-    <form method="post" action="">
-        <?php wp_nonce_field('hodima_save_podcast_schema', 'hodima_podcast_schema_nonce'); ?>
+<section class="hd-card hd-card--accent">
+    <header class="hd-card__head">
+        <?php echo hodima_admin_icon( 'dashicons-rss' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+        <h2 class="hd-card__title">آدرس فید پادکست</h2>
+    </header>
+    <div class="hd-code">
+        <span><?php echo esc_html($feed_url); ?></span>
+        <a href="<?php echo esc_url($feed_url); ?>" target="_blank" rel="noopener">مشاهده</a>
+    </div>
+    <?php if ( ! empty( $permalink_structure ) ) : ?>
+        <p class="description">اگر همچنان به صفحه اصلی هدایت می‌شوید، یک بار در «تنظیمات ← پیوندهای یکتا» بدون تغییر ذخیره کنید تا قوانین بازنویسی دوباره ساخته شوند.</p>
+    <?php endif; ?>
+</section>
 
-        <div class="h-card" style="margin-bottom: 20px;">
-            <h3 style="font-weight: inherit; font-size: 16px; margin-top: 0; color: #25316a;">تنظیمات عمومی فید</h3>
+<form method="post" action="" class="hd-body">
+    <?php wp_nonce_field('hodima_save_podcast_schema', 'hodima_podcast_schema_nonce'); ?>
 
-            <div class="h-form-group">
-                <label class="h-checkbox-label">
-                    <input type="checkbox" name="hodima_podcast_status" value="1" <?php checked($is_enabled, '1'); ?>>
-                    <span style="font-weight: inherit;">فعال‌سازی فید پادکست (<code dir="ltr">/feed/podcast/</code>)</span>
+    <section class="hd-card">
+        <header class="hd-card__head">
+            <?php echo hodima_admin_icon( 'dashicons-admin-settings' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+            <h2 class="hd-card__title">تنظیمات عمومی فید</h2>
+        </header>
+
+        <div class="hd-fields">
+            <div class="hd-field hd-field--wide">
+                <label class="hd-toggle">
+                    <input type="checkbox" class="hd-switch" role="switch" name="hodima_podcast_status" value="1" <?php checked($is_enabled, '1'); ?>>
+                    <span>فعال‌سازی فید پادکست (<code>/feed/podcast/</code>)</span>
                 </label>
-                <p class="description">در صورت غیرفعال بودن، آدرس فید ثبت نمی‌شود و ۴۰۴ برمی‌گرداند.</p>
+                <p class="hd-field__help">اگر خاموش باشد، آدرس فید ثبت نمی‌شود و ۴۰۴ برمی‌گرداند.</p>
             </div>
 
-            <div class="h-separator dashed" style="border-top: 1px dashed #e2e8f0; margin: 15px 0;"></div>
-
-            <div class="h-form-group">
-                <label for="hodima_podcast_title" style="display:block; margin-bottom: 5px;">عنوان پادکست</label>
-                <input type="text" name="hodima_podcast_title" id="hodima_podcast_title" class="regular-text hodima-input" value="<?php echo esc_attr($title); ?>">
+            <div class="hd-field">
+                <label class="hd-field__label" for="hodima_podcast_title">عنوان پادکست</label>
+                <input type="text" name="hodima_podcast_title" id="hodima_podcast_title" value="<?php echo esc_attr($title); ?>">
             </div>
 
-            <div class="h-separator dashed" style="border-top: 1px dashed #e2e8f0; margin: 15px 0;"></div>
-
-            <div class="h-form-group">
-                <label for="hodima_podcast_desc" style="display:block; margin-bottom: 5px;">توضیحات پادکست</label>
-                <textarea name="hodima_podcast_desc" id="hodima_podcast_desc" class="large-text hodima-textarea" rows="3"><?php echo esc_textarea($desc); ?></textarea>
+            <div class="hd-field hd-field--wide">
+                <label class="hd-field__label" for="hodima_podcast_desc">توضیحات پادکست</label>
+                <textarea name="hodima_podcast_desc" id="hodima_podcast_desc" rows="3"><?php echo esc_textarea($desc); ?></textarea>
             </div>
         </div>
+    </section>
 
-        <div class="h-card">
-            <h3 style="font-weight: inherit; font-size: 16px; margin-top: 0; color: #25316a;">تنظیمات iTunes / Apple Podcasts</h3>
+    <section class="hd-card">
+        <header class="hd-card__head">
+            <?php echo hodima_admin_icon( 'dashicons-playlist-audio' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+            <h2 class="hd-card__title">تنظیمات iTunes / Apple Podcasts</h2>
+        </header>
 
-            <div class="h-form-group">
-                <label for="hodima_podcast_author" style="display:block; margin-bottom: 5px;">نام سازنده (Author)</label>
-                <input type="text" name="hodima_podcast_author" id="hodima_podcast_author" class="regular-text hodima-input" value="<?php echo esc_attr($author); ?>">
+        <div class="hd-fields">
+            <div class="hd-field">
+                <label class="hd-field__label" for="hodima_podcast_author">نام سازنده (Author)</label>
+                <input type="text" name="hodima_podcast_author" id="hodima_podcast_author" value="<?php echo esc_attr($author); ?>">
             </div>
 
-            <div class="h-separator dashed" style="border-top: 1px dashed #e2e8f0; margin: 15px 0;"></div>
-
-            <div class="h-form-group">
-                <label for="hodima_podcast_category" style="display:block; margin-bottom: 5px;">دسته‌بندی iTunes</label>
-                <input type="text" name="hodima_podcast_category" id="hodima_podcast_category" class="regular-text ltr hodima-input" dir="ltr" value="<?php echo esc_attr($category); ?>" placeholder="Business">
-                <p class="description">باید دقیقاً منطبق با یکی از دسته‌های رسمی Apple Podcasts باشد (مثال: Business, Technology).</p>
+            <div class="hd-field">
+                <label class="hd-field__label" for="hodima_podcast_category">دسته‌بندی iTunes</label>
+                <input type="text" name="hodima_podcast_category" id="hodima_podcast_category" class="ltr" dir="ltr" value="<?php echo esc_attr($category); ?>" placeholder="Business">
+                <p class="hd-field__help">باید دقیقا یکی از دسته‌های رسمی Apple Podcasts باشد (مثال: Business, Technology).</p>
             </div>
 
-            <div class="h-separator dashed" style="border-top: 1px dashed #e2e8f0; margin: 15px 0;"></div>
-
-            <div class="h-form-group">
-                <label style="display:block; margin-bottom: 5px;">محتوای صریح (Explicit)</label>
-                <select name="hodima_podcast_explicit" class="hodima-input" style="min-width:150px;">
+            <div class="hd-field">
+                <label class="hd-field__label" for="hodima_podcast_explicit">محتوای صریح (Explicit)</label>
+                <select name="hodima_podcast_explicit" id="hodima_podcast_explicit">
                     <option value="clean" <?php selected($explicit, 'clean'); ?>>Clean (خانواده‌پسند)</option>
                     <option value="explicit" <?php selected($explicit, 'explicit'); ?>>Explicit</option>
                 </select>
             </div>
 
-            <div class="h-separator dashed" style="border-top: 1px dashed #e2e8f0; margin: 15px 0;"></div>
-
-            <div class="h-form-group">
-                <label style="display:block; margin-bottom: 10px; font-weight: inherit;">پست‌تایپ‌های دارای فایل صوتی</label>
-                <div style="display: flex; flex-wrap: wrap; gap: 15px; background: #f8fafc; padding: 15px; border: 1px dashed #b6c2f3; border-radius: 6px;">
+            <fieldset class="hd-field hd-field--wide">
+                <legend class="hd-field__label">پست‌تایپ‌های دارای فایل صوتی</legend>
+                <div class="hd-choices">
                     <?php foreach ($all_post_types as $pt) : if ($pt->name === 'attachment') continue; ?>
-                        <label style="display: flex; align-items: center; gap: 5px; min-width: 170px; cursor: pointer;">
+                        <label>
                             <input type="checkbox" name="hodima_podcast_post_types[]" value="<?php echo esc_attr($pt->name); ?>" <?php checked(in_array($pt->name, $saved_types, true)); ?>>
-                            <span style="font-weight: inherit; color: #25316a;"><?php echo esc_html($pt->labels->name); ?></span>
+                            <?php echo esc_html($pt->labels->name); ?>
                         </label>
                     <?php endforeach; ?>
                 </div>
-                <p class="description" style="margin-top: 10px;">فقط نوشته‌هایی که متای <code>_hook_audio_url</code> برایشان مقداردهی شده باشد، وارد فید می‌شوند.</p>
-            </div>
+                <p class="hd-field__help">فقط نوشته‌هایی که متای <code>_hook_audio_url</code> دارند وارد فید می‌شوند.</p>
+            </fieldset>
         </div>
+    </section>
 
-        <?php hodima_view_form_footer(); ?>
-    </form>
-</div>
+    <?php hodima_view_form_footer(); ?>
+</form>
 
 <?php hodima_view_footer(); ?>

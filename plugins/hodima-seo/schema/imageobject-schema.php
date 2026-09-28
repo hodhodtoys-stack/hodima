@@ -24,7 +24,7 @@ function hook_generate_imageobject_schema() {
     $page_url       = '';
     $image_objects  = []; 
     $category_product_thumbs = [];
-    // 🛠️ باگ رفع‌شده: wp_date('Y') روی این سایت از مبدل تقویم شمسی وردپرس
+    // باگ رفع‌شده: wp_date('Y') روی این سایت از مبدل تقویم شمسی وردپرس
     // عبور می‌کند (طبق کشف تأییدشده در category/product-schema-pro.php) و
     // به‌جای سال میلادی («۲۰۲۶») سال شمسی با اعداد فارسی («۱۴۰۵») برمی‌گرداند
     // — که در متن copyrightNotice هر تصویر سایت چاپ می‌شد. gmdate با افست
@@ -163,7 +163,7 @@ function hook_generate_imageobject_schema() {
         foreach ($images as $img) {
             if ($count >= $opt_max_imgs) break;
             
-            // 🛠️ رفع‌شده: قبلاً فقط data-src و src بررسی می‌شد. خیلی از
+            // رفع‌شده: قبلاً فقط data-src و src بررسی می‌شد. خیلی از
             // افزونه‌ها/قالب‌های lazy-load از نام‌های دیگری استفاده می‌کنند
             // (data-lazy-src، data-original، data-echo) و تصویرشان کلاً از
             // این استخراج جا می‌ماند.
@@ -216,7 +216,7 @@ function hook_generate_imageobject_schema() {
     if (!empty($image_objects)) {
         $final_schemas = array_values($image_objects);
 
-        // 🛠️ برگردانده شد: در اصلاح دور قبل، اینجا یک سقف کلی روی خروجی
+        // برگردانده شد: در اصلاح دور قبل، اینجا یک سقف کلی روی خروجی
         // نهایی اعمال شده بود (فکر می‌کردم چون توضیح پنل ادمین می‌گفت این
         // عدد «سقف کلی» تصاویر از محتوا+گالری+دسته‌بندی است). ولی طبق تست
         // واقعی شما در Rich Results گوگل، این باعث شد تعداد ImageObject

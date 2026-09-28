@@ -21,7 +21,7 @@
     --media-radius-md: 12px;
     --media-radius-lg: 14px;
     --media-transition: 0.25s ease;
-    --media-font: 'Vazirmatn', Tahoma, sans-serif;
+    --media-font: inherit;
 }
 
 .hook-video-wrapper,
@@ -29,7 +29,7 @@
 .hook-faq,
 .hook-intro-wrapper,
 .hodima-ai-summary-wrapper {
-    font-family: var(--media-font);
+    font-family: inherit;
 }
 
 .hook-video-wrapper {
