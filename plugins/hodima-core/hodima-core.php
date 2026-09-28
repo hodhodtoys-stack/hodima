@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Core
  * Plugin URI:        https://hodima.com
  * Description:       کتابخانه مشترک افزونه‌های هدیما: تشخیص IP واقعی (سازگار با Cloudflare)، محدودیت نرخ، تشخیص ربات موتور جستجو، موتور Canonical، گراف واحد اسکیما (JSON-LD) و بررسی محتوای محافظت‌شده. پیش‌نیاز Hodima SEO، Hodima Commerce و Hodima Media.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Author:            آرین فتحی
@@ -17,7 +17,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 // پیشوند HODIMA_CORE_PLUGIN_ چون HODIMA_CORE_* قبلا در ماژول IndexNow (افزونه SEO) استفاده شده است.
-const HODIMA_CORE_PLUGIN_VERSION = '1.0.0';
+const HODIMA_CORE_PLUGIN_VERSION = '1.1.0';
 define( 'HODIMA_CORE_PLUGIN_FILE', __FILE__ );
 define( 'HODIMA_CORE_PLUGIN_DIR', __DIR__ );
 define( 'HODIMA_CORE_PLUGIN_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -31,6 +31,10 @@ require_once HODIMA_CORE_PLUGIN_DIR . '/includes/modules.php';
 
 // گراف واحد اسکیما: همه JSON-LDهای صفحه در یک @graph (hodima_schema_add)
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/schema-graph.php';
+
+// به‌روزرسانی خودکار قالب و افزونه‌ها از گیت‌هاب (Plugin Update Checker)
+// همه‌جا لود می‌شود، نه فقط پیشخوان: بررسی زمان‌بندی‌شده با WP-Cron هم اجرا می‌شود.
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/updates.php';
 
 // پنل «ابزارهای هدیما» در پیشخوان: وضعیت، روشن/خاموش کردن ماژول‌ها و
 // سیستم طراحی مشترک همه صفحه‌های افزونه‌ها (هدر، تب‌ها، فوتر، عرض ۹۵٪)

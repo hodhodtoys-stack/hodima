@@ -12,6 +12,7 @@ os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import subprocess, difflib, sys
 files = subprocess.run(['git','diff','--name-only'],capture_output=True,text=True).stdout.split()
 for f in files:
+    if f.endswith(('.zip','.png','.jpg','.jpeg','.gif','.webp','.woff','.woff2','.mo')): continue  # فایل باینری
     orig = subprocess.run(['git','show','HEAD:'+f],capture_output=True).stdout.decode('utf-8').splitlines(keepends=True)
     cur  = open(f,encoding='utf-8',newline='').read().splitlines(keepends=True)
     strip = lambda l: l.rstrip('\r\n')

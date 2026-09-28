@@ -159,6 +159,7 @@ function environment_checks(): array {
 	$is_hodima  = 'Hodima' === $theme->get( 'Name' );
 	$theme_ver  = (string) $theme->get( 'Version' );
 	$robots_txt = is_file( ABSPATH . 'robots.txt' );
+	$updates    = function_exists( 'Hodima\\Core\\Updates\\status' ) ? \Hodima\Core\Updates\status() : [ 'enabled' => false, 'count' => 0 ];
 
 	return [
 		[
@@ -208,6 +209,14 @@ function environment_checks(): array {
 			'ok'     => ! $robots_txt,
 			'level'  => 'warning',
 			'detail' => $robots_txt ? 'فایل فیزیکی robots.txt در ریشه سایت جلوی قوانین افزونه سئو را گرفته است' : 'توسط افزونه سئو ساخته می‌شود',
+		],
+		[
+			'label'  => 'به‌روزرسانی خودکار از گیت‌هاب',
+			'ok'     => $updates['enabled'],
+			'level'  => 'warning',
+			'detail' => $updates['enabled']
+				? sprintf( '%s بسته (قالب و افزونه‌ها) هر ۱۲ ساعت بررسی می‌شوند؛ نسخه جدید در «پیشخوان ← به‌روزرسانی‌ها» می‌آید', number_format_i18n( $updates['count'] ) )
+				: 'غیرفعال (فیلتر hodima_updates_enabled یا کتابخانه ناقص)',
 		],
 		[
 			'label'  => 'نمایش خطاها روی سایت',
