@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Hodima_GI_Queue {
 
 	public const HOOK     = 'hodima_gi_process_queue';
-	private const LOCK    = 'hodima_gi_queue_mysql_lock';
+	public const LOCK     = 'hodima_gi_queue_mysql_lock'; // پنل هم همین قفل را می‌گیرد
 	private const MAX_TRY = 3;
 
 	public static function init(): void {

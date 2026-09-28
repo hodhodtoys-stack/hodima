@@ -54,6 +54,8 @@ def changelog_html(slug):
         if line.startswith('## '):
             if in_list:
                 parts.append('</ul>'); in_list = False
+            elif parts and parts[-1].startswith('<h4>'):
+                parts.pop()  # نسخه‌ای که هیچ خطی برای این بسته ندارد، عنوان خالی نگیرد
             parts.append(f'<h4>{html.escape(line[3:])}</h4>')
         elif line.startswith('- '):
             item = line[2:]
