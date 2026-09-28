@@ -46,7 +46,8 @@ th.col-url { text-align: left; direction: ltr; width: 50%; padding-left: 15px;}
 .in-upload-row { margin-top:10px; border: 1px dashed var(--in-border); padding: 10px; border-radius: 6px; background: #fff;}
 .in-quota-wrap { padding: 15px; background: #fff; border: 1px solid var(--in-border); border-radius: 6px; margin-bottom: 15px;}
 
-#hodima-notices { margin-bottom: 15px; }
+#hodima-notices:empty { display: none; }
+#hodima-notices .notice { display: block; margin: 0.75rem 0; }
 .hodima-notice { padding: 12px 15px; border-radius: 6px; margin-bottom: 10px; font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.3s ease; border-right: 4px solid transparent; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .hodima-notice.success { border-color: var(--hodima-state-success, #2f7a55); color: var(--hodima-state-success, #2f7a55); }
 .hodima-notice.error { border-color: var(--hodima-state-danger, #a32a2a); color: var(--hodima-state-danger, #a32a2a); }

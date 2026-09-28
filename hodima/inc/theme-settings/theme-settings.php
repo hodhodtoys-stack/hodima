@@ -324,7 +324,14 @@ function hodima_settings_render_page(): void {
 
 		<hr class="wp-header-end">
 
-		<?php settings_errors( HODIMA_SETTINGS_OPTION ); ?>
+		<?php
+		/*
+		 * بدون آرگومان: پیام «تنظیمات ذخیره شد» را options.php زیر نامک general
+		 * ثبت می‌کند. نسخه قبلی فقط خطاهای همین گزینه را چاپ می‌کرد و بعد از
+		 * ذخیره موفق هیچ پیامی دیده نمی‌شد.
+		 */
+		settings_errors();
+		?>
 
 		<form method="post" action="options.php" class="hodima-settings__form" novalidate>
 			<?php settings_fields( 'hodima_theme_settings_group' ); ?>

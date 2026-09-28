@@ -30,31 +30,7 @@
     box-shadow: 0 4px 18px rgba(37, 49, 106, 0.05);
 }
 
-.h-notice {
-    background: var(--h-soft);
-    color: var(--h-primary);
-    border: 1px solid var(--h-border);
-    padding: 1rem;
-    border-radius: 8px;
-    margin: 1rem 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.h-error {
-    background: #fee2e2;
-    color: #7f1d1d;
-    border: 1px solid #fecaca;
-    padding: 1rem;
-    border-radius: 8px;
-    margin: 1rem 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.h-close-btn { padding: 0 .25rem; border: 0; background: transparent; color: inherit; cursor: pointer; line-height: 1; }
+/* پیام ذخیره: notice استاندارد وردپرس (Hodima Core → hodima_admin_flash) */
 
 .h-section {
     background: var(--h-bg);

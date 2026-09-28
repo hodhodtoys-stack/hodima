@@ -62,6 +62,40 @@ if ( ! function_exists( 'hodima_admin_page_close' ) ) {
 	}
 }
 
+if ( ! function_exists( 'hodima_admin_notice' ) ) {
+	function hodima_admin_notice( string $message, string $type = 'success', bool $echo = true ): string {
+		$type = in_array( $type, [ 'success', 'error', 'warning', 'info' ], true ) ? $type : 'info';
+		$html = sprintf( '<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>', esc_attr( $type ), wp_kses_post( $message ) );
+		if ( $echo ) {
+			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput
+		}
+		return $html;
+	}
+}
+
+if ( ! function_exists( 'hodima_admin_flash' ) ) {
+	/** پیام برای بارگذاری بعدی صفحه (نسخه ساده Core). */
+	function hodima_admin_flash( string $message, string $type = 'success' ): void {
+		$key   = 'hodima_admin_flash_' . get_current_user_id();
+		$queue = get_transient( $key );
+		$queue = is_array( $queue ) ? $queue : [];
+		$queue[] = [ $type, $message ];
+		set_transient( $key, array_slice( $queue, -5 ), 5 * MINUTE_IN_SECONDS );
+	}
+
+	add_action( 'admin_notices', static function (): void {
+		$key   = 'hodima_admin_flash_' . get_current_user_id();
+		$queue = get_transient( $key );
+		if ( ! is_array( $queue ) || ! $queue ) {
+			return;
+		}
+		delete_transient( $key );
+		foreach ( $queue as [ $type, $message ] ) {
+			hodima_admin_notice( (string) $message, (string) $type );
+		}
+	} );
+}
+
 if ( ! function_exists( 'hodima_admin_menu_parent' ) ) {
 	/** بدون Core منوی مشترکی نیست؛ رشته خالی یعنی «منوی سطح اول بساز». */
 	function hodima_admin_menu_parent(): string {

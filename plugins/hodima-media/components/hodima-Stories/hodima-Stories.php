@@ -333,6 +333,12 @@ class Admin {
             ] );
             ?>
 
+            <?php
+            // پیام نتیجه ذخیره: notice استاندارد وردپرس زیر هدر (مثل بقیه صفحه‌های هدیما)
+            if ( $notice ) {
+                hodima_admin_notice( esc_html( $notice['message'] ), 'error' === $notice['type'] ? 'error' : 'success' );
+            }
+            ?>
             <form method="post" id="hodima-stories-form">
                 <?php wp_nonce_field( 'hodima_stories_save', 'hodima_stories_nonce' ); ?>
                 <div class="hdn-card hd-shadow-soft">
@@ -340,14 +346,6 @@ class Admin {
 
                     <div class="hdn-actions-bar">
                         <button type="button" class="hdn-btn hdn-btn-outline" id="hs-add-new"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> <?php esc_html_e( 'افزودن استوری جدید', 'hodima' ); ?></button>
-                        <?php if ( $notice ) : ?>
-                            <div class="hdn-actions-msg">
-                                <span class="hdn-msg <?php echo esc_attr( $notice['type'] ); ?>">
-                                    <span class="hdn-msg-text"><?php echo esc_html( $notice['message'] ); ?></span>
-                                    <button type="button" class="hdn-msg-close" aria-label="<?php esc_attr_e( 'بستن', 'hodima' ); ?>">×</button>
-                                </span>
-                            </div>
-                        <?php endif; ?>
                         <button type="submit" class="hdn-btn hdn-btn-primary">
                             <span class="dashicons dashicons-saved"></span>
                             <?php esc_html_e( 'ذخیره تنظیمات', 'hodima' ); ?>
