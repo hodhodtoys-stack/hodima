@@ -2,7 +2,11 @@
 # ساخت فایل‌های ZIP قابل نصب از پیشخوان وردپرس
 #   قالب:    نمایش ← پوسته‌ها ← افزودن ← بارگذاری پوسته
 #   افزونه‌ها: افزونه‌ها ← افزودن ← بارگذاری افزونه
-# خروجی: dist/*.zip
+# خروجی: dist/*.zip و نسخه انتشار در release/ (ZIP + JSON به‌روزرسانی خودکار)
+#
+# به‌روزرسانی خودکار سایت‌ها (Hodima Core → includes/updates.php) فایل‌های
+# release/*.json را از شاخه پیش‌فرض گیت‌هاب می‌خواند؛ فقط وقتی نسخه جدید
+# نشان داده می‌شود که «Version» بسته تغییرکرده بالا رفته باشد.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,3 +23,8 @@ package "$root" hodima
 for plugin in hodima-core hodima-seo hodima-commerce hodima-media; do
 	package "$root/plugins" "$plugin"
 done
+
+# انتشار: ZIPها و فایل‌های JSON به‌روزرسانی در release/
+mkdir -p "$root/release"
+cp "$dist"/*.zip "$root/release/"
+python3 "$root/bin/build-meta.py"
