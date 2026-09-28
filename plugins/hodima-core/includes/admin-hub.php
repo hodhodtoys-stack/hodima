@@ -26,9 +26,12 @@ const HUB_SLUG = 'hodima-hub';
 
 add_action( 'admin_menu', static function (): void {
 
+	// عنوان منو «ابزارهای هدیما»؛ اسلاگ (hodima-hub) و آدرس صفحه‌ها تغییر نکرده است.
+	// ریدایرکت‌ها، خوشه‌بندی، اسلایدر و نوتیفیکیشن‌ها هم زیر همین منو هستند
+	// (هر افزونه با hodima_admin_menu_parent() زیرمنوی خودش را اضافه می‌کند).
 	add_menu_page(
-		'هدیما',
-		'هدیما',
+		'ابزارهای هدیما',
+		'ابزارهای هدیما',
 		'manage_options',
 		HUB_SLUG,
 		__NAMESPACE__ . '\\render_dashboard',
@@ -36,7 +39,7 @@ add_action( 'admin_menu', static function (): void {
 		58.5
 	);
 
-	add_submenu_page( HUB_SLUG, 'وضعیت هدیما', 'وضعیت', 'manage_options', HUB_SLUG, __NAMESPACE__ . '\\render_dashboard' );
+	add_submenu_page( HUB_SLUG, 'وضعیت ابزارهای هدیما', 'وضعیت', 'manage_options', HUB_SLUG, __NAMESPACE__ . '\\render_dashboard' );
 
 	foreach ( Modules::plugins() as $plugin => $data ) {
 		add_submenu_page(
@@ -223,8 +226,8 @@ function render_dashboard(): void {
 
 	$registered = Modules::plugins();
 	?>
-	<div class="wrap hodima-hub">
-		<?php render_header( 'هدیما', 'وضعیت افزونه‌ها و ماژول‌ها، و بررسی آمادگی سرور.' ); ?>
+	<div class="wrap hd-wrap hodima-hub">
+		<?php render_header( 'ابزارهای هدیما', 'وضعیت افزونه‌ها و ماژول‌ها، و بررسی آمادگی سرور.' ); ?>
 
 		<section class="hodima-hub__section" aria-labelledby="hodima-hub-plugins">
 			<h2 id="hodima-hub-plugins">افزونه‌ها</h2>
@@ -304,8 +307,8 @@ function render_modules_page( string $plugin ): void {
 
 	$option = Modules::option_name( $plugin );
 	?>
-	<div class="wrap hodima-hub">
-		<?php render_header( 'ماژول‌های ' . $data['title'], $data['description'] ); ?>
+	<div class="wrap hd-wrap hodima-hub">
+		<?php render_header( 'ماژول‌های ' . $data['title'], $data['description'], modules_page_slug( $plugin ), 'dashicons-admin-plugins' ); ?>
 
 		<?php settings_errors(); ?>
 
@@ -395,17 +398,32 @@ function render_modules_page( string $plugin ): void {
 	<?php
 }
 
-function render_header( string $title, string $description ): void {
-	?>
-	<header class="hodima-hub__header">
-		<h1><?php echo esc_html( $title ); ?></h1>
-		<p><?php echo esc_html( $description ); ?></p>
-		<nav class="hodima-hub__nav" aria-label="بخش‌های هدیما">
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . HUB_SLUG ) ); ?>">وضعیت</a>
-			<?php foreach ( Modules::plugins() as $plugin => $data ) : ?>
-				<a href="<?php echo esc_url( modules_page_url( $plugin ) ); ?>"><?php echo esc_html( $data['title'] ); ?></a>
-			<?php endforeach; ?>
-		</nav>
-	</header>
-	<?php
+/** هدر مشترک + تب‌های پنل (وضعیت و ماژول‌های هر افزونه) زیر هدر. */
+function render_header( string $title, string $description, string $current = HUB_SLUG, string $icon = 'dashicons-screenoptions' ): void {
+
+	$tabs = [
+		HUB_SLUG => [ 'label' => 'وضعیت', 'url' => admin_url( 'admin.php?page=' . HUB_SLUG ), 'icon' => 'dashicons-dashboard' ],
+	];
+
+	foreach ( Modules::plugins() as $plugin => $data ) {
+		$tabs[ modules_page_slug( $plugin ) ] = [
+			'label' => 'ماژول‌های ' . $data['title'],
+			'url'   => modules_page_url( $plugin ),
+			'icon'  => match ( $plugin ) {
+				'seo'      => 'dashicons-search',
+				'commerce' => 'dashicons-cart',
+				'media'    => 'dashicons-format-video',
+				default    => 'dashicons-admin-plugins',
+			},
+		];
+	}
+
+	hodima_admin_header( [
+		'title'       => $title,
+		'description' => $description,
+		'icon'        => $icon,
+		'tabs'        => $tabs,
+		'current'     => $current,
+		'tabs_label'  => 'بخش‌های ابزارهای هدیما',
+	] );
 }

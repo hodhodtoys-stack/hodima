@@ -154,6 +154,11 @@ add_action( 'plugins_loaded', static function (): void {
 		require_once __DIR__ . '/inc/schema-fallback.php';
 	}
 
+	// بدون Hodima Core، هدر/تب مشترک پیشخوان نسخه ساده می‌گیرد
+	if ( is_admin() && ! function_exists( 'hodima_admin_header' ) ) {
+		require_once __DIR__ . '/inc/admin-ui-fallback.php';
+	}
+
 	$specs = hodima_seo_modules();
 
 	// مسیر عادی: ثبت در Hodima Core و بارگذاری ماژول‌های روشن

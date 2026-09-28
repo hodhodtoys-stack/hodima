@@ -1392,7 +1392,7 @@
 
 /* ارقام انگلیسی (کد محصول، حداقل تعداد) */
 .hodima-num {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-family: inherit;
     font-variant-numeric: lining-nums tabular-nums;
     direction: ltr;
     unicode-bidi: isolate;
@@ -1447,7 +1447,7 @@
     padding: 0 4px;
     font-size: 0.9rem;
     border-radius: 8px;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-family: inherit;
 }
 
 .custom-product-summary .hp-buy-row form.cart button.single_add_to_cart_button {

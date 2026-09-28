@@ -63,9 +63,15 @@ $logs = $logs_data['items'];
 $logs_pages = $logs_data['max_pages'];
 
 ?>
-<div class="wrap" style="max-width: 100%; margin: 0;"><div class="in-admin">
-    <div class="in-header"><h1>ایندکس گوگل</h1></div>
-    
+<div class="wrap hd-wrap"><div class="in-admin">
+    <?php
+    hodima_admin_header( [
+        'title'       => 'ایندکس گوگل (Indexing API)',
+        'description' => 'ارسال خودکار صفحات به گوگل با صف و سهمیه روزانه، گزارش خزش ربات‌ها و احیای محتوای راکد.',
+        'icon'        => 'dashicons-google',
+    ] );
+    ?>
+
     <div id="hodima-notices"></div>
 
     <form id="hodima-form">

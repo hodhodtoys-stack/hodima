@@ -1,7 +1,7 @@
 /* ایزوله کردن ساختار باکس مدل */
 .h-slider, .h-slider * { 
     box-sizing: border-box; 
-    font-family: 'Vazirmatn', Tahoma, sans-serif;
+    font-family: inherit;
 }
 
 .h-slider { 

@@ -52,7 +52,7 @@ final class Hodima_Core {
         // هندلر اختصاصی ایجکس برای ابزار استخراج‌گر لینک‌های AEO
         add_action( 'wp_ajax_hodima_get_aeo_links', [ __CLASS__, 'ajax_get_aeo_links' ] );
 
-        // 🚀 هندلرهای پاکسازی صف و تاریخچه IndexNow
+        // هندلرهای پاکسازی صف و تاریخچه IndexNow
         add_action( 'admin_post_hodima_clear_in_history', [ __CLASS__, 'clear_in_history' ] );
         add_action( 'admin_post_hodima_clear_in_queue', [ __CLASS__, 'clear_in_queue' ] );
 

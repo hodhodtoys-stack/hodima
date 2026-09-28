@@ -66,28 +66,88 @@
 		});
 	};
 
-	/** نشان دادن بخش فعال در نوار ناوبری هنگام اسکرول. */
+	/**
+	 * تب‌های واقعی: هر بخش پنل جداگانه دارد (الگوی ARIA tabs).
+	 * بدون JS تب‌ها لینک ?tab=… هستند و سرور پنل درست را نشان می‌دهد؛ اینجا
+	 * جابه‌جایی بدون بارگذاری مجدد انجام می‌شود، آدرس صفحه و آدرس بازگشت فرم
+	 * (_wp_http_referer) به‌روز می‌شوند تا بعد از «ذخیره» همان تب باز بماند.
+	 */
 	const initTabs = () => {
-		const tabs = [...document.querySelectorAll('.hodima-settings__tab')];
-		const sections = tabs
-			.map((tab) => document.querySelector(tab.getAttribute('href')))
-			.filter(Boolean);
-
-		if (!sections.length || !('IntersectionObserver' in window)) {
+		const list = document.querySelector('[data-hodima-tabs]');
+		if (!list) {
 			return;
 		}
 
-		const observer = new IntersectionObserver((entries) => {
-			const visible = entries.find((entry) => entry.isIntersecting);
-			if (!visible) {
+		const tabs = [...list.querySelectorAll('[role="tab"]')];
+		const referer = document.querySelector('.hodima-settings__form input[name="_wp_http_referer"]');
+
+		const activate = (tab, focus = false) => {
+			tabs.forEach((item) => {
+				const selected = item === tab;
+				item.setAttribute('aria-selected', String(selected));
+				item.tabIndex = selected ? 0 : -1;
+				const panel = document.getElementById(item.getAttribute('aria-controls'));
+				if (panel) {
+					panel.hidden = !selected;
+				}
+			});
+
+			const url = new URL(window.location.href);
+			url.searchParams.set('tab', tab.dataset.tab);
+			url.searchParams.delete('settings-updated');
+			window.history.replaceState(null, '', url);
+
+			if (referer) {
+				const back = new URL(referer.value, window.location.origin);
+				back.searchParams.set('tab', tab.dataset.tab);
+				back.searchParams.delete('settings-updated');
+				referer.value = back.pathname + back.search;
+			}
+
+			if (focus) {
+				tab.focus();
+			}
+		};
+
+		list.addEventListener('click', (event) => {
+			const tab = event.target.closest('[role="tab"]');
+			if (!tab) {
 				return;
 			}
-			tabs.forEach((tab) => {
-				tab.setAttribute('aria-current', String(tab.getAttribute('href') === `#${visible.target.id}`));
-			});
-		}, { rootMargin: '-30% 0px -60% 0px' });
+			event.preventDefault();
+			activate(tab);
+		});
 
-		sections.forEach((section) => observer.observe(section));
+		// کیبورد: چپ/راست (با توجه به RTL)، Home و End
+		list.addEventListener('keydown', (event) => {
+			const index = tabs.indexOf(document.activeElement);
+			if (index < 0) {
+				return;
+			}
+			const rtl = getComputedStyle(list).direction === 'rtl';
+			const step = { ArrowLeft: rtl ? 1 : -1, ArrowRight: rtl ? -1 : 1 }[event.key];
+			let next = null;
+			if (step) {
+				next = tabs[(index + step + tabs.length) % tabs.length];
+			} else if (event.key === 'Home') {
+				next = tabs[0];
+			} else if (event.key === 'End') {
+				next = tabs.at(-1);
+			}
+			if (next) {
+				event.preventDefault();
+				activate(next, true);
+			}
+		});
+
+		// اگر فیلدی نامعتبر در تب پنهان بود، همان تب باز شود
+		document.querySelector('.hodima-settings__form')?.addEventListener('invalid', (event) => {
+			const panel = event.target.closest('[role="tabpanel"]');
+			const tab = panel && tabs.find((item) => item.getAttribute('aria-controls') === panel.id);
+			if (tab && panel.hidden) {
+				activate(tab);
+			}
+		}, true);
 	};
 
 	document.addEventListener('DOMContentLoaded', () => {

@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hodima_homepage_schem
         if (isset($_POST['hodima_schema_ai_languages'])) update_option('hodima_schema_ai_languages', sanitize_text_field( wp_unslash( $_POST['hodima_schema_ai_languages'] ) ));
         if (isset($_POST['hodima_schema_ai_audience'])) update_option('hodima_schema_ai_audience', sanitize_text_field( wp_unslash( $_POST['hodima_schema_ai_audience'] ) ));
 
-        $notice_msg = '<div class="notice notice-success is-dismissible" style="border-right: 4px solid #25316a; background: #fff;"><p style="font-weight: inherit;">تنظیمات سیستم یکپارچه گراف دانش و AI GEO با موفقیت ذخیره شد.</p></div>';
+        $notice_msg = '<div class="notice notice-success is-dismissible"><p>تنظیمات سیستم یکپارچه گراف دانش و AI GEO با موفقیت ذخیره شد.</p></div>';
     }
 }
 
@@ -95,264 +95,191 @@ $ai_languages     = get_option('hodima_schema_ai_languages', 'fa, ar, ps, ur, en
 $ai_audience      = get_option('hodima_schema_ai_audience', 'B2B, Wholesale Buyers, Importers, Exporters');
 
 hodima_view_header(
-    'تنظیمات سیستم جامع اسکیما (Master Knowledge Graph)',
-    'در این بخش تمام اطلاعات هویتی، آدرس، تلفن‌ها، شبکه‌های اجتماعی و هدف‌گذاری هوش مصنوعی (AI Target) را به صورت یکپارچه مدیریت کنید.',
-    '👑'
+    'اسکیمای صفحه اصلی (Master Knowledge Graph)',
+    'اطلاعات هویتی، آدرس، تلفن‌ها، شبکه‌های اجتماعی و هدف‌گذاری هوش مصنوعی (AI Target) به‌صورت یکپارچه.',
+    'dashicons-admin-home'
 );
+
+/** عنوان هر بخش فرم با آیکون داخلی. */
+$hodima_section = static function ( string $icon, string $title ): void {
+    printf( '<h2 class="hd-section-title">%1$s %2$s</h2>', hodima_admin_icon( $icon ), esc_html( $title ) ); // phpcs:ignore WordPress.Security.EscapeOutput
+};
 ?>
 
-<style>
-    .hodima-schema-card { 
-        background: #fff; 
-        box-shadow: 0 4px 12px rgba(37, 49, 106, 0.08); 
-        border-radius: 12px; 
-        margin-top: 20px; 
-        overflow: hidden; 
-    }
-    .hodima-schema-card-top { 
-        background: linear-gradient(90deg, #25316a, #607bbd); 
-        height: 5px; 
-        width: 100%; 
-    }
-    .hodima-section-title { 
-        margin: 0; 
-        color: #25316a; 
-        font-size: 18px; 
-        font-weight: inherit;
-        display: flex; 
-        align-items: center; 
-        gap: 8px; 
-        border-bottom: 2px dashed #b6c2f3; 
-        padding-bottom: 12px; 
-        padding-top: 25px; 
-    }
-    .hodima-textarea, .hodima-input { 
-        padding: 10px; 
-        line-height: 1.6; 
-        border-radius: 6px; 
-        border: 1px solid #b6c2f3; 
-        transition: all 0.3s ease;
-    }
-    .hodima-textarea { width: 100%; }
-    .hodima-textarea:focus, .hodima-input:focus {
-        border-color: #25316a;
-        box-shadow: 0 0 0 3px rgba(37, 49, 106, 0.1);
-        outline: none;
-    }
-</style>
+<?php echo $notice_msg; ?>
 
-<div class="h-card hodima-schema-card">
-    <div class="hodima-schema-card-top"></div>
-    <div style="padding: 20px;">
-        <?php echo $notice_msg; ?>
-
-        <div class="notice notice-info" style="border-right: 4px solid #607bbd; background: #fff; padding: 15px; margin-bottom: 25px; box-shadow: 0 1px 1px rgba(37, 49, 106, 0.04);">
-            <h4 style="margin: 0 0 10px 0; color: #25316a; font-weight: inherit; display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 20px;">🌐</span> سیستم یکپارچه گراف دانش گوگل و AI GEO
-            </h4>
-            <p style="margin: 0; font-size: 13px; color: #444; line-height: 1.6; font-weight: inherit;">
-                با این سیستم، تمامی اطلاعات بیزینسی و سیگنال‌های تارگتینگ منطقه‌ای شما به طور هوشمند بین صفحه اصلی، صفحات داخلی و ماژول‌های هوش مصنوعی تقسیم می‌شود. این کد به عنوان مرجع اصلی برای لوکال بیزینس و سازمان عمل می‌کند، لطفاً کدهای موازی (مانند رنک‌مث) را خاموش کنید تا گراف شما دچار اختلال نشود.
-            </p>
-        </div>
-
-        <form method="post" action="">
-            <?php wp_nonce_field('hodima_save_homepage_schema', 'hodima_homepage_schema_nonce'); ?>
-
-            <table class="form-table">
-                <tr>
-                    <th scope="row" style="font-weight: inherit;">وضعیت سیستم اسکیما</th>
-                    <td>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                            <input type="checkbox" name="hodima_schema_homepage_enable" value="1" <?php checked($is_enabled, '1'); ?>>
-                            <strong style="font-weight: inherit;">فعال‌سازی گراف یکپارچه در کل سایت</strong>
-                        </label>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_org_type">نوع کسب‌وکار اصلی</label></th>
-                    <td>
-                        <select name="hodima_schema_homepage_org_type" id="hodima_schema_homepage_org_type" style="min-width: 250px; border-radius: 6px;">
-                            <option value="WholesaleStore" <?php selected($org_type, 'WholesaleStore'); ?>>فروشگاه عمده‌فروشی (WholesaleStore)</option>
-                            <option value="LocalBusiness" <?php selected($org_type, 'LocalBusiness'); ?>>کسب‌وکار محلی (LocalBusiness)</option>
-                            <option value="Organization" <?php selected($org_type, 'Organization'); ?>>سازمان عمومی (Organization)</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_org_name">نام رسمی کسب‌وکار</label></th>
-                    <td>
-                        <input type="text" name="hodima_schema_homepage_org_name" id="hodima_schema_homepage_org_name" class="regular-text hodima-input" value="<?php echo esc_attr($org_name); ?>">
-                        <p class="description">جهت رفع ارور نام اشتباه در سرچ کنسول</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label>اسلاگ صفحات سازمانی</label></th>
-                    <td>
-                        <input type="text" name="hodima_corp_about_slug" class="small-text ltr hodima-input" value="<?php echo esc_attr($about_slug); ?>" placeholder="درباره ما">
-                        <input type="text" name="hodima_corp_contact_slug" class="small-text ltr hodima-input" value="<?php echo esc_attr($contact_slug); ?>" placeholder="تماس با ما">
-                        <p class="description">جهت تزریق خودکار اسکیما به صفحات AboutPage و ContactPage.</p>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th colspan="2" style="padding: 0;">
-                        <h3 class="hodima-section-title">🤖 هوش مصنوعی و هدف‌گذاری منطقه‌ای (AI & GEO Target)</h3>
-                    </th>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_ai_countries">کشورهای تحت پوشش (areaServed)<br><small>(هر کشور در یک خط به انگلیسی)</small></label></th>
-                    <td>
-                        <textarea name="hodima_schema_ai_countries" id="hodima_schema_ai_countries" rows="5" class="ltr hodima-textarea" dir="ltr"><?php echo esc_textarea($ai_countries); ?></textarea>
-                        <p class="description">مثال: Iran, Iraq, United Arab Emirates (سیگنال قوی برای LLMها)</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_ai_languages">زبان‌های قابل پشتیبانی (knowsLanguage)</label></th>
-                    <td>
-                        <input type="text" name="hodima_schema_ai_languages" id="hodima_schema_ai_languages" class="large-text ltr hodima-input" value="<?php echo esc_attr($ai_languages); ?>">
-                        <p class="description">کدهای ISO زبان با کاما جدا شوند. مثال: fa, ar, ps, ur, en, tr</p>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_ai_audience">نوع مخاطب تجاری (audienceType)</label></th>
-                    <td>
-                        <input type="text" name="hodima_schema_ai_audience" id="hodima_schema_ai_audience" class="large-text ltr hodima-input" value="<?php echo esc_attr($ai_audience); ?>">
-                        <p class="description">مثال: B2B, Wholesale Buyers, Importers, Exporters</p>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th colspan="2" style="padding: 0;">
-                        <h3 class="hodima-section-title">🎨 هویت بصری و برندینگ</h3>
-                    </th>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_logo">آدرس لوگو (URL)</label></th>
-                    <td>
-                        <input type="url" name="hodima_schema_homepage_logo" id="hodima_schema_homepage_logo" class="large-text ltr hodima-input" value="<?php echo esc_attr($logo); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_image">آدرس عکس کاور شرکت</label></th>
-                    <td>
-                        <input type="url" name="hodima_schema_homepage_image" id="hodima_schema_homepage_image" class="large-text ltr hodima-input" value="<?php echo esc_attr($image); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_geo_alt_names">نام‌های جایگزین شرکت<br><small>(هر نام در یک خط)</small></label></th>
-                    <td>
-                        <textarea name="hodima_schema_geo_alt_names" id="hodima_schema_geo_alt_names" rows="3" class="hodima-textarea"><?php echo esc_textarea($alt_names); ?></textarea>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_geo_description">توضیحات بیزینس (سئو شده)</label></th>
-                    <td>
-                        <textarea name="hodima_schema_geo_description" id="hodima_schema_geo_description" rows="3" class="hodima-textarea"><?php echo esc_textarea($description); ?></textarea>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th colspan="2" style="padding: 0;">
-                        <h3 class="hodima-section-title">📍 اطلاعات تماس و آدرس</h3>
-                    </th>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_geo_telephones">شماره‌های تماس<br><small>(هر شماره در یک خط با کد 98+)</small></label></th>
-                    <td>
-                        <textarea name="hodima_schema_geo_telephones" id="hodima_schema_geo_telephones" rows="3" class="ltr hodima-textarea" dir="ltr"><?php echo esc_textarea($telephones); ?></textarea>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_address_locality">شهر</label></th>
-                    <td>
-                        <input type="text" name="hodima_schema_homepage_address_locality" id="hodima_schema_homepage_address_locality" class="regular-text hodima-input" value="<?php echo esc_attr($address_locality); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <!-- 🛠️ باگ رفع‌شده: قبلاً هیچ فیلد جداگانه‌ای برای «استان»
-                    وجود نداشت و کد همان مقدار «شهر» را هم برای addressLocality
-                    هم برای addressRegion در JSON-LD تکرار می‌کرد. برای تهران
-                    این تصادفاً بی‌ضرر بود (چون نام استان و شهر یکی است)، ولی
-                    برای هر شهر دیگری (مثلاً مشهد که استانش خراسان رضوی است)
-                    داده‌ی غلط تولید می‌شد. -->
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_address_region">استان</label></th>
-                    <td>
-                        <input type="text" name="hodima_schema_homepage_address_region" id="hodima_schema_homepage_address_region" class="regular-text hodima-input" value="<?php echo esc_attr($address_region); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_street_address">آدرس دقیق پستی</label></th>
-                    <td>
-                        <textarea name="hodima_schema_homepage_street_address" id="hodima_schema_homepage_street_address" rows="2" class="hodima-textarea"><?php echo esc_textarea($street_address); ?></textarea>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_postal_code">کد پستی</label></th>
-                    <td>
-                        <input type="text" name="hodima_schema_homepage_postal_code" id="hodima_schema_homepage_postal_code" class="regular-text ltr hodima-input" value="<?php echo esc_attr($postal_code); ?>">
-                    </td>
-                </tr>
-
-                <tr>
-                    <th colspan="2" style="padding: 0;">
-                        <h3 class="hodima-section-title">🕒 ساعات کاری</h3>
-                    </th>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label>شنبه تا چهارشنبه</label></th>
-                    <td>
-                        از <input type="time" name="hodima_schema_geo_weekday_open" class="hodima-input" value="<?php echo esc_attr($wd_open); ?>">
-                        تا <input type="time" name="hodima_schema_geo_weekday_close" class="hodima-input" value="<?php echo esc_attr($wd_close); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label>پنج‌شنبه‌ها</label></th>
-                    <td>
-                        از <input type="time" name="hodima_schema_geo_thursday_open" class="hodima-input" value="<?php echo esc_attr($th_open); ?>">
-                        تا <input type="time" name="hodima_schema_geo_thursday_close" class="hodima-input" value="<?php echo esc_attr($th_close); ?>">
-                    </td>
-                </tr>
-
-                <tr>
-                    <th colspan="2" style="padding: 0;">
-                        <h3 class="hodima-section-title">💡 اطلاعات تجاری و شبکه‌های اجتماعی</h3>
-                    </th>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_slogan">شعار تجاری (Slogan)</label></th>
-                    <td>
-                        <input type="text" name="hodima_schema_homepage_slogan" id="hodima_schema_homepage_slogan" class="large-text hodima-input" value="<?php echo esc_attr($slogan); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_catalog_name">نام کاتالوگ خدمات</label></th>
-                    <td>
-                        <input type="text" name="hodima_schema_homepage_catalog_name" id="hodima_schema_homepage_catalog_name" class="regular-text hodima-input" value="<?php echo esc_attr($catalog_name); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_price_range">محدوده قیمت</label></th>
-                    <td>
-                        <input type="text" name="hodima_schema_homepage_price_range" id="hodima_schema_homepage_price_range" class="small-text ltr hodima-input" value="<?php echo esc_attr($price_range); ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_homepage_knows_about">تخصص‌ها (knowsAbout)<br><small>(هر مورد در یک خط)</small></label></th>
-                    <td>
-                        <textarea name="hodima_schema_homepage_knows_about" id="hodima_schema_homepage_knows_about" rows="5" class="hodima-textarea"><?php echo esc_textarea($knows_about); ?></textarea>
-                    </td>
-                </tr>
-                <tr>
-                    <th scope="row" style="font-weight: inherit;"><label for="hodima_schema_geo_socials">لینک شبکه‌های اجتماعی<br><small>(هر لینک در یک خط)</small></label></th>
-                    <td>
-                        <textarea name="hodima_schema_geo_socials" id="hodima_schema_geo_socials" rows="4" class="ltr hodima-textarea" dir="ltr" placeholder="https://instagram.com/..."><?php echo esc_textarea($socials); ?></textarea>
-                    </td>
-                </tr>
-            </table>
-
-            <?php hodima_view_form_footer(); ?>
-        </form>
+<div class="hd-callout">
+    <?php echo hodima_admin_icon( 'dashicons-admin-site-alt3' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+    <div>
+        <strong>گراف دانش گوگل و AI GEO</strong>
+        <p>اطلاعات کسب‌وکار و سیگنال‌های هدف‌گیری منطقه‌ای به‌صورت هوشمند بین صفحه اصلی، صفحات داخلی و ماژول‌های هوش مصنوعی تقسیم می‌شود. این مرجع اصلی LocalBusiness و Organization است؛ کدهای موازی (مانند Rank Math) را خاموش کنید تا گراف دچار اختلال نشود.</p>
     </div>
 </div>
+
+<form method="post" action="" class="hd-card">
+    <?php wp_nonce_field('hodima_save_homepage_schema', 'hodima_homepage_schema_nonce'); ?>
+
+    <?php $hodima_section( 'dashicons-admin-settings', 'تنظیمات عمومی' ); ?>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row">وضعیت سیستم اسکیما</th>
+            <td>
+                <label class="hd-toggle">
+                    <input type="checkbox" class="hd-switch" role="switch" name="hodima_schema_homepage_enable" value="1" <?php checked($is_enabled, '1'); ?>>
+                    <span>فعال‌سازی گراف یکپارچه در کل سایت</span>
+                </label>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_org_type">نوع کسب‌وکار اصلی</label></th>
+            <td>
+                <select name="hodima_schema_homepage_org_type" id="hodima_schema_homepage_org_type">
+                    <option value="WholesaleStore" <?php selected($org_type, 'WholesaleStore'); ?>>فروشگاه عمده‌فروشی (WholesaleStore)</option>
+                    <option value="LocalBusiness" <?php selected($org_type, 'LocalBusiness'); ?>>کسب‌وکار محلی (LocalBusiness)</option>
+                    <option value="Organization" <?php selected($org_type, 'Organization'); ?>>سازمان عمومی (Organization)</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_org_name">نام رسمی کسب‌وکار</label></th>
+            <td>
+                <input type="text" name="hodima_schema_homepage_org_name" id="hodima_schema_homepage_org_name" class="regular-text" value="<?php echo esc_attr($org_name); ?>">
+                <p class="description">برای رفع خطای «نام اشتباه» در سرچ کنسول.</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_corp_about_slug">نامک صفحات سازمانی</label></th>
+            <td>
+                <div class="hd-inline">
+                    <label>درباره ما
+                        <input type="text" id="hodima_corp_about_slug" name="hodima_corp_about_slug" class="ltr" dir="ltr" value="<?php echo esc_attr($about_slug); ?>" placeholder="about-us">
+                    </label>
+                    <label>تماس با ما
+                        <input type="text" name="hodima_corp_contact_slug" class="ltr" dir="ltr" value="<?php echo esc_attr($contact_slug); ?>" placeholder="contact-us">
+                    </label>
+                </div>
+                <p class="description">برای افزودن خودکار اسکیمای AboutPage و ContactPage به این صفحات.</p>
+            </td>
+        </tr>
+    </table>
+
+    <?php $hodima_section( 'dashicons-admin-site-alt3', 'هوش مصنوعی و هدف‌گذاری منطقه‌ای (AI & GEO Target)' ); ?>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row"><label for="hodima_schema_ai_countries">کشورهای تحت پوشش (areaServed)<small>هر کشور در یک خط، به انگلیسی</small></label></th>
+            <td>
+                <textarea name="hodima_schema_ai_countries" id="hodima_schema_ai_countries" rows="5" class="ltr" dir="ltr"><?php echo esc_textarea($ai_countries); ?></textarea>
+                <p class="description">مثال: Iran, Iraq, United Arab Emirates (سیگنال قوی برای LLMها)</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_ai_languages">زبان‌های قابل پشتیبانی (knowsLanguage)</label></th>
+            <td>
+                <input type="text" name="hodima_schema_ai_languages" id="hodima_schema_ai_languages" class="large-text ltr" dir="ltr" value="<?php echo esc_attr($ai_languages); ?>">
+                <p class="description">کدهای ISO زبان با کاما جدا شوند. مثال: fa, ar, ps, ur, en, tr</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_ai_audience">نوع مخاطب تجاری (audienceType)</label></th>
+            <td>
+                <input type="text" name="hodima_schema_ai_audience" id="hodima_schema_ai_audience" class="large-text ltr" dir="ltr" value="<?php echo esc_attr($ai_audience); ?>">
+                <p class="description">مثال: B2B, Wholesale Buyers, Importers, Exporters</p>
+            </td>
+        </tr>
+    </table>
+
+    <?php $hodima_section( 'dashicons-art', 'هویت بصری و برندینگ' ); ?>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_logo">آدرس لوگو (URL)</label></th>
+            <td><input type="url" name="hodima_schema_homepage_logo" id="hodima_schema_homepage_logo" class="large-text ltr" dir="ltr" value="<?php echo esc_attr($logo); ?>"></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_image">آدرس عکس کاور شرکت</label></th>
+            <td><input type="url" name="hodima_schema_homepage_image" id="hodima_schema_homepage_image" class="large-text ltr" dir="ltr" value="<?php echo esc_attr($image); ?>"></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_geo_alt_names">نام‌های جایگزین شرکت<small>هر نام در یک خط</small></label></th>
+            <td><textarea name="hodima_schema_geo_alt_names" id="hodima_schema_geo_alt_names" rows="3"><?php echo esc_textarea($alt_names); ?></textarea></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_geo_description">توضیحات کسب‌وکار (سئو شده)</label></th>
+            <td><textarea name="hodima_schema_geo_description" id="hodima_schema_geo_description" rows="3"><?php echo esc_textarea($description); ?></textarea></td>
+        </tr>
+    </table>
+
+    <?php $hodima_section( 'dashicons-location', 'اطلاعات تماس و آدرس' ); ?>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row"><label for="hodima_schema_geo_telephones">شماره‌های تماس<small>هر شماره در یک خط با کد 98+</small></label></th>
+            <td><textarea name="hodima_schema_geo_telephones" id="hodima_schema_geo_telephones" rows="3" class="ltr" dir="ltr"><?php echo esc_textarea($telephones); ?></textarea></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_address_locality">شهر</label></th>
+            <td><input type="text" name="hodima_schema_homepage_address_locality" id="hodima_schema_homepage_address_locality" class="regular-text" value="<?php echo esc_attr($address_locality); ?>"></td>
+        </tr>
+        <tr>
+            <?php /* فیلد جداگانه «استان»: قبلا مقدار «شهر» برای addressRegion هم تکرار می‌شد */ ?>
+            <th scope="row"><label for="hodima_schema_homepage_address_region">استان</label></th>
+            <td><input type="text" name="hodima_schema_homepage_address_region" id="hodima_schema_homepage_address_region" class="regular-text" value="<?php echo esc_attr($address_region); ?>"></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_street_address">آدرس دقیق پستی</label></th>
+            <td><textarea name="hodima_schema_homepage_street_address" id="hodima_schema_homepage_street_address" rows="2"><?php echo esc_textarea($street_address); ?></textarea></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_postal_code">کد پستی</label></th>
+            <td><input type="text" name="hodima_schema_homepage_postal_code" id="hodima_schema_homepage_postal_code" class="regular-text ltr" dir="ltr" value="<?php echo esc_attr($postal_code); ?>"></td>
+        </tr>
+    </table>
+
+    <?php $hodima_section( 'dashicons-clock', 'ساعات کاری' ); ?>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row">شنبه تا چهارشنبه</th>
+            <td>
+                <div class="hd-inline">
+                    <label>از <input type="time" name="hodima_schema_geo_weekday_open" value="<?php echo esc_attr($wd_open); ?>"></label>
+                    <label>تا <input type="time" name="hodima_schema_geo_weekday_close" value="<?php echo esc_attr($wd_close); ?>"></label>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row">پنج‌شنبه‌ها</th>
+            <td>
+                <div class="hd-inline">
+                    <label>از <input type="time" name="hodima_schema_geo_thursday_open" value="<?php echo esc_attr($th_open); ?>"></label>
+                    <label>تا <input type="time" name="hodima_schema_geo_thursday_close" value="<?php echo esc_attr($th_close); ?>"></label>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <?php $hodima_section( 'dashicons-store', 'اطلاعات تجاری و شبکه‌های اجتماعی' ); ?>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_slogan">شعار تجاری (Slogan)</label></th>
+            <td><input type="text" name="hodima_schema_homepage_slogan" id="hodima_schema_homepage_slogan" class="large-text" value="<?php echo esc_attr($slogan); ?>"></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_catalog_name">نام کاتالوگ خدمات</label></th>
+            <td><input type="text" name="hodima_schema_homepage_catalog_name" id="hodima_schema_homepage_catalog_name" class="regular-text" value="<?php echo esc_attr($catalog_name); ?>"></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_price_range">محدوده قیمت</label></th>
+            <td><input type="text" name="hodima_schema_homepage_price_range" id="hodima_schema_homepage_price_range" class="small-text ltr" dir="ltr" value="<?php echo esc_attr($price_range); ?>"></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_homepage_knows_about">تخصص‌ها (knowsAbout)<small>هر مورد در یک خط</small></label></th>
+            <td><textarea name="hodima_schema_homepage_knows_about" id="hodima_schema_homepage_knows_about" rows="5"><?php echo esc_textarea($knows_about); ?></textarea></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_geo_socials">لینک شبکه‌های اجتماعی<small>هر لینک در یک خط</small></label></th>
+            <td><textarea name="hodima_schema_geo_socials" id="hodima_schema_geo_socials" rows="4" class="ltr" dir="ltr" placeholder="https://instagram.com/..."><?php echo esc_textarea($socials); ?></textarea></td>
+        </tr>
+    </table>
+
+    <?php hodima_view_form_footer(); ?>
+</form>
 
 <?php hodima_view_footer(); ?>

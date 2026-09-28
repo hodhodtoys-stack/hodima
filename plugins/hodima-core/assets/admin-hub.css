@@ -4,12 +4,14 @@
  * پالت: #25316a · #607bbd · #b6c2f3 · #6a2b9a · #a341c8
  * ========================================================================= */
 
+/* هدر، تب‌ها، عرض صفحه و فوتر از سیستم طراحی مشترک (admin-ui.css) می‌آیند؛
+ * این فایل فقط اجزای خاص پنل وضعیت و ماژول‌ها را دارد. فونت از قالب ارث می‌برد. */
 .hodima-hub {
-	--hh-primary: #25316a;
-	--hh-secondary: #607bbd;
-	--hh-third: #b6c2f3;
-	--hh-accent: #6a2b9a;
-	--hh-accent-light: #a341c8;
+	--hh-primary: var(--hd-primary, #25316a);
+	--hh-secondary: var(--hd-secondary, #607bbd);
+	--hh-third: var(--hd-third, #b6c2f3);
+	--hh-accent: var(--hd-accent, #6a2b9a);
+	--hh-accent-light: var(--hd-accent-light, #a341c8);
 
 	--hh-surface: #ffffff;
 	--hh-soft: color-mix(in srgb, var(--hh-third) 16%, #ffffff);
@@ -20,66 +22,13 @@
 	--hh-warn: #9a5b00;
 	--hh-error: #b3261e;
 	--hh-radius: 0.875rem;
-	--hh-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--hh-primary) 9%, transparent);
+	--hh-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--hh-primary) 7%, transparent);
 
-	max-inline-size: 78rem;
 	color: var(--hh-text);
-	font-family: "Vazirmatn", system-ui, sans-serif;
-}
-
-/* ── سربرگ ────────────────────────────────────────────────────────── */
-.hodima-hub__header {
-	margin-block: 1.5rem;
-	padding: 1.5rem 1.75rem 1rem;
-	border-radius: var(--hh-radius);
-	background: linear-gradient(135deg, var(--hh-primary) 0%, var(--hh-secondary) 60%, var(--hh-accent) 100%);
-	color: #ffffff;
-	box-shadow: var(--hh-shadow);
-
-	& h1 {
-		margin: 0 0 0.375rem;
-		padding: 0;
-		color: inherit;
-		font-size: 1.5rem;
-		font-weight: 800;
-	}
-
-	& p {
-		margin: 0 0 1rem;
-		opacity: 0.92;
-	}
-}
-
-.hodima-hub__nav {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.5rem;
-
-	& a {
-		padding: 0.375rem 0.875rem;
-		border-radius: 999px;
-		background: rgb(255 255 255 / 0.14);
-		color: #ffffff;
-		font-weight: 600;
-		text-decoration: none;
-		transition: background-color 0.2s ease;
-
-		&:hover,
-		&:focus-visible {
-			background: rgb(255 255 255 / 0.28);
-			color: #ffffff;
-		}
-
-		&:focus-visible {
-			outline: 2px solid #ffffff;
-			outline-offset: 2px;
-			box-shadow: none;
-		}
-	}
 }
 
 .hodima-hub__section {
-	margin-block-end: 2rem;
+	margin-block: 1.5rem 2rem;
 
 	& > h2 {
 		margin-block: 0 1rem;
@@ -90,6 +39,7 @@
 
 .hodima-hub__intro,
 .hodima-hub__footnote {
+	margin-block: 1.25rem;
 	color: var(--hh-muted);
 }
 
@@ -341,7 +291,7 @@
 	gap: 1rem;
 	margin-block-start: 1.5rem;
 	padding-block: 1rem;
-	background: linear-gradient(to top, #f0f0f1 70%, transparent);
+	background: linear-gradient(to top, var(--hd-bg, #f0f0f1) 70%, transparent);
 }
 
 .hodima-hub__dirty {

@@ -1,55 +1,25 @@
+/* =========================================================================
+ * اسلایدر صفحه اصلی — پیشخوان
+ * هدر، عرض ۹۵٪ و فوتر از سیستم طراحی مشترک (Hodima Core → admin-ui.css).
+ * فونت فقط از قالب ارث می‌برد (قبلا Vazirmatn/Tahoma ثابت نوشته شده بود).
+ * ========================================================================= */
 .h-admin {
-    --h-primary: var(--hodima-primary, #25316a);
-    --h-primary-hover: var(--hodima-secondary, #607bbd);
-    --h-header-bg: linear-gradient(90deg, #25316a, #607bbd, #b6c2f3);
-    --h-border: var(--hodima-third, #b6c2f3);
-    --h-text: var(--hodima-text-dark, #111111);
-    --h-bg: #f8f9fc;
+    --h-primary: var(--hd-primary, #25316a);
+    --h-primary-hover: var(--hd-secondary, #607bbd);
+    --h-border: var(--hd-border, #b6c2f3);
+    --h-text: var(--hd-text, #1d2340);
+    --h-muted: var(--hd-muted, #5d6785);
+    --h-bg: var(--hd-softer, #f8f9fc);
     --h-surface: #ffffff;
-    --h-soft: #eef1fb;
-    --h-font: 'Vazirmatn', Tahoma, sans-serif;
+    --h-soft: var(--hd-soft, #eef1fb);
 
-    /* ۹۵٪ عرض: با ۱۰۰٪ به‌علاوه padding و حاشیه، محتوا از کادر پیشخوان بیرون می‌زد */
-    width: 95%;
-    max-width: 95%;
-    box-sizing: border-box;
-    margin: 1.5rem 0;
-    direction: rtl;
     color: var(--h-text);
-    font-family: var(--h-font);
 }
 
-.h-admin * { box-sizing: border-box; font-family: inherit; }
+.h-admin * { box-sizing: border-box; }
 
-.h-admin .h-header {
-    background: var(--h-header-bg) !important;
-    color: #fff;
-    padding: 1.5rem;
-    border-radius: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    box-shadow: 0 8px 24px rgba(37, 49, 106, 0.14);
-}
-
-.h-admin .h-header h1 {
-    margin: 0;
-    color: #fff !important;
-    font-size: 1.5rem;
-}
-
-.h-header-help {
-    margin-top: .4rem;
-    font-size: .9rem;
-    color: rgba(255,255,255,.92);
-    line-height: 1.7;
-    background: rgba(37, 49, 106, .18);
-    padding: .35rem .6rem;
-    border-radius: 8px;
-}
-
-.h-version { font-size: 1.1rem; font-weight: bold; }
+.h-cache-field { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-bottom: 1rem; font-weight: 700; color: var(--h-primary); }
+.h-cache-field .h-input-dim { inline-size: 6.5rem; }
 
 .h-card {
     background: #fff;
@@ -84,7 +54,7 @@
     align-items: center;
 }
 
-.h-close-btn { cursor: pointer; font-weight: bold; font-size: 1.2rem; line-height: 1; padding: 0 10px; }
+.h-close-btn { padding: 0 .25rem; border: 0; background: transparent; color: inherit; cursor: pointer; line-height: 1; }
 
 .h-section {
     background: var(--h-bg);
@@ -153,30 +123,33 @@
     padding: .6rem;
     border: 1px solid var(--h-border);
     border-radius: 6px;
-    font-family: inherit;
 }
 .h-input:focus { outline: 1px solid var(--h-primary); border-color: var(--h-primary); }
 .h-input-dim { width: 80px; }
 
-.h-btn { cursor: pointer; padding: .6rem 1rem; border-radius: 6px; border: none; font-weight: 700; transition: background 0.3s; }
-.h-btn-primary { background: var(--h-primary); color: #fff; }
-.h-btn-primary:hover { background: var(--h-primary-hover); }
-.h-btn-danger { background: #ef4444; color: #fff; }
-.h-btn-danger:hover { background: #dc2626; }
+.h-btn { display: inline-flex; align-items: center; justify-content: center; gap: .25rem; cursor: pointer; padding: .6rem 1rem; border-radius: 8px; border: 1px solid transparent; font-weight: 700; transition: background 0.2s, color 0.2s; }
+.h-btn:focus-visible { outline: 2px solid var(--hd-accent-light, #a341c8); outline-offset: 2px; }
+.h-btn-primary { background: var(--hd-gradient-accent, var(--h-primary)); color: #fff; min-inline-size: 10rem; }
+.h-btn-primary:hover { background: var(--h-primary); color: #fff; }
+.h-btn-add { background: #fff; color: var(--h-primary); border-color: var(--hd-border-strong, var(--h-border)); }
+.h-btn-add:hover { background: var(--h-soft); }
+.h-btn-danger { background: #fff; color: var(--hd-error, #b3261e); border-color: color-mix(in srgb, var(--hd-error, #b3261e) 40%, #fff); }
+.h-btn-danger:hover { background: color-mix(in srgb, var(--hd-error, #b3261e) 8%, #fff); }
 
 .h-dim-row { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--h-border); padding: 10px; border-radius: 8px; background: #fff; }
 .h-dim-input-group { display: flex; gap: 10px; align-items: center; }
 .h-dim-label { min-width: 60px; font-weight: 500; font-size: 0.9em; }
 .h-mobile-toggle { font-weight: normal; font-size: 0.9em; display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--h-primary); }
-.h-effect-select { padding: 4px; border: 1px solid var(--h-border); border-radius: 4px; font-size: 0.9em; font-family: inherit; }
+.h-effect-select { padding: 4px; border: 1px solid var(--h-border); border-radius: 4px; font-size: 0.9em; }
 .h-settings-hint { margin-top: 5px; font-size: 0.9em; color: #64748b; }
-.h-dim-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 1rem; }
+.h-dim-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 20px; margin-top: 1rem; }
 .h-dim-header { font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; }
-.h-actions { display: flex; justify-content: flex-end; margin-top: 1rem; }
 .h-grid-fields { display: flex; flex-direction: column; justify-content: center; gap: .8rem; width: 100%; }
 
 @media (max-width: 782px) {
     .h-grid { grid-template-columns: 1fr; }
+    .h-dim-wrap { grid-template-columns: 1fr; }
+    .h-dim-input-group { flex-wrap: wrap; }
     .h-images-wrapper { flex-direction: row; }
     .h-img-box { flex: 1; }
 }
@@ -190,8 +163,10 @@
 }
 .h-drag {
     cursor: grab;
-    padding: 4px 6px;
-    font-size: 16px;
+    inline-size: 28px;
+    block-size: 28px;
+    padding: 4px;
+    font-size: 20px;
     line-height: 1;
     color: var(--h-muted, #5d6785);
     border-radius: 6px;
@@ -210,10 +185,12 @@
     border-radius: 999px;
 }
 .h-move {
+    display: grid;
+    place-items: center;
     width: 28px;
-    height: 22px;
+    height: 24px;
     padding: 0;
-    font-size: 10px;
+    font-size: 16px;
     line-height: 1;
     color: var(--h-primary, #25316a);
     background: #fff;

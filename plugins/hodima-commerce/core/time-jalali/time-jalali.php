@@ -63,76 +63,47 @@ final class Hodima_Localizer_WC {
 
     public function render_admin_page(): void {
         if ( ! current_user_can( 'manage_options' ) ) return;
+
+        /*
+         * هدر، سوییچ‌ها و نوار ذخیره از سیستم طراحی مشترک «ابزارهای هدیما».
+         * پیام «ذخیره شد» را خود وردپرس برای صفحه‌های «تنظیمات» چاپ می‌کند
+         * (options-head.php) و زیر هدر می‌نشیند؛ پیام تکراری با ایموجی حذف شد.
+         */
+        $fields = [
+            'hodima_wc_jalali_status'             => [ 'تاریخ شمسی', 'فعال‌سازی تاریخ جلالی در سراسر سایت و ووکامرس.', 'dashicons-calendar-alt' ],
+            'hodima_wc_iran_cities_status'        => [ 'استان‌ها و شهرهای ایران', 'فهرست محلی استان‌ها و شهرها به جای فیلد متنی در تسویه‌حساب.', 'dashicons-location' ],
+            'hodima_wc_checkout_optimizer_status' => [ 'بهینه‌ساز فرم صورتحساب', 'مرتب‌سازی فیلدهای آدرس و اعتبارسنجی موبایل ۱۱ رقمی و کد پستی.', 'dashicons-feedback' ],
+        ];
         ?>
-        <div class="wrap hodima-loc-admin">
-            <!-- ترفند جلوگیری از انتقال نوتیفیکیشن پیش‌فرض وردپرس به داخل هدر -->
-            <h1 style="display: none;"></h1>
+        <div class="wrap hd-wrap hodima-loc-admin">
+            <?php
+            hodima_admin_header( [
+                'title'       => 'بومی‌سازی سایت',
+                'description' => 'تاریخ شمسی، استان‌ها و شهرهای ایران و بهینه‌سازی فرم تسویه‌حساب ووکامرس.',
+                'icon'        => 'dashicons-translation',
+            ] );
+            ?>
 
-            <header class="hodima-loc-header">
-                <h2 class="hodima-title">تنظیمات</h2>
-                <span class="hodima-version-badge">نسخه 1.1.4</span>
-            </header>
-            
-            <div style="margin-block-start: 15px;">
-                <?php 
-                $settings_errors = get_settings_errors();
-                if ( ! empty( $settings_errors ) ) {
-                    foreach ( $settings_errors as $error ) {
-                        $icon = in_array( $error['type'], ['success', 'updated'], true ) ? '✅' : '⚠️';
-                        ?>
-                        <div class="hodima-loc-notice" role="alert">
-                            <span><?= $icon . ' ' . esc_html( $error['message'] ); ?></span>
-                            <button type="button" class="hodima-loc-notice-close" aria-label="بستن" onclick="this.parentElement.style.display='none';">&times;</button>
-                        </div>
-                        <?php
-                    }
-                    global $wp_settings_errors;
-                    $wp_settings_errors = [];
-                }
-                ?>
-            </div>
+            <form method="post" action="options.php" class="hd-body">
+                <?php settings_fields( 'hodima_localizer_group' ); ?>
 
-            <section class="hodima-loc-card">
-                <form method="post" action="options.php">
-                    <?php settings_fields( 'hodima_localizer_group' ); ?>
-                    
-                    <div class="hodima-loc-table-wrapper" style="margin-block-end: 25px;">
-                        <table class="hodima-loc-table">
-                            <tbody>
-                                <tr>
-                                    <td style="inline-size: 280px; font-weight: 600;">تغییر تاریخ به شمسی:</td>
-                                    <td>
-                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                            <input type="checkbox" name="hodima_wc_jalali_status" value="yes" <?php checked( get_option( 'hodima_wc_jalali_status', 'yes' ), 'yes' ); ?> />
-                                            <span>فعال‌سازی الگوریتم تاریخ جلالی در سراسر سایت</span>
-                                        </label>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 600;">استان‌ها و شهرهای ایران:</td>
-                                    <td>
-                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                            <input type="checkbox" name="hodima_wc_iran_cities_status" value="yes" <?php checked( get_option( 'hodima_wc_iran_cities_status', 'yes' ), 'yes' ); ?> />
-                                            <span>جایگزینی دیتابیس لوکال شهرها (حذف فیلد متنی)</span>
-                                        </label>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 600;">بهینه‌ساز فرم صورتحساب:</td>
-                                    <td>
-                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                            <input type="checkbox" name="hodima_wc_checkout_optimizer_status" value="yes" <?php checked( get_option( 'hodima_wc_checkout_optimizer_status', 'yes' ), 'yes' ); ?> />
-                                            <span>مرتب‌سازی آدرس و اعتبارسنجی ۱۱ رقمی موبایل</span>
-                                        </label>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <button type="submit" name="submit" class="hodima-loc-btn hodima-loc-btn-primary">ذخیره یکپارچه تنظیمات</button>
-                </form>
-            </section>
+                <div class="hd-grid">
+                    <?php foreach ( $fields as $option => [ $title, $desc, $icon ] ) : ?>
+                        <section class="hd-card">
+                            <header class="hd-card__head">
+                                <?php echo hodima_admin_icon( $icon ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+                                <h2 class="hd-card__title" id="<?php echo esc_attr( $option ); ?>-title"><?php echo esc_html( $title ); ?></h2>
+                                <input type="checkbox" class="hd-switch" role="switch" name="<?php echo esc_attr( $option ); ?>" value="yes" aria-labelledby="<?php echo esc_attr( $option ); ?>-title" <?php checked( get_option( $option, 'yes' ), 'yes' ); ?> />
+                            </header>
+                            <p class="hd-text"><?php echo esc_html( $desc ); ?></p>
+                        </section>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="hd-actions">
+                    <button type="submit" name="submit" class="button button-primary">ذخیره تنظیمات</button>
+                </div>
+            </form>
         </div>
         <?php
     }

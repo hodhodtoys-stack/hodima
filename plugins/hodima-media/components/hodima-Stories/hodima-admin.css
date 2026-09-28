@@ -1,25 +1,20 @@
-:root {
-    --hdn-primary: var(--hodima-primary, #25316a);
-    --hdn-primary-hover: var(--hodima-secondary, #607bbd);
-    --hdn-bg: var(--hodima-surface-soft, #f7f9fd);
-    --hdn-card: #ffffff;
-    --hdn-text: var(--hodima-text-dark, #111111);
-    --hdn-muted: var(--hodima-text-muted, #5d6785);
-    --hdn-border: var(--hodima-third, #b6c2f3);
-    --hdn-shadow: 0 10px 25px rgba(37, 49, 106, 0.14);
-}
-
+/* هدر، عرض ۹۵٪ و فوتر از سیستم طراحی مشترک (Hodima Core → admin-ui.css).
+ * متغیرها دیگر روی :root نیستند (به همه پیشخوان نشت می‌کردند). فونت فقط از قالب. */
 .hdn-admin-wrapper {
-    max-width: 100%;
-    margin: 20px 20px 20px 0;
-    direction: rtl;
-    background: var(--hdn-bg);
-    padding: 30px;
-    box-sizing: border-box;
-    border-radius: 20px;
+    --hdn-primary: var(--hd-primary, #25316a);
+    --hdn-primary-hover: var(--hd-secondary, #607bbd);
+    --hdn-bg: var(--hd-softer, #f7f9fd);
+    --hdn-card: #ffffff;
+    --hdn-text: var(--hd-text, #1d2340);
+    --hdn-muted: var(--hd-muted, #5d6785);
+    --hdn-border: var(--hd-border, #b6c2f3);
+    --hdn-shadow: var(--hd-shadow, 0 10px 25px rgba(37, 49, 106, 0.14));
+
     position: relative;
     color: var(--hdn-text);
 }
+
+.hdn-admin-wrapper > form { margin-top: 1.25rem; }
 
 .hdn-header {
     background: linear-gradient(90deg, #25316a, #607bbd, #b6c2f3);
@@ -133,7 +128,6 @@
     .hdn-actions-bar { flex-direction: column; align-items: flex-start; }
     .hdn-actions-bar .hdn-btn { width: 100%; }
     .hdn-actions-bar .hdn-btn-primary { margin-inline-start: 0; }
-    .hdn-admin-wrapper { margin-left: 0; margin-right: 0; padding: 15px; }
 }
 
 .hd-shadow-soft { box-shadow: 0 10px 30px -5px rgba(37, 49, 106, 0.12); }

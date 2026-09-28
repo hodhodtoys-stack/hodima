@@ -94,7 +94,7 @@ final class HodimaNotificationSettings
         <div class="hdn-admin-wrapper">
             <header class="hdn-header">
                 <div class="hdn-header-info">
-                    <div class="hdn-icon" style="transform: scaleX(-1);">📢</div>
+                    <div class="hdn-icon"><span class="dashicons dashicons-megaphone" aria-hidden="true"></span></div>
                     <div>
                         <h1>تنظیمات نوتفیکیشن پاپ‌آپ</h1>
                         <p>تصویر پاپ‌آپ را آپلود کنید و لینک دلخواه خود را قرار دهید.</p>
@@ -176,7 +176,7 @@ final class HodimaNotificationSettings
                                     <label>آپلود تصویر اصلی</label>
                                     <div class="hdn-media-container" style="display:inline-flex;">
                                         <div class="hdn-img-preview-box <?php echo empty($meta['hd_notif_bg_image']) ? 'empty' : ''; ?>">
-                                            <span class="placeholder">🖼️</span>
+                                            <span class="placeholder dashicons dashicons-format-image" aria-hidden="true"></span>
                                             <img id="hd_notif_bg_preview" src="<?php echo esc_url($meta['hd_notif_bg_image']); ?>" alt="Background Preview">
                                         </div>
                                         <div class="hdn-media-actions">

@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
         height: 'auto',
         role: 'img',
         'aria-label': 'روند بازدید ربات‌های هوش مصنوعی در ۷ روز گذشته',
-        style: 'display:block;overflow:visible;font-family:Vazirmatn,Tahoma,sans-serif;'
+        style: 'display:block;overflow:visible;font-family:inherit;'
     });
 
     // گرادیان پرکننده زیر خط

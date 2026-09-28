@@ -15,6 +15,15 @@ add_action( 'admin_menu', __NAMESPACE__ . '\\admin_menu' );
 add_action( 'admin_init', __NAMESPACE__ . '\\handle_actions' );
 
 function admin_menu(): void {
+	// زیر «ابزارهای هدیما» (آدرس admin.php?page=hodima-redirects همان قبلی است)؛
+	// بدون Hodima Core مثل قبل منوی سطح اول
+	$parent = function_exists( 'hodima_admin_menu_parent' ) ? hodima_admin_menu_parent() : '';
+
+	if ( '' !== $parent ) {
+		add_submenu_page( $parent, 'مدیریت ریدایرکت‌ها', 'ریدایرکت‌ها', 'manage_options', 'hodima-redirects', __NAMESPACE__ . '\\render_page' );
+		return;
+	}
+
 	add_menu_page( 'مدیریت ریدایرکت‌ها', 'ریدایرکت‌ها', 'manage_options', 'hodima-redirects', __NAMESPACE__ . '\\render_page', 'dashicons-randomize', 30 );
 }
 
@@ -217,9 +226,15 @@ function render_page(): void {
 
 	$labels = [ 301 => 'انتقال دائم', 302 => 'موقت', 307 => 'موقت', 308 => 'دائم', 404 => 'پیدا نشد', 410 => 'حذف همیشگی' ];
 	?>
-	<div class="h-admin">
+	<div class="wrap hd-wrap h-admin">
 
-		<div class="h-header"><h1>مدیریت ریدایرکت‌های سایت</h1></div>
+		<?php
+		hodima_admin_header( [
+			'title'       => 'مدیریت ریدایرکت‌های سایت',
+			'description' => 'ریدایرکت‌های ۳۰۱/۳۰۲/۴۱۰، ورود و خروج CSV و ریدایرکت خودکار هنگام تغییر نامک.',
+			'icon'        => 'dashicons-randomize',
+		] );
+		?>
 
 		<?php if ( is_array( $msg ) ) : ?>
 			<div class="h-notice h-notice--<?php echo esc_attr( $msg[0] ); ?>" role="status">

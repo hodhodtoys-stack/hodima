@@ -15,41 +15,38 @@ if ( isset($_POST['hodima_save_blog_schema']) ) {
 
     update_option('hodima_blog_schema_status', $status);
 
-    $notice_msg = '<div class="notice notice-success is-dismissible" style="margin-bottom: 20px; border-radius: 8px;"><p style="font-weight: inherit;">تنظیمات اسکیمای بلاگ با موفقیت ذخیره شد.</p></div>';
+    $notice_msg = '<div class="notice notice-success is-dismissible"><p>تنظیمات اسکیمای بلاگ با موفقیت ذخیره شد.</p></div>';
 }
 
 $current_status = get_option('hodima_blog_schema_status', 'on');
 
 hodima_view_header(
-    'تنظیمات اسکیمای بلاگ (BlogPosting)',
-    'در این بخش می‌توانید تنظیمات عمومی مربوط به اسکیمای مقالات سایت را مدیریت کنید.',
-    '📝'
+    'اسکیمای بلاگ (BlogPosting)',
+    'تنظیمات عمومی اسکیمای مقالات سایت.',
+    'dashicons-edit-page'
 );
 ?>
 
-<div class="h-card">
-    <?php echo $notice_msg; ?>
+<?php echo $notice_msg; ?>
 
-    <form method="post" action="">
-        <?php wp_nonce_field('hodima_blog_schema_nonce'); ?>
+<form method="post" action="" class="hd-card">
+    <?php wp_nonce_field('hodima_blog_schema_nonce'); ?>
 
-        <table class="form-table">
-            <tr valign="top">
-                <th scope="row" style="font-weight: inherit;">وضعیت اسکیمای بلاگ</th>
-                <td>
-                    <label style="display:flex;align-items:center;gap:8px;">
-                        <input type="checkbox" name="schema_status" value="on" <?php checked($current_status, 'on'); ?> />
-                        <span style="font-weight: inherit;">فعال بودن اسکیما در مقالات</span>
-                    </label>
-                    <p class="description">اگر این تیک را بردارید، تولید اسکیمای بلاگ در کل سایت متوقف می‌شود.</p>
-                </td>
-            </tr>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row">وضعیت اسکیمای بلاگ</th>
+            <td>
+                <label class="hd-toggle">
+                    <input type="checkbox" class="hd-switch" role="switch" name="schema_status" value="on" <?php checked($current_status, 'on'); ?> />
+                    <span>فعال بودن اسکیما در مقالات</span>
+                </label>
+                <p class="description">اگر این گزینه خاموش شود، تولید اسکیمای بلاگ در کل سایت متوقف می‌شود.</p>
+            </td>
+        </tr>
+    </table>
 
-        </table>
-
-        <?php hodima_view_form_footer(); ?>
-        <input type="hidden" name="hodima_save_blog_schema" value="1">
-    </form>
-</div>
+    <?php hodima_view_form_footer(); ?>
+    <input type="hidden" name="hodima_save_blog_schema" value="1">
+</form>
 
 <?php hodima_view_footer(); ?>

@@ -3,17 +3,31 @@ declare(strict_types=1);
 if ( ! defined( 'ABSPATH' ) ) exit;
 /** @var string $active_tab */
 ?>
-<div class="wrap hodima-wrap" dir="rtl">
-    
-    <div class="hodima-header">
-        <div class="hodima-header-title">
-            <h1>ایندکس جهانی <span>AEO & GEO Engine</span></h1>
-            <p>مدیریت یکپارچه ماشین‌خوان‌ها، خزنده‌های هوشمند و همگام‌سازی دیتابیس (شرکت بازرگانی هدهد)</p>
-        </div>
-        <div class="hodima-header-logo">
-            <span class="hodima-badge">Hodima Core v2.0</span>
-        </div>
-    </div>
+<div class="wrap hd-wrap hodima-wrap">
+
+    <?php
+    // هدر مشترک + تب‌ها زیر هدر (آدرس تب‌ها همان ?page=hodima-core&tab=… قبلی است)
+    $hodima_in_tabs = [
+        'dashboard'    => [ 'داشبورد آماری', 'dashicons-chart-bar' ],
+        'ai-shield'    => [ 'سپر ربات‌های هوش مصنوعی', 'dashicons-shield' ],
+        'bing-sync'    => [ 'همگام‌سازی بینگ (IndexNow)', 'dashicons-update' ],
+        'aeo-exporter' => [ 'استخراج‌گر AEO', 'dashicons-download' ],
+        'search-bots'  => [ 'رادار موتورهای جستجو', 'dashicons-visibility' ],
+        'settings'     => [ 'تنظیمات سیستم', 'dashicons-admin-settings' ],
+    ];
+    $hodima_tabs = [];
+    foreach ( $hodima_in_tabs as $key => [ $label, $icon ] ) {
+        $hodima_tabs[ $key ] = [ 'label' => $label, 'icon' => $icon, 'url' => admin_url( 'admin.php?page=hodima-core&tab=' . $key ) ];
+    }
+    hodima_admin_header( [
+        'title'       => 'ایندکس جهانی (AEO و GEO)',
+        'description' => 'ماشین‌خوان‌ها، خزنده‌های هوشمند، سپر ربات‌های هوش مصنوعی و همگام‌سازی با بینگ.',
+        'icon'        => 'dashicons-shield',
+        'current'     => $active_tab,
+        'tabs_label'  => 'بخش‌های ایندکس جهانی',
+        'tabs'        => $hodima_tabs,
+    ] );
+    ?>
 
     <?php if ( isset( $_GET['msg'] ) || isset( $_GET['updated'] ) || isset( $_GET['synced'] ) || isset( $_GET['queued'] ) || isset( $_GET['test_status'] ) ) : ?>
         <div class="notice is-dismissible hodima-notice">
@@ -29,15 +43,6 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             ?>
         </div>
     <?php endif; ?>
-
-    <nav class="hodima-tabs">
-        <a href="?page=hodima-core&tab=dashboard"   class="<?php echo $active_tab === 'dashboard'   ? 'active' : ''; ?>">داشبورد آماری</a>
-        <a href="?page=hodima-core&tab=ai-shield"    class="<?php echo $active_tab === 'ai-shield'    ? 'active' : ''; ?>">سپر ربات‌های هوش مصنوعی</a>
-        <a href="?page=hodima-core&tab=bing-sync"    class="<?php echo $active_tab === 'bing-sync'    ? 'active' : ''; ?>">همگام‌سازی بینگ (IndexNow)</a>
-        <a href="?page=hodima-core&tab=aeo-exporter" class="<?php echo $active_tab === 'aeo-exporter' ? 'active' : ''; ?>">استخراج‌گر AEO</a>
-        <a href="?page=hodima-core&tab=search-bots"  class="<?php echo $active_tab === 'search-bots'  ? 'active' : ''; ?>">رادار موتورهای جستجو</a>
-        <a href="?page=hodima-core&tab=settings"     class="<?php echo $active_tab === 'settings'     ? 'active' : ''; ?>">تنظیمات سیستم</a>
-    </nav>
 
     <div class="hodima-panel">
 
@@ -83,7 +88,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <tbody>
             <?php foreach ( $banned_ips as $b ) : ?>
                 <tr>
-                    <td dir="ltr" style="font-family:monospace; font-weight:bold; color:#25316a;"><?php echo esc_html( $b['ip_address'] ); ?></td>
+                    <td dir="ltr" style="font-family: inherit; font-weight:bold; color:#25316a;"><?php echo esc_html( $b['ip_address'] ); ?></td>
                     <td><?php echo esc_html( $b['reason'] ?: '—' ); ?></td>
                     <td dir="ltr" style="text-align:right;"><?php echo esc_html( $b['created_at'] ); ?></td>
                     <td>
@@ -125,7 +130,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <tbody>
             <?php foreach ( $queue_pending as $row ) : ?>
                 <tr>
-                    <td dir="ltr" style="text-align:left; font-family:monospace;"><a href="<?php echo esc_url($row->url_path); ?>" target="_blank" style="color:#607bbd; text-decoration:none;"><?php echo esc_html( $row->url_path ); ?></a></td>
+                    <td dir="ltr" style="text-align:left; font-family: inherit;"><a href="<?php echo esc_url($row->url_path); ?>" target="_blank" style="color:#607bbd; text-decoration:none;"><?php echo esc_html( $row->url_path ); ?></a></td>
                     <td><span style="background:rgba(193, 200, 236, 0.3); color:#25316a; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:12px; border:1px solid #b6c2f3;"><?php echo esc_html( $row->action ); ?></span></td>
                     <td><span style="color:#607bbd; font-weight:bold;">در حال انتظار (<?php echo esc_html( $row->status ); ?>)</span></td>
                     <td dir="ltr" style="text-align:right;"><?php echo esc_html( $row->updated_at ); ?></td>
@@ -141,7 +146,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <tbody>
             <?php foreach ( $queue_history as $row ) : ?>
                 <tr>
-                    <td dir="ltr" style="text-align:left; font-family:monospace; color:#25316a;"><?php echo esc_html( $row->url_path ); ?></td>
+                    <td dir="ltr" style="text-align:left; font-family: inherit; color:#25316a;"><?php echo esc_html( $row->url_path ); ?></td>
                     <td><span style="background:rgba(193, 200, 236, 0.3); color:#25316a; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:12px; border:1px solid #b6c2f3;"><?php echo esc_html( $row->action ); ?></span></td>
                     <td>
                         <?php if($row->status === 'synced'): ?>
@@ -233,7 +238,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 <tr>
                     <td><strong style="color:#25316a;"><?php echo esc_html( $row['bot_name'] ); ?></strong></td>
                     <td><span style="background:rgba(193, 200, 236, 0.2); padding:4px 10px; border-radius:4px; font-weight:bold; border:1px solid #b6c2f3;"><?php echo (int) $row['visit_count']; ?></span></td>
-                    <td dir="ltr" style="text-align:right; font-family:monospace;"><?php echo esc_html( $row['last_visit'] ); ?></td>
+                    <td dir="ltr" style="text-align:right; font-family: inherit;"><?php echo esc_html( $row['last_visit'] ); ?></td>
                 </tr>
             <?php endforeach; ?>
             <?php if ( empty( $search_bot_logs ) ) : ?><tr><td colspan="3" style="text-align:center;">رکوردی یافت نشد.</td></tr><?php endif; ?>
@@ -262,7 +267,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                         <th>کلید اتصال (API Key)</th>
                         <td>
                             <div style="display:flex; gap:10px; align-items:center;">
-                                <input type="text" name="bing_api_key" value="<?php echo esc_attr( $bing_key ); ?>" style="width:400px; font-family:monospace;" dir="ltr">
+                                <input type="text" name="bing_api_key" value="<?php echo esc_attr( $bing_key ); ?>" style="width:400px; font-family: inherit;" dir="ltr">
                                 <button type="submit" name="hodima_action" value="test_bing" formnovalidate class="hodima-btn hodima-btn-secondary">تست اتصال (Ping)</button>
                             </div>
                             <p class="description" style="margin-top:8px;">موقعیت فایل تاییدیه در سرور: <code dir="ltr" style="background:rgba(193, 200, 236, 0.2); padding:3px 6px; border-radius:4px; border:1px solid #b6c2f3;"><?php echo esc_html( home_url( '/' . $bing_key . '.txt' ) ); ?></code></p>
@@ -311,7 +316,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                     </tr>
                     <tr>
                         <th>شناسه امنیتی (Bearer Token)</th>
-                        <td><input type="text" name="api_token" value="<?php echo esc_attr( $api_token ); ?>" style="width:400px; font-family:monospace;" dir="ltr"></td>
+                        <td><input type="text" name="api_token" value="<?php echo esc_attr( $api_token ); ?>" style="width:400px; font-family: inherit;" dir="ltr"></td>
                     </tr>
                     <tr>
                         <th>لیست سفید خزنده‌ها (Whitelisted)</th>
@@ -321,7 +326,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                                 <label style="background:rgba(193, 200, 236, 0.1); border:1px solid #b6c2f3; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">
                                     <input type="checkbox" name="bot_<?php echo esc_attr( $sig ); ?>" <?php checked( ( $ai_bot_settings[ $sig ] ?? '1' ) === '1' ); ?>>
                                     <span style="color:#25316a;"><?php echo esc_html( $label ); ?></span> 
-                                    <span style="color:#607bbd; font-size:11px; direction:ltr; display:inline-block; font-family:monospace;">(<?php echo esc_html($sig); ?>)</span>
+                                    <span style="color:#607bbd; font-size:11px; direction:ltr; display:inline-block; font-family: inherit;">(<?php echo esc_html($sig); ?>)</span>
                                 </label>
                             <?php endforeach; ?>
                             </div>

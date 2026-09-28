@@ -182,7 +182,7 @@ function hodima_category_schema_fields(): ?array {
         $video_thumb = get_term_meta( $term->term_id, '_hod_video_thumbnail', true ) ?: get_term_meta( $term->term_id, '_hook_video_thumb', true );
         $video_date  = get_term_meta( $term->term_id, '_hod_video_date', true ) ?: get_term_meta( $term->term_id, '_hook_video_date', true );
 
-        // 🛠️ دو باگ رفع‌شده:
+        // دو باگ رفع‌شده:
         // ۱) date('c') از تایم‌زون سرور استفاده می‌کرد نه تایم‌زون واقعی سایت
         //    (همان کلاس باگی که در sitemap-core.php هم بود)؛ جایگزین شد با
         //    wp_date('c', ...) که تایم‌زون تنظیمات وردپرس را رعایت می‌کند.
@@ -192,7 +192,7 @@ function hodima_category_schema_fields(): ?array {
         //    در اسکیما می‌شد ۱ ژانویه ۱۹۷۰ — یک تاریخ کاملاً غلط و گمراه‌کننده
         //    در Search Console. حالا نتیجه‌ی strtotime بررسی می‌شود.
         $video_ts    = $video_date ? strtotime( $video_date ) : false;
-        // 🛠️ باگ واقعی و تأییدشده (گزارش‌شده توسط ابزار Rich Results گوگل):
+        // باگ واقعی و تأییدشده (گزارش‌شده توسط ابزار Rich Results گوگل):
         // در اصلاح قبلی، date('c') با wp_date('c') جایگزین شد تا تایم‌زون
         // سایت رعایت شود — ولی wp_date() از لایه‌ی locale/i18n خود وردپرس
         // (همان date_i18n) عبور می‌کند. همان‌طور که در sitemap-core.php این

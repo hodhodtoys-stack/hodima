@@ -24,7 +24,8 @@ if ( is_admin() ) {
  * فراخوانی فایل‌های استایل مدیریت
  */
 function enqueue_assets( string $hook ): void {
-    if ( 'toplevel_page_hodima-redirects' === $hook ) {
+    // با انتقال به زیر «ابزارهای هدیما» نام هوک عوض شد؛ پسوند صفحه ثابت است
+    if ( str_ends_with( $hook, '_page_hodima-redirects' ) ) {
         wp_enqueue_style( 
             'hodima-redirects-css', 
             HODIMA_SEO_URL . '/core/redirects/admin-redirects.css', 

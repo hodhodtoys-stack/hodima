@@ -105,15 +105,19 @@ function hodima_social_fields(): array {
 	return $fields;
 }
 
-/** @return array<string, array{title:string, description:string}> */
+/**
+ * بخش‌های صفحه تنظیمات؛ هر بخش یک تب جداگانه است.
+ *
+ * @return array<string, array{title:string, description:string, icon:string}>
+ */
 function hodima_settings_sections(): array {
 	return [
-		'brand'     => [ 'title' => 'برند', 'description' => 'لوگوی هدر سایت.' ],
-		'contact'   => [ 'title' => 'اطلاعات تماس', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی، نمایش داده نمی‌شود.' ],
-		'footer'    => [ 'title' => 'فوتر', 'description' => 'ستون‌های فوتر. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود.' ],
-		'analytics' => [ 'title' => 'Google Analytics', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
-		'shop'      => [ 'title' => 'صفحه فروشگاه', 'description' => 'سربرگ صفحه اول فروشگاه. زیرعنوان و ویژگی‌های خالی نمایش داده نمی‌شوند.' ],
-		'social'    => [ 'title' => 'شبکه‌های اجتماعی', 'description' => 'بخش شبکه‌های اجتماعی صفحه اصلی. شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود.' ],
+		'brand'     => [ 'title' => 'برند', 'icon' => 'dashicons-art', 'description' => 'لوگوی هدر سایت.' ],
+		'contact'   => [ 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی، نمایش داده نمی‌شود.' ],
+		'footer'    => [ 'title' => 'فوتر', 'icon' => 'dashicons-align-wide', 'description' => 'ستون‌های فوتر. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود.' ],
+		'analytics' => [ 'title' => 'Google Analytics', 'icon' => 'dashicons-chart-area', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
+		'shop'      => [ 'title' => 'صفحه فروشگاه', 'icon' => 'dashicons-store', 'description' => 'سربرگ صفحه اول فروشگاه. زیرعنوان و ویژگی‌های خالی نمایش داده نمی‌شوند.' ],
+		'social'    => [ 'title' => 'شبکه‌های اجتماعی', 'icon' => 'dashicons-share', 'description' => 'بخش شبکه‌های اجتماعی صفحه اصلی. شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود.' ],
 	];
 }
 
@@ -267,6 +271,17 @@ add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
 	wp_enqueue_script( 'hodima-theme-settings', hodima_URI . $base . 'admin.js', [ 'media-editor' ], hodima_asset_version( $base . 'admin.js' ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
 } );
 
+/**
+ * صفحه «نمایش ← تنظیمات هدیما» با تب جداگانه برای هر بخش.
+ *
+ * قبلا همه بخش‌ها زیر هم در یک صفحه بلند بودند و «تب‌ها» فقط لینک پرش به
+ * همان صفحه بودند. حالا هر بخش پنل خودش را دارد:
+ *   - بدون جاوااسکریپت: تب‌ها لینک ?tab=… هستند و سرور پنل همان تب را نشان می‌دهد؛
+ *   - با جاوااسکریپت (admin.js): جابه‌جایی فوری بدون بارگذاری مجدد، و تب فعال
+ *     بعد از «ذخیره» حفظ می‌شود (آدرس بازگشت فرم به‌روز می‌شود).
+ * همه فیلدها در همان یک فرم و یک گزینه (hodima_theme_settings) می‌مانند؛ پنل‌های
+ * پنهان هم ارسال می‌شوند، پس ذخیره یک تب مقدار تب‌های دیگر را پاک نمی‌کند.
+ */
 function hodima_settings_render_page(): void {
 
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -275,27 +290,54 @@ function hodima_settings_render_page(): void {
 
 	$settings = hodima_settings();
 	$fields   = hodima_settings_fields();
+	$sections = hodima_settings_sections();
+
+	$requested = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط انتخاب تب
+	$current   = isset( $sections[ $requested ] ) ? $requested : (string) array_key_first( $sections );
 	?>
 	<div class="wrap hodima-settings">
 		<header class="hodima-settings__header">
-			<h1>تنظیمات قالب هدیما</h1>
-			<p>برند، اطلاعات تماس، فوتر و آمار سایت. این مقادیر جایگزین مقادیری شده‌اند که قبلا داخل کد قالب نوشته شده بودند.</p>
+			<span class="dashicons dashicons-admin-appearance hodima-settings__header-icon" aria-hidden="true"></span>
+			<div>
+				<h1>تنظیمات هدیما</h1>
+				<p>برند، اطلاعات تماس، فوتر، آمار، صفحه فروشگاه و شبکه‌های اجتماعی قالب.</p>
+			</div>
 		</header>
+
+		<nav class="hodima-settings__tabs" role="tablist" aria-label="بخش‌های تنظیمات" data-hodima-tabs>
+			<?php foreach ( $sections as $section_key => $section ) : ?>
+				<a
+					class="hodima-settings__tab"
+					id="hodima-tab-<?php echo esc_attr( $section_key ); ?>"
+					href="<?php echo esc_url( add_query_arg( [ 'page' => HODIMA_SETTINGS_PAGE, 'tab' => $section_key ], admin_url( 'themes.php' ) ) ); ?>"
+					role="tab"
+					aria-controls="hodima-section-<?php echo esc_attr( $section_key ); ?>"
+					aria-selected="<?php echo $section_key === $current ? 'true' : 'false'; ?>"
+					tabindex="<?php echo $section_key === $current ? '0' : '-1'; ?>"
+					data-tab="<?php echo esc_attr( $section_key ); ?>"
+				>
+					<span class="dashicons <?php echo esc_attr( $section['icon'] ); ?>" aria-hidden="true"></span>
+					<?php echo esc_html( $section['title'] ); ?>
+				</a>
+			<?php endforeach; ?>
+		</nav>
+
+		<hr class="wp-header-end">
 
 		<?php settings_errors( HODIMA_SETTINGS_OPTION ); ?>
 
 		<form method="post" action="options.php" class="hodima-settings__form" novalidate>
 			<?php settings_fields( 'hodima_theme_settings_group' ); ?>
 
-			<nav class="hodima-settings__tabs" aria-label="بخش‌های تنظیمات">
-				<?php foreach ( hodima_settings_sections() as $section_key => $section ) : ?>
-					<a class="hodima-settings__tab" href="#hodima-section-<?php echo esc_attr( $section_key ); ?>"><?php echo esc_html( $section['title'] ); ?></a>
-				<?php endforeach; ?>
-			</nav>
-
-			<?php foreach ( hodima_settings_sections() as $section_key => $section ) : ?>
-				<section class="hodima-settings__card" id="hodima-section-<?php echo esc_attr( $section_key ); ?>" aria-labelledby="hodima-section-title-<?php echo esc_attr( $section_key ); ?>">
-					<h2 id="hodima-section-title-<?php echo esc_attr( $section_key ); ?>"><?php echo esc_html( $section['title'] ); ?></h2>
+			<?php foreach ( $sections as $section_key => $section ) : ?>
+				<section
+					class="hodima-settings__card"
+					id="hodima-section-<?php echo esc_attr( $section_key ); ?>"
+					role="tabpanel"
+					aria-labelledby="hodima-tab-<?php echo esc_attr( $section_key ); ?>"
+					<?php echo $section_key === $current ? '' : 'hidden'; ?>
+				>
+					<h2><?php echo esc_html( $section['title'] ); ?></h2>
 					<p class="hodima-settings__desc"><?php echo esc_html( $section['description'] ); ?></p>
 
 					<div class="hodima-settings__grid">

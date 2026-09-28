@@ -30,7 +30,7 @@ function hook_render_blog_schema() {
     $raw_excerpt   = get_the_excerpt() ? get_the_excerpt() : wp_trim_words(strip_shortcodes($post->post_content), 30, '...');
     $clean_desc    = wp_strip_all_tags(html_entity_decode($raw_excerpt, ENT_QUOTES, 'UTF-8'));
     
-    // 🛠️ باگ واقعی و مهم پیدا‌شده (همان خانواده‌ی باگ priceValidUntil/uploadDate):
+    // باگ واقعی و مهم پیدا‌شده (همان خانواده‌ی باگ priceValidUntil/uploadDate):
     // get_the_date() و get_the_modified_date() هسته‌ی وردپرس، داخلشان با
     // پارامتر translate=true صدا زده می‌شوند که یعنی از wp_date() عبور
     // می‌کنند — همان تابعی که روی این سایت از مبدل تقویم شمسی رد می‌شود.
@@ -79,7 +79,7 @@ function hook_render_blog_schema() {
             'url' => $image_url,
         ),
         'url' => $post_url,
-        // 🛠️ باگ رفع‌شده: قبلاً اینجا یک Organization کامل و مستقل (بدون
+        // باگ رفع‌شده: قبلاً اینجا یک Organization کامل و مستقل (بدون
         // @id) به‌عنوان publisher ساخته می‌شد — یعنی یک نسخه‌ی دوم و جدا از
         // همان کسب‌وکار، غیر از نود اصلی Organization که homepage-schema.php
         // با @id ثابت (#organization) و اطلاعات کامل‌تر (آدرس، تلفن، sameAs)
@@ -88,7 +88,7 @@ function hook_render_blog_schema() {
         // چون homepage-schema.php روی صفحات مقاله هم اجرا می‌شود و همیشه نود
         // Organization را می‌سازد، اینجا فقط باید به همان @id ارجاع داد.
         'publisher' => array( '@id' => $site_url . '#organization' ),
-        // 🛠️ باگ رفع‌شده: @id قبلی ($post_url بدون اسلش پایانی و بدون
+        // باگ رفع‌شده: @id قبلی ($post_url بدون اسلش پایانی و بدون
         // #webpage) به هیچ نود واقعی‌ای در گراف اشاره نمی‌کرد — نه فرمتش با
         // نود WebPage واقعی (که homepage-schema.php با
         // trailingslashit($post_url).'#webpage' می‌سازد) یکی بود، نه اصلاً

@@ -91,7 +91,7 @@ final class Hodima_AEO_Admin {
         $units_fa = ['کیلوگرم', 'کارتن', 'بسته', 'جین'];
         $units_en = ['kg', 'Carton', 'Pack', 'Dozen'];
         ?>
-        <div style="background:#f8fafc; padding:20px; direction:rtl; text-align:right; border-radius:4px; border:1px solid #b6c2f3; font-family: 'Vazirmatn', sans-serif;">
+        <div class="hodima-aeo-metabox" style="background:#f8fafc; padding:20px; direction:rtl; text-align:right; border-radius:4px; border:1px solid #b6c2f3;">
 
             <div style="background:#ffffff; padding:15px; border:1px solid #b6c2f3; border-right:4px solid #25316a; border-radius:8px; margin-bottom:20px;">
                 <h4 style="margin:0 0 15px 0; padding-bottom:5px; border-bottom:1px solid #b6c2f3; color:#25316a;">۱. مفاهیم بنیادین (Core Semantics)</h4>
@@ -135,7 +135,7 @@ final class Hodima_AEO_Admin {
                         </td>
                         <td style="padding:10px;">
                             <label style="display:block; font-weight:bold; margin-bottom:5px; color:#25316a; direction:ltr; text-align:left;">Semantic Context</label>
-                            <textarea name="h_ai_en_context" style="width:100%; height:80px; padding:8px; font-family:monospace; direction:ltr; text-align:left; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($en_context); ?></textarea>
+                            <textarea name="h_ai_en_context" style="width:100%; height:80px; padding:8px; direction:ltr; text-align:left; border:1px solid #b6c2f3; border-radius:4px;"><?php echo esc_textarea($en_context); ?></textarea>
                         </td>
                     </tr>
                     <tr>
@@ -475,8 +475,9 @@ final class Hodima_AEO_Admin {
                         v.addEventListener('input', function() { data[i].v = v.value; input.value = JSON.stringify(data); });
 
                         var del = document.createElement('button');
-                        del.type = 'button'; del.textContent = '✖';
-                        del.style.cssText = 'color:#25316a; background:none; border:none; cursor:pointer; font-weight:bold; font-size:16px; padding:0 5px;';
+                        // آیکون داخلی (Dashicons) به جای ایموجی
+                        del.type = 'button'; del.className = 'dashicons dashicons-no-alt'; del.setAttribute('aria-label', 'حذف');
+                        del.style.cssText = 'color:#25316a; background:none; border:none; cursor:pointer; padding:0 5px; width:auto; height:auto; font-size:20px;';
                         del.addEventListener('click', function() { data.splice(i, 1); draw(); });
 
                         box.append(k, v, del);

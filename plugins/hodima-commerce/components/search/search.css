@@ -303,7 +303,7 @@
 /* فرم نباید حاشیه پیش‌فرض بگیرد */
 form.woo-live-search { margin: 0; }
 
-/* مرورگرهای WebKit روی input[type=search] دکمه ✕ خودشان را اضافه می‌کنند
+/* مرورگرهای WebKit روی input[type=search] دکمه خودشان را اضافه می‌کنند
    که کنار دکمه پاک کردن ما تکراری می‌شد */
 .woo-live-search__input[type="search"] {
     -webkit-appearance: none;

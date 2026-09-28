@@ -32,9 +32,11 @@ require_once HODIMA_CORE_PLUGIN_DIR . '/includes/modules.php';
 // گراف واحد اسکیما: همه JSON-LDهای صفحه در یک @graph (hodima_schema_add)
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/schema-graph.php';
 
-// پنل «هدیما» در پیشخوان: وضعیت و روشن/خاموش کردن ماژول‌ها
+// پنل «ابزارهای هدیما» در پیشخوان: وضعیت، روشن/خاموش کردن ماژول‌ها و
+// سیستم طراحی مشترک همه صفحه‌های افزونه‌ها (هدر، تب‌ها، فوتر، عرض ۹۵٪)
 if ( is_admin() ) {
 	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-hub.php';
+	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-ui.php';
 }
 
 /**

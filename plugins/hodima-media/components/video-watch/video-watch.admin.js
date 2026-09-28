@@ -15,7 +15,7 @@
                 '<div class="hvw-field hvw-flex-15"><label class="hvw-label">آدرس عکس کاور</label>' +
                     '<div class="hvw-inline"><input type="url" name="hod_related_links[' + i + '][cover]" class="hvw-input" dir="ltr">' +
                     '<button type="button" class="button hvw-btn-action hvw-media-upload-btn">انتخاب</button></div></div>' +
-                '<button type="button" class="hvw-remove-row" aria-label="حذف">✕</button>' +
+                '<button type="button" class="hvw-remove-row" aria-label="حذف"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>' +
             '</div>';
     }
 
