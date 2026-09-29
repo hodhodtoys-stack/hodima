@@ -486,8 +486,15 @@ function hodima_post_content_is_visible( $post ): bool {
  * @param array  $payload {@graph:[…]}، فهرست نودها، یا یک نود تکی.
  * @param string $source  نام سازنده (فقط در گزارش مدیر دیده می‌شود).
  */
-function hodima_schema_add( array $payload, string $source = '' ): void {
-    \Hodima\Core\Schema_Graph::add( $payload, $source );
+// گارد لازم است: قالب نسخه ۲ (inc/helpers.php) و افزونه‌های SEO/Media وقتی Core
+// فعال نیست فالبک همین تابع را تعریف می‌کنند. باگ قبلی: در درخواست «فعال‌سازی»
+// پیشخوان، قالب قبل از Core لود شده بود و فعال‌سازی با «Cannot redeclare function
+// hodima_schema_add()» شکست می‌خورد. فقط همان یک درخواست از فالبک استفاده می‌کند؛
+// از درخواست بعد Core قبل از قالب لود می‌شود و همین تعریف به کار می‌رود.
+if ( ! function_exists( 'hodima_schema_add' ) ) {
+    function hodima_schema_add( array $payload, string $source = '' ): void {
+        \Hodima\Core\Schema_Graph::add( $payload, $source );
+    }
 }
 
 /** آیا نودی با این @id تا این لحظه در گراف صفحه هست؟ */
