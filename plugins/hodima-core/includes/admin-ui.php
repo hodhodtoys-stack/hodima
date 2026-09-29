@@ -300,7 +300,7 @@ add_filter( 'admin_footer_text', static function ( $text ) {
 	}
 
 	if ( function_exists( 'hodima_settings' ) ) {
-		$links['تنظیمات هدیما'] = admin_url( 'themes.php?page=hodima-settings' );
+		$links['تنظیمات قالب هدیما'] = admin_url( 'themes.php?page=hodima-settings' );
 	}
 
 	$items = '';

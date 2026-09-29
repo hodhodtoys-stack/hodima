@@ -707,59 +707,7 @@ h1.section-col-title {
 }
 
 
-/* ================= Socials ================= */
-.socials-section {
-  margin: 10px 0;
-  padding: 15px 0;
-  background: linear-gradient(135deg, rgba(182, 194, 243, 0.15) 0%, rgba(255, 255, 255, 0.8) 100%);
-  border-radius: 15px;
-}
-
-.social-grid {
-  display: flex;
-  justify-content: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.social-icon-wrapper {
-  width: 55px;
-  height: 55px;
-  background: #fff;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 16px rgba(37, 49, 106, 0.06);
-  border: 1px solid var(--border-color);
-  transition: all 0.3s ease;
-}
-
-.social-icon-wrapper img {
-  width: 35px;
-  height: 35px;
-  object-fit: contain;
-}
-
-.modern-social-item:hover .social-icon-wrapper {
-  transform: translateY(-6px);
-  border-color: var(--arian-secondary);
-  background: rgba(182, 194, 243, 0.1);
-  box-shadow: 0 10px 20px rgba(96, 123, 189, 0.15);
-}
-
-
-
-
-
-
-
-
-
-
+/* شبکه‌های اجتماعی: به assets/css/footer.css منتقل شد (نوار بالای فوتر همه صفحه‌ها) */
 
 /* ================= Product Sections  شورت کد دسته باکس هر دسته بندی(Optimized) ================= */
 .arian-product-section {
@@ -890,31 +838,4 @@ h1.section-col-title {
     line-height: 1.1;
     margin: 0 !important;
   }
-}
-/* شبکه بدون آیکون در تنظیمات: نام شبکه */
-.social-icon-wrapper:has(.social-icon-text) {
-  width: auto;
-  min-width: 55px;
-  padding-inline: 14px;
-}
-
-.social-icon-text {
-  color: var(--hodima-primary, #25316a);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.modern-social-item:focus-visible {
-  outline: none;
-}
-
-.modern-social-item:focus-visible .social-icon-wrapper {
-  outline: 2px solid var(--hodima-accent-light, #a341c8);
-  outline-offset: 3px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .social-icon-wrapper { transition: none; }
-  .modern-social-item:hover .social-icon-wrapper { transform: none; }
 }

@@ -1,5 +1,5 @@
 /* =========================================================================
- * Hodima — صفحه «تنظیمات هدیما»
+ * Hodima — صفحه «تنظیمات قالب هدیما»
  * Path: inc/theme-settings/admin.css
  * Modern CSS: متغیرها، nesting بومی، خصوصیات منطقی (RTL/LTR) و :focus-visible
  * ========================================================================= */
@@ -318,6 +318,9 @@
 	padding: 0.5rem;
 	border: 1px dashed var(--hs-border);
 	border-radius: 0.75rem;
+	/* ردیف و ستون با اندازه قطعی تا max-block-size: 100% تصویر کار کند (قبلا تصویر بلند از کادر بیرون می‌زد) */
+	grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+	overflow: hidden;
 	/* شطرنجی برای دیده شدن لوگوی سفید یا شفاف */
 	background: conic-gradient(var(--hs-surface-soft) 25%, #ffffff 0 50%, var(--hs-surface-soft) 0 75%, #ffffff 0) 0 0 / 1rem 1rem;
 
@@ -345,6 +348,195 @@
 
 	&[hidden] {
 		display: none;
+	}
+}
+
+/* ── مجموعه گروه‌ها (نمادهای اعتماد، شبکه‌های اجتماعی) ─────────── */
+.hodima-set {
+	grid-column: 1 / -1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.hodima-set__head {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding-block-start: 1rem;
+	border-block-start: 1px solid var(--hs-border);
+}
+
+.hodima-set__title {
+	margin: 0;
+	font-size: 0.9375rem;
+	color: var(--hs-primary);
+}
+
+.hodima-group {
+	min-inline-size: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+/* float: legend عادی می‌شود تا مثل بقیه فرزندها چیده شود (legend پیش‌فرض روی کادر می‌نشیند) */
+.hodima-group__title {
+	float: inline-start;
+	margin: 0;
+	padding: 0;
+	font-weight: 700;
+	font-size: 0.875rem;
+	color: var(--hs-primary);
+}
+
+/* کارت‌ها: نمادهای اعتماد کنار هم، به ترتیب ۱، ۲، ۳ */
+.hodima-set--cards {
+	& .hodima-set__items {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+		gap: 1rem;
+	}
+
+	& .hodima-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.875rem;
+		padding: 1rem;
+		border: 1px solid var(--hs-border);
+		border-radius: 0.75rem;
+		background: var(--hs-surface-soft);
+	}
+
+	& .hodima-group__title {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		inline-size: 100%;
+
+		&::before {
+			content: "";
+			inline-size: 0.5rem;
+			block-size: 0.5rem;
+			border-radius: 50%;
+			background: var(--hs-accent-light);
+		}
+	}
+
+	& .hodima-group__fields {
+		display: flex;
+		flex-direction: column;
+		gap: 0.875rem;
+	}
+
+	& .hodima-media {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.625rem;
+	}
+
+	& .hodima-media__preview {
+		inline-size: 100%;
+		block-size: 7rem;
+		background-color: #ffffff;
+	}
+
+	& .hodima-field input[type="url"] {
+		background: #ffffff;
+	}
+}
+
+/* ردیف‌ها: هر شبکه یک ردیف با ستون‌های هم‌تراز «شبکه | آدرس | آیکون» */
+.hodima-set--rows {
+	--row-cols: 9rem minmax(0, 1fr) minmax(15rem, 20rem);
+
+	& .hodima-set__columns,
+	& .hodima-group {
+		display: grid;
+		grid-template-columns: var(--row-cols);
+		align-items: center;
+		gap: 1rem;
+		padding-inline: 1rem;
+	}
+
+	& .hodima-set__columns {
+		padding-block: 0.5rem;
+		border-radius: 0.625rem;
+		background: var(--hs-primary);
+		color: #ffffff;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
+	& .hodima-set__items {
+		border: 1px solid var(--hs-border);
+		border-radius: 0.75rem;
+		overflow: hidden;
+	}
+
+	& .hodima-group {
+		padding-block: 0.75rem;
+		transition: background-color 0.2s ease;
+
+		&:nth-child(even) {
+			background: var(--hs-surface-soft);
+		}
+
+		&:not(:last-child) {
+			border-block-end: 1px solid var(--hs-border);
+		}
+
+		&:focus-within {
+			background: color-mix(in srgb, var(--hs-third) 22%, #ffffff);
+		}
+	}
+
+	/* دو فیلد هر شبکه در ستون‌های دوم و سوم همان ردیف */
+	& .hodima-group__fields {
+		display: contents;
+	}
+
+	/* نام شبکه در ستون اول آمده؛ برچسب فیلدها فقط برای صفحه‌خوان */
+	& .hodima-field__label {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	& .hodima-media {
+		flex-wrap: nowrap;
+		gap: 0.75rem;
+	}
+
+	& .hodima-media__preview {
+		flex-shrink: 0;
+		inline-size: 2.75rem;
+		block-size: 2.75rem;
+		padding: 0.25rem;
+		border-radius: 0.5rem;
+	}
+
+	& .hodima-media__buttons {
+		gap: 0.5rem;
+	}
+
+	@media (width < 1100px) {
+		--row-cols: 7rem minmax(0, 1fr) minmax(13rem, 16rem);
+	}
+
+	/* موبایل: نام شبکه بالا، آدرس و آیکون زیر هم */
+	@media (width < 783px) {
+		& .hodima-set__columns {
+			display: none;
+		}
+
+		& .hodima-group {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.625rem;
+		}
 	}
 }
 
