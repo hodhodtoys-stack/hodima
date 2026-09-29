@@ -2,7 +2,7 @@
 /**
  * ==========================================================
  * footer.php — قالب هدیما
- * نسخه: 2.0.0 (محتوا از «نمایش ← تنظیمات هدیما»)
+ * نسخه: 2.1.0 (محتوا از «نمایش ← تنظیمات قالب هدیما»)
  *
  * فقط شامل HTML معنایی فوتر
  * CSS → assets/css/footer.css
@@ -10,6 +10,7 @@
  *
  * متن‌ها، آدرس، نماد اعتماد و کپی‌رایت قبلا در همین فایل ثابت نوشته
  * شده بودند. ستونی که در تنظیمات محتوایی ندارد نمایش داده نمی‌شود.
+ * نوار شبکه‌های اجتماعی (inc/footer.php) درست بالای فوتر همه صفحه‌ها می‌آید.
  * ==========================================================
  */
 
@@ -21,13 +22,19 @@ $hodima_about_text  = (string) ( $hodima_s['about_text'] ?? '' );
 $hodima_guide_text  = (string) ( $hodima_s['guide_text'] ?? '' );
 $hodima_address     = (string) ( $hodima_s['address'] ?? '' );
 $hodima_map_url     = (string) ( $hodima_s['map_url'] ?? '' );
-$hodima_trust_image = (int) ( $hodima_s['trust_image_id'] ?? 0 );
-$hodima_trust_url   = (string) ( $hodima_s['trust_url'] ?? '' );
+$hodima_trust      = function_exists( 'hodima_trust_badges' ) ? hodima_trust_badges() : [];
+$hodima_trust_title = (string) ( $hodima_s['trust_title'] ?? '' );
 $hodima_has_form    = shortcode_exists( 'hodima_phone_form' );
 $hodima_copyright   = (string) ( $hodima_s['copyright'] ?? '' ) ?: get_bloginfo( 'name' );
 ?>
 
 <!-- پایان محتوای اصلی سایت -->
+
+<?php
+if ( function_exists( 'hodima_render_social_bar' ) ) {
+    hodima_render_social_bar();
+}
+?>
 
 <footer class="custom-site-footer">
     <div class="footer-container">
@@ -65,24 +72,33 @@ $hodima_copyright   = (string) ( $hodima_s['copyright'] ?? '' ) ?: get_bloginfo(
         </section>
         <?php endif; ?>
 
-        <?php if ( $hodima_trust_image ) : ?>
-        <!-- ستون سوم: نماد اعتماد -->
+        <?php if ( $hodima_trust ) : ?>
+        <!-- ستون سوم: نمادهای اعتماد (تا سه نماد، به ترتیب تنظیمات، کنار هم) -->
         <section class="footer-col footer-trust-col" aria-labelledby="footer-trust-title">
-            <h2 id="footer-trust-title"><?php echo esc_html( (string) ( $hodima_s['trust_title'] ?? '' ) ); ?></h2>
+            <h2 id="footer-trust-title"><?php echo esc_html( $hodima_trust_title ); ?></h2>
             <div class="footer-content footer-trust">
-                <?php
-                $hodima_trust_img = wp_get_attachment_image( $hodima_trust_image, 'medium', false, [
-                    'class'    => 'footer-trust__img',
-                    'alt'      => (string) ( $hodima_s['trust_title'] ?? '' ),
-                    'loading'  => 'lazy',
-                    'decoding' => 'async',
-                ] );
-                ?>
-                <?php if ( '' !== $hodima_trust_url ) : ?>
-                    <a class="footer-trust__link" href="<?php echo esc_url( $hodima_trust_url ); ?>" target="_blank" rel="noopener"><?php echo $hodima_trust_img; // خروجی wp_get_attachment_image ?></a>
-                <?php else : ?>
-                    <?php echo $hodima_trust_img; // خروجی wp_get_attachment_image ?>
-                <?php endif; ?>
+                <ul class="footer-trust__list" role="list">
+                    <?php foreach ( $hodima_trust as $hodima_badge ) : ?>
+                        <?php
+                        // متن جایگزین: alt خود تصویر در کتابخانه رسانه، وگرنه عنوان ستون
+                        $hodima_badge_alt = trim( (string) get_post_meta( $hodima_badge['image_id'], '_wp_attachment_image_alt', true ) ) ?: $hodima_trust_title;
+                        $hodima_badge_img = wp_get_attachment_image( $hodima_badge['image_id'], 'medium', false, [
+                            'class'    => 'footer-trust__img',
+                            'alt'      => $hodima_badge_alt,
+                            'sizes'    => '110px',
+                            'loading'  => 'lazy',
+                            'decoding' => 'async',
+                        ] );
+                        ?>
+                        <li class="footer-trust__item">
+                            <?php if ( '' !== $hodima_badge['url'] ) : ?>
+                                <a class="footer-trust__link" href="<?php echo esc_url( $hodima_badge['url'] ); ?>" target="_blank" rel="noopener"><?php echo $hodima_badge_img; // خروجی wp_get_attachment_image ?></a>
+                            <?php else : ?>
+                                <?php echo $hodima_badge_img; // خروجی wp_get_attachment_image ?>
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
             </div>
         </section>
         <?php endif; ?>

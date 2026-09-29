@@ -211,7 +211,7 @@ function environment_checks(): array {
 			'detail' => $robots_txt ? 'فایل فیزیکی robots.txt در ریشه سایت جلوی قوانین افزونه سئو را گرفته است' : 'توسط افزونه سئو ساخته می‌شود',
 		],
 		[
-			'label'  => 'به‌روزرسانی خودکار از گیت‌هاب',
+			'label'  => 'به‌روزرسانی خودکار و دستی از پیشخوان وردپرس',
 			'ok'     => $updates['enabled'],
 			'level'  => 'warning',
 			'detail' => $updates['enabled']
@@ -290,8 +290,8 @@ function render_dashboard(): void {
 
 		<?php if ( function_exists( 'hodima_settings' ) ) : ?>
 			<p class="hodima-hub__footnote">
-				لوگو، اطلاعات تماس، فوتر و Google Analytics در
-				<a href="<?php echo esc_url( admin_url( 'themes.php?page=hodima-settings' ) ); ?>">نمایش ← تنظیمات هدیما</a>
+				لوگو، اطلاعات تماس، فوتر، شبکه‌های اجتماعی و Google Analytics در
+				<a href="<?php echo esc_url( admin_url( 'themes.php?page=hodima-settings' ) ); ?>">نمایش ← تنظیمات قالب هدیما</a>
 				(تنظیمات قالب) هستند.
 			</p>
 		<?php endif; ?>

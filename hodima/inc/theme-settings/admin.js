@@ -1,5 +1,5 @@
 /**
- * Hodima — صفحه «تنظیمات هدیما»
+ * Hodima — صفحه «تنظیمات قالب هدیما»
  * Path: inc/theme-settings/admin.js
  *
  * Vanilla JS (بدون jQuery). انتخابگر تصویر از API رسانه وردپرس (wp.media)
