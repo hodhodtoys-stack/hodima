@@ -26,6 +26,26 @@ final class Hodima_Bot_Shield {
         'PetalBot'          => 'Petal Search AI',
     ];
 
+    /** گزینه autoload: زمان پایان آخرین مسدودیت (برای رد کردن کوئری در هر بازدید). */
+    private const BAN_UNTIL_OPTION = 'hodima_ban_until';
+
+    /**
+     * این درخواست قبلا بررسی و ثبت شده؟
+     *
+     * باگ قبلی: scan() روی init هر بازدید ربات را ثبت می‌کرد و برای مسیرهای
+     * AEO (llms.txt، .md، ai-feed) مسیریاب در template_redirect دوباره همان
+     * بررسی را انجام می‌داد — هر بازدید دو ردیف لاگ و دو واحد از سقف نرخ.
+     */
+    private static bool $handled = false;
+
+    public static function already_handled(): bool {
+        return self::$handled;
+    }
+
+    public static function mark_handled(): void {
+        self::$handled = true;
+    }
+
     public static function init(): void {
         add_action( 'init', [ __CLASS__, 'scan' ], 1 );
 
@@ -51,8 +71,30 @@ final class Hodima_Bot_Shield {
         $wpdb->query( $wpdb->prepare(
             "INSERT INTO {$wpdb->prefix}hodima_banned_ips (ip_address, reason) VALUES (%s, %s)
              ON DUPLICATE KEY UPDATE reason = VALUES(reason), created_at = CURRENT_TIMESTAMP",
-            $ip, $reason
+            $ip, mb_substr( $reason, 0, 250 )
         ) );
+        update_option( self::BAN_UNTIL_OPTION, time() + self::ban_duration(), true );
+    }
+
+    /**
+     * آیا اصلا مسدودیت فعالی وجود دارد؟ (بدون کوئری؛ گزینه autoload است)
+     *
+     * قبلا is_ip_banned() در *هر* بازدید صفحه (نه فقط ربات‌ها) یک کوئری
+     * دیتابیس اجرا می‌کرد، حتی وقتی جدول خالی بود.
+     */
+    /** مقدار گزینه را از روی جدول دوباره می‌سازد (ارتقا، آزادسازی، هرس). */
+    public static function sync_ban_until(): void {
+        global $wpdb;
+        $last = $wpdb->get_var( "SELECT MAX(created_at) FROM {$wpdb->prefix}hodima_banned_ips" );
+        // created_at با CURRENT_TIMESTAMP خود دیتابیس ثبت می‌شود؛ مقایسه هم با همان ساعت
+        $left = $last ? (int) $wpdb->get_var( $wpdb->prepare(
+            'SELECT TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(%s, INTERVAL %d SECOND))', $last, self::ban_duration()
+        ) ) : -1;
+        update_option( self::BAN_UNTIL_OPTION, $left > 0 ? time() + $left : 0, true );
+    }
+
+    private static function has_active_bans(): bool {
+        return (int) get_option( self::BAN_UNTIL_OPTION, PHP_INT_MAX ) >= time();
     }
 
     /**
@@ -74,6 +116,7 @@ final class Hodima_Bot_Shield {
         $ip = sanitize_text_field( wp_unslash( $_GET['ip'] ?? '' ) );
         if ( $ip ) {
             $wpdb->delete( $wpdb->prefix . 'hodima_banned_ips', [ 'ip_address' => $ip ] );
+            self::sync_ban_until();
         }
         wp_safe_redirect( admin_url( 'admin.php?page=hodima-core&tab=ai-shield&msg=unbanned' ) );
         exit;
@@ -161,7 +204,8 @@ final class Hodima_Bot_Shield {
         $ip = Hodima_Core_Helpers::get_client_ip();
         if ( ! $ua || ! $ip ) return;
 
-        if ( self::is_ip_banned( $ip ) ) {
+        // مقدار پیش‌فرض PHP_INT_MAX: تا اولین بن بعد از به‌روزرسانی، رفتار قبلی (کوئری) حفظ می‌شود
+        if ( self::has_active_bans() && self::is_ip_banned( $ip ) ) {
             header( 'HTTP/1.1 403 Forbidden' );
             header( 'Retry-After: ' . self::ban_duration() );
             exit( 'دسترسی موقتا مسدود شده است. لطفا بعدا تلاش کنید.' );
@@ -188,6 +232,7 @@ final class Hodima_Bot_Shield {
             $raw_path   = (string) ( $_SERVER['REQUEST_URI'] ?? '/' );
             $clean_path = Hodima_Core_Helpers::clean_url( rtrim( home_url(), '/' ) . '/' . ltrim( $raw_path, '/' ) );
             self::log_bot( $name, $ip, $ua, $clean_path );
+            self::mark_handled();
             break;
         }
     }
@@ -197,8 +242,9 @@ final class Hodima_Bot_Shield {
         $wpdb->insert( $wpdb->prefix . 'hodima_ai_bot_logs', [
             'bot_name'   => $bot,
             'ip_address' => $ip,
-            'user_agent' => substr( $ua, 0, 250 ),
-            'url_path'   => $url,
+            'user_agent' => mb_substr( $ua, 0, 250 ),
+            // ستون varchar(500): آدرس بلندتر در حالت strict مای‌اس‌کیوال کل درج را رد می‌کرد
+            'url_path'   => mb_substr( $url, 0, 500 ),
         ] );
     }
 
@@ -231,7 +277,11 @@ final class Hodima_Bot_Shield {
         global $wpdb;
         return [
             'logs'   => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}hodima_ai_bot_logs" ),
-            'banned' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}hodima_banned_ips" ),
+            // فقط مسدودیت‌های فعال (همان چیزی که جدول فهرست سیاه نشان می‌دهد)
+            'banned' => (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}hodima_banned_ips WHERE created_at >= DATE_SUB(NOW(), INTERVAL %d SECOND)",
+                self::ban_duration()
+            ) ),
         ];
     }
 
@@ -257,6 +307,7 @@ final class Hodima_Bot_Shield {
             "DELETE FROM {$wpdb->prefix}hodima_banned_ips WHERE created_at < DATE_SUB(NOW(), INTERVAL %d SECOND)",
             self::ban_duration()
         ) );
+        self::sync_ban_until();
     }
 
     public static function clear_logs(): void {

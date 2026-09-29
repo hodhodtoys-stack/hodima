@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           1.1.2
+ * Version:           1.1.3
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '1.1.2';
+const HODIMA_SEO_VERSION = '1.1.3';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -202,4 +202,7 @@ register_deactivation_hook( __FILE__, static function (): void {
 	// هرس روزانه در init و صف با ورود آیتم جدید یا باز شدن پنل زمان‌بندی می‌شوند.
 	wp_clear_scheduled_hook( 'hodima_gi_process_queue' );
 	wp_clear_scheduled_hook( 'hodima_gi_daily_pruning' );
+	// IndexNow (ساعتی) و پاکسازی روزانه لاگ‌ها؛ با فعال‌سازی دوباره خودکار زمان‌بندی می‌شوند
+	wp_clear_scheduled_hook( 'hodima_core_hourly_sync' );
+	wp_clear_scheduled_hook( 'hodima_core_daily_cleanup' );
 } );

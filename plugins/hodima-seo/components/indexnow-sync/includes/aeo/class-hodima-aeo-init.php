@@ -18,6 +18,7 @@ final class Hodima_AEO_Init {
         // نسخه قبلی فقط save_post را می‌شنید. سایت‌مپ شامل دسته‌بندی‌ها
         // هم هست، پس تغییر ترم و حذف نوشته هم باید کش را باطل کند.
         add_action( 'edited_term',        [ __CLASS__, 'clear_sitemap_cache' ] );
+        add_action( 'edited_term',        [ __CLASS__, 'clear_term_cache' ] );
         add_action( 'created_term',       [ __CLASS__, 'clear_sitemap_cache' ] );
         add_action( 'delete_term',        [ __CLASS__, 'clear_sitemap_cache' ] );
         add_action( 'before_delete_post', [ __CLASS__, 'clear_llms_cache' ] );
@@ -37,7 +38,22 @@ final class Hodima_AEO_Init {
         delete_transient( 'hodima_llms_txt_cache_fa_500_siloed' );
         delete_transient( 'hodima_llms_txt_cache_en_500_siloed' );
 
+        /*
+         * کش .md خود نوشته هم (۲۴ ساعته). قبلا فقط با ذخیره متاباکس AEO پاک
+         * می‌شد؛ تغییر قیمت و موجودی از ویرایش سریع، سفارش یا REST تا یک روز
+         * در نسخه ماشین‌خوان قدیمی می‌ماند.
+         */
+        if ( class_exists( 'Hodima_AEO_Generator' ) && (int) $post_id > 0 ) {
+            Hodima_AEO_Generator::clear_entity_cache( (int) $post_id, 'post' );
+        }
+
         self::clear_sitemap_cache();
+    }
+
+    public static function clear_term_cache( $term_id ): void {
+        if ( class_exists( 'Hodima_AEO_Generator' ) && (int) $term_id > 0 ) {
+            Hodima_AEO_Generator::clear_entity_cache( (int) $term_id, 'term' );
+        }
     }
 
     /** پاک کردن کش سایت‌مپ XML نسخه‌های مارک‌داون */

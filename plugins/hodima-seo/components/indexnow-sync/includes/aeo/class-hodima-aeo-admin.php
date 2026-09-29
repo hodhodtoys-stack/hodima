@@ -515,14 +515,16 @@ final class Hodima_AEO_Admin {
     }
 
     public static function save_post_meta( $id ): void {
-        if ( ! isset( $_POST['h_ai_nonce'] ) || ! wp_verify_nonce( $_POST['h_ai_nonce'], 'h_ai_n' ) ) return;
+        if ( ! isset( $_POST['h_ai_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['h_ai_nonce'] ) ), 'h_ai_n' ) ) return;
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+        // save_post برای بازنگری هم اجرا می‌شود؛ همان ۴۰+ متا بی‌دلیل دو بار پردازش می‌شد
+        if ( wp_is_post_revision( (int) $id ) || wp_is_post_autosave( (int) $id ) ) return;
         if ( ! current_user_can( 'edit_post', $id ) ) return;
         self::process_and_save( $id, 'post' );
     }
 
     public static function save_tax_meta( $term_id ): void {
-        if ( ! isset( $_POST['h_ai_nonce'] ) || ! wp_verify_nonce( $_POST['h_ai_nonce'], 'h_ai_n' ) ) return;
+        if ( ! isset( $_POST['h_ai_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['h_ai_nonce'] ) ), 'h_ai_n' ) ) return;
         if ( ! current_user_can( 'manage_categories' ) ) return;
         self::process_and_save( $term_id, 'term' );
     }
@@ -548,7 +550,8 @@ final class Hodima_AEO_Admin {
             '_h_ai_en_prompts'            => sanitize_textarea_field( $_POST['h_ai_en_prompts'] ?? '' ),
             '_h_ai_en_embedding_summary'  => sanitize_textarea_field( $_POST['h_ai_en_embedding_summary'] ?? '' ),
             
-            '_h_ai_biz_model'             => sanitize_text_field( $_POST['h_ai_biz_model'] ?? 'both' ),
+            // فقط سه مقدار معتبر رابط؛ هر مقدار دیگری عملا هر دو ردیف قیمت را پنهان می‌کرد
+            '_h_ai_biz_model'             => in_array( $_POST['h_ai_biz_model'] ?? '', [ 'both', 'tier_a', 'tier_b' ], true ) ? (string) $_POST['h_ai_biz_model'] : 'both',
 
             '_h_ai_fa_price_t1'           => sanitize_text_field( $_POST['h_ai_fa_price_t1'] ?? '' ),
             '_h_ai_fa_sale_unit'          => sanitize_text_field( $_POST['h_ai_fa_sale_unit'] ?? '' ),
@@ -578,8 +581,12 @@ final class Hodima_AEO_Admin {
             '_h_ai_fa_pod_title'          => sanitize_text_field( $_POST['h_ai_fa_pod_title'] ?? '' ),
         ];
 
-        delete_post_meta( $object_id, '_h_ai_pillars' );
-        delete_post_meta( $object_id, '_h_ai_clusters' );
+        // کلیدهای قدیمی؛ فقط برای نوشته. قبلا برای ترم هم اجرا می‌شد و متای
+        // *نوشته‌ای* را پاک می‌کرد که شناسه‌اش با شناسه ترم برابر بود.
+        if ( 'post' === $type ) {
+            delete_post_meta( $object_id, '_h_ai_pillars' );
+            delete_post_meta( $object_id, '_h_ai_clusters' );
+        }
 
         $raw_faqs = json_decode( stripslashes( $_POST['h_ai_faqs'] ?? '[]' ), true );
         $clean_faqs = [];
@@ -614,6 +621,17 @@ final class Hodima_AEO_Admin {
         }
         $meta_data['_h_ai_en_specs'] = wp_json_encode( $clean_en_specs, JSON_UNESCAPED_UNICODE );
 
+        /*
+         * update_post_meta/update_term_meta مقدار را wp_unslash می‌کنند. JSON
+         * پرسش‌ها و مشخصات پشتیبان‌های خودش را دارد (\" و \n)؛ بدون wp_slash
+         * پرسشی با « " » کل JSON را خراب می‌کرد (همه پرسش‌ها از دست می‌رفتند)
+         * و خط جدید پاسخ به حرف «n» تبدیل می‌شد. مقادیر متنی دیگر از $_POST
+         * خام (اسلش‌دار) می‌آیند و همان رفتار قبلی را دارند.
+         */
+        foreach ( [ '_h_ai_faqs', '_h_ai_en_faqs', '_h_ai_en_specs' ] as $json_key ) {
+            $meta_data[ $json_key ] = wp_slash( $meta_data[ $json_key ] );
+        }
+
         foreach ( $meta_data as $key => $value ) {
             if ( $type === 'post' ) {
                 update_post_meta( $object_id, $key, $value );
@@ -623,13 +641,7 @@ final class Hodima_AEO_Admin {
         }
 
         // --- پاک کردن کش فایل‌های تفکیک شده دوزبانه (.md) ---
-        if ( $type === 'post' ) {
-            delete_transient( "hodima_md_fa_post_{$object_id}" );
-            delete_transient( "hodima_md_en_post_{$object_id}" );
-        } else {
-            delete_transient( "hodima_md_fa_term_{$object_id}" );
-            delete_transient( "hodima_md_en_term_{$object_id}" );
-        }
+        Hodima_AEO_Generator::clear_entity_cache( $object_id, 'post' === $type ? 'post' : 'term' );
         
         // --- پاک کردن کش سراسری llms.txt برای هر دو زبان ---
         delete_transient( 'hodima_llms_txt_cache_fa_20_siloed' );

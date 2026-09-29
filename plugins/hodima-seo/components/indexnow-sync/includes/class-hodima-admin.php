@@ -29,7 +29,8 @@ final class Hodima_Admin {
 
         if ( $hook === 'toplevel_page_hodima-core' ) {
             // Chart.js حذف شد؛ نمودار حالا با SVG وانیلا در admin.js رسم می‌شود.
-            wp_enqueue_script( 'hodima-core-admin', HODIMA_CORE_URL . '/assets/admin.js', [ 'jquery' ], HODIMA_CORE_VERSION, true );
+            // بدون jQuery (قانون پروژه: جاوااسکریپت خالص)
+            wp_enqueue_script( 'hodima-core-admin', HODIMA_CORE_URL . '/assets/admin.js', [], HODIMA_CORE_VERSION, true );
             wp_localize_script( 'hodima-core-admin', 'hodimaCoreObj', [ 'ajax_url' => admin_url( 'admin-ajax.php' ) ] );
         }
     }
@@ -39,8 +40,8 @@ final class Hodima_Admin {
         if ( ! current_user_can( 'manage_options' ) ) return;
         if ( ! check_admin_referer( 'hodima_core_action' ) ) return;
 
-        $action     = sanitize_text_field( $_POST['hodima_action'] );
-        $active_tab = sanitize_text_field( $_POST['active_tab'] ?? 'dashboard' );
+        $action     = sanitize_key( wp_unslash( $_POST['hodima_action'] ) );
+        $active_tab = sanitize_key( wp_unslash( $_POST['active_tab'] ?? 'dashboard' ) ) ?: 'dashboard';
         $redirect   = admin_url( "admin.php?page=hodima-core&tab={$active_tab}" );
 
         switch ( $action ) {
@@ -51,7 +52,7 @@ final class Hodima_Admin {
                 exit;
 
             case 'test_bing':
-                $key = ! empty( $_POST['bing_api_key'] ) ? sanitize_text_field( $_POST['bing_api_key'] ) : get_option( 'hodima_bing_api_key' );
+                $key = ! empty( $_POST['bing_api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['bing_api_key'] ) ) : (string) get_option( 'hodima_bing_api_key' );
                 $result = Hodima_IndexNow::send_to_bing( [ home_url() ], $key );
                 wp_safe_redirect( $result['success']
                     ? $redirect . '&test_status=success'
@@ -60,23 +61,40 @@ final class Hodima_Admin {
                 exit;
 
             case 'manual_sync':
-                $url = esc_url_raw( $_POST['manual_url'] ?? '' );
-                if ( $url ) Hodima_IndexNow::add_to_queue( Hodima_Core_Helpers::clean_url( $url ), 'update' );
+                $url = esc_url_raw( wp_unslash( $_POST['manual_url'] ?? '' ) );
+                // آدرس دامنه دیگر کل دسته ارسال را در بینگ رد می‌کرد (۴۲۲)
+                if ( ! $url || ! Hodima_IndexNow::is_own_url( $url ) ) {
+                    wp_safe_redirect( $redirect . '&msg=foreign_url' );
+                    exit;
+                }
+                Hodima_IndexNow::add_to_queue( Hodima_Core_Helpers::clean_url( $url ), 'update' );
                 wp_safe_redirect( $redirect . '&queued=1' );
                 exit;
 
             case 'save_settings':
-                update_option( 'hodima_bing_api_key', sanitize_text_field( $_POST['bing_api_key'] ?? '' ) );
-                update_option( 'hodima_indexnow_status', sanitize_text_field( $_POST['module_status'] ?? 'enabled' ) );
+                /*
+                 * کلید طبق پروتکل IndexNow: ۸ تا ۱۲۸ نویسه از a-z، A-Z، 0-9 و «-».
+                 * کلید نامعتبر قبلا ذخیره می‌شد و همه ارسال‌ها با ۴۰۳ شکست
+                 * می‌خوردند؛ حالا کلید قبلی حفظ و خطا نمایش داده می‌شود.
+                 */
+                $new_key   = trim( sanitize_text_field( wp_unslash( $_POST['bing_api_key'] ?? '' ) ) );
+                $key_error = '' !== $new_key && ! preg_match( '/^[A-Za-z0-9-]{8,128}$/', $new_key );
+                if ( ! $key_error && '' !== $new_key ) {
+                    update_option( 'hodima_bing_api_key', $new_key );
+                }
+
+                $status = sanitize_key( wp_unslash( $_POST['module_status'] ?? 'enabled' ) );
+                update_option( 'hodima_indexnow_status', in_array( $status, [ 'enabled', 'disabled' ], true ) ? $status : 'enabled' );
                 update_option( 'hodima_verify_search_bots', isset( $_POST['verify_search_bots'] ) ? '1' : '0' );
-                update_option( 'hodima_ai_rl_limit', max( 1, (int) ( $_POST['ai_rl_limit'] ?? 50 ) ) );
-                update_option( 'hodima_api_token', sanitize_text_field( $_POST['api_token'] ?? '' ) );
+                update_option( 'hodima_ai_rl_limit', min( 10000, max( 1, (int) ( $_POST['ai_rl_limit'] ?? 50 ) ) ) );
+                update_option( 'hodima_api_token', sanitize_text_field( wp_unslash( $_POST['api_token'] ?? '' ) ) );
                 
                 // ذخیره نرخ دلار سراسری
                 update_option( 'hodima_usd_exchange_rate', max( 1, (int) ( $_POST['usd_exchange_rate'] ?? 60000 ) ) );
 
+                // فقط نوع‌هایی که در فرم هستند (قبلا هر مقداری ذخیره می‌شد)
                 $allowed_content = isset( $_POST['allowed_content'] ) && is_array( $_POST['allowed_content'] )
-                    ? array_map( 'sanitize_text_field', $_POST['allowed_content'] ) : [];
+                    ? array_values( array_intersect( array_map( 'sanitize_key', wp_unslash( $_POST['allowed_content'] ) ), array_keys( self::content_types() ) ) ) : [];
                 update_option( 'hodima_indexnow_allowed_content', $allowed_content );
 
                 $bot_settings = [];
@@ -91,25 +109,36 @@ final class Hodima_Admin {
                 delete_transient( 'hodima_llms_txt_cache_fa_500_siloed' );
                 delete_transient( 'hodima_llms_txt_cache_en_500_siloed' );
 
-                // 2. پاک کردن گروهیِ کش تمام فایل‌های دوزبانه (.md) برای اعمال فوری نرخ جدید ارز
-                global $wpdb;
-                $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_hodima_md_%' OR option_name LIKE '_transient_timeout_hodima_md_%'" );
+                /*
+                 * 2. باطل کردن کش همه فایل‌های .md و فید (برای اعمال فوری نرخ جدید ارز).
+                 * قبلا ردیف‌های ترنزینت با LIKE از جدول options حذف می‌شدند؛ با کش
+                 * شیء (Redis/Memcached/LiteSpeed Object Cache) ترنزینت‌ها آنجا نیستند
+                 * و هیچ‌چیز پاک نمی‌شد. حالا شماره نسل کش بالا می‌رود.
+                 */
+                if ( class_exists( 'Hodima_AEO_Generator' ) ) {
+                    Hodima_AEO_Generator::bump_cache_generation();
+                }
 
-                wp_safe_redirect( $redirect . '&updated=1' );
+                wp_safe_redirect( $redirect . ( $key_error ? '&msg=bad_key' : '&updated=1' ) );
                 exit;
         }
+    }
+
+    /** نوع‌های محتوای قابل انتخاب برای IndexNow (فرم و اعتبارسنجی ذخیره). */
+    public static function content_types(): array {
+        return [
+            'post' => 'نوشته‌ها', 'category' => 'دسته‌بندی نوشته‌ها', 'page' => 'برگه‌ها',
+            'product' => 'محصولات', 'product_cat' => 'دسته‌بندی محصولات', 'attachment' => 'رسانه‌ها',
+        ];
     }
 
     public static function render(): void {
         global $wpdb;
 
-        $active_tab = sanitize_text_field( $_GET['tab'] ?? 'dashboard' );
+        $active_tab = sanitize_key( wp_unslash( $_GET['tab'] ?? 'dashboard' ) ) ?: 'dashboard';
 
-        $content_types = [
-            'post' => 'نوشته‌ها', 'category' => 'دسته‌بندی نوشته‌ها', 'page' => 'برگه‌ها',
-            'product' => 'محصولات', 'product_cat' => 'دسته‌بندی محصولات', 'attachment' => 'رسانه‌ها',
-        ];
-        $selected_content = get_option( 'hodima_indexnow_allowed_content', [ 'post', 'category', 'page', 'product' ] );
+        $content_types = self::content_types();
+        $selected_content = (array) get_option( 'hodima_indexnow_allowed_content', [ 'post', 'category', 'page', 'product' ] );
 
         $bing_key       = get_option( 'hodima_bing_api_key', '' );
         $module_status  = get_option( 'hodima_indexnow_status', 'enabled' );

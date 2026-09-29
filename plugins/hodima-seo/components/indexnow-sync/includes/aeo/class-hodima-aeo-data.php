@@ -435,14 +435,37 @@ final class Hodima_AEO_Data {
         return (int) $rows[0]->id;
     }
 
+    /**
+     * زمان محلی سایت به قالب ISO 8601 (مثلا 2025-03-01T10:00:00+03:30).
+     *
+     * قبلا با gmt_offset فعلی حساب می‌شد: برای منطقه‌های دارای ساعت تابستانی
+     * تاریخ‌های گذشته یک ساعت خطا داشتند و strtotime به منطقه پیش‌فرض PHP
+     * وابسته بود. حالا منطقه زمانی خود وردپرس در همان لحظه. (wp_date('c')
+     * عمدا استفاده نشده: فیلتر تاریخ شمسی آن را به رقم فارسی تبدیل می‌کند.)
+     */
     public static function get_iso8601_local_time( string $gmt_time = '' ): string {
-        $timestamp = (!empty($gmt_time) && $gmt_time !== '0000-00-00 00:00:00') ? (int) strtotime($gmt_time) : time();
-        $offset_h  = (float) get_option('gmt_offset');
-        $local_ts  = $timestamp + (int) ($offset_h * 3600);
-        $tz_sign   = ($offset_h < 0) ? '-' : '+';
-        $tz_h      = str_pad( (string) floor(abs($offset_h)), 2, '0', STR_PAD_LEFT );
-        $tz_m      = str_pad( (string) ((abs($offset_h) - floor(abs($offset_h))) * 60), 2, '0', STR_PAD_LEFT );
-        return gmdate('Y-m-d\TH:i:s', $local_ts) . $tz_sign . $tz_h . ':' . $tz_m;
+        try {
+            $utc = ( '' !== $gmt_time && '0000-00-00 00:00:00' !== $gmt_time )
+                ? new DateTimeImmutable( $gmt_time, new DateTimeZone( 'UTC' ) )
+                : new DateTimeImmutable( 'now', new DateTimeZone( 'UTC' ) );
+        } catch ( Exception $e ) {
+            $utc = new DateTimeImmutable( 'now', new DateTimeZone( 'UTC' ) );
+        }
+        return $utc->setTimezone( wp_timezone() )->format( 'Y-m-d\TH:i:sP' );
+    }
+
+    /**
+     * قیمت عددی محصول.
+     *
+     * قبلا از متن قالب‌بندی‌شده wc_price همه غیررقم‌ها حذف می‌شد: با دو رقم
+     * اعشار «12,500.00» به ۱۲۵۰۰۰۰ (صد برابر) تبدیل می‌شد، و اگر فیلتری ارقام
+     * را فارسی می‌کرد، صفر. حالا خود عدد ووکامرس استفاده می‌شود.
+     */
+    public static function price_number( array $commerce ): int {
+        if ( isset( $commerce['price_raw'] ) ) {
+            return (int) round( (float) $commerce['price_raw'] );
+        }
+        return (int) preg_replace( '/[^0-9]/', '', strip_tags( (string) ( $commerce['price'] ?? '' ) ) );
     }
 
     public static function get_commerce_data( int $id ): array {
@@ -452,6 +475,7 @@ final class Hodima_AEO_Data {
 
         return [
             'price'    => html_entity_decode( wp_strip_all_tags( wc_price( $product->get_price() ) ), ENT_QUOTES, 'UTF-8' ),
+            'price_raw'=> (float) $product->get_price(),
             'status_fa'=> $product->is_in_stock() ? 'موجود در انبار' : 'ناموجود',
             'status_en'=> $product->is_in_stock() ? 'In Stock' : 'Out of Stock',
             'rating'   => $product->get_average_rating(),

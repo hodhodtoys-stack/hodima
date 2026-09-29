@@ -28,7 +28,9 @@ final class Hodima_Search_Tracker {
         }
         if ( ! $detected ) return;
 
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        // IP واقعی (پشت Cloudflare)؛ قبلا REMOTE_ADDR خام بود و پشت پراکسی
+        // همیشه IP کلادفلر تأیید می‌شد که هرگز DNS بینگ ندارد.
+        $ip = Hodima_Core_Helpers::get_client_ip();
         if ( empty( $ip ) ) return;
 
         $verify_enabled = get_option( 'hodima_verify_search_bots', '1' ) === '1';
@@ -43,7 +45,9 @@ final class Hodima_Search_Tracker {
 
         if ( $status === false ) {
             $status = self::verify_bot_ip( $ip, $detected ) ? 'valid' : 'invalid';
-            set_transient( $cache_key, $status, 30 * DAY_IN_SECONDS );
+            // نتیجه منفی فقط یک روز: قبلا ۳۰ روز بود و یک خطای موقت DNS
+            // یک IP واقعی بینگ را یک ماه از آمار حذف می‌کرد.
+            set_transient( $cache_key, $status, 'valid' === $status ? 30 * DAY_IN_SECONDS : DAY_IN_SECONDS );
         }
 
         if ( $status === 'valid' ) {
@@ -61,7 +65,17 @@ final class Hodima_Search_Tracker {
         ) );
     }
 
+    /**
+     * DNS معکوس و مستقیم.
+     *
+     * باگ قبلی: gethostbyaddr/gethostbyname بدون بررسی صدا زده می‌شدند. در
+     * هاستی که این توابع را در disable_functions دارد، PHP 8 خطای کشنده
+     * می‌دهد — یعنی بینگ‌بات و یاندکس‌بات روی کل سایت خطای ۵۰۰ می‌گرفتند.
+     * gethostbyname هم فقط IPv4 برمی‌گرداند؛ حالا A و AAAA هر دو بررسی می‌شوند.
+     */
     private static function verify_bot_ip( string $ip, string $bot_name ): bool {
+        if ( ! function_exists( 'gethostbyaddr' ) ) return false;
+
         $hostname = @gethostbyaddr( $ip );
         if ( $hostname === $ip || $hostname === false ) return false;
 
@@ -74,8 +88,18 @@ final class Hodima_Search_Tracker {
             return false;
         }
 
-        $forward_ip = @gethostbyname( $hostname );
-        return $forward_ip === $ip;
+        $target = @inet_pton( $ip );
+        if ( false === $target ) return false;
+
+        if ( function_exists( 'dns_get_record' ) ) {
+            foreach ( (array) @dns_get_record( $hostname, DNS_A | DNS_AAAA ) as $record ) {
+                $resolved = (string) ( $record['ip'] ?? ( $record['ipv6'] ?? '' ) );
+                if ( '' !== $resolved && @inet_pton( $resolved ) === $target ) return true;
+            }
+            return false;
+        }
+
+        return function_exists( 'gethostbyname' ) && @gethostbyname( $hostname ) === $ip;
     }
 
     public static function get_stats( int $limit = 30 ): array {
