@@ -129,6 +129,8 @@ final class Hodima_AEO_Schema {
                 'mainEntity' => [],
             ];
             foreach ( $all_faqs as $f ) {
+                // ردیف ناقص (بدون پرسش یا پاسخ) هشدار PHP و Question نامعتبر می‌ساخت
+                if ( ! is_array( $f ) || empty( $f['q'] ) || empty( $f['a'] ) ) continue;
                 $schema['mainEntity'][] = [
                     '@type'          => 'Question',
                     'name'           => $f['q'],
@@ -136,7 +138,7 @@ final class Hodima_AEO_Schema {
                 ];
             }
             if ( ! empty( $context ) ) $schema['description'] = $context;
-            self::add_node( $schema );
+            if ( ! empty( $schema['mainEntity'] ) ) self::add_node( $schema );
         } elseif ( ! empty( $context ) ) {
             /*
              * گراف اصلی (schema/homepage-schema.php) نود «#webpage» را با نوع

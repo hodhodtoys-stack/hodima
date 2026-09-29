@@ -4,6 +4,43 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 final class Hodima_AEO_Generator {
 
+    /*
+     * نسل کش خروجی‌های .md و فید.
+     * ذخیره تنظیمات قبلا ترنزینت‌ها را با LIKE از جدول options پاک می‌کرد که
+     * با کش شیء (Redis، LiteSpeed Object Cache) بی‌اثر بود؛ حالا شماره نسل در
+     * کلید کش است و با بالا رفتنش همه نسخه‌های قبلی کنار گذاشته می‌شوند.
+     */
+    private const GEN_OPTION = 'hodima_aeo_cache_gen';
+
+    public static function cache_gen(): int {
+        return (int) get_option( self::GEN_OPTION, 0 );
+    }
+
+    public static function bump_cache_generation(): void {
+        update_option( self::GEN_OPTION, self::cache_gen() + 1, true );
+    }
+
+    public static function md_cache_key( string $lang, string $object_type, int $id ): string {
+        return "hodima_md_{$lang}_{$object_type}_{$id}_g" . self::cache_gen();
+    }
+
+    private static function feed_cache_key( string $lang ): string {
+        return "hodima_ai_feed_{$lang}_g" . self::cache_gen();
+    }
+
+    /** پاک کردن کش .md یک موجودیت (هر دو زبان) و فید زنده. */
+    public static function clear_entity_cache( int $id, string $object_type ): void {
+        foreach ( [ 'fa', 'en' ] as $lang ) {
+            delete_transient( self::md_cache_key( $lang, $object_type, $id ) );
+            delete_transient( self::feed_cache_key( $lang ) );
+        }
+    }
+
+    /** دور زدن کش فقط برای مدیر (یا حالت اشکال‌زدایی). */
+    private static function bypass_cache(): bool {
+        return ( isset( $_GET['nocache'] ) && current_user_can( 'manage_options' ) ) || ( defined( 'WP_DEBUG' ) && WP_DEBUG );
+    }
+
     // --- تابع مترجم هوشمند عناوین بر اساس زبان ---
     public static function get_localized_title( int $id, string $object_type, string $lang ): string {
         $native_title = '';
@@ -231,9 +268,11 @@ final class Hodima_AEO_Generator {
     }
 
     public static function generate_markdown( int $id, string $object_type = 'post', string $lang = 'fa' ): string {
-        $cache_key = "hodima_md_{$lang}_{$object_type}_{$id}";
-        
-        $no_cache  = isset($_GET['nocache']) || ( defined('WP_DEBUG') && WP_DEBUG );
+        $cache_key = self::md_cache_key( $lang, $object_type, $id );
+
+        // ?nocache قبلا برای هر بازدیدکننده‌ای کار می‌کرد (مثل llms.txt که قبلا
+        // اصلاح شده بود): ساخت سنگین سند با هر درخواست دلخواه
+        $no_cache  = self::bypass_cache();
         if ( ! $no_cache ) {
             $cached = get_transient( $cache_key );
             if ( false !== $cached ) return $cached;
@@ -548,7 +587,7 @@ final class Hodima_AEO_Generator {
             $md .= ($lang === 'en') ? "## Commercial Data\n\n" : "## اطلاعات تجاری\n\n";
             
             if ( !empty($commerce) ) {
-                $wc_price_num = (int) preg_replace('/[^0-9]/', '', strip_tags($commerce['price'] ?? ''));
+                $wc_price_num = Hodima_AEO_Data::price_number( $commerce );
                 
                 $price_num_t1 = ($fa_price_t1 !== '') ? (int) $fa_price_t1 : $wc_price_num;
                 $price_num_t2 = ($fa_price_t2 !== '') ? (int) $fa_price_t2 : $wc_price_num;
@@ -1046,7 +1085,25 @@ final class Hodima_AEO_Generator {
         return $md;
     }
 
+    /**
+     * فید زنده با کش یک‌ساعته.
+     *
+     * قبلا در هر درخواست ۱۰۰ نوشته، متای هرکدام و محصول ووکامرس را از نو
+     * می‌خواند — اندپوینتی عمومی و بدون محدودیت. کش با ذخیره هر نوشته
+     * (clear_entity_cache) و ذخیره تنظیمات باطل می‌شود.
+     */
     public static function generate_ai_feed( string $lang = 'fa' ): array {
+        $key = self::feed_cache_key( $lang );
+        if ( ! self::bypass_cache() ) {
+            $cached = get_transient( $key );
+            if ( is_array( $cached ) ) return $cached;
+        }
+        $feed = self::build_ai_feed( $lang );
+        set_transient( $key, $feed, HOUR_IN_SECONDS );
+        return $feed;
+    }
+
+    private static function build_ai_feed( string $lang ): array {
         // تغییرات از اینجا شروع می‌شود: محدودیت زمان حذف شد و دریافت 100 خروجی اعمال گردید
         $posts = get_posts( [ 
             'post_type'      => [ 'product', 'post' ], 
@@ -1090,7 +1147,7 @@ final class Hodima_AEO_Generator {
             if ( get_post_type( $p->ID ) === 'product' ) {
                 $commerce = Hodima_AEO_Data::get_commerce_data( $p->ID );
                 if ( ! empty( $commerce ) ) {
-                    $wc_price_num = (int) preg_replace('/[^0-9]/', '', strip_tags($commerce['price'] ?? ''));
+                    $wc_price_num = Hodima_AEO_Data::price_number( $commerce );
                     
                     $fa_price_t1 = (string) get_post_meta($p->ID, '_h_ai_fa_price_t1', true);
                     $fa_price_t2 = (string) get_post_meta($p->ID, '_h_ai_fa_price_t2', true);

@@ -136,80 +136,88 @@ window.hodimaToggleAeoInputs = function() {
     dateInputs.style.display = (mode.value === 'date_range') ? 'flex' : 'none';
 };
 
-window.hodimaFetchAeoLinks = function() {
-    var mode = document.getElementById('hodima-aeo-filter-mode').value;
-    var limitCount = document.getElementById('hodima-aeo-limit-count').value;
-    var dateFrom = document.getElementById('hodima-aeo-date-from').value;
-    var dateTo = document.getElementById('hodima-aeo-date-to').value;
-    
-    var textarea = document.getElementById('hodima-aeo-export-textarea');
-    var loading = document.getElementById('hodima-aeo-loading');
-    var countMsg = document.getElementById('hodima-aeo-count-msg');
-    
+/*
+ * بدون jQuery (قانون پروژه). قبلا jQuery.ajax و متغیر سراسری ajaxurl بود و
+ * کپی با document.execCommand (منسوخ) انجام می‌شد. نام توابع سراسری همان
+ * قبلی است چون دکمه‌های صفحه با onclick آن‌ها را صدا می‌زنند.
+ */
+window.hodimaFetchAeoLinks = async function() {
+    var $ = function (id) { return document.getElementById(id); };
+    var mode = $('hodima-aeo-filter-mode').value;
+    var dateFrom = $('hodima-aeo-date-from').value;
+
+    var textarea = $('hodima-aeo-export-textarea');
+    var loading = $('hodima-aeo-loading');
+    var countMsg = $('hodima-aeo-count-msg');
+
     if (mode === 'date_range' && !dateFrom) {
         alert('لطفاً حداقل تاریخ شروع (از) را انتخاب کنید.');
         return;
     }
 
     textarea.value = '';
-    countMsg.innerText = '';
+    countMsg.textContent = '';
     loading.style.display = 'block';
 
-    // دریافت Nonce امنیتی وردپرس از صفحه
-    var nonceElement = document.getElementById('hodima_aeo_nonce');
-    var securityNonce = nonceElement ? nonceElement.value : '';
-
-    jQuery.ajax({
-        url: ajaxurl, // متغیر گلوبال وردپرس برای AJAX
-        type: 'POST',
-        data: {
-            action: 'hodima_get_aeo_links',
-            filter_mode: mode,
-            limit_count: limitCount,
-            date_from: dateFrom,
-            date_to: dateTo,
-            lang_fa: document.getElementById('hodima-aeo-lang-fa').checked ? 1 : 0,
-            lang_en: document.getElementById('hodima-aeo-lang-en').checked ? 1 : 0,
-            type_md: document.getElementById('hodima-aeo-type-md').checked ? 1 : 0,
-            type_llms: document.getElementById('hodima-aeo-type-llms').checked ? 1 : 0,
-            type_feed: document.getElementById('hodima-aeo-type-feed').checked ? 1 : 0,
-            nonce: securityNonce
-        },
-        success: function(response) {
-            loading.style.display = 'none';
-            if(response.success) {
-                if(response.data.links.length > 0) {
-                    textarea.value = response.data.links.join('\n');
-                    countMsg.innerText = 'تعداد لینک یافت شده: ' + response.data.links.length;
-                } else {
-                    textarea.value = 'برای این فیلتر، هیچ موردی یافت نشد.';
-                }
-            } else {
-                textarea.value = 'خطا در دریافت لینک‌ها: ' + (response.data || 'خطای ناشناخته');
-            }
-        },
-        error: function(xhr, status, error) {
-            loading.style.display = 'none';
-            var errorDetails = '\n\nکد ارور: ' + xhr.status + '\nتوضیحات: ' + error + '\n' + xhr.responseText;
-            textarea.value = 'خطای شبکه در ارتباط با سرور وردپرس.' + errorDetails;
-        }
+    var body = new URLSearchParams({
+        action: 'hodima_get_aeo_links',
+        filter_mode: mode,
+        limit_count: $('hodima-aeo-limit-count').value,
+        date_from: dateFrom,
+        date_to: $('hodima-aeo-date-to').value,
+        lang_fa: $('hodima-aeo-lang-fa').checked ? '1' : '',
+        lang_en: $('hodima-aeo-lang-en').checked ? '1' : '',
+        type_md: $('hodima-aeo-type-md').checked ? '1' : '',
+        type_llms: $('hodima-aeo-type-llms').checked ? '1' : '',
+        type_feed: $('hodima-aeo-type-feed').checked ? '1' : '',
+        nonce: $('hodima_aeo_nonce') ? $('hodima_aeo_nonce').value : ''
     });
+
+    var url = (window.hodimaCoreObj && hodimaCoreObj.ajax_url) || window.ajaxurl;
+
+    try {
+        var res = await fetch(url, { method: 'POST', body: body, credentials: 'same-origin' });
+        var text = await res.text();
+        var response;
+        try { response = JSON.parse(text); }
+        catch (e) { throw new Error('پاسخ نامعتبر از سرور (کد ' + res.status + ')'); }
+
+        if (response.success) {
+            var links = (response.data && response.data.links) || [];
+            if (links.length > 0) {
+                textarea.value = links.join('\n');
+                countMsg.textContent = 'تعداد لینک یافت شده: ' + links.length;
+            } else {
+                textarea.value = 'برای این فیلتر، هیچ موردی یافت نشد.';
+            }
+        } else {
+            textarea.value = 'خطا در دریافت لینک‌ها: ' + (typeof response.data === 'string' ? response.data : 'خطای ناشناخته');
+        }
+    } catch (e) {
+        textarea.value = 'خطای شبکه در ارتباط با سرور وردپرس.\n\n' + e.message;
+    } finally {
+        loading.style.display = 'none';
+    }
 };
 
-window.hodimaCopyAeoLinks = function() {
-    var copyText = document.getElementById("hodima-aeo-export-textarea");
-    if(!copyText || !copyText.value || copyText.value.includes('هیچ موردی') || copyText.value.startsWith('خطا')) {
+window.hodimaCopyAeoLinks = async function() {
+    var copyText = document.getElementById('hodima-aeo-export-textarea');
+    if (!copyText || !copyText.value || copyText.value.includes('هیچ موردی') || copyText.value.startsWith('خطا')) {
         alert('لیست لینک‌ها خالی است!');
         return;
     }
-    
-    copyText.select();
-    copyText.setSelectionRange(0, 99999);
-    document.execCommand("copy");
-    
-    var msg = document.getElementById("hodima-aeo-copy-msg");
+
+    try {
+        await navigator.clipboard.writeText(copyText.value);
+    } catch (e) {
+        // مرورگر قدیمی یا صفحه بدون HTTPS: روش قدیمی
+        copyText.select();
+        document.execCommand('copy');
+    }
+
+    var msg = document.getElementById('hodima-aeo-copy-msg');
     if (msg) {
-        msg.style.display = "inline";
-        setTimeout(function() { msg.style.display = "none"; }, 3000);
+        msg.style.display = 'inline';
+        setTimeout(function() { msg.style.display = 'none'; }, 3000);
     }
 };

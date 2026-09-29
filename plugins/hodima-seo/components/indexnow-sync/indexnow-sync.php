@@ -10,8 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'HODIMA_CORE_DIR', __DIR__ );
 define( 'HODIMA_CORE_URL', HODIMA_SEO_URL . '/components/indexnow-sync' );
-define( 'HODIMA_CORE_VERSION', '1.0.0' );
-define( 'HODIMA_CORE_DB_VERSION', '1.0.0' ); 
+define( 'HODIMA_CORE_VERSION', '1.1.0' );
+define( 'HODIMA_CORE_DB_VERSION', '1.1.0' ); // 1.1.0: گزینه hodima_ban_until
 
 // ---------------------------------------------------------------------
 // بارگذاری فایل‌های کلاس
@@ -70,6 +70,7 @@ final class Hodima_Core {
     public static function maybe_upgrade_db(): void {
         if ( get_option( 'hodima_core_db_version' ) !== HODIMA_CORE_DB_VERSION ) {
             Hodima_Core_Schema::create_tables();
+            Hodima_Bot_Shield::sync_ban_until();
             update_option( 'hodima_core_db_version', HODIMA_CORE_DB_VERSION );
         }
     }
@@ -124,7 +125,7 @@ final class Hodima_Core {
             wp_send_json_error( 'دسترسی غیرمجاز' );
         }
 
-        $mode      = sanitize_text_field( $_POST['filter_mode'] ?? '24h' );
+        $mode      = sanitize_key( wp_unslash( $_POST['filter_mode'] ?? '24h' ) );
         
         $lang_fa   = ! empty( $_POST['lang_fa'] );
         $lang_en   = ! empty( $_POST['lang_en'] );
@@ -161,15 +162,23 @@ final class Hodima_Core {
                 $limit = isset($_POST['limit_count']) ? absint($_POST['limit_count']) : 50;
                 $args['posts_per_page'] = $limit ?: 50;
             } elseif ( $mode === 'date_range' ) {
-                $date_from = sanitize_text_field($_POST['date_from'] ?? '');
-                $date_to   = sanitize_text_field($_POST['date_to'] ?? '');
+                // فقط قالب YYYY-MM-DD (ورودی type=date)
+                $date_from = preg_match( '/^\d{4}-\d{2}-\d{2}$/', (string) ( $_POST['date_from'] ?? '' ) ) ? (string) $_POST['date_from'] : '';
+                $date_to   = preg_match( '/^\d{4}-\d{2}-\d{2}$/', (string) ( $_POST['date_to'] ?? '' ) ) ? (string) $_POST['date_to'] : '';
                 $date_query = [ 'column' => 'post_modified' ];
                 if ( ! empty($date_from) ) $date_query['after'] = $date_from . ' 00:00:00';
                 if ( ! empty($date_to) )   $date_query['before'] = $date_to . ' 23:59:59';
                 $args['date_query'] = [ $date_query ];
             }
 
-            $post_ids = get_posts( $args );
+            $args['no_found_rows'] = true;
+            $post_ids = array_map( 'intval', get_posts( $args ) );
+
+            // is_noindex همه متای هر نوشته را می‌خواند؛ در حالت «کامل» (هزاران
+            // نوشته) هر مورد یک کوئری جدا بود. یک کوئری برای همه:
+            if ( ! empty( $post_ids ) ) {
+                update_meta_cache( 'post', $post_ids );
+            }
 
             foreach ( $post_ids as $id ) {
                 if ( class_exists('Hodima_Core_Helpers') && method_exists('Hodima_Core_Helpers', 'is_noindex') && Hodima_Core_Helpers::is_noindex( $id, 'post' ) ) {
@@ -186,11 +195,13 @@ final class Hodima_Core {
                 $permalink = get_permalink( $id );
                 if ( ! $permalink ) continue;
 
-                $path = str_replace( $home_url, '', $permalink );
-                $path = untrailingslashit( $path ); 
-                
-                if ( $lang_fa ) $links[] = $home_url . '/fa' . $path . '.md';
-                if ( $lang_en ) $links[] = $home_url . '/en' . $path . '.md';
+                // همان سازنده آدرس بقیه ماژول (llms.txt، سایت‌مپ .md). جایگزینی
+                // رشته‌ای قبلی با نصب در زیرپوشه یا رشته کوئری آدرس خراب می‌ساخت.
+                $permalink = Hodima_Core_Helpers::clean_url( (string) $permalink );
+                foreach ( array_keys( array_filter( [ 'fa' => $lang_fa, 'en' => $lang_en ] ) ) as $lang ) {
+                    $md = Hodima_AEO_Generator::format_md_url( $permalink, $lang );
+                    if ( '' !== $md ) $links[] = $md;
+                }
             }
         }
 

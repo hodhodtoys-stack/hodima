@@ -41,6 +41,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             isset( $_GET['queued'] )                           => [ 'success', 'آدرس با موفقیت به صف انتظار افزوده شد.' ],
             ( $_GET['msg'] ?? '' ) === 'cleared'               => [ 'success', 'عملیات پاکسازی لاگ‌ها با موفقیت انجام شد.' ],
             ( $_GET['msg'] ?? '' ) === 'unbanned'              => [ 'success', 'آی‌پی مورد نظر از لیست سیاه خارج شد.' ],
+            ( $_GET['msg'] ?? '' ) === 'foreign_url'           => [ 'error', 'فقط آدرس‌های همین سایت را می‌توان به IndexNow فرستاد؛ آدرس دامنه دیگر کل دسته ارسال را در بینگ رد می‌کند.' ],
+            ( $_GET['msg'] ?? '' ) === 'bad_key'               => [ 'error', 'تنظیمات ذخیره شد، ولی کلید API معتبر نبود و کلید قبلی حفظ شد. کلید IndexNow باید ۸ تا ۱۲۸ نویسه از حروف انگلیسی، عدد و «-» باشد.' ],
             ( $_GET['test_status'] ?? '' ) === 'success'       => [ 'success', 'اتصال به API بینگ موفقیت‌آمیز بود.' ],
             ( $_GET['test_status'] ?? '' ) === 'failed'        => [ 'error', 'خطا در برقراری ارتباط با بینگ: ' . esc_html( sanitize_text_field( wp_unslash( $_GET['test_error'] ?? '' ) ) ) ],
             default                                            => [ 'success', 'عملیات با موفقیت انجام شد.' ],
@@ -135,7 +137,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <tbody>
             <?php foreach ( $queue_pending as $row ) : ?>
                 <tr>
-                    <td dir="ltr" style="text-align:left; font-family: inherit;"><a href="<?php echo esc_url($row->url_path); ?>" target="_blank" style="color:#607bbd; text-decoration:none;"><?php echo esc_html( $row->url_path ); ?></a></td>
+                    <td dir="ltr" style="text-align:left; font-family: inherit;"><a href="<?php echo esc_url($row->url_path); ?>" target="_blank" rel="noopener" style="color:#607bbd; text-decoration:none;"><?php echo esc_html( $row->url_path ); ?></a></td>
                     <td><span style="background:rgba(193, 200, 236, 0.3); color:#25316a; padding:3px 8px; border-radius:4px; font-weight:bold; font-size:12px; border:1px solid #b6c2f3;"><?php echo esc_html( $row->action ); ?></span></td>
                     <td><span style="color:#607bbd; font-weight:bold;">در حال انتظار (<?php echo esc_html( $row->status ); ?>)</span></td>
                     <td dir="ltr" style="text-align:right;"><?php echo esc_html( $row->updated_at ); ?></td>
@@ -227,7 +229,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <span id="hodima-aeo-count-msg" class="hodima-aeo-msg-count"></span>
         </div>
 
-        <input type="hidden" id="hodima_aeo_nonce" value="<?php echo wp_create_nonce('hodima_aeo_export_nonce'); ?>">
+        <input type="hidden" id="hodima_aeo_nonce" value="<?php echo esc_attr( wp_create_nonce( 'hodima_aeo_export_nonce' ) ); ?>">
 
     <?php elseif ( $active_tab === 'search-bots' ) : ?>
         <div class="hodima-toolbar">

@@ -72,6 +72,9 @@ final class Hodima_AEO_Router {
     /** ثبت فوری بازدید ربات قبل از توقف اجرای قالب وردپرس */
     private static function track_bot_visit_early(): void {
         if ( ! class_exists('Hodima_Bot_Shield') ) return;
+
+        // scan() روی init همین درخواست را بررسی و ثبت کرده است
+        if ( Hodima_Bot_Shield::already_handled() ) return;
         
         $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $ip = class_exists('Hodima_Core_Helpers') ? Hodima_Core_Helpers::get_client_ip() : '';
@@ -99,6 +102,7 @@ final class Hodima_AEO_Router {
             $clean_path = class_exists('Hodima_Core_Helpers') ? Hodima_Core_Helpers::clean_url( rtrim( home_url(), '/' ) . '/' . ltrim( $raw_path, '/' ) ) : $raw_path;
             
             Hodima_Bot_Shield::log_bot( $name, $ip, $ua, $clean_path );
+            Hodima_Bot_Shield::mark_handled();
             break;
         }
     }
@@ -140,12 +144,12 @@ final class Hodima_AEO_Router {
         $legacy_exact = ['llms.txt', 'llms-full.txt', 'ai-feed.json', 'openapi.json', 'sitemap-md.xml'];
         if ( in_array( $path, $legacy_exact, true ) || strpos( $path, 'llm-search' ) === 0 ) {
             $query_string = isset($_SERVER['QUERY_STRING']) && !empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '';
-            wp_redirect( home_url( "/fa/{$path}{$query_string}" ), 301 );
+            wp_safe_redirect( home_url( "/fa/{$path}{$query_string}" ), 301 );
             exit;
         }
         if ( preg_match( '/^(.+)\.md\/?$/i', $path ) && ! preg_match( '/^(fa|en)\//i', $path ) ) {
             $clean_path = rtrim($path, '/');
-            wp_redirect( home_url( "/fa/{$clean_path}" ), 301 );
+            wp_safe_redirect( home_url( "/fa/{$clean_path}" ), 301 );
             exit;
         }
 

@@ -28,9 +28,14 @@ final class Hodima_IndexNow {
         $key = get_option( 'hodima_bing_api_key' );
         if ( empty( $key ) ) return;
 
-        $uri = $_SERVER['REQUEST_URI'] ?? '';
-        if ( strpos( $uri, "/{$key}.txt" ) !== false ) {
+        // فقط مسیر دقیق /{key}.txt در ریشه سایت؛ قبلا هر آدرسی که این رشته را
+        // در هر جایش (حتی در رشته کوئری) داشت، فایل کلید را برمی‌گرداند.
+        $path      = (string) wp_parse_url( (string) ( $_SERVER['REQUEST_URI'] ?? '' ), PHP_URL_PATH );
+        $home_path = rtrim( (string) wp_parse_url( home_url(), PHP_URL_PATH ), '/' );
+        if ( $path === "{$home_path}/{$key}.txt" ) {
+            status_header( 200 );
             header( 'Content-Type: text/plain; charset=utf-8' );
+            header( 'X-Robots-Tag: noindex' );
             echo esc_html( $key );
             exit;
         }
@@ -70,6 +75,13 @@ final class Hodima_IndexNow {
         $placeholders = implode( ', ', array_fill( 0, count( $hashes ), '%s' ) );
 
         if ( $status === 'failed' ) {
+            /*
+             * ستون error_message از نوع varchar(255) است. پاسخ HTML بینگ (مثلا
+             * صفحه خطای ۵۰۰) بلندتر است و در حالت strict مای‌اس‌کیوال کل UPDATE
+             * رد می‌شد: وضعیت و شمارنده تلاش عوض نمی‌شد و همان آدرس‌ها هر ساعت
+             * بی‌پایان دوباره ارسال می‌شدند.
+             */
+            $error  = mb_substr( trim( (string) preg_replace( '/\s+/u', ' ', (string) $error ) ), 0, 250 );
             $sql    = "UPDATE {$wpdb->prefix}hodima_indexnow_queue SET status = 'failed', error_message = %s, retries = retries + 1 WHERE url_hash IN ({$placeholders})";
             $params = array_merge( [ $error ], $hashes );
         } else {
@@ -82,6 +94,8 @@ final class Hodima_IndexNow {
     public static function clean_old_logs(): void {
         global $wpdb;
         $wpdb->query( "DELETE FROM {$wpdb->prefix}hodima_indexnow_queue WHERE status = 'synced' AND updated_at < NOW() - INTERVAL 30 DAY" );
+        // ناموفق‌هایی که هر ۳ تلاش را مصرف کرده‌اند دیگر هرگز ارسال نمی‌شوند؛ قبلا تا ابد می‌ماندند
+        $wpdb->query( "DELETE FROM {$wpdb->prefix}hodima_indexnow_queue WHERE status = 'failed' AND retries > 3 AND updated_at < NOW() - INTERVAL 30 DAY" );
     }
 
     public static function send_to_bing( array $urls, string $api_key ): array {
@@ -110,7 +124,7 @@ final class Hodima_IndexNow {
         if ( $code === 403 ) return [ 'success' => false, 'rate_limit' => false, 'error_msg' => 'HTTP 403: کلید شما توسط بینگ تایید نشد.' ];
         if ( $code === 422 ) return [ 'success' => false, 'rate_limit' => false, 'error_msg' => 'HTTP 422: دامنه شما با کلید همخوانی ندارد.' ];
 
-        return [ 'success' => false, 'rate_limit' => false, 'error_msg' => "HTTP {$code} (بینگ): " . strip_tags( (string) wp_remote_retrieve_body( $response ) ) ];
+        return [ 'success' => false, 'rate_limit' => false, 'error_msg' => "HTTP {$code} (بینگ): " . mb_substr( trim( wp_strip_all_tags( (string) wp_remote_retrieve_body( $response ) ) ), 0, 200 ) ];
     }
 
     public static function process_queue( bool $force = false ): void {
@@ -146,7 +160,19 @@ final class Hodima_IndexNow {
     }
 
     private static function content_type_allowed( string $type ): bool {
-        return in_array( $type, get_option( 'hodima_indexnow_allowed_content', [] ), true );
+        // (array): گزینه خراب (رشته) در PHP 8 با in_array خطای کشنده می‌داد — روی هر ذخیره نوشته
+        return in_array( $type, (array) get_option( 'hodima_indexnow_allowed_content', [] ), true );
+    }
+
+    /**
+     * آیا آدرس متعلق به همین سایت است؟
+     *
+     * IndexNow کل دسته ۵۰تایی را رد می‌کند (HTTP 422) اگر حتی یک آدرس از
+     * دامنه دیگری باشد؛ یک لینک دستی اشتباه، ۴۹ آدرس سالم را هم ناموفق می‌کرد.
+     */
+    public static function is_own_url( string $url ): bool {
+        $host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+        return '' !== $host && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === $host;
     }
 
     public static function on_save_post( int $post_id, WP_Post $post, bool $update ): void {
