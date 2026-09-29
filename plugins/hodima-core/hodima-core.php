@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Core
  * Plugin URI:        https://hodima.com
  * Description:       کتابخانه مشترک افزونه‌های هدیما: تشخیص IP واقعی (سازگار با Cloudflare)، محدودیت نرخ، تشخیص ربات موتور جستجو، موتور Canonical، گراف واحد اسکیما (JSON-LD) و بررسی محتوای محافظت‌شده. پیش‌نیاز Hodima SEO، Hodima Commerce و Hodima Media.
- * Version:           1.1.1
+ * Version:           1.1.2
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Author:            آرین فتحی
@@ -17,31 +17,10 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 // پیشوند HODIMA_CORE_PLUGIN_ چون HODIMA_CORE_* قبلا در ماژول IndexNow (افزونه SEO) استفاده شده است.
-const HODIMA_CORE_PLUGIN_VERSION = '1.1.1';
+const HODIMA_CORE_PLUGIN_VERSION = '1.1.2';
 define( 'HODIMA_CORE_PLUGIN_FILE', __FILE__ );
 define( 'HODIMA_CORE_PLUGIN_DIR', __DIR__ );
 define( 'HODIMA_CORE_PLUGIN_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
-
-// بلافاصله لود می‌شود (نه در plugins_loaded) تا توابع برای افزونه‌های دیگر و
-// قالب، مستقل از ترتیب الفبایی بارگذاری افزونه‌ها، در دسترس باشند.
-require_once HODIMA_CORE_PLUGIN_DIR . '/includes/helpers.php';
-
-// مدیریت ماژول‌ها (هر افزونه ماژول‌هایش را در plugins_loaded ثبت می‌کند)
-require_once HODIMA_CORE_PLUGIN_DIR . '/includes/modules.php';
-
-// گراف واحد اسکیما: همه JSON-LDهای صفحه در یک @graph (hodima_schema_add)
-require_once HODIMA_CORE_PLUGIN_DIR . '/includes/schema-graph.php';
-
-// به‌روزرسانی خودکار قالب و افزونه‌ها از گیت‌هاب (Plugin Update Checker)
-// همه‌جا لود می‌شود، نه فقط پیشخوان: بررسی زمان‌بندی‌شده با WP-Cron هم اجرا می‌شود.
-require_once HODIMA_CORE_PLUGIN_DIR . '/includes/updates.php';
-
-// پنل «ابزارهای هدیما» در پیشخوان: وضعیت، روشن/خاموش کردن ماژول‌ها و
-// سیستم طراحی مشترک همه صفحه‌های افزونه‌ها (هدر، تب‌ها، فوتر، عرض ۹۵٪)
-if ( is_admin() ) {
-	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-hub.php';
-	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-ui.php';
-}
 
 /**
  * آیا نسخه ۱ قالب هدیما (که همین ماژول‌ها را داخل خودش دارد) فعال است؟
@@ -73,4 +52,39 @@ function hodima_legacy_theme_notice( string $plugin_name ): void {
 			);
 		}
 	} );
+}
+
+/*
+ * قالب هدیما نسخه ۱ همین توابع مشترک (hodima_get_client_ip، hodima_get_canonical_url و …)
+ * را بدون گارد در inc/helpers.php خودش تعریف می‌کند. باگ قبلی: helpers.php بدون این
+ * بررسی لود می‌شد؛ روی سایتی که هنوز قالب نسخه ۱ فعال بود، فعال‌سازی افزونه با خطای
+ * «Cannot redeclare function hodima_cloudflare_ranges()» شکست می‌خورد و اگر افزونه
+ * (مثلا از طریق FTP) فعال می‌ماند، کل سایت از کار می‌افتاد. در این حالت فقط
+ * به‌روزرسانی خودکار (برای رساندن قالب به نسخه ۲) و یک اعلان پیشخوان لود می‌شود.
+ */
+if ( hodima_legacy_theme_active() ) {
+	hodima_legacy_theme_notice( 'Hodima Core' );
+	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/updates.php';
+	return;
+}
+
+// بلافاصله لود می‌شود (نه در plugins_loaded) تا توابع برای افزونه‌های دیگر و
+// قالب، مستقل از ترتیب الفبایی بارگذاری افزونه‌ها، در دسترس باشند.
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/helpers.php';
+
+// مدیریت ماژول‌ها (هر افزونه ماژول‌هایش را در plugins_loaded ثبت می‌کند)
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/modules.php';
+
+// گراف واحد اسکیما: همه JSON-LDهای صفحه در یک @graph (hodima_schema_add)
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/schema-graph.php';
+
+// به‌روزرسانی خودکار قالب و افزونه‌ها از گیت‌هاب (Plugin Update Checker)
+// همه‌جا لود می‌شود، نه فقط پیشخوان: بررسی زمان‌بندی‌شده با WP-Cron هم اجرا می‌شود.
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/updates.php';
+
+// پنل «ابزارهای هدیما» در پیشخوان: وضعیت، روشن/خاموش کردن ماژول‌ها و
+// سیستم طراحی مشترک همه صفحه‌های افزونه‌ها (هدر، تب‌ها، فوتر، عرض ۹۵٪)
+if ( is_admin() ) {
+	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-hub.php';
+	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-ui.php';
 }
