@@ -79,7 +79,7 @@ final class AdminPage {
 		echo '<div class="wrap hd-wrap hodima-rl-page">';
 		hodima_admin_header( [
 			'title'       => 'لینک‌های مرتبط',
-			'description' => 'دسته‌بندی‌های مرتبط، محصولات مکمل و مقاله پیشنهادی که در ویرایشگر هر نوشته، محصول و دسته انتخاب می‌شوند.',
+			'description' => 'محصولات مکمل و مقاله پیشنهادی که در ویرایشگر هر نوشته، محصول و دسته انتخاب می‌شوند.',
 			'icon'        => 'dashicons-admin-links',
 			'current'     => $tab,
 			'tabs'        => [
@@ -112,7 +112,7 @@ final class AdminPage {
 					</header>
 					<p class="hd-card__desc">
 						شورت‌کد: <code>[<?php echo esc_html( $group->shortcode() ); ?>]</code>
-						<?php echo Group::Article === $group ? ' — بدون هیچ عنوانی بالای آن؛ داخل لینک نیمی عکس و نیمی عنوان مقاله.' : ' — کارت‌های تصویری با عنوان بالای کادر.'; ?>
+						<?php echo Group::Article === $group ? ' — بدون هیچ عنوانی بالای آن؛ کارت کوچک، داخل لینک نیمی عکس و نیمی برچسب و عنوان مقاله.' : ' — کارت‌های تصویری با عنوان بالای کادر.'; ?>
 					</p>
 					<div class="hd-fields">
 						<div class="hd-field">
@@ -140,6 +140,11 @@ final class AdminPage {
 							</p>
 						</div>
 						<?php if ( Group::Article === $group ) : ?>
+							<div class="hd-field">
+								<label class="hd-field__label" for="hodima-rl-label">برچسب داخل کارت (بالای عنوان مقاله)</label>
+								<input type="text" id="hodima-rl-label" name="hodima_rl[article_label]" value="<?php echo esc_attr( (string) $s['article_label'] ); ?>" placeholder="خالی = بدون برچسب">
+								<p class="hd-field__help">جزو متن لینک حساب نمی‌شود؛ گوگل فقط عنوان مقاله را متن لینک می‌بیند.</p>
+							</div>
 							<div class="hd-field">
 								<label class="hd-field__label" for="hodima-rl-paragraph">جایگاه در نمایش خودکار: بعد از پاراگراف</label>
 								<input type="number" min="0" max="50" id="hodima-rl-paragraph" name="hodima_rl[article_paragraph]" value="<?php echo esc_attr( (string) $s['article_paragraph'] ); ?>">
@@ -188,8 +193,9 @@ final class AdminPage {
 					<h2 class="hd-card__title">راهنمای شورت‌کدها</h2>
 				</header>
 				<ul class="hd-list">
-					<li><code>[hodima_related_categories]</code> دسته‌بندی‌های مرتبط · <code>[manual_related_products]</code> محصولات مکمل · <code>[hodima_related_article]</code> مقاله پیشنهادی</li>
-					<li>هر شورت‌کد مستقل است: هر کدام را هر جای متن (یا توضیح دسته) بگذارید، فقط کادر خودش همان‌جا نمایش داده می‌شود. لازم نیست کنار هم باشند و لازم نیست هر سه را بگذارید.</li>
+					<li><code>[manual_related_products]</code> محصولات مکمل · <code>[hodima_related_article]</code> مقاله پیشنهادی</li>
+					<li>«دسته‌بندی‌های مرتبط» حذف شد (لینک دسته‌ها را خوشه موضوعی می‌سازد). اگر <code>[hodima_related_categories]</code> جایی در متن مانده باشد چیزی نمایش نمی‌دهد.</li>
+					<li>هر شورت‌کد مستقل است: هر کدام را هر جای متن (یا توضیح دسته) بگذارید، فقط کادر خودش همان‌جا نمایش داده می‌شود. لازم نیست کنار هم باشند و لازم نیست هر دو را بگذارید.</li>
 					<li>ویژگی‌ها: <code>title="…"</code> عنوان دلخواه (<code>title=""</code> بدون عنوان)، <code>heading="h2"</code>، و <code>id="123" type="term"</code> برای نمایش لینک‌های صفحه یا دسته‌ای دیگر.</li>
 					<li><code>[manual_related_products]</code> که از قبل در محتوای سایت است، حالا همان کادر «محصولات مکمل» است و لازم نیست پاک شود. <code>[manual_related_links]</code> و <code>[hodima_complementary_products]</code> هم همین کادر را نشان می‌دهند.</li>
 					<li>در توضیح دسته‌ها هم شورت‌کد کار می‌کند (قبلا به شکل متن خام دیده می‌شد).</li>

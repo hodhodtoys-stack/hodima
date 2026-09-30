@@ -23,7 +23,7 @@
 
 		slots.forEach((slot, i) => {
 			slot.querySelectorAll('[name]').forEach((el) => {
-				el.name = el.name.replace(/\[(categories|products|article)\]\[\d+\]/, `[$1][${i}]`);
+				el.name = el.name.replace(/\[(products|article)\]\[\d+\]/, `[$1][${i}]`);
 			});
 			slot.querySelector('.hodima-rl-slot__num').textContent = faNum(i + 1);
 			const reserve = i >= count;

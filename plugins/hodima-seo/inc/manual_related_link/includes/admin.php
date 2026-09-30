@@ -343,47 +343,33 @@ final class Admin {
 
 		$items = [];
 
-		if ( Group::Categories === $group ) {
-			$terms = get_terms( [
-				'taxonomy'   => Store::search_scope( $group ),
-				'hide_empty' => false,
-				'number'     => 12,
-				'search'     => $query,
-				'orderby'    => '' === $query ? 'count' : 'name',
-				'order'      => '' === $query ? 'DESC' : 'ASC',
+		$types = Store::search_scope( $group );
+		$ids   = [];
+
+		// کد محصول (SKU) — برای فروشگاه عمده رایج‌ترین راه پیدا کردن محصول
+		if ( '' !== $query && in_array( 'product', $types, true ) ) {
+			$ids = get_posts( [
+				'post_type'      => $types,
+				'post_status'    => 'publish',
+				'posts_per_page' => 5,
+				'fields'         => 'ids',
+				'meta_query'     => [ [ 'key' => '_sku', 'value' => $query ] ], // phpcs:ignore WordPress.DB.SlowDBQuery
 			] );
-			foreach ( is_array( $terms ) ? $terms : [] as $term ) {
-				$items[] = [ 'kind' => 'term', 'id' => $term->term_id ];
-			}
-		} else {
-			$types = Store::search_scope( $group );
-			$ids   = [];
+		}
 
-			// کد محصول (SKU) — برای فروشگاه عمده رایج‌ترین راه پیدا کردن محصول
-			if ( '' !== $query && in_array( 'product', $types, true ) ) {
-				$ids = get_posts( [
-					'post_type'      => $types,
-					'post_status'    => 'publish',
-					'posts_per_page' => 5,
-					'fields'         => 'ids',
-					'meta_query'     => [ [ 'key' => '_sku', 'value' => $query ] ], // phpcs:ignore WordPress.DB.SlowDBQuery
-				] );
-			}
+		$found = new WP_Query( [
+			'post_type'              => $types,
+			'post_status'            => 'publish',
+			'posts_per_page'         => 12,
+			's'                      => $query,
+			'fields'                 => 'ids',
+			'no_found_rows'          => true,
+			'update_post_term_cache' => false,
+			'orderby'                => '' === $query ? 'modified' : 'relevance',
+		] );
 
-			$found = new WP_Query( [
-				'post_type'              => $types,
-				'post_status'            => 'publish',
-				'posts_per_page'         => 12,
-				's'                      => $query,
-				'fields'                 => 'ids',
-				'no_found_rows'          => true,
-				'update_post_term_cache' => false,
-				'orderby'                => '' === $query ? 'modified' : 'relevance',
-			] );
-
-			foreach ( array_unique( array_merge( $ids, $found->posts ) ) as $id ) {
-				$items[] = [ 'kind' => 'post', 'id' => (int) $id ];
-			}
+		foreach ( array_unique( array_merge( $ids, $found->posts ) ) as $id ) {
+			$items[] = [ 'kind' => 'post', 'id' => (int) $id ];
 		}
 
 		$results = [];

@@ -4,7 +4,8 @@
  * Path: plugins/hodima-seo/inc/manual_related_link/includes/store.php
  *
  * ساختار متای جدید (_hodima_rl_groups):
- *   [ 'categories' => [ item, … ], 'products' => [ … ], 'article' => [ … ] ]
+ *   [ 'products' => [ item, … ], 'article' => [ … ] ]
+ *   (کلید 'categories' از نسخه ۲.۰–۲.۱ اگر هست دست‌نخورده می‌ماند؛ RETIRED)
  *   item = [ 'kind' => 'post'|'term'|'url', 'id' => int, 'url' => string,
  *            'title' => string (عنوان دلخواه؛ خالی = عنوان مقصد),
  *            'img_id' => int (تصویر دلخواه؛ صفر = تصویر شاخص مقصد) ]
@@ -30,6 +31,9 @@ final class Store {
 	public const OPTION      = 'hodima_rl_settings';
 	public const MAX_SLOTS   = 6;
 	public const HEADINGS    = [ 'h2', 'h3', 'h4', 'p' ];
+
+	/** گروه‌های حذف‌شده: داده‌شان در ذخیره بعدی حفظ می‌شود ولی نمایش/ویرایش ندارند. */
+	public const RETIRED     = [ 'categories' ];
 
 	/** مشکلاتی که کارت را از سایت پنهان می‌کنند (بقیه فقط هشدارند). */
 	public const HIDING = [ 'missing', 'unpublished', 'self', 'gone', 'no_title', 'empty_url', 'noindex' ];
@@ -57,6 +61,7 @@ final class Store {
 		return [
 			'groups'            => $groups,
 			'article_paragraph' => 3,
+			'article_label'     => 'مطالب مرتبط',
 			'heading'           => 'h3',
 			'hide_noindex'      => true,
 			'track_clicks'      => false,
@@ -104,6 +109,7 @@ final class Store {
 		}
 
 		$out['article_paragraph'] = min( 50, max( 0, (int) ( $input['article_paragraph'] ?? 3 ) ) );
+		$out['article_label']     = sanitize_text_field( (string) ( $input['article_label'] ?? 'مطالب مرتبط' ) );
 		$heading                  = (string) ( $input['heading'] ?? 'h3' );
 		$out['heading']           = in_array( $heading, self::HEADINGS, true ) ? $heading : 'h3';
 		$out['hide_noindex']      = ! empty( $input['hide_noindex'] );
@@ -143,13 +149,11 @@ final class Store {
 	/** @return list<string> نوع مقصدهای قابل جستجو برای هر گروه. */
 	public static function search_scope( Group $group ): array {
 		$scope = match ( $group ) {
-			Group::Categories => [ 'product_cat', 'category' ],
-			Group::Products   => [ 'product' ],
-			Group::Article    => [ 'post', 'page' ],
+			Group::Products => [ 'product' ],
+			Group::Article  => [ 'post', 'page' ],
 		};
 		$scope = (array) apply_filters( 'hodima_related_links_search_scope', $scope, $group->value );
-		$check = Group::Categories === $group ? 'taxonomy_exists' : 'post_type_exists';
-		return array_values( array_filter( $scope, $check ) );
+		return array_values( array_filter( $scope, 'post_type_exists' ) );
 	}
 
 	/* =====================================================================
@@ -198,6 +202,15 @@ final class Store {
 		$type  = self::meta_type( $context );
 		$clean = [];
 		$any   = false;
+
+		// داده گروه‌های حذف‌شده (دسته‌بندی‌های مرتبط) پاک نمی‌شود.
+		$stored = get_metadata( $type, $object_id, self::META, true );
+		foreach ( self::RETIRED as $key ) {
+			if ( is_array( $stored ) && ! empty( $stored[ $key ] ) ) {
+				$clean[ $key ] = $stored[ $key ];
+				$any           = true;
+			}
+		}
 
 		foreach ( Group::cases() as $group ) {
 			$items = array_filter( array_map( [ self::class, 'normalize_item' ], array_values( (array) ( $groups[ $group->value ] ?? [] ) ) ) );
@@ -315,8 +328,9 @@ final class Store {
 
 	/**
 	 * لینک‌های «ویترین پیشنهادی» قدیمی بر اساس نوع مقصد پخش می‌شوند:
-	 * ترم ← دسته‌بندی‌های مرتبط، محصول ← محصولات مکمل، نوشته/برگه ← مقاله.
-	 * آدرس ناشناخته به «محصولات مکمل» می‌رود (نام شورت‌کد قدیمی همین بود).
+	 * نوشته/برگه ← مقاله؛ محصول، دسته و آدرس ناشناخته ← محصولات مکمل (همان
+	 * شورت‌کد قدیمی manual_related_products، پس چیزی که روی صفحه بود می‌ماند).
+	 * (تا نسخه ۲.۱ ترم به گروه «دسته‌بندی‌های مرتبط» می‌رفت که حذف شد.)
 	 * هیچ آیتمی دور ریخته نمی‌شود: بیشتر از تعداد نمایش، «خانه ذخیره» می‌شود.
 	 *
 	 * @param list<array{title:string, url:string, img_id:int}> $legacy
@@ -335,9 +349,7 @@ final class Store {
 				$item['kind'] = $target['kind'];
 				$item['id']   = $target['id'];
 				$item['url']  = '';
-				if ( 'term' === $target['kind'] ) {
-					$group = Group::Categories;
-				} elseif ( 'product' !== get_post_type( $target['id'] ) ) {
+				if ( 'post' === $target['kind'] && 'product' !== get_post_type( $target['id'] ) ) {
 					$group = Group::Article;
 				}
 			}
@@ -597,7 +609,7 @@ final class Store {
 			}
 		}
 
-		$taxonomies = array_values( array_unique( array_merge( self::taxonomies(), self::search_scope( Group::Categories ) ) ) );
+		$taxonomies = array_values( array_unique( array_merge( self::taxonomies(), [ 'product_cat', 'category' ] ) ) );
 		foreach ( $taxonomies as $taxonomy ) {
 			$term = get_term_by( 'slug', $slug, $taxonomy );
 			if ( $term instanceof WP_Term ) {

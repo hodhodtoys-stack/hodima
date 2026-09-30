@@ -5,10 +5,11 @@
  *
  * شورت‌کدها — هر کدام مستقل؛ هر جای محتوا که گذاشته شود، فقط کادر خودش
  * همان‌جا چاپ می‌شود:
- *   [hodima_related_categories]  «دسته‌بندی‌های مرتبط» (پیش‌فرض ۲ لینک)
  *   [manual_related_products]    «محصولات مکمل» (پیش‌فرض ۲ لینک)؛ نام‌های دیگر:
  *                                manual_related_links، hodima_complementary_products
- *   [hodima_related_article]     مقاله پیشنهادی، بدون هیچ عنوانی (۱ لینک)
+ *   [hodima_related_article]     مقاله پیشنهادی، بدون هیچ عنوانی بالای کادر (۱ لینک)
+ *   [hodima_related_categories]  حذف‌شده در ۲.۲ (لینک دسته‌ها با خوشه موضوعی)؛
+ *                                چیزی چاپ نمی‌کند تا متن خامش روی صفحه نماند.
  *
  * نسخه ۱.۴ شورت‌کد manual_related_products را «ویترین قدیمی» می‌دانست و هر
  * سه کادر را پشت هم چاپ می‌کرد؛ از ۱.۵ فقط کادر محصولات مکمل است.
@@ -31,6 +32,9 @@ defined( 'ABSPATH' ) || exit;
 
 final class Front {
 
+	/** شورت‌کد گروه‌های حذف‌شده: ثبت می‌مانند و خروجی خالی دارند. */
+	public const RETIRED_TAGS = [ 'hodima_related_categories' ];
+
 	/** زمینه اجباری هنگام اجرای شورت‌کد داخل توضیح ترم. */
 	private static ?array $forced = null;
 
@@ -43,6 +47,9 @@ final class Front {
 				add_shortcode( $tag, static fn( $atts ) => self::shortcode( $group, (array) $atts ) );
 			}
 		}
+		foreach ( self::RETIRED_TAGS as $tag ) {
+			add_shortcode( $tag, '__return_empty_string' );
+		}
 
 		add_action( 'wp_enqueue_scripts', [ self::class, 'assets' ] );
 		add_filter( 'the_content', [ self::class, 'auto_content' ], 12 );
@@ -52,7 +59,7 @@ final class Front {
 
 	/** @return list<string> */
 	public static function tags(): array {
-		return array_merge( ...array_map( static fn( Group $g ) => $g->tags(), Group::cases() ) );
+		return array_merge( self::RETIRED_TAGS, ...array_map( static fn( Group $g ) => $g->tags(), Group::cases() ) );
 	}
 
 	/** آیا شورت‌کد این گروه (با هر نامش) در متن هست؟ */
@@ -192,13 +199,12 @@ final class Front {
 		if ( $item['img_id'] ) {
 			// alt خالی درست است: عنوان همین کارت داخل همین لینک است و alt
 			// تکراری فقط باعث می‌شود صفحه‌خوان عنوان را دو بار بخواند.
-			// کارت مقاله نیمی از عرض محتوا است: اندازه بزرگ‌تر با srcset
-			$media = wp_get_attachment_image( (int) $item['img_id'], Group::Article === $group ? 'medium_large' : 'medium', false, [
+			$media = wp_get_attachment_image( (int) $item['img_id'], 'medium', false, [
 				'class'    => 'hodima-rl__img',
 				'alt'      => '',
 				'loading'  => 'lazy',
 				'decoding' => 'async',
-				'sizes'    => Group::Article === $group ? '(max-width: 48rem) 50vw, 24rem' : '(max-width: 48rem) 45vw, 12rem',
+				'sizes'    => Group::Article === $group ? '(max-width: 48rem) 50vw, 11rem' : '(max-width: 48rem) 45vw, 12rem',
 			] );
 		}
 
@@ -208,22 +214,33 @@ final class Front {
 			$media = '<span class="hodima-rl__placeholder">' . self::icon( $group ) . '</span>';
 		}
 
+		$name = '<span class="hodima-rl__name">' . esc_html( $title ) . '</span>';
+
+		/*
+		 * کارت مقاله: برچسب «مطالب مرتبط» بالای عنوان، داخل کادر. با ::before و
+		 * data-label ساخته می‌شود، نه متن واقعی، تا جزو متن لینک (anchor text)
+		 * نشود — گوگل فقط عنوان مقاله را متن لینک ببیند.
+		 */
+		$label = Group::Article === $group ? (string) Store::settings()['article_label'] : '';
+		if ( '' !== $label ) {
+			$name = sprintf( '<span class="hodima-rl__body" data-label="%s">%s</span>', esc_attr( $label ), $name );
+		}
+
 		return sprintf(
-			'<a class="hodima-rl__card" href="%1$s" data-hodima-rl="%2$s" data-hodima-rl-pos="%3$d"><span class="hodima-rl__media">%4$s</span><span class="hodima-rl__name">%5$s</span></a>',
+			'<a class="hodima-rl__card" href="%1$s" data-hodima-rl="%2$s" data-hodima-rl-pos="%3$d"><span class="hodima-rl__media">%4$s</span>%5$s</a>',
 			esc_url( (string) $item['url'] ),
 			esc_attr( $group->value ),
 			$position,
 			$media,
-			esc_html( $title )
+			$name
 		);
 	}
 
 	/** نماد SVG درون‌خطی (بدون فونت یا فایل خارجی). */
 	private static function icon( Group $group ): string {
 		$path = match ( $group ) {
-			Group::Categories => 'M3 6.5A1.5 1.5 0 0 1 4.5 5h4l2 2h9A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z',
-			Group::Products   => 'M6 8h12l-1 11.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 19.5zM9 8V6.5a3 3 0 0 1 6 0V8',
-			Group::Article    => 'M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM9 12h6M9 16h6M14 3v4h4',
+			Group::Products => 'M6 8h12l-1 11.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 19.5zM9 8V6.5a3 3 0 0 1 6 0V8',
+			Group::Article  => 'M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM9 12h6M9 16h6M14 3v4h4',
 		};
 		return '<svg class="hodima-rl__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' . $path . '"/></svg>';
 	}
@@ -259,10 +276,8 @@ final class Front {
 			}
 		}
 
-		foreach ( [ Group::Categories, Group::Products ] as $group ) {
-			if ( Store::auto( $group ) && ! $present( $group ) ) {
-				$content .= self::render( $group, $object_id, $context );
-			}
+		if ( Store::auto( Group::Products ) && ! $present( Group::Products ) ) {
+			$content .= self::render( Group::Products, $object_id, $context );
 		}
 
 		return $content;

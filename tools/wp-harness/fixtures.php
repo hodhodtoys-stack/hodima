@@ -79,7 +79,7 @@ foreach ( [ [ 'red', 'کوتاه', '120000', 'instock', '6260000000014', 'KS-1-R
 	p( [ 'post_type' => 'product_variation', 'post_parent' => $prod3, 'post_title' => "v$i", 'post_name' => "kesh-rangi-v$i" ], [ '_hx_attrs' => [ 'pa_color' => $c, 'طول' => $len ], '_price' => $pr, '_stock_status' => $st, '_global_unique_id' => $gtin, '_sku' => $vsku ] );
 }
 
-// لینک‌های مرتبط دستی (بخش ۳۱–۳۲): سه شورت‌کد مستقل در سه جای متن پیلار، داده نسخه ۱ در فرزند، شورت‌کد در توضیح دسته
+// لینک‌های مرتبط دستی (بخش ۳۱–۳۳): شورت‌کدهای مستقل در جاهای مختلف متن پیلار (شورت‌کد دسته‌ها از ۳۳ حذف‌شده و نباید چیزی چاپ کند)، داده نسخه ۱ در فرزند، شورت‌کد در توضیح دسته
 wp_update_post( [ 'ID' => $pillar, 'post_content' => '<p>پیلار</p>[hodima_related_categories]<p>بند دوم</p>[hodima_related_article]<img src="https://hodima.test/wp-content/uploads/2025/01/post.jpg" width="640" height="480" alt="p"><p>بند سوم</p>[manual_related_products]' ] );
 update_post_meta( $pillar, '_hodima_rl_groups', [
 	'categories' => [ [ 'kind' => 'term', 'id' => $pcat, 'url' => '', 'title' => '', 'img_id' => 0 ], [ 'kind' => 'term', 'id' => $cat, 'url' => '', 'title' => 'همه اخبار', 'img_id' => 0 ] ],

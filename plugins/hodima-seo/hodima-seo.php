@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           1.5.0
+ * Version:           1.6.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '1.5.0';
+const HODIMA_SEO_VERSION = '1.6.0';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -87,7 +87,7 @@ function hodima_seo_modules(): array {
 		],
 		'manual-links' => [
 			'title'       => 'لینک‌های مرتبط دستی',
-			'description' => 'دسته‌بندی‌های مرتبط، محصولات مکمل و مقاله پیشنهادی با جستجوی زنده در ویرایشگر، نمایش خودکار یا شورت‌کد، relatedLink در اسکیما و گزارش سلامت لینک‌ها.',
+			'description' => 'محصولات مکمل و مقاله پیشنهادی با جستجوی زنده در ویرایشگر، نمایش خودکار یا شورت‌کد، relatedLink در اسکیما و گزارش سلامت لینک‌ها.',
 			'files'       => [ 'inc/manual_related_link/manual_related_link.php' ],
 			'settings'    => 'admin.php?page=hodima-related-links',
 			'icon'        => 'dashicons-admin-links',

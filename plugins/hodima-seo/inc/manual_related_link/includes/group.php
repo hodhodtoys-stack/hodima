@@ -6,6 +6,10 @@
  * پیش از نسخه ۲ فقط یک «ویترین پیشنهادی» با سه خانه وجود داشت و دسته، محصول
  * و مقاله در یک کادر قاطی می‌شدند. حالا هر نوع لینک گروه، شورت‌کد، تعداد و
  * ظاهر خودش را دارد.
+ *
+ * گروه «دسته‌بندی‌های مرتبط» (categories) در نسخه ۲.۲ حذف شد (خواسته کاربر:
+ * لینک دسته‌ها را خوشه موضوعی می‌سازد). داده ذخیره‌شده‌اش پاک نمی‌شود
+ * (Store::RETIRED) و شورت‌کدش چیزی چاپ نمی‌کند (Front::RETIRED_TAGS).
  */
 
 declare(strict_types=1);
@@ -16,14 +20,12 @@ defined( 'ABSPATH' ) || exit;
 
 enum Group: string {
 
-	case Categories = 'categories';
 	case Products   = 'products';
 	case Article    = 'article';
 
 	/** نام گروه در پیشخوان. */
 	public function label(): string {
 		return match ( $this ) {
-			self::Categories => 'دسته‌بندی‌های مرتبط',
 			self::Products   => 'محصولات مکمل',
 			self::Article    => 'مقاله پیشنهادی',
 		};
@@ -32,8 +34,8 @@ enum Group: string {
 	/** عنوان پیش‌فرض بالای کادر در سایت؛ مقاله عمدا هیچ عنوانی ندارد (خواسته کاربر). */
 	public function default_title(): string {
 		return match ( $this ) {
-			self::Categories, self::Products => $this->label(),
-			self::Article                    => '',
+			self::Products => $this->label(),
+			self::Article  => '',
 		};
 	}
 
@@ -44,8 +46,8 @@ enum Group: string {
 	/** تعداد پیش‌فرض لینک‌های نمایشی. */
 	public function default_count(): int {
 		return match ( $this ) {
-			self::Categories, self::Products => 2,
-			self::Article                    => 1,
+			self::Products => 2,
+			self::Article  => 1,
 		};
 	}
 
@@ -58,7 +60,6 @@ enum Group: string {
 	 */
 	public function shortcode(): string {
 		return match ( $this ) {
-			self::Categories => 'hodima_related_categories',
 			self::Products   => 'manual_related_products',
 			self::Article    => 'hodima_related_article',
 		};
@@ -85,7 +86,6 @@ enum Group: string {
 	/** راهنمای جستجو در کادر ویرایشگر. */
 	public function search_placeholder(): string {
 		return match ( $this ) {
-			self::Categories => 'جستجوی دسته‌بندی یا چسباندن آدرس…',
 			self::Products   => 'جستجوی نام یا کد (SKU) محصول، یا چسباندن آدرس…',
 			self::Article    => 'جستجوی مقاله یا برگه، یا چسباندن آدرس…',
 		};
@@ -93,7 +93,6 @@ enum Group: string {
 
 	public function icon(): string {
 		return match ( $this ) {
-			self::Categories => 'dashicons-category',
 			self::Products   => 'dashicons-cart',
 			self::Article    => 'dashicons-media-text',
 		};
