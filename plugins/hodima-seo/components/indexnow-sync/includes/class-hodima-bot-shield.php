@@ -172,6 +172,58 @@ final class Hodima_Bot_Shield {
     }
 
     /**
+     * افزودن نام ربات‌ها به «Do Not Cache User Agents» لایت‌اسپید — با یک کلیک.
+     *
+     * از همان متدی استفاده می‌کند که صفحه تنظیمات خود LiteSpeed Cache هنگام
+     * ذخیره صدا می‌زند (Conf::update_confs در src/conf.cls.php): گزینه ذخیره
+     * *و* قانون .htaccess (که عبور از کش سرور را انجام می‌دهد) از نو ساخته
+     * می‌شود. فقط اضافه می‌کند؛ هیچ خط موجودی حذف نمی‌شود.
+     *
+     * چرا: کاربر فهرست را دستی وارد کرد ولی در کادری از تب Excludes نوشت که
+     * متن را نگه نمی‌دارد (دسته‌ها/برچسب‌ها نام ناموجود را هنگام ذخیره حذف
+     * می‌کنند) و کادر وضعیت سبز نشد.
+     *
+     * @param list<string> $agents
+     * @return 'ok'|'unavailable'|'error'
+     */
+    public static function litespeed_add_agents( array $agents ): string {
+        if ( ! class_exists( '\\LiteSpeed\\Conf' ) || ! method_exists( '\\LiteSpeed\\Conf', 'cls' ) ) {
+            return 'unavailable';
+        }
+
+        $current = self::litespeed_list( 'cache-exc_useragents' ) ?? [];
+        $merged  = $current;
+        foreach ( $agents as $agent ) {
+            $agent = trim( (string) $agent );
+            if ( '' !== $agent && ! self::bot_bypasses_cache( $agent, $merged ) ) {
+                $merged[] = $agent;
+            }
+        }
+
+        if ( $merged === $current ) {
+            return 'ok';
+        }
+
+        try {
+            \LiteSpeed\Conf::cls()->update_confs( [ 'cache-exc_useragents' => $merged ] );
+        } catch ( \Throwable $e ) {
+            error_log( 'Hodima: LiteSpeed update_confs failed: ' . $e->getMessage() );
+            return 'error';
+        }
+
+        // بررسی واقعی: از دیتابیس دوباره خوانده شود
+        wp_cache_delete( 'litespeed.conf.cache-exc_useragents', 'options' );
+        wp_cache_delete( 'alloptions', 'options' );
+        $after = self::litespeed_list( 'cache-exc_useragents' ) ?? [];
+        foreach ( $agents as $agent ) {
+            if ( ! self::bot_bypasses_cache( (string) $agent, $after ) ) {
+                return 'error';
+            }
+        }
+        return 'ok';
+    }
+
+    /**
      * ربات‌های مجازی که هنوز از کش لایت‌اسپید جواب می‌گیرند (هیچ خط فهرست
      * لایت‌اسپید در نامشان نیست). ربات‌های مسدود هم شمرده می‌شوند: بدون عبور
      * از کش، مسدودسازی‌شان عملا اجرا نمی‌شود.

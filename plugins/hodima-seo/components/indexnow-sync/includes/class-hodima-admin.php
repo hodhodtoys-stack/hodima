@@ -133,6 +133,14 @@ final class Hodima_Admin {
                 wp_safe_redirect( $redirect . ( $key_error ? '&msg=bad_key' : '&updated=1' ) );
                 exit;
 
+            // دکمه «افزودن خودکار به لایت‌اسپید» (کادر کش، پایین تب تنظیمات)
+            case 'litespeed_add_bots':
+                $result = Hodima_Bot_Shield::litespeed_add_agents(
+                    array_merge( [ 'Googlebot' ], Hodima_Bot_Shield::bots_served_from_cache() ?? [] )
+                );
+                wp_safe_redirect( $redirect . '&msg=ls_' . $result . '#hodima-cache' );
+                exit;
+
             case 'save_bots': // تب «ربات‌های هوش مصنوعی»
                 $bot_settings = [];
                 foreach ( Hodima_Bot_Shield::BOTS as $sig => $name ) {

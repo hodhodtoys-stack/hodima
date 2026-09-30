@@ -75,6 +75,9 @@ $hodima_nonce_field = static function (): void {
             ( $_GET['msg'] ?? '' ) === 'cleared'         => [ 'success', 'پاکسازی با موفقیت انجام شد.' ],
             ( $_GET['msg'] ?? '' ) === 'unbanned'        => [ 'success', 'آی‌پی مورد نظر از فهرست سیاه خارج شد.' ],
             ( $_GET['msg'] ?? '' ) === 'foreign_url'     => [ 'error', 'فقط آدرس‌های همین سایت را می‌توان به IndexNow فرستاد؛ آدرس دامنه دیگر کل دسته ارسال را در بینگ رد می‌کند.' ],
+            ( $_GET['msg'] ?? '' ) === 'ls_ok'           => [ 'success', 'ربات‌ها به «Do Not Cache User Agents» لایت‌اسپید اضافه شدند و قانون .htaccess به‌روز شد. از این به بعد بازدیدشان ثبت می‌شود.' ],
+            ( $_GET['msg'] ?? '' ) === 'ls_error'        => [ 'error', 'لایت‌اسپید تغییر را ذخیره نکرد. فهرست را دستی در LiteSpeed Cache ← Cache ← Excludes ← Do Not Cache User Agents وارد کنید.' ],
+            ( $_GET['msg'] ?? '' ) === 'ls_unavailable'  => [ 'error', 'افزونه LiteSpeed Cache در دسترس نیست؛ فهرست را دستی وارد کنید.' ],
             ( $_GET['msg'] ?? '' ) === 'bad_key'         => [ 'error', 'تنظیمات ذخیره شد، ولی کلید API معتبر نبود و کلید قبلی حفظ شد. کلید IndexNow باید ۸ تا ۱۲۸ نویسه از حروف انگلیسی، عدد و «-» باشد.' ],
             ( $_GET['test_status'] ?? '' ) === 'success' => [ 'success', 'اتصال به IndexNow بینگ موفق بود.' ],
             ( $_GET['test_status'] ?? '' ) === 'failed'  => [ 'error', 'خطا در ارتباط با بینگ: ' . esc_html( sanitize_text_field( wp_unslash( $_GET['test_error'] ?? '' ) ) ) ],
@@ -544,8 +547,17 @@ $hodima_nonce_field = static function (): void {
                         <p><strong>کادر اشتباه</strong> <code dir="ltr"><?php echo esc_html( implode( ' · ', $hodima_items ) ); ?></code> در کادر <strong dir="ltr"><?php echo esc_html( $hodima_box ); ?></strong> نوشته شده و آنجا روی ربات‌ها اثری ندارد؛ از آنجا پاک و در <strong dir="ltr">Do Not Cache User Agents</strong> بنویسید.</p>
                     </div>
                 <?php endforeach; ?>
+                <?php if ( $hodima_uncached && class_exists( '\\LiteSpeed\\Conf' ) ) : ?>
+                    <form method="post" class="hodima-row">
+                        <?php $hodima_nonce_field(); ?>
+                        <input type="hidden" name="hodima_action" value="litespeed_add_bots">
+                        <input type="hidden" name="active_tab" value="settings">
+                        <button type="submit" class="button button-primary"><span class="dashicons dashicons-yes" aria-hidden="true"></span> افزودن خودکار به لایت‌اسپید</button>
+                        <span class="hd-field__help">همان کاری که ذخیره تنظیمات خود لایت‌اسپید انجام می‌دهد؛ فقط اضافه می‌کند و خطوط فعلی دست نمی‌خورند.</span>
+                    </form>
+                <?php endif; ?>
                 <?php if ( $hodima_uncached ) : ?>
-                    <p class="hd-text">این <?php echo esc_html( number_format_i18n( count( $hodima_uncached ) ) ); ?> ربات هنوز از کش جواب می‌گیرند. در <strong>LiteSpeed Cache ← Cache ← Excludes ← Do Not Cache User Agents</strong> («عامل‌های کاربر را کش نکنید»؛ نه «نقش‌ها» یا «دسته‌ها») اضافه و ذخیره کنید:</p>
+                    <p class="hd-text">یا دستی: این <?php echo esc_html( number_format_i18n( count( $hodima_uncached ) ) ); ?> ربات هنوز از کش جواب می‌گیرند. در <strong>LiteSpeed Cache ← Cache ← Excludes ← Do Not Cache User Agents</strong> («عامل‌های کاربر را کش نکنید»؛ نه «نقش‌ها» یا «دسته‌ها») اضافه و ذخیره کنید:</p>
                     <div class="hodima-copy">
                         <pre class="hd-code" id="hodima-cache-list" dir="ltr"><?php echo esc_html( implode( "\n", $hodima_uncached ) ); ?></pre>
                         <button type="button" class="button" data-copy="hodima-cache-list"><span class="dashicons dashicons-clipboard" aria-hidden="true"></span> کپی فهرست</button>
