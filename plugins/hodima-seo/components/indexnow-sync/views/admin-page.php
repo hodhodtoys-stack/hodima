@@ -76,25 +76,51 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     <?php elseif ( $active_tab === 'ai-shield' ) : ?>
         <?php
         /*
-         * چرا بعضی ربات‌ها در آمار نیستند؟ ربات‌هایی که از کش لایت‌اسپید جواب
-         * می‌گیرند به وردپرس نمی‌رسند: نه شمرده می‌شوند و نه مسدودسازی/محدودیت
-         * نرخ رویشان اجرا می‌شود. فهرست خط‌هایی که باید اضافه شود آماده کپی است.
+         * وضعیت لایت‌اسپید — همیشه نمایش داده می‌شود.
+         * نسخه‌های ۱.۱.۴ و ۱.۱.۵ اگر چیزی مطابق انتظار نبود کادر را بی‌صدا پنهان
+         * می‌کردند؛ روی سایت نه کادری دیده می‌شد و نه علتش. حالا هر حالت
+         * (پیدا نشد، فهرست ناقص، نام ربات در کادر اشتباه، کامل) گزارش می‌شود.
          */
-        $hodima_uncached = Hodima_Bot_Shield::bots_served_from_cache();
-        if ( is_array( $hodima_uncached ) && $hodima_uncached ) : ?>
-            <div class="hd-callout hd-callout--warning">
-                <span class="dashicons dashicons-warning" aria-hidden="true"></span>
+        $hodima_ls       = Hodima_Bot_Shield::litespeed_diagnostics();
+        $hodima_uncached = Hodima_Bot_Shield::bots_served_from_cache() ?? [];
+        $hodima_ver      = defined( 'HODIMA_SEO_VERSION' ) ? HODIMA_SEO_VERSION : '';
+        ?>
+        <?php if ( ! $hodima_ls['active'] ) : ?>
+            <div class="hd-callout">
+                <span class="dashicons dashicons-info" aria-hidden="true"></span>
                 <div>
-                    <p><strong>این ربات‌ها هنوز از کش لایت‌اسپید جواب می‌گیرند</strong></p>
-                    <p>بازدیدشان در آمار ثبت نمی‌شود و اگر مسدودشان کرده باشید، مسدودسازی و محدودیت نرخ روی آن‌ها اجرا نمی‌شود. این خط‌ها را در <strong>LiteSpeed Cache ← Cache ← Excludes ← Do Not Cache User Agents</strong> اضافه و ذخیره کنید (هر کدام در یک خط):</p>
-                    <pre class="hd-code" dir="ltr"><?php echo esc_html( implode( "\n", $hodima_uncached ) ); ?></pre>
-                    <p>هزینه: صفحه‌ها برای این ربات‌ها هر بار ساخته می‌شوند؛ محدودیت نرخ (تب تنظیمات) فشار ربات‌های پرحجم را کنترل می‌کند. بازدیدکننده‌ها همچنان از کش استفاده می‌کنند.</p>
+                    <p><strong>افزونه LiteSpeed Cache روی این سایت پیدا نشد</strong></p>
+                    <p>اگر کش صفحه از طرف هاست یا Cloudflare است (نه افزونه LiteSpeed Cache)، باید ربات‌ها را در تنظیمات همان سرویس از کش مستثنا کنید.</p>
+                    <p class="hd-muted">Hodima SEO <?php echo esc_html( $hodima_ver ); ?></p>
                 </div>
             </div>
-        <?php elseif ( is_array( $hodima_uncached ) ) : ?>
-            <div class="hd-callout hd-callout--success">
-                <span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
-                <p>همه ربات‌های هوش مصنوعی از کش لایت‌اسپید عبور می‌کنند؛ هر بازدیدشان ثبت می‌شود و تنظیمات مسدودسازی رویشان اجرا می‌شود.</p>
+        <?php else : ?>
+            <div class="hd-callout <?php echo $hodima_uncached || $hodima_ls['misplaced'] ? 'hd-callout--warning' : 'hd-callout--success'; ?>">
+                <span class="dashicons <?php echo $hodima_uncached || $hodima_ls['misplaced'] ? 'dashicons-warning' : 'dashicons-yes-alt'; ?>" aria-hidden="true"></span>
+                <div>
+                    <p><strong><?php echo $hodima_uncached ? 'این ربات‌ها هنوز از کش لایت‌اسپید جواب می‌گیرند' : 'همه ربات‌های هوش مصنوعی از کش لایت‌اسپید عبور می‌کنند'; ?></strong></p>
+                    <p>
+                        فهرست فعلی <strong dir="ltr">Do Not Cache User Agents</strong> در لایت‌اسپید:
+                        <?php if ( $hodima_ls['agents'] ) : ?>
+                            <code dir="ltr"><?php echo esc_html( implode( ' · ', $hodima_ls['agents'] ) ); ?></code>
+                        <?php else : ?>
+                            <strong>خالی است.</strong>
+                        <?php endif; ?>
+                    </p>
+                    <?php foreach ( $hodima_ls['misplaced'] as $hodima_box => $hodima_items ) : ?>
+                        <p>
+                            <strong>کادر اشتباه:</strong> <code dir="ltr"><?php echo esc_html( implode( ' · ', $hodima_items ) ); ?></code>
+                            در کادر <strong dir="ltr"><?php echo esc_html( $hodima_box ); ?></strong> نوشته شده و آنجا روی ربات‌ها اثری ندارد.
+                            آن را از این کادر پاک و در <strong dir="ltr">Do Not Cache User Agents</strong> بنویسید.
+                        </p>
+                    <?php endforeach; ?>
+                    <?php if ( $hodima_uncached ) : ?>
+                        <p>بازدید این ربات‌ها در آمار ثبت نمی‌شود و اگر مسدودشان کرده باشید، مسدودسازی و محدودیت نرخ روی آن‌ها اجرا نمی‌شود. در <strong>LiteSpeed Cache ← Cache ← Excludes ← Do Not Cache User Agents</strong> (به فارسی معمولا «عامل‌های کاربر را کش نکنید»؛ <em>نه</em> «نقش‌ها» یا «دسته‌ها») این خط‌ها را اضافه و ذخیره کنید:</p>
+                        <pre class="hd-code" dir="ltr"><?php echo esc_html( implode( "\n", $hodima_uncached ) ); ?></pre>
+                        <p>هزینه: صفحه‌ها برای این ربات‌ها هر بار ساخته می‌شوند؛ محدودیت نرخ (تب تنظیمات) فشار ربات‌های پرحجم را کنترل می‌کند. بازدیدکننده‌ها همچنان از کش استفاده می‌کنند.</p>
+                    <?php endif; ?>
+                    <p class="hd-muted">LiteSpeed Cache <?php echo esc_html( $hodima_ls['version'] ?: '—' ); ?> · Hodima SEO <?php echo esc_html( $hodima_ver ); ?></p>
+                </div>
             </div>
         <?php endif; ?>
         <div class="hodima-toolbar">

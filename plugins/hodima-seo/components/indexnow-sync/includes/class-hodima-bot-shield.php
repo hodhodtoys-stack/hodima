@@ -43,36 +43,75 @@ final class Hodima_Bot_Shield {
      */
     public const ROBOTS_ONLY = [ 'Google-Extended', 'Applebot-Extended' ];
 
+    /** یک گزینه لایت‌اسپید؛ آرایه‌ها به شکل رشته JSON ذخیره می‌شوند (Root::_maybe_encode). */
+    private static function litespeed_list( string $id ): ?array {
+        $value = get_option( 'litespeed.conf.' . $id, null );
+        if ( null === $value || false === $value ) {
+            return null;
+        }
+        if ( is_string( $value ) ) {
+            $decoded = json_decode( $value, true );
+            $value   = is_array( $decoded ) ? $decoded : preg_split( '/\R/', $value );
+        }
+        return array_values( array_filter( array_map( 'trim', array_map( 'strval', (array) $value ) ) ) );
+    }
+
+    /**
+     * وضعیت کامل لایت‌اسپید برای کادر تب «سپر ربات‌ها».
+     *
+     * نسخه‌های ۱.۱.۴ و ۱.۱.۵ وقتی چیزی مطابق انتظار نبود کادر را بی‌صدا
+     * پنهان می‌کردند و علت روی سایت معلوم نمی‌شد. حالا همه‌چیز گزارش می‌شود:
+     * لایت‌اسپید پیدا شد یا نه، فهرست فعلی چیست، و اگر نام رباتی اشتباهی در
+     * کادر دیگری از تب Excludes (مثلا Do Not Cache Roles) نوشته شده، کجا.
+     *
+     * @return array{active:bool, version:string, agents:list<string>, option_found:bool, misplaced:array<string, list<string>>}
+     */
+    public static function litespeed_diagnostics(): array {
+        $active = defined( 'LSCWP_V' ) || class_exists( '\\LiteSpeed\\Core' )
+            || ( function_exists( 'hodima_litespeed_active' ) && hodima_litespeed_active() );
+
+        $agents    = $active ? self::litespeed_list( 'cache-exc_useragents' ) : null;
+        $misplaced = [];
+
+        if ( $active ) {
+            $boxes = [
+                'cache-exc'         => 'Do Not Cache URIs',
+                'cache-exc_qs'      => 'Do Not Cache Query Strings',
+                'cache-exc_cookies' => 'Do Not Cache Cookies',
+                'cache-exc_cat'     => 'Do Not Cache Categories',
+                'cache-exc_tag'     => 'Do Not Cache Tags',
+                'cache-exc_roles'   => 'Do Not Cache Roles',
+            ];
+            $bot_words = '/bot|gpt|claude|perplexity|crawler|meta-external|bytespider|google|bing/i';
+            foreach ( $boxes as $id => $label ) {
+                foreach ( (array) self::litespeed_list( $id ) as $entry ) {
+                    if ( preg_match( $bot_words, $entry ) ) {
+                        $misplaced[ $label ][] = $entry;
+                    }
+                }
+            }
+        }
+
+        return [
+            'active'       => $active,
+            'version'      => defined( 'LSCWP_V' ) ? (string) LSCWP_V : '',
+            'agents'       => $agents ?? [],
+            'option_found' => null !== $agents,
+            'misplaced'    => $misplaced,
+        ];
+    }
+
     /**
      * فهرست «Do Not Cache User Agents» لایت‌اسپید.
      *
      * درخواستی که از کش صفحه لایت‌اسپید سرو شود به وردپرس نمی‌رسد: نه در
      * آمار ثبت می‌شود و نه مسدودسازی و محدودیت نرخ روی آن اعمال می‌شود.
      *
-     * باگ نسخه ۱.۱.۴: LiteSpeed Cache آرایه‌ها را به شکل رشته JSON ذخیره
-     * می‌کند (Root::_maybe_encode → '["Googlebot"]')، نه آرایه PHP؛ آن رشته
-     * یک «خط» حساب می‌شد و هیچ رباتی پوشش‌داده تشخیص داده نمی‌شد. تشخیص
-     * لایت‌اسپید هم به تابع قالب وابسته بود. حالا هر دو مستقیم.
-     *
      * @return list<string>|null null = لایت‌اسپید فعال نیست
      */
     public static function litespeed_excluded_agents(): ?array {
-        $active = defined( 'LSCWP_V' ) || class_exists( '\\LiteSpeed\\Core' )
-            || ( function_exists( 'hodima_litespeed_active' ) && hodima_litespeed_active() );
-        if ( ! $active ) {
-            return null;
-        }
-
-        // نام گزینه در LSCWP 3+: 'litespeed.conf.' + Base::O_CACHE_EXC_USERAGENTS
-        $value = get_option( 'litespeed.conf.cache-exc_useragents', [] );
-
-        if ( is_string( $value ) ) {
-            $decoded = json_decode( $value, true );
-            $value   = is_array( $decoded ) ? $decoded : preg_split( '/\R/', $value );
-        }
-
-        // گزینه نبود = هیچ استثنایی (پیش‌فرض خود لایت‌اسپید آرایه خالی است)
-        return array_values( array_filter( array_map( 'trim', array_map( 'strval', (array) $value ) ) ) );
+        $diag = self::litespeed_diagnostics();
+        return $diag['active'] ? $diag['agents'] : null;
     }
 
     /**
