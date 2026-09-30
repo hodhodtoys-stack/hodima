@@ -908,7 +908,13 @@ define( 'HOD_VIDEO_WATCH_CRON_KEY', 'یک-رشته-طولانی-تصادفی' );
 - نصب و فعال‌سازی از ZIP در هر دو ترتیب: بدون خطا، یک تگ. بدون Hodima Core: بدون خطا (فالبک تگ‌های جداگانه). `php -l`.
 - محدودیت: ووکامرس شبیه‌سازی‌شده است؛ روی سایت یک محصول ساده و یک محصول متغیر را در Rich Results Test (بخش «Product snippets» و «Merchant listings») ببینید.
 
-## ۲۹. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
+## ۲۹. نوع بازپرداخت مرجوعی (refundType) — مرحله ۲۲
+
+- **گزارش کاربر (Rich Results Test سایت زنده، بعد از 1.2.0):** بخش جدید «Return policies» یک مورد معتبر با هشدار غیرمهم `Missing field "refundType" (optional)`.
+- **اصلاح (SEO 1.2.1):** گزینه `hodima_schema_product_refund_type` در پنل «اسکیما ← محصولات» (`none` پیش‌فرض / `full` → `FullRefund` / `exchange` → `ExchangeRefund` / `credit` → `StoreCreditRefund`) در `hodima_seo_schema_return_policy()` — همان سیاست روی سازمان و پیشنهاد هر محصول. پیش‌فرض «ذکر نشود» چون ادعای «بازگشت کامل وجه» بدون تأیید سیاست واقعی فروشگاه نادرست است؛ برای «مرجوعی پذیرفته نمی‌شود» چاپ نمی‌شود.
+- **تست:** `compare-with-ref.sh` با پیش‌فرض: بدون تغییر خروجی (فقط `uploadDate` شناخته‌شده)، بدون هشدار PHP. ذخیره پنل با `full` → `"refundType":"https://schema.org/FullRefund"`؛ مقدار نامجاز → پیش‌فرض. `admin-check.sh` صفحه محصولات بدون خطا. `php -l`.
+
+## ۳۰. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
 
 | مسیر | کارکرد | پیشنهاد مکان |
 |---|---|---|

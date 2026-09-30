@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hodima_product_schema
         update_option('hodima_schema_product_amount_unit', 'toman');
         update_option('hodima_schema_product_return_fees', $pick( 'hodima_schema_product_return_fees', [ 'customer', 'free' ] ));
         update_option('hodima_schema_product_return_method', $pick( 'hodima_schema_product_return_method', [ 'mail', 'store', 'none' ] ));
+        update_option('hodima_schema_product_refund_type', $pick( 'hodima_schema_product_refund_type', [ 'none', 'full', 'exchange', 'credit' ] ));
 
         // باگ رفع‌شده: قبلاً حداقل/حداکثر روزهای آماده‌سازی و ارسال بدون هیچ
         // بررسی نسبت به هم ذخیره می‌شدند. اگر ادمین به‌اشتباه مقدار حداقل را
@@ -89,6 +90,7 @@ if ( 'toman' !== get_option( 'hodima_schema_product_amount_unit', 'rial' ) ) {
 }
 $return_fees   = get_option('hodima_schema_product_return_fees', 'customer');
 $return_method = get_option('hodima_schema_product_return_method', 'mail');
+$refund_type   = get_option('hodima_schema_product_refund_type', 'none');
 $handling_min  = get_option('hodima_schema_product_handling_min', '1');
 $handling_max  = get_option('hodima_schema_product_handling_max', '2');
 $transit_min   = get_option('hodima_schema_product_transit_min', '1');
@@ -183,6 +185,17 @@ hodima_view_header(
                     <option value="store" <?php selected($return_method, 'store'); ?>>تحویل حضوری در فروشگاه/انبار</option>
                     <option value="none" <?php selected($return_method, 'none'); ?>>ذکر نشود</option>
                 </select>
+            </div>
+
+            <div class="hd-field">
+                <label class="hd-field__label" for="hodima_schema_product_refund_type">نوع بازپرداخت کالای مرجوعی</label>
+                <select name="hodima_schema_product_refund_type" id="hodima_schema_product_refund_type">
+                    <option value="none" <?php selected($refund_type, 'none'); ?>>ذکر نشود</option>
+                    <option value="full" <?php selected($refund_type, 'full'); ?>>بازگشت کامل وجه</option>
+                    <option value="exchange" <?php selected($refund_type, 'exchange'); ?>>تعویض کالا</option>
+                    <option value="credit" <?php selected($refund_type, 'credit'); ?>>اعتبار خرید (کیف پول/اعتبار فروشگاه)</option>
+                </select>
+                <p class="hd-field__help">گوگل بدون این فیلد هشدار غیرمهم «Missing field refundType» می‌دهد. گزینه‌ای را انتخاب کنید که واقعا در فروشگاه انجام می‌شود.</p>
             </div>
 
             <div class="hd-field">

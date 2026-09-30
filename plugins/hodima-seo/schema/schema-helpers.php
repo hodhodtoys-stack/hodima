@@ -421,6 +421,23 @@ function hodima_seo_schema_return_policy(): array {
 		? 'https://schema.org/FreeReturn'
 		: 'https://schema.org/ReturnFeesCustomerResponsibility';
 
+	/*
+	 * نوع بازپرداخت (refundType) — Rich Results Test بدون آن هشدار غیرمهم
+	 * «Missing field refundType» می‌دهد. پیش‌فرض «ذکر نشود»: ادعای
+	 * «بازگشت کامل وجه» وقتی سیاست فروشگاه چیز دیگری است نادرست است؛
+	 * مدیر در «اسکیما ← محصولات» انتخاب می‌کند.
+	 */
+	$refund = match ( get_option( 'hodima_schema_product_refund_type', 'none' ) ) {
+		'full'     => 'https://schema.org/FullRefund',
+		'exchange' => 'https://schema.org/ExchangeRefund',
+		'credit'   => 'https://schema.org/StoreCreditRefund',
+		default    => '',
+	};
+
+	if ( '' !== $refund ) {
+		$policy['refundType'] = $refund;
+	}
+
 	return $policy;
 }
 
