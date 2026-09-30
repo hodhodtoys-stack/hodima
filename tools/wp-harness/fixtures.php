@@ -69,9 +69,18 @@ set_post_thumbnail( $prod, $img4 );
 wp_set_object_terms( $prod, [ $pcat ], 'product_cat' ); wp_set_object_terms( $prod, [ $ptag ], 'product_tag' );
 $prod2 = p( [ 'post_type' => 'product', 'post_title' => 'گلسر ساده', 'post_name' => 'pin-simple', 'post_content' => 'ساده' ], [ '_sku' => 'PN-1', '_price' => '90000', '_stock_status' => 'outofstock' ] );
 wp_set_object_terms( $prod2, [ $pcat ], 'product_cat' ); wp_set_object_terms( $prod2, [ $ptag ], 'product_tag' );
+// محصول متغیر: دو رنگ (ویژگی سراسری pa_color) × طول (ویژگی سفارشی)، یکی ناموجود، یکی با بارکد، یکی بی‌قیمت
+$red  = wp_insert_term( 'قرمز', 'pa_color', [ 'slug' => 'red' ] )['term_id'];
+$blue = wp_insert_term( 'آبی', 'pa_color', [ 'slug' => 'blue' ] )['term_id'];
+$prod3 = p( [ 'post_type' => 'product', 'post_title' => 'کش مو رنگی', 'post_name' => 'kesh-rangi', 'post_content' => 'کش', 'post_excerpt' => 'کش رنگی' ], [ '_sku' => 'KS-1', '_hx_type' => 'variable', '_stock_status' => 'instock', '_wc_review_count' => 3, '_wc_average_rating' => '4.00' ] );
+set_post_thumbnail( $prod3, $img4 );
+wp_set_object_terms( $prod3, [ $pcat ], 'product_cat' );
+foreach ( [ [ 'red', 'کوتاه', '120000', 'instock', '6260000000014', 'KS-1-R' ], [ 'blue', 'بلند', '150000', 'outofstock', '', '' ], [ 'red', 'بلند', '', 'instock', '', '' ] ] as $i => [ $c, $len, $pr, $st, $gtin, $vsku ] ) {
+	p( [ 'post_type' => 'product_variation', 'post_parent' => $prod3, 'post_title' => "v$i", 'post_name' => "kesh-rangi-v$i" ], [ '_hx_attrs' => [ 'pa_color' => $c, 'طول' => $len ], '_price' => $pr, '_stock_status' => $st, '_global_unique_id' => $gtin, '_sku' => $vsku ] );
+}
 
 update_option( 'posts_per_page', 1 );
 if ( $o = getenv( 'HARNESS_OPTS' ) ) { eval( $o ); }
 flush_rewrite_rules( true );
-file_put_contents( dirname( $harness_wp ) . '/ids.json', json_encode( compact( 'gchild', 'home', 'blog', 'about', 'contact', 'plain', 'videos', 'pillar', 'child', 'vid', 'prod', 'prod2', 'shop', 'cat', 'tag', 'pcat', 'ptag' ) ) );
+file_put_contents( dirname( $harness_wp ) . '/ids.json', json_encode( compact( 'gchild', 'home', 'blog', 'about', 'contact', 'plain', 'videos', 'pillar', 'child', 'vid', 'prod', 'prod2', 'prod3', 'shop', 'cat', 'tag', 'pcat', 'ptag' ) ) );
 echo "installed\n";

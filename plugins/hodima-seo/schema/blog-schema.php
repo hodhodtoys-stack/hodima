@@ -53,7 +53,12 @@ function hook_render_blog_schema() {
     $default_image_from_admin = function_exists( 'hodima_seo_schema_logo_url' ) ? hodima_seo_schema_logo_url() : ( get_option('hodima_schema_homepage_logo') ?: get_site_url(null, '/wp-content/uploads/2025/06/logo2.png') );
     $image_url = $default_image_from_admin; 
     
-    if ( has_post_thumbnail() ) {
+    $image_size = null;
+    $featured   = function_exists( 'hodima_seo_schema_featured_image' ) ? hodima_seo_schema_featured_image( (int) $post_id ) : null;
+    if ( null !== $featured ) {
+        [ $image_url, $w, $h ] = $featured;
+        $image_size = [ $w, $h ];
+    } elseif ( has_post_thumbnail() ) {
         $image_url = get_the_post_thumbnail_url($post_id, 'full');
     }
 
@@ -72,16 +77,19 @@ function hook_render_blog_schema() {
         'description' => $clean_desc,
         'datePublished' => $published_at,
         'dateModified' => $modified_at,
-        'author' => array(
-            '@type' => 'Person',
-            'name' => $author_name,
-            'url' => get_author_posts_url($post->post_author)
-        ),
+        // نویسنده با شناسه (نود Person پایین؛ صفحه نویسنده ProfilePage همان را
+        // mainEntity دارد). قبلا Person بی‌شناسه‌ی جداگانه در هر مقاله بود.
+        'author' => function_exists( 'hodima_seo_schema_person_id' )
+            ? array( '@id' => hodima_seo_schema_person_id( (int) $post->post_author ) )
+            : array( '@type' => 'Person', 'name' => $author_name, 'url' => get_author_posts_url( $post->post_author ) ),
         'image' => array(
             '@type' => 'ImageObject',
             '@id' => $post_url . '#primaryimage',
             'url' => $image_url,
         ),
+        'thumbnailUrl' => $image_url,
+        'inLanguage' => 'fa-IR',
+        'isPartOf' => array( '@id' => $post_url . '#webpage' ),
         'url' => $post_url,
         // باگ رفع‌شده: قبلاً اینجا یک Organization کامل و مستقل (بدون
         // @id) به‌عنوان publisher ساخته می‌شد — یعنی یک نسخه‌ی دوم و جدا از
@@ -134,6 +142,32 @@ function hook_render_blog_schema() {
         }
     }
 
+    if ( null !== $image_size ) {
+        $blog_posting['image']['width']  = $image_size[0];
+        $blog_posting['image']['height'] = $image_size[1];
+    }
+
+    // تعداد کلمات، بخش (دسته‌ها) و کلیدواژه‌ها (برچسب‌ها) — ویژگی‌های پیشنهادی Article
+    $plain = trim( wp_strip_all_tags( strip_shortcodes( (string) $post->post_content ) ) );
+    if ( '' !== $plain ) {
+        $blog_posting['wordCount'] = count( preg_split( '/\s+/u', $plain, -1, PREG_SPLIT_NO_EMPTY ) );
+    }
+
+    $sections = array_values( wp_list_pluck( (array) get_the_category( $post_id ), 'name' ) );
+    if ( [] !== $sections ) {
+        $blog_posting['articleSection'] = count( $sections ) > 1 ? array_values( $sections ) : (string) $sections[0];
+    }
+
+    $tags = get_the_tags( $post_id );
+    if ( is_array( $tags ) && [] !== $tags ) {
+        $blog_posting['keywords'] = implode( '، ', wp_list_pluck( $tags, 'name' ) );
+    }
+
+    $graph = [ $blog_posting ];
+    if ( function_exists( 'hodima_seo_schema_person_node' ) ) {
+        $graph[] = hodima_seo_schema_person_node( (int) $post->post_author );
+    }
+
     // 3. افزودن به گراف واحد صفحه (hodima-core)
-    hodima_schema_add( $blog_posting, 'hodima-seo: blog-schema' );
+    hodima_schema_add( [ '@graph' => $graph ], 'hodima-seo: blog-schema' );
 }

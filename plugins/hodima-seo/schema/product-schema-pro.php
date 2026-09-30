@@ -86,8 +86,18 @@ function hook_generate_custom_product_schema() {
     }
     // =========================================================================
 
-    $image_id = $_product->get_image_id();
-    $image_url = $image_id ? wp_get_attachment_url( $image_id ) : $opt_def_img;
+    /*
+     * تصاویر: تصویر اصلی + گالری (گوگل چند تصویر را ترجیح می‌دهد؛ قبلا فقط
+     * تصویر اصلی بود). بدون تصویر → لوگو.
+     */
+    $images = [];
+    foreach ( array_merge( [ (int) $_product->get_image_id() ], array_map( 'intval', (array) ( method_exists( $_product, 'get_gallery_image_ids' ) ? $_product->get_gallery_image_ids() : [] ) ) ) as $img_id ) {
+        $img_url = $img_id ? (string) wp_get_attachment_url( $img_id ) : '';
+        if ( '' !== $img_url && ! in_array( $img_url, $images, true ) && count( $images ) < 10 ) {
+            $images[] = $img_url;
+        }
+    }
+    $image_url = $images[0] ?? $opt_def_img;
 
     /*
      * موجودی از همان تابعی که قالب صفحه استفاده می‌کند
@@ -100,7 +110,6 @@ function hook_generate_custom_product_schema() {
         ? hodima_product_schema_availability( $_product )
         : ( $_product->is_in_stock() ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' );
     $stock_location = function_exists( 'hodima_product_stock_location' ) ? hodima_product_stock_location( $_product ) : '';
-    $offer_url      = function_exists( 'hodima_product_schema_page_url' ) ? hodima_product_schema_page_url( $url ) : $url;
     // باگ واقعی و تأییدشده (دقیقاً همان چیزی که ابزار Rich Results گوگل
     // با خطای «Date/time not in ISO 8601 format in field priceValidUntil»
     // گزارش داد): wp_date() روی این سایت از تبدیل‌کننده‌ی تقویم شمسی وردپرس
@@ -130,38 +139,8 @@ function hook_generate_custom_product_schema() {
      */
     $seller_info = ['@type' => 'Organization', 'name' => $opt_seller, 'url' => trailingslashit( home_url() )];
 
-    /*
-     * سیاست مرجوعی از پنل (قبلا «مرجوعی رایگان، پستی» در کد ثابت بود).
-     * مهلت ۰ روز = مرجوعی پذیرفته نمی‌شود؛ قبلا «۰ روز مهلت» چاپ می‌شد که
-     * نامعتبر است.
-     */
-    if ( $opt_return_days > 0 ) {
-        $merchant_return = [
-            '@type' => 'MerchantReturnPolicy',
-            'applicableCountry' => 'IR',
-            'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
-            'merchantReturnDays' => $opt_return_days,
-        ];
-
-        $return_method = match ( get_option( 'hodima_schema_product_return_method', 'mail' ) ) {
-            'store' => 'https://schema.org/ReturnInStore',
-            'none'  => '',
-            default => 'https://schema.org/ReturnByMail',
-        };
-        if ( '' !== $return_method ) {
-            $merchant_return['returnMethod'] = $return_method;
-        }
-
-        $merchant_return['returnFees'] = 'free' === get_option( 'hodima_schema_product_return_fees', 'customer' )
-            ? 'https://schema.org/FreeReturn'
-            : 'https://schema.org/ReturnFeesCustomerResponsibility';
-    } else {
-        $merchant_return = [
-            '@type' => 'MerchantReturnPolicy',
-            'applicableCountry' => 'IR',
-            'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted',
-        ];
-    }
+    // سیاست مرجوعی از پنل — همان که روی سازمان هم هست (schema-helpers.php)
+    $merchant_return = hodima_seo_schema_return_policy();
 
     $shipping_details = [
         '@type' => 'OfferShippingDetails',
@@ -176,14 +155,15 @@ function hook_generate_custom_product_schema() {
      * اعلام می‌شد، در حالی که هزینه با مشتری و بسته به حجم بار است.
      *   متغیر (پیش‌فرض): مبلغی اعلام نمی‌شود، یا فقط سقف (maxValue)
      *   ثابت: همان مبلغ پنل (0 = رایگان)
+     * مبلغ پنل به تومان است و برای گوگل به ریال (IRR، کد ISO) تبدیل می‌شود.
      */
     if ( 'fixed' === get_option( 'hodima_schema_product_shipping_mode', 'customer' ) ) {
         $shipping_details['shippingRate'] = [
             '@type'    => 'MonetaryAmount',
-            'value'    => (string) $opt_shipping_cost,
+            'value'    => (string) hodima_seo_schema_panel_amount_rial( $opt_shipping_cost ),
             'currency' => 'IRR',
         ];
-    } elseif ( ( $shipping_max = (int) get_option( 'hodima_schema_product_shipping_max', 0 ) ) > 0 ) {
+    } elseif ( ( $shipping_max = hodima_seo_schema_panel_amount_rial( get_option( 'hodima_schema_product_shipping_max', '' ) ) ) > 0 ) {
         $shipping_details['shippingRate'] = [
             '@type'    => 'MonetaryAmount',
             'maxValue' => $shipping_max,
@@ -192,17 +172,11 @@ function hook_generate_custom_product_schema() {
     }
 
     /*
-     * زمان تحویل فقط برای کالای انبار ایران.
-     * زمان‌های تنظیم‌شده (مثلا ۱ تا ۴ روز) برای کالای انبار چین درست نیستند.
-     * ادعای زمان تحویل نادرست بدتر از نبودنش است (deliveryTime توصیه‌شده
-     * است نه الزامی). برای کالای چین با زمان واقعی:
+     * زمان تحویل. انبار چین زمان جداگانه خودش را دارد (پنل اسکیما ←
+     * محصولات). قبلا deliveryTime برای این محصولات حذف می‌شد و Merchant
+     * Listings هشدار Missing field "deliveryTime" می‌داد. زمان دلخواه:
      *   add_filter( 'hodima_product_delivery_days', fn( $d, $loc ) => 'china' === $loc
      *       ? [ 'handling' => [ 2, 5 ], 'transit' => [ 20, 35 ] ] : $d, 10, 2 );
-     */
-    /*
-     * انبار چین زمان جداگانه خودش را دارد (پنل اسکیما ← محصولات). قبلا
-     * deliveryTime برای این محصولات حذف می‌شد (چون زمان انبار ایران درست
-     * نبود) و Merchant Listings هشدار Missing field "deliveryTime" می‌داد.
      */
     $delivery_default = 'china' === $stock_location
         ? [
@@ -221,76 +195,40 @@ function hook_generate_custom_product_schema() {
         ];
     }
 
-    $currency = get_woocommerce_currency();
-    $is_irt = ($currency === 'IRT');
-    if ($is_irt) $currency = 'IRR';
+    /*
+     * پیشنهاد (Offer) یک محصول یا یک تنوع.
+     *
+     * قیمت فروشگاه تومان است؛ گوگل فقط کد ISO 4217 را می‌پذیرد و «IRT» کد
+     * رسمی نیست، پس ×۱۰ و IRR (hodima_seo_schema_price). نسخه قبلی فقط
+     * IRT را می‌شناخت و «هزار تومان» (IRHT) را بی‌تبدیل و با کد نامعتبر
+     * چاپ می‌کرد.
+     *
+     * بدون قیمت → بدون Offer. نسخه قبلی "price": "0" می‌گذاشت که گوگل آن را
+     * «رایگان» می‌خواند؛ محصول با امتیاز/نظرات همچنان Product snippet دارد.
+     * حداقل سفارش (eligibleTransactionVolume) عمدا در اسکیما نیست.
+     */
+    $make_offer = static function ( $item, string $offer_url, string $availability ) use ( $valid_until, $valid_from, $seller_info, $merchant_return, $shipping_details ): ?array {
 
-    if ( $_product->is_type( 'variable' ) ) {
-        $prices = $_product->get_variation_prices( true );
+        $price = hodima_seo_schema_price( $item->get_price() );
 
-        // نکته مهم: آرایه get_variation_prices بر اساس ترتیب واریانت‌ها است، نه مقدار قیمت.
-        // current()/end() اولین/آخرین عضو آرایه را می‌دهند که لزوماً کمترین/بیشترین قیمت نیست.
-        // برای صحت داده باید از min()/max() واقعی استفاده شود.
-        $min_price = ! empty( $prices['price'] ) ? min( $prices['price'] ) : 0;
-        $max_price = ! empty( $prices['price'] ) ? max( $prices['price'] ) : 0;
-
-        if ( $is_irt ) {
-            // باگ رفع‌شده: ضرب مستقیم فلوت در ۱۰ می‌تواند نویز اعشاری تولید
-            // کند (مثلاً 123456.70000000001) که وارد JSON-LD می‌شد و در
-            // اعتبارسنج‌های schema.org به‌عنوان قیمت نامعتبر/عجیب گزارش می‌شد.
-            $min_price = round( (float) $min_price * 10, 2 );
-            $max_price = round( (float) $max_price * 10, 2 );
+        if ( null === $price ) {
+            return null;
         }
-        // بدون قیمت معتبر → بدون Offer (نه lowPrice: 0)
-        $has_price = $max_price > 0;
 
-        $offers = [
-            '@type'                   => 'AggregateOffer',
-            'url'                     => $offer_url,
-            'priceCurrency'           => $currency,
-            'lowPrice'                => $min_price ?: '0',
-            'highPrice'               => $max_price ?: '0',
-            'offerCount'              => count( $prices['price'] ) ?: 1,
-            'priceValidUntil'         => $valid_until, // <-- افزوده شد؛ قبلاً فقط در Offer ساده وجود داشت
-            'validFrom'               => $valid_from, // <-- اضافه شدن برای محصولات متغیر
-            'availability'            => $stock_status,
-            'seller'                  => $seller_info,
-            'hasMerchantReturnPolicy' => $merchant_return,
-            'shippingDetails'         => $shipping_details
-        ];
-
-        if ( ! $has_price ) {
-            $offers = null;
-        }
-    } else {
-        $price = $_product->get_price();
-        if ( $is_irt && '' !== (string) $price ) $price = round( (float) $price * 10, 2 );
-        $offers = [
+        return [
             '@type'                   => 'Offer',
             'url'                     => $offer_url,
-            'priceCurrency'           => $currency,
-            'price'                   => $price ?: '0',
+            'priceCurrency'           => $price[1],
+            'price'                   => $price[0],
             'priceValidUntil'         => $valid_until,
-            'validFrom'               => $valid_from, // <-- اضافه شدن برای محصولات ساده
-            'availability'            => $stock_status,
+            'validFrom'               => $valid_from,
+            'availability'            => $availability,
             'itemCondition'           => 'https://schema.org/NewCondition',
             'seller'                  => $seller_info,
             'hasMerchantReturnPolicy' => $merchant_return,
-            'shippingDetails'         => $shipping_details
+            'shippingDetails'         => $shipping_details,
         ];
-
-        // حداقل سفارش (eligibleTransactionVolume) عمدا در اسکیما نیست؛
-        // Offer فقط قیمت محصول را اعلام می‌کند.
-
-        /*
-         * بدون قیمت → بدون Offer.
-         * نسخه قبلی "price": "0" می‌گذاشت که گوگل آن را «رایگان» می‌خواند.
-         * محصول همچنان با امتیاز/نظرات واجد Product snippet می‌ماند.
-         */
-        if ( '' === (string) $_product->get_price() || (float) $_product->get_price() <= 0 ) {
-            $offers = null;
-        }
-    }
+    };
 
     /*
      * هویت محصول در گراف.
@@ -303,23 +241,47 @@ function hook_generate_custom_product_schema() {
     $page_url = hodima_product_schema_page_url( $url );
 
     $schema = [
-        '@context'         => 'https://schema.org/',
         '@type'            => 'Product',
         '@id'              => $page_url . '#product',
         'url'              => $page_url,
         'mainEntityOfPage' => [ '@id' => $page_url . '#webpage' ],
         'name'             => $name,
-        'image'       => $image_url,
-        'description' => $clean_description,
-        'sku'         => $sku,
-        // mpn (کد قطعه سازنده) حذف شد: همیشه برابر SKU خود فروشگاه گذاشته
-        // می‌شد که داده ساختگی است. بارکد واقعی (gtin) در مرحله بعد.
-        'brand'       => ['@type' => 'Brand', 'name'  => $opt_brand],
-        'offers'      => $offers
+        'image'            => count( $images ) > 1 ? $images : $image_url,
+        'description'      => $clean_description,
+        'sku'              => $sku,
+        // mpn (کد قطعه سازنده) عمدا نیست: قبلا همیشه برابر SKU خود فروشگاه
+        // گذاشته می‌شد که داده ساختگی است.
+        'brand'            => ['@type' => 'Brand', 'name'  => $opt_brand],
     ];
 
-    if ( null === $offers ) {
-        unset( $schema['offers'] );
+    $gtin = hodima_seo_schema_gtin( $_product );
+    if ( '' !== $gtin ) {
+        $schema['gtin'] = $gtin;
+    }
+
+    /*
+     * محصول متغیر → ProductGroup با تنوع‌ها (hasVariant).
+     *
+     * نسخه قبلی یک AggregateOffer (بازه قیمت) می‌ساخت. گوگل AggregateOffer
+     * را فقط برای Product snippet می‌پذیرد، نه برای Merchant listings
+     * (نتایج فروش)؛ شیوه‌ی درست از ۲۰۲۴ گروه محصول است: هر رنگ/سایز یک
+     * Product با قیمت، موجودی، SKU و آدرس خودش.
+     */
+    $variants = $_product->is_type( 'variable' ) ? hodima_product_schema_variants( $_product, $page_url, $sku, $name, $image_url, $stock_status, $make_offer ) : null;
+
+    if ( null !== $variants ) {
+        $schema['@type']          = 'ProductGroup';
+        $schema['productGroupID'] = $sku;
+        if ( [] !== $variants['varies_by'] ) {
+            $schema['variesBy'] = $variants['varies_by'];
+        }
+        $schema['hasVariant'] = $variants['items'];
+        unset( $schema['gtin'] ); // بارکد مال هر تنوع است، نه گروه
+    } elseif ( ! $_product->is_type( 'variable' ) ) {
+        $offer = $make_offer( $_product, $page_url, $stock_status );
+        if ( null !== $offer ) {
+            $schema['offers'] = $offer;
+        }
     }
 
     /*
@@ -340,8 +302,10 @@ function hook_generate_custom_product_schema() {
     // متن ویژگی یا کد فیلد → کد ISO (همان منابع ردیف «کشور سازنده» جدول)
     $origin_norm = mb_strtolower( str_replace( [ 'ی', 'ي' ], '', $origin_text ) );
     $origin = match ( true ) {
-        in_array( $origin_norm, [ 'cn', 'چن', 'china' ], true ), str_contains( $origin_norm, 'چین' ) => 'CN',
-        in_array( $origin_norm, [ 'ir', 'اران', 'iran' ], true ), str_contains( $origin_norm, 'ایران' ) => 'IR',
+        // باگ رفع‌شده: جستجوی «چین»/«ایران» روی متنی بود که «ی»اش حذف شده؛
+        // «ساخت چین» هرگز پیدا نمی‌شد. حالا روی متن اصلی (ی عربی → فارسی).
+        in_array( $origin_norm, [ 'cn', 'چن', 'china' ], true ), str_contains( str_replace( 'ي', 'ی', $origin_text ), 'چین' ) => 'CN',
+        in_array( $origin_norm, [ 'ir', 'اران', 'iran' ], true ), str_contains( str_replace( 'ي', 'ی', $origin_text ), 'ایران' ) => 'IR',
         default => '',
     };
     if ( '' !== $origin ) {
@@ -432,6 +396,17 @@ function hook_generate_custom_product_schema() {
             if ( count( $clean ) >= 25 ) {
                 break;
             }
+        }
+
+        /*
+         * گروه محصول: مشخصه‌ای که تنوع‌ها بر اساسش فرق دارند (مثلا «رنگ»)
+         * روی گروه نمی‌آید؛ جدول مشخصات یک مقدار کلی («تک رنگ»/«متنوع»)
+         * می‌دهد که با رنگ هر تنوع تناقض دارد.
+         */
+        if ( ! empty( $schema['variesBy'] ) ) {
+            $clean = array_values( array_filter( $clean, static fn( array $p ): bool =>
+                ! in_array( 'https://schema.org/' . hodima_product_schema_variant_property( '', $p['name'] ), (array) $schema['variesBy'], true )
+            ) );
         }
 
         if ( ! empty( $clean ) ) {
@@ -539,6 +514,130 @@ function hook_generate_custom_product_schema() {
     }
 
     hodima_schema_add( [ '@graph' => $graph ], 'hodima-seo: product-schema-pro' );
+}
+
+/**
+ * تنوع‌های یک محصول متغیر برای ProductGroup.hasVariant، یا null اگر هیچ
+ * تنوع قیمت‌داری نیست.
+ *
+ * هر تنوع: نام (نام محصول + مقدار ویژگی‌ها)، SKU خودش (اگر خالی یا همان SKU
+ * والد باشد، «SKU والد-شناسه» تا یکتا بماند)، تصویر، GTIN، آدرس با انتخاب
+ * همان تنوع (?attribute_pa_color=…) و پیشنهاد جداگانه. ویژگی‌هایی که گوگل
+ * برای variesBy می‌شناسد (رنگ، سایز، جنس، طرح) به ویژگی schema.org خودشان
+ * می‌روند؛ بقیه additionalProperty.
+ *
+ * @return array{items: list<array>, varies_by: list<string>}|null
+ */
+function hodima_product_schema_variants( WC_Product $product, string $page_url, string $group_sku, string $group_name, string $fallback_image, string $group_availability, callable $make_offer ): ?array {
+
+    $max      = max( 1, (int) apply_filters( 'hodima_product_schema_max_variants', 50 ) );
+    $children = array_slice( array_map( 'intval', (array) $product->get_children() ), 0, $max );
+    $items    = [];
+    $varies   = [];
+
+    foreach ( $children as $variation_id ) {
+
+        $variation = wc_get_product( $variation_id );
+
+        if ( ! $variation || 'publish' !== $variation->get_status() ) {
+            continue;
+        }
+
+        $props = [];
+        $extra = [];
+        $parts = [];
+
+        foreach ( (array) $variation->get_attributes() as $key => $value ) {
+
+            $value = (string) $value;
+            if ( '' === $value ) {
+                continue; // «هر مقدار» — این تنوع روی این ویژگی فرقی ندارد
+            }
+
+            $term  = taxonomy_exists( (string) $key ) ? get_term_by( 'slug', $value, (string) $key ) : false;
+            $shown = $term ? (string) $term->name : rawurldecode( $value );
+            $label = function_exists( 'wc_attribute_label' ) ? (string) wc_attribute_label( (string) $key, $product ) : (string) $key;
+            $prop  = hodima_product_schema_variant_property( (string) $key, $label );
+
+            if ( '' !== $prop ) {
+                $props[ $prop ]  = $shown;
+                $varies[ $prop ] = 'https://schema.org/' . $prop;
+            } else {
+                $extra[] = [ '@type' => 'PropertyValue', 'name' => wp_strip_all_tags( $label ), 'value' => wp_strip_all_tags( $shown ) ];
+            }
+
+            $parts[] = $shown;
+        }
+
+        // آدرس تنوع = آدرس canonical + همان رشته انتخاب ویژگی که ووکامرس می‌سازد
+        // نویسه‌های غیر ASCII (نام ویژگی/مقدار فارسی) درصدی می‌شوند تا آدرس معتبر باشد
+        $query     = (string) preg_replace_callback( '/[^\x21-\x7e]+/', static fn( array $m ): string => rawurlencode( $m[0] ), (string) wp_parse_url( (string) $variation->get_permalink(), PHP_URL_QUERY ) );
+        $offer_url = '' !== $query ? $page_url . ( str_contains( $page_url, '?' ) ? '&' : '?' ) . $query : $page_url;
+
+        $availability = $variation->is_in_stock() ? $group_availability : 'https://schema.org/OutOfStock';
+        $offer        = $make_offer( $variation, $offer_url, $availability );
+
+        if ( null === $offer ) {
+            continue; // تنوع بدون قیمت پیشنهادی ندارد و گوگل آن را رد می‌کند
+        }
+
+        $variant_sku = (string) $variation->get_sku();
+        if ( '' === $variant_sku || $variant_sku === $group_sku ) {
+            $variant_sku = $group_sku . '-' . $variation_id;
+        }
+
+        $image_id = (int) $variation->get_image_id();
+        $image    = $image_id ? (string) wp_get_attachment_url( $image_id ) : '';
+
+        $item = [
+            '@type'                => 'Product',
+            '@id'                  => $page_url . '#variant-' . $variation_id,
+            'name'                 => [] !== $parts ? $group_name . ' - ' . implode( '، ', $parts ) : $group_name,
+            'sku'                  => $variant_sku,
+            'inProductGroupWithID' => $group_sku,
+            'image'                => '' !== $image ? $image : $fallback_image,
+        ] + $props;
+
+        $gtin = function_exists( 'hodima_seo_schema_gtin' ) ? hodima_seo_schema_gtin( $variation ) : '';
+        if ( '' !== $gtin ) {
+            $item['gtin'] = $gtin;
+        }
+
+        if ( [] !== $extra ) {
+            $item['additionalProperty'] = $extra;
+        }
+
+        $item['offers'] = $offer;
+        $items[]        = $item;
+    }
+
+    return [] === $items ? null : [ 'items' => $items, 'varies_by' => array_values( $varies ) ];
+}
+
+/**
+ * ویژگی schema.org یک ویژگی ووکامرس (برای variesBy)، یا رشته خالی.
+ * گوگل برای تنوع فقط color، size، material، pattern، suggestedAge و
+ * suggestedGender را می‌شناسد.
+ */
+function hodima_product_schema_variant_property( string $key, string $label ): string {
+
+    $slug  = mb_strtolower( rawurldecode( (string) preg_replace( '/^(attribute_)?(pa_)?/', '', $key ) ) );
+    $label = mb_strtolower( trim( $label ) );
+
+    $map = [
+        'color'    => [ 'color', 'colour', 'rang', 'رنگ', 'رنگ‌بندی', 'رنگبندی' ],
+        'size'     => [ 'size', 'saiz', 'سایز', 'اندازه' ],
+        'material' => [ 'material', 'jens', 'جنس', 'متریال' ],
+        'pattern'  => [ 'pattern', 'tarh', 'طرح', 'الگو' ],
+    ];
+
+    foreach ( $map as $prop => $names ) {
+        if ( in_array( $slug, $names, true ) || in_array( $label, $names, true ) ) {
+            return $prop;
+        }
+    }
+
+    return '';
 }
 
 /**

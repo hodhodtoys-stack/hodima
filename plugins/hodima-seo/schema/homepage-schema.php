@@ -59,6 +59,8 @@ function hook_render_master_schema() {
         'name'      => $org_name,
         'publisher' => [ '@id' => $site_url . '#organization' ],
         'inLanguage'=> 'fa-IR',
+        // جعبه جستجوی سایت‌لینک را گوگل از نوامبر ۲۰۲۴ نشان نمی‌دهد؛ SearchAction
+        // بی‌ضرر است و موتورها/دستیارهای دیگر هنوز می‌خوانند، پس می‌ماند.
         'potentialAction' => [
             '@type' => 'SearchAction',
             'target' => [
@@ -69,6 +71,19 @@ function hook_render_master_schema() {
         ]
     ];
 
+    /*
+     * نام‌های دیگر سایت — گوگل «نام سایت» نتایج را از WebSite.name و
+     * alternateName صفحه اصلی انتخاب می‌کند (قبلا alternateName نبود؛ نام
+     * برند وردپرس، مثلا «هدهدلی»، اگر با نام سازمان فرق دارد اول می‌آید).
+     */
+    $site_alt_names = array_values( array_unique( array_filter(
+        array_merge( [ (string) get_bloginfo( 'name' ) ], (array) ( $organization_schema['alternateName'] ?? [] ) ),
+        static fn( $alt ): bool => is_string( $alt ) && '' !== trim( $alt ) && $alt !== $org_name
+    ) ) );
+    if ( [] !== $site_alt_names ) {
+        $website_schema['alternateName'] = $site_alt_names;
+    }
+
     // 3. ساخت هسته صفحه فعلی (WebPage) به صورت کاملا داینامیک
     $page_type = 'WebPage';
     $about_slug = get_option('hodima_corp_about_slug', 'about-us');
@@ -78,7 +93,11 @@ function hook_render_master_schema() {
     // نسخه قبلی فقط صفحه اصلی و وبلاگ را CollectionPage می‌کرد؛ دسته‌بندی‌ها
     // WebPage معمولی می‌گرفتند و category-schema-pro.php یک CollectionPage
     // *دوم* با شناسه #collection برای همان آدرس می‌ساخت.
-    if (is_front_page() || is_home() || is_archive() || is_page_template('template-page-videos.php')) {
+    // صفحه نویسنده: ProfilePage (نتیجه غنی «پروفایل» گوگل) با mainEntity →
+    // Person؛ قبلا CollectionPage بود و نویسنده هیچ نودی نداشت.
+    if (is_author()) {
+        $page_type = 'ProfilePage';
+    } elseif (is_front_page() || is_home() || is_archive() || is_page_template('template-page-videos.php')) {
         $page_type = 'CollectionPage';
     } elseif (is_page($about_slug)) {
         $page_type = 'AboutPage';
@@ -161,6 +180,49 @@ function hook_render_master_schema() {
     // گراف واحد (hodima-core): این سه نود اولین نودهای گراف صفحه‌اند و
     // بقیه سازنده‌ها با @id به آن‌ها ارجاع می‌دهند یا ادغام می‌شوند.
     hodima_schema_add( [ '@graph' => $graph_nodes ], 'hodima-seo: homepage-schema' );
+}
+
+/**
+ * غنی‌سازی پایه نود صفحه (اولویت ۵، پیش از بقیه؛ در برگه‌های درباره‌ما/تماس
+ * هم از corporate-schema.php عبور می‌کند):
+ *   - نوشته/برگه/محصول: datePublished و dateModified، و primaryImageOfPage
+ *     (تصویر شاخص با ابعاد، همان #primaryimage مقاله) — قبلا نود صفحه هیچ
+ *     تاریخ و تصویری نداشت.
+ *   - صفحه نویسنده: mainEntity → Person (همان که مقاله‌ها به آن ارجاع می‌دهند).
+ * تاریخ‌ها با get_post_time بدون ترجمه (نه wp_date که شمسی می‌شود).
+ */
+add_filter( 'hodima_schema_webpage_node', 'hodima_schema_webpage_base_fields', 5, 2 );
+
+function hodima_schema_webpage_base_fields( array $node, string $page_url ): array {
+
+    if ( is_singular() ) {
+
+        $post_id   = (int) get_queried_object_id();
+        $published = get_post_time( 'c', false, $post_id, false );
+        $modified  = get_post_modified_time( 'c', false, $post_id, false );
+
+        if ( $published ) {
+            $node['datePublished'] = $published;
+        }
+        if ( $modified ) {
+            $node['dateModified'] = $modified;
+        }
+
+        $image = function_exists( 'hodima_seo_schema_featured_image' ) ? hodima_seo_schema_featured_image( $post_id ) : null;
+        if ( null !== $image ) {
+            $node['primaryImageOfPage'] = [
+                '@type'  => 'ImageObject',
+                '@id'    => $page_url . '#primaryimage',
+                'url'    => $image[0],
+                'width'  => $image[1],
+                'height' => $image[2],
+            ];
+        }
+    } elseif ( is_author() && function_exists( 'hodima_seo_schema_person_node' ) ) {
+        $node['mainEntity'] = hodima_seo_schema_person_node( (int) get_queried_object_id() );
+    }
+
+    return $node;
 }
 
 /**

@@ -42,6 +42,44 @@ function hodima_seo_schema_logo_url(): string {
 	return $memo = $logo;
 }
 
+/**
+ * نود لوگو (#logo) با ابعاد. گوگل لوگوی حداقل ۱۱۲×۱۱۲ می‌خواهد و بدون
+ * width/height نمی‌تواند اندازه را بدون دانلود بسنجد (قبلا فقط url بود).
+ * عمدا بدون contentUrl/creator: نود لوگو نباید در Image Metadata بررسی شود.
+ */
+function hodima_seo_schema_logo_node(): array {
+
+	$url  = hodima_seo_schema_logo_url();
+	$node = [
+		'@type'   => 'ImageObject',
+		'@id'     => trailingslashit( home_url() ) . '#logo',
+		'url'     => $url,
+		'caption' => hodima_seo_schema_org_name(),
+	];
+
+	$logo_id = (int) get_theme_mod( 'custom_logo' );
+
+	if ( ! $logo_id ) {
+		// شناسه پیوست از آدرس (یک کوئری)؛ یک روز کش — با تغییر آدرس کلید عوض می‌شود
+		$key     = 'hodima_logo_id_' . md5( $url );
+		$logo_id = get_transient( $key );
+		if ( false === $logo_id ) {
+			$logo_id = (int) attachment_url_to_postid( $url );
+			set_transient( $key, $logo_id, DAY_IN_SECONDS );
+		}
+		$logo_id = (int) $logo_id;
+	}
+
+	$src = $logo_id ? wp_get_attachment_image_src( $logo_id, 'full' ) : false;
+
+	if ( is_array( $src ) && ! empty( $src[1] ) && ! empty( $src[2] ) ) {
+		$node['width']  = (int) $src[1];
+		$node['height'] = (int) $src[2];
+	}
+
+	return $node;
+}
+
 /** نام سازمان (همان نام نود #organization). */
 function hodima_seo_schema_org_name(): string {
 	return (string) ( get_option( 'hodima_schema_homepage_org_name' ) ?: get_bloginfo( 'name' ) ?: 'بازرگانی هدهد' );
@@ -98,11 +136,7 @@ function hodima_seo_schema_organization_node(): array {
 		'@id'         => $site_url . '#organization',
 		'name'        => hodima_seo_schema_org_name(),
 		'url'         => $site_url,
-		'logo'        => [
-			'@type' => 'ImageObject',
-			'@id'   => $site_url . '#logo',
-			'url'   => hodima_seo_schema_logo_url(),
-		],
+		'logo'        => hodima_seo_schema_logo_node(),
 		'image'       => [ '@id' => $site_url . '#logo' ],
 		'description' => get_option( 'hodima_schema_geo_description', get_bloginfo( 'description' ) ) ?: 'پخش عمده اکسسوری مو',
 		'telephone'   => $telephones[0] ?? '+989124093140',
@@ -191,6 +225,12 @@ function hodima_seo_schema_organization_node(): array {
 			'closes'    => get_option( 'hodima_schema_geo_thursday_close', '13:00' ),
 		],
 	];
+
+	// سیاست مرجوعی پیش‌فرض کل فروشگاه (گوگل از ۲۰۲۴ روی سازمان هم می‌خواند؛
+	// روی پیشنهاد هر محصول هم می‌ماند). همان تنظیم پنل «اسکیما ← محصولات».
+	if ( hodima_seo_schema_products_enabled() ) {
+		$node['hasMerchantReturnPolicy'] = hodima_seo_schema_return_policy();
+	}
 
 	// اتصال به ماژول AI GEO
 	$node = (array) apply_filters( 'wpgi_ai_geo_schema_data', $node );
@@ -290,4 +330,167 @@ function hodima_seo_schema_video_url( string $url ): array {
 		: 1 === preg_match( '/\.(mp4|m4v|webm|mov|ogv|ogg)$/i', (string) wp_parse_url( $url, PHP_URL_PATH ) );
 
 	return [ $is_file ? 'contentUrl' : 'embedUrl', $url ];
+}
+
+/* =====================================================================
+ * قیمت و واحد پول
+ * ===================================================================== */
+
+/**
+ * ضریب تبدیل واحدهای پول ایران (ووکامرس فارسی) به ریال.
+ * گوگل فقط کد ISO 4217 را می‌پذیرد؛ «تومان» (IRT) کد رسمی نیست، پس قیمت
+ * تومانی ×۱۰ و با IRR اعلام می‌شود. عدد روی صفحه همان تومان می‌ماند.
+ */
+const HODIMA_SEO_SCHEMA_TO_RIAL = [ 'IRR' => 1, 'IRT' => 10, 'IRHR' => 1000, 'IRHT' => 10000 ];
+
+/** واحد پول فروشگاه (ووکامرس)، پیش‌فرض تومان. */
+function hodima_seo_schema_store_currency(): string {
+	return function_exists( 'get_woocommerce_currency' ) ? strtoupper( (string) get_woocommerce_currency() ) : 'IRT';
+}
+
+/**
+ * قیمت فروشگاه → [ price, priceCurrency ] برای اسکیما، یا null اگر قیمت نیست.
+ * ریال عدد صحیح است (بدون «.0» و بدون نویز اعشاری ضرب فلوت).
+ *
+ * @return array{0: string, 1: string}|null
+ */
+function hodima_seo_schema_price( mixed $amount ): ?array {
+
+	if ( ! is_numeric( $amount ) || (float) $amount <= 0 ) {
+		return null;
+	}
+
+	$currency = hodima_seo_schema_store_currency();
+
+	if ( isset( HODIMA_SEO_SCHEMA_TO_RIAL[ $currency ] ) ) {
+		return [ (string) (int) round( (float) $amount * HODIMA_SEO_SCHEMA_TO_RIAL[ $currency ] ), 'IRR' ];
+	}
+
+	return [ rtrim( rtrim( number_format( (float) $amount, 2, '.', '' ), '0' ), '.' ), $currency ];
+}
+
+/**
+ * مبلغ‌های پنل اسکیمای محصول (هزینه/سقف ارسال) به ریال.
+ *
+ * پنل از نسخه ۱.۲.۰ مبلغ را به تومان می‌گیرد (مثل خود فروشگاه). مقدار
+ * ذخیره‌شده قبل از آن ریال بود؛ تا اولین ذخیره پنل (که
+ * hodima_schema_product_amount_unit = toman می‌نویسد) همان ریال خوانده می‌شود.
+ */
+function hodima_seo_schema_panel_amount_rial( mixed $stored ): int {
+
+	$value = (int) preg_replace( '/[^0-9]/', '', (string) $stored );
+
+	return 'toman' === get_option( 'hodima_schema_product_amount_unit', 'rial' ) ? $value * 10 : $value;
+}
+
+/**
+ * سیاست مرجوعی از پنل «اسکیما ← محصولات» — روی هر پیشنهاد محصول و روی
+ * سازمان (سیاست پیش‌فرض کل فروشگاه؛ گوگل از ۲۰۲۴ در سطح سازمان هم می‌خواند).
+ * مهلت ۰ روز = مرجوعی پذیرفته نمی‌شود.
+ */
+function hodima_seo_schema_return_policy(): array {
+
+	$days = (int) get_option( 'hodima_schema_product_return_days', 7 );
+
+	if ( $days <= 0 ) {
+		return [
+			'@type'                => 'MerchantReturnPolicy',
+			'applicableCountry'    => 'IR',
+			'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted',
+		];
+	}
+
+	$policy = [
+		'@type'                => 'MerchantReturnPolicy',
+		'applicableCountry'    => 'IR',
+		'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+		'merchantReturnDays'   => $days,
+	];
+
+	$method = match ( get_option( 'hodima_schema_product_return_method', 'mail' ) ) {
+		'store' => 'https://schema.org/ReturnInStore',
+		'none'  => '',
+		default => 'https://schema.org/ReturnByMail',
+	};
+
+	if ( '' !== $method ) {
+		$policy['returnMethod'] = $method;
+	}
+
+	$policy['returnFees'] = 'free' === get_option( 'hodima_schema_product_return_fees', 'customer' )
+		? 'https://schema.org/FreeReturn'
+		: 'https://schema.org/ReturnFeesCustomerResponsibility';
+
+	return $policy;
+}
+
+/** آیا اسکیمای محصول فعال است و فروشگاه وجود دارد؟ */
+function hodima_seo_schema_products_enabled(): bool {
+	return '1' === get_option( 'hodima_schema_product_enable', '1' ) && class_exists( 'WooCommerce' );
+}
+
+/**
+ * GTIN (بارکد) واقعی محصول، یا رشته خالی.
+ * از فیلد «GTIN, UPC, EAN یا ISBN» خود ووکامرس (نسخه ۹.۲+). فقط ۸، ۱۲، ۱۳
+ * یا ۱۴ رقم پذیرفته می‌شود؛ مقدار ساختگی/ناقص چاپ نمی‌شود.
+ */
+function hodima_seo_schema_gtin( object $product ): string {
+
+	$gtin = method_exists( $product, 'get_global_unique_id' )
+		? (string) $product->get_global_unique_id()
+		: (string) get_post_meta( (int) $product->get_id(), '_global_unique_id', true );
+
+	$gtin = (string) apply_filters( 'hodima_product_gtin', preg_replace( '/[^0-9]/', '', $gtin ), $product );
+
+	return in_array( strlen( $gtin ), [ 8, 12, 13, 14 ], true ) ? $gtin : '';
+}
+
+/* =====================================================================
+ * نویسنده و تصویر اصلی صفحه
+ * ===================================================================== */
+
+/** شناسه نود نویسنده — صفحه نویسنده + «#person». */
+function hodima_seo_schema_person_id( int $user_id ): string {
+	return get_author_posts_url( $user_id ) . '#person';
+}
+
+/**
+ * نود Person نویسنده. مقاله با @id به آن ارجاع می‌دهد و صفحه نویسنده
+ * (ProfilePage) آن را mainEntity دارد؛ قبلا نویسنده هر مقاله یک Person
+ * جداگانه بدون شناسه بود و گوگل نمی‌توانست مقاله‌های یک نویسنده را به هم وصل کند.
+ */
+function hodima_seo_schema_person_node( int $user_id ): array {
+
+	$node = [
+		'@type' => 'Person',
+		'@id'   => hodima_seo_schema_person_id( $user_id ),
+		'name'  => (string) get_the_author_meta( 'display_name', $user_id ),
+		'url'   => get_author_posts_url( $user_id ),
+	];
+
+	$bio = trim( wp_strip_all_tags( (string) get_the_author_meta( 'description', $user_id ) ) );
+	if ( '' !== $bio ) {
+		$node['description'] = $bio;
+	}
+
+	// وب‌سایت پروفایل؛ آدرس خود همین سایت (پیش‌فرض وردپرس برای مدیر) هویت بیرونی نیست
+	$website = esc_url_raw( (string) get_the_author_meta( 'user_url', $user_id ) );
+	if ( '' !== $website && wp_parse_url( $website, PHP_URL_HOST ) !== wp_parse_url( home_url(), PHP_URL_HOST ) ) {
+		$node['sameAs'] = [ $website ];
+	}
+
+	return $node;
+}
+
+/**
+ * تصویر شاخص یک نوشته/محصول: [ آدرس, عرض, ارتفاع ] یا null.
+ *
+ * @return array{0: string, 1: int, 2: int}|null
+ */
+function hodima_seo_schema_featured_image( int $post_id ): ?array {
+
+	$thumb_id = (int) get_post_thumbnail_id( $post_id );
+	$src      = $thumb_id ? wp_get_attachment_image_src( $thumb_id, 'full' ) : false;
+
+	return is_array( $src ) && ! empty( $src[0] ) ? [ (string) $src[0], (int) $src[1], (int) $src[2] ] : null;
 }

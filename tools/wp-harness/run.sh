@@ -16,7 +16,7 @@ rm -f "$HODIMA_WP/debug.log"
 full=( "/ home" "/blog/ blog" "/blog/page/2/ blog-p2" "/clips-guide/ pillar" "/metal-clips/ child" "/about-us/ about" "/contact-us/ contact"
        "/guide/ guide" "/guide-child/ guide-child" "/videos/ videos" "/video/hairpin-video/ video" "/news/ category" "/news/page/2/ category-p2"
        "/tag/clips/ tag" "/author/admin/ author" "/?s=test search" "/no-such-page/ 404" "/2025/03/ date" )
-wc=( "/103/ product" "/pin-simple/ product2" "/hair/ product-cat" "/shop/ shop" "/product-tag/best/ product-tag" "/ home-wc" )
+wc=( "/103/ product" "/pin-simple/ product2" "/kesh-rangi/ product3" "/hair/ product-cat" "/shop/ shop" "/product-tag/best/ product-tag" "/ home-wc" )
 for s in "${full[@]}"; do set -- $s; HARNESS=1 php "$here/render.php" "$1" full > "$out/$2.html" 2> "$out/$2.err"; done
 for s in "${wc[@]}";   do set -- $s; HARNESS=1 HARNESS_WC=1 php "$here/render.php" "$1" hooks > "$out/$2.html" 2> "$out/$2.err"; done
 cp "$HODIMA_WP/debug.log" "$out/debug.log" 2>/dev/null || true

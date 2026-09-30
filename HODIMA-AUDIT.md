@@ -874,7 +874,41 @@ define( 'HOD_VIDEO_WATCH_CRON_KEY', 'یک-رشته-طولانی-تصادفی' );
 - **محصول:** `ProductGroup` + `hasVariant` برای محصولات متغیر (AggregateOffer برای Merchant listings پذیرفته نیست)، GTIN از فیلد ووکامرس، تصاویر گالری، سیاست مرجوعی/ارسال در سطح سازمان (`hasMerchantReturnPolicy`، `ShippingService`).
 - **هویت و محتوا:** `alternateName` روی WebSite (نام سایت در گوگل)، اندازه لوگو، نویسنده با `@id` و `ProfilePage`، `primaryImageOfPage`/تاریخ‌ها روی نود صفحه.
 
-## ۲۸. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
+## ۲۸. اسکیما در سطح جهانی: تومان، گروه محصول، بارکد، هویت و نویسنده — مرحله ۲۱
+
+مرحله‌های ۱ و ۲ پیشنهادی بخش ۲۷.۴ (SEO 1.2.0). کاربر: سایت و ووکامرس روی **تومان** تنظیم شده است.
+
+### ۲۸.۱ تومان
+- گوگل فقط کد ISO 4217 را می‌پذیرد؛ «IRT» کد رسمی نیست. `hodima_seo_schema_price()` (`schema-helpers.php`) قیمت فروشگاه را با ضریب واحد (`IRR`×۱، `IRT`×۱۰، `IRHR`×۱۰۰۰، `IRHT`×۱۰۰۰۰ — همان نگاشت `seobox_product_price_meta`) به ریال صحیح (بدون «.0» و نویز فلوت) و `IRR` تبدیل می‌کند؛ ارز دیگر بی‌تغییر. نسخه قبلی فقط `IRT` را می‌شناخت و `IRHT` را با کد نامعتبر چاپ می‌کرد. عدد روی صفحه دست نمی‌خورد.
+- مبلغ‌های پنل (هزینه ثابت/سقف ارسال) حالا به **تومان**: گزینه جدید `hodima_schema_product_amount_unit`؛ تا اولین ذخیره پنل، مقدار قبلی ریال خوانده می‌شود و در پنل ÷۱۰ نمایش داده می‌شود (مهاجرت بدون از دست رفتن داده). ارقام فارسی و جداکننده پذیرفته می‌شوند.
+- فید AEO/llms (`indexnow-sync`) از قبل قیمت ووکامرس را «تومان» برچسب می‌زد؛ با فروشگاه تومانی درست است و تغییری لازم نبود.
+
+### ۲۸.۲ محصول
+- **محصول متغیر → `ProductGroup`** (`hodima_product_schema_variants()`): `productGroupID` = SKU والد، `hasVariant` = هر تنوع منتشرشده و قیمت‌دار (حداکثر ۵۰، فیلتر `hodima_product_schema_max_variants`) با نام «محصول - مقادیر»، SKU یکتا (خالی/برابر والد → «SKU-شناسه»)، `inProductGroupWithID`، تصویر، GTIN، و `Offer` جداگانه با آدرس انتخاب تنوع (`?attribute_pa_color=…`، نویسه غیر ASCII درصدی). رنگ/سایز/جنس/طرح (نامک یا برچسب فارسی) → `color`/`size`/`material`/`pattern` و `variesBy`؛ بقیه `additionalProperty`. مشخصه گروه برای ویژگی‌های `variesBy` حذف می‌شود («رنگ: تک رنگ» با رنگ تنوع‌ها تناقض داشت). قبلا `AggregateOffer` که گوگل برای Merchant listings نمی‌پذیرد.
+- **GTIN** (`hodima_seo_schema_gtin()`): `get_global_unique_id()` ووکامرس ۹.۲+ (فالبک متای `_global_unique_id`)، فیلتر `hodima_product_gtin`؛ فقط ۸/۱۲/۱۳/۱۴ رقم.
+- **تصاویر:** اصلی + گالری (حداکثر ۱۰).
+- **مرجوعی در سطح سازمان:** `Organization.hasMerchantReturnPolicy` (همان `hodima_seo_schema_return_policy()` پیشنهادها؛ فقط با ووکامرس و اسکیمای محصول روشن). سیاست ارسال سازمانی (`ShippingService`) عمدا نه: هزینه ارسال متغیر است.
+- **باگ:** تشخیص «ساخت چین/ایران» روی متنی بود که «ی»اش حذف شده بود؛ هرگز پیدا نمی‌شد.
+
+### ۲۸.۳ هویت و محتوا
+- `WebSite.alternateName`: نام وردپرس (هدهدلی) + نام‌های دیگر سازمان، بدون تکرار نام اصلی (برای «نام سایت» گوگل). `WebSite.name` عمدا تغییر نکرد.
+- لوگو: `hodima_seo_schema_logo_node()` با `width`/`height` (پیوست لوگوی سفارشی، یا `attachment_url_to_postid` یک‌روزه کش) و `caption`؛ عمدا بدون `contentUrl`/`creator` (بررسی Image Metadata).
+- نویسنده: `Person` با `@id` = صفحه نویسنده + `#person` (نام، آدرس، بیوگرافی، وب‌سایت بیرونی)؛ `BlogPosting.author` ارجاع به آن و Person در گراف مقاله؛ صفحه نویسنده `ProfilePage` با `mainEntity` = همان Person (قبلا CollectionPage).
+- نود صفحه (فیلتر پایه، اولویت ۵، شامل درباره‌ما/تماس): `datePublished`/`dateModified` نوشته‌ها/برگه‌ها/محصولات و `primaryImageOfPage` (#primaryimage با ابعاد).
+- `BlogPosting`: `isPartOf`، `inLanguage`، `thumbnailUrl`، `wordCount`، `articleSection` (دسته‌ها)، `keywords` (برچسب‌ها)، ابعاد تصویر.
+- پنل صفحه اصلی: «محدوده قیمت» دیگر پیش‌فرض `IRR` ندارد.
+
+### ۲۸.۴ ابزار تست
+- stub ووکامرس: محصول متغیر (`_hx_type=variable`، تنوع‌ها `product_variation` با `_hx_attrs`)، `get_children`/`get_status`/`get_global_unique_id`/`wc_attribute_label`، واحد پول از گزینه `harness_wc_currency`. داده جدید: «کش مو رنگی» (`/kesh-rangi/`، صفحه `product3`) با سه تنوع (یکی ناموجود، یکی با بارکد، یکی بی‌قیمت). `link.sh` حالا mu-pluginها را هر بار کپی می‌کند (قبلا فقط `setup.sh` یک بار؛ تغییر stub بی‌اثر می‌ماند).
+
+### ۲۸.۵ تست
+- `compare-with-ref.sh` (۲۵ صفحه): فقط تغییرهای بالا؛ «LOST» صفر؛ بدون شناسه تکراری یا ارجاع بی‌مقصد جدید؛ بدون هشدار PHP.
+- تومان (`HARNESS_OPTS`): قیمت ۲۵۰٬۰۰۰ تومان → `2500000` `IRR` (ساده و هر تنوع)؛ هزینه ارسال ثابت قدیمی ۵۰۰٬۰۰۰ ریال → همان ۵۰۰٬۰۰۰؛ بعد از علامت تومان → ۵٬۰۰۰٬۰۰۰ ریال. `IRHT` ۲۵٫۵ → `255000` `IRR`؛ `USD` ۱۲٫۵۰ → `12.5`؛ صفر/خالی → بدون Offer.
+- پنل محصولات: مقدار ریالی قدیمی ۵۰۰٬۰۰۰ به‌صورت ۵۰٬۰۰۰ تومان نمایش؛ ذخیره «۵۰,۰۰۰» (ارقام فارسی) → `50000` و واحد تومان. `admin-check.sh` بدون خطا.
+- نصب و فعال‌سازی از ZIP در هر دو ترتیب: بدون خطا، یک تگ. بدون Hodima Core: بدون خطا (فالبک تگ‌های جداگانه). `php -l`.
+- محدودیت: ووکامرس شبیه‌سازی‌شده است؛ روی سایت یک محصول ساده و یک محصول متغیر را در Rich Results Test (بخش «Product snippets» و «Merchant listings») ببینید.
+
+## ۲۹. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
 
 | مسیر | کارکرد | پیشنهاد مکان |
 |---|---|---|

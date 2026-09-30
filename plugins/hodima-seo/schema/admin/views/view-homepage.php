@@ -83,7 +83,8 @@ $wd_close         = get_option('hodima_schema_geo_weekday_close', '17:30');
 $th_open          = get_option('hodima_schema_geo_thursday_open', '09:00');
 $th_close         = get_option('hodima_schema_geo_thursday_close', '13:00');
 
-$price_range      = get_option('hodima_schema_homepage_price_range', 'IRR');
+// پیش‌فرض خالی: «IRR» کد ارز است نه بازه قیمت و در اسکیما چاپ نمی‌شود
+$price_range      = get_option('hodima_schema_homepage_price_range', '');
 $catalog_name     = get_option('hodima_schema_homepage_catalog_name', 'خدمات پخش و فروش عمده کالا');
 $slogan           = get_option('hodima_schema_homepage_slogan', 'مرجع تخصصی خرید عمده و پخش سراسری در ایران');
 $knows_about      = get_option('hodima_schema_homepage_knows_about', "واردات اکسسوری مو\nپخش عمده کلیپس\nفروش عمده کش مو\nتولید و پخش گلسر\nلوازم خرازی و خرج‌کار");
@@ -267,7 +268,8 @@ $hodima_section = static function ( string $icon, string $title ): void {
         </tr>
         <tr>
             <th scope="row"><label for="hodima_schema_homepage_price_range">محدوده قیمت</label></th>
-            <td><input type="text" name="hodima_schema_homepage_price_range" id="hodima_schema_homepage_price_range" class="small-text ltr" dir="ltr" value="<?php echo esc_attr($price_range); ?>"></td>
+            <td><input type="text" name="hodima_schema_homepage_price_range" id="hodima_schema_homepage_price_range" value="<?php echo esc_attr($price_range); ?>" placeholder="مثلا: ۵۰ هزار تا ۲۰ میلیون تومان">
+                <p class="description">بازه قیمت محصولات (priceRange). کد ارز تنها (مثل IRR) چاپ نمی‌شود؛ خالی = اعلام نشود.</p></td>
         </tr>
         <tr>
             <th scope="row"><label for="hodima_schema_homepage_knows_about">تخصص‌ها (knowsAbout)<small>هر مورد در یک خط</small></label></th>

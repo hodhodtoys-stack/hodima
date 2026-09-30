@@ -23,14 +23,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hodima_product_schema
         
         // تنظیمات فروش و ارسال
         update_option('hodima_schema_product_return_days', isset($_POST['hodima_schema_product_return_days']) ? absint($_POST['hodima_schema_product_return_days']) : 7);
-        update_option('hodima_schema_product_shipping_cost', isset($_POST['hodima_schema_product_shipping_cost']) ? sanitize_text_field( wp_unslash( $_POST['hodima_schema_product_shipping_cost'] ) ) : '0');
 
         // نحوه هزینه ارسال و مرجوعی (فقط مقدارهای مجاز؛ بقیه = پیش‌فرض)
         $pick = static fn( string $key, array $allowed ): string => in_array( $v = sanitize_key( wp_unslash( $_POST[ $key ] ?? '' ) ), $allowed, true ) ? $v : $allowed[0];
         update_option('hodima_schema_product_shipping_mode', $pick( 'hodima_schema_product_shipping_mode', [ 'customer', 'fixed' ] ));
-        // ارقام فارسی/عربی هم پذیرفته می‌شوند (۵۰۰۰۰۰ → 500000)
-        $max_raw = strtr( (string) wp_unslash( $_POST['hodima_schema_product_shipping_max'] ?? '' ), array_combine( [ '۰','۱','۲','۳','۴','۵','۶','۷','۸','۹','٠','١','٢','٣','٤','٥','٦','٧','٨','٩' ], [ '0','1','2','3','4','5','6','7','8','9','0','1','2','3','4','5','6','7','8','9' ] ) );
-        update_option('hodima_schema_product_shipping_max', preg_replace( '/[^0-9]/', '', $max_raw ));
+        /*
+         * مبلغ‌های ارسال به تومان (مثل خود فروشگاه)؛ اسکیما برای گوگل به ریال
+         * (IRR) تبدیل می‌کند. قبلا ریال بود؛ hodima_schema_product_amount_unit
+         * نشان می‌دهد مقدار ذخیره‌شده تومان است (مقدار قدیمی تا این ذخیره
+         * همان ریال خوانده می‌شود). ارقام فارسی/عربی هم پذیرفته می‌شوند.
+         */
+        $digits = static fn( string $key ): string => (string) preg_replace( '/[^0-9]/', '', strtr( (string) wp_unslash( $_POST[ $key ] ?? '' ), array_combine( [ '۰','۱','۲','۳','۴','۵','۶','۷','۸','۹','٠','١','٢','٣','٤','٥','٦','٧','٨','٩' ], [ '0','1','2','3','4','5','6','7','8','9','0','1','2','3','4','5','6','7','8','9' ] ) ) );
+        update_option('hodima_schema_product_shipping_cost', $digits( 'hodima_schema_product_shipping_cost' ) ?: '0');
+        update_option('hodima_schema_product_shipping_max', $digits( 'hodima_schema_product_shipping_max' ));
+        update_option('hodima_schema_product_amount_unit', 'toman');
         update_option('hodima_schema_product_return_fees', $pick( 'hodima_schema_product_return_fees', [ 'customer', 'free' ] ));
         update_option('hodima_schema_product_return_method', $pick( 'hodima_schema_product_return_method', [ 'mail', 'store', 'none' ] ));
 
@@ -76,6 +82,11 @@ $return_days   = get_option('hodima_schema_product_return_days', '7');
 $shipping_cost = get_option('hodima_schema_product_shipping_cost', '0');
 $shipping_mode = get_option('hodima_schema_product_shipping_mode', 'customer');
 $shipping_max  = get_option('hodima_schema_product_shipping_max', '');
+// مقدار قدیمی ریالی → نمایش به تومان (بعد از ذخیره، تومان ذخیره می‌شود)
+if ( 'toman' !== get_option( 'hodima_schema_product_amount_unit', 'rial' ) ) {
+    $shipping_cost = (string) intdiv( (int) preg_replace( '/[^0-9]/', '', (string) $shipping_cost ), 10 );
+    $shipping_max  = '' === (string) $shipping_max ? '' : (string) intdiv( (int) $shipping_max, 10 );
+}
 $return_fees   = get_option('hodima_schema_product_return_fees', 'customer');
 $return_method = get_option('hodima_schema_product_return_method', 'mail');
 $handling_min  = get_option('hodima_schema_product_handling_min', '1');
@@ -127,6 +138,7 @@ hodima_view_header(
             <div class="hd-field">
                 <label class="hd-field__label" for="hodima_schema_product_brand">نام برند پیش‌فرض (Brand)</label>
                 <input type="text" name="hodima_schema_product_brand" id="hodima_schema_product_brand" value="<?php echo esc_attr($brand); ?>">
+                <p class="hd-field__help">بارکد (GTIN) هر محصول و هر تنوع از فیلد «GTIN, UPC, EAN یا ISBN» خود ووکامرس (تب «انبار» محصول) خودکار خوانده می‌شود؛ فقط ۸، ۱۲، ۱۳ یا ۱۴ رقم.</p>
             </div>
 
             <div class="hd-field">
@@ -183,15 +195,15 @@ hodima_view_header(
             </div>
 
             <div class="hd-field">
-                <label class="hd-field__label" for="hodima_schema_product_shipping_cost">مبلغ ثابت ارسال (ریال)</label>
+                <label class="hd-field__label" for="hodima_schema_product_shipping_cost">مبلغ ثابت ارسال (تومان)</label>
                 <input type="text" name="hodima_schema_product_shipping_cost" id="hodima_schema_product_shipping_cost" class="ltr" dir="ltr" value="<?php echo esc_attr($shipping_cost); ?>">
                 <p class="hd-field__help">فقط در حالت «مبلغ ثابت». عدد 0 یعنی ارسال رایگان.</p>
             </div>
 
             <div class="hd-field">
-                <label class="hd-field__label" for="hodima_schema_product_shipping_max">سقف هزینه ارسال (ریال، اختیاری)</label>
+                <label class="hd-field__label" for="hodima_schema_product_shipping_max">سقف هزینه ارسال (تومان، اختیاری)</label>
                 <input type="text" name="hodima_schema_product_shipping_max" id="hodima_schema_product_shipping_max" class="ltr" dir="ltr" inputmode="numeric" value="<?php echo esc_attr($shipping_max); ?>">
-                <p class="hd-field__help">فقط در حالت «متغیر». اگر بیشترین هزینه ارسال را می‌دانید وارد کنید؛ گوگل آن را «تا این مبلغ» می‌خواند. خالی = اعلام نشود.</p>
+                <p class="hd-field__help">فقط در حالت «متغیر». اگر بیشترین هزینه ارسال را می‌دانید وارد کنید؛ گوگل آن را «تا این مبلغ» می‌خواند. خالی = اعلام نشود. مبلغ‌ها به تومان‌اند؛ گوگل فقط کد رسمی ریال (IRR) را می‌پذیرد، پس اسکیما خودکار ×۱۰ می‌کند.</p>
             </div>
 
             <div class="hd-field">
