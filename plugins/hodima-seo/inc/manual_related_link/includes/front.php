@@ -3,11 +3,15 @@
  * لینک‌های مرتبط دستی — خروجی سایت
  * Path: plugins/hodima-seo/inc/manual_related_link/includes/front.php
  *
- * شورت‌کدها:
- *   [hodima_related_categories]      «دسته‌بندی‌های مرتبط» (پیش‌فرض ۲ لینک)
- *   [hodima_complementary_products]  «محصولات مکمل» (پیش‌فرض ۲ لینک)
- *   [hodima_related_article]         مقاله پیشنهادی، بدون هیچ عنوانی (۱ لینک)
- *   [manual_related_products] / [manual_related_links]  نسخه ۱: هر سه گروه
+ * شورت‌کدها — هر کدام مستقل؛ هر جای محتوا که گذاشته شود، فقط کادر خودش
+ * همان‌جا چاپ می‌شود:
+ *   [hodima_related_categories]  «دسته‌بندی‌های مرتبط» (پیش‌فرض ۲ لینک)
+ *   [manual_related_products]    «محصولات مکمل» (پیش‌فرض ۲ لینک)؛ نام‌های دیگر:
+ *                                manual_related_links، hodima_complementary_products
+ *   [hodima_related_article]     مقاله پیشنهادی، بدون هیچ عنوانی (۱ لینک)
+ *
+ * نسخه ۱.۴ شورت‌کد manual_related_products را «ویترین قدیمی» می‌دانست و هر
+ * سه کادر را پشت هم چاپ می‌کرد؛ از ۱.۵ فقط کادر محصولات مکمل است.
  *
  * ویژگی‌ها: title="" (عنوان دلخواه یا خالی)، heading="h2|h3|h4|p"،
  *           id="…" و type="auto|post|term" (نمایش لینک‌های صفحه‌ای دیگر).
@@ -27,8 +31,6 @@ defined( 'ABSPATH' ) || exit;
 
 final class Front {
 
-	public const LEGACY_TAGS = [ 'manual_related_products', 'manual_related_links' ];
-
 	/** زمینه اجباری هنگام اجرای شورت‌کد داخل توضیح ترم. */
 	private static ?array $forced = null;
 
@@ -37,10 +39,9 @@ final class Front {
 	public static function init(): void {
 
 		foreach ( Group::cases() as $group ) {
-			add_shortcode( $group->shortcode(), static fn( $atts ) => self::shortcode( $group, (array) $atts ) );
-		}
-		foreach ( self::LEGACY_TAGS as $tag ) {
-			add_shortcode( $tag, [ self::class, 'legacy_shortcode' ] );
+			foreach ( $group->tags() as $tag ) {
+				add_shortcode( $tag, static fn( $atts ) => self::shortcode( $group, (array) $atts ) );
+			}
 		}
 
 		add_action( 'wp_enqueue_scripts', [ self::class, 'assets' ] );
@@ -51,7 +52,38 @@ final class Front {
 
 	/** @return list<string> */
 	public static function tags(): array {
-		return array_merge( array_map( static fn( Group $g ) => $g->shortcode(), Group::cases() ), self::LEGACY_TAGS );
+		return array_merge( ...array_map( static fn( Group $g ) => $g->tags(), Group::cases() ) );
+	}
+
+	/** آیا شورت‌کد این گروه (با هر نامش) در متن هست؟ */
+	public static function has_group( string $text, Group $group ): bool {
+		return str_contains( $text, '[' ) && (bool) preg_match( '/' . get_shortcode_regex( $group->tags() ) . '/', $text );
+	}
+
+	/**
+	 * متنی که شورت‌کدها در آن گذاشته می‌شوند: محتوا + توضیح کوتاه نوشته/محصول
+	 * (ووکامرس شورت‌کد توضیح کوتاه را هم اجرا می‌کند)، یا توضیح ترم.
+	 */
+	public static function source_text( int $object_id, string $context ): string {
+		if ( 'term' === $context ) {
+			$term = get_term( $object_id );
+			return $term instanceof WP_Term ? (string) $term->description : '';
+		}
+		return get_post_field( 'post_content', $object_id ) . "\n" . get_post_field( 'post_excerpt', $object_id );
+	}
+
+	/**
+	 * گروه‌هایی که در این متن نمایش داده می‌شوند: شورت‌کدشان در متن است یا
+	 * نمایش خودکارشان روشن است. (برای CSS، اسکیما و هشدار «جایی نمایش داده
+	 * نمی‌شود» در ویرایشگر و گزارش)
+	 *
+	 * @return list<Group>
+	 */
+	public static function placed_groups( string $text, bool $auto_ok = true ): array {
+		return array_values( array_filter(
+			Group::cases(),
+			static fn( Group $g ): bool => ( $auto_ok && Store::auto( $g ) ) || self::has_group( $text, $g )
+		) );
 	}
 
 	/* =====================================================================
@@ -69,32 +101,6 @@ final class Front {
 		$ctx  = self::context( $atts );
 
 		return $ctx ? self::render( $group, $ctx[0], $ctx[1], $atts ) : '';
-	}
-
-	/**
-	 * شورت‌کد نسخه ۱ («ویترین پیشنهادی»): حالا هر سه گروه را پشت هم نشان
-	 * می‌دهد. بدون محدودیت تعداد، تا صفحه‌هایی که قبلا سه لینک داشتند بعد از
-	 * مهاجرت هم همه لینک‌هایشان را نشان دهند.
-	 *
-	 * @param array<string, mixed>|string $atts
-	 */
-	public static function legacy_shortcode( $atts ): string {
-
-		if ( is_admin() && ! wp_doing_ajax() ) {
-			return '';
-		}
-
-		$atts = shortcode_atts( [ 'id' => '', 'type' => 'auto' ], (array) $atts, 'manual_related_products' );
-		$ctx  = self::context( $atts );
-		if ( ! $ctx ) {
-			return '';
-		}
-
-		$html = '';
-		foreach ( Group::cases() as $group ) {
-			$html .= self::render( $group, $ctx[0], $ctx[1], [ 'limit' => Store::MAX_SLOTS ] );
-		}
-		return $html;
 	}
 
 	/**
@@ -186,12 +192,13 @@ final class Front {
 		if ( $item['img_id'] ) {
 			// alt خالی درست است: عنوان همین کارت داخل همین لینک است و alt
 			// تکراری فقط باعث می‌شود صفحه‌خوان عنوان را دو بار بخواند.
-			$media = wp_get_attachment_image( (int) $item['img_id'], 'medium', false, [
+			// کارت مقاله نیمی از عرض محتوا است: اندازه بزرگ‌تر با srcset
+			$media = wp_get_attachment_image( (int) $item['img_id'], Group::Article === $group ? 'medium_large' : 'medium', false, [
 				'class'    => 'hodima-rl__img',
 				'alt'      => '',
 				'loading'  => 'lazy',
 				'decoding' => 'async',
-				'sizes'    => Group::Article === $group ? '6rem' : '(max-width: 48rem) 45vw, 12rem',
+				'sizes'    => Group::Article === $group ? '(max-width: 48rem) 50vw, 24rem' : '(max-width: 48rem) 45vw, 12rem',
 			] );
 		}
 
@@ -333,7 +340,7 @@ final class Front {
 	 * (برای CSS در <head> و relatedLink اسکیما که پیش از محتوا ساخته می‌شوند)
 	 * ===================================================================== */
 
-	/** @return array{0:int, 1:string, 2:list<Group>, 3:bool}|null شناسه، زمینه، گروه‌ها، شورت‌کد قدیمی */
+	/** @return array{0:int, 1:string, 2:list<Group>}|null شناسه، زمینه، گروه‌ها */
 	private static function page_plan(): ?array {
 
 		static $plan = false;
@@ -346,7 +353,7 @@ final class Front {
 		if ( is_singular() ) {
 			$id      = (int) get_queried_object_id();
 			$context = 'post';
-			$text    = (string) get_post_field( 'post_content', $id );
+			$text    = self::source_text( $id, 'post' );
 			// نمایش خودکار فقط برای پست‌تایپ‌های دارای کادر ویرایشگر
 			$auto_ok = in_array( get_post_type( $id ), Store::post_types(), true );
 		} elseif ( ( is_category() || is_tag() || is_tax() ) && ! is_paged() ) {
@@ -363,15 +370,9 @@ final class Front {
 			return $plan;
 		}
 
-		$legacy = (bool) preg_match( '/' . get_shortcode_regex( self::LEGACY_TAGS ) . '/', $text );
-		$groups = [];
-		foreach ( Group::cases() as $group ) {
-			if ( $legacy || ( $auto_ok && Store::auto( $group ) ) || str_contains( $text, '[' . $group->shortcode() ) ) {
-				$groups[] = $group;
-			}
-		}
+		$groups = self::placed_groups( $text, $auto_ok );
 
-		return $plan = $groups ? [ $id, $context, $groups, $legacy ] : null;
+		return $plan = $groups ? [ $id, $context, $groups ] : null;
 	}
 
 	/**
@@ -389,11 +390,11 @@ final class Front {
 			return $node;
 		}
 
-		[ $id, $context, $groups, $legacy ] = $plan;
+		[ $id, $context, $groups ] = $plan;
 
 		$urls = [];
 		foreach ( $groups as $group ) {
-			foreach ( Store::visible( $group, $id, $context, $legacy ? Store::MAX_SLOTS : null ) as $item ) {
+			foreach ( Store::visible( $group, $id, $context ) as $item ) {
 				$urls[] = (string) $item['url'];
 			}
 		}
@@ -419,7 +420,7 @@ final class Front {
 		$plan = self::page_plan();
 		if ( $plan ) {
 			foreach ( $plan[2] as $group ) {
-				if ( Store::visible( $group, $plan[0], $plan[1], $plan[3] ? Store::MAX_SLOTS : null ) ) {
+				if ( Store::visible( $group, $plan[0], $plan[1] ) ) {
 					self::enqueue();
 					break;
 				}

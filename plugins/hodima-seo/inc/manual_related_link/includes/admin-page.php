@@ -112,7 +112,7 @@ final class AdminPage {
 					</header>
 					<p class="hd-card__desc">
 						شورت‌کد: <code>[<?php echo esc_html( $group->shortcode() ); ?>]</code>
-						<?php echo Group::Article === $group ? ' — کارت افقی تمام‌عرض، بدون هیچ عنوانی بالای آن.' : ' — کارت‌های تصویری با عنوان بالای کادر.'; ?>
+						<?php echo Group::Article === $group ? ' — بدون هیچ عنوانی بالای آن؛ داخل لینک نیمی عکس و نیمی عنوان مقاله.' : ' — کارت‌های تصویری با عنوان بالای کادر.'; ?>
 					</p>
 					<div class="hd-fields">
 						<div class="hd-field">
@@ -188,9 +188,10 @@ final class AdminPage {
 					<h2 class="hd-card__title">راهنمای شورت‌کدها</h2>
 				</header>
 				<ul class="hd-list">
-					<li><code>[hodima_related_categories]</code> دسته‌بندی‌های مرتبط · <code>[hodima_complementary_products]</code> محصولات مکمل · <code>[hodima_related_article]</code> مقاله پیشنهادی</li>
+					<li><code>[hodima_related_categories]</code> دسته‌بندی‌های مرتبط · <code>[manual_related_products]</code> محصولات مکمل · <code>[hodima_related_article]</code> مقاله پیشنهادی</li>
+					<li>هر شورت‌کد مستقل است: هر کدام را هر جای متن (یا توضیح دسته) بگذارید، فقط کادر خودش همان‌جا نمایش داده می‌شود. لازم نیست کنار هم باشند و لازم نیست هر سه را بگذارید.</li>
 					<li>ویژگی‌ها: <code>title="…"</code> عنوان دلخواه (<code>title=""</code> بدون عنوان)، <code>heading="h2"</code>، و <code>id="123" type="term"</code> برای نمایش لینک‌های صفحه یا دسته‌ای دیگر.</li>
-					<li>شورت‌کد قدیمی <code>[manual_related_products]</code> هنوز کار می‌کند و هر سه گروه را پشت هم نشان می‌دهد؛ بهتر است با شورت‌کدهای جدید جایگزین شود.</li>
+					<li><code>[manual_related_products]</code> که از قبل در محتوای سایت است، حالا همان کادر «محصولات مکمل» است و لازم نیست پاک شود. <code>[manual_related_links]</code> و <code>[hodima_complementary_products]</code> هم همین کادر را نشان می‌دهند.</li>
 					<li>در توضیح دسته‌ها هم شورت‌کد کار می‌کند (قبلا به شکل متن خام دیده می‌شد).</li>
 				</ul>
 			</section>
@@ -231,6 +232,7 @@ final class AdminPage {
 
 		$links    = 0;
 		$problems = [];
+		$unplaced = [];
 		$inbound  = [];
 
 		foreach ( $sources as [ $id, $context ] ) {
@@ -247,6 +249,13 @@ final class AdminPage {
 					}
 				}
 			}
+
+			$placed = Front::placed_groups( Front::source_text( $id, $context ) );
+			foreach ( Group::cases() as $group ) {
+				if ( Store::get( $id, $context )[ $group->value ] && ! in_array( $group, $placed, true ) ) {
+					$unplaced[] = [ $id, $context, $group ];
+				}
+			}
 		}
 
 		$hiding = count( array_filter( $problems, static fn( array $p ): bool => Store::is_hiding( $p[5] ) ) );
@@ -258,6 +267,7 @@ final class AdminPage {
 				<div class="hd-stat"><span class="hd-stat__label">کل لینک‌ها</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $links ) ); ?></span></div>
 				<div class="hd-stat"><span class="hd-stat__label">لینک‌های پنهان‌شده (مشکل جدی)</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $hiding ) ); ?></span></div>
 				<div class="hd-stat"><span class="hd-stat__label">هشدارها</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( count( $problems ) - $hiding ) ); ?></span></div>
+				<div class="hd-stat"><span class="hd-stat__label">گروه‌های بدون شورت‌کد در متن</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( count( $unplaced ) ) ); ?></span></div>
 			</div>
 
 			<?php if ( $legacy ) : ?>
@@ -298,6 +308,30 @@ final class AdminPage {
 					</div>
 				<?php endif; ?>
 			</section>
+
+			<?php if ( $unplaced ) : ?>
+				<section class="hd-card">
+					<header class="hd-card__head">
+						<?php echo hodima_admin_icon( 'dashicons-hidden' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+						<h2 class="hd-card__title">لینک‌هایی که جایی نمایش داده نمی‌شوند</h2>
+					</header>
+					<p class="hd-card__desc">این صفحه‌ها در این گروه لینک دارند ولی شورت‌کد گروه در متن (یا توضیح دسته) نیست و نمایش خودکارش خاموش است. شورت‌کد را هر جای متن که می‌خواهید بگذارید، یا نمایش خودکار را روشن کنید.</p>
+					<div class="hd-table-wrap">
+						<table class="widefat striped hodima-rl-report">
+							<thead><tr><th>صفحه</th><th>گروه</th><th>شورت‌کد لازم</th></tr></thead>
+							<tbody>
+							<?php foreach ( $unplaced as [ $id, $context, $group ] ) : ?>
+								<tr>
+									<td><?php self::source_link( $id, $context ); ?></td>
+									<td><?php echo esc_html( $group->label() ); ?></td>
+									<td><code>[<?php echo esc_html( $group->shortcode() ); ?>]</code></td>
+								</tr>
+							<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+				</section>
+			<?php endif; ?>
 
 			<section class="hd-card">
 				<header class="hd-card__head">

@@ -49,12 +49,37 @@ enum Group: string {
 		};
 	}
 
+	/**
+	 * شورت‌کد اصلی گروه.
+	 *
+	 * «محصولات مکمل» همان نام قدیمی manual_related_products را دارد (خواسته
+	 * کاربر، نسخه ۱.۵): شورت‌کدی که از قبل در محتوای سایت است بدون ویرایش
+	 * همان کادر محصولات می‌شود و لازم نیست روزی از محتوا پاک شود.
+	 */
 	public function shortcode(): string {
 		return match ( $this ) {
 			self::Categories => 'hodima_related_categories',
-			self::Products   => 'hodima_complementary_products',
+			self::Products   => 'manual_related_products',
 			self::Article    => 'hodima_related_article',
 		};
+	}
+
+	/**
+	 * نام‌های دیگری که همین گروه را نشان می‌دهند:
+	 * manual_related_links (هم‌معنی قدیمی) و hodima_complementary_products (نسخه ۱.۴).
+	 *
+	 * @return list<string>
+	 */
+	public function aliases(): array {
+		return match ( $this ) {
+			self::Products => [ 'manual_related_links', 'hodima_complementary_products' ],
+			default        => [],
+		};
+	}
+
+	/** @return list<string> همه نام‌های شورت‌کد این گروه. */
+	public function tags(): array {
+		return [ $this->shortcode(), ...$this->aliases() ];
 	}
 
 	/** راهنمای جستجو در کادر ویرایشگر. */

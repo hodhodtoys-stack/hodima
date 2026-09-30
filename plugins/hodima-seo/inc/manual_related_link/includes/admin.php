@@ -99,6 +99,9 @@ final class Admin {
 		$count = Store::count( $group );
 		$slots = max( $count, count( $items ) );
 		$auto  = Store::auto( $group );
+		// شورت‌کدها مستقل‌اند: گروهی که لینک دارد ولی شورت‌کدش در متن نیست
+		// (و نمایش خودکار خاموش است) در سایت هیچ‌جا دیده نمی‌شود.
+		$hidden = $items && ! in_array( $group, Front::placed_groups( Front::source_text( $object_id, $context ) ), true );
 		?>
 		<fieldset class="hodima-rl-group" data-group="<?php echo esc_attr( $group->value ); ?>" data-count="<?php echo esc_attr( (string) $count ); ?>" data-max="<?php echo esc_attr( (string) Store::MAX_SLOTS ); ?>">
 			<legend class="hodima-rl-group__head">
@@ -117,6 +120,18 @@ final class Admin {
 				);
 				?>
 			</p>
+			<?php if ( $hidden ) : ?>
+				<p class="hodima-rl-group__notplaced">
+					<span class="dashicons dashicons-hidden" aria-hidden="true"></span>
+					<?php
+					printf(
+						'این لینک‌ها فعلا در سایت دیده نمی‌شوند: شورت‌کد %s در متن %s نیست و نمایش خودکار این گروه خاموش است. شورت‌کد را هر جای متن که می‌خواهید بگذارید (این پیام بعد از ذخیره به‌روز می‌شود).',
+						'<code>[' . esc_html( $group->shortcode() ) . ']</code>',
+						'term' === $context ? 'توضیح این دسته' : 'این صفحه'
+					);
+					?>
+				</p>
+			<?php endif; ?>
 			<ol class="hodima-rl-slots">
 				<?php
 				$seen = [];
