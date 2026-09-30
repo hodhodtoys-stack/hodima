@@ -1,0 +1,413 @@
+/*
+ * لینک‌های مرتبط دستی — کادر ویرایشگر نوشته/محصول/دسته
+ * Path: plugins/hodima-seo/inc/manual_related_link/assets/admin.css
+ *
+ * فقط روی صفحه ویرایش لود می‌شود و همه قوانین زیر .hodima-rl-box هستند
+ * (هیچ :root یا قانون سراسری وردپرس). پالت برند؛ فونت از قالب ارث می‌برد.
+ */
+
+.hodima-rl-box {
+	--rl-primary: #25316a;
+	--rl-secondary: #607bbd;
+	--rl-third: #b6c2f3;
+	--rl-accent: #6a2b9a;
+	--rl-soft: color-mix(in srgb, var(--rl-third) 14%, #ffffff);
+	--rl-border: color-mix(in srgb, var(--rl-third) 60%, #ffffff);
+	--rl-muted: #5d6785;
+	--rl-warn: #9a5b00;
+	--rl-error: #b3261e;
+
+	font-family: inherit;
+
+	& .hodima-rl-box__legacy,
+	& .hodima-rl-box__foot {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		margin: 0.5rem 0;
+		color: var(--rl-muted);
+	}
+
+	& .hodima-rl-box__legacy {
+		padding: 0.625rem 0.75rem;
+		color: var(--rl-primary);
+		background: var(--rl-soft);
+		border-inline-start: 3px solid var(--rl-secondary);
+		border-radius: 0.375rem;
+	}
+
+	/* ── گروه ── */
+	& .hodima-rl-group {
+		margin: 0 0 1rem;
+		padding: 0.75rem 1rem 1rem;
+		background: #ffffff;
+		border: 1px solid var(--rl-border);
+		border-radius: 0.75rem;
+	}
+
+	& .hodima-rl-group__head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		padding-inline: 0.25rem;
+		color: var(--rl-primary);
+		font-weight: 600;
+	}
+
+	& .hodima-rl-group__code {
+		direction: ltr;
+		font-family: inherit;
+		font-size: 0.75rem;
+		color: var(--rl-primary);
+		background: var(--rl-soft);
+	}
+
+	& .hodima-rl-group__help {
+		margin: 0.25rem 0 0.75rem;
+		font-size: 0.8125rem;
+		color: var(--rl-muted);
+	}
+
+	& .hodima-rl-slots {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+		gap: 0.75rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	/* ── خانه ── */
+	& .hodima-rl-slot {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin: 0;
+		padding: 0.625rem;
+		background: var(--rl-soft);
+		border: 1px solid var(--rl-border);
+		border-radius: 0.625rem;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+		&:focus-within {
+			border-color: var(--rl-secondary);
+			box-shadow: 0 0 0 2px color-mix(in srgb, var(--rl-secondary) 20%, transparent);
+		}
+
+		&.is-reserve {
+			background: #ffffff;
+			border-style: dashed;
+		}
+
+		&.is-dragging {
+			opacity: 0.5;
+		}
+	}
+
+	& .hodima-rl-slot__bar {
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	& .hodima-rl-slot__handle {
+		cursor: grab;
+		color: var(--rl-muted);
+	}
+
+	& .hodima-rl-slot__num {
+		display: inline-grid;
+		place-items: center;
+		inline-size: 1.5rem;
+		block-size: 1.5rem;
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: #ffffff;
+		background: var(--rl-primary);
+		border-radius: 50%;
+	}
+
+	& .hodima-rl-slot__badge {
+		padding: 0.0625rem 0.5rem;
+		font-size: 0.6875rem;
+		color: var(--rl-primary);
+		background: color-mix(in srgb, var(--rl-third) 35%, #ffffff);
+		border-radius: 999px;
+	}
+
+	& .is-reserve .hodima-rl-slot__badge {
+		color: var(--rl-muted);
+		background: #f0f0f1;
+	}
+
+	& .hodima-rl-slot__moves {
+		display: flex;
+		margin-inline-start: auto;
+	}
+
+	& .button-link {
+		color: var(--rl-primary);
+
+		&:hover {
+			color: var(--rl-accent);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--rl-accent);
+			outline-offset: 1px;
+			box-shadow: none;
+		}
+	}
+
+	/* ── مقصد انتخاب‌شده ── */
+	& .hodima-rl-target {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.375rem;
+		background: #ffffff;
+		border-radius: 0.5rem;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	& .hodima-rl-target__thumb,
+	& .hodima-rl-result__thumb {
+		flex-shrink: 0;
+		inline-size: 2.75rem;
+		block-size: 2.75rem;
+		overflow: hidden;
+		background: color-mix(in srgb, var(--rl-third) 30%, #ffffff);
+		border-radius: 0.375rem;
+
+		& img {
+			display: block;
+			inline-size: 100%;
+			block-size: 100%;
+			object-fit: cover;
+		}
+	}
+
+	& .hodima-rl-target__body,
+	& .hodima-rl-result__body {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-inline-size: 0;
+	}
+
+	& .hodima-rl-target__title {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+		color: var(--rl-primary);
+	}
+
+	& .hodima-rl-target__meta {
+		display: flex;
+		gap: 0.375rem;
+		min-inline-size: 0;
+		font-size: 0.75rem;
+		color: var(--rl-muted);
+	}
+
+	& .hodima-rl-target__url {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	/* ── جستجو ── */
+	& .hodima-rl-picker {
+		position: relative;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	& .hodima-rl-search {
+		inline-size: 100%;
+		border-color: var(--rl-third);
+
+		&:focus {
+			border-color: var(--rl-secondary);
+			box-shadow: 0 0 0 1px var(--rl-secondary);
+		}
+	}
+
+	& .hodima-rl-results {
+		position: absolute;
+		z-index: 20;
+		inset-inline: 0;
+		inset-block-start: calc(100% + 0.25rem);
+		max-block-size: 18rem;
+		margin: 0;
+		padding: 0.25rem;
+		overflow-y: auto;
+		list-style: none;
+		background: #ffffff;
+		border: 1px solid var(--rl-border);
+		border-radius: 0.5rem;
+		box-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--rl-primary) 16%, transparent);
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	& .hodima-rl-result {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0;
+		padding: 0.375rem;
+		cursor: pointer;
+		border-radius: 0.375rem;
+
+		&:hover,
+		&[aria-selected="true"] {
+			background: var(--rl-soft);
+		}
+
+		&.is-problem {
+			opacity: 0.75;
+		}
+	}
+
+	& .hodima-rl-result__meta {
+		font-size: 0.75rem;
+		color: var(--rl-muted);
+	}
+
+	& .hodima-rl-result__warn {
+		font-size: 0.75rem;
+		color: var(--rl-error);
+	}
+
+	& .hodima-rl-status:empty {
+		display: none;
+	}
+
+	& .hodima-rl-status {
+		margin: 0.25rem 0 0;
+		font-size: 0.75rem;
+		color: var(--rl-muted);
+	}
+
+	/* ── عنوان و تصویر دلخواه ── */
+	& .hodima-rl-more {
+		& summary {
+			cursor: pointer;
+			font-size: 0.8125rem;
+			color: var(--rl-primary);
+		}
+
+		& p {
+			margin: 0.5rem 0;
+		}
+
+		& label {
+			font-size: 0.75rem;
+			color: var(--rl-muted);
+		}
+
+		& input[type="text"] {
+			inline-size: 100%;
+			border-color: var(--rl-third);
+		}
+	}
+
+	& .hodima-rl-image {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	& .hodima-rl-image__preview:not(:empty) {
+		inline-size: 2.75rem;
+		block-size: 2.75rem;
+		overflow: hidden;
+		border-radius: 0.375rem;
+
+		& img {
+			inline-size: 100%;
+			block-size: 100%;
+			object-fit: cover;
+		}
+	}
+
+	& .hodima-rl-image__help {
+		inline-size: 100%;
+		font-size: 0.75rem;
+		color: var(--rl-muted);
+	}
+
+	/* ── هشدارها ── */
+	& .hodima-rl-warnings {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		&:empty {
+			display: none;
+		}
+
+		& li {
+			margin: 0.25rem 0 0;
+			padding-inline-start: 0.5rem;
+			font-size: 0.75rem;
+			border-inline-start: 3px solid currentColor;
+		}
+
+		& .is-error {
+			color: var(--rl-error);
+		}
+
+		& .is-warning {
+			color: var(--rl-warn);
+		}
+
+		& .is-info {
+			color: var(--rl-secondary);
+		}
+	}
+
+	& .hodima-rl-add {
+		margin-block-start: 0.75rem;
+
+		& .dashicons {
+			vertical-align: middle;
+		}
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	& [hidden] {
+		display: none;
+	}
+}
+
+/* کادر در فرم ویرایش دسته/برچسب */
+.hodima-rl-postbox {
+	margin-block-start: 1.875rem;
+
+	& .hndle {
+		padding: 0.75rem 1rem;
+		margin: 0;
+		font-size: 0.875rem;
+		color: #25316a;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-rl-box .hodima-rl-slot {
+		transition: none;
+	}
+}

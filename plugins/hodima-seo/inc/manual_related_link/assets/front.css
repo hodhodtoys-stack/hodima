@@ -1,0 +1,263 @@
+/*
+ * لینک‌های مرتبط دستی — ظاهر سایت
+ * Path: plugins/hodima-seo/inc/manual_related_link/assets/front.css
+ *
+ * نسخه ۱ متغیرهایش را روی :root تعریف می‌کرد، ۵۰ بار !important داشت،
+ * نوار گرادیان با رنگ‌های خارج از پالت (#4f5f9f، #8ec5ff) و ایموجی ✨ کنار
+ * عنوان داشت، و با grid-auto-flow: column کارت‌ها در موبایل باریک می‌شدند.
+ * حالا: فقط پالت برند (توکن‌های قالب با مقدار پشتیبان)، همه‌چیز زیر .hodima-rl،
+ * خصوصیات منطقی، فوکوس کیبورد و احترام به prefers-reduced-motion.
+ */
+
+.hodima-rl {
+	--rl-primary: var(--hodima-primary, #25316a);
+	--rl-secondary: var(--hodima-secondary, #607bbd);
+	--rl-third: var(--hodima-third, #b6c2f3);
+	--rl-accent: var(--hodima-accent-light, #a341c8);
+	--rl-surface: var(--hodima-surface, #ffffff);
+	--rl-soft: var(--hodima-surface-soft, #f7f9fd);
+	--rl-text: var(--hodima-text-dark, #111111);
+	--rl-border: color-mix(in srgb, var(--rl-third) 60%, transparent);
+	--rl-radius: 0.75rem;
+	--rl-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--rl-primary) 7%, transparent);
+	--rl-shadow-hover: 0 0.75rem 1.75rem color-mix(in srgb, var(--rl-primary) 14%, transparent);
+
+	box-sizing: border-box;
+	margin-block: 1.75rem;
+	font-family: inherit;
+	color: var(--rl-text);
+
+	& *,
+	& *::before,
+	& *::after {
+		box-sizing: inherit;
+	}
+
+	/* ── فهرست (خنثی کردن استایل ul/li محتوا) ── */
+	& .hodima-rl__list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	& .hodima-rl__item {
+		margin: 0;
+		padding: 0;
+		min-inline-size: 0;
+
+		&::before,
+		&::after {
+			content: none;
+		}
+	}
+
+	/* ── کارت: کل کارت یک لینک است و عنوان داخل لینک (متن لینک برای گوگل) ── */
+	& .hodima-rl__card {
+		position: relative;
+		display: flex;
+		block-size: 100%;
+		color: inherit;
+		text-decoration: none;
+		background: var(--rl-surface);
+		border: 1px solid var(--rl-border);
+		border-radius: var(--rl-radius);
+		box-shadow: var(--rl-shadow);
+		transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+
+		&:hover {
+			transform: translateY(-2px);
+			border-color: var(--rl-secondary);
+			box-shadow: var(--rl-shadow-hover);
+
+			& .hodima-rl__name {
+				color: var(--rl-accent);
+			}
+
+			& .hodima-rl__img {
+				transform: scale(1.04);
+			}
+		}
+
+		&:focus-visible {
+			outline: 3px solid var(--rl-accent);
+			outline-offset: 3px;
+		}
+	}
+
+	& .hodima-rl__media {
+		position: relative;
+		display: block;
+		flex-shrink: 0;
+		overflow: hidden;
+		aspect-ratio: 1;
+		background: var(--hodima-bg-gray, #eef2f8);
+		border-radius: calc(var(--rl-radius) - 0.25rem);
+	}
+
+	& .hodima-rl__img {
+		display: block;
+		inline-size: 100%;
+		block-size: 100%;
+		max-inline-size: none;
+		/* جعبه «نمایش بیشتر» محتوا به همه img ها margin-block می‌دهد (گزینش‌گر قوی‌تر) */
+		margin: 0 !important;
+		object-fit: cover;
+		transition: transform 0.35s ease;
+	}
+
+	/* کارت بدون تصویر: نماد گروه به جای عکس (نسخه ۱ کارت را بی‌صدا حذف می‌کرد) */
+	& .hodima-rl__placeholder {
+		display: grid;
+		place-items: center;
+		block-size: 100%;
+		color: var(--rl-secondary);
+		background: linear-gradient(135deg, color-mix(in srgb, var(--rl-third) 45%, #ffffff), color-mix(in srgb, var(--rl-secondary) 25%, #ffffff));
+	}
+
+	& .hodima-rl__icon {
+		inline-size: 40%;
+		block-size: 40%;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.6;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	& .hodima-rl__name {
+		display: -webkit-box;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		font-size: 0.9rem;
+		font-weight: 600;
+		line-height: 1.5;
+		color: var(--rl-primary);
+		overflow-wrap: anywhere;
+		transition: color 0.25s ease;
+	}
+}
+
+/* ── دسته‌بندی‌های مرتبط و محصولات مکمل: کارت‌های تصویری با عنوان کادر ── */
+.hodima-rl--categories,
+.hodima-rl--products {
+	padding: 1rem;
+	background: var(--rl-soft);
+	border: 1px solid var(--rl-border);
+	border-radius: calc(var(--rl-radius) + 0.25rem);
+	border-block-start: 3px solid var(--rl-primary);
+
+	& .hodima-rl__title {
+		margin: 0 0 0.875rem;
+		padding: 0;
+		font-size: 1.05rem;
+		font-weight: 700;
+		line-height: 1.5;
+		text-align: center;
+		color: var(--rl-primary);
+
+		&::before,
+		&::after {
+			content: none;
+		}
+	}
+
+	& .hodima-rl__list {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 12rem));
+		justify-content: center;
+		gap: 0.75rem;
+	}
+
+	& .hodima-rl__card {
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 0.5rem;
+	}
+
+	& .hodima-rl__name {
+		min-block-size: 3em;
+		padding-inline: 0.25rem;
+		text-align: center;
+	}
+}
+
+.hodima-rl--products .hodima-rl__media {
+	background: var(--rl-surface);
+}
+
+/* ── مقاله پیشنهادی: کارت افقی تمام‌عرض، بدون هیچ عنوانی ── */
+.hodima-rl--article {
+	& .hodima-rl__list {
+		display: grid;
+		gap: 0.625rem;
+	}
+
+	& .hodima-rl__card {
+		align-items: center;
+		gap: 0.875rem;
+		padding: 0.5rem;
+		padding-inline-end: 2.75rem;
+		border-inline-start: 4px solid var(--rl-accent);
+
+		/* پیکان جهت (سمت چپ در راست‌به‌چپ) */
+		&::after {
+			content: "";
+			position: absolute;
+			inset-inline-end: 1rem;
+			inset-block-start: 50%;
+			inline-size: 0.6rem;
+			block-size: 0.6rem;
+			border-block-start: 2px solid currentColor;
+			border-inline-start: 2px solid currentColor;
+			color: var(--rl-secondary);
+			transform: translateY(-50%) rotate(-135deg);
+		}
+
+		&:dir(ltr)::after {
+			transform: translateY(-50%) rotate(135deg);
+		}
+	}
+
+	& .hodima-rl__media {
+		inline-size: 5.5rem;
+	}
+
+	& .hodima-rl__name {
+		font-size: 1rem;
+	}
+}
+
+@media (max-width: 48rem) {
+	.hodima-rl--categories,
+	.hodima-rl--products {
+		padding: 0.75rem;
+
+		& .hodima-rl__list {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 0.5rem;
+		}
+
+		& .hodima-rl__name {
+			font-size: 0.82rem;
+		}
+	}
+
+	.hodima-rl--article .hodima-rl__media {
+		inline-size: 4.5rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-rl .hodima-rl__card,
+	.hodima-rl .hodima-rl__img,
+	.hodima-rl .hodima-rl__name {
+		transition: none;
+	}
+
+	.hodima-rl .hodima-rl__card:hover,
+	.hodima-rl .hodima-rl__card:hover .hodima-rl__img {
+		transform: none;
+	}
+}

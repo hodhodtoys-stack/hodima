@@ -79,6 +79,18 @@ foreach ( [ [ 'red', 'کوتاه', '120000', 'instock', '6260000000014', 'KS-1-R
 	p( [ 'post_type' => 'product_variation', 'post_parent' => $prod3, 'post_title' => "v$i", 'post_name' => "kesh-rangi-v$i" ], [ '_hx_attrs' => [ 'pa_color' => $c, 'طول' => $len ], '_price' => $pr, '_stock_status' => $st, '_global_unique_id' => $gtin, '_sku' => $vsku ] );
 }
 
+// لینک‌های مرتبط دستی (بخش ۳۱): گروه‌های جدید در پیلار، داده نسخه ۱ در فرزند، شورت‌کد در توضیح دسته
+wp_update_post( [ 'ID' => $pillar, 'post_content' => '<p>پیلار</p><p>بند دوم</p>[hodima_related_article]<img src="https://hodima.test/wp-content/uploads/2025/01/post.jpg" width="640" height="480" alt="p">[hodima_related_categories][hodima_complementary_products]' ] );
+update_post_meta( $pillar, '_hodima_rl_groups', [
+	'categories' => [ [ 'kind' => 'term', 'id' => $pcat, 'url' => '', 'title' => '', 'img_id' => 0 ], [ 'kind' => 'term', 'id' => $cat, 'url' => '', 'title' => 'همه اخبار', 'img_id' => 0 ] ],
+	'products'   => [ [ 'kind' => 'post', 'id' => $prod, 'url' => '', 'title' => '', 'img_id' => 0 ], [ 'kind' => 'post', 'id' => $pillar, 'url' => '', 'title' => '', 'img_id' => 0 ], [ 'kind' => 'post', 'id' => $prod3, 'url' => '', 'title' => '', 'img_id' => 0 ] ],
+	'article'    => [ [ 'kind' => 'post', 'id' => $child, 'url' => '', 'title' => '', 'img_id' => $img3 ] ],
+] );
+wp_update_post( [ 'ID' => $child, 'post_content' => 'فرزند [manual_related_products]' ] );
+update_post_meta( $child, '_hodima_mrl_data', [ [ 'title' => 'کلیپس', 'url' => 'https://hodima.test/103/', 'img_id' => $img4 ], [ 'title' => 'دسته مو', 'url' => 'https://hodima.test/hair/', 'img_id' => 0 ], [ 'title' => '', 'url' => '', 'img_id' => 0 ] ] );
+wp_update_term( $cat, 'category', [ 'description' => 'اخبار بازار [hodima_related_categories][hodima_related_article]' ] );
+update_term_meta( $cat, '_hodima_rl_groups', [ 'categories' => [ [ 'kind' => 'term', 'id' => $pcat, 'url' => '', 'title' => '', 'img_id' => 0 ] ], 'article' => [ [ 'kind' => 'post', 'id' => $pillar, 'url' => '', 'title' => '', 'img_id' => 0 ] ] ] );
+
 update_option( 'posts_per_page', 1 );
 if ( $o = getenv( 'HARNESS_OPTS' ) ) { eval( $o ); }
 flush_rewrite_rules( true );
