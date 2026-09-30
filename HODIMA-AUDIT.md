@@ -836,7 +836,45 @@ define( 'HOD_VIDEO_WATCH_CRON_KEY', 'یک-رشته-طولانی-تصادفی' );
 - **اصلاح:** `Hodima_Bot_Shield::litespeed_add_agents()` و دکمه «افزودن خودکار به لایت‌اسپید» (اکشن `litespeed_add_bots`، کادر `#hodima-cache` تب تنظیمات). از `\LiteSpeed\Conf::cls()->update_confs()` استفاده می‌کند — همان متدی که ذخیره تنظیمات خود لایت‌اسپید صدا می‌زند و گزینه را ذخیره و از طریق `Activation::update_files()` ← `Htaccess::update()` قانون `.htaccess` را از نو می‌سازد. فقط اضافه می‌کند (خطوط موجود حفظ، تکراری/پوشش‌داده‌شده اضافه نمی‌شود)، Googlebot را هم تضمین می‌کند، و بعد از ذخیره از دیتابیس دوباره می‌خواند تا نتیجه واقعی را گزارش کند (`ls_ok` / `ls_error` / `ls_unavailable`). بدون کلاس LiteSpeed دکمه نمایش داده نمی‌شود.
 - **تست با LiteSpeed Cache واقعی** (نسخه 7.9.1 از مخزن گیت‌هاب litespeedtech، نصب و فعال در ابزار تست): گزینه به شکل رشته JSON `'[]'` ذخیره بود (تأیید اصلاح ۱.۱.۵)؛ از «فقط Googlebot» → ۲۵ خط، `.htaccess` دقیقا با بلوک `### marker NOCACHE USER AGENTS` و `RewriteCond %{HTTP_USER_AGENT} Googlebot|GPTBot|ChatGPT\-User|… [E=Cache-Control:no-cache]` نوشته شد؛ خط قدیمی دلخواه حفظ شد (۲ + ۲۴ = ۲۶)؛ در مرورگر: کلیک دکمه ← کادر «درست» (سبز) و «وضعیت سلامت» بدون هیچ مورد قرمز؛ ریدایرکت با `msg=ls_ok#hodima-cache`. بعد از تست افزونه لایت‌اسپید از ابزار تست حذف شد. `admin-check.sh`، `compare-with-ref.sh` (۲۳ یکسان + `uploadDate`)، `php -l`.
 
-## ۲۷. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
+## ۲۷. تحلیل دوباره اسکیما و رفع ۱۲ ایراد — مرحله ۲۰
+
+تحلیل کامل ۹ فایل `plugins/hodima-seo/schema/` و گراف واحد Core با خروجی واقعی ۲۴ صفحه ابزار تست. زیرساخت (یک تگ، ادغام هم‌شناسه‌ها، شناسه‌های canonical) سالم بود؛ ۱۲ ایراد قطعی و چند عقب‌ماندگی از استاندارد روز گوگل پیدا شد. این مرحله فقط ایرادهای قطعی را رفع می‌کند (SEO 1.1.9، قالب 2.2.1).
+
+### ۲۷.۱ پاسخ‌های کاربر (مبنای تصمیم‌ها)
+- ارسال رایگان **نیست**؛ هزینه با مشتری و بسته به حجم بار (ماشین سبک تا سنگین).
+- بارکد (GTIN) فعلا ندارد، به‌زودی اضافه می‌شود. Rank Math/Yoast نصب نیست (بخش Rank Math پاک‌کن بی‌اثر است و دست نخورد).
+- Rich Results Test صفحه فروشگاه روی سایت زنده: Breadcrumbs، Local business و Organization معتبر (مورد مشکوک ابزار تست — ItemList فروشگاه شامل خود صفحه — محدودیت ووکامرس شبیه‌سازی‌شده است، نه باگ).
+
+### ۲۷.۲ اصلاحات
+| # | مشکل | اصلاح |
+|---|---|---|
+| ۱ | تصویر پیش‌فرض محصول: `https://hodima.com/…` (دامنه اشتباه) | `hodima_seo_schema_logo_url()`: لوگوی سفارشی قالب ← تنظیم لوگو ← مسیر همین سایت؛ در محصول، دسته و مقاله |
+| ۲ | `uploadDate` ویدیوی محصول/دسته بدون تاریخ = «یک ماه پیش از امروز» (هر روز متفاوت) | محصول: تاریخ انتشار محصول؛ دسته: اولین مشاهده یک بار ثبت (`_hod_video_date` اگر خالی؛ اگر مقدار نامفهوم ادمین هست، دست نمی‌خورد و `_hodima_video_first_seen`). ارقام فارسی خوانده می‌شوند |
+| ۳ | ویدیوی دسته: `esc_url` (`&` → `&#038;`) و آپارات/یوتیوب به‌عنوان `contentUrl` | `hodima_seo_schema_video_url()`: فایل مستقیم → `contentUrl`، صفحه پخش → `embedUrl`، با `esc_url_raw` |
+| ۴ | `mpn` همیشه برابر SKU (داده ساختگی) | حذف؛ `sku` (شناسه خود فروشگاه) می‌ماند. GTIN در مرحله بعد |
+| ۵ | «ارسال رایگان» (`shippingRate` = 0) و «مرجوعی رایگان پستی» ثابت در کد؛ مهلت ۰ روز = خروجی نامعتبر | گزینه‌های جدید پنل محصولات: `hodima_schema_product_shipping_mode` (`customer` پیش‌فرض: بدون مبلغ، یا `maxValue` از `…_shipping_max` / `fixed`: مبلغ `…_shipping_cost`)، `…_return_fees` (`customer` پیش‌فرض → `ReturnFeesCustomerResponsibility` / `free`)، `…_return_method` (`mail`/`store`/`none`). ۰ روز → `MerchantReturnNotPermitted`. گزینه‌های قبلی تغییر نام نکردند |
+| ۶ | سازمان در درباره‌ما/تماس نسخه دوم ناقص (بدون ساعت کاری، knowsAbout، شعار، areaServed؛ نوع شماره متفاوت) | `hodima_seo_schema_organization_node()` تنها سازنده؛ `homepage-schema.php` و `corporate-schema.php` هر دو از آن. ContactPoint همه صفحه‌ها: اولی `sales`، بقیه `customer support` (قبلا صفحه اصلی `customer service` و فقط با بیش از یک شماره) |
+| ۷ | فروشنده: پیش‌فرض کد «بازرگانی هدهد»، پنل «بازرگانی هدیما»؛ برند: پنل «هدهدلی (hodima)»، کد «هدهدلی» | فروشنده خالی = نام سازمان (+ `url`)؛ پیش‌فرض پنل = خروجی واقعی. ارجاع `seller` به `#organization` عمدا نه (همان خطای نوع WholesaleStore در creator تصویر) |
+| ۸ | بردکرامب تک‌پله‌ای («خانه») صفحه اصلی از `hodima/home/logic.php` | حذف؛ نسخه مانده در کش ۱۲ ساعته هم هنگام چاپ فیلتر می‌شود |
+| ۹ | `priceRange` = `IRR` (کد ارز) | کد ارز سه‌حرفی تنها چاپ نمی‌شود (`hodima_seo_schema_price_range()`) |
+| ۱۰ | توضیح صفحه: اول برش، بعد حذف شورت‌کد | اول `strip_shortcodes` |
+| ۱۱ | آدرس‌های بردکرامب با `esc_url` | `esc_url_raw` |
+| ۱۲ | `#article`/`#primaryimage` از پیوند یکتا، `mainEntityOfPage` از canonical | همه از canonical |
+
+فایل جدید `schema/schema-helpers.php` (اول فهرست فایل‌های ماژول اسکیما).
+
+### ۲۷.۳ تست
+- `compare-with-ref.sh` (۲۴ صفحه): تفاوت‌ها فقط همین اصلاحات — `contactPoint` و حذف `priceRange: IRR` در همه صفحه‌ها، `knowsAbout`/`openingHoursSpecification` اضافه در درباره‌ما/تماس، حذف `/#breadcrumb` صفحه اصلی، حذف `mpn`، `offers` (مرجوعی با مشتری، بدون `shippingRate`)، تصویر پیش‌فرض محصول ۲ با دامنه درست؛ `uploadDate` شناخته‌شده `/hair/#video`. بدون شناسه تکراری یا ارجاع بی‌مقصد جدید؛ بدون هشدار PHP.
+- با گزینه‌ها (`HARNESS_OPTS`): مهلت ۰ → `MerchantReturnNotPermitted`؛ سقف ارسال → `shippingRate.maxValue`؛ ویدیوی آپارات دسته با `?a=1&b=2` → `embedUrl` سالم؛ تاریخ فارسی نامفهوم ادمین حفظ و تاریخ اولین مشاهده جداگانه ثبت شد.
+- ذخیره فرم پنل محصولات (POST شبیه‌سازی‌شده با nonce): مقدار نامجاز → پیش‌فرض؛ سقف با ارقام فارسی `۱۲abc34` → `1234`. `admin-check.sh`: صفحه‌های محصولات، صفحه اصلی و پیشخوان اسکیما بدون خطا.
+- نصب و فعال‌سازی واقعی از ZIP (`Theme_Upgrader`/`Plugin_Upgrader` + `activate_plugin`) در هر دو ترتیب «اول قالب» و «اول افزونه‌ها»: بدون خطا، یک تگ JSON-LD، توابع مشترک لود شده. `php -l` همه فایل‌ها.
+- محدودیت: محصول متغیر (AggregateOffer) در ووکامرس شبیه‌سازی‌شده نیست؛ همان `shippingDetails`/مرجوعی را می‌گیرد. بعد از به‌روزرسانی، یک محصول را روی سایت با Rich Results Test ببینید؛ نبود مبلغ ارسال فقط هشدار غیرمهم «Missing field shippingRate» می‌دهد (عمدی).
+
+### ۲۷.۴ مرحله‌های بعدی پیشنهادی
+- **محصول:** `ProductGroup` + `hasVariant` برای محصولات متغیر (AggregateOffer برای Merchant listings پذیرفته نیست)، GTIN از فیلد ووکامرس، تصاویر گالری، سیاست مرجوعی/ارسال در سطح سازمان (`hasMerchantReturnPolicy`، `ShippingService`).
+- **هویت و محتوا:** `alternateName` روی WebSite (نام سایت در گوگل)، اندازه لوگو، نویسنده با `@id` و `ProfilePage`، `primaryImageOfPage`/تاریخ‌ها روی نود صفحه.
+
+## ۲۸. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
 
 | مسیر | کارکرد | پیشنهاد مکان |
 |---|---|---|

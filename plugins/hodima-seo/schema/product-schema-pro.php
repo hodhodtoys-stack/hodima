@@ -21,10 +21,13 @@ function hook_generate_custom_product_schema() {
     $site_name  = get_bloginfo('name');
 
     $opt_brand         = get_option('hodima_schema_product_brand', 'هدهدلی');
-    $opt_seller        = get_option('hodima_schema_product_seller', 'بازرگانی هدهد');
+    // فروشنده خالی = نام سازمان (همان نام #organization)؛ قبلا پیش‌فرض کد
+    // «بازرگانی هدهد» و پیش‌فرض پنل «بازرگانی هدیما» بود.
+    $opt_seller        = get_option('hodima_schema_product_seller') ?: ( function_exists( 'hodima_seo_schema_org_name' ) ? hodima_seo_schema_org_name() : get_bloginfo( 'name' ) );
     // تصویر پیش‌فرض دیگر گزینه‌ی جداگانه‌ای در این ماژول نیست؛ طبق درخواست شما،
     // تنها منبع لوگو/تصویر مرکزی همان تنظیمات صفحه اصلی (Homepage) است.
-    $opt_def_img       = get_option('hodima_schema_homepage_logo') ?: 'https://hodima.com/wp-content/uploads/2025/06/logo2.png';
+    // باگ رفع‌شده: فالبک به دامنه اشتباه (hodima.com) اشاره می‌کرد.
+    $opt_def_img       = function_exists( 'hodima_seo_schema_logo_url' ) ? hodima_seo_schema_logo_url() : ( get_option('hodima_schema_homepage_logo') ?: trailingslashit( home_url() ) . 'wp-content/uploads/2025/06/logo2.png' );
     $opt_desc_tpl      = get_option('hodima_schema_product_desc_tpl', 'خرید عمده [product_name] با بهترین قیمت از [site_name].');
     $opt_return_days   = (int)get_option('hodima_schema_product_return_days', 7);
     $opt_shipping_cost = get_option('hodima_schema_product_shipping_cost', '0');
@@ -120,29 +123,73 @@ function hook_generate_custom_product_schema() {
     $modified   = $_product->get_date_modified();
     $valid_from = $modified ? $modified->date( 'Y-m-d' ) : current_time( 'Y-m-d' );
     
-    $seller_info = ['@type' => 'Organization', 'name' => $opt_seller];
-    
-    $merchant_return = [
-        '@type' => 'MerchantReturnPolicy',
-        'applicableCountry' => 'IR',
-        'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
-        'merchantReturnDays' => $opt_return_days,
-        'returnMethod' => 'https://schema.org/ReturnByMail',
-        'returnFees' => 'https://schema.org/FreeReturn'
-    ];
+    /*
+     * فروشنده: سازمان درون‌خطی (بدون @id). ارجاع به #organization عمدا نیست:
+     * نوع آن WholesaleStore است و اعتبارسنج گوگل همین را برای creator تصویر
+     * نپذیرفت (imageobject-schema.php)؛ نام و آدرس همان سازمان است.
+     */
+    $seller_info = ['@type' => 'Organization', 'name' => $opt_seller, 'url' => trailingslashit( home_url() )];
+
+    /*
+     * سیاست مرجوعی از پنل (قبلا «مرجوعی رایگان، پستی» در کد ثابت بود).
+     * مهلت ۰ روز = مرجوعی پذیرفته نمی‌شود؛ قبلا «۰ روز مهلت» چاپ می‌شد که
+     * نامعتبر است.
+     */
+    if ( $opt_return_days > 0 ) {
+        $merchant_return = [
+            '@type' => 'MerchantReturnPolicy',
+            'applicableCountry' => 'IR',
+            'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+            'merchantReturnDays' => $opt_return_days,
+        ];
+
+        $return_method = match ( get_option( 'hodima_schema_product_return_method', 'mail' ) ) {
+            'store' => 'https://schema.org/ReturnInStore',
+            'none'  => '',
+            default => 'https://schema.org/ReturnByMail',
+        };
+        if ( '' !== $return_method ) {
+            $merchant_return['returnMethod'] = $return_method;
+        }
+
+        $merchant_return['returnFees'] = 'free' === get_option( 'hodima_schema_product_return_fees', 'customer' )
+            ? 'https://schema.org/FreeReturn'
+            : 'https://schema.org/ReturnFeesCustomerResponsibility';
+    } else {
+        $merchant_return = [
+            '@type' => 'MerchantReturnPolicy',
+            'applicableCountry' => 'IR',
+            'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted',
+        ];
+    }
 
     $shipping_details = [
         '@type' => 'OfferShippingDetails',
-        'shippingRate' => [
-            '@type' => 'MonetaryAmount',
-            'value' => (string)$opt_shipping_cost,
-            'currency' => 'IRR'
-        ],
         'shippingDestination' => [
             '@type' => 'DefinedRegion',
             'addressCountry' => 'IR'
         ],
     ];
+
+    /*
+     * هزینه ارسال. باگ قبلی: پیش‌فرض «0» بود یعنی به گوگل «ارسال رایگان»
+     * اعلام می‌شد، در حالی که هزینه با مشتری و بسته به حجم بار است.
+     *   متغیر (پیش‌فرض): مبلغی اعلام نمی‌شود، یا فقط سقف (maxValue)
+     *   ثابت: همان مبلغ پنل (0 = رایگان)
+     */
+    if ( 'fixed' === get_option( 'hodima_schema_product_shipping_mode', 'customer' ) ) {
+        $shipping_details['shippingRate'] = [
+            '@type'    => 'MonetaryAmount',
+            'value'    => (string) $opt_shipping_cost,
+            'currency' => 'IRR',
+        ];
+    } elseif ( ( $shipping_max = (int) get_option( 'hodima_schema_product_shipping_max', 0 ) ) > 0 ) {
+        $shipping_details['shippingRate'] = [
+            '@type'    => 'MonetaryAmount',
+            'maxValue' => $shipping_max,
+            'currency' => 'IRR',
+        ];
+    }
 
     /*
      * زمان تحویل فقط برای کالای انبار ایران.
@@ -265,7 +312,8 @@ function hook_generate_custom_product_schema() {
         'image'       => $image_url,
         'description' => $clean_description,
         'sku'         => $sku,
-        'mpn'         => $sku,
+        // mpn (کد قطعه سازنده) حذف شد: همیشه برابر SKU خود فروشگاه گذاشته
+        // می‌شد که داده ساختگی است. بارکد واقعی (gtin) در مرحله بعد.
         'brand'       => ['@type' => 'Brand', 'name'  => $opt_brand],
         'offers'      => $offers
     ];
@@ -399,6 +447,11 @@ function hook_generate_custom_product_schema() {
         // سرور را به‌جای تایم‌زون سایت به کار می‌برد، و strtotime() نامعتبر
         // بی‌سروصدا تاریخ را به ۱۹۷۰ سقوط می‌داد.
         $video_ts    = ! empty( $media_data['video_date'] ) ? strtotime( $media_data['video_date'] ) : false;
+        // باگ رفع‌شده: بدون تاریخ معتبر «یک ماه پیش از امروز» گذاشته می‌شد که
+        // هر روز عوض می‌شد؛ حالا تاریخ انتشار محصول (ارقام فارسی هم خوانده می‌شوند).
+        if ( ! $video_ts && function_exists( 'hodima_seo_schema_post_video_date' ) ) {
+            $video_ts = strtotime( hodima_seo_schema_post_video_date( $media_data['video_date'] ?? '', (int) $product_id ) );
+        }
         // همان باگ Jalali/locale که در category-schema-pro.php رفع شد —
         // اینجا هم wp_date() جای خودش را به DateTime بومی PHP + wp_timezone()
         // می‌دهد تا لایه‌ی تقویم شمسی وردپرس این سایت اصلاً درگیر نشود.

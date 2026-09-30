@@ -525,20 +525,10 @@ function arian_build_homepage_schema_graph() {
     }
 
     // ==========================================
-    // ۲. مسیر راهنما (BreadcrumbList)
+    // ۲. مسیر راهنما (BreadcrumbList) — حذف شد
     // ==========================================
-    $graph[] = [
-        '@type'           => 'BreadcrumbList',
-        '@id'             => $site_url . '#breadcrumb',
-        'itemListElement' => [
-            [
-                '@type'    => 'ListItem',
-                'position' => 1,
-                'name'     => 'خانه',
-                'item'     => $site_url,
-            ],
-        ],
-    ];
+    // بردکرامب صفحه اصلی فقط یک پله («خانه») داشت: مسیری که به هیچ جا
+    // نمی‌رود و گوگل حداقل دو پله می‌خواهد. هیچ نودی به آن ارجاع نمی‌داد.
 
 // ==========================================
     // ۳. تصاویر و ویدئوی اصلی (Hook Media System)
@@ -688,6 +678,12 @@ function arian_add_homepage_schema_extra() {
             static fn( array $node ): bool => ! str_ends_with( (string) ( $node['@id'] ?? '' ), '#hero-video' )
         ) );
     }
+
+    // بردکرامب تک‌پله‌ای قدیمی (بخش ۲ بالا) ممکن است تا ۱۲ ساعت در کش مانده باشد
+    $graph = array_values( array_filter(
+        $graph,
+        static fn( array $node ): bool => 'BreadcrumbList' !== ( $node['@type'] ?? '' )
+    ) );
 
     if ( empty( $graph ) ) {
         return;

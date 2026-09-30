@@ -25,6 +25,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hodima_product_schema
         update_option('hodima_schema_product_return_days', isset($_POST['hodima_schema_product_return_days']) ? absint($_POST['hodima_schema_product_return_days']) : 7);
         update_option('hodima_schema_product_shipping_cost', isset($_POST['hodima_schema_product_shipping_cost']) ? sanitize_text_field( wp_unslash( $_POST['hodima_schema_product_shipping_cost'] ) ) : '0');
 
+        // نحوه هزینه ارسال و مرجوعی (فقط مقدارهای مجاز؛ بقیه = پیش‌فرض)
+        $pick = static fn( string $key, array $allowed ): string => in_array( $v = sanitize_key( wp_unslash( $_POST[ $key ] ?? '' ) ), $allowed, true ) ? $v : $allowed[0];
+        update_option('hodima_schema_product_shipping_mode', $pick( 'hodima_schema_product_shipping_mode', [ 'customer', 'fixed' ] ));
+        // ارقام فارسی/عربی هم پذیرفته می‌شوند (۵۰۰۰۰۰ → 500000)
+        $max_raw = strtr( (string) wp_unslash( $_POST['hodima_schema_product_shipping_max'] ?? '' ), array_combine( [ '۰','۱','۲','۳','۴','۵','۶','۷','۸','۹','٠','١','٢','٣','٤','٥','٦','٧','٨','٩' ], [ '0','1','2','3','4','5','6','7','8','9','0','1','2','3','4','5','6','7','8','9' ] ) );
+        update_option('hodima_schema_product_shipping_max', preg_replace( '/[^0-9]/', '', $max_raw ));
+        update_option('hodima_schema_product_return_fees', $pick( 'hodima_schema_product_return_fees', [ 'customer', 'free' ] ));
+        update_option('hodima_schema_product_return_method', $pick( 'hodima_schema_product_return_method', [ 'mail', 'store', 'none' ] ));
+
         // باگ رفع‌شده: قبلاً حداقل/حداکثر روزهای آماده‌سازی و ارسال بدون هیچ
         // بررسی نسبت به هم ذخیره می‌شدند. اگر ادمین به‌اشتباه مقدار حداقل را
         // بزرگ‌تر از حداکثر وارد می‌کرد (مثلاً حداقل=۵، حداکثر=۲)، این بازه‌ی
@@ -58,11 +67,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hodima_product_schema
 
 // مقادیر فعلی با Fallback به مقادیر اصلی شما
 $is_enabled    = get_option('hodima_schema_product_enable', '1');
-$brand         = get_option('hodima_schema_product_brand', 'هدهدلی (hodima)');
-$seller        = get_option('hodima_schema_product_seller', 'بازرگانی هدیما');
+// پیش‌فرض‌ها همان مقدارهایی که اسکیما واقعا چاپ می‌کند (قبلا پنل «هدهدلی (hodima)»
+// و «بازرگانی هدیما» نشان می‌داد ولی خروجی چیز دیگری بود).
+$brand         = get_option('hodima_schema_product_brand', 'هدهدلی');
+$seller        = get_option('hodima_schema_product_seller') ?: ( function_exists( 'hodima_seo_schema_org_name' ) ? hodima_seo_schema_org_name() : get_bloginfo( 'name' ) );
 $desc_tpl      = get_option('hodima_schema_product_desc_tpl', 'خرید عمده [product_name] با بهترین قیمت از [site_name].');
 $return_days   = get_option('hodima_schema_product_return_days', '7');
 $shipping_cost = get_option('hodima_schema_product_shipping_cost', '0');
+$shipping_mode = get_option('hodima_schema_product_shipping_mode', 'customer');
+$shipping_max  = get_option('hodima_schema_product_shipping_max', '');
+$return_fees   = get_option('hodima_schema_product_return_fees', 'customer');
+$return_method = get_option('hodima_schema_product_return_method', 'mail');
 $handling_min  = get_option('hodima_schema_product_handling_min', '1');
 $handling_max  = get_option('hodima_schema_product_handling_max', '2');
 $transit_min   = get_option('hodima_schema_product_transit_min', '1');
@@ -138,13 +153,45 @@ hodima_view_header(
             <div class="hd-field">
                 <label class="hd-field__label" for="hodima_schema_product_return_days">مهلت مرجوعی کالا (روز)</label>
                 <input type="number" name="hodima_schema_product_return_days" id="hodima_schema_product_return_days" value="<?php echo esc_attr($return_days); ?>">
-                <p class="hd-field__help">مثال: 7 (یعنی ۷ روز ضمانت بازگشت وجه)</p>
+                <p class="hd-field__help">مثال: 7 (یعنی ۷ روز ضمانت بازگشت وجه). عدد 0 یعنی مرجوعی پذیرفته نمی‌شود.</p>
             </div>
 
             <div class="hd-field">
-                <label class="hd-field__label" for="hodima_schema_product_shipping_cost">هزینه ارسال پیش‌فرض (ریال)</label>
+                <label class="hd-field__label" for="hodima_schema_product_return_fees">هزینه برگشت کالا</label>
+                <select name="hodima_schema_product_return_fees" id="hodima_schema_product_return_fees">
+                    <option value="customer" <?php selected($return_fees, 'customer'); ?>>با مشتری</option>
+                    <option value="free" <?php selected($return_fees, 'free'); ?>>رایگان (با فروشگاه)</option>
+                </select>
+            </div>
+
+            <div class="hd-field">
+                <label class="hd-field__label" for="hodima_schema_product_return_method">روش برگشت کالا</label>
+                <select name="hodima_schema_product_return_method" id="hodima_schema_product_return_method">
+                    <option value="mail" <?php selected($return_method, 'mail'); ?>>ارسال (پست یا باربری)</option>
+                    <option value="store" <?php selected($return_method, 'store'); ?>>تحویل حضوری در فروشگاه/انبار</option>
+                    <option value="none" <?php selected($return_method, 'none'); ?>>ذکر نشود</option>
+                </select>
+            </div>
+
+            <div class="hd-field">
+                <label class="hd-field__label" for="hodima_schema_product_shipping_mode">هزینه ارسال</label>
+                <select name="hodima_schema_product_shipping_mode" id="hodima_schema_product_shipping_mode">
+                    <option value="customer" <?php selected($shipping_mode, 'customer'); ?>>با مشتری، متغیر (بسته به حجم بار)</option>
+                    <option value="fixed" <?php selected($shipping_mode, 'fixed'); ?>>مبلغ ثابت</option>
+                </select>
+                <p class="hd-field__help">«متغیر»: مبلغی به گوگل اعلام نمی‌شود (یا فقط سقف، اگر پر شود). سرچ کنسول برای نبود مبلغ فقط هشدار غیرمهم می‌دهد؛ اعلام «ارسال رایگان» وقتی رایگان نیست خلاف قوانین Merchant است.</p>
+            </div>
+
+            <div class="hd-field">
+                <label class="hd-field__label" for="hodima_schema_product_shipping_cost">مبلغ ثابت ارسال (ریال)</label>
                 <input type="text" name="hodima_schema_product_shipping_cost" id="hodima_schema_product_shipping_cost" class="ltr" dir="ltr" value="<?php echo esc_attr($shipping_cost); ?>">
-                <p class="hd-field__help">عدد 0 یعنی ارسال رایگان (Free Shipping).</p>
+                <p class="hd-field__help">فقط در حالت «مبلغ ثابت». عدد 0 یعنی ارسال رایگان.</p>
+            </div>
+
+            <div class="hd-field">
+                <label class="hd-field__label" for="hodima_schema_product_shipping_max">سقف هزینه ارسال (ریال، اختیاری)</label>
+                <input type="text" name="hodima_schema_product_shipping_max" id="hodima_schema_product_shipping_max" class="ltr" dir="ltr" inputmode="numeric" value="<?php echo esc_attr($shipping_max); ?>">
+                <p class="hd-field__help">فقط در حالت «متغیر». اگر بیشترین هزینه ارسال را می‌دانید وارد کنید؛ گوگل آن را «تا این مبلغ» می‌خواند. خالی = اعلام نشود.</p>
             </div>
 
             <div class="hd-field">

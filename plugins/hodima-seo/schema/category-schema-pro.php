@@ -116,7 +116,7 @@ function hodima_category_schema_fields(): ?array {
     // --- خواندن تنظیمات از پنل ادمین (view-category.php) ---
     // تصویر پیش‌فرض دیگر گزینه‌ی جداگانه‌ای در این ماژول نیست؛ طبق درخواست شما،
     // تنها منبع لوگو/تصویر مرکزی همان تنظیمات صفحه اصلی (Homepage) است.
-    $default_img  = get_option( 'hodima_schema_homepage_logo' ) ?: get_site_url( null, '/wp-content/uploads/2025/06/logo2.png' );
+    $default_img  = function_exists( 'hodima_seo_schema_logo_url' ) ? hodima_seo_schema_logo_url() : ( get_option( 'hodima_schema_homepage_logo' ) ?: get_site_url( null, '/wp-content/uploads/2025/06/logo2.png' ) );
     $name_tpl     = get_option( 'hodima_cat_name_template', 'پخش عمده [category]' );
     $desc_tpl     = get_option( 'hodima_cat_desc_template', 'مرجع تخصصی واردات و پخش عمده [category] با رقابتی‌ترین قیمت بازار در [site_name].' );
     $catalog_tpl  = get_option( 'hodima_cat_catalog_template', 'کاتالوگ محصولات [category]' );
@@ -192,6 +192,12 @@ function hodima_category_schema_fields(): ?array {
         //    در اسکیما می‌شد ۱ ژانویه ۱۹۷۰ — یک تاریخ کاملاً غلط و گمراه‌کننده
         //    در Search Console. حالا نتیجه‌ی strtotime بررسی می‌شود.
         $video_ts    = $video_date ? strtotime( $video_date ) : false;
+        // باگ رفع‌شده: بدون تاریخ معتبر «یک ماه پیش از امروز» گذاشته می‌شد که
+        // هر روز عوض می‌شد. حالا تاریخ اولین مشاهده یک بار ثبت و ثابت می‌ماند
+        // (ارقام فارسی هم خوانده می‌شوند).
+        if ( ! $video_ts && function_exists( 'hodima_seo_schema_term_video_date' ) ) {
+            $video_ts = strtotime( hodima_seo_schema_term_video_date( $video_date, (int) $term->term_id ) );
+        }
         // باگ واقعی و تأییدشده (گزارش‌شده توسط ابزار Rich Results گوگل):
         // در اصلاح قبلی، date('c') با wp_date('c') جایگزین شد تا تایم‌زون
         // سایت رعایت شود — ولی wp_date() از لایه‌ی locale/i18n خود وردپرس
@@ -213,13 +219,23 @@ function hodima_category_schema_fields(): ?array {
             $upload_date = gmdate( 'c', $video_ts ?: strtotime( '-1 month' ) );
         }
 
+        /*
+         * باگ رفع‌شده (همان که در محصول رفع شده بود): esc_url برای HTML است و
+         * «&» را «&#038;» می‌کرد؛ و صفحه آپارات/یوتیوب هم contentUrl (یعنی
+         * خود فایل ویدیو) ثبت می‌شد. حالا فایل مستقیم → contentUrl، صفحه
+         * پخش → embedUrl.
+         */
+        $video_prop = function_exists( 'hodima_seo_schema_video_url' )
+            ? hodima_seo_schema_video_url( (string) $video_url )
+            : [ 'contentUrl', esc_url_raw( (string) $video_url ) ];
+
         $collection_page['subjectOf'] = [
-            '@type'        => 'VideoObject',
-            'name'         => strtr( $video_title_tpl, $replace_vars ),
-            'description'  => strtr( $video_desc_tpl, $replace_vars ),
-            'thumbnailUrl' => [ esc_url( $video_thumb ?: $image_url ) ],
-            'uploadDate'   => $upload_date,
-            'contentUrl'   => esc_url( $video_url ),
+            '@type'          => 'VideoObject',
+            'name'           => strtr( $video_title_tpl, $replace_vars ),
+            'description'    => strtr( $video_desc_tpl, $replace_vars ),
+            'thumbnailUrl'   => [ esc_url_raw( (string) ( $video_thumb ?: $image_url ) ) ],
+            'uploadDate'     => $upload_date,
+            $video_prop[0]   => $video_prop[1],
         ];
     }
 

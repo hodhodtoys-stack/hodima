@@ -54,6 +54,8 @@ function hodima_breadcrumb_items(): array {
     $site_url = trailingslashit(home_url());
     $home_label = sanitize_text_field(get_option('hodima_breadcrumb_home_label', 'خانه'));
 
+    // آدرس‌ها با esc_url_raw (نه esc_url): esc_url برای HTML است و «&» را به
+    // «&#038;» تبدیل می‌کند که داخل JSON آدرس خراب است.
     $items[] = [
         '@type'    => 'ListItem',
         'position' => $pos++,
@@ -74,7 +76,7 @@ function hodima_breadcrumb_items(): array {
                             '@type'    => 'ListItem',
                             'position' => $pos++,
                             'name'     => wp_strip_all_tags($anc_term->name),
-                            'item'     => esc_url($link)
+                            'item'     => esc_url_raw($link)
                         ];
                     }
                 }
@@ -91,7 +93,7 @@ function hodima_breadcrumb_items(): array {
                     '@type'    => 'ListItem',
                     'position' => $pos++,
                     'name'     => wp_strip_all_tags(get_the_title($ancestor_id)),
-                    'item'     => esc_url(get_permalink($ancestor_id))
+                    'item'     => esc_url_raw(get_permalink($ancestor_id))
                 ];
             }
         }
@@ -132,7 +134,7 @@ function hodima_breadcrumb_items(): array {
                         '@type'    => 'ListItem',
                         'position' => $pos++,
                         'name'     => wp_strip_all_tags($main_term->name),
-                        'item'     => esc_url($link)
+                        'item'     => esc_url_raw($link)
                     ];
                 }
             }
@@ -141,7 +143,7 @@ function hodima_breadcrumb_items(): array {
             '@type'    => 'ListItem',
             'position' => $pos++,
             'name'     => wp_strip_all_tags(get_the_title()),
-            'item'     => esc_url(get_permalink())
+            'item'     => esc_url_raw(get_permalink())
         ];
     } 
     elseif (is_tax('product_cat') || is_category()) {
@@ -153,7 +155,7 @@ function hodima_breadcrumb_items(): array {
                 '@type'    => 'ListItem',
                 'position' => $pos++,
                 'name'     => wp_strip_all_tags($term->name),
-                'item'     => esc_url($link)
+                'item'     => esc_url_raw($link)
             ];
         }
     } 
@@ -167,7 +169,7 @@ function hodima_breadcrumb_items(): array {
                     '@type'    => 'ListItem',
                     'position' => $pos++,
                     'name'     => wp_strip_all_tags($main_cat->name),
-                    'item'     => esc_url($link)
+                    'item'     => esc_url_raw($link)
                 ];
             }
         }
@@ -175,7 +177,7 @@ function hodima_breadcrumb_items(): array {
             '@type'    => 'ListItem',
             'position' => $pos++,
             'name'     => wp_strip_all_tags(get_the_title()),
-            'item'     => esc_url(get_permalink())
+            'item'     => esc_url_raw(get_permalink())
         ];
     }
     elseif ( (function_exists('is_shop') && is_shop()) || is_post_type_archive() ) {
@@ -186,7 +188,7 @@ function hodima_breadcrumb_items(): array {
                 '@type'    => 'ListItem',
                 'position' => $pos++,
                 'name'     => wp_strip_all_tags($obj->labels->name),
-                'item'     => esc_url(get_post_type_archive_link($obj->name))
+                'item'     => esc_url_raw(get_post_type_archive_link($obj->name))
             ];
         }
     }
@@ -199,7 +201,7 @@ function hodima_breadcrumb_items(): array {
             '@type'    => 'ListItem',
             'position' => $pos++,
             'name'     => wp_strip_all_tags(get_the_title()),
-            'item'     => esc_url(get_permalink())
+            'item'     => esc_url_raw(get_permalink())
         ];
     }
     elseif (is_tag()) {
@@ -211,7 +213,7 @@ function hodima_breadcrumb_items(): array {
                     '@type'    => 'ListItem',
                     'position' => $pos++,
                     'name'     => wp_strip_all_tags($term->name),
-                    'item'     => esc_url($link)
+                    'item'     => esc_url_raw($link)
                 ];
             }
         }
@@ -232,7 +234,7 @@ function hodima_breadcrumb_items(): array {
                     '@type'    => 'ListItem',
                     'position' => $pos++,
                     'name'     => wp_strip_all_tags($term->name),
-                    'item'     => esc_url($link)
+                    'item'     => esc_url_raw($link)
                 ];
             }
         }
@@ -251,7 +253,7 @@ function hodima_breadcrumb_items(): array {
                             '@type'    => 'ListItem',
                             'position' => $pos++,
                             'name'     => wp_strip_all_tags($main_term->name),
-                            'item'     => esc_url($link)
+                            'item'     => esc_url_raw($link)
                         ];
                     }
                     break;
@@ -262,7 +264,7 @@ function hodima_breadcrumb_items(): array {
             '@type'    => 'ListItem',
             'position' => $pos++,
             'name'     => wp_strip_all_tags(get_the_title()),
-            'item'     => esc_url(get_permalink())
+            'item'     => esc_url_raw(get_permalink())
         ];
     }
 

@@ -24,7 +24,11 @@ function hook_render_blog_schema() {
     $post_id = get_the_ID();
 
     $site_url      = trailingslashit(home_url());
-    $post_url      = get_permalink($post_id);
+    // پایه همه شناسه‌ها همان آدرس canonical نود «#webpage». قبلا #article و
+    // #primaryimage از پیوند یکتا ساخته می‌شدند ولی mainEntityOfPage از
+    // canonical؛ با canonical دستی، مقاله از صفحه‌اش جدا می‌افتاد.
+    $canonical     = function_exists( 'hodima_get_canonical_url' ) ? hodima_get_canonical_url() : '';
+    $post_url      = '' !== $canonical ? $canonical : trailingslashit( (string) get_permalink( $post_id ) );
     $post_title    = get_the_title($post_id);
     
     $raw_excerpt   = get_the_excerpt() ? get_the_excerpt() : wp_trim_words(strip_shortcodes($post->post_content), 30, '...');
@@ -46,7 +50,7 @@ function hook_render_blog_schema() {
     // 2. جایگزین کردن عکس هاردکد شده با عکسی که از پنل ادمین می‌آید
     // تصویر پیش‌فرض دیگر یک گزینه‌ی جداگانه در این ماژول نیست؛ طبق درخواست شما،
     // تنها منبع لوگو/تصویر مرکزی همان تنظیمات صفحه اصلی (Homepage) است.
-    $default_image_from_admin = get_option('hodima_schema_homepage_logo') ?: get_site_url(null, '/wp-content/uploads/2025/06/logo2.png');
+    $default_image_from_admin = function_exists( 'hodima_seo_schema_logo_url' ) ? hodima_seo_schema_logo_url() : ( get_option('hodima_schema_homepage_logo') ?: get_site_url(null, '/wp-content/uploads/2025/06/logo2.png') );
     $image_url = $default_image_from_admin; 
     
     if ( has_post_thumbnail() ) {
@@ -99,9 +103,7 @@ function hook_render_blog_schema() {
             // نسخه قبلی trailingslashit( get_permalink() ) بود؛ اگر برای نوشته
             // canonical دستی تنظیم شده بود یا نوشته صفحه‌بندی داشت، ارجاع به
             // نودی می‌رسید که وجود نداشت.
-            '@id' => ( function_exists( 'hodima_get_canonical_url' ) && hodima_get_canonical_url() !== ''
-                ? hodima_get_canonical_url()
-                : trailingslashit( $post_url ) ) . '#webpage',
+            '@id' => $post_url . '#webpage',
         )
     );
 

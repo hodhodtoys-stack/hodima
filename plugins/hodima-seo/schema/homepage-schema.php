@@ -18,22 +18,6 @@ function hook_render_master_schema() {
     $global_enabled = get_option('hodima_schema_homepage_enable', '1') === '1';
     if (!$global_enabled) return;
 
-    // توابع کمکی
-    $sanitize_multiline = function($raw_text) {
-        if (empty($raw_text)) return [];
-        $lines = explode("\n", $raw_text);
-        $lines = array_map('trim', $lines);
-        return array_values(array_filter($lines));
-    };
-
-    $normalize_phone = function($tel) {
-        $cleaned = preg_replace('/[^0-9+]/', '', $tel);
-        if (strpos($cleaned, '0') === 0) {
-            return '+98' . substr($cleaned, 1);
-        }
-        return $cleaned;
-    };
-
     $site_url = trailingslashit(home_url());
 
     /* ── آدرس صفحه ───────────────────────────────────────────────────
@@ -60,143 +44,12 @@ function hook_render_master_schema() {
 
     $current_url = $canonical !== '' ? $canonical : $site_url;
 
-    // دریافت اطلاعات پایه
-    $org_name = get_option('hodima_schema_homepage_org_name') ?: get_bloginfo('name') ?: 'شرکت بازرگانی هدهد';
-    
-    $custom_logo_id = get_theme_mod('custom_logo');
-    $logo_url = $custom_logo_id ? wp_get_attachment_image_url($custom_logo_id, 'full') : get_option('hodima_schema_homepage_logo');
-    if (empty($logo_url)) $logo_url = $site_url . 'wp-content/uploads/2025/06/logo2.png';
-    
-    $image_url = get_option('hodima_schema_homepage_image') ?: $logo_url;
-
-    $alt_names_raw = get_option('hodima_schema_geo_alt_names', "عمده فروشی هدهد\nبازرگانی هدهد\nhodima");
-    $alt_names     = $sanitize_multiline($alt_names_raw);
-
-    $knows_home  = $sanitize_multiline(get_option('hodima_schema_homepage_knows_about'));
-    $knows_geo   = $sanitize_multiline(get_option('hodima_schema_geo_knows_about', "واردات اکسسوری مو\nپخش عمده کلیپس\nفروش عمده کش مو\nتولید و پخش گلسر\nلوازم خرازی و خرج‌کار"));
-    $knows_about = array_unique(array_merge($knows_home, $knows_geo));
-
-    $socials_geo  = $sanitize_multiline(get_option('hodima_schema_geo_socials', "https://instagram.com/hodima\nhttps://t.me/hodimaaccessory\nhttps://wa.me/989124093140"));
-    $social_links = array_unique($socials_geo);
-
-    $raw_telephones = $sanitize_multiline(get_option('hodima_schema_geo_telephones', "+989124093140\n02177322684"));
-    $telephones     = array_map($normalize_phone, $raw_telephones);
-    $primary_phone  = !empty($telephones) ? $telephones[0] : '+989124093140';
-
-    $price_range = get_option('hodima_schema_homepage_price_range') ?: 'IRR';
-    
-    $address_schema = [
-        '@type'           => 'PostalAddress',
-        'addressCountry'  => 'IR',
-        'streetAddress'   => get_option('hodima_schema_homepage_street_address', 'تهرانپارس، خیابان احسان، پلاک ۸۴'),
-        'addressLocality' => get_option('hodima_schema_homepage_address_locality', 'تهران'),
-        // باگ رفع‌شده: قبلاً این خط هم از get_option('..._address_locality')
-        // می‌خواند، یعنی addressRegion همیشه دقیقاً همان مقدار addressLocality
-        // بود. حالا از گزینه‌ی جداگانه‌ی «استان» می‌خواند.
-        'addressRegion'   => get_option('hodima_schema_homepage_address_region', 'تهران'),
-        'postalCode'      => get_option('hodima_schema_homepage_postal_code', '1657883361')
-    ];
-
-    $org_type = get_option('hodima_schema_homepage_org_type', 'WholesaleStore');
-    $org_desc = get_option('hodima_schema_geo_description', get_bloginfo('description')) ?: 'پخش عمده اکسسوری مو';
-
-    // 1. ساخت هسته سازمان (Organization)
-    $organization_schema = [
-        '@type'         => $org_type,
-        '@id'           => $site_url . '#organization',
-        'name'          => $org_name,
-        'url'           => $site_url,
-        'logo'          => [
-            '@type' => 'ImageObject',
-            '@id'   => $site_url . '#logo',
-            'url'   => $logo_url
-        ],
-        'image'         => ['@id' => $site_url . '#logo'],
-        'description'   => $org_desc,
-        'priceRange'    => $price_range,
-        'telephone'     => $primary_phone,
-        'address'       => $address_schema
-    ];
-
-    if (!empty($alt_names)) $organization_schema['alternateName'] = $alt_names;
-    if (!empty($knows_about)) $organization_schema['knowsAbout'] = array_values($knows_about);
-    if (!empty($social_links)) $organization_schema['sameAs'] = array_values($social_links);
-
-    // باگ رفع‌شده: پنل ادمین (view-homepage.php) این چهار فیلد را ذخیره
-    // می‌کرد («شعار تجاری»، «نام کاتالوگ خدمات»، «کشورهای تحت پوشش
-    // areaServed» و «زبان‌های قابل پشتیبانی knowsLanguage») ولی هیچ‌کدام
-    // در خروجی JSON-LD خوانده نمی‌شدند — یعنی هرچه ادمین در این فیلدها
-    // وارد می‌کرد، عملاً بی‌اثر بود. حالا واقعاً در گراف سازمان درج می‌شوند.
-    $slogan = get_option('hodima_schema_homepage_slogan');
-    if (!empty($slogan)) $organization_schema['slogan'] = sanitize_text_field($slogan);
-
-    $catalog_name = get_option('hodima_schema_homepage_catalog_name');
-    if (!empty($catalog_name)) {
-        $organization_schema['hasOfferCatalog'] = [
-            '@type' => 'OfferCatalog',
-            'name'  => sanitize_text_field($catalog_name)
-        ];
-    }
-
-    $area_countries = $sanitize_multiline(get_option('hodima_schema_ai_countries'));
-    if (!empty($area_countries)) {
-        $organization_schema['areaServed'] = array_map(function($country) {
-            return ['@type' => 'Country', 'name' => $country];
-        }, $area_countries);
-    }
-
-    $lang_raw = get_option('hodima_schema_ai_languages');
-    if (!empty($lang_raw)) {
-        $languages = array_values(array_filter(array_map('trim', explode(',', $lang_raw))));
-        if (!empty($languages)) $organization_schema['knowsLanguage'] = $languages;
-    }
-
-    // نکته: فیلد «نوع مخاطب تجاری» (hodima_schema_ai_audience) عمداً به
-    // نود Organization اضافه نمی‌شود. طبق کامنت «FIX ERROR» که پیش‌تر در
-    // همین فایل بود، خاصیت audience روی Organization توسط اعتبارسنج گوگل
-    // به‌عنوان فیلد نامعتبر/غیرمنتظره گزارش می‌شد و به‌صورت دستی حذف شده
-    // بود؛ برای جلوگیری از بازگشت همان خطا، این فیلد اینجا استفاده نمی‌شود.
-    // (audience واقعی و معتبر همان چیزی است که category-schema-pro.php از
-    // طریق hodima_cat_audience روی CollectionPage هر دسته تولید می‌کند.)
-
-    if (count($telephones) > 1) {
-        $contact_points = [];
-        foreach ($telephones as $tel) {
-            $contact_points[] = [
-                '@type'             => 'ContactPoint',
-                'telephone'         => $tel,
-                'contactType'       => 'customer service',
-                'areaServed'        => 'IR',
-                'availableLanguage' => ['Persian']
-            ];
-        }
-        $organization_schema['contactPoint'] = $contact_points;
-    }
-
-    $organization_schema['openingHoursSpecification'] = [
-        [
-            '@type'     => 'OpeningHoursSpecification',
-            'dayOfWeek' => ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday'],
-            'opens'     => get_option('hodima_schema_geo_weekday_open', '09:00'),
-            'closes'    => get_option('hodima_schema_geo_weekday_close', '17:30')
-        ],
-        [
-            '@type'     => 'OpeningHoursSpecification',
-            'dayOfWeek' => ['Thursday'],
-            'opens'     => get_option('hodima_schema_geo_thursday_open', '09:00'),
-            'closes'    => get_option('hodima_schema_geo_thursday_close', '13:00')
-        ]
-    ];
-
-    // =========================================================================
-    // اتصال جادویی به ماژول AI GEO
-    // =========================================================================
-    $organization_schema = apply_filters('wpgi_ai_geo_schema_data', $organization_schema);
-
-    // FIX ERROR: حذف اتوماتیک ویژگی audience در صورتی که توسط فیلتر بالا به استور تزریق شده باشد
-    if (isset($organization_schema['audience'])) {
-        unset($organization_schema['audience']);
-    }
+    // نود سازمان از سازنده مشترک (schema-helpers.php) — همان نودی که برگه‌های
+    // درباره‌ما/تماس هم چاپ می‌کنند. قبلا این فایل و corporate-schema.php هر کدام
+    // نسخه خودشان را می‌ساختند و در برگه‌های درباره‌ما/تماس سازمان ساعت کاری،
+    // knowsAbout و شعار نداشت.
+    $org_name            = hodima_seo_schema_org_name();
+    $organization_schema = hodima_seo_schema_organization_node();
 
     // 2. ساخت هسته وب‌سایت (WebSite)
     $website_schema = [
@@ -249,7 +102,9 @@ function hook_render_master_schema() {
     if (is_front_page() || is_home()) {
         $page_desc = get_bloginfo('description');
     } elseif (is_singular()) {
-        $page_desc = has_excerpt() ? get_the_excerpt() : wp_trim_words(get_post_field('post_content', get_queried_object_id()), 20);
+        // باگ قبلی: اول کوتاه می‌شد، بعد شورت‌کد حذف می‌شد؛ شورت‌کدی که وسط
+        // برش افتاده بود («[video src=…») در توضیح می‌ماند.
+        $page_desc = has_excerpt() ? get_the_excerpt() : wp_trim_words(strip_shortcodes((string) get_post_field('post_content', get_queried_object_id())), 20);
     } elseif (is_archive() || is_tax()) {
         $page_desc = get_the_archive_description();
     }
