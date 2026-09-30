@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 define( 'HODIMA_CORE_DIR', __DIR__ );
 define( 'HODIMA_CORE_URL', HODIMA_SEO_URL . '/components/indexnow-sync' );
-define( 'HODIMA_CORE_VERSION', '1.1.0' );
+define( 'HODIMA_CORE_VERSION', '1.2.0' ); // 1.2.0: بازطراحی پیشخوان
 define( 'HODIMA_CORE_DB_VERSION', '1.1.0' ); // 1.1.0: گزینه hodima_ban_until
 
 // ---------------------------------------------------------------------
@@ -102,7 +102,7 @@ final class Hodima_Core {
         check_admin_referer( 'hodima_clear_inh' );
         global $wpdb;
         $wpdb->query( "DELETE FROM {$wpdb->prefix}hodima_indexnow_queue WHERE status != 'pending'" );
-        wp_redirect( add_query_arg( [ 'page' => 'hodima-core', 'tab' => 'bing-sync', 'msg' => 'cleared' ], admin_url( 'admin.php' ) ) );
+        wp_safe_redirect( add_query_arg( [ 'page' => 'hodima-core', 'tab' => 'history', 'msg' => 'cleared' ], admin_url( 'admin.php' ) ) );
         exit;
     }
 
@@ -111,7 +111,7 @@ final class Hodima_Core {
         check_admin_referer( 'hodima_clear_inq' );
         global $wpdb;
         $wpdb->query( "DELETE FROM {$wpdb->prefix}hodima_indexnow_queue WHERE status = 'pending'" );
-        wp_redirect( add_query_arg( [ 'page' => 'hodima-core', 'tab' => 'bing-sync', 'msg' => 'cleared' ], admin_url( 'admin.php' ) ) );
+        wp_safe_redirect( add_query_arg( [ 'page' => 'hodima-core', 'tab' => 'queue', 'msg' => 'cleared' ], admin_url( 'admin.php' ) ) );
         exit;
     }
 

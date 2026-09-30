@@ -43,6 +43,63 @@ final class Hodima_Bot_Shield {
      */
     public const ROBOTS_ONLY = [ 'Google-Extended', 'Applebot-Extended' ];
 
+    /** شرکت سازنده هر ربات (ستون «شرکت» جدول ربات‌ها؛ ترتیب جدول هم همین است). */
+    public const COMPANIES = [
+        'GPTBot' => 'OpenAI', 'ChatGPT-User' => 'OpenAI', 'OAI-SearchBot' => 'OpenAI',
+        'ClaudeBot' => 'Anthropic', 'Claude-User' => 'Anthropic', 'Claude-SearchBot' => 'Anthropic', 'Claude-Web' => 'Anthropic',
+        'Google-Extended' => 'Google', 'Google-CloudVertexBot' => 'Google',
+        'meta-externalagent' => 'Meta', 'meta-externalfetcher' => 'Meta', 'FacebookBot' => 'Meta',
+        'PerplexityBot' => 'Perplexity', 'Perplexity-User' => 'Perplexity',
+        'Applebot-Extended' => 'Apple', 'Amazonbot' => 'Amazon', 'Bytespider' => 'ByteDance',
+        'MistralAI-User' => 'Mistral', 'DuckAssistBot' => 'DuckDuckGo',
+        'Cohere-ai' => 'Cohere', 'cohere-training-data-crawler' => 'Cohere',
+        'CCBot' => 'Common Crawl', 'AI2Bot' => 'Allen Institute', 'YouBot' => 'You.com',
+        'Diffbot' => 'Diffbot', 'PetalBot' => 'Huawei',
+    ];
+
+    /**
+     * ربات‌ها به ترتیب شرکت برای جدول تب «ربات‌های هوش مصنوعی».
+     *
+     * @return list<string> نام‌های User-Agent
+     */
+    public static function bots_by_company(): array {
+        $rank = array_flip( array_values( array_unique( array_values( self::COMPANIES ) ) ) );
+        $bots = array_keys( self::BOTS );
+        // مرتب‌سازی پایدار (PHP 8): ترتیب داخل هر شرکت همان ترتیب BOTS می‌ماند
+        usort( $bots, static fn( string $a, string $b ): int =>
+            ( $rank[ self::COMPANIES[ $a ] ?? '' ] ?? PHP_INT_MAX ) <=> ( $rank[ self::COMPANIES[ $b ] ?? '' ] ?? PHP_INT_MAX )
+        );
+        return $bots;
+    }
+
+    /**
+     * بازدید هر ربات (لاگ‌ها ۳۰ روز نگه داشته می‌شوند).
+     *
+     * @return array<string, array{hits:int, ts:int}> کلید: نام نمایشی ثبت‌شده در لاگ
+     */
+    public static function get_bot_visits(): array {
+        global $wpdb;
+        $rows = $wpdb->get_results(
+            "SELECT bot_name, COUNT(*) AS hits, UNIX_TIMESTAMP(MAX(created_at)) AS ts
+             FROM {$wpdb->prefix}hodima_ai_bot_logs GROUP BY bot_name", ARRAY_A
+        ) ?: [];
+        $out = [];
+        foreach ( $rows as $row ) {
+            $out[ (string) $row['bot_name'] ] = [ 'hits' => (int) $row['hits'], 'ts' => (int) $row['ts'] ];
+        }
+        return $out;
+    }
+
+    /** آیا یکی از خط‌های فهرست لایت‌اسپید این ربات را پوشش می‌دهد؟ (مثل [NC] لایت‌اسپید: بی‌حساس به حروف) */
+    public static function bot_bypasses_cache( string $sig, array $excluded ): bool {
+        foreach ( $excluded as $entry ) {
+            if ( '' !== $entry && false !== stripos( $sig, $entry ) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** یک گزینه لایت‌اسپید؛ آرایه‌ها به شکل رشته JSON ذخیره می‌شوند (Root::_maybe_encode). */
     private static function litespeed_list( string $id ): ?array {
         $value = get_option( 'litespeed.conf.' . $id, null );
@@ -131,14 +188,7 @@ final class Hodima_Bot_Shield {
             if ( in_array( $sig, self::ROBOTS_ONLY, true ) ) {
                 continue;
             }
-            $covered = false;
-            foreach ( $excluded as $entry ) {
-                if ( '' !== $entry && false !== stripos( $sig, $entry ) ) {
-                    $covered = true;
-                    break;
-                }
-            }
-            if ( ! $covered ) {
+            if ( ! self::bot_bypasses_cache( $sig, $excluded ) ) {
                 $missing[] = $sig;
             }
         }

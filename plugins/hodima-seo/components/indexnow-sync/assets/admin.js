@@ -221,3 +221,40 @@ window.hodimaCopyAeoLinks = async function() {
         setTimeout(function() { msg.style.display = 'none'; }, 3000);
     }
 };
+/* =========================================================
+ * تأیید حذف با پنجره داخل صفحه (به جای confirm مرورگر) و دکمه کپی
+ * ========================================================= */
+document.addEventListener('DOMContentLoaded', function () {
+    var dialog = document.getElementById('hodima-confirm');
+    var go = document.getElementById('hodima-confirm-go');
+
+    document.querySelectorAll('[data-confirm]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            if (!dialog || typeof dialog.showModal !== 'function') {
+                if (!confirm(link.dataset.confirm)) e.preventDefault();
+                return;
+            }
+            e.preventDefault();
+            document.getElementById('hodima-confirm-text').textContent = link.dataset.confirm;
+            go.href = link.href;
+            dialog.showModal();
+        });
+    });
+    dialog?.querySelector('[data-close]')?.addEventListener('click', function () { dialog.close(); });
+
+    document.querySelectorAll('[data-copy]').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            var src = document.getElementById(btn.dataset.copy);
+            if (!src) return;
+            try { await navigator.clipboard.writeText(src.textContent); }
+            catch (e) {
+                var r = document.createRange(); r.selectNodeContents(src);
+                var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+                document.execCommand('copy');
+            }
+            var old = btn.innerHTML;
+            btn.textContent = 'کپی شد';
+            setTimeout(function () { btn.innerHTML = old; }, 2000);
+        });
+    });
+});
