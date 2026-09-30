@@ -49,18 +49,30 @@ final class Hodima_Bot_Shield {
      * درخواستی که از کش صفحه لایت‌اسپید سرو شود به وردپرس نمی‌رسد: نه در
      * آمار ثبت می‌شود و نه مسدودسازی و محدودیت نرخ روی آن اعمال می‌شود.
      *
-     * @return list<string>|null null = لایت‌اسپید فعال نیست یا تنظیمش خوانده نشد
+     * باگ نسخه ۱.۱.۴: LiteSpeed Cache آرایه‌ها را به شکل رشته JSON ذخیره
+     * می‌کند (Root::_maybe_encode → '["Googlebot"]')، نه آرایه PHP؛ آن رشته
+     * یک «خط» حساب می‌شد و هیچ رباتی پوشش‌داده تشخیص داده نمی‌شد. تشخیص
+     * لایت‌اسپید هم به تابع قالب وابسته بود. حالا هر دو مستقیم.
+     *
+     * @return list<string>|null null = لایت‌اسپید فعال نیست
      */
     public static function litespeed_excluded_agents(): ?array {
-        if ( ! function_exists( 'hodima_litespeed_active' ) || ! hodima_litespeed_active() ) {
+        $active = defined( 'LSCWP_V' ) || class_exists( '\\LiteSpeed\\Core' )
+            || ( function_exists( 'hodima_litespeed_active' ) && hodima_litespeed_active() );
+        if ( ! $active ) {
             return null;
         }
-        $value = get_option( 'litespeed.conf.cache-exc_useragents', null );
-        if ( null === $value || false === $value ) {
-            return null;
+
+        // نام گزینه در LSCWP 3+: 'litespeed.conf.' + Base::O_CACHE_EXC_USERAGENTS
+        $value = get_option( 'litespeed.conf.cache-exc_useragents', [] );
+
+        if ( is_string( $value ) ) {
+            $decoded = json_decode( $value, true );
+            $value   = is_array( $decoded ) ? $decoded : preg_split( '/\R/', $value );
         }
-        $list = is_array( $value ) ? $value : preg_split( '/\R/', (string) $value );
-        return array_values( array_filter( array_map( 'trim', array_map( 'strval', (array) $list ) ) ) );
+
+        // گزینه نبود = هیچ استثنایی (پیش‌فرض خود لایت‌اسپید آرایه خالی است)
+        return array_values( array_filter( array_map( 'trim', array_map( 'strval', (array) $value ) ) ) );
     }
 
     /**
@@ -68,7 +80,7 @@ final class Hodima_Bot_Shield {
      * لایت‌اسپید در نامشان نیست). ربات‌های مسدود هم شمرده می‌شوند: بدون عبور
      * از کش، مسدودسازی‌شان عملا اجرا نمی‌شود.
      *
-     * @return list<string>|null null = لایت‌اسپید فعال نیست یا تنظیمش خوانده نشد
+     * @return list<string>|null null = لایت‌اسپید فعال نیست
      */
     public static function bots_served_from_cache(): ?array {
         $excluded = self::litespeed_excluded_agents();
