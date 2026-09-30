@@ -24,7 +24,75 @@ final class Hodima_Bot_Shield {
         'YouBot'            => 'You.com AI',
         'Diffbot'           => 'Diffbot AI',
         'PetalBot'          => 'Petal Search AI',
+        // اضافه‌شده در ۱.۱.۴ — نام‌های رسمی User-Agent طبق مستندات هر شرکت.
+        // FacebookBot نام قدیمی است؛ ربات هوش مصنوعی متا امروز با این دو می‌آید.
+        'meta-externalagent'           => 'Meta AI (آموزش)',
+        'meta-externalfetcher'         => 'Meta AI (درخواست کاربر)',
+        'DuckAssistBot'                => 'DuckDuckGo AI',
+        'MistralAI-User'               => 'Mistral Le Chat',
+        'Google-CloudVertexBot'        => 'Google Vertex AI',
+        'cohere-training-data-crawler' => 'Cohere (آموزش)',
+        'AI2Bot'                       => 'Allen Institute AI2',
     ];
+
+    /**
+     * «توکن‌های کنترل» که هیچ‌وقت در User-Agent دیده نمی‌شوند: گوگل و اپل
+     * با همان Googlebot و Applebot می‌آیند و این نام‌ها فقط در robots.txt
+     * تعیین می‌کنند محتوا برای آموزش Gemini / Apple Intelligence استفاده شود
+     * یا نه. تیک آن‌ها فقط robots.txt را عوض می‌کند و در آمار نمی‌آیند.
+     */
+    public const ROBOTS_ONLY = [ 'Google-Extended', 'Applebot-Extended' ];
+
+    /**
+     * فهرست «Do Not Cache User Agents» لایت‌اسپید.
+     *
+     * درخواستی که از کش صفحه لایت‌اسپید سرو شود به وردپرس نمی‌رسد: نه در
+     * آمار ثبت می‌شود و نه مسدودسازی و محدودیت نرخ روی آن اعمال می‌شود.
+     *
+     * @return list<string>|null null = لایت‌اسپید فعال نیست یا تنظیمش خوانده نشد
+     */
+    public static function litespeed_excluded_agents(): ?array {
+        if ( ! function_exists( 'hodima_litespeed_active' ) || ! hodima_litespeed_active() ) {
+            return null;
+        }
+        $value = get_option( 'litespeed.conf.cache-exc_useragents', null );
+        if ( null === $value || false === $value ) {
+            return null;
+        }
+        $list = is_array( $value ) ? $value : preg_split( '/\R/', (string) $value );
+        return array_values( array_filter( array_map( 'trim', array_map( 'strval', (array) $list ) ) ) );
+    }
+
+    /**
+     * ربات‌های مجازی که هنوز از کش لایت‌اسپید جواب می‌گیرند (هیچ خط فهرست
+     * لایت‌اسپید در نامشان نیست). ربات‌های مسدود هم شمرده می‌شوند: بدون عبور
+     * از کش، مسدودسازی‌شان عملا اجرا نمی‌شود.
+     *
+     * @return list<string>|null null = لایت‌اسپید فعال نیست یا تنظیمش خوانده نشد
+     */
+    public static function bots_served_from_cache(): ?array {
+        $excluded = self::litespeed_excluded_agents();
+        if ( null === $excluded ) {
+            return null;
+        }
+        $missing = [];
+        foreach ( array_keys( self::BOTS ) as $sig ) {
+            if ( in_array( $sig, self::ROBOTS_ONLY, true ) ) {
+                continue;
+            }
+            $covered = false;
+            foreach ( $excluded as $entry ) {
+                if ( '' !== $entry && false !== stripos( $sig, $entry ) ) {
+                    $covered = true;
+                    break;
+                }
+            }
+            if ( ! $covered ) {
+                $missing[] = $sig;
+            }
+        }
+        return $missing;
+    }
 
     /** گزینه autoload: زمان پایان آخرین مسدودیت (برای رد کردن کوئری در هر بازدید). */
     private const BAN_UNTIL_OPTION = 'hodima_ban_until';

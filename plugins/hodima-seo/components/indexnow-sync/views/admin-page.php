@@ -74,6 +74,29 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         <?php endif; ?>
 
     <?php elseif ( $active_tab === 'ai-shield' ) : ?>
+        <?php
+        /*
+         * چرا بعضی ربات‌ها در آمار نیستند؟ ربات‌هایی که از کش لایت‌اسپید جواب
+         * می‌گیرند به وردپرس نمی‌رسند: نه شمرده می‌شوند و نه مسدودسازی/محدودیت
+         * نرخ رویشان اجرا می‌شود. فهرست خط‌هایی که باید اضافه شود آماده کپی است.
+         */
+        $hodima_uncached = Hodima_Bot_Shield::bots_served_from_cache();
+        if ( is_array( $hodima_uncached ) && $hodima_uncached ) : ?>
+            <div class="hd-callout hd-callout--warning">
+                <span class="dashicons dashicons-warning" aria-hidden="true"></span>
+                <div>
+                    <p><strong>این ربات‌ها هنوز از کش لایت‌اسپید جواب می‌گیرند</strong></p>
+                    <p>بازدیدشان در آمار ثبت نمی‌شود و اگر مسدودشان کرده باشید، مسدودسازی و محدودیت نرخ روی آن‌ها اجرا نمی‌شود. این خط‌ها را در <strong>LiteSpeed Cache ← Cache ← Excludes ← Do Not Cache User Agents</strong> اضافه و ذخیره کنید (هر کدام در یک خط):</p>
+                    <pre class="hd-code" dir="ltr"><?php echo esc_html( implode( "\n", $hodima_uncached ) ); ?></pre>
+                    <p>هزینه: صفحه‌ها برای این ربات‌ها هر بار ساخته می‌شوند؛ محدودیت نرخ (تب تنظیمات) فشار ربات‌های پرحجم را کنترل می‌کند. بازدیدکننده‌ها همچنان از کش استفاده می‌کنند.</p>
+                </div>
+            </div>
+        <?php elseif ( is_array( $hodima_uncached ) ) : ?>
+            <div class="hd-callout hd-callout--success">
+                <span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
+                <p>همه ربات‌های هوش مصنوعی از کش لایت‌اسپید عبور می‌کنند؛ هر بازدیدشان ثبت می‌شود و تنظیمات مسدودسازی رویشان اجرا می‌شود.</p>
+            </div>
+        <?php endif; ?>
         <div class="hodima-toolbar">
             <a class="hodima-btn hodima-btn-primary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=hodima_export_ai_logs' ), 'hodima_export_ai' ) ); ?>">دانلود لاگ‌ها (CSV)</a>
             <a class="hodima-btn hodima-btn-outline" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=hodima_clear_ai_logs' ), 'hodima_clear_ai' ) ); ?>" onclick="return confirm('آیا از پاکسازی تمامی لاگ‌های ثبت شده اطمینان دارید؟');">پاکسازی کامل لاگ‌ها</a>
@@ -342,9 +365,15 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                                     <input type="checkbox" name="bot_<?php echo esc_attr( $sig ); ?>" <?php checked( ( $ai_bot_settings[ $sig ] ?? '1' ) === '1' ); ?>>
                                     <span style="color:#25316a;"><?php echo esc_html( $label ); ?></span> 
                                     <span style="color:#607bbd; font-size:11px; direction:ltr; display:inline-block; font-family: inherit;">(<?php echo esc_html($sig); ?>)</span>
+                                    <?php if ( in_array( $sig, Hodima_Bot_Shield::ROBOTS_ONLY, true ) ) : ?>
+                                        <span class="hd-pill hd-pill--info" title="در بازدید دیده نمی‌شود؛ این تیک فقط robots.txt را تعیین می‌کند">فقط robots.txt</span>
+                                    <?php elseif ( function_exists( 'hodima_robots_blocked_tool_bots' ) && in_array( $sig, hodima_robots_blocked_tool_bots(), true ) ) : ?>
+                                        <span class="hd-pill hd-pill--warn" title="در robots.txt همیشه در گروه ابزارهای سئو بسته است">در robots.txt بسته</span>
+                                    <?php endif; ?>
                                 </label>
                             <?php endforeach; ?>
                             </div>
+                            <p class="description" style="margin-top:8px;">تیک‌خورده = مجاز: در robots.txt اجازه خزش کل سایت و نسخه‌های ماشین‌خوان (llms.txt، .md، فید) را می‌گیرد. بدون تیک = در robots.txt بسته و درخواستش با ۴۰۳ رد می‌شود.</p>
                         </td>
                     </tr>
                 </table>
