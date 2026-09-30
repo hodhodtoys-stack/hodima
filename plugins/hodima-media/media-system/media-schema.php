@@ -42,12 +42,6 @@ function hook_media_article_enrichment( array $entity, array $data ): array {
 	return $entity;
 }
 
-add_filter( 'rank_math/snippet/rich_snippet_article_entity', static function ( $entity ) {
-	$id   = (int) get_queried_object_id();
-	$data = $id ? hook_get_media_data( $id, 'post' ) : [];
-	return ( 'yes' === ( $data['enabled'] ?? '' ) ) ? hook_media_article_enrichment( (array) $entity, $data ) : $entity;
-} );
-
 add_filter( 'wpseo_schema_article', static function ( $entity, $context = null ) {
 	$id   = isset( $context->id ) ? (int) $context->id : (int) get_queried_object_id();
 	$data = $id ? hook_get_media_data( $id, 'post' ) : [];
@@ -57,6 +51,29 @@ add_filter( 'wpseo_schema_article', static function ( $entity, $context = null )
 /* =====================================================================
  * چاپ نودها
  * ===================================================================== */
+
+/**
+ * خلاصه متنی همان صفحه برای description ویدیو و صوت.
+ *
+ * باگ قبلی: توضیح صوت («توضیحات صوتی اختصاصی هدهدلی برای …») و ویدیو یک
+ * متن ثابت با نام صفحه بود — در همه صفحه‌ها تقریبا یکسان. حالا از محتوای
+ * واقعی همان صفحه: خلاصه نوشته/محصول ← خلاصه هوش مصنوعی ← ابتدای متن؛
+ * برای دسته، توضیح دسته. فقط اگر هیچ متنی نبود، همان متن قالبی.
+ */
+function hook_media_summary( int $object_id, string $context, string $fallback ): string {
+
+	if ( 'post' === $context ) {
+		$post = get_post( $object_id );
+		$data = hook_get_media_data( $object_id, 'post' );
+		$text = $post ? ( '' !== trim( (string) $post->post_excerpt ) ? (string) $post->post_excerpt : ( (string) ( $data['ai_summary'] ?? '' ) ?: (string) $post->post_content ) ) : '';
+	} else {
+		$text = (string) term_description( $object_id );
+	}
+
+	$text = trim( wp_trim_words( wp_strip_all_tags( strip_shortcodes( $text ) ), 40, '…' ) );
+
+	return '' !== $text ? $text : $fallback;
+}
 
 /**
  * تاریخ پایدار انتشار رسانه.
@@ -135,7 +152,8 @@ function hook_print_schema( $type, $data, $object_id, $context ) {
 				return;
 			}
 
-			if ( 'post' === $context && ( defined( 'WPSEO_VERSION' ) || defined( 'RANK_MATH_VERSION' ) ) ) {
+			// Rank Math از سایت حذف شده و پشتیبانی‌اش برداشته شد؛ فقط Yoast (اگر نصب شود)
+			if ( 'post' === $context && defined( 'WPSEO_VERSION' ) ) {
 				return;
 			}
 
@@ -181,12 +199,18 @@ function hook_print_schema( $type, $data, $object_id, $context ) {
 				'@id'          => $base . '#video',
 				'isPartOf'     => $webpage,
 				'name'         => ! empty( $data['video_title'] ) ? sanitize_text_field( $data['video_title'] ) : 'ویدیوی معرفی: ' . $title,
-				'description'  => 'بررسی و نمایش ویدیویی ' . $title . ' توسط ' . $brand,
+				'description'  => hook_media_summary( $object_id, $context, 'بررسی و نمایش ویدیویی ' . $title . ' توسط ' . $brand ),
 				'thumbnailUrl' => [ esc_url_raw( $thumb ) ],
 				'uploadDate'   => hook_media_stable_date( $data, 'video', $object_id, $context ),
 			];
 
-			$schema[ hook_is_direct_video_file( $video_url ) ? 'contentUrl' : 'embedUrl' ] = $video_url;
+			// فایل مستقیم → contentUrl؛ صفحه آپارات/یوتیوب → آدرس پخش‌کننده (embed) که
+			// گوگل برای embedUrl می‌خواهد (قبلا آدرس صفحه تماشا بود).
+			if ( hook_is_direct_video_file( $video_url ) ) {
+				$schema['contentUrl'] = $video_url;
+			} else {
+				$schema['embedUrl'] = function_exists( 'hodima_video_player_url' ) ? hodima_video_player_url( $video_url ) : $video_url;
+			}
 
 			$duration = hook_format_duration_iso( $data['video_duration'] ?? '' );
 			if ( '' !== $duration ) {
@@ -211,7 +235,7 @@ function hook_print_schema( $type, $data, $object_id, $context ) {
 				'@id'           => $base . '#audio',
 				'isPartOf'      => $webpage,
 				'name'          => ! empty( $data['voice_title'] ) ? sanitize_text_field( $data['voice_title'] ) : 'پادکست اختصاصی: ' . $title,
-				'description'   => 'توضیحات صوتی اختصاصی ' . $brand . ' برای ' . $title,
+				'description'   => hook_media_summary( $object_id, $context, 'توضیحات صوتی اختصاصی ' . $brand . ' برای ' . $title ),
 				'contentUrl'    => esc_url_raw( (string) preg_replace( '/\s+/', '%20', trim( (string) $data['voice_url'] ) ) ),
 				'datePublished' => $date,
 				'uploadDate'    => $date,

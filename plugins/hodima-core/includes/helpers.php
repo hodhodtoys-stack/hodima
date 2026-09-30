@@ -501,3 +501,44 @@ if ( ! function_exists( 'hodima_schema_add' ) ) {
 function hodima_schema_has( string $id ): bool {
     return \Hodima\Core\Schema_Graph::has( $id );
 }
+
+/* ============================================================
+ * ۷. آدرس پخش‌کننده ویدیو (embed)
+ * ------------------------------------------------------------
+ * گوگل برای embedUrl (اسکیما) و video:player_loc (سایت‌مپ) آدرس خود
+ * *پخش‌کننده* را می‌خواهد (همان src داخل iframe)، نه صفحه تماشای ویدیو.
+ * قبلا آدرس صفحه آپارات/یوتیوب («aparat.com/v/…»، «youtube.com/watch?v=…»)
+ * مستقیم فرستاده می‌شد. سیستم رسانه، اسکیمای SEO و سایت‌مپ همه از این
+ * یک تابع استفاده می‌کنند.
+ * ============================================================ */
+if ( ! function_exists( 'hodima_video_player_url' ) ) {
+    function hodima_video_player_url( string $url ): string {
+
+        $url  = trim( $url );
+        $host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+        $path = (string) wp_parse_url( $url, PHP_URL_PATH );
+
+        // آپارات: /v/{hash} → پخش‌کننده رسمی
+        if ( str_ends_with( $host, 'aparat.com' ) && preg_match( '#^/v/([A-Za-z0-9]+)#', $path, $m ) ) {
+            return 'https://www.aparat.com/video/video/embed/videohash/' . $m[1] . '/vt/frame';
+        }
+
+        // یوتیوب: watch?v= / youtu.be / shorts → /embed/{id}
+        if ( str_ends_with( $host, 'youtube.com' ) || 'youtu.be' === $host ) {
+            parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
+            $id = 'youtu.be' === $host
+                ? trim( $path, '/' )
+                : ( (string) ( $query['v'] ?? '' ) ?: ( preg_match( '#^/shorts/([\w-]+)#', $path, $s ) ? $s[1] : '' ) );
+            if ( 1 === preg_match( '/^[\w-]{6,20}$/', $id ) ) {
+                return 'https://www.youtube.com/embed/' . $id;
+            }
+        }
+
+        // ویمئو: vimeo.com/{id} → player.vimeo.com/video/{id}
+        if ( 'vimeo.com' === preg_replace( '/^www\./', '', $host ) && preg_match( '#^/(\d+)#', $path, $m ) ) {
+            return 'https://player.vimeo.com/video/' . $m[1];
+        }
+
+        return $url; // آدرس پخش‌کننده (یا ناشناخته) دست نمی‌خورد
+    }
+}

@@ -100,7 +100,10 @@ function hodima_breadcrumb_items(): array {
     };
 
     $get_primary_term = function($post_id, $taxonomy) {
-        $primary_id = get_post_meta($post_id, "rank_math_primary_{$taxonomy}", true) ?: get_post_meta($post_id, "_yoast_wpseo_primary_{$taxonomy}", true);
+        // دسته اصلی: «_hodima_primary_{taxonomy}» — همان انتخاب‌های قبلی Rank Math که
+        // پاکسازی یک‌باره (schema-cleaner.php) پیش از حذف داده‌های Rank Math به
+        // این کلید منتقل می‌کند؛ پس مسیر راهنمای محصولات عوض نمی‌شود.
+        $primary_id = get_post_meta($post_id, "_hodima_primary_{$taxonomy}", true) ?: get_post_meta($post_id, "_yoast_wpseo_primary_{$taxonomy}", true);
         if ($primary_id) {
             $term = get_term($primary_id, $taxonomy);
             if ($term && !is_wp_error($term)) return $term;
@@ -221,9 +224,7 @@ function hodima_breadcrumb_items(): array {
     // حالت رفع‌شده: قبلاً هیچ شاخه‌ای برای آرشیو تکسونومی‌های سفارشی
     // (مثلاً یک taxonomy اختصاصی محصول غیر از product_cat) وجود نداشت.
     // نتیجه این بود که breadcrumb-schema.php برای این صفحات هیچ خروجی
-    // تولید نمی‌کرد؛ ولی schema-cleaner.php همچنان BreadcrumbList رنک‌مث
-    // را (چون گمان می‌کرد این فایل پوششش می‌دهد) در همه‌جا حذف می‌کرد —
-    // یعنی این صفحات کلاً بدون breadcrumb schema می‌ماندند.
+    // تولید نمی‌کرد و این صفحات کلاً بدون breadcrumb schema می‌ماندند.
     elseif (is_tax()) {
         $term = get_queried_object();
         if ($term && isset($term->taxonomy)) {

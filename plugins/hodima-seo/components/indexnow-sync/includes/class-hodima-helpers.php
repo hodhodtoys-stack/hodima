@@ -57,7 +57,10 @@ final class Hodima_Core_Helpers {
 
         foreach ( $meta as $key => $values ) {
             $key_lc = strtolower( (string) $key );
-            if ( str_contains( $key_lc, 'noindex' ) || $key_lc === '_seobox_robots' || $key_lc === 'rank_math_robots' ) {
+            // هم‌راستا با سایت‌مپ (hodima_get_noindex_post_ids): فقط کلید noindex یا
+            // «…_noindex» و سئوباکس. قبلا هر کلیدی که «noindex» جایی از نامش بود
+            // حساب می‌شد؛ کلید Rank Math (از سایت حذف شده) هم برداشته شد.
+            if ( 'noindex' === $key_lc || str_ends_with( $key_lc, '_noindex' ) || $key_lc === '_seobox_robots' || $key_lc === '_yoast_wpseo_meta-robots-noindex' ) {
                 foreach ( (array) $values as $v ) {
                     $v = strtolower( is_array( $v ) ? wp_json_encode( $v ) : (string) $v );
                     if ( in_array( $v, [ '1', 'yes', 'true', 'on' ], true ) || str_contains( $v, 'noindex' ) ) {

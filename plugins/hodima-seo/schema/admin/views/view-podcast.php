@@ -49,7 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hodima_podcast_schema
 $is_enabled   = get_option('hodima_podcast_status', '1');
 $title        = get_option('hodima_podcast_title', get_bloginfo('name') . ' - پادکست');
 $desc         = get_option('hodima_podcast_desc', get_bloginfo('description'));
-$author       = get_option('hodima_podcast_author', 'بازرگانی هدهد');
+// خالی = نام سازمان (همان که فید چاپ می‌کند)
+$author       = get_option('hodima_podcast_author') ?: ( function_exists( 'hodima_seo_schema_org_name' ) ? hodima_seo_schema_org_name() : get_bloginfo( 'name' ) );
 $category     = get_option('hodima_podcast_category', 'Business');
 $explicit     = get_option('hodima_podcast_explicit', 'clean');
 $saved_types  = get_option('hodima_podcast_post_types', ['post', 'product']);
@@ -60,7 +61,7 @@ $permalink_structure = get_option('permalink_structure');
 
 hodima_view_header(
     'فید پادکست (Apple & Google Podcast)',
-    'خروجی استاندارد RSS 2.0 برای فایل‌های صوتی نوشته‌ها و محصولات، سازگار با اپل پادکست و گوگل پادکست.',
+    'خروجی استاندارد RSS 2.0 از فایل‌های صوتی (پادکست) نوشته‌ها، محصولات و دسته‌ها، سازگار با اپل پادکست و گوگل پادکست.',
     'dashicons-microphone'
 );
 ?>
@@ -159,7 +160,7 @@ hodima_view_header(
                         </label>
                     <?php endforeach; ?>
                 </div>
-                <p class="hd-field__help">فقط نوشته‌هایی که متای <code>_hook_audio_url</code> دارند وارد فید می‌شوند.</p>
+                <p class="hd-field__help">هر نوشته/محصول/برگه‌ای از این نوع‌ها که در کادر «سیستم رسانه» ویرایشگرش «لینک فایل صوتی» دارد یک قسمت پادکست است، با عنوان صوت، خلاصه همان صفحه، مدت و تصویر خودش. با تیک «محصول» دسته‌های محصول و با «نوشته» دسته‌های نوشته هم (اگر صوت دارند) می‌آیند.</p>
             </fieldset>
         </div>
     </section>

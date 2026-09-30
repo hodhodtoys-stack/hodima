@@ -56,8 +56,8 @@ function hodima_get_noindex_post_ids() {
     // باعث می‌شد آن پست به‌کل از سایت‌مپ حذف شود — حتی اگر آن متاکی هیچ
     // ربطی به noindex واقعی نداشت (مثلاً یک فیلد اسپکس محصول یا متای یک
     // پلاگین دیگر که تصادفاً همین ساب‌استرینگ را در اسمش داشت). حالا فقط
-    // کلیدهای شناخته‌شده‌ی noindex (خود سیستم + سئوباکس + رنک‌مث + یواست +
-    // AIOSEO) یا کلیدهایی که دقیقاً با «_noindex»/«noindex» تمام می‌شوند
+    // کلیدهای شناخته‌شده‌ی noindex (خود سیستم + سئوباکس + یواست + AIOSEO)
+    // یا کلیدهایی که دقیقاً با «_noindex»/«noindex» تمام می‌شوند
     // بررسی می‌شوند، و مقایسه‌ی مقدار case-insensitive است تا با تابع مشابه
     // برای ترم‌ها (hodima_is_term_noindex) هم‌راستا بماند.
     $ids = $wpdb->get_col("
@@ -71,7 +71,6 @@ function hodima_get_noindex_post_ids() {
                 AND LOWER(meta_value) IN ('1', 'yes', 'true', 'on')
             )
             OR (meta_key = '_seobox_robots' AND meta_value LIKE '%noindex%')
-            OR (meta_key = 'rank_math_robots' AND meta_value LIKE '%noindex%')
             OR (meta_key = '_yoast_wpseo_meta-robots-noindex' AND meta_value = '1')
             OR (meta_key = '_aioseo_robots_noindex' AND meta_value = '1')
     ");
@@ -92,7 +91,8 @@ function hodima_is_term_noindex( $term_id ) {
     // با «_noindex»/«noindex» تمام می‌شوند بررسی می‌شوند — هم‌راستا با
     // نسخه‌ی رفع‌شده‌ی همین منطق برای پست‌ها.
     $meta = get_term_meta( $term_id );
-    $known_exact_keys = [ '_seobox_robots', 'rank_math_robots', '_yoast_wpseo_meta-robots-noindex', '_aioseo_robots_noindex' ];
+    // rank_math_robots برداشته شد: Rank Math از سایت حذف شده و داده‌اش پاکسازی می‌شود
+    $known_exact_keys = [ '_seobox_robots', '_yoast_wpseo_meta-robots-noindex', '_aioseo_robots_noindex' ];
 
     foreach ( $meta as $key => $values ) {
         $key_lower  = strtolower( (string) $key );
@@ -106,10 +106,75 @@ function hodima_is_term_noindex( $term_id ) {
         foreach ( $values as $v ) {
             $v_lower = strtolower( (string) $v );
             if ( in_array( $v_lower, [ '1', 'yes', 'true', 'on' ], true ) ) return true;
-            if ( $is_known && is_string( $v ) && str_contains( $v_lower, 'noindex' ) ) return true; // برای رنک‌مث/سئوباکس که مقدار را داخل یک رشته/آرایه سریالایز می‌کنند
+            if ( $is_known && is_string( $v ) && str_contains( $v_lower, 'noindex' ) ) return true; // سئوباکس مقدار را داخل یک رشته/آرایه سریالایز می‌کند
         }
     }
     return false;
+}
+
+/**
+ * آیا canonical دستی (سئوباکس) این صفحه به آدرس دیگری اشاره می‌کند؟
+ *
+ * سایت‌مپ فقط باید آدرس‌های canonical را داشته باشد. قبلا نوشته/دسته‌ای
+ * که canonical آن به صفحه دیگری تنظیم شده بود هم فهرست می‌شد؛ گوگل در
+ * Search Console آن را «Alternate page with proper canonical tag» و سیگنال
+ * متناقض می‌بیند.
+ */
+function hodima_sitemap_canonical_elsewhere( string $own_url, string $override ): bool {
+
+    $override = trim( $override );
+
+    if ( '' === $override ) {
+        return false;
+    }
+
+    $norm = static fn( string $u ): string => untrailingslashit( strtolower( (string) preg_replace( '#^https?://(www\.)?#i', '', rawurldecode( $u ) ) ) );
+
+    return $norm( $override ) !== $norm( $own_url );
+}
+
+/**
+ * آدرس مطلق تصویر (سایت‌مپ آدرس نسبی را نمی‌پذیرد)، یا رشته خالی.
+ * قبلا <img src="/wp-content/…"> نسبی همان‌طور در image:loc چاپ می‌شد.
+ */
+function hodima_sitemap_absolute_url( string $url ): string {
+
+    $url = trim( $url );
+
+    if ( '' === $url || str_starts_with( $url, 'data:' ) ) {
+        return '';
+    }
+
+    if ( str_starts_with( $url, '//' ) ) {
+        return 'https:' . $url;
+    }
+
+    if ( str_starts_with( $url, '/' ) ) {
+        return home_url( $url );
+    }
+
+    return 1 === preg_match( '#^https?://#i', $url ) ? $url : '';
+}
+
+/**
+ * برچسب مکان ویدیو: فایل مستقیم → video:content_loc، صفحه آپارات/یوتیوب →
+ * video:player_loc با آدرس *پخش‌کننده* (hodima_video_player_url در Core).
+ *
+ * باگ قبلی: الگوی «\.m(?:p4|3u8|kv|ebm)» فایل webm را نمی‌شناخت («mebm»)
+ * و mov/m4v را هم؛ و صفحه تماشای آپارات به‌عنوان player_loc می‌رفت که
+ * گوگل آن را پخش‌کننده نمی‌داند.
+ *
+ * @return array{0: string, 1: string} [ نام برچسب, آدرس ]
+ */
+function hodima_sitemap_video_loc( string $url ): array {
+
+    $path = (string) wp_parse_url( $url, PHP_URL_PATH );
+
+    if ( 1 === preg_match( '/\.(mp4|m4v|webm|mov|ogv|m3u8)$/i', $path ) ) {
+        return [ 'video:content_loc', $url ];
+    }
+
+    return [ 'video:player_loc', function_exists( 'hodima_video_player_url' ) ? hodima_video_player_url( $url ) : $url ];
 }
 
 // ==========================================
@@ -248,6 +313,11 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
             }
         }
         
+        // گالری محصول (تصاویر گالری معمولا پیوست خود محصول نیستند و قبلا جا می‌ماندند)
+        foreach ( array_filter( array_map( 'intval', explode( ',', (string) get_post_meta( $object_id, '_product_image_gallery', true ) ) ) ) as $gallery_id ) {
+            $data['images'][] = wp_get_attachment_url( $gallery_id );
+        }
+
         $attached_images = get_attached_media( 'image', $object_id );
         if ( !empty($attached_images) ) {
             foreach ( $attached_images as $att ) {
@@ -261,11 +331,22 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
         $v_duration = get_post_meta( $object_id, '_hod_video_duration', true ) ?: get_post_meta( $object_id, '_hook_video_duration', true );
         $v_date     = get_post_meta( $object_id, '_hod_video_date', true ) ?: get_post_meta( $object_id, '_hook_video_date', true );
         
-        if ( empty($v_url) && function_exists('hook_get_media_data') ) {
-            $media = hook_get_media_data( $object_id, $post_type );
-            if ( !empty($media['video_url']) ) {
+        /*
+         * ویدیوی سیستم رسانه: عنوان، مدت، کاور و تاریخ خودش.
+         * باگ قبلی: hook_get_media_data( $id, $post_type ) — زمینه باید «post»
+         * باشد نه نوع نوشته («product»)؛ برای محصول کلیدها با پیشوند ترم
+         * خوانده می‌شد و ویدیو پیدا نمی‌شد. عنوان/مدت/تاریخ هم خوانده نمی‌شد.
+         */
+        if ( function_exists('hook_get_media_data') ) {
+            $media = hook_get_media_data( (int) $object_id, 'post' );
+            if ( empty($v_url) && !empty($media['video_url']) ) {
                 $v_url = $media['video_url'];
+            }
+            if ( $v_url && $v_url === ($media['video_url'] ?? '') ) {
                 if (empty($v_thumb) && !empty($media['video_thumb'])) $v_thumb = $media['video_thumb'];
+                if (empty($v_title) && !empty($media['video_title'])) $v_title = $media['video_title'];
+                if (empty($v_duration) && !empty($media['video_duration'])) $v_duration = $media['video_duration'];
+                if (empty($v_date) && !empty($media['video_date'])) $v_date = $media['video_date'];
             }
         }
         
@@ -300,11 +381,18 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
             // این بخش عیناً معادل fallback موجود برای پست‌ها است که برای ترم‌ها اصلاً
             // وجود نداشت — همان چیزی که باعث می‌شد ویدیوی دسته‌بندی خوانده نشود
             // در حالی که همین تابع برای محصولات (پست‌ها) کاملاً درست کار می‌کرد.
-            if ( empty($v_url) && function_exists('hook_get_media_data') ) {
-                $media = hook_get_media_data( $object_id, 'term' );
-                if ( !empty($media['video_url']) ) {
+            if ( function_exists('hook_get_media_data') ) {
+                $media = hook_get_media_data( (int) $object_id, 'term' );
+                if ( empty($v_url) && !empty($media['video_url']) ) {
                     $v_url = $media['video_url'];
+                }
+                if ( $v_url && $v_url === ($media['video_url'] ?? '') ) {
                     if (empty($v_thumb) && !empty($media['video_thumb'])) $v_thumb = $media['video_thumb'];
+                    if (empty($v_title) && !empty($media['video_title'])) $v_title = $media['video_title'];
+                    if (empty($v_duration) && !empty($media['video_duration'])) $v_duration = $media['video_duration'];
+                    // همان تاریخ پایدار اسکیمای سیستم رسانه (uploadDate)؛ قبلا تاریخ آخرین
+                    // محتوای دسته جایش می‌رفت که با هر ویرایش محصولی عوض می‌شد
+                    if (empty($v_date) && function_exists('hook_media_stable_date')) $v_date = hook_media_stable_date( $media, 'video', (int) $object_id, 'term' );
                 }
             }
 
@@ -314,7 +402,8 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
                     'title'    => $v_title ?: $title,
                     'thumb'    => hodima_sitemap_clean_url($v_thumb),
                     'duration' => hodima_sitemap_duration_seconds($v_duration),
-                    'date'     => hodima_sitemap_normalize_iso_date($v_date, 0)
+                    // بدون تاریخ ثبت‌شده، خالی (اختیاری در استاندارد) — نه «همین الان»
+                    'date'     => '' !== trim( (string) $v_date ) ? hodima_sitemap_normalize_iso_date($v_date, 0) : ''
                 ];
             }
         }
@@ -340,10 +429,10 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
         }
     }
 
-    $data['images'] = array_unique( array_filter( $data['images'] ) );
+    $data['images'] = array_values( array_unique( array_filter( array_map( static fn( $u ) => hodima_sitemap_absolute_url( (string) $u ), $data['images'] ) ) ) );
     
     if ( ! empty( $data['images'] ) ) {
-        $data['images'] = array_slice( $data['images'], 0, 5 );
+        $data['images'] = array_slice( $data['images'], 0, 10 ); // تصویر اصلی + گالری (قبلا ۵)
     }
     
     $unique_videos = [];
@@ -369,7 +458,7 @@ function hodima_sitemap_render() {
         header( 'Content-Type: text/xsl; charset=' . get_option( 'blog_charset' ), true );
         echo '<?xml version="1.0" encoding="UTF-8"?>';
         ?>
-        <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:sitemap="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+        <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:sitemap="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
             <xsl:output method="html" indent="yes" encoding="UTF-8"/>
             <xsl:template match="/">
                 <html dir="rtl" lang="fa-IR">
@@ -395,14 +484,14 @@ function hodima_sitemap_render() {
                     </head>
                     <body>
                         <div class="container">
-                            <div class="header"><h1>sitemap</h1></div>
+                            <div class="header"><h1>نقشه سایت (XML Sitemap)</h1></div>
                             <xsl:if test="sitemap:sitemapindex">
                                 <div class="summary-text">تعداد سایت‌مپ‌ها: <xsl:value-of select="count(sitemap:sitemapindex/sitemap:sitemap)"/></div>
                                 <table>
                                     <tr><th style="width: 200px;">آخرین بروزرسانی</th><th style="text-align: left;">آدرس سایت‌مپ (Sitemap URL)</th></tr>
                                     <xsl:for-each select="sitemap:sitemapindex/sitemap:sitemap">
                                         <tr>
-                                            <td dir="ltr" style="text-align: right; color: #64748b;"><xsl:value-of select="concat(substring(sitemap:lastmod,0,11),concat(' ', substring(sitemap:lastmod,12,5)), ' +00:00')"/></td>
+                                            <td dir="ltr" style="text-align: right; color: #64748b;"><xsl:value-of select="concat(substring(sitemap:lastmod,1,10), ' ', substring(sitemap:lastmod,12,5), ' ', substring(sitemap:lastmod,20))"/></td>
                                             <td dir="ltr" style="text-align: left;"><xsl:variable name="itemURL"><xsl:value-of select="sitemap:loc"/></xsl:variable><a href="{$itemURL}"><xsl:value-of select="sitemap:loc"/></a></td>
                                         </tr>
                                     </xsl:for-each>
@@ -415,7 +504,7 @@ function hodima_sitemap_render() {
                                     <xsl:for-each select="sitemap:urlset/sitemap:url">
                                         <tr>
                                             <td dir="ltr" style="text-align: right; color: #64748b;">
-                                                <xsl:choose><xsl:when test="sitemap:lastmod"><xsl:value-of select="concat(substring(sitemap:lastmod,0,11),concat(' ', substring(sitemap:lastmod,12,5)), ' +00:00')"/></xsl:when><xsl:otherwise>-</xsl:otherwise></xsl:choose>
+                                                <xsl:choose><xsl:when test="sitemap:lastmod"><xsl:value-of select="concat(substring(sitemap:lastmod,1,10), ' ', substring(sitemap:lastmod,12,5), ' ', substring(sitemap:lastmod,20))"/></xsl:when><xsl:otherwise>-</xsl:otherwise></xsl:choose>
                                             </td>
                                             <td style="text-align: right;">
                                                 <xsl:if test="image:image"><span class="media-badge"><xsl:value-of select="count(image:image)"/> تصویر</span></xsl:if>
@@ -458,9 +547,22 @@ function hodima_sitemap_render() {
     if (!in_array('product_cat', $enabled_taxonomies)) $enabled_taxonomies[] = 'product_cat';
     if (!in_array('category', $enabled_taxonomies)) $enabled_taxonomies[] = 'category'; // اجباری: دسته‌بندی نوشته‌ها دیگر هرگز از سایت‌مپ حذف نمی‌شود
 
+    // نوع/تکسونومی که روی سایت وجود ندارد (مثلا product بدون ووکامرس) سایت‌مپ خالی نمی‌گیرد
+    $enabled_post_types = array_values( array_filter( $enabled_post_types, 'post_type_exists' ) );
+    $enabled_taxonomies = array_values( array_filter( $enabled_taxonomies, 'taxonomy_exists' ) );
+
+    /*
+     * نوع ناشناخته (/foo-sitemap.xml) → ۴۰۴ واقعی قالب.
+     * قبلا با کد ۲۰۰ فقط اعلان XML بدون محتوا برمی‌گشت (XML نامعتبر).
+     */
+    if ( 'index' !== $sitemap_type && ! in_array( $sitemap_type, $enabled_post_types, true ) && ! in_array( $sitemap_type, $enabled_taxonomies, true ) ) {
+        hodima_sitemap_not_found();
+        return;
+    }
+
     $cache_version = get_option('hodima_sitemap_cache_ver', 1);
-    // کلید کش آپدیت شده (V8) تا بلافاصله لیست جدید بدون کش خوانده شود
-    $cache_key = 'hodima_sitemap_v8_pro_' . md5( (string)$cache_version . '_' . $sitemap_type . '_' . $paged . '_' . $limit );
+    // کلید کش (V9: canonical دستی، ویدیوی پخش‌کننده، گالری، بدون سایت‌مپ خالی)
+    $cache_key = 'hodima_sitemap_v9_pro_' . md5( (string)$cache_version . '_' . $sitemap_type . '_' . $paged . '_' . $limit );
     
     $cached_xml = get_transient( $cache_key );
     if ( $cached_xml ) { echo $cached_xml; exit; }
@@ -468,7 +570,8 @@ function hodima_sitemap_render() {
     $noindex_post_ids = hodima_get_noindex_post_ids();
     // تصویر پیش‌فرض دیگر گزینه‌ی جداگانه‌ای در این ماژول نیست؛ طبق درخواست شما،
     // تنها منبع لوگو/تصویر مرکزی همان تنظیمات صفحه اصلی (Homepage) است.
-    $fallback_logo = esc_url( get_option('hodima_schema_homepage_logo') ?: site_url('/wp-content/uploads/logo.png') );
+    // همان لوگوی اسکیما (لوگوی قالب ← تنظیم لوگو)؛ قبلا فالبک به logo.png ناموجود
+    $fallback_logo = esc_url( function_exists( 'hodima_seo_schema_logo_url' ) ? hodima_seo_schema_logo_url() : ( get_option('hodima_schema_homepage_logo') ?: home_url('/wp-content/uploads/2025/06/logo2.png') ) );
 
     ob_start();
     echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -490,10 +593,15 @@ function hodima_sitemap_render() {
             if (!empty($noindex_post_ids)) $query_args['post__not_in'] = $noindex_post_ids;
             
             $count_query = new WP_Query($query_args);
-            $pages = ceil( $count_query->found_posts / $limit ) ?: 1;
-            
-            // حتی اگر پستی یافت نشد، صفحه 1 را بساز
-            if ($pages < 1) $pages = 1;
+            $found = (int) $count_query->found_posts;
+
+            // صفحه اصلی «آخرین نوشته‌ها» (بدون برگه) در سایت‌مپ برگه‌ها می‌آید
+            if ( 'page' === $pt && 'posts' === get_option( 'show_on_front' ) ) $found++;
+
+            // سایت‌مپ خالی در فهرست نمی‌آید (قبلا همیشه حداقل یک صفحه خالی)
+            if ( $found < 1 ) continue;
+
+            $pages = (int) ceil( $found / $limit );
 
             for ( $i = 1; $i <= $pages; $i++ ) {
                 $chunk_newest = hodima_sitemap_newest_post( [
@@ -516,9 +624,9 @@ function hodima_sitemap_render() {
                     if ( ! hodima_is_term_noindex( $t_id ) ) $term_count++;
                 }
             }
-            $pages = ceil( $term_count / $limit ) ?: 1;
-            
-            if ($pages < 1) $pages = 1;
+            if ( $term_count < 1 ) continue; // بدون دسته قابل‌ایندکس، سایت‌مپ خالی نمی‌سازد
+
+            $pages = (int) ceil( $term_count / $limit );
 
             // آخرین محتوای ویرایش‌شده در هر ترمی از این تکسونومی
             $tax_newest = hodima_sitemap_newest_post( [
@@ -553,10 +661,26 @@ function hodima_sitemap_render() {
         $printed_urls = [];
         $posts_list = get_posts($query_args);
 
+        // صفحه اصلی «آخرین نوشته‌ها»: برگه‌ای ندارد و قبلا در هیچ سایت‌مپی نبود
+        if ( 'page' === $sitemap_type && 1 === $paged && 'posts' === get_option( 'show_on_front' ) ) {
+            $home_newest = hodima_sitemap_newest_post( [ 'post_type' => 'post', 'post__not_in' => $noindex_post_ids ] );
+            echo "\t<url>\n\t\t<loc>" . esc_url( home_url( '/' ) ) . "</loc>\n" . hodima_sitemap_lastmod_tag( $home_newest, "\t\t" ) . "\t</url>\n";
+            $printed_urls[ home_url( '/' ) ] = true;
+        }
+
+        // صفحه‌ای بیرون از بازه (post-sitemap-99.xml) → ۴۰۴، نه urlset خالی
+        if ( empty( $posts_list ) && $paged > 1 ) {
+            ob_end_clean();
+            hodima_sitemap_not_found();
+            return;
+        }
+
         if (!empty($posts_list)) {
+            update_meta_cache( 'post', $posts_list ); // _seobox_canonical همه در یک کوئری
             foreach ( $posts_list as $pid ) {
                 $url = get_permalink($pid);
                 if ( !$url || isset( $printed_urls[ $url ] ) ) continue;
+                if ( hodima_sitemap_canonical_elsewhere( (string) $url, (string) get_post_meta( $pid, '_seobox_canonical', true ) ) ) continue;
                 $printed_urls[ $url ] = true;
 
                 // آپدیت مهم برای جلوگیری از تاریخ شمسی
@@ -570,7 +694,7 @@ function hodima_sitemap_render() {
 
                 foreach ( $radar['videos'] as $vid ) {
                     $v_thumb = $vid['thumb'] ?: (!empty($radar['images']) ? reset($radar['images']) : $fallback_logo);
-                    $loc_tag = preg_match('/\.m(?:p4|3u8|kv|ebm)/i', $vid['url']) ? 'video:content_loc' : 'video:player_loc';
+                    [ $loc_tag, $loc_url ] = hodima_sitemap_video_loc( (string) $vid['url'] );
                     
                     $raw_content = get_post_field('post_excerpt', $pid) ?: get_post_field('post_content', $pid);
                     $v_desc = wp_trim_words( wp_strip_all_tags( strip_shortcodes($raw_content) ), 30, '...' );
@@ -583,7 +707,7 @@ function hodima_sitemap_render() {
                     echo "\t\t\t<video:thumbnail_loc>" . esc_url($v_thumb) . "</video:thumbnail_loc>\n";
                     echo "\t\t\t<video:title><![CDATA[" . hodima_sitemap_cdata( $vid['title'] ) . "]]></video:title>\n";
                     echo "\t\t\t<video:description><![CDATA[" . hodima_sitemap_cdata( trim($v_desc) ) . "]]></video:description>\n";
-                    echo "\t\t\t<{$loc_tag}>" . esc_url($vid['url']) . "</{$loc_tag}>\n";
+                    echo "\t\t\t<{$loc_tag}>" . esc_url($loc_url) . "</{$loc_tag}>\n";
                     echo "\t\t\t<video:publication_date>" . esc_html($v_date) . "</video:publication_date>\n";
                     if ( $vid['duration'] > 0 ) echo "\t\t\t<video:duration>" . esc_html($vid['duration']) . "</video:duration>\n";
                     echo "\t\t\t<video:family_friendly>yes</video:family_friendly>\n";
@@ -604,12 +728,19 @@ function hodima_sitemap_render() {
         $terms = get_terms(['taxonomy' => $sitemap_type, 'hide_empty' => true, 'number' => $limit, 'offset' => ($paged - 1) * $limit]);
         $printed_urls = [];
 
+        if ( ( is_wp_error( $terms ) || empty( $terms ) ) && $paged > 1 ) {
+            ob_end_clean();
+            hodima_sitemap_not_found();
+            return;
+        }
+
         if ( ! is_wp_error($terms) && !empty($terms) ) {
             foreach ( $terms as $term ) {
                 if ( hodima_is_term_noindex( $term->term_id ) ) continue;
 
                 $url = get_term_link($term);
                 if ( is_wp_error($url) || isset( $printed_urls[ $url ] ) ) continue;
+                if ( hodima_sitemap_canonical_elsewhere( (string) $url, (string) get_term_meta( $term->term_id, '_seobox_canonical', true ) ) ) continue;
                 $printed_urls[ $url ] = true;
 
                 echo "\t<url>\n\t\t<loc>" . esc_url($url) . "</loc>\n";
@@ -645,18 +776,20 @@ function hodima_sitemap_render() {
 
                 foreach ( $radar['videos'] as $vid ) {
                     $v_thumb = $vid['thumb'] ?: (!empty($radar['images']) ? reset($radar['images']) : $fallback_logo);
-                    $loc_tag = preg_match('/\.m(?:p4|3u8|kv|ebm)/i', $vid['url']) ? 'video:content_loc' : 'video:player_loc';
+                    [ $loc_tag, $loc_url ] = hodima_sitemap_video_loc( (string) $vid['url'] );
                     
                     $v_desc = wp_trim_words( wp_strip_all_tags( strip_shortcodes($term->description) ), 30, '...' );
                     if(empty($v_desc)) $v_desc = 'ویدیو دسته‌بندی ' . $vid['title'];
                     
-                    $v_date = !empty($vid['date']) ? $vid['date'] : $lastmod_date;
+                    // بدون تاریخ ثبت‌شده، بدون publication_date (قبلا تاریخ آخرین محصول دسته
+                    // که با هر ویرایش عوض می‌شد)
+                    $v_date = (string) ( $vid['date'] ?? '' );
 
                     echo "\t\t<video:video>\n";
                     echo "\t\t\t<video:thumbnail_loc>" . esc_url($v_thumb) . "</video:thumbnail_loc>\n";
                     echo "\t\t\t<video:title><![CDATA[" . hodima_sitemap_cdata( $vid['title'] ) . "]]></video:title>\n";
                     echo "\t\t\t<video:description><![CDATA[" . hodima_sitemap_cdata( trim($v_desc) ) . "]]></video:description>\n";
-                    echo "\t\t\t<{$loc_tag}>" . esc_url($vid['url']) . "</{$loc_tag}>\n";
+                    echo "\t\t\t<{$loc_tag}>" . esc_url($loc_url) . "</{$loc_tag}>\n";
                     if ( '' !== (string) $v_date ) echo "\t\t\t<video:publication_date>" . esc_html($v_date) . "</video:publication_date>\n"; // اختیاری در استاندارد
                     if ( $vid['duration'] > 0 ) echo "\t\t\t<video:duration>" . esc_html($vid['duration']) . "</video:duration>\n";
                     echo "\t\t\t<video:family_friendly>yes</video:family_friendly>\n";
@@ -679,12 +812,26 @@ function hodima_sitemap_render() {
 // ۴. باطل کردن کش هنگام تغییرات نوشته و ترم‌ها
 // ==========================================
 add_action('save_post', 'hodima_sitemap_clear_cache');
+// حذف/بازگردانی از زباله‌دان هم فهرست را عوض می‌کند (قبلا کش ۱۲ ساعته می‌ماند)
+add_action('trashed_post', 'hodima_sitemap_clear_cache');
+add_action('untrashed_post', 'hodima_sitemap_clear_cache');
+add_action('deleted_post', 'hodima_sitemap_clear_cache');
 add_action('edit_term', 'hodima_sitemap_clear_cache');
 add_action('delete_term', 'hodima_sitemap_clear_cache');
 add_action('created_term', 'hodima_sitemap_clear_cache');
 
 function hodima_sitemap_clear_cache() {
     update_option('hodima_sitemap_cache_ver', time(), false);
+}
+
+/** ۴۰۴ واقعی قالب برای آدرس سایت‌مپ نامعتبر. */
+function hodima_sitemap_not_found(): void {
+    global $wp_query;
+    header_remove( 'Content-Type' );
+    header_remove( 'X-Robots-Tag' );
+    $wp_query->set_404();
+    status_header( 404 );
+    nocache_headers();
 }// ==========================================
 // ۵. lastmod واقعی برای ایندکس سایت‌مپ
 // ==========================================

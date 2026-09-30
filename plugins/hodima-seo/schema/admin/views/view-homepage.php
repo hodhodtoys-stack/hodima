@@ -113,7 +113,7 @@ $hodima_section = static function ( string $icon, string $title ): void {
     <?php echo hodima_admin_icon( 'dashicons-admin-site-alt3' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
     <div>
         <strong>گراف دانش گوگل و AI GEO</strong>
-        <p>اطلاعات کسب‌وکار و سیگنال‌های هدف‌گیری منطقه‌ای به‌صورت هوشمند بین صفحه اصلی، صفحات داخلی و ماژول‌های هوش مصنوعی تقسیم می‌شود. این مرجع اصلی LocalBusiness و Organization است؛ کدهای موازی (مانند Rank Math) را خاموش کنید تا گراف دچار اختلال نشود.</p>
+        <p>اطلاعات کسب‌وکار و سیگنال‌های هدف‌گیری منطقه‌ای به‌صورت هوشمند بین صفحه اصلی، صفحات داخلی و ماژول‌های هوش مصنوعی تقسیم می‌شود. این مرجع اصلی LocalBusiness و Organization است؛ افزونه سئوی دیگری کنار آن فعال نکنید تا گراف دچار اختلال نشود.</p>
     </div>
 </div>
 

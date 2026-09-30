@@ -329,7 +329,12 @@ function hodima_seo_schema_video_url( string $url ): array {
 		? hook_is_direct_video_file( $url )
 		: 1 === preg_match( '/\.(mp4|m4v|webm|mov|ogv|ogg)$/i', (string) wp_parse_url( $url, PHP_URL_PATH ) );
 
-	return [ $is_file ? 'contentUrl' : 'embedUrl', $url ];
+	if ( $is_file ) {
+		return [ 'contentUrl', $url ];
+	}
+
+	// صفحه آپارات/یوتیوب → آدرس خود پخش‌کننده (گوگل برای embedUrl آن را می‌خواهد)
+	return [ 'embedUrl', function_exists( 'hodima_video_player_url' ) ? hodima_video_player_url( $url ) : $url ];
 }
 
 /* =====================================================================

@@ -480,7 +480,8 @@ function hook_generate_custom_product_schema() {
             ? (bool) hook_is_direct_video_file( $video_raw )
             : (bool) preg_match( '/\.(mp4|m4v|webm|mov|ogv)(\?|$)/i', (string) wp_parse_url( $video_raw, PHP_URL_PATH ) );
 
-        $video_node[ $is_file ? 'contentUrl' : 'embedUrl' ] = $video_raw;
+        // صفحه آپارات/یوتیوب → آدرس پخش‌کننده (embed)؛ گوگل صفحه تماشا را embedUrl نمی‌پذیرد
+        $video_node[ $is_file ? 'contentUrl' : 'embedUrl' ] = ( ! $is_file && function_exists( 'hodima_video_player_url' ) ) ? hodima_video_player_url( $video_raw ) : $video_raw;
 
         if ( ! empty( $media_data['video_duration'] ) && function_exists( 'hook_format_duration_iso' ) ) {
             $duration = hook_format_duration_iso( $media_data['video_duration'] );
