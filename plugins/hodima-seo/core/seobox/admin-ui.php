@@ -185,17 +185,19 @@ function seobox_render_html( array $data ): void {
 					<label for="seobox_description">توضیحات متا</label>
 					<span class="seobox__counter" id="seobox_description_counter" data-seobox-counter="description"></span>
 				</div>
-				<textarea class="seobox__input" id="seobox_description" name="seobox_description" rows="3" aria-describedby="seobox_description_counter" placeholder="<?php echo esc_attr( $desc_hint ); ?>"><?php echo esc_textarea( (string) $data['description'] ); ?></textarea>
-				<div class="seobox__meter" aria-hidden="true"><span data-seobox-meter="description"></span></div>
-			</div>
-
-			<div class="seobox__vars">
-				<span class="seobox__vars-label" id="seobox_vars_label">درج متغیر:</span>
-				<div class="seobox__vars-list" role="group" aria-labelledby="seobox_vars_label">
-					<?php foreach ( $hints as $var => $hint ) : ?>
-						<button type="button" class="seobox__var" data-seobox-var="<?php echo esc_attr( $var ); ?>" title="<?php echo esc_attr( $hint ); ?>" dir="ltr"><?php echo esc_html( $var ); ?></button>
-					<?php endforeach; ?>
+				<?php /* دکمه‌های متغیر داخل همان کادر توضیحات (پایین آن)، نه یک ردیف جدا زیر فیلد */ ?>
+				<div class="seobox__composer">
+					<textarea class="seobox__input seobox__input--bare" id="seobox_description" name="seobox_description" rows="3" aria-describedby="seobox_description_counter" placeholder="<?php echo esc_attr( $desc_hint ); ?>"><?php echo esc_textarea( (string) $data['description'] ); ?></textarea>
+					<div class="seobox__vars">
+						<span class="seobox__vars-label" id="seobox_vars_label">درج متغیر:</span>
+						<div class="seobox__vars-list" role="group" aria-labelledby="seobox_vars_label">
+							<?php foreach ( $hints as $var => $hint ) : ?>
+								<button type="button" class="seobox__var" data-seobox-var="<?php echo esc_attr( $var ); ?>" title="<?php echo esc_attr( $hint . ' — در آخرین کادر فعال (عنوان یا توضیحات) درج می‌شود' ); ?>" dir="ltr"><?php echo esc_html( $var ); ?></button>
+							<?php endforeach; ?>
+						</div>
+					</div>
 				</div>
+				<div class="seobox__meter" aria-hidden="true"><span data-seobox-meter="description"></span></div>
 			</div>
 		</section>
 
