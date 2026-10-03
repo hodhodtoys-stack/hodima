@@ -215,44 +215,19 @@ function save_stock_location_custom_field( $post_id ) {
 /* ==========================================================
    12.   کشور سازنده
    ----------------------------------------------------------
-   آخرین ردیف جدول مشخصات («کشور سازنده») و countryOfOrigin در اسکیما.
-   کد کشور ذخیره می‌شود (IR / CN) و نام فارسی فقط در نمایش ساخته می‌شود.
+   فیلد انتخابی «کشور سازنده» (ایرانی/چینی) در تب عمومی «اطلاعات محصول»
+   حذف شد: تکراری بود، چون کشور با ویژگی محصول «تولید» (تب ویژگی‌ها) ثبت
+   می‌شود و ردیف «تولید» جدول مشخصات و countryOfOrigin اسکیما اول همان
+   ویژگی را می‌خوانند.
+   داده پاک نمی‌شود: متای قبلی `_hodima_country_of_origin` فقط برای
+   محصولی که ویژگی «تولید» ندارد آخرین منبع جدول و اسکیما می‌ماند؛ با
+   افزودن ویژگی «تولید» به محصول، همان ویژگی جایش را می‌گیرد.
    ========================================================== */
 
+/** کد کشور ذخیره‌شده در متای قدیمی → نام فارسی (جدول مشخصات). */
 function hodima_country_of_origin_options(): array {
     return (array) apply_filters( 'hodima_country_of_origin_options', [
         'IR' => [ 'choice' => 'ایرانی', 'label' => 'ایران' ],
         'CN' => [ 'choice' => 'چینی',  'label' => 'چین' ],
     ] );
 }
-
-add_action( 'woocommerce_product_options_general_product_data', static function (): void {
-
-    $choices = [ '' => 'انتخاب کنید' ];
-    foreach ( hodima_country_of_origin_options() as $code => $opt ) {
-        $choices[ $code ] = $opt['choice'];
-    }
-
-    echo '<div class="options_group">';
-    woocommerce_wp_select( [
-        'id'          => '_hodima_country_of_origin',
-        'label'       => 'کشور سازنده',
-        'description' => 'آخرین ردیف جدول مشخصات و «کشور مبدا» در داده ساختاریافته گوگل.',
-        'desc_tip'    => true,
-        'options'     => $choices,
-    ] );
-    echo '</div>';
-} );
-
-add_action( 'woocommerce_process_product_meta', static function ( $post_id ): void {
-
-    if ( ! isset( $_POST['_hodima_country_of_origin'] ) ) {
-        return;
-    }
-
-    $code = strtoupper( sanitize_key( wp_unslash( $_POST['_hodima_country_of_origin'] ) ) );
-
-    isset( hodima_country_of_origin_options()[ $code ] )
-        ? update_post_meta( (int) $post_id, '_hodima_country_of_origin', $code )
-        : delete_post_meta( (int) $post_id, '_hodima_country_of_origin' );
-} );
