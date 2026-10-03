@@ -1,50 +1,54 @@
 <?php
 /**
- * Media System — Admin UI
+ * Media System — کادر «تنظیمات رسانه» در ویرایش نوشته، محصول، برگه و دسته
  * Path: media-system/media-admin.php
- * Version: 3.0.0
+ *
+ * نسخه ۴ (بازطراحی):
+ *   - هر فیلد برچسب واقعی دارد (قبلا فقط متن راهنمای داخل کادر که با تایپ محو می‌شد).
+ *   - انتخاب ویدیو، صوت، کاور و تصویر Discover از کتابخانه رسانه؛ مدت و
+ *     نسبت تصویر از خود فایل خوانده می‌شود.
+ *   - بررسی زنده: سرویس لینک ویدیو (آپارات/یوتیوب/فایل)، قالب مدت، فصل‌ها.
+ *     مدت نامعتبر دیگر بی‌صدا پاک نمی‌شود: مقدار قبلی می‌ماند و پیام داده می‌شود.
+ *   - جابه‌جایی ترتیب سوالات FAQ؛ حذف بدون پنجره confirm مرورگر.
+ *   - بخش Discover (نوشته و برگه) با فهرست بررسی؛ «خلاصه هوش مصنوعی» حذف شد
+ *     (داده قبلی پاک نمی‌شود).
+ *   - جاوااسکریپت خالص (بدون jQuery)؛ CSS فقط زیر .hodima-mb (بدون :root).
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+declare(strict_types=1);
 
-/**
- * نوع پستی که فیلد «متن کامل معرفی» برایش غیرفعال است.
- * منبع واحد برای رندر و ذخیره.
- */
-function hook_content_field_is_disabled( string $context, int|string $object_id ): bool {
+defined( 'ABSPATH' ) || exit;
+
+/** «متن معرفی» برای محصول غیرفعال است (توضیحات خود محصول کافی است). */
+function hodima_media_content_disabled( string $context, int $object_id ): bool {
 
 	if ( 'post' !== $context ) {
 		return false;
 	}
 
-	if ( 'new' !== $object_id && (int) $object_id > 0 ) {
-		return get_post_type( (int) $object_id ) === 'product';
+	if ( $object_id > 0 ) {
+		return 'product' === get_post_type( $object_id );
 	}
 
 	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 
-	return ( $screen && 'product' === $screen->post_type );
+	return $screen && 'product' === $screen->post_type;
 }
 
-add_action( 'admin_enqueue_scripts', 'hook_enqueue_admin_media_assets' );
+add_action( 'admin_enqueue_scripts', 'hodima_media_admin_assets' );
 
-function hook_enqueue_admin_media_assets( string $hook ): void {
+function hodima_media_admin_assets(): void {
 
 	$screen = get_current_screen();
+
 	if ( ! $screen ) {
 		return;
 	}
 
-	$is_post = ( 'post' === $screen->base && in_array( $screen->post_type, hook_get_supported_post_types(), true ) );
-	$is_term = ( 'term' === $screen->base && in_array( $screen->taxonomy, hook_get_supported_taxonomies(), true ) );
+	$is_post = 'post' === $screen->base && in_array( $screen->post_type, hodima_media_post_types(), true );
+	$is_term = 'term' === $screen->base && in_array( $screen->taxonomy, hodima_media_taxonomies(), true );
 
-	/*
-	 * edit-tags.php (فهرست ترم‌ها و فرم افزودن) حذف شد: فیلدهای رسانه
-	 * فقط در فرم *ویرایش* ترم رندر می‌شوند، ولی نسخه قبلی کتابخانه رسانه
-	 * وردپرس را روی صفحه فهرست هم بارگذاری می‌کرد.
-	 */
+	// فقط فرم ویرایش؛ نه فهرست ترم‌ها (فیلدها آنجا رندر نمی‌شوند)
 	if ( ! $is_post && ! $is_term ) {
 		return;
 	}
@@ -53,132 +57,304 @@ function hook_enqueue_admin_media_assets( string $hook ): void {
 
 	$url = HODIMA_MEDIA_URL . '/media-system';
 
-	wp_enqueue_style( 'hook-media-admin-css', $url . '/css/media-admin.css', [], hook_media_asset_version( 'css/media-admin.css' ) );
-	wp_enqueue_script( 'hook-media-admin-js', $url . '/js/media-admin.js', [ 'jquery' ], hook_media_asset_version( 'js/media-admin.js' ), true );
+	wp_enqueue_style( 'hodima-media-admin', $url . '/css/media-admin.css', [ 'dashicons' ], hodima_media_asset_version( 'css/media-admin.css' ) );
+	wp_enqueue_script( 'hodima-media-admin', $url . '/js/media-admin.js', [], hodima_media_asset_version( 'js/media-admin.js' ), [
+		'in_footer' => true,
+		'strategy'  => 'defer',
+	] );
+
+	wp_add_inline_script( 'hodima-media-admin', 'window.hodimaMediaAdmin = ' . wp_json_encode( [
+		'minWidth'  => HODIMA_MEDIA_DISCOVER_MIN_WIDTH,
+		'clickbait' => HODIMA_MEDIA_CLICKBAIT,
+		'ratios'    => array_values( array_diff( array_keys( HODIMA_MEDIA_RATIOS ), [ 'auto' ] ) ),
+	], JSON_UNESCAPED_UNICODE ) . ';', 'before' );
 }
 
 /* =====================================================================
  * فرم
  * ===================================================================== */
 
-function hook_render_media_fields_core( array $data, string $context, int|string $object_id = 0 ): void {
-
-	$unique_id = $object_id ?: 'new';
-	$field_id  = esc_attr( (string) $unique_id );
-
-	wp_nonce_field( "hook_media_save_{$context}_{$unique_id}", 'hook_media_nonce' );
-
-	$content_disabled = hook_content_field_is_disabled( $context, $unique_id );
-
-	// موجودیت‌ها هر کدام در یک خط نمایش داده می‌شوند
-	$entities_text = implode( "\n", hook_parse_key_entities( $data['key_entities'] ?? '' ) );
-	$cover         = (string) ( $data['video_cover'] ?? '' );
+/** یک فیلد آدرس + دکمه انتخاب از کتابخانه رسانه (+ شناسه پیوست اختیاری). */
+function hodima_media_field_picker( string $key, string $label, string $value, string $type, string $help = '', int $attachment_id = -1, string $placeholder = '' ): void {
+	$id = 'hodima-mb-' . str_replace( '_', '-', $key );
 	?>
-	<div class="hook-admin-box hook-admin-box-primary">
-		<label>
-			<input type="checkbox" name="hook_enabled" value="yes" <?php checked( $data['enabled'] ?? 'no', 'yes' ); ?>>
-			<strong>فعال‌سازی سیستم رسانه (ویدیو، پادکست، سوالات متداول) &mdash; نسخه <?php echo esc_html( HOOK_MEDIA_VERSION ); ?></strong>
-		</label>
+	<div class="hodima-mb__field" data-hodima-picker="<?php echo esc_attr( $type ); ?>">
+		<label class="hodima-mb__label" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $label ); ?></label>
+		<div class="hodima-mb__row">
+			<input type="url" id="<?php echo esc_attr( $id ); ?>" name="hodima_media[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_url( $value ); ?>" dir="ltr" class="hodima-mb__grow" data-hodima-url<?php echo '' !== $placeholder ? ' placeholder="' . esc_attr( $placeholder ) . '"' : ''; ?>>
+			<?php if ( $attachment_id >= 0 ) : ?>
+				<input type="hidden" name="hodima_media[<?php echo esc_attr( $key ); ?>_id]" value="<?php echo (int) $attachment_id ?: ''; ?>" data-hodima-id>
+			<?php endif; ?>
+			<button type="button" class="button" data-hodima-pick><span class="dashicons dashicons-admin-media" aria-hidden="true"></span> انتخاب از کتابخانه</button>
+			<button type="button" class="button-link hodima-mb__clear" data-hodima-clear <?php echo '' === $value ? 'hidden' : ''; ?>>حذف</button>
+		</div>
+		<?php if ( 'image' === $type ) : ?>
+			<img class="hodima-mb__preview" src="<?php echo esc_url( $value ); ?>" alt="" data-hodima-preview <?php echo '' === $value ? 'hidden' : ''; ?>>
+		<?php endif; ?>
+		<p class="hodima-mb__status" data-hodima-status aria-live="polite"></p>
+		<?php if ( '' !== $help ) : ?>
+			<p class="hodima-mb__help"><?php echo wp_kses( $help, [ 'code' => [], 'strong' => [] ] ); ?></p>
+		<?php endif; ?>
 	</div>
+	<?php
+}
 
-	<?php if ( hook_modern_seo_enabled( $context, $unique_id ) ) : ?>
-	<div class="hook-admin-box">
-		<p class="hook-section-title">سئو مدرن (AI &amp; Discover)</p>
-		<?php // نشانه‌ای که ذخیره فقط وقتی این سه فیلد را بنویسد که واقعا در فرم بوده‌اند ?>
-		<input type="hidden" name="hook_modern_seo_present" value="1">
+/** فیلد متنی ساده با برچسب. */
+function hodima_media_field_text( string $key, string $label, string $value, string $help = '', array $attrs = [] ): void {
+	$id   = 'hodima-mb-' . str_replace( '_', '-', $key );
+	$html = '';
+	foreach ( $attrs as $name => $attr ) {
+		$html .= sprintf( ' %s="%s"', esc_attr( (string) $name ), esc_attr( (string) $attr ) );
+	}
+	?>
+	<div class="hodima-mb__field">
+		<label class="hodima-mb__label" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $label ); ?></label>
+		<input type="text" id="<?php echo esc_attr( $id ); ?>" name="hodima_media[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $value ); ?>"<?php echo $html; // phpcs:ignore -- بالا escape شده ?>>
+		<p class="hodima-mb__status" data-hodima-status aria-live="polite"></p>
+		<?php if ( '' !== $help ) : ?>
+			<p class="hodima-mb__help"><?php echo wp_kses( $help, [ 'code' => [], 'strong' => [] ] ); ?></p>
+		<?php endif; ?>
+	</div>
+	<?php
+}
 
-		<div class="hook-field-group">
-			<label for="hook_discover_title_<?php echo $field_id; ?>"><strong>عنوان قلاب (Discover Title):</strong></label>
-			<input type="text" id="hook_discover_title_<?php echo $field_id; ?>" name="hook_discover_title" value="<?php echo esc_attr( (string) ( $data['discover_title'] ?? '' ) ); ?>" placeholder="عنوانی جذاب و کنجکاوکننده...">
+/** فیلد چندخطی با برچسب. */
+function hodima_media_field_textarea( string $key, string $label, string $value, string $help = '', array $attrs = [] ): void {
+	$id   = 'hodima-mb-' . str_replace( '_', '-', $key );
+	$html = '';
+	foreach ( $attrs + [ 'rows' => 4 ] as $name => $attr ) {
+		$html .= sprintf( ' %s="%s"', esc_attr( (string) $name ), esc_attr( (string) $attr ) );
+	}
+	?>
+	<div class="hodima-mb__field">
+		<label class="hodima-mb__label" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $label ); ?></label>
+		<textarea id="<?php echo esc_attr( $id ); ?>" name="hodima_media[<?php echo esc_attr( $key ); ?>]"<?php echo $html; // phpcs:ignore -- بالا escape شده ?>><?php echo esc_textarea( $value ); ?></textarea>
+		<p class="hodima-mb__status" data-hodima-status aria-live="polite"></p>
+		<?php if ( '' !== $help ) : ?>
+			<p class="hodima-mb__help"><?php echo wp_kses( $help, [ 'code' => [], 'strong' => [] ] ); ?></p>
+		<?php endif; ?>
+	</div>
+	<?php
+}
+
+/** سرتیتر یک بخش تاشو، با برچسب وضعیت («تنظیم شده»). */
+function hodima_media_section_open( string $key, string $icon, string $title, bool $filled, bool $open ): void {
+	printf(
+		'<details class="hodima-mb__section" data-hodima-section="%1$s"%2$s><summary class="hodima-mb__summary"><span class="dashicons %3$s" aria-hidden="true"></span><span class="hodima-mb__title">%4$s</span>%5$s</summary><div class="hodima-mb__body">',
+		esc_attr( $key ),
+		$open ? ' open' : '',
+		esc_attr( $icon ),
+		esc_html( $title ),
+		$filled ? '<span class="hodima-mb__badge">تنظیم شده</span>' : ''
+	);
+}
+
+function hodima_media_section_close(): void {
+	echo '</div></details>';
+}
+
+/** یک ردیف FAQ (در PHP و قالب <template> برای ردیف تازه). */
+function hodima_media_faq_row( int|string $index, string $question, string $answer ): string {
+	return sprintf(
+		'<li class="hodima-mb__faq" data-hodima-faq>
+			<div class="hodima-mb__faq-fields">
+				<label class="screen-reader-text" for="hodima-mb-faq-q-%1$s">سوال</label>
+				<input type="text" id="hodima-mb-faq-q-%1$s" name="hodima_media[faq][%1$s][q]" value="%2$s" placeholder="سوال">
+				<label class="screen-reader-text" for="hodima-mb-faq-a-%1$s">پاسخ</label>
+				<textarea id="hodima-mb-faq-a-%1$s" name="hodima_media[faq][%1$s][a]" rows="3" placeholder="پاسخ">%3$s</textarea>
+			</div>
+			<div class="hodima-mb__faq-tools">
+				<button type="button" class="button-link" data-hodima-move="-1" aria-label="انتقال به بالا"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
+				<button type="button" class="button-link" data-hodima-move="1" aria-label="انتقال به پایین"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
+				<button type="button" class="button-link hodima-mb__delete" data-hodima-remove aria-label="حذف این سوال"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+			</div>
+		</li>',
+		esc_attr( (string) $index ),
+		esc_attr( $question ),
+		esc_textarea( $answer )
+	);
+}
+
+/** فهرست بررسی Discover. */
+function hodima_media_render_discover_checks( WP_Post $post ): void {
+
+	$icons = [ 'ok' => 'dashicons-yes-alt', 'warn' => 'dashicons-warning', 'error' => 'dashicons-dismiss' ];
+
+	echo '<ul class="hodima-mb__checks" data-hodima-checks>';
+	foreach ( hodima_media_discover_checks( $post ) as $check ) {
+		printf(
+			'<li class="is-%1$s" data-hodima-check="%2$s"><span class="dashicons %3$s" aria-hidden="true"></span><strong>%4$s:</strong> <span data-hodima-check-text>%5$s</span></li>',
+			esc_attr( $check['status'] ),
+			esc_attr( $check['key'] ),
+			esc_attr( $icons[ $check['status'] ] ),
+			esc_html( $check['label'] ),
+			esc_html( $check['detail'] )
+		);
+	}
+	echo '</ul>';
+}
+
+function hodima_media_render_fields( array $data, string $context, int $object_id ): void {
+
+	$context  = hodima_media_context( $context );
+	$discover = hodima_media_discover_enabled( $context, $object_id );
+	$post     = 'post' === $context ? get_post( $object_id ) : null;
+
+	$video_set = '' !== (string) ( $data['video_url'] ?? '' );
+	$voice_set = '' !== (string) ( $data['voice_url'] ?? '' );
+	$faq       = array_values( (array) ( $data['faq'] ?? [] ) );
+	$cover_id  = (int) ( $data['video_cover_id'] ?? 0 );
+	$cover     = (string) ( $data['video_cover'] ?? '' );
+
+	$discover_id  = (int) ( $data['discover_image_id'] ?? 0 );
+	$discover_src = $discover_id ? wp_get_attachment_image_src( $discover_id, 'medium' ) : false;
+	?>
+	<div class="hodima-mb" data-hodima-mb>
+		<?php wp_nonce_field( "hodima_media_save_{$context}_{$object_id}", 'hodima_media_nonce' ); ?>
+
+		<div class="hodima-mb__head">
+			<label class="hodima-mb__toggle">
+				<input type="checkbox" class="hodima-mb__switch" role="switch" name="hodima_media[enabled]" value="yes" <?php checked( $data['enabled'] ?? '', 'yes' ); ?>>
+				<span>
+					<strong>نمایش ویدیو، پادکست، سوالات متداول و متن معرفی</strong>
+					<small>خاموش: هیچ‌کدام در سایت نمایش داده نمی‌شوند و به گوگل اعلام نمی‌شوند. اطلاعات پایین پاک نمی‌شود.</small>
+				</span>
+			</label>
 		</div>
 
-		<div class="hook-field-group">
-			<label for="hook_key_entities_<?php echo $field_id; ?>"><strong>موجودیت‌های کلیدی (Key Entities):</strong></label>
-			<?php
-			/*
-			 * textarea به جای input تک‌خطی.
-			 * چسباندن متن چندخطی در input تک‌خطی، خط‌های جدید را به فاصله
-			 * تبدیل می‌کرد و هیچ جداکننده‌ای باقی نمی‌ماند؛ کل متن یک
-			 * موجودیت می‌شد (همان «مرتبط با» طولانی در اسکیمای محصول).
-			 */
-			?>
-			<textarea id="hook_key_entities_<?php echo $field_id; ?>" name="hook_key_entities" rows="4" class="hook-textarea" placeholder="هر موجودیت در یک خط، یا با ویرگول (, یا ،) جدا شود&#10;مثلا:&#10;کش مو&#10;واردات از چین"><?php echo esc_textarea( $entities_text ); ?></textarea>
-			<p class="description">مفاهیم اصلی صفحه که به موتورهای جستجو و هوش مصنوعی کمک می‌کند موضوع را دقیق درک کنند.</p>
-		</div>
+		<?php if ( $discover && $post instanceof WP_Post ) : ?>
+			<?php hodima_media_section_open( 'discover', 'dashicons-visibility', 'Google Discover', '' !== (string) ( $data['discover_title'] ?? '' ) || $discover_id > 0, true ); ?>
+				<input type="hidden" name="hodima_media[discover_present]" value="1">
+				<p class="hodima-mb__intro">Discover فید پیشنهادی گوگل در موبایل است. این بخش به کلید بالا وابسته نیست.</p>
 
-		<div class="hook-field-group">
-			<label><strong>خلاصه برای هوش مصنوعی (AI TL;DR):</strong></label>
-			<?php
-			if ( 'new' === $unique_id ) {
-				echo '<textarea name="hook_ai_summary" rows="5" class="hook-textarea">' . esc_textarea( (string) ( $data['ai_summary'] ?? '' ) ) . '</textarea>';
-			} else {
-				wp_editor( (string) ( $data['ai_summary'] ?? '' ), 'hookaisummary', [
-					'textarea_name' => 'hook_ai_summary',
-					'textarea_rows' => 6,
-					'media_buttons' => false,
-					'quicktags'     => true,
-					'tinymce'       => true,
-				] );
-			}
-			?>
-			<p class="description"><strong>شورت‌کد نمایش:</strong> <code>[hook_ai_box title="خلاصه هوش مصنوعی"]</code></p>
-		</div>
+				<?php hodima_media_render_discover_checks( $post ); ?>
 
-	</div>
-	<?php endif; ?>
+				<?php
+				hodima_media_field_text(
+					'discover_title',
+					'عنوان Discover (اختیاری)',
+					(string) ( $data['discover_title'] ?? '' ),
+					'فقط در کارت Discover و اشتراک‌گذاری (og:title) استفاده می‌شود؛ عنوان صفحه و h1 عوض نمی‌شوند. جذاب ولی صادق: اغراق و «طعمه کلیک» در Discover جریمه دارد. خالی = عنوان نوشته.',
+					[ 'maxlength' => 200, 'data-hodima-discover-title' => '', 'data-hodima-fallback' => $post->post_title ]
+				);
+				?>
 
-	<div class="hook-admin-box">
-		<p class="hook-section-title">متن معرفی</p>
-
-		<div class="hook-field-group">
-			<div class="hook-label-title"><strong>متن کامل معرفی (HOOK):</strong></div>
-			<?php
-			if ( $content_disabled ) {
-				// مقدار فعلی در فیلد مخفی تا ذخیره محصول آن را پاک نکند
-				printf( '<input type="hidden" name="hook_content" value="%s">', esc_attr( (string) ( $data['content'] ?? '' ) ) );
-				echo '<div class="hook-notice hook-notice-muted"><em>این قسمت برای صفحه محصول غیرفعال است. مقدار قبلی دست‌نخورده باقی می‌ماند.</em></div>';
-			} elseif ( 'new' === $unique_id ) {
-				echo '<textarea name="hook_content" rows="6" class="hook-textarea">' . esc_textarea( (string) ( $data['content'] ?? '' ) ) . '</textarea>';
-			} else {
-				wp_editor( (string) ( $data['content'] ?? '' ), 'hookcontent', [ 'textarea_name' => 'hook_content', 'textarea_rows' => 8 ] );
-			}
-			?>
-		</div>
-	</div>
-
-	<div class="hook-admin-box">
-		<p class="hook-section-title">تنظیمات ویدیو</p>
-		<input type="text" name="hook_video_title" value="<?php echo esc_attr( (string) ( $data['video_title'] ?? '' ) ); ?>" placeholder="عنوان ویدیو">
-		<input type="url" name="hook_video_url" value="<?php echo esc_url( (string) ( $data['video_url'] ?? '' ) ); ?>" placeholder="لینک مستقیم فایل (MP4) یا لینک صفحه آپارات / یوتیوب" dir="ltr">
-		<input type="text" name="hook_video_duration" value="<?php echo esc_attr( (string) ( $data['video_duration'] ?? '' ) ); ?>" placeholder="مدت زمان — مثلا ۲:۳۵ یا ۱:۰۵:۲۰" class="hook-duration" inputmode="numeric">
-
-		<div class="hook-video-cover-wrap">
-			<input type="url" id="hook_video_cover_<?php echo $field_id; ?>" class="hook-video-cover-input" name="hook_video_cover" value="<?php echo esc_url( $cover ); ?>" placeholder="لینک تصویر کاور ویدیو..." dir="ltr">
-			<button type="button" class="button hook-upload-video-cover">انتخاب تصویر از گالری</button>
-		</div>
-		<img class="hook-video-cover-preview" src="<?php echo esc_url( $cover ); ?>" alt="" <?php echo '' === $cover ? 'hidden' : ''; ?>>
-		<p class="description">کاور هم در پلیر نمایش داده می‌شود و هم به عنوان تصویر ویدیو به گوگل ارسال می‌شود.</p>
-	</div>
-
-	<div class="hook-admin-box">
-		<p class="hook-section-title">تنظیمات صوت (پادکست)</p>
-		<input type="text" name="hook_voice_title" value="<?php echo esc_attr( (string) ( $data['voice_title'] ?? '' ) ); ?>" placeholder="عنوان پادکست">
-		<input type="url" name="hook_voice_url" value="<?php echo esc_url( (string) ( $data['voice_url'] ?? '' ) ); ?>" placeholder="لینک مستقیم فایل صوتی (MP3)" dir="ltr">
-		<input type="text" name="hook_voice_duration" value="<?php echo esc_attr( (string) ( $data['voice_duration'] ?? '' ) ); ?>" placeholder="مدت زمان — مثلا ۱۲:۴۰" class="hook-duration" inputmode="numeric">
-	</div>
-
-	<div class="hook-admin-box">
-		<p class="hook-section-title">سوالات متداول (FAQ)</p>
-		<div class="hook-faq-container">
-			<?php foreach ( array_values( (array) ( $data['faq'] ?? [] ) ) as $index => $faq ) : ?>
-				<div class="hook-faq-item">
-					<input type="text" name="hook_faq[<?php echo (int) $index; ?>][q]" value="<?php echo esc_attr( (string) ( $faq['q'] ?? '' ) ); ?>" placeholder="سؤال (پرسش)...">
-					<textarea name="hook_faq[<?php echo (int) $index; ?>][a]" placeholder="پاسخ..."><?php echo esc_textarea( (string) ( $faq['a'] ?? '' ) ); ?></textarea>
-					<button type="button" class="button-link button-link-delete hook-remove-faq">حذف این سؤال</button>
+				<div class="hodima-mb__field" data-hodima-picker="image" data-hodima-discover-image>
+					<span class="hodima-mb__label" id="hodima-mb-discover-image-label">تصویر Discover (اختیاری)</span>
+					<input type="hidden" name="hodima_media[discover_image_id]" value="<?php echo $discover_id ?: ''; ?>" data-hodima-id>
+					<div class="hodima-mb__row">
+						<button type="button" class="button" data-hodima-pick aria-describedby="hodima-mb-discover-image-label"><span class="dashicons dashicons-format-image" aria-hidden="true"></span> انتخاب تصویر</button>
+						<button type="button" class="button-link hodima-mb__clear" data-hodima-clear <?php echo $discover_id ? '' : 'hidden'; ?>>حذف (تصویر شاخص استفاده شود)</button>
+					</div>
+					<img class="hodima-mb__preview" src="<?php echo esc_url( is_array( $discover_src ) ? (string) $discover_src[0] : '' ); ?>" alt="" data-hodima-preview <?php echo is_array( $discover_src ) ? '' : 'hidden'; ?>>
+					<p class="hodima-mb__status" data-hodima-status aria-live="polite"></p>
+					<p class="hodima-mb__help">حداقل <strong>۱۲۰۰ پیکسل عرض</strong>، ترجیحا افقی ۱۶:۹؛ بدون لوگو و بدون متن زیاد روی تصویر. خالی = تصویر شاخص. سه برش ۱۶:۹، ۴:۳ و ۱:۱ هنگام ذخیره خودکار ساخته می‌شود.</p>
 				</div>
-			<?php endforeach; ?>
-		</div>
-		<button type="button" class="button hook-add-faq">افزودن سؤال جدید</button>
+
+				<?php
+				hodima_media_field_textarea(
+					'key_entities',
+					'موضوعات اصلی (اختیاری)',
+					implode( "\n", hodima_media_parse_entities( $data['key_entities'] ?? '' ) ),
+					'هر موضوع در یک خط (یا جدا با ویرگول). به گوگل کمک می‌کند بداند نوشته درباره چیست و به علاقه‌مندان همان موضوع در Discover نشانش دهد.',
+					[ 'rows' => 3, 'placeholder' => "کش مو\nکلیپس فلزی" ]
+				);
+				?>
+			<?php hodima_media_section_close(); ?>
+		<?php endif; ?>
+
+		<?php hodima_media_section_open( 'intro', 'dashicons-text-page', 'متن معرفی', '' !== trim( (string) ( $data['content'] ?? '' ) ), false ); ?>
+			<?php if ( hodima_media_content_disabled( $context, $object_id ) ) : ?>
+				<input type="hidden" name="hodima_media[content_locked]" value="1">
+				<p class="hodima-mb__intro">برای محصول غیرفعال است (توضیحات خود محصول نمایش داده می‌شود). مقدار قبلی دست‌نخورده می‌ماند.</p>
+			<?php else : ?>
+				<div class="hodima-mb__field">
+					<span class="hodima-mb__label">متن کامل معرفی <code>[hook_intro]</code></span>
+					<?php wp_editor( (string) ( $data['content'] ?? '' ), 'hookcontent', [ 'textarea_name' => 'hodima_media[content]', 'textarea_rows' => 8 ] ); ?>
+				</div>
+			<?php endif; ?>
+		<?php hodima_media_section_close(); ?>
+
+		<?php hodima_media_section_open( 'video', 'dashicons-video-alt3', 'ویدیو', $video_set, $video_set ); ?>
+			<?php
+			hodima_media_field_picker(
+				'video_url',
+				'لینک ویدیو',
+				(string) ( $data['video_url'] ?? '' ),
+				'video',
+				'لینک صفحه آپارات یا یوتیوب (مثل <code>aparat.com/v/…</code>)، یا فایل MP4 از کتابخانه رسانه.',
+				-1,
+				'https://www.aparat.com/v/…'
+			);
+			hodima_media_field_text( 'video_title', 'عنوان ویدیو', (string) ( $data['video_title'] ?? '' ), 'بالای پلیر و در نتایج ویدیویی گوگل. خالی = «ویدیوی معرفی: عنوان صفحه».' );
+			?>
+			<div class="hodima-mb__grid">
+				<div class="hodima-mb__field">
+					<label class="hodima-mb__label" for="hodima-mb-video-ratio">نسبت تصویر</label>
+					<select id="hodima-mb-video-ratio" name="hodima_media[video_ratio]" data-hodima-ratio>
+						<?php foreach ( HODIMA_MEDIA_RATIOS as $value => $label ) : ?>
+							<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $data['video_ratio'] ?? 'auto', $value ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<p class="hodima-mb__help">خودکار: شورتز یوتیوب عمودی، فایل آپلودشده از ابعاد واقعی، بقیه افقی.</p>
+				</div>
+				<?php
+				hodima_media_field_text( 'video_duration', 'مدت', (string) ( $data['video_duration'] ?? '' ), 'مثلا <code>2:35</code> یا <code>1:05:20</code>. برای فایل کتابخانه خودکار پر می‌شود.', [ 'dir' => 'ltr', 'inputmode' => 'numeric', 'placeholder' => '2:35', 'data-hodima-duration' => '' ] );
+				?>
+			</div>
+			<?php
+			hodima_media_field_picker(
+				'video_cover',
+				'کاور ویدیو',
+				$cover,
+				'image',
+				'قبل از پخش نمایش داده می‌شود و تصویر ویدیو در گوگل است. خالی = تصویر شاخص.',
+				$cover_id
+			);
+			hodima_media_field_textarea(
+				'video_chapters',
+				'فصل‌های ویدیو (اختیاری)',
+				(string) ( $data['video_chapters'] ?? '' ),
+				'هر خط: زمان و عنوان. زیر پلیر دکمه پرش ساخته می‌شود و گوگل «لحظه‌های کلیدی» را در نتایج نشان می‌دهد.',
+				[ 'rows' => 4, 'dir' => 'auto', 'placeholder' => "0:00 معرفی\n0:45 رنگ‌بندی\n1:30 نحوه استفاده", 'data-hodima-chapters' => '' ]
+			);
+			hodima_media_field_textarea(
+				'video_transcript',
+				'متن کامل ویدیو (اختیاری)',
+				(string) ( $data['video_transcript'] ?? '' ),
+				'زیر پلیر به صورت بسته («متن کامل ویدیو») نمایش داده می‌شود و در اسکیما (transcript) به گوگل می‌رسد.',
+				[ 'rows' => 4 ]
+			);
+			?>
+		<?php hodima_media_section_close(); ?>
+
+		<?php hodima_media_section_open( 'voice', 'dashicons-microphone', 'پادکست (صوت)', $voice_set, $voice_set ); ?>
+			<?php
+			hodima_media_field_picker( 'voice_url', 'لینک فایل صوتی', (string) ( $data['voice_url'] ?? '' ), 'audio', 'فایل MP3 یا M4A؛ از کتابخانه رسانه یا لینک مستقیم.', -1, 'https://…/podcast.mp3' );
+			?>
+			<div class="hodima-mb__grid">
+				<?php
+				hodima_media_field_text( 'voice_title', 'عنوان پادکست', (string) ( $data['voice_title'] ?? '' ) );
+				hodima_media_field_text( 'voice_duration', 'مدت', (string) ( $data['voice_duration'] ?? '' ), 'مثلا <code>12:40</code>. برای فایل کتابخانه خودکار پر می‌شود.', [ 'dir' => 'ltr', 'inputmode' => 'numeric', 'placeholder' => '12:40', 'data-hodima-duration' => '' ] );
+				?>
+			</div>
+			<?php
+			hodima_media_field_textarea( 'voice_transcript', 'متن کامل پادکست (اختیاری)', (string) ( $data['voice_transcript'] ?? '' ), 'زیر پلیر به صورت بسته نمایش داده می‌شود و در اسکیما به گوگل می‌رسد.', [ 'rows' => 4 ] );
+			?>
+		<?php hodima_media_section_close(); ?>
+
+		<?php hodima_media_section_open( 'faq', 'dashicons-editor-help', 'سوالات متداول (FAQ)', (bool) $faq, (bool) $faq ); ?>
+			<ol class="hodima-mb__faqs" data-hodima-faqs>
+				<?php
+				foreach ( $faq as $index => $item ) {
+					echo hodima_media_faq_row( (int) $index, (string) ( $item['q'] ?? '' ), (string) ( $item['a'] ?? '' ) ); // phpcs:ignore -- داخل تابع escape شده
+				}
+				?>
+			</ol>
+			<template data-hodima-faq-template><?php echo hodima_media_faq_row( '__i__', '', '' ); // phpcs:ignore ?></template>
+			<button type="button" class="button" data-hodima-faq-add><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> افزودن سوال</button>
+			<p class="hodima-mb__help">سوال بدون پاسخ ذخیره نمی‌شود. شورت‌کد: <code>[hook_faq]</code></p>
+		<?php hodima_media_section_close(); ?>
 	</div>
 	<?php
 }
@@ -187,163 +363,189 @@ function hook_render_media_fields_core( array $data, string $context, int|string
  * ثبت در نوشته‌ها و ترم‌ها
  * ===================================================================== */
 
-add_action( 'add_meta_boxes', 'hook_add_post_media_meta_box' );
-
-function hook_add_post_media_meta_box(): void {
-	foreach ( hook_get_supported_post_types() as $post_type ) {
-		add_meta_box( 'hook_media_box', 'تنظیمات رسانه', 'hook_render_post_media_box', $post_type, 'normal', 'high' );
+add_action( 'add_meta_boxes', static function (): void {
+	foreach ( hodima_media_post_types() as $post_type ) {
+		add_meta_box( 'hook_media_box', 'تنظیمات رسانه', static function ( WP_Post $post ): void {
+			hodima_media_render_fields( hodima_media_get_data( $post->ID, 'post' ), 'post', $post->ID );
+		}, $post_type, 'normal', 'high' );
 	}
-}
+} );
 
-function hook_render_post_media_box( WP_Post $post ): void {
-	hook_render_media_fields_core( hook_get_media_data( $post->ID, 'post' ), 'post', $post->ID );
-}
-
-add_action( 'save_post', 'hook_save_all_post_types_media_box', 10, 2 );
-
-function hook_save_all_post_types_media_box( int $post_id, WP_Post $post ): void {
+add_action( 'save_post', static function ( int $post_id, WP_Post $post ): void {
 
 	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
 		return;
 	}
 
-	if ( ! in_array( $post->post_type, hook_get_supported_post_types(), true ) || ! current_user_can( 'edit_post', $post_id ) ) {
+	if ( ! in_array( $post->post_type, hodima_media_post_types(), true ) || ! current_user_can( 'edit_post', $post_id ) ) {
 		return;
 	}
 
-	hook_save_media_fields_core( $post_id, 'post' );
-}
+	hodima_media_save_fields( $post_id, 'post' );
+}, 10, 2 );
 
-add_action( 'admin_init', 'hook_register_taxonomy_media_hooks' );
-
-function hook_register_taxonomy_media_hooks(): void {
-	foreach ( hook_get_supported_taxonomies() as $taxonomy ) {
-		add_action( "{$taxonomy}_edit_form", 'hook_render_term_media_fields', 2 );
-		add_action( "edited_{$taxonomy}", 'hook_save_term_media_fields' );
-		// هوک created_{$taxonomy} حذف شد: فیلدها در فرم *افزودن* رندر نمی‌شوند،
-		// پس nonce وجود نداشت و آن کالبک همیشه در خط اول برمی‌گشت.
+add_action( 'admin_init', static function (): void {
+	foreach ( hodima_media_taxonomies() as $taxonomy ) {
+		add_action( "{$taxonomy}_edit_form", 'hodima_media_render_term_box', 2 );
+		add_action( "edited_{$taxonomy}", static fn( int $term_id ) => hodima_media_save_fields( $term_id, 'term' ) );
 	}
-}
+} );
 
-function hook_render_term_media_fields( WP_Term $term ): void {
+function hodima_media_render_term_box( WP_Term $term ): void {
 	?>
-	<div id="hook_term_media_box" class="postbox hook-term-postbox">
-		<div class="postbox-header"><h2 class="hndle"><span>تنظیمات رسانه دسته‌بندی</span></h2></div>
-		<div class="inside hook-term-wrapper">
-			<?php hook_render_media_fields_core( hook_get_media_data( $term->term_id, 'term' ), 'term', $term->term_id ); ?>
+	<div id="hook_term_media_box" class="postbox hodima-mb-postbox">
+		<div class="postbox-header"><h2 class="hndle">تنظیمات رسانه دسته‌بندی</h2></div>
+		<div class="inside">
+			<?php hodima_media_render_fields( hodima_media_get_data( $term->term_id, 'term' ), 'term', $term->term_id ); ?>
 		</div>
 	</div>
 	<?php
-}
-
-function hook_save_term_media_fields( int $term_id ): void {
-	hook_save_media_fields_core( $term_id, 'term' );
 }
 
 /* =====================================================================
  * ذخیره
  * ===================================================================== */
 
-function hook_save_media_fields_core( int $object_id, string $context ): void {
+/**
+ * اطلاعات فایل کتابخانه رسانه از روی آدرس: [ مدت (ثانیه), عرض, ارتفاع ].
+ *
+ * @return array{0: int, 1: int, 2: int}
+ */
+function hodima_media_attachment_info( string $url ): array {
 
-	$nonce = isset( $_POST['hook_media_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['hook_media_nonce'] ) ) : '';
+	$id   = '' !== $url ? (int) attachment_url_to_postid( $url ) : 0;
+	$meta = $id ? wp_get_attachment_metadata( $id ) : false;
 
-	if ( ! wp_verify_nonce( $nonce, "hook_media_save_{$context}_{$object_id}" ) ) {
+	return is_array( $meta )
+		? [ (int) ( $meta['length'] ?? 0 ), (int) ( $meta['width'] ?? 0 ), (int) ( $meta['height'] ?? 0 ) ]
+		: [ 0, 0, 0 ];
+}
+
+function hodima_media_save_fields( int $object_id, string $context ): void {
+
+	$context = hodima_media_context( $context );
+	$nonce   = isset( $_POST['hodima_media_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['hodima_media_nonce'] ) ) : '';
+
+	if ( ! wp_verify_nonce( $nonce, "hodima_media_save_{$context}_{$object_id}" ) ) {
 		return;
 	}
 
-	$is_post = ( 'post' === $context );
-
-	if ( ! $is_post ) {
-		$term = get_term( $object_id );
-		if ( ! ( $term instanceof WP_Term ) ) {
-			return;
-		}
-		$taxonomy = get_taxonomy( $term->taxonomy );
+	if ( 'term' === $context ) {
+		$term     = get_term( $object_id );
+		$taxonomy = $term instanceof WP_Term ? get_taxonomy( $term->taxonomy ) : null;
 		if ( ! $taxonomy || ! current_user_can( $taxonomy->cap->edit_terms ) ) {
 			return;
 		}
 	}
 
-	$prefix = $is_post ? '_hook_' : 'hook_';
-	$get    = $is_post ? 'get_post_meta' : 'get_term_meta';
-	$update = $is_post ? 'update_post_meta' : 'update_term_meta';
-	$delete = $is_post ? 'delete_post_meta' : 'delete_term_meta';
-
-	// مقادیر فعلی (با فالبک کلید قدیمی) — برای تشخیص تغییر آدرس ویدیو/صوت
-	$before = hook_get_media_data( $object_id, $context, true );
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- هر فیلد پایین جداگانه پاک‌سازی می‌شود
+	$in     = isset( $_POST['hodima_media'] ) && is_array( $_POST['hodima_media'] ) ? wp_unslash( $_POST['hodima_media'] ) : [];
+	$get    = static fn( string $key ): string => isset( $in[ $key ] ) && is_scalar( $in[ $key ] ) ? trim( (string) $in[ $key ] ) : '';
+	$prefix = hodima_media_meta_prefix( $context );
+	$before = hodima_media_get_data( $object_id, $context, true );
+	$errors = [];
 
 	/*
-	 * نوشتن هر فیلد.
-	 *
-	 *   - مقدار خالی حذف می‌شود، نه ذخیره (جلوگیری از ردیف‌های بی‌مصرف).
-	 *   - کلید قدیمیِ بدون پیشوند هم حذف می‌شود. نسخه قبلی فقط کلید جدید
-	 *     را حذف می‌کرد؛ خواندن به کلید قدیمی برمی‌گشت و فیلدی که مدیر
-	 *     عمدا خالی کرده بود، در بارگذاری بعدی دوباره ظاهر می‌شد. داده
-	 *     قدیمی را هرگز نمی‌شد پاک کرد.
+	 * نوشتن هر فیلد: مقدار خالی حذف می‌شود. هیچ کلید بی‌پیشوندی حذف
+	 * نمی‌شود (باگ قبلی: داده افزونه‌های دیگر با همان نام عمومی پاک می‌شد).
 	 */
-	$write = static function ( string $key, $value ) use ( $object_id, $prefix, $get, $update, $delete ): void {
-
-		( '' === $value || [] === $value )
-			? $delete( $object_id, $prefix . $key )
-			: $update( $object_id, $prefix . $key, $value );
-
-		if ( '' !== $get( $object_id, $key, true ) ) {
-			$delete( $object_id, $key );
-		}
+	$write = static function ( string $key, mixed $value ) use ( $object_id, $context, $prefix ): void {
+		( '' === $value || [] === $value || 0 === $value )
+			? delete_metadata( $context, $object_id, $prefix . $key )
+			: update_metadata( $context, $object_id, $prefix . $key, $value );
 	};
 
-	$post = static fn( string $key ): string => isset( $_POST[ $key ] ) ? (string) wp_unslash( $_POST[ $key ] ) : '';
+	// همیشه yes/no (نه حذف): نشانه اینکه این شیء با نسخه ۴ ذخیره شده و
+	// کلیدهای بی‌پیشوند نسخه خیلی قدیمی دیگر خوانده نشوند.
+	update_metadata( $context, $object_id, $prefix . 'enabled', 'yes' === $get( 'enabled' ) ? 'yes' : 'no' );
 
-	$write( 'enabled', isset( $_POST['hook_enabled'] ) ? 'yes' : '' );
-
-	/*
-	 * این سه فیلد فقط وقتی نوشته می‌شوند که بخش «سئو مدرن» در فرم بوده.
-	 * برای محصول و دسته‌بندی بخش نمایش داده نمی‌شود؛ بدون این شرط، ذخیره
-	 * بعدی مقدار خالی می‌فرستاد و داده قبلی پاک می‌شد.
-	 */
-	if ( isset( $_POST['hook_modern_seo_present'] ) ) {
-		$write( 'discover_title', sanitize_text_field( $post( 'hook_discover_title' ) ) );
-		$write( 'key_entities', implode( ', ', hook_parse_key_entities( sanitize_textarea_field( $post( 'hook_key_entities' ) ) ) ) );
-		$write( 'ai_summary', wp_kses_post( $post( 'hook_ai_summary' ) ) );
+	// Discover: فقط اگر بخش در فرم بوده (محصول و دسته ندارند؛ داده قبلی‌شان نمی‌ماند خالی)
+	if ( '1' === $get( 'discover_present' ) ) {
+		$write( 'discover_title', sanitize_text_field( $get( 'discover_title' ) ) );
+		$write( 'key_entities', implode( ', ', hodima_media_parse_entities( sanitize_textarea_field( $get( 'key_entities' ) ) ) ) );
+		$image_id = absint( $get( 'discover_image_id' ) );
+		$write( 'discover_image_id', $image_id && wp_attachment_is_image( $image_id ) ? $image_id : 0 );
 	}
-	$write( 'content', wp_kses_post( $post( 'hook_content' ) ) );
 
-	$video_url = esc_url_raw( trim( $post( 'hook_video_url' ) ), [ 'http', 'https' ] );
-	$voice_url = esc_url_raw( trim( $post( 'hook_voice_url' ) ), [ 'http', 'https' ] );
+	if ( '1' !== $get( 'content_locked' ) && array_key_exists( 'content', $in ) ) {
+		$write( 'content', wp_kses_post( $get( 'content' ) ) );
+	}
 
-	$write( 'video_title', sanitize_text_field( $post( 'hook_video_title' ) ) );
+	/* ── ویدیو ── */
+	$video_url = esc_url_raw( $get( 'video_url' ), [ 'http', 'https' ] );
+	[ $v_length, $v_width, $v_height ] = hodima_media_attachment_info( $video_url );
+
 	$write( 'video_url', $video_url );
-	$write( 'video_cover', esc_url_raw( trim( $post( 'hook_video_cover' ) ), [ 'http', 'https' ] ) );
-	$write( 'video_duration', hook_sanitize_duration( $post( 'hook_video_duration' ) ) );
+	$write( 'video_title', sanitize_text_field( $get( 'video_title' ) ) );
 
-	$write( 'voice_title', sanitize_text_field( $post( 'hook_voice_title' ) ) );
+	$ratio = $get( 'video_ratio' );
+	$ratio = isset( HODIMA_MEDIA_RATIOS[ $ratio ] ) ? $ratio : 'auto';
+	if ( 'auto' === $ratio && $v_width > 0 ) {
+		$ratio = hodima_media_nearest_ratio( $v_width, $v_height ); // نسبت واقعی فایل آپلودشده
+	}
+	$write( 'video_ratio', 'auto' === $ratio ? '' : $ratio );
+
+	$cover_id  = absint( $get( 'video_cover_id' ) );
+	$cover_url = esc_url_raw( $get( 'video_cover' ), [ 'http', 'https' ] );
+	if ( $cover_id && ! wp_attachment_is_image( $cover_id ) ) {
+		$cover_id = 0;
+	}
+	if ( ! $cover_id && '' !== $cover_url ) {
+		$cover_id = (int) attachment_url_to_postid( $cover_url );
+	}
+	if ( '' === $cover_url ) {
+		$cover_id = 0;
+	}
+	$write( 'video_cover', $cover_url );
+	$write( 'video_cover_id', $cover_id );
+
+	$write( 'video_chapters', sanitize_textarea_field( $get( 'video_chapters' ) ) );
+	$write( 'video_transcript', sanitize_textarea_field( $get( 'video_transcript' ) ) );
+
+	/* ── صوت ── */
+	$voice_url = esc_url_raw( $get( 'voice_url' ), [ 'http', 'https' ] );
+	[ $a_length ] = hodima_media_attachment_info( $voice_url );
+
 	$write( 'voice_url', $voice_url );
-	$write( 'voice_duration', hook_sanitize_duration( $post( 'hook_voice_duration' ) ) );
+	$write( 'voice_title', sanitize_text_field( $get( 'voice_title' ) ) );
+	$write( 'voice_transcript', sanitize_textarea_field( $get( 'voice_transcript' ) ) );
 
 	/*
-	 * تاریخ انتشار ویدیو و صوت (uploadDate در اسکیما).
-	 *
-	 * فرم قبلا این تاریخ را نمی‌نوشت. اسکیما برای نوشته‌ها به تاریخ *آخرین
-	 * ویرایش* برمی‌گشت (هر ویرایش متن = ویدیوی «تازه آپلودشده») و برای
-	 * دسته‌ها به «همین الان» — یعنی در هر بازدید یک تاریخ جدید. حالا
-	 * تاریخ فقط وقتی ثبت می‌شود که آدرس فایل *واقعا* عوض شود.
+	 * مدت: خالی + فایل کتابخانه = از اطلاعات فایل. نامعتبر («۵ دقیقه») دیگر
+	 * بی‌صدا پاک نمی‌شود: مقدار قبلی می‌ماند و پیام داده می‌شود.
+	 */
+	foreach ( [ 'video' => [ $video_url, $v_length, 'ویدیو' ], 'voice' => [ $voice_url, $a_length, 'پادکست' ] ] as $kind => [ $url, $length, $label ] ) {
+		$raw   = $get( "{$kind}_duration" );
+		$clean = hodima_media_sanitize_duration( $raw );
+
+		if ( '' !== $raw && '' === $clean ) {
+			$errors[] = sprintf( 'مدت %1$s («%2$s») قابل فهم نبود؛ مقدار قبلی نگه داشته شد. قالب درست: 2:35 یا 1:05:20.', $label, $raw );
+			continue;
+		}
+		if ( '' === $clean && '' !== $url && $length > 0 ) {
+			$clean = hodima_media_clock( $length );
+		}
+		$write( "{$kind}_duration", '' === $url ? '' : $clean );
+	}
+
+	/*
+	 * تاریخ انتشار ویدیو و صوت (uploadDate): فقط وقتی آدرس فایل *واقعا*
+	 * عوض شود ثبت می‌شود؛ ویرایش متن، ویدیو را «تازه» نمی‌کند.
 	 */
 	foreach ( [ 'video' => $video_url, 'voice' => $voice_url ] as $kind => $url ) {
-
 		if ( '' === $url ) {
 			$write( "{$kind}_date", '' );
-		} elseif ( $url !== (string) $before[ "{$kind}_url" ] || '' === (string) $before[ "{$kind}_date" ] ) {
+		} elseif ( $url !== (string) ( $before[ "{$kind}_url" ] ?? '' ) || '' === (string) ( $before[ "{$kind}_date" ] ?? '' ) ) {
 			$write( "{$kind}_date", gmdate( 'c' ) );
 		}
 	}
 
+	/* ── سوالات متداول (به ترتیب فرم) ── */
 	$faq = [];
-	foreach ( (array) ( $_POST['hook_faq'] ?? [] ) as $item ) {
+	foreach ( (array) ( $in['faq'] ?? [] ) as $item ) {
 		if ( ! is_array( $item ) ) {
 			continue;
 		}
-		$item     = wp_unslash( $item );
 		$question = sanitize_text_field( (string) ( $item['q'] ?? '' ) );
 		$answer   = wp_kses_post( (string) ( $item['a'] ?? '' ) );
 		if ( '' !== $question && '' !== trim( wp_strip_all_tags( $answer ) ) ) {
@@ -352,11 +554,12 @@ function hook_save_media_fields_core( int $object_id, string $context ): void {
 	}
 	$write( 'faq', $faq );
 
-	hook_get_media_data( $object_id, $context, true );
-}
+	hodima_media_get_data( $object_id, $context, true );
 
-/** «۲:۳۵» → «2:35»؛ مقدار نامعتبر → رشته خالی. */
-function hook_sanitize_duration( string $value ): string {
-	$value = trim( hook_normalize_digits( $value ) );
-	return ( '' !== hook_format_duration_iso( $value ) ) ? $value : '';
+	// پیام بعد از بارگذاری دوباره (ویرایشگر کلاسیک و دسته؛ ویرایشگر بلوکی همان پیام را زنده زیر فیلد نشان می‌دهد)
+	if ( $errors && function_exists( 'hodima_admin_flash' ) ) {
+		foreach ( $errors as $error ) {
+			hodima_admin_flash( $error, 'warning' );
+		}
+	}
 }

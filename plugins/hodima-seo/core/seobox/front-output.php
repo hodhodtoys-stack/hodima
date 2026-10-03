@@ -364,6 +364,26 @@ function seobox_output_front_meta() {
         }
     }
 
+    /*
+     * تصویر و عنوان شبکه‌های اجتماعی برای افزونه‌های دیگر (مثلا Discover
+     * سیستم رسانه: تصویر بزرگ ۱۶:۹ و «عنوان Discover» برای نوشته‌ها).
+     * <title> صفحه دست نمی‌خورد؛ فقط og:title و twitter:title.
+     */
+    $social_title = $title;
+    if ($post_id) {
+        $social_title = (string) apply_filters('hodima_seobox_social_title', $title, (int) $post_id);
+        $og_image     = apply_filters('hodima_seobox_og_image', [
+            'url' => (string) $img_url, 'width' => $img_width, 'height' => $img_height, 'type' => (string) $img_type, 'alt' => (string) $img_alt,
+        ], (int) $post_id);
+        if (is_array($og_image) && !empty($og_image['url'])) {
+            $img_url    = (string) $og_image['url'];
+            $img_width  = $og_image['width'] ?? '';
+            $img_height = $og_image['height'] ?? '';
+            $img_type   = (string) ($og_image['type'] ?? '');
+            $img_alt    = (string) ($og_image['alt'] ?? '');
+        }
+    }
+
     $updated_time = '';
     $published_time = '';
     if ($post_id) {
@@ -407,8 +427,10 @@ function seobox_output_front_meta() {
 
     $video_url = '';
     if ($post_id) {
-        if (function_exists('hook_get_media_data')) {
-            $media_data = hook_get_media_data($post_id, 'post');
+        // نام جدید سیستم رسانه (Hodima Media 1.2+)، با فالبک نام قدیمی
+        $media_get = function_exists('hodima_media_get_data') ? 'hodima_media_get_data' : (function_exists('hook_get_media_data') ? 'hook_get_media_data' : '');
+        if ($media_get !== '') {
+            $media_data = $media_get((int) $post_id, 'post');
             if (!empty($media_data['video_url'])) {
                 $video_url = $media_data['video_url'];
             }
@@ -452,7 +474,7 @@ function seobox_output_front_meta() {
 
     echo '<meta property="og:locale" content="' . esc_attr($locale) . '">' . "\n";
     echo '<meta property="og:type" content="' . esc_attr($og_type) . '">' . "\n";
-    echo '<meta property="og:title" content="' . esc_attr($title) . '">' . "\n";
+    echo '<meta property="og:title" content="' . esc_attr($social_title) . '">' . "\n";
     if ($social_desc !== '') echo '<meta property="og:description" content="' . esc_attr($social_desc) . '">' . "\n";
     if ($og_url !== '') echo '<meta property="og:url" content="' . esc_url($og_url) . '">' . "\n";
     echo '<meta property="og:site_name" content="' . esc_attr($site_name) . '">' . "\n";
@@ -505,7 +527,7 @@ function seobox_output_front_meta() {
      * کارت نامعتبر می‌شد. summary_large_image همیشه کار می‌کند.
      */
     echo '<meta name="twitter:card" content="summary_large_image">' . "\n";
-    echo '<meta name="twitter:title" content="' . esc_attr($title) . '">' . "\n";
+    echo '<meta name="twitter:title" content="' . esc_attr($social_title) . '">' . "\n";
     if ($social_desc !== '') echo '<meta name="twitter:description" content="' . esc_attr($social_desc) . '">' . "\n";
     if ($img_url) echo '<meta name="twitter:image" content="' . esc_url($img_url) . '">' . "\n";
 

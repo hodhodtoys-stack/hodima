@@ -62,7 +62,9 @@ function hook_render_blog_schema() {
         $image_url = get_the_post_thumbnail_url($post_id, 'full');
     }
 
-    $media_data = function_exists('hook_get_media_data') ? hook_get_media_data($post_id, 'post') : array();
+    // نام جدید سیستم رسانه (Hodima Media 1.2+)، با فالبک نام قدیمی
+    $media_data = function_exists('hodima_media_get_data') ? hodima_media_get_data((int) $post_id, 'post')
+        : ( function_exists('hook_get_media_data') ? hook_get_media_data($post_id, 'post') : array() );
 
     // گوگل هدلاین بیش از ۱۱۰ کاراکتر را در سرچ کنسول به عنوان خطا/هشدار علامت می‌زند؛
     // فیلد name کامل باقی می‌ماند، فقط headline کوتاه می‌شود.
@@ -115,19 +117,21 @@ function hook_render_blog_schema() {
         )
     );
 
-    // افزودن اطلاعات دیسکاور و هوش مصنوعی در صورت وجود
+    /*
+     * عنوان Discover: «عنوان جایگزین» مقاله (alternativeHeadline؛ ویژگی
+     * درست CreativeWork). قبلا alternateName بود که یعنی «نام دیگر» مقاله.
+     * خلاصه هوش مصنوعی (abstract) حذف شد — آن بخش از سایت برداشته شده.
+     */
     if ( ! empty( $media_data['discover_title'] ) ) {
-        $blog_posting['alternateName'] = wp_strip_all_tags( $media_data['discover_title'] );
-    }
-
-    if ( ! empty( $media_data['ai_summary'] ) ) {
-        $blog_posting['abstract'] = wp_strip_all_tags( $media_data['ai_summary'] );
+        $blog_posting['alternativeHeadline'] = wp_strip_all_tags( $media_data['discover_title'] );
     }
 
     if ( ! empty( $media_data['key_entities'] ) ) {
         $about_entities = array();
-        // جدا کردن کلمات با ویرگول انگلیسی یا فارسی
-        $entities_array = explode( ',', str_replace( '،', ',', $media_data['key_entities'] ) );
+        // جدا کردن با ویرگول انگلیسی/فارسی، نقطه‌ویرگول و خط جدید (همان قانون سیستم رسانه)
+        $entities_array = function_exists( 'hodima_media_parse_entities' )
+            ? hodima_media_parse_entities( $media_data['key_entities'] )
+            : explode( ',', str_replace( '،', ',', $media_data['key_entities'] ) );
         foreach ( $entities_array as $entity ) {
             $entity = trim( $entity );
             if ( ! empty( $entity ) ) {
@@ -145,6 +149,26 @@ function hook_render_blog_schema() {
     if ( null !== $image_size ) {
         $blog_posting['image']['width']  = $image_size[0];
         $blog_posting['image']['height'] = $image_size[1];
+    }
+
+    /*
+     * Google Discover / نتایج مقاله: گوگل تصویر با سه نسبت ۱۶:۹، ۴:۳ و ۱:۱
+     * (عرض ۱۲۰۰) را توصیه می‌کند. سیستم رسانه این برش‌ها را هنگام ذخیره
+     * نوشته از «تصویر Discover» (یا تصویر شاخص) می‌سازد. #primaryimage همان
+     * اول فهرست می‌ماند (نود صفحه به آن ارجاع می‌دهد).
+     */
+    if ( function_exists( 'hodima_media_discover_images' ) ) {
+        // همان تصویر اصلی (#primaryimage) دوباره اضافه نشود
+        $discover_images = array_values( array_filter(
+            hodima_media_discover_images( (int) $post_id ),
+            static fn( array $img ): bool => $img['url'] !== $image_url
+        ) );
+        if ( [] !== $discover_images ) {
+            $blog_posting['image'] = array_merge( [ $blog_posting['image'] ], array_map(
+                static fn( array $img ): array => [ '@type' => 'ImageObject', 'url' => $img['url'], 'width' => $img['width'], 'height' => $img['height'] ],
+                $discover_images
+            ) );
+        }
     }
 
     // تعداد کلمات، بخش (دسته‌ها) و کلیدواژه‌ها (برچسب‌ها) — ویژگی‌های پیشنهادی Article

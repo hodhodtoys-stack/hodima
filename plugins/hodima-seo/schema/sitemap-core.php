@@ -157,6 +157,39 @@ function hodima_sitemap_absolute_url( string $url ): string {
 }
 
 /**
+ * ویدیوی سیستم رسانه برای سایت‌مپ، از همان سازنده واحد (hodima_media_video).
+ *
+ * @return array|null|false آرایه = ورودی سایت‌مپ؛ null = ویدیو ندارد یا سیستم
+ *   رسانه برای این صفحه خاموش است؛ false = Hodima Media قدیمی یا داده خیلی
+ *   قدیمی «_hod_video_url» (مسیر قبلی همین فایل).
+ */
+function hodima_sitemap_media_video( int $object_id, string $context, string $title ): array|null|false {
+
+    if ( ! function_exists( 'hodima_media_video' ) ) {
+        return false;
+    }
+
+    $legacy = 'term' === $context ? get_term_meta( $object_id, '_hod_video_url', true ) : get_post_meta( $object_id, '_hod_video_url', true );
+    if ( ! empty( $legacy ) ) {
+        return false;
+    }
+
+    $video = hodima_media_video( $object_id, $context );
+
+    if ( null === $video || ! $video['enabled'] ) {
+        return null;
+    }
+
+    return [
+        'url'      => hodima_sitemap_clean_url( $video['url'] ),
+        'title'    => '' !== $video['title'] ? $video['title'] : $title,
+        'thumb'    => hodima_sitemap_clean_url( (string) ( $video['cover']['url'] ?? '' ) ),
+        'duration' => $video['seconds'],
+        'date'     => $video['date'],
+    ];
+}
+
+/**
  * برچسب مکان ویدیو: فایل مستقیم → video:content_loc، صفحه آپارات/یوتیوب →
  * video:player_loc با آدرس *پخش‌کننده* (hodima_video_player_url در Core).
  *
@@ -325,39 +358,51 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
             }
         }
 
-        $v_url      = get_post_meta( $object_id, '_hod_video_url', true ) ?: get_post_meta( $object_id, '_hook_video_url', true );
-        $v_thumb    = get_post_meta( $object_id, '_hod_video_thumbnail', true ) ?: get_post_meta( $object_id, '_hook_video_thumb', true );
-        $v_title    = get_post_meta( $object_id, '_hod_video_title', true ) ?: get_post_meta( $object_id, '_hook_video_title', true );
-        $v_duration = get_post_meta( $object_id, '_hod_video_duration', true ) ?: get_post_meta( $object_id, '_hook_video_duration', true );
-        $v_date     = get_post_meta( $object_id, '_hod_video_date', true ) ?: get_post_meta( $object_id, '_hook_video_date', true );
-        
         /*
-         * ویدیوی سیستم رسانه: عنوان، مدت، کاور و تاریخ خودش.
-         * باگ قبلی: hook_get_media_data( $id, $post_type ) — زمینه باید «post»
-         * باشد نه نوع نوشته («product»)؛ برای محصول کلیدها با پیشوند ترم
-         * خوانده می‌شد و ویدیو پیدا نمی‌شد. عنوان/مدت/تاریخ هم خوانده نمی‌شد.
+         * ویدیوی سیستم رسانه از همان سازنده واحد اسکیما (Hodima Media 1.2+):
+         * کاور، عنوان، مدت و تاریخ یکسان با VideoObject صفحه، و فقط وقتی
+         * سیستم رسانه برای این صفحه روشن است (ویدیوی خاموش روی صفحه نیست).
+         * false = Hodima Media قدیمی یا داده خیلی قدیمی «_hod_video_*» → مسیر قبلی.
          */
-        if ( function_exists('hook_get_media_data') ) {
-            $media = hook_get_media_data( (int) $object_id, 'post' );
-            if ( empty($v_url) && !empty($media['video_url']) ) {
-                $v_url = $media['video_url'];
-            }
-            if ( $v_url && $v_url === ($media['video_url'] ?? '') ) {
-                if (empty($v_thumb) && !empty($media['video_thumb'])) $v_thumb = $media['video_thumb'];
-                if (empty($v_title) && !empty($media['video_title'])) $v_title = $media['video_title'];
-                if (empty($v_duration) && !empty($media['video_duration'])) $v_duration = $media['video_duration'];
-                if (empty($v_date) && !empty($media['video_date'])) $v_date = $media['video_date'];
-            }
-        }
+        $media_entry = hodima_sitemap_media_video( (int) $object_id, 'post', (string) $title );
+
+        if ( is_array( $media_entry ) ) {
+            $data['videos'][] = $media_entry;
+        } elseif ( false === $media_entry ) {
+            $v_url      = get_post_meta( $object_id, '_hod_video_url', true ) ?: get_post_meta( $object_id, '_hook_video_url', true );
+            $v_thumb    = get_post_meta( $object_id, '_hod_video_thumbnail', true ) ?: get_post_meta( $object_id, '_hook_video_thumb', true );
+            $v_title    = get_post_meta( $object_id, '_hod_video_title', true ) ?: get_post_meta( $object_id, '_hook_video_title', true );
+            $v_duration = get_post_meta( $object_id, '_hod_video_duration', true ) ?: get_post_meta( $object_id, '_hook_video_duration', true );
+            $v_date     = get_post_meta( $object_id, '_hod_video_date', true ) ?: get_post_meta( $object_id, '_hook_video_date', true );
         
-        if ( $v_url ) {
-            $data['videos'][] = [
-                'url'      => hodima_sitemap_clean_url($v_url),
-                'title'    => $v_title ?: $title,
-                'thumb'    => hodima_sitemap_clean_url($v_thumb),
-                'duration' => hodima_sitemap_duration_seconds($v_duration),
-                'date'     => hodima_sitemap_normalize_iso_date($v_date, $object_id)
-            ];
+            /*
+             * ویدیوی سیستم رسانه: عنوان، مدت، کاور و تاریخ خودش.
+             * باگ قبلی: hook_get_media_data( $id, $post_type ) — زمینه باید «post»
+             * باشد نه نوع نوشته («product»)؛ برای محصول کلیدها با پیشوند ترم
+             * خوانده می‌شد و ویدیو پیدا نمی‌شد. عنوان/مدت/تاریخ هم خوانده نمی‌شد.
+             */
+            if ( function_exists('hook_get_media_data') ) {
+                $media = hook_get_media_data( (int) $object_id, 'post' );
+                if ( empty($v_url) && !empty($media['video_url']) ) {
+                    $v_url = $media['video_url'];
+                }
+                if ( $v_url && $v_url === ($media['video_url'] ?? '') ) {
+                    if (empty($v_thumb) && !empty($media['video_thumb'])) $v_thumb = $media['video_thumb'];
+                    if (empty($v_title) && !empty($media['video_title'])) $v_title = $media['video_title'];
+                    if (empty($v_duration) && !empty($media['video_duration'])) $v_duration = $media['video_duration'];
+                    if (empty($v_date) && !empty($media['video_date'])) $v_date = $media['video_date'];
+                }
+            }
+        
+            if ( $v_url ) {
+                $data['videos'][] = [
+                    'url'      => hodima_sitemap_clean_url($v_url),
+                    'title'    => $v_title ?: $title,
+                    'thumb'    => hodima_sitemap_clean_url($v_thumb),
+                    'duration' => hodima_sitemap_duration_seconds($v_duration),
+                    'date'     => hodima_sitemap_normalize_iso_date($v_date, $object_id)
+                ];
+            }
         }
 
     } else {
@@ -372,39 +417,45 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
                 if ( $img_url ) $data['images'][] = $img_url;
             }
 
-            $v_url      = get_term_meta( $object_id, '_hod_video_url', true ) ?: get_term_meta( $object_id, '_hook_video_url', true );
-            $v_thumb    = get_term_meta( $object_id, '_hod_video_thumbnail', true ) ?: get_term_meta( $object_id, '_hook_video_thumb', true );
-            $v_title    = get_term_meta( $object_id, '_hod_video_title', true ) ?: get_term_meta( $object_id, '_hook_video_title', true );
-            $v_duration = get_term_meta( $object_id, '_hod_video_duration', true ) ?: get_term_meta( $object_id, '_hook_video_duration', true );
-            $v_date     = get_term_meta( $object_id, '_hod_video_date', true ) ?: get_term_meta( $object_id, '_hook_video_date', true );
+            $media_entry = hodima_sitemap_media_video( (int) $object_id, 'term', (string) $title );
 
-            // این بخش عیناً معادل fallback موجود برای پست‌ها است که برای ترم‌ها اصلاً
-            // وجود نداشت — همان چیزی که باعث می‌شد ویدیوی دسته‌بندی خوانده نشود
-            // در حالی که همین تابع برای محصولات (پست‌ها) کاملاً درست کار می‌کرد.
-            if ( function_exists('hook_get_media_data') ) {
-                $media = hook_get_media_data( (int) $object_id, 'term' );
-                if ( empty($v_url) && !empty($media['video_url']) ) {
-                    $v_url = $media['video_url'];
-                }
-                if ( $v_url && $v_url === ($media['video_url'] ?? '') ) {
-                    if (empty($v_thumb) && !empty($media['video_thumb'])) $v_thumb = $media['video_thumb'];
-                    if (empty($v_title) && !empty($media['video_title'])) $v_title = $media['video_title'];
-                    if (empty($v_duration) && !empty($media['video_duration'])) $v_duration = $media['video_duration'];
-                    // همان تاریخ پایدار اسکیمای سیستم رسانه (uploadDate)؛ قبلا تاریخ آخرین
-                    // محتوای دسته جایش می‌رفت که با هر ویرایش محصولی عوض می‌شد
-                    if (empty($v_date) && function_exists('hook_media_stable_date')) $v_date = hook_media_stable_date( $media, 'video', (int) $object_id, 'term' );
-                }
-            }
+            if ( is_array( $media_entry ) ) {
+                $data['videos'][] = $media_entry;
+            } elseif ( false === $media_entry ) {
+                $v_url      = get_term_meta( $object_id, '_hod_video_url', true ) ?: get_term_meta( $object_id, '_hook_video_url', true );
+                $v_thumb    = get_term_meta( $object_id, '_hod_video_thumbnail', true ) ?: get_term_meta( $object_id, '_hook_video_thumb', true );
+                $v_title    = get_term_meta( $object_id, '_hod_video_title', true ) ?: get_term_meta( $object_id, '_hook_video_title', true );
+                $v_duration = get_term_meta( $object_id, '_hod_video_duration', true ) ?: get_term_meta( $object_id, '_hook_video_duration', true );
+                $v_date     = get_term_meta( $object_id, '_hod_video_date', true ) ?: get_term_meta( $object_id, '_hook_video_date', true );
 
-            if ( $v_url ) {
-                $data['videos'][] = [
-                    'url'      => hodima_sitemap_clean_url($v_url),
-                    'title'    => $v_title ?: $title,
-                    'thumb'    => hodima_sitemap_clean_url($v_thumb),
-                    'duration' => hodima_sitemap_duration_seconds($v_duration),
-                    // بدون تاریخ ثبت‌شده، خالی (اختیاری در استاندارد) — نه «همین الان»
-                    'date'     => '' !== trim( (string) $v_date ) ? hodima_sitemap_normalize_iso_date($v_date, 0) : ''
-                ];
+                // این بخش عیناً معادل fallback موجود برای پست‌ها است که برای ترم‌ها اصلاً
+                // وجود نداشت — همان چیزی که باعث می‌شد ویدیوی دسته‌بندی خوانده نشود
+                // در حالی که همین تابع برای محصولات (پست‌ها) کاملاً درست کار می‌کرد.
+                if ( function_exists('hook_get_media_data') ) {
+                    $media = hook_get_media_data( (int) $object_id, 'term' );
+                    if ( empty($v_url) && !empty($media['video_url']) ) {
+                        $v_url = $media['video_url'];
+                    }
+                    if ( $v_url && $v_url === ($media['video_url'] ?? '') ) {
+                        if (empty($v_thumb) && !empty($media['video_thumb'])) $v_thumb = $media['video_thumb'];
+                        if (empty($v_title) && !empty($media['video_title'])) $v_title = $media['video_title'];
+                        if (empty($v_duration) && !empty($media['video_duration'])) $v_duration = $media['video_duration'];
+                        // همان تاریخ پایدار اسکیمای سیستم رسانه (uploadDate)؛ قبلا تاریخ آخرین
+                        // محتوای دسته جایش می‌رفت که با هر ویرایش محصولی عوض می‌شد
+                        if (empty($v_date) && function_exists('hook_media_stable_date')) $v_date = hook_media_stable_date( $media, 'video', (int) $object_id, 'term' );
+                    }
+                }
+
+                if ( $v_url ) {
+                    $data['videos'][] = [
+                        'url'      => hodima_sitemap_clean_url($v_url),
+                        'title'    => $v_title ?: $title,
+                        'thumb'    => hodima_sitemap_clean_url($v_thumb),
+                        'duration' => hodima_sitemap_duration_seconds($v_duration),
+                        // بدون تاریخ ثبت‌شده، خالی (اختیاری در استاندارد) — نه «همین الان»
+                        'date'     => '' !== trim( (string) $v_date ) ? hodima_sitemap_normalize_iso_date($v_date, 0) : ''
+                    ];
+                }
             }
         }
     }

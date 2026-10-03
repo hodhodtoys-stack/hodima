@@ -369,8 +369,16 @@ function render_modules_page( string $plugin ): void {
 
 						<p class="hodima-card__desc"><?php echo esc_html( $module->description ); ?></p>
 
+						<?php
+						/*
+						 * هشدار «اثر خاموش کردن» است، نه وضعیت فعلی. قبلا بدون هیچ
+						 * توضیحی و همیشه با رنگ هشدار نمایش داده می‌شد؛ روی ماژول روشن
+						 * طوری خوانده می‌شد که انگار همین الان چیزی کار نمی‌کند.
+						 * حالا با «اگر خاموش شود:» و روی ماژول روشن کم‌رنگ (admin-hub.css).
+						 */
+						?>
 						<?php if ( '' !== $module->warning ) : ?>
-							<p class="hodima-module__warning"><?php echo esc_html( $module->warning ); ?></p>
+							<p class="hodima-module__warning"><strong>اگر خاموش شود:</strong> <?php echo esc_html( $module->warning ); ?></p>
 						<?php endif; ?>
 
 						<?php if ( $recommends ) : ?>

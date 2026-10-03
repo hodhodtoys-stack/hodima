@@ -1,23 +1,32 @@
 <?php
 /**
- * Main Loader: hodima Media System (Hook Structure)
- * File: media-init.php
+ * Main Loader: Hodima Media System
+ * Path: media-system/media-init.php
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-    exit; // جلوگیری از دسترسی مستقیم
-}
+declare(strict_types=1);
 
-// 1. بارگذاری توابع کمکی و هسته سیستم (آپدیت شده به ساختار جدید)
+defined( 'ABSPATH' ) || exit;
+
+// ۱. داده، تبدیل‌ها و قرارداد عمومی
 require_once __DIR__ . '/media-helpers.php';
 
-// 2. بارگذاری رابط کاربری پنل مدیریت (متاباکس‌ها و ذخیره‌سازی اطلاعات)
+// ۲. ویدیوی یکسان‌شده و VideoObject واحد (پخش‌کننده، اسکیما، سایت‌مپ)
+require_once __DIR__ . '/media-video.php';
+
+// ۳. پیشخوان: کادر «تنظیمات رسانه» و ذخیره
 if ( is_admin() ) {
-    require_once __DIR__ . '/media-admin.php';
+	require_once __DIR__ . '/media-admin.php';
 }
 
-// 3. بارگذاری شورت‌کدهای هوشمند رسانه (ویدیو، پادکست، FAQ و معرفی)
+// ۴. شورت‌کدها (ویدیو، پادکست، FAQ، معرفی)
 require_once __DIR__ . '/media-shortcodes.php';
 
-// 4. بارگذاری سیستم خودکار اسکیمای سئو (تولید JSON-LD بر اساس متادیتا)
+// ۵. اسکیما (JSON-LD) در گراف واحد صفحه
 require_once __DIR__ . '/media-schema.php';
+
+// ۶. Google Discover برای نوشته‌ها: عنوان/تصویر شبکه‌های اجتماعی، برش‌های تصویر، فید
+require_once __DIR__ . '/media-discover.php';
+
+// ۷. نام‌های قدیمی hook_* (فقط اگر تعریف نشده باشند)
+require_once __DIR__ . '/media-legacy.php';

@@ -1,25 +1,50 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) exit;
+/**
+ * [hook_faq id="" context=""]
+ */
 
-add_shortcode( 'hook_faq', 'hook_render_shortcode_faq' );
-function hook_render_shortcode_faq( $atts ) {
-    if ( is_admin() && ! wp_doing_ajax() ) return ''; 
-    list( $object_id, $context ) = hook_get_shortcode_context( $atts );
-    if ( ! $object_id || ! $context ) return ''; 
+declare(strict_types=1);
 
-    $data = hook_get_media_data( $object_id, $context );
-    if ( empty( $data['enabled'] ) || $data['enabled'] !== 'yes' || empty( $data['faq'] ) || ! is_array( $data['faq'] ) ) return '';
+defined( 'ABSPATH' ) || exit;
 
-    hook_enqueue_media_assets();
+add_shortcode( 'hook_faq', 'hodima_media_shortcode_faq' );
 
-    $html = '<div class="hook-faq">';
-    foreach ( $data['faq'] as $f ) {
-        if ( empty( $f['q'] ) ) continue;
-        $html .= sprintf(
-            '<details class="hook-faq-item"><summary class="hook-faq-summary">%s</summary><div class="hook-faq-content">%s</div></details>',
-            esc_html( $f['q'] ), wpautop( wp_kses_post( $f['a'] ?? '' ) )
-        );
-    }
-    $html .= '</div>';
-    return $html;
+function hodima_media_shortcode_faq( mixed $atts ): string {
+
+	if ( is_admin() && ! wp_doing_ajax() ) {
+		return '';
+	}
+
+	[ $object_id, $context ] = hodima_media_shortcode_context( $atts );
+
+	if ( ! $object_id ) {
+		return '';
+	}
+
+	$data = hodima_media_get_data( $object_id, $context );
+
+	if ( 'yes' !== ( $data['enabled'] ?? '' ) || ! $data['faq'] ) {
+		return '';
+	}
+
+	$items = '';
+
+	foreach ( $data['faq'] as $item ) {
+		if ( ! is_array( $item ) || empty( $item['q'] ) ) {
+			continue;
+		}
+		$items .= sprintf(
+			'<details class="hook-faq-item"><summary class="hook-faq-summary">%s</summary><div class="hook-faq-content">%s</div></details>',
+			esc_html( (string) $item['q'] ),
+			wpautop( wp_kses_post( (string) ( $item['a'] ?? '' ) ) )
+		);
+	}
+
+	if ( '' === $items ) {
+		return '';
+	}
+
+	hodima_media_enqueue_assets();
+
+	return '<div class="hook-faq">' . $items . '</div>';
 }

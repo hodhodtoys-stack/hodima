@@ -175,12 +175,26 @@ function hodima_category_schema_fields(): ?array {
         $collection_page['mainEntity']['itemListElement'] = $list_items;
     }
 
-    // --- ویدیوی اختصاصی دسته‌بندی (در صورت وجود در term meta) ---
-    $video_url = get_term_meta( $term->term_id, '_hod_video_url', true ) ?: get_term_meta( $term->term_id, '_hook_video_url', true );
+    /*
+     * --- ویدیوی اختصاصی دسته‌بندی ---
+     *
+     * باگ رفع‌شده: این بخش دنبال متای «_hook_video_url» می‌گشت، ولی سیستم
+     * رسانه ویدیوی دسته را در «hook_video_url» (بدون زیرخط اول) ذخیره
+     * می‌کند؛ پس هرگز پیدا نمی‌شد و صفحه دسته هیچ ارجاعی به ویدیوی خودش
+     * نداشت. حالا اگر سیستم رسانه برای این دسته VideoObject «#video»
+     * می‌سازد (media-system/media-schema.php، با همان سازنده واحد)، صفحه
+     * دسته با subjectOf به همان ارجاع می‌دهد؛ ویدیوی دوم ساخته نمی‌شود.
+     * کد پایین فقط برای داده خیلی قدیمی «_hod_video_*» می‌ماند.
+     */
+    $media_video = function_exists( 'hodima_media_video_node' ) ? hodima_media_video_node( (int) $term->term_id, 'term' ) : null;
 
-    if ( ! empty( $video_url ) ) {
-        $video_thumb = get_term_meta( $term->term_id, '_hod_video_thumbnail', true ) ?: get_term_meta( $term->term_id, '_hook_video_thumb', true );
-        $video_date  = get_term_meta( $term->term_id, '_hod_video_date', true ) ?: get_term_meta( $term->term_id, '_hook_video_date', true );
+    $video_url = null !== $media_video ? '' : get_term_meta( $term->term_id, '_hod_video_url', true );
+
+    if ( null !== $media_video ) {
+        $collection_page['subjectOf'] = [ '@id' => $media_video['@id'] ];
+    } elseif ( ! empty( $video_url ) ) {
+        $video_thumb = get_term_meta( $term->term_id, '_hod_video_thumbnail', true );
+        $video_date  = get_term_meta( $term->term_id, '_hod_video_date', true );
 
         // دو باگ رفع‌شده:
         // ۱) date('c') از تایم‌زون سرور استفاده می‌کرد نه تایم‌زون واقعی سایت

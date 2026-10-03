@@ -1,104 +1,186 @@
 <?php
 /**
- * [hook_video id="" context="" heading="h2|h3|…|none"]
+ * [hook_video id="" context="" heading="h2|h3|…|none" facade="yes|no"]
+ *
+ * نسخه ۴:
+ *   - آپارات/یوتیوب/ویمئو: پخش‌کننده رسمی از روی آدرس (نه oEmbed وردپرس
+ *     که آپارات را نمی‌شناخت)، با «نما» (facade): تا کلیک نشده فقط کاور و
+ *     دکمه پخش؛ اسکریپت چندصدکیلوبایتی پخش‌کننده فقط بعد از کلیک.
+ *   - ویدیوی عمودی (ریلز/شورتز) و مربع با نسبت درست، نه نوار سیاه بزرگ.
+ *   - کاور سبک: اندازه مناسب صفحه با srcset، نه تصویر اصلی چندمگابایتی.
+ *   - فصل‌های ویدیو (کلیک = پرش به همان زمان) و متن کامل زیر پلیر.
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+declare(strict_types=1);
 
-add_shortcode( 'hook_video', 'hook_render_shortcode_video' );
+defined( 'ABSPATH' ) || exit;
 
-function hook_render_shortcode_video( $atts ) {
+add_shortcode( 'hook_video', 'hodima_media_shortcode_video' );
+
+function hodima_media_shortcode_video( mixed $atts ): string {
 
 	if ( is_admin() && ! wp_doing_ajax() ) {
 		return '';
 	}
 
-	[ $object_id, $context ] = hook_get_shortcode_context( $atts );
+	[ $object_id, $context ] = hodima_media_shortcode_context( $atts );
+	$atts                    = is_array( $atts ) ? $atts : [];
 
-	if ( ! $object_id ) {
+	$video = $object_id ? hodima_media_video( $object_id, $context ) : null;
+
+	if ( null === $video || ! $video['enabled'] ) {
 		return '';
 	}
 
-	$data = hook_get_media_data( $object_id, $context );
+	hodima_media_enqueue_assets();
 
-	if ( 'yes' !== ( $data['enabled'] ?? '' ) || empty( $data['video_url'] ) ) {
-		return '';
-	}
+	$url   = ( is_ssl() && str_starts_with( $video['url'], 'http://' ) ) ? set_url_scheme( $video['url'], 'https' ) : $video['url'];
+	$title = $video['title'];
+	$label = '' !== $title ? $title : 'ویدیو';
 
-	hook_enqueue_media_assets();
+	[ $rw, $rh ] = array_map( 'intval', explode( ':', $video['ratio'] ) );
+	$portrait    = $rh > $rw;
 
-	$url   = esc_url_raw( (string) $data['video_url'] );
-	$url   = ( is_ssl() && str_starts_with( $url, 'http://' ) ) ? set_url_scheme( $url, 'https' ) : $url;
-	$title = (string) ( $data['video_title'] ?? '' );
-	$atts  = (array) $atts;
+	// کاور در اندازه صفحه (نه full): پوستر MP4 و تصویر «نما»
+	$cover = hodima_media_video_cover( $object_id, $context, 'large' );
 
-	if ( hook_is_direct_video_file( $url ) ) {
-
-		// video_thumb در hook_get_media_data به کاور برمی‌گردد
-		$poster = (string) ( $data['video_thumb'] ?? '' );
-		$mime   = wp_check_filetype( (string) wp_parse_url( $url, PHP_URL_PATH ), wp_get_mime_types() )['type'] ?: 'video/mp4';
+	if ( $video['is_file'] ) {
 
 		/*
-		 * preload="none" وقتی کاور هست.
-		 * preload="metadata" برای MP4 که اطلاعاتش (moov) انتهای فایل است،
-		 * مرورگر را وادار می‌کند بخش بزرگی از فایل را قبل از هر کلیک
-		 * دانلود کند — روی هر بازدید صفحه محصول. با کاور، چیزی برای نمایش
-		 * پیش از پخش لازم نیست.
+		 * فایل مستقیم: خود <video> در HTML می‌ماند (گوگل ویدیو را از همین تگ
+		 * پیدا می‌کند). preload="none" با کاور: هیچ بایتی از ویدیو تا کلیک
+		 * دانلود نمی‌شود؛ بدون کاور metadata تا فریم اول نمایش داده شود.
 		 */
 		$media = sprintf(
-			'<video class="hook-video-el" controls playsinline preload="%1$s"%2$s aria-label="%3$s"><source src="%4$s" type="%5$s"><p>مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند. <a href="%4$s">دانلود ویدیو</a></p></video>',
-			'' !== $poster ? 'none' : 'metadata',
-			'' !== $poster ? ' poster="' . esc_url( $poster ) . '"' : '',
-			esc_attr( '' !== $title ? $title : 'ویدیو' ),
+			'<video class="hook-video-el" controls playsinline preload="%1$s"%2$s width="%3$d" height="%4$d" aria-label="%5$s"><source src="%6$s" type="%7$s"><p>مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند. <a href="%6$s">دانلود ویدیو</a></p></video>',
+			null !== $cover ? 'none' : 'metadata',
+			null !== $cover ? ' poster="' . esc_url( set_url_scheme( $cover['url'] ) ) . '"' : '',
+			$rw * 80,
+			$rh * 80,
+			esc_attr( $label ),
 			esc_url( $url ),
-			esc_attr( $mime )
+			esc_attr( $video['mime'] )
 		);
+
+	} elseif ( in_array( $video['provider'], [ 'aparat', 'youtube', 'vimeo' ], true ) ) {
+
+		$media = 'no' === strtolower( (string) ( $atts['facade'] ?? '' ) )
+			? hodima_media_iframe( hodima_media_embed_src( $video, false ), $label )
+			: hodima_media_facade( $video, $cover, $label, $url );
 
 	} else {
 
-		$embed = hook_get_cached_oembed( $url, [ 'width' => 800 ] );
-
-		if ( '' !== $embed ) {
-			$media = '<div class="hook-oembed-container">' . hook_prepare_embed_iframe( $embed, $title ) . '</div>';
-		} else {
-			$media = sprintf( '<a href="%s" target="_blank" rel="noopener noreferrer" class="button">مشاهده ویدیو</a>', esc_url( $url ) );
-		}
+		// سرویس ناشناخته: oEmbed وردپرس (با کش) یا دکمه رفتن به صفحه ویدیو
+		$embed = hodima_media_cached_oembed( $url, [ 'width' => 800 ] );
+		$media = '' !== $embed
+			? '<div class="hook-oembed-container">' . hodima_media_prepare_iframe( $embed, $label ) . '</div>'
+			: sprintf( '<a href="%s" target="_blank" rel="noopener noreferrer" class="button">مشاهده ویدیو</a>', esc_url( $url ) );
 	}
 
 	return sprintf(
-		'<div class="hook-video-wrapper">%s<div class="hook-video-container"><div class="hook-video-inner">%s</div></div></div>',
-		hook_media_heading( $title, $atts['heading'] ?? 'h2' ),
-		$media
+		'<div class="hook-video-wrapper%1$s" style="--hook-video-ratio: %2$d / %3$d">%4$s<div class="hook-video-container"><div class="hook-video-inner">%5$s</div></div>%6$s%7$s</div>',
+		$portrait ? ' hook-video-wrapper--portrait' : '',
+		$rw,
+		$rh,
+		hodima_media_heading( $title, $atts['heading'] ?? 'h2' ),
+		$media,
+		hodima_media_chapters_html( $video['chapters'] ),
+		hodima_media_transcript_html( $video['transcript'], 'متن کامل ویدیو' )
 	);
 }
 
 /**
- * آماده‌سازی iframe آپارات / یوتیوب.
- *
- *   loading="lazy"  — نسخه قبلی iframe را فورا بارگذاری می‌کرد؛ یعنی اسکریپت
- *                     سنگین پلیر آپارات یا یوتیوب (صدها کیلوبایت) روی *هر*
- *                     بازدید صفحه محصول، حتی وقتی ویدیو داخل جعبه جمع‌شده
- *                     توضیحات بود و کاربر هرگز به آن نمی‌رسید.
- *   title           — لازم برای صفحه‌خوان (iframe بدون عنوان خطای دسترسی‌پذیری است)
- *   enablejsapi=1   — بدون آن، دستور توقف یوتیوب از media-style.js (وقتی
- *                     ویدیو از دید خارج می‌شود) بی‌اثر بود
+ * آدرس پخش‌کننده برای iframe.
+ *   autoplay: بعد از کلیک روی «نما» تا کاربر دو بار کلیک نکند.
+ *   enablejsapi=1 (یوتیوب): توقف خودکار وقتی ویدیو از دید خارج می‌شود.
+ * (پارامتر autoplay آپارات مستند رسمی ندارد؛ اگر نادیده گرفته شود کاربر
+ * یک بار دیگر روی پخش‌کننده کلیک می‌کند.)
  */
-function hook_prepare_embed_iframe( string $embed, string $title ): string {
+function hodima_media_embed_src( array $video, bool $autoplay ): string {
 
-	/*
-	 * فقط افزودن ویژگی به خود iframe؛ هیچ چیزی حذف نمی‌شود.
-	 * کد جاسازی آپارات یک قاب دارد که ارتفاعش از padding درون‌خطی یک
-	 * <span> می‌آید؛ حذف style از کل HTML آن قاب را صفر و پلیر را نامرئی
-	 * می‌کرد. اندازه‌دهی با CSS کانتینر انجام می‌شود (مثل نسخه اصلی).
-	 */
-	$attrs = ' loading="lazy" title="' . esc_attr( '' !== $title ? $title : 'ویدیو' ) . '"';
-	$embed = (string) preg_replace( '/<iframe\b(?![^>]*\bloading=)/i', '<iframe' . $attrs, $embed );
+	$args = match ( $video['provider'] ) {
+		'youtube' => [ 'enablejsapi' => 1, 'rel' => 0, 'playsinline' => 1 ] + ( $autoplay ? [ 'autoplay' => 1 ] : [] ),
+		'vimeo'   => $autoplay ? [ 'autoplay' => 1 ] : [],
+		'aparat'  => $autoplay ? [ 'autoplay' => 'true' ] : [],
+		default   => [],
+	};
 
-	return (string) preg_replace_callback(
-		'/(<iframe[^>]+src=")([^"]*(?:youtube\.com|youtube-nocookie\.com)[^"]*)(")/i',
-		static fn( array $m ): string => $m[1] . ( str_contains( $m[2], 'enablejsapi=' ) ? $m[2] : $m[2] . ( str_contains( $m[2], '?' ) ? '&' : '?' ) . 'enablejsapi=1' ) . $m[3],
-		$embed
+	return add_query_arg( $args, $video['player'] );
+}
+
+/** iframe پخش‌کننده (حالت بدون «نما» و داخل noscript). */
+function hodima_media_iframe( string $src, string $label ): string {
+	return sprintf(
+		'<div class="hook-oembed-container"><iframe src="%1$s" title="%2$s" loading="lazy" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>',
+		esc_url( $src ),
+		esc_attr( $label )
 	);
+}
+
+/**
+ * «نما»ی ویدیو: کاور + دکمه پخش. media-style.js با کلیک، iframe را جای
+ * آن می‌گذارد. بدون جاوااسکریپت، لینک به صفحه ویدیو باز می‌شود.
+ */
+function hodima_media_facade( array $video, ?array $cover, string $label, string $watch_url ): string {
+
+	$image = '';
+
+	if ( null !== $cover ) {
+		$image = $cover['id']
+			? (string) wp_get_attachment_image( $cover['id'], 'large', false, [
+				'class'    => 'hook-video-facade__img',
+				'alt'      => '',
+				'loading'  => 'lazy',
+				'decoding' => 'async',
+				'sizes'    => '(max-width: 700px) 100vw, 650px',
+			] )
+			: sprintf( '<img class="hook-video-facade__img" src="%s" alt="" loading="lazy" decoding="async">', esc_url( $cover['url'] ) );
+	}
+
+	$service = [ 'aparat' => 'آپارات', 'youtube' => 'یوتیوب', 'vimeo' => 'ویمئو' ][ $video['provider'] ] ?? '';
+
+	return sprintf(
+		'<div class="hook-video-facade" data-hook-embed="%1$s" data-hook-provider="%2$s" data-hook-title="%3$s">%4$s<a class="hook-video-play" href="%5$s" target="_blank" rel="noopener" aria-label="%6$s"><svg viewBox="0 0 68 48" width="68" height="48" aria-hidden="true" focusable="false"><path class="hook-video-play__bg" d="M66.5 7.7a8.5 8.5 0 0 0-6-6C55.3.3 34 .3 34 .3s-21.3 0-26.5 1.4a8.5 8.5 0 0 0-6 6C.1 12.9.1 24 .1 24s0 11.1 1.4 16.3a8.5 8.5 0 0 0 6 6C12.7 47.7 34 47.7 34 47.7s21.3 0 26.5-1.4a8.5 8.5 0 0 0 6-6C67.9 35.1 67.9 24 67.9 24s0-11.1-1.4-16.3z"/><path class="hook-video-play__icon" d="M27 34V14l18 10z"/></svg></a>%7$s<noscript>%8$s</noscript></div>',
+		esc_url( hodima_media_embed_src( $video, true ) ),
+		esc_attr( $video['provider'] ),
+		esc_attr( $label ),
+		$image,
+		esc_url( $watch_url ),
+		esc_attr( 'پخش ویدیو: ' . $label ),
+		'' !== $service ? '<span class="hook-video-facade__service">' . esc_html( $service ) . '</span>' : '',
+		hodima_media_iframe( hodima_media_embed_src( $video, false ), $label )
+	);
+}
+
+/**
+ * فهرست فصل‌ها: هر دکمه ویدیو را از همان زمان پخش می‌کند (media-style.js).
+ *
+ * @param list<array{start: int, title: string}> $chapters
+ */
+function hodima_media_chapters_html( array $chapters ): string {
+
+	if ( ! $chapters ) {
+		return '';
+	}
+
+	$items = array_map(
+		static fn( array $c ): string => sprintf(
+			'<li><button type="button" class="hook-video-chapter" data-hook-seek="%1$d"><span class="hook-video-chapter__time" dir="ltr">%2$s</span> %3$s</button></li>',
+			$c['start'],
+			esc_html( hodima_media_clock( $c['start'] ) ),
+			esc_html( $c['title'] )
+		),
+		$chapters
+	);
+
+	return '<nav class="hook-video-chapters" aria-label="فصل‌های ویدیو"><ol>' . implode( '', $items ) . '</ol></nav>';
+}
+
+/**
+ * آماده‌سازی iframe کد oEmbed (سرویس‌های ناشناخته): loading="lazy" و
+ * title (صفحه‌خوان). فقط ویژگی اضافه می‌شود؛ چیزی حذف نمی‌شود.
+ */
+function hodima_media_prepare_iframe( string $embed, string $title ): string {
+	$attrs = ' loading="lazy" title="' . esc_attr( '' !== $title ? $title : 'ویدیو' ) . '"';
+	return (string) preg_replace( '/<iframe\b(?![^>]*\bloading=)/i', '<iframe' . $attrs, $embed );
 }

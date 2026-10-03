@@ -247,8 +247,8 @@ function hodima_seo_schema_organization_node(): array {
  */
 function hodima_seo_schema_iso_date( mixed $raw ): string {
 
-	if ( function_exists( 'hook_normalize_iso_date' ) ) {
-		return hook_normalize_iso_date( $raw );
+	if ( function_exists( 'hodima_media_iso_date' ) ) {
+		return hodima_media_iso_date( $raw );
 	}
 
 	$raw = trim( strtr( (string) $raw, [ '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9' ] ) );
@@ -325,8 +325,8 @@ function hodima_seo_schema_video_url( string $url ): array {
 
 	$url = esc_url_raw( (string) preg_replace( '/\s+/', '%20', trim( $url ) ) );
 
-	$is_file = function_exists( 'hook_is_direct_video_file' )
-		? hook_is_direct_video_file( $url )
+	$is_file = function_exists( 'hodima_media_is_direct_video' )
+		? hodima_media_is_direct_video( $url )
 		: 1 === preg_match( '/\.(mp4|m4v|webm|mov|ogv|ogg)$/i', (string) wp_parse_url( $url, PHP_URL_PATH ) );
 
 	if ( $is_file ) {

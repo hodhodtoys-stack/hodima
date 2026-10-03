@@ -2,94 +2,97 @@
 /**
  * Media System — Shortcodes loader
  * Path: media-system/media-shortcodes.php
+ *
+ * نام شورت‌کدها ([hook_video]، [hook_voice]، [hook_faq]، [hook_intro]،
+ * [hook_ai_box]) و کلاس‌های CSS «hook-*» عمدا عوض نشده‌اند: در محتوای
+ * سایت، قالب و CSS سفارشی استفاده شده‌اند.
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+declare(strict_types=1);
 
-add_action( 'wp_enqueue_scripts', 'hook_register_media_assets' );
+defined( 'ABSPATH' ) || exit;
 
-function hook_register_media_assets(): void {
+add_action( 'wp_enqueue_scripts', 'hodima_media_register_assets' );
+
+function hodima_media_register_assets(): void {
 
 	$url = HODIMA_MEDIA_URL . '/media-system';
 
-	// نسخه از زمان تغییر فایل؛ نسخه ثابت «1.0.1» به‌روزرسانی را از مرورگر
-	// و کش لایت‌اسپید پنهان می‌کرد.
-	wp_register_style( 'hook-media-css', $url . '/css/media-style.css', [], hook_media_asset_version( 'css/media-style.css' ) );
-	wp_register_script( 'hook-media-js', $url . '/js/media-style.js', [], hook_media_asset_version( 'js/media-style.js' ), true );
+	wp_register_style( 'hook-media-css', $url . '/css/media-style.css', [], hodima_media_asset_version( 'css/media-style.css' ) );
+	wp_register_script( 'hook-media-js', $url . '/js/media-style.js', [], hodima_media_asset_version( 'js/media-style.js' ), [
+		'in_footer' => true,
+		'strategy'  => 'defer',
+	] );
 
 	/*
-	 * بارگذاری زودهنگام در head برای صفحه‌ای که سیستم رسانه‌اش فعال است.
-	 * بدون این، استایل فقط هنگام اجرای شورت‌کد (وسط body) صف می‌شد و در
-	 * فوتر چاپ می‌شد؛ بلوک ویدیو و FAQ اول بدون استایل نمایش داده و بعد
-	 * جابه‌جا می‌شدند (FOUC و CLS).
+	 * بارگذاری زودهنگام در head برای صفحه‌ای که سیستم رسانه‌اش فعال است؛
+	 * بدون آن استایل فقط هنگام اجرای شورت‌کد (وسط body) صف می‌شد و بلوک‌ها
+	 * اول بی‌استایل نمایش داده و بعد جابه‌جا می‌شدند (CLS).
 	 */
 	$queried = get_queried_object();
-	$id      = 0;
-	$context = '';
 
-	if ( $queried instanceof WP_Post ) {
-		$id      = (int) $queried->ID;
-		$context = 'post';
-	} elseif ( $queried instanceof WP_Term ) {
-		$id      = (int) $queried->term_id;
-		$context = 'term';
-	}
+	[ $id, $context ] = match ( true ) {
+		$queried instanceof WP_Post => [ (int) $queried->ID, 'post' ],
+		$queried instanceof WP_Term => [ (int) $queried->term_id, 'term' ],
+		default                     => [ 0, 'post' ],
+	};
 
-	if ( $id && 'yes' === ( hook_get_media_data( $id, $context )['enabled'] ?? '' ) ) {
-		hook_enqueue_media_assets();
+	if ( $id && hodima_media_is_enabled( $id, $context ) ) {
+		hodima_media_enqueue_assets();
 	}
 }
 
 /** فالبک: شورت‌کد روی صفحه‌ای که در head تشخیص داده نشده بود. */
-function hook_enqueue_media_assets(): void {
+function hodima_media_enqueue_assets(): void {
 	wp_enqueue_style( 'hook-media-css' );
 	wp_enqueue_script( 'hook-media-js' );
 }
 
-/** تشخیص شیء و context شورت‌کد. */
-function hook_get_shortcode_context( $atts ): array {
+/**
+ * تشخیص شیء و context شورت‌کد.
+ *
+ * @return array{0: int, 1: string} [ شناسه (۰ = هیچ), context ]
+ */
+function hodima_media_shortcode_context( mixed $atts ): array {
 
-	$atts      = shortcode_atts( [ 'id' => 0, 'context' => '' ], (array) $atts );
+	$atts      = shortcode_atts( [ 'id' => 0, 'context' => '' ], is_array( $atts ) ? $atts : [] );
 	$object_id = absint( $atts['id'] );
 	$context   = sanitize_key( (string) $atts['context'] );
 
 	if ( ! $object_id ) {
 		$queried = get_queried_object();
 		if ( $queried instanceof WP_Post ) {
-			$object_id = (int) $queried->ID;
-			$context   = 'post';
+			[ $object_id, $context ] = [ (int) $queried->ID, 'post' ];
 		} elseif ( $queried instanceof WP_Term ) {
-			$object_id = (int) $queried->term_id;
-			$context   = 'term';
+			[ $object_id, $context ] = [ (int) $queried->term_id, 'term' ];
 		}
 	}
 
-	if ( $object_id && ! in_array( $context, [ 'post', 'term' ], true ) ) {
-		$context = 'post';
-	}
+	$context = hodima_media_context( $context );
 
-	// بلوک رسانه نوشته رمزدار یا منتشرنشده نباید بدون رمز/دسترسی نمایش
-	// داده شود؛ شناسه دلخواه در شورت‌کد هم نباید آن را دور بزند.
-	if ( $object_id && 'post' === $context && function_exists( 'hodima_post_content_is_visible' )
-		&& ! hodima_post_content_is_visible( $object_id ) ) {
-		return [ 0, '' ];
+	/*
+	 * بلوک رسانه نوشته رمزدار، پیش‌نویس یا خصوصی نباید بدون دسترسی نمایش
+	 * داده شود؛ شناسه دلخواه در شورت‌کد هم نباید آن را دور بزند.
+	 * بدون Hodima Core، حداقل بررسی وردپرس (منتشرشده + بدون رمز) انجام می‌شود.
+	 */
+	if ( $object_id && 'post' === $context ) {
+		$visible = function_exists( 'hodima_post_content_is_visible' )
+			? hodima_post_content_is_visible( $object_id )
+			: ! post_password_required( $object_id ) && ( 'publish' === get_post_status( $object_id ) || current_user_can( 'read_post', $object_id ) );
+		if ( ! $visible ) {
+			return [ 0, 'post' ];
+		}
 	}
 
 	return [ $object_id, $context ];
 }
 
 /** سطح عنوان بلوک رسانه (پیش‌فرض h2؛ «none» یعنی بدون عنوان). */
-function hook_media_heading( string $text, $level = 'h2' ): string {
+function hodima_media_heading( string $text, mixed $level = 'h2' ): string {
 
-	if ( '' === $text ) {
-		return '';
-	}
+	$level = strtolower( is_scalar( $level ) ? (string) $level : 'h2' );
 
-	$level = strtolower( (string) $level );
-
-	if ( 'none' === $level ) {
+	if ( '' === $text || 'none' === $level ) {
 		return '';
 	}
 
@@ -99,7 +102,7 @@ function hook_media_heading( string $text, $level = 'h2' ): string {
 }
 
 /** کد جاسازی با کش (wp_oembed_get در هر بازدید درخواست HTTP می‌زند). */
-function hook_get_cached_oembed( string $url, array $args = [] ): string {
+function hodima_media_cached_oembed( string $url, array $args = [] ): string {
 
 	$cache_key = 'hook_oembed_' . md5( $url . wp_json_encode( $args ) );
 	$cached    = get_transient( $cache_key );
@@ -116,10 +119,22 @@ function hook_get_cached_oembed( string $url, array $args = [] ): string {
 	return $embed;
 }
 
-$hook_shortcodes_dir = __DIR__ . '/shortcodes/';
+/**
+ * «متن کامل» زیر پلیر (ویدیو یا صوت) — برای ناشنوایان، جستجو و
+ * کسی که نمی‌تواند صدا را پخش کند. بسته است تا صفحه را بلند نکند.
+ */
+function hodima_media_transcript_html( string $text, string $label ): string {
 
-require_once $hook_shortcodes_dir . 'video.php';
-require_once $hook_shortcodes_dir . 'voice.php';
-require_once $hook_shortcodes_dir . 'faq.php';
-require_once $hook_shortcodes_dir . 'intro.php';
-require_once $hook_shortcodes_dir . 'ai-box.php';
+	$text = trim( $text );
+
+	return '' === $text ? '' : sprintf(
+		'<details class="hook-media-transcript"><summary>%1$s</summary><div class="hook-media-transcript__text">%2$s</div></details>',
+		esc_html( $label ),
+		wpautop( esc_html( $text ) )
+	);
+}
+
+foreach ( [ 'video', 'voice', 'faq', 'intro', 'ai-box' ] as $hodima_media_shortcode ) {
+	require_once __DIR__ . '/shortcodes/' . $hodima_media_shortcode . '.php';
+}
+unset( $hodima_media_shortcode );

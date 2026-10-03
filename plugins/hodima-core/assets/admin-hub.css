@@ -114,6 +114,7 @@
 	color: var(--hh-accent);
 }
 
+/* اثر خاموش کردن: روی ماژول روشن فقط یک توضیح کم‌رنگ، روی ماژول خاموش هشدار */
 .hodima-module__warning {
 	margin: 0;
 	padding: 0.5rem 0.75rem;
@@ -121,6 +122,11 @@
 	background: color-mix(in srgb, var(--hh-warn) 10%, #ffffff);
 	color: var(--hh-warn);
 	font-size: 0.75rem;
+}
+
+.hodima-module.is-on .hodima-module__warning {
+	background: color-mix(in srgb, var(--hh-secondary) 7%, #ffffff);
+	color: color-mix(in srgb, var(--hh-secondary) 70%, #000000);
 }
 
 .hodima-module__hint {

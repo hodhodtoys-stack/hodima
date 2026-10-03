@@ -617,8 +617,11 @@ function arian_build_homepage_schema_graph() {
                 $video_schema["url"]      = $site_url; 
             }
 
-            if ( !empty($v_dur) && function_exists('hook_format_duration_iso') ) {
-                $video_schema["duration"] = hook_format_duration_iso($v_dur);
+            // نام جدید سیستم رسانه (Hodima Media 1.2+)، با فالبک نام قدیمی
+            $v_iso = function_exists('hodima_media_duration_iso') ? hodima_media_duration_iso($v_dur)
+                : ( function_exists('hook_format_duration_iso') ? hook_format_duration_iso($v_dur) : '' );
+            if ( !empty($v_dur) && '' !== $v_iso ) {
+                $video_schema["duration"] = $v_iso;
             }
 
             $graph[] = $video_schema;
@@ -695,11 +698,18 @@ function arian_add_homepage_schema_extra() {
 
 /**
  * آیا سیستم رسانه برای برگه صفحه اصلی VideoObject می‌سازد؟
+ * Hodima Media 1.2+: همان سازنده واحد (hodima_media_video_node)؛ قبل از آن
  * همان شرط‌های hook_auto_inject_head_schema() و hook_print_schema('video').
  */
 function arian_media_system_owns_front_video(): bool {
 
     $front_id = (int) get_option( 'page_on_front' );
+
+    if ( $front_id > 0 && function_exists( 'hodima_media_video_node' ) && function_exists( 'hodima_media_post_types' ) ) {
+        return in_array( 'page', hodima_media_post_types(), true )
+            && ( ! function_exists( 'hodima_post_content_is_visible' ) || hodima_post_content_is_visible( $front_id ) )
+            && null !== hodima_media_video_node( $front_id, 'post' );
+    }
 
     if ( $front_id <= 0 || ! function_exists( 'hook_get_media_data' ) || ! function_exists( 'hook_print_schema' ) ) {
         return false;

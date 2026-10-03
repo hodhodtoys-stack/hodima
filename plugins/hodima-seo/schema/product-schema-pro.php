@@ -43,7 +43,9 @@ function hook_generate_custom_product_schema() {
     $replace_vars = ['[product_name]' => $name, '[site_name]' => $site_name];
     $final_desc_tpl   = strtr($opt_desc_tpl, $replace_vars);
 
-    $media_data = function_exists('hook_get_media_data') ? hook_get_media_data($product_id, 'post') : array();
+    // نام جدید سیستم رسانه (Hodima Media 1.2+)، با فالبک نام قدیمی
+    $media_data = function_exists('hodima_media_get_data') ? hodima_media_get_data((int) $product_id, 'post')
+        : ( function_exists('hook_get_media_data') ? hook_get_media_data($product_id, 'post') : array() );
 
     // =========================================================================
     // ۱. استخراج مشخصات از کلاس جدول
@@ -315,16 +317,13 @@ function hook_generate_custom_product_schema() {
     /*
      * «سئو مدرن» برای محصولات خاموش است (hook_modern_seo_enabled در
      * media-system/media-helpers.php):
-     *   - خلاصه هوش مصنوعی به انتهای description اضافه می‌شد؛ همان متن
-     *     روی صفحه هم بود و توضیح اسکیما یک رشته الحاقی طولانی می‌شد.
      *   - عنوان Discover به عنوان alternateName (پایین) و موجودیت‌ها به عنوان
      *     مشخصه «مرتبط با» — هر دو کاربرد نادرست آن ویژگی‌ها.
+     *   - خلاصه هوش مصنوعی کلا از سایت حذف شد (دیگر به description اضافه نمی‌شود).
      */
-    $modern_seo = function_exists( 'hook_modern_seo_enabled' ) && hook_modern_seo_enabled( 'post', (int) $product_id );
-
-    if ( $modern_seo && ! empty( $media_data['ai_summary'] ) ) {
-        $schema['description'] .= ' | ' . wp_strip_all_tags( $media_data['ai_summary'] );
-    }
+    $modern_seo = function_exists( 'hodima_media_discover_enabled' )
+        ? hodima_media_discover_enabled( 'post', (int) $product_id )
+        : ( function_exists( 'hook_modern_seo_enabled' ) && hook_modern_seo_enabled( 'post', (int) $product_id ) );
 
     if ( $modern_seo && ! empty( $media_data['key_entities'] ) ) {
         $entities = explode( ',', $media_data['key_entities'] );
@@ -414,7 +413,25 @@ function hook_generate_custom_product_schema() {
         }
     }
 
-    if ( ! empty( $media_data['video_url'] ) ) {
+    /*
+     * ویدیو: سازنده واحد سیستم رسانه (media-system/media-video.php) — همان
+     * کاور، تاریخ، پخش‌کننده، فصل‌ها و متن کامل که روی صفحه نمایش داده
+     * می‌شود. فقط وقتی سیستم رسانه برای محصول روشن است؛ قبلا ویدیوی محصولی
+     * که «فعال‌سازی» آن خاموش بود (و روی صفحه دیده نمی‌شد) هم اعلام می‌شد.
+     * کد پایین فقط برای Hodima Media قدیمی (بدون این تابع) می‌ماند.
+     */
+    if ( function_exists( 'hodima_media_video_node' ) ) {
+        $video_node = hodima_media_video_node( (int) $product_id, 'post', [
+            '_name'            => 'فیلم معرفی ' . $name,
+            'mainEntityOfPage' => [ '@id' => $page_url . '#webpage' ],
+            'about'            => [ '@id' => $page_url . '#product' ],
+        ] );
+        if ( null === $video_node ) {
+            unset( $video_node );
+        } else {
+            $schema['subjectOf'] = [ '@id' => $video_node['@id'] ];
+        }
+    } elseif ( ! empty( $media_data['video_url'] ) ) {
         $video_thumb = ! empty( $media_data['video_thumb'] ) ? $media_data['video_thumb'] : $image_url;
         $video_title = ! empty( $media_data['video_title'] ) ? sanitize_text_field( $media_data['video_title'] ) : 'فیلم معرفی ' . $name;
         

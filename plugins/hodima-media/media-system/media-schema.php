@@ -2,40 +2,36 @@
 /**
  * Media System — JSON-LD
  * Path: media-system/media-schema.php
- * Version: 3.0.0
  *
- * توابع زمان و تشخیص فایل به media-helpers.php منتقل شدند (بخشی از
- * قرارداد عمومی ماژول‌اند و آنجا یک بار تعریف می‌شوند).
+ * ویدیو (media-video.php)، صوت، FAQ و غنی‌سازی Discover برگه‌ها به گراف
+ * واحد صفحه (hodima_schema_add در hodima-core) اضافه می‌شوند.
+ *
+ * «خلاصه هوش مصنوعی» (ai_summary) از نسخه ۴ هیچ‌جا استفاده نمی‌شود: نه
+ * abstract، نه description. داده ذخیره‌شده پاک نمی‌شود.
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+declare(strict_types=1);
+
+defined( 'ABSPATH' ) || exit;
 
 /* =====================================================================
- * ادغام با افزونه‌های سئو (فقط اگر نصب باشند؛ در غیر این صورت بی‌اثر)
+ * ادغام با Yoast (فقط اگر نصب باشد؛ در غیر این صورت بی‌اثر)
  * ===================================================================== */
 
-/** فیلدهای مشترک خلاصه هوش مصنوعی و موجودیت‌ها برای یک نود Article. */
-function hook_media_article_enrichment( array $entity, array $data ): array {
+/** عنوان Discover و موجودیت‌ها برای یک نود Article/WebPage. */
+function hodima_media_article_enrichment( array $entity, array $data ): array {
 
 	if ( ! empty( $data['discover_title'] ) ) {
-		$entity['headline']      = sanitize_text_field( $data['discover_title'] );
-		$entity['alternateName'] = sanitize_text_field( $data['discover_title'] );
-	}
-
-	if ( ! empty( $data['ai_summary'] ) ) {
-		$summary               = wp_strip_all_tags( (string) $data['ai_summary'] );
-		$entity['abstract']    = $summary;
-		$entity['description'] = $summary;
+		// عنوان جایگزین مقاله؛ headline همان عنوان اصلی صفحه می‌ماند
+		$entity['alternativeHeadline'] = sanitize_text_field( (string) $data['discover_title'] );
 	}
 
 	$about = array_map(
 		static fn( string $name ): array => [ '@type' => 'Thing', 'name' => $name ],
-		hook_parse_key_entities( $data['key_entities'] ?? '' )
+		hodima_media_parse_entities( $data['key_entities'] ?? '' )
 	);
 
-	if ( ! empty( $about ) ) {
+	if ( $about ) {
 		$entity['about'] = $about;
 	}
 
@@ -44,257 +40,163 @@ function hook_media_article_enrichment( array $entity, array $data ): array {
 
 add_filter( 'wpseo_schema_article', static function ( $entity, $context = null ) {
 	$id   = isset( $context->id ) ? (int) $context->id : (int) get_queried_object_id();
-	$data = $id ? hook_get_media_data( $id, 'post' ) : [];
-	return ( 'yes' === ( $data['enabled'] ?? '' ) ) ? hook_media_article_enrichment( (array) $entity, $data ) : $entity;
+	$data = $id ? hodima_media_get_data( $id, 'post' ) : [];
+	return ( 'yes' === ( $data['enabled'] ?? '' ) ) ? hodima_media_article_enrichment( (array) $entity, $data ) : $entity;
 }, 10, 2 );
 
 /* =====================================================================
- * چاپ نودها
+ * ساخت نودها
  * ===================================================================== */
 
 /**
- * خلاصه متنی همان صفحه برای description ویدیو و صوت.
+ * یک نوع نود را می‌سازد و به گراف می‌دهد (هر نوع برای هر شیء یک بار).
  *
- * باگ قبلی: توضیح صوت («توضیحات صوتی اختصاصی هدهدلی برای …») و ویدیو یک
- * متن ثابت با نام صفحه بود — در همه صفحه‌ها تقریبا یکسان. حالا از محتوای
- * واقعی همان صفحه: خلاصه نوشته/محصول ← خلاصه هوش مصنوعی ← ابتدای متن؛
- * برای دسته، توضیح دسته. فقط اگر هیچ متنی نبود، همان متن قالبی.
+ * @param string $type video | audio | faq | seo_discover
  */
-function hook_media_summary( int $object_id, string $context, string $fallback ): string {
-
-	if ( 'post' === $context ) {
-		$post = get_post( $object_id );
-		$data = hook_get_media_data( $object_id, 'post' );
-		$text = $post ? ( '' !== trim( (string) $post->post_excerpt ) ? (string) $post->post_excerpt : ( (string) ( $data['ai_summary'] ?? '' ) ?: (string) $post->post_content ) ) : '';
-	} else {
-		$text = (string) term_description( $object_id );
-	}
-
-	$text = trim( wp_trim_words( wp_strip_all_tags( strip_shortcodes( $text ) ), 40, '…' ) );
-
-	return '' !== $text ? $text : $fallback;
-}
-
-/**
- * تاریخ پایدار انتشار رسانه.
- *
- * ترتیب: تاریخ ثبت‌شده هنگام ذخیره آدرس فایل → برای نوشته، تاریخ
- * *انتشار* (نه آخرین ویرایش) → برای ترم، ثبت یک‌باره همین لحظه.
- *
- * نسخه قبلی برای ترم gmdate('c') می‌داد — در *هر* بازدید یک تاریخ
- * جدید. گوگل ویدیوی دسته‌بندی را هر بار «تازه آپلودشده» می‌دید.
- */
-function hook_media_stable_date( array $data, string $kind, int $object_id, string $context ): string {
-
-	$stored = hook_normalize_iso_date( $data[ "{$kind}_date" ] ?? '' );
-	if ( '' !== $stored ) {
-		return $stored;
-	}
-
-	if ( 'post' === $context ) {
-		$gmt = (string) get_post_field( 'post_date_gmt', $object_id );
-		if ( '' !== $gmt && ! str_starts_with( $gmt, '0000' ) ) {
-			return gmdate( 'c', (int) strtotime( $gmt . ' UTC' ) );
-		}
-	}
-
-	// ثبت یک‌باره تا از این به بعد ثابت بماند (داده‌های قبل از این نسخه)
-	$now = gmdate( 'c' );
-	'post' === $context
-		? update_post_meta( $object_id, "_hook_{$kind}_date", $now )
-		: update_term_meta( $object_id, "hook_{$kind}_date", $now );
-	hook_get_media_data( $object_id, $context, true );
-
-	return $now;
-}
-
-function hook_print_schema( $type, $data, $object_id, $context ) {
+function hodima_media_print_schema( string $type, array $data, int $object_id, string $context ): void {
 
 	static $printed = [];
 
-	$object_id = (int) $object_id;
-	$key       = $type . '_' . $context . '_' . $object_id;
+	$context = hodima_media_context( $context );
+	$key     = $type . '_' . $context . '_' . $object_id;
 
 	if ( isset( $printed[ $key ] ) ) {
 		return;
 	}
 	$printed[ $key ] = true;
 
-	$brand = (string) ( get_option( 'hodima_brand_name', '' ) ?: 'هدهدلی' );
-
-	if ( 'post' === $context ) {
-		$title = (string) get_the_title( $object_id );
-	} else {
-		$term  = get_term( $object_id );
-		$title = $term instanceof WP_Term ? $term->name : '';
-	}
-
-	$page_url = hook_media_page_url( $object_id, $context );
+	$page_url = hodima_media_page_url( $object_id, $context );
 
 	if ( '' === $page_url ) {
 		return;
 	}
 
-	/*
-	 * esc_url_raw به جای esc_url در همه شناسه‌ها و آدرس‌ها.
-	 * esc_url برای خروجی HTML است و «&» را به «&#038;» تبدیل می‌کند؛
-	 * داخل JSON یعنی آدرس خراب برای هر آدرسی که رشته کوئری دارد.
-	 */
+	// esc_url_raw (نه esc_url که «&» را «&#038;» می‌کند و آدرس را در JSON خراب می‌کند)
 	$base    = esc_url_raw( $page_url );
 	$webpage = [ '@id' => $base . '#webpage' ];
-	$schema  = [];
+	$title   = hodima_media_object_title( $object_id, $context );
+	$brand   = (string) ( get_option( 'hodima_brand_name', '' ) ?: get_bloginfo( 'name' ) );
 
-	switch ( $type ) {
-
-		case 'seo_discover':
-
-			if ( empty( $data['discover_title'] ) && empty( $data['ai_summary'] ) && empty( $data['key_entities'] ) ) {
-				return;
-			}
-
-			// Rank Math از سایت حذف شده و پشتیبانی‌اش برداشته شد؛ فقط Yoast (اگر نصب شود)
-			if ( 'post' === $context && defined( 'WPSEO_VERSION' ) ) {
-				return;
-			}
-
-			$schema = hook_media_article_enrichment( [
-				'@type'            => ( 'post' === $context ) ? 'Article' : 'WebPage',
-				'@id'              => $base . '#media-article',
-				'headline'         => $title,
-				'isPartOf'         => $webpage,
-				'mainEntityOfPage' => $webpage,
-			], $data );
-			break;
-
-		case 'video':
-
-			if ( empty( $data['video_url'] ) ) {
-				return;
-			}
-
-			// کاوری که مدیر انتخاب کرده (video_thumb در hook_get_media_data به آن برمی‌گردد)
-			$thumb = (string) ( $data['video_thumb'] ?? '' );
-
-			if ( '' === $thumb ) {
-				$thumb = ( 'post' === $context )
-					? (string) get_the_post_thumbnail_url( $object_id, 'full' )
-					: (string) wp_get_attachment_url( (int) get_term_meta( $object_id, 'thumbnail_id', true ) );
-			}
-
-			if ( '' === $thumb ) {
-				return; // thumbnailUrl برای ویدیو الزامی است
-			}
-
-			$video_url = esc_url_raw( (string) preg_replace( '/\s+/', '%20', trim( (string) $data['video_url'] ) ) );
-
-			/*
-			 * بدون mainEntityOfPage.
-			 * نسخه قبلی آن را به صورت رشته آدرس صفحه می‌گذاشت، یعنی ادعا
-			 * می‌کرد ویدیو *موضوع اصلی* صفحه است. روی صفحه دسته‌بندی موضوع
-			 * اصلی کاتالوگ محصولات است و روی نوشته خود مقاله؛ ویدیو بخشی
-			 * از صفحه است (isPartOf).
-			 */
-			$schema = [
-				'@type'        => 'VideoObject',
-				'@id'          => $base . '#video',
-				'isPartOf'     => $webpage,
-				'name'         => ! empty( $data['video_title'] ) ? sanitize_text_field( $data['video_title'] ) : 'ویدیوی معرفی: ' . $title,
-				'description'  => hook_media_summary( $object_id, $context, 'بررسی و نمایش ویدیویی ' . $title . ' توسط ' . $brand ),
-				'thumbnailUrl' => [ esc_url_raw( $thumb ) ],
-				'uploadDate'   => hook_media_stable_date( $data, 'video', $object_id, $context ),
-			];
-
-			// فایل مستقیم → contentUrl؛ صفحه آپارات/یوتیوب → آدرس پخش‌کننده (embed) که
-			// گوگل برای embedUrl می‌خواهد (قبلا آدرس صفحه تماشا بود).
-			if ( hook_is_direct_video_file( $video_url ) ) {
-				$schema['contentUrl'] = $video_url;
-			} else {
-				$schema['embedUrl'] = function_exists( 'hodima_video_player_url' ) ? hodima_video_player_url( $video_url ) : $video_url;
-			}
-
-			$duration = hook_format_duration_iso( $data['video_duration'] ?? '' );
-			if ( '' !== $duration ) {
-				$schema['duration'] = $duration;
-			}
-
-			if ( ! empty( $data['video_keywords'] ) ) {
-				$schema['keywords'] = sanitize_text_field( $data['video_keywords'] );
-			}
-			break;
-
-		case 'audio':
-
-			if ( empty( $data['voice_url'] ) ) {
-				return;
-			}
-
-			$date = hook_media_stable_date( $data, 'voice', $object_id, $context );
-
-			$schema = [
-				'@type'         => 'AudioObject',
-				'@id'           => $base . '#audio',
-				'isPartOf'      => $webpage,
-				'name'          => ! empty( $data['voice_title'] ) ? sanitize_text_field( $data['voice_title'] ) : 'پادکست اختصاصی: ' . $title,
-				'description'   => hook_media_summary( $object_id, $context, 'توضیحات صوتی اختصاصی ' . $brand . ' برای ' . $title ),
-				'contentUrl'    => esc_url_raw( (string) preg_replace( '/\s+/', '%20', trim( (string) $data['voice_url'] ) ) ),
-				'datePublished' => $date,
-				'uploadDate'    => $date,
-			];
-
-			$duration = hook_format_duration_iso( $data['voice_duration'] ?? '' );
-			if ( '' !== $duration ) {
-				$schema['duration'] = $duration;
-			}
-
-			if ( ! empty( $data['voice_keywords'] ) ) {
-				$schema['keywords'] = sanitize_text_field( $data['voice_keywords'] );
-			}
-			break;
-
-		case 'faq':
-
-			$questions = [];
-
-			foreach ( (array) ( $data['faq'] ?? [] ) as $item ) {
-				if ( empty( $item['q'] ) || empty( $item['a'] ) ) {
-					continue;
-				}
-				$questions[] = [
-					'@type'          => 'Question',
-					'name'           => wp_strip_all_tags( (string) $item['q'] ),
-					'acceptedAnswer' => [ '@type' => 'Answer', 'text' => wp_kses_post( (string) $item['a'] ) ],
-				];
-			}
-
-			if ( empty( $questions ) ) {
-				return;
-			}
-
-			$schema = [
-				'@type'      => 'FAQPage',
-				'@id'        => $base . '#faq',
-				'isPartOf'   => $webpage,
-				'mainEntity' => $questions,
-			];
-			break;
-	}
+	$schema = match ( $type ) {
+		'video'        => hodima_media_video_node( $object_id, $context ),
+		'audio'        => hodima_media_audio_node( $data, $object_id, $context, $base, $title, $brand ),
+		'faq'          => hodima_media_faq_node( $data, $base ),
+		'seo_discover' => hodima_media_discover_node( $data, $context, $base, $title ),
+		default        => null,
+	};
 
 	if ( empty( $schema ) ) {
 		return;
 	}
 
-	// گراف واحد صفحه (hodima-core)؛ نودهای هم‌شناسه (مثلا FAQPage «#faq» که
-	// ماژول AEO هم می‌سازد) ادغام می‌شوند.
+	// گراف واحد صفحه؛ نودهای هم‌شناسه (مثلا FAQPage «#faq» ماژول AEO) ادغام می‌شوند.
 	hodima_schema_add( $schema, 'hodima-media: media-schema (' . $type . ')' );
 }
 
+/** AudioObject («#audio») یا null. */
+function hodima_media_audio_node( array $data, int $object_id, string $context, string $base, string $title, string $brand ): ?array {
+
+	$url = trim( (string) ( $data['voice_url'] ?? '' ) );
+
+	if ( '' === $url ) {
+		return null;
+	}
+
+	$url  = esc_url_raw( (string) preg_replace( '/\s+/', '%20', $url ) );
+	$date = hodima_media_stable_date( $data, 'voice', $object_id, $context );
+	$mime = (string) ( wp_check_filetype( (string) wp_parse_url( $url, PHP_URL_PATH ), wp_get_mime_types() )['type'] ?: '' );
+
+	$node = [
+		'@type'         => 'AudioObject',
+		'@id'           => $base . '#audio',
+		'isPartOf'      => [ '@id' => $base . '#webpage' ],
+		'name'          => ! empty( $data['voice_title'] ) ? sanitize_text_field( (string) $data['voice_title'] ) : 'پادکست اختصاصی: ' . $title,
+		'description'   => hodima_media_summary( $object_id, $context, 'توضیحات صوتی اختصاصی ' . $brand . ' برای ' . $title ),
+		'contentUrl'    => $url,
+		'datePublished' => $date,
+		'uploadDate'    => $date,
+		'inLanguage'    => hodima_media_language(),
+	];
+
+	if ( '' !== $mime ) {
+		$node['encodingFormat'] = $mime;
+	}
+
+	$duration = hodima_media_duration_iso( $data['voice_duration'] ?? '' );
+	if ( '' !== $duration ) {
+		$node['duration'] = $duration;
+	}
+
+	if ( function_exists( 'hodima_seo_schema_organization_node' ) ) {
+		$node['publisher'] = [ '@id' => trailingslashit( home_url() ) . '#organization' ];
+	}
+
+	$transcript = trim( (string) ( $data['voice_transcript'] ?? '' ) );
+	if ( '' !== $transcript ) {
+		$node['transcript'] = wp_strip_all_tags( $transcript );
+	}
+
+	if ( ! empty( $data['voice_keywords'] ) ) {
+		$node['keywords'] = sanitize_text_field( (string) $data['voice_keywords'] );
+	}
+
+	return $node;
+}
+
+/** FAQPage («#faq») یا null. */
+function hodima_media_faq_node( array $data, string $base ): ?array {
+
+	$questions = [];
+
+	foreach ( (array) ( $data['faq'] ?? [] ) as $item ) {
+		if ( ! is_array( $item ) || empty( $item['q'] ) || empty( $item['a'] ) ) {
+			continue;
+		}
+		$questions[] = [
+			'@type'          => 'Question',
+			'name'           => wp_strip_all_tags( (string) $item['q'] ),
+			'acceptedAnswer' => [ '@type' => 'Answer', 'text' => wp_kses_post( (string) $item['a'] ) ],
+		];
+	}
+
+	return $questions ? [
+		'@type'      => 'FAQPage',
+		'@id'        => $base . '#faq',
+		'isPartOf'   => [ '@id' => $base . '#webpage' ],
+		'mainEntity' => $questions,
+	] : null;
+}
+
+/** غنی‌سازی Discover برای برگه (نوشته را blog-schema.php پوشش می‌دهد)، یا null. */
+function hodima_media_discover_node( array $data, string $context, string $base, string $title ): ?array {
+
+	if ( empty( $data['discover_title'] ) && empty( $data['key_entities'] ) ) {
+		return null;
+	}
+
+	// اگر Yoast نصب شود، همان فیلتر wpseo_schema_article بالا کار را انجام می‌دهد
+	if ( 'post' === $context && defined( 'WPSEO_VERSION' ) ) {
+		return null;
+	}
+
+	$webpage = [ '@id' => $base . '#webpage' ];
+
+	return hodima_media_article_enrichment( [
+		'@type'            => 'post' === $context ? 'Article' : 'WebPage',
+		'@id'              => $base . '#media-article',
+		'headline'         => $title,
+		'isPartOf'         => $webpage,
+		'mainEntityOfPage' => $webpage,
+	], $data );
+}
+
 /* =====================================================================
- * تزریق خودکار در head
+ * تزریق خودکار
  * ===================================================================== */
 
-add_action( 'wp_head', 'hook_auto_inject_head_schema' );
+add_action( 'wp_head', 'hodima_media_auto_inject_schema' );
 
-function hook_auto_inject_head_schema() {
+function hodima_media_auto_inject_schema(): void {
 
 	if ( is_admin() ) {
 		return;
@@ -302,44 +204,41 @@ function hook_auto_inject_head_schema() {
 
 	$queried = get_queried_object();
 
-	if ( $queried instanceof WP_Post && in_array( $queried->post_type, hook_get_supported_post_types(), true ) ) {
-		// FAQ و متن رسانه نوشته رمزدار نباید در اسکیما منتشر شود.
+	if ( $queried instanceof WP_Post && in_array( $queried->post_type, hodima_media_post_types(), true ) ) {
+		// FAQ و رسانه نوشته رمزدار نباید در اسکیما منتشر شود.
 		if ( function_exists( 'hodima_post_content_is_visible' ) && ! hodima_post_content_is_visible( $queried ) ) {
 			return;
 		}
 		$object_id = (int) $queried->ID;
 		$context   = 'post';
-	} elseif ( $queried instanceof WP_Term && in_array( $queried->taxonomy, hook_get_supported_taxonomies(), true ) ) {
+	} elseif ( $queried instanceof WP_Term && in_array( $queried->taxonomy, hodima_media_taxonomies(), true ) ) {
 		$object_id = (int) $queried->term_id;
 		$context   = 'term';
 	} else {
 		return;
 	}
 
-	$data = hook_get_media_data( $object_id, $context );
+	$data       = hodima_media_get_data( $object_id, $context );
+	$post_type  = 'post' === $context ? (string) get_post_type( $object_id ) : '';
+	$is_product = 'product' === $post_type;
+
+	/*
+	 * Discover برگه‌ها (عنوان Discover و موضوعات) — مثل نوشته‌ها به کلید
+	 * «نمایش رسانه» وابسته نیست. نوشته‌ها را blog-schema.php پوشش می‌دهد.
+	 */
+	if ( ! $is_product && 'post' !== $post_type && hodima_media_discover_enabled( $context, $object_id ) ) {
+		hodima_media_print_schema( 'seo_discover', $data, $object_id, $context );
+	}
 
 	if ( 'yes' !== ( $data['enabled'] ?? '' ) ) {
 		return;
 	}
 
-	$post_type  = ( 'post' === $context ) ? (string) get_post_type( $object_id ) : '';
-	$is_product = ( 'product' === $post_type );
-
-	/*
-	 * نوشته‌ها: blog-schema.php خلاصه و موجودیت‌ها را به BlogPosting اضافه
-	 * می‌کند. محصولات: product-schema-pro.php ویدیو را به عنوان نود #video
-	 * می‌سازد. چاپ دوباره اینجا موجودیت تکراری می‌ساخت.
-	 */
-	// فقط جایی که «سئو مدرن» فعال است (برگه). روی دسته‌بندی یک WebPage دوم
-	// برای همان آدرس می‌ساخت؛ نوشته را blog-schema.php پوشش می‌دهد.
-	if ( ! $is_product && 'post' !== $post_type && hook_modern_seo_enabled( $context, $object_id ) ) {
-		hook_print_schema( 'seo_discover', $data, $object_id, $context );
-	}
-
+	// محصولات: product-schema-pro.php همین VideoObject واحد را با ارجاع به محصول می‌سازد.
 	if ( ! $is_product ) {
-		hook_print_schema( 'video', $data, $object_id, $context );
+		hodima_media_print_schema( 'video', $data, $object_id, $context );
 	}
 
-	hook_print_schema( 'audio', $data, $object_id, $context );
-	hook_print_schema( 'faq', $data, $object_id, $context );
+	hodima_media_print_schema( 'audio', $data, $object_id, $context );
+	hodima_media_print_schema( 'faq', $data, $object_id, $context );
 }

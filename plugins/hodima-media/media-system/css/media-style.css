@@ -1,327 +1,416 @@
-/* 
- * Phase 2.3: Media System Front-End - Stylesheet
- * File: wp-content/plugins/hodima-media/media-system/css/media-style.css
+/*
+ * Media System — front-end
+ * Path: media-system/css/media-style.css
+ *
+ * نسخه ۴: بدون :root (توکن‌ها روی خود بلوک‌ها، با پالت برند و فالبک توکن‌های
+ * قالب)، خصوصیات منطقی (راست‌چین/چپ‌چین خودکار)، color-mix به جای رنگ ثابت.
+ * «نما»ی ویدیو، ویدیوی عمودی، فصل‌ها و متن کامل اضافه شدند.
  */
-
-:root {
-    --media-primary: var(--hodima-primary, #25316a);
-    --media-primary-hover: var(--hodima-primary-hover, #1b244d);
-    --media-secondary: var(--hodima-secondary, #607bbd);
-    --media-accent: var(--hodima-third, #b6c2f3);
-    --media-text: var(--hodima-text-dark, #111111);
-    --media-text-soft: var(--hodima-text-muted, #5d6785);
-    --media-text-muted: var(--hodima-text-muted, #5d6785);
-    --media-surface: var(--hodima-surface, #ffffff);
-    --media-surface-soft: var(--hodima-surface-soft, #f7f9fd);
-    --media-border: rgba(37, 49, 106, 0.10);
-    --media-border-strong: rgba(37, 49, 106, 0.18);
-    --media-shadow: 0 4px 14px rgba(37, 49, 106, 0.08);
-    --media-shadow-hover: 0 8px 22px rgba(37, 49, 106, 0.12);
-    --media-radius-sm: 8px;
-    --media-radius-md: 12px;
-    --media-radius-lg: 14px;
-    --media-transition: 0.25s ease;
-    --media-font: inherit;
-}
 
 .hook-video-wrapper,
 .hook-voice-wrapper,
 .hook-faq,
-.hook-intro-wrapper,
-.hodima-ai-summary-wrapper {
-    font-family: inherit;
+.hook-intro-wrapper {
+	--hm-primary: var(--hodima-primary, #25316a);
+	--hm-secondary: var(--hodima-secondary, #607bbd);
+	--hm-third: var(--hodima-third, #b6c2f3);
+	--hm-accent: #6a2b9a;
+	--hm-text: var(--hodima-text-dark, #111111);
+	--hm-muted: var(--hodima-text-muted, #5d6785);
+	--hm-surface: var(--hodima-surface, #ffffff);
+	--hm-soft: var(--hodima-surface-soft, #f7f9fd);
+	--hm-border: color-mix(in srgb, var(--hm-primary) 10%, transparent);
+	--hm-border-strong: color-mix(in srgb, var(--hm-primary) 18%, transparent);
+	--hm-shadow: 0 4px 14px color-mix(in srgb, var(--hm-primary) 8%, transparent);
+	--hm-radius: 12px;
+	--hm-transition: 0.25s ease;
+
+	font-family: inherit;
 }
 
-.hook-video-wrapper {
-    margin: 30px auto;
-    width: 100%;
-    max-width: 650px;
-}
-
+/* ── عنوان بلوک ─────────────────────────────────────────────────────── */
 .hook-media-title {
-    position: relative;
-    margin-bottom: 15px;
-    padding-right: 16px;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1.5;
-    color: var(--media-text);
+	position: relative;
+	margin-block-end: 15px;
+	padding-inline-start: 16px;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.5;
+	color: var(--hm-text);
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset-inline-start: 0;
+		inset-block-start: 50%;
+		inline-size: 8px;
+		block-size: 8px;
+		border-radius: 50%;
+		background: var(--hm-primary);
+		transform: translateY(-50%);
+		box-shadow: 0 0 0 4px color-mix(in srgb, var(--hm-primary) 10%, transparent);
+	}
 }
 
-.hook-media-title::before {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: 50%;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--media-primary);
-    transform: translateY(-50%);
-    box-shadow: 0 0 0 4px rgba(37, 49, 106, 0.10);
+/* ── ویدیو ──────────────────────────────────────────────────────────── */
+.hook-video-wrapper {
+	--hook-video-ratio: 16 / 9;
+
+	inline-size: 100%;
+	max-inline-size: 650px;
+	margin: 30px auto;
+}
+
+/*
+ * ویدیوی عمودی (ریلز/شورتز) باریک و وسط‌چین؛ قبلا در قاب ۱۶:۹ با دو نوار
+ * خالی بزرگ و خیلی کوچک نمایش داده می‌شد.
+ */
+.hook-video-wrapper--portrait {
+	/* عرض ۴۵vh یعنی ارتفاع ۹:۱۶ حداکثر ۸۰٪ صفحه؛ در موبایل از صفحه بلندتر نمی‌شود */
+	max-inline-size: min(100%, 380px, 45vh);
 }
 
 .hook-video-container {
-    overflow: hidden !important;
-    border: 2px solid var(--media-secondary) !important;
-    border-radius: 14px !important;
-    background: #ffffff !important;
-    box-shadow: 0 6px 18px rgba(37, 49, 106, 0.12) !important;
+	overflow: hidden;
+	border: 2px solid var(--hm-secondary);
+	border-radius: 14px;
+	background: var(--hm-surface);
+	box-shadow: 0 6px 18px color-mix(in srgb, var(--hm-primary) 12%, transparent);
 }
 
 .hook-video-inner {
-    overflow: hidden !important;
-    border-radius: 0 !important;
-    background: var(--media-primary) !important;
-    line-height: 0;
+	overflow: hidden;
+	background: var(--hm-primary);
+	line-height: 0;
+
+	& video {
+		display: block;
+		inline-size: 100%;
+		block-size: auto;
+		/* ارتفاع رزروشده پیش از بارگذاری (بدون CLS) با نسبت واقعی ویدیو */
+		aspect-ratio: var(--hook-video-ratio);
+		object-fit: contain;
+		background: #000000;
+	}
 }
 
-.hook-video-inner video {
-    display: block;
-    width: 100%;
-    height: auto;
-    /*
-     * ارتفاع رزروشده پیش از بارگذاری.
-     * <video> بدون ابعاد با ارتفاع پیش‌فرض ۱۵۰ پیکسل رندر می‌شد و بعد از
-     * خواندن اطلاعات فایل بزرگ می‌شد — جابه‌جایی صفحه (CLS) روی هر محصول.
-     */
-    aspect-ratio: 16 / 9;
-    object-fit: contain;
-    border-radius: 0 !important;
-}
-
-/* کانتینر امبد — قبلا style درون‌خطی در PHP */
 .hook-oembed-container {
-    position: relative;
-    height: 0;
-    padding-bottom: 56.25%;
-    overflow: hidden;
+	position: relative;
+	aspect-ratio: var(--hook-video-ratio, 16 / 9);
+
+	& iframe {
+		position: absolute;
+		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
+		border: 0;
+	}
 }
 
-.hook-oembed-container iframe {
-    position: absolute !important;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    border: 0;
+/* «نما»: کاور + دکمه پخش؛ پخش‌کننده فقط بعد از کلیک بارگذاری می‌شود */
+.hook-video-facade {
+	position: relative;
+	display: grid;
+	place-items: center;
+	aspect-ratio: var(--hook-video-ratio);
+	overflow: hidden;
+	background: linear-gradient(135deg, var(--hm-primary), var(--hm-accent));
+
+	& .hook-video-facade__img {
+		position: absolute;
+		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
+		object-fit: cover;
+	}
+
+	& .hook-video-play {
+		position: relative;
+		display: grid;
+		place-items: center;
+		inline-size: 100%;
+		block-size: 100%;
+		cursor: pointer;
+
+		& svg {
+			inline-size: 68px;
+			block-size: 48px;
+			filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.3));
+			transition: transform var(--hm-transition);
+		}
+
+		& .hook-video-play__bg {
+			fill: var(--hm-primary);
+			fill-opacity: 0.9;
+			transition: fill var(--hm-transition);
+		}
+
+		& .hook-video-play__icon {
+			fill: #ffffff;
+		}
+
+		&:hover svg,
+		&:focus-visible svg {
+			transform: scale(1.08);
+		}
+
+		&:hover .hook-video-play__bg,
+		&:focus-visible .hook-video-play__bg {
+			fill: var(--hm-accent);
+		}
+
+		&:focus-visible {
+			outline: 3px solid var(--hm-third);
+			outline-offset: -6px;
+		}
+	}
+
+	& .hook-video-facade__service {
+		position: absolute;
+		inset-block-end: 10px;
+		inset-inline-end: 10px;
+		padding: 2px 10px;
+		border-radius: 999px;
+		background: rgb(0 0 0 / 0.55);
+		color: #ffffff;
+		font-size: 12px;
+		line-height: 1.8;
+		pointer-events: none;
+	}
 }
 
-.hook-audio-el {
-    flex-grow: 1;
-    width: 100%;
+/* فصل‌های ویدیو */
+.hook-video-chapters {
+	margin-block-start: 12px;
+
+	& ol {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
 }
 
+.hook-video-chapter {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	border: 1px solid var(--hm-border-strong);
+	border-radius: 999px;
+	background: var(--hm-soft);
+	color: var(--hm-text);
+	font: inherit;
+	font-size: 13px;
+	cursor: pointer;
+	transition: border-color var(--hm-transition), background var(--hm-transition);
+
+	&:hover,
+	&:focus-visible {
+		border-color: var(--hm-secondary);
+		background: var(--hm-surface);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hm-secondary);
+		outline-offset: 2px;
+	}
+}
+
+.hook-video-chapter__time {
+	font-weight: 700;
+	color: var(--hm-primary);
+	font-variant-numeric: tabular-nums;
+}
+
+/* متن کامل ویدیو/پادکست */
+.hook-media-transcript {
+	margin-block-start: 12px;
+	border: 1px solid var(--hm-border);
+	border-radius: var(--hm-radius);
+	background: var(--hm-surface);
+
+	& summary {
+		padding: 10px 14px;
+		color: var(--hm-primary);
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	& .hook-media-transcript__text {
+		max-block-size: 320px;
+		overflow: auto;
+		padding: 0 14px 12px;
+		color: var(--hm-muted);
+		font-size: 14px;
+		line-height: 1.9;
+	}
+}
+
+/* ── صوت ────────────────────────────────────────────────────────────── */
 .hook-voice-wrapper {
-    margin: 30px auto;
-    max-width: 650px;
+	max-inline-size: 650px;
+	margin: 30px auto;
 }
 
 .hook-voice-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 14px 18px;
-    border: 1px solid var(--media-border-strong);
-    border-radius: 999px;
-    background: var(--media-surface-soft);
-    box-shadow: var(--media-shadow);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	padding: 14px 18px;
+	border: 1px solid var(--hm-border-strong);
+	border-radius: 999px;
+	background: var(--hm-soft);
+	box-shadow: var(--hm-shadow);
+
+	& audio {
+		flex-grow: 1;
+		inline-size: 100%;
+		block-size: 36px;
+	}
 }
 
 .hook-voice-label {
-    margin: 0;
-    white-space: nowrap;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--media-primary);
+	margin: 0;
+	white-space: nowrap;
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--hm-primary);
 }
 
-.hook-voice-container audio {
-    width: 100%;
-    height: 36px;
-    flex-grow: 1;
-}
-
+/* ── سوالات متداول ──────────────────────────────────────────────────── */
 .hook-faq {
-    margin: 20px auto;
-    max-width: 800px;
+	max-inline-size: 800px;
+	margin: 20px auto;
 }
 
 .hook-faq-item {
-    overflow: hidden;
-    margin-bottom: 12px;
-    border: 1px solid var(--media-border);
-    border-radius: var(--media-radius-md);
-    background: var(--media-surface);
-    box-shadow: 0 2px 10px rgba(37, 49, 106, 0.04);
-    transition: border-color var(--media-transition), box-shadow var(--media-transition), transform var(--media-transition);
-}
+	overflow: hidden;
+	margin-block-end: 12px;
+	border: 1px solid var(--hm-border);
+	border-radius: var(--hm-radius);
+	background: var(--hm-surface);
+	box-shadow: 0 2px 10px color-mix(in srgb, var(--hm-primary) 4%, transparent);
+	transition: border-color var(--hm-transition), box-shadow var(--hm-transition);
 
-.hook-faq-item[open] {
-    border-color: var(--media-border-strong);
-    box-shadow: var(--media-shadow);
+	&[open] {
+		border-color: var(--hm-border-strong);
+		box-shadow: var(--hm-shadow);
+	}
 }
 
 .hook-faq-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 14px 16px;
-    list-style: none;
-    cursor: pointer;
-    background: var(--media-surface-soft);
-    color: var(--media-text);
-    font-size: 15px !important;
-    font-weight: 600 !important;
-    line-height: 1.6;
-}
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 14px 16px;
+	list-style: none;
+	cursor: pointer;
+	background: var(--hm-soft);
+	color: var(--hm-text);
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.6;
 
-.hook-faq-summary::-webkit-details-marker {
-    display: none;
-}
+	&::-webkit-details-marker {
+		display: none;
+	}
 
-.hook-faq-summary::after {
-    content: "+";
-    flex: 0 0 auto;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(37, 49, 106, 0.08);
-    color: var(--media-primary);
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1;
-    transition: background var(--media-transition), color var(--media-transition), transform var(--media-transition);
+	&::after {
+		content: "+";
+		flex: 0 0 auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		inline-size: 24px;
+		block-size: 24px;
+		border-radius: 50%;
+		background: color-mix(in srgb, var(--hm-primary) 8%, transparent);
+		color: var(--hm-primary);
+		font-size: 16px;
+		font-weight: 700;
+		line-height: 1;
+		transition: background var(--hm-transition), color var(--hm-transition);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hm-secondary);
+		outline-offset: -2px;
+	}
 }
 
 .hook-faq-item[open] .hook-faq-summary::after {
-    content: "−";
-    background: var(--media-primary);
-    color: #ffffff;
+	content: "−";
+	background: var(--hm-primary);
+	color: #ffffff;
 }
 
 .hook-faq-content {
-    padding: 15px 16px;
-    border-top: 1px solid rgba(37, 49, 106, 0.06);
-    color: var(--media-text-soft);
-    font-size: 14px;
-    line-height: 1.9;
+	padding: 15px 16px;
+	border-block-start: 1px solid color-mix(in srgb, var(--hm-primary) 6%, transparent);
+	color: var(--hm-muted);
+	font-size: 14px;
+	line-height: 1.9;
 }
 
+/* ── متن معرفی ──────────────────────────────────────────────────────── */
 .hook-intro-wrapper {
-    margin: 25px 0;
-    padding: 20px;
-    border-right: 4px solid var(--media-primary);
-    border-radius: 8px 12px 12px 8px;
-    background: linear-gradient(135deg, rgba(37, 49, 106, 0.04) 0%, rgba(37, 49, 106, 0.01) 100%);
-    color: var(--media-text-soft);
-    font-size: 15px;
-    line-height: 1.9;
-    box-shadow: var(--media-shadow);
-}
+	margin: 25px 0;
+	padding: 20px;
+	border-inline-start: 4px solid var(--hm-primary);
+	border-start-start-radius: 8px;
+	border-end-start-radius: 8px;
+	border-start-end-radius: 12px;
+	border-end-end-radius: 12px;
+	background: linear-gradient(135deg, color-mix(in srgb, var(--hm-primary) 4%, transparent), color-mix(in srgb, var(--hm-primary) 1%, transparent));
+	color: var(--hm-muted);
+	font-size: 15px;
+	line-height: 1.9;
+	box-shadow: var(--hm-shadow);
 
-.hook-intro-wrapper p:first-child {
-    margin-top: 0;
-}
+	& p:first-child {
+		margin-block-start: 0;
+	}
 
-.hook-intro-wrapper p:last-child {
-    margin-bottom: 0;
-}
-
-.hodima-ai-summary-wrapper {
-    position: relative;
-    z-index: 1;
-    overflow: hidden;
-    margin: 25px 0;
-    padding: 20px !important;
-    border-right: 4px solid var(--media-primary) !important;
-    border-radius: 8px 12px 12px 8px;
-    background: #ffffff !important;
-    box-shadow: var(--media-shadow);
-}
-
-.hodima-ai-summary-wrapper::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 8px 12px 12px 8px;
-    background: linear-gradient(135deg, rgba(37, 49, 106, 0.05) 0%, rgba(37, 49, 106, 0) 100%);
-    pointer-events: none;
-    z-index: 0;
-}
-
-.hodima-ai-summary-wrapper > * {
-    position: relative;
-    z-index: 1;
-}
-
-.hodima-ai-summary-wrapper .hodima-ai-title {
-    margin-top: 0;
-    margin-bottom: 12px;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--media-text);
-}
-
-.hodima-ai-summary-wrapper .hodima-ai-text {
-    margin-bottom: 15px;
-    color: var(--media-text-soft);
-    font-size: 15px;
-    line-height: 1.9;
-}
-
-.hodima-ai-summary-wrapper .hodima-ai-text:last-child {
-    margin-bottom: 0;
-}
-
-.hodima-ai-summary-wrapper .hodima-ai-entities {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px dashed rgba(37, 49, 106, 0.14);
-    color: var(--media-text-muted);
-    font-size: 14px;
-    line-height: 1.7;
-}
-
-.hodima-ai-summary-wrapper .hodima-ai-entities strong {
-    color: var(--media-primary);
+	& p:last-child {
+		margin-block-end: 0;
+	}
 }
 
 @media (max-width: 767px) {
-    .hook-video-wrapper,
-    .hook-voice-wrapper,
-    .hook-faq {
-        margin-top: 24px;
-        margin-bottom: 24px;
-    }
+	.hook-video-wrapper,
+	.hook-voice-wrapper,
+	.hook-faq {
+		margin-block: 24px;
+	}
 
-    .hook-voice-container {
-        align-items: stretch;
-        flex-direction: column;
-        border-radius: 16px;
-        padding: 14px;
-    }
+	.hook-voice-container {
+		flex-direction: column;
+		align-items: stretch;
+		padding: 14px;
+		border-radius: 16px;
+	}
 
-    .hook-voice-label {
-        white-space: normal;
-    }
+	.hook-voice-label {
+		white-space: normal;
+	}
 
-    .hook-media-title,
-    .hodima-ai-summary-wrapper .hodima-ai-title {
-        font-size: 16px;
-    }
-
-    .hook-intro-wrapper,
-    .hodima-ai-summary-wrapper {
-        padding: 16px !important;
-    }
+	.hook-intro-wrapper {
+		padding: 16px;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .hook-faq-summary::after { transition: none !important; }
+	.hook-faq-item,
+	.hook-faq-summary::after,
+	.hook-video-chapter,
+	.hook-video-facade .hook-video-play svg,
+	.hook-video-facade .hook-video-play__bg {
+		transition: none;
+	}
 }

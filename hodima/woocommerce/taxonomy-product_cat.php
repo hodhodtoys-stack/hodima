@@ -182,14 +182,7 @@ get_header( 'shop' );
 			</section>
 		<?php endif; ?>
 
-		<?php if ( shortcode_exists( 'hook_ai_box' ) && $hodima_term_id ) : ?>
-			<?php $hodima_ai = do_shortcode( '[hook_ai_box id="' . $hodima_term_id . '" context="term"]' ); ?>
-			<?php if ( '' !== trim( $hodima_ai ) ) : ?>
-				<section class="hodima-section-box section-ai-box" aria-label="خلاصه هوش مصنوعی">
-					<?php echo $hodima_ai; // phpcs:ignore ?>
-				</section>
-			<?php endif; ?>
-		<?php endif; ?>
+>>>
 
 	<?php endif; ?>
 

@@ -90,7 +90,9 @@ function hodima_podcast_episodes(): array {
     $cover    = hodima_podcast_cover();
     $episodes = [];
 
-    $media = static fn( int $id, string $context ): array => function_exists( 'hook_get_media_data' ) ? hook_get_media_data( $id, $context ) : [];
+    // نام جدید سیستم رسانه (Hodima Media 1.2+)، با فالبک نام قدیمی
+    $media = static fn( int $id, string $context ): array => function_exists( 'hodima_media_get_data' ) ? hodima_media_get_data( $id, $context )
+        : ( function_exists( 'hook_get_media_data' ) ? hook_get_media_data( $id, $context ) : [] );
 
     // نوشته‌ها و محصولات
     $post_types = array_values( array_filter( $post_types, 'post_type_exists' ) );
@@ -122,7 +124,8 @@ function hodima_podcast_episodes(): array {
             }
 
             $post  = get_post( $post_id );
-            $text  = '' !== trim( (string) $post->post_excerpt ) ? (string) $post->post_excerpt : ( (string) ( $data['ai_summary'] ?? '' ) ?: (string) $post->post_content );
+            // خلاصه هوش مصنوعی از سایت حذف شد؛ خلاصه نوشته ← ابتدای متن
+            $text  = '' !== trim( (string) $post->post_excerpt ) ? (string) $post->post_excerpt : (string) $post->post_content;
             $image = (string) get_the_post_thumbnail_url( $post_id, 'full' ) ?: (string) ( $data['video_thumb'] ?? '' ) ?: $cover;
             $date  = hodima_podcast_timestamp( (string) ( $data['voice_date'] ?? '' ) ) ?: (int) strtotime( (string) $post->post_date_gmt . ' UTC' );
 
@@ -166,7 +169,11 @@ function hodima_podcast_episodes(): array {
             }
 
             $thumb_id = (int) get_term_meta( $term->term_id, 'thumbnail_id', true );
-            $date     = function_exists( 'hook_media_stable_date' ) ? hook_media_stable_date( $data, 'voice', (int) $term->term_id, 'term' ) : (string) ( $data['voice_date'] ?? '' );
+            $date     = match ( true ) {
+                function_exists( 'hodima_media_stable_date' ) => hodima_media_stable_date( $data, 'voice', (int) $term->term_id, 'term' ),
+                function_exists( 'hook_media_stable_date' )   => hook_media_stable_date( $data, 'voice', (int) $term->term_id, 'term' ),
+                default                                       => (string) ( $data['voice_date'] ?? '' ),
+            };
 
             $episodes[] = [
                 'title'    => (string) ( $data['voice_title'] ?? '' ) ?: $term->name,

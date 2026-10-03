@@ -181,12 +181,7 @@ get_header();
             ?>
         </section>
 
-        <!-- 7. بخش باکس هوش مصنوعی (AI Box) -->
-        <?php if ( shortcode_exists('hook_ai_box') ) : ?>
-            <section class="hodima-section-box section-ai-box">
-                <?php echo do_shortcode('[hook_ai_box]'); ?>
-            </section>
-        <?php endif; ?>
+>>>
 
     <?php endwhile; // پایان حلقه وردپرس ?>
 </div>

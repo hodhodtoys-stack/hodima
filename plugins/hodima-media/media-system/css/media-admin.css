@@ -1,235 +1,437 @@
-/* 
- * Phase 2.4: Media System Admin UI - Stylesheet
- * File: wp-content/plugins/hodima-media/media-system/css/media-admin.css 
- * Version: 2.1.0 (Font Updated & Resized)
+/*
+ * Media System — کادر «تنظیمات رسانه» (ویرایش نوشته، محصول، برگه و دسته)
+ * Path: media-system/css/media-admin.css
  *
- * پالت رسمی پروژه: اصلی #25316a / ثانویه #607bbd / مکمل #b6c2f3
- * فونت: Vazirmatn 
+ * فقط روی صفحه ویرایش لود می‌شود و همه قوانین زیر .hodima-mb هستند (هیچ
+ * :root یا قانون سراسری وردپرس؛ نسخه قبلی متغیرها را روی :root کل پیشخوان
+ * تعریف می‌کرد). ظاهر هم‌خانواده اجزای hd-* پیشخوان هدیما؛ پالت برند؛ فونت
+ * از قالب ارث می‌برد؛ آیکون‌ها Dashicons.
  */
 
-:root {
-    --hook-primary: var(--hodima-primary, #25316a);
-    --hook-primary-dark: var(--hodima-primary-dark, #1b244d);
-    --hook-secondary: var(--hodima-secondary, #607bbd);
-    --hook-accent: var(--hodima-third, #b6c2f3);
-    --hook-accent-light: var(--hodima-bg-gray, #eef2f8);
-    --hook-text-main: var(--hodima-text-dark, #111111);
-    --hook-text-muted: var(--hodima-text-muted, #5d6785);
-    --hook-bg-light: var(--hodima-surface-soft, #f7f9fd);
-    --hook-danger: var(--hodima-state-danger, #a32a2a);
-    --hook-danger-dark: var(--hodima-primary-dark, #1b244d);
-    --hook-font: inherit;
+.hodima-mb {
+	--mb-primary: #25316a;
+	--mb-secondary: #607bbd;
+	--mb-third: #b6c2f3;
+	--mb-accent: #6a2b9a;
+	--mb-accent-light: #a341c8;
+	--mb-text: #1d2340;
+	--mb-muted: #5d6785;
+	--mb-soft: color-mix(in srgb, var(--mb-third) 14%, #ffffff);
+	--mb-softer: color-mix(in srgb, var(--mb-third) 7%, #ffffff);
+	--mb-border: color-mix(in srgb, var(--mb-third) 60%, #ffffff);
+	--mb-border-strong: color-mix(in srgb, var(--mb-secondary) 45%, #ffffff);
+	--mb-ok: #1f7a4d;
+	--mb-warn: #9a5b00;
+	--mb-error: #b3261e;
+	--mb-radius: 0.75rem;
+
+	display: grid;
+	gap: 0.75rem;
+	font-family: inherit;
+	color: var(--mb-text);
+
+	& code {
+		padding: 0.0625rem 0.375rem;
+		border-radius: 0.25rem;
+		background: var(--mb-soft);
+		color: var(--mb-primary);
+		font-size: 0.75rem;
+		direction: ltr;
+		unicode-bidi: isolate;
+	}
+
+	/* ── کلید اصلی ── */
+	& .hodima-mb__head {
+		padding: 0.875rem 1rem;
+		border: 1px solid var(--mb-border);
+		border-inline-start: 4px solid var(--mb-primary);
+		border-radius: var(--mb-radius);
+		background: linear-gradient(135deg, var(--mb-softer), #ffffff);
+	}
+
+	& .hodima-mb__toggle {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+		cursor: pointer;
+
+		& > span {
+			display: grid;
+			gap: 0.125rem;
+		}
+
+		& strong {
+			color: var(--mb-primary);
+			font-size: 0.875rem;
+		}
+
+		& small {
+			color: var(--mb-muted);
+			font-size: 0.75rem;
+			line-height: 1.7;
+		}
+	}
+
+	/* سوییچ (همان طرح hd-switch پیشخوان هدیما) */
+	& input[type="checkbox"].hodima-mb__switch {
+		appearance: none;
+		position: relative;
+		flex-shrink: 0;
+		inline-size: 2.75rem;
+		block-size: 1.5rem;
+		margin: 0.125rem 0 0;
+		border: 0;
+		border-radius: 999px;
+		background: var(--mb-border-strong);
+		box-shadow: none;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+
+		&::before {
+			content: "";
+			position: absolute;
+			inset-block-start: 0.1875rem;
+			inset-inline-start: 0.1875rem;
+			inline-size: 1.125rem;
+			block-size: 1.125rem;
+			margin: 0;
+			border-radius: 50%;
+			background: #ffffff;
+			box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+			transition: inset-inline-start 0.2s ease;
+		}
+
+		&:checked {
+			background: linear-gradient(135deg, var(--mb-primary), var(--mb-accent));
+
+			&::before {
+				inset-inline-start: 1.4375rem;
+			}
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--mb-accent-light);
+			outline-offset: 2px;
+		}
+	}
+
+	/* ── بخش‌های تاشو ── */
+	& .hodima-mb__section {
+		border: 1px solid var(--mb-border);
+		border-radius: var(--mb-radius);
+		background: #ffffff;
+
+		&[open] {
+			box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--mb-primary) 6%, transparent);
+		}
+	}
+
+	& .hodima-mb__summary {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1rem;
+		color: var(--mb-primary);
+		font-size: 0.875rem;
+		font-weight: 700;
+		cursor: pointer;
+		list-style: none;
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+
+		/* فلش باز/بسته (حاشیه چرخیده؛ بدون فونت آیکون) */
+		&::after {
+			content: "";
+			inline-size: 0.5rem;
+			block-size: 0.5rem;
+			margin-inline-start: auto;
+			border-block-end: 2px solid var(--mb-secondary);
+			border-inline-end: 2px solid var(--mb-secondary);
+			transform: rotate(45deg);
+			transition: transform 0.2s ease;
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--mb-secondary);
+			outline-offset: -2px;
+			border-radius: var(--mb-radius);
+		}
+
+		& .dashicons {
+			color: var(--mb-secondary);
+		}
+	}
+
+	& .hodima-mb__section[open] > .hodima-mb__summary {
+		border-block-end: 1px solid var(--mb-border);
+
+		&::after {
+			transform: rotate(-135deg);
+		}
+	}
+
+	& .hodima-mb__badge {
+		padding: 0.0625rem 0.5rem;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--mb-ok) 12%, #ffffff);
+		color: var(--mb-ok);
+		font-size: 0.6875rem;
+		font-weight: 600;
+	}
+
+	& .hodima-mb__body {
+		display: grid;
+		gap: 1rem;
+		padding: 1rem;
+	}
+
+	& .hodima-mb__intro {
+		margin: 0;
+		color: var(--mb-muted);
+		font-size: 0.8125rem;
+	}
+
+	/* ── فیلدها ── */
+	& .hodima-mb__field {
+		display: grid;
+		gap: 0.375rem;
+		min-inline-size: 0;
+	}
+
+	& .hodima-mb__label {
+		color: var(--mb-text);
+		font-size: 0.8125rem;
+		font-weight: 600;
+	}
+
+	& :is(input[type="text"], input[type="url"], select, textarea) {
+		inline-size: 100%;
+		max-inline-size: 100%;
+		box-sizing: border-box;
+		padding: 0.5rem 0.75rem;
+		border: 1.5px solid var(--mb-border);
+		border-radius: 0.5rem;
+		background: #ffffff;
+		color: var(--mb-text);
+		font: inherit;
+		font-size: 0.8125rem;
+		box-shadow: none;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+		&:focus {
+			border-color: var(--mb-secondary);
+			box-shadow: 0 0 0 3px color-mix(in srgb, var(--mb-secondary) 18%, transparent);
+			outline: none;
+		}
+
+		&[aria-invalid="true"] {
+			border-color: var(--mb-error);
+		}
+	}
+
+	& textarea {
+		min-block-size: 4.5rem;
+		line-height: 1.7;
+		resize: vertical;
+	}
+
+	& [dir="ltr"] {
+		text-align: left;
+	}
+
+	& .hodima-mb__row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+
+		& .button .dashicons {
+			margin-block-start: 0.2rem;
+			font-size: 1rem;
+			inline-size: 1rem;
+			block-size: 1rem;
+		}
+	}
+
+	& .hodima-mb__grow {
+		flex: 1 1 16rem;
+		inline-size: auto;
+	}
+
+	& .hodima-mb__grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+		gap: 1rem;
+	}
+
+	& .hodima-mb__clear {
+		color: var(--mb-error);
+	}
+
+	& .hodima-mb__preview {
+		display: block;
+		max-inline-size: 15rem;
+		max-block-size: 9rem;
+		object-fit: cover;
+		border: 1px solid var(--mb-border);
+		border-radius: 0.5rem;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	& .hodima-mb__help {
+		margin: 0;
+		color: var(--mb-muted);
+		font-size: 0.75rem;
+		line-height: 1.8;
+	}
+
+	& .hodima-mb__status {
+		margin: 0;
+		font-size: 0.75rem;
+		font-weight: 600;
+
+		&:empty,
+		&[hidden] {
+			display: none;
+		}
+
+		&[data-level="ok"] { color: var(--mb-ok); }
+		&[data-level="warn"] { color: var(--mb-warn); }
+		&[data-level="error"] { color: var(--mb-error); }
+	}
+
+	/* ── فهرست بررسی Discover ── */
+	& .hodima-mb__checks {
+		display: grid;
+		gap: 0.375rem;
+		margin: 0;
+		padding: 0.75rem;
+		border-radius: 0.5rem;
+		background: var(--mb-softer);
+		list-style: none;
+
+		& li {
+			display: flex;
+			align-items: flex-start;
+			gap: 0.375rem;
+			margin: 0;
+			font-size: 0.8125rem;
+			line-height: 1.7;
+		}
+
+		& .dashicons {
+			flex-shrink: 0;
+			margin-block-start: 0.125rem;
+		}
+
+		& .is-ok .dashicons { color: var(--mb-ok); }
+		& .is-warn .dashicons { color: var(--mb-warn); }
+		& .is-error .dashicons { color: var(--mb-error); }
+	}
+
+	/* ── سوالات متداول ── */
+	& .hodima-mb__faqs {
+		display: grid;
+		gap: 0.75rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		counter-reset: hodima-faq;
+
+		&:empty {
+			display: none;
+		}
+	}
+
+	& .hodima-mb__faq {
+		display: flex;
+		gap: 0.75rem;
+		margin: 0;
+		padding: 0.75rem;
+		border: 1.5px dashed var(--mb-third);
+		border-radius: 0.625rem;
+		background: var(--mb-softer);
+		counter-increment: hodima-faq;
+
+		&:focus-within {
+			border-style: solid;
+			border-color: var(--mb-secondary);
+			background: #ffffff;
+		}
+	}
+
+	& .hodima-mb__faq-fields {
+		display: grid;
+		flex: 1;
+		gap: 0.5rem;
+
+		& input {
+			font-weight: 600;
+		}
+	}
+
+	& .hodima-mb__faq-tools {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+
+		& .button-link {
+			display: grid;
+			place-items: center;
+			inline-size: 2rem;
+			block-size: 2rem;
+			border-radius: 0.375rem;
+			color: var(--mb-secondary);
+			text-decoration: none;
+
+			&:hover,
+			&:focus-visible {
+				background: var(--mb-soft);
+				color: var(--mb-primary);
+			}
+		}
+
+		& .hodima-mb__delete {
+			color: var(--mb-error);
+
+			&.is-armed {
+				background: var(--mb-error);
+				color: #ffffff;
+			}
+		}
+	}
+
+	& [data-hodima-faq-add] {
+		justify-self: start;
+
+		& .dashicons {
+			margin-block-start: 0.2rem;
+			font-size: 1rem;
+			inline-size: 1rem;
+			block-size: 1rem;
+		}
+	}
 }
 
-.hook-admin-box,
-.hook-term-wrapper {
-    font-family: inherit;
-    box-sizing: border-box;
+/* کادر دسته‌بندی (فرم ویرایش ترم، بیرون از جعبه‌های meta-box) */
+.hodima-mb-postbox {
+	max-inline-size: 60rem;
+	margin-block-start: 1.5rem;
+
+	& .postbox-header .hndle {
+		padding-inline: 1rem;
+		font-family: inherit;
+		color: #25316a;
+	}
 }
 
-.hook-admin-box { 
-    width: 100%;
-    background: var(--hodima-surface, #ffffff); 
-    border: 1px solid var(--hook-accent-light); 
-    padding: 24px; 
-    margin: 0 0 20px; 
-    border-radius: 12px; 
-    box-shadow: 0 4px 12px rgba(37, 49, 106, 0.04); 
-    transition: box-shadow 0.3s ease, border-color 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+@media (prefers-reduced-motion: reduce) {
+	.hodima-mb :is(.hodima-mb__switch, .hodima-mb__switch::before, .hodima-mb__summary::after, input, textarea, select) {
+		transition: none;
+	}
 }
-
-.hook-admin-box:hover {
-    box-shadow: 0 6px 18px rgba(37, 49, 106, 0.08);
-    border-color: var(--hook-accent);
-}
-
-.hook-admin-box-primary {
-    background: linear-gradient(135deg, rgba(37, 49, 106, 0.03) 0%, rgba(96, 123, 189, 0.03) 100%);
-    border-left: 4px solid var(--hook-primary);
-    border-right: 4px solid var(--hook-primary);
-}
-
-.hook-admin-box-primary label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px; 
-    color: var(--hook-primary-dark);
-    font-weight: 600;
-}
-
-.hook-section-title { 
-    font-weight: 700; 
-    font-size: 15px; 
-    border-bottom: 2px solid var(--hook-accent-light); 
-    padding-bottom: 12px; 
-    margin: 0;
-    color: var(--hook-primary); 
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.hook-field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.hook-field-group label, 
-.hook-label-title {
-    font-weight: 600;
-    color: var(--hook-text-main);
-    font-size: 13px; 
-}
-
-.hook-admin-box input[type="text"], 
-.hook-admin-box input[type="url"], 
-.hook-admin-box input[type="date"],
-.hook-admin-box textarea,
-.hook-admin-box select { 
-    width: 100%; 
-    box-sizing: border-box; 
-    padding: 10px 14px;
-    font-family: inherit;
-    font-size: 13px; 
-    color: var(--hook-text-main);
-    border: 1.5px solid var(--hodima-border-light, #d9e1f0);
-    background-color: #fff;
-    border-radius: 8px;
-    transition: all 0.2s ease-in-out;
-}
-
-.hook-admin-box textarea {
-    resize: vertical;
-    min-height: 100px;
-    line-height: 1.6;
-}
-
-.hook-admin-box input:focus,
-.hook-admin-box textarea:focus,
-.hook-admin-box select:focus {
-    border-color: var(--hook-secondary);
-    box-shadow: 0 0 0 4px rgba(96, 123, 189, 0.15);
-    outline: none;
-}
-
-.hook-admin-box .description {
-    color: var(--hook-text-muted);
-    font-size: 12px; 
-    line-height: 1.7;
-    margin: 0;
-}
-
-.hook-video-cover-wrap {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap; 
-}
-
-.hook-video-cover-input {
-    flex: 1 1 250px;
-}
-
-.hook-faq-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.hook-faq-item { 
-    border: 1.5px dashed var(--hook-accent); 
-    padding: 16px; 
-    background: var(--hook-bg-light); 
-    border-radius: 10px; 
-    position: relative; 
-    box-sizing: border-box; 
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    transition: all 0.2s ease;
-}
-
-.hook-faq-item:hover {
-    background: var(--hodima-surface, #ffffff);
-    border-color: var(--hook-secondary);
-    box-shadow: 0 2px 8px rgba(37, 49, 106, 0.05);
-}
-
-.hook-faq-item input { 
-    font-weight: 600; 
-}
-
-.hook-faq-item textarea { 
-    height: 80px; 
-    min-height: 80px; 
-}
-
-.hook-remove-faq { 
-    color: var(--hook-danger); 
-    cursor: pointer;
-    font-size: 13px; 
-    font-weight: 500;
-    align-self: flex-start;
-    transition: color 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.hook-remove-faq:hover { 
-    color: var(--hook-danger-dark); 
-}
-
-.hook-add-faq { 
-    background: var(--hodima-surface, #ffffff); 
-    border: 2px solid var(--hook-primary); 
-    color: var(--hook-primary); 
-    padding: 10px 20px; 
-    cursor: pointer; 
-    border-radius: 8px; 
-    font-weight: 700; 
-    font-size: 13px; 
-    font-family: inherit;
-    transition: all 0.2s ease;
-    display: inline-flex; 
-    align-items: center;
-    justify-content: center;
-    align-self: flex-start;
-    gap: 6px;
-}
-
-.hook-add-faq:hover { 
-    background: var(--hook-primary); 
-    color: #fff;
-    box-shadow: 0 4px 10px rgba(37, 49, 106, 0.2);
-}
-
-.hook-term-wrapper .hook-admin-box {
-    margin-top: 0; 
-}
-
-#hook_term_media_box .hndle,
-#hook_term_media_box_add .hndle {
-    font-family: inherit;
-    color: var(--hook-primary);
-    font-weight: 700;
-}
-
-/* نسخه ۳ */
-.hook-textarea { width: 100%; }
-.hook-duration { max-width: 260px; direction: ltr; text-align: left; }
-.hook-video-cover-preview {
-    display: block;
-    max-width: 240px;
-    max-height: 140px;
-    margin-top: 8px;
-    object-fit: cover;
-    border: 1px solid var(--hodima-border-light, #d9e1f0);
-    border-radius: 6px;
-}
-.hook-video-cover-preview[hidden] { display: none; }
