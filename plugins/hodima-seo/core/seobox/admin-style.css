@@ -53,7 +53,12 @@
     color: var(--sb-text);
     font-size: 13px;
 
-    & *, & *::before, & *::after { box-sizing: border-box; font-family: inherit; }
+    & *, & *::before, & *::after { box-sizing: border-box; }
+    /*
+     * فقط کنترل‌های فرم (مرورگر فونت خودش را به آن‌ها می‌دهد). قبلا روی همه
+     * ::before ها بود و فونت Dashicons را از بین می‌برد؛ هیچ آیکونی دیده نمی‌شد.
+     */
+    & :is(input, textarea, select, button) { font-family: inherit; }
     & [hidden] { display: none; }
 
     & code { font-size: 11.5px; padding: 1px 5px; border-radius: 4px; background: var(--sb-soft); }
@@ -117,6 +122,15 @@
         &:hover { color: var(--sb-primary); background: var(--sb-soft); }
         &[aria-selected="true"] { color: var(--sb-primary); border-block-end-color: var(--sb-secondary); }
         &:focus-visible { outline: 2px solid var(--sb-secondary); outline-offset: -2px; }
+
+        /* «ایندکس / نوایندکس»: سبز یا قرمز، انتخاب‌شده یا نه */
+        &.seobox__tab--state[data-state="index"] { --tone: var(--sb-ok); }
+        &.seobox__tab--state[data-state="noindex"] { --tone: var(--sb-error); }
+        &.seobox__tab--state,
+        &.seobox__tab--state:hover,
+        &.seobox__tab--state[aria-selected="true"] { color: var(--tone); }
+        &.seobox__tab--state[aria-selected="true"] { border-block-end-color: var(--tone); }
+        &.seobox__tab--state:hover { background: color-mix(in srgb, var(--tone) 8%, #fff); }
     }
 
     /* بدون جاوااسکریپت تب‌ها معنا ندارند و هر دو بخش زیر هم دیده می‌شوند */
@@ -148,6 +162,15 @@
         color: #fff;
         background: var(--sb-primary);
         border-radius: 50%;
+
+        /* لوگوی قالب: داخل دایره سفید، بدون برش لوگوی افقی */
+        &.has-image {
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid var(--sb-border);
+        }
+
+        & img { display: block; inline-size: 100%; block-size: 100%; padding: 2px; object-fit: contain; }
     }
 
     & .seobox__serp-name { display: block; font-size: 13px; color: #202124; }
@@ -190,7 +213,8 @@
         border-radius: var(--sb-radius-sm);
         box-shadow: none;
 
-        &::placeholder { color: color-mix(in srgb, var(--sb-muted) 75%, #fff); opacity: 1; }
+        &::placeholder { color: color-mix(in srgb, var(--sb-muted) 75%, #fff); opacity: 1; transition: opacity 0.2s ease; }
+        &:focus::placeholder { opacity: 0.45; }
         &:focus { border-color: var(--sb-secondary); box-shadow: 0 0 0 1px var(--sb-secondary); outline: 2px solid transparent; }
     }
 
@@ -251,29 +275,47 @@
         & .seobox__grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
 
-    /* ── انتخاب دوحالته (رادیو) ── */
+    /* ── انتخاب دوحالته (رادیو): عنوان و دو گزینه کوچک در یک ردیف ── */
     & .seobox__segment {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.25rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem 0.75rem;
         margin: 0;
-        padding: 0.25rem;
+        padding: 0.55rem 0.75rem;
         min-inline-size: 0;
         background: var(--sb-soft);
         border: 1px solid var(--sb-border);
         border-radius: var(--sb-radius-sm);
 
+        /* float: legend جزو چیدمان flex شود (legend عادی بیرون از آن رندر می‌شود) */
         & legend {
             float: inline-start;
-            grid-column: 1 / -1;
-            inline-size: 100%;
             margin: 0;
-            padding: 0.2rem 0.3rem 0.35rem;
+            padding: 0;
             font-weight: 600;
             color: var(--sb-primary);
         }
+    }
 
-        & label { position: relative; display: block; margin: 0; cursor: pointer; }
+    & .seobox__segment-options {
+        display: inline-flex;
+        gap: 0.2rem;
+        padding: 0.15rem;
+        background: #fff;
+        border: 1px solid var(--sb-border);
+        border-radius: 999px;
+    }
+
+    & .seobox__option {
+        --tone: var(--sb-ok);
+        position: relative;
+        display: block;
+        margin: 0;
+        cursor: pointer;
+
+        &.seobox__option--off { --tone: var(--sb-error); }
 
         & input {
             position: absolute;
@@ -285,23 +327,24 @@
             cursor: pointer;
         }
 
-        & span {
-            display: flex;
-            flex-direction: column;
+        & > span {
+            display: inline-flex;
             align-items: center;
-            gap: 0.05rem;
-            padding: 0.45rem 0.5rem;
+            gap: 0.2rem;
+            padding: 0.2rem 0.65rem;
+            font-size: 12px;
             font-weight: 600;
-            text-align: center;
+            line-height: 1.6;
+            white-space: nowrap;
             color: var(--sb-muted);
-            border-radius: calc(var(--sb-radius-sm) - 2px);
-            transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+            border-radius: 999px;
+            transition: background-color 0.15s ease, color 0.15s ease;
         }
 
-        & small { font-size: 11px; font-weight: 400; opacity: 0.85; }
+        & .dashicons { font-size: 14px; inline-size: 14px; block-size: 14px; }
 
-        & input:checked + span { color: #fff; background: var(--sb-primary); box-shadow: 0 1px 3px rgb(37 49 106 / 0.25); }
-        & input[value^="no"]:checked + span { background: var(--sb-error); }
+        &:hover > span { color: var(--tone); }
+        & input:checked + span { color: #fff; background: var(--tone); }
         & input:focus-visible + span { outline: 2px solid var(--sb-secondary); outline-offset: 1px; }
     }
 

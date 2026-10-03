@@ -6,7 +6,9 @@
  *   - پیش‌نمایش گوگل با مقادیر سرور (data-seobox): سال/ماه شمسی، سال
  *     میلادی، شعار و جداکننده. قبلا سال میلادی مرورگر (2026) به جای
  *     سال شمسی روی سایت (۱۴۰۵) نشان داده می‌شد و %currentmonth% و %gyear% ناپدید می‌شدند.
- *   - شمارنده به *پیکسل*: گوگل عنوان را با عرض نمایش (حدود ۵۸۰ پیکسل) کوتاه می‌کند.
+ *   - شمارنده به *پیکسل* («۴۵۳ از ۵۸۰ پیکسل»): گوگل عنوان را با عرض نمایش
+ *     (حدود ۵۸۰ پیکسل) کوتاه می‌کند، نه با تعداد نویسه.
+ *   - تب «ایندکس / نوایندکس» با انتخاب، زنده سبز یا قرمز می‌شود.
  *   - دکمه‌های متغیر، متغیر را در آخرین فیلد فعال (عنوان/توضیحات) درج می‌کنند.
  * ========================================================================= */
 (() => {
@@ -116,7 +118,7 @@
             const ratio   = px / limit.px;
 
             if (counter) {
-                counter.textContent = value ? `${value.length} نویسه · ${px} از ${limit.px} پیکسل` : 'خالی';
+                counter.textContent = `${px} از ${limit.px} پیکسل`;
                 counter.classList.toggle('is-over', ratio > 1);
             }
             if (bar) {
@@ -154,6 +156,26 @@
                 const now = objectTitle();
                 if (now !== last) { last = now; render(); }
             });
+        }
+
+        /* ── رنگ تب «ایندکس / نوایندکس»: سبز = ایندکس، قرمز = نوایندکس ──
+         * noindex قدیمی (افزونه قبلی) تا وقتی تیک حذفش نخورده، صفحه را
+         * نوایندکس نگه می‌دارد؛ تب هم قرمز می‌ماند. */
+        const stateTab = root.querySelector('.seobox__tab--state');
+        if (stateTab) {
+            const external = root.dataset.seoboxExternal === '1';
+            const clear    = root.querySelector('[data-seobox-clear-legacy]');
+            const icon     = stateTab.querySelector('.dashicons');
+            const syncState = () => {
+                const chosen  = root.querySelector('input[name="seobox_robot_index"]:checked')?.value;
+                const noindex = chosen === 'noindex' || (external && !clear?.checked);
+                stateTab.dataset.state = noindex ? 'noindex' : 'index';
+                icon?.classList.toggle('dashicons-hidden', noindex);
+                icon?.classList.toggle('dashicons-visibility', !noindex);
+            };
+            root.querySelectorAll('input[name="seobox_robot_index"]').forEach((el) => el.addEventListener('change', syncState));
+            clear?.addEventListener('change', syncState);
+            syncState();
         }
 
         /* ── درج متغیر ─────────────────────────────────────────────── */
