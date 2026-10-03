@@ -464,6 +464,25 @@ function auto_enabled(): bool {
 	return (bool) apply_filters( 'hodima_redirects_auto', true );
 }
 
+/**
+ * آیا آدرس قدیمی هنوز صفحه زنده *دیگری* را نشان می‌دهد؟
+ *
+ * با آدرس بدون پایه، محصول و نوشته (یا دسته محصول و دسته نوشته) هم‌نام
+ * می‌توانستند یک آدرس داشته باشند. تغییر نامک صفحه پنهان‌مانده قانون
+ * «آدرس قدیمی ← آدرس جدید» می‌ساخت که صفحه دیگری را که روی همان آدرس است
+ * از دسترس خارج می‌کرد (ریدایرکت‌ها پیش از نمایش صفحه اجرا می‌شوند).
+ */
+function url_owned_by_other( string $url, string $kind, int $id ): bool {
+
+	if ( ! function_exists( 'hodima_router_resolve_url' ) ) {
+		return false;
+	}
+
+	$hit = hodima_router_resolve_url( $url );
+
+	return null !== $hit && ! ( $hit['kind'] === $kind && $hit['id'] === $id );
+}
+
 function term_paths_with_children( int $term_id, string $taxonomy ): array {
 
 	$ids   = array_merge( [ $term_id ], array_slice( (array) get_term_children( $term_id, $taxonomy ), 0, 200 ) );
@@ -499,7 +518,7 @@ add_action( 'edited_term', static function ( $term_id, $tt_id = 0, $taxonomy = '
 
 	foreach ( $before as $id => $old_url ) {
 		$new_url = $after[ $id ] ?? '';
-		if ( '' !== $new_url && normalize_path( $old_url ) !== normalize_path( $new_url ) ) {
+		if ( '' !== $new_url && normalize_path( $old_url ) !== normalize_path( $new_url ) && ! url_owned_by_other( $old_url, 'term', (int) $id ) ) {
 			add_rule( $old_url, $new_url, 301, 'term' );
 		}
 	}
@@ -522,7 +541,7 @@ add_action( 'post_updated', static function ( $post_id, $after, $before ): void 
 	$old_url = (string) get_permalink( $before );
 	$new_url = (string) get_permalink( $after );
 
-	if ( '' !== $old_url && '' !== $new_url && normalize_path( $old_url ) !== normalize_path( $new_url ) ) {
+	if ( '' !== $old_url && '' !== $new_url && normalize_path( $old_url ) !== normalize_path( $new_url ) && ! url_owned_by_other( $old_url, 'post', (int) $post_id ) ) {
 		add_rule( $old_url, $new_url, 301, 'post' );
 	}
 }, 10, 3 );

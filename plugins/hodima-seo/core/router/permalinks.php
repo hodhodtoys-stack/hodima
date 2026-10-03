@@ -1,44 +1,58 @@
 <?php
 /**
- * Arian Clean Router - Permalink output
- * تولید لینک‌های تمیز: حذف پایه دسته‌بندی و محصولات.
+ * Hodima Router — ساخت لینک‌های بدون پایه
+ * Path: core/router/permalinks.php
+ *
+ * محصول: /نامک/ به جای /product/نامک/
+ * دسته محصول و دسته نوشته: بدون /product-category/ و /category/
  */
-if ( ! defined( 'ABSPATH' ) ) exit;
 
-/** حذف یک پایه از ابتدای لینک، فقط بعد از مسیر خانه (مرز-امن) */
-function arian_strip_leading_base( $link, $base ) {
-    if ( $base === '' ) return $link;
-    $home = trailingslashit( home_url() );
-    $needle = $home . $base . '/';
-    if ( strpos( $link, $needle ) === 0 ) {
-        return $home . substr( $link, strlen( $needle ) );
-    }
-    return $link;
-}
+declare(strict_types=1);
+
+defined( 'ABSPATH' ) || exit;
+
+add_filter( 'post_type_link', 'hodima_router_product_link', 10, 3 );
 
 /**
- * لینک محصول → حذف پایه و استفاده از نامک (Slug).
- * برای وضعیت‌های غیرمنتشر لینک پیش‌فرض حفظ می‌شود تا پیش‌نمایش نشکند.
+ * لینک محصول. برای پیش‌نویس، در انتظار و زمان‌بندی‌شده لینک پیش‌فرض می‌ماند تا
+ * پیش‌نمایش نشکند. با $leavename (پیوند نمونه پیشخوان) نشانگر %product% برمی‌گردد
+ * تا دکمه «ویرایش» نامک زیر عنوان محصول کار کند؛ نسخه قبلی نامک ثابت می‌داد.
+ *
+ * @param string  $permalink
+ * @param WP_Post $post
+ * @param bool    $leavename
  */
-add_filter( 'post_type_link', function ( $permalink, $post ) {
-    if ( empty( $post->post_type ) || $post->post_type !== 'product' ) {
-        return $permalink;
-    }
-    $unpublished = array( 'draft', 'pending', 'auto-draft', 'future' );
-    if ( in_array( $post->post_status, $unpublished, true ) ) {
-        return $permalink; // اجازه بده WP لینک پیش‌نمایش بسازد
-    }
-    // جایگزینی ID با post_name برای برگرداندن نامک در آدرس
-    return home_url( user_trailingslashit( $post->post_name ) );
-}, 10, 2 );
+function hodima_router_product_link( $permalink, $post, $leavename = false ) {
 
-/** حذف پایه دسته نوشته و دسته محصول از لینک ترم‌ها */
-add_filter( 'term_link', function ( $termlink, $term, $taxonomy ) {
-    if ( $taxonomy === 'category' ) {
-        return arian_strip_leading_base( $termlink, arian_category_base() );
-    }
-    if ( $taxonomy === 'product_cat' ) {
-        return arian_strip_leading_base( $termlink, arian_product_cat_base() );
-    }
-    return $termlink;
-}, 10, 3 );
+	if ( ! ( $post instanceof WP_Post ) || 'product' !== $post->post_type || ! hodima_router_active() ) {
+		return $permalink;
+	}
+
+	if ( in_array( $post->post_status, [ 'draft', 'pending', 'auto-draft', 'future' ], true ) || '' === $post->post_name ) {
+		return $permalink;
+	}
+
+	return home_url( user_trailingslashit( $leavename ? '%product%' : $post->post_name ) );
+}
+
+add_filter( 'term_link', 'hodima_router_term_link', 10, 3 );
+
+/**
+ * @param string  $termlink
+ * @param WP_Term $term
+ * @param string  $taxonomy
+ */
+function hodima_router_term_link( $termlink, $term, $taxonomy ) {
+
+	if ( ! hodima_router_active() ) {
+		return $termlink;
+	}
+
+	$bases = hodima_router_bases();
+
+	return match ( (string) $taxonomy ) {
+		'category'    => hodima_router_strip_base( (string) $termlink, $bases['category'] ),
+		'product_cat' => hodima_router_strip_base( (string) $termlink, $bases['product_cat'] ),
+		default       => $termlink,
+	};
+}

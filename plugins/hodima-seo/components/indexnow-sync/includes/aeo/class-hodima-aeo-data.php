@@ -29,7 +29,14 @@ final class Hodima_AEO_Data {
                 continue;
             }
 
-            if ( function_exists( 'arian_resolve_path' ) ) {
+            // API ماژول «آدرس تمیز»؛ نام قدیمی arian_resolve_path فقط فالبک
+            if ( function_exists( 'hodima_router_resolve_url' ) ) {
+                $hit = hodima_router_resolve_url( home_url( '/' . implode( '/', $segments ) . '/' ), true );
+                if ( null !== $hit && self::is_addressable( $hit['id'], $hit['kind'] ) ) {
+                    $type = $hit['kind'];
+                    return $hit['id'];
+                }
+            } elseif ( function_exists( 'arian_resolve_path' ) ) {
                 $resolved = arian_resolve_path( $variant, $segments );
                 $mapped   = self::map_router_vars( $resolved, $type );
                 if ( $mapped && self::is_addressable( $mapped, $type ) ) {
@@ -296,13 +303,8 @@ final class Hodima_AEO_Data {
         $identifier = (string) preg_replace( '#^(fa|en)/#i', '', $identifier );
         $identifier = (string) preg_replace( '#\.md$#i', '', $identifier );
 
-        if ( function_exists( 'arian_strip_leading_base' ) ) {
-            $full = home_url( '/' . $identifier );
-            foreach ( [ 'arian_product_base', 'arian_product_cat_base', 'arian_category_base' ] as $base_fn ) {
-                if ( function_exists( $base_fn ) ) {
-                    $full = arian_strip_leading_base( $full, $base_fn() );
-                }
-            }
+        if ( function_exists( 'hodima_router_clean_url' ) ) {
+            $full       = hodima_router_clean_url( home_url( '/' . $identifier ) );
             $identifier = trim( (string) wp_parse_url( $full, PHP_URL_PATH ), '/' );
             if ( $home_path !== '' && str_starts_with( $identifier, $home_path . '/' ) ) {
                 $identifier = substr( $identifier, strlen( $home_path ) + 1 );

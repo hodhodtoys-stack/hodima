@@ -2,7 +2,7 @@
 /**
  * SeoBox — bootstrap
  * Path: core/seobox/seobox-init.php
- * Version: 4.0.0
+ * Version: 5.0.0
  */
 
 declare(strict_types=1);
@@ -11,12 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SEOBOX_DIR', HODIMA_SEO_DIR . '/core/seobox/' );
-define( 'SEOBOX_URL', HODIMA_SEO_URL . '/core/seobox/' );
-define( 'SEOBOX_VERSION', '4.0.0' );
+defined( 'SEOBOX_DIR' ) || define( 'SEOBOX_DIR', HODIMA_SEO_DIR . '/core/seobox/' );
+defined( 'SEOBOX_URL' ) || define( 'SEOBOX_URL', HODIMA_SEO_URL . '/core/seobox/' );
+defined( 'SEOBOX_VERSION' ) || define( 'SEOBOX_VERSION', '5.0.0' );
 
 require_once SEOBOX_DIR . 'core-variables.php';
-// robots-txt.php حالا ماژول جداگانه «robots.txt» در افزونه SEO است
+// robots-txt.php ماژول جداگانه «robots.txt» در افزونه SEO است
 
 if ( is_admin() ) {
 
@@ -43,16 +43,18 @@ if ( is_admin() ) {
 			return;
 		}
 
-		wp_enqueue_style( 'seobox-admin-style', SEOBOX_URL . 'admin-style.css', [], SEOBOX_VERSION );
+		/*
+		 * نسخه فایل‌ها = نسخه افزونه. قبلا ثابت «4.0.0» بود و با تغییر CSS
+		 * (مثلا بازطراحی پیشخوان) مرورگر و کش لایت‌اسپید نسخه قدیمی را نگه
+		 * می‌داشتند.
+		 */
+		$version = HODIMA_SEO_VERSION;
+
+		wp_enqueue_style( 'seobox-admin-style', SEOBOX_URL . 'admin-style.css', [ 'dashicons' ], $version );
 
 		if ( $is_post_editor || $is_term_editor ) {
-			/*
-			 * بدون وابستگی. نسخه قبلی ['wp-data', 'wp-editor'] را می‌خواست که
-			 * اسکریپت اصلا از آن‌ها استفاده نمی‌کرد، ولی روی صفحه ویرایش
-			 * دسته‌بندی و محصول (ویرایشگر کلاسیک) کل بسته ویرایشگر بلوکی را
-			 * بارگذاری می‌کرد.
-			 */
-			wp_enqueue_script( 'seobox-admin-script', SEOBOX_URL . 'admin-script.js', [], SEOBOX_VERSION, true );
+			// بدون وابستگی: wp-data فقط اگر ویرایشگر بلوکی خودش لود کرده باشد استفاده می‌شود
+			wp_enqueue_script( 'seobox-admin-script', SEOBOX_URL . 'admin-script.js', [], $version, [ 'in_footer' => true, 'strategy' => 'defer' ] );
 		}
 	} );
 

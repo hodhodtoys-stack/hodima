@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           1.8.2
+ * Version:           1.10.1
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '1.8.2';
+const HODIMA_SEO_VERSION = '1.10.1';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -94,9 +94,9 @@ function hodima_seo_modules(): array {
 		],
 		'router' => [
 			'title'       => 'آدرس تمیز (بدون پایه)',
-			'description' => 'حذف /product/ و /product-category/ و /category/ از آدرس‌ها، با ریدایرکت ۳۰۱ آدرس‌های قدیمی و بستن مسیرهای تکراری.',
+			'description' => 'حذف /product/ و /product-category/ و /category/ از آدرس‌ها؛ هر صفحه یک آدرس دارد و شکل‌های قدیمی و تکراری با ۳۰۱ به آن می‌روند. جلوگیری از نامک تکراری بین محصول، نوشته، برگه و دسته‌ها و گزارش تداخل‌های موجود.',
 			'files'       => [ 'core/router/router.php' ],
-			'settings'    => 'options-permalink.php',
+			'settings'    => 'admin.php?page=hodima-router',
 			'warning'     => 'آدرس همه محصولات و دسته‌ها به حالت پیش‌فرض (با /product/ و /product-category/) برمی‌گردد؛ لینک‌های فعلی و ایندکس‌شده گوگل ۴۰۴ می‌شوند.',
 			'icon'        => 'dashicons-admin-site-alt3',
 		],
@@ -110,7 +110,7 @@ function hodima_seo_modules(): array {
 		],
 		'seobox' => [
 			'title'       => 'متاباکس سئو',
-			'description' => 'عنوان، توضیحات، canonical، robots و تگ‌های Open Graph و Twitter برای نوشته‌ها، محصولات و دسته‌ها.',
+			'description' => 'عنوان، توضیحات، canonical، robots و تگ‌های Open Graph و Twitter برای نوشته‌ها، برگه‌ها، محصولات، دسته‌ها و برچسب‌ها، با پیش‌نمایش گوگل و فیلتر Index/Noindex فهرست‌ها.',
 			'files'       => [ 'core/seobox/seobox-init.php' ],
 			'warning'     => 'عنوان سفارشی، توضیحات متا، canonical و تگ‌های شبکه‌های اجتماعی همه صفحات حذف می‌شوند.',
 			'icon'        => 'dashicons-search',
@@ -188,12 +188,11 @@ add_action( 'plugins_loaded', static function (): void {
 }, 5 );
 
 /*
- * قوانین بازنویسی (سایت‌مپ، robots، آدرس‌های بدون پایه، llms.txt، فید پادکست)
+ * قوانین بازنویسی (سایت‌مپ، robots، llms.txt، فید پادکست)
  * با فعال/غیرفعال شدن افزونه باید از نو ساخته شوند.
  */
 register_activation_hook( __FILE__, static function (): void {
-	delete_option( 'arian_router_flushed' ); // روتر در init بعدی flush می‌کند
-	delete_option( 'rewrite_rules' );
+	delete_option( 'rewrite_rules' ); // وردپرس در اولین درخواست بعدی از نو می‌سازد
 } );
 
 register_deactivation_hook( __FILE__, static function (): void {

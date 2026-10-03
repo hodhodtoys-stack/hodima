@@ -308,14 +308,23 @@ function hodima_get_canonical_url(): string {
     }
 
     // ترتیب بررسی مهم است: برگه ثابت صفحه اصلی هم is_singular() را true می‌کند.
+    /*
+     * canonical دستی سئوباکس برای برگه صفحه اصلی، وبلاگ و فروشگاه هم
+     * خوانده می‌شود؛ قبلا فقط نوشته‌ها و ترم‌ها override داشتند و مقدار
+     * ذخیره‌شده در کادر سئوی این سه برگه نادیده گرفته می‌شد.
+     */
+    $page_override = static fn( int $page_id ): string => $page_id > 0 ? (string) get_post_meta( $page_id, '_seobox_canonical', true ) : '';
+
     if ( is_front_page() ) {
 
-        $url = home_url( '/' );
+        $override = 'page' === get_option( 'show_on_front' ) ? $page_override( (int) get_option( 'page_on_front' ) ) : '';
+        $url      = $override !== '' ? $override : home_url( '/' );
 
     } elseif ( is_home() ) {
 
-        $blog_id = (int) get_option( 'page_for_posts' );
-        $url     = $blog_id > 0 ? (string) get_permalink( $blog_id ) : home_url( '/' );
+        $blog_id  = (int) get_option( 'page_for_posts' );
+        $override = $page_override( $blog_id );
+        $url      = $override !== '' ? $override : ( $blog_id > 0 ? (string) get_permalink( $blog_id ) : home_url( '/' ) );
 
     } elseif ( is_singular() ) {
 
@@ -340,8 +349,9 @@ function hodima_get_canonical_url(): string {
 
     } elseif ( function_exists( 'is_shop' ) && is_shop() ) {
 
-        $shop_id = function_exists( 'wc_get_page_id' ) ? (int) wc_get_page_id( 'shop' ) : 0;
-        $url     = $shop_id > 0 ? (string) get_permalink( $shop_id ) : home_url( '/' );
+        $shop_id  = function_exists( 'wc_get_page_id' ) ? (int) wc_get_page_id( 'shop' ) : 0;
+        $override = $page_override( $shop_id );
+        $url      = $override !== '' ? $override : ( $shop_id > 0 ? (string) get_permalink( $shop_id ) : home_url( '/' ) );
 
     } elseif ( is_post_type_archive() ) {
 
