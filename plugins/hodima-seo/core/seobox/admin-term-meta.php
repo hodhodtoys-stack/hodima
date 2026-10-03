@@ -10,43 +10,37 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/*
+ * اولویت ۲۰ بعد از ثبت تکسونومی‌های ووکامرس (ویژگی‌ها در init).
+ *
+ * کادر از ردیف جدول فرم ({taxonomy}_edit_form_fields، بدون کادر و با
+ * استایل‌های .form-field وردپرس روی ورودی‌ها) به یک postbox عنوان‌دار بعد
+ * از جدول ({taxonomy}_edit_form، داخل همان فرم) رفت — همان الگوی
+ * «خوشه‌بندی» (اولویت ۸) و «لینک‌های مرتبط» (۹)؛ سئو اولشان.
+ */
 add_action( 'init', static function (): void {
 	foreach ( seobox_taxonomies() as $taxonomy ) {
-		add_action( "{$taxonomy}_edit_form_fields", 'seobox_render_term_ui', 10, 2 );
+		add_action( "{$taxonomy}_edit_form", 'seobox_render_term_ui', 7, 2 );
 		add_action( "edited_{$taxonomy}", 'seobox_save_term_meta', 10, 1 );
 	}
-} );
+}, 20 );
 
-function seobox_render_term_ui( WP_Term $term, string $taxonomy ): void {
+function seobox_render_term_ui( mixed $term, string $taxonomy = '' ): void {
 
-	$term_id = (int) $term->term_id;
-	$link    = get_term_link( $term );
-	$meta    = static fn( string $key ): string => (string) get_term_meta( $term_id, '_seobox_' . $key, true );
-
-	$fallback = wp_strip_all_tags( strip_shortcodes( (string) $term->description ) );
-	$fallback = mb_substr( trim( (string) preg_replace( '/\s+/u', ' ', $fallback ) ), 0, 155 );
-
-	echo '<tr class="form-field seobox-term-row"><td colspan="2">';
-	echo '<h3 class="seobox-term-title">تنظیمات سئو (SeoBox)</h3>';
-
-	seobox_render_html( [
-		'title'       => $meta( 'title' ),
-		'description' => $meta( 'description' ),
-		'canonical'   => $meta( 'canonical' ),
-		'robots'      => seobox_normalize_robots( get_term_meta( $term_id, '_seobox_robots', true ) ),
-		'adv_snippet' => '' !== $meta( 'adv_snippet' ) ? $meta( 'adv_snippet' ) : '-1',
-		'adv_video'   => '' !== $meta( 'adv_video' ) ? $meta( 'adv_video' ) : '-1',
-		'adv_image'   => '' !== $meta( 'adv_image' ) ? $meta( 'adv_image' ) : 'large',
-		'current_url' => is_wp_error( $link ) ? '' : (string) $link,
-		'fallback'    => $fallback,
-	] );
-
-	echo '</td></tr>';
+	if ( ! $term instanceof WP_Term ) {
+		return;
+	}
+	?>
+	<div class="postbox seobox-postbox">
+		<div class="postbox-header"><h2 class="hndle">سئو (SeoBox)</h2></div>
+		<div class="inside"><?php seobox_render_html( seobox_editor_data( (int) $term->term_id, 'term' ) ); ?></div>
+	</div>
+	<?php
 }
 
 function seobox_save_term_meta( int $term_id ): void {
 
-	$nonce = isset( $_POST['seobox_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['seobox_nonce'] ) ) : '';
+	$nonce = isset( $_POST['seobox_nonce'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['seobox_nonce'] ) ) : '';
 
 	if ( ! wp_verify_nonce( $nonce, 'seobox_save_action' ) ) {
 		return;
@@ -54,8 +48,7 @@ function seobox_save_term_meta( int $term_id ): void {
 
 	/*
 	 * تکسونومی از خود ترم خوانده می‌شود، نه از $_POST['taxonomy'].
-	 * نسخه قبلی قابلیت را روی تکسونومی‌ای بررسی می‌کرد که کاربر فرستاده بود،
-	 * و اگر آن فیلد در درخواست نبود به قابلیت ثابت manage_categories برمی‌گشت.
+	 * نسخه قدیمی قابلیت را روی تکسونومی‌ای بررسی می‌کرد که کاربر فرستاده بود.
 	 */
 	$term = get_term( $term_id );
 
@@ -63,9 +56,7 @@ function seobox_save_term_meta( int $term_id ): void {
 		return;
 	}
 
-	$taxonomy = get_taxonomy( $term->taxonomy );
-
-	if ( ! $taxonomy || ! current_user_can( $taxonomy->cap->edit_terms ) ) {
+	if ( ! current_user_can( 'edit_term', $term_id ) ) {
 		return;
 	}
 

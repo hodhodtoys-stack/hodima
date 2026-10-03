@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           1.8.1
+ * Version:           1.9.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '1.8.1';
+const HODIMA_SEO_VERSION = '1.9.0';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -110,7 +110,7 @@ function hodima_seo_modules(): array {
 		],
 		'seobox' => [
 			'title'       => 'متاباکس سئو',
-			'description' => 'عنوان، توضیحات، canonical، robots و تگ‌های Open Graph و Twitter برای نوشته‌ها، محصولات و دسته‌ها.',
+			'description' => 'عنوان، توضیحات، canonical، robots و تگ‌های Open Graph و Twitter برای نوشته‌ها، برگه‌ها، محصولات، دسته‌ها و برچسب‌ها، با پیش‌نمایش گوگل و فیلتر Index/Noindex فهرست‌ها.',
 			'files'       => [ 'core/seobox/seobox-init.php' ],
 			'warning'     => 'عنوان سفارشی، توضیحات متا، canonical و تگ‌های شبکه‌های اجتماعی همه صفحات حذف می‌شوند.',
 			'icon'        => 'dashicons-search',
