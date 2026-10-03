@@ -44,7 +44,7 @@ final class Editor {
 
 		add_action( 'init', static function (): void {
 			foreach ( Graph::taxonomies() as $taxonomy ) {
-				add_action( "{$taxonomy}_edit_form_fields", [ self::class, 'term_edit' ], 10, 2 );
+				add_action( "{$taxonomy}_edit_form", [ self::class, 'term_edit' ], 8, 2 );
 				add_action( "{$taxonomy}_add_form_fields", [ self::class, 'term_add' ], 10, 1 );
 				add_action( "edited_{$taxonomy}", [ self::class, 'save_term' ], 10, 1 );
 				add_action( "created_{$taxonomy}", [ self::class, 'save_term' ], 10, 1 );
@@ -89,7 +89,13 @@ final class Editor {
 	}
 
 	/* =================================================================
-	 * کادر ویرایشگر نوشته
+	 * کادر ویرایشگر
+	 * -----------------------------------------------------------------
+	 * طراحی نسخه ۴.۱: یک کادر با نوار وضعیت، سوییچ‌ها و بخش‌های جدا (کارت)،
+	 * مثل کادرهای «تنظیمات رسانه» و «لینک‌های مرتبط». در صفحه دسته قبلا
+	 * فیلدها بدون کادر داخل جدول فرم وردپرس بودند؛ حالا یک postbox جدا با
+	 * عنوان است. چیدمان با container query: در ستون کناری ویرایشگر یک‌ستونه،
+	 * در صفحه دسته دوستونه.
 	 * ================================================================= */
 
 	public static function meta_boxes(): void {
@@ -101,37 +107,37 @@ final class Editor {
 	}
 
 	public static function render_post( WP_Post $post ): void {
-		echo '<div class="htc-box htc-box--side">';
-		self::fields( Ref::post( $post->ID ) );
-		echo '</div>';
+		self::box( Ref::post( $post->ID ) );
 	}
 
-	public static function term_edit( WP_Term $term, string $taxonomy ): void {
+	/** صفحه ویرایش دسته: postbox جدا بعد از فیلدهای اصلی (داخل همان فرم). */
+	public static function term_edit( $term, string $taxonomy = '' ): void {
+
+		if ( ! $term instanceof WP_Term ) {
+			return;
+		}
 		?>
-		<tr class="form-field htc-term-row">
-			<th scope="row">خوشه‌بندی محتوا</th>
-			<td>
-				<div class="htc-box htc-box--term">
-					<?php self::fields( Ref::term( (int) $term->term_id ), $taxonomy ); ?>
-				</div>
-			</td>
-		</tr>
+		<div class="postbox htc-postbox">
+			<div class="postbox-header"><h2 class="hndle">خوشه‌بندی محتوا</h2></div>
+			<div class="inside"><?php self::box( Ref::term( (int) $term->term_id ), $term->taxonomy ); ?></div>
+		</div>
 		<?php
 	}
 
+	/** فرم «افزودن دسته» (ستون کناری صفحه دسته‌ها). */
 	public static function term_add( string $taxonomy ): void {
 		?>
-		<div class="form-field htc-box htc-box--term">
-			<span class="htc-box__title">خوشه‌بندی محتوا</span>
-			<?php self::fields( null, $taxonomy ); ?>
+		<div class="htc-add-term">
+			<p class="htc-add-term__title"><span class="dashicons dashicons-networking" aria-hidden="true"></span> خوشه‌بندی محتوا</p>
+			<?php self::box( null, $taxonomy ); ?>
 		</div>
 		<?php
 	}
 
 	/**
-	 * فیلدهای مشترک. $ref = null یعنی فرم «افزودن دسته» (هنوز شناسه‌ای نیست).
+	 * کادر مشترک. $ref = null یعنی فرم «افزودن دسته» (هنوز شناسه‌ای نیست).
 	 */
-	private static function fields( ?Ref $ref, string $taxonomy = '' ): void {
+	private static function box( ?Ref $ref, string $taxonomy = '' ): void {
 
 		wp_nonce_field( self::NONCE, self::NONCE_NAME );
 
@@ -140,6 +146,7 @@ final class Editor {
 		$explicit  = $ref ? Graph::explicit_parents( $ref ) : [];
 		$type      = $ref && $ref->is_post() ? Graph::post_type_of( $ref ) : '';
 		$is_term   = null === $ref || $ref->is_term();
+		$self_key  = $ref ? $ref->key() : '';
 
 		// والد دسته‌ای (ترم) یا والد محتوایی (برگه)
 		$term_tax = $is_term ? $taxonomy : Graph::parent_taxonomy_for( $type );
@@ -147,72 +154,152 @@ final class Editor {
 			$t        = get_term( $ref->id );
 			$term_tax = $t instanceof WP_Term ? $t->taxonomy : '';
 		}
-		$self_key = $ref ? $ref->key() : '';
+
+		$post_parents = null !== $ref && ( Graph::accepts_post_parents( $ref ) || ( $ref->is_post() && '' === $term_tax ) );
 		?>
-		<div class="htc-section htc-flags">
-			<label class="htc-check">
-				<input type="checkbox" name="hodima_is_pillar" value="1" class="hodima-pillar-toggle" <?php checked( $is_pillar ); ?>>
-				<span><strong>پیلار (هسته خوشه)</strong> — صفحه مرجع یک موضوع که به همه زیرمجموعه‌هایش لینک می‌دهد</span>
-			</label>
-			<label class="htc-check">
-				<input type="checkbox" name="hodima_tc_exclude" value="1" class="hodima-tc-exclude" <?php checked( $excluded ); ?>>
-				<span>خارج از خوشه (بدون والد خودکار، در گزارش یتیم‌ها نمی‌آید)</span>
-			</label>
+		<div class="htc-box" data-hodima-tc-box>
+
+			<?php if ( null !== $ref ) { self::summary( $ref ); } ?>
+
+			<div class="htc-box__grid">
+				<div class="htc-box__col">
+
+					<section class="htc-card">
+						<h3 class="htc-card__title"><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>نقش در خوشه</h3>
+						<label class="htc-switch-row">
+							<input type="checkbox" name="hodima_is_pillar" value="1" class="htc-switch hodima-pillar-toggle" role="switch" <?php checked( $is_pillar ); ?>>
+							<span class="htc-switch-row__text">
+								<strong>پیلار (هسته خوشه)</strong>
+								<small>صفحه مرجع یک موضوع که به همه زیرمجموعه‌هایش لینک می‌دهد.</small>
+							</span>
+						</label>
+						<label class="htc-switch-row">
+							<input type="checkbox" name="hodima_tc_exclude" value="1" class="htc-switch hodima-tc-exclude" role="switch" <?php checked( $excluded ); ?>>
+							<span class="htc-switch-row__text">
+								<strong>خارج از خوشه</strong>
+								<small>والد خودکار نمی‌گیرد و در گزارش محتوای یتیم نمی‌آید.</small>
+							</span>
+						</label>
+					</section>
+
+					<section class="htc-card htc-parents" <?php echo $excluded ? 'hidden' : ''; ?>>
+						<h3 class="htc-card__title"><span class="dashicons dashicons-arrow-up-alt" aria-hidden="true"></span>والد</h3>
+						<?php
+						if ( '' !== $term_tax ) {
+							self::select(
+								'hodima_pillar_id[]',
+								$is_term ? 'دسته پیلار والد' : 'دسته پیلار',
+								'term',
+								$term_tax,
+								array_values( array_filter( $explicit, static fn( Ref $p ): bool => $p->is_term() ) ),
+								$ref,
+								$self_key
+							);
+						}
+
+						if ( $post_parents ) {
+							$accepts = Graph::accepts_post_parents( $ref );
+							self::select(
+								$accepts ? 'hodima_pillar_post_id[]' : 'hodima_pillar_id[]',
+								$accepts ? 'محتوای ستون (اختیاری)' : 'برگه یا مقاله پیلار',
+								'post',
+								implode( ',', Graph::post_pillar_types() ),
+								array_values( array_filter( $explicit, static fn( Ref $p ): bool => $p->is_post() ) ),
+								$ref,
+								$self_key
+							);
+							if ( $accepts ) {
+								echo '<p class="htc-help">یک مقاله یا برگه «راهنمای جامع» که پیلار است.</p>';
+							}
+						}
+
+						if ( Settings::get( 'auto_parent' ) ) {
+							echo '<p class="htc-help">';
+							echo match ( true ) {
+								$is_term          => 'خالی بگذارید تا نزدیک‌ترین دسته پیلار بالاتر (والد این دسته) خودکار والد شود.',
+								'' === $term_tax  => 'خالی بگذارید تا نزدیک‌ترین برگه پیلار بالاتر (برگه والد) خودکار والد شود.',
+								default           => 'خالی بگذارید تا دسته اصلی (یا نزدیک‌ترین دسته پیلار بالاتر) خودکار والد شود.',
+							};
+							echo '</p>';
+						}
+						?>
+					</section>
+
+				</div>
+
+				<?php if ( null !== $ref && ( $is_pillar || ! $excluded ) ) : ?>
+					<div class="htc-box__col">
+						<?php
+						if ( $is_pillar ) {
+							self::children_order( $ref );
+							self::topic_fields( $ref );
+						}
+						if ( ! $excluded ) {
+							self::link_suggestions( $ref );
+						}
+						?>
+					</div>
+				<?php endif; ?>
+			</div>
+
+			<div class="htc-foot">
+				<span class="htc-foot__label">شورت‌کد کادر:</span>
+				<code class="htc-foot__code">[hodima_topic_cluster]</code>
+				<button type="button" class="htc-icon-btn htc-copy" data-copy="[hodima_topic_cluster]" aria-label="کپی شورت‌کد"><span class="dashicons dashicons-admin-page" aria-hidden="true"></span></button>
+				<span class="htc-foot__note">
+					<?php echo ( null !== $ref && Settings::auto_insert( Render::place( $ref ) ) ) ? 'نمایش خودکار روشن است؛ شورت‌کد فقط برای جای دلخواه.' : 'برای نمایش کادر در صفحه، در متن بگذارید (یا «نمایش خودکار» را در تنظیمات خوشه‌بندی روشن کنید).'; ?>
+				</span>
+			</div>
 		</div>
-
-		<div class="htc-section htc-parents" <?php echo $excluded ? 'hidden' : ''; ?>>
-			<?php
-			if ( '' !== $term_tax ) {
-				self::select(
-					'hodima_pillar_id[]',
-					$is_term ? 'دسته والد' : 'دسته پیلار والد',
-					'term',
-					$term_tax,
-					array_values( array_filter( $explicit, static fn( Ref $p ): bool => $p->is_term() ) ),
-					$ref,
-					$self_key
-				);
-			}
-
-			if ( null !== $ref && ( Graph::accepts_post_parents( $ref ) || ( $ref->is_post() && '' === $term_tax ) ) ) {
-				self::select(
-					Graph::accepts_post_parents( $ref ) ? 'hodima_pillar_post_id[]' : 'hodima_pillar_id[]',
-					Graph::accepts_post_parents( $ref ) ? 'محتوای ستون (مقاله یا برگه پیلار — اختیاری)' : 'برگه یا مقاله پیلار والد',
-					'post',
-					implode( ',', Graph::post_pillar_types() ),
-					array_values( array_filter( $explicit, static fn( Ref $p ): bool => $p->is_post() ) ),
-					$ref,
-					$self_key
-				);
-			}
-
-			if ( null !== $ref ) {
-				self::status( $ref );
-			} elseif ( Settings::get( 'auto_parent' ) ) {
-				echo '<p class="htc-help">اگر والدی انتخاب نشود، نزدیک‌ترین دسته پیلار بالاتر (والد این دسته در وردپرس) خودکار والد می‌شود.</p>';
-			}
-			?>
-		</div>
-
 		<?php
-		if ( null !== $ref && $is_pillar ) {
-			self::children_order( $ref );
-			self::topic_fields( $ref );
-		}
+	}
 
-		if ( null !== $ref && ! $excluded ) {
-			self::link_suggestions( $ref );
-		}
+	/** نوار وضعیت بالای کادر. */
+	private static function summary( ?Ref $ref ): void {
+
+		[ $state, $title, $text ] = match ( true ) {
+			null === $ref               => [ 'new', 'دسته جدید', 'وضعیت خوشه بعد از ذخیره مشخص می‌شود.' ],
+			Graph::is_excluded( $ref )  => [ 'muted', 'خارج از خوشه', 'این صفحه عمدا در هیچ خوشه‌ای نیست.' ],
+			default                     => self::state_text( $ref ),
+		};
+
+		$icon = [ 'pillar' => 'dashicons-star-filled', 'member' => 'dashicons-networking', 'orphan' => 'dashicons-warning', 'muted' => 'dashicons-hidden', 'new' => 'dashicons-plus-alt2' ][ $state ];
 		?>
-
-		<div class="htc-section htc-code">
-			<?php if ( null !== $ref && Settings::auto_insert( Render::place( $ref ) ) ) : ?>
-				<p class="htc-help">کادر خوشه به صورت خودکار نمایش داده می‌شود. برای نمایش در جای دلخواه: <code>[hodima_topic_cluster]</code></p>
-			<?php else : ?>
-				<p class="htc-help">برای نمایش کادر خوشه در صفحه این کد را در متن بگذارید (یا «نمایش خودکار» را در تنظیمات خوشه‌بندی روشن کنید): <code>[hodima_topic_cluster]</code></p>
+		<div class="htc-summary htc-summary--<?php echo esc_attr( $state ); ?>">
+			<span class="htc-summary__icon dashicons <?php echo esc_attr( $icon ); ?>" aria-hidden="true"></span>
+			<span class="htc-summary__body">
+				<strong class="htc-summary__title"><?php echo esc_html( $title ); ?></strong>
+				<span class="htc-summary__text"><?php echo esc_html( $text ); ?></span>
+			</span>
+			<?php if ( null !== $ref && current_user_can( 'manage_options' ) ) : ?>
+				<a class="htc-summary__link" href="<?php echo esc_url( admin_url( 'admin.php?page=hodima-tc-map' ) ); ?>">نقشه خوشه‌ها</a>
 			<?php endif; ?>
 		</div>
 		<?php
+	}
+
+	/** @return array{0:string, 1:string, 2:string} حالت، عنوان، توضیح */
+	private static function state_text( Ref $ref ): array {
+
+		$titles = [];
+		foreach ( Graph::parents( $ref ) as $parent ) {
+			$node = Graph::node( $parent );
+			if ( null !== $node ) {
+				$titles[] = '«' . $node['title'] . '»';
+			}
+		}
+		$under = $titles ? 'زیر ' . implode( '، ', $titles ) . ( 'auto' === Graph::parent_source( $ref ) ? ' (خودکار از دسته اصلی)' : '' ) : '';
+
+		if ( Graph::is_pillar( $ref ) ) {
+			$count = number_format_i18n( count( Graph::children( $ref ) ) );
+			return [ 'pillar', 'پیلار · ' . $count . ' زیرمجموعه', '' !== $under ? 'خودش ' . $under . ' است.' : 'پیلار اصلی؛ والدی ندارد.' ];
+		}
+
+		if ( $titles ) {
+			return [ 'member', 'عضو خوشه', $under . '.' ];
+		}
+
+		return [ 'orphan', 'یتیم', 'به هیچ خوشه‌ای وصل نیست. یک پیلار والد انتخاب کنید یا خودش را پیلار کنید.' ];
 	}
 
 	/**
@@ -266,66 +353,41 @@ final class Editor {
 		return ( '' !== $title ? $title : (string) get_the_title( $ref->id ) ) . ' (' . Health::type_label( 'post', $type ) . ')';
 	}
 
-	/** والد فعلی و منبعش. */
-	private static function status( Ref $ref ): void {
-
-		$parents = Graph::parents( $ref );
-		$source  = Graph::parent_source( $ref );
-
-		echo '<p class="htc-status">';
-
-		if ( Graph::is_excluded( $ref ) ) {
-			echo '<span class="htc-pill htc-pill--muted">خارج از خوشه</span>';
-		} elseif ( ! $parents ) {
-			echo Graph::is_pillar( $ref )
-				? '<span class="htc-pill htc-pill--ok">پیلار اصلی (بدون والد)</span>'
-				: '<span class="htc-pill htc-pill--warn">یتیم: والدی ندارد</span>';
-		} else {
-			echo '<span class="htc-status__label">والد فعلی:</span> ';
-			$links = [];
-			foreach ( $parents as $parent ) {
-				$node = Graph::node( $parent );
-				if ( null !== $node ) {
-					$links[] = '<strong>' . esc_html( self::label_for( $parent, $node['title'] ) ) . '</strong>';
-				}
-			}
-			echo implode( '، ', $links ); // phpcs:ignore WordPress.Security.EscapeOutput -- esc_html بالا
-			if ( 'auto' === $source ) {
-				echo ' <span class="htc-pill htc-pill--muted">خودکار از دسته اصلی</span>';
-			}
-		}
-
-		echo '</p>';
-	}
-
 	/** ترتیب دستی زیرمجموعه‌ها (فقط روی پیلار). */
 	private static function children_order( Ref $ref ): void {
 
 		$children = Graph::children( $ref );
 		?>
-		<div class="htc-section htc-children">
-			<p class="htc-label">زیرمجموعه‌ها (<?php echo esc_html( number_format_i18n( count( $children ) ) ); ?>)</p>
+		<section class="htc-card htc-children">
+			<h3 class="htc-card__title">
+				<span class="dashicons dashicons-list-view" aria-hidden="true"></span>زیرمجموعه‌ها
+				<span class="htc-count"><?php echo esc_html( number_format_i18n( count( $children ) ) ); ?></span>
+			</h3>
 			<?php if ( ! $children ) : ?>
-				<p class="htc-help">هنوز زیرمجموعه‌ای ندارد. در ویرایشگر صفحه‌های دیگر این پیلار را والد کنید؛ نوشته‌هایی که دسته اصلی‌شان این دسته است خودکار اضافه می‌شوند.</p>
+				<p class="htc-empty-note">هنوز زیرمجموعه‌ای ندارد. در ویرایشگر صفحه‌های دیگر این پیلار را والد کنید؛ نوشته‌هایی که دسته اصلی‌شان این دسته است خودکار اضافه می‌شوند.</p>
 			<?php else : ?>
 				<ol class="htc-order" data-hodima-tc-order>
 					<?php foreach ( $children as $child ) : ?>
 						<li class="htc-order__item">
 							<input type="hidden" name="hodima_tc_order[]" value="<?php echo esc_attr( $child['key'] ); ?>">
-							<span class="htc-order__title"><?php echo esc_html( $child['title'] ); ?>
-								<?php if ( 'auto' === ( $child['source'] ?? '' ) ) : ?><span class="htc-pill htc-pill--muted">خودکار</span><?php endif; ?>
-								<?php if ( $child['noindex'] ) : ?><span class="htc-pill htc-pill--warn">noindex</span><?php endif; ?>
+							<span class="htc-order__title">
+								<?php echo esc_html( $child['title'] ); ?>
+								<span class="htc-order__tags">
+									<span class="htc-pill htc-pill--muted"><?php echo esc_html( Health::type_label( $child['kind'], $child['type'] ) ); ?></span>
+									<?php if ( 'auto' === ( $child['source'] ?? '' ) ) : ?><span class="htc-pill htc-pill--muted">خودکار</span><?php endif; ?>
+									<?php if ( $child['noindex'] ) : ?><span class="htc-pill htc-pill--warn">noindex</span><?php endif; ?>
+								</span>
 							</span>
 							<span class="htc-order__actions">
-								<button type="button" class="button-link htc-order__up" aria-label="<?php echo esc_attr( 'بالا: ' . $child['title'] ); ?>"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
-								<button type="button" class="button-link htc-order__down" aria-label="<?php echo esc_attr( 'پایین: ' . $child['title'] ); ?>"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
+								<button type="button" class="htc-icon-btn htc-order__up" aria-label="<?php echo esc_attr( 'بالا: ' . $child['title'] ); ?>"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
+								<button type="button" class="htc-icon-btn htc-order__down" aria-label="<?php echo esc_attr( 'پایین: ' . $child['title'] ); ?>"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
 							</span>
 						</li>
 					<?php endforeach; ?>
 				</ol>
 				<p class="htc-help">ترتیب نمایش در کادر خوشه و اسکیما. زیرمجموعه‌های جدید انتهای فهرست می‌آیند.</p>
 			<?php endif; ?>
-		</div>
+		</section>
 		<?php
 	}
 
@@ -334,18 +396,22 @@ final class Editor {
 
 		$topic = Graph::topic( $ref );
 		$id    = 'htc-topic-' . $ref->kind->value . '-' . $ref->id;
+		$set   = '' !== $topic['name'] || $topic['sameas'];
 		?>
-		<details class="htc-section htc-topic" <?php echo ( '' !== $topic['name'] || $topic['sameas'] ) ? 'open' : ''; ?>>
-			<summary class="htc-label">موضوع این خوشه (اسکیما)</summary>
+		<details class="htc-card htc-card--toggle htc-topic" <?php echo $set ? 'open' : ''; ?>>
+			<summary class="htc-card__title">
+				<span class="dashicons dashicons-tag" aria-hidden="true"></span>موضوع این خوشه (اسکیما)
+				<?php if ( $set ) : ?><span class="htc-pill htc-pill--ok">تنظیم شده</span><?php endif; ?>
+			</summary>
 			<div class="htc-field">
 				<label class="htc-label" for="<?php echo esc_attr( $id ); ?>-name">نام موضوع</label>
-				<input type="text" class="widefat" id="<?php echo esc_attr( $id ); ?>-name" name="hodima_tc_topic[name]" value="<?php echo esc_attr( $topic['name'] ); ?>" placeholder="مثلا: کلیپس مو">
+				<input type="text" class="htc-input" id="<?php echo esc_attr( $id ); ?>-name" name="hodima_tc_topic[name]" value="<?php echo esc_attr( $topic['name'] ); ?>" placeholder="مثلا: کلیپس مو">
 			</div>
 			<div class="htc-field">
-				<label class="htc-label" for="<?php echo esc_attr( $id ); ?>-sameas">آدرس همین موضوع در ویکی‌پدیا یا ویکی‌داده (هر خط یک آدرس)</label>
-				<textarea class="widefat" rows="2" dir="ltr" id="<?php echo esc_attr( $id ); ?>-sameas" name="hodima_tc_topic[sameas]"><?php echo esc_textarea( implode( "\n", $topic['sameas'] ) ); ?></textarea>
+				<label class="htc-label" for="<?php echo esc_attr( $id ); ?>-sameas">آدرس ویکی‌پدیا یا ویکی‌داده (هر خط یک آدرس)</label>
+				<textarea class="htc-input" rows="2" dir="ltr" id="<?php echo esc_attr( $id ); ?>-sameas" name="hodima_tc_topic[sameas]" placeholder="https://fa.wikipedia.org/wiki/..."><?php echo esc_textarea( implode( "\n", $topic['sameas'] ) ); ?></textarea>
 			</div>
-			<p class="htc-help">در اسکیما «about» این صفحه و همه زیرمجموعه‌هایش می‌شود؛ گوگل و موتورهای هوش مصنوعی خوشه را به یک موجودیت مشخص وصل می‌کنند.</p>
+			<p class="htc-help">در اسکیما «about» این صفحه و همه زیرمجموعه‌هایش می‌شود؛ گوگل و موتورهای هوش مصنوعی خوشه را به یک موضوع مشخص وصل می‌کنند.</p>
 		</details>
 		<?php
 	}
@@ -383,19 +449,24 @@ final class Editor {
 		foreach ( Links::extract( $text, $ref ) as [ $target ] ) {
 			$linked[ $target->key() ] = true;
 		}
+
+		$done = count( array_filter( $targets, static fn( array $n ): bool => isset( $linked[ $n['key'] ] ) ) );
 		?>
-		<details class="htc-section htc-suggest" open>
-			<summary class="htc-label">پیشنهاد لینک داخلی در متن</summary>
+		<details class="htc-card htc-card--toggle htc-suggest" <?php echo $done < count( $targets ) ? 'open' : ''; ?>>
+			<summary class="htc-card__title">
+				<span class="dashicons dashicons-admin-links" aria-hidden="true"></span>پیشنهاد لینک داخلی در متن
+				<span class="htc-pill <?php echo $done === count( $targets ) ? 'htc-pill--ok' : 'htc-pill--warn'; ?>"><?php echo esc_html( number_format_i18n( $done ) . ' از ' . number_format_i18n( count( $targets ) ) ); ?></span>
+			</summary>
 			<ul class="htc-suggest__list">
 				<?php foreach ( $targets as $node ) : $ok = isset( $linked[ $node['key'] ] ); ?>
 					<li class="htc-suggest__item <?php echo $ok ? 'is-linked' : ''; ?>">
-						<span class="dashicons <?php echo $ok ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>" aria-hidden="true"></span>
+						<span class="htc-suggest__icon dashicons <?php echo $ok ? 'dashicons-yes-alt' : 'dashicons-marker'; ?>" aria-hidden="true"></span>
 						<span class="htc-suggest__text">
 							<?php echo esc_html( $node['title'] ); ?>
-							<small class="htc-muted"><?php echo esc_html( $node['role'] . ( $ok ? ' · لینک شده' : ' · لینک نشده' ) ); ?></small>
+							<small><?php echo esc_html( $node['role'] . ( $ok ? ' · در متن لینک شده' : ' · هنوز لینک نشده' ) ); ?></small>
 						</span>
 						<?php if ( ! $ok ) : ?>
-							<button type="button" class="button-link htc-copy" data-copy="<?php echo esc_attr( $node['url'] ); ?>" aria-label="<?php echo esc_attr( 'کپی آدرس ' . $node['title'] ); ?>"><span class="dashicons dashicons-admin-links" aria-hidden="true"></span></button>
+							<button type="button" class="htc-icon-btn htc-copy" data-copy="<?php echo esc_attr( $node['url'] ); ?>" aria-label="<?php echo esc_attr( 'کپی آدرس ' . $node['title'] ); ?>"><span class="dashicons dashicons-admin-page" aria-hidden="true"></span></button>
 						<?php endif; ?>
 					</li>
 				<?php endforeach; ?>
