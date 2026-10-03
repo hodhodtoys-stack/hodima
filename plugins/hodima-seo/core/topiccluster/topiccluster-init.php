@@ -2,7 +2,7 @@
 /**
  * Topic Cluster — Bootstrap
  * Path: core/topiccluster/topiccluster-init.php
- * Version: 4.1.0
+ * Version: 4.1.1
  *
  *   includes/ref.php        نوع گره (enum) و ارجاع (Ref)
  *   includes/settings.php   تنظیمات ماژول
@@ -28,7 +28,7 @@ if ( ! defined( 'TOPICCLUSTER_VERSION' ) ) {
 
 	define( 'TOPICCLUSTER_DIR', HODIMA_SEO_DIR . '/core/topiccluster/' );
 	define( 'TOPICCLUSTER_URL', HODIMA_SEO_URL . '/core/topiccluster/' );
-	define( 'TOPICCLUSTER_VERSION', '4.1.0' );
+	define( 'TOPICCLUSTER_VERSION', '4.1.1' );
 
 	require_once TOPICCLUSTER_DIR . 'includes/ref.php';
 	require_once TOPICCLUSTER_DIR . 'includes/settings.php';

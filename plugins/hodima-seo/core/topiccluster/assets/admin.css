@@ -108,8 +108,17 @@
 
     & .htc-box__col { display: grid; gap: 0.75rem; min-width: 0; }
 
-    @container (min-width: 46rem) {
-        & .htc-box__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /*
+     * ستون‌ها به تعداد ستون‌های غیرخالی (grid-auto-flow: column):
+     * سه‌ستونه (محصول) از ۴۲rem، دوستونه (دسته و نوشته) از ۳۶rem؛
+     * کمتر از آن (موبایل، ستون کناری) زیر هم.
+     */
+    @container (min-width: 36rem) {
+        & .htc-box__grid--two { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+    }
+
+    @container (min-width: 42rem) {
+        & .htc-box__grid--three { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
     }
 
     /* ستون کناری باریک ویرایشگر */

@@ -98,16 +98,32 @@ final class Editor {
 	 * در صفحه دسته دوستونه.
 	 * ================================================================= */
 
+	/**
+	 * جای کادر و چیدمان کارت‌ها برای هر نوع.
+	 * محصول و نوشته در ستون اصلی (عرض کامل) با کارت‌های کنار هم — در ستون
+	 * کناری باریک کارت‌ها زیر هم می‌آمدند و فضای خالی زیادی می‌ماند.
+	 * برگه مثل قبل در ستون کناری.
+	 *
+	 * @return array{0:string, 1:string} context متاباکس، چیدمان (three|two|side)
+	 */
+	private static function placement( string $post_type ): array {
+		$map = [
+			'product' => [ 'normal', 'three' ],
+			'post'    => [ 'normal', 'two' ],
+		];
+		return (array) apply_filters( 'hodima_tc_metabox_placement', $map[ $post_type ] ?? [ 'side', 'side' ], $post_type );
+	}
+
 	public static function meta_boxes(): void {
 		foreach ( Graph::post_types() as $post_type ) {
 			if ( post_type_exists( $post_type ) ) {
-				add_meta_box( 'hodima_tc_box', 'خوشه‌بندی محتوا', [ self::class, 'render_post' ], $post_type, 'side', 'high' );
+				add_meta_box( 'hodima_tc_box', 'خوشه‌بندی محتوا', [ self::class, 'render_post' ], $post_type, self::placement( $post_type )[0], 'side' === self::placement( $post_type )[0] ? 'high' : 'default' );
 			}
 		}
 	}
 
 	public static function render_post( WP_Post $post ): void {
-		self::box( Ref::post( $post->ID ) );
+		self::box( Ref::post( $post->ID ), '', (string) self::placement( $post->post_type )[1] );
 	}
 
 	/** صفحه ویرایش دسته: postbox جدا بعد از فیلدهای اصلی (داخل همان فرم). */
@@ -119,7 +135,7 @@ final class Editor {
 		?>
 		<div class="postbox htc-postbox">
 			<div class="postbox-header"><h2 class="hndle">خوشه‌بندی محتوا</h2></div>
-			<div class="inside"><?php self::box( Ref::term( (int) $term->term_id ), $term->taxonomy ); ?></div>
+			<div class="inside"><?php self::box( Ref::term( (int) $term->term_id ), $term->taxonomy, 'two' ); ?></div>
 		</div>
 		<?php
 	}
@@ -137,7 +153,7 @@ final class Editor {
 	/**
 	 * کادر مشترک. $ref = null یعنی فرم «افزودن دسته» (هنوز شناسه‌ای نیست).
 	 */
-	private static function box( ?Ref $ref, string $taxonomy = '' ): void {
+	private static function box( ?Ref $ref, string $taxonomy = '', string $layout = 'side' ): void {
 
 		wp_nonce_field( self::NONCE, self::NONCE_NAME );
 
@@ -161,9 +177,16 @@ final class Editor {
 
 			<?php if ( null !== $ref ) { self::summary( $ref ); } ?>
 
-			<div class="htc-box__grid">
-				<div class="htc-box__col">
-
+			<?php
+			/*
+			 * کارت‌ها جدا ساخته و بعد در ستون‌ها چیده می‌شوند:
+			 *   three (محصول): نقش | والد + موضوع | زیرمجموعه‌ها + پیشنهاد لینک
+			 *   two (دسته، نوشته): نقش + والد + موضوع | زیرمجموعه‌ها + پیشنهاد لینک
+			 *   side (ستون کناری، فرم افزودن دسته): همه زیر هم
+			 * «موضوع» زیر «والد» است تا کنار تنظیمات جایگاه صفحه دیده شود.
+			 */
+			ob_start();
+			?>
 					<section class="htc-card">
 						<h3 class="htc-card__title"><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>نقش در خوشه</h3>
 						<label class="htc-switch-row">
@@ -181,7 +204,10 @@ final class Editor {
 							</span>
 						</label>
 					</section>
-
+			<?php
+			$role = (string) ob_get_clean();
+			ob_start();
+			?>
 					<section class="htc-card htc-parents" <?php echo $excluded ? 'hidden' : ''; ?>>
 						<h3 class="htc-card__title"><span class="dashicons dashicons-arrow-up-alt" aria-hidden="true"></span>والد</h3>
 						<?php
@@ -224,22 +250,27 @@ final class Editor {
 						}
 						?>
 					</section>
+			<?php
+			$parent   = (string) ob_get_clean();
+			$topic    = null !== $ref && $is_pillar ? self::capture( static fn() => self::topic_fields( $ref ) ) : '';
+			$children = null !== $ref && $is_pillar ? self::capture( static fn() => self::children_order( $ref ) ) : '';
+			$suggest  = null !== $ref && ! $excluded ? self::capture( static fn() => self::link_suggestions( $ref ) ) : '';
 
-				</div>
-
-				<?php if ( null !== $ref && ( $is_pillar || ! $excluded ) ) : ?>
-					<div class="htc-box__col">
-						<?php
-						if ( $is_pillar ) {
-							self::children_order( $ref );
-							self::topic_fields( $ref );
-						}
-						if ( ! $excluded ) {
-							self::link_suggestions( $ref );
-						}
-						?>
-					</div>
-				<?php endif; ?>
+			$columns = match ( $layout ) {
+				'three' => [ [ $role ], [ $parent, $topic ], [ $children, $suggest ] ],
+				'two'   => [ [ $role, $parent, $topic ], [ $children, $suggest ] ],
+				default => [ [ $role, $parent, $topic, $children, $suggest ] ],
+			};
+			?>
+			<div class="htc-box__grid htc-box__grid--<?php echo esc_attr( in_array( $layout, [ 'three', 'two' ], true ) ? $layout : 'side' ); ?>">
+				<?php
+				foreach ( $columns as $cards ) {
+					$cards = implode( '', array_filter( $cards, static fn( string $c ): bool => '' !== trim( $c ) ) );
+					if ( '' !== $cards ) {
+						echo '<div class="htc-box__col">' . $cards . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput -- خروجی توابع همین کلاس (esc_* شده)
+					}
+				}
+				?>
 			</div>
 
 			<div class="htc-foot">
@@ -252,6 +283,13 @@ final class Editor {
 			</div>
 		</div>
 		<?php
+	}
+
+	/** خروجی یک تابع چاپ‌کننده به صورت رشته. */
+	private static function capture( callable $render ): string {
+		ob_start();
+		$render();
+		return (string) ob_get_clean();
 	}
 
 	/** نوار وضعیت بالای کادر. */
@@ -398,21 +436,21 @@ final class Editor {
 		$id    = 'htc-topic-' . $ref->kind->value . '-' . $ref->id;
 		$set   = '' !== $topic['name'] || $topic['sameas'];
 		?>
-		<details class="htc-card htc-card--toggle htc-topic" <?php echo $set ? 'open' : ''; ?>>
-			<summary class="htc-card__title">
+		<section class="htc-card htc-topic">
+			<h3 class="htc-card__title">
 				<span class="dashicons dashicons-tag" aria-hidden="true"></span>موضوع این خوشه (اسکیما)
-				<?php if ( $set ) : ?><span class="htc-pill htc-pill--ok">تنظیم شده</span><?php endif; ?>
-			</summary>
+				<?php if ( $set ) : ?><span class="htc-pill htc-pill--ok">تنظیم شده</span><?php else : ?><span class="htc-pill htc-pill--warn">پر نشده</span><?php endif; ?>
+			</h3>
 			<div class="htc-field">
 				<label class="htc-label" for="<?php echo esc_attr( $id ); ?>-name">نام موضوع</label>
 				<input type="text" class="htc-input" id="<?php echo esc_attr( $id ); ?>-name" name="hodima_tc_topic[name]" value="<?php echo esc_attr( $topic['name'] ); ?>" placeholder="مثلا: کلیپس مو">
 			</div>
 			<div class="htc-field">
-				<label class="htc-label" for="<?php echo esc_attr( $id ); ?>-sameas">آدرس ویکی‌پدیا یا ویکی‌داده (هر خط یک آدرس)</label>
-				<textarea class="htc-input" rows="2" dir="ltr" id="<?php echo esc_attr( $id ); ?>-sameas" name="hodima_tc_topic[sameas]" placeholder="https://fa.wikipedia.org/wiki/..."><?php echo esc_textarea( implode( "\n", $topic['sameas'] ) ); ?></textarea>
+				<label class="htc-label" for="<?php echo esc_attr( $id ); ?>-sameas">آدرس لینک (هر خط یک آدرس)</label>
+				<textarea class="htc-input" rows="2" dir="ltr" id="<?php echo esc_attr( $id ); ?>-sameas" name="hodima_tc_topic[sameas]" placeholder="آدرس لینک"><?php echo esc_textarea( implode( "\n", $topic['sameas'] ) ); ?></textarea>
 			</div>
-			<p class="htc-help">در اسکیما «about» این صفحه و همه زیرمجموعه‌هایش می‌شود؛ گوگل و موتورهای هوش مصنوعی خوشه را به یک موضوع مشخص وصل می‌کنند.</p>
-		</details>
+			<p class="htc-help">آدرس صفحه‌ای معتبر که همین موضوع را معرفی می‌کند (مثلا مقاله ویکی‌پدیا یا ویکی‌داده). در اسکیما «about» این صفحه و همه زیرمجموعه‌هایش می‌شود.</p>
+		</section>
 		<?php
 	}
 
