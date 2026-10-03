@@ -134,44 +134,13 @@ final class Hodima_Cluster_Sitemap {
 		return implode( "\n", $lines );
 	}
 
-	/** @return array<int, array{0:int, 1:string}> */
+	/**
+	 * همه پیلارها از خود ماژول خوشه (نسخه قبلی همان کوئری را جدا تکرار می‌کرد).
+	 *
+	 * @return array<int, array{0:int, 1:string}>
+	 */
 	private function pillars(): array {
-
-		$out = [];
-
-		$post_ids = get_posts( [
-			'post_type'              => Hodima_TC_Helper::post_types(),
-			'post_status'            => 'publish',
-			'posts_per_page'         => 500,
-			'fields'                 => 'ids',
-			'no_found_rows'          => true,
-			'update_post_term_cache' => false,
-			'meta_query'             => [ [ 'key' => Hodima_TC_Helper::META_PILLAR, 'value' => '1' ] ],
-		] );
-
-		if ( ! empty( $post_ids ) ) {
-			_prime_post_caches( array_map( 'intval', $post_ids ), false, true );
-		}
-
-		foreach ( (array) $post_ids as $id ) {
-			$out[] = [ (int) $id, Hodima_TC_Helper::KIND_POST ];
-		}
-
-		$term_ids = get_terms( [
-			'taxonomy'   => Hodima_TC_Helper::taxonomies(),
-			'hide_empty' => false,
-			'number'     => 500,
-			'fields'     => 'ids',
-			'meta_query' => [ [ 'key' => Hodima_TC_Helper::META_PILLAR, 'value' => '1' ] ],
-		] );
-
-		if ( ! is_wp_error( $term_ids ) ) {
-			foreach ( (array) $term_ids as $id ) {
-				$out[] = [ (int) $id, Hodima_TC_Helper::KIND_TERM ];
-			}
-		}
-
-		return $out;
+		return method_exists( 'Hodima_TC_Helper', 'pillars' ) ? Hodima_TC_Helper::pillars() : [];
 	}
 
 	private function append_url( array &$lines, array &$seen, array $node, string $priority, string $lastmod ): void {

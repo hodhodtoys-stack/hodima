@@ -542,3 +542,57 @@ if ( ! function_exists( 'hodima_video_player_url' ) ) {
         return $url; // آدرس پخش‌کننده (یا ناشناخته) دست نمی‌خورد
     }
 }
+
+/* ============================================================
+ * ۱۰. noindex واحد
+ * ------------------------------------------------------------
+ * تا نسخه ۱.۲ پنج پیاده‌سازی جدا در افزونه سئو بود (سایت‌مپ،
+ * IndexNow، لینک‌های مرتبط، خوشه موضوعی) و هر کدام کلیدهای متفاوتی
+ * را می‌شناخت؛ یک صفحه می‌توانست در سایت‌مپ noindex و در خوشه
+ * ایندکس‌پذیر باشد. همه حالا همین تابع را صدا می‌زنند.
+ *
+ * noindex یعنی یکی از این‌ها:
+ *   - _seobox_robots (سئوباکس هدیما) شامل «noindex» — آرایه یا رشته
+ *   - کلیدهای شناخته‌شده یواست/AIOSEO با مقدار ۱
+ *   - کلیدی دقیقا «noindex» یا «…_noindex» با مقدار ۱/yes/true/on
+ * (کلیدی که فقط جایی از نامش «noindex» دارد حساب نمی‌شود — باگ قدیمی
+ *  سایت‌مپ که فیلدهای بی‌ربط را noindex می‌دید.)
+ * ============================================================ */
+if ( ! function_exists( 'hodima_is_noindex' ) ) {
+    /**
+     * @param string $kind 'post' یا 'term'
+     */
+    function hodima_is_noindex( int $id, string $kind = 'post' ): bool {
+
+        if ( $id <= 0 ) {
+            return false;
+        }
+
+        $meta   = ( 'term' === $kind ) ? get_term_meta( $id ) : get_post_meta( $id );
+        $result = false;
+
+        foreach ( (array) $meta as $key => $values ) {
+
+            $key = strtolower( (string) $key );
+
+            $known    = in_array( $key, [ '_seobox_robots', '_yoast_wpseo_meta-robots-noindex', '_aioseo_robots_noindex' ], true );
+            $anchored = 'noindex' === $key || str_ends_with( $key, '_noindex' );
+
+            if ( ! $known && ! $anchored ) {
+                continue;
+            }
+
+            foreach ( (array) $values as $value ) {
+                $value = maybe_unserialize( $value );
+                $text  = strtolower( is_array( $value ) ? implode( ' ', array_map( 'strval', $value ) ) : (string) $value );
+
+                if ( in_array( $text, [ '1', 'yes', 'true', 'on' ], true ) || ( $known && str_contains( $text, 'noindex' ) ) ) {
+                    $result = true;
+                    break 2;
+                }
+            }
+        }
+
+        return (bool) apply_filters( 'hodima_is_noindex', $result, $id, $kind );
+    }
+}

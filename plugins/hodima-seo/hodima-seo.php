@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           1.7.0
+ * Version:           1.8.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '1.7.0';
+const HODIMA_SEO_VERSION = '1.8.0';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -124,7 +124,7 @@ function hodima_seo_modules(): array {
 		],
 		'topic-cluster' => [
 			'title'       => 'خوشه‌های موضوعی',
-			'description' => 'تعریف صفحات ستون (Pillar) و زیرمجموعه‌ها، نقشه خوشه‌ها، محتوای یتیم و لینک‌سازی داخلی خودکار.',
+			'description' => 'صفحات ستون (Pillar) و زیرمجموعه‌ها با والد خودکار از دسته اصلی، کادر خوشه با مطالب هم‌خوشه، نقشه درختی، محتوای یتیم، فهرست لینک‌های داخلی متن و گزارش سلامت خوشه‌ها.',
 			'files'       => [ 'core/topiccluster/topiccluster-init.php' ],
 			'settings'    => 'admin.php?page=hodima-tc-orphans',
 			'icon'        => 'dashicons-networking',

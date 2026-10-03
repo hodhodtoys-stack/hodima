@@ -655,6 +655,10 @@ final class Store {
 
 	/** noindex بودن مقصد از متاباکس سئو (همان کلید _seobox_robots). */
 	public static function is_noindex( int $id, string $context ): bool {
+		// تشخیص واحد Core (سئوباکس + یواست/AIOSEO)؛ بدنه زیر فالبک بدون Core
+		if ( function_exists( 'hodima_is_noindex' ) ) {
+			return hodima_is_noindex( $id, 'term' === $context ? 'term' : 'post' );
+		}
 		$robots = get_metadata( self::meta_type( $context ), $id, '_seobox_robots', true );
 		if ( is_array( $robots ) ) {
 			return in_array( 'noindex', $robots, true );

@@ -52,6 +52,10 @@ final class Hodima_Core_Helpers {
     }
 
     public static function is_noindex( int $object_id, string $type = 'post' ): bool {
+        // تشخیص واحد Core؛ بدنه زیر فقط فالبک بدون Core است
+        if ( function_exists( 'hodima_is_noindex' ) ) {
+            return hodima_is_noindex( $object_id, 'term' === $type ? 'term' : 'post' );
+        }
         $meta = ( $type === 'term' ) ? get_term_meta( $object_id ) : get_post_meta( $object_id );
         if ( ! is_array( $meta ) ) return false;
 

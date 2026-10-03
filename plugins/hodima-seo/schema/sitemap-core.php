@@ -83,6 +83,10 @@ function hodima_get_noindex_post_ids() {
 }
 
 function hodima_is_term_noindex( $term_id ) {
+    // تشخیص واحد Core (همان قاعده زیر)؛ این بدنه فقط فالبک بدون Core است
+    if ( function_exists( 'hodima_is_noindex' ) ) {
+        return hodima_is_noindex( (int) $term_id, 'term' );
+    }
     // باگ رفع‌شده: این تابع همان باگ hodima_get_noindex_post_ids() را
     // داشت (که در همین فایل رفع شد) ولی خودش هیچ‌وقت اصلاح نشده بود —
     // str_contains($key, 'noindex') یعنی هر متاکیِ ترم که این ساب‌استرینگ

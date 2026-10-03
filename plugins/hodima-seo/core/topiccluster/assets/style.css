@@ -1,181 +1,219 @@
 /*
- * Hodima Topic Cluster - Unified Front-end UI
- * Compact Inline Layout (Titles and items in the same row)
+ * Hodima Topic Cluster — کادر خوشه در سایت (نسخه ۴)
+ *
+ * نسبت به نسخه ۳:
+ *   - متغیرها روی خود کادر، نه :root (روی کل صفحه اثر نمی‌گذاشتند)
+ *   - خصوصیات منطقی (border-inline-start …) به جای right/left ثابت
+ *   - شبکه انعطاف‌پذیر به جای ۸ ستون ثابت که عنوان‌های بلند فارسی را له می‌کرد
+ *   - :focus-visible برای کاربر کیبورد، prefers-reduced-motion
+ *   - بدون !important (قالب با کلاس‌های قدیمی هم می‌تواند بازنویسی کند)
  */
 
-:root {
+.hodima-tc {
     --htc-primary: var(--hodima-primary, #25316a);
     --htc-secondary: var(--hodima-secondary, #607bbd);
-    --htc-surface: #ffffff;
-    --htc-bg-light: var(--hodima-surface-soft, #f7f9fd);
+    --htc-surface: #fff;
+    --htc-soft: var(--hodima-surface-soft, #f7f9fd);
     --htc-border: var(--hodima-border-light, #d9e1f0);
-    --htc-text-main: var(--hodima-text-dark, #111111);
-    
+    --htc-text: var(--hodima-text-dark, #111111);
     --htc-radius: 8px;
-    --htc-shadow: 0 4px 12px rgba(37, 49, 106, 0.05);
-    --htc-shadow-hover: 0 6px 16px rgba(37, 49, 106, 0.12);
-    --htc-transition: all 0.3s ease;
-}
 
-.hodima-tc-unified-box,
-.hodima-tc-unified-box * {
-    box-sizing: border-box;
-    font-family: inherit;
-}
-
-/* =======================================
-   باکس یکپارچه (Unified Box)
-======================================= */
-.hodima-tc-unified-box {
-    background-color: var(--htc-surface);
-    border: 1px solid var(--htc-border);
-    border-right: 4px solid var(--htc-primary);
-    border-radius: var(--htc-radius);
-    padding: 24px;
-    margin: 30px 0;
-    box-shadow: var(--htc-shadow);
     display: flex;
     flex-direction: column;
-    gap: 20px;
-}
-
-/* تغییر بسیار مهم: چیدمان افقی (سطری) تایتل و دکمه‌ها */
-.hodima-tc-section {
-    display: flex;
-    flex-direction: row; /* در یک خط قرار گرفتن */
-    align-items: center; /* تراز شدن عمودی تایتل با دکمه‌ها */
-    gap: 15px;
-}
-
-/* خط‌چین جداکننده اگر هر دو بخش والد و فرزند وجود داشته باشند */
-.hodima-tc-parents-section + .hodima-tc-children-section {
-    padding-top: 20px;
-    border-top: 1px dashed var(--htc-border);
-}
-
-.hodima-tc-header {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--htc-text-main);
-    margin: 0;
-    white-space: nowrap; /* جلوگیری از دو خط شدن تایتل */
-    flex-shrink: 0; /* جلوگیری از جمع شدن (مچاله شدن) تایتل */
-}
-
-/* =======================================
-   لیست دسته‌بندی‌های مرجع (Inline)
-======================================= */
-.hodima-tc-inline-list {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    flex: 1; /* پر کردن فضای باقی مانده در سطر */
-}
-
-.hodima-tc-parent-btn {
-    background-color: var(--htc-bg-light);
-    color: var(--htc-primary) !important;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 6px 14px;
-    border-radius: 6px;
+    gap: 1.1rem;
+    margin-block: 1.75rem;
+    padding: 1.4rem 1.5rem;
+    font-family: inherit;
+    background: var(--htc-surface);
     border: 1px solid var(--htc-border);
-    text-decoration: none !important;
-    transition: var(--htc-transition);
-}
+    border-inline-start: 4px solid var(--htc-primary);
+    border-radius: var(--htc-radius);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--htc-primary) 6%, transparent);
+    box-sizing: border-box;
 
-.hodima-tc-parent-btn:hover {
-    background-color: var(--htc-primary);
-    color: var(--htc-surface) !important;
-    border-color: var(--htc-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(37, 49, 106, 0.15);
-}
+    & *,
+    & *::before { box-sizing: border-box; }
 
-/* =======================================
-   گرید زیرمجموعه‌ها (Grid 8)
-======================================= */
-.hodima-tc-grid-list {
-    flex: 1; /* پر کردن فضای باقی مانده در سطر */
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 10px;
-}
-
-.hodima-tc-child-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 8px 6px;
-    background-color: var(--htc-bg-light);
-    border: 1px solid var(--htc-border);
-    border-radius: 6px;
-    color: var(--htc-text-main) !important;
-    font-size: 12px;
-    font-weight: 500;
-    text-decoration: none !important;
-    transition: var(--htc-transition);
-    line-height: 1.4;
-    min-height: 46px;
-}
-
-.hodima-tc-child-link::before {
-    content: '';
-    display: inline-block;
-    width: 5px;
-    height: 5px;
-    background-color: var(--htc-secondary);
-    border-radius: 50%;
-    margin-left: 6px;
-    flex-shrink: 0;
-    transition: var(--htc-transition);
-}
-
-.hodima-tc-child-link:hover {
-    background-color: var(--htc-surface);
-    border-color: var(--htc-secondary);
-    color: var(--htc-primary) !important;
-    box-shadow: var(--htc-shadow-hover);
-    transform: translateY(-2px);
-}
-
-.hodima-tc-child-link:hover::before {
-    background-color: var(--htc-primary);
-    transform: scale(1.5);
-}
-
-/* =======================================
-   Responsive / واکنش‌گرایی
-======================================= */
-@media (max-width: 1024px) {
-    .hodima-tc-grid-list {
-        grid-template-columns: repeat(6, 1fr);
+    & ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
     }
-}
 
-@media (max-width: 768px) {
-    .hodima-tc-unified-box {
-        padding: 16px;
+    & li { margin: 0; }
+
+    & .hodima-tc__group {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .6rem 1rem;
+
+        & + .hodima-tc__group {
+            padding-block-start: 1.1rem;
+            border-block-start: 1px dashed var(--htc-border);
+        }
     }
-    
-    /* در موبایل مجدداً تایتل و دکمه‌ها زیر هم قرار می‌گیرند تا فضا کم نیاید */
-    .hodima-tc-section {
+
+    & .hodima-tc__title {
+        flex: none;
+        margin: 0;
+        font-size: .875rem;
+        font-weight: 600;
+        line-height: 1.6;
+        color: var(--htc-text);
+    }
+
+    & a {
+        text-decoration: none;
+        transition: color .2s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+
+        &:focus-visible {
+            outline: 2px solid var(--htc-secondary);
+            outline-offset: 2px;
+        }
+    }
+
+    /* مرجع (والدها): دکمه‌های کوچک */
+    & .hodima-tc__chips {
+        display: flex;
+        flex: 1 1 12rem;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    & .hodima-tc__chip {
+        display: inline-block;
+        padding: .35rem .9rem;
+        font-size: .8125rem;
+        font-weight: 500;
+        line-height: 1.6;
+        color: var(--htc-primary);
+        background: var(--htc-soft);
+        border: 1px solid var(--htc-border);
+        border-radius: 6px;
+
+        &:hover {
+            color: #fff;
+            background: var(--htc-primary);
+            border-color: var(--htc-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px color-mix(in srgb, var(--htc-primary) 15%, transparent);
+        }
+    }
+
+    /* زیرمجموعه‌ها و هم‌خوشه‌ها: شبکه کارت */
+    & .hodima-tc__links {
+        display: grid;
+        flex: 1 1 24rem;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
+        gap: .6rem;
+
+        /* کارت هم‌ارتفاع ردیف (به جای block-size: 100% که ردیف را دو برابر بلند می‌کرد) */
+        & > li { display: grid; }
+    }
+
+    & .hodima-tc__link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: .4rem;
+        min-block-size: 2.9rem;
+        padding: .5rem .6rem;
+        font-size: .78rem;
+        font-weight: 500;
+        line-height: 1.5;
+        text-align: center;
+        color: var(--htc-text);
+        background: var(--htc-soft);
+        border: 1px solid var(--htc-border);
+        border-radius: 6px;
+        overflow-wrap: anywhere;
+
+        &::before {
+            content: "";
+            flex: none;
+            inline-size: 5px;
+            block-size: 5px;
+            background: var(--htc-secondary);
+            border-radius: 50%;
+            transition: transform .2s ease, background-color .2s ease;
+        }
+
+        &:hover {
+            color: var(--htc-primary);
+            background: var(--htc-surface);
+            border-color: var(--htc-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px color-mix(in srgb, var(--htc-primary) 12%, transparent);
+
+            &::before {
+                background: var(--htc-primary);
+                transform: scale(1.5);
+            }
+        }
+    }
+
+    /* چیدمان «فهرست ساده»: عنوان بالای فهرست */
+    &.hodima-tc--list .hodima-tc__group {
+        display: grid;
+        grid-template-columns: 100%;
+    }
+
+    &.hodima-tc--list .hodima-tc__links {
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
+        gap: .2rem;
     }
-    
-    .hodima-tc-grid-list {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-        width: 100%;
+
+    &.hodima-tc--list .hodima-tc__link {
+        justify-content: flex-start;
+        min-block-size: 0;
+        padding: .3rem 0;
+        font-size: .875rem;
+        text-align: start;
+        background: none;
+        border: 0;
+
+        &:hover {
+            transform: none;
+            box-shadow: none;
+            text-decoration: underline;
+        }
     }
-    
-    .hodima-tc-child-link {
-        font-size: 11px;
-        padding: 6px 4px;
-        min-height: 42px;
-        word-break: break-word;
+
+    @media (max-width: 48rem) {
+        padding: 1rem;
+
+        /*
+         * عنوان بالای فهرست. با grid، نه flex ستونی: در flex ستونی
+         * flex-basis ارتفاع می‌شد و ارتفاع ردیف‌های کارت با عرض حداقلی
+         * محاسبه می‌شد (کارت‌ها دو برابر بلند).
+         */
+        & .hodima-tc__group {
+            display: grid;
+            grid-template-columns: 100%;
+            gap: .6rem;
+        }
+
+        & .hodima-tc__links {
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 7.5rem), 1fr));
+            gap: .5rem;
+        }
+
+        & .hodima-tc__link {
+            font-size: .72rem;
+            min-block-size: 2.6rem;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        & a,
+        & .hodima-tc__link::before {
+            transition: none;
+        }
+
+        & :is(.hodima-tc__chip, .hodima-tc__link):hover {
+            transform: none;
+        }
     }
 }

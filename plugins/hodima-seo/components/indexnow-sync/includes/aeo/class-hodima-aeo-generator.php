@@ -817,94 +817,34 @@ final class Hodima_AEO_Generator {
         $general_data   = [];
         $is_pillar_root = false;
 
-        if ( ! empty( $content_raw ) ) {
-            global $wp_query, $post;
-            if ( ! isset( $wp_query ) || ! is_object( $wp_query ) ) $wp_query = new WP_Query();
-            $orig_query = clone $wp_query; $orig_post = $post ?? null;
-            $wp_query->is_singular = true; $wp_query->is_single = in_array( $post_type_name ?? '', ['post', 'product'] );
-            if ( isset( $post_obj ) ) { $post = $post_obj; setup_postdata( $post ); }
+        /*
+         * خوشه موضوعی: مستقیم از گراف خوشه (Hodima_TC_Helper).
+         * نسخه قبلی شورت‌کد را با دستکاری $wp_query اجرا و HTML خروجی را
+         * دوباره تجزیه می‌کرد؛ برای دسته‌ها فرزندان را با شناسه دسته به
+         * عنوان شناسه *نوشته* می‌خواند (فهرست اشتباه) و والد نوشته‌ها را
+         * (که دسته است) با get_permalink() نوشته‌ای هم‌شماره می‌ساخت.
+         * حالا والد مؤثر (دستی یا خودکار)، فرزندان پیلار و هم‌خوشه‌ها.
+         */
+        if ( class_exists('Hodima_TC_Helper') && method_exists('Hodima_TC_Helper', 'parent_nodes') ) {
+            $sc_type   = $is_term ? 'term' : 'post';
+            $is_pillar = Hodima_TC_Helper::is_pillar( $id, $sc_type );
+            $md_item   = static function ( array $node ) use ( $lang ): array {
+                return [
+                    'title' => self::get_localized_title( (int) $node['id'], (string) $node['kind'], $lang ),
+                    'url'   => self::format_md_url( (string) $node['url'], $lang ),
+                ];
+            };
 
-            $pattern = get_shortcode_regex( [ 'hodima_topic_cluster' ] );
-            $html_to_parse = '';
-            if ( preg_match_all( '/' . $pattern . '/s', $content_raw, $matches, PREG_SET_ORDER ) ) {
-                $sc_type = $is_term ? 'term' : 'post';
-                $html_to_parse = do_shortcode( '[hodima_topic_cluster id="' . $id . '" type="' . $sc_type . '"]' );
-            } elseif ( shortcode_exists('hodima_topic_cluster') ) {
-                $sc_type = $is_term ? 'term' : 'post';
-                $html_to_parse = do_shortcode( '[hodima_topic_cluster id="' . $id . '" type="' . $sc_type . '"]' );
+            foreach ( Hodima_TC_Helper::parent_nodes( $id, $sc_type ) as $node ) {
+                $pillars_data[] = $md_item( $node );
             }
-            
-            if ( !empty($html_to_parse) ) {
-                $extracted = self::extract_links_from_html($html_to_parse, $lang);
-                
-                if ( class_exists('Hodima_AEO_Data') && method_exists('Hodima_AEO_Data', 'resolve_entity') ) {
-                    foreach (['pillars', 'clusters', 'general'] as $cat) {
-                        foreach ($extracted[$cat] as &$item) {
-                            $res_type = '';
-                            $res_id = Hodima_AEO_Data::resolve_entity($item['url'], $res_type);
-                            if ($res_id) {
-                                $item['title'] = self::get_localized_title( $res_id, $res_type, $lang );
-                            }
-                        }
-                    }
-                }
-                
-                $pillars_data  = array_merge($pillars_data, $extracted['pillars']);
-                $clusters_data = array_merge($clusters_data, $extracted['clusters']);
-                $general_data  = array_merge($general_data, $extracted['general']);
-            }
-            $wp_query = $orig_query; $post = $orig_post;
-            if ( $post ) setup_postdata( $post ); else wp_reset_postdata();
-        }
-
-        if ( class_exists('Hodima_TC_Helper') ) {
-            $sc_type = $is_term ? 'term' : 'post';
-            $pillar_ids = Hodima_TC_Helper::get_parents($id, $sc_type);
-            $is_pillar  = Hodima_TC_Helper::is_pillar($id, $sc_type);
-
-            $related_items = [];
             if ( $is_pillar ) {
-                $related_items = Hodima_TC_Helper::get_children($id);
-            } elseif ( $is_term && empty($pillar_ids) ) {
-                $related_items = Hodima_TC_Helper::get_children($id);
-            }
-
-            if ( !empty($pillar_ids) && is_array($pillar_ids) ) {
-                foreach ($pillar_ids as $p_id) {
-                    $p_title = ''; $p_url = '';
-                    if ($sc_type === 'post') {
-                        if (get_post_type($id) === 'product') {
-                            $p_term = get_term($p_id, 'product_cat');
-                            if ($p_term instanceof WP_Term && !is_wp_error($p_term)) {
-                                $p_title = self::get_localized_title( $p_term->term_id, 'term', $lang );
-                                $p_url = get_term_link($p_term);
-                            }
-                        } else {
-                            $p_title = self::get_localized_title( $p_id, 'post', $lang );
-                            $p_url = get_permalink($p_id);
-                        }
-                    } else {
-                        $p_term = get_term($p_id);
-                        if ($p_term instanceof WP_Term && !is_wp_error($p_term)) {
-                            $p_title = self::get_localized_title( $p_term->term_id, 'term', $lang );
-                            $p_url = get_term_link($p_term);
-                        }
-                    }
-                    if ($p_title && $p_url && !is_wp_error($p_url)) {
-                        $pillars_data[] = [ 'title' => $p_title, 'url' => self::format_md_url((string)$p_url, $lang) ];
-                    }
+                foreach ( Hodima_TC_Helper::get_children( $id, $sc_type ) as $node ) {
+                    $clusters_data[] = $md_item( $node );
                 }
-            }
-
-            if ( !empty($related_items) && is_array($related_items) ) {
-                foreach ($related_items as $item) {
-                    if ( !empty($item['title']) && !empty($item['url']) ) {
-                        $resolved_id = Hodima_AEO_Data::resolve_entity($item['url'], $res_type);
-                        if ($resolved_id) {
-                            $item['title'] = self::get_localized_title( $resolved_id, $res_type, $lang );
-                        }
-                        $clusters_data[] = [ 'title' => $item['title'], 'url' => self::format_md_url((string)$item['url'], $lang) ];
-                    }
+            } else {
+                foreach ( Hodima_TC_Helper::sibling_nodes( $id, $sc_type, 10 ) as $node ) {
+                    $general_data[] = $md_item( $node );
                 }
             }
 
