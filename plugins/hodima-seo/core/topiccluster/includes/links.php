@@ -351,8 +351,17 @@ final class Links {
 			return self::$resolved[ $path ] = Ref::post( $post_id );
 		}
 
-		// مسیریاب آدرس تمیز (محصول/دسته بدون پایه) — از AEO اگر فعال است
-		if ( class_exists( 'Hodima_AEO_Data' ) && method_exists( 'Hodima_AEO_Data', 'resolve_entity' ) ) {
+		// مسیریاب آدرس تمیز (محصول/دسته بدون پایه). پیش‌تر فقط از AEO خوانده
+		// می‌شد و با ماژول IndexNow خاموش، لینک دسته‌ها در متن شناخته نمی‌شد.
+		if ( function_exists( 'hodima_router_resolve_url' ) ) {
+			$hit = hodima_router_resolve_url( $absolute );
+			if ( null !== $hit ) {
+				$ref = new Ref( Kind::from( $hit['kind'] ), $hit['id'] );
+				if ( $matches( $ref ) ) {
+					return self::$resolved[ $path ] = $ref;
+				}
+			}
+		} elseif ( class_exists( 'Hodima_AEO_Data' ) && method_exists( 'Hodima_AEO_Data', 'resolve_entity' ) ) {
 			$type = '';
 			$id   = (int) \Hodima_AEO_Data::resolve_entity( $absolute, $type );
 			if ( $id > 0 && in_array( $type, [ 'post', 'term' ], true ) ) {

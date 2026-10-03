@@ -85,14 +85,13 @@ final class Hodima_Core_Helpers {
         return preg_replace( $patterns, '[حذف‌شده توسط فیلتر امنیتی]', $text ) ?? $text;
     }
 
+    /**
+     * آدرس بدون پایه، هماهنگ با ماژول «آدرس تمیز» (router).
+     * باگ قبلی: وقتی روتر خاموش بود /product/ را از آدرس واقعی محصول حذف می‌کرد
+     * و آدرس ۴۰۴ (/103/ به جای /product/103/) به بینگ و Yandex می‌رفت.
+     */
     public static function clean_url( string $url ): string {
-        if ( function_exists( 'arian_strip_leading_base' ) ) {
-            $url = arian_strip_leading_base( $url, function_exists( 'arian_product_base' ) ? arian_product_base() : 'product' );
-            $url = arian_strip_leading_base( $url, function_exists( 'arian_product_cat_base' ) ? arian_product_cat_base() : 'product-category' );
-            $url = arian_strip_leading_base( $url, function_exists( 'arian_category_base' ) ? arian_category_base() : 'category' );
-            return $url;
-        }
-        return (string) preg_replace( '#^(https?://[^/]+)/product/#i', '$1/', $url );
+        return function_exists( 'hodima_router_clean_url' ) ? hodima_router_clean_url( $url ) : $url;
     }
 
     /**
