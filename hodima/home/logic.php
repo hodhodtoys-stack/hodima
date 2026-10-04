@@ -358,8 +358,13 @@ function arian_clear_category_cache_force() {
     if ( function_exists( 'rocket_clean_home' ) ) {
         rocket_clean_home();
     }
-    if ( class_exists( 'LiteSpeed_Cache_API' ) ) {
-        LiteSpeed_Cache_API::purge_all(); // استفاده از purge_all استانداردتر از force است
+    /*
+     * فقط صفحه اصلی از کش لایت‌اسپید پاک شود. قبلا purge_all بود: ذخیره هر
+     * نوشته یا دسته کل کش سایت را خالی می‌کرد و تا ساخته شدن دوباره کش،
+     * همه صفحه‌ها برای بازدیدکننده و ربات‌ها کند می‌شدند.
+     */
+    if ( function_exists( 'hodima_litespeed_purge_home' ) ) {
+        hodima_litespeed_purge_home();
     }
 }
 
@@ -405,8 +410,13 @@ function arian_clear_blog_cache_force() {
     if ( function_exists( 'rocket_clean_home' ) ) {
         rocket_clean_home();
     }
-    if ( class_exists( 'LiteSpeed_Cache_API' ) ) {
-        LiteSpeed_Cache_API::purge_all(); 
+    /*
+     * فقط صفحه اصلی از کش لایت‌اسپید پاک شود. قبلا purge_all بود: ذخیره هر
+     * نوشته یا دسته کل کش سایت را خالی می‌کرد و تا ساخته شدن دوباره کش،
+     * همه صفحه‌ها برای بازدیدکننده و ربات‌ها کند می‌شدند.
+     */
+    if ( function_exists( 'hodima_litespeed_purge_home' ) ) {
+        hodima_litespeed_purge_home();
     }
 }
 

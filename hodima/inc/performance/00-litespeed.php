@@ -193,6 +193,19 @@ function hodima_litespeed_purge_front( int $post_id ): void {
         return;
     }
 
+    hodima_litespeed_purge_home();
+}
+
+/**
+ * پاک کردن فقط صفحه اصلی از کش لایت‌اسپید (نه کل سایت).
+ * بخش‌های صفحه اصلی (دسته‌ها، آخرین مقالات) با تغییر داده همین را صدا می‌زنند.
+ */
+function hodima_litespeed_purge_home(): void {
+
+    if ( ! hodima_litespeed_active() ) {
+        return;
+    }
+
     do_action( 'litespeed_purge_url', home_url( '/' ) );
 }
 

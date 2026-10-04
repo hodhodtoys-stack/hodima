@@ -257,77 +257,12 @@ function hodima_custom_catalog_ordering_args( $args ) {
 
 
 /* ============================================================
- * همه ویدئو های مدیا در یک صفحه (پشتیبانی از اسکرول بی‌نهایت)
+ * «بارگذاری ویدیوی بیشتر» (AJAX) حذف شد
+ * ------------------------------------------------------------
+ * template-page-videos.php از نسخه 2.0 صفحه‌بندی واقعی دارد و هیچ اسکریپتی
+ * دیگر این درخواست را نمی‌فرستاد؛ ولی آدرس AJAX برای عموم باز مانده بود
+ * و با هر درخواست یک کوئری ویدیو اجرا می‌کرد.
  * ============================================================ */
-
-add_action( 'wp_ajax_hodima_load_more_videos', 'hodima_load_more_videos' );
-add_action( 'wp_ajax_nopriv_hodima_load_more_videos', 'hodima_load_more_videos' );
-
-function hodima_load_more_videos() {
-    // 1. بررسی امنیتی Nonce (دلیل اصلی مسدود شدن در هاست اصلی)
-    if ( ! isset( $_POST['security'] ) || ! wp_verify_nonce( $_POST['security'], 'hodima_load_videos_nonce' ) ) {
-        wp_send_json_error( 'درخواست نامعتبر است (خطای امنیتی).' );
-        wp_die();
-    }
-
-    $page = isset( $_POST['page'] ) ? max( 1, absint( $_POST['page'] ) ) : 1;
-    $posts_per_page = 12;
-
-    $video_query = new WP_Query( array(
-        'post_type'      => 'video',
-        'posts_per_page' => $posts_per_page,
-        'paged'          => $page,
-        'post_status'    => 'publish' // اطمینان از دریافت فقط پست‌های منتشر شده
-    ) );
-
-    ob_start();
-
-    if ( $video_query->have_posts() ) {
-        while ( $video_query->have_posts() ) {
-            $video_query->the_post();
-
-            $title = get_the_title();
-            $url   = get_permalink();
-            ?>
-            <a href="<?php echo esc_url( $url ); ?>" class="videos-page-card">
-                <?php if ( has_post_thumbnail() ) : ?>
-                    <?php the_post_thumbnail( 'medium', array(
-                        'class' => 'videos-page-thumbnail',
-                        'alt'   => $title,
-                    ) ); ?>
-                <?php else : ?>
-                    <div class="videos-page-thumbnail videos-page-thumbnail--empty">
-                        <span>بدون تصویر</span>
-                    </div>
-                <?php endif; ?>
-
-                <div class="videos-page-content">
-                    <h2 class="videos-page-title" title="<?php echo esc_attr( $title ); ?>">
-                        <?php
-                        if ( mb_strlen( $title, 'UTF-8' ) > 22 ) {
-                            echo esc_html( mb_substr( $title, 0, 22, 'UTF-8' ) . '...' );
-                        } else {
-                            echo esc_html( $title );
-                        }
-                        ?>
-                    </h2>
-                </div>
-            </a>
-            <?php
-        }
-    }
-
-    wp_reset_postdata();
-
-    wp_send_json_success( array(
-        'html'      => ob_get_clean(),
-        'has_more'  => $page < (int) $video_query->max_num_pages,
-        'next_page' => $page + 1,
-        'max_pages' => (int) $video_query->max_num_pages,
-    ) );
-    
-    wp_die();
-}
 
 
 

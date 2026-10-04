@@ -182,7 +182,6 @@ get_header( 'shop' );
 			</section>
 		<?php endif; ?>
 
->>>
 
 	<?php endif; ?>
 

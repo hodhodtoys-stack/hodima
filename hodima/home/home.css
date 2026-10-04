@@ -638,6 +638,16 @@ h1.section-col-title {
   display:block;
 }
 
+/* مقاله بدون تصویر شاخص (قبلا فایل جایگزین ناموجود → تصویر شکسته) */
+.blog-card-img-placeholder{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  color:var(--hodima-secondary, #607bbd);
+  background:linear-gradient(135deg, var(--hodima-bg-light, #f6f8fc), color-mix(in srgb, var(--hodima-third, #b6c2f3) 45%, #fff));
+}
+
 .blog-card-info{
   padding:6px 8px 4px;
   display:flex;

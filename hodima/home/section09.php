@@ -91,16 +91,15 @@ if ( empty( $posts_data ) ) {
                         echo wp_get_attachment_image( $post['thumbnail_id'], 'medium_large', false, $img_attrs );
 
                     } else {
-                        // اگر پستی تصویر شاخص نداشت، از جایگزین استفاده می‌کنیم.
+                        /*
+                         * مقاله بدون تصویر شاخص: کادر جایگزین با رنگ برند.
+                         * قبلا assets/img/blog-placeholder.webp صدا زده می‌شد که در قالب
+                         * وجود نداشت و تصویر شکسته (۴۰۴) نمایش داده می‌شد.
+                         */
                         ?>
-                        <img
-                            src="<?php echo esc_url( get_template_directory_uri() . '/assets/img/blog-placeholder.webp' ); ?>"
-                            alt="<?php echo esc_attr( $post['title'] ); ?>"
-                            width="500"
-                            height="500"
-                            loading="lazy"
-                            decoding="async"
-                        >
+                        <span class="blog-card-img-placeholder" role="img" aria-label="<?php echo esc_attr( $post['title'] ); ?>">
+                            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+                        </span>
                         <?php
                     }
                     ?>

@@ -37,10 +37,10 @@ get_header(); ?>
                 <header class="blog-archive-header">
                     <h1 class="blog-archive-title">
                         <?php 
-                        if ( is_category() ) {
-                            echo 'هدهدنما';
-                        } elseif ( is_tag() || is_tax() ) {
-                            echo single_term_title( '', false );
+                        // نام خود دسته/برچسب؛ قبلا همه دسته‌های وبلاگ H1 ثابت «هدهدنما» داشتند
+                        // (H1 تکراری بین دسته‌ها و ناهمخوان با عنوان صفحه و اسکیما)
+                        if ( is_category() || is_tag() || is_tax() ) {
+                            echo esc_html( single_term_title( '', false ) );
                         } else {
                             echo wp_strip_all_tags( get_the_archive_title() );
                         }
@@ -125,10 +125,8 @@ get_header(); ?>
                     
                     // استخراج نام برای اسکیما (با تغییر مدنظر شما)
                     $archive_name = 'وبلاگ';
-                    if ( is_category() ) {
-                        $archive_name = 'بلاگ هدهدنما';
-                    } elseif ( is_archive() ) {
-                        $archive_name = is_tag() || is_tax() ? single_term_title( '', false ) : wp_strip_all_tags( get_the_archive_title() );
+                    if ( is_archive() ) {
+                        $archive_name = is_category() || is_tag() || is_tax() ? single_term_title( '', false ) : wp_strip_all_tags( get_the_archive_title() );
                     }
 
                     $item_list_schema = array(

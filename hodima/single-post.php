@@ -181,7 +181,6 @@ get_header();
             ?>
         </section>
 
->>>
 
     <?php endwhile; // پایان حلقه وردپرس ?>
 </div>
