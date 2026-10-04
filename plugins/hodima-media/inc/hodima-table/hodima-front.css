@@ -1,84 +1,97 @@
 /* =========================================================
-   Hodima Front-end Table CSS
+   Hodima Front-end Table CSS — شورت‌کد [hodima_table]
+   متغیرها روی خود کادر جدول‌اند (نه :root) و از توکن‌های قالب
+   (assets/css/tokens.css) ارث می‌برند.
    ========================================================= */
 
-:root {
-    --hodima-table-primary: var(--hodima-primary, #25316a);
-    --hodima-table-primary-soft: rgba(37, 49, 106, 0.08);
-    --hodima-table-primary-border: rgba(37, 49, 106, 0.16);
-    --hodima-table-border: var(--hodima-border-light, #d9e1f0);
-    --hodima-table-border-strong: var(--hodima-third, #b6c2f3);
-    --hodima-table-text: var(--hodima-text-dark, #111111);
-    --hodima-table-text-soft: var(--hodima-text-muted, #5d6785);
-    --hodima-table-surface: #ffffff;
-    --hodima-table-surface-alt: var(--hodima-surface-soft, #f7f9fd);
-    --hodima-table-head: var(--hodima-secondary, #607bbd);
-    --hodima-table-head-hover: var(--hodima-secondary, #607bbd);
-    --hodima-table-shadow: 0 6px 18px rgba(37, 49, 106, 0.06);
-}
-
 .hodima-table-container {
-    margin-bottom: 20px;
+    --hdt-primary: var(--hodima-primary, #25316a);
+    --hdt-head: var(--hodima-secondary, #607bbd);
+    --hdt-border: var(--hodima-border-light, #d9e1f0);
+    --hdt-border-strong: var(--hodima-third, #b6c2f3);
+    --hdt-text: var(--hodima-text-dark, #111111);
+    --hdt-text-soft: var(--hodima-text-muted, #5d6785);
+    --hdt-surface: var(--hodima-surface, #ffffff);
+    --hdt-surface-alt: var(--hodima-surface-soft, #f7f9fd);
+    --hdt-hover: var(--hodima-bg-gray, #eef2f8);
+    --hdt-shadow: 0 6px 18px rgba(37, 49, 106, 0.06);
+    --hdt-shadow: 0 6px 18px color-mix(in srgb, var(--hdt-primary) 6%, transparent);
+
+    margin-block-end: 20px;
     overflow-x: auto;
-    border: 1px solid var(--hodima-table-border-strong);
-    border-bottom: 3px solid var(--hodima-third, #b6c2f3);
-    border-radius: 10px;
-    background: var(--hodima-table-surface);
-    box-shadow: var(--hodima-table-shadow);
+    overscroll-behavior-inline: contain;
     -webkit-overflow-scrolling: touch;
+    background: var(--hdt-surface);
+    border: 1px solid var(--hdt-border-strong);
+    border-block-end-width: 3px;
+    border-radius: 10px;
+    box-shadow: var(--hdt-shadow);
 }
 
+/* کادر با role="region" و tabindex با کیبورد اسکرول می‌شود. */
+.hodima-table-container:focus-visible {
+    outline: 2px solid var(--hdt-head);
+    outline-offset: 2px;
+}
+
+/*
+ * table-layout: auto + حداقل عرض خانه. قبلا fixed با عرض ۱۰۰٪ بود: جدول
+ * هیچ‌وقت از کادر بزرگ‌تر نمی‌شد و اسکرول افقی کار نمی‌کرد؛ جدول ۱۰ستونه
+ * در موبایل ستون‌های چندپیکسلی و متن حرف‌به‌حرف شکسته داشت. حالا جدول
+ * کم‌ستون تمام‌عرض است و جدول پرستون اسکرول افقی می‌خورد.
+ */
 .hodima-dynamic-table {
-    width: 100%;
-    table-layout: fixed;
+    inline-size: 100%;
+    table-layout: auto;
     border-collapse: collapse;
-    direction: rtl;
     border-style: hidden;
-    background: var(--hodima-table-surface);
+    background: var(--hdt-surface);
 }
 
 .hodima-dynamic-table th,
 .hodima-dynamic-table td {
+    min-inline-size: 7.5rem;
     padding: 12px;
     text-align: center;
-    border: 1px solid var(--hodima-table-border);
-    color: var(--hodima-table-text-soft);
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    white-space: normal;
-    line-height: 1.8;
     vertical-align: middle;
+    line-height: 1.8;
+    white-space: normal;
+    overflow-wrap: break-word;
+    color: var(--hdt-text-soft);
     background: transparent;
+    border: 1px solid var(--hdt-border);
 }
 
 .hodima-dynamic-table thead th {
-    background-color: var(--hodima-table-head) !important;
+    font-weight: 700;
+    /* !important مثل قبل: استایل جدول صفحه‌سازها و افزونه‌ها سرستون را نپوشاند */
     color: #ffffff !important;
-    font-weight: 700;
+    background-color: var(--hdt-head) !important;
     border-color: rgba(255, 255, 255, 0.12);
+    border-color: color-mix(in srgb, #ffffff 12%, transparent);
 }
 
+/* سلول اول هر ردیف th با scope="row" (نام ویژگی) */
 .hodima-dynamic-table tbody th {
-    background-color: var(--hodima-table-surface-alt);
-    color: var(--hodima-table-text);
+    font-weight: 600;
+    color: var(--hdt-primary);
+    background: var(--hdt-surface-alt);
+}
+
+.hodima-dynamic-table tbody tr:hover > * {
+    background-color: var(--hdt-hover);
+}
+
+/* عنوان جدول (title/caption شورت‌کد) — قبلا دو قانون متناقض داشت */
+.hodima-dynamic-table .hodima-table-caption {
+    caption-side: top;
+    padding: 10px 12px;
+    font-size: 15px;
     font-weight: 700;
-}
-
-.hodima-dynamic-table tbody tr:nth-child(even) {
-    background-color: var(--hodima-surface, #ffffff);
-}
-
-.hodima-dynamic-table tbody tr:hover {
-    background-color: var(--hodima-bg-gray, #eef2f8);
-}
-
-.hodima-dynamic-table caption {
-    padding: 12px;
-    background: var(--hodima-surface-soft, #f7f9fd);
-    border-bottom: 1px solid var(--hodima-table-border);
-    color: var(--hodima-table-text);
-    font-size: 1rem;
-    font-weight: 700;
+    text-align: center;
+    color: var(--hdt-primary);
+    background: var(--hdt-surface-alt);
+    border-block-end: 1px solid var(--hdt-border);
 }
 
 @media (max-width: 768px) {
@@ -88,36 +101,9 @@
 
     .hodima-dynamic-table th,
     .hodima-dynamic-table td {
+        min-inline-size: 6.5rem;
         padding: 10px 8px;
         font-size: 13px;
         line-height: 1.7;
     }
-}
-
-/* ── افزوده‌های نسخه ۲.۳ ─────────────────────────────────────────── */
-
-/* عنوان جدول: هم برای دسترس‌پذیری لازم است و هم گوگل آن را به عنوان
-   نام جدول می‌خواند. */
-.hodima-table-caption {
-    caption-side: top;
-    padding: 10px 12px;
-    font-size: 15px;
-    font-weight: 700;
-    text-align: center;
-    color: var(--hodima-primary, #25316a);
-}
-
-/* سلول اول هر ردیف حالا th با scope="row" است، پس باید مثل داده
-   استایل بگیرد نه مثل سرستون ستونی. */
-.hodima-dynamic-table tbody th[scope="row"] {
-    font-weight: 600;
-    text-align: center;   /* قبلا inherit بود → از جهت RTL ارث می‌برد و راست‌چین می‌شد */
-    color: var(--hodima-primary, #25316a);
-    background: var(--hodima-surface-soft, #f7f9fd);
-}
-
-/* کادر جدول با role="region" و tabindex قابل اسکرول با کیبورد است. */
-.hodima-table-container:focus-visible {
-    outline: 2px solid var(--hodima-secondary, #607bbd);
-    outline-offset: 2px;
 }

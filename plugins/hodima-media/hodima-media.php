@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Media
  * Plugin URI:        https://hodima.com
  * Description:       رسانه و محتوای تعاملی هدیما: استوری، ویدیو با شمارش بازدید، اسلایدر، سیستم رسانه (ویدیو، پادکست، FAQ، Google Discover)، اعلان‌ها، باکس‌های بازشونده و جدول داینامیک.
- * Version:           1.2.0
+ * Version:           1.3.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_MEDIA_VERSION = '1.2.0';
+const HODIMA_MEDIA_VERSION = '1.3.0';
 define( 'HODIMA_MEDIA_FILE', __FILE__ );
 define( 'HODIMA_MEDIA_DIR', __DIR__ );
 define( 'HODIMA_MEDIA_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -77,7 +77,7 @@ function hodima_media_modules(): array {
 		],
 		'dynamic-table' => [
 			'title'       => 'جدول داینامیک',
-			'description' => 'جدول قابل ویرایش در ویرایشگر با اسکیمای ItemList (شورت‌کد hodima_table).',
+			'description' => 'جدول مشخصات قابل ویرایش برای نوشته، برگه، محصول و دسته با اسکیمای Table و مشخصات محصول (شورت‌کد hodima_table).',
 			'files'       => [ 'inc/hodima-table/hodima-table.php' ],
 			'icon'        => 'dashicons-grid-view',
 		],

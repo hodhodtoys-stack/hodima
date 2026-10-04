@@ -571,8 +571,15 @@ final class Hodima_AEO_Generator {
             $pattern = get_shortcode_regex( [ 'hodima_table' ] );
             if ( preg_match_all( '/' . $pattern . '/s', $content_raw, $matches, PREG_SET_ORDER ) ) {
                 foreach ( $matches as $match ) {
+                    if ( '[' === $match[1] && ']' === $match[6] ) continue; // [[hodima_table]] = متن، نه شورت‌کد
                     $full_sc = $match[0];
-                    if ( strpos( $full_sc, 'id=' ) === false ) $full_sc = str_replace( '[hodima_table', '[hodima_table id="' . $id . '"', $full_sc );
+                    // بدون id: جدول همین شیء. برای دسته type="term" هم لازم است؛ قبلا
+                    // فقط id اضافه می‌شد و جدول *نوشته‌ای* با همان شماره خوانده می‌شد.
+                    $sc_atts = shortcode_parse_atts( $match[3] );
+                    $sc_atts = is_array( $sc_atts ) ? $sc_atts : [];
+                    if ( empty( $sc_atts['id'] ) ) {
+                        $full_sc = '[hodima_table id="' . $id . '" type="' . ( $is_term ? 'term' : 'post' ) . '"' . $match[3] . ']';
+                    }
                     $parsed = self::html_table_to_md( do_shortcode( $full_sc ) );
                     if ( $parsed ) $table_shortcodes_content .= $parsed . "\n";
                 }

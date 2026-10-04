@@ -1,143 +1,230 @@
 /* =========================================================
-   Hodima Admin Table CSS
+   Hodima Admin Table CSS — کادر «جدول مشخصات» در ویرایشگر و صفحه دسته
+   همه قانون‌ها زیر .hodima-wrap‌اند؛ قبلا .ui-sortable-helper سراسری بود
+   و هر کادر یا ردیفی که در صفحه ویرایش کشیده می‌شد (متاباکس‌ها، ویژگی‌ها
+   و متغیرهای ووکامرس) display: table-row می‌گرفت و به‌هم می‌ریخت.
    ========================================================= */
 
-.hodima-wrap { 
-    box-sizing: border-box; 
+.hodima-wrap {
+    --hdt-primary: var(--hodima-primary, #25316a);
+    --hdt-third: var(--hodima-third, #b6c2f3);
+    --hdt-border: var(--hodima-border-light, #d9e1f0);
+    --hdt-muted: var(--hodima-text-muted, #5d6785);
+    --hdt-soft: var(--hodima-surface-soft, #f7f9fd);
+    --hdt-head: var(--hodima-bg-gray, #eef2f8);
+    --hdt-danger: var(--hodima-state-danger, #a32a2a);
+
+    box-sizing: border-box;
+
+    & *,
+    & *::before,
+    & *::after {
+        box-sizing: inherit;
+    }
+
+    & .hodima-table-info {
+        margin-block-end: 12px;
+
+        & p {
+            margin-block: 0 4px;
+        }
+    }
+
+    & .hodima-hint {
+        color: var(--hdt-muted);
+    }
+
+    & .hodima-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px 15px;
+        padding: 12px 15px;
+        background: var(--hdt-soft);
+        border: 1px solid var(--hdt-third);
+        border-block-end: 0;
+        border-start-start-radius: 4px;
+        border-start-end-radius: 4px;
+    }
+
+    & .hodima-toolbar-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+
+        & .button {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        & .dashicons {
+            font-size: 16px;
+            inline-size: 16px;
+            block-size: 16px;
+        }
+    }
+
+    & .hodima-table-scroll {
+        inline-size: 100%;
+        overflow-x: auto;
+        margin-block-end: 15px;
+        background: #fff;
+        border: 1px solid var(--hdt-third);
+        border-end-start-radius: 4px;
+        border-end-end-radius: 4px;
+    }
+
+    & .hodima-admin-table {
+        inline-size: 100%;
+        border-collapse: collapse;
+        text-align: center;
+
+        & th,
+        & td {
+            padding: 10px;
+            min-inline-size: 150px;
+            vertical-align: middle;
+            border-block-end: 1px solid var(--hdt-border);
+            border-inline-end: 1px solid var(--hdt-border);
+
+            &:last-child {
+                border-inline-end: 0;
+            }
+        }
+
+        & thead th {
+            background: var(--hdt-head);
+            font-weight: 600;
+        }
+
+        & .hodima-col-ops {
+            inline-size: 1%;
+            min-inline-size: 0;
+            white-space: nowrap;
+            background: var(--hdt-soft);
+        }
+
+        & input[type="text"],
+        & textarea {
+            inline-size: 100%;
+            padding: 8px;
+            font-size: 13px;
+            text-align: center;
+            border: 1px solid var(--hdt-muted);
+            border-radius: 4px;
+            box-shadow: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+            &:focus {
+                border-color: var(--hdt-primary);
+                box-shadow: 0 0 0 1px var(--hdt-primary);
+                outline: none;
+            }
+        }
+
+        & textarea {
+            resize: vertical;
+            min-block-size: 45px;
+        }
+
+        & tr.is-dragging {
+            opacity: 0.5;
+            background: color-mix(in srgb, var(--hdt-third) 35%, #fff);
+        }
+    }
+
+    & .hodima-col-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    & .hodima-row-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+    }
+
+    & .hodima-icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: 28px;
+        block-size: 28px;
+        padding: 0;
+        color: var(--hdt-muted);
+        background: transparent;
+        border: 0;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: color 0.2s ease, background-color 0.2s ease;
+
+        &:hover {
+            color: var(--hdt-primary);
+            background: color-mix(in srgb, var(--hdt-third) 30%, transparent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--hdt-primary);
+            outline-offset: 1px;
+        }
+
+        &[data-action="remove-col"]:hover,
+        &.hodima-icon-btn--danger:hover {
+            color: var(--hdt-danger);
+        }
+    }
+
+    & .hodima-drag-handle {
+        color: var(--hdt-muted);
+        cursor: grab;
+        touch-action: none;
+
+        &:active {
+            cursor: grabbing;
+        }
+    }
+
+    & .hodima-table-dialog {
+        max-inline-size: min(420px, 90vw);
+        padding: 20px;
+        border: 1px solid var(--hdt-third);
+        border-radius: 8px;
+        box-shadow: 0 10px 30px color-mix(in srgb, var(--hdt-primary) 20%, transparent);
+
+        &::backdrop {
+            background: color-mix(in srgb, var(--hdt-primary) 35%, transparent);
+        }
+    }
+
+    & .hodima-table-dialog__text {
+        margin-block: 0 16px;
+        font-size: 14px;
+        line-height: 1.8;
+    }
+
+    & .hodima-table-dialog__actions {
+        display: flex;
+        gap: 8px;
+    }
 }
 
-.hodima-toolbar { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    flex-wrap: wrap; 
-    gap: 15px; 
-    background: var(--hodima-surface-soft, #f7f9fd); 
-    padding: 12px 15px; 
-    border: 1px solid var(--hodima-third, #b6c2f3); 
-    border-radius: 4px 4px 0 0; 
-    border-bottom: none; 
+/* کادر صفحه ویرایش دسته (بیرون از جدول فرم وردپرس) */
+.hodima-term-meta-box {
+    margin-block-start: 20px;
+    max-inline-size: 100%;
+
+    & .postbox-header .hndle {
+        padding-inline: 12px;
+    }
 }
 
-.hodima-toolbar-group { 
-    display: flex; 
-    gap: 10px; 
-    align-items: center; 
-}
-
-#hodima-admin-table-wrapper { 
-    width: 100%; 
-    overflow-x: auto; 
-    border: 1px solid var(--hodima-third, #b6c2f3); 
-    border-radius: 0 0 4px 4px; 
-    background: #fff; 
-    margin-bottom: 15px; 
-}
-
-.hodima-admin-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    text-align: center; 
-}
-
-.hodima-admin-table th, 
-.hodima-admin-table td { 
-    padding: 12px; 
-    border-bottom: 1px solid var(--hodima-border-light, #d9e1f0); 
-    border-left: 1px solid var(--hodima-border-light, #d9e1f0); /* در محیط راست‌چین وردپرس (RTL)، خطوط جداکننده معمولاً در سمت چپ قرار می‌گیرند */
-    vertical-align: middle; 
-    min-width: 150px; 
-}
-
-.hodima-admin-table th:last-child, 
-.hodima-admin-table td:last-child { 
-    border-left: none; 
-}
-
-.hodima-admin-table th.hodima-col-ops, 
-.hodima-admin-table td.hodima-col-ops { 
-    width: 60px; 
-    min-width: 60px; 
-    background: var(--hodima-surface-soft, #f7f9fd); 
-}
-
-.hodima-admin-table thead th { 
-    background: var(--hodima-bg-gray, #eef2f8); 
-    font-weight: 600; 
-}
-
-/* استایل ورودی‌ها و هماهنگی با کلاس جدید hodima-cell-textarea */
-.hodima-admin-table input[type="text"], 
-.hodima-admin-table textarea,
-.hodima-cell-textarea { 
-    width: 100%; 
-    box-sizing: border-box; 
-    border: 1px solid var(--hodima-text-muted, #5d6785); 
-    border-radius: 4px; 
-    padding: 8px; 
-    font-size: 13px; 
-    text-align: center; 
-    transition: 0.2s ease; 
-    box-shadow: none; 
-}
-
-.hodima-admin-table input[type="text"]:focus, 
-.hodima-admin-table textarea:focus,
-.hodima-cell-textarea:focus { 
-    border-color: var(--hodima-primary, #25316a); 
-    box-shadow: 0 0 0 1px var(--hodima-primary, #25316a); 
-    outline: none; 
-    background-color: var(--hodima-surface, #ffffff);
-}
-
-.hodima-admin-table textarea,
-.hodima-cell-textarea { 
-    resize: vertical; 
-    min-height: 45px; 
-}
-
-.hodima-col-header-inner { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 8px; 
-}
-
-.hodima-col-actions { 
-    display: flex; 
-    justify-content: flex-end; 
-}
-
-.hodima-row-actions { 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 12px; 
-}
-
-.hodima-icon-btn { 
-    cursor: pointer; 
-    color: var(--hodima-text-muted, #5d6785); 
-    display: inline-flex; 
-    align-items: center; 
-    justify-content: center; 
-    transition: color 0.2s; 
-}
-
-.hodima-icon-btn:hover { 
-    color: var(--hodima-state-danger, #a32a2a); 
-}
-
-.hodima-drag-handle { 
-    cursor: grab; 
-    color: var(--hodima-text-muted, #5d6785); 
-}
-
-.hodima-drag-handle:active { 
-    cursor: grabbing; 
-}
-
-.ui-sortable-helper { 
-    background: #fff; 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-    display: table-row; 
+@media (prefers-reduced-motion: reduce) {
+    .hodima-wrap * {
+        transition: none !important;
+    }
 }
