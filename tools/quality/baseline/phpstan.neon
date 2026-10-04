@@ -49,12 +49,6 @@ parameters:
 			path: ../../../hodima/home/legacy.php
 
 		-
-			message: '#^Callback expects 0\-1 parameters, \$accepted_args is set to 3\.$#'
-			identifier: arguments.count
-			count: 1
-			path: ../../../hodima/home/logic.php
-
-		-
 			message: '#^Function hodima_home_blog_cache_on_meta\(\) has no return type specified\.$#'
 			identifier: missingType.return
 			count: 1
@@ -189,18 +183,6 @@ parameters:
 		-
 			message: '#^Function hodima_home_clear_category_shortcode_map\(\) has no return type specified\.$#'
 			identifier: missingType.return
-			count: 1
-			path: ../../../hodima/home/logic.php
-
-		-
-			message: '#^Function hodima_home_flush_product_sliders\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: ../../../hodima/home/logic.php
-
-		-
-			message: '#^Function hodima_home_flush_product_sliders\(\) has parameter \$post_id with no type specified\.$#'
-			identifier: missingType.parameter
 			count: 1
 			path: ../../../hodima/home/logic.php
 
@@ -403,24 +385,6 @@ parameters:
 			path: ../../../hodima/inc/performance/content-optimizations.php
 
 		-
-			message: '#^Function hodima_add_resource_hints\(\) has parameter \$urls with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../../../hodima/inc/performance/ui-performance.php
-
-		-
-			message: '#^Function hodima_add_resource_hints\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: ../../../hodima/inc/performance/ui-performance.php
-
-		-
-			message: '#^Action callback returns bool but should not return anything\.$#'
-			identifier: return.void
-			count: 1
-			path: ../../../hodima/inc/performance/woo-optimizer.php
-
-		-
 			message: '#^Function hodima_filter_core_resource_hints\(\) has parameter \$urls with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -429,12 +393,6 @@ parameters:
 		-
 			message: '#^Function hodima_filter_core_resource_hints\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: ../../../hodima/inc/performance/wp-cleanup.php
-
-		-
-			message: '#^Function remove_action invoked with 4 parameters, 2\-3 required\.$#'
-			identifier: arguments.count
 			count: 1
 			path: ../../../hodima/inc/performance/wp-cleanup.php
 

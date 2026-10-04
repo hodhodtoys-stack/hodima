@@ -1,97 +1,82 @@
 /**
  * ==========================================================
- * footer.js — ماژول آکاردئون فوتر
- * نسخه: 2.0.0 (بازطراحی با Event Delegation و Debounce)
+ * footer.js — آکاردئون ستون‌های فوتر در موبایل
+ * نسخه: 3.0.0
+ *
+ * باگ‌های نسخه قبلی:
+ *   - هر رویداد resize همه ستون‌ها را می‌بست؛ در موبایل نوار آدرس مرورگر هنگام
+ *     اسکرول جمع/باز می‌شود و resize می‌فرستد، پس ستونی که کاربر باز کرده بود
+ *     با اسکرول خودبه‌خود بسته می‌شد. حالا فقط عبور از مرز موبایل/دسکتاپ
+ *     (matchMedia، همان 48rem فایل CSS) وضعیت را از نو می‌چیند.
+ *   - عنوان h2 کلیک‌پذیر بود ولی دکمه نبود: با کیبورد باز نمی‌شد و صفحه‌خوان
+ *     باز/بسته بودن را نمی‌فهمید. حالا در موبایل متن عنوان داخل یک <button>
+ *     با aria-expanded/aria-controls است (الگوی آکاردئون WAI-ARIA)؛ در دسکتاپ
+ *     همان h2 ساده (ستون‌ها همیشه باز). ظاهر عوض نمی‌شود: دکمه همه استایل را
+ *     از h2 می‌گیرد (footer.css: .footer-col__toggle).
  * ==========================================================
  */
-document.addEventListener('DOMContentLoaded', () => {
+( () => {
+	const container = document.querySelector( '.footer-container' );
+	if ( ! container ) {
+		return;
+	}
 
-    const MOBILE_BREAKPOINT = 768;
-    const footerContainer = document.querySelector('.footer-container');
-    const formColumn = document.querySelector('.footer-form-col');
+	const mobile = window.matchMedia( '(max-width: 48rem)' );
+	// ستون فرم مشاوره همیشه باز است و دکمه ندارد
+	const columns = [ ...container.querySelectorAll( '.footer-col' ) ];
+	const toggles = columns.filter( ( col ) => ! col.classList.contains( 'footer-form-col' ) );
 
-    if (!footerContainer) return;
+	const setOpen = ( col, open ) => {
+		col.classList.toggle( 'active', open );
+		col.querySelector( ':scope > h2 > .footer-col__toggle' )?.setAttribute( 'aria-expanded', String( open ) );
+	};
 
-    // تابع برای بررسی وضعیت موبایل
-    const isMobile = () => window.innerWidth <= MOBILE_BREAKPOINT;
+	/** متن عنوان را در دکمه بگذار (موبایل) یا دکمه را بردار (دسکتاپ). */
+	const enhance = ( on ) => {
+		toggles.forEach( ( col, i ) => {
+			const heading = col.querySelector( ':scope > h2' );
+			const content = col.querySelector( ':scope > .footer-content' );
+			if ( ! heading || ! content ) {
+				return;
+			}
+			const button = heading.querySelector( ':scope > .footer-col__toggle' );
 
-    /**
-     * تابع Debounce برای بهینه‌سازی رویداد resize
-     * از اجرای مکرر تابع در حین تغییر اندازه پنجره جلوگیری می‌کند.
-     * @param {Function} func تابعی که باید اجرا شود
-     * @param {number} delay مدت زمان تاخیر (میلی‌ثانیه)
-     * @returns {Function}
-     */
-    const debounce = (func, delay = 250) => {
-        let timeoutId;
-        return (...args) => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                func.apply(this, args);
-            }, delay);
-        };
-    };
+			if ( on && ! button ) {
+				content.id ||= `footer-col-content-${ i + 1 }`;
+				const btn = document.createElement( 'button' );
+				btn.type = 'button';
+				btn.className = 'footer-col__toggle';
+				btn.setAttribute( 'aria-controls', content.id );
+				btn.setAttribute( 'aria-expanded', 'false' );
+				btn.append( ...heading.childNodes );
+				heading.append( btn );
+			} else if ( ! on && button ) {
+				heading.append( ...button.childNodes );
+				button.remove();
+			}
+		} );
+	};
 
-    /**
-     * وضعیت آکاردئون را بر اساس اندازه صفحه به‌روز می‌کند.
-     */
-    const updateAccordionState = () => {
-        const columns = footerContainer.querySelectorAll('.footer-col');
-        if (isMobile()) {
-            // در حالت موبایل، همه را ببند به جز فرم
-            columns.forEach(col => col.classList.remove('active'));
-            if (formColumn) {
-                formColumn.classList.add('active');
-            }
-        } else {
-            // در حالت دسکتاپ، همه کلاس‌های active را حذف کن
-            columns.forEach(col => col.classList.remove('active'));
-        }
-    };
+	/** وضعیت اولیه هر حالت: موبایل همه بسته جز فرم؛ دسکتاپ بدون کلاس active. */
+	const apply = () => {
+		const isMobile = mobile.matches;
+		enhance( isMobile );
+		toggles.forEach( ( col ) => setOpen( col, false ) );
+		container.querySelector( '.footer-form-col' )?.classList.toggle( 'active', isMobile );
+	};
 
-    /**
-     * مدیریت کلیک روی هدرهای آکاردئون با Event Delegation
-     * @param {Event} event
-     */
-    const handleAccordionToggle = (event) => {
-        if (!isMobile()) return;
+	// کلیک روی کل عنوان (فلش ::after هم جزو h2 است، نه دکمه)؛ Enter/Space دکمه هم به اینجا می‌رسد
+	container.addEventListener( 'click', ( event ) => {
+		const button = event.target.closest( '.footer-col > h2' )?.querySelector( ':scope > .footer-col__toggle' );
+		if ( ! button || ! mobile.matches ) {
+			return;
+		}
+		const current = button.closest( '.footer-col' );
+		const willOpen = ! current.classList.contains( 'active' );
+		// فقط یک ستون باز
+		toggles.forEach( ( col ) => setOpen( col, col === current && willOpen ) );
+	} );
 
-        // پیدا کردن نزدیک‌ترین والد h2 که روی آن کلیک شده
-        const heading = event.target.closest('h2');
-        if (!heading) return;
-
-        // پیدا کردن ستون والد
-        const currentColumn = heading.closest('.footer-col');
-        if (!currentColumn || currentColumn.classList.contains('footer-form-col')) {
-            return; // اگر ستون فرم بود یا ستونی پیدا نشد، خارج شو
-        }
-
-        const isActive = currentColumn.classList.contains('active');
-        
-        // بستن تمام ستون‌های باز
-        footerContainer.querySelectorAll('.footer-col').forEach(col => {
-            col.classList.remove('active');
-        });
-        
-        // اگر ستون فعلی بسته بود، آن را باز کن
-        if (!isActive) {
-            currentColumn.classList.add('active');
-        }
-
-        // اطمینان از باز ماندن ستون فرم
-        if (formColumn) {
-            formColumn.classList.add('active');
-        }
-    };
-
-    // --- راه‌اندازی اولیه ---
-
-    // افزودن یک Event Listener به والد اصلی
-    footerContainer.addEventListener('click', handleAccordionToggle);
-
-    // به‌روزرسانی وضعیت در هنگام تغییر اندازه صفحه (با debounce)
-    window.addEventListener('resize', debounce(updateAccordionState));
-
-    // تنظیم اولیه وضعیت آکاردئون در زمان بارگذاری صفحه
-    updateAccordionState();
-});
+	mobile.addEventListener( 'change', apply );
+	apply();
+} )();

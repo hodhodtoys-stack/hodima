@@ -1,5 +1,6 @@
 /**
- * Arian Home – Ultra Optimized JS
+ * صفحه اصلی: کشیدن اسلایدرها با ماوس (دسکتاپ).
+ * «Lazy Load Enhancer» برای img.arian-lazy حذف شد: هیچ تصویری این کلاس را نداشت (کد مرده).
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,33 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // =============================
-    // 2. Lazy Load Enhancer (Optional)
-    // =============================
-    const initLazyLoad = () => {
-        // اگر LiteSpeed فعال است، LazyLoad اصلی را خودش انجام می‌دهد
-        if (window.lsjs) return;
-
-        // حداقل بهبود برای تصاویر arian-lazy
-        const images = document.querySelectorAll('img.arian-lazy');
-
-        const obs = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (!entry.isIntersecting) return;
-
-                const img = entry.target;
-                img.src = img.dataset.src;
-                img.removeAttribute('data-src');
-                img.classList.remove('arian-lazy');
-                observer.unobserve(img);
-            });
-        }, { rootMargin: '200px' });
-
-        images.forEach(img => obs.observe(img));
-    };
-
-
     // اجرا
     initDragScroll();
-    initLazyLoad();
 });

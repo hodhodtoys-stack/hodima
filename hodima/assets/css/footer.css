@@ -302,18 +302,40 @@
         transform: rotate(135deg);
     }
 
+    /*
+     * دکمه آکاردئون (footer.js متن عنوان را در موبایل داخلش می‌گذارد): همه
+     * ظاهر از h2؛ کل عرض عنوان تا فلش. فقط حلقه تمرکز کیبورد اضافه است.
+     * انتخابگر دوکلاسه تا استایل سراسری button و button:hover (گرادیان، سایه،
+     * جابه‌جایی؛ style.css) رویش اثر نکند. رنگ متن را button سراسری با
+     * !important سفید می‌کند که همان رنگ عنوان فوتر (--footer-heading) است.
+     */
+    .footer-col > h2 > .footer-col__toggle {
+        all: unset;
+        flex: 1;
+        cursor: pointer;
+
+        &:focus-visible {
+            outline: 2px solid var(--footer-third);
+            outline-offset: 0.25rem;
+            border-radius: 0.25rem;
+        }
+    }
+
     .footer-content {
         font-size: 0.8125rem; /* افزایش سایز متن داخلی در موبایل */
         max-height: 0;
         overflow: hidden;
         opacity: 0;
-        transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease;
+        /* بسته: لینک‌های داخلش با Tab و صفحه‌خوان هم در دسترس نباشند (قبلا نامرئی ولی فوکوس‌پذیر) */
+        visibility: hidden;
+        transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease, visibility 0.4s;
         padding: 0 0.625rem;
     }
 
     .footer-col.active > .footer-content {
         max-height: 31.25rem;
         opacity: 1;
+        visibility: visible;
         padding-bottom: 1.25rem;
     }
 
@@ -333,6 +355,7 @@
     .footer-form-col .footer-content {
         max-height: 62.5rem;
         opacity: 1;
+        visibility: visible;
         padding-bottom: 1.25rem;
         overflow: visible;
     }

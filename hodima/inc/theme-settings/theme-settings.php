@@ -115,6 +115,10 @@ function hodima_settings_fields(): array {
 		'ga_id'            => [ 'panel' => 'analytics_ga', 'type' => 'ga', 'label' => 'شناسه اندازه‌گیری (Measurement ID)', 'default' => '', 'placeholder' => 'G-XXXXXXXXXX', 'help' => 'خالی = کد آمار چاپ نمی‌شود.' ],
 		'ga_skip_editors'  => [ 'panel' => 'analytics_ga', 'type' => 'toggle', 'label' => 'بازدید مدیران و نویسندگان ثبت نشود', 'default' => true ],
 		'ga_production'    => [ 'panel' => 'analytics_ga', 'type' => 'toggle', 'label' => 'فقط روی سایت اصلی (Production)', 'default' => true, 'help' => 'روی استیجینگ یا لوکال (WP_ENVIRONMENT_TYPE) کد آمار چاپ نمی‌شود تا آمار واقعی آلوده نشود.' ],
+
+		// ── سرعت: اتصال زودهنگام به دامنه رسانه (نوسازی قالب، مرحله ۲؛ قبلا dl.hodima.com ثابت در کد) ──
+		'preconnect_media_auto' => [ 'panel' => 'speed_preconnect', 'type' => 'toggle', 'label' => 'تشخیص خودکار دامنه ویدیو و پادکست هر صفحه', 'default' => true, 'wide' => true, 'help' => 'در صفحه‌ای که ویدیو، کاور ویدیو یا پادکست دارد (کادر «رسانه» نوشته، محصول، دسته یا صفحه هر ویدیو)، مرورگر از همان ابتدای بارگذاری به دامنه آن فایل (مثلا dl.example.com یا آپارات) وصل می‌شود تا پخش زودتر شروع شود. صفحه‌های بدون رسانه اتصال اضافه نمی‌گیرند و چیزی لازم نیست وارد کنید.' ],
+		'preconnect_hosts'      => [ 'panel' => 'speed_preconnect', 'type' => 'hostlist', 'label' => 'دامنه‌های همیشگی (همه صفحه‌ها)', 'default' => '', 'placeholder' => "https://cdn.example.com\nstatic.example.com", 'help' => 'اختیاری؛ هر دامنه در یک خط. فقط دامنه‌ای که تقریبا در همه صفحه‌ها چیزی از آن بارگذاری می‌شود (مثلا CDN تصاویر). اتصال اضافه در صفحه‌ای که از آن استفاده نمی‌کند کمی هزینه دارد؛ روی هم حداکثر ۴ دامنه در هر صفحه. دامنه خود سایت لازم نیست.' ],
 	];
 }
 
@@ -203,7 +207,7 @@ function hodima_settings_nav_groups(): array {
 		'look'    => 'ظاهر سایت',
 		'pages'   => 'صفحه‌ها',
 		'contact' => 'ارتباط با مشتری',
-		'tools'   => 'آمار',
+		'tools'   => 'آمار و سرعت',
 	];
 }
 
@@ -230,6 +234,7 @@ function hodima_settings_sections(): array {
 		'contact'   => [ 'nav' => 'contact', 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی نمایش داده نمی‌شود.' ],
 		'social'    => [ 'nav' => 'contact', 'title' => 'شبکه‌های اجتماعی', 'icon' => 'dashicons-share', 'description' => 'نوار شبکه‌های اجتماعی بالای فوتر همه صفحه‌ها. بدون هیچ شبکه‌ای نوار نمایش داده نمی‌شود.' ],
 		'analytics' => [ 'nav' => 'tools', 'title' => 'Google Analytics', 'icon' => 'dashicons-chart-area', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
+		'speed'     => [ 'nav' => 'tools', 'title' => 'سرعت بارگذاری', 'icon' => 'dashicons-performance', 'description' => 'اتصال زودهنگام مرورگر به دامنه‌هایی که ویدیو، پادکست یا فایل‌های دیگر سایت از آن‌ها پخش می‌شوند.' ],
 	];
 }
 
@@ -278,6 +283,8 @@ function hodima_settings_panels(): array {
 		'social_networks'    => [ 'section' => 'social', 'title' => 'شبکه‌ها', 'icon' => 'dashicons-share', 'layout' => 'rows', 'columns' => [ 'شبکه', 'آدرس صفحه', 'آیکون (اختیاری)' ], 'help' => 'شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد.' ],
 
 		'analytics_ga'       => [ 'section' => 'analytics', 'title' => 'Google Analytics 4', 'icon' => 'dashicons-chart-area' ],
+
+		'speed_preconnect'   => [ 'section' => 'speed', 'title' => 'دامنه پخش ویدیو و پادکست', 'icon' => 'dashicons-performance', 'help' => 'اگر ویدیو و پادکست‌ها روی دامنه جدا (مثلا یک هاست دانلود یا CDN) هستند، اتصال زودهنگام چند صدم ثانیه از شروع پخش کم می‌کند.' ],
 	];
 }
 
@@ -385,6 +392,7 @@ function hodima_settings_sanitize( $input ): array {
 			'tel'      => hodima_settings_sanitize_phone( $key, $raw ),
 			'ga'       => hodima_settings_sanitize_ga( $raw ),
 			'urllist'  => hodima_settings_sanitize_url_list( $raw ),
+			'hostlist' => hodima_settings_sanitize_host_list( $key, $raw ),
 			'textarea' => sanitize_textarea_field( is_string( $raw ) ? $raw : '' ),
 			// عدد در بازه min/max؛ ورودی خالی/نامعتبر = پیش‌فرض
 			'number'   => is_numeric( $raw ) ? min( (int) ( $field['max'] ?? PHP_INT_MAX ), max( (int) ( $field['min'] ?? 0 ), (int) $raw ) ) : (int) $field['default'],
@@ -458,6 +466,43 @@ function hodima_settings_sanitize_url_list( mixed $raw ): string {
 
 	if ( $invalid ) {
 		add_settings_error( HODIMA_SETTINGS_OPTION, 'invalid_social_hide_urls', sprintf( 'این آدرس‌ها در فهرست صفحه‌های بدون شبکه‌های اجتماعی معتبر نبودند و ذخیره نشدند: %s', implode( '، ', $invalid ) ) );
+	}
+
+	return implode( "\n", array_values( array_unique( $clean ) ) );
+}
+
+/**
+ * فهرست دامنه (هر خط یکی): «dl.example.com»، «https://dl.example.com/a.mp4» یا
+ * «//cdn.example.com» → «https://dl.example.com» (فقط origin). تکراری حذف؛ نامعتبر
+ * رد و به کاربر اطلاع داده می‌شود.
+ */
+function hodima_settings_sanitize_host_list( string $key, mixed $raw ): string {
+
+	$lines   = preg_split( '/\R/u', is_string( $raw ) ? $raw : '' ) ?: [];
+	$clean   = [];
+	$invalid = [];
+
+	foreach ( $lines as $line ) {
+
+		$line = trim( wp_strip_all_tags( $line ) );
+		if ( '' === $line ) {
+			continue;
+		}
+
+		$url  = preg_match( '#^https?://#i', $line ) ? $line : 'https://' . ltrim( $line, '/' );
+		$host = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );
+
+		if ( ! preg_match( '/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/', $host ) ) {
+			$invalid[] = $line;
+			continue;
+		}
+
+		$port    = wp_parse_url( $url, PHP_URL_PORT );
+		$clean[] = strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ) . '://' . $host . ( $port ? ':' . (int) $port : '' );
+	}
+
+	if ( $invalid ) {
+		add_settings_error( HODIMA_SETTINGS_OPTION, "invalid_{$key}", sprintf( 'این دامنه‌ها در «%1$s» معتبر نبودند و ذخیره نشدند: %2$s', hodima_settings_field_label( $key ), implode( '، ', $invalid ) ) );
 	}
 
 	return implode( "\n", array_values( array_unique( $clean ) ) );
@@ -773,7 +818,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 	$help      = $field['help'] ?? '';
 	$help_id   = $id . '-help';
 	$described = '' !== $help ? ' aria-describedby="' . esc_attr( $help_id ) . '"' : '';
-	$wide      = ( $field['wide'] ?? in_array( $field['type'], [ 'textarea', 'urllist', 'image' ], true ) ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
+	$wide      = ( $field['wide'] ?? in_array( $field['type'], [ 'textarea', 'urllist', 'hostlist', 'image' ], true ) ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
 	?>
 	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">
 		<?php if ( 'toggle' === $field['type'] ) : ?>
@@ -850,7 +895,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 						<option value="<?php echo esc_attr( (string) $option ); ?>" <?php selected( (string) $value, (string) $option ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>
-			<?php elseif ( 'urllist' === $field['type'] ) : ?>
+			<?php elseif ( 'urllist' === $field['type'] || 'hostlist' === $field['type'] ) : ?>
 				<textarea
 					id="<?php echo esc_attr( $id ); ?>"
 					name="<?php echo esc_attr( $name ); ?>"

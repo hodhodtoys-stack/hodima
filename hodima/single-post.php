@@ -17,27 +17,16 @@ get_header();
         $post_id = get_the_ID(); // دریافت آیدی مقاله فعلی برای سیستم رسانه
     ?>
 
-        <!-- 1. بخش مسیرنما (Breadcrumb) -->
+        <!-- 1. بخش مسیرنما (Breadcrumb): همان مسیر اسکیما (inc/breadcrumb.php) -->
         <section class="hodima-section-box section-breadcrumb">
-            <?php 
-                if ( function_exists('yoast_breadcrumb') ) {
-                    yoast_breadcrumb( '<div id="breadcrumbs">','</div>' );
-                } else {
-                    // نام و آدرس وبلاگ از «تنظیمات قالب ← وبلاگ» (قبلا «وبلاگ» ثابت)
-                    echo '<p class="hodima-custom-breadcrumb">';
-                    echo '<a href="' . esc_url( home_url( '/' ) ) . '" style="text-decoration:none; color:inherit;">خانه</a> / ';
-                    echo '<a href="' . esc_url( hodima_blog_url() ) . '" style="text-decoration:none; color:inherit;">' . esc_html( hodima_blog_name() ) . '</a> &gt; ';
-                    echo '<span class="current-item" style="color:#888;">' . esc_html( get_the_title() ) . '</span>';
-                    echo '</p>';
-                }
-            ?>
+            <?php echo hodima_breadcrumb_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در inc/breadcrumb.php ?>
         </section>
 
 <!-- 2. بخش معرفی (تگ H1) + متن معرفی و ویدیو -->
         <section class="hodima-section-box section-intro-media">
             <h1 class="single-post-title"><?php the_title(); ?></h1>
             
-            <div class="video-thumbnail-wrapper" style="margin-top: 20px;">
+            <div class="video-thumbnail-wrapper single-post-media">
                 
                 <!-- ستون اول (سمت راست): هوک متن معرفی -->
                 <div class="intro-content">

@@ -29,7 +29,7 @@ function hodima_cleanup_wp_core(): void {
     remove_action( 'wp_head', 'adjacent_posts_rel_link_wp_head', 10 );
     remove_action( 'wp_head', 'rest_output_link_wp_head', 10 );
     remove_action( 'wp_head', 'wp_oembed_add_discovery_links', 10 );
-    remove_action( 'template_redirect', 'rest_output_link_header', 11, 0 );
+    remove_action( 'template_redirect', 'rest_output_link_header', 11 ); // remove_action سه آرگومان دارد (چهارمی اضافه بود)
 
     // اسکریپت و استایل ایموجی
     // لایت‌اسپید گزینه Remove WordPress Emoji دارد؛ اگر روشن باشد این
@@ -118,7 +118,11 @@ add_action( 'wp_enqueue_scripts', static function (): void {
     }
 }, 1 );
 
-add_action( 'wp_footer', static fn() => wp_deregister_script( 'wp-embed' ) );
+/*
+ * deregister «wp-embed» در فوتر حذف شد: از وردپرس 5.9 این اسکریپت دیگر در همه
+ * صفحه‌ها چاپ نمی‌شود و فقط وقتی متن یک نوشته وردپرسی دیگر را embed کرده باشد
+ * لود می‌شود — همان‌جا لازم است (اندازه iframe و پیام امن بین دو سایت).
+ */
 
 /* ============================================================
  * ۵. XML-RPC و Pingback → افزونه Hodima Core (includes/hardening.php)

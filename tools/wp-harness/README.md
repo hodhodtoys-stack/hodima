@@ -49,6 +49,7 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 | `wp-eval.php '<php>'` | اجرای کد دلخواه روی سایت تست (`HARNESS=1 HODIMA_WP=… php wp-eval.php '…'`) |
 | `extract.py` / `compare.py` / `integrity.py` | استخراج، مقایسه و بررسی گراف |
 | `visual-compare.sh` / `visual-compare.mjs` | مقایسه ظاهر دو نسخه با Chromium (`playwright-core` از `npm ci`): `getComputedStyle` همه عنصرها به ترتیب DOM و عکس کل صفحه؛ CSS/JS هر طرف از پوشه خودش. بازنویسی هم‌ارز CSS (خصوصیات منطقی، nesting، …) باید «یکسان» بدهد. تصویرهای آپلود = PNG خاکستری ثابت، ویدیو/صوت = خطای فوری (بدون چرخنده)، انیمیشن خاموش. عکس‌ها و `*-diff.png` (قرمز = پیکسل متفاوت) در `$HODIMA_HARNESS/visual` |
+| `zip-install-check.sh` + `zip-install.php` | نصب و فعال‌سازی واقعی از `dist/*.zip` (اول `bash bin/build.sh`) روی کپی جدای وردپرس، در هر دو ترتیب «اول قالب» و «اول افزونه‌ها»، هر گام یک فرایند PHP جدا؛ «Cannot redeclare» و هر خطای PHP را می‌گیرد، بعد صفحه اصلی را می‌سازد |
 | `ci-check.sh [ref]` | کار «render» در GitHub Actions: رد با هشدار PHP، صفحه خالی/ناقص، `@id` تکراری؛ تفاوت اسکیما با ref فقط گزارش |
 | `mu-plugins/harness-core.php` | بدون ریدایرکت canonical؛ ورود مدیر با `HARNESS_USER=1` |
 | `mu-plugins/harness-wc-stub.php` | ووکامرس حداقلی با `HARNESS_WC=1` (محصول، دسته، برچسب، فروشگاه). ویژگی‌ها از متای `attr_{نام}` (مثل `attr_pa_color`) و وزن از متای `_weight` خوانده می‌شوند |

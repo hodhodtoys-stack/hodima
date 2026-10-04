@@ -26,7 +26,8 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
             'category' => '',
             'limit'    => 10,
             'bg_color' => 'transparent',
-            'id'       => uniqid('arian-sec-') 
+            // شناسه ثابت در هر بار ساخت صفحه (قبلا uniqid: HTML صفحه اصلی هر بار فرق می‌کرد)
+            'id'       => wp_unique_id( 'arian-sec-' ),
         ];
         $args = wp_parse_args( $args, $defaults );
 
@@ -50,7 +51,8 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
             $query_args['category'] = (array) $args['category'];
         }
 
-        $transient_key = 'arian_pslider_' . md5( serialize( $query_args ) );
+        // نسل کش در کلید: پاک کردن = بالا بردن نسل (hodima_home_flush_product_sliders)
+        $transient_key = 'arian_pslider_' . md5( serialize( $query_args ) . '|' . hodima_home_slider_generation() );
         $products_data = get_transient( $transient_key );
 
         if ( false === $products_data ) {
@@ -363,26 +365,38 @@ add_action('init', function() {
 // ========================================================================
 // ۴. پاکسازی خودکار و هوشمند کشِ اسلایدرها هنگام تغییر محصولات
 // ========================================================================
-add_action( 'save_post_product', 'hodima_home_flush_product_sliders', 10, 3 );
+add_action( 'save_post_product', 'hodima_home_flush_product_sliders', 10, 1 );
 add_action( 'woocommerce_product_deleted', 'hodima_home_flush_product_sliders' );
 add_action( 'woocommerce_product_set_stock_status', 'hodima_home_flush_product_sliders' );
 
+/**
+ * نسل کش اسلایدرها (گزینه hodima_home_slider_gen).
+ *
+ * باگ قبلی: پاک کردن فقط با DELETE روی جدول options بود. با کش شیء پایدار
+ * (Redis/Memcached، مثلا کش شیء لایت‌اسپید) ترنزینت‌ها اصلا در آن جدول
+ * نیستند، پس بعد از ویرایش/ناموجود شدن محصول تا ۱۰ دقیقه محصول و قیمت
+ * قدیمی در صفحه اصلی می‌ماند. حالا کلید هر کش نسل را دارد و پاک کردن یعنی
+ * بالا بردن نسل — در هر دو حالت فورا کش تازه ساخته می‌شود.
+ */
+function hodima_home_slider_generation(): int {
+    return (int) get_option( 'hodima_home_slider_gen', 0 );
+}
+
 if ( ! function_exists( 'hodima_home_flush_product_sliders' ) ) {
-    function hodima_home_flush_product_sliders( $post_id = 0 ) {
-        
+    function hodima_home_flush_product_sliders( mixed $post_id = 0 ): void {
+
         // جلوگیری از اجرای بی‌دلیل هنگام ذخیره خودکار (Autosave) وردپرس
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
             return;
         }
 
-        global $wpdb;
-        
-        // اجرای کوئری برای پاک کردن تمام کش‌هایی که با 'arian_pslider_' شروع می‌شوند
-        $wpdb->query( "
-            DELETE FROM {$wpdb->options} 
-            WHERE option_name LIKE '_transient_arian_pslider_%' 
-            OR option_name LIKE '_transient_timeout_arian_pslider_%'
-        " );
+        update_option( 'hodima_home_slider_gen', hodima_home_slider_generation() + 1, true );
+
+        // بدون کش شیء: ردیف‌های نسل قبلی را هم از جدول پاک کن (وگرنه تا انقضا می‌مانند)
+        if ( ! wp_using_ext_object_cache() ) {
+            global $wpdb;
+            $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_arian_pslider_%' OR option_name LIKE '_transient_timeout_arian_pslider_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- پاکسازی گروهی ترنزینت‌ها؛ API وردپرس برای الگو ندارد
+        }
     }
 }
 

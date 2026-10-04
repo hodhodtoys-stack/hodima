@@ -22,19 +22,7 @@ get_header(); ?>
 <main class="hodima-page-wrapper">
 
     <section class="section-breadcrumb">
-        <?php
-        if ( function_exists('yoast_breadcrumb') ) {
-            yoast_breadcrumb( '<div id="breadcrumbs">', '</div>' );
-        } else {
-            echo '<a href="' . esc_url( home_url( '/' ) ) . '">خانه</a> / ';
-            if ( is_category() || is_tag() || is_tax() ) {
-                // همان دو پله اسکیمای بردکرامب (خانه › دسته)
-                echo esc_html( single_term_title( '', false ) );
-            } else {
-                echo esc_html( is_home() ? hodima_blog_name() : wp_strip_all_tags( get_the_archive_title() ) );
-            }
-        }
-        ?>
+        <?php echo hodima_breadcrumb_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در inc/breadcrumb.php (همان مسیر اسکیما) ?>
     </section>
 
     <section class="blog-page-section">
@@ -128,13 +116,20 @@ get_header(); ?>
             </div>
 
             <!-- لودر اسکرول -->
-            <div id="infinite-scroll-loader" style="display:none; text-align:center; padding: 20px; width:100%;">
+            <div id="infinite-scroll-loader" hidden>
                 <span class="loader-text">در حال بارگذاری...</span>
             </div>
 
-            <?php // صفحه‌بندی: با بارگذاری خودکار پنهان (لینک‌ها برای خزنده‌ها)، بدون آن نمایش داده می‌شود ?>
+            <?php
+            /*
+             * صفحه‌بندی: با بارگذاری خودکار پنهان (لینک‌ها برای خزنده‌ها)، بدون آن نمایش داده می‌شود.
+             * قبلا style="display:none" ثابت بود: اگر جاوااسکریپت اجرا نمی‌شد (خطا، مسدود)
+             * بازدیدکننده هیچ راهی به صفحه‌های بعد نداشت. حالا فقط وقتی اسکریپت فعال است
+             * (CSS: @media (scripting: enabled)، archive-blog.css).
+             */
+            ?>
             <?php if ( $wp_query->max_num_pages > 1 ) : ?>
-                <div class="hodima-pagination"<?php echo hodima_setting( 'blog_infinite_scroll' ) ? ' style="display: none;"' : ''; ?>>
+                <div class="hodima-pagination<?php echo hodima_setting( 'blog_infinite_scroll' ) ? ' hodima-pagination--auto' : ''; ?>">
                     <?php echo paginate_links( array(
                         'total'     => $wp_query->max_num_pages,
                         'current'   => $paged,

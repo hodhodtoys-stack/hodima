@@ -11,14 +11,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /* ============================================================
- * ۱. Preconnect و DNS Prefetch
+ * ۱. Preconnect و DNS Prefetch — دامنه پخش ویدیو و پادکست
  * ------------------------------------------------------------
- * تا پیش از این، not-crawl.php کل اکشن wp_resource_hints را
- * remove_action می‌کرد و این فیلتر هرگز اجرا نمی‌شد (کد مرده).
- * با اصلاح wp-cleanup.php حالا فعال است.
+ * قبلا https://dl.hodima.com ثابت در کد بود و در *همه* صفحه‌ها (حتی
+ * بدون هیچ ویدیو/صوتی) اتصال زودهنگام می‌گرفت؛ روی سایت دیگری که قالب را
+ * نصب می‌کرد هم به همان دامنه وصل می‌شد. حالا «هوشمند»:
+ *   ۱. خودکار: دامنه ویدیو، کاور و پادکست همین صفحه (کادر «رسانه» افزونه
+ *      Hodima Media، و صفحه هر ویدیو) — فقط صفحه‌ای که رسانه دارد.
+ *   ۲. دستی: «تنظیمات قالب ← سرعت بارگذاری ← دامنه‌های همیشگی» (همه صفحه‌ها).
+ * دامنه خود سایت حذف می‌شود (اتصالش از قبل باز است). فیلتر hodima_preconnect_hosts
+ * مثل قبل برای کد سفارشی.
  * ============================================================ */
 add_filter( 'wp_resource_hints', 'hodima_add_resource_hints', 10, 2 );
 
+/**
+ * @param array<int, string|array<string, string>> $urls
+ * @return array<int, string|array<string, string>>
+ */
 function hodima_add_resource_hints( array $urls, string $relation_type ): array {
 
     if ( function_exists( 'hodima_litespeed_handles' ) && hodima_litespeed_handles( 'resource_hints' ) ) {
@@ -30,20 +39,103 @@ function hodima_add_resource_hints( array $urls, string $relation_type ): array 
     }
 
     /**
-     * دامنه‌های خارجی که قالب به آن‌ها متصل می‌شود.
-     * برای افزودن/حذف دامنه، این فیلتر را در functions.php استفاده کنید.
+     * دامنه‌های خارجی که این صفحه از اول به آن‌ها وصل شود.
+     * برای افزودن/حذف دامنه، این فیلتر را در کد سفارشی استفاده کنید.
      */
-    $hosts = (array) apply_filters( 'hodima_preconnect_hosts', [
-        'https://dl.hodima.com',
-    ] );
+    $hosts = (array) apply_filters( 'hodima_preconnect_hosts', hodima_preconnect_hosts() );
 
     foreach ( $hosts as $host ) {
-        if ( ! in_array( $host, $urls, true ) ) {
+        if ( is_string( $host ) && '' !== $host && ! in_array( $host, $urls, true ) ) {
             $urls[] = $host;
         }
     }
 
     return $urls;
+}
+
+/** بیشترین تعداد دامنه preconnect در یک صفحه. */
+const HODIMA_PRECONNECT_MAX = 4;
+
+/**
+ * دامنه‌های preconnect صفحه جاری (origin مثل https://dl.example.com).
+ * بیشتر از HODIMA_PRECONNECT_MAX نه: هر اتصال زودهنگام هزینه دارد.
+ *
+ * @return list<string>
+ */
+function hodima_preconnect_hosts(): array {
+
+    static $memo = null;
+    if ( null !== $memo ) {
+        return $memo;
+    }
+
+    // اول رسانه همین صفحه (با سقف تعداد، مهم‌تر از دامنه‌های همیشگی است)
+    $auto   = ! function_exists( 'hodima_setting' ) || hodima_setting( 'preconnect_media_auto' );
+    $always = preg_split( '/\R/u', function_exists( 'hodima_setting' ) ? (string) hodima_setting( 'preconnect_hosts' ) : '' ) ?: [];
+    $urls   = [ ...( $auto ? hodima_page_media_urls() : [] ), ...$always ];
+
+    $own   = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+    $hosts = [];
+
+    foreach ( $urls as $url ) {
+        $origin = hodima_url_origin( (string) $url );
+        if ( '' !== $origin && strtolower( (string) wp_parse_url( $origin, PHP_URL_HOST ) ) !== $own ) {
+            $hosts[ $origin ] = true;
+        }
+    }
+
+    $memo = array_slice( array_keys( $hosts ), 0, HODIMA_PRECONNECT_MAX );
+
+    return $memo;
+}
+
+/** «https://dl.example.com/a/b.mp4» → «https://dl.example.com» (یا '' اگر آدرس http(s) نیست). */
+function hodima_url_origin( string $url ): string {
+
+    $parts  = wp_parse_url( trim( $url ) );
+    $scheme = strtolower( (string) ( $parts['scheme'] ?? '' ) );
+    $host   = strtolower( (string) ( $parts['host'] ?? '' ) );
+
+    if ( '' === $host || ! in_array( $scheme, [ 'https', 'http' ], true ) ) {
+        return '';
+    }
+
+    return $scheme . '://' . $host . ( isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '' );
+}
+
+/**
+ * آدرس‌های ویدیو، کاور و پادکست صفحه جاری که مرورگر بلافاصله دریافت می‌کند.
+ *   - کادر «رسانه» (نوشته، برگه، محصول، دسته) وقتی روشن است — Hodima Media؛
+ *   - صفحه هر ویدیو (نوع «video» افزونه رسانه، متای _hod_video_*).
+ * ویدیوی آپارات/یوتیوب: دامنه پخش‌کننده iframe (نه صفحه تماشا).
+ *
+ * @return list<string>
+ */
+function hodima_page_media_urls(): array {
+
+    $object = get_queried_object();
+    $player = static fn( string $url ): string => ( '' !== $url && function_exists( 'hodima_media_player_url' ) ) ? hodima_media_player_url( $url ) : $url;
+    $urls   = [];
+
+    [ $id, $context ] = match ( true ) {
+        $object instanceof WP_Post => [ (int) $object->ID, 'post' ],
+        $object instanceof WP_Term => [ (int) $object->term_id, 'term' ],
+        default                    => [ 0, '' ],
+    };
+
+    if ( $id && function_exists( 'hodima_media_get_data' ) && function_exists( 'hodima_media_is_enabled' ) && hodima_media_is_enabled( $id, $context ) ) {
+        $data   = hodima_media_get_data( $id, $context );
+        $urls[] = $player( (string) ( $data['video_url'] ?? '' ) );
+        $urls[] = (string) ( $data['video_cover'] ?? '' );
+        $urls[] = (string) ( $data['voice_url'] ?? '' );
+    }
+
+    if ( $object instanceof WP_Post && 'video' === $object->post_type ) {
+        $urls[] = $player( (string) get_post_meta( $object->ID, '_hod_video_url', true ) );
+        $urls[] = (string) get_post_meta( $object->ID, '_hod_video_thumbnail', true );
+    }
+
+    return array_values( array_filter( $urls ) );
 }
 
 /* ============================================================

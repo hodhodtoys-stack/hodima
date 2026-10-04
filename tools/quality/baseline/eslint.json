@@ -1,8 +1,4 @@
 {
-	"hodima/assets/js/archive-blog.js": {
-		"prefer-arrow-callback": 1,
-		"prefer-const": 1
-	},
 	"hodima/assets/js/single-product.js": {
 		"no-var": 11,
 		"prefer-arrow-callback": 4

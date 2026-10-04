@@ -31,7 +31,9 @@ add_action( 'wp_enqueue_scripts', function() {
 }, 100 );
 
 // ۳. پاکسازی تگ‌های متای ووکامرس از هدر سایت
-add_action( 'init', fn() => remove_action( 'wp_head', 'wc_generator_tag' ) );
+add_action( 'init', static function (): void {
+    remove_action( 'wp_head', 'wc_generator_tag' );
+} );
 
 // ۴. (این بخش به schema/ منتقل شد)
 // ------------------------------------------------------------------

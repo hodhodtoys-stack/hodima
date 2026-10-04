@@ -199,7 +199,7 @@ function hodima_dequeue_woo_heavy_assets() {
         wp_dequeue_style( 'photoswipe' );
         wp_dequeue_style( 'photoswipe-default-skin' );
     }
-    wp_dequeue_style( 'wc-blocks-style' );
+    // wc-blocks-style در همه صفحه‌ها در inc/performance/woo-optimizer.php حذف می‌شود (اینجا تکراری بود)
 }
 add_action( 'wp_enqueue_scripts', 'hodima_dequeue_woo_heavy_assets', 99 );
 

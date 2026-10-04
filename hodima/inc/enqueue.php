@@ -87,10 +87,9 @@ function hodima_enqueue_scripts() {
         wp_enqueue_script( 'hodima-single-product-js', $theme_uri . '/assets/js/single-product.js', [], hodima_asset_version( 'assets/js/single-product.js' ), [ 'in_footer' => true ] );
     }
 
-    // 6. سبد خرید (اسکریپت Vanilla JS)
+    // 6. سبد خرید (فایل خالی assets/js/cart-page.js حذف شد: یک درخواست بی‌فایده در هر بار باز شدن سبد)
     if ( $wc && is_cart() ) {
         wp_enqueue_style( 'hodima-cart-page', $theme_uri . '/assets/css/cart-page.css', [], hodima_asset_version( 'assets/css/cart-page.css' ) );
-        wp_enqueue_script( 'hodima-cart-js', $theme_uri . '/assets/js/cart-page.js', [], hodima_asset_version( 'assets/js/cart-page.js' ), [ 'in_footer' => true ] );
     }
 
     /*
