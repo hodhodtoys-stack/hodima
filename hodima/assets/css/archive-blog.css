@@ -168,4 +168,44 @@
     .blog-page-grid{grid-template-columns:1fr !important;}
     .blog-page-content{padding:10px !important;}
     .blog-page-title{font-size:14px !important;}
+}/* صفحه‌بندی قابل‌مشاهده (وقتی «بارگذاری خودکار» در تنظیمات قالب خاموش است) */
+.hodima-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-block: 1.5rem 0.5rem;
+
+    & .page-numbers {
+        display: inline-grid;
+        place-items: center;
+        min-inline-size: 2.5rem;
+        block-size: 2.5rem;
+        padding-inline: 0.75rem;
+        border: 1px solid var(--hodima-border-light, #d9e1f0);
+        border-radius: var(--hodima-radius, 8px);
+        background: var(--hodima-surface, #fff);
+        color: var(--hodima-primary, #25316a);
+        text-decoration: none;
+
+        &.current {
+            background: var(--hodima-primary, #25316a);
+            border-color: var(--hodima-primary, #25316a);
+            color: #fff;
+        }
+
+        &:is(a):hover {
+            border-color: var(--hodima-secondary, #607bbd);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--hodima-secondary, #607bbd);
+            outline-offset: 2px;
+        }
+    }
+}
+.blog-archive-page {
+    font-size: 0.6em;
+    font-weight: 500;
+    color: var(--hodima-text-muted, #5d6785);
 }

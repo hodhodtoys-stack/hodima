@@ -203,12 +203,14 @@
 	& input[type="text"],
 	& input[type="url"],
 	& input[type="tel"],
+	& input[type="number"],
+	& select,
 	& textarea {
 		inline-size: 100%;
 		padding: 0.5rem 0.75rem;
 		border: 1px solid var(--hs-border);
 		border-radius: 0.5rem;
-		background: var(--hs-surface-soft);
+		background-color: var(--hs-surface-soft); /* فقط رنگ: فلش select وردپرس background-image است */
 		color: var(--hs-text);
 		transition: border-color 0.2s ease, box-shadow 0.2s ease;
 

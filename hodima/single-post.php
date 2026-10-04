@@ -23,23 +23,11 @@ get_header();
                 if ( function_exists('yoast_breadcrumb') ) {
                     yoast_breadcrumb( '<div id="breadcrumbs">','</div>' );
                 } else {
-                    // داینامیک و قابل کلیک کردن مسیرنما
-                    $home_url = home_url('/');
-                    
-                    // پیدا کردن لینک برگه وبلاگ (اگر در تنظیمات وردپرس ست شده باشد)
-                    $blog_page_id = get_option('page_for_posts');
-                    if ($blog_page_id) {
-                        $blog_url = get_permalink($blog_page_id);
-                    } else {
-                        // اگر برگه‌ای اختصاص داده نشده بود، به دسته‌بندی اولِ همین مقاله لینک می‌دهیم
-                        $categories = get_the_category();
-                        $blog_url = !empty($categories) ? get_category_link($categories[0]->term_id) : home_url('/blog/');
-                    }
-                    
+                    // نام و آدرس وبلاگ از «تنظیمات قالب ← وبلاگ» (قبلا «وبلاگ» ثابت)
                     echo '<p class="hodima-custom-breadcrumb">';
-                    echo '<a href="' . esc_url($home_url) . '" style="text-decoration:none; color:inherit;">خانه</a> / ';
-                    echo '<a href="' . esc_url($blog_url) . '" style="text-decoration:none; color:inherit;">وبلاگ</a> &gt; ';
-                    echo '<span class="current-item" style="color:#888;">' . get_the_title() . '</span>';
+                    echo '<a href="' . esc_url( home_url( '/' ) ) . '" style="text-decoration:none; color:inherit;">خانه</a> / ';
+                    echo '<a href="' . esc_url( hodima_blog_url() ) . '" style="text-decoration:none; color:inherit;">' . esc_html( hodima_blog_name() ) . '</a> &gt; ';
+                    echo '<span class="current-item" style="color:#888;">' . esc_html( get_the_title() ) . '</span>';
                     echo '</p>';
                 }
             ?>
@@ -132,55 +120,35 @@ get_header();
             </div>
         </section>
 
-        <!-- 6. بخش مقالات مرتبط (گرید 4 ستونه) -->
+        <?php
+        /*
+         * 6. مقالات مرتبط — «تنظیمات قالب ← وبلاگ» (عنوان، تعداد، هم‌دسته/هم‌خوشه).
+         * بدون مقاله مرتبط بخش چاپ نمی‌شود (قبلا عنوان + «مقاله مرتبطی یافت نشد»
+         * یا برای مقاله بی‌دسته فقط عنوان خالی).
+         */
+        $hodima_related = hodima_related_post_ids(
+            (int) $post_id,
+            max( 0, (int) hodima_setting( 'blog_related_limit' ) ),
+            (string) hodima_setting( 'blog_related_source' )
+        );
+        ?>
+        <?php if ( $hodima_related ) : ?>
         <section class="hodima-section-box section-upsells">
-            <h3 class="upsells-title">مقالات مرتبط</h3>
-            <?php
-            $categories = get_the_category($post_id);
-            if ($categories) {
-                $category_ids = array();
-                foreach($categories as $individual_category) {
-                    $category_ids[] = $individual_category->term_id;
-                }
-                
-                $args = array(
-                    'category__in'        => $category_ids,
-                    'post__not_in'        => array($post_id),
-                    'posts_per_page'      => 4,
-                    'ignore_sticky_posts' => 1
-                );
-                
-                $related_query = new WP_Query( $args );
-                
-                if( $related_query->have_posts() ) {
-                    echo '<div class="related-posts-grid">';
-                    while( $related_query->have_posts() ) {
-                        $related_query->the_post();
-                        ?>
-                        <div class="related-post-card">
-                            <a href="<?php the_permalink(); ?>">
-                                <?php 
-                                if(has_post_thumbnail()) {
-                                    the_post_thumbnail('medium'); 
-                                }
-                                ?>
-                            </a>
-                            <h4 class="related-post-title">
-                                <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
-                            </h4>
-                        </div>
-                        <?php
-                    }
-                    echo '</div>';
-                } else {
-                    echo '<p>مقاله مرتبطی یافت نشد.</p>';
-                }
-                
-                wp_reset_postdata(); 
-            }
-            ?>
+            <h3 class="upsells-title"><?php echo esc_html( (string) hodima_setting( 'blog_related_title' ) ); ?></h3>
+            <div class="related-posts-grid">
+                <?php foreach ( $hodima_related as $hodima_related_id ) : ?>
+                    <div class="related-post-card">
+                        <a href="<?php echo esc_url( get_permalink( $hodima_related_id ) ); ?>">
+                            <?php echo get_the_post_thumbnail( $hodima_related_id, 'medium' ); ?>
+                        </a>
+                        <h4 class="related-post-title">
+                            <a href="<?php echo esc_url( get_permalink( $hodima_related_id ) ); ?>"><?php echo esc_html( get_the_title( $hodima_related_id ) ); ?></a>
+                        </h4>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </section>
-
+        <?php endif; ?>
 
     <?php endwhile; // پایان حلقه وردپرس ?>
 </div>

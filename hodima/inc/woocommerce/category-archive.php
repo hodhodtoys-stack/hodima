@@ -30,7 +30,9 @@ function hodima_is_product_archive(): bool {
  * کمتری از دسته در دسترس خزنده‌اند.
  * ===================================================================== */
 add_filter( 'loop_shop_per_page', static function ( $per_page ) {
-	return max( 1, (int) apply_filters( 'hodima_category_per_page', 36 ) );
+	// «تنظیمات قالب ← فروشگاه و دسته‌ها» (پیش‌فرض همان ۳۶)
+	$setting = function_exists( 'hodima_setting' ) ? (int) hodima_setting( 'shop_per_page' ) : 36;
+	return max( 1, (int) apply_filters( 'hodima_category_per_page', $setting > 0 ? $setting : 36 ) );
 }, 20 );
 
 /* =====================================================================

@@ -232,7 +232,8 @@ add_action( 'wp_footer', function() {
 add_filter( 'woocommerce_product_upsells_products_heading', 'hodima_custom_upsells_heading' );
 
 function hodima_custom_upsells_heading( $heading ) {
-    return 'محصولات مشابه';
+    // «تنظیمات قالب ← صفحه محصول» (قبلا ثابت)
+    return (string) hodima_setting( 'product_upsells_title' );
 }
 
 /* ==========================================================

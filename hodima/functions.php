@@ -45,6 +45,7 @@ $inc_files = [
     'inc/helpers.php',
     'inc/theme-settings/theme-settings.php', // برند، تماس، فوتر و Google Analytics
     'inc/home-layout.php',                   // چیدمان صفحه اصلی (تب «صفحه اصلی» تنظیمات قالب)
+    'inc/blog.php',                          // نام وبلاگ و مقالات مرتبط (تب «وبلاگ»)
     'inc/setup.php',
     'inc/enqueue.php',
     'inc/header.php',

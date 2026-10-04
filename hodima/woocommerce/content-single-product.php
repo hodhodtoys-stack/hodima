@@ -57,6 +57,9 @@ foreach ( $hp_stock_texts as $hp_key => $hp_text ) {
 
 $hp_can_buy = ( 'out' !== $hp_location );
 
+// متن‌ها و بخش‌های صفحه از «تنظیمات قالب ← صفحه محصول» (قبلا ثابت در همین فایل)
+$hp_show = static fn( string $part ): bool => (bool) hodima_setting( 'product_show_' . $part );
+
 $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 	&& Hodima_Product_Specs_Table::get_instance()->is_shown_for( $product );
 
@@ -105,7 +108,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 						<dd class="unit-price">
 							<?php
 							echo $product->is_type( 'variable' ) || '' === (string) $product->get_price()
-								? wp_kses_post( $product->get_price_html() ?: 'تماس بگیرید' )
+								? wp_kses_post( $product->get_price_html() ?: esc_html( (string) hodima_setting( 'product_price_empty' ) ) )
 								: wp_kses_post( wc_price( $product->get_price() ) );
 							?>
 						</dd>
@@ -155,14 +158,15 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 				 * پس دکمه خرید را از دید اول بیرون نمی‌برد.
 				 */
 				?>
-				<?php if ( shortcode_exists( 'hook_voice' ) ) : ?>
+				<?php if ( shortcode_exists( 'hook_voice' ) && $hp_show( 'podcast' ) ) : ?>
 					<?php
-					// فقط کلمه «پادکست» داخل کادر پلیر؛ عنوان کامل برچسب دسترس‌پذیری پلیر می‌ماند
-					$hp_voice = trim( do_shortcode( '[hook_voice title="پادکست" layout="inline"]' ) );
+					// فقط برچسب کوتاه («پادکست») داخل کادر پلیر؛ عنوان کامل برچسب دسترس‌پذیری پلیر می‌ماند
+					$hp_voice = trim( hodima_shortcode( 'hook_voice', [ 'title' => (string) hodima_setting( 'product_podcast_label' ), 'layout' => 'inline' ] ) );
 					?>
 					<?php if ( '' !== $hp_voice ) : ?>
 						<div class="custom-voice-shortcode"><?php echo $hp_voice; // phpcs:ignore ?></div>
 					<?php endif; ?>
+				<?php endif; ?>
 
 				<?php
 				/*
@@ -176,7 +180,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 							<?php woocommerce_template_single_add_to_cart(); ?>
 						<?php else : ?>
 							<div class="custom-out-of-stock-message">
-								<p>برای اطلاع از شارژ مجدد تماس بگیرید.</p>
+								<p><?php echo esc_html( (string) hodima_setting( 'product_out_of_stock' ) ); ?></p>
 							</div>
 						<?php endif; ?>
 					</div>
@@ -200,8 +204,13 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 						</div>
 					<?php endif; ?>
 				</div>
-
-				<?php endif; ?>
+				<?php
+				/*
+				 * باگ قبلی: endif بلوک پادکست اینجا (بعد از ردیف خرید) بود؛ بدون افزونه
+				 * Hodima Media (شورت‌کد hook_voice) دکمه افزودن به سبد و وضعیت انبار
+				 * اصلا چاپ نمی‌شدند. حالا بلوک پادکست جدا بسته می‌شود.
+				 */
+				?>
 
 			</div>
 		</div>
@@ -210,7 +219,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 	<section class="hodima-section-box section-description" aria-label="<?php echo esc_attr( 'توضیحات ' . $product->get_name() ); ?>">
 		<?php
 		$hp_desc = apply_filters( 'the_content', get_the_content() );
-		$hp_faq  = shortcode_exists( 'hook_faq' ) ? trim( do_shortcode( '[hook_faq]' ) ) : '';
+		$hp_faq  = shortcode_exists( 'hook_faq' ) && $hp_show( 'faq' ) ? trim( do_shortcode( '[hook_faq]' ) ) : '';
 
 		if ( '' !== $hp_faq ) {
 			$hp_desc .= '<div class="faq-inline-wrapper">' . $hp_faq . '</div>';
@@ -222,22 +231,24 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 		?>
 	</section>
 
+	<?php
+	$hp_video   = shortcode_exists( 'hook_video' ) && $hp_show( 'video' ) ? trim( do_shortcode( '[hook_video]' ) ) : '';
+	$hp_reviews = shortcode_exists( 'expand_product_reviews' ) && $hp_show( 'reviews' ) ? trim( do_shortcode( '[expand_product_reviews]' ) ) : '';
+	$hp_upsells = max( 0, (int) hodima_setting( 'product_upsells_limit' ) );
+	?>
+	<?php if ( '' !== $hp_video || '' !== $hp_reviews ) : ?>
 	<section class="hodima-section-box section-reviews">
-		<?php if ( shortcode_exists( 'hook_video' ) ) : ?>
-			<?php $hp_video = trim( do_shortcode( '[hook_video]' ) ); ?>
-			<?php if ( '' !== $hp_video ) : ?>
-				<div class="video-wrapper"><?php echo $hp_video; // phpcs:ignore ?></div>
-			<?php endif; ?>
+		<?php if ( '' !== $hp_video ) : ?>
+			<div class="video-wrapper"><?php echo $hp_video; // phpcs:ignore ?></div>
 		<?php endif; ?>
 
-		<?php if ( shortcode_exists( 'expand_product_reviews' ) ) : ?>
-			<?php echo do_shortcode( '[expand_product_reviews]' ); // phpcs:ignore ?>
-		<?php endif; ?>
+		<?php echo $hp_reviews; // phpcs:ignore — خروجی شورت‌کد افزونه ?>
 	</section>
+	<?php endif; ?>
 
-	<?php if ( $product->get_upsell_ids() ) : ?>
+	<?php if ( $hp_upsells > 0 && $product->get_upsell_ids() ) : ?>
 		<section class="hodima-section-box section-upsells product-card-scope">
-			<?php function_exists( 'hodima_render_upsells' ) ? hodima_render_upsells( 6 ) : woocommerce_upsell_display( 6, 6 ); ?>
+			<?php function_exists( 'hodima_render_upsells' ) ? hodima_render_upsells( $hp_upsells ) : woocommerce_upsell_display( $hp_upsells, $hp_upsells ); ?>
 		</section>
 	<?php endif; ?>
 

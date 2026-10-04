@@ -82,12 +82,14 @@ $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'log
 
                 <!-- مرکز: جستجو با ساختار فلکس و منعطف -->
                 <div class="header__center">
+                    <?php if ( ! function_exists( 'hodima_setting' ) || hodima_setting( 'header_search' ) ) : ?>
                     <search class="header__search" role="search" aria-label="جستجوی محصولات">
                         <?php
                         // جستجوی زنده محصولات از افزونه Hodima Commerce؛ بدون آن فرم جستجوی وردپرس
                         echo shortcode_exists( 'woo_live_search' ) ? do_shortcode( '[woo_live_search]' ) : get_search_form( [ 'echo' => false ] );
                         ?>
                     </search>
+                    <?php endif; ?>
                 </div>
 
                 <!-- سمت چپ: دکمه پشتیبانی -->
@@ -105,7 +107,7 @@ $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'log
                             <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>
                             <path d="M19 22v-3"/>
                         </svg>
-                        <span>پشتیبانی</span>
+                        <span><?php echo esc_html( function_exists( 'hodima_setting' ) ? (string) hodima_setting( 'header_support_text' ) : 'پشتیبانی' ); ?></span>
                     </button>
                     <?php endif; ?>
                 </div>
@@ -133,7 +135,7 @@ $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'log
                 type="button"
                 aria-label="بستن پنجره پشتیبانی"
             >&times;</button>
-            <h3 class="popup__title" id="supportTitle">ارتباط با ما</h3>
+            <h3 class="popup__title" id="supportTitle"><?php echo esc_html( function_exists( 'hodima_setting' ) ? (string) hodima_setting( 'header_popup_title' ) : 'ارتباط با ما' ); ?></h3>
 
             <?php
             $hodima_channel_icons = [

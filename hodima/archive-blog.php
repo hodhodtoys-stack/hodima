@@ -8,7 +8,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 // فراخوانی فایل استایل اختصاصی این صفحه
 add_action( 'wp_enqueue_scripts', function() {
-    wp_enqueue_style( 'hodima-archive-blog', get_template_directory_uri() . '/assets/css/archive-blog.css', array(), '1.0.0' );
+    // نسخه = زمان تغییر فایل (قبلا ثابت '1.0.0': تغییر CSS در کش مرورگرها دیده نمی‌شد)
+    wp_enqueue_style( 'hodima-archive-blog', get_template_directory_uri() . '/assets/css/archive-blog.css', array(), hodima_asset_version( 'assets/css/archive-blog.css' ) );
 });
 
 get_header(); ?>
@@ -22,9 +23,10 @@ get_header(); ?>
         } else {
             echo '<a href="' . esc_url( home_url( '/' ) ) . '">خانه</a> / ';
             if ( is_category() || is_tag() || is_tax() ) {
-                echo single_term_title( '', false );
+                // همان دو پله اسکیمای بردکرامب (خانه › دسته)
+                echo esc_html( single_term_title( '', false ) );
             } else {
-                echo 'وبلاگ';
+                echo esc_html( is_home() ? hodima_blog_name() : wp_strip_all_tags( get_the_archive_title() ) );
             }
         }
         ?>
@@ -33,7 +35,27 @@ get_header(); ?>
     <section class="blog-page-section">
         <div class="blog-page-container">
             
-            <?php if ( is_archive() ) : ?>
+            <?php if ( is_home() ) : ?>
+                <?php
+                /*
+                 * صفحه اصلی وبلاگ: قبلا هیچ H1 و معرفی‌ای نداشت. عنوان و متن از
+                 * «تنظیمات قالب ← وبلاگ» (خالی = عنوان برگه «نوشته‌ها»).
+                 */
+                $hodima_blog_intro = (string) hodima_setting( 'blog_intro' );
+                $hodima_blog_paged = max( 1, (int) get_query_var( 'paged' ) );
+                ?>
+                <header class="blog-archive-header">
+                    <h1 class="blog-archive-title">
+                        <?php echo esc_html( hodima_blog_name() ); ?>
+                        <?php if ( $hodima_blog_paged > 1 ) : ?>
+                            <span class="blog-archive-page">— صفحه <?php echo (int) $hodima_blog_paged; ?></span>
+                        <?php endif; ?>
+                    </h1>
+                    <?php if ( '' !== $hodima_blog_intro && 1 === $hodima_blog_paged ) : ?>
+                        <div class="blog-archive-desc"><?php echo wp_kses_post( wpautop( esc_html( $hodima_blog_intro ) ) ); ?></div>
+                    <?php endif; ?>
+                </header>
+            <?php elseif ( is_archive() ) : ?>
                 <header class="blog-archive-header">
                     <h1 class="blog-archive-title">
                         <?php 
@@ -105,9 +127,9 @@ get_header(); ?>
                 <span class="loader-text">در حال بارگذاری...</span>
             </div>
 
-            <!-- صفحه‌بندی مخفی -->
+            <?php // صفحه‌بندی: با بارگذاری خودکار پنهان (لینک‌ها برای خزنده‌ها)، بدون آن نمایش داده می‌شود ?>
             <?php if ( $wp_query->max_num_pages > 1 ) : ?>
-                <div class="hodima-pagination" style="display: none;">
+                <div class="hodima-pagination"<?php echo hodima_setting( 'blog_infinite_scroll' ) ? ' style="display: none;"' : ''; ?>>
                     <?php echo paginate_links( array(
                         'total'     => $wp_query->max_num_pages,
                         'current'   => $paged,
@@ -119,6 +141,7 @@ get_header(); ?>
     </section>
 </main>
 
+<?php if ( hodima_setting( 'blog_infinite_scroll' ) ) : // «تنظیمات قالب ← وبلاگ» ?>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     let nextLink = document.querySelector('.hodima-pagination .next');
@@ -168,5 +191,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 </script>
+<?php endif; ?>
 
 <?php get_footer(); ?>
