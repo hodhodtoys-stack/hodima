@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Commerce
  * Plugin URI:        https://hodima.com
  * Description:       امکانات فروشگاهی هدیما برای ووکامرس: تاریخ جلالی و شهرهای ایران در تسویه‌حساب، جستجوی زنده محصولات با ایندکس فارسی، فرم لید تلفنی، جدول مشخصات محصول، حداقل مبلغ و تعداد سفارش عمده و فیلدهای سفارشی محصول.
- * Version:           1.1.7
+ * Version:           1.1.8
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_COMMERCE_VERSION = '1.1.7';
+const HODIMA_COMMERCE_VERSION = '1.1.8';
 define( 'HODIMA_COMMERCE_FILE', __FILE__ );
 define( 'HODIMA_COMMERCE_DIR', __DIR__ );
 define( 'HODIMA_COMMERCE_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );

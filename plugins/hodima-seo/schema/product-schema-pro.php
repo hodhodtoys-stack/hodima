@@ -49,7 +49,6 @@ function hook_generate_custom_product_schema() {
 
     // =========================================================================
     // ۱. استخراج مشخصات از کلاس جدول
-    $specs_text = '';
     $additional_properties = [];
     $schema_facts = [];
 
@@ -63,36 +62,32 @@ function hook_generate_custom_product_schema() {
 
         // رنگ، جنس، سایز و وزن واقعی (بدون مقدار پیش‌فرض) برای ویژگی‌های اصلی Product
         $schema_facts = (array) ( $prepared_data['schema_facts'] ?? [] );
+    }
 
-        if ( ! empty( $prepared_data['specs_data'] ) ) {
-            $specs_parts = [];
-            foreach ( $prepared_data['specs_data'] as $spec ) {
-                // «سایز: متنوع» / «رنگ: تک رنگ» پیش‌فرض‌اند، نه اطلاعات؛ در توضیح اسکیما هم نیایند
-                if ( ! empty( $spec['is_fallback'] ) ) {
-                    continue;
-                }
-                $specs_parts[] = $spec['label'] . ': ' . wp_strip_all_tags( $spec['value'] );
-            }
-            if ( ! empty( $specs_parts ) ) {
-                $specs_text = implode( ' | ', $specs_parts );
+    /*
+     * ۲. توضیح محصول: متن خود محصول، نه فهرست مشخصات.
+     *
+     * قبلا «ویژگی‌ها: جنس: … | سایز: … | رنگ: … | تولید: …» به توضیح چسبانده
+     * می‌شد (و بدون توضیح کوتاه، کل توضیح همین بود)؛ همان داده‌ها سومین بار،
+     * بعد از ویژگی‌های اصلی و additionalProperty. ترتیب: توضیح کوتاه ←
+     * اولین بند متن محصول ← الگوی پنل.
+     */
+    $raw_short_desc = trim( wp_strip_all_tags( strip_shortcodes( $_product->get_short_description() ) ) );
+
+    if ( '' === $raw_short_desc ) {
+        $content_text = trim( (string) preg_replace( "/[ \t]+/u", ' ', wp_strip_all_tags( strip_shortcodes( (string) $_product->get_description() ) ) ) );
+        foreach ( (array) preg_split( '/\R\s*\R|\R/u', $content_text ) as $paragraph ) {
+            if ( mb_strlen( trim( (string) $paragraph ) ) >= 20 ) {
+                $raw_short_desc = trim( (string) $paragraph );
+                break;
             }
         }
     }
 
-    // ۲. تولید فیلد Description نهایی
-    $raw_short_desc = trim( wp_strip_all_tags( strip_shortcodes( $_product->get_short_description() ) ) );
-
-    if ( ! empty( $raw_short_desc ) ) {
+    if ( '' !== $raw_short_desc ) {
         $clean_description = wp_trim_words( $raw_short_desc, 40 );
-        if ( ! empty( $specs_text ) ) {
-            $clean_description .= ' - ویژگی‌ها: ' . $specs_text;
-        }
     } else {
-        if ( ! empty( $specs_text ) ) {
-            $clean_description = 'ویژگی‌ها: ' . $specs_text;
-        } else {
-            $clean_description = $final_desc_tpl;
-        }
+        $clean_description = $final_desc_tpl;
     }
     // =========================================================================
 
@@ -466,6 +461,26 @@ function hook_generate_custom_product_schema() {
     // وزن: عدد + کد واحد (QuantitativeValue)، نه متن «۲۰ گرم»
     if ( ! empty( $schema_facts['weight']['value'] ) && ! empty( $schema_facts['weight']['unitCode'] ) ) {
         $schema['weight'] = [ '@type' => 'QuantitativeValue' ] + array_intersect_key( (array) $schema_facts['weight'], array_flip( [ 'value', 'unitCode', 'unitText' ] ) );
+    }
+
+    /*
+     * هر داده یک جا: ردیفی از additionalProperty که شناسه‌اش (propertyID) همان
+     * ویژگی اصلی است که بالا ساخته شد (color، material، size، weight،
+     * countryOfOrigin) حذف می‌شود. قبلا رنگ/جنس/سایز/وزن/تولید هم ویژگی
+     * اصلی بودند و هم در additionalProperty. ردیفی که ویژگی اصلی‌اش ساخته
+     * نشده (مثلا رنگ چندگزینه‌ای) سر جایش می‌ماند.
+     */
+    if ( ! empty( $schema['additionalProperty'] ) ) {
+        $schema['additionalProperty'] = array_values( array_filter(
+            $schema['additionalProperty'],
+            static function ( array $p ) use ( $schema ): bool {
+                $id = (string) ( $p['propertyID'] ?? '' );
+                return ! ( str_starts_with( $id, 'https://schema.org/' ) && isset( $schema[ substr( $id, 19 ) ] ) );
+            }
+        ) );
+        if ( [] === $schema['additionalProperty'] ) {
+            unset( $schema['additionalProperty'] );
+        }
     }
 
     /*

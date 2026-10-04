@@ -3,7 +3,7 @@
  * Hodima Product Specs Table - HTML Generator Only (PHP 8.1+)
  *
  * @package Hodima
- * @version 2.12.0
+ * @version 2.13.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -25,7 +25,7 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 
 		private static ?self $instance = null;
 
-		public const VERSION = '2.12.0';
+		public const VERSION = '2.13.0';
 
 		/**
 		 * حافظه موقت همین درخواست، کلید = شناسه محصول.
@@ -346,10 +346,26 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 				$schema_properties[] = $property;
 
 				if ( in_array( $spec_key, [ 'color', 'material', 'size' ], true ) && '' !== $text ) {
-					// چند مقدار («صورتی | آبی»): رنگ و جنس با «/» (شکلی که گوگل برای
-					// چندرنگ می‌خواند)؛ سایز با «، » چون «1.5/2.5» شبیه کسر است
-					$parts                     = array_filter( array_map( 'trim', (array) preg_split( '/\s*[|,،]\s*/u', $text ) ) );
-					$schema_facts[ $spec_key ] = implode( 'size' === $spec_key ? '، ' : '/', $parts );
+
+					$parts = array_values( array_filter( array_map( 'trim', (array) preg_split( '/\s*[|,،]\s*/u', $text ) ) ) );
+
+					/*
+					 * color و size اصلی Product یعنی رنگ/سایز *همین کالا*؛ «/» در
+					 * color یعنی کالایی که چند رنگ با هم دارد (گوگل حداکثر ۳). چند
+					 * گزینه‌ای که مشتری یکی را انتخاب می‌کند (۸ رنگ، یا «سایزهای 1.5
+					 * و 2.5 و 3 سانتی») گزینه است، نه رنگ/سایز کالا — قبلا
+					 * color: «بی رنگ/پاستیلی/…/نود» ساخته می‌شد. پس فقط یک گزینه؛
+					 * فهرست گزینه‌ها در additionalProperty می‌ماند. جنس چندتایی
+					 * («استیل/پلاستیک») ترکیب جنس یک کالاست و می‌ماند.
+					 */
+					if ( 'color' === $spec_key && 1 !== count( $parts ) ) {
+						continue;
+					}
+					if ( 'size' === $spec_key && ( 1 !== count( $parts ) || ! $this->is_single_size( $parts[0] ) ) ) {
+						continue;
+					}
+
+					$schema_facts[ $spec_key ] = implode( '/', $parts );
 				}
 			}
 
@@ -487,6 +503,18 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 			}
 
 			return $this->measured_value( $parts ) ?? [ 'value' => 1 === count( $parts ) ? $parts[0] : $parts ];
+		}
+
+		/**
+		 * متن یک سایز واحد است؟ حداکثر یک عدد، یا یک ابعاد «3×5». «سایزهای 1.5 و
+		 * 2.5 و 3 سانتی» (سه عدد) چند سایز است، نه سایز این کالا.
+		 */
+		private function is_single_size( string $text ): bool {
+
+			$text = strtr( $text, [ '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9', '٫' => '.' ] );
+			$text = (string) preg_replace( '/\d+(?:\.\d+)?\s*[×xX*]\s*\d+(?:\.\d+)?(?:\s*[×xX*]\s*\d+(?:\.\d+)?)?/u', 'D', $text );
+
+			return preg_match_all( '/D|\d+(?:\.\d+)?/u', $text ) <= 1;
 		}
 
 		/** گزینه‌های «عدد + واحد» → عدد و کد واحد؛ null اگر واحد روشن و یکسان نیست. */
