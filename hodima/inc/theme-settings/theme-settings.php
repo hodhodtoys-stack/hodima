@@ -38,6 +38,13 @@ function hodima_settings_fields(): array {
 		'logo_id'          => [ 'section' => 'brand', 'type' => 'image', 'label' => 'لوگو', 'default' => 0, 'help' => 'بهتر است نسخه SVG یا WebP با پس‌زمینه شفاف باشد. اگر خالی بماند نام سایت نمایش داده می‌شود.' ],
 		'logo_invert'      => [ 'section' => 'brand', 'type' => 'toggle', 'label' => 'نمایش لوگو به رنگ سفید روی هدر', 'default' => true, 'help' => 'برای لوگوی رنگی روی پس‌زمینه تیره هدر.' ],
 
+		// ── پالت رنگ برند (بازسازی قالب، مرحله ۵؛ توکن‌های assets/css/tokens.css) ──
+		'color_primary'      => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ اصلی (سرمه‌ای)', 'default' => '#25316a', 'help' => 'هدر، دکمه‌ها، عنوان‌ها؛ نسخه تیره (hover) و سایه‌ها خودکار ساخته می‌شوند.' ],
+		'color_secondary'    => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ دوم (آبی)', 'default' => '#607bbd' ],
+		'color_third'        => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ سوم (آبی روشن)', 'default' => '#b6c2f3', 'help' => 'زمینه‌ها و خطوط.' ],
+		'color_accent'       => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ تأکید (بنفش)', 'default' => '#6a2b9a' ],
+		'color_accent_light' => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ تأکید روشن (ارغوانی)', 'default' => '#a341c8' ],
+
 		// ── صفحه اصلی (بخش‌ها: inc/theme-settings/home-layout-admin.php) ──
 		'home_builder'     => [ 'section' => 'home', 'type' => 'toggle', 'label' => 'ساخت صفحه اصلی از این چیدمان', 'default' => false, 'help' => 'خاموش: صفحه اصلی مثل قبل از متن برگه صفحه اصلی (ویرایشگر برگه و شورت‌کدهایش) ساخته می‌شود. روشن: از بخش‌های زیر، به همین ترتیب.' ],
 
@@ -148,6 +155,8 @@ function hodima_settings_groups(): array {
 		$groups[ "social_{$key}" ] = [ 'title' => $label, 'set' => 'social' ];
 	}
 
+	$groups['palette'] = [ 'title' => 'پنج رنگ', 'set' => 'palette' ];
+
 	// قاب‌های تکی: هر کدام مجموعه خودش
 	$groups['notfound']         = [ 'title' => 'متن‌ها و دکمه‌ها', 'set' => 'notfound' ];
 	$groups['product_sections'] = [ 'title' => 'نمایش در صفحه محصول', 'set' => 'product_sections' ];
@@ -166,6 +175,7 @@ function hodima_settings_groups(): array {
 function hodima_settings_sets(): array {
 	return [
 		'trust'  => [ 'layout' => 'cards', 'title' => 'نمادهای اعتماد', 'help' => 'تا سه نماد (مثلا اینماد، ساماندهی، اتحادیه). نمادهای دارای تصویر به همین ترتیب کنار هم در فوتر نمایش داده می‌شوند؛ نماد بدون تصویر نادیده گرفته می‌شود.' ],
+		'palette'          => [ 'layout' => 'cards', 'title' => 'پالت رنگ برند', 'help' => 'رنگ‌های کل سایت (و صفحه‌های تنظیمات پیشخوان) از این پنج رنگ ساخته می‌شوند. برای برگشت به رنگ اصلی، مقدار پیش‌فرض زیر هر رنگ را وارد کنید. بعد از ذخیره، کش لایت‌اسپید خودکار پاک می‌شود.' ],
 		'notfound'         => [ 'layout' => 'cards', 'title' => 'صفحه «پیدا نشد» (۴۰۴)', 'help' => 'صفحه‌ای که بازدیدکننده با آدرس اشتباه یا حذف‌شده می‌بیند. دکمه «صفحه اصلی» همیشه هست.' ],
 		'product_sections' => [ 'layout' => 'cards', 'title' => 'بخش‌های صفحه محصول', 'help' => 'محتوای این بخش‌ها از کادر «رسانه» هر محصول (افزونه Hodima Media) و نظرات ووکامرس می‌آید.' ],
 		'blog_related'     => [ 'layout' => 'cards', 'title' => 'مقالات مرتبط', 'help' => 'فهرست مقاله‌های دیگر زیر هر مقاله، بعد از دیدگاه‌ها.' ],
@@ -303,6 +313,8 @@ function hodima_settings_sanitize( $input ): array {
 			// عدد در بازه min/max؛ ورودی خالی/نامعتبر = پیش‌فرض
 			'number'   => is_numeric( $raw ) ? min( (int) ( $field['max'] ?? PHP_INT_MAX ), max( (int) ( $field['min'] ?? 0 ), (int) $raw ) ) : (int) $field['default'],
 			'select'   => isset( $field['options'][ (string) $raw ] ) ? (string) $raw : (string) $field['default'],
+			// #abc → #aabbcc (input type=color فقط شش رقمی می‌پذیرد)
+			'color'    => ( $hex = sanitize_hex_color( is_string( $raw ) ? trim( $raw ) : '' ) ) ? hodima_rgb_hex( hodima_hex_rgb( $hex ) ) : strtolower( (string) $field['default'] ),
 			default    => sanitize_text_field( is_string( $raw ) ? $raw : '' ),
 		};
 	}
@@ -648,6 +660,11 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					inputmode="numeric"
 					<?php echo '' !== $help ? 'aria-describedby="' . esc_attr( $id ) . '-help"' : ''; ?>
 				>
+			<?php elseif ( 'color' === $field['type'] ) : ?>
+				<span class="hodima-color">
+					<input type="color" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" <?php echo '' !== $help ? 'aria-describedby="' . esc_attr( $id ) . '-help"' : ''; ?>>
+					<span class="hodima-color__default">پیش‌فرض: <code dir="ltr"><?php echo esc_html( (string) $field['default'] ); ?></code></span>
+				</span>
 			<?php elseif ( 'select' === $field['type'] ) : ?>
 				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>">
 					<?php foreach ( (array) ( $field['options'] ?? [] ) as $option => $label ) : ?>
@@ -847,6 +864,86 @@ function hodima_socials_visible_here(): bool {
 /* =========================================================================
  * ۵. Google Analytics 4
  * ========================================================================= */
+
+/* =========================================================================
+ * پالت رنگ برند (تب «برند»)
+ * ------------------------------------------------------------------------
+ * فقط رنگ‌هایی که با پیش‌فرض فرق دارند به‌صورت :root{…} بعد از tokens.css
+ * چاپ می‌شوند (سایت با پالت پیش‌فرض هیچ CSS اضافه‌ای ندارد). مشتق‌ها هم
+ * دوباره ساخته می‌شوند: «R, G, B» برای رنگ‌های نیمه‌شفاف، نسخه تیره رنگ
+ * اصلی (hover؛ ×۰٫۷۳ همان نسبت #1b244d به #25316a) و نقطه میانی گرادیان.
+ * ========================================================================= */
+
+/** «#rrggbb» → [r, g, b] */
+function hodima_hex_rgb( string $hex ): array {
+	$hex = ltrim( $hex, '#' );
+	if ( 3 === strlen( $hex ) ) {
+		$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+	}
+	return array_map( 'hexdec', str_split( substr( str_pad( $hex, 6, '0' ), 0, 6 ), 2 ) );
+}
+
+/** [r, g, b] → «#rrggbb» */
+function hodima_rgb_hex( array $rgb ): string {
+	return '#' . implode( '', array_map( static fn( $c ): string => str_pad( dechex( max( 0, min( 255, (int) round( $c ) ) ) ), 2, '0', STR_PAD_LEFT ), $rgb ) );
+}
+
+/** CSS پالت تنظیم‌شده، یا رشته خالی برای پالت پیش‌فرض. */
+function hodima_palette_css(): string {
+
+	$fields = hodima_settings_fields();
+	$vars   = [];
+	$map    = [
+		'color_primary'      => 'primary',
+		'color_secondary'    => 'secondary',
+		'color_third'        => 'third',
+		'color_accent'       => 'accent',
+		'color_accent_light' => 'accent-light',
+	];
+	$changed = [];
+
+	foreach ( $map as $key => $token ) {
+		$value = strtolower( (string) hodima_setting( $key ) );
+		if ( $value !== strtolower( (string) $fields[ $key ]['default'] ) && sanitize_hex_color( $value ) ) {
+			$changed[ $token ]            = $value;
+			$vars[ "--hodima-{$token}" ]     = $value;
+			$vars[ "--hodima-{$token}-rgb" ] = implode( ', ', hodima_hex_rgb( $value ) );
+		}
+	}
+
+	if ( ! $changed ) {
+		return '';
+	}
+
+	$primary   = hodima_hex_rgb( (string) hodima_setting( 'color_primary' ) );
+	$secondary = hodima_hex_rgb( (string) hodima_setting( 'color_secondary' ) );
+
+	if ( isset( $changed['primary'] ) ) {
+		$vars['--hodima-primary-dark'] = hodima_rgb_hex( array_map( static fn( $c ) => $c * 0.73, $primary ) );
+	}
+
+	if ( isset( $changed['primary'] ) || isset( $changed['secondary'] ) ) {
+		$vars['--hodima-gradient-mid']  = hodima_rgb_hex( array_map( static fn( $a, $b ) => $a + ( $b - $a ) * 0.4, $primary, $secondary ) );
+		$vars['--hodima-gradient-deep'] = hodima_rgb_hex( array_map( static fn( $a, $b ) => $a + ( $b - $a ) * 0.26, $primary, $secondary ) );
+	}
+
+	$css = '';
+	foreach ( $vars as $name => $value ) {
+		$css .= $name . ':' . $value . ';';
+	}
+
+	return ':root{' . $css . '}';
+}
+
+/** بعد از tokens.css در سایت و پیشخوان (همان handle). */
+function hodima_print_palette(): void {
+	$css = hodima_palette_css();
+	if ( '' !== $css && wp_style_is( 'hodima-tokens', 'enqueued' ) ) {
+		wp_add_inline_style( 'hodima-tokens', $css );
+	}
+}
+add_action( 'wp_enqueue_scripts', 'hodima_print_palette', 21 );
+add_action( 'admin_enqueue_scripts', 'hodima_print_palette', 2 );
 
 add_action( 'wp_enqueue_scripts', 'hodima_enqueue_google_analytics', 1 );
 

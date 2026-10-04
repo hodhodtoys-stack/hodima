@@ -2,7 +2,7 @@
     --cat-max-width: 1440px;
     --cat-gap: 10px;
     --cat-radius: 12px;
-    --cat-shadow: 0 2px 10px rgba(37, 49, 106, .04);
+    --cat-shadow: 0 2px 10px rgba(var(--hodima-primary-rgb, 37, 49, 106), .04);
     --cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
     --cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
     --cat-grid-gap: 1px;
@@ -183,11 +183,11 @@
 
 .sort-title-box,
 .sort-title-box * {
-    color: #111111 !important;
+    color: var(--hodima-text-dark, #111111) !important;
 }
 
 .sort-title-box svg {
-    color: #111111 !important;
+    color: var(--hodima-text-dark, #111111) !important;
     display: block;
 }
 
@@ -200,10 +200,10 @@
 
 .hodima-sort-btn {
     background: var(--hodima-surface-soft, #f7f9fd);
-    border: 1px solid #d9e1f0;
+    border: 1px solid var(--hodima-border-light, #d9e1f0);
     padding: 6px 14px;
     border-radius: 20px;
-    color: #111111;
+    color: var(--hodima-text-dark, #111111);
     font-size: 13px;
     cursor: pointer;
     transition: all .25s ease;
@@ -212,14 +212,14 @@
 }
 
 .hodima-sort-btn:hover {
-    background: #eef2f8;
+    background: var(--hodima-bg-gray, #eef2f8);
 }
 
 .hodima-sort-btn.active {
     background: var(--hodima-surface-soft, #f7f9fd) !important; 
     border-color: var(--hodima-third, #b6c2f3) !important; 
-    color: #111111 !important; 
-    box-shadow: 0 2px 8px rgba(37, 49, 106, .05);
+    color: var(--hodima-text-dark, #111111) !important; 
+    box-shadow: 0 2px 8px rgba(var(--hodima-primary-rgb, 37, 49, 106), .05);
 }
 
 .price-sort-wrapper {
@@ -247,9 +247,9 @@
     left: 50%;
     right: auto;
     background: #fff;
-    border: 1px solid #d9e1f0;
+    border: 1px solid var(--hodima-border-light, #d9e1f0);
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(37, 49, 106, .08);
+    box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), .08);
     padding: 6px;
     display: flex;
     flex-direction: column;
@@ -273,7 +273,7 @@
     border: none;
     padding: 6px 8px;
     border-radius: 6px;
-    color: #111111;
+    color: var(--hodima-text-dark, #111111);
     font-size: 13px;
     cursor: pointer;
     transition: all .25s ease;
@@ -288,7 +288,7 @@
 
 .hodima-sort-sub-btn.active {
     background: var(--hodima-surface-soft, #f7f9fd) !important; 
-    color: #111111 !important; 
+    color: var(--hodima-text-dark, #111111) !important; 
     font-weight: 700;
 }
 
@@ -338,16 +338,16 @@
 .hodima-custom-sort-wrapper .hodima-sort-sub-btn *,
 .hodima-custom-sort-wrapper .sort-title-box,
 .hodima-custom-sort-wrapper .sort-title-box * {
-    color: #111111 !important;
-    fill: #111111 !important;
-    stroke: #111111 !important;
+    color: var(--hodima-text-dark, #111111) !important;
+    fill: var(--hodima-text-dark, #111111) !important;
+    stroke: var(--hodima-text-dark, #111111) !important;
 }
 
 .hodima-custom-sort-wrapper .hodima-sort-btn.active,
 .hodima-custom-sort-wrapper .hodima-sort-btn.active *,
 .hodima-custom-sort-wrapper .hodima-sort-sub-btn.active,
 .hodima-custom-sort-wrapper .hodima-sort-sub-btn.active * {
-    color: #111111 !important;
+    color: var(--hodima-text-dark, #111111) !important;
 }
 
 /* =========================================================================

@@ -25,6 +25,7 @@ define( 'hodima_DIR', get_template_directory() );
 
 $home_modules = [
     'home/logic.php',
+    'home/legacy.php', // نام‌های قدیمی arian_* (سازگاری)
 ];
 
 foreach ( $home_modules as $module ) {

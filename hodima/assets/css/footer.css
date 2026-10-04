@@ -12,10 +12,10 @@
     --footer-secondary: var(--hodima-secondary, #607bbd);
     --footer-third: var(--hodima-third, #b6c2f3);
 
-    --footer-bg: linear-gradient(135deg, #25316a 0%, #344483 55%, #607bbd 100%);
+    --footer-bg: linear-gradient(135deg, var(--hodima-primary, #25316a) 0%, var(--hodima-gradient-deep, #344483) 55%, var(--hodima-secondary, #607bbd) 100%);
     --footer-surface: rgba(255, 255, 255, 0.08);
     --footer-surface-hover: rgba(255, 255, 255, 0.14);
-    --footer-border: rgba(182, 194, 243, 0.22);
+    --footer-border: rgba(var(--hodima-third-rgb, 182, 194, 243), 0.22);
     --footer-text: rgba(255, 255, 255, 0.82);
     --footer-heading: #ffffff;
     --footer-link-hover: var(--hodima-third, #b6c2f3);
@@ -51,7 +51,7 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(circle at top right, rgba(182, 194, 243, 0.16) 0, transparent 28%),
+        radial-gradient(circle at top right, rgba(var(--hodima-third-rgb, 182, 194, 243), 0.16) 0, transparent 28%),
         radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.08) 0, transparent 26%);
     pointer-events: none;
 }
@@ -110,7 +110,7 @@
     height: 0.1875rem;
     background: linear-gradient(90deg, var(--footer-third), var(--footer-secondary));
     border-radius: 0.125rem;
-    box-shadow: 0 0 0.75rem rgba(182, 194, 243, 0.35);
+    box-shadow: 0 0 0.75rem rgba(var(--hodima-third-rgb, 182, 194, 243), 0.35);
 }
 
 .footer-content {
@@ -498,14 +498,14 @@ p.footer-copyright {
     border: 1px solid color-mix(in srgb, var(--hodima-third, #b6c2f3) 70%, transparent);
     border-radius: 0.875rem;
     background: #ffffff;
-    box-shadow: 0 0.375rem 1rem rgba(37, 49, 106, 0.06);
+    box-shadow: 0 0.375rem 1rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.06);
     text-decoration: none;
     transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 
     &:hover {
         transform: translateY(-0.25rem);
         border-color: var(--hodima-secondary, #607bbd);
-        box-shadow: 0 0.625rem 1.25rem rgba(96, 123, 189, 0.16);
+        box-shadow: 0 0.625rem 1.25rem rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.16);
     }
 
     &:focus-visible {

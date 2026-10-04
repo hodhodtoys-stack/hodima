@@ -13,8 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 // ========================================================================
 // ۱. تابع مرکزی اسلایدر محصولات (موتور رندر)
 // ========================================================================
-if ( ! function_exists( 'arian_render_product_slider' ) ) {
-    function arian_render_product_slider( $args = [] ) {
+if ( ! function_exists( 'hodima_home_product_slider' ) ) {
+    function hodima_home_product_slider( $args = [] ) {
         
         if ( ! function_exists( 'wc_get_products' ) ) {
             return ''; 
@@ -207,8 +207,8 @@ function hodima_home_blog_posts_data(): array {
 // ========================================================================
 // ۲. تابع لود سکشن‌های فیزیکی (برای section01 تا section20)
 // ========================================================================
-if ( ! function_exists( 'arian_load_home_section' ) ) {
-    function arian_load_home_section( $tag ) {
+if ( ! function_exists( 'hodima_home_load_section' ) ) {
+    function hodima_home_load_section( $tag ) {
         $tag = sanitize_key( $tag );
         if ( empty( $tag ) ) return '';
 
@@ -238,7 +238,7 @@ if ( ! function_exists( 'arian_load_home_section' ) ) {
  * هوک‌های create_term / edit_term / delete_term از قبل در همین فایل
  * وجود دارند و حالا این کش را هم باطل می‌کنند.
  */
-function arian_get_category_shortcode_map() {
+function hodima_home_category_shortcode_map() {
 
     $cached = get_transient( 'arian_cat_shortcode_map' );
 
@@ -272,12 +272,12 @@ function arian_get_category_shortcode_map() {
     return $map;
 }
 
-function arian_clear_category_shortcode_map() {
+function hodima_home_clear_category_shortcode_map() {
     delete_transient( 'arian_cat_shortcode_map' );
 }
-add_action( 'created_product_cat', 'arian_clear_category_shortcode_map' );
-add_action( 'edited_product_cat',  'arian_clear_category_shortcode_map' );
-add_action( 'delete_product_cat',  'arian_clear_category_shortcode_map' );
+add_action( 'created_product_cat', 'hodima_home_clear_category_shortcode_map' );
+add_action( 'edited_product_cat',  'hodima_home_clear_category_shortcode_map' );
+add_action( 'delete_product_cat',  'hodima_home_clear_category_shortcode_map' );
 
 // ========================================================================
 // ۳. ثبت تمامی شورت‌کدها در یک هوک یکپارچه
@@ -302,15 +302,15 @@ add_action('init', function() {
         }
 
         add_shortcode( $tag, function( $atts, $content, $shortcode_tag ) {
-            return arian_load_home_section( $shortcode_tag );
+            return hodima_home_load_section( $shortcode_tag );
         } );
     }
 
     // ب) شورت‌کد اختصاصی «جدیدترین محصولات»
-    if ( function_exists('arian_render_product_slider') ) {
+    if ( function_exists('hodima_home_product_slider') ) {
         add_shortcode( 'latest-products', function($atts) {
             $atts = shortcode_atts(['limit' => 12], $atts);
-            return arian_render_product_slider([
+            return hodima_home_product_slider([
                 'title'    => 'جدیدترین محصولات',
                 'link'     => 'latest-products',
                 'category' => '',
@@ -321,7 +321,7 @@ add_action('init', function() {
     }
 
     // ج) شورت‌کد خودکار برای دسته‌بندی‌های ووکامرس (مثل [plasco])
-    if ( function_exists('arian_render_product_slider') ) {
+    if ( function_exists('hodima_home_product_slider') ) {
 
         $brand_colors = [
             'rgba(37, 49, 106, 0.08)',   // رنگ اصلی
@@ -331,7 +331,7 @@ add_action('init', function() {
 
         $color_index = 0;
 
-        foreach ( arian_get_category_shortcode_map() as $slug => $name ) {
+        foreach ( hodima_home_category_shortcode_map() as $slug => $name ) {
 
             // شورت‌کدهای ثبت‌شده بالاتر را بازنویسی نکن
             if ( shortcode_exists( $slug ) ) {
@@ -348,7 +348,7 @@ add_action('init', function() {
                     'bg_color' => $bg_color
                 ], $atts);
 
-                return arian_render_product_slider([
+                return hodima_home_product_slider([
                     'title'    => $atts['title'],
                     'link'     => $slug,
                     'category' => $slug,
@@ -363,12 +363,12 @@ add_action('init', function() {
 // ========================================================================
 // ۴. پاکسازی خودکار و هوشمند کشِ اسلایدرها هنگام تغییر محصولات
 // ========================================================================
-add_action( 'save_post_product', 'arian_flush_product_sliders_cache', 10, 3 );
-add_action( 'woocommerce_product_deleted', 'arian_flush_product_sliders_cache' );
-add_action( 'woocommerce_product_set_stock_status', 'arian_flush_product_sliders_cache' );
+add_action( 'save_post_product', 'hodima_home_flush_product_sliders', 10, 3 );
+add_action( 'woocommerce_product_deleted', 'hodima_home_flush_product_sliders' );
+add_action( 'woocommerce_product_set_stock_status', 'hodima_home_flush_product_sliders' );
 
-if ( ! function_exists( 'arian_flush_product_sliders_cache' ) ) {
-    function arian_flush_product_sliders_cache( $post_id = 0 ) {
+if ( ! function_exists( 'hodima_home_flush_product_sliders' ) ) {
+    function hodima_home_flush_product_sliders( $post_id = 0 ) {
         
         // جلوگیری از اجرای بی‌دلیل هنگام ذخیره خودکار (Autosave) وردپرس
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
@@ -393,7 +393,8 @@ if ( ! function_exists( 'arian_flush_product_sliders_cache' ) ) {
 add_action( 'wp_enqueue_scripts', function() {
 
     // فقط در صفحه اصلی
-    if ( ! ( is_front_page() || is_home() ) ) return;
+    // فقط صفحه اصلی (قبلا برگه وبلاگ هم — is_home — بی‌دلیل این CSS/JS را می‌گرفت)
+    if ( ! is_front_page() ) return;
 
     $base_path = get_stylesheet_directory() . '/home/';
     $base_uri  = get_stylesheet_directory_uri() . '/home/';
@@ -431,7 +432,7 @@ add_action( 'wp_enqueue_scripts', function() {
 /**
  * تابع پاک‌کننده ترنزینت دسته‌بندی‌ها
  */
-function arian_clear_category_cache_force() {
+function hodima_home_clear_categories_cache() {
     // v5: همه دسته‌ها با نامک؛ استثناها هنگام نمایش (home/parts/categories.php). v4 نسخه قبلی
     delete_transient( 'hodima_home_categories_v5' );
     delete_transient( 'arian_categories_hyper_v4' );
@@ -451,25 +452,25 @@ function arian_clear_category_cache_force() {
 }
 
 // ۱. هوک‌های عمومی تغییرات دسته‌بندی ووکامرس
-function arian_clear_category_cache_on_term_change( $term_id, $tt_id, $taxonomy ) {
+function hodima_home_categories_cache_on_term( $term_id, $tt_id, $taxonomy ) {
     if ( 'product_cat' === $taxonomy ) {
-        arian_clear_category_cache_force();
+        hodima_home_clear_categories_cache();
     }
 }
-add_action( 'create_term', 'arian_clear_category_cache_on_term_change', 10, 3 );
-add_action( 'edit_term', 'arian_clear_category_cache_on_term_change', 10, 3 );
-add_action( 'delete_term', 'arian_clear_category_cache_on_term_change', 10, 3 );
+add_action( 'create_term', 'hodima_home_categories_cache_on_term', 10, 3 );
+add_action( 'edit_term', 'hodima_home_categories_cache_on_term', 10, 3 );
+add_action( 'delete_term', 'hodima_home_categories_cache_on_term', 10, 3 );
 
 // ۲. هوک‌های تغییر متادیتاهای دسته‌بندی (زمانی که فقط تصویر شاخص عوض می‌شود)
-function arian_clear_category_cache_on_meta_change( $meta_id, $object_id, $meta_key, $meta_value ) {
+function hodima_home_categories_cache_on_meta( $meta_id, $object_id, $meta_key, $meta_value ) {
     // وقتی تصویر شاخص دسته‌بندی تغییر می‌کند
     if ( 'thumbnail_id' === $meta_key ) {
-        arian_clear_category_cache_force();
+        hodima_home_clear_categories_cache();
     }
 }
-add_action( 'added_term_meta', 'arian_clear_category_cache_on_meta_change', 10, 4 );
-add_action( 'updated_term_meta', 'arian_clear_category_cache_on_meta_change', 10, 4 );
-add_action( 'deleted_term_meta', 'arian_clear_category_cache_on_meta_change', 10, 4 );
+add_action( 'added_term_meta', 'hodima_home_categories_cache_on_meta', 10, 4 );
+add_action( 'updated_term_meta', 'hodima_home_categories_cache_on_meta', 10, 4 );
+add_action( 'deleted_term_meta', 'hodima_home_categories_cache_on_meta', 10, 4 );
 
 
 
@@ -484,7 +485,7 @@ add_action( 'deleted_term_meta', 'arian_clear_category_cache_on_meta_change', 10
 /**
  * تابع پاک‌کننده ترنزینت مقالات وبلاگ
  */
-function arian_clear_blog_cache_force() {
+function hodima_home_clear_blog_cache() {
     // v3: ۲۰ مقاله آخر؛ تعداد هر بخش هنگام نمایش (home/parts/blog.php). v2 نسخه قبلی
     delete_transient( 'hodima_home_blog_posts_v3' );
     delete_transient( 'arian_latest_blog_posts_hyper_v2' );
@@ -504,7 +505,7 @@ function arian_clear_blog_cache_force() {
 }
 
 // ۱. هوک‌های عمومی تغییرات پست‌ها (انتشار، ویرایش، حذف و انتقال به زباله‌دان)
-function arian_clear_blog_cache_on_post_change( $post_id, $post = null ) {
+function hodima_home_blog_cache_on_post( $post_id, $post = null ) {
     // جلوگیری از اجرای کد هنگام ذخیره خودکار (Autosave) و ریویژن‌ها
     if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
     if ( wp_is_post_revision( $post_id ) ) return;
@@ -514,23 +515,23 @@ function arian_clear_blog_cache_on_post_change( $post_id, $post = null ) {
 
     // فقط اگر تغییرات روی نوشته‌ها (post) بود کش را خالی کن
     if ( 'post' === $post_type ) {
-        arian_clear_blog_cache_force();
+        hodima_home_clear_blog_cache();
     }
 }
-add_action( 'save_post', 'arian_clear_blog_cache_on_post_change', 10, 2 );
-add_action( 'deleted_post', 'arian_clear_blog_cache_on_post_change', 10, 2 );
-add_action( 'trashed_post', 'arian_clear_blog_cache_on_post_change', 10, 2 );
+add_action( 'save_post', 'hodima_home_blog_cache_on_post', 10, 2 );
+add_action( 'deleted_post', 'hodima_home_blog_cache_on_post', 10, 2 );
+add_action( 'trashed_post', 'hodima_home_blog_cache_on_post', 10, 2 );
 
 // ۲. هوک‌های تغییر متادیتاهای پست (زمانی که فقط تصویر شاخص عوض می‌شود)
-function arian_clear_blog_cache_on_meta_change( $meta_id, $post_id, $meta_key, $meta_value ) {
+function hodima_home_blog_cache_on_meta( $meta_id, $post_id, $meta_key, $meta_value ) {
     // تصویر شاخص پست‌ها با کلید _thumbnail_id ذخیره می‌شود (دقت کنید آندرلاین دارد)
     if ( '_thumbnail_id' === $meta_key && get_post_type( $post_id ) === 'post' ) {
-        arian_clear_blog_cache_force();
+        hodima_home_clear_blog_cache();
     }
 }
-add_action( 'added_post_meta', 'arian_clear_blog_cache_on_meta_change', 10, 4 );
-add_action( 'updated_post_meta', 'arian_clear_blog_cache_on_meta_change', 10, 4 );
-add_action( 'deleted_post_meta', 'arian_clear_blog_cache_on_meta_change', 10, 4 );
+add_action( 'added_post_meta', 'hodima_home_blog_cache_on_meta', 10, 4 );
+add_action( 'updated_post_meta', 'hodima_home_blog_cache_on_meta', 10, 4 );
+add_action( 'deleted_post_meta', 'hodima_home_blog_cache_on_meta', 10, 4 );
 
 
 /*

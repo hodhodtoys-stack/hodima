@@ -335,7 +335,7 @@ function hodima_home_layout_from_content( ?string $content = null ): array {
 
 	$items      = [];
 	$pending    = '';
-	$cat_map    = function_exists( 'arian_get_category_shortcode_map' ) ? arian_get_category_shortcode_map() : [];
+	$cat_map    = function_exists( 'hodima_home_category_shortcode_map' ) ? hodima_home_category_shortcode_map() : [];
 	$cat_tones  = hodima_home_legacy_category_tones( $cat_map );
 	$tone_by_css = array_flip( array_map( static fn( array $t ): string => $t['css'], hodima_home_tones() ) );
 
@@ -455,8 +455,8 @@ function hodima_home_render_section( array $item ): void {
 			break;
 
 		case 'latest':
-			if ( function_exists( 'arian_render_product_slider' ) ) {
-				echo arian_render_product_slider( [ // phpcs:ignore — خروجی ساخته‌شده و escape‌شده در logic.php
+			if ( function_exists( 'hodima_home_product_slider' ) ) {
+				echo hodima_home_product_slider( [ // phpcs:ignore — خروجی ساخته‌شده و escape‌شده در logic.php
 					'title'    => $args['title'],
 					'link'     => hodima_home_link_url( (string) $args['link'] ),
 					'category' => '',
@@ -468,9 +468,9 @@ function hodima_home_render_section( array $item ): void {
 
 		case 'products':
 			$term = '' !== $args['category'] ? get_term_by( 'slug', (string) $args['category'], 'product_cat' ) : false;
-			if ( $term instanceof WP_Term && function_exists( 'arian_render_product_slider' ) ) {
+			if ( $term instanceof WP_Term && function_exists( 'hodima_home_product_slider' ) ) {
 				$link = get_term_link( $term );
-				echo arian_render_product_slider( [ // phpcs:ignore — خروجی ساخته‌شده و escape‌شده در logic.php
+				echo hodima_home_product_slider( [ // phpcs:ignore — خروجی ساخته‌شده و escape‌شده در logic.php
 					'title'    => '' !== (string) $args['title'] ? $args['title'] : $term->name,
 					'link'     => is_wp_error( $link ) ? '' : $link,
 					'category' => $term->slug,

@@ -10,6 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 add_action( 'wp_enqueue_scripts', function() {
     // نسخه = زمان تغییر فایل (قبلا ثابت '1.0.0': تغییر CSS در کش مرورگرها دیده نمی‌شد)
     wp_enqueue_style( 'hodima-archive-blog', get_template_directory_uri() . '/assets/css/archive-blog.css', array(), hodima_asset_version( 'assets/css/archive-blog.css' ) );
+
+    // بارگذاری خودکار با اسکرول (قبلا اسکریپت inline پایین همین فایل)
+    if ( hodima_setting( 'blog_infinite_scroll' ) ) {
+        wp_enqueue_script( 'hodima-archive-blog', get_template_directory_uri() . '/assets/js/archive-blog.js', array(), hodima_asset_version( 'assets/js/archive-blog.js' ), array( 'in_footer' => true, 'strategy' => 'defer' ) );
+    }
 });
 
 get_header(); ?>
@@ -141,56 +146,5 @@ get_header(); ?>
     </section>
 </main>
 
-<?php if ( hodima_setting( 'blog_infinite_scroll' ) ) : // «تنظیمات قالب ← وبلاگ» ?>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    let nextLink = document.querySelector('.hodima-pagination .next');
-    if (!nextLink) return;
-
-    const loader = document.getElementById('infinite-scroll-loader');
-    const grid = document.getElementById('blog-grid');
-    let isFetching = false;
-
-    const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !isFetching && nextLink) {
-            loadNextPage();
-        }
-    }, { rootMargin: "200px" });
-
-    observer.observe(loader);
-    loader.style.display = 'block';
-
-    async function loadNextPage() {
-        isFetching = true;
-        let url = nextLink.href;
-        
-        try {
-            const response = await fetch(url);
-            const text = await response.text();
-            const parser = new DOMParser();
-            const html = parser.parseFromString(text, 'text/html');
-            
-            const newItems = html.querySelectorAll('.blog-page-card');
-            newItems.forEach(item => {
-                grid.appendChild(item);
-            });
-
-            const newNextLink = html.querySelector('.hodima-pagination .next');
-            if (newNextLink) {
-                nextLink.href = newNextLink.href;
-            } else {
-                nextLink = null;
-                loader.style.display = 'none';
-                observer.disconnect();
-            }
-        } catch (error) {
-            console.error('Error loading next page:', error);
-        }
-        
-        isFetching = false;
-    }
-});
-</script>
-<?php endif; ?>
 
 <?php get_footer(); ?>

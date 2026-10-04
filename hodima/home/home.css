@@ -5,11 +5,11 @@
   --arian-third: var(--hodima-third, #b6c2f3);
 
   --arian-grad: linear-gradient(135deg, var(--arian-primary), var(--arian-secondary), var(--arian-third));
-  --arian-grad-soft: linear-gradient(135deg, rgba(37,49,106,.08), rgba(96,123,189,.10), rgba(182, 194, 243,.18));
-  --border-color: rgba(182, 194, 243, 0.45);
-  --shadow-sm: 0 2px 5px rgba(37, 49, 106, 0.05);
-  --shadow-md: 0 8px 24px rgba(37, 49, 106, 0.08);
-  --shadow-lg: 0 12px 30px rgba(37, 49, 106, 0.12);
+  --arian-grad-soft: linear-gradient(135deg, rgba(var(--hodima-primary-rgb, 37, 49, 106), .08), rgba(var(--hodima-secondary-rgb, 96, 123, 189), .10), rgba(var(--hodima-third-rgb, 182, 194, 243), .18));
+  --border-color: rgba(var(--hodima-third-rgb, 182, 194, 243), 0.45);
+  --shadow-sm: 0 2px 5px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.05);
+  --shadow-md: 0 8px 24px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.08);
+  --shadow-lg: 0 12px 30px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.12);
   --white: #fff;
   --text-main: #111827;
   --text-muted: #4b5563;
@@ -239,7 +239,7 @@
   /* پدینگ پایین کاملا 0 شد تا کل باکس از پایین بسته شود */
   padding: 16px 16px 0px 16px !important; 
   position: relative;
-  background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(182, 194, 243,0.12) 100%);
+  background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(var(--hodima-third-rgb, 182, 194, 243), 0.12) 100%);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   overflow: hidden;
@@ -251,8 +251,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top right, rgba(96,123,189,.08) 0%, transparent 40%),
-    radial-gradient(circle at bottom left, rgba(37,49,106,.05) 0%, transparent 40%);
+    radial-gradient(circle at top right, rgba(var(--hodima-secondary-rgb, 96, 123, 189), .08) 0%, transparent 40%),
+    radial-gradient(circle at bottom left, rgba(var(--hodima-primary-rgb, 37, 49, 106), .05) 0%, transparent 40%);
   pointer-events: none;
 }
 
@@ -326,7 +326,7 @@ h1.section-col-title {
   border-radius: 50%;
   background: var(--arian-grad);
   flex: 0 0 10px;
-  box-shadow: 0 0 0 4px rgba(182, 194, 243,.25);
+  box-shadow: 0 0 0 4px rgba(var(--hodima-third-rgb, 182, 194, 243), .25);
 }
 
 /* --- محتوای متنی ستون اول --- */
@@ -368,10 +368,10 @@ h1.section-col-title {
   font-size: 14px;
   line-height: 1.6;
   background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(182, 194, 243, 0.36);
+  border: 1px solid rgba(var(--hodima-third-rgb, 182, 194, 243), 0.36);
   padding: 12px 14px;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(37, 49, 106, 0.03);
+  box-shadow: 0 2px 10px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.03);
   display: flex;
   align-items: center;
 }
@@ -385,7 +385,7 @@ h1.section-col-title {
   height: 20px;
   margin-left: 10px;
   border-radius: 50%;
-  background: rgba(96, 123, 189, 0.14);
+  background: rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.14);
   color: var(--arian-primary);
   font-size: 12px;
   font-weight: 700;
@@ -425,7 +425,7 @@ h1.section-col-title {
   max-width: 100%;
   border: 0;
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(37,49,106,.06);
+  box-shadow: 0 4px 16px rgba(var(--hodima-primary-rgb, 37, 49, 106), .06);
   aspect-ratio: 16 / 9;
   object-fit: cover;
   margin: 0 !important;
@@ -460,7 +460,7 @@ h1.section-col-title {
 .section-cta {
   margin: 12px 0;
   padding: 12px 0;
-  background: linear-gradient(135deg, rgba(182, 194, 243, 0.15) 0%, rgba(96, 123, 189, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(var(--hodima-third-rgb, 182, 194, 243), 0.15) 0%, rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.1) 100%);
   border-radius: 16px;
   overflow: hidden;
 }
@@ -493,7 +493,7 @@ h1.section-col-title {
   object-fit: cover;
   transition: width 0.3s ease, height 0.3s ease;
   border: 3px solid #fff;
-  box-shadow: 0 4px 15px rgba(37, 49, 106, 0.1);
+  box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.1);
 }
 
 .section-cta .cta-content-side {
@@ -530,14 +530,14 @@ h1.section-col-title {
   background-color: var(--arian-primary);
   color: #fff;
   border: 1px solid var(--arian-primary);
-  box-shadow: 0 4px 10px rgba(37, 49, 106, 0.2);
+  box-shadow: 0 4px 10px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.2);
 }
 
 .section-cta .cta-main-btn:hover {
   background-color: var(--arian-secondary);
   border-color: var(--arian-secondary);
   transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(96, 123, 189, 0.3);
+  box-shadow: 0 6px 15px rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.3);
 }
 
 @media (max-width: 768px) {
@@ -578,9 +578,9 @@ h1.section-col-title {
 .arian-section.section-blog{
   margin:10px 0;
   padding:15px;
-  background: rgba(182, 194, 243, 0.15) !important;
+  background: rgba(var(--hodima-third-rgb, 182, 194, 243), 0.15) !important;
   border-radius:15px;
-  box-shadow:0 6px 12px rgba(37, 49, 106, 0.03);
+  box-shadow:0 6px 12px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.03);
   overflow:hidden;
   position:relative;
   z-index:1;
@@ -609,13 +609,13 @@ h1.section-col-title {
   display:flex;
   flex-direction:column;
   border:1px solid var(--border-color);
-  box-shadow:0 3px 8px rgba(37, 49, 106, 0.05);
+  box-shadow:0 3px 8px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.05);
   transition:transform .25s ease, box-shadow .25s ease;
 }
 
 .modern-blog-card:hover{
   transform:translateY(-4px);
-  box-shadow:0 10px 20px rgba(37, 49, 106, 0.1);
+  box-shadow:0 10px 20px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.1);
 }
 
 .modern-blog-card:hover img{
@@ -738,7 +738,7 @@ h1.section-col-title {
   background: #fff;
   border-radius: 12px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 3px 8px rgba(37, 49, 106, 0.05); /* استفاده از رنگ سازمانی در سایه */
+  box-shadow: 0 3px 8px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.05); /* استفاده از رنگ سازمانی در سایه */
   overflow: hidden;
   text-decoration: none !important;
   display: flex;
@@ -748,7 +748,7 @@ h1.section-col-title {
 
 .arian-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(37, 49, 106, 0.12);
+  box-shadow: 0 10px 20px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.12);
 }
 
 .arian-card-img-link {
@@ -793,7 +793,7 @@ h1.section-col-title {
 }
 
 .arian-card-name a:hover {
-  color: #25316a; /* هاور با Primary Color */
+  color: var(--hodima-primary, #25316a); /* هاور با Primary Color */
 }
 
 .arian-card-price {

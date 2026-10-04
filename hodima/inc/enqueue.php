@@ -93,14 +93,28 @@ function hodima_enqueue_scripts() {
         wp_enqueue_script( 'hodima-cart-js', $theme_uri . '/assets/js/cart-page.js', [], hodima_asset_version( 'assets/js/cart-page.js' ), [ 'in_footer' => true ] );
     }
 
-    // 7. استایل اختصاصی صفحه نوشته‌های وبلاگ (Single Post)
-    if ( is_singular( 'post' ) ) {
+    /*
+     * 7. استایل اختصاصی صفحه نوشته‌های وبلاگ (Single Post).
+     * برگه‌ها (page.php) هم همان بخش‌های رسانه و دیدگاه را دارند: فقط وقتی
+     * کادر «رسانه» برگه روشن است یا دیدگاه دارد (برگه ساده CSS اضافه نمی‌گیرد).
+     */
+    $is_media_page = is_page() && ! is_front_page() && (
+        ( function_exists( 'hodima_media_is_enabled' ) && hodima_media_is_enabled( (int) get_queried_object_id(), 'post' ) )
+        || comments_open( (int) get_queried_object_id() )
+        || get_comments_number( (int) get_queried_object_id() )
+    );
+    if ( is_singular( 'post' ) || $is_media_page ) {
         wp_enqueue_style( 
             'hodima-single-post', 
             get_template_directory_uri() . '/assets/css/single-post.css', 
             array(), 
             hodima_asset_version( 'assets/css/single-post.css' ) 
         );
+    }
+
+    // 7.1 جستجوی سایت (search.php): کارت‌ها و صفحه‌بندی آرشیو وبلاگ؛ جستجوی محصول قالب فروشگاه است
+    if ( is_search() && ! $is_prod_src ) {
+        wp_enqueue_style( 'hodima-archive-blog', $theme_uri . '/assets/css/archive-blog.css', [], hodima_asset_version( 'assets/css/archive-blog.css' ) );
     }
 
     // 8. استایل صفحه ۴۰۴

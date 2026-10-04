@@ -35,14 +35,14 @@ $hodima_has_h1 = shortcode_exists( 'hook_intro' ) && in_array( 'intro', array_co
 ?>
 
 <main id="primary" class="site-main hodima-home">
-	<div class="hodima-container" style="padding-top: 40px; padding-bottom: 40px; min-height: 50vh;">
+	<div class="hodima-container hodima-page__container">
 		<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
 
 			<?php if ( ! $hodima_has_h1 ) : ?>
 				<h1 class="hodima-sr-only"><?php echo esc_html( get_the_title() ?: get_bloginfo( 'name' ) ); ?></h1>
 			<?php endif; ?>
 
-			<div class="entry-content" style="color: var(--hodima-text-dark);">
+			<div class="entry-content">
 				<?php
 				foreach ( $hodima_sections as $hodima_section ) {
 					hodima_home_render_section( $hodima_section );

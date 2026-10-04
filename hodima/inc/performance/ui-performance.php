@@ -96,17 +96,18 @@ function hodima_print_critical_css(): void {
         return;
     }
 
-    $critical_css  = '.btn-primary,.button{background-color:#25316a!important;color:#fff!important;border-color:#25316a!important}';
-    $critical_css .= '.btn-primary:hover,.button:hover{background-color:#607bbd!important;border-color:#607bbd!important}';
-    $critical_css .= '.card-top-line{background:linear-gradient(90deg,#25316a,#607bbd,#b6c2f3)!important}';
+    // رنگ‌ها از توکن‌ها (پالت «تنظیمات قالب ← برند»)، با همان مقدار پیش‌فرض
+    $critical_css  = '.btn-primary,.button{background-color:var(--hodima-primary,#25316a)!important;color:#fff!important;border-color:var(--hodima-primary,#25316a)!important}';
+    $critical_css .= '.btn-primary:hover,.button:hover{background-color:var(--hodima-secondary,#607bbd)!important;border-color:var(--hodima-secondary,#607bbd)!important}';
+    $critical_css .= '.card-top-line{background:linear-gradient(90deg,var(--hodima-primary,#25316a),var(--hodima-secondary,#607bbd),var(--hodima-third,#b6c2f3))!important}';
 
     if ( function_exists( 'is_woocommerce' ) && is_woocommerce() ) {
-        $critical_css .= '.single_add_to_cart_button{background-color:#25316a!important;color:#fff!important;border-color:#25316a!important}';
-        $critical_css .= '.single_add_to_cart_button:hover{background-color:#607bbd!important;border-color:#607bbd!important}';
+        $critical_css .= '.single_add_to_cart_button{background-color:var(--hodima-primary,#25316a)!important;color:#fff!important;border-color:var(--hodima-primary,#25316a)!important}';
+        $critical_css .= '.single_add_to_cart_button:hover{background-color:var(--hodima-secondary,#607bbd)!important;border-color:var(--hodima-secondary,#607bbd)!important}';
     }
 
     if ( is_404() ) {
-        $critical_css .= '.error-404-number,.highlight-number{background:linear-gradient(45deg,#25316a,#607bbd);-webkit-background-clip:text;-webkit-text-fill-color:transparent}';
+        $critical_css .= '.error-404-number,.highlight-number{background:linear-gradient(45deg,var(--hodima-primary,#25316a),var(--hodima-secondary,#607bbd));-webkit-background-clip:text;-webkit-text-fill-color:transparent}';
     }
 
     echo '<style id="hodima-critical-css">' . $critical_css . '</style>' . "\n";
