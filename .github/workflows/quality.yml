@@ -1,0 +1,69 @@
+# بررسی خودکار کیفیت کد هدیما — روی هر push به claude/hodima.
+# همان bash bin/lint.sh محلی + ساخت ۲۵ صفحه با وردپرس واقعی (tools/wp-harness).
+# نتیجه: تب Actions مخزن (علامت سبز/قرمز کنار هر commit).
+name: Quality
+
+on:
+  push:
+    branches: [claude/hodima]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (php -l, PHPCS, PHPStan, Stylelint, ESLint)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install tools
+        run: |
+          composer install --no-interaction --no-progress
+          npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: bash bin/lint.sh
+
+  render:
+    name: Render 25 pages on WordPress (no PHP errors)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: sqlite3, pdo_sqlite, mbstring, gd, intl, zip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Render and check (schema diff vs previous commit is report-only)
+        run: |
+          ref=""
+          git rev-parse -q --verify HEAD^ >/dev/null && ref="HEAD^"
+          tools/wp-harness/ci-check.sh $ref

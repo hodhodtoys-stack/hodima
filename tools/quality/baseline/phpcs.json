@@ -1,0 +1,162 @@
+{
+	"hodima/404.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/archive-blog.php": {
+		"Generic.Arrays.DisallowLongArraySyntax.Found": 5,
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 2,
+		"WordPress.WP.GlobalVariablesOverride.Prohibited": 2
+	},
+	"hodima/footer.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 4
+	},
+	"hodima/front-page.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"PEAR.Files.IncludingFile.BracketsNotRequired": 1
+	},
+	"hodima/functions.php": {
+		"Generic.NamingConventions.UpperCaseConstantName.ConstantNotUpperCase": 3,
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound": 12
+	},
+	"hodima/header.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 2
+	},
+	"hodima/home/legacy.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/home/logic.php": {
+		"Generic.CodeAnalysis.UnusedFunctionParameter.Found": 1,
+		"Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed": 2,
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize": 1,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 1
+	},
+	"hodima/home/parts/blog.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound": 7
+	},
+	"hodima/home/parts/categories.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound": 4,
+		"WordPress.WP.GlobalVariablesOverride.Prohibited": 1
+	},
+	"hodima/home/parts/intro.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound": 4
+	},
+	"hodima/home/section03.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/home/section07.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/home/section09.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/home/section10.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/inc/enqueue.php": {
+		"Generic.Arrays.DisallowLongArraySyntax.Found": 6,
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound": 3
+	},
+	"hodima/inc/footer.php": {
+		"Generic.Arrays.DisallowLongArraySyntax.Found": 2,
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/inc/header.php": {
+		"Generic.Arrays.DisallowLongArraySyntax.Found": 2,
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/inc/helpers.php": {
+		"Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed": 1,
+		"Squiz.PHP.DisallowMultipleAssignments.Found": 2
+	},
+	"hodima/inc/home-layout.php": {
+		"Squiz.Operators.IncrementDecrementUsage.NoBrackets": 1,
+		"Squiz.Operators.IncrementDecrementUsage.NotAllowed": 1,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 2
+	},
+	"hodima/inc/performance/00-litespeed.php": {
+		"Squiz.PHP.DisallowMultipleAssignments.Found": 2,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound": 1
+	},
+	"hodima/inc/performance/content-optimizations.php": {
+		"Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed": 1,
+		"Universal.NamingConventions.NoReservedKeywordParameterNames.matchFound": 1
+	},
+	"hodima/inc/performance/ui-performance.php": {
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 1
+	},
+	"hodima/inc/performance/woo-optimizer.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/inc/theme-settings/home-layout-admin.php": {
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 2
+	},
+	"hodima/inc/theme-settings/theme-settings.php": {
+		"Squiz.PHP.DisallowMultipleAssignments.Found": 2,
+		"WordPress.CodeAnalysis.AssignmentInTernaryCondition.FoundInTernaryCondition": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound": 1,
+		"WordPress.WP.EnqueuedResourceParameters.MissingVersion": 1
+	},
+	"hodima/inc/woocommerce/category-archive.php": {
+		"Generic.CodeAnalysis.UnusedFunctionParameter.Found": 1,
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/inc/woocommerce/product-hooks.php": {
+		"Generic.CodeAnalysis.UnusedFunctionParameter.Found": 1,
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/inc/woocommerce/product-page.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound": 1
+	},
+	"hodima/index.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/page-user-panel.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/page.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 5
+	},
+	"hodima/search.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1
+	},
+	"hodima/single-post.php": {
+		"Generic.Arrays.DisallowLongArraySyntax.Found": 1,
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound": 2,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 5,
+		"WordPress.WP.GlobalVariablesOverride.Prohibited": 1
+	},
+	"hodima/template-page-videos.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound": 16,
+		"WordPress.WP.GlobalVariablesOverride.Prohibited": 2
+	},
+	"hodima/woocommerce/archive-product.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound": 8,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 1
+	},
+	"hodima/woocommerce/content-single-product.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound": 4,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound": 20,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 1
+	},
+	"hodima/woocommerce/taxonomy-product_cat.php": {
+		"Generic.PHP.RequireStrictTypes.MissingDeclaration": 1,
+		"WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound": 7,
+		"WordPress.Security.EscapeOutput.OutputNotEscaped": 1
+	}
+}

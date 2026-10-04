@@ -1,0 +1,23 @@
+{
+	"name": "hodima-quality",
+	"private": true,
+	"description": "ابزارهای کنترل کیفیت CSS و JS هدیما (فقط توسعه؛ در ZIP قالب و افزونه‌ها نیست)",
+	"type": "module",
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"lint": "bash bin/lint.sh",
+		"lint:css": "stylelint \"hodima/**/*.css\"",
+		"lint:js": "eslint hodima"
+	},
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"eslint": "^10.12.0",
+		"globals": "^17.13.0",
+		"playwright-core": "^1.56.1",
+		"stylelint": "^17.16.0",
+		"stylelint-config-standard": "^40.0.0",
+		"stylelint-use-logical": "^2.1.3"
+	}
+}

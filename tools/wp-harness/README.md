@@ -12,6 +12,13 @@ tools/wp-harness/compare-with-ref.sh
 # در برابر یک commit مشخص
 tools/wp-harness/compare-with-ref.sh 7fa8063
 
+# ظاهر قبل/بعد: استایل محاسبه‌شده هر عنصر + عکس پیکسل‌به‌پیکسل (دسکتاپ ۱۳۰۰، موبایل ۳۹۰)
+tools/wp-harness/visual-compare.sh                 # همه صفحه‌ها، کار فعلی در برابر آخرین commit
+tools/wp-harness/visual-compare.sh HEAD home 404   # فقط چند صفحه
+
+# بررسی GitHub Actions به‌صورت محلی: بدون هشدار PHP، بدون صفحه ناقص، بدون @id تکراری
+tools/wp-harness/ci-check.sh [ref]
+
 # صفحه‌های پیشخوان (دسترسی، عنوان، منوی فعال، هشدار PHP)
 tools/wp-harness/admin-check.sh . /tmp/adm                 # صفحه‌های پیش‌فرض
 tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های دلخواه
@@ -41,6 +48,8 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 | `admin-render.php <slug>` | رندر یک صفحه پیشخوان با حساب مدیر |
 | `wp-eval.php '<php>'` | اجرای کد دلخواه روی سایت تست (`HARNESS=1 HODIMA_WP=… php wp-eval.php '…'`) |
 | `extract.py` / `compare.py` / `integrity.py` | استخراج، مقایسه و بررسی گراف |
+| `visual-compare.sh` / `visual-compare.mjs` | مقایسه ظاهر دو نسخه با Chromium (`playwright-core` از `npm ci`): `getComputedStyle` همه عنصرها به ترتیب DOM و عکس کل صفحه؛ CSS/JS هر طرف از پوشه خودش. بازنویسی هم‌ارز CSS (خصوصیات منطقی، nesting، …) باید «یکسان» بدهد. تصویرهای آپلود = PNG خاکستری ثابت، ویدیو/صوت = خطای فوری (بدون چرخنده)، انیمیشن خاموش. عکس‌ها و `*-diff.png` (قرمز = پیکسل متفاوت) در `$HODIMA_HARNESS/visual` |
+| `ci-check.sh [ref]` | کار «render» در GitHub Actions: رد با هشدار PHP، صفحه خالی/ناقص، `@id` تکراری؛ تفاوت اسکیما با ref فقط گزارش |
 | `mu-plugins/harness-core.php` | بدون ریدایرکت canonical؛ ورود مدیر با `HARNESS_USER=1` |
 | `mu-plugins/harness-wc-stub.php` | ووکامرس حداقلی با `HARNESS_WC=1` (محصول، دسته، برچسب، فروشگاه). ویژگی‌ها از متای `attr_{نام}` (مثل `attr_pa_color`) و وزن از متای `_weight` خوانده می‌شوند |
 
@@ -53,5 +62,6 @@ unset HARNESS_OPTS
 ```
 
 ## محدودیت‌ها
+- مقایسه ظاهر فقط چیزی را می‌بیند که در صفحه‌های نمونه هست: CSS انتخابگری که در داده آزمایشی عنصری ندارد (مثلا پاسخ تو در توی دیدگاه) یا قانونی که قانون دیگری بازنویسی‌اش می‌کند «یکسان» می‌ماند. برای آزمایش یک قانون، اول مطمئن شوید روی صفحه اثر دارد.
 - ووکامرس واقعی نیست؛ صفحه‌های محصول/فروشگاه را روی سایت با [Rich Results Test](https://search.google.com/test/rich-results) هم بررسی کنید.
 - پنل کاربری در مخزن نیست و تست نمی‌شود.

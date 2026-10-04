@@ -1,2 +1,5 @@
 dist/
 __pycache__/
+# ابزارهای کیفیت کد (composer install / npm ci؛ در محیط ابری vendor لینک نمادین است)
+/vendor
+/node_modules

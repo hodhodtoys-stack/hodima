@@ -41,8 +41,10 @@ PHP 8.4، HTML5، CSS مدرن، JavaScript خالص (بدون jQuery).
 
 پالت رنگ: `#25316a` · `#607bbd` · `#b6c2f3` · `#6a2b9a` · `#a341c8` (توکن‌ها در `hodima/assets/css/tokens.css`؛ قابل تغییر از «تنظیمات قالب ← برند»).
 
-## تست
-`tools/wp-harness/` — تست روی وردپرس واقعی (قبل/بعد اسکیما در ۲۵ نوع صفحه، صفحه‌های پیشخوان). راهنما: `tools/wp-harness/README.md`. قوانین کار روی پروژه: `CLAUDE.md`.
+## کیفیت کد و تست
+- `bash bin/lint.sh` — php -l (PHP 8.4)، PHPCS، PHPStan، Stylelint و ESLint با baseline (خطاهای قدیمی ثبت‌شده؛ فقط خطای جدید رد می‌شود). پیش‌نیاز: `composer install` و `npm ci` (در محیط ابری: `bash tools/quality/install-offline.sh`). تنظیمات: `phpcs.xml.dist`، `phpstan.neon.dist`، `stylelint.config.mjs`، `eslint.config.mjs`.
+- GitHub Actions (`.github/workflows/quality.yml`) روی هر push: همان lint + ساخت ۲۵ صفحه با وردپرس واقعی بدون هیچ هشدار PHP. نتیجه در تب Actions مخزن.
+- `tools/wp-harness/` — تست روی وردپرس واقعی: قبل/بعد اسکیما در ۲۵ نوع صفحه، قبل/بعد ظاهر (`visual-compare.sh`)، صفحه‌های پیشخوان. راهنما: `tools/wp-harness/README.md`. قوانین کار روی پروژه: `CLAUDE.md`.
 
 ## ساخت فایل‌های نصب
 ```bash

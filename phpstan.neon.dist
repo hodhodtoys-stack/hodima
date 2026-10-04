@@ -1,0 +1,28 @@
+# PHPStan هدیما (اجرا: bash bin/lint.sh یا vendor/bin/phpstan)
+# سطح ۶: نوع پارامتر/خروجی همه توابع لازم است (هدف مرحله ۳ نقشه راه، بخش ۵۷).
+# خطاهای قدیمی در tools/quality/baseline/phpstan.neon ثبت‌اند؛ فقط خطای جدید رد می‌شود.
+# بعد از رفع خطاهای قدیمی: bash bin/lint.sh --update-baseline
+includes:
+	- vendor/szepeviktor/phpstan-wordpress/extension.neon
+	- tools/quality/baseline/phpstan.neon
+
+parameters:
+	level: 6
+	phpVersion: 80400
+	paths:
+		- hodima
+	excludePaths:
+		analyse:
+			- hodima/user-panel/*
+	bootstrapFiles:
+		- tools/quality/phpstan-bootstrap.php
+	scanFiles:
+		- vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+	# قالب توابع و کلاس‌های افزونه‌های هدیما را (با گارد) صدا می‌زند؛ فقط شناخته شوند، تحلیل نشوند
+	scanDirectories:
+		- plugins
+	# توابع افزونه‌های هدیما و ووکامرس ممکن است نباشند؛ قالب با function_exists گارد می‌کند
+	reportUnmatchedIgnoredErrors: false
+	treatPhpDocTypesAsCertain: false
+	# have_posts() و مشابه هر بار مقدار تازه می‌دهند (هشدار اشتباه «حلقه همیشه درست»)
+	rememberPossiblyImpureFunctionValues: false

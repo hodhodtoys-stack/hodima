@@ -313,7 +313,7 @@
 15. یکپارچه‌سازی اسکیما در یک گراف واحد و حذف `schema-cleaner` (۴.۱۲)
 16. یکسان‌سازی تشخیص IP و محدودیت نرخ در یک سرویس مشترک (۴.۱۵)
 17. ابزار حریم خصوصی: exporter/eraser، رضایت در فرم‌ها، Consent Mode برای GA (۴.۱۹)
-18. راه‌اندازی Composer + PHPCS (WPCS) + PHPStan + CI در GitHub Actions
+18. ✅ راه‌اندازی Composer + PHPCS (WPCS) + PHPStan + CI در GitHub Actions (انجام شد برای قالب — بخش ۵۸)
 19. Build دارایی‌ها (Vite/esbuild) با Minify و ادغام CSS سراسری
 
 ### فاز ۳ — بلندمدت (۳ تا ۶ ماه)
@@ -1602,7 +1602,7 @@ Commerce 1.1.8 (woo-table ۲.۱۳.۰)، SEO 1.10.8. کاربر خروجی Rich R
 - **فایل workflow گیت‌هاب:** push فایل‌های `.github/workflows/` ممکن است مجوز جدا (`workflows`) بخواهد؛ اگر رد شد کاربر باید یک بار مجوز بدهد یا فایل را خودش در گیت‌هاب بسازد.
 
 ### ۵۷.۴ نقشه راه (به ترتیب پیشنهادی، هر مرحله نسخه جدا)
-1. **ابزارهای کیفیت + بررسی خودکار** (ریسک: صفر برای سایت؛ اولویت بالا چون بقیه مرحله‌ها را محافظت می‌کند): `composer.json` و `package.json` در ریشه مخزن (نه در ZIP)؛ PHPCS (WPCS 3 + PHPCompatibility 8.4، قواعد متناسب با پروژه: کامنت فارسی، tab/space فعلی)، PHPStan (سطح ۵ با stubs وردپرس/ووکامرس)، Stylelint (standard + order منطقی)، ESLint (flat config، مرورگر)؛ **baseline** خطاهای فعلی تا فقط کد جدید/تغییرکرده سخت‌گیری شود؛ `bin/lint.sh` برای اجرای محلی؛ `.github/workflows/quality.yml` روی هر push به `claude/hodima` (`php -l` با 8.4، چهار ابزار، و در صورت امکان ابزار تست اسکیما). اضافه شدن «مقایسه computed style» به `tools/wp-harness`.
+1. ✅ **ابزارهای کیفیت + بررسی خودکار** — انجام شد، بخش ۵۸ (ریسک: صفر برای سایت؛ اولویت بالا چون بقیه مرحله‌ها را محافظت می‌کند): `composer.json` و `package.json` در ریشه مخزن (نه در ZIP)؛ PHPCS (WPCS 3 + PHPCompatibility 8.4، قواعد متناسب با پروژه: کامنت فارسی، tab/space فعلی)، PHPStan (سطح ۵ با stubs وردپرس/ووکامرس)، Stylelint (standard + order منطقی)، ESLint (flat config، مرورگر)؛ **baseline** خطاهای فعلی تا فقط کد جدید/تغییرکرده سخت‌گیری شود؛ `bin/lint.sh` برای اجرای محلی؛ `.github/workflows/quality.yml` روی هر push به `claude/hodima` (`php -l` با 8.4، چهار ابزار، و در صورت امکان ابزار تست اسکیما). اضافه شدن «مقایسه computed style» به `tools/wp-harness`.
 2. **رفع باگ‌ها و کد مرده** (بخش ۵۷.۲؛ ریسک کم): آکاردئون فوتر (دکمه + `aria-expanded`، بدون بستن با resize)، پاک شدن کش اسلایدر با کش شیء، فایل خالی سبد، `arian-lazy`، wp-embed و dequeue تکراری، شناسه ثابت بخش‌ها، استایل‌های inline. preconnect `dl.hodima.com` و مسیر راهنمای مقاله (یکی شدن با اسکیما = **تغییر ظاهری**) فقط با تأیید کاربر.
 3. **PHP 8.4** (ریسک متوسط؛ با نصب واقعی از ZIP در دو ترتیب): `strict_types` همه فایل‌ها با قاعده کال‌بک‌ها (۵۷.۳)، نوع همه توابع، enum برای مجموعه‌های ثابت (نوع بخش صفحه اصلی، نوع فیلد تنظیمات، کانال تماس)، کلاس‌های readonly کوچک برای داده ساختاریافته، یک تابع/نقشه واحد ثبت دارایی‌ها (CSS/JS هر صفحه) به‌جای سه روش، بدون متغیر سراسری در `functions.php`. خروجی HTML و اسکیما بایت‌به‌بایت یکسان.
 4. **جاوااسکریپت مدرن** (ریسک کم تا متوسط): `const/let`، ماژول‌بندی بدون IIFE، `strategy: 'defer'` وردپرس برای اسکریپت‌های قالب (هماهنگ با لایت‌اسپید)، **`<dialog>`** برای پنجره پشتیبانی و لایت‌باکس (فوکوس، Esc و inert بومی؛ ظاهر یکسان)، هدر چسبان با IntersectionObserver (بدون خواندن ارتفاع در هر اسکرول)، `sp-gallery.js` بازنویسی تمیز با همان رفتار.
@@ -1611,9 +1611,52 @@ Commerce 1.1.8 (woo-table ۲.۱۳.۰)، SEO 1.10.8. کاربر خروجی Rich R
 7. **قالب‌ها و HTML** (ریسک متوسط): بخش‌های تکراری «معرفی + ویدیو» و «پادکست + FAQ» که در ۵ قالب جدا نوشته شده‌اند (`single-post.php`، `page.php`، `taxonomy-product_cat.php`، `content-single-product.php`، `home/parts/intro.php`) → یک template part مشترک؛ هماهنگی قالب‌های ووکامرس با نسخه فعلی ووکامرس (`@version`).
 8. **کارایی** (پس از ۵ و ۶): minify، حذف `!important`های CSS حیاتی (`.button`)، بررسی حذف dashicons برای مهمان و ادغام CSSهای مشترک همه صفحه‌ها (tokens + style + header + footer = ۴ درخواست ~۵۳ کیلوبایت).
 
+**تصمیم‌های کاربر (بعد از تحلیل):**
+- **مرورگرهای قدیمی (۵۷.۳):** «مدرن کن» → سورس CSS با nesting/`color-mix()`/container query نوشته می‌شود و در مرحله ۵ یک مرحله ساخت (Lightning CSS در `bin/build.sh`) نسخه سازگار با مرورگرهای قدیمی + minify را در ZIP می‌گذارد.
+- **`dl.hodima.com`:** دامنه پخش ویدیو و پادکست خود کاربر است (پس preconnect بی‌فایده نیست، فقط ثابت در کد است). مرحله ۲: «هوشمند» — دامنه‌ها از آدرس‌های رسانه (ویدیو/صوت Hodima Media) خود صفحه تشخیص داده شوند و فقط در صفحه‌ای که رسانه دارد preconnect شود، به‌علاوه یک فیلد در تنظیمات قالب برای دامنه‌های دلخواه (پیش‌فرض `https://dl.hodima.com` تا رفتار سایت فعلی حفظ شود)؛ هر کس قالب را نصب کند دامنه خودش را می‌گذارد.
+- **مسیر راهنمای مقاله‌ها:** «بهترین کار» → مرحله ۲: مسیر دیده‌شده از همان `hodima_breadcrumb_items()` افزونه SEO ساخته شود (یکی با اسکیما، با دسته اصلی، `<nav aria-label>` + `<ol>`)؛ بدون افزونه همان مسیر فعلی. تغییر ظاهری عمدی و کوچک.
+
 هر مرحله: `compare-with-ref.sh` (اسکیمای ۲۵ صفحه)، عکس پیکسل‌به‌پیکسل Chromium (دسکتاپ ۱۳۰۰/موبایل ۳۹۰) و برای صفحه‌های فروشگاه مقایسه computed style، `php -l`/`node --check`/ابزارهای مرحله ۱، نسخه + CHANGELOG + build + push.
 
-## ۵۸. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
+## ۵۸. نوسازی قالب مرحله ۱: ابزارهای کیفیت کد و بررسی خودکار گیت‌هاب — مرحله ۵۱
+
+مرحله ۱ نقشه راه بخش ۵۷.۴. **هیچ فایلی از قالب یا افزونه‌ها عوض نشد** (نسخه‌ها همان؛ ZIPهای `release/` دست‌نخورده). فقط ابزار توسعه در ریشه مخزن (در ZIPها نیست؛ `bin/build.sh` فقط `hodima/` و `plugins/*` را می‌بندد).
+
+### ۵۸.۱ ابزارها
+| ابزار | تنظیمات | محدوده | baseline (موارد قدیمی ثبت‌شده) |
+|---|---|---|---|
+| `php -l` با PHP 8.4، هشدار Deprecated زمان کامپایل هم خطا (مثل nullable ضمنی) | `bin/lint.sh` | قالب + ۴ افزونه (۲۰۴ فایل) | — (همه سالم) |
+| PHPCS 3.13 + WPCS 3.4 | `phpcs.xml.dist` | قالب | ۱۹۴ |
+| PHPStan 2.2 سطح ۶ + `szepeviktor/phpstan-wordpress` + stubs ووکامرس | `phpstan.neon.dist` | قالب (افزونه‌ها فقط برای شناختن توابع/کلاس‌ها) | ۹۶ |
+| Stylelint 17 + standard + `stylelint-use-logical` | `stylelint.config.mjs` | CSS قالب | ۱۱۹۶ |
+| ESLint 10 (flat config) | `eslint.config.mjs` | JS قالب | ۱۱۱ |
+
+- **قواعد:** امنیت (escape خروجی، nonce، SQL)، درستی API وردپرس، پیشوند `hodima` برای نام‌های سراسری، `strict_types`، نوع همه توابع (سطح ۶ PHPStan)، آرایه کوتاه؛ در CSS: `!important`، خصوصیات منطقی (فقط چپ/راست؛ top/bottom و width/height آزاد)، نگارش مدرن رنگ و media query، انتخابگر تکراری و `no-descending-specificity`؛ در JS: `const/let`، arrow، template literal، `no-alert`، ممنوعیت `jQuery`/`$`. قواعد صرفا ظاهری (تب/فاصله، تراز `=>`، خط خالی، نقطه آخر کامنت فارسی، الگوی نام کلاس BEM) خاموش‌اند: ۳۲۴۴ هشدار WPCS خام → ۱۹۴ هشدار معنادار.
+- **baseline با «جغجغه»** (`tools/quality/ratchet.py`): شمار هشدار هر «فایل + قاعده» در `tools/quality/baseline/*.json` (PHPStan: `baseline/phpstan.neon` خودش). بیشتر شدن در هر جا = رد با پیام دقیق و شماره خط؛ کمتر شدن = قبول + پیشنهاد `bash bin/lint.sh --update-baseline`. شماره خط ذخیره نمی‌شود (جابه‌جایی کد هشدار اشتباه نمی‌دهد). هدف مرحله‌های بعد: پایین آوردن همین عددها.
+- **نسخه‌های ثابت:** `composer.json` نسخه دقیق هر بسته (بدون `composer.lock`؛ قاعده جدید در نسخه جدید ابزار ناگهان CI را رد نکند) و `package-lock.json` برای npm.
+- **محیط ابری Claude:** composer نمی‌تواند ZIP بسته‌ها را از گیت‌هاب بگیرد (`Could not authenticate against github.com`) ولی `git clone` باز است → `bash tools/quality/install-offline.sh`: هر بسته با git clone (همان نسخه‌ها) + «path repository» composer در `/tmp/hodima-quality`، `vendor/` لینک نمادین، `npm ci`. PHP 8.4 هم باید طبق بخش ۳۵ نصب شود.
+
+### ۵۸.۲ بررسی خودکار گیت‌هاب (`.github/workflows/quality.yml`)
+روی هر push به `claude/hodima` (و Pull Request و اجرای دستی)، دو کار موازی روی Ubuntu 24.04 با PHP 8.4 و Node 22:
+1. **Lint:** `composer install` + `npm ci` + `bash bin/lint.sh` (همان اجرای محلی).
+2. **Render:** `tools/wp-harness/ci-check.sh HEAD^` — نصب وردپرس 6.7 + SQLite از npm، ساخت ۲۵ صفحه با داده آزمایشی؛ رد با هر هشدار/خطای PHP، صفحه خالی یا ناقص (Fatal)، `@id` تکراری؛ تفاوت اسکیما با commit قبلی فقط در خلاصه اجرا گزارش می‌شود (تغییر اسکیما ممکن است عمدی باشد).
+
+### ۵۸.۳ مقایسه ظاهر (`tools/wp-harness/visual-compare.sh`)
+ابزار پیشنهادی بخش ۵۷.۳ برای مرحله‌های CSS/JS: صفحه‌های رندرشده ref و کار فعلی در Chromium (`playwright-core` 1.56.1 هم‌نسخه مرورگر نصب‌شده)، هر طرف CSS/JS پوشه خودش؛ دسکتاپ ۱۳۰۰ و موبایل ۳۹۰: `getComputedStyle` همه عنصرها (و `::before/::after`) به ترتیب DOM + عکس کل صفحه و شمار پیکسل متفاوت (`*-diff.png`). نویز حذف‌شده: تصویرهای آپلود ناموجود (PNG ثابت)، چرخنده ویدیوی بی‌فایل Chromium (۶۷۸ پیکسل در «راهنما» — درخواست media فورا خطا)، انیمیشن/transition.
+
+### ۵۸.۴ یافته‌های تازه (برای مرحله‌های بعد)
+- ۲۷ هشدار «خروجی escape‌نشده» PHPCS یکی‌یکی بررسی شد: **هیچ مشکل امنیتی واقعی** — همه خروجی ازپیش‌امن (`wp_get_attachment_image`، شورت‌کد افزونه، SVG ثابت، `wpautop( esc_html() )`). ولی کامنت‌های `// phpcs:ignore — توضیح` قالب کار نمی‌کنند (PHPCS بعد از `ignore` نام قاعده یا ` -- ` می‌خواهد) → مرحله ۳.
+- PHPStan: `remove_action( 'template_redirect', 'rest_output_link_header', 11, 0 )` با آرگومان چهارم اضافه (`wp-cleanup.php`)؛ `esc_attr( int )` در گالری محصول؛ کال‌بک `fn() => remove_action(...)` روی اکشن مقدار برمی‌گرداند → مرحله ۲/۳.
+- **CSS مرده:** `padding-right: 2rem` در `.header__center` (`header.css` خط ۱۰۷) را قانون دیگری بازنویسی می‌کند و اثری ندارد (مقدار واقعی ۲۰px) — هنگام تست ابزار مقایسه پیدا شد؛ نمونه‌ای از کار مرحله ۶.
+
+**تست:**
+- `bash bin/lint.sh` روی کد فعلی: همه قبول. **آزمایش منفی** (بعد برگردانده شد): تابع بی‌نوع با `echo $_GET` در PHP → PHPCS (escape، nonce) و PHPStan (نوع) رد؛ `color: red !important; margin-left` در CSS → Stylelint رد؛ `var` سراسری در JS → ESLint رد؛ پارامتر `int $a = null` → `php -l` 8.4 (Deprecated) و PHPStan رد.
+- `ci-check.sh`: کد فعلی قبول (۲۵ صفحه، بدون هشدار PHP، بدون `@id` تکراری)؛ متغیر تعریف‌نشده در `404.php` → رد با Warning؛ تابع ناموجود → رد با Fatal.
+- `visual-compare.sh HEAD` روی همه ۲۵ صفحه × ۲ عرض (کد یکسان): همه «یکسان» (بعد از حذف نویز ویدیو). با commit موقت محلی (push نشد): `padding-right: 7px` → `padding-inline-start: 7px` (هم‌ارز در راست‌به‌چپ) = «یکسان»؛ `7px` → `9px` = پیدا شد با نام دقیق خاصیت و ۸۶۶ پیکسل.
+- `install-offline.sh` از صفر در پوشه تازه: موفق؛ YAML workflow معتبر؛ `composer validate` معتبر.
+- **محدودیت:** خود GitHub Actions از این محیط اجرا نمی‌شود؛ اولین اجرای واقعی بعد از همین push در تب Actions دیده می‌شود.
+
+## ۵۹. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
 
 | مسیر | کارکرد | پیشنهاد مکان |
 |---|---|---|

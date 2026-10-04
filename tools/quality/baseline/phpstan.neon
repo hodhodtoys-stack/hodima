@@ -1,0 +1,577 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Function hodima_route_blog_archive_template\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/functions.php
+
+		-
+			message: '#^Function hodima_route_blog_archive_template\(\) has parameter \$template with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/functions.php
+
+		-
+			message: '#^Parameter \#1 \$args of function wp_nav_menu expects array\{menu\?\: int\|string\|WP_Term, menu_class\?\: string, menu_id\?\: string, container\?\: string, container_class\?\: string, container_id\?\: string, container_aria_label\?\: string, fallback_cb\?\: \(callable\(\)\: mixed\)\|false, \.\.\.\}, array\{theme_location\: ''primary'', menu_class\: ''main\-menu'', container\: false, fallback_cb\: false\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../../../hodima/header.php
+
+		-
+			message: '#^Function arian_get_category_shortcode_map\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/legacy.php
+
+		-
+			message: '#^Function arian_load_home_section\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/legacy.php
+
+		-
+			message: '#^Function arian_load_home_section\(\) has parameter \$tag with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/legacy.php
+
+		-
+			message: '#^Function arian_render_product_slider\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/legacy.php
+
+		-
+			message: '#^Function arian_render_product_slider\(\) has parameter \$args with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/legacy.php
+
+		-
+			message: '#^Callback expects 0\-1 parameters, \$accepted_args is set to 3\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_blog_cache_on_meta\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_blog_cache_on_meta\(\) has parameter \$meta_id with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_blog_cache_on_meta\(\) has parameter \$meta_key with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_blog_cache_on_meta\(\) has parameter \$meta_value with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_blog_cache_on_meta\(\) has parameter \$post_id with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_blog_cache_on_post\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_blog_cache_on_post\(\) has parameter \$post with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_blog_cache_on_post\(\) has parameter \$post_id with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_blog_posts_data\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_cache_on_meta\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_cache_on_meta\(\) has parameter \$meta_id with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_cache_on_meta\(\) has parameter \$meta_key with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_cache_on_meta\(\) has parameter \$meta_value with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_cache_on_meta\(\) has parameter \$object_id with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_cache_on_term\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_cache_on_term\(\) has parameter \$taxonomy with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_cache_on_term\(\) has parameter \$term_id with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_cache_on_term\(\) has parameter \$tt_id with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_categories_data\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_category_shortcode_map\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_clear_blog_cache\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_clear_categories_cache\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_clear_category_shortcode_map\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_flush_product_sliders\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_flush_product_sliders\(\) has parameter \$post_id with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_load_section\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_load_section\(\) has parameter \$tag with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_product_slider\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Function hodima_home_product_slider\(\) has parameter \$args with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/home/logic.php
+
+		-
+			message: '#^Call to function method_exists\(\) with ''Hodima_TC_Helper'' and ''sibling_nodes'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: ../../../hodima/inc/blog.php
+
+		-
+			message: '#^Function add_placeholder_to_comment_textarea\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/enqueue.php
+
+		-
+			message: '#^Function add_placeholder_to_comment_textarea\(\) has parameter \$comment_field with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/inc/enqueue.php
+
+		-
+			message: '#^Function custom_review_form_placeholders\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/enqueue.php
+
+		-
+			message: '#^Function custom_review_form_placeholders\(\) has parameter \$comment_form with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/inc/enqueue.php
+
+		-
+			message: '#^Function hodima_enqueue_admin_tokens\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/enqueue.php
+
+		-
+			message: '#^Function hodima_enqueue_scripts\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/enqueue.php
+
+		-
+			message: '#^Function suspended_enqueue_custom_gallery\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/enqueue.php
+
+		-
+			message: '#^Function hodima_footer_assets\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/footer.php
+
+		-
+			message: '#^Function hodima_header_assets\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/header.php
+
+		-
+			message: '#^Function hodima_schema_add\(\) has parameter \$payload with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/helpers.php
+
+		-
+			message: '#^Function hodima_shortcode\(\) has parameter \$atts with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/helpers.php
+
+		-
+			message: '#^Function hodima_home_layout\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_layout_from_content\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_legacy_category_tones\(\) has parameter \$cat_map with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_legacy_category_tones\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_normalize_layout\(\) has parameter \$items with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_normalize_layout\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_render_section\(\) has parameter \$item with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_sanitize_field\(\) has parameter \$field with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_sanitize_layout\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_section_defaults\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_home_section_types\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/home-layout.php
+
+		-
+			message: '#^Function hodima_defer_script_tag\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/performance/content-optimizations.php
+
+		-
+			message: '#^Function hodima_defer_script_tag\(\) has parameter \$handle with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/inc/performance/content-optimizations.php
+
+		-
+			message: '#^Function hodima_defer_script_tag\(\) has parameter \$src with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/inc/performance/content-optimizations.php
+
+		-
+			message: '#^Function hodima_defer_script_tag\(\) has parameter \$tag with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/inc/performance/content-optimizations.php
+
+		-
+			message: '#^Function hodima_lazyload_content_iframes\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/performance/content-optimizations.php
+
+		-
+			message: '#^Function hodima_lazyload_content_iframes\(\) has parameter \$content with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/inc/performance/content-optimizations.php
+
+		-
+			message: '#^Function hodima_add_resource_hints\(\) has parameter \$urls with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/performance/ui-performance.php
+
+		-
+			message: '#^Function hodima_add_resource_hints\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/performance/ui-performance.php
+
+		-
+			message: '#^Action callback returns bool but should not return anything\.$#'
+			identifier: return.void
+			count: 1
+			path: ../../../hodima/inc/performance/woo-optimizer.php
+
+		-
+			message: '#^Function hodima_filter_core_resource_hints\(\) has parameter \$urls with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/performance/wp-cleanup.php
+
+		-
+			message: '#^Function hodima_filter_core_resource_hints\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/performance/wp-cleanup.php
+
+		-
+			message: '#^Function remove_action invoked with 4 parameters, 2\-3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../../../hodima/inc/performance/wp-cleanup.php
+
+		-
+			message: '#^Function hodima_home_admin_field\(\) has parameter \$field with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/home-layout-admin.php
+
+		-
+			message: '#^Function hodima_home_admin_field\(\) has parameter \$terms with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/home-layout-admin.php
+
+		-
+			message: '#^Function hodima_home_admin_item\(\) has parameter \$item with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/home-layout-admin.php
+
+		-
+			message: '#^Empty array passed to foreach\.$#'
+			identifier: foreach.emptyArray
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_hex_rgb\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_rgb_hex\(\) has parameter \$rgb with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_settings\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_settings_field_section\(\) has parameter \$field with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_settings_palette_preview\(\) has parameter \$settings with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_settings_render_panel\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_settings_render_panel\(\) has parameter \$panel with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_settings_render_panel\(\) has parameter \$settings with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_settings_sanitize\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_social_fields\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_trust_fields\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: ../../../hodima/inc/theme-settings/theme-settings.php
+
+		-
+			message: '#^Function hodima_cleanup_single_product\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/woocommerce/product-hooks.php
+
+		-
+			message: '#^Function hodima_custom_product_gallery\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/woocommerce/product-hooks.php
+
+		-
+			message: '#^Function hodima_custom_upsells_heading\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/woocommerce/product-hooks.php
+
+		-
+			message: '#^Function hodima_custom_upsells_heading\(\) has parameter \$heading with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: ../../../hodima/inc/woocommerce/product-hooks.php
+
+		-
+			message: '#^Function hodima_dequeue_woo_heavy_assets\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/woocommerce/product-hooks.php
+
+		-
+			message: '#^Function hodima_remove_archive_clutter\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/woocommerce/product-hooks.php
+
+		-
+			message: '#^Function hodima_remove_woo_gallery_support\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: ../../../hodima/inc/woocommerce/product-hooks.php
+
+		-
+			message: '#^Parameter \#1 \$text of function esc_attr expects string, int\<1, max\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../../../hodima/inc/woocommerce/product-hooks.php

@@ -1,0 +1,32 @@
+{
+	"name": "hodima/hodima",
+	"description": "ابزارهای کنترل کیفیت کد هدیما (فقط توسعه؛ در ZIP قالب و افزونه‌ها نیست). نسخه‌ها ثابت‌اند تا قاعده جدید ناگهان CI را رد نکند؛ هم‌زمان در tools/quality/install-offline.sh به‌روز شوند.",
+	"type": "project",
+	"license": "proprietary",
+	"require": {
+		"php": ">=8.4"
+	},
+	"require-dev": {
+		"dealerdirect/phpcodesniffer-composer-installer": "1.2.1",
+		"php-stubs/woocommerce-stubs": "11.1.2",
+		"php-stubs/wordpress-stubs": "6.9.4",
+		"phpcsstandards/phpcsextra": "1.5.1",
+		"phpcsstandards/phpcsutils": "1.2.3",
+		"phpstan/phpstan": "2.2.17",
+		"squizlabs/php_codesniffer": "3.13.6",
+		"szepeviktor/phpstan-wordpress": "2.0.4",
+		"wp-coding-standards/wpcs": "3.4.1"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"platform": {
+			"php": "8.4.5"
+		},
+		"sort-packages": true
+	},
+	"scripts": {
+		"lint": "bash bin/lint.sh"
+	}
+}
