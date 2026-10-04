@@ -58,26 +58,10 @@ get_header(); ?>
                 global $wp_query;
                 $paged = ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : 1;
                 
-                $schema_items = array();
-                $position = 1;
-
+                // فهرست ساختاریافته مقاله‌ها (ItemList) را افزونه Hodima SEO می‌سازد:
+                // schema/collection-lists-schema.php (قبلا همین‌جا) — بازسازی قالب، مرحله ۲
                 if ( have_posts() ) : ?>
-                    <?php while ( have_posts() ) : the_post(); 
-                        $thumb_url = get_the_post_thumbnail_url( get_the_ID(), 'full' );
-                        
-                        $item_data = array(
-                            '@type'    => 'ListItem',
-                            'position' => $position,
-                            'name'     => get_the_title(),
-                            'url'      => get_permalink(),
-                        );
-                        if ( $thumb_url ) {
-                            $item_data['image'] = $thumb_url;
-                        }
-                        
-                        $schema_items[] = $item_data;
-                        $position++;
-                    ?>
+                    <?php while ( have_posts() ) : the_post(); ?>
                         <a href="<?php the_permalink(); ?>" class="blog-page-card">
 
                             <?php if ( has_post_thumbnail() ) : ?>
@@ -109,38 +93,6 @@ get_header(); ?>
 
                         </a>
                     <?php endwhile; ?>
-                    
-                    <?php 
-                    /*
-                     * پایه شناسه از موتور canonical مشترک — همان آدرسی که
-                     * homepage-schema.php برای «#webpage» به کار می‌برد.
-                     * نسخه قبلی home_url($wp->request) بود که با canonical
-                     * دستی یا ساختار پیوند بدون اسلش پایانی یکی نمی‌شد.
-                     */
-                    global $wp;
-                    $current_url = function_exists( 'hodima_get_canonical_url' ) ? hodima_get_canonical_url() : '';
-                    if ( '' === $current_url ) {
-                        $current_url = trailingslashit( home_url( $wp->request ) );
-                    }
-                    
-                    // استخراج نام برای اسکیما (با تغییر مدنظر شما)
-                    $archive_name = 'وبلاگ';
-                    if ( is_archive() ) {
-                        $archive_name = is_category() || is_tag() || is_tax() ? single_term_title( '', false ) : wp_strip_all_tags( get_the_archive_title() );
-                    }
-
-                    $item_list_schema = array(
-                        '@type'            => 'ItemList',
-                        '@id'              => $current_url . '#itemlist',
-                        'mainEntityOfPage' => array( '@id' => $current_url . '#webpage' ),
-                        'name'             => 'آرشیو ' . $archive_name . ( $paged > 1 ? ' - صفحه ' . $paged : '' ),
-                        'description'      => 'لیست مقالات و نوشته‌های مرتبط',
-                        'itemListElement'  => $schema_items
-                    );
-                    
-                    // گراف واحد صفحه (hodima-core) — در فوتر با بقیه نودها چاپ می‌شود
-                    hodima_schema_add( $item_list_schema, 'theme: archive-blog.php' );
-                    ?>
 
                 <?php else : ?>
                     <p class="blog-page-empty">هیچ مقاله‌ای یافت نشد.</p>

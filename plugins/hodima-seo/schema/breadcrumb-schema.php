@@ -33,6 +33,49 @@ function hodima_disable_woo_breadcrumb_schema() {
 }
 
 
+/* =====================================================================
+ * دسته‌هایی که دسته اصلی مسیر راهنما نمی‌شوند
+ * ---------------------------------------------------------------------
+ * دسته‌های عمومی مثل «جدیدترین محصولات» (latest-products) به محصول ربطی
+ * موضوعی ندارند؛ اگر ووکامرس یا این ماژول آن را دسته اصلی انتخاب کند، مسیر
+ * «خانه › جدیدترین محصولات › کش مو» ساخته می‌شود. قبلا فقط مسیر قابل‌مشاهده
+ * ووکامرس با فیلتری در قالب (inc/enqueue.php، نامک ثابت) اصلاح می‌شد و اسکیما
+ * همچنان می‌توانست همان دسته را بگیرد. حالا هر دو از یک فهرست می‌خوانند:
+ * «اسکیما ← بردکرامب». دسته اصلی که دستی انتخاب شده (_hodima_primary_*) دست
+ * نمی‌خورد.
+ * ===================================================================== */
+const HODIMA_BREADCRUMB_EXCLUDE_OPTION = 'hodima_breadcrumb_exclude_slugs';
+
+/** نامک دسته‌های مستثنا (پیش‌فرض: latest-products، همان رفتار قبلی قالب). */
+function hodima_breadcrumb_excluded_slugs(): array {
+    $stored = get_option( HODIMA_BREADCRUMB_EXCLUDE_OPTION, false );
+    return array_values( array_filter( array_map( 'sanitize_title', (array) ( is_array( $stored ) ? $stored : [ 'latest-products' ] ) ) ) );
+}
+
+/** دسته‌های غیرمستثنا؛ اگر همه مستثنا باشند، همان فهرست اصلی. */
+function hodima_breadcrumb_filter_terms( array $terms ): array {
+    $excluded = hodima_breadcrumb_excluded_slugs();
+    $kept     = array_values( array_filter( $terms, static fn( $t ): bool => $t instanceof WP_Term && ! in_array( $t->slug, $excluded, true ) ) );
+    return $kept ?: $terms;
+}
+
+add_filter( 'woocommerce_breadcrumb_main_term', 'hodima_seo_breadcrumb_main_term', 10, 2 );
+
+/** مسیر راهنمای قابل‌مشاهده ووکامرس. */
+function hodima_seo_breadcrumb_main_term( $main_term, $terms ) {
+
+    // قالب قبل از 2.3.0 همین فیلتر را خودش دارد
+    if ( function_exists( 'hodima_theme_has_legacy_logic' ) && hodima_theme_has_legacy_logic() ) {
+        return $main_term;
+    }
+
+    if ( $main_term instanceof WP_Term && in_array( $main_term->slug, hodima_breadcrumb_excluded_slugs(), true ) ) {
+        return hodima_breadcrumb_filter_terms( (array) $terms )[0] ?? $main_term;
+    }
+
+    return $main_term;
+}
+
 /**
  * آیتم‌های مسیر راهنمای صفحه جاری (یا آرایه خالی).
  *
@@ -111,6 +154,8 @@ function hodima_breadcrumb_items(): array {
         
         $terms = get_the_terms($post_id, $taxonomy);
         if (!empty($terms) && !is_wp_error($terms)) {
+            // همان دسته‌های مستثنای مسیر راهنمای ووکامرس (مثل «جدیدترین محصولات»)
+            $terms     = hodima_breadcrumb_filter_terms( $terms );
             $main_term = $terms[0];
             $max_depth = -1;
             foreach ($terms as $t) {

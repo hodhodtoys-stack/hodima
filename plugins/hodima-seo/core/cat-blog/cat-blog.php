@@ -2,6 +2,11 @@
 /**
  * مسیر: wp-content/plugins/hodima-seo/core/cat-blog/cat-blog.php
  * پشتیبانی اختصاصی برای دسته‌بندی مقالات (وبلاگ) + رابط کاربری بهینه‌شده
+ *
+ * ویرایشگر پیشرفته توضیحات برای دسته محصول هم هست (قبلا در inc/enqueue.php
+ * قالب — بازسازی قالب، مرحله ۲). قالب پیش‌فرض وردپرس را پنهان و نام فیلدش را
+ * حذف می‌کند تا دو فیلد «description» در یک فرم نباشند (نسخه قالب فقط پنهان
+ * می‌کرد). تصویر دسته فقط برای دسته نوشته‌ها؛ دسته محصول تصویر ووکامرس را دارد.
  */
 declare(strict_types=1);
 
@@ -11,7 +16,19 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class Cat_Blog {
 
+    /** طبقه‌بندی‌هایی که ویرایشگر پیشرفته توضیحات دارند. */
+    private array $editor_taxonomies;
+
     public function __construct() {
+        $taxonomies = (array) apply_filters( 'hodima_rich_term_description_taxonomies', [ 'category', 'product_cat' ] );
+
+        // قالب هدیما قبل از 2.3.0 ویرایشگر دسته محصول را خودش (با همین شناسه‌ها) اضافه می‌کند
+        if ( function_exists( 'hodima_theme_has_legacy_logic' ) && hodima_theme_has_legacy_logic() ) {
+            $taxonomies = array_diff( $taxonomies, [ 'product_cat' ] );
+        }
+
+        $this->editor_taxonomies = array_values( $taxonomies );
+
         // ۱. فیلترهای امنیتی برای پذیرش HTML در توضیحات دسته
         remove_filter('pre_term_description', 'wp_filter_kses');
         add_filter('pre_term_description', 'wp_filter_post_kses');
@@ -23,8 +40,10 @@ class Cat_Blog {
         add_action('admin_footer', [$this, 'inject_js']);
 
         // ۳. هوک‌های ویرایشگر متنی
-        add_action('category_add_form_fields', [$this, 'add_editor_to_create_form'], 10);
-        add_action('category_edit_form_fields', [$this, 'add_editor_to_edit_form'], 10, 1);
+        foreach ( $this->editor_taxonomies as $taxonomy ) {
+            add_action( "{$taxonomy}_add_form_fields", [ $this, 'add_editor_to_create_form' ], 10 );
+            add_action( "{$taxonomy}_edit_form_fields", [ $this, 'add_editor_to_edit_form' ], 10, 1 );
+        }
 
         // ۴. هوک‌های آپلود تصویر
         add_action('category_add_form_fields', [$this, 'add_image_to_create_form'], 20);
@@ -46,14 +65,14 @@ class Cat_Blog {
 
     private function is_category_screen(): bool {
         global $current_screen;
-        return isset($current_screen->id) && $current_screen->id === 'edit-category';
+        return isset( $current_screen->id ) && in_array( $current_screen->id, array_map( static fn( string $tax ): string => "edit-{$tax}", $this->editor_taxonomies ), true );
     }
 
     public function inject_css(): void {
         if (!$this->is_category_screen()) return;
         
         echo '<style>
-            :root { --brand-primary: #25316a; --brand-secondary: #607bbd; }
+            #wpbody { --brand-primary: #25316a; --brand-secondary: #607bbd; }
             .term-description-wrap { display: none !important; }
             .term-description-wrap-custom { display: block !important; margin-bottom: 20px; }
             tr.term-description-wrap-custom { display: table-row !important; }

@@ -32,6 +32,22 @@ function hodima_product_stock_location( WC_Product $product ): string {
 }
 
 /**
+ * متن هر وضعیت انبار در صفحه محصول: [برچسب، پیام زیر آن (یا خالی)].
+ * قبلا داخل قالب (woocommerce/content-single-product.php) ثابت بود، جدا از
+ * گزینه‌های همین فیلد؛ حالا یک منبع. فیلتر hodima_product_stock_texts برای
+ * تغییر متن‌ها.
+ *
+ * @return array<string, array{label:string, notice:string}>
+ */
+function hodima_product_stock_texts(): array {
+	return (array) apply_filters( 'hodima_product_stock_texts', [
+		'iran'  => [ 'label' => 'موجود در انبار ایران', 'notice' => 'امکان ثبت پیش فاکتور دارد' ],
+		'china' => [ 'label' => 'موجود در انبار چین', 'notice' => 'امکان ثبت پیش خرید دارد' ],
+		'out'   => [ 'label' => 'اتمام موجودی', 'notice' => '' ],
+	] );
+}
+
+/**
  * availability در اسکیما — دقیقا همان چیزی که بازدیدکننده می‌بیند.
  *
  * نسخه قبلی فقط is_in_stock() ووکامرس را می‌خواند. روی همین سایت محصولی
@@ -185,9 +201,9 @@ function add_stock_location_custom_field() {
         'desc_tip'    => true,
         'options'     => array(
             ''             => 'انتخاب کنید',
-            'iran_stock'   => 'موجود در انبار ایران',
-            'china_stock'  => 'موجود در انبار چین',
-            'out_of_stock' => 'اتمام موجودی',
+            'iran_stock'   => hodima_product_stock_texts()['iran']['label'] ?? 'موجود در انبار ایران',
+            'china_stock'  => hodima_product_stock_texts()['china']['label'] ?? 'موجود در انبار چین',
+            'out_of_stock' => hodima_product_stock_texts()['out']['label'] ?? 'اتمام موجودی',
         ),
     ) );
 

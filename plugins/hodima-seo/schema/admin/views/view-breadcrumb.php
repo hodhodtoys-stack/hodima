@@ -18,6 +18,12 @@ if ( isset($_POST['hodima_save_breadcrumb_schema']) ) {
     update_option('hodima_breadcrumb_schema_status', $status);
     update_option('hodima_breadcrumb_home_label', $home_label);
 
+    // دسته‌های مستثنا از مسیر راهنمای محصول (قبلا نامک ثابت در قالب)
+    if ( isset( $_POST['hodima_bc_exclude_sent'] ) && defined( 'HODIMA_BREADCRUMB_EXCLUDE_OPTION' ) ) {
+        $bc_exclude = array_map( 'sanitize_title', (array) wp_unslash( $_POST['hodima_bc_exclude'] ?? [] ) );
+        update_option( HODIMA_BREADCRUMB_EXCLUDE_OPTION, array_values( array_unique( array_filter( $bc_exclude ) ) ), false );
+    }
+
     $notice_msg = '<div class="notice notice-success is-dismissible"><p>تنظیمات اسکیمای بردکرامب با موفقیت به‌روزرسانی شد.</p></div>';
 }
 
@@ -65,6 +71,30 @@ hodima_view_header(
                 <p class="description">کلمه‌ای که به عنوان اولین بخش مسیر (Root) به گوگل معرفی می‌شود.</p>
             </td>
         </tr>
+
+        <?php if ( function_exists( 'hodima_breadcrumb_excluded_slugs' ) && taxonomy_exists( 'product_cat' ) ) : ?>
+            <?php $bc_terms = get_terms( [ 'taxonomy' => 'product_cat', 'hide_empty' => false, 'orderby' => 'name' ] ); ?>
+            <?php $bc_selected = hodima_breadcrumb_excluded_slugs(); ?>
+            <tr>
+                <th scope="row">دسته‌هایی که دسته اصلی مسیر نمی‌شوند</th>
+                <td>
+                    <input type="hidden" name="hodima_bc_exclude_sent" value="1">
+                    <?php if ( is_array( $bc_terms ) && $bc_terms ) : ?>
+                        <fieldset class="hodima-bc-exclude">
+                            <legend class="screen-reader-text">دسته‌هایی که دسته اصلی مسیر نمی‌شوند</legend>
+                            <?php foreach ( $bc_terms as $bc_term ) : ?>
+                                <label>
+                                    <input type="checkbox" name="hodima_bc_exclude[]" value="<?php echo esc_attr( $bc_term->slug ); ?>" <?php checked( in_array( $bc_term->slug, $bc_selected, true ) ); ?>>
+                                    <?php echo esc_html( $bc_term->name ); ?>
+                                </label>
+                            <?php endforeach; ?>
+                        </fieldset>
+                        <style>.hd-wrap .hodima-bc-exclude { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: .5rem 1rem; border: 0; padding: 0; }</style>
+                    <?php endif; ?>
+                    <p class="description">دسته‌های عمومی مثل «جدیدترین محصولات» که موضوع محصول نیستند. اگر محصولی دسته دیگری هم داشته باشد، مسیر راهنما (هم در سایت و هم در اسکیما) از آن دسته ساخته می‌شود. دسته اصلی که در ویرایش محصول دستی انتخاب شده، تغییر نمی‌کند.</p>
+                </td>
+            </tr>
+        <?php endif; ?>
     </table>
 
     <?php hodima_view_form_footer(); ?>

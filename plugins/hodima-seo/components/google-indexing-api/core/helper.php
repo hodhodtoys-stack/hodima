@@ -247,6 +247,8 @@ final class Hodima_GI_Helper {
 	}
 
 	public static function litespeed_active(): bool {
-		return function_exists( 'hodima_litespeed_active' ) && hodima_litespeed_active();
+		// Hodima Core 1.2+ (قبلا فقط از قالب)؛ فالبک: تابع قالب
+		return ( function_exists( 'hodima_core_litespeed_active' ) && hodima_core_litespeed_active() )
+			|| ( function_exists( 'hodima_litespeed_active' ) && hodima_litespeed_active() );
 	}
 }

@@ -125,6 +125,7 @@ final class Hodima_Bot_Shield {
      */
     public static function litespeed_diagnostics(): array {
         $active = defined( 'LSCWP_V' ) || class_exists( '\\LiteSpeed\\Core' )
+            || ( function_exists( 'hodima_core_litespeed_active' ) && hodima_core_litespeed_active() )
             || ( function_exists( 'hodima_litespeed_active' ) && hodima_litespeed_active() );
 
         $agents    = $active ? self::litespeed_list( 'cache-exc_useragents' ) : null;

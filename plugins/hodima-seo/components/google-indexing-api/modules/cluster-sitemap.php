@@ -74,7 +74,7 @@ final class Hodima_Cluster_Sitemap {
 		}
 
 		// درخواست سایت‌مپ نباید در کش صفحه ذخیره شود
-		if ( function_exists( 'hodima_litespeed_active' ) && hodima_litespeed_active() ) {
+		if ( Hodima_GI_Helper::litespeed_active() ) {
 			do_action( 'litespeed_control_set_nocache', 'hodima: cluster sitemap' );
 		}
 

@@ -7,9 +7,9 @@
  * می‌شوند، پس این فایل قبل از بقیه اجرا می‌شود و توابعش در دسترس‌اند.
  *
  * وظیفه: وقتی افزونه LiteSpeed Cache فعال است،
- *   ۱. از کارهایی که لایت‌اسپید بهتر انجام می‌دهد کنار بکش (تداخل نساز)
- *   ۲. جلوی کش شدن نسخه‌های خطرناک را بگیر
- *   ۳. کش را در نقاط درستی که خود قالب داده را عوض می‌کند پاک کن
+ *   ۱. از بهینه‌سازی‌های نمایشی که لایت‌اسپید بهتر انجام می‌دهد کنار بکش
+ *   ۲. صفحه اصلی را وقتی بخش‌هایش عوض می‌شوند از کش پاک کن
+ * سیاست کش (نماهای فیلترشده، ترم‌ها، ربات‌ها) در Hodima Core است.
  */
 
 declare(strict_types=1);
@@ -28,6 +28,11 @@ function hodima_litespeed_active(): bool {
 
     if ( null !== $active ) {
         return $active;
+    }
+
+    // Hodima Core 1.2+ همین تشخیص (با همان فیلتر) را دارد؛ افزونه SEO هم از آنجا می‌خواند
+    if ( function_exists( 'hodima_core_litespeed_active' ) ) {
+        return $active = hodima_core_litespeed_active();
     }
 
     $active = defined( 'LSCWP_V' )
@@ -85,95 +90,14 @@ function hodima_litespeed_handles( string $feature ): bool {
 }
 
 /* ============================================================
- * ۲. بهداشت کش: نماهای فیلترشده کش نشوند
+ * ۲. سیاست کش (کش‌نکردن نماهای فیلترشده/مرتب‌شده، پاکسازی صفحه‌های ترم
+ *    بعد از ویرایش، کش پاسخ ربات‌ها) → افزونه Hodima Core
+ *    (includes/litespeed.php) — بازسازی قالب، مرحله ۲. این‌ها به داده
+ *    سایت مربوط‌اند نه ظاهر، و با عوض شدن قالب نباید از کار بیفتند.
  * ------------------------------------------------------------
- * هر ترکیبی از پارامترهای فیلتر و مرتب‌سازی یک آدرس یکتا می‌سازد:
- *
- *     ?orderby=price
- *     ?orderby=price&min_price=10000
- *     ?orderby=price&min_price=10000&filter_color=12
- *     ...
- *
- * تعداد این ترکیب‌ها عملا نامحدود است. اگر همه کش شوند، فضای کش
- * با نسخه‌هایی پر می‌شود که هرکدام شاید یک بار بازدید شوند، و
- * صفحات واقعی سایت زودتر از کش بیرون می‌افتند.
- *
- * این یک تصمیم *کارایی* است، نه سئو. هیچ متاتگ یا هدر رباتی
- * اینجا چاپ نمی‌شود.
+ * اینجا فقط پاکسازی صفحه اصلی می‌ماند: بخش‌های صفحه اصلی (اسلایدر
+ * محصولات، دسته‌ها، آخرین مقالات) را خود قالب نمایش می‌دهد.
  * ============================================================ */
-add_action( 'template_redirect', 'hodima_litespeed_skip_cache_for_variants', 1 );
-
-function hodima_litespeed_skip_cache_for_variants(): void {
-
-    if ( ! hodima_litespeed_active() || is_admin() || wp_doing_ajax() ) {
-        return;
-    }
-
-    if ( ! hodima_request_has_filter_params() ) {
-        return;
-    }
-
-    // API رسمی افزونه برای «این درخواست را کش نکن»
-    do_action( 'litespeed_control_set_nocache', 'hodima: filter/sort variant' );
-}
-
-/** آیا درخواست جاری پارامتر فیلتر یا مرتب‌سازی دارد؟ */
-function hodima_request_has_filter_params(): bool {
-
-    if ( empty( $_GET ) ) {
-        return false;
-    }
-
-    $params = (array) apply_filters( 'hodima_cache_skip_query_params', [
-        'orderby', 'min_price', 'max_price', 'stock_status',
-        'rating_filter', 'per_page', 'per_row',
-    ] );
-
-    foreach ( $params as $param ) {
-        if ( isset( $_GET[ $param ] ) ) {
-            return true;
-        }
-    }
-
-    foreach ( array_keys( $_GET ) as $key ) {
-        $key = (string) $key;
-        if ( str_starts_with( $key, 'filter_' ) || str_starts_with( $key, 'wc-ajax' ) ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/* ============================================================
- * ۳. پاکسازی کش در نقاطی که قالب داده را عوض می‌کند
- * ------------------------------------------------------------
- * ماژول‌های قالب ترنزینت‌های خودشان را پاک می‌کنند، ولی HTML
- * کش‌شده لایت‌اسپید دست‌نخورده می‌ماند. بدون این، مدیر تغییری
- * می‌دهد، ترنزینت پاک می‌شود، ولی بازدیدکننده تا انقضای کش صفحه
- * همان نسخه قدیمی را می‌بیند و فکر می‌کند تغییر ذخیره نشده.
- * ============================================================ */
-add_action( 'edited_term', 'hodima_litespeed_purge_term', 10, 3 );
-add_action( 'delete_term', 'hodima_litespeed_purge_term', 10, 3 );
-
-function hodima_litespeed_purge_term( $term_id, $tt_id = 0, $taxonomy = '' ): void {
-
-    if ( ! hodima_litespeed_active() ) {
-        return;
-    }
-
-    $taxonomy = (string) $taxonomy;
-
-    // ویژگی‌های محصول روی جدول مشخصات تمام محصولات آن ترم اثر می‌گذارند
-    if ( str_starts_with( $taxonomy, 'pa_' ) ) {
-        do_action( 'litespeed_purge_post_tag', (int) $term_id );
-        return;
-    }
-
-    if ( in_array( $taxonomy, [ 'product_cat', 'category' ], true ) ) {
-        do_action( 'litespeed_purge_post_tag', (int) $term_id );
-    }
-}
 
 /**
  * پاکسازی کش صفحه اصلی وقتی محصولی منتشر یا ویرایش می‌شود.
@@ -207,36 +131,4 @@ function hodima_litespeed_purge_home(): void {
     }
 
     do_action( 'litespeed_purge_url', home_url( '/' ) );
-}
-
-/* ============================================================
- * ۴. سشن ربات‌ها و کش صفحه
- * ------------------------------------------------------------
- * woo-optimizer.php برای ربات‌های موتور جستجو یک session handler
- * خنثی می‌گذارد تا ردیف سشن و کوکی ساخته نشود. این با کش صفحه
- * سازگار است، چون HTML خروجی تغییری نمی‌کند — فقط کوکی ساخته
- * نمی‌شود، و نبودِ کوکی دقیقا چیزی است که لایت‌اسپید برای کش کردن
- * لازم دارد.
- *
- * تنها حالت ناسازگار وقتی است که چیزی در قالب یا افزونه‌ای، خروجی
- * را بر اساس وجود سشن تغییر دهد. اگر چنین موردی دیدید، این فیلتر
- * را در functions.php برگردانید تا پاسخ ربات‌ها کش نشود:
- *
- *     add_filter( 'hodima_litespeed_nocache_bots', '__return_true' );
- * ============================================================ */
-add_action( 'template_redirect', 'hodima_litespeed_bot_cache_policy', 2 );
-
-function hodima_litespeed_bot_cache_policy(): void {
-
-    if ( ! hodima_litespeed_active() || is_admin() ) {
-        return;
-    }
-
-    if ( ! apply_filters( 'hodima_litespeed_nocache_bots', false ) ) {
-        return;
-    }
-
-    if ( function_exists( 'hodima_is_search_bot' ) && hodima_is_search_bot() ) {
-        do_action( 'litespeed_control_set_nocache', 'hodima: bot session handler active' );
-    }
 }

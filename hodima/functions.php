@@ -14,38 +14,10 @@ define( 'hodima_URI', get_template_directory_uri() );
 define( 'hodima_DIR', get_template_directory() );
 
 /* ==========================================================
-   Admin Font (Vazirmatn)
+   فونت Vazirmatn پیشخوان به افزونه Hodima Core منتقل شد
+   (includes/admin-font.php) — بازسازی قالب، مرحله ۲: فونت پیشخوان
+   به قالب سایت ربطی ندارد و با عوض شدن قالب نباید از بین برود.
 ========================================================== */
-add_action('admin_head', 'hodima_custom_admin_font');
-
-function hodima_custom_admin_font() {
-    // مسیردهی دقیق با استفاده از ثابتی که در بالای فایل تعریف کردید
-    $font_path = esc_url( hodima_URI . '/assets/fonts/' );
-    ?>
-    <style>
-        /* لود فونت‌ها در بک‌اند */
-        @font-face { font-family: 'Vazirmatn'; src: url('<?php echo $font_path; ?>Vazirmatn-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-        @font-face { font-family: 'Vazirmatn'; src: url('<?php echo $font_path; ?>Vazirmatn-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
-        @font-face { font-family: 'Vazirmatn'; src: url('<?php echo $font_path; ?>Vazirmatn-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-        @font-face { font-family: 'Vazirmatn'; src: url('<?php echo $font_path; ?>Vazirmatn-Black.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
-
-        /* قفل کردن فونت روی تمام ساختار پنل مدیریت */
-        body, 
-        #wpbody, 
-        .wp-core-ui, 
-        #wpadminbar *, 
-        .wp-admin input, 
-        .wp-admin select, 
-        .wp-admin textarea, 
-        .wp-admin button,
-        .wp-admin a,
-        .wp-admin p,
-        .wp-admin h1, .wp-admin h2, .wp-admin h3, .wp-admin h4, .wp-admin h5, .wp-admin h6 {
-            font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif !important;
-        }
-    </style>
-    <?php
-}
 
 /* ============================================================
  * 1. Home Modules
@@ -76,7 +48,7 @@ $inc_files = [
     'inc/enqueue.php',
     'inc/header.php',
     'inc/footer.php',
-    'inc/category-box.php',
+    // inc/category-box.php (کادر فرم دسته‌ها در پیشخوان) → Hodima Core: includes/admin-term-box.php
 ];
 
 foreach ( $inc_files as $file ) {
@@ -192,25 +164,49 @@ add_action( 'admin_notices', static function (): void {
     }
 
     $screen = get_current_screen();
-    if ( ! $screen || ! in_array( $screen->id, [ 'dashboard', 'themes', 'plugins' ], true ) ) {
+    if ( ! $screen || ! in_array( $screen->id, [ 'dashboard', 'themes', 'plugins', 'update-core' ], true ) ) {
         return;
     }
 
-    $missing = array_keys( array_filter( [
-        'Hodima Core'     => ! defined( 'HODIMA_CORE_PLUGIN_VERSION' ),
-        'Hodima SEO'      => ! defined( 'HODIMA_SEO_VERSION' ),
-        'Hodima Commerce' => ! defined( 'HODIMA_COMMERCE_VERSION' ),
-        'Hodima Media'    => ! defined( 'HODIMA_MEDIA_VERSION' ),
-    ] ) );
+    /*
+     * کمترین نسخه هر افزونه برای این نسخه قالب. از قالب 2.3.0 بخشی از منطق قبلی
+     * قالب (اسکیمای صفحه اصلی/فروشگاه/وبلاگ/ویدیوها، بستن XML-RPC، فونت پیشخوان،
+     * مرتب‌سازی کاتالوگ، …) در این نسخه‌های افزونه است؛ با افزونه قدیمی‌تر سایت
+     * خطا نمی‌دهد ولی آن امکانات تا به‌روزرسانی افزونه غایب‌اند.
+     */
+    $required = [
+        'Hodima Core'     => [ 'HODIMA_CORE_PLUGIN_VERSION', '1.2.0' ],
+        'Hodima SEO'      => [ 'HODIMA_SEO_VERSION', '1.11.0' ],
+        'Hodima Commerce' => [ 'HODIMA_COMMERCE_VERSION', '1.2.0' ],
+        'Hodima Media'    => [ 'HODIMA_MEDIA_VERSION', '1.3.2' ],
+    ];
 
-    if ( ! $missing ) {
-        return;
+    $missing  = [];
+    $outdated = [];
+
+    foreach ( $required as $name => [ $constant, $min ] ) {
+        if ( ! defined( $constant ) ) {
+            $missing[] = $name;
+        } elseif ( version_compare( (string) constant( $constant ), $min, '<' ) ) {
+            $outdated[] = "{$name} {$min}";
+        }
     }
 
-    printf(
-        '<div class="notice notice-info"><p><strong>%1$s</strong> %2$s <code>%3$s</code></p></div>',
-        esc_html( 'قالب هدیما:' ),
-        esc_html( 'این افزونه‌های همراه قالب فعال نیستند و امکاناتشان (سئو، فروشگاه، رسانه) در دسترس نیست:' ),
-        esc_html( implode( '، ', $missing ) )
-    );
+    if ( $missing ) {
+        printf(
+            '<div class="notice notice-info"><p><strong>%1$s</strong> %2$s <code>%3$s</code></p></div>',
+            esc_html( 'قالب هدیما:' ),
+            esc_html( 'این افزونه‌های همراه قالب فعال نیستند و امکاناتشان (سئو، فروشگاه، رسانه) در دسترس نیست:' ),
+            esc_html( implode( '، ', $missing ) )
+        );
+    }
+
+    if ( $outdated ) {
+        printf(
+            '<div class="notice notice-warning"><p><strong>%1$s</strong> %2$s <code>%3$s</code></p></div>',
+            esc_html( 'قالب هدیما:' ),
+            esc_html( 'بخشی از امکانات قبلی قالب (اسکیما، امنیت XML-RPC، فونت پیشخوان، مرتب‌سازی محصولات) به افزونه‌ها منتقل شده است. این افزونه‌ها را دست‌کم به این نسخه به‌روز کنید:' ),
+            esc_html( implode( '، ', $outdated ) )
+        );
+    }
 } );

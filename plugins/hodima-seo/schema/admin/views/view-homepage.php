@@ -54,6 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hodima_homepage_schem
         if (isset($_POST['hodima_schema_ai_languages'])) update_option('hodima_schema_ai_languages', sanitize_text_field( wp_unslash( $_POST['hodima_schema_ai_languages'] ) ));
         if (isset($_POST['hodima_schema_ai_audience'])) update_option('hodima_schema_ai_audience', sanitize_text_field( wp_unslash( $_POST['hodima_schema_ai_audience'] ) ));
 
+        // ۷. دسته‌های فهرست صفحه اصلی (ItemList #homepage-categories؛ قبلا ثابت در قالب)
+        if ( isset( $_POST['hodima_home_cats_sent'] ) && defined( 'HODIMA_SEO_FRONT_CATEGORIES_OPTION' ) ) {
+            $home_cats = array_map( 'sanitize_title', (array) wp_unslash( $_POST['hodima_home_cats'] ?? [] ) );
+            update_option( HODIMA_SEO_FRONT_CATEGORIES_OPTION, array_values( array_unique( array_filter( $home_cats ) ) ), false );
+        }
+
         $notice_msg = '<div class="notice notice-success is-dismissible"><p>تنظیمات سیستم یکپارچه گراف دانش و AI GEO با موفقیت ذخیره شد.</p></div>';
     }
 }
@@ -280,6 +286,30 @@ $hodima_section = static function ( string $icon, string $title ): void {
             <td><textarea name="hodima_schema_geo_socials" id="hodima_schema_geo_socials" rows="4" class="ltr" dir="ltr" placeholder="https://instagram.com/..."><?php echo esc_textarea($socials); ?></textarea></td>
         </tr>
     </table>
+
+    <?php if ( function_exists( 'hodima_seo_front_category_slugs' ) && taxonomy_exists( 'product_cat' ) ) : ?>
+        <?php
+        $home_cat_terms    = get_terms( [ 'taxonomy' => 'product_cat', 'hide_empty' => false, 'orderby' => 'name' ] );
+        $home_cat_selected = hodima_seo_front_category_slugs();
+        ?>
+        <?php $hodima_section( 'dashicons-category', 'دسته‌های فهرست صفحه اصلی' ); ?>
+        <p class="description">دسته‌های اصلی محصولات که در اسکیمای صفحه اصلی به‌صورت فهرست (ItemList) به گوگل معرفی می‌شوند. هیچ‌کدام انتخاب نشود = فهرست ساخته نمی‌شود.</p>
+        <input type="hidden" name="hodima_home_cats_sent" value="1">
+        <?php if ( is_array( $home_cat_terms ) && $home_cat_terms ) : ?>
+            <fieldset class="hodima-home-cats">
+                <legend class="screen-reader-text">دسته‌های فهرست صفحه اصلی</legend>
+                <?php foreach ( $home_cat_terms as $home_cat ) : ?>
+                    <label>
+                        <input type="checkbox" name="hodima_home_cats[]" value="<?php echo esc_attr( $home_cat->slug ); ?>" <?php checked( in_array( $home_cat->slug, $home_cat_selected, true ) ); ?>>
+                        <?php echo esc_html( $home_cat->name ); ?>
+                    </label>
+                <?php endforeach; ?>
+            </fieldset>
+            <style>.hd-wrap .hodima-home-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: .5rem 1rem; margin-block: 1rem; border: 0; padding: 0; }</style>
+        <?php else : ?>
+            <p>هنوز دسته محصولی ساخته نشده است.</p>
+        <?php endif; ?>
+    <?php endif; ?>
 
     <?php hodima_view_form_footer(); ?>
 </form>

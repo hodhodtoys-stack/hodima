@@ -1406,7 +1406,7 @@ Commerce 1.1.8 (woo-table ۲.۱۳.۰)، SEO 1.10.8. کاربر خروجی Rich R
 
 ### ۵۱.۱ نقشه راه (به ترتیب، هر مرحله نسخه جدا)
 1. **رفع باگ‌های قابل مشاهده** — همین بخش (انجام شد).
-2. **انتقال منطق باقی‌مانده به افزونه‌ها** (معیار: اسکیمای ۲۵ صفحه قبل/بعد یکسان):
+2. **انتقال منطق باقی‌مانده به افزونه‌ها** (معیار: اسکیمای ۲۵ صفحه قبل/بعد یکسان) — انجام شد، بخش ۵۲:
    - اسکیمای صفحه اصلی (`home/logic.php`: ItemList با ۱۷ نامک ثابت، ImageObject، VideoObject `#hero-video`) → SEO کنار `homepage-schema.php`، فهرست دسته‌ها از تنظیمات؛
    - ItemList فروشگاه/برچسب (`inc/enqueue.php`) → SEO؛ ItemList آرشیو وبلاگ (`archive-blog.php`) → SEO `blog-schema.php`؛ اسکیمای صفحه ویدیوها (`template-page-videos.php`) → Media `video-watch`؛
    - ویرایشگر توضیحات دسته محصول + مجوز HTML (`inc/enqueue.php`) و کادر فرم دسته‌ها (`inc/category-box.php`، jQuery) → SEO `cat-blog` با JS خالص؛ فونت پیشخوان (`functions.php`) → Core؛
@@ -1426,7 +1426,43 @@ Commerce 1.1.8 (woo-table ۲.۱۳.۰)، SEO 1.10.8. کاربر خروجی Rich R
 
 **تست:** `compare-with-ref.sh`: فقط تفاوت عمدی — `/news/#itemlist .name` «آرشیو بلاگ هدهدنما» → «آرشیو اخبار» (و صفحه ۲)؛ بقیه یکسان (جز زمان‌های نصب داده آزمایشی)، یکپارچگی سالم، بدون هشدار PHP. HTML رندرشده: `>>>` در `pillar`/`child` قبل بود و بعد نیست؛ H1 دسته «هدهدنما» → «اخبار». `[section09]` روی سایت تست (۲ از ۳ نوشته بدون تصویر): ۲ کادر جایگزین، صفر ارجاع به فایل ناموجود. لایت‌اسپید شبیه‌سازی‌شده (`LSCWP_V`): انتشار و ویرایش نوشته فقط `litespeed_purge_url` صفحه اصلی، هیچ `litespeed_purge_all`. اکشن `wp_ajax_nopriv_hodima_load_more_videos` ثبت نیست. `php -l` همه فایل‌های تغییرکرده. **محدودیت:** صفحه دسته محصول در ابزار تست فقط با هوک‌ها رندر می‌شود (ووکامرس شبیه‌سازی‌شده)؛ حذف `>>>` آن از روی diff بررسی شد.
 
-## ۵۲. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
+## ۵۲. بازسازی قالب: انتقال منطق باقی‌مانده به افزونه‌ها — مرحله ۴۵
+
+قالب 2.3.0، Core 1.2.0، SEO 1.11.0، Commerce 1.2.0، Media 1.3.2. مرحله ۲ نقشه راه بخش ۵۱.۱. قاعده: هر چیزی که با عوض شدن قالب نباید از بین برود (داده، اسکیما، امنیت، پیشخوان) در افزونه؛ قالب فقط نمایش.
+
+### ۵۲.۱ جابه‌جایی‌ها
+| قبلا در قالب | حالا | نکته |
+|---|---|---|
+| `home/logic.php`: `arian_*_homepage_schema_*` (ItemList `#homepage-categories`، `#image-N`، `#hero-video`) | SEO `schema/front-page-extra-schema.php` (`hodima_seo_front_*`) | ۱۷ نامک ثابت → گزینه `hodima_schema_home_category_slugs` («اسکیما ← صفحه اصلی»، چک‌باکس دسته‌ها؛ نبودن گزینه = همان ۱۷ نامک). نام سازنده تصویر: `hodima_corp_name` ← نام سازمان پنل (قبلا «بازرگانی هدهد» ثابت)؛ تصویر پیش‌فرض ویدیو: لوگوی سازمان (قبلا site icon یا مسیر حدسی). کش `hodima_seo_front_extra_graph_v1` |
+| `inc/enqueue.php`: `hodima_shop_*` (ItemList فروشگاه/برچسب) | SEO `schema/collection-lists-schema.php` (`hodima_seo_shop_*`) | — |
+| `archive-blog.php`: ItemList داخل قالب صفحه | همان فایل (`hodima_seo_blog_archive_itemlist`) | تشخیص صفحه با کوئری اصلی (`is_home()` یا آرشیوی که پست اولش `post` است) |
+| `template-page-videos.php`: کوئری + ItemList | Media `components/video-watch/videos-page.php` | `hodima_media_videos_page_query()` (static؛ قالب همان را نمایش می‌دهد، فالبک کوئری خودش) |
+| `inc/enqueue.php`: ویرایشگر توضیحات دسته محصول + kses | SEO `core/cat-blog` (ماژول «دسته‌های وبلاگ و محصول») | فیلتر `hodima_rich_term_description_taxonomies`. **رفع شد:** نسخه قالب textarea پیش‌فرض را فقط پنهان می‌کرد → دو فیلد `description` در فرم؛ cat-blog نامش را حذف می‌کند. مجوز HTML: `wp_filter_post_kses` cat-blog برای همه (نسخه قالب برای کاربر بدون `unfiltered_html` همان `wp_filter_kses` می‌گذاشت؛ post_kses هم اسکریپت را حذف می‌کند). `:root` در CSS آن → `#wpbody` |
+| `inc/enqueue.php`: `hodima_exclude_latest_products_breadcrumb` | SEO `schema/breadcrumb-schema.php` | گزینه `hodima_breadcrumb_exclude_slugs` («اسکیما ← بردکرامب»؛ پیش‌فرض `latest-products`). **حالا اسکیمای بردکرامب هم** دسته مستثنا را دسته اصلی نمی‌گیرد (قبلا فقط مسیر قابل‌مشاهده؛ ناهمخوانی). دسته اصلی دستی `_hodima_primary_*` دست نمی‌خورد |
+| `inc/enqueue.php`: مرتب‌سازی کاتالوگ | Commerce ماژول `catalog-sorting` | — |
+| `woo-optimizer.php` بخش ۵–۷، ۱۰، ۱۱ (پیشخوان ووکامرس، ابزارک‌ها، سشن ربات) | Commerce ماژول `store-optimizer` (+ `class-bot-session.php`، کلاس `Hodima_Commerce_Bot_Session`) | حذف CSS/JS ووکامرس از صفحه‌ها و jQuery در قالب ماند (نمایشی) |
+| `content-single-product.php`: متن وضعیت انبار | Commerce `hodima_product_stock_texts()` (فیلتر هم‌نام) | گزینه‌های فیلد «وضعیت موجودی» هم از همان؛ قالب فالبک دارد |
+| `wp-cleanup.php` بخش ۵ (XML-RPC، X-Pingback) | Core `includes/hardening.php` | فیلتر `hodima_disable_xmlrpc` هنگام اجرا خوانده می‌شود |
+| `00-litespeed.php` بخش ۲، پاکسازی ترم، بخش ۴ | Core `includes/litespeed.php` | `hodima_core_litespeed_active()`؛ `hodima_litespeed_active()` قالب به آن تکیه می‌کند. SEO (bot-shield، indexing helper، cluster-sitemap) حالا اول از Core می‌خواند (قبلا افزونه به تابع قالب وابسته بود) |
+| `functions.php`: فونت پیشخوان | Core `includes/admin-font.php` + `assets/fonts/` | `hodima_core_font_url()`؛ نقشه سایت XSL هم از آن (قبلا از پوشه قالب). فیلتر `hodima_admin_font` |
+| `inc/category-box.php` (jQuery) | Core `includes/admin-term-box.php` (JS خالص) | فیلتر `hodima_term_box_taxonomies`؛ CSS زیر `.hodima-postbox` (قبلا `.term-thumbnail-wrap` سراسری) |
+
+در قالب ماند: گالری، preload/defer، CSS حیاتی، حذف CSS/JS ووکامرس از صفحه‌های غیرفروشگاهی، `hodima_litespeed_handles()`، پاکسازی کش صفحه اصلی، کش اسلایدرها و بخش‌های صفحه اصلی. «مقالات مرتبط» `single-post.php` به مرحله ۴ (تنظیمات وبلاگ) موکول شد چون خروجی قابل‌مشاهده را عوض می‌کند.
+
+### ۵۲.۲ سازگاری ترتیب به‌روزرسانی (مهم برای مرحله‌های بعد)
+- **نام جدید در افزونه:** قالب 2.2.3 این توابع را بدون گارد تعریف می‌کند؛ هم‌نامی = «Cannot redeclare». همه نام‌های افزونه جدیدند (`hodima_seo_*`، `hodima_core_*`، `hodima_commerce_*`، `hodima_media_*`).
+- **`hodima_theme_has_legacy_logic()`** (Core، `hodima-core.php`): قالب «Hodima» قبل از 2.3.0. هر کد منتقل‌شده در این حالت کاری نمی‌کند (بدون تکرار: دو ویرایشگر با یک شناسه، دو کادر، اسکیمای تکراری). در افزونه‌ها با `function_exists`.
+- **قالب جدید + افزونه قدیمی:** بدون خطا، ولی امکانات منتقل‌شده غایب‌اند؛ اعلان پیشخوان قالب (پیشخوان، پوسته‌ها، افزونه‌ها، به‌روزرسانی‌ها) کمترین نسخه هر افزونه را می‌گوید.
+
+**تست:**
+- `compare-with-ref.sh`: اسکیمای هر ۲۵ صفحه **یکسان** (حالا از افزونه‌ها؛ تأیید شد توابع قالب دیگر تعریف نمی‌شوند و توابع افزونه هستند)، یکپارچگی سالم، بدون هشدار PHP.
+- ترکیبی: قالب HEAD (2.2.3) + افزونه‌های جدید → یکسان با HEAD، بدون تکرار؛ قالب جدید + افزونه‌های HEAD → بدون خطا، ItemListها و `#image-1` غایب (مورد انتظار) و اعلان «به‌روز کنید» با هر چهار نسخه.
+- نصب واقعی از ZIP (`Theme_Upgrader`/`Plugin_Upgrader` + `activate_plugin`، هر مرحله پروسه جدا) در چهار سناریو: نصب تازه «اول قالب» و «اول افزونه‌ها»، به‌روزرسانی از نسخه‌های فعلی «اول افزونه‌ها» (`legacy=1` تا به‌روزرسانی قالب) و «اول قالب»: همه فعال‌سازی‌ها ok، صفحه اصلی بدون خطا با یک تگ JSON-LD.
+- کارکردی (ووکامرس شبیه‌سازی‌شده): محصول در «جدیدترین محصولات» + «اکسسوری مو» → مسیر ووکامرس و اسکیما «اکسسوری مو»؛ با فهرست خالی «جدیدترین محصولات». مرتب‌سازی `price-desc` → `meta_value_num`/`_price`/DESC و چهار برچسب. فهرست دسته‌های صفحه اصلی: پیش‌فرض ۱۷، انتخاب [hair, latest-products] → ItemList همان دو، خالی → بدون ItemList. ذخیره فرم «صفحه اصلی» و «بردکرامب» (POST شبیه‌سازی‌شده) → گزینه ذخیره و چک‌باکس تیک‌خورده.
+- پیشخوان: صفحه‌های هاب و ماژول‌ها (دو ماژول جدید Commerce)، «اسکیما ← صفحه اصلی/بردکرامب» بدون خطا؛ فونت از Core. صفحه دسته محصول (افزودن/ویرایش) و دسته نوشته: یک ویرایشگر پیشرفته، تصویر فقط برای دسته نوشته؛ Chromium: کادر «افزودن دسته تازه»/«ویرایش دسته» ساخته شد و فقط **یک** فیلد `description` در فرم.
+- `php -l` همه فایل‌ها. **محدودیت:** ووکامرس واقعی و لایت‌اسپید واقعی نیست؛ سشن ربات (کلاس) و پیشخوان ووکامرس روی سایت دیده شود.
+
+## ۵۳. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
 
 | مسیر | کارکرد | پیشنهاد مکان |
 |---|---|---|

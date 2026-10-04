@@ -42,16 +42,9 @@ add_action( 'init', fn() => remove_action( 'wp_head', 'wc_generator_tag' ) );
 //
 // این پوشه از این به بعد هیچ کد سئویی ندارد.
 
-// ۵. غیرفعال کردن منوی مارکتینگ، تبلیغات و امکانات اضافی (PHP 8.4 Optimized)
-add_filter( 'woocommerce_marketing_menu_items', '__return_empty_array' );
-add_filter( 'woocommerce_helper_suppress_admin_notices', '__return_true' );
-add_filter( 'woocommerce_admin_features', fn( $features ) => array_values( array_diff( $features, [ 'marketing', 'analytics', 'wc-pay-promotion', 'wc-pay-welcome-page', 'suggestions' ] ) ) );
-
-// ۶. غیرفعال کردن ابزارک سنگین وضعیت داشبورد
-add_action( 'wp_dashboard_setup', fn() => remove_meta_box( 'woocommerce_dashboard_status', 'dashboard', 'normal' ), 99 );
-
-// ۷. متوقف کردن سیستم ثبت ادمین نوت‌ها (جلوگیری از تورم دیتابیس)
-add_filter( 'woocommerce_admin_notes_default_sources', '__return_empty_array' );
+// ۵ تا ۷. پاکسازی پیشخوان ووکامرس (منوی بازاریابی، پیشنهادها، ابزارک وضعیت،
+// یادداشت‌های پیشخوان) → افزونه Hodima Commerce، ماژول «سبک‌سازی ووکامرس»
+// (inc/woocommerce/store-optimizer.php) — بازسازی قالب، مرحله ۲.
 
 // ۸. غیرفعال کردن SelectWoo در صفحات غیرضروری
 add_action( 'wp_enqueue_scripts', function() {
@@ -106,80 +99,6 @@ function hodima_maybe_dequeue_jquery(): void {
     }
 }
 
-// ۱۰. آزادسازی رم سرور با حذف ابزارک‌های پیش‌فرض ووکامرس
-add_action( 'widgets_init', function() {
-    $woo_widgets = [
-        'WC_Widget_Products', 'WC_Widget_Product_Categories', 
-        'WC_Widget_Product_Tag_Cloud', 'WC_Widget_Cart', 
-        'WC_Widget_Layered_Nav', 'WC_Widget_Layered_Nav_Filters', 
-        'WC_Widget_Price_Filter', 'WC_Widget_Product_Search', 
-        'WC_Widget_Top_Rated_Products', 'WC_Widget_Recent_Reviews', 
-        'WC_Widget_Recently_Viewed', 'WC_Widget_Rating_Filter'
-    ];
-    foreach ( $woo_widgets as $widget ) {
-        unregister_widget( $widget );
-    }
-}, 99 );
-
-// ۱۱. جلوگیری از ایجاد سشن (Session) برای ربات‌های موتور جستجو
-// ------------------------------------------------------------------
-// نسخه قبلی یک کلاس ساختگی مستقل معرفی می‌کرد که از WC_Session ارث‌بری
-// نداشت و متدهایی مثل get_customer_id() و forget_session() را نداشت.
-// نتیجه: Fatal Error روی ترافیک Googlebot — یعنی دقیقا روی حساس‌ترین
-// ترافیک سایت. حالا کلاس از WC_Session_Handler واقعی ارث می‌برد و فقط
-// متدهای نوشتن در دیتابیس و کوکی را خنثی می‌کند.
-add_filter( 'woocommerce_session_handler', 'hodima_bot_session_handler' );
-
-function hodima_bot_session_handler( $session_class ) {
-
-    if ( ! function_exists( 'hodima_is_search_bot' ) || ! hodima_is_search_bot() ) {
-        return $session_class;
-    }
-
-    // فقط درخواست‌های خواندنی. هر POST/AJAX مسیر عادی ووکامرس را می‌رود.
-    if ( ( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) !== 'GET' || wp_doing_ajax() ) {
-        return $session_class;
-    }
-
-    if ( ! class_exists( 'WC_Session_Handler' ) ) {
-        return $session_class;
-    }
-
-    if ( ! class_exists( 'WC_Session_Handler_Bot_Dummy', false ) ) {
-
-        class WC_Session_Handler_Bot_Dummy extends WC_Session_Handler {
-
-            public function init() {
-                $this->_customer_id = 'bot';
-                $this->_data        = [];
-                $this->_dirty       = false;
-            }
-
-            public function get_session_cookie() {
-                return false;
-            }
-
-            public function set_customer_session_cookie( $set ) {}
-
-            public function has_session() {
-                return false;
-            }
-
-            public function get_session( $customer_id, $default = false ) {
-                return [];
-            }
-
-            public function save_data( $old_session_key = 0 ) {}
-
-            public function update_session_timestamp( $customer_id, $timestamp ) {}
-
-            public function destroy_session() {}
-
-            public function forget_session() {}
-
-            public function cleanup_sessions() {}
-        }
-    }
-
-    return 'WC_Session_Handler_Bot_Dummy';
-}
+// ۱۰ و ۱۱. حذف ابزارک‌های قدیمی ووکامرس و سشن خنثی برای ربات‌های موتور جستجو
+// → افزونه Hodima Commerce، ماژول «سبک‌سازی ووکامرس» (store-optimizer.php).
+// این فایل فقط بهینه‌سازی‌های نمایشی (CSS/JS ووکامرس در صفحه‌ها) را دارد.

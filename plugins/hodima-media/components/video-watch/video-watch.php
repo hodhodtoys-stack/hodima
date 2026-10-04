@@ -20,6 +20,7 @@ $hod_video_watch_files = [
     'meta-boxes.php',
     'vid-w-schema.php',
     'db-video-watch.php',
+    'videos-page.php', // کوئری و اسکیمای صفحه فهرست ویدئوها (قبلا داخل قالب)
 ];
 
 foreach ($hod_video_watch_files as $hod_video_watch_file) {

@@ -36,16 +36,24 @@ $hp_min_total = (float) get_post_meta( $product->get_id(), '_wholesale_price', t
 $hp_sku       = (string) $product->get_sku();
 $hp_modified  = $product->get_date_modified();
 
-$hp_stock_labels = [
-	'iran'  => 'موجود در انبار ایران',
-	'china' => 'موجود در انبار چین',
-	'out'   => 'اتمام موجودی',
+/*
+ * متن وضعیت‌های انبار از Hodima Commerce (همان گزینه‌های فیلد «وضعیت موجودی»)؛
+ * قبلا اینجا ثابت بود — بازسازی قالب، مرحله ۲. بدون افزونه، متن‌های پیش‌فرض.
+ */
+$hp_stock_texts = function_exists( 'hodima_product_stock_texts' ) ? hodima_product_stock_texts() : [
+	'iran'  => [ 'label' => 'موجود در انبار ایران', 'notice' => 'امکان ثبت پیش فاکتور دارد' ],
+	'china' => [ 'label' => 'موجود در انبار چین', 'notice' => 'امکان ثبت پیش خرید دارد' ],
+	'out'   => [ 'label' => 'اتمام موجودی', 'notice' => '' ],
 ];
 
-$hp_notices = [
-	'iran'  => [ 'امکان ثبت پیش فاکتور دارد', 'custom-stock-notice-iran' ],
-	'china' => [ 'امکان ثبت پیش خرید دارد', 'custom-stock-notice-china' ],
-];
+$hp_stock_labels = array_filter( array_map( static fn( $t ): string => (string) ( $t['label'] ?? '' ), $hp_stock_texts ) );
+
+$hp_notices = [];
+foreach ( $hp_stock_texts as $hp_key => $hp_text ) {
+	if ( '' !== (string) ( $hp_text['notice'] ?? '' ) ) {
+		$hp_notices[ $hp_key ] = [ (string) $hp_text['notice'], 'custom-stock-notice-' . sanitize_html_class( (string) $hp_key ) ];
+	}
+}
 
 $hp_can_buy = ( 'out' !== $hp_location );
 

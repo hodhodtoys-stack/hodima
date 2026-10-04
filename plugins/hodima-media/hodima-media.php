@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Media
  * Plugin URI:        https://hodima.com
  * Description:       رسانه و محتوای تعاملی هدیما: استوری، ویدیو با شمارش بازدید، اسلایدر، سیستم رسانه (ویدیو، پادکست، FAQ، Google Discover)، اعلان‌ها، باکس‌های بازشونده و جدول داینامیک.
- * Version:           1.3.1
+ * Version:           1.3.2
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_MEDIA_VERSION = '1.3.1';
+const HODIMA_MEDIA_VERSION = '1.3.2';
 define( 'HODIMA_MEDIA_FILE', __FILE__ );
 define( 'HODIMA_MEDIA_DIR', __DIR__ );
 define( 'HODIMA_MEDIA_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );

@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           1.10.8
+ * Version:           1.11.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '1.10.8';
+const HODIMA_SEO_VERSION = '1.11.0';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -63,6 +63,8 @@ function hodima_seo_modules(): array {
 				'schema/page-schema-pro.php',
 				'schema/product-schema-pro.php',
 				'schema/schema-cleaner.php',
+				'schema/front-page-extra-schema.php',   // از قالب (home/logic.php) — بازسازی قالب، مرحله ۲
+				'schema/collection-lists-schema.php',   // از قالب (فروشگاه/برچسب و آرشیو وبلاگ)
 				$schema_admin,
 			],
 			'settings'    => 'admin.php?page=hodima-schema',
@@ -130,8 +132,8 @@ function hodima_seo_modules(): array {
 			'icon'        => 'dashicons-networking',
 		],
 		'cat-blog' => [
-			'title'       => 'دسته‌های وبلاگ',
-			'description' => 'ویرایشگر پیشرفته و تصویر برای دسته‌بندی‌های نوشته‌ها.',
+			'title'       => 'دسته‌های وبلاگ و محصول',
+			'description' => 'ویرایشگر پیشرفته توضیحات (HTML، تصویر، تیتر) برای دسته نوشته‌ها و دسته محصولات، و تصویر شاخص دسته نوشته‌ها.',
 			'files'       => [ 'core/cat-blog/cat-blog.php' ],
 			'settings'    => 'edit-tags.php?taxonomy=category',
 			'icon'        => 'dashicons-category',

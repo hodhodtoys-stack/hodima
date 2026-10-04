@@ -39,7 +39,12 @@ $hvp_latin = static fn( $v ): string => strtr( (string) $v, [
 	'٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
 ] );
 
-$video_query = new WP_Query( [
+/*
+ * کوئری از افزونه Hodima Media (components/video-watch/videos-page.php)؛ همان
+ * کوئری که ItemList اسکیمای این صفحه را می‌سازد (قبلا اسکیما همین‌جا بود —
+ * بازسازی قالب، مرحله ۲). بدون افزونه، همان کوئری اینجا.
+ */
+$video_query = function_exists( 'hodima_media_videos_page_query' ) ? hodima_media_videos_page_query() : new WP_Query( [
 	'post_type'           => 'video',
 	'post_status'         => 'publish',
 	'posts_per_page'      => $hvp_per_page,
@@ -120,8 +125,6 @@ get_header(); ?>
 
 				<div class="videos-page-grid" id="videos-grid">
 					<?php
-					$hvp_list     = [];
-					$hvp_position = ( $hvp_paged - 1 ) * $hvp_per_page + 1;
 					$hvp_index    = 0;
 
 					while ( $video_query->have_posts() ) :
@@ -130,25 +133,6 @@ get_header(); ?>
 						$post_id = (int) get_the_ID();
 						$url     = (string) get_permalink();
 						$title   = (string) get_the_title();
-
-						/*
-						 * فهرست ساختاریافته: فقط آدرس صفحه هر ویدئو.
-						 *
-						 * نسخه قبلی برای هر کارت یک VideoObject کامل با همان شناسه
-						 * «<آدرس ویدئو>#video» می‌ساخت که صفحه خود ویدئو هم دارد —
-						 * ولی با داده ناقص و متفاوت، یعنی دو تعریف متناقض از یک
-						 * موجودیت. داده ویدئو را از media-system با context
-						 * نامعتبر «video» می‌خواند (که آن را ترم تفسیر می‌کند)، پس
-						 * contentUrl هرگز پیدا نمی‌شد و embedUrl روی صفحه تماشا
-						 * می‌رفت — الگویی که راهنمای گوگل صراحتا منع کرده.
-						 * الگوی «صفحه خلاصه» گوگل: ItemList از آدرس‌ها؛ نود کامل
-						 * ویدئو روی صفحه خودش (vid-w-schema.php).
-						 */
-						$hvp_list[] = [
-							'@type'    => 'ListItem',
-							'position' => $hvp_position++,
-							'url'      => $url,
-						];
 
 						// کاور ویدئو، مثل صفحه تماشا؛ نسخه قبلی فقط تصویر شاخص را نشان می‌داد
 						$cover_url = (string) get_post_meta( $post_id, '_hod_video_thumbnail', true );
@@ -217,42 +201,7 @@ get_header(); ?>
 					</nav>
 				<?php endif; ?>
 
-				<?php
-				/*
-				 * فهرست به نود صفحه اصلی (CollectionPage «#webpage» از
-				 * homepage-schema.php) متصل می‌شود.
-				 */
-				$hvp_base = function_exists( 'hodima_get_canonical_url' ) && hodima_get_canonical_url() !== ''
-					? hodima_get_canonical_url()
-					: $hvp_page_url;
-
-				// گراف واحد صفحه (hodima-core) — در فوتر با بقیه نودها چاپ می‌شود.
-				// نود صفحه با همان شناسه «#webpage» گراف اصلی ادغام می‌شود.
-				$hvp_master_ran = function_exists( 'hodima_schema_webpage_emitted' ) && hodima_schema_webpage_emitted();
-
-				hodima_schema_add( [
-					'@graph' => [
-						$hvp_master_ran
-							? [ '@id' => $hvp_base . '#webpage', 'mainEntity' => [ '@id' => $hvp_base . '#itemlist' ] ]
-							: [
-								'@type'      => 'CollectionPage',
-								'@id'        => $hvp_base . '#webpage',
-								'url'        => $hvp_base,
-								'name'       => $hvp_page_title,
-								'isPartOf'   => [ '@id' => trailingslashit( home_url() ) . '#website' ],
-								'mainEntity' => [ '@id' => $hvp_base . '#itemlist' ],
-								'inLanguage' => 'fa-IR',
-							],
-						[
-							'@type'            => 'ItemList',
-							'@id'              => $hvp_base . '#itemlist',
-							'mainEntityOfPage' => [ '@id' => $hvp_base . '#webpage' ],
-							'numberOfItems'    => (int) $video_query->found_posts,
-							'itemListElement'  => $hvp_list,
-						],
-					],
-				], 'theme: template-page-videos.php' );
-				?>
+				<?php // ItemList ویدئوهای این صفحه: Hodima Media (components/video-watch/videos-page.php) ?>
 
 			<?php else : ?>
 				<p class="videos-page-empty">هیچ ویدئویی یافت نشد.</p>

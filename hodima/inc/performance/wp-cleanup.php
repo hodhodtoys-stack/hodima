@@ -121,13 +121,8 @@ add_action( 'wp_enqueue_scripts', static function (): void {
 add_action( 'wp_footer', static fn() => wp_deregister_script( 'wp-embed' ) );
 
 /* ============================================================
- * ۵. XML-RPC و Pingback
+ * ۵. XML-RPC و Pingback → افزونه Hodima Core (includes/hardening.php)
+ * ------------------------------------------------------------
+ * بستن XML-RPC تصمیم امنیتی سایت است و با عوض شدن قالب نباید بی‌صدا دوباره
+ * باز شود — بازسازی قالب، مرحله ۲.
  * ============================================================ */
-add_filter( 'xmlrpc_enabled', '__return_false' );
-
-add_filter( 'wp_headers', 'hodima_remove_pingback_header' );
-
-function hodima_remove_pingback_header( array $headers ): array {
-    unset( $headers['X-Pingback'] );
-    return $headers;
-}

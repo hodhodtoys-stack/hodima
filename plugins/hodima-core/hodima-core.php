@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Core
  * Plugin URI:        https://hodima.com
  * Description:       کتابخانه مشترک افزونه‌های هدیما: تشخیص IP واقعی (سازگار با Cloudflare)، محدودیت نرخ، تشخیص ربات موتور جستجو، موتور Canonical، گراف واحد اسکیما (JSON-LD) و بررسی محتوای محافظت‌شده. پیش‌نیاز Hodima SEO، Hodima Commerce و Hodima Media.
- * Version:           1.1.8
+ * Version:           1.2.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Author:            آرین فتحی
@@ -17,7 +17,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 // پیشوند HODIMA_CORE_PLUGIN_ چون HODIMA_CORE_* قبلا در ماژول IndexNow (افزونه SEO) استفاده شده است.
-const HODIMA_CORE_PLUGIN_VERSION = '1.1.8';
+const HODIMA_CORE_PLUGIN_VERSION = '1.2.0';
 define( 'HODIMA_CORE_PLUGIN_FILE', __FILE__ );
 define( 'HODIMA_CORE_PLUGIN_DIR', __DIR__ );
 define( 'HODIMA_CORE_PLUGIN_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -36,6 +36,27 @@ function hodima_legacy_theme_active(): bool {
 	if ( null === $legacy ) {
 		$theme  = wp_get_theme( get_template() );
 		$legacy = 'Hodima' === $theme->get( 'Name' ) && version_compare( (string) $theme->get( 'Version' ), '2.0.0', '<' );
+	}
+
+	return $legacy;
+}
+
+/**
+ * آیا قالب هدیما قبل از 2.3.0 فعال است که این منطق‌ها را هنوز خودش اجرا می‌کند؟
+ *
+ * از قالب 2.3.0 (بازسازی قالب، مرحله ۲) اسکیمای صفحه اصلی/فروشگاه/وبلاگ/ویدیوها،
+ * XML-RPC، سیاست کش لایت‌اسپید، فونت و کادر فرم دسته‌ها در پیشخوان، بهینه‌سازی
+ * پیشخوان ووکامرس، سشن ربات‌ها و مرتب‌سازی کاتالوگ در افزونه‌ها هستند. اگر
+ * افزونه‌ها زودتر از قالب به‌روز شوند، نسخه افزونه این کارها را انجام نمی‌دهد
+ * تا دوبار اجرا نشوند (مثلا دو ویرایشگر توضیحات با یک شناسه در فرم دسته).
+ * نام توابع افزونه با قالب قدیمی فرق دارد، پس خطای «Cannot redeclare» هم نیست.
+ */
+function hodima_theme_has_legacy_logic(): bool {
+	static $legacy = null;
+
+	if ( null === $legacy ) {
+		$theme  = wp_get_theme( get_template() );
+		$legacy = 'Hodima' === $theme->get( 'Name' ) && version_compare( (string) $theme->get( 'Version' ), '2.3.0', '<' );
 	}
 
 	return $legacy;
@@ -82,9 +103,16 @@ require_once HODIMA_CORE_PLUGIN_DIR . '/includes/schema-graph.php';
 // همه‌جا لود می‌شود، نه فقط پیشخوان: بررسی زمان‌بندی‌شده با WP-Cron هم اجرا می‌شود.
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/updates.php';
 
+// منتقل‌شده از قالب (بازسازی قالب، مرحله ۲): سیاست کش لایت‌اسپید، بستن XML-RPC،
+// فونت پیشخوان (hodima_core_font_url در فرانت هم برای نقشه سایت XSL لازم است)
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/litespeed.php';
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/hardening.php';
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-font.php';
+
 // پنل «ابزارهای هدیما» در پیشخوان: وضعیت، روشن/خاموش کردن ماژول‌ها و
 // سیستم طراحی مشترک همه صفحه‌های افزونه‌ها (هدر، تب‌ها، فوتر، عرض ۹۵٪)
 if ( is_admin() ) {
 	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-hub.php';
 	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-ui.php';
+	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-term-box.php';
 }

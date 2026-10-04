@@ -520,9 +520,9 @@ function hodima_sitemap_render() {
                     <head>
                         <title>نقشه سایت هدیما (XML Sitemap)</title>
                         <style>
-                            <?php // فقط فونت قالب (فایل محلی)، نه Tahoma/Arial؛ این صفحه XSL استایل قالب را ندارد ?>
-                            @font-face { font-family: 'Vazirmatn'; src: url('<?php echo esc_url( get_template_directory_uri() . '/assets/fonts/Vazirmatn-Regular.woff2' ); ?>') format('woff2'); font-weight: 400; font-display: swap; }
-                            @font-face { font-family: 'Vazirmatn'; src: url('<?php echo esc_url( get_template_directory_uri() . '/assets/fonts/Vazirmatn-Bold.woff2' ); ?>') format('woff2'); font-weight: 700; font-display: swap; }
+                            <?php // فونت محلی همراه Hodima Core (فالبک: فونت قالب)، نه Tahoma/Arial؛ این صفحه XSL استایل قالب را ندارد ?>
+                            @font-face { font-family: 'Vazirmatn'; src: url('<?php echo esc_url( function_exists( 'hodima_core_font_url' ) ? hodima_core_font_url( 'Regular' ) : get_template_directory_uri() . '/assets/fonts/Vazirmatn-Regular.woff2' ); ?>') format('woff2'); font-weight: 400; font-display: swap; }
+                            @font-face { font-family: 'Vazirmatn'; src: url('<?php echo esc_url( function_exists( 'hodima_core_font_url' ) ? hodima_core_font_url( 'Bold' ) : get_template_directory_uri() . '/assets/fonts/Vazirmatn-Bold.woff2' ); ?>') format('woff2'); font-weight: 700; font-display: swap; }
                             body { font-family: 'Vazirmatn', sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; line-height: 1.5; }
                             .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 20px; border: 1px solid #e2e8f0; }
                             .header { border-bottom: 2px solid #25316a; padding-bottom: 15px; margin-bottom: 20px; }
