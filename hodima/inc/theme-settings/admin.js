@@ -8,7 +8,9 @@
 (() => {
 	'use strict';
 
-	/** یک انتخابگر تصویر: دکمه انتخاب، پیش‌نمایش، دکمه حذف و فیلد مخفی شناسه. */
+	const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	/** یک انتخابگر تصویر: دکمه انتخاب، پیش‌نمایش (با حالت «بدون تصویر»)، دکمه حذف و فیلد مخفی شناسه. */
 	const initMediaField = (root) => {
 		const input = root.querySelector('[data-hodima-media-input]');
 		const preview = root.querySelector('[data-hodima-media-preview]');
@@ -22,12 +24,14 @@
 		let frame = null;
 
 		const render = (attachment) => {
-			preview.replaceChildren();
+			preview.querySelector('img')?.remove();
 
 			if (!attachment) {
 				input.value = '';
-				preview.hidden = true;
+				preview.classList.add('is-empty');
 				removeBtn.hidden = true;
+				selectBtn.textContent = 'انتخاب تصویر';
+				input.dispatchEvent(new Event('change', { bubbles: true }));
 				return;
 			}
 
@@ -37,10 +41,13 @@
 			img.alt = '';
 			img.decoding = 'async';
 
-			preview.append(img);
+			preview.prepend(img);
+			preview.classList.remove('is-empty');
 			input.value = String(attachment.id);
-			preview.hidden = false;
 			removeBtn.hidden = false;
+			selectBtn.textContent = 'تغییر تصویر';
+			// فیلد مخفی رویداد ندارد؛ برای نشانه «ذخیره‌نشده»
+			input.dispatchEvent(new Event('change', { bubbles: true }));
 		};
 
 		selectBtn.addEventListener('click', () => {
@@ -67,87 +74,180 @@
 	};
 
 	/**
-	 * تب‌های واقعی: هر بخش پنل جداگانه دارد (الگوی ARIA tabs).
-	 * بدون JS تب‌ها لینک ?tab=… هستند و سرور پنل درست را نشان می‌دهد؛ اینجا
-	 * جابه‌جایی بدون بارگذاری مجدد انجام می‌شود، آدرس صفحه و آدرس بازگشت فرم
-	 * (_wp_http_referer) به‌روز می‌شوند تا بعد از «ذخیره» همان تب باز بماند.
+	 * منوی کناری: هر تب لینک ?tab=… است (بدون JS سرور پنل درست را نشان می‌دهد).
+	 * اینجا جابه‌جایی بدون بارگذاری مجدد انجام می‌شود، آدرس صفحه و آدرس بازگشت
+	 * فرم (_wp_http_referer) به‌روز می‌شوند تا بعد از «ذخیره» همان تب باز بماند.
 	 */
-	const initTabs = () => {
-		const list = document.querySelector('[data-hodima-tabs]');
-		if (!list) {
-			return;
+	const initNav = () => {
+		const nav = document.querySelector('[data-hodima-nav]');
+		if (!nav) {
+			return null;
 		}
 
-		const tabs = [...list.querySelectorAll('[role="tab"]')];
-		const referer = document.querySelector('.hodima-settings__form input[name="_wp_http_referer"]');
+		const links = [...nav.querySelectorAll('[data-tab]')];
+		const referer = document.querySelector('[data-hodima-form] input[name="_wp_http_referer"]');
+		const panelOf = (link) => document.getElementById(link.getAttribute('aria-controls'));
 
-		const activate = (tab, focus = false) => {
-			tabs.forEach((item) => {
-				const selected = item === tab;
-				item.setAttribute('aria-selected', String(selected));
-				item.tabIndex = selected ? 0 : -1;
-				const panel = document.getElementById(item.getAttribute('aria-controls'));
+		const activate = (link, { focus = false } = {}) => {
+			links.forEach((item) => {
+				const selected = item === link;
+				if (selected) {
+					item.setAttribute('aria-current', 'page');
+				} else {
+					item.removeAttribute('aria-current');
+				}
+				const panel = panelOf(item);
 				if (panel) {
 					panel.hidden = !selected;
 				}
 			});
 
 			const url = new URL(window.location.href);
-			url.searchParams.set('tab', tab.dataset.tab);
+			url.searchParams.set('tab', link.dataset.tab);
 			url.searchParams.delete('settings-updated');
 			window.history.replaceState(null, '', url);
 
 			if (referer) {
 				const back = new URL(referer.value, window.location.origin);
-				back.searchParams.set('tab', tab.dataset.tab);
+				back.searchParams.set('tab', link.dataset.tab);
 				back.searchParams.delete('settings-updated');
 				referer.value = back.pathname + back.search;
 			}
 
+			// تب فعال در منوی لغزنده موبایل دیده شود
+			link.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+
+			// صفحه‌خوان: تمرکز روی عنوان تب تازه (فقط با کیبورد؛ کلیک موس صفحه را جابه‌جا نکند)
 			if (focus) {
-				tab.focus();
+				panelOf(link)?.querySelector('h2')?.focus({ preventScroll: true });
+			}
+
+			const top = document.querySelector('.hodima-settings__layout');
+			if (top && top.getBoundingClientRect().top < 0) {
+				top.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
 			}
 		};
 
-		list.addEventListener('click', (event) => {
-			const tab = event.target.closest('[role="tab"]');
-			if (!tab) {
-				return;
+		nav.addEventListener('click', (event) => {
+			const link = event.target.closest('[data-tab]');
+			if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) {
+				return; // باز کردن در زبانه جدید دست نخورد
 			}
 			event.preventDefault();
-			activate(tab);
-		});
-
-		// کیبورد: چپ/راست (با توجه به RTL)، Home و End
-		list.addEventListener('keydown', (event) => {
-			const index = tabs.indexOf(document.activeElement);
-			if (index < 0) {
-				return;
-			}
-			const rtl = getComputedStyle(list).direction === 'rtl';
-			const step = { ArrowLeft: rtl ? 1 : -1, ArrowRight: rtl ? -1 : 1 }[event.key];
-			let next = null;
-			if (step) {
-				next = tabs[(index + step + tabs.length) % tabs.length];
-			} else if (event.key === 'Home') {
-				next = tabs[0];
-			} else if (event.key === 'End') {
-				next = tabs.at(-1);
-			}
-			if (next) {
-				event.preventDefault();
-				activate(next, true);
-			}
+			// detail === 0: فعال‌سازی با Enter
+			activate(link, { focus: event.detail === 0 });
 		});
 
 		// اگر فیلدی نامعتبر در تب پنهان بود، همان تب باز شود
-		document.querySelector('.hodima-settings__form')?.addEventListener('invalid', (event) => {
-			const panel = event.target.closest('[role="tabpanel"]');
-			const tab = panel && tabs.find((item) => item.getAttribute('aria-controls') === panel.id);
-			if (tab && panel.hidden) {
-				activate(tab);
+		document.querySelector('[data-hodima-form]')?.addEventListener('invalid', (event) => {
+			const panel = event.target.closest('[data-section]');
+			const link = panel && links.find((item) => item.getAttribute('aria-controls') === panel.id);
+			if (link && panel.hidden) {
+				activate(link);
 			}
 		}, true);
+
+		return { links, panelOf };
+	};
+
+	/**
+	 * نشانه «تغییرهای ذخیره‌نشده»: در نوار ذخیره و کنار تب‌هایی که تغییر کرده‌اند،
+	 * هشدار مرورگر هنگام ترک صفحه، و Ctrl/⌘ + S برای ذخیره.
+	 */
+	const initDirty = (nav) => {
+		const form = document.querySelector('[data-hodima-form]');
+		if (!form) {
+			return;
+		}
+
+		let dirty = false;
+		let submitting = false;
+
+		const mark = (target) => {
+			if (!target?.name || target.closest('template')) {
+				return;
+			}
+			dirty = true;
+			form.classList.add('is-dirty');
+			const panel = target.closest('[data-section]');
+			const link = panel && nav?.links.find((item) => item.getAttribute('aria-controls') === panel.id);
+			const dot = link?.querySelector('[data-hodima-dirty]');
+			if (dot) {
+				dot.hidden = false;
+			}
+		};
+
+		form.addEventListener('input', (event) => mark(event.target));
+		form.addEventListener('change', (event) => mark(event.target));
+		// جابه‌جایی، افزودن و حذف بخش‌های صفحه اصلی (admin.js خودش رویداد می‌فرستد)
+		form.addEventListener('hodima:changed', (event) => mark(event.target.querySelector('[name]') ?? form.querySelector('[data-hodima-home] [name]')));
+
+		form.addEventListener('submit', () => {
+			submitting = true;
+		});
+
+		window.addEventListener('beforeunload', (event) => {
+			if (dirty && !submitting) {
+				event.preventDefault();
+				event.returnValue = '';
+			}
+		});
+
+		document.addEventListener('keydown', (event) => {
+			if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 's') {
+				event.preventDefault();
+				form.requestSubmit(form.querySelector('[type="submit"][name="submit"]') ?? undefined);
+			}
+		});
+	};
+
+	/** پالت: نمونه زنده، مقدار هگز و دکمه «بازگشت به پیش‌فرض» هر رنگ. */
+	const initPalette = () => {
+		const preview = document.querySelector('[data-hodima-palette-preview]');
+
+		document.querySelectorAll('[data-hodima-color]').forEach((input) => {
+			const field = input.closest('.hodima-field');
+			const value = field?.querySelector('[data-hodima-color-value]');
+			const reset = field?.querySelector('[data-hodima-color-reset]');
+
+			const sync = () => {
+				const color = input.value.toLowerCase();
+				if (value) {
+					value.textContent = color;
+				}
+				if (reset) {
+					reset.hidden = color === reset.dataset.hodimaColorReset;
+				}
+				preview?.style.setProperty(`--pv-${input.dataset.hodimaColor}`, color);
+			};
+
+			input.addEventListener('input', sync);
+			reset?.addEventListener('click', () => {
+				input.value = reset.dataset.hodimaColorReset;
+				input.dispatchEvent(new Event('input', { bubbles: true }));
+				input.focus();
+			});
+		});
+	};
+
+	/** پیش‌نمایش لوگو روی رنگ هدر، هم‌زمان با کلید «لوگو سفید نمایش داده شود». */
+	const initLogoInvert = () => {
+		document.querySelectorAll('[data-hodima-invert-source]').forEach((preview) => {
+			const source = document.getElementById(preview.dataset.hodimaInvertSource);
+			source?.addEventListener('change', () => preview.classList.toggle('is-inverted', source.checked));
+		});
+	};
+
+	/** برچسب «در حال استفاده» قاب بخش‌های صفحه اصلی، هم‌زمان با کلید ساخت از چیدمان. */
+	const initBuilderStatus = () => {
+		const status = document.querySelector('[data-hodima-builder-status]');
+		const source = document.getElementById('hodima-setting-home_builder');
+		source?.addEventListener('change', () => {
+			if (status) {
+				status.classList.toggle('is-on', source.checked);
+				status.textContent = source.checked ? status.dataset.on : status.dataset.off;
+			}
+		});
 	};
 
 	/**
@@ -172,6 +272,8 @@
 		const announce = (text) => {
 			live.textContent = '';
 			window.setTimeout(() => { live.textContent = text; }, 50);
+			// جابه‌جایی/افزودن/حذف رویداد input ندارد؛ برای نشانه «ذخیره‌نشده»
+			list.dispatchEvent(new CustomEvent('hodima:changed', { bubbles: true }));
 		};
 
 		const items = () => [...list.querySelectorAll(':scope > [data-hodima-home-item]')];
@@ -226,7 +328,7 @@
 			const item = holder.firstElementChild;
 			list.append(item);
 			refresh();
-			item.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+			item.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
 			item.querySelector('[data-hodima-home-toggle]')?.focus();
 			announce(`بخش «${labelOf(item)}» به انتهای فهرست اضافه شد`);
 		});
@@ -329,6 +431,9 @@
 	document.addEventListener('DOMContentLoaded', () => {
 		document.querySelectorAll('[data-hodima-media]').forEach(initMediaField);
 		document.querySelectorAll('[data-hodima-home]').forEach(initHomeLayout);
-		initTabs();
+		initDirty(initNav());
+		initPalette();
+		initLogoInvert();
+		initBuilderStatus();
 	});
 })();

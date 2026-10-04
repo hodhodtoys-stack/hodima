@@ -1,11 +1,15 @@
 /* =========================================================================
  * Hodima — صفحه «تنظیمات قالب هدیما»
  * Path: inc/theme-settings/admin.css
- * Modern CSS: متغیرها، nesting بومی، خصوصیات منطقی (RTL/LTR) و :focus-visible
+ * Modern CSS: متغیرها، nesting بومی، خصوصیات منطقی (RTL/LTR)، :has() و :focus-visible
+ *
+ * ساختار: هدر ← [منوی کناری | تب فعال: سرتیتر تب + قاب‌ها] ← نوار ذخیره.
+ * هر قاب (.hodima-panel) یک کارت با سرتیتر است؛ فیلدهای آزاد در شبکه، و
+ * زیرگروه‌ها به‌صورت کارت (نمادهای اعتماد)، ردیف (شبکه‌ها) یا رنگ (پالت).
  * ========================================================================= */
 
 .hodima-settings {
-	/* پالت سازمانی (پنج رنگ) */
+	/* پالت سازمانی (پنج رنگ؛ از tokens.css و پالت تنظیم‌شده) */
 	--hs-primary: var(--hodima-primary, #25316a);
 	--hs-secondary: var(--hodima-secondary, #607bbd);
 	--hs-third: var(--hodima-third, #b6c2f3);
@@ -13,12 +17,21 @@
 	--hs-accent-light: var(--hodima-accent-light, #a341c8);
 
 	--hs-surface: #ffffff;
-	--hs-surface-soft: color-mix(in srgb, var(--hs-third) 14%, #ffffff);
-	--hs-border: color-mix(in srgb, var(--hs-third) 70%, #ffffff);
+	--hs-surface-soft: color-mix(in srgb, var(--hs-third) 12%, #ffffff);
+	--hs-surface-tint: color-mix(in srgb, var(--hs-third) 24%, #ffffff);
+	--hs-border: color-mix(in srgb, var(--hs-third) 55%, #e4e6ee);
+	--hs-border-strong: color-mix(in srgb, var(--hs-secondary) 45%, #c9cedd);
 	--hs-text: #1d2340;
 	--hs-muted: #5d6785;
+	--hs-danger: #b3261e;
+	--hs-warning: #b26a00;
+	--hs-success: #1a7f37;
 	--hs-radius: 0.875rem;
+	--hs-radius-sm: 0.5rem;
 	--hs-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--hs-primary) 10%, transparent);
+	--hs-shadow-sm: 0 1px 2px color-mix(in srgb, var(--hs-primary) 8%, transparent);
+	--hs-ring: 0 0 0 3px color-mix(in srgb, var(--hs-secondary) 28%, transparent);
+	--hs-top: 32px; /* نوار مدیریت وردپرس */
 
 	/* عرض ۹۵٪ در دسکتاپ (هم‌اندازه صفحه‌های افزونه‌های هدیما)؛ فونت فقط از قالب */
 	box-sizing: border-box;
@@ -37,16 +50,35 @@
 		font-family: inherit;
 	}
 
+	& .dashicons {
+		inline-size: 1.25rem;
+		block-size: 1.25rem;
+		font-size: 1.25rem;
+	}
+
+	& kbd {
+		padding: 0.0625rem 0.375rem;
+		border: 1px solid var(--hs-border);
+		border-block-end-width: 2px;
+		border-radius: 0.3125rem;
+		background: var(--hs-surface);
+		font-family: inherit;
+		font-size: 0.6875rem;
+	}
+
 	@media (width < 783px) {
+		--hs-top: 46px;
 		inline-size: auto;
 		margin-inline: 0.625rem;
 	}
 }
 
+/* ── هدر ───────────────────────────────────────────────────────── */
 .hodima-settings__header {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
-	gap: 1.125rem;
+	gap: 1rem 1.125rem;
 	margin-block: 1.25rem 0;
 	padding: 1.5rem 1.75rem;
 	border-radius: var(--hs-radius);
@@ -55,10 +87,11 @@
 	box-shadow: var(--hs-shadow);
 
 	& h1 {
-		margin: 0 0 0.5rem;
+		margin: 0.375rem 0 0.375rem;
 		padding: 0;
 		font-size: 1.5rem;
 		font-weight: 700;
+		line-height: 1.3;
 		color: inherit;
 	}
 
@@ -71,6 +104,11 @@
 	@media (width < 783px) {
 		padding: 1.125rem 1.25rem;
 	}
+}
+
+.hodima-settings__header-body {
+	flex: 1;
+	min-inline-size: min(100%, 16rem);
 }
 
 .hodima-settings__header-icon.dashicons {
@@ -91,6 +129,48 @@
 	}
 }
 
+.hodima-settings__badge {
+	display: inline-block;
+	padding: 0.125rem 0.625rem;
+	border-radius: 999px;
+	background: rgb(255 255 255 / 0.18);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.hodima-settings__visit {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	padding: 0.5rem 1rem;
+	border: 1px solid rgb(255 255 255 / 0.35);
+	border-radius: 999px;
+	background: rgb(255 255 255 / 0.1);
+	color: #ffffff;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-decoration: none;
+	transition: background-color 0.2s ease;
+
+	&:hover,
+	&:focus {
+		background: rgb(255 255 255 / 0.2);
+		color: #ffffff;
+	}
+
+	&:focus-visible {
+		outline: 2px solid #ffffff;
+		outline-offset: 2px;
+		box-shadow: none;
+	}
+
+	& .dashicons {
+		inline-size: 1rem;
+		block-size: 1rem;
+		font-size: 1rem;
+	}
+}
+
 .hodima-settings .wp-header-end {
 	margin: 0;
 	border: 0;
@@ -102,92 +182,289 @@
 	margin-block: 1rem 0;
 }
 
-/* ── تب‌ها (زیر هدر؛ هر بخش پنل جداگانه دارد) ─────────────────── */
-.hodima-settings__tabs {
+/* ── چیدمان: منوی کناری + محتوا ─────────────────────────────────── */
+.hodima-settings__layout {
+	display: grid;
+	grid-template-columns: 15rem minmax(0, 1fr);
+	align-items: start;
+	gap: 1.5rem;
+	margin-block-start: 1.25rem;
+
+	@media (width < 960px) {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1rem;
+	}
+}
+
+.hodima-settings__nav {
+	position: sticky;
+	inset-block-start: calc(var(--hs-top) + 1rem);
 	display: flex;
-	gap: 0.25rem;
-	margin-block: 0.875rem 0;
-	padding: 0.375rem;
-	overflow-x: auto;
+	flex-direction: column;
+	gap: 1rem;
+	padding: 0.875rem 0.625rem;
 	border: 1px solid var(--hs-border);
 	border-radius: var(--hs-radius);
-	background: #ffffff;
-	box-shadow: var(--hs-shadow);
-	scrollbar-width: thin;
+	background: var(--hs-surface);
+	box-shadow: var(--hs-shadow-sm);
+
+	& ul {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	& li {
+		margin: 0;
+	}
+
+	/* تبلت و موبایل: یک ردیف لغزنده بالای محتوا، بدون عنوان گروه‌ها */
+	@media (width < 960px) {
+		inset-block-start: var(--hs-top);
+		z-index: 6;
+		flex-direction: row;
+		gap: 0.25rem;
+		padding: 0.375rem;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scrollbar-width: thin;
+
+		& .hodima-settings__nav-group,
+		& ul,
+		& li {
+			display: contents;
+		}
+
+		& .hodima-settings__nav-title {
+			display: none;
+		}
+	}
+}
+
+.hodima-settings__nav-title {
+	margin: 0 0 0.375rem;
+	padding-inline: 0.625rem;
+	color: var(--hs-muted);
+	font-size: 0.6875rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
 }
 
 .hodima-settings__tab {
-	display: inline-flex;
-	flex-shrink: 0;
+	display: flex;
 	align-items: center;
-	gap: 0.375rem;
-	padding: 0.5rem 0.875rem;
+	gap: 0.5rem;
+	padding: 0.5625rem 0.75rem;
 	border-radius: 0.625rem;
-	color: var(--hs-primary);
+	color: var(--hs-text);
 	font-size: 0.8125rem;
 	font-weight: 600;
-	white-space: nowrap;
 	text-decoration: none;
 	transition: background-color 0.2s ease, color 0.2s ease;
 
 	& .dashicons {
+		flex-shrink: 0;
 		inline-size: 1.125rem;
 		block-size: 1.125rem;
 		font-size: 1.125rem;
+		color: var(--hs-secondary);
 	}
 
-	&:hover {
+	&:hover,
+	&:focus {
 		background: var(--hs-surface-soft);
 		color: var(--hs-primary);
 	}
 
-	&[aria-selected="true"] {
-		background: var(--hs-primary);
-		color: #ffffff;
-	}
-
 	&:focus-visible {
 		outline: 2px solid var(--hs-accent-light);
-		outline-offset: 2px;
+		outline-offset: 1px;
 		box-shadow: none;
+	}
+
+	&[aria-current="page"] {
+		background: var(--hs-primary);
+		color: #ffffff;
+
+		& .dashicons {
+			color: inherit;
+		}
+	}
+
+	@media (width < 960px) {
+		flex-shrink: 0;
+		white-space: nowrap;
 	}
 }
 
-/* ── کارت هر بخش ──────────────────────────────────────────────── */
-.hodima-settings__card {
-	margin-block: 1.25rem;
-	padding: 1.5rem 1.75rem;
-	border: 1px solid var(--hs-border);
-	border-inline-start: 4px solid var(--hs-secondary);
-	border-radius: var(--hs-radius);
-	background: var(--hs-surface);
-	box-shadow: var(--hs-shadow);
-
-	& h2 {
-		margin: 0 0 0.25rem;
-		font-size: 1.125rem;
-		color: var(--hs-primary);
-	}
+/* نقطه «ذخیره‌نشده» کنار تب */
+.hodima-settings__tab-dirty {
+	flex-shrink: 0;
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	margin-inline-start: auto;
+	border-radius: 50%;
+	background: var(--hs-warning);
+	box-shadow: 0 0 0 2px var(--hs-surface);
 
 	&[hidden] {
 		display: none;
 	}
+}
+
+/* ── تب فعال ───────────────────────────────────────────────────── */
+.hodima-settings__form {
+	min-inline-size: 0;
+}
+
+.hodima-settings__section {
+	&[hidden] {
+		display: none;
+	}
+}
+
+.hodima-settings__section-head {
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	margin-block-end: 1rem;
+
+	& > .dashicons {
+		flex-shrink: 0;
+		display: grid;
+		place-items: center;
+		inline-size: 2.75rem;
+		block-size: 2.75rem;
+		border-radius: 0.75rem;
+		background: var(--hs-surface-tint);
+		color: var(--hs-primary);
+		font-size: 1.375rem;
+	}
+
+	& h2 {
+		margin: 0 0 0.125rem;
+		padding: 0;
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--hs-primary);
+
+		&:focus {
+			outline: none;
+		}
+	}
+
+	& p {
+		margin: 0;
+		color: var(--hs-muted);
+		font-size: 0.8125rem;
+	}
+}
+
+.hodima-settings__panels {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+/* ── قاب ───────────────────────────────────────────────────────── */
+.hodima-panel {
+	grid-column: 1 / -1;
+	min-inline-size: 0;
+	border: 1px solid var(--hs-border);
+	border-radius: var(--hs-radius);
+	background: var(--hs-surface);
+	box-shadow: var(--hs-shadow-sm);
+
+	&.hodima-panel--half {
+		grid-column: auto;
+
+		@media (width < 1280px) {
+			grid-column: 1 / -1;
+		}
+	}
+}
+
+.hodima-panel__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 0.75rem;
+	padding: 1rem 1.25rem;
+	border-block-end: 1px solid var(--hs-border);
+}
+
+.hodima-panel__icon.dashicons {
+	flex-shrink: 0;
+	display: grid;
+	place-items: center;
+	inline-size: 2.25rem;
+	block-size: 2.25rem;
+	border-radius: 0.625rem;
+	background: var(--hs-surface-soft);
+	color: var(--hs-secondary);
+	font-size: 1.125rem;
+}
+
+.hodima-panel__heading {
+	flex: 1 1 14rem;
+	min-inline-size: 0;
+	align-self: center;
+}
+
+.hodima-panel__title {
+	margin: 0;
+	font-size: 0.9375rem;
+	font-weight: 700;
+	color: var(--hs-primary);
+}
+
+.hodima-panel__help {
+	margin: 0.25rem 0 0;
+	color: var(--hs-muted);
+	font-size: 0.8125rem;
+	line-height: 1.6;
+}
+
+/* برچسب وضعیت در سرتیتر قاب (مثلا «در حال استفاده») */
+.hodima-panel__status {
+	flex-shrink: 0;
+	align-self: center;
+	padding: 0.1875rem 0.625rem;
+	border-radius: 999px;
+	background: #eef0f4;
+	color: var(--hs-muted);
+	font-size: 0.75rem;
+	font-weight: 600;
+
+	&.is-on {
+		background: color-mix(in srgb, var(--hs-success) 12%, #ffffff);
+		color: var(--hs-success);
+	}
+}
+
+.hodima-panel__body {
+	display: flex;
+	flex-direction: column;
+	gap: 1.125rem;
+	padding: 1.25rem;
 
 	@media (width < 783px) {
 		padding: 1rem;
 	}
 }
 
-.hodima-settings__desc {
-	margin: 0 0 1.25rem;
-	color: var(--hs-muted);
-	font-size: 0.8125rem;
+.hodima-panel__fields {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+	gap: 1.125rem 1.25rem;
 }
 
-.hodima-settings__grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
-	gap: 1.25rem 1.5rem;
+.hodima-panel--toggles .hodima-panel__fields {
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+	gap: 0.75rem;
 }
 
 /* ── فیلدها ───────────────────────────────────────────────────── */
@@ -195,6 +472,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 0.375rem;
+	min-inline-size: 0;
 
 	&.hodima-field--wide {
 		grid-column: 1 / -1;
@@ -207,33 +485,55 @@
 	& select,
 	& textarea {
 		inline-size: 100%;
-		padding: 0.5rem 0.75rem;
-		border: 1px solid var(--hs-border);
-		border-radius: 0.5rem;
-		background-color: var(--hs-surface-soft); /* فقط رنگ: فلش select وردپرس background-image است */
+		max-inline-size: none;
+		min-block-size: 2.5rem;
+		margin: 0;
+		padding: 0.4375rem 0.75rem;
+		border: 1px solid var(--hs-border-strong);
+		border-radius: var(--hs-radius-sm);
+		background-color: var(--hs-surface); /* فقط رنگ: فلش select وردپرس background-image است */
+		box-shadow: none;
 		color: var(--hs-text);
+		font-size: 0.875rem;
+		line-height: 1.5;
 		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+		&:hover {
+			border-color: var(--hs-secondary);
+		}
 
 		&:focus {
 			border-color: var(--hs-secondary);
-			box-shadow: 0 0 0 3px color-mix(in srgb, var(--hs-secondary) 25%, transparent);
+			box-shadow: var(--hs-ring);
 			outline: none;
 		}
 
 		&:user-invalid {
-			border-color: #b3261e;
+			border-color: var(--hs-danger);
 		}
+
+		&::placeholder {
+			color: color-mix(in srgb, var(--hs-muted) 60%, #ffffff);
+		}
+	}
+
+	& select {
+		padding-inline-end: 2rem;
 	}
 
 	& textarea {
 		resize: vertical;
 		min-block-size: 6rem;
 	}
+
+	& input[type="number"] {
+		max-inline-size: 9rem;
+	}
 }
 
 .hodima-field__label {
 	font-weight: 600;
-	font-size: 0.875rem;
+	font-size: 0.8125rem;
 	color: var(--hs-primary);
 }
 
@@ -241,10 +541,12 @@
 	margin: 0;
 	color: var(--hs-muted);
 	font-size: 0.75rem;
+	line-height: 1.6;
 }
 
-/* ── سوییچ روشن/خاموش ─────────────────────────────────────────── */
+/* ── کلید روشن/خاموش ───────────────────────────────────────────── */
 .hodima-toggle {
+	position: relative;
 	display: inline-flex;
 	align-items: center;
 	gap: 0.75rem;
@@ -255,6 +557,7 @@
 		opacity: 0;
 		inline-size: 1px;
 		block-size: 1px;
+		margin: 0;
 	}
 }
 
@@ -264,9 +567,10 @@
 	inline-size: 2.75rem;
 	block-size: 1.5rem;
 	border-radius: 999px;
-	background: var(--hs-border);
+	background: #c3c8d6;
 	transition: background-color 0.2s ease;
 
+	/* جای دکمه با inset-inline-start: در راست‌به‌چپ و چپ‌به‌راست درست، بدون وابستگی به dir */
 	&::after {
 		content: "";
 		position: absolute;
@@ -277,23 +581,19 @@
 		border-radius: 50%;
 		background: #ffffff;
 		box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
-		transition: translate 0.2s ease;
+		transition: inset-inline-start 0.2s ease;
 	}
 }
 
-.hodima-toggle input:checked + .hodima-toggle__track {
+.hodima-toggle input:checked ~ .hodima-toggle__track {
 	background: var(--hs-primary);
 
 	&::after {
-		translate: calc(1.25rem * -1) 0; /* RTL: به سمت چپ */
+		inset-inline-start: calc(100% - 1.3125rem);
 	}
 }
 
-:root:not([dir="rtl"]) .hodima-toggle input:checked + .hodima-toggle__track::after {
-	translate: 1.25rem 0;
-}
-
-.hodima-toggle input:focus-visible + .hodima-toggle__track {
+.hodima-toggle input:focus-visible ~ .hodima-toggle__track {
 	outline: 2px solid var(--hs-accent-light);
 	outline-offset: 2px;
 }
@@ -301,6 +601,54 @@
 .hodima-toggle__label {
 	font-weight: 600;
 	font-size: 0.875rem;
+}
+
+/* کاشی کلید در قاب‌ها: کل کادر قابل کلیک، توضیح زیر عنوان، کلید در انتهای ردیف */
+.hodima-field--toggle {
+	& .hodima-toggle {
+		display: flex;
+		inline-size: 100%;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		block-size: 100%;
+		padding: 0.875rem 1rem;
+		border: 1px solid var(--hs-border);
+		border-radius: 0.75rem;
+		background: var(--hs-surface-soft);
+		transition: border-color 0.2s ease, background-color 0.2s ease;
+
+		&:hover {
+			border-color: var(--hs-border-strong);
+		}
+
+		&:has(input:checked) {
+			border-color: color-mix(in srgb, var(--hs-primary) 35%, var(--hs-border));
+			background: var(--hs-surface-tint);
+		}
+
+		&:has(input:focus-visible) {
+			box-shadow: var(--hs-ring);
+		}
+	}
+
+	& .hodima-toggle__text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	& .hodima-toggle__label {
+		color: var(--hs-primary);
+	}
+
+	& .hodima-toggle__track {
+		margin-block-start: 0.0625rem;
+	}
+
+	& .hodima-toggle input:focus-visible ~ .hodima-toggle__track {
+		outline: none;
+	}
 }
 
 /* ── انتخاب تصویر ──────────────────────────────────────────────── */
@@ -314,21 +662,17 @@
 .hodima-media__preview {
 	display: grid;
 	place-items: center;
-	margin: 0;
-	inline-size: 10rem;
-	block-size: 6rem;
-	padding: 0.5rem;
-	border: 1px dashed var(--hs-border);
-	border-radius: 0.75rem;
-	/* ردیف و ستون با اندازه قطعی تا max-block-size: 100% تصویر کار کند (قبلا تصویر بلند از کادر بیرون می‌زد) */
+	/* ردیف و ستون با اندازه قطعی تا max-block-size: 100% تصویر کار کند */
 	grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+	inline-size: 12rem;
+	block-size: 6.5rem;
+	margin: 0;
+	padding: 0.5rem;
 	overflow: hidden;
+	border: 1px solid var(--hs-border);
+	border-radius: 0.75rem;
 	/* شطرنجی برای دیده شدن لوگوی سفید یا شفاف */
 	background: conic-gradient(var(--hs-surface-soft) 25%, #ffffff 0 50%, var(--hs-surface-soft) 0 75%, #ffffff 0) 0 0 / 1rem 1rem;
-
-	&[hidden] {
-		display: none;
-	}
 
 	& img {
 		max-inline-size: 100%;
@@ -336,6 +680,46 @@
 		inline-size: auto;
 		block-size: auto;
 		object-fit: contain;
+	}
+
+	&.is-empty {
+		border-style: dashed;
+		background: var(--hs-surface-soft);
+	}
+
+	&:not(.is-empty) .hodima-media__empty {
+		display: none;
+	}
+
+	/* لوگو: پیش‌نمایش روی رنگ هدر سایت؛ «لوگو سفید» مثل header.css */
+	&.hodima-media__preview--header {
+		inline-size: min(100%, 18rem);
+		border: 0;
+		background: linear-gradient(135deg, var(--hs-primary) 0%, var(--hs-secondary) 100%);
+
+		& .hodima-media__empty {
+			color: rgb(255 255 255 / 0.8);
+		}
+
+		&.is-inverted img {
+			filter: brightness(0) invert(1);
+		}
+	}
+}
+
+.hodima-media__empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+	color: var(--hs-muted);
+	font-size: 0.75rem;
+
+	& .dashicons {
+		inline-size: 1.5rem;
+		block-size: 1.5rem;
+		font-size: 1.5rem;
+		opacity: 0.7;
 	}
 }
 
@@ -345,36 +729,42 @@
 	gap: 0.75rem;
 }
 
-.hodima-media__remove {
-	color: #b3261e;
+.hodima-settings :is(.hodima-media__buttons, .hodima-home__toolbar) .button {
+	min-block-size: 2.25rem;
+	padding-inline: 0.875rem;
+	border: 1px solid var(--hs-border-strong);
+	border-radius: var(--hs-radius-sm);
+	background: var(--hs-surface);
+	box-shadow: none;
+	color: var(--hs-primary);
+	font-weight: 600;
+	line-height: 2.1;
+
+	&:hover {
+		border-color: var(--hs-secondary);
+		background: var(--hs-surface-soft);
+	}
+
+	&:focus-visible {
+		box-shadow: var(--hs-ring);
+		outline: none;
+	}
+}
+
+.hodima-media__remove.button-link {
+	color: var(--hs-danger);
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
 
 	&[hidden] {
 		display: none;
 	}
 }
 
-/* ── مجموعه گروه‌ها (نمادهای اعتماد، شبکه‌های اجتماعی) ─────────── */
-.hodima-set {
-	grid-column: 1 / -1;
-	display: flex;
-	flex-direction: column;
-	gap: 0.75rem;
-}
-
-.hodima-set__head {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-	padding-block-start: 1rem;
-	border-block-start: 1px solid var(--hs-border);
-}
-
-.hodima-set__title {
-	margin: 0;
-	font-size: 0.9375rem;
-	color: var(--hs-primary);
-}
-
+/* ── زیرگروه‌ها ────────────────────────────────────────────────── */
 .hodima-group {
 	min-inline-size: 0;
 	margin: 0;
@@ -393,10 +783,10 @@
 }
 
 /* کارت‌ها: نمادهای اعتماد کنار هم، به ترتیب ۱، ۲، ۳ */
-.hodima-set--cards {
-	& .hodima-set__items {
+.hodima-panel--cards {
+	& .hodima-panel__items {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
 		gap: 1rem;
 	}
 
@@ -440,19 +830,22 @@
 	& .hodima-media__preview {
 		inline-size: 100%;
 		block-size: 7rem;
-		background-color: #ffffff;
-	}
 
-	& .hodima-field input[type="url"] {
-		background: #ffffff;
+		&:not(.is-empty) {
+			background-color: #ffffff;
+		}
 	}
 }
 
 /* ردیف‌ها: هر شبکه یک ردیف با ستون‌های هم‌تراز «شبکه | آدرس | آیکون» */
-.hodima-set--rows {
+.hodima-panel--rows {
 	--row-cols: 9rem minmax(0, 1fr) minmax(15rem, 20rem);
 
-	& .hodima-set__columns,
+	& .hodima-panel__body {
+		gap: 0.625rem;
+	}
+
+	& .hodima-panel__columns,
 	& .hodima-group {
 		display: grid;
 		grid-template-columns: var(--row-cols);
@@ -461,7 +854,7 @@
 		padding-inline: 1rem;
 	}
 
-	& .hodima-set__columns {
+	& .hodima-panel__columns {
 		padding-block: 0.5rem;
 		border-radius: 0.625rem;
 		background: var(--hs-primary);
@@ -470,7 +863,7 @@
 		font-weight: 600;
 	}
 
-	& .hodima-set__items {
+	& .hodima-panel__items {
 		border: 1px solid var(--hs-border);
 		border-radius: 0.75rem;
 		overflow: hidden;
@@ -489,7 +882,7 @@
 		}
 
 		&:focus-within {
-			background: color-mix(in srgb, var(--hs-third) 22%, #ffffff);
+			background: var(--hs-surface-tint);
 		}
 	}
 
@@ -521,17 +914,21 @@
 		border-radius: 0.5rem;
 	}
 
+	& .hodima-media__empty-text {
+		display: none;
+	}
+
 	& .hodima-media__buttons {
 		gap: 0.5rem;
 	}
 
-	@media (width < 1100px) {
+	@media (width < 1280px) {
 		--row-cols: 7rem minmax(0, 1fr) minmax(13rem, 16rem);
 	}
 
 	/* موبایل: نام شبکه بالا، آدرس و آیکون زیر هم */
 	@media (width < 783px) {
-		& .hodima-set__columns {
+		& .hodima-panel__columns {
 			display: none;
 		}
 
@@ -542,13 +939,230 @@
 	}
 }
 
-/* ── دکمه ذخیره ───────────────────────────────────────────────── */
+/* ── پالت رنگ ─────────────────────────────────────────────────── */
+.hodima-panel--swatches .hodima-panel__fields {
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+	gap: 0.875rem;
+}
+
+.hodima-field--color {
+	gap: 0.5rem;
+	padding: 0.625rem;
+	border: 1px solid var(--hs-border);
+	border-radius: 0.75rem;
+	background: var(--hs-surface);
+}
+
+.hodima-swatch {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 0.5rem 0.375rem;
+	cursor: pointer;
+
+	& input[type="color"] {
+		grid-column: 1 / -1;
+		inline-size: 100%;
+		block-size: 4.5rem;
+		margin: 0;
+		padding: 0;
+		border: 1px solid rgb(0 0 0 / 0.08);
+		border-radius: var(--hs-radius-sm);
+		background: none;
+		cursor: pointer;
+		appearance: none;
+
+		&::-webkit-color-swatch-wrapper {
+			padding: 0;
+		}
+
+		&::-webkit-color-swatch {
+			border: 0;
+			border-radius: calc(var(--hs-radius-sm) - 1px);
+		}
+
+		&::-moz-color-swatch {
+			border: 0;
+			border-radius: calc(var(--hs-radius-sm) - 1px);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--hs-secondary);
+			outline-offset: 2px;
+		}
+	}
+}
+
+.hodima-swatch__name {
+	font-weight: 700;
+	font-size: 0.8125rem;
+	color: var(--hs-primary);
+}
+
+.hodima-swatch__value {
+	padding: 0.0625rem 0.375rem;
+	border-radius: 0.25rem;
+	background: var(--hs-surface-soft);
+	color: var(--hs-muted);
+	font-size: 0.75rem;
+	unicode-bidi: isolate;
+}
+
+.hodima-swatch__reset {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	align-self: flex-start;
+	margin: 0;
+	padding: 0.125rem 0;
+	border: 0;
+	background: none;
+	color: var(--hs-secondary);
+	font-size: 0.75rem;
+	cursor: pointer;
+
+	&:hover {
+		color: var(--hs-primary);
+		text-decoration: underline;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hs-secondary);
+		outline-offset: 2px;
+		border-radius: 0.25rem;
+	}
+
+	&[hidden] {
+		display: none;
+	}
+
+	& .dashicons {
+		inline-size: 0.875rem;
+		block-size: 0.875rem;
+		font-size: 0.875rem;
+	}
+
+	& code {
+		padding: 0;
+		background: none;
+		font-size: inherit;
+		unicode-bidi: isolate;
+	}
+}
+
+/* نمونه کوچک سایت با پالت فعلی؛ admin.js متغیرهای --pv-* را با هر تغییر رنگ عوض می‌کند */
+.hodima-palette-preview {
+	--pv-primary: #25316a;
+	--pv-secondary: #607bbd;
+	--pv-third: #b6c2f3;
+	--pv-accent: #6a2b9a;
+	--pv-accent-light: #a341c8;
+
+	overflow: hidden;
+	border: 1px solid var(--hs-border);
+	border-radius: 0.75rem;
+	background: color-mix(in srgb, var(--pv-third) 16%, #ffffff);
+	user-select: none;
+}
+
+.hodima-palette-preview__header {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.75rem 1rem;
+	background: linear-gradient(135deg, var(--pv-primary) 0%, var(--pv-secondary) 100%);
+	color: #ffffff;
+}
+
+.hodima-palette-preview__logo {
+	font-weight: 700;
+	font-size: 0.875rem;
+}
+
+.hodima-palette-preview__menu {
+	display: flex;
+	flex: 1;
+	gap: 0.625rem;
+
+	& span {
+		inline-size: 3rem;
+		block-size: 0.375rem;
+		border-radius: 999px;
+		background: rgb(255 255 255 / 0.45);
+	}
+
+	@media (width < 600px) {
+		display: none;
+	}
+}
+
+.hodima-palette-preview__support {
+	margin-inline-start: auto;
+	padding: 0.25rem 0.75rem;
+	border: 1px solid rgb(255 255 255 / 0.4);
+	border-radius: 999px;
+	font-size: 0.75rem;
+}
+
+.hodima-palette-preview__body {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem 1rem;
+	padding: 1rem;
+}
+
+.hodima-palette-preview__chip {
+	padding: 0.125rem 0.625rem;
+	border-radius: 999px;
+	background: var(--pv-third);
+	color: var(--pv-primary);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.hodima-palette-preview__title {
+	color: var(--pv-primary);
+	font-size: 0.9375rem;
+}
+
+.hodima-palette-preview__line {
+	flex: 1;
+	min-inline-size: 3rem;
+	block-size: 2px;
+	background: linear-gradient(90deg, var(--pv-secondary), transparent);
+}
+
+.hodima-palette-preview__buttons {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.hodima-palette-preview__button {
+	padding: 0.375rem 0.875rem;
+	border-radius: 0.5rem;
+	background: var(--pv-primary);
+	color: #ffffff;
+	font-size: 0.75rem;
+	font-weight: 600;
+
+	&.hodima-palette-preview__button--accent {
+		border-radius: 999px;
+		background: linear-gradient(135deg, var(--pv-accent), var(--pv-accent-light));
+	}
+}
+
+/* ── نوار ذخیره ───────────────────────────────────────────────── */
 .hodima-settings__actions {
 	position: sticky;
 	inset-block-end: 0;
 	z-index: 5;
 	display: flex;
-	justify-content: flex-end;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-block: 1.25rem 1rem;
 	padding: 0.75rem 1rem;
 	border: 1px solid var(--hs-border);
 	border-radius: var(--hs-radius);
@@ -557,17 +1171,62 @@
 	backdrop-filter: blur(8px);
 }
 
+.hodima-settings__status {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0;
+	color: var(--hs-muted);
+	font-size: 0.8125rem;
+}
+
+.hodima-settings__status-dirty {
+	display: none;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--hs-warning);
+	font-weight: 600;
+
+	&::before {
+		content: "";
+		inline-size: 0.5rem;
+		block-size: 0.5rem;
+		border-radius: 50%;
+		background: currentColor;
+	}
+}
+
+.hodima-settings__form.is-dirty {
+	& .hodima-settings__status-dirty {
+		display: inline-flex;
+	}
+
+	& .hodima-settings__status-hint {
+		display: none;
+	}
+}
+
+@media (width < 783px) {
+	.hodima-settings__status-hint {
+		display: none;
+	}
+}
+
 .hodima-settings .hodima-settings__save {
+	min-block-size: 2.5rem;
 	padding-inline: 2rem;
 	border: 0;
 	border-radius: 999px;
-	background: var(--hodima-gradient-accent, linear-gradient(135deg, #6a2b9a, #a341c8));
+	background: var(--hodima-gradient-accent, linear-gradient(135deg, var(--hs-accent), var(--hs-accent-light)));
+	color: #ffffff;
 	font-weight: 700;
 	box-shadow: 0 0.375rem 1rem color-mix(in srgb, var(--hs-accent) 35%, transparent);
+	cursor: pointer;
 
 	&:hover,
 	&:focus {
 		background: linear-gradient(135deg, var(--hs-primary), var(--hs-accent));
+		color: #ffffff;
 	}
 
 	&:focus-visible {
@@ -584,43 +1243,17 @@
 }
 
 /* =========================================================================
- * تب «صفحه اصلی»: فهرست بخش‌ها (home-layout-admin.php)
+ * قاب «بخش‌های صفحه اصلی» (home-layout-admin.php)
  * ========================================================================= */
 .hodima-home {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-	grid-column: 1 / -1; /* تمام‌عرض در شبکه فیلدهای تب */
+	& .hodima-panel__body {
+		gap: 1rem;
+	}
 
-	& .dashicons {
-		font-size: 1.125rem;
+	& .hodima-home__bar .dashicons {
 		inline-size: 1.125rem;
 		block-size: 1.125rem;
-	}
-
-	& select,
-	& input[type="number"] {
-		inline-size: 100%;
-		max-inline-size: 100%;
-		min-block-size: 2.25rem;
-		padding-block: 0.25rem;
-		border: 1px solid var(--hs-border);
-		border-radius: 0.5rem;
-		background-color: var(--hs-surface-soft);
-		color: var(--hs-text);
-	}
-}
-
-.hodima-home__head {
-	display: flex;
-	flex-direction: column;
-	gap: 0.375rem;
-	padding-block-start: 1rem;
-	border-block-start: 1px solid var(--hs-border);
-
-	& .dashicons {
-		vertical-align: text-bottom;
-		color: var(--hs-secondary);
+		font-size: 1.125rem;
 	}
 }
 
@@ -628,12 +1261,17 @@
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;
-	margin: 0.25rem 0 0;
+	margin: 0;
 	padding: 0.625rem 0.875rem;
 	border-inline-start: 4px solid var(--hs-secondary);
 	border-radius: 0.5rem;
-	background: color-mix(in srgb, var(--hs-third) 22%, #ffffff);
+	background: var(--hs-surface-tint);
 	font-size: 0.8125rem;
+
+	& .dashicons {
+		flex-shrink: 0;
+		color: var(--hs-secondary);
+	}
 }
 
 .hodima-home__list {
@@ -651,9 +1289,13 @@
 	border: 1px solid var(--hs-border);
 	border-radius: 0.75rem;
 	background: var(--hs-surface);
-	box-shadow: 0 1px 2px color-mix(in srgb, var(--hs-primary) 8%, transparent);
+	box-shadow: var(--hs-shadow-sm);
 	counter-increment: hodima-home;
-	transition: box-shadow 0.2s ease, opacity 0.2s ease;
+	transition: box-shadow 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
+
+	&:hover {
+		border-color: var(--hs-border-strong);
+	}
 
 	&.is-dragging {
 		opacity: 0.55;
@@ -663,6 +1305,10 @@
 	/* بخش خاموش کم‌رنگ دیده شود */
 	&:has(.hodima-home__switch input:not(:checked)) .hodima-home__bar {
 		opacity: 0.6;
+	}
+
+	&:has(.hodima-home__title[aria-expanded="true"]) {
+		border-color: var(--hs-border-strong);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
@@ -684,7 +1330,7 @@
 		inline-size: 1.5rem;
 		block-size: 1.5rem;
 		border-radius: 50%;
-		background: color-mix(in srgb, var(--hs-third) 45%, #ffffff);
+		background: var(--hs-surface-tint);
 		color: var(--hs-primary);
 		font-size: 0.75rem;
 		font-weight: 700;
@@ -791,7 +1437,7 @@
 	}
 
 	& .hodima-home__remove:hover {
-		color: #b3261e;
+		color: var(--hs-danger);
 	}
 }
 
@@ -801,6 +1447,9 @@
 	gap: 0.875rem;
 	padding: 0.875rem 1rem 1rem;
 	border-block-start: 1px dashed var(--hs-border);
+	background: var(--hs-surface-soft);
+	border-end-start-radius: 0.75rem;
+	border-end-end-radius: 0.75rem;
 
 	&[hidden] {
 		display: none;
@@ -846,6 +1495,10 @@
 	border-radius: 0.75rem;
 	color: var(--hs-muted);
 	text-align: center;
+
+	&[hidden] {
+		display: none;
+	}
 }
 
 .hodima-home__toolbar {
@@ -853,20 +1506,37 @@
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 0.625rem;
+	padding-block-start: 1rem;
+	border-block-start: 1px solid var(--hs-border);
 
 	& select {
 		inline-size: auto;
 		min-inline-size: 12rem;
+		min-block-size: 2.25rem;
+		padding-block: 0.25rem;
+		padding-inline-end: 2rem;
+		border: 1px solid var(--hs-border-strong);
+		border-radius: var(--hs-radius-sm);
+		background-color: var(--hs-surface);
+		color: var(--hs-text);
 	}
 
 	& .button .dashicons {
+		inline-size: 1rem;
+		block-size: 1rem;
+		font-size: 1rem;
 		vertical-align: text-bottom;
 	}
 }
 
-.hodima-home__import {
+.hodima-home__import.button-link {
 	margin-inline-start: auto;
 	color: var(--hs-secondary);
+	font-size: 0.8125rem;
+
+	&:hover {
+		color: var(--hs-primary);
+	}
 }
 
 @media (width < 600px) {
@@ -878,38 +1548,8 @@
 		flex-basis: 100%;
 		order: -1;
 	}
-}
 
-/* انتخاب رنگ پالت برند */
-.hodima-color {
-	display: flex;
-	align-items: center;
-	gap: 0.75rem;
-
-	& input[type="color"] {
-		inline-size: 3.5rem;
-		block-size: 2.5rem;
-		padding: 0.125rem;
-		border: 1px solid var(--hs-border);
-		border-radius: 0.5rem;
-		background-color: var(--hs-surface);
-		cursor: pointer;
-
-		&:focus-visible {
-			outline: 2px solid var(--hs-secondary);
-			outline-offset: 2px;
-		}
-	}
-}
-
-.hodima-color__default {
-	color: var(--hs-muted);
-	font-size: 0.75rem;
-
-	& code {
-		padding: 0.125rem 0.375rem;
-		border-radius: 0.25rem;
-		background: var(--hs-surface-soft);
-		unicode-bidi: isolate;
+	.hodima-home__import.button-link {
+		margin-inline-start: 0;
 	}
 }

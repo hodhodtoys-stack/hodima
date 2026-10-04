@@ -22,7 +22,7 @@ add_action( 'admin_init', static function (): void {
 	] );
 } );
 
-/** محتوای تب «صفحه اصلی» (زیر کلید «ساخت صفحه اصلی از این چیدمان»). */
+/** قاب «بخش‌های صفحه اصلی» در تب «صفحه اصلی» (زیر قاب «روش ساخت صفحه اصلی»). */
 function hodima_home_admin_render(): void {
 
 	$types  = hodima_home_section_types();
@@ -30,55 +30,68 @@ function hodima_home_admin_render(): void {
 	$layout = $saved ? hodima_home_layout() : hodima_home_layout_from_content();
 	$terms  = taxonomy_exists( 'product_cat' ) ? get_terms( [ 'taxonomy' => 'product_cat', 'hide_empty' => false, 'orderby' => 'name' ] ) : [];
 	$terms  = is_array( $terms ) ? $terms : [];
-	?>
-	<div class="hodima-home hodima-field--wide" data-hodima-home>
-		<input type="hidden" name="<?php echo esc_attr( HODIMA_HOME_LAYOUT_OPTION ); ?>[_sent]" value="1">
 
-		<div class="hodima-home__head">
-			<h3 class="hodima-set__title">بخش‌های صفحه اصلی</h3>
-			<p class="hodima-field__help">
-				به ترتیب از بالا به پایین. ترتیب را با کشیدن <span class="dashicons dashicons-move" aria-hidden="true"></span> یا دکمه‌های بالا/پایین عوض کنید؛ با کلیک روی نام هر بخش تنظیماتش باز می‌شود. بخش خاموش ذخیره می‌ماند ولی نمایش داده نمی‌شود.
-			</p>
+	$active = function_exists( 'hodima_setting' ) && hodima_setting( 'home_builder' );
+	$status = sprintf(
+		'<span class="hodima-panel__status%1$s" data-hodima-builder-status data-on="در حال استفاده" data-off="استفاده نمی‌شود">%2$s</span>',
+		$active ? ' is-on' : '',
+		$active ? 'در حال استفاده' : 'استفاده نمی‌شود'
+	);
+	?>
+	<section class="hodima-panel hodima-panel--builder hodima-home" aria-labelledby="hodima-panel-home_layout-title" data-hodima-home>
+		<?php
+		hodima_settings_panel_head(
+			'hodima-panel-home_layout-title',
+			'بخش‌های صفحه اصلی',
+			'به ترتیب از بالا به پایین. ترتیب را با کشیدن دستگیره یا دکمه‌های بالا/پایین عوض کنید؛ با کلیک روی نام هر بخش تنظیماتش باز می‌شود. بخش خاموش ذخیره می‌ماند ولی نمایش داده نمی‌شود.',
+			'dashicons-layout',
+			$status
+		);
+		?>
+
+		<div class="hodima-panel__body">
+			<input type="hidden" name="<?php echo esc_attr( HODIMA_HOME_LAYOUT_OPTION ); ?>[_sent]" value="1">
+
 			<?php if ( ! $saved ) : ?>
 				<p class="hodima-home__notice" role="note">
 					<span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
-					این چیدمان از روی متن فعلی برگه صفحه اصلی خوانده شده است. بررسی و «ذخیره» کنید، بعد کلید بالا را روشن کنید.
+					این چیدمان از روی متن فعلی برگه صفحه اصلی خوانده شده است. بررسی و «ذخیره» کنید، بعد کلید «ساخت صفحه اصلی از چیدمان پایین» را روشن کنید.
 				</p>
 			<?php endif; ?>
-		</div>
 
-		<ol class="hodima-home__list" data-hodima-home-list>
-			<?php foreach ( $layout as $item ) : ?>
-				<?php hodima_home_admin_item( $item, $terms ); ?>
-			<?php endforeach; ?>
-		</ol>
-
-		<p class="hodima-home__empty" data-hodima-home-empty <?php echo $layout ? 'hidden' : ''; ?>>هنوز بخشی ندارید؛ از پایین اضافه کنید.</p>
-
-		<div class="hodima-home__toolbar">
-			<label class="screen-reader-text" for="hodima-home-add-type">نوع بخش جدید</label>
-			<select id="hodima-home-add-type" data-hodima-home-type>
-				<?php foreach ( $types as $type => $def ) : ?>
-					<option value="<?php echo esc_attr( $type ); ?>" data-single="<?php echo $def['single'] ? '1' : '0'; ?>"><?php echo esc_html( $def['label'] ); ?></option>
+			<ol class="hodima-home__list" data-hodima-home-list>
+				<?php foreach ( $layout as $item ) : ?>
+					<?php hodima_home_admin_item( $item, $terms ); ?>
 				<?php endforeach; ?>
-			</select>
-			<button type="button" class="button" data-hodima-home-add>
-				<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> افزودن بخش
-			</button>
-			<button type="submit" class="button-link hodima-home__import" name="<?php echo esc_attr( HODIMA_HOME_LAYOUT_OPTION ); ?>[_import]" value="1" data-hodima-home-import>
-				خواندن دوباره چیدمان از متن برگه صفحه اصلی
-			</button>
-		</div>
+			</ol>
 
-		<?php
-		// الگوی هر نوع بخش برای «افزودن بخش» (بدون ارسال؛ __UID__ را admin.js جایگزین می‌کند)
-		foreach ( array_keys( $types ) as $type ) :
-			?>
-			<template data-hodima-home-template="<?php echo esc_attr( $type ); ?>">
-				<?php hodima_home_admin_item( [ 'id' => '__UID__', 'type' => $type, 'enabled' => true ] + hodima_home_section_defaults( $type ), $terms, true ); ?>
-			</template>
-		<?php endforeach; ?>
-	</div>
+			<p class="hodima-home__empty" data-hodima-home-empty <?php echo $layout ? 'hidden' : ''; ?>>هنوز بخشی ندارید؛ از پایین اضافه کنید.</p>
+
+			<div class="hodima-home__toolbar">
+				<label class="screen-reader-text" for="hodima-home-add-type">نوع بخش جدید</label>
+				<select id="hodima-home-add-type" data-hodima-home-type>
+					<?php foreach ( $types as $type => $def ) : ?>
+						<option value="<?php echo esc_attr( $type ); ?>" data-single="<?php echo $def['single'] ? '1' : '0'; ?>"><?php echo esc_html( $def['label'] ); ?></option>
+					<?php endforeach; ?>
+				</select>
+				<button type="button" class="button" data-hodima-home-add>
+					<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> افزودن بخش
+				</button>
+				<button type="submit" class="button-link hodima-home__import" name="<?php echo esc_attr( HODIMA_HOME_LAYOUT_OPTION ); ?>[_import]" value="1" data-hodima-home-import>
+					خواندن دوباره چیدمان از متن برگه صفحه اصلی
+				</button>
+			</div>
+
+			<?php
+			// الگوی هر نوع بخش برای «افزودن بخش» (بدون ارسال؛ __UID__ را admin.js جایگزین می‌کند)
+			foreach ( array_keys( $types ) as $type ) :
+				?>
+				<template data-hodima-home-template="<?php echo esc_attr( $type ); ?>">
+					<?php hodima_home_admin_item( [ 'id' => '__UID__', 'type' => $type, 'enabled' => true ] + hodima_home_section_defaults( $type ), $terms, true ); ?>
+				</template>
+			<?php endforeach; ?>
+		</div>
+	</section>
 	<?php
 }
 

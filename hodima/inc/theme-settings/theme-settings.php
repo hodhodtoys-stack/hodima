@@ -28,88 +28,93 @@ const HODIMA_TRUST_SLOTS     = 3; // تعداد نمادهای اعتماد فو
  * ========================================================================= */
 
 /**
- * تعریف همه فیلدها: نوع، مقدار پیش‌فرض، برچسب و بخش.
+ * تعریف همه فیلدها: نوع، مقدار پیش‌فرض، برچسب و قاب (panel).
  *
- * @return array<string, array{section:string, type:string, label:string, default:mixed, help?:string, placeholder?:string, wide?:bool}>
+ * تب هر فیلد از قابش می‌آید (hodima_settings_panels). کلید فیلدها نام ذخیره‌شده در
+ * گزینه hodima_theme_settings است و نباید عوض شود؛ ترتیب و جای نمایش آزاد است.
+ *
+ * @return array<string, array{panel:string, type:string, label:string, default:mixed, group?:string, help?:string, placeholder?:string, wide?:bool}>
  */
 function hodima_settings_fields(): array {
 	return [
 		// ── برند ────────────────────────────────────────────────────
-		'logo_id'          => [ 'section' => 'brand', 'type' => 'image', 'label' => 'لوگو', 'default' => 0, 'help' => 'بهتر است نسخه SVG یا WebP با پس‌زمینه شفاف باشد. اگر خالی بماند نام سایت نمایش داده می‌شود.' ],
-		'logo_invert'      => [ 'section' => 'brand', 'type' => 'toggle', 'label' => 'نمایش لوگو به رنگ سفید روی هدر', 'default' => true, 'help' => 'برای لوگوی رنگی روی پس‌زمینه تیره هدر.' ],
+		'logo_id'          => [ 'panel' => 'brand_logo', 'type' => 'image', 'label' => 'تصویر لوگو', 'default' => 0, 'preview' => 'header', 'help' => 'بهتر است نسخه SVG یا WebP با پس‌زمینه شفاف باشد. اگر خالی بماند نام سایت نمایش داده می‌شود.' ],
+		'logo_invert'      => [ 'panel' => 'brand_logo', 'type' => 'toggle', 'label' => 'لوگو سفید نمایش داده شود', 'default' => true, 'wide' => true, 'help' => 'برای لوگوی رنگی روی پس‌زمینه تیره هدر. نتیجه را در پیش‌نمایش کنار تصویر ببینید.' ],
 
 		// ── پالت رنگ برند (بازسازی قالب، مرحله ۵؛ توکن‌های assets/css/tokens.css) ──
-		'color_primary'      => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ اصلی (سرمه‌ای)', 'default' => '#25316a', 'help' => 'هدر، دکمه‌ها، عنوان‌ها؛ نسخه تیره (hover) و سایه‌ها خودکار ساخته می‌شوند.' ],
-		'color_secondary'    => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ دوم (آبی)', 'default' => '#607bbd' ],
-		'color_third'        => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ سوم (آبی روشن)', 'default' => '#b6c2f3', 'help' => 'زمینه‌ها و خطوط.' ],
-		'color_accent'       => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ تأکید (بنفش)', 'default' => '#6a2b9a' ],
-		'color_accent_light' => [ 'section' => 'brand', 'group' => 'palette', 'type' => 'color', 'label' => 'رنگ تأکید روشن (ارغوانی)', 'default' => '#a341c8' ],
+		'color_primary'      => [ 'panel' => 'brand_palette', 'type' => 'color', 'label' => 'رنگ اصلی', 'default' => '#25316a', 'help' => 'هدر، دکمه‌ها و عنوان‌ها؛ نسخه تیره و سایه‌ها خودکار ساخته می‌شوند.' ],
+		'color_secondary'    => [ 'panel' => 'brand_palette', 'type' => 'color', 'label' => 'رنگ دوم', 'default' => '#607bbd', 'help' => 'انتهای گرادیان هدر و لینک‌ها.' ],
+		'color_third'        => [ 'panel' => 'brand_palette', 'type' => 'color', 'label' => 'رنگ سوم (روشن)', 'default' => '#b6c2f3', 'help' => 'زمینه‌ها و خطوط.' ],
+		'color_accent'       => [ 'panel' => 'brand_palette', 'type' => 'color', 'label' => 'رنگ تأکید', 'default' => '#6a2b9a', 'help' => 'دکمه‌های مهم و برچسب‌ها.' ],
+		'color_accent_light' => [ 'panel' => 'brand_palette', 'type' => 'color', 'label' => 'رنگ تأکید روشن', 'default' => '#a341c8', 'help' => 'انتهای گرادیان دکمه‌های مهم.' ],
 
-		// ── صفحه اصلی (بخش‌ها: inc/theme-settings/home-layout-admin.php) ──
-		'home_builder'     => [ 'section' => 'home', 'type' => 'toggle', 'label' => 'ساخت صفحه اصلی از این چیدمان', 'default' => false, 'help' => 'خاموش: صفحه اصلی مثل قبل از متن برگه صفحه اصلی (ویرایشگر برگه و شورت‌کدهایش) ساخته می‌شود. روشن: از بخش‌های زیر، به همین ترتیب.' ],
-
-		// ── اطلاعات تماس ───────────────────────────────────────────
-		'phone'            => [ 'section' => 'contact', 'type' => 'tel', 'label' => 'شماره تماس', 'default' => '', 'placeholder' => '09120000000', 'help' => 'دکمه «تماس تلفنی» پنجره پشتیبانی.' ],
-		'phone_2'          => [ 'section' => 'contact', 'type' => 'tel', 'label' => 'شماره تماس دوم (اختیاری)', 'default' => '', 'placeholder' => '02100000000', 'help' => 'مثلا تلفن ثابت؛ در نسخه ماشین‌خوان (llms.txt) کنار شماره اصلی می‌آید.' ],
-		'whatsapp_url'     => [ 'section' => 'contact', 'type' => 'url', 'label' => 'لینک واتس‌اپ', 'default' => '', 'placeholder' => 'https://wa.me/989120000000' ],
-		'telegram_url'     => [ 'section' => 'contact', 'type' => 'url', 'label' => 'لینک تلگرام', 'default' => '', 'placeholder' => 'https://t.me/username' ],
-		'rubika_url'       => [ 'section' => 'contact', 'type' => 'url', 'label' => 'لینک روبیکا', 'default' => '', 'placeholder' => 'https://rubika.ir/username' ],
-		'address'          => [ 'section' => 'contact', 'type' => 'text', 'label' => 'آدرس', 'default' => '' ],
-		'map_url'          => [ 'section' => 'contact', 'type' => 'url', 'label' => 'لینک نقشه آدرس', 'default' => '', 'placeholder' => 'https://maps.app.goo.gl/...' ],
+		// ── هدر ─────────────────────────────────────────────────────
+		'header_support_text'  => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'متن دکمه پشتیبانی', 'default' => 'پشتیبانی' ],
+		'header_popup_title'   => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'عنوان پنجره پشتیبانی', 'default' => 'ارتباط با ما' ],
+		'header_search'        => [ 'panel' => 'header_main', 'type' => 'toggle', 'label' => 'جستجو در هدر', 'default' => true, 'help' => 'کادر جستجوی محصولات و مقاله‌ها.' ],
 
 		// ── فوتر ────────────────────────────────────────────────────
-		'about_title'      => [ 'section' => 'footer', 'type' => 'text', 'label' => 'عنوان ستون درباره ما', 'default' => 'درباره ما' ],
-		'about_text'       => [ 'section' => 'footer', 'type' => 'textarea', 'label' => 'متن درباره ما', 'default' => '' ],
-		'guide_title'      => [ 'section' => 'footer', 'type' => 'text', 'label' => 'عنوان ستون راهنمای خرید', 'default' => 'راهنمای خرید' ],
-		'guide_text'       => [ 'section' => 'footer', 'type' => 'textarea', 'label' => 'متن راهنمای خرید', 'default' => '', 'help' => 'آدرس بخش «اطلاعات تماس» زیر همین متن نمایش داده می‌شود.' ],
-		'trust_title'      => [ 'section' => 'footer', 'type' => 'text', 'label' => 'عنوان ستون نماد اعتماد', 'default' => 'نماد اعتماد' ],
-		'consult_title'    => [ 'section' => 'footer', 'type' => 'text', 'label' => 'عنوان ستون فرم مشاوره', 'default' => 'مشاوره خرید' ],
-		'copyright'        => [ 'section' => 'footer', 'type' => 'text', 'label' => 'متن کپی‌رایت', 'default' => '', 'help' => 'اگر خالی بماند نام سایت نمایش داده می‌شود.' ],
+		'about_title'      => [ 'panel' => 'footer_about', 'type' => 'text', 'label' => 'عنوان ستون', 'default' => 'درباره ما' ],
+		'about_text'       => [ 'panel' => 'footer_about', 'type' => 'textarea', 'label' => 'متن', 'default' => '' ],
+		'guide_title'      => [ 'panel' => 'footer_guide', 'type' => 'text', 'label' => 'عنوان ستون', 'default' => 'راهنمای خرید' ],
+		'guide_text'       => [ 'panel' => 'footer_guide', 'type' => 'textarea', 'label' => 'متن', 'default' => '', 'help' => 'آدرس تب «اطلاعات تماس» زیر همین متن نمایش داده می‌شود.' ],
+		'consult_title'    => [ 'panel' => 'footer_consult', 'type' => 'text', 'label' => 'عنوان ستون فرم مشاوره', 'default' => 'مشاوره خرید' ],
+		'copyright'        => [ 'panel' => 'footer_consult', 'type' => 'text', 'label' => 'متن کپی‌رایت (پایین فوتر)', 'default' => '', 'help' => 'اگر خالی بماند نام سایت نمایش داده می‌شود.' ],
+		'trust_title'      => [ 'panel' => 'footer_trust', 'type' => 'text', 'label' => 'عنوان ستون', 'default' => 'نماد اعتماد' ],
 		...hodima_trust_fields(),
 
-		// ── Google Analytics ───────────────────────────────────────
-		'ga_id'            => [ 'section' => 'analytics', 'type' => 'ga', 'label' => 'شناسه Google Analytics 4', 'default' => '', 'placeholder' => 'G-XXXXXXXXXX' ],
-		'ga_skip_editors'  => [ 'section' => 'analytics', 'type' => 'toggle', 'label' => 'بازدید مدیران و نویسندگان ثبت نشود', 'default' => true ],
-		'ga_production'    => [ 'section' => 'analytics', 'type' => 'toggle', 'label' => 'فقط روی سایت اصلی (Production) فعال باشد', 'default' => true, 'help' => 'روی استیجینگ یا لوکال (WP_ENVIRONMENT_TYPE) کد آمار چاپ نمی‌شود تا آمار واقعی آلوده نشود.' ],
-
-		// ── هدر و صفحه ۴۰۴ (بازسازی قالب، مرحله ۴؛ قبلا ثابت در header.php و 404.php) ──
-		'header_support_text'  => [ 'section' => 'header', 'type' => 'text', 'label' => 'متن دکمه پشتیبانی هدر', 'default' => 'پشتیبانی', 'help' => 'دکمه فقط وقتی دیده می‌شود که در «اطلاعات تماس» دست‌کم یک راه ارتباطی وارد شده باشد.' ],
-		'header_popup_title'   => [ 'section' => 'header', 'type' => 'text', 'label' => 'عنوان پنجره پشتیبانی', 'default' => 'ارتباط با ما' ],
-		'header_search'        => [ 'section' => 'header', 'type' => 'toggle', 'label' => 'جستجو در هدر', 'default' => true ],
-		'notfound_title'       => [ 'section' => 'header', 'group' => 'notfound', 'type' => 'text', 'label' => 'عنوان', 'default' => 'صفحه مورد نظر پیدا نشد!' ],
-		'notfound_text'        => [ 'section' => 'header', 'group' => 'notfound', 'type' => 'textarea', 'label' => 'توضیح', 'default' => 'متأسفیم، به نظر می‌رسد آدرسی که وارد کرده‌اید اشتباه است یا این صفحه به مکان دیگری منتقل شده است.' ],
-		'notfound_placeholder' => [ 'section' => 'header', 'group' => 'notfound', 'type' => 'text', 'label' => 'متن داخل کادر جستجو', 'default' => 'دنبال چه چیزی می‌گردید؟' ],
-		'notfound_shop_button' => [ 'section' => 'header', 'group' => 'notfound', 'type' => 'toggle', 'label' => 'دکمه «رفتن به فروشگاه»', 'default' => true ],
-
-		// ── صفحه محصول (قبلا ثابت در woocommerce/content-single-product.php) ──
-		'product_price_empty'   => [ 'section' => 'product', 'type' => 'text', 'label' => 'متن جای قیمت، وقتی قیمت ندارد', 'default' => 'تماس بگیرید' ],
-		'product_out_of_stock'  => [ 'section' => 'product', 'type' => 'text', 'label' => 'پیام محصول ناموجود (جای دکمه خرید)', 'default' => 'برای اطلاع از شارژ مجدد تماس بگیرید.' ],
-		'product_podcast_label' => [ 'section' => 'product', 'type' => 'text', 'label' => 'برچسب پلیر پادکست', 'default' => 'پادکست' ],
-		'product_upsells_title' => [ 'section' => 'product', 'type' => 'text', 'label' => 'عنوان بخش محصولات پیشنهادی (Upsell)', 'default' => 'محصولات مشابه', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید.' ],
-		'product_upsells_limit' => [ 'section' => 'product', 'type' => 'number', 'label' => 'تعداد محصولات پیشنهادی', 'default' => 6, 'min' => 0, 'max' => 24, 'help' => '۰ = بخش نمایش داده نشود.' ],
-		'product_show_podcast'  => [ 'section' => 'product', 'group' => 'product_sections', 'type' => 'toggle', 'label' => 'پادکست', 'default' => true ],
-		'product_show_faq'      => [ 'section' => 'product', 'group' => 'product_sections', 'type' => 'toggle', 'label' => 'سوالات متداول', 'default' => true ],
-		'product_show_video'    => [ 'section' => 'product', 'group' => 'product_sections', 'type' => 'toggle', 'label' => 'ویدیو', 'default' => true ],
-		'product_show_reviews'  => [ 'section' => 'product', 'group' => 'product_sections', 'type' => 'toggle', 'label' => 'نظرات کاربران', 'default' => true ],
+		// ── صفحه اصلی (بخش‌ها: inc/theme-settings/home-layout-admin.php) ──
+		'home_builder'     => [ 'panel' => 'home_mode', 'type' => 'toggle', 'label' => 'ساخت صفحه اصلی از چیدمان پایین', 'default' => false, 'wide' => true, 'help' => 'خاموش: صفحه اصلی مثل قبل از متن برگه صفحه اصلی (ویرایشگر برگه و شورت‌کدهایش) ساخته می‌شود. روشن: از بخش‌های پایین، به همان ترتیب.' ],
 
 		// ── فروشگاه و دسته‌ها ─────────────────────────────────────────
-		'shop_title'       => [ 'section' => 'shop', 'type' => 'text', 'label' => 'عنوان سربرگ فروشگاه', 'default' => '', 'help' => 'اگر خالی بماند عنوان برگه فروشگاه ووکامرس نمایش داده می‌شود.' ],
-		'shop_subtitle'    => [ 'section' => 'shop', 'type' => 'text', 'label' => 'زیرعنوان', 'default' => '' ],
-		'shop_features'    => [ 'section' => 'shop', 'type' => 'textarea', 'label' => 'ویژگی‌ها (هر خط یک مورد)', 'default' => '', 'help' => 'مثلا: اصالت کالا، قیمت رقابتی، ارسال سریع — هر کدام در یک خط.' ],
-		'shop_per_page'    => [ 'section' => 'shop', 'type' => 'number', 'label' => 'تعداد محصول در هر صفحه (فروشگاه، دسته‌ها، برچسب‌ها)', 'default' => 36, 'min' => 6, 'max' => 120, 'help' => 'مضرب ۱۲ (مثلا ۲۴، ۳۶، ۴۸) در همه اندازه‌های صفحه‌نمایش ردیف کامل می‌سازد. عدد خیلی بزرگ صفحه را روی موبایل کند می‌کند.' ],
+		'shop_title'       => [ 'panel' => 'shop_header', 'type' => 'text', 'label' => 'عنوان', 'default' => '', 'help' => 'اگر خالی بماند عنوان برگه فروشگاه ووکامرس نمایش داده می‌شود.' ],
+		'shop_subtitle'    => [ 'panel' => 'shop_header', 'type' => 'text', 'label' => 'زیرعنوان', 'default' => '' ],
+		'shop_features'    => [ 'panel' => 'shop_header', 'type' => 'textarea', 'label' => 'ویژگی‌ها (هر خط یک مورد)', 'default' => '', 'help' => 'مثلا: اصالت کالا، قیمت رقابتی، ارسال سریع — هر کدام در یک خط.' ],
+		'shop_per_page'    => [ 'panel' => 'shop_list', 'type' => 'number', 'label' => 'تعداد محصول در هر صفحه', 'default' => 36, 'min' => 6, 'max' => 120, 'help' => 'مضرب ۱۲ (مثلا ۲۴، ۳۶، ۴۸) در همه اندازه‌های صفحه‌نمایش ردیف کامل می‌سازد. عدد خیلی بزرگ صفحه را روی موبایل کند می‌کند.' ],
+
+		// ── صفحه محصول (قبلا ثابت در woocommerce/content-single-product.php) ──
+		'product_price_empty'   => [ 'panel' => 'product_texts', 'type' => 'text', 'label' => 'جای قیمت، وقتی قیمت ندارد', 'default' => 'تماس بگیرید' ],
+		'product_out_of_stock'  => [ 'panel' => 'product_texts', 'type' => 'text', 'label' => 'پیام محصول ناموجود (جای دکمه خرید)', 'default' => 'برای اطلاع از شارژ مجدد تماس بگیرید.' ],
+		'product_podcast_label' => [ 'panel' => 'product_texts', 'type' => 'text', 'label' => 'برچسب پلیر پادکست', 'default' => 'پادکست' ],
+		'product_show_podcast'  => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'پادکست', 'default' => true ],
+		'product_show_faq'      => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'سوالات متداول', 'default' => true ],
+		'product_show_video'    => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'ویدیو', 'default' => true ],
+		'product_show_reviews'  => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'نظرات کاربران', 'default' => true ],
+		'product_upsells_title' => [ 'panel' => 'product_upsells', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'محصولات مشابه' ],
+		'product_upsells_limit' => [ 'panel' => 'product_upsells', 'type' => 'number', 'label' => 'تعداد', 'default' => 6, 'min' => 0, 'max' => 24, 'help' => '۰ = بخش نمایش داده نشود.' ],
 
 		// ── وبلاگ (قبلا ثابت در archive-blog.php و single-post.php) ──
-		'blog_title'           => [ 'section' => 'blog', 'type' => 'text', 'label' => 'عنوان صفحه وبلاگ (H1)', 'default' => '', 'help' => 'خالی = عنوان برگه «نوشته‌ها» (تنظیمات ← خواندن). همین نام در مسیر راهنمای مقاله‌ها هم می‌آید.' ],
-		'blog_intro'           => [ 'section' => 'blog', 'type' => 'textarea', 'label' => 'متن کوتاه زیر عنوان وبلاگ', 'default' => '' ],
-		'blog_infinite_scroll' => [ 'section' => 'blog', 'type' => 'toggle', 'label' => 'بارگذاری خودکار مقاله‌های بعدی با اسکرول', 'default' => true, 'help' => 'صفحه‌بندی واقعی برای موتورهای جستجو در هر حال سر جایش است.' ],
-		'blog_related_title'   => [ 'section' => 'blog', 'group' => 'blog_related', 'type' => 'text', 'label' => 'عنوان', 'default' => 'مقالات مرتبط' ],
-		'blog_related_limit'   => [ 'section' => 'blog', 'group' => 'blog_related', 'type' => 'number', 'label' => 'تعداد', 'default' => 4, 'min' => 0, 'max' => 12, 'help' => '۰ = بخش نمایش داده نشود.' ],
-		'blog_related_source'  => [ 'section' => 'blog', 'group' => 'blog_related', 'type' => 'select', 'label' => 'کدام مقاله‌ها', 'default' => 'category', 'options' => [ 'category' => 'هم‌دسته (آخرین مقاله‌های همان دسته)', 'cluster' => 'هم‌خوشه (خوشه موضوعی افزونه سئو)، و اگر کم بود هم‌دسته' ] ],
+		'blog_title'           => [ 'panel' => 'blog_page', 'type' => 'text', 'label' => 'عنوان صفحه وبلاگ (H1)', 'default' => '', 'help' => 'خالی = عنوان برگه «نوشته‌ها» (تنظیمات ← خواندن). همین نام در مسیر راهنمای مقاله‌ها هم می‌آید.' ],
+		'blog_intro'           => [ 'panel' => 'blog_page', 'type' => 'textarea', 'label' => 'متن کوتاه زیر عنوان', 'default' => '' ],
+		'blog_infinite_scroll' => [ 'panel' => 'blog_page', 'type' => 'toggle', 'label' => 'بارگذاری خودکار مقاله‌های بعدی با اسکرول', 'default' => true, 'help' => 'صفحه‌بندی واقعی برای موتورهای جستجو در هر حال سر جایش است.' ],
+		'blog_related_title'   => [ 'panel' => 'blog_related', 'type' => 'text', 'label' => 'عنوان', 'default' => 'مقالات مرتبط' ],
+		'blog_related_limit'   => [ 'panel' => 'blog_related', 'type' => 'number', 'label' => 'تعداد', 'default' => 4, 'min' => 0, 'max' => 12, 'help' => '۰ = بخش نمایش داده نشود.' ],
+		'blog_related_source'  => [ 'panel' => 'blog_related', 'type' => 'select', 'label' => 'کدام مقاله‌ها', 'default' => 'category', 'options' => [ 'category' => 'هم‌دسته (آخرین مقاله‌های همان دسته)', 'cluster' => 'هم‌خوشه (خوشه موضوعی افزونه سئو)، و اگر کم بود هم‌دسته' ] ],
+
+		// ── صفحه ۴۰۴ (بازسازی قالب، مرحله ۴؛ قبلا ثابت در 404.php) ──
+		'notfound_title'       => [ 'panel' => 'notfound_main', 'type' => 'text', 'label' => 'عنوان', 'default' => 'صفحه مورد نظر پیدا نشد!' ],
+		'notfound_placeholder' => [ 'panel' => 'notfound_main', 'type' => 'text', 'label' => 'متن داخل کادر جستجو', 'default' => 'دنبال چه چیزی می‌گردید؟' ],
+		'notfound_text'        => [ 'panel' => 'notfound_main', 'type' => 'textarea', 'label' => 'توضیح', 'default' => 'متأسفیم، به نظر می‌رسد آدرسی که وارد کرده‌اید اشتباه است یا این صفحه به مکان دیگری منتقل شده است.' ],
+		'notfound_shop_button' => [ 'panel' => 'notfound_main', 'type' => 'toggle', 'label' => 'دکمه «رفتن به فروشگاه»', 'default' => true, 'help' => 'دکمه «صفحه اصلی» همیشه هست.' ],
+
+		// ── اطلاعات تماس ───────────────────────────────────────────
+		'phone'            => [ 'panel' => 'contact_phone', 'type' => 'tel', 'label' => 'شماره تماس', 'default' => '', 'placeholder' => '09120000000', 'help' => 'دکمه «تماس تلفنی» پنجره پشتیبانی.' ],
+		'phone_2'          => [ 'panel' => 'contact_phone', 'type' => 'tel', 'label' => 'شماره تماس دوم (اختیاری)', 'default' => '', 'placeholder' => '02100000000', 'help' => 'مثلا تلفن ثابت؛ در نسخه ماشین‌خوان (llms.txt) کنار شماره اصلی می‌آید.' ],
+		'whatsapp_url'     => [ 'panel' => 'contact_messengers', 'type' => 'url', 'label' => 'واتس‌اپ', 'default' => '', 'placeholder' => 'https://wa.me/989120000000' ],
+		'telegram_url'     => [ 'panel' => 'contact_messengers', 'type' => 'url', 'label' => 'تلگرام', 'default' => '', 'placeholder' => 'https://t.me/username' ],
+		'rubika_url'       => [ 'panel' => 'contact_messengers', 'type' => 'url', 'label' => 'روبیکا', 'default' => '', 'placeholder' => 'https://rubika.ir/username' ],
+		'address'          => [ 'panel' => 'contact_address', 'type' => 'text', 'label' => 'آدرس', 'default' => '' ],
+		'map_url'          => [ 'panel' => 'contact_address', 'type' => 'url', 'label' => 'لینک نقشه', 'default' => '', 'placeholder' => 'https://maps.app.goo.gl/...' ],
 
 		// ── شبکه‌های اجتماعی ─────────────────────────────────────────
-		'social_title'     => [ 'section' => 'social', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'شبکه‌های اجتماعی' ],
-		'social_hide_urls' => [ 'section' => 'social', 'type' => 'urllist', 'label' => 'صفحه‌هایی که شبکه‌های اجتماعی در آن‌ها نمایش داده نشود', 'default' => '', 'placeholder' => "https://example.com/cart/\n/checkout/\n/product/*", 'help' => 'هر آدرس در یک خط؛ آدرس کامل صفحه یا فقط مسیر آن (مثلا /cart/). برای صفحه اصلی / و برای یک صفحه و همه زیرصفحه‌هایش * در انتها (مثلا /blog/*). پارامترهای بعد از ? در نظر گرفته نمی‌شوند.' ],
+		'social_title'     => [ 'panel' => 'social_bar', 'type' => 'text', 'label' => 'عنوان نوار', 'default' => 'شبکه‌های اجتماعی' ],
+		'social_hide_urls' => [ 'panel' => 'social_bar', 'type' => 'urllist', 'label' => 'صفحه‌هایی که نوار در آن‌ها نمایش داده نشود', 'default' => '', 'placeholder' => "https://example.com/cart/\n/checkout/\n/product/*", 'help' => 'هر آدرس در یک خط؛ آدرس کامل صفحه یا فقط مسیر آن (مثلا /cart/). برای صفحه اصلی / و برای یک صفحه و همه زیرصفحه‌هایش * در انتها (مثلا /blog/*). پارامترهای بعد از ? در نظر گرفته نمی‌شوند.' ],
 		...hodima_social_fields(),
+
+		// ── Google Analytics ───────────────────────────────────────
+		'ga_id'            => [ 'panel' => 'analytics_ga', 'type' => 'ga', 'label' => 'شناسه اندازه‌گیری (Measurement ID)', 'default' => '', 'placeholder' => 'G-XXXXXXXXXX', 'help' => 'خالی = کد آمار چاپ نمی‌شود.' ],
+		'ga_skip_editors'  => [ 'panel' => 'analytics_ga', 'type' => 'toggle', 'label' => 'بازدید مدیران و نویسندگان ثبت نشود', 'default' => true ],
+		'ga_production'    => [ 'panel' => 'analytics_ga', 'type' => 'toggle', 'label' => 'فقط روی سایت اصلی (Production)', 'default' => true, 'help' => 'روی استیجینگ یا لوکال (WP_ENVIRONMENT_TYPE) کد آمار چاپ نمی‌شود تا آمار واقعی آلوده نشود.' ],
 	];
 }
 
@@ -124,9 +129,8 @@ function hodima_trust_fields(): array {
 
 	for ( $i = 1; $i <= HODIMA_TRUST_SLOTS; $i++ ) {
 		$suffix = 1 === $i ? '' : "_{$i}";
-		$num    = hodima_fa_digits( $i );
-		$fields[ "trust_image_id{$suffix}" ] = [ 'section' => 'footer', 'group' => "trust_{$i}", 'type' => 'image', 'label' => "تصویر نماد {$num}", 'default' => 0 ];
-		$fields[ "trust_url{$suffix}" ]      = [ 'section' => 'footer', 'group' => "trust_{$i}", 'type' => 'url', 'label' => "لینک نماد {$num}", 'default' => '', 'placeholder' => 'https://', 'help' => 'صفحه اعتبارسنجی نماد (اختیاری).' ];
+		$fields[ "trust_image_id{$suffix}" ] = [ 'panel' => 'footer_trust', 'group' => "trust_{$i}", 'type' => 'image', 'label' => 'تصویر', 'default' => 0 ];
+		$fields[ "trust_url{$suffix}" ]      = [ 'panel' => 'footer_trust', 'group' => "trust_{$i}", 'type' => 'url', 'label' => 'لینک (اختیاری)', 'default' => '', 'placeholder' => 'https://', 'help' => 'صفحه اعتبارسنجی نماد.' ];
 	}
 
 	return $fields;
@@ -138,49 +142,23 @@ function hodima_fa_digits( int|string $value ): string {
 }
 
 /**
- * گروه‌های فیلد: فیلدهای پشت‌سرهم با یک group در یک قاب نمایش داده می‌شوند و
- * گروه‌های پشت‌سرهم با یک set در یک ظرف (کنار هم یا ردیف به ردیف).
+ * زیرگروه‌های داخل یک قاب (کارت هر نماد اعتماد، ردیف هر شبکه اجتماعی).
  *
- * @return array<string, array{title:string, set:string}>
+ * @return array<string, array{title:string}>
  */
 function hodima_settings_groups(): array {
 
 	$groups = [];
 
 	for ( $i = 1; $i <= HODIMA_TRUST_SLOTS; $i++ ) {
-		$groups[ "trust_{$i}" ] = [ 'title' => 'نماد اعتماد ' . hodima_fa_digits( $i ), 'set' => 'trust' ];
+		$groups[ "trust_{$i}" ] = [ 'title' => 'نماد ' . hodima_fa_digits( $i ) ];
 	}
 
 	foreach ( hodima_social_networks() as $key => $label ) {
-		$groups[ "social_{$key}" ] = [ 'title' => $label, 'set' => 'social' ];
+		$groups[ "social_{$key}" ] = [ 'title' => $label ];
 	}
 
-	$groups['palette'] = [ 'title' => 'پنج رنگ', 'set' => 'palette' ];
-
-	// قاب‌های تکی: هر کدام مجموعه خودش
-	$groups['notfound']         = [ 'title' => 'متن‌ها و دکمه‌ها', 'set' => 'notfound' ];
-	$groups['product_sections'] = [ 'title' => 'نمایش در صفحه محصول', 'set' => 'product_sections' ];
-	$groups['blog_related']     = [ 'title' => 'زیر هر مقاله', 'set' => 'blog_related' ];
-
 	return $groups;
-}
-
-/**
- * ظرف هر مجموعه گروه.
- *   cards: قاب‌ها کنار هم (نمادهای اعتماد به ترتیب ۱، ۲، ۳)
- *   rows : هر گروه یک ردیف با ستون‌های هم‌تراز (شبکه‌های اجتماعی)
- *
- * @return array<string, array{layout:string, title:string, help:string, columns?:list<string>}>
- */
-function hodima_settings_sets(): array {
-	return [
-		'trust'  => [ 'layout' => 'cards', 'title' => 'نمادهای اعتماد', 'help' => 'تا سه نماد (مثلا اینماد، ساماندهی، اتحادیه). نمادهای دارای تصویر به همین ترتیب کنار هم در فوتر نمایش داده می‌شوند؛ نماد بدون تصویر نادیده گرفته می‌شود.' ],
-		'palette'          => [ 'layout' => 'cards', 'title' => 'پالت رنگ برند', 'help' => 'رنگ‌های کل سایت (و صفحه‌های تنظیمات پیشخوان) از این پنج رنگ ساخته می‌شوند. برای برگشت به رنگ اصلی، مقدار پیش‌فرض زیر هر رنگ را وارد کنید. بعد از ذخیره، کش لایت‌اسپید خودکار پاک می‌شود.' ],
-		'notfound'         => [ 'layout' => 'cards', 'title' => 'صفحه «پیدا نشد» (۴۰۴)', 'help' => 'صفحه‌ای که بازدیدکننده با آدرس اشتباه یا حذف‌شده می‌بیند. دکمه «صفحه اصلی» همیشه هست.' ],
-		'product_sections' => [ 'layout' => 'cards', 'title' => 'بخش‌های صفحه محصول', 'help' => 'محتوای این بخش‌ها از کادر «رسانه» هر محصول (افزونه Hodima Media) و نظرات ووکامرس می‌آید.' ],
-		'blog_related'     => [ 'layout' => 'cards', 'title' => 'مقالات مرتبط', 'help' => 'فهرست مقاله‌های دیگر زیر هر مقاله، بعد از دیدگاه‌ها.' ],
-		'social' => [ 'layout' => 'rows', 'title' => 'شبکه‌ها', 'help' => 'شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد.', 'columns' => [ 'شبکه', 'آدرس صفحه', 'آیکون (اختیاری)' ] ],
-	];
 }
 
 /**
@@ -208,30 +186,98 @@ function hodima_social_fields(): array {
 	$fields = [];
 
 	foreach ( hodima_social_networks() as $key => $label ) {
-		$fields[ "social_{$key}_url" ]  = [ 'section' => 'social', 'group' => "social_{$key}", 'type' => 'url', 'label' => $label, 'default' => '', 'placeholder' => 'https://' ];
-		$fields[ "social_{$key}_icon" ] = [ 'section' => 'social', 'group' => "social_{$key}", 'type' => 'image', 'label' => 'آیکون ' . $label, 'default' => 0 ];
+		$fields[ "social_{$key}_url" ]  = [ 'panel' => 'social_networks', 'group' => "social_{$key}", 'type' => 'url', 'label' => $label, 'default' => '', 'placeholder' => 'https://' ];
+		$fields[ "social_{$key}_icon" ] = [ 'panel' => 'social_networks', 'group' => "social_{$key}", 'type' => 'image', 'label' => 'آیکون ' . $label, 'default' => 0 ];
 	}
 
 	return $fields;
 }
 
 /**
- * بخش‌های صفحه تنظیمات؛ هر بخش یک تب جداگانه است.
+ * گروه‌های منوی کناری صفحه تنظیمات.
  *
- * @return array<string, array{title:string, description:string, icon:string}>
+ * @return array<string, string>
+ */
+function hodima_settings_nav_groups(): array {
+	return [
+		'look'    => 'ظاهر سایت',
+		'pages'   => 'صفحه‌ها',
+		'contact' => 'ارتباط با مشتری',
+		'tools'   => 'آمار',
+	];
+}
+
+/**
+ * بخش‌های صفحه تنظیمات؛ هر بخش یک تب. ترتیب = ترتیب منوی کناری.
+ *
+ * قبلا ده تب بی‌ترتیب در یک ردیف بودند (و در صفحه‌های کوچک‌تر آخرین تب‌ها
+ * بیرون از کادر می‌افتادند)؛ «هدر و ۴۰۴» هم دو چیز بی‌ربط را در یک تب داشت.
+ * حالا تب‌ها به ترتیب جای‌شان در سایت (بالا به پایین، بعد صفحه‌ها) و در
+ * چهار گروه‌اند. کلید تب‌ها همان قبلی است (لینک‌های ?tab=… قدیمی کار می‌کنند).
+ *
+ * @return array<string, array{title:string, description:string, icon:string, nav:string}>
  */
 function hodima_settings_sections(): array {
 	return [
-		'brand'     => [ 'title' => 'برند', 'icon' => 'dashicons-art', 'description' => 'لوگوی هدر سایت.' ],
-		'home'      => [ 'title' => 'صفحه اصلی', 'icon' => 'dashicons-admin-home', 'description' => 'بخش‌های صفحه اصلی سایت: ترتیب، روشن/خاموش و تنظیمات هر بخش (عنوان‌ها، تعداد، دسته‌ها، رنگ زمینه).' ],
-		'header'    => [ 'title' => 'هدر و ۴۰۴', 'icon' => 'dashicons-editor-kitchensink', 'description' => 'متن‌های هدر سایت و صفحه «پیدا نشد» (۴۰۴). متن خالی به پیش‌فرض برمی‌گردد.' ],
-		'product'   => [ 'title' => 'صفحه محصول', 'icon' => 'dashicons-products', 'description' => 'متن‌ها و بخش‌های صفحه هر محصول. بخش خاموش برای همه محصولات پنهان می‌شود؛ بخش روشن فقط وقتی محتوا دارد دیده می‌شود.' ],
-		'blog'      => [ 'title' => 'وبلاگ', 'icon' => 'dashicons-welcome-write-blog', 'description' => 'صفحه وبلاگ، آرشیو دسته‌ها و بخش «مقالات مرتبط» زیر هر مقاله.' ],
-		'contact'   => [ 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی، نمایش داده نمی‌شود.' ],
-		'footer'    => [ 'title' => 'فوتر', 'icon' => 'dashicons-align-wide', 'description' => 'ستون‌های فوتر. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود (ستون نماد اعتماد بدون هیچ تصویری).' ],
-		'analytics' => [ 'title' => 'Google Analytics', 'icon' => 'dashicons-chart-area', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
-		'shop'      => [ 'title' => 'فروشگاه و دسته‌ها', 'icon' => 'dashicons-store', 'description' => 'سربرگ صفحه اول فروشگاه (زیرعنوان و ویژگی‌های خالی نمایش داده نمی‌شوند) و تعداد محصول صفحه‌های فهرست محصولات.' ],
-		'social'    => [ 'title' => 'شبکه‌های اجتماعی', 'icon' => 'dashicons-share', 'description' => 'نوار شبکه‌های اجتماعی بالای فوتر همه صفحه‌ها (به جز صفحه‌هایی که در فهرست زیر آمده‌اند). بدون هیچ شبکه‌ای نوار نمایش داده نمی‌شود.' ],
+		'brand'     => [ 'nav' => 'look', 'title' => 'برند و رنگ‌ها', 'icon' => 'dashicons-art', 'description' => 'لوگوی هدر و پنج رنگ برند که کل سایت از آن‌ها ساخته می‌شود.' ],
+		'header'    => [ 'nav' => 'look', 'title' => 'هدر', 'icon' => 'dashicons-editor-kitchensink', 'description' => 'نوار بالای همه صفحه‌ها. متن خالی به پیش‌فرض برمی‌گردد.' ],
+		'footer'    => [ 'nav' => 'look', 'title' => 'فوتر', 'icon' => 'dashicons-table-row-after', 'description' => 'ستون‌های پایین همه صفحه‌ها. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود.' ],
+		'home'      => [ 'nav' => 'pages', 'title' => 'صفحه اصلی', 'icon' => 'dashicons-admin-home', 'description' => 'بخش‌های صفحه اصلی سایت: ترتیب، روشن/خاموش و تنظیمات هر بخش.' ],
+		'shop'      => [ 'nav' => 'pages', 'title' => 'فروشگاه و دسته‌ها', 'icon' => 'dashicons-store', 'description' => 'سربرگ صفحه فروشگاه و تعداد محصول صفحه‌های فهرست محصولات.' ],
+		'product'   => [ 'nav' => 'pages', 'title' => 'صفحه محصول', 'icon' => 'dashicons-products', 'description' => 'متن‌ها و بخش‌های صفحه هر محصول.' ],
+		'blog'      => [ 'nav' => 'pages', 'title' => 'وبلاگ', 'icon' => 'dashicons-welcome-write-blog', 'description' => 'صفحه وبلاگ، آرشیو دسته‌ها و «مقالات مرتبط» زیر هر مقاله.' ],
+		'notfound'  => [ 'nav' => 'pages', 'title' => 'صفحه ۴۰۴', 'icon' => 'dashicons-warning', 'description' => 'صفحه‌ای که بازدیدکننده با آدرس اشتباه یا حذف‌شده می‌بیند. متن خالی به پیش‌فرض برمی‌گردد.' ],
+		'contact'   => [ 'nav' => 'contact', 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی نمایش داده نمی‌شود.' ],
+		'social'    => [ 'nav' => 'contact', 'title' => 'شبکه‌های اجتماعی', 'icon' => 'dashicons-share', 'description' => 'نوار شبکه‌های اجتماعی بالای فوتر همه صفحه‌ها. بدون هیچ شبکه‌ای نوار نمایش داده نمی‌شود.' ],
+		'analytics' => [ 'nav' => 'tools', 'title' => 'Google Analytics', 'icon' => 'dashicons-chart-area', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
+	];
+}
+
+/**
+ * قاب‌های هر تب (کارت با عنوان و توضیح). ترتیب = ترتیب نمایش در تب.
+ *
+ *   layout: grid (پیش‌فرض) | toggles (کلیدها کنار هم) | swatches (رنگ‌ها) |
+ *           cards (زیرگروه‌ها کنار هم: نمادهای اعتماد) |
+ *           rows (هر زیرگروه یک ردیف با ستون‌های هم‌تراز: شبکه‌ها)
+ *   half:   در صفحه پهن، نصف عرض (دو قاب کوچک کنار هم)
+ *
+ * @return array<string, array{section:string, title:string, help?:string, icon?:string, layout?:string, half?:bool, columns?:list<string>}>
+ */
+function hodima_settings_panels(): array {
+	return [
+		'brand_logo'         => [ 'section' => 'brand', 'title' => 'لوگو', 'icon' => 'dashicons-format-image', 'help' => 'لوگوی هدر سایت؛ پیش‌نمایش روی رنگ هدر است.' ],
+		'brand_palette'      => [ 'section' => 'brand', 'title' => 'پالت رنگ برند', 'icon' => 'dashicons-admin-appearance', 'layout' => 'swatches', 'help' => 'رنگ‌های کل سایت (و صفحه‌های تنظیمات پیشخوان) از این پنج رنگ ساخته می‌شوند. بعد از ذخیره، کش لایت‌اسپید خودکار پاک می‌شود.' ],
+
+		'header_main'        => [ 'section' => 'header', 'title' => 'پشتیبانی و جستجو', 'icon' => 'dashicons-format-chat', 'help' => 'دکمه پشتیبانی فقط وقتی دیده می‌شود که در تب «اطلاعات تماس» دست‌کم یک راه ارتباطی وارد شده باشد.' ],
+
+		'footer_about'       => [ 'section' => 'footer', 'title' => 'ستون «درباره ما»', 'icon' => 'dashicons-info', 'half' => true ],
+		'footer_guide'       => [ 'section' => 'footer', 'title' => 'ستون «راهنمای خرید»', 'icon' => 'dashicons-sos', 'half' => true ],
+		'footer_trust'       => [ 'section' => 'footer', 'title' => 'ستون «نماد اعتماد»', 'icon' => 'dashicons-shield', 'layout' => 'cards', 'help' => 'تا سه نماد (مثلا اینماد، ساماندهی، اتحادیه). نمادهای دارای تصویر به همین ترتیب کنار هم نمایش داده می‌شوند؛ نماد بدون تصویر نادیده گرفته می‌شود.' ],
+		'footer_consult'     => [ 'section' => 'footer', 'title' => 'فرم مشاوره و کپی‌رایت', 'icon' => 'dashicons-edit' ],
+
+		'home_mode'          => [ 'section' => 'home', 'title' => 'روش ساخت صفحه اصلی', 'icon' => 'dashicons-admin-generic' ],
+		// قاب «بخش‌های صفحه اصلی» را home-layout-admin.php می‌سازد
+
+		'shop_header'        => [ 'section' => 'shop', 'title' => 'سربرگ صفحه فروشگاه', 'icon' => 'dashicons-cover-image', 'help' => 'زیرعنوان و ویژگی‌های خالی نمایش داده نمی‌شوند.' ],
+		'shop_list'          => [ 'section' => 'shop', 'title' => 'فهرست محصولات', 'icon' => 'dashicons-grid-view', 'help' => 'فروشگاه، دسته‌ها و برچسب‌های محصول.' ],
+
+		'product_texts'      => [ 'section' => 'product', 'title' => 'متن‌ها', 'icon' => 'dashicons-editor-textcolor' ],
+		'product_sections'   => [ 'section' => 'product', 'title' => 'بخش‌های صفحه محصول', 'icon' => 'dashicons-visibility', 'layout' => 'toggles', 'help' => 'بخش خاموش برای همه محصولات پنهان می‌شود؛ بخش روشن فقط وقتی محتوا دارد دیده می‌شود (کادر «رسانه» هر محصول و نظرات ووکامرس).' ],
+		'product_upsells'    => [ 'section' => 'product', 'title' => 'محصولات پیشنهادی (Upsell)', 'icon' => 'dashicons-cart', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید.' ],
+
+		'blog_page'          => [ 'section' => 'blog', 'title' => 'صفحه وبلاگ', 'icon' => 'dashicons-welcome-write-blog' ],
+		'blog_related'       => [ 'section' => 'blog', 'title' => 'مقالات مرتبط', 'icon' => 'dashicons-admin-links', 'help' => 'فهرست مقاله‌های دیگر زیر هر مقاله، بعد از دیدگاه‌ها.' ],
+
+		'notfound_main'      => [ 'section' => 'notfound', 'title' => 'متن‌ها و دکمه‌ها', 'icon' => 'dashicons-editor-textcolor' ],
+
+		'contact_phone'      => [ 'section' => 'contact', 'title' => 'تلفن', 'icon' => 'dashicons-phone' ],
+		'contact_messengers' => [ 'section' => 'contact', 'title' => 'پیام‌رسان‌ها', 'icon' => 'dashicons-format-chat', 'help' => 'دکمه‌های پنجره پشتیبانی هدر.' ],
+		'contact_address'    => [ 'section' => 'contact', 'title' => 'آدرس', 'icon' => 'dashicons-location' ],
+
+		'social_bar'         => [ 'section' => 'social', 'title' => 'نوار شبکه‌ها', 'icon' => 'dashicons-admin-settings' ],
+		'social_networks'    => [ 'section' => 'social', 'title' => 'شبکه‌ها', 'icon' => 'dashicons-share', 'layout' => 'rows', 'columns' => [ 'شبکه', 'آدرس صفحه', 'آیکون (اختیاری)' ], 'help' => 'شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد.' ],
+
+		'analytics_ga'       => [ 'section' => 'analytics', 'title' => 'Google Analytics 4', 'icon' => 'dashicons-chart-area' ],
 	];
 }
 
@@ -261,6 +307,36 @@ function hodima_settings(): array {
 /** یک مقدار از تنظیمات. */
 function hodima_setting( string $key ): mixed {
 	return hodima_settings()[ $key ] ?? null;
+}
+
+/** تب یک فیلد (از قابش). */
+function hodima_settings_field_section( array $field ): string {
+	return (string) ( hodima_settings_panels()[ $field['panel'] ?? '' ]['section'] ?? '' );
+}
+
+/**
+ * نام کامل فیلد برای پیام خطا، مثل «فوتر › نماد ۲ › لینک (اختیاری)».
+ * برچسب‌ها داخل قاب کوتاه‌اند («لینک (اختیاری)»)؛ بیرون از قاب مبهم می‌شدند.
+ */
+function hodima_settings_field_label( string $key ): string {
+
+	$field = hodima_settings_fields()[ $key ] ?? null;
+	if ( null === $field ) {
+		return $key;
+	}
+
+	$panel = hodima_settings_panels()[ $field['panel'] ] ?? [];
+	$parts = [
+		hodima_settings_sections()[ hodima_settings_field_section( $field ) ]['title'] ?? '',
+		isset( $field['group'] ) ? ( hodima_settings_groups()[ $field['group'] ]['title'] ?? '' ) : ( $panel['title'] ?? '' ),
+		$field['label'],
+	];
+
+	// بدون تکه خالی و تکرار پشت‌سرهم (ردیف «اینستاگرام» با برچسب «اینستاگرام»)
+	$parts = array_values( array_filter( $parts, static fn( string $part ): bool => '' !== $part ) );
+	$parts = array_filter( $parts, static fn( string $part, int $i ): bool => 0 === $i || $part !== $parts[ $i - 1 ], ARRAY_FILTER_USE_BOTH );
+
+	return implode( ' › ', $parts );
 }
 
 /* =========================================================================
@@ -336,7 +412,7 @@ function hodima_settings_sanitize_url( string $key, mixed $raw ): string {
 
 	$url = esc_url_raw( $raw, [ 'https', 'http' ] );
 	if ( '' === $url || ! wp_http_validate_url( $url ) ) {
-		add_settings_error( HODIMA_SETTINGS_OPTION, "invalid_{$key}", sprintf( 'آدرس وارد شده برای «%s» معتبر نیست و ذخیره نشد.', hodima_settings_fields()[ $key ]['label'] ) );
+		add_settings_error( HODIMA_SETTINGS_OPTION, "invalid_{$key}", sprintf( 'آدرس وارد شده برای «%s» معتبر نیست و ذخیره نشد.', hodima_settings_field_label( $key ) ) );
 		return '';
 	}
 
@@ -399,7 +475,7 @@ function hodima_settings_sanitize_phone( string $key, mixed $raw ): string {
 	$phone = (string) preg_replace( '/(?!^\+)[^\d]/', '', trim( $raw ) );
 
 	if ( '' !== $phone && ! preg_match( '/^\+?\d{5,15}$/', $phone ) ) {
-		add_settings_error( HODIMA_SETTINGS_OPTION, "invalid_{$key}", sprintf( '«%s» معتبر نیست و ذخیره نشد.', hodima_settings_fields()[ $key ]['label'] ) );
+		add_settings_error( HODIMA_SETTINGS_OPTION, "invalid_{$key}", sprintf( '«%s» معتبر نیست و ذخیره نشد.', hodima_settings_field_label( $key ) ) );
 		return '';
 	}
 
@@ -436,13 +512,14 @@ add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
 } );
 
 /**
- * صفحه «نمایش ← تنظیمات قالب هدیما» با تب جداگانه برای هر بخش.
+ * صفحه «نمایش ← تنظیمات قالب هدیما»: منوی کناری گروه‌بندی‌شده + پنل هر تب.
  *
- * قبلا همه بخش‌ها زیر هم در یک صفحه بلند بودند و «تب‌ها» فقط لینک پرش به
- * همان صفحه بودند. حالا هر بخش پنل خودش را دارد:
- *   - بدون جاوااسکریپت: تب‌ها لینک ?tab=… هستند و سرور پنل همان تب را نشان می‌دهد؛
- *   - با جاوااسکریپت (admin.js): جابه‌جایی فوری بدون بارگذاری مجدد، و تب فعال
- *     بعد از «ذخیره» حفظ می‌شود (آدرس بازگشت فرم به‌روز می‌شود).
+ * تاریخچه: اول همه بخش‌ها زیر هم بودند؛ بعد ده تب در یک ردیف افقی (بی‌ترتیب و
+ * در صفحه کوچک‌تر بیرون‌زده)؛ حالا منوی کناری با چهار گروه (ظاهر سایت، صفحه‌ها،
+ * ارتباط با مشتری، آمار) و در موبایل یک ردیف لغزنده.
+ *   - بدون جاوااسکریپت: هر تب لینک ?tab=… است و سرور پنل همان تب را نشان می‌دهد؛
+ *   - با جاوااسکریپت (admin.js): جابه‌جایی فوری، تب فعال بعد از «ذخیره» حفظ
+ *     می‌شود (آدرس بازگشت فرم به‌روز می‌شود)، نشانه «ذخیره‌نشده» و Ctrl+S.
  * همه فیلدها در همان یک فرم و یک گزینه (hodima_theme_settings) می‌مانند؛ پنل‌های
  * پنهان هم ارسال می‌شوند، پس ذخیره یک تب مقدار تب‌های دیگر را پاک نمی‌کند.
  */
@@ -455,6 +532,8 @@ function hodima_settings_render_page(): void {
 	$settings = hodima_settings();
 	$fields   = hodima_settings_fields();
 	$sections = hodima_settings_sections();
+	$panels   = hodima_settings_panels();
+	$version  = (string) wp_get_theme( get_template() )->get( 'Version' );
 
 	$requested = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط انتخاب تب
 	$current   = isset( $sections[ $requested ] ) ? $requested : (string) array_key_first( $sections );
@@ -462,29 +541,18 @@ function hodima_settings_render_page(): void {
 	<div class="wrap hodima-settings">
 		<header class="hodima-settings__header">
 			<span class="dashicons dashicons-admin-appearance hodima-settings__header-icon" aria-hidden="true"></span>
-			<div>
+			<div class="hodima-settings__header-body">
+				<?php if ( '' !== $version ) : ?>
+					<span class="hodima-settings__badge">قالب هدیما · نسخه <bdi><?php echo esc_html( $version ); ?></bdi></span>
+				<?php endif; ?>
 				<h1>تنظیمات قالب هدیما</h1>
-				<p>برند، صفحه اصلی، اطلاعات تماس، فوتر و نمادهای اعتماد، آمار، صفحه فروشگاه و شبکه‌های اجتماعی قالب.</p>
+				<p>ظاهر سایت، صفحه‌ها و راه‌های ارتباطی. هر تغییر بعد از «ذخیره» روی همه صفحه‌های سایت اعمال می‌شود.</p>
 			</div>
+			<a class="hodima-settings__visit" href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener">
+				<span class="dashicons dashicons-external" aria-hidden="true"></span>
+				مشاهده سایت<span class="screen-reader-text"> (در زبانه جدید)</span>
+			</a>
 		</header>
-
-		<nav class="hodima-settings__tabs" role="tablist" aria-label="بخش‌های تنظیمات" data-hodima-tabs>
-			<?php foreach ( $sections as $section_key => $section ) : ?>
-				<a
-					class="hodima-settings__tab"
-					id="hodima-tab-<?php echo esc_attr( $section_key ); ?>"
-					href="<?php echo esc_url( add_query_arg( [ 'page' => HODIMA_SETTINGS_PAGE, 'tab' => $section_key ], admin_url( 'themes.php' ) ) ); ?>"
-					role="tab"
-					aria-controls="hodima-section-<?php echo esc_attr( $section_key ); ?>"
-					aria-selected="<?php echo $section_key === $current ? 'true' : 'false'; ?>"
-					tabindex="<?php echo $section_key === $current ? '0' : '-1'; ?>"
-					data-tab="<?php echo esc_attr( $section_key ); ?>"
-				>
-					<span class="dashicons <?php echo esc_attr( $section['icon'] ); ?>" aria-hidden="true"></span>
-					<?php echo esc_html( $section['title'] ); ?>
-				</a>
-			<?php endforeach; ?>
-		</nav>
 
 		<hr class="wp-header-end">
 
@@ -497,158 +565,274 @@ function hodima_settings_render_page(): void {
 		settings_errors();
 		?>
 
-		<form method="post" action="options.php" class="hodima-settings__form" novalidate>
-			<?php settings_fields( 'hodima_theme_settings_group' ); ?>
+		<div class="hodima-settings__layout">
+			<nav class="hodima-settings__nav" aria-label="بخش‌های تنظیمات" data-hodima-nav>
+				<?php foreach ( hodima_settings_nav_groups() as $nav_key => $nav_label ) : ?>
+					<?php $nav_sections = array_filter( $sections, static fn( array $section ): bool => $section['nav'] === $nav_key ); ?>
+					<?php if ( $nav_sections ) : ?>
+						<div class="hodima-settings__nav-group">
+							<p class="hodima-settings__nav-title" id="hodima-nav-<?php echo esc_attr( $nav_key ); ?>"><?php echo esc_html( $nav_label ); ?></p>
+							<ul aria-labelledby="hodima-nav-<?php echo esc_attr( $nav_key ); ?>">
+								<?php foreach ( $nav_sections as $section_key => $section ) : ?>
+									<li>
+										<a
+											class="hodima-settings__tab"
+											href="<?php echo esc_url( add_query_arg( [ 'page' => HODIMA_SETTINGS_PAGE, 'tab' => $section_key ], admin_url( 'themes.php' ) ) ); ?>"
+											aria-controls="hodima-section-<?php echo esc_attr( $section_key ); ?>"
+											data-tab="<?php echo esc_attr( $section_key ); ?>"
+											<?php echo $section_key === $current ? 'aria-current="page"' : ''; ?>
+										>
+											<span class="dashicons <?php echo esc_attr( $section['icon'] ); ?>" aria-hidden="true"></span>
+											<span class="hodima-settings__tab-label"><?php echo esc_html( $section['title'] ); ?></span>
+											<span class="hodima-settings__tab-dirty" data-hodima-dirty hidden><span class="screen-reader-text">(تغییر ذخیره‌نشده)</span></span>
+										</a>
+									</li>
+								<?php endforeach; ?>
+							</ul>
+						</div>
+					<?php endif; ?>
+				<?php endforeach; ?>
+			</nav>
 
-			<?php foreach ( $sections as $section_key => $section ) : ?>
-				<section
-					class="hodima-settings__card"
-					id="hodima-section-<?php echo esc_attr( $section_key ); ?>"
-					role="tabpanel"
-					aria-labelledby="hodima-tab-<?php echo esc_attr( $section_key ); ?>"
-					<?php echo $section_key === $current ? '' : 'hidden'; ?>
-				>
-					<h2><?php echo esc_html( $section['title'] ); ?></h2>
-					<p class="hodima-settings__desc"><?php echo esc_html( $section['description'] ); ?></p>
+			<form method="post" action="options.php" class="hodima-settings__form" novalidate data-hodima-form>
+				<?php settings_fields( 'hodima_theme_settings_group' ); ?>
 
-					<div class="hodima-settings__grid">
-						<?php
-						hodima_settings_render_section_fields(
-							array_filter( $fields, static fn( array $field ): bool => $field['section'] === $section_key ),
-							$settings
-						);
+				<?php foreach ( $sections as $section_key => $section ) : ?>
+					<section
+						class="hodima-settings__section"
+						id="hodima-section-<?php echo esc_attr( $section_key ); ?>"
+						data-section="<?php echo esc_attr( $section_key ); ?>"
+						aria-labelledby="hodima-section-<?php echo esc_attr( $section_key ); ?>-title"
+						<?php echo $section_key === $current ? '' : 'hidden'; ?>
+					>
+						<header class="hodima-settings__section-head">
+							<span class="dashicons <?php echo esc_attr( $section['icon'] ); ?>" aria-hidden="true"></span>
+							<div>
+								<h2 id="hodima-section-<?php echo esc_attr( $section_key ); ?>-title" tabindex="-1"><?php echo esc_html( $section['title'] ); ?></h2>
+								<p><?php echo esc_html( $section['description'] ); ?></p>
+							</div>
+						</header>
 
-						// تب «صفحه اصلی»: فهرست بخش‌ها (گزینه جدا، همین فرم)
-						if ( 'home' === $section_key && function_exists( 'hodima_home_admin_render' ) ) {
-							hodima_home_admin_render();
-						}
-						?>
-					</div>
-				</section>
-			<?php endforeach; ?>
+						<div class="hodima-settings__panels">
+							<?php
+							foreach ( $panels as $panel_key => $panel ) {
+								if ( $panel['section'] === $section_key ) {
+									hodima_settings_render_panel(
+										$panel_key,
+										$panel,
+										array_filter( $fields, static fn( array $field ): bool => ( $field['panel'] ?? '' ) === $panel_key ),
+										$settings
+									);
+								}
+							}
 
-			<footer class="hodima-settings__actions">
-				<?php submit_button( 'ذخیره تنظیمات', 'primary hodima-settings__save', 'submit', false ); ?>
-			</footer>
-		</form>
+							// تب «صفحه اصلی»: فهرست بخش‌ها (گزینه جدا، همین فرم)
+							if ( 'home' === $section_key && function_exists( 'hodima_home_admin_render' ) ) {
+								hodima_home_admin_render();
+							}
+							?>
+						</div>
+					</section>
+				<?php endforeach; ?>
+
+				<footer class="hodima-settings__actions">
+					<p class="hodima-settings__status" data-hodima-status aria-live="polite">
+						<span class="hodima-settings__status-dirty">تغییرهای ذخیره‌نشده دارید</span>
+						<span class="hodima-settings__status-hint">میان‌بر ذخیره: <kbd dir="ltr">Ctrl + S</kbd></span>
+					</p>
+					<?php submit_button( 'ذخیره تنظیمات', 'primary hodima-settings__save', 'submit', false ); ?>
+				</footer>
+			</form>
+		</div>
 	</div>
 	<?php
 }
 
 /**
- * فیلدهای یک بخش، با قاب گروه‌ها و ظرف مجموعه‌ها (hodima_settings_groups/sets).
+ * یک قاب: سرتیتر (آیکون، عنوان، توضیح)، فیلدهای آزاد در شبکه، بعد زیرگروه‌ها
+ * (کارت‌های نماد اعتماد یا ردیف‌های شبکه‌ها).
  *
- * قبلا فیلدهای شبکه‌های اجتماعی (آدرس و آیکون ۹ شبکه) همه در یک شبکه
- * خودکار ریخته می‌شدند؛ آیکون هر شبکه کنار آدرس شبکه دیگری می‌افتاد و
- * معلوم نبود کدام به کدام تعلق دارد. حالا هر شبکه یک ردیف است.
- *
- * @param array<string, array> $fields
+ * @param array<string, array> $fields فیلدهای همین قاب، به ترتیب تعریف
  */
-function hodima_settings_render_section_fields( array $fields, array $settings ): void {
+function hodima_settings_render_panel( string $key, array $panel, array $fields, array $settings ): void {
 
-	$groups     = hodima_settings_groups();
-	$sets       = hodima_settings_sets();
-	$open_group = null;
-	$open_set   = null;
+	$layout  = (string) ( $panel['layout'] ?? 'grid' );
+	$groups  = hodima_settings_groups();
+	$loose   = array_filter( $fields, static fn( array $field ): bool => ! isset( $field['group'] ) );
+	$grouped = [];
 
-	$close_group = static function () use ( &$open_group ): void {
-		if ( null !== $open_group ) {
-			echo '</div></fieldset>';
-			$open_group = null;
+	foreach ( $fields as $field_key => $field ) {
+		if ( isset( $field['group'] ) ) {
+			$grouped[ $field['group'] ][ $field_key ] = $field;
 		}
-	};
-
-	$close_set = static function () use ( &$open_set, $close_group ): void {
-		$close_group();
-		if ( null !== $open_set ) {
-			echo '</div></div>';
-			$open_set = null;
-		}
-	};
-
-	foreach ( $fields as $key => $field ) {
-
-		$group = isset( $field['group'], $groups[ $field['group'] ] ) ? $field['group'] : null;
-		$set   = null !== $group ? $groups[ $group ]['set'] : null;
-
-		if ( $group !== $open_group ) {
-			$close_group();
-		}
-
-		if ( $set !== $open_set ) {
-			$close_set();
-
-			if ( null !== $set && isset( $sets[ $set ] ) ) {
-				$meta = $sets[ $set ];
-				printf(
-					'<div class="hodima-set hodima-set--%1$s"><div class="hodima-set__head"><h3 class="hodima-set__title">%2$s</h3><p class="hodima-field__help">%3$s</p></div>',
-					esc_attr( $meta['layout'] ),
-					esc_html( $meta['title'] ),
-					esc_html( $meta['help'] )
-				);
-				if ( ! empty( $meta['columns'] ) ) {
-					echo '<div class="hodima-set__columns" aria-hidden="true">';
-					foreach ( $meta['columns'] as $column ) {
-						echo '<span>' . esc_html( $column ) . '</span>';
-					}
-					echo '</div>';
-				}
-				echo '<div class="hodima-set__items">';
-				$open_set = $set;
-			}
-		}
-
-		if ( null !== $group && $group !== $open_group ) {
-			printf(
-				'<fieldset class="hodima-group" data-group="%1$s"><legend class="hodima-group__title">%2$s</legend><div class="hodima-group__fields">',
-				esc_attr( $group ),
-				esc_html( $groups[ $group ]['title'] )
-			);
-			$open_group = $group;
-		}
-
-		hodima_settings_render_field( $key, $field, $settings[ $key ] );
 	}
 
-	$close_set();
+	$classes = 'hodima-panel hodima-panel--' . $layout . ( ! empty( $panel['half'] ) ? ' hodima-panel--half' : '' );
+	$title   = 'hodima-panel-' . $key . '-title';
+	?>
+	<section class="<?php echo esc_attr( $classes ); ?>" aria-labelledby="<?php echo esc_attr( $title ); ?>">
+		<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '' ); ?>
+
+		<div class="hodima-panel__body">
+			<?php if ( 'swatches' === $layout ) : ?>
+				<?php hodima_settings_palette_preview( $settings ); ?>
+			<?php endif; ?>
+
+			<?php if ( $loose ) : ?>
+				<div class="hodima-panel__fields">
+					<?php foreach ( $loose as $field_key => $field ) : ?>
+						<?php hodima_settings_render_field( $field_key, $field, $settings[ $field_key ] ); ?>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( $grouped ) : ?>
+				<?php if ( ! empty( $panel['columns'] ) ) : ?>
+					<div class="hodima-panel__columns" aria-hidden="true">
+						<?php foreach ( $panel['columns'] as $column ) : ?>
+							<span><?php echo esc_html( $column ); ?></span>
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
+				<div class="hodima-panel__items">
+					<?php foreach ( $grouped as $group => $group_fields ) : ?>
+						<fieldset class="hodima-group" data-group="<?php echo esc_attr( $group ); ?>">
+							<legend class="hodima-group__title"><?php echo esc_html( $groups[ $group ]['title'] ?? $group ); ?></legend>
+							<div class="hodima-group__fields">
+								<?php foreach ( $group_fields as $field_key => $field ) : ?>
+									<?php hodima_settings_render_field( $field_key, $field, $settings[ $field_key ] ); ?>
+								<?php endforeach; ?>
+							</div>
+						</fieldset>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
+		</div>
+	</section>
+	<?php
+}
+
+/** سرتیتر قاب (مشترک با قاب «بخش‌های صفحه اصلی» در home-layout-admin.php). */
+function hodima_settings_panel_head( string $id, string $title, string $help = '', string $icon = '', string $extra = '' ): void {
+	?>
+	<header class="hodima-panel__head">
+		<?php if ( '' !== $icon ) : ?>
+			<span class="hodima-panel__icon dashicons <?php echo esc_attr( $icon ); ?>" aria-hidden="true"></span>
+		<?php endif; ?>
+		<div class="hodima-panel__heading">
+			<h3 class="hodima-panel__title" id="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $title ); ?></h3>
+			<?php if ( '' !== $help ) : ?>
+				<p class="hodima-panel__help"><?php echo esc_html( $help ); ?></p>
+			<?php endif; ?>
+		</div>
+		<?php echo $extra; // phpcs:ignore WordPress.Security.EscapeOutput -- نشانه‌گذاری ثابت فراخواننده ?>
+	</header>
+	<?php
 }
 
 /**
- * @param array{section:string, type:string, label:string, default:mixed, group?:string, help?:string, placeholder?:string, wide?:bool} $field
+ * نمونه کوچک سایت با پالت فعلی (تب «برند و رنگ‌ها»). admin.js با تغییر هر رنگ
+ * متغیرهای همین ظرف را عوض می‌کند تا نتیجه پیش از ذخیره دیده شود.
+ */
+function hodima_settings_palette_preview( array $settings ): void {
+
+	$vars = '';
+	foreach ( [ 'primary', 'secondary', 'third', 'accent', 'accent_light' ] as $name ) {
+		$value = sanitize_hex_color( (string) ( $settings[ 'color_' . $name ] ?? '' ) );
+		if ( $value ) {
+			$vars .= '--pv-' . str_replace( '_', '-', $name ) . ':' . $value . ';';
+		}
+	}
+	?>
+	<div class="hodima-palette-preview" style="<?php echo esc_attr( $vars ); ?>" data-hodima-palette-preview aria-hidden="true">
+		<div class="hodima-palette-preview__header">
+			<span class="hodima-palette-preview__logo"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></span>
+			<span class="hodima-palette-preview__menu"><span></span><span></span><span></span></span>
+			<span class="hodima-palette-preview__support">پشتیبانی</span>
+		</div>
+		<div class="hodima-palette-preview__body">
+			<span class="hodima-palette-preview__chip">دسته‌بندی</span>
+			<strong class="hodima-palette-preview__title">عنوان نمونه محصول</strong>
+			<span class="hodima-palette-preview__line"></span>
+			<span class="hodima-palette-preview__buttons">
+				<span class="hodima-palette-preview__button">افزودن به سبد</span>
+				<span class="hodima-palette-preview__button hodima-palette-preview__button--accent">خرید عمده</span>
+			</span>
+		</div>
+	</div>
+	<?php
+}
+
+/**
+ * @param array{panel:string, type:string, label:string, default:mixed, group?:string, help?:string, placeholder?:string, wide?:bool, preview?:string} $field
  */
 function hodima_settings_render_field( string $key, array $field, mixed $value ): void {
 
-	$id   = 'hodima-setting-' . $key;
-	$name = HODIMA_SETTINGS_OPTION . '[' . $key . ']';
-	$help = $field['help'] ?? '';
-	$wide = in_array( $field['type'], [ 'textarea', 'urllist', 'image' ], true ) && ( $field['wide'] ?? true ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
+	$id        = 'hodima-setting-' . $key;
+	$name      = HODIMA_SETTINGS_OPTION . '[' . $key . ']';
+	$help      = $field['help'] ?? '';
+	$help_id   = $id . '-help';
+	$described = '' !== $help ? ' aria-describedby="' . esc_attr( $help_id ) . '"' : '';
+	$wide      = ( $field['wide'] ?? in_array( $field['type'], [ 'textarea', 'urllist', 'image' ], true ) ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
 	?>
 	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">
 		<?php if ( 'toggle' === $field['type'] ) : ?>
+			<?php /* کاشی کلید: کل کادر قابل کلیک؛ توضیح داخل همان کادر */ ?>
 			<label class="hodima-toggle" for="<?php echo esc_attr( $id ); ?>">
-				<input type="checkbox" role="switch" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( (bool) $value ); ?>>
+				<input type="checkbox" role="switch" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( (bool) $value ); ?><?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
+				<span class="hodima-toggle__text">
+					<span class="hodima-toggle__label"><?php echo esc_html( $field['label'] ); ?></span>
+					<?php if ( '' !== $help ) : ?>
+						<span class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></span>
+					<?php endif; ?>
+				</span>
 				<span class="hodima-toggle__track" aria-hidden="true"></span>
-				<span class="hodima-toggle__label"><?php echo esc_html( $field['label'] ); ?></span>
 			</label>
+			<?php $help = ''; // توضیح بالاتر چاپ شد ?>
+
+		<?php elseif ( 'color' === $field['type'] ) : ?>
+			<?php $default = strtolower( (string) $field['default'] ); ?>
+			<label class="hodima-swatch" for="<?php echo esc_attr( $id ); ?>">
+				<input type="color" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" data-hodima-color="<?php echo esc_attr( str_replace( [ 'color_', '_' ], [ '', '-' ], $key ) ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
+				<span class="hodima-swatch__name"><?php echo esc_html( $field['label'] ); ?></span>
+				<code class="hodima-swatch__value" dir="ltr" data-hodima-color-value><?php echo esc_html( (string) $value ); ?></code>
+			</label>
+			<?php if ( '' !== $help ) : ?>
+				<p class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></p>
+			<?php endif; ?>
+			<button type="button" class="hodima-swatch__reset" data-hodima-color-reset="<?php echo esc_attr( $default ); ?>" <?php echo strtolower( (string) $value ) === $default ? 'hidden' : ''; ?>>
+				<span class="dashicons dashicons-undo" aria-hidden="true"></span>
+				بازگشت به پیش‌فرض <code dir="ltr"><?php echo esc_html( $default ); ?></code>
+			</button>
+			<?php $help = ''; // توضیح بالاتر چاپ شد ?>
 
 		<?php elseif ( 'image' === $field['type'] ) : ?>
-			<?php $image_id = (int) $value; ?>
+			<?php
+			$image_id = (int) $value;
+			$header   = 'header' === ( $field['preview'] ?? '' );
+			$inverted = $header && hodima_setting( 'logo_invert' );
+			?>
 			<span class="hodima-field__label" id="<?php echo esc_attr( $id ); ?>-label"><?php echo esc_html( $field['label'] ); ?></span>
 			<div class="hodima-media" data-hodima-media>
 				<input type="hidden" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $image_id ); ?>" data-hodima-media-input>
-				<figure class="hodima-media__preview" data-hodima-media-preview <?php echo $image_id ? '' : 'hidden'; ?>>
+				<figure
+					class="hodima-media__preview<?php echo $header ? ' hodima-media__preview--header' : ''; ?><?php echo $inverted ? ' is-inverted' : ''; ?><?php echo $image_id ? '' : ' is-empty'; ?>"
+					data-hodima-media-preview
+					<?php echo $header ? 'data-hodima-invert-source="hodima-setting-logo_invert"' : ''; ?>
+				>
 					<?php echo $image_id ? wp_get_attachment_image( $image_id, 'medium', false, [ 'alt' => '' ] ) : ''; ?>
+					<span class="hodima-media__empty" aria-hidden="true"><span class="dashicons dashicons-format-image"></span><span class="hodima-media__empty-text">بدون تصویر</span></span>
 				</figure>
 				<div class="hodima-media__buttons">
-					<button type="button" class="button" data-hodima-media-select aria-describedby="<?php echo esc_attr( $id ); ?>-label" data-title="<?php echo esc_attr( $field['label'] ); ?>">انتخاب تصویر</button>
-					<button type="button" class="button-link hodima-media__remove" data-hodima-media-remove <?php echo $image_id ? '' : 'hidden'; ?>>حذف</button>
+					<button type="button" class="button" data-hodima-media-select aria-describedby="<?php echo esc_attr( $id ); ?>-label" data-title="<?php echo esc_attr( $field['label'] ); ?>"><?php echo $image_id ? 'تغییر تصویر' : 'انتخاب تصویر'; ?></button>
+					<button type="button" class="button-link hodima-media__remove" data-hodima-media-remove aria-describedby="<?php echo esc_attr( $id ); ?>-label" <?php echo $image_id ? '' : 'hidden'; ?>>حذف</button>
 				</div>
 			</div>
 
 		<?php else : ?>
 			<label class="hodima-field__label" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
 			<?php if ( 'textarea' === $field['type'] ) : ?>
-				<textarea id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" rows="4"><?php echo esc_textarea( (string) $value ); ?></textarea>
+				<textarea id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" rows="4"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>><?php echo esc_textarea( (string) $value ); ?></textarea>
 			<?php elseif ( 'number' === $field['type'] ) : ?>
 				<input
 					type="number"
@@ -658,15 +842,10 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					min="<?php echo esc_attr( (string) ( $field['min'] ?? 0 ) ); ?>"
 					max="<?php echo esc_attr( (string) ( $field['max'] ?? '' ) ); ?>"
 					inputmode="numeric"
-					<?php echo '' !== $help ? 'aria-describedby="' . esc_attr( $id ) . '-help"' : ''; ?>
+					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				>
-			<?php elseif ( 'color' === $field['type'] ) : ?>
-				<span class="hodima-color">
-					<input type="color" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" <?php echo '' !== $help ? 'aria-describedby="' . esc_attr( $id ) . '-help"' : ''; ?>>
-					<span class="hodima-color__default">پیش‌فرض: <code dir="ltr"><?php echo esc_html( (string) $field['default'] ); ?></code></span>
-				</span>
 			<?php elseif ( 'select' === $field['type'] ) : ?>
-				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>">
+				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
 					<?php foreach ( (array) ( $field['options'] ?? [] ) as $option => $label ) : ?>
 						<option value="<?php echo esc_attr( (string) $option ); ?>" <?php selected( (string) $value, (string) $option ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
@@ -680,7 +859,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					spellcheck="false"
 					autocomplete="off"
 					<?php echo isset( $field['placeholder'] ) ? 'placeholder="' . esc_attr( $field['placeholder'] ) . '"' : ''; ?>
-					<?php echo '' !== $help ? 'aria-describedby="' . esc_attr( $id ) . '-help"' : ''; ?>
+					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				><?php echo esc_textarea( (string) $value ); ?></textarea>
 			<?php else : ?>
 				<?php
@@ -699,12 +878,13 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<?php echo isset( $field['placeholder'] ) ? 'placeholder="' . esc_attr( $field['placeholder'] ) . '"' : ''; ?>
 					<?php echo $is_ltr ? 'dir="ltr"' : ''; ?>
 					<?php echo 'ga' === $field['type'] ? 'pattern="G-[A-Za-z0-9]{4,16}" autocomplete="off" spellcheck="false"' : ''; ?>
+					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				>
 			<?php endif; ?>
 		<?php endif; ?>
 
 		<?php if ( '' !== $help ) : ?>
-			<p class="hodima-field__help" id="<?php echo esc_attr( $id ); ?>-help"><?php echo esc_html( $help ); ?></p>
+			<p class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></p>
 		<?php endif; ?>
 	</div>
 	<?php
@@ -862,11 +1042,7 @@ function hodima_socials_visible_here(): bool {
 }
 
 /* =========================================================================
- * ۵. Google Analytics 4
- * ========================================================================= */
-
-/* =========================================================================
- * پالت رنگ برند (تب «برند»)
+ * ۵. پالت رنگ برند (تب «برند و رنگ‌ها»)
  * ------------------------------------------------------------------------
  * فقط رنگ‌هایی که با پیش‌فرض فرق دارند به‌صورت :root{…} بعد از tokens.css
  * چاپ می‌شوند (سایت با پالت پیش‌فرض هیچ CSS اضافه‌ای ندارد). مشتق‌ها هم
@@ -945,6 +1121,10 @@ function hodima_print_palette(): void {
 add_action( 'wp_enqueue_scripts', 'hodima_print_palette', 21 );
 add_action( 'admin_enqueue_scripts', 'hodima_print_palette', 2 );
 
+/* =========================================================================
+ * ۶. Google Analytics 4
+ * ========================================================================= */
+
 add_action( 'wp_enqueue_scripts', 'hodima_enqueue_google_analytics', 1 );
 
 function hodima_enqueue_google_analytics(): void {
@@ -989,7 +1169,7 @@ add_filter( 'wp_resource_hints', static function ( array $urls, string $relation
 }, 10, 2 );
 
 /* =========================================================================
- * ۶. باطل کردن کش‌هایی که از این تنظیمات استفاده می‌کنند
+ * ۷. باطل کردن کش‌هایی که از این تنظیمات استفاده می‌کنند
  * ========================================================================= */
 
 add_action( 'update_option_' . HODIMA_SETTINGS_OPTION, static function (): void {
