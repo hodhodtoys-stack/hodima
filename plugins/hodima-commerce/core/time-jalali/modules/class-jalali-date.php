@@ -26,6 +26,9 @@ final class Jalali_Date {
     }
 
     public function convert_comment_date( string $date, string $format, $comment ): string {
+        if ( $this->is_machine_format( $format ) ) {
+            return $date;
+        }
         if ( isset( $comment->comment_date ) ) {
             try {
                 $format = $format ?: get_option( 'date_format' );
@@ -37,6 +40,9 @@ final class Jalali_Date {
     }
 
     public function convert_comment_time( string $time, string $format, bool $gmt, bool $translate, $comment ): string {
+        if ( $this->is_machine_format( $format ) ) {
+            return $time;
+        }
         if ( isset( $comment->comment_date ) ) {
             try {
                 $format = $format ?: get_option( 'time_format' );
@@ -48,6 +54,9 @@ final class Jalali_Date {
     }
 
     public function convert_post_date( string $the_date, string $format, $post ): string {
+        if ( $this->is_machine_format( $format ) ) {
+            return $the_date;
+        }
         try {
             $post = get_post( $post );
             if ( $post ) {
@@ -60,6 +69,9 @@ final class Jalali_Date {
     }
 
     public function convert_post_time( string $the_time, string $format, $post ): string {
+        if ( $this->is_machine_format( $format ) ) {
+            return $the_time;
+        }
         try {
             $post = get_post( $post );
             if ( $post ) {
@@ -72,6 +84,9 @@ final class Jalali_Date {
     }
 
     public function convert_wp_date_globally( string $date, string $format, int $timestamp, mixed $timezone ): string {
+        if ( $this->is_machine_format( $format ) ) {
+            return $date;
+        }
         try { 
             /*
              * باگ قبلی: wp_date یک timestamp واقعی (UTC) می‌دهد ولی format_jalali_date
@@ -89,6 +104,9 @@ final class Jalali_Date {
     }
 
     public function convert_date_i18n_globally( string $date, string $format, int $timestamp, bool $gmt ): string {
+        if ( $this->is_machine_format( $format ) ) {
+            return $date;
+        }
         try { 
             return $this->to_persian_numbers( $this->format_jalali_date( $timestamp, $format ) ); 
         } catch ( \Throwable $e ) { 
@@ -132,6 +150,19 @@ final class Jalali_Date {
                 esc_html( $jalali_date ) 
             );
         } catch ( \Throwable $e ) { return $formatted_date; }
+    }
+
+    /**
+     * قالب ماشین‌خوان (timestamp، ISO 8601، RFC) نباید شمسی یا فارسی شود.
+     * باگ قبلی: get_the_time( 'U' ) به‌جای عدد timestamp حرف «U» (یا رقم فارسی)
+     * برمی‌گرداند؛ ابزارک «فعالیت» پیشخوان وردپرس آن را به gmdate() می‌دهد و با
+     * TypeError کل صفحه پیشخوان از کار می‌افتاد. هر کدی که تاریخ را برای مقایسه
+     * یا ذخیره می‌خواهد همین قالب‌ها را به کار می‌برد.
+     */
+    private function is_machine_format( string $format ): bool {
+        static $machine = null;
+        $machine ??= [ 'U', 'G', 'u', 'v', 'Z', 'c', 'r', DATE_ATOM, DATE_COOKIE, DATE_ISO8601, DATE_RFC822, DATE_RFC850, DATE_RFC1036, DATE_RFC1123, DATE_RFC7231, DATE_RFC2822, DATE_RFC3339, DATE_RFC3339_EXTENDED, DATE_RSS, DATE_W3C ];
+        return in_array( $format, $machine, true ) || str_contains( $format, '\\T' );
     }
 
     private function to_persian_numbers( string $string ): string {

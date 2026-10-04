@@ -30,8 +30,13 @@ if ( ! function_exists( 'arian_render_product_slider' ) ) {
         ];
         $args = wp_parse_args( $args, $defaults );
 
-        $clean_slug = trim( $args['link'], '/' );
-        $final_link = ! empty( $clean_slug ) ? esc_url( home_url( '/' . $clean_slug . '/' ) ) : esc_url( home_url( '/' ) );
+        // نامک/مسیر داخلی (شورت‌کدهای قدیمی) یا آدرس کامل (چیدمان صفحه اصلی: لینک واقعی دسته)
+        $clean_slug = trim( (string) $args['link'], '/' );
+        $final_link = match ( true ) {
+            '' === $clean_slug                             => esc_url( home_url( '/' ) ),
+            (bool) preg_match( '#^https?://#i', $clean_slug ) => esc_url( (string) $args['link'] ),
+            default                                        => esc_url( home_url( '/' . $clean_slug . '/' ) ),
+        };
 
         $query_args = [
             'status'       => 'publish',
@@ -121,6 +126,82 @@ if ( ! function_exists( 'arian_render_product_slider' ) ) {
         <?php
         return ob_get_clean();
     }
+}
+
+// ========================================================================
+// ۱.۱ داده بخش‌های «دسته‌بندی کالاها» و «آخرین مقالات» (با کش)
+// ------------------------------------------------------------------------
+// مشترک بین چیدمان «تنظیمات قالب ← صفحه اصلی» و شورت‌کدهای قدیمی
+// [section03] و [section09] (home/parts/*.php). دسته‌های مستثنا و تعداد
+// مقاله‌ها هنگام نمایش اعمال می‌شوند تا یک کش برای همه تنظیمات کافی باشد؛
+// کش با تغییر دسته/نوشته پاک می‌شود (پایین همین فایل).
+// ========================================================================
+
+/** همه دسته‌های محصول دارای کالا: نامک، نام، لینک، شناسه تصویر. */
+function hodima_home_categories_data(): array {
+
+    $data = get_transient( 'hodima_home_categories_v5' );
+
+    if ( is_array( $data ) ) {
+        return $data;
+    }
+
+    $data  = [];
+    $terms = taxonomy_exists( 'product_cat' ) ? get_terms( [
+        'taxonomy'               => 'product_cat',
+        'hide_empty'             => true,
+        'update_term_meta_cache' => true,
+    ] ) : [];
+
+    if ( is_array( $terms ) ) {
+        foreach ( $terms as $term ) {
+            $link = get_term_link( $term );
+            if ( is_wp_error( $link ) ) {
+                continue;
+            }
+            $data[] = [
+                'slug'         => $term->slug,
+                'name'         => $term->name,
+                'link'         => $link,
+                'thumbnail_id' => (int) get_term_meta( $term->term_id, 'thumbnail_id', true ),
+            ];
+        }
+    }
+
+    set_transient( 'hodima_home_categories_v5', $data, WEEK_IN_SECONDS );
+
+    return $data;
+}
+
+/** ۲۰ مقاله آخر: عنوان، لینک، شناسه تصویر شاخص (۱۵ دقیقه کش). */
+function hodima_home_blog_posts_data(): array {
+
+    $data = get_transient( 'hodima_home_blog_posts_v3' );
+
+    if ( is_array( $data ) ) {
+        return $data;
+    }
+
+    $data = [];
+
+    foreach ( get_posts( [
+        'post_type'      => 'post',
+        'posts_per_page' => 20,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+        'post_status'    => 'publish',
+        'no_found_rows'  => true,
+    ] ) as $post_item ) {
+        $data[] = [
+            'title'        => $post_item->post_title,
+            'link'         => get_permalink( $post_item->ID ),
+            'thumbnail_id' => (int) get_post_thumbnail_id( $post_item->ID ),
+        ];
+    }
+
+    set_transient( 'hodima_home_blog_posts_v3', $data, 15 * MINUTE_IN_SECONDS );
+
+    return $data;
 }
 
 // ========================================================================
@@ -351,7 +432,8 @@ add_action( 'wp_enqueue_scripts', function() {
  * تابع پاک‌کننده ترنزینت دسته‌بندی‌ها
  */
 function arian_clear_category_cache_force() {
-    // کلید با فایل نمایشی یکپارچه شد (v4)
+    // v5: همه دسته‌ها با نامک؛ استثناها هنگام نمایش (home/parts/categories.php). v4 نسخه قبلی
+    delete_transient( 'hodima_home_categories_v5' );
     delete_transient( 'arian_categories_hyper_v4' );
     
     // سازگاری با افزونه‌های کش معروف (در صورت نصب بودن)
@@ -403,7 +485,8 @@ add_action( 'deleted_term_meta', 'arian_clear_category_cache_on_meta_change', 10
  * تابع پاک‌کننده ترنزینت مقالات وبلاگ
  */
 function arian_clear_blog_cache_force() {
-    // کلید مربوط به کش وبلاگ که در section9.php تعریف شده است
+    // v3: ۲۰ مقاله آخر؛ تعداد هر بخش هنگام نمایش (home/parts/blog.php). v2 نسخه قبلی
+    delete_transient( 'hodima_home_blog_posts_v3' );
     delete_transient( 'arian_latest_blog_posts_hyper_v2' );
     
     // سازگاری با افزونه‌های کش معروف (در صورت نصب بودن)

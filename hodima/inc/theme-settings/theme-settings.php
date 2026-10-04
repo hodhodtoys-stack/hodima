@@ -38,6 +38,9 @@ function hodima_settings_fields(): array {
 		'logo_id'          => [ 'section' => 'brand', 'type' => 'image', 'label' => 'لوگو', 'default' => 0, 'help' => 'بهتر است نسخه SVG یا WebP با پس‌زمینه شفاف باشد. اگر خالی بماند نام سایت نمایش داده می‌شود.' ],
 		'logo_invert'      => [ 'section' => 'brand', 'type' => 'toggle', 'label' => 'نمایش لوگو به رنگ سفید روی هدر', 'default' => true, 'help' => 'برای لوگوی رنگی روی پس‌زمینه تیره هدر.' ],
 
+		// ── صفحه اصلی (بخش‌ها: inc/theme-settings/home-layout-admin.php) ──
+		'home_builder'     => [ 'section' => 'home', 'type' => 'toggle', 'label' => 'ساخت صفحه اصلی از این چیدمان', 'default' => false, 'help' => 'خاموش: صفحه اصلی مثل قبل از متن برگه صفحه اصلی (ویرایشگر برگه و شورت‌کدهایش) ساخته می‌شود. روشن: از بخش‌های زیر، به همین ترتیب.' ],
+
 		// ── اطلاعات تماس ───────────────────────────────────────────
 		'phone'            => [ 'section' => 'contact', 'type' => 'tel', 'label' => 'شماره تماس', 'default' => '', 'placeholder' => '09120000000', 'help' => 'دکمه «تماس تلفنی» پنجره پشتیبانی.' ],
 		'phone_2'          => [ 'section' => 'contact', 'type' => 'tel', 'label' => 'شماره تماس دوم (اختیاری)', 'default' => '', 'placeholder' => '02100000000', 'help' => 'مثلا تلفن ثابت؛ در نسخه ماشین‌خوان (llms.txt) کنار شماره اصلی می‌آید.' ],
@@ -173,6 +176,7 @@ function hodima_social_fields(): array {
 function hodima_settings_sections(): array {
 	return [
 		'brand'     => [ 'title' => 'برند', 'icon' => 'dashicons-art', 'description' => 'لوگوی هدر سایت.' ],
+		'home'      => [ 'title' => 'صفحه اصلی', 'icon' => 'dashicons-admin-home', 'description' => 'بخش‌های صفحه اصلی سایت: ترتیب، روشن/خاموش و تنظیمات هر بخش (عنوان‌ها، تعداد، دسته‌ها، رنگ زمینه).' ],
 		'contact'   => [ 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی، نمایش داده نمی‌شود.' ],
 		'footer'    => [ 'title' => 'فوتر', 'icon' => 'dashicons-align-wide', 'description' => 'ستون‌های فوتر. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود (ستون نماد اعتماد بدون هیچ تصویری).' ],
 		'analytics' => [ 'title' => 'Google Analytics', 'icon' => 'dashicons-chart-area', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
@@ -405,7 +409,7 @@ function hodima_settings_render_page(): void {
 			<span class="dashicons dashicons-admin-appearance hodima-settings__header-icon" aria-hidden="true"></span>
 			<div>
 				<h1>تنظیمات قالب هدیما</h1>
-				<p>برند، اطلاعات تماس، فوتر و نمادهای اعتماد، آمار، صفحه فروشگاه و شبکه‌های اجتماعی قالب.</p>
+				<p>برند، صفحه اصلی، اطلاعات تماس، فوتر و نمادهای اعتماد، آمار، صفحه فروشگاه و شبکه‌های اجتماعی قالب.</p>
 			</div>
 		</header>
 
@@ -458,6 +462,11 @@ function hodima_settings_render_page(): void {
 							array_filter( $fields, static fn( array $field ): bool => $field['section'] === $section_key ),
 							$settings
 						);
+
+						// تب «صفحه اصلی»: فهرست بخش‌ها (گزینه جدا، همین فرم)
+						if ( 'home' === $section_key && function_exists( 'hodima_home_admin_render' ) ) {
+							hodima_home_admin_render();
+						}
 						?>
 					</div>
 				</section>
