@@ -2,39 +2,17 @@
  * لینک‌های مرتبط دستی — کادر ویرایشگر
  * Path: plugins/hodima-seo/inc/manual_related_link/assets/admin.js
  *
- * جستجوی زنده مقصد (کیبوردی: بالا/پایین/Enter/Escape)، چسباندن آدرس،
- * تصویر دلخواه از کتابخانه رسانه، جابه‌جایی خانه‌ها (کشیدن یا دکمه) و
- * افزودن خانه ذخیره. JavaScript خالص، بدون jQuery.
+ * جستجوی زنده مقصد (کیبوردی: بالا/پایین/Enter/Escape)، چسباندن آدرس و
+ * تصویر دلخواه از کتابخانه رسانه. JavaScript خالص، بدون jQuery.
+ * (جابه‌جایی، شماره‌گذاری و «افزودن خانه ذخیره» در ۲.۳ به خواست کاربر حذف شد.)
  */
 (() => {
 	'use strict';
 
 	const cfg = window.hodimaRL ?? {};
 	const t = cfg.i18n ?? {};
-	const faNum = (n) => Number(n).toLocaleString('fa-IR');
 
 	const field = (slot, name) => slot.querySelector(`[data-field="${name}"]`);
-
-	/* ── شماره‌گذاری دوباره بعد از جابه‌جایی/افزودن ── */
-	const renumber = (group) => {
-		const count = Number(group.dataset.count ?? 1);
-		const max = Number(group.dataset.max ?? 6);
-		const slots = [...group.querySelectorAll(':scope > .hodima-rl-slots > .hodima-rl-slot')];
-
-		slots.forEach((slot, i) => {
-			slot.querySelectorAll('[name]').forEach((el) => {
-				el.name = el.name.replace(/\[(products|article)\]\[\d+\]/, `[$1][${i}]`);
-			});
-			slot.querySelector('.hodima-rl-slot__num').textContent = faNum(i + 1);
-			const reserve = i >= count;
-			slot.classList.toggle('is-reserve', reserve);
-			const badge = slot.querySelector('.hodima-rl-slot__badge');
-			badge.textContent = reserve ? (t.reserve ?? 'ذخیره') : (t.shown ?? 'نمایش');
-		});
-
-		const add = group.querySelector('.hodima-rl-add');
-		if (add) add.hidden = slots.length >= max;
-	};
 
 	const markUnsaved = (slot) => {
 		const list = slot.querySelector('.hodima-rl-warnings');
@@ -273,65 +251,16 @@
 		});
 	};
 
-	/* ── جابه‌جایی ── */
-	const move = (slot, dir) => {
-		const sibling = dir < 0 ? slot.previousElementSibling : slot.nextElementSibling;
-		if (!sibling) return;
-		dir < 0 ? sibling.before(slot) : sibling.after(slot);
-		renumber(slot.closest('.hodima-rl-group'));
-		slot.querySelector(dir < 0 ? '.hodima-rl-up' : '.hodima-rl-down').focus();
-	};
-
-	let dragged = null;
-
 	const setupSlot = (slot, group) => {
 		setupSearch(slot, group);
 		setupImage(slot);
-
 		slot.querySelector('.hodima-rl-clear').addEventListener('click', () => clearTarget(slot));
-		slot.querySelector('.hodima-rl-up').addEventListener('click', () => move(slot, -1));
-		slot.querySelector('.hodima-rl-down').addEventListener('click', () => move(slot, 1));
-
-		// کشیدن فقط از دستگیره، تا انتخاب متن داخل فیلدها خراب نشود
-		const handle = slot.querySelector('.hodima-rl-slot__handle');
-		handle.addEventListener('pointerdown', () => { slot.draggable = true; });
-		slot.addEventListener('dragstart', (e) => {
-			dragged = slot;
-			slot.classList.add('is-dragging');
-			e.dataTransfer.effectAllowed = 'move';
-		});
-		slot.addEventListener('dragend', () => {
-			slot.draggable = false;
-			slot.classList.remove('is-dragging');
-			dragged = null;
-			renumber(group);
-		});
-		slot.addEventListener('dragover', (e) => {
-			if (!dragged || dragged === slot || dragged.parentElement !== slot.parentElement) return;
-			e.preventDefault();
-			const rect = slot.getBoundingClientRect();
-			e.clientY < rect.top + rect.height / 2 ? slot.before(dragged) : slot.after(dragged);
-		});
 	};
 
 	/* ── راه‌اندازی ── */
 	const init = () => {
 		document.querySelectorAll('.hodima-rl-group').forEach((group) => {
 			group.querySelectorAll(':scope > .hodima-rl-slots > .hodima-rl-slot').forEach((slot) => setupSlot(slot, group));
-
-			const template = group.querySelector('.hodima-rl-template');
-			group.querySelector('.hodima-rl-add')?.addEventListener('click', () => {
-				const slot = template.content.firstElementChild.cloneNode(true);
-				// شناسه‌های یکتا برای label/aria-controls خانه تازه
-				const suffix = `-n${Date.now().toString(36)}`;
-				slot.querySelectorAll('[id]').forEach((el) => { el.id += suffix; });
-				slot.querySelectorAll('[for]').forEach((el) => { el.htmlFor += suffix; });
-				slot.querySelectorAll('[aria-controls]').forEach((el) => el.setAttribute('aria-controls', el.getAttribute('aria-controls') + suffix));
-				group.querySelector('.hodima-rl-slots').append(slot);
-				setupSlot(slot, group);
-				renumber(group);
-				slot.querySelector('.hodima-rl-search').focus();
-			});
 		});
 
 		document.querySelectorAll('.hodima-rl-copy').forEach((button) => {

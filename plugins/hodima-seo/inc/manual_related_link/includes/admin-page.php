@@ -79,7 +79,7 @@ final class AdminPage {
 		echo '<div class="wrap hd-wrap hodima-rl-page">';
 		hodima_admin_header( [
 			'title'       => 'لینک‌های مرتبط',
-			'description' => 'محصولات مکمل و مقاله پیشنهادی که در ویرایشگر هر نوشته، محصول و دسته انتخاب می‌شوند.',
+			'description' => 'پیشنهاد خرید (در سایت: «محصولات مکمل») و مقاله پیشنهادی که در ویرایشگر هر نوشته، محصول و دسته انتخاب می‌شوند.',
 			'icon'        => 'dashicons-admin-links',
 			'current'     => $tab,
 			'tabs'        => [
@@ -118,7 +118,7 @@ final class AdminPage {
 						<div class="hd-field">
 							<label class="hd-field__label" for="hodima-rl-count-<?php echo esc_attr( $group->value ); ?>">تعداد لینک نمایشی</label>
 							<input type="number" min="1" max="<?php echo esc_attr( (string) Store::MAX_SLOTS ); ?>" id="hodima-rl-count-<?php echo esc_attr( $group->value ); ?>" name="<?php echo esc_attr( $f ); ?>[count]" value="<?php echo esc_attr( (string) $g['count'] ); ?>">
-							<p class="hd-field__help">لینک‌های اضافه در ویرایشگر «ذخیره» می‌مانند و پاک نمی‌شوند.</p>
+							<p class="hd-field__help">ویرایشگر به همین تعداد خانه جستجو نشان می‌دهد. اگر تعداد را کم کنید، لینک‌های اضافه پاک نمی‌شوند و به‌عنوان «ذخیره» می‌مانند.</p>
 						</div>
 						<?php if ( $group->has_title() ) : ?>
 							<div class="hd-field">
@@ -193,11 +193,11 @@ final class AdminPage {
 					<h2 class="hd-card__title">راهنمای شورت‌کدها</h2>
 				</header>
 				<ul class="hd-list">
-					<li><code>[manual_related_products]</code> محصولات مکمل · <code>[hodima_related_article]</code> مقاله پیشنهادی</li>
+					<li><code>[manual_related_products]</code> پیشنهاد خرید (عنوان کادر در سایت: «محصولات مکمل»، از همین صفحه قابل تغییر) · <code>[hodima_related_article]</code> مقاله پیشنهادی</li>
 					<li>«دسته‌بندی‌های مرتبط» حذف شد (لینک دسته‌ها را خوشه موضوعی می‌سازد). اگر <code>[hodima_related_categories]</code> جایی در متن مانده باشد چیزی نمایش نمی‌دهد.</li>
 					<li>هر شورت‌کد مستقل است: هر کدام را هر جای متن (یا توضیح دسته) بگذارید، فقط کادر خودش همان‌جا نمایش داده می‌شود. لازم نیست کنار هم باشند و لازم نیست هر دو را بگذارید.</li>
 					<li>ویژگی‌ها: <code>title="…"</code> عنوان دلخواه (<code>title=""</code> بدون عنوان)، <code>heading="h2"</code>، و <code>id="123" type="term"</code> برای نمایش لینک‌های صفحه یا دسته‌ای دیگر.</li>
-					<li><code>[manual_related_products]</code> که از قبل در محتوای سایت است، حالا همان کادر «محصولات مکمل» است و لازم نیست پاک شود. <code>[manual_related_links]</code> و <code>[hodima_complementary_products]</code> هم همین کادر را نشان می‌دهند.</li>
+					<li><code>[manual_related_products]</code> که از قبل در محتوای سایت است، حالا همان کادر «پیشنهاد خرید» است و لازم نیست پاک شود. <code>[manual_related_links]</code> و <code>[hodima_complementary_products]</code> هم همین کادر را نشان می‌دهند.</li>
 					<li>در توضیح دسته‌ها هم شورت‌کد کار می‌کند (قبلا به شکل متن خام دیده می‌شد).</li>
 				</ul>
 			</section>

@@ -5,8 +5,9 @@
  *
  * نسخه ۱: سه خانه ثابت که آدرس باید دستی کپی و چسبانده می‌شد، بدون هیچ
  * هشداری برای لینک خراب یا کارت بی‌تصویر (که بی‌صدا در سایت حذف می‌شد).
- * حالا: جستجوی زنده مقصد، عنوان و تصویر خودکار از مقصد، جابه‌جایی ترتیب،
- * خانه ذخیره، و هشدار هر خانه (پیش‌نویس، noindex، ریدایرکت، لینک به خود…).
+ * حالا: جستجوی زنده مقصد، عنوان و تصویر خودکار از مقصد و هشدار هر خانه
+ * (پیش‌نویس، noindex، ریدایرکت، لینک به خود…). از ۲.۳ دو گروه در یک ردیف،
+ * بدون شماره، جابه‌جایی و دکمه «افزودن خانه ذخیره».
  */
 
 declare(strict_types=1);
@@ -103,23 +104,16 @@ final class Admin {
 		// (و نمایش خودکار خاموش است) در سایت هیچ‌جا دیده نمی‌شود.
 		$hidden = $items && ! in_array( $group, Front::placed_groups( Front::source_text( $object_id, $context ) ), true );
 		?>
-		<fieldset class="hodima-rl-group" data-group="<?php echo esc_attr( $group->value ); ?>" data-count="<?php echo esc_attr( (string) $count ); ?>" data-max="<?php echo esc_attr( (string) Store::MAX_SLOTS ); ?>">
+		<fieldset class="hodima-rl-group" data-group="<?php echo esc_attr( $group->value ); ?>">
 			<legend class="hodima-rl-group__head">
 				<span class="dashicons <?php echo esc_attr( $group->icon() ); ?>" aria-hidden="true"></span>
 				<span class="hodima-rl-group__title"><?php echo esc_html( $group->label() ); ?></span>
 				<code class="hodima-rl-group__code">[<?php echo esc_html( $group->shortcode() ); ?>]</code>
 				<button type="button" class="button-link hodima-rl-copy" data-copy="[<?php echo esc_attr( $group->shortcode() ); ?>]">کپی شورت‌کد</button>
 			</legend>
-			<p class="hodima-rl-group__help">
-				<?php
-				printf(
-					'%1$s لینک اول نمایش داده می‌شود%2$s؛ خانه‌های بعدی «ذخیره»‌اند و اگر یکی از لینک‌های بالا قابل نمایش نباشد جایش می‌آیند.%3$s',
-					esc_html( number_format_i18n( $count ) ),
-					$group->has_title() ? esc_html( sprintf( ' با عنوان «%s»', Store::title( $group ) ?: 'بدون عنوان' ) ) : ' بدون هیچ عنوانی',
-					$auto ? ' نمایش خودکار روشن است؛ شورت‌کد لازم نیست.' : ''
-				);
-				?>
-			</p>
+			<?php if ( $auto ) : ?>
+				<p class="hodima-rl-group__help">نمایش خودکار روشن است؛ شورت‌کد لازم نیست.</p>
+			<?php endif; ?>
 			<?php if ( $hidden ) : ?>
 				<p class="hodima-rl-group__notplaced">
 					<span class="dashicons dashicons-hidden" aria-hidden="true"></span>
@@ -143,10 +137,6 @@ final class Admin {
 				}
 				?>
 			</ol>
-			<template class="hodima-rl-template"><?php self::render_slot( $group, 0, null, $count, $object_id, $context ); ?></template>
-			<button type="button" class="button hodima-rl-add"<?php echo $slots >= Store::MAX_SLOTS ? ' hidden' : ''; ?>>
-				<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> افزودن خانه ذخیره
-			</button>
 		</fieldset>
 		<?php
 	}
@@ -161,15 +151,17 @@ final class Admin {
 		$uid      = wp_unique_id( 'hodima-rl-' );
 		?>
 		<li class="hodima-rl-slot<?php echo $index >= $count ? ' is-reserve' : ''; ?>" data-filled="<?php echo $item ? '1' : '0'; ?>">
-			<div class="hodima-rl-slot__bar">
-				<span class="hodima-rl-slot__handle dashicons dashicons-menu" aria-hidden="true" title="برای جابه‌جایی بکشید"></span>
-				<span class="hodima-rl-slot__num"><?php echo esc_html( number_format_i18n( $index + 1 ) ); ?></span>
-				<span class="hodima-rl-slot__badge" data-shown="نمایش" data-reserve="ذخیره"><?php echo $index >= $count ? 'ذخیره' : 'نمایش'; ?></span>
-				<span class="hodima-rl-slot__moves">
-					<button type="button" class="button-link hodima-rl-up" aria-label="بالاتر"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
-					<button type="button" class="button-link hodima-rl-down" aria-label="پایین‌تر"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
-				</span>
-			</div>
+			<?php
+			/*
+			 * نسخه ۲.۳: شماره خانه، دستگیره کشیدن و دکمه‌های بالا/پایین و
+			 * «افزودن خانه ذخیره» حذف شد (خواسته کاربر: اضافی بودند). خانه
+			 * اضافه فقط وقتی هست که از قبل لینکی بیش از تعداد نمایش ذخیره شده
+			 * (مثلا مهاجرت ویترین قدیمی یا کم کردن تعداد)؛ آن‌جا برچسب «ذخیره».
+			 */
+			if ( $index >= $count ) :
+				?>
+				<span class="hodima-rl-slot__badge">ذخیره — فقط اگر لینک بالایی نمایش داده نشود</span>
+			<?php endif; ?>
 
 			<input type="hidden" data-field="kind" name="<?php echo esc_attr( $name ); ?>[kind]" value="<?php echo esc_attr( $item['kind'] ?? '' ); ?>">
 			<input type="hidden" data-field="id" name="<?php echo esc_attr( $name ); ?>[id]" value="<?php echo esc_attr( (string) ( $item['id'] ?? '' ) ); ?>">
@@ -184,14 +176,14 @@ final class Admin {
 						<bdi class="hodima-rl-target__url" dir="ltr"><?php echo esc_html( rawurldecode( (string) ( $resolved['url'] ?? '' ) ) ); ?></bdi>
 					</span>
 				</span>
-				<button type="button" class="button-link hodima-rl-clear">پاک کردن</button>
+				<button type="button" class="button-link hodima-rl-clear" aria-label="پاک کردن" title="پاک کردن"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>
 			</div>
 
 			<div class="hodima-rl-picker"<?php echo $item ? ' hidden' : ''; ?>>
-				<label class="screen-reader-text" for="<?php echo esc_attr( $uid ); ?>-q"><?php echo esc_html( $group->search_placeholder() ); ?></label>
+				<label class="screen-reader-text" for="<?php echo esc_attr( $uid ); ?>-q"><?php echo esc_html( $group->search_label() ); ?></label>
 				<input type="search" id="<?php echo esc_attr( $uid ); ?>-q" class="hodima-rl-search" autocomplete="off"
 					role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="<?php echo esc_attr( $uid ); ?>-list"
-					placeholder="<?php echo esc_attr( $group->search_placeholder() ); ?>">
+					placeholder="جستجو">
 				<ul class="hodima-rl-results" id="<?php echo esc_attr( $uid ); ?>-list" role="listbox" hidden></ul>
 				<p class="hodima-rl-status" role="status" aria-live="polite"></p>
 			</div>
@@ -453,8 +445,6 @@ final class Admin {
 				'error'       => 'جستجو انجام نشد؛ دوباره تلاش کنید.',
 				'copied'      => 'کپی شد',
 				'hidden'      => ' — در سایت نمایش داده نمی‌شود',
-				'shown'       => 'نمایش',
-				'reserve'     => 'ذخیره',
 				'unsaved'     => 'برای اعمال، صفحه را ذخیره/به‌روزرسانی کنید.',
 			],
 		] );

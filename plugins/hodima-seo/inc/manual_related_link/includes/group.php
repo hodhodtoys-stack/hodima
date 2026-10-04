@@ -1,6 +1,6 @@
 <?php
 /**
- * لینک‌های مرتبط دستی — سه گروه (سه شورت‌کد)
+ * لینک‌های مرتبط دستی — دو گروه (پیشنهاد خرید و مقاله پیشنهادی)
  * Path: plugins/hodima-seo/inc/manual_related_link/includes/group.php
  *
  * پیش از نسخه ۲ فقط یک «ویترین پیشنهادی» با سه خانه وجود داشت و دسته، محصول
@@ -23,18 +23,22 @@ enum Group: string {
 	case Products   = 'products';
 	case Article    = 'article';
 
-	/** نام گروه در پیشخوان. */
+	/**
+	 * نام گروه در پیشخوان (کادر ویرایشگر، تنظیمات، گزارش).
+	 * محصولات در پیشخوان «پیشنهاد خرید» است (خواسته کاربر، ۲.۳)؛ عنوان کادر
+	 * در سایت جداست (default_title) و همان «محصولات مکمل» می‌ماند.
+	 */
 	public function label(): string {
 		return match ( $this ) {
-			self::Products   => 'محصولات مکمل',
-			self::Article    => 'مقاله پیشنهادی',
+			self::Products => 'پیشنهاد خرید',
+			self::Article  => 'مقاله پیشنهادی',
 		};
 	}
 
 	/** عنوان پیش‌فرض بالای کادر در سایت؛ مقاله عمدا هیچ عنوانی ندارد (خواسته کاربر). */
 	public function default_title(): string {
 		return match ( $this ) {
-			self::Products => $this->label(),
+			self::Products => 'محصولات مکمل',
 			self::Article  => '',
 		};
 	}
@@ -83,11 +87,14 @@ enum Group: string {
 		return [ $this->shortcode(), ...$this->aliases() ];
 	}
 
-	/** راهنمای جستجو در کادر ویرایشگر. */
-	public function search_placeholder(): string {
+	/**
+	 * برچسب فیلد جستجو برای صفحه‌خوان (نامرئی). متن داخل خود فیلد فقط
+	 * «جستجو» است (خواسته کاربر، ۲.۳)؛ جستجو با نام، کد SKU و آدرس همچنان کار می‌کند.
+	 */
+	public function search_label(): string {
 		return match ( $this ) {
-			self::Products   => 'جستجوی نام یا کد (SKU) محصول، یا چسباندن آدرس…',
-			self::Article    => 'جستجوی مقاله یا برگه، یا چسباندن آدرس…',
+			self::Products => 'جستجوی نام یا کد (SKU) محصول، یا چسباندن آدرس',
+			self::Article  => 'جستجوی مقاله یا برگه، یا چسباندن آدرس',
 		};
 	}
 

@@ -36,9 +36,20 @@
 		border-radius: 0.375rem;
 	}
 
+	/* ── دو گروه کنار هم در یک ردیف (پیشنهاد خرید | مقاله پیشنهادی)؛ پیام‌ها تمام‌عرض ── */
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	align-items: start;
+	gap: 1rem;
+
+	& > p {
+		grid-column: 1 / -1;
+	}
+
 	/* ── گروه ── */
 	& .hodima-rl-group {
-		margin: 0 0 1rem;
+		min-inline-size: 0;
+		margin: 0;
 		padding: 0.75rem 1rem 1rem;
 		background: #ffffff;
 		border: 1px solid var(--rl-border);
@@ -84,7 +95,8 @@
 
 	& .hodima-rl-slots {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
+		/* auto-fit: خانه تنها (مقاله) تمام‌عرض کادر خودش را می‌گیرد */
+		grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
 		gap: 0.75rem;
 		margin: 0;
 		padding: 0;
@@ -112,51 +124,16 @@
 			background: #ffffff;
 			border-style: dashed;
 		}
-
-		&.is-dragging {
-			opacity: 0.5;
-		}
 	}
 
-	& .hodima-rl-slot__bar {
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-	}
-
-	& .hodima-rl-slot__handle {
-		cursor: grab;
-		color: var(--rl-muted);
-	}
-
-	& .hodima-rl-slot__num {
-		display: inline-grid;
-		place-items: center;
-		inline-size: 1.5rem;
-		block-size: 1.5rem;
-		font-size: 0.75rem;
-		font-weight: 700;
-		color: #ffffff;
-		background: var(--rl-primary);
-		border-radius: 50%;
-	}
-
+	/* فقط خانه ذخیره (لینک بیش از تعداد نمایش که از قبل ذخیره شده) برچسب دارد */
 	& .hodima-rl-slot__badge {
+		align-self: flex-start;
 		padding: 0.0625rem 0.5rem;
 		font-size: 0.6875rem;
-		color: var(--rl-primary);
-		background: color-mix(in srgb, var(--rl-third) 35%, #ffffff);
-		border-radius: 999px;
-	}
-
-	& .is-reserve .hodima-rl-slot__badge {
 		color: var(--rl-muted);
 		background: #f0f0f1;
-	}
-
-	& .hodima-rl-slot__moves {
-		display: flex;
-		margin-inline-start: auto;
+		border-radius: 999px;
 	}
 
 	& .button-link {
@@ -212,11 +189,25 @@
 		min-inline-size: 0;
 	}
 
+	/* نام مقصد تا دو خط (در کادر نیمه‌عرض یک‌خطی بریده می‌شد) */
 	& .hodima-rl-target__title {
+		display: -webkit-box;
 		overflow: hidden;
-		white-space: nowrap;
-		text-overflow: ellipsis;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		line-height: 1.5;
 		color: var(--rl-primary);
+	}
+
+	& .hodima-rl-clear {
+		flex-shrink: 0;
+		align-self: flex-start;
+		color: var(--rl-muted);
+
+		&:hover {
+			color: var(--rl-error);
+		}
 	}
 
 	& .hodima-rl-target__meta {
@@ -390,18 +381,6 @@
 		}
 	}
 
-	& .hodima-rl-add {
-		margin-block-start: 0.75rem;
-
-		& .dashicons {
-			vertical-align: middle;
-		}
-
-		&[hidden] {
-			display: none;
-		}
-	}
-
 	& [hidden] {
 		display: none;
 	}
@@ -422,5 +401,12 @@
 @media (prefers-reduced-motion: reduce) {
 	.hodima-rl-box .hodima-rl-slot {
 		transition: none;
+	}
+}
+
+/* پیشخوان در موبایل/تبلت: دو گروه زیر هم */
+@media (max-width: 782px) {
+	.hodima-rl-box {
+		grid-template-columns: minmax(0, 1fr);
 	}
 }
