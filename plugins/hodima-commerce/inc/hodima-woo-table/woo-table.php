@@ -3,7 +3,7 @@
  * Hodima Product Specs Table - HTML Generator Only (PHP 8.1+)
  *
  * @package Hodima
- * @version 2.9.0
+ * @version 2.10.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -25,7 +25,7 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 
 		private static ?self $instance = null;
 
-		public const VERSION = '2.9.0';
+		public const VERSION = '2.10.0';
 
 		/**
 		 * حافظه موقت همین درخواست، کلید = شناسه محصول.
@@ -322,6 +322,50 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 			$this->prepared_memo[ $product_id ] = $prepared;
 
 			return $prepared;
+		}
+
+		/**
+		 * نام‌های ردیف‌هایی که این جدول می‌سازد (برچسب‌ها + نام ویژگی‌های منبع +
+		 * ردیف «بروزرسانی»).
+		 *
+		 * جدول دستی hodima-table (Hodima Media) برای مقایسه و کاربرد محصول است
+		 * و نباید هیچ‌کدام از این‌ها را بسازد؛ قبلا «سايز: بزرگ» یا «رنگ‌بندی: …»
+		 * جدول دستی کنار «سایز: متنوع» و «رنگ: تک رنگ» این جدول در اسکیمای
+		 * محصول می‌نشست (دو مقدار متناقض برای یک ویژگی). hodima-table این
+		 * فهرست را می‌خواند؛ پیکربندی فیلترشده (hodima_specs_table_config) هم
+		 * خودکار حساب می‌شود.
+		 *
+		 * @return list<string>
+		 */
+		public function property_names(): array {
+
+			$names = [ 'بروزرسانی' ];
+
+			foreach ( $this->get_table_config() as $spec_key => $spec ) {
+
+				$names[] = (string) ( $spec['label'] ?? $spec_key );
+
+				foreach ( (array) ( $spec['sources'] ?? [] ) as $source ) {
+
+					if ( Hodima_Source_Type::Attribute !== ( $source['type'] ?? null ) ) {
+						continue;
+					}
+
+					$attr = (string) ( $source['name'] ?? '' );
+
+					// ویژگی سراسری (pa_…) با برچسب نمایشی‌اش، ویژگی سفارشی با خود نامش
+					if ( str_starts_with( $attr, 'pa_' ) ) {
+						if ( function_exists( 'wc_attribute_label' ) ) {
+							$names[] = (string) wc_attribute_label( $attr );
+						}
+						continue;
+					}
+
+					$names[] = $attr;
+				}
+			}
+
+			return array_values( array_unique( array_filter( $names, static fn( string $n ): bool => '' !== trim( $n ) ) ) );
 		}
 
 		/**

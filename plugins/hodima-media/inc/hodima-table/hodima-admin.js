@@ -51,8 +51,59 @@
 		rows: [...body.rows].map((tr) => [...tr.cells].slice(1).map((td) => td.querySelector('textarea').value)),
 	});
 
+	// ---------- ردیف‌های جدول مشخصات ووکامرس (فقط در محصول) ----------
+
+	/*
+	 * جنس، سایز، وزن، تعداد، رنگ، تولید و بروزرسانی را «جدول مشخصات محصول»
+	 * (hodima-woo-table) می‌سازد؛ این ردیف‌ها در جدول دوستونه محصول در سایت و
+	 * اسکیما نادیده گرفته می‌شوند (همان قانون PHP: get_public_table) و این‌جا
+	 * زنده علامت می‌خورند. فهرست یکدست‌شده از PHP می‌آید.
+	 */
+	const wooNames   = new Set(JSON.parse(root.dataset.wooNames || '[]'));
+	const wooWarning = root.querySelector('[data-role="woo-warning"]');
+	const parser     = new DOMParser(); // سند بی‌اثر: تگ‌های خانه اجرا یا بارگذاری نمی‌شوند
+
+	const plainText = (html) => (parser.parseFromString(String(html), 'text/html').body.textContent || '').trim();
+
+	// باید با normalize_property_name() در PHP یکی باشد
+	const nameKey = (html) => plainText(html)
+		.replace(/[\u200c\u200d\u200e\u200f]/g, '')
+		.replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[أإ]/g, 'ا').replace(/ۀ/g, 'ه')
+		.replace(/[\s:：]+/g, '')
+		.toLowerCase();
+
+	const markWooRows = ({ headers, rows }) => {
+		if (!wooNames.size) {
+			return;
+		}
+
+		// ستون‌های پر (مثل normalize_table در PHP: ستون کاملا خالی حساب نمی‌شود)
+		const active = headers.map((_, c) => c).filter((c) =>
+			plainText(headers[c]) !== '' || rows.some((r) => plainText(r[c] ?? '') !== '')
+		);
+		const twoCols = active.length === 2;
+		const found   = [];
+
+		[...body.rows].forEach((tr, r) => {
+			const name   = twoCols ? (rows[r]?.[active[0]] ?? '') : '';
+			const hasVal = twoCols && rows[r].some((cell) => plainText(cell) !== '');
+			const isWoo  = hasVal && wooNames.has(nameKey(name));
+			tr.classList.toggle('is-woo-row', isWoo);
+			if (isWoo) {
+				found.push(plainText(name));
+			}
+		});
+
+		wooWarning.hidden = !found.length;
+		wooWarning.textContent = found.length
+			? `ردیف‌های ${found.map((n) => `«${n}»`).join('، ')} را «جدول مشخصات محصول» (ووکامرس) می‌سازد؛ در سایت و اسکیما نمایش داده نمی‌شوند. آن‌ها را از ویژگی‌های محصول ووکامرس تنظیم کنید.`
+			: '';
+	};
+
 	const sync = () => {
-		jsonInput.value = JSON.stringify(readTable());
+		const data = readTable();
+		jsonInput.value = JSON.stringify(data);
+		markWooRows(data);
 	};
 
 	const hasContent = (values) => values.some((v) => v.trim() !== '');

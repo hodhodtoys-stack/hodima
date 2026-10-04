@@ -13,6 +13,8 @@
     --hdt-soft: var(--hodima-surface-soft, #f7f9fd);
     --hdt-head: var(--hodima-bg-gray, #eef2f8);
     --hdt-danger: var(--hodima-state-danger, #a32a2a);
+    --hdt-warning: var(--hodima-state-warning, #8a6116);
+    --hdt-warning-bg: var(--hodima-state-warning-bg, #fbf4e6);
 
     box-sizing: border-box;
 
@@ -32,6 +34,21 @@
 
     & .hodima-hint {
         color: var(--hdt-muted);
+    }
+
+    /* محصول: ردیف‌هایی که مال جدول مشخصات ووکامرس است */
+    & .hodima-hint--woo {
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+    }
+
+    & .hodima-woo-warning {
+        padding: 8px 10px;
+        color: var(--hdt-warning);
+        background: var(--hdt-warning-bg);
+        border-inline-start: 3px solid var(--hdt-warning);
+        border-radius: 4px;
     }
 
     & .hodima-toolbar {
@@ -128,6 +145,15 @@
         & textarea {
             resize: vertical;
             min-block-size: 45px;
+        }
+
+        & tr.is-woo-row td:not(.hodima-col-ops) {
+            background: var(--hdt-warning-bg);
+
+            & textarea {
+                text-decoration: line-through;
+                border-color: var(--hdt-warning);
+            }
         }
 
         & tr.is-dragging {

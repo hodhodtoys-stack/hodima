@@ -2,7 +2,7 @@
 /**
  * Hodima Dynamic Table
  * Path: wp-content/plugins/hodima-media/inc/hodima-table/hodima-table.php
- * Version: 3.0.0
+ * Version: 3.1.0
  *
  * جدول مشخصات قابل ویرایش برای نوشته، برگه، محصول و دسته‌ها:
  * کادر ویرایش در پیشخوان، شورت‌کد [hodima_table] در سایت، نود Table
@@ -35,7 +35,7 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 
 		private static ?self $instance = null;
 
-		public const VERSION  = '3.0.0';
+		public const VERSION  = '3.1.0';
 		public const META_KEY = '_hodima_table_data';
 
 		private const MAX_COLS = 20;
@@ -54,6 +54,31 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 		 * — اگر فیلدهای جدول اصلا نمی‌رسید — کامل پاک می‌شد.
 		 */
 		private const JSON_FIELD = 'hodima_table_json';
+
+		/**
+		 * ردیف‌هایی که مال «جدول مشخصات محصول» ووکامرس (hodima-woo-table در
+		 * Hodima Commerce) است: جنس، سایز، وزن، تعداد، رنگ، تولید و بروزرسانی،
+		 * با نام‌های هم‌معنی رایج. جدول دستی در محصول برای مقایسه، کاربرد و
+		 * موارد متغیر است و این ردیف‌ها را نمی‌سازد (نه در سایت، نه در اسکیما).
+		 * فهرست دقیق جدول ووکامرس (با پیکربندی فیلترشده) از
+		 * Hodima_Product_Specs_Table::property_names() به این اضافه می‌شود.
+		 */
+		private const WOO_TABLE_NAMES = [
+			// جنس
+			'جنس', 'جنس محصول', 'متریال', 'material',
+			// سایز
+			'سایز', 'سایزها', 'سایزبندی', 'اندازه', 'اندازه‌ها', 'size',
+			// وزن
+			'وزن', 'وزن محصول', 'weight',
+			// تعداد
+			'تعداد', 'تعداد در بسته', 'تعداد در جین', 'تعداد در کارتن', 'بسته بندی', 'quantity', 'pack size',
+			// رنگ
+			'رنگ', 'رنگ‌ها', 'رنگبندی', 'رنگ محصول', 'color', 'colour',
+			// تولید (کشور سازنده؛ countryOfOrigin اسکیمای محصول هم از همین می‌آید)
+			'تولید', 'کشور سازنده', 'کشور', 'ساخت', 'ساخت کشور', 'مبدا', 'made in', 'country of origin', 'origin',
+			// ردیف «بروزرسانی | تاریخ: …»
+			'بروزرسانی', 'به‌روزرسانی', 'تاریخ بروزرسانی', 'آخرین بروزرسانی',
+		];
 
 		/** پاکسازی یک‌باره کش نسخه ۲ (گزینه‌های نسل و ترنزینت‌ها). */
 		private const CLEANUP_OPTION = 'hodima_table_legacy_cache_cleaned';
@@ -231,7 +256,8 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 			foreach ( $this->get_post_types() as $post_type ) {
 				add_meta_box(
 					'hodima_table_meta_box',
-					'جدول مشخصات',
+					// در محصول «جدول مشخصات» نام جدول ووکامرس است؛ این کادر جدول دیگری است
+					'product' === $post_type ? 'جدول تکمیلی محصول (مقایسه، کاربرد و …)' : 'جدول مشخصات',
 					[ $this, 'render_post_meta_box' ],
 					$post_type,
 					'normal',
@@ -242,7 +268,10 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 
 		public function render_post_meta_box( WP_Post $post ): void {
 			wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
-			$this->render_table_builder_ui( self::get_table( $post->ID, Hodima_Table_Context::Post ) );
+			$this->render_table_builder_ui(
+				self::get_table( $post->ID, Hodima_Table_Context::Post ),
+				'product' === $post->post_type ? self::woo_table_names() : null
+			);
 		}
 
 		public function render_term_meta_box_edit( $term ): void {
@@ -509,7 +538,7 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 		 * را برمی‌دارد و کل جدول را در یک فیلد JSON می‌فرستد. دکمه‌ها
 		 * <button> واقعی‌اند (قبلا span بودند و با کیبورد در دسترس نبودند).
 		 */
-		private function render_table_builder_ui( array $table_data ): void {
+		private function render_table_builder_ui( array $table_data, ?array $woo_names = null ): void {
 
 			$headers = [] !== $table_data['headers'] ? $table_data['headers'] : [];
 			$rows    = [] !== $table_data['rows'] ? $table_data['rows'] : [];
@@ -521,7 +550,7 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 				$rows = [ array_fill( 0, $cols, '' ) ];
 			}
 			?>
-			<div class="hodima-wrap" data-hodima-table data-max-cols="<?php echo (int) self::MAX_COLS; ?>" data-max-rows="<?php echo (int) self::MAX_ROWS; ?>">
+			<div class="hodima-wrap" data-hodima-table data-max-cols="<?php echo (int) self::MAX_COLS; ?>" data-max-rows="<?php echo (int) self::MAX_ROWS; ?>"<?php if ( null !== $woo_names ) : ?> data-woo-names="<?php echo esc_attr( (string) wp_json_encode( array_keys( $woo_names ), JSON_UNESCAPED_UNICODE ) ); ?>"<?php endif; ?>>
 
 				<div class="hodima-table-info">
 					<p><strong>نمایش در سایت:</strong> <code>[hodima_table]</code> را در متن بگذارید.</p>
@@ -529,6 +558,14 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 						سقف <?php echo (int) self::MAX_COLS; ?> ستون و <?php echo (int) self::MAX_ROWS; ?> ردیف.
 						جدول دوستونه (نام ویژگی / مقدار) در اسکیمای گوگل هم ثبت می‌شود؛ ستون‌های خالی خودکار حذف می‌شوند.
 					</p>
+					<?php if ( null !== $woo_names ) : ?>
+						<p class="hodima-hint hodima-hint--woo">
+							<span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
+							این جدول برای مقایسه، کاربرد و موارد متغیر هر محصول است. جنس، سایز، وزن، تعداد، رنگ، تولید و بروزرسانی را
+							«جدول مشخصات محصول» (از ویژگی‌های ووکامرس) می‌سازد؛ اگر این ردیف‌ها را این‌جا بنویسید، در سایت و اسکیما نادیده گرفته می‌شوند.
+						</p>
+					<?php endif; ?>
+					<p class="hodima-hint hodima-woo-warning" data-role="woo-warning" role="status" hidden></p>
 				</div>
 
 				<div class="hodima-toolbar" role="toolbar" aria-label="ابزار جدول">
@@ -589,6 +626,74 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 		--------------------------------------------------------------*/
 
 		/**
+		 * جدولی که در سایت نمایش داده و به اسکیما داده می‌شود.
+		 *
+		 * در محصول، ردیف‌های جدول دوستونه‌ای که نامشان مال جدول مشخصات ووکامرس
+		 * است حذف می‌شوند. قبلا هر دو جدول همان ویژگی را می‌ساختند: در سایت دو
+		 * ردیف «سایز» با دو مقدار، و در additionalProperty محصول «سایز: متنوع»
+		 * کنار «سايز: بزرگ» (ی عربی از مقایسه نام‌ها رد می‌شد) یا «رنگ: تک رنگ»
+		 * کنار «رنگ‌بندی: صورتی و آبی». جدول چندستونه (مقایسه چند مدل) مشخصه‌ای
+		 * به اسکیما نمی‌دهد و دست نمی‌خورد. داده ذخیره‌شده هم دست نمی‌خورد
+		 * (کادر ویرایش همه ردیف‌ها را با هشدار نشان می‌دهد).
+		 */
+		public static function get_public_table( int $object_id, Hodima_Table_Context $context ): array {
+
+			$table = self::get_table( $object_id, $context );
+
+			if ( Hodima_Table_Context::Post !== $context
+				|| 2 !== self::column_count( $table )
+				|| 'product' !== get_post_type( $object_id ) ) {
+				return $table;
+			}
+
+			$woo = self::woo_table_names();
+
+			$table['rows'] = array_values( array_filter(
+				$table['rows'],
+				static fn( array $row ): bool => ! isset( $woo[ self::normalize_property_name( $row[0] ) ] )
+			) );
+
+			// همه ردیف‌ها مال ووکامرس بود: جدولی با فقط سرستون نمایش داده نشود
+			if ( [] === $table['rows'] ) {
+				return [ 'headers' => [], 'rows' => [] ];
+			}
+
+			return self::normalize_table( $table );
+		}
+
+		/**
+		 * نام‌های جدول مشخصات ووکامرس، کلید = نام یکدست‌شده.
+		 *
+		 * @return array<string, true>
+		 */
+		public static function woo_table_names(): array {
+
+			static $memo = null;
+
+			if ( null !== $memo ) {
+				return $memo;
+			}
+
+			$names = self::WOO_TABLE_NAMES;
+
+			if ( class_exists( 'Hodima_Product_Specs_Table' ) && method_exists( 'Hodima_Product_Specs_Table', 'property_names' ) ) {
+				$names = [ ...$names, ...Hodima_Product_Specs_Table::get_instance()->property_names() ];
+			}
+
+			$names = (array) apply_filters( 'hodima_table_woo_property_names', $names );
+
+			$memo = [];
+			foreach ( $names as $name ) {
+				$key = self::normalize_property_name( (string) $name );
+				if ( '' !== $key ) {
+					$memo[ $key ] = true;
+				}
+			}
+
+			return $memo;
+		}
+
+		/**
 		 * جدول دوستونه را به آرایه PropertyValue تبدیل می‌کند (ستون اول نام
 		 * ویژگی، ستون دوم مقدار).
 		 *
@@ -604,7 +709,7 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 		public static function get_property_values( int $object_id, string $context = 'post' ): array {
 
 			$context = Hodima_Table_Context::tryFrom( $context ) ?? Hodima_Table_Context::Post;
-			$table   = self::get_table( $object_id, $context );
+			$table   = self::get_public_table( $object_id, $context );
 
 			$properties = [];
 
@@ -717,12 +822,18 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 			return (bool) apply_filters( 'hodima_table_is_displayed', $shown, $post_id );
 		}
 
-		/** مقایسه نام‌ها بدون حساسیت به فاصله، نیم‌فاصله و حروف. */
+		/**
+		 * کلید مقایسه نام‌ها: بدون تگ، فاصله، نیم‌فاصله، «:» پایانی و حساسیت به
+		 * حروف؛ «ي/ك» عربی = «ی/ک» فارسی. قبلا «سايز» (ی عربی، رایج در متن
+		 * کپی‌شده) یا «رنگ بندی» با فاصله نام دیگری حساب می‌شد و کنار «سایز» و
+		 * «رنگ‌بندی» در اسکیمای محصول می‌نشست.
+		 */
 		private static function normalize_property_name( string $name ): string {
-			$name = wp_strip_all_tags( $name );
-			$name = str_replace( [ "\u{200c}", "\u{200f}", "\u{200e}" ], '', $name );
-			$name = preg_replace( '/\s+/u', ' ', $name );
-			return mb_strtolower( trim( (string) $name ) );
+			$name = self::plain_text( $name );
+			$name = str_replace( [ "\u{200c}", "\u{200d}", "\u{200f}", "\u{200e}" ], '', $name );
+			$name = strtr( $name, [ 'ي' => 'ی', 'ى' => 'ی', 'ك' => 'ک', 'أ' => 'ا', 'إ' => 'ا', 'ۀ' => 'ه' ] );
+			$name = (string) preg_replace( '/[\s:：]+/u', '', $name );
+			return mb_strtolower( $name );
 		}
 
 		/**
@@ -762,8 +873,23 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 			];
 
 			$properties = self::get_property_values( $object_id, $context->value );
+			$product_node = $page_url . '#product';
 
-			if ( [] !== $properties ) {
+			/*
+			 * جدول همین محصول در صفحه خودش: مقدارها در additionalProperty نود
+			 * Product‌اند (append_manual_properties)، پس این‌جا تکرار نمی‌شوند؛
+			 * نود جدول فقط می‌گوید «درباره این محصول است». قبلا همان مقدارها در
+			 * دو موجودیت جدا (Table و Product) می‌آمد.
+			 */
+			$is_own_product = Hodima_Table_Context::Post === $context
+				&& is_singular( 'product' )
+				&& (int) get_queried_object_id() === $object_id
+				&& function_exists( 'hodima_schema_has' )
+				&& hodima_schema_has( $product_node );
+
+			if ( $is_own_product ) {
+				$node['about'] = [ '@id' => $product_node ];
+			} elseif ( [] !== $properties ) {
 				$node['mainEntity'] = [
 					'@type'          => 'PropertyValue',
 					'name'           => $name,
@@ -883,13 +1009,16 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 
 			[ $object_id, $context ] = $target;
 
-			$table = self::get_table( $object_id, $context );
+			$table = self::get_public_table( $object_id, $context );
 
 			if ( self::is_empty_table( $table ) ) {
 				return '';
 			}
 
 			$caption = trim( (string) ( '' !== $atts['caption'] ? $atts['caption'] : $atts['title'] ) );
+
+			// نام پیش‌فرض در محصول با «جدول مشخصات محصول» ووکامرس یکی نباشد
+			$default = ( Hodima_Table_Context::Post === $context && 'product' === get_post_type( $object_id ) ) ? 'مشخصات تکمیلی' : 'جدول مشخصات';
 
 			/*
 			 * کلاس مخصوص همین جدول (نه id): قالب توضیح دسته را دو بار می‌خواند
@@ -900,7 +1029,7 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 			$css_class = 'hodima-table-' . $key;
 
 			if ( ! isset( $this->queued_schemas[ $key ] ) && ! is_feed() ) {
-				$schema = $this->build_schema_node( $object_id, $context, $caption, $css_class );
+				$schema = $this->build_schema_node( $object_id, $context, '' !== $caption ? $caption : $default, $css_class );
 				if ( ! empty( $schema['@id'] ) ) {
 					$this->queued_schemas[ $key ] = $schema;
 				}
@@ -908,7 +1037,7 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 
 			wp_enqueue_style( 'hodima-table-front-css' );
 
-			return $this->build_table_html( $table, $caption, $css_class );
+			return $this->build_table_html( $table, $caption, $css_class, $default );
 		}
 
 		/**
@@ -993,10 +1122,10 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 		 * HTML جدول، بدون خط خالی و فاصله بین تگ‌ها: در توضیح دسته و
 		 * صفحه‌سازها wpautop داخل جدول <p> و <br> نسازد.
 		 */
-		private function build_table_html( array $table, string $caption, string $css_class ): string {
+		private function build_table_html( array $table, string $caption, string $css_class, string $default_label = 'جدول مشخصات' ): string {
 
 			$row_header = self::column_count( $table ) > 1;
-			$label      = '' !== $caption ? $caption : 'جدول مشخصات';
+			$label      = '' !== $caption ? $caption : $default_label;
 
 			$html  = '<div class="hodima-table-container" role="region" tabindex="0" aria-label="' . esc_attr( $label ) . '">';
 			$html .= '<table class="hodima-dynamic-table ' . esc_attr( $css_class ) . '">';
