@@ -3,7 +3,7 @@
  * Hodima Product Specs Table - HTML Generator Only (PHP 8.1+)
  *
  * @package Hodima
- * @version 2.11.0
+ * @version 2.12.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -25,7 +25,7 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 
 		private static ?self $instance = null;
 
-		public const VERSION = '2.11.0';
+		public const VERSION = '2.12.0';
 
 		/**
 		 * حافظه موقت همین درخواست، کلید = شناسه محصول.
@@ -283,7 +283,8 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 				$unit    = (string) ( $spec_details['unit'] ?? '' );
 				$label   = (string) ( $spec_details['label'] ?? $spec_key );
 
-				$value       = $this->get_product_value_by_priority( $product, $sources );
+				$source_type = null;
+				$value       = $this->get_product_value_by_priority( $product, $sources, $source_type );
 				$is_fallback = false;
 
 				// مقدار کدگذاری‌شده → نام نمایشی (مثلا CN → چین)
@@ -324,18 +325,22 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 					continue;
 				}
 
-				$text     = trim( wp_strip_all_tags( $value ) );
-				$property = [
-					'@type' => 'PropertyValue',
-					'name'  => $label,
-					'value' => $text,
-				];
+				$text = trim( wp_strip_all_tags( $value ) );
+
+				// مقدار ویژگی ووکامرس: گزینه‌های جدا → فهرست، «عدد + واحد» → عدد و کد واحد
+				$property = [ '@type' => 'PropertyValue', 'name' => $label ]
+					+ ( Hodima_Source_Type::Attribute === $source_type ? $this->schema_value( $text ) : [ 'value' => $text ] );
 
 				// وزن: عدد + کد واحد بین‌المللی به جای متن «۲۰ گرم» (فقط وقتی از
-				// فیلد وزن ووکامرس آمده؛ ویژگی متنی pa_weight همان متن می‌ماند)
+				// فیلد وزن ووکامرس آمده؛ ویژگی متنی pa_weight مسیر بالا را دارد)
 				if ( 'weight' === $spec_key && null !== ( $weight = $this->schema_weight( $product ) ) ) {
 					$property               = [ '@type' => 'PropertyValue', 'name' => $label ] + $weight;
 					$schema_facts['weight'] = $weight;
+				}
+
+				$property_id = $this->property_id( (string) $spec_key, $spec_details );
+				if ( '' !== $property_id ) {
+					$property['propertyID'] = $property_id;
 				}
 
 				$schema_properties[] = $property;
@@ -409,6 +414,12 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 		 * از get_weight() خام (نقطه اعشار انگلیسی) خوانده می‌شود، نه از متن
 		 * نمایشی جدول که ممکن است جداکننده اعشار محلی داشته باشد.
 		 *
+		 * فقط واحد متریک: کیلوگرم (KGM) یا گرم (GRM)، هر کدام که در «ووکامرس ←
+		 * پیکربندی ← محصولات ← واحد وزن» انتخاب شده (عدد وزن محصول در همان
+		 * واحد وارد شده و جدول صفحه هم همان را نشان می‌دهد). اگر واحد فروشگاه
+		 * روزی پوند یا اونس باشد، به کیلوگرم تبدیل می‌شود؛ اسکیمای سایت فارسی
+		 * هرگز پوند اعلام نمی‌کند.
+		 *
 		 * @return array{value: int|float, unitCode: string, unitText: string}|null
 		 */
 		private function schema_weight( WC_Product $product ): ?array {
@@ -419,20 +430,128 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 				return null;
 			}
 
-			$codes = [ 'g' => 'GRM', 'kg' => 'KGM', 'lbs' => 'LBR', 'oz' => 'ONZ' ];
-			$unit  = (string) get_option( 'woocommerce_weight_unit', 'g' );
-
-			if ( ! isset( $codes[ $unit ] ) ) {
-				return null;
-			}
-
 			$number = (float) $raw;
+
+			[ $number, $code, $label ] = match ( (string) get_option( 'woocommerce_weight_unit', 'kg' ) ) {
+				'g'     => [ $number, 'GRM', 'گرم' ],
+				'lbs'   => [ round( $number * 0.45359237, 3 ), 'KGM', 'کیلوگرم' ],
+				'oz'    => [ round( $number * 0.028349523125, 3 ), 'KGM', 'کیلوگرم' ],
+				default => [ $number, 'KGM', 'کیلوگرم' ],
+			};
 
 			return [
 				'value'    => floor( $number ) === $number ? (int) $number : $number,
-				'unitCode' => $codes[ $unit ],
-				'unitText' => $this->get_weight_unit(),
+				'unitCode' => $code,
+				'unitText' => $label,
 			];
+		}
+
+		/**
+		 * واحدهای شناخته‌شده در مقدار ویژگی‌ها → [کد UN/CEFACT، نام فارسی].
+		 * کلیدها بدون نیم‌فاصله و حروف کوچک.
+		 */
+		private const VALUE_UNITS = [
+			'سانتیمتر' => [ 'CMT', 'سانتی‌متر' ], 'سانتی' => [ 'CMT', 'سانتی‌متر' ], 'سانت' => [ 'CMT', 'سانتی‌متر' ], 'cm' => [ 'CMT', 'سانتی‌متر' ],
+			'میلیمتر'  => [ 'MMT', 'میلی‌متر' ], 'میلی' => [ 'MMT', 'میلی‌متر' ], 'mm' => [ 'MMT', 'میلی‌متر' ],
+			'متر'      => [ 'MTR', 'متر' ], 'm' => [ 'MTR', 'متر' ],
+			'کیلوگرم'  => [ 'KGM', 'کیلوگرم' ], 'کیلو' => [ 'KGM', 'کیلوگرم' ], 'kg' => [ 'KGM', 'کیلوگرم' ],
+			'گرم'      => [ 'GRM', 'گرم' ], 'g' => [ 'GRM', 'گرم' ],
+			'عدد'      => [ 'C62', 'عدد' ], 'تایی' => [ 'C62', 'عدد' ],
+			'جفت'      => [ 'PR', 'جفت' ],
+		];
+
+		/**
+		 * مقدار اسکیمای یک ویژگی ووکامرس.
+		 *
+		 * - چند گزینه («1.5 | 2.5 | 3» یا «صورتی, آبی») → فهرست جدا به جای یک
+		 *   جمله؛ ربات‌ها هر مقدار را جدا می‌شناسند.
+		 * - همه گزینه‌ها «عدد + یک واحد مشخص» («1.5، 2.5، 3 سانتی»، «12 عدد») →
+		 *   عدد + unitCode/unitText. واحد فقط وقتی که روشن و یکسان است.
+		 * - متن آزاد یک‌گزینه‌ای («سایزهای 1.5 و 2.5 و 3 سانتی») همان متن می‌ماند؛
+		 *   جدا کردنش حدسی است.
+		 *
+		 * جداکننده‌ها همان‌هایی‌اند که ووکامرس می‌سازد: «, » (ویژگی سراسری)،
+		 * « | » (ویژگی سفارشی)، و «،». ویرگول بدون فاصله («1,5») جدا نمی‌کند.
+		 *
+		 * @return array{value: string|int|float|list<string|int|float>, unitCode?: string, unitText?: string}
+		 */
+		private function schema_value( string $text ): array {
+
+			$parts = array_values( array_unique( array_filter(
+				array_map( 'trim', (array) preg_split( '/\s*\|\s*|\s*،\s*|\s*,\s+/u', $text ) ),
+				static fn( string $part ): bool => '' !== $part
+			) ) );
+
+			if ( [] === $parts ) {
+				return [ 'value' => $text ];
+			}
+
+			return $this->measured_value( $parts ) ?? [ 'value' => 1 === count( $parts ) ? $parts[0] : $parts ];
+		}
+
+		/** گزینه‌های «عدد + واحد» → عدد و کد واحد؛ null اگر واحد روشن و یکسان نیست. */
+		private function measured_value( array $parts ): ?array {
+
+			$numbers = [];
+			$unit    = null;
+			$digits  = [ '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+				'٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9', '٫' => '.' ];
+
+			foreach ( $parts as $part ) {
+
+				$part = strtr( str_replace( "\u{200c}", '', $part ), $digits );
+
+				if ( ! preg_match( '/^(\d+(?:\.\d+)?)\s*(.*)$/u', $part, $m ) ) {
+					return null;
+				}
+
+				$word = mb_strtolower( trim( $m[2] ) );
+
+				if ( '' !== $word ) {
+					$found = self::VALUE_UNITS[ $word ] ?? null;
+					if ( null === $found || ( null !== $unit && $unit !== $found ) ) {
+						return null; // واحد ناشناخته یا دو واحد مختلف → متن
+					}
+					$unit = $found;
+				}
+
+				$number    = (float) $m[1];
+				$numbers[] = floor( $number ) === $number ? (int) $number : $number;
+			}
+
+			// عدد بدون هیچ واحدی معلوم نیست چیست (سانتی؟ شماره؟) → متن
+			if ( null === $unit ) {
+				return null;
+			}
+
+			return [
+				'value'    => 1 === count( $numbers ) ? $numbers[0] : $numbers,
+				'unitCode' => $unit[0],
+				'unitText' => $unit[1],
+			];
+		}
+
+		/**
+		 * شناسه استاندارد ویژگی (propertyID) — موتورهای جستجو و هوش مصنوعی
+		 * «جنس» فارسی را به ویژگی جهانی material وصل می‌کنند، و با عوض شدن
+		 * برچسب فارسی شناسه ثابت می‌ماند. آدرس schema.org برای ویژگی‌هایی که
+		 * آن‌جا تعریف شده‌اند؛ «تعداد» معادل schema.org ندارد و شناسه ساده
+		 * سایت می‌گیرد. پیکربندی فیلترشده می‌تواند property_id خودش را بدهد.
+		 */
+		private function property_id( string $spec_key, array $spec_details ): string {
+
+			if ( isset( $spec_details['property_id'] ) ) {
+				return (string) $spec_details['property_id'];
+			}
+
+			return [
+				'material' => 'https://schema.org/material',
+				'size'     => 'https://schema.org/size',
+				'color'    => 'https://schema.org/color',
+				'weight'   => 'https://schema.org/weight',
+				'origin'   => 'https://schema.org/countryOfOrigin',
+				'quantity' => 'quantity',
+			][ $spec_key ] ?? '';
 		}
 
 		/**
@@ -444,7 +563,7 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 		 */
 		private function get_weight_unit(): string {
 
-			$unit = function_exists( 'get_option' ) ? (string) get_option( 'woocommerce_weight_unit', 'g' ) : 'g';
+			$unit = function_exists( 'get_option' ) ? (string) get_option( 'woocommerce_weight_unit', 'kg' ) : 'kg'; // پیش‌فرض ووکامرس کیلوگرم است
 
 			$map = [
 				'g'   => 'گرم',
@@ -549,7 +668,11 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 			return (array) apply_filters( 'hodima_specs_table_config', $default_config );
 		}
 
-		private function get_product_value_by_priority( WC_Product $product, array $sources ): string {
+		/** @param ?Hodima_Source_Type $found_type نوع منبعی که مقدار از آن آمد (خروجی). */
+		private function get_product_value_by_priority( WC_Product $product, array $sources, ?Hodima_Source_Type &$found_type = null ): string {
+
+			$found_type = null;
+
 
 			foreach ( $sources as $source ) {
 
@@ -588,6 +711,8 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 						continue;
 					}
 				}
+
+				$found_type = $type instanceof Hodima_Source_Type ? $type : null;
 
 				return $value;
 			}

@@ -380,10 +380,23 @@ function hook_generate_custom_product_schema() {
         foreach ( $additional_properties as $property ) {
 
             $prop_name  = isset( $property['name'] ) ? trim( wp_strip_all_tags( (string) $property['name'] ) ) : '';
-            // عدد (مثلا وزن ۲۰ با unitCode) عدد می‌ماند؛ بقیه متن تمیز
-            $prop_value = isset( $property['value'] ) && ( is_int( $property['value'] ) || is_float( $property['value'] ) )
-                ? $property['value']
-                : ( isset( $property['value'] ) ? trim( wp_strip_all_tags( (string) $property['value'] ) ) : '' );
+            /*
+             * عدد (مثلا وزن ۲۰ با unitCode) عدد می‌ماند؛ فهرست چند گزینه‌ای
+             * (["1.5", "2.5", "3"] یا ["صورتی", "آبی"]) فهرست می‌ماند؛ بقیه متن تمیز.
+             */
+            $clean_value = static fn( mixed $v ): int|float|string => ( is_int( $v ) || is_float( $v ) ) ? $v : trim( wp_strip_all_tags( is_scalar( $v ) ? (string) $v : '' ) );
+
+            $prop_value = $property['value'] ?? '';
+            if ( is_array( $prop_value ) ) {
+                $prop_value = array_values( array_filter( array_map( $clean_value, $prop_value ), static fn( $v ): bool => '' !== $v ) );
+                $prop_value = match ( count( $prop_value ) ) {
+                    0       => '',
+                    1       => $prop_value[0],
+                    default => $prop_value,
+                };
+            } else {
+                $prop_value = $clean_value( $prop_value );
+            }
 
             if ( '' === $prop_name || '' === $prop_value ) {
                 continue;
