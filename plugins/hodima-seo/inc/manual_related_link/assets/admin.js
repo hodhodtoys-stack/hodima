@@ -2,8 +2,8 @@
  * لینک‌های مرتبط دستی — کادر ویرایشگر
  * Path: plugins/hodima-seo/inc/manual_related_link/assets/admin.js
  *
- * جستجوی زنده مقصد (کیبوردی: بالا/پایین/Enter/Escape)، چسباندن آدرس و
- * تصویر دلخواه از کتابخانه رسانه. JavaScript خالص، بدون jQuery.
+ * جستجوی زنده مقصد (کیبوردی: بالا/پایین/Enter/Escape) و چسباندن آدرس.
+ * JavaScript خالص، بدون jQuery. (انتخاب تصویر دلخواه در ۲.۴ حذف شد.)
  * (جابه‌جایی، شماره‌گذاری و «افزودن خانه ذخیره» در ۲.۳ به خواست کاربر حذف شد.)
  */
 (() => {
@@ -57,7 +57,6 @@
 
 		// آدرس دلخواه بدون عنوان نمایش داده نمی‌شود: بخش عنوان باز شود
 		if (item.kind === 'url') {
-			slot.querySelector('.hodima-rl-more').open = true;
 			field(slot, 'title').focus();
 		} else {
 			target.querySelector('.hodima-rl-clear').focus();
@@ -65,10 +64,8 @@
 	};
 
 	const clearTarget = (slot) => {
-		// عنوان و تصویر دلخواه هم پاک می‌شوند تا روی مقصد بعدی نمانند
+		// عنوان دلخواه و تصویر قدیمی ذخیره‌شده هم پاک می‌شوند تا روی مقصد بعدی نمانند
 		['kind', 'id', 'url', 'title', 'img_id'].forEach((name) => { field(slot, name).value = ''; });
-		slot.querySelector('.hodima-rl-image__preview').textContent = '';
-		slot.querySelector('.hodima-rl-remove-image').hidden = true;
 		slot.querySelector('.hodima-rl-target').hidden = true;
 		const picker = slot.querySelector('.hodima-rl-picker');
 		picker.hidden = false;
@@ -209,51 +206,8 @@
 		});
 	};
 
-	/* ── تصویر دلخواه ── */
-	const setupImage = (slot) => {
-		const pick = slot.querySelector('.hodima-rl-pick-image');
-		const remove = slot.querySelector('.hodima-rl-remove-image');
-		const preview = slot.querySelector('.hodima-rl-image__preview');
-		const input = field(slot, 'img_id');
-		let frame = null;
-
-		if (typeof window.wp?.media !== 'function') {
-			pick.disabled = true;
-			return;
-		}
-
-		pick.addEventListener('click', () => {
-			frame ??= window.wp.media({
-				title: t.mediaTitle,
-				button: { text: t.mediaButton },
-				library: { type: 'image' },
-				multiple: false,
-			});
-			frame.off('select').on('select', () => {
-				const attachment = frame.state().get('selection').first()?.toJSON();
-				if (!attachment) return;
-				input.value = String(attachment.id);
-				const img = document.createElement('img');
-				img.src = attachment.sizes?.thumbnail?.url ?? attachment.url;
-				img.alt = '';
-				preview.replaceChildren(img);
-				remove.hidden = false;
-				markUnsaved(slot);
-			});
-			frame.open();
-		});
-
-		remove.addEventListener('click', () => {
-			input.value = '';
-			preview.textContent = '';
-			remove.hidden = true;
-			markUnsaved(slot);
-		});
-	};
-
 	const setupSlot = (slot, group) => {
 		setupSearch(slot, group);
-		setupImage(slot);
 		slot.querySelector('.hodima-rl-clear').addEventListener('click', () => clearTarget(slot));
 	};
 

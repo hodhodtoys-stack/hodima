@@ -79,7 +79,7 @@ final class AdminPage {
 		echo '<div class="wrap hd-wrap hodima-rl-page">';
 		hodima_admin_header( [
 			'title'       => 'لینک‌های مرتبط',
-			'description' => 'پیشنهاد خرید (در سایت: «محصولات مکمل») و مقاله پیشنهادی که در ویرایشگر هر نوشته، محصول و دسته انتخاب می‌شوند.',
+			'description' => 'پیشنهاد خرید و مقاله پیشنهادی که در ویرایشگر هر نوشته، محصول و دسته انتخاب می‌شوند.',
 			'icon'        => 'dashicons-admin-links',
 			'current'     => $tab,
 			'tabs'        => [
@@ -193,7 +193,7 @@ final class AdminPage {
 					<h2 class="hd-card__title">راهنمای شورت‌کدها</h2>
 				</header>
 				<ul class="hd-list">
-					<li><code>[manual_related_products]</code> پیشنهاد خرید (عنوان کادر در سایت: «محصولات مکمل»، از همین صفحه قابل تغییر) · <code>[hodima_related_article]</code> مقاله پیشنهادی</li>
+					<li><code>[manual_related_products]</code> پیشنهاد خرید (عنوان کادر در سایت از همین صفحه قابل تغییر) · <code>[hodima_related_article]</code> مقاله پیشنهادی</li>
 					<li>«دسته‌بندی‌های مرتبط» حذف شد (لینک دسته‌ها را خوشه موضوعی می‌سازد). اگر <code>[hodima_related_categories]</code> جایی در متن مانده باشد چیزی نمایش نمی‌دهد.</li>
 					<li>هر شورت‌کد مستقل است: هر کدام را هر جای متن (یا توضیح دسته) بگذارید، فقط کادر خودش همان‌جا نمایش داده می‌شود. لازم نیست کنار هم باشند و لازم نیست هر دو را بگذارید.</li>
 					<li>ویژگی‌ها: <code>title="…"</code> عنوان دلخواه (<code>title=""</code> بدون عنوان)، <code>heading="h2"</code>، و <code>id="123" type="term"</code> برای نمایش لینک‌های صفحه یا دسته‌ای دیگر.</li>

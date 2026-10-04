@@ -73,6 +73,16 @@ final class Admin {
 	private static function render_box( int $object_id, string $context ): void {
 
 		$groups = Store::get( $object_id, $context );
+
+		/*
+		 * همه خانه‌ها (۲ پیشنهاد خرید + ۱ مقاله) در یک ردیف با عرض و ارتفاع
+		 * یکسان (خواسته کاربر، ۲.۴): ردیف به تعداد کل خانه‌ها ستون دارد و هر
+		 * گروه به تعداد خانه‌هایش ستون می‌گیرد (--rl-span).
+		 */
+		$spans = [];
+		foreach ( Group::cases() as $group ) {
+			$spans[ $group->value ] = max( Store::count( $group ), count( $groups[ $group->value ] ) );
+		}
 		?>
 		<div class="hodima-rl-box">
 			<?php if ( Store::has_legacy( $object_id, $context ) ) : ?>
@@ -82,9 +92,11 @@ final class Admin {
 				</p>
 			<?php endif; ?>
 
-			<?php foreach ( Group::cases() as $group ) : ?>
-				<?php self::render_group( $group, $groups[ $group->value ], $object_id, $context ); ?>
-			<?php endforeach; ?>
+			<div class="hodima-rl-groups" style="--rl-cols: <?php echo (int) array_sum( $spans ); ?>">
+				<?php foreach ( Group::cases() as $group ) : ?>
+					<?php self::render_group( $group, $groups[ $group->value ], $object_id, $context, $spans[ $group->value ] ); ?>
+				<?php endforeach; ?>
+			</div>
 
 			<p class="hodima-rl-box__foot">
 				تعداد، عنوان و نمایش خودکار هر گروه:
@@ -95,22 +107,29 @@ final class Admin {
 	}
 
 	/** @param list<array<string, mixed>> $items */
-	private static function render_group( Group $group, array $items, int $object_id, string $context ): void {
+	private static function render_group( Group $group, array $items, int $object_id, string $context, int $slots ): void {
 
 		$count = Store::count( $group );
-		$slots = max( $count, count( $items ) );
 		$auto  = Store::auto( $group );
 		// شورت‌کدها مستقل‌اند: گروهی که لینک دارد ولی شورت‌کدش در متن نیست
 		// (و نمایش خودکار خاموش است) در سایت هیچ‌جا دیده نمی‌شود.
 		$hidden = $items && ! in_array( $group, Front::placed_groups( Front::source_text( $object_id, $context ) ), true );
+		$gid    = wp_unique_id( 'hodima-rl-group-' );
+
+		/*
+		 * section به جای fieldset (۲.۴): legend در گرید شرکت نمی‌کند و برای
+		 * هم‌ارتفاع کردن سر و خانه‌های دو گروه (subgrid) لازم است بخش بالا یک
+		 * عنصر معمولی باشد. role="group" همان معنای fieldset را دارد.
+		 */
 		?>
-		<fieldset class="hodima-rl-group" data-group="<?php echo esc_attr( $group->value ); ?>">
-			<legend class="hodima-rl-group__head">
+		<section class="hodima-rl-group" role="group" aria-labelledby="<?php echo esc_attr( $gid ); ?>" data-group="<?php echo esc_attr( $group->value ); ?>" style="--rl-span: <?php echo (int) $slots; ?>">
+			<div class="hodima-rl-group__top">
+			<div class="hodima-rl-group__head">
 				<span class="dashicons <?php echo esc_attr( $group->icon() ); ?>" aria-hidden="true"></span>
-				<span class="hodima-rl-group__title"><?php echo esc_html( $group->label() ); ?></span>
+				<span class="hodima-rl-group__title" id="<?php echo esc_attr( $gid ); ?>"><?php echo esc_html( $group->label() ); ?></span>
 				<code class="hodima-rl-group__code">[<?php echo esc_html( $group->shortcode() ); ?>]</code>
 				<button type="button" class="button-link hodima-rl-copy" data-copy="[<?php echo esc_attr( $group->shortcode() ); ?>]">کپی شورت‌کد</button>
-			</legend>
+			</div>
 			<?php if ( $auto ) : ?>
 				<p class="hodima-rl-group__help">نمایش خودکار روشن است؛ شورت‌کد لازم نیست.</p>
 			<?php endif; ?>
@@ -126,6 +145,7 @@ final class Admin {
 					?>
 				</p>
 			<?php endif; ?>
+			</div>
 			<ol class="hodima-rl-slots">
 				<?php
 				$seen = [];
@@ -137,7 +157,7 @@ final class Admin {
 				}
 				?>
 			</ol>
-		</fieldset>
+		</section>
 		<?php
 	}
 
@@ -147,7 +167,6 @@ final class Admin {
 		$resolved = $item ? Store::resolve( $item, $object_id, $context ) : null;
 		$name     = sprintf( '%s[%s][%d]', self::FIELD, $group->value, $index );
 		$thumb    = $resolved && $resolved['img_id'] ? (string) wp_get_attachment_image_url( (int) $resolved['img_id'], 'thumbnail' ) : '';
-		$custom   = $item && $item['img_id'] ? (string) wp_get_attachment_image_url( (int) $item['img_id'], 'thumbnail' ) : '';
 		$uid      = wp_unique_id( 'hodima-rl-' );
 		?>
 		<li class="hodima-rl-slot<?php echo $index >= $count ? ' is-reserve' : ''; ?>" data-filled="<?php echo $item ? '1' : '0'; ?>">
@@ -188,20 +207,19 @@ final class Admin {
 				<p class="hodima-rl-status" role="status" aria-live="polite"></p>
 			</div>
 
-			<details class="hodima-rl-more"<?php echo $item && ( '' !== $item['title'] || $item['img_id'] ) ? ' open' : ''; ?>>
-				<summary>عنوان و تصویر دلخواه</summary>
-				<p>
-					<label for="<?php echo esc_attr( $uid ); ?>-title">عنوان روی کارت (متن لینک)</label>
-					<input type="text" id="<?php echo esc_attr( $uid ); ?>-title" data-field="title" name="<?php echo esc_attr( $name ); ?>[title]" value="<?php echo esc_attr( $item['title'] ?? '' ); ?>" placeholder="خالی = عنوان خود مقصد">
-				</p>
-				<div class="hodima-rl-image">
-					<span class="hodima-rl-image__preview"><?php if ( $custom ) : ?><img src="<?php echo esc_url( $custom ); ?>" alt=""><?php endif; ?></span>
-					<input type="hidden" data-field="img_id" name="<?php echo esc_attr( $name ); ?>[img_id]" value="<?php echo esc_attr( (string) ( $item['img_id'] ?? '' ) ); ?>">
-					<button type="button" class="button hodima-rl-pick-image">تصویر دلخواه</button>
-					<button type="button" class="button-link hodima-rl-remove-image"<?php echo $custom ? '' : ' hidden'; ?>>حذف تصویر دلخواه</button>
-					<span class="hodima-rl-image__help">خالی = تصویر شاخص مقصد</span>
-				</div>
-			</details>
+			<?php
+			/*
+			 * ۲.۴ (خواسته کاربر): «عنوان دلخواه» همیشه باز است (بدون دکمه
+			 * باز/بسته) و انتخاب «تصویر دلخواه» حذف شد. تصویر دلخواهی که از قبل
+			 * ذخیره شده (مثلا کاور ویترین نسخه ۱) در فیلد مخفی می‌ماند تا داده
+			 * پاک نشود؛ با «پاک کردن» مقصد خالی می‌شود.
+			 */
+			?>
+			<p class="hodima-rl-more">
+				<label for="<?php echo esc_attr( $uid ); ?>-title">عنوان روی کارت (متن لینک)</label>
+				<input type="text" id="<?php echo esc_attr( $uid ); ?>-title" data-field="title" name="<?php echo esc_attr( $name ); ?>[title]" value="<?php echo esc_attr( $item['title'] ?? '' ); ?>" placeholder="خالی = عنوان خود مقصد">
+				<input type="hidden" data-field="img_id" name="<?php echo esc_attr( $name ); ?>[img_id]" value="<?php echo esc_attr( (string) ( $item['img_id'] ?? '' ) ); ?>">
+			</p>
 
 			<ul class="hodima-rl-warnings">
 				<?php if ( $duplicate ) : ?>
@@ -415,18 +433,17 @@ final class Admin {
 			return;
 		}
 
-		// فقط صفحه ویرایش (نه فهرست نوشته‌ها): wp_enqueue_media سنگین است.
+		// فقط صفحه ویرایش (نه فهرست نوشته‌ها).
 		$is_post = 'post' === $screen->base && in_array( $screen->post_type, Store::post_types(), true );
 		$is_term = 'term' === $screen->base && in_array( $screen->taxonomy, Store::taxonomies(), true );
 		if ( ! $is_post && ! $is_term ) {
 			return;
 		}
 
-		wp_enqueue_media();
-
 		$base = HODIMA_SEO_URL . '/inc/manual_related_link/assets/';
 		wp_enqueue_style( 'hodima-rl-admin', $base . 'admin.css', [ 'dashicons' ], VERSION );
-		wp_enqueue_script( 'hodima-rl-admin', $base . 'admin.js', [ 'media-editor' ], VERSION, [ 'in_footer' => true ] );
+		// بدون کتابخانه رسانه (wp_enqueue_media): از ۲.۴ انتخاب تصویر دلخواه نیست.
+		wp_enqueue_script( 'hodima-rl-admin', $base . 'admin.js', [], VERSION, [ 'in_footer' => true ] );
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- فقط شناسه صفحه جاری
 		$self_id  = $is_post ? absint( $_GET['post'] ?? get_the_ID() ) : absint( $_GET['tag_ID'] ?? 0 );
@@ -438,8 +455,6 @@ final class Admin {
 			'selfId'  => $self_id,
 			'selfCtx' => $is_term ? 'term' : 'post',
 			'i18n'    => [
-				'mediaTitle'  => 'انتخاب تصویر کارت',
-				'mediaButton' => 'استفاده از این تصویر',
 				'searching'   => 'در حال جستجو…',
 				'noResults'   => 'چیزی پیدا نشد. می‌توانید آدرس کامل را بچسبانید.',
 				'error'       => 'جستجو انجام نشد؛ دوباره تلاش کنید.',

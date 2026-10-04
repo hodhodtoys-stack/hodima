@@ -5,7 +5,7 @@
  *
  * شورت‌کدها — هر کدام مستقل؛ هر جای محتوا که گذاشته شود، فقط کادر خودش
  * همان‌جا چاپ می‌شود:
- *   [manual_related_products]    «محصولات مکمل» (پیش‌فرض ۲ لینک)؛ نام‌های دیگر:
+ *   [manual_related_products]    «پیشنهاد خرید» (تا ۲.۳: «محصولات مکمل»؛ پیش‌فرض ۲ لینک)؛ نام‌های دیگر:
  *                                manual_related_links، hodima_complementary_products
  *   [hodima_related_article]     مقاله پیشنهادی، بدون هیچ عنوانی بالای کادر (۱ لینک)
  *   [hodima_related_categories]  حذف‌شده در ۲.۲ (لینک دسته‌ها با خوشه موضوعی)؛

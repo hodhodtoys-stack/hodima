@@ -87,6 +87,16 @@ final class Store {
 			);
 		}
 
+		/*
+		 * ۲.۴ (خواسته کاربر): عنوان پیش‌فرض کادر محصولات در سایت از «محصولات
+		 * مکمل» به «پیشنهاد خرید» تغییر کرد. اگر صفحه تنظیمات یک بار ذخیره شده
+		 * باشد، همان عنوان پیش‌فرض قدیمی در گزینه مانده؛ آن هم عوض می‌شود.
+		 * عنوانی که مدیر خودش نوشته دست نمی‌خورد.
+		 */
+		if ( 'محصولات مکمل' === ( $settings['groups'][ Group::Products->value ]['title'] ?? null ) ) {
+			$settings['groups'][ Group::Products->value ]['title'] = Group::Products->default_title();
+		}
+
 		return self::$settings = self::sanitize_settings( $settings );
 	}
 

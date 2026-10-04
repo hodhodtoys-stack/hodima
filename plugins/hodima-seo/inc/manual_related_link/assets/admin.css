@@ -36,24 +36,45 @@
 		border-radius: 0.375rem;
 	}
 
-	/* ── دو گروه کنار هم در یک ردیف (پیشنهاد خرید | مقاله پیشنهادی)؛ پیام‌ها تمام‌عرض ── */
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	align-items: start;
-	gap: 1rem;
+	/*
+	 * ── همه خانه‌ها در یک ردیف با عرض و ارتفاع یکسان (۲.۴) ──
+	 * ردیف --rl-cols ستون مساوی دارد (۲ پیشنهاد خرید + ۱ مقاله = ۳) و هر
+	 * گروه --rl-span ستون می‌گیرد. چون هر گروه حاشیه و قاب دارد، فاصله بین
+	 * خانه‌های داخل یک گروه = فاصله گروه‌ها + دو حاشیه + دو قاب؛ این‌طور
+	 * خانه تنهای مقاله دقیقا هم‌عرض هر خانه پیشنهاد خرید است.
+	 * سرِ گروه‌ها و خانه‌ها با subgrid هم‌ارتفاع می‌شوند (سطر ۱: عنوان و
+	 * پیام‌ها، سطر ۲: خانه‌ها).
+	 */
+	--rl-gap: 1rem;
+	--rl-pad: 0.75rem;
 
-	& > p {
-		grid-column: 1 / -1;
+	& .hodima-rl-groups {
+		display: grid;
+		grid-template-columns: repeat(var(--rl-cols, 3), minmax(0, 1fr));
+		grid-template-rows: auto 1fr;
+		column-gap: var(--rl-gap);
 	}
 
 	/* ── گروه ── */
 	& .hodima-rl-group {
+		display: grid;
+		grid-column: span var(--rl-span, 1);
+		grid-row: span 2;
+		grid-template-rows: subgrid;
+		row-gap: 0.625rem;
 		min-inline-size: 0;
 		margin: 0;
-		padding: 0.75rem 1rem 1rem;
+		padding: 0.75rem var(--rl-pad) var(--rl-pad);
 		background: #ffffff;
 		border: 1px solid var(--rl-border);
 		border-radius: 0.75rem;
+	}
+
+	& .hodima-rl-group__top {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		min-inline-size: 0;
 	}
 
 	& .hodima-rl-group__head {
@@ -75,7 +96,7 @@
 	}
 
 	& .hodima-rl-group__help {
-		margin: 0.25rem 0 0.75rem;
+		margin: 0;
 		font-size: 0.8125rem;
 		color: var(--rl-muted);
 	}
@@ -84,7 +105,7 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 0.375rem;
-		margin: 0 0 0.75rem;
+		margin: 0;
 		padding: 0.5rem 0.75rem;
 		font-size: 0.8125rem;
 		color: var(--rl-warn);
@@ -95,9 +116,8 @@
 
 	& .hodima-rl-slots {
 		display: grid;
-		/* auto-fit: خانه تنها (مقاله) تمام‌عرض کادر خودش را می‌گیرد */
-		grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
-		gap: 0.75rem;
+		grid-template-columns: repeat(var(--rl-span, 1), minmax(0, 1fr));
+		gap: calc(var(--rl-gap) + 2 * var(--rl-pad) + 2px);
 		margin: 0;
 		padding: 0;
 		list-style: none;
@@ -243,20 +263,21 @@
 		}
 	}
 
+	/*
+	 * فهرست نتیجه جستجو داخل خود خانه باز می‌شود (نه شناور). نسخه قبل
+	 * position: absolute بود و زیر کادر/خانه بعدی می‌رفت و همه نتیجه‌ها دیده
+	 * نمی‌شد (گزارش کاربر).
+	 */
 	& .hodima-rl-results {
-		position: absolute;
-		z-index: 20;
-		inset-inline: 0;
-		inset-block-start: calc(100% + 0.25rem);
-		max-block-size: 18rem;
-		margin: 0;
+		max-block-size: 16rem;
+		margin: 0.25rem 0 0;
 		padding: 0.25rem;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		list-style: none;
 		background: #ffffff;
 		border: 1px solid var(--rl-border);
 		border-radius: 0.5rem;
-		box-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--rl-primary) 16%, transparent);
 
 		&[hidden] {
 			display: none;
@@ -302,17 +323,12 @@
 		color: var(--rl-muted);
 	}
 
-	/* ── عنوان و تصویر دلخواه ── */
+	/* ── عنوان دلخواه (همیشه باز؛ تصویر دلخواه از ۲.۴ حذف شد) ── */
 	& .hodima-rl-more {
-		& summary {
-			cursor: pointer;
-			font-size: 0.8125rem;
-			color: var(--rl-primary);
-		}
-
-		& p {
-			margin: 0.5rem 0;
-		}
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		margin: 0;
 
 		& label {
 			font-size: 0.75rem;
@@ -323,32 +339,6 @@
 			inline-size: 100%;
 			border-color: var(--rl-third);
 		}
-	}
-
-	& .hodima-rl-image {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.375rem;
-	}
-
-	& .hodima-rl-image__preview:not(:empty) {
-		inline-size: 2.75rem;
-		block-size: 2.75rem;
-		overflow: hidden;
-		border-radius: 0.375rem;
-
-		& img {
-			inline-size: 100%;
-			block-size: 100%;
-			object-fit: cover;
-		}
-	}
-
-	& .hodima-rl-image__help {
-		inline-size: 100%;
-		font-size: 0.75rem;
-		color: var(--rl-muted);
 	}
 
 	/* ── هشدارها ── */
@@ -384,6 +374,16 @@
 	& [hidden] {
 		display: none;
 	}
+
+	/* برچسب نامرئی فیلد جستجو (پشتیبان؛ وردپرس هم همین کلاس را پنهان می‌کند) */
+	& .screen-reader-text {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
 }
 
 /* کادر در فرم ویرایش دسته/برچسب */
@@ -404,9 +404,24 @@
 	}
 }
 
-/* پیشخوان در موبایل/تبلت: دو گروه زیر هم */
+/* پیشخوان در موبایل/تبلت: گروه‌ها زیر هم؛ در گوشی خانه‌ها هم زیر هم */
 @media (max-width: 782px) {
-	.hodima-rl-box {
+	.hodima-rl-box .hodima-rl-groups {
 		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: none;
+		row-gap: var(--rl-gap);
+	}
+
+	.hodima-rl-box .hodima-rl-group {
+		grid-column: auto;
+		grid-row: auto;
+		grid-template-rows: auto 1fr;
+	}
+}
+
+@media (max-width: 600px) {
+	.hodima-rl-box .hodima-rl-slots {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.75rem;
 	}
 }
