@@ -42,7 +42,7 @@ class WC_Product {
 	public function is_on_sale() { return $this->get_sale_price() !== ''; }
 	public function get_permalink() { if ( ! $this->is_variation() ) return get_permalink( $this->id ); $q = []; foreach ( $this->get_attributes() as $k => $v ) { if ( '' !== $v ) $q[ 'attribute_' . $k ] = urlencode( $v ); } return add_query_arg( $q, get_permalink( $this->parent() ) ); }
 	public function get_category_ids() { return wp_get_post_terms( $this->id, 'product_cat', [ 'fields' => 'ids' ] ); }
-	public function get_weight() { return ''; }
+	public function get_weight() { return (string) $this->m( '_weight' ); } // وزن خام مثل ووکامرس ("20" یا "12.500")
 	public function get_meta( $k, $single = true ) { return $this->m( $k ); }
 	public function get_min_purchase_quantity() { return 1; }
 	public function get_max_purchase_quantity() { return -1; }

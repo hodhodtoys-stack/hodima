@@ -51,6 +51,7 @@ function hook_generate_custom_product_schema() {
     // ۱. استخراج مشخصات از کلاس جدول
     $specs_text = '';
     $additional_properties = [];
+    $schema_facts = [];
 
     if ( class_exists( 'Hodima_Product_Specs_Table' ) ) {
         $specs_table_instance = Hodima_Product_Specs_Table::get_instance();
@@ -60,9 +61,16 @@ function hook_generate_custom_product_schema() {
             $additional_properties = $prepared_data['schema_properties'];
         }
 
+        // رنگ، جنس، سایز و وزن واقعی (بدون مقدار پیش‌فرض) برای ویژگی‌های اصلی Product
+        $schema_facts = (array) ( $prepared_data['schema_facts'] ?? [] );
+
         if ( ! empty( $prepared_data['specs_data'] ) ) {
             $specs_parts = [];
             foreach ( $prepared_data['specs_data'] as $spec ) {
+                // «سایز: متنوع» / «رنگ: تک رنگ» پیش‌فرض‌اند، نه اطلاعات؛ در توضیح اسکیما هم نیایند
+                if ( ! empty( $spec['is_fallback'] ) ) {
+                    continue;
+                }
                 $specs_parts[] = $spec['label'] . ': ' . wp_strip_all_tags( $spec['value'] );
             }
             if ( ! empty( $specs_parts ) ) {
@@ -372,7 +380,10 @@ function hook_generate_custom_product_schema() {
         foreach ( $additional_properties as $property ) {
 
             $prop_name  = isset( $property['name'] ) ? trim( wp_strip_all_tags( (string) $property['name'] ) ) : '';
-            $prop_value = isset( $property['value'] ) ? trim( wp_strip_all_tags( (string) $property['value'] ) ) : '';
+            // عدد (مثلا وزن ۲۰ با unitCode) عدد می‌ماند؛ بقیه متن تمیز
+            $prop_value = isset( $property['value'] ) && ( is_int( $property['value'] ) || is_float( $property['value'] ) )
+                ? $property['value']
+                : ( isset( $property['value'] ) ? trim( wp_strip_all_tags( (string) $property['value'] ) ) : '' );
 
             if ( '' === $prop_name || '' === $prop_value ) {
                 continue;
@@ -386,11 +397,20 @@ function hook_generate_custom_product_schema() {
 
             $seen[ $key ] = true;
 
-            $clean[] = [
+            $entry = [
                 '@type' => 'PropertyValue',
                 'name'  => $prop_name,
                 'value' => $prop_value,
             ];
+
+            // واحد اندازه‌گیری (UN/CEFACT) و شناسه ویژگی، اگر ماژول سازنده داده باشد
+            foreach ( [ 'unitCode', 'unitText', 'propertyID' ] as $extra_key ) {
+                if ( isset( $property[ $extra_key ] ) && is_string( $property[ $extra_key ] ) && '' !== trim( $property[ $extra_key ] ) ) {
+                    $entry[ $extra_key ] = trim( wp_strip_all_tags( $property[ $extra_key ] ) );
+                }
+            }
+
+            $clean[] = $entry;
 
             if ( count( $clean ) >= 25 ) {
                 break;
@@ -411,6 +431,28 @@ function hook_generate_custom_product_schema() {
         if ( ! empty( $clean ) ) {
             $schema['additionalProperty'] = $clean;
         }
+    }
+
+    /*
+     * رنگ، جنس و سایز به‌عنوان ویژگی‌های اصلی Product (ویژگی‌های پیشنهادی
+     * گوگل برای محصول و Merchant listings). قبلا فقط تنوع‌های محصول متغیر
+     * آن‌ها را داشتند و در محصول ساده فقط در additionalProperty بودند که
+     * گوگل برای نتایج غنی محصول نمی‌خواند. فقط مقدار واقعی (نه «متنوع» /
+     * «تک رنگ» پیش‌فرض)، و در گروه محصول نه ویژگی‌ای که تنوع‌ها بر اساسش
+     * فرق دارند (مقدار آن مال هر تنوع است). additionalProperty دست نمی‌خورد.
+     */
+    foreach ( [ 'color', 'material', 'size' ] as $fact ) {
+        $fact_value = trim( (string) ( $schema_facts[ $fact ] ?? '' ) );
+        if ( '' === $fact_value || isset( $schema[ $fact ] )
+            || in_array( 'https://schema.org/' . $fact, (array) ( $schema['variesBy'] ?? [] ), true ) ) {
+            continue;
+        }
+        $schema[ $fact ] = $fact_value;
+    }
+
+    // وزن: عدد + کد واحد (QuantitativeValue)، نه متن «۲۰ گرم»
+    if ( ! empty( $schema_facts['weight']['value'] ) && ! empty( $schema_facts['weight']['unitCode'] ) ) {
+        $schema['weight'] = [ '@type' => 'QuantitativeValue' ] + array_intersect_key( (array) $schema_facts['weight'], array_flip( [ 'value', 'unitCode', 'unitText' ] ) );
     }
 
     /*

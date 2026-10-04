@@ -42,7 +42,7 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 | `wp-eval.php '<php>'` | اجرای کد دلخواه روی سایت تست (`HARNESS=1 HODIMA_WP=… php wp-eval.php '…'`) |
 | `extract.py` / `compare.py` / `integrity.py` | استخراج، مقایسه و بررسی گراف |
 | `mu-plugins/harness-core.php` | بدون ریدایرکت canonical؛ ورود مدیر با `HARNESS_USER=1` |
-| `mu-plugins/harness-wc-stub.php` | ووکامرس حداقلی با `HARNESS_WC=1` (محصول، دسته، برچسب، فروشگاه) |
+| `mu-plugins/harness-wc-stub.php` | ووکامرس حداقلی با `HARNESS_WC=1` (محصول، دسته، برچسب، فروشگاه). ویژگی‌ها از متای `attr_{نام}` (مثل `attr_pa_color`) و وزن از متای `_weight` خوانده می‌شوند |
 
 ## نمونه: مقایسه در حالت خاص
 ```bash

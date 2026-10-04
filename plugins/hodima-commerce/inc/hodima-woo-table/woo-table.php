@@ -3,7 +3,7 @@
  * Hodima Product Specs Table - HTML Generator Only (PHP 8.1+)
  *
  * @package Hodima
- * @version 2.10.0
+ * @version 2.11.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -25,7 +25,7 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 
 		private static ?self $instance = null;
 
-		public const VERSION = '2.10.0';
+		public const VERSION = '2.11.0';
 
 		/**
 		 * حافظه موقت همین درخواست، کلید = شناسه محصول.
@@ -250,7 +250,18 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 		--------------------------------------------------------------*/
 
 		/**
-		 * @return array{specs_data: array, schema_properties: array}
+		 * داده جدول (HTML) و اسکیمای محصول.
+		 *
+		 * - specs_data: همه ردیف‌های جدول، با is_fallback برای مقدار پیش‌فرض.
+		 * - schema_properties: فقط مقدار واقعی. «سایز: متنوع» و «رنگ: تک رنگ»
+		 *   (وقتی ویژگی پر نشده) جای خالی‌اند، نه اطلاعات؛ قبلا به اسکیما
+		 *   می‌رفتند و محصولی که رنگ داشت ولی ویژگی رنگش پر نشده بود «تک رنگ»
+		 *   اعلام می‌شد. در جدول صفحه مثل قبل نمایش داده می‌شوند.
+		 * - schema_facts: color / material / size (متن) و weight (عدد + کد واحد)
+		 *   برای ویژگی‌های اصلی Product که گوگل مستقیم می‌شناسد؛ فقط از مقدار
+		 *   واقعی.
+		 *
+		 * @return array{specs_data: array, schema_properties: array, schema_facts: array}
 		 */
 		public function _prepare_specs_data( WC_Product $product ): array {
 
@@ -263,6 +274,7 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 			$config            = $this->get_table_config();
 			$specs_data        = [];
 			$schema_properties = [];
+			$schema_facts      = [];
 
 			foreach ( $config as $spec_key => $spec_details ) {
 
@@ -303,20 +315,43 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 				}
 
 				$specs_data[ $spec_key ] = [
-					'label' => $label,
-					'value' => $value,
+					'label'       => $label,
+					'value'       => $value,
+					'is_fallback' => $is_fallback,
 				];
 
-				$schema_properties[] = [
+				if ( $is_fallback ) {
+					continue;
+				}
+
+				$text     = trim( wp_strip_all_tags( $value ) );
+				$property = [
 					'@type' => 'PropertyValue',
 					'name'  => $label,
-					'value' => wp_strip_all_tags( $value ),
+					'value' => $text,
 				];
+
+				// وزن: عدد + کد واحد بین‌المللی به جای متن «۲۰ گرم» (فقط وقتی از
+				// فیلد وزن ووکامرس آمده؛ ویژگی متنی pa_weight همان متن می‌ماند)
+				if ( 'weight' === $spec_key && null !== ( $weight = $this->schema_weight( $product ) ) ) {
+					$property               = [ '@type' => 'PropertyValue', 'name' => $label ] + $weight;
+					$schema_facts['weight'] = $weight;
+				}
+
+				$schema_properties[] = $property;
+
+				if ( in_array( $spec_key, [ 'color', 'material', 'size' ], true ) && '' !== $text ) {
+					// چند مقدار («صورتی | آبی»): رنگ و جنس با «/» (شکلی که گوگل برای
+					// چندرنگ می‌خواند)؛ سایز با «، » چون «1.5/2.5» شبیه کسر است
+					$parts                     = array_filter( array_map( 'trim', (array) preg_split( '/\s*[|,،]\s*/u', $text ) ) );
+					$schema_facts[ $spec_key ] = implode( 'size' === $spec_key ? '، ' : '/', $parts );
+				}
 			}
 
 			$prepared = [
 				'specs_data'        => $specs_data,
 				'schema_properties' => $schema_properties,
+				'schema_facts'      => $schema_facts,
 			];
 
 			$this->prepared_memo[ $product_id ] = $prepared;
@@ -366,6 +401,38 @@ if ( ! class_exists( 'Hodima_Product_Specs_Table' ) ) {
 			}
 
 			return array_values( array_unique( array_filter( $names, static fn( string $n ): bool => '' !== trim( $n ) ) ) );
+		}
+
+		/**
+		 * وزن محصول برای اسکیما: عدد خام ووکامرس + کد واحد UN/CEFACT.
+		 *
+		 * از get_weight() خام (نقطه اعشار انگلیسی) خوانده می‌شود، نه از متن
+		 * نمایشی جدول که ممکن است جداکننده اعشار محلی داشته باشد.
+		 *
+		 * @return array{value: int|float, unitCode: string, unitText: string}|null
+		 */
+		private function schema_weight( WC_Product $product ): ?array {
+
+			$raw = trim( (string) $product->get_weight() );
+
+			if ( '' === $raw || ! is_numeric( $raw ) || (float) $raw <= 0 ) {
+				return null;
+			}
+
+			$codes = [ 'g' => 'GRM', 'kg' => 'KGM', 'lbs' => 'LBR', 'oz' => 'ONZ' ];
+			$unit  = (string) get_option( 'woocommerce_weight_unit', 'g' );
+
+			if ( ! isset( $codes[ $unit ] ) ) {
+				return null;
+			}
+
+			$number = (float) $raw;
+
+			return [
+				'value'    => floor( $number ) === $number ? (int) $number : $number,
+				'unitCode' => $codes[ $unit ],
+				'unitText' => $this->get_weight_unit(),
+			];
 		}
 
 		/**
