@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * نصب می‌کرد هم به همان دامنه وصل می‌شد. حالا «هوشمند»:
  *   ۱. خودکار: دامنه ویدیو، کاور و پادکست همین صفحه (کادر «رسانه» افزونه
  *      Hodima Media، و صفحه هر ویدیو) — فقط صفحه‌ای که رسانه دارد.
- *   ۲. دستی: «تنظیمات قالب ← سرعت بارگذاری ← دامنه‌های همیشگی» (همه صفحه‌ها).
+ *   ۲. دستی: «تنظیمات قالب ← دامنه ویدئو» — فقط در صفحه‌ای که از همان دامنه رسانه دارد (2.9.1).
  * دامنه خود سایت حذف می‌شود (اتصالش از قبل باز است). فیلتر hodima_preconnect_hosts
  * مثل قبل برای کد سفارشی.
  * ============================================================ */
@@ -69,10 +69,26 @@ function hodima_preconnect_hosts(): array {
         return $memo;
     }
 
-    // اول رسانه همین صفحه (با سقف تعداد، مهم‌تر از دامنه‌های همیشگی است)
+    $media  = hodima_page_media_urls();
     $auto   = ! function_exists( 'hodima_setting' ) || hodima_setting( 'preconnect_media_auto' );
-    $always = preg_split( '/\R/u', function_exists( 'hodima_setting' ) ? (string) hodima_setting( 'preconnect_hosts' ) : '' ) ?: [];
-    $urls   = [ ...( $auto ? hodima_page_media_urls() : [] ), ...$always ];
+    $domains = preg_split( '/\R/u', function_exists( 'hodima_setting' ) ? (string) hodima_setting( 'preconnect_hosts' ) : '' ) ?: [];
+
+    /*
+     * «تنظیمات قالب ← دامنه ویدئو»: هر دامنه فقط در صفحه‌ای که از آن ویدیو یا
+     * پادکست دارد (رسانه همین صفحه یا آدرسی داخل متن نوشته/توضیح دسته). قبلا
+     * (2.8.0) «دامنه‌های همیشگی» در همه صفحه‌ها بود.
+     */
+    $haystack = strtolower( implode( ' ', $media ) . ' ' . hodima_page_text() );
+    $used     = array_filter(
+        $domains,
+        static function ( string $domain ) use ( $haystack ): bool {
+            $host = strtolower( (string) wp_parse_url( hodima_url_origin( $domain ), PHP_URL_HOST ) );
+            return '' !== $host && str_contains( $haystack, '//' . $host );
+        }
+    );
+
+    // اول رسانه خود صفحه (با سقف تعداد)، بعد دامنه‌های تنظیمات که این صفحه استفاده می‌کند
+    $urls = [ ...( $auto ? $media : [] ), ...$used ];
 
     $own   = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
     $hosts = [];
@@ -87,6 +103,18 @@ function hodima_preconnect_hosts(): array {
     $memo = array_slice( array_keys( $hosts ), 0, HODIMA_PRECONNECT_MAX );
 
     return $memo;
+}
+
+/** متن خام شیء جاری (متن نوشته/برگه/محصول یا توضیح دسته) برای یافتن آدرس رسانه جاسازی‌شده. */
+function hodima_page_text(): string {
+
+    $object = get_queried_object();
+
+    return match ( true ) {
+        $object instanceof WP_Post => (string) $object->post_content,
+        $object instanceof WP_Term => (string) $object->description,
+        default                    => '',
+    };
 }
 
 /** «https://dl.example.com/a/b.mp4» → «https://dl.example.com» (یا '' اگر آدرس http(s) نیست). */

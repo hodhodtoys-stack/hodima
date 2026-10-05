@@ -1,331 +1,266 @@
 /**
  * SP Gallery — گالری سفارشی محصول
  * Vanilla JS — بدون وابستگی
- * ساپورت: Touch Swipe + Keyboard + Lightbox + Lazy Load
+ * ساپورت: Touch Swipe + Keyboard + Lightbox (<dialog>) + Lazy Load
+ *
+ * نسخه 3.0.0 (نوسازی قالب، مرحله ۴): بدون var/function‌های تو در تو؛ لایت‌باکس
+ * <dialog> بومی با showModal() — بقیه صفحه inert (تله فوکوس Tab دستی حذف شد)،
+ * Escape با همان انیمیشن بسته شدن (رویداد cancel). رفتار و ظاهر همان قبلی.
  *
  * @package hodima
  * @since   1.0.0
  */
-;(function () {
-    'use strict';
+( () => {
+	const gallery = document.querySelector( '.sp-gallery' );
+	if ( ! gallery ) {
+		return;
+	}
 
-    // ── بررسی وجود گالری ──
-    var gallery = document.querySelector('.sp-gallery');
-    if (!gallery) return;
+	const slides = [ ...gallery.querySelectorAll( '.sp-gallery__slide' ) ];
+	const thumbs = [ ...gallery.querySelectorAll( '.sp-gallery__thumb' ) ];
+	const zoomBtn = gallery.querySelector( '.sp-gallery__zoom' );
+	const thumbsTrack = gallery.querySelector( '.sp-gallery__thumbs-track' );
+	const mainImage = gallery.querySelector( '.sp-gallery__main-image' );
 
-    // ── المان‌ها ──
-    var slides      = gallery.querySelectorAll('.sp-gallery__slide');
-    var thumbs      = gallery.querySelectorAll('.sp-gallery__thumb');
-    var zoomBtn     = gallery.querySelector('.sp-gallery__zoom');
-    var thumbsTrack = gallery.querySelector('.sp-gallery__thumbs-track');
+	const lightbox = document.querySelector( '.sp-lightbox' );
+	const lb = {
+		img: lightbox?.querySelector( '.sp-lightbox__img' ),
+		close: lightbox?.querySelector( '.sp-lightbox__close' ),
+		prev: lightbox?.querySelector( '.sp-lightbox__nav--prev' ),
+		next: lightbox?.querySelector( '.sp-lightbox__nav--next' ),
+		overlay: lightbox?.querySelector( '.sp-lightbox__overlay' ),
+		counter: lightbox?.querySelector( '.sp-lightbox__counter' ),
+	};
 
-    // ── لایتباکس ──
-    var lightbox  = document.querySelector('.sp-lightbox');
-    var lbImg     = lightbox ? lightbox.querySelector('.sp-lightbox__img')        : null;
-    var lbClose   = lightbox ? lightbox.querySelector('.sp-lightbox__close')      : null;
-    var lbPrev    = lightbox ? lightbox.querySelector('.sp-lightbox__nav--prev')  : null;
-    var lbNext    = lightbox ? lightbox.querySelector('.sp-lightbox__nav--next')  : null;
-    var lbOverlay = lightbox ? lightbox.querySelector('.sp-lightbox__overlay')    : null;
-    var lbCounter = lightbox ? lightbox.querySelector('.sp-lightbox__counter')    : null;
+	const total = slides.length;
+	if ( 0 === total ) {
+		return;
+	}
 
-    var total = slides.length;
-    var current = 0;
-    var isLightboxOpen = false;
-    var hasSwiped = false;
-    var lastFocus = null;
-    var hideTimer = null;
+	let current = 0;
+	let isLightboxOpen = false;
+	let hasSwiped = false;
+	let hideTimer = 0;
 
-    // RTL: «بعدی» سمت چپ است (ترتیب تامبنیل‌ها از راست به چپ)
-    var isRTL = (document.documentElement.getAttribute('dir') || getComputedStyle(document.documentElement).direction) === 'rtl';
+	// RTL: «بعدی» سمت چپ است (ترتیب تامبنیل‌ها از راست به چپ)
+	const isRTL = 'rtl' === ( document.documentElement.getAttribute( 'dir' ) || getComputedStyle( document.documentElement ).direction );
 
-    if (total === 0) return;
+	const wrap = ( index ) => ( ( index % total ) + total ) % total;
 
-    // ══════════════════════════════════════════
-    // تابع اصلی: تغییر اسلاید
-    // ══════════════════════════════════════════
-    function goTo(index) {
-        if (index < 0) index = total - 1;
-        if (index >= total) index = 0;
+	/** src اولیه اسلایدهای ۲ به بعد تامبنیل است؛ تصویر کامل جایگزین می‌شود. */
+	const loadFull = ( slide ) => {
+		if ( slide?.dataset.src && slide.getAttribute( 'src' ) !== slide.dataset.src ) {
+			slide.src = slide.dataset.src;
+		}
+	};
 
-        // Lazy load تصویر
-        var targetSlide = slides[index];
-        // src اولیه اسلایدهای ۲ به بعد تامبنیل است؛ تصویر کامل جایگزین می‌شود
-        if (targetSlide.dataset.src && targetSlide.getAttribute('src') !== targetSlide.dataset.src) {
-            targetSlide.src = targetSlide.dataset.src;
-        }
+	/** اسکرول تامبنیل فعال به محدوده دید. */
+	const scrollThumbIntoView = ( index ) => {
+		const thumb = thumbs[ index ];
+		if ( ! thumbsTrack || ! thumb ) {
+			return;
+		}
+		const trackRect = thumbsTrack.getBoundingClientRect();
+		const thumbRect = thumb.getBoundingClientRect();
 
-        // تعویض کلاس فعال — اسلایدها
-        slides[current].classList.remove('is-active');
-        targetSlide.classList.add('is-active');
+		if ( thumbRect.right > trackRect.right ) {
+			thumbsTrack.scrollLeft += thumbRect.right - trackRect.right + 20;
+		} else if ( thumbRect.left < trackRect.left ) {
+			thumbsTrack.scrollLeft -= trackRect.left - thumbRect.left + 20;
+		}
+	};
 
-        // تعویض کلاس فعال — تامبنیل‌ها
-        if (thumbs.length > 0) {
-            thumbs[current].classList.remove('is-active');
-            thumbs[current].setAttribute('aria-current', 'false');
-            thumbs[index].classList.add('is-active');
-            thumbs[index].setAttribute('aria-current', 'true');
-            scrollThumbIntoView(index);
-        }
+	/** تغییر اسلاید (و تامبنیل فعال)؛ اسلایدهای مجاور پیش‌بارگذاری می‌شوند. */
+	const goTo = ( requested ) => {
+		const index = wrap( requested );
 
-        current = index;
+		loadFull( slides[ index ] );
+		slides[ current ].classList.remove( 'is-active' );
+		slides[ index ].classList.add( 'is-active' );
 
-        // Preload اسلایدهای مجاور
-        preloadAdjacent(index);
-    }
+		if ( thumbs.length ) {
+			thumbs[ current ].classList.remove( 'is-active' );
+			thumbs[ current ].setAttribute( 'aria-current', 'false' );
+			thumbs[ index ].classList.add( 'is-active' );
+			thumbs[ index ].setAttribute( 'aria-current', 'true' );
+			scrollThumbIntoView( index );
+		}
 
-    // ══════════════════════════════════════════
-    // Preload تصاویر مجاور
-    // ══════════════════════════════════════════
-    function preloadAdjacent(index) {
-        var next = (index + 1) % total;
-        var prev = (index - 1 + total) % total;
+		current = index;
+		loadFull( slides[ wrap( index + 1 ) ] );
+		loadFull( slides[ wrap( index - 1 ) ] );
+	};
 
-        [next, prev].forEach(function (i) {
-            var s = slides[i];
-            if (s && s.dataset.src && s.getAttribute('src') !== s.dataset.src) {
-                s.src = s.dataset.src;
-            }
-        });
-    }
+	thumbs.forEach( ( thumb ) => {
+		thumb.addEventListener( 'click', () => goTo( Number.parseInt( thumb.dataset.index, 10 ) ) );
+	} );
 
-    // ══════════════════════════════════════════
-    // اسکرول تامبنیل فعال به محدوده دید
-    // ══════════════════════════════════════════
-    function scrollThumbIntoView(index) {
-        if (!thumbsTrack || !thumbs[index]) return;
+	// ══════════════════════════════════════════
+	// Touch Swipe (موبایل)
+	// ══════════════════════════════════════════
+	if ( mainImage ) {
+		let startX = 0;
+		let startY = 0;
+		let isSwiping = false;
 
-        var thumb = thumbs[index];
-        var trackRect = thumbsTrack.getBoundingClientRect();
-        var thumbRect = thumb.getBoundingClientRect();
+		mainImage.addEventListener( 'touchstart', ( event ) => {
+			startX = event.touches[ 0 ].clientX;
+			startY = event.touches[ 0 ].clientY;
+			isSwiping = true;
+			hasSwiped = false;
+		}, { passive: true } );
 
-        if (thumbRect.right > trackRect.right) {
-            thumbsTrack.scrollLeft += (thumbRect.right - trackRect.right + 20);
-        } else if (thumbRect.left < trackRect.left) {
-            thumbsTrack.scrollLeft -= (trackRect.left - thumbRect.left + 20);
-        }
-    }
+		mainImage.addEventListener( 'touchmove', ( event ) => {
+			if ( ! isSwiping ) {
+				return;
+			}
+			const diffX = Math.abs( event.touches[ 0 ].clientX - startX );
+			const diffY = Math.abs( event.touches[ 0 ].clientY - startY );
+			if ( diffX > diffY && diffX > 10 ) {
+				event.preventDefault();
+				hasSwiped = true;
+			}
+		}, { passive: false } );
 
-    // ══════════════════════════════════════════
-    // کلیک تامبنیل
-    // ══════════════════════════════════════════
-    thumbs.forEach(function (thumb) {
-        thumb.addEventListener('click', function () {
-            var index = parseInt(this.dataset.index, 10);
-            goTo(index);
-        });
-    });
+		mainImage.addEventListener( 'touchend', ( event ) => {
+			if ( ! isSwiping ) {
+				return;
+			}
+			isSwiping = false;
 
-    // ══════════════════════════════════════════
-    // Touch Swipe (موبایل)
-    // ══════════════════════════════════════════
-    var touchStartX = 0;
-    var touchStartY = 0;
-    var isSwiping = false;
+			// RTL: swipe چپ = بعدی، swipe راست = قبلی
+			const diff = startX - event.changedTouches[ 0 ].clientX;
+			if ( diff > 50 ) {
+				hasSwiped = true;
+				goTo( current + 1 );
+			} else if ( diff < -50 ) {
+				hasSwiped = true;
+				goTo( current - 1 );
+			}
+		}, { passive: true } );
+	}
 
-    var mainImage = gallery.querySelector('.sp-gallery__main-image');
-    if (mainImage) {
-        mainImage.addEventListener('touchstart', function (e) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            isSwiping = true;
-            hasSwiped = false;
-        }, { passive: true });
+	// ══════════════════════════════════════════
+	// لایت‌باکس (<dialog>)
+	// ══════════════════════════════════════════
+	const showInLightbox = ( index ) => {
+		const slide = slides[ index ];
+		if ( lb.img ) {
+			lb.img.src = slide.dataset.full || slide.dataset.src || slide.src;
+			lb.img.alt = slide.alt || '';
+		}
+		if ( lb.counter ) {
+			lb.counter.textContent = `${ index + 1 } / ${ total }`;
+		}
+	};
 
-        mainImage.addEventListener('touchmove', function (e) {
-            if (!isSwiping) return;
-            var diffX = Math.abs(e.touches[0].clientX - touchStartX);
-            var diffY = Math.abs(e.touches[0].clientY - touchStartY);
-            if (diffX > diffY && diffX > 10) {
-                e.preventDefault();
-                hasSwiped = true;
-            }
-        }, { passive: false });
+	const openLightbox = ( index ) => {
+		if ( ! ( lightbox instanceof HTMLDialogElement ) || ! lb.img ) {
+			return;
+		}
+		isLightboxOpen = true;
+		showInLightbox( index );
+		clearTimeout( hideTimer );
 
-        mainImage.addEventListener('touchend', function (e) {
-            if (!isSwiping) return;
-            isSwiping = false;
+		if ( ! lightbox.open ) {
+			lightbox.showModal();
+		}
+		// یک فریم بعد تا انیمیشن باز شدن اجرا شود؛ فوکوس به «بستن» یک فریم بعدتر
+		// (در فریم اول visibility هنوز hidden است و فوکوس نمی‌گیرد — نسخه قبلی هم)
+		requestAnimationFrame( () => {
+			lightbox.classList.add( 'is-open' );
+			requestAnimationFrame( () => lb.close?.focus() );
+		} );
+		document.body.style.overflow = 'hidden';
+	};
 
-            var touchEndX = e.changedTouches[0].clientX;
-            var diff = touchStartX - touchEndX;
-            var threshold = 50;
+	const closeLightbox = () => {
+		if ( ! ( lightbox instanceof HTMLDialogElement ) || ! isLightboxOpen ) {
+			return;
+		}
+		isLightboxOpen = false;
+		lightbox.classList.remove( 'is-open' );
+		document.body.style.overflow = '';
+		// بستن dialog بعد از پایان انیمیشن (فوکوس را خود مرورگر به دکمه/تصویر قبلی برمی‌گرداند)
+		hideTimer = setTimeout( () => lightbox.close(), 350 );
+	};
 
-            // RTL: swipe چپ = بعدی، swipe راست = قبلی
-            if (diff > threshold) {
-                hasSwiped = true;
-                goTo(current + 1);
-            } else if (diff < -threshold) {
-                hasSwiped = true;
-                goTo(current - 1);
-            }
-        }, { passive: true });
-    }
+	const lightboxGoTo = ( index ) => {
+		goTo( index );
+		showInLightbox( current );
+	};
 
-    // ══════════════════════════════════════════
-    // لایتباکس
-    // ══════════════════════════════════════════
-    function openLightbox(index) {
-        if (!lightbox || !lbImg) return;
+	zoomBtn?.addEventListener( 'click', () => openLightbox( current ) );
 
-        isLightboxOpen = true;
-        var slide = slides[index];
-        var fullSrc = slide.dataset.full || slide.dataset.src || slide.src;
+	// کلیک روی تصویر اصلی → لایت‌باکس (فقط اگر swipe نبوده)
+	mainImage?.addEventListener( 'click', () => {
+		if ( ! hasSwiped ) {
+			openLightbox( current );
+		}
+		hasSwiped = false;
+	} );
 
-        lbImg.src = fullSrc;
-        lbImg.alt = slide.alt || '';
+	lb.close?.addEventListener( 'click', closeLightbox );
+	lb.overlay?.addEventListener( 'click', closeLightbox );
 
-        if (lbCounter) {
-            lbCounter.textContent = (index + 1) + ' / ' + total;
-        }
+	// ناوبری لایت‌باکس (RTL)
+	lb.prev?.addEventListener( 'click', () => lightboxGoTo( current + 1 ) );
+	lb.next?.addEventListener( 'click', () => lightboxGoTo( current - 1 ) );
 
-        clearTimeout(hideTimer);
-        lastFocus = document.activeElement;
-        lightbox.hidden = false;
-        // یک فریم بعد تا انیمیشن باز شدن اجرا شود
-        requestAnimationFrame(function () { lightbox.classList.add('is-open'); });
-        lightbox.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-        if (lbClose) lbClose.focus();
-    }
+	if ( lightbox ) {
+		// Escape بومی dialog فورا می‌بندد؛ به‌جایش همان بستن با انیمیشن
+		lightbox.addEventListener( 'cancel', ( event ) => {
+			event.preventDefault();
+			closeLightbox();
+		} );
 
-    function closeLightbox() {
-        if (!lightbox) return;
+		let lbStartX = 0;
+		lightbox.addEventListener( 'touchstart', ( event ) => {
+			lbStartX = event.touches[ 0 ].clientX;
+		}, { passive: true } );
 
-        isLightboxOpen = false;
-        lightbox.classList.remove('is-open');
-        lightbox.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
-        // hidden بعد از پایان انیمیشن بسته شدن
-        hideTimer = setTimeout(function () { lightbox.hidden = true; }, 350);
-        if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
-    }
+		lightbox.addEventListener( 'touchend', ( event ) => {
+			const diff = lbStartX - event.changedTouches[ 0 ].clientX;
+			if ( diff > 50 ) {
+				lightboxGoTo( current + 1 );
+			} else if ( diff < -50 ) {
+				lightboxGoTo( current - 1 );
+			}
+		}, { passive: true } );
+	}
 
-    function lightboxGoTo(index) {
-        if (index < 0) index = total - 1;
-        if (index >= total) index = 0;
+	// ══════════════════════════════════════════
+	// کیبورد
+	// ══════════════════════════════════════════
+	/*
+	 * فقط وقتی لایت‌باکس باز است یا فوکوس داخل گالری است. نسخه‌های قدیمی به
+	 * کل صفحه گوش می‌دادند: فلش چپ و راست هنگام تایپ نظر یا تعداد، عکس را عوض می‌کرد.
+	 */
+	const isEditable = ( el ) => !! el && ( [ 'INPUT', 'TEXTAREA', 'SELECT' ].includes( el.tagName ) || el.isContentEditable );
 
-        goTo(index);
+	document.addEventListener( 'keydown', ( event ) => {
+		if ( isEditable( event.target ) ) {
+			return;
+		}
+		if ( ! isLightboxOpen && ! gallery.contains( document.activeElement ) ) {
+			return;
+		}
+		if ( 'ArrowRight' !== event.key && 'ArrowLeft' !== event.key ) {
+			return;
+		}
 
-        var slide = slides[index];
-        var fullSrc = slide.dataset.full || slide.dataset.src || slide.src;
-        if (lbImg) {
-            lbImg.src = fullSrc;
-            lbImg.alt = slide.alt || '';
-        }
+		const step = ( 'ArrowLeft' === event.key ) === isRTL ? 1 : -1;
+		event.preventDefault();
 
-        if (lbCounter) {
-            lbCounter.textContent = (index + 1) + ' / ' + total;
-        }
-    }
+		if ( isLightboxOpen ) {
+			lightboxGoTo( current + step );
+		} else {
+			goTo( current + step );
+			thumbs[ current ]?.focus();
+		}
+	} );
 
-    // دکمه زوم
-    if (zoomBtn) {
-        zoomBtn.addEventListener('click', function () {
-            openLightbox(current);
-        });
-    }
-
-    // کلیک روی تصویر اصلی → لایتباکس (فقط اگر swipe نبوده)
-    if (mainImage) {
-        mainImage.addEventListener('click', function (e) {
-            if (!hasSwiped) {
-                openLightbox(current);
-            }
-            hasSwiped = false;
-        });
-    }
-
-    // بستن لایتباکس
-    if (lbClose) {
-        lbClose.addEventListener('click', closeLightbox);
-    }
-    if (lbOverlay) {
-        lbOverlay.addEventListener('click', closeLightbox);
-    }
-
-    // ناوبری لایتباکس (RTL)
-    if (lbPrev) {
-        lbPrev.addEventListener('click', function () {
-            lightboxGoTo(current + 1);
-        });
-    }
-    if (lbNext) {
-        lbNext.addEventListener('click', function () {
-            lightboxGoTo(current - 1);
-        });
-    }
-
-    // Touch swipe لایتباکس
-    if (lightbox) {
-        var lbTouchStartX = 0;
-
-        lightbox.addEventListener('touchstart', function (e) {
-            lbTouchStartX = e.touches[0].clientX;
-        }, { passive: true });
-
-        lightbox.addEventListener('touchend', function (e) {
-            var diff = lbTouchStartX - e.changedTouches[0].clientX;
-            if (diff > 50) {
-                lightboxGoTo(current + 1);
-            } else if (diff < -50) {
-                lightboxGoTo(current - 1);
-            }
-        }, { passive: true });
-    }
-
-    // ══════════════════════════════════════════
-    // کیبورد
-    // ══════════════════════════════════════════
-    /*
-     * کیبورد — فقط وقتی لایت‌باکس باز است یا فوکوس داخل گالری است.
-     * نسخه قبلی به *کل صفحه* گوش می‌داد: فلش چپ و راست هنگام تایپ نظر،
-     * تغییر تعداد یا وارد کردن شماره تلفن، عکس محصول را عوض می‌کرد.
-     */
-    function isEditable(el) {
-        if (!el) return false;
-        var tag = el.tagName;
-        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
-    }
-
-    document.addEventListener('keydown', function (e) {
-
-        if (isEditable(e.target)) return;
-
-        var inGallery = gallery.contains(document.activeElement);
-        if (!isLightboxOpen && !inGallery) return;
-
-        if (e.key === 'Escape' && isLightboxOpen) {
-            closeLightbox();
-            return;
-        }
-
-        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-
-        var step = (e.key === 'ArrowLeft') === isRTL ? 1 : -1;
-        e.preventDefault();
-
-        if (isLightboxOpen) {
-            lightboxGoTo(current + step);
-        } else {
-            goTo(current + step);
-            if (thumbs[current]) thumbs[current].focus();
-        }
-    });
-
-    // تله فوکوس داخل لایت‌باکس (Tab از دیالوگ بیرون نرود)
-    if (lightbox) {
-        lightbox.addEventListener('keydown', function (e) {
-            if (e.key !== 'Tab' || !isLightboxOpen) return;
-            var f = lightbox.querySelectorAll('button');
-            if (!f.length) return;
-            var first = f[0], last = f[f.length - 1];
-            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-        });
-    }
-
-    // ══════════════════════════════════════════
-    // Preload اولیه
-    // ══════════════════════════════════════════
-    preloadAdjacent(0);
-
-})();
+	// پیش‌بارگذاری اولیه اسلایدهای مجاور
+	loadFull( slides[ wrap( 1 ) ] );
+	loadFull( slides[ wrap( -1 ) ] );
+} )();

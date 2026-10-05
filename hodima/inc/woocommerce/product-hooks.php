@@ -161,12 +161,12 @@ function hodima_custom_product_gallery(): void {
     </div>
     <?php
     /*
-     * لایت‌باکس: dialog واقعی. قبلا aria-hidden="true" بود ولی دکمه‌های
-     * فوکوس‌پذیر داشت؛ hidden هم فوکوس و هم صفحه‌خوان را درست قطع می‌کند.
-     * img بدون src (قبلا src="" نامعتبر) تا JS مقدار بدهد.
+     * لایت‌باکس: <dialog> بومی (sp-gallery.js: showModal) — بقیه صفحه inert، بدون
+     * تله فوکوس دستی؛ dialog بسته نه دیده و نه فوکوس‌پذیر است (قبلا div با
+     * role="dialog"، aria-hidden و hidden). img بدون src تا JS مقدار بدهد.
      */
     ?>
-    <div class="sp-lightbox" role="dialog" aria-modal="true" aria-label="<?php echo esc_attr( 'نمایش بزرگ ' . $name ); ?>" aria-hidden="true" hidden>
+    <dialog class="sp-lightbox" aria-label="<?php echo esc_attr( 'نمایش بزرگ ' . $name ); ?>">
         <div class="sp-lightbox__overlay"></div>
         <div class="sp-lightbox__content">
             <button type="button" class="sp-lightbox__close" aria-label="بستن">×</button>
@@ -175,7 +175,7 @@ function hodima_custom_product_gallery(): void {
             <button type="button" class="sp-lightbox__nav sp-lightbox__nav--next" aria-label="تصویر بعدی">›</button>
             <span class="sp-lightbox__counter" aria-live="polite"></span>
         </div>
-    </div>
+    </dialog>
     <?php
 }
 

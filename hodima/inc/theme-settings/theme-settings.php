@@ -116,9 +116,9 @@ function hodima_settings_fields(): array {
 		'ga_skip_editors'  => [ 'panel' => 'analytics_ga', 'type' => 'toggle', 'label' => 'بازدید مدیران و نویسندگان ثبت نشود', 'default' => true ],
 		'ga_production'    => [ 'panel' => 'analytics_ga', 'type' => 'toggle', 'label' => 'فقط روی سایت اصلی (Production)', 'default' => true, 'help' => 'روی استیجینگ یا لوکال (WP_ENVIRONMENT_TYPE) کد آمار چاپ نمی‌شود تا آمار واقعی آلوده نشود.' ],
 
-		// ── سرعت: اتصال زودهنگام به دامنه رسانه (نوسازی قالب، مرحله ۲؛ قبلا dl.hodima.com ثابت در کد) ──
-		'preconnect_media_auto' => [ 'panel' => 'speed_preconnect', 'type' => 'toggle', 'label' => 'تشخیص خودکار دامنه ویدیو و پادکست هر صفحه', 'default' => true, 'wide' => true, 'help' => 'در صفحه‌ای که ویدیو، کاور ویدیو یا پادکست دارد (کادر «رسانه» نوشته، محصول، دسته یا صفحه هر ویدیو)، مرورگر از همان ابتدای بارگذاری به دامنه آن فایل (مثلا dl.example.com یا آپارات) وصل می‌شود تا پخش زودتر شروع شود. صفحه‌های بدون رسانه اتصال اضافه نمی‌گیرند و چیزی لازم نیست وارد کنید.' ],
-		'preconnect_hosts'      => [ 'panel' => 'speed_preconnect', 'type' => 'hostlist', 'label' => 'دامنه‌های همیشگی (همه صفحه‌ها)', 'default' => '', 'placeholder' => "https://cdn.example.com\nstatic.example.com", 'help' => 'اختیاری؛ هر دامنه در یک خط. فقط دامنه‌ای که تقریبا در همه صفحه‌ها چیزی از آن بارگذاری می‌شود (مثلا CDN تصاویر). اتصال اضافه در صفحه‌ای که از آن استفاده نمی‌کند کمی هزینه دارد؛ روی هم حداکثر ۴ دامنه در هر صفحه. دامنه خود سایت لازم نیست.' ],
+		// ── دامنه ویدئو: اتصال زودهنگام به دامنه پخش رسانه (نوسازی قالب، مرحله ۲ و ۴؛ قبلا dl.hodima.com ثابت در کد) ──
+		'preconnect_hosts'      => [ 'panel' => 'speed_preconnect', 'type' => 'hostlist', 'label' => 'دامنه ویدئو و پادکست', 'default' => '', 'placeholder' => 'dl.example.com', 'help' => 'دامنه‌ای که فایل‌های ویدیو و پادکست سایت از آن پخش می‌شوند (مثلا هاست دانلود یا CDN)؛ اگر بیش از یکی است هر کدام در یک خط. در هر صفحه‌ای که ویدیو یا پادکستی از این دامنه دارد (کادر «رسانه»، صفحه ویدیو یا داخل متن نوشته)، مرورگر از همان ابتدای بارگذاری به آن وصل می‌شود تا پخش زودتر شروع شود؛ صفحه‌های دیگر اتصال اضافه نمی‌گیرند.' ],
+		'preconnect_media_auto' => [ 'panel' => 'speed_preconnect', 'type' => 'toggle', 'label' => 'تشخیص خودکار دامنه هر ویدیو و پادکست', 'default' => true, 'wide' => true, 'help' => 'دامنه ویدیو، کاور و پادکست هر صفحه (حتی آپارات و یوتیوب یا دامنه‌ای که بالا وارد نشده) خودکار تشخیص داده می‌شود. خاموش: فقط دامنه‌های کادر بالا.' ],
 	];
 }
 
@@ -212,7 +212,7 @@ function hodima_settings_nav_groups(): array {
 		'look'    => 'ظاهر سایت',
 		'pages'   => 'صفحه‌ها',
 		'contact' => 'ارتباط با مشتری',
-		'tools'   => 'آمار و سرعت',
+		'tools'   => 'آمار و ویدئو',
 	];
 }
 
@@ -239,7 +239,7 @@ function hodima_settings_sections(): array {
 		'contact'   => [ 'nav' => 'contact', 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی نمایش داده نمی‌شود.' ],
 		'social'    => [ 'nav' => 'contact', 'title' => 'شبکه‌های اجتماعی', 'icon' => 'dashicons-share', 'description' => 'نوار شبکه‌های اجتماعی بالای فوتر همه صفحه‌ها. بدون هیچ شبکه‌ای نوار نمایش داده نمی‌شود.' ],
 		'analytics' => [ 'nav' => 'tools', 'title' => 'Google Analytics', 'icon' => 'dashicons-chart-area', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
-		'speed'     => [ 'nav' => 'tools', 'title' => 'سرعت بارگذاری', 'icon' => 'dashicons-performance', 'description' => 'اتصال زودهنگام مرورگر به دامنه‌هایی که ویدیو، پادکست یا فایل‌های دیگر سایت از آن‌ها پخش می‌شوند.' ],
+		'speed'     => [ 'nav' => 'tools', 'title' => 'دامنه ویدئو', 'icon' => 'dashicons-video-alt3', 'description' => 'دامنه‌ای که ویدیو و پادکست‌های سایت از آن پخش می‌شوند؛ مرورگر در صفحه‌های دارای ویدیو از ابتدا به آن وصل می‌شود تا پخش زودتر شروع شود.' ],
 	];
 }
 
@@ -289,7 +289,7 @@ function hodima_settings_panels(): array {
 
 		'analytics_ga'       => [ 'section' => 'analytics', 'title' => 'Google Analytics 4', 'icon' => 'dashicons-chart-area' ],
 
-		'speed_preconnect'   => [ 'section' => 'speed', 'title' => 'دامنه پخش ویدیو و پادکست', 'icon' => 'dashicons-performance', 'help' => 'اگر ویدیو و پادکست‌ها روی دامنه جدا (مثلا یک هاست دانلود یا CDN) هستند، اتصال زودهنگام چند صدم ثانیه از شروع پخش کم می‌کند.' ],
+		'speed_preconnect'   => [ 'section' => 'speed', 'title' => 'دامنه پخش ویدیو و پادکست', 'icon' => 'dashicons-video-alt3', 'help' => 'اگر ویدیو و پادکست‌ها روی دامنه جدا (مثلا dl.hodima.com) هستند، اتصال زودهنگام چند صدم ثانیه از شروع پخش کم می‌کند.' ],
 	];
 }
 
@@ -919,7 +919,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 				<textarea
 					id="<?php echo esc_attr( $id ); ?>"
 					name="<?php echo esc_attr( $name ); ?>"
-					rows="5"
+					rows="<?php echo Hodima_Setting_Type::HostList === $type ? '3' : '5'; // یک یا دو دامنه؛ فهرست آدرس بلندتر ?>"
 					dir="ltr"
 					spellcheck="false"
 					autocomplete="off"

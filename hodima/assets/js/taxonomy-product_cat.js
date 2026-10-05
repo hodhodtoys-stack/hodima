@@ -1,8 +1,8 @@
 /**
  * Product category — sorting
- * Version: 2.0.0
+ * Version: 3.0.0 (نوسازی قالب، مرحله ۴: async/await، بدون var)
  *
- * تغییرات:
+ * تغییرات (2.0.0):
  *   - مرتب‌سازی به صفحه ۱ برمی‌گردد. شماره صفحه در *مسیر* است
  *     (/cat/page/3/) نه در ?paged=؛ نسخه قبلی فقط ?paged را حذف می‌کرد و
  *     مرتب‌سازی روی صفحه ۳، صفحه ۳ ترتیب جدید را می‌آورد (یا ۴۰۴).
@@ -11,145 +11,171 @@
  *   - درخواست‌های پشت سر هم: قبلی لغو می‌شود.
  *   - aria-pressed / aria-expanded و Escape برای منوی قیمت.
  *   - راه‌اندازی مستقل از DOMContentLoaded (Delay JS لایت‌اسپید).
+ * 3.0.0: نشانه «در حال بارگذاری» با لغو درخواست قبلی برداشته نمی‌شود (فقط
+ * وقتی آخرین درخواست تمام شد).
  */
-(function () {
-    'use strict';
+( () => {
+	const init = () => {
+		const scope = document.querySelector( '.section-products' );
+		const group = document.querySelector( '.hodima-custom-sort-wrapper' );
+		if ( ! scope || ! group ) {
+			return;
+		}
 
-    function init() {
+		const priceWrap = group.querySelector( '.price-sort-wrapper' );
+		const priceBtn = group.querySelector( '[data-sort-type="price-group"]' );
+		let ctrl = null;
 
-        var scope = document.querySelector('.section-products');
-        var group = document.querySelector('.hodima-custom-sort-wrapper');
-        if (!scope || !group) return;
+		const stripPage = ( url ) => {
+			url.pathname = url.pathname.replace( /\/page\/\d+\/?$/, '/' );
+			url.searchParams.delete( 'paged' );
+			url.searchParams.delete( 'product-page' );
+			return url;
+		};
 
-        var priceWrap = group.querySelector('.price-sort-wrapper');
-        var priceBtn  = group.querySelector('[data-sort-type="price-group"]');
-        var ctrl      = null;
+		const markActive = ( orderby ) => {
+			group.querySelectorAll( '.hodima-sort-btn, .hodima-sort-sub-btn' ).forEach( ( b ) => {
+				b.classList.remove( 'active' );
+				if ( b.hasAttribute( 'aria-pressed' ) ) {
+					b.setAttribute( 'aria-pressed', 'false' );
+				}
+			} );
 
-        function stripPage(url) {
-            url.pathname = url.pathname.replace(/\/page\/\d+\/?$/, '/');
-            url.searchParams.delete('paged');
-            url.searchParams.delete('product-page');
-            return url;
-        }
+			let target = null;
+			if ( 'date' === orderby || 'popularity' === orderby ) {
+				target = group.querySelector( `[data-sort-type="${ orderby }"]` );
+			} else if ( 'price' === orderby || 'price-desc' === orderby ) {
+				target = group.querySelector( `[data-orderby="${ orderby }"]` );
+				priceBtn?.classList.add( 'active' );
+			}
+			if ( target ) {
+				target.classList.add( 'active' );
+				target.setAttribute( 'aria-pressed', 'true' );
+			}
+		};
 
-        function markActive(orderby) {
-            group.querySelectorAll('.hodima-sort-btn, .hodima-sort-sub-btn').forEach(function (b) {
-                b.classList.remove('active');
-                if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', 'false');
-            });
+		const setMenu = ( open ) => {
+			if ( ! priceWrap || ! priceBtn ) {
+				return;
+			}
+			priceWrap.classList.toggle( 'open', open );
+			priceBtn.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+		};
 
-            var target = null;
-            if (orderby === 'date' || orderby === 'popularity') {
-                target = group.querySelector('[data-sort-type="' + orderby + '"]');
-            } else if (orderby === 'price' || orderby === 'price-desc') {
-                target = group.querySelector('[data-orderby="' + orderby + '"]');
-                if (priceBtn) priceBtn.classList.add('active');
-            }
-            if (target) {
-                target.classList.add('active');
-                target.setAttribute('aria-pressed', 'true');
-            }
-        }
+		/** محصولات و صفحه‌بندی را از HTML صفحه دیگر جایگزین کن. */
+		const swap = ( doc ) => {
+			const fresh = doc.querySelector( '.section-products ul.products' );
+			const now = scope.querySelector( 'ul.products' );
+			if ( ! fresh || ! now ) {
+				return false;
+			}
 
-        function setMenu(open) {
-            if (!priceWrap || !priceBtn) return;
-            priceWrap.classList.toggle('open', open);
-            priceBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        }
+			now.replaceWith( fresh );
 
-        /** محصولات و صفحه‌بندی را از HTML صفحه دیگر جایگزین کن */
-        function swap(doc) {
-            var fresh = doc.querySelector('.section-products ul.products');
-            var now   = scope.querySelector('ul.products');
-            if (!fresh || !now) return false;
+			const oldNav = scope.querySelector( '.woocommerce-pagination' );
+			const newNav = doc.querySelector( '.section-products .woocommerce-pagination' );
+			if ( oldNav && newNav ) {
+				oldNav.replaceWith( newNav );
+			} else if ( oldNav ) {
+				oldNav.remove();
+			} else if ( newNav ) {
+				fresh.insertAdjacentElement( 'afterend', newNav );
+			}
 
-            now.replaceWith(fresh);
+			return true;
+		};
 
-            var oldNav = scope.querySelector('.woocommerce-pagination');
-            var newNav = doc.querySelector('.section-products .woocommerce-pagination');
-            if (oldNav && newNav) oldNav.replaceWith(newNav);
-            else if (oldNav) oldNav.remove();
-            else if (newNav) fresh.insertAdjacentElement('afterend', newNav);
+		const load = async ( url, push ) => {
+			ctrl?.abort();
+			const mine = new AbortController();
+			ctrl = mine;
 
-            return true;
-        }
+			scope.classList.add( 'is-loading' );
+			scope.setAttribute( 'aria-busy', 'true' );
 
-        function load(url, push) {
+			try {
+				const res = await fetch( url.toString(), { signal: mine.signal, credentials: 'same-origin' } );
+				if ( ! res.ok ) {
+					throw new Error( `HTTP ${ res.status }` );
+				}
+				const doc = new DOMParser().parseFromString( await res.text(), 'text/html' );
+				if ( ! swap( doc ) ) {
+					throw new Error( 'no products' );
+				}
 
-            if (ctrl) ctrl.abort();
-            ctrl = new AbortController();
+				if ( push ) {
+					history.pushState( { hodimaSort: true }, '', url.toString() );
+				}
+				markActive( url.searchParams.get( 'orderby' ) );
 
-            scope.classList.add('is-loading');
-            scope.setAttribute('aria-busy', 'true');
+				const top = scope.getBoundingClientRect().top + window.scrollY - 100;
+				if ( top < window.scrollY ) {
+					window.scrollTo( { top, behavior: 'smooth' } );
+				}
+			} catch ( err ) {
+				if ( 'AbortError' !== err?.name ) {
+					window.location.href = url.toString(); // بازگشت امن: بارگذاری کامل
+				}
+			} finally {
+				// درخواست لغوشده نشانه درخواست تازه‌تر را برنمی‌دارد
+				if ( ctrl === mine ) {
+					scope.classList.remove( 'is-loading' );
+					scope.removeAttribute( 'aria-busy' );
+				}
+			}
+		};
 
-            return fetch(url.toString(), { signal: ctrl.signal, credentials: 'same-origin' })
-                .then(function (res) {
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    return res.text();
-                })
-                .then(function (html) {
-                    var doc = new DOMParser().parseFromString(html, 'text/html');
-                    if (!swap(doc)) throw new Error('no products');
+		const applySort = ( orderby ) => {
+			const url = stripPage( new URL( window.location.href ) );
+			url.searchParams.set( 'orderby', orderby );
+			setMenu( false );
+			load( url, true );
+		};
 
-                    if (push) history.pushState({ hodimaSort: true }, '', url.toString());
-                    markActive(url.searchParams.get('orderby'));
+		group.addEventListener( 'click', ( event ) => {
+			const sub = event.target.closest( '.hodima-sort-sub-btn' );
+			if ( sub ) {
+				event.preventDefault();
+				applySort( sub.getAttribute( 'data-orderby' ) );
+				return;
+			}
 
-                    var top = scope.getBoundingClientRect().top + window.pageYOffset - 100;
-                    if (top < window.pageYOffset) window.scrollTo({ top: top, behavior: 'smooth' });
-                })
-                .catch(function (err) {
-                    if (err && err.name === 'AbortError') return;
-                    window.location.href = url.toString();   // بازگشت امن: بارگذاری کامل
-                })
-                .then(function () {
-                    scope.classList.remove('is-loading');
-                    scope.removeAttribute('aria-busy');
-                });
-        }
+			const btn = event.target.closest( '.hodima-sort-btn' );
+			if ( ! btn ) {
+				return;
+			}
+			event.preventDefault();
 
-        function applySort(orderby) {
-            var url = stripPage(new URL(window.location.href));
-            url.searchParams.set('orderby', orderby);
-            setMenu(false);
-            load(url, true);
-        }
+			const type = btn.getAttribute( 'data-sort-type' );
+			if ( 'price-group' === type ) {
+				setMenu( ! priceWrap.classList.contains( 'open' ) );
+			} else {
+				applySort( type );
+			}
+		} );
 
-        group.addEventListener('click', function (e) {
+		document.addEventListener( 'click', ( event ) => {
+			if ( priceWrap && ! priceWrap.contains( event.target ) ) {
+				setMenu( false );
+			}
+		} );
 
-            var sub = e.target.closest('.hodima-sort-sub-btn');
-            if (sub) { e.preventDefault(); applySort(sub.getAttribute('data-orderby')); return; }
+		document.addEventListener( 'keydown', ( event ) => {
+			if ( 'Escape' === event.key && priceWrap?.classList.contains( 'open' ) ) {
+				setMenu( false );
+				priceBtn?.focus();
+			}
+		} );
 
-            var btn = e.target.closest('.hodima-sort-btn');
-            if (!btn) return;
-            e.preventDefault();
+		// دکمه برگشت/جلو مرورگر
+		window.addEventListener( 'popstate', () => load( new URL( window.location.href ), false ) );
 
-            var type = btn.getAttribute('data-sort-type');
-            if (type === 'price-group') setMenu(!priceWrap.classList.contains('open'));
-            else applySort(type);
-        });
+		markActive( new URL( window.location.href ).searchParams.get( 'orderby' ) );
+	};
 
-        document.addEventListener('click', function (e) {
-            if (priceWrap && !priceWrap.contains(e.target)) setMenu(false);
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && priceWrap && priceWrap.classList.contains('open')) {
-                setMenu(false);
-                if (priceBtn) priceBtn.focus();
-            }
-        });
-
-        // دکمه برگشت/جلو مرورگر
-        window.addEventListener('popstate', function () {
-            load(new URL(window.location.href), false);
-        });
-
-        markActive(new URL(window.location.href).searchParams.get('orderby'));
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
+	if ( 'loading' === document.readyState ) {
+		document.addEventListener( 'DOMContentLoaded', init );
+	} else {
+		init();
+	}
+} )();

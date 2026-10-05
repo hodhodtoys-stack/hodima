@@ -123,13 +123,17 @@ $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'log
     <!-- ============================================
          پاپ‌آپ پشتیبانی (کانال‌ها از تنظیمات قالب)
     ============================================ -->
-    <div
+    <?php
+    /*
+     * <dialog> بومی (قبلا div با role="dialog"، aria-hidden و تله فوکوس دستی در
+     * header.js): showModal() بقیه صفحه را inert می‌کند، Escape و برگشت فوکوس به
+     * دکمه را خود مرورگر انجام می‌دهد. ظاهر و انیمیشن همان .overlay قبلی.
+     */
+    ?>
+    <dialog
         class="overlay"
         id="supportOverlay"
-        role="dialog"
-        aria-modal="true"
         aria-labelledby="supportTitle"
-        aria-hidden="true"
     >
         <article class="popup">
             <button
@@ -152,7 +156,8 @@ $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'log
                 </a>
             <?php endforeach; ?>
         </article>
-    </div>    <?php endif; ?>
+    </dialog>
+    <?php endif; ?>
 
     <!-- مقصد لینک «پرش به محتوای اصلی»: شروع محتوای هر قالب -->
     <span id="site-content" class="skip-link-target" tabindex="-1"></span>

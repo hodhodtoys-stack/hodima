@@ -1406,8 +1406,30 @@
 }
 
 
-/* لایت‌باکس: hidden تا وقتی باز شود */
-.sp-lightbox[hidden] { display: none !important; }
+/*
+ * لایت‌باکس <dialog> (inc/woocommerce/product-hooks.php): بسته = دیده نشود؛
+ * استایل پیش‌فرض مرورگر برای dialog (حاشیه، فاصله، زمینه سفید، حداکثر اندازه،
+ * پرده ::backdrop) خنثی تا همان لایت‌باکس قبلی باشد (پرده تیره .sp-lightbox__overlay است).
+ */
+dialog.sp-lightbox {
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    overflow: visible;
+    unicode-bidi: isolate; /* مثل div قبلی */
+
+    &:not([open]) {
+        display: none;
+    }
+
+    &::backdrop {
+        background: transparent;
+    }
+}
 
 /* فوکوس صفحه‌کلید روی تامبنیل‌ها */
 .sp-gallery__thumb:focus-visible {

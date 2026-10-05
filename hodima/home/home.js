@@ -1,57 +1,40 @@
 /**
  * صفحه اصلی: کشیدن اسلایدرها با ماوس (دسکتاپ).
- * «Lazy Load Enhancer» برای img.arian-lazy حذف شد: هیچ تصویری این کلاس را نداشت (کد مرده).
+ * «Lazy Load Enhancer» برای img.arian-lazy در 2.8.0 حذف شد: هیچ تصویری این کلاس را نداشت.
+ * نسخه 3.0.0 (نوسازی قالب، مرحله ۴): بدون انتظار DOMContentLoaded (اسکریپت در فوتر).
  */
+( () => {
+	// موبایل (لمس بومی) و کاربرانی که حرکت را کم کرده‌اند → بدون کشیدن با ماوس
+	if ( window.innerWidth < 900 || window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ) {
+		return;
+	}
 
-document.addEventListener('DOMContentLoaded', () => {
+	document.querySelectorAll( '.arian-scroller' ).forEach( ( el ) => {
+		let isDown = false;
+		let startX = 0;
+		let scrollLeft = 0;
 
-    // =============================
-    // 1. Drag Scroll (Desktop only)
-    // =============================
-    const initDragScroll = () => {
+		el.addEventListener( 'mousedown', ( event ) => {
+			isDown = true;
+			el.classList.add( 'active' );
+			startX = event.pageX - el.getBoundingClientRect().left;
+			scrollLeft = el.scrollLeft;
+		}, { passive: true } );
 
-        // موبایل + کاربرانی که Motion ممنوع شده → Drag غیر فعال
-        if (window.innerWidth < 900 || 
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            return;
-        }
+		el.addEventListener( 'mousemove', ( event ) => {
+			if ( ! isDown ) {
+				return;
+			}
+			event.preventDefault();
+			const x = event.pageX - el.getBoundingClientRect().left;
+			el.scrollLeft = scrollLeft - ( x - startX ) * 2;
+		} );
 
-        const scrollers = document.querySelectorAll('.arian-scroller');
-
-        scrollers.forEach(el => {
-            let isDown = false;
-            let startX = 0;
-            let scrollLeft = 0;
-
-            const onMouseDown = (e) => {
-                isDown = true;
-                el.classList.add('active');
-                startX = e.pageX - el.getBoundingClientRect().left;
-                scrollLeft = el.scrollLeft;
-            };
-
-            const onMouseMove = (e) => {
-                if (!isDown) return;
-                e.preventDefault();
-                const x = e.pageX - el.getBoundingClientRect().left;
-                const walk = (x - startX) * 2;
-                el.scrollLeft = scrollLeft - walk;
-            };
-
-            const endDrag = () => {
-                isDown = false;
-                el.classList.remove('active');
-            };
-
-            el.addEventListener('mousedown', onMouseDown, { passive: true });
-            el.addEventListener('mousemove', onMouseMove);
-            el.addEventListener('mouseleave', endDrag);
-            el.addEventListener('mouseup', endDrag);
-
-        });
-    };
-
-
-    // اجرا
-    initDragScroll();
-});
+		const endDrag = () => {
+			isDown = false;
+			el.classList.remove( 'active' );
+		};
+		el.addEventListener( 'mouseleave', endDrag );
+		el.addEventListener( 'mouseup', endDrag );
+	} );
+} )();

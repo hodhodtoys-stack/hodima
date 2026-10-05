@@ -68,7 +68,7 @@
 		"color-function-notation": 10,
 		"csstools/use-logical": 18,
 		"declaration-block-no-redundant-longhand-properties": 10,
-		"declaration-no-important": 238,
+		"declaration-no-important": 237,
 		"declaration-property-value-keyword-no-deprecated": 1,
 		"media-feature-range-notation": 16,
 		"no-descending-specificity": 12,

@@ -531,6 +531,27 @@
     visibility: visible;
 }
 
+/*
+ * پنجره پشتیبانی <dialog> است (header.php): استایل پیش‌فرض مرورگر برای dialog
+ * (حاشیه، فاصله، رنگ زمینه، حداکثر اندازه، پرده ::backdrop) خنثی می‌شود تا
+ * دقیقا همان .overlay قبلی باشد. display: flex بالا عمدا dialog بسته را هم
+ * در صفحه نگه می‌دارد (پنهان با opacity/visibility) تا انیمیشن بستن دیده شود.
+ */
+dialog.overlay {
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    overflow: visible;
+    unicode-bidi: isolate; /* مثل div قبلی */
+
+    &::backdrop {
+        background: transparent;
+    }
+}
+
 .popup {
     background: var(--clr-white);
     width: 20rem;

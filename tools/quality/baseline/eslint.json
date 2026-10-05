@@ -1,18 +1,1 @@
-{
-	"hodima/assets/js/single-product.js": {
-		"no-var": 11,
-		"prefer-arrow-callback": 4
-	},
-	"hodima/assets/js/sp-gallery.js": {
-		"no-unused-vars": 1,
-		"no-var": 47,
-		"prefer-arrow-callback": 15,
-		"prefer-template": 2
-	},
-	"hodima/assets/js/taxonomy-product_cat.js": {
-		"no-var": 16,
-		"object-shorthand": 1,
-		"prefer-arrow-callback": 9,
-		"prefer-template": 3
-	}
-}
+{}

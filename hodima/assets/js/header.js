@@ -1,197 +1,165 @@
-'use strict';
-
 /**
- * ──────────────────────────────────────────
- * ماژول ۱: هدر چسبان (Sticky Header)
- * ──────────────────────────────────────────
+ * هدر: هدر چسبان، منوی موبایل، پنجره پشتیبانی
+ * نسخه: 3.0.0 (نوسازی قالب، مرحله ۴)
+ *
+ * اسکریپت در فوتر و با defer لود می‌شود؛ HTML هدر از قبل در صفحه است، پس
+ * منتظر DOMContentLoaded نمی‌ماند.
  */
-const StickyHeaderModule = (() => {
-    let header = null;
-    let wrapper = null;
-    let ticking = false;
+( () => {
+	/**
+	 * ──────────────────────────────────────────
+	 * ۱. هدر چسبان
+	 * ──────────────────────────────────────────
+	 * قبلا در هر فریم اسکرول ارتفاع هدر خوانده و padding نوشته می‌شد (خواندن و
+	 * نوشتن چیدمان پشت سر هم). حالا فقط وقتی وضعیت (چسبان/عادی) عوض می‌شود.
+	 */
+	const initStickyHeader = () => {
+		const header = document.getElementById( 'mainHeader' );
+		const wrapper = document.getElementById( 'headerWrapper' );
+		if ( ! header || ! wrapper ) {
+			return;
+		}
 
-    const onScroll = () => {
-        if (!ticking) {
-            window.requestAnimationFrame(() => {
-                if (window.scrollY > 10) {
-                    header.classList.add('is-fixed');
-                    wrapper.style.paddingTop = `${header.offsetHeight}px`;
-                } else {
-                    header.classList.remove('is-fixed');
-                    wrapper.style.paddingTop = '0';
-                }
-                ticking = false;
-            });
-            ticking = true;
-        }
-    };
+		let fixed = false;
+		let ticking = false;
 
-    const init = () => {
-        header  = document.getElementById('mainHeader');
-        wrapper = document.getElementById('headerWrapper');
+		const update = () => {
+			ticking = false;
+			const shouldFix = window.scrollY > 10;
+			if ( shouldFix === fixed ) {
+				return;
+			}
+			fixed = shouldFix;
+			// ارتفاع پیش از fixed شدن (جای خالی هدر تا صفحه نپرد)
+			wrapper.style.paddingTop = fixed ? `${ header.offsetHeight }px` : '0';
+			header.classList.toggle( 'is-fixed', fixed );
+		};
 
-        if (header && wrapper) {
-            window.addEventListener('scroll', onScroll, { passive: true });
-        }
-    };
+		window.addEventListener( 'scroll', () => {
+			if ( ! ticking ) {
+				ticking = true;
+				window.requestAnimationFrame( update );
+			}
+		}, { passive: true } );
 
-    return { init };
-})();
+		update();
+	};
 
-/**
- * ──────────────────────────────────────────
- * ماژول ۲: منوی موبایل (نسخه سئو شده و داینامیک)
- * ──────────────────────────────────────────
- */
-const MobileMenuModule = (() => {
-    let mainNav = null;
-    let toggleBtn = null;
-    let svgPath = null;
-    
-    // 🔴 نکته: اگر نقطه شکست منوی شما در CSS عدد دیگری است (مثلا 768px)، این عدد را تغییر دهید
-    const desktopBreakpoint = window.matchMedia('(min-width: 992px)'); 
-    
-    const HAMBURGER_D = 'M4 6h16M4 12h16m-7 6h7';
-    const CLOSE_D = 'M6 18L18 6M6 6l12 12';
+	/**
+	 * ──────────────────────────────────────────
+	 * ۲. منوی موبایل
+	 * ──────────────────────────────────────────
+	 */
+	const initMobileMenu = () => {
+		const nav = document.getElementById( 'mainNavWrapper' );
+		const toggle = document.getElementById( 'mobileMenuTrigger' );
+		const path = toggle?.querySelector( 'svg path' );
+		if ( ! nav || ! toggle || ! path ) {
+			return;
+		}
 
-    const toggleMenu = () => {
-        const isOpen = mainNav.classList.toggle('is-open');
-        svgPath.setAttribute('d', isOpen ? CLOSE_D : HAMBURGER_D);
-        toggleBtn.setAttribute('aria-expanded', String(isOpen));
-        mainNav.setAttribute('aria-hidden', String(!isOpen));
-        toggleBtn.setAttribute('aria-label', isOpen ? 'بستن منوی موبایل' : 'باز کردن منوی موبایل');
+		// همان نقطه شکست CSS منو
+		const desktop = window.matchMedia( '(min-width: 992px)' );
+		const HAMBURGER = 'M4 6h16M4 12h16m-7 6h7';
+		const CLOSE = 'M6 18L18 6M6 6l12 12';
 
-        document.body.classList.toggle('menu-is-open', isOpen);
-    };
+		const setOpen = ( open ) => {
+			nav.classList.toggle( 'is-open', open );
+			path.setAttribute( 'd', open ? CLOSE : HAMBURGER );
+			toggle.setAttribute( 'aria-expanded', String( open ) );
+			toggle.setAttribute( 'aria-label', open ? 'بستن منوی موبایل' : 'باز کردن منوی موبایل' );
+			nav.setAttribute( 'aria-hidden', String( ! open ) );
+			document.body.classList.toggle( 'menu-is-open', open );
+		};
 
-    const closeMenu = () => {
-        if (!mainNav.classList.contains('is-open')) return;
-        mainNav.classList.remove('is-open');
-        svgPath.setAttribute('d', HAMBURGER_D);
-        toggleBtn.setAttribute('aria-expanded', 'false');
-        mainNav.setAttribute('aria-hidden', 'true');
-        toggleBtn.setAttribute('aria-label', 'باز کردن منوی موبایل');
+		const isOpen = () => nav.classList.contains( 'is-open' );
 
-        document.body.classList.remove('menu-is-open');
-    };
+		toggle.addEventListener( 'click', () => setOpen( ! isOpen() ) );
 
-    const handleScreenChange = (e) => {
-        if (e.matches) {
-            // در دسکتاپ: حذف aria-hidden برای خوانایی سئو
-            mainNav.removeAttribute('aria-hidden');
-            if (mainNav.classList.contains('is-open')) {
-                closeMenu();
-            }
-        } else {
-            // در موبایل: کنترل داینامیک وضعیت بر اساس باز یا بسته بودن
-            mainNav.setAttribute('aria-hidden', String(!mainNav.classList.contains('is-open')));
-        }
-    };
+		// کلیک بیرون منو آن را می‌بندد
+		document.addEventListener( 'click', ( event ) => {
+			if ( isOpen() && ! nav.contains( event.target ) && ! toggle.contains( event.target ) ) {
+				setOpen( false );
+			}
+		} );
 
-    const onDocumentClick = (e) => {
-        if (
-            mainNav.classList.contains('is-open') &&
-            !mainNav.contains(e.target) &&
-            !toggleBtn.contains(e.target)
-        ) {
-            closeMenu();
-        }
-    };
+		document.addEventListener( 'keydown', ( event ) => {
+			if ( 'Escape' === event.key && isOpen() ) {
+				setOpen( false );
+				toggle.focus();
+			}
+		} );
 
-    const onKeyDown = (e) => {
-        if (e.key === 'Escape' && mainNav.classList.contains('is-open')) {
-            closeMenu();
-            toggleBtn.focus();
-        }
-    };
+		// زیرمنو در موبایل: کلیک روی والد باز/بسته می‌کند
+		nav.addEventListener( 'click', ( event ) => {
+			if ( 'none' === window.getComputedStyle( toggle ).display ) {
+				return;
+			}
+			const link = event.target.closest( '.menu-item-has-children > a' );
+			if ( link ) {
+				event.preventDefault();
+				link.parentElement.classList.toggle( 'submenu-active' );
+			}
+		} );
 
-    const handleSubmenuToggle = (e) => {
-        if (window.getComputedStyle(toggleBtn).display === 'none') return;
-        
-        const link = e.target.closest('.menu-item-has-children > a');
-        if (link) {
-            e.preventDefault();
-            link.parentElement.classList.toggle('submenu-active');
-        }
-    };
+		// دسکتاپ: منو همیشه برای صفحه‌خوان در دسترس (بدون aria-hidden)
+		const onScreenChange = () => {
+			if ( desktop.matches ) {
+				nav.removeAttribute( 'aria-hidden' );
+				if ( isOpen() ) {
+					setOpen( false );
+				}
+				nav.removeAttribute( 'aria-hidden' );
+			} else {
+				nav.setAttribute( 'aria-hidden', String( ! isOpen() ) );
+			}
+		};
+		desktop.addEventListener( 'change', onScreenChange );
+		onScreenChange();
+	};
 
-    const init = () => {
-        mainNav = document.getElementById('mainNavWrapper');
-        toggleBtn = document.getElementById('mobileMenuTrigger');
+	/**
+	 * ──────────────────────────────────────────
+	 * ۳. پنجره پشتیبانی (<dialog>)
+	 * ──────────────────────────────────────────
+	 * قبلا div با aria-hidden، تله فوکوس Tab دستی و Escape دستی. حالا showModal():
+	 * بقیه صفحه inert، Escape بومی (رویداد close). کلاس is-active همان انیمیشن
+	 * قبلی (header.css).
+	 */
+	const initSupportDialog = () => {
+		const dialog = document.getElementById( 'supportOverlay' );
+		const trigger = document.getElementById( 'supportTrigger' );
+		const closeButton = document.getElementById( 'supportClose' );
+		if ( ! ( dialog instanceof HTMLDialogElement ) || ! trigger || ! closeButton ) {
+			return;
+		}
 
-        if (!mainNav || !toggleBtn) return;
+		trigger.addEventListener( 'click', () => {
+			dialog.showModal();
+			dialog.classList.add( 'is-active' );
+			// visibility در اولین فریم انیمیشن هنوز hidden است و فوکوس نمی‌گیرد (نسخه
+			// قبلی هم به همین دلیل فوکوس را به لینک نمی‌رساند)؛ یک فریم بعد از شروع
+			const focusFirst = () => ( dialog.querySelector( '.popup__link' ) ?? dialog.querySelector( '.popup__close' ) )?.focus();
+			window.requestAnimationFrame( () => window.requestAnimationFrame( focusFirst ) );
+		} );
 
-        svgPath = toggleBtn.querySelector('svg path');
-        if (!svgPath) return;
+		closeButton.addEventListener( 'click', () => dialog.close() );
 
-        toggleBtn.addEventListener('click', toggleMenu);
-        document.addEventListener('click', onDocumentClick);
-        document.addEventListener('keydown', onKeyDown);
-        mainNav.addEventListener('click', handleSubmenuToggle);
+		// کلیک روی پرده تیره (خود dialog، بیرون کادر) می‌بندد
+		dialog.addEventListener( 'click', ( event ) => {
+			if ( event.target === dialog ) {
+				dialog.close();
+			}
+		} );
 
-        // اعمال منطق سئو
-        handleScreenChange(desktopBreakpoint);
-        desktopBreakpoint.addEventListener('change', handleScreenChange);
-    };
+		// بستن از هر راه (دکمه، پرده، Escape)
+		dialog.addEventListener( 'close', () => {
+			dialog.classList.remove( 'is-active' );
+			trigger.focus();
+		} );
+	};
 
-    return { init };
-})();
-
-/**
- * ──────────────────────────────────────────
- * ماژول ۳: پاپ‌آپ پشتیبانی
- * ──────────────────────────────────────────
- */
-const SupportPopupModule = (() => {
-    let overlay = null, triggerBtn = null, closeBtn = null;
-
-    const open = () => {
-        overlay.classList.add('is-active');
-        overlay.setAttribute('aria-hidden', 'false');
-        overlay.querySelector('.popup__link')?.focus();
-    };
-
-    const close = () => {
-        overlay.classList.remove('is-active');
-        overlay.setAttribute('aria-hidden', 'true');
-        triggerBtn?.focus();
-    };
-
-    const onOverlayClick = (e) => { if (e.target === overlay) close(); };
-    const onKeyDown = (e) => { if (e.key === 'Escape' && overlay.classList.contains('is-active')) close(); };
-
-    const trapFocus = (e) => {
-        if (!overlay.classList.contains('is-active')) return;
-        const focusables = overlay.querySelectorAll('button, a[href]');
-        if (focusables.length === 0) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (e.key === 'Tab') {
-            if (e.shiftKey) {
-                if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-            } else {
-                if (document.activeElement === last) { e.preventDefault(); first.focus(); }
-            }
-        }
-    };
-
-    const init = () => {
-        overlay = document.getElementById('supportOverlay');
-        triggerBtn = document.getElementById('supportTrigger');
-        closeBtn = document.getElementById('supportClose');
-        if (!overlay || !triggerBtn || !closeBtn) return;
-        triggerBtn.addEventListener('click', open);
-        closeBtn.addEventListener('click', close);
-        overlay.addEventListener('click', onOverlayClick);
-        document.addEventListener('keydown', onKeyDown);
-        document.addEventListener('keydown', trapFocus);
-    };
-
-    return { init };
-})();
-
-document.addEventListener('DOMContentLoaded', () => {
-    StickyHeaderModule.init();
-    MobileMenuModule.init();
-    SupportPopupModule.init();
-});
+	initStickyHeader();
+	initMobileMenu();
+	initSupportDialog();
+} )();

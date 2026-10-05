@@ -11,6 +11,8 @@
  *      هم‌ارز (nesting، خصوصیات منطقی، color-mix) باید دقیقا «صفر تفاوت» بدهد؛
  *   ۲. عکس کل صفحه و شمار پیکسل‌های متفاوت (عکس‌ها در report-dir).
  * تصویرهای آپلود در ابزار تست وجود ندارند و با یک PNG خاکستری ثابت جایگزین می‌شوند.
+ * HODIMA_VISUAL_ACTION (اختیاری): کد JS که پیش از عکس در هر دو نسخه اجرا می‌شود
+ * (مثلا «document.getElementById('supportTrigger').click()» برای پنجره باز).
  */
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
@@ -71,6 +73,12 @@ async function snapshot( browser, htmlFile, root, vp, shotPath ) {
 	await page.waitForFunction( () => [ ...document.querySelectorAll( 'video, audio' ) ].every( ( m ) => m.error || m.readyState > 0 || m.networkState === 3 || ! m.currentSrc ), null, { timeout: 5000 } ).catch( () => {} );
 	await page.waitForTimeout( 300 );
 
+	// حالت تعاملی (مثلا باز کردن پنجره یا کلیک): کد JS از HODIMA_VISUAL_ACTION، هر دو طرف یکسان
+	if ( process.env.HODIMA_VISUAL_ACTION ) {
+		await page.evaluate( process.env.HODIMA_VISUAL_ACTION );
+		await page.waitForTimeout( 300 );
+	}
+
 	const styles = await page.evaluate( () => {
 		const out = [];
 		const skip = new Set( [ 'SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'HEAD', 'NOSCRIPT', 'TEMPLATE' ] );
@@ -126,7 +134,15 @@ function styleDiff( ref, work ) {
 	if ( ref.length !== work.length ) diffs.push( `ساختار DOM فرق دارد: ${ ref.length } → ${ work.length } عنصر` );
 	const n = Math.min( ref.length, work.length );
 	for ( let i = 0; i < n && diffs.length < 40; i++ ) {
-		if ( ref[ i ].el !== work[ i ].el ) { diffs.push( `عنصر ${ i }: ${ ref[ i ].el } → ${ work[ i ].el } (DOM فرق دارد؛ مقایسه متوقف شد)` ); break; }
+		if ( ref[ i ].el !== work[ i ].el ) {
+			// فقط تگ عوض شده (همان id/کلاس، مثلا div → dialog): مقایسه ادامه دارد
+			const sameButTag = ref[ i ].el.replace( /^[a-z0-9-]+/, '' ) === work[ i ].el.replace( /^[a-z0-9-]+/, '' ) && '' !== ref[ i ].el.replace( /^[a-z0-9-]+/, '' );
+			if ( ! sameButTag ) {
+				diffs.push( `عنصر ${ i }: ${ ref[ i ].el } → ${ work[ i ].el } (DOM فرق دارد؛ مقایسه متوقف شد)` );
+				break;
+			}
+			diffs.push( `(تگ عوض شد: ${ ref[ i ].el } → ${ work[ i ].el })` );
+		}
 		const a = ref[ i ].props, b = work[ i ].props;
 		const keys = new Set( [ ...Object.keys( a ), ...Object.keys( b ) ] );
 		const changed = [ ...keys ].filter( ( k ) => a[ k ] !== b[ k ] );
