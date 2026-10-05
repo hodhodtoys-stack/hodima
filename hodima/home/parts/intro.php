@@ -11,7 +11,11 @@
  * @var array{features_title?:string, features?:list<string>, video_title?:string} $args
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- قالب داخل تابع (load_template/wc_get_template_part) لود می‌شود؛ متغیرها محلی‌اند، نه سراسری
 
 $args = wp_parse_args( $args ?? [], hodima_home_section_defaults( 'intro' ) );
 

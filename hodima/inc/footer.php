@@ -1,42 +1,22 @@
 <?php
 /**
- * Footer Module – Enqueue styles & scripts
+ * Footer Module – Enqueue styles & scripts و نوار شبکه‌های اجتماعی
  *
- * @package suspended suspended suspended suspended
- * @since   1.0.0
+ * @package hodima
  */
+
+declare(strict_types=1);
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
 /**
- * Enqueue footer-specific CSS & JS.
+ * Enqueue footer-specific CSS & JS (Vanilla JS، در فوتر).
  */
-function hodima_footer_assets() {
-
-    /* ---------- CSS ---------- */
-    $css_file = '/assets/css/footer.css';
-    wp_enqueue_style(
-        'hodima-footer',
-        hodima_URI . $css_file,
-        array(),
-        file_exists( hodima_DIR . $css_file )
-            ? filemtime( hodima_DIR . $css_file )
-            : hodima_VERSION
-    );
-
-    /* ---------- JS ---------- */
-    $js_file = '/assets/js/footer.js';
-    wp_enqueue_script(
-        'hodima-footer',
-        hodima_URI . $js_file,
-        array(),                       // بدون وابستگی — Vanilla JS
-        file_exists( hodima_DIR . $js_file )
-            ? filemtime( hodima_DIR . $js_file )
-            : hodima_VERSION,
-        true                           // لود در فوتر
-    );
+function hodima_footer_assets(): void {
+    hodima_enqueue_asset( 'hodima-footer', 'assets/css/footer.css' );
+    hodima_enqueue_asset( 'hodima-footer', 'assets/js/footer.js', [], [ 'in_footer' => true ] );
 }
 add_action( 'wp_enqueue_scripts', 'hodima_footer_assets', 20 );
 

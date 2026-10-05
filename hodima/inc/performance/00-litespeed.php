@@ -32,14 +32,17 @@ function hodima_litespeed_active(): bool {
 
     // Hodima Core 1.2+ همین تشخیص (با همان فیلتر) را دارد؛ افزونه SEO هم از آنجا می‌خواند
     if ( function_exists( 'hodima_core_litespeed_active' ) ) {
-        return $active = hodima_core_litespeed_active();
+        $active = hodima_core_litespeed_active();
+        return $active;
     }
 
     $active = defined( 'LSCWP_V' )
         || class_exists( '\\LiteSpeed\\Core' )
         || class_exists( 'LiteSpeed_Cache' );
 
-    return $active = (bool) apply_filters( 'hodima_litespeed_active', $active );
+    $active = (bool) apply_filters( 'hodima_litespeed_active', $active );
+
+    return $active;
 }
 
 /**
@@ -130,5 +133,5 @@ function hodima_litespeed_purge_home(): void {
         return;
     }
 
-    do_action( 'litespeed_purge_url', home_url( '/' ) );
+    do_action( 'litespeed_purge_url', home_url( '/' ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- API خود لایت‌اسپید
 }

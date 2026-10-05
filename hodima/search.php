@@ -10,6 +10,8 @@
  * کارت‌ها همان کارت‌های آرشیو وبلاگ (assets/css/archive-blog.css).
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
 
 global $wp_query;

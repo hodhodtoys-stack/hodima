@@ -8,6 +8,8 @@
  * پس نمی‌توانند داخل قالب taxonomy-product_cat.php باشند.
  */
 
+declare(strict_types=1);
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -29,7 +31,7 @@ function hodima_is_product_archive(): bool {
  * محصول ۶ صفحه — عمق کمتر از ۲۴ تایی (۹ صفحه)، یعنی محصولات با کلیک
  * کمتری از دسته در دسترس خزنده‌اند.
  * ===================================================================== */
-add_filter( 'loop_shop_per_page', static function ( $per_page ) {
+add_filter( 'loop_shop_per_page', static function (): int {
 	// «تنظیمات قالب ← فروشگاه و دسته‌ها» (پیش‌فرض همان ۳۶)
 	$setting = function_exists( 'hodima_setting' ) ? (int) hodima_setting( 'shop_per_page' ) : 36;
 	return max( 1, (int) apply_filters( 'hodima_category_per_page', $setting > 0 ? $setting : 36 ) );

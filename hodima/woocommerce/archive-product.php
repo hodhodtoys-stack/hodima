@@ -18,7 +18,11 @@
  * برچسب‌ها و دسته‌ها مشترک‌اند.
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- هوک‌های خود ووکامرس در قالب ووکامرس (باید همین نام‌ها اجرا شوند)
 
 $hodima_paged     = max( 1, (int) get_query_var( 'paged' ) );
 $hodima_is_search = is_search();
@@ -189,7 +193,7 @@ get_header( 'shop' );
 		<section class="hodima-section-box section-description shop-description" aria-label="درباره فروشگاه">
 			<?php
 			// مستقیم (شورت‌کد جعبه بازشونده فقط در صفحه دسته‌بندی خروجی دارد)
-			echo $hodima_archive_desc; // phpcs:ignore — خروجی خود ووکامرس
+			echo $hodima_archive_desc; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی خود ووکامرس
 			?>
 		</section>
 	<?php endif; ?>

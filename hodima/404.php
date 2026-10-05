@@ -6,6 +6,8 @@
  * قبلا ثابت). دکمه فروشگاه به برگه فروشگاه ووکامرس (قبلا آدرس ثابت /shop که
  * با نامک دیگر برگه فروشگاه ۴۰۴ می‌داد) و فقط وقتی فروشگاه هست.
  */
+
+declare(strict_types=1);
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 $hodima_404_setting = static fn( string $key, string $fallback ): string => function_exists( 'hodima_setting' ) ? (string) hodima_setting( $key ) : $fallback;

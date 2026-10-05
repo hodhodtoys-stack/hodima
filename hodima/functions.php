@@ -5,13 +5,17 @@
  * @package hodima
  */
 
+declare(strict_types=1);
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'hodima_VERSION', wp_get_theme()->get( 'Version' ) ?: '1.0.0' );
-define( 'hodima_URI', get_template_directory_uri() );
-define( 'hodima_DIR', get_template_directory() );
+// نام ثابت‌ها با حروف کوچک از نسخه‌های اول قالب است و افزونه Hodima SEO
+// (google-indexing-api/etag-handler.php) hodima_VERSION را می‌خواند؛ عوض نشوند.
+define( 'hodima_VERSION', wp_get_theme()->get( 'Version' ) ?: '1.0.0' ); // phpcs:ignore Generic.NamingConventions.UpperCaseConstantName.ConstantNotUpperCase -- نام قدیمی، افزونه SEO می‌خواند
+define( 'hodima_URI', get_template_directory_uri() ); // phpcs:ignore Generic.NamingConventions.UpperCaseConstantName.ConstantNotUpperCase -- نام قدیمی
+define( 'hodima_DIR', get_template_directory() ); // phpcs:ignore Generic.NamingConventions.UpperCaseConstantName.ConstantNotUpperCase -- نام قدیمی
 
 /* ==========================================================
    فونت Vazirmatn پیشخوان به افزونه Hodima Core منتقل شد
@@ -19,109 +23,95 @@ define( 'hodima_DIR', get_template_directory() );
    به قالب سایت ربطی ندارد و با عوض شدن قالب نباید از بین برود.
 ========================================================== */
 
-/* ============================================================
- * 1. Home Modules
- * ============================================================ */
+/**
+ * بارگذاری فایل‌های قالب، به ترتیب.
+ *
+ * قبلا با متغیرهای سراسری ($home_modules، $inc_files، $perf_files، …) در
+ * فضای سراسری PHP؛ هر افزونه‌ای با همان نام‌ها مقدارشان را عوض می‌کرد یا
+ * برعکس. حالا داخل یک تابع (متغیرها محلی‌اند). ترتیب همان قبلی است — ترتیب
+ * ثبت هوک‌ها (و در نتیجه ترتیب CSSها در صفحه) به آن بستگی دارد.
+ */
+function hodima_load_theme_files(): void {
 
-$home_modules = [
-    'home/logic.php',
-    'home/legacy.php', // نام‌های قدیمی arian_* (سازگاری)
-];
+	$files = [
+		// ۰. نوع‌ها (enum و کلاس‌های PHP 8.4) — پیش از هر چیز
+		'inc/classes/class-hodima-theme-asset.php',
+		'inc/classes/enum-hodima-contact-channel.php',
+		'inc/classes/class-hodima-contact-link.php',
+		'inc/classes/enum-hodima-setting-type.php',
+		'inc/classes/enum-hodima-home-tone.php',
 
-foreach ( $home_modules as $module ) {
-    // استفاده از get_stylesheet_directory برای اطمینان از صحت آدرس در سرور
-    $filepath = get_stylesheet_directory() . '/' . $module;
+		// ۱. صفحه اصلی
+		'home/logic.php',
+		'home/legacy.php',                       // نام‌های قدیمی arian_* (سازگاری)
 
-    if ( is_file( $filepath ) ) {
-        require_once $filepath;
-    }
+		// ۲. هسته قالب
+		'inc/helpers.php',
+		'inc/theme-settings/theme-settings.php', // برند، تماس، فوتر و Google Analytics
+		'inc/home-layout.php',                   // چیدمان صفحه اصلی (تب «صفحه اصلی» تنظیمات قالب)
+		'inc/blog.php',                          // نام وبلاگ و مقالات مرتبط (تب «وبلاگ»)
+		'inc/breadcrumb.php',                    // مسیر راهنمای مقاله‌ها و آرشیو وبلاگ (یکی با اسکیما)
+		'inc/setup.php',
+		'inc/enqueue.php',
+		'inc/header.php',
+		'inc/footer.php',
+		// inc/category-box.php (کادر فرم دسته‌ها در پیشخوان) → Hodima Core: includes/admin-term-box.php
+	];
+
+	// ۳. بهینه‌سازی (به ترتیب الفبا؛ 00-litespeed.php اول)
+	$files = [ ...$files, ...hodima_theme_dir_files( 'inc/performance' ) ];
+
+	// ۴. ووکامرس — بدون ووکامرس این ماژول‌ها فقط Fatal Error تولید می‌کنند.
+	// hodima_wc_active در inc/helpers.php (یا Hodima Core) است و همین بالاتر لود شد.
+	foreach ( $files as $file ) {
+		$path = hodima_DIR . '/' . $file;
+		if ( is_file( $path ) ) {
+			require_once $path;
+		}
+	}
+
+	if ( hodima_wc_active() ) {
+		foreach ( hodima_theme_dir_files( 'inc/woocommerce' ) as $file ) {
+			require_once hodima_DIR . '/' . $file;
+		}
+	}
 }
 
+/**
+ * فایل‌های PHP یک پوشه قالب (مسیر نسبی)، به ترتیب الفبا.
+ *
+ * @return list<string>
+ */
+function hodima_theme_dir_files( string $dir ): array {
 
-/* ============================================================
- * 2. Core Theme Files (inc/)
- * ============================================================ */
+	// wp_normalize_path: جلوگیری از تداخل جداکننده مسیر در ویندوز
+	$found = glob( wp_normalize_path( hodima_DIR . '/' . $dir . '/' ) . '*.php' ) ?: [];
+	sort( $found );
 
-$inc_files = [
-    'inc/helpers.php',
-    'inc/theme-settings/theme-settings.php', // برند، تماس، فوتر و Google Analytics
-    'inc/home-layout.php',                   // چیدمان صفحه اصلی (تب «صفحه اصلی» تنظیمات قالب)
-    'inc/blog.php',                          // نام وبلاگ و مقالات مرتبط (تب «وبلاگ»)
-    'inc/breadcrumb.php',                    // مسیر راهنمای مقاله‌ها و آرشیو وبلاگ (یکی با اسکیما)
-    'inc/setup.php',
-    'inc/enqueue.php',
-    'inc/header.php',
-    'inc/footer.php',
-    // inc/category-box.php (کادر فرم دسته‌ها در پیشخوان) → Hodima Core: includes/admin-term-box.php
-];
-
-foreach ( $inc_files as $file ) {
-
-    $filepath = hodima_DIR . '/' . $file;
-
-    if ( is_file( $filepath ) ) {
-        require_once $filepath;
-    }
-
+	return array_map( static fn( string $path ): string => $dir . '/' . basename( $path ), $found );
 }
 
-/* ============================================================
- * 3. Performance Modules
- * ============================================================ */
-
-// استفاده از wp_normalize_path برای جلوگیری از باگ تداخل مسیر در سرور و ویندوز
-// مسیر اصلاح شد: اضافه شدن /inc/
-$performance_dir = wp_normalize_path( hodima_DIR . '/inc/performance/' );
-
-if ( is_dir( $performance_dir ) ) {
-
-    $perf_files = glob( $performance_dir . '*.php' );
-    
-    // اطمینان از اینکه آرایه خالی نیست
-    if ( is_array( $perf_files ) && ! empty( $perf_files ) ) {
-        foreach ( $perf_files as $module ) {
-            require_once $module;
-        }
-    }
-
-}
+hodima_load_theme_files();
 
 /* ============================================================
- * 4. WooCommerce Modules (Auto Load)
- * ============================================================ */
-
-$woo_dir = hodima_DIR . '/inc/woocommerce/';
-
-// بدون ووکامرس این ماژول‌ها فقط Fatal Error تولید می‌کنند
-if ( hodima_wc_active() && is_dir( $woo_dir ) ) {
-
-    foreach ( glob( $woo_dir . '*.php' ) as $module ) {
-        require_once $module;
-    }
-
-}
-
-/* ============================================================
- * 5. user-panel
+ * ۵. user-panel
  * ============================================================ */
 // ماژول پنل کاربری اختیاری است و در نسخه عمومی قالب همراه نیست.
-// فقط وقتی پوشه user-panel وجود داشته باشد لود می‌شود؛ برای خاموش کردن
-// دستی: add_filter( 'hodima_enable_user_panel', '__return_false' );
-$user_panel_loader = hodima_DIR . '/user-panel/loader.php';
-
+// فقط وقتی پوشه user-panel وجود داشته باشد لود می‌شود (عمدا در فضای سراسری،
+// مثل قبل)؛ برای خاموش کردن دستی: add_filter( 'hodima_enable_user_panel', '__return_false' );
 define(
-    'HODIMA_USER_PANEL_ENABLED',
-    is_file( $user_panel_loader ) && (bool) apply_filters( 'hodima_enable_user_panel', true )
+	'HODIMA_USER_PANEL_ENABLED',
+	is_file( hodima_DIR . '/user-panel/loader.php' ) && (bool) apply_filters( 'hodima_enable_user_panel', true )
 );
 
 if ( HODIMA_USER_PANEL_ENABLED ) {
-    require_once $user_panel_loader;
+	require_once hodima_DIR . '/user-panel/loader.php';
 } else {
-    // بدون ماژول، تمپلیت «User Panel» در فهرست قالب‌های برگه نمایش داده نشود.
-    add_filter( 'theme_page_templates', static function ( array $templates ): array {
-        unset( $templates['page-user-panel.php'] );
-        return $templates;
-    } );
+	// بدون ماژول، تمپلیت «User Panel» در فهرست قالب‌های برگه نمایش داده نشود.
+	add_filter( 'theme_page_templates', static function ( array $templates ): array {
+		unset( $templates['page-user-panel.php'] );
+		return $templates;
+	} );
 }
 
 /* ============================================================
@@ -137,7 +127,7 @@ if ( HODIMA_USER_PANEL_ENABLED ) {
  * ============================================================ */
 add_filter( 'template_include', 'hodima_route_blog_archive_template', 99 );
 
-function hodima_route_blog_archive_template( $template ) {
+function hodima_route_blog_archive_template( mixed $template ): mixed {
     // بررسی می‌کنیم که آیا کاربر در صفحه اصلی وبلاگ یا آرشیو استاندارد پست‌ها (دسته‌بندی/برچسب) است
     if ( is_home() || ( is_archive() && get_post_type() === 'post' ) ) {
         $custom_template = locate_template( 'archive-blog.php' );

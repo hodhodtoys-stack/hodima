@@ -9,11 +9,13 @@
  * شورت‌کدهایش (index.php).
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
 
 // فیلتر frontpage_template (inc/home-layout.php) این فایل را فقط با چیدمان فعال انتخاب می‌کند؛ این فقط محافظ است
 if ( ! function_exists( 'hodima_home_builder_active' ) || ! hodima_home_builder_active() ) {
-	require ( is_page() ? get_page_template() : '' ) ?: __DIR__ . '/index.php';
+	require ( is_page() ? get_page_template() : '' ) ?: __DIR__ . '/index.php'; // phpcs:ignore PEAR.Files.IncludingFile.BracketsNotRequired -- پرانتز لازم است: ?: روی شرط اعمال شود
 	return;
 }
 

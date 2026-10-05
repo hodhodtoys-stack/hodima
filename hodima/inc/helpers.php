@@ -56,7 +56,8 @@ function hodima_table_exists( string $table ): bool {
     $cached    = get_transient( $cache_key );
 
     if ( 'yes' === $cached ) {
-        return $memo[ $table ] = true;
+        $memo[ $table ] = true;
+        return true;
     }
 
     global $wpdb;
@@ -67,7 +68,9 @@ function hodima_table_exists( string $table ): bool {
     // جدول خیلی زود تشخیص داده شود.
     set_transient( $cache_key, $found ? 'yes' : 'no', $found ? WEEK_IN_SECONDS : MINUTE_IN_SECONDS );
 
-    return $memo[ $table ] = $found;
+    $memo[ $table ] = $found;
+
+    return $found;
 }
 
 /* ============================================================
@@ -94,6 +97,9 @@ if ( ! function_exists( 'hodima_wc_active' ) ) {
  * «[hook_faq ...]» را در صفحه چاپ می‌کند. این تابع در آن حالت رشته
  * خالی برمی‌گرداند تا قالب بتواند بخش مربوط را کلا نمایش ندهد.
  * ============================================================ */
+/**
+ * @param array<string, scalar> $atts
+ */
 function hodima_shortcode( string $tag, array $atts = [] ): string {
 
     if ( ! shortcode_exists( $tag ) ) {
@@ -118,7 +124,10 @@ function hodima_shortcode( string $tag, array $atts = [] ): string {
  * یک تگ جداگانه چاپ می‌شود تا هیچ اسکیمایی گم نشود.
  * ============================================================ */
 if ( ! function_exists( 'hodima_schema_add' ) ) {
-    function hodima_schema_add( array $payload, string $source = '' ): void {
+    /**
+     * @param array<mixed> $payload
+     */
+    function hodima_schema_add( array $payload, string $source = '' ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- امضای همان تابع Hodima Core
         if ( empty( $payload ) ) {
             return;
         }

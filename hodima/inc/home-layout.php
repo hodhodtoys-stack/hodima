@@ -31,7 +31,7 @@ const HODIMA_HOME_LAYOUT_OPTION = 'hodima_home_layout';
  * تعریف انواع بخش. هر فیلد: type (text|lines|number|tone|category|categories|html|link)،
  * label، default، و برای number: min/max.
  *
- * @return array<string, array{label:string, icon:string, help:string, single:bool, fields:array<string, array>}>
+ * @return array<string, array{label:string, icon:string, help:string, single:bool, fields:array<string, array<string, mixed>>}>
  */
 function hodima_home_section_types(): array {
 
@@ -118,7 +118,11 @@ function hodima_home_section_types(): array {
 	] );
 }
 
-/** مقدار پیش‌فرض فیلدهای یک نوع بخش. */
+/**
+ * مقدار پیش‌فرض فیلدهای یک نوع بخش.
+ *
+ * @return array<string, mixed>
+ */
 function hodima_home_section_defaults( string $type ): array {
 	return array_map(
 		static fn( array $field ): mixed => $field['default'],
@@ -127,17 +131,20 @@ function hodima_home_section_defaults( string $type ): array {
 }
 
 /**
- * رنگ‌های زمینه بخش‌های محصول (همان سه رنگ قبلی اسلایدرها).
+ * رنگ‌های زمینه بخش‌های محصول (همان سه رنگ قبلی اسلایدرها) — از enum
+ * Hodima_Home_Tone (inc/classes)؛ همین شکل آرایه برای کدهای قبلی.
  *
  * @return array<string, array{label:string, css:string}>
  */
 function hodima_home_tones(): array {
-	return [
-		'primary'   => [ 'label' => 'سرمه‌ای کم‌رنگ', 'css' => 'rgba(37, 49, 106, 0.08)' ],
-		'secondary' => [ 'label' => 'آبی کم‌رنگ', 'css' => 'rgba(96, 123, 189, 0.1)' ],
-		'third'     => [ 'label' => 'آبی روشن', 'css' => 'rgba(182, 194, 243, 0.25)' ],
-		'none'      => [ 'label' => 'بدون رنگ', 'css' => 'transparent' ],
-	];
+
+	$tones = [];
+
+	foreach ( Hodima_Home_Tone::cases() as $tone ) {
+		$tones[ $tone->value ] = [ 'label' => $tone->label(), 'css' => $tone->css() ];
+	}
+
+	return $tones;
 }
 
 /* =========================================================================
@@ -149,7 +156,11 @@ function hodima_home_layout_saved(): bool {
 	return is_array( get_option( HODIMA_HOME_LAYOUT_OPTION, false ) );
 }
 
-/** چیدمان ذخیره‌شده (یکدست‌شده). */
+/**
+ * چیدمان ذخیره‌شده (یکدست‌شده).
+ *
+ * @return list<array<string, mixed>>
+ */
 function hodima_home_layout(): array {
 
 	$stored = get_option( HODIMA_HOME_LAYOUT_OPTION, [] );
@@ -179,6 +190,8 @@ function hodima_home_builder_active(): bool {
 /**
  * یکدست‌سازی: نوع ناشناخته حذف، فیلدهای ناشناخته حذف، فیلد غایب = پیش‌فرض،
  * بخش‌های تک‌نمونه (معرفی، دسته‌ها، مقالات، متن برگه) فقط اولین نمونه.
+ * @param array<mixed> $items
+ * @return list<array<string, mixed>>
  */
 function hodima_home_normalize_layout( array $items ): array {
 
@@ -214,6 +227,7 @@ function hodima_home_normalize_layout( array $items ): array {
  * ورودی غیرآرایه (فرمی که این بخش را نداشت) = دست نزدن به چیدمان فعلی.
  *
  * @param mixed $input
+ * @return list<array<string, mixed>>
  */
 function hodima_home_sanitize_layout( $input ): array {
 
@@ -269,7 +283,11 @@ function hodima_home_sanitize_layout( $input ): array {
 	return hodima_home_normalize_layout( $items );
 }
 
-/** پاک‌سازی یک فیلد بر اساس نوعش. */
+/**
+ * پاک‌سازی یک فیلد بر اساس نوعش.
+ *
+ * @param array<string, mixed> $field
+ */
 function hodima_home_sanitize_field( array $field, mixed $raw ): mixed {
 
 	return match ( $field['type'] ) {
@@ -325,6 +343,7 @@ function hodima_home_link_url( string $link ): string {
  *   [latest-products limit=N] → جدیدترین، [نامک دسته …] → محصولات دسته
  *   (با همان رنگ زمینه قبلی)، [section10] (خالی) → نادیده، بقیه شورت‌کدها و
  *   متن/HTML → «محتوای دلخواه» (متن پشت‌سرهم یک بخش).
+ * @return list<array<string, mixed>>
  */
 function hodima_home_layout_from_content( ?string $content = null ): array {
 
@@ -403,7 +422,8 @@ function hodima_home_layout_from_content( ?string $content = null ): array {
 
 	$id = 0;
 	foreach ( $items as &$item ) {
-		$item['id'] = 'i' . ++$id;
+		++$id;
+		$item['id'] = 'i' . $id;
 	}
 	unset( $item );
 
@@ -413,6 +433,9 @@ function hodima_home_layout_from_content( ?string $content = null ): array {
 /**
  * رنگ زمینه‌ای که هر شورت‌کد دسته قبلا داشت: سه رنگ برند به نوبت، به ترتیب
  * فهرست دسته‌ها (همان منطق logic.php؛ latest-products قبلا ثبت شده و نوبت نمی‌گیرد).
+ *
+ * @param array<string, string> $cat_map
+ * @return array<string, string>
  */
 function hodima_home_legacy_category_tones( array $cat_map ): array {
 
@@ -424,7 +447,8 @@ function hodima_home_legacy_category_tones( array $cat_map ): array {
 		if ( 'latest-products' === $slug || preg_match( '/^section\d{2}$/', (string) $slug ) ) {
 			continue;
 		}
-		$tones[ $slug ] = $cycle[ $index++ % 3 ];
+		$tones[ $slug ] = $cycle[ $index % 3 ];
+		++$index;
 	}
 
 	return $tones;
@@ -441,7 +465,11 @@ function hodima_home_legacy_category_tones( array $cat_map ): array {
  */
 add_filter( 'frontpage_template', static fn( $template ) => hodima_home_builder_active() ? $template : '' );
 
-/** چاپ یک بخش چیدمان. */
+/**
+ * چاپ یک بخش چیدمان.
+ *
+ * @param array<string, mixed> $item
+ */
 function hodima_home_render_section( array $item ): void {
 
 	$args = array_diff_key( $item, [ 'id' => 1, 'type' => 1, 'enabled' => 1 ] );
@@ -456,7 +484,7 @@ function hodima_home_render_section( array $item ): void {
 
 		case 'latest':
 			if ( function_exists( 'hodima_home_product_slider' ) ) {
-				echo hodima_home_product_slider( [ // phpcs:ignore — خروجی ساخته‌شده و escape‌شده در logic.php
+				echo hodima_home_product_slider( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی ساخته‌شده و escape‌شده در logic.php
 					'title'    => $args['title'],
 					'link'     => hodima_home_link_url( (string) $args['link'] ),
 					'category' => '',
@@ -470,7 +498,7 @@ function hodima_home_render_section( array $item ): void {
 			$term = '' !== $args['category'] ? get_term_by( 'slug', (string) $args['category'], 'product_cat' ) : false;
 			if ( $term instanceof WP_Term && function_exists( 'hodima_home_product_slider' ) ) {
 				$link = get_term_link( $term );
-				echo hodima_home_product_slider( [ // phpcs:ignore — خروجی ساخته‌شده و escape‌شده در logic.php
+				echo hodima_home_product_slider( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی ساخته‌شده و escape‌شده در logic.php
 					'title'    => '' !== (string) $args['title'] ? $args['title'] : $term->name,
 					'link'     => is_wp_error( $link ) ? '' : $link,
 					'category' => $term->slug,
@@ -486,7 +514,7 @@ function hodima_home_render_section( array $item ): void {
 
 		case 'custom':
 			if ( '' !== (string) $args['html'] ) {
-				echo do_shortcode( (string) $args['html'] ); // phpcs:ignore — محتوای مدیر (هنگام ذخیره پاک‌سازی شد)
+				echo do_shortcode( (string) $args['html'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- محتوای مدیر (هنگام ذخیره پاک‌سازی شد)
 			}
 			break;
 	}

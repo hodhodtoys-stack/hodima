@@ -10,25 +10,30 @@
  * کلیدهای کش (arian_pslider_*، arian_cat_shortcode_map) عمدا عوض نشدند.
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
 
 if ( ! function_exists( 'arian_render_product_slider' ) ) {
 	/** @deprecated 2.6.0 hodima_home_product_slider() */
-	function arian_render_product_slider( $args = [] ) {
-		return hodima_home_product_slider( $args );
+	function arian_render_product_slider( mixed $args = [] ): string {
+		return hodima_home_product_slider( (array) $args );
 	}
 }
 
 if ( ! function_exists( 'arian_load_home_section' ) ) {
 	/** @deprecated 2.6.0 hodima_home_load_section() */
-	function arian_load_home_section( $tag ) {
-		return hodima_home_load_section( $tag );
+	function arian_load_home_section( mixed $tag ): string {
+		return hodima_home_load_section( (string) $tag );
 	}
 }
 
 if ( ! function_exists( 'arian_get_category_shortcode_map' ) ) {
-	/** @deprecated 2.6.0 hodima_home_category_shortcode_map() */
-	function arian_get_category_shortcode_map() {
+	/**
+	 * @deprecated 2.6.0 hodima_home_category_shortcode_map()
+	 * @return array<string, string>
+	 */
+	function arian_get_category_shortcode_map(): array {
 		return hodima_home_category_shortcode_map();
 	}
 }

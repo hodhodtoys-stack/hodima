@@ -20,14 +20,19 @@
  * استفاده می‌کند — آنچه بازدیدکننده می‌بیند و آنچه گوگل می‌خواند یکی است.
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- هوک‌های خود ووکامرس در قالب ووکامرس (باید همین نام‌ها اجرا شوند)
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- قالب داخل تابع (load_template/wc_get_template_part) لود می‌شود؛ متغیرها محلی‌اند، نه سراسری
 
 global $product;
 
 do_action( 'woocommerce_before_single_product' );
 
 if ( post_password_required() ) {
-	echo get_the_password_form(); // phpcs:ignore
+	echo get_the_password_form(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- فرم خود وردپرس
 	return;
 }
 
@@ -148,7 +153,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 				</dl>
 
 				<div class="woocommerce-product-details__short-description">
-					<?php echo apply_filters( 'woocommerce_short_description', $product->get_short_description() ); // phpcs:ignore ?>
+					<?php echo apply_filters( 'woocommerce_short_description', $product->get_short_description() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی فیلتر خود ووکامرس (مثل قالب اصلی) ?>
 				</div>
 
 				<?php
@@ -164,7 +169,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 					$hp_voice = trim( hodima_shortcode( 'hook_voice', [ 'title' => (string) hodima_setting( 'product_podcast_label' ), 'layout' => 'inline' ] ) );
 					?>
 					<?php if ( '' !== $hp_voice ) : ?>
-						<div class="custom-voice-shortcode"><?php echo $hp_voice; // phpcs:ignore ?></div>
+						<div class="custom-voice-shortcode"><?php echo $hp_voice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?></div>
 					<?php endif; ?>
 				<?php endif; ?>
 
@@ -218,7 +223,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 
 	<section class="hodima-section-box section-description" aria-label="<?php echo esc_attr( 'توضیحات ' . $product->get_name() ); ?>">
 		<?php
-		$hp_desc = apply_filters( 'the_content', get_the_content() );
+		$hp_desc = apply_filters( 'the_content', get_the_content() ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- فیلتر خود وردپرس
 		$hp_faq  = shortcode_exists( 'hook_faq' ) && $hp_show( 'faq' ) ? trim( do_shortcode( '[hook_faq]' ) ) : '';
 
 		if ( '' !== $hp_faq ) {
@@ -226,8 +231,8 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 		}
 
 		echo shortcode_exists( 'expand_product_description' )
-			? do_shortcode( '[expand_product_description]' . $hp_desc . '[/expand_product_description]' ) // phpcs:ignore
-			: $hp_desc; // phpcs:ignore
+			? do_shortcode( '[expand_product_description]' . $hp_desc . '[/expand_product_description]' ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- متن محصول (the_content)
+			: $hp_desc; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- متن محصول (the_content)
 		?>
 	</section>
 
@@ -239,10 +244,10 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 	<?php if ( '' !== $hp_video || '' !== $hp_reviews ) : ?>
 	<section class="hodima-section-box section-reviews">
 		<?php if ( '' !== $hp_video ) : ?>
-			<div class="video-wrapper"><?php echo $hp_video; // phpcs:ignore ?></div>
+			<div class="video-wrapper"><?php echo $hp_video; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?></div>
 		<?php endif; ?>
 
-		<?php echo $hp_reviews; // phpcs:ignore — خروجی شورت‌کد افزونه ?>
+		<?php echo $hp_reviews; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه ?>
 	</section>
 	<?php endif; ?>
 

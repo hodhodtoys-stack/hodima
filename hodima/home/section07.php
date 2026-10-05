@@ -7,6 +7,8 @@
  * می‌ماند چون شورت‌کد در متن برگه صفحه اصلی سایت ذخیره است؛ با تنظیمات
  * پیش‌فرض (همان خروجی قبلی) نمایش داده می‌شود.
  */
+
+declare(strict_types=1);
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 get_template_part( 'home/parts/intro' );

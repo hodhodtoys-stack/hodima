@@ -1,9 +1,18 @@
 <?php
 /**
- * Enqueue scripts and styles
- * مدیریت هوشمند بارگذاری استایل‌ها بر اساس نام‌گذاری جدید
+ * بارگذاری CSS و JS قالب (فقط در صفحه‌هایی که لازم است) و ظاهر فرم نظرات
+ * Path: hodima/inc/enqueue.php
+ *
+ * همه فایل‌ها با hodima_enqueue_asset() (کلاس Hodima_Theme_Asset): آدرس از
+ * hodima_URI، نسخه از زمان تغییر فایل. ترتیب فراخوانی‌ها = ترتیب <link>ها در
+ * صفحه (توکن‌ها اول)؛ عوضش نکنید.
  */
-if ( ! defined( 'ABSPATH' ) ) exit;
+
+declare(strict_types=1);
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * نسخه‌دهی امن برای فایل‌های استاتیک.
@@ -13,205 +22,180 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * @param string $rel_path مسیر نسبی از ریشه قالب، مثلا: assets/css/header.css
  */
 function hodima_asset_version( string $rel_path ): string {
-    static $cache = [];
 
-    if ( isset( $cache[ $rel_path ] ) ) {
-        return $cache[ $rel_path ];
-    }
+	static $cache = [];
 
-    $abs_path = hodima_DIR . '/' . ltrim( $rel_path, '/' );
-    $fallback = defined( 'hodima_VERSION' ) ? (string) hodima_VERSION : '1.0.0';
+	if ( ! isset( $cache[ $rel_path ] ) ) {
+		$abs_path             = hodima_DIR . '/' . ltrim( $rel_path, '/' );
+		$fallback             = defined( 'hodima_VERSION' ) ? (string) hodima_VERSION : '1.0.0';
+		$cache[ $rel_path ] = is_file( $abs_path ) ? (string) filemtime( $abs_path ) : $fallback;
+	}
 
-    $cache[ $rel_path ] = is_file( $abs_path ) ? (string) filemtime( $abs_path ) : $fallback;
-
-    return $cache[ $rel_path ];
+	return $cache[ $rel_path ];
 }
 
 /**
  * true اگر فایل استاتیک واقعا روی دیسک وجود داشته باشد.
  */
 function hodima_asset_exists( string $rel_path ): bool {
-    return is_file( hodima_DIR . '/' . ltrim( $rel_path, '/' ) );
+	return is_file( hodima_DIR . '/' . ltrim( $rel_path, '/' ) );
 }
-
-function hodima_enqueue_scripts() {
-
-    // توکن‌های طراحی باید قبل از هر استایل دیگری لود شوند تا متغیرها
-    // هنگام رسیدن به CSS ماژول‌ها تعریف شده باشند.
-    wp_enqueue_style(
-        'hodima-tokens',
-        hodima_URI . '/assets/css/tokens.css',
-        array(),
-        hodima_asset_version( 'assets/css/tokens.css' )
-    );
-    // از تعریف hodima_VERSION در functions.php استفاده کنید، اگر تعریف شده است.
-    // در غیر این صورت، این خط را اضافه کنید یا از filemtime استفاده کنید.
-    $theme_version = hodima_asset_version( 'style.css' );
-
-    // 1. استایل اصلی سایت
-    wp_enqueue_style( 'hodima-style', get_template_directory_uri() . '/style.css', array(), $theme_version );
-
-    /*
-     * صفحات فروشگاهی.
-     * توابع is_shop() و مشابه را ووکامرس تعریف می‌کند؛ بدون گارد، غیرفعال
-     * شدن ووکامرس کل سایت را با Fatal Error از کار می‌انداخت.
-     */
-    $wc          = hodima_wc_active();
-    $is_product  = $wc && is_product();
-    $is_shop     = $wc && is_shop();
-    $is_cat_tag  = $wc && ( is_product_category() || is_product_tag() );
-    $is_prod_src = is_search() && 'product' === get_query_var( 'post_type' );
-
-    $theme_uri = get_template_directory_uri();
-
-    // 2. کارت محصول (همه صفحات فروشگاهی و نتایج جستجو)
-    if ( $is_shop || $is_cat_tag || $is_product || is_search() ) {
-        wp_enqueue_style( 'hodima-product-card', $theme_uri . '/assets/css/product-card.css', [], hodima_asset_version( 'assets/css/product-card.css' ) );
-    }
-
-    // 3. صفحه اصلی فروشگاه
-    if ( $is_shop && ! $is_cat_tag ) {
-        wp_enqueue_style( 'hodima-shop-page', $theme_uri . '/assets/css/shop-page.css', [], hodima_asset_version( 'assets/css/shop-page.css' ) );
-    }
-
-    // 4. دسته، برچسب، فروشگاه و جستجوی محصول: نوار مرتب‌سازی و صفحه‌بندی مشترک
-    // اسکریپت Vanilla JS است و به jQuery وابستگی ندارد.
-    if ( $is_cat_tag || $is_shop || $is_prod_src ) {
-        wp_enqueue_style( 'hodima-taxonomy-cat', $theme_uri . '/assets/css/taxonomy-product_cat.css', [], hodima_asset_version( 'assets/css/taxonomy-product_cat.css' ) );
-        wp_enqueue_script( 'hodima-taxonomy-js', $theme_uri . '/assets/js/taxonomy-product_cat.js', [], hodima_asset_version( 'assets/js/taxonomy-product_cat.js' ), [ 'in_footer' => true ] );
-    }
-
-    // 5. صفحه محصول
-    if ( $is_product ) {
-        wp_enqueue_style( 'hodima-single-product', $theme_uri . '/assets/css/single-product.css', [], hodima_asset_version( 'assets/css/single-product.css' ) );
-        wp_enqueue_script( 'hodima-single-product-js', $theme_uri . '/assets/js/single-product.js', [], hodima_asset_version( 'assets/js/single-product.js' ), [ 'in_footer' => true ] );
-    }
-
-    // 6. سبد خرید (فایل خالی assets/js/cart-page.js حذف شد: یک درخواست بی‌فایده در هر بار باز شدن سبد)
-    if ( $wc && is_cart() ) {
-        wp_enqueue_style( 'hodima-cart-page', $theme_uri . '/assets/css/cart-page.css', [], hodima_asset_version( 'assets/css/cart-page.css' ) );
-    }
-
-    /*
-     * 7. استایل اختصاصی صفحه نوشته‌های وبلاگ (Single Post).
-     * برگه‌ها (page.php) هم همان بخش‌های رسانه و دیدگاه را دارند: فقط وقتی
-     * کادر «رسانه» برگه روشن است یا دیدگاه دارد (برگه ساده CSS اضافه نمی‌گیرد).
-     */
-    $is_media_page = is_page() && ! is_front_page() && (
-        ( function_exists( 'hodima_media_is_enabled' ) && hodima_media_is_enabled( (int) get_queried_object_id(), 'post' ) )
-        || comments_open( (int) get_queried_object_id() )
-        || get_comments_number( (int) get_queried_object_id() )
-    );
-    if ( is_singular( 'post' ) || $is_media_page ) {
-        wp_enqueue_style( 
-            'hodima-single-post', 
-            get_template_directory_uri() . '/assets/css/single-post.css', 
-            array(), 
-            hodima_asset_version( 'assets/css/single-post.css' ) 
-        );
-    }
-
-    // 7.1 جستجوی سایت (search.php): کارت‌ها و صفحه‌بندی آرشیو وبلاگ؛ جستجوی محصول قالب فروشگاه است
-    if ( is_search() && ! $is_prod_src ) {
-        wp_enqueue_style( 'hodima-archive-blog', $theme_uri . '/assets/css/archive-blog.css', [], hodima_asset_version( 'assets/css/archive-blog.css' ) );
-    }
-
-    // 8. استایل صفحه ۴۰۴
-    // (فایل assets/css/404.css از قبل وجود داشت ولی خالی بود و هرگز ثبت نشده بود)
-    if ( is_404() ) {
-        wp_enqueue_style(
-            'hodima-404',
-            hodima_URI . '/assets/css/404.css',
-            array( 'hodima-tokens' ),
-            hodima_asset_version( 'assets/css/404.css' )
-        );
-    }
-
-}
-add_action( 'wp_enqueue_scripts', 'hodima_enqueue_scripts', 20 ); // عدد 20 برای اولویت بالاتر در صورت لزوم
-
-/* -------------------------------------------------------------
- * بقیه توابع (Placeholder, Custom Product Gallery, ...)
- * نیازی به تغییر ندارند مگر اینکه بخواهید آنها را هم در تابع hodima_enqueue_scripts ادغام کنید.
- * اما برای خوانایی و جداسازی منطق، بهتر است آنها را جدا نگه دارید.
- * ------------------------------------------------------------- */
-
 
 /**
- * افزودن Placeholder به فیلدهای فرم نظرات ووکامرس
- * بدون دست زدن به بخش ستاره‌های امتیازدهی
+ * یک فایل CSS/JS قالب را در صف بارگذاری بگذار (فایل ناموجود رد می‌شود).
+ *
+ * @param list<string>               $deps
+ * @param array<string, string|bool> $args اسکریپت: in_footer/strategy؛ استایل: media.
+ */
+function hodima_enqueue_asset( string $handle, string $path, array $deps = [], array $args = [] ): bool {
+	return ( new Hodima_Theme_Asset( $handle, $path, $deps, $args ) )->enqueue();
+}
+
+function hodima_enqueue_scripts(): void {
+
+	// توکن‌های طراحی باید قبل از هر استایل دیگری لود شوند تا متغیرها
+	// هنگام رسیدن به CSS ماژول‌ها تعریف شده باشند.
+	hodima_enqueue_asset( 'hodima-tokens', 'assets/css/tokens.css' );
+
+	// 1. استایل اصلی سایت
+	hodima_enqueue_asset( 'hodima-style', 'style.css' );
+
+	/*
+	 * صفحات فروشگاهی.
+	 * توابع is_shop() و مشابه را ووکامرس تعریف می‌کند؛ بدون گارد، غیرفعال
+	 * شدن ووکامرس کل سایت را با Fatal Error از کار می‌انداخت.
+	 */
+	$wc          = hodima_wc_active();
+	$is_product  = $wc && is_product();
+	$is_shop     = $wc && is_shop();
+	$is_cat_tag  = $wc && ( is_product_category() || is_product_tag() );
+	$is_prod_src = is_search() && 'product' === get_query_var( 'post_type' );
+	$in_footer   = [ 'in_footer' => true ];
+
+	// 2. کارت محصول (همه صفحات فروشگاهی و نتایج جستجو)
+	if ( $is_shop || $is_cat_tag || $is_product || is_search() ) {
+		hodima_enqueue_asset( 'hodima-product-card', 'assets/css/product-card.css' );
+	}
+
+	// 3. صفحه اصلی فروشگاه
+	if ( $is_shop && ! $is_cat_tag ) {
+		hodima_enqueue_asset( 'hodima-shop-page', 'assets/css/shop-page.css' );
+	}
+
+	// 4. دسته، برچسب، فروشگاه و جستجوی محصول: نوار مرتب‌سازی و صفحه‌بندی مشترک
+	// اسکریپت Vanilla JS است و به jQuery وابستگی ندارد.
+	if ( $is_cat_tag || $is_shop || $is_prod_src ) {
+		hodima_enqueue_asset( 'hodima-taxonomy-cat', 'assets/css/taxonomy-product_cat.css' );
+		hodima_enqueue_asset( 'hodima-taxonomy-js', 'assets/js/taxonomy-product_cat.js', [], $in_footer );
+	}
+
+	// 5. صفحه محصول
+	if ( $is_product ) {
+		hodima_enqueue_asset( 'hodima-single-product', 'assets/css/single-product.css' );
+		hodima_enqueue_asset( 'hodima-single-product-js', 'assets/js/single-product.js', [], $in_footer );
+	}
+
+	// 6. سبد خرید (فایل خالی assets/js/cart-page.js حذف شد: یک درخواست بی‌فایده در هر بار باز شدن سبد)
+	if ( $wc && is_cart() ) {
+		hodima_enqueue_asset( 'hodima-cart-page', 'assets/css/cart-page.css' );
+	}
+
+	/*
+	 * 7. استایل اختصاصی صفحه نوشته‌های وبلاگ (Single Post).
+	 * برگه‌ها (page.php) هم همان بخش‌های رسانه و دیدگاه را دارند: فقط وقتی
+	 * کادر «رسانه» برگه روشن است یا دیدگاه دارد (برگه ساده CSS اضافه نمی‌گیرد).
+	 */
+	$page_id       = (int) get_queried_object_id();
+	$is_media_page = is_page() && ! is_front_page() && (
+		( function_exists( 'hodima_media_is_enabled' ) && hodima_media_is_enabled( $page_id, 'post' ) )
+		|| comments_open( $page_id )
+		|| get_comments_number( $page_id )
+	);
+	if ( is_singular( 'post' ) || $is_media_page ) {
+		hodima_enqueue_asset( 'hodima-single-post', 'assets/css/single-post.css' );
+	}
+
+	// 7.1 جستجوی سایت (search.php): کارت‌ها و صفحه‌بندی آرشیو وبلاگ؛ جستجوی محصول قالب فروشگاه است
+	if ( is_search() && ! $is_prod_src ) {
+		hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css' );
+	}
+
+	// 8. استایل صفحه ۴۰۴
+	if ( is_404() ) {
+		hodima_enqueue_asset( 'hodima-404', 'assets/css/404.css', [ 'hodima-tokens' ] );
+	}
+}
+add_action( 'wp_enqueue_scripts', 'hodima_enqueue_scripts', 20 );
+
+/*
+ * Placeholder فیلدهای فرم نظرات ووکامرس، بدون دست زدن به ستاره‌های امتیازدهی.
+ * نام توابع قبلی بی‌پیشوند بود (custom_review_form_placeholders،
+ * add_placeholder_to_comment_textarea) و با هر افزونه‌ای با همان نام «Cannot
+ * redeclare» می‌داد؛ حالا hodima_*.
  */
 
-// ─── ۱. فیلدهای نام و ایمیل (اینا مشکلی ندارن) ───
-add_filter('woocommerce_product_review_comment_form_args', 'custom_review_form_placeholders', 20);
-function custom_review_form_placeholders($comment_form) {
+// ─── ۱. فیلدهای نام و ایمیل ───
+add_filter( 'woocommerce_product_review_comment_form_args', 'hodima_review_form_placeholders', 20 );
 
-    $commenter = wp_get_current_commenter();
+/**
+ * @param array<string, mixed> $comment_form
+ * @return array<string, mixed>
+ */
+function hodima_review_form_placeholders( mixed $comment_form ): mixed {
 
-    $comment_form['fields']['author'] = '<p class="comment-form-author">'
-        . '<input id="author" name="author" type="text" '
-        . 'placeholder="نام *" value="' . esc_attr($commenter['comment_author']) . '" '
-        . 'size="30" required /></p>';
+	if ( ! is_array( $comment_form ) ) {
+		return $comment_form;
+	}
 
-    $comment_form['fields']['email'] = '<p class="comment-form-email">'
-        . '<input id="email" name="email" type="email" '
-        . 'placeholder="ایمیل *" value="' . esc_attr($commenter['comment_author_email']) . '" '
-        . 'size="30" required /></p>';
+	$commenter = wp_get_current_commenter();
 
-    $comment_form['comment_notes_before'] = '<p class="comment-notes-before">'
-        . '<span class="email-notes">نشانی ایمیل شما منتشر نخواهد شد. '
-        . 'بخش‌های موردنیاز علامت‌گذاری شده‌اند <span class="required">*</span></span></p>';
+	$comment_form['fields']['author'] = '<p class="comment-form-author">'
+		. '<input id="author" name="author" type="text" '
+		. 'placeholder="نام *" value="' . esc_attr( $commenter['comment_author'] ) . '" '
+		. 'size="30" required /></p>';
 
-    return $comment_form;
+	$comment_form['fields']['email'] = '<p class="comment-form-email">'
+		. '<input id="email" name="email" type="email" '
+		. 'placeholder="ایمیل *" value="' . esc_attr( $commenter['comment_author_email'] ) . '" '
+		. 'size="30" required /></p>';
+
+	$comment_form['comment_notes_before'] = '<p class="comment-notes-before">'
+		. '<span class="email-notes">نشانی ایمیل شما منتشر نخواهد شد. '
+		. 'بخش‌های موردنیاز علامت‌گذاری شده‌اند <span class="required">*</span></span></p>';
+
+	return $comment_form;
 }
 
-// ─── ۲. اضافه کردن placeholder به textarea بدون حذف ستاره‌ها ───
-add_filter('comment_form_field_comment', 'add_placeholder_to_comment_textarea', 20);
-function add_placeholder_to_comment_textarea($comment_field) {
+// ─── ۲. placeholder برای textarea بدون حذف ستاره‌ها ───
+add_filter( 'comment_form_field_comment', 'hodima_comment_textarea_placeholder', 20 );
 
-    $comment_field = preg_replace(
-        '/<label[^>]*for=["\']comment["\'][^>]*>.*?<\/label>/is',
-        '',
-        $comment_field
-    );
+function hodima_comment_textarea_placeholder( mixed $comment_field ): mixed {
 
-    if (strpos($comment_field, 'placeholder=') === false) {
-        $comment_field = str_replace(
-            '<textarea',
-            '<textarea placeholder="دیدگاه شما *"',
-            $comment_field
-        );
-    }
+	if ( ! is_string( $comment_field ) ) {
+		return $comment_field;
+	}
 
-    return $comment_field;
+	$comment_field = (string) preg_replace( '/<label[^>]*for=["\']comment["\'][^>]*>.*?<\/label>/is', '', $comment_field );
+
+	if ( ! str_contains( $comment_field, 'placeholder=' ) ) {
+		$comment_field = str_replace( '<textarea', '<textarea placeholder="دیدگاه شما *"', $comment_field );
+	}
+
+	return $comment_field;
 }
-
-
 
 /* ============================================================
  * Custom Product Gallery (SP Gallery)
+ * استایل گالری داخل assets/css/single-product.css است.
+ * (نام قبلی تابع: suspended_enqueue_custom_gallery — بی‌پیشوند)
  * ============================================================ */
-add_action( 'wp_enqueue_scripts', 'suspended_enqueue_custom_gallery', 20 );
-function suspended_enqueue_custom_gallery() {
-    if ( ! hodima_wc_active() || ! is_product() ) {
-        return;
-    }
+add_action( 'wp_enqueue_scripts', 'hodima_enqueue_product_gallery', 20 );
 
-    // نکته: استایل گالری داخل assets/css/single-product.css قرار دارد،
-    // بنابراین فایل مستقل single-product-gallery.css حذف شد (کد مرده بود).
-    if ( hodima_asset_exists( 'assets/js/sp-gallery.js' ) ) {
-        wp_enqueue_script(
-            'sp-gallery-js',
-            hodima_URI . '/assets/js/sp-gallery.js',
-            array(),
-            hodima_asset_version( 'assets/js/sp-gallery.js' ),
-            true
-        );
-    }
+function hodima_enqueue_product_gallery(): void {
+	if ( hodima_wc_active() && is_product() ) {
+		hodima_enqueue_asset( 'sp-gallery-js', 'assets/js/sp-gallery.js', [], [ 'in_footer' => true ] );
+	}
 }
-
-
-
 
 /* ============================================================
  * منطق منتقل‌شده به افزونه‌ها — بازسازی قالب، مرحله ۲
@@ -238,11 +222,6 @@ function suspended_enqueue_custom_gallery() {
  * ============================================================ */
 add_action( 'admin_enqueue_scripts', 'hodima_enqueue_admin_tokens', 1 );
 
-function hodima_enqueue_admin_tokens() {
-    wp_enqueue_style(
-        'hodima-tokens',
-        hodima_URI . '/assets/css/tokens.css',
-        array(),
-        hodima_asset_version( 'assets/css/tokens.css' )
-    );
+function hodima_enqueue_admin_tokens(): void {
+	hodima_enqueue_asset( 'hodima-tokens', 'assets/css/tokens.css' );
 }

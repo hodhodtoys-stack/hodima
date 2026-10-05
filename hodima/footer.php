@@ -14,6 +14,8 @@
  * ==========================================================
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
 
 $hodima_s = function_exists( 'hodima_settings' ) ? hodima_settings() : [];
@@ -44,7 +46,7 @@ if ( function_exists( 'hodima_render_social_bar' ) ) {
         <section class="footer-col" aria-labelledby="footer-about-title">
             <h2 id="footer-about-title"><?php echo esc_html( (string) ( $hodima_s['about_title'] ?? '' ) ); ?></h2>
             <div class="footer-content">
-                <?php echo wpautop( esc_html( $hodima_about_text ) ); ?>
+                <?php echo wpautop( esc_html( $hodima_about_text ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html پیش از wpautop ?>
             </div>
         </section>
         <?php endif; ?>
@@ -54,7 +56,7 @@ if ( function_exists( 'hodima_render_social_bar' ) ) {
         <section class="footer-col" aria-labelledby="footer-guide-title">
             <h2 id="footer-guide-title"><?php echo esc_html( (string) ( $hodima_s['guide_title'] ?? '' ) ); ?></h2>
             <div class="footer-content">
-                <?php echo '' !== $hodima_guide_text ? wpautop( esc_html( $hodima_guide_text ) ) : ''; ?>
+                <?php echo '' !== $hodima_guide_text ? wpautop( esc_html( $hodima_guide_text ) ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html پیش از wpautop ?>
 
                 <?php if ( '' !== $hodima_address ) : ?>
                 <address class="footer-address">
@@ -92,9 +94,9 @@ if ( function_exists( 'hodima_render_social_bar' ) ) {
                         ?>
                         <li class="footer-trust__item">
                             <?php if ( '' !== $hodima_badge['url'] ) : ?>
-                                <a class="footer-trust__link" href="<?php echo esc_url( $hodima_badge['url'] ); ?>" target="_blank" rel="noopener"><?php echo $hodima_badge_img; // خروجی wp_get_attachment_image ?></a>
+                                <a class="footer-trust__link" href="<?php echo esc_url( $hodima_badge['url'] ); ?>" target="_blank" rel="noopener"><?php echo $hodima_badge_img; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی wp_get_attachment_image ?></a>
                             <?php else : ?>
-                                <?php echo $hodima_badge_img; // خروجی wp_get_attachment_image ?>
+                                <?php echo $hodima_badge_img; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی wp_get_attachment_image ?>
                             <?php endif; ?>
                         </li>
                     <?php endforeach; ?>

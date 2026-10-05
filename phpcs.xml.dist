@@ -76,6 +76,14 @@
 	<rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
 	<rule ref="Generic.PHP.RequireStrictTypes"/>
 
+	<!--
+		PHPCS 3 هنوز property hooks (PHP 8.4) را نمی‌شناسد و «get => …» را اعلان
+		ویژگی بی‌نام می‌خواند. فقط فایل‌هایی که property hook دارند.
+	-->
+	<rule ref="PSR2.Classes.PropertyDeclaration">
+		<exclude-pattern>*/inc/classes/class-hodima-theme-asset.php</exclude-pattern>
+	</rule>
+
 	<!-- همه نام‌های سراسری با پیشوند هدیما -->
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>

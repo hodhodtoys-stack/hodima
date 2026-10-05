@@ -8,13 +8,18 @@
  * ۳. پشتیبانی از فایل‌های فیزیکی پوشه home با شورت‌کدهای [section01] الی [section20]
  */
 
+declare(strict_types=1);
+
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // ========================================================================
 // ۱. تابع مرکزی اسلایدر محصولات (موتور رندر)
 // ========================================================================
 if ( ! function_exists( 'hodima_home_product_slider' ) ) {
-    function hodima_home_product_slider( $args = [] ) {
+    /**
+     * @param array<string, mixed> $args title، link، category، limit، bg_color، id.
+     */
+    function hodima_home_product_slider( array $args = [] ): string {
         
         if ( ! function_exists( 'wc_get_products' ) ) {
             return ''; 
@@ -52,7 +57,7 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
         }
 
         // نسل کش در کلید: پاک کردن = بالا بردن نسل (hodima_home_flush_product_sliders)
-        $transient_key = 'arian_pslider_' . md5( serialize( $query_args ) . '|' . hodima_home_slider_generation() );
+        $transient_key = 'arian_pslider_' . md5( (string) wp_json_encode( $query_args ) . '|' . hodima_home_slider_generation() );
         $products_data = get_transient( $transient_key );
 
         if ( false === $products_data ) {
@@ -86,7 +91,7 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
                     <div class="arian-line"></div>
                 </div>
                 <?php if ( ! empty( $clean_slug ) ) : ?>
-                <a href="<?php echo $final_link; ?>" class="arian-view-all">مشاهده همه</a>
+                <a href="<?php echo $final_link; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- بالاتر با esc_url ساخته شد ?>" class="arian-view-all">مشاهده همه</a>
                 <?php endif; ?>
             </div>
 
@@ -126,7 +131,7 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
             </div>
         </section>
         <?php
-        return ob_get_clean();
+        return (string) ob_get_clean();
     }
 }
 
@@ -139,7 +144,11 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
 // کش با تغییر دسته/نوشته پاک می‌شود (پایین همین فایل).
 // ========================================================================
 
-/** همه دسته‌های محصول دارای کالا: نامک، نام، لینک، شناسه تصویر. */
+/**
+ * همه دسته‌های محصول دارای کالا: نامک، نام، لینک، شناسه تصویر.
+ *
+ * @return list<array{slug: string, name: string, link: string, thumbnail_id: int}>
+ */
 function hodima_home_categories_data(): array {
 
     $data = get_transient( 'hodima_home_categories_v5' );
@@ -175,7 +184,11 @@ function hodima_home_categories_data(): array {
     return $data;
 }
 
-/** ۲۰ مقاله آخر: عنوان، لینک، شناسه تصویر شاخص (۱۵ دقیقه کش). */
+/**
+ * ۲۰ مقاله آخر: عنوان، لینک، شناسه تصویر شاخص (۱۵ دقیقه کش).
+ *
+ * @return list<array{title: string, link: string, thumbnail_id: int}>
+ */
 function hodima_home_blog_posts_data(): array {
 
     $data = get_transient( 'hodima_home_blog_posts_v3' );
@@ -210,7 +223,7 @@ function hodima_home_blog_posts_data(): array {
 // ۲. تابع لود سکشن‌های فیزیکی (برای section01 تا section20)
 // ========================================================================
 if ( ! function_exists( 'hodima_home_load_section' ) ) {
-    function hodima_home_load_section( $tag ) {
+    function hodima_home_load_section( string $tag ): string {
         $tag = sanitize_key( $tag );
         if ( empty( $tag ) ) return '';
 
@@ -222,7 +235,7 @@ if ( ! function_exists( 'hodima_home_load_section' ) ) {
 
         ob_start();
         include $php_file;
-        return trim( ob_get_clean() );
+        return trim( (string) ob_get_clean() ); // strict_types: ob_get_clean ممکن است false باشد
     }
 }
 
@@ -240,7 +253,8 @@ if ( ! function_exists( 'hodima_home_load_section' ) ) {
  * هوک‌های create_term / edit_term / delete_term از قبل در همین فایل
  * وجود دارند و حالا این کش را هم باطل می‌کنند.
  */
-function hodima_home_category_shortcode_map() {
+/** @return array<string, string> نامک => نام دسته */
+function hodima_home_category_shortcode_map(): array {
 
     $cached = get_transient( 'arian_cat_shortcode_map' );
 
@@ -274,7 +288,7 @@ function hodima_home_category_shortcode_map() {
     return $map;
 }
 
-function hodima_home_clear_category_shortcode_map() {
+function hodima_home_clear_category_shortcode_map(): void {
     delete_transient( 'arian_cat_shortcode_map' );
 }
 add_action( 'created_product_cat', 'hodima_home_clear_category_shortcode_map' );
@@ -295,7 +309,8 @@ add_action('init', function() {
     // الف) شورت‌کد برای فایل‌های بخش موجود.
     // نسخه قبلی کورکورانه section01 تا section20 را ثبت می‌کرد در حالی که
     // فقط چهار فایل وجود دارد؛ ۱۶ شورت‌کد مرده که خروجی‌شان یک کامنت خطا بود.
-    foreach ( (array) glob( get_stylesheet_directory() . '/home/section*.php' ) as $section_file ) {
+    // (array) false = [false] و basename(false) با strict_types خطا می‌داد
+    foreach ( glob( get_stylesheet_directory() . '/home/section*.php' ) ?: [] as $section_file ) {
 
         $tag = basename( $section_file, '.php' );
 
@@ -383,7 +398,7 @@ function hodima_home_slider_generation(): int {
 }
 
 if ( ! function_exists( 'hodima_home_flush_product_sliders' ) ) {
-    function hodima_home_flush_product_sliders( mixed $post_id = 0 ): void {
+    function hodima_home_flush_product_sliders(): void {
 
         // جلوگیری از اجرای بی‌دلیل هنگام ذخیره خودکار (Autosave) وردپرس
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
@@ -404,37 +419,16 @@ if ( ! function_exists( 'hodima_home_flush_product_sliders' ) ) {
 /**
  * لود هوشمند دارایی‌ها (CSS و JS)
  */
-add_action( 'wp_enqueue_scripts', function() {
+add_action( 'wp_enqueue_scripts', static function (): void {
 
-    // فقط در صفحه اصلی
     // فقط صفحه اصلی (قبلا برگه وبلاگ هم — is_home — بی‌دلیل این CSS/JS را می‌گرفت)
-    if ( ! is_front_page() ) return;
-
-    $base_path = get_stylesheet_directory() . '/home/';
-    $base_uri  = get_stylesheet_directory_uri() . '/home/';
-
-    // CSS
-    if ( file_exists( $base_path . 'home.css' ) ) {
-        wp_enqueue_style(
-            'hodima-home-style',
-            $base_uri . 'home.css',
-            [],
-            filemtime( $base_path . 'home.css' )
-        );
+    if ( ! is_front_page() ) {
+        return;
     }
 
-    // JS
-    if ( file_exists( $base_path . 'home.js' ) ) {
-        wp_enqueue_script(
-            'hodima-home-js',
-            $base_uri . 'home.js',
-            [], // Vanilla JS؛ وابستگی jQuery لازم نیست
-            filemtime( $base_path . 'home.js' ),
-            true
-        );
-    }
-
-}, 20);
+    hodima_enqueue_asset( 'hodima-home-style', 'home/home.css' );
+    hodima_enqueue_asset( 'hodima-home-js', 'home/home.js', [], [ 'in_footer' => true ] ); // Vanilla JS؛ بدون jQuery
+}, 20 );
 
 
 /**
@@ -446,7 +440,7 @@ add_action( 'wp_enqueue_scripts', function() {
 /**
  * تابع پاک‌کننده ترنزینت دسته‌بندی‌ها
  */
-function hodima_home_clear_categories_cache() {
+function hodima_home_clear_categories_cache(): void {
     // v5: همه دسته‌ها با نامک؛ استثناها هنگام نمایش (home/parts/categories.php). v4 نسخه قبلی
     delete_transient( 'hodima_home_categories_v5' );
     delete_transient( 'arian_categories_hyper_v4' );
@@ -466,7 +460,7 @@ function hodima_home_clear_categories_cache() {
 }
 
 // ۱. هوک‌های عمومی تغییرات دسته‌بندی ووکامرس
-function hodima_home_categories_cache_on_term( $term_id, $tt_id, $taxonomy ) {
+function hodima_home_categories_cache_on_term( mixed $term_id, mixed $tt_id, mixed $taxonomy ): void {
     if ( 'product_cat' === $taxonomy ) {
         hodima_home_clear_categories_cache();
     }
@@ -476,15 +470,15 @@ add_action( 'edit_term', 'hodima_home_categories_cache_on_term', 10, 3 );
 add_action( 'delete_term', 'hodima_home_categories_cache_on_term', 10, 3 );
 
 // ۲. هوک‌های تغییر متادیتاهای دسته‌بندی (زمانی که فقط تصویر شاخص عوض می‌شود)
-function hodima_home_categories_cache_on_meta( $meta_id, $object_id, $meta_key, $meta_value ) {
+function hodima_home_categories_cache_on_meta( mixed $meta_id, mixed $object_id, mixed $meta_key ): void {
     // وقتی تصویر شاخص دسته‌بندی تغییر می‌کند
     if ( 'thumbnail_id' === $meta_key ) {
         hodima_home_clear_categories_cache();
     }
 }
-add_action( 'added_term_meta', 'hodima_home_categories_cache_on_meta', 10, 4 );
-add_action( 'updated_term_meta', 'hodima_home_categories_cache_on_meta', 10, 4 );
-add_action( 'deleted_term_meta', 'hodima_home_categories_cache_on_meta', 10, 4 );
+add_action( 'added_term_meta', 'hodima_home_categories_cache_on_meta', 10, 3 );
+add_action( 'updated_term_meta', 'hodima_home_categories_cache_on_meta', 10, 3 );
+add_action( 'deleted_term_meta', 'hodima_home_categories_cache_on_meta', 10, 3 );
 
 
 
@@ -499,7 +493,7 @@ add_action( 'deleted_term_meta', 'hodima_home_categories_cache_on_meta', 10, 4 )
 /**
  * تابع پاک‌کننده ترنزینت مقالات وبلاگ
  */
-function hodima_home_clear_blog_cache() {
+function hodima_home_clear_blog_cache(): void {
     // v3: ۲۰ مقاله آخر؛ تعداد هر بخش هنگام نمایش (home/parts/blog.php). v2 نسخه قبلی
     delete_transient( 'hodima_home_blog_posts_v3' );
     delete_transient( 'arian_latest_blog_posts_hyper_v2' );
@@ -519,13 +513,17 @@ function hodima_home_clear_blog_cache() {
 }
 
 // ۱. هوک‌های عمومی تغییرات پست‌ها (انتشار، ویرایش، حذف و انتقال به زباله‌دان)
-function hodima_home_blog_cache_on_post( $post_id, $post = null ) {
+function hodima_home_blog_cache_on_post( mixed $post_id, mixed $post = null ): void {
     // جلوگیری از اجرای کد هنگام ذخیره خودکار (Autosave) و ریویژن‌ها
     if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
     if ( wp_is_post_revision( $post_id ) ) return;
     
-    // دریافت نوع پست
-    $post_type = $post ? $post->post_type : get_post_type( $post_id );
+    /*
+     * نوع پست. باگ قبلی: «$post ? $post->post_type» — ولی trashed_post (از وردپرس
+     * 6.3) به‌جای شیء نوشته وضعیت قبلی (رشته) را می‌فرستد؛ هر انتقال نوشته به
+     * زباله‌دان هشدار PHP «Attempt to read property on string» می‌داد.
+     */
+    $post_type = $post instanceof WP_Post ? $post->post_type : get_post_type( (int) $post_id );
 
     // فقط اگر تغییرات روی نوشته‌ها (post) بود کش را خالی کن
     if ( 'post' === $post_type ) {
@@ -537,15 +535,15 @@ add_action( 'deleted_post', 'hodima_home_blog_cache_on_post', 10, 2 );
 add_action( 'trashed_post', 'hodima_home_blog_cache_on_post', 10, 2 );
 
 // ۲. هوک‌های تغییر متادیتاهای پست (زمانی که فقط تصویر شاخص عوض می‌شود)
-function hodima_home_blog_cache_on_meta( $meta_id, $post_id, $meta_key, $meta_value ) {
+function hodima_home_blog_cache_on_meta( mixed $meta_id, mixed $post_id, mixed $meta_key ): void {
     // تصویر شاخص پست‌ها با کلید _thumbnail_id ذخیره می‌شود (دقت کنید آندرلاین دارد)
     if ( '_thumbnail_id' === $meta_key && get_post_type( $post_id ) === 'post' ) {
         hodima_home_clear_blog_cache();
     }
 }
-add_action( 'added_post_meta', 'hodima_home_blog_cache_on_meta', 10, 4 );
-add_action( 'updated_post_meta', 'hodima_home_blog_cache_on_meta', 10, 4 );
-add_action( 'deleted_post_meta', 'hodima_home_blog_cache_on_meta', 10, 4 );
+add_action( 'added_post_meta', 'hodima_home_blog_cache_on_meta', 10, 3 );
+add_action( 'updated_post_meta', 'hodima_home_blog_cache_on_meta', 10, 3 );
+add_action( 'deleted_post_meta', 'hodima_home_blog_cache_on_meta', 10, 3 );
 
 
 /*

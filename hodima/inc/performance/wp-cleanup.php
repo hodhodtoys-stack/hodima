@@ -58,6 +58,10 @@ function hodima_cleanup_wp_core(): void {
  * ============================================================ */
 add_filter( 'wp_resource_hints', 'hodima_filter_core_resource_hints', 10, 2 );
 
+/**
+ * @param array<int, string|array<string, string>> $urls
+ * @return array<int, string|array<string, string>>
+ */
 function hodima_filter_core_resource_hints( array $urls, string $relation_type ): array {
 
     if ( 'dns-prefetch' !== $relation_type ) {
@@ -67,7 +71,7 @@ function hodima_filter_core_resource_hints( array $urls, string $relation_type )
     return array_values( array_filter(
         $urls,
         static function ( $url ): bool {
-            $host = is_array( $url ) ? ( $url['href'] ?? '' ) : (string) $url;
+            $host = (string) ( is_array( $url ) ? ( $url['href'] ?? '' ) : $url );
             return ! str_contains( $host, 's.w.org' ) && ! str_contains( $host, 'wp.org' );
         }
     ) );

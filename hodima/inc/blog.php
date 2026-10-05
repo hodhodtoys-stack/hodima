@@ -48,6 +48,8 @@ function hodima_related_post_ids( int $post_id, int $limit, string $source = 'ca
 
 	$ids = [];
 
+	// method_exists: نسخه قدیمی‌تر افزونه SEO این متد را ندارد (PHPStan افزونه فعلی را می‌بیند)
+	// @phpstan-ignore function.alreadyNarrowedType
 	if ( 'cluster' === $source && class_exists( 'Hodima_TC_Helper' ) && method_exists( 'Hodima_TC_Helper', 'sibling_nodes' ) ) {
 		foreach ( Hodima_TC_Helper::sibling_nodes( $post_id, 'post', $limit * 3 ) as $node ) {
 			if ( 'post' === ( $node['kind'] ?? '' ) && 'post' === ( $node['type'] ?? '' ) && empty( $node['noindex'] ) && (int) $node['id'] !== $post_id ) {

@@ -13,7 +13,11 @@
  * صفحه‌بندی، اسکیمای صفحه اول) در inc/woocommerce/category-archive.php هستند.
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- هوک‌های خود ووکامرس در قالب ووکامرس (باید همین نام‌ها اجرا شوند)
 
 $hodima_paged    = max( 1, (int) get_query_var( 'paged' ) );
 $hodima_is_first = ( 1 === $hodima_paged );
@@ -79,7 +83,7 @@ get_header( 'shop' );
 				<?php $hodima_video = do_shortcode( '[hook_video]' ); ?>
 				<?php if ( '' !== trim( $hodima_video ) ) : ?>
 					<div class="video-box">
-						<?php echo $hodima_video; // phpcs:ignore — خروجی شورت‌کد ?>
+						<?php echo $hodima_video; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?>
 					</div>
 				<?php endif; ?>
 			<?php endif; ?>
@@ -174,10 +178,10 @@ get_header( 'shop' );
 		<?php if ( '' !== trim( $hodima_voice . $hodima_faq ) ) : ?>
 			<section class="hodima-section-box section-voice section-faq" aria-label="پادکست و سوالات متداول">
 				<?php if ( '' !== trim( $hodima_voice ) ) : ?>
-					<div class="voice-inner-wrapper"><?php echo $hodima_voice; // phpcs:ignore ?></div>
+					<div class="voice-inner-wrapper"><?php echo $hodima_voice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?></div>
 				<?php endif; ?>
 				<?php if ( '' !== trim( $hodima_faq ) ) : ?>
-					<div class="faq-inner-wrapper"><?php echo $hodima_faq; // phpcs:ignore ?></div>
+					<div class="faq-inner-wrapper"><?php echo $hodima_faq; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?></div>
 				<?php endif; ?>
 			</section>
 		<?php endif; ?>

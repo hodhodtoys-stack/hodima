@@ -1,6 +1,8 @@
 <?php
 /* Template Name: User Panel */
 
+declare(strict_types=1);
+
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // ماژول پنل کاربری نصب یا فعال نیست: برگه مثل یک برگه معمولی نمایش داده شود.

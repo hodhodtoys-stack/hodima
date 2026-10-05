@@ -4,18 +4,19 @@
  * Description: صفحه آرشیو مقالات وبلاگ با اسکرول بی‌نهایت
  */
 
+declare(strict_types=1);
+
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // فراخوانی فایل استایل اختصاصی این صفحه
-add_action( 'wp_enqueue_scripts', function() {
-    // نسخه = زمان تغییر فایل (قبلا ثابت '1.0.0': تغییر CSS در کش مرورگرها دیده نمی‌شد)
-    wp_enqueue_style( 'hodima-archive-blog', get_template_directory_uri() . '/assets/css/archive-blog.css', array(), hodima_asset_version( 'assets/css/archive-blog.css' ) );
+add_action( 'wp_enqueue_scripts', static function (): void {
+    hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css' );
 
     // بارگذاری خودکار با اسکرول (قبلا اسکریپت inline پایین همین فایل)
     if ( hodima_setting( 'blog_infinite_scroll' ) ) {
-        wp_enqueue_script( 'hodima-archive-blog', get_template_directory_uri() . '/assets/js/archive-blog.js', array(), hodima_asset_version( 'assets/js/archive-blog.js' ), array( 'in_footer' => true, 'strategy' => 'defer' ) );
+        hodima_enqueue_asset( 'hodima-archive-blog', 'assets/js/archive-blog.js', [], [ 'in_footer' => true, 'strategy' => 'defer' ] );
     }
-});
+} );
 
 get_header(); ?>
 
@@ -57,7 +58,7 @@ get_header(); ?>
                         if ( is_category() || is_tag() || is_tax() ) {
                             echo esc_html( single_term_title( '', false ) );
                         } else {
-                            echo wp_strip_all_tags( get_the_archive_title() );
+                            echo esc_html( wp_strip_all_tags( get_the_archive_title() ) );
                         }
                         ?>
                     </h1>
@@ -71,7 +72,8 @@ get_header(); ?>
 
                 <?php 
                 global $wp_query;
-                $paged = ( get_query_var( 'paged' ) ) ? get_query_var( 'paged' ) : 1;
+                // قبلا $paged: متغیر سراسری خود وردپرس را بازنویسی می‌کرد (این قالب در فضای سراسری اجرا می‌شود)
+                $hodima_paged = max( 1, (int) get_query_var( 'paged' ) );
                 
                 // فهرست ساختاریافته مقاله‌ها (ItemList) را افزونه Hodima SEO می‌سازد:
                 // schema/collection-lists-schema.php (قبلا همین‌جا) — بازسازی قالب، مرحله ۲
@@ -80,10 +82,10 @@ get_header(); ?>
                         <a href="<?php the_permalink(); ?>" class="blog-page-card">
 
                             <?php if ( has_post_thumbnail() ) : ?>
-                                <?php the_post_thumbnail( 'medium', array(
+                                <?php the_post_thumbnail( 'medium', [
                                     'class' => 'blog-page-thumbnail',
                                     'alt'   => get_the_title(),
-                                ) ); ?>
+                                ] ); ?>
                             <?php else : ?>
                                 <div class="blog-page-thumbnail blog-page-thumbnail--empty">
                                     <span>بدون تصویر</span>
@@ -93,11 +95,11 @@ get_header(); ?>
                             <div class="blog-page-content">
                                 <h2 class="blog-page-title" title="<?php echo esc_attr(get_the_title()); ?>">
                                     <?php 
-                                        $title = get_the_title();
-                                        if (mb_strlen($title, 'UTF-8') > 45) {
-                                            echo esc_html( mb_substr($title, 0, 45, 'UTF-8') ) . '...';
+                                        $hodima_card_title = get_the_title();
+                                        if ( mb_strlen( $hodima_card_title, 'UTF-8' ) > 45 ) {
+                                            echo esc_html( mb_substr( $hodima_card_title, 0, 45, 'UTF-8' ) ) . '...';
                                         } else {
-                                            echo esc_html( $title );
+                                            echo esc_html( $hodima_card_title );
                                         }
                                     ?>
                                 </h2>
@@ -130,10 +132,12 @@ get_header(); ?>
             ?>
             <?php if ( $wp_query->max_num_pages > 1 ) : ?>
                 <div class="hodima-pagination<?php echo hodima_setting( 'blog_infinite_scroll' ) ? ' hodima-pagination--auto' : ''; ?>">
-                    <?php echo paginate_links( array(
-                        'total'     => $wp_query->max_num_pages,
-                        'current'   => $paged,
-                    ) ); ?>
+                    <?php
+                    echo paginate_links( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده خود وردپرس
+                        'total'   => $wp_query->max_num_pages,
+                        'current' => $hodima_paged,
+                    ] );
+                    ?>
                 </div>
             <?php endif; ?>
 

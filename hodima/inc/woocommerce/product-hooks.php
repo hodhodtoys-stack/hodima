@@ -8,6 +8,8 @@
  * @since   1.1.0
  */
 
+declare(strict_types=1);
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
@@ -23,7 +25,7 @@ add_filter( 'woocommerce_product_add_to_cart_text', '__return_empty_string' );
    ۲. پاکسازی صفحات آرشیو
    ========================================================== */
 
-function hodima_remove_archive_clutter() {
+function hodima_remove_archive_clutter(): void {
     if ( is_product_category() || is_product_tag() ) {
         remove_action( 'woocommerce_before_shop_loop', 'woocommerce_result_count',    20 );
         remove_action( 'woocommerce_before_shop_loop', 'woocommerce_catalog_ordering', 30 );
@@ -39,7 +41,7 @@ remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_singl
 remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_excerpt', 20 );
 remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_meta',    40 );
 
-function hodima_cleanup_single_product() {
+function hodima_cleanup_single_product(): void {
     if ( ! is_product() ) {
         return;
     }
@@ -58,7 +60,7 @@ add_action( 'wp', 'hodima_cleanup_single_product' );
    ۴. حذف کامل ساپورت گالری پیش‌فرض
    ========================================================== */
 
-function hodima_remove_woo_gallery_support() {
+function hodima_remove_woo_gallery_support(): void {
     remove_theme_support( 'wc-product-gallery-zoom' );
     remove_theme_support( 'wc-product-gallery-lightbox' );
     remove_theme_support( 'wc-product-gallery-slider' );
@@ -72,7 +74,7 @@ add_action(    'woocommerce_before_single_product_summary', 'hodima_custom_produ
    ۵. گالری سفارشی (بدون تغییر)
    ========================================================== */
 
-function hodima_custom_product_gallery() {
+function hodima_custom_product_gallery(): void {
     global $product;
     if ( ! $product ) return;
 
@@ -92,7 +94,7 @@ function hodima_custom_product_gallery() {
     $name  = $product->get_name();
     $sizes = function_exists( 'hodima_gallery_sizes' ) ? hodima_gallery_sizes() : '(max-width: 768px) 100vw, 600px';
     ?>
-    <div class="sp-gallery" data-total="<?php echo esc_attr( $total ); ?>" role="region" aria-roledescription="گالری" aria-label="<?php echo esc_attr( 'تصاویر ' . $name ); ?>">
+    <div class="sp-gallery" data-total="<?php echo esc_attr( (string) $total ); ?>" role="region" aria-roledescription="گالری" aria-label="<?php echo esc_attr( 'تصاویر ' . $name ); ?>">
         <div class="sp-gallery__main">
             <div class="sp-gallery__main-image">
                 <?php foreach ( $all_image_ids as $index => $image_id ) :
@@ -181,7 +183,7 @@ function hodima_custom_product_gallery() {
    ۶. اصلاح بخش اسکریپت‌ها (فعال کردن مجدد اسکریپت ستاره‌ها)
    ========================================================== */
 
-function hodima_dequeue_woo_heavy_assets() {
+function hodima_dequeue_woo_heavy_assets(): void {
     if ( is_product() ) {
         // حذف فقط اسکریپت‌های گالری
         wp_dequeue_script( 'zoom' );
@@ -218,7 +220,7 @@ add_action( 'wp_enqueue_scripts', 'hodima_dequeue_woo_heavy_assets', 99 );
    ۸. حذف photoswipe HTML
    ========================================================== */
 
-add_action( 'wp_footer', function() {
+add_action( 'wp_footer', static function (): void {
     if ( is_product() ) {
         remove_action( 'wp_footer', 'woocommerce_photoswipe', 15 );
     }
@@ -231,7 +233,8 @@ add_action( 'wp_footer', function() {
    ========================================================== */
 add_filter( 'woocommerce_product_upsells_products_heading', 'hodima_custom_upsells_heading' );
 
-function hodima_custom_upsells_heading( $heading ) {
+// عنوان پیش‌فرض ووکامرس (آرگومان فیلتر) لازم نیست؛ همیشه عنوان تنظیمات
+function hodima_custom_upsells_heading(): string {
     // «تنظیمات قالب ← صفحه محصول» (قبلا ثابت)
     return (string) hodima_setting( 'product_upsells_title' );
 }

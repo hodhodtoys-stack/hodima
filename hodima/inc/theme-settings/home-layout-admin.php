@@ -98,7 +98,8 @@ function hodima_home_admin_render(): void {
 /**
  * یک بخش در فهرست.
  *
- * @param list<WP_Term> $terms دسته‌های محصول
+ * @param array<int, WP_Term> $terms دسته‌های محصول
+ * @param array<string, mixed> $item
  */
 function hodima_home_admin_item( array $item, array $terms, bool $open = false ): void {
 
@@ -158,7 +159,12 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
 	<?php
 }
 
-/** یک فیلد تنظیمات بخش. */
+/**
+ * یک فیلد تنظیمات بخش.
+ *
+ * @param array<string, mixed> $field
+ * @param array<int, WP_Term> $terms
+ */
 function hodima_home_admin_field( string $name, string $id, array $field, mixed $value, array $terms, string $key ): void {
 
 	$summary = in_array( $key, [ 'title', 'category' ], true ) ? ' data-hodima-home-summary-source' : '';
@@ -197,7 +203,7 @@ function hodima_home_admin_field( string $name, string $id, array $field, mixed 
 				</select>
 
 			<?php elseif ( 'category' === $field['type'] ) : ?>
-				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $summary; // ثابت ?>>
+				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $summary; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ویژگی ثابت (escape‌شده بالاتر) ?>>
 					<option value="">— انتخاب دسته —</option>
 					<?php foreach ( $terms as $term ) : ?>
 						<option value="<?php echo esc_attr( $term->slug ); ?>" <?php selected( $value, $term->slug ); ?>><?php echo esc_html( $term->name ); ?></option>
@@ -208,7 +214,7 @@ function hodima_home_admin_field( string $name, string $id, array $field, mixed 
 				<input type="number" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) (int) $value ); ?>" min="<?php echo esc_attr( (string) ( $field['min'] ?? 1 ) ); ?>" max="<?php echo esc_attr( (string) ( $field['max'] ?? 100 ) ); ?>" inputmode="numeric">
 
 			<?php else : ?>
-				<input type="text" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>"<?php echo 'link' === $field['type'] ? ' dir="ltr" spellcheck="false"' : ''; ?><?php echo $summary; // ثابت ?>>
+				<input type="text" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>"<?php echo 'link' === $field['type'] ? ' dir="ltr" spellcheck="false"' : ''; ?><?php echo $summary; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ویژگی ثابت (escape‌شده بالاتر) ?>>
 			<?php endif; ?>
 		<?php endif; ?>
 	</div>

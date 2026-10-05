@@ -4,6 +4,8 @@
  * Path: hodima/inc/performance/woo-optimizer.php
  */
 
+declare(strict_types=1);
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }

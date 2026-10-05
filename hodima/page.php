@@ -15,6 +15,8 @@
  * index.php: H1 و ویدیو آن از شورت‌کدهای داخل متن برگه می‌آید.
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
 
 if ( is_front_page() ) {
@@ -60,27 +62,27 @@ while ( have_posts() ) :
 					<section class="hodima-section-box section-intro-media">
 						<div class="video-thumbnail-wrapper">
 							<?php if ( '' !== $hodima_intro ) : ?>
-								<div class="intro-content"><?php echo $hodima_intro; // خروجی افزونه Hodima Media ?></div>
+								<div class="intro-content"><?php echo $hodima_intro; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?></div>
 							<?php endif; ?>
 							<?php if ( '' !== $hodima_video ) : ?>
-								<div class="video-content"><?php echo $hodima_video; // خروجی افزونه Hodima Media ?></div>
+								<div class="video-content"><?php echo $hodima_video; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?></div>
 							<?php endif; ?>
 						</div>
 					</section>
 				<?php endif; ?>
 
 				<div class="entry-content">
-					<?php echo $hodima_content; // خروجی the_content ?>
+					<?php echo $hodima_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی the_content ?>
 				</div>
 
 				<?php if ( '' !== $hodima_voice || '' !== $hodima_faq ) : ?>
 					<section class="hodima-section-box section-voice-faq">
 						<div class="voice-faq-wrapper">
 							<?php if ( '' !== $hodima_voice ) : ?>
-								<div class="voice-content"><?php echo $hodima_voice; // خروجی افزونه Hodima Media ?></div>
+								<div class="voice-content"><?php echo $hodima_voice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?></div>
 							<?php endif; ?>
 							<?php if ( '' !== $hodima_faq ) : ?>
-								<div class="faq-content"><?php echo $hodima_faq; // خروجی افزونه Hodima Media ?></div>
+								<div class="faq-content"><?php echo $hodima_faq; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?></div>
 							<?php endif; ?>
 						</div>
 					</section>

@@ -126,6 +126,7 @@ function hodima_settings_fields(): array {
  * سه نماد اعتماد فوتر؛ هر کدام تصویر و لینک.
  * نماد اول همان کلیدهای قدیمی (trust_image_id / trust_url) را نگه می‌دارد تا
  * نماد ذخیره‌شده سایت بعد از به‌روزرسانی از دست نرود؛ بقیه پسوند _2 و _3 دارند.
+ * @return array<string, array<string, mixed>>
  */
 function hodima_trust_fields(): array {
 
@@ -184,7 +185,11 @@ function hodima_social_networks(): array {
 	] );
 }
 
-/** برای هر شبکه دو فیلد در یک ردیف: آدرس صفحه و آیکون (اختیاری). */
+/**
+ * برای هر شبکه دو فیلد در یک ردیف: آدرس صفحه و آیکون (اختیاری).
+ *
+ * @return array<string, array<string, mixed>>
+ */
 function hodima_social_fields(): array {
 
 	$fields = [];
@@ -288,7 +293,11 @@ function hodima_settings_panels(): array {
 	];
 }
 
-/** همه تنظیمات، ادغام‌شده با پیش‌فرض‌ها. */
+/**
+ * همه تنظیمات، ادغام‌شده با پیش‌فرض‌ها.
+ *
+ * @return array<string, mixed>
+ */
 function hodima_settings(): array {
 
 	static $cache = null;
@@ -308,7 +317,9 @@ function hodima_settings(): array {
 		}
 	}
 
-	return $cache = $settings;
+	$cache = $settings;
+
+	return $cache;
 }
 
 /** یک مقدار از تنظیمات. */
@@ -316,7 +327,11 @@ function hodima_setting( string $key ): mixed {
 	return hodima_settings()[ $key ] ?? null;
 }
 
-/** تب یک فیلد (از قابش). */
+/**
+ * تب یک فیلد (از قابش).
+ *
+ * @param array<string, mixed> $field
+ */
 function hodima_settings_field_section( array $field ): string {
 	return (string) ( hodima_settings_panels()[ $field['panel'] ?? '' ]['section'] ?? '' );
 }
@@ -375,6 +390,7 @@ add_action( 'admin_menu', static function (): void {
  * تا خطا بی‌صدا پنهان نماند.
  *
  * @param mixed $input
+ * @return array<string, mixed>
  */
 function hodima_settings_sanitize( $input ): array {
 
@@ -383,27 +399,28 @@ function hodima_settings_sanitize( $input ): array {
 
 	foreach ( hodima_settings_fields() as $key => $field ) {
 
-		$raw = $input[ $key ] ?? null;
-
-		$clean[ $key ] = match ( $field['type'] ) {
-			'toggle'   => ! empty( $raw ),
-			'image'    => hodima_settings_sanitize_image( $raw ),
-			'url'      => hodima_settings_sanitize_url( $key, $raw ),
-			'tel'      => hodima_settings_sanitize_phone( $key, $raw ),
-			'ga'       => hodima_settings_sanitize_ga( $raw ),
-			'urllist'  => hodima_settings_sanitize_url_list( $raw ),
-			'hostlist' => hodima_settings_sanitize_host_list( $key, $raw ),
-			'textarea' => sanitize_textarea_field( is_string( $raw ) ? $raw : '' ),
-			// عدد در بازه min/max؛ ورودی خالی/نامعتبر = پیش‌فرض
-			'number'   => is_numeric( $raw ) ? min( (int) ( $field['max'] ?? PHP_INT_MAX ), max( (int) ( $field['min'] ?? 0 ), (int) $raw ) ) : (int) $field['default'],
-			'select'   => isset( $field['options'][ (string) $raw ] ) ? (string) $raw : (string) $field['default'],
-			// #abc → #aabbcc (input type=color فقط شش رقمی می‌پذیرد)
-			'color'    => ( $hex = sanitize_hex_color( is_string( $raw ) ? trim( $raw ) : '' ) ) ? hodima_rgb_hex( hodima_hex_rgb( $hex ) ) : strtolower( (string) $field['default'] ),
-			default    => sanitize_text_field( is_string( $raw ) ? $raw : '' ),
-		};
+		// رفتار هر نوع: enum Hodima_Setting_Type (inc/classes)؛ نوع ناشناخته مثل قبل = متن
+		$clean[ $key ] = hodima_setting_type( $field )->sanitize( $key, $field, $input[ $key ] ?? null );
 	}
 
 	return $clean;
+}
+
+/**
+ * نوع یک فیلد تنظیمات.
+ *
+ * @param array<string, mixed> $field
+ */
+function hodima_setting_type( array $field ): Hodima_Setting_Type {
+	return Hodima_Setting_Type::tryFrom( (string) ( $field['type'] ?? '' ) ) ?? Hodima_Setting_Type::Text;
+}
+
+/** رنگ: #abc → #aabbcc (input type=color فقط شش رقمی می‌پذیرد)؛ نامعتبر = پیش‌فرض. */
+function hodima_settings_sanitize_color( mixed $raw, string $fallback ): string {
+
+	$hex = sanitize_hex_color( is_string( $raw ) ? trim( $raw ) : '' );
+
+	return $hex ? hodima_rgb_hex( hodima_hex_rgb( $hex ) ) : strtolower( $fallback );
 }
 
 function hodima_settings_sanitize_image( mixed $raw ): int {
@@ -551,9 +568,8 @@ add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
 
 	wp_enqueue_media();
 
-	$base = '/inc/theme-settings/';
-	wp_enqueue_style( 'hodima-theme-settings', hodima_URI . $base . 'admin.css', [], hodima_asset_version( $base . 'admin.css' ) );
-	wp_enqueue_script( 'hodima-theme-settings', hodima_URI . $base . 'admin.js', [ 'media-editor' ], hodima_asset_version( $base . 'admin.js' ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
+	hodima_enqueue_asset( 'hodima-theme-settings', 'inc/theme-settings/admin.css' );
+	hodima_enqueue_asset( 'hodima-theme-settings', 'inc/theme-settings/admin.js', [ 'media-editor' ], [ 'in_footer' => true, 'strategy' => 'defer' ] );
 } );
 
 /**
@@ -697,7 +713,9 @@ function hodima_settings_render_page(): void {
  * یک قاب: سرتیتر (آیکون، عنوان، توضیح)، فیلدهای آزاد در شبکه، بعد زیرگروه‌ها
  * (کارت‌های نماد اعتماد یا ردیف‌های شبکه‌ها).
  *
- * @param array<string, array> $fields فیلدهای همین قاب، به ترتیب تعریف
+ * @param array<string, mixed>                $panel
+ * @param array<string, array<string, mixed>> $fields فیلدهای همین قاب، به ترتیب تعریف
+ * @param array<string, mixed>                $settings
  */
 function hodima_settings_render_panel( string $key, array $panel, array $fields, array $settings ): void {
 
@@ -778,6 +796,7 @@ function hodima_settings_panel_head( string $id, string $title, string $help = '
 /**
  * نمونه کوچک سایت با پالت فعلی (تب «برند و رنگ‌ها»). admin.js با تغییر هر رنگ
  * متغیرهای همین ظرف را عوض می‌کند تا نتیجه پیش از ذخیره دیده شود.
+ * @param array<string, mixed> $settings
  */
 function hodima_settings_palette_preview( array $settings ): void {
 
@@ -809,7 +828,7 @@ function hodima_settings_palette_preview( array $settings ): void {
 }
 
 /**
- * @param array{panel:string, type:string, label:string, default:mixed, group?:string, help?:string, placeholder?:string, wide?:bool, preview?:string} $field
+ * @param array{panel:string, type:string, label:string, default:mixed, group?:string, help?:string, placeholder?:string, wide?:bool, preview?:string, options?:array<string, string>, min?:int, max?:int} $field
  */
 function hodima_settings_render_field( string $key, array $field, mixed $value ): void {
 
@@ -818,10 +837,11 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 	$help      = $field['help'] ?? '';
 	$help_id   = $id . '-help';
 	$described = '' !== $help ? ' aria-describedby="' . esc_attr( $help_id ) . '"' : '';
-	$wide      = ( $field['wide'] ?? in_array( $field['type'], [ 'textarea', 'urllist', 'hostlist', 'image' ], true ) ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
+	$type      = hodima_setting_type( $field );
+	$wide      = ( $field['wide'] ?? $type->is_wide() ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
 	?>
 	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">
-		<?php if ( 'toggle' === $field['type'] ) : ?>
+		<?php if ( Hodima_Setting_Type::Toggle === $type ) : ?>
 			<?php /* کاشی کلید: کل کادر قابل کلیک؛ توضیح داخل همان کادر */ ?>
 			<label class="hodima-toggle" for="<?php echo esc_attr( $id ); ?>">
 				<input type="checkbox" role="switch" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( (bool) $value ); ?><?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
@@ -835,7 +855,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			</label>
 			<?php $help = ''; // توضیح بالاتر چاپ شد ?>
 
-		<?php elseif ( 'color' === $field['type'] ) : ?>
+		<?php elseif ( Hodima_Setting_Type::Color === $type ) : ?>
 			<?php $default = strtolower( (string) $field['default'] ); ?>
 			<label class="hodima-swatch" for="<?php echo esc_attr( $id ); ?>">
 				<input type="color" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" data-hodima-color="<?php echo esc_attr( str_replace( [ 'color_', '_' ], [ '', '-' ], $key ) ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
@@ -851,7 +871,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			</button>
 			<?php $help = ''; // توضیح بالاتر چاپ شد ?>
 
-		<?php elseif ( 'image' === $field['type'] ) : ?>
+		<?php elseif ( Hodima_Setting_Type::Image === $type ) : ?>
 			<?php
 			$image_id = (int) $value;
 			$header   = 'header' === ( $field['preview'] ?? '' );
@@ -876,9 +896,9 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 
 		<?php else : ?>
 			<label class="hodima-field__label" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
-			<?php if ( 'textarea' === $field['type'] ) : ?>
+			<?php if ( Hodima_Setting_Type::Textarea === $type ) : ?>
 				<textarea id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" rows="4"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>><?php echo esc_textarea( (string) $value ); ?></textarea>
-			<?php elseif ( 'number' === $field['type'] ) : ?>
+			<?php elseif ( Hodima_Setting_Type::Number === $type ) : ?>
 				<input
 					type="number"
 					id="<?php echo esc_attr( $id ); ?>"
@@ -889,13 +909,13 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					inputmode="numeric"
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				>
-			<?php elseif ( 'select' === $field['type'] ) : ?>
+			<?php elseif ( Hodima_Setting_Type::Select === $type ) : ?>
 				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
 					<?php foreach ( (array) ( $field['options'] ?? [] ) as $option => $label ) : ?>
 						<option value="<?php echo esc_attr( (string) $option ); ?>" <?php selected( (string) $value, (string) $option ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>
-			<?php elseif ( 'urllist' === $field['type'] || 'hostlist' === $field['type'] ) : ?>
+			<?php elseif ( $type->is_list() ) : ?>
 				<textarea
 					id="<?php echo esc_attr( $id ); ?>"
 					name="<?php echo esc_attr( $name ); ?>"
@@ -907,22 +927,14 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				><?php echo esc_textarea( (string) $value ); ?></textarea>
 			<?php else : ?>
-				<?php
-				$input_type = match ( $field['type'] ) {
-					'url'   => 'url',
-					'tel'   => 'tel',
-					default => 'text',
-				};
-				$is_ltr = in_array( $field['type'], [ 'url', 'tel', 'ga' ], true );
-				?>
 				<input
-					type="<?php echo esc_attr( $input_type ); ?>"
+					type="<?php echo esc_attr( $type->input_type() ); ?>"
 					id="<?php echo esc_attr( $id ); ?>"
 					name="<?php echo esc_attr( $name ); ?>"
 					value="<?php echo esc_attr( (string) $value ); ?>"
 					<?php echo isset( $field['placeholder'] ) ? 'placeholder="' . esc_attr( $field['placeholder'] ) . '"' : ''; ?>
-					<?php echo $is_ltr ? 'dir="ltr"' : ''; ?>
-					<?php echo 'ga' === $field['type'] ? 'pattern="G-[A-Za-z0-9]{4,16}" autocomplete="off" spellcheck="false"' : ''; ?>
+					<?php echo $type->is_ltr() ? 'dir="ltr"' : ''; ?>
+					<?php echo Hodima_Setting_Type::Ga === $type ? 'pattern="G-[A-Za-z0-9]{4,16}" autocomplete="off" spellcheck="false"' : ''; ?>
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				>
 			<?php endif; ?>
@@ -963,31 +975,23 @@ function hodima_logo_html(): string {
 }
 
 /**
- * کانال‌های تماس پیکربندی‌شده برای پنجره پشتیبانی.
+ * کانال‌های تماس پیکربندی‌شده برای پنجره پشتیبانی، به ترتیب enum
+ * Hodima_Contact_Channel (تماس، واتس‌اپ، روبیکا، تلگرام). کانال بدون مقدار رد می‌شود.
  *
- * @return list<array{key:string, url:string, label:string, aria:string}>
+ * @return list<Hodima_Contact_Link>
  */
 function hodima_contact_channels(): array {
 
-	$channels = [];
-	$phone    = (string) hodima_setting( 'phone' );
+	$links = [];
 
-	if ( '' !== $phone ) {
-		$channels[] = [ 'key' => 'call', 'url' => 'tel:' . $phone, 'label' => 'تماس تلفنی', 'aria' => 'تماس تلفنی با شماره ' . $phone ];
-	}
-
-	foreach ( [
-		'whatsapp' => [ 'whatsapp_url', 'واتس‌اپ' ],
-		'rubika'   => [ 'rubika_url', 'روبیکا' ],
-		'telegram' => [ 'telegram_url', 'تلگرام' ],
-	] as $key => [ $setting, $label ] ) {
-		$url = (string) hodima_setting( $setting );
-		if ( '' !== $url ) {
-			$channels[] = [ 'key' => $key, 'url' => $url, 'label' => $label, 'aria' => 'ارتباط از طریق ' . $label ];
+	foreach ( Hodima_Contact_Channel::cases() as $channel ) {
+		$value = (string) hodima_setting( $channel->setting() );
+		if ( '' !== $value ) {
+			$links[] = new Hodima_Contact_Link( $channel, $value );
 		}
 	}
 
-	return $channels;
+	return $links;
 }
 
 /**
@@ -1095,7 +1099,11 @@ function hodima_socials_visible_here(): bool {
  * اصلی (hover؛ ×۰٫۷۳ همان نسبت #1b244d به #25316a) و نقطه میانی گرادیان.
  * ========================================================================= */
 
-/** «#rrggbb» → [r, g, b] */
+/**
+ * «#rrggbb» → [r, g, b]
+ *
+ * @return array{int, int, int}
+ */
 function hodima_hex_rgb( string $hex ): array {
 	$hex = ltrim( $hex, '#' );
 	if ( 3 === strlen( $hex ) ) {
@@ -1104,7 +1112,11 @@ function hodima_hex_rgb( string $hex ): array {
 	return array_map( 'hexdec', str_split( substr( str_pad( $hex, 6, '0' ), 0, 6 ), 2 ) );
 }
 
-/** [r, g, b] → «#rrggbb» */
+/**
+ * [r, g, b] → «#rrggbb»
+ *
+ * @param array<int, int|float> $rgb
+ */
 function hodima_rgb_hex( array $rgb ): string {
 	return '#' . implode( '', array_map( static fn( $c ): string => str_pad( dechex( max( 0, min( 255, (int) round( $c ) ) ) ), 2, '0', STR_PAD_LEFT ), $rgb ) );
 }
@@ -1192,7 +1204,7 @@ function hodima_enqueue_google_analytics(): void {
 		'hodima-gtag',
 		'https://www.googletagmanager.com/gtag/js?id=' . rawurlencode( $ga_id ),
 		[],
-		null, // پارامتر نسخه به آدرس گوگل اضافه نشود
+		null, // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- پارامتر نسخه به آدرس گوگل اضافه نشود
 		[ 'in_footer' => false, 'strategy' => 'async' ]
 	);
 
@@ -1227,5 +1239,5 @@ add_action( 'update_option_' . HODIMA_SETTINGS_OPTION, static function (): void 
 	}
 
 	// هدر و فوتر در همه صفحات کش‌شده تغییر کرده‌اند
-	do_action( 'litespeed_purge_all' );
+	do_action( 'litespeed_purge_all' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- API خود لایت‌اسپید
 } );

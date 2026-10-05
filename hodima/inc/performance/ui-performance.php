@@ -202,5 +202,5 @@ function hodima_print_critical_css(): void {
         $critical_css .= '.error-404-number,.highlight-number{background:linear-gradient(45deg,var(--hodima-primary,#25316a),var(--hodima-secondary,#607bbd));-webkit-background-clip:text;-webkit-text-fill-color:transparent}';
     }
 
-    echo '<style id="hodima-critical-css">' . $critical_css . '</style>' . "\n";
+    echo '<style id="hodima-critical-css">' . $critical_css . '</style>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS ثابت همین تابع
 }

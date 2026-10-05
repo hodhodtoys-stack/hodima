@@ -5,6 +5,8 @@
  * Description: قالب نمایش تکی مقالات وبلاگ در قالب هدهد یکپارچه با سیستم رسانه و باکس‌های بازشونده
  */
 
+declare(strict_types=1);
+
 defined( 'ABSPATH' ) || exit;
 
 get_header(); 
@@ -14,7 +16,8 @@ get_header();
     <?php 
     // شروع حلقه وردپرس برای نمایش محتوای مقاله
     while ( have_posts() ) : the_post(); 
-        $post_id = get_the_ID(); // دریافت آیدی مقاله فعلی برای سیستم رسانه
+        // آیدی مقاله برای سیستم رسانه (قبلا $post_id: این قالب در فضای سراسری PHP اجرا می‌شود)
+        $hodima_post_id = (int) get_the_ID();
     ?>
 
         <!-- 1. بخش مسیرنما (Breadcrumb): همان مسیر اسکیما (inc/breadcrumb.php) -->
@@ -30,18 +33,18 @@ get_header();
                 
                 <!-- ستون اول (سمت راست): هوک متن معرفی -->
                 <div class="intro-content">
-                    <?php echo hodima_shortcode( 'hook_intro', [ 'id' => $post_id, 'context' => 'post' ] ); // خروجی افزونه Hodima Media ?>
+                    <?php echo hodima_shortcode( 'hook_intro', [ 'id' => $hodima_post_id, 'context' => 'post' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?>
                 </div>
 
                 <!-- ستون دوم (سمت چپ): ویدیو یا تصویر شاخص -->
                 <div class="video-content">
                     <?php 
-                    $video_output = hodima_shortcode( 'hook_video', [ 'id' => $post_id, 'context' => 'post' ] );
+                    $hodima_video_output = hodima_shortcode( 'hook_video', [ 'id' => $hodima_post_id, 'context' => 'post' ] );
                     // اگر هوک ویدیو چیزی برگرداند، آن را نمایش بده، در غیر این صورت تصویر شاخص
-                    if ( ! empty( trim( $video_output ) ) && strpos( $video_output, '<' ) !== false ) {
-                        echo $video_output;
+                    if ( '' !== trim( $hodima_video_output ) && str_contains( $hodima_video_output, '<' ) ) {
+                        echo $hodima_video_output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media
                     } elseif ( has_post_thumbnail() ) {
-                        the_post_thumbnail('large', array('class' => 'single-post-image'));
+                        the_post_thumbnail( 'large', [ 'class' => 'single-post-image' ] );
                     }
                     ?>
                 </div>
@@ -54,13 +57,13 @@ get_header();
             <div class="single-post-content">
                 <?php 
                 // دریافت محتوای اصلی مقاله
-                $post_content = apply_filters('the_content', get_the_content());
+                $hodima_post_content = apply_filters( 'the_content', get_the_content() ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- فیلتر خود وردپرس
 
                 // قرار دادن محتوا در آغوش شورت‌کد نمایش بیشتر
                 if ( shortcode_exists('expand_blog_content') ) {
-                    echo do_shortcode('[expand_blog_content height="400"]' . $post_content . '[/expand_blog_content]');
+                    echo do_shortcode( '[expand_blog_content height="400"]' . $hodima_post_content . '[/expand_blog_content]' );
                 } else {
-                    echo $post_content;
+                    echo $hodima_post_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- متن مقاله (the_content)
                 }
                 ?>
             </div>
@@ -68,8 +71,8 @@ get_header();
 
         <?php
         // بدون افزونه Hodima Media (یا بدون محتوا) کل بخش نمایش داده نمی‌شود
-        $hodima_voice = hodima_shortcode( 'hook_voice', [ 'id' => $post_id, 'context' => 'post' ] );
-        $hodima_faq   = hodima_shortcode( 'hook_faq', [ 'id' => $post_id, 'context' => 'post' ] );
+        $hodima_voice = hodima_shortcode( 'hook_voice', [ 'id' => $hodima_post_id, 'context' => 'post' ] );
+        $hodima_faq   = hodima_shortcode( 'hook_faq', [ 'id' => $hodima_post_id, 'context' => 'post' ] );
         ?>
         <?php if ( '' !== $hodima_voice || '' !== $hodima_faq ) : ?>
         <!-- 4. بخش پادکست و سوالات متداول (FAQ) -->
@@ -78,14 +81,14 @@ get_header();
                 <?php if ( '' !== $hodima_voice ) : ?>
                 <!-- بخش پادکست -->
                 <div class="voice-content">
-                    <?php echo $hodima_voice; // خروجی شورت‌کد افزونه ?>
+                    <?php echo $hodima_voice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه ?>
                 </div>
                 <?php endif; ?>
 
                 <?php if ( '' !== $hodima_faq ) : ?>
                 <!-- بخش سوالات متداول (FAQ) -->
                 <div class="faq-content">
-                    <?php echo $hodima_faq; // خروجی شورت‌کد افزونه ?>
+                    <?php echo $hodima_faq; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه ?>
                 </div>
                 <?php endif; ?>
             </div>
@@ -116,7 +119,7 @@ get_header();
          * یا برای مقاله بی‌دسته فقط عنوان خالی).
          */
         $hodima_related = hodima_related_post_ids(
-            (int) $post_id,
+            $hodima_post_id,
             max( 0, (int) hodima_setting( 'blog_related_limit' ) ),
             (string) hodima_setting( 'blog_related_source' )
         );

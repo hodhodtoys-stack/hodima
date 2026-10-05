@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * ============================================================ */
 add_filter( 'the_content', 'hodima_lazyload_content_iframes', 99 );
 
-function hodima_lazyload_content_iframes( $content ) {
+function hodima_lazyload_content_iframes( mixed $content ): mixed {
 
     // لایت‌اسپید خودش lazy load آیفریم دارد و src را با data-src جایگزین
     // می‌کند. اجرای همزمان هر دو مکانیزم روی یک آیفریم، بعضی امبدها
@@ -34,12 +34,12 @@ function hodima_lazyload_content_iframes( $content ) {
 
     return (string) preg_replace_callback(
         '/<iframe\b([^>]*)>/i',
-        static function ( array $match ): string {
+        static function ( array $found ): string {
 
-            $attributes = $match[1];
+            $attributes = $found[1];
 
             if ( preg_match( '/\bloading\s*=/i', $attributes ) ) {
-                return $match[0];
+                return $found[0];
             }
 
             return '<iframe loading="lazy"' . $attributes . '>';
@@ -57,9 +57,10 @@ function hodima_lazyload_content_iframes( $content ) {
  * زودتر از اسکریپت defer شده اجرا می‌شود و با خطای undefined می‌شکند —
  * دقیقا همان چیزی که اسکریپت‌های ووکامرس را از کار می‌اندازد.
  * ============================================================ */
-add_filter( 'script_loader_tag', 'hodima_defer_script_tag', 10, 3 );
+// دو آرگومان کافی است (src استفاده نمی‌شد)
+add_filter( 'script_loader_tag', 'hodima_defer_script_tag', 10, 2 );
 
-function hodima_defer_script_tag( $tag, $handle, $src ) {
+function hodima_defer_script_tag( mixed $tag, mixed $handle ): mixed {
 
     /*
      * اگر لایت‌اسپید فعال است، این کار را به او واگذار کن.

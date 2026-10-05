@@ -10,6 +10,8 @@
  * موجودی را جداگانه تشخیص می‌دادند و روی همین سایت با هم نمی‌خواندند.
  */
 
+declare(strict_types=1);
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -116,7 +118,7 @@ add_action( 'wp_enqueue_scripts', static function (): void {
  * woocommerce-loop-product__title می‌آید و تغییری نمی‌کند.
  * ===================================================================== */
 function hodima_loop_product_title_h3(): void {
-	echo '<h3 class="' . esc_attr( apply_filters( 'woocommerce_product_loop_title_classes', 'woocommerce-loop-product__title' ) ) . '">' . esc_html( get_the_title() ) . '</h3>';
+	echo '<h3 class="' . esc_attr( apply_filters( 'woocommerce_product_loop_title_classes', 'woocommerce-loop-product__title' ) ) . '">' . esc_html( get_the_title() ) . '</h3>'; // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- فیلتر خود ووکامرس
 }
 
 function hodima_render_upsells( int $limit = 6 ): void {
