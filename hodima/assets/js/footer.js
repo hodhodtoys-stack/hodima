@@ -21,7 +21,8 @@
 		return;
 	}
 
-	const mobile = window.matchMedia( '(max-width: 48rem)' );
+	// همان نقطه شکست footer.css (width <= 768px)
+	const mobile = window.matchMedia( '(max-width: 768px)' );
 	// ستون فرم مشاوره همیشه باز است و دکمه ندارد
 	const columns = [ ...container.querySelectorAll( '.footer-col' ) ];
 	const toggles = columns.filter( ( col ) => ! col.classList.contains( 'footer-form-col' ) );

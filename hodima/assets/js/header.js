@@ -58,8 +58,11 @@
 			return;
 		}
 
-		// همان نقطه شکست CSS منو
-		const desktop = window.matchMedia( '(min-width: 992px)' );
+		// همان نقطه شکست CSS منو (header.css: width <= 1024px = منوی موبایل). تا 2.9.1
+		// اینجا 992 بود: در عرض ۹۹۲ تا ۱۰۲۴ منوی کشویی موبایل نمایش داده می‌شد ولی
+		// JS آن را دسکتاپ می‌دانست (aria-hidden برداشته می‌شد و صفحه‌خوان منوی بسته را می‌خواند).
+		// JS پایین آورده نمی‌شود، پس نگارش قدیمی min-width (نه بازه‌ای) برای مرورگر قدیمی.
+		const desktop = window.matchMedia( '(min-width: 1025px)' );
 		const HAMBURGER = 'M4 6h16M4 12h16m-7 6h7';
 		const CLOSE = 'M6 18L18 6M6 6l12 12';
 

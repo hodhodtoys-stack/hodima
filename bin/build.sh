@@ -19,7 +19,22 @@ package() {
 	echo "✔ dist/$name.zip"
 }
 
-package "$root" hodima
+# قالب: CSS سورس مدرن است؛ در کپی قالب برای مرورگرهای قدیمی پایین آورده و
+# minify می‌شود (bin/build-css.mjs، Lightning CSS) و هم‌ارزی هر قانون با سورس
+# در Chromium بررسی می‌شود (tools/wp-harness/css-equiv.mjs). بدون node_modules:
+#   npm ci   (یک بار؛ در محیط ابری مثل GitHub Actions خودکار)
+[ -d "$root/node_modules/lightningcss" ] || ( cd "$root" && npm ci --no-audit --no-fund --silent )
+stage="$dist/.stage"
+mkdir -p "$stage" && cp -r "$root/hodima" "$stage/hodima"
+( cd "$root" && node bin/build-css.mjs "$stage/hodima" )
+( cd "$root" && node tools/wp-harness/css-equiv.mjs "$root/hodima" "$stage/hodima" >"$dist/css-equiv.log" ) || {
+	cat "$dist/css-equiv.log"
+	echo "✘ CSS ساخته‌شده با سورس هم‌ارز نیست (بالا)؛ ZIP قالب ساخته نشد" >&2
+	exit 1
+}
+echo "✔ CSS ساخته‌شده با سورس هم‌ارز است"
+package "$stage" hodima
+rm -rf "$stage"
 for plugin in hodima-core hodima-seo hodima-commerce hodima-media; do
 	package "$root/plugins" "$plugin"
 done

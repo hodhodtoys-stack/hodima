@@ -66,7 +66,7 @@
 		font-size: 0.6875rem;
 	}
 
-	@media (width < 783px) {
+	@media (width <= 782px) {
 		--hs-top: 46px;
 		inline-size: auto;
 		margin-inline: 0.625rem;
@@ -101,7 +101,7 @@
 		font-size: 0.875rem;
 	}
 
-	@media (width < 783px) {
+	@media (width <= 782px) {
 		padding: 1.125rem 1.25rem;
 	}
 }
@@ -122,7 +122,7 @@
 	background: rgb(255 255 255 / 0.14);
 	font-size: 1.75rem;
 
-	@media (width < 783px) {
+	@media (width <= 782px) {
 		inline-size: 2.75rem;
 		block-size: 2.75rem;
 		font-size: 1.375rem;
@@ -190,7 +190,7 @@
 	gap: 1.5rem;
 	margin-block-start: 1.25rem;
 
-	@media (width < 960px) {
+	@media (width <= 959px) {
 		grid-template-columns: minmax(0, 1fr);
 		gap: 1rem;
 	}
@@ -222,7 +222,7 @@
 	}
 
 	/* تبلت و موبایل: یک ردیف لغزنده بالای محتوا، بدون عنوان گروه‌ها */
-	@media (width < 960px) {
+	@media (width <= 959px) {
 		inset-block-start: var(--hs-top);
 		z-index: 6;
 		flex-direction: row;
@@ -294,7 +294,7 @@
 		}
 	}
 
-	@media (width < 960px) {
+	@media (width <= 959px) {
 		flex-shrink: 0;
 		white-space: nowrap;
 	}
@@ -381,7 +381,7 @@
 	&.hodima-panel--half {
 		grid-column: auto;
 
-		@media (width < 1280px) {
+		@media (width <= 1279px) {
 			grid-column: 1 / -1;
 		}
 	}
@@ -451,7 +451,7 @@
 	gap: 1.125rem;
 	padding: 1.25rem;
 
-	@media (width < 783px) {
+	@media (width <= 782px) {
 		padding: 1rem;
 	}
 }
@@ -922,12 +922,12 @@
 		gap: 0.5rem;
 	}
 
-	@media (width < 1280px) {
+	@media (width <= 1279px) {
 		--row-cols: 7rem minmax(0, 1fr) minmax(13rem, 16rem);
 	}
 
 	/* موبایل: نام شبکه بالا، آدرس و آیکون زیر هم */
-	@media (width < 783px) {
+	@media (width <= 782px) {
 		& .hodima-panel__columns {
 			display: none;
 		}
@@ -1091,7 +1091,7 @@
 		background: rgb(255 255 255 / 0.45);
 	}
 
-	@media (width < 600px) {
+	@media (width <= 599px) {
 		display: none;
 	}
 }
@@ -1206,7 +1206,7 @@
 	}
 }
 
-@media (width < 783px) {
+@media (width <= 782px) {
 	.hodima-settings__status-hint {
 		display: none;
 	}
@@ -1539,7 +1539,7 @@
 	}
 }
 
-@media (width < 600px) {
+@media (width <= 599px) {
 	.hodima-home__bar {
 		flex-wrap: wrap;
 	}

@@ -26,7 +26,10 @@ if ( ! reportDir ) {
 const wpRoot = path.join( process.env.HODIMA_HARNESS || '/tmp/hodima-harness', 'wp' );
 fs.mkdirSync( reportDir, { recursive: true } );
 
-const VIEWPORTS = [ { name: 'desktop', width: 1300, height: 900 }, { name: 'mobile', width: 390, height: 844 } ];
+// عرض‌های دیگر (مثلا نزدیک نقطه‌های شکست): HODIMA_VISUAL_WIDTHS="1300,1100,800,390"
+const VIEWPORTS = process.env.HODIMA_VISUAL_WIDTHS
+	? process.env.HODIMA_VISUAL_WIDTHS.split( ',' ).map( Number ).filter( Boolean ).map( ( width ) => ( { name: `w${ width }`, width, height: width < 600 ? 844 : 900 } ) )
+	: [ { name: 'desktop', width: 1300, height: 900 }, { name: 'mobile', width: 390, height: 844 } ];
 const MIME = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.woff': 'font/woff', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif' };
 // PNG خاکستری ۱×۱ برای تصویرهای ناموجود (هر دو طرف یکسان)
 const GREY = Buffer.from( 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN4+P/ffwAJpAPqf4/yxwAAAABJRU5ErkJggg==', 'base64' );
@@ -129,6 +132,19 @@ async function pixelDiff( browser, a, b, diffPath ) {
 	return res;
 }
 
+/*
+ * دو مقدار هم‌معنا. حالت --built (HODIMA_VISUAL_IGNORE_VARS): متن خام متغیرهای
+ * CSS (‎--x‎) کوچک‌شده است (#ffffff → #fff، 0.1 → .1) و مقایسه نمی‌شود؛ مقدار
+ * نهایی هر خصوصیتی که از آن‌ها استفاده می‌کند جدا مقایسه می‌شود.
+ * background-position: «0% 0%» و «0px 0px» یک جا هستند (minify، background: 0 0).
+ */
+const ZERO_POS = /^0(%|px) 0(%|px)$/;
+function sameValue( key, a, b ) {
+	if ( a === b ) return true;
+	if ( process.env.HODIMA_VISUAL_IGNORE_VARS && /^(::(before|after))?--/.test( key ) ) return true;
+	return /background-position$/.test( key ) && ZERO_POS.test( a ?? '' ) && ZERO_POS.test( b ?? '' );
+}
+
 function styleDiff( ref, work ) {
 	const diffs = [];
 	if ( ref.length !== work.length ) diffs.push( `ساختار DOM فرق دارد: ${ ref.length } → ${ work.length } عنصر` );
@@ -145,7 +161,7 @@ function styleDiff( ref, work ) {
 		}
 		const a = ref[ i ].props, b = work[ i ].props;
 		const keys = new Set( [ ...Object.keys( a ), ...Object.keys( b ) ] );
-		const changed = [ ...keys ].filter( ( k ) => a[ k ] !== b[ k ] );
+		const changed = [ ...keys ].filter( ( k ) => ! sameValue( k, a[ k ], b[ k ] ) );
 		if ( changed.length ) diffs.push( `${ ref[ i ].el }: ${ changed.slice( 0, 6 ).map( ( k ) => `${ k }: ${ a[ k ] ?? '∅' } → ${ b[ k ] ?? '∅' }` ).join( ' | ' ) }${ changed.length > 6 ? ` (+${ changed.length - 6 })` : '' }` );
 	}
 	return diffs;

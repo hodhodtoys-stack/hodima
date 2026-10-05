@@ -10,6 +10,8 @@
 # ۳. PHPStan (phpstan.neon.dist)   ← tools/quality/baseline/phpstan.neon
 # ۴. Stylelint (stylelint.config.mjs) ← tools/quality/baseline/stylelint.json
 # ۵. ESLint (eslint.config.mjs)    ← tools/quality/baseline/eslint.json
+# ۶. ساخت CSS قالب (bin/build-css.mjs --check): سورس با Lightning CSS برای مرورگرهای
+#    هدف ساخته می‌شود (بدون نوشتن)؛ خطای تجزیه، بازه اکید @media و @layer رد می‌شوند
 # خطاهای قدیمی ثبت‌شده در baseline رد نمی‌شوند؛ هر خطای جدید رد می‌شود.
 #
 # پیش‌نیاز: composer install و npm ci در ریشه مخزن. در محیط ابری Claude که
@@ -85,6 +87,13 @@ if want css; then
 	if need node_modules/.bin/stylelint Stylelint "npm ci"; then
 		node_modules/.bin/stylelint "hodima/**/*.css" -f json > /dev/null 2> "$tmp/stylelint.json"
 		ratchet stylelint "$tmp/stylelint.json" "$base/stylelint.json"
+	fi
+	if need node_modules/lightningcss "Lightning CSS" "npm ci"; then
+		if node bin/build-css.mjs --check > "$tmp/build-css.txt" 2>&1; then
+			echo "  ✔ $(tail -1 "$tmp/build-css.txt" | sed 's/^✔ //')"
+		else
+			echo "  ✘ ساخت CSS:"; sed 's/^/    /' "$tmp/build-css.txt" | head -20; fail=1
+		fi
 	fi
 fi
 

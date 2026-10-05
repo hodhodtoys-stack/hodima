@@ -4,21 +4,18 @@
 		"color-function-alias-notation": 5,
 		"color-function-notation": 5,
 		"csstools/use-logical": 1,
-		"media-feature-range-notation": 1,
 		"property-no-vendor-prefix": 1
 	},
 	"hodima/assets/css/archive-blog.css": {
-		"color-function-alias-notation": 3,
+		"color-function-alias-notation": 2,
 		"csstools/use-logical": 1,
-		"declaration-no-important": 83,
-		"media-feature-range-notation": 4
+		"declaration-no-important": 83
 	},
 	"hodima/assets/css/cart-page.css": {
 		"alpha-value-notation": 3,
 		"color-function-alias-notation": 3,
 		"color-function-notation": 3,
-		"declaration-no-important": 19,
-		"media-feature-range-notation": 1
+		"declaration-no-important": 19
 	},
 	"hodima/assets/css/footer.css": {
 		"alpha-value-notation": 15,
@@ -26,7 +23,6 @@
 		"color-function-notation": 15,
 		"csstools/use-logical": 2,
 		"declaration-no-important": 1,
-		"media-feature-range-notation": 3,
 		"no-descending-specificity": 6
 	},
 	"hodima/assets/css/header.css": {
@@ -35,7 +31,6 @@
 		"color-function-notation": 3,
 		"csstools/use-logical": 14,
 		"declaration-no-important": 45,
-		"media-feature-range-notation": 5,
 		"no-descending-specificity": 9,
 		"no-duplicate-selectors": 3,
 		"property-no-vendor-prefix": 1,
@@ -45,32 +40,28 @@
 		"color-function-alias-notation": 2,
 		"csstools/use-logical": 1,
 		"declaration-no-important": 79,
-		"font-family-no-missing-generic-family-keyword": 1,
-		"media-feature-range-notation": 2
+		"font-family-no-missing-generic-family-keyword": 1
 	},
 	"hodima/assets/css/shop-page.css": {
-		"color-function-alias-notation": 2,
+		"color-function-alias-notation": 1,
 		"declaration-no-important": 40,
-		"media-feature-range-notation": 4,
 		"no-duplicate-selectors": 2
 	},
 	"hodima/assets/css/single-post.css": {
-		"color-function-alias-notation": 5,
+		"color-function-alias-notation": 2,
 		"csstools/use-logical": 5,
 		"declaration-no-important": 21,
-		"media-feature-range-notation": 3,
 		"no-descending-specificity": 3,
 		"shorthand-property-no-redundant-values": 1
 	},
 	"hodima/assets/css/single-product.css": {
 		"alpha-value-notation": 10,
-		"color-function-alias-notation": 37,
+		"color-function-alias-notation": 35,
 		"color-function-notation": 10,
 		"csstools/use-logical": 18,
 		"declaration-block-no-redundant-longhand-properties": 10,
 		"declaration-no-important": 237,
 		"declaration-property-value-keyword-no-deprecated": 1,
-		"media-feature-range-notation": 16,
 		"no-descending-specificity": 12,
 		"no-duplicate-selectors": 8,
 		"property-no-deprecated": 1,
@@ -79,16 +70,14 @@
 		"selector-pseudo-element-colon-notation": 7
 	},
 	"hodima/assets/css/taxonomy-product_cat.css": {
-		"color-function-alias-notation": 3,
+		"color-function-alias-notation": 2,
 		"csstools/use-logical": 7,
 		"declaration-no-important": 62,
-		"media-feature-range-notation": 4,
 		"no-descending-specificity": 8
 	},
 	"hodima/assets/css/template-page-videos.css": {
-		"color-function-alias-notation": 3,
+		"color-function-alias-notation": 1,
 		"declaration-no-important": 98,
-		"media-feature-range-notation": 5,
 		"no-descending-specificity": 1,
 		"no-duplicate-selectors": 1,
 		"shorthand-property-no-redundant-values": 2
@@ -103,7 +92,6 @@
 		"csstools/use-logical": 6,
 		"declaration-block-no-redundant-longhand-properties": 1,
 		"declaration-no-important": 40,
-		"media-feature-range-notation": 5,
 		"no-descending-specificity": 8,
 		"no-duplicate-selectors": 2,
 		"shorthand-property-no-redundant-values": 6
@@ -116,11 +104,10 @@
 		"shorthand-property-no-redundant-values": 1
 	},
 	"hodima/style.css": {
-		"color-function-alias-notation": 3,
+		"color-function-alias-notation": 2,
 		"csstools/use-logical": 3,
 		"declaration-block-no-redundant-longhand-properties": 1,
 		"declaration-no-important": 8,
-		"media-feature-range-notation": 3,
 		"no-descending-specificity": 12
 	}
 }

@@ -2,7 +2,7 @@
     --cat-max-width: 1440px;
     --cat-gap: 10px;
     --cat-radius: 12px;
-    --cat-shadow: 0 2px 10px rgba(var(--hodima-primary-rgb, 37, 49, 106), .04);
+    --cat-shadow: var(--hodima-shadow-xs);
     --cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
     --cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
     --cat-grid-gap: 1px;
@@ -34,7 +34,7 @@
 .section-breadcrumb {
     background-color: var(--cat-bg-light-blue) !important;
     padding: 6px 15px !important; 
-    border-radius: 10px !important;
+    border-radius: var(--hodima-radius-lg) !important;
     margin: 0 auto !important;
     font-size: .85rem !important;
     color: var(--hodima-text-muted, #5d6785) !important;
@@ -160,7 +160,7 @@
     gap: 15px;
     background: #fff;
     padding: 12px 15px;
-    border-radius: 10px;
+    border-radius: var(--hodima-radius-lg);
     margin-bottom: 20px;
     border: 1px solid var(--hodima-border-light, #d9e1f0);
     flex-wrap: nowrap;
@@ -202,7 +202,7 @@
     background: var(--hodima-surface-soft, #f7f9fd);
     border: 1px solid var(--hodima-border-light, #d9e1f0);
     padding: 6px 14px;
-    border-radius: 20px;
+    border-radius: var(--hodima-radius-3xl);
     color: var(--hodima-text-dark, #111111);
     font-size: 13px;
     cursor: pointer;
@@ -248,7 +248,7 @@
     right: auto;
     background: #fff;
     border: 1px solid var(--hodima-border-light, #d9e1f0);
-    border-radius: 10px;
+    border-radius: var(--hodima-radius-lg);
     box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), .08);
     padding: 6px;
     display: flex;
@@ -272,7 +272,7 @@
     background: transparent;
     border: none;
     padding: 6px 8px;
-    border-radius: 6px;
+    border-radius: var(--hodima-radius-sm);
     color: var(--hodima-text-dark, #111111);
     font-size: 13px;
     cursor: pointer;
@@ -292,7 +292,7 @@
     font-weight: 700;
 }
 
-@media (max-width: 1140px) {
+@media (width <= 1140px) {
     .section-breadcrumb {
         width: 100% !important;
     }
@@ -301,7 +301,7 @@
     }
 }
 
-@media (max-width: 992px) {
+@media (width <= 992px) {
     .product-card-scope ul.products {
         grid-template-columns: repeat(3, 1fr) !important;
     }
@@ -316,7 +316,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
     .product-card-scope ul.products {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: var(--cat-grid-gap-mobile) !important;
@@ -458,7 +458,7 @@
     unicode-bidi: isolate;
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
     .section-products .woocommerce-pagination .page-numbers:not(ul) {
         min-width: 38px;
         height: 38px;

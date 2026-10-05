@@ -245,7 +245,7 @@
 /* ==========================================================
    ۸. رسپانسیو — تبلت
    ========================================================== */
-@media (max-width: 64rem) {
+@media (width <= 1024px) {
     .footer-col {
         flex: 0 0 50%;
     }
@@ -254,7 +254,7 @@
 /* ==========================================================
    ۹. رسپانسیو — موبایل و آکاردئون
    ========================================================== */
-@media (max-width: 48rem) {
+@media (width <= 768px) {
     .custom-site-footer {
         padding-top: 1.75rem;
     }
@@ -492,7 +492,7 @@ p.footer-copyright {
         margin-inline: auto; /* وسط‌چین زیر عنوان، مستقل از جهت */
         inline-size: 2.5rem;
         block-size: 0.1875rem;
-        border-radius: 999px;
+        border-radius: var(--hodima-radius-pill);
         background: linear-gradient(90deg, var(--hodima-primary, #25316a), var(--hodima-secondary, #607bbd), var(--hodima-third, #b6c2f3));
     }
 }
@@ -553,7 +553,7 @@ p.footer-copyright {
     white-space: nowrap;
 }
 
-@media (max-width: 48rem) {
+@media (width <= 768px) {
     .hodima-socials {
         --socials-tile: 3rem;
         padding-block: 1.25rem 1.5rem;

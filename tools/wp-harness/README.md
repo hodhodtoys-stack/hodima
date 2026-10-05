@@ -15,6 +15,12 @@ tools/wp-harness/compare-with-ref.sh 7fa8063
 # ظاهر قبل/بعد: استایل محاسبه‌شده هر عنصر + عکس پیکسل‌به‌پیکسل (دسکتاپ ۱۳۰۰، موبایل ۳۹۰)
 tools/wp-harness/visual-compare.sh                 # همه صفحه‌ها، کار فعلی در برابر آخرین commit
 tools/wp-harness/visual-compare.sh HEAD home 404   # فقط چند صفحه
+tools/wp-harness/visual-compare.sh --built         # طرف «کار» با CSS ساخته‌شده ZIP (minify + پایین‌آوردن)
+HODIMA_VISUAL_WIDTHS="1180,1000,800,420" tools/wp-harness/visual-compare.sh   # عرض‌های دیگر (نزدیک نقطه‌های شکست)
+
+# هم‌ارزی CSS قانون‌به‌قانون (بدون صفحه؛ همه فایل‌ها حتی single-product.css که صفحه‌اش در ابزار تست نیست)
+tools/wp-harness/css-equiv.sh            # CSS آخرین commit در برابر کار فعلی
+tools/wp-harness/css-equiv.sh --built    # سورس در برابر خروجی bin/build-css.mjs (bin/build.sh هم همین را اجبارا اجرا می‌کند)
 
 # بررسی GitHub Actions به‌صورت محلی: بدون هشدار PHP، بدون صفحه ناقص، بدون @id تکراری
 tools/wp-harness/ci-check.sh [ref]
@@ -48,6 +54,7 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 | `admin-render.php <slug>` | رندر یک صفحه پیشخوان با حساب مدیر |
 | `wp-eval.php '<php>'` | اجرای کد دلخواه روی سایت تست (`HARNESS=1 HODIMA_WP=… php wp-eval.php '…'`) |
 | `extract.py` / `compare.py` / `integrity.py` | استخراج، مقایسه و بررسی گراف |
+| `css-equiv.sh` / `css-equiv.mjs` | هم‌ارزی دو نسخه CSS قالب در Chromium، مستقل از HTML: از CSSOM برای هر «@media/@supports + انتخابگر تکی + خصوصیت longhand» مقدار نهایی (important برنده، وگرنه آخرین)؛ nesting مثل مرورگر باز می‌شود (والد چندتایی = `:is()`)، توکن‌های `tokens.css` هر طرف جایگزین می‌شوند و نگارش‌های هم‌معنا یکی (`#fff`/`#ffffff`، `transparent`، `width <= 768px` = `max-width: 768px`، `48rem` = `768px`، `bold` = `700`…). ترتیب نسبی قانون‌های *متفاوت* را نمی‌سنجد. در مرحله ۵ نوسازی، حذف `backdrop-filter` توسط minify را گرفت که عکس‌ها نمی‌دیدند |
 | `visual-compare.sh` / `visual-compare.mjs` | مقایسه ظاهر دو نسخه با Chromium (`playwright-core` از `npm ci`): `getComputedStyle` همه عنصرها به ترتیب DOM و عکس کل صفحه؛ CSS/JS هر طرف از پوشه خودش. بازنویسی هم‌ارز CSS (خصوصیات منطقی، nesting، …) باید «یکسان» بدهد. تصویرهای آپلود = PNG خاکستری ثابت، ویدیو/صوت = خطای فوری (بدون چرخنده)، انیمیشن خاموش. عکس‌ها و `*-diff.png` (قرمز = پیکسل متفاوت) در `$HODIMA_HARNESS/visual` |
 | `zip-install-check.sh` + `zip-install.php` | نصب و فعال‌سازی واقعی از `dist/*.zip` (اول `bash bin/build.sh`) روی کپی جدای وردپرس، در هر دو ترتیب «اول قالب» و «اول افزونه‌ها»، هر گام یک فرایند PHP جدا؛ «Cannot redeclare» و هر خطای PHP را می‌گیرد، بعد صفحه اصلی را می‌سازد |
 | `ci-check.sh [ref]` | کار «render» در GitHub Actions: رد با هشدار PHP، صفحه خالی/ناقص، `@id` تکراری؛ تفاوت اسکیما با ref فقط گزارش |

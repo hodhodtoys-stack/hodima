@@ -27,7 +27,7 @@
     float: none !important;
     background: var(--card-bg) !important;
     border: 1px solid var(--card-border) !important;
-    border-radius: 8px !important;
+    border-radius: var(--hodima-radius-md) !important;
     padding: 6px !important;
     text-align: center !important;
     box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), .03) !important;
@@ -55,7 +55,7 @@
     height: auto !important;
     aspect-ratio: 1/1 !important;
     object-fit: contain !important;
-    border-radius: 8px !important;
+    border-radius: var(--hodima-radius-md) !important;
     margin-bottom: 12px !important;
     background: transparent !important;
     transition: transform .25s ease !important;
@@ -137,14 +137,14 @@
 }
 
 /* --- Media Queries --- */
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
     .product-card-scope ul.products {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 15px !important;
     }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
     .product-card-scope ul.products {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px !important;

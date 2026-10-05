@@ -19,7 +19,7 @@
 }
 .section-breadcrumb{
     padding:10px 20px !important; /* مطابق مرجع */
-    border-radius:8px !important; /* مطابق مرجع */
+    border-radius:var(--hodima-radius-md) !important; /* مطابق مرجع */
     margin:0 auto !important;
     font-size:.85rem !important;
     color:var(--hodima-text-muted,#5d6785) !important;
@@ -61,7 +61,7 @@
 .blog-page-container{
     margin:0 auto !important;
     padding:20px !important;
-    border-radius:12px !important; /* مطابق مرجع */
+    border-radius:var(--hodima-radius-xl) !important; /* مطابق مرجع */
 }
 .blog-page-grid{
     display:grid !important;
@@ -72,9 +72,9 @@
 }
 .blog-page-card{
     background:#fff !important;
-    border-radius:10px !important;
+    border-radius:var(--hodima-radius-lg) !important;
     overflow:hidden !important;
-    box-shadow:0 2px 10px rgba(var(--hodima-primary-rgb, 37, 49, 106), .04) !important;
+    box-shadow:var(--hodima-shadow-xs) !important;
     transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease !important;
     display:flex !important;
     flex-direction:column !important;
@@ -149,20 +149,20 @@
     display:inline-block;
     padding:8px 16px;
     background:#fff;
-    border-radius:20px;
+    border-radius:var(--hodima-radius-3xl);
     border:1px solid var(--hodima-border-light,#d9e1f0);
     box-shadow:0 2px 5px rgba(var(--hodima-primary-rgb, 37, 49, 106), .05);
 }
-@media (max-width:1140px){.blog-page-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}}
-@media (max-width:992px){
+@media (width <= 1140px) {.blog-page-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}}
+@media (width <= 992px) {
     .blog-page-container{padding:15px !important;}
 }
-@media (max-width:768px){
+@media (width <= 768px) {
     :root { --section-gap: 8px; }
     .hodima-page-wrapper{padding:0 15px;}
     .blog-page-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important;}
 }
-@media (max-width:480px){
+@media (width <= 480px) {
     :root { --section-gap: 6px; }
     .hodima-page-wrapper{padding:0 10px;}
     .blog-page-grid{grid-template-columns:1fr !important;}

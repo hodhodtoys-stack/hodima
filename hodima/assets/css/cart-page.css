@@ -43,7 +43,7 @@
         .wc-proceed-to-checkout a.checkout-button {
             background: linear-gradient(90deg, #FF9800, #F57C00, #FFB74D) !important;
             color: #fff !important;
-            border-radius: 10px !important;
+            border-radius: var(--hodima-radius-lg) !important;
             padding: 15px !important;
             font-weight: 800 !important;
             text-align: center;
@@ -62,7 +62,7 @@
         /* پنهان‌سازی دکمه تا رسیدن به حداقل سفارش: افزونه Hodima Commerce (cart-progress.css) */
 
         /* ریسپانسیو و اصلاحات موبایل */
-        @media (max-width: 768px) {
+        @media (width <= 768px) {
             .woocommerce-cart .woocommerce { flex-direction: column; }
             .woocommerce-cart-form, .cart-collaterals { width: 100%; flex: none; }
             
@@ -77,7 +77,7 @@
                 max-width: 80px !important;
                 height: auto;
                 margin: 0 auto;
-                border-radius: 8px;
+                border-radius: var(--hodima-radius-md);
                 box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             }
             /* مخفی کردن لیبل پیش‌فرض ووکامرس کنار عکس در موبایل */

@@ -4,7 +4,7 @@ Theme URI: https://hodima.com
 Author: آرین فتحی
 Author URI: https://hodima.com
 Description: قالب اختصاصی فروشگاه عمده‌فروشی (فقط نمایش). امکانات سئو، فروشگاه و رسانه در افزونه‌های همراه Hodima Core، Hodima SEO، Hodima Commerce و Hodima Media هستند.
-Version: 2.9.1
+Version: 2.9.2
 Requires at least: 6.5
 Requires PHP: 8.4
 Text Domain: hodima
@@ -29,10 +29,11 @@ Text Domain: hodima
     --woo-secondary: var(--hodima-secondary);
     --woo-border: var(--hodima-border-light);
 
-    --radius: 8px;
-    --space-s: 8px;
-    --space-m: 15px;
-    --space-l: 25px;
+    /* نام‌های قدیمی؛ مقدار از tokens.css */
+    --radius: var(--hodima-radius-md);
+    --space-s: var(--hodima-space-s);
+    --space-m: var(--hodima-space-m);
+    --space-l: var(--hodima-space-l);
 }
 
 /* ==========================================================
@@ -40,11 +41,11 @@ Text Domain: hodima
 ========================================================== */
 html { font-size: 14px; }
 
-@media (min-width: 768px) {
+@media (width >= 768px) {
     html { font-size: 15px; }
 }
 
-@media (min-width: 1024px) {
+@media (width >= 1024px) {
     html { font-size: 16px; }
 }
 
@@ -120,7 +121,7 @@ input[type="button"],
 .woocommerce a.button,
 .woocommerce input.button,
 .woocommerce #respond input#submit {
-    border-radius: 8px;
+    border-radius: var(--hodima-radius-md);
     border: 1px solid transparent;
     background: var(--hodima-gradient-main);
     color: #ffffff !important;
@@ -152,7 +153,7 @@ input[type="number"],
 textarea,
 select {
     border: 1px solid var(--hodima-border-light);
-    border-radius: 8px;
+    border-radius: var(--hodima-radius-md);
     background: #ffffff;
     color: var(--hodima-text-dark);
     transition: border-color .2s ease, box-shadow .2s ease;
@@ -168,7 +169,7 @@ input[type="number"]:focus,
 textarea:focus,
 select:focus {
     border-color: var(--hodima-secondary);
-    box-shadow: 0 0 0 3px rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.15);
+    box-shadow: var(--hodima-ring);
     outline: none;
 }
 
@@ -189,7 +190,7 @@ select:focus {
     padding: 0 10px !important;
 }
 
-@media (min-width: 768px) {
+@media (width >= 768px) {
     .hodima-container,
     .custom-product-page-container {
         padding: 0 20px !important;

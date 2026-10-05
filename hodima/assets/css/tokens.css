@@ -68,14 +68,52 @@
     --hodima-border-light:   #d9e1f0;
 
     /* ── سایه ────────────────────────────────────────────────────── */
+    --hodima-shadow-xs:      0 2px 10px rgb(var(--hodima-primary-rgb), 0.04);   /* کارت‌های ساده (وبلاگ، نظرات) */
     --hodima-shadow-soft:    0 0.25rem 1rem rgba(var(--hodima-primary-rgb), 0.06);
     --hodima-shadow-medium:  0 0.625rem 1.875rem rgba(var(--hodima-primary-rgb), 0.1);
+    --hodima-ring:           0 0 0 3px rgb(var(--hodima-secondary-rgb), 0.15);  /* حلقه فوکوس فیلدها */
 
-    /* ── فاصله و شعاع ────────────────────────────────────────────── */
-    --hodima-radius:         8px;
-    --hodima-space-s:        8px;
-    --hodima-space-m:        15px;
-    --hodima-space-l:        25px;
+    /* ── شعاع گوشه (نوسازی قالب، مرحله ۵) ──────────────────────────
+       مقدارها همان‌هایی‌اند که در CSS قالب بیشترین استفاده را داشتند؛
+       جایگزینی مقدار ثابت با توکن ظاهر را عوض نمی‌کند. */
+    --hodima-radius-xs:      4px;
+    --hodima-radius-sm:      6px;
+    --hodima-radius-md:      8px;
+    --hodima-radius-lg:      10px;
+    --hodima-radius-xl:      12px;
+    --hodima-radius-2xl:     16px;
+    --hodima-radius-3xl:     20px;
+    --hodima-radius-pill:    999px;
+    --hodima-radius-round:   50%;
+    --hodima-radius:         var(--hodima-radius-md);   /* نام قدیمی */
+
+    /* ── فاصله (px؛ rem با اندازه فونت پایه واکنش‌گرا ۱۴/۱۵/۱۶ عوض می‌شود) ──
+       پله‌ها = پرکاربردترین مقدارهای فعلی قالب (۱۰، ۱۵، ۲۰ و ۸ بیشترین). */
+    --hodima-space-1:        4px;
+    --hodima-space-2:        6px;
+    --hodima-space-3:        8px;
+    --hodima-space-4:        10px;
+    --hodima-space-5:        12px;
+    --hodima-space-6:        15px;
+    --hodima-space-7:        20px;
+    --hodima-space-8:        25px;
+    --hodima-space-9:        40px;
+    --hodima-space-s:        var(--hodima-space-3);     /* نام‌های قدیمی */
+    --hodima-space-m:        var(--hodima-space-6);
+    --hodima-space-l:        var(--hodima-space-8);
+
+    /* ── نقطه‌های شکست (فقط مرجع: متغیر CSS در @media کار نمی‌کند) ──
+       نگارش واحد: بازه‌ای با <= و >=، مثلا @media (width <= 768px) و
+       (width >= 993px) برای مکمل (992 + 1). < و > ممنوع است: نسخه پایین‌آورده
+       آن‌ها را Chrome زیر ۱۰۴ نمی‌فهمد (bin/build-css.mjs خطا می‌دهد).
+       JS (matchMedia) پایین آورده نمی‌شود: (max-width: 768px) با همان عدد.
+         اصلی:  480 گوشی · 768 تبلت عمودی (نقطه اصلی موبایل) · 992 تبلت افقی · 1200 دسکتاپ
+         خاص:   400 و 600 صفحه محصول · 1024 منوی همبرگری هدر، کارت محصول و
+                فونت پایه · 1140 شبکه چهار به سه ستون (وبلاگ، ویدیوها، دسته، محصول)
+                · 1025 تا 1400 فاصله فشرده هدر
+       موارد خاص عمدا یکی نشدند: جابه‌جایی‌شان ظاهر دستگاه‌های رایج را عوض
+       می‌کند (۱۱۴۰ ← ۱۲۰۰ آی‌پد افقی ۱۱۸۰ را سه‌ستونه می‌کند؛ ۴۰۰ ← ۴۸۰ گوشی‌های
+       ۴۱۲ تا ۴۳۰). یکی کردنشان تصمیم طراحی است، نه بازنویسی هم‌ارز. */
 
     /* ── رنگ‌های وضعیت ───────────────────────────────────────────────
        اینها خارج از پالت سه‌رنگی هستند چون معنا دارند نه هویت برند:

@@ -318,7 +318,7 @@
 /* ==========================================================
    ۵. واکنش‌گرایی دسکتاپ‌های متوسط تا بزرگ 
 ========================================================== */
-@media (min-width: 1025px) and (max-width: 1400px) {
+@media (1025px <= width <= 1400px) {
     .header__container {
         gap: 1rem;
         padding-inline: 1rem;
@@ -344,7 +344,7 @@
     display: none;
 }
 
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
     .header__mobile-toggle {
         display: block;
         background: transparent;
@@ -501,7 +501,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
     .header__container {
         height: var(--header-height-mobile);
     }
@@ -753,7 +753,7 @@ img.popup__icon {
 /* ==========================================================
    FIX: تراز وسط باکس سرچ در موبایل
 ========================================================== */
-@media (max-width: 1024px) {
+@media (width <= 1024px) {
     .header__container {
         display: flex;
         align-items: center;
