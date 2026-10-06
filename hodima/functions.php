@@ -47,6 +47,7 @@ function hodima_load_theme_files(): void {
 
 		// ۲. هسته قالب
 		'inc/helpers.php',
+		'inc/media-sections.php',                // بخش‌های «رسانه» (معرفی، ویدیو، پادکست، FAQ) در قالب‌ها
 		'inc/theme-settings/theme-settings.php', // برند، تماس، فوتر و Google Analytics
 		'inc/home-layout.php',                   // چیدمان صفحه اصلی (تب «صفحه اصلی» تنظیمات قالب)
 		'inc/blog.php',                          // نام وبلاگ و مقالات مرتبط (تب «وبلاگ»)

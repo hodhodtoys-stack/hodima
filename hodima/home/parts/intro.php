@@ -6,7 +6,10 @@
  * فراخوانی: get_template_part( 'home/parts/intro', null, $args ) — از چیدمان
  * «تنظیمات قالب ← صفحه اصلی» (home/builder.php) یا شورت‌کد قدیمی [section07].
  * متن معرفی و ویدیو از کادر «رسانه» همین برگه (شورت‌کدهای hook_intro و
- * hook_video افزونه Hodima Media)؛ بدون افزونه بخش چاپ نمی‌شود.
+ * hook_video افزونه Hodima Media، با inc/media-sections.php)؛ بدون افزونه بخش
+ * چاپ نمی‌شود. چیدمان سه‌ستونه (با «اهداف و مزایا») مال صفحه اصلی است، پس
+ * template-parts/media/intro-media.php را به کار نمی‌برد؛ ستون‌ها با بودن
+ * افزونه چاپ می‌شوند (H1 صفحه اصلی همین‌جاست — front-page.php).
  *
  * @var array{features_title?:string, features?:list<string>, video_title?:string} $args
  */
@@ -19,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 
 $args = wp_parse_args( $args ?? [], hodima_home_section_defaults( 'intro' ) );
 
-if ( ! shortcode_exists( 'hook_intro' ) && ! shortcode_exists( 'hook_video' ) ) {
+if ( ! hodima_theme_media_available( 'intro' ) && ! hodima_theme_media_available( 'video' ) ) {
 	return;
 }
 
@@ -38,11 +41,11 @@ $features = array_values( array_filter( array_map( 'trim', (array) $args['featur
 
 	<div class="intro-media-wrapper">
 
-		<?php if ( shortcode_exists( 'hook_intro' ) ) : ?>
+		<?php if ( hodima_theme_media_available( 'intro' ) ) : ?>
 			<div class="intro-content-box">
 				<h1 id="arian-section01-title" class="section-col-title"><?php echo esc_html( $page_title ); ?></h1>
 				<div class="intro-hook-content">
-					<?php echo do_shortcode( '[hook_intro]' ); // خروجی افزونه Hodima Media ?>
+					<?php echo hodima_theme_media_html( 'intro' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?>
 				</div>
 			</div>
 		<?php endif; ?>
@@ -64,13 +67,13 @@ $features = array_values( array_filter( array_map( 'trim', (array) $args['featur
 			</div>
 		<?php endif; ?>
 
-		<?php if ( shortcode_exists( 'hook_video' ) ) : ?>
+		<?php if ( hodima_theme_media_available( 'video' ) ) : ?>
 			<div class="intro-video-box" aria-label="<?php echo esc_attr( (string) $args['video_title'] ?: 'ویدیو' ); ?>">
 				<?php if ( '' !== (string) $args['video_title'] ) : ?>
 					<h2 class="section-col-title"><?php echo esc_html( $args['video_title'] ); ?></h2>
 				<?php endif; ?>
 				<div class="video-content-wrapper">
-					<?php echo do_shortcode( '[hook_video]' ); // خروجی افزونه Hodima Media ?>
+					<?php echo hodima_theme_media_html( 'video' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?>
 				</div>
 			</div>
 		<?php endif; ?>

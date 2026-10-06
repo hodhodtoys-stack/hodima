@@ -33,7 +33,7 @@ $hodima_sections = array_values( array_filter( hodima_home_layout(), static fn( 
  * افزونه رسانه هست). بدون آن، صفحه اصلی نباید بی‌H1 بماند: عنوان پنهان
  * برای موتور جستجو و صفحه‌خوان.
  */
-$hodima_has_h1 = shortcode_exists( 'hook_intro' ) && in_array( 'intro', array_column( $hodima_sections, 'type' ), true );
+$hodima_has_h1 = hodima_theme_media_available( 'intro' ) && in_array( 'intro', array_column( $hodima_sections, 'type' ), true );
 ?>
 
 <main id="primary" class="site-main hodima-home">

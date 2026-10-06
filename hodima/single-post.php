@@ -25,32 +25,24 @@ get_header();
             <?php echo hodima_breadcrumb_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در inc/breadcrumb.php ?>
         </section>
 
-<!-- 2. بخش معرفی (تگ H1) + متن معرفی و ویدیو -->
-        <section class="hodima-section-box section-intro-media">
-            <h1 class="single-post-title"><?php the_title(); ?></h1>
-            
-            <div class="video-thumbnail-wrapper single-post-media">
-                
-                <!-- ستون اول (سمت راست): هوک متن معرفی -->
-                <div class="intro-content">
-                    <?php echo hodima_shortcode( 'hook_intro', [ 'id' => $hodima_post_id, 'context' => 'post' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?>
-                </div>
-
-                <!-- ستون دوم (سمت چپ): ویدیو یا تصویر شاخص -->
-                <div class="video-content">
-                    <?php 
-                    $hodima_video_output = hodima_shortcode( 'hook_video', [ 'id' => $hodima_post_id, 'context' => 'post' ] );
-                    // اگر هوک ویدیو چیزی برگرداند، آن را نمایش بده، در غیر این صورت تصویر شاخص
-                    if ( '' !== trim( $hodima_video_output ) && str_contains( $hodima_video_output, '<' ) ) {
-                        echo $hodima_video_output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media
-                    } elseif ( has_post_thumbnail() ) {
-                        the_post_thumbnail( 'large', [ 'class' => 'single-post-image' ] );
-                    }
-                    ?>
-                </div>
-
-            </div>
-        </section>
+        <?php
+        /*
+         * 2. بخش معرفی (تگ H1) + متن معرفی و ویدیو (template-parts/media/intro-media.php).
+         * اگر هوک ویدیو چیزی برنگرداند، تصویر شاخص مقاله جای ویدیو.
+         */
+        $hodima_media_atts   = [ 'id' => $hodima_post_id, 'context' => 'post' ];
+        $hodima_intro_output = hodima_theme_media_html( 'intro', $hodima_media_atts ); // ترتیب قبلی: اول معرفی، بعد ویدیو
+        $hodima_video_output = hodima_theme_media_html( 'video', $hodima_media_atts );
+        if ( '' === $hodima_video_output || ! str_contains( $hodima_video_output, '<' ) ) {
+            $hodima_video_output = has_post_thumbnail() ? (string) get_the_post_thumbnail( null, 'large', [ 'class' => 'single-post-image' ] ) : '';
+        }
+        get_template_part( 'template-parts/media/intro-media', null, [
+            'layout' => 'post',
+            'title'  => get_the_title(),
+            'intro'  => $hodima_intro_output,
+            'video'  => $hodima_video_output,
+        ] );
+        ?>
 
         <!-- 3. بخش محتوای متنی مقاله -->
         <section class="hodima-section-box section-description">
@@ -70,30 +62,13 @@ get_header();
         </section>
 
         <?php
-        // بدون افزونه Hodima Media (یا بدون محتوا) کل بخش نمایش داده نمی‌شود
-        $hodima_voice = hodima_shortcode( 'hook_voice', [ 'id' => $hodima_post_id, 'context' => 'post' ] );
-        $hodima_faq   = hodima_shortcode( 'hook_faq', [ 'id' => $hodima_post_id, 'context' => 'post' ] );
+        // 4. پادکست و سوالات متداول؛ بدون افزونه Hodima Media (یا بدون محتوا) کل بخش نمایش داده نمی‌شود
+        get_template_part( 'template-parts/media/voice-faq', null, [
+            'layout' => 'post',
+            'voice'  => hodima_theme_media_html( 'voice', $hodima_media_atts ),
+            'faq'    => hodima_theme_media_html( 'faq', $hodima_media_atts ),
+        ] );
         ?>
-        <?php if ( '' !== $hodima_voice || '' !== $hodima_faq ) : ?>
-        <!-- 4. بخش پادکست و سوالات متداول (FAQ) -->
-        <section class="hodima-section-box section-voice-faq">
-            <div class="voice-faq-wrapper">
-                <?php if ( '' !== $hodima_voice ) : ?>
-                <!-- بخش پادکست -->
-                <div class="voice-content">
-                    <?php echo $hodima_voice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه ?>
-                </div>
-                <?php endif; ?>
-
-                <?php if ( '' !== $hodima_faq ) : ?>
-                <!-- بخش سوالات متداول (FAQ) -->
-                <div class="faq-content">
-                    <?php echo $hodima_faq; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه ?>
-                </div>
-                <?php endif; ?>
-            </div>
-        </section>
-        <?php endif; ?>
 
         <!-- 5. بخش دیدگاه‌ها (کاملا مجزا) -->
         <section class="hodima-section-box section-comments">

@@ -42,10 +42,10 @@ while ( have_posts() ) :
 	// کادر «رسانه» برگه (افزونه Hodima Media)
 	$hodima_media = function_exists( 'hodima_media_is_enabled' ) && hodima_media_is_enabled( $hodima_page_id, 'post' );
 	$hodima_atts  = [ 'id' => $hodima_page_id, 'context' => 'post' ];
-	$hodima_intro = $hodima_media ? hodima_shortcode( 'hook_intro', $hodima_atts ) : '';
-	$hodima_video = $hodima_media ? hodima_shortcode( 'hook_video', $hodima_atts ) : '';
-	$hodima_voice = $hodima_media ? hodima_shortcode( 'hook_voice', $hodima_atts ) : '';
-	$hodima_faq   = $hodima_media ? hodima_shortcode( 'hook_faq', $hodima_atts ) : '';
+	$hodima_intro = $hodima_media ? hodima_theme_media_html( 'intro', $hodima_atts ) : '';
+	$hodima_video = $hodima_media ? hodima_theme_media_html( 'video', $hodima_atts ) : '';
+	$hodima_voice = $hodima_media ? hodima_theme_media_html( 'voice', $hodima_atts ) : '';
+	$hodima_faq   = $hodima_media ? hodima_theme_media_html( 'faq', $hodima_atts ) : '';
 	?>
 
 	<main id="primary" class="site-main hodima-page">
@@ -58,35 +58,16 @@ while ( have_posts() ) :
 					</header>
 				<?php endif; ?>
 
-				<?php if ( '' !== $hodima_intro || '' !== $hodima_video ) : ?>
-					<section class="hodima-section-box section-intro-media">
-						<div class="video-thumbnail-wrapper">
-							<?php if ( '' !== $hodima_intro ) : ?>
-								<div class="intro-content"><?php echo $hodima_intro; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?></div>
-							<?php endif; ?>
-							<?php if ( '' !== $hodima_video ) : ?>
-								<div class="video-content"><?php echo $hodima_video; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?></div>
-							<?php endif; ?>
-						</div>
-					</section>
-				<?php endif; ?>
+				<?php
+				// معرفی + ویدیو و پادکست + FAQ: همان بخش‌های مقاله (template-parts/media/)
+				get_template_part( 'template-parts/media/intro-media', null, [ 'layout' => 'page', 'intro' => $hodima_intro, 'video' => $hodima_video ] );
+				?>
 
 				<div class="entry-content">
 					<?php echo $hodima_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی the_content ?>
 				</div>
 
-				<?php if ( '' !== $hodima_voice || '' !== $hodima_faq ) : ?>
-					<section class="hodima-section-box section-voice-faq">
-						<div class="voice-faq-wrapper">
-							<?php if ( '' !== $hodima_voice ) : ?>
-								<div class="voice-content"><?php echo $hodima_voice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?></div>
-							<?php endif; ?>
-							<?php if ( '' !== $hodima_faq ) : ?>
-								<div class="faq-content"><?php echo $hodima_faq; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?></div>
-							<?php endif; ?>
-						</div>
-					</section>
-				<?php endif; ?>
+				<?php get_template_part( 'template-parts/media/voice-faq', null, [ 'layout' => 'post', 'voice' => $hodima_voice, 'faq' => $hodima_faq ] ); ?>
 
 				<?php
 				wp_link_pages( [

@@ -71,23 +71,15 @@ get_header( 'shop' );
 	?>
 	<?php if ( $hodima_is_first ) : ?>
 
-		<section class="hodima-section-box section-intro-video">
-			<div class="intro-box">
-				<h1 class="category-title"><?php echo esc_html( $hodima_title ); ?></h1>
-				<?php if ( shortcode_exists( 'hook_intro' ) ) : ?>
-					<?php echo do_shortcode( '[hook_intro]' ); ?>
-				<?php endif; ?>
-			</div>
-
-			<?php if ( shortcode_exists( 'hook_video' ) ) : ?>
-				<?php $hodima_video = do_shortcode( '[hook_video]' ); ?>
-				<?php if ( '' !== trim( $hodima_video ) ) : ?>
-					<div class="video-box">
-						<?php echo $hodima_video; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?>
-					</div>
-				<?php endif; ?>
-			<?php endif; ?>
-		</section>
+		<?php
+		// template-parts/media/intro-media.php (چیدمان دسته)؛ ستون ویدیو فقط با محتوا
+		get_template_part( 'template-parts/media/intro-media', null, [
+			'layout' => 'category',
+			'title'  => esc_html( $hodima_title ),
+			'intro'  => hodima_theme_media_html( 'intro' ),
+			'video'  => hodima_theme_media_html( 'video' ),
+		] );
+		?>
 
 	<?php else : ?>
 
@@ -172,19 +164,12 @@ get_header( 'shop' );
 		<?php endif; ?>
 
 		<?php
-		$hodima_voice = shortcode_exists( 'hook_voice' ) ? do_shortcode( '[hook_voice]' ) : '';
-		$hodima_faq   = shortcode_exists( 'hook_faq' ) ? do_shortcode( '[hook_faq]' ) : '';
+		get_template_part( 'template-parts/media/voice-faq', null, [
+			'layout' => 'category',
+			'voice'  => hodima_theme_media_html( 'voice' ),
+			'faq'    => hodima_theme_media_html( 'faq' ),
+		] );
 		?>
-		<?php if ( '' !== trim( $hodima_voice . $hodima_faq ) ) : ?>
-			<section class="hodima-section-box section-voice section-faq" aria-label="پادکست و سوالات متداول">
-				<?php if ( '' !== trim( $hodima_voice ) ) : ?>
-					<div class="voice-inner-wrapper"><?php echo $hodima_voice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?></div>
-				<?php endif; ?>
-				<?php if ( '' !== trim( $hodima_faq ) ) : ?>
-					<div class="faq-inner-wrapper"><?php echo $hodima_faq; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?></div>
-				<?php endif; ?>
-			</section>
-		<?php endif; ?>
 
 
 	<?php endif; ?>

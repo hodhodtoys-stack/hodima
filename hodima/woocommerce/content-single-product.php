@@ -163,14 +163,12 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 				 * پس دکمه خرید را از دید اول بیرون نمی‌برد.
 				 */
 				?>
-				<?php if ( shortcode_exists( 'hook_voice' ) && $hp_show( 'podcast' ) ) : ?>
-					<?php
-					// فقط برچسب کوتاه («پادکست») داخل کادر پلیر؛ عنوان کامل برچسب دسترس‌پذیری پلیر می‌ماند
-					$hp_voice = trim( hodima_shortcode( 'hook_voice', [ 'title' => (string) hodima_setting( 'product_podcast_label' ), 'layout' => 'inline' ] ) );
-					?>
-					<?php if ( '' !== $hp_voice ) : ?>
-						<div class="custom-voice-shortcode"><?php echo $hp_voice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?></div>
-					<?php endif; ?>
+				<?php
+				// فقط برچسب کوتاه («پادکست») داخل کادر پلیر؛ عنوان کامل برچسب دسترس‌پذیری پلیر می‌ماند
+				$hp_voice = $hp_show( 'podcast' ) ? hodima_theme_media_html( 'voice', [ 'title' => (string) hodima_setting( 'product_podcast_label' ), 'layout' => 'inline' ] ) : '';
+				?>
+				<?php if ( '' !== $hp_voice ) : ?>
+					<div class="custom-voice-shortcode"><?php echo $hp_voice; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?></div>
 				<?php endif; ?>
 
 				<?php
@@ -224,7 +222,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 	<section class="hodima-section-box section-description" aria-label="<?php echo esc_attr( 'توضیحات ' . $product->get_name() ); ?>">
 		<?php
 		$hp_desc = apply_filters( 'the_content', get_the_content() ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- فیلتر خود وردپرس
-		$hp_faq  = shortcode_exists( 'hook_faq' ) && $hp_show( 'faq' ) ? trim( do_shortcode( '[hook_faq]' ) ) : '';
+		$hp_faq  = $hp_show( 'faq' ) ? hodima_theme_media_html( 'faq' ) : '';
 
 		if ( '' !== $hp_faq ) {
 			$hp_desc .= '<div class="faq-inline-wrapper">' . $hp_faq . '</div>';
@@ -237,7 +235,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 	</section>
 
 	<?php
-	$hp_video   = shortcode_exists( 'hook_video' ) && $hp_show( 'video' ) ? trim( do_shortcode( '[hook_video]' ) ) : '';
+	$hp_video   = $hp_show( 'video' ) ? hodima_theme_media_html( 'video' ) : '';
 	$hp_reviews = shortcode_exists( 'expand_product_reviews' ) && $hp_show( 'reviews' ) ? trim( do_shortcode( '[expand_product_reviews]' ) ) : '';
 	$hp_upsells = max( 0, (int) hodima_setting( 'product_upsells_limit' ) );
 	?>
