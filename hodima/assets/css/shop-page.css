@@ -1,166 +1,227 @@
+/* =========================================================================
+ * صفحه فروشگاه (woocommerce/archive-product.php)
+ * نوسازی قالب، مرحله ۶: nesting، خصوصیات منطقی و توکن‌ها؛ قانون‌های «نسخه ۲»
+ * که برای همان انتخابگرها جدا در انتهای فایل بودند، در قانون اصلی ادغام شدند.
+ * ظاهر بدون تغییر.
+ * ========================================================================= */
+
 :root {
-    --cat-max-width: 1440px;
-    --section-gap: 10px;
-    --cat-radius: 12px;
-    --cat-shadow: var(--hodima-shadow-xs);
-    --cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
-    --cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
-    --cat-grid-gap: 15px;
-    --cat-grid-gap-mobile: 10px;
+	--cat-max-width: 1440px;
+	--section-gap: 10px;
+	--cat-radius: 12px;
+	--cat-shadow: var(--hodima-shadow-xs);
+	--cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
+	--cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
+	--cat-grid-gap: 15px;
+	--cat-grid-gap-mobile: 10px;
 }
 
 .hodima-page-wrapper {
-    max-width: var(--cat-max-width, 1440px) !important;
-    margin: var(--section-gap) auto !important;
-    padding: 0 20px !important; /* مطابق مرجع */
-    display: flex !important;
-    flex-direction: column !important;
-    gap: var(--section-gap) !important; /* یکپارچه‌سازی گپ */
-    box-sizing: border-box !important;
-    font-family: inherit !important;
-    direction: rtl;
+	max-width: var(--cat-max-width, 1440px) !important;
+	margin: var(--section-gap) auto !important;
+	padding: 0 var(--hodima-space-7) !important; /* مطابق مرجع */
+	display: flex;
+	flex-direction: column;
+	gap: var(--section-gap) !important; /* یکپارچه‌سازی گپ */
+	box-sizing: border-box;
+	font-family: inherit;
+	direction: rtl;
 }
 
 .hodima-section-box {
-    width: 100%;
-    border-radius: var(--cat-radius); /* 12px مطابق مرجع */
-    box-shadow: var(--cat-shadow);
-    box-sizing: border-box;
-    padding: 20px;
-    background: #fff;
-    border: 1px solid var(--hodima-border-light, #d9e1f0);
+	width: 100%;
+	border-radius: var(--cat-radius); /* 12px مطابق مرجع */
+	box-shadow: var(--cat-shadow);
+	box-sizing: border-box;
+	padding: var(--hodima-space-7);
+	background: #fff;
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
 }
 
 .section-breadcrumb {
-    background-color: var(--cat-bg-light-blue, var(--hodima-surface-soft, #f7f9fd)) !important;
-    padding: 10px 20px !important; /* مطابق مرجع */
-    border-radius: var(--hodima-radius-md) !important; /* مطابق مرجع */
-    margin: 0 auto !important;
-    font-size: .85rem !important;
-    color: var(--hodima-text-muted, #5d6785) !important;
-    display: block !important;
-    border: 1px solid var(--hodima-border-light, #d9e1f0) !important;
-    max-width: 1400px !important; /* مطابق مرجع */
-    width: 100% !important;
-    box-sizing: border-box !important;
-    font-family: inherit !important;
-    line-height: 1.5 !important;
-}
-.section-breadcrumb a {
-    color: var(--hodima-text-dark, #111111) !important;
-    text-decoration: none !important;
-    transition: color .25s ease !important;
-    font-weight: 500 !important;
-    font-family: inherit !important;
-}
-.section-breadcrumb a:hover {
-    color: var(--hodima-primary, #25316a) !important;
+	background-color: var(--cat-bg-light-blue, var(--hodima-surface-soft, #f7f9fd));
+	padding: var(--hodima-space-4) var(--hodima-space-7); /* مطابق مرجع */
+	border-radius: var(--hodima-radius-md); /* مطابق مرجع */
+	margin: 0 auto;
+	font-size: 0.85rem;
+	color: var(--hodima-text-muted, #5d6785);
+	display: block;
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	max-width: 1400px; /* مطابق مرجع */
+	width: 100%;
+	box-sizing: border-box;
+	font-family: inherit;
+	line-height: 1.5;
+
+	& a {
+		color: var(--hodima-text-dark, #111111) !important;
+		text-decoration: none !important;
+		transition: color 0.25s ease !important;
+		font-weight: 500 !important;
+		font-family: inherit !important;
+
+		&:hover {
+			color: var(--hodima-primary, #25316a) !important;
+		}
+	}
 }
 
 .shop-custom-header {
-    background: linear-gradient(135deg, var(--hodima-surface-soft, #f7f9fd) 0%, var(--hodima-bg-gray, #eef2f8) 100%);
-    text-align: center;
-    padding: 25px 15px;
-    border-radius: var(--cat-radius);
+	background: linear-gradient(135deg, var(--hodima-surface-soft, #f7f9fd) 0%, var(--hodima-bg-gray, #eef2f8) 100%);
+	text-align: center;
+	padding: var(--hodima-space-8) var(--hodima-space-6);
+	border-radius: var(--cat-radius);
 }
-.shop-header-content h1 {
-    color: var(--hodima-text-dark, #111111);
-    font-size: 2rem;
-    font-weight: 800;
-    margin: 0 0 10px;
-    font-family: inherit;
+
+.shop-header-content {
+	& h1 {
+		color: var(--hodima-text-dark, #111111);
+		font-size: 2rem;
+		font-weight: 800;
+		margin: 0 0 var(--hodima-space-4);
+		font-family: inherit;
+	}
+
+	& p {
+		color: var(--hodima-text-muted, #5d6785);
+		font-size: 1.1rem;
+		margin: 0 0 var(--hodima-space-7);
+		font-weight: 500;
+	}
 }
-.shop-header-content p {
-    color: var(--hodima-text-muted, #5d6785);
-    font-size: 1.1rem;
-    margin: 0 0 20px;
-    font-weight: 500;
-}
+
+/* ویژگی‌ها <ul><li> هستند (نسخه ۲؛ قبلا div/span) */
 .shop-features {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-.shop-features li {
-    font-size: .95rem;
-    color: var(--hodima-primary, #25316a);
-    background: #fff;
-    padding: 8px 20px;
-    border-radius: 50px;
-    box-shadow: 0 2px 6px rgba(var(--hodima-primary-rgb, 37, 49, 106), .04);
-    font-weight: 700;
-    border: 1px solid var(--hodima-border-light, #d9e1f0);
+	display: flex;
+	justify-content: center;
+	gap: var(--hodima-space-6);
+	flex-wrap: wrap;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	& li {
+		font-size: 0.95rem;
+		color: var(--hodima-primary, #25316a);
+		background: #fff;
+		padding: var(--hodima-space-3) var(--hodima-space-7);
+		border-radius: 50px;
+		box-shadow: 0 2px 6px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.04);
+		font-weight: 700;
+		border: 1px solid var(--hodima-border-light, #d9e1f0);
+		margin: 0;
+	}
 }
 
 .shop-content-area ul.products {
-    display: grid !important;
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    gap: var(--cat-grid-gap, 15px) !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    list-style: none !important;
-}
-.shop-content-area ul.products::before,
-.shop-content-area ul.products::after {
-    display: none !important;
+	display: grid !important;
+	grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+	gap: var(--cat-grid-gap, 15px) !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	list-style: none !important;
+
+	&::before,
+	&::after {
+		display: none !important;
+	}
 }
 
 @media (width <= 1200px) {
-    .shop-content-area ul.products { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+	.shop-content-area ul.products {
+		grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+	}
 }
+
 @media (width <= 992px) {
-    .shop-content-area ul.products { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
-    .shop-header-content h1 { font-size: 1.8rem; }
-    .shop-header-content p { font-size: 1.05rem; }
+	.shop-content-area ul.products {
+		grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+	}
+
+	.shop-header-content {
+		& h1 {
+			font-size: 1.8rem;
+		}
+
+		& p {
+			font-size: 1.05rem;
+		}
+	}
 }
+
 @media (width <= 768px) {
-    :root { --section-gap: 8px; }
-    .hodima-page-wrapper { padding: 0 15px !important; }
-    .shop-custom-header { padding: 20px 10px; }
-    .shop-header-content h1 { font-size: 1.5rem; }
-    .shop-header-content p { font-size: 1rem; }
-    .shop-content-area ul.products { 
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important; 
-        gap: var(--cat-grid-gap-mobile, 10px) !important; 
-    }
-    .shop-features { gap: 10px; }
-    .shop-features li { font-size: .9rem; padding: 6px 14px; }
+	:root {
+		--section-gap: 8px;
+	}
+
+	.hodima-page-wrapper {
+		padding: 0 var(--hodima-space-6) !important;
+	}
+
+	.shop-custom-header {
+		padding: var(--hodima-space-7) var(--hodima-space-4);
+	}
+
+	.shop-header-content {
+		& h1 {
+			font-size: 1.5rem;
+		}
+
+		& p {
+			font-size: 1rem;
+		}
+	}
+
+	.shop-content-area ul.products {
+		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+		gap: var(--cat-grid-gap-mobile, 10px) !important;
+	}
+
+	.shop-features {
+		gap: var(--hodima-space-4);
+
+		& li {
+			font-size: 0.9rem;
+			padding: var(--hodima-space-2) 14px;
+		}
+	}
 }
+
 @media (width <= 480px) {
-    :root { --section-gap: 6px; }
-    .hodima-page-wrapper { padding: 0 10px !important; }
-}
+	:root {
+		--section-gap: 6px;
+	}
 
-/* =========================================================================
- * نسخه ۲
- * ========================================================================= */
-
-/* ویژگی‌ها حالا <ul><li> (قبلا div/span) */
-.shop-features {
-    margin: 0;
-    padding: 0;
-    list-style: none;
+	.hodima-page-wrapper {
+		padding: 0 var(--hodima-space-4) !important;
+	}
 }
-.shop-features li { margin: 0; }
 
 /* سربرگ فشرده: صفحات ۲ به بعد، برچسب‌ها، جستجو */
-.shop-custom-header--compact { padding: 14px 20px; }
-.shop-compact-title {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 700;
-    line-height: 1.5;
-    color: var(--hodima-text-dark, #111111);
+.shop-custom-header--compact {
+	padding: 14px var(--hodima-space-7);
 }
+
+.shop-compact-title {
+	margin: 0;
+	font-size: 1.2rem;
+	font-weight: 700;
+	line-height: 1.5;
+	color: var(--hodima-text-dark, #111111);
+}
+
 .shop-compact-page {
-    margin-inline-start: 8px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--hodima-text-muted, #5d6785);
+	margin-inline-start: var(--hodima-space-3);
+	font-size: 0.9rem;
+	font-weight: 500;
+	color: var(--hodima-text-muted, #5d6785);
 }
 
 /* باکس محصولات فروشگاه سفید می‌ماند (کلاس section-products رنگ دسته‌ها را دارد) */
-.shop-content-area.section-products { background: #fff; }
+.shop-content-area.section-products {
+	background: #fff;
+}
 
-.shop-description { line-height: 2; }
+.shop-description {
+	line-height: 2;
+}

@@ -1,157 +1,157 @@
 /* ==========================================================
    فوتر سایت هدهدلی — footer.css
-   نسخه: 2.3.0
+   نسخه: 2.4.0 (نوسازی قالب، مرحله ۶: nesting و خصوصیات منطقی؛ ظاهر بدون تغییر)
    ========================================================== */
 
 /* ==========================================================
    ۱. متغیرها و استایل‌های پایه فوتر
    ========================================================== */
 :root {
-    --footer-primary: var(--hodima-primary, #25316a);
-    --footer-primary-hover: var(--hodima-primary-dark, #1b244d);
-    --footer-secondary: var(--hodima-secondary, #607bbd);
-    --footer-third: var(--hodima-third, #b6c2f3);
+	--footer-primary: var(--hodima-primary, #25316a);
+	--footer-primary-hover: var(--hodima-primary-dark, #1b244d);
+	--footer-secondary: var(--hodima-secondary, #607bbd);
+	--footer-third: var(--hodima-third, #b6c2f3);
 
-    --footer-bg: linear-gradient(135deg, var(--hodima-primary, #25316a) 0%, var(--hodima-gradient-deep, #344483) 55%, var(--hodima-secondary, #607bbd) 100%);
-    --footer-surface: rgba(255, 255, 255, 0.08);
-    --footer-surface-hover: rgba(255, 255, 255, 0.14);
-    --footer-border: rgba(var(--hodima-third-rgb, 182, 194, 243), 0.22);
-    --footer-text: rgba(255, 255, 255, 0.82);
-    --footer-heading: #ffffff;
-    --footer-link-hover: var(--hodima-third, #b6c2f3);
-    --footer-note-text: rgba(255, 255, 255, 0.78);
-    --footer-copyright-text: rgba(255, 255, 255, 0.7);
+	--footer-bg: linear-gradient(135deg, var(--hodima-primary, #25316a) 0%, var(--hodima-gradient-deep, #344483) 55%, var(--hodima-secondary, #607bbd) 100%);
+	--footer-surface: rgb(255 255 255 / 0.08);
+	--footer-surface-hover: rgb(255 255 255 / 0.14);
+	--footer-border: rgba(var(--hodima-third-rgb, 182, 194, 243), 0.22);
+	--footer-text: rgb(255 255 255 / 0.82);
+	--footer-heading: #ffffff;
+	--footer-link-hover: var(--hodima-third, #b6c2f3);
+	--footer-note-text: rgb(255 255 255 / 0.78);
+	--footer-copyright-text: rgb(255 255 255 / 0.7);
 
-    --footer-shadow: 0 -0.75rem 2rem rgba(20, 28, 64, 0.18);
-    --footer-card-shadow: 0 0.625rem 1.5rem rgba(16, 24, 40, 0.12);
-    --footer-btn-shadow: 0 0.5rem 1.25rem rgba(17, 17, 17, 0.18);
-    --footer-btn-shadow-hover: 0 0.75rem 1.75rem rgba(17, 17, 17, 0.24);
+	--footer-shadow: 0 -0.75rem 2rem rgb(20 28 64 / 0.18);
+	--footer-card-shadow: 0 0.625rem 1.5rem rgb(16 24 40 / 0.12);
+	--footer-btn-shadow: 0 0.5rem 1.25rem rgb(17 17 17 / 0.18);
+	--footer-btn-shadow-hover: 0 0.75rem 1.75rem rgb(17 17 17 / 0.24);
 }
 
 /* ==========================================================
    ۲. ساختار اصلی فوتر
    ========================================================== */
 .custom-site-footer {
-    background: var(--footer-bg);
-    color: var(--footer-text);
-    padding: 2.5rem 1.25rem 0.75rem;
-    direction: rtl;
-    line-height: 1.85;
-    font-weight: 300;
-    box-sizing: border-box;
-    width: 100%;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: var(--footer-shadow);
-    position: relative;
-    overflow: hidden;
-}
+	background: var(--footer-bg);
+	color: var(--footer-text);
+	padding: 2.5rem 1.25rem 0.75rem;
+	direction: rtl;
+	line-height: 1.85;
+	font-weight: 300;
+	box-sizing: border-box;
+	width: 100%;
+	border-top: 1px solid rgb(255 255 255 / 0.08);
+	box-shadow: var(--footer-shadow);
+	position: relative;
+	overflow: hidden;
 
-.custom-site-footer::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(circle at top right, rgba(var(--hodima-third-rgb, 182, 194, 243), 0.16) 0, transparent 28%),
-        radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.08) 0, transparent 26%);
-    pointer-events: none;
-}
+	&::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background:
+			radial-gradient(circle at top right, rgba(var(--hodima-third-rgb, 182, 194, 243), 0.16) 0, transparent 28%),
+			radial-gradient(circle at bottom left, rgb(255 255 255 / 0.08) 0, transparent 26%);
+		pointer-events: none;
+	}
 
-.custom-site-footer *,
-.custom-site-footer *::before,
-.custom-site-footer *::after {
-    box-sizing: inherit;
+	& *,
+	& *::before,
+	& *::after {
+		box-sizing: inherit;
+	}
 }
 
 .footer-container,
 .footer-copyright {
-    position: relative;
-    z-index: 1;
+	position: relative;
+	z-index: 1;
 }
 
 /* ==========================================================
    ۳. کانتینر اصلی فوتر
    ========================================================== */
 .footer-container {
-    max-width: 90rem;
-    margin: 0 auto;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    row-gap: 0.5rem;
+	max-width: 90rem;
+	margin: 0 auto;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	row-gap: 0.5rem;
 }
 
 /* ==========================================================
    ۴. ستون‌های فوتر
    ========================================================== */
 .footer-col {
-    flex: 0 0 25%;
-    padding: 0 0.9375rem;
-    margin-bottom: 1.875rem;
-    display: flex;
-    flex-direction: column;
-}
+	flex: 0 0 25%;
+	padding: 0 0.9375rem;
+	margin-bottom: 1.875rem;
+	display: flex;
+	flex-direction: column;
 
-.footer-col h2 {
-    color: var(--footer-heading);
-    font-size: 0.95rem; /* کاهش سایز عنوان */
-    margin-top: 0;
-    margin-bottom: 1.25rem;
-    position: relative;
-    padding-bottom: 0.75rem;
-    font-weight: 500; /* کاهش بولد بودن عنوان */
-}
+	& h2 {
+		color: var(--footer-heading);
+		font-size: 0.95rem; /* کاهش سایز عنوان */
+		margin-top: 0;
+		margin-bottom: 1.25rem;
+		position: relative;
+		padding-bottom: 0.75rem;
+		font-weight: 500; /* کاهش بولد بودن عنوان */
 
-.footer-col h2::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 3rem;
-    height: 0.1875rem;
-    background: linear-gradient(90deg, var(--footer-third), var(--footer-secondary));
-    border-radius: 0.125rem;
-    box-shadow: 0 0 0.75rem rgba(var(--hodima-third-rgb, 182, 194, 243), 0.35);
+		&::after {
+			content: '';
+			position: absolute;
+			bottom: 0;
+			inset-inline-start: 0;
+			width: 3rem;
+			height: 0.1875rem;
+			background: linear-gradient(90deg, var(--footer-third), var(--footer-secondary));
+			border-radius: 0.125rem;
+			box-shadow: 0 0 0.75rem rgba(var(--hodima-third-rgb, 182, 194, 243), 0.35);
+		}
+	}
 }
 
 .footer-content {
-    font-size: 0.875rem; /* افزایش سایز متن داخلی */
-    font-weight: 300;
-    text-align: justify;
-    flex-grow: 1;
+	font-size: 0.875rem; /* افزایش سایز متن داخلی */
+	font-weight: 300;
+	text-align: justify;
+	flex-grow: 1;
 }
 
 /* ==========================================================
    ۵. لیست‌ها و آیکون‌ها
    ========================================================== */
 .footer-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
+	list-style: none;
+	padding: 0;
+	margin: 0;
 
-.footer-list li,
-.footer-list a {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    color: var(--footer-text);
-    text-decoration: none;
-    margin-bottom: 0.75rem;
-    font-size: 0.875rem; /* افزایش سایز متن لینک‌ها و لیست‌ها */
-    font-weight: 400;
-    transition: color 0.3s ease, transform 0.3s ease;
-}
+	& li,
+	& a {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		color: var(--footer-text);
+		text-decoration: none;
+		margin-bottom: 0.75rem;
+		font-size: 0.875rem; /* افزایش سایز متن لینک‌ها و لیست‌ها */
+		font-weight: 400;
+		transition: color 0.3s ease, transform 0.3s ease;
+	}
 
-.footer-list a:hover {
-    color: var(--footer-link-hover);
-    transform: translateX(-0.1875rem);
+	& a:hover {
+		color: var(--footer-link-hover);
+		transform: translateX(-0.1875rem);
+	}
 }
 
 .f-icon {
-    width: 1.0625rem;
-    height: 1.0625rem;
-    fill: var(--footer-third);
-    flex-shrink: 0;
+	width: 1.0625rem;
+	height: 1.0625rem;
+	fill: var(--footer-third);
+	flex-shrink: 0;
 }
 
 /* تغییرات اعمال شده روی آدرس برای یکدست شدن رنگ */
@@ -159,206 +159,209 @@
 .footer-address a,
 .footer-address span,
 .footer-address address {
-    display: flex;
-    gap: 0.5rem;
-    align-items: flex-start;
-    margin-bottom: 0.75rem;
-    color: var(--footer-text) !important;
-    text-decoration: none;
-    font-style: normal;
+	display: flex;
+	gap: 0.5rem;
+	align-items: flex-start;
+	margin-bottom: 0.75rem;
+	color: var(--footer-text) !important;
+	text-decoration: none;
+	font-style: normal;
 }
 
 .footer-address .f-icon {
-    margin-top: 0.25rem;
+	margin-top: 0.25rem;
 }
 
 .footer-note {
-    font-size: 0.6875rem;
-    font-weight: 400;
-    color: var(--footer-note-text);
-    background: var(--footer-surface);
-    border: 1px solid var(--footer-border);
-    backdrop-filter: blur(8px);
-    padding: 0.375rem 0.75rem;
-    border-radius: 0.5rem;
-    display: inline-block;
-    margin: 0;
-    box-shadow: var(--footer-card-shadow);
+	font-size: 0.6875rem;
+	font-weight: 400;
+	color: var(--footer-note-text);
+	background: var(--footer-surface);
+	border: 1px solid var(--footer-border);
+	backdrop-filter: blur(8px);
+	padding: 0.375rem 0.75rem;
+	border-radius: 0.5rem;
+	display: inline-block;
+	margin: 0;
+	box-shadow: var(--footer-card-shadow);
 }
 
 /* ==========================================================
    ۶. دکمه‌های شبکه‌های اجتماعی
    ========================================================== */
 .social-box {
-    display: flex;
-    gap: 0.625rem;
-    margin-top: 1.25rem;
-    flex-wrap: wrap;
+	display: flex;
+	gap: 0.625rem;
+	margin-top: 1.25rem;
+	flex-wrap: wrap;
 }
 
 .social-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    background: var(--footer-surface);
-    color: #ffffff;
-    padding: 0.5rem 0.9375rem;
-    border-radius: 3.125rem;
-    font-size: 0.75rem;
-    font-weight: 400;
-    text-decoration: none;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-    box-shadow: var(--footer-btn-shadow);
-}
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	background: var(--footer-surface);
+	color: #ffffff;
+	padding: 0.5rem 0.9375rem;
+	border-radius: 3.125rem;
+	font-size: 0.75rem;
+	font-weight: 400;
+	text-decoration: none;
+	border: 1px solid rgb(255 255 255 / 0.16);
+	backdrop-filter: blur(10px);
+	transition: all 0.3s ease;
+	box-shadow: var(--footer-btn-shadow);
 
-.social-btn svg {
-    width: 0.9375rem;
-    height: 0.9375rem;
-    fill: currentColor;
-}
+	& svg {
+		width: 0.9375rem;
+		height: 0.9375rem;
+		fill: currentcolor;
+	}
 
-.social-btn:hover {
-    background: linear-gradient(135deg, var(--footer-secondary) 0%, var(--footer-primary) 100%);
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.22);
-    transform: translateY(-0.1875rem);
-    box-shadow: var(--footer-btn-shadow-hover);
+	&:hover {
+		background: linear-gradient(135deg, var(--footer-secondary) 0%, var(--footer-primary) 100%);
+		color: #ffffff;
+		border-color: rgb(255 255 255 / 0.22);
+		transform: translateY(-0.1875rem);
+		box-shadow: var(--footer-btn-shadow-hover);
+	}
 }
 
 /* ==========================================================
    ۷. کپی‌رایت
    ========================================================== */
 .footer-copyright {
-    width: 100%;
-    text-align: center;
-    font-size: 0.75rem;
-    font-weight: 300;
-    color: var(--footer-copyright-text);
-    padding-top: 1rem;
-    padding-bottom: 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-    margin-top: 0.625rem;
+	width: 100%;
+	text-align: center;
+	font-size: 0.75rem;
+	font-weight: 300;
+	color: var(--footer-copyright-text);
+	padding-top: 1rem;
+	padding-bottom: 0.75rem;
+	border-top: 1px solid rgb(255 255 255 / 0.12);
+	margin-top: 0.625rem;
 }
 
 /* ==========================================================
    ۸. رسپانسیو — تبلت
    ========================================================== */
 @media (width <= 1024px) {
-    .footer-col {
-        flex: 0 0 50%;
-    }
+	.footer-col {
+		flex: 0 0 50%;
+	}
 }
 
 /* ==========================================================
    ۹. رسپانسیو — موبایل و آکاردئون
    ========================================================== */
 @media (width <= 768px) {
-    .custom-site-footer {
-        padding-top: 1.75rem;
-    }
+	.custom-site-footer {
+		padding-top: 1.75rem;
+	}
 
-    .footer-col {
-        flex: 1 0 100%;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 0;
-        padding: 0;
-    }
+	.footer-col {
+		flex: 1 0 100%;
+		border-bottom: 1px solid rgb(255 255 255 / 0.1);
+		margin-bottom: 0;
+		padding: 0;
 
-    .footer-container > .footer-col:last-child {
-        border-bottom: none;
-    }
+		& h2 {
+			margin: 0;
+			padding: 0.9375rem 0.3125rem;
+			font-size: 0.9rem; /* کاهش سایز عنوان در موبایل */
+			cursor: pointer;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			-webkit-tap-highlight-color: transparent;
+			user-select: none;
 
-    .footer-col h2 {
-        margin: 0;
-        padding: 0.9375rem 0.3125rem;
-        font-size: 0.9rem; /* کاهش سایز عنوان در موبایل */
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        -webkit-tap-highlight-color: transparent;
-        user-select: none;
-    }
+			/* فلش آکاردئون: دو لبه چرخیده (در راست‌به‌چپ لبه چپ = inline-end) */
+			&::after {
+				content: '';
+				position: static;
+				display: block;
+				width: 0.5rem;
+				height: 0.5rem;
+				background: transparent;
+				border-inline-end: 2px solid var(--footer-third);
+				border-bottom: 2px solid var(--footer-third);
+				border-radius: 0;
+				transform: rotate(-45deg);
+				transition: transform 0.3s ease;
+				flex-shrink: 0;
+				box-shadow: none;
+			}
+		}
+	}
 
-    .footer-col h2::after {
-        content: '';
-        position: static;
-        display: block;
-        width: 0.5rem;
-        height: 0.5rem;
-        background: transparent;
-        border-left: 2px solid var(--footer-third);
-        border-bottom: 2px solid var(--footer-third);
-        border-radius: 0;
-        transform: rotate(-45deg);
-        transition: transform 0.3s ease;
-        flex-shrink: 0;
-        box-shadow: none;
-    }
+	.footer-container > .footer-col:last-child {
+		border-bottom: none;
+	}
 
-    .footer-col.active > h2::after {
-        transform: rotate(135deg);
-    }
+	.footer-col.active > h2::after {
+		transform: rotate(135deg);
+	}
 
-    /*
-     * دکمه آکاردئون (footer.js متن عنوان را در موبایل داخلش می‌گذارد): همه
-     * ظاهر از h2؛ کل عرض عنوان تا فلش. فقط حلقه تمرکز کیبورد اضافه است.
-     * انتخابگر دوکلاسه تا استایل سراسری button و button:hover (گرادیان، سایه،
-     * جابه‌جایی؛ style.css) رویش اثر نکند. رنگ متن را button سراسری با
-     * !important سفید می‌کند که همان رنگ عنوان فوتر (--footer-heading) است.
-     */
-    .footer-col > h2 > .footer-col__toggle {
-        all: unset;
-        flex: 1;
-        cursor: pointer;
+	/*
+	 * دکمه آکاردئون (footer.js متن عنوان را در موبایل داخلش می‌گذارد): همه
+	 * ظاهر از h2؛ کل عرض عنوان تا فلش. فقط حلقه تمرکز کیبورد اضافه است.
+	 * انتخابگر دوکلاسه تا استایل سراسری button و button:hover (گرادیان، سایه،
+	 * جابه‌جایی؛ style.css) رویش اثر نکند. رنگ متن را button سراسری با
+	 * !important سفید می‌کند که همان رنگ عنوان فوتر (--footer-heading) است.
+	 */
+	.footer-col > h2 > .footer-col__toggle {
+		all: unset;
+		flex: 1;
+		cursor: pointer;
 
-        &:focus-visible {
-            outline: 2px solid var(--footer-third);
-            outline-offset: 0.25rem;
-            border-radius: 0.25rem;
-        }
-    }
+		&:focus-visible {
+			outline: 2px solid var(--footer-third);
+			outline-offset: 0.25rem;
+			border-radius: 0.25rem;
+		}
+	}
 
-    .footer-content {
-        font-size: 0.8125rem; /* افزایش سایز متن داخلی در موبایل */
-        max-height: 0;
-        overflow: hidden;
-        opacity: 0;
-        /* بسته: لینک‌های داخلش با Tab و صفحه‌خوان هم در دسترس نباشند (قبلا نامرئی ولی فوکوس‌پذیر) */
-        visibility: hidden;
-        transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease, visibility 0.4s;
-        padding: 0 0.625rem;
-    }
+	.footer-content {
+		font-size: 0.8125rem; /* افزایش سایز متن داخلی در موبایل */
+		max-height: 0;
+		overflow: hidden;
+		opacity: 0;
+		/* بسته: لینک‌های داخلش با Tab و صفحه‌خوان هم در دسترس نباشند (قبلا نامرئی ولی فوکوس‌پذیر) */
+		visibility: hidden;
+		transition: max-height 0.4s ease, opacity 0.4s ease, padding 0.4s ease, visibility 0.4s;
+		padding: 0 0.625rem;
+	}
 
-    .footer-col.active > .footer-content {
-        max-height: 31.25rem;
-        opacity: 1;
-        visibility: visible;
-        padding-bottom: 1.25rem;
-    }
+	.footer-col.active > .footer-content {
+		max-height: 31.25rem;
+		opacity: 1;
+		visibility: visible;
+		padding-bottom: 1.25rem;
+	}
 
-    .social-btn {
-        font-size: 0.6875rem;
-        padding: 0.4375rem 0.8125rem;
-    }
+	.social-btn {
+		font-size: 0.6875rem;
+		padding: 0.4375rem 0.8125rem;
+	}
 
-    .footer-form-col h2 {
-        cursor: default;
-    }
+	.footer-form-col {
+		& h2 {
+			cursor: default;
 
-    .footer-form-col h2::after {
-        display: none;
-    }
+			&::after {
+				display: none;
+			}
+		}
 
-    .footer-form-col .footer-content {
-        max-height: 62.5rem;
-        opacity: 1;
-        visibility: visible;
-        padding-bottom: 1.25rem;
-        overflow: visible;
-    }
+		& .footer-content {
+			max-height: 62.5rem;
+			opacity: 1;
+			visibility: visible;
+			padding-bottom: 1.25rem;
+			overflow: visible;
+		}
+	}
 }
 
 /* ==========================================================
@@ -366,27 +369,27 @@
    (قبلا به صورت style و onmouseover داخل footer.php)
    ========================================================== */
 .footer-content p {
-    margin-block: 0 0.75rem;
+	margin-block: 0 0.75rem;
 }
 
 .footer-address {
-    margin-block-start: 1rem;
+	margin-block-start: 1rem;
 }
 
 .footer-address__link {
-    transition: opacity 0.3s ease;
-}
+	transition: opacity 0.3s ease;
 
-.footer-address__link:hover,
-.footer-address__link:focus-visible {
-    opacity: 0.7;
+	&:hover,
+	&:focus-visible {
+		opacity: 0.7;
+	}
 }
 
 .footer-address__link:focus-visible,
 .footer-trust__link:focus-visible {
-    outline: 2px solid var(--footer-third);
-    outline-offset: 3px;
-    border-radius: 0.25rem;
+	outline: 2px solid var(--footer-third);
+	outline-offset: 3px;
+	border-radius: 0.25rem;
 }
 
 /*
@@ -400,55 +403,55 @@
  * (اختصاصی‌تر از هر قانون عمومی img) و اندازه صریح دارد.
  */
 .footer-trust {
-    text-align: center;
+	text-align: center;
 }
 
 .custom-site-footer .footer-trust__list {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	gap: 0.75rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
 }
 
 .custom-site-footer .footer-trust__item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0;
 }
 
 .custom-site-footer .footer-trust__img {
-    display: block;
-    inline-size: auto;
-    block-size: auto;
-    max-inline-size: 6.875rem;
-    max-block-size: 7.5rem;
-    object-fit: contain;
-    border-radius: 0.75rem;
-    transition: transform 0.3s ease;
+	display: block;
+	inline-size: auto;
+	block-size: auto;
+	max-inline-size: 6.875rem;
+	max-block-size: 7.5rem;
+	object-fit: contain;
+	border-radius: 0.75rem;
+	transition: transform 0.3s ease;
 }
 
 /* دو یا سه نماد: کمی کوچک‌تر تا در یک ردیف ستون جا شوند */
 .custom-site-footer .footer-trust__list:has(> li + li) .footer-trust__img {
-    max-inline-size: 5.5rem;
-    max-block-size: 6.25rem;
+	max-inline-size: 5.5rem;
+	max-block-size: 6.25rem;
 }
 
 .footer-trust__link {
-    display: block;
-}
+	display: block;
 
-.footer-trust__link:hover .footer-trust__img,
-.footer-trust__link:focus-visible .footer-trust__img {
-    transform: scale(1.05);
+	&:hover .footer-trust__img,
+	&:focus-visible .footer-trust__img {
+		transform: scale(1.05);
+	}
 }
 
 p.footer-copyright {
-    margin: 0;
+	margin: 0;
 }
 
 /* ==========================================================
@@ -456,127 +459,128 @@ p.footer-copyright {
    قبلا فقط در صفحه اصلی و با استایل home/home.css
    ========================================================== */
 .hodima-socials {
-    --socials-tile: 3.5rem;
+	--socials-tile: 3.5rem;
 
-    direction: rtl;
-    padding: 1.75rem 1.25rem 2rem;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--hodima-third, #b6c2f3) 22%, #ffffff) 0%, #ffffff 100%);
-    border-block-start: 1px solid color-mix(in srgb, var(--hodima-third, #b6c2f3) 60%, transparent);
-    font-family: inherit;
+	direction: rtl;
+	padding: 1.75rem 1.25rem 2rem;
+	background: linear-gradient(180deg, color-mix(in srgb, var(--hodima-third, #b6c2f3) 22%, #ffffff) 0%, #ffffff 100%);
+	border-block-start: 1px solid color-mix(in srgb, var(--hodima-third, #b6c2f3) 60%, transparent);
+	font-family: inherit;
 }
 
 .hodima-socials__inner {
-    max-inline-size: 90rem;
-    margin-inline: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.125rem;
+	max-inline-size: 90rem;
+	margin-inline: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.125rem;
 }
 
 .hodima-socials__title {
-    position: relative;
-    margin: 0;
-    padding-block-end: 0.625rem;
-    color: var(--hodima-primary, #25316a);
-    font-size: 1rem;
-    font-weight: 500;
-    line-height: 1.4;
-    text-align: center;
+	position: relative;
+	margin: 0;
+	padding-block-end: 0.625rem;
+	color: var(--hodima-primary, #25316a);
+	font-size: 1rem;
+	font-weight: 500;
+	line-height: 1.4;
+	text-align: center;
 
-    &::after {
-        content: '';
-        position: absolute;
-        inset-block-end: 0;
-        inset-inline: 0;
-        margin-inline: auto; /* وسط‌چین زیر عنوان، مستقل از جهت */
-        inline-size: 2.5rem;
-        block-size: 0.1875rem;
-        border-radius: var(--hodima-radius-pill);
-        background: linear-gradient(90deg, var(--hodima-primary, #25316a), var(--hodima-secondary, #607bbd), var(--hodima-third, #b6c2f3));
-    }
+	&::after {
+		content: '';
+		position: absolute;
+		inset-block-end: 0;
+		inset-inline: 0;
+		margin-inline: auto; /* وسط‌چین زیر عنوان، مستقل از جهت */
+		inline-size: 2.5rem;
+		block-size: 0.1875rem;
+		border-radius: var(--hodima-radius-pill);
+		background: linear-gradient(90deg, var(--hodima-primary, #25316a), var(--hodima-secondary, #607bbd), var(--hodima-third, #b6c2f3));
+	}
 }
 
 .hodima-socials__list {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.875rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.875rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
 
-    & li {
-        margin: 0;
-    }
+	& li {
+		margin: 0;
+	}
 }
 
 .hodima-socials__link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-inline-size: var(--socials-tile);
-    block-size: var(--socials-tile);
-    padding-inline: 0.625rem;
-    border: 1px solid color-mix(in srgb, var(--hodima-third, #b6c2f3) 70%, transparent);
-    border-radius: 0.875rem;
-    background: #ffffff;
-    box-shadow: 0 0.375rem 1rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.06);
-    text-decoration: none;
-    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-inline-size: var(--socials-tile);
+	block-size: var(--socials-tile);
+	padding-inline: 0.625rem;
+	border: 1px solid color-mix(in srgb, var(--hodima-third, #b6c2f3) 70%, transparent);
+	border-radius: 0.875rem;
+	background: #ffffff;
+	box-shadow: 0 0.375rem 1rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.06);
+	text-decoration: none;
+	transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 
-    &:hover {
-        transform: translateY(-0.25rem);
-        border-color: var(--hodima-secondary, #607bbd);
-        box-shadow: 0 0.625rem 1.25rem rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.16);
-    }
+	&:hover {
+		transform: translateY(-0.25rem);
+		border-color: var(--hodima-secondary, #607bbd);
+		box-shadow: 0 0.625rem 1.25rem rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.16);
+	}
 
-    &:focus-visible {
-        outline: 2px solid var(--hodima-accent-light, #a341c8);
-        outline-offset: 3px;
-    }
+	&:focus-visible {
+		outline: 2px solid var(--hodima-accent-light, #a341c8);
+		outline-offset: 3px;
+	}
 }
 
 /* ابعاد صریح زیر .hodima-socials تا قوانین عمومی img (مثلا ووکامرس) بزرگش نکنند */
 .hodima-socials .hodima-socials__icon {
-    display: block;
-    inline-size: 2.25rem;
-    block-size: 2.25rem;
-    max-inline-size: none;
-    object-fit: contain;
+	display: block;
+	inline-size: 2.25rem;
+	block-size: 2.25rem;
+	max-inline-size: none;
+	object-fit: contain;
 }
 
 .hodima-socials__name {
-    color: var(--hodima-primary, #25316a);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    white-space: nowrap;
+	color: var(--hodima-primary, #25316a);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	white-space: nowrap;
 }
 
 @media (width <= 768px) {
-    .hodima-socials {
-        --socials-tile: 3rem;
-        padding-block: 1.25rem 1.5rem;
-    }
+	.hodima-socials {
+		--socials-tile: 3rem;
 
-    .hodima-socials__list {
-        gap: 0.625rem;
-    }
+		padding-block: 1.25rem 1.5rem;
+	}
 
-    .hodima-socials .hodima-socials__icon {
-        inline-size: 1.875rem;
-        block-size: 1.875rem;
-    }
+	.hodima-socials__list {
+		gap: 0.625rem;
+	}
+
+	.hodima-socials .hodima-socials__icon {
+		inline-size: 1.875rem;
+		block-size: 1.875rem;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .footer-address__link,
-    .footer-trust__img,
-    .hodima-socials__link {
-        transition: none;
-    }
+	.footer-address__link,
+	.footer-trust__img,
+	.hodima-socials__link {
+		transition: none;
+	}
 
-    .hodima-socials__link:hover {
-        transform: none;
-    }
+	.hodima-socials__link:hover {
+		transform: none;
+	}
 }

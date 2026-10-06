@@ -139,9 +139,26 @@ async function pixelDiff( browser, a, b, diffPath ) {
  * background-position: «0% 0%» و «0px 0px» یک جا هستند (minify، background: 0 0).
  */
 const ZERO_POS = /^0(%|px) 0(%|px)$/;
-function sameValue( key, a, b ) {
+// متن خام متغیر CSS: نگارش‌های هم‌معنای رنگ و عدد (rgba(…, .1) = rgb(… / 0.1)) یکی
+const normVar = ( v ) => String( v ?? '' ).toLowerCase()
+	.replace( /#([0-9a-f])([0-9a-f])([0-9a-f])\b/g, '#$1$1$2$2$3$3' )
+	.replace( /rgba?\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*(?:\/\s*([\d.]+%?)\s*)?\)/g, ( m, r, g, b, a ) => `rgba(${ r },${ g },${ b },${ a ?? 1 })` )
+	.replace( /rgba?\(\s*([^,()]+),\s*([^,()]+),\s*([^,()]+?)\s*\)/g, 'rgba($1,$2,$3,1)' )
+	.replace( /\brgb\(/g, 'rgba(' ).replace( /\s*([,()/])\s*/g, '$1' ).replace( /\s+/g, ' ' )
+	.replace( /(^|[^\d.])0?\.(\d)/g, '$10.$2' ).replace( /(\.\d*?)0+(?!\d)/g, '$1' ).replace( /\.(?!\d)/g, '' ).trim();
+// FREEZE همه انیمیشن/ترنزیشن را با !important خاموش می‌کند؛ مقدارشان مقایسه‌پذیر نیست
+// (ترنزیشن !important قالب در یک طرف بر FREEZE غالب است و در طرف دیگر نه).
+const FROZEN = /^(::(before|after))?(transition|animation)-/;
+function sameValue( key, a, b, dir ) {
 	if ( a === b ) return true;
+	if ( FROZEN.test( key ) ) return true;
+	// text-align: start در راست‌به‌چپ = right (مقدار محاسبه‌شده کلمه start را نگه می‌دارد)
+	if ( /text-align$/.test( key ) && 'rtl' === dir ) {
+		const t = ( v ) => ( { start: 'right', end: 'left' }[ v ] ?? v );
+		if ( t( a ) === t( b ) ) return true;
+	}
 	if ( process.env.HODIMA_VISUAL_IGNORE_VARS && /^(::(before|after))?--/.test( key ) ) return true;
+	if ( /^(::(before|after))?--/.test( key ) && normVar( a ) === normVar( b ) ) return true;
 	return /background-position$/.test( key ) && ZERO_POS.test( a ?? '' ) && ZERO_POS.test( b ?? '' );
 }
 
@@ -161,7 +178,7 @@ function styleDiff( ref, work ) {
 		}
 		const a = ref[ i ].props, b = work[ i ].props;
 		const keys = new Set( [ ...Object.keys( a ), ...Object.keys( b ) ] );
-		const changed = [ ...keys ].filter( ( k ) => ! sameValue( k, a[ k ], b[ k ] ) );
+		const changed = [ ...keys ].filter( ( k ) => ! sameValue( k, a[ k ], b[ k ], b.direction ) );
 		if ( changed.length ) diffs.push( `${ ref[ i ].el }: ${ changed.slice( 0, 6 ).map( ( k ) => `${ k }: ${ a[ k ] ?? '∅' } → ${ b[ k ] ?? '∅' }` ).join( ' | ' ) }${ changed.length > 6 ? ` (+${ changed.length - 6 })` : '' }` );
 	}
 	return diffs;

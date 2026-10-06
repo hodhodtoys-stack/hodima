@@ -5,83 +5,97 @@
  * ۸۴ خط CSS واقعی به صورت inline داخل inc/woocommerce/cart.php چاپ
  * می‌شد. یعنی روی هر بازدید سبد خرید یک فایل خالی دانلود می‌شد و
  * استایل واقعی هیچ‌وقت کش نمی‌شد.
+ *
+ * نوسازی قالب، مرحله ۶: nesting، خصوصیات منطقی و توکن‌ها؛ ظاهر بدون تغییر.
  * ========================================================================= */
+
 /* استایل‌های اختصاصی سبد خرید هدهدلی */
-        .woocommerce-cart .woocommerce {
-            direction: rtl;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        
-        /* اصلاح فاصله پیام‌های ووکامرس (مثل "سبد خرید بروز شد") */
-        .woocommerce-notices-wrapper,
-        .woocommerce-message,
-        .woocommerce-error,
-        .woocommerce-info {
-            margin-bottom: 15px !important;
-        }
+.woocommerce-cart .woocommerce {
+	direction: rtl;
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--hodima-space-7);
+}
 
-        .woocommerce-cart-form {
-            flex: 2;
-            background: #fff;
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid #e1e8ed;
-        }
-        .cart-collaterals {
-            flex: 1;
-        }
-        .cart_totals {
-            background: #EEF5F2 !important;
-            border-radius: 15px !important;
-            padding: 20px !important;
-            border: 2px solid #8F9EAD !important;
-        }
-        
-        /* استایل دکمه تسویه حساب */
-        .wc-proceed-to-checkout a.checkout-button {
-            background: linear-gradient(90deg, #FF9800, #F57C00, #FFB74D) !important;
-            color: #fff !important;
-            border-radius: var(--hodima-radius-lg) !important;
-            padding: 15px !important;
-            font-weight: 800 !important;
-            text-align: center;
-            display: block;
-            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3) !important;
-            transition: all 0.3s ease !important;
-        }
-        
-        /* رنگ هاور دکمه تسویه حساب */
-        .wc-proceed-to-checkout a.checkout-button:hover {
-            background: #E08600 !important;
-            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4) !important;
-            transform: translateY(-2px);
-        }
+/* اصلاح فاصله پیام‌های ووکامرس (مثل "سبد خرید بروز شد") */
+.woocommerce-notices-wrapper,
+.woocommerce-message,
+.woocommerce-error,
+.woocommerce-info {
+	margin-bottom: var(--hodima-space-6) !important;
+}
 
-        /* پنهان‌سازی دکمه تا رسیدن به حداقل سفارش: افزونه Hodima Commerce (cart-progress.css) */
+.woocommerce-cart-form {
+	flex: 2;
+	background: #fff;
+	padding: var(--hodima-space-7);
+	border-radius: 15px;
+	border: 1px solid #e1e8ed;
+}
 
-        /* ریسپانسیو و اصلاحات موبایل */
-        @media (width <= 768px) {
-            .woocommerce-cart .woocommerce { flex-direction: column; }
-            .woocommerce-cart-form, .cart-collaterals { width: 100%; flex: none; }
-            
-            /* نمایش عکس محصول در موبایل و استایل‌دهی آن */
-            .woocommerce-page table.cart .product-thumbnail {
-                display: block !important;
-                text-align: center;
-                border: none !important;
-                padding-bottom: 10px !important;
-            }
-            .woocommerce-page table.cart .product-thumbnail img {
-                max-width: 80px !important;
-                height: auto;
-                margin: 0 auto;
-                border-radius: var(--hodima-radius-md);
-                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            }
-            /* مخفی کردن لیبل پیش‌فرض ووکامرس کنار عکس در موبایل */
-            .woocommerce-page table.cart .product-thumbnail::before {
-                display: none !important;
-            }
-        }
+.cart-collaterals {
+	flex: 1;
+}
+
+.cart_totals {
+	background: #EEF5F2 !important;
+	border-radius: 15px !important;
+	padding: var(--hodima-space-7) !important;
+	border: 2px solid #8F9EAD !important;
+}
+
+/* استایل دکمه تسویه حساب */
+.wc-proceed-to-checkout a.checkout-button {
+	background: linear-gradient(90deg, #FF9800, #F57C00, #FFB74D) !important;
+	color: #fff !important;
+	border-radius: var(--hodima-radius-lg) !important;
+	padding: var(--hodima-space-6) !important;
+	font-weight: 800 !important;
+	text-align: center;
+	display: block;
+	box-shadow: 0 4px 15px rgb(255 152 0 / 0.3) !important;
+	transition: all 0.3s ease !important;
+
+	/* رنگ هاور دکمه تسویه حساب */
+	&:hover {
+		background: #E08600 !important;
+		box-shadow: 0 6px 20px rgb(255 152 0 / 0.4) !important;
+		transform: translateY(-2px);
+	}
+}
+
+/* پنهان‌سازی دکمه تا رسیدن به حداقل سفارش: افزونه Hodima Commerce (cart-progress.css) */
+
+/* ریسپانسیو و اصلاحات موبایل */
+@media (width <= 768px) {
+	.woocommerce-cart .woocommerce {
+		flex-direction: column;
+	}
+
+	.woocommerce-cart-form,
+	.cart-collaterals {
+		width: 100%;
+		flex: none;
+	}
+
+	/* نمایش عکس محصول در موبایل و استایل‌دهی آن */
+	.woocommerce-page table.cart .product-thumbnail {
+		display: block !important;
+		text-align: center;
+		border: none !important;
+		padding-bottom: var(--hodima-space-4) !important;
+
+		& img {
+			max-width: 80px !important;
+			height: auto;
+			margin: 0 auto;
+			border-radius: var(--hodima-radius-md);
+			box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+		}
+
+		/* مخفی کردن لیبل پیش‌فرض ووکامرس کنار عکس در موبایل */
+		&::before {
+			display: none !important;
+		}
+	}
+}

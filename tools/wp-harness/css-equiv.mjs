@@ -20,6 +20,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
+import Specificity from '@bramus/specificity';
 
 const [ dirA, dirB, ...only ] = process.argv.slice( 2 );
 if ( ! dirB ) {
@@ -98,7 +99,7 @@ function extract( css ) {
 		for ( let i = 0; i < style.length; i++ ) {
 			const prop = style[ i ];
 			const value = color( prop, style.getPropertyValue( prop ).trim() );
-			for ( const sel of selectors ) out.push( [ `${ ctx } ${ sel } { ${ prop }`, value, style.getPropertyPriority( prop ) ] );
+			for ( const sel of selectors ) out.push( [ `${ ctx } ${ sel } { ${ prop }`, value, style.getPropertyPriority( prop ), out.length ] );
 		}
 	};
 	const walk = ( rules, ctx, parents ) => {
@@ -136,6 +137,7 @@ function extract( css ) {
 const hex2 = ( n ) => Math.round( Number( n ) ).toString( 16 ).padStart( 2, '0' );
 const normVar = ( v ) => v.toLowerCase().replaceAll( "'", '"' )
 	// rgb()/rgba() با عدد ثابت = hex (minify)
+	.replace( /rgba?\(\s*(\d+)\s+(\d+)\s+(\d+)\s*(?:\/\s*([\d.]+)\s*)?\)/g, 'rgba($1,$2,$3,$4)' ).replace( /,\)/g, ')' )
 	.replace( /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/g, ( m, r, g, b, a ) => `#${ hex2( r ) }${ hex2( g ) }${ hex2( b ) }${ undefined === a || 1 === Number( a ) ? '' : hex2( Number( a ) * 255 ) }` )
 	.replace( /#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3(?:([0-9a-f])\4)?\b/g, '#$1$2$3$4' )
 	.replace( /\s*([,()/])\s*/g, '$1' ).replace( /\s+/g, ' ' )
@@ -164,15 +166,84 @@ const norm = ( prop, raw ) => {
 	return v;
 };
 
-/** مقدار نهایی هر کلید: important برنده، وگرنه آخرین. */
+/*
+ * سایت راست‌به‌چپ است (html dir=rtl، body direction: rtl): خصوصیت منطقی = همان فیزیکی
+ * (inline-start = right). «margin-right: 5px» و «margin-inline-start: 5px» هم‌ارزند و
+ * آخری برنده است (مثل مرورگر). عنصری با direction: ltr استثناست — با visual-compare ببینید.
+ */
+const SIDE = { 'inline-start': 'right', 'inline-end': 'left', 'block-start': 'top', 'block-end': 'bottom' };
+const SIZE = { 'inline-size': 'width', 'block-size': 'height', 'min-inline-size': 'min-width', 'max-inline-size': 'max-width', 'min-block-size': 'min-height', 'max-block-size': 'max-height' };
+const physical = ( prop ) => {
+	if ( SIZE[ prop ] ) return SIZE[ prop ];
+	const inset = prop.match( /^inset-(inline|block)-(start|end)$/ );
+	if ( inset ) return SIDE[ `${ inset[ 1 ] }-${ inset[ 2 ] }` ];
+	return prop.replace( /-(inline|block)-(start|end)(?=-|$)/, ( m, axis, edge ) => `-${ SIDE[ `${ axis }-${ edge }` ] }` );
+};
+const TEXT_ALIGN = { start: 'right', end: 'left' };
+
+/** مقدار نهایی هر کلید: important برنده، وگرنه آخرین (با شماره ترتیب اعلان برنده). */
 const finalMap = ( rows ) => {
 	const map = new Map();
-	for ( const [ key, raw, prio ] of rows ) {
-		const value = norm( key.slice( key.lastIndexOf( '{ ' ) + 2 ), raw );
+	for ( const [ rawKey, raw, prio, idx ] of rows ) {
+		const at = rawKey.lastIndexOf( '{ ' );
+		const prop = physical( rawKey.slice( at + 2 ) );
+		const key = `${ rawKey.slice( 0, at + 2 ) }${ prop }`;
+		let value = norm( prop, raw );
+		if ( 'text-align' === prop && TEXT_ALIGN[ value ] ) value = TEXT_ALIGN[ value ];
 		const prev = map.get( key );
-		if ( ! prev || prio || ! prev.prio ) map.set( key, { value, prio } );
+		if ( ! prev || prio || ! prev.prio ) map.set( key, { value, prio, idx } );
 	}
 	return map;
+};
+
+/*
+ * ترتیب: دو انتخابگر *متفاوت* با specificity و important برابر و مقدار متفاوت برای یک
+ * خصوصیت، اگر هر دو به یک عنصر بخورند، آخری برنده است. ادغام انتخابگرهای تکراری یا
+ * جابه‌جایی قانون‌ها می‌تواند این ترتیب را برگرداند بی‌آنکه مقدار نهایی هیچ انتخابگری عوض
+ * شود؛ این‌ها گزارش می‌شوند (فرض بدبینانه: هر دو ممکن است به یک عنصر بخورند).
+ */
+const PSEUDO_EL = /::?(before|after|placeholder|marker|selection|backdrop|-webkit-[a-z-]+)\b/g;
+const specCache = new Map();
+const spec = ( sel ) => {
+	if ( ! specCache.has( sel ) ) {
+		let v = '?';
+		try {
+			v = Specificity.calculate( sel.replace( PSEUDO_EL, '' ) || '*' ).map( ( x ) => x.toArray().join( ',' ) ).join( '|' );
+		} catch { /* انتخابگر ناشناخته: مقایسه نمی‌شود */ }
+		specCache.set( sel, v );
+	}
+	return specCache.get( sel );
+};
+/** کلید «زمینه انتخابگر { خصوصیت» → [انتخابگر، خصوصیت به‌علاوه شبه‌عنصر]. */
+const splitKey = ( key ) => {
+	const at = key.lastIndexOf( ' { ' );
+	const head = key.slice( 0, at ).trim();
+	// زمینه‌ها (@media … ) قبل از انتخابگرند؛ انتخابگر = بعد از آخرین «)» زمینه یا کل
+	const sel = head.replace( /^(?:@(?:media|supports|container|layer|keyframes|font-face)\b(?:[^()]|\([^()]*\))*?\)\s*)+/, '' ).trim();
+	const pseudo = ( sel.match( PSEUDO_EL ) || [ '' ] )[ 0 ].replace( /^:+/, '::' );
+	return [ sel, key.slice( at + 3 ) + pseudo ];
+};
+const orderDiffs = ( ma, mb ) => {
+	const byProp = new Map();
+	for ( const [ key, x ] of ma ) {
+		const y = mb.get( key );
+		if ( ! y ) continue;
+		const [ sel, prop ] = splitKey( key );
+		if ( prop.startsWith( '--' ) || /@(keyframes|font-face)/.test( key ) ) continue;
+		if ( ! byProp.has( prop ) ) byProp.set( prop, [] );
+		byProp.get( prop ).push( { key, x, y, spec: spec( sel ) } );
+	}
+	const out = [];
+	for ( const list of byProp.values() ) {
+		for ( let i = 0; i < list.length; i++ ) {
+			for ( let j = i + 1; j < list.length; j++ ) {
+				const [ p, q ] = [ list[ i ], list[ j ] ];
+				if ( '?' === p.spec || p.spec !== q.spec || p.x.prio !== q.x.prio || p.y.prio !== q.y.prio || p.x.value === q.x.value ) continue;
+				if ( ( p.x.idx < q.x.idx ) !== ( p.y.idx < q.y.idx ) ) out.push( `ترتیب عوض شد (هم‌وزن): «${ p.key.trim() }» و «${ q.key.trim() }»` );
+			}
+		}
+	}
+	return out;
 };
 
 const browser = await chromium.launch();
@@ -222,6 +293,7 @@ for ( const rel of files ) {
 			diffs.push( `${ key.trim() }: ${ x ? `${ x.value }${ x.prio ? ' !important' : '' }` : '∅' } → ${ y ? `${ y.value }${ y.prio ? ' !important' : '' }` : '∅' }` );
 		}
 	}
+	diffs.push( ...orderDiffs( ma, mb ) );
 	if ( diffs.length ) bad++;
 	console.log( `${ diffs.length ? '✘' : '✔' } ${ rel.padEnd( 40 ) } ${ ma.size } اعلان${ diffs.length ? ` — ${ diffs.length } تفاوت` : ' — یکسان' }` );
 	for ( const d of diffs.slice( 0, Number( process.env.CSS_EQUIV_MAX ) || 15 ) ) console.log( `      ${ d }` );

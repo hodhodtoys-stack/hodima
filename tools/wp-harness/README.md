@@ -18,6 +18,10 @@ tools/wp-harness/visual-compare.sh HEAD home 404   # فقط چند صفحه
 tools/wp-harness/visual-compare.sh --built         # طرف «کار» با CSS ساخته‌شده ZIP (minify + پایین‌آوردن)
 HODIMA_VISUAL_WIDTHS="1180,1000,800,420" tools/wp-harness/visual-compare.sh   # عرض‌های دیگر (نزدیک نقطه‌های شکست)
 
+# ووکامرس واقعی (نسخه دوم ابزار در /tmp/hodima-harness-wc؛ بار اول wc-setup.sh خودکار)
+tools/wp-harness/visual-compare.sh --wc            # محصول ساده/متغیر/ناموجود/حراج، فروشگاه، دسته، سبد، پرداخت…
+tools/wp-harness/important-audit.sh [--apply]      # !importantهای زائد قالب (آبشار واقعی همه CSSها، ۴۰ صفحه × ۱۰ عرض)
+
 # هم‌ارزی CSS قانون‌به‌قانون (بدون صفحه؛ همه فایل‌ها حتی single-product.css که صفحه‌اش در ابزار تست نیست)
 tools/wp-harness/css-equiv.sh            # CSS آخرین commit در برابر کار فعلی
 tools/wp-harness/css-equiv.sh --built    # سورس در برابر خروجی bin/build-css.mjs (bin/build.sh هم همین را اجبارا اجرا می‌کند)
@@ -54,6 +58,8 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 | `admin-render.php <slug>` | رندر یک صفحه پیشخوان با حساب مدیر |
 | `wp-eval.php '<php>'` | اجرای کد دلخواه روی سایت تست (`HARNESS=1 HODIMA_WP=… php wp-eval.php '…'`) |
 | `extract.py` / `compare.py` / `integrity.py` | استخراج، مقایسه و بررسی گراف |
+| `wc-setup.sh` / `wc-fixtures.php` / `wc-run.sh` | نسخه دوم ابزار با ووکامرس 9.9.5 *واقعی* (از انتشار گیت‌هاب؛ `HODIMA_WC_VERSION`). داده: محصول ساده کامل (گالری، جدول «حداقل خرید»، ویژگی‌های pa_*، نظر، رسانه، مکمل)، متغیر، ناموجود، حراج، ۸ محصول دیگر، دسته و زیردسته، سبد/پرداخت کلاسیک. `mu-plugins/harness-wc-stable.php` (مرتبط‌ها بدون ترتیب تصادفی)، `harness-wc-cart.php` (`HARNESS_CART=شناسه:تعداد`). stub ووکامرس ابزار اصلی اینجا حذف می‌شود |
+| `important-audit.sh` / `important-audit.mjs` | برای هر `!important` قالب: عنصرهای هدف در صفحه‌ها و عرض‌ها، همه اعلان‌های رقیب از همه CSSها و آبشار با/بدون آن. قابل حذف = به عنصری خورده، هدفش کلاس خود قالب است (نه ووکامرس/وردپرس) و حذف هم‌زمان برنده هیچ موردی را عوض نمی‌کند. `--apply` فقط همان «!important»ها را از سورس برمی‌دارد |
 | `css-equiv.sh` / `css-equiv.mjs` | هم‌ارزی دو نسخه CSS قالب در Chromium، مستقل از HTML: از CSSOM برای هر «@media/@supports + انتخابگر تکی + خصوصیت longhand» مقدار نهایی (important برنده، وگرنه آخرین)؛ nesting مثل مرورگر باز می‌شود (والد چندتایی = `:is()`)، توکن‌های `tokens.css` هر طرف جایگزین می‌شوند و نگارش‌های هم‌معنا یکی (`#fff`/`#ffffff`، `transparent`، `width <= 768px` = `max-width: 768px`، `48rem` = `768px`، `bold` = `700`…). ترتیب نسبی قانون‌های *متفاوت* را نمی‌سنجد. در مرحله ۵ نوسازی، حذف `backdrop-filter` توسط minify را گرفت که عکس‌ها نمی‌دیدند |
 | `visual-compare.sh` / `visual-compare.mjs` | مقایسه ظاهر دو نسخه با Chromium (`playwright-core` از `npm ci`): `getComputedStyle` همه عنصرها به ترتیب DOM و عکس کل صفحه؛ CSS/JS هر طرف از پوشه خودش. بازنویسی هم‌ارز CSS (خصوصیات منطقی، nesting، …) باید «یکسان» بدهد. تصویرهای آپلود = PNG خاکستری ثابت، ویدیو/صوت = خطای فوری (بدون چرخنده)، انیمیشن خاموش. عکس‌ها و `*-diff.png` (قرمز = پیکسل متفاوت) در `$HODIMA_HARNESS/visual` |
 | `zip-install-check.sh` + `zip-install.php` | نصب و فعال‌سازی واقعی از `dist/*.zip` (اول `bash bin/build.sh`) روی کپی جدای وردپرس، در هر دو ترتیب «اول قالب» و «اول افزونه‌ها»، هر گام یک فرایند PHP جدا؛ «Cannot redeclare» و هر خطای PHP را می‌گیرد، بعد صفحه اصلی را می‌سازد |

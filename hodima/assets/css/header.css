@@ -1,45 +1,58 @@
 /* ==========================================================
+   هدر، منو و پنجره پشتیبانی (header.php، inc/header.php)
+   نوسازی قالب، مرحله ۶: nesting، خصوصیات منطقی (راست ← inline-start)،
+   قانون‌های تکراری «FIX» دکمه بستن پنجره در قانون اصلی ادغام شد و
+   قانون‌های آیکون عنوان پنجره (.popup__icon و svg/img/i داخل
+   .popup__title) حذف شدند: عنوان پنجره در header.php فقط متن است و
+   هیچ‌وقت آیکون نداشت. ظاهر بدون تغییر.
+========================================================== */
+
+/* ==========================================================
    ۱. متغیرها و استایل‌های پایه
 ========================================================== */
 :root {
-    font-size: 16px;
+	/*
+	 * اندازه پایه rem همه صفحه‌ها ۱۶px است: این قانون (:root) بر html { font-size }
+	 * واکنش‌گرای style.css (۱۴/۱۵/۱۶) غالب است؛ همان رفتار همیشگی سایت.
+	 */
+	font-size: 16px;
 
-    --clr-primary: var(--hodima-primary, #25316a);
-    --clr-primary-hover: var(--hodima-primary-dark, #1b244d);
-    --clr-primary-light: var(--hodima-state-info-bg, #eef1fb);
-    --clr-secondary: var(--hodima-secondary, #607bbd);
-    --clr-third: var(--hodima-third, #b6c2f3);
+	--clr-primary: var(--hodima-primary, #25316a);
+	--clr-primary-hover: var(--hodima-primary-dark, #1b244d);
+	--clr-primary-light: var(--hodima-state-info-bg, #eef1fb);
+	--clr-secondary: var(--hodima-secondary, #607bbd);
+	--clr-third: var(--hodima-third, #b6c2f3);
 
-    --clr-header-bg: var(--hodima-primary, #25316a);
-    --clr-header-bg-soft: var(--hodima-secondary, #607bbd);
-    --clr-menu-text: #ffffff;
-    --clr-text-dark: var(--hodima-text-dark, #111111);
-    --clr-text-muted: #4b5563;
-    --clr-mobile-menu-bg: #f8f9fc;
-    --clr-white: #ffffff;
-    --clr-overlay: rgba(17, 17, 17, 0.6);
+	--clr-header-bg: var(--hodima-primary, #25316a);
+	--clr-header-bg-soft: var(--hodima-secondary, #607bbd);
+	--clr-menu-text: #ffffff;
+	--clr-text-dark: var(--hodima-text-dark, #111111);
+	--clr-text-muted: #4b5563;
+	--clr-mobile-menu-bg: #f8f9fc;
+	--clr-white: #ffffff;
+	--clr-overlay: rgb(17 17 17 / 0.6);
 
-    --grad-underline: linear-gradient(90deg, var(--clr-secondary), var(--clr-third));
-    --grad-header: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-secondary) 100%);
-    --grad-call: linear-gradient(135deg, #10b981, #34d399);
-    --grad-whatsapp: linear-gradient(135deg, #1f8f5f, #25d366);
-    --grad-telegram: linear-gradient(135deg, #1d5f9f, #2a86d1);
+	--grad-underline: linear-gradient(90deg, var(--clr-secondary), var(--clr-third));
+	--grad-header: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-secondary) 100%);
+	--grad-call: linear-gradient(135deg, #10b981, #34d399);
+	--grad-whatsapp: linear-gradient(135deg, #1f8f5f, #25d366);
+	--grad-telegram: linear-gradient(135deg, #1d5f9f, #2a86d1);
 
-    --header-height: 5.3125rem;
-    --header-height-mobile: 4.375rem;
-    --header-max-width: 90rem;
-    --header-radius: 2.0625rem;
+	--header-height: 5.3125rem;
+	--header-height-mobile: 4.375rem;
+	--header-max-width: 90rem;
+	--header-radius: 2.0625rem;
 
-    --transition-fast: 0.2s ease;
-    --transition-base: 0.3s ease;
-    --transition-bounce: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	--transition-fast: 0.2s ease;
+	--transition-base: 0.3s ease;
+	--transition-bounce: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-    --shadow-header: 0 0.625rem 1.5625rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.2);
-    --shadow-dropdown: 0 0.625rem 1.875rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.14);
-    --shadow-button: 0 0.25rem 0.625rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.12);
-    --shadow-button-hover: 0 0.375rem 0.9375rem rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.28);
-    --shadow-popup: 0 0.9375rem 2.5rem rgba(17, 17, 17, 0.24);
-    --shadow-mobile-nav: -0.3125rem 0.9375rem 2.1875rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.14);
+	--shadow-header: 0 0.625rem 1.5625rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.2);
+	--shadow-dropdown: 0 0.625rem 1.875rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.14);
+	--shadow-button: 0 0.25rem 0.625rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.12);
+	--shadow-button-hover: 0 0.375rem 0.9375rem rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.28);
+	--shadow-popup: 0 0.9375rem 2.5rem rgb(17 17 17 / 0.24);
+	--shadow-mobile-nav: -0.3125rem 0.9375rem 2.1875rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.14);
 }
 
 /* ریست */
@@ -47,488 +60,494 @@
 .site-header-area *::before,
 .site-header-area *::after,
 #supportOverlay * {
-    box-sizing: border-box;
-    font-family: inherit;
+	box-sizing: border-box;
+	font-family: inherit;
 }
 
 .site-header-area a,
 .site-header-area button {
-    -webkit-tap-highlight-color: transparent;
+	-webkit-tap-highlight-color: transparent;
 }
 
 /* ==========================================================
    ۲. ساختار اصلی هدر
 ========================================================== */
 .header {
-    background: var(--grad-header);
-    border-radius: 0 0 var(--header-radius) var(--header-radius);
-    position: relative;
-    z-index: 900;
-    box-shadow: var(--shadow-header);
-    direction: rtl;
-    width: 100%;
-}
+	background: var(--grad-header);
+	border-radius: 0 0 var(--header-radius) var(--header-radius);
+	position: relative;
+	z-index: 900;
+	box-shadow: var(--shadow-header);
+	direction: rtl;
+	width: 100%;
 
-.header.is-fixed {
-    position: fixed;
-    inset: 0 0 auto 0;
-    animation: header-drop 0.3s ease forwards;
+	&.is-fixed {
+		position: fixed;
+		inset: 0 0 auto;
+		animation: header-drop 0.3s ease forwards;
+	}
 }
 
 @keyframes header-drop {
-    from { transform: translateY(-100%); }
-    to   { transform: translateY(0); }
+	from { transform: translateY(-100%); }
+	to { transform: translateY(0); }
 }
 
 .header__container {
-    max-width: var(--header-max-width);
-    margin-inline: auto;
-    padding-inline: 1.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: var(--header-height);
-    position: relative;
-    gap: 1.5rem; 
+	max-width: var(--header-max-width);
+	margin-inline: auto;
+	padding-inline: 1.25rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: var(--header-height);
+	position: relative;
+	gap: 1.5rem;
 }
 
 .header__right {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    flex-shrink: 0; 
+	display: flex;
+	align-items: center;
+	gap: 1.25rem;
+	flex-shrink: 0;
 }
 
 .header__center {
-    display: flex;
-    align-items: center;
-    flex-grow: 1;
-    justify-content: flex-start;
-    padding-right: 2rem; 
-    min-width: 0; 
+	display: flex;
+	align-items: center;
+	flex-grow: 1;
+	justify-content: flex-start;
+	padding-inline-start: 2rem;
+	min-width: 0;
 }
 
 .header__left {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    flex-shrink: 0; 
+	display: flex;
+	align-items: center;
+	gap: 1.25rem;
+	flex-shrink: 0;
 }
 
 /* ==========================================================
    ۳. منوی اصلی (حالت دسکتاپ)
 ========================================================== */
 .main-nav {
-    display: block;
+	display: block;
 }
 
 .main-menu {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    gap: 1.25rem;
-}
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	gap: 1.25rem;
 
-.main-menu li {
-    position: relative;
-}
+	& li {
+		position: relative;
+	}
 
-.main-menu > li > a {
-    color: var(--clr-menu-text);
-    text-decoration: none;
-    font-size: 0.9375rem;
-    font-weight: 400;
-    padding: 0.9375rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    position: relative;
-    transition: color var(--transition-base), opacity var(--transition-base);
-    white-space: nowrap; 
-}
+	& > li > a {
+		color: var(--clr-menu-text);
+		text-decoration: none;
+		font-size: 0.9375rem;
+		font-weight: 400;
+		padding: 0.9375rem 0;
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		position: relative;
+		transition: color var(--transition-base), opacity var(--transition-base);
+		white-space: nowrap;
+	}
 
-.main-menu li.menu-item-has-children > a::after {
-    content: '';
-    display: inline-block;
-    border-width: 5px;
-    border-style: solid;
-    border-color: currentColor transparent transparent transparent;
-    transition: transform var(--transition-base);
-    margin-top: 4px;
-}
+	& li.menu-item-has-children > a::after {
+		content: '';
+		display: inline-block;
+		border-width: 5px;
+		border-style: solid;
+		border-color: currentcolor transparent transparent;
+		transition: transform var(--transition-base);
+		margin-top: var(--hodima-space-1);
+	}
 
-.main-menu li.menu-item-has-children:hover > a::after,
-.main-menu li.menu-item-has-children:focus-within > a::after {
-    transform: rotate(180deg);
-    margin-top: -2px;
-}
+	& li.menu-item-has-children:hover > a::after,
+	& li.menu-item-has-children:focus-within > a::after {
+		transform: rotate(180deg);
+		margin-top: -2px;
+	}
 
-.main-menu > li > a:hover,
-.main-menu > li > a:focus-visible {
-    color: var(--clr-white);
-    opacity: 1;
-    outline: none;
-}
+	& > li > a:hover,
+	& > li > a:focus-visible {
+		color: var(--clr-white);
+		opacity: 1;
+		outline: none;
+	}
 
-.main-menu > li > a::before {
-    content: '';
-    position: absolute;
-    bottom: 0.3125rem;
-    right: 0;
-    width: 0;
-    height: 2px;
-    background: var(--grad-underline);
-    transition: width var(--transition-base);
-}
+	& > li > a::before {
+		content: '';
+		position: absolute;
+		bottom: 0.3125rem;
+		inset-inline-start: 0;
+		width: 0;
+		height: 2px;
+		background: var(--grad-underline);
+		transition: width var(--transition-base);
+	}
 
-.main-menu > li:hover > a::before,
-.main-menu > li:focus-within > a::before {
-    width: 100%;
-}
+	& > li:hover > a::before,
+	& > li:focus-within > a::before {
+		width: 100%;
+	}
 
-.main-menu .sub-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: var(--clr-white);
-    min-width: 15rem;
-    border-radius: 0.75rem;
-    padding: 0.625rem 0;
-    margin: 0;
-    box-shadow: var(--shadow-dropdown);
-    list-style: none;
-    z-index: 1000;
-    border-top: 3px solid var(--clr-secondary);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(10px);
-    transition: opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base);
-}
+	& .sub-menu {
+		position: absolute;
+		top: 100%;
+		inset-inline-start: 0;
+		background: var(--clr-white);
+		min-width: 15rem;
+		border-radius: 0.75rem;
+		padding: 0.625rem 0;
+		margin: 0;
+		box-shadow: var(--shadow-dropdown);
+		list-style: none;
+		z-index: 1000;
+		border-top: 3px solid var(--clr-secondary);
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(10px);
+		transition: opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base);
 
-.main-menu .sub-menu .sub-menu {
-    top: 0;
-    right: 100%;
-    margin-right: 2px;
-}
+		& .sub-menu {
+			top: 0;
+			inset-inline-start: 100%;
+			margin-inline-start: 2px;
+		}
+	}
 
-.main-menu li:hover > .sub-menu,
-.main-menu li:focus-within > .sub-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
+	& li:hover > .sub-menu,
+	& li:focus-within > .sub-menu {
+		opacity: 1;
+		visibility: visible;
+		transform: translateY(0);
+	}
 
-.main-menu .sub-menu li a {
-    color: var(--clr-text-dark);
-    text-decoration: none;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.875rem;
-    transition: all var(--transition-fast);
-    border-bottom: 1px solid #edf1f7;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    white-space: nowrap; 
-}
+	& .sub-menu li a {
+		color: var(--clr-text-dark);
+		text-decoration: none;
+		padding: 0.75rem 1.25rem;
+		font-size: 0.875rem;
+		transition: all var(--transition-fast);
+		border-bottom: 1px solid #edf1f7;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		white-space: nowrap;
+	}
 
-.main-menu .sub-menu li:last-child a {
-    border-bottom: none;
-}
+	& .sub-menu li:last-child a {
+		border-bottom: none;
+	}
 
-.main-menu .sub-menu li a:hover,
-.main-menu .sub-menu li a:focus-visible {
-    background-color: var(--clr-primary-light);
-    color: var(--clr-primary);
-    padding-right: 1.75rem;
-    outline: none;
+	& .sub-menu li a:hover,
+	& .sub-menu li a:focus-visible {
+		background-color: var(--clr-primary-light);
+		color: var(--clr-primary);
+		padding-inline-start: 1.75rem;
+		outline: none;
+	}
 }
 
 /* ==========================================================
    ۴. لوگو، جستجو و دکمه پشتیبانی
 ========================================================== */
-.header__logo img {
-    max-height: 3.4375rem;
-    width: auto;
-    display: block;
-    transition: transform var(--transition-base);
-}
+.header__logo {
+	& img {
+		max-height: 3.4375rem;
+		width: auto;
+		display: block;
+		transition: transform var(--transition-base);
+	}
 
-.header__logo:hover img,
-.header__logo:focus-visible img {
-    transform: scale(1.05);
+	&:hover img,
+	&:focus-visible img {
+		transform: scale(1.05);
+	}
 }
 
 .header__search {
-    width: 100%;
-    max-width: 28.75rem; 
+	width: 100%;
+	max-width: 28.75rem;
 }
 
 .search-box input {
-    width: 100%;
-    background: var(--clr-white);
-    border: 1px solid var(--clr-third);
-    color: var(--clr-text-dark);
-    padding: 0.625rem 0.9375rem;
-    border-radius: 1.875rem;
-    outline: none;
-    font-size: 0.8125rem;
-    transition: all var(--transition-base);
-}
+	width: 100%;
+	background: var(--clr-white);
+	border: 1px solid var(--clr-third);
+	color: var(--clr-text-dark);
+	padding: 0.625rem 0.9375rem;
+	border-radius: 1.875rem;
+	outline: none;
+	font-size: 0.8125rem;
+	transition: all var(--transition-base);
 
-.search-box input:focus {
-    border-color: var(--clr-secondary);
-    box-shadow: 0 0 0 3px rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.18);
+	&:focus {
+		border-color: var(--clr-secondary);
+		box-shadow: 0 0 0 3px rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.18);
+	}
 }
 
 .btn-support {
-    background-color: var(--clr-white);
-    color: var(--clr-text-dark);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 0.625rem;
-    padding: 0.625rem 1.125rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: var(--shadow-button);
-    transition: all var(--transition-base);
-    text-decoration: none;
-    white-space: nowrap; 
-}
+	background-color: var(--clr-white);
+	color: var(--clr-text-dark) !important;
+	border: 1px solid rgb(255 255 255 / 0.08);
+	border-radius: 0.625rem;
+	padding: 0.625rem 1.125rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	box-shadow: var(--shadow-button);
+	transition: all var(--transition-base);
+	text-decoration: none;
+	white-space: nowrap;
 
-.btn-support:hover,
-.btn-support:focus-visible {
-    transform: translateY(-2px);
-    color: var(--clr-text-dark) !important; 
-    box-shadow: var(--shadow-button-hover);
-    outline: none;
-}
+	&:hover,
+	&:focus-visible {
+		transform: translateY(-2px);
+		color: var(--clr-text-dark) !important;
+		box-shadow: var(--shadow-button-hover);
+		outline: none;
+	}
 
-.btn-support svg {
-    stroke: var(--clr-secondary);
-    fill: none;
-    stroke-width: 2;
-    width: 1.25rem;
-    height: 1.25rem;
+	& svg {
+		stroke: var(--clr-secondary) !important;
+		fill: none !important;
+		stroke-width: 2;
+		width: 1.25rem;
+		height: 1.25rem;
+	}
 }
 
 /* ==========================================================
-   ۵. واکنش‌گرایی دسکتاپ‌های متوسط تا بزرگ 
+   ۵. واکنش‌گرایی دسکتاپ‌های متوسط تا بزرگ
 ========================================================== */
 @media (1025px <= width <= 1400px) {
-    .header__container {
-        gap: 1rem;
-        padding-inline: 1rem;
-    }
-    .header__center {
-        padding-right: 1.25rem;
-    }
-    .main-menu {
-        gap: 0.875rem; 
-    }
-    .main-menu > li > a {
-        font-size: 0.875rem; 
-    }
-    .header__search {
-        max-width: 20rem; 
-    }
+	.header__container {
+		gap: 1rem;
+		padding-inline: 1rem;
+	}
+
+	.header__center {
+		padding-inline-start: 1.25rem;
+	}
+
+	.main-menu {
+		gap: 0.875rem;
+
+		& > li > a {
+			font-size: 0.875rem;
+		}
+	}
+
+	.header__search {
+		max-width: 20rem;
+	}
 }
 
 /* ==========================================================
    ۶. استایل‌های موبایل و واکنش‌گرایی موبایل و تبلت
 ========================================================== */
 .header__mobile-toggle {
-    display: none;
+	display: none;
 }
 
 @media (width <= 1024px) {
-    .header__mobile-toggle {
-        display: block;
-        background: transparent;
-        border: none;
-        color: var(--clr-white);
-        cursor: pointer;
-        padding: 0.3125rem;
-        z-index: 1000;
-        outline: none; 
-        -webkit-tap-highlight-color: transparent; 
-    }
+	.header__mobile-toggle {
+		display: block;
+		background: transparent;
+		border: none;
+		color: var(--clr-white);
+		cursor: pointer;
+		padding: 0.3125rem;
+		z-index: 1000;
+		outline: none;
+		-webkit-tap-highlight-color: transparent;
 
-    .header__mobile-toggle:focus,
-    .header__mobile-toggle:active {
-        outline: none;
-        background: transparent;
-    }
+		&:focus,
+		&:active {
+			outline: none;
+			background: transparent;
+		}
 
-    .header__mobile-toggle svg {
-        width: 1.65rem;  
-        height: 1.65rem; 
-        stroke: currentColor;
-        stroke-width: 2;
-    }
+		& svg {
+			width: 1.65rem;
+			height: 1.65rem;
+			stroke: currentcolor;
+			stroke-width: 2;
+		}
+	}
 
-    .header__logo {
-        display: none;
-    }
+	.header__logo {
+		display: none;
+	}
 
-    .header__container {
-        gap: 0.625rem;
-        padding-inline: 0.9375rem;
-    }
+	.header__container {
+		gap: 0.625rem;
+		padding-inline: 0.9375rem;
+	}
 
-    .header__search {
-        max-width: 15.55rem;
-    }
+	.header__search {
+		max-width: 15.55rem;
+	}
 
-    .search-box input {
-        padding: 0.5rem 0.9375rem;
-        font-size: 0.75rem;
-    }
+	.search-box input {
+		padding: 0.5rem 0.9375rem;
+		font-size: 0.75rem;
+	}
 
-    .btn-support span {
-        display: none;
-    }
+	.btn-support span {
+		display: none;
+	}
 
-    .btn-support {
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.5rem;
-    }
+	.btn-support {
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.5rem;
+	}
 
-    .main-nav {
-        display: block;
-        position: fixed;
-        top: var(--header-height-mobile);
-        right: 0;
-        width: 75%;
-        max-width: 20rem;
-        background-color: var(--clr-mobile-menu-bg);
-        box-shadow: var(--shadow-mobile-nav);
-        border-radius: 0 0 0 var(--header-radius);
-        padding: 0.9375rem 0;
-        z-index: 998;
-        border-top: 3px solid var(--clr-secondary);
-        border-bottom: 3px solid var(--clr-secondary);
-        max-height: calc(100vh - var(--header-height-mobile));
-        overflow-y: auto !important;
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-        transform: translateX(20px);
-        transition: opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base);
-    }
+	.main-nav {
+		display: block;
+		position: fixed;
+		top: var(--header-height-mobile);
+		inset-inline-start: 0;
+		width: 75%;
+		max-width: 20rem;
+		background-color: var(--clr-mobile-menu-bg);
+		box-shadow: var(--shadow-mobile-nav);
+		border-radius: 0 0 0 var(--header-radius);
+		padding: 0.9375rem 0;
+		z-index: 998;
+		border-top: 3px solid var(--clr-secondary);
+		border-bottom: 3px solid var(--clr-secondary);
+		max-height: calc(100vh - var(--header-height-mobile));
+		overflow-y: auto;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transform: translateX(20px);
+		transition: opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base);
 
-    .main-nav.is-open {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: translateX(0);
-    }
+		&.is-open {
+			opacity: 1;
+			visibility: visible;
+			pointer-events: auto;
+			transform: translateX(0);
+		}
+	}
 
-    .main-menu {
-        flex-direction: column;
-        gap: 0;
-        padding-bottom: 0;
-    }
+	.main-menu {
+		flex-direction: column;
+		gap: 0;
+		padding-bottom: 0;
 
-    .main-menu > li > a {
-        padding: 0.75rem 1.5625rem;
-        color: var(--clr-text-dark);
-        font-weight: 500;
-        border-bottom: 1px solid rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.06);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        white-space: normal; 
-    }
+		& > li > a {
+			padding: 0.75rem 1.5625rem;
+			color: var(--clr-text-dark);
+			font-weight: 500;
+			border-bottom: 1px solid rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.06);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			white-space: normal;
+		}
 
-    .main-menu > li > a::before {
-        display: none;
-    }
+		& > li > a::before {
+			display: none;
+		}
 
-    .main-menu > li > a:hover,
-    .main-menu > li > a:focus-visible,
-    .main-menu .sub-menu a:hover,
-    .main-menu .sub-menu a:focus-visible {
-        background-color: var(--clr-primary-light);
-        color: var(--clr-primary);
-        padding-right: 2rem;
-    }
+		& > li > a:hover,
+		& > li > a:focus-visible,
+		& .sub-menu a:hover,
+		& .sub-menu a:focus-visible {
+			background-color: var(--clr-primary-light);
+			color: var(--clr-primary);
+			padding-inline-start: 2rem;
+		}
 
-    .main-menu li.menu-item-has-children > a::after {
-        border-color: #7b8794 transparent transparent transparent;
-        margin-top: 0;
-    }
+		& li.menu-item-has-children > a::after {
+			border-color: #7b8794 transparent transparent;
+			margin-top: 0;
+		}
 
-    .main-menu li.menu-item-has-children.submenu-active > a::after {
-        transform: rotate(180deg);
-        border-color: var(--clr-secondary) transparent transparent transparent;
-    }
+		& li.menu-item-has-children.submenu-active > a::after {
+			transform: rotate(180deg);
+			border-color: var(--clr-secondary) transparent transparent;
+		}
 
-    .main-menu li.menu-item-has-children.submenu-active > a {
-        color: var(--clr-primary);
-    }
+		& li.menu-item-has-children.submenu-active > a {
+			color: var(--clr-primary);
+		}
 
-    .main-menu .sub-menu,
-    .main-menu .sub-menu .sub-menu {
-        position: static;
-        opacity: 1;
-        visibility: visible;
-        transform: none;
-        box-shadow: none;
-        border: none;
-        border-right: 3px solid var(--clr-secondary);
-        background: rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.08);
-        min-width: auto;
-        padding: 0;
-        border-radius: 0;
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.4s ease;
-    }
+		& .sub-menu,
+		& .sub-menu .sub-menu {
+			position: static;
+			opacity: 1;
+			visibility: visible;
+			transform: none;
+			box-shadow: none;
+			border: none;
+			border-inline-start: 3px solid var(--clr-secondary);
+			background: rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.08);
+			min-width: auto;
+			padding: 0;
+			border-radius: 0;
+			max-height: 0;
+			overflow: hidden;
+			transition: max-height 0.4s ease;
+		}
 
-    .main-menu li.submenu-active > .sub-menu {
-        max-height: 60rem;
-    }
+		& li.submenu-active > .sub-menu {
+			max-height: 60rem;
+		}
 
-    .main-menu .sub-menu a {
-        padding: 0.625rem 1.5625rem;
-        color: var(--clr-text-muted);
-        font-size: 0.875rem;
-        white-space: normal;
-    }
+		& .sub-menu a {
+			padding: 0.625rem 1.5625rem;
+			color: var(--clr-text-muted);
+			font-size: 0.875rem;
+			white-space: normal;
+		}
+	}
 }
 
 @media (width <= 768px) {
-    .header__container {
-        height: var(--header-height-mobile);
-    }
+	.header__container {
+		height: var(--header-height-mobile);
+	}
 }
 
 /* ==========================================================
    ۷. پاپ‌آپ پشتیبانی
 ========================================================== */
 .overlay {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--clr-overlay);
-    backdrop-filter: blur(5px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    visibility: hidden;
-    transition: all var(--transition-base);
-    z-index: 2147483647;
-}
+	position: fixed;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	background: var(--clr-overlay);
+	backdrop-filter: blur(5px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	visibility: hidden;
+	transition: all var(--transition-base);
+	z-index: 2147483647;
 
-.overlay.is-active {
-    opacity: 1;
-    visibility: visible;
+	&.is-active {
+		opacity: 1;
+		visibility: visible;
+	}
 }
 
 /*
@@ -538,161 +557,147 @@
  * در صفحه نگه می‌دارد (پنهان با opacity/visibility) تا انیمیشن بستن دیده شود.
  */
 dialog.overlay {
-    max-width: none;
-    max-height: none;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    color: inherit;
-    overflow: visible;
-    unicode-bidi: isolate; /* مثل div قبلی */
+	max-width: none;
+	max-height: none;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	color: inherit;
+	overflow: visible;
+	unicode-bidi: isolate; /* مثل div قبلی */
 
-    &::backdrop {
-        background: transparent;
-    }
+	&::backdrop {
+		background: transparent;
+	}
 }
 
 .popup {
-    background: var(--clr-white);
-    width: 20rem;
-    max-width: 90%;
-    padding: 1.875rem 1.5625rem;
-    border-radius: 1.25rem;
-    box-shadow: var(--shadow-popup);
-    text-align: center;
-    transform: scale(0.8);
-    transition: all var(--transition-bounce);
-    position: relative;
+	background: var(--clr-white);
+	width: 20rem;
+	max-width: 90%;
+	padding: 1.875rem 1.5625rem;
+	border-radius: 1.25rem;
+	box-shadow: var(--shadow-popup);
+	text-align: center;
+	transform: scale(0.8);
+	transition: all var(--transition-bounce);
+	position: relative;
 }
 
 .overlay.is-active .popup {
-    transform: scale(1);
-}
-
-/* ==========================================================
-   استایل‌های قدرتمند برای آیکون هدفون (رنگ سرمه‌ای شیک) 🎧✨
-========================================================== */
-.popup__icon,
-.popup__title i,
-.popup__title svg,
-.popup__title svg path,
-.popup__title svg rect,
-.popup__title svg circle {
-    color: var(--clr-primary) !important;
-    fill: var(--clr-primary) !important;
-    stroke: var(--clr-primary) !important;
-    width: 1.8rem !important;
-    height: 1.8rem !important;
-    font-size: 1.8rem !important;
-    transform: scale(1.15) !important;
-    margin-left: 0.75rem !important;
-    display: inline-block !important;
-    vertical-align: middle !important;
-}
-
-img.popup__icon,
-.popup__title img {
-    filter: invert(17%) sepia(45%) saturate(3022%) hue-rotate(218deg) brightness(88%) contrast(92%) !important;
-    width: 1.8rem !important;
-    height: auto !important;
-    transform: scale(1.15) !important;
-    margin-left: 0.75rem !important;
-    display: inline-block !important;
-    vertical-align: middle !important;
+	transform: scale(1);
 }
 
 /* ==========================================================
    بخش محتوا و دکمه‌های پاپ‌آپ
 ========================================================== */
 .popup__title {
-    margin: 0 0 1.25rem;
-    font-size: 1.125rem;
-    color: var(--clr-text-dark);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+	margin: 0 0 1.25rem;
+	font-size: 1.125rem;
+	color: var(--clr-text-dark);
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
+/* دکمه بستن X: فقط خود X، بدون باکس/رنگ هاور پیش‌فرض دکمه‌ها (style.css) */
 .popup__close {
-    position: absolute;
-    top: 0.625rem;
-    left: 0.625rem;
-    background: none;
-    border: none;
-    width: 2.1875rem;
-    height: 2.1875rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.75rem;
-    /* 🔴 جایگزینی رنگ‌های عمومی با متغیر برند سازمانی */
-    color: var(--clr-secondary) !important; 
-    cursor: pointer;
-    transition: color var(--transition-base), transform var(--transition-fast);
-}
+	position: absolute;
+	top: 0.625rem;
+	inset-inline-end: 0.625rem;
+	background: transparent !important;
+	border: none !important;
+	box-shadow: none !important;
+	outline: none !important;
+	appearance: none;
+	width: 2.1875rem;
+	height: 2.1875rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.75rem;
+	line-height: 1;
+	border-radius: 0 !important;
+	color: var(--clr-secondary) !important;
+	cursor: pointer;
+	transition: color var(--transition-base), transform var(--transition-fast);
 
-.popup__close:hover,
-.popup__close:focus-visible {
-    color: var(--clr-primary) !important;
-    transform: scale(1.1);
-    outline: none;
+	&:hover,
+	&:focus,
+	&:active,
+	&:focus-visible {
+		background: transparent !important;
+		border: none !important;
+		box-shadow: none !important;
+		outline: none !important;
+		appearance: none;
+	}
+
+	&:hover,
+	&:focus-visible {
+		color: var(--clr-primary) !important;
+		transform: scale(1.08);
+	}
 }
 
 .popup__link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.625rem;
-    width: 100%;
-    padding: 0.75rem;
-    margin-bottom: 0.75rem;
-    border-radius: 0.75rem;
-    text-decoration: none;
-    color: var(--clr-white);
-    font-size: 0.9375rem;
-    font-weight: 500;
-    transition: transform var(--transition-fast);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.625rem;
+	width: 100%;
+	padding: 0.75rem;
+	margin-bottom: 0.75rem;
+	border-radius: 0.75rem;
+	text-decoration: none;
+	color: var(--clr-white);
+	font-size: 0.9375rem;
+	font-weight: 500;
+	transition: transform var(--transition-fast);
+
+	&:hover,
+	&:focus-visible {
+		transform: scale(1.03);
+		color: var(--clr-white) !important;
+		outline: 2px solid var(--clr-secondary);
+		outline-offset: 2px;
+	}
+
+	& svg,
+	& i {
+		width: 1.375rem;
+		height: 1.375rem;
+		fill: #ffffff !important;
+		color: #ffffff !important;
+	}
 }
 
-.popup__link:hover,
-.popup__link:focus-visible {
-    transform: scale(1.03);
-    color: var(--clr-white) !important;
-    outline: 2px solid var(--clr-secondary); 
-    outline-offset: 2px;
-}
-
-.popup__link svg,
-.popup__link i {
-    width: 1.375rem;
-    height: 1.375rem;
-    fill: #ffffff !important;
-    color: #ffffff !important;
-}
-
-.popup__link--call     { background: var(--grad-call); }
+.popup__link--call { background: var(--grad-call); }
 .popup__link--whatsapp { background: var(--grad-whatsapp); }
 .popup__link--telegram { background: var(--grad-telegram); }
+
+/* رنگ دکمه روبیکا در پنجره پشتیبانی (قبلا به صورت inline در header.php) */
+.popup__link--rubika { background: linear-gradient(135deg, #d82b7e, #f25000); }
 
 /* ==========================================================
    ۸. سیستم قفل اسکرول حرفه‌ای و بهینه
 ========================================================== */
 body.menu-is-open {
-    overflow: hidden !important;
+	overflow: hidden !important;
 }
 
 /* ==========================================================
-   FIX نهایی پاپ‌آپ پشتیبانی (Desktop + Mobile)
+   FIX نهایی دکمه پشتیبانی
 ========================================================== */
 
-/* 1) متن دکمه پشتیبانی - سفید ملایم (کمی کدرتر از سفید خالص) */
+/* متن دکمه پشتیبانی - سفید ملایم (کمی کدرتر از سفید خالص) */
 .btn-support,
 .btn-support span,
 .btn-support:visited,
 .btn-support:hover,
 .btn-support:focus,
 .btn-support:active {
-    color: #f2eded !important;
+	color: #f2eded !important;
 }
 
 /* آیکون دکمه پشتیبانی - هماهنگ با رنگ متن */
@@ -700,133 +705,87 @@ body.menu-is-open {
 .btn-support:hover svg,
 .btn-support:focus svg,
 .btn-support:active svg {
-    stroke: #f2eded !important;
-    fill: none !important;
-}
-
-/* 2) آیکون عنوان پاپ‌آپ: فقط سرمه‌ای برند، بدون ترکیب زشت با آبی */
-.popup__title .popup__icon,
-.popup__title i,
-.popup__title svg,
-.popup__title svg * {
-    color: var(--clr-primary) !important;
-    fill: var(--clr-primary) !important;
-    stroke: var(--clr-primary) !important;
-    opacity: 1 !important;
-    filter: none !important;
-}
-
-/* اگر آیکون به صورت img باشد */
-.popup__title img,
-img.popup__icon {
-    filter: none !important;
-    opacity: 1 !important;
-}
-
-/* 3) دکمه بستن X: حذف باکس/رنگ هاور بد پیش‌فرض */
-.popup__close,
-.popup__close:hover,
-.popup__close:focus,
-.popup__close:active,
-.popup__close:focus-visible {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    -webkit-appearance: none;
-    appearance: none;
-}
-
-/* هاور فقط روی خود X */
-.popup__close {
-    color: var(--clr-secondary) !important;
-    line-height: 1;
-    border-radius: 0 !important;
-}
-
-.popup__close:hover,
-.popup__close:focus-visible {
-    color: var(--clr-primary) !important;
-    transform: scale(1.08);
+	stroke: #f2eded !important;
+	fill: none !important;
 }
 
 /* ==========================================================
    FIX: تراز وسط باکس سرچ در موبایل
 ========================================================== */
 @media (width <= 1024px) {
-    .header__container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
+	.header__container {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
 
-    /* ستون وسط واقعی برای سرچ */
-    .header__center {
-        flex: 1 1 auto;
-        min-width: 0;
-        padding-right: 0 !important;
-        justify-content: center !important;
-        display: flex;
-    }
+	/* ستون وسط واقعی برای سرچ */
+	.header__center {
+		flex: 1 1 auto;
+		min-width: 0;
+		padding-inline-start: 0;
+		justify-content: center;
+		display: flex;
+	}
 
-    /* خود باکس سرچ وسط بماند */
-    .header__search {
-        width: 100%;
-        max-width: 15.55rem;
-        margin-inline: auto !important;
-    }
+	/* خود باکس سرچ وسط بماند */
+	.header__search {
+		width: 100%;
+		max-width: 15.55rem;
+		margin-inline: auto;
+	}
 }
+
 /* ==========================================================
    لینک «پرش به محتوای اصلی» (WCAG 2.4.1) و لوگو از تنظیمات قالب
 ========================================================== */
 .skip-link {
-    position: fixed;
-    inset-block-start: 0.75rem;
-    inset-inline-start: 0.75rem;
-    z-index: 100000;
-    padding: 0.75rem 1.25rem;
-    border-radius: 0.75rem;
-    background: var(--clr-white);
-    color: var(--clr-primary);
-    font-weight: 700;
-    text-decoration: none;
-    box-shadow: var(--shadow-dropdown);
-    translate: 0 -200%;
-    transition: translate var(--transition-fast);
-}
+	position: fixed;
+	inset-block-start: 0.75rem;
+	inset-inline-start: 0.75rem;
+	z-index: 100000;
+	padding: 0.75rem 1.25rem;
+	border-radius: 0.75rem;
+	background: var(--clr-white);
+	color: var(--clr-primary);
+	font-weight: 700;
+	text-decoration: none;
+	box-shadow: var(--shadow-dropdown);
+	translate: 0 -200%;
+	transition: translate var(--transition-fast);
 
-.skip-link:focus-visible {
-    translate: 0 0;
-    outline: 2px solid var(--hodima-accent-light, #a341c8);
-    outline-offset: 2px;
+	&:focus-visible {
+		translate: 0 0;
+		outline: 2px solid var(--hodima-accent-light, #a341c8);
+		outline-offset: 2px;
+	}
 }
 
 .skip-link-target:focus {
-    outline: none;
+	outline: none;
 }
 
 /* لوگوی رنگی روی پس‌زمینه تیره هدر (گزینه «نمایش لوگو به رنگ سفید») */
 .header__logo--invert img {
-    filter: brightness(0) invert(1);
+	filter: brightness(0) invert(1);
 }
 
 /* بدون لوگو: نام سایت */
 .header__logo-text {
-    display: block;
-    color: var(--clr-white);
-    font-size: 1.25rem;
-    font-weight: 900;
-    white-space: nowrap;
+	display: block;
+	color: var(--clr-white);
+	font-size: 1.25rem;
+	font-weight: 900;
+	white-space: nowrap;
 }
 
 .header__logo-img {
-    block-size: auto;
-    inline-size: auto;
+	block-size: auto;
+	inline-size: auto;
 }
 
-/* رنگ دکمه روبیکا در پنجره پشتیبانی (قبلا به صورت inline در header.php) */
-.popup__link--rubika { background: linear-gradient(135deg, #d82b7e, #f25000); }
-
 @media (prefers-reduced-motion: reduce) {
-    .skip-link { transition: none; }
+	.skip-link {
+		transition: none;
+	}
 }

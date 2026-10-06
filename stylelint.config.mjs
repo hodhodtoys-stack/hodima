@@ -2,7 +2,7 @@
  * Stylelint هدیما (اجرا: bash bin/lint.sh یا npm run lint:css)
  *
  * پایه: stylelint-config-standard، با تمرکز بر خطا و نوسازی:
- *   - نگارش مدرن رنگ و media query (rgb(… / a)، width < 768px)
+ *   - نگارش مدرن رنگ و media query (rgb(0 0 0 / 0.1)، width <= 768px)
  *   - !important (هدف مرحله ۶ نقشه راه: کم کردن ۷۳۲ مورد)
  *   - خصوصیات منطقی (margin-inline-start به‌جای margin-left؛ سایت راست‌به‌چپ است)
  *   - انتخابگر تکراری و ترتیب ویژگی (specificity) که باعث بازنویسی ناخواسته می‌شود
@@ -31,6 +31,17 @@ export default {
 		'length-zero-no-unit': null,
 		'value-keyword-case': null,
 		'declaration-block-single-line-max-declarations': null,
+
+		/*
+		 * رنگ نیمه‌شفاف برند قرارداد پروژه است: rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.1)
+		 * (CLAUDE.md؛ افزونه‌ها هم همین را دارند). متغیر «R, G, B» ویرگول دارد و با نگارش
+		 * فاصله‌ای rgb(… / a) نمی‌خواند؛ color-mix(var) هم در مرورگرهای هدف قدیمی (Chrome 109
+		 * ویندوز ۷) پایین آورده نمی‌شود (HODIMA-AUDIT.md ۶۳). رنگ ثابت: rgb(0 0 0 / 0.1).
+		 * آلفا عدد (0.1) مثل بقیه کد.
+		 */
+		'color-function-notation': [ 'modern', { ignore: [ 'with-var-inside' ] } ],
+		'color-function-alias-notation': null,
+		'alpha-value-notation': 'number',
 
 		// نوسازی و درستی
 		'declaration-no-important': true,
