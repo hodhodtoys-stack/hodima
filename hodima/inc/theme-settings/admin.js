@@ -250,7 +250,8 @@
 		let submitting = false;
 
 		const mark = (target) => {
-			if (!target?.name || target.closest('template')) {
+			// ورودی‌های فرم جدای بازگردانی پشتیبان (form=) جزو تنظیمات نیستند
+			if (!target?.name || target.closest('template') || target.form !== form) {
 				return;
 			}
 			dirty = true;
@@ -548,6 +549,16 @@
 		sync();
 	};
 
+	/** بازگردانی پشتیبان: تأیید پیش از جایگزینی همه تنظیمات. */
+	const initBackup = () => {
+		document.querySelector('[data-hodima-import-form]')?.addEventListener('submit', (event) => {
+			// eslint-disable-next-line no-alert
+			if (!window.confirm('همه تنظیمات فعلی قالب با فایل پشتیبان جایگزین شود؟')) {
+				event.preventDefault();
+			}
+		});
+	};
+
 	document.addEventListener('DOMContentLoaded', () => {
 		document.querySelectorAll('[data-hodima-media]').forEach(initMediaField);
 		document.querySelectorAll('[data-hodima-home]').forEach(initHomeLayout);
@@ -557,5 +568,6 @@
 		initBuilderStatus();
 		initTypography();
 		initLook();
+		initBackup();
 	});
 })();

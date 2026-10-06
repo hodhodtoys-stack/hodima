@@ -56,6 +56,14 @@ function hodima_settings_fields(): array {
 		'button_style'     => [ 'panel' => 'look_shape', 'type' => 'select', 'label' => 'سبک دکمه‌ها', 'default' => 'gradient', 'options' => [ 'gradient' => 'گرادیان رنگ اصلی و دوم (پیش‌فرض)', 'solid' => 'یک‌رنگ: رنگ اصلی', 'secondary' => 'یک‌رنگ: رنگ دوم', 'accent' => 'گرادیان رنگ تأکید' ], 'help' => 'دکمه‌های عمومی سایت و ووکامرس (افزودن به سبد، ثبت، ارسال فرم‌ها). دکمه‌های طراحی‌شده بخش‌ها (مثل «تسویه حساب») رنگ خودشان را دارند.' ],
 		'container_width'  => [ 'panel' => 'look_width', 'type' => 'number', 'label' => 'بیشترین عرض محتوا (پیکسل)', 'default' => 1440, 'min' => 960, 'max' => 1920, 'help' => 'هدر، فوتر، فروشگاه، دسته‌ها، محصول و وبلاگ در صفحه‌های پهن‌تر از این عدد وسط صفحه می‌مانند. رایج: ۱۲۰۰ تا ۱۴۴۰.' ],
 
+		// ── امکانات کاربری (2.9.8؛ inc/extras.php) — پیش‌فرض خاموش: ظاهر سایت تا روشن کردن همان ──
+		'back_to_top'        => [ 'panel' => 'extras_top', 'type' => 'toggle', 'label' => 'دکمه «بازگشت به بالا»', 'default' => false, 'wide' => true, 'help' => 'بعد از کمی اسکرول پایین صفحه (سمت راست) ظاهر می‌شود؛ با کیبورد هم کار می‌کند.' ],
+		'mobile_nav'         => [ 'panel' => 'extras_mobile_nav', 'type' => 'toggle', 'label' => 'نوار پایین موبایل', 'default' => false, 'wide' => true, 'help' => 'نوار ثابت پایین صفحه در موبایل و تبلت عمودی (عرض ۷۶۸ پیکسل و کمتر)، با «خانه» و موارد روشن پایین.' ],
+		'mobile_nav_shop'    => [ 'panel' => 'extras_mobile_nav', 'type' => 'toggle', 'label' => 'فروشگاه', 'default' => true ],
+		'mobile_nav_search'  => [ 'panel' => 'extras_mobile_nav', 'type' => 'toggle', 'label' => 'جستجو', 'default' => true, 'help' => 'کادر جستجوی هدر را باز می‌کند (اگر در تب «هدر» روشن باشد).' ],
+		'mobile_nav_cart'    => [ 'panel' => 'extras_mobile_nav', 'type' => 'toggle', 'label' => 'سبد خرید', 'default' => true ],
+		'mobile_nav_support' => [ 'panel' => 'extras_mobile_nav', 'type' => 'toggle', 'label' => 'پشتیبانی', 'default' => true, 'help' => 'پنجره پشتیبانی هدر (اگر در «اطلاعات تماس» راهی وارد شده باشد).' ],
+
 		// ── هدر ─────────────────────────────────────────────────────
 		'header_support_text'  => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'متن دکمه پشتیبانی', 'default' => 'پشتیبانی' ],
 		'header_popup_title'   => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'عنوان پنجره پشتیبانی', 'default' => 'ارتباط با ما' ],
@@ -126,6 +134,8 @@ function hodima_settings_fields(): array {
 
 		// ── دامنه ویدئو: اتصال زودهنگام به دامنه پخش رسانه (نوسازی قالب، مرحله ۲ و ۴؛ قبلا dl.hodima.com ثابت در کد) ──
 		'preconnect_hosts'      => [ 'panel' => 'speed_preconnect', 'type' => 'hostlist', 'label' => 'دامنه ویدئو و پادکست', 'default' => '', 'placeholder' => 'dl.example.com', 'help' => 'دامنه‌ای که فایل‌های ویدیو و پادکست سایت از آن پخش می‌شوند (مثلا هاست دانلود یا CDN)؛ اگر بیش از یکی است هر کدام در یک خط. در هر صفحه‌ای که ویدیو یا پادکستی از این دامنه دارد (کادر «رسانه»، صفحه ویدیو یا داخل متن نوشته)، مرورگر از همان ابتدای بارگذاری به آن وصل می‌شود تا پخش زودتر شروع شود؛ صفحه‌های دیگر اتصال اضافه نمی‌گیرند.' ],
+		'code_head'             => [ 'panel' => 'code_main', 'type' => 'code', 'label' => 'کد داخل <head> همه صفحه‌ها', 'default' => '', 'placeholder' => '<meta name="…" content="…">', 'help' => 'مثلا تأیید مالکیت سایت یا کد ابزارهای آمار. فقط مدیر با دسترسی «HTML نامحدود» می‌تواند ذخیره کند. کد اشتباه ممکن است ظاهر یا کارکرد سایت را خراب کند.' ],
+		'code_body_end'         => [ 'panel' => 'code_main', 'type' => 'code', 'label' => 'کد پایان صفحه (پیش از </body>)', 'default' => '', 'placeholder' => '<script>…</script>', 'help' => 'اسکریپت‌هایی که لازم نیست زود بارگذاری شوند (گفتگوی آنلاین، پیکسل‌ها). برای سرعت بهتر از کادر بالا این‌جاست.' ],
 		'preconnect_media_auto' => [ 'panel' => 'speed_preconnect', 'type' => 'toggle', 'label' => 'تشخیص خودکار دامنه هر ویدیو و پادکست', 'default' => true, 'wide' => true, 'help' => 'دامنه ویدیو، کاور و پادکست هر صفحه (حتی آپارات و یوتیوب یا دامنه‌ای که بالا وارد نشده) خودکار تشخیص داده می‌شود. خاموش: فقط دامنه‌های کادر بالا.' ],
 	];
 }
@@ -304,7 +314,7 @@ function hodima_settings_nav_groups(): array {
 		'look'    => 'ظاهر سایت',
 		'pages'   => 'صفحه‌ها',
 		'contact' => 'ارتباط با مشتری',
-		'tools'   => 'آمار و ویدئو',
+		'tools'   => 'آمار و ابزارها',
 	];
 }
 
@@ -323,6 +333,7 @@ function hodima_settings_sections(): array {
 		'brand'     => [ 'nav' => 'look', 'title' => 'برند و رنگ‌ها', 'icon' => 'dashicons-art', 'description' => 'لوگوی هدر و پنج رنگ برند که کل سایت از آن‌ها ساخته می‌شود.' ],
 		'typography' => [ 'nav' => 'look', 'title' => 'تایپوگرافی', 'icon' => 'dashicons-editor-textcolor', 'description' => 'فونت، اندازه و رنگ متن، لینک‌ها و تیترهای H1 تا H6 در کل سایت (و ویرایشگر نوشته‌ها).' ],
 		'layout'    => [ 'nav' => 'look', 'title' => 'ظاهر عمومی', 'icon' => 'dashicons-layout', 'description' => 'گردی گوشه‌ها، سبک دکمه‌ها و عرض محتوای کل سایت.' ],
+		'extras'    => [ 'nav' => 'look', 'title' => 'امکانات کاربری', 'icon' => 'dashicons-smartphone', 'description' => 'دکمه بازگشت به بالا و نوار پایین موبایل. هر دو تا روشن نشوند در سایت نمایش داده نمی‌شوند.' ],
 		'header'    => [ 'nav' => 'look', 'title' => 'هدر', 'icon' => 'dashicons-editor-kitchensink', 'description' => 'نوار بالای همه صفحه‌ها. متن خالی به پیش‌فرض برمی‌گردد.' ],
 		'footer'    => [ 'nav' => 'look', 'title' => 'فوتر', 'icon' => 'dashicons-table-row-after', 'description' => 'ستون‌های پایین همه صفحه‌ها. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود.' ],
 		'home'      => [ 'nav' => 'pages', 'title' => 'صفحه اصلی', 'icon' => 'dashicons-admin-home', 'description' => 'بخش‌های صفحه اصلی سایت: ترتیب، روشن/خاموش و تنظیمات هر بخش.' ],
@@ -334,6 +345,8 @@ function hodima_settings_sections(): array {
 		'social'    => [ 'nav' => 'contact', 'title' => 'شبکه‌های اجتماعی', 'icon' => 'dashicons-share', 'description' => 'نوار شبکه‌های اجتماعی بالای فوتر همه صفحه‌ها. بدون هیچ شبکه‌ای نوار نمایش داده نمی‌شود.' ],
 		'analytics' => [ 'nav' => 'tools', 'title' => 'Google Analytics', 'icon' => 'dashicons-chart-area', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
 		'speed'     => [ 'nav' => 'tools', 'title' => 'دامنه ویدئو', 'icon' => 'dashicons-video-alt3', 'description' => 'دامنه‌ای که ویدیو و پادکست‌های سایت از آن پخش می‌شوند؛ مرورگر در صفحه‌های دارای ویدیو از ابتدا به آن وصل می‌شود تا پخش زودتر شروع شود.' ],
+		'code'      => [ 'nav' => 'tools', 'title' => 'کد سفارشی', 'icon' => 'dashicons-editor-code', 'description' => 'کد HTML یا اسکریپت دلخواه در همه صفحه‌های سایت (نه پیشخوان).' ],
+		'backup'    => [ 'nav' => 'tools', 'title' => 'پشتیبان تنظیمات', 'icon' => 'dashicons-backup', 'description' => 'همه تنظیمات این صفحه (و چیدمان صفحه اصلی) در یک فایل؛ برای نگه‌داری یا انتقال به سایت دیگر.' ],
 	];
 }
 
@@ -393,6 +406,10 @@ function hodima_settings_panels(): array {
 
 		'analytics_ga'       => [ 'section' => 'analytics', 'title' => 'Google Analytics 4', 'icon' => 'dashicons-chart-area' ],
 
+		'extras_top'         => [ 'section' => 'extras', 'title' => 'بازگشت به بالا', 'icon' => 'dashicons-arrow-up-alt', 'half' => true ],
+		'extras_mobile_nav'  => [ 'section' => 'extras', 'title' => 'نوار پایین موبایل', 'icon' => 'dashicons-smartphone', 'layout' => 'toggles', 'help' => '«خانه» همیشه هست؛ فروشگاه و سبد فقط با ووکامرس. بیشتر از ۵ مورد نیست تا روی صفحه کوچک جا شود.' ],
+		'code_main'          => [ 'section' => 'code', 'title' => 'کد دلخواه', 'icon' => 'dashicons-editor-code' ],
+		'backup_main'        => [ 'section' => 'backup', 'title' => 'دریافت و بازگردانی', 'icon' => 'dashicons-backup', 'layout' => 'backup', 'help' => 'تصویرها (لوگو، نمادها، فونت‌ها) با شناسه کتابخانه رسانه ذخیره می‌شوند؛ روی سایت دیگر اگر همان فایل نباشد خالی می‌مانند و باید دوباره انتخاب شوند.' ],
 		'speed_preconnect'   => [ 'section' => 'speed', 'title' => 'دامنه پخش ویدیو و پادکست', 'icon' => 'dashicons-video-alt3', 'help' => 'اگر ویدیو و پادکست‌ها روی دامنه جدا (مثلا dl.hodima.com) هستند، اتصال زودهنگام چند صدم ثانیه از شروع پخش کم می‌کند.' ],
 	];
 }
@@ -498,7 +515,12 @@ add_action( 'admin_menu', static function (): void {
  */
 function hodima_settings_sanitize( $input ): array {
 
-	$input  = is_array( $input ) ? wp_unslash( $input ) : [];
+	/*
+	 * بدون wp_unslash: options.php پیش از update_option خودش unslash می‌کند و این
+	 * callback داده unslash‌شده می‌گیرد. تا 2.9.7 دوباره unslash می‌شد و هر «\» در
+	 * متن تنظیمات (و از 2.9.8 در کد سفارشی، مثل "\n" در اسکریپت) پاک می‌شد.
+	 */
+	$input  = is_array( $input ) ? $input : [];
 	$clean  = [];
 
 	foreach ( hodima_settings_fields() as $key => $field ) {
@@ -568,6 +590,24 @@ function hodima_number_text( int|float $value ): string {
 function hodima_settings_sanitize_font( mixed $raw ): int {
 	$id = absint( is_scalar( $raw ) ? $raw : 0 );
 	return ( $id && hodima_is_font_attachment( $id ) ) ? $id : 0;
+}
+
+/**
+ * کد خام (تب «کد سفارشی»): فقط کاربری که اجازه HTML نامحدود دارد (unfiltered_html؛
+ * در چندسایته فقط مدیر کل) می‌تواند عوضش کند؛ برای بقیه مقدار قبلی می‌ماند.
+ */
+function hodima_settings_sanitize_code( string $key, mixed $raw ): string {
+
+	$raw     = is_string( $raw ) ? trim( $raw ) : '';
+	$stored  = get_option( HODIMA_SETTINGS_OPTION, [] );
+	$current = is_array( $stored ) ? (string) ( $stored[ $key ] ?? '' ) : '';
+
+	if ( $raw !== $current && ! current_user_can( 'unfiltered_html' ) ) {
+		add_settings_error( HODIMA_SETTINGS_OPTION, "denied_{$key}", sprintf( '«%s» ذخیره نشد: حساب شما اجازه افزودن کد HTML/اسکریپت را ندارد.', hodima_settings_field_label( $key ) ) );
+		return $current;
+	}
+
+	return $raw;
 }
 
 function hodima_settings_sanitize_url( string $key, mixed $raw ): string {
@@ -847,8 +887,16 @@ function hodima_settings_render_page(): void {
 				</footer>
 			</form>
 		</div>
+		<?php hodima_settings_backup_form_if_any(); ?>
 	</div>
 	<?php
+}
+
+/** فرم بازگردانی پشتیبان (inc/extras.php) بیرون از فرم اصلی. */
+function hodima_settings_backup_form_if_any(): void {
+	if ( function_exists( 'hodima_settings_backup_form' ) ) {
+		hodima_settings_backup_form();
+	}
 }
 
 /**
@@ -885,6 +933,8 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 				<?php hodima_typography_preview(); ?>
 			<?php elseif ( 'lookpreview' === $layout && function_exists( 'hodima_appearance_preview' ) ) : ?>
 				<?php hodima_appearance_preview(); ?>
+			<?php elseif ( 'backup' === $layout && function_exists( 'hodima_settings_backup_panel' ) ) : ?>
+				<?php hodima_settings_backup_panel(); ?>
 			<?php endif; ?>
 
 			<?php if ( $loose ) : ?>
@@ -1085,6 +1135,19 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 						<option value="<?php echo esc_attr( (string) $option ); ?>" <?php selected( (string) $value, (string) $option ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>
+			<?php elseif ( Hodima_Setting_Type::Code === $type ) : ?>
+				<textarea
+					class="hodima-code"
+					id="<?php echo esc_attr( $id ); ?>"
+					name="<?php echo esc_attr( $name ); ?>"
+					rows="6"
+					dir="ltr"
+					spellcheck="false"
+					autocomplete="off"
+					<?php echo isset( $field['placeholder'] ) ? 'placeholder="' . esc_attr( $field['placeholder'] ) . '"' : ''; ?>
+					<?php echo current_user_can( 'unfiltered_html' ) ? '' : 'readonly'; ?>
+					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
+				><?php echo esc_textarea( (string) $value ); ?></textarea>
 			<?php elseif ( $type->is_list() ) : ?>
 				<textarea
 					id="<?php echo esc_attr( $id ); ?>"

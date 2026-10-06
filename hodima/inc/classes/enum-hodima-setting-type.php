@@ -29,10 +29,11 @@ enum Hodima_Setting_Type: string {
 	case Select   = 'select';
 	case Color    = 'color';
 	case Font     = 'font';   // فایل فونت woff2/woff از کتابخانه رسانه (شناسه پیوست)
+	case Code     = 'code';   // HTML/اسکریپت خام (فقط کاربر با unfiltered_html)
 
 	/** فیلد در شبکه تنظیمات کل عرض را می‌گیرد (مگر داخل زیرگروه). */
 	public function is_wide(): bool {
-		return in_array( $this, [ self::Textarea, self::UrlList, self::HostList, self::Image, self::Font ], true );
+		return in_array( $this, [ self::Textarea, self::UrlList, self::HostList, self::Image, self::Font, self::Code ], true );
 	}
 
 	/** فهرست چندخطی آدرس/دامنه (textarea چپ‌به‌راست). */
@@ -65,6 +66,7 @@ enum Hodima_Setting_Type: string {
 			self::Toggle   => ! empty( $raw ),
 			self::Image    => hodima_settings_sanitize_image( $raw ),
 			self::Font     => hodima_settings_sanitize_font( $raw ),
+			self::Code     => hodima_settings_sanitize_code( $key, $raw ),
 			self::Url      => hodima_settings_sanitize_url( $key, $raw ),
 			self::Tel      => hodima_settings_sanitize_phone( $key, $raw ),
 			self::Ga       => hodima_settings_sanitize_ga( $raw ),

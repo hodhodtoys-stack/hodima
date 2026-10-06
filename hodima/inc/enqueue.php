@@ -61,6 +61,7 @@ const HODIMA_COMMON_CSS = [
 	'hodima-style'  => 'style.css',
 	'hodima-header' => 'assets/css/header.css',
 	'hodima-footer' => 'assets/css/footer.css',
+	'hodima-extras' => 'assets/css/extras.css', // بازگشت به بالا و نوار موبایل (2.9.8؛ بدون عنصر بی‌اثر)
 ];
 
 /** فایل یکی‌شده CSS مشترک — فقط در ZIP نصبی (ساخته bin/build-css.mjs)، نه در مخزن. */

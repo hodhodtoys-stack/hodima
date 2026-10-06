@@ -1,0 +1,118 @@
+/* =========================================================================
+ * امکانات کاربری (از 2.9.8؛ inc/extras.php): دکمه بازگشت به بالا و نوار پایین موبایل
+ * -------------------------------------------------------------------------
+ * بخشی از CSS مشترک (HODIMA_COMMON_CSS)؛ تا در پیشخوان روشن نشوند عنصری
+ * در صفحه نیست و این قانون‌ها اثری ندارند.
+ * ========================================================================= */
+
+:root {
+	--hodima-mobile-nav-height: 60px;
+}
+
+/* بازگشت به بالا: پایین سمت راست (پخش‌کننده کوچک استوری سمت چپ است) */
+.hodima-to-top {
+	position: fixed;
+	inset-block-end: var(--hodima-space-7);
+	inset-inline-start: var(--hodima-space-7);
+	z-index: 9990;
+	display: grid;
+	place-items: center;
+	inline-size: 2.75rem;
+	block-size: 2.75rem;
+	padding: 0;
+	border-radius: var(--hodima-radius-round);
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(0.5rem);
+	transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+
+	&.is-visible {
+		opacity: 1;
+		visibility: visible;
+		transform: none;
+	}
+
+	& svg {
+		inline-size: 1.375rem;
+		block-size: 1.375rem;
+	}
+}
+
+.hodima-mobile-nav {
+	display: none;
+}
+
+@media (width <= 768px) {
+	.hodima-mobile-nav {
+		position: fixed;
+		inset-inline: 0;
+		inset-block-end: 0;
+		z-index: 9980;
+		display: block;
+		padding-block-end: env(safe-area-inset-bottom);
+		border-block-start: 1px solid var(--hodima-border-light);
+		background: var(--hodima-surface);
+		box-shadow: 0 -4px 16px rgba(var(--hodima-primary-rgb), 0.08);
+
+		& ul {
+			display: flex;
+			margin: 0;
+			padding: 0;
+			list-style: none;
+		}
+
+		& li {
+			flex: 1 1 0;
+			min-inline-size: 0;
+		}
+	}
+
+	.hodima-mobile-nav__item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.125rem;
+		min-block-size: var(--hodima-mobile-nav-height);
+		padding: var(--hodima-space-2) var(--hodima-space-1);
+		color: var(--hodima-text-muted);
+		font-size: 0.6875rem;
+		line-height: 1.4;
+		text-align: center;
+
+		&:hover,
+		&[aria-current="page"] {
+			color: var(--hodima-primary);
+		}
+
+		&[aria-current="page"] {
+			font-weight: 700;
+		}
+
+		&:focus-visible {
+			outline-offset: -2px;
+		}
+
+		& span {
+			max-inline-size: 100%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+	}
+
+	/* فوتر و عنصرهای شناور زیر نوار پنهان نمانند */
+	body.has-hodima-mobile-nav {
+		padding-block-end: calc(var(--hodima-mobile-nav-height) + env(safe-area-inset-bottom));
+
+		& :is(.hodima-to-top, .hs-mini-player, .hd-wrap-bottom_right, .hd-wrap-bottom_left) {
+			bottom: calc(var(--hodima-mobile-nav-height) + env(safe-area-inset-bottom) + var(--hodima-space-5));
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-to-top {
+		transition: none;
+	}
+}
