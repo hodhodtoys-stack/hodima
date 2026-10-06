@@ -5,7 +5,7 @@
  * ========================================================================= */
 
 .hodima-page-wrapper {
-	max-width: var(--cat-max-width, 1440px);
+	max-width: var(--cat-max-width, var(--hodima-container));
 	margin: 5px auto;
 	padding: 0 var(--hodima-space-4);
 	display: flex;
@@ -24,7 +24,7 @@
 	color: var(--hodima-text-muted, #5d6785);
 	display: block;
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	max-width: var(--cat-max-width, 1440px);
+	max-width: var(--cat-max-width, var(--hodima-container));
 	width: 100%;
 	box-sizing: border-box;
 	font-family: inherit;
@@ -47,7 +47,7 @@
 .video-page-section {
 	margin: 0 auto;
 	padding: 0;
-	max-width: var(--cat-max-width, 1440px);
+	max-width: var(--cat-max-width, var(--hodima-container));
 	width: 100%;
 	box-sizing: border-box;
 }
@@ -241,7 +241,7 @@
 		color: var(--hodima-primary, #25316a);
 		background: #fff;
 		border: 1px solid var(--hodima-border-light, #d9e1f0);
-		border-radius: 21px;
+		border-radius: calc(21px * var(--hodima-radius-scale));
 		box-sizing: border-box;
 		transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 

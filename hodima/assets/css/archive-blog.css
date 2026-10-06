@@ -8,7 +8,7 @@
 }
 
 .hodima-page-wrapper {
-	max-width: var(--cat-max-width, 1440px);
+	max-width: var(--cat-max-width, var(--hodima-container));
 	margin: var(--section-gap) auto;
 	padding: 0 var(--hodima-space-7); /* مطابق مرجع */
 	display: flex;
@@ -32,7 +32,7 @@
 	font-size: 0.85rem;
 	color: var(--hodima-text-muted, #5d6785);
 	display: block;
-	max-width: 1400px; /* مطابق مرجع */
+	max-width: calc(var(--hodima-container) - 40px); /* مطابق مرجع (۴۰px کمتر از عرض محتوا) */
 	width: 100%;
 	font-family: inherit;
 
@@ -51,7 +51,7 @@
 .blog-page-section {
 	margin: 0 auto;
 	padding: 0;
-	max-width: var(--cat-max-width, 1440px);
+	max-width: var(--cat-max-width, var(--hodima-container));
 	width: 100%;
 	box-sizing: border-box;
 }

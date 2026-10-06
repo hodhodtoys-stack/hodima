@@ -4,9 +4,9 @@
  * ========================================================================= */
 
 :root {
-	--cat-max-width: 1440px;
+	--cat-max-width: var(--hodima-container);
 	--cat-gap: 8px;
-	--cat-radius: 12px;
+	--cat-radius: var(--hodima-radius-xl);
 	--cat-shadow: var(--hodima-shadow-xs);
 	--cat-bg-light-blue: var(--hodima-bg-light, #f6f8fc);
 	--cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);

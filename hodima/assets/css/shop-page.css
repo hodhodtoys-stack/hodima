@@ -6,9 +6,9 @@
  * ========================================================================= */
 
 :root {
-	--cat-max-width: 1440px;
+	--cat-max-width: var(--hodima-container);
 	--section-gap: 10px;
-	--cat-radius: 12px;
+	--cat-radius: var(--hodima-radius-xl);
 	--cat-shadow: var(--hodima-shadow-xs);
 	--cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
 	--cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
@@ -17,7 +17,7 @@
 }
 
 .hodima-page-wrapper {
-	max-width: var(--cat-max-width, 1440px) !important;
+	max-width: var(--cat-max-width, var(--hodima-container)) !important;
 	margin: var(--section-gap) auto !important;
 	padding: 0 var(--hodima-space-7) !important; /* مطابق مرجع */
 	display: flex;
@@ -47,7 +47,7 @@
 	color: var(--hodima-text-muted, #5d6785);
 	display: block;
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	max-width: 1400px; /* مطابق مرجع */
+	max-width: calc(var(--hodima-container) - 40px); /* مطابق مرجع (۴۰px کمتر از عرض محتوا) */
 	width: 100%;
 	box-sizing: border-box;
 	font-family: inherit;

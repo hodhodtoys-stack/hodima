@@ -75,17 +75,27 @@
 
     /* ── شعاع گوشه (نوسازی قالب، مرحله ۵) ──────────────────────────
        مقدارها همان‌هایی‌اند که در CSS قالب بیشترین استفاده را داشتند؛
-       جایگزینی مقدار ثابت با توکن ظاهر را عوض نمی‌کند. */
-    --hodima-radius-xs:      4px;
-    --hodima-radius-sm:      6px;
-    --hodima-radius-md:      8px;
-    --hodima-radius-lg:      10px;
-    --hodima-radius-xl:      12px;
-    --hodima-radius-2xl:     16px;
-    --hodima-radius-3xl:     20px;
+       جایگزینی مقدار ثابت با توکن ظاهر را عوض نمی‌کند.
+       ضریب --hodima-radius-scale (از 2.9.7، تب «ظاهر عمومی ← گردی گوشه‌ها»):
+       ۰ تیز، ۰٫۵ کم، ۱ پیش‌فرض، ۱٫۵ گرد. pill و round (شکل) ضریب نمی‌گیرند. */
+    --hodima-radius-scale:   1;
+    --hodima-radius-xs:      calc(4px * var(--hodima-radius-scale));
+    --hodima-radius-sm:      calc(6px * var(--hodima-radius-scale));
+    --hodima-radius-md:      calc(8px * var(--hodima-radius-scale));
+    --hodima-radius-lg:      calc(10px * var(--hodima-radius-scale));
+    --hodima-radius-xl:      calc(12px * var(--hodima-radius-scale));
+    --hodima-radius-2xl:     calc(16px * var(--hodima-radius-scale));
+    --hodima-radius-3xl:     calc(20px * var(--hodima-radius-scale));
     --hodima-radius-pill:    999px;
     --hodima-radius-round:   50%;
     --hodima-radius:         var(--hodima-radius-md);   /* نام قدیمی */
+
+    /* ── چیدمان و دکمه‌ها (از 2.9.7، تب «ظاهر عمومی») ────────────────
+       --hodima-container: بیشترین عرض محتوای همه صفحه‌ها (هدر، فوتر، فروشگاه،
+       محصول، وبلاگ…)؛ قبلا ۱۴۴۰px / 90rem در ۱۲ جا جدا نوشته شده بود. */
+    --hodima-container:       1440px;
+    --hodima-button-bg:       var(--hodima-gradient-main);
+    --hodima-button-bg-hover: var(--hodima-gradient-alt);
 
     /* ── فاصله (px؛ rem با اندازه فونت پایه واکنش‌گرا ۱۴/۱۵/۱۶ عوض می‌شود) ──
        پله‌ها = پرکاربردترین مقدارهای فعلی قالب (۱۰، ۱۵، ۲۰ و ۸ بیشترین). */

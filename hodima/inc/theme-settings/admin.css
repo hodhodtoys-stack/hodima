@@ -1738,3 +1738,62 @@
 		}
 	}
 }
+
+/* ── ظاهر عمومی (2.9.7): نمونه کارت و دکمه با همان توکن‌های سایت ── */
+.hodima-look-preview {
+	/* توکن‌های شعاع در :root حساب می‌شوند؛ ضریب نمونه زنده فقط با تعریف دوباره همین‌جا اثر دارد */
+	--hodima-radius-md: calc(8px * var(--hodima-radius-scale, 1));
+	--hodima-radius-xl: calc(12px * var(--hodima-radius-scale, 1));
+
+	display: grid;
+	justify-items: start;
+	gap: 0.75rem;
+
+	& .hodima-look-preview__card {
+		display: grid;
+		gap: 0.625rem;
+		inline-size: min(100%, 16rem);
+		padding: 0.875rem;
+		border: 1px solid var(--hs-border);
+		border-radius: var(--hodima-radius-xl);
+		background: #ffffff;
+		box-shadow: var(--hodima-shadow-soft);
+	}
+
+	& .hodima-look-preview__image {
+		block-size: 6rem;
+		border-radius: var(--hodima-radius-md);
+		background: linear-gradient(135deg, var(--hodima-third) 0%, var(--hs-surface-soft) 100%);
+	}
+
+	& .hodima-look-preview__title {
+		color: var(--hodima-text-dark);
+	}
+
+	& .hodima-look-preview__field {
+		padding: 0.375rem 0.625rem;
+		border: 1px solid var(--hodima-border-light);
+		border-radius: var(--hodima-radius-md);
+		color: var(--hs-muted);
+		font-size: 0.8125rem;
+	}
+
+	& .hodima-look-preview__button {
+		padding: 0.5rem 1rem;
+		border-radius: var(--hodima-radius-md);
+		background: var(--hodima-button-bg);
+		box-shadow: var(--hodima-shadow-soft);
+		color: #ffffff;
+		font-weight: 600;
+		text-align: center;
+
+		&:hover {
+			background: var(--hodima-button-bg-hover);
+		}
+	}
+
+	& .hodima-look-preview__width {
+		margin: 0;
+		color: var(--hs-muted);
+	}
+}

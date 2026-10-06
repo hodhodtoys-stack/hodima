@@ -51,6 +51,11 @@ function hodima_settings_fields(): array {
 		// ── تایپوگرافی (2.9.6؛ CSS: inc/typography.php، پیش‌فرض‌ها = tokens.css) ──
 		...hodima_typography_fields(),
 
+		// ── ظاهر عمومی (2.9.7؛ CSS: inc/appearance.php، پیش‌فرض‌ها = tokens.css) ──
+		'radius_style'     => [ 'panel' => 'look_shape', 'type' => 'select', 'label' => 'گردی گوشه‌ها', 'default' => 'default', 'options' => [ 'sharp' => 'تیز (بدون گردی)', 'soft' => 'کم', 'default' => 'معمولی (پیش‌فرض)', 'round' => 'گرد' ], 'help' => 'کارت‌ها، کادرها، دکمه‌ها، فیلدها و تصویرهای کل سایت با هم. شکل‌های کاملا گرد (دکمه‌های کپسولی، دایره‌ها) همان می‌مانند.' ],
+		'button_style'     => [ 'panel' => 'look_shape', 'type' => 'select', 'label' => 'سبک دکمه‌ها', 'default' => 'gradient', 'options' => [ 'gradient' => 'گرادیان رنگ اصلی و دوم (پیش‌فرض)', 'solid' => 'یک‌رنگ: رنگ اصلی', 'secondary' => 'یک‌رنگ: رنگ دوم', 'accent' => 'گرادیان رنگ تأکید' ], 'help' => 'دکمه‌های عمومی سایت و ووکامرس (افزودن به سبد، ثبت، ارسال فرم‌ها). دکمه‌های طراحی‌شده بخش‌ها (مثل «تسویه حساب») رنگ خودشان را دارند.' ],
+		'container_width'  => [ 'panel' => 'look_width', 'type' => 'number', 'label' => 'بیشترین عرض محتوا (پیکسل)', 'default' => 1440, 'min' => 960, 'max' => 1920, 'help' => 'هدر، فوتر، فروشگاه، دسته‌ها، محصول و وبلاگ در صفحه‌های پهن‌تر از این عدد وسط صفحه می‌مانند. رایج: ۱۲۰۰ تا ۱۴۴۰.' ],
+
 		// ── هدر ─────────────────────────────────────────────────────
 		'header_support_text'  => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'متن دکمه پشتیبانی', 'default' => 'پشتیبانی' ],
 		'header_popup_title'   => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'عنوان پنجره پشتیبانی', 'default' => 'ارتباط با ما' ],
@@ -317,6 +322,7 @@ function hodima_settings_sections(): array {
 	return [
 		'brand'     => [ 'nav' => 'look', 'title' => 'برند و رنگ‌ها', 'icon' => 'dashicons-art', 'description' => 'لوگوی هدر و پنج رنگ برند که کل سایت از آن‌ها ساخته می‌شود.' ],
 		'typography' => [ 'nav' => 'look', 'title' => 'تایپوگرافی', 'icon' => 'dashicons-editor-textcolor', 'description' => 'فونت، اندازه و رنگ متن، لینک‌ها و تیترهای H1 تا H6 در کل سایت (و ویرایشگر نوشته‌ها).' ],
+		'layout'    => [ 'nav' => 'look', 'title' => 'ظاهر عمومی', 'icon' => 'dashicons-layout', 'description' => 'گردی گوشه‌ها، سبک دکمه‌ها و عرض محتوای کل سایت.' ],
 		'header'    => [ 'nav' => 'look', 'title' => 'هدر', 'icon' => 'dashicons-editor-kitchensink', 'description' => 'نوار بالای همه صفحه‌ها. متن خالی به پیش‌فرض برمی‌گردد.' ],
 		'footer'    => [ 'nav' => 'look', 'title' => 'فوتر', 'icon' => 'dashicons-table-row-after', 'description' => 'ستون‌های پایین همه صفحه‌ها. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود.' ],
 		'home'      => [ 'nav' => 'pages', 'title' => 'صفحه اصلی', 'icon' => 'dashicons-admin-home', 'description' => 'بخش‌های صفحه اصلی سایت: ترتیب، روشن/خاموش و تنظیمات هر بخش.' ],
@@ -351,6 +357,10 @@ function hodima_settings_panels(): array {
 		'type_body'          => [ 'section' => 'typography', 'title' => 'متن و لینک‌ها', 'icon' => 'dashicons-editor-paragraph' ],
 		'type_headings'      => [ 'section' => 'typography', 'title' => 'تیترها (H1 تا H6)', 'icon' => 'dashicons-heading', 'layout' => 'rows', 'columns' => [ 'تیتر', 'اندازه دسکتاپ (px)', 'اندازه موبایل (px)', 'وزن', 'فاصله خطوط', 'رنگ' ], 'help' => 'اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند. پایه تیترهای داخل متن مقاله، برگه، توضیح محصول و دسته است؛ تیترهای طراحی‌شده بخش‌ها (کارت محصول، فوتر، عنوان صفحه‌ها) اندازه خودشان را دارند. ترتیب درست: هر سطح کوچک‌تر از سطح بالاتر.' ],
 		'type_custom'        => [ 'section' => 'typography', 'title' => 'فونت آپلودی', 'icon' => 'dashicons-upload', 'layout' => 'rows', 'columns' => [ 'وزن', 'فایل فونت (woff2)' ], 'help' => 'برای فونتی که مجوز استفاده در وب را دارید (مثلا ایران‌سنس یا یکان‌بخ). فایل woff2 هر وزن را از کتابخانه رسانه انتخاب یا آپلود کنید؛ وزن «معمولی (۴۰۰)» لازم است و وزن خالی از نزدیک‌ترین وزن موجود ساخته می‌شود. بعد در قاب «فونت‌ها» گزینه «فونت آپلودی» را انتخاب کنید.' ],
+
+		'look_preview'       => [ 'section' => 'layout', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'lookpreview', 'help' => 'نمونه کارت و دکمه با انتخاب‌های پایین (پیش از ذخیره).' ],
+		'look_shape'         => [ 'section' => 'layout', 'title' => 'گوشه‌ها و دکمه‌ها', 'icon' => 'dashicons-art', 'half' => true ],
+		'look_width'         => [ 'section' => 'layout', 'title' => 'عرض صفحه', 'icon' => 'dashicons-editor-expand', 'half' => true ],
 
 		'header_main'        => [ 'section' => 'header', 'title' => 'پشتیبانی و جستجو', 'icon' => 'dashicons-format-chat', 'help' => 'دکمه پشتیبانی فقط وقتی دیده می‌شود که در تب «اطلاعات تماس» دست‌کم یک راه ارتباطی وارد شده باشد.' ],
 
@@ -873,6 +883,8 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 				<?php hodima_settings_palette_preview( $settings ); ?>
 			<?php elseif ( 'typepreview' === $layout && function_exists( 'hodima_typography_preview' ) ) : ?>
 				<?php hodima_typography_preview(); ?>
+			<?php elseif ( 'lookpreview' === $layout && function_exists( 'hodima_appearance_preview' ) ) : ?>
+				<?php hodima_appearance_preview(); ?>
 			<?php endif; ?>
 
 			<?php if ( $loose ) : ?>

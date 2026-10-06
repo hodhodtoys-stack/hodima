@@ -28,7 +28,7 @@
 	--space-s: 10px;
 	--space-m: 15px;
 	--space-l: 25px;
-	--radius: 8px;
+	--radius: var(--hodima-radius-md);
 	--section-gap: 10px;
 }
 
@@ -37,7 +37,7 @@
    ========================================================================== */
 
 .custom-product-page-container {
-	max-width: 1440px;
+	max-width: var(--hodima-container);
 	margin: 0 auto;
 	padding: 0 20px;
 	direction: rtl;
@@ -53,7 +53,7 @@
 	color: var(--hodima-text-muted, #5d6785) !important;
 	display: block !important;
 	border: 1px solid var(--hodima-border-light, #d9e1f0) !important;
-	max-width: 1400px;
+	max-width: calc(var(--hodima-container) - 40px);
 	box-sizing: border-box;
 }
 
@@ -270,7 +270,7 @@
 		height: 100%;
 		object-fit: cover;
 		display: block;
-		border-radius: 7px;
+		border-radius: calc(7px * var(--hodima-radius-scale));
 	}
 }
 
@@ -875,7 +875,7 @@
 		width: 50px;
 		height: 3px;
 		background: var(--hodima-primary, #25316a);
-		border-radius: 2px;
+		border-radius: calc(2px * var(--hodima-radius-scale));
 	}
 }
 
@@ -984,7 +984,7 @@
 			inset-inline: 0;
 			height: 3px;
 			background: var(--brand-gradient);
-			border-radius: 8px 8px 0 0;
+			border-radius: var(--hodima-radius-md) var(--hodima-radius-md) 0 0;
 		}
 	}
 }

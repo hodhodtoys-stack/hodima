@@ -514,6 +514,40 @@
 		refresh();
 	};
 
+	/** تب «ظاهر عمومی»: گردی گوشه‌ها، سبک دکمه و عرض در نمونه زنده. */
+	const initLook = () => {
+		const preview = document.querySelector('[data-hodima-look-preview]');
+		if (!preview) {
+			return;
+		}
+
+		const scales = JSON.parse(preview.dataset.scales ?? '{}');
+		const buttons = JSON.parse(preview.dataset.buttons ?? '{}');
+		const field = (key) => document.getElementById(`hodima-setting-${key}`);
+		const width = preview.querySelector('[data-hodima-look-width]');
+		const faDigits = (value) => String(value).replace(/\d/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[digit]);
+
+		const sync = () => {
+			const scale = scales[field('radius_style')?.value ?? 'default'];
+			const [bg, hover] = buttons[field('button_style')?.value ?? 'gradient'] ?? [];
+			if (scale !== undefined) {
+				preview.style.setProperty('--hodima-radius-scale', scale);
+			}
+			if (bg && hover) {
+				preview.style.setProperty('--hodima-button-bg', bg);
+				preview.style.setProperty('--hodima-button-bg-hover', hover);
+			}
+			if (width) {
+				width.textContent = faDigits(field('container_width')?.value ?? '');
+			}
+		};
+
+		const section = document.querySelector('[data-section="layout"]');
+		section?.addEventListener('input', sync);
+		section?.addEventListener('change', sync);
+		sync();
+	};
+
 	document.addEventListener('DOMContentLoaded', () => {
 		document.querySelectorAll('[data-hodima-media]').forEach(initMediaField);
 		document.querySelectorAll('[data-hodima-home]').forEach(initHomeLayout);
@@ -522,5 +556,6 @@
 		initLogoInvert();
 		initBuilderStatus();
 		initTypography();
+		initLook();
 	});
 })();

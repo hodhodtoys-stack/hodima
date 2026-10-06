@@ -179,7 +179,7 @@
 .cat-img-box {
 	inline-size: 80px;
 	block-size: 80px;
-	border-radius: 15px;
+	border-radius: calc(15px * var(--hodima-radius-scale));
 	margin-inline: auto;
 	margin-block-end: var(--hodima-space-3);
 	display: flex;
@@ -577,7 +577,7 @@ h1.section-col-title {
 	margin: var(--hodima-space-4) 0;
 	padding: var(--hodima-space-6);
 	background: rgba(var(--hodima-third-rgb, 182, 194, 243), 0.15) !important;
-	border-radius: 15px;
+	border-radius: calc(15px * var(--hodima-radius-scale));
 	box-shadow: 0 6px 12px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.03);
 	overflow: hidden;
 	position: relative;
@@ -719,7 +719,7 @@ h1.section-col-title {
 /* ================= Product Sections  شورت کد دسته باکس هر دسته بندی(Optimized) ================= */
 .arian-product-section {
 	padding: var(--hodima-space-6) 0;
-	border-radius: 15px;
+	border-radius: calc(15px * var(--hodima-radius-scale));
 	overflow: hidden;
 	margin: 7px 0;
 	background: var(--section-bg, transparent); /* دریافت رنگ از تنظیمات تابع */

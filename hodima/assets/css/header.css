@@ -40,8 +40,8 @@
 
 	--header-height: 5.3125rem;
 	--header-height-mobile: 4.375rem;
-	--header-max-width: 90rem;
-	--header-radius: 2.0625rem;
+	--header-max-width: var(--hodima-container);
+	--header-radius: calc(2.0625rem * var(--hodima-radius-scale));
 
 	--transition-fast: 0.2s ease;
 	--transition-base: 0.3s ease;
@@ -205,7 +205,7 @@
 		inset-inline-start: 0;
 		background: var(--clr-white);
 		min-width: 15rem;
-		border-radius: 0.75rem;
+		border-radius: var(--hodima-radius-xl);
 		padding: 0.625rem 0;
 		margin: 0;
 		box-shadow: var(--shadow-dropdown);
@@ -285,7 +285,7 @@
 	border: 1px solid var(--clr-third);
 	color: var(--clr-text-dark);
 	padding: 0.625rem 0.9375rem;
-	border-radius: 1.875rem;
+	border-radius: calc(1.875rem * var(--hodima-radius-scale));
 	outline: none;
 	font-size: 0.8125rem;
 	transition: all var(--transition-base);
@@ -300,7 +300,7 @@
 	background-color: var(--clr-white);
 	color: var(--clr-text-dark) !important;
 	border: 1px solid rgb(255 255 255 / 0.08);
-	border-radius: 0.625rem;
+	border-radius: var(--hodima-radius-lg);
 	padding: 0.625rem 1.125rem;
 	font-size: 0.875rem;
 	font-weight: 500;
@@ -413,7 +413,7 @@
 
 	.btn-support {
 		padding: 0.5rem 0.75rem;
-		border-radius: 0.5rem;
+		border-radius: var(--hodima-radius-md);
 	}
 
 	.main-nav {
@@ -576,7 +576,7 @@ dialog.overlay {
 	width: 20rem;
 	max-width: 90%;
 	padding: 1.875rem 1.5625rem;
-	border-radius: 1.25rem;
+	border-radius: var(--hodima-radius-3xl);
 	box-shadow: var(--shadow-popup);
 	text-align: center;
 	transform: scale(0.8);
@@ -648,7 +648,7 @@ dialog.overlay {
 	width: 100%;
 	padding: 0.75rem;
 	margin-bottom: 0.75rem;
-	border-radius: 0.75rem;
+	border-radius: var(--hodima-radius-xl);
 	text-decoration: none;
 	color: var(--clr-white);
 	font-size: 0.9375rem;
@@ -745,7 +745,7 @@ body.menu-is-open {
 	inset-inline-start: 0.75rem;
 	z-index: 100000;
 	padding: 0.75rem 1.25rem;
-	border-radius: 0.75rem;
+	border-radius: var(--hodima-radius-xl);
 	background: var(--clr-white);
 	color: var(--clr-primary);
 	font-weight: 700;

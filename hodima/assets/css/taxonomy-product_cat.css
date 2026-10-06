@@ -4,9 +4,9 @@
  * ========================================================================= */
 
 :root {
-	--cat-max-width: 1440px;
+	--cat-max-width: var(--hodima-container);
 	--cat-gap: 10px;
-	--cat-radius: 12px;
+	--cat-radius: var(--hodima-radius-xl);
 	--cat-shadow: var(--hodima-shadow-xs);
 	--cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
 	--cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
@@ -446,7 +446,7 @@
 		color: var(--hodima-primary, #25316a);
 		background: #fff;
 		border: 1px solid var(--hodima-border-light, #d9e1f0);
-		border-radius: 21px;
+		border-radius: calc(21px * var(--hodima-radius-scale));
 		box-sizing: border-box;
 		transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 	}
