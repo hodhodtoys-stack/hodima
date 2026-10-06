@@ -11,6 +11,7 @@ argument-hint: "[check]"
 با آرگومان `check`: فقط مرحله ۰ و `python3 bin/release-check.py plan` و `python3 bin/release-check.py` را اجرا کن، نتیجه را فارسی و ساده گزارش بده و چیزی عوض نکن.
 
 ## ۰. محیط و شاخه
+در محیط ابری قلاب شروع جلسه (`.claude/hooks/session-start.sh`) همه را آماده کرده است؛ این‌ها فقط بررسی‌اند (اگر خلاصه شروع گفتگو خطا گفت، گزارش: `~/.cache/hodima/session-start.log`).
 ```bash
 php -v | head -1                      # باید 8.4 باشد؛ وگرنه روش HODIMA-AUDIT.md بخش ۳۵
 [ -e vendor/bin/phpcs ] || bash tools/quality/install-offline.sh   # PHPCS/PHPStan + npm ci
