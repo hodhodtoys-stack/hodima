@@ -40,6 +40,21 @@ for plugin in hodima-core hodima-seo hodima-commerce hodima-media; do
 done
 
 # انتشار: ZIPها و فایل‌های JSON به‌روزرسانی در release/
+# ZIP هر بسته فقط وقتی جایگزین می‌شود که محتوایش (نام، اندازه و CRC هر فایل)
+# فرق کند: زمان فایل‌ها داخل ZIP هر بار عوض می‌شود و بدون این، هر ساخت هر ۵
+# ZIP را در git «تغییرکرده» نشان می‌داد حتی برای بسته‌ای که دست نخورده بود.
 mkdir -p "$root/release"
-cp "$dist"/*.zip "$root/release/"
+for zip in "$dist"/*.zip; do
+	target="$root/release/$(basename "$zip")"
+	if [ -f "$target" ] && python3 - "$zip" "$target" <<'PY'
+import sys, zipfile
+sig = lambda p: sorted((i.filename, i.file_size, i.CRC) for i in zipfile.ZipFile(p).infolist())
+sys.exit(0 if sig(sys.argv[1]) == sig(sys.argv[2]) else 1)
+PY
+	then
+		echo "= release/$(basename "$zip") بدون تغییر"
+	else
+		cp "$zip" "$target"
+	fi
+done
 python3 "$root/bin/build-meta.py"

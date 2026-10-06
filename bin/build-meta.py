@@ -107,6 +107,16 @@ def main():
 
 
 def write(out_dir, slug, data):
+    # اگر جز زمان ساخت چیزی عوض نشده، همان last_updated قبلی بماند تا فایل
+    # بسته‌ای که تغییر نکرده در git «تغییرکرده» دیده نشود.
+    path = os.path.join(out_dir, slug + '.json')
+    if 'last_updated' in data and os.path.exists(path):
+        try:
+            old = json.load(open(path, encoding='utf-8'))
+        except ValueError:
+            old = {}
+        if {**old, 'last_updated': data['last_updated']} == data:
+            data['last_updated'] = old['last_updated']
     with open(os.path.join(out_dir, slug + '.json'), 'w', encoding='utf-8', newline='\n') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write('\n')
