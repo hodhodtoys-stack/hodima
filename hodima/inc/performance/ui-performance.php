@@ -1,6 +1,6 @@
 <?php
 /**
- * Module: UI Performance & Critical CSS (Custom Theme)
+ * Module: UI Performance (preconnect رسانه، preload فونت)
  * Path: hodima/inc/performance/ui-performance.php
  */
 
@@ -197,38 +197,16 @@ function hodima_preload_fonts(): void {
 }
 
 /* ============================================================
- * ۳. تزریق استایل‌های حیاتی با رنگ‌های سازمانی
+ * ۳. «CSS حیاتی» درون‌خطی — حذف شد (نوسازی قالب، مرحله ۸؛ HODIMA-AUDIT.md بخش ۶۵)
+ * ------------------------------------------------------------
+ * قبلا hodima_print_critical_css() در هر صفحه (بدون لایت‌اسپید) یک <style>
+ * پر از !important چاپ می‌کرد: رنگ .button/.btn-primary/.single_add_to_cart_button،
+ * .card-top-line و عدد ۴۰۴. اندازه‌گیری روی ۴۰ صفحه (هر عنصر، عادی و hover):
+ *   - .btn-primary، .card-top-line و .error-404-number/.highlight-number در
+ *     قالب و افزونه‌ها هیچ عنصری ندارند (کد مرده)؛
+ *   - دکمه خرید و بقیه .buttonها همین رنگ را از style.css/single-product.css
+ *     می‌گیرند — تنها اثر: حاشیه ۱ پیکسلی و رنگ زیر گرادیان سه دکمه سبد/پرداخت ووکامرس؛
+ *   - «حیاتی» هم نبود: CSS قالب در head مسدودکننده است و صفحه پیش از آن رسم
+ *     نمی‌شود؛ و با لایت‌اسپید (سایت اصلی) اصلا چاپ نمی‌شد.
+ * پس حذف شد؛ ظاهر سایت بدون لایت‌اسپید حالا همان سایت با لایت‌اسپید است.
  * ============================================================ */
-add_action( 'wp_head', 'hodima_print_critical_css', 2 );
-
-function hodima_print_critical_css(): void {
-
-    /*
-     * لایت‌اسپید Critical CSS را با QUIC.cloud برای هر قالب صفحه جداگانه
-     * تولید می‌کند و بقیه CSS را async می‌کند. بلوک دستی زیر پر از
-     * !important است، پس روی CCSS تولیدشده غالب می‌شود و همان چیزی را
-     * که لایت‌اسپید دقیق محاسبه کرده خراب می‌کند.
-     *
-     * برای برگرداندن کنترل به قالب:
-     *     add_filter( 'hodima_litespeed_handles_critical_css', '__return_false' );
-     */
-    if ( function_exists( 'hodima_litespeed_handles' ) && hodima_litespeed_handles( 'critical_css' ) ) {
-        return;
-    }
-
-    // رنگ‌ها از توکن‌ها (پالت «تنظیمات قالب ← برند»)، با همان مقدار پیش‌فرض
-    $critical_css  = '.btn-primary,.button{background-color:var(--hodima-primary,#25316a)!important;color:#fff!important;border-color:var(--hodima-primary,#25316a)!important}';
-    $critical_css .= '.btn-primary:hover,.button:hover{background-color:var(--hodima-secondary,#607bbd)!important;border-color:var(--hodima-secondary,#607bbd)!important}';
-    $critical_css .= '.card-top-line{background:linear-gradient(90deg,var(--hodima-primary,#25316a),var(--hodima-secondary,#607bbd),var(--hodima-third,#b6c2f3))!important}';
-
-    if ( function_exists( 'is_woocommerce' ) && is_woocommerce() ) {
-        $critical_css .= '.single_add_to_cart_button{background-color:var(--hodima-primary,#25316a)!important;color:#fff!important;border-color:var(--hodima-primary,#25316a)!important}';
-        $critical_css .= '.single_add_to_cart_button:hover{background-color:var(--hodima-secondary,#607bbd)!important;border-color:var(--hodima-secondary,#607bbd)!important}';
-    }
-
-    if ( is_404() ) {
-        $critical_css .= '.error-404-number,.highlight-number{background:linear-gradient(45deg,var(--hodima-primary,#25316a),var(--hodima-secondary,#607bbd));-webkit-background-clip:text;-webkit-text-fill-color:transparent}';
-    }
-
-    echo '<style id="hodima-critical-css">' . $critical_css . '</style>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS ثابت همین تابع
-}

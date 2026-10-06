@@ -274,9 +274,34 @@ const resolveTokens = ( css, map ) => {
 };
 const [ tokensA, tokensB ] = [ tokenMap( dirA ), tokenMap( dirB ) ];
 
+/*
+ * فایل یکی‌شده CSS مشترک (مرحله ۸؛ فقط در قالب ساخته‌شده): طرف دیگر = همان
+ * فایل‌های HODIMA_COMMON_CSS (inc/enqueue.php) پشت سر هم با آدرس‌های نسبی
+ * بازنویسی‌شده مثل bin/build-css.mjs — پس ترتیب بین فایل‌ها هم سنجیده می‌شود.
+ */
+const bundleOf = ( dir ) => {
+	const php = path.join( dir, 'inc/enqueue.php' );
+	if ( ! fs.existsSync( php ) ) return null;
+	const src = fs.readFileSync( php, 'utf8' );
+	const rel = src.match( /const HODIMA_COMMON_CSS_BUNDLE = '([^']+)'/ )?.[ 1 ];
+	const parts = [ ...( src.match( /const HODIMA_COMMON_CSS = \[([\s\S]*?)\];/ )?.[ 1 ] ?? '' ).matchAll( /=>\s*'([^']+\.css)'/g ) ].map( ( m ) => m[ 1 ] );
+	return rel ? { rel, parts } : null;
+};
+const bundle = bundleOf( dirB ) ?? bundleOf( dirA );
+const joined = ( dir ) => bundle.parts.map( ( part ) => {
+	// سربرگ style.css (کامنت) و آدرس‌های نسبی نسبت به پوشه فایل یکی‌شده
+	const css = fs.readFileSync( path.join( dir, part ), 'utf8' ).replace( /url\(\s*(['"]?)([^'")]+)\1\s*\)/g, ( all, quote, url ) => (
+		/^(?:[a-z]+:|\/|#)/i.test( url ) ? all : `url(${ quote }${ path.posix.relative( path.posix.dirname( bundle.rel ), path.posix.normalize( path.posix.join( path.posix.dirname( part ), url ) ) ) }${ quote })`
+	) );
+	return css;
+} ).join( '\n' );
+
 let bad = 0;
 for ( const rel of files ) {
-	const read = ( dir, map ) => ( fs.existsSync( path.join( dir, rel ) ) ? resolveTokens( fs.readFileSync( path.join( dir, rel ), 'utf8' ), map ) : null );
+	const read = ( dir, map ) => {
+		if ( fs.existsSync( path.join( dir, rel ) ) ) return resolveTokens( fs.readFileSync( path.join( dir, rel ), 'utf8' ), map );
+		return bundle && rel === bundle.rel ? resolveTokens( joined( dir ), map ) : null;
+	};
 	const [ a, b ] = [ read( dirA, tokensA ), read( dirB, tokensB ) ];
 	if ( null === a || null === b ) {
 		bad++;

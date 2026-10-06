@@ -98,10 +98,15 @@ add_action( 'wp_enqueue_scripts', static function (): void {
         wp_dequeue_style( 'wp-block-library-theme' );
     }
 
-    // dashicons فقط در فرانت‌اند و فقط برای مهمان‌ها حذف می‌شود.
-    // ماژول hodima-table آن را در ادمین enqueue می‌کند و دست‌نخورده می‌ماند.
+    /*
+     * dashicons فقط در فرانت‌اند و فقط برای مهمان‌ها از صف برداشته می‌شود.
+     * dequeue نه deregister (نوسازی قالب، مرحله ۸): با deregister هر استایل
+     * دیگری که dashicons را وابستگی دارد (CSS یک افزونه) بی‌صدا اصلا چاپ
+     * نمی‌شد؛ حالا dashicons فقط وقتی لود می‌شود که استایلی به آن وابسته باشد.
+     * ماژول hodima-table آن را در ادمین enqueue می‌کند و دست‌نخورده می‌ماند.
+     */
     if ( ! is_user_logged_in() ) {
-        wp_deregister_style( 'dashicons' );
+        wp_dequeue_style( 'dashicons' );
     }
 }, 100 );
 

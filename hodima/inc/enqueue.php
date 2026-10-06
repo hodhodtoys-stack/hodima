@@ -51,14 +51,49 @@ function hodima_enqueue_asset( string $handle, string $path, array $deps = [], a
 	return ( new Hodima_Theme_Asset( $handle, $path, $deps, $args ) )->enqueue();
 }
 
+/**
+ * CSS مشترک همه صفحه‌ها، به همین ترتیب (توکن‌ها اول تا متغیرها پیش از بقیه
+ * تعریف شده باشند). کلید = handle وردپرس (افزونه/قالب فرزند ممکن است به آن وابسته باشد).
+ * bin/build-css.mjs همین فهرست را در ZIP یک فایل می‌کند (HODIMA_COMMON_CSS_BUNDLE).
+ */
+const HODIMA_COMMON_CSS = [
+	'hodima-tokens' => 'assets/css/tokens.css',
+	'hodima-style'  => 'style.css',
+	'hodima-header' => 'assets/css/header.css',
+	'hodima-footer' => 'assets/css/footer.css',
+];
+
+/** فایل یکی‌شده CSS مشترک — فقط در ZIP نصبی (ساخته bin/build-css.mjs)، نه در مخزن. */
+const HODIMA_COMMON_CSS_BUNDLE = 'assets/css/hodima-common.css';
+
+/**
+ * CSS مشترک: نسخه نصبی یک درخواست (hodima-common.css)، سورس مخزن چهار فایل.
+ *
+ * نوسازی قالب، مرحله ۸ (HODIMA-AUDIT.md بخش ۶۵): قبلا چهار درخواست جدا
+ * (توکن‌ها، style.css، هدر، فوتر) در همه صفحه‌ها. با فایل یکی، handleهای
+ * قبلی «نام مستعار» بی‌فایل می‌مانند (وابستگی 404.css، رنگ‌های «برند» که
+ * با wp_add_inline_style به hodima-tokens می‌چسبند، و هر کد بیرونی).
+ * هدر و فوتر از 2.9.5 پیش از CSS هر صفحه‌اند (قبلا بعد از آن) — در هر دو حالت یکسان.
+ */
+function hodima_enqueue_common_css(): void {
+
+	if ( hodima_enqueue_asset( 'hodima-common', HODIMA_COMMON_CSS_BUNDLE ) ) {
+		foreach ( array_keys( HODIMA_COMMON_CSS ) as $handle ) {
+			wp_register_style( $handle, false, [ 'hodima-common' ], null ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion -- نام مستعار بی‌فایل
+			wp_enqueue_style( $handle );
+		}
+		return;
+	}
+
+	foreach ( HODIMA_COMMON_CSS as $handle => $path ) {
+		hodima_enqueue_asset( $handle, $path );
+	}
+}
+
 function hodima_enqueue_scripts(): void {
 
-	// توکن‌های طراحی باید قبل از هر استایل دیگری لود شوند تا متغیرها
-	// هنگام رسیدن به CSS ماژول‌ها تعریف شده باشند.
-	hodima_enqueue_asset( 'hodima-tokens', 'assets/css/tokens.css' );
-
-	// 1. استایل اصلی سایت
-	hodima_enqueue_asset( 'hodima-style', 'style.css' );
+	// 1. توکن‌ها، استایل اصلی، هدر و فوتر (همه صفحه‌ها)
+	hodima_enqueue_common_css();
 
 	/*
 	 * صفحات فروشگاهی.

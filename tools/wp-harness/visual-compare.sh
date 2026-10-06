@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # مقایسه ظاهر قبل/بعد در یک دستور (مثل compare-with-ref.sh برای اسکیما):
 #   visual-compare.sh [--built] [--wc] [git-ref] [page ...]     (پیش‌فرض HEAD = کار commit‌نشده در برابر آخرین commit)
-#   --built: طرف «کار» با CSS ساخته‌شده ZIP (bin/build-css.mjs: پایین‌آوردن + minify)؛
+#   --built: طرف «کار» قالب ساخته‌شده ZIP (bin/build-css.mjs: پایین‌آوردن + minify + CSS مشترک یکی)؛
 #            «visual-compare.sh --built» بدون تغییر سورس = آزمون هم‌ارزی مرحله ساخت.
 #   HODIMA_VISUAL_WIDTHS="1300,1100,800,390": عرض‌های دیگر به‌جای دسکتاپ/موبایل.
 # همه صفحه‌های ابزار تست را برای <ref> و کار فعلی می‌سازد و با Chromium
@@ -33,10 +33,12 @@ git -C "$repo" worktree add --detach -f "$base/vref" "$ref" >/dev/null
 "$runner" "$repo" "$base/vout-work" >/dev/null
 work_root="$repo"
 if [ "$built" = 1 ]; then
-	# همان HTML کار، با CSS ساخته‌شده (کپی قالب؛ افزونه‌ها پیوند به مخزن)
+	# قالب ساخته‌شده (کپی قالب؛ افزونه‌ها پیوند به مخزن). HTML هم از همین قالب ساخته
+	# می‌شود تا مسیر نصبی PHP آزموده شود (مرحله ۸: یک فایل CSS مشترک hodima-common.css).
 	rm -rf "$base/vbuilt" && mkdir -p "$base/vbuilt"
 	cp -r "$repo/hodima" "$base/vbuilt/hodima" && ln -s "$repo/plugins" "$base/vbuilt/plugins"
 	( cd "$repo" && node bin/build-css.mjs "$base/vbuilt/hodima" ) || exit 1
+	"$runner" "$base/vbuilt" "$base/vout-work" >/dev/null
 	work_root="$base/vbuilt"
 	export HODIMA_VISUAL_IGNORE_VARS=1
 fi
