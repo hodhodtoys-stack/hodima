@@ -130,8 +130,8 @@
 }
 
 .single-post-content {
-	line-height: 1.8;
-	font-size: 16px;
+	line-height: var(--hodima-body-line-height);
+	font-size: calc(var(--hodima-body-size) * 0.0625rem);
 	color: #444;
 }
 

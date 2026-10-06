@@ -48,6 +48,9 @@ function hodima_settings_fields(): array {
 		'color_accent'       => [ 'panel' => 'brand_palette', 'type' => 'color', 'label' => 'رنگ تأکید', 'default' => '#6a2b9a', 'help' => 'دکمه‌های مهم و برچسب‌ها.' ],
 		'color_accent_light' => [ 'panel' => 'brand_palette', 'type' => 'color', 'label' => 'رنگ تأکید روشن', 'default' => '#a341c8', 'help' => 'انتهای گرادیان دکمه‌های مهم.' ],
 
+		// ── تایپوگرافی (2.9.6؛ CSS: inc/typography.php، پیش‌فرض‌ها = tokens.css) ──
+		...hodima_typography_fields(),
+
 		// ── هدر ─────────────────────────────────────────────────────
 		'header_support_text'  => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'متن دکمه پشتیبانی', 'default' => 'پشتیبانی' ],
 		'header_popup_title'   => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'عنوان پنجره پشتیبانی', 'default' => 'ارتباط با ما' ],
@@ -141,6 +144,82 @@ function hodima_trust_fields(): array {
 	return $fields;
 }
 
+/**
+ * فیلدهای تب «تایپوگرافی». پیش‌فرض‌ها دقیقا همان مقدارهای assets/css/tokens.css
+ * است؛ hodima_typography_css() فقط مقدار متفاوت با پیش‌فرض را چاپ می‌کند.
+ *
+ * @return array<string, array<string, mixed>>
+ */
+function hodima_typography_fields(): array {
+
+	$fonts   = [ 'vazirmatn' => 'وزیرمتن (همراه قالب)', 'custom' => 'فونت آپلودی (قاب «فونت آپلودی»)', 'system' => 'فونت سیستم کاربر (بدون دانلود فونت)' ];
+	$weights = hodima_typography_weights();
+	$colors  = hodima_typography_color_options();
+
+	$fields = [
+		'font_body'    => [ 'panel' => 'type_fonts', 'type' => 'select', 'label' => 'فونت متن', 'default' => 'vazirmatn', 'options' => $fonts, 'help' => 'متن، منو، دکمه‌ها و فرم‌ها.' ],
+		'font_heading' => [ 'panel' => 'type_fonts', 'type' => 'select', 'label' => 'فونت تیترها', 'default' => 'body', 'options' => [ 'body' => 'همان فونت متن' ] + $fonts, 'help' => 'H1 تا H6 و هر چه داخل تیتر است (مثلا لینک عنوان کارت‌ها).' ],
+
+		'body_size'              => [ 'panel' => 'type_body', 'type' => 'number', 'label' => 'اندازه متن (پیکسل)', 'default' => 16, 'min' => 12, 'max' => 22, 'help' => 'متن مقاله‌ها، برگه‌ها و بدنه سایت. استاندارد خوانایی ۱۶ است.' ],
+		'body_line_height'       => [ 'panel' => 'type_body', 'type' => 'number', 'label' => 'فاصله خطوط متن', 'default' => 1.8, 'min' => 1.2, 'max' => 2.4, 'step' => 0.05, 'help' => 'ضریب اندازه متن؛ برای فارسی ۱٫۷ تا ۲ خواناتر است.' ],
+		'color_text'             => [ 'panel' => 'type_body', 'type' => 'color', 'label' => 'رنگ متن و تیترها', 'default' => '#111111', 'help' => 'رنگ اصلی نوشته‌ها در کل سایت؛ تیترها جدا هم قابل تنظیم‌اند (قاب «تیترها»).' ],
+		'link_color'             => [ 'panel' => 'type_body', 'type' => 'select', 'label' => 'رنگ لینک‌ها', 'default' => 'secondary', 'options' => $colors, 'help' => 'از پالت برند؛ با عوض شدن پالت، لینک‌ها هم عوض می‌شوند.' ],
+		'link_hover_color'       => [ 'panel' => 'type_body', 'type' => 'select', 'label' => 'رنگ لینک زیر نشانگر ماوس', 'default' => 'primary', 'options' => $colors ],
+		'content_link_underline' => [ 'panel' => 'type_body', 'type' => 'toggle', 'label' => 'زیرخط لینک‌های داخل متن', 'default' => true, 'wide' => true, 'help' => 'لینک‌های داخل متن مقاله، برگه و توضیح محصول/دسته. استاندارد دسترس‌پذیری (WCAG): لینک نباید فقط با رنگ از متن جدا شود. دکمه‌ها و کارت‌ها زیرخط نمی‌گیرند.' ],
+	];
+
+	foreach ( hodima_typography_heading_defaults() as $level => $default ) {
+		$group = "type_h{$level}";
+		$fields[ "h{$level}_size" ]        = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'number', 'label' => "اندازه دسکتاپ H{$level} (پیکسل)", 'default' => $default['max'], 'min' => 10, 'max' => 80 ];
+		$fields[ "h{$level}_size_mobile" ] = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'number', 'label' => "اندازه موبایل H{$level} (پیکسل)", 'default' => $default['min'], 'min' => 10, 'max' => 80 ];
+		$fields[ "h{$level}_weight" ]      = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'select', 'label' => "وزن H{$level}", 'default' => (string) $default['weight'], 'options' => $weights ];
+		$fields[ "h{$level}_line_height" ] = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'number', 'label' => "فاصله خطوط H{$level}", 'default' => $default['line_height'], 'min' => 1, 'max' => 2.4, 'step' => 0.05 ];
+		$fields[ "h{$level}_color" ]       = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'select', 'label' => "رنگ H{$level}", 'default' => 'text', 'options' => $colors ];
+	}
+
+	foreach ( array_keys( $weights ) as $weight ) {
+		$fields[ "font_custom_{$weight}" ] = [ 'panel' => 'type_custom', 'group' => "font_w{$weight}", 'type' => 'font', 'label' => 'فایل وزن ' . $weights[ $weight ], 'default' => 0 ];
+	}
+
+	return $fields;
+}
+
+/**
+ * پیش‌فرض تیترها (همان tokens.css): اندازه دسکتاپ (max) و موبایل (min) به پیکسل.
+ * تا 2.9.5: H1 ۲۷px، H2 ۱۶px، H3 تا H5 ۱۸px، H6 ۱۶px — H2 کوچک‌تر از H3 بود.
+ *
+ * @return array<int, array{max:int, min:int, weight:int, line_height:float}>
+ */
+function hodima_typography_heading_defaults(): array {
+	return [
+		1 => [ 'max' => 32, 'min' => 26, 'weight' => 700, 'line_height' => 1.5 ],
+		2 => [ 'max' => 26, 'min' => 22, 'weight' => 700, 'line_height' => 1.5 ],
+		3 => [ 'max' => 22, 'min' => 19, 'weight' => 700, 'line_height' => 1.5 ],
+		4 => [ 'max' => 19, 'min' => 17, 'weight' => 700, 'line_height' => 1.5 ],
+		5 => [ 'max' => 17, 'min' => 16, 'weight' => 700, 'line_height' => 1.5 ],
+		6 => [ 'max' => 15, 'min' => 14, 'weight' => 700, 'line_height' => 1.5 ],
+	];
+}
+
+/**
+ * وزن‌های فونت (فایل‌های Vazirmatn همراه قالب همین هفت وزن‌اند).
+ *
+ * @return array<int, string>
+ */
+function hodima_typography_weights(): array {
+	return [ 300 => 'نازک (۳۰۰)', 400 => 'معمولی (۴۰۰)', 500 => 'متوسط (۵۰۰)', 600 => 'نیم‌ضخیم (۶۰۰)', 700 => 'ضخیم (۷۰۰)', 800 => 'خیلی ضخیم (۸۰۰)', 900 => 'سیاه (۹۰۰)' ];
+}
+
+/**
+ * رنگ‌های قابل انتخاب برای لینک و تیتر: متغیرهای پالت (نه رنگ ثابت)، تا با
+ * عوض شدن پالت در تب «برند و رنگ‌ها» همه با هم عوض شوند.
+ *
+ * @return array<string, string>
+ */
+function hodima_typography_color_options(): array {
+	return [ 'text' => 'رنگ متن', 'primary' => 'رنگ اصلی', 'secondary' => 'رنگ دوم', 'accent' => 'رنگ تأکید', 'accent-light' => 'رنگ تأکید روشن' ];
+}
+
 /** ارقام فارسی برای برچسب‌ها (مستقل از زبان پیشخوان). */
 function hodima_fa_digits( int|string $value ): string {
 	return strtr( (string) $value, [ '0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴', '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹' ] );
@@ -161,6 +240,14 @@ function hodima_settings_groups(): array {
 
 	foreach ( hodima_social_networks() as $key => $label ) {
 		$groups[ "social_{$key}" ] = [ 'title' => $label ];
+	}
+
+	foreach ( array_keys( hodima_typography_heading_defaults() ) as $level ) {
+		$groups[ "type_h{$level}" ] = [ 'title' => "H{$level}" ];
+	}
+
+	foreach ( hodima_typography_weights() as $weight => $label ) {
+		$groups[ "font_w{$weight}" ] = [ 'title' => $label ];
 	}
 
 	return $groups;
@@ -229,6 +316,7 @@ function hodima_settings_nav_groups(): array {
 function hodima_settings_sections(): array {
 	return [
 		'brand'     => [ 'nav' => 'look', 'title' => 'برند و رنگ‌ها', 'icon' => 'dashicons-art', 'description' => 'لوگوی هدر و پنج رنگ برند که کل سایت از آن‌ها ساخته می‌شود.' ],
+		'typography' => [ 'nav' => 'look', 'title' => 'تایپوگرافی', 'icon' => 'dashicons-editor-textcolor', 'description' => 'فونت، اندازه و رنگ متن، لینک‌ها و تیترهای H1 تا H6 در کل سایت (و ویرایشگر نوشته‌ها).' ],
 		'header'    => [ 'nav' => 'look', 'title' => 'هدر', 'icon' => 'dashicons-editor-kitchensink', 'description' => 'نوار بالای همه صفحه‌ها. متن خالی به پیش‌فرض برمی‌گردد.' ],
 		'footer'    => [ 'nav' => 'look', 'title' => 'فوتر', 'icon' => 'dashicons-table-row-after', 'description' => 'ستون‌های پایین همه صفحه‌ها. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود.' ],
 		'home'      => [ 'nav' => 'pages', 'title' => 'صفحه اصلی', 'icon' => 'dashicons-admin-home', 'description' => 'بخش‌های صفحه اصلی سایت: ترتیب، روشن/خاموش و تنظیمات هر بخش.' ],
@@ -257,6 +345,12 @@ function hodima_settings_panels(): array {
 	return [
 		'brand_logo'         => [ 'section' => 'brand', 'title' => 'لوگو', 'icon' => 'dashicons-format-image', 'help' => 'لوگوی هدر سایت؛ پیش‌نمایش روی رنگ هدر است.' ],
 		'brand_palette'      => [ 'section' => 'brand', 'title' => 'پالت رنگ برند', 'icon' => 'dashicons-admin-appearance', 'layout' => 'swatches', 'help' => 'رنگ‌های کل سایت (و صفحه‌های تنظیمات پیشخوان) از این پنج رنگ ساخته می‌شوند. بعد از ذخیره، کش لایت‌اسپید خودکار پاک می‌شود.' ],
+
+		'type_preview'       => [ 'section' => 'typography', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'typepreview', 'help' => 'با هر تغییر پایین همین‌جا به‌روز می‌شود (پیش از ذخیره). اندازه تیترها در عرض همین کادر نمایش داده می‌شود.' ],
+		'type_fonts'         => [ 'section' => 'typography', 'title' => 'فونت‌ها', 'icon' => 'dashicons-editor-textcolor', 'help' => 'فایل‌های وزیرمتن (هفت وزن ۳۰۰ تا ۹۰۰) همراه قالب‌اند و از همین سایت بارگذاری می‌شوند. مرورگر هر وزن را فقط وقتی دانلود می‌کند که در صفحه به کار رفته باشد.' ],
+		'type_body'          => [ 'section' => 'typography', 'title' => 'متن و لینک‌ها', 'icon' => 'dashicons-editor-paragraph' ],
+		'type_headings'      => [ 'section' => 'typography', 'title' => 'تیترها (H1 تا H6)', 'icon' => 'dashicons-heading', 'layout' => 'rows', 'columns' => [ 'تیتر', 'اندازه دسکتاپ (px)', 'اندازه موبایل (px)', 'وزن', 'فاصله خطوط', 'رنگ' ], 'help' => 'اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند. پایه تیترهای داخل متن مقاله، برگه، توضیح محصول و دسته است؛ تیترهای طراحی‌شده بخش‌ها (کارت محصول، فوتر، عنوان صفحه‌ها) اندازه خودشان را دارند. ترتیب درست: هر سطح کوچک‌تر از سطح بالاتر.' ],
+		'type_custom'        => [ 'section' => 'typography', 'title' => 'فونت آپلودی', 'icon' => 'dashicons-upload', 'layout' => 'rows', 'columns' => [ 'وزن', 'فایل فونت (woff2)' ], 'help' => 'برای فونتی که مجوز استفاده در وب را دارید (مثلا ایران‌سنس یا یکان‌بخ). فایل woff2 هر وزن را از کتابخانه رسانه انتخاب یا آپلود کنید؛ وزن «معمولی (۴۰۰)» لازم است و وزن خالی از نزدیک‌ترین وزن موجود ساخته می‌شود. بعد در قاب «فونت‌ها» گزینه «فونت آپلودی» را انتخاب کنید.' ],
 
 		'header_main'        => [ 'section' => 'header', 'title' => 'پشتیبانی و جستجو', 'icon' => 'dashicons-format-chat', 'help' => 'دکمه پشتیبانی فقط وقتی دیده می‌شود که در تب «اطلاعات تماس» دست‌کم یک راه ارتباطی وارد شده باشد.' ],
 
@@ -403,7 +497,8 @@ function hodima_settings_sanitize( $input ): array {
 		$clean[ $key ] = hodima_setting_type( $field )->sanitize( $key, $field, $input[ $key ] ?? null );
 	}
 
-	return $clean;
+	// «فونت آپلودی» بدون فایل (inc/typography.php)
+	return function_exists( 'hodima_typography_validate' ) ? hodima_typography_validate( $clean ) : $clean;
 }
 
 /**
@@ -426,6 +521,43 @@ function hodima_settings_sanitize_color( mixed $raw, string $fallback ): string 
 function hodima_settings_sanitize_image( mixed $raw ): int {
 	$id = absint( is_scalar( $raw ) ? $raw : 0 );
 	return ( $id && wp_attachment_is_image( $id ) ) ? $id : 0;
+}
+
+/**
+ * عدد در بازه min/max؛ خالی/نامعتبر = پیش‌فرض. با step اعشاری (مثلا ۰٫۰۵ برای
+ * فاصله خطوط) عدد اعشاری گرد‌شده به همان گام، وگرنه صحیح (رفتار قبلی همه
+ * فیلدهای عددی). ارقام فارسی هم پذیرفته می‌شوند.
+ *
+ * @param array<string, mixed> $field
+ */
+function hodima_settings_sanitize_number( array $field, mixed $raw ): int|float {
+
+	$step    = (float) ( $field['step'] ?? 1 );
+	$decimal = $step > 0 && floor( $step ) !== $step;
+	$raw     = is_string( $raw ) ? strtr( trim( $raw ), [ '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9', '٫' => '.', '/' => '.' ] ) : $raw;
+
+	if ( ! is_numeric( $raw ) ) {
+		return $decimal ? (float) $field['default'] : (int) $field['default'];
+	}
+
+	if ( ! $decimal ) {
+		return min( (int) ( $field['max'] ?? PHP_INT_MAX ), max( (int) ( $field['min'] ?? 0 ), (int) $raw ) );
+	}
+
+	$value = min( (float) ( $field['max'] ?? PHP_FLOAT_MAX ), max( (float) ( $field['min'] ?? 0 ), (float) $raw ) );
+
+	return round( round( $value / $step ) * $step, 4 );
+}
+
+/** عدد برای نمایش در فیلد و CSS: «1.80» → «1.8»، «16.0» → «16». */
+function hodima_number_text( int|float $value ): string {
+	return rtrim( rtrim( number_format( (float) $value, 4, '.', '' ), '0' ), '.' );
+}
+
+/** فایل فونت (woff2/woff) از کتابخانه رسانه؛ هر چیز دیگر = ۰. */
+function hodima_settings_sanitize_font( mixed $raw ): int {
+	$id = absint( is_scalar( $raw ) ? $raw : 0 );
+	return ( $id && hodima_is_font_attachment( $id ) ) ? $id : 0;
 }
 
 function hodima_settings_sanitize_url( string $key, mixed $raw ): string {
@@ -730,7 +862,7 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 		}
 	}
 
-	$classes = 'hodima-panel hodima-panel--' . $layout . ( ! empty( $panel['half'] ) ? ' hodima-panel--half' : '' );
+	$classes = 'hodima-panel hodima-panel--' . $layout . ' hodima-panel-' . $key . ( ! empty( $panel['half'] ) ? ' hodima-panel--half' : '' );
 	$title   = 'hodima-panel-' . $key . '-title';
 	?>
 	<section class="<?php echo esc_attr( $classes ); ?>" aria-labelledby="<?php echo esc_attr( $title ); ?>">
@@ -739,6 +871,8 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 		<div class="hodima-panel__body">
 			<?php if ( 'swatches' === $layout ) : ?>
 				<?php hodima_settings_palette_preview( $settings ); ?>
+			<?php elseif ( 'typepreview' === $layout && function_exists( 'hodima_typography_preview' ) ) : ?>
+				<?php hodima_typography_preview(); ?>
 			<?php endif; ?>
 
 			<?php if ( $loose ) : ?>
@@ -894,6 +1028,25 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 				</div>
 			</div>
 
+		<?php elseif ( Hodima_Setting_Type::Font === $type ) : ?>
+			<?php
+			$font_id   = (int) $value;
+			$font_name = $font_id ? wp_basename( (string) get_attached_file( $font_id ) ) : '';
+			?>
+			<span class="hodima-field__label screen-reader-text" id="<?php echo esc_attr( $id ); ?>-label"><?php echo esc_html( $field['label'] ); ?></span>
+			<div class="hodima-media hodima-media--file" data-hodima-media data-hodima-media-kind="font">
+				<input type="hidden" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $font_id ); ?>" data-hodima-media-input>
+				<span class="hodima-media__file<?php echo $font_id ? '' : ' is-empty'; ?>" data-hodima-media-preview>
+					<span class="dashicons dashicons-media-default" aria-hidden="true"></span>
+					<bdi dir="ltr" data-hodima-media-name><?php echo esc_html( $font_name ); ?></bdi>
+					<span class="hodima-media__empty-text">بدون فایل</span>
+				</span>
+				<div class="hodima-media__buttons">
+					<button type="button" class="button" data-hodima-media-select aria-describedby="<?php echo esc_attr( $id ); ?>-label" data-title="<?php echo esc_attr( $field['label'] ); ?>"><?php echo $font_id ? 'تغییر فایل' : 'انتخاب فایل'; ?></button>
+					<button type="button" class="button-link hodima-media__remove" data-hodima-media-remove aria-describedby="<?php echo esc_attr( $id ); ?>-label" <?php echo $font_id ? '' : 'hidden'; ?>>حذف</button>
+				</div>
+			</div>
+
 		<?php else : ?>
 			<label class="hodima-field__label" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
 			<?php if ( Hodima_Setting_Type::Textarea === $type ) : ?>
@@ -903,10 +1056,15 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					type="number"
 					id="<?php echo esc_attr( $id ); ?>"
 					name="<?php echo esc_attr( $name ); ?>"
-					value="<?php echo esc_attr( (string) (int) $value ); ?>"
+					value="<?php echo esc_attr( hodima_number_text( is_numeric( $value ) ? 0 + $value : 0 ) ); ?>"
 					min="<?php echo esc_attr( (string) ( $field['min'] ?? 0 ) ); ?>"
 					max="<?php echo esc_attr( (string) ( $field['max'] ?? '' ) ); ?>"
-					inputmode="numeric"
+					<?php if ( isset( $field['step'] ) ) : ?>
+						step="<?php echo esc_attr( (string) $field['step'] ); ?>"
+						inputmode="decimal"
+					<?php else : ?>
+						inputmode="numeric"
+					<?php endif; ?>
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				>
 			<?php elseif ( Hodima_Setting_Type::Select === $type ) : ?>

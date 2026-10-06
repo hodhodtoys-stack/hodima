@@ -173,25 +173,19 @@ function hodima_page_media_urls(): array {
  * body هیچ font-weight صریحی ندارد و روی ۴۰۰ (Regular) می‌افتد.
  * یعنی مرورگر با اولویت بالا فایلی را می‌گرفت که برای متن اصلی
  * لازم نبود و Regular با تاخیر لود می‌شد.
+ * از 2.9.6 فایل‌ها از فونت انتخاب‌شده تب «تایپوگرافی» می‌آیند
+ * (hodima_typography_preload_urls: وزن ۴۰۰ متن و ۷۰۰ تیترها)؛
+ * با تنظیمات پیش‌فرض همان Regular و Bold وزیرمتن.
  * ============================================================ */
 add_action( 'wp_head', 'hodima_preload_fonts', 1 );
 
 function hodima_preload_fonts(): void {
 
-    $fonts = [
-        'assets/fonts/Vazirmatn-Regular.woff2', // متن اصلی (font-weight: 400)
-        'assets/fonts/Vazirmatn-Bold.woff2',    // تیترها (font-weight: 700)
-    ];
-
-    foreach ( $fonts as $font ) {
-
-        if ( ! is_file( get_theme_file_path( $font ) ) ) {
-            continue;
-        }
-
+    foreach ( hodima_typography_preload_urls() as $url ) {
         printf(
-            '<link rel="preload" href="%s" as="font" type="font/woff2" crossorigin>' . "\n",
-            esc_url( get_theme_file_uri( $font ) )
+            '<link rel="preload" href="%s" as="font" type="%s" crossorigin>' . "\n",
+            esc_url( $url ),
+            str_ends_with( strtolower( (string) wp_parse_url( $url, PHP_URL_PATH ) ), '.woff' ) ? 'font/woff' : 'font/woff2'
         );
     }
 }

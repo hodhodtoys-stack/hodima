@@ -1553,3 +1553,188 @@
 		margin-inline-start: 0;
 	}
 }
+
+/* ── تایپوگرافی (2.9.6) ───────────────────────────────────────── */
+
+/* وزن‌های ۳۰۰/۶۰۰/۸۰۰ وزیرمتن قالب برای پیش‌نمایش (فونت پیشخوان Hodima Core چهار وزن دارد) */
+@font-face { font-family: 'Vazirmatn'; src: url('../../assets/fonts/Vazirmatn-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('../../assets/fonts/Vazirmatn-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('../../assets/fonts/Vazirmatn-ExtraBold.woff2') format('woff2'); font-weight: 800; font-style: normal; font-display: swap; }
+
+/*
+ * نمونه زنده: همان فرمول style.css با مقدار «دسکتاپ» یا «موبایل» (دکمه‌ها).
+ * فونت پیشخوان (Hodima Core) با !important روی p و a است؛ انتخابگر اختصاصی‌تر.
+ */
+.hodima-type-preview {
+	display: grid;
+	gap: 0.875rem;
+
+	& .hodima-type-preview__modes {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	& .hodima-type-preview__mode {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		min-block-size: 2.25rem;
+		padding-inline: 0.875rem;
+		border: 1px solid var(--hs-border-strong);
+		border-radius: var(--hs-radius-sm);
+		background: var(--hs-surface);
+		color: var(--hs-primary);
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+
+		&[aria-pressed="true"] {
+			border-color: var(--hs-primary);
+			background: var(--hs-primary);
+			color: #ffffff;
+		}
+
+		&:focus-visible {
+			box-shadow: var(--hs-ring);
+			outline: none;
+		}
+	}
+
+	& .hodima-type-preview__page {
+		display: grid;
+		gap: 0.25rem;
+		inline-size: 100%;
+		max-inline-size: 60rem;
+		padding: 1.25rem 1.5rem;
+		border: 1px solid var(--hs-border);
+		border-radius: 0.75rem;
+		background: var(--hodima-bg-light, #f6f8fc);
+		transition: max-inline-size 0.2s ease;
+	}
+
+	&[data-mode="mobile"] .hodima-type-preview__page {
+		max-inline-size: 390px;
+	}
+}
+
+.wp-admin .hodima-type-preview :is(.hodima-type-preview__h, .hodima-type-preview__text, .hodima-type-preview__link) {
+	margin: 0;
+	/* stylelint-disable-next-line declaration-no-important -- فونت پیشخوان Hodima Core روی p و a با !important است */
+	font-family: var(--hodima-font) !important;
+}
+
+.wp-admin .hodima-type-preview .hodima-type-preview__h {
+	/* stylelint-disable-next-line declaration-no-important -- فونت پیشخوان Hodima Core روی p با !important است */
+	font-family: var(--hodima-font-heading) !important;
+	font-size: calc(var(--hodima-heading-max) * 1px);
+	font-weight: var(--hodima-heading-weight);
+	line-height: var(--hodima-heading-line-height);
+	color: var(--hodima-heading-color);
+}
+
+.hodima-type-preview__h1 { --hodima-heading-min: var(--hodima-h1-size-min); --hodima-heading-max: var(--hodima-h1-size-max); --hodima-heading-weight: var(--hodima-h1-weight); --hodima-heading-line-height: var(--hodima-h1-line-height); --hodima-heading-color: var(--hodima-h1-color); }
+.hodima-type-preview__h2 { --hodima-heading-min: var(--hodima-h2-size-min); --hodima-heading-max: var(--hodima-h2-size-max); --hodima-heading-weight: var(--hodima-h2-weight); --hodima-heading-line-height: var(--hodima-h2-line-height); --hodima-heading-color: var(--hodima-h2-color); }
+.hodima-type-preview__h3 { --hodima-heading-min: var(--hodima-h3-size-min); --hodima-heading-max: var(--hodima-h3-size-max); --hodima-heading-weight: var(--hodima-h3-weight); --hodima-heading-line-height: var(--hodima-h3-line-height); --hodima-heading-color: var(--hodima-h3-color); }
+.hodima-type-preview__h4 { --hodima-heading-min: var(--hodima-h4-size-min); --hodima-heading-max: var(--hodima-h4-size-max); --hodima-heading-weight: var(--hodima-h4-weight); --hodima-heading-line-height: var(--hodima-h4-line-height); --hodima-heading-color: var(--hodima-h4-color); }
+.hodima-type-preview__h5 { --hodima-heading-min: var(--hodima-h5-size-min); --hodima-heading-max: var(--hodima-h5-size-max); --hodima-heading-weight: var(--hodima-h5-weight); --hodima-heading-line-height: var(--hodima-h5-line-height); --hodima-heading-color: var(--hodima-h5-color); }
+.hodima-type-preview__h6 { --hodima-heading-min: var(--hodima-h6-size-min); --hodima-heading-max: var(--hodima-h6-size-max); --hodima-heading-weight: var(--hodima-h6-weight); --hodima-heading-line-height: var(--hodima-h6-line-height); --hodima-heading-color: var(--hodima-h6-color); }
+
+.wp-admin .hodima-type-preview .hodima-type-preview__text {
+	margin-block-start: 0.5rem;
+	font-size: calc(var(--hodima-body-size) * 1px);
+	line-height: var(--hodima-body-line-height);
+	color: var(--hodima-text-dark);
+}
+
+.wp-admin .hodima-type-preview .hodima-type-preview__link {
+	color: var(--hodima-link);
+	text-decoration-line: var(--hodima-content-link-line);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.3em;
+	cursor: pointer;
+
+	&:hover {
+		color: var(--hodima-link-hover);
+	}
+}
+
+/* موبایل: اندازه «موبایل» هر تیتر */
+.wp-admin .hodima-type-preview[data-mode="mobile"] .hodima-type-preview__h {
+	font-size: calc(var(--hodima-heading-min) * 1px);
+}
+
+/* جدول تیترها: شش ستون «تیتر | دسکتاپ | موبایل | وزن | فاصله خطوط | رنگ» */
+.hodima-panel-type_headings {
+	--row-cols: 4rem repeat(2, minmax(5rem, 7rem)) minmax(9rem, 1fr) minmax(5rem, 7rem) minmax(8rem, 1fr);
+
+	& .hodima-group__title {
+		font-size: 1rem;
+	}
+
+	@media (width <= 1279px) {
+		--row-cols: 3rem repeat(2, minmax(4.5rem, 6rem)) minmax(8rem, 1fr) minmax(4.5rem, 6rem) minmax(7rem, 1fr);
+	}
+
+	/* موبایل: برچسب هر فیلد دیده شود (ستون‌ها پنهان‌اند)، دو فیلد در هر ردیف */
+	@media (width <= 782px) {
+		& .hodima-group {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		& .hodima-group__title {
+			grid-column: 1 / -1;
+		}
+
+		& .hodima-field__label {
+			position: static;
+			inline-size: auto;
+			block-size: auto;
+			overflow: visible;
+			clip-path: none;
+			white-space: normal;
+		}
+	}
+}
+
+/* فونت آپلودی: «وزن | فایل» */
+.hodima-panel-type_custom {
+	--row-cols: 9rem minmax(0, 1fr);
+}
+
+/* فایل (فونت): نام فایل به‌جای تصویر */
+.hodima-media__file {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-inline-size: 0;
+	padding: 0.375rem 0.75rem;
+	border: 1px solid var(--hs-border);
+	border-radius: var(--hs-radius-sm);
+	background: var(--hs-surface);
+	color: var(--hs-text);
+	font-size: 0.8125rem;
+
+	& bdi {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	& .hodima-media__empty-text {
+		display: none;
+		color: var(--hs-muted);
+	}
+
+	&.is-empty {
+		border-style: dashed;
+		background: var(--hs-surface-soft);
+
+		& bdi {
+			display: none;
+		}
+
+		& .hodima-media__empty-text {
+			display: inline;
+		}
+	}
+}

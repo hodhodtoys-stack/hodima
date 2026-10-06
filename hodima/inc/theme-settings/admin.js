@@ -10,12 +10,18 @@
 
 	const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-	/** یک انتخابگر تصویر: دکمه انتخاب، پیش‌نمایش (با حالت «بدون تصویر»)، دکمه حذف و فیلد مخفی شناسه. */
+	/**
+	 * یک انتخابگر رسانه: دکمه انتخاب، پیش‌نمایش (با حالت «بدون تصویر»)، دکمه حذف و
+	 * فیلد مخفی شناسه. data-hodima-media-kind="font": فایل فونت (نام فایل به‌جای
+	 * تصویر؛ رویداد hodima:font برای پیش‌نمایش تایپوگرافی).
+	 */
 	const initMediaField = (root) => {
 		const input = root.querySelector('[data-hodima-media-input]');
 		const preview = root.querySelector('[data-hodima-media-preview]');
 		const selectBtn = root.querySelector('[data-hodima-media-select]');
 		const removeBtn = root.querySelector('[data-hodima-media-remove]');
+		const isFont = root.dataset.hodimaMediaKind === 'font';
+		const noun = isFont ? 'فایل' : 'تصویر';
 
 		if (!input || !preview || !selectBtn || !removeBtn || typeof window.wp?.media !== 'function') {
 			return;
@@ -25,27 +31,38 @@
 
 		const render = (attachment) => {
 			preview.querySelector('img')?.remove();
+			const name = preview.querySelector('[data-hodima-media-name]');
 
 			if (!attachment) {
 				input.value = '';
 				preview.classList.add('is-empty');
+				if (name) {
+					name.textContent = '';
+				}
 				removeBtn.hidden = true;
-				selectBtn.textContent = 'انتخاب تصویر';
+				selectBtn.textContent = `انتخاب ${noun}`;
 				input.dispatchEvent(new Event('change', { bubbles: true }));
 				return;
 			}
 
-			const size = attachment.sizes?.medium ?? attachment.sizes?.full ?? attachment;
-			const img = document.createElement('img');
-			img.src = size.url;
-			img.alt = '';
-			img.decoding = 'async';
+			if (isFont) {
+				if (name) {
+					name.textContent = attachment.filename ?? '';
+				}
+				root.dispatchEvent(new CustomEvent('hodima:font', { bubbles: true, detail: { url: attachment.url, input } }));
+			} else {
+				const size = attachment.sizes?.medium ?? attachment.sizes?.full ?? attachment;
+				const img = document.createElement('img');
+				img.src = size.url;
+				img.alt = '';
+				img.decoding = 'async';
+				preview.prepend(img);
+			}
 
-			preview.prepend(img);
 			preview.classList.remove('is-empty');
 			input.value = String(attachment.id);
 			removeBtn.hidden = false;
-			selectBtn.textContent = 'تغییر تصویر';
+			selectBtn.textContent = `تغییر ${noun}`;
 			// فیلد مخفی رویداد ندارد؛ برای نشانه «ذخیره‌نشده»
 			input.dispatchEvent(new Event('change', { bubbles: true }));
 		};
@@ -53,8 +70,8 @@
 		selectBtn.addEventListener('click', () => {
 			frame ??= window.wp.media({
 				title: selectBtn.dataset.title ?? '',
-				library: { type: 'image' },
-				button: { text: 'استفاده از این تصویر' },
+				library: { type: isFont ? ['font/woff2', 'font/woff'] : 'image' },
+				button: { text: `استفاده از این ${noun}` },
 				multiple: false,
 			});
 
@@ -71,6 +88,75 @@
 			render(null);
 			selectBtn.focus();
 		});
+	};
+
+	/**
+	 * تب «تایپوگرافی»: نمونه زنده. هر فیلد یک متغیر همان tokens.css را روی ظرف
+	 * نمونه عوض می‌کند (فرمول‌ها در admin.css همان style.css‌اند).
+	 */
+	const initTypography = () => {
+		const preview = document.querySelector('[data-hodima-type-preview]');
+		if (!preview) {
+			return;
+		}
+
+		const stacks = JSON.parse(preview.dataset.stacks ?? '{}');
+		const field = (key) => document.getElementById(`hodima-setting-${key}`);
+		const colorVar = (key) => (key === 'text' ? 'var(--hodima-text-dark)' : `var(--hodima-${key})`);
+		const set = (name, value) => {
+			if (value !== undefined && value !== '') {
+				preview.style.setProperty(name, value);
+			}
+		};
+
+		const sync = () => {
+			const body = field('font_body')?.value ?? 'vazirmatn';
+			const heading = field('font_heading')?.value ?? 'body';
+			set('--hodima-font', stacks[body]);
+			set('--hodima-font-heading', heading === 'body' ? stacks[body] : stacks[heading]);
+			set('--hodima-body-size', field('body_size')?.value);
+			set('--hodima-body-line-height', field('body_line_height')?.value);
+			set('--hodima-text-dark', field('color_text')?.value);
+			set('--hodima-link', colorVar(field('link_color')?.value ?? 'secondary'));
+			set('--hodima-link-hover', colorVar(field('link_hover_color')?.value ?? 'primary'));
+			set('--hodima-content-link-line', field('content_link_underline')?.checked === false ? 'none' : 'underline');
+
+			for (let level = 1; level <= 6; level++) {
+				set(`--hodima-h${level}-size-max`, field(`h${level}_size`)?.value);
+				set(`--hodima-h${level}-size-min`, field(`h${level}_size_mobile`)?.value);
+				set(`--hodima-h${level}-weight`, field(`h${level}_weight`)?.value);
+				set(`--hodima-h${level}-line-height`, field(`h${level}_line_height`)?.value);
+				set(`--hodima-h${level}-color`, colorVar(field(`h${level}_color`)?.value ?? 'text'));
+			}
+		};
+
+		document.querySelector('[data-section="typography"]')?.addEventListener('input', sync);
+		document.querySelector('[data-section="typography"]')?.addEventListener('change', sync);
+
+		// فایل فونت تازه (پیش از ذخیره): همان‌جا به مرورگر اضافه شود
+		document.addEventListener('hodima:font', async (event) => {
+			const weight = event.detail.input?.id.match(/font_custom_(\d+)$/)?.[1];
+			if (!weight || typeof FontFace !== 'function') {
+				return;
+			}
+			try {
+				const face = new FontFace(preview.dataset.family ?? 'Hodima Custom', `url("${event.detail.url}")`, { weight });
+				document.fonts.add(await face.load());
+			} catch {
+				// فایل خراب یا نامعتبر: پیش‌نمایش با فونت جایگزین می‌ماند
+			}
+		});
+
+		preview.querySelectorAll('[data-hodima-type-mode]').forEach((button) => {
+			button.addEventListener('click', () => {
+				preview.dataset.mode = button.dataset.hodimaTypeMode;
+				preview.querySelectorAll('[data-hodima-type-mode]').forEach((other) => {
+					other.setAttribute('aria-pressed', String(other === button));
+				});
+			});
+		});
+
+		sync();
 	};
 
 	/**
@@ -435,5 +521,6 @@
 		initPalette();
 		initLogoInvert();
 		initBuilderStatus();
+		initTypography();
 	});
 })();

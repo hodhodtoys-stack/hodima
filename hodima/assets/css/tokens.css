@@ -132,6 +132,27 @@
     --hodima-state-danger-bg:  #f8ecec;
     --hodima-state-info-bg:    #eef1fb;
 
-    /* ── فونت ────────────────────────────────────────────────────── */
+    /* ── تایپوگرافی (تب «تایپوگرافی» تنظیمات قالب؛ inc/typography.php) ──
+       مقدار پیش‌فرض همه این‌جاست؛ پیشخوان فقط مقدارهای تغییرکرده را بعد از
+       همین فایل بازنویسی می‌کند (مثل پالت). اندازه‌ها عدد بی‌واحد پیکسل‌اند تا
+       CSS از آن‌ها اندازه روان بسازد (style.css بخش ۴). */
     --hodima-font: 'Vazirmatn', Tahoma, sans-serif;
+    --hodima-font-heading: var(--hodima-font);
+
+    --hodima-body-size:        16;      /* اندازه متن (px) */
+    --hodima-body-line-height: 1.8;
+
+    /* لینک‌ها: رنگ دوم پالت؛ hover رنگ اصلی (تا 2.9.5 آبی ثابت #0d6efd) */
+    --hodima-link:             var(--hodima-secondary);
+    --hodima-link-hover:       var(--hodima-primary);
+    --hodima-content-link-line: underline;   /* زیرخط لینک‌های داخل متن (none = بدون) */
+
+    /* تیترها: اندازه موبایل (min، عرض ۳۹۰) تا دسکتاپ (max، عرض ۱۲۰۰ به بالا)،
+       بینشان روان. پله‌ها از 2.9.6 (قبلا H2 ۱۶px و کوچک‌تر از H3 بود). */
+    --hodima-h1-size-max: 32;  --hodima-h1-size-min: 26;  --hodima-h1-weight: 700;  --hodima-h1-line-height: 1.5;  --hodima-h1-color: var(--hodima-text-dark);
+    --hodima-h2-size-max: 26;  --hodima-h2-size-min: 22;  --hodima-h2-weight: 700;  --hodima-h2-line-height: 1.5;  --hodima-h2-color: var(--hodima-text-dark);
+    --hodima-h3-size-max: 22;  --hodima-h3-size-min: 19;  --hodima-h3-weight: 700;  --hodima-h3-line-height: 1.5;  --hodima-h3-color: var(--hodima-text-dark);
+    --hodima-h4-size-max: 19;  --hodima-h4-size-min: 17;  --hodima-h4-weight: 700;  --hodima-h4-line-height: 1.5;  --hodima-h4-color: var(--hodima-text-dark);
+    --hodima-h5-size-max: 17;  --hodima-h5-size-min: 16;  --hodima-h5-weight: 700;  --hodima-h5-line-height: 1.5;  --hodima-h5-color: var(--hodima-text-dark);
+    --hodima-h6-size-max: 15;  --hodima-h6-size-min: 14;  --hodima-h6-weight: 700;  --hodima-h6-line-height: 1.5;  --hodima-h6-color: var(--hodima-text-dark);
 }

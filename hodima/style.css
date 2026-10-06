@@ -4,7 +4,7 @@ Theme URI: https://hodima.com
 Author: آرین فتحی
 Author URI: https://hodima.com
 Description: قالب اختصاصی فروشگاه عمده‌فروشی (فقط نمایش). امکانات سئو، فروشگاه و رسانه در افزونه‌های همراه Hodima Core، Hodima SEO، Hodima Commerce و Hodima Media هستند.
-Version: 2.9.5
+Version: 2.9.6
 Requires at least: 6.5
 Requires PHP: 8.4
 Text Domain: hodima
@@ -12,10 +12,17 @@ Text Domain: hodima
 
 /* ==========================================================
    1. Local fonts
+   Vazirmatn 33.003 (مجوز OFL: assets/fonts/OFL.txt). هفت وزن ۳۰۰ تا ۹۰۰؛ تا 2.9.5
+   فقط ۴۰۰/۵۰۰/۷۰۰/۹۰۰ بود و ۲۱ قانون با وزن ۳۰۰/۶۰۰/۸۰۰ وزن دیگری می‌گرفتند
+   (۶۰۰ ← ۷۰۰، ۳۰۰ ← ۴۰۰، ۸۰۰ ← ۹۰۰). مرورگر هر فایل را فقط وقتی متنی با
+   همان وزن در صفحه باشد دانلود می‌کند. فونت آپلودی پیشخوان: inc/typography.php.
 ========================================================== */
+@font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-ExtraBold.woff2') format('woff2'); font-weight: 800; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-Black.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
 
 /* ==========================================================
@@ -40,18 +47,10 @@ Text Domain: hodima
    3. Base reset and typography
 ========================================================== */
 /*
- * اندازه واکنش‌گرای پایه؛ در عمل header.css (:root { font-size: 16px }، اختصاصی‌تر
- * از html) در همه صفحه‌ها ۱۶px می‌کند — رفتار همیشگی سایت، دست نخورد.
+ * اندازه پایه rem: header.css (:root { font-size: 16px }) در همه صفحه‌ها.
+ * قانون‌های واکنش‌گرای html (۱۴/۱۵/۱۶px) که اینجا بودند هیچ‌وقت اثر نداشتند
+ * (:root اختصاصی‌تر از html است) و در 2.9.6 حذف شدند. اندازه متن: --hodima-body-size.
  */
-html { font-size: 14px; }
-
-@media (width >= 768px) {
-	html { font-size: 15px; }
-}
-
-@media (width >= 1024px) {
-	html { font-size: 16px; }
-}
 
 *,
 *::before,
@@ -59,15 +58,26 @@ html { font-size: 14px; }
 	box-sizing: border-box;
 }
 
+/*
+ * فونت از توکن‌ها (تب «تایپوگرافی»): متن --hodima-font، تیترها و هر چه داخل
+ * تیتر است (لینک عنوان کارت، span…) --hodima-font-heading. !important از قبل
+ * بود: CSS افزونه‌ها و ووکامرس فونت خودشان را روی همین عنصرها می‌گذارند.
+ */
 body,
-h1, h2, h3, h4, h5, h6,
 p, a, span, div,
 input, button, textarea, select, form, label, ul, li {
-	font-family: 'Vazirmatn', Tahoma, sans-serif !important;
+	font-family: var(--hodima-font) !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+:is(h1, h2, h3, h4, h5, h6) :is(p, a, span, div, button, label) {
+	/* stylelint-disable-next-line declaration-no-important -- همان !important قانون بالا (تا 2.9.5 تیترها در همان قانون بودند) */
+	font-family: var(--hodima-font-heading) !important;
 }
 
 body {
-	line-height: 1.8;
+	font-size: calc(var(--hodima-body-size) * 0.0625rem);
+	line-height: var(--hodima-body-line-height);
 	color: var(--hodima-text-dark);
 	background-color: var(--hodima-bg-light);
 	direction: rtl;
@@ -78,15 +88,17 @@ body {
 	padding: 0;
 }
 
+/* رنگ لینک از پالت (تا 2.9.5 آبی ثابت #0d6efd / #0a58ca، جدا از رنگ برند) */
 a {
-	color: #0d6efd; /* آبی استاندارد و مدرن وب */
+	color: var(--hodima-link);
 	text-decoration: none;
 	transition: color 0.25s ease;
 }
 
 a:hover {
-	color: #0a58ca; /* آبی تیره‌تر برای حالت هاور (وقتی موس روی لینک می‌رود) */
+	color: var(--hodima-link-hover);
 }
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -96,22 +108,46 @@ select:focus-visible {
 	outline-offset: 2px;
 }
 
+/*
+ * لینک‌های داخل متن (مقاله، برگه، توضیح محصول/دسته/فروشگاه) زیرخط دارند:
+ * تفاوت رنگ لینک با متن کنارش کمتر از ۳ به ۱ است و فقط با رنگ دیده نمی‌شود
+ * (WCAG 1.4.1). لینک کلاس‌دار (دکمه، کارت، شورت‌کد) و بخش‌های ووکامرس (سبد،
+ * پرداخت و حساب کاربری داخل برگه‌اند) دست نمی‌خورد.
+ */
+:is(.single-post-content, .entry-content, .section-description) a:not([class], .woocommerce a) {
+	text-decoration-line: var(--hodima-content-link-line);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.3em;
+}
+
 /* ==========================================================
    4. Headings
 ========================================================== */
+/*
+ * همه از توکن‌ها (tokens.css، تب «تایپوگرافی»). اندازه روان: از عدد «موبایل»
+ * در عرض ۳۹۰px تا عدد «دسکتاپ» در ۱۲۰۰px و بالاتر، بینشان خطی (min/max تا
+ * اگر موبایل بزرگ‌تر وارد شد هم درست بماند). تیترهای اجزا (کارت، فوتر،
+ * عنوان محصول…) اندازه خودشان را دارند و این‌جا فقط پایه است.
+ * تا 2.9.5: H1 ۲۷px، H2 ۱۶px (هم‌اندازه متن و کوچک‌تر از H3 تا H5 با ۱۸px).
+ */
 h1, h2, h3, h4, h5, h6 {
-	font-weight: 700;
-	line-height: 1.5;
 	margin: 0 0 var(--hodima-space-5);
-	color: var(--hodima-text-dark);
+	font-size: clamp(
+		calc(min(var(--hodima-heading-min), var(--hodima-heading-max)) * 0.0625rem),
+		calc(var(--hodima-heading-min) * 0.0625rem + (var(--hodima-heading-max) - var(--hodima-heading-min)) * (100vw - 390px) / 810),
+		calc(max(var(--hodima-heading-min), var(--hodima-heading-max)) * 0.0625rem)
+	);
+	font-weight: var(--hodima-heading-weight);
+	line-height: var(--hodima-heading-line-height);
+	color: var(--hodima-heading-color);
 }
 
-h1 { font-size: 1.7rem; }
-h2 { font-size: 1rem; }
-h3 { font-size: 1.1rem; }
-h4 { font-size: 1.1rem; }
-h5 { font-size: 1.1rem; }
-h6 { font-size: 1rem; }
+h1 { --hodima-heading-min: var(--hodima-h1-size-min); --hodima-heading-max: var(--hodima-h1-size-max); --hodima-heading-weight: var(--hodima-h1-weight); --hodima-heading-line-height: var(--hodima-h1-line-height); --hodima-heading-color: var(--hodima-h1-color); }
+h2 { --hodima-heading-min: var(--hodima-h2-size-min); --hodima-heading-max: var(--hodima-h2-size-max); --hodima-heading-weight: var(--hodima-h2-weight); --hodima-heading-line-height: var(--hodima-h2-line-height); --hodima-heading-color: var(--hodima-h2-color); }
+h3 { --hodima-heading-min: var(--hodima-h3-size-min); --hodima-heading-max: var(--hodima-h3-size-max); --hodima-heading-weight: var(--hodima-h3-weight); --hodima-heading-line-height: var(--hodima-h3-line-height); --hodima-heading-color: var(--hodima-h3-color); }
+h4 { --hodima-heading-min: var(--hodima-h4-size-min); --hodima-heading-max: var(--hodima-h4-size-max); --hodima-heading-weight: var(--hodima-h4-weight); --hodima-heading-line-height: var(--hodima-h4-line-height); --hodima-heading-color: var(--hodima-h4-color); }
+h5 { --hodima-heading-min: var(--hodima-h5-size-min); --hodima-heading-max: var(--hodima-h5-size-max); --hodima-heading-weight: var(--hodima-h5-weight); --hodima-heading-line-height: var(--hodima-h5-line-height); --hodima-heading-color: var(--hodima-h5-color); }
+h6 { --hodima-heading-min: var(--hodima-h6-size-min); --hodima-heading-max: var(--hodima-h6-size-max); --hodima-heading-weight: var(--hodima-h6-weight); --hodima-heading-line-height: var(--hodima-h6-line-height); --hodima-heading-color: var(--hodima-h6-color); }
 
 /* ==========================================================
    5. Global UI elements

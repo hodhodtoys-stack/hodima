@@ -28,10 +28,11 @@ enum Hodima_Setting_Type: string {
 	case Number   = 'number';
 	case Select   = 'select';
 	case Color    = 'color';
+	case Font     = 'font';   // فایل فونت woff2/woff از کتابخانه رسانه (شناسه پیوست)
 
 	/** فیلد در شبکه تنظیمات کل عرض را می‌گیرد (مگر داخل زیرگروه). */
 	public function is_wide(): bool {
-		return in_array( $this, [ self::Textarea, self::UrlList, self::HostList, self::Image ], true );
+		return in_array( $this, [ self::Textarea, self::UrlList, self::HostList, self::Image, self::Font ], true );
 	}
 
 	/** فهرست چندخطی آدرس/دامنه (textarea چپ‌به‌راست). */
@@ -63,14 +64,15 @@ enum Hodima_Setting_Type: string {
 		return match ( $this ) {
 			self::Toggle   => ! empty( $raw ),
 			self::Image    => hodima_settings_sanitize_image( $raw ),
+			self::Font     => hodima_settings_sanitize_font( $raw ),
 			self::Url      => hodima_settings_sanitize_url( $key, $raw ),
 			self::Tel      => hodima_settings_sanitize_phone( $key, $raw ),
 			self::Ga       => hodima_settings_sanitize_ga( $raw ),
 			self::UrlList  => hodima_settings_sanitize_url_list( $raw ),
 			self::HostList => hodima_settings_sanitize_host_list( $key, $raw ),
 			self::Textarea => sanitize_textarea_field( is_string( $raw ) ? $raw : '' ),
-			// عدد در بازه min/max؛ ورودی خالی/نامعتبر = پیش‌فرض
-			self::Number   => is_numeric( $raw ) ? min( (int) ( $field['max'] ?? PHP_INT_MAX ), max( (int) ( $field['min'] ?? 0 ), (int) $raw ) ) : (int) $field['default'],
+			// عدد در بازه min/max (اعشاری اگر step اعشاری دارد)؛ ورودی خالی/نامعتبر = پیش‌فرض
+			self::Number   => hodima_settings_sanitize_number( $field, $raw ),
 			self::Select   => isset( $field['options'][ (string) ( is_scalar( $raw ) ? $raw : '' ) ] ) ? (string) $raw : (string) $field['default'],
 			// #abc → #aabbcc (input type=color فقط شش رقمی می‌پذیرد)
 			self::Color    => hodima_settings_sanitize_color( $raw, (string) $field['default'] ),

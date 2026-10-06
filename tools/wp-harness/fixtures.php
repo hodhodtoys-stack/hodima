@@ -39,7 +39,9 @@ $home = p( [ 'post_type' => 'page', 'post_title' => 'خانه', 'post_name' => '
 set_post_thumbnail( $home, $img1 );
 $blog = p( [ 'post_type' => 'page', 'post_title' => 'وبلاگ', 'post_name' => 'blog' ] );
 update_option( 'show_on_front', 'page' ); update_option( 'page_on_front', $home ); update_option( 'page_for_posts', $blog );
-$about = p( [ 'post_type' => 'page', 'post_title' => 'درباره ما', 'post_name' => 'about-us', 'post_excerpt' => 'معرفی شرکت' ] );
+// تیترهای H2 تا H6 و لینک داخل متن: پوشش تایپوگرافی (تب «تایپوگرافی»، 2.9.6)
+$typo = '<p>متن نمونه با <a href="https://hodima.test/guide/">لینک داخل متن</a> برای خواندن.</p><h2>تیتر دوم نمونه</h2><p>بند</p><h3>تیتر سوم نمونه</h3><p>بند</p><h4>تیتر چهارم</h4><h5>تیتر پنجم</h5><h6>تیتر ششم</h6><p>پایان</p>';
+$about = p( [ 'post_type' => 'page', 'post_title' => 'درباره ما', 'post_name' => 'about-us', 'post_excerpt' => 'معرفی شرکت', 'post_content' => $typo ] );
 $contact = p( [ 'post_type' => 'page', 'post_title' => 'تماس با ما', 'post_name' => 'contact-us' ] );
 $plain = p( [ 'post_type' => 'page', 'post_title' => 'راهنمای خرید', 'post_name' => 'guide', 'post_content' => 'متن راهنما [hodima_table]' ], $media( [ '_hook_discover_title' => 'راهنمای کامل خرید عمده', '_hook_ai_summary' => 'خلاصه هوش مصنوعی', '_hook_key_entities' => 'کلیپس, گلسر', '_h_ai_faqs' => wp_json_encode( [ [ 'q' => 'حداقل سفارش چقدر است؟', 'a' => 'یک بسته' ], [ 'q' => 'پرداخت چگونه است؟', 'a' => 'کارت به کارت' ] ], JSON_UNESCAPED_UNICODE ) ] ) );
 update_post_meta( $plain, '_hodima_table_data', [ 'headers' => [ 'ویژگی', 'مقدار' ], 'rows' => [ [ 'جنس', 'فلز' ], [ 'رنگ', 'طلایی' ] ] ] );
@@ -86,7 +88,7 @@ update_post_meta( $pillar, '_hodima_rl_groups', [
 	'products'   => [ [ 'kind' => 'post', 'id' => $prod, 'url' => '', 'title' => '', 'img_id' => 0 ], [ 'kind' => 'post', 'id' => $pillar, 'url' => '', 'title' => '', 'img_id' => 0 ], [ 'kind' => 'post', 'id' => $prod3, 'url' => '', 'title' => '', 'img_id' => 0 ] ],
 	'article'    => [ [ 'kind' => 'post', 'id' => $child, 'url' => '', 'title' => '', 'img_id' => $img3 ] ],
 ] );
-wp_update_post( [ 'ID' => $child, 'post_content' => 'فرزند [manual_related_products]' ] );
+wp_update_post( [ 'ID' => $child, 'post_content' => 'فرزند ' . $typo . '[manual_related_products]' ] );
 update_post_meta( $child, '_hodima_mrl_data', [ [ 'title' => 'کلیپس', 'url' => 'https://hodima.test/103/', 'img_id' => $img4 ], [ 'title' => 'دسته مو', 'url' => 'https://hodima.test/hair/', 'img_id' => 0 ], [ 'title' => '', 'url' => '', 'img_id' => 0 ] ] );
 wp_update_term( $cat, 'category', [ 'description' => 'اخبار بازار [hodima_related_article]<p>ادامه توضیح</p>[hodima_related_categories]' ] );
 update_term_meta( $cat, '_hodima_rl_groups', [ 'categories' => [ [ 'kind' => 'term', 'id' => $pcat, 'url' => '', 'title' => '', 'img_id' => 0 ] ], 'article' => [ [ 'kind' => 'post', 'id' => $pillar, 'url' => '', 'title' => '', 'img_id' => 0 ] ] ] );

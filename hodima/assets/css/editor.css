@@ -1,0 +1,53 @@
+/* =========================================================================
+ * ویرایشگر نوشته‌ها (بلوک و کلاسیک): همان فونت، متن، لینک و تیترهای سایت
+ * -------------------------------------------------------------------------
+ * با add_editor_style (inc/typography.php) بعد از tokens.css لود می‌شود؛
+ * ویرایشگر بلوک body و :root را به ظرف ویرایشگر (.editor-styles-wrapper)
+ * تبدیل می‌کند. مقدارها همه از توکن‌ها (و تنظیمات تب «تایپوگرافی» که جدا
+ * داده می‌شوند)؛ قانون‌ها همان style.css بخش‌های ۳ و ۴ (هر دو را با هم عوض کنید).
+ * ========================================================================= */
+
+@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-Light.woff2') format('woff2'); font-weight: 300; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-Regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-Medium.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-SemiBold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-Bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-ExtraBold.woff2') format('woff2'); font-weight: 800; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Vazirmatn'; src: url('../fonts/Vazirmatn-Black.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+
+body {
+	font-family: var(--hodima-font);
+	font-size: calc(var(--hodima-body-size) * 0.0625rem);
+	line-height: var(--hodima-body-line-height);
+	color: var(--hodima-text-dark);
+}
+
+a {
+	color: var(--hodima-link);
+	text-decoration-line: var(--hodima-content-link-line);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.3em;
+
+	&:hover {
+		color: var(--hodima-link-hover);
+	}
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-family: var(--hodima-font-heading);
+	font-size: clamp(
+		calc(min(var(--hodima-heading-min), var(--hodima-heading-max)) * 0.0625rem),
+		calc(var(--hodima-heading-min) * 0.0625rem + (var(--hodima-heading-max) - var(--hodima-heading-min)) * (100vw - 390px) / 810),
+		calc(max(var(--hodima-heading-min), var(--hodima-heading-max)) * 0.0625rem)
+	);
+	font-weight: var(--hodima-heading-weight);
+	line-height: var(--hodima-heading-line-height);
+	color: var(--hodima-heading-color);
+}
+
+h1 { --hodima-heading-min: var(--hodima-h1-size-min); --hodima-heading-max: var(--hodima-h1-size-max); --hodima-heading-weight: var(--hodima-h1-weight); --hodima-heading-line-height: var(--hodima-h1-line-height); --hodima-heading-color: var(--hodima-h1-color); }
+h2 { --hodima-heading-min: var(--hodima-h2-size-min); --hodima-heading-max: var(--hodima-h2-size-max); --hodima-heading-weight: var(--hodima-h2-weight); --hodima-heading-line-height: var(--hodima-h2-line-height); --hodima-heading-color: var(--hodima-h2-color); }
+h3 { --hodima-heading-min: var(--hodima-h3-size-min); --hodima-heading-max: var(--hodima-h3-size-max); --hodima-heading-weight: var(--hodima-h3-weight); --hodima-heading-line-height: var(--hodima-h3-line-height); --hodima-heading-color: var(--hodima-h3-color); }
+h4 { --hodima-heading-min: var(--hodima-h4-size-min); --hodima-heading-max: var(--hodima-h4-size-max); --hodima-heading-weight: var(--hodima-h4-weight); --hodima-heading-line-height: var(--hodima-h4-line-height); --hodima-heading-color: var(--hodima-h4-color); }
+h5 { --hodima-heading-min: var(--hodima-h5-size-min); --hodima-heading-max: var(--hodima-h5-size-max); --hodima-heading-weight: var(--hodima-h5-weight); --hodima-heading-line-height: var(--hodima-h5-line-height); --hodima-heading-color: var(--hodima-h5-color); }
+h6 { --hodima-heading-min: var(--hodima-h6-size-min); --hodima-heading-max: var(--hodima-h6-size-max); --hodima-heading-weight: var(--hodima-h6-weight); --hodima-heading-line-height: var(--hodima-h6-line-height); --hodima-heading-color: var(--hodima-h6-color); }
