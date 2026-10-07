@@ -119,10 +119,8 @@
 	}
 }
 
+/* اندازه، وزن و رنگ از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۲۰/۲۲px */
 .single-post-title {
-	font-size: 20px;
-	font-weight: 700;
-	color: var(--hodima-text-dark, #111111);
 	margin-top: 0;
 	margin-bottom: var(--hodima-space-7);
 	border-bottom: 2px solid #dce8e3;
@@ -355,10 +353,6 @@
 
 	.hodima-section-box {
 		padding: var(--hodima-space-6);
-	}
-
-	.single-post-title {
-		font-size: 22px;
 	}
 
 	.comments-wrapper .children {

@@ -366,6 +366,63 @@ function hodima_media_player_url( string $url ): string {
 	return hodima_media_parse_video_url( $url )['player'];
 }
 
+/**
+ * دامنه‌های بیرونی که ویدیو، کاور و پادکست‌های سایت از آن‌ها پخش می‌شوند
+ * (origin ← تعداد آدرس، پرتکرار اول): کادر «رسانه» نوشته/برگه/محصول/دسته و
+ * صفحه هر ویدیو. برای «تنظیمات قالب ← دامنه ویدئو» تا مدیر دامنه را از
+ * رسانه‌های واقعی سایت انتخاب کند، نه از حافظه (دامنه عوض شود یا هر کس قالب
+ * را نصب کند، فهرست خودش را می‌بیند). ویدیوی آپارات/یوتیوب: دامنه پخش‌کننده
+ * (iframe)، همان که preconnect قالب می‌گیرد. دامنه خود سایت نه.
+ *
+ * @return array<string, int>
+ */
+function hodima_media_external_hosts( int $limit = 5000 ): array {
+
+	global $wpdb;
+
+	$fields = [ 'video_url', 'video_cover', 'video_thumb', 'voice_url' ];
+	$tables = [
+		// کلیدهای قدیمی بی‌پیشوند (HODIMA_MEDIA_LEGACY_KEYS) هم، مثل hodima_media_get_data()
+		$wpdb->postmeta => [ ...array_map( static fn( string $k ): string => hodima_media_meta_prefix( 'post' ) . $k, $fields ), ...$fields, '_hod_video_url', '_hod_video_thumbnail' ],
+		$wpdb->termmeta => [ ...array_map( static fn( string $k ): string => hodima_media_meta_prefix( 'term' ) . $k, $fields ), ...$fields ],
+	];
+
+	$own   = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+	$hosts = [];
+
+	foreach ( $tables as $table => $keys ) {
+
+		$in   = implode( ',', array_fill( 0, count( $keys ), '%s' ) );
+		$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- فقط صفحه تنظیمات قالب؛ یک پرس‌وجو به‌جای خواندن متای تک‌تک اشیا
+			$wpdb->prepare( "SELECT meta_key, meta_value FROM {$table} WHERE meta_key IN ({$in}) AND meta_value LIKE %s LIMIT %d", ...[ ...$keys, '%//%', $limit ] ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- نام جدول از $wpdb و جای‌نگهدار IN
+			ARRAY_A
+		);
+
+		foreach ( $rows as $row ) {
+
+			$url = trim( (string) ( $row['meta_value'] ?? '' ) );
+			if ( str_ends_with( (string) ( $row['meta_key'] ?? '' ), 'video_url' ) ) {
+				$url = hodima_media_player_url( $url );
+			}
+
+			$parts  = wp_parse_url( $url );
+			$scheme = strtolower( (string) ( $parts['scheme'] ?? '' ) );
+			$host   = strtolower( (string) ( $parts['host'] ?? '' ) );
+
+			if ( '' === $host || $host === $own || ! in_array( $scheme, [ 'https', 'http' ], true ) ) {
+				continue;
+			}
+
+			$origin           = $scheme . '://' . $host . ( isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '' );
+			$hosts[ $origin ] = ( $hosts[ $origin ] ?? 0 ) + 1;
+		}
+	}
+
+	arsort( $hosts );
+
+	return $hosts;
+}
+
 /* =====================================================================
  * زمان و تاریخ
  * ===================================================================== */

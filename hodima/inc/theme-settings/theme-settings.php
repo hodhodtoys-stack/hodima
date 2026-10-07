@@ -98,6 +98,8 @@ function hodima_settings_fields(): array {
 		'product_show_reviews'  => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'نظرات کاربران', 'default' => true ],
 		'product_upsells_title' => [ 'panel' => 'product_upsells', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'محصولات مشابه' ],
 		'product_upsells_limit' => [ 'panel' => 'product_upsells', 'type' => 'number', 'label' => 'تعداد', 'default' => 6, 'min' => 0, 'max' => 24, 'help' => '۰ = بخش نمایش داده نشود.' ],
+		// قیمت اعلام‌شده به بیرون؛ خواننده: Hodima SEO (inc/product-price.php)
+		'product_offer_price'   => [ 'panel' => 'product_price_feed', 'type' => 'select', 'label' => 'قیمتی که اعلام شود', 'default' => 'unit', 'options' => [ 'unit' => 'قیمت تک محصول', 'min_order' => 'مبلغ حداقل سفارش' ], 'help' => '«حداقل سفارش» همان مبلغی است که در ویرایش هر محصول (فیلد حداقل مبلغ سفارش) وارد کرده‌اید و صفحه محصول کنار قیمت نشان می‌دهد. محصولی که حداقل سفارش ندارد یا متغیر است، همیشه قیمت تک را اعلام می‌کند. به افزونه Hodima SEO نیاز دارد.' ],
 
 		// ── وبلاگ (قبلا ثابت در archive-blog.php و single-post.php) ──
 		'blog_title'           => [ 'panel' => 'blog_page', 'type' => 'text', 'label' => 'عنوان صفحه وبلاگ (H1)', 'default' => '', 'help' => 'خالی = عنوان برگه «نوشته‌ها» (تنظیمات ← خواندن). همین نام در مسیر راهنمای مقاله‌ها هم می‌آید.' ],
@@ -368,7 +370,7 @@ function hodima_settings_panels(): array {
 		'type_preview'       => [ 'section' => 'typography', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'typepreview', 'help' => 'با هر تغییر پایین همین‌جا به‌روز می‌شود (پیش از ذخیره). اندازه تیترها در عرض همین کادر نمایش داده می‌شود.' ],
 		'type_fonts'         => [ 'section' => 'typography', 'title' => 'فونت‌ها', 'icon' => 'dashicons-editor-textcolor', 'help' => 'فایل‌های وزیرمتن (هفت وزن ۳۰۰ تا ۹۰۰) همراه قالب‌اند و از همین سایت بارگذاری می‌شوند. مرورگر هر وزن را فقط وقتی دانلود می‌کند که در صفحه به کار رفته باشد.' ],
 		'type_body'          => [ 'section' => 'typography', 'title' => 'متن و لینک‌ها', 'icon' => 'dashicons-editor-paragraph' ],
-		'type_headings'      => [ 'section' => 'typography', 'title' => 'تیترها (H1 تا H6)', 'icon' => 'dashicons-heading', 'layout' => 'rows', 'columns' => [ 'تیتر', 'اندازه دسکتاپ (px)', 'اندازه موبایل (px)', 'وزن', 'فاصله خطوط', 'رنگ' ], 'help' => 'اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند. پایه تیترهای داخل متن مقاله، برگه، توضیح محصول و دسته است؛ تیترهای طراحی‌شده بخش‌ها (کارت محصول، فوتر، عنوان صفحه‌ها) اندازه خودشان را دارند. ترتیب درست: هر سطح کوچک‌تر از سطح بالاتر.' ],
+		'type_headings'      => [ 'section' => 'typography', 'title' => 'تیترها (H1 تا H6)', 'icon' => 'dashicons-heading', 'layout' => 'rows', 'columns' => [ 'تیتر', 'اندازه دسکتاپ (px)', 'اندازه موبایل (px)', 'وزن', 'فاصله خطوط', 'رنگ' ], 'help' => 'اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند. پایه تیترهای داخل متن مقاله، برگه، توضیح محصول و دسته است؛ H1 عنوان همه صفحه‌ها هم هست (محصول، مقاله، دسته، فروشگاه، وبلاگ، برگه، جستجو، ویدیو). تیترهای طراحی‌شده بخش‌ها (کارت محصول، فوتر، عنوان بخش‌های صفحه اصلی) اندازه خودشان را دارند. ترتیب درست: هر سطح کوچک‌تر از سطح بالاتر.' ],
 		'type_custom'        => [ 'section' => 'typography', 'title' => 'فونت آپلودی', 'icon' => 'dashicons-upload', 'layout' => 'rows', 'columns' => [ 'وزن', 'فایل فونت (woff2)' ], 'help' => 'برای فونتی که مجوز استفاده در وب را دارید (مثلا ایران‌سنس یا یکان‌بخ). فایل woff2 هر وزن را از کتابخانه رسانه انتخاب یا آپلود کنید؛ وزن «معمولی (۴۰۰)» لازم است و وزن خالی از نزدیک‌ترین وزن موجود ساخته می‌شود. بعد در قاب «فونت‌ها» گزینه «فونت آپلودی» را انتخاب کنید.' ],
 
 		'look_preview'       => [ 'section' => 'layout', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'lookpreview', 'help' => 'نمونه کارت و دکمه با انتخاب‌های پایین (پیش از ذخیره).' ],
@@ -390,6 +392,7 @@ function hodima_settings_panels(): array {
 
 		'product_texts'      => [ 'section' => 'product', 'title' => 'متن‌ها', 'icon' => 'dashicons-editor-textcolor' ],
 		'product_sections'   => [ 'section' => 'product', 'title' => 'بخش‌های صفحه محصول', 'icon' => 'dashicons-visibility', 'layout' => 'toggles', 'help' => 'بخش خاموش برای همه محصولات پنهان می‌شود؛ بخش روشن فقط وقتی محتوا دارد دیده می‌شود (کادر «رسانه» هر محصول و نظرات ووکامرس).' ],
+		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت در اسکیما و سایت‌های دیگر', 'icon' => 'dashicons-tag', 'help' => 'عددی که گوگل (اسکیما)، سایت‌های مقایسه قیمت مثل ترب (متاتگ قیمت)، پیش‌نمایش لینک در شبکه‌های اجتماعی و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. نمایش قیمت در خود صفحه محصول عوض نمی‌شود.' ],
 		'product_upsells'    => [ 'section' => 'product', 'title' => 'محصولات پیشنهادی (Upsell)', 'icon' => 'dashicons-cart', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید.' ],
 
 		'blog_page'          => [ 'section' => 'blog', 'title' => 'صفحه وبلاگ', 'icon' => 'dashicons-welcome-write-blog' ],
@@ -410,7 +413,7 @@ function hodima_settings_panels(): array {
 		'extras_mobile_nav'  => [ 'section' => 'extras', 'title' => 'نوار پایین موبایل', 'icon' => 'dashicons-smartphone', 'layout' => 'toggles', 'help' => '«خانه» همیشه هست؛ فروشگاه و سبد فقط با ووکامرس. بیشتر از ۵ مورد نیست تا روی صفحه کوچک جا شود.' ],
 		'code_main'          => [ 'section' => 'code', 'title' => 'کد دلخواه', 'icon' => 'dashicons-editor-code' ],
 		'backup_main'        => [ 'section' => 'backup', 'title' => 'دریافت و بازگردانی', 'icon' => 'dashicons-backup', 'layout' => 'backup', 'help' => 'تصویرها (لوگو، نمادها، فونت‌ها) با شناسه کتابخانه رسانه ذخیره می‌شوند؛ روی سایت دیگر اگر همان فایل نباشد خالی می‌مانند و باید دوباره انتخاب شوند.' ],
-		'speed_preconnect'   => [ 'section' => 'speed', 'title' => 'دامنه پخش ویدیو و پادکست', 'icon' => 'dashicons-video-alt3', 'help' => 'اگر ویدیو و پادکست‌ها روی دامنه جدا (مثلا dl.hodima.com) هستند، اتصال زودهنگام چند صدم ثانیه از شروع پخش کم می‌کند.' ],
+		'speed_preconnect'   => [ 'section' => 'speed', 'title' => 'دامنه پخش ویدیو و پادکست', 'icon' => 'dashicons-video-alt3', 'help' => 'اگر ویدیو و پادکست‌ها روی دامنه جدا (هاست دانلود یا CDN) هستند، اتصال زودهنگام چند صدم ثانیه از شروع پخش کم می‌کند. دامنه را خودتان وارد کنید یا از «دامنه‌های پیدا شده» زیر کادر انتخاب کنید.' ],
 	];
 }
 
@@ -1159,6 +1162,9 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<?php echo isset( $field['placeholder'] ) ? 'placeholder="' . esc_attr( $field['placeholder'] ) . '"' : ''; ?>
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				><?php echo esc_textarea( (string) $value ); ?></textarea>
+				<?php if ( Hodima_Setting_Type::HostList === $type ) : ?>
+					<?php hodima_settings_render_host_suggestions( $id, (string) $value ); ?>
+				<?php endif; ?>
 			<?php else : ?>
 				<input
 					type="<?php echo esc_attr( $type->input_type() ); ?>"
@@ -1175,6 +1181,50 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 
 		<?php if ( '' !== $help ) : ?>
 			<p class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></p>
+		<?php endif; ?>
+	</div>
+	<?php
+}
+
+/**
+ * «دامنه‌های پیدا شده» زیر کادر دامنه ویدئو: دامنه‌هایی که ویدیو، کاور و
+ * پادکست‌های همین سایت واقعا از آن‌ها پخش می‌شوند (Hodima Media، پرتکرار
+ * اول) با دکمه «افزودن» (admin.js). دامنه عوض شود یا قالب روی سایت دیگری
+ * نصب شود، فهرست از رسانه‌های همان سایت ساخته می‌شود؛ هیچ دامنه‌ای در کد نیست.
+ */
+function hodima_settings_render_host_suggestions( string $target_id, string $value ): void {
+
+	if ( ! function_exists( 'hodima_media_external_hosts' ) ) {
+		echo '<p class="hodima-hosts__note">برای پیدا کردن خودکار دامنه‌ها، افزونه Hodima Media لازم است.</p>';
+		return;
+	}
+
+	$hosts   = array_slice( hodima_media_external_hosts(), 0, 12, true );
+	$entered = array_filter( array_map( static fn( string $line ): string => strtolower( trim( $line ) ), preg_split( '/\R/u', $value ) ?: [] ) );
+	?>
+	<div class="hodima-hosts" data-hodima-hosts="<?php echo esc_attr( $target_id ); ?>">
+		<p class="hodima-hosts__title">دامنه‌های پیدا شده در ویدیو و پادکست‌های سایت</p>
+		<?php if ( ! $hosts ) : ?>
+			<p class="hodima-hosts__note">هنوز ویدیو یا پادکستی از دامنه دیگری در سایت ثبت نشده است.</p>
+		<?php else : ?>
+			<ul class="hodima-hosts__list">
+				<?php foreach ( $hosts as $origin => $count ) : ?>
+					<?php $hodima_added = in_array( strtolower( $origin ), $entered, true ); ?>
+					<li>
+						<button
+							type="button"
+							class="button button-small hodima-hosts__add"
+							data-hodima-host="<?php echo esc_attr( $origin ); ?>"
+							aria-label="<?php echo esc_attr( sprintf( 'افزودن %s', $origin ) ); ?>"
+							<?php disabled( $hodima_added ); ?>
+						>
+							<span class="dashicons <?php echo $hodima_added ? 'dashicons-yes' : 'dashicons-plus-alt2'; ?>" aria-hidden="true"></span>
+							<bdi dir="ltr"><?php echo esc_html( (string) preg_replace( '#^https?://#', '', $origin ) ); ?></bdi>
+							<span class="hodima-hosts__count"><?php echo esc_html( sprintf( '%s رسانه', number_format_i18n( $count ) ) ); ?></span>
+						</button>
+					</li>
+				<?php endforeach; ?>
+			</ul>
 		<?php endif; ?>
 	</div>
 	<?php

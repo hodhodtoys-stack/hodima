@@ -497,13 +497,10 @@
    6. Summary
    ========================================================================== */
 
+/* اندازه، وزن، رنگ و فاصله خطوط از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۲۷٫۲px */
 .custom-product-summary .product_title {
-	color: var(--hodima-text-dark, #111111);
-	font-size: 1.7rem;
-	font-weight: 700;
 	margin-top: 0;
 	margin-bottom: 15px;
-	line-height: 1.4;
 	text-align: center !important;
 	width: 100%;
 	display: block;
@@ -1181,7 +1178,6 @@
 	}
 
 	.custom-product-summary .product_title {
-		font-size: 1.5rem;
 		text-align: center;
 	}
 
@@ -1288,10 +1284,6 @@
 	}
 
 	.custom-product-summary {
-		& .product_title {
-			font-size: 1.3rem;
-		}
-
 		& .price {
 			font-size: 1.2rem;
 		}

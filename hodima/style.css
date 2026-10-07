@@ -4,7 +4,7 @@ Theme URI: https://hodima.com
 Author: آرین فتحی
 Author URI: https://hodima.com
 Description: قالب اختصاصی فروشگاه عمده‌فروشی (فقط نمایش). امکانات سئو، فروشگاه و رسانه در افزونه‌های همراه Hodima Core، Hodima SEO، Hodima Commerce و Hodima Media هستند.
-Version: 2.9.8
+Version: 2.9.9
 Requires at least: 6.5
 Requires PHP: 8.4
 Text Domain: hodima
@@ -127,16 +127,22 @@ select:focus-visible {
  * همه از توکن‌ها (tokens.css، تب «تایپوگرافی»). اندازه روان: از عدد «موبایل»
  * در عرض ۳۹۰px تا عدد «دسکتاپ» در ۱۲۰۰px و بالاتر، بینشان خطی (min/max تا
  * اگر موبایل بزرگ‌تر وارد شد هم درست بماند). تیترهای اجزا (کارت، فوتر،
- * عنوان محصول…) اندازه خودشان را دارند و این‌جا فقط پایه است.
+ * عنوان بخش‌ها…) اندازه خودشان را دارند؛ عنوان h1 هر صفحه (محصول، مقاله،
+ * دسته، فروشگاه، وبلاگ، برگه، جستجو) از 2.9.9 فقط از همین‌جا (به‌جز عدد
+ * تزئینی ۴۰۴ و h1 داخل مسیر راهنمای صفحه ویدیوها).
  * تا 2.9.5: H1 ۲۷px، H2 ۱۶px (هم‌اندازه متن و کوچک‌تر از H3 تا H5 با ۱۸px).
+ * --hodima-heading-size: اندازه محاسبه‌شده همان سطح، برای جزئی که باید با
+ * تنظیم تیتر هم‌اندازه بماند ولی قانون کلاس خودش اندازه دیگری می‌دهد (home.css).
  */
 h1, h2, h3, h4, h5, h6 {
-	margin: 0 0 var(--hodima-space-5);
-	font-size: clamp(
+	--hodima-heading-size: clamp(
 		calc(min(var(--hodima-heading-min), var(--hodima-heading-max)) * 0.0625rem),
 		calc(var(--hodima-heading-min) * 0.0625rem + (var(--hodima-heading-max) - var(--hodima-heading-min)) * (100vw - 390px) / 810),
 		calc(max(var(--hodima-heading-min), var(--hodima-heading-max)) * 0.0625rem)
 	);
+
+	margin: 0 0 var(--hodima-space-5);
+	font-size: var(--hodima-heading-size);
 	font-weight: var(--hodima-heading-weight);
 	line-height: var(--hodima-heading-line-height);
 	color: var(--hodima-heading-color);
@@ -246,10 +252,7 @@ select:focus {
    7. WooCommerce typography
 ========================================================== */
 .woocommerce div.product .product_title {
-	font-size: 1.5rem;
-	font-weight: 500;
 	margin-bottom: var(--hodima-space-4);
-	color: var(--hodima-text-dark);
 }
 
 .woocommerce div.product p.price,
@@ -331,11 +334,9 @@ body {
 		margin-block-end: var(--hodima-space-7);
 	}
 
+	/* عنوان h1 از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 اندازه ثابت ۳۲px */
 	& .entry-title {
 		margin-block: 0 var(--hodima-space-6);
-		font-size: 2rem;
-		font-weight: 700;
-		color: var(--hodima-text-dark, #111111);
 	}
 
 	& .entry-title--list {
@@ -361,10 +362,9 @@ body {
 	padding-block: 50px;
 	text-align: center;
 
+	/* از تنظیم H1؛ تا 2.9.8 ثابت ۲۴px و رنگ اصلی */
 	& .hodima-empty__title {
 		margin-block-end: var(--hodima-space-6);
-		font-size: 1.5rem;
-		color: var(--hodima-primary, #25316a);
 	}
 }
 

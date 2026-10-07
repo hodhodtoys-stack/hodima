@@ -584,6 +584,7 @@ function seobox_output_front_meta(): void {
 	// محصول: قیمت و موجودی
 	$social_desc = $desc;
 	$price       = [ 'label' => '', 'amount' => '', 'currency' => '' ];
+	$price_name  = 'قیمت';
 	$in_stock    = false;
 	$stock_label = '';
 
@@ -593,13 +594,16 @@ function seobox_output_front_meta(): void {
 
 		if ( $product instanceof WC_Product ) {
 
-			$price       = seobox_product_price_meta( (string) $product->get_price() );
+			// «قیمت تک» یا «حداقل سفارش» (تنظیمات قالب ← صفحه محصول؛ inc/product-price.php)
+			$feed        = hodima_seo_product_feed_price( $product );
+			$price       = seobox_product_price_meta( $feed['amount'] );
+			$price_name  = $feed['min_order'] ? 'حداقل سفارش' : 'قیمت';
 			$in_stock    = $product->is_in_stock();
 			$stock_label = $in_stock ? 'موجود' : 'ناموجود';
 
 			if ( '' !== $price['label'] ) {
 				// بدون توضیحات، « - » آویزان آخر متن نمی‌ماند
-				$badge       = '[' . ( $in_stock ? '✅' : '❌' ) . ' ' . $stock_label . ' | ' . $price['label'] . ']';
+				$badge       = '[' . ( $in_stock ? '✅' : '❌' ) . ' ' . $stock_label . ' | ' . ( $feed['min_order'] ? $price_name . ' ' : '' ) . $price['label'] . ']';
 				$social_desc = '' !== $social_desc ? $badge . ' - ' . $social_desc : $badge;
 			}
 		}
@@ -684,7 +688,7 @@ function seobox_output_front_meta(): void {
 	}
 
 	if ( 'product' === $og_type && '' !== $price['label'] ) {
-		$meta( 'name', 'twitter:label1', 'قیمت' );
+		$meta( 'name', 'twitter:label1', $price_name );
 		$meta( 'name', 'twitter:data1', $price['label'] );
 		$meta( 'name', 'twitter:label2', 'دسترسی' );
 		$meta( 'name', 'twitter:data2', $stock_label );

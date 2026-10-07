@@ -92,14 +92,10 @@
 	}
 }
 
+/* اندازه، وزن، رنگ و فاصله خطوط از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۱۸px */
 .intro-box .category-title {
 	margin: 0 0 var(--hodima-space-6);
 	text-align: start;
-	font-size: 18px;
-	font-weight: 600;
-	color: var(--hodima-text-dark, #111111);
-	line-height: 1.4;
-	font-family: inherit;
 }
 
 .section-products,
@@ -368,10 +364,6 @@
 /* سربرگ صفحات ۲ به بعد (معرفی و ویدیو فقط در صفحه اول‌اند) */
 .section-paged-head .category-title {
 	margin: 0;
-	font-size: 18px;
-	font-weight: 600;
-	line-height: 1.4;
-	color: var(--hodima-text-dark, #111111);
 }
 
 .category-title__page {
@@ -504,12 +496,9 @@
 	padding: 14px var(--hodima-space-7);
 }
 
+/* از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۱۹٫۲px */
 .shop-compact-title {
 	margin: 0;
-	font-size: 1.2rem;
-	font-weight: 700;
-	line-height: 1.5;
-	color: var(--hodima-text-dark, #111111);
 }
 
 .shop-compact-page {

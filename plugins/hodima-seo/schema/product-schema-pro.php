@@ -214,7 +214,8 @@ function hook_generate_custom_product_schema() {
      */
     $make_offer = static function ( $item, string $offer_url, string $availability ) use ( $valid_until, $valid_from, $seller_info, $merchant_return, $shipping_details ): ?array {
 
-        $price = hodima_seo_schema_price( $item->get_price() );
+        // «قیمت تک» یا «حداقل سفارش» (تنظیمات قالب ← صفحه محصول؛ inc/product-price.php)
+        $price = hodima_seo_schema_price( hodima_seo_product_feed_price( $item )['amount'] );
 
         if ( null === $price ) {
             return null;

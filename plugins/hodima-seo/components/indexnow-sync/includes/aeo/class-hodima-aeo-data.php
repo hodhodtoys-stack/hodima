@@ -475,8 +475,16 @@ final class Hodima_AEO_Data {
         $product = wc_get_product( $id );
         if ( ! $product ) return [];
 
+        /*
+         * price (متن «قیمت:» نتایج جستجوی عامل) از گزینه «قیمت تک / حداقل سفارش»
+         * تنظیمات قالب (inc/product-price.php)؛ price_raw همیشه قیمت تک، چون
+         * بلوک‌های قیمت پله‌ای واحد خودشان (کیلو، بسته) را کنارش می‌نویسند.
+         */
+        $feed = function_exists( 'hodima_seo_product_feed_price' ) ? hodima_seo_product_feed_price( $product ) : [ 'amount' => (string) $product->get_price(), 'min_order' => false ];
+
         return [
-            'price'    => html_entity_decode( wp_strip_all_tags( wc_price( $product->get_price() ) ), ENT_QUOTES, 'UTF-8' ),
+            'price'    => html_entity_decode( wp_strip_all_tags( wc_price( (float) $feed['amount'] ) ), ENT_QUOTES, 'UTF-8' ),
+            'min_order'=> $feed['min_order'],
             'price_raw'=> (float) $product->get_price(),
             'status_fa'=> $product->is_in_stock() ? 'موجود در انبار' : 'ناموجود',
             'status_en'=> $product->is_in_stock() ? 'In Stock' : 'Out of Stock',

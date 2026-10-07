@@ -549,6 +549,34 @@
 		sync();
 	};
 
+	/**
+	 * «دامنه‌های پیدا شده» (تب دامنه ویدئو): دکمه افزودن، دامنه را خط آخر کادر
+	 * می‌گذارد؛ رویداد input نشانه «ذخیره‌نشده» را روشن می‌کند (initDirty).
+	 */
+	const initHosts = () => {
+		document.querySelectorAll('[data-hodima-hosts]').forEach((box) => {
+			const field = document.getElementById(box.dataset.hodimaHosts);
+			if (!field) {
+				return;
+			}
+
+			box.addEventListener('click', (event) => {
+				const button = event.target.closest('[data-hodima-host]');
+				if (!button || button.disabled) {
+					return;
+				}
+
+				const lines = field.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+				lines.push(button.dataset.hodimaHost);
+				field.value = lines.join('\n');
+				field.dispatchEvent(new Event('input', { bubbles: true }));
+
+				button.disabled = true;
+				button.querySelector('.dashicons')?.classList.replace('dashicons-plus-alt2', 'dashicons-yes');
+			});
+		});
+	};
+
 	/** بازگردانی پشتیبان: تأیید پیش از جایگزینی همه تنظیمات. */
 	const initBackup = () => {
 		document.querySelector('[data-hodima-import-form]')?.addEventListener('submit', (event) => {
@@ -568,6 +596,7 @@
 		initBuilderStatus();
 		initTypography();
 		initLook();
+		initHosts();
 		initBackup();
 	});
 })();

@@ -74,12 +74,9 @@
 }
 
 .shop-header-content {
+	/* اندازه، وزن، رنگ و فاصله خطوط از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۳۲/۲۸٫۸/۲۴px */
 	& h1 {
-		color: var(--hodima-text-dark, #111111);
-		font-size: 2rem;
-		font-weight: 800;
 		margin: 0 0 var(--hodima-space-4);
-		font-family: inherit;
 	}
 
 	& p {
@@ -138,14 +135,8 @@
 		grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
 	}
 
-	.shop-header-content {
-		& h1 {
-			font-size: 1.8rem;
-		}
-
-		& p {
-			font-size: 1.05rem;
-		}
+	.shop-header-content p {
+		font-size: 1.05rem;
 	}
 }
 
@@ -162,14 +153,8 @@
 		padding: var(--hodima-space-7) var(--hodima-space-4);
 	}
 
-	.shop-header-content {
-		& h1 {
-			font-size: 1.5rem;
-		}
-
-		& p {
-			font-size: 1rem;
-		}
+	.shop-header-content p {
+		font-size: 1rem;
 	}
 
 	.shop-content-area ul.products {
@@ -202,12 +187,9 @@
 	padding: 14px var(--hodima-space-7);
 }
 
+/* از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۱۹٫۲px */
 .shop-compact-title {
 	margin: 0;
-	font-size: 1.2rem;
-	font-weight: 700;
-	line-height: 1.5;
-	color: var(--hodima-text-dark, #111111);
 }
 
 .shop-compact-page {

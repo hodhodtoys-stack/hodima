@@ -62,7 +62,8 @@
 .hs-intro-section { background: var(--cat-bg-light-blue); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-start; }
 .hs-content-col { flex: 1; min-width: 300px; order: 1; }
 .hs-video-col { flex: 1; min-width: 300px; order: 2; }
-.hs-content-col .hs-title { margin: 0 0 12px; text-align: right; font-size: 24px; font-weight: 600; color: var(--color-text); line-height: 1.5; font-family: inherit; }
+/* اندازه، وزن، رنگ و فاصله خطوط از تنظیم H1 قالب (تب تایپوگرافی)؛ تا 1.3.2 ثابت ۲۴px */
+.hs-content-col .hs-title { margin: 0 0 12px; text-align: right; font-family: inherit; }
 .hs-content-col .hs-content-box { color: var(--cat-text-muted); font-size: 15px; line-height: 1.8; }
 
 .hs-flex-center { display: flex; align-items: center; justify-content: center; }

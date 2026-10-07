@@ -63,9 +63,8 @@
 	border-bottom: 1px solid var(--hodima-border-light, #d9e1f0);
 }
 
+/* اندازه و رنگ از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۲۴px */
 .blog-archive-title {
-	font-size: 1.5rem;
-	color: var(--hodima-text-dark, #111111);
 	margin: 0 0 var(--hodima-space-4);
 }
 

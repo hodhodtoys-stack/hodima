@@ -295,9 +295,16 @@
 	gap: var(--hodima-space-3);
 }
 
-/* فاصله‌ی دقیق عنوان ستون اول */
+/*
+ * عنوان صفحه (h1 بخش «معرفی»): اندازه، وزن، رنگ و فاصله خطوط از تنظیم H1
+ * (تب تایپوگرافی)؛ تا 2.9.8 مثل عنوان بخش‌ها ثابت ۱۸٫۴px و رنگ اصلی بود.
+ */
 h1.section-col-title {
 	margin-bottom: var(--hodima-space-1);
+	font-size: var(--hodima-heading-size);
+	font-weight: var(--hodima-heading-weight);
+	line-height: var(--hodima-heading-line-height);
+	color: var(--hodima-heading-color);
 }
 
 /* 🔥 راهکار قطعی: کشیدن ویدئو به سمت بالا با Margin منفی برای خنثی کردن فواصل مخفی وردپرس 🔥 */

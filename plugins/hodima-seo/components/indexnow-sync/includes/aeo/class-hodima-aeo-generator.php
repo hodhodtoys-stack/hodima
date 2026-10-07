@@ -1018,7 +1018,9 @@ final class Hodima_AEO_Generator {
 
             $md .= "## [{$p_title}]({$md_url})\n";
             if ( ! empty( $commerce ) ) {
-                $price_lbl = ($lang === 'en') ? 'Price' : 'قیمت';
+                $price_lbl = ! empty( $commerce['min_order'] )
+                    ? ( ($lang === 'en') ? 'Minimum order' : 'حداقل سفارش' )
+                    : ( ($lang === 'en') ? 'Price' : 'قیمت' );
                 $stat_lbl  = ($lang === 'en') ? 'Status' : 'وضعیت';
                 $status    = ($lang === 'en') ? $commerce['status_en'] : $commerce['status_fa'];
                 $btn       = ($lang === 'en') ? 'View and Purchase Product' : 'مشاهده و خرید محصول';
