@@ -373,11 +373,12 @@ def check_eol():
 
 def check_docs(base, files, pkgs, bumped):
     print('== مستندات')
-    theme_now = header_version(read('hodima/style.css'))
-    if f'قالب (نسخه {theme_now})' in read('CLAUDE.md'):
-        ok(f'CLAUDE.md نسخه قالب {theme_now}')
+    # CLAUDE.md در هر گفتگو کامل خوانده می‌شود؛ قانون جزئی جایش اسکیل‌های .claude/skills/ است (بخش ۷۱)
+    size = len(read('CLAUDE.md'))
+    if size > 15000:
+        warn(f'CLAUDE.md {size} حرف شده (حد ۱۵۰۰۰) — قانون جزئی را به اسکیل همان بخش ببر (hodima-theme / hodima-plugins)')
     else:
-        fail(f'CLAUDE.md: جدول «ساختار مخزن» باید «قالب (نسخه {theme_now})» بگوید')
+        ok(f'CLAUDE.md کوتاه است ({size} حرف)')
     heads = [l for l in read('HODIMA-AUDIT.md').splitlines() if l.startswith('## ')]
     if heads and 'پیوست' in heads[-1]:
         ok('HODIMA-AUDIT.md: پیوست آخرین بخش است')
