@@ -123,6 +123,30 @@ add_filter( 'hodima_schema_webpage_node', static function ( array $node ): array
 }, 15 );
 
 /* =====================================================================
+ * نویسنده (E-E-A-T): سمت، تخصص‌ها و پروفایل‌های معتبر روی نود Person
+ * ===================================================================== */
+
+add_filter( 'hodima_seo_schema_person_node', static function ( array $node, int $user_id ): array {
+
+	$author = hodima_seo_discover_author( $user_id );
+
+	if ( '' !== $author['job_title'] ) {
+		$node['jobTitle'] = $author['job_title'];
+	}
+
+	if ( $author['knows_about'] ) {
+		$node['knowsAbout'] = $author['knows_about'];
+	}
+
+	$same_as = array_values( array_unique( [ ...(array) ( $node['sameAs'] ?? [] ), ...$author['same_as'] ] ) );
+	if ( $same_as ) {
+		$node['sameAs'] = $same_as;
+	}
+
+	return $node;
+}, 10, 2 );
+
+/* =====================================================================
  * فید RSS («دنبال کردن» در Discover)
  * ===================================================================== */
 

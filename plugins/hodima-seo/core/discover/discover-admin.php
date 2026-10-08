@@ -86,6 +86,11 @@ function hodima_seo_discover_render_box( WP_Post $post ): void {
 
 		<p class="hodima-dc__intro">Discover فید پیشنهادی گوگل در موبایل است و ورودی زیادی برای مقاله‌ها می‌آورد. فهرست زیر آمادگی همین نوشته را نشان می‌دهد.</p>
 
+		<?php $stats = 'publish' === $post->post_status ? hodima_seo_discover_post_stats( $post->ID ) : null; ?>
+		<?php if ( null !== $stats ) : ?>
+			<p class="hodima-dc__stats"><span class="dashicons dashicons-chart-bar" aria-hidden="true"></span> در Discover (۲۸ روز، Search Console): <strong><?php echo esc_html( number_format_i18n( $stats['clicks'] ) ); ?></strong> کلیک از <strong><?php echo esc_html( number_format_i18n( $stats['impressions'] ) ); ?></strong> نمایش</p>
+		<?php endif; ?>
+
 		<?php hodima_seo_discover_render_checks( $post ); ?>
 
 		<div class="hodima-dc__field">
@@ -109,8 +114,8 @@ function hodima_seo_discover_render_box( WP_Post $post ): void {
 
 		<div class="hodima-dc__field">
 			<label class="hodima-dc__label" for="hodima-dc-entities">موضوعات اصلی (اختیاری)</label>
-			<textarea id="hodima-dc-entities" name="hodima_discover[entities]" rows="3" placeholder="<?php echo esc_attr( "کش مو\nکلیپس فلزی" ); ?>"><?php echo esc_textarea( implode( "\n", $data['entities'] ) ); ?></textarea>
-			<p class="hodima-dc__help">هر موضوع در یک خط (یا جدا با ویرگول). به گوگل کمک می‌کند بداند نوشته درباره چیست و به علاقه‌مندان همان موضوع در Discover نشانش دهد.</p>
+			<textarea id="hodima-dc-entities" name="hodima_discover[entities]" rows="3" dir="auto" placeholder="<?php echo esc_attr( "کش مو\nکلیپس https://www.wikidata.org/wiki/Q…" ); ?>"><?php echo esc_textarea( hodima_seo_discover_format_entities( $data['entity_items'], "\n" ) ); ?></textarea>
+			<p class="hodima-dc__help">هر موضوع در یک خط (یا جدا با ویرگول). به گوگل کمک می‌کند بداند نوشته درباره چیست و به علاقه‌مندان همان موضوع در Discover نشانش دهد. برای دقت بیشتر، بعد از نام آدرس صفحه آن در <strong>ویکی‌داده</strong> یا ویکی‌پدیا (یا فقط شناسه ویکی‌داده مثل <code>Q1234</code>) را بنویسید تا گوگل موضوع را بی‌ابهام بشناسد.</p>
 		</div>
 	</div>
 	<?php
@@ -141,7 +146,7 @@ add_action( 'save_post', static function ( int $post_id ): void {
 
 	$values = [
 		HODIMA_SEO_DISCOVER_META['title']    => sanitize_text_field( $get( 'title' ) ),
-		HODIMA_SEO_DISCOVER_META['entities'] => implode( ', ', hodima_seo_discover_parse_entities( sanitize_textarea_field( $get( 'entities' ) ) ) ),
+		HODIMA_SEO_DISCOVER_META['entities'] => hodima_seo_discover_format_entities( hodima_seo_discover_entity_items( sanitize_textarea_field( $get( 'entities' ) ) ) ),
 		HODIMA_SEO_DISCOVER_META['image_id'] => $image_id && wp_attachment_is_image( $image_id ) ? $image_id : 0,
 	];
 
@@ -151,3 +156,72 @@ add_action( 'save_post', static function ( int $post_id ): void {
 			: update_post_meta( $post_id, $key, $value );
 	}
 }, 10 );
+
+/* =====================================================================
+ * نمایه کاربر: «نویسنده در گوگل» (E-E-A-T)
+ * ===================================================================== */
+
+/** فیلدهای معرفی نویسنده در «کاربران ← نمایه». */
+function hodima_seo_discover_profile_fields( WP_User $user ): void {
+
+	$author = hodima_seo_discover_author( (int) $user->ID );
+	wp_nonce_field( 'hodima_discover_author_' . $user->ID, 'hodima_discover_author_nonce' );
+	?>
+	<h2>نویسنده در گوگل (Google Discover)</h2>
+	<p class="description">گوگل برای نمایش مقاله در Discover و نتایج جستجو به «چه کسی نوشته و چرا قابل اعتماد است» وزن می‌دهد. این اطلاعات در اسکیمای نویسنده (Person) همه مقاله‌هایش می‌رود. بیوگرافی همان «اطلاعات زندگی‌نامه» بالاست.</p>
+	<table class="form-table" role="presentation">
+		<tr>
+			<th scope="row"><label for="hodima-author-job">سمت و تخصص</label></th>
+			<td>
+				<input type="text" class="regular-text" id="hodima-author-job" name="hodima_author[job_title]" value="<?php echo esc_attr( $author['job_title'] ); ?>" placeholder="کارشناس اکسسوری مو و فروش عمده">
+			</td>
+		</tr>
+		<tr>
+			<th scope="row"><label for="hodima-author-knows">حوزه‌های تخصص</label></th>
+			<td>
+				<textarea class="large-text" rows="3" id="hodima-author-knows" name="hodima_author[knows_about]" placeholder="<?php echo esc_attr( "اکسسوری مو\nواردات و پخش عمده" ); ?>"><?php echo esc_textarea( implode( "\n", $author['knows_about'] ) ); ?></textarea>
+				<p class="description">هر مورد در یک خط.</p>
+			</td>
+		</tr>
+		<tr>
+			<th scope="row"><label for="hodima-author-sameas">پروفایل‌های معتبر</label></th>
+			<td>
+				<textarea class="large-text" rows="3" id="hodima-author-sameas" name="hodima_author[same_as]" dir="ltr" placeholder="https://www.instagram.com/…"><?php echo esc_textarea( implode( "\n", $author['same_as'] ) ); ?></textarea>
+				<p class="description">هر آدرس در یک خط: اینستاگرام، لینکدین، آپارات، صفحه ویکی‌پدیا، مصاحبه‌ها. فقط صفحه‌هایی که واقعا مال همین شخص است.</p>
+			</td>
+		</tr>
+	</table>
+	<?php
+}
+
+add_action( 'show_user_profile', 'hodima_seo_discover_profile_fields' );
+add_action( 'edit_user_profile', 'hodima_seo_discover_profile_fields' );
+
+/** ذخیره فیلدهای معرفی نویسنده. */
+function hodima_seo_discover_profile_save( int $user_id ): void {
+
+	$nonce = isset( $_POST['hodima_discover_author_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['hodima_discover_author_nonce'] ) ) : '';
+
+	if ( ! wp_verify_nonce( $nonce, 'hodima_discover_author_' . $user_id ) || ! current_user_can( 'edit_user', $user_id ) ) {
+		return;
+	}
+
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- هر فیلد پایین جداگانه پاک‌سازی می‌شود
+	$in  = isset( $_POST['hodima_author'] ) && is_array( $_POST['hodima_author'] ) ? wp_unslash( $_POST['hodima_author'] ) : [];
+	$get = static fn( string $key ): string => isset( $in[ $key ] ) && is_scalar( $in[ $key ] ) ? (string) $in[ $key ] : '';
+
+	$lines = static fn( string $raw ): array => array_values( array_filter( array_map( 'trim', preg_split( '/[\r\n]+/', $raw ) ?: [] ) ) );
+
+	$values = [
+		HODIMA_SEO_DISCOVER_AUTHOR_META['job_title']   => sanitize_text_field( $get( 'job_title' ) ),
+		HODIMA_SEO_DISCOVER_AUTHOR_META['knows_about'] => implode( "\n", array_map( 'sanitize_text_field', $lines( $get( 'knows_about' ) ) ) ),
+		HODIMA_SEO_DISCOVER_AUTHOR_META['same_as']     => implode( "\n", array_filter( array_map( 'hodima_seo_discover_clean_url', $lines( $get( 'same_as' ) ) ) ) ),
+	];
+
+	foreach ( $values as $key => $value ) {
+		'' === $value ? delete_user_meta( $user_id, $key ) : update_user_meta( $user_id, $key, $value );
+	}
+}
+
+add_action( 'personal_options_update', 'hodima_seo_discover_profile_save' );
+add_action( 'edit_user_profile_update', 'hodima_seo_discover_profile_save' );

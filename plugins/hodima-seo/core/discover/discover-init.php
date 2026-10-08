@@ -35,10 +35,22 @@ const HODIMA_SEO_DISCOVER_CROPS = [ '16x9' => [ 16, 9 ], '4x3' => [ 4, 3 ], '1x1
 /** حداقل عرض تصویر بزرگ Discover (مستندات گوگل). */
 const HODIMA_SEO_DISCOVER_MIN_WIDTH = 1200;
 
-/** عبارت‌های طعمه کلیک (گوگل Discover عنوان اغراق‌آمیز را جریمه می‌کند). */
+/**
+ * عبارت‌های طعمه کلیک و اغراق (گوگل Discover عنوان اغراق‌آمیز، پنهان‌کاری
+ * محتوا و تحریک احساس را جریمه می‌کند). مقایسه بدون نیم‌فاصله انجام می‌شود
+ * (hodima_seo_discover_is_clickbait) تا «باورنکردنی» و «باور نکردنی» یکی باشند.
+ */
 const HODIMA_SEO_DISCOVER_CLICKBAIT = [
-	'باورتان نمی', 'باورت نمی', 'باور نمی‌کنید', 'شوکه', 'حتما ببینید', 'حتماً ببینید', 'از دست ندهید',
-	'هرگز تصور', 'معجزه', 'راز ', 'فوری', '!!', '؟؟', '??',
+	// باور و شگفتی
+	'باورتان نمی', 'باورت نمی', 'باور نمی', 'باورنکردنی', 'باور نکردنی', 'غیرقابل باور', 'شوکه', 'شوک ', 'تکان دهنده', 'شگفت زده',
+	'هرگز تصور', 'معجزه', 'جادویی',
+	// پنهان‌کاری و کنجکاوی
+	'راز ', 'رازهای', 'افشا', 'ببینید چه', 'ببینید چی', 'نمی دانستید', 'نمیدانستید', 'هیچ کس نمی', 'هیچکس نمی', 'حدس بزنید',
+	'آخرش', 'تا آخر ببینید', 'کلیک کنید',
+	// فوریت ساختگی
+	'حتما ببینید', 'حتماً ببینید', 'از دست ندهید', 'فوری', 'همین الان', 'فقط امروز',
+	// نشانه‌گذاری اغراق‌آمیز
+	'!!', '؟؟', '??', '؟!', '!؟',
 ];
 
 /** کلیدهای متا (همان کلیدهای سیستم رسانه قبلی). */
@@ -59,9 +71,11 @@ function hodima_seo_discover_boot(): void {
 
 	require_once __DIR__ . '/legacy.php';
 	require_once __DIR__ . '/discover-front.php';
+	require_once __DIR__ . '/discover-stats.php'; // WP-Cron هم در درخواست غیر پیشخوان اجرا می‌شود
 
 	if ( is_admin() ) {
 		require_once __DIR__ . '/discover-admin.php';
+		require_once __DIR__ . '/discover-report.php';
 	}
 }
 
@@ -108,24 +122,74 @@ function hodima_seo_discover_for_post( int $post_id ): bool {
 }
 
 /**
- * موضوعات اصلی به صورت آرایه (یکتا، بدون HTML، حداکثر ۱۲۰ حرف هر کدام).
- * جداکننده‌ها: خط جدید، «,» «،» «;» «؛» «|».
+ * موضوعات اصلی: هر مورد نام و (اختیاری) آدرس هویت آن در ویکی‌داده/ویکی‌پدیا.
  *
- * @return list<string>
+ *   کش مو
+ *   کلیپس https://www.wikidata.org/wiki/Q1234
+ *   گلسر Q5678                ← شناسه ویکی‌داده خودش آدرس می‌شود
+ *
+ * آدرس، موضوع را برای گوگل بی‌ابهام می‌کند (sameAs): «کلیپس» دقیقا کدام
+ * چیز است. جداکننده‌ها: خط جدید، «,» «،» «;» «؛» «|». یکتا بر اساس نام.
+ *
+ * @return list<array{name: string, url: string}>
  */
-function hodima_seo_discover_parse_entities( mixed $raw ): array {
+function hodima_seo_discover_entity_items( mixed $raw ): array {
 
 	$parts = preg_split( '/[\r\n,،;؛|]+/u', is_scalar( $raw ) ? (string) $raw : '' ) ?: [];
 	$out   = [];
 
 	foreach ( $parts as $part ) {
-		$part = trim( str_replace( "\u{200C}", ' ', wp_strip_all_tags( $part ) ) );
-		if ( '' !== $part && mb_strlen( $part ) <= 120 ) {
-			$out[ mb_strtolower( $part ) ] = $part;
+
+		$part = trim( wp_strip_all_tags( $part ) );
+		$url  = '';
+
+		if ( preg_match( '#^(.*?)\s+(https?://\S+|Q\d{1,12})$#u', $part, $m ) ) {
+			$part = $m[1];
+			$url  = str_starts_with( $m[2], 'Q' ) ? 'https://www.wikidata.org/wiki/' . $m[2] : hodima_seo_discover_clean_url( $m[2] );
+		}
+
+		$name = trim( str_replace( "\u{200C}", ' ', $part ) );
+		$key  = mb_strtolower( $name );
+
+		// تکراری: اولی می‌ماند، ولی آدرسش اگر نداشت از تکرار بعدی گرفته می‌شود
+		if ( '' !== $name && mb_strlen( $name ) <= 120 ) {
+			$out[ $key ] = isset( $out[ $key ] )
+				? [ 'name' => $out[ $key ]['name'], 'url' => '' !== $out[ $key ]['url'] ? $out[ $key ]['url'] : $url ]
+				: [ 'name' => $name, 'url' => $url ];
 		}
 	}
 
 	return array_values( $out );
+}
+
+/** آدرس معتبر http(s) با دامنه، یا رشته خالی (متن دلخواه آدرس جعلی «http://…» نشود). */
+function hodima_seo_discover_clean_url( string $url ): string {
+	$url  = trim( $url );
+	$host = (string) wp_parse_url( $url, PHP_URL_HOST );
+	return ( false !== filter_var( $url, FILTER_VALIDATE_URL ) && preg_match( '#^https?://#i', $url ) && str_contains( $host, '.' ) )
+		? esc_url_raw( $url, [ 'https', 'http' ] )
+		: '';
+}
+
+/**
+ * نام موضوعات (بدون آدرس).
+ *
+ * @return list<string>
+ */
+function hodima_seo_discover_parse_entities( mixed $raw ): array {
+	return array_column( hodima_seo_discover_entity_items( $raw ), 'name' );
+}
+
+/**
+ * موضوعات به شکل ذخیره («نام آدرس, نام»).
+ *
+ * @param list<array{name: string, url: string}> $items
+ */
+function hodima_seo_discover_format_entities( array $items, string $glue = ', ' ): string {
+	return implode( $glue, array_map(
+		static fn( array $i ): string => trim( $i['name'] . ( '' !== $i['url'] ? ' ' . $i['url'] : '' ) ),
+		$items
+	) );
 }
 
 /**
@@ -136,12 +200,14 @@ function hodima_seo_discover_parse_entities( mixed $raw ): array {
  * (ردیف «_hook_enabled» ندارد) و نشانه نسخه قدیمی (enabled = yes) را دارد —
  * همان قاعده hodima_media_has_legacy_data().
  *
- * @return array{title: string, image_id: int, entities: list<string>}
+ * entities: فقط نام‌ها (سازگار با نسخه قبلی)؛ entity_items: نام + آدرس هویت.
+ *
+ * @return array{title: string, image_id: int, entities: list<string>, entity_items: list<array{name: string, url: string}>}
  */
 function hodima_seo_discover_data( int $post_id ): array {
 
 	if ( $post_id <= 0 ) {
-		return [ 'title' => '', 'image_id' => 0, 'entities' => [] ];
+		return [ 'title' => '', 'image_id' => 0, 'entities' => [], 'entity_items' => [] ];
 	}
 
 	$legacy = ! metadata_exists( 'post', $post_id, '_hook_enabled' ) && 'yes' === get_post_meta( $post_id, 'enabled', true );
@@ -150,17 +216,24 @@ function hodima_seo_discover_data( int $post_id ): array {
 		return ( '' === $value && $legacy ) ? (string) get_post_meta( $post_id, $old, true ) : $value;
 	};
 
+	$items = hodima_seo_discover_entity_items( $read( HODIMA_SEO_DISCOVER_META['entities'], 'key_entities' ) );
+
 	return [
-		'title'    => sanitize_text_field( $read( HODIMA_SEO_DISCOVER_META['title'], 'discover_title' ) ),
-		'image_id' => (int) get_post_meta( $post_id, HODIMA_SEO_DISCOVER_META['image_id'], true ),
-		'entities' => hodima_seo_discover_parse_entities( $read( HODIMA_SEO_DISCOVER_META['entities'], 'key_entities' ) ),
+		'title'        => sanitize_text_field( $read( HODIMA_SEO_DISCOVER_META['title'], 'discover_title' ) ),
+		'image_id'     => (int) get_post_meta( $post_id, HODIMA_SEO_DISCOVER_META['image_id'], true ),
+		'entities'     => array_column( $items, 'name' ),
+		'entity_items' => $items,
 	];
 }
 
-/** آیا عنوان عبارت طعمه کلیک دارد؟ (همان فهرست در JS پیشخوان) */
+/** آیا عنوان عبارت طعمه کلیک دارد؟ (همان قاعده در JS پیشخوان) */
 function hodima_seo_discover_is_clickbait( string $title ): bool {
+
+	$norm = static fn( string $s ): string => str_replace( "\u{200C}", ' ', $s );
+	$title = $norm( $title );
+
 	foreach ( HODIMA_SEO_DISCOVER_CLICKBAIT as $phrase ) {
-		if ( str_contains( $title, $phrase ) ) {
+		if ( str_contains( $title, $norm( $phrase ) ) ) {
 			return true;
 		}
 	}
@@ -321,7 +394,8 @@ function hodima_seo_discover_wide_image( int $post_id ): ?array {
 /**
  * عنوان Discover و موضوعات برای یک نود مقاله/صفحه:
  *   alternativeHeadline (headline همان عنوان اصلی صفحه می‌ماند)
- *   about → Thing برای هر موضوع (به ارجاع‌های موجود، مثلا #organization، اضافه می‌شود)
+ *   about → Thing برای هر موضوع، با sameAs اگر آدرس ویکی‌داده/ویکی‌پدیا دارد
+ *   (به ارجاع‌های موجود، مثلا #organization، اضافه می‌شود)
  *
  * @param array<string, mixed> $node
  * @return array<string, mixed>
@@ -334,12 +408,12 @@ function hodima_seo_discover_enrich( array $node, int $post_id ): array {
 		$node['alternativeHeadline'] = $data['title'];
 	}
 
-	if ( $data['entities'] ) {
+	if ( $data['entity_items'] ) {
 		$about = $node['about'] ?? [];
 		$about = ( is_array( $about ) && array_is_list( $about ) ) ? $about : ( $about ? [ $about ] : [] );
 
-		foreach ( $data['entities'] as $name ) {
-			$about[] = [ '@type' => 'Thing', 'name' => $name ];
+		foreach ( $data['entity_items'] as $item ) {
+			$about[] = [ '@type' => 'Thing', 'name' => $item['name'] ] + ( '' !== $item['url'] ? [ 'sameAs' => $item['url'] ] : [] );
 		}
 
 		$node['about'] = $about;
@@ -407,14 +481,105 @@ function hodima_seo_discover_checks( WP_Post $post ): array {
 		? [ 'desc', 'ok', 'خلاصه', 'چکیده یا توضیحات متا دارد.' ]
 		: [ 'desc', 'warn', 'خلاصه', 'چکیده و توضیحات متا خالی است؛ متن کارت از ابتدای مطلب برداشته می‌شود.' ];
 
-	// ۶. نویسنده (اعتماد: E-E-A-T)
+	// ۶. نویسنده (اعتماد: E-E-A-T) — بیوگرافی + سمت/تخصص یا پروفایل معتبر بیرونی
+	$author   = hodima_seo_discover_author( (int) $post->post_author );
 	$bio      = trim( (string) get_the_author_meta( 'description', (int) $post->post_author ) );
-	$checks[] = '' !== $bio
-		? [ 'author', 'ok', 'نویسنده', 'بیوگرافی نویسنده کامل است.' ]
-		: [ 'author', 'warn', 'نویسنده', 'بیوگرافی نویسنده (کاربران ← نمایه) خالی است؛ معرفی نویسنده اعتماد گوگل را بالا می‌برد.' ];
+	$checks[] = match ( true ) {
+		'' === $bio => [ 'author', 'warn', 'نویسنده', 'بیوگرافی نویسنده (کاربران ← نمایه) خالی است؛ معرفی نویسنده اعتماد گوگل را بالا می‌برد.' ],
+		'' === $author['job_title'] && ! $author['same_as'] => [ 'author', 'warn', 'نویسنده', 'بیوگرافی هست؛ «سمت و تخصص» یا «پروفایل‌های معتبر» نویسنده (کاربران ← نمایه ← نویسنده در گوگل) را هم کامل کنید.' ],
+		default => [ 'author', 'ok', 'نویسنده', 'بیوگرافی و معرفی تخصص نویسنده کامل است.' ],
+	};
 
 	return array_map(
 		static fn( array $c ): array => array_combine( [ 'key', 'status', 'label', 'detail' ], $c ),
 		$checks
 	);
+}
+
+/* =====================================================================
+ * نویسنده (E-E-A-T)
+ * ===================================================================== */
+
+/** کلیدهای متای کاربر برای معرفی نویسنده. */
+const HODIMA_SEO_DISCOVER_AUTHOR_META = [
+	'job_title'   => 'hodima_author_job_title',
+	'knows_about' => 'hodima_author_knows_about',
+	'same_as'     => 'hodima_author_same_as',
+];
+
+/**
+ * معرفی تخصص نویسنده: سمت، حوزه‌های تخصص و پروفایل‌های معتبر بیرونی
+ * (اینستاگرام، لینکدین، آپارات، ویکی‌پدیا…). گوگل برای Discover و نتایج
+ * مقاله به «چه کسی نوشته و چرا قابل اعتماد است» وزن می‌دهد.
+ *
+ * @return array{job_title: string, knows_about: list<string>, same_as: list<string>}
+ */
+function hodima_seo_discover_author( int $user_id ): array {
+
+	$lines = static fn( string $key ): array => array_values( array_filter( array_map(
+		'trim',
+		preg_split( '/[\r\n]+/', (string) get_user_meta( $user_id, $key, true ) ) ?: []
+	) ) );
+
+	return [
+		'job_title'   => sanitize_text_field( (string) get_user_meta( $user_id, HODIMA_SEO_DISCOVER_AUTHOR_META['job_title'], true ) ),
+		'knows_about' => array_map( 'sanitize_text_field', $lines( HODIMA_SEO_DISCOVER_AUTHOR_META['knows_about'] ) ),
+		'same_as'     => array_values( array_filter( array_map( 'hodima_seo_discover_clean_url', $lines( HODIMA_SEO_DISCOVER_AUTHOR_META['same_as'] ) ) ) ),
+	];
+}
+
+/* =====================================================================
+ * آمار Search Console (فقط خواندن داده ذخیره‌شده؛ دریافت: discover-stats.php)
+ * ===================================================================== */
+
+/** نام گزینه آمار Discover (autoload خاموش). */
+const HODIMA_SEO_DISCOVER_STATS_OPTION = 'hodima_discover_sc_stats';
+
+/** کلید یکسان یک آدرس برای مقایسه با آدرس‌های Search Console (مسیر بدون اسلش پایانی). */
+function hodima_seo_discover_url_key( string $url ): string {
+	$path  = (string) wp_parse_url( $url, PHP_URL_PATH );
+	$query = (string) wp_parse_url( $url, PHP_URL_QUERY );
+	return rawurldecode( untrailingslashit( '' !== $path ? $path : '/' ) ) . ( '' !== $query ? '?' . $query : '' );
+}
+
+/**
+ * آمار ذخیره‌شده Discover.
+ *
+ * @return array{property: string, fetched: int, start: string, end: string, totals: array{clicks: int, impressions: int}, rows: array<string, array{clicks: int, impressions: int}>, error: string}
+ */
+function hodima_seo_discover_stats(): array {
+
+	$stored = get_option( HODIMA_SEO_DISCOVER_STATS_OPTION, [] );
+	$stored = is_array( $stored ) ? $stored : [];
+
+	return [
+		'property' => (string) ( $stored['property'] ?? '' ),
+		'fetched'  => (int) ( $stored['fetched'] ?? 0 ),
+		'start'    => (string) ( $stored['start'] ?? '' ),
+		'end'      => (string) ( $stored['end'] ?? '' ),
+		'totals'   => [
+			'clicks'      => (int) ( $stored['totals']['clicks'] ?? 0 ),
+			'impressions' => (int) ( $stored['totals']['impressions'] ?? 0 ),
+		],
+		'rows'     => is_array( $stored['rows'] ?? null ) ? $stored['rows'] : [],
+		'error'    => (string) ( $stored['error'] ?? '' ),
+	];
+}
+
+/**
+ * آمار Discover یک نوشته (۲۸ روز آخر Search Console)، یا null اگر آماری نیست.
+ *
+ * @return array{clicks: int, impressions: int}|null
+ */
+function hodima_seo_discover_post_stats( int $post_id ): ?array {
+
+	$stats = hodima_seo_discover_stats();
+
+	if ( ! $stats['fetched'] ) {
+		return null;
+	}
+
+	$row = $stats['rows'][ hodima_seo_discover_url_key( (string) get_permalink( $post_id ) ) ] ?? null;
+
+	return [ 'clicks' => (int) ( $row['clicks'] ?? 0 ), 'impressions' => (int) ( $row['impressions'] ?? 0 ) ];
 }

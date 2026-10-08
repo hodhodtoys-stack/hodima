@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، Google Discover و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           1.15.0
+ * Version:           1.16.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '1.15.0';
+const HODIMA_SEO_VERSION = '1.16.0';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -119,8 +119,9 @@ function hodima_seo_modules(): array {
 		],
 		'discover' => [
 			'title'       => 'Google Discover',
-			'description' => 'عنوان و تصویر Discover نوشته‌ها و برگه‌ها، سه برش ۱۶:۹ / ۴:۳ / ۱:۱ (عرض ۱۲۰۰)، og:image و og:title بزرگ، فید RSS با تصویر برای «دنبال کردن»، موضوعات اصلی در اسکیما و فهرست بررسی آمادگی در ویرایش نوشته.',
+			'description' => 'عنوان و تصویر Discover نوشته‌ها و برگه‌ها، سه برش ۱۶:۹ / ۴:۳ / ۱:۱ (عرض ۱۲۰۰)، og:image و og:title بزرگ، فید RSS با تصویر برای «دنبال کردن»، موضوعات با ویکی‌داده و معرفی نویسنده در اسکیما، گزارش آمادگی همه نوشته‌ها و آمار واقعی Discover از Search Console.',
 			'files'       => [ 'core/discover/discover-init.php' ],
+			'settings'    => 'admin.php?page=hodima-discover',
 			'warning'     => 'کادر Google Discover از ویرایش نوشته برداشته می‌شود و عنوان/تصویر Discover، برش‌های تصویر و تصویر فید دیگر اعمال نمی‌شوند (اطلاعات پاک نمی‌شود).',
 			'recommends'  => [ 'seobox', 'schema' ],
 			'icon'        => 'dashicons-visibility',

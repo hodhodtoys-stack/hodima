@@ -501,7 +501,11 @@ function hodima_seo_schema_person_node( int $user_id ): array {
 		$node['sameAs'] = [ $website ];
 	}
 
-	return $node;
+	/*
+	 * غنی‌سازی (مثلا ماژول Google Discover: سمت، تخصص‌ها و پروفایل‌های
+	 * معتبر نویسنده — E-E-A-T). @id و نام عوض نشود.
+	 */
+	return (array) apply_filters( 'hodima_seo_schema_person_node', $node, $user_id );
 }
 
 /**

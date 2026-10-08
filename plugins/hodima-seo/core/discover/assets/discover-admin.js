@@ -3,7 +3,7 @@
  * Path: core/discover/assets/discover-admin.js
  *
  * جاوااسکریپت خالص:
- *   - بررسی زنده عنوان Discover (طول، عبارت طعمه کلیک — همان فهرست PHP)
+ *   - بررسی زنده عنوان Discover (طول، عبارت طعمه کلیک — همان فهرست و قاعده PHP)
  *   - انتخاب تصویر Discover از کتابخانه رسانه و بررسی عرض آن
  */
 (() => {
@@ -36,7 +36,8 @@
 		const len = [...title].length;
 		let level = 'ok';
 		let text = `${nf.format(len)} کاراکتر.`;
-		if (config.clickbait.some((p) => title.includes(p))) [level, text] = ['warn', 'عبارت اغراق‌آمیز یا طعمه کلیک دارد؛ گوگل در Discover آن را جریمه می‌کند.'];
+		const norm = (v) => v.replaceAll('\u200C', ' '); // بدون نیم‌فاصله؛ همان قاعده PHP
+		if (config.clickbait.some((p) => norm(title).includes(norm(p)))) [level, text] = ['warn', 'عبارت اغراق‌آمیز یا طعمه کلیک دارد؛ گوگل در Discover آن را جریمه می‌کند.'];
 		else if (len < 30) [level, text] = ['warn', `${nf.format(len)} کاراکتر؛ کوتاه است. عنوانی که اصل مطلب را بگوید (۴۰ تا ۱۰۰ کاراکتر).`];
 		else if (len > 110) [level, text] = ['warn', `${nf.format(len)} کاراکتر؛ بیشتر از ۱۱۰ کوتاه می‌شود.`];
 		setCheck('title', level, text);
