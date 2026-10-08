@@ -33,14 +33,18 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * کلیدهای نسخه‌های قبلی که ممکن است بدون پیشوند ذخیره شده باشند.
- * کلیدهای تازه (کاور با شناسه، نسبت، فصل‌ها، متن گفتار، تصویر Discover)
- * هرگز بدون پیشوند ذخیره نشده‌اند.
+ * کلیدهای تازه (کاور با شناسه، نسبت، فصل‌ها، متن گفتار) هرگز بدون پیشوند
+ * ذخیره نشده‌اند.
+ *
+ * Discover (عنوان، تصویر، موضوعات) از Hodima Media 1.5.0 در ماژول «Google
+ * Discover» افزونه سئو است (core/discover)؛ همان کلیدهای متا را خودش
+ * می‌خواند و اینجا دیگر خوانده نمی‌شوند.
  */
 const HODIMA_MEDIA_LEGACY_KEYS = [
 	'enabled', 'content',
 	'video_url', 'video_thumb', 'video_keywords', 'video_duration', 'video_date', 'video_title', 'video_cover',
 	'voice_url', 'voice_keywords', 'voice_duration', 'voice_date', 'voice_title',
-	'discover_title', 'key_entities', 'faq',
+	'faq',
 ];
 
 /** نسبت‌های تصویر ویدیو (مقدار ذخیره‌شده ← برچسب). */
@@ -62,7 +66,7 @@ function hodima_media_meta_keys(): array {
 	return [
 		...HODIMA_MEDIA_LEGACY_KEYS,
 		'video_cover_id', 'video_ratio', 'video_chapters', 'video_transcript',
-		'voice_transcript', 'discover_image_id',
+		'voice_transcript',
 	];
 }
 
@@ -162,7 +166,6 @@ function hodima_media_has_legacy_data( int $object_id, string $context ): bool {
  * مقادیر مشتق‌شده (تا همه مصرف‌کننده‌ها بدون تغییر، داده درست بگیرند):
  *   video_thumb     اگر خالی بود = video_cover (فرم فقط کاور را می‌نویسد)
  *   video_cover_id  اگر فقط آدرس بود، شناسه پیوست از روی آدرس
- *   key_entities    به شکل یکسان «الف, ب, ج»
  *   video_ratio     پیش‌فرض «auto»
  *
  * @param bool $force کش را دور بزن و دوباره از دیتابیس بخوان.
@@ -200,7 +203,6 @@ function hodima_media_get_data( int $object_id, string $context = 'post', bool $
 
 	$data['faq']               = is_array( $data['faq'] ) ? array_values( $data['faq'] ) : [];
 	$data['video_cover_id']    = (int) $data['video_cover_id'];
-	$data['discover_image_id'] = (int) $data['discover_image_id'];
 	$data['video_ratio']       = isset( HODIMA_MEDIA_RATIOS[ (string) $data['video_ratio'] ] ) ? (string) $data['video_ratio'] : 'auto';
 
 	if ( 0 === $data['video_cover_id'] && '' !== (string) $data['video_cover'] ) {
@@ -209,10 +211,6 @@ function hodima_media_get_data( int $object_id, string $context = 'post', bool $
 
 	if ( '' === (string) $data['video_thumb'] && '' !== (string) $data['video_cover'] ) {
 		$data['video_thumb'] = $data['video_cover'];
-	}
-
-	if ( '' !== (string) $data['key_entities'] ) {
-		$data['key_entities'] = implode( ', ', hodima_media_parse_entities( $data['key_entities'] ) );
 	}
 
 	return $cache[ $cache_key ] = $data;
@@ -575,35 +573,4 @@ function hodima_media_parse_chapters( mixed $raw ): array {
 	ksort( $out );
 
 	return array_values( $out );
-}
-
-/* =====================================================================
- * Discover (نوشته‌ها و برگه‌ها)
- * ===================================================================== */
-
-/**
- * آیا بخش «Discover» (عنوان Discover، تصویر Discover، موجودیت‌ها) برای
- * این شیء فعال است؟
- *
- *   نوشته و برگه: بله.
- *   محصول و دسته: خیر (عنوان تبلیغاتی جای نام محصول نیست و دسته نود
- *     WebPage خودش را دارد). داده ذخیره‌شده حذف نمی‌شود. برای برگرداندن:
- *     add_filter( 'hook_modern_seo_post_types', fn( $t ) => [ ...$t, 'product' ] );
- */
-function hodima_media_discover_enabled( string $context, int|string $object_id = 0 ): bool {
-
-	$enabled = false;
-
-	if ( 'post' === $context ) {
-
-		$post_type = ( is_numeric( $object_id ) && (int) $object_id > 0 ) ? (string) get_post_type( (int) $object_id ) : '';
-
-		if ( '' === $post_type && function_exists( 'get_current_screen' ) && get_current_screen() ) {
-			$post_type = (string) get_current_screen()->post_type;
-		}
-
-		$enabled = in_array( $post_type, (array) apply_filters( 'hook_modern_seo_post_types', [ 'post', 'page' ] ), true );
-	}
-
-	return (bool) apply_filters( 'hook_modern_seo_enabled', $enabled, $context, $object_id );
 }

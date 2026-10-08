@@ -2180,7 +2180,35 @@ UPDATE wp_term_taxonomy SET description = REGEXP_REPLACE(description, '(<p>\\s*)
 
 **محدودیت:** SQL روی دیتابیس واقعی اجرا نشد. پخش واقعی آپارات/یوتیوب در محیط نیست.
 
-## ۷۷. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
+## ۷۷. Google Discover ماژول مستقل افزونه سئو (گروه ۳) — مرحله ۷۰
+
+Hodima SEO 1.15.0، Hodima Media 1.5.0. خواسته کاربر (بخش ۷۶): Discover برایش خیلی مهم است و باید ماژول مستقل شود تا روی آن کار جدی شود. تصمیم: ماژول «Google Discover» در **افزونه سئو** (همه مصرف‌کننده‌هایش — سئوباکس، اسکیمای مقاله، فید، ریدایرکت فیدها — آنجا بودند)، با کلید جدا در «هدیما ← ماژول‌های سئو»؛ خاموش کردن «سیستم رسانه» دیگر Discover را خاموش نمی‌کند. این مرحله فقط **جابه‌جایی** است؛ خروجی سایت عمدا یکسان، جز رفع نود تکراری.
+
+### ۷۷.۱ ساختار `plugins/hodima-seo/core/discover/`
+| فایل | کار |
+|---|---|
+| `discover-init.php` | ثابت‌ها (`HODIMA_SEO_DISCOVER_*`)، `hodima_seo_discover_enabled()` (همان فیلترهای قبلی `hook_modern_seo_post_types`/`hook_modern_seo_enabled`)، `hodima_seo_discover_data()` (عنوان، تصویر، موضوعات؛ با همان قاعده داده خیلی قدیمی بی‌پیشوند)، تصویر/برش‌ها، `hodima_seo_discover_enrich()` (alternativeHeadline + about)، فهرست بررسی؛ و `hodima_seo_discover_boot()` |
+| `discover-front.php` | برش‌ها هنگام ذخیره/تغییر تصویر شاخص، og:title و og:image (فیلترهای سئوباکس)، غنی‌سازی نود `#webpage` برگه‌ها، لینک فید در head، باز ماندن فید اصلی/دسته، `media:content` در فید |
+| `discover-admin.php` + `assets/` | کادر جدای «Google Discover» (نوشته و برگه؛ `hodima_discover[…]`، nonce `hodima_discover_nonce`)، CSS زیر `.hodima-dc`، JS خالص (بررسی زنده عنوان، انتخاب تصویر) |
+| `legacy.php` | نام‌های قبلی `hodima_media_discover_*`، `hodima_media_is_clickbait`، `hook_modern_seo_enabled` — فقط اگر تعریف نشده باشند |
+
+- **کلیدهای متا عوض نشدند** (قانون ۵): `_hook_discover_title`، `_hook_discover_image_id`، `_hook_key_entities`. Media دیگر آن‌ها را در `hodima_media_get_data()` نمی‌خواند.
+- **هم‌زیستی نسخه‌ها:** SEO در `plugins_loaded` اولویت ۵ و Media در ۱۰ لود می‌شود؛ پس هوک‌ها، کادر و نام‌های قدیمی در اولویت ۲۰ و فقط وقتی ثبت می‌شوند که Media قدیمی (۱.۴ و پایین‌تر) `hodima_media_discover_image` را تعریف نکرده باشد. وگرنه دو لینک فید، دو تصویر در فید، دو کادر و «Cannot redeclare» نام‌های قدیمی. Media جدید + SEO قدیمی: Discover نیست تا SEO هم به‌روز شود (بدون خطا).
+- **اسکیما:** `blog-schema.php` با `hodima_seo_discover_enrich()` و `hodima_seo_discover_images()` (فالبک Media قدیمی)؛ `product-schema-pro.php` با `hodima_seo_discover_data()` (Discover محصول پیش‌فرض خاموش؛ فقط با فیلتر).
+- **رفع شد:** برگه‌ها یک نود دوم `Article` با شناسه `#media-article` برای همان آدرس داشتند (قانون: نود صفحه فقط `#webpage`)؛ حالا عنوان Discover و موضوعات روی همان `#webpage` (فیلتر `hodima_schema_webpage_node`، اولویت ۱۵؛ `about` به ارجاع `#organization` اضافه می‌شود). برگه رمزدار: نه.
+- **حذف از Media:** `media-discover.php`، بخش Discover کادر رسانه و ذخیره‌اش، `hodima_media_discover_enabled()`، نود `seo_discover`، ادغام Yoast (`wpseo_schema_article`؛ سایت Yoast ندارد)، بخش Discover در `media-admin.js`/`.css`.
+
+**تست:**
+- `bash bin/lint.sh` قبول؛ PHPCS و PHPStan جداگانه روی `core/discover/` (فقط «HODIMA_SEO_URL پیدا نشد» که پیکربندی تحلیل افزونه‌هاست)؛ Stylelint روی CSS تازه؛ `node --check`.
+- `compare-with-ref.sh` (۲۵ صفحه): فقط برگه راهنما — `#media-article` حذف، `#webpage` گرفت `alternativeHeadline` و `about` (کلیپس، گلسر)؛ مقاله پیلار با موضوعات یکسان؛ بقیه یکسان (جز زمان). یکپارچگی سالم، بدون هشدار PHP.
+- `wp-eval`: کادر (۵ ردیف بررسی و فیلدها)؛ ذخیره (عنوان، تصویر، «الف, ب, ج»)؛ بدون `present` و با nonce نادرست داده ماند؛ خالی کردن ← حذف متا؛ برش‌ها روی تصویر واقعی ۱۶۰۰×۱۰۰۰: ۱۲۰۰×۶۷۵، ۱۲۰۰×۹۰۰، ۱۰۰۰×۱۰۰۰؛ og:title = عنوان Discover، og:image = برش ۱۲۰۰×۶۷۵؛ کادر رسانه دیگر Discover ندارد؛ `hook_modern_seo_enabled` قدیمی کار می‌کند.
+- `/feed/`: یک `xmlns:media` و `media:content` برای نوشته تصویردار؛ لینک فید در head یک بار.
+- ترکیب نسخه‌ها روی سایت تست: Media قدیمی + SEO جدید ← ماژول کنار می‌ایستد (یک `rss2_item`، یک فیلتر og:image، alternativeHeadline برگه راهنما از Media قدیمی)، بدون خطا؛ Media جدید + SEO قدیمی ← بدون Discover، بدون خطا.
+- `admin-check.sh hodima-hub-seo`: ماژول «Google Discover» در فهرست. نصب واقعی از ZIP در هر دو ترتیب (پایین، انتشار).
+
+**محدودیت:** تعامل JS کادر در ویرایشگر بلوکی واقعی مرورگر اجرا نشد (کد همان نسخه قبلی با نام‌های تازه؛ `node --check`).
+
+## ۷۸. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
 
 | مسیر | کارکرد | پیشنهاد مکان |
 |---|---|---|

@@ -118,29 +118,24 @@ function hook_render_blog_schema() {
     );
 
     /*
-     * عنوان Discover: «عنوان جایگزین» مقاله (alternativeHeadline؛ ویژگی
-     * درست CreativeWork). قبلا alternateName بود که یعنی «نام دیگر» مقاله.
+     * عنوان Discover → alternativeHeadline (ویژگی درست CreativeWork؛ قبلا
+     * alternateName بود که یعنی «نام دیگر» مقاله) و موضوعات اصلی → about.
+     * ماژول «Google Discover» همین افزونه (core/discover)؛ فالبک: Hodima
+     * Media قدیمی (۱.۴ و پایین‌تر) که Discover را خودش داشت.
      */
-    if ( ! empty( $media_data['discover_title'] ) ) {
-        $blog_posting['alternativeHeadline'] = wp_strip_all_tags( $media_data['discover_title'] );
-    }
-
-    if ( ! empty( $media_data['key_entities'] ) ) {
-        $about_entities = array();
-        // جدا کردن با ویرگول انگلیسی/فارسی، نقطه‌ویرگول و خط جدید (همان قانون سیستم رسانه)
-        $entities_array = function_exists( 'hodima_media_parse_entities' )
-            ? hodima_media_parse_entities( $media_data['key_entities'] )
-            : explode( ',', str_replace( '،', ',', $media_data['key_entities'] ) );
-        foreach ( $entities_array as $entity ) {
-            $entity = trim( $entity );
-            if ( ! empty( $entity ) ) {
-                $about_entities[] = array(
-                    '@type' => 'Thing',
-                    'name'  => $entity
-                );
-            }
+    if ( function_exists( 'hodima_seo_discover_enrich' ) ) {
+        if ( hodima_seo_discover_for_post( (int) $post_id ) ) {
+            $blog_posting = hodima_seo_discover_enrich( $blog_posting, (int) $post_id );
         }
-        if ( ! empty( $about_entities ) ) {
+    } elseif ( function_exists( 'hodima_media_discover_image' ) ) {
+        if ( ! empty( $media_data['discover_title'] ) ) {
+            $blog_posting['alternativeHeadline'] = wp_strip_all_tags( $media_data['discover_title'] );
+        }
+        $about_entities = array_map(
+            static fn( string $name ): array => [ '@type' => 'Thing', 'name' => $name ],
+            function_exists( 'hodima_media_parse_entities' ) ? hodima_media_parse_entities( $media_data['key_entities'] ?? '' ) : []
+        );
+        if ( [] !== $about_entities ) {
             $blog_posting['about'] = $about_entities;
         }
     }
@@ -152,14 +147,16 @@ function hook_render_blog_schema() {
 
     /*
      * Google Discover / نتایج مقاله: گوگل تصویر با سه نسبت ۱۶:۹، ۴:۳ و ۱:۱
-     * (عرض ۱۲۰۰) را توصیه می‌کند. سیستم رسانه این برش‌ها را هنگام ذخیره
-     * نوشته از «تصویر Discover» (یا تصویر شاخص) می‌سازد. #primaryimage همان
-     * اول فهرست می‌ماند (نود صفحه به آن ارجاع می‌دهد).
+     * (عرض ۱۲۰۰) را توصیه می‌کند. ماژول «Google Discover» این برش‌ها را
+     * هنگام ذخیره نوشته از «تصویر Discover» (یا تصویر شاخص) می‌سازد.
+     * #primaryimage همان اول فهرست می‌ماند (نود صفحه به آن ارجاع می‌دهد).
      */
-    if ( function_exists( 'hodima_media_discover_images' ) ) {
+    $discover_images_fn = function_exists( 'hodima_seo_discover_images' ) ? 'hodima_seo_discover_images'
+        : ( function_exists( 'hodima_media_discover_images' ) ? 'hodima_media_discover_images' : '' );
+    if ( '' !== $discover_images_fn ) {
         // همان تصویر اصلی (#primaryimage) دوباره اضافه نشود
         $discover_images = array_values( array_filter(
-            hodima_media_discover_images( (int) $post_id ),
+            $discover_images_fn( (int) $post_id ),
             static fn( array $img ): bool => $img['url'] !== $image_url
         ) );
         if ( [] !== $discover_images ) {

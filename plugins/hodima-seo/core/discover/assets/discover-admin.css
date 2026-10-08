@@ -1,0 +1,164 @@
+/*
+ * ماژول «Google Discover» — کادر ویرایش نوشته و برگه
+ * Path: core/discover/assets/discover-admin.css
+ *
+ * فقط روی صفحه ویرایش لود می‌شود و همه قوانین زیر .hodima-dc هستند (هیچ
+ * :root یا قانون سراسری وردپرس). پالت برند؛ فونت از پیشخوان ارث می‌برد؛
+ * آیکون‌ها Dashicons. همان ظاهر بخش Discover کادر رسانه قبلی.
+ */
+
+.hodima-dc {
+	--dc-primary: #25316a;
+	--dc-secondary: #607bbd;
+	--dc-third: #b6c2f3;
+	--dc-text: #1d2340;
+	--dc-muted: #5d6785;
+	--dc-soft: #f9fafe;
+	--dc-border: #d3daf8;
+	--dc-ok: #1f7a4d;
+	--dc-warn: #9a5b00;
+	--dc-error: #b3261e;
+
+	display: grid;
+	gap: 1rem;
+	padding-block: 0.25rem;
+	font-family: inherit;
+	color: var(--dc-text);
+
+	& .hodima-dc__intro {
+		margin: 0;
+		color: var(--dc-muted);
+		font-size: 0.8125rem;
+	}
+
+	/* ── فهرست بررسی ── */
+	& .hodima-dc__checks {
+		display: grid;
+		gap: 0.375rem;
+		margin: 0;
+		padding: 0.75rem;
+		border-radius: 0.5rem;
+		background: var(--dc-soft);
+		list-style: none;
+
+		& li {
+			display: flex;
+			align-items: flex-start;
+			gap: 0.375rem;
+			margin: 0;
+			font-size: 0.8125rem;
+			line-height: 1.7;
+		}
+
+		& .dashicons {
+			flex-shrink: 0;
+			margin-block-start: 0.125rem;
+		}
+
+		& .is-ok .dashicons { color: var(--dc-ok); }
+		& .is-warn .dashicons { color: var(--dc-warn); }
+		& .is-error .dashicons { color: var(--dc-error); }
+	}
+
+	& .hodima-dc__field {
+		display: grid;
+		gap: 0.375rem;
+		min-inline-size: 0;
+	}
+
+	& .hodima-dc__label {
+		color: var(--dc-text);
+		font-size: 0.8125rem;
+		font-weight: 600;
+	}
+
+	& :is(input[type="text"], textarea) {
+		inline-size: 100%;
+		max-inline-size: 100%;
+		box-sizing: border-box;
+		padding: 0.5rem 0.75rem;
+		border: 1.5px solid var(--dc-border);
+		border-radius: 0.5rem;
+		background: #ffffff;
+		color: var(--dc-text);
+		font: inherit;
+		font-size: 0.8125rem;
+		box-shadow: none;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+		&:focus {
+			border-color: var(--dc-secondary);
+			box-shadow: 0 0 0 3px rgb(96 123 189 / 0.18);
+			outline: none;
+		}
+
+		&[aria-invalid="true"] {
+			border-color: var(--dc-error);
+		}
+	}
+
+	& textarea {
+		min-block-size: 4.5rem;
+		line-height: 1.7;
+		resize: vertical;
+	}
+
+	& .hodima-dc__row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+
+		& .button .dashicons {
+			margin-block-start: 0.2rem;
+			font-size: 1rem;
+			inline-size: 1rem;
+			block-size: 1rem;
+		}
+	}
+
+	& .hodima-dc__clear {
+		color: var(--dc-error);
+	}
+
+	& .hodima-dc__preview {
+		display: block;
+		max-inline-size: 15rem;
+		max-block-size: 9rem;
+		object-fit: cover;
+		border: 1px solid var(--dc-border);
+		border-radius: 0.5rem;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	& .hodima-dc__help {
+		margin: 0;
+		color: var(--dc-muted);
+		font-size: 0.75rem;
+		line-height: 1.8;
+	}
+
+	& .hodima-dc__status {
+		margin: 0;
+		font-size: 0.75rem;
+		font-weight: 600;
+
+		&:empty,
+		&[hidden] {
+			display: none;
+		}
+
+		&[data-level="ok"] { color: var(--dc-ok); }
+		&[data-level="warn"] { color: var(--dc-warn); }
+		&[data-level="error"] { color: var(--dc-error); }
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-dc :is(input, textarea) {
+		transition: none;
+	}
+}

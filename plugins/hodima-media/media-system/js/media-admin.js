@@ -3,14 +3,14 @@
  * Path: media-system/js/media-admin.js
  *
  * جاوااسکریپت خالص (نسخه قبلی jQuery بود). کارها:
- *   - انتخاب از کتابخانه رسانه (ویدیو، صوت، کاور، تصویر Discover) + خواندن مدت و ابعاد فایل
- *   - بررسی زنده: سرویس لینک ویدیو، قالب مدت، فصل‌ها، عنوان و تصویر Discover
+ *   - انتخاب از کتابخانه رسانه (ویدیو، صوت، کاور) + خواندن مدت و ابعاد فایل
+ *   - بررسی زنده: سرویس لینک ویدیو، قالب مدت، فصل‌ها
  *   - سوالات متداول: افزودن، جابه‌جایی، حذف (بدون پنجره confirm مرورگر)
  */
 (() => {
 	'use strict';
 
-	const config = window.hodimaMediaAdmin || { minWidth: 1200, clickbait: [], ratios: [] };
+	const config = window.hodimaMediaAdmin || { ratios: [] };
 	const faDigits = (s) => String(s).replace(/[۰-۹]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 	const nf = new Intl.NumberFormat('fa-IR', { useGrouping: false });
 
@@ -87,40 +87,6 @@
 			: setStatus(field, `${nf.format(lines.length)} فصل.`, 'ok');
 	}
 
-	/* ── Discover ── */
-	function setCheck(key, level, text) {
-		const row = document.querySelector(`[data-hodima-check="${key}"]`);
-		if (!row) return;
-		row.className = `is-${level}`;
-		row.querySelector('.dashicons').className = `dashicons ${{ ok: 'dashicons-yes-alt', warn: 'dashicons-warning', error: 'dashicons-dismiss' }[level]}`;
-		row.querySelector('[data-hodima-check-text]').textContent = text;
-	}
-
-	function checkDiscoverTitle(input) {
-		const title = input.value.trim() || input.dataset.hodimaFallback || '';
-		const len = [...title].length;
-		const field = input.closest('.hodima-mb__field');
-		const bait = config.clickbait.find((p) => title.includes(p));
-		let level = 'ok';
-		let text = `${nf.format(len)} کاراکتر.`;
-		if (bait) [level, text] = ['warn', 'عبارت اغراق‌آمیز یا طعمه کلیک دارد؛ گوگل در Discover آن را جریمه می‌کند.'];
-		else if (len < 30) [level, text] = ['warn', `${nf.format(len)} کاراکتر؛ کوتاه است. عنوانی که اصل مطلب را بگوید (۴۰ تا ۱۰۰ کاراکتر).`];
-		else if (len > 110) [level, text] = ['warn', `${nf.format(len)} کاراکتر؛ بیشتر از ۱۱۰ کوتاه می‌شود.`];
-		setCheck('title', level, text);
-		setStatus(field, input.value.trim() === '' ? '' : text, level);
-	}
-
-	function checkDiscoverImage(field, attachment) {
-		if (!attachment) return setStatus(field, '');
-		const w = Number(attachment.width) || 0;
-		const ok = w >= config.minWidth;
-		const text = ok
-			? `${nf.format(w)}×${nf.format(Number(attachment.height) || 0)} پیکسل؛ مناسب. برش‌ها بعد از ذخیره ساخته می‌شوند.`
-			: `عرض ${nf.format(w)} پیکسل است؛ برای کارت بزرگ Discover حداقل ${nf.format(config.minWidth)} لازم است.`;
-		setStatus(field, text, ok ? 'ok' : 'error');
-		setCheck('image', ok ? 'ok' : 'error', text);
-	}
-
 	/* ── انتخاب از کتابخانه رسانه ── */
 	function nearestRatio(w, h) {
 		if (!w || !h) return '';
@@ -176,8 +142,6 @@
 				const r = nearestRatio(Number(a.width), Number(a.height));
 				if (r) ratio.value = r;
 			}
-
-			if (field.matches('[data-hodima-discover-image]')) checkDiscoverImage(field, a);
 		});
 
 		frame.open();
@@ -253,7 +217,6 @@
 		if (t.matches('#hodima-mb-video-url')) checkVideoUrl(t);
 		if (t.matches('[data-hodima-duration]')) checkDuration(t);
 		if (t.matches('[data-hodima-chapters]')) checkChapters(t);
-		if (t.matches('[data-hodima-discover-title]')) checkDiscoverTitle(t);
 
 		// پیش‌نمایش کاور با تایپ یا چسباندن آدرس
 		if (t.matches('[data-hodima-url]')) {

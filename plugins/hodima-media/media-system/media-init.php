@@ -25,8 +25,7 @@ require_once __DIR__ . '/media-shortcodes.php';
 // ۵. اسکیما (JSON-LD) در گراف واحد صفحه
 require_once __DIR__ . '/media-schema.php';
 
-// ۶. Google Discover برای نوشته‌ها: عنوان/تصویر شبکه‌های اجتماعی، برش‌های تصویر، فید
-require_once __DIR__ . '/media-discover.php';
+// Google Discover از نسخه 1.5.0 ماژول مستقل افزونه سئو است (core/discover).
 
-// ۷. نام‌های قدیمی hook_* (فقط اگر تعریف نشده باشند)
+// ۶. نام‌های قدیمی hook_* (فقط اگر تعریف نشده باشند)
 require_once __DIR__ . '/media-legacy.php';

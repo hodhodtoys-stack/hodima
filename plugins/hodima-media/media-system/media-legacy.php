@@ -88,12 +88,6 @@ if ( ! function_exists( 'hook_normalize_iso_date' ) ) {
 	}
 }
 
-if ( ! function_exists( 'hook_modern_seo_enabled' ) ) {
-	function hook_modern_seo_enabled( $context, $object_id = 0 ): bool {
-		return hodima_media_discover_enabled( (string) $context, is_numeric( $object_id ) ? (int) $object_id : (string) $object_id );
-	}
-}
-
 if ( ! function_exists( 'hook_media_stable_date' ) ) {
 	function hook_media_stable_date( $data, $kind, $object_id, $context ): string {
 		return hodima_media_stable_date( (array) $data, (string) $kind, (int) $object_id, hodima_media_context( (string) $context ) );

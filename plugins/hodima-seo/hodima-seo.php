@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
- * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           1.14.1
+ * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، Google Discover و نسخه‌های ماشین‌خوان (llms.txt).
+ * Version:           1.15.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '1.14.1';
+const HODIMA_SEO_VERSION = '1.15.0';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -117,6 +117,14 @@ function hodima_seo_modules(): array {
 			'warning'     => 'عنوان سفارشی، توضیحات متا، canonical و تگ‌های شبکه‌های اجتماعی همه صفحات حذف می‌شوند.',
 			'icon'        => 'dashicons-search',
 		],
+		'discover' => [
+			'title'       => 'Google Discover',
+			'description' => 'عنوان و تصویر Discover نوشته‌ها و برگه‌ها، سه برش ۱۶:۹ / ۴:۳ / ۱:۱ (عرض ۱۲۰۰)، og:image و og:title بزرگ، فید RSS با تصویر برای «دنبال کردن»، موضوعات اصلی در اسکیما و فهرست بررسی آمادگی در ویرایش نوشته.',
+			'files'       => [ 'core/discover/discover-init.php' ],
+			'warning'     => 'کادر Google Discover از ویرایش نوشته برداشته می‌شود و عنوان/تصویر Discover، برش‌های تصویر و تصویر فید دیگر اعمال نمی‌شوند (اطلاعات پاک نمی‌شود).',
+			'recommends'  => [ 'seobox', 'schema' ],
+			'icon'        => 'dashicons-visibility',
+		],
 		'robots' => [
 			'title'       => 'robots.txt هوشمند',
 			'description' => 'ساخت کامل robots.txt هماهنگ با ووکامرس، سایت‌مپ و تنظیمات ربات‌گیر (هر گروه ربات قوانین پایه را هم دارد).',
@@ -173,7 +181,7 @@ add_action( 'plugins_loaded', static function (): void {
 		\Hodima\Core\Modules::register(
 			'seo',
 			'سئو',
-			'متاباکس سئو، اسکیما، سایت‌مپ، robots.txt، ریدایرکت‌ها، آدرس تمیز، خوشه‌های موضوعی، IndexNow و Google Indexing.',
+			'متاباکس سئو، اسکیما، سایت‌مپ، robots.txt، ریدایرکت‌ها، آدرس تمیز، خوشه‌های موضوعی، Google Discover، IndexNow و Google Indexing.',
 			HODIMA_SEO_FILE,
 			HODIMA_SEO_VERSION,
 			...array_map(

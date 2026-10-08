@@ -319,17 +319,22 @@ function hook_generate_custom_product_schema() {
     }
 
     /*
-     * «سئو مدرن» برای محصولات خاموش است (hook_modern_seo_enabled در
-     * media-system/media-helpers.php):
-     *   - عنوان Discover به عنوان alternateName (پایین) و موجودیت‌ها به عنوان
-     *     مشخصه «مرتبط با» — هر دو کاربرد نادرست آن ویژگی‌ها.
+     * Discover برای محصولات پیش‌فرض خاموش است (ماژول «Google Discover»،
+     * فیلتر hook_modern_seo_post_types). فقط اگر سایت آن را برای محصول
+     * روشن کند: عنوان Discover → alternateName (پایین) و موضوعات → مشخصه
+     * «مرتبط با».
      */
-    $modern_seo = function_exists( 'hodima_media_discover_enabled' )
-        ? hodima_media_discover_enabled( 'post', (int) $product_id )
+    $modern_seo = function_exists( 'hodima_seo_discover_enabled' )
+        ? hodima_seo_discover_enabled( 'post', (int) $product_id )
         : ( function_exists( 'hook_modern_seo_enabled' ) && hook_modern_seo_enabled( 'post', (int) $product_id ) );
 
-    if ( $modern_seo && ! empty( $media_data['key_entities'] ) ) {
-        $entities = explode( ',', $media_data['key_entities'] );
+    $discover = function_exists( 'hodima_seo_discover_data' ) ? hodima_seo_discover_data( (int) $product_id ) : [
+        'title'    => (string) ( $media_data['discover_title'] ?? '' ),
+        'entities' => array_filter( array_map( 'trim', explode( ',', (string) ( $media_data['key_entities'] ?? '' ) ) ) ),
+    ];
+
+    if ( $modern_seo && ! empty( $discover['entities'] ) ) {
+        $entities = $discover['entities'];
         foreach ( $entities as $entity ) {
             $entity = trim( $entity );
             if ( ! empty( $entity ) ) {
@@ -580,8 +585,8 @@ function hook_generate_custom_product_schema() {
         $schema['subjectOf'] = [ '@id' => $video_node['@id'] ];
     }
 
-    if ( $modern_seo && ! empty( $media_data['discover_title'] ) ) {
-        $schema['alternateName'] = sanitize_text_field( $media_data['discover_title'] );
+    if ( $modern_seo && '' !== $discover['title'] ) {
+        $schema['alternateName'] = sanitize_text_field( $discover['title'] );
     }
 
     if ( $_product->get_review_count() > 0 ) {

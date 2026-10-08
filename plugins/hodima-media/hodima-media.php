@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Hodima Media
  * Plugin URI:        https://hodima.com
- * Description:       رسانه و محتوای تعاملی هدیما: استوری، ویدیو با شمارش بازدید، اسلایدر، سیستم رسانه (ویدیو، پادکست، FAQ، Google Discover)، اعلان‌ها، باکس‌های بازشونده و جدول داینامیک.
- * Version:           1.4.0
+ * Description:       رسانه و محتوای تعاملی هدیما: استوری، ویدیو با شمارش بازدید، اسلایدر، سیستم رسانه (ویدیو، پادکست، FAQ)، اعلان‌ها، باکس‌های بازشونده و جدول داینامیک.
+ * Version:           1.5.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_MEDIA_VERSION = '1.4.0';
+const HODIMA_MEDIA_VERSION = '1.5.0';
 define( 'HODIMA_MEDIA_FILE', __FILE__ );
 define( 'HODIMA_MEDIA_DIR', __DIR__ );
 define( 'HODIMA_MEDIA_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -70,9 +70,9 @@ function hodima_media_modules(): array {
 		],
 		'media-system' => [
 			'title'       => 'سیستم رسانه',
-			'description' => 'ویدیو، پادکست، FAQ و متن معرفی برای محصولات، دسته‌ها و نوشته‌ها (شورت‌کدهای hook_*)، و بخش Google Discover نوشته‌ها.',
+			'description' => 'ویدیو، پادکست، FAQ و متن معرفی برای محصولات، دسته‌ها و نوشته‌ها (شورت‌کدهای hook_*). Google Discover ماژول جدای افزونه سئو است.',
 			'files'       => [ 'media-system/media-init.php' ],
-			'warning'     => 'ویدیو، پادکست، سوالات متداول و متن معرفی از صفحه‌های محصول، دسته و نوشته برداشته می‌شوند و تنظیمات Discover نوشته‌ها هم اثری نخواهند داشت (اطلاعات پاک نمی‌شود).',
+			'warning'     => 'ویدیو، پادکست، سوالات متداول و متن معرفی از صفحه‌های محصول، دسته و نوشته برداشته می‌شوند (اطلاعات پاک نمی‌شود).',
 			'icon'        => 'dashicons-format-video',
 		],
 		'dynamic-table' => [

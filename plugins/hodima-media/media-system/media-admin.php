@@ -5,12 +5,12 @@
  *
  * نسخه ۴ (بازطراحی):
  *   - هر فیلد برچسب واقعی دارد (قبلا فقط متن راهنمای داخل کادر که با تایپ محو می‌شد).
- *   - انتخاب ویدیو، صوت، کاور و تصویر Discover از کتابخانه رسانه؛ مدت و
+ *   - انتخاب ویدیو، صوت و کاور از کتابخانه رسانه؛ مدت و
  *     نسبت تصویر از خود فایل خوانده می‌شود.
  *   - بررسی زنده: سرویس لینک ویدیو (آپارات/یوتیوب/فایل)، قالب مدت، فصل‌ها.
  *     مدت نامعتبر دیگر بی‌صدا پاک نمی‌شود: مقدار قبلی می‌ماند و پیام داده می‌شود.
  *   - جابه‌جایی ترتیب سوالات FAQ؛ حذف بدون پنجره confirm مرورگر.
- *   - بخش Discover (نوشته و برگه) با فهرست بررسی.
+ *   - بخش Discover از نسخه 1.5.0 کادر جدای ماژول «Google Discover» افزونه سئو است.
  *   - جاوااسکریپت خالص (بدون jQuery)؛ CSS فقط زیر .hodima-mb (بدون :root).
  */
 
@@ -63,9 +63,7 @@ function hodima_media_admin_assets(): void {
 	] );
 
 	wp_add_inline_script( 'hodima-media-admin', 'window.hodimaMediaAdmin = ' . wp_json_encode( [
-		'minWidth'  => HODIMA_MEDIA_DISCOVER_MIN_WIDTH,
-		'clickbait' => HODIMA_MEDIA_CLICKBAIT,
-		'ratios'    => array_values( array_diff( array_keys( HODIMA_MEDIA_RATIOS ), [ 'auto' ] ) ),
+		'ratios' => array_values( array_diff( array_keys( HODIMA_MEDIA_RATIOS ), [ 'auto' ] ) ),
 	], JSON_UNESCAPED_UNICODE ) . ';', 'before' );
 }
 
@@ -174,39 +172,15 @@ function hodima_media_faq_row( int|string $index, string $question, string $answ
 	);
 }
 
-/** فهرست بررسی Discover. */
-function hodima_media_render_discover_checks( WP_Post $post ): void {
-
-	$icons = [ 'ok' => 'dashicons-yes-alt', 'warn' => 'dashicons-warning', 'error' => 'dashicons-dismiss' ];
-
-	echo '<ul class="hodima-mb__checks" data-hodima-checks>';
-	foreach ( hodima_media_discover_checks( $post ) as $check ) {
-		printf(
-			'<li class="is-%1$s" data-hodima-check="%2$s"><span class="dashicons %3$s" aria-hidden="true"></span><strong>%4$s:</strong> <span data-hodima-check-text>%5$s</span></li>',
-			esc_attr( $check['status'] ),
-			esc_attr( $check['key'] ),
-			esc_attr( $icons[ $check['status'] ] ),
-			esc_html( $check['label'] ),
-			esc_html( $check['detail'] )
-		);
-	}
-	echo '</ul>';
-}
-
 function hodima_media_render_fields( array $data, string $context, int $object_id ): void {
 
-	$context  = hodima_media_context( $context );
-	$discover = hodima_media_discover_enabled( $context, $object_id );
-	$post     = 'post' === $context ? get_post( $object_id ) : null;
+	$context = hodima_media_context( $context );
 
 	$video_set = '' !== (string) ( $data['video_url'] ?? '' );
 	$voice_set = '' !== (string) ( $data['voice_url'] ?? '' );
 	$faq       = array_values( (array) ( $data['faq'] ?? [] ) );
 	$cover_id  = (int) ( $data['video_cover_id'] ?? 0 );
 	$cover     = (string) ( $data['video_cover'] ?? '' );
-
-	$discover_id  = (int) ( $data['discover_image_id'] ?? 0 );
-	$discover_src = $discover_id ? wp_get_attachment_image_src( $discover_id, 'medium' ) : false;
 	?>
 	<div class="hodima-mb" data-hodima-mb>
 		<?php wp_nonce_field( "hodima_media_save_{$context}_{$object_id}", 'hodima_media_nonce' ); ?>
@@ -220,47 +194,6 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 				</span>
 			</label>
 		</div>
-
-		<?php if ( $discover && $post instanceof WP_Post ) : ?>
-			<?php hodima_media_section_open( 'discover', 'dashicons-visibility', 'Google Discover', '' !== (string) ( $data['discover_title'] ?? '' ) || $discover_id > 0, true ); ?>
-				<input type="hidden" name="hodima_media[discover_present]" value="1">
-				<p class="hodima-mb__intro">Discover فید پیشنهادی گوگل در موبایل است. این بخش به کلید بالا وابسته نیست.</p>
-
-				<?php hodima_media_render_discover_checks( $post ); ?>
-
-				<?php
-				hodima_media_field_text(
-					'discover_title',
-					'عنوان Discover (اختیاری)',
-					(string) ( $data['discover_title'] ?? '' ),
-					'فقط در کارت Discover و اشتراک‌گذاری (og:title) استفاده می‌شود؛ عنوان صفحه و h1 عوض نمی‌شوند. جذاب ولی صادق: اغراق و «طعمه کلیک» در Discover جریمه دارد. خالی = عنوان نوشته.',
-					[ 'maxlength' => 200, 'data-hodima-discover-title' => '', 'data-hodima-fallback' => $post->post_title ]
-				);
-				?>
-
-				<div class="hodima-mb__field" data-hodima-picker="image" data-hodima-discover-image>
-					<span class="hodima-mb__label" id="hodima-mb-discover-image-label">تصویر Discover (اختیاری)</span>
-					<input type="hidden" name="hodima_media[discover_image_id]" value="<?php echo $discover_id ?: ''; ?>" data-hodima-id>
-					<div class="hodima-mb__row">
-						<button type="button" class="button" data-hodima-pick aria-describedby="hodima-mb-discover-image-label"><span class="dashicons dashicons-format-image" aria-hidden="true"></span> انتخاب تصویر</button>
-						<button type="button" class="button-link hodima-mb__clear" data-hodima-clear <?php echo $discover_id ? '' : 'hidden'; ?>>حذف (تصویر شاخص استفاده شود)</button>
-					</div>
-					<img class="hodima-mb__preview" src="<?php echo esc_url( is_array( $discover_src ) ? (string) $discover_src[0] : '' ); ?>" alt="" data-hodima-preview <?php echo is_array( $discover_src ) ? '' : 'hidden'; ?>>
-					<p class="hodima-mb__status" data-hodima-status aria-live="polite"></p>
-					<p class="hodima-mb__help">حداقل <strong>۱۲۰۰ پیکسل عرض</strong>، ترجیحا افقی ۱۶:۹؛ بدون لوگو و بدون متن زیاد روی تصویر. خالی = تصویر شاخص. سه برش ۱۶:۹، ۴:۳ و ۱:۱ هنگام ذخیره خودکار ساخته می‌شود.</p>
-				</div>
-
-				<?php
-				hodima_media_field_textarea(
-					'key_entities',
-					'موضوعات اصلی (اختیاری)',
-					implode( "\n", hodima_media_parse_entities( $data['key_entities'] ?? '' ) ),
-					'هر موضوع در یک خط (یا جدا با ویرگول). به گوگل کمک می‌کند بداند نوشته درباره چیست و به علاقه‌مندان همان موضوع در Discover نشانش دهد.',
-					[ 'rows' => 3, 'placeholder' => "کش مو\nکلیپس فلزی" ]
-				);
-				?>
-			<?php hodima_media_section_close(); ?>
-		<?php endif; ?>
 
 		<?php hodima_media_section_open( 'intro', 'dashicons-text-page', 'متن معرفی', '' !== trim( (string) ( $data['content'] ?? '' ) ), false ); ?>
 			<?php if ( hodima_media_content_disabled( $context, $object_id ) ) : ?>
@@ -460,14 +393,6 @@ function hodima_media_save_fields( int $object_id, string $context ): void {
 	// همیشه yes/no (نه حذف): نشانه اینکه این شیء با نسخه ۴ ذخیره شده و
 	// کلیدهای بی‌پیشوند نسخه خیلی قدیمی دیگر خوانده نشوند.
 	update_metadata( $context, $object_id, $prefix . 'enabled', 'yes' === $get( 'enabled' ) ? 'yes' : 'no' );
-
-	// Discover: فقط اگر بخش در فرم بوده (محصول و دسته ندارند؛ داده قبلی‌شان نمی‌ماند خالی)
-	if ( '1' === $get( 'discover_present' ) ) {
-		$write( 'discover_title', sanitize_text_field( $get( 'discover_title' ) ) );
-		$write( 'key_entities', implode( ', ', hodima_media_parse_entities( sanitize_textarea_field( $get( 'key_entities' ) ) ) ) );
-		$image_id = absint( $get( 'discover_image_id' ) );
-		$write( 'discover_image_id', $image_id && wp_attachment_is_image( $image_id ) ? $image_id : 0 );
-	}
 
 	if ( '1' !== $get( 'content_locked' ) && array_key_exists( 'content', $in ) ) {
 		$write( 'content', wp_kses_post( $get( 'content' ) ) );

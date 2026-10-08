@@ -3,43 +3,17 @@
  * Media System — JSON-LD
  * Path: media-system/media-schema.php
  *
- * ویدیو (media-video.php)، صوت، FAQ و غنی‌سازی Discover برگه‌ها به گراف
- * واحد صفحه (hodima_schema_add در hodima-core) اضافه می‌شوند.
+ * ویدیو (media-video.php)، صوت و FAQ به گراف واحد صفحه (hodima_schema_add
+ * در hodima-core) اضافه می‌شوند.
+ *
+ * Discover (عنوان و موضوعات برگه‌ها) از نسخه 1.5.0 در ماژول «Google
+ * Discover» افزونه سئو است و روی همان نود «#webpage» اضافه می‌شود؛ ادغام
+ * Yoast (wpseo_schema_article) هم برداشته شد (سایت Yoast ندارد).
  */
 
 declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
-
-/* =====================================================================
- * ادغام با Yoast (فقط اگر نصب باشد؛ در غیر این صورت بی‌اثر)
- * ===================================================================== */
-
-/** عنوان Discover و موجودیت‌ها برای یک نود Article/WebPage. */
-function hodima_media_article_enrichment( array $entity, array $data ): array {
-
-	if ( ! empty( $data['discover_title'] ) ) {
-		// عنوان جایگزین مقاله؛ headline همان عنوان اصلی صفحه می‌ماند
-		$entity['alternativeHeadline'] = sanitize_text_field( (string) $data['discover_title'] );
-	}
-
-	$about = array_map(
-		static fn( string $name ): array => [ '@type' => 'Thing', 'name' => $name ],
-		hodima_media_parse_entities( $data['key_entities'] ?? '' )
-	);
-
-	if ( $about ) {
-		$entity['about'] = $about;
-	}
-
-	return $entity;
-}
-
-add_filter( 'wpseo_schema_article', static function ( $entity, $context = null ) {
-	$id   = isset( $context->id ) ? (int) $context->id : (int) get_queried_object_id();
-	$data = $id ? hodima_media_get_data( $id, 'post' ) : [];
-	return ( 'yes' === ( $data['enabled'] ?? '' ) ) ? hodima_media_article_enrichment( (array) $entity, $data ) : $entity;
-}, 10, 2 );
 
 /* =====================================================================
  * ساخت نودها
@@ -48,7 +22,7 @@ add_filter( 'wpseo_schema_article', static function ( $entity, $context = null )
 /**
  * یک نوع نود را می‌سازد و به گراف می‌دهد (هر نوع برای هر شیء یک بار).
  *
- * @param string $type video | audio | faq | seo_discover
+ * @param string $type video | audio | faq
  */
 function hodima_media_print_schema( string $type, array $data, int $object_id, string $context ): void {
 
@@ -70,7 +44,6 @@ function hodima_media_print_schema( string $type, array $data, int $object_id, s
 
 	// esc_url_raw (نه esc_url که «&» را «&#038;» می‌کند و آدرس را در JSON خراب می‌کند)
 	$base    = esc_url_raw( $page_url );
-	$webpage = [ '@id' => $base . '#webpage' ];
 	$title   = hodima_media_object_title( $object_id, $context );
 	$brand   = (string) ( get_option( 'hodima_brand_name', '' ) ?: get_bloginfo( 'name' ) );
 
@@ -78,7 +51,6 @@ function hodima_media_print_schema( string $type, array $data, int $object_id, s
 		'video'        => hodima_media_video_node( $object_id, $context ),
 		'audio'        => hodima_media_audio_node( $data, $object_id, $context, $base, $title, $brand ),
 		'faq'          => hodima_media_faq_node( $data, $base ),
-		'seo_discover' => hodima_media_discover_node( $data, $context, $base, $title ),
 		default        => null,
 	};
 
@@ -173,29 +145,6 @@ function hodima_media_faq_node( array $data, string $base ): ?array {
 	] : null;
 }
 
-/** غنی‌سازی Discover برای برگه (نوشته را blog-schema.php پوشش می‌دهد)، یا null. */
-function hodima_media_discover_node( array $data, string $context, string $base, string $title ): ?array {
-
-	if ( empty( $data['discover_title'] ) && empty( $data['key_entities'] ) ) {
-		return null;
-	}
-
-	// اگر Yoast نصب شود، همان فیلتر wpseo_schema_article بالا کار را انجام می‌دهد
-	if ( 'post' === $context && defined( 'WPSEO_VERSION' ) ) {
-		return null;
-	}
-
-	$webpage = [ '@id' => $base . '#webpage' ];
-
-	return hodima_media_article_enrichment( [
-		'@type'            => 'post' === $context ? 'Article' : 'WebPage',
-		'@id'              => $base . '#media-article',
-		'headline'         => $title,
-		'isPartOf'         => $webpage,
-		'mainEntityOfPage' => $webpage,
-	], $data );
-}
-
 /* =====================================================================
  * تزریق خودکار
  * ===================================================================== */
@@ -225,16 +174,7 @@ function hodima_media_auto_inject_schema(): void {
 	}
 
 	$data       = hodima_media_get_data( $object_id, $context );
-	$post_type  = 'post' === $context ? (string) get_post_type( $object_id ) : '';
-	$is_product = 'product' === $post_type;
-
-	/*
-	 * Discover برگه‌ها (عنوان Discover و موضوعات) — مثل نوشته‌ها به کلید
-	 * «نمایش رسانه» وابسته نیست. نوشته‌ها را blog-schema.php پوشش می‌دهد.
-	 */
-	if ( ! $is_product && 'post' !== $post_type && hodima_media_discover_enabled( $context, $object_id ) ) {
-		hodima_media_print_schema( 'seo_discover', $data, $object_id, $context );
-	}
+	$is_product = 'post' === $context && 'product' === get_post_type( $object_id );
 
 	if ( 'yes' !== ( $data['enabled'] ?? '' ) || ! hodima_media_schema_page_shows_media( $object_id, $context ) ) {
 		return;
