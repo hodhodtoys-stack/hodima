@@ -3,7 +3,7 @@
 		"declaration-no-important": 9
 	},
 	"hodima/assets/css/cart-page.css": {
-		"declaration-no-important": 19
+		"declaration-no-important": 7
 	},
 	"hodima/assets/css/footer.css": {
 		"declaration-no-important": 1,
@@ -27,7 +27,7 @@
 	"hodima/assets/css/single-product.css": {
 		"csstools/use-logical": 3,
 		"declaration-block-no-redundant-longhand-properties": 10,
-		"declaration-no-important": 142,
+		"declaration-no-important": 137,
 		"declaration-property-value-keyword-no-deprecated": 1,
 		"no-descending-specificity": 12,
 		"property-no-deprecated": 1,

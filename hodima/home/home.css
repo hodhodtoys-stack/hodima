@@ -170,7 +170,7 @@
 	}
 
 	&:focus-visible {
-		outline: 2px solid var(--arian-primary, #FF9800);
+		outline: 2px solid var(--arian-primary, #25316a);
 		outline-offset: 3px;
 		border-radius: var(--hodima-radius-md);
 	}

@@ -27,7 +27,9 @@
 	--hs-warning: #b26a00;
 	--hs-success: #1a7f37;
 	--hs-radius: 0.875rem;
+	--hs-radius-md: 0.75rem; /* کارت‌های داخل قاب: کلید، زیرگروه، کادر تصویر، پشتیبان */
 	--hs-radius-sm: 0.5rem;
+	--hs-control-h: 2.5rem; /* ارتفاع یکسان همه کنترل‌ها: کادر، فهرست، کد رنگ، مربع رنگ، دکمه (3.0.1) */
 	--hs-shadow: 0 0.5rem 1.5rem color-mix(in srgb, var(--hs-primary) 10%, transparent);
 	--hs-shadow-sm: 0 1px 2px color-mix(in srgb, var(--hs-primary) 8%, transparent);
 	--hs-ring: 0 0 0 3px color-mix(in srgb, var(--hs-secondary) 28%, transparent);
@@ -338,7 +340,7 @@
 		place-items: center;
 		inline-size: 2.75rem;
 		block-size: 2.75rem;
-		border-radius: 0.75rem;
+		border-radius: var(--hs-radius-md);
 		background: var(--hs-surface-tint);
 		color: var(--hs-primary);
 		font-size: 1.375rem;
@@ -486,7 +488,7 @@
 	& textarea {
 		inline-size: 100%;
 		max-inline-size: none;
-		min-block-size: 2.5rem;
+		min-block-size: var(--hs-control-h);
 		margin: 0;
 		padding: 0.4375rem 0.75rem;
 		border: 1px solid var(--hs-border-strong);
@@ -526,9 +528,7 @@
 		min-block-size: 6rem;
 	}
 
-	& input[type="number"] {
-		max-inline-size: 9rem;
-	}
+	/* عدد هم تمام‌عرض ستون، مثل بقیه کادرها (تا 3.0.0 حداکثر ۹rem و ناهم‌تراز با کادر کناری) */
 }
 
 .hodima-field__label {
@@ -614,17 +614,13 @@
 		block-size: 100%;
 		padding: 0.875rem 1rem;
 		border: 1px solid var(--hs-border);
-		border-radius: 0.75rem;
+		border-radius: var(--hs-radius-md);
 		background: var(--hs-surface-soft);
 		transition: border-color 0.2s ease, background-color 0.2s ease;
 
+		/* رنگ کارت با روشن/خاموش عوض نمی‌شود (تا 3.0.0 می‌شد و کارت‌های کنار هم دو رنگ بودند)؛ وضعیت فقط با خود کلید */
 		&:hover {
 			border-color: var(--hs-border-strong);
-		}
-
-		&:has(input:checked) {
-			border-color: color-mix(in srgb, var(--hs-primary) 35%, var(--hs-border));
-			background: var(--hs-surface-tint);
 		}
 
 		&:has(input:focus-visible) {
@@ -651,12 +647,18 @@
 	}
 }
 
+/* کلید بیرون از قاب‌های «چند کلید کنار هم» همیشه یک ردیف کامل (تا 3.0.0 گاهی نیم و گاهی تمام‌عرض) */
+.hodima-panel:not(.hodima-panel--toggles) .hodima-panel__fields > .hodima-field--toggle {
+	grid-column: 1 / -1;
+}
+
 /* ── انتخاب تصویر ──────────────────────────────────────────────── */
+/* کادر تصویر یکسان همه‌جا (لوگو، نماد اعتماد): پیش‌نمایش بالا، دکمه‌ها زیرش (3.0.1) */
 .hodima-media {
 	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 1rem;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.625rem;
 }
 
 .hodima-media__preview {
@@ -664,13 +666,13 @@
 	place-items: center;
 	/* ردیف و ستون با اندازه قطعی تا max-block-size: 100% تصویر کار کند */
 	grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-	inline-size: 12rem;
+	inline-size: min(100%, 18rem);
 	block-size: 6.5rem;
 	margin: 0;
 	padding: 0.5rem;
 	overflow: hidden;
 	border: 1px solid var(--hs-border);
-	border-radius: 0.75rem;
+	border-radius: var(--hs-radius-md);
 	/* شطرنجی برای دیده شدن لوگوی سفید یا شفاف */
 	background: conic-gradient(var(--hs-surface-soft) 25%, #ffffff 0 50%, var(--hs-surface-soft) 0 75%, #ffffff 0) 0 0 / 1rem 1rem;
 
@@ -693,7 +695,6 @@
 
 	/* لوگو: پیش‌نمایش روی رنگ هدر سایت؛ «لوگو سفید» مثل header.css */
 	&.hodima-media__preview--header {
-		inline-size: min(100%, 18rem);
 		border: 0;
 		background: linear-gradient(135deg, var(--hs-primary) 0%, var(--hs-secondary) 100%);
 
@@ -730,7 +731,10 @@
 }
 
 .hodima-settings :is(.hodima-media__buttons, .hodima-home__toolbar, .hodima-backup) .button {
-	min-block-size: 2.25rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-block-size: var(--hs-control-h);
 	padding-inline: 0.875rem;
 	border: 1px solid var(--hs-border-strong);
 	border-radius: var(--hs-radius-sm);
@@ -796,7 +800,7 @@
 		gap: 0.875rem;
 		padding: 1rem;
 		border: 1px solid var(--hs-border);
-		border-radius: 0.75rem;
+		border-radius: var(--hs-radius-md);
 		background: var(--hs-surface-soft);
 	}
 
@@ -822,14 +826,11 @@
 	}
 
 	& .hodima-media {
-		flex-direction: column;
 		align-items: stretch;
-		gap: 0.625rem;
 	}
 
 	& .hodima-media__preview {
 		inline-size: 100%;
-		block-size: 7rem;
 
 		&:not(.is-empty) {
 			background-color: #ffffff;
@@ -865,7 +866,7 @@
 
 	& .hodima-panel__items {
 		border: 1px solid var(--hs-border);
-		border-radius: 0.75rem;
+		border-radius: var(--hs-radius-md);
 		overflow: hidden;
 	}
 
@@ -911,8 +912,10 @@
 		white-space: normal;
 	}
 
+	/* ردیف جدول: آیکون/فایل و دکمه‌ها کنار هم */
 	& .hodima-media {
-		flex-wrap: nowrap;
+		flex-flow: row nowrap;
+		align-items: center;
 		gap: 0.75rem;
 	}
 
@@ -949,91 +952,81 @@
 	}
 }
 
-/* ── پالت رنگ ─────────────────────────────────────────────────── */
+/* ── رنگ (3.0.1) ───────────────────────────────────────────────
+ * یک کنترل برای همه رنگ‌ها: [مربع رنگ | کد رنگ] یا [مربع رنگ | فهرست پالت]،
+ * هم‌ارتفاع بقیه کادرها. تا 3.0.0 سه شکل بود: کارت با بلوک رنگ (پالت، رنگ متن)
+ * و دایره کنار فهرست (رنگ لینک‌ها و تیترها).
+ */
 .hodima-panel--swatches .hodima-panel__fields {
-	grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
-	gap: 0.875rem;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
 }
 
-.hodima-field--color {
+.hodima-color {
+	display: flex;
+	align-items: stretch;
 	gap: 0.5rem;
-	padding: 0.625rem;
-	border: 1px solid var(--hs-border);
-	border-radius: 0.75rem;
-	background: var(--hs-surface);
-}
+	min-inline-size: 0;
 
-.hodima-swatch {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	align-items: center;
-	gap: 0.5rem 0.375rem;
-	cursor: pointer;
-
-	& input[type="color"] {
-		grid-column: 1 / -1;
-		inline-size: 100%;
-		block-size: 2.5rem; /* تا 2.9.9 بلوک ۷۲px؛ خواسته کاربر: کوچک‌تر */
-		margin: 0;
-		padding: 0;
-		border: 1px solid rgb(0 0 0 / 0.08);
-		border-radius: var(--hs-radius-sm);
-		background: none;
-		cursor: pointer;
-		appearance: none;
-
-		&::-webkit-color-swatch-wrapper {
-			padding: 0;
-		}
-
-		&::-webkit-color-swatch {
-			border: 0;
-			border-radius: calc(var(--hs-radius-sm) - 1px);
-		}
-
-		&::-moz-color-swatch {
-			border: 0;
-			border-radius: calc(var(--hs-radius-sm) - 1px);
-		}
-
-		&:focus-visible {
-			outline: 2px solid var(--hs-secondary);
-			outline-offset: 2px;
-		}
+	& select,
+	& .hodima-color__hex {
+		flex: 1 1 auto;
+		min-inline-size: 0;
 	}
 }
 
-.hodima-swatch__name {
-	font-weight: 700;
-	font-size: 0.8125rem;
-	color: var(--hs-primary);
+.hodima-color__swatch {
+	flex: 0 0 var(--hs-control-h);
+	inline-size: var(--hs-control-h);
+	block-size: var(--hs-control-h);
+	margin: 0;
+	padding: 0;
+	border: 1px solid var(--hs-border-strong);
+	border-radius: var(--hs-radius-sm);
+	/* حاشیه سفید داخلی یکسان برای مربع input رنگ و مربع کنار فهرست */
+	box-shadow: inset 0 0 0 3px var(--hs-surface);
 }
 
-/* کد رنگ تایپی زیر هر رنگ (#25316a) */
-.hodima-swatch__hex {
-	inline-size: 100%;
-	min-block-size: 2rem;
-	padding: 0.125rem 0.5rem;
-	border: 1px solid var(--hs-border);
-	border-radius: var(--hs-radius-sm);
-	background: var(--hs-surface-soft);
-	color: var(--hs-text);
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	font-size: 0.8125rem;
-	text-align: start; /* dir="ltr" ← چپ */
+input.hodima-color__swatch {
+	background: var(--hs-surface);
+	box-shadow: none;
+	cursor: pointer;
+	appearance: none;
+
+	&::-webkit-color-swatch-wrapper {
+		padding: 3px;
+	}
+
+	&::-webkit-color-swatch {
+		border: 0;
+		border-radius: calc(var(--hs-radius-sm) - 3px);
+	}
+
+	&::-moz-color-swatch {
+		border: 0;
+		border-radius: calc(var(--hs-radius-sm) - 3px);
+	}
+
+	&:hover {
+		border-color: var(--hs-secondary);
+	}
 
 	&:focus-visible {
 		border-color: var(--hs-secondary);
-		outline: 0;
 		box-shadow: var(--hs-ring);
+		outline: none;
 	}
+}
+
+.hodima-field .hodima-color__hex {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	text-align: start; /* dir="ltr" ← چپ */
 
 	&[aria-invalid] {
 		border-color: var(--hs-danger);
 	}
 }
 
-.hodima-swatch__reset {
+.hodima-color__reset {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.25rem;
@@ -1085,7 +1078,7 @@
 
 	overflow: hidden;
 	border: 1px solid var(--hs-border);
-	border-radius: 0.75rem;
+	border-radius: var(--hs-radius-md);
 	background: color-mix(in srgb, var(--pv-third) 16%, #ffffff);
 	user-select: none;
 }
@@ -1312,7 +1305,7 @@
 .hodima-home__item {
 	margin: 0;
 	border: 1px solid var(--hs-border);
-	border-radius: 0.75rem;
+	border-radius: var(--hs-radius-md);
 	background: var(--hs-surface);
 	box-shadow: var(--hs-shadow-sm);
 	counter-increment: hodima-home;
@@ -1517,7 +1510,7 @@
 	margin: 0;
 	padding: 1rem;
 	border: 1px dashed var(--hs-border);
-	border-radius: 0.75rem;
+	border-radius: var(--hs-radius-md);
 	color: var(--hs-muted);
 	text-align: center;
 
@@ -1537,7 +1530,7 @@
 	& select {
 		inline-size: auto;
 		min-inline-size: 12rem;
-		min-block-size: 2.25rem;
+		min-block-size: var(--hs-control-h);
 		padding-block: 0.25rem;
 		padding-inline-end: 2rem;
 		border: 1px solid var(--hs-border-strong);
@@ -1603,7 +1596,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.375rem;
-		min-block-size: 2.25rem;
+		min-block-size: var(--hs-control-h);
 		padding-inline: 0.875rem;
 		border: 1px solid var(--hs-border-strong);
 		border-radius: var(--hs-radius-sm);
@@ -1632,7 +1625,7 @@
 		max-inline-size: 60rem;
 		padding: 1.25rem 1.5rem;
 		border: 1px solid var(--hs-border);
-		border-radius: 0.75rem;
+		border-radius: var(--hs-radius-md);
 		background: var(--hodima-bg-light, #f6f8fc);
 		transition: max-inline-size 0.2s ease;
 	}
@@ -1690,20 +1683,21 @@
 
 /* جدول تیترها: شش ستون «تیتر | دسکتاپ | موبایل | وزن | فاصله خطوط | رنگ» */
 .hodima-panel-type_headings {
-	--row-cols: 4rem repeat(2, minmax(5rem, 7rem)) minmax(9rem, 1fr) minmax(5rem, 7rem) minmax(8rem, 1fr);
+	--row-cols: 4rem repeat(2, minmax(5rem, 7rem)) minmax(8rem, 1fr) minmax(5rem, 7rem) minmax(11rem, 1.25fr); /* رنگ: مربع رنگ + فهرست */
 
 	& .hodima-group__title {
 		font-size: 1rem;
 	}
 
 	@media (width <= 1279px) {
-		--row-cols: 3rem repeat(2, minmax(4.5rem, 6rem)) minmax(8rem, 1fr) minmax(4.5rem, 6rem) minmax(7rem, 1fr);
+		--row-cols: 3rem repeat(2, minmax(4.5rem, 6rem)) minmax(7rem, 1fr) minmax(4.5rem, 6rem) minmax(10.5rem, 1.25fr);
 	}
 
 	/* موبایل: برچسب هر فیلد دیده شود (ستون‌ها پنهان‌اند)، دو فیلد در هر ردیف */
 	@media (width <= 782px) {
 		& .hodima-group {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
+			align-items: end; /* برچسب دوخطی کنار یک‌خطی: کادرها هم‌تراز بمانند */
 		}
 
 		& .hodima-group__title {
@@ -1750,6 +1744,7 @@
 	align-items: center;
 	gap: 0.5rem;
 	min-inline-size: 0;
+	min-block-size: var(--hs-control-h);
 	padding: 0.375rem 0.75rem;
 	border: 1px solid var(--hs-border);
 	border-radius: var(--hs-radius-sm);
@@ -1861,7 +1856,7 @@
 		gap: 0.625rem;
 		padding: 1rem;
 		border: 1px solid var(--hs-border);
-		border-radius: 0.75rem;
+		border-radius: var(--hs-radius-md);
 		background: var(--hs-surface-soft);
 	}
 
@@ -1880,6 +1875,31 @@
 		align-items: center;
 		gap: 0.375rem;
 	}
+}
+
+/* انتخاب فایل هم‌شکل بقیه دکمه‌ها؛ input واقعی فقط از دید پنهان (required و صفحه‌خوان کار می‌کنند) */
+.hodima-file {
+	position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.625rem;
+}
+
+.hodima-file__input {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	opacity: 0;
+
+	&:focus-visible + .button {
+		box-shadow: var(--hs-ring);
+	}
+}
+
+.hodima-file__name {
+	color: var(--hs-muted);
+	font-size: 0.8125rem;
 }
 
 /* ── دامنه‌های پیدا شده (تب دامنه ویدئو) ─────────────────────────── */
@@ -1924,27 +1944,6 @@
 	margin: 0;
 	color: var(--hs-muted);
 	font-size: 0.75rem;
-}
-
-/* ── انتخاب رنگ از پالت: دایره رنگ کنار فهرست (رنگ لینک‌ها، رنگ تیترها) ── */
-.hodima-select-color {
-	display: flex;
-	align-items: center;
-	gap: 0.375rem;
-	min-inline-size: 0;
-
-	& select {
-		flex: 1 1 auto;
-		min-inline-size: 0;
-	}
-}
-
-.hodima-select-color__dot {
-	flex-shrink: 0;
-	inline-size: 1.25rem;
-	block-size: 1.25rem;
-	border: 1px solid rgb(0 0 0 / 0.15);
-	border-radius: 50%;
 }
 
 /* ── قاب جمع‌شونده (پیش‌نمایش تایپوگرافی؛ <details>) ── */

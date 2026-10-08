@@ -646,6 +646,16 @@
 
 	/** بازگردانی پشتیبان: تأیید پیش از جایگزینی همه تنظیمات. */
 	const initBackup = () => {
+		// نام فایل انتخاب‌شده کنار دکمه «انتخاب فایل»
+		document.querySelectorAll('[data-hodima-file]').forEach((input) => {
+			const name = input.parentElement?.querySelector('[data-hodima-file-name]');
+			input.addEventListener('change', () => {
+				if (name) {
+					name.textContent = input.files?.[0]?.name ?? 'فایلی انتخاب نشده';
+				}
+			});
+		});
+
 		document.querySelector('[data-hodima-import-form]')?.addEventListener('submit', (event) => {
 			// eslint-disable-next-line no-alert
 			if (!window.confirm('همه تنظیمات فعلی قالب با فایل پشتیبان جایگزین شود؟')) {

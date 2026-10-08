@@ -10,11 +10,12 @@
     --arian-btn-bg: var(--hodima-primary, #25316a);
     --arian-btn-bg-hover: var(--hodima-secondary, #607bbd);
     --arian-btn-color: #ffffff;
-    --arian-btn-radius: 999px;
-    --arian-btn-height: 40px;
+    /* هم‌اندازه و هم‌شکل دکمه‌های قالب (--hodima-control-*، گوشه md؛ قالب 3.0.1)؛ تا 1.3.3 قرص ۴۰ (موبایل ۳۸) پیکسلی */
+    --arian-btn-radius: var(--hodima-radius-md, 8px);
+    --arian-btn-height: var(--hodima-control-h, 44px);
     --arian-btn-padding-x: 18px;
-    --arian-btn-font-size: 14px;
-    --arian-btn-font-weight: 600;
+    --arian-btn-font-size: var(--hodima-control-font, 15px);
+    --arian-btn-font-weight: 700;
 
     --arian-transition-duration: 0.6s;
     --arian-transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -149,8 +150,6 @@
 @media (max-width: 767px) {
     .arian-expandable-box {
         --arian-fade-height: 64px;
-        --arian-btn-font-size: 13px;
-        --arian-btn-height: 38px;
         --arian-btn-padding-x: 16px;
 
         .arian-expandable-inner table:not(.hodima-dynamic-table):not(.hodima-specs-table) {

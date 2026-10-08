@@ -7,6 +7,11 @@
  * استایل واقعی هیچ‌وقت کش نمی‌شد.
  *
  * نوسازی قالب، مرحله ۶: nesting، خصوصیات منطقی و توکن‌ها؛ ظاهر بدون تغییر.
+ *
+ * 3.0.1 (یکدست‌سازی): قاب‌ها هم‌شکل بقیه قاب‌های سایت (حاشیه border-light،
+ * گوشه xl)؛ «جمع سبد» بی رنگ سبز/حاشیه خاکستری ۲ پیکسلی بیرون از پالت؛ دکمه
+ * «تسویه حساب» دکمه برند (قبلا گرادیان نارنجی)؛ «جمع سبد» و «پیشنهادها» زیر هم
+ * (شناور ۴۸٪ ووکامرس در ستون باریک روی هم می‌افتادند)؛ کادر کد تخفیف پهن‌تر.
  * ========================================================================= */
 
 /* استایل‌های اختصاصی سبد خرید هدهدلی */
@@ -29,8 +34,13 @@
 	flex: 2;
 	background: #fff;
 	padding: var(--hodima-space-7);
-	border-radius: calc(15px * var(--hodima-radius-scale));
-	border: 1px solid #e1e8ed;
+	border-radius: var(--hodima-radius-xl);
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+
+	/* کد تخفیف: ووکامرس ۸۰ پیکسل؛ متن راهنما بریده می‌شد */
+	& .coupon .input-text {
+		width: min(12rem, 100%);
+	}
 }
 
 .cart-collaterals {
@@ -43,32 +53,47 @@
 	& :is(.cart_totals, .cross-sells) > h2 {
 		font-size: 1.125rem;
 	}
+
 }
 
-.cart_totals {
-	background: #EEF5F2 !important;
-	border-radius: calc(15px * var(--hodima-radius-scale)) !important;
-	padding: var(--hodima-space-7) !important;
-	border: 2px solid #8F9EAD !important;
+/* زیر هم، تمام‌عرض ستون (نه شناور ۴۸٪ کنار هم)؛ «جمع سبد» اول (در HTML ووکامرس بعد از پیشنهادهاست)؛ .woocommerce هم‌وزن قانون ووکامرس */
+.woocommerce .cart-collaterals {
+	display: flex;
+	flex-direction: column;
+
+	& .cart_totals,
+	& .cross-sells {
+		float: none;
+		width: 100%;
+	}
+
+	& .cart_totals {
+		order: -1;
+		background: var(--hodima-surface-soft, #f7f9fd);
+		border-radius: var(--hodima-radius-xl);
+		padding: var(--hodima-space-7);
+		border: 1px solid var(--hodima-border-light, #d9e1f0);
+	}
+
+	& .cross-sells {
+		margin-top: var(--hodima-space-7);
+	}
 }
 
-/* استایل دکمه تسویه حساب */
+/* دکمه تسویه حساب: دکمه برند تمام‌عرض (سبک «ظاهر عمومی ← دکمه‌ها»)؛ !important در برابر ووکامرس (.woocommerce a.button.alt) */
 .wc-proceed-to-checkout a.checkout-button {
-	background: linear-gradient(90deg, #FF9800, #F57C00, #FFB74D) !important;
+	display: flex;
+	width: 100%;
+	/* stylelint-disable-next-line declaration-no-important -- رنگ ووکامرس a.button.alt */
+	background: var(--hodima-button-bg) !important;
 	color: #fff !important;
-	border-radius: var(--hodima-radius-lg) !important;
-	padding: var(--hodima-space-6) !important;
-	font-weight: 800 !important;
+	font-size: 1rem;
+	font-weight: 800;
 	text-align: center;
-	display: block;
-	box-shadow: 0 4px 15px rgb(255 152 0 / 0.3) !important;
-	transition: all 0.3s ease !important;
 
-	/* رنگ هاور دکمه تسویه حساب */
 	&:hover {
-		background: #E08600 !important;
-		box-shadow: 0 6px 20px rgb(255 152 0 / 0.4) !important;
-		transform: translateY(-2px);
+		/* stylelint-disable-next-line declaration-no-important -- رنگ ووکامرس a.button.alt:hover */
+		background: var(--hodima-button-bg-hover) !important;
 	}
 }
 

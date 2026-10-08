@@ -24,6 +24,11 @@ description: قانون‌های کد قالب هدیما (پوشه hodima/) —
 - **بخش‌های «رسانه» در قالب (از 2.9.4، بخش ۶۴):** شورت‌کدهای `hook_intro|video|voice|faq` افزونه را فقط با `hodima_theme_media_html( $part, $atts )` بخوان (`hodima/inc/media-sections.php`؛ بدون افزونه رشته خالی) و «معرفی + ویدیو» / «پادکست + FAQ» را با `get_template_part( 'template-parts/media/intro-media'|'voice-faq', null, [ 'layout' => … ] )` چاپ کن؛ HTML تازه برای این بخش‌ها در قالب‌های جدا ننویس. پیشوند `hodima_media_*` مال افزونه است؛ تابع قالب با آن پیشوند ننویس.
 - **تنظیمات قالب** (`hodima/inc/theme-settings/`): فیلد جدید در `hodima_settings_fields()` با کلید `panel` (قاب در `hodima_settings_panels()`؛ تب از قاب، ترتیب تب‌ها و گروه منوی کناری در `hodima_settings_sections()`). کلید فیلدها = نام ذخیره‌شده؛ عوضش نکن (بخش ۵۶). از 3.0.0 (بخش ۷۳) منوی سطح اول بالای «نمایش»: آدرس فقط با `hodima_settings_url( [ 'tab' => … ] )` و شناسه صفحه `HODIMA_SETTINGS_HOOK` (هرگز `themes.php?page=` یا `appearance_page_`). select رنگ از پالت: `'swatch' => true`؛ قاب جمع‌شونده: `'collapsible' => true` در قاب.
 
+## یکدستی طراحی (از 3.0.1، بخش ۷۴) — قانون
+- **سایت:** کادر فرم و دکمه عملیاتی فقط با `--hodima-control-h` (۴۴px)، `--hodima-control-font` و `--hodima-radius-md`؛ ارتفاع/گوشه ثابت ننویس. قانون عمومی کادرها با `:where()` است تا فاصله داخلی جزء خاص (جستجوی هدر) بماند. رنگ فقط از پالت/توکن (نه نارنجی، سبز، خاکستری دلخواه).
+- **پیشخوان تنظیمات:** هر کنترل هم‌ارتفاع `--hs-control-h`، تمام‌عرض ستون؛ رنگ فقط با جزء `.hodima-color` (نوع Color یا select با `'swatch' => true`)؛ کلید بیرون از قاب `toggles` یک ردیف کامل و رنگ کارت ثابت؛ کارت‌های داخل قاب `--hs-radius-md`.
+- **پیش از تحویل:** عکس همه تب‌های پیشخوان (CSS واقعی و راست‌به‌چپ پیشخوان، ۱۳۰۰ و ۳۹۰) و اندازه‌گیری دکمه/کادرهای همه صفحه‌ها، نه فقط بخش تغییرکرده.
+
 ## تست ظاهر
 برای هر تغییر CSS/JS/HTML قالب `visual-compare.sh` و برای هر تغییر CSS `css-equiv.sh` را اجرا کن؛ بازنویسی هم‌ارز باید «همه نماها یکسان» بدهد و هر تفاوت باید عمدی و در گزارش باشد. ابزار فقط عنصرهای موجود در داده آزمایشی را می‌بیند (ابزار اصلی: صفحه‌های ووکامرس فقط head/footer؛ برای ظاهر فروشگاه `--wc`).
 ابزارها (دستورها در `CLAUDE.md` «ابزار تست» و `tools/wp-harness/README.md`): `visual-compare.sh` (`--built`، `--wc`)، `css-equiv.sh`، `important-audit.sh`.

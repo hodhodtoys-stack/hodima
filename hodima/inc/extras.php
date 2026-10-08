@@ -275,7 +275,14 @@ function hodima_settings_backup_panel(): void {
 		<div class="hodima-backup__item">
 			<h4 class="hodima-backup__title"><label for="hodima-settings-file">بازگردانی از فایل</label></h4>
 			<p class="hodima-field__help" id="hodima-settings-file-help">همه تنظیمات فعلی با فایل جایگزین می‌شوند. بهتر است اول از تنظیمات فعلی فایل بگیرید.</p>
-			<input type="file" id="hodima-settings-file" name="hodima_settings_file" accept=".json,application/json" form="hodima-import-form" aria-describedby="hodima-settings-file-help" required>
+			<?php // دکمه فایل هم‌شکل بقیه دکمه‌ها (3.0.1؛ قبلا دکمه خام مرورگر «Choose File»)؛ input واقعی فقط از دید پنهان است تا required کار کند ?>
+			<span class="hodima-file">
+				<input type="file" class="hodima-file__input" id="hodima-settings-file" name="hodima_settings_file" accept=".json,application/json" form="hodima-import-form" aria-describedby="hodima-settings-file-help" required data-hodima-file>
+				<label class="button hodima-backup__button" for="hodima-settings-file">
+					<span class="dashicons dashicons-media-default" aria-hidden="true"></span> انتخاب فایل
+				</label>
+				<span class="hodima-file__name" data-hodima-file-name>فایلی انتخاب نشده</span>
+			</span>
 			<button type="submit" class="button hodima-backup__button" form="hodima-import-form">
 				<span class="dashicons dashicons-upload" aria-hidden="true"></span> بازگردانی
 			</button>

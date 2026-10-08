@@ -5,7 +5,7 @@
     --wls-secondary-color: var(--hodima-secondary, #607bbd);
     --wls-third-color: var(--hodima-third, #b6c2f3);
 
-    --wls-border-radius: 0.5rem;
+    --wls-border-radius: var(--hodima-radius-md, 0.5rem); /* ضریب گردی «ظاهر عمومی» قالب */
     --wls-border-color: var(--hodima-border-light, #d9e1f0);
     --wls-border-strong: var(--wls-secondary-color);
 
@@ -108,12 +108,14 @@
    استایل‌های باکس جستجو و ورودی متن
 ========================================= */
 
+/* ارتفاع و اندازه متن همان کادرهای قالب (--hodima-control-*؛ قالب 3.0.1)؛ تا 1.2.1 حدود ۴۹ پیکسل */
 .woo-live-search__input {
     width: 100%;
-    padding: 0.6875rem 2.8125rem 0.6875rem 2.8125rem;
+    min-height: var(--hodima-control-h, 2.75rem);
+    padding: 0 2.8125rem;
     border-radius: var(--wls-border-radius);
     border: 1px solid var(--wls-border-color);
-    font-size: 1rem;
+    font-size: var(--hodima-control-font, 0.9375rem);
     color: var(--wls-text);
     outline: none;
     transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
@@ -271,10 +273,6 @@
    حالت موبایل و تبلت
 ========================================= */
 @media (max-width: 48rem) {
-    .woo-live-search__input {
-        font-size: 0.9375rem;
-        padding: 0.625rem 2.8125rem 0.625rem 2.8125rem;
-    }
 
     .woo-search-results__img {
         width: 2.8125rem;

@@ -123,7 +123,7 @@
 .single-post-title {
 	margin-top: 0;
 	margin-bottom: var(--hodima-space-7);
-	border-bottom: 2px solid #dce8e3;
+	border-bottom: 2px solid var(--hodima-border-light, #d9e1f0); /* تا 3.0.0 سبز-خاکستری #dce8e3 بیرون از پالت */
 	padding-bottom: var(--hodima-space-6);
 }
 
@@ -258,10 +258,14 @@
 		box-sizing: border-box;
 		border: 1px solid var(--hodima-border-light, #d9e1f0);
 		border-radius: var(--hodima-radius-md);
-		padding: var(--hodima-space-4) var(--hodima-space-5);
+		padding: 0 var(--hodima-space-5); /* ارتفاع از کادر عمومی (--hodima-control-h)؛ تا 3.0.0 با فاصله عمودی ۴۵ پیکسل */
 		font-family: inherit;
 		color: var(--hodima-text-dark, #111111);
 		background: #fff;
+	}
+
+	& .comment-form-comment textarea {
+		padding-block: var(--hodima-space-4);
 	}
 
 	/* جدا (نه &:focus زیر فهرست بالا): nesting زیر چند انتخابگر :is() می‌سازد */

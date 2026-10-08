@@ -1109,28 +1109,45 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			<?php $help = ''; // توضیح بالاتر چاپ شد ?>
 
 		<?php elseif ( Hodima_Setting_Type::Color === $type ) : ?>
-			<?php $default = strtolower( (string) $field['default'] ); ?>
-			<label class="hodima-swatch" for="<?php echo esc_attr( $id ); ?>">
-				<input type="color" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" data-hodima-color="<?php echo esc_attr( str_replace( [ 'color_', '_' ], [ '', '-' ], $key ) ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
-				<span class="hodima-swatch__name"><?php echo esc_html( $field['label'] ); ?></span>
-			</label>
-			<?php // کد رنگ تایپی (مثلا #25316a)؛ بی name: مقدار با input رنگ بالا ارسال می‌شود (admin.js همگام می‌کند). تا 2.9.9 فقط نمایش بود ?>
-			<input
-				type="text"
-				class="hodima-swatch__hex"
-				value="<?php echo esc_attr( (string) $value ); ?>"
-				dir="ltr"
-				maxlength="7"
-				spellcheck="false"
-				autocomplete="off"
-				pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})"
-				aria-label="<?php echo esc_attr( sprintf( 'کد رنگ %s (مثلا #25316a)', $field['label'] ) ); ?>"
-				data-hodima-color-value
-			>
+			<?php
+			/*
+			 * کنترل رنگ یکدست (3.0.1): برچسب بالا، [مربع رنگ | کد رنگ] هم‌ارتفاع بقیه
+			 * کادرها، توضیح و «بازگشت به پیش‌فرض» زیر آن — همان شکل «انتخاب از پالت»
+			 * (.hodima-color). تا 3.0.0 کارت با بلوک رنگ تمام‌عرض بود.
+			 * کد رنگ بی name است (مقدار با input رنگ ارسال می‌شود؛ admin.js همگام می‌کند).
+			 */
+			$default = strtolower( (string) $field['default'] );
+			?>
+			<label class="hodima-field__label" for="<?php echo esc_attr( $id ); ?>-hex"><?php echo esc_html( $field['label'] ); ?></label>
+			<span class="hodima-color">
+				<input
+					type="color"
+					class="hodima-color__swatch"
+					id="<?php echo esc_attr( $id ); ?>"
+					name="<?php echo esc_attr( $name ); ?>"
+					value="<?php echo esc_attr( (string) $value ); ?>"
+					data-hodima-color="<?php echo esc_attr( str_replace( [ 'color_', '_' ], [ '', '-' ], $key ) ); ?>"
+					aria-label="<?php echo esc_attr( sprintf( 'انتخاب %s از جعبه رنگ', $field['label'] ) ); ?>"
+				>
+				<input
+					type="text"
+					class="hodima-color__hex"
+					id="<?php echo esc_attr( $id ); ?>-hex"
+					value="<?php echo esc_attr( (string) $value ); ?>"
+					dir="ltr"
+					maxlength="7"
+					spellcheck="false"
+					autocomplete="off"
+					pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})"
+					placeholder="#25316a"
+					data-hodima-color-value
+					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
+				>
+			</span>
 			<?php if ( '' !== $help ) : ?>
 				<p class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></p>
 			<?php endif; ?>
-			<button type="button" class="hodima-swatch__reset" data-hodima-color-reset="<?php echo esc_attr( $default ); ?>" <?php echo strtolower( (string) $value ) === $default ? 'hidden' : ''; ?>>
+			<button type="button" class="hodima-color__reset" data-hodima-color-reset="<?php echo esc_attr( $default ); ?>" <?php echo strtolower( (string) $value ) === $default ? 'hidden' : ''; ?>>
 				<span class="dashicons dashicons-undo" aria-hidden="true"></span>
 				بازگشت به پیش‌فرض <code dir="ltr"><?php echo esc_html( $default ); ?></code>
 			</button>
@@ -1203,10 +1220,10 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				>
 			<?php elseif ( Hodima_Setting_Type::Select === $type ) : ?>
-				<?php $hodima_swatch = ! empty( $field['swatch'] ); // انتخاب از پالت: دایره رنگ کنارش (admin.js با پالت زنده) ?>
+				<?php $hodima_swatch = ! empty( $field['swatch'] ); // انتخاب از پالت: همان کنترل رنگ (.hodima-color)، مربع رنگ کنار فهرست (admin.js با پالت زنده) ?>
 				<?php if ( $hodima_swatch ) : ?>
-					<span class="hodima-select-color">
-						<span class="hodima-select-color__dot" data-hodima-color-dot style="background: <?php echo esc_attr( hodima_settings_palette_hex( (string) $value ) ); ?>" aria-hidden="true"></span>
+					<span class="hodima-color">
+						<span class="hodima-color__swatch" data-hodima-color-dot style="background: <?php echo esc_attr( hodima_settings_palette_hex( (string) $value ) ); ?>" aria-hidden="true"></span>
 				<?php endif; ?>
 				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
 					<?php foreach ( (array) ( $field['options'] ?? [] ) as $option => $label ) : ?>
@@ -1240,9 +1257,6 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<?php echo isset( $field['placeholder'] ) ? 'placeholder="' . esc_attr( $field['placeholder'] ) . '"' : ''; ?>
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				><?php echo esc_textarea( (string) $value ); ?></textarea>
-				<?php if ( Hodima_Setting_Type::HostList === $type ) : ?>
-					<?php hodima_settings_render_host_suggestions( $id, (string) $value ); ?>
-				<?php endif; ?>
 			<?php else : ?>
 				<input
 					type="<?php echo esc_attr( $type->input_type() ); ?>"
@@ -1259,6 +1273,10 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 
 		<?php if ( '' !== $help ) : ?>
 			<p class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></p>
+		<?php endif; ?>
+
+		<?php if ( Hodima_Setting_Type::HostList === $type ) : // بعد از توضیح، مثل بقیه فیلدها (کنترل ← توضیح ← افزوده‌ها) ?>
+			<?php hodima_settings_render_host_suggestions( $id, (string) $value ); ?>
 		<?php endif; ?>
 	</div>
 	<?php
