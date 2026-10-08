@@ -180,7 +180,9 @@ function hodima_sitemap_media_video( int $object_id, string $context, string $ti
 
     $video = hodima_media_video( $object_id, $context );
 
-    if ( null === $video || ! $video['enabled'] ) {
+    // دسته‌ای که قالب بخش رسانه‌اش را نشان نمی‌دهد (دسته وبلاگ): ویدیو روی صفحه نیست
+    if ( null === $video || ! $video['enabled']
+        || ( function_exists( 'hodima_media_is_displayed' ) && ! hodima_media_is_displayed( $object_id, $context ) ) ) {
         return null;
     }
 

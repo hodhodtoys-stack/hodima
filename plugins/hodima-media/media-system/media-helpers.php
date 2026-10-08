@@ -40,7 +40,7 @@ const HODIMA_MEDIA_LEGACY_KEYS = [
 	'enabled', 'content',
 	'video_url', 'video_thumb', 'video_keywords', 'video_duration', 'video_date', 'video_title', 'video_cover',
 	'voice_url', 'voice_keywords', 'voice_duration', 'voice_date', 'voice_title',
-	'discover_title', 'ai_summary', 'key_entities', 'faq',
+	'discover_title', 'key_entities', 'faq',
 ];
 
 /** نسبت‌های تصویر ویدیو (مقدار ذخیره‌شده ← برچسب). */
@@ -55,9 +55,6 @@ const HODIMA_MEDIA_RATIOS = [
 
 /**
  * کلیدهای متای سیستم رسانه — منبع واحد برای خواندن و نوشتن.
- *
- * ai_summary فقط برای نگه داشتن داده قبلی خوانده می‌شود؛ بخش «خلاصه هوش
- * مصنوعی» از فرم و سایت حذف شده و هیچ‌جا استفاده نمی‌شود.
  *
  * @return list<string>
  */
@@ -256,12 +253,7 @@ function hodima_media_is_enabled( int $object_id, string $context = 'post' ): bo
  */
 function hodima_media_page_url( int $object_id, string $context ): string {
 
-	$queried = get_queried_object();
-
-	$is_current = ( 'post' === $context && $queried instanceof WP_Post && (int) $queried->ID === $object_id )
-		|| ( 'term' === $context && $queried instanceof WP_Term && (int) $queried->term_id === $object_id );
-
-	if ( $is_current && function_exists( 'hodima_get_canonical_url' ) ) {
+	if ( hodima_media_is_queried( $object_id, $context ) && function_exists( 'hodima_get_canonical_url' ) ) {
 		$canonical = (string) hodima_get_canonical_url();
 		if ( '' !== $canonical ) {
 			return $canonical;
@@ -274,6 +266,46 @@ function hodima_media_page_url( int $object_id, string $context ): string {
 
 	$link = get_term_link( $object_id );
 	return is_wp_error( $link ) ? '' : (string) $link;
+}
+
+/** آیا این شیء همان نوشته/ترم صفحه جاری است؟ */
+function hodima_media_is_queried( int $object_id, string $context ): bool {
+
+	$queried = get_queried_object();
+
+	return ( 'post' === $context && $queried instanceof WP_Post && (int) $queried->ID === $object_id )
+		|| ( 'term' === $context && $queried instanceof WP_Term && (int) $queried->term_id === $object_id );
+}
+
+/**
+ * تکسونومی‌هایی که قالب بخش‌های رسانه را در صفحه آرشیوشان واقعا نمایش
+ * می‌دهد. پیش‌فرض همه تکسونومی‌های پشتیبانی‌شده (قالب‌های دیگر)؛ قالب
+ * هدیما با فیلتر «hodima_media_displayed_taxonomies» فقط product_cat را
+ * اعلام می‌کند.
+ *
+ * باگ قبلی: کادر رسانه دسته‌های وبلاگ (category) ویدیو، FAQ و صوت را به
+ * گوگل اعلام می‌کرد (اسکیما و سایت‌مپ ویدیو)، ولی قالب در صفحه دسته وبلاگ
+ * هیچ‌کدام را نشان نمی‌داد؛ اسکیمای محتوای دیده‌نشده خلاف قانون گوگل است.
+ *
+ * @return list<string>
+ */
+function hodima_media_displayed_taxonomies(): array {
+	return array_values( array_intersect(
+		hodima_media_taxonomies(),
+		(array) apply_filters( 'hodima_media_displayed_taxonomies', hodima_media_taxonomies() )
+	) );
+}
+
+/** آیا بخش‌های رسانه این شیء در سایت نمایش داده می‌شوند (جدا از کلید «فعال»)؟ */
+function hodima_media_is_displayed( int $object_id, string $context ): bool {
+
+	if ( 'term' !== hodima_media_context( $context ) ) {
+		return true;
+	}
+
+	$term = get_term( $object_id );
+
+	return $term instanceof WP_Term && in_array( $term->taxonomy, hodima_media_displayed_taxonomies(), true );
 }
 
 /** عنوان نوشته یا نام ترم. */
@@ -290,6 +322,21 @@ function hodima_media_object_title( int $object_id, string $context ): string {
 /* =====================================================================
  * آدرس ویدیو
  * ===================================================================== */
+
+/**
+ * آیا دامنه همان دامنه یا زیردامنه آن است؟
+ * باگ قبلی: str_ends_with( $host, 'aparat.com' ) دامنه‌ای مثل
+ * «fakeaparat.com» را هم آپارات می‌دانست.
+ */
+function hodima_media_host_is( string $host, string $domain ): bool {
+	return $host === $domain || str_ends_with( $host, '.' . $domain );
+}
+
+/** آیا آدرس، فایل مستقیم صوتی است (در مقابل صفحه SoundCloud/Castbox)؟ */
+function hodima_media_is_direct_audio( mixed $url ): bool {
+	$path = (string) wp_parse_url( is_scalar( $url ) ? (string) $url : '', PHP_URL_PATH );
+	return in_array( strtolower( pathinfo( $path, PATHINFO_EXTENSION ) ), [ 'mp3', 'wav', 'ogg', 'oga', 'm4a', 'aac', 'opus' ], true );
+}
 
 /** آیا آدرس، فایل مستقیم ویدیو است (در مقابل صفحه آپارات/یوتیوب)؟ */
 function hodima_media_is_direct_video( mixed $url ): bool {
@@ -326,7 +373,7 @@ function hodima_media_parse_video_url( string $url ): array {
 	}
 
 	// آپارات: صفحه تماشا /v/{hash} یا خود پخش‌کننده …/videohash/{hash}/…
-	if ( str_ends_with( $host, 'aparat.com' )
+	if ( hodima_media_host_is( $host, 'aparat.com' )
 		&& preg_match( '#^/(?:v/|video/video/embed/videohash/)([A-Za-z0-9]+)#', $path, $m ) ) {
 		return [
 			'provider' => 'aparat',
@@ -337,7 +384,7 @@ function hodima_media_parse_video_url( string $url ): array {
 	}
 
 	// یوتیوب: watch?v= / youtu.be / shorts / embed
-	if ( str_ends_with( $host, 'youtube.com' ) || str_ends_with( $host, 'youtube-nocookie.com' ) || 'youtu.be' === $host ) {
+	if ( hodima_media_host_is( $host, 'youtube.com' ) || hodima_media_host_is( $host, 'youtube-nocookie.com' ) || 'youtu.be' === $host ) {
 		parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
 		$shorts = 1 === preg_match( '#^/shorts/([\w-]+)#', $path, $s );
 		$id     = match ( true ) {
@@ -352,7 +399,7 @@ function hodima_media_parse_video_url( string $url ): array {
 	}
 
 	// ویمئو
-	if ( preg_match( '/(^|\.)vimeo\.com$/', $host ) && preg_match( '#^/(?:video/)?(\d+)#', $path, $m ) ) {
+	if ( hodima_media_host_is( $host, 'vimeo.com' ) && preg_match( '#^/(?:video/)?(\d+)#', $path, $m ) ) {
 		return [ 'provider' => 'vimeo', 'id' => $m[1], 'player' => 'https://player.vimeo.com/video/' . $m[1], 'vertical' => false ];
 	}
 

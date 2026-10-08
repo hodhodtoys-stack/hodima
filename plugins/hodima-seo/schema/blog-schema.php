@@ -120,7 +120,6 @@ function hook_render_blog_schema() {
     /*
      * عنوان Discover: «عنوان جایگزین» مقاله (alternativeHeadline؛ ویژگی
      * درست CreativeWork). قبلا alternateName بود که یعنی «نام دیگر» مقاله.
-     * خلاصه هوش مصنوعی (abstract) حذف شد — آن بخش از سایت برداشته شده.
      */
     if ( ! empty( $media_data['discover_title'] ) ) {
         $blog_posting['alternativeHeadline'] = wp_strip_all_tags( $media_data['discover_title'] );

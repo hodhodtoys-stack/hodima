@@ -189,10 +189,10 @@ function hodima_media_video( int $object_id, string $context = 'post' ): ?array 
 /**
  * VideoObject واحد با شناسه «{صفحه}#video»، یا null.
  *
- * null وقتی: ویدیو ندارد، سیستم رسانه برای این شیء خاموش است (ویدیو روی
- * صفحه نمایش داده نمی‌شود، پس نباید به گوگل اعلام شود — اسکیمای محصول
- * قبلا بدون این شرط اعلام می‌کرد)، یا تصویری برای thumbnailUrl نیست
- * (الزامی گوگل).
+ * null وقتی: ویدیو ندارد، سیستم رسانه برای این شیء خاموش است یا قالب
+ * بخش رسانه آن دسته را نمایش نمی‌دهد (ویدیو روی صفحه نیست، پس نباید به
+ * گوگل اعلام شود — اسکیمای محصول قبلا بدون این شرط اعلام می‌کرد)، یا
+ * تصویری برای thumbnailUrl نیست (الزامی گوگل).
  *
  * @param array<string, mixed> $extra ویژگی‌های اضافه (about، mainEntityOfPage…).
  *   «_name» = عنوان جایگزین وقتی ویدیو عنوان ندارد.
@@ -202,7 +202,8 @@ function hodima_media_video_node( int $object_id, string $context = 'post', arra
 	$context = hodima_media_context( $context );
 	$video   = hodima_media_video( $object_id, $context );
 
-	if ( null === $video || ! $video['enabled'] || null === $video['cover'] ) {
+	// دسته‌ای که قالب بخش رسانه‌اش را نشان نمی‌دهد (دسته وبلاگ): ویدیو اعلام نمی‌شود
+	if ( null === $video || ! $video['enabled'] || null === $video['cover'] || ! hodima_media_is_displayed( $object_id, $context ) ) {
 		return null;
 	}
 

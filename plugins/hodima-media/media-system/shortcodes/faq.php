@@ -45,6 +45,7 @@ function hodima_media_shortcode_faq( mixed $atts ): string {
 	}
 
 	hodima_media_enqueue_assets();
+	hodima_media_schema_on_render( 'faq', $object_id, $context, $data );
 
 	return '<div class="hook-faq">' . $items . '</div>';
 }

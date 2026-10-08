@@ -5,9 +5,6 @@
  *
  * ویدیو (media-video.php)، صوت، FAQ و غنی‌سازی Discover برگه‌ها به گراف
  * واحد صفحه (hodima_schema_add در hodima-core) اضافه می‌شوند.
- *
- * «خلاصه هوش مصنوعی» (ai_summary) از نسخه ۴ هیچ‌جا استفاده نمی‌شود: نه
- * abstract، نه description. داده ذخیره‌شده پاک نمی‌شود.
  */
 
 declare(strict_types=1);
@@ -102,9 +99,10 @@ function hodima_media_audio_node( array $data, int $object_id, string $context, 
 		return null;
 	}
 
-	$url  = esc_url_raw( (string) preg_replace( '/\s+/', '%20', $url ) );
-	$date = hodima_media_stable_date( $data, 'voice', $object_id, $context );
-	$mime = (string) ( wp_check_filetype( (string) wp_parse_url( $url, PHP_URL_PATH ), wp_get_mime_types() )['type'] ?: '' );
+	$url    = esc_url_raw( (string) preg_replace( '/\s+/', '%20', $url ) );
+	$date   = hodima_media_stable_date( $data, 'voice', $object_id, $context );
+	$direct = hodima_media_is_direct_audio( $url );
+	$mime   = $direct ? (string) ( wp_check_filetype( (string) wp_parse_url( $url, PHP_URL_PATH ), wp_get_mime_types() )['type'] ?: '' ) : '';
 
 	$node = [
 		'@type'         => 'AudioObject',
@@ -112,14 +110,22 @@ function hodima_media_audio_node( array $data, int $object_id, string $context, 
 		'isPartOf'      => [ '@id' => $base . '#webpage' ],
 		'name'          => ! empty( $data['voice_title'] ) ? sanitize_text_field( (string) $data['voice_title'] ) : 'پادکست اختصاصی: ' . $title,
 		'description'   => hodima_media_summary( $object_id, $context, 'توضیحات صوتی اختصاصی ' . $brand . ' برای ' . $title ),
-		'contentUrl'    => $url,
 		'datePublished' => $date,
 		'uploadDate'    => $date,
 		'inLanguage'    => hodima_media_language(),
 	];
 
-	if ( '' !== $mime ) {
-		$node['encodingFormat'] = $mime;
+	/*
+	 * contentUrl فقط آدرس خود فایل صوتی است. باگ قبلی: لینک صفحه یک سرویس
+	 * (SoundCloud، Castbox) هم contentUrl می‌شد؛ حالا آن آدرس «url» است.
+	 */
+	if ( $direct ) {
+		$node['contentUrl'] = $url;
+		if ( '' !== $mime ) {
+			$node['encodingFormat'] = $mime;
+		}
+	} else {
+		$node['url'] = $url;
 	}
 
 	$duration = hodima_media_duration_iso( $data['voice_duration'] ?? '' );
@@ -230,7 +236,7 @@ function hodima_media_auto_inject_schema(): void {
 		hodima_media_print_schema( 'seo_discover', $data, $object_id, $context );
 	}
 
-	if ( 'yes' !== ( $data['enabled'] ?? '' ) ) {
+	if ( 'yes' !== ( $data['enabled'] ?? '' ) || ! hodima_media_schema_page_shows_media( $object_id, $context ) ) {
 		return;
 	}
 
@@ -239,6 +245,55 @@ function hodima_media_auto_inject_schema(): void {
 		hodima_media_print_schema( 'video', $data, $object_id, $context );
 	}
 
-	hodima_media_print_schema( 'audio', $data, $object_id, $context );
-	hodima_media_print_schema( 'faq', $data, $object_id, $context );
+	// صوت و FAQ: هنگام نمایش واقعی (hodima_media_schema_on_render)، نه اینجا.
 }
+
+/**
+ * آیا صفحه جاری بخش‌های رسانه این شیء را نشان می‌دهد؟
+ *
+ *   - دسته‌ای که قالب بخش رسانه‌اش را نمایش نمی‌دهد (دسته وبلاگ): خیر.
+ *   - صفحه ۲ به بعد آرشیو دسته: خیر؛ قالب بخش‌ها را فقط در صفحه اول نشان
+ *     می‌دهد. باگ قبلی: قالب برای حذف اسکیما در صفحه ۲ به بعد نام قدیمی
+ *     تابع (hook_auto_inject_head_schema) را remove_action می‌کرد که دیگر
+ *     وجود نداشت؛ FAQ و ویدیوی دسته روی همه صفحه‌های صفحه‌بندی اعلام می‌شد.
+ */
+function hodima_media_schema_page_shows_media( int $object_id, string $context ): bool {
+	return hodima_media_is_displayed( $object_id, $context )
+		&& ! ( 'term' === hodima_media_context( $context ) && is_paged() );
+}
+
+/**
+ * اسکیمای صوت و FAQ فقط وقتی همان بخش واقعا در صفحه نمایش داده شده
+ * (شورت‌کد اجرا شده و خروجی داشته) و شیء همان نوشته/ترم صفحه جاری است.
+ *
+ * باگ قبلی: FAQ و صوت در head بر اساس داده چاپ می‌شدند، جدا از اینکه قالب
+ * آن‌ها را نشان می‌دهد یا نه: صفحه ۲ دسته‌ها، دسته‌های وبلاگ، محصولی که
+ * «سوالات متداول» آن در تنظیمات قالب خاموش است. گوگل اسکیمای محتوای
+ * دیده‌نشده را خلاف قانون می‌داند.
+ *
+ * نود تا فوتر نگه داشته و پیش از چاپ گراف واحد (اولویت ۹۹۹۹ Core) اضافه
+ * می‌شود؛ بدون Core هم فالبک تگ جدا در فوتر چاپ می‌شود، نه وسط قالب.
+ */
+function hodima_media_schema_on_render( string $type, int $object_id, string $context, array $data ): void {
+
+	if ( is_admin() || is_feed() || ! hodima_media_is_queried( $object_id, $context ) ) {
+		return;
+	}
+
+	$queue = &hodima_media_schema_queue();
+	$queue[ $type . ':' . $context . ':' . $object_id ] = [ $type, $data, $object_id, $context ];
+}
+
+/** صف نودهای نمایش‌داده‌شده (با ارجاع). */
+function &hodima_media_schema_queue(): array {
+	static $queue = [];
+	return $queue;
+}
+
+add_action( 'wp_footer', static function (): void {
+	$queue = &hodima_media_schema_queue();
+	foreach ( $queue as [ $type, $data, $object_id, $context ] ) {
+		hodima_media_print_schema( $type, $data, $object_id, $context );
+	}
+	$queue = [];
+}, 1 );

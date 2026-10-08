@@ -3,9 +3,9 @@
  * Media System — Shortcodes loader
  * Path: media-system/media-shortcodes.php
  *
- * نام شورت‌کدها ([hook_video]، [hook_voice]، [hook_faq]، [hook_intro]،
- * [hook_ai_box]) و کلاس‌های CSS «hook-*» عمدا عوض نشده‌اند: در محتوای
- * سایت، قالب و CSS سفارشی استفاده شده‌اند.
+ * نام شورت‌کدها ([hook_video]، [hook_voice]، [hook_faq]، [hook_intro]) و
+ * کلاس‌های CSS «hook-*» عمدا عوض نشده‌اند: در محتوای سایت، قالب و CSS
+ * سفارشی استفاده شده‌اند.
  */
 
 declare(strict_types=1);
@@ -134,7 +134,7 @@ function hodima_media_transcript_html( string $text, string $label ): string {
 	);
 }
 
-foreach ( [ 'video', 'voice', 'faq', 'intro', 'ai-box' ] as $hodima_media_shortcode ) {
+foreach ( [ 'video', 'voice', 'faq', 'intro' ] as $hodima_media_shortcode ) {
 	require_once __DIR__ . '/shortcodes/' . $hodima_media_shortcode . '.php';
 }
 unset( $hodima_media_shortcode );

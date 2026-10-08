@@ -43,13 +43,13 @@ update_option( 'show_on_front', 'page' ); update_option( 'page_on_front', $home 
 $typo = '<p>متن نمونه با <a href="https://hodima.test/guide/">لینک داخل متن</a> برای خواندن.</p><h2>تیتر دوم نمونه</h2><p>بند</p><h3>تیتر سوم نمونه</h3><p>بند</p><h4>تیتر چهارم</h4><h5>تیتر پنجم</h5><h6>تیتر ششم</h6><p>پایان</p>';
 $about = p( [ 'post_type' => 'page', 'post_title' => 'درباره ما', 'post_name' => 'about-us', 'post_excerpt' => 'معرفی شرکت', 'post_content' => $typo ] );
 $contact = p( [ 'post_type' => 'page', 'post_title' => 'تماس با ما', 'post_name' => 'contact-us' ] );
-$plain = p( [ 'post_type' => 'page', 'post_title' => 'راهنمای خرید', 'post_name' => 'guide', 'post_content' => 'متن راهنما [hodima_table]' ], $media( [ '_hook_discover_title' => 'راهنمای کامل خرید عمده', '_hook_ai_summary' => 'خلاصه هوش مصنوعی', '_hook_key_entities' => 'کلیپس, گلسر', '_h_ai_faqs' => wp_json_encode( [ [ 'q' => 'حداقل سفارش چقدر است؟', 'a' => 'یک بسته' ], [ 'q' => 'پرداخت چگونه است؟', 'a' => 'کارت به کارت' ] ], JSON_UNESCAPED_UNICODE ) ] ) );
+$plain = p( [ 'post_type' => 'page', 'post_title' => 'راهنمای خرید', 'post_name' => 'guide', 'post_content' => 'متن راهنما [hodima_table]' ], $media( [ '_hook_discover_title' => 'راهنمای کامل خرید عمده', '_hook_key_entities' => 'کلیپس, گلسر', '_h_ai_faqs' => wp_json_encode( [ [ 'q' => 'حداقل سفارش چقدر است؟', 'a' => 'یک بسته' ], [ 'q' => 'پرداخت چگونه است؟', 'a' => 'کارت به کارت' ] ], JSON_UNESCAPED_UNICODE ) ] ) );
 update_post_meta( $plain, '_hodima_table_data', [ 'headers' => [ 'ویژگی', 'مقدار' ], 'rows' => [ [ 'جنس', 'فلز' ], [ 'رنگ', 'طلایی' ] ] ] );
 $videos = p( [ 'post_type' => 'page', 'post_title' => 'ویدئوها', 'post_name' => 'videos' ], [ '_wp_page_template' => 'template-page-videos.php' ] );
 
 $cat = wp_insert_term( 'اخبار', 'category', [ 'slug' => 'news', 'description' => 'اخبار بازار' ] )['term_id'];
 $tag = wp_insert_term( 'کلیپس', 'post_tag', [ 'slug' => 'clips' ] )['term_id'];
-$pillar = p( [ 'post_title' => 'راهنمای جامع کلیپس', 'post_name' => 'clips-guide', 'post_content' => '<p>پیلار</p><img src="https://hodima.test/wp-content/uploads/2025/01/post.jpg" width="640" height="480" alt="p">', 'post_excerpt' => 'خلاصه پیلار', 'post_category' => [ $cat ], 'tags_input' => [ 'کلیپس' ] ], $media( [ '_hook_ai_summary' => 'چکیده', '_hook_key_entities' => 'کلیپس، گلسر', '_h_ai_text' => 'متن AEO' ] ) );
+$pillar = p( [ 'post_title' => 'راهنمای جامع کلیپس', 'post_name' => 'clips-guide', 'post_content' => '<p>پیلار</p><img src="https://hodima.test/wp-content/uploads/2025/01/post.jpg" width="640" height="480" alt="p">', 'post_excerpt' => 'خلاصه پیلار', 'post_category' => [ $cat ], 'tags_input' => [ 'کلیپس' ] ], $media( [ '_hook_key_entities' => 'کلیپس، گلسر', '_h_ai_text' => 'متن AEO' ] ) );
 set_post_thumbnail( $pillar, $img2 );
 $child = p( [ 'post_title' => 'انواع کلیپس فلزی', 'post_name' => 'metal-clips', 'post_content' => 'فرزند', 'post_category' => [ $cat ], 'post_date' => '2025-03-02 10:00:00', 'post_date_gmt' => '2025-03-02 06:30:00' ], [ '_h_ai_text' => 'متن هوش مصنوعی فرزند' ] );
 update_term_meta( $cat, '_hodima_is_pillar', '1' );

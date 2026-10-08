@@ -68,12 +68,6 @@ $hp_show = static fn( string $part ): bool => (bool) hodima_setting( 'product_sh
 $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 	&& Hodima_Product_Specs_Table::get_instance()->is_shown_for( $product );
 
-/*
- * باکس «خلاصه» (ai-box) در صفحه محصول نمایش داده نمی‌شود؛ بخش «سئو مدرن»
- * برای محصولات خاموش است (media-system/media-helpers.php →
- * hook_modern_seo_enabled). اطلاعات کلیدی در <dl> بالا، جدول مشخصات،
- * توضیحات و نسخه .md برای هوش مصنوعی همین نقش را پوشش می‌دهند.
- */
 ?>
 
 <div class="custom-product-page-container">

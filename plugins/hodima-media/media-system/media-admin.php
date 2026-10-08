@@ -10,8 +10,7 @@
  *   - بررسی زنده: سرویس لینک ویدیو (آپارات/یوتیوب/فایل)، قالب مدت، فصل‌ها.
  *     مدت نامعتبر دیگر بی‌صدا پاک نمی‌شود: مقدار قبلی می‌ماند و پیام داده می‌شود.
  *   - جابه‌جایی ترتیب سوالات FAQ؛ حذف بدون پنجره confirm مرورگر.
- *   - بخش Discover (نوشته و برگه) با فهرست بررسی؛ «خلاصه هوش مصنوعی» حذف شد
- *     (داده قبلی پاک نمی‌شود).
+ *   - بخش Discover (نوشته و برگه) با فهرست بررسی.
  *   - جاوااسکریپت خالص (بدون jQuery)؛ CSS فقط زیر .hodima-mb (بدون :root).
  */
 
@@ -396,6 +395,9 @@ function hodima_media_render_term_box( WP_Term $term ): void {
 	<div id="hook_term_media_box" class="postbox hodima-mb-postbox">
 		<div class="postbox-header"><h2 class="hndle">تنظیمات رسانه دسته‌بندی</h2></div>
 		<div class="inside">
+			<?php if ( ! hodima_media_is_displayed( $term->term_id, 'term' ) ) : ?>
+				<p class="hodima-mb__intro"><span class="dashicons dashicons-info" aria-hidden="true"></span> قالب فعلی بخش‌های رسانه را در صفحه این نوع دسته نمایش نمی‌دهد؛ برای همین به گوگل هم اعلام نمی‌شوند. اطلاعات ذخیره‌شده پاک نمی‌شود.</p>
+			<?php endif; ?>
 			<?php hodima_media_render_fields( hodima_media_get_data( $term->term_id, 'term' ), 'term', $term->term_id ); ?>
 		</div>
 	</div>

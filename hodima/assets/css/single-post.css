@@ -330,15 +330,6 @@
 	}
 }
 
-.section-ai-box {
-	background: transparent !important;
-	border: none !important;
-	box-shadow: none !important;
-	padding: 0 !important;
-	margin-top: 0 !important;
-	margin-bottom: 0 !important;
-}
-
 @media (width <= 1200px) {
 	.related-posts-grid {
 		grid-template-columns: repeat(3, 1fr);

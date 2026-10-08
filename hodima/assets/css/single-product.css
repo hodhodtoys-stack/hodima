@@ -1127,21 +1127,7 @@
 }
 
 /* ==========================================================================
-   11. AI box
-   ========================================================================== */
-
-.section-ai-box {
-	background: transparent !important;
-	background-color: transparent !important;
-	border: none !important;
-	box-shadow: none !important;
-	padding: 0 !important;
-	margin-top: 0 !important;
-	margin-bottom: 0 !important;
-}
-
-/* ==========================================================================
-   12. Responsive product summary and reviews
+   11. Responsive product summary and reviews
    ========================================================================== */
 
 @media (width <= 1024px) {
@@ -1261,12 +1247,6 @@
 			min-width: 100% !important;
 		}
 	}
-
-	.section-ai-box {
-		padding: 0 !important;
-		margin-top: 0 !important;
-		margin-bottom: 0 !important;
-	}
 }
 
 @media (width <= 480px) {
@@ -1337,7 +1317,7 @@
 }
 
 /* ==========================================================================
-   13. Small cleanup helpers
+   12. Small cleanup helpers
    ========================================================================== */
 
 .custom-product-summary {

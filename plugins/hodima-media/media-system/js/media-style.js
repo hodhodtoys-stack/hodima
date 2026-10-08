@@ -4,7 +4,7 @@
  *
  *   - «نما»ی ویدیو: کلیک روی کاور ← پخش‌کننده آپارات/یوتیوب/ویمئو ساخته می‌شود
  *   - فصل‌ها: کلیک ← پخش از همان زمان؛ آدرس ?t=ثانیه (لحظه‌های کلیدی گوگل) هم
- *   - فقط یک رسانه همزمان پخش شود؛ رسانه خارج از دید متوقف شود
+ *   - فقط یک رسانه همزمان پخش شود؛ ویدیوی خارج از دید متوقف شود (پادکست نه)
  *
  * راه‌اندازی مستقل از DOMContentLoaded (حالت «Delay JS» لایت‌اسپید اسکریپت را
  * بعد از آن رویداد اجرا می‌کند).
@@ -110,7 +110,9 @@
 	}, true);
 
 	function init() {
-		for (const m of document.querySelectorAll('.hook-video-el, .hook-audio-el, .hook-oembed-container iframe')) {
+		// پادکست عمدا نه: کاربر صوت را پخش می‌کند و برای خواندن متن پایین می‌رود
+		// (باگ قبلی: با اسکرول پخش پادکست قطع می‌شد)
+		for (const m of document.querySelectorAll('.hook-video-el, .hook-video-wrapper .hook-oembed-container iframe')) {
 			observer?.observe(m);
 		}
 

@@ -117,3 +117,11 @@ if ( ! function_exists( 'hook_get_shortcode_context' ) ) {
 		return hodima_media_shortcode_context( $atts );
 	}
 }
+
+/*
+ * [hook_ai_box]: بخش «خلاصه هوش مصنوعی» حذف شده است. ثبت خالی فقط تا وقتی
+ * می‌ماند که شورت‌کد از متن نوشته‌های سایت پاک شود (دستور SQL در
+ * HODIMA-AUDIT.md بخش «پاک‌سازی AI»)؛ بدون آن، متن خام «[hook_ai_box]» در
+ * صفحه دیده می‌شد. بعد از پاک‌سازی دیتابیس این دو خط حذف شود.
+ */
+add_shortcode( 'hook_ai_box', '__return_empty_string' );

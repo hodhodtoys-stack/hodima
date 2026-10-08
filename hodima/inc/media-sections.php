@@ -38,3 +38,10 @@ function hodima_theme_media_available( string $part ): bool {
 function hodima_theme_media_html( string $part, array $atts = [] ): string {
 	return hodima_shortcode( 'hook_' . $part, $atts );
 }
+
+/*
+ * قالب بخش‌های رسانه را فقط در صفحه دسته محصول نشان می‌دهد (نه دسته‌های
+ * وبلاگ)؛ افزونه فقط برای همین‌ها اسکیما و سایت‌مپ ویدیو می‌سازد. بدون
+ * این اعلام، ویدیو و FAQ دسته‌های وبلاگ به گوگل اعلام می‌شد ولی در صفحه نبود.
+ */
+add_filter( 'hodima_media_displayed_taxonomies', static fn(): array => [ 'product_cat' ] );

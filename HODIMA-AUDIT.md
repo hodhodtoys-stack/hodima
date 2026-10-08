@@ -2127,7 +2127,60 @@ Commerce 1.1.8 (woo-table ۲.۱۳.۰)، SEO 1.10.8. کاربر خروجی Rich R
 
 **محدودیت:** ترب واقعی و سایت زنده از محیط در دسترس نبود؛ درخواست ترب با `rest_do_request` شبیه‌سازی شد. عکس پیشخوان بدون CSS هسته وردپرس (در بسته‌های npm ابزار نیست) و بدون Dashicons. قیمت تازه را ترب در بازدید دوره‌ای خودش می‌گیرد (وب‌هوک افزونه ترب `_wholesale_price` را زیر نظر ندارد؛ کاربر خبر فوری نخواست).
 
-## ۷۶. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
+## ۷۶. سیستم رسانه: پاک‌سازی AI و رفع شش باگ اسکیما/پخش (گروه ۱ و ۲) — مرحله ۶۹
+
+قالب 3.0.3، Hodima Media 1.4.0، Hodima SEO 1.14.1. اول کل `media-system` دوباره تحلیل شد (۷ باگ، ضعف‌های ساختاری و پیشنهادهای جهانی)؛ کاربر خواست باقی‌مانده «خلاصه هوش مصنوعی» کامل حذف شود (داده دیتابیس با SQL، پایین)، Discover **ماژول مستقل** شود، و کار به ترتیب گروه‌ها انجام شود:
+۱ پاک‌سازی AI · ۲ باگ‌های رسانه · ۳ Discover → ماژول مستقل در افزونه سئو · ۴ توسعه Discover (گزارش آمادگی، آمار Search Console، موضوعات با ویکی‌داده و نویسنده، برش WebP/فید/طعمه‌کلیک) · ۵ سئوی ویدیو (سازنده واحد برای ماژول «ویدیوها»، توضیح ویدیو، پر شدن خودکار) · ۶ پخش/دسترس‌پذیری/سرعت · ۷ ساختار (کلید جدا هر بخش، چند رسانه، register_post_meta، تست). این بخش گروه ۱ و ۲ است.
+
+### ۷۶.۱ پاک‌سازی AI (گروه ۱)
+- حذف: `shortcodes/ai-box.php`، کلید `ai_summary` از `HODIMA_MEDIA_LEGACY_KEYS` (دیگر خوانده نمی‌شود)، CSS مرده `.section-ai-box` (`single-post.css`، `single-product.css` دو جا، `taxonomy-product_cat.css`؛ هیچ قالبی آن کلاس را نداشت)، متن راهنمای «الگوی توضیحات کوتاه» در اسکیمای محصول، توضیح‌های کهنه کد، `_hook_ai_summary` داده آزمایشی.
+- **می‌ماند تا پاک‌سازی دیتابیس:** ثبت خالی `[hook_ai_box]` (دو خط در `media-legacy.php`). سایت‌ها خودکار به‌روز می‌شوند؛ اگر شورت‌کد زودتر حذف شود و در متن نوشته‌ای مانده باشد، متن خام «[hook_ai_box]» دیده می‌شود. بعد از اجرای SQL پایین (تأیید کاربر) حذف شود.
+- ماژول AEO (`_h_ai_*`، llms.txt) و آمار ربات‌های هوش مصنوعی ربطی به این بخش ندارند و ماندند.
+
+**SQL پاک‌سازی دیتابیس (کاربر در phpMyAdmin؛ اول پشتیبان؛ پیشوند `wp_` را با `$table_prefix` عوض کنید):**
+```sql
+-- ۱) شمارش
+SELECT 'post' AS t, meta_key, COUNT(*) FROM wp_postmeta WHERE meta_key IN ('_hook_ai_summary','ai_summary') GROUP BY meta_key
+UNION ALL SELECT 'term', meta_key, COUNT(*) FROM wp_termmeta WHERE meta_key IN ('hook_ai_summary','ai_summary') GROUP BY meta_key;
+SELECT ID, post_type, post_status, post_title FROM wp_posts WHERE post_content LIKE '%[hook\_ai\_box%' OR post_excerpt LIKE '%[hook\_ai\_box%';
+SELECT term_id, taxonomy FROM wp_term_taxonomy WHERE description LIKE '%[hook\_ai\_box%';
+SELECT option_name FROM wp_options WHERE option_value LIKE '%[hook\_ai\_box%';   -- ابزارک‌ها: دستی، نه SQL (داده سریالی)
+-- ۲) حذف
+DELETE FROM wp_postmeta WHERE meta_key = '_hook_ai_summary';
+DELETE FROM wp_termmeta WHERE meta_key = 'hook_ai_summary';
+DELETE pm FROM wp_postmeta pm JOIN wp_postmeta flag ON flag.post_id = pm.post_id AND flag.meta_key = 'enabled' AND flag.meta_value = 'yes' WHERE pm.meta_key = 'ai_summary';
+DELETE tm FROM wp_termmeta tm JOIN wp_termmeta flag ON flag.term_id = tm.term_id AND flag.meta_key = 'enabled' AND flag.meta_value = 'yes' WHERE tm.meta_key = 'ai_summary';
+UPDATE wp_posts SET post_content = REGEXP_REPLACE(post_content, '<!-- wp:shortcode -->\\s*\\[hook_ai_box[^\\]]*\\]\\s*<!-- /wp:shortcode -->\\s*', '') WHERE post_content LIKE '%[hook\_ai\_box%';
+UPDATE wp_posts SET post_content = REGEXP_REPLACE(post_content, '(<p>\\s*)?\\[hook_ai_box[^\\]]*\\](\\s*</p>)?', ''), post_excerpt = REGEXP_REPLACE(post_excerpt, '\\[hook_ai_box[^\\]]*\\]', '') WHERE post_content LIKE '%[hook\_ai\_box%' OR post_excerpt LIKE '%[hook\_ai\_box%';
+UPDATE wp_term_taxonomy SET description = REGEXP_REPLACE(description, '(<p>\\s*)?\\[hook_ai_box[^\\]]*\\](\\s*</p>)?', '') WHERE description LIKE '%[hook\_ai\_box%';
+```
+`ai_summary` بی‌پیشوند نام عمومی است؛ فقط روی شیء دارای نشانه داده خیلی قدیمی سیستم رسانه (`enabled = yes` بی‌پیشوند) حذف می‌شود. `REGEXP_REPLACE`: MySQL 8+ / MariaDB 10.0.5+. اجرا نشده (دیتابیس سایت در دسترس نیست؛ SQLite ابزار تست این تابع را ندارد).
+
+### ۷۶.۲ باگ‌ها (گروه ۲)
+| # | مشکل | اصلاح |
+|---|---|---|
+| ۱ | قالب برای حذف اسکیمای رسانه در صفحه ۲ به بعد دسته‌ها `remove_action( 'wp_head', 'hook_auto_inject_head_schema' )` می‌کرد؛ آن نام از Media 1.2 وجود نداشت ← FAQ، ویدیو و `subjectOf` دسته روی همه صفحه‌های صفحه‌بندی بدون نمایش اعلام می‌شد | Media: `hodima_media_schema_page_shows_media()` (صفحه‌بندی ترم ← خیر)؛ اسکیمای دسته (`category-schema-pro.php`) در صفحه ۲ به بعد `subjectOf` نمی‌سازد؛ کد مرده قالب حذف شد |
+| ۲ | دسته‌های وبلاگ (`category`) کادر رسانه داشتند و ویدیو/FAQ/صوت در اسکیما و سایت‌مپ ویدیو اعلام می‌شد، ولی هیچ قالبی آن‌ها را در صفحه دسته وبلاگ نشان نمی‌داد | فیلتر تازه `hodima_media_displayed_taxonomies` (پیش‌فرض همه، برای قالب‌های دیگر)؛ قالب هدیما فقط `product_cat` را اعلام می‌کند (`inc/media-sections.php`). `hodima_media_is_displayed()` در `hodima_media_video_node()` و سایت‌مپ؛ کادر دسته وبلاگ پیام «قالب فعلی نمایش نمی‌دهد» دارد (داده پاک نمی‌شود) |
+| ۳ | FAQ و صوت در head فقط بر اساس داده چاپ می‌شدند، جدا از نمایش: صفحه اصلی (قالب فقط معرفی و ویدیو را نشان می‌دهد)، صفحه ۲ دسته‌ها، دسته وبلاگ، محصولی که «سوالات متداول/پادکست» آن در تنظیمات قالب خاموش است | `hodima_media_schema_on_render()`: شورت‌کدهای `[hook_faq]` و `[hook_voice]` هنگام خروجی واقعی، فقط برای شیء همان صفحه، نود را صف می‌کنند و در `wp_footer` اولویت ۱ (پیش از چاپ گراف ۹۹۹۹ Core؛ بدون Core فالبک تگ جدا در فوتر، نه وسط قالب) اضافه می‌شود. ویدیو همچنان در head (اسکیمای دسته و صفحه اصلی پیش از بدنه به `#video` ارجاع می‌دهند) با شرط‌های ۱ و ۲ |
+| ۴ | `media-style.js` هر پلیر خارج از دید را متوقف می‌کرد، پادکست هم ← با اسکرول برای خواندن متن صدا قطع می‌شد | فقط ویدیو (`.hook-video-el` و iframe داخل `.hook-video-wrapper`) |
+| ۵ | `[hook_intro]` داخل خود متن معرفی ← فراخوانی بی‌پایان و Fatal | نگهبان بازگشت برای همان شیء (`static` + `finally`) |
+| ۶ | لینک صفحه SoundCloud/Castbox در AudioObject `contentUrl` می‌شد | `hodima_media_is_direct_audio()` (مشترک با شورت‌کد)؛ فایل ← `contentUrl` + `encodingFormat`، صفحه سرویس ← `url` |
+| ۷ | دامنه با `str_ends_with` (`fakeaparat.com` = آپارات)؛ JS پیشخوان `youtube-nocookie.com` را نمی‌شناخت | `hodima_media_host_is()` (خود دامنه یا زیردامنه) و همان قاعده در JS (`hostIs`) |
+
+باگ «نود WebPage تکراری Discover برگه‌ها (`#media-article`)» و کد مرده `alternateName` محصول به گروه ۳ (انتقال Discover) موکول شد.
+
+**تست:**
+- `bash bin/lint.sh` قبول (Stylelint ۲۲ مورد قدیمی کمتر — `!important`های حذف‌شده؛ baseline به‌روز شد)؛ `node --check` دو JS.
+- `compare-with-ref.sh` (۲۵ صفحه): فقط تفاوت‌های عمدی — صفحه اصلی `#faq` و `#audio` حذف (در HTML هر دو نسخه نه FAQ هست نه پادکست)؛ صفحه‌های ووکامرس این ابزار فقط head/footer رندر می‌شوند (شورت‌کد اجرا نمی‌شود) ← `#faq`/`#audio` محصول و FAQ دسته در آن‌ها «LOST» است که **مصنوعی** است؛ پس روی ووکامرس **واقعی** (`wc-run.sh` ref و کار، `compare.py`): محصول، دسته، زیر‌دسته، فروشگاه، خانه — اسکیما یکسان (فقط زمان نصب)، FAQ و پادکست نمایش‌داده‌شده همچنان اعلام می‌شوند. برگه راهنما (FAQ و پادکست قابل‌مشاهده) یکسان. یکپارچگی: بدون تکراری و بدون ارجاع بی‌مقصد؛ بدون هشدار PHP. `ci-check.sh` سالم.
+- `/hair/page/2/` ووکامرس واقعی: قبل FAQPage + VideoObject + subjectOf (بدون FAQ در HTML)، بعد هیچ‌کدام.
+- `wp-eval`: دسته وبلاگ ← `is_displayed` false، `video_node` و ورودی سایت‌مپ null؛ بدون فیلتر قالب ← node ساخته می‌شود. `fakeaparat.com`/`evilyoutube.com` ← other؛ nocookie و player.vimeo درست. صوت SoundCloud ← `url` بدون contentUrl؛ MP3 ← contentUrl + audio/mpeg. متن معرفی با `[hook_intro]` درون خودش ← «سلام  پایان» بدون خطا. `[hook_ai_box]` ← خالی.
+- Chromium (Playwright): پخش صوت و اسکرول تا پایین ← قبل متوقف، بعد ادامه.
+- کادر دسته وبلاگ: پیام نمایش داده می‌شود؛ `admin-check.sh` صفحه‌های پیشخوان بدون خطا (هشدارها فقط بررسی به‌روزرسانی بدون شبکه).
+- `css-equiv.sh`: سه فایل متفاوت، همه فقط قانون‌های `.section-ai-box`؛ `visual-compare.sh` و `--wc`: همه نماها یکسان (۰ پیکسل).
+
+**محدودیت:** SQL روی دیتابیس واقعی اجرا نشد. پخش واقعی آپارات/یوتیوب در محیط نیست.
+
+## ۷۷. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
 
 | مسیر | کارکرد | پیشنهاد مکان |
 |---|---|---|

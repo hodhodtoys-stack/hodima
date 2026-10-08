@@ -28,8 +28,27 @@ function hodima_media_shortcode_intro( mixed $atts ): string {
 		return '';
 	}
 
+	/*
+	 * باگ قبلی: اگر خود «[hook_intro]» داخل متن معرفی نوشته می‌شد، شورت‌کد
+	 * خودش را بی‌پایان صدا می‌زد و صفحه با Fatal از کار می‌افتاد. حالا داخل
+	 * متن معرفی همان شیء دوباره اجرا نمی‌شود.
+	 */
+	static $rendering = [];
+	$key = $context . ':' . $object_id;
+
+	if ( isset( $rendering[ $key ] ) ) {
+		return '';
+	}
+
 	hodima_media_enqueue_assets();
 
-	// shortcode_unautop: شورت‌کد در خط خودش داخل <p> پیچیده نشود (div داخل p نامعتبر است)
-	return sprintf( '<div class="hook-intro-wrapper">%s</div>', do_shortcode( shortcode_unautop( wpautop( $content ) ) ) );
+	$rendering[ $key ] = true;
+	try {
+		// shortcode_unautop: شورت‌کد در خط خودش داخل <p> پیچیده نشود (div داخل p نامعتبر است)
+		$html = do_shortcode( shortcode_unautop( wpautop( $content ) ) );
+	} finally {
+		unset( $rendering[ $key ] );
+	}
+
+	return sprintf( '<div class="hook-intro-wrapper">%s</div>', $html );
 }

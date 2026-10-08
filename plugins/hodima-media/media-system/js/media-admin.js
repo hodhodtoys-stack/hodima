@@ -25,21 +25,23 @@
 	}
 
 	/* ── لینک ویدیو: کدام سرویس؟ (همان قوانین hodima_media_parse_video_url) ── */
+	const hostIs = (host, domain) => host === domain || host.endsWith(`.${domain}`);
+
 	function parseVideo(url) {
 		let u;
 		try { u = new URL(url); } catch { return null; }
 		const host = u.hostname.toLowerCase();
 		const path = u.pathname;
 		if (/\.(mp4|webm|ogg|ogv|mov|m4v)$/i.test(path)) return { provider: 'file', label: 'فایل ویدیو' };
-		let m = host.endsWith('aparat.com') && path.match(/^\/(?:v\/|video\/video\/embed\/videohash\/)([A-Za-z0-9]+)/);
+		let m = hostIs(host, 'aparat.com') && path.match(/^\/(?:v\/|video\/video\/embed\/videohash\/)([A-Za-z0-9]+)/);
 		if (m) return { provider: 'aparat', label: `آپارات (شناسه ${m[1]})` };
-		if (host.endsWith('youtube.com') || host === 'youtu.be') {
+		if (hostIs(host, 'youtube.com') || hostIs(host, 'youtube-nocookie.com') || host === 'youtu.be') {
 			m = path.match(/^\/shorts\/([\w-]+)/);
 			if (m) return { provider: 'youtube', label: 'یوتیوب شورتز (عمودی)', vertical: true };
 			const id = host === 'youtu.be' ? path.slice(1) : (u.searchParams.get('v') || path.match(/^\/embed\/([\w-]+)/)?.[1] || '');
 			if (/^[\w-]{6,20}$/.test(id)) return { provider: 'youtube', label: 'یوتیوب' };
 		}
-		if (/(^|\.)vimeo\.com$/.test(host) && /^\/(?:video\/)?\d+/.test(path)) return { provider: 'vimeo', label: 'ویمئو' };
+		if (hostIs(host, 'vimeo.com') && /^\/(?:video\/)?\d+/.test(path)) return { provider: 'vimeo', label: 'ویمئو' };
 		return { provider: 'other', label: '' };
 	}
 

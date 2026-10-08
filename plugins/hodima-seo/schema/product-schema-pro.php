@@ -323,7 +323,6 @@ function hook_generate_custom_product_schema() {
      * media-system/media-helpers.php):
      *   - عنوان Discover به عنوان alternateName (پایین) و موجودیت‌ها به عنوان
      *     مشخصه «مرتبط با» — هر دو کاربرد نادرست آن ویژگی‌ها.
-     *   - خلاصه هوش مصنوعی کلا از سایت حذف شد (دیگر به description اضافه نمی‌شود).
      */
     $modern_seo = function_exists( 'hodima_media_discover_enabled' )
         ? hodima_media_discover_enabled( 'post', (int) $product_id )

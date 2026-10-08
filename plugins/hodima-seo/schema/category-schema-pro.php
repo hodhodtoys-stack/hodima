@@ -190,8 +190,14 @@ function hodima_category_schema_fields(): ?array {
 
     $video_url = null !== $media_video ? '' : get_term_meta( $term->term_id, '_hod_video_url', true );
 
+    // صفحه ۲ به بعد: بخش ویدیو نمایش داده نمی‌شود و #video چاپ نمی‌شود؛ ارجاع آویزان نساز
+    $media_shown = null !== $media_video
+        && ( ! function_exists( 'hodima_media_schema_page_shows_media' ) || hodima_media_schema_page_shows_media( (int) $term->term_id, 'term' ) );
+
     if ( null !== $media_video ) {
-        $collection_page['subjectOf'] = [ '@id' => $media_video['@id'] ];
+        if ( $media_shown ) {
+            $collection_page['subjectOf'] = [ '@id' => $media_video['@id'] ];
+        }
     } elseif ( ! empty( $video_url ) ) {
         $video_thumb = get_term_meta( $term->term_id, '_hod_video_thumbnail', true );
         $video_date  = get_term_meta( $term->term_id, '_hod_video_date', true );

@@ -120,21 +120,10 @@
 	}
 }
 
-.section-ai-box {
-	background: transparent !important;
-	box-shadow: none !important;
-	padding: 0 !important;
-
-	& > *:first-child {
-		margin-top: 0 !important;
-	}
-}
-
 .section-intro-video > div > *:last-child,
 .section-description > *:last-child,
 .section-voice > *:last-child,
-.section-faq > *:last-child,
-.section-ai-box > *:last-child {
+.section-faq > *:last-child {
 	margin-bottom: 0 !important;
 }
 

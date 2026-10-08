@@ -33,6 +33,7 @@ function hodima_media_shortcode_voice( mixed $atts ): string {
 	}
 
 	hodima_media_enqueue_assets();
+	hodima_media_schema_on_render( 'audio', $object_id, $context, $data );
 
 	$url    = esc_url_raw( (string) preg_replace( '/\s+/', '%20', trim( (string) $data['voice_url'] ) ) );
 	$url    = ( is_ssl() && str_starts_with( $url, 'http://' ) ) ? set_url_scheme( $url, 'https' ) : $url;
@@ -41,7 +42,7 @@ function hodima_media_shortcode_voice( mixed $atts ): string {
 	$inline = 'inline' === ( $atts['layout'] ?? '' );
 	$path   = (string) wp_parse_url( $url, PHP_URL_PATH );
 
-	if ( preg_match( '/\.(mp3|wav|ogg|oga|m4a|aac|opus)$/i', $path ) ) {
+	if ( hodima_media_is_direct_audio( $url ) ) {
 
 		$mime  = wp_check_filetype( $path, wp_get_mime_types() )['type'] ?: 'audio/mpeg';
 		$media = sprintf(

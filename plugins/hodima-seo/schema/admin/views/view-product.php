@@ -151,7 +151,7 @@ hodima_view_header(
             <div class="hd-field hd-field--wide">
                 <label class="hd-field__label" for="hodima_schema_product_desc_tpl">الگوی توضیحات کوتاه</label>
                 <textarea name="hodima_schema_product_desc_tpl" id="hodima_schema_product_desc_tpl" rows="3"><?php echo esc_textarea($desc_tpl); ?></textarea>
-                <p class="hd-field__help">اگر محصول توضیح کوتاه نداشته باشد و خلاصه هوش مصنوعی هم نباشد، این متن جایگزین می‌شود.</p>
+                <p class="hd-field__help">اگر محصول توضیح کوتاه نداشته باشد، این متن جایگزین می‌شود.</p>
             </div>
         </div>
     </section>

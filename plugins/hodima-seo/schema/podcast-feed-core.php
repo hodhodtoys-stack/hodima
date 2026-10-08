@@ -124,7 +124,7 @@ function hodima_podcast_episodes(): array {
             }
 
             $post  = get_post( $post_id );
-            // خلاصه هوش مصنوعی از سایت حذف شد؛ خلاصه نوشته ← ابتدای متن
+            // خلاصه نوشته ← ابتدای متن
             $text  = '' !== trim( (string) $post->post_excerpt ) ? (string) $post->post_excerpt : (string) $post->post_content;
             $image = (string) get_the_post_thumbnail_url( $post_id, 'full' ) ?: (string) ( $data['video_thumb'] ?? '' ) ?: $cover;
             $date  = hodima_podcast_timestamp( (string) ( $data['voice_date'] ?? '' ) ) ?: (int) strtotime( (string) $post->post_date_gmt . ' UTC' );
