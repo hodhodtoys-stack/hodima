@@ -1,11 +1,14 @@
 <?php
 /**
- * ماژول «Google Discover» — کادر ویرایش نوشته و برگه
+ * ماژول «Google Discover» — کادر ویرایش نوشته، برگه، محصول و دسته محصول
  * Path: core/discover/discover-admin.php
  *
- * قبلا بخشی از کادر «تنظیمات رسانه» (Hodima Media) بود؛ حالا کادر جدای
- * «Google Discover» که فقط با همین ماژول دیده می‌شود. نام فیلدها
- * hodima_discover[…]، nonce جدا؛ کلیدهای متا همان قبلی.
+ * چیدمان (SEO 1.17.0؛ نسخه قبلی راهنما را بالای فیلدها و همه را زیر هم داشت):
+ *   ۱. فیلدها: عنوان با شمارنده، کارت تصویر، موضوعات به شکل برچسب — و کنارش
+ *      پیش‌نمایش کارت Discover در گوشی (با هر تغییر زنده عوض می‌شود).
+ *   ۲. زیر فیلدها: «آمادگی برای Discover» با امتیاز و نوار پیشرفت؛ مشکل‌ها
+ *      اول و پررنگ، موارد درست کم‌رنگ؛ هر مشکل لینک رفعش را دارد.
+ * نام فیلدها hodima_discover[…]، nonce جدا؛ کلیدهای متا همان قبلی.
  */
 
 declare(strict_types=1);
@@ -16,7 +19,10 @@ add_action( 'admin_enqueue_scripts', static function (): void {
 
 	$screen = get_current_screen();
 
-	if ( ! $screen || 'post' !== $screen->base || ! hodima_seo_discover_enabled( 'post' ) ) {
+	$is_post = $screen && 'post' === $screen->base && hodima_seo_discover_enabled( 'post' );
+	$is_term = $screen && 'term' === $screen->base && hodima_seo_discover_enabled( 'term' );
+
+	if ( ! $is_post && ! $is_term ) {
 		return;
 	}
 
@@ -43,32 +49,22 @@ add_action( 'admin_enqueue_scripts', static function (): void {
 
 add_action( 'add_meta_boxes', static function ( string $post_type ): void {
 
-	if ( ! in_array( $post_type, (array) apply_filters( 'hook_modern_seo_post_types', [ 'post', 'page' ] ), true ) ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- نام فیلتر قبلی سیستم رسانه
+	if ( ! in_array( $post_type, hodima_seo_discover_post_types(), true ) ) {
 		return;
 	}
 
 	add_meta_box( 'hodima_discover_box', 'Google Discover', 'hodima_seo_discover_render_box', $post_type, 'normal', 'high' );
 } );
 
-/** فهرست بررسی آمادگی. */
-function hodima_seo_discover_render_checks( WP_Post $post ): void {
-
-	$icons = [ 'ok' => 'dashicons-yes-alt', 'warn' => 'dashicons-warning', 'error' => 'dashicons-dismiss' ];
-
-	echo '<ul class="hodima-dc__checks" data-hodima-dc-checks>';
-	foreach ( hodima_seo_discover_checks( $post ) as $check ) {
-		printf(
-			'<li class="is-%1$s" data-hodima-dc-check="%2$s"><span class="dashicons %3$s" aria-hidden="true"></span><strong>%4$s:</strong> <span data-hodima-dc-check-text>%5$s</span></li>',
-			esc_attr( $check['status'] ),
-			esc_attr( $check['key'] ),
-			esc_attr( $icons[ $check['status'] ] ),
-			esc_html( $check['label'] ),
-			esc_html( $check['detail'] )
-		);
+// دسته محصول: کادر در فرم ویرایش دسته (بعد از کادر رسانه) و ذخیره
+add_action( 'admin_init', static function (): void {
+	foreach ( hodima_seo_discover_taxonomies() as $taxonomy ) {
+		add_action( "{$taxonomy}_edit_form", 'hodima_seo_discover_render_term_box', 5 );
+		add_action( "edited_{$taxonomy}", static fn( int $term_id ) => hodima_seo_discover_save( $term_id, 'term' ) );
 	}
-	echo '</ul>';
-}
+} );
 
+/** کادر Discover نوشته/برگه/محصول. */
 function hodima_seo_discover_render_box( WP_Post $post ): void {
 
 	if ( ! hodima_seo_discover_for_post( $post->ID ) ) {
@@ -76,60 +72,188 @@ function hodima_seo_discover_render_box( WP_Post $post ): void {
 		return;
 	}
 
-	$data      = hodima_seo_discover_data( $post->ID );
-	$image_id  = $data['image_id'];
-	$image_src = $image_id ? wp_get_attachment_image_src( $image_id, 'medium' ) : false;
+	hodima_seo_discover_render_fields( $post );
+}
+
+/** کادر Discover دسته محصول (فرم ویرایش ترم، بیرون از جعبه‌های meta-box). */
+function hodima_seo_discover_render_term_box( WP_Term $term ): void {
+
+	if ( ! hodima_seo_discover_for_term( (int) $term->term_id ) ) {
+		return;
+	}
 	?>
-	<div class="hodima-dc" data-hodima-dc>
-		<?php wp_nonce_field( 'hodima_discover_save_' . $post->ID, 'hodima_discover_nonce' ); ?>
-		<input type="hidden" name="hodima_discover[present]" value="1">
-
-		<p class="hodima-dc__intro">Discover فید پیشنهادی گوگل در موبایل است و ورودی زیادی برای مقاله‌ها می‌آورد. فهرست زیر آمادگی همین نوشته را نشان می‌دهد.</p>
-
-		<?php $stats = 'publish' === $post->post_status ? hodima_seo_discover_post_stats( $post->ID ) : null; ?>
-		<?php if ( null !== $stats ) : ?>
-			<p class="hodima-dc__stats"><span class="dashicons dashicons-chart-bar" aria-hidden="true"></span> در Discover (۲۸ روز، Search Console): <strong><?php echo esc_html( number_format_i18n( $stats['clicks'] ) ); ?></strong> کلیک از <strong><?php echo esc_html( number_format_i18n( $stats['impressions'] ) ); ?></strong> نمایش</p>
-		<?php endif; ?>
-
-		<?php hodima_seo_discover_render_checks( $post ); ?>
-
-		<div class="hodima-dc__field">
-			<label class="hodima-dc__label" for="hodima-dc-title">عنوان Discover (اختیاری)</label>
-			<input type="text" id="hodima-dc-title" name="hodima_discover[title]" value="<?php echo esc_attr( $data['title'] ); ?>" maxlength="200" data-hodima-dc-title data-hodima-dc-fallback="<?php echo esc_attr( $post->post_title ); ?>">
-			<p class="hodima-dc__status" data-hodima-dc-status aria-live="polite"></p>
-			<p class="hodima-dc__help">فقط در کارت Discover و اشتراک‌گذاری (og:title) استفاده می‌شود؛ عنوان صفحه و h1 عوض نمی‌شوند. جذاب ولی صادق: اغراق و «طعمه کلیک» در Discover جریمه دارد. خالی = عنوان نوشته.</p>
-		</div>
-
-		<div class="hodima-dc__field" data-hodima-dc-image>
-			<span class="hodima-dc__label" id="hodima-dc-image-label">تصویر Discover (اختیاری)</span>
-			<input type="hidden" name="hodima_discover[image_id]" value="<?php echo $image_id ? (int) $image_id : ''; ?>" data-hodima-dc-image-id>
-			<div class="hodima-dc__row">
-				<button type="button" class="button" data-hodima-dc-pick aria-describedby="hodima-dc-image-label"><span class="dashicons dashicons-format-image" aria-hidden="true"></span> انتخاب تصویر</button>
-				<button type="button" class="button-link hodima-dc__clear" data-hodima-dc-clear <?php echo $image_id ? '' : 'hidden'; ?>>حذف (تصویر شاخص استفاده شود)</button>
-			</div>
-			<img class="hodima-dc__preview" src="<?php echo esc_url( is_array( $image_src ) ? (string) $image_src[0] : '' ); ?>" alt="" data-hodima-dc-preview <?php echo is_array( $image_src ) ? '' : 'hidden'; ?>>
-			<p class="hodima-dc__status" data-hodima-dc-status aria-live="polite"></p>
-			<p class="hodima-dc__help">حداقل <strong>۱۲۰۰ پیکسل عرض</strong>، ترجیحا افقی ۱۶:۹؛ بدون لوگو و بدون متن زیاد روی تصویر. خالی = تصویر شاخص. سه برش ۱۶:۹، ۴:۳ و ۱:۱ هنگام ذخیره خودکار ساخته می‌شود.</p>
-		</div>
-
-		<div class="hodima-dc__field">
-			<label class="hodima-dc__label" for="hodima-dc-entities">موضوعات اصلی (اختیاری)</label>
-			<textarea id="hodima-dc-entities" name="hodima_discover[entities]" rows="3" dir="auto" placeholder="<?php echo esc_attr( "کش مو\nکلیپس https://www.wikidata.org/wiki/Q…" ); ?>"><?php echo esc_textarea( hodima_seo_discover_format_entities( $data['entity_items'], "\n" ) ); ?></textarea>
-			<p class="hodima-dc__help">هر موضوع در یک خط (یا جدا با ویرگول). به گوگل کمک می‌کند بداند نوشته درباره چیست و به علاقه‌مندان همان موضوع در Discover نشانش دهد. برای دقت بیشتر، بعد از نام آدرس صفحه آن در <strong>ویکی‌داده</strong> یا ویکی‌پدیا (یا فقط شناسه ویکی‌داده مثل <code>Q1234</code>) را بنویسید تا گوگل موضوع را بی‌ابهام بشناسد.</p>
-		</div>
+	<div id="hodima_discover_term_box" class="postbox hodima-dc-postbox">
+		<div class="postbox-header"><h2 class="hndle">Google Discover</h2></div>
+		<div class="inside"><?php hodima_seo_discover_render_fields( $term ); ?></div>
 	</div>
 	<?php
 }
 
-add_action( 'save_post', static function ( int $post_id ): void {
+/** آدرس تصویر پیش‌نمایش کارت Discover (اندازه متوسط)، یا رشته خالی. */
+function hodima_seo_discover_preview_image( int $id, string $context ): string {
+	$image = hodima_seo_discover_image( $id, $context );
+	if ( null === $image ) {
+		return '';
+	}
+	$src = wp_get_attachment_image_src( $image['id'], 'medium_large' );
+	return is_array( $src ) ? (string) $src[0] : $image['url'];
+}
 
-	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+/** فیلدها + پیش‌نمایش + آمادگی. */
+function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
+
+	$context   = $target instanceof WP_Term ? 'term' : 'post';
+	$id        = $target instanceof WP_Term ? (int) $target->term_id : (int) $target->ID;
+	$data      = hodima_seo_discover_data( $id, $context );
+	$fallback  = hodima_seo_discover_object_title( $id, $context );
+	$own_id    = $data['image_id'];
+	$own_src   = $own_id ? wp_get_attachment_image_src( $own_id, 'medium_large' ) : false;
+	$preview   = hodima_seo_discover_preview_image( $id, $context );
+	$def_id    = hodima_seo_discover_default_image_id( $id, $context );
+	$def_src   = $def_id ? wp_get_attachment_image_src( $def_id, 'medium_large' ) : false;
+	$default   = is_array( $def_src ) ? (string) $def_src[0] : ''; // پیش‌نمایش وقتی تصویر Discover حذف شود
+	$checks    = hodima_seo_discover_checks( $target );
+	$stats     = ( $target instanceof WP_Term || 'publish' === $target->post_status ) ? hodima_seo_discover_post_stats( $id, $context ) : null;
+	$own_label = 'term' === $context ? 'تصویر دسته' : ( 'product' === $target->post_type ? 'تصویر محصول' : 'تصویر شاخص' );
+	$host      = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+	$icon      = (string) get_site_icon_url( 64 );
+	$length    = mb_strlen( '' !== $data['title'] ? $data['title'] : $fallback );
+	?>
+	<div class="hodima-dc" data-hodima-dc>
+		<?php wp_nonce_field( 'hodima_discover_save_' . $context . '_' . $id, 'hodima_discover_nonce' ); ?>
+		<input type="hidden" name="hodima_discover[present]" value="1">
+
+		<?php if ( null !== $stats ) : ?>
+			<p class="hodima-dc__stats"><span class="dashicons dashicons-chart-bar" aria-hidden="true"></span> در Discover (۲۸ روز، Search Console): <strong><?php echo esc_html( number_format_i18n( $stats['clicks'] ) ); ?></strong> کلیک از <strong><?php echo esc_html( number_format_i18n( $stats['impressions'] ) ); ?></strong> نمایش</p>
+		<?php endif; ?>
+
+		<div class="hodima-dc__layout" data-hodima-dc-default-img="<?php echo esc_url( $default ); ?>">
+			<div class="hodima-dc__main">
+
+				<div class="hodima-dc__field">
+					<div class="hodima-dc__label-row">
+						<label class="hodima-dc__label" for="hodima-dc-title">عنوان Discover</label>
+						<span class="hodima-dc__counter" data-hodima-dc-counter aria-live="polite"><?php echo esc_html( number_format_i18n( $length ) ); ?> / ۱۱۰</span>
+					</div>
+					<input type="text" id="hodima-dc-title" name="hodima_discover[title]" value="<?php echo esc_attr( $data['title'] ); ?>" maxlength="200" placeholder="<?php echo esc_attr( $fallback ); ?>" data-hodima-dc-title data-hodima-dc-fallback="<?php echo esc_attr( $fallback ); ?>">
+					<p class="hodima-dc__help">فقط کارت Discover و اشتراک‌گذاری (og:title)؛ عنوان صفحه و h1 عوض نمی‌شوند. خالی = همان عنوان. جذاب ولی صادق؛ «طعمه کلیک» جریمه دارد.</p>
+				</div>
+
+				<div class="hodima-dc__field" data-hodima-dc-image>
+					<span class="hodima-dc__label" id="hodima-dc-image-label">تصویر Discover</span>
+					<input type="hidden" name="hodima_discover[image_id]" value="<?php echo $own_id ? (int) $own_id : ''; ?>" data-hodima-dc-image-id>
+					<div class="hodima-dc__image<?php echo is_array( $own_src ) ? ' has-image' : ''; ?>" data-hodima-dc-image-card>
+						<img src="<?php echo esc_url( is_array( $own_src ) ? (string) $own_src[0] : '' ); ?>" alt="" data-hodima-dc-image-preview <?php echo is_array( $own_src ) ? '' : 'hidden'; ?>>
+						<div class="hodima-dc__image-empty" <?php echo is_array( $own_src ) ? 'hidden' : ''; ?> data-hodima-dc-image-empty>
+							<span class="dashicons dashicons-format-image" aria-hidden="true"></span>
+							<span><?php echo esc_html( $own_label ); ?> استفاده می‌شود</span>
+						</div>
+						<div class="hodima-dc__image-actions">
+							<button type="button" class="button" data-hodima-dc-pick aria-describedby="hodima-dc-image-label"><?php echo is_array( $own_src ) ? 'تغییر تصویر' : 'انتخاب تصویر'; ?></button>
+							<button type="button" class="button-link hodima-dc__clear" data-hodima-dc-clear <?php echo $own_id ? '' : 'hidden'; ?>>حذف</button>
+						</div>
+					</div>
+					<p class="hodima-dc__status" data-hodima-dc-status aria-live="polite"></p>
+					<p class="hodima-dc__help">حداقل <strong>۱۲۰۰ پیکسل عرض</strong>، ترجیحا افقی ۱۶:۹؛ بدون لوگو و متن زیاد روی تصویر. سه برش ۱۶:۹، ۴:۳ و ۱:۱ هنگام ذخیره خودکار ساخته می‌شود.</p>
+				</div>
+
+				<div class="hodima-dc__field" data-hodima-dc-topics>
+					<label class="hodima-dc__label" for="hodima-dc-topic-input">موضوعات اصلی</label>
+					<div class="hodima-dc__chips" data-hodima-dc-chips>
+						<?php foreach ( $data['entity_items'] as $item ) : ?>
+							<span class="hodima-dc__chip" data-value="<?php echo esc_attr( trim( $item['name'] . ' ' . $item['url'] ) ); ?>">
+								<span><?php echo esc_html( $item['name'] ); ?></span>
+								<?php if ( '' !== $item['url'] ) : ?><span class="hodima-dc__chip-link" title="<?php echo esc_attr( $item['url'] ); ?>">ویکی</span><?php endif; ?>
+								<button type="button" class="hodima-dc__chip-x" data-hodima-dc-chip-remove aria-label="<?php echo esc_attr( 'حذف ' . $item['name'] ); ?>">×</button>
+							</span>
+						<?php endforeach; ?>
+						<input type="text" id="hodima-dc-topic-input" class="hodima-dc__chip-input" placeholder="موضوع را بنویسید و Enter بزنید" data-hodima-dc-topic-input>
+					</div>
+					<textarea name="hodima_discover[entities]" hidden data-hodima-dc-entities><?php echo esc_textarea( hodima_seo_discover_format_entities( $data['entity_items'], "\n" ) ); ?></textarea>
+					<p class="hodima-dc__help">به گوگل می‌گوید صفحه درباره چیست. برای دقت بیشتر بعد از نام، آدرس ویکی‌داده یا شناسه‌اش را بنویسید: <code>کلیپس Q1234</code></p>
+				</div>
+			</div>
+
+			<aside class="hodima-dc__phone" aria-label="پیش‌نمایش کارت Discover">
+				<span class="hodima-dc__phone-label">پیش‌نمایش در گوشی</span>
+				<div class="hodima-dc__card">
+					<div class="hodima-dc__card-img">
+						<img src="<?php echo esc_url( $preview ); ?>" alt="" data-hodima-dc-card-img <?php echo '' === $preview ? 'hidden' : ''; ?>>
+						<span data-hodima-dc-card-noimg <?php echo '' === $preview ? '' : 'hidden'; ?>>بدون تصویر</span>
+					</div>
+					<div class="hodima-dc__card-body">
+						<span class="hodima-dc__card-site">
+							<?php if ( '' !== $icon ) : ?><img src="<?php echo esc_url( $icon ); ?>" alt="" width="16" height="16"><?php endif; ?>
+							<?php echo esc_html( $host ); ?>
+						</span>
+						<strong class="hodima-dc__card-title" data-hodima-dc-card-title><?php echo esc_html( '' !== $data['title'] ? $data['title'] : $fallback ); ?></strong>
+					</div>
+				</div>
+			</aside>
+		</div>
+
+		<?php hodima_seo_discover_render_checks( $checks ); ?>
+	</div>
+	<?php
+}
+
+/**
+ * «آمادگی برای Discover»: امتیاز، نوار پیشرفت و فهرست (مشکل‌ها اول).
+ *
+ * @param list<array{key: string, status: string, label: string, detail: string, link?: string}> $checks
+ */
+function hodima_seo_discover_render_checks( array $checks ): void {
+
+	[ $ok, $total ] = hodima_seo_discover_score( $checks );
+	$icons          = [ 'ok' => 'dashicons-yes-alt', 'warn' => 'dashicons-warning', 'error' => 'dashicons-dismiss' ];
+	$order          = [ 'error' => 0, 'warn' => 1, 'ok' => 2 ];
+	$level          = match ( true ) {
+		$ok === $total        => 'ok',
+		$ok >= $total * 0.6   => 'warn',
+		default               => 'error',
+	};
+
+	usort( $checks, static fn( array $a, array $b ): int => $order[ $a['status'] ] <=> $order[ $b['status'] ] );
+	?>
+	<section class="hodima-dc__guide" data-hodima-dc-guide>
+		<header class="hodima-dc__guide-head">
+			<strong>آمادگی برای Discover</strong>
+			<span class="hodima-dc__score is-<?php echo esc_attr( $level ); ?>" data-hodima-dc-score><?php echo esc_html( sprintf( '%s از %s', number_format_i18n( $ok ), number_format_i18n( $total ) ) ); ?></span>
+		</header>
+		<div class="hodima-dc__bar is-<?php echo esc_attr( $level ); ?>" role="progressbar" aria-label="آمادگی برای Discover" aria-valuemin="0" aria-valuemax="<?php echo (int) $total; ?>" aria-valuenow="<?php echo (int) $ok; ?>" data-hodima-dc-bar>
+			<span style="inline-size: <?php echo esc_attr( (string) ( $total ? round( 100 * $ok / $total ) : 0 ) ); ?>%"></span>
+		</div>
+		<ul class="hodima-dc__checks">
+			<?php foreach ( $checks as $check ) : ?>
+				<li class="is-<?php echo esc_attr( $check['status'] ); ?>" data-hodima-dc-check="<?php echo esc_attr( $check['key'] ); ?>">
+					<span class="dashicons <?php echo esc_attr( $icons[ $check['status'] ] ); ?>" aria-hidden="true"></span>
+					<span class="hodima-dc__check-text"><strong><?php echo esc_html( $check['label'] ); ?></strong> <span data-hodima-dc-check-text><?php echo esc_html( $check['detail'] ); ?></span></span>
+					<?php if ( 'ok' !== $check['status'] && '' !== ( $check['link'] ?? '' ) ) : ?>
+						<a class="hodima-dc__fix" href="<?php echo esc_url( (string) $check['link'] ); ?>">رفع</a>
+					<?php endif; ?>
+				</li>
+			<?php endforeach; ?>
+		</ul>
+		<p class="hodima-dc__help">Discover فید پیشنهادی گوگل در موبایل است؛ گوگل خودش صفحه‌ها را انتخاب می‌کند. این فهرست چیزهایی است که شانس انتخاب را بالا می‌برد. گزارش همه صفحه‌ها: «ابزارهای هدیما ← Google Discover».</p>
+	</section>
+	<?php
+}
+
+/** ذخیره کادر (نوشته/برگه/محصول یا دسته). */
+function hodima_seo_discover_save( int $object_id, string $context ): void {
+
+	$context = hodima_seo_discover_context( $context );
+	$nonce   = isset( $_POST['hodima_discover_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['hodima_discover_nonce'] ) ) : '';
+
+	if ( ! wp_verify_nonce( $nonce, 'hodima_discover_save_' . $context . '_' . $object_id ) ) {
 		return;
 	}
 
-	$nonce = isset( $_POST['hodima_discover_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['hodima_discover_nonce'] ) ) : '';
+	$allowed = 'term' === $context
+		? hodima_seo_discover_for_term( $object_id ) && current_user_can( 'edit_term', $object_id )
+		: hodima_seo_discover_for_post( $object_id ) && current_user_can( 'edit_post', $object_id );
 
-	if ( ! wp_verify_nonce( $nonce, 'hodima_discover_save_' . $post_id ) || ! current_user_can( 'edit_post', $post_id ) || ! hodima_seo_discover_for_post( $post_id ) ) {
+	if ( ! $allowed ) {
 		return;
 	}
 
@@ -145,16 +269,24 @@ add_action( 'save_post', static function ( int $post_id ): void {
 	$image_id = absint( $get( 'image_id' ) );
 
 	$values = [
-		HODIMA_SEO_DISCOVER_META['title']    => sanitize_text_field( $get( 'title' ) ),
-		HODIMA_SEO_DISCOVER_META['entities'] => hodima_seo_discover_format_entities( hodima_seo_discover_entity_items( sanitize_textarea_field( $get( 'entities' ) ) ) ),
-		HODIMA_SEO_DISCOVER_META['image_id'] => $image_id && wp_attachment_is_image( $image_id ) ? $image_id : 0,
+		'title'    => sanitize_text_field( $get( 'title' ) ),
+		'entities' => hodima_seo_discover_format_entities( hodima_seo_discover_entity_items( sanitize_textarea_field( $get( 'entities' ) ) ) ),
+		'image_id' => $image_id && wp_attachment_is_image( $image_id ) ? $image_id : 0,
 	];
 
-	foreach ( $values as $key => $value ) {
+	foreach ( $values as $field => $value ) {
+		$key = hodima_seo_discover_meta_key( $field, $context );
 		( '' === $value || 0 === $value )
-			? delete_post_meta( $post_id, $key )
-			: update_post_meta( $post_id, $key, $value );
+			? delete_metadata( $context, $object_id, $key )
+			: update_metadata( $context, $object_id, $key, $value );
 	}
+}
+
+add_action( 'save_post', static function ( int $post_id ): void {
+	if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+		return;
+	}
+	hodima_seo_discover_save( $post_id, 'post' );
 }, 10 );
 
 /* =====================================================================

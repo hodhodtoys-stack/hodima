@@ -31,7 +31,9 @@ function hook_render_blog_schema() {
     $post_url      = '' !== $canonical ? $canonical : trailingslashit( (string) get_permalink( $post_id ) );
     $post_title    = get_the_title($post_id);
     
-    $raw_excerpt   = get_the_excerpt() ? get_the_excerpt() : wp_trim_words(strip_shortcodes($post->post_content), 30, '...');
+    // بدون چکیده دستی: «متن معرفی» نوشته (سیستم رسانه؛ inc/page-intro.php)، بعد ابتدای متن
+    $intro         = function_exists( 'hodima_seo_page_intro_text' ) ? hodima_seo_page_intro_text( (int) $post_id, 'post', 40 ) : '';
+    $raw_excerpt   = has_excerpt( $post_id ) ? get_the_excerpt() : ( '' !== $intro ? $intro : ( get_the_excerpt() ?: wp_trim_words(strip_shortcodes($post->post_content), 30, '...') ) );
     $clean_desc    = wp_strip_all_tags(html_entity_decode($raw_excerpt, ENT_QUOTES, 'UTF-8'));
     
     // باگ واقعی و مهم پیدا‌شده (همان خانواده‌ی باگ priceValidUntil/uploadDate):

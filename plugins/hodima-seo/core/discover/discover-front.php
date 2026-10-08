@@ -40,6 +40,16 @@ add_action( 'save_post', static function ( int $post_id ): void {
 	}
 }, 30 );
 
+// دسته محصول: بعد از ذخیره دسته (اولویت ۳۰: بعد از ذخیره کادر Discover)
+add_action( 'edited_term', static function ( int $term_id ): void {
+	if ( hodima_seo_discover_for_term( $term_id ) ) {
+		$image = hodima_seo_discover_image( $term_id, 'term' );
+		if ( null !== $image ) {
+			hodima_seo_discover_make_crops( $image['id'] );
+		}
+	}
+}, 30 );
+
 // … و وقتی تصویر شاخص جدا (ویرایشگر بلوکی با REST) عوض می‌شود.
 foreach ( [ 'added_post_meta', 'updated_post_meta' ] as $hodima_seo_discover_hook ) {
 	add_action( $hodima_seo_discover_hook, static function ( int $meta_id, int $post_id, string $meta_key, mixed $value ): void {
@@ -103,23 +113,68 @@ add_filter( 'hodima_seobox_og_image', static function ( array $image, int $post_
 }, 10, 2 );
 
 /* =====================================================================
- * اسکیمای برگه‌ها (نوشته‌ها: blog-schema.php، محصول: product-schema-pro.php)
+ * دسته محصول: og:title و og:image (فیلترهای ترم سئوباکس)
+ * ===================================================================== */
+
+add_filter( 'hodima_seobox_term_social_title', static function ( string $title, int $term_id ): string {
+	$discover = hodima_seo_discover_for_term( $term_id ) ? hodima_seo_discover_data( $term_id, 'term' )['title'] : '';
+	return '' !== $discover ? $discover : $title;
+}, 10, 2 );
+
+/** @param array{url: string, width: int|string, height: int|string, type: string, alt: string} $image */
+add_filter( 'hodima_seobox_term_og_image', static function ( array $image, int $term_id ): array {
+
+	if ( ! hodima_seo_discover_for_term( $term_id ) ) {
+		return $image;
+	}
+
+	$source = hodima_seo_discover_image( $term_id, 'term' );
+	$wide   = hodima_seo_discover_wide_image( $term_id, 'term' );
+
+	$pick = match ( true ) {
+		null === $source => null,
+		null !== $wide && $wide['width'] >= HODIMA_SEO_DISCOVER_MIN_WIDTH => $wide,
+		$source['width'] >= HODIMA_SEO_DISCOVER_MIN_WIDTH,
+		hodima_seo_discover_data( $term_id, 'term' )['image_id'] === $source['id'] => $source,
+		default => null,
+	};
+
+	return null === $pick || null === $source ? $image : [
+		'url'    => $pick['url'],
+		'width'  => $pick['width'],
+		'height' => $pick['height'],
+		'type'   => $source['mime'],
+		'alt'    => $source['alt'],
+	];
+}, 10, 2 );
+
+/* =====================================================================
+ * اسکیما: عنوان Discover و موضوعات روی نود «#webpage»
+ * (نوشته‌ها روی BlogPosting: blog-schema.php)
  * ===================================================================== */
 
 add_filter( 'hodima_schema_webpage_node', static function ( array $node ): array {
 
-	$post = is_singular() ? get_queried_object() : null;
+	$queried = get_queried_object();
 
-	if ( ! $post instanceof WP_Post || in_array( $post->post_type, [ 'post', 'product' ], true ) || ! hodima_seo_discover_for_post( (int) $post->ID ) ) {
+	// دسته محصول
+	if ( $queried instanceof WP_Term ) {
+		return hodima_seo_discover_for_term( (int) $queried->term_id ) && ! is_paged()
+			? hodima_seo_discover_enrich( $node, (int) $queried->term_id, 'term' )
+			: $node;
+	}
+
+	// برگه و محصول (و هر نوع دیگری غیر از نوشته)
+	if ( ! is_singular() || ! $queried instanceof WP_Post || 'post' === $queried->post_type || ! hodima_seo_discover_for_post( (int) $queried->ID ) ) {
 		return $node;
 	}
 
 	// برگه رمزدار: اطلاعات آن در اسکیما منتشر نشود
-	if ( function_exists( 'hodima_post_content_is_visible' ) && ! hodima_post_content_is_visible( $post ) ) {
+	if ( function_exists( 'hodima_post_content_is_visible' ) && ! hodima_post_content_is_visible( $queried ) ) {
 		return $node;
 	}
 
-	return hodima_seo_discover_enrich( $node, (int) $post->ID );
+	return hodima_seo_discover_enrich( $node, (int) $queried->ID );
 }, 15 );
 
 /* =====================================================================

@@ -5,7 +5,7 @@
  *   - «نما»ی ویدیو: کلیک روی کاور ← پخش‌کننده آپارات/یوتیوب/ویمئو ساخته می‌شود
  *   - فصل‌ها: کلیک ← پخش از همان زمان؛ آدرس ?t=ثانیه (لحظه‌های کلیدی گوگل) هم
  *   - فقط یک رسانه همزمان پخش شود؛ ویدیوی خارج از دید متوقف شود (پادکست نه)
- *   - پادکست: دکمه‌های سرعت پخش، و پلیر کوچک ثابت پایین صفحه وقتی در حال پخش
+ *   - پادکست: دکمه سرعت پخش (هر کلیک یک پله)، و پلیر کوچک ثابت پایین صفحه وقتی در حال پخش
  *     است و کاربر از آن دور شده (توقف/ادامه و بازگشت به پلیر)
  *
  * راه‌اندازی مستقل از DOMContentLoaded (حالت «Delay JS» لایت‌اسپید اسکریپت را
@@ -121,35 +121,38 @@
 		if (e.target.tagName === 'VIDEO' && e.target.hasAttribute('poster')) e.target.load();
 	}, true);
 
-	/* ── پادکست: سرعت پخش ── */
+	/* ── پادکست: سرعت پخش (یک دکمه؛ هر کلیک یک پله) ── */
 	const RATE_KEY = 'hodimaPodcastRate';
+	const RATES = [1, 1.25, 1.5, 2];
+	const fa = (n) => new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 }).format(n);
 
 	function storedRate() {
 		try {
 			const r = Number(localStorage.getItem(RATE_KEY));
-			return [1, 1.25, 1.5, 2].includes(r) ? r : 1;
+			return RATES.includes(r) ? r : 1;
 		} catch {
 			return 1;
 		}
 	}
 
-	function setRate(group, rate) {
-		const audio = group.closest('.hook-voice-container')?.querySelector('audio.hook-audio-el');
+	function setRate(button, rate) {
+		const audio = button.closest('.hook-voice-container')?.querySelector('audio.hook-audio-el');
 		if (audio) {
 			audio.playbackRate = rate;
 			audio.defaultPlaybackRate = rate;
 		}
-		for (const b of group.querySelectorAll('[data-hook-rate]')) {
-			b.setAttribute('aria-pressed', String(Number(b.dataset.hookRate) === rate));
-		}
+		button.dataset.hookSpeed = String(rate);
+		button.textContent = `${fa(rate)}×`;
+		button.setAttribute('aria-label', `سرعت پخش: ${fa(rate)} برابر (برای تغییر بزنید)`);
+		button.classList.toggle('is-fast', rate !== 1);
 	}
 
 	document.addEventListener('click', (e) => {
-		const btn = e.target.closest?.('.hook-audio-speed [data-hook-rate]');
+		const btn = e.target.closest?.('.hook-audio-speed');
 		if (!btn) return;
-		const rate = Number(btn.dataset.hookRate) || 1;
-		setRate(btn.closest('.hook-audio-speed'), rate);
-		try { localStorage.setItem(RATE_KEY, String(rate)); } catch { /* حالت خصوصی */ }
+		const next = RATES[(RATES.indexOf(Number(btn.dataset.hookSpeed)) + 1) % RATES.length];
+		setRate(btn, next);
+		try { localStorage.setItem(RATE_KEY, String(next)); } catch { /* حالت خصوصی */ }
 	});
 
 	/* ── پادکست: پلیر کوچک ثابت ── */
@@ -216,11 +219,11 @@
 	}
 
 	function init() {
-		// سرعت ذخیره‌شده + نمایش دکمه‌های سرعت (بدون JS پنهان‌اند)
+		// سرعت ذخیره‌شده + نمایش دکمه سرعت (بدون JS پنهان است)
 		const rate = storedRate();
-		for (const group of document.querySelectorAll('.hook-audio-speed')) {
-			group.hidden = false;
-			setRate(group, rate);
+		for (const btn of document.querySelectorAll('.hook-audio-speed')) {
+			btn.hidden = false;
+			setRate(btn, rate);
 		}
 
 		// پادکست عمدا نه: کاربر صوت را پخش می‌کند و برای خواندن متن پایین می‌رود

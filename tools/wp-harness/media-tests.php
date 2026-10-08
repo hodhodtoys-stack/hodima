@@ -119,6 +119,16 @@ update_post_meta( $post_id, '_hook_hidden_parts', [ 'video' ] );
 hodima_media_get_data( $post_id, 'post', true );
 hodima_t( 'ویدیو پنهان ← بدون VideoObject', hodima_media_video_node( $post_id, 'post' ), null );
 hodima_t( 'ویدیو پنهان ← بدون ویدیوی بیشتر', hodima_media_extra_video_nodes( $post_id, 'post' ), [] );
+hodima_t( 'پادکست: یک دکمه سرعت', substr_count( hodima_media_speed_html(), '<button' ), 1 );
+update_post_meta( $post_id, '_hook_content', '<p>معرفی <strong>کوتاه</strong> [hodima_table] این صفحه.</p>' );
+update_post_meta( $post_id, '_hook_hidden_parts', [] );
+hodima_media_get_data( $post_id, 'post', true );
+if ( function_exists( 'hodima_seo_page_intro_text' ) ) {
+	hodima_t( 'متن معرفی ← توضیح ساده (بدون HTML و شورت‌کد)', hodima_seo_page_intro_text( $post_id, 'post' ), 'معرفی کوتاه این صفحه.' );
+	update_post_meta( $post_id, '_hook_hidden_parts', [ 'intro' ] );
+	hodima_media_get_data( $post_id, 'post', true );
+	hodima_t( 'متن معرفی پنهان ← توضیح نیست', hodima_seo_page_intro_text( $post_id, 'post' ), '' );
+}
 hodima_t( 'متای FAQ در REST ثبت شده', registered_meta_key_exists( 'post', '_hook_faq', 'post' ), true );
 hodima_t( 'متای ویدیوهای بیشتر در REST ثبت شده', registered_meta_key_exists( 'post', '_hook_video_extra', 'post' ), true );
 wp_delete_post( $post_id, true );
@@ -136,6 +146,15 @@ if ( function_exists( 'hodima_seo_discover_entity_items' ) ) {
 	hodima_t( 'برش ۱۶:۹ از ۱۶۰۰×۱۰۰۰', hodima_seo_discover_crop_size( 1600, 1000, 16, 9 ), [ 1200, 675 ] );
 	hodima_t( 'برش خیلی کوچک', hodima_seo_discover_crop_size( 200, 100, 1, 1 ), [ 0, 0 ] );
 	hodima_t( 'کلید آدرس Search Console', hodima_seo_discover_url_key( 'https://hodima.test/%D8%AA%D8%B3%D8%AA/' ), '/تست' );
+	hodima_t( 'Discover برای محصول روشن', in_array( 'product', hodima_seo_discover_post_types(), true ), true );
+	hodima_t( 'Discover برای دسته محصول روشن', in_array( 'product_cat', hodima_seo_discover_taxonomies(), true ), true );
+	hodima_t( 'کلید متای ترم', hodima_seo_discover_meta_key( 'title', 'term' ), 'hook_discover_title' );
+	hodima_t( 'کلید متای نوشته (همان قبلی)', hodima_seo_discover_meta_key( 'entities', 'post' ), '_hook_key_entities' );
+	hodima_t( 'امتیاز آمادگی', hodima_seo_discover_score( [ [ 'status' => 'ok' ], [ 'status' => 'warn' ], [ 'status' => 'ok' ] ] ), [ 2, 3 ] );
+	$cat = get_terms( [ 'taxonomy' => 'category', 'hide_empty' => false, 'number' => 1 ] );
+	if ( is_array( $cat ) && $cat ) {
+		hodima_t( 'دسته وبلاگ Discover ندارد', hodima_seo_discover_for_term( (int) $cat[0]->term_id ), false );
+	}
 }
 
 echo "\n" . ( 0 === $failed ? "✔ همه {$passed} آزمون قبول" : "✘ {$failed} آزمون رد شد ({$passed} قبول)" ) . "\n";

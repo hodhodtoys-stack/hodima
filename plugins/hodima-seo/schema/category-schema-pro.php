@@ -129,7 +129,9 @@ function hodima_category_schema_fields(): ?array {
     $replace_vars   = [ '[category]' => $category_name, '[site_name]' => $site_name ];
 
     $final_name    = strtr( $name_tpl, $replace_vars );
-    $final_desc    = wp_strip_all_tags( strtr( $desc_tpl, $replace_vars ) );
+    // «متن معرفی» دسته (سیستم رسانه؛ inc/page-intro.php) توضیح واقعی صفحه است؛ وگرنه الگوی تنظیمات
+    $intro         = function_exists( 'hodima_seo_page_intro_text' ) ? hodima_seo_page_intro_text( (int) $term->term_id, 'term', 40 ) : '';
+    $final_desc    = '' !== $intro ? $intro : wp_strip_all_tags( strtr( $desc_tpl, $replace_vars ) );
     $final_catalog = strtr( $catalog_tpl, $replace_vars );
 
     // --- تصویر دسته‌بندی (بدون کوئری اضافه؛ فقط term meta) ---

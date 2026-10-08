@@ -123,9 +123,17 @@ function hook_render_master_schema() {
     } elseif (is_singular()) {
         // باگ قبلی: اول کوتاه می‌شد، بعد شورت‌کد حذف می‌شد؛ شورت‌کدی که وسط
         // برش افتاده بود («[video src=…») در توضیح می‌ماند.
-        $page_desc = has_excerpt() ? get_the_excerpt() : wp_trim_words(strip_shortcodes((string) get_post_field('post_content', get_queried_object_id())), 20);
+        //
+        // بدون چکیده: «متن معرفی» صفحه (سیستم رسانه؛ inc/page-intro.php) و
+        // بعد ابتدای متن.
+        $intro     = function_exists( 'hodima_seo_page_intro_text' ) ? hodima_seo_page_intro_text( (int) get_queried_object_id(), 'post', 40 ) : '';
+        $page_desc = has_excerpt() ? get_the_excerpt() : ( '' !== $intro ? $intro : wp_trim_words(strip_shortcodes((string) get_post_field('post_content', get_queried_object_id())), 20) );
     } elseif (is_archive() || is_tax()) {
         $page_desc = get_the_archive_description();
+        // دسته بدون توضیح: «متن معرفی» دسته
+        if ( '' === trim( wp_strip_all_tags( (string) $page_desc ) ) && ( is_category() || is_tax() ) && function_exists( 'hodima_seo_page_intro_text' ) ) {
+            $page_desc = hodima_seo_page_intro_text( (int) get_queried_object_id(), 'term', 40 );
+        }
     }
     $page_desc = wp_strip_all_tags(strip_shortcodes($page_desc));
 

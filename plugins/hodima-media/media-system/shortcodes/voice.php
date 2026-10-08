@@ -81,22 +81,12 @@ function hodima_media_shortcode_voice( mixed $atts ): string {
 }
 
 /**
- * دکمه‌های سرعت پخش پادکست (۱، ۱٫۲۵، ۱٫۵، ۲ برابر). media-style.js سرعت را
- * روی پلیر می‌گذارد و برای بازدید بعدی همین مرورگر به خاطر می‌سپارد.
- * بدون جاوااسکریپت پنهان‌اند (hidden؛ JS نشانشان می‌دهد).
+ * دکمه سرعت پخش پادکست: یک دکمه گرد که سرعت فعلی را نشان می‌دهد؛ هر
+ * کلیک/لمس یک پله (۱ ← ۱٫۲۵ ← ۱٫۵ ← ۲ ← ۱). media-style.js سرعت را روی
+ * پلیر می‌گذارد و برای بازدید بعدی همین مرورگر به خاطر می‌سپارد.
+ * (نسخه 1.7 چهار دکمه کنار هم داشت که پلیر را شلوغ می‌کرد.)
+ * بدون جاوااسکریپت پنهان است.
  */
 function hodima_media_speed_html(): string {
-
-	$buttons = '';
-
-	foreach ( [ '1' => '۱×', '1.25' => '۱٫۲۵×', '1.5' => '۱٫۵×', '2' => '۲×' ] as $rate => $label ) {
-		$buttons .= sprintf(
-			'<button type="button" class="hook-audio-speed__btn" data-hook-rate="%1$s" aria-pressed="%2$s">%3$s</button>',
-			esc_attr( (string) $rate ),
-			'1' === (string) $rate ? 'true' : 'false',
-			esc_html( $label )
-		);
-	}
-
-	return '<div class="hook-audio-speed" role="group" aria-label="سرعت پخش" hidden>' . $buttons . '</div>';
+	return '<button type="button" class="hook-audio-speed" data-hook-speed="1" aria-label="سرعت پخش: ۱ برابر (برای تغییر بزنید)" hidden>۱×</button>';
 }

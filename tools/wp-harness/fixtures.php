@@ -43,7 +43,7 @@ update_option( 'show_on_front', 'page' ); update_option( 'page_on_front', $home 
 $typo = '<p>متن نمونه با <a href="https://hodima.test/guide/">لینک داخل متن</a> برای خواندن.</p><h2>تیتر دوم نمونه</h2><p>بند</p><h3>تیتر سوم نمونه</h3><p>بند</p><h4>تیتر چهارم</h4><h5>تیتر پنجم</h5><h6>تیتر ششم</h6><p>پایان</p>';
 $about = p( [ 'post_type' => 'page', 'post_title' => 'درباره ما', 'post_name' => 'about-us', 'post_excerpt' => 'معرفی شرکت', 'post_content' => $typo ] );
 $contact = p( [ 'post_type' => 'page', 'post_title' => 'تماس با ما', 'post_name' => 'contact-us' ] );
-$plain = p( [ 'post_type' => 'page', 'post_title' => 'راهنمای خرید', 'post_name' => 'guide', 'post_content' => 'متن راهنما [hodima_table]' ], $media( [ '_hook_discover_title' => 'راهنمای کامل خرید عمده', '_hook_key_entities' => 'کلیپس, گلسر', '_h_ai_faqs' => wp_json_encode( [ [ 'q' => 'حداقل سفارش چقدر است؟', 'a' => 'یک بسته' ], [ 'q' => 'پرداخت چگونه است؟', 'a' => 'کارت به کارت' ] ], JSON_UNESCAPED_UNICODE ) ] ) );
+$plain = p( [ 'post_type' => 'page', 'post_title' => 'راهنمای خرید', 'post_name' => 'guide', 'post_content' => 'متن راهنما [hodima_table]' ], $media( [ '_hook_content' => '<p>در این راهنما مراحل خرید عمده اکسسوری مو از هدهدلی، از انتخاب مدل تا ارسال، [hodima_table] قدم به قدم توضیح داده شده است.</p>', '_hook_discover_title' => 'راهنمای کامل خرید عمده', '_hook_key_entities' => 'کلیپس, گلسر', '_h_ai_faqs' => wp_json_encode( [ [ 'q' => 'حداقل سفارش چقدر است؟', 'a' => 'یک بسته' ], [ 'q' => 'پرداخت چگونه است؟', 'a' => 'کارت به کارت' ] ], JSON_UNESCAPED_UNICODE ) ] ) );
 update_post_meta( $plain, '_hodima_table_data', [ 'headers' => [ 'ویژگی', 'مقدار' ], 'rows' => [ [ 'جنس', 'فلز' ], [ 'رنگ', 'طلایی' ] ] ] );
 $videos = p( [ 'post_type' => 'page', 'post_title' => 'ویدئوها', 'post_name' => 'videos' ], [ '_wp_page_template' => 'template-page-videos.php' ] );
 
@@ -62,7 +62,7 @@ $vid = p( [ 'post_type' => 'video', 'post_title' => 'ویدیو معرفی گل�
 // WooCommerce side
 $pcat = wp_insert_term( 'اکسسوری مو', 'product_cat', [ 'slug' => 'hair', 'description' => 'اکسسوری' ] )['term_id'];
 update_term_meta( $pcat, 'thumbnail_id', $img3 );
-foreach ( [ 'hook_enabled' => 'yes', 'hook_faq' => $faq, 'hook_video_url' => 'https://hodima.test/v/cat.mp4', 'hook_video_cover' => 'https://hodima.test/v/catc.jpg', '_h_ai_faqs' => wp_json_encode( [ [ 'q' => 'سوال دسته', 'a' => 'جواب' ] ], JSON_UNESCAPED_UNICODE ) ] as $k => $v ) update_term_meta( $pcat, $k, $v );
+foreach ( [ 'hook_enabled' => 'yes', 'hook_content' => '<p>اکسسوری مو عمده: کلیپس، گلسر و کش مو با قیمت پخش.</p>', 'hook_faq' => $faq, 'hook_video_url' => 'https://hodima.test/v/cat.mp4', 'hook_video_cover' => 'https://hodima.test/v/catc.jpg', '_h_ai_faqs' => wp_json_encode( [ [ 'q' => 'سوال دسته', 'a' => 'جواب' ] ], JSON_UNESCAPED_UNICODE ) ] as $k => $v ) update_term_meta( $pcat, $k, $v );
 $ptag = wp_insert_term( 'پرفروش', 'product_tag', [ 'slug' => 'best' ] )['term_id'];
 $shop = p( [ 'post_type' => 'page', 'post_title' => 'فروشگاه', 'post_name' => 'shop' ] );
 update_option( 'woocommerce_shop_page_id', $shop );

@@ -322,7 +322,8 @@ final class Hodima_AEO_Generator {
             if ( ! empty($extra_content) ) $content_raw .= "\n" . $extra_content;
             $post_type_name     = '';
             $last_updated       = Hodima_AEO_Data::get_iso8601_local_time();
-            $post_excerpt       = '';
+            // خلاصه دسته: «متن معرفی» آن (سیستم رسانه؛ inc/page-intro.php)
+            $post_excerpt       = function_exists( 'hodima_seo_page_intro_text' ) ? hodima_seo_page_intro_text( (int) $id, 'term' ) : '';
         } else {
             $fa_title           = (string) get_the_title( $id );
             $url                = get_permalink( $id );
@@ -336,6 +337,10 @@ final class Hodima_AEO_Generator {
                 if ( empty($post_excerpt) && $post_type_name === 'product' && function_exists('wc_get_product') ) {
                     $wc_prod = wc_get_product($id);
                     if ( $wc_prod ) $post_excerpt = $wc_prod->get_short_description();
+                }
+                // بدون چکیده: «متن معرفی» صفحه (سیستم رسانه؛ inc/page-intro.php)
+                if ( empty($post_excerpt) && function_exists( 'hodima_seo_page_intro_text' ) ) {
+                    $post_excerpt = hodima_seo_page_intro_text( (int) $id, 'post' );
                 }
             }
         }

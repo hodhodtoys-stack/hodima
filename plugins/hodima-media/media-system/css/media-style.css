@@ -326,37 +326,36 @@
 	color: var(--hm-primary);
 }
 
-/* سرعت پخش پادکست */
-.hook-audio-speed {
-	display: flex;
-	flex-shrink: 0;
-	gap: 4px;
-
-	&[hidden] {
-		display: none;
-	}
-}
-
 /*
- * قالب برای همه <button>ها «color: #ffffff !important» و پس‌زمینه گرادیان
- * (و در hover جابه‌جایی و سایه) دارد؛ این دکمه‌های کوچک ظاهر خودشان را
- * می‌خواهند، پس رنگ متن با !important و hover با انتخابگر قوی‌تر.
+ * دکمه سرعت پخش پادکست: یک دایره کوچک کنار پلیر با سرعت فعلی. قالب برای
+ * همه <button>ها «color: #ffffff !important» و پس‌زمینه گرادیان (و در hover
+ * جابه‌جایی و سایه) دارد؛ این دکمه ظاهر خودش را می‌خواهد، پس رنگ متن با
+ * !important و hover با انتخابگر قوی‌تر.
  */
-.hook-audio-speed .hook-audio-speed__btn {
-	min-inline-size: 40px;
-	min-block-size: 32px;
-	padding: 2px 8px;
-	border: 1px solid var(--hm-border-strong);
+.hook-voice-container .hook-audio-speed {
+	display: grid;
+	place-items: center;
+	flex-shrink: 0;
+	/* ۴۴ پیکسل: اندازه استاندارد لمس؛ «۱٫۲۵×» آن را کمی کشیده (کپسول) می‌کند */
+	min-inline-size: 44px;
+	block-size: 44px;
+	margin: 0;
+	padding-block: 0;
+	padding-inline: 8px;
+	border: 1.5px solid var(--hm-border-strong);
 	border-radius: 999px;
+	white-space: nowrap;
 	background: var(--hm-surface);
 	/* stylelint-disable-next-line declaration-no-important -- رقیب: color: #fff !important قالب روی همه button */
 	color: var(--hm-primary) !important;
 	font: inherit;
 	font-size: 13px;
-	font-weight: 700;
+	font-weight: 800;
+	line-height: 1;
 	box-shadow: none;
 	cursor: pointer;
 	transform: none;
+	transition: background-color 0.2s ease, border-color 0.2s ease;
 
 	&:hover {
 		border-color: var(--hm-primary);
@@ -365,7 +364,8 @@
 		transform: none;
 	}
 
-	&[aria-pressed="true"] {
+	/* سرعت غیرعادی (غیر از ۱×) پررنگ تا کاربر یادش بماند */
+	&.is-fast {
 		border-color: var(--hm-primary);
 		background: var(--hm-primary);
 		/* stylelint-disable-next-line declaration-no-important -- رقیب: color: #fff !important قالب روی همه button */
@@ -375,6 +375,10 @@
 	&:focus-visible {
 		outline: 2px solid var(--hm-secondary);
 		outline-offset: 2px;
+	}
+
+	&[hidden] {
+		display: none;
 	}
 }
 
@@ -560,14 +564,21 @@
 		margin-block: 24px;
 	}
 
+	/* پلیر و دکمه سرعت کنار هم؛ برچسب (حالت inline) یک ردیف کامل بالای آن‌ها */
 	.hook-voice-container {
-		flex-direction: column;
-		align-items: stretch;
-		padding: 14px;
+		flex-wrap: wrap;
+		gap: 10px;
+		padding: 12px;
 		border-radius: 16px;
+
+		& audio {
+			flex: 1 1 0;
+			min-inline-size: 0;
+		}
 	}
 
 	.hook-voice-label {
+		flex-basis: 100%;
 		white-space: normal;
 	}
 

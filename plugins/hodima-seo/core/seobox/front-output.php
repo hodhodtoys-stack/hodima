@@ -558,9 +558,16 @@ function seobox_output_front_meta(): void {
 	 */
 	$social_title = $title;
 
-	if ( $singular ) {
-		$social_title = (string) apply_filters( 'hodima_seobox_social_title', $title, $post_id );
-		$filtered     = apply_filters( 'hodima_seobox_og_image', $image, $post_id );
+	$term_id = 'term' === $context['meta_type'] ? (int) $context['id'] : 0;
+
+	if ( $singular || $term_id > 0 ) {
+		// نوشته/برگه/محصول، یا دسته (مثلا Discover دسته‌های محصول)
+		$social_title = $singular
+			? (string) apply_filters( 'hodima_seobox_social_title', $title, $post_id )
+			: (string) apply_filters( 'hodima_seobox_term_social_title', $title, $term_id );
+		$filtered     = $singular
+			? apply_filters( 'hodima_seobox_og_image', $image, $post_id )
+			: apply_filters( 'hodima_seobox_term_og_image', $image, $term_id );
 		if ( is_array( $filtered ) && ! empty( $filtered['url'] ) ) {
 			$image = [
 				'url'    => (string) $filtered['url'],

@@ -319,34 +319,12 @@ function hook_generate_custom_product_schema() {
     }
 
     /*
-     * Discover برای محصولات پیش‌فرض خاموش است (ماژول «Google Discover»،
-     * فیلتر hook_modern_seo_post_types). فقط اگر سایت آن را برای محصول
-     * روشن کند: عنوان Discover → alternateName (پایین) و موضوعات → مشخصه
-     * «مرتبط با».
+     * Discover محصول (ماژول «Google Discover»، از SEO 1.17.0 برای محصول هم
+     * روشن): عنوان Discover فقط og:title است و موضوعات روی نود «#webpage»
+     * (about) می‌روند (core/discover/discover-front.php). قبلا عنوان Discover
+     * alternateName محصول («نام دیگر» — نادرست) و موضوعات مشخصه «مرتبط با»
+     * می‌شد؛ دیگر به نود Product اضافه نمی‌شوند.
      */
-    $modern_seo = function_exists( 'hodima_seo_discover_enabled' )
-        ? hodima_seo_discover_enabled( 'post', (int) $product_id )
-        : ( function_exists( 'hook_modern_seo_enabled' ) && hook_modern_seo_enabled( 'post', (int) $product_id ) );
-
-    $discover = function_exists( 'hodima_seo_discover_data' ) ? hodima_seo_discover_data( (int) $product_id ) : [
-        'title'    => (string) ( $media_data['discover_title'] ?? '' ),
-        'entities' => array_filter( array_map( 'trim', explode( ',', (string) ( $media_data['key_entities'] ?? '' ) ) ) ),
-    ];
-
-    if ( $modern_seo && ! empty( $discover['entities'] ) ) {
-        $entities = $discover['entities'];
-        foreach ( $entities as $entity ) {
-            $entity = trim( $entity );
-            if ( ! empty( $entity ) ) {
-                // تبدیل about به property های استاندارد محصول
-                $additional_properties[] = [
-                    '@type' => 'PropertyValue',
-                    'name'  => 'مرتبط با',
-                    'value' => sanitize_text_field( $entity )
-                ];
-            }
-        }
-    }
 
     /*
      * نقطه اتصال مشترک additionalProperty.
@@ -585,9 +563,6 @@ function hook_generate_custom_product_schema() {
         $schema['subjectOf'] = [ '@id' => $video_node['@id'] ];
     }
 
-    if ( $modern_seo && '' !== $discover['title'] ) {
-        $schema['alternateName'] = sanitize_text_field( $discover['title'] );
-    }
 
     if ( $_product->get_review_count() > 0 ) {
         $schema['aggregateRating'] = [

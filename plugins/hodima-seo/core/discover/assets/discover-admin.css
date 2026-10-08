@@ -1,98 +1,109 @@
 /*
- * ماژول «Google Discover» — کادر ویرایش نوشته و برگه
+ * ماژول «Google Discover» — کادر ویرایش نوشته، برگه، محصول و دسته محصول
  * Path: core/discover/assets/discover-admin.css
  *
  * فقط روی صفحه ویرایش لود می‌شود و همه قوانین زیر .hodima-dc هستند (هیچ
  * :root یا قانون سراسری وردپرس). پالت برند؛ فونت از پیشخوان ارث می‌برد؛
- * آیکون‌ها Dashicons. همان ظاهر بخش Discover کادر رسانه قبلی.
+ * آیکون‌ها Dashicons. چیدمان: فیلدها + پیش‌نمایش گوشی (کنار هم در دسکتاپ،
+ * زیر هم در موبایل)، و «آمادگی برای Discover» زیر آن‌ها.
  */
 
 .hodima-dc {
 	--dc-primary: #25316a;
 	--dc-secondary: #607bbd;
 	--dc-third: #b6c2f3;
+	--dc-accent: #6a2b9a;
 	--dc-text: #1d2340;
 	--dc-muted: #5d6785;
-	--dc-soft: #f9fafe;
-	--dc-border: #d3daf8;
+	--dc-soft: #f5f7fe;
+	--dc-softer: #fafbff;
+	--dc-border: #d9dff7;
 	--dc-ok: #1f7a4d;
 	--dc-warn: #9a5b00;
 	--dc-error: #b3261e;
+	--dc-radius: 12px;
 
 	display: grid;
-	gap: 1rem;
-	padding-block: 0.25rem;
+	gap: 18px;
+	padding-block: 6px;
 	font-family: inherit;
 	color: var(--dc-text);
 
-	& .hodima-dc__intro {
-		margin: 0;
-		color: var(--dc-muted);
-		font-size: 0.8125rem;
+	& code {
+		padding: 1px 6px;
+		border-radius: 4px;
+		background: var(--dc-soft);
+		color: var(--dc-primary);
+		font-size: 12px;
 	}
 
 	& .hodima-dc__stats {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 		margin: 0;
-		padding: 0.5rem 0.75rem;
-		border-inline-start: 3px solid var(--dc-secondary);
-		border-radius: 0.375rem;
-		background: var(--dc-soft);
+		padding: 10px 14px;
+		border-radius: var(--dc-radius);
+		background: linear-gradient(135deg, var(--dc-soft), #ffffff);
 		color: var(--dc-primary);
-		font-size: 0.8125rem;
+		font-size: 13px;
 	}
 
-	/* ── فهرست بررسی ── */
-	& .hodima-dc__checks {
+	/* ── چیدمان: فیلدها | پیش‌نمایش ── */
+	& .hodima-dc__layout {
 		display: grid;
-		gap: 0.375rem;
-		margin: 0;
-		padding: 0.75rem;
-		border-radius: 0.5rem;
-		background: var(--dc-soft);
-		list-style: none;
+		grid-template-columns: minmax(0, 1fr) 260px;
+		gap: 24px;
+		align-items: start;
+	}
 
-		& li {
-			display: flex;
-			align-items: flex-start;
-			gap: 0.375rem;
-			margin: 0;
-			font-size: 0.8125rem;
-			line-height: 1.7;
-		}
-
-		& .dashicons {
-			flex-shrink: 0;
-			margin-block-start: 0.125rem;
-		}
-
-		& .is-ok .dashicons { color: var(--dc-ok); }
-		& .is-warn .dashicons { color: var(--dc-warn); }
-		& .is-error .dashicons { color: var(--dc-error); }
+	& .hodima-dc__main {
+		display: grid;
+		gap: 20px;
+		min-inline-size: 0;
 	}
 
 	& .hodima-dc__field {
 		display: grid;
-		gap: 0.375rem;
+		gap: 8px;
 		min-inline-size: 0;
+	}
+
+	& .hodima-dc__label-row {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 8px;
 	}
 
 	& .hodima-dc__label {
 		color: var(--dc-text);
-		font-size: 0.8125rem;
-		font-weight: 600;
+		font-size: 13px;
+		font-weight: 700;
 	}
 
-	& :is(input[type="text"], textarea) {
+	& .hodima-dc__counter {
+		color: var(--dc-muted);
+		font-size: 12px;
+		font-variant-numeric: tabular-nums;
+
+		&.is-over {
+			color: var(--dc-error);
+			font-weight: 700;
+		}
+	}
+
+	& input[type="text"] {
 		inline-size: 100%;
-		max-inline-size: 100%;
+		min-block-size: 42px;
 		box-sizing: border-box;
-		padding: 0.5rem 0.75rem;
+		padding: 8px 12px;
 		border: 1.5px solid var(--dc-border);
-		border-radius: 0.5rem;
+		border-radius: 10px;
 		background: #ffffff;
 		color: var(--dc-text);
 		font: inherit;
-		font-size: 0.8125rem;
+		font-size: 14px;
 		box-shadow: none;
 		transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
@@ -101,59 +112,18 @@
 			box-shadow: 0 0 0 3px rgb(96 123 189 / 0.18);
 			outline: none;
 		}
-
-		&[aria-invalid="true"] {
-			border-color: var(--dc-error);
-		}
-	}
-
-	& textarea {
-		min-block-size: 4.5rem;
-		line-height: 1.7;
-		resize: vertical;
-	}
-
-	& .hodima-dc__row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.5rem;
-
-		& .button .dashicons {
-			margin-block-start: 0.2rem;
-			font-size: 1rem;
-			inline-size: 1rem;
-			block-size: 1rem;
-		}
-	}
-
-	& .hodima-dc__clear {
-		color: var(--dc-error);
-	}
-
-	& .hodima-dc__preview {
-		display: block;
-		max-inline-size: 15rem;
-		max-block-size: 9rem;
-		object-fit: cover;
-		border: 1px solid var(--dc-border);
-		border-radius: 0.5rem;
-
-		&[hidden] {
-			display: none;
-		}
 	}
 
 	& .hodima-dc__help {
 		margin: 0;
 		color: var(--dc-muted);
-		font-size: 0.75rem;
+		font-size: 12px;
 		line-height: 1.8;
 	}
 
 	& .hodima-dc__status {
 		margin: 0;
-		font-size: 0.75rem;
+		font-size: 12px;
 		font-weight: 600;
 
 		&:empty,
@@ -165,10 +135,374 @@
 		&[data-level="warn"] { color: var(--dc-warn); }
 		&[data-level="error"] { color: var(--dc-error); }
 	}
+
+	/* ── کارت تصویر ── */
+	& .hodima-dc__image {
+		position: relative;
+		overflow: hidden;
+		aspect-ratio: 16 / 9;
+		max-inline-size: 480px;
+		border: 1.5px dashed var(--dc-border);
+		border-radius: var(--dc-radius);
+		background: var(--dc-softer);
+
+		&.has-image {
+			border-style: solid;
+		}
+
+		& img {
+			display: block;
+			inline-size: 100%;
+			block-size: 100%;
+			object-fit: cover;
+		}
+	}
+
+	& .hodima-dc__image-empty {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-content: center;
+		justify-items: center;
+		gap: 6px;
+		color: var(--dc-muted);
+		font-size: 13px;
+
+		& .dashicons {
+			inline-size: 32px;
+			block-size: 32px;
+			font-size: 32px;
+			color: var(--dc-third);
+		}
+	}
+
+	& .hodima-dc__image-actions {
+		position: absolute;
+		inset-inline: 10px;
+		inset-block-end: 10px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+
+		& .button {
+			border-color: transparent;
+			border-radius: 8px;
+			background: rgb(255 255 255 / 0.94);
+			color: var(--dc-primary);
+			font-weight: 600;
+			box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+		}
+	}
+
+	& .hodima-dc__clear {
+		padding: 4px 10px;
+		border-radius: 8px;
+		background: rgb(255 255 255 / 0.94);
+		color: var(--dc-error);
+		text-decoration: none;
+		box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+	}
+
+	/* ── موضوعات (برچسب‌ها) ── */
+	& .hodima-dc__chips {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		min-block-size: 42px;
+		box-sizing: border-box;
+		padding: 6px 8px;
+		border: 1.5px solid var(--dc-border);
+		border-radius: 10px;
+		background: #ffffff;
+		cursor: text;
+
+		&:focus-within {
+			border-color: var(--dc-secondary);
+			box-shadow: 0 0 0 3px rgb(96 123 189 / 0.18);
+		}
+	}
+
+	& .hodima-dc__chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding-block: 3px;
+		padding-inline: 10px 4px;
+		border-radius: 999px;
+		background: var(--dc-soft);
+		color: var(--dc-primary);
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	& .hodima-dc__chip-link {
+		padding: 0 6px;
+		border-radius: 999px;
+		background: var(--dc-primary);
+		color: #ffffff;
+		font-size: 10px;
+		font-weight: 700;
+	}
+
+	& .hodima-dc__chip-x {
+		display: grid;
+		place-items: center;
+		inline-size: 20px;
+		block-size: 20px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		color: var(--dc-muted);
+		font-size: 16px;
+		line-height: 1;
+		cursor: pointer;
+
+		&:hover,
+		&:focus-visible {
+			background: var(--dc-third);
+			color: var(--dc-primary);
+			outline: none;
+		}
+	}
+
+	& .hodima-dc__chips input.hodima-dc__chip-input {
+		flex: 1 1 140px;
+		min-inline-size: 140px;
+		min-block-size: 28px;
+		padding: 2px 4px;
+		border: 0;
+		box-shadow: none;
+
+		&:focus {
+			box-shadow: none;
+		}
+	}
+
+	/* ── پیش‌نمایش گوشی ── */
+	& .hodima-dc__phone {
+		position: sticky;
+		inset-block-start: 40px;
+		display: grid;
+		gap: 8px;
+		padding: 14px 12px 18px;
+		border: 1px solid var(--dc-border);
+		border-radius: 28px;
+		background: linear-gradient(180deg, var(--dc-softer), var(--dc-soft));
+	}
+
+	& .hodima-dc__phone-label {
+		color: var(--dc-muted);
+		font-size: 11px;
+		font-weight: 600;
+		text-align: center;
+	}
+
+	& .hodima-dc__card {
+		overflow: hidden;
+		border-radius: 16px;
+		background: #ffffff;
+		box-shadow: 0 4px 16px rgb(37 49 106 / 0.12);
+	}
+
+	& .hodima-dc__card-img {
+		display: grid;
+		place-items: center;
+		aspect-ratio: 16 / 9;
+		background: var(--dc-soft);
+		color: var(--dc-muted);
+		font-size: 12px;
+
+		& img {
+			display: block;
+			inline-size: 100%;
+			block-size: 100%;
+			object-fit: cover;
+		}
+	}
+
+	& .hodima-dc__card-body {
+		display: grid;
+		gap: 6px;
+		padding: 10px 12px 14px;
+	}
+
+	& .hodima-dc__card-site {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		color: var(--dc-muted);
+		font-size: 11px;
+		direction: ltr;
+		justify-content: flex-end;
+
+		& img {
+			border-radius: 50%;
+		}
+	}
+
+	& .hodima-dc__card-title {
+		display: -webkit-box;
+		overflow: hidden;
+		color: #202124;
+		font-size: 15px;
+		font-weight: 700;
+		line-height: 1.6;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+	}
+
+	/* ── آمادگی برای Discover ── */
+	& .hodima-dc__guide {
+		display: grid;
+		gap: 12px;
+		padding: 16px 18px;
+		border: 1px solid var(--dc-border);
+		border-radius: var(--dc-radius);
+		background: var(--dc-softer);
+	}
+
+	& .hodima-dc__guide-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		color: var(--dc-primary);
+		font-size: 14px;
+	}
+
+	& .hodima-dc__score {
+		padding: 2px 12px;
+		border-radius: 999px;
+		color: #ffffff;
+		font-size: 13px;
+		font-weight: 700;
+
+		&.is-ok { background: var(--dc-ok); }
+		&.is-warn { background: var(--dc-warn); }
+		&.is-error { background: var(--dc-error); }
+	}
+
+	& .hodima-dc__bar {
+		overflow: hidden;
+		block-size: 8px;
+		border-radius: 999px;
+		background: var(--dc-border);
+
+		& span {
+			display: block;
+			block-size: 100%;
+			border-radius: inherit;
+			transition: inline-size 0.3s ease;
+		}
+
+		&.is-ok span { background: var(--dc-ok); }
+		&.is-warn span { background: var(--dc-warn); }
+		&.is-error span { background: var(--dc-error); }
+	}
+
+	& .hodima-dc__checks {
+		display: grid;
+		gap: 4px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		& li {
+			display: flex;
+			align-items: flex-start;
+			gap: 8px;
+			margin: 0;
+			padding: 8px 10px;
+			border-radius: 8px;
+			font-size: 13px;
+			line-height: 1.7;
+		}
+
+		& .dashicons {
+			flex-shrink: 0;
+			margin-block-start: 2px;
+		}
+
+		& .hodima-dc__check-text {
+			flex: 1;
+			min-inline-size: 0;
+		}
+
+		/* مشکل‌ها پررنگ و با پس‌زمینه؛ موارد درست کم‌رنگ */
+		& .is-error {
+			background: #fdf1f0;
+
+			& .dashicons { color: var(--dc-error); }
+		}
+
+		& .is-warn {
+			background: #fdf6ea;
+
+			& .dashicons { color: var(--dc-warn); }
+		}
+
+		& .is-ok {
+			opacity: 0.62;
+
+			& .dashicons { color: var(--dc-ok); }
+		}
+	}
+
+	& .hodima-dc__fix {
+		flex-shrink: 0;
+		padding: 2px 10px;
+		border: 1px solid currentcolor;
+		border-radius: 999px;
+		color: var(--dc-primary);
+		font-size: 12px;
+		font-weight: 600;
+		text-decoration: none;
+
+		&:hover,
+		&:focus-visible {
+			background: var(--dc-primary);
+			color: #ffffff;
+		}
+	}
+
+	/* hidden همیشه پنهان (انتخابگر دوبرابر تا بر display عناصر بالا غلبه کند) */
+	& [hidden][hidden] {
+		display: none;
+	}
+}
+
+/* کادر دسته محصول (فرم ویرایش ترم، بیرون از جعبه‌های meta-box) */
+.hodima-dc-postbox {
+	max-inline-size: 60rem;
+	margin-block-start: 1.5rem;
+
+	& .postbox-header .hndle {
+		padding-inline: 1rem;
+		font-family: inherit;
+		color: #25316a;
+	}
+
+	& .inside {
+		padding-inline: 16px;
+	}
+}
+
+/* ستون کناری باریک (نوار کناری ویرایشگر) یا موبایل: پیش‌نمایش زیر فیلدها */
+@media (width <= 1100px) {
+	.hodima-dc .hodima-dc__layout {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.hodima-dc .hodima-dc__phone {
+		position: static;
+		max-inline-size: 320px;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.hodima-dc :is(input, textarea) {
+	.hodima-dc :is(input, .hodima-dc__bar span) {
 		transition: none;
 	}
 }
