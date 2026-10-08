@@ -144,7 +144,7 @@ function hodima_media_summary( int $object_id, string $context, string $fallback
  *   enabled: bool, url: string, provider: string, provider_id: string, player: string,
  *   is_file: bool, mime: string, title: string, cover: ?array, ratio: string,
  *   seconds: int, duration: string, date: string, chapters: list<array{start:int,title:string}>,
- *   transcript: string, keywords: string, description: string
+ *   transcript: string, keywords: string, description: string, captions: string
  * }|null
  */
 function hodima_media_video( int $object_id, string $context = 'post' ): ?array {
@@ -184,6 +184,8 @@ function hodima_media_video( int $object_id, string $context = 'post' ): ?array 
 		'transcript'  => trim( (string) ( $data['video_transcript'] ?? '' ) ),
 		'keywords'    => sanitize_text_field( (string) ( $data['video_keywords'] ?? '' ) ),
 		'description' => trim( sanitize_textarea_field( (string) ( $data['video_description'] ?? '' ) ) ),
+		// زیرنویس فقط برای فایل خود سایت (پلیرهای آپارات/یوتیوب زیرنویس خودشان را دارند)
+		'captions'    => 'file' === $parsed['provider'] ? esc_url_raw( (string) ( $data['video_captions'] ?? '' ) ) : '',
 	];
 }
 
@@ -232,6 +234,7 @@ function hodima_media_video_node( int $object_id, string $context = 'post', arra
 		'transcript'  => $video['transcript'],
 		'keywords'    => $video['keywords'],
 		'chapters'    => $video['chapters'],
+		'captions'    => $video['captions'],
 		// پلیر صفحه ?t= را برای فایل، یوتیوب و ویمئو اجرا می‌کند (media-style.js)؛ آپارات زمان شروع ندارد
 		'seekable'    => in_array( $video['provider'], [ 'file', 'youtube', 'vimeo' ], true ),
 		'publisher'   => function_exists( 'hodima_seo_schema_organization_node' ),

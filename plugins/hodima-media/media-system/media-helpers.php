@@ -65,7 +65,7 @@ const HODIMA_MEDIA_RATIOS = [
 function hodima_media_meta_keys(): array {
 	return [
 		...HODIMA_MEDIA_LEGACY_KEYS,
-		'video_cover_id', 'video_ratio', 'video_chapters', 'video_transcript', 'video_description',
+		'video_cover_id', 'video_ratio', 'video_chapters', 'video_transcript', 'video_description', 'video_captions',
 		'voice_transcript',
 	];
 }
@@ -573,4 +573,50 @@ function hodima_media_parse_chapters( mixed $raw ): array {
 	ksort( $out );
 
 	return array_values( $out );
+}
+
+/* =====================================================================
+ * زیرنویس (WebVTT)
+ * ===================================================================== */
+
+// آپلود فایل زیرنویس .vtt در کتابخانه رسانه (ماژول «ویدیوها» هم همین را دارد)
+add_filter( 'upload_mimes', static function ( array $mimes ): array {
+	$mimes['vtt'] = 'text/vtt';
+	return $mimes;
+} );
+
+/**
+ * متن ساده از WebVTT (برای «متن کامل»): بدون سرتیتر، زمان‌ها، شماره‌ها،
+ * برچسب‌ها و خطوط تکراری پشت سر هم.
+ */
+function hodima_media_vtt_to_text( string $vtt ): string {
+
+	$out  = [];
+	$skip = false;
+
+	foreach ( preg_split( '/\R/u', $vtt ) ?: [] as $line ) {
+
+		$line = trim( $line );
+
+		// بلوک‌های NOTE / STYLE / REGION تا خط خالی بعدی
+		if ( preg_match( '/^(NOTE|STYLE|REGION)\b/', $line ) ) {
+			$skip = true;
+			continue;
+		}
+		if ( '' === $line ) {
+			$skip = false;
+			continue;
+		}
+		if ( $skip || str_starts_with( $line, 'WEBVTT' ) || str_contains( $line, '-->' ) || ctype_digit( $line ) ) {
+			continue;
+		}
+
+		$text = trim( html_entity_decode( wp_strip_all_tags( $line ), ENT_QUOTES | ENT_HTML5 ) );
+
+		if ( '' !== $text && end( $out ) !== $text ) {
+			$out[] = $text;
+		}
+	}
+
+	return implode( "\n", $out );
 }

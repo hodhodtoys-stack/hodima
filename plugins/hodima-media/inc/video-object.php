@@ -40,6 +40,7 @@ if ( function_exists( 'hodima_media_video_object' ) ) {
  *   transcript?: string,
  *   keywords?: string,
  *   chapters?: list<array{start: int, title: string}>,
+ *   captions?: string,
  *   seekable?: bool,
  *   views?: int|null,
  *   publisher?: bool,
@@ -99,6 +100,17 @@ function hodima_media_video_object( array $v ): array {
 
 	if ( ! empty( $v['keywords'] ) ) {
 		$node['keywords'] = $v['keywords'];
+	}
+
+	// زیرنویس WebVTT (دسترس‌پذیری؛ گوگل متن گفتار را هم می‌خواند)
+	if ( ! empty( $v['captions'] ) ) {
+		$node['caption'] = [
+			'@type'          => 'MediaObject',
+			'contentUrl'     => esc_url_raw( $v['captions'] ),
+			'encodingFormat' => 'text/vtt',
+			'inLanguage'     => (string) ( $v['language'] ?? ( get_bloginfo( 'language' ) ?: 'fa-IR' ) ),
+		];
+		$node['accessibilityFeature'] = [ 'captions' ];
 	}
 
 	if ( isset( $v['views'] ) ) {

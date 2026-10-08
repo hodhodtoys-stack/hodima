@@ -282,6 +282,133 @@
 	color: var(--hm-primary);
 }
 
+/* سرعت پخش پادکست */
+.hook-audio-speed {
+	display: flex;
+	flex-shrink: 0;
+	gap: 4px;
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+/*
+ * قالب برای همه <button>ها «color: #ffffff !important» و پس‌زمینه گرادیان
+ * (و در hover جابه‌جایی و سایه) دارد؛ این دکمه‌های کوچک ظاهر خودشان را
+ * می‌خواهند، پس رنگ متن با !important و hover با انتخابگر قوی‌تر.
+ */
+.hook-audio-speed .hook-audio-speed__btn {
+	min-inline-size: 40px;
+	min-block-size: 32px;
+	padding: 2px 8px;
+	border: 1px solid var(--hm-border-strong);
+	border-radius: 999px;
+	background: var(--hm-surface);
+	/* stylelint-disable-next-line declaration-no-important -- رقیب: color: #fff !important قالب روی همه button */
+	color: var(--hm-primary) !important;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 700;
+	box-shadow: none;
+	cursor: pointer;
+	transform: none;
+
+	&:hover {
+		border-color: var(--hm-primary);
+		background: var(--hm-soft);
+		box-shadow: none;
+		transform: none;
+	}
+
+	&[aria-pressed="true"] {
+		border-color: var(--hm-primary);
+		background: var(--hm-primary);
+		/* stylelint-disable-next-line declaration-no-important -- رقیب: color: #fff !important قالب روی همه button */
+		color: #ffffff !important;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hm-secondary);
+		outline-offset: 2px;
+	}
+}
+
+/* پلیر کوچک ثابت پادکست (وقتی کاربر از پلیر اصلی دور شده) */
+.hook-mini-player {
+	--hm-primary: var(--hodima-primary, #25316a);
+	--hm-accent: #6a2b9a;
+
+	position: fixed;
+	inset-inline: 0;
+	inset-block-end: max(16px, env(safe-area-inset-bottom));
+	z-index: 9990;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	inline-size: min(480px, calc(100% - 112px));
+	margin-inline: auto;
+	padding: 8px 10px;
+	border-radius: 999px;
+	background: linear-gradient(135deg, var(--hm-primary), var(--hm-accent));
+	color: #ffffff;
+	font-family: inherit;
+	box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+
+	&[hidden] {
+		display: none;
+	}
+
+	& button,
+	& button:hover {
+		border: 0;
+		background: transparent;
+		/* stylelint-disable-next-line declaration-no-important -- رقیب: color: #fff !important قالب روی همه button */
+		color: #ffffff !important;
+		font: inherit;
+		box-shadow: none;
+		cursor: pointer;
+		transform: none;
+
+		&:focus-visible {
+			outline: 2px solid #ffffff;
+			outline-offset: 2px;
+			border-radius: 999px;
+		}
+	}
+
+	& .hook-mini-player__toggle,
+	& .hook-mini-player__toggle:hover {
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+		inline-size: 36px;
+		block-size: 36px;
+		border-radius: 50%;
+		background: rgb(255 255 255 / 0.18);
+		font-size: 14px;
+	}
+
+	& .hook-mini-player__title {
+		flex: 1;
+		min-inline-size: 0;
+		overflow: hidden;
+		text-align: start;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 14px;
+		font-weight: 700;
+	}
+
+	& .hook-mini-player__close {
+		flex-shrink: 0;
+		inline-size: 32px;
+		block-size: 32px;
+		font-size: 20px;
+		line-height: 1;
+	}
+}
+
 /* ── سوالات متداول ──────────────────────────────────────────────────── */
 .hook-faq {
 	max-inline-size: 800px;

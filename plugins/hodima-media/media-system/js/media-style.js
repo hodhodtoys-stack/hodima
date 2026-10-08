@@ -5,6 +5,8 @@
  *   - «نما»ی ویدیو: کلیک روی کاور ← پخش‌کننده آپارات/یوتیوب/ویمئو ساخته می‌شود
  *   - فصل‌ها: کلیک ← پخش از همان زمان؛ آدرس ?t=ثانیه (لحظه‌های کلیدی گوگل) هم
  *   - فقط یک رسانه همزمان پخش شود؛ ویدیوی خارج از دید متوقف شود (پادکست نه)
+ *   - پادکست: دکمه‌های سرعت پخش، و پلیر کوچک ثابت پایین صفحه وقتی در حال پخش
+ *     است و کاربر از آن دور شده (توقف/ادامه و بازگشت به پلیر)
  *
  * راه‌اندازی مستقل از DOMContentLoaded (حالت «Delay JS» لایت‌اسپید اسکریپت را
  * بعد از آن رویداد اجرا می‌کند).
@@ -12,9 +14,19 @@
 (() => {
 	'use strict';
 
+	/*
+	 * اولین گزارش هر عنصر (بلافاصله بعد از observe) نادیده گرفته می‌شود.
+	 * باگ قبلی: با آدرس ?t= ویدیوی پایین صفحه از همان زمان پخش می‌شد و
+	 * همین گزارش اول («خارج از دید»، پیش از پایان اسکرول) بلافاصله متوقفش می‌کرد.
+	 */
+	const seen = new WeakSet();
 	const observer = 'IntersectionObserver' in window
 		? new IntersectionObserver((entries) => {
 			for (const { isIntersecting, target } of entries) {
+				if (!seen.has(target)) {
+					seen.add(target);
+					continue;
+				}
 				if (isIntersecting) continue;
 				if (target.tagName === 'IFRAME') {
 					pauseIframe(target);
@@ -109,7 +121,108 @@
 		if (e.target.tagName === 'VIDEO' && e.target.hasAttribute('poster')) e.target.load();
 	}, true);
 
+	/* ── پادکست: سرعت پخش ── */
+	const RATE_KEY = 'hodimaPodcastRate';
+
+	function storedRate() {
+		try {
+			const r = Number(localStorage.getItem(RATE_KEY));
+			return [1, 1.25, 1.5, 2].includes(r) ? r : 1;
+		} catch {
+			return 1;
+		}
+	}
+
+	function setRate(group, rate) {
+		const audio = group.closest('.hook-voice-container')?.querySelector('audio.hook-audio-el');
+		if (audio) {
+			audio.playbackRate = rate;
+			audio.defaultPlaybackRate = rate;
+		}
+		for (const b of group.querySelectorAll('[data-hook-rate]')) {
+			b.setAttribute('aria-pressed', String(Number(b.dataset.hookRate) === rate));
+		}
+	}
+
+	document.addEventListener('click', (e) => {
+		const btn = e.target.closest?.('.hook-audio-speed [data-hook-rate]');
+		if (!btn) return;
+		const rate = Number(btn.dataset.hookRate) || 1;
+		setRate(btn.closest('.hook-audio-speed'), rate);
+		try { localStorage.setItem(RATE_KEY, String(rate)); } catch { /* حالت خصوصی */ }
+	});
+
+	/* ── پادکست: پلیر کوچک ثابت ── */
+	let mini = null;
+	let current = null;      // صوتی که آخرین بار پخش شد
+	let currentVisible = true;
+
+	const audioObserver = 'IntersectionObserver' in window
+		? new IntersectionObserver((entries) => {
+			for (const { isIntersecting, target } of entries) {
+				if (target === current?.closest('.hook-voice-wrapper')) {
+					currentVisible = isIntersecting;
+					updateMini();
+				}
+			}
+		})
+		: null;
+
+	function buildMini() {
+		mini = document.createElement('div');
+		mini.className = 'hook-mini-player';
+		mini.setAttribute('role', 'region');
+		mini.setAttribute('aria-label', 'پخش‌کننده پادکست');
+		mini.hidden = true;
+		mini.innerHTML = '<button type="button" class="hook-mini-player__toggle" data-hook-mini="toggle"></button>'
+			+ '<button type="button" class="hook-mini-player__title" data-hook-mini="back"></button>'
+			+ '<button type="button" class="hook-mini-player__close" data-hook-mini="close" aria-label="بستن پخش‌کننده کوچک">×</button>';
+		mini.addEventListener('click', (e) => {
+			const action = e.target.closest('[data-hook-mini]')?.dataset.hookMini;
+			if (!current || !action) return;
+			if (action === 'toggle') current.paused ? current.play().catch(() => {}) : current.pause();
+			if (action === 'back') current.closest('.hook-voice-wrapper')?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+			if (action === 'close') { current.pause(); mini.hidden = true; }
+		});
+		document.body.append(mini);
+	}
+
+	function updateMini() {
+		if (!current) return;
+		// فقط وقتی پلیر اصلی از دید خارج است و صوت پخش شده (در حال پخش یا مکث موقت)
+		const show = !currentVisible && current.currentTime > 0 && !current.ended;
+		if (show && !mini) buildMini();
+		if (!mini) return;
+		mini.hidden = !show;
+		const toggle = mini.querySelector('[data-hook-mini="toggle"]');
+		toggle.textContent = current.paused ? '▶' : '❚❚';
+		toggle.setAttribute('aria-label', current.paused ? 'ادامه پخش' : 'توقف');
+		mini.querySelector('[data-hook-mini="back"]').textContent = current.dataset.hookTitle || 'پادکست';
+	}
+
+	for (const type of ['play', 'pause', 'ended']) {
+		document.addEventListener(type, (e) => {
+			if (!e.target.matches?.('audio.hook-audio-el')) return;
+			if (type === 'play' && current !== e.target) {
+				const old = current?.closest('.hook-voice-wrapper');
+				if (old) audioObserver?.unobserve(old);
+				current = e.target;
+				currentVisible = true;
+				const wrap = current.closest('.hook-voice-wrapper');
+				if (wrap) audioObserver?.observe(wrap);
+			}
+			updateMini();
+		}, true);
+	}
+
 	function init() {
+		// سرعت ذخیره‌شده + نمایش دکمه‌های سرعت (بدون JS پنهان‌اند)
+		const rate = storedRate();
+		for (const group of document.querySelectorAll('.hook-audio-speed')) {
+			group.hidden = false;
+			setRate(group, rate);
+		}
+
 		// پادکست عمدا نه: کاربر صوت را پخش می‌کند و برای خواندن متن پایین می‌رود
 		// (باگ قبلی: با اسکرول پخش پادکست قطع می‌شد)
 		for (const m of document.querySelectorAll('.hook-video-el, .hook-video-wrapper .hook-oembed-container iframe')) {

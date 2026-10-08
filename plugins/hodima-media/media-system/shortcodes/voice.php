@@ -46,10 +46,11 @@ function hodima_media_shortcode_voice( mixed $atts ): string {
 
 		$mime  = wp_check_filetype( $path, wp_get_mime_types() )['type'] ?: 'audio/mpeg';
 		$media = sprintf(
-			'<audio class="hook-audio-el" controls preload="none" aria-label="%1$s"><source src="%2$s" type="%3$s"><p>مرورگر شما از پخش صوت پشتیبانی نمی‌کند. <a href="%2$s">دانلود فایل</a></p></audio>',
+			'<audio class="hook-audio-el" controls preload="none" aria-label="%1$s" data-hook-title="%1$s"><source src="%2$s" type="%3$s"><p>مرورگر شما از پخش صوت پشتیبانی نمی‌کند. <a href="%2$s">دانلود فایل</a></p></audio>%4$s',
 			esc_attr( '' !== $title ? $title : 'پادکست' ),
 			esc_url( $url ),
-			esc_attr( (string) $mime )
+			esc_attr( (string) $mime ),
+			hodima_media_speed_html()
 		);
 
 	} else {
@@ -77,4 +78,25 @@ function hodima_media_shortcode_voice( mixed $atts ): string {
 		$media,
 		$transcript
 	);
+}
+
+/**
+ * دکمه‌های سرعت پخش پادکست (۱، ۱٫۲۵، ۱٫۵، ۲ برابر). media-style.js سرعت را
+ * روی پلیر می‌گذارد و برای بازدید بعدی همین مرورگر به خاطر می‌سپارد.
+ * بدون جاوااسکریپت پنهان‌اند (hidden؛ JS نشانشان می‌دهد).
+ */
+function hodima_media_speed_html(): string {
+
+	$buttons = '';
+
+	foreach ( [ '1' => '۱×', '1.25' => '۱٫۲۵×', '1.5' => '۱٫۵×', '2' => '۲×' ] as $rate => $label ) {
+		$buttons .= sprintf(
+			'<button type="button" class="hook-audio-speed__btn" data-hook-rate="%1$s" aria-pressed="%2$s">%3$s</button>',
+			esc_attr( (string) $rate ),
+			'1' === (string) $rate ? 'true' : 'false',
+			esc_html( $label )
+		);
+	}
+
+	return '<div class="hook-audio-speed" role="group" aria-label="سرعت پخش" hidden>' . $buttons . '</div>';
 }

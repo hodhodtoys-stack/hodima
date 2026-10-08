@@ -287,6 +287,15 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 				'هر خط: زمان و عنوان. زیر پلیر دکمه پرش ساخته می‌شود و گوگل «لحظه‌های کلیدی» را در نتایج نشان می‌دهد.',
 				[ 'rows' => 4, 'dir' => 'auto', 'placeholder' => "0:00 معرفی\n0:45 رنگ‌بندی\n1:30 نحوه استفاده", 'data-hodima-chapters' => '' ]
 			);
+			hodima_media_field_picker(
+				'video_captions',
+				'زیرنویس (اختیاری، فقط فایل MP4)',
+				(string) ( $data['video_captions'] ?? '' ),
+				'text/vtt',
+				'فایل <code>.vtt</code> فارسی؛ روی پلیر قابل روشن/خاموش شدن است (ناشنوایان، تماشای بی‌صدا در موبایل). اگر «متن کامل» خالی باشد، هنگام ذخیره از همین فایل پر می‌شود.',
+				-1,
+				'https://…/video-fa.vtt'
+			);
 			hodima_media_field_textarea(
 				'video_transcript',
 				'متن کامل ویدیو (اختیاری)',
@@ -465,7 +474,25 @@ function hodima_media_save_fields( int $object_id, string $context ): void {
 	$write( 'video_cover_id', $cover_id );
 
 	$write( 'video_chapters', sanitize_textarea_field( $get( 'video_chapters' ) ) );
-	$write( 'video_transcript', sanitize_textarea_field( $get( 'video_transcript' ) ) );
+
+	/*
+	 * زیرنویس: فقط .vtt. «متن کامل» خالی + فایل زیرنویس در کتابخانه سایت ←
+	 * متن ساده همان زیرنویس (بدون زمان‌ها) برای متن کامل زیر پلیر و transcript اسکیما.
+	 */
+	$captions   = esc_url_raw( $get( 'video_captions' ), [ 'http', 'https' ] );
+	$captions   = 'vtt' === strtolower( pathinfo( (string) wp_parse_url( $captions, PHP_URL_PATH ), PATHINFO_EXTENSION ) ) ? $captions : '';
+	$transcript = sanitize_textarea_field( $get( 'video_transcript' ) );
+
+	if ( '' === $transcript && '' !== $captions ) {
+		$vtt_id   = (int) attachment_url_to_postid( $captions );
+		$vtt_file = $vtt_id ? (string) get_attached_file( $vtt_id ) : '';
+		if ( '' !== $vtt_file && is_readable( $vtt_file ) && filesize( $vtt_file ) < 2 * MB_IN_BYTES ) {
+			$transcript = sanitize_textarea_field( hodima_media_vtt_to_text( (string) file_get_contents( $vtt_file ) ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- فایل محلی کتابخانه رسانه
+		}
+	}
+
+	$write( 'video_captions', $captions );
+	$write( 'video_transcript', $transcript );
 
 	/* ── صوت ── */
 	$voice_url = esc_url_raw( $get( 'voice_url' ), [ 'http', 'https' ] );

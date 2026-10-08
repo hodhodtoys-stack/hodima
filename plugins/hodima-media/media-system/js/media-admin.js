@@ -109,8 +109,8 @@
 	function openPicker(field) {
 		const type = field.dataset.hodimaPicker;
 		if (!window.wp?.media) return;
-		const titles = { image: 'انتخاب تصویر', video: 'انتخاب ویدیو', audio: 'انتخاب فایل صوتی' };
-		const frame = wp.media({ title: titles[type], button: { text: 'انتخاب' }, multiple: false, library: { type } });
+		const titles = { image: 'انتخاب تصویر', video: 'انتخاب ویدیو', audio: 'انتخاب فایل صوتی', 'text/vtt': 'انتخاب فایل زیرنویس (.vtt)' };
+		const frame = wp.media({ title: titles[type] || 'انتخاب فایل', button: { text: 'انتخاب' }, multiple: false, library: { type } });
 
 		frame.on('select', () => {
 			const a = frame.state().get('selection').first().toJSON();

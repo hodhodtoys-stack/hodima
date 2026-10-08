@@ -1,6 +1,9 @@
 <?php
 /**
- * [hook_video id="" context="" heading="h2|h3|…|none" facade="yes|no"]
+ * [hook_video id="" context="" heading="h2|h3|…|none" facade="yes|no" priority="high"]
+ *
+ *   priority="high": ویدیو بالای صفحه است (مثلا بخش معرفی صفحه اصلی)؛ کاور
+ *   «نما» بدون lazy و با fetchpriority بالا (بزرگ‌ترین تصویر دید اول = LCP).
  *
  * نسخه ۴:
  *   - آپارات/یوتیوب/ویمئو: پخش‌کننده رسمی از روی آدرس (نه oEmbed وردپرس
@@ -52,21 +55,25 @@ function hodima_media_shortcode_video( mixed $atts ): string {
 		 * دانلود نمی‌شود؛ بدون کاور metadata تا فریم اول نمایش داده شود.
 		 */
 		$media = sprintf(
-			'<video class="hook-video-el" controls playsinline preload="%1$s"%2$s width="%3$d" height="%4$d" aria-label="%5$s"><source src="%6$s" type="%7$s"><p>مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند. <a href="%6$s">دانلود ویدیو</a></p></video>',
+			'<video class="hook-video-el" controls playsinline preload="%1$s"%2$s width="%3$d" height="%4$d" aria-label="%5$s"><source src="%6$s" type="%7$s">%8$s<p>مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند. <a href="%6$s">دانلود ویدیو</a></p></video>',
 			null !== $cover ? 'none' : 'metadata',
 			null !== $cover ? ' poster="' . esc_url( set_url_scheme( $cover['url'] ) ) . '"' : '',
 			$rw * 80,
 			$rh * 80,
 			esc_attr( $label ),
 			esc_url( $url ),
-			esc_attr( $video['mime'] )
+			esc_attr( $video['mime'] ),
+			// زیرنویس (WebVTT)؛ پیش‌فرض خاموش، کاربر از منوی پلیر روشن می‌کند
+			'' !== $video['captions']
+				? sprintf( '<track kind="captions" src="%s" srclang="%s" label="%s">', esc_url( set_url_scheme( $video['captions'] ) ), esc_attr( substr( (string) get_bloginfo( 'language' ), 0, 2 ) ?: 'fa' ), esc_attr( 'زیرنویس' ) )
+				: ''
 		);
 
 	} elseif ( in_array( $video['provider'], [ 'aparat', 'youtube', 'vimeo' ], true ) ) {
 
 		$media = 'no' === strtolower( (string) ( $atts['facade'] ?? '' ) )
 			? hodima_media_iframe( hodima_media_embed_src( $video, false ), $label )
-			: hodima_media_facade( $video, $cover, $label, $url );
+			: hodima_media_facade( $video, $cover, $label, $url, 'high' === strtolower( (string) ( $atts['priority'] ?? '' ) ) );
 
 	} else {
 
@@ -98,6 +105,14 @@ function hodima_media_shortcode_video( mixed $atts ): string {
  */
 function hodima_media_embed_src( array $video, bool $autoplay ): string {
 
+	/*
+	 * یوتیوب در «حالت حریم خصوصی» (youtube-nocookie.com): تا پخش، کوکی
+	 * ردیابی نمی‌گذارد. فقط پخش‌کننده صفحه؛ embedUrl اسکیما همان youtube.com.
+	 */
+	$player = 'youtube' === $video['provider']
+		? str_replace( 'https://www.youtube.com/embed/', 'https://www.youtube-nocookie.com/embed/', $video['player'] )
+		: $video['player'];
+
 	$args = match ( $video['provider'] ) {
 		'youtube' => [ 'enablejsapi' => 1, 'rel' => 0, 'playsinline' => 1 ] + ( $autoplay ? [ 'autoplay' => 1 ] : [] ),
 		'vimeo'   => $autoplay ? [ 'autoplay' => 1 ] : [],
@@ -105,7 +120,7 @@ function hodima_media_embed_src( array $video, bool $autoplay ): string {
 		default   => [],
 	};
 
-	return add_query_arg( $args, $video['player'] );
+	return add_query_arg( $args, $player );
 }
 
 /** iframe پخش‌کننده (حالت بدون «نما» و داخل noscript). */
@@ -121,20 +136,25 @@ function hodima_media_iframe( string $src, string $label ): string {
  * «نما»ی ویدیو: کاور + دکمه پخش. media-style.js با کلیک، iframe را جای
  * آن می‌گذارد. بدون جاوااسکریپت، لینک به صفحه ویدیو باز می‌شود.
  */
-function hodima_media_facade( array $video, ?array $cover, string $label, string $watch_url ): string {
+function hodima_media_facade( array $video, ?array $cover, string $label, string $watch_url, bool $priority = false ): string {
 
 	$image = '';
 
 	if ( null !== $cover ) {
-		$image = $cover['id']
+		// بالای صفحه: بدون lazy و با اولویت بالا (LCP)؛ وگرنه lazy
+		$loading = $priority ? [ 'loading' => 'eager', 'fetchpriority' => 'high' ] : [ 'loading' => 'lazy' ];
+		$image   = $cover['id']
 			? (string) wp_get_attachment_image( $cover['id'], 'large', false, [
 				'class'    => 'hook-video-facade__img',
 				'alt'      => '',
-				'loading'  => 'lazy',
 				'decoding' => 'async',
 				'sizes'    => '(max-width: 700px) 100vw, 650px',
-			] )
-			: sprintf( '<img class="hook-video-facade__img" src="%s" alt="" loading="lazy" decoding="async">', esc_url( $cover['url'] ) );
+			] + $loading )
+			: sprintf(
+				'<img class="hook-video-facade__img" src="%s" alt=""%s decoding="async">',
+				esc_url( $cover['url'] ),
+				$priority ? ' loading="eager" fetchpriority="high"' : ' loading="lazy"'
+			);
 	}
 
 	$service = [ 'aparat' => 'آپارات', 'youtube' => 'یوتیوب', 'vimeo' => 'ویمئو' ][ $video['provider'] ] ?? '';
