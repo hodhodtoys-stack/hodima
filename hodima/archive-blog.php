@@ -93,18 +93,16 @@ get_header(); ?>
                             <?php endif; ?>
 
                             <div class="blog-page-content">
-                                <h2 class="blog-page-title" title="<?php echo esc_attr(get_the_title()); ?>">
-                                    <?php 
-                                        $hodima_card_title = get_the_title();
-                                        if ( mb_strlen( $hodima_card_title, 'UTF-8' ) > 45 ) {
-                                            echo esc_html( mb_substr( $hodima_card_title, 0, 45, 'UTF-8' ) ) . '...';
-                                        } else {
-                                            echo esc_html( $hodima_card_title );
-                                        }
-                                    ?>
-                                </h2>
+                                <?php // عنوان کامل؛ دو خط را CSS می‌بُرد (تا 2.9.9 بریدن ۴۵ حرفی PHP عنوان کوتاه دوخطی را هم می‌برید) ?>
+                                <h2 class="blog-page-title"><?php echo esc_html( get_the_title() ); ?></h2>
+                                <?php if ( hodima_setting( 'blog_card_excerpt' ) ) : ?>
+                                    <p class="blog-page-excerpt"><?php echo esc_html( wp_trim_words( get_the_excerpt(), 22 ) ); ?></p>
+                                <?php endif; ?>
                                 <div class="blog-page-meta">
-                                    <span class="blog-date"><?php echo get_the_date('j F Y'); ?></span>
+                                    <span class="blog-date"><?php echo esc_html( (string) get_the_date( 'j F Y' ) ); ?></span>
+                                    <?php if ( hodima_setting( 'blog_meta_reading' ) ) : ?>
+                                        <span class="blog-reading"><?php echo esc_html( hodima_reading_label( (int) get_the_ID() ) ); ?></span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
 

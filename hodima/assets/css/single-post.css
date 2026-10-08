@@ -127,6 +127,17 @@
 	padding-bottom: var(--hodima-space-6);
 }
 
+/* اطلاعات زیر عنوان مقاله (3.0.0؛ تنظیمات قالب ← وبلاگ): زیر خط عنوان */
+.single-post-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--hodima-space-2) var(--hodima-space-6);
+	margin: calc(var(--hodima-space-7) * -0.5) 0 var(--hodima-space-7);
+	color: var(--hodima-text-muted, #5d6785);
+	font-size: 0.875rem;
+	line-height: 1.6;
+}
+
 .single-post-content {
 	line-height: var(--hodima-body-line-height);
 	font-size: calc(var(--hodima-body-size) * 0.0625rem);

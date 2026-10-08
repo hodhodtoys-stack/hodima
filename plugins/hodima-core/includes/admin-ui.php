@@ -300,7 +300,8 @@ add_filter( 'admin_footer_text', static function ( $text ) {
 	}
 
 	if ( function_exists( 'hodima_settings' ) ) {
-		$links['تنظیمات قالب هدیما'] = admin_url( 'themes.php?page=hodima-settings' );
+		// قالب 3.0.0+ منوی سطح اول، قبلی زیر «نمایش»: آدرس از خود منو
+		$links['تنظیمات قالب هدیما'] = menu_page_url( 'hodima-settings', false ) ?: admin_url( 'themes.php?page=hodima-settings' );
 	}
 
 	$items = '';

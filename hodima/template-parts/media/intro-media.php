@@ -12,7 +12,9 @@
  *   category — H1 دسته داخل ستون معرفی؛ ستون ویدیو فقط با محتوا.
  * محتوا را قالب فراخوان با hodima_theme_media_html() می‌خواند (inc/media-sections.php).
  *
- * @var array{layout?:string, title?:string, intro?:string, video?:string} $args
+ * meta (فقط post): HTML اطلاعات زیر عنوان مقاله (hodima_post_meta_html، inc/blog.php).
+ *
+ * @var array{layout?:string, title?:string, intro?:string, video?:string, meta?:string} $args
  */
 
 declare(strict_types=1);
@@ -26,6 +28,7 @@ $hodima_args = wp_parse_args(
 		'title'  => '', // HTML عنوان (H1)؛ با wp_kses_post چاپ می‌شود
 		'intro'  => '',
 		'video'  => '',
+		'meta'   => '',
 	]
 );
 
@@ -52,6 +55,7 @@ if ( 'post' !== $hodima_layout && 'category' !== $hodima_layout && '' === $hodim
 	<section class="hodima-section-box section-intro-media">
 		<?php if ( 'post' === $hodima_layout ) : ?>
 			<h1 class="single-post-title"><?php echo wp_kses_post( $hodima_title ); ?></h1>
+			<?php echo (string) $hodima_args['meta']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_post_meta_html() ?>
 		<?php endif; ?>
 		<div class="<?php echo 'post' === $hodima_layout ? 'video-thumbnail-wrapper single-post-media' : 'video-thumbnail-wrapper'; ?>">
 			<?php if ( 'post' === $hodima_layout || '' !== $hodima_intro ) : ?>

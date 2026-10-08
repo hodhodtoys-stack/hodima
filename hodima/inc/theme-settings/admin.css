@@ -901,6 +901,16 @@
 		white-space: nowrap;
 	}
 
+	/* فیلد بیرون از ردیف‌ها (مثلا «نام فونت» بالای جدول وزن‌ها) برچسب دیدنی دارد */
+	& .hodima-panel__fields .hodima-field__label {
+		position: static;
+		inline-size: auto;
+		block-size: auto;
+		overflow: visible;
+		clip-path: none;
+		white-space: normal;
+	}
+
 	& .hodima-media {
 		flex-wrap: nowrap;
 		gap: 0.75rem;
@@ -963,7 +973,7 @@
 	& input[type="color"] {
 		grid-column: 1 / -1;
 		inline-size: 100%;
-		block-size: 4.5rem;
+		block-size: 2.5rem; /* تا 2.9.9 بلوک ۷۲px؛ خواسته کاربر: کوچک‌تر */
 		margin: 0;
 		padding: 0;
 		border: 1px solid rgb(0 0 0 / 0.08);
@@ -999,13 +1009,28 @@
 	color: var(--hs-primary);
 }
 
-.hodima-swatch__value {
-	padding: 0.0625rem 0.375rem;
-	border-radius: 0.25rem;
+/* کد رنگ تایپی زیر هر رنگ (#25316a) */
+.hodima-swatch__hex {
+	inline-size: 100%;
+	min-block-size: 2rem;
+	padding: 0.125rem 0.5rem;
+	border: 1px solid var(--hs-border);
+	border-radius: var(--hs-radius-sm);
 	background: var(--hs-surface-soft);
-	color: var(--hs-muted);
-	font-size: 0.75rem;
-	unicode-bidi: isolate;
+	color: var(--hs-text);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.8125rem;
+	text-align: start; /* dir="ltr" ← چپ */
+
+	&:focus-visible {
+		border-color: var(--hs-secondary);
+		outline: 0;
+		box-shadow: var(--hs-ring);
+	}
+
+	&[aria-invalid] {
+		border-color: var(--hs-danger);
+	}
 }
 
 .hodima-swatch__reset {
@@ -1699,6 +1724,24 @@
 /* فونت آپلودی: «وزن | فایل» */
 .hodima-panel-type_custom {
 	--row-cols: 9rem minmax(0, 1fr);
+
+	/* «نام فونت» بالای جدول وزن‌ها، نه تمام‌عرض */
+	& .hodima-panel__fields {
+		max-inline-size: 26rem;
+		margin-block-end: 1rem;
+	}
+}
+
+/* نمونه هر وزن با خود فونت آپلودی (3.0.0) */
+.hodima-font-sample {
+	flex: 1 1 auto;
+	color: var(--hs-text);
+	font-size: 1rem;
+	line-height: 1.6;
+
+	&[hidden] {
+		display: none;
+	}
 }
 
 /* فایل (فونت): نام فایل به‌جای تصویر */
@@ -1881,4 +1924,68 @@
 	margin: 0;
 	color: var(--hs-muted);
 	font-size: 0.75rem;
+}
+
+/* ── انتخاب رنگ از پالت: دایره رنگ کنار فهرست (رنگ لینک‌ها، رنگ تیترها) ── */
+.hodima-select-color {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	min-inline-size: 0;
+
+	& select {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+	}
+}
+
+.hodima-select-color__dot {
+	flex-shrink: 0;
+	inline-size: 1.25rem;
+	block-size: 1.25rem;
+	border: 1px solid rgb(0 0 0 / 0.15);
+	border-radius: 50%;
+}
+
+/* ── قاب جمع‌شونده (پیش‌نمایش تایپوگرافی؛ <details>) ── */
+.hodima-panel--collapsible {
+	& > .hodima-panel__summary {
+		display: block;
+		border-radius: var(--hs-radius);
+		cursor: pointer;
+		list-style: none;
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--hs-secondary);
+			outline-offset: 2px;
+		}
+
+		& .hodima-panel__head {
+			border-block-end: 0;
+		}
+	}
+
+	&[open] > .hodima-panel__summary .hodima-panel__head {
+		border-block-end: 1px solid var(--hs-border);
+	}
+
+	& .hodima-panel__chevron {
+		align-self: center;
+		color: var(--hs-muted);
+		transition: transform 0.2s ease;
+	}
+
+	&[open] .hodima-panel__chevron {
+		transform: rotate(180deg);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		& .hodima-panel__chevron {
+			transition: none;
+		}
+	}
 }

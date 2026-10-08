@@ -275,7 +275,7 @@ function hodima_robots_physical_file_notice(): void {
 	}
 
 	$screen = get_current_screen();
-	if ( ! $screen || ! in_array( $screen->id, [ 'dashboard', 'options-reading', 'appearance_page_hodima-settings' ], true ) ) {
+	if ( ! $screen || ! in_array( $screen->id, [ 'dashboard', 'options-reading', 'appearance_page_hodima-settings', 'toplevel_page_hodima-settings' ], true ) ) {
 		return;
 	}
 

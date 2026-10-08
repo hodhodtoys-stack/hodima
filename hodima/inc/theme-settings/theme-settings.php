@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 const HODIMA_SETTINGS_OPTION = 'hodima_theme_settings';
 const HODIMA_SETTINGS_PAGE   = 'hodima-settings';
+const HODIMA_SETTINGS_HOOK   = 'toplevel_page_' . HODIMA_SETTINGS_PAGE; // شناسه صفحه پیشخوان (از 3.0.0 منوی سطح اول؛ قبلا appearance_page_…)
 const HODIMA_TRUST_SLOTS     = 3; // تعداد نمادهای اعتماد فوتر
 
 /* =========================================================================
@@ -105,6 +106,14 @@ function hodima_settings_fields(): array {
 		'blog_title'           => [ 'panel' => 'blog_page', 'type' => 'text', 'label' => 'عنوان صفحه وبلاگ (H1)', 'default' => '', 'help' => 'خالی = عنوان برگه «نوشته‌ها» (تنظیمات ← خواندن). همین نام در مسیر راهنمای مقاله‌ها هم می‌آید.' ],
 		'blog_intro'           => [ 'panel' => 'blog_page', 'type' => 'textarea', 'label' => 'متن کوتاه زیر عنوان', 'default' => '' ],
 		'blog_infinite_scroll' => [ 'panel' => 'blog_page', 'type' => 'toggle', 'label' => 'بارگذاری خودکار مقاله‌های بعدی با اسکرول', 'default' => true, 'help' => 'صفحه‌بندی واقعی برای موتورهای جستجو در هر حال سر جایش است.' ],
+		'blog_card_excerpt'    => [ 'panel' => 'blog_page', 'type' => 'toggle', 'label' => 'خلاصه مقاله در کارت‌ها', 'default' => false, 'wide' => true, 'help' => 'چند خط اول هر مقاله (یا «خلاصه» ویرایشگر) زیر عنوان کارت.' ],
+		// صفحه هر مقاله (3.0.0): اطلاعات زیر عنوان و جمع شدن متن بلند
+		'blog_meta_date'       => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'تاریخ انتشار', 'default' => true ],
+		'blog_meta_updated'    => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'تاریخ به‌روزرسانی', 'default' => true, 'help' => 'فقط وقتی مقاله بعد از انتشار ویرایش شده باشد.' ],
+		'blog_meta_reading'    => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'زمان مطالعه', 'default' => true, 'help' => 'تخمینی از تعداد کلمه‌ها؛ در کارت‌های وبلاگ هم.' ],
+		'blog_meta_author'     => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'نویسنده', 'default' => false ],
+		'blog_content_collapse' => [ 'panel' => 'blog_post_content', 'type' => 'toggle', 'label' => 'متن بلند مقاله جمع شود («نمایش بیشتر»)', 'default' => true, 'wide' => true, 'help' => 'به افزونه Hodima Media نیاز دارد. خاموش: کل متن یک‌جا نمایش داده می‌شود.' ],
+		'blog_content_height'  => [ 'panel' => 'blog_post_content', 'type' => 'number', 'label' => 'ارتفاع متن جمع‌شده (پیکسل)', 'default' => 400, 'min' => 200, 'max' => 1500 ],
 		'blog_related_title'   => [ 'panel' => 'blog_related', 'type' => 'text', 'label' => 'عنوان', 'default' => 'مقالات مرتبط' ],
 		'blog_related_limit'   => [ 'panel' => 'blog_related', 'type' => 'number', 'label' => 'تعداد', 'default' => 4, 'min' => 0, 'max' => 12, 'help' => '۰ = بخش نمایش داده نشود.' ],
 		'blog_related_source'  => [ 'panel' => 'blog_related', 'type' => 'select', 'label' => 'کدام مقاله‌ها', 'default' => 'category', 'options' => [ 'category' => 'هم‌دسته (آخرین مقاله‌های همان دسته)', 'cluster' => 'هم‌خوشه (خوشه موضوعی افزونه سئو)، و اگر کم بود هم‌دسته' ] ],
@@ -169,7 +178,10 @@ function hodima_trust_fields(): array {
  */
 function hodima_typography_fields(): array {
 
-	$fonts   = [ 'vazirmatn' => 'وزیرمتن (همراه قالب)', 'custom' => 'فونت آپلودی (قاب «فونت آپلودی»)', 'system' => 'فونت سیستم کاربر (بدون دانلود فونت)' ];
+	// نام دلخواه فونت آپلودی در فهرست انتخاب (گزینه خام: hodima_setting() این‌جا حلقه بی‌پایان می‌سازد)
+	$custom  = (string) ( ( (array) get_option( HODIMA_SETTINGS_OPTION, [] ) )['font_custom_name'] ?? '' );
+	$custom  = function_exists( 'hodima_typography_clean_font_name' ) ? hodima_typography_clean_font_name( $custom ) : '';
+	$fonts   = [ 'vazirmatn' => 'وزیرمتن (همراه قالب)', 'custom' => '' !== $custom ? $custom . ' (فونت آپلودی)' : 'فونت آپلودی (قاب «فونت آپلودی»)', 'system' => 'فونت سیستم کاربر (بدون دانلود فونت)' ];
 	$weights = hodima_typography_weights();
 	$colors  = hodima_typography_color_options();
 
@@ -180,8 +192,8 @@ function hodima_typography_fields(): array {
 		'body_size'              => [ 'panel' => 'type_body', 'type' => 'number', 'label' => 'اندازه متن (پیکسل)', 'default' => 16, 'min' => 12, 'max' => 22, 'help' => 'متن مقاله‌ها، برگه‌ها و بدنه سایت. استاندارد خوانایی ۱۶ است.' ],
 		'body_line_height'       => [ 'panel' => 'type_body', 'type' => 'number', 'label' => 'فاصله خطوط متن', 'default' => 1.8, 'min' => 1.2, 'max' => 2.4, 'step' => 0.05, 'help' => 'ضریب اندازه متن؛ برای فارسی ۱٫۷ تا ۲ خواناتر است.' ],
 		'color_text'             => [ 'panel' => 'type_body', 'type' => 'color', 'label' => 'رنگ متن و تیترها', 'default' => '#111111', 'help' => 'رنگ اصلی نوشته‌ها در کل سایت؛ تیترها جدا هم قابل تنظیم‌اند (قاب «تیترها»).' ],
-		'link_color'             => [ 'panel' => 'type_body', 'type' => 'select', 'label' => 'رنگ لینک‌ها', 'default' => 'secondary', 'options' => $colors, 'help' => 'از پالت برند؛ با عوض شدن پالت، لینک‌ها هم عوض می‌شوند.' ],
-		'link_hover_color'       => [ 'panel' => 'type_body', 'type' => 'select', 'label' => 'رنگ لینک زیر نشانگر ماوس', 'default' => 'primary', 'options' => $colors ],
+		'link_color'             => [ 'panel' => 'type_body', 'type' => 'select', 'label' => 'رنگ لینک‌ها', 'default' => 'secondary', 'options' => $colors, 'swatch' => true, 'help' => 'از پالت برند؛ با عوض شدن پالت، لینک‌ها هم عوض می‌شوند.' ],
+		'link_hover_color'       => [ 'panel' => 'type_body', 'type' => 'select', 'label' => 'رنگ لینک زیر نشانگر ماوس', 'default' => 'primary', 'options' => $colors, 'swatch' => true ],
 		'content_link_underline' => [ 'panel' => 'type_body', 'type' => 'toggle', 'label' => 'زیرخط لینک‌های داخل متن', 'default' => true, 'wide' => true, 'help' => 'لینک‌های داخل متن مقاله، برگه و توضیح محصول/دسته. استاندارد دسترس‌پذیری (WCAG): لینک نباید فقط با رنگ از متن جدا شود. دکمه‌ها و کارت‌ها زیرخط نمی‌گیرند.' ],
 	];
 
@@ -191,8 +203,10 @@ function hodima_typography_fields(): array {
 		$fields[ "h{$level}_size_mobile" ] = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'number', 'label' => "اندازه موبایل H{$level} (پیکسل)", 'default' => $default['min'], 'min' => 10, 'max' => 80 ];
 		$fields[ "h{$level}_weight" ]      = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'select', 'label' => "وزن H{$level}", 'default' => (string) $default['weight'], 'options' => $weights ];
 		$fields[ "h{$level}_line_height" ] = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'number', 'label' => "فاصله خطوط H{$level}", 'default' => $default['line_height'], 'min' => 1, 'max' => 2.4, 'step' => 0.05 ];
-		$fields[ "h{$level}_color" ]       = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'select', 'label' => "رنگ H{$level}", 'default' => 'text', 'options' => $colors ];
+		$fields[ "h{$level}_color" ]       = [ 'panel' => 'type_headings', 'group' => $group, 'type' => 'select', 'label' => "رنگ H{$level}", 'default' => 'text', 'options' => $colors, 'swatch' => true ];
 	}
+
+	$fields['font_custom_name'] = [ 'panel' => 'type_custom', 'type' => 'text', 'label' => 'نام فونت', 'default' => '', 'placeholder' => 'مثلا ایران‌سنس', 'help' => 'نامی که در فهرست «فونت متن» و «فونت تیترها» می‌بینید (فقط حرف، عدد، فاصله، - و _). خالی: «فونت آپلودی».' ];
 
 	foreach ( array_keys( $weights ) as $weight ) {
 		$fields[ "font_custom_{$weight}" ] = [ 'panel' => 'type_custom', 'group' => "font_w{$weight}", 'type' => 'font', 'label' => 'فایل وزن ' . $weights[ $weight ], 'default' => 0 ];
@@ -235,6 +249,11 @@ function hodima_typography_weights(): array {
  */
 function hodima_typography_color_options(): array {
 	return [ 'text' => 'رنگ متن', 'primary' => 'رنگ اصلی', 'secondary' => 'رنگ دوم', 'accent' => 'رنگ تأکید', 'accent-light' => 'رنگ تأکید روشن' ];
+}
+
+/** رنگ ذخیره‌شده یک گزینه hodima_typography_color_options() (text ← color_text، accent-light ← color_accent_light). */
+function hodima_settings_palette_hex( string $option ): string {
+	return (string) hodima_setting( 'color_' . str_replace( '-', '_', $option ) );
 }
 
 /** ارقام فارسی برای برچسب‌ها (مستقل از زبان پیشخوان). */
@@ -339,9 +358,9 @@ function hodima_settings_sections(): array {
 		'header'    => [ 'nav' => 'look', 'title' => 'هدر', 'icon' => 'dashicons-editor-kitchensink', 'description' => 'نوار بالای همه صفحه‌ها. متن خالی به پیش‌فرض برمی‌گردد.' ],
 		'footer'    => [ 'nav' => 'look', 'title' => 'فوتر', 'icon' => 'dashicons-table-row-after', 'description' => 'ستون‌های پایین همه صفحه‌ها. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود.' ],
 		'home'      => [ 'nav' => 'pages', 'title' => 'صفحه اصلی', 'icon' => 'dashicons-admin-home', 'description' => 'بخش‌های صفحه اصلی سایت: ترتیب، روشن/خاموش و تنظیمات هر بخش.' ],
-		'shop'      => [ 'nav' => 'pages', 'title' => 'فروشگاه و دسته‌ها', 'icon' => 'dashicons-store', 'description' => 'سربرگ صفحه فروشگاه و تعداد محصول صفحه‌های فهرست محصولات.' ],
+		'shop'      => [ 'nav' => 'pages', 'title' => 'فروشگاه', 'icon' => 'dashicons-store', 'description' => 'سربرگ صفحه فروشگاه و تعداد محصول در هر صفحه.' ],
 		'product'   => [ 'nav' => 'pages', 'title' => 'صفحه محصول', 'icon' => 'dashicons-products', 'description' => 'متن‌ها و بخش‌های صفحه هر محصول.' ],
-		'blog'      => [ 'nav' => 'pages', 'title' => 'وبلاگ', 'icon' => 'dashicons-welcome-write-blog', 'description' => 'صفحه وبلاگ، آرشیو دسته‌ها و «مقالات مرتبط» زیر هر مقاله.' ],
+		'blog'      => [ 'nav' => 'pages', 'title' => 'وبلاگ', 'icon' => 'dashicons-welcome-write-blog', 'description' => 'صفحه وبلاگ و کارت‌ها، اطلاعات و متن هر مقاله، و «مقالات مرتبط».' ],
 		'notfound'  => [ 'nav' => 'pages', 'title' => 'صفحه ۴۰۴', 'icon' => 'dashicons-warning', 'description' => 'صفحه‌ای که بازدیدکننده با آدرس اشتباه یا حذف‌شده می‌بیند. متن خالی به پیش‌فرض برمی‌گردد.' ],
 		'contact'   => [ 'nav' => 'contact', 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی نمایش داده نمی‌شود.' ],
 		'social'    => [ 'nav' => 'contact', 'title' => 'شبکه‌های اجتماعی', 'icon' => 'dashicons-share', 'description' => 'نوار شبکه‌های اجتماعی بالای فوتر همه صفحه‌ها. بدون هیچ شبکه‌ای نوار نمایش داده نمی‌شود.' ],
@@ -367,7 +386,7 @@ function hodima_settings_panels(): array {
 		'brand_logo'         => [ 'section' => 'brand', 'title' => 'لوگو', 'icon' => 'dashicons-format-image', 'help' => 'لوگوی هدر سایت؛ پیش‌نمایش روی رنگ هدر است.' ],
 		'brand_palette'      => [ 'section' => 'brand', 'title' => 'پالت رنگ برند', 'icon' => 'dashicons-admin-appearance', 'layout' => 'swatches', 'help' => 'رنگ‌های کل سایت (و صفحه‌های تنظیمات پیشخوان) از این پنج رنگ ساخته می‌شوند. بعد از ذخیره، کش لایت‌اسپید خودکار پاک می‌شود.' ],
 
-		'type_preview'       => [ 'section' => 'typography', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'typepreview', 'help' => 'با هر تغییر پایین همین‌جا به‌روز می‌شود (پیش از ذخیره). اندازه تیترها در عرض همین کادر نمایش داده می‌شود.' ],
+		'type_preview'       => [ 'section' => 'typography', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'typepreview', 'collapsible' => true, 'help' => 'برای دیدن، باز کنید. با هر تغییر پایین همین‌جا به‌روز می‌شود (پیش از ذخیره). اندازه تیترها در عرض همین کادر نمایش داده می‌شود.' ],
 		'type_fonts'         => [ 'section' => 'typography', 'title' => 'فونت‌ها', 'icon' => 'dashicons-editor-textcolor', 'help' => 'فایل‌های وزیرمتن (هفت وزن ۳۰۰ تا ۹۰۰) همراه قالب‌اند و از همین سایت بارگذاری می‌شوند. مرورگر هر وزن را فقط وقتی دانلود می‌کند که در صفحه به کار رفته باشد.' ],
 		'type_body'          => [ 'section' => 'typography', 'title' => 'متن و لینک‌ها', 'icon' => 'dashicons-editor-paragraph' ],
 		'type_headings'      => [ 'section' => 'typography', 'title' => 'تیترها (H1 تا H6)', 'icon' => 'dashicons-heading', 'layout' => 'rows', 'columns' => [ 'تیتر', 'اندازه دسکتاپ (px)', 'اندازه موبایل (px)', 'وزن', 'فاصله خطوط', 'رنگ' ], 'help' => 'اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند. پایه تیترهای داخل متن مقاله، برگه، توضیح محصول و دسته است؛ H1 عنوان همه صفحه‌ها هم هست (محصول، مقاله، دسته، فروشگاه، وبلاگ، برگه، جستجو، ویدیو). تیترهای طراحی‌شده بخش‌ها (کارت محصول، فوتر، عنوان بخش‌های صفحه اصلی) اندازه خودشان را دارند. ترتیب درست: هر سطح کوچک‌تر از سطح بالاتر.' ],
@@ -392,10 +411,12 @@ function hodima_settings_panels(): array {
 
 		'product_texts'      => [ 'section' => 'product', 'title' => 'متن‌ها', 'icon' => 'dashicons-editor-textcolor' ],
 		'product_sections'   => [ 'section' => 'product', 'title' => 'بخش‌های صفحه محصول', 'icon' => 'dashicons-visibility', 'layout' => 'toggles', 'help' => 'بخش خاموش برای همه محصولات پنهان می‌شود؛ بخش روشن فقط وقتی محتوا دارد دیده می‌شود (کادر «رسانه» هر محصول و نظرات ووکامرس).' ],
-		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت در اسکیما و سایت‌های دیگر', 'icon' => 'dashicons-tag', 'help' => 'عددی که گوگل (اسکیما)، سایت‌های مقایسه قیمت مثل ترب (متاتگ قیمت)، پیش‌نمایش لینک در شبکه‌های اجتماعی و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. نمایش قیمت در خود صفحه محصول عوض نمی‌شود.' ],
+		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت در اسکیما و سایت‌های دیگر', 'icon' => 'dashicons-tag', 'help' => 'عددی که گوگل (اسکیما)، ترب و ایمالز (افزونه رسمی‌شان و متاتگ قیمت)، پیش‌نمایش لینک در شبکه‌های اجتماعی و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود. بعد از تغییر، کش لایت‌اسپید را پاک کنید؛ ترب قیمت تازه را در بازدید بعدی خودش (معمولا تا یکی دو روز) می‌گیرد.' ],
 		'product_upsells'    => [ 'section' => 'product', 'title' => 'محصولات پیشنهادی (Upsell)', 'icon' => 'dashicons-cart', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید.' ],
 
 		'blog_page'          => [ 'section' => 'blog', 'title' => 'صفحه وبلاگ', 'icon' => 'dashicons-welcome-write-blog' ],
+		'blog_post_meta'     => [ 'section' => 'blog', 'title' => 'اطلاعات زیر عنوان مقاله', 'icon' => 'dashicons-calendar-alt', 'layout' => 'toggles', 'help' => 'تاریخ، زمان مطالعه و نویسنده به خواننده و گوگل نشان می‌دهد مقاله تازه و معتبر است.' ],
+		'blog_post_content'  => [ 'section' => 'blog', 'title' => 'متن مقاله', 'icon' => 'dashicons-editor-expand' ],
 		'blog_related'       => [ 'section' => 'blog', 'title' => 'مقالات مرتبط', 'icon' => 'dashicons-admin-links', 'help' => 'فهرست مقاله‌های دیگر زیر هر مقاله، بعد از دیدگاه‌ها.' ],
 
 		'notfound_main'      => [ 'section' => 'notfound', 'title' => 'متن‌ها و دکمه‌ها', 'icon' => 'dashicons-editor-textcolor' ],
@@ -498,15 +519,40 @@ add_action( 'admin_init', static function (): void {
 	] );
 } );
 
+/*
+ * منوی سطح اول درست بالای «نمایش» (جایگاه ۶۰؛ ۵۹ جداکننده است). تا 2.9.9 زیرمنوی
+ * «نمایش» بود (themes.php?page=hodima-settings)؛ آن آدرس (نشانک‌ها، لینک افزونه‌های
+ * قدیمی) با همه پارامترهایش به آدرس تازه می‌رود.
+ */
 add_action( 'admin_menu', static function (): void {
-	add_theme_page(
+	add_menu_page(
 		'تنظیمات قالب هدیما',
 		'تنظیمات قالب هدیما',
 		'manage_options',
 		HODIMA_SETTINGS_PAGE,
-		'hodima_settings_render_page'
+		'hodima_settings_render_page',
+		'dashicons-admin-customizer',
+		59.5
 	);
 } );
+
+add_action( 'admin_init', static function (): void {
+	global $pagenow;
+
+	if ( 'themes.php' === $pagenow && HODIMA_SETTINGS_PAGE === ( $_GET['page'] ?? '' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط ریدایرکت آدرس قدیمی
+		wp_safe_redirect( hodima_settings_url( array_map( 'sanitize_text_field', wp_unslash( array_diff_key( $_GET, [ 'page' => 1 ] ) ) ) ), 301 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- همان پارامترها (tab، settings-updated)
+		exit;
+	}
+} );
+
+/**
+ * آدرس صفحه تنظیمات قالب (با پارامتر دلخواه، مثلا [ 'tab' => 'blog' ]).
+ *
+ * @param array<string, mixed> $args
+ */
+function hodima_settings_url( array $args = [] ): string {
+	return add_query_arg( [ 'page' => HODIMA_SETTINGS_PAGE, ...$args ], admin_url( 'admin.php' ) );
+}
 
 /**
  * پاک‌سازی و اعتبارسنجی همه فیلدها.
@@ -747,7 +793,7 @@ function hodima_settings_sanitize_ga( mixed $raw ): string {
 
 add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
 
-	if ( 'appearance_page_' . HODIMA_SETTINGS_PAGE !== $hook ) {
+	if ( HODIMA_SETTINGS_HOOK !== $hook ) {
 		return;
 	}
 
@@ -758,7 +804,7 @@ add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
 } );
 
 /**
- * صفحه «نمایش ← تنظیمات قالب هدیما»: منوی کناری گروه‌بندی‌شده + پنل هر تب.
+ * صفحه «تنظیمات قالب هدیما» (منوی سطح اول پیشخوان): منوی کناری گروه‌بندی‌شده + پنل هر تب.
  *
  * تاریخچه: اول همه بخش‌ها زیر هم بودند؛ بعد ده تب در یک ردیف افقی (بی‌ترتیب و
  * در صفحه کوچک‌تر بیرون‌زده)؛ حالا منوی کناری با چهار گروه (ظاهر سایت، صفحه‌ها،
@@ -823,7 +869,7 @@ function hodima_settings_render_page(): void {
 									<li>
 										<a
 											class="hodima-settings__tab"
-											href="<?php echo esc_url( add_query_arg( [ 'page' => HODIMA_SETTINGS_PAGE, 'tab' => $section_key ], admin_url( 'themes.php' ) ) ); ?>"
+											href="<?php echo esc_url( hodima_settings_url( [ 'tab' => $section_key ] ) ); ?>"
 											aria-controls="hodima-section-<?php echo esc_attr( $section_key ); ?>"
 											data-tab="<?php echo esc_attr( $section_key ); ?>"
 											<?php echo $section_key === $current ? 'aria-current="page"' : ''; ?>
@@ -923,11 +969,19 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 		}
 	}
 
-	$classes = 'hodima-panel hodima-panel--' . $layout . ' hodima-panel-' . $key . ( ! empty( $panel['half'] ) ? ' hodima-panel--half' : '' );
-	$title   = 'hodima-panel-' . $key . '-title';
+	$collapse = ! empty( $panel['collapsible'] ); // قاب جمع‌شونده (<details>، پیش‌فرض بسته)؛ مثلا پیش‌نمایش تایپوگرافی
+	$classes  = 'hodima-panel hodima-panel--' . $layout . ' hodima-panel-' . $key . ( ! empty( $panel['half'] ) ? ' hodima-panel--half' : '' ) . ( $collapse ? ' hodima-panel--collapsible' : '' );
+	$title    = 'hodima-panel-' . $key . '-title';
 	?>
+	<?php if ( $collapse ) : ?>
+		<details class="<?php echo esc_attr( $classes ); ?>" data-hodima-collapsible="<?php echo esc_attr( $key ); ?>">
+			<summary class="hodima-panel__summary">
+				<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '', '<span class="hodima-panel__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>' ); ?>
+			</summary>
+	<?php else : ?>
 	<section class="<?php echo esc_attr( $classes ); ?>" aria-labelledby="<?php echo esc_attr( $title ); ?>">
 		<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '' ); ?>
+	<?php endif; ?>
 
 		<div class="hodima-panel__body">
 			<?php if ( 'swatches' === $layout ) : ?>
@@ -970,7 +1024,7 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 				</div>
 			<?php endif; ?>
 		</div>
-	</section>
+	<?php echo $collapse ? '</details>' : '</section>'; // phpcs:ignore WordPress.Security.EscapeOutput -- برچسب ثابت ?>
 	<?php
 }
 
@@ -1059,8 +1113,20 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			<label class="hodima-swatch" for="<?php echo esc_attr( $id ); ?>">
 				<input type="color" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $value ); ?>" data-hodima-color="<?php echo esc_attr( str_replace( [ 'color_', '_' ], [ '', '-' ], $key ) ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
 				<span class="hodima-swatch__name"><?php echo esc_html( $field['label'] ); ?></span>
-				<code class="hodima-swatch__value" dir="ltr" data-hodima-color-value><?php echo esc_html( (string) $value ); ?></code>
 			</label>
+			<?php // کد رنگ تایپی (مثلا #25316a)؛ بی name: مقدار با input رنگ بالا ارسال می‌شود (admin.js همگام می‌کند). تا 2.9.9 فقط نمایش بود ?>
+			<input
+				type="text"
+				class="hodima-swatch__hex"
+				value="<?php echo esc_attr( (string) $value ); ?>"
+				dir="ltr"
+				maxlength="7"
+				spellcheck="false"
+				autocomplete="off"
+				pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})"
+				aria-label="<?php echo esc_attr( sprintf( 'کد رنگ %s (مثلا #25316a)', $field['label'] ) ); ?>"
+				data-hodima-color-value
+			>
 			<?php if ( '' !== $help ) : ?>
 				<p class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></p>
 			<?php endif; ?>
@@ -1110,6 +1176,10 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<button type="button" class="button" data-hodima-media-select aria-describedby="<?php echo esc_attr( $id ); ?>-label" data-title="<?php echo esc_attr( $field['label'] ); ?>"><?php echo $font_id ? 'تغییر فایل' : 'انتخاب فایل'; ?></button>
 					<button type="button" class="button-link hodima-media__remove" data-hodima-media-remove aria-describedby="<?php echo esc_attr( $id ); ?>-label" <?php echo $font_id ? '' : 'hidden'; ?>>حذف</button>
 				</div>
+				<?php if ( preg_match( '/^font_custom_(\d+)$/', $key, $hodima_w ) && function_exists( 'hodima_typography_custom_family' ) ) : ?>
+					<?php // نمونه همین وزن با فونت آپلودی (پیش از ذخیره هم: admin.js همان خانواده را با FontFace اضافه می‌کند) ?>
+					<span class="hodima-font-sample" data-hodima-font-sample style="<?php echo esc_attr( sprintf( "font-family: '%s', Tahoma, sans-serif; font-weight: %d", hodima_typography_custom_family(), (int) $hodima_w[1] ) ); ?>" <?php echo $font_id ? '' : 'hidden'; ?>>نمونه متن فارسی ۱۲۳ Abc</span>
+				<?php endif; ?>
 			</div>
 
 		<?php else : ?>
@@ -1133,11 +1203,19 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				>
 			<?php elseif ( Hodima_Setting_Type::Select === $type ) : ?>
+				<?php $hodima_swatch = ! empty( $field['swatch'] ); // انتخاب از پالت: دایره رنگ کنارش (admin.js با پالت زنده) ?>
+				<?php if ( $hodima_swatch ) : ?>
+					<span class="hodima-select-color">
+						<span class="hodima-select-color__dot" data-hodima-color-dot style="background: <?php echo esc_attr( hodima_settings_palette_hex( (string) $value ) ); ?>" aria-hidden="true"></span>
+				<?php endif; ?>
 				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
 					<?php foreach ( (array) ( $field['options'] ?? [] ) as $option => $label ) : ?>
 						<option value="<?php echo esc_attr( (string) $option ); ?>" <?php selected( (string) $value, (string) $option ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>
+				<?php if ( $hodima_swatch ) : ?>
+					</span>
+				<?php endif; ?>
 			<?php elseif ( Hodima_Setting_Type::Code === $type ) : ?>
 				<textarea
 					class="hodima-code"

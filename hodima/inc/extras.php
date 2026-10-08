@@ -199,7 +199,7 @@ function hodima_settings_import(): void {
 
 	check_admin_referer( 'hodima_settings_import' );
 
-	$back = add_query_arg( [ 'page' => HODIMA_SETTINGS_PAGE, 'tab' => 'backup', 'settings-updated' => 'true' ], admin_url( 'themes.php' ) );
+	$back = hodima_settings_url( [ 'tab' => 'backup', 'settings-updated' => 'true' ] );
 	$data = hodima_settings_backup_read( $_FILES['hodima_settings_file'] ?? null ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated -- فایل در تابع بررسی می‌شود
 
 	if ( is_string( $data ) ) {

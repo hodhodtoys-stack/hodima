@@ -291,7 +291,7 @@ function render_dashboard(): void {
 		<?php if ( function_exists( 'hodima_settings' ) ) : ?>
 			<p class="hodima-hub__footnote">
 				لوگو، اطلاعات تماس، فوتر، شبکه‌های اجتماعی و Google Analytics در
-				<a href="<?php echo esc_url( admin_url( 'themes.php?page=hodima-settings' ) ); ?>">نمایش ← تنظیمات قالب هدیما</a>
+				<a href="<?php echo esc_url( menu_page_url( 'hodima-settings', false ) ?: admin_url( 'themes.php?page=hodima-settings' ) ); ?>">تنظیمات قالب هدیما</a>
 				(تنظیمات قالب) هستند.
 			</p>
 		<?php endif; ?>

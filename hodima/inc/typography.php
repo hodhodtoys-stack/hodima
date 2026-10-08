@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-/** نام خانواده فونت آپلودی در CSS (نام دلخواه؛ فقط داخل همین سایت). */
+/** نام خانواده فونت آپلودی در CSS وقتی مدیر نامی نگذاشته (فقط داخل همین سایت). */
 const HODIMA_FONT_CUSTOM_FAMILY = 'Hodima Custom';
 
 /** پسوندهای مجاز فایل فونت آپلودی و نوع MIME هر کدام. */
@@ -74,6 +74,26 @@ function hodima_typography_custom_faces(): array {
 }
 
 /**
+ * نام خانواده فونت آپلودی در CSS: «نام فونت» قاب «فونت آپلودی» (از 3.0.0؛ مثلا
+ * «ایران‌سنس»)، فقط حرف، عدد، فاصله، - و _ (بی کوتیشن، امن داخل '…' در CSS)؛
+ * خالی ← Hodima Custom (رفتار قبلی).
+ */
+function hodima_typography_custom_family(): string {
+
+	$name = hodima_typography_clean_font_name( (string) hodima_setting( 'font_custom_name' ) );
+
+	return '' !== $name ? $name : HODIMA_FONT_CUSTOM_FAMILY;
+}
+
+/** نام فونت پاک‌شده: حرف، نشانه، عدد، فاصله، - و _ و نیم‌فاصله (ZWNJ/ZWJ)؛ حداکثر ۴۰ حرف. */
+function hodima_typography_clean_font_name( string $raw ): string {
+
+	$name = (string) preg_replace( '/[^\p{L}\p{M}\p{N} _\x{200C}\x{200D}-]+/u', '', $raw );
+
+	return mb_substr( trim( (string) preg_replace( '/\s+/u', ' ', $name ) ), 0, 40 );
+}
+
+/**
  * فونت واقعی یک انتخاب: «فونت آپلودی» بدون هیچ فایلی همان وزیرمتن است
  * (فایل در کتابخانه رسانه پاک شده باشد، سایت بی‌فونت نماند).
  */
@@ -99,7 +119,7 @@ function hodima_typography_heading_font(): string {
 /** فهرست فونت CSS (font-family) هر کلید. */
 function hodima_typography_stack( string $font ): string {
 	return match ( $font ) {
-		'custom' => "'" . HODIMA_FONT_CUSTOM_FAMILY . "', Tahoma, sans-serif",
+		'custom' => "'" . hodima_typography_custom_family() . "', Tahoma, sans-serif",
 		// فونت رابط کاربری سیستم (ویندوز: Segoe UI، اپل: San Francisco، اندروید: Roboto) — همه فارسی دارند
 		'system' => "system-ui, -apple-system, 'Segoe UI', Roboto, Tahoma, sans-serif",
 		default  => "'Vazirmatn', Tahoma, sans-serif",
@@ -126,7 +146,7 @@ function hodima_typography_font_faces_css( bool $always = false ): string {
 		$format = str_ends_with( strtolower( (string) wp_parse_url( $url, PHP_URL_PATH ) ), '.woff' ) ? 'woff' : 'woff2';
 		$css   .= sprintf(
 			"@font-face{font-family:'%s';src:url('%s') format('%s');font-weight:%d;font-style:normal;font-display:swap}",
-			HODIMA_FONT_CUSTOM_FAMILY,
+			hodima_typography_custom_family(),
 			hodima_typography_css_url( $url ),
 			$format,
 			$weight
@@ -284,7 +304,7 @@ add_action( 'wp_enqueue_scripts', 'hodima_print_typography', 21 );
 
 /** صفحه تنظیمات قالب: فونت آپلودی ذخیره‌شده برای پیش‌نمایش (فقط همان صفحه). */
 add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
-	if ( 'appearance_page_' . HODIMA_SETTINGS_PAGE === $hook ) {
+	if ( HODIMA_SETTINGS_HOOK === $hook ) {
 		$css = hodima_typography_font_faces_css( true );
 		if ( '' !== $css ) {
 			wp_add_inline_style( 'hodima-theme-settings', $css );
@@ -449,7 +469,7 @@ function hodima_typography_preview(): void {
 		data-hodima-type-preview
 		data-mode="desktop"
 		data-stacks="<?php echo esc_attr( (string) wp_json_encode( array_combine( [ 'vazirmatn', 'custom', 'system' ], array_map( 'hodima_typography_stack', [ 'vazirmatn', 'custom', 'system' ] ) ) ) ); ?>"
-		data-family="<?php echo esc_attr( HODIMA_FONT_CUSTOM_FAMILY ); ?>"
+		data-family="<?php echo esc_attr( hodima_typography_custom_family() ); ?>"
 		style="<?php echo esc_attr( $vars ); ?>"
 	>
 		<div class="hodima-type-preview__modes" role="group" aria-label="اندازه پیش‌نمایش">

@@ -29,9 +29,14 @@
 
 		let frame = null;
 
+		const sample = root.querySelector('[data-hodima-font-sample]');
+
 		const render = (attachment) => {
 			preview.querySelector('img')?.remove();
 			const name = preview.querySelector('[data-hodima-media-name]');
+			if (sample) {
+				sample.hidden = !attachment;
+			}
 
 			if (!attachment) {
 				input.value = '';
@@ -289,6 +294,29 @@
 	};
 
 	/** پالت: نمونه زنده، مقدار هگز و دکمه «بازگشت به پیش‌فرض» هر رنگ. */
+	/** «#abc»، «25316A» یا «#25316a» ← «#25316a»؛ نامعتبر ← null. */
+	const normalizeHex = (raw) => {
+		const hex = raw.trim().replace(/^#/, '').toLowerCase();
+		if (/^[0-9a-f]{3}$/.test(hex)) {
+			return `#${[...hex].map((digit) => digit + digit).join('')}`;
+		}
+		return /^[0-9a-f]{6}$/.test(hex) ? `#${hex}` : null;
+	};
+
+	/**
+	 * دایره رنگ کنار انتخاب‌های «از پالت» (رنگ لینک، رنگ تیترها): رنگ گزینه انتخاب‌شده
+	 * از کادرهای رنگ همین فرم (پالت و رنگ متن، حتی پیش از ذخیره).
+	 */
+	const syncColorDots = () => {
+		document.querySelectorAll('[data-hodima-color-dot]').forEach((dot) => {
+			const select = dot.parentElement?.querySelector('select');
+			const source = select && document.getElementById(`hodima-setting-color_${select.value.replace('-', '_')}`);
+			if (source) {
+				dot.style.background = source.value;
+			}
+		});
+	};
+
 	const initPalette = () => {
 		const preview = document.querySelector('[data-hodima-palette-preview]');
 
@@ -299,13 +327,15 @@
 
 			const sync = () => {
 				const color = input.value.toLowerCase();
-				if (value) {
-					value.textContent = color;
+				if (value && document.activeElement !== value) {
+					value.value = color;
+					value.removeAttribute('aria-invalid');
 				}
 				if (reset) {
 					reset.hidden = color === reset.dataset.hodimaColorReset;
 				}
 				preview?.style.setProperty(`--pv-${input.dataset.hodimaColor}`, color);
+				syncColorDots();
 			};
 
 			input.addEventListener('input', sync);
@@ -313,6 +343,43 @@
 				input.value = reset.dataset.hodimaColorReset;
 				input.dispatchEvent(new Event('input', { bubbles: true }));
 				input.focus();
+			});
+
+			// کد رنگ تایپی: معتبر ← همان لحظه روی کادر رنگ؛ نامعتبر هنگام خروج به رنگ فعلی برمی‌گردد
+			value?.addEventListener('input', () => {
+				const color = normalizeHex(value.value);
+				value.toggleAttribute('aria-invalid', color === null && value.value.trim() !== '');
+				if (color && color !== input.value.toLowerCase()) {
+					input.value = color;
+					input.dispatchEvent(new Event('input', { bubbles: true }));
+				}
+			});
+			value?.addEventListener('change', () => {
+				value.value = input.value.toLowerCase();
+				value.removeAttribute('aria-invalid');
+			});
+		});
+
+		document.querySelectorAll('[data-hodima-color-dot]').forEach((dot) => {
+			dot.parentElement?.querySelector('select')?.addEventListener('change', syncColorDots);
+		});
+	};
+
+	/** قاب جمع‌شونده (پیش‌نمایش تایپوگرافی): باز/بسته بودن برای همین مرورگر به خاطر می‌ماند. */
+	const initCollapsible = () => {
+		document.querySelectorAll('[data-hodima-collapsible]').forEach((panel) => {
+			const key = `hodima-panel-open-${panel.dataset.hodimaCollapsible}`;
+			try {
+				panel.open = window.localStorage.getItem(key) === '1';
+			} catch {
+				// بدون دسترسی به حافظه مرورگر: همان پیش‌فرض بسته
+			}
+			panel.addEventListener('toggle', () => {
+				try {
+					window.localStorage.setItem(key, panel.open ? '1' : '0');
+				} catch {
+					// نادیده
+				}
 			});
 		});
 	};
@@ -592,6 +659,7 @@
 		document.querySelectorAll('[data-hodima-home]').forEach(initHomeLayout);
 		initDirty(initNav());
 		initPalette();
+		initCollapsible();
 		initLogoInvert();
 		initBuilderStatus();
 		initTypography();

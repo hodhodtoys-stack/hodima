@@ -41,6 +41,7 @@ get_header();
             'title'  => get_the_title(),
             'intro'  => $hodima_intro_output,
             'video'  => $hodima_video_output,
+            'meta'   => hodima_post_meta_html( $hodima_post_id ),
         ] );
         ?>
 
@@ -51,9 +52,9 @@ get_header();
                 // دریافت محتوای اصلی مقاله
                 $hodima_post_content = apply_filters( 'the_content', get_the_content() ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- فیلتر خود وردپرس
 
-                // قرار دادن محتوا در آغوش شورت‌کد نمایش بیشتر
-                if ( shortcode_exists('expand_blog_content') ) {
-                    echo do_shortcode( '[expand_blog_content height="400"]' . $hodima_post_content . '[/expand_blog_content]' );
+                // «نمایش بیشتر» (افزونه Hodima Media) با کلید و ارتفاع «تنظیمات قالب ← وبلاگ ← متن مقاله»؛ تا 2.9.9 همیشه و ثابت ۴۰۰
+                if ( hodima_setting( 'blog_content_collapse' ) && shortcode_exists('expand_blog_content') ) {
+                    echo do_shortcode( sprintf( '[expand_blog_content height="%d"]', max( 200, (int) hodima_setting( 'blog_content_height' ) ) ) . $hodima_post_content . '[/expand_blog_content]' );
                 } else {
                     echo $hodima_post_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- متن مقاله (the_content)
                 }
@@ -101,16 +102,17 @@ get_header();
         ?>
         <?php if ( $hodima_related ) : ?>
         <section class="hodima-section-box section-upsells">
-            <h3 class="upsells-title"><?php echo esc_html( (string) hodima_setting( 'blog_related_title' ) ); ?></h3>
+            <?php // h2/h3 (تا 2.9.9 h3/h4: بعد از H1 مقاله سطح H2 جا افتاده بود)؛ اندازه از کلاس، همان قبلی ?>
+            <h2 class="upsells-title"><?php echo esc_html( (string) hodima_setting( 'blog_related_title' ) ); ?></h2>
             <div class="related-posts-grid">
                 <?php foreach ( $hodima_related as $hodima_related_id ) : ?>
                     <div class="related-post-card">
                         <a href="<?php echo esc_url( get_permalink( $hodima_related_id ) ); ?>">
                             <?php echo get_the_post_thumbnail( $hodima_related_id, 'medium' ); ?>
                         </a>
-                        <h4 class="related-post-title">
+                        <h3 class="related-post-title">
                             <a href="<?php echo esc_url( get_permalink( $hodima_related_id ) ); ?>"><?php echo esc_html( get_the_title( $hodima_related_id ) ); ?></a>
-                        </h4>
+                        </h3>
                     </div>
                 <?php endforeach; ?>
             </div>
