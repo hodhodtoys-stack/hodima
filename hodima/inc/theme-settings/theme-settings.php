@@ -99,8 +99,9 @@ function hodima_settings_fields(): array {
 		'product_show_reviews'  => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'نظرات کاربران', 'default' => true ],
 		'product_upsells_title' => [ 'panel' => 'product_upsells', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'محصولات مشابه' ],
 		'product_upsells_limit' => [ 'panel' => 'product_upsells', 'type' => 'number', 'label' => 'تعداد', 'default' => 6, 'min' => 0, 'max' => 24, 'help' => '۰ = بخش نمایش داده نشود.' ],
-		// قیمت اعلام‌شده به بیرون؛ خواننده: Hodima SEO (inc/product-price.php)
+		// قیمت اعلام‌شده به بیرون؛ خواننده: Hodima SEO (inc/product-price.php). دو قاب جدا از 3.0.2
 		'product_offer_price'   => [ 'panel' => 'product_price_feed', 'type' => 'select', 'label' => 'قیمتی که اعلام شود', 'default' => 'unit', 'options' => [ 'unit' => 'قیمت تک محصول', 'min_order' => 'مبلغ حداقل سفارش' ], 'help' => '«حداقل سفارش» همان مبلغی است که در ویرایش هر محصول (فیلد حداقل مبلغ سفارش) وارد کرده‌اید و صفحه محصول کنار قیمت نشان می‌دهد. محصولی که حداقل سفارش ندارد یا متغیر است، همیشه قیمت تک را اعلام می‌کند. به افزونه Hodima SEO نیاز دارد.' ],
+		'product_torob_price'   => [ 'panel' => 'product_price_torob', 'type' => 'select', 'label' => 'قیمتی که ترب بگیرد', 'default' => 'unit', 'options' => [ 'unit' => 'قیمت تک محصول', 'min_order' => 'مبلغ حداقل سفارش' ], 'help' => 'مستقل از قاب اسکیما. محصولی که حداقل سفارش ندارد یا متغیر است، همیشه قیمت تک را می‌فرستد. به افزونه Hodima SEO 1.14.0 نیاز دارد.' ],
 
 		// ── وبلاگ (قبلا ثابت در archive-blog.php و single-post.php) ──
 		'blog_title'           => [ 'panel' => 'blog_page', 'type' => 'text', 'label' => 'عنوان صفحه وبلاگ (H1)', 'default' => '', 'help' => 'خالی = عنوان برگه «نوشته‌ها» (تنظیمات ← خواندن). همین نام در مسیر راهنمای مقاله‌ها هم می‌آید.' ],
@@ -411,7 +412,8 @@ function hodima_settings_panels(): array {
 
 		'product_texts'      => [ 'section' => 'product', 'title' => 'متن‌ها', 'icon' => 'dashicons-editor-textcolor' ],
 		'product_sections'   => [ 'section' => 'product', 'title' => 'بخش‌های صفحه محصول', 'icon' => 'dashicons-visibility', 'layout' => 'toggles', 'help' => 'بخش خاموش برای همه محصولات پنهان می‌شود؛ بخش روشن فقط وقتی محتوا دارد دیده می‌شود (کادر «رسانه» هر محصول و نظرات ووکامرس).' ],
-		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت در اسکیما و سایت‌های دیگر', 'icon' => 'dashicons-tag', 'help' => 'عددی که گوگل (اسکیما)، ترب و ایمالز (افزونه رسمی‌شان و متاتگ قیمت)، پیش‌نمایش لینک در شبکه‌های اجتماعی و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود. بعد از تغییر، کش لایت‌اسپید را پاک کنید؛ ترب قیمت تازه را در بازدید بعدی خودش (معمولا تا یکی دو روز) می‌گیرد.' ],
+		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت در اسکیما (گوگل)', 'icon' => 'dashicons-tag', 'half' => true, 'help' => 'عددی که گوگل (اسکیما)، پیش‌نمایش لینک در شبکه‌های اجتماعی (متاتگ قیمت) و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود. بعد از تغییر، کش لایت‌اسپید را پاک کنید.' ],
+		'product_price_torob' => [ 'section' => 'product', 'title' => 'قیمت در ترب', 'icon' => 'dashicons-store', 'half' => true, 'help' => 'عددی که ترب از افزونه رسمی‌اش («استخراج محصولات ووکامرس برای ترب») می‌گیرد. درستی را در «تنظیمات ترب ← مشاهده پیش‌نمایش محصولات» ببینید. ترب قیمت تازه را در بازدید بعدی خودش (معمولا تا یکی دو روز) می‌گیرد. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود.' ],
 		'product_upsells'    => [ 'section' => 'product', 'title' => 'محصولات پیشنهادی (Upsell)', 'icon' => 'dashicons-cart', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید.' ],
 
 		'blog_page'          => [ 'section' => 'blog', 'title' => 'صفحه وبلاگ', 'icon' => 'dashicons-welcome-write-blog' ],

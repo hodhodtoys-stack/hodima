@@ -174,7 +174,7 @@ add_action( 'admin_notices', static function (): void {
      */
     $required = [
         'Hodima Core'     => [ 'HODIMA_CORE_PLUGIN_VERSION', '1.2.0' ],
-        'Hodima SEO'      => [ 'HODIMA_SEO_VERSION', '1.13.0' ],
+        'Hodima SEO'      => [ 'HODIMA_SEO_VERSION', '1.14.0' ],
         'Hodima Commerce' => [ 'HODIMA_COMMERCE_VERSION', '1.2.2' ],
         'Hodima Media'    => [ 'HODIMA_MEDIA_VERSION', '1.3.4' ],
     ];
