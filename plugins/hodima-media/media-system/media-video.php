@@ -167,7 +167,7 @@ function hodima_media_video( int $object_id, string $context = 'post' ): ?array 
 	$seconds = hodima_media_duration_seconds( $data['video_duration'] ?? '' );
 
 	return [
-		'enabled'     => 'yes' === ( $data['enabled'] ?? '' ),
+		'enabled'     => hodima_media_part_shown( $data, 'video' ),
 		'url'         => $url,
 		'provider'    => $parsed['provider'],
 		'provider_id' => $parsed['id'],
@@ -307,4 +307,101 @@ function hodima_media_video_checks( int $object_id, string $context ): array {
 		static fn( array $c ): array => array_combine( [ 'key', 'status', 'label', 'detail' ], $c ),
 		$checks
 	);
+}
+
+/* =====================================================================
+ * ویدیوهای بیشتر (فهرست زیر ویدیوی اصلی)
+ * ===================================================================== */
+
+/** بیشترین تعداد ویدیوی اضافه هر صفحه. */
+const HODIMA_MEDIA_EXTRA_MAX = 12;
+
+/**
+ * ویدیوهای اضافه یک شیء، یکسان‌شده (مثل hodima_media_video، بدون فصل و زیرنویس).
+ * هر ردیف ذخیره‌شده: url، title، duration، cover (آدرس)، cover_id، date.
+ *
+ * @return list<array{url: string, provider: string, provider_id: string, player: string, is_file: bool, mime: string, title: string, cover: ?array, ratio: string, seconds: int, duration: string, date: string}>
+ */
+function hodima_media_extra_videos( int $object_id, string $context = 'post' ): array {
+
+	$context = hodima_media_context( $context );
+	$data    = hodima_media_get_data( $object_id, $context );
+	$out     = [];
+
+	foreach ( array_slice( $data['video_extra'], 0, HODIMA_MEDIA_EXTRA_MAX ) as $item ) {
+
+		$url = esc_url_raw( (string) preg_replace( '/\s+/', '%20', trim( (string) ( $item['url'] ?? '' ) ) ) );
+		if ( '' === $url ) {
+			continue;
+		}
+
+		$parsed   = hodima_media_parse_video_url( $url );
+		$cover_id = (int) ( $item['cover_id'] ?? 0 );
+		$src      = $cover_id ? wp_get_attachment_image_src( $cover_id, 'full' ) : false;
+		$cover    = is_array( $src ) && ! empty( $src[0] )
+			? [ 'id' => $cover_id, 'url' => (string) $src[0], 'width' => (int) $src[1], 'height' => (int) $src[2] ]
+			: ( '' !== (string) ( $item['cover'] ?? '' ) ? [ 'id' => 0, 'url' => esc_url_raw( (string) $item['cover'] ), 'width' => 0, 'height' => 0 ] : null );
+
+		$out[] = [
+			'url'         => $url,
+			'provider'    => $parsed['provider'],
+			'provider_id' => $parsed['id'],
+			'player'      => $parsed['player'],
+			'is_file'     => 'file' === $parsed['provider'],
+			'mime'        => 'file' === $parsed['provider'] ? ( wp_check_filetype( (string) wp_parse_url( $url, PHP_URL_PATH ), wp_get_mime_types() )['type'] ?: 'video/mp4' ) : '',
+			'title'       => sanitize_text_field( (string) ( $item['title'] ?? '' ) ),
+			'cover'       => $cover ?? hodima_media_video_cover( $object_id, $context ),
+			'ratio'       => $parsed['vertical'] ? '9:16' : '16:9',
+			'seconds'     => hodima_media_duration_seconds( $item['duration'] ?? '' ),
+			'duration'    => hodima_media_duration_iso( $item['duration'] ?? '' ),
+			'date'        => hodima_media_iso_date( $item['date'] ?? '' ) ?: hodima_media_stable_date( $data, 'video', $object_id, $context ),
+		];
+	}
+
+	return $out;
+}
+
+/**
+ * نودهای VideoObject ویدیوهای اضافه («#video-2»، «#video-3»…)، فقط با تصویر.
+ *
+ * @return list<array<string, mixed>>
+ */
+function hodima_media_extra_video_nodes( int $object_id, string $context = 'post' ): array {
+
+	$context = hodima_media_context( $context );
+	$data    = hodima_media_get_data( $object_id, $context );
+
+	if ( ! hodima_media_part_shown( $data, 'video' ) || ! hodima_media_is_displayed( $object_id, $context ) ) {
+		return [];
+	}
+
+	$page_url = hodima_media_page_url( $object_id, $context );
+	$title    = hodima_media_object_title( $object_id, $context );
+	$nodes    = [];
+
+	foreach ( hodima_media_extra_videos( $object_id, $context ) as $i => $video ) {
+
+		if ( null === $video['cover'] || '' === $page_url ) {
+			continue;
+		}
+
+		$node = hodima_media_video_object( [
+			'base'        => $page_url,
+			'name'        => '' !== $video['title'] ? $video['title'] : sprintf( 'ویدیوی %1$s: %2$s', number_format_i18n( $i + 2 ), $title ),
+			'description' => '' !== $video['title'] ? $video['title'] . ' — ' . $title : hodima_media_summary( $object_id, $context, $title ),
+			'thumbnails'  => [ $video['cover']['url'] ],
+			'upload_date' => $video['date'],
+			'content_url' => $video['is_file'] ? $video['url'] : '',
+			'embed_url'   => $video['is_file'] ? '' : $video['player'],
+			'mime'        => $video['mime'],
+			'duration'    => $video['duration'],
+			'publisher'   => function_exists( 'hodima_seo_schema_organization_node' ),
+		] );
+
+		// شناسه جدا برای هر ویدیو (ویدیوی اصلی «#video» است)
+		$node['@id'] = esc_url_raw( $page_url ) . '#video-' . ( $i + 2 );
+		$nodes[]     = $node;
+	}
+
+	return $nodes;
 }

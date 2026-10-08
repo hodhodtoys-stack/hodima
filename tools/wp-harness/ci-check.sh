@@ -3,7 +3,8 @@
 # فعلی می‌سازد و رد می‌کند اگر:
 #   - هشدار/خطای PHP (Warning، Notice، Deprecated، Fatal) از کد هدیما در debug.log باشد؛
 #   - صفحه‌ای خالی یا ناقص باشد (بدون </html> در رندر کامل، بدون JSON-LD)؛
-#   - در یک تگ JSON-LD شناسه (@id) تکراری باشد.
+#   - در یک تگ JSON-LD شناسه (@id) تکراری باشد؛
+#   - آزمون‌های خودکار سیستم رسانه و Google Discover (media-tests.php) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
 #   ci-check.sh [ref]
@@ -40,6 +41,13 @@ echo "=== یکپارچگی اسکیما"
 python3 "$here/integrity.py" "$out" > "$out/integrity.txt"
 if grep -E "dup=\[[^]]" "$out/integrity.txt"; then fail=1; else echo "  ✔ بدون @id تکراری"; fi
 grep -E "dangling=\[[^]]" "$out/integrity.txt" | sed 's/^/  (ارجاع به صفحه دیگر — معمولا عمدی) /' || true
+
+echo "=== آزمون رسانه و Discover (media-tests.php)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/media-tests.php" > "$out/media-tests.txt" 2>&1; then
+	tail -1 "$out/media-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/media-tests.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
 
 if [ -n "$ref" ] && git -C "$repo" rev-parse -q --verify "$ref^{commit}" >/dev/null; then
 	echo "=== تفاوت اسکیما با $ref (فقط گزارش)"

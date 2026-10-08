@@ -19,7 +19,7 @@
  *
  * هم‌زیستی با Hodima Media قدیمی (۱.۴ و پایین‌تر که Discover را خودش دارد):
  * این فایل فقط تابع تعریف می‌کند؛ هوک‌ها، کادر و نام‌های قدیمی در
- * plugins_loaded اولویت ۲۰ (بعد از لود Media در اولویت ۱۰) و فقط وقتی
+ * plugins_loaded اولویت ۲۰ (بعد از لود ماژول‌های Media و SEO در اولویت ۵) و فقط وقتی
  * Media قدیمی Discover را نساخته ثبت می‌شوند. وگرنه همه چیز دو بار اجرا
  * می‌شد (دو لینک فید، دو تصویر در فید، دو کادر) و نام‌های قدیمی خطای
  * «Cannot redeclare» می‌دادند.
@@ -81,7 +81,7 @@ function hodima_seo_discover_boot(): void {
 
 /** آیا Hodima Media قدیمی (۱.۴ و پایین‌تر) Discover را خودش ساخته است؟ */
 function hodima_seo_discover_provided_by_media(): bool {
-	// Media در plugins_loaded اولویت ۱۰ لود می‌شود؛ این تابع در اولویت ۲۰ صدا زده می‌شود
+	// ماژول‌های Media در plugins_loaded اولویت ۵ لود می‌شوند؛ این تابع در اولویت ۲۰ صدا زده می‌شود
 	return function_exists( 'hodima_media_discover_image' );
 }
 

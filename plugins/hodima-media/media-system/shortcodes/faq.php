@@ -23,7 +23,7 @@ function hodima_media_shortcode_faq( mixed $atts ): string {
 
 	$data = hodima_media_get_data( $object_id, $context );
 
-	if ( 'yes' !== ( $data['enabled'] ?? '' ) || ! $data['faq'] ) {
+	if ( ! hodima_media_part_shown( $data, 'faq' ) || ! $data['faq'] ) {
 		return '';
 	}
 

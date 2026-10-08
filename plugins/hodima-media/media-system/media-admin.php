@@ -134,16 +134,33 @@ function hodima_media_field_textarea( string $key, string $label, string $value,
 	<?php
 }
 
-/** سرتیتر یک بخش تاشو، با برچسب وضعیت («تنظیم شده»). */
-function hodima_media_section_open( string $key, string $icon, string $title, bool $filled, bool $open ): void {
+/**
+ * سرتیتر یک بخش تاشو، با برچسب وضعیت («تنظیم شده»، «پنهان») و کلید
+ * «نمایش این بخش در سایت» اول بدنه (بخش‌های intro/video/voice/faq).
+ *
+ * @param array<string, mixed>|null $data برای کلید نمایش؛ null = بدون کلید
+ */
+function hodima_media_section_open( string $key, string $icon, string $title, bool $filled, bool $open, ?array $data = null ): void {
+
+	$hidden = null !== $data && in_array( $key, (array) ( $data['hidden_parts'] ?? [] ), true );
+
 	printf(
-		'<details class="hodima-mb__section" data-hodima-section="%1$s"%2$s><summary class="hodima-mb__summary"><span class="dashicons %3$s" aria-hidden="true"></span><span class="hodima-mb__title">%4$s</span>%5$s</summary><div class="hodima-mb__body">',
+		'<details class="hodima-mb__section" data-hodima-section="%1$s"%2$s><summary class="hodima-mb__summary"><span class="dashicons %3$s" aria-hidden="true"></span><span class="hodima-mb__title">%4$s</span>%5$s%6$s</summary><div class="hodima-mb__body">',
 		esc_attr( $key ),
 		$open ? ' open' : '',
 		esc_attr( $icon ),
 		esc_html( $title ),
-		$filled ? '<span class="hodima-mb__badge">تنظیم شده</span>' : ''
+		$filled ? '<span class="hodima-mb__badge">تنظیم شده</span>' : '',
+		$hidden ? '<span class="hodima-mb__badge hodima-mb__badge--off">پنهان</span>' : ''
 	);
+
+	if ( null !== $data && in_array( $key, HODIMA_MEDIA_PARTS, true ) ) {
+		printf(
+			'<label class="hodima-mb__part"><input type="checkbox" name="hodima_media[show_parts][]" value="%1$s"%2$s> نمایش این بخش در سایت <small>(خاموش: فقط همین بخش پنهان می‌شود و به گوگل اعلام نمی‌شود؛ اطلاعاتش می‌ماند)</small></label>',
+			esc_attr( $key ),
+			$hidden ? '' : ' checked'
+		);
+	}
 }
 
 function hodima_media_section_close(): void {
@@ -169,6 +186,70 @@ function hodima_media_faq_row( int|string $index, string $question, string $answ
 		esc_attr( (string) $index ),
 		esc_attr( $question ),
 		esc_textarea( $answer )
+	);
+}
+
+/**
+ * یک ردیف «ویدیوهای بیشتر» (در PHP و قالب <template> برای ردیف تازه).
+ *
+ * @param array<string, mixed> $item
+ */
+function hodima_media_extra_row( int|string $index, array $item ): string {
+
+	$i        = esc_attr( (string) $index );
+	$url      = (string) ( $item['url'] ?? '' );
+	$cover    = (string) ( $item['cover'] ?? '' );
+	$cover_id = (int) ( $item['cover_id'] ?? 0 );
+	$preview  = $cover_id ? wp_get_attachment_image_src( $cover_id, 'thumbnail' ) : false;
+	$preview  = is_array( $preview ) ? (string) $preview[0] : $cover;
+
+	return sprintf(
+		'<li class="hodima-mb__faq" data-hodima-row>
+			<div class="hodima-mb__faq-fields">
+				<div class="hodima-mb__field" data-hodima-picker="video">
+					<label class="hodima-mb__label" for="hodima-mb-extra-url-%1$s">لینک ویدیو</label>
+					<div class="hodima-mb__row">
+						<input type="url" id="hodima-mb-extra-url-%1$s" name="hodima_media[video_extra][%1$s][url]" value="%2$s" dir="ltr" class="hodima-mb__grow" placeholder="https://www.aparat.com/v/…" data-hodima-url>
+						<button type="button" class="button" data-hodima-pick><span class="dashicons dashicons-admin-media" aria-hidden="true"></span> کتابخانه</button>
+					</div>
+				</div>
+				<div class="hodima-mb__grid">
+					<div class="hodima-mb__field">
+						<label class="hodima-mb__label" for="hodima-mb-extra-title-%1$s">عنوان</label>
+						<input type="text" id="hodima-mb-extra-title-%1$s" name="hodima_media[video_extra][%1$s][title]" value="%3$s">
+					</div>
+					<div class="hodima-mb__field">
+						<label class="hodima-mb__label" for="hodima-mb-extra-duration-%1$s">مدت</label>
+						<input type="text" id="hodima-mb-extra-duration-%1$s" name="hodima_media[video_extra][%1$s][duration]" value="%4$s" dir="ltr" inputmode="numeric" placeholder="2:35" data-hodima-duration>
+						<p class="hodima-mb__status" data-hodima-status aria-live="polite"></p>
+					</div>
+				</div>
+				<div class="hodima-mb__field" data-hodima-picker="image">
+					<label class="hodima-mb__label" for="hodima-mb-extra-cover-%1$s">کاور</label>
+					<div class="hodima-mb__row">
+						<input type="url" id="hodima-mb-extra-cover-%1$s" name="hodima_media[video_extra][%1$s][cover]" value="%5$s" dir="ltr" class="hodima-mb__grow" data-hodima-url>
+						<input type="hidden" name="hodima_media[video_extra][%1$s][cover_id]" value="%6$s" data-hodima-id>
+						<button type="button" class="button" data-hodima-pick><span class="dashicons dashicons-format-image" aria-hidden="true"></span> کتابخانه</button>
+						<button type="button" class="button-link hodima-mb__clear" data-hodima-clear%7$s>حذف</button>
+					</div>
+					<img class="hodima-mb__preview" src="%8$s" alt="" data-hodima-preview%9$s>
+				</div>
+			</div>
+			<div class="hodima-mb__faq-tools">
+				<button type="button" class="button-link" data-hodima-move="-1" aria-label="انتقال به بالا"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
+				<button type="button" class="button-link" data-hodima-move="1" aria-label="انتقال به پایین"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
+				<button type="button" class="button-link hodima-mb__delete" data-hodima-remove aria-label="حذف این ویدیو"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+			</div>
+		</li>',
+		$i,
+		esc_url( $url ),
+		esc_attr( (string) ( $item['title'] ?? '' ) ),
+		esc_attr( (string) ( $item['duration'] ?? '' ) ),
+		esc_url( $cover ),
+		$cover_id ? (string) $cover_id : '',
+		'' === $cover ? ' hidden' : '',
+		esc_url( $preview ),
+		'' === $preview ? ' hidden' : ''
 	);
 }
 
@@ -221,7 +302,9 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 			</label>
 		</div>
 
-		<?php hodima_media_section_open( 'intro', 'dashicons-text-page', 'متن معرفی', '' !== trim( (string) ( $data['content'] ?? '' ) ), false ); ?>
+		<input type="hidden" name="hodima_media[parts_present]" value="1">
+
+		<?php hodima_media_section_open( 'intro', 'dashicons-text-page', 'متن معرفی', '' !== trim( (string) ( $data['content'] ?? '' ) ), false, hodima_media_content_disabled( $context, $object_id ) ? null : $data ); ?>
 			<?php if ( hodima_media_content_disabled( $context, $object_id ) ) : ?>
 				<input type="hidden" name="hodima_media[content_locked]" value="1">
 				<p class="hodima-mb__intro">برای محصول غیرفعال است (توضیحات خود محصول نمایش داده می‌شود). مقدار قبلی دست‌نخورده می‌ماند.</p>
@@ -233,7 +316,7 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 			<?php endif; ?>
 		<?php hodima_media_section_close(); ?>
 
-		<?php hodima_media_section_open( 'video', 'dashicons-video-alt3', 'ویدیو', $video_set, $video_set ); ?>
+		<?php hodima_media_section_open( 'video', 'dashicons-video-alt3', 'ویدیو', $video_set, $video_set, $data ); ?>
 			<?php if ( $video_set && $object_id > 0 ) : ?>
 				<?php hodima_media_render_checks( hodima_media_video_checks( $object_id, $context ) ); ?>
 				<p class="hodima-mb__help">گوگل ویدیو را در نتایج ویدیویی بیشتر وقتی نشان می‌دهد که موضوع اصلی صفحه باشد (مثل صفحه هر ویدیو)؛ در محصول و مقاله، اسکیما و کاور خوب شانس را بالا می‌برند.</p>
@@ -304,9 +387,22 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 				[ 'rows' => 4 ]
 			);
 			?>
+			<div class="hodima-mb__field">
+				<span class="hodima-mb__label">ویدیوهای بیشتر (اختیاری)</span>
+				<p class="hodima-mb__help">زیر ویدیوی اصلی به صورت کارت نمایش داده می‌شوند و هر کدام جدا به گوگل اعلام می‌شود (با کاور؛ آپارات/یوتیوب/ویمئو عنوان، مدت و کاورشان هنگام ذخیره خودکار پر می‌شود). حداکثر <?php echo esc_html( number_format_i18n( HODIMA_MEDIA_EXTRA_MAX ) ); ?> ویدیو.</p>
+				<ol class="hodima-mb__faqs" data-hodima-list="extra">
+					<?php
+					foreach ( (array) ( $data['video_extra'] ?? [] ) as $index => $item ) {
+						echo hodima_media_extra_row( (int) $index, (array) $item ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- داخل تابع escape شده
+					}
+					?>
+				</ol>
+				<template data-hodima-template="extra"><?php echo hodima_media_extra_row( '__i__', [] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- داخل تابع escape شده ?></template>
+				<button type="button" class="button" data-hodima-add="extra"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> افزودن ویدیو</button>
+			</div>
 		<?php hodima_media_section_close(); ?>
 
-		<?php hodima_media_section_open( 'voice', 'dashicons-microphone', 'پادکست (صوت)', $voice_set, $voice_set ); ?>
+		<?php hodima_media_section_open( 'voice', 'dashicons-microphone', 'پادکست (صوت)', $voice_set, $voice_set, $data ); ?>
 			<?php
 			hodima_media_field_picker( 'voice_url', 'لینک فایل صوتی', (string) ( $data['voice_url'] ?? '' ), 'audio', 'فایل MP3 یا M4A؛ از کتابخانه رسانه یا لینک مستقیم.', -1, 'https://…/podcast.mp3' );
 			?>
@@ -321,7 +417,7 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 			?>
 		<?php hodima_media_section_close(); ?>
 
-		<?php hodima_media_section_open( 'faq', 'dashicons-editor-help', 'سوالات متداول (FAQ)', (bool) $faq, (bool) $faq ); ?>
+		<?php hodima_media_section_open( 'faq', 'dashicons-editor-help', 'سوالات متداول (FAQ)', (bool) $faq, (bool) $faq, $data ); ?>
 			<ol class="hodima-mb__faqs" data-hodima-faqs>
 				<?php
 				foreach ( $faq as $index => $item ) {
@@ -571,6 +667,82 @@ function hodima_media_save_fields( int $object_id, string $context ): void {
 		} elseif ( $url !== (string) ( $before[ "{$kind}_url" ] ?? '' ) || '' === (string) ( $before[ "{$kind}_date" ] ?? '' ) ) {
 			$write( "{$kind}_date", gmdate( 'c' ) );
 		}
+	}
+
+	/* ── ویدیوهای بیشتر (به ترتیب فرم) ── */
+	if ( array_key_exists( 'video_extra', $in ) || '1' === $get( 'parts_present' ) ) {
+
+		$old_dates = [];
+		foreach ( (array) ( $before['video_extra'] ?? [] ) as $old ) {
+			if ( is_array( $old ) && ! empty( $old['url'] ) ) {
+				$old_dates[ (string) $old['url'] ] = (string) ( $old['date'] ?? '' );
+			}
+		}
+
+		$extras = [];
+		foreach ( (array) ( $in['video_extra'] ?? [] ) as $item ) {
+
+			if ( ! is_array( $item ) || count( $extras ) >= HODIMA_MEDIA_EXTRA_MAX ) {
+				continue;
+			}
+
+			$e_url = esc_url_raw( trim( (string) ( $item['url'] ?? '' ) ), [ 'http', 'https' ] );
+			if ( '' === $e_url ) {
+				continue;
+			}
+
+			$e_cover    = esc_url_raw( trim( (string) ( $item['cover'] ?? '' ) ), [ 'http', 'https' ] );
+			$e_cover_id = absint( $item['cover_id'] ?? 0 );
+			$e_cover_id = ( $e_cover_id && wp_attachment_is_image( $e_cover_id ) && '' !== $e_cover ) ? $e_cover_id : ( '' !== $e_cover ? (int) attachment_url_to_postid( $e_cover ) : 0 );
+			$e_title    = sanitize_text_field( (string) ( $item['title'] ?? '' ) );
+			$e_duration = hodima_media_sanitize_duration( (string) ( $item['duration'] ?? '' ) );
+			$is_new     = ! isset( $old_dates[ $e_url ] );
+
+			// فایل کتابخانه: مدت از خود فایل؛ آپارات/یوتیوب/ویمئو: عنوان، مدت و (برای لینک تازه) کاور
+			if ( '' === $e_duration ) {
+				[ $e_length ] = hodima_media_attachment_info( $e_url );
+				$e_duration   = $e_length > 0 ? hodima_media_clock( $e_length ) : '';
+			}
+
+			if ( ( '' === $e_title || '' === $e_duration || ( $is_new && '' === $e_cover ) )
+				&& in_array( hodima_media_parse_video_url( $e_url )['provider'], [ 'aparat', 'youtube', 'vimeo' ], true ) ) {
+				$info = hodima_media_fetch_video_info( $e_url );
+				if ( null !== $info ) {
+					$e_title    = '' !== $e_title ? $e_title : $info['title'];
+					$e_duration = '' !== $e_duration ? $e_duration : ( $info['seconds'] > 0 ? hodima_media_clock( $info['seconds'] ) : '' );
+					if ( $is_new && '' === $e_cover && '' !== $info['thumbnail'] ) {
+						$e_cover_id = hodima_media_sideload_cover( $info['thumbnail'], 'post' === $context ? $object_id : 0, $e_title );
+						$e_cover    = $e_cover_id ? (string) wp_get_attachment_url( $e_cover_id ) : '';
+					}
+				}
+			}
+
+			$extras[] = array_filter( [
+				'url'      => $e_url,
+				'title'    => $e_title,
+				'duration' => $e_duration,
+				'cover'    => $e_cover,
+				'cover_id' => $e_cover_id,
+				// تاریخ انتشار پایدار: همان قبلی برای لینک موجود، اکنون برای لینک تازه
+				'date'     => '' !== ( $old_dates[ $e_url ] ?? '' ) ? $old_dates[ $e_url ] : gmdate( 'c' ),
+			], static fn( $v ): bool => '' !== $v && 0 !== $v );
+		}
+
+		$write( 'video_extra', $extras );
+	}
+
+	/* ── نمایش هر بخش (فقط اگر کلیدها در فرم بودند) ── */
+	if ( '1' === $get( 'parts_present' ) ) {
+		$shown  = array_map( 'sanitize_key', array_filter( (array) ( $in['show_parts'] ?? [] ), 'is_scalar' ) );
+		$hidden = array_values( array_diff( HODIMA_MEDIA_PARTS, $shown ) );
+		// «متن معرفی» محصول کلید ندارد (غیرفعال است): وضعیت قبلی‌اش دست نخورد
+		if ( '1' === $get( 'content_locked' ) ) {
+			$hidden = array_values( array_diff( $hidden, [ 'intro' ] ) );
+			if ( in_array( 'intro', (array) ( $before['hidden_parts'] ?? [] ), true ) ) {
+				$hidden[] = 'intro';
+			}
+		}
+		$write( 'hidden_parts', $hidden );
 	}
 
 	/* ── سوالات متداول (به ترتیب فرم) ── */

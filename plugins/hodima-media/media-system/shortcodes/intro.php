@@ -24,7 +24,7 @@ function hodima_media_shortcode_intro( mixed $atts ): string {
 	$data    = hodima_media_get_data( $object_id, $context );
 	$content = (string) ( $data['content'] ?? '' );
 
-	if ( 'yes' !== ( $data['enabled'] ?? '' ) || '' === trim( $content ) ) {
+	if ( ! hodima_media_part_shown( $data, 'intro' ) || '' === trim( $content ) ) {
 		return '';
 	}
 

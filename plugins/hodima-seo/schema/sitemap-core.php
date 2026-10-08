@@ -196,6 +196,36 @@ function hodima_sitemap_media_video( int $object_id, string $context, string $ti
 }
 
 /**
+ * «ویدیوهای بیشتر» سیستم رسانه (Hodima Media 1.8+)، با همان شرط‌های اسکیما:
+ * بخش ویدیو نمایش داده می‌شود، قالب آن را نشان می‌دهد و ویدیو کاور دارد.
+ *
+ * @return list<array{url: string, title: string, thumb: string, duration: int, date: string}>
+ */
+function hodima_sitemap_media_extra_videos( int $object_id, string $context, string $title ): array {
+
+    if ( ! function_exists( 'hodima_media_extra_video_nodes' ) || [] === hodima_media_extra_video_nodes( $object_id, $context ) ) {
+        return [];
+    }
+
+    $out = [];
+
+    foreach ( hodima_media_extra_videos( $object_id, $context ) as $video ) {
+        if ( null === $video['cover'] ) {
+            continue;
+        }
+        $out[] = [
+            'url'      => hodima_sitemap_clean_url( $video['url'] ),
+            'title'    => '' !== $video['title'] ? $video['title'] : $title,
+            'thumb'    => hodima_sitemap_clean_url( (string) $video['cover']['url'] ),
+            'duration' => $video['seconds'],
+            'date'     => $video['date'],
+        ];
+    }
+
+    return $out;
+}
+
+/**
  * برچسب مکان ویدیو: فایل مستقیم → video:content_loc، صفحه آپارات/یوتیوب →
  * video:player_loc با آدرس *پخش‌کننده* (hodima_video_player_url در Core).
  *
@@ -374,6 +404,7 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
 
         if ( is_array( $media_entry ) ) {
             $data['videos'][] = $media_entry;
+            array_push( $data['videos'], ...hodima_sitemap_media_extra_videos( (int) $object_id, 'post', (string) $title ) );
         } elseif ( false === $media_entry ) {
             $v_url      = get_post_meta( $object_id, '_hod_video_url', true ) ?: get_post_meta( $object_id, '_hook_video_url', true );
             $v_thumb    = get_post_meta( $object_id, '_hod_video_thumbnail', true ) ?: get_post_meta( $object_id, '_hook_video_thumb', true );
@@ -427,6 +458,7 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
 
             if ( is_array( $media_entry ) ) {
                 $data['videos'][] = $media_entry;
+                array_push( $data['videos'], ...hodima_sitemap_media_extra_videos( (int) $object_id, 'term', (string) $title ) );
             } elseif ( false === $media_entry ) {
                 $v_url      = get_term_meta( $object_id, '_hod_video_url', true ) ?: get_term_meta( $object_id, '_hook_video_url', true );
                 $v_thumb    = get_term_meta( $object_id, '_hod_video_thumbnail', true ) ?: get_term_meta( $object_id, '_hook_video_thumb', true );

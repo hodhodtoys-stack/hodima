@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * یک نوع نود را می‌سازد و به گراف می‌دهد (هر نوع برای هر شیء یک بار).
  *
- * @param string $type video | audio | faq
+ * @param string $type video | video_extra | audio | faq
  */
 function hodima_media_print_schema( string $type, array $data, int $object_id, string $context ): void {
 
@@ -51,6 +51,8 @@ function hodima_media_print_schema( string $type, array $data, int $object_id, s
 		'video'        => hodima_media_video_node( $object_id, $context ),
 		'audio'        => hodima_media_audio_node( $data, $object_id, $context, $base, $title, $brand ),
 		'faq'          => hodima_media_faq_node( $data, $base ),
+		// ویدیوهای بیشتر: چند نود در یک گراف
+		'video_extra'  => hodima_media_extra_video_graph( $object_id, $context ),
 		default        => null,
 	};
 
@@ -60,6 +62,16 @@ function hodima_media_print_schema( string $type, array $data, int $object_id, s
 
 	// گراف واحد صفحه؛ نودهای هم‌شناسه (مثلا FAQPage «#faq» ماژول AEO) ادغام می‌شوند.
 	hodima_schema_add( $schema, 'hodima-media: media-schema (' . $type . ')' );
+}
+
+/**
+ * ویدیوهای بیشتر به شکل گراف، یا null.
+ *
+ * @return array{'@graph': list<array<string, mixed>>}|null
+ */
+function hodima_media_extra_video_graph( int $object_id, string $context ): ?array {
+	$nodes = hodima_media_extra_video_nodes( $object_id, $context );
+	return $nodes ? [ '@graph' => $nodes ] : null;
 }
 
 /** AudioObject («#audio») یا null. */

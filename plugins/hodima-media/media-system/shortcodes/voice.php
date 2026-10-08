@@ -28,7 +28,7 @@ function hodima_media_shortcode_voice( mixed $atts ): string {
 
 	$data = hodima_media_get_data( $object_id, $context );
 
-	if ( 'yes' !== ( $data['enabled'] ?? '' ) || empty( $data['voice_url'] ) ) {
+	if ( ! hodima_media_part_shown( $data, 'voice' ) || empty( $data['voice_url'] ) ) {
 		return '';
 	}
 

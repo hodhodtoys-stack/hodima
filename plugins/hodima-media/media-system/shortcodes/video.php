@@ -84,16 +84,78 @@ function hodima_media_shortcode_video( mixed $atts ): string {
 			: sprintf( '<a href="%s" target="_blank" rel="noopener noreferrer" class="button">مشاهده ویدیو</a>', esc_url( $url ) );
 	}
 
+	// ویدیوهای بیشتر: اسکیمای هر کدام فقط وقتی همین‌جا نمایش داده شده‌اند
+	$extras = hodima_media_extra_videos( $object_id, $context );
+	if ( $extras ) {
+		hodima_media_schema_on_render( 'video_extra', $object_id, $context, [] );
+	}
+
 	return sprintf(
-		'<div class="hook-video-wrapper%1$s" style="--hook-video-ratio: %2$d / %3$d">%4$s<div class="hook-video-container"><div class="hook-video-inner">%5$s</div></div>%6$s%7$s</div>',
+		'<div class="hook-video-wrapper%1$s" style="--hook-video-ratio: %2$d / %3$d">%4$s<div class="hook-video-container"><div class="hook-video-inner">%5$s</div></div>%6$s%7$s%8$s</div>',
 		$portrait ? ' hook-video-wrapper--portrait' : '',
 		$rw,
 		$rh,
 		hodima_media_heading( $title, $atts['heading'] ?? 'h2' ),
 		$media,
 		hodima_media_chapters_html( $video['chapters'] ),
-		hodima_media_transcript_html( $video['transcript'], 'متن کامل ویدیو' )
+		hodima_media_transcript_html( $video['transcript'], 'متن کامل ویدیو' ),
+		hodima_media_extra_html( $extras )
 	);
+}
+
+/**
+ * فهرست ویدیوهای بیشتر (کارت‌های کوچک زیر ویدیوی اصلی). آپارات/یوتیوب/ویمئو
+ * با «نما» (پخش‌کننده فقط بعد از کلیک)، فایل با تگ video.
+ *
+ * @param list<array<string, mixed>> $extras hodima_media_extra_videos()
+ */
+function hodima_media_extra_html( array $extras ): string {
+
+	if ( ! $extras ) {
+		return '';
+	}
+
+	$items = '';
+
+	foreach ( $extras as $i => $video ) {
+
+		$label = '' !== $video['title'] ? $video['title'] : sprintf( 'ویدیوی %s', number_format_i18n( $i + 2 ) );
+		$cover = null !== $video['cover'] && $video['cover']['id']
+			? ( hodima_media_video_cover_src( (int) $video['cover']['id'], 'medium_large' ) ?? $video['cover'] )
+			: $video['cover'];
+
+		$media = match ( true ) {
+			$video['is_file'] => sprintf(
+				'<video class="hook-video-el" controls playsinline preload="none"%1$s aria-label="%2$s"><source src="%3$s" type="%4$s"></video>',
+				null !== $cover ? ' poster="' . esc_url( set_url_scheme( $cover['url'] ) ) . '"' : '',
+				esc_attr( $label ),
+				esc_url( $video['url'] ),
+				esc_attr( $video['mime'] )
+			),
+			in_array( $video['provider'], [ 'aparat', 'youtube', 'vimeo' ], true ) => hodima_media_facade( $video, $cover, $label, $video['url'] ),
+			default => sprintf( '<a href="%s" target="_blank" rel="noopener noreferrer" class="button">مشاهده ویدیو</a>', esc_url( $video['url'] ) ),
+		};
+
+		$items .= sprintf(
+			'<li class="hook-video-card"><div class="hook-video-container" style="--hook-video-ratio: %1$s"><div class="hook-video-inner">%2$s</div></div><p class="hook-video-card__title">%3$s%4$s</p></li>',
+			esc_attr( str_replace( ':', ' / ', $video['ratio'] ) ),
+			$media,
+			esc_html( $label ),
+			$video['seconds'] > 0 ? ' <span class="hook-video-card__time" dir="ltr">' . esc_html( hodima_media_clock( $video['seconds'] ) ) . '</span>' : ''
+		);
+	}
+
+	return '<div class="hook-video-more"><p class="hook-video-more__title">ویدیوهای بیشتر</p><ul class="hook-video-grid">' . $items . '</ul></div>';
+}
+
+/**
+ * تصویر یک پیوست در اندازه دلخواه: [ id, url, width, height ] یا null.
+ *
+ * @return array{id: int, url: string, width: int, height: int}|null
+ */
+function hodima_media_video_cover_src( int $id, string $size ): ?array {
+	$src = wp_get_attachment_image_src( $id, $size );
+	return is_array( $src ) && ! empty( $src[0] ) ? [ 'id' => $id, 'url' => (string) $src[0], 'width' => (int) $src[1], 'height' => (int) $src[2] ] : null;
 }
 
 /**

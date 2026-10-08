@@ -47,6 +47,9 @@ const HODIMA_MEDIA_LEGACY_KEYS = [
 	'faq',
 ];
 
+/** بخش‌های سیستم رسانه که جدا روشن/خاموش می‌شوند (همان نام شورت‌کدها). */
+const HODIMA_MEDIA_PARTS = [ 'intro', 'video', 'voice', 'faq' ];
+
 /** نسبت‌های تصویر ویدیو (مقدار ذخیره‌شده ← برچسب). */
 const HODIMA_MEDIA_RATIOS = [
 	'auto' => 'خودکار',
@@ -66,7 +69,7 @@ function hodima_media_meta_keys(): array {
 	return [
 		...HODIMA_MEDIA_LEGACY_KEYS,
 		'video_cover_id', 'video_ratio', 'video_chapters', 'video_transcript', 'video_description', 'video_captions',
-		'voice_transcript',
+		'video_extra', 'voice_transcript', 'hidden_parts',
 	];
 }
 
@@ -202,6 +205,8 @@ function hodima_media_get_data( int $object_id, string $context = 'post', bool $
 	}
 
 	$data['faq']               = is_array( $data['faq'] ) ? array_values( $data['faq'] ) : [];
+	$data['video_extra']       = is_array( $data['video_extra'] ) ? array_values( array_filter( $data['video_extra'], 'is_array' ) ) : [];
+	$data['hidden_parts']      = is_array( $data['hidden_parts'] ) ? array_values( array_intersect( $data['hidden_parts'], HODIMA_MEDIA_PARTS ) ) : [];
 	$data['video_cover_id']    = (int) $data['video_cover_id'];
 	$data['video_ratio']       = isset( HODIMA_MEDIA_RATIOS[ (string) $data['video_ratio'] ] ) ? (string) $data['video_ratio'] : 'auto';
 
@@ -240,9 +245,20 @@ foreach ( [ 'post', 'term' ] as $hodima_media_type ) {
 }
 unset( $hodima_media_type, $hodima_media_action );
 
-/** آیا سیستم رسانه برای این شیء روشن است؟ */
+/** آیا سیستم رسانه برای این شیء روشن است (کلید اصلی)؟ */
 function hodima_media_is_enabled( int $object_id, string $context = 'post' ): bool {
 	return 'yes' === ( hodima_media_get_data( $object_id, $context )['enabled'] ?? '' );
+}
+
+/**
+ * آیا یک بخش (intro | video | voice | faq) نمایش داده می‌شود؟
+ * کلید اصلی روشن و همان بخش پنهان نشده. «hidden_parts» خالی (همه داده‌های
+ * قبلی) = همه بخش‌ها مثل قبل.
+ *
+ * @param array<string, mixed> $data خروجی hodima_media_get_data()
+ */
+function hodima_media_part_shown( array $data, string $part ): bool {
+	return 'yes' === ( $data['enabled'] ?? '' ) && ! in_array( $part, (array) ( $data['hidden_parts'] ?? [] ), true );
 }
 
 /**

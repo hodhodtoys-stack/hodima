@@ -129,15 +129,16 @@
 			}
 			field.querySelector('[data-hodima-clear]')?.removeAttribute('hidden');
 
-			// مدت و نسبت تصویر از خود فایل
-			const section = field.closest('.hodima-mb__body');
+			// مدت و نسبت تصویر از خود فایل (در ردیف «ویدیوهای بیشتر» فقط مدت همان ردیف)
+			const row = field.closest('[data-hodima-row]');
+			const section = row || field.closest('.hodima-mb__body');
 			const seconds = Number(a.fileLength ? durationSeconds(a.fileLength) : 0);
 			const duration = section?.querySelector('[data-hodima-duration]');
 			if (duration && seconds > 0 && duration.value.trim() === '') {
 				duration.value = clockFromSeconds(seconds);
 				checkDuration(duration);
 			}
-			const ratio = section?.querySelector('[data-hodima-ratio]');
+			const ratio = row ? null : section?.querySelector('[data-hodima-ratio]');
 			if (type === 'video' && ratio && ratio.value === 'auto') {
 				const r = nearestRatio(Number(a.width), Number(a.height));
 				if (r) ratio.value = r;
@@ -182,19 +183,30 @@
 			}, 4000);
 			return;
 		}
-		const row = button.closest('[data-hodima-faq]');
+		const row = button.closest('[data-hodima-faq], [data-hodima-row]');
 		const next = row.nextElementSibling || row.previousElementSibling;
 		row.remove();
 		next?.querySelector('input')?.focus();
 	}
 
 	function moveFaq(button) {
-		const row = button.closest('[data-hodima-faq]');
+		const row = button.closest('[data-hodima-faq], [data-hodima-row]');
 		const dir = Number(button.dataset.hodimaMove);
 		const sibling = dir < 0 ? row.previousElementSibling : row.nextElementSibling;
 		if (!sibling) return;
 		dir < 0 ? sibling.before(row) : sibling.after(row);
 		button.focus();
+	}
+
+	/* ── فهرست‌های تکرارشونده دیگر (ویدیوهای بیشتر) ── */
+	function addRow(button) {
+		const name = button.dataset.hodimaAdd;
+		const scope = button.closest('.hodima-mb__field') || button.closest('.hodima-mb__body');
+		const list = scope?.querySelector(`[data-hodima-list="${name}"]`);
+		const tpl = scope?.querySelector(`[data-hodima-template="${name}"]`);
+		if (!list || !tpl) return;
+		list.insertAdjacentHTML('beforeend', tpl.innerHTML.replaceAll('__i__', `n${faqCounter++}`));
+		list.lastElementChild?.querySelector('input')?.focus();
 	}
 
 	/* ── رویدادها (یک شنونده برای همه) ── */
@@ -206,6 +218,7 @@
 		if (t.matches('[data-hodima-pick]') && field) { e.preventDefault(); openPicker(field); }
 		else if (t.matches('[data-hodima-clear]') && field) { e.preventDefault(); clearPicker(field); }
 		else if (t.matches('[data-hodima-faq-add]')) { e.preventDefault(); addFaq(t.closest('.hodima-mb__body')); }
+		else if (t.matches('[data-hodima-add]')) { e.preventDefault(); addRow(t); }
 		else if (t.matches('[data-hodima-remove]')) { e.preventDefault(); removeFaq(t); }
 		else if (t.matches('[data-hodima-move]')) { e.preventDefault(); moveFaq(t); }
 	});

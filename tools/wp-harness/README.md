@@ -29,6 +29,9 @@ tools/wp-harness/css-equiv.sh --built    # سورس در برابر خروجی b
 # بررسی GitHub Actions به‌صورت محلی: بدون هشدار PHP، بدون صفحه ناقص، بدون @id تکراری
 tools/wp-harness/ci-check.sh [ref]
 
+# آزمون خودکار سیستم رسانه و Google Discover (تجزیه‌گرها، سازنده VideoObject، بخش‌ها، REST؛ ci-check هم اجرا می‌کند)
+HARNESS=1 php tools/wp-harness/media-tests.php
+
 # صفحه‌های پیشخوان (دسترسی، عنوان، منوی فعال، هشدار PHP)
 tools/wp-harness/admin-check.sh . /tmp/adm                 # صفحه‌های پیش‌فرض
 tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های دلخواه
@@ -56,6 +59,7 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 | `run.sh <src> <out>` | رندر همه صفحه‌ها و استخراج JSON-LD |
 | `render.php <path> <full\|hooks>` | رندر یک آدرس |
 | `admin-render.php <slug>` | رندر یک صفحه پیشخوان با حساب مدیر |
+| `media-tests.php` | آزمون‌های خودکار سیستم رسانه و Discover (کد خروج ۱ = رد) |
 | `wp-eval.php '<php>'` | اجرای کد دلخواه روی سایت تست (`HARNESS=1 HODIMA_WP=… php wp-eval.php '…'`) |
 | `extract.py` / `compare.py` / `integrity.py` | استخراج، مقایسه و بررسی گراف |
 | `wc-setup.sh` / `wc-fixtures.php` / `wc-run.sh` | نسخه دوم ابزار با ووکامرس 9.9.5 *واقعی* (از انتشار گیت‌هاب؛ `HODIMA_WC_VERSION`). داده: محصول ساده کامل (گالری، جدول «حداقل خرید»، ویژگی‌های pa_*، نظر، رسانه، مکمل)، متغیر، ناموجود، حراج، ۸ محصول دیگر، دسته و زیردسته، سبد/پرداخت کلاسیک. `mu-plugins/harness-wc-stable.php` (مرتبط‌ها بدون ترتیب تصادفی)، `harness-wc-cart.php` (`HARNESS_CART=شناسه:تعداد`). stub ووکامرس ابزار اصلی اینجا حذف می‌شود |
