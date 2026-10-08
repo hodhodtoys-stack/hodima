@@ -144,7 +144,7 @@ function hodima_media_summary( int $object_id, string $context, string $fallback
  *   enabled: bool, url: string, provider: string, provider_id: string, player: string,
  *   is_file: bool, mime: string, title: string, cover: ?array, ratio: string,
  *   seconds: int, duration: string, date: string, chapters: list<array{start:int,title:string}>,
- *   transcript: string, keywords: string
+ *   transcript: string, keywords: string, description: string
  * }|null
  */
 function hodima_media_video( int $object_id, string $context = 'post' ): ?array {
@@ -183,6 +183,7 @@ function hodima_media_video( int $object_id, string $context = 'post' ): ?array 
 		'chapters'    => hodima_media_parse_chapters( $data['video_chapters'] ?? '' ),
 		'transcript'  => trim( (string) ( $data['video_transcript'] ?? '' ) ),
 		'keywords'    => sanitize_text_field( (string) ( $data['video_keywords'] ?? '' ) ),
+		'description' => trim( sanitize_textarea_field( (string) ( $data['video_description'] ?? '' ) ) ),
 	];
 }
 
@@ -213,70 +214,28 @@ function hodima_media_video_node( int $object_id, string $context = 'post', arra
 		return null;
 	}
 
-	$base  = esc_url_raw( $page_url );
 	$title = hodima_media_object_title( $object_id, $context );
 	$brand = (string) ( get_option( 'hodima_brand_name', '' ) ?: get_bloginfo( 'name' ) );
 
-	$node = [
-		'@type'        => 'VideoObject',
-		'@id'          => $base . '#video',
-		'isPartOf'     => [ '@id' => $base . '#webpage' ],
-		'name'         => '' !== $video['title'] ? $video['title'] : (string) ( $extra['_name'] ?? 'ویدیوی معرفی: ' . $title ),
-		'description'  => hodima_media_summary( $object_id, $context, 'بررسی و نمایش ویدیویی ' . $title . ' توسط ' . $brand ),
-		'thumbnailUrl' => [ esc_url_raw( $video['cover']['url'] ) ],
-		'uploadDate'   => $video['date'],
-		'inLanguage'   => hodima_media_language(),
-	];
-
-	if ( $video['is_file'] ) {
-		$node['contentUrl']     = $video['url'];
-		$node['encodingFormat'] = $video['mime'];
-	} else {
-		$node['embedUrl'] = esc_url_raw( $video['player'] );
-	}
-
-	if ( '' !== $video['duration'] ) {
-		$node['duration'] = $video['duration'];
-	}
-
-	// ناشر = همان سازمان یکتای سایت (homepage-schema.php)، فقط وقتی افزونه سئو آن را می‌سازد
-	if ( function_exists( 'hodima_seo_schema_organization_node' ) ) {
-		$node['publisher'] = [ '@id' => trailingslashit( home_url() ) . '#organization' ];
-	}
-
-	if ( '' !== $video['transcript'] ) {
-		$node['transcript'] = wp_strip_all_tags( $video['transcript'] );
-	}
-
-	if ( '' !== $video['keywords'] ) {
-		$node['keywords'] = $video['keywords'];
-	}
-
-	/*
-	 * «لحظه‌های کلیدی» گوگل: هر فصل یک Clip با آدرسی که ویدیو را از همان
-	 * زمان شروع می‌کند (?t=ثانیه؛ media-style.js آن را اجرا می‌کند).
-	 * پایان هر فصل = شروع فصل بعد؛ آخرین = مدت ویدیو (اگر معلوم است).
-	 */
-	$clips = [];
-	foreach ( $video['chapters'] as $i => $chapter ) {
-		$end = $video['chapters'][ $i + 1 ]['start'] ?? $video['seconds'];
-		if ( $end > 0 && $end <= $chapter['start'] ) {
-			continue;
-		}
-		$clip = [
-			'@type'       => 'Clip',
-			'name'        => $chapter['title'],
-			'startOffset' => $chapter['start'],
-			'url'         => add_query_arg( 't', $chapter['start'], $base ),
-		];
-		if ( $end > 0 ) {
-			$clip['endOffset'] = $end;
-		}
-		$clips[] = $clip;
-	}
-	if ( $clips ) {
-		$node['hasPart'] = $clips;
-	}
+	// سازنده واحد (inc/video-object.php)؛ همان نود ماژول «ویدیوها»
+	$node = hodima_media_video_object( [
+		'base'        => $page_url,
+		'name'        => '' !== $video['title'] ? $video['title'] : (string) ( $extra['_name'] ?? 'ویدیوی معرفی: ' . $title ),
+		'description' => '' !== $video['description'] ? $video['description'] : hodima_media_summary( $object_id, $context, 'بررسی و نمایش ویدیویی ' . $title . ' توسط ' . $brand ),
+		'thumbnails'  => [ $video['cover']['url'] ],
+		'upload_date' => $video['date'],
+		'content_url' => $video['is_file'] ? $video['url'] : '',
+		'embed_url'   => $video['is_file'] ? '' : $video['player'],
+		'mime'        => $video['mime'],
+		'duration'    => $video['duration'],
+		'seconds'     => $video['seconds'],
+		'transcript'  => $video['transcript'],
+		'keywords'    => $video['keywords'],
+		'chapters'    => $video['chapters'],
+		// پلیر صفحه ?t= را برای فایل، یوتیوب و ویمئو اجرا می‌کند (media-style.js)؛ آپارات زمان شروع ندارد
+		'seekable'    => in_array( $video['provider'], [ 'file', 'youtube', 'vimeo' ], true ),
+		'publisher'   => function_exists( 'hodima_seo_schema_organization_node' ),
+	] );
 
 	foreach ( $extra as $key => $value ) {
 		if ( ! str_starts_with( (string) $key, '_' ) ) {
@@ -285,4 +244,64 @@ function hodima_media_video_node( int $object_id, string $context = 'post', arra
 	}
 
 	return $node;
+}
+
+/**
+ * وضعیت آمادگی ویدیوی یک شیء برای نتایج ویدیویی گوگل (کادر رسانه).
+ *
+ * @return list<array{key: string, status: string, label: string, detail: string}>
+ *   status: ok | warn | error
+ */
+function hodima_media_video_checks( int $object_id, string $context ): array {
+
+	$context = hodima_media_context( $context );
+	$video   = hodima_media_video( $object_id, $context );
+
+	if ( null === $video ) {
+		return [];
+	}
+
+	$checks = [];
+
+	// ۱. نمایش (بدون آن به گوگل هم اعلام نمی‌شود)
+	$checks[] = match ( true ) {
+		! hodima_media_is_displayed( $object_id, $context ) => [ 'shown', 'error', 'نمایش', 'قالب بخش رسانه این نوع دسته را نشان نمی‌دهد؛ ویدیو به گوگل اعلام نمی‌شود.' ],
+		! $video['enabled'] => [ 'shown', 'error', 'نمایش', 'کلید «نمایش ویدیو، پادکست…» بالای کادر خاموش است؛ ویدیو نه در صفحه است نه در گوگل.' ],
+		default => [ 'shown', 'ok', 'نمایش', 'در صفحه نمایش داده و به گوگل اعلام می‌شود.' ],
+	};
+
+	// ۲. سرویس
+	$checks[] = match ( $video['provider'] ) {
+		'youtube' => [ 'provider', 'warn', 'سرویس', 'یوتیوب برای بیشتر بازدیدکنندگان ایرانی فیلتر است و پخش نمی‌شود؛ آپارات یا فایل MP4 خود سایت بهتر است.' ],
+		'other'   => [ 'provider', 'warn', 'سرویس', 'سرویس شناخته نشد؛ پخش با جاسازی خودکار وردپرس امتحان می‌شود و گوگل ممکن است پخش‌کننده را نشناسد.' ],
+		'file'    => [ 'provider', 'ok', 'سرویس', 'فایل ویدیوی خود سایت (بهترین حالت برای گوگل و سرعت پخش در ایران).' ],
+		default   => [ 'provider', 'ok', 'سرویس', 'aparat' === $video['provider'] ? 'آپارات.' : 'ویمئو.' ],
+	};
+
+	// ۳. تصویر (thumbnailUrl الزامی گوگل)
+	$checks[] = null === $video['cover']
+		? [ 'cover', 'error', 'کاور', 'نه کاور دارد نه تصویر شاخص؛ بدون تصویر، ویدیو به گوگل اعلام نمی‌شود.' ]
+		: [ 'cover', 'ok', 'کاور', $video['cover']['width'] ? sprintf( '%s×%s پیکسل.', number_format_i18n( $video['cover']['width'] ), number_format_i18n( $video['cover']['height'] ) ) : 'آدرس بیرونی.' ];
+
+	// ۴. مدت
+	$checks[] = '' === $video['duration']
+		? [ 'duration', 'warn', 'مدت', 'مدت ندارد؛ گوگل مدت را کنار ویدیو نشان می‌دهد.' ]
+		: [ 'duration', 'ok', 'مدت', hodima_media_clock( $video['seconds'] ) . '.' ];
+
+	// ۵. توضیح اختصاصی
+	$checks[] = '' === $video['description']
+		? [ 'description', 'warn', 'توضیح', 'توضیح اختصاصی ویدیو ندارد؛ خلاصه صفحه استفاده می‌شود (برای ویدیوهای زیاد تکراری می‌شود).' ]
+		: [ 'description', 'ok', 'توضیح', 'توضیح اختصاصی دارد.' ];
+
+	// ۶. لحظه‌های کلیدی
+	$checks[] = match ( true ) {
+		(bool) $video['chapters'] => [ 'chapters', 'ok', 'لحظه‌های کلیدی', sprintf( '%s فصل.', number_format_i18n( count( $video['chapters'] ) ) ) ],
+		'aparat' === $video['provider'] => [ 'chapters', 'warn', 'لحظه‌های کلیدی', 'فصل ندارد؛ پخش‌کننده آپارات پرش به زمان را پشتیبانی نمی‌کند، پس فقط با فصل‌ها «لحظه‌های کلیدی» ممکن است.' ],
+		default => [ 'chapters', 'ok', 'لحظه‌های کلیدی', 'فصل ندارد؛ گوگل خودش لحظه‌ها را پیدا می‌کند (SeekToAction).' ],
+	};
+
+	return array_map(
+		static fn( array $c ): array => array_combine( [ 'key', 'status', 'label', 'detail' ], $c ),
+		$checks
+	);
 }

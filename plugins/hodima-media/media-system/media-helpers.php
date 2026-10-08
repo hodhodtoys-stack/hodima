@@ -65,7 +65,7 @@ const HODIMA_MEDIA_RATIOS = [
 function hodima_media_meta_keys(): array {
 	return [
 		...HODIMA_MEDIA_LEGACY_KEYS,
-		'video_cover_id', 'video_ratio', 'video_chapters', 'video_transcript',
+		'video_cover_id', 'video_ratio', 'video_chapters', 'video_transcript', 'video_description',
 		'voice_transcript',
 	];
 }

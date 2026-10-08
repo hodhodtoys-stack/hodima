@@ -14,8 +14,9 @@ require_once __DIR__ . '/media-helpers.php';
 // ۲. ویدیوی یکسان‌شده و VideoObject واحد (پخش‌کننده، اسکیما، سایت‌مپ)
 require_once __DIR__ . '/media-video.php';
 
-// ۳. پیشخوان: کادر «تنظیمات رسانه» و ذخیره
+// ۳. پیشخوان: کادر «تنظیمات رسانه» و ذخیره (+ اطلاعات خودکار از آپارات/یوتیوب/ویمئو)
 if ( is_admin() ) {
+	require_once __DIR__ . '/media-providers.php';
 	require_once __DIR__ . '/media-admin.php';
 }
 

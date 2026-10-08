@@ -172,6 +172,32 @@ function hodima_media_faq_row( int|string $index, string $question, string $answ
 	);
 }
 
+/**
+ * فهرست بررسی (ok / warn / error).
+ *
+ * @param list<array{key: string, status: string, label: string, detail: string}> $checks
+ */
+function hodima_media_render_checks( array $checks ): void {
+
+	if ( ! $checks ) {
+		return;
+	}
+
+	$icons = [ 'ok' => 'dashicons-yes-alt', 'warn' => 'dashicons-warning', 'error' => 'dashicons-dismiss' ];
+
+	echo '<ul class="hodima-mb__checks">';
+	foreach ( $checks as $check ) {
+		printf(
+			'<li class="is-%1$s"><span class="dashicons %2$s" aria-hidden="true"></span><strong>%3$s:</strong> <span>%4$s</span></li>',
+			esc_attr( $check['status'] ),
+			esc_attr( $icons[ $check['status'] ] ),
+			esc_html( $check['label'] ),
+			esc_html( $check['detail'] )
+		);
+	}
+	echo '</ul>';
+}
+
 function hodima_media_render_fields( array $data, string $context, int $object_id ): void {
 
 	$context = hodima_media_context( $context );
@@ -208,6 +234,10 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 		<?php hodima_media_section_close(); ?>
 
 		<?php hodima_media_section_open( 'video', 'dashicons-video-alt3', 'ویدیو', $video_set, $video_set ); ?>
+			<?php if ( $video_set && $object_id > 0 ) : ?>
+				<?php hodima_media_render_checks( hodima_media_video_checks( $object_id, $context ) ); ?>
+				<p class="hodima-mb__help">گوگل ویدیو را در نتایج ویدیویی بیشتر وقتی نشان می‌دهد که موضوع اصلی صفحه باشد (مثل صفحه هر ویدیو)؛ در محصول و مقاله، اسکیما و کاور خوب شانس را بالا می‌برند.</p>
+			<?php endif; ?>
 			<?php
 			hodima_media_field_picker(
 				'video_url',
@@ -218,7 +248,14 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 				-1,
 				'https://www.aparat.com/v/…'
 			);
-			hodima_media_field_text( 'video_title', 'عنوان ویدیو', (string) ( $data['video_title'] ?? '' ), 'بالای پلیر و در نتایج ویدیویی گوگل. خالی = «ویدیوی معرفی: عنوان صفحه».' );
+			hodima_media_field_text( 'video_title', 'عنوان ویدیو', (string) ( $data['video_title'] ?? '' ), 'بالای پلیر و در نتایج ویدیویی گوگل. خالی = «ویدیوی معرفی: عنوان صفحه» (برای آپارات، یوتیوب و ویمئو هنگام ذخیره از خود ویدیو پر می‌شود).' );
+			hodima_media_field_textarea(
+				'video_description',
+				'توضیح ویدیو (اختیاری)',
+				(string) ( $data['video_description'] ?? '' ),
+				'یکی دو جمله درباره همین ویدیو (نه کل صفحه) برای نتایج ویدیویی گوگل. خالی = خلاصه صفحه.',
+				[ 'rows' => 2, 'maxlength' => 500 ]
+			);
 			?>
 			<div class="hodima-mb__grid">
 				<div class="hodima-mb__field">
@@ -404,6 +441,7 @@ function hodima_media_save_fields( int $object_id, string $context ): void {
 
 	$write( 'video_url', $video_url );
 	$write( 'video_title', sanitize_text_field( $get( 'video_title' ) ) );
+	$write( 'video_description', sanitize_textarea_field( $get( 'video_description' ) ) );
 
 	$ratio = $get( 'video_ratio' );
 	$ratio = isset( HODIMA_MEDIA_RATIOS[ $ratio ] ) ? $ratio : 'auto';
@@ -453,6 +491,47 @@ function hodima_media_save_fields( int $object_id, string $context ): void {
 			$clean = hodima_media_clock( $length );
 		}
 		$write( "{$kind}_duration", '' === $url ? '' : $clean );
+	}
+
+	/*
+	 * آپارات، یوتیوب، ویمئو: عنوان و مدت خالی از خود ویدیو؛ کاور فقط برای
+	 * لینک تازه و وقتی کاوری انتخاب نشده (تصویر واقعی ویدیو در کتابخانه سایت،
+	 * به‌جای تصویر شاخص صفحه). فیلدی که مدیر پر کرده دست نمی‌خورد.
+	 */
+	$video_changed = '' !== $video_url && $video_url !== (string) ( $before['video_url'] ?? '' );
+	$need          = [
+		'title'    => '' === $get( 'video_title' ),
+		'duration' => '' === (string) get_metadata( $context, $object_id, $prefix . 'video_duration', true ),
+		'cover'    => $video_changed && '' === $cover_url,
+	];
+
+	if ( '' !== $video_url && in_array( hodima_media_parse_video_url( $video_url )['provider'], [ 'aparat', 'youtube', 'vimeo' ], true ) && in_array( true, $need, true ) ) {
+
+		$info   = hodima_media_fetch_video_info( $video_url );
+		$filled = [];
+
+		if ( null !== $info ) {
+			if ( $need['title'] && '' !== $info['title'] ) {
+				$write( 'video_title', $info['title'] );
+				$filled[] = 'عنوان';
+			}
+			if ( $need['duration'] && $info['seconds'] > 0 ) {
+				$write( 'video_duration', hodima_media_clock( $info['seconds'] ) );
+				$filled[] = 'مدت';
+			}
+			if ( $need['cover'] && '' !== $info['thumbnail'] ) {
+				$cover_new = hodima_media_sideload_cover( $info['thumbnail'], 'post' === $context ? $object_id : 0, $info['title'] );
+				if ( $cover_new ) {
+					$write( 'video_cover_id', $cover_new );
+					$write( 'video_cover', (string) wp_get_attachment_url( $cover_new ) );
+					$filled[] = 'کاور';
+				}
+			}
+		}
+
+		if ( $filled && function_exists( 'hodima_admin_flash' ) ) {
+			hodima_admin_flash( 'از خود ویدیو پر شد: ' . implode( '، ', $filled ) . '. در کادر «تنظیمات رسانه» می‌توانید عوضش کنید.', 'success' );
+		}
 	}
 
 	/*

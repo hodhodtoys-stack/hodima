@@ -222,7 +222,6 @@ add_action('wp_head', static function (): void {
     if ('' === $raw_video_url) return;
 
     $page_url  = hod_video_schema_page_url($post_id);
-    $site_url  = trailingslashit(home_url());
     $video_url = esc_url_raw((string) preg_replace('/\s+/', '%20', trim($raw_video_url)));
 
     /*
@@ -241,6 +240,11 @@ add_action('wp_head', static function (): void {
     $product    = (string) get_post_meta($post_id, '_hod_related_product_url', true);
     $chapters   = hod_video_parse_chapters((string) get_post_meta($post_id, '_hod_video_chapters', true));
 
+    // مدت به ثانیه (پایان آخرین فصل)
+    $total = ('' !== $duration && preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $duration, $d))
+        ? ((int) ($d[1] ?? 0)) * 3600 + ((int) ($d[2] ?? 0)) * 60 + (int) ($d[3] ?? 0)
+        : 0;
+
     $tags     = get_the_tags($post_id);
     $keywords = $tags ? implode(', ', wp_list_pluck($tags, 'name')) : '';
 
@@ -249,52 +253,42 @@ add_action('wp_head', static function (): void {
     $published = (string) get_post_time('c', true, $post_id);
     $modified  = (string) get_post_modified_time('c', true, $post_id);
 
-    $schema = [
-        '@context'         => 'https://schema.org',
-        '@type'            => 'VideoObject',
-        '@id'              => $page_url . '#video',
-        'isPartOf'         => ['@id' => $page_url . '#webpage'],
-        'mainEntityOfPage' => ['@id' => $page_url . '#webpage'],
-        'url'              => $page_url,
-        'name'             => get_the_title($post_id),
-        'description'      => wp_strip_all_tags((string) (get_the_excerpt($post_id) ?: get_the_title($post_id))),
-        'thumbnailUrl'     => [$video_thumb],
-        'uploadDate'       => $published,
-        'datePublished'    => $published,
-        'dateModified'     => $modified,
-        /*
-         * فقط contentUrl. نسخه قبلی embedUrl را برابر خود صفحه تماشا
-         * می‌گذاشت؛ طبق راهنمای گوگل embedUrl باید پلیر *قابل‌جاسازی*
-         * باشد و صراحتا نباید به صفحه‌ای که ویدیو در آن است اشاره کند.
-         */
-        'contentUrl'       => $video_url,
-        'encodingFormat'   => 'video/mp4',
-        'inLanguage'       => 'fa-IR',
-        'isFamilyFriendly' => true,
-        /*
-         * ارجاع به سازمان گراف اصلی. نسخه قبلی site_url() را *بدون* اسلش
-         * پایانی به کار می‌برد: «…com#organization» — شناسه‌ای متفاوت از
-         * «…com/#organization» گراف اصلی، یعنی یک سازمان تکراری با نام و
-         * لوگوی دیگر.
-         */
-        'publisher'        => ['@id' => $site_url . '#organization'],
-        'interactionStatistic' => [
-            '@type'                => 'InteractionCounter',
-            'interactionType'      => ['@type' => 'WatchAction'],
-            'userInteractionCount' => $views,
-        ],
-    ];
+    /*
+     * سازنده واحد VideoObject (inc/video-object.php) — همان که ویدیوی
+     * نوشته/محصول/دسته را می‌سازد. نکته‌های قبلی همین فایل حفظ شده‌اند:
+     *   - فقط contentUrl: embedUrl باید پلیر *قابل‌جاسازی* باشد، نه خود صفحه تماشا.
+     *   - تاریخ‌ها به وقت گرینویچ (get_post_time با gmt).
+     *   - ناشر = همان «…/#organization» گراف اصلی (با اسلش؛ نسخه خیلی قدیمی
+     *     بدون اسلش یک سازمان تکراری می‌ساخت).
+     *   - بخش‌بندی ← Clip؛ بدون آن SeekToAction (پلیر صفحه ?t= را اجرا می‌کند).
+     */
+    $mime = (string) (wp_check_filetype((string) wp_parse_url($video_url, PHP_URL_PATH), wp_get_mime_types())['type'] ?: 'video/mp4');
 
-    if ('' !== $duration) {
-        $schema['duration'] = $duration;
-    }
+    $schema = hodima_media_video_object([
+        'base'          => $page_url,
+        'page_url'      => $page_url,
+        'name'          => get_the_title($post_id),
+        'description'   => wp_strip_all_tags((string) (get_the_excerpt($post_id) ?: get_the_title($post_id))),
+        'thumbnails'    => [$video_thumb],
+        'upload_date'   => $published,
+        'date_modified' => $modified,
+        'content_url'   => $video_url,
+        'mime'          => $mime,
+        'duration'      => $duration,
+        'seconds'       => $total,
+        'transcript'    => $transcript,
+        'keywords'      => $keywords,
+        'chapters'      => array_map(static fn(array $c): array => ['start' => $c['start'], 'title' => $c['name']], $chapters),
+        'seekable'      => true,
+        'views'         => $views,
+        'publisher'     => true,
+    ]);
 
-    if ('' !== $keywords) {
-        $schema['keywords'] = $keywords;
-    }
+    $schema['mainEntityOfPage'] = ['@id' => $page_url . '#webpage'];
+    $schema['datePublished']    = $published;
+    $schema['isFamilyFriendly'] = true;
 
     if ('' !== trim($transcript)) {
-        $schema['transcript']           = wp_strip_all_tags($transcript);
         $schema['accessibilityFeature'] = ['transcript'];
     }
 
@@ -307,42 +301,6 @@ add_action('wp_head', static function (): void {
      */
     if ('' !== $product) {
         $schema['about'] = ['@id' => trailingslashit(esc_url_raw($product)) . '#product'];
-    }
-
-    /*
-     * لحظه‌های کلیدی (Key Moments).
-     * بخش‌بندی قبلا ذخیره می‌شد ولی هرگز در اسکیما نمی‌آمد. با بخش‌بندی،
-     * Clip دقیق ساخته می‌شود؛ بدون آن SeekToAction تا گوگل خودش لحظه‌ها را
-     * تشخیص دهد. هر دو به ?t= اشاره می‌کنند که پلیر حالا پشتیبانی می‌کند.
-     */
-    if (!empty($chapters)) {
-
-        $total = ('' !== $duration && preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $duration, $d))
-            ? ((int) ($d[1] ?? 0)) * 3600 + ((int) ($d[2] ?? 0)) * 60 + (int) ($d[3] ?? 0)
-            : 0;
-
-        $clips = [];
-        foreach ($chapters as $i => $chapter) {
-            $end = $chapters[$i + 1]['start'] ?? ($total > $chapter['start'] ? $total : null);
-            $clip = [
-                '@type'       => 'Clip',
-                'name'        => $chapter['name'],
-                'startOffset' => $chapter['start'],
-                'url'         => add_query_arg('t', $chapter['start'], $page_url),
-            ];
-            if (null !== $end) {
-                $clip['endOffset'] = $end;
-            }
-            $clips[] = $clip;
-        }
-        $schema['hasPart'] = $clips;
-
-    } else {
-        $schema['potentialAction'] = [
-            '@type'             => 'SeekToAction',
-            'target'            => $page_url . '?t={seek_to_second_number}',
-            'startOffset-input' => 'required name=seek_to_second_number',
-        ];
     }
 
     hodima_schema_add($schema, 'hodima-media: video-watch');
