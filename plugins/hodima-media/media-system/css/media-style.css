@@ -327,7 +327,162 @@
 }
 
 /*
- * دکمه سرعت پخش پادکست: یک دایره کوچک کنار پلیر با سرعت فعلی. قالب برای
+ * نوار پخش پادکست (media-style.js آن را به‌جای کنترل‌های بومی <audio> می‌سازد؛
+ * مرورگرها دکمه اضافه داخل پلیر بومی را نمی‌پذیرند). چیدمان چپ‌به‌راست مثل
+ * پلیر بومی: پخش، زمان، نوار پیشرفت، بلندگو، دایره سرعت، ⋮.
+ * قالب روی همه <button>ها رنگ سفید !important، پس‌زمینه گرادیان و جابه‌جایی
+ * hover دارد؛ دکمه‌های نوار ظاهر خودشان را با انتخابگر قوی‌تر می‌گیرند.
+ */
+.hook-player {
+	position: relative;
+	display: flex;
+	flex: 1 1 auto;
+	align-items: center;
+	gap: 4px;
+	min-inline-size: 0;
+	block-size: 40px;
+	padding-inline: 4px 6px;
+	border-radius: 999px;
+	background: var(--hm-surface);
+	box-shadow: inset 0 0 0 1px var(--hm-border);
+	color: var(--hm-primary);
+	direction: ltr;
+
+	& .hook-player__btn,
+	& .hook-player__btn:hover {
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+		inline-size: 32px;
+		block-size: 32px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		/* stylelint-disable-next-line declaration-no-important -- رقیب: color: #fff !important قالب روی همه button */
+		color: var(--hm-primary) !important;
+		box-shadow: none;
+		cursor: pointer;
+		transform: none;
+
+		& svg {
+			inline-size: 20px;
+			block-size: 20px;
+		}
+	}
+
+	& .hook-player__btn:hover {
+		background: var(--hm-soft);
+	}
+
+	& .hook-player__btn:focus-visible,
+	& .hook-player__seek:focus-visible,
+	& .hook-player__menu a:focus-visible {
+		outline: 2px solid var(--hm-secondary);
+		outline-offset: 1px;
+	}
+
+	& .hook-player__time {
+		flex-shrink: 0;
+		padding-inline: 2px 4px;
+		font-size: 13px;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		color: var(--hm-text);
+	}
+
+	/* نوار پیشرفت: بخش پخش‌شده رنگ اصلی (--hook-progress از JS) */
+	& .hook-player__seek {
+		--hook-progress: 0%;
+
+		flex: 1 1 auto;
+		min-inline-size: 40px;
+		block-size: 24px;
+		margin: 0 4px;
+		padding: 0;
+		background: transparent;
+		cursor: pointer;
+		appearance: none;
+
+		&::-webkit-slider-runnable-track {
+			block-size: 4px;
+			border-radius: 4px;
+			background: linear-gradient(to right, var(--hm-primary) var(--hook-progress), var(--hm-border-strong) var(--hook-progress));
+		}
+
+		&::-webkit-slider-thumb {
+			inline-size: 12px;
+			block-size: 12px;
+			margin-block-start: -4px;
+			border: 0;
+			border-radius: 50%;
+			background: var(--hm-primary);
+			appearance: none;
+		}
+
+		&::-moz-range-track {
+			block-size: 4px;
+			border-radius: 4px;
+			background: var(--hm-border-strong);
+		}
+
+		&::-moz-range-progress {
+			block-size: 4px;
+			border-radius: 4px;
+			background: var(--hm-primary);
+		}
+
+		&::-moz-range-thumb {
+			inline-size: 12px;
+			block-size: 12px;
+			border: 0;
+			border-radius: 50%;
+			background: var(--hm-primary);
+		}
+	}
+
+	& .hook-player__more {
+		position: relative;
+		flex-shrink: 0;
+	}
+
+	/* منوی ⋮ بالای دکمه، هم‌تراز لبه راست نوار */
+	& .hook-player__menu {
+		position: absolute;
+		inset-block-end: calc(100% + 6px);
+		inset-inline-end: 0;
+		z-index: 20;
+		min-inline-size: 140px;
+		padding: 6px;
+		border: 1px solid var(--hm-border-strong);
+		border-radius: var(--hm-radius);
+		background: var(--hm-surface);
+		box-shadow: var(--hm-shadow);
+
+		&[hidden] {
+			display: none;
+		}
+
+		& a {
+			display: block;
+			padding: 8px 10px;
+			border-radius: 8px;
+			font-size: 14px;
+			color: var(--hm-text);
+			text-decoration: none;
+			/* خود منو چپ‌به‌راست نوار را دارد (لبه راستش هم‌تراز ⋮)؛ متن فارسی راست‌چین */
+			direction: rtl;
+
+			&:hover {
+				background: var(--hm-soft);
+			}
+		}
+	}
+}
+
+/*
+ * دکمه سرعت پخش پادکست: دایره کوچک داخل نوار پخش، بعد از بلندگو. قالب برای
  * همه <button>ها «color: #ffffff !important» و پس‌زمینه گرادیان (و در hover
  * جابه‌جایی و سایه) دارد؛ این دکمه ظاهر خودش را می‌خواهد، پس رنگ متن با
  * !important و hover با انتخابگر قوی‌تر.
@@ -336,9 +491,9 @@
 	display: grid;
 	place-items: center;
 	flex-shrink: 0;
-	/* ۴۴ پیکسل: اندازه استاندارد لمس؛ سرعت‌ها یک‌رقمی‌اند (۱، ۲، ۳) پس دایره کامل */
-	inline-size: 44px;
-	block-size: 44px;
+	/* هم‌اندازه دکمه‌های نوار پخش (۳۲)؛ سرعت‌ها یک‌رقمی‌اند (۱، ۲، ۳) پس دایره کامل */
+	inline-size: 32px;
+	block-size: 32px;
 	margin: 0;
 	padding: 0;
 	border: 1.5px solid var(--hm-border-strong);
@@ -348,7 +503,7 @@
 	/* stylelint-disable-next-line declaration-no-important -- رقیب: color: #fff !important قالب روی همه button */
 	color: var(--hm-primary) !important;
 	font: inherit;
-	font-size: 13px;
+	font-size: 12px;
 	font-weight: 800;
 	line-height: 1;
 	box-shadow: none;
@@ -570,9 +725,19 @@
 		padding: 12px;
 		border-radius: 16px;
 
-		& audio {
+		& audio,
+		& .hook-player {
 			flex: 1 1 0;
 			min-inline-size: 0;
+		}
+
+		/* نوار پخش در عرض کم: فاصله‌ها کمتر */
+		& .hook-player {
+			gap: 0;
+		}
+
+		& .hook-player__time {
+			font-size: 12px;
 		}
 	}
 

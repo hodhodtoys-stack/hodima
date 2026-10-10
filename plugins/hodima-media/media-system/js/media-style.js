@@ -5,8 +5,9 @@
  *   - «نما»ی ویدیو: کلیک روی کاور ← پخش‌کننده آپارات/یوتیوب/ویمئو ساخته می‌شود
  *   - فصل‌ها: کلیک ← پخش از همان زمان؛ آدرس ?t=ثانیه (لحظه‌های کلیدی گوگل) هم
  *   - فقط یک رسانه همزمان پخش شود؛ ویدیوی خارج از دید متوقف شود (پادکست نه)
- *   - پادکست: دکمه سرعت پخش (هر کلیک یک پله)، و پلیر کوچک ثابت پایین صفحه وقتی در حال پخش
- *     است و کاربر از آن دور شده (توقف/ادامه و بازگشت به پلیر)
+ *   - پادکست: نوار پخش خود سایت به‌جای کنترل‌های بومی مرورگر (پخش، زمان، نوار
+ *     پیشرفت، بلندگو، دایره سرعت، منوی ⋮)، و پلیر کوچک ثابت پایین صفحه وقتی در
+ *     حال پخش است و کاربر از آن دور شده (توقف/ادامه و بازگشت به پلیر)
  *
  * راه‌اندازی مستقل از DOMContentLoaded (حالت «Delay JS» لایت‌اسپید اسکریپت را
  * بعد از آن رویداد اجرا می‌کند).
@@ -156,6 +157,150 @@
 		try { localStorage.setItem(RATE_KEY, String(next)); } catch { /* حالت خصوصی */ }
 	});
 
+	/*
+	 * ── پادکست: نوار پخش ──
+	 * مرورگرها اجازه نمی‌دهند دکمه‌ای داخل کنترل‌های بومی <audio> گذاشته شود؛
+	 * پس نوار خود سایت با همان چیدمان (چپ‌به‌راست مثل پلیر بومی): پخش، زمان،
+	 * نوار پیشرفت، بلندگو، دایره سرعت، ⋮ (دانلود). خود <audio> می‌ماند (پنهان)
+	 * و همه رویدادها (یک رسانه همزمان، پلیر کوچک) مثل قبل از آن می‌آیند.
+	 * بدون جاوااسکریپت همان پلیر بومی مرورگر نمایش داده می‌شود.
+	 */
+	const svg = (body) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${body}</svg>`;
+	const ICONS = {
+		play: svg('<path fill="currentColor" d="M8 5.5v13l10.5-6.5z"/>'),
+		pause: svg('<path fill="currentColor" d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z"/>'),
+		volume: svg('<path fill="currentColor" d="M4 9.5v5h3.5L12 19V5L7.5 9.5z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>'),
+		muted: svg('<path fill="currentColor" d="M4 9.5v5h3.5L12 19V5L7.5 9.5z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m15.5 9.5 5 5m0-5-5 5"/>'),
+		more: svg('<circle fill="currentColor" cx="12" cy="5.5" r="2"/><circle fill="currentColor" cx="12" cy="12" r="2"/><circle fill="currentColor" cx="12" cy="18.5" r="2"/>'),
+	};
+	const faDigits = (str) => str.replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+
+	function clock(seconds) {
+		const s = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
+		const two = (n) => String(n).padStart(2, '0');
+		const h = Math.floor(s / 3600);
+		const m = Math.floor((s % 3600) / 60);
+		return faDigits(h ? `${h}:${two(m)}:${two(s % 60)}` : `${m}:${two(s % 60)}`);
+	}
+
+	function iconButton(cls, label, icon) {
+		const b = document.createElement('button');
+		b.type = 'button';
+		b.className = `hook-player__btn ${cls}`;
+		b.setAttribute('aria-label', label);
+		b.innerHTML = ICONS[icon];
+		return b;
+	}
+
+	function buildPlayer(audio) {
+		const container = audio.closest('.hook-voice-container');
+		if (!container || audio.dataset.hookPlayer) return;
+		audio.dataset.hookPlayer = '1';
+
+		const bar = document.createElement('div');
+		bar.className = 'hook-player';
+		bar.dir = 'ltr';
+		bar.setAttribute('role', 'group');
+		bar.setAttribute('aria-label', `پخش‌کننده ${audio.dataset.hookTitle || 'پادکست'}`);
+
+		const play = iconButton('hook-player__play', 'پخش', 'play');
+		const time = document.createElement('span');
+		time.className = 'hook-player__time';
+		const seekBar = document.createElement('input');
+		seekBar.type = 'range';
+		seekBar.className = 'hook-player__seek';
+		seekBar.min = '0';
+		seekBar.max = '1000';
+		seekBar.step = '1';
+		seekBar.value = '0';
+		seekBar.setAttribute('aria-label', 'موقعیت پخش');
+		const volume = iconButton('hook-player__volume', 'بی‌صدا کردن', 'volume');
+		const speed = container.querySelector('.hook-audio-speed');
+
+		// ⋮: منوی کوچک با «دانلود فایل» (همان گزینه منوی پلیر بومی)
+		const more = document.createElement('div');
+		more.className = 'hook-player__more';
+		const moreBtn = iconButton('hook-player__more-btn', 'گزینه‌های بیشتر', 'more');
+		moreBtn.setAttribute('aria-haspopup', 'true');
+		moreBtn.setAttribute('aria-expanded', 'false');
+		const menu = document.createElement('div');
+		menu.className = 'hook-player__menu';
+		menu.hidden = true;
+		const download = document.createElement('a');
+		download.href = audio.currentSrc || audio.querySelector('source')?.src || audio.src;
+		download.download = '';
+		download.textContent = 'دانلود فایل';
+		menu.append(download);
+		more.append(moreBtn, menu);
+
+		bar.append(play, time, seekBar, volume);
+		if (speed) bar.append(speed);
+		bar.append(more);
+
+		const sync = () => {
+			const d = audio.duration;
+			const known = Number.isFinite(d) && d > 0;
+			const ratio = known ? audio.currentTime / d : 0;
+			time.textContent = known ? `${clock(audio.currentTime)} / ${clock(d)}` : clock(audio.currentTime);
+			seekBar.value = String(Math.round(ratio * 1000));
+			seekBar.style.setProperty('--hook-progress', `${(ratio * 100).toFixed(2)}%`);
+			seekBar.setAttribute('aria-valuetext', known ? `${clock(audio.currentTime)} از ${clock(d)}` : clock(audio.currentTime));
+		};
+		const syncPlay = () => {
+			const paused = audio.paused || audio.ended;
+			play.innerHTML = ICONS[paused ? 'play' : 'pause'];
+			play.setAttribute('aria-label', paused ? 'پخش' : 'توقف');
+		};
+		const syncVolume = () => {
+			volume.innerHTML = ICONS[audio.muted ? 'muted' : 'volume'];
+			volume.setAttribute('aria-label', audio.muted ? 'صدادار کردن' : 'بی‌صدا کردن');
+			volume.setAttribute('aria-pressed', String(audio.muted));
+		};
+		const closeMenu = () => {
+			menu.hidden = true;
+			moreBtn.setAttribute('aria-expanded', 'false');
+		};
+
+		play.addEventListener('click', () => (audio.paused || audio.ended ? audio.play().catch(() => {}) : audio.pause()));
+		volume.addEventListener('click', () => { audio.muted = !audio.muted; });
+		seekBar.addEventListener('input', () => {
+			if (Number.isFinite(audio.duration) && audio.duration > 0) {
+				audio.currentTime = (Number(seekBar.value) / 1000) * audio.duration;
+			}
+			sync();
+		});
+		// صفحه‌کلید: هر فلش ۵ ثانیه (پله پیش‌فرض نوار یک‌هزارم کل زمان است و تقریبا حرکت نمی‌کند)
+		seekBar.addEventListener('keydown', (e) => {
+			const step = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5 }[e.key];
+			if (!step || !Number.isFinite(audio.duration)) return;
+			e.preventDefault();
+			audio.currentTime = Math.min(audio.duration, Math.max(0, audio.currentTime + step));
+		});
+		moreBtn.addEventListener('click', () => {
+			const open = menu.hidden;
+			menu.hidden = !open;
+			moreBtn.setAttribute('aria-expanded', String(open));
+			if (open) download.focus();
+		});
+		download.addEventListener('click', closeMenu);
+		document.addEventListener('click', (e) => { if (!more.contains(e.target)) closeMenu(); });
+		bar.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && !menu.hidden) { closeMenu(); moreBtn.focus(); }
+		});
+
+		for (const type of ['timeupdate', 'durationchange', 'loadedmetadata', 'seeked', 'emptied']) audio.addEventListener(type, sync);
+		for (const type of ['play', 'pause', 'ended']) audio.addEventListener(type, syncPlay);
+		audio.addEventListener('volumechange', syncVolume);
+
+		audio.controls = false;
+		audio.hidden = true;
+		audio.after(bar);
+		container.classList.add('has-player');
+		sync();
+		syncPlay();
+		syncVolume();
+	}
+
 	/* ── پادکست: پلیر کوچک ثابت ── */
 	let mini = null;
 	let current = null;      // صوتی که آخرین بار پخش شد
@@ -220,7 +365,8 @@
 	}
 
 	function init() {
-		// سرعت ذخیره‌شده + نمایش دکمه سرعت (بدون JS پنهان است)
+		// نوار پخش پادکست + سرعت ذخیره‌شده (دکمه سرعت بدون JS پنهان است)
+		for (const audio of document.querySelectorAll('.hook-voice-container audio.hook-audio-el')) buildPlayer(audio);
 		const rate = storedRate();
 		for (const btn of document.querySelectorAll('.hook-audio-speed')) {
 			btn.hidden = false;
