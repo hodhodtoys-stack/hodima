@@ -119,12 +119,110 @@
 	}
 
 	/* ── مرتب‌سازی ── */
-	& .hodima-dr-sort {
-		margin-block: 0.75rem;
+	/* نوار فیلتر و مرتب‌سازی تب «آمادگی» (SEO 2.1.9): همه در یک ردیف، گروه‌های کپسولی */
+	& .hodima-dr-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.625rem 0.75rem;
+		align-items: center;
+		margin-block: 0.25rem 1rem;
+		padding: 0.5rem 0.625rem;
+		border: 1px solid var(--hd-border, #dfe4f7);
+		border-radius: var(--hd-radius, 0.875rem);
+		background: var(--hd-softer, #f7f8fe);
+	}
 
-		& [aria-current] {
+	& .hodima-dr-seg {
+		display: inline-flex;
+		flex-wrap: nowrap;
+		gap: 0.1875rem;
+		max-inline-size: 100%;
+		overflow-x: auto;
+		scrollbar-width: thin;
+		padding: 0.1875rem;
+		border: 1px solid var(--hd-border, #dfe4f7);
+		border-radius: 999px;
+		background: var(--hd-surface, #ffffff);
+	}
+
+	& .hodima-dr-seg__count {
+		min-inline-size: 1.25rem;
+		padding: 0 0.375rem;
+		border-radius: 999px;
+		background: var(--hd-soft, #eef1fc);
+		color: var(--hd-muted, #5d6785);
+		font-size: 0.6875rem;
+		font-weight: 700;
+		text-align: center;
+	}
+
+	& .hodima-dr-seg a,
+	& .hodima-dr-toggle {
+		display: inline-flex;
+		gap: 0.375rem;
+		align-items: center;
+		padding: 0.375rem 0.875rem;
+		border-radius: 999px;
+		color: var(--hd-text, #1d2340);
+		font-size: 0.8125rem;
+		font-weight: 600;
+		line-height: 1.4;
+		white-space: nowrap;
+		text-decoration: none;
+		transition: background-color 0.15s ease, color 0.15s ease;
+
+		&:hover {
+			background: var(--hd-soft, #eef1fc);
 			color: var(--hd-primary, #25316a);
 		}
+
+		&:focus-visible {
+			outline: none;
+			box-shadow: var(--hd-focus, 0 0 0 3px rgb(96 123 189 / 0.3));
+		}
+	}
+
+	& .hodima-dr-seg a[aria-current="true"] {
+		background: var(--hd-primary, #25316a);
+		color: #ffffff;
+
+		& .hodima-dr-seg__count {
+			background: rgb(255 255 255 / 0.2);
+			color: #ffffff;
+		}
+	}
+
+	& .hodima-dr-toggle {
+		border: 1px solid var(--hd-border, #dfe4f7);
+		background: var(--hd-surface, #ffffff);
+
+		& .dashicons {
+			inline-size: 1rem;
+			block-size: 1rem;
+			font-size: 1rem;
+			color: var(--hd-warn, #9a5b00);
+		}
+
+		&[aria-pressed="true"] {
+			border-color: var(--hd-warn, #9a5b00);
+			background: color-mix(in srgb, var(--hd-warn, #9a5b00) 12%, #ffffff);
+			color: var(--hd-warn, #9a5b00);
+		}
+	}
+
+	& .hodima-dr-toolbar__sort {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		max-inline-size: 100%;
+		align-items: center;
+		margin-inline-start: auto;
+	}
+
+	& .hodima-dr-toolbar__label {
+		color: var(--hd-muted, #5d6785);
+		font-size: 0.75rem;
+		font-weight: 700;
 	}
 
 	/* ── تغییر نسبت به ۲۸ روز قبل (جهت با ▲/▼ هم نوشته شده) ── */
@@ -444,6 +542,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
+	.hodima-dr .hodima-dr-seg a,
+	.hodima-dr .hodima-dr-toggle {
+		transition: none;
+	}
 
 	.hodima-dr .hodima-dr-progress > span {
 		transition: none;

@@ -593,23 +593,36 @@ function hodima_seo_discover_render_report(): void {
 			<h2 class="hd-card__title">آمادگی نوشته‌ها، برگه‌ها، محصولات و دسته‌ها</h2>
 			<p class="hd-card__desc">همان «آمادگی برای دیسکاور» کادر ویرایش: تصویر بزرگ و اختصاصی با متن جایگزین، برش‌ها، ایندکس، عنوان اختصاصی بدون طعمه کلیک، متن معرفی، خلاصه، عمق و تازگی مقاله، و معرفی نویسنده. <?php echo esc_html( number_format_i18n( HODIMA_SEO_DISCOVER_REPORT_LIMIT ) ); ?> صفحه آخر و دسته‌های محصول.</p>
 		</div>
-		<div class="hd-inline">
-			<a class="button<?php echo '' === $type ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( array_diff_key( $args, [ 'type' => 1 ] ) ) ); ?>">همه</a>
-			<?php foreach ( $types as $t ) : ?>
-				<a class="button<?php echo $t === $type ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( [ 'type' => $t ] + $args ) ); ?>"><?php echo esc_html( hodima_seo_discover_type_label( $t ) ); ?></a>
-			<?php endforeach; ?>
-			<a class="button<?php echo $only ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'issues' => $only ? '' : '1' ] + $args ) ) ); ?>" aria-pressed="<?php echo $only ? 'true' : 'false'; ?>"><?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> فقط نیازمند توجه</a>
+		<?php
+		/*
+		 * نوار فیلتر و مرتب‌سازی در یک ردیف (SEO 2.1.9): نوع (با تعداد)، «فقط نیازمند
+		 * توجه» و مرتب‌سازی، هر سه به شکل گروه دکمه‌های کپسولی. قبلا نوع و توجه
+		 * دکمه‌های عادی بودند و مرتب‌سازی یک خط متن جدا زیرشان.
+		 */
+		$by_type = array_count_values( array_column( $rows, 'type' ) );
+		$needing = count( array_filter( $rows, static fn( array $r ): bool => $r['error'] > 0 || $r['warn'] > 0 ) );
+		$num     = static fn( int $n ): string => number_format_i18n( $n );
+		?>
+		<div class="hodima-dr-toolbar">
+			<nav class="hodima-dr-seg" aria-label="نوع صفحه">
+				<a href="<?php echo esc_url( hodima_seo_discover_page_url( array_diff_key( $args, [ 'type' => 1 ] ) ) ); ?>"<?php echo '' === $type ? ' aria-current="true"' : ''; ?>>همه <span class="hodima-dr-seg__count"><?php echo esc_html( $num( count( $rows ) ) ); ?></span></a>
+				<?php foreach ( $types as $t ) : ?>
+					<a href="<?php echo esc_url( hodima_seo_discover_page_url( [ 'type' => $t ] + $args ) ); ?>"<?php echo $t === $type ? ' aria-current="true"' : ''; ?>><?php echo esc_html( hodima_seo_discover_type_label( $t ) ); ?> <span class="hodima-dr-seg__count"><?php echo esc_html( $num( (int) ( $by_type[ $t ] ?? 0 ) ) ); ?></span></a>
+				<?php endforeach; ?>
+			</nav>
+			<a class="hodima-dr-toggle" href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'issues' => $only ? '' : '1' ] + $args ) ) ); ?>" aria-pressed="<?php echo $only ? 'true' : 'false'; ?>">
+				<?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
+				فقط نیازمند توجه <span class="hodima-dr-seg__count"><?php echo esc_html( $num( $needing ) ); ?></span>
+			</a>
+			<div class="hodima-dr-toolbar__sort">
+				<span class="hodima-dr-toolbar__label" id="hodima-dr-sort-label">مرتب‌سازی</span>
+				<nav class="hodima-dr-seg" aria-labelledby="hodima-dr-sort-label">
+					<?php foreach ( $sorts as $key => $label ) : ?>
+						<a href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'orderby' => 'date' !== $key ? $key : '' ] + $args ) ) ); ?>"<?php echo $key === $sort ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $label ); ?></a>
+					<?php endforeach; ?>
+				</nav>
+			</div>
 		</div>
-		<p class="hd-inline hodima-dr-sort">
-			<span class="hd-muted">مرتب‌سازی:</span>
-			<?php foreach ( $sorts as $key => $label ) : ?>
-				<?php if ( $key === $sort ) : ?>
-					<strong aria-current="true"><?php echo esc_html( $label ); ?></strong>
-				<?php else : ?>
-					<a href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'orderby' => 'date' !== $key ? $key : '' ] + $args ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
-				<?php endif; ?>
-			<?php endforeach; ?>
-		</p>
 
 		<?php if ( ! $list ) : ?>
 			<p class="hd-empty">موردی نیست.</p>
