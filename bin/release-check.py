@@ -81,20 +81,35 @@ def vtuple(v):
     return tuple(int(x) for x in v.split('.'))
 
 
-def theme_next(v):
-    """قاعده شماره‌گذاری قالب (خواسته کاربر): فقط یک پله؛ هر رقم ۰ تا ۹."""
+def fits_rule(v):
+    """شماره در قاعده هست؟ سه رقم و رقم دوم و سوم هر کدام ۰ تا ۹ (مثلا 1.17.0 نه)."""
+    parts = v.split('.')
+    return len(parts) == 3 and all(p.isdigit() for p in parts) and int(parts[1]) <= 9 and int(parts[2]) <= 9
+
+
+def next_version(v):
+    """قاعده شماره‌گذاری همه بسته‌ها، قالب و افزونه‌ها (خواسته کاربر): فقط یک پله.
+
+    رقم سوم ۰ تا ۹، بعد رقم دوم +۱ و سوم ۰ (2.9.8 ← 2.9.9، 1.2.9 ← 1.3.0).
+    None = تصمیم با کاربر: بعد از x.9.9 (نسخه اصلی بعدی، مثلا 4.0.0 یا 4.1.1) یا
+    وقتی شماره منتشرشده خودش خارج از قاعده است (مثل SEO 1.17.0 که 2.1.1 شد).
+    """
+    if not fits_rule(v):
+        return None
     a, b, c = vtuple(v)
     if c < 9:
         return f'{a}.{b}.{c + 1}'
     if b < 9:
         return f'{a}.{b + 1}.0'
-    return None  # بعد از x.9.9 تصمیم با کاربر است (3.0.0 یا 3.1.1)
+    return None
 
 
-def plugin_next(v):
-    parts = list(vtuple(v)) + [0] * (3 - len(v.split('.')))
-    parts[2] += 1
-    return '.'.join(str(p) for p in parts[:3])
+def ask_hint(v):
+    """متن «بپرس» برای وقتی next_version() تصمیم را به کاربر می‌دهد."""
+    if not fits_rule(v):
+        return f'{v} خارج از قاعده است؛ شماره تازه را کاربر تعیین می‌کند (بپرس)'
+    major = vtuple(v)[0] + 1
+    return f'بعد از {v} نسخه اصلی بعدی را کاربر انتخاب می‌کند: {major}.0.0 یا {major}.1.1 (بپرس)'
 
 
 def changed_files(base):
@@ -145,10 +160,7 @@ def cmd_plan(base):
         return
     for slug, hits in pkgs.items():
         old, now, _c = versions(slug, base)
-        if slug == 'hodima':
-            nxt = theme_next(old) or 'تصمیم کاربر: 3.0.0 یا 3.1.1 (بپرس)'
-        else:
-            nxt = plugin_next(old)
+        nxt = next_version(old) or ask_hint(old)
         state = f'الان {now}' + (' (بالا رفته)' if old and now and vtuple(now) > vtuple(old) else '')
         print(f'- {slug}: {len(hits)} فایل؛ نسخه منتشرشده {old} ← پیشنهاد {nxt}؛ {state}')
         for f in hits[:8]:
@@ -199,19 +211,18 @@ def check_versions(base, pkgs):
             if not is_bumped:
                 fail(f'{slug}: {len(pkgs[slug])} فایل تغییر کرده ولی نسخه همان {now} است — سایت‌ها به‌روزرسانی را نمی‌بینند')
                 continue
-            if slug == 'hodima':
-                nxt = theme_next(old)
-                if nxt is None:
-                    if vtuple(now)[0] == vtuple(old)[0] + 1:
-                        warn(f'hodima {old} ← {now}: بعد از x.9.9 شماره را کاربر انتخاب می‌کند (3.0.0 یا 3.1.1) — مطمئن شو پرسیده‌ای')
-                    else:
-                        fail(f'hodima {old} ← {now}: بعد از {old} فقط نسخه اصلی بعدی (کاربر انتخاب می‌کند: 3.0.0 یا 3.1.1)')
-                elif now != nxt:
-                    fail(f'hodima {old} ← {now}: قاعده «یک پله» — باید {nxt} باشد')
+            nxt = next_version(old)
+            if not fits_rule(now):
+                fail(f'{slug} {old} ← {now}: شماره تازه باید در قاعده باشد (رقم دوم و سوم ۰ تا ۹)')
+            elif nxt is None:
+                if fits_rule(old) and vtuple(now)[0] != vtuple(old)[0] + 1:
+                    fail(f'{slug} {old} ← {now}: {ask_hint(old)}')
                 else:
-                    ok(f'hodima {old} ← {now} (یک پله)')
+                    warn(f'{slug} {old} ← {now}: {ask_hint(old)} — مطمئن شو کاربر همین را گفته')
+            elif now != nxt:
+                fail(f'{slug} {old} ← {now}: قاعده «یک پله» — باید {nxt} باشد')
             else:
-                ok(f'{slug} {old} ← {now}')
+                ok(f'{slug} {old} ← {now} (یک پله)')
             bumped[slug] = (old, now)
         elif is_bumped:
             warn(f'{slug}: نسخه بالا رفته ({old} ← {now}) ولی هیچ فایلی از بسته تغییر نکرده')
