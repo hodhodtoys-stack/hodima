@@ -46,7 +46,7 @@ function hodima_media_shortcode_voice( mixed $atts ): string {
 
 		$mime  = wp_check_filetype( $path, wp_get_mime_types() )['type'] ?: 'audio/mpeg';
 		$media = sprintf(
-			'<audio class="hook-audio-el" controls preload="none" aria-label="%1$s" data-hook-title="%1$s"><source src="%2$s" type="%3$s"><p>مرورگر شما از پخش صوت پشتیبانی نمی‌کند. <a href="%2$s">دانلود فایل</a></p></audio>%4$s',
+			'%4$s<audio class="hook-audio-el" controls preload="none" aria-label="%1$s" data-hook-title="%1$s"><source src="%2$s" type="%3$s"><p>مرورگر شما از پخش صوت پشتیبانی نمی‌کند. <a href="%2$s">دانلود فایل</a></p></audio>',
 			esc_attr( '' !== $title ? $title : 'پادکست' ),
 			esc_url( $url ),
 			esc_attr( (string) $mime ),
@@ -82,8 +82,10 @@ function hodima_media_shortcode_voice( mixed $atts ): string {
 
 /**
  * دکمه سرعت پخش پادکست: یک دکمه گرد که سرعت فعلی را نشان می‌دهد؛ هر
- * کلیک/لمس یک پله (۱ ← ۱٫۲۵ ← ۱٫۵ ← ۲ ← ۱). media-style.js سرعت را روی
+ * کلیک/لمس یک پله (۱ ← ۲ ← ۳ ← ۱). media-style.js سرعت را روی
  * پلیر می‌گذارد و برای بازدید بعدی همین مرورگر به خاطر می‌سپارد.
+ * پیش از <audio> در HTML: در صفحه راست‌به‌چپ سمت راست پلیر، کنار
+ * آیکن بلندگو می‌نشیند (قبلا آخر بود و سمت چپ، کنار دکمه پخش می‌افتاد).
  * (نسخه 1.7 چهار دکمه کنار هم داشت که پلیر را شلوغ می‌کرد.)
  * بدون جاوااسکریپت پنهان است.
  */

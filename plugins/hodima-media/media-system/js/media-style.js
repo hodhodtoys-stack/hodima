@@ -123,7 +123,8 @@
 
 	/* ── پادکست: سرعت پخش (یک دکمه؛ هر کلیک یک پله) ── */
 	const RATE_KEY = 'hodimaPodcastRate';
-	const RATES = [1, 1.25, 1.5, 2];
+	// ۱ ← ۲ ← ۳ ← ۱ (خواسته کاربر: پله‌های ساده؛ قبلا ۱٫۲۵ و ۱٫۵ هم داشت)
+	const RATES = [1, 2, 3];
 	const fa = (n) => new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 }).format(n);
 
 	function storedRate() {

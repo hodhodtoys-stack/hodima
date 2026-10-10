@@ -336,12 +336,11 @@
 	display: grid;
 	place-items: center;
 	flex-shrink: 0;
-	/* ۴۴ پیکسل: اندازه استاندارد لمس؛ «۱٫۲۵×» آن را کمی کشیده (کپسول) می‌کند */
-	min-inline-size: 44px;
+	/* ۴۴ پیکسل: اندازه استاندارد لمس؛ سرعت‌ها یک‌رقمی‌اند (۱، ۲، ۳) پس دایره کامل */
+	inline-size: 44px;
 	block-size: 44px;
 	margin: 0;
-	padding-block: 0;
-	padding-inline: 8px;
+	padding: 0;
 	border: 1.5px solid var(--hm-border-strong);
 	border-radius: 999px;
 	white-space: nowrap;
