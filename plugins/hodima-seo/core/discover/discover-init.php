@@ -40,21 +40,32 @@ const HODIMA_SEO_DISCOVER_MIN_WIDTH = 1200;
 
 /**
  * عبارت‌های طعمه کلیک و اغراق (گوگل Discover عنوان اغراق‌آمیز، پنهان‌کاری
- * محتوا و تحریک احساس را جریمه می‌کند). مقایسه بدون نیم‌فاصله انجام می‌شود
- * (hodima_seo_discover_is_clickbait) تا «باورنکردنی» و «باور نکردنی» یکی باشند.
+ * محتوا و تحریک احساس را جریمه می‌کند).
+ *
+ * مقایسه «کلمه کامل» است (hodima_seo_discover_clickbait_match)؛ «*» در آخر
+ * یعنی ادامه کلمه آزاد است («باورتان نمی*» = نمی‌شود/نمی‌کنید). نیم‌فاصله،
+ * اعراب و «ي/ك» عربی پیش از مقایسه یکسان می‌شوند.
+ * باگ قبلی (تا SEO 2.1.1): تکه‌ای از کلمه مقایسه می‌شد؛ «موی افشان» (افشا)،
+ * «شیراز» (راز)، «فوریه» (فوری) طعمه کلیک شمرده می‌شدند. «جادویی» هم برداشته
+ * شد: نام واقعی محصول است («شانه جادویی»). سایت با فیلتر
+ * hodima_seo_discover_clickbait_phrases فهرست را عوض می‌کند.
  */
 const HODIMA_SEO_DISCOVER_CLICKBAIT = [
 	// باور و شگفتی
-	'باورتان نمی', 'باورت نمی', 'باور نمی', 'باورنکردنی', 'باور نکردنی', 'غیرقابل باور', 'شوکه', 'شوک ', 'تکان دهنده', 'شگفت زده',
-	'هرگز تصور', 'معجزه', 'جادویی',
+	'باورتان نمی*', 'باورت نمی*', 'باور نمی*', 'باورنکردنی', 'باور نکردنی', 'غیرقابل باور', 'غیر قابل باور', 'شوکه*', 'شوک', 'تکان دهنده',
+	'شگفت زده*', 'هرگز تصور*', 'معجزه', 'معجزه آسا', 'معجزه گر',
 	// پنهان‌کاری و کنجکاوی
-	'راز ', 'رازهای', 'افشا', 'ببینید چه', 'ببینید چی', 'نمی دانستید', 'نمیدانستید', 'هیچ کس نمی', 'هیچکس نمی', 'حدس بزنید',
-	'آخرش', 'تا آخر ببینید', 'کلیک کنید',
+	'راز', 'رازهای', 'افشا', 'افشای', 'افشاگری', 'ببینید چه', 'ببینید چی', 'نمی دانستید', 'نمیدانستید', 'هیچ کس نمی*', 'هیچکس نمی*',
+	'حدس بزنید', 'آخرش', 'تا آخر ببینید', 'کلیک کنید',
 	// فوریت ساختگی
-	'حتما ببینید', 'حتماً ببینید', 'از دست ندهید', 'فوری', 'همین الان', 'فقط امروز',
+	'حتما ببینید', 'از دست ندهید', 'فوری', 'همین الان', 'فقط امروز',
 	// نشانه‌گذاری اغراق‌آمیز
-	'!!', '؟؟', '??', '؟!', '!؟',
+	'!!', '؟؟', '??', '؟!', '!؟', '?!', '!?',
 ];
+
+/** طول پیشنهادی عنوان کارت Discover (کاراکتر): کوتاه‌تر مبهم، بلندتر کوتاه می‌شود. */
+const HODIMA_SEO_DISCOVER_TITLE_MIN = 30;
+const HODIMA_SEO_DISCOVER_TITLE_MAX = 110;
 
 /** کلیدهای متای نوشته/محصول (همان کلیدهای سیستم رسانه قبلی). */
 const HODIMA_SEO_DISCOVER_META = [
@@ -69,6 +80,9 @@ function hodima_seo_discover_meta_key( string $field, string $context = 'post' )
 	return 'term' === $context ? ltrim( $key, '_' ) : $key;
 }
 
+// فهرست «آمادگی برای Discover» و پیشنهاد عنوان (فقط تابع)
+require_once __DIR__ . '/discover-checks.php';
+
 add_action( 'plugins_loaded', 'hodima_seo_discover_boot', 20 );
 
 /** ثبت هوک‌ها، کادر و نام‌های قدیمی — فقط اگر Hodima Media قدیمی Discover را ندارد. */
@@ -81,10 +95,63 @@ function hodima_seo_discover_boot(): void {
 	require_once __DIR__ . '/legacy.php';
 	require_once __DIR__ . '/discover-front.php';
 	require_once __DIR__ . '/discover-stats.php'; // WP-Cron هم در درخواست غیر پیشخوان اجرا می‌شود
+	// کش ردیف گزارش: پاک شدن آن باید در REST (ویرایشگر بلوکی) و کرون هم رخ دهد، نه فقط پیشخوان
+	require_once __DIR__ . '/discover-cache.php';
+
+	add_action( 'init', 'hodima_seo_discover_register_meta', 20 ); // بعد از ثبت «محصول» ووکامرس (init ۵)
 
 	if ( is_admin() ) {
 		require_once __DIR__ . '/discover-admin.php';
+		require_once __DIR__ . '/discover-insights.php';
 		require_once __DIR__ . '/discover-report.php';
+	}
+}
+
+/**
+ * ثبت متاهای Discover (register_post_meta / register_term_meta):
+ *   - REST و ویرایشگر بلوکی نوع و دسترسی آن‌ها را می‌شناسند (فقط ویرایشگر همان شیء)؛
+ *   - نوع‌هایی که «نسخه‌ها» دارند (نوشته، برگه): بازگردانی یک نسخه، عنوان،
+ *     تصویر و موضوعات Discover همان نسخه را هم برمی‌گرداند.
+ * پاک‌سازی همان قاعده ذخیره کادر است (تکرار آن روی مقدار تمیز، همان را می‌دهد).
+ */
+function hodima_seo_discover_register_meta(): void {
+
+	$sanitize = [
+		'title'    => static fn( mixed $v ): string => sanitize_text_field( is_scalar( $v ) ? (string) $v : '' ),
+		'image_id' => static fn( mixed $v ): int => absint( is_scalar( $v ) ? $v : 0 ),
+		'entities' => static fn( mixed $v ): string => hodima_seo_discover_format_entities( hodima_seo_discover_entity_items( sanitize_textarea_field( is_scalar( $v ) ? (string) $v : '' ) ) ),
+	];
+
+	foreach ( hodima_seo_discover_post_types() as $post_type ) {
+		if ( ! post_type_exists( $post_type ) ) {
+			continue;
+		}
+		foreach ( array_keys( HODIMA_SEO_DISCOVER_META ) as $field ) {
+			register_post_meta( $post_type, hodima_seo_discover_meta_key( $field ), [
+				'type'              => 'image_id' === $field ? 'integer' : 'string',
+				'single'            => true,
+				'show_in_rest'      => true,
+				'sanitize_callback' => $sanitize[ $field ],
+				'auth_callback'     => static fn( bool $allowed, string $key, int $post_id ): bool => current_user_can( 'edit_post', $post_id ),
+				// فقط نوع دارای نسخه؛ وگرنه وردپرس _doing_it_wrong می‌دهد (محصول نسخه ندارد)
+				'revisions_enabled' => post_type_supports( $post_type, 'revisions' ),
+			] );
+		}
+	}
+
+	foreach ( hodima_seo_discover_taxonomies() as $taxonomy ) {
+		if ( ! taxonomy_exists( $taxonomy ) ) {
+			continue;
+		}
+		foreach ( array_keys( HODIMA_SEO_DISCOVER_META ) as $field ) {
+			register_term_meta( $taxonomy, hodima_seo_discover_meta_key( $field, 'term' ), [
+				'type'              => 'image_id' === $field ? 'integer' : 'string',
+				'single'            => true,
+				'show_in_rest'      => true,
+				'sanitize_callback' => $sanitize[ $field ],
+				'auth_callback'     => static fn( bool $allowed, string $key, int $term_id ): bool => current_user_can( 'edit_term', $term_id ),
+			] );
+		}
 	}
 }
 
@@ -291,18 +358,63 @@ function hodima_seo_discover_default_image_id( int $object_id, string $context =
 	return (int) get_post_thumbnail_id( $object_id );
 }
 
-/** آیا عنوان عبارت طعمه کلیک دارد؟ (همان قاعده در JS پیشخوان) */
-function hodima_seo_discover_is_clickbait( string $title ): bool {
+/**
+ * یکسان‌سازی متن فارسی برای مقایسه: نیم‌فاصله ← فاصله، بدون اعراب
+ * («حتماً» = «حتما»)، «ي/ك» عربی ← «ی/ک»، فاصله‌های پشت هم یکی، حروف کوچک.
+ * همان قاعده در JS پیشخوان (discover-admin.js: norm).
+ */
+function hodima_seo_discover_text_norm( string $text ): string {
+	$text = str_replace( [ "\u{200C}", 'ي', 'ك' ], [ ' ', 'ی', 'ک' ], $text );
+	$text = (string) preg_replace( '/[\x{064B}-\x{0652}\x{0670}]/u', '', $text );
+	return mb_strtolower( trim( (string) preg_replace( '/\s+/u', ' ', $text ) ) );
+}
 
-	$norm = static fn( string $s ): string => str_replace( "\u{200C}", ' ', $s );
-	$title = $norm( $title );
+/**
+ * فهرست عبارت‌های طعمه کلیک (قابل تغییر با فیلتر).
+ *
+ * @return list<string>
+ */
+function hodima_seo_discover_clickbait_phrases(): array {
+	$phrases = apply_filters( 'hodima_seo_discover_clickbait_phrases', HODIMA_SEO_DISCOVER_CLICKBAIT );
+	return array_values( array_filter( array_map( 'strval', is_array( $phrases ) ? $phrases : [] ), static fn( string $p ): bool => '' !== trim( $p, " *\t" ) ) );
+}
 
-	foreach ( HODIMA_SEO_DISCOVER_CLICKBAIT as $phrase ) {
-		if ( str_contains( $title, $norm( $phrase ) ) ) {
-			return true;
+/**
+ * عبارت طعمه کلیکی که عنوان دارد (بدون «*»)، یا رشته خالی.
+ *
+ * عبارت حرف‌دار فقط به‌صورت کلمه کامل پیدا می‌شود: پیش از آن حرف نباشد و
+ * (بدون «*») بعد از آن هم نه. نشانه‌گذاری («!!») هر جا باشد.
+ */
+function hodima_seo_discover_clickbait_match( string $title ): string {
+
+	static $patterns = null;
+
+	if ( null === $patterns ) {
+		$patterns = [];
+		foreach ( hodima_seo_discover_clickbait_phrases() as $raw ) {
+			$phrase = hodima_seo_discover_text_norm( $raw );
+			$prefix = str_ends_with( $phrase, '*' );
+			$phrase = rtrim( $phrase, ' *' );
+			$letter = 1 === preg_match( '/\p{L}/u', $phrase );
+			$body   = str_replace( ' ', '\s+', preg_quote( $phrase, '/' ) );
+
+			$patterns[ rtrim( $raw, ' *' ) ] = '/' . ( $letter ? '(?<![\p{L}\p{M}\p{N}])' : '' ) . $body . ( $letter && ! $prefix ? '(?![\p{L}\p{M}\p{N}])' : '' ) . '/u';
 		}
 	}
-	return false;
+
+	$title = hodima_seo_discover_text_norm( $title );
+
+	foreach ( $patterns as $phrase => $pattern ) {
+		if ( 1 === preg_match( $pattern, $title ) ) {
+			return (string) $phrase;
+		}
+	}
+	return '';
+}
+
+/** آیا عنوان عبارت طعمه کلیک دارد؟ (همان قاعده در JS پیشخوان) */
+function hodima_seo_discover_is_clickbait( string $title ): bool {
+	return '' !== hodima_seo_discover_clickbait_match( $title );
 }
 
 /* =====================================================================
@@ -354,26 +466,27 @@ function hodima_seo_discover_crop_size( int $src_w, int $src_h, int $rw, int $rh
 }
 
 /**
- * سه برش Discover را (اگر نیست) برای یک پیوست می‌سازد.
- * فقط هنگام ذخیره نوشته/تغییر تصویر شاخص اجرا می‌شود، نه هنگام بازدید.
+ * سه برش Discover را (اگر نیست) برای یک پیوست می‌سازد و تعداد برش تازه را برمی‌گرداند.
+ * فقط هنگام ذخیره نوشته/تغییر تصویر شاخص و «ساخت برش برای همه» (گزارش)
+ * اجرا می‌شود، نه هنگام بازدید.
  * برش‌ها در اطلاعات همان پیوست («sizes») ثبت می‌شوند؛ با حذف تصویر،
  * وردپرس آن‌ها را هم پاک می‌کند. (اندازه تصویر سراسری ثبت نشد تا هر آپلود
  * سه فایل اضافه نسازد.)
  */
-function hodima_seo_discover_make_crops( int $attachment_id ): void {
+function hodima_seo_discover_make_crops( int $attachment_id ): int {
 
 	if ( ! $attachment_id || ! wp_attachment_is_image( $attachment_id ) ) {
-		return;
+		return 0;
 	}
 
 	$meta = wp_get_attachment_metadata( $attachment_id );
 	$file = (string) get_attached_file( $attachment_id );
 
 	if ( ! is_array( $meta ) || empty( $meta['width'] ) || '' === $file || ! is_file( $file ) ) {
-		return;
+		return 0;
 	}
 
-	$changed = false;
+	$made_count = 0;
 
 	foreach ( HODIMA_SEO_DISCOVER_CROPS as $key => [ $rw, $rh ] ) {
 
@@ -395,19 +508,21 @@ function hodima_seo_discover_make_crops( int $attachment_id ): void {
 
 		if ( is_array( $made ) ) {
 			$meta['sizes'][ $name ] = $made;
-			$changed                = true;
+			++$made_count;
 		}
 	}
 
-	if ( $changed ) {
+	if ( $made_count ) {
 		wp_update_attachment_metadata( $attachment_id, $meta );
 	}
+
+	return $made_count;
 }
 
 /**
  * تصاویر Discover آماده (برش‌های ساخته‌شده؛ یا خود تصویر وقتی همان نسبت را دارد).
  *
- * @return list<array{url: string, width: int, height: int, ratio: string}>
+ * @return list<array{url: string, width: int, height: int, ratio: string, mime: string}>
  */
 function hodima_seo_discover_images( int $object_id, string $context = 'post' ): array {
 
@@ -425,14 +540,16 @@ function hodima_seo_discover_images( int $object_id, string $context = 'post' ):
 		if ( is_array( $meta ) && isset( $meta['sizes'][ 'hodima-discover-' . $key ] ) ) {
 			$src = wp_get_attachment_image_src( $image['id'], 'hodima-discover-' . $key );
 			if ( is_array( $src ) && ! empty( $src[0] ) ) {
-				$out[] = [ 'url' => (string) $src[0], 'width' => (int) $src[1], 'height' => (int) $src[2], 'ratio' => $key ];
+				// نوع فایل خود برش (اگر سایت خروجی WebP را روشن کند، با اصل فرق دارد)
+				$mime  = (string) ( $meta['sizes'][ 'hodima-discover-' . $key ]['mime-type'] ?? $image['mime'] );
+				$out[] = [ 'url' => (string) $src[0], 'width' => (int) $src[1], 'height' => (int) $src[2], 'ratio' => $key, 'mime' => $mime ];
 				continue;
 			}
 		}
 
 		// خود تصویر همین نسبت را دارد (مثلا اصل ۱۲۰۰×۶۷۵)
 		if ( $image['height'] > 0 && abs( $image['width'] / $image['height'] - $rw / $rh ) < 0.01 ) {
-			$out[] = [ 'url' => $image['url'], 'width' => $image['width'], 'height' => $image['height'], 'ratio' => $key ];
+			$out[] = [ 'url' => $image['url'], 'width' => $image['width'], 'height' => $image['height'], 'ratio' => $key, 'mime' => $image['mime'] ];
 		}
 	}
 
@@ -442,7 +559,7 @@ function hodima_seo_discover_images( int $object_id, string $context = 'post' ):
 /**
  * برش ۱۶:۹ آماده، یا null.
  *
- * @return array{url: string, width: int, height: int, ratio: string}|null
+ * @return array{url: string, width: int, height: int, ratio: string, mime: string}|null
  */
 function hodima_seo_discover_wide_image( int $object_id, string $context = 'post' ): ?array {
 	foreach ( hodima_seo_discover_images( $object_id, $context ) as $image ) {
@@ -489,112 +606,6 @@ function hodima_seo_discover_enrich( array $node, int $object_id, string $contex
 }
 
 /* =====================================================================
- * فهرست بررسی آمادگی
- * ===================================================================== */
-
-/**
- * وضعیت آمادگی یک نوشته، محصول یا دسته برای Discover.
- *
- * هر ردیف: key، status (ok | warn | error)، label، detail، و link (اختیاری:
- * آدرس بخشی از صفحه ویرایش که مشکل را رفع می‌کند).
- *
- * @return list<array{key: string, status: string, label: string, detail: string, link: string}>
- */
-function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
-
-	$context = $target instanceof WP_Term ? 'term' : 'post';
-	$id      = $target instanceof WP_Term ? (int) $target->term_id : (int) $target->ID;
-	$type    = $target instanceof WP_Term ? $target->taxonomy : $target->post_type;
-	$data    = hodima_seo_discover_data( $id, $context );
-	$image   = hodima_seo_discover_image( $id, $context );
-	$checks  = [];
-	$row     = static fn( string $key, string $status, string $label, string $detail, string $link = '' ): array
-		=> [ 'key' => $key, 'status' => $status, 'label' => $label, 'detail' => $detail, 'link' => $link ];
-
-	// ۱. تصویر بزرگ
-	$own      = 'term' === $context ? 'تصویر دسته' : ( 'product' === $type ? 'تصویر محصول' : 'تصویر شاخص' );
-	$logo_ids = array_filter( [ (int) get_theme_mod( 'custom_logo' ), (int) get_option( 'site_icon' ) ] );
-	$checks[] = match ( true ) {
-		null === $image => $row( 'image', 'error', 'تصویر بزرگ', $own . ' یا تصویر Discover ندارد؛ Discover صفحه بی‌تصویر را تقریبا نشان نمی‌دهد.' ),
-		in_array( $image['id'], $logo_ids, true ) => $row( 'image', 'error', 'تصویر بزرگ', 'لوگوی سایت به عنوان تصویر انتخاب شده؛ گوگل تصویر عمومی و لوگو را نمی‌پذیرد.' ),
-		$image['width'] < HODIMA_SEO_DISCOVER_MIN_WIDTH => $row( 'image', 'error', 'تصویر بزرگ', sprintf( 'عرض تصویر %s پیکسل است؛ برای کارت بزرگ Discover حداقل ۱۲۰۰ لازم است.', number_format_i18n( $image['width'] ) ) ),
-		default => $row( 'image', 'ok', 'تصویر بزرگ', sprintf( '%s×%s پیکسل.', number_format_i18n( $image['width'] ), number_format_i18n( $image['height'] ) ) ),
-	};
-
-	// ۲. برش‌های ۱۶:۹ / ۴:۳ / ۱:۱
-	if ( null !== $image && $image['width'] >= HODIMA_SEO_DISCOVER_MIN_WIDTH ) {
-		$ready    = array_column( hodima_seo_discover_images( $id, $context ), 'ratio' );
-		$checks[] = count( $ready ) === count( HODIMA_SEO_DISCOVER_CROPS )
-			? $row( 'crops', 'ok', 'برش‌های ۱۶:۹، ۴:۳ و ۱:۱', 'ساخته شده و در اسکیما و og:image استفاده می‌شوند.' )
-			: $row( 'crops', 'warn', 'برش‌های ۱۶:۹، ۴:۳ و ۱:۱', 'بعد از ذخیره خودکار ساخته می‌شوند.' );
-	}
-
-	// ۳. ایندکس و پیش‌نمایش بزرگ تصویر
-	$robots   = function_exists( 'seobox_object_robots' ) ? seobox_object_robots( $id, $context ) : [ 'index' => true ];
-	$preview  = (string) get_metadata( $context, $id, '_seobox_adv_image', true );
-	$checks[] = match ( true ) {
-		'0' === (string) get_option( 'blog_public', '1' ) => $row( 'robots', 'error', 'دسترسی گوگل', 'در «تنظیمات ← خواندن» گزینه پنهان کردن سایت از موتورهای جستجو روشن است.' ),
-		empty( $robots['index'] ) => $row( 'robots', 'error', 'دسترسی گوگل', 'این صفحه noindex است (سئوباکس) و در Discover نمی‌آید.' ),
-		in_array( $preview, [ 'none', 'standard' ], true ) => $row( 'robots', 'error', 'دسترسی گوگل', 'در سئوباکس «پیش‌نمایش تصویر» روی ' . $preview . ' است؛ باید large باشد.' ),
-		default => $row( 'robots', 'ok', 'دسترسی گوگل', 'ایندکس و max-image-preview:large.' ),
-	};
-
-	// ۴. عنوان
-	$title    = '' !== $data['title'] ? $data['title'] : hodima_seo_discover_object_title( $id, $context );
-	$length   = mb_strlen( $title );
-	$checks[] = match ( true ) {
-		hodima_seo_discover_is_clickbait( $title ) => $row( 'title', 'warn', 'عنوان', 'عبارت اغراق‌آمیز یا طعمه کلیک دارد؛ گوگل در Discover آن را جریمه می‌کند.' ),
-		$length < 30 => $row( 'title', 'warn', 'عنوان', sprintf( '%s کاراکتر؛ کوتاه است. عنوانی که اصل مطلب را بگوید (۴۰ تا ۱۰۰ کاراکتر).', number_format_i18n( $length ) ) ),
-		$length > 110 => $row( 'title', 'warn', 'عنوان', sprintf( '%s کاراکتر؛ بیشتر از ۱۱۰ کوتاه می‌شود.', number_format_i18n( $length ) ) ),
-		default => $row( 'title', 'ok', 'عنوان', sprintf( '%s کاراکتر.', number_format_i18n( $length ) ) ),
-	};
-
-	// ۵. متن معرفی (گوگل و موتورهای پاسخ آن را به‌عنوان توضیح صفحه می‌خوانند)
-	if ( 'product' === $type ) {
-		$checks[] = '' !== trim( wp_strip_all_tags( $target instanceof WP_Post ? $target->post_excerpt : '' ) )
-			? $row( 'intro', 'ok', 'توضیح کوتاه', 'توضیح کوتاه محصول دارد.' )
-			: $row( 'intro', 'warn', 'توضیح کوتاه', 'توضیح کوتاه محصول خالی است؛ متن کارت و توضیح صفحه از آن ساخته می‌شود.', '#postexcerpt' );
-	} elseif ( function_exists( 'hodima_seo_page_intro_text' ) && function_exists( 'hodima_media_get_data' ) ) {
-		$anchor   = 'term' === $context ? '#hook_term_media_box' : '#hook_media_box';
-		$checks[] = '' !== hodima_seo_page_intro_text( $id, $context )
-			? $row( 'intro', 'ok', 'متن معرفی', 'دارد؛ در اسکیما و فایل‌های ماشین‌خوان توضیح صفحه است.' )
-			: $row( 'intro', 'warn', 'متن معرفی', 'متن معرفی ندارد (یا بخشش پنهان است)؛ یک پاراگراف که اصل صفحه را بگوید، هم در صفحه دیده می‌شود هم گوگل و موتورهای پاسخ آن را می‌خوانند.', $anchor );
-	}
-
-	// ۶. خلاصه (نوشته و برگه)
-	if ( 'post' === $context && 'product' !== $type ) {
-		$has_desc = '' !== trim( $target instanceof WP_Post ? $target->post_excerpt : '' ) || '' !== trim( (string) get_post_meta( $id, '_seobox_description', true ) );
-		$checks[] = $has_desc
-			? $row( 'desc', 'ok', 'خلاصه', 'چکیده یا توضیحات متا دارد.' )
-			: $row( 'desc', 'warn', 'خلاصه', 'چکیده و توضیحات متا خالی است؛ متن کارت از ابتدای مطلب برداشته می‌شود.' );
-	}
-
-	// ۷. نویسنده (اعتماد: E-E-A-T) — فقط نوشته و برگه
-	if ( $target instanceof WP_Post && 'product' !== $type ) {
-		$author   = hodima_seo_discover_author( (int) $target->post_author );
-		$bio      = trim( (string) get_the_author_meta( 'description', (int) $target->post_author ) );
-		$profile  = admin_url( 'user-edit.php?user_id=' . (int) $target->post_author );
-		$checks[] = match ( true ) {
-			'' === $bio => $row( 'author', 'warn', 'نویسنده', 'بیوگرافی نویسنده خالی است؛ معرفی نویسنده اعتماد گوگل را بالا می‌برد.', $profile ),
-			'' === $author['job_title'] && ! $author['same_as'] => $row( 'author', 'warn', 'نویسنده', 'بیوگرافی هست؛ «سمت و تخصص» یا «پروفایل‌های معتبر» نویسنده را هم کامل کنید.', $profile ),
-			default => $row( 'author', 'ok', 'نویسنده', 'بیوگرافی و معرفی تخصص نویسنده کامل است.' ),
-		};
-	}
-
-	return $checks;
-}
-
-/**
- * امتیاز آمادگی: [ تعداد درست, کل ].
- *
- * @param list<array{status: string}> $checks
- * @return array{0: int, 1: int}
- */
-function hodima_seo_discover_score( array $checks ): array {
-	return [ count( array_filter( $checks, static fn( array $c ): bool => 'ok' === $c['status'] ) ), count( $checks ) ];
-}
-
-/* =====================================================================
  * نویسنده (E-E-A-T)
  * ===================================================================== */
 
@@ -633,41 +644,78 @@ function hodima_seo_discover_author( int $user_id ): array {
 /** نام گزینه آمار Discover (autoload خاموش). */
 const HODIMA_SEO_DISCOVER_STATS_OPTION = 'hodima_discover_sc_stats';
 
-/** کلید یکسان یک آدرس برای مقایسه با آدرس‌های Search Console (مسیر بدون اسلش پایانی). */
+/** پارامترهای ردیابی که آدرس دیگری نمی‌سازند (Search Console گاهی با آن‌ها گزارش می‌دهد؛ srsltid = لینک‌های فروشگاهی گوگل). */
+const HODIMA_SEO_DISCOVER_TRACKING_PARAMS = '/^(utm_[a-z_]+|gclid|gbraid|wbraid|fbclid|srsltid|_gl|mc_[a-z]+)$/i';
+
+/**
+ * کلید یکسان یک آدرس برای مقایسه با آدرس‌های Search Console: مسیر decode‌شده
+ * بدون اسلش پایانی، و پارامترها بدون پارامترهای ردیابی (مرتب‌شده).
+ * باگ قبلی (تا SEO 2.1.1): «‎/x?utm_source=…» ردیف جدا از «‎/x» شمرده می‌شد.
+ */
 function hodima_seo_discover_url_key( string $url ): string {
+
 	$path  = (string) wp_parse_url( $url, PHP_URL_PATH );
-	$query = (string) wp_parse_url( $url, PHP_URL_QUERY );
-	return rawurldecode( untrailingslashit( '' !== $path ? $path : '/' ) ) . ( '' !== $query ? '?' . $query : '' );
+	$query = [];
+
+	wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $query );
+	$query = array_filter( $query, static fn( mixed $v, int|string $k ): bool => 1 !== preg_match( HODIMA_SEO_DISCOVER_TRACKING_PARAMS, (string) $k ), ARRAY_FILTER_USE_BOTH );
+	ksort( $query );
+
+	$path = rawurldecode( untrailingslashit( $path ) );
+
+	// صفحه اصلی «/» (قبلا رشته خالی بود و در جدول آمار بی‌نام دیده می‌شد)
+	return ( '' !== $path ? $path : '/' ) . ( $query ? '?' . http_build_query( $query ) : '' );
 }
 
 /**
  * آمار ذخیره‌شده Discover.
  *
- * @return array{property: string, fetched: int, start: string, end: string, totals: array{clicks: int, impressions: int}, rows: array<string, array{clicks: int, impressions: int}>, error: string}
+ *   totals/rows: ۲۸ روز آخر (هر مسیر ← کلیک/نمایش)
+ *   prev:        ۲۸ روز پیش از آن (برای مقایسه و «افت نمایش»)
+ *   daily:       روز به روز کل سایت (حداکثر ۹۰ روز؛ نمودار)
+ *
+ * @return array{property: string, fetched: int, start: string, end: string, totals: array{clicks: int, impressions: int}, rows: array<string, array{clicks: int, impressions: int}>, prev: array{start: string, end: string, totals: array{clicks: int, impressions: int}, rows: array<string, array{clicks: int, impressions: int}>}, daily: array<string, array{clicks: int, impressions: int}>, error: string}
  */
 function hodima_seo_discover_stats(): array {
 
 	$stored = get_option( HODIMA_SEO_DISCOVER_STATS_OPTION, [] );
 	$stored = is_array( $stored ) ? $stored : [];
+	$totals = static fn( mixed $t ): array => [
+		'clicks'      => (int) ( is_array( $t ) ? ( $t['clicks'] ?? 0 ) : 0 ),
+		'impressions' => (int) ( is_array( $t ) ? ( $t['impressions'] ?? 0 ) : 0 ),
+	];
+	$rows   = static function ( mixed $r ) use ( $totals ): array {
+		$out = [];
+		foreach ( is_array( $r ) ? $r : [] as $key => $row ) {
+			$out[ '' === (string) $key ? '/' : (string) $key ] = $totals( $row ); // صفحه اصلی تا SEO 2.1.1 کلید خالی داشت
+		}
+		return $out;
+	};
+	$prev   = is_array( $stored['prev'] ?? null ) ? $stored['prev'] : [];
 
 	return [
 		'property' => (string) ( $stored['property'] ?? '' ),
 		'fetched'  => (int) ( $stored['fetched'] ?? 0 ),
 		'start'    => (string) ( $stored['start'] ?? '' ),
 		'end'      => (string) ( $stored['end'] ?? '' ),
-		'totals'   => [
-			'clicks'      => (int) ( $stored['totals']['clicks'] ?? 0 ),
-			'impressions' => (int) ( $stored['totals']['impressions'] ?? 0 ),
+		'totals'   => $totals( $stored['totals'] ?? [] ),
+		'rows'     => $rows( $stored['rows'] ?? [] ),
+		'prev'     => [
+			'start'  => (string) ( $prev['start'] ?? '' ),
+			'end'    => (string) ( $prev['end'] ?? '' ),
+			'totals' => $totals( $prev['totals'] ?? [] ),
+			'rows'   => $rows( $prev['rows'] ?? [] ),
 		],
-		'rows'     => is_array( $stored['rows'] ?? null ) ? $stored['rows'] : [],
+		'daily'    => $rows( $stored['daily'] ?? [] ),
 		'error'    => (string) ( $stored['error'] ?? '' ),
 	];
 }
 
 /**
- * آمار Discover یک نوشته/محصول/دسته (۲۸ روز آخر Search Console)، یا null اگر آماری نیست.
+ * آمار Discover یک نوشته/محصول/دسته (۲۸ روز آخر Search Console و ۲۸ روز پیش از
+ * آن)، یا null اگر آماری نیست. prev_* = null وقتی دوره قبل گرفته نشده است.
  *
- * @return array{clicks: int, impressions: int}|null
+ * @return array{clicks: int, impressions: int, prev_clicks: int|null, prev_impressions: int|null}|null
  */
 function hodima_seo_discover_post_stats( int $object_id, string $context = 'post' ): ?array {
 
@@ -678,7 +726,31 @@ function hodima_seo_discover_post_stats( int $object_id, string $context = 'post
 		return null;
 	}
 
-	$row = $stats['rows'][ hodima_seo_discover_url_key( $url ) ] ?? null;
+	$key  = hodima_seo_discover_url_key( $url );
+	$row  = $stats['rows'][ $key ] ?? null;
+	$prev = '' !== $stats['prev']['start'] ? ( $stats['prev']['rows'][ $key ] ?? [ 'clicks' => 0, 'impressions' => 0 ] ) : null;
 
-	return [ 'clicks' => (int) ( $row['clicks'] ?? 0 ), 'impressions' => (int) ( $row['impressions'] ?? 0 ) ];
+	return [
+		'clicks'           => (int) ( $row['clicks'] ?? 0 ),
+		'impressions'      => (int) ( $row['impressions'] ?? 0 ),
+		'prev_clicks'      => null !== $prev ? $prev['clicks'] : null,
+		'prev_impressions' => null !== $prev ? $prev['impressions'] : null,
+	];
+}
+
+/**
+ * درصد تغییر (برای «▲ ۱۲٪»)، یا null وقتی دوره قبل صفر/نامعلوم است.
+ */
+function hodima_seo_discover_change( int $now, ?int $before ): ?float {
+	return ( null === $before || 0 === $before ) ? null : 100 * ( $now - $before ) / $before;
+}
+
+/** متن تغییر با جهت به‌صورت نوشته (نه فقط رنگ): «▲ ۱۲٪» / «▼ ۳۰٪» / «بدون تغییر». */
+function hodima_seo_discover_change_text( ?float $change ): string {
+	return match ( true ) {
+		null === $change      => '',
+		abs( $change ) < 0.5  => 'بدون تغییر',
+		$change > 0           => '▲ ' . number_format_i18n( $change, 0 ) . '٪',
+		default               => '▼ ' . number_format_i18n( abs( $change ), 0 ) . '٪',
+	};
 }

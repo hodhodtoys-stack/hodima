@@ -4,7 +4,9 @@
  * Path: core/discover/discover-stats.php
  *
  * گزارش «Discover» سرچ کنسول (searchAnalytics با type=discover): کلیک و
- * نمایش هر صفحه در ۲۸ روز آخر. روزی یک بار (WP-Cron) و با دکمه «به‌روزرسانی»
+ * نمایش هر صفحه در ۲۸ روز آخر و ۲۸ روز پیش از آن، و روند روزانه ۹۰ روز
+ * (از SEO 2.1.2؛ قبلا فقط ۲۸ روز آخر و هر روز آمار قبلی جایش را می‌گرفت).
+ * روزی یک بار (WP-Cron) و با دکمه «به‌روزرسانی»
  * گرفته می‌شود و در گزینه hodima_discover_sc_stats می‌ماند؛ هیچ بازدیدی از
  * سایت به گوگل درخواست نمی‌زند.
  *
@@ -128,9 +130,10 @@ function hodima_seo_discover_sc_token( bool $force = false ): string|WP_Error {
 /**
  * یک درخواست گزارش Discover برای یک property.
  *
+ * @param list<string> $dimensions page یا date
  * @return array{rows: list<array<string, mixed>>}|WP_Error
  */
-function hodima_seo_discover_sc_query( string $property, string $token, string $start, string $end ): array|WP_Error {
+function hodima_seo_discover_sc_query( string $property, string $token, string $start, string $end, array $dimensions = [ 'page' ] ): array|WP_Error {
 
 	$res = wp_remote_post(
 		'https://searchconsole.googleapis.com/webmasters/v3/sites/' . rawurlencode( $property ) . '/searchAnalytics/query',
@@ -141,7 +144,7 @@ function hodima_seo_discover_sc_query( string $property, string $token, string $
 				'startDate'  => $start,
 				'endDate'    => $end,
 				'type'       => 'discover',
-				'dimensions' => [ 'page' ],
+				'dimensions' => $dimensions,
 				'rowLimit'   => 5000,
 			] ),
 		]
@@ -163,7 +166,71 @@ function hodima_seo_discover_sc_query( string $property, string $token, string $
 }
 
 /**
- * دریافت آمار ۲۸ روز آخر (تا ۲ روز پیش؛ داده Discover با تاخیر می‌رسد) و ذخیره.
+ * ردیف‌های پاسخ ← [ کلید ← کلیک/نمایش ] و جمع. کلید صفحه با
+ * hodima_seo_discover_url_key (آدرس‌های هم‌مسیر و با پارامتر ردیابی یکی می‌شوند)،
+ * کلید تاریخ همان «Y-m-d».
+ *
+ * @param list<array<string, mixed>> $rows
+ * @return array{rows: array<string, array{clicks: int, impressions: int}>, totals: array{clicks: int, impressions: int}}
+ */
+function hodima_seo_discover_sc_rows( array $rows, bool $by_page = true ): array {
+
+	$out    = [];
+	$totals = [ 'clicks' => 0, 'impressions' => 0 ];
+
+	foreach ( $rows as $row ) {
+		$raw = (string) ( $row['keys'][0] ?? '' );
+		if ( '' === $raw ) {
+			continue;
+		}
+		$clicks      = (int) round( (float) ( $row['clicks'] ?? 0 ) );
+		$impressions = (int) round( (float) ( $row['impressions'] ?? 0 ) );
+		$key         = $by_page ? hodima_seo_discover_url_key( $raw ) : $raw;
+
+		$out[ $key ] = [
+			'clicks'      => ( $out[ $key ]['clicks'] ?? 0 ) + $clicks,
+			'impressions' => ( $out[ $key ]['impressions'] ?? 0 ) + $impressions,
+		];
+		$totals['clicks']      += $clicks;
+		$totals['impressions'] += $impressions;
+	}
+
+	if ( ! $by_page ) {
+		ksort( $out );
+	}
+
+	return [ 'rows' => $out, 'totals' => $totals ];
+}
+
+/** تعداد روزهای نمودار روزانه. */
+const HODIMA_SEO_DISCOVER_SC_DAILY_DAYS = 90;
+
+/**
+ * بازه‌ها به وقت اقیانوس آرام (Search Console روزها را به همین وقت می‌شمارد؛
+ * قبلا UTC بود و مرز روزها چند ساعت جابه‌جا می‌شد). پایان: ۲ روز پیش (داده
+ * Discover با تاخیر می‌رسد).
+ *
+ * @return array{start: string, end: string, prev_start: string, prev_end: string, daily_start: string}
+ */
+function hodima_seo_discover_sc_ranges(): array {
+
+	$end = new DateTimeImmutable( 'today -2 days', new DateTimeZone( 'America/Los_Angeles' ) );
+	$day = static fn( int $back ): string => $end->modify( "-{$back} days" )->format( 'Y-m-d' );
+
+	return [
+		'start'       => $day( 27 ),
+		'end'         => $end->format( 'Y-m-d' ),
+		'prev_start'  => $day( 55 ),
+		'prev_end'    => $day( 28 ),
+		'daily_start' => $day( HODIMA_SEO_DISCOVER_SC_DAILY_DAYS - 1 ),
+	];
+}
+
+/**
+ * دریافت آمار و ذخیره: ۲۸ روز آخر به تفکیک صفحه، ۲۸ روز پیش از آن (مقایسه)،
+ * و ۹۰ روز روزانه کل سایت (نمودار). سه درخواست برای یک property؛ اگر
+ * درخواست اصلی موفق باشد و یکی از دو درخواست دیگر نه، داده قبلی همان بخش
+ * می‌ماند.
  *
  * @return true|WP_Error
  */
@@ -176,56 +243,53 @@ function hodima_seo_discover_sc_refresh(): bool|WP_Error {
 		return $token;
 	}
 
-	$end   = gmdate( 'Y-m-d', time() - 2 * DAY_IN_SECONDS );
-	$start = gmdate( 'Y-m-d', time() - 29 * DAY_IN_SECONDS );
+	$range = hodima_seo_discover_sc_ranges();
 	$last  = null;
+
+	// یک درخواست، با یک بار توکن تازه اگر منقضی بود (۴۰۱)
+	$query = static function ( string $property, string $start, string $end, array $dims ) use ( &$token ): array|WP_Error {
+		$result = hodima_seo_discover_sc_query( $property, (string) $token, $start, $end, $dims );
+		if ( is_wp_error( $result ) && 401 === (int) ( $result->get_error_data()['status'] ?? 0 ) ) {
+			$fresh = hodima_seo_discover_sc_token( true );
+			if ( is_wp_error( $fresh ) ) {
+				return $fresh;
+			}
+			$token  = $fresh;
+			$result = hodima_seo_discover_sc_query( $property, $token, $start, $end, $dims );
+		}
+		return $result;
+	};
 
 	foreach ( hodima_seo_discover_sc_candidates() as $property ) {
 
-		$result = hodima_seo_discover_sc_query( $property, $token, $start, $end );
-
-		// توکن منقضی: یک بار توکن تازه
-		if ( is_wp_error( $result ) && 401 === (int) ( $result->get_error_data()['status'] ?? 0 ) ) {
-			$token = hodima_seo_discover_sc_token( true );
-			if ( is_wp_error( $token ) ) {
-				hodima_seo_discover_sc_store_error( $token->get_error_message() );
-				return $token;
-			}
-			$result = hodima_seo_discover_sc_query( $property, $token, $start, $end );
-		}
+		$result = $query( $property, $range['start'], $range['end'], [ 'page' ] );
 
 		if ( is_wp_error( $result ) ) {
+			if ( str_starts_with( (string) $result->get_error_code(), 'hodima_discover_' ) && ! str_starts_with( (string) $result->get_error_code(), 'hodima_discover_sc_' ) ) {
+				hodima_seo_discover_sc_store_error( $result->get_error_message() ); // خطای توکن
+				return $result;
+			}
 			$last = $result;
 			continue;
 		}
 
-		$rows   = [];
-		$totals = [ 'clicks' => 0, 'impressions' => 0 ];
-
-		foreach ( $result['rows'] as $row ) {
-			$url = (string) ( $row['keys'][0] ?? '' );
-			if ( '' === $url ) {
-				continue;
-			}
-			$clicks      = (int) round( (float) ( $row['clicks'] ?? 0 ) );
-			$impressions = (int) round( (float) ( $row['impressions'] ?? 0 ) );
-			$key         = hodima_seo_discover_url_key( $url );
-
-			$rows[ $key ] = [
-				'clicks'      => ( $rows[ $key ]['clicks'] ?? 0 ) + $clicks,
-				'impressions' => ( $rows[ $key ]['impressions'] ?? 0 ) + $impressions,
-			];
-			$totals['clicks']      += $clicks;
-			$totals['impressions'] += $impressions;
-		}
+		$old     = get_option( HODIMA_SEO_DISCOVER_STATS_OPTION, [] );
+		$old     = is_array( $old ) && ( $old['property'] ?? '' ) === $property ? $old : [];
+		$current = hodima_seo_discover_sc_rows( $result['rows'] );
+		$prev    = $query( $property, $range['prev_start'], $range['prev_end'], [ 'page' ] );
+		$daily   = $query( $property, $range['daily_start'], $range['end'], [ 'date' ] );
 
 		update_option( HODIMA_SEO_DISCOVER_STATS_OPTION, [
 			'property' => $property,
 			'fetched'  => time(),
-			'start'    => $start,
-			'end'      => $end,
-			'totals'   => $totals,
-			'rows'     => $rows,
+			'start'    => $range['start'],
+			'end'      => $range['end'],
+			'totals'   => $current['totals'],
+			'rows'     => $current['rows'],
+			'prev'     => is_wp_error( $prev )
+				? ( $old['prev'] ?? [] )
+				: [ 'start' => $range['prev_start'], 'end' => $range['prev_end'] ] + hodima_seo_discover_sc_rows( $prev['rows'] ),
+			'daily'    => is_wp_error( $daily ) ? ( $old['daily'] ?? [] ) : hodima_seo_discover_sc_rows( $daily['rows'], false )['rows'],
 			'error'    => '',
 		], false );
 
@@ -261,7 +325,11 @@ add_action( HODIMA_SEO_DISCOVER_SC_CRON, static function (): void {
 } );
 
 add_action( 'admin_init', static function (): void {
-	if ( '' !== hodima_seo_discover_sc_key_json() && ! wp_next_scheduled( HODIMA_SEO_DISCOVER_SC_CRON ) ) {
+	$has_key   = '' !== hodima_seo_discover_sc_key_json();
+	$scheduled = (bool) wp_next_scheduled( HODIMA_SEO_DISCOVER_SC_CRON );
+	if ( $has_key && ! $scheduled ) {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', HODIMA_SEO_DISCOVER_SC_CRON );
+	} elseif ( ! $has_key && $scheduled ) {
+		wp_clear_scheduled_hook( HODIMA_SEO_DISCOVER_SC_CRON ); // کلید برداشته شد: رویداد بی‌کار نماند
 	}
 } );

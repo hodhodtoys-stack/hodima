@@ -121,6 +121,47 @@
 		line-height: 1.8;
 	}
 
+	/* ── پیشنهاد عنوان (دکمه‌های کوچک زیر فیلد عنوان) ── */
+	& .hodima-dc__ideas {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+	}
+
+	& .hodima-dc__ideas-label {
+		color: var(--dc-muted);
+		font-size: 12px;
+	}
+
+	& .hodima-dc__idea {
+		padding: 3px 10px;
+		border: 1px dashed var(--dc-secondary);
+		border-radius: 999px;
+		background: var(--dc-softer);
+		color: var(--dc-primary);
+		font: inherit;
+		font-size: 12px;
+		text-align: start;
+		cursor: pointer;
+
+		&:hover,
+		&:focus-visible {
+			border-style: solid;
+			background: var(--dc-soft);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--dc-secondary);
+			outline-offset: 2px;
+		}
+	}
+
+	& .hodima-dc__change {
+		color: var(--dc-muted);
+		font-weight: 400;
+	}
+
 	& .hodima-dc__status {
 		margin: 0;
 		font-size: 12px;

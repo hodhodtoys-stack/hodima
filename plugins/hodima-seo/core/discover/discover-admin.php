@@ -8,6 +8,9 @@
  *      پیش‌نمایش کارت Discover در گوشی (با هر تغییر زنده عوض می‌شود).
  *   ۲. زیر فیلدها: «آمادگی برای Discover» با امتیاز و نوار پیشرفت؛ مشکل‌ها
  *      اول و پررنگ، موارد درست کم‌رنگ؛ هر مشکل لینک رفعش را دارد.
+ * از SEO 2.1.2: پیشنهاد عنوان (از داده واقعی صفحه)، آمار با مقایسه ۲۸ روز
+ * قبل، و به‌روز شدن زنده فهرست با تغییر تصویر شاخص، عنوان و چکیده در
+ * ویرایشگر بلوکی و کلاسیک (discover-admin.js).
  * نام فیلدها hodima_discover[…]، nonce جدا؛ کلیدهای متا همان قبلی.
  */
 
@@ -43,7 +46,9 @@ add_action( 'admin_enqueue_scripts', static function (): void {
 
 	wp_add_inline_script( 'hodima-discover-admin', 'window.hodimaDiscover = ' . wp_json_encode( [
 		'minWidth'  => HODIMA_SEO_DISCOVER_MIN_WIDTH,
-		'clickbait' => HODIMA_SEO_DISCOVER_CLICKBAIT,
+		'titleMin'  => HODIMA_SEO_DISCOVER_TITLE_MIN,
+		'titleMax'  => HODIMA_SEO_DISCOVER_TITLE_MAX,
+		'clickbait' => hodima_seo_discover_clickbait_phrases(),
 	], JSON_UNESCAPED_UNICODE ) . ';', 'before' );
 } );
 
@@ -118,13 +123,16 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 	$host      = (string) wp_parse_url( home_url(), PHP_URL_HOST );
 	$icon      = (string) get_site_icon_url( 64 );
 	$length    = mb_strlen( '' !== $data['title'] ? $data['title'] : $fallback );
+	$ideas     = hodima_seo_discover_title_ideas( $target );
+	$meta_desc = 'post' === $context && '' !== trim( (string) get_post_meta( $id, '_seobox_description', true ) );
+	$change    = null !== $stats ? hodima_seo_discover_change( $stats['impressions'], $stats['prev_impressions'] ) : null;
 	?>
-	<div class="hodima-dc" data-hodima-dc>
+	<div class="hodima-dc" data-hodima-dc data-context="<?php echo esc_attr( $context ); ?>" data-has-meta-desc="<?php echo $meta_desc ? '1' : '0'; ?>">
 		<?php wp_nonce_field( 'hodima_discover_save_' . $context . '_' . $id, 'hodima_discover_nonce' ); ?>
 		<input type="hidden" name="hodima_discover[present]" value="1">
 
 		<?php if ( null !== $stats ) : ?>
-			<p class="hodima-dc__stats"><span class="dashicons dashicons-chart-bar" aria-hidden="true"></span> در Discover (۲۸ روز، Search Console): <strong><?php echo esc_html( number_format_i18n( $stats['clicks'] ) ); ?></strong> کلیک از <strong><?php echo esc_html( number_format_i18n( $stats['impressions'] ) ); ?></strong> نمایش</p>
+			<p class="hodima-dc__stats"><span class="dashicons dashicons-chart-bar" aria-hidden="true"></span> در Discover (۲۸ روز، Search Console): <strong><?php echo esc_html( number_format_i18n( $stats['clicks'] ) ); ?></strong> کلیک از <strong><?php echo esc_html( number_format_i18n( $stats['impressions'] ) ); ?></strong> نمایش<?php if ( null !== $change ) : ?> <span class="hodima-dc__change"><?php echo esc_html( '(نمایش ' . hodima_seo_discover_change_text( $change ) . ' نسبت به ۲۸ روز قبل)' ); ?></span><?php elseif ( 0 === $stats['prev_impressions'] && $stats['impressions'] > 0 ) : ?> <span class="hodima-dc__change">(۲۸ روز قبل نمایش نداشت)</span><?php endif; ?></p>
 		<?php endif; ?>
 
 		<div class="hodima-dc__layout" data-hodima-dc-default-img="<?php echo esc_url( $default ); ?>">
@@ -133,10 +141,18 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 				<div class="hodima-dc__field">
 					<div class="hodima-dc__label-row">
 						<label class="hodima-dc__label" for="hodima-dc-title">عنوان Discover</label>
-						<span class="hodima-dc__counter" data-hodima-dc-counter aria-live="polite"><?php echo esc_html( number_format_i18n( $length ) ); ?> / ۱۱۰</span>
+						<span class="hodima-dc__counter" data-hodima-dc-counter aria-live="polite"><?php echo esc_html( number_format_i18n( $length ) . ' / ' . number_format_i18n( HODIMA_SEO_DISCOVER_TITLE_MAX ) ); ?></span>
 					</div>
 					<input type="text" id="hodima-dc-title" name="hodima_discover[title]" value="<?php echo esc_attr( $data['title'] ); ?>" maxlength="200" placeholder="<?php echo esc_attr( $fallback ); ?>" data-hodima-dc-title data-hodima-dc-fallback="<?php echo esc_attr( $fallback ); ?>">
-					<p class="hodima-dc__help">فقط کارت Discover و اشتراک‌گذاری (og:title)؛ عنوان صفحه و h1 عوض نمی‌شوند. خالی = همان عنوان. جذاب ولی صادق؛ «طعمه کلیک» جریمه دارد.</p>
+					<?php if ( $ideas ) : ?>
+						<div class="hodima-dc__ideas" role="group" aria-label="پیشنهاد عنوان">
+							<span class="hodima-dc__ideas-label">پیشنهاد:</span>
+							<?php foreach ( $ideas as $idea ) : ?>
+								<button type="button" class="hodima-dc__idea" data-hodima-dc-idea="<?php echo esc_attr( $idea ); ?>"><?php echo esc_html( $idea ); ?></button>
+							<?php endforeach; ?>
+						</div>
+					<?php endif; ?>
+					<p class="hodima-dc__help">فقط کارت Discover و اشتراک‌گذاری (og:title)؛ عنوان صفحه و h1 عوض نمی‌شوند. خالی = همان عنوان. جذاب ولی صادق؛ «طعمه کلیک» جریمه دارد. پیشنهادها از اطلاعات خود صفحه ساخته می‌شوند؛ با کلیک در فیلد می‌نشینند.</p>
 				</div>
 
 				<div class="hodima-dc__field" data-hodima-dc-image>

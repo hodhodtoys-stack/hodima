@@ -40,15 +40,21 @@ add_action( 'save_post', static function ( int $post_id ): void {
 	}
 }, 30 );
 
-// دسته محصول: بعد از ذخیره دسته (اولویت ۳۰: بعد از ذخیره کادر Discover)
-add_action( 'edited_term', static function ( int $term_id ): void {
-	if ( hodima_seo_discover_for_term( $term_id ) ) {
+/*
+ * دسته محصول: بعد از ذخیره دسته. saved_term بعد از edited_{taxonomy} اجرا
+ * می‌شود که کادر Discover در آن ذخیره می‌شود. باگ قبلی (تا SEO 2.1.1):
+ * edited_term بود که وردپرس پیش از edited_{taxonomy} اجرا می‌کند؛ برش‌ها از
+ * تصویر Discover قبلی ساخته می‌شد و تصویر تازه تا ذخیره دوم برش نداشت.
+ * (ساخت دسته تازه هم: تصویر دسته‌ای که ووکامرس هنگام ساخت ذخیره کرده.)
+ */
+add_action( 'saved_term', static function ( int $term_id, int $tt_id, string $taxonomy ): void {
+	if ( in_array( $taxonomy, hodima_seo_discover_taxonomies(), true ) && hodima_seo_discover_for_term( $term_id ) ) {
 		$image = hodima_seo_discover_image( $term_id, 'term' );
 		if ( null !== $image ) {
 			hodima_seo_discover_make_crops( $image['id'] );
 		}
 	}
-}, 30 );
+}, 30, 3 );
 
 // … و وقتی تصویر شاخص جدا (ویرایشگر بلوکی با REST) عوض می‌شود.
 foreach ( [ 'added_post_meta', 'updated_post_meta' ] as $hodima_seo_discover_hook ) {
@@ -107,7 +113,7 @@ add_filter( 'hodima_seobox_og_image', static function ( array $image, int $post_
 		'url'    => $pick['url'],
 		'width'  => $pick['width'],
 		'height' => $pick['height'],
-		'type'   => $source['mime'],
+		'type'   => $pick['mime'], // نوع خود فایل انتخاب‌شده (برش WebP با اصل JPEG فرق دارد)
 		'alt'    => $source['alt'],
 	];
 }, 10, 2 );
@@ -143,7 +149,7 @@ add_filter( 'hodima_seobox_term_og_image', static function ( array $image, int $
 		'url'    => $pick['url'],
 		'width'  => $pick['width'],
 		'height' => $pick['height'],
-		'type'   => $source['mime'],
+		'type'   => $pick['mime'],
 		'alt'    => $source['alt'],
 	];
 }, 10, 2 );
@@ -208,39 +214,76 @@ add_filter( 'hodima_seo_schema_person_node', static function ( array $node, int 
 /**
  * لینک فید در head. قالب automatic-feed-links را فعال نکرده و
  * feed_links_extra را هم عمدا حذف کرده (فید دیدگاه‌ها لازم نیست)؛ پس گوگل
- * فیدی برای دکمه «دنبال کردن» پیدا نمی‌کرد. فقط فید نوشته‌ها اعلام می‌شود.
+ * فیدی برای دکمه «دنبال کردن» پیدا نمی‌کرد. فید نوشته‌ها در صفحه اصلی،
+ * وبلاگ، مقاله‌ها و دسته‌ها؛ از SEO 2.1.2 فید «محصولات تازه» (و فید هر دسته
+ * محصول) هم در فروشگاه، دسته محصول و صفحه محصول تا کاربر بتواند فروشگاه
+ * را هم در Discover دنبال کند.
  */
 add_action( 'wp_head', static function (): void {
 
-	if ( current_theme_supports( 'automatic-feed-links' ) || ! ( is_front_page() || is_home() || is_singular( 'post' ) || is_category() ) ) {
-		return;
+	$link = static function ( string $title, string $href ): void {
+		if ( '' !== $href ) {
+			printf( '<link rel="alternate" type="application/rss+xml" title="%s" href="%s">' . "\n", esc_attr( $title ), esc_url( $href ) );
+		}
+	};
+	$site = (string) get_bloginfo( 'name' );
+
+	if ( ! current_theme_supports( 'automatic-feed-links' ) && ( is_front_page() || is_home() || is_singular( 'post' ) || is_category() ) ) {
+		$link( $site . ' — نوشته‌ها', get_feed_link() );
+		if ( is_category() ) {
+			$link( single_cat_title( '', false ) ?: '', get_category_feed_link( (int) get_queried_object_id() ) );
+		}
 	}
 
-	printf(
-		'<link rel="alternate" type="application/rss+xml" title="%s" href="%s">' . "\n",
-		esc_attr( get_bloginfo( 'name' ) . ' — نوشته‌ها' ),
-		esc_url( get_feed_link() )
-	);
-
-	if ( is_category() ) {
-		printf(
-			'<link rel="alternate" type="application/rss+xml" title="%s" href="%s">' . "\n",
-			esc_attr( single_cat_title( '', false ) ),
-			esc_url( get_category_feed_link( (int) get_queried_object_id() ) )
-		);
+	// فروشگاه: نوع نوشته‌ای با بایگانی که Discover دارد (محصول)؛ نه نتیجه جستجو (noindex)
+	foreach ( is_search() ? [] : hodima_seo_discover_feed_post_types() as $post_type ) {
+		$term = get_queried_object();
+		if ( is_post_type_archive( $post_type ) || is_singular( $post_type ) || ( $term instanceof WP_Term && in_array( $term->taxonomy, get_object_taxonomies( $post_type ), true ) && in_array( $term->taxonomy, hodima_seo_discover_taxonomies(), true ) ) ) {
+			$link( $site . ' — ' . ( get_post_type_object( $post_type )?->labels->name ?? $post_type ) . ' تازه', (string) get_post_type_archive_feed_link( $post_type ) );
+			if ( $term instanceof WP_Term && is_tax() ) {
+				$link( $term->name, get_term_feed_link( $term->term_id, $term->taxonomy ) );
+			}
+		}
 	}
 }, 3 );
+
+/**
+ * نوع‌های نوشته غیر از «post» که فید بایگانی دارند و Discover برایشان روشن
+ * است (پیش‌فرض: محصول، اگر ووکامرس صفحه فروشگاه دارد).
+ *
+ * @return list<string>
+ */
+function hodima_seo_discover_feed_post_types(): array {
+	return array_values( array_filter(
+		hodima_seo_discover_post_types(),
+		static fn( string $type ): bool => ! in_array( $type, [ 'post', 'page' ], true ) && post_type_exists( $type ) && (bool) get_post_type_object( $type )?->has_archive
+	) );
+}
 
 /*
  * «بهینه‌سازی بودجه خزش» (Google Indexing، router-pruning.php) همه فیدهای
  * پیش‌فرض را به صفحه اصلی ۳۰۱ می‌کرد؛ یعنی گوگل هیچ فیدی برای «دنبال
- * کردن» نداشت. فقط فید اصلی نوشته‌ها و فید دسته‌ها باز می‌ماند؛ فید
- * دیدگاه‌ها و فید تک‌نوشته (بی‌مصرف برای خزش) مثل قبل ریدایرکت می‌شوند.
+ * کردن» نداشت. فید اصلی نوشته‌ها، فید دسته‌ها، فید محصولات و فید دسته
+ * محصول باز می‌مانند؛ فید دیدگاه‌ها، تک‌نوشته و بقیه (بی‌مصرف برای خزش)
+ * مثل قبل ریدایرکت می‌شوند.
  */
 add_filter( 'hodima_gi_redirect_core_feeds', static function ( $redirect ): bool {
-	// فید اصلی (/feed/): وردپرس در فید is_home را false می‌گذارد؛ پس «نه آرشیو، نه جستجو»
-	$posts_feed = is_feed() && ! is_comment_feed() && ! is_singular() && ! is_search() && ( ! is_archive() || is_category() );
-	return (bool) $redirect && ! $posts_feed;
+
+	if ( ! is_feed() || is_comment_feed() || is_singular() || is_search() ) {
+		return (bool) $redirect;
+	}
+
+	// فید اصلی (/feed/): وردپرس در فید is_home را false می‌گذارد؛ پس «نه آرشیو» یا دسته
+	$open = ! is_archive() || is_category();
+
+	foreach ( hodima_seo_discover_feed_post_types() as $post_type ) {
+		$open = $open || is_post_type_archive( $post_type );
+	}
+
+	$taxonomies = hodima_seo_discover_taxonomies();
+	$open       = $open || ( $taxonomies && is_tax( $taxonomies ) );
+
+	return (bool) $redirect && ! $open;
 } );
 
 add_action( 'rss2_ns', static function (): void {
@@ -267,7 +310,7 @@ add_action( 'rss2_item', static function (): void {
 	printf(
 		"\t\t<media:content url=\"%s\" medium=\"image\" type=\"%s\" width=\"%d\" height=\"%d\" />\n",
 		esc_url( $wide['url'] ),
-		esc_attr( $source['mime'] ),
+		esc_attr( $wide['mime'] ),
 		absint( $wide['width'] ),
 		absint( $wide['height'] )
 	);

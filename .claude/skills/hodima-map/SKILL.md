@@ -59,6 +59,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 | Core | `function_exists( 'hodima_settings' )` = «قالب هدیما فعال است» ← لینک «تنظیمات قالب هدیما» در پنل و فوتر | `includes/admin-hub.php`، `admin-ui.php` |
 | Core و قالب | فیلتر مشترک `hodima_litespeed_active` (هر دو اجرا می‌کنند؛ نام تابع Core عمدا `hodima_core_litespeed_active` است تا با قالب قدیمی تداخل نکند) | `includes/litespeed.php`، `inc/performance/00-litespeed.php` |
 | SEO | `hodima_setting( 'phone' / 'phone_2' / 'logo_id' / product_offer_price / product_torob_price )` | AEO (`class-hodima-aeo-generator.php`)، `core/seobox/admin-ui.php`، `inc/product-price.php` |
+| SEO (Discover) | `hodima_setting( 'logo_id' / 'blog_meta_date' / 'blog_meta_updated' / 'blog_meta_author' )` و `hodima_settings_url( [ 'tab' => 'blog' ] )` — فهرست آمادگی (لوگو، نمایش تاریخ/نویسنده زیر عنوان مقاله)؛ با تغییر گزینه `hodima_theme_settings` کش ردیف‌ها کهنه می‌شود (فقط نام گزینه، بدون get_option) | `core/discover/discover-checks.php`، `core/discover/discover-cache.php` |
 | SEO | ثابت `hodima_VERSION` (حروف کوچک؛ نامش عوض نشود) | `google-indexing-api/modules/etag-handler.php` |
 | SEO | `hodima_litespeed_active()` | `class-hodima-bot-shield.php`، `google-indexing-api/core/helper.php` |
 | Media | (فقط نام هم‌خانواده `hodima_table_exists` در قالب؛ hodima-table عمدا پیشوند دیگری دارد) | `inc/hodima-table/hodima-table.php` |

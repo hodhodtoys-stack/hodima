@@ -157,5 +157,145 @@ if ( function_exists( 'hodima_seo_discover_entity_items' ) ) {
 	}
 }
 
+if ( function_exists( 'hodima_seo_discover_clickbait_match' ) ) {
+	echo "=== Google Discover: طعمه کلیک (کلمه کامل، SEO 2.1.2)\n";
+	$bait = static fn( string $t ): bool => hodima_seo_discover_is_clickbait( $t );
+	hodima_t( '«موی افشان» طعمه نیست (قبلا: افشا)', $bait( '۱۰ مدل موی افشان برای عروسی' ), false );
+	hodima_t( '«شیراز» طعمه نیست (قبلا: راز)', $bait( 'ارسال عمده به شیراز و اصفهان' ), false );
+	hodima_t( '«فوریه» طعمه نیست (قبلا: فوری)', $bait( 'حراج فوریه اکسسوری مو' ), false );
+	hodima_t( '«شانه جادویی» نام محصول است', $bait( 'شانه جادویی گره‌باز کن' ), false );
+	hodima_t( '«افشای» طعمه است', $bait( 'افشای قیمت واقعی کلیپس' ), true );
+	hodima_t( '«رازهای» طعمه است', $bait( 'رازهای موی سالم' ), true );
+	hodima_t( '«باورتان نمی‌شود» (ادامه آزاد)', $bait( "باورتان نمی\u{200C}شود چقدر ارزان است" ), true );
+	hodima_t( '«حتماً» با تنوین = «حتما»', $bait( 'این مدل را حتماً ببینید' ), true );
+	hodima_t( '«ي» عربی یکسان می‌شود', $bait( 'تخفیف فوري کلیپس' ), true );
+	hodima_t( 'نشانه‌گذاری «!!»', $bait( 'کلیپس جدید!!' ), true );
+	hodima_t( 'نام عبارت پیداشده', hodima_seo_discover_clickbait_match( 'رازهای موی سالم' ), 'رازهای' );
+	hodima_t( 'فیلتر فهرست', ( static function (): bool {
+		add_filter( 'hodima_seo_discover_clickbait_phrases', $f = static fn(): array => [ 'نمونه' ] );
+		$out = hodima_seo_discover_clickbait_phrases();
+		remove_filter( 'hodima_seo_discover_clickbait_phrases', $f );
+		return [ 'نمونه' ] === $out;
+	} )(), true );
+
+	echo "=== Google Discover: آمار و فرصت‌ها\n";
+	// فرصت‌ها و نمودار فقط در پیشخوان لود می‌شوند
+	if ( ! function_exists( 'hodima_seo_discover_opportunities' ) ) {
+		require_once WP_PLUGIN_DIR . '/hodima-seo/core/discover/discover-insights.php';
+	}
+	hodima_t( 'کلید آدرس بدون utm و srsltid', hodima_seo_discover_url_key( 'https://hodima.test/x/?utm_source=a&srsltid=b&p=2' ), '/x?p=2' );
+	hodima_t( 'تغییر ۱۵۰ از ۱۰۰ = ۵۰٪', hodima_seo_discover_change( 150, 100 ), 50.0 );
+	hodima_t( 'تغییر از صفر = نامعلوم', hodima_seo_discover_change( 5, 0 ), null );
+	hodima_t( 'سقف محور ۸۷ ← ۱۰۰', hodima_seo_discover_nice_max( 87 ), 100 );
+	hodima_t( 'سقف محور ۱۲۳۴ ← ۲۰۰۰', hodima_seo_discover_nice_max( 1234 ), 2000 );
+	hodima_t( 'روزهای بی‌ردیف صفر', array_keys( hodima_seo_discover_daily_filled( [ '2026-01-03' => [ 'clicks' => 1, 'impressions' => 9 ], '2026-01-01' => [ 'clicks' => 0, 'impressions' => 4 ] ] ) ), [ '2026-01-01', '2026-01-02', '2026-01-03' ] );
+	$opp_row = static fn( string $key, string $type = 'page', int $ts = 0, int $warn = 0 ): array => [ 'url_key' => $key, 'type' => $type, 'ts' => $ts, 'error' => 0, 'warn' => $warn, 'issues' => [] ];
+	$opp     = hodima_seo_discover_opportunities(
+		[ $opp_row( '/a' ), $opp_row( '/b', 'page', 0, 1 ), $opp_row( '/c' ), $opp_row( '/new', 'post', time() - 5 * DAY_IN_SECONDS, 1 ) ],
+		[
+			'fetched' => 1,
+			'totals'  => [ 'clicks' => 100, 'impressions' => 2000 ], // میانگین ۵٪
+			'rows'    => [ '/a' => [ 'clicks' => 2, 'impressions' => 1000 ], '/b' => [ 'clicks' => 60, 'impressions' => 600 ], '/c' => [ 'clicks' => 10, 'impressions' => 100 ] ],
+			'prev'    => [ 'start' => '2026-01-01', 'rows' => [ '/c' => [ 'clicks' => 30, 'impressions' => 900 ] ] ],
+		]
+	);
+	hodima_t( 'کم‌کلیک: فقط /a', array_column( $opp['low_ctr'], 'url_key' ), [ '/a' ] );
+	hodima_t( 'کلیک از دست رفته /a ≈ ۴۸', $opp['low_ctr'][0]['lost'] ?? null, 48 );
+	hodima_t( 'افت نمایش: /c (۹۰۰ ← ۱۰۰)', array_column( $opp['dropping'], 'url_key' ), [ '/c' ] );
+	hodima_t( 'دیده می‌شود ولی آماده نیست: /b', array_column( $opp['not_ready'], 'url_key' ), [ '/b' ] );
+	hodima_t( 'مقاله تازه بدون نمایش: /new', array_column( $opp['new_unseen'], 'url_key' ), [ '/new' ] );
+
+	echo "=== Google Discover: فهرست بررسی، کش، متا\n";
+	hodima_t( 'متای عنوان Discover در REST ثبت شده', registered_meta_key_exists( 'post', '_hook_discover_title', 'post' ), true );
+	hodima_t( 'متای تصویر Discover عدد است', get_registered_meta_keys( 'post', 'post' )['_hook_discover_image_id']['type'] ?? '', 'integer' );
+	hodima_t( 'نسخه‌ها برای نوشته روشن', get_registered_meta_keys( 'post', 'post' )['_hook_discover_title']['revisions_enabled'] ?? null, true );
+
+	// تصویر واقعی ۱۶۰۰×۱۰۰۰ در کتابخانه (برش، متن جایگزین، تصویر تکراری)
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+	$make_image = static function ( string $name ): int {
+		$dir  = wp_upload_dir();
+		$file = $dir['path'] . '/' . $name;
+		$gd   = imagecreatetruecolor( 1600, 1000 );
+		imagefill( $gd, 0, 0, (int) imagecolorallocate( $gd, 37, 49, 106 ) );
+		imagejpeg( $gd, $file );
+		$id = (int) wp_insert_attachment( [ 'post_mime_type' => 'image/jpeg', 'post_title' => $name, 'post_status' => 'inherit' ], $file );
+		wp_update_attachment_metadata( $id, wp_generate_attachment_metadata( $id, $file ) );
+		return $id;
+	};
+	$img_a = $make_image( 'discover-test-a.jpg' );
+	$img_b = $make_image( 'discover-test-b.jpg' );
+
+	hodima_t( 'سه برش تازه ساخته شد', hodima_seo_discover_make_crops( $img_a ), 3 );
+	hodima_t( 'بار دوم برش تازه‌ای لازم نیست', hodima_seo_discover_make_crops( $img_a ), 0 );
+
+	$long = str_repeat( 'کلیپس فلزی برای موی بلند و کوتاه مناسب است. ', 40 );
+	$p1   = wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => 'راهنمای انتخاب کلیپس فلزی برای موی بلند', 'post_content' => $long ] );
+	$p2   = wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => 'راهنمای انتخاب کلیپس فلزی برای موی بلند', 'post_content' => 'کوتاه' ] );
+	set_post_thumbnail( $p1, $img_a );
+	set_post_thumbnail( $p2, $img_a );
+
+	$checks = static fn( int $id ): array => array_column( hodima_seo_discover_checks( get_post( $id ) ), 'status', 'key' );
+	$c1     = $checks( $p1 );
+	hodima_t( 'تصویر ۱۶۰۰ پیکسلی: درست', $c1['image'] ?? '', 'ok' );
+	hodima_t( 'بدون متن جایگزین: هشدار', $c1['alt'] ?? '', 'warn' );
+	hodima_t( 'تصویر مشترک با نوشته دیگر: هشدار', $c1['unique_image'] ?? '', 'warn' );
+	hodima_t( 'عنوان مشترک با نوشته دیگر: هشدار', $c1['unique_title'] ?? '', 'warn' );
+	hodima_t( 'مطلب بلند: درست', $c1['length'] ?? '', 'ok' );
+	hodima_t( 'مطلب کوتاه: هشدار', $checks( $p2 )['length'] ?? '', 'warn' );
+	hodima_t( 'تازه منتشرشده: درست', $c1['fresh'] ?? '', 'ok' );
+
+	update_post_meta( $img_a, '_wp_attachment_image_alt', 'کلیپس فلزی سرمه‌ای' );
+	update_post_meta( $p2, '_hook_discover_title', 'کلیپس فلزی سرمه‌ای با فنر محکم برای موی ضخیم' );
+	update_post_meta( $p2, '_hook_discover_image_id', $img_b );
+	// نمایه همین درخواست کهنه است؛ در درخواست واقعی بعدی تازه ساخته می‌شود
+	$c1 = array_column( ( static function () use ( $p1 ): array {
+		return hodima_seo_discover_checks( get_post( $p1 ) );
+	} )(), 'status', 'key' );
+	hodima_t( 'با متن جایگزین: درست', $c1['alt'] ?? '', 'ok' );
+
+	// کش ردیف: ساخته، با تغییر متا پاک، با شماره نسل کهنه
+	hodima_seo_discover_forget( 'post', $p1 );
+	hodima_t( 'ردیف ساخته و ذخیره شد', is_array( hodima_seo_discover_row( get_post( $p1 ) ) ) && metadata_exists( 'post', $p1, '_hodima_discover_row' ), true );
+	update_post_meta( $p1, '_seobox_description', 'توضیح تازه' );
+	hodima_t( 'تغییر متا ← ردیف پاک شد', metadata_exists( 'post', $p1, '_hodima_discover_row' ), false );
+	hodima_seo_discover_row( get_post( $p1 ) );
+	update_post_meta( $img_a, '_wp_attachment_image_alt', 'متن دیگر' );
+	hodima_t( 'تغییر متن جایگزین تصویر ← ردیف صفحه‌اش پاک شد', metadata_exists( 'post', $p1, '_hodima_discover_row' ), false );
+	hodima_seo_discover_row( get_post( $p1 ) );
+	hodima_seo_discover_rows_reset();
+	hodima_t( 'شماره نسل تازه ← ردیف کهنه', hodima_seo_discover_row( get_post( $p1 ), false ), null );
+
+	// پیشنهاد عنوان: از چکیده؛ بدون طعمه کلیک و بدون عنوان فعلی
+	wp_update_post( [ 'ID' => $p1, 'post_excerpt' => 'کلیپس فلزی سبک است و موی بلند را بدون فشار نگه می‌دارد. جمله دوم.' ] );
+	$ideas = hodima_seo_discover_title_ideas( get_post( $p1 ) );
+	hodima_t( 'پیشنهاد عنوان از جمله اول چکیده', in_array( 'کلیپس فلزی سبک است و موی بلند را بدون فشار نگه می‌دارد', $ideas, true ), true );
+	hodima_t( 'پیشنهادها بی‌طعمه و در بازه طول', array_filter( $ideas, static fn( string $i ): bool => hodima_seo_discover_is_clickbait( $i ) || mb_strlen( $i ) < 30 || mb_strlen( $i ) > 110 ), [] );
+
+	// دسته: برش‌های تصویر Discover تازه در همان ذخیره (باگ قبلی: edited_term پیش از ذخیره کادر)
+	register_taxonomy( 'hd_test_cat', 'post' );
+	add_filter( 'hodima_seo_discover_taxonomies', $tax = static fn( array $t ): array => [ ...$t, 'hd_test_cat' ] );
+	$term = wp_insert_term( 'دسته آزمون Discover', 'hd_test_cat' );
+	$tid  = is_array( $term ) ? (int) $term['term_id'] : 0;
+	// همان ترتیب واقعی: کادر Discover در edited_{taxonomy} ذخیره می‌شود
+	add_action( 'edited_hd_test_cat', $save = static fn( int $id ) => update_term_meta( $id, 'hook_discover_image_id', $img_b ) );
+	wp_update_term( $tid, 'hd_test_cat', [ 'description' => 'به‌روز' ] );
+	$meta_b = wp_get_attachment_metadata( $img_b );
+	hodima_t( 'تصویر Discover تازه دسته در همان ذخیره برش خورد', isset( $meta_b['sizes']['hodima-discover-16x9'] ), true );
+	remove_action( 'edited_hd_test_cat', $save );
+	remove_filter( 'hodima_seo_discover_taxonomies', $tax );
+	wp_delete_term( $tid, 'hd_test_cat' );
+
+	// آمار یک صفحه با دوره قبل
+	$saved = get_option( 'hodima_discover_sc_stats' );
+	$path  = hodima_seo_discover_url_key( (string) get_permalink( $p1 ) );
+	update_option( 'hodima_discover_sc_stats', [ 'fetched' => time(), 'rows' => [ $path => [ 'clicks' => 3, 'impressions' => 40 ] ], 'prev' => [ 'start' => '2026-01-01', 'rows' => [ $path => [ 'clicks' => 1, 'impressions' => 20 ] ] ] ], false );
+	hodima_t( 'آمار صفحه با دوره قبل', hodima_seo_discover_post_stats( $p1 ), [ 'clicks' => 3, 'impressions' => 40, 'prev_clicks' => 1, 'prev_impressions' => 20 ] );
+	false === $saved ? delete_option( 'hodima_discover_sc_stats' ) : update_option( 'hodima_discover_sc_stats', $saved, false );
+
+	foreach ( [ $p1, $p2, $img_a, $img_b ] as $id ) {
+		wp_delete_post( $id, true );
+	}
+}
+
 echo "\n" . ( 0 === $failed ? "✔ همه {$passed} آزمون قبول" : "✘ {$failed} آزمون رد شد ({$passed} قبول)" ) . "\n";
 exit( $failed > 0 ? 1 : 0 );

@@ -1,14 +1,20 @@
 <?php
 /**
- * ماژول «Google Discover» — صفحه گزارش و ستون فهرست نوشته‌ها
+ * ماژول «Google Discover» — صفحه گزارش و ستون فهرست‌ها
  * Path: core/discover/discover-report.php
  *
  * «ابزارهای هدیما ← Google Discover»:
- *   تب «آمادگی نوشته‌ها»: همان فهرست بررسی کادر ویرایش، برای همه نوشته‌ها
- *     و برگه‌های منتشرشده (۳۰۰ آخر)، با شمارش و فیلتر «فقط مشکل‌دار».
- *   تب «آمار Search Console»: کلیک و نمایش واقعی Discover هر صفحه (۲۸ روز)
+ *   تب «آمادگی»: فهرست بررسی کادر ویرایش برای ۱۰۰۰ صفحه منتشرشده آخر و
+ *     دسته‌های محصول (از کش هر صفحه؛ discover-cache.php)، با شمارش، فیلتر،
+ *     مرتب‌سازی (تاریخ، آمادگی، نمایش، کلیک) و «ساخت برش برای همه».
+ *   تب «فرصت‌ها»: آمادگی کنار آمار واقعی (discover-insights.php).
+ *   تب «آمار Search Console»: مقایسه با ۲۸ روز قبل، نمودار روزانه، صفحه‌ها
  *     و تنظیم property.
- * و ستون «Discover» در فهرست نوشته‌ها/برگه‌ها.
+ * و ستون «Discover» در فهرست نوشته‌ها، برگه‌ها، محصولات و دسته‌های محصول.
+ *
+ * کارهای طولانی (ساختن ردیف‌های تازه، برش تصویر همه صفحه‌ها) دسته‌دسته با
+ * admin-ajax و نوار پیشرفت انجام می‌شوند تا هیچ درخواستی به محدودیت زمان
+ * سرور نخورد (discover-report.js).
  */
 
 declare(strict_types=1);
@@ -17,8 +23,17 @@ defined( 'ABSPATH' ) || exit;
 
 const HODIMA_SEO_DISCOVER_PAGE = 'hodima-discover';
 
-/** تعداد نوشته‌های بررسی‌شده در گزارش (جدیدترین‌ها). */
-const HODIMA_SEO_DISCOVER_REPORT_LIMIT = 300;
+/** تعداد نوشته/برگه/محصول منتشرشده بررسی‌شده در گزارش (جدیدترین‌ها). */
+const HODIMA_SEO_DISCOVER_REPORT_LIMIT = 1000;
+
+/** بیشترین دسته‌های بررسی‌شده در گزارش. */
+const HODIMA_SEO_DISCOVER_REPORT_TERMS = 300;
+
+/** صفحه در هر دسته «ساخت برش برای همه». */
+const HODIMA_SEO_DISCOVER_CROP_BATCH = 6;
+
+/** حداکثر زمان کار هر درخواست دسته‌ای (ثانیه). */
+const HODIMA_SEO_DISCOVER_BATCH_SECONDS = 8.0;
 
 add_action( 'admin_menu', static function (): void {
 
@@ -45,79 +60,87 @@ function hodima_seo_discover_page_url( array $args = [] ): string {
  * داده گزارش
  * ===================================================================== */
 
-/** بیشترین دسته‌های بررسی‌شده در گزارش. */
-const HODIMA_SEO_DISCOVER_REPORT_TERMS = 200;
-
 /**
- * خلاصه آمادگی نوشته‌ها، برگه‌ها، محصولات (منتشرشده) و دسته‌های محصول
- * (کش یک ساعته؛ با ذخیره هر نوشته/دسته پاک می‌شود).
+ * صفحه‌های گزارش: نوشته‌ها، برگه‌ها و محصولات منتشرشده (جدیدترین‌ها؛ متاها
+ * یک‌جا در کش وردپرس) و دسته‌های محصول.
  *
- * @return list<array{id: int, context: string, type: string, title: string, edit: string, date: string, error: int, warn: int, ok: int, total: int, issues: list<array{status: string, label: string, detail: string}>}>
+ * @return list<WP_Post|WP_Term>
  */
-function hodima_seo_discover_report_rows(): array {
+function hodima_seo_discover_report_targets(): array {
 
-	$cached = get_transient( 'hodima_discover_report' );
-
-	if ( is_array( $cached ) ) {
-		return $cached;
-	}
-
-	$objects = [];
+	$targets = [];
 	$types   = array_values( array_filter( hodima_seo_discover_post_types(), 'post_type_exists' ) );
 
 	if ( $types ) {
-		foreach ( get_posts( [
-			'post_type'      => $types,
-			'post_status'    => 'publish',
-			'has_password'   => false,
-			'posts_per_page' => HODIMA_SEO_DISCOVER_REPORT_LIMIT,
-			'orderby'        => 'date',
-			'order'          => 'DESC',
-			'no_found_rows'  => true,
-		] ) as $post ) {
-			$objects[] = $post;
+		$posts = get_posts( [
+			'post_type'              => $types,
+			'post_status'            => 'publish',
+			'has_password'           => false,
+			'posts_per_page'         => HODIMA_SEO_DISCOVER_REPORT_LIMIT,
+			'orderby'                => 'date',
+			'order'                  => 'DESC',
+			'no_found_rows'          => true,
+			'update_post_term_cache' => false,
+		] );
+		foreach ( $posts as $post ) {
+			if ( hodima_seo_discover_for_post( (int) $post->ID ) ) {
+				$targets[] = $post;
+			}
 		}
 	}
 
 	$taxonomies = array_values( array_filter( hodima_seo_discover_taxonomies(), 'taxonomy_exists' ) );
-	$terms      = $taxonomies ? get_terms( [ 'taxonomy' => $taxonomies, 'hide_empty' => false, 'number' => HODIMA_SEO_DISCOVER_REPORT_TERMS ] ) : [];
+	$terms      = $taxonomies ? get_terms( [ 'taxonomy' => $taxonomies, 'hide_empty' => false, 'number' => HODIMA_SEO_DISCOVER_REPORT_TERMS, 'update_term_meta_cache' => true ] ) : [];
+
 	foreach ( is_array( $terms ) ? $terms : [] as $term ) {
-		$objects[] = $term;
+		if ( $term instanceof WP_Term && hodima_seo_discover_for_term( (int) $term->term_id ) ) {
+			$targets[] = $term;
+		}
 	}
 
-	$rows = [];
+	return $targets;
+}
 
-	foreach ( $objects as $target ) {
+/**
+ * ردیف‌های گزارش. ردیف کش‌شده هر صفحه خوانده می‌شود؛ ردیف تازه فقط تا
+ * $budget ثانیه ساخته می‌شود و بقیه «در انتظار» می‌مانند (JS دسته‌دسته
+ * کاملشان می‌کند).
+ *
+ * @return array{rows: list<array<string, mixed>>, pending: int, total: int}
+ */
+function hodima_seo_discover_report_rows( float $budget = 4.0 ): array {
 
-		$is_term = $target instanceof WP_Term;
-		$id      = $is_term ? (int) $target->term_id : (int) $target->ID;
+	$start   = microtime( true );
+	$rows    = [];
+	$pending = 0;
+	$targets = hodima_seo_discover_report_targets();
 
-		if ( $is_term ? ! hodima_seo_discover_for_term( $id ) : ! hodima_seo_discover_for_post( $id ) ) {
+	foreach ( $targets as $target ) {
+
+		$cached = hodima_seo_discover_row( $target, microtime( true ) - $start < $budget );
+
+		if ( null === $cached ) {
+			++$pending;
 			continue;
 		}
 
-		$checks          = hodima_seo_discover_checks( $target );
-		[ $ok, $total ]  = hodima_seo_discover_score( $checks );
-		$issues          = array_values( array_filter( $checks, static fn( array $c ): bool => 'ok' !== $c['status'] ) );
+		$is_term = $target instanceof WP_Term;
+		$id      = $is_term ? (int) $target->term_id : (int) $target->ID;
+		$context = $is_term ? 'term' : 'post';
 
 		$rows[] = [
 			'id'      => $id,
-			'context' => $is_term ? 'term' : 'post',
+			'context' => $context,
 			'type'    => $is_term ? $target->taxonomy : $target->post_type,
 			'title'   => $is_term ? $target->name : (string) get_the_title( $target ),
 			'edit'    => (string) ( $is_term ? get_edit_term_link( $id, $target->taxonomy ) : get_edit_post_link( $id, 'raw' ) ),
 			'date'    => $is_term ? '' : (string) get_the_date( '', $target ),
-			'error'   => count( array_filter( $issues, static fn( array $c ): bool => 'error' === $c['status'] ) ),
-			'warn'    => count( array_filter( $issues, static fn( array $c ): bool => 'warn' === $c['status'] ) ),
-			'ok'      => $ok,
-			'total'   => $total,
-			'issues'  => array_map( static fn( array $c ): array => [ 'status' => $c['status'], 'label' => $c['label'], 'detail' => $c['detail'] ], $issues ),
-		];
+			'ts'      => $is_term ? 0 : (int) strtotime( $target->post_date_gmt . ' UTC' ),
+			'url_key' => hodima_seo_discover_url_key( hodima_seo_discover_object_url( $id, $context ) ),
+		] + $cached;
 	}
 
-	set_transient( 'hodima_discover_report', $rows, HOUR_IN_SECONDS );
-
-	return $rows;
+	return [ 'rows' => $rows, 'pending' => $pending, 'total' => count( $targets ) ];
 }
 
 /** برچسب فارسی نوع ردیف گزارش. */
@@ -130,14 +153,6 @@ function hodima_seo_discover_type_label( string $type ): string {
 		default       => (string) ( get_post_type_object( $type )?->labels->singular_name ?? get_taxonomy( $type )?->labels->singular_name ?? $type ),
 	};
 }
-
-// هر تغییر نوشته، تصویر یا نمایه نویسنده: گزارش از نو
-foreach ( [ 'save_post', 'deleted_post', 'edit_attachment', 'profile_update', 'edited_term', 'delete_term' ] as $hodima_seo_discover_hook ) {
-	add_action( $hodima_seo_discover_hook, static function (): void {
-		delete_transient( 'hodima_discover_report' );
-	} );
-}
-unset( $hodima_seo_discover_hook );
 
 /**
  * برچسب وضعیت یک ردیف: [ کلاس pill, متن ].
@@ -153,7 +168,7 @@ function hodima_seo_discover_row_state( int $error, int $warn ): array {
 }
 
 /* =====================================================================
- * عملیات (admin-post)
+ * عملیات
  * ===================================================================== */
 
 add_action( 'admin_post_hodima_discover_sc', static function (): void {
@@ -181,52 +196,179 @@ add_action( 'admin_post_hodima_discover_sc', static function (): void {
 	exit;
 } );
 
+/** بررسی دسترسی و nonce درخواست‌های دسته‌ای (پاسخ JSON خطا و پایان در صورت رد). */
+function hodima_seo_discover_batch_guard(): void {
+	if ( ! current_user_can( 'edit_others_posts' ) || ! check_ajax_referer( 'hodima_discover_batch', 'nonce', false ) ) {
+		wp_send_json_error( [ 'message' => 'دسترسی ندارید یا صفحه منقضی شده است؛ صفحه را دوباره باز کنید.' ], 403 );
+	}
+}
+
+// ساختن ردیف‌های کش‌نشده گزارش، دسته‌دسته
+add_action( 'wp_ajax_hodima_discover_warm', static function (): void {
+	hodima_seo_discover_batch_guard();
+	$result = hodima_seo_discover_report_rows( HODIMA_SEO_DISCOVER_BATCH_SECONDS );
+	wp_send_json_success( [
+		'done'  => $result['total'] - $result['pending'],
+		'total' => $result['total'],
+		'next'  => 0,
+		'end'   => 0 === $result['pending'],
+	] );
+} );
+
+/**
+ * «ساخت برش برای همه»: برش‌های ۱۶:۹، ۴:۳ و ۱:۱ برای همه صفحه‌های منتشرشده
+ * (نه فقط ۱۰۰۰ صفحه گزارش). برش‌ها تا SEO 2.1.1 فقط هنگام ذخیره ساخته
+ * می‌شد؛ صفحه‌هایی که بعد از نصب ذخیره نشده بودند og:image بزرگ نداشتند.
+ * offset = جای ادامه در فهرست (اول نوشته‌ها به ترتیب شناسه، بعد دسته‌ها).
+ */
+add_action( 'wp_ajax_hodima_discover_crops', static function (): void {
+
+	hodima_seo_discover_batch_guard();
+
+	$offset     = isset( $_POST['offset'] ) ? absint( $_POST['offset'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- در hodima_seo_discover_batch_guard
+	$types      = array_values( array_filter( hodima_seo_discover_post_types(), 'post_type_exists' ) );
+	$taxonomies = array_values( array_filter( hodima_seo_discover_taxonomies(), 'taxonomy_exists' ) );
+	$posts      = array_sum( array_map( static fn( string $t ): int => (int) ( wp_count_posts( $t )->publish ?? 0 ), $types ) );
+	$terms      = $taxonomies ? (int) wp_count_terms( [ 'taxonomy' => $taxonomies, 'hide_empty' => false ] ) : 0;
+	$total      = $posts + $terms;
+	$start      = microtime( true );
+	$made       = 0;
+	$done       = 0;
+
+	while ( $done < HODIMA_SEO_DISCOVER_CROP_BATCH && $offset < $total && microtime( true ) - $start < HODIMA_SEO_DISCOVER_BATCH_SECONDS ) {
+
+		if ( $offset < $posts ) {
+			$ids     = get_posts( [ 'post_type' => $types, 'post_status' => 'publish', 'orderby' => 'ID', 'order' => 'ASC', 'posts_per_page' => 1, 'offset' => $offset, 'fields' => 'ids', 'no_found_rows' => true ] );
+			$id      = (int) ( $ids[0] ?? 0 );
+			$context = 'post';
+			$enabled = $id && hodima_seo_discover_for_post( $id );
+		} else {
+			$ids     = get_terms( [ 'taxonomy' => $taxonomies, 'hide_empty' => false, 'orderby' => 'term_id', 'order' => 'ASC', 'number' => 1, 'offset' => $offset - $posts, 'fields' => 'ids' ] );
+			$id      = is_array( $ids ) ? (int) ( $ids[0] ?? 0 ) : 0;
+			$context = 'term';
+			$enabled = $id && hodima_seo_discover_for_term( $id );
+		}
+
+		$image = $enabled ? hodima_seo_discover_image( $id, $context ) : null;
+		if ( null !== $image ) {
+			$made += hodima_seo_discover_make_crops( $image['id'] );
+		}
+
+		++$offset;
+		++$done;
+	}
+
+	wp_send_json_success( [
+		'done'  => min( $offset, $total ),
+		'total' => $total,
+		'next'  => $offset,
+		'made'  => $made,
+		'end'   => $offset >= $total,
+	] );
+} );
+
+// CSS و JS صفحه گزارش (فقط همین صفحه)
+add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
+
+	if ( ! str_ends_with( $hook, '_page_' . HODIMA_SEO_DISCOVER_PAGE ) ) {
+		return;
+	}
+
+	$url = HODIMA_SEO_URL . '/core/discover/assets';
+	$ver = static function ( string $file ): string {
+		$path = __DIR__ . '/assets/' . $file;
+		return is_file( $path ) ? (string) filemtime( $path ) : HODIMA_SEO_VERSION;
+	};
+
+	wp_enqueue_style( 'hodima-discover-report', $url . '/discover-report.css', [], $ver( 'discover-report.css' ) );
+	wp_enqueue_script( 'hodima-discover-report', $url . '/discover-report.js', [], $ver( 'discover-report.js' ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
+	wp_add_inline_script( 'hodima-discover-report', 'window.hodimaDiscoverReport = ' . wp_json_encode( [
+		'ajax'  => admin_url( 'admin-ajax.php' ),
+		'nonce' => wp_create_nonce( 'hodima_discover_batch' ),
+	] ) . ';', 'before' );
+} );
+
 /* =====================================================================
  * صفحه
  * ===================================================================== */
 
 function hodima_seo_discover_render_page(): void {
 
-	$tab  = isset( $_GET['tab'] ) && 'stats' === sanitize_key( wp_unslash( $_GET['tab'] ) ) ? 'stats' : 'report'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط انتخاب تب
+	$tab  = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط انتخاب تب
+	$tab  = in_array( $tab, [ 'opportunities', 'stats' ], true ) ? $tab : 'report';
 	$tabs = [
-		'report' => [ 'label' => 'آمادگی نوشته‌ها', 'url' => hodima_seo_discover_page_url(), 'icon' => 'dashicons-yes-alt' ],
-		'stats'  => [ 'label' => 'آمار Search Console', 'url' => hodima_seo_discover_page_url( [ 'tab' => 'stats' ] ), 'icon' => 'dashicons-chart-bar' ],
+		'report'        => [ 'label' => 'آمادگی', 'url' => hodima_seo_discover_page_url(), 'icon' => 'dashicons-yes-alt' ],
+		'opportunities' => [ 'label' => 'فرصت‌ها', 'url' => hodima_seo_discover_page_url( [ 'tab' => 'opportunities' ] ), 'icon' => 'dashicons-lightbulb' ],
+		'stats'         => [ 'label' => 'آمار Search Console', 'url' => hodima_seo_discover_page_url( [ 'tab' => 'stats' ] ), 'icon' => 'dashicons-chart-area' ],
 	];
 	?>
-	<div class="wrap hd-wrap">
+	<div class="wrap hd-wrap hodima-dr">
 		<?php
 		hodima_admin_header( [
 			'title'       => 'Google Discover',
-			'description' => 'فید پیشنهادی گوگل در موبایل؛ برای مقاله‌ها پرورودی‌ترین مسیر گوگل. آمادگی همه نوشته‌ها و آمار واقعی Discover در یک جا.',
+			'description' => 'فید پیشنهادی گوگل در موبایل؛ برای مقاله‌ها پرورودی‌ترین مسیر گوگل. آمادگی همه صفحه‌ها، فرصت‌های بهتر شدن و آمار واقعی Discover در یک جا.',
 			'icon'        => 'dashicons-visibility',
 			'tabs'        => $tabs,
 			'current'     => $tab,
 		] );
 
-		'stats' === $tab ? hodima_seo_discover_render_stats() : hodima_seo_discover_render_report();
+		match ( $tab ) {
+			'stats'         => hodima_seo_discover_render_stats(),
+			'opportunities' => hodima_seo_discover_render_opportunities(),
+			default         => hodima_seo_discover_render_report(),
+		};
 		?>
 	</div>
 	<?php
 }
 
-/** تب «آمادگی نوشته‌ها». */
+/** کادر «در حال آماده‌سازی گزارش» با نوار پیشرفت (JS خودکار ادامه می‌دهد و صفحه را تازه می‌کند). */
+function hodima_seo_discover_render_warming( int $done, int $total ): void {
+	?>
+	<div class="hd-callout hodima-dr-batch" data-hodima-dr-batch="warm" data-autostart data-reload>
+		<p><strong>در حال بررسی صفحه‌ها:</strong> <span data-hodima-dr-count><?php echo esc_html( sprintf( '%1$s از %2$s', number_format_i18n( $done ), number_format_i18n( $total ) ) ); ?></span>. نتیجه هر صفحه ذخیره می‌شود و دفعه بعد گزارش فوری باز می‌شود.</p>
+		<div class="hodima-dr-progress" role="progressbar" aria-label="بررسی صفحه‌ها" aria-valuemin="0" aria-valuemax="<?php echo (int) $total; ?>" aria-valuenow="<?php echo (int) $done; ?>"><span style="inline-size: <?php echo esc_attr( (string) ( $total ? round( 100 * $done / $total ) : 0 ) ); ?>%"></span></div>
+		<p class="hodima-dr-batch__msg" data-hodima-dr-msg aria-live="polite"></p>
+		<noscript><p><a class="button" href="<?php echo esc_url( hodima_seo_discover_page_url() ); ?>">ادامه بررسی</a></p></noscript>
+	</div>
+	<?php
+}
+
+/** تب «آمادگی». */
 function hodima_seo_discover_render_report(): void {
 
-	$rows   = hodima_seo_discover_report_rows();
+	$data   = hodima_seo_discover_report_rows();
+	$rows   = $data['rows'];
 	$stats  = hodima_seo_discover_stats();
-	$only   = isset( $_GET['issues'] ) && '1' === sanitize_key( wp_unslash( $_GET['issues'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش
-	$type   = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش
+	$get    = static fn( string $key ): string => isset( $_GET[ $key ] ) ? sanitize_key( wp_unslash( $_GET[ $key ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش
+	$only   = '1' === $get( 'issues' );
 	$types  = array_values( array_unique( array_column( $rows, 'type' ) ) );
-	$type   = in_array( $type, $types, true ) ? $type : '';
+	$type   = in_array( $get( 'type' ), $types, true ) ? $get( 'type' ) : '';
+	$sorts  = [ 'date' => 'تاریخ', 'score' => 'آمادگی' ] + ( $stats['fetched'] ? [ 'impressions' => 'نمایش', 'clicks' => 'کلیک' ] : [] );
+	$sort   = isset( $sorts[ $get( 'orderby' ) ] ) ? $get( 'orderby' ) : 'date';
 	$ready  = count( array_filter( $rows, static fn( array $r ): bool => 0 === $r['error'] && 0 === $r['warn'] ) );
 	$errors = count( array_filter( $rows, static fn( array $r ): bool => $r['error'] > 0 ) );
 	$warns  = count( $rows ) - $ready - $errors;
+	$nocrop = count( array_filter( $rows, static fn( array $r ): bool => 'missing' === $r['crops'] ) );
+	$metric = static fn( array $r, string $m ): int => (int) ( $stats['rows'][ $r['url_key'] ][ $m ] ?? 0 );
+
+	if ( $data['pending'] > 0 ) {
+		hodima_seo_discover_render_warming( $data['total'] - $data['pending'], $data['total'] );
+	}
 
 	$list = array_values( array_filter(
 		$rows,
 		static fn( array $r ): bool => ( '' === $type || $type === $r['type'] ) && ( ! $only || $r['error'] > 0 || $r['warn'] > 0 )
 	) );
-	$args  = array_filter( [ 'type' => $type, 'issues' => $only ? '1' : '' ] );
+
+	match ( $sort ) {
+		'score'       => usort( $list, static fn( array $a, array $b ): int => [ $b['error'], $b['warn'] ] <=> [ $a['error'], $a['warn'] ] ),
+		'impressions',
+		'clicks'      => usort( $list, static fn( array $a, array $b ): int => $metric( $b, $sort ) <=> $metric( $a, $sort ) ),
+		default       => null, // همان ترتیب جدیدترین‌ها
+	};
+
+	$args  = array_filter( [ 'type' => $type, 'issues' => $only ? '1' : '', 'orderby' => 'date' !== $sort ? $sort : '' ] );
 	$per   = 25;
 	$paged = max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط صفحه‌بندی
 	$pages = max( 1, (int) ceil( count( $list ) / $per ) );
@@ -245,17 +387,47 @@ function hodima_seo_discover_render_report(): void {
 
 	<section class="hd-card">
 		<div class="hd-card__head">
+			<?php echo hodima_admin_icon( 'dashicons-image-crop' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
+			<h2 class="hd-card__title">برش‌های تصویر Discover</h2>
+			<p class="hd-card__desc">
+				برش‌های ۱۶:۹، ۴:۳ و ۱:۱ (عرض ۱۲۰۰) در og:image و اسکیما استفاده می‌شوند و هنگام ذخیره هر صفحه ساخته می‌شوند. صفحه‌هایی که از قبل بوده‌اند و دوباره ذخیره نشده‌اند برش ندارند.
+				<?php if ( $nocrop ) : ?>
+					<strong><?php echo esc_html( sprintf( '%s صفحه از صفحه‌های گزارش هنوز برش ندارد.', number_format_i18n( $nocrop ) ) ); ?></strong>
+				<?php endif; ?>
+			</p>
+		</div>
+		<div class="hodima-dr-batch" data-hodima-dr-batch="crops">
+			<div class="hodima-dr-progress" role="progressbar" aria-label="ساخت برش‌ها" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span></span></div>
+			<p class="hodima-dr-batch__msg" data-hodima-dr-msg aria-live="polite"></p>
+			<div class="hd-actions">
+				<button type="button" class="button button-primary" data-hodima-dr-start><?php echo hodima_admin_icon( 'dashicons-image-crop' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> ساخت برش برای همه صفحه‌ها</button>
+			</div>
+		</div>
+	</section>
+
+	<section class="hd-card">
+		<div class="hd-card__head">
 			<?php echo hodima_admin_icon( 'dashicons-list-view' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
 			<h2 class="hd-card__title">آمادگی نوشته‌ها، برگه‌ها، محصولات و دسته‌ها</h2>
-			<p class="hd-card__desc">همان «آمادگی برای Discover» کادر ویرایش: تصویر بزرگ ≥۱۲۰۰ پیکسل، برش‌ها، ایندکس و پیش‌نمایش تصویر بزرگ، عنوان بدون طعمه کلیک، متن معرفی، خلاصه و معرفی نویسنده. <?php echo esc_html( number_format_i18n( HODIMA_SEO_DISCOVER_REPORT_LIMIT ) ); ?> صفحه آخر و دسته‌های محصول.</p>
+			<p class="hd-card__desc">همان «آمادگی برای Discover» کادر ویرایش: تصویر بزرگ و اختصاصی با متن جایگزین، برش‌ها، ایندکس، عنوان اختصاصی بدون طعمه کلیک، متن معرفی، خلاصه، عمق و تازگی مقاله، و معرفی نویسنده. <?php echo esc_html( number_format_i18n( HODIMA_SEO_DISCOVER_REPORT_LIMIT ) ); ?> صفحه آخر و دسته‌های محصول.</p>
 		</div>
 		<div class="hd-inline">
-			<a class="button<?php echo '' === $type ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'issues' => $only ? '1' : '' ] ) ) ); ?>">همه</a>
+			<a class="button<?php echo '' === $type ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( array_diff_key( $args, [ 'type' => 1 ] ) ) ); ?>">همه</a>
 			<?php foreach ( $types as $t ) : ?>
-				<a class="button<?php echo $t === $type ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'type' => $t, 'issues' => $only ? '1' : '' ] ) ) ); ?>"><?php echo esc_html( hodima_seo_discover_type_label( $t ) ); ?></a>
+				<a class="button<?php echo $t === $type ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( [ 'type' => $t ] + $args ) ); ?>"><?php echo esc_html( hodima_seo_discover_type_label( $t ) ); ?></a>
 			<?php endforeach; ?>
-			<a class="button<?php echo $only ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'type' => $type, 'issues' => $only ? '' : '1' ] ) ) ); ?>" aria-pressed="<?php echo $only ? 'true' : 'false'; ?>"><?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> فقط نیازمند توجه</a>
+			<a class="button<?php echo $only ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'issues' => $only ? '' : '1' ] + $args ) ) ); ?>" aria-pressed="<?php echo $only ? 'true' : 'false'; ?>"><?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> فقط نیازمند توجه</a>
 		</div>
+		<p class="hd-inline hodima-dr-sort">
+			<span class="hd-muted">مرتب‌سازی:</span>
+			<?php foreach ( $sorts as $key => $label ) : ?>
+				<?php if ( $key === $sort ) : ?>
+					<strong aria-current="true"><?php echo esc_html( $label ); ?></strong>
+				<?php else : ?>
+					<a href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'orderby' => 'date' !== $key ? $key : '' ] + $args ) ) ); ?>"><?php echo esc_html( $label ); ?></a>
+				<?php endif; ?>
+			<?php endforeach; ?>
+		</p>
 
 		<?php if ( ! $list ) : ?>
 			<p class="hd-empty">موردی نیست.</p>
@@ -274,23 +446,16 @@ function hodima_seo_discover_render_report(): void {
 					</thead>
 					<tbody>
 						<?php foreach ( $list as $row ) : ?>
-							<?php
-							[ $class, $label ] = hodima_seo_discover_row_state( $row['error'], $row['warn'] );
-							$post_stats        = $stats['fetched'] ? hodima_seo_discover_post_stats( $row['id'], $row['context'] ) : null;
-							?>
+							<?php [ $class, $label ] = hodima_seo_discover_row_state( $row['error'], $row['warn'] ); ?>
 							<tr>
 								<td>
 									<strong><a href="<?php echo esc_url( $row['edit'] ); ?>"><?php echo esc_html( '' !== $row['title'] ? $row['title'] : '(بدون عنوان)' ); ?></a></strong>
 									<div class="hd-muted"><?php echo esc_html( hodima_seo_discover_type_label( $row['type'] ) . ( '' !== $row['date'] ? ' · ' . $row['date'] : '' ) ); ?></div>
 								</td>
 								<td><span class="hd-pill <?php echo esc_attr( $class ); ?>"><?php echo esc_html( sprintf( '%1$s · %2$s از %3$s', $label, number_format_i18n( $row['ok'] ), number_format_i18n( $row['total'] ) ) ); ?></span></td>
-								<td>
-									<?php foreach ( $row['issues'] as $issue ) : ?>
-										<span class="hd-pill <?php echo esc_attr( 'error' === $issue['status'] ? 'hd-pill--error' : 'hd-pill--warn' ); ?>" title="<?php echo esc_attr( $issue['detail'] ); ?>"><?php echo esc_html( $issue['label'] ); ?></span>
-									<?php endforeach; ?>
-								</td>
+								<td><?php hodima_seo_discover_render_issue_pills( $row['issues'] ); ?></td>
 								<?php if ( $stats['fetched'] ) : ?>
-									<td dir="ltr"><?php echo null !== $post_stats ? esc_html( number_format_i18n( $post_stats['clicks'] ) . ' / ' . number_format_i18n( $post_stats['impressions'] ) ) : '—'; ?></td>
+									<td dir="ltr"><?php echo esc_html( number_format_i18n( $metric( $row, 'clicks' ) ) . ' / ' . number_format_i18n( $metric( $row, 'impressions' ) ) ); ?></td>
 								<?php endif; ?>
 							</tr>
 						<?php endforeach; ?>
@@ -314,6 +479,139 @@ function hodima_seo_discover_render_report(): void {
 	<?php
 }
 
+/**
+ * برچسب‌های موارد نیازمند توجه یک ردیف (توضیح در title).
+ *
+ * @param list<array{status: string, label: string, detail: string}> $issues
+ */
+function hodima_seo_discover_render_issue_pills( array $issues ): void {
+	foreach ( $issues as $issue ) {
+		printf(
+			'<span class="hd-pill %1$s" title="%2$s">%3$s</span> ',
+			esc_attr( 'error' === $issue['status'] ? 'hd-pill--error' : 'hd-pill--warn' ),
+			esc_attr( $issue['detail'] ),
+			esc_html( $issue['label'] )
+		);
+	}
+}
+
+/** تب «فرصت‌ها». */
+function hodima_seo_discover_render_opportunities(): void {
+
+	$data  = hodima_seo_discover_report_rows();
+	$stats = hodima_seo_discover_stats();
+	$opp   = hodima_seo_discover_opportunities( $data['rows'], $stats );
+	$pct   = static fn( float $v ): string => number_format_i18n( 100 * $v, 1 ) . '٪';
+	$num   = static fn( int $v ): string => number_format_i18n( $v );
+
+	if ( $data['pending'] > 0 ) {
+		hodima_seo_discover_render_warming( $data['total'] - $data['pending'], $data['total'] );
+	}
+
+	if ( ! $stats['fetched'] ) {
+		?>
+		<p class="hd-callout hd-callout--warning">بیشتر فرصت‌ها از آمار واقعی Search Console ساخته می‌شوند که هنوز گرفته نشده است. از تب «آمار Search Console» اتصال را تنظیم کنید؛ تا آن موقع فقط «مقاله تازه بدون نمایش» کامل نیست.</p>
+		<?php
+	}
+
+	$groups = [
+		'low_ctr'    => [
+			'icon'  => 'dashicons-visibility',
+			'title' => 'دیده می‌شود ولی کم کلیک می‌خورد',
+			'desc'  => sprintf( 'دست‌کم %1$s نمایش و نرخ کلیک کمتر از %2$s (۶۰٪ میانگین سایت، %3$s). کارت را جذاب‌تر کنید: عنوان Discover صادق ولی گیرا، و تصویر بزرگ روشن و مرتبط. «کلیک از دست رفته» تخمین فاصله با میانگین سایت است.', $num( HODIMA_SEO_DISCOVER_OPP_MIN_IMPRESSIONS ), $pct( $opp['site_ctr'] * HODIMA_SEO_DISCOVER_OPP_CTR_RATIO ), $pct( $opp['site_ctr'] ) ),
+		],
+		'dropping'   => [
+			'icon'  => 'dashicons-arrow-down-alt',
+			'title' => 'افت نمایش',
+			'desc'  => 'نمایش ۲۸ روز آخر نصف ۲۸ روز قبل یا کمتر. Discover به تازگی حساس است؛ اطلاعات مطلب را به‌روز کنید، چیز تازه اضافه کنید و دوباره منتشر کنید.',
+		],
+		'not_ready'  => [
+			'icon'  => 'dashicons-warning',
+			'title' => 'در Discover هست ولی آماده نیست',
+			'desc'  => 'گوگل این صفحه‌ها را انتخاب کرده؛ رفع موارد آمادگی (مثلا تصویر بزرگ و برش‌ها) کارت را بزرگ‌تر و نمایش را بیشتر می‌کند. اول پرنمایش‌ترها.',
+		],
+		'new_unseen' => [
+			'icon'  => 'dashicons-clock',
+			'title' => 'مقاله تازه، هنوز دیده نشده',
+			'desc'  => 'مقاله‌های ۳ تا ۳۰ روز اخیر که در Discover نمایش نداشته‌اند و مورد آمادگی دارند. Discover بیشتر مطالب تازه را نشان می‌دهد؛ تا مقاله تازه است، موارد را رفع کنید.',
+		],
+	];
+
+	foreach ( $groups as $key => $group ) {
+		$items = $opp[ $key ];
+		?>
+		<section class="hd-card">
+			<div class="hd-card__head">
+				<?php echo hodima_admin_icon( $group['icon'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
+				<h2 class="hd-card__title"><?php echo esc_html( $group['title'] ); ?> <span class="hd-pill"><?php echo esc_html( $num( count( $items ) ) ); ?></span></h2>
+				<p class="hd-card__desc"><?php echo esc_html( $group['desc'] ); ?></p>
+			</div>
+			<?php if ( ! $items ) : ?>
+				<p class="hd-empty"><?php echo $stats['fetched'] || 'new_unseen' === $key ? 'موردی نیست.' : 'بدون آمار Search Console قابل محاسبه نیست.'; ?></p>
+			<?php else : ?>
+				<div class="hd-table-wrap">
+					<table class="widefat striped">
+						<thead>
+							<tr>
+								<th scope="col">صفحه</th>
+								<?php if ( 'new_unseen' !== $key ) : ?>
+									<th scope="col">نمایش</th>
+									<th scope="col">کلیک</th>
+									<th scope="col">نرخ کلیک</th>
+								<?php endif; ?>
+								<?php if ( 'low_ctr' === $key ) : ?>
+									<th scope="col">کلیک از دست رفته</th>
+								<?php elseif ( 'dropping' === $key ) : ?>
+									<th scope="col">۲۸ روز قبل</th>
+								<?php else : ?>
+									<th scope="col">موارد آمادگی</th>
+								<?php endif; ?>
+							</tr>
+						</thead>
+						<tbody>
+							<?php foreach ( $items as $item ) : ?>
+								<tr>
+									<td>
+										<strong><a href="<?php echo esc_url( $item['edit'] ); ?>"><?php echo esc_html( '' !== $item['title'] ? $item['title'] : '(بدون عنوان)' ); ?></a></strong>
+										<div class="hd-muted"><?php echo esc_html( hodima_seo_discover_type_label( $item['type'] ) . ( '' !== $item['date'] ? ' · ' . $item['date'] : '' ) ); ?></div>
+									</td>
+									<?php if ( 'new_unseen' !== $key ) : ?>
+										<td><?php echo esc_html( $num( $item['impressions'] ) ); ?></td>
+										<td><?php echo esc_html( $num( $item['clicks'] ) ); ?></td>
+										<td><?php echo esc_html( $pct( $item['ctr'] ) ); ?></td>
+									<?php endif; ?>
+									<?php if ( 'low_ctr' === $key ) : ?>
+										<td><?php echo esc_html( '≈ ' . $num( $item['lost'] ) ); ?></td>
+									<?php elseif ( 'dropping' === $key ) : ?>
+										<td><?php echo esc_html( $num( (int) $item['prev_impressions'] ) . ' ← ' . hodima_seo_discover_change_text( hodima_seo_discover_change( $item['impressions'], $item['prev_impressions'] ) ) ); ?></td>
+									<?php else : ?>
+										<td><?php hodima_seo_discover_render_issue_pills( $item['issues'] ); ?></td>
+									<?php endif; ?>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+			<?php endif; ?>
+		</section>
+		<?php
+	}
+}
+
+/** کاشی آمار با تغییر نسبت به ۲۸ روز قبل (جهت با ▲/▼ نوشته می‌شود، نه فقط رنگ). */
+function hodima_seo_discover_render_stat_tile( string $label, string $value, ?float $change = null ): void {
+	$level = null === $change || abs( $change ) < 0.5 ? '' : ( $change > 0 ? ' is-up' : ' is-down' );
+	?>
+	<div class="hd-stat">
+		<span class="hd-stat__label"><?php echo esc_html( $label ); ?></span>
+		<span class="hd-stat__value"><?php echo esc_html( $value ); ?></span>
+		<?php if ( null !== $change ) : ?>
+			<span class="hodima-dr-change<?php echo esc_attr( $level ); ?>"><?php echo esc_html( hodima_seo_discover_change_text( $change ) ); ?> <span class="hd-muted">نسبت به ۲۸ روز قبل</span></span>
+		<?php endif; ?>
+	</div>
+	<?php
+}
+
 /** تب «آمار Search Console». */
 function hodima_seo_discover_render_stats(): void {
 
@@ -321,6 +619,11 @@ function hodima_seo_discover_render_stats(): void {
 	$email    = hodima_seo_discover_sc_email();
 	$has_key  = '' !== hodima_seo_discover_sc_key_json();
 	$can_edit = current_user_can( 'manage_options' );
+	$has_prev = '' !== $stats['prev']['start'];
+	$now      = $stats['totals'];
+	$before   = $stats['prev']['totals'];
+	$ctr      = static fn( array $t ): ?float => $t['impressions'] ? $t['clicks'] / $t['impressions'] : null;
+	$daily    = hodima_seo_discover_daily_filled( $stats['daily'] );
 
 	if ( '' !== $stats['error'] && function_exists( 'hodima_admin_notice' ) ) {
 		hodima_admin_notice( $stats['error'], 'warning' );
@@ -332,11 +635,52 @@ function hodima_seo_discover_render_stats(): void {
 	?>
 	<?php if ( $stats['fetched'] ) : ?>
 		<div class="hd-grid hd-grid--stats">
-			<div class="hd-stat"><span class="hd-stat__label">کلیک Discover</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $stats['totals']['clicks'] ) ); ?></span></div>
-			<div class="hd-stat"><span class="hd-stat__label">نمایش Discover</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $stats['totals']['impressions'] ) ); ?></span></div>
-			<div class="hd-stat"><span class="hd-stat__label">نرخ کلیک</span><span class="hd-stat__value"><?php echo esc_html( $stats['totals']['impressions'] ? number_format_i18n( 100 * $stats['totals']['clicks'] / $stats['totals']['impressions'], 1 ) . '٪' : '—' ); ?></span></div>
-			<div class="hd-stat"><span class="hd-stat__label">صفحه‌های دیده‌شده</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( count( $stats['rows'] ) ) ); ?></span></div>
+			<?php
+			hodima_seo_discover_render_stat_tile( 'کلیک Discover', number_format_i18n( $now['clicks'] ), $has_prev ? hodima_seo_discover_change( $now['clicks'], $before['clicks'] ) : null );
+			hodima_seo_discover_render_stat_tile( 'نمایش Discover', number_format_i18n( $now['impressions'] ), $has_prev ? hodima_seo_discover_change( $now['impressions'], $before['impressions'] ) : null );
+			$ctr_now  = $ctr( $now );
+			$ctr_prev = $ctr( $before );
+			hodima_seo_discover_render_stat_tile(
+				'نرخ کلیک',
+				null !== $ctr_now ? number_format_i18n( 100 * $ctr_now, 1 ) . '٪' : '—',
+				$has_prev && null !== $ctr_now && null !== $ctr_prev && $ctr_prev > 0 ? 100 * ( $ctr_now - $ctr_prev ) / $ctr_prev : null
+			);
+			hodima_seo_discover_render_stat_tile( 'صفحه‌های دیده‌شده', number_format_i18n( count( $stats['rows'] ) ), $has_prev ? hodima_seo_discover_change( count( $stats['rows'] ), count( $stats['prev']['rows'] ) ) : null );
+			?>
 		</div>
+	<?php endif; ?>
+
+	<?php if ( count( $daily ) > 1 ) : ?>
+		<section class="hd-card">
+			<div class="hd-card__head">
+				<?php echo hodima_admin_icon( 'dashicons-chart-area' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
+				<h2 class="hd-card__title">روند روزانه</h2>
+				<p class="hd-card__desc">کل سایت در Discover، روز به روز (وقت اقیانوس آرام، مثل خود Search Console). نمایش و کلیک دو نمودار جدا با محور خودشان‌اند.</p>
+			</div>
+			<div class="hodima-dr-charts">
+				<?php
+				echo hodima_seo_discover_chart( $daily, 'impressions', 'نمایش' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع
+				echo hodima_seo_discover_chart( $daily, 'clicks', 'کلیک' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع
+				?>
+			</div>
+			<details class="hodima-dr-daily">
+				<summary>جدول روزانه</summary>
+				<div class="hd-table-wrap">
+					<table class="widefat striped">
+						<thead><tr><th scope="col">روز</th><th scope="col">نمایش</th><th scope="col">کلیک</th></tr></thead>
+						<tbody>
+							<?php foreach ( array_reverse( $daily, true ) as $day => $row ) : ?>
+								<tr>
+									<td><?php echo esc_html( (string) ( wp_date( 'l j F Y', (int) strtotime( $day . ' 12:00:00 UTC' ) ) ?: $day ) ); ?></td>
+									<td><?php echo esc_html( number_format_i18n( $row['impressions'] ) ); ?></td>
+									<td><?php echo esc_html( number_format_i18n( $row['clicks'] ) ); ?></td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+			</details>
+		</section>
 	<?php endif; ?>
 
 	<section class="hd-card">
@@ -354,14 +698,28 @@ function hodima_seo_discover_render_stats(): void {
 		<?php if ( $top ) : ?>
 			<div class="hd-table-wrap">
 				<table class="widefat striped">
-					<thead><tr><th scope="col">صفحه</th><th scope="col">کلیک</th><th scope="col">نمایش</th><th scope="col">نرخ کلیک</th></tr></thead>
+					<thead>
+						<tr>
+							<th scope="col">صفحه</th>
+							<th scope="col">کلیک</th>
+							<th scope="col">نمایش</th>
+							<th scope="col">نرخ کلیک</th>
+							<?php if ( $has_prev ) : ?>
+								<th scope="col">نمایش نسبت به ۲۸ روز قبل</th>
+							<?php endif; ?>
+						</tr>
+					</thead>
 					<tbody>
 						<?php foreach ( $top as $path => $row ) : ?>
+							<?php $prev_imp = $stats['prev']['rows'][ $path ]['impressions'] ?? 0; ?>
 							<tr>
 								<td dir="ltr"><a href="<?php echo esc_url( home_url( (string) $path ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html( (string) $path ); ?></a></td>
 								<td><?php echo esc_html( number_format_i18n( $row['clicks'] ) ); ?></td>
 								<td><?php echo esc_html( number_format_i18n( $row['impressions'] ) ); ?></td>
 								<td><?php echo esc_html( $row['impressions'] ? number_format_i18n( 100 * $row['clicks'] / $row['impressions'], 1 ) . '٪' : '—' ); ?></td>
+								<?php if ( $has_prev ) : ?>
+									<td><?php echo esc_html( 0 === $prev_imp ? 'تازه' : hodima_seo_discover_change_text( hodima_seo_discover_change( $row['impressions'], $prev_imp ) ) ); ?></td>
+								<?php endif; ?>
 							</tr>
 						<?php endforeach; ?>
 					</tbody>
@@ -404,24 +762,25 @@ function hodima_seo_discover_render_stats(): void {
 }
 
 /* =====================================================================
- * ستون «Discover» در فهرست نوشته‌ها و برگه‌ها
+ * ستون «Discover» در فهرست نوشته‌ها، برگه‌ها، محصولات و دسته‌ها
  * ===================================================================== */
 
-/** نشان آمادگی یک شیء برای ستون فهرست‌ها. */
+/** نشان آمادگی یک شیء برای ستون فهرست‌ها (از کش ردیف همان صفحه). */
 function hodima_seo_discover_column_html( WP_Post|WP_Term $target ): string {
 
-	$checks = hodima_seo_discover_checks( $target );
-	$issues = array_filter( $checks, static fn( array $c ): bool => 'ok' !== $c['status'] );
-	$error  = count( array_filter( $issues, static fn( array $c ): bool => 'error' === $c['status'] ) );
-	[ $ok, $total ] = hodima_seo_discover_score( $checks );
+	$row = hodima_seo_discover_row( $target );
+
+	if ( null === $row ) {
+		return '';
+	}
 
 	$icon = match ( true ) {
-		$error > 0 => [ 'dashicons-dismiss', 'is-error', 'Discover: مشکل دارد' ],
-		(bool) $issues => [ 'dashicons-warning', 'is-warn', 'Discover: قابل بهتر شدن' ],
-		default    => [ 'dashicons-yes-alt', 'is-ok', 'Discover: آماده' ],
+		$row['error'] > 0 => [ 'dashicons-dismiss', 'is-error', 'Discover: مشکل دارد' ],
+		$row['warn'] > 0  => [ 'dashicons-warning', 'is-warn', 'Discover: قابل بهتر شدن' ],
+		default           => [ 'dashicons-yes-alt', 'is-ok', 'Discover: آماده' ],
 	};
-	$title = sprintf( '%1$s (%2$s از %3$s)', $icon[2], number_format_i18n( $ok ), number_format_i18n( $total ) )
-		. ( $issues ? ' — ' . implode( ' · ', array_column( $issues, 'label' ) ) : '' );
+	$title = sprintf( '%1$s (%2$s از %3$s)', $icon[2], number_format_i18n( $row['ok'] ), number_format_i18n( $row['total'] ) )
+		. ( $row['issues'] ? ' — ' . implode( ' · ', array_column( $row['issues'], 'label' ) ) : '' );
 
 	return sprintf(
 		'<span class="dashicons %1$s hodima-dc-dot %2$s" title="%3$s" aria-hidden="true"></span><span class="screen-reader-text">%3$s</span>',

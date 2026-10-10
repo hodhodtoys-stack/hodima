@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، Google Discover و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           2.1.1
+ * Version:           2.1.2
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '2.1.1';
+const HODIMA_SEO_VERSION = '2.1.2';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -119,7 +119,7 @@ function hodima_seo_modules(): array {
 		],
 		'discover' => [
 			'title'       => 'Google Discover',
-			'description' => 'عنوان و تصویر Discover نوشته‌ها، برگه‌ها، محصولات و دسته‌های محصول، سه برش ۱۶:۹ / ۴:۳ / ۱:۱ (عرض ۱۲۰۰)، og:image و og:title بزرگ، فید RSS با تصویر برای «دنبال کردن»، موضوعات با ویکی‌داده و معرفی نویسنده در اسکیما، گزارش آمادگی همه نوشته‌ها و آمار واقعی Discover از Search Console.',
+			'description' => 'عنوان و تصویر Discover نوشته‌ها، برگه‌ها، محصولات و دسته‌های محصول، سه برش ۱۶:۹ / ۴:۳ / ۱:۱ (عرض ۱۲۰۰)، og:image و og:title بزرگ، فید RSS نوشته‌ها و محصولات با تصویر برای «دنبال کردن»، موضوعات با ویکی‌داده و معرفی نویسنده در اسکیما، گزارش آمادگی همه صفحه‌ها با ساخت برش برای همه، فرصت‌های بهتر شدن، و آمار واقعی Discover از Search Console با نمودار روزانه و مقایسه ۲۸ روز قبل.',
 			'files'       => [ 'core/discover/discover-init.php' ],
 			'settings'    => 'admin.php?page=hodima-discover',
 			'warning'     => 'کادر Google Discover از ویرایش نوشته برداشته می‌شود و عنوان/تصویر Discover، برش‌های تصویر و تصویر فید دیگر اعمال نمی‌شوند (اطلاعات پاک نمی‌شود).',
@@ -195,6 +195,11 @@ add_action( 'plugins_loaded', static function (): void {
 			)
 		);
 		\Hodima\Core\Modules::load( 'seo' );
+
+		// ماژول Discover خاموش: رویداد روزانه آمار Search Console یتیم نماند
+		if ( is_admin() && ! \Hodima\Core\Modules::is_loaded( 'seo', 'discover' ) && wp_next_scheduled( 'hodima_discover_sc_refresh' ) ) {
+			wp_clear_scheduled_hook( 'hodima_discover_sc_refresh' );
+		}
 		return;
 	}
 
@@ -223,4 +228,6 @@ register_deactivation_hook( __FILE__, static function (): void {
 	// IndexNow (ساعتی) و پاکسازی روزانه لاگ‌ها؛ با فعال‌سازی دوباره خودکار زمان‌بندی می‌شوند
 	wp_clear_scheduled_hook( 'hodima_core_hourly_sync' );
 	wp_clear_scheduled_hook( 'hodima_core_daily_cleanup' );
+	// آمار روزانه Google Discover (با فعال‌سازی دوباره در اولین بازدید پیشخوان زمان‌بندی می‌شود)
+	wp_clear_scheduled_hook( 'hodima_discover_sc_refresh' );
 } );
