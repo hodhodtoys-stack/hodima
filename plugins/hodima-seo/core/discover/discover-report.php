@@ -201,36 +201,47 @@ add_action( 'admin_post_hodima_discover_sc', static function (): void {
 			hodima_admin_flash( $message, $type );
 		}
 	};
+	$done  = static function () use ( $back ): never {
+		wp_safe_redirect( $back );
+		exit;
+	};
+	$do    = isset( $_POST['do'] ) ? sanitize_key( wp_unslash( $_POST['do'] ) ) : 'save';
 
 	/*
-	 * کلید جدای دیسکاور (از SEO 2.1.5): حساب سرویس (و ایمیلش) را مدیر همین‌جا
-	 * عوض یا حذف می‌کند. خالی = کلید فعلی می‌ماند. کلید نامعتبر ذخیره نمی‌شود.
+	 * دو فرم جدا (از SEO 2.1.6): «حساب سرویس» (افزودن/حذف کلید جدای دیسکاور) و
+	 * «property». باگ قبلی (2.1.5): هر دو در یک فرم با دکمه‌های نوار چسبان
+	 * پایین صفحه بودند؛ نوار هنگام نوشتن روی کادر کلید می‌آمد.
 	 */
-	if ( isset( $_POST['remove_key'] ) ) {
+	if ( 'remove_key' === $do ) {
 		delete_option( HODIMA_SEO_DISCOVER_SC_KEY_OPTION );
-	} else {
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON کلید؛ با hodima_seo_discover_sc_validate_key بررسی و دست‌نخورده ذخیره می‌شود (پاک‌سازی، کلید خصوصی را خراب می‌کند)
-		$json = isset( $_POST['key_json'] ) ? trim( (string) wp_unslash( $_POST['key_json'] ) ) : '';
-		if ( '' !== $json ) {
-			$check = hodima_seo_discover_sc_validate_key( $json );
-			if ( ! $check['ok'] ) {
-				$flash( 'کلید ذخیره نشد: ' . $check['message'], 'error' );
-				wp_safe_redirect( $back );
-				exit;
-			}
-			update_option( HODIMA_SEO_DISCOVER_SC_KEY_OPTION, $json, false );
-		}
+		delete_option( HODIMA_SEO_DISCOVER_SC_SITES_OPTION ); // فهرست property حساب قبلی
+		$flash( '' !== hodima_seo_discover_sc_key_json() ? 'کلید جدای دیسکاور حذف شد؛ از این به بعد کلید ماژول Google Indexing استفاده می‌شود.' : 'کلید جدای دیسکاور حذف شد. تا کلید تازه وارد نشود آمار به‌روز نمی‌شود.', 'success' );
+		$done();
 	}
 
-	$property = isset( $_POST['property'] ) ? sanitize_text_field( wp_unslash( $_POST['property'] ) ) : '';
-	$property = str_starts_with( $property, 'sc-domain:' ) ? $property : ( '' !== $property ? trailingslashit( esc_url_raw( $property, [ 'https', 'http' ] ) ) : '' );
-
-	update_option( HODIMA_SEO_DISCOVER_SC_OPTION, [ 'property' => $property ], false );
+	if ( 'add_key' === $do ) {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON کلید؛ با hodima_seo_discover_sc_validate_key بررسی و دست‌نخورده ذخیره می‌شود (پاک‌سازی، کلید خصوصی را خراب می‌کند)
+		$json  = isset( $_POST['key_json'] ) ? trim( (string) wp_unslash( $_POST['key_json'] ) ) : '';
+		$check = '' === $json ? [ 'ok' => false, 'message' => 'کادر خالی است؛ کل محتوای فایل JSON حساب سرویس را بچسبانید.', 'email' => '' ] : hodima_seo_discover_sc_validate_key( $json );
+		if ( ! $check['ok'] ) {
+			$flash( 'کلید ذخیره نشد: ' . $check['message'], 'error' );
+			$done();
+		}
+		update_option( HODIMA_SEO_DISCOVER_SC_KEY_OPTION, $json, false );
+		delete_option( HODIMA_SEO_DISCOVER_SC_SITES_OPTION ); // فهرست property حساب قبلی
+		$flash( sprintf( 'کلید حساب سرویس %s ذخیره شد. همین ایمیل را در سرچ کنسول کاربر property سایت کنید.', $check['email'] ), 'success' );
+	} else {
+		$property = hodima_seo_discover_sc_clean_property( isset( $_POST['property'] ) ? sanitize_text_field( wp_unslash( $_POST['property'] ) ) : '' );
+		if ( is_wp_error( $property ) ) {
+			$flash( $property->get_error_message(), 'error' );
+			$done();
+		}
+		update_option( HODIMA_SEO_DISCOVER_SC_OPTION, [ 'property' => $property ], false );
+	}
 
 	if ( '' === hodima_seo_discover_sc_key_json() ) {
 		$flash( 'کلید حساب سرویس تنظیم نشده است؛ تا کلید وارد نشود آمار به‌روز نمی‌شود.', 'warning' );
-		wp_safe_redirect( $back );
-		exit;
+		$done();
 	}
 
 	$result = hodima_seo_discover_sc_refresh();
@@ -239,8 +250,7 @@ add_action( 'admin_post_hodima_discover_sc', static function (): void {
 		? $flash( $result->get_error_message(), 'error' )
 		: $flash( 'آمار دیسکاور از سرچ کنسول به‌روز شد.', 'success' );
 
-	wp_safe_redirect( $back );
-	exit;
+	$done();
 } );
 
 /** بررسی دسترسی و nonce درخواست‌های دسته‌ای (پاسخ JSON خطا و پایان در صورت رد). */
@@ -708,12 +718,23 @@ function hodima_seo_discover_render_stats(): void {
 	$email    = hodima_seo_discover_sc_email();
 	$has_key  = '' !== hodima_seo_discover_sc_key_json();
 	$source   = hodima_seo_discover_sc_key_source();
+	$sites    = hodima_seo_discover_sc_sites();
+	$settings = get_option( HODIMA_SEO_DISCOVER_SC_OPTION, [] );
+	$raw_prop = is_array( $settings ) ? trim( (string) ( $settings['property'] ?? '' ) ) : '';
+	$bad_prop = '' !== $raw_prop && is_wp_error( hodima_seo_discover_sc_clean_property( $raw_prop ) );
 	$can_edit = current_user_can( 'manage_options' );
 	$has_prev = '' !== $stats['prev']['start'];
 	$now      = $stats['totals'];
 	$before   = $stats['prev']['totals'];
 	$ctr      = static fn( array $t ): ?float => $t['impressions'] ? $t['clicks'] / $t['impressions'] : null;
-	$daily    = hodima_seo_discover_daily_filled( $stats['daily'] );
+	$ranges   = [ '90' => '۹۰ روز', '365' => 'یک سال', 'all' => 'همه تاریخچه' ];
+	$range    = isset( $_GET['range'] ) ? sanitize_key( wp_unslash( $_GET['range'] ) ) : '90'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط بازه نمودار
+	$range    = isset( $ranges[ $range ] ) ? $range : '90';
+	$daily    = hodima_seo_discover_daily_filled( hodima_seo_discover_history_daily( 'all' === $range ? 0 : (int) $range ) );
+	$first    = (string) array_key_first( $daily );
+	$in_range = array_values( array_filter( hodima_seo_discover_changes(), static fn( array $c ): bool => '' !== $first && hodima_seo_discover_sc_day( $c['t'] ) >= $first ) );
+	$marks    = hodima_seo_discover_change_marks( $in_range );
+	$monthly  = hodima_seo_discover_history_monthly();
 
 	if ( '' !== $stats['error'] && function_exists( 'hodima_admin_notice' ) ) {
 		hodima_admin_notice( $stats['error'], 'warning' );
@@ -745,14 +766,44 @@ function hodima_seo_discover_render_stats(): void {
 			<div class="hd-card__head">
 				<?php echo hodima_admin_icon( 'dashicons-chart-area' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
 				<h2 class="hd-card__title">روند روزانه</h2>
-				<p class="hd-card__desc">کل سایت در دیسکاور، روز به روز (وقت اقیانوس آرام، مثل خود سرچ کنسول). نمایش و کلیک دو نمودار جدا با محور خودشان‌اند.</p>
+				<p class="hd-card__desc">کل سایت در دیسکاور، روز به روز (وقت اقیانوس آرام، مثل خود سرچ کنسول). نمایش و کلیک دو نمودار جدا با محور خودشان‌اند. خط نقطه‌چین بنفش = روزی که عنوان، تصویر یا نقطه تمرکز کارت صفحه‌ای عوض شد.</p>
 			</div>
+			<nav class="hodima-dr-range" aria-label="بازه نمودار">
+				<?php foreach ( $ranges as $key => $label ) : ?>
+					<a class="button<?php echo $key === $range ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( [ 'tab' => 'stats', 'range' => $key ] ) ); ?>"<?php echo $key === $range ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $label ); ?></a>
+				<?php endforeach; ?>
+			</nav>
 			<div class="hodima-dr-charts">
 				<?php
-				echo hodima_seo_discover_chart( $daily, 'impressions', 'نمایش' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع
-				echo hodima_seo_discover_chart( $daily, 'clicks', 'کلیک' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع
+				echo hodima_seo_discover_chart( $daily, 'impressions', 'نمایش', $marks ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع
+				echo hodima_seo_discover_chart( $daily, 'clicks', 'کلیک', $marks ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع
 				?>
 			</div>
+			<?php if ( $in_range ) : ?>
+				<details class="hodima-dr-daily" open>
+					<summary><?php echo esc_html( sprintf( 'تغییرهای کارت در این بازه (%s)', number_format_i18n( count( $in_range ) ) ) ); ?></summary>
+					<div class="hd-table-wrap">
+						<table class="widefat striped">
+							<thead><tr><th scope="col">روز</th><th scope="col">صفحه</th><th scope="col">تغییر</th><th scope="col">نمایش در روز، ۲۸ روز قبل ← بعد</th></tr></thead>
+							<tbody>
+								<?php foreach ( array_reverse( $in_range ) as $change ) : ?>
+									<?php
+									$edit   = 'term' === $change['ctx'] ? (string) get_edit_term_link( $change['id'] ) : (string) get_edit_post_link( $change['id'], 'raw' );
+									$name   = hodima_seo_discover_object_title( $change['id'], $change['ctx'] );
+									$effect = hodima_seo_discover_change_effect( $change );
+									?>
+									<tr>
+										<td><?php echo esc_html( (string) wp_date( 'j F Y', $change['t'] ) ); ?></td>
+										<td><a href="<?php echo esc_url( $edit ); ?>"><?php echo esc_html( '' !== $name ? $name : '(حذف‌شده)' ); ?></a></td>
+										<td><?php echo esc_html( hodima_seo_discover_change_entry_text( $change, false ) ); ?></td>
+										<td><?php echo esc_html( hodima_seo_discover_effect_text( $effect ) ); ?></td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+				</details>
+			<?php endif; ?>
 			<details class="hodima-dr-daily">
 				<summary>جدول روزانه</summary>
 				<div class="hd-table-wrap">
@@ -770,6 +821,44 @@ function hodima_seo_discover_render_stats(): void {
 					</table>
 				</div>
 			</details>
+		</section>
+	<?php endif; ?>
+
+	<?php if ( $monthly ) : ?>
+		<section class="hd-card">
+			<div class="hd-card__head">
+				<?php echo hodima_admin_icon( 'dashicons-calendar-alt' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
+				<h2 class="hd-card__title">ماه به ماه</h2>
+				<p class="hd-card__desc">کل سایت در دیسکاور به تفکیک ماه میلادی (همان ماه‌های سرچ کنسول). تاریخچه از این به بعد در خود سایت می‌ماند، حتی بعد از ۱۶ ماهی که سرچ کنسول نگه می‌دارد.</p>
+			</div>
+			<div class="hd-table-wrap">
+				<table class="widefat striped">
+					<thead><tr><th scope="col">ماه</th><th scope="col">نمایش</th><th scope="col">کلیک</th><th scope="col">نرخ کلیک</th><th scope="col">نمایش نسبت به ماه قبل</th></tr></thead>
+					<tbody>
+						<?php $months = array_keys( $monthly ); ?>
+						<?php foreach ( $months as $i => $month ) : ?>
+							<?php
+							$row     = $monthly[ $month ];
+							$older   = $months[ $i + 1 ] ?? null;
+							$change  = null !== $older ? hodima_seo_discover_change( $row['impressions'], $monthly[ $older ]['impressions'] ) : null;
+							$in_days = (int) gmdate( 't', (int) strtotime( $month . '-01 12:00:00 UTC' ) );
+							?>
+							<tr>
+								<td>
+									<?php echo esc_html( hodima_seo_discover_month_label( (string) $month ) ); ?>
+									<?php if ( $row['days'] < $in_days ) : ?>
+										<span class="hd-muted"><?php echo esc_html( sprintf( '(%s روز)', number_format_i18n( $row['days'] ) ) ); ?></span>
+									<?php endif; ?>
+								</td>
+								<td><?php echo esc_html( number_format_i18n( $row['impressions'] ) ); ?></td>
+								<td><?php echo esc_html( number_format_i18n( $row['clicks'] ) ); ?></td>
+								<td><?php echo esc_html( $row['impressions'] ? number_format_i18n( 100 * $row['clicks'] / $row['impressions'], 1 ) . '٪' : '—' ); ?></td>
+								<td><?php echo esc_html( null !== $change && $row['days'] >= $in_days ? hodima_seo_discover_change_text( $change ) : '—' ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
 		</section>
 	<?php endif; ?>
 
@@ -827,37 +916,57 @@ function hodima_seo_discover_render_stats(): void {
 			<p class="hd-card__desc">با یک حساب سرویس گوگل (Service Account) و فقط دسترسی خواندنی. آمار روزی یک بار خودکار به‌روز می‌شود.</p>
 		</div>
 		<?php if ( ! $has_key ) : ?>
-			<p class="hd-callout hd-callout--warning">کلید حساب سرویس تنظیم نشده است. فایل JSON حساب سرویس را پایین بچسبانید (اگر ماژول «Google Indexing API» کلید داشته باشد، همان خودکار استفاده می‌شود).</p>
+			<p class="hd-callout hd-callout--warning">کلید حساب سرویس تنظیم نشده است. فایل JSON حساب سرویس را پایین بچسبانید و «افزودن کلید» را بزنید (اگر ماژول «Google Indexing API» کلید داشته باشد، همان خودکار استفاده می‌شود).</p>
 		<?php else : ?>
 			<div class="hd-callout">
 				<div>
 					<p><strong>حساب فعلی:</strong> <code dir="ltr"><?php echo esc_html( $email ); ?></code>
 						<span class="hd-pill"><?php echo esc_html( 'own' === $source ? 'کلید جدای دیسکاور' : 'کلید ماژول Google Indexing' ); ?></span></p>
-					<p class="hd-muted">همین ایمیل باید در سرچ کنسول ← تنظیمات ← کاربران و مجوزها، کاربر همین property باشد. ایمیل جزئی از خود کلید است؛ برای عوض کردن حساب (و ایمیل)، فایل JSON حساب تازه را پایین بچسبانید.</p>
+					<p class="hd-muted">همین ایمیل باید در سرچ کنسول ← تنظیمات ← کاربران و مجوزها، کاربر property سایت باشد. ایمیل جزئی از خود کلید است؛ برای عوض کردن حساب (و ایمیل)، فایل JSON حساب تازه را پایین بچسبانید و «افزودن کلید» را بزنید.</p>
 				</div>
 			</div>
 		<?php endif; ?>
 		<?php if ( $can_edit ) : ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-dr-form">
 				<input type="hidden" name="action" value="hodima_discover_sc">
 				<?php wp_nonce_field( 'hodima_discover_sc' ); ?>
-				<div class="hd-fields">
-					<div class="hd-field hd-field--wide">
-						<label class="hd-field__label" for="hodima-discover-key"><?php echo esc_html( $has_key ? 'کلید حساب سرویس تازه (فایل JSON)' : 'کلید حساب سرویس (فایل JSON)' ); ?></label>
-						<textarea id="hodima-discover-key" name="key_json" rows="5" dir="ltr" autocomplete="off" spellcheck="false" placeholder='{"type": "service_account", "client_email": "…", "private_key": "…"}'></textarea>
-						<p class="hd-field__help">کل محتوای فایل JSON که از Google Cloud ← IAM ← حساب‌های سرویس ← کلیدها دانلود کرده‌اید. خالی بماند = کلید فعلی عوض نمی‌شود. این کلید فقط برای خواندن آمار دیسکاور است و ماژول Google Indexing را عوض نمی‌کند.</p>
-					</div>
-					<div class="hd-field hd-field--wide">
-						<label class="hd-field__label" for="hodima-discover-property">property در سرچ کنسول</label>
-						<input type="text" id="hodima-discover-property" name="property" dir="ltr" value="<?php echo esc_attr( hodima_seo_discover_sc_property() ); ?>" placeholder="<?php echo esc_attr( implode( '  یا  ', hodima_seo_discover_sc_candidates() ) ); ?>">
-						<p class="hd-field__help">خالی = اول آدرس سایت و بعد دامنه (sc-domain) خودکار امتحان می‌شود.</p>
-					</div>
+				<div class="hd-field hd-field--wide">
+					<label class="hd-field__label" for="hodima-discover-key"><?php echo esc_html( $has_key ? 'کلید حساب سرویس تازه (فایل JSON)' : 'کلید حساب سرویس (فایل JSON)' ); ?></label>
+					<textarea id="hodima-discover-key" name="key_json" rows="5" dir="ltr" autocomplete="off" spellcheck="false" placeholder='{"type": "service_account", "client_email": "…", "private_key": "…"}'></textarea>
+					<p class="hd-field__help">کل محتوای فایل JSON که از Google Cloud ← IAM ← حساب‌های سرویس ← کلیدها دانلود کرده‌اید. این کلید فقط برای خواندن آمار دیسکاور است و ماژول Google Indexing را عوض نمی‌کند.</p>
 				</div>
-				<div class="hd-actions">
-					<button type="submit" class="button button-primary"><?php echo hodima_admin_icon( 'dashicons-update' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> ذخیره و به‌روزرسانی آمار</button>
+				<div class="hodima-dr-form__actions">
+					<button type="submit" class="button button-primary" name="do" value="add_key"><?php echo hodima_admin_icon( 'dashicons-plus-alt2' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> <?php echo esc_html( 'own' === $source ? 'جایگزینی کلید' : 'افزودن کلید' ); ?></button>
 					<?php if ( 'own' === $source ) : ?>
-						<button type="submit" class="button" name="remove_key" value="1"><?php echo hodima_admin_icon( 'dashicons-trash' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> حذف کلید جدا (برگشت به کلید ماژول Google Indexing)</button>
+						<button type="submit" class="button" name="do" value="remove_key" formnovalidate><?php echo hodima_admin_icon( 'dashicons-trash' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> حذف کلید جدا (برگشت به کلید ماژول Google Indexing)</button>
 					<?php endif; ?>
+				</div>
+			</form>
+
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-dr-form">
+				<input type="hidden" name="action" value="hodima_discover_sc">
+				<?php wp_nonce_field( 'hodima_discover_sc' ); ?>
+				<?php if ( $bad_prop ) : ?>
+					<p class="hd-callout hd-callout--warning"><?php echo esc_html( sprintf( 'property ذخیره‌شده قبلی («%s») آدرس سایت نبود و نادیده گرفته شد؛ تا property درست ذخیره نشود، خودکار امتحان می‌شود.', $raw_prop ) ); ?></p>
+				<?php endif; ?>
+				<div class="hd-field hd-field--wide">
+					<label class="hd-field__label" for="hodima-discover-property">property در سرچ کنسول</label>
+					<input type="text" id="hodima-discover-property" name="property" dir="ltr" list="hodima-discover-sites" value="<?php echo esc_attr( hodima_seo_discover_sc_property() ); ?>" placeholder="<?php echo esc_attr( implode( '  یا  ', array_slice( hodima_seo_discover_sc_candidates(), 0, 2 ) ) ); ?>">
+					<?php if ( $sites ) : ?>
+						<datalist id="hodima-discover-sites">
+							<?php foreach ( $sites as $site ) : ?>
+								<option value="<?php echo esc_attr( $site ); ?>"></option>
+							<?php endforeach; ?>
+						</datalist>
+					<?php endif; ?>
+					<p class="hd-field__help">آدرس سایت در سرچ کنسول، نه ایمیل: مثل <code dir="ltr"><?php echo esc_html( trailingslashit( home_url() ) ); ?></code> یا <code dir="ltr">sc-domain:<?php echo esc_html( (string) preg_replace( '/^www\./', '', (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) ); ?></code>. خالی = خودکار پیدا می‌شود.
+						<?php if ( $sites ) : ?>
+							<br><?php echo esc_html( 'propertyهایی که این حساب به آن‌ها دسترسی دارد: ' . implode( '، ', $sites ) ); ?>
+						<?php endif; ?>
+					</p>
+				</div>
+				<div class="hodima-dr-form__actions">
+					<button type="submit" class="button button-primary" name="do" value="save"<?php disabled( ! $has_key ); ?>><?php echo hodima_admin_icon( 'dashicons-update' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> ذخیره و به‌روزرسانی آمار</button>
 				</div>
 			</form>
 		<?php endif; ?>

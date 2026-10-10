@@ -348,6 +348,114 @@ if ( function_exists( 'hodima_seo_discover_clickbait_match' ) ) {
 	false === $saved_own ? delete_option( 'hodima_discover_sc_key' ) : update_option( 'hodima_discover_sc_key', $saved_own, false );
 	false === $saved_gi ? delete_option( 'hodima_gi_json_key' ) : update_option( 'hodima_gi_json_key', $saved_gi, false );
 
+	echo "=== گوگل دیسکاور: نقطه تمرکز، property، تاریخچه و تغییرها (SEO 2.1.6)\n";
+	hodima_t( 'نقطه تمرکز «0.3,0.4»', hodima_seo_discover_parse_focus( '0.3,0.4' ), [ 0.3, 0.4 ] );
+	hodima_t( 'نقطه تمرکز بیرون از تصویر محدود می‌شود', hodima_seo_discover_parse_focus( '1.5,-1' ), [ 1.0, 0.0 ] );
+	hodima_t( 'نقطه تمرکز نامعتبر', hodima_seo_discover_parse_focus( 'abc' ), null );
+	hodima_t( 'ناحیه ۱۶:۹ وسط از ۱۶۰۰×۱۰۰۰', hodima_seo_discover_crop_rect( 1600, 1000, 16, 9, 0.5, 0.5 ), [ 'x' => 0, 'y' => 50, 'w' => 1600, 'h' => 900 ] );
+	hodima_t( 'ناحیه ۱:۱ با نقطه چپ (محدود به لبه)', hodima_seo_discover_crop_rect( 1600, 1000, 1, 1, 0.1, 0.5 ), [ 'x' => 0, 'y' => 0, 'w' => 1000, 'h' => 1000 ] );
+	hodima_t( 'ناحیه ۱:۱ با نقطه ۷۰٪', hodima_seo_discover_crop_rect( 1600, 1000, 1, 1, 0.7, 0.5 ), [ 'x' => 600, 'y' => 0, 'w' => 1000, 'h' => 1000 ] );
+
+	hodima_seo_discover_set_focus( $img_b, '0.50,0.50' );
+	hodima_seo_discover_make_crops( $img_b );
+	$before_files = array_column( wp_get_attachment_metadata( $img_b )['sizes'] ?? [], 'file', null );
+	hodima_t( 'نقطه تازه ذخیره شد', hodima_seo_discover_set_focus( $img_b, '0.2,0.3' ), true );
+	hodima_t( 'با نقطه تازه سه برش دوباره ساخته شد', hodima_seo_discover_make_crops( $img_b ), 3 );
+	$meta_f = wp_get_attachment_metadata( $img_b );
+	hodima_t( 'نام فایل برش نقطه را دارد', str_contains( (string) ( $meta_f['sizes']['hodima-discover-16x9']['file'] ?? '' ), '-f20-30' ), true );
+	hodima_t( 'نقطه در اطلاعات برش', $meta_f['sizes']['hodima-discover-1x1']['hodima_focus'] ?? '', '0.20,0.30' );
+	$dir_b = dirname( (string) get_attached_file( $img_b ) );
+	hodima_t( 'فایل برش‌های وسط قبلی پاک شد', array_values( array_filter( (array) $before_files, static fn( string $f ): bool => is_file( $dir_b . '/' . $f ) && ! in_array( $f, array_column( $meta_f['sizes'], 'file' ), true ) ) ), [] );
+	hodima_t( 'بار دوم با همان نقطه برشی ساخته نمی‌شود', hodima_seo_discover_make_crops( $img_b ), 0 );
+	hodima_t( 'تکرار همان نقطه = بدون تغییر', hodima_seo_discover_set_focus( $img_b, '0.20,0.30' ), false );
+	$old_crop = $dir_b . '/' . $meta_f['sizes']['hodima-discover-16x9']['file'];
+	hodima_seo_discover_set_focus( $img_b, '0.5,0.5' );
+	hodima_seo_discover_make_crops( $img_b );
+	hodima_t( 'برگشت به وسط: نام عادی و فایل نقطه قبلی پاک', [ str_contains( (string) ( wp_get_attachment_metadata( $img_b )['sizes']['hodima-discover-16x9']['file'] ?? '' ), '-f' ), is_file( $old_crop ) ], [ false, false ] );
+	hodima_t( 'متای نقطه تمرکز تصویر در REST ثبت شده', registered_meta_key_exists( 'post', '_hodima_discover_focus', 'attachment' ), true );
+
+	hodima_t( 'property: ایمیل رد می‌شود', is_wp_error( hodima_seo_discover_sc_clean_property( 'google-indexing-api@engaged-diode-465907-v7.iam.gserviceaccount.com' ) ), true );
+	hodima_t( 'property: آدرس با / آخر', hodima_seo_discover_sc_clean_property( 'https://HodhodLi.com' ), 'https://hodhodli.com/' );
+	hodima_t( 'property: دامنه', hodima_seo_discover_sc_clean_property( 'sc-domain:Hodhodli.com' ), 'sc-domain:hodhodli.com' );
+	hodima_t( 'property: دامنه خالی ← sc-domain', hodima_seo_discover_sc_clean_property( 'hodhodli.com' ), 'sc-domain:hodhodli.com' );
+	hodima_t( 'property: آدرس با نام کاربری رد', is_wp_error( hodima_seo_discover_sc_clean_property( 'https://user@hodhodli.com/' ) ), true );
+	$saved_sc    = get_option( 'hodima_discover_sc_settings' );
+	$saved_sites = get_option( 'hodima_discover_sc_sites' );
+	update_option( 'hodima_discover_sc_settings', [ 'property' => 'https://google-indexing-api@engaged-diode-465907-v7.iam.gserviceaccount.com/' ], false );
+	hodima_t( 'property نامعتبر ذخیره‌شده قبلی نادیده گرفته می‌شود', hodima_seo_discover_sc_property(), '' );
+	update_option( 'hodima_discover_sc_sites', [ 'https://other.example/', 'sc-domain:hodima.test' ], false );
+	hodima_t( 'property خودکار: اول property دامنه همین سایت که حساب به آن دسترسی دارد', hodima_seo_discover_sc_candidates()[0] ?? '', 'sc-domain:hodima.test' );
+
+	// تغییرها: یکی شدن تغییرهای پشت هم و برگشت
+	$saved_changes = get_option( 'hodima_discover_changes' );
+	delete_option( 'hodima_discover_changes' );
+	hodima_seo_discover_log_change( 'post', $p1, 'title', 'الف', 'ب' );
+	hodima_seo_discover_log_change( 'post', $p1, 'title', 'ب', 'ج' );
+	hodima_t( 'دو تغییر پشت هم یکی شد (الف ← ج)', array_map( static fn( array $c ): string => $c['from'] . '>' . $c['to'], hodima_seo_discover_changes() ), [ 'الف>ج' ] );
+	hodima_seo_discover_log_change( 'post', $p1, 'title', 'ج', 'الف' );
+	hodima_t( 'برگشت به حالت قبل ← تغییری نماند', hodima_seo_discover_changes(), [] );
+
+	// یک تغییر ۱۰ روز پیش (برای «قبل و بعد») و به‌روزرسانی آمار با سرچ کنسول شبیه‌سازی‌شده
+	update_option( 'hodima_discover_changes', [ [ 't' => time() - 10 * DAY_IN_SECONDS, 'ctx' => 'post', 'id' => $p1, 'key' => hodima_seo_discover_url_key( (string) get_permalink( $p1 ) ), 'what' => 'title', 'from' => 'قدیم', 'to' => 'تازه' ] ], false );
+	$saved_key   = get_option( 'hodima_discover_sc_key' );
+	$saved_hist  = get_option( 'hodima_discover_sc_history' );
+	$saved_stats = get_option( 'hodima_discover_sc_stats' );
+	delete_option( 'hodima_discover_sc_history' );
+	delete_option( 'hodima_discover_sc_settings' );
+	update_option( 'hodima_discover_sc_key', $own_key, false );
+	$p1_url   = (string) get_permalink( $p1 );
+	$change_d = hodima_seo_discover_sc_day( time() - 10 * DAY_IN_SECONDS );
+	$calls    = [];
+	$mock     = static function ( $pre, array $args, string $url ) use ( &$calls, $p1_url, $change_d ) {
+		$json = static fn( array $body ): array => [ 'headers' => [], 'body' => (string) wp_json_encode( $body ), 'response' => [ 'code' => 200, 'message' => 'OK' ], 'cookies' => [] ];
+		if ( str_contains( $url, 'oauth2.googleapis.com/token' ) ) {
+			return $json( [ 'access_token' => 'test-token', 'expires_in' => 3600 ] );
+		}
+		if ( str_ends_with( $url, '/webmasters/v3/sites' ) ) {
+			return $json( [ 'siteEntry' => [ [ 'siteUrl' => 'sc-domain:hodima.test', 'permissionLevel' => 'siteOwner' ] ] ] );
+		}
+		if ( ! str_contains( $url, '/searchAnalytics/query' ) ) {
+			return $pre;
+		}
+		$q       = json_decode( (string) $args['body'], true );
+		$calls[] = implode( '+', $q['dimensions'] ) . ' ' . $q['startDate'];
+		$rows    = [];
+		for ( $d = strtotime( $q['startDate'] . ' 12:00 UTC' ); $d <= strtotime( $q['endDate'] . ' 12:00 UTC' ); $d += DAY_IN_SECONDS ) {
+			$day = gmdate( 'Y-m-d', $d );
+			if ( [ 'date' ] === $q['dimensions'] ) {
+				$rows[] = [ 'keys' => [ $day ], 'clicks' => 1, 'impressions' => 10 ];
+			} elseif ( [ 'page', 'date' ] === $q['dimensions'] ) {
+				$rows[] = [ 'keys' => [ $p1_url, $day ], 'clicks' => 0, 'impressions' => $day > $change_d ? 9 : 3 ];
+			}
+		}
+		if ( [ 'page' ] === $q['dimensions'] ) {
+			$rows[] = [ 'keys' => [ $p1_url ], 'clicks' => 4, 'impressions' => 120 ];
+		}
+		return $json( [ 'rows' => $rows ] );
+	};
+	add_filter( 'pre_http_request', $mock, 10, 3 );
+	hodima_t( 'به‌روزرسانی آمار (شبیه‌سازی‌شده) موفق', hodima_seo_discover_sc_refresh(), true );
+	$hist = hodima_seo_discover_history();
+	hodima_t( 'property از فهرست حساب انتخاب شد', $hist['property'], 'sc-domain:hodima.test' );
+	hodima_t( 'تاریخچه روزانه ۱۶ ماه پر شد', $hist['backfilled'] && count( $hist['daily'] ) > 470, true );
+	hodima_t( 'سه ماه کامل صفحه‌ها در دور اول', count( $hist['months'] ), 3 );
+	hodima_t( 'ماه به ماه صفحه: ۱۲۰ نمایش', array_values( hodima_seo_discover_page_months( hodima_seo_discover_url_key( $p1_url ), 1 ) )[0]['impressions'] ?? 0, 120 );
+	hodima_t( 'روزانه صفحه تغییرکرده ذخیره شد', count( $hist['pages_daily'][ hodima_seo_discover_url_key( $p1_url ) ] ?? [] ) > 60, true );
+	$effect = hodima_seo_discover_change_effect( hodima_seo_discover_changes()[0] );
+	hodima_t( 'اثر تغییر: نمایش روزانه ۳ ← ۹', [ round( $effect['before']['impressions'] ?? 0, 1 ), round( $effect['after']['impressions'] ?? 0, 1 ), $effect['before_days'] ?? 0 ], [ 3.0, 9.0, 28 ] );
+	hodima_t( 'متن اثر تغییر', str_starts_with( hodima_seo_discover_effect_text( $effect ), 'نمایش ' ), true );
+	hodima_t( 'جمع ماهانه کل سایت', ( array_values( hodima_seo_discover_history_monthly() )[1]['impressions'] ?? 0 ) > 250, true );
+	hodima_t( 'روزانه یک سال از تاریخچه', count( hodima_seo_discover_history_daily( 365 ) ), 365 );
+	$calls = [];
+	hodima_seo_discover_sc_refresh();
+	hodima_t( 'دور دوم: ۱۶ ماه دوباره گرفته نمی‌شود، سه ماه دیگر پر می‌شود', [ count( array_filter( $calls, static fn( string $c ): bool => str_starts_with( $c, 'page ' ) ) ), count( hodima_seo_discover_history()['months'] ) ], [ 5, 6 ] );
+	hodima_t( 'نام ماه میلادی فارسی', hodima_seo_discover_month_label( '2026-05' ), 'مه ۲۰۲۶' );
+	remove_filter( 'pre_http_request', $mock, 10 );
+
+	foreach ( [ 'hodima_discover_sc_key' => $saved_key, 'hodima_discover_sc_history' => $saved_hist, 'hodima_discover_sc_stats' => $saved_stats, 'hodima_discover_changes' => $saved_changes, 'hodima_discover_sc_settings' => $saved_sc, 'hodima_discover_sc_sites' => $saved_sites ] as $option => $value ) {
+		false === $value ? delete_option( $option ) : update_option( $option, $value, false );
+	}
+
 	false === $old_privacy ? delete_option( 'wp_page_for_privacy_policy' ) : update_option( 'wp_page_for_privacy_policy', $old_privacy );
 	wp_delete_post( $privacy, true );
 

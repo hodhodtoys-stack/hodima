@@ -95,6 +95,7 @@ function hodima_seo_discover_boot(): void {
 	require_once __DIR__ . '/legacy.php';
 	require_once __DIR__ . '/discover-front.php';
 	require_once __DIR__ . '/discover-stats.php'; // WP-Cron هم در درخواست غیر پیشخوان اجرا می‌شود
+	require_once __DIR__ . '/discover-history.php'; // تاریخچه آمار و ثبت تغییرها (ذخیره از REST هم)
 	// کش ردیف گزارش: پاک شدن آن باید در REST (ویرایشگر بلوکی) و کرون هم رخ دهد، نه فقط پیشخوان
 	require_once __DIR__ . '/discover-cache.php';
 
@@ -146,6 +147,18 @@ function hodima_seo_discover_register_meta(): void {
 			'auth_callback'     => static fn( bool $allowed, string $key, int $post_id ): bool => current_user_can( 'edit_post', $post_id ),
 		] );
 	}
+
+	// نقطه تمرکز برش‌ها روی خود تصویر (ویرایشگر بلوکی آن را با تصویر شاخص از REST می‌خواند)
+	register_post_meta( 'attachment', HODIMA_SEO_DISCOVER_FOCUS_META, [
+		'type'              => 'string',
+		'single'            => true,
+		'show_in_rest'      => true,
+		'sanitize_callback' => static function ( mixed $v ): string {
+			$focus = hodima_seo_discover_parse_focus( is_scalar( $v ) ? (string) $v : '' );
+			return null === $focus ? '' : hodima_seo_discover_focus_string( $focus );
+		},
+		'auth_callback'     => static fn( bool $allowed, string $key, int $post_id ): bool => current_user_can( 'edit_post', $post_id ),
+	] );
 
 	foreach ( hodima_seo_discover_taxonomies() as $taxonomy ) {
 		if ( ! taxonomy_exists( $taxonomy ) ) {
@@ -480,13 +493,103 @@ function hodima_seo_discover_crop_size( int $src_w, int $src_h, int $rw, int $rh
 	return ( $w > 0 && $w * $h >= 50000 ) ? [ $w, $h ] : [ 0, 0 ];
 }
 
+/** متای پیوست: نقطه تمرکز برش‌ها «x,y» (۰ تا ۱ از چپ و بالا؛ نبودن = وسط). */
+const HODIMA_SEO_DISCOVER_FOCUS_META = '_hodima_discover_focus';
+
 /**
- * سه برش دیسکاور را (اگر نیست) برای یک پیوست می‌سازد و تعداد برش تازه را برمی‌گرداند.
- * فقط هنگام ذخیره نوشته/تغییر تصویر شاخص و «ساخت برش برای همه» (گزارش)
- * اجرا می‌شود، نه هنگام بازدید.
+ * نقطه تمرکز یک تصویر: [ x, y ] بین ۰ و ۱ (دو رقم اعشار)، پیش‌فرض وسط.
+ *
+ * مال خود پیوست است، نه صفحه: هر صفحه‌ای که این تصویر را دارد همان برش‌ها را
+ * می‌گیرد (برش‌ها هم در اطلاعات همان پیوست ذخیره می‌شوند).
+ *
+ * @return array{0: float, 1: float}
+ */
+function hodima_seo_discover_focus( int $attachment_id ): array {
+	return hodima_seo_discover_parse_focus( (string) get_post_meta( $attachment_id, HODIMA_SEO_DISCOVER_FOCUS_META, true ) ) ?? [ 0.5, 0.5 ];
+}
+
+/**
+ * «x,y» ← [ x, y ] محدود به ۰ تا ۱، یا null اگر نامعتبر است.
+ *
+ * @return array{0: float, 1: float}|null
+ */
+function hodima_seo_discover_parse_focus( string $raw ): ?array {
+	if ( 1 !== preg_match( '/^\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*$/', $raw, $m ) ) {
+		return null;
+	}
+	$clamp = static fn( string $v ): float => round( max( 0.0, min( 1.0, (float) $v ) ), 2 );
+	return [ $clamp( $m[1] ), $clamp( $m[2] ) ];
+}
+
+/**
+ * @param array{0: float, 1: float} $focus
+ */
+function hodima_seo_discover_focus_string( array $focus ): string {
+	return sprintf( '%.2F,%.2F', $focus[0], $focus[1] );
+}
+
+/**
+ * ذخیره نقطه تمرکز یک تصویر (وسط = حذف متا). true اگر عوض شد؛ برش‌ها در
+ * ذخیره بعدی (یا همین ذخیره صفحه) با نقطه تازه دوباره ساخته می‌شوند.
+ */
+function hodima_seo_discover_set_focus( int $attachment_id, string $raw ): bool {
+
+	$focus = hodima_seo_discover_parse_focus( $raw );
+
+	if ( null === $focus || ! wp_attachment_is_image( $attachment_id ) ) {
+		return false;
+	}
+
+	$value = hodima_seo_discover_focus_string( $focus );
+
+	if ( hodima_seo_discover_focus_string( hodima_seo_discover_focus( $attachment_id ) ) === $value ) {
+		return false;
+	}
+
+	'0.50,0.50' === $value
+		? delete_post_meta( $attachment_id, HODIMA_SEO_DISCOVER_FOCUS_META )
+		: update_post_meta( $attachment_id, HODIMA_SEO_DISCOVER_FOCUS_META, $value );
+
+	return true;
+}
+
+/**
+ * ناحیه برش در تصویر اصلی: بزرگ‌ترین ناحیه با نسبت rw:rh که مرکزش تا جای ممکن
+ * روی نقطه تمرکز است (بیرون از تصویر نمی‌رود). همان حساب در JS پیش‌نمایش
+ * (discover-admin.js: focusPosition).
+ *
+ * @return array{x: int, y: int, w: int, h: int}
+ */
+function hodima_seo_discover_crop_rect( int $src_w, int $src_h, int $rw, int $rh, float $fx, float $fy ): array {
+
+	if ( $src_w * $rh > $src_h * $rw ) {   // پهن‌تر از نسبت: تمام ارتفاع
+		$h = $src_h;
+		$w = (int) round( $src_h * $rw / $rh );
+	} else {                               // بلندتر: تمام عرض
+		$w = $src_w;
+		$h = (int) round( $src_w * $rh / $rw );
+	}
+
+	$x = (int) round( max( 0, min( $src_w - $w, $fx * $src_w - $w / 2 ) ) );
+	$y = (int) round( max( 0, min( $src_h - $h, $fy * $src_h - $h / 2 ) ) );
+
+	return [ 'x' => $x, 'y' => $y, 'w' => $w, 'h' => $h ];
+}
+
+/**
+ * سه برش دیسکاور را (اگر نیست یا نقطه تمرکز عوض شده) برای یک پیوست می‌سازد و
+ * تعداد برش تازه را برمی‌گرداند. فقط هنگام ذخیره نوشته/تغییر تصویر شاخص و
+ * «ساخت برش برای همه» (گزارش) اجرا می‌شود، نه هنگام بازدید.
  * برش‌ها در اطلاعات همان پیوست («sizes») ثبت می‌شوند؛ با حذف تصویر،
  * وردپرس آن‌ها را هم پاک می‌کند. (اندازه تصویر سراسری ثبت نشد تا هر آپلود
  * سه فایل اضافه نسازد.)
+ *
+ * SEO 2.1.6: برش دور «نقطه تمرکز» (hodima_seo_discover_focus) بریده می‌شود، نه
+ * همیشه از وسط (سوژه کنار کادر، مثلا محصول، بریده می‌شد). نقطه غیر از وسط در
+ * نام فایل می‌آید (…-1200x675-f30-40.jpg) تا با عوض شدنش آدرس og:image هم عوض
+ * شود و کش‌ها (لایت‌اسپید، گوگل، شبکه‌ها) تصویر کهنه نشان ندهند؛ فایل برش
+ * قبلی اگر اندازه دیگری از آن استفاده نکند، پاک می‌شود. برش وسط همان نام
+ * قبلی را دارد، پس برش‌های موجود دوباره ساخته نمی‌شوند.
  */
 function hodima_seo_discover_make_crops( int $attachment_id ): int {
 
@@ -501,29 +604,64 @@ function hodima_seo_discover_make_crops( int $attachment_id ): int {
 		return 0;
 	}
 
+	$src_w      = (int) $meta['width'];
+	$src_h      = (int) $meta['height'];
+	$focus      = hodima_seo_discover_focus( $attachment_id );
+	$focus_key  = hodima_seo_discover_focus_string( $focus );
+	$dir        = dirname( $file );
 	$made_count = 0;
 
 	foreach ( HODIMA_SEO_DISCOVER_CROPS as $key => [ $rw, $rh ] ) {
 
 		$name      = 'hodima-discover-' . $key;
-		[ $w, $h ] = hodima_seo_discover_crop_size( (int) $meta['width'], (int) $meta['height'], $rw, $rh );
+		[ $w, $h ] = hodima_seo_discover_crop_size( $src_w, $src_h, $rw, $rh );
 		$existing  = $meta['sizes'][ $name ] ?? null;
 
 		// بدون برش: خیلی کوچک، یا خود تصویر اصلی دقیقا همین نسبت را دارد
-		if ( ! $w || ( $w === (int) $meta['width'] && $h === (int) $meta['height'] ) ) {
+		if ( ! $w || ( $w === $src_w && $h === $src_h ) ) {
 			continue;
 		}
 
+		// برش‌های قبل از SEO 2.1.6 کلید نقطه ندارند و از وسط‌اند
 		if ( is_array( $existing ) && (int) $existing['width'] === $w && (int) $existing['height'] === $h
-			&& is_file( dirname( $file ) . '/' . $existing['file'] ) ) {
+			&& ( $existing['hodima_focus'] ?? '0.50,0.50' ) === $focus_key
+			&& is_file( $dir . '/' . $existing['file'] ) ) {
 			continue;
 		}
 
-		$made = image_make_intermediate_size( $file, $w, $h, true );
+		$editor = wp_get_image_editor( $file );
+		if ( is_wp_error( $editor ) ) {
+			continue;
+		}
 
-		if ( is_array( $made ) ) {
-			$meta['sizes'][ $name ] = $made;
-			++$made_count;
+		$rect   = hodima_seo_discover_crop_rect( $src_w, $src_h, $rw, $rh, $focus[0], $focus[1] );
+		$suffix = "{$w}x{$h}" . ( '0.50,0.50' === $focus_key ? '' : sprintf( '-f%d-%d', (int) round( 100 * $focus[0] ), (int) round( 100 * $focus[1] ) ) );
+
+		if ( is_wp_error( $editor->crop( $rect['x'], $rect['y'], $rect['w'], $rect['h'], $w, $h ) ) ) {
+			continue;
+		}
+
+		$saved = $editor->save( $editor->generate_filename( $suffix ) );
+
+		if ( is_wp_error( $saved ) || empty( $saved['file'] ) ) {
+			continue;
+		}
+
+		$old = is_array( $existing ) ? (string) ( $existing['file'] ?? '' ) : '';
+
+		$meta['sizes'][ $name ] = [
+			'file'         => (string) $saved['file'],
+			'width'        => (int) $saved['width'],
+			'height'       => (int) $saved['height'],
+			'mime-type'    => (string) $saved['mime-type'],
+			'filesize'     => (int) ( $saved['filesize'] ?? 0 ),
+			'hodima_focus' => $focus_key,
+		];
+		++$made_count;
+
+		// فایل برش قبلی (نقطه دیگر) اگر اندازه دیگری یا خود اصل از آن استفاده نمی‌کند
+		if ( '' !== $old && $old !== $saved['file'] && $old !== basename( $file ) && ! in_array( $old, array_column( $meta['sizes'], 'file' ), true ) ) {
+			wp_delete_file( $dir . '/' . $old );
 		}
 	}
 

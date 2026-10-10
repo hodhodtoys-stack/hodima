@@ -10,6 +10,8 @@
  *     قاعده PHP)، پیشنهاد عنوان با یک کلیک
  *   - تصویر: یک تصویر کوچک (تصویر جدای دیسکاور یا تصویر پیش‌فرض صفحه) با
  *     ابعاد و وضعیت برش؛ انتخاب از کتابخانه رسانه و برگشت به پیش‌فرض
+ *   - نقطه تمرکز برش‌ها (SEO 2.1.6): کلیک یا کلیدهای جهت روی تصویر، پیش‌نمایش
+ *     همان سه برش (همان حساب PHP)، و همان جای تصویر در کارت‌های پیش‌نمایش
  *   - موضوعات: برچسب‌ها (Enter یا ویرگول = افزودن، × یا Backspace = حذف)
  *   - آمادگی: هر تغییر ردیف را بین «نیاز به توجه» و «موارد درست» جابه‌جا و
  *     دایره امتیاز، شمارنده تب و خلاصه سربرگ را به‌روز می‌کند
@@ -171,7 +173,7 @@
 
 	function defaultImage(field) {
 		const d = field.dataset;
-		return d.defaultUrl ? { url: d.defaultUrl, width: Number(d.defaultWidth) || 0, height: Number(d.defaultHeight) || 0, alt: d.defaultAlt === '1' } : null;
+		return d.defaultUrl ? { url: d.defaultUrl, width: Number(d.defaultWidth) || 0, height: Number(d.defaultHeight) || 0, alt: d.defaultAlt === '1', focus: d.defaultFocus || CENTER } : null;
 	}
 
 	/** تصویر کوچک، واقعیت‌ها (ابعاد، برش)، دکمه‌ها و تصویر پیش‌نمایش‌ها از روی وضعیت فعلی. */
@@ -203,6 +205,9 @@
 		});
 		box.querySelectorAll('[data-hodima-dc-preview-noimg]').forEach((el) => { el.hidden = Boolean(shown); });
 
+		// تصویر عوض شد: نقطه تمرکز همان تصویر (هر تصویر نقطه خودش را دارد)
+		renderFocus(box, shown, changed);
+
 		if (!changed) return;
 
 		// تصویر عوض شد: ردیف‌های آمادگی (همان پیام‌های PHP)
@@ -226,13 +231,96 @@
 			: (shown ? `برای کارت بزرگ حداقل ${nf.format(config.minWidth)} پیکسل عرض لازم است.` : 'بدون تصویر، دیسکاور کارت را تقریبا نشان نمی‌دهد.');
 	}
 
+	/* ── نقطه تمرکز برش‌ها (SEO 2.1.6) ── */
+	const CENTER = '0.50,0.50';
+	const RATIOS = { '16:9': [16, 9], '4:3': [4, 3], '1:1': [1, 1] };
+	const pct = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 0 });
+
+	/** «x,y» ← [x, y] بین ۰ و ۱. */
+	const parseFocus = (raw) => {
+		const m = String(raw || '').match(/^\s*([\d.]+)\s*,\s*([\d.]+)\s*$/);
+		const clamp = (v) => Math.round(Math.max(0, Math.min(1, Number(v))) * 100) / 100;
+		return m ? [clamp(m[1]), clamp(m[2])] : [0.5, 0.5];
+	};
+	const focusString = ([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`;
+
+	/*
+	 * object-position (درصد) برای نمایش برش rw:rh دور نقطه تمرکز با object-fit: cover؛
+	 * همان حساب PHP (hodima_seo_discover_crop_rect): بزرگ‌ترین ناحیه هم‌نسبت که
+	 * مرکزش تا جای ممکن روی نقطه است و بیرون از تصویر نمی‌رود.
+	 */
+	function focusPosition(srcW, srcH, rw, rh, [fx, fy]) {
+		if (!srcW || !srcH) return [fx * 100, fy * 100];
+		const wide = srcW * rh > srcH * rw;
+		const w = wide ? (srcH * rw) / rh : srcW;
+		const h = wide ? srcH : (srcW * rh) / rw;
+		const x = Math.max(0, Math.min(srcW - w, fx * srcW - w / 2));
+		const y = Math.max(0, Math.min(srcH - h, fy * srcH - h / 2));
+		return [srcW - w > 0 ? (100 * x) / (srcW - w) : 50, srcH - h > 0 ? (100 * y) / (srcH - h) : 50];
+	}
+
+	const focusImages = new WeakMap(); // تصویر فعلی بخش نقطه تمرکز هر کادر
+
+	/** نقطه، برش‌های پیش‌نمایش، تصویر کوچک و کارت‌های پنجره را از روی نقطه فعلی می‌چیند. */
+	function paintFocus(box) {
+		const wrap = box.querySelector('[data-hodima-dc-focus]');
+		const input = box.querySelector('[data-hodima-dc-focus-input]');
+		const shown = focusImages.get(box);
+		if (!wrap || !input || !shown) return;
+		const focus = parseFocus(input.value);
+		const dot = wrap.querySelector('[data-hodima-dc-focus-dot]');
+		// تصویر تمرکز چپ‌به‌راست واقعی است؛ پس جای فیزیکی
+		dot.style.left = `${focus[0] * 100}%`;
+		dot.style.top = `${focus[1] * 100}%`;
+		const at = (rw, rh) => focusPosition(shown.width, shown.height, rw, rh, focus).map((v) => `${v}%`).join(' ');
+		wrap.querySelectorAll('[data-hodima-dc-crop-img]').forEach((img) => {
+			const [rw, rh] = RATIOS[img.dataset.ratio] || [16, 9];
+			img.style.objectPosition = at(rw, rh);
+		});
+		const wide = at(16, 9);
+		box.querySelectorAll('[data-hodima-dc-thumb-img], .hodima-dc__card--phone [data-hodima-dc-preview-img], .hodima-dc__card--desktop [data-hodima-dc-preview-img]').forEach((img) => { img.style.objectPosition = wide; });
+		box.querySelectorAll('.hodima-dc__card--social [data-hodima-dc-preview-img]').forEach((img) => { img.style.objectPosition = at(191, 100); });
+		const center = input.value === CENTER;
+		wrap.querySelector('[data-hodima-dc-focus-state]').textContent = center
+			? 'وسط تصویر'
+			: `${pct.format(focus[0] * 100)}٪ از چپ، ${pct.format(focus[1] * 100)}٪ از بالا`;
+		wrap.querySelector('[data-hodima-dc-focus-reset]').hidden = center;
+	}
+
+	/** تصویر بخش نقطه تمرکز؛ با reset نقطه همان تصویر (ذخیره‌شده در خود تصویر) برمی‌گردد. */
+	function renderFocus(box, shown, reset) {
+		const wrap = box.querySelector('[data-hodima-dc-focus]');
+		const input = box.querySelector('[data-hodima-dc-focus-input]');
+		if (!wrap || !input) return;
+		wrap.hidden = !shown;
+		if (!shown) { focusImages.delete(box); return; }
+		focusImages.set(box, shown);
+		wrap.querySelectorAll('[data-hodima-dc-focus-img], [data-hodima-dc-crop-img]').forEach((img) => { img.src = shown.url; });
+		if (reset) input.value = focusString(parseFocus(shown.focus));
+		paintFocus(box);
+	}
+
+	/** مدیر نقطه را جابه‌جا کرد. */
+	function setFocus(box, focus) {
+		const input = box.querySelector('[data-hodima-dc-focus-input]');
+		if (!input) return;
+		const value = focusString(focus.map((v) => Math.max(0, Math.min(1, v))));
+		if (value === input.value) return;
+		input.value = value;
+		paintFocus(box);
+		// برش‌ها بعد از ذخیره با نقطه تازه ساخته می‌شوند
+		const crops = box.querySelector('[data-hodima-dc-crops]');
+		if (crops) { crops.className = 'hodima-dc__fact is-warn'; crops.textContent = 'برش بعد از ذخیره'; }
+		if (box.querySelector('[data-hodima-dc-check="crops"]')) setCheck(box, 'crops', 'warn', 'نقطه تمرکز عوض شد؛ برش‌ها بعد از ذخیره دوباره ساخته می‌شوند.');
+	}
+
 	function openPicker(box) {
 		if (!window.wp?.media) return;
 		const frame = wp.media({ title: 'انتخاب تصویر دیسکاور', button: { text: 'انتخاب' }, multiple: false, library: { type: 'image' } });
 		frame.on('select', () => {
 			const a = frame.state().get('selection').first().toJSON();
 			box.querySelector('[data-hodima-dc-image-id]').value = a.id;
-			ownImages.set(box, { url: a.sizes?.medium_large?.url || a.sizes?.large?.url || a.url, width: Number(a.width) || 0, height: Number(a.height) || 0, alt: Boolean(a.alt) });
+			ownImages.set(box, { url: a.sizes?.medium_large?.url || a.sizes?.large?.url || a.url, width: Number(a.width) || 0, height: Number(a.height) || 0, alt: Boolean(a.alt), focus: a.hodimaFocus || CENTER });
 			renderImage(box, true);
 		});
 		frame.open();
@@ -317,6 +405,15 @@
 
 		const d = button.dataset;
 		if ('hodimaDcTab' in d) { selectTab(box, d.hodimaDcTab); return; }
+		if ('hodimaDcFocusPad' in d) {
+			e.preventDefault();
+			const img = button.querySelector('[data-hodima-dc-focus-img]');
+			const rect = (img || button).getBoundingClientRect();
+			// کلید Enter/Space روی دکمه هم «click» می‌دهد (بدون مختصات): نقطه همان می‌ماند
+			if (e.detail === 0 || !rect.width) return;
+			setFocus(box, [(e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height]);
+			return;
+		}
 		e.preventDefault();
 
 		if ('hodimaDcInfo' in d) {
@@ -343,6 +440,9 @@
 			closePreview(button.closest('dialog'));
 		} else if ('hodimaDcView' in d) {
 			selectView(box, d.hodimaDcView);
+		} else if ('hodimaDcFocusReset' in d) {
+			setFocus(box, [0.5, 0.5]);
+			box.querySelector('[data-hodima-dc-focus-pad]')?.focus();
 		}
 	});
 
@@ -356,6 +456,17 @@
 		if (!box) return;
 
 		if (e.target.matches('[data-hodima-dc-tab]')) { tabKeys(box, e); return; }
+
+		// نقطه تمرکز با کلیدهای جهت (۵٪؛ با Shift یک‌درصدی). جهت فیزیکی تصویر، نه جهت متن
+		if (e.target.matches('[data-hodima-dc-focus-pad]')) {
+			const step = e.shiftKey ? 0.01 : 0.05;
+			const move = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
+			if (!move) return;
+			e.preventDefault();
+			const [x, y] = parseFocus(box.querySelector('[data-hodima-dc-focus-input]')?.value);
+			setFocus(box, [x + move[0], y + move[1]]);
+			return;
+		}
 		if (!e.target.matches('[data-hodima-dc-topic-input]')) return;
 
 		// Enter یا ویرگول (لاتین/فارسی) = افزودن؛ Enter نباید فرم را ارسال کند
@@ -387,6 +498,7 @@
 		field.dataset.defaultWidth = String(attachment?.width || 0);
 		field.dataset.defaultHeight = String(attachment?.height || 0);
 		field.dataset.defaultAlt = attachment?.alt ? '1' : '0';
+		field.dataset.defaultFocus = attachment?.focus || CENTER;
 		renderImage(box, !ownImages.get(box)); // تصویر جدای دیسکاور انتخاب شده؟ آمادگی دست نمی‌خورد
 	}
 
@@ -412,6 +524,7 @@
 		width: m.media_details?.width,
 		height: m.media_details?.height,
 		alt: Boolean(m.alt_text),
+		focus: m.meta?._hodima_discover_focus || CENTER,
 	});
 
 	/** پیوست wp.media (ویرایشگر کلاسیک) ← شکل مشترک. */
@@ -420,13 +533,14 @@
 		width: a.width,
 		height: a.height,
 		alt: Boolean(a.alt),
+		focus: a.hodimaFocus || CENTER,
 	});
 
 	/** کادر نوشته فعلی (بعد از تازه شدن، عنصر DOM عوض می‌شود). */
 	const currentBox = () => document.querySelector('[data-hodima-dc][data-context="post"]');
 
 	/** مقدار فیلدهای ذخیره‌شونده کادر (برای فهمیدن تغییر حین ذخیره). */
-	const fieldState = (box) => ['[data-hodima-dc-title]', '[data-hodima-dc-image-id]', '[data-hodima-dc-entities]']
+	const fieldState = (box) => ['[data-hodima-dc-title]', '[data-hodima-dc-image-id]', '[data-hodima-dc-entities]', '[data-hodima-dc-focus-input]']
 		.map((sel) => box.querySelector(sel)?.value ?? '')
 		.concat(box.querySelector('[data-hodima-dc-skip]')?.checked ? '1' : '')
 		.join('\u0001');
@@ -538,7 +652,12 @@
 	function setupBox(box) {
 		// تصویر جدای دیسکاور که از قبل ذخیره شده
 		const own = box.querySelector('[data-hodima-dc-image-id]');
-		ownImages.set(box, own?.value ? { url: own.dataset.ownUrl || '', width: Number(own.dataset.ownWidth) || 0, height: Number(own.dataset.ownHeight) || 0, alt: own.dataset.ownAlt === '1' } : null);
+		ownImages.set(box, own?.value ? { url: own.dataset.ownUrl || '', width: Number(own.dataset.ownWidth) || 0, height: Number(own.dataset.ownHeight) || 0, alt: own.dataset.ownAlt === '1', focus: own.dataset.ownFocus || CENTER } : null);
+
+		// نقطه تمرکز: فقط با JS دیده می‌شود (کلیک لازم دارد)
+		const field = box.querySelector('[data-hodima-dc-image]');
+		const shown = ownImages.get(box) || (field ? defaultImage(field) : null);
+		renderFocus(box, shown, false);
 
 		const saved = storage.get(TAB_KEY);
 		if (saved && box.querySelector(`[data-hodima-dc-tab="${saved}"]`)) selectTab(box, saved);

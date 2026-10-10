@@ -49,6 +49,14 @@ add_action( 'admin_enqueue_scripts', static function (): void {
 	], JSON_UNESCAPED_UNICODE ) . ';', 'before' );
 } );
 
+// نقطه تمرکز در اطلاعات تصویر کتابخانه رسانه (انتخاب تصویر در کادر، تصویر شاخص کلاسیک)
+add_filter( 'wp_prepare_attachment_for_js', static function ( array $response, WP_Post $attachment ): array {
+	if ( wp_attachment_is_image( $attachment->ID ) ) {
+		$response['hodimaFocus'] = hodima_seo_discover_focus_string( hodima_seo_discover_focus( (int) $attachment->ID ) );
+	}
+	return $response;
+}, 10, 2 );
+
 add_action( 'add_meta_boxes', static function ( string $post_type ): void {
 
 	if ( ! in_array( $post_type, hodima_seo_discover_post_types(), true ) ) {
@@ -95,7 +103,7 @@ function hodima_seo_discover_render_term_box( WP_Term $term ): void {
  * اطلاعات یک تصویر برای کادر: آدرس اندازه متوسط (نمایش)، ابعاد اصل فایل
  * (بررسی ۱۲۰۰ پیکسل) و متن جایگزین؛ یا null.
  *
- * @return array{id: int, url: string, width: int, height: int, alt: string}|null
+ * @return array{id: int, url: string, width: int, height: int, alt: string, focus: string}|null
  */
 function hodima_seo_discover_admin_image( int $attachment_id ): ?array {
 
@@ -112,6 +120,7 @@ function hodima_seo_discover_admin_image( int $attachment_id ): ?array {
 		'width'  => (int) ( is_array( $meta ) ? ( $meta['width'] ?? 0 ) : 0 ),
 		'height' => (int) ( is_array( $meta ) ? ( $meta['height'] ?? 0 ) : 0 ),
 		'alt'    => trim( (string) get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ) ),
+		'focus'  => hodima_seo_discover_focus_string( hodima_seo_discover_focus( $attachment_id ) ),
 	];
 }
 
@@ -253,6 +262,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 				data-default-width="<?php echo (int) ( $default['width'] ?? 0 ); ?>"
 				data-default-height="<?php echo (int) ( $default['height'] ?? 0 ); ?>"
 				data-default-alt="<?php echo '' !== ( $default['alt'] ?? '' ) ? '1' : '0'; ?>"
+				data-default-focus="<?php echo esc_attr( $default['focus'] ?? '0.50,0.50' ); ?>"
 				data-own-label="<?php echo esc_attr( $own_label ); ?>">
 				<div class="hodima-dc__label-row">
 					<span class="hodima-dc__label" id="hodima-dc-image-label">تصویر کارت</span>
@@ -263,7 +273,8 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 					data-own-url="<?php echo esc_url( $own['url'] ?? '' ); ?>"
 					data-own-width="<?php echo (int) ( $own['width'] ?? 0 ); ?>"
 					data-own-height="<?php echo (int) ( $own['height'] ?? 0 ); ?>"
-					data-own-alt="<?php echo '' !== ( $own['alt'] ?? '' ) ? '1' : '0'; ?>">
+					data-own-alt="<?php echo '' !== ( $own['alt'] ?? '' ) ? '1' : '0'; ?>"
+					data-own-focus="<?php echo esc_attr( $own['focus'] ?? '0.50,0.50' ); ?>">
 				<div class="hodima-dc__media">
 					<div class="hodima-dc__thumb<?php echo null !== $shown ? ' has-image' : ''; ?>" data-hodima-dc-thumb>
 						<img src="<?php echo esc_url( $shown['url'] ?? '' ); ?>" alt="" data-hodima-dc-thumb-img <?php echo null !== $shown ? '' : 'hidden'; ?>>
@@ -286,6 +297,39 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 					</div>
 				</div>
 				<p class="hodima-dc__msg" data-hodima-dc-status aria-live="polite" hidden></p>
+
+				<?php
+				/*
+				 * نقطه تمرکز برش‌ها (SEO 2.1.6). بدون JS پنهان است (کلیک لازم دارد)؛ مقدار
+				 * فعلی در فیلد پنهان می‌ماند و ذخیره دست به آن نمی‌زند.
+				 */
+				?>
+				<div class="hodima-dc__focus" data-hodima-dc-focus hidden>
+					<div class="hodima-dc__label-row">
+						<span class="hodima-dc__label" id="hodima-dc-focus-label">نقطه تمرکز برش‌ها</span>
+						<?php echo hodima_seo_discover_info_button( 'hodima-dc-help-focus', 'نقطه تمرکز برش‌ها' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
+					</div>
+					<p class="hodima-dc__help" id="hodima-dc-help-focus" hidden>روی مهم‌ترین بخش تصویر (مثلا خود محصول یا صورت) کلیک کنید؛ برش‌های ۱۶:۹، ۴:۳ و ۱:۱ دور همین نقطه بریده می‌شوند و پیش‌نمایش کنارش همان برش‌هاست. با کلیدهای جهت هم جابه‌جا می‌شود. نقطه مال خود تصویر است: هر صفحه‌ای که همین تصویر را دارد همین برش‌ها را می‌گیرد. برش‌ها بعد از ذخیره صفحه دوباره ساخته می‌شوند.</p>
+					<input type="hidden" name="hodima_discover[focus]" value="<?php echo esc_attr( $shown['focus'] ?? '0.50,0.50' ); ?>" data-hodima-dc-focus-input>
+					<div class="hodima-dc__focus-body">
+						<button type="button" class="hodima-dc__focus-pad" data-hodima-dc-focus-pad aria-labelledby="hodima-dc-focus-label" aria-describedby="hodima-dc-focus-state">
+							<img src="<?php echo esc_url( $shown['url'] ?? '' ); ?>" alt="" draggable="false" data-hodima-dc-focus-img>
+							<span class="hodima-dc__focus-dot" data-hodima-dc-focus-dot aria-hidden="true"></span>
+						</button>
+						<div class="hodima-dc__crop-previews">
+							<?php foreach ( HODIMA_SEO_DISCOVER_CROPS as $ratio => [ $rw, $rh ] ) : ?>
+								<figure class="hodima-dc__crop-preview">
+									<span class="hodima-dc__crop-frame" style="aspect-ratio: <?php echo (int) $rw; ?> / <?php echo (int) $rh; ?>"><img src="<?php echo esc_url( $shown['url'] ?? '' ); ?>" alt="" data-hodima-dc-crop-img data-ratio="<?php echo (int) $rw . ':' . (int) $rh; ?>"></span>
+									<figcaption><?php echo esc_html( number_format_i18n( $rw ) . ':' . number_format_i18n( $rh ) ); ?></figcaption>
+								</figure>
+							<?php endforeach; ?>
+						</div>
+					</div>
+					<p class="hodima-dc__focus-state">
+						<span id="hodima-dc-focus-state" data-hodima-dc-focus-state aria-live="polite"></span>
+						<button type="button" class="button-link" data-hodima-dc-focus-reset>برگرداندن به وسط</button>
+					</p>
+				</div>
 			</div>
 
 			<div class="hodima-dc__field" data-hodima-dc-topics>
@@ -359,6 +403,41 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 						این صفحه در ۲۸ روز آخر در دیسکاور نمایش نداشته است.
 					<?php endif; ?>
 				</p>
+			<?php endif; ?>
+
+			<?php
+			/*
+			 * تاریخچه ماه به ماه همین صفحه و تغییرهای کارتش با «قبل و بعد» (SEO 2.1.6؛
+			 * discover-history.php). فقط داده ذخیره‌شده، بدون درخواست به گوگل.
+			 */
+			$months  = $published && function_exists( 'hodima_seo_discover_page_months' ) ? array_reverse( hodima_seo_discover_page_months( hodima_seo_discover_url_key( hodima_seo_discover_object_url( $id, $context ) ) ), true ) : [];
+			$top     = max( 1, ...array_column( $months ?: [ [ 'impressions' => 0 ] ], 'impressions' ) );
+			$changes = function_exists( 'hodima_seo_discover_object_changes' ) ? array_slice( hodima_seo_discover_object_changes( $context, $id ), 0, 10 ) : [];
+			?>
+			<?php if ( array_filter( array_column( $months, 'impressions' ) ) ) : ?>
+				<h3 class="hodima-dc__subhead">ماه به ماه (دیسکاور)</h3>
+				<ul class="hodima-dc__bars">
+					<?php foreach ( $months as $month => $row ) : ?>
+						<li>
+							<span class="hodima-dc__bar-label"><?php echo esc_html( hodima_seo_discover_month_label( (string) $month ) ); ?></span>
+							<span class="hodima-dc__bar" aria-hidden="true"><span style="inline-size: <?php echo esc_attr( (string) round( 100 * $row['impressions'] / $top, 1 ) ); ?>%"></span></span>
+							<span class="hodima-dc__bar-value"><?php echo esc_html( sprintf( '%1$s نمایش · %2$s کلیک', $num( $row['impressions'] ), $num( $row['clicks'] ) ) ); ?></span>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
+
+			<?php if ( $changes ) : ?>
+				<h3 class="hodima-dc__subhead">تغییرهای کارت و اثرشان</h3>
+				<ul class="hodima-dc__changes">
+					<?php foreach ( $changes as $change ) : ?>
+						<li>
+							<strong><?php echo esc_html( (string) wp_date( 'j F Y', $change['t'] ) ); ?></strong>
+							<span><?php echo esc_html( hodima_seo_discover_change_entry_text( $change, false ) ); ?></span>
+							<span class="hodima-dc__change-effect"><?php echo esc_html( 'میانگین روزانه، ۲۸ روز قبل ← بعد: ' . hodima_seo_discover_effect_text( hodima_seo_discover_change_effect( $change ) ) ); ?></span>
+						</li>
+					<?php endforeach; ?>
+				</ul>
 			<?php endif; ?>
 		</section>
 
@@ -480,6 +559,12 @@ function hodima_seo_discover_save( int $object_id, string $context ): void {
 
 	$image_id = absint( $get( 'image_id' ) );
 
+	// حالت قبلی کارت برای «ثبت تغییرها» (discover-history.php)
+	$before         = hodima_seo_discover_data( $object_id, $context );
+	$before_image   = $before['image_id'] ?: hodima_seo_discover_default_image_id( $object_id, $context );
+	$before_focus   = $before_image ? hodima_seo_discover_focus_string( hodima_seo_discover_focus( $before_image ) ) : '';
+	$object_title   = hodima_seo_discover_object_title( $object_id, $context );
+
 	$values = [
 		'title'    => sanitize_text_field( $get( 'title' ) ),
 		'entities' => hodima_seo_discover_format_entities( hodima_seo_discover_entity_items( sanitize_textarea_field( $get( 'entities' ) ) ) ),
@@ -491,6 +576,26 @@ function hodima_seo_discover_save( int $object_id, string $context ): void {
 		( '' === $value || 0 === $value )
 			? delete_metadata( $context, $object_id, $key )
 			: update_metadata( $context, $object_id, $key, $value );
+	}
+
+	/*
+	 * نقطه تمرکز برش‌ها روی تصویر مؤثر (تصویر جدای دیسکاور، وگرنه پیش‌فرض صفحه)؛
+	 * فقط اگر کاربر اجازه ویرایش همان تصویر را دارد. برش‌ها بعد از همین ذخیره
+	 * (save_post / saved_term، اولویت ۳۰) با نقطه تازه ساخته می‌شوند.
+	 */
+	$effective = $values['image_id'] ?: hodima_seo_discover_default_image_id( $object_id, $context );
+	if ( '' !== $get( 'focus' ) && $effective > 0 && current_user_can( 'edit_post', $effective ) ) {
+		hodima_seo_discover_set_focus( $effective, $get( 'focus' ) );
+	}
+
+	if ( function_exists( 'hodima_seo_discover_log_change' ) ) {
+		$focus_text = static fn( string $f ): string => '' === $f ? '' : implode( '، ', array_map( static fn( string $v ): string => number_format_i18n( 100 * (float) $v ) . '٪', explode( ',', $f ) ) );
+		hodima_seo_discover_log_change( $context, $object_id, 'title', '' !== $before['title'] ? $before['title'] : $object_title, '' !== $values['title'] ? $values['title'] : $object_title );
+		if ( $before_image !== $effective ) {
+			hodima_seo_discover_log_change( $context, $object_id, 'image', hodima_seo_discover_change_image_text( (int) $before_image ), hodima_seo_discover_change_image_text( (int) $effective ) );
+		} elseif ( $effective > 0 ) {
+			hodima_seo_discover_log_change( $context, $object_id, 'focus', $focus_text( $before_focus ), $focus_text( hodima_seo_discover_focus_string( hodima_seo_discover_focus( (int) $effective ) ) ) );
+		}
 	}
 
 	// «این صفحه برای گوگل دیسکاور نیست» (کلید تازه SEO 2.1.5؛ نبودنش = بررسی می‌شود)

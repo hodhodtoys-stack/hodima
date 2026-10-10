@@ -107,15 +107,105 @@ function hodima_seo_discover_sc_email(): string {
 	return is_array( $key ) ? sanitize_email( (string) ( $key['client_email'] ?? '' ) ) : '';
 }
 
-/** property انتخاب‌شده در تنظیمات (خالی = خودکار). */
+/** property انتخاب‌شده در تنظیمات (خالی = خودکار). مقدار نامعتبر ذخیره‌شده (مثلا ایمیل، تا SEO 2.1.5) نادیده گرفته می‌شود. */
 function hodima_seo_discover_sc_property(): string {
 	$settings = get_option( HODIMA_SEO_DISCOVER_SC_OPTION, [] );
-	return is_array( $settings ) ? trim( (string) ( $settings['property'] ?? '' ) ) : '';
+	$property = hodima_seo_discover_sc_clean_property( is_array( $settings ) ? (string) ( $settings['property'] ?? '' ) : '' );
+	return is_string( $property ) ? $property : '';
 }
 
 /**
- * propertyهایی که به ترتیب امتحان می‌شوند: انتخاب مدیر، وگرنه آدرس سایت
- * (پیشوند URL) و بعد دامنه (sc-domain:).
+ * property واردشده مدیر ← شکل سرچ کنسول، یا خطای فارسی.
+ *
+ *   https://example.com/ یا آدرس با مسیر  ← property «پیشوند آدرس» (با / آخر)
+ *   sc-domain:example.com یا example.com  ← property «دامنه»
+ *   خالی                                  ← خودکار
+ *
+ * باگ قبلی (تا SEO 2.1.5): هر متنی آدرس فرض می‌شد؛ ایمیل حساب سرویس
+ * «https://name@project.iam.gserviceaccount.com/» ذخیره و به سرچ کنسول
+ * فرستاده می‌شد («is not a valid Search Console site URL»).
+ */
+function hodima_seo_discover_sc_clean_property( string $raw ): string|WP_Error {
+
+	$raw = trim( $raw );
+
+	if ( '' === $raw ) {
+		return '';
+	}
+
+	$host_ok = static fn( string $host ): bool => 1 === preg_match( '/^(?=.{4,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{1,62}$/', $host );
+
+	if ( str_contains( $raw, '@' ) ) {
+		return new WP_Error( 'hodima_discover_property_email', 'در فیلد property ایمیل نوشته شده است. ایمیل حساب سرویس جای دیگری لازم است (کاربر سرچ کنسول)؛ property آدرس سایت است، مثل ' . trailingslashit( home_url() ) . ' یا sc-domain:' . preg_replace( '/^www\./', '', (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) . '. خالی هم بگذارید خودکار پیدا می‌شود.' );
+	}
+
+	// property دامنه: «sc-domain:example.com» یا فقط «example.com»
+	if ( str_starts_with( strtolower( $raw ), 'sc-domain:' ) || ! str_contains( $raw, '/' ) ) {
+		$host = strtolower( trim( (string) preg_replace( '/^sc-domain:/i', '', $raw ) ) );
+		return $host_ok( $host ) ? 'sc-domain:' . $host : new WP_Error( 'hodima_discover_property', 'property نامعتبر است؛ مثلا sc-domain:example.com یا https://example.com/' );
+	}
+
+	$parts = wp_parse_url( $raw );
+	$host  = strtolower( (string) ( $parts['host'] ?? '' ) );
+
+	if ( ! is_array( $parts ) || ! in_array( strtolower( (string) ( $parts['scheme'] ?? '' ) ), [ 'http', 'https' ], true ) || isset( $parts['user'] ) || ! $host_ok( $host ) ) {
+		return new WP_Error( 'hodima_discover_property', 'property نامعتبر است؛ آدرس کامل با https:// (مثل ' . trailingslashit( home_url() ) . ') یا sc-domain:دامنه بنویسید.' );
+	}
+
+	return strtolower( (string) $parts['scheme'] ) . '://' . $host . ( isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '' ) . trailingslashit( (string) ( $parts['path'] ?? '/' ) );
+}
+
+/** گزینه propertyهایی که حساب سرویس در سرچ کنسول به آن‌ها دسترسی دارد (از آخرین اتصال). */
+const HODIMA_SEO_DISCOVER_SC_SITES_OPTION = 'hodima_discover_sc_sites';
+
+/**
+ * propertyهای در دسترس حساب سرویس (sites.list سرچ کنسول)، یا خطا.
+ *
+ * @return list<string>|WP_Error
+ */
+function hodima_seo_discover_sc_list_sites( string $token ): array|WP_Error {
+
+	$res = wp_remote_get( 'https://searchconsole.googleapis.com/webmasters/v3/sites', [
+		'timeout' => 15,
+		'headers' => [ 'Authorization' => 'Bearer ' . $token ],
+	] );
+
+	if ( is_wp_error( $res ) ) {
+		return $res;
+	}
+
+	$body = json_decode( (string) wp_remote_retrieve_body( $res ), true );
+
+	if ( 200 !== (int) wp_remote_retrieve_response_code( $res ) || ! is_array( $body ) ) {
+		return new WP_Error( 'hodima_discover_sc_sites', (string) ( is_array( $body ) ? ( $body['error']['message'] ?? '' ) : '' ) );
+	}
+
+	$sites = [];
+	foreach ( (array) ( $body['siteEntry'] ?? [] ) as $entry ) {
+		if ( is_array( $entry ) && '' !== (string) ( $entry['siteUrl'] ?? '' ) && 'siteUnverifiedUser' !== ( $entry['permissionLevel'] ?? '' ) ) {
+			$sites[] = (string) $entry['siteUrl'];
+		}
+	}
+
+	sort( $sites );
+
+	return $sites;
+}
+
+/**
+ * propertyهای ذخیره‌شده از آخرین اتصال.
+ *
+ * @return list<string>
+ */
+function hodima_seo_discover_sc_sites(): array {
+	$sites = get_option( HODIMA_SEO_DISCOVER_SC_SITES_OPTION, [] );
+	return is_array( $sites ) ? array_values( array_map( 'strval', $sites ) ) : [];
+}
+
+/**
+ * propertyهایی که به ترتیب امتحان می‌شوند: انتخاب مدیر؛ وگرنه propertyهای
+ * در دسترس حساب که مال همین سایت‌اند (آدرس سایت، بعد دامنه)، و در آخر
+ * حدس آدرس سایت و دامنه.
  *
  * @return list<string>
  */
@@ -127,9 +217,14 @@ function hodima_seo_discover_sc_candidates(): array {
 		return [ $chosen ];
 	}
 
-	$host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+	$host   = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) );
+	$guess  = [ trailingslashit( home_url() ), 'sc-domain:' . $host ];
+	$owned  = array_filter( hodima_seo_discover_sc_sites(), static function ( string $site ) use ( $host ): bool {
+		$site_host = str_starts_with( $site, 'sc-domain:' ) ? substr( $site, 10 ) : (string) wp_parse_url( $site, PHP_URL_HOST );
+		return preg_replace( '/^www\./', '', strtolower( $site_host ) ) === $host;
+	} );
 
-	return array_values( array_unique( [ trailingslashit( home_url() ), 'sc-domain:' . preg_replace( '/^www\./', '', $host ) ] ) );
+	return array_values( array_unique( [ ...array_intersect( $guess, $owned ), ...$owned, ...$guess ] ) );
 }
 
 /**
@@ -200,7 +295,7 @@ function hodima_seo_discover_sc_token( bool $force = false ): string|WP_Error {
  * @param list<string> $dimensions page یا date
  * @return array{rows: list<array<string, mixed>>}|WP_Error
  */
-function hodima_seo_discover_sc_query( string $property, string $token, string $start, string $end, array $dimensions = [ 'page' ] ): array|WP_Error {
+function hodima_seo_discover_sc_query( string $property, string $token, string $start, string $end, array $dimensions = [ 'page' ], int $row_limit = 5000 ): array|WP_Error {
 
 	$res = wp_remote_post(
 		'https://searchconsole.googleapis.com/webmasters/v3/sites/' . rawurlencode( $property ) . '/searchAnalytics/query',
@@ -212,7 +307,7 @@ function hodima_seo_discover_sc_query( string $property, string $token, string $
 				'endDate'    => $end,
 				'type'       => 'discover',
 				'dimensions' => $dimensions,
-				'rowLimit'   => 5000,
+				'rowLimit'   => max( 1, min( 25000, $row_limit ) ), // سقف خود سرچ کنسول ۲۵ هزار
 			] ),
 		]
 	);
@@ -310,19 +405,25 @@ function hodima_seo_discover_sc_refresh(): bool|WP_Error {
 		return $token;
 	}
 
+	// propertyهای در دسترس حساب (برای انتخاب خودکار و پیام خطا)؛ شکستش مانع آمار نیست
+	$sites = hodima_seo_discover_sc_list_sites( $token );
+	if ( is_array( $sites ) ) {
+		update_option( HODIMA_SEO_DISCOVER_SC_SITES_OPTION, $sites, false );
+	}
+
 	$range = hodima_seo_discover_sc_ranges();
 	$last  = null;
 
 	// یک درخواست، با یک بار توکن تازه اگر منقضی بود (۴۰۱)
-	$query = static function ( string $property, string $start, string $end, array $dims ) use ( &$token ): array|WP_Error {
-		$result = hodima_seo_discover_sc_query( $property, (string) $token, $start, $end, $dims );
+	$query = static function ( string $property, string $start, string $end, array $dims, int $limit = 5000 ) use ( &$token ): array|WP_Error {
+		$result = hodima_seo_discover_sc_query( $property, (string) $token, $start, $end, $dims, $limit );
 		if ( is_wp_error( $result ) && 401 === (int) ( $result->get_error_data()['status'] ?? 0 ) ) {
 			$fresh = hodima_seo_discover_sc_token( true );
 			if ( is_wp_error( $fresh ) ) {
 				return $fresh;
 			}
 			$token  = $fresh;
-			$result = hodima_seo_discover_sc_query( $property, $token, $start, $end, $dims );
+			$result = hodima_seo_discover_sc_query( $property, $token, $start, $end, $dims, $limit );
 		}
 		return $result;
 	};
@@ -360,13 +461,23 @@ function hodima_seo_discover_sc_refresh(): bool|WP_Error {
 			'error'    => '',
 		], false );
 
+		// تاریخچه بلندمدت و روزانه صفحه‌های تغییرکرده (discover-history.php؛ شکستش آمار اصلی را خراب نمی‌کند)
+		if ( function_exists( 'hodima_seo_discover_history_update' ) ) {
+			hodima_seo_discover_history_update( $property, $query, $range, $daily );
+		}
+
 		return true;
 	}
 
 	$status  = null !== $last ? (int) ( $last->get_error_data()['status'] ?? 0 ) : 0;
+	$known   = hodima_seo_discover_sc_sites();
+	$hint    = $known
+		? ' propertyهایی که این حساب به آن‌ها دسترسی دارد: ' . implode( '، ', $known ) . '.'
+		: ' این حساب هنوز به هیچ property دسترسی ندارد.';
 	$message = match ( true ) {
-		403 === $status => 'سرچ کنسول اجازه نداد: ایمیل سرویس اکانت (' . hodima_seo_discover_sc_email() . ') را در سرچ کنسول ← تنظیمات ← کاربران و مجوزها به همین property اضافه کنید، یا property درست را پایین وارد کنید.',
-		404 === $status => 'این property در سرچ کنسول پیدا نشد؛ آدرس دقیق property را پایین وارد کنید (مثلا https://example.com/ یا sc-domain:example.com).',
+		403 === $status => 'سرچ کنسول اجازه نداد: ایمیل حساب سرویس (' . hodima_seo_discover_sc_email() . ') را در سرچ کنسول ← تنظیمات ← کاربران و مجوزها به property سایت اضافه کنید، یا property درست را پایین انتخاب کنید.' . $hint,
+		404 === $status => 'این property در سرچ کنسول پیدا نشد؛ property درست را پایین انتخاب کنید (مثلا https://example.com/ یا sc-domain:example.com).' . $hint,
+		400 === $status => 'سرچ کنسول property را نپذیرفت (' . $last?->get_error_message() . '). property درست را پایین انتخاب کنید یا خالی بگذارید.' . $hint,
 		null !== $last  => 'خطای سرچ کنسول: ' . $last->get_error_message(),
 		default         => 'property برای امتحان وجود ندارد.',
 	};

@@ -113,7 +113,7 @@ function hodima_seo_discover_daily_filled( array $daily ): array {
 		return $daily;
 	}
 
-	for ( $i = 0; $day <= $last && $i < 500; $day = $day->modify( '+1 day' ), $i++ ) {
+	for ( $i = 0; $day <= $last && $i < 3000; $day = $day->modify( '+1 day' ), $i++ ) { // تاریخچه چندساله (SEO 2.1.6؛ قبلا ۹۰ روز)
 		$key         = $day->format( 'Y-m-d' );
 		$out[ $key ] = $daily[ $key ] ?? [ 'clicks' => 0, 'impressions' => 0 ];
 	}
@@ -143,9 +143,13 @@ function hodima_seo_discover_nice_max( int $value ): int {
  * داده راهنمای زیر نشانگر در data-* (JS گزارش: discover-report.js)؛ بدون JS
  * هم خط، محور و برچسب‌ها کامل‌اند و جدول روزانه زیر نمودارها هست.
  *
+ * علامت تغییرها (SEO 2.1.6): خط عمودی روی روز هر تغییر کارت، با متنش در راهنما
+ * (title و data-marks برای JS)؛ فهرست کامل زیر نمودار است.
+ *
  * @param array<string, array{clicks: int, impressions: int}> $daily  روزهای پیوسته
+ * @param array<string, list<string>>                          $marks  روز ← متن تغییرهای آن روز
  */
-function hodima_seo_discover_chart( array $daily, string $metric, string $title ): string {
+function hodima_seo_discover_chart( array $daily, string $metric, string $title, array $marks = [] ): string {
 
 	$values = array_map( static fn( array $d ): int => (int) $d[ $metric ], array_values( $daily ) );
 	$days   = array_keys( $daily );
@@ -175,6 +179,15 @@ function hodima_seo_discover_chart( array $daily, string $metric, string $title 
 		$yaxis .= sprintf( '<span style="inset-block-end: %s%%">%s</span>', $fmt( 100 * $tick / $max ), esc_html( number_format_i18n( $tick ) ) );
 	}
 
+	$marked = '';
+	$notes  = [];
+	foreach ( $days as $i => $d ) {
+		$notes[] = isset( $marks[ $d ] ) ? implode( ' — ', $marks[ $d ] ) : '';
+		if ( isset( $marks[ $d ] ) ) {
+			$marked .= sprintf( '<span class="hodima-dr-chart__mark" style="left: %1$s%%" title="%2$s"></span>', $fmt( 100 * $i / ( $count - 1 ) ), esc_attr( $date( $d, 'j F Y' ) . ': ' . implode( ' — ', $marks[ $d ] ) ) );
+		}
+	}
+
 	$xaxis = '';
 	foreach ( array_unique( [ 0, intdiv( $count - 1, 2 ), $count - 1 ] ) as $i ) {
 		// محور زمان dir=ltr است (جای فیزیکی left)؛ قالب «j F» چون «M» را تبدیل تاریخ شمسی سایت نمی‌شناسد
@@ -182,7 +195,7 @@ function hodima_seo_discover_chart( array $daily, string $metric, string $title 
 	}
 
 	return sprintf(
-		'<figure class="hodima-dr-chart" data-hodima-dr-chart data-values="%1$s" data-days="%2$s" data-max="%3$d">
+		'<figure class="hodima-dr-chart" data-hodima-dr-chart data-values="%1$s" data-days="%2$s" data-max="%3$d" data-marks="%12$s">
 			<figcaption class="hodima-dr-chart__title">%4$s <span class="hd-muted">— جمع %5$s در %6$s روز</span></figcaption>
 			<div class="hodima-dr-chart__body" dir="ltr">
 				<div class="hodima-dr-chart__y" aria-hidden="true">%7$s</div>
@@ -194,6 +207,7 @@ function hodima_seo_discover_chart( array $daily, string $metric, string $title 
 						<path class="hodima-dr-chart__area" d="%9$s"/>
 						<path class="hodima-dr-chart__line" d="%10$s"/>
 					</svg>
+					%13$s
 					<span class="hodima-dr-chart__cross" hidden></span>
 					<span class="hodima-dr-chart__dot" hidden></span>
 					<div class="hodima-dr-chart__tip" hidden></div>
@@ -211,6 +225,8 @@ function hodima_seo_discover_chart( array $daily, string $metric, string $title 
 		esc_attr( sprintf( '%1$s روزانه، از %2$s تا %3$s؛ جمع %4$s', $title, $dates[0], $dates[ $count - 1 ], number_format_i18n( $total ) ) ),
 		esc_attr( $area ),
 		esc_attr( $line ),
-		$xaxis
+		$xaxis,
+		esc_attr( (string) wp_json_encode( $marks ? $notes : [], JSON_UNESCAPED_UNICODE ) ),
+		$marked
 	);
 }

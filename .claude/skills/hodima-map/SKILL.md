@@ -85,7 +85,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 - `arian_router_flushed`، `rewrite_rules`: روتر SEO؛ پنل Core و فعال‌سازی SEO/Media بازسازی آدرس‌ها را درخواست می‌کنند.
 - `hodima_schema_graph_debug`: Core (گراف) و صفحه «پاک‌کننده» اسکیما در SEO.
 - `hodima_gi_json_key` (کلید ماژول Google Indexing): آمار دیسکاور (`core/discover/discover-stats.php`) اگر کلید جدای خودش (`hodima_discover_sc_key`) خالی باشد مستقیم می‌خواند، حتی با ماژول Indexing خاموش.
-- متاهای رسانه `_hook_*` / `hook_*` (Media)؛ Discover `_hook_discover_*` و `_hodima_discover_skip` (SEO)؛ سئوباکس `_seobox_*`؛ دسته اصلی `_hodima_primary_{taxonomy}`.
+- متاهای رسانه `_hook_*` / `hook_*` (Media)؛ Discover `_hook_discover_*`، `_hodima_discover_skip` و روی تصویر `_hodima_discover_focus` (SEO)؛ سئوباکس `_seobox_*`؛ دسته اصلی `_hodima_primary_{taxonomy}`.
 
 ## ۷. انتشار و به‌روزرسانی خودکار
 `plugins/hodima-core/includes/updates.php` (Plugin Update Checker) هر ۱۲ ساعت `release/<slug>.json` را از `raw.githubusercontent.com/hodhodtoys-stack/hodima/HEAD/release/` (شاخه پیش‌فرض = `claude/hodima`) می‌خواند و با نسخه نصب‌شده مقایسه می‌کند (`version_compare`؛ پس نسخه فقط باید بالا برود). نسخه هر بسته از سربرگ `Version` (+ ثابت `HODIMA_*_VERSION` در افزونه‌ها) — قاعده شماره‌گذاری: قانون ۷ `CLAUDE.md`. ساخت: `bin/build.sh` ← `dist/` و `release/`؛ متن «جزئیات» از `CHANGELOG.md` (`bin/build-meta.py`).

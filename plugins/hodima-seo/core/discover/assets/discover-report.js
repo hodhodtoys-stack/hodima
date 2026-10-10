@@ -70,6 +70,7 @@
 	function initChart(fig) {
 		const values = JSON.parse(fig.dataset.values || '[]');
 		const days = JSON.parse(fig.dataset.days || '[]');
+		const marks = JSON.parse(fig.dataset.marks || '[]'); // متن تغییر کارت هر روز (یا '')
 		const max = Number(fig.dataset.max) || 1;
 		const plot = fig.querySelector('.hodima-dr-chart__plot');
 		const cross = plot.querySelector('.hodima-dr-chart__cross');
@@ -92,6 +93,12 @@
 			const strong = document.createElement('strong');
 			strong.textContent = `${nf.format(values[current])} ${unit}`;
 			tip.append(strong, days[current] || '');
+			if (marks[current]) {
+				const note = document.createElement('span');
+				note.className = 'hodima-dr-chart__tip-mark';
+				note.textContent = marks[current];
+				tip.append(note);
+			}
 			// راهنما سمت مخالف نشانگر تا زیر انگشت/ماوس نرود
 			tip.style.left = x > 55 ? 'auto' : `calc(${x}% + 0.75rem)`;
 			tip.style.right = x > 55 ? `calc(${100 - x}% + 0.75rem)` : 'auto';

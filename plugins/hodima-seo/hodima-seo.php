@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           2.1.5
+ * Version:           2.1.6
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '2.1.5';
+const HODIMA_SEO_VERSION = '2.1.6';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -119,7 +119,7 @@ function hodima_seo_modules(): array {
 		],
 		'discover' => [
 			'title'       => 'گوگل دیسکاور',
-			'description' => 'عنوان و تصویر دیسکاور نوشته‌ها، برگه‌ها، محصولات و دسته‌های محصول، سه برش ۱۶:۹ / ۴:۳ / ۱:۱ (عرض ۱۲۰۰)، og:image و og:title بزرگ، فید RSS نوشته‌ها و محصولات با تصویر برای «دنبال کردن»، موضوعات با ویکی‌داده و معرفی نویسنده در اسکیما، گزارش آمادگی همه صفحه‌ها با ساخت برش برای همه، فرصت‌های بهتر شدن، و آمار واقعی دیسکاور از سرچ کنسول با نمودار روزانه و مقایسه ۲۸ روز قبل.',
+			'description' => 'عنوان و تصویر دیسکاور نوشته‌ها، برگه‌ها، محصولات و دسته‌های محصول، سه برش ۱۶:۹ / ۴:۳ / ۱:۱ (عرض ۱۲۰۰)، og:image و og:title بزرگ، فید RSS نوشته‌ها و محصولات با تصویر برای «دنبال کردن»، موضوعات با ویکی‌داده و معرفی نویسنده در اسکیما، گزارش آمادگی همه صفحه‌ها با ساخت برش برای همه، فرصت‌های بهتر شدن، و آمار واقعی دیسکاور از سرچ کنسول با نمودار روزانه، مقایسه ۲۸ روز قبل، تاریخچه بلندمدت ماه به ماه، نقطه تمرکز برش‌ها و ثبت اثر تغییر عنوان و تصویر کارت.',
 			'files'       => [ 'core/discover/discover-init.php' ],
 			'settings'    => 'admin.php?page=hodima-discover',
 			'warning'     => 'کادر گوگل دیسکاور از ویرایش نوشته برداشته می‌شود و عنوان/تصویر دیسکاور، برش‌های تصویر و تصویر فید دیگر اعمال نمی‌شوند (اطلاعات پاک نمی‌شود).',
