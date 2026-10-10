@@ -915,34 +915,83 @@ function hodima_seo_discover_render_stats(): void {
 			<h2 class="hd-card__title">اتصال به سرچ کنسول</h2>
 			<p class="hd-card__desc">با یک حساب سرویس گوگل (Service Account) و فقط دسترسی خواندنی. آمار روزی یک بار خودکار به‌روز می‌شود.</p>
 		</div>
-		<?php if ( ! $has_key ) : ?>
-			<p class="hd-callout hd-callout--warning">کلید حساب سرویس تنظیم نشده است. فایل JSON حساب سرویس را پایین بچسبانید و «افزودن کلید» را بزنید (اگر ماژول «Google Indexing API» کلید داشته باشد، همان خودکار استفاده می‌شود).</p>
-		<?php else : ?>
-			<div class="hd-callout">
-				<div>
-					<p><strong>حساب فعلی:</strong> <code dir="ltr"><?php echo esc_html( $email ); ?></code>
-						<span class="hd-pill"><?php echo esc_html( 'own' === $source ? 'کلید جدای دیسکاور' : 'کلید ماژول Google Indexing' ); ?></span></p>
-					<p class="hd-muted">همین ایمیل باید در سرچ کنسول ← تنظیمات ← کاربران و مجوزها، کاربر property سایت باشد. ایمیل جزئی از خود کلید است؛ برای عوض کردن حساب (و ایمیل)، فایل JSON حساب تازه را پایین بچسبانید و «افزودن کلید» را بزنید.</p>
-				</div>
-			</div>
-		<?php endif; ?>
-		<?php if ( $can_edit ) : ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-dr-form">
-				<input type="hidden" name="action" value="hodima_discover_sc">
-				<?php wp_nonce_field( 'hodima_discover_sc' ); ?>
-				<div class="hd-field hd-field--wide">
-					<label class="hd-field__label" for="hodima-discover-key"><?php echo esc_html( $has_key ? 'کلید حساب سرویس تازه (فایل JSON)' : 'کلید حساب سرویس (فایل JSON)' ); ?></label>
-					<textarea id="hodima-discover-key" name="key_json" rows="5" dir="ltr" autocomplete="off" spellcheck="false" placeholder='{"type": "service_account", "client_email": "…", "private_key": "…"}'></textarea>
-					<p class="hd-field__help">کل محتوای فایل JSON که از Google Cloud ← IAM ← حساب‌های سرویس ← کلیدها دانلود کرده‌اید. این کلید فقط برای خواندن آمار دیسکاور است و ماژول Google Indexing را عوض نمی‌کند.</p>
-				</div>
-				<div class="hodima-dr-form__actions">
-					<button type="submit" class="button button-primary" name="do" value="add_key"><?php echo hodima_admin_icon( 'dashicons-plus-alt2' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> <?php echo esc_html( 'own' === $source ? 'جایگزینی کلید' : 'افزودن کلید' ); ?></button>
+		<?php
+		/*
+		 * کلید حساب سرویس، به همان شکل ماژول Google Indexing (SEO 2.1.7): یک ردیف
+		 * وضعیت (کلید فعال / تنظیم نشده، ایمیل، منبع) و دکمه‌های «جایگزینی کلید» /
+		 * «افزودن کلید» که پنجره‌ای برای انتخاب فایل JSON (یا چسباندن متنش) باز
+		 * می‌کند، و «حذف کلید» برای کلید جدای دیسکاور. تا 2.1.6 یک کادر بزرگ همیشه
+		 * باز زیر کارت بود و کاربر جای عوض کردن حساب را پیدا نمی‌کرد.
+		 */
+		?>
+		<h3 class="hodima-dr-subtitle">کلید Service Account</h3>
+		<div class="hodima-dr-key">
+			<?php if ( $has_key ) : ?>
+				<span class="hd-pill hd-pill--ok"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>کلید فعال</span>
+				<code class="hodima-dr-key__email" dir="ltr"><?php echo esc_html( $email ); ?></code>
+				<span class="hd-pill"><?php echo esc_html( 'own' === $source ? 'کلید جدای دیسکاور' : 'از ماژول Google Indexing' ); ?></span>
+			<?php else : ?>
+				<span class="hd-pill hd-pill--error"><span class="dashicons dashicons-warning" aria-hidden="true"></span>کلیدی تنظیم نشده</span>
+				<span class="hd-muted">بدون کلید آمار دیسکاور از سرچ کنسول گرفته نمی‌شود.</span>
+			<?php endif; ?>
+			<?php if ( $can_edit ) : ?>
+				<span class="hodima-dr-key__actions">
+					<button type="button" class="button<?php echo $has_key ? '' : ' button-primary'; ?>" data-hodima-dr-key-open aria-haspopup="dialog">
+						<?php echo hodima_admin_icon( $has_key ? 'dashicons-update' : 'dashicons-plus-alt2' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
+						<?php echo esc_html( $has_key ? 'جایگزینی کلید' : 'افزودن کلید' ); ?>
+					</button>
 					<?php if ( 'own' === $source ) : ?>
-						<button type="submit" class="button" name="do" value="remove_key" formnovalidate><?php echo hodima_admin_icon( 'dashicons-trash' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> حذف کلید جدا (برگشت به کلید ماژول Google Indexing)</button>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-dr-key__remove" data-hodima-dr-confirm="کلید جدای دیسکاور حذف شود؟ بعد از آن آمار با کلید ماژول Google Indexing گرفته می‌شود (اگر آن ماژول کلید داشته باشد).">
+							<input type="hidden" name="action" value="hodima_discover_sc">
+							<?php wp_nonce_field( 'hodima_discover_sc' ); ?>
+							<button type="submit" class="button hodima-dr-danger" name="do" value="remove_key"><?php echo hodima_admin_icon( 'dashicons-trash' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> حذف کلید</button>
+						</form>
 					<?php endif; ?>
-				</div>
-			</form>
+				</span>
+			<?php endif; ?>
+		</div>
+		<p class="hd-muted hodima-dr-key__hint">
+			<?php if ( 'own' === $source ) : ?>
+				این کلید فقط برای خواندن آمار دیسکاور است و کلید ماژول Google Indexing را عوض نمی‌کند. «حذف کلید» = برگشت به کلید ماژول Google Indexing.
+			<?php elseif ( 'indexing' === $source ) : ?>
+				این کلید از تنظیمات ماژول Google Indexing خوانده می‌شود. برای استفاده از حساب دیگری فقط برای دیسکاور، «جایگزینی کلید» را بزنید؛ کلید ماژول Indexing دست نمی‌خورد.
+			<?php else : ?>
+				اگر ماژول Google Indexing کلید داشته باشد، همان خودکار استفاده می‌شود.
+			<?php endif; ?>
+			ایمیل حساب باید در سرچ کنسول ← تنظیمات ← کاربران و مجوزها، کاربر property سایت باشد.
+		</p>
 
+		<?php if ( $can_edit ) : ?>
+			<dialog class="hd-dialog hodima-dr-key-dialog" data-hodima-dr-key-dialog aria-labelledby="hodima-dr-key-title">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<input type="hidden" name="action" value="hodima_discover_sc">
+					<input type="hidden" name="do" value="add_key">
+					<?php wp_nonce_field( 'hodima_discover_sc' ); ?>
+					<h2 class="hd-card__title" id="hodima-dr-key-title"><?php echo esc_html( $has_key ? 'جایگزینی کلید Service Account' : 'افزودن کلید Service Account' ); ?></h2>
+					<p class="hd-muted">
+						فایل JSON کلید را از Google Cloud Console بگیرید
+						(<span dir="ltr">IAM &amp; Admin ← Service Accounts ← Keys ← Add key ← JSON</span>).
+						ایمیل این حساب باید در سرچ کنسول کاربر property سایت باشد (دسترسی خواندن کافی است).
+					</p>
+					<div class="hodima-dr-key-dialog__pick">
+						<button type="button" class="button button-primary" data-hodima-dr-key-pick><?php echo hodima_admin_icon( 'dashicons-upload' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> انتخاب فایل JSON</button>
+						<input type="file" accept=".json,application/json" hidden data-hodima-dr-key-file>
+						<span class="hodima-dr-key-dialog__file" dir="ltr" data-hodima-dr-key-name aria-live="polite"></span>
+					</div>
+					<details class="hodima-dr-key-dialog__paste">
+						<summary>یا محتوای فایل را بچسبانید</summary>
+						<textarea name="key_json" rows="6" dir="ltr" autocomplete="off" spellcheck="false" placeholder='{"type": "service_account", ...}' data-hodima-dr-key-text></textarea>
+					</details>
+					<p class="hodima-dr-key-dialog__preview" role="status" data-hodima-dr-key-preview></p>
+					<div class="hodima-dr-form__actions">
+						<button type="submit" class="button button-primary" data-hodima-dr-key-save disabled><?php echo hodima_admin_icon( 'dashicons-saved' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> ذخیره کلید</button>
+						<button type="button" class="button" data-hodima-dr-key-cancel>انصراف</button>
+					</div>
+				</form>
+			</dialog>
+		<?php endif; ?>
+
+		<?php if ( $can_edit ) : ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-dr-form">
 				<input type="hidden" name="action" value="hodima_discover_sc">
 				<?php wp_nonce_field( 'hodima_discover_sc' ); ?>

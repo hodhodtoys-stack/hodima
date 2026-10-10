@@ -66,6 +66,69 @@
 
 	document.querySelectorAll('[data-hodima-dr-batch][data-autostart]').forEach((box) => runBatch(box));
 
+	/* ── کلید حساب سرویس: پنجره افزودن/جایگزینی (همان رفتار ماژول Google Indexing) ── */
+	const keyDialog = document.querySelector('[data-hodima-dr-key-dialog]');
+	if (keyDialog) {
+		const text = keyDialog.querySelector('[data-hodima-dr-key-text]');
+		const file = keyDialog.querySelector('[data-hodima-dr-key-file]');
+		const name = keyDialog.querySelector('[data-hodima-dr-key-name]');
+		const preview = keyDialog.querySelector('[data-hodima-dr-key-preview]');
+		const save = keyDialog.querySelector('[data-hodima-dr-key-save]');
+
+		/** بررسی سریع در مرورگر تا مدیر پیش از ذخیره بداند فایل درست است (سرور دوباره بررسی می‌کند). */
+		const check = () => {
+			const raw = text.value.trim();
+			preview.className = 'hodima-dr-key-dialog__preview';
+			save.disabled = true;
+			if (!raw) { preview.textContent = ''; return; }
+			let data = null;
+			try { data = JSON.parse(raw); } catch { /* متن JSON نیست */ }
+			if (!data || typeof data !== 'object') {
+				preview.textContent = 'این متن JSON معتبر نیست.';
+				preview.classList.add('is-error');
+				return;
+			}
+			if (data.type !== 'service_account' || !data.client_email || !data.private_key) {
+				preview.textContent = 'این فایل کلید Service Account نیست (باید type برابر service_account و client_email و private_key داشته باشد).';
+				preview.classList.add('is-error');
+				return;
+			}
+			preview.textContent = `حساب: ${data.client_email}`;
+			preview.classList.add('is-ok');
+			save.disabled = false;
+		};
+
+		document.querySelector('[data-hodima-dr-key-open]')?.addEventListener('click', () => {
+			text.value = '';
+			file.value = '';
+			name.textContent = '';
+			check();
+			if (typeof keyDialog.showModal === 'function') keyDialog.showModal(); else keyDialog.setAttribute('open', '');
+		});
+		keyDialog.querySelector('[data-hodima-dr-key-cancel]')?.addEventListener('click', () => keyDialog.close?.());
+		keyDialog.addEventListener('click', (e) => { if (e.target === keyDialog) keyDialog.close?.(); }); // کلیک بیرون کادر
+		keyDialog.querySelector('[data-hodima-dr-key-pick]')?.addEventListener('click', () => file.click());
+		text.addEventListener('input', check);
+		file.addEventListener('change', () => {
+			const picked = file.files?.[0];
+			if (!picked) return;
+			const reader = new FileReader();
+			reader.onload = () => {
+				text.value = String(reader.result || '');
+				name.textContent = picked.name;
+				check();
+			};
+			reader.readAsText(picked);
+		});
+	}
+
+	// حذف کلید: پرسش پیش از ارسال
+	document.querySelectorAll('form[data-hodima-dr-confirm]').forEach((form) => {
+		form.addEventListener('submit', (e) => {
+			if (!window.confirm(form.dataset.hodimaDrConfirm)) e.preventDefault();
+		});
+	});
+
 	/* ── نمودار ── */
 	function initChart(fig) {
 		const values = JSON.parse(fig.dataset.values || '[]');

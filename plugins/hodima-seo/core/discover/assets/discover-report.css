@@ -6,6 +6,62 @@
  * رنگ‌ها از توکن‌های پیشخوان هدیما (--hd-*)، با مقدار پشتیبان برای وقتی Core نیست.
  */
 
+/* پنجره کلید (در لایه بالا؛ بیرون از .hodima-dr هم درست است) */
+.hodima-dr-key-dialog {
+	inline-size: min(34rem, 92vw);
+	max-inline-size: none;
+
+	& form {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	& textarea {
+		inline-size: 100%;
+		margin-block-start: 0.5rem;
+		font-size: 0.75rem;
+	}
+
+	& .hodima-dr-form__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+}
+
+.hodima-dr-key-dialog__pick {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.625rem;
+	align-items: center;
+}
+
+.hodima-dr-key-dialog__file {
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+	unicode-bidi: isolate;
+}
+
+.hodima-dr-key-dialog__paste summary {
+	color: var(--hd-primary, #25316a);
+	font-size: 0.8125rem;
+	cursor: pointer;
+}
+
+.hodima-dr-key-dialog__preview {
+	min-block-size: 1.5em;
+	margin: 0;
+	font-size: 0.8125rem;
+
+	&.is-ok {
+		color: var(--hd-ok, #1f7a4d);
+	}
+
+	&.is-error {
+		color: var(--hd-error, #b3261e);
+	}
+}
+
 .hodima-dr {
 
 	/* ── نوار پیشرفت کارهای دسته‌ای ── */
@@ -222,6 +278,63 @@
 			font-size: 1rem;
 			font-variant-numeric: tabular-nums;
 		}
+	}
+
+	/* کلید حساب سرویس: یک ردیف وضعیت مثل ماژول Google Indexing (SEO 2.1.7) */
+	& .hodima-dr-subtitle {
+		margin: 1.25rem 0 0.75rem;
+		padding-inline-start: 0.625rem;
+		border-inline-start: 3px solid var(--hd-primary, #25316a);
+		color: var(--hd-text, #1d2340);
+		font-size: 0.9375rem;
+	}
+
+	& .hodima-dr-key {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.625rem;
+		align-items: center;
+		padding: 0.75rem 0.875rem;
+		border: 1px solid var(--hd-border, #dfe4f7);
+		border-radius: var(--hd-radius-sm, 0.5rem);
+		background: var(--hd-surface, #ffffff);
+
+		& .hd-pill .dashicons {
+			inline-size: 1rem;
+			block-size: 1rem;
+			font-size: 1rem;
+		}
+
+		& > .hd-muted {
+			font-size: 0.8125rem;
+		}
+	}
+
+	& .hodima-dr-key__email {
+		direction: ltr;
+		unicode-bidi: isolate;
+	}
+
+	& .hodima-dr-key__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: center;
+		margin-inline-start: auto;
+	}
+
+	& .hodima-dr-key__remove {
+		display: contents;
+	}
+
+	& .button.hodima-dr-danger {
+		border-color: color-mix(in srgb, var(--hd-error, #b3261e) 35%, #ffffff);
+		color: var(--hd-error, #b3261e);
+	}
+
+	& .hodima-dr-key__hint {
+		margin-block: 0.5rem 0;
+		font-size: 0.75rem;
 	}
 
 	/* فرم‌های کارت «اتصال به سرچ کنسول»: دکمه‌ها کنار همان فیلد، نه نوار چسبان پایین صفحه */

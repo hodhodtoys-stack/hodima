@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           2.1.6
+ * Version:           2.1.7
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '2.1.6';
+const HODIMA_SEO_VERSION = '2.1.7';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
