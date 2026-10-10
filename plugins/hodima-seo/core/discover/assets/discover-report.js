@@ -1,5 +1,5 @@
 /**
- * ماژول «Google Discover» — صفحه گزارش (ابزارهای هدیما ← Google Discover)
+ * ماژول «گوگل دیسکاور» — صفحه گزارش (ابزارهای هدیما ← گوگل دیسکاور)
  * Path: core/discover/assets/discover-report.js
  *
  * جاوااسکریپت خالص:

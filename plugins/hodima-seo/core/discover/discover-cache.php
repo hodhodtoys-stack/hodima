@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «Google Discover» — کش نتیجه «آمادگی برای Discover» هر صفحه
+ * ماژول «گوگل دیسکاور» — کش نتیجه «آمادگی برای دیسکاور» هر صفحه
  * Path: core/discover/discover-cache.php
  *
  * تا SEO 2.1.1 کل گزارش (۳۰۰ نوشته + ۲۰۰ دسته، هر کدام ده‌ها کوئری) یک
@@ -12,8 +12,12 @@
  * (با get_posts یک‌جا خوانده می‌شود) و فقط وقتی پاک می‌شود که چیزی از
  * همان صفحه عوض شود: ذخیره، متا، تصویرش، یا تصویری که با آن مشترک است.
  * تغییرهای سراسری (نمایه نویسنده، «پنهان کردن از موتورها»، لوگو، تنظیمات
- * قالب) شماره نسل را بالا می‌برند و همه ردیف‌ها کهنه می‌شوند. هر ردیف هم
- * حداکثر یک روز اعتبار دارد (برای اثر صفحه‌های دیگر، مثل تصویر تکراری).
+ * قالب) شماره نسل را بالا می‌برند و همه ردیف‌ها کهنه می‌شوند.
+ *
+ * اثر صفحه‌های دیگر (تصویر یا عنوان تکراری) با «امضای تکراری» هر ردیف
+ * (hodima_seo_discover_dup_signature) سنجیده می‌شود: اگر صفحه دیگری تصویر یا
+ * عنوانش را عوض کند، امضا عوض و ردیف کهنه می‌شود. پس اعتبار هر ردیف از یک
+ * روز (تا SEO 2.1.4؛ گزارش تقریبا هر روز از نو ساخته می‌شد) به یک هفته رسید.
  */
 
 declare(strict_types=1);
@@ -24,10 +28,10 @@ defined( 'ABSPATH' ) || exit;
 const HODIMA_SEO_DISCOVER_ROW_META = '_hodima_discover_row';
 
 /** نسخه ساختار ردیف؛ با تغییر فهرست بررسی بالا برود تا ردیف‌های قبلی دوباره ساخته شوند. */
-const HODIMA_SEO_DISCOVER_ROW_VERSION = 2;
+const HODIMA_SEO_DISCOVER_ROW_VERSION = 3;
 
-/** اعتبار هر ردیف (ثانیه). */
-const HODIMA_SEO_DISCOVER_ROW_TTL = DAY_IN_SECONDS;
+/** اعتبار هر ردیف (ثانیه)؛ فقط برای موارد وابسته به زمان مثل «تازگی». */
+const HODIMA_SEO_DISCOVER_ROW_TTL = WEEK_IN_SECONDS;
 
 /** گزینه شماره نسل (تغییر سراسری = همه ردیف‌ها کهنه). */
 const HODIMA_SEO_DISCOVER_GEN_OPTION = 'hodima_discover_rows_gen';
@@ -45,7 +49,7 @@ function hodima_seo_discover_rows_reset(): void {
 /**
  * ساخت ردیف گزارش یک صفحه از فهرست بررسی.
  *
- * @return array{v: int, gen: int, at: int, error: int, warn: int, ok: int, total: int, crops: string, issues: list<array{key: string, status: string, label: string, detail: string, link: string}>}
+ * @return array{v: int, gen: int, at: int, dup: string, error: int, warn: int, ok: int, total: int, crops: string, issues: list<array{key: string, status: string, label: string, detail: string, link: string}>}
  */
 function hodima_seo_discover_build_row( WP_Post|WP_Term $target ): array {
 
@@ -53,11 +57,13 @@ function hodima_seo_discover_build_row( WP_Post|WP_Term $target ): array {
 	[ $ok, $total ] = hodima_seo_discover_score( $checks );
 	$issues         = array_values( array_filter( $checks, static fn( array $c ): bool => 'ok' !== $c['status'] ) );
 	$crops          = array_column( $checks, 'status', 'key' )['crops'] ?? '';
+	$self           = ( $target instanceof WP_Term ? 'term:' . $target->term_id : 'post:' . $target->ID );
 
 	return [
 		'v'      => HODIMA_SEO_DISCOVER_ROW_VERSION,
 		'gen'    => hodima_seo_discover_rows_gen(),
 		'at'     => time(),
+		'dup'    => hodima_seo_discover_dup_signature( $self ),
 		'error'  => count( array_filter( $issues, static fn( array $c ): bool => 'error' === $c['status'] ) ),
 		'warn'   => count( array_filter( $issues, static fn( array $c ): bool => 'warn' === $c['status'] ) ),
 		'ok'     => $ok,
@@ -74,7 +80,7 @@ function hodima_seo_discover_build_row( WP_Post|WP_Term $target ): array {
 /**
  * ردیف کش‌شده یک صفحه؛ اگر نیست یا کهنه است و $build، ساخته و ذخیره می‌شود.
  *
- * @return array{v: int, gen: int, at: int, error: int, warn: int, ok: int, total: int, crops: string, issues: list<array{key: string, status: string, label: string, detail: string, link: string}>}|null
+ * @return array{v: int, gen: int, at: int, dup: string, error: int, warn: int, ok: int, total: int, crops: string, issues: list<array{key: string, status: string, label: string, detail: string, link: string}>}|null
  */
 function hodima_seo_discover_row( WP_Post|WP_Term $target, bool $build = true ): ?array {
 
@@ -85,7 +91,8 @@ function hodima_seo_discover_row( WP_Post|WP_Term $target, bool $build = true ):
 	if ( is_array( $row )
 		&& HODIMA_SEO_DISCOVER_ROW_VERSION === (int) ( $row['v'] ?? 0 )
 		&& hodima_seo_discover_rows_gen() === (int) ( $row['gen'] ?? 0 )
-		&& (int) ( $row['at'] ?? 0 ) > time() - HODIMA_SEO_DISCOVER_ROW_TTL ) {
+		&& (int) ( $row['at'] ?? 0 ) > time() - HODIMA_SEO_DISCOVER_ROW_TTL
+		&& hodima_seo_discover_dup_signature( $context . ':' . $id ) === (string) ( $row['dup'] ?? '' ) ) {
 		return $row;
 	}
 
@@ -107,7 +114,7 @@ function hodima_seo_discover_forget( string $context, int $id ): void {
 }
 
 /**
- * پاک کردن ردیف همه صفحه‌هایی که این تصویر را (شاخص، Discover یا تصویر دسته)
+ * پاک کردن ردیف همه صفحه‌هایی که این تصویر را (شاخص، دیسکاور یا تصویر دسته)
  * دارند. مستقیم از دیتابیس، نه نمایه همین درخواست که ممکن است کهنه باشد.
  */
 function hodima_seo_discover_forget_image_users( int $attachment_id ): void {
@@ -151,12 +158,28 @@ add_action( 'save_post', static function ( int $post_id, WP_Post $post ): void {
 	}
 }, 99, 2 );
 
-// ذخیره دسته (بعد از edited_{taxonomy} که کادر Discover در آن ذخیره می‌شود)
+// ذخیره دسته (بعد از edited_{taxonomy} که کادر دیسکاور در آن ذخیره می‌شود)
 add_action( 'saved_term', static function ( int $term_id, int $tt_id, string $taxonomy ): void {
 	if ( in_array( $taxonomy, hodima_seo_discover_taxonomies(), true ) ) {
 		hodima_seo_discover_forget( 'term', $term_id );
+		hodima_seo_discover_index( true ); // نام دسته شاید عوض شد
 	}
 }, 99, 3 );
+
+// حذف یا انتقال به زباله‌دان نوشته/دسته: نمایه «تکراری» بقیه صفحه‌ها کهنه شد
+foreach ( [ 'delete_post', 'trashed_post', 'untrashed_post' ] as $hodima_seo_discover_action ) {
+	add_action( $hodima_seo_discover_action, static function ( int $post_id ): void {
+		if ( in_array( (string) get_post_type( $post_id ), hodima_seo_discover_post_types(), true ) ) {
+			hodima_seo_discover_index( true );
+		}
+	} );
+}
+unset( $hodima_seo_discover_action );
+add_action( 'delete_term', static function ( int $term_id, int $tt_id, string $taxonomy ): void {
+	if ( in_array( $taxonomy, hodima_seo_discover_taxonomies(), true ) ) {
+		hodima_seo_discover_index( true );
+	}
+}, 10, 3 );
 
 /**
  * تغییر هر متا (از جمله REST ویرایشگر بلوکی و ذخیره تصویر شاخص جدا):

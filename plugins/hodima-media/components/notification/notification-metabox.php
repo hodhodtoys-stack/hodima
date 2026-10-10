@@ -355,12 +355,12 @@ final class HodimaNotificationSettings
                             
                             <div class="hdn-flex-row" style="margin-top: 15px;">
                                 <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_target_utm">پارامتر تبلیغاتی (UTM Source) - اختیاری</label>
+                                    <label for="hd_notif_target_utm">پارامتر تبلیغاتی (UTM Source)</label>
                                     <input type="text" id="hd_notif_target_utm" name="hd_notif_target_utm" value="<?php echo esc_attr($meta['hd_notif_target_utm']); ?>" placeholder="مثال: yektanet">
                                 </div>
 
                                 <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_target_referrer">ارجاع‌دهنده (Referrer) - اختیاری</label>
+                                    <label for="hd_notif_target_referrer">ارجاع‌دهنده (Referrer)</label>
                                     <input type="text" id="hd_notif_target_referrer" name="hd_notif_target_referrer" value="<?php echo esc_attr($meta['hd_notif_target_referrer']); ?>" placeholder="مثال: google.com یا yektanet.com">
                                 </div>
                             </div>

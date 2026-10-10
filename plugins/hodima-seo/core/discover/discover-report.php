@@ -1,16 +1,16 @@
 <?php
 /**
- * ماژول «Google Discover» — صفحه گزارش و ستون فهرست‌ها
+ * ماژول «گوگل دیسکاور» — صفحه گزارش و ستون فهرست‌ها
  * Path: core/discover/discover-report.php
  *
- * «ابزارهای هدیما ← Google Discover»:
+ * «ابزارهای هدیما ← گوگل دیسکاور»:
  *   تب «آمادگی»: فهرست بررسی کادر ویرایش برای ۱۰۰۰ صفحه منتشرشده آخر و
  *     دسته‌های محصول (از کش هر صفحه؛ discover-cache.php)، با شمارش، فیلتر،
  *     مرتب‌سازی (تاریخ، آمادگی، نمایش، کلیک) و «ساخت برش برای همه».
  *   تب «فرصت‌ها»: آمادگی کنار آمار واقعی (discover-insights.php).
- *   تب «آمار Search Console»: مقایسه با ۲۸ روز قبل، نمودار روزانه، صفحه‌ها
+ *   تب «آمار سرچ کنسول»: مقایسه با ۲۸ روز قبل، نمودار روزانه، صفحه‌ها
  *     و تنظیم property.
- * و ستون «Discover» در فهرست نوشته‌ها، برگه‌ها، محصولات و دسته‌های محصول.
+ * و ستون «دیسکاور» در فهرست نوشته‌ها، برگه‌ها، محصولات و دسته‌های محصول.
  *
  * کارهای طولانی (ساختن ردیف‌های تازه، برش تصویر همه صفحه‌ها) دسته‌دسته با
  * admin-ajax و نوار پیشرفت انجام می‌شوند تا هیچ درخواستی به محدودیت زمان
@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit;
 
 const HODIMA_SEO_DISCOVER_PAGE = 'hodima-discover';
 
-/** تعداد نوشته/برگه/محصول منتشرشده بررسی‌شده در گزارش (جدیدترین‌ها). */
+/** سقف نوشته، برگه و محصول منتشرشده بررسی‌شده در گزارش، از هر نوع جدا (جدیدترین‌ها). */
 const HODIMA_SEO_DISCOVER_REPORT_LIMIT = 1000;
 
 /** بیشترین دسته‌های بررسی‌شده در گزارش. */
@@ -40,11 +40,11 @@ add_action( 'admin_menu', static function (): void {
 	$parent = function_exists( 'hodima_admin_menu_parent' ) ? hodima_admin_menu_parent() : '';
 
 	if ( '' === $parent ) {
-		add_menu_page( 'Google Discover', 'Google Discover', 'edit_others_posts', HODIMA_SEO_DISCOVER_PAGE, 'hodima_seo_discover_render_page', 'dashicons-visibility', 26 );
+		add_menu_page( 'گوگل دیسکاور', 'گوگل دیسکاور', 'edit_others_posts', HODIMA_SEO_DISCOVER_PAGE, 'hodima_seo_discover_render_page', 'dashicons-visibility', 26 );
 		return;
 	}
 
-	add_submenu_page( $parent, 'Google Discover', 'Google Discover', 'edit_others_posts', HODIMA_SEO_DISCOVER_PAGE, 'hodima_seo_discover_render_page' );
+	add_submenu_page( $parent, 'گوگل دیسکاور', 'گوگل دیسکاور', 'edit_others_posts', HODIMA_SEO_DISCOVER_PAGE, 'hodima_seo_discover_render_page' );
 }, 20 );
 
 /**
@@ -61,19 +61,31 @@ function hodima_seo_discover_page_url( array $args = [] ): string {
  * ===================================================================== */
 
 /**
- * صفحه‌های گزارش: نوشته‌ها، برگه‌ها و محصولات منتشرشده (جدیدترین‌ها؛ متاها
- * یک‌جا در کش وردپرس) و دسته‌های محصول.
+ * صفحه‌های گزارش: نوشته‌ها، برگه‌ها و محصولات منتشرشده (از هر نوع جدا تا
+ * سقف خودش، جدیدترین‌ها؛ متاها یک‌جا در کش وردپرس) و دسته‌های محصول.
+ * صفحه‌هایی که برای دیسکاور نیستند (hodima_seo_discover_skip_reason) جدا
+ * برمی‌گردند.
  *
- * @return list<WP_Post|WP_Term>
+ * باگ قبلی (تا SEO 2.1.4): سقف ۱۰۰۰ برای همه نوع‌ها با هم بود؛ با زیاد شدن
+ * محصولات، مقاله‌های قدیمی‌تر از گزارش و «فرصت‌ها» بیرون می‌افتادند.
+ *
+ * @return array{targets: list<WP_Post|WP_Term>, skipped: list<array{target: WP_Post|WP_Term, reason: string}>}
  */
 function hodima_seo_discover_report_targets(): array {
 
-	$targets = [];
-	$types   = array_values( array_filter( hodima_seo_discover_post_types(), 'post_type_exists' ) );
+	$out   = [ 'targets' => [], 'skipped' => [] ];
+	$add   = static function ( WP_Post|WP_Term $target ) use ( &$out ): void {
+		$reason = hodima_seo_discover_skip_reason( $target );
+		if ( '' === $reason ) {
+			$out['targets'][] = $target;
+		} else {
+			$out['skipped'][] = [ 'target' => $target, 'reason' => $reason ];
+		}
+	};
 
-	if ( $types ) {
+	foreach ( array_filter( hodima_seo_discover_post_types(), 'post_type_exists' ) as $type ) {
 		$posts = get_posts( [
-			'post_type'              => $types,
+			'post_type'              => $type,
 			'post_status'            => 'publish',
 			'has_password'           => false,
 			'posts_per_page'         => HODIMA_SEO_DISCOVER_REPORT_LIMIT,
@@ -84,7 +96,7 @@ function hodima_seo_discover_report_targets(): array {
 		] );
 		foreach ( $posts as $post ) {
 			if ( hodima_seo_discover_for_post( (int) $post->ID ) ) {
-				$targets[] = $post;
+				$add( $post );
 			}
 		}
 	}
@@ -94,11 +106,14 @@ function hodima_seo_discover_report_targets(): array {
 
 	foreach ( is_array( $terms ) ? $terms : [] as $term ) {
 		if ( $term instanceof WP_Term && hodima_seo_discover_for_term( (int) $term->term_id ) ) {
-			$targets[] = $term;
+			$add( $term );
 		}
 	}
 
-	return $targets;
+	// گزارش به ترتیب جدیدترین‌ها (نوع‌ها جدا خوانده شدند)؛ دسته‌ها آخر
+	usort( $out['targets'], static fn( WP_Post|WP_Term $a, WP_Post|WP_Term $b ): int => ( $b instanceof WP_Post ? $b->post_date_gmt : '' ) <=> ( $a instanceof WP_Post ? $a->post_date_gmt : '' ) );
+
+	return $out;
 }
 
 /**
@@ -106,14 +121,15 @@ function hodima_seo_discover_report_targets(): array {
  * $budget ثانیه ساخته می‌شود و بقیه «در انتظار» می‌مانند (JS دسته‌دسته
  * کاملشان می‌کند).
  *
- * @return array{rows: list<array<string, mixed>>, pending: int, total: int}
+ * @return array{rows: list<array<string, mixed>>, pending: int, total: int, skipped: list<array{target: WP_Post|WP_Term, reason: string}>}
  */
 function hodima_seo_discover_report_rows( float $budget = 4.0 ): array {
 
 	$start   = microtime( true );
 	$rows    = [];
 	$pending = 0;
-	$targets = hodima_seo_discover_report_targets();
+	$found   = hodima_seo_discover_report_targets();
+	$targets = $found['targets'];
 
 	foreach ( $targets as $target ) {
 
@@ -140,7 +156,7 @@ function hodima_seo_discover_report_rows( float $budget = 4.0 ): array {
 		] + $cached;
 	}
 
-	return [ 'rows' => $rows, 'pending' => $pending, 'total' => count( $targets ) ];
+	return [ 'rows' => $rows, 'pending' => $pending, 'total' => count( $targets ), 'skipped' => $found['skipped'] ];
 }
 
 /** برچسب فارسی نوع ردیف گزارش. */
@@ -179,20 +195,51 @@ add_action( 'admin_post_hodima_discover_sc', static function (): void {
 
 	check_admin_referer( 'hodima_discover_sc' );
 
+	$back  = hodima_seo_discover_page_url( [ 'tab' => 'stats' ] );
+	$flash = static function ( string $message, string $type ): void {
+		if ( function_exists( 'hodima_admin_flash' ) ) {
+			hodima_admin_flash( $message, $type );
+		}
+	};
+
+	/*
+	 * کلید جدای دیسکاور (از SEO 2.1.5): حساب سرویس (و ایمیلش) را مدیر همین‌جا
+	 * عوض یا حذف می‌کند. خالی = کلید فعلی می‌ماند. کلید نامعتبر ذخیره نمی‌شود.
+	 */
+	if ( isset( $_POST['remove_key'] ) ) {
+		delete_option( HODIMA_SEO_DISCOVER_SC_KEY_OPTION );
+	} else {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON کلید؛ با hodima_seo_discover_sc_validate_key بررسی و دست‌نخورده ذخیره می‌شود (پاک‌سازی، کلید خصوصی را خراب می‌کند)
+		$json = isset( $_POST['key_json'] ) ? trim( (string) wp_unslash( $_POST['key_json'] ) ) : '';
+		if ( '' !== $json ) {
+			$check = hodima_seo_discover_sc_validate_key( $json );
+			if ( ! $check['ok'] ) {
+				$flash( 'کلید ذخیره نشد: ' . $check['message'], 'error' );
+				wp_safe_redirect( $back );
+				exit;
+			}
+			update_option( HODIMA_SEO_DISCOVER_SC_KEY_OPTION, $json, false );
+		}
+	}
+
 	$property = isset( $_POST['property'] ) ? sanitize_text_field( wp_unslash( $_POST['property'] ) ) : '';
 	$property = str_starts_with( $property, 'sc-domain:' ) ? $property : ( '' !== $property ? trailingslashit( esc_url_raw( $property, [ 'https', 'http' ] ) ) : '' );
 
 	update_option( HODIMA_SEO_DISCOVER_SC_OPTION, [ 'property' => $property ], false );
 
-	$result = hodima_seo_discover_sc_refresh();
-
-	if ( function_exists( 'hodima_admin_flash' ) ) {
-		is_wp_error( $result )
-			? hodima_admin_flash( $result->get_error_message(), 'error' )
-			: hodima_admin_flash( 'آمار Discover از Search Console به‌روز شد.', 'success' );
+	if ( '' === hodima_seo_discover_sc_key_json() ) {
+		$flash( 'کلید حساب سرویس تنظیم نشده است؛ تا کلید وارد نشود آمار به‌روز نمی‌شود.', 'warning' );
+		wp_safe_redirect( $back );
+		exit;
 	}
 
-	wp_safe_redirect( hodima_seo_discover_page_url( [ 'tab' => 'stats' ] ) );
+	$result = hodima_seo_discover_sc_refresh();
+
+	is_wp_error( $result )
+		? $flash( $result->get_error_message(), 'error' )
+		: $flash( 'آمار دیسکاور از سرچ کنسول به‌روز شد.', 'success' );
+
+	wp_safe_redirect( $back );
 	exit;
 } );
 
@@ -295,18 +342,19 @@ add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
 function hodima_seo_discover_render_page(): void {
 
 	$tab  = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط انتخاب تب
-	$tab  = in_array( $tab, [ 'opportunities', 'stats' ], true ) ? $tab : 'report';
+	$tab  = in_array( $tab, [ 'opportunities', 'stats', 'settings' ], true ) ? $tab : 'report';
 	$tabs = [
 		'report'        => [ 'label' => 'آمادگی', 'url' => hodima_seo_discover_page_url(), 'icon' => 'dashicons-yes-alt' ],
 		'opportunities' => [ 'label' => 'فرصت‌ها', 'url' => hodima_seo_discover_page_url( [ 'tab' => 'opportunities' ] ), 'icon' => 'dashicons-lightbulb' ],
-		'stats'         => [ 'label' => 'آمار Search Console', 'url' => hodima_seo_discover_page_url( [ 'tab' => 'stats' ] ), 'icon' => 'dashicons-chart-area' ],
+		'stats'         => [ 'label' => 'آمار سرچ کنسول', 'url' => hodima_seo_discover_page_url( [ 'tab' => 'stats' ] ), 'icon' => 'dashicons-chart-area' ],
+		'settings'      => [ 'label' => 'تنظیمات', 'url' => hodima_seo_discover_page_url( [ 'tab' => 'settings' ] ), 'icon' => 'dashicons-admin-generic' ],
 	];
 	?>
 	<div class="wrap hd-wrap hodima-dr">
 		<?php
 		hodima_admin_header( [
-			'title'       => 'Google Discover',
-			'description' => 'فید پیشنهادی گوگل در موبایل؛ برای مقاله‌ها پرورودی‌ترین مسیر گوگل. آمادگی همه صفحه‌ها، فرصت‌های بهتر شدن و آمار واقعی Discover در یک جا.',
+			'title'       => 'گوگل دیسکاور',
+			'description' => 'فید پیشنهادی گوگل در موبایل؛ برای مقاله‌ها پرورودی‌ترین مسیر گوگل. آمادگی همه صفحه‌ها، فرصت‌های بهتر شدن و آمار واقعی دیسکاور در یک جا.',
 			'icon'        => 'dashicons-visibility',
 			'tabs'        => $tabs,
 			'current'     => $tab,
@@ -314,6 +362,7 @@ function hodima_seo_discover_render_page(): void {
 
 		match ( $tab ) {
 			'stats'         => hodima_seo_discover_render_stats(),
+			'settings'      => hodima_seo_discover_render_settings(),
 			'opportunities' => hodima_seo_discover_render_opportunities(),
 			default         => hodima_seo_discover_render_report(),
 		};
@@ -349,7 +398,6 @@ function hodima_seo_discover_render_report(): void {
 	$ready  = count( array_filter( $rows, static fn( array $r ): bool => 0 === $r['error'] && 0 === $r['warn'] ) );
 	$errors = count( array_filter( $rows, static fn( array $r ): bool => $r['error'] > 0 ) );
 	$warns  = count( $rows ) - $ready - $errors;
-	$nocrop = count( array_filter( $rows, static fn( array $r ): bool => 'missing' === $r['crops'] ) );
 	$metric = static fn( array $r, string $m ): int => (int) ( $stats['rows'][ $r['url_key'] ][ $m ] ?? 0 );
 
 	if ( $data['pending'] > 0 ) {
@@ -380,36 +428,16 @@ function hodima_seo_discover_render_report(): void {
 		<div class="hd-stat"><span class="hd-stat__label">قابل بهتر شدن</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $warns ) ); ?></span></div>
 		<div class="hd-stat"><span class="hd-stat__label">مشکل دارد</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $errors ) ); ?></span></div>
 		<?php if ( $stats['fetched'] ) : ?>
-			<div class="hd-stat"><span class="hd-stat__label">کلیک Discover (۲۸ روز)</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $stats['totals']['clicks'] ) ); ?></span></div>
-			<div class="hd-stat"><span class="hd-stat__label">نمایش Discover (۲۸ روز)</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $stats['totals']['impressions'] ) ); ?></span></div>
+			<div class="hd-stat"><span class="hd-stat__label">کلیک دیسکاور (۲۸ روز)</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $stats['totals']['clicks'] ) ); ?></span></div>
+			<div class="hd-stat"><span class="hd-stat__label">نمایش دیسکاور (۲۸ روز)</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $stats['totals']['impressions'] ) ); ?></span></div>
 		<?php endif; ?>
 	</div>
 
 	<section class="hd-card">
 		<div class="hd-card__head">
-			<?php echo hodima_admin_icon( 'dashicons-image-crop' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
-			<h2 class="hd-card__title">برش‌های تصویر Discover</h2>
-			<p class="hd-card__desc">
-				برش‌های ۱۶:۹، ۴:۳ و ۱:۱ (عرض ۱۲۰۰) در og:image و اسکیما استفاده می‌شوند و هنگام ذخیره هر صفحه ساخته می‌شوند. صفحه‌هایی که از قبل بوده‌اند و دوباره ذخیره نشده‌اند برش ندارند.
-				<?php if ( $nocrop ) : ?>
-					<strong><?php echo esc_html( sprintf( '%s صفحه از صفحه‌های گزارش هنوز برش ندارد.', number_format_i18n( $nocrop ) ) ); ?></strong>
-				<?php endif; ?>
-			</p>
-		</div>
-		<div class="hodima-dr-batch" data-hodima-dr-batch="crops">
-			<div class="hodima-dr-progress" role="progressbar" aria-label="ساخت برش‌ها" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span></span></div>
-			<p class="hodima-dr-batch__msg" data-hodima-dr-msg aria-live="polite"></p>
-			<div class="hd-actions">
-				<button type="button" class="button button-primary" data-hodima-dr-start><?php echo hodima_admin_icon( 'dashicons-image-crop' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> ساخت برش برای همه صفحه‌ها</button>
-			</div>
-		</div>
-	</section>
-
-	<section class="hd-card">
-		<div class="hd-card__head">
 			<?php echo hodima_admin_icon( 'dashicons-list-view' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
 			<h2 class="hd-card__title">آمادگی نوشته‌ها، برگه‌ها، محصولات و دسته‌ها</h2>
-			<p class="hd-card__desc">همان «آمادگی برای Discover» کادر ویرایش: تصویر بزرگ و اختصاصی با متن جایگزین، برش‌ها، ایندکس، عنوان اختصاصی بدون طعمه کلیک، متن معرفی، خلاصه، عمق و تازگی مقاله، و معرفی نویسنده. <?php echo esc_html( number_format_i18n( HODIMA_SEO_DISCOVER_REPORT_LIMIT ) ); ?> صفحه آخر و دسته‌های محصول.</p>
+			<p class="hd-card__desc">همان «آمادگی برای دیسکاور» کادر ویرایش: تصویر بزرگ و اختصاصی با متن جایگزین، برش‌ها، ایندکس، عنوان اختصاصی بدون طعمه کلیک، متن معرفی، خلاصه، عمق و تازگی مقاله، و معرفی نویسنده. <?php echo esc_html( number_format_i18n( HODIMA_SEO_DISCOVER_REPORT_LIMIT ) ); ?> صفحه آخر و دسته‌های محصول.</p>
 		</div>
 		<div class="hd-inline">
 			<a class="button<?php echo '' === $type ? ' button-primary' : ''; ?>" href="<?php echo esc_url( hodima_seo_discover_page_url( array_diff_key( $args, [ 'type' => 1 ] ) ) ); ?>">همه</a>
@@ -440,7 +468,7 @@ function hodima_seo_discover_render_report(): void {
 							<th scope="col">آمادگی</th>
 							<th scope="col">موارد</th>
 							<?php if ( $stats['fetched'] ) : ?>
-								<th scope="col">Discover (کلیک / نمایش)</th>
+								<th scope="col">دیسکاور (کلیک / نمایش)</th>
 							<?php endif; ?>
 						</tr>
 					</thead>
@@ -475,7 +503,68 @@ function hodima_seo_discover_render_report(): void {
 				</div></div>
 			<?php endif; ?>
 		<?php endif; ?>
+
+		<?php if ( $data['skipped'] ) : ?>
+			<details class="hodima-dr-skipped">
+				<summary><?php echo esc_html( sprintf( '%s صفحه کنار گذاشته شد (برای گوگل دیسکاور نیستند)', number_format_i18n( count( $data['skipped'] ) ) ) ); ?></summary>
+				<p class="hd-muted">این صفحه‌ها در شمارش، «فرصت‌ها» و ستون فهرست‌ها نمی‌آیند. صفحه‌ای که اشتباه اینجاست: در کادر دیسکاور همان صفحه، تیک «این صفحه برای گوگل دیسکاور نیست» را بردارید یا noindex آن را در سئوباکس عوض کنید.</p>
+				<div class="hd-table-wrap">
+					<table class="widefat striped">
+						<thead><tr><th scope="col">عنوان</th><th scope="col">دلیل</th></tr></thead>
+						<tbody>
+							<?php foreach ( $data['skipped'] as $item ) : ?>
+								<?php
+								$target  = $item['target'];
+								$is_term = $target instanceof WP_Term;
+								$edit    = (string) ( $is_term ? get_edit_term_link( (int) $target->term_id, $target->taxonomy ) : get_edit_post_link( (int) $target->ID, 'raw' ) );
+								$name    = $is_term ? $target->name : (string) get_the_title( $target );
+								?>
+								<tr>
+									<td>
+										<strong><a href="<?php echo esc_url( $edit ); ?>"><?php echo esc_html( '' !== $name ? $name : '(بدون عنوان)' ); ?></a></strong>
+										<div class="hd-muted"><?php echo esc_html( hodima_seo_discover_type_label( $is_term ? $target->taxonomy : $target->post_type ) ); ?></div>
+									</td>
+									<td><?php echo esc_html( hodima_seo_discover_skip_label( $item['reason'] ) ); ?></td>
+								</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+			</details>
+		<?php endif; ?>
 	</section>
+	<?php
+}
+
+/**
+ * تب «تنظیمات»: برش‌های تصویر دیسکاور (تا SEO 2.1.4 بالای تب «آمادگی» بود).
+ * تعداد صفحه‌های بی‌برش از ردیف‌های کش‌شده (بدون ساختن ردیف تازه).
+ */
+function hodima_seo_discover_render_settings(): void {
+
+	$rows   = hodima_seo_discover_report_rows( 0.0 )['rows'];
+	$nocrop = count( array_filter( $rows, static fn( array $r ): bool => 'missing' === $r['crops'] ) );
+	?>
+	<section class="hd-card">
+		<div class="hd-card__head">
+			<?php echo hodima_admin_icon( 'dashicons-image-crop' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
+			<h2 class="hd-card__title">برش‌های تصویر دیسکاور</h2>
+			<p class="hd-card__desc">
+				برش‌های ۱۶:۹، ۴:۳ و ۱:۱ (عرض ۱۲۰۰) در og:image و اسکیما استفاده می‌شوند و هنگام ذخیره هر صفحه ساخته می‌شوند. صفحه‌هایی که از قبل بوده‌اند و دوباره ذخیره نشده‌اند برش ندارند.
+				<?php if ( $nocrop ) : ?>
+					<strong><?php echo esc_html( sprintf( '%s صفحه از صفحه‌های گزارش هنوز برش ندارد.', number_format_i18n( $nocrop ) ) ); ?></strong>
+				<?php endif; ?>
+			</p>
+		</div>
+		<div class="hodima-dr-batch" data-hodima-dr-batch="crops">
+			<div class="hodima-dr-progress" role="progressbar" aria-label="ساخت برش‌ها" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span></span></div>
+			<p class="hodima-dr-batch__msg" data-hodima-dr-msg aria-live="polite"></p>
+			<div class="hd-actions">
+				<button type="button" class="button button-primary" data-hodima-dr-start><?php echo hodima_admin_icon( 'dashicons-image-crop' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> ساخت برش برای همه صفحه‌ها</button>
+			</div>
+		</div>
+	</section>
+
 	<?php
 }
 
@@ -510,7 +599,7 @@ function hodima_seo_discover_render_opportunities(): void {
 
 	if ( ! $stats['fetched'] ) {
 		?>
-		<p class="hd-callout hd-callout--warning">بیشتر فرصت‌ها از آمار واقعی Search Console ساخته می‌شوند که هنوز گرفته نشده است. از تب «آمار Search Console» اتصال را تنظیم کنید؛ تا آن موقع فقط «مقاله تازه بدون نمایش» کامل نیست.</p>
+		<p class="hd-callout hd-callout--warning">بیشتر فرصت‌ها از آمار واقعی سرچ کنسول ساخته می‌شوند که هنوز گرفته نشده است. از تب «آمار سرچ کنسول» اتصال را تنظیم کنید؛ تا آن موقع فقط «مقاله تازه بدون نمایش» کامل نیست.</p>
 		<?php
 	}
 
@@ -518,22 +607,22 @@ function hodima_seo_discover_render_opportunities(): void {
 		'low_ctr'    => [
 			'icon'  => 'dashicons-visibility',
 			'title' => 'دیده می‌شود ولی کم کلیک می‌خورد',
-			'desc'  => sprintf( 'دست‌کم %1$s نمایش و نرخ کلیک کمتر از %2$s (۶۰٪ میانگین سایت، %3$s). کارت را جذاب‌تر کنید: عنوان Discover صادق ولی گیرا، و تصویر بزرگ روشن و مرتبط. «کلیک از دست رفته» تخمین فاصله با میانگین سایت است.', $num( HODIMA_SEO_DISCOVER_OPP_MIN_IMPRESSIONS ), $pct( $opp['site_ctr'] * HODIMA_SEO_DISCOVER_OPP_CTR_RATIO ), $pct( $opp['site_ctr'] ) ),
+			'desc'  => sprintf( 'دست‌کم %1$s نمایش و نرخ کلیک کمتر از %2$s (۶۰٪ میانگین سایت، %3$s). کارت را جذاب‌تر کنید: عنوان دیسکاور صادق ولی گیرا، و تصویر بزرگ روشن و مرتبط. «کلیک از دست رفته» تخمین فاصله با میانگین سایت است.', $num( HODIMA_SEO_DISCOVER_OPP_MIN_IMPRESSIONS ), $pct( $opp['site_ctr'] * HODIMA_SEO_DISCOVER_OPP_CTR_RATIO ), $pct( $opp['site_ctr'] ) ),
 		],
 		'dropping'   => [
 			'icon'  => 'dashicons-arrow-down-alt',
 			'title' => 'افت نمایش',
-			'desc'  => 'نمایش ۲۸ روز آخر نصف ۲۸ روز قبل یا کمتر. Discover به تازگی حساس است؛ اطلاعات مطلب را به‌روز کنید، چیز تازه اضافه کنید و دوباره منتشر کنید.',
+			'desc'  => 'نمایش ۲۸ روز آخر نصف ۲۸ روز قبل یا کمتر. دیسکاور به تازگی حساس است؛ اطلاعات مطلب را به‌روز کنید، چیز تازه اضافه کنید و دوباره منتشر کنید.',
 		],
 		'not_ready'  => [
 			'icon'  => 'dashicons-warning',
-			'title' => 'در Discover هست ولی آماده نیست',
+			'title' => 'در دیسکاور هست ولی آماده نیست',
 			'desc'  => 'گوگل این صفحه‌ها را انتخاب کرده؛ رفع موارد آمادگی (مثلا تصویر بزرگ و برش‌ها) کارت را بزرگ‌تر و نمایش را بیشتر می‌کند. اول پرنمایش‌ترها.',
 		],
 		'new_unseen' => [
 			'icon'  => 'dashicons-clock',
 			'title' => 'مقاله تازه، هنوز دیده نشده',
-			'desc'  => 'مقاله‌های ۳ تا ۳۰ روز اخیر که در Discover نمایش نداشته‌اند و مورد آمادگی دارند. Discover بیشتر مطالب تازه را نشان می‌دهد؛ تا مقاله تازه است، موارد را رفع کنید.',
+			'desc'  => 'مقاله‌های ۳ تا ۳۰ روز اخیر که در دیسکاور نمایش نداشته‌اند و مورد آمادگی دارند. دیسکاور بیشتر مطالب تازه را نشان می‌دهد؛ تا مقاله تازه است، موارد را رفع کنید.',
 		],
 	];
 
@@ -547,7 +636,7 @@ function hodima_seo_discover_render_opportunities(): void {
 				<p class="hd-card__desc"><?php echo esc_html( $group['desc'] ); ?></p>
 			</div>
 			<?php if ( ! $items ) : ?>
-				<p class="hd-empty"><?php echo $stats['fetched'] || 'new_unseen' === $key ? 'موردی نیست.' : 'بدون آمار Search Console قابل محاسبه نیست.'; ?></p>
+				<p class="hd-empty"><?php echo $stats['fetched'] || 'new_unseen' === $key ? 'موردی نیست.' : 'بدون آمار سرچ کنسول قابل محاسبه نیست.'; ?></p>
 			<?php else : ?>
 				<div class="hd-table-wrap">
 					<table class="widefat striped">
@@ -612,12 +701,13 @@ function hodima_seo_discover_render_stat_tile( string $label, string $value, ?fl
 	<?php
 }
 
-/** تب «آمار Search Console». */
+/** تب «آمار سرچ کنسول». */
 function hodima_seo_discover_render_stats(): void {
 
 	$stats    = hodima_seo_discover_stats();
 	$email    = hodima_seo_discover_sc_email();
 	$has_key  = '' !== hodima_seo_discover_sc_key_json();
+	$source   = hodima_seo_discover_sc_key_source();
 	$can_edit = current_user_can( 'manage_options' );
 	$has_prev = '' !== $stats['prev']['start'];
 	$now      = $stats['totals'];
@@ -636,8 +726,8 @@ function hodima_seo_discover_render_stats(): void {
 	<?php if ( $stats['fetched'] ) : ?>
 		<div class="hd-grid hd-grid--stats">
 			<?php
-			hodima_seo_discover_render_stat_tile( 'کلیک Discover', number_format_i18n( $now['clicks'] ), $has_prev ? hodima_seo_discover_change( $now['clicks'], $before['clicks'] ) : null );
-			hodima_seo_discover_render_stat_tile( 'نمایش Discover', number_format_i18n( $now['impressions'] ), $has_prev ? hodima_seo_discover_change( $now['impressions'], $before['impressions'] ) : null );
+			hodima_seo_discover_render_stat_tile( 'کلیک دیسکاور', number_format_i18n( $now['clicks'] ), $has_prev ? hodima_seo_discover_change( $now['clicks'], $before['clicks'] ) : null );
+			hodima_seo_discover_render_stat_tile( 'نمایش دیسکاور', number_format_i18n( $now['impressions'] ), $has_prev ? hodima_seo_discover_change( $now['impressions'], $before['impressions'] ) : null );
 			$ctr_now  = $ctr( $now );
 			$ctr_prev = $ctr( $before );
 			hodima_seo_discover_render_stat_tile(
@@ -655,7 +745,7 @@ function hodima_seo_discover_render_stats(): void {
 			<div class="hd-card__head">
 				<?php echo hodima_admin_icon( 'dashicons-chart-area' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
 				<h2 class="hd-card__title">روند روزانه</h2>
-				<p class="hd-card__desc">کل سایت در Discover، روز به روز (وقت اقیانوس آرام، مثل خود Search Console). نمایش و کلیک دو نمودار جدا با محور خودشان‌اند.</p>
+				<p class="hd-card__desc">کل سایت در دیسکاور، روز به روز (وقت اقیانوس آرام، مثل خود سرچ کنسول). نمایش و کلیک دو نمودار جدا با محور خودشان‌اند.</p>
 			</div>
 			<div class="hodima-dr-charts">
 				<?php
@@ -686,12 +776,12 @@ function hodima_seo_discover_render_stats(): void {
 	<section class="hd-card">
 		<div class="hd-card__head">
 			<?php echo hodima_admin_icon( 'dashicons-chart-bar' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
-			<h2 class="hd-card__title">پرنمایش‌ترین صفحه‌ها در Discover</h2>
+			<h2 class="hd-card__title">پرنمایش‌ترین صفحه‌ها در دیسکاور</h2>
 			<p class="hd-card__desc">
 				<?php if ( $stats['fetched'] ) : ?>
-					<?php echo esc_html( sprintf( 'از %1$s تا %2$s (داده Discover با دو روز تاخیر می‌رسد) — property: %3$s — آخرین دریافت: %4$s', $stats['start'], $stats['end'], $stats['property'], wp_date( 'Y/m/d H:i', $stats['fetched'] ) ) ); ?>
+					<?php echo esc_html( sprintf( 'از %1$s تا %2$s (داده دیسکاور با دو روز تاخیر می‌رسد) — property: %3$s — آخرین دریافت: %4$s', $stats['start'], $stats['end'], $stats['property'], wp_date( 'Y/m/d H:i', $stats['fetched'] ) ) ); ?>
 				<?php else : ?>
-					هنوز آماری گرفته نشده است. اگر سایت هنوز در Discover نمایش نداشته، Search Console هم داده‌ای ندارد.
+					هنوز آماری گرفته نشده است. اگر سایت هنوز در دیسکاور نمایش نداشته، سرچ کنسول هم داده‌ای ندارد.
 				<?php endif; ?>
 			</p>
 		</div>
@@ -726,34 +816,48 @@ function hodima_seo_discover_render_stats(): void {
 				</table>
 			</div>
 		<?php elseif ( $stats['fetched'] ) : ?>
-			<p class="hd-empty">در این بازه هیچ صفحه‌ای از سایت در Discover نمایش داده نشده است.</p>
+			<p class="hd-empty">در این بازه هیچ صفحه‌ای از سایت در دیسکاور نمایش داده نشده است.</p>
 		<?php endif; ?>
 	</section>
 
 	<section class="hd-card">
 		<div class="hd-card__head">
 			<?php echo hodima_admin_icon( 'dashicons-admin-network' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
-			<h2 class="hd-card__title">اتصال به Search Console</h2>
-			<p class="hd-card__desc">از همان کلید سرویس اکانت ماژول «Google Indexing API» استفاده می‌شود (فقط دسترسی خواندنی). آمار روزی یک بار خودکار به‌روز می‌شود.</p>
+			<h2 class="hd-card__title">اتصال به سرچ کنسول</h2>
+			<p class="hd-card__desc">با یک حساب سرویس گوگل (Service Account) و فقط دسترسی خواندنی. آمار روزی یک بار خودکار به‌روز می‌شود.</p>
 		</div>
 		<?php if ( ! $has_key ) : ?>
-			<p class="hd-callout hd-callout--warning">کلید سرویس اکانت تنظیم نشده است. اول ماژول «Google Indexing API» را روشن و کلید JSON را در تنظیمات آن وارد کنید.</p>
+			<p class="hd-callout hd-callout--warning">کلید حساب سرویس تنظیم نشده است. فایل JSON حساب سرویس را پایین بچسبانید (اگر ماژول «Google Indexing API» کلید داشته باشد، همان خودکار استفاده می‌شود).</p>
 		<?php else : ?>
-			<p class="hd-muted">ایمیل سرویس اکانت باید در Search Console ← تنظیمات ← کاربران و مجوزها، کاربر همین property باشد: <code dir="ltr"><?php echo esc_html( $email ); ?></code></p>
+			<div class="hd-callout">
+				<div>
+					<p><strong>حساب فعلی:</strong> <code dir="ltr"><?php echo esc_html( $email ); ?></code>
+						<span class="hd-pill"><?php echo esc_html( 'own' === $source ? 'کلید جدای دیسکاور' : 'کلید ماژول Google Indexing' ); ?></span></p>
+					<p class="hd-muted">همین ایمیل باید در سرچ کنسول ← تنظیمات ← کاربران و مجوزها، کاربر همین property باشد. ایمیل جزئی از خود کلید است؛ برای عوض کردن حساب (و ایمیل)، فایل JSON حساب تازه را پایین بچسبانید.</p>
+				</div>
+			</div>
 		<?php endif; ?>
 		<?php if ( $can_edit ) : ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="hodima_discover_sc">
 				<?php wp_nonce_field( 'hodima_discover_sc' ); ?>
 				<div class="hd-fields">
-				<div class="hd-field hd-field--wide">
-					<label class="hd-field__label" for="hodima-discover-property">property در Search Console (اختیاری)</label>
-					<input type="text" id="hodima-discover-property" name="property" dir="ltr" value="<?php echo esc_attr( hodima_seo_discover_sc_property() ); ?>" placeholder="<?php echo esc_attr( implode( '  یا  ', hodima_seo_discover_sc_candidates() ) ); ?>">
-					<p class="hd-field__help">خالی = اول آدرس سایت و بعد دامنه (sc-domain) خودکار امتحان می‌شود.</p>
-				</div>
+					<div class="hd-field hd-field--wide">
+						<label class="hd-field__label" for="hodima-discover-key"><?php echo esc_html( $has_key ? 'کلید حساب سرویس تازه (فایل JSON)' : 'کلید حساب سرویس (فایل JSON)' ); ?></label>
+						<textarea id="hodima-discover-key" name="key_json" rows="5" dir="ltr" autocomplete="off" spellcheck="false" placeholder='{"type": "service_account", "client_email": "…", "private_key": "…"}'></textarea>
+						<p class="hd-field__help">کل محتوای فایل JSON که از Google Cloud ← IAM ← حساب‌های سرویس ← کلیدها دانلود کرده‌اید. خالی بماند = کلید فعلی عوض نمی‌شود. این کلید فقط برای خواندن آمار دیسکاور است و ماژول Google Indexing را عوض نمی‌کند.</p>
+					</div>
+					<div class="hd-field hd-field--wide">
+						<label class="hd-field__label" for="hodima-discover-property">property در سرچ کنسول</label>
+						<input type="text" id="hodima-discover-property" name="property" dir="ltr" value="<?php echo esc_attr( hodima_seo_discover_sc_property() ); ?>" placeholder="<?php echo esc_attr( implode( '  یا  ', hodima_seo_discover_sc_candidates() ) ); ?>">
+						<p class="hd-field__help">خالی = اول آدرس سایت و بعد دامنه (sc-domain) خودکار امتحان می‌شود.</p>
+					</div>
 				</div>
 				<div class="hd-actions">
-					<button type="submit" class="button button-primary" <?php disabled( ! $has_key ); ?>><?php echo hodima_admin_icon( 'dashicons-update' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> ذخیره و به‌روزرسانی آمار</button>
+					<button type="submit" class="button button-primary"><?php echo hodima_admin_icon( 'dashicons-update' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> ذخیره و به‌روزرسانی آمار</button>
+					<?php if ( 'own' === $source ) : ?>
+						<button type="submit" class="button" name="remove_key" value="1"><?php echo hodima_admin_icon( 'dashicons-trash' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?> حذف کلید جدا (برگشت به کلید ماژول Google Indexing)</button>
+					<?php endif; ?>
 				</div>
 			</form>
 		<?php endif; ?>
@@ -762,37 +866,57 @@ function hodima_seo_discover_render_stats(): void {
 }
 
 /* =====================================================================
- * ستون «Discover» در فهرست نوشته‌ها، برگه‌ها، محصولات و دسته‌ها
+ * ستون «دیسکاور» در فهرست نوشته‌ها، برگه‌ها، محصولات و دسته‌ها
  * ===================================================================== */
 
-/** نشان آمادگی یک شیء برای ستون فهرست‌ها (از کش ردیف همان صفحه). */
+/** حداکثر زمان ساختن ردیف‌های تازه در یک صفحه فهرست (ثانیه). */
+const HODIMA_SEO_DISCOVER_COLUMN_BUDGET = 1.0;
+
+/**
+ * نشان آمادگی یک شیء برای ستون فهرست‌ها (از کش ردیف همان صفحه).
+ *
+ * ردیف‌های کهنه فقط تا HODIMA_SEO_DISCOVER_COLUMN_BUDGET ثانیه در هر صفحه
+ * فهرست ساخته می‌شوند؛ بقیه «هنوز بررسی نشده» (با بارگذاری بعدی یا صفحه گزارش
+ * ساخته می‌شوند). باگ قبلی (تا SEO 2.1.4): بعد از هر تغییر سراسری (مثلا ذخیره
+ * تنظیمات قالب) فهرست ۱۰۰ محصولی همه ردیف‌ها را همان لحظه می‌ساخت و کند باز می‌شد.
+ */
 function hodima_seo_discover_column_html( WP_Post|WP_Term $target ): string {
 
-	$row = hodima_seo_discover_row( $target );
+	static $start = null;
+	$start      ??= microtime( true );
+
+	$dot = static fn( string $icon, string $state, string $title ): string => sprintf(
+		'<span class="dashicons %1$s hodima-dc-dot %2$s" title="%3$s" aria-hidden="true"></span><span class="screen-reader-text">%3$s</span>',
+		esc_attr( $icon ),
+		esc_attr( $state ),
+		esc_attr( $title )
+	);
+
+	$skip = hodima_seo_discover_skip_reason( $target );
+	if ( '' !== $skip ) {
+		return $dot( 'dashicons-hidden', 'is-skip', 'دیسکاور: کنار گذاشته — ' . hodima_seo_discover_skip_label( $skip ) );
+	}
+
+	$row = hodima_seo_discover_row( $target, microtime( true ) - $start < HODIMA_SEO_DISCOVER_COLUMN_BUDGET );
 
 	if ( null === $row ) {
-		return '';
+		return $dot( 'dashicons-clock', 'is-skip', 'دیسکاور: هنوز بررسی نشده (با بارگذاری دوباره همین صفحه یا گزارش گوگل دیسکاور ساخته می‌شود)' );
 	}
 
 	$icon = match ( true ) {
-		$row['error'] > 0 => [ 'dashicons-dismiss', 'is-error', 'Discover: مشکل دارد' ],
-		$row['warn'] > 0  => [ 'dashicons-warning', 'is-warn', 'Discover: قابل بهتر شدن' ],
-		default           => [ 'dashicons-yes-alt', 'is-ok', 'Discover: آماده' ],
+		$row['error'] > 0 => [ 'dashicons-dismiss', 'is-error', 'دیسکاور: مشکل دارد' ],
+		$row['warn'] > 0  => [ 'dashicons-warning', 'is-warn', 'دیسکاور: قابل بهتر شدن' ],
+		default           => [ 'dashicons-yes-alt', 'is-ok', 'دیسکاور: آماده' ],
 	};
 	$title = sprintf( '%1$s (%2$s از %3$s)', $icon[2], number_format_i18n( $row['ok'] ), number_format_i18n( $row['total'] ) )
 		. ( $row['issues'] ? ' — ' . implode( ' · ', array_column( $row['issues'], 'label' ) ) : '' );
 
-	return sprintf(
-		'<span class="dashicons %1$s hodima-dc-dot %2$s" title="%3$s" aria-hidden="true"></span><span class="screen-reader-text">%3$s</span>',
-		esc_attr( $icon[0] ),
-		esc_attr( $icon[1] ),
-		esc_attr( $title )
-	);
+	return $dot( $icon[0], $icon[1], $title );
 }
 
 add_action( 'admin_init', static function (): void {
 
-	$heading = '<span class="dashicons dashicons-visibility" aria-hidden="true"></span><span class="screen-reader-text">Discover</span>';
+	$heading = '<span class="dashicons dashicons-visibility" aria-hidden="true"></span><span class="screen-reader-text">دیسکاور</span>';
 
 	// نوشته، برگه، محصول
 	foreach ( hodima_seo_discover_post_types() as $post_type ) {
@@ -837,5 +961,5 @@ add_action( 'admin_enqueue_scripts', static function (): void {
 
 	wp_register_style( 'hodima-discover-list', false, [], HODIMA_SEO_VERSION );
 	wp_enqueue_style( 'hodima-discover-list' );
-	wp_add_inline_style( 'hodima-discover-list', '.column-hodima_discover{inline-size:2.5rem}.column-hodima_discover .hodima-dc-dot.is-ok{color:#1f7a4d}.column-hodima_discover .hodima-dc-dot.is-warn{color:#9a5b00}.column-hodima_discover .hodima-dc-dot.is-error{color:#b3261e}' );
+	wp_add_inline_style( 'hodima-discover-list', '.column-hodima_discover{inline-size:2.5rem}.column-hodima_discover .hodima-dc-dot.is-ok{color:#1f7a4d}.column-hodima_discover .hodima-dc-dot.is-warn{color:#9a5b00}.column-hodima_discover .hodima-dc-dot.is-error{color:#b3261e}.column-hodima_discover .hodima-dc-dot.is-skip{color:#5d6785}' );
 } );

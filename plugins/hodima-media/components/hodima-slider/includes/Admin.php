@@ -227,7 +227,7 @@ final class Admin {
                 </div>
                 <?php if ($has_mobile): ?>
                 <div class="h-img-box">
-                    <span class="h-img-label">موبایل <small>(اختیاری)</small></span>
+                    <span class="h-img-label">موبایل</span>
                     <img src="<?php echo esc_url(Helpers::get_image_url($mob_id)); ?>" class="h-preview" alt="پیش‌نمایش">
                     <input type="hidden" name="<?php echo esc_attr($name); ?>[<?php echo esc_attr((string)$i); ?>][mobile_image_id]" value="<?php echo esc_attr((string)$mob_id); ?>" class="h-img-id">
                 </div>

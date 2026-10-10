@@ -252,8 +252,8 @@ function seobox_render_html( array $data ): void {
 					</div>
 					<div class="seobox__field">
 						<label for="seobox_adv_image">پیش‌نمایش تصویر</label>
-						<select class="seobox__input" id="seobox_adv_image" name="seobox_adv_image" title="تصویر «بزرگ» برای Google Discover لازم است">
-							<option value="large" <?php selected( $data['adv_image'], 'large' ); ?>>بزرگ (لازم برای Discover)</option>
+						<select class="seobox__input" id="seobox_adv_image" name="seobox_adv_image" title="تصویر «بزرگ» برای گوگل دیسکاور لازم است">
+							<option value="large" <?php selected( $data['adv_image'], 'large' ); ?>>بزرگ (لازم برای دیسکاور)</option>
 							<option value="standard" <?php selected( $data['adv_image'], 'standard' ); ?>>استاندارد</option>
 							<option value="none" <?php selected( $data['adv_image'], 'none' ); ?>>هیچ‌کدام</option>
 						</select>

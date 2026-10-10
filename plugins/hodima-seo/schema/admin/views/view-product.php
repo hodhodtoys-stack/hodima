@@ -214,7 +214,7 @@ hodima_view_header(
             </div>
 
             <div class="hd-field">
-                <label class="hd-field__label" for="hodima_schema_product_shipping_max">سقف هزینه ارسال (تومان، اختیاری)</label>
+                <label class="hd-field__label" for="hodima_schema_product_shipping_max">سقف هزینه ارسال (تومان)</label>
                 <input type="text" name="hodima_schema_product_shipping_max" id="hodima_schema_product_shipping_max" class="ltr" dir="ltr" inputmode="numeric" value="<?php echo esc_attr($shipping_max); ?>">
                 <p class="hd-field__help">فقط در حالت «متغیر». اگر بیشترین هزینه ارسال را می‌دانید وارد کنید؛ گوگل آن را «تا این مبلغ» می‌خواند. خالی = اعلام نشود. مبلغ‌ها به تومان‌اند؛ گوگل فقط کد رسمی ریال (IRR) را می‌پذیرد، پس اسکیما خودکار ×۱۰ می‌کند.</p>
             </div>

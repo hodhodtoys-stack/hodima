@@ -292,6 +292,65 @@ if ( function_exists( 'hodima_seo_discover_clickbait_match' ) ) {
 	hodima_t( 'آمار صفحه با دوره قبل', hodima_seo_discover_post_stats( $p1 ), [ 'clicks' => 3, 'impressions' => 40, 'prev_clicks' => 1, 'prev_impressions' => 20 ] );
 	false === $saved ? delete_option( 'hodima_discover_sc_stats' ) : update_option( 'hodima_discover_sc_stats', $saved, false );
 
+	echo "=== گوگل دیسکاور: یک تصویر، کنار گذاشتن، امضای تکراری، کلید (SEO 2.1.5)\n";
+	// p1: تصویر شاخص img_a؛ p2: تصویر جدای دیسکاور img_b
+	hodima_seo_discover_make_crops( $img_b );
+	$feat = hodima_seo_schema_featured_image( $p2 );
+	hodima_t( 'تصویر اصلی اسکیما (#primaryimage) = تصویر دیسکاور', $feat[0] ?? '', (string) wp_get_attachment_url( $img_b ) );
+	hodima_t( 'بدون تصویر جدا ← تصویر شاخص', hodima_seo_schema_featured_image( $p1 )[0] ?? '', (string) wp_get_attachment_url( $img_a ) );
+	$objs = hodima_seo_discover_image_objects( $p2 );
+	hodima_t( 'ImageObjectها: خود تصویر + سه برش', count( $objs ), 4 );
+	hodima_t( 'اولین ImageObject همان تصویر دیسکاور', $objs[0]['url'] ?? '', (string) wp_get_attachment_url( $img_b ) );
+	hodima_t( 'برش ۱۶:۹ در ImageObjectها', in_array( [ 1200, 675 ], array_map( static fn( array $o ): array => [ $o['width'], $o['height'] ], $objs ), true ), true );
+
+	hodima_t( 'نوشته عادی کنار گذاشته نمی‌شود', hodima_seo_discover_skip_reason( get_post( $p1 ) ), '' );
+	update_post_meta( $p1, '_hodima_discover_skip', '1' );
+	hodima_t( 'انتخاب دستی ← کنار', hodima_seo_discover_skip_reason( get_post( $p1 ) ), 'manual' );
+	delete_post_meta( $p1, '_hodima_discover_skip' );
+	update_post_meta( $p1, '_seobox_robots', [ 'noindex', 'follow' ] );
+	hodima_t( 'noindex ← کنار', hodima_seo_discover_skip_reason( get_post( $p1 ) ), 'noindex' );
+	delete_post_meta( $p1, '_seobox_robots' );
+	$privacy     = wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'حریم خصوصی آزمون' ] );
+	$old_privacy = get_option( 'wp_page_for_privacy_policy' );
+	update_option( 'wp_page_for_privacy_policy', $privacy );
+	hodima_t( 'برگه حریم خصوصی ← کنار (برگه کاربردی)', hodima_seo_discover_skip_reason( get_post( $privacy ) ), 'utility' );
+	hodima_t( 'متای «برای دیسکاور نیست» در REST ثبت شده', registered_meta_key_exists( 'post', '_hodima_discover_skip', 'post' ), true );
+
+	// امضای تکراری: صفحه دیگر تصویر مشترک را عوض کند ← ردیف این صفحه کهنه
+	update_post_meta( $p2, '_hook_discover_image_id', $img_a );
+	hodima_seo_discover_forget( 'post', $p1 );
+	$row = hodima_seo_discover_row( get_post( $p1 ) );
+	hodima_t( 'ردیف: تصویر مشترک با p2', in_array( 'unique_image', array_column( (array) ( $row['issues'] ?? [] ), 'key' ), true ), true );
+	hodima_t( 'نمایه سایت در ترنزینت ماند', is_array( get_transient( 'hodima_discover_index' ) ), true );
+	hodima_t( 'ردیف تازه معتبر است', is_array( hodima_seo_discover_row( get_post( $p1 ), false ) ), true );
+	update_post_meta( $p2, '_hook_discover_image_id', $img_b );
+	hodima_t( 'p2 تصویرش را عوض کرد ← ردیف p1 کهنه (امضای تکراری)', hodima_seo_discover_row( get_post( $p1 ), false ), null );
+	$row = hodima_seo_discover_row( get_post( $p1 ) );
+	hodima_t( 'ردیف دوباره: تصویر اختصاصی درست', in_array( 'unique_image', array_column( (array) ( $row['issues'] ?? [] ), 'key' ), true ), false );
+
+	// کلید سرچ کنسول: مستقل از ماژول Google Indexing، کلید جدای دیسکاور مقدم
+	hodima_t( 'کلید نامعتبر رد می‌شود', hodima_seo_discover_sc_validate_key( '{"type":"x"}' )['ok'], false );
+	$make_key = static function ( string $email ): string {
+		$pem = '';
+		openssl_pkey_export( openssl_pkey_new( [ 'private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA ] ), $pem );
+		return (string) wp_json_encode( [ 'type' => 'service_account', 'client_email' => $email, 'private_key' => $pem, 'token_uri' => 'https://oauth2.googleapis.com/token' ] );
+	};
+	$own_key   = $make_key( 'discover@test.iam.gserviceaccount.com' );
+	$gi_key    = $make_key( 'indexing@test.iam.gserviceaccount.com' );
+	$saved_own = get_option( 'hodima_discover_sc_key' );
+	$saved_gi  = get_option( 'hodima_gi_json_key' );
+	hodima_t( 'کلید درست قبول، با ایمیل', hodima_seo_discover_sc_validate_key( $own_key ), [ 'ok' => true, 'message' => '', 'email' => 'discover@test.iam.gserviceaccount.com' ] );
+	delete_option( 'hodima_discover_sc_key' );
+	update_option( 'hodima_gi_json_key', $gi_key, false );
+	hodima_t( 'بدون کلید جدا ← کلید ماژول Indexing', [ hodima_seo_discover_sc_key_source(), hodima_seo_discover_sc_email() ], [ 'indexing', 'indexing@test.iam.gserviceaccount.com' ] );
+	update_option( 'hodima_discover_sc_key', $own_key, false );
+	hodima_t( 'کلید جدای دیسکاور مقدم (ایمیل عوض شد)', [ hodima_seo_discover_sc_key_source(), hodima_seo_discover_sc_email() ], [ 'own', 'discover@test.iam.gserviceaccount.com' ] );
+	false === $saved_own ? delete_option( 'hodima_discover_sc_key' ) : update_option( 'hodima_discover_sc_key', $saved_own, false );
+	false === $saved_gi ? delete_option( 'hodima_gi_json_key' ) : update_option( 'hodima_gi_json_key', $saved_gi, false );
+
+	false === $old_privacy ? delete_option( 'wp_page_for_privacy_policy' ) : update_option( 'wp_page_for_privacy_policy', $old_privacy );
+	wp_delete_post( $privacy, true );
+
 	foreach ( [ $p1, $p2, $img_a, $img_b ] as $id ) {
 		wp_delete_post( $id, true );
 	}

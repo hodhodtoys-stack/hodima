@@ -1,5 +1,5 @@
 /*
- * ماژول «Google Discover» — کادر ویرایش نوشته، برگه، محصول و دسته محصول
+ * ماژول «گوگل دیسکاور» — کادر ویرایش نوشته، برگه، محصول و دسته محصول
  * Path: core/discover/assets/discover-admin.css
  *
  * طراحی تازه (SEO 2.1.3): سربرگ با دایره امتیاز، تب‌ها (تنظیمات، آمادگی،
@@ -114,6 +114,34 @@
 	& .hodima-dc__head-summary {
 		color: var(--hd-muted);
 		font-size: 0.75rem;
+	}
+
+	& .hodima-dc__head-note {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		color: var(--hd-muted);
+		font-size: 0.75rem;
+
+		& .dashicons {
+			inline-size: 1rem;
+			block-size: 1rem;
+			font-size: 1rem;
+		}
+	}
+
+	& .hodima-dc__toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		color: var(--hd-text);
+		font-size: 0.8125rem;
+		font-weight: 700;
+		cursor: pointer;
+
+		& input {
+			margin: 0;
+		}
 	}
 
 	& .hodima-dc__stat-chip {

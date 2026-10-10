@@ -1,11 +1,11 @@
 <?php
 /**
- * ماژول «Google Discover» — فرصت‌ها و نمودار (پیشخوان)
+ * ماژول «گوگل دیسکاور» — فرصت‌ها و نمودار (پیشخوان)
  * Path: core/discover/discover-insights.php
  *
- * «فرصت‌ها» آمادگی هر صفحه را کنار آمار واقعی Search Console می‌گذارد و
+ * «فرصت‌ها» آمادگی هر صفحه را کنار آمار واقعی سرچ کنسول می‌گذارد و
  * می‌گوید وقت را کجا بگذارید (قبلا مدیر باید دو جدول را خودش کنار هم می‌گذاشت):
- *   - کم‌کلیک: در Discover زیاد دیده می‌شود ولی نرخ کلیکش خیلی کمتر از میانگین
+ *   - کم‌کلیک: در دیسکاور زیاد دیده می‌شود ولی نرخ کلیکش خیلی کمتر از میانگین
  *     سایت است ← عنوان و تصویر کارت؛
  *   - افت نمایش: نسبت به ۲۸ روز قبل نصف یا کمتر ← به‌روزرسانی مطلب؛
  *   - دیده می‌شود ولی آماده نیست ← رفع موارد آمادگی صفحه‌ای که گوگل انتخابش کرده؛
@@ -71,7 +71,7 @@ function hodima_seo_discover_opportunities( array $rows, array $stats ): array {
 			$groups['not_ready'][] = $item;
 		}
 
-		// مقاله ۳ تا ۳۰ روزه (داده Discover دو روز تاخیر دارد) که هنوز دیده نشده و مشکل دارد
+		// مقاله ۳ تا ۳۰ روزه (داده دیسکاور دو روز تاخیر دارد) که هنوز دیده نشده و مشکل دارد
 		$age = $now - (int) $row['ts'];
 		if ( 'post' === $row['type'] && $needs && 0 === $imp && $age >= 3 * DAY_IN_SECONDS && $age <= 30 * DAY_IN_SECONDS ) {
 			$groups['new_unseen'][] = $item;
@@ -92,7 +92,7 @@ function hodima_seo_discover_opportunities( array $rows, array $stats ): array {
 }
 
 /**
- * روزهای پیوسته نمودار: روزهایی که Search Console ردیف نداده (بدون نمایش) صفر.
+ * روزهای پیوسته نمودار: روزهایی که سرچ کنسول ردیف نداده (بدون نمایش) صفر.
  *
  * @param array<string, array{clicks: int, impressions: int}> $daily
  * @return array<string, array{clicks: int, impressions: int}>

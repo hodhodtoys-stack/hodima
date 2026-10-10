@@ -227,7 +227,7 @@ final class Editor {
 							$accepts = Graph::accepts_post_parents( $ref );
 							self::select(
 								$accepts ? 'hodima_pillar_post_id[]' : 'hodima_pillar_id[]',
-								$accepts ? 'محتوای ستون (اختیاری)' : 'برگه یا مقاله پیلار',
+								$accepts ? 'محتوای ستون' : 'برگه یا مقاله پیلار',
 								'post',
 								implode( ',', Graph::post_pillar_types() ),
 								array_values( array_filter( $explicit, static fn( Ref $p ): bool => $p->is_post() ) ),

@@ -1,20 +1,23 @@
 <?php
 /**
- * ماژول «Google Discover» — آمار واقعی Discover از Search Console
+ * ماژول «گوگل دیسکاور» — آمار واقعی دیسکاور از سرچ کنسول
  * Path: core/discover/discover-stats.php
  *
- * گزارش «Discover» سرچ کنسول (searchAnalytics با type=discover): کلیک و
+ * گزارش «دیسکاور» سرچ کنسول (searchAnalytics با type=discover): کلیک و
  * نمایش هر صفحه در ۲۸ روز آخر و ۲۸ روز پیش از آن، و روند روزانه ۹۰ روز
  * (از SEO 2.1.2؛ قبلا فقط ۲۸ روز آخر و هر روز آمار قبلی جایش را می‌گرفت).
  * روزی یک بار (WP-Cron) و با دکمه «به‌روزرسانی»
  * گرفته می‌شود و در گزینه hodima_discover_sc_stats می‌ماند؛ هیچ بازدیدی از
  * سایت به گوگل درخواست نمی‌زند.
  *
- * کلید: همان «سرویس اکانت» ماژول Google Indexing (Hodima_GI_Helper)، با
- * دسترسی فقط‌خواندنی جدا (webmasters.readonly؛ توکن جدا). ماژول Indexing
- * عمدا فقط دسترسی indexing می‌گیرد (اصل حداقل دسترسی). ایمیل سرویس اکانت
- * باید در Search Console کاربر همان property باشد (برای Indexing API هم لازم
- * است، پس معمولا هست).
+ * کلید (از SEO 2.1.5): «کلید جدای دیسکاور» که مدیر در تب «آمار سرچ کنسول»
+ * می‌چسباند؛ وگرنه همان «سرویس اکانت» ماژول Google Indexing — از گزینه و
+ * ثابت wp-config همان ماژول، پس با خاموش بودن آن ماژول هم کار می‌کند. باگ
+ * قبلی (تا SEO 2.1.4): کلید فقط از کلاس آن ماژول خوانده می‌شد؛ با خاموش
+ * کردنش آمار بی‌صدا قطع می‌شد و پیام «کلید تنظیم نشده» می‌داد، و عوض کردن
+ * حساب (ایمیل) فقط از تنظیمات Indexing ممکن بود. دسترسی فقط‌خواندنی جدا
+ * (webmasters.readonly؛ توکن جدا برای هر حساب). ایمیل حساب سرویس باید در
+ * سرچ کنسول کاربر همان property باشد.
  */
 
 declare(strict_types=1);
@@ -24,20 +27,81 @@ defined( 'ABSPATH' ) || exit;
 /** نام گزینه تنظیمات (property). */
 const HODIMA_SEO_DISCOVER_SC_OPTION = 'hodima_discover_sc_settings';
 
+/** نام گزینه «کلید جدای دیسکاور» (JSON حساب سرویس؛ autoload خاموش). */
+const HODIMA_SEO_DISCOVER_SC_KEY_OPTION = 'hodima_discover_sc_key';
+
 /** رویداد روزانه دریافت آمار. */
 const HODIMA_SEO_DISCOVER_SC_CRON = 'hodima_discover_sc_refresh';
 
-/** JSON سرویس اکانت (ماژول Google Indexing یا ثابت wp-config)، یا رشته خالی. */
-function hodima_seo_discover_sc_key_json(): string {
+/**
+ * منبع کلید فعلی: own (کلید جدای دیسکاور)، indexing (ماژول Google Indexing یا
+ * ثابت HODIMA_GI_SERVICE_ACCOUNT_JSON در wp-config)، یا رشته خالی.
+ */
+function hodima_seo_discover_sc_key_source(): string {
+
+	if ( '' !== trim( (string) get_option( HODIMA_SEO_DISCOVER_SC_KEY_OPTION, '' ) ) ) {
+		return 'own';
+	}
+
+	return '' !== hodima_seo_discover_sc_indexing_json() ? 'indexing' : '';
+}
+
+/** JSON حساب سرویس ماژول Google Indexing (روشن یا خاموش)، یا رشته خالی. */
+function hodima_seo_discover_sc_indexing_json(): string {
 
 	if ( class_exists( 'Hodima_GI_Helper' ) ) {
 		return Hodima_GI_Helper::service_account_json();
 	}
 
-	return defined( 'HODIMA_GI_SERVICE_ACCOUNT_JSON' ) ? (string) HODIMA_GI_SERVICE_ACCOUNT_JSON : '';
+	if ( defined( 'HODIMA_GI_SERVICE_ACCOUNT_JSON' ) && '' !== (string) HODIMA_GI_SERVICE_ACCOUNT_JSON ) {
+		return (string) HODIMA_GI_SERVICE_ACCOUNT_JSON;
+	}
+
+	return (string) get_option( 'hodima_gi_json_key', '' ); // همان HODIMA_GI_OPTION_JSON؛ ماژول خاموش ثابتش را تعریف نکرده
 }
 
-/** ایمیل سرویس اکانت (برای راهنمای افزودن کاربر در Search Console). */
+/** JSON سرویس اکانت (کلید جدای دیسکاور، وگرنه ماژول Google Indexing)، یا رشته خالی. */
+function hodima_seo_discover_sc_key_json(): string {
+	$own = trim( (string) get_option( HODIMA_SEO_DISCOVER_SC_KEY_OPTION, '' ) );
+	return '' !== $own ? $own : hodima_seo_discover_sc_indexing_json();
+}
+
+/**
+ * بررسی JSON حساب سرویس پیش از ذخیره (همان قاعده ماژول Google Indexing).
+ *
+ * @return array{ok: bool, message: string, email: string}
+ */
+function hodima_seo_discover_sc_validate_key( string $json ): array {
+
+	$key  = json_decode( $json, true );
+	$fail = static fn( string $message ): array => [ 'ok' => false, 'message' => $message, 'email' => '' ];
+
+	if ( ! is_array( $key ) ) {
+		return $fail( 'متن واردشده JSON معتبر نیست؛ کل محتوای فایل JSON حساب سرویس را بچسبانید.' );
+	}
+
+	foreach ( [ 'type', 'client_email', 'private_key', 'token_uri' ] as $field ) {
+		if ( empty( $key[ $field ] ) || ! is_string( $key[ $field ] ) ) {
+			return $fail( "فیلد «{$field}» در فایل وجود ندارد." );
+		}
+	}
+
+	if ( 'service_account' !== $key['type'] ) {
+		return $fail( 'این فایل مربوط به حساب سرویس (Service Account) نیست.' );
+	}
+
+	if ( ! is_email( $key['client_email'] ) ) {
+		return $fail( 'ایمیل حساب سرویس (client_email) معتبر نیست.' );
+	}
+
+	if ( function_exists( 'openssl_pkey_get_private' ) && false === @openssl_pkey_get_private( $key['private_key'] ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- کلید خراب فقط پیام فارسی بدهد
+		return $fail( 'کلید خصوصی فایل قابل خواندن نیست؛ فایل JSON را دوباره از Google Cloud دانلود کنید.' );
+	}
+
+	return [ 'ok' => true, 'message' => '', 'email' => sanitize_email( $key['client_email'] ) ];
+}
+
+/** ایمیل سرویس اکانت (برای راهنمای افزودن کاربر در سرچ کنسول). */
 function hodima_seo_discover_sc_email(): string {
 	$key = json_decode( hodima_seo_discover_sc_key_json(), true );
 	return is_array( $key ) ? sanitize_email( (string) ( $key['client_email'] ?? '' ) ) : '';
@@ -69,21 +133,24 @@ function hodima_seo_discover_sc_candidates(): array {
 }
 
 /**
- * توکن دسترسی فقط‌خواندنی Search Console، یا پیام خطا (WP_Error).
+ * توکن دسترسی فقط‌خواندنی سرچ کنسول، یا پیام خطا (WP_Error).
  */
 function hodima_seo_discover_sc_token( bool $force = false ): string|WP_Error {
-
-	if ( ! $force ) {
-		$cached = get_transient( 'hodima_discover_sc_token' );
-		if ( is_string( $cached ) && '' !== $cached ) {
-			return $cached;
-		}
-	}
 
 	$key = json_decode( hodima_seo_discover_sc_key_json(), true );
 
 	if ( ! is_array( $key ) || empty( $key['client_email'] ) || empty( $key['private_key'] ) || empty( $key['token_uri'] ) ) {
-		return new WP_Error( 'hodima_discover_no_key', 'کلید سرویس اکانت گوگل تنظیم نشده است (ماژول Google Indexing ← تنظیمات).' );
+		return new WP_Error( 'hodima_discover_no_key', 'کلید حساب سرویس گوگل تنظیم نشده است؛ در «گوگل دیسکاور ← آمار سرچ کنسول» فایل JSON حساب سرویس را وارد کنید.' );
+	}
+
+	// توکن هر حساب جدا: با عوض شدن کلید (ایمیل)، توکن حساب قبلی استفاده نمی‌شود
+	$cache = 'hodima_discover_sc_token_' . substr( md5( (string) $key['client_email'] ), 0, 12 );
+
+	if ( ! $force ) {
+		$cached = get_transient( $cache );
+		if ( is_string( $cached ) && '' !== $cached ) {
+			return $cached;
+		}
 	}
 
 	$enc = static fn( string $d ): string => rtrim( strtr( base64_encode( $d ), '+/', '-_' ), '=' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- base64url استاندارد JWT گوگل
@@ -122,13 +189,13 @@ function hodima_seo_discover_sc_token( bool $force = false ): string|WP_Error {
 		return new WP_Error( 'hodima_discover_token', 'گوگل توکن نداد (کلید یا دسترسی سرویس اکانت را بررسی کنید).' );
 	}
 
-	set_transient( 'hodima_discover_sc_token', $token, max( 60, (int) ( $body['expires_in'] ?? 3600 ) - 300 ) );
+	set_transient( $cache, $token, max( 60, (int) ( $body['expires_in'] ?? 3600 ) - 300 ) );
 
 	return $token;
 }
 
 /**
- * یک درخواست گزارش Discover برای یک property.
+ * یک درخواست گزارش دیسکاور برای یک property.
  *
  * @param list<string> $dimensions page یا date
  * @return array{rows: list<array<string, mixed>>}|WP_Error
@@ -206,9 +273,9 @@ function hodima_seo_discover_sc_rows( array $rows, bool $by_page = true ): array
 const HODIMA_SEO_DISCOVER_SC_DAILY_DAYS = 90;
 
 /**
- * بازه‌ها به وقت اقیانوس آرام (Search Console روزها را به همین وقت می‌شمارد؛
+ * بازه‌ها به وقت اقیانوس آرام (سرچ کنسول روزها را به همین وقت می‌شمارد؛
  * قبلا UTC بود و مرز روزها چند ساعت جابه‌جا می‌شد). پایان: ۲ روز پیش (داده
- * Discover با تاخیر می‌رسد).
+ * دیسکاور با تاخیر می‌رسد).
  *
  * @return array{start: string, end: string, prev_start: string, prev_end: string, daily_start: string}
  */
@@ -298,9 +365,9 @@ function hodima_seo_discover_sc_refresh(): bool|WP_Error {
 
 	$status  = null !== $last ? (int) ( $last->get_error_data()['status'] ?? 0 ) : 0;
 	$message = match ( true ) {
-		403 === $status => 'Search Console اجازه نداد: ایمیل سرویس اکانت (' . hodima_seo_discover_sc_email() . ') را در Search Console ← تنظیمات ← کاربران و مجوزها به همین property اضافه کنید، یا property درست را پایین وارد کنید.',
-		404 === $status => 'این property در Search Console پیدا نشد؛ آدرس دقیق property را پایین وارد کنید (مثلا https://example.com/ یا sc-domain:example.com).',
-		null !== $last  => 'خطای Search Console: ' . $last->get_error_message(),
+		403 === $status => 'سرچ کنسول اجازه نداد: ایمیل سرویس اکانت (' . hodima_seo_discover_sc_email() . ') را در سرچ کنسول ← تنظیمات ← کاربران و مجوزها به همین property اضافه کنید، یا property درست را پایین وارد کنید.',
+		404 === $status => 'این property در سرچ کنسول پیدا نشد؛ آدرس دقیق property را پایین وارد کنید (مثلا https://example.com/ یا sc-domain:example.com).',
+		null !== $last  => 'خطای سرچ کنسول: ' . $last->get_error_message(),
 		default         => 'property برای امتحان وجود ندارد.',
 	};
 

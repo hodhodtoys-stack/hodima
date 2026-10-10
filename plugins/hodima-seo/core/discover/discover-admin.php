@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «Google Discover» — کادر ویرایش نوشته، برگه، محصول و دسته محصول
+ * ماژول «گوگل دیسکاور» — کادر ویرایش نوشته، برگه، محصول و دسته محصول
  * Path: core/discover/discover-admin.php
  *
  * چیدمان (SEO 2.1.3): سربرگ با دایره امتیاز و دکمه پیش‌نمایش، سه تب
@@ -55,7 +55,7 @@ add_action( 'add_meta_boxes', static function ( string $post_type ): void {
 		return;
 	}
 
-	add_meta_box( 'hodima_discover_box', 'Google Discover', 'hodima_seo_discover_render_box', $post_type, 'normal', 'high' );
+	add_meta_box( 'hodima_discover_box', 'گوگل دیسکاور', 'hodima_seo_discover_render_box', $post_type, 'normal', 'high' );
 } );
 
 // دسته محصول: کادر در فرم ویرایش دسته (بعد از کادر رسانه) و ذخیره
@@ -66,18 +66,18 @@ add_action( 'admin_init', static function (): void {
 	}
 } );
 
-/** کادر Discover نوشته/برگه/محصول. */
+/** کادر دیسکاور نوشته/برگه/محصول. */
 function hodima_seo_discover_render_box( WP_Post $post ): void {
 
 	if ( ! hodima_seo_discover_for_post( $post->ID ) ) {
-		echo '<p>Discover برای این نوع محتوا فعال نیست.</p>';
+		echo '<p>دیسکاور برای این نوع محتوا فعال نیست.</p>';
 		return;
 	}
 
 	hodima_seo_discover_render_fields( $post );
 }
 
-/** کادر Discover دسته محصول (فرم ویرایش ترم، بیرون از جعبه‌های meta-box). */
+/** کادر دیسکاور دسته محصول (فرم ویرایش ترم، بیرون از جعبه‌های meta-box). */
 function hodima_seo_discover_render_term_box( WP_Term $term ): void {
 
 	if ( ! hodima_seo_discover_for_term( (int) $term->term_id ) ) {
@@ -85,7 +85,7 @@ function hodima_seo_discover_render_term_box( WP_Term $term ): void {
 	}
 	?>
 	<div id="hodima_discover_term_box" class="postbox hodima-dc-postbox">
-		<div class="postbox-header"><h2 class="hndle">Google Discover</h2></div>
+		<div class="postbox-header"><h2 class="hndle">گوگل دیسکاور</h2></div>
 		<div class="inside"><?php hodima_seo_discover_render_fields( $term ); ?></div>
 	</div>
 	<?php
@@ -134,7 +134,7 @@ function hodima_seo_discover_info_button( string $help_id, string $label ): stri
 }
 
 /**
- * کادر Discover (SEO 2.1.3، طراحی تازه). تا 2.1.2 همه چیز زیر هم بود: کارت تصویر
+ * کادر دیسکاور (SEO 2.1.3، طراحی تازه). تا 2.1.2 همه چیز زیر هم بود: کارت تصویر
  * بزرگ و کنارش پیش‌نمایش گوشی با همان تصویر (تصویر دو بار)، راهنمای ثابت زیر
  * هر فیلد و ۱۳ مورد آمادگی همیشه باز؛ کادر در دسکتاپ ~۱۴۰۰ و در موبایل ~۲۱۰۰
  * پیکسل بود. حالا:
@@ -169,6 +169,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 	$summary   = '' !== $meta_desc ? $meta_desc : trim( wp_strip_all_tags( $target instanceof WP_Post ? $target->post_excerpt : $target->description ) );
 	$summary   = '' !== $summary && ! str_contains( $summary, '%' ) ? wp_html_excerpt( $summary, 160, '…' ) : '';
 	$report    = function_exists( 'hodima_seo_discover_page_url' ) ? hodima_seo_discover_page_url() : '';
+	$skip      = hodima_seo_discover_skip_reason( $target );
 	$num       = static fn( int $n ): string => number_format_i18n( $n );
 
 	[ $ok, $total ] = hodima_seo_discover_score( $checks );
@@ -190,11 +191,14 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 				<span data-hodima-dc-ring-text><?php echo esc_html( $num( $ok ) . '/' . $num( $total ) ); ?></span>
 			</span>
 			<div class="hodima-dc__head-text">
-				<strong>آمادگی برای Discover</strong>
+				<strong>آمادگی برای دیسکاور</strong>
 				<span class="hodima-dc__head-summary" data-hodima-dc-summary aria-live="polite"><?php echo esc_html( $issues ? sprintf( '%s مورد نیاز به توجه', $num( count( $issues ) ) ) : 'همه موارد درست است' ); ?></span>
+				<?php if ( '' !== $skip ) : ?>
+					<span class="hodima-dc__head-note"><span class="dashicons dashicons-hidden" aria-hidden="true"></span> <?php echo esc_html( 'در گزارش دیسکاور نیست: ' . hodima_seo_discover_skip_label( $skip ) ); ?></span>
+				<?php endif; ?>
 			</div>
 			<?php if ( null !== $stats ) : ?>
-				<span class="hodima-dc__stat-chip" title="Discover، ۲۸ روز آخر (Search Console)">
+				<span class="hodima-dc__stat-chip" title="دیسکاور، ۲۸ روز آخر (سرچ کنسول)">
 					<span class="dashicons dashicons-chart-bar" aria-hidden="true"></span>
 					<?php echo esc_html( sprintf( '%1$s کلیک · %2$s نمایش', $num( $stats['clicks'] ), $num( $stats['impressions'] ) ) ); ?>
 					<?php if ( null !== $change ) : ?>
@@ -207,7 +211,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 			</button>
 		</header>
 
-		<div class="hodima-dc__tabs" role="tablist" aria-label="Google Discover">
+		<div class="hodima-dc__tabs" role="tablist" aria-label="گوگل دیسکاور">
 			<button type="button" role="tab" id="hodima-dc-tab-settings" aria-controls="hodima-dc-panel-settings" aria-selected="true" data-hodima-dc-tab="settings">
 				<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span> تنظیمات
 			</button>
@@ -228,7 +232,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 					<label class="hodima-dc__label" for="hodima-dc-title">عنوان کارت</label>
 					<?php echo hodima_seo_discover_info_button( 'hodima-dc-help-title', 'عنوان کارت' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
 				</div>
-				<p class="hodima-dc__help" id="hodima-dc-help-title" hidden>فقط کارت Discover و اشتراک‌گذاری (og:title) عوض می‌شود؛ عنوان صفحه و h1 همان می‌ماند. خالی = عنوان صفحه. جذاب ولی صادق؛ «طعمه کلیک» جریمه دارد. <?php echo esc_html( sprintf( 'بهتر است %1$s تا %2$s کاراکتر باشد.', $num( HODIMA_SEO_DISCOVER_TITLE_MIN ), $num( HODIMA_SEO_DISCOVER_TITLE_MAX ) ) ); ?></p>
+				<p class="hodima-dc__help" id="hodima-dc-help-title" hidden>فقط کارت دیسکاور و اشتراک‌گذاری (og:title) عوض می‌شود؛ عنوان صفحه و h1 همان می‌ماند. خالی = عنوان صفحه. جذاب ولی صادق؛ «طعمه کلیک» جریمه دارد. <?php echo esc_html( sprintf( 'بهتر است %1$s تا %2$s کاراکتر باشد.', $num( HODIMA_SEO_DISCOVER_TITLE_MIN ), $num( HODIMA_SEO_DISCOVER_TITLE_MAX ) ) ); ?></p>
 				<div class="hodima-dc__input-wrap<?php echo 'ok' === $title_state ? '' : ' is-warn'; ?>" data-hodima-dc-title-wrap>
 					<input type="text" id="hodima-dc-title" name="hodima_discover[title]" value="<?php echo esc_attr( $data['title'] ); ?>" maxlength="200" placeholder="<?php echo esc_attr( $fallback ); ?>" aria-describedby="hodima-dc-title-msg" data-hodima-dc-title data-hodima-dc-fallback="<?php echo esc_attr( $fallback ); ?>">
 					<span class="hodima-dc__counter<?php echo $length > HODIMA_SEO_DISCOVER_TITLE_MAX ? ' is-over' : ''; ?>" data-hodima-dc-counter aria-hidden="true"><?php echo esc_html( $num( $length ) . '/' . $num( HODIMA_SEO_DISCOVER_TITLE_MAX ) ); ?></span>
@@ -266,7 +270,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 						<span class="dashicons dashicons-format-image" aria-hidden="true" data-hodima-dc-thumb-empty <?php echo null !== $shown ? 'hidden' : ''; ?>></span>
 					</div>
 					<div class="hodima-dc__media-body">
-						<strong class="hodima-dc__media-source" data-hodima-dc-image-source><?php echo esc_html( null !== $own ? 'تصویر جدای Discover' : ( null !== $default ? $own_label . ' (پیش‌فرض)' : 'تصویری انتخاب نشده' ) ); ?></strong>
+						<strong class="hodima-dc__media-source" data-hodima-dc-image-source><?php echo esc_html( null !== $own ? 'تصویر جدای دیسکاور' : ( null !== $default ? $own_label . ' (پیش‌فرض)' : 'تصویری انتخاب نشده' ) ); ?></strong>
 						<span class="hodima-dc__facts">
 							<span class="hodima-dc__fact <?php echo null !== $shown && $shown['width'] >= HODIMA_SEO_DISCOVER_MIN_WIDTH ? 'is-ok' : 'is-error'; ?>" data-hodima-dc-dims>
 								<?php echo esc_html( null !== $shown ? sprintf( '%1$s×%2$s', $num( $shown['width'] ), $num( $shown['height'] ) ) : 'بدون تصویر' ); ?>
@@ -302,6 +306,17 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 				</div>
 				<textarea name="hodima_discover[entities]" hidden data-hodima-dc-entities><?php echo esc_textarea( hodima_seo_discover_format_entities( $data['entity_items'], "\n" ) ); ?></textarea>
 			</div>
+
+			<div class="hodima-dc__field">
+				<div class="hodima-dc__label-row">
+					<label class="hodima-dc__toggle">
+						<input type="checkbox" name="hodima_discover[skip]" value="1" <?php checked( 'manual' === $skip ); ?> data-hodima-dc-skip>
+						این صفحه برای گوگل دیسکاور نیست
+					</label>
+					<?php echo hodima_seo_discover_info_button( 'hodima-dc-help-skip', 'این صفحه برای گوگل دیسکاور نیست' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
+				</div>
+				<p class="hodima-dc__help" id="hodima-dc-help-skip" hidden>برای صفحه‌ای مثل «تماس با ما» یا «قوانین» که قرار نیست در دیسکاور بیاید: از گزارش، «فرصت‌ها» و ستون فهرست‌ها کنار گذاشته می‌شود. چیزی که گوگل از صفحه می‌بیند عوض نمی‌شود. برگه‌های noindex، سبد خرید، پرداخت و حساب کاربری خودکار کنار گذاشته می‌شوند.</p>
+			</div>
 		</section>
 
 		<?php /* ── تب «آمادگی» ── */ ?>
@@ -320,7 +335,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 					<?php endforeach; ?>
 				</ul>
 			</details>
-			<p class="hodima-dc__foot">Discover فید پیشنهادی گوگل در موبایل است و گوگل خودش صفحه‌ها را انتخاب می‌کند؛ این موارد شانس انتخاب را بالا می‌برند.<?php if ( '' !== $report ) : ?> <a href="<?php echo esc_url( $report ); ?>">گزارش همه صفحه‌ها</a><?php endif; ?></p>
+			<p class="hodima-dc__foot">دیسکاور فید پیشنهادی گوگل در موبایل است و گوگل خودش صفحه‌ها را انتخاب می‌کند؛ این موارد شانس انتخاب را بالا می‌برند.<?php if ( '' !== $report ) : ?> <a href="<?php echo esc_url( $report ); ?>">گزارش همه صفحه‌ها</a><?php endif; ?></p>
 		</section>
 
 		<?php /* ── تب «آمار» ── */ ?>
@@ -332,16 +347,16 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 					<div class="hodima-dc__tile"><span>نرخ کلیک</span><strong><?php echo esc_html( $stats['impressions'] ? number_format_i18n( 100 * $stats['clicks'] / $stats['impressions'], 1 ) . '٪' : '—' ); ?></strong></div>
 					<div class="hodima-dc__tile"><span>نمایش نسبت به ۲۸ روز قبل</span><strong><?php echo esc_html( null !== $change ? hodima_seo_discover_change_text( $change ) : ( 0 === $stats['prev_impressions'] && $stats['impressions'] > 0 ? 'تازه' : '—' ) ); ?></strong></div>
 				</div>
-				<p class="hodima-dc__foot"><?php echo esc_html( sprintf( 'Discover، ۲۸ روز آخر تا %s (Search Console، با دو روز تاخیر).', $all_stats['end'] ) ); ?><?php if ( '' !== $report ) : ?> <a href="<?php echo esc_url( add_query_arg( 'tab', 'stats', $report ) ); ?>">آمار همه صفحه‌ها</a><?php endif; ?></p>
+				<p class="hodima-dc__foot"><?php echo esc_html( sprintf( 'دیسکاور، ۲۸ روز آخر تا %s (سرچ کنسول، با دو روز تاخیر).', $all_stats['end'] ) ); ?><?php if ( '' !== $report ) : ?> <a href="<?php echo esc_url( add_query_arg( 'tab', 'stats', $report ) ); ?>">آمار همه صفحه‌ها</a><?php endif; ?></p>
 			<?php else : ?>
 				<p class="hodima-dc__empty">
 					<span class="dashicons dashicons-chart-area" aria-hidden="true"></span>
 					<?php if ( ! $published ) : ?>
-						آمار Discover بعد از انتشار و نمایش صفحه در گوگل اینجا می‌آید.
+						آمار دیسکاور بعد از انتشار و نمایش صفحه در گوگل اینجا می‌آید.
 					<?php elseif ( ! $all_stats['fetched'] ) : ?>
-						آمار Search Console هنوز گرفته نشده است.<?php if ( '' !== $report ) : ?> <a href="<?php echo esc_url( add_query_arg( 'tab', 'stats', $report ) ); ?>">اتصال به Search Console</a><?php endif; ?>
+						آمار سرچ کنسول هنوز گرفته نشده است.<?php if ( '' !== $report ) : ?> <a href="<?php echo esc_url( add_query_arg( 'tab', 'stats', $report ) ); ?>">اتصال به سرچ کنسول</a><?php endif; ?>
 					<?php else : ?>
-						این صفحه در ۲۸ روز آخر در Discover نمایش نداشته است.
+						این صفحه در ۲۸ روز آخر در دیسکاور نمایش نداشته است.
 					<?php endif; ?>
 				</p>
 			<?php endif; ?>
@@ -350,7 +365,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 		<?php /* ── پیش‌نمایش (پنجره) ── */ ?>
 		<dialog class="hodima-dc__dialog" aria-labelledby="hodima-dc-dialog-title" data-hodima-dc-dialog>
 			<div class="hodima-dc__dialog-head">
-				<h2 id="hodima-dc-dialog-title">پیش‌نمایش کارت Discover</h2>
+				<h2 id="hodima-dc-dialog-title">پیش‌نمایش کارت دیسکاور</h2>
 				<button type="button" class="hodima-dc__icon-btn" data-hodima-dc-close aria-label="بستن"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>
 			</div>
 			<div class="hodima-dc__segment" role="group" aria-label="نوع پیش‌نمایش">
@@ -363,7 +378,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 					<article class="hodima-dc__card hodima-dc__card--<?php echo esc_attr( $view ); ?>" data-hodima-dc-pane="<?php echo esc_attr( $view ); ?>" <?php echo 'phone' === $view ? '' : 'hidden'; ?>>
 						<div class="hodima-dc__card-img">
 							<img src="<?php echo esc_url( $shown['url'] ?? '' ); ?>" alt="" data-hodima-dc-preview-img <?php echo null !== $shown ? '' : 'hidden'; ?>>
-							<span class="hodima-dc__card-noimg" data-hodima-dc-preview-noimg <?php echo null !== $shown ? 'hidden' : ''; ?>>بدون تصویر؛ Discover کارت بی‌تصویر را تقریبا نشان نمی‌دهد</span>
+							<span class="hodima-dc__card-noimg" data-hodima-dc-preview-noimg <?php echo null !== $shown ? 'hidden' : ''; ?>>بدون تصویر؛ دیسکاور کارت بی‌تصویر را تقریبا نشان نمی‌دهد</span>
 						</div>
 						<div class="hodima-dc__card-body">
 							<span class="hodima-dc__card-site">
@@ -477,6 +492,11 @@ function hodima_seo_discover_save( int $object_id, string $context ): void {
 			? delete_metadata( $context, $object_id, $key )
 			: update_metadata( $context, $object_id, $key, $value );
 	}
+
+	// «این صفحه برای گوگل دیسکاور نیست» (کلید تازه SEO 2.1.5؛ نبودنش = بررسی می‌شود)
+	'1' === $get( 'skip' )
+		? update_metadata( $context, $object_id, HODIMA_SEO_DISCOVER_SKIP_META, '1' )
+		: delete_metadata( $context, $object_id, HODIMA_SEO_DISCOVER_SKIP_META );
 }
 
 add_action( 'save_post', static function ( int $post_id ): void {
@@ -496,8 +516,8 @@ function hodima_seo_discover_profile_fields( WP_User $user ): void {
 	$author = hodima_seo_discover_author( (int) $user->ID );
 	wp_nonce_field( 'hodima_discover_author_' . $user->ID, 'hodima_discover_author_nonce' );
 	?>
-	<h2>نویسنده در گوگل (Google Discover)</h2>
-	<p class="description">گوگل برای نمایش مقاله در Discover و نتایج جستجو به «چه کسی نوشته و چرا قابل اعتماد است» وزن می‌دهد. این اطلاعات در اسکیمای نویسنده (Person) همه مقاله‌هایش می‌رود. بیوگرافی همان «اطلاعات زندگی‌نامه» بالاست.</p>
+	<h2>نویسنده در گوگل (گوگل دیسکاور)</h2>
+	<p class="description">گوگل برای نمایش مقاله در دیسکاور و نتایج جستجو به «چه کسی نوشته و چرا قابل اعتماد است» وزن می‌دهد. این اطلاعات در اسکیمای نویسنده (Person) همه مقاله‌هایش می‌رود. بیوگرافی همان «اطلاعات زندگی‌نامه» بالاست.</p>
 	<table class="form-table" role="presentation">
 		<tr>
 			<th scope="row"><label for="hodima-author-job">سمت و تخصص</label></th>

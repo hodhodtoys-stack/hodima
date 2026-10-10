@@ -1,5 +1,5 @@
 /**
- * ماژول «Google Discover» — کادر ویرایش نوشته، برگه، محصول و دسته محصول
+ * ماژول «گوگل دیسکاور» — کادر ویرایش نوشته، برگه، محصول و دسته محصول
  * Path: core/discover/assets/discover-admin.js
  *
  * جاوااسکریپت خالص (طراحی تازه SEO 2.1.3):
@@ -8,12 +8,12 @@
  *   - دکمه‌های ⓘ: باز/بسته کردن راهنمای هر فیلد
  *   - عنوان: شمارنده داخل فیلد، پیام کوتاه زیر فیلد، طول و طعمه کلیک (همان
  *     قاعده PHP)، پیشنهاد عنوان با یک کلیک
- *   - تصویر: یک تصویر کوچک (تصویر جدای Discover یا تصویر پیش‌فرض صفحه) با
+ *   - تصویر: یک تصویر کوچک (تصویر جدای دیسکاور یا تصویر پیش‌فرض صفحه) با
  *     ابعاد و وضعیت برش؛ انتخاب از کتابخانه رسانه و برگشت به پیش‌فرض
  *   - موضوعات: برچسب‌ها (Enter یا ویرگول = افزودن، × یا Backspace = حذف)
  *   - آمادگی: هر تغییر ردیف را بین «نیاز به توجه» و «موارد درست» جابه‌جا و
  *     دایره امتیاز، شمارنده تب و خلاصه سربرگ را به‌روز می‌کند
- *   - پیش‌نمایش کارت در <dialog>: Discover گوشی، Discover دسکتاپ، اشتراک‌گذاری
+ *   - پیش‌نمایش کارت در <dialog>: دیسکاور گوشی، دیسکاور دسکتاپ، اشتراک‌گذاری
  *   - هماهنگی زنده با ویرایشگر بلوکی (wp.data) و کلاسیک/محصول: تصویر شاخص،
  *     عنوان و چکیده
  *   - ویرایشگر بلوکی: بعد از «به‌روزرسانی» کادر خودش از سرور تازه می‌شود
@@ -150,7 +150,7 @@
 		let level = 'ok';
 		let text = `${nf.format(len)} کاراکتر.`;
 		// همان پیام‌های hodima_seo_discover_checks
-		if (bait) [level, text] = ['warn', `عبارت «${bait}» اغراق‌آمیز یا طعمه کلیک است؛ گوگل در Discover آن را جریمه می‌کند.`];
+		if (bait) [level, text] = ['warn', `عبارت «${bait}» اغراق‌آمیز یا طعمه کلیک است؛ گوگل در دیسکاور آن را جریمه می‌کند.`];
 		else if (len < config.titleMin) [level, text] = ['warn', `${nf.format(len)} کاراکتر؛ کوتاه است. عنوانی که اصل مطلب را بگوید: ${nf.format(config.titleMin)} تا ${nf.format(config.titleMax)} کاراکتر.`];
 		else if (len > config.titleMax) [level, text] = ['warn', `${nf.format(len)} کاراکتر؛ بیشتر از ${nf.format(config.titleMax)} در کارت کوتاه می‌شود.`];
 		setCheck(box, 'title', level, text);
@@ -167,7 +167,7 @@
 	}
 
 	/* ── تصویر ── */
-	const ownImages = new WeakMap(); // تصویر جدای Discover هر کادر: {url, width, height, alt} یا null
+	const ownImages = new WeakMap(); // تصویر جدای دیسکاور هر کادر: {url, width, height, alt} یا null
 
 	function defaultImage(field) {
 		const d = field.dataset;
@@ -187,7 +187,7 @@
 		img.hidden = !shown;
 		field.querySelector('[data-hodima-dc-thumb-empty]').hidden = Boolean(shown);
 		field.querySelector('[data-hodima-dc-thumb]').classList.toggle('has-image', Boolean(shown));
-		field.querySelector('[data-hodima-dc-image-source]').textContent = own ? 'تصویر جدای Discover' : (shown ? `${label} (پیش‌فرض)` : 'تصویری انتخاب نشده');
+		field.querySelector('[data-hodima-dc-image-source]').textContent = own ? 'تصویر جدای دیسکاور' : (shown ? `${label} (پیش‌فرض)` : 'تصویری انتخاب نشده');
 
 		const big = Boolean(shown) && shown.width >= config.minWidth;
 		const dims = field.querySelector('[data-hodima-dc-dims]');
@@ -209,9 +209,9 @@
 		const crops = field.querySelector('[data-hodima-dc-crops]');
 		if (crops) { crops.className = 'hodima-dc__fact is-warn'; crops.textContent = 'برش بعد از ذخیره'; }
 		if (!shown) {
-			setCheck(box, 'image', 'error', `${label} یا تصویر Discover ندارد؛ Discover صفحه بی‌تصویر را تقریبا نشان نمی‌دهد.`);
+			setCheck(box, 'image', 'error', `${label} یا تصویر دیسکاور ندارد؛ دیسکاور صفحه بی‌تصویر را تقریبا نشان نمی‌دهد.`);
 		} else if (!big) {
-			setCheck(box, 'image', 'error', `عرض تصویر ${nf.format(shown.width)} پیکسل است؛ برای کارت بزرگ Discover حداقل ${nf.format(config.minWidth)} لازم است.`);
+			setCheck(box, 'image', 'error', `عرض تصویر ${nf.format(shown.width)} پیکسل است؛ برای کارت بزرگ دیسکاور حداقل ${nf.format(config.minWidth)} لازم است.`);
 		} else {
 			setCheck(box, 'image', 'ok', `${nf.format(shown.width)}×${nf.format(shown.height)} پیکسل.`);
 			setCheck(box, 'crops', 'warn', 'تصویر عوض شد؛ برش‌ها بعد از ذخیره ساخته می‌شوند.');
@@ -223,12 +223,12 @@
 		status.dataset.level = big ? 'ok' : 'error';
 		status.textContent = big
 			? 'مناسب است؛ برش‌های ۱۶:۹، ۴:۳ و ۱:۱ بعد از ذخیره ساخته می‌شوند.'
-			: (shown ? `برای کارت بزرگ حداقل ${nf.format(config.minWidth)} پیکسل عرض لازم است.` : 'بدون تصویر، Discover کارت را تقریبا نشان نمی‌دهد.');
+			: (shown ? `برای کارت بزرگ حداقل ${nf.format(config.minWidth)} پیکسل عرض لازم است.` : 'بدون تصویر، دیسکاور کارت را تقریبا نشان نمی‌دهد.');
 	}
 
 	function openPicker(box) {
 		if (!window.wp?.media) return;
-		const frame = wp.media({ title: 'انتخاب تصویر Discover', button: { text: 'انتخاب' }, multiple: false, library: { type: 'image' } });
+		const frame = wp.media({ title: 'انتخاب تصویر دیسکاور', button: { text: 'انتخاب' }, multiple: false, library: { type: 'image' } });
 		frame.on('select', () => {
 			const a = frame.state().get('selection').first().toJSON();
 			box.querySelector('[data-hodima-dc-image-id]').value = a.id;
@@ -387,7 +387,7 @@
 		field.dataset.defaultWidth = String(attachment?.width || 0);
 		field.dataset.defaultHeight = String(attachment?.height || 0);
 		field.dataset.defaultAlt = attachment?.alt ? '1' : '0';
-		renderImage(box, !ownImages.get(box)); // تصویر جدای Discover انتخاب شده؟ آمادگی دست نمی‌خورد
+		renderImage(box, !ownImages.get(box)); // تصویر جدای دیسکاور انتخاب شده؟ آمادگی دست نمی‌خورد
 	}
 
 	/** عنوان اصلی صفحه عوض شد: عنوان پیش‌فرض کارت. */
@@ -427,7 +427,9 @@
 
 	/** مقدار فیلدهای ذخیره‌شونده کادر (برای فهمیدن تغییر حین ذخیره). */
 	const fieldState = (box) => ['[data-hodima-dc-title]', '[data-hodima-dc-image-id]', '[data-hodima-dc-entities]']
-		.map((sel) => box.querySelector(sel)?.value ?? '').join('\u0001');
+		.map((sel) => box.querySelector(sel)?.value ?? '')
+		.concat(box.querySelector('[data-hodima-dc-skip]')?.checked ? '1' : '')
+		.join('\u0001');
 
 	/*
 	 * کادر تازه از سرور بعد از ذخیره ویرایشگر بلوکی (باگ تا SEO 2.1.3: ویرایشگر
@@ -457,15 +459,36 @@
 		}
 	}
 
+	/*
+	 * باگ تا SEO 2.1.4: این اسکریپت (defer) پیش از راه افتادن ویرایشگر بلوکی اجرا
+	 * می‌شود (وردپرس ویرایشگر را در DOMContentLoaded می‌سازد). آن لحظه
+	 * getCurrentPostId() هنوز خالی بود، پس صفحه «ویرایشگر کلاسیک» شمرده می‌شد:
+	 * نه هماهنگی زنده با تصویر شاخص بود، نه تازه شدن کادر بعد از «به‌روزرسانی»
+	 * (آزمون بخش ۸۹ با store از پیش آماده این را نمی‌دید). حالا ویرایشگر بلوکی از
+	 * کلاس body شناخته می‌شود و پیگیری از اولین لحظه‌ای شروع می‌شود که نوشته در
+	 * ویرایشگر بار شده است.
+	 */
+	const isBlockEditor = () => document.body.classList.contains('block-editor-page') && typeof window.wp?.data?.subscribe === 'function';
+
+	let watchingBlockEditor = false;
+
 	function watchBlockEditor() {
+		if (watchingBlockEditor) return;
+		watchingBlockEditor = true;
+
 		const { select, subscribe } = window.wp.data;
 		const editor = () => select('core/editor');
-		const last = { media: editor().getEditedPostAttribute('featured_media'), title: editor().getEditedPostAttribute('title'), excerpt: editor().getEditedPostAttribute('excerpt'), resolved: true, savingBoxes: false, savedState: '' };
+		let last = null;
 
 		subscribe(() => {
 			const ed = editor();
 			const box = currentBox();
-			if (!ed || !box) return;
+			if (!ed?.getCurrentPostId?.() || !box) return; // ویرایشگر هنوز نوشته را بار نکرده
+
+			// وضعیت اولیه: همان چیزی که سرور کادر را با آن ساخته است
+			if (!last) {
+				last = { media: ed.getEditedPostAttribute('featured_media') || 0, title: ed.getEditedPostAttribute('title') || '', excerpt: ed.getEditedPostAttribute('excerpt') || '', resolved: true, savingBoxes: false, savedState: '' };
+			}
 
 			// پایان ذخیره کادرها (بعد از ذخیره خود نوشته؛ ذخیره خودکار کادرها را نمی‌فرستد)
 			let savingBoxes = false;
@@ -513,7 +536,7 @@
 
 	/** وضعیت اولیه یک کادر (بار اول و بعد از تازه شدن از سرور). */
 	function setupBox(box) {
-		// تصویر جدای Discover که از قبل ذخیره شده
+		// تصویر جدای دیسکاور که از قبل ذخیره شده
 		const own = box.querySelector('[data-hodima-dc-image-id]');
 		ownImages.set(box, own?.value ? { url: own.dataset.ownUrl || '', width: Number(own.dataset.ownWidth) || 0, height: Number(own.dataset.ownHeight) || 0, alt: own.dataset.ownAlt === '1' } : null);
 
@@ -526,7 +549,7 @@
 			setupBox(box);
 			if (box.dataset.context !== 'post') return; // دسته محصول: با ذخیره، صفحه کامل بارگذاری می‌شود
 			// ویرایشگر بلوکی: هماهنگی زنده + تازه شدن بعد از ذخیره؛ کلاسیک/محصول با ذخیره دوباره بارگذاری می‌شود
-			if (window.wp?.data?.select?.('core/editor')?.getCurrentPostId?.()) watchBlockEditor();
+			if (isBlockEditor()) watchBlockEditor();
 			else watchClassicEditor(box);
 		});
 	}

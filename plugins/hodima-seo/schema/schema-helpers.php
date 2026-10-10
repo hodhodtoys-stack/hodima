@@ -509,11 +509,23 @@ function hodima_seo_schema_person_node( int $user_id ): array {
 }
 
 /**
- * تصویر شاخص یک نوشته/محصول: [ آدرس, عرض, ارتفاع ] یا null.
+ * تصویر اصلی یک نوشته/محصول در اسکیما (#primaryimage): [ آدرس, عرض, ارتفاع ] یا null.
+ *
+ * اگر ماژول «گوگل دیسکاور» برای این نوشته روشن است، تصویر دیسکاور (تصویر
+ * جدای دیسکاور، وگرنه همان تصویر شاخص). باگ قبلی (تا SEO 2.1.4): og:image
+ * تصویر دیسکاور بود ولی تصویر اصلی اسکیما تصویر شاخص؛ گوگل برای یک صفحه دو
+ * تصویر متفاوت می‌دید و برش‌های تصویر دیسکاور کنار تصویر شاخص می‌آمدند.
  *
  * @return array{0: string, 1: int, 2: int}|null
  */
 function hodima_seo_schema_featured_image( int $post_id ): ?array {
+
+	if ( function_exists( 'hodima_seo_discover_for_post' ) && hodima_seo_discover_for_post( $post_id ) ) {
+		$discover = hodima_seo_discover_image( $post_id );
+		if ( null !== $discover ) {
+			return [ $discover['url'], $discover['width'], $discover['height'] ];
+		}
+	}
 
 	$thumb_id = (int) get_post_thumbnail_id( $post_id );
 	$src      = $thumb_id ? wp_get_attachment_image_src( $thumb_id, 'full' ) : false;

@@ -127,7 +127,7 @@ function hodima_settings_fields(): array {
 
 		// ── اطلاعات تماس ───────────────────────────────────────────
 		'phone'            => [ 'panel' => 'contact_phone', 'type' => 'tel', 'label' => 'شماره تماس', 'default' => '', 'placeholder' => '09120000000', 'help' => 'دکمه «تماس تلفنی» پنجره پشتیبانی.' ],
-		'phone_2'          => [ 'panel' => 'contact_phone', 'type' => 'tel', 'label' => 'شماره تماس دوم (اختیاری)', 'default' => '', 'placeholder' => '02100000000', 'help' => 'مثلا تلفن ثابت؛ در نسخه ماشین‌خوان (llms.txt) کنار شماره اصلی می‌آید.' ],
+		'phone_2'          => [ 'panel' => 'contact_phone', 'type' => 'tel', 'label' => 'شماره تماس دوم', 'default' => '', 'placeholder' => '02100000000', 'help' => 'مثلا تلفن ثابت؛ در نسخه ماشین‌خوان (llms.txt) کنار شماره اصلی می‌آید.' ],
 		'whatsapp_url'     => [ 'panel' => 'contact_messengers', 'type' => 'url', 'label' => 'واتس‌اپ', 'default' => '', 'placeholder' => 'https://wa.me/989120000000' ],
 		'telegram_url'     => [ 'panel' => 'contact_messengers', 'type' => 'url', 'label' => 'تلگرام', 'default' => '', 'placeholder' => 'https://t.me/username' ],
 		'rubika_url'       => [ 'panel' => 'contact_messengers', 'type' => 'url', 'label' => 'روبیکا', 'default' => '', 'placeholder' => 'https://rubika.ir/username' ],
@@ -165,7 +165,7 @@ function hodima_trust_fields(): array {
 	for ( $i = 1; $i <= HODIMA_TRUST_SLOTS; $i++ ) {
 		$suffix = 1 === $i ? '' : "_{$i}";
 		$fields[ "trust_image_id{$suffix}" ] = [ 'panel' => 'footer_trust', 'group' => "trust_{$i}", 'type' => 'image', 'label' => 'تصویر', 'default' => 0 ];
-		$fields[ "trust_url{$suffix}" ]      = [ 'panel' => 'footer_trust', 'group' => "trust_{$i}", 'type' => 'url', 'label' => 'لینک (اختیاری)', 'default' => '', 'placeholder' => 'https://', 'help' => 'صفحه اعتبارسنجی نماد.' ];
+		$fields[ "trust_url{$suffix}" ]      = [ 'panel' => 'footer_trust', 'group' => "trust_{$i}", 'type' => 'url', 'label' => 'لینک', 'default' => '', 'placeholder' => 'https://', 'help' => 'صفحه اعتبارسنجی نماد.' ];
 	}
 
 	return $fields;
@@ -310,7 +310,7 @@ function hodima_social_networks(): array {
 }
 
 /**
- * برای هر شبکه دو فیلد در یک ردیف: آدرس صفحه و آیکون (اختیاری).
+ * برای هر شبکه دو فیلد در یک ردیف: آدرس صفحه و آیکون (پر کردن آیکون لازم نیست).
  *
  * @return array<string, array<string, mixed>>
  */
@@ -428,7 +428,7 @@ function hodima_settings_panels(): array {
 		'contact_address'    => [ 'section' => 'contact', 'title' => 'آدرس', 'icon' => 'dashicons-location' ],
 
 		'social_bar'         => [ 'section' => 'social', 'title' => 'نوار شبکه‌ها', 'icon' => 'dashicons-admin-settings' ],
-		'social_networks'    => [ 'section' => 'social', 'title' => 'شبکه‌ها', 'icon' => 'dashicons-share', 'layout' => 'rows', 'columns' => [ 'شبکه', 'آدرس صفحه', 'آیکون (اختیاری)' ], 'help' => 'شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد.' ],
+		'social_networks'    => [ 'section' => 'social', 'title' => 'شبکه‌ها', 'icon' => 'dashicons-share', 'layout' => 'rows', 'columns' => [ 'شبکه', 'آدرس صفحه', 'آیکون' ], 'help' => 'شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد.' ],
 
 		'analytics_ga'       => [ 'section' => 'analytics', 'title' => 'Google Analytics 4', 'icon' => 'dashicons-chart-area' ],
 
@@ -484,8 +484,8 @@ function hodima_settings_field_section( array $field ): string {
 }
 
 /**
- * نام کامل فیلد برای پیام خطا، مثل «فوتر › نماد ۲ › لینک (اختیاری)».
- * برچسب‌ها داخل قاب کوتاه‌اند («لینک (اختیاری)»)؛ بیرون از قاب مبهم می‌شدند.
+ * نام کامل فیلد برای پیام خطا، مثل «فوتر › نماد ۲ › لینک».
+ * برچسب‌ها داخل قاب کوتاه‌اند («لینک»)؛ بیرون از قاب مبهم می‌شدند.
  */
 function hodima_settings_field_label( string $key ): string {
 

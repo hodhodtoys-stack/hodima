@@ -334,7 +334,7 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 			hodima_media_field_text( 'video_title', 'عنوان ویدیو', (string) ( $data['video_title'] ?? '' ), 'بالای پلیر و در نتایج ویدیویی گوگل. خالی = «ویدیوی معرفی: عنوان صفحه» (برای آپارات، یوتیوب و ویمئو هنگام ذخیره از خود ویدیو پر می‌شود).' );
 			hodima_media_field_textarea(
 				'video_description',
-				'توضیح ویدیو (اختیاری)',
+				'توضیح ویدیو',
 				(string) ( $data['video_description'] ?? '' ),
 				'یکی دو جمله درباره همین ویدیو (نه کل صفحه) برای نتایج ویدیویی گوگل. خالی = خلاصه صفحه.',
 				[ 'rows' => 2, 'maxlength' => 500 ]
@@ -365,14 +365,14 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 			);
 			hodima_media_field_textarea(
 				'video_chapters',
-				'فصل‌های ویدیو (اختیاری)',
+				'فصل‌های ویدیو',
 				(string) ( $data['video_chapters'] ?? '' ),
 				'هر خط: زمان و عنوان. زیر پلیر دکمه پرش ساخته می‌شود و گوگل «لحظه‌های کلیدی» را در نتایج نشان می‌دهد.',
 				[ 'rows' => 4, 'dir' => 'auto', 'placeholder' => "0:00 معرفی\n0:45 رنگ‌بندی\n1:30 نحوه استفاده", 'data-hodima-chapters' => '' ]
 			);
 			hodima_media_field_picker(
 				'video_captions',
-				'زیرنویس (اختیاری، فقط فایل MP4)',
+				'زیرنویس (فقط فایل MP4)',
 				(string) ( $data['video_captions'] ?? '' ),
 				'text/vtt',
 				'فایل <code>.vtt</code> فارسی؛ روی پلیر قابل روشن/خاموش شدن است (ناشنوایان، تماشای بی‌صدا در موبایل). اگر «متن کامل» خالی باشد، هنگام ذخیره از همین فایل پر می‌شود.',
@@ -381,14 +381,14 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 			);
 			hodima_media_field_textarea(
 				'video_transcript',
-				'متن کامل ویدیو (اختیاری)',
+				'متن کامل ویدیو',
 				(string) ( $data['video_transcript'] ?? '' ),
 				'زیر پلیر به صورت بسته («متن کامل ویدیو») نمایش داده می‌شود و در اسکیما (transcript) به گوگل می‌رسد.',
 				[ 'rows' => 4 ]
 			);
 			?>
 			<div class="hodima-mb__field">
-				<span class="hodima-mb__label">ویدیوهای بیشتر (اختیاری)</span>
+				<span class="hodima-mb__label">ویدیوهای بیشتر</span>
 				<p class="hodima-mb__help">زیر ویدیوی اصلی به صورت کارت نمایش داده می‌شوند و هر کدام جدا به گوگل اعلام می‌شود (با کاور؛ آپارات/یوتیوب/ویمئو عنوان، مدت و کاورشان هنگام ذخیره خودکار پر می‌شود). حداکثر <?php echo esc_html( number_format_i18n( HODIMA_MEDIA_EXTRA_MAX ) ); ?> ویدیو.</p>
 				<ol class="hodima-mb__faqs" data-hodima-list="extra">
 					<?php
@@ -413,7 +413,7 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 				?>
 			</div>
 			<?php
-			hodima_media_field_textarea( 'voice_transcript', 'متن کامل پادکست (اختیاری)', (string) ( $data['voice_transcript'] ?? '' ), 'زیر پلیر به صورت بسته نمایش داده می‌شود و در اسکیما به گوگل می‌رسد.', [ 'rows' => 4 ] );
+			hodima_media_field_textarea( 'voice_transcript', 'متن کامل پادکست', (string) ( $data['voice_transcript'] ?? '' ), 'زیر پلیر به صورت بسته نمایش داده می‌شود و در اسکیما به گوگل می‌رسد.', [ 'rows' => 4 ] );
 			?>
 		<?php hodima_media_section_close(); ?>
 

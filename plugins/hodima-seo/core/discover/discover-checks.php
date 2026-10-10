@@ -1,10 +1,10 @@
 <?php
 /**
- * ماژول «Google Discover» — فهرست «آمادگی برای Discover» و پیشنهاد عنوان
+ * ماژول «گوگل دیسکاور» — فهرست «آمادگی برای دیسکاور» و پیشنهاد عنوان
  * Path: core/discover/discover-checks.php
  *
  * فقط تابع تعریف می‌کند (از discover-init.php لود می‌شود). همین فهرست در
- * کادر ویرایش، گزارش «ابزارهای هدیما ← Google Discover» و ستون فهرست‌ها
+ * کادر ویرایش، گزارش «ابزارهای هدیما ← گوگل دیسکاور» و ستون فهرست‌ها
  * استفاده می‌شود؛ نتیجه هر شیء در کش ردیف (discover-cache.php) می‌ماند.
  *
  * SEO 2.1.2: موارد تازه — متن جایگزین تصویر، تصویر تکراری، عنوان تکراری،
@@ -27,30 +27,43 @@ const HODIMA_SEO_DISCOVER_STALE_DAYS = 365;
  * نمایه سایت: تصویر و عنوان هر صفحه (برای «تکراری»)
  * ===================================================================== */
 
+/** ترنزینت نمایه سایت (تصویر و عنوان همه صفحه‌ها). */
+const HODIMA_SEO_DISCOVER_INDEX_CACHE = 'hodima_discover_index';
+
 /**
- * تصویر و عنوان Discover همه نوشته‌ها/محصولات منتشرشده و دسته‌ها، با دو
- * کوئری (یک بار در هر درخواست): images[شناسه پیوست] و titles[عنوان یکسان‌شده]
- * ← فهرست کلیدهای «post:ID» / «term:ID». با $reset نمایه کنار گذاشته می‌شود
- * تا دفعه بعد از نو ساخته شود.
+ * تصویر و عنوان دیسکاور همه نوشته‌ها/محصولات منتشرشده و دسته‌ها، با دو
+ * کوئری: images[شناسه پیوست] و titles[عنوان یکسان‌شده] ← فهرست کلیدهای
+ * «post:ID» / «term:ID». با $reset نمایه کنار گذاشته می‌شود تا دفعه بعد از
+ * نو ساخته شود (discover-cache.php: ذخیره، حذف، تغییر تصویر/عنوان).
  *
- * @return array{images: array<int, list<string>>, titles: array<string, list<string>>}
+ * از SEO 2.1.5 در ترنزینت هم می‌ماند؛ قبلا با هر باز شدن کادر ویرایش و هر
+ * صفحه فهرست، دو کوئری روی همه نوشته‌ها و محصولات سایت زده می‌شد.
+ *
+ * @return array{images: array<int, list<string>>, titles: array<string, list<string>>, keys: array<string, array{0: int, 1: string}>}
  */
 function hodima_seo_discover_index( bool $reset = false ): array {
 
 	static $index = null;
 
 	if ( $reset ) {
-		$index = null; // تصویر یا عنوانی در همین درخواست عوض شد (discover-cache.php)
-		return [ 'images' => [], 'titles' => [] ];
+		$index = null; // تصویر یا عنوانی عوض شد (discover-cache.php)
+		delete_transient( HODIMA_SEO_DISCOVER_INDEX_CACHE );
+		return [ 'images' => [], 'titles' => [], 'keys' => [] ];
 	}
 
 	if ( null !== $index ) {
 		return $index;
 	}
 
+	$cached = get_transient( HODIMA_SEO_DISCOVER_INDEX_CACHE );
+	if ( is_array( $cached ) && isset( $cached['images'], $cached['titles'], $cached['keys'] ) && is_array( $cached['images'] ) && is_array( $cached['titles'] ) && is_array( $cached['keys'] ) ) {
+		$index = $cached;
+		return $index;
+	}
+
 	global $wpdb;
 
-	$index = [ 'images' => [], 'titles' => [] ];
+	$index = [ 'images' => [], 'titles' => [], 'keys' => [] ];
 	$add   = static function ( string $key, int $image, string $title ) use ( &$index ): void {
 		if ( $image > 0 ) {
 			$index['images'][ $image ][] = $key;
@@ -59,6 +72,7 @@ function hodima_seo_discover_index( bool $reset = false ): array {
 		if ( '' !== $title ) {
 			$index['titles'][ $title ][] = $key;
 		}
+		$index['keys'][ $key ] = [ $image, $title ]; // برای امضای «تکراری» بدون گشتن کل نمایه
 	};
 
 	$types = array_values( array_filter( hodima_seo_discover_post_types(), 'post_type_exists' ) );
@@ -127,10 +141,28 @@ function hodima_seo_discover_index( bool $reset = false ): array {
 		}
 	}
 
+	set_transient( HODIMA_SEO_DISCOVER_INDEX_CACHE, $index, DAY_IN_SECONDS );
+
 	return $index;
 }
 
-/** چند صفحه دیگر همین تصویر را به‌عنوان تصویر اصلی/Discover دارند؟ */
+/**
+ * امضای «تکراری بودن» یک صفحه در نمایه فعلی: تعداد صفحه‌های هم‌تصویر و
+ * صفحه هم‌عنوان. ردیف کش هر صفحه (discover-cache.php) این را نگه می‌دارد و
+ * اگر عوض شده باشد (مثلا صفحه دیگری تصویرش را عوض کرد)، ردیف کهنه است.
+ */
+function hodima_seo_discover_dup_signature( string $self_key ): string {
+
+	$index             = hodima_seo_discover_index();
+	[ $image, $title ] = $index['keys'][ $self_key ] ?? [ 0, '' ];
+	$others            = static fn( array $keys ): array => array_values( array_diff( $keys, [ $self_key ] ) );
+	$images            = $others( $index['images'][ $image ] ?? [] );
+	$titles            = $others( $index['titles'][ $title ] ?? [] );
+
+	return md5( implode( '|', [ $image, count( $images ), $title, $titles[0] ?? '' ] ) );
+}
+
+/** چند صفحه دیگر همین تصویر را به‌عنوان تصویر اصلی/دیسکاور دارند؟ */
 function hodima_seo_discover_image_shared( int $image_id, string $self_key ): int {
 	$keys = hodima_seo_discover_index()['images'][ $image_id ] ?? [];
 	return count( array_diff( $keys, [ $self_key ] ) );
@@ -155,11 +187,82 @@ function hodima_seo_discover_word_count( WP_Post $post ): int {
 }
 
 /* =====================================================================
+ * صفحه‌هایی که برای دیسکاور نیستند (کنار گذاشته از گزارش و ستون‌ها)
+ * ===================================================================== */
+
+/** کلید متای «این صفحه برای گوگل دیسکاور نیست» (نوشته و ترم؛ '1' = کنار گذاشته). */
+const HODIMA_SEO_DISCOVER_SKIP_META = '_hodima_discover_skip';
+
+/**
+ * چرا این صفحه از گزارش دیسکاور کنار گذاشته می‌شود؛ رشته خالی = بررسی می‌شود.
+ *
+ *   manual   مدیر در کادر دیسکاور زده «این صفحه برای گوگل دیسکاور نیست»
+ *   noindex  صفحه noindex است (سئوباکس یا متای noindex قدیمی) و اصلا در گوگل نمی‌آید
+ *   utility  برگه کاربردی: سبد خرید، پرداخت، حساب کاربری، شرایط، حریم خصوصی
+ *
+ * باگ قبلی (تا SEO 2.1.4): همه برگه‌ها بررسی می‌شدند و سبد خرید و پرداخت
+ * جزو «مشکل دارد» شمرده می‌شدند. فقط گزارش، فرصت‌ها و ستون فهرست‌ها؛ خروجی
+ * سایت (og:image، اسکیما، فید) عوض نمی‌شود.
+ */
+function hodima_seo_discover_skip_reason( WP_Post|WP_Term $target ): string {
+
+	$context = $target instanceof WP_Term ? 'term' : 'post';
+	$id      = $target instanceof WP_Term ? (int) $target->term_id : (int) $target->ID;
+
+	if ( '1' === (string) get_metadata( $context, $id, HODIMA_SEO_DISCOVER_SKIP_META, true ) ) {
+		return 'manual';
+	}
+
+	if ( function_exists( 'seobox_object_robots' ) && empty( seobox_object_robots( $id, $context )['index'] ) ) {
+		return 'noindex';
+	}
+
+	if ( $target instanceof WP_Post && 'page' === $target->post_type && in_array( $id, hodima_seo_discover_utility_pages(), true ) ) {
+		return 'utility';
+	}
+
+	return '';
+}
+
+/** متن فارسی دلیل کنار گذاشتن. */
+function hodima_seo_discover_skip_label( string $reason ): string {
+	return match ( $reason ) {
+		'manual'  => 'انتخاب دستی: این صفحه برای گوگل دیسکاور نیست',
+		'noindex' => 'noindex است و در گوگل نمی‌آید',
+		'utility' => 'برگه کاربردی (سبد خرید، پرداخت، حساب کاربری، شرایط یا حریم خصوصی)',
+		default   => '',
+	};
+}
+
+/**
+ * شناسه برگه‌های کاربردی سایت (ووکامرس و حریم خصوصی).
+ *
+ * @return list<int>
+ */
+function hodima_seo_discover_utility_pages(): array {
+
+	static $ids = null;
+
+	if ( null === $ids ) {
+		$ids = [ (int) get_option( 'wp_page_for_privacy_policy' ) ];
+		if ( function_exists( 'wc_get_page_id' ) ) {
+			foreach ( [ 'cart', 'checkout', 'myaccount', 'terms' ] as $page ) {
+				$ids[] = (int) wc_get_page_id( $page );
+			}
+		}
+		$ids = array_values( array_filter( array_unique( (array) apply_filters( 'hodima_seo_discover_utility_pages', $ids ) ), static fn( mixed $id ): bool => (int) $id > 0 ) );
+		$ids = array_map( 'intval', $ids );
+	}
+
+	return $ids;
+}
+
+/* =====================================================================
  * فهرست بررسی آمادگی
  * ===================================================================== */
 
 /**
- * وضعیت آمادگی یک نوشته، محصول یا دسته برای Discover.
+ * وضعیت آمادگی یک نوشته، محصول یا دسته برای دیسکاور.
  *
  * هر ردیف: key، status (ok | warn | error)، label، detail، و link (اختیاری:
  * آدرس بخشی از صفحه ویرایش یا تنظیمی که مشکل را رفع می‌کند).
@@ -188,9 +291,9 @@ function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
 		function_exists( 'hodima_setting' ) ? (int) hodima_setting( 'logo_id' ) : 0, // لوگوی تنظیمات قالب هدیما
 	] );
 	$checks[] = match ( true ) {
-		null === $image => $row( 'image', 'error', 'تصویر بزرگ', $own . ' یا تصویر Discover ندارد؛ Discover صفحه بی‌تصویر را تقریبا نشان نمی‌دهد.' ),
+		null === $image => $row( 'image', 'error', 'تصویر بزرگ', $own . ' یا تصویر دیسکاور ندارد؛ دیسکاور صفحه بی‌تصویر را تقریبا نشان نمی‌دهد.' ),
 		in_array( $image['id'], $logo_ids, true ) => $row( 'image', 'error', 'تصویر بزرگ', 'لوگوی سایت به عنوان تصویر انتخاب شده؛ گوگل تصویر عمومی و لوگو را نمی‌پذیرد.' ),
-		$image['width'] < HODIMA_SEO_DISCOVER_MIN_WIDTH => $row( 'image', 'error', 'تصویر بزرگ', sprintf( 'عرض تصویر %s پیکسل است؛ برای کارت بزرگ Discover حداقل %s لازم است.', $num( $image['width'] ), $num( HODIMA_SEO_DISCOVER_MIN_WIDTH ) ) ),
+		$image['width'] < HODIMA_SEO_DISCOVER_MIN_WIDTH => $row( 'image', 'error', 'تصویر بزرگ', sprintf( 'عرض تصویر %s پیکسل است؛ برای کارت بزرگ دیسکاور حداقل %s لازم است.', $num( $image['width'] ), $num( HODIMA_SEO_DISCOVER_MIN_WIDTH ) ) ),
 		default => $row( 'image', 'ok', 'تصویر بزرگ', sprintf( '%s×%s پیکسل.', $num( $image['width'] ), $num( $image['height'] ) ) ),
 	};
 
@@ -201,7 +304,7 @@ function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
 			$ready    = array_column( hodima_seo_discover_images( $id, $context ), 'ratio' );
 			$checks[] = count( $ready ) === count( HODIMA_SEO_DISCOVER_CROPS )
 				? $row( 'crops', 'ok', 'برش‌های ۱۶:۹، ۴:۳ و ۱:۱', 'ساخته شده و در اسکیما و og:image استفاده می‌شوند.' )
-				: $row( 'crops', 'warn', 'برش‌های ۱۶:۹، ۴:۳ و ۱:۱', 'هنوز ساخته نشده‌اند؛ با ذخیره همین صفحه یا «ساخت برش برای همه» در گزارش Discover ساخته می‌شوند.' );
+				: $row( 'crops', 'warn', 'برش‌های ۱۶:۹، ۴:۳ و ۱:۱', 'هنوز ساخته نشده‌اند؛ با ذخیره همین صفحه یا «ساخت برش برای همه» در گزارش دیسکاور ساخته می‌شوند.' );
 		}
 
 		// ۳. متن جایگزین (خود فایل؛ hodima_seo_discover_image نبودنش را با عنوان پر می‌کند)
@@ -214,7 +317,7 @@ function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
 		$shared   = hodima_seo_discover_image_shared( $image['id'], $self );
 		$checks[] = 0 === $shared
 			? $row( 'unique_image', 'ok', 'تصویر اختصاصی', 'تصویر فقط مال همین صفحه است.' )
-			: $row( 'unique_image', 'warn', 'تصویر اختصاصی', sprintf( 'همین تصویر، تصویر اصلی %s صفحه دیگر هم هست؛ کارت‌های با تصویر یکسان در Discover تکراری دیده می‌شوند. برای این صفحه تصویر Discover جدا انتخاب کنید.', $num( $shared ) ) );
+			: $row( 'unique_image', 'warn', 'تصویر اختصاصی', sprintf( 'همین تصویر، تصویر اصلی %s صفحه دیگر هم هست؛ کارت‌های با تصویر یکسان در دیسکاور تکراری دیده می‌شوند. برای این صفحه تصویر دیسکاور جدا انتخاب کنید.', $num( $shared ) ) );
 	}
 
 	// ۵. ایندکس و پیش‌نمایش بزرگ تصویر
@@ -222,7 +325,7 @@ function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
 	$preview  = (string) get_metadata( $context, $id, '_seobox_adv_image', true );
 	$checks[] = match ( true ) {
 		'0' === (string) get_option( 'blog_public', '1' ) => $row( 'robots', 'error', 'دسترسی گوگل', 'در «تنظیمات ← خواندن» گزینه پنهان کردن سایت از موتورهای جستجو روشن است.', admin_url( 'options-reading.php' ) ),
-		empty( $robots['index'] ) => $row( 'robots', 'error', 'دسترسی گوگل', 'این صفحه noindex است (سئوباکس) و در Discover نمی‌آید.' ),
+		empty( $robots['index'] ) => $row( 'robots', 'error', 'دسترسی گوگل', 'این صفحه noindex است (سئوباکس) و در دیسکاور نمی‌آید.' ),
 		in_array( $preview, [ 'none', 'standard' ], true ) => $row( 'robots', 'error', 'دسترسی گوگل', 'در سئوباکس «پیش‌نمایش تصویر» روی ' . $preview . ' است؛ باید «بزرگ» باشد.' ),
 		default => $row( 'robots', 'ok', 'دسترسی گوگل', 'ایندکس و max-image-preview:large.' ),
 	};
@@ -232,7 +335,7 @@ function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
 	$length   = mb_strlen( $title );
 	$bait     = hodima_seo_discover_clickbait_match( $title );
 	$checks[] = match ( true ) {
-		'' !== $bait => $row( 'title', 'warn', 'عنوان', sprintf( 'عبارت «%s» اغراق‌آمیز یا طعمه کلیک است؛ گوگل در Discover آن را جریمه می‌کند.', $bait ) ),
+		'' !== $bait => $row( 'title', 'warn', 'عنوان', sprintf( 'عبارت «%s» اغراق‌آمیز یا طعمه کلیک است؛ گوگل در دیسکاور آن را جریمه می‌کند.', $bait ) ),
 		$length < HODIMA_SEO_DISCOVER_TITLE_MIN => $row( 'title', 'warn', 'عنوان', sprintf( '%1$s کاراکتر؛ کوتاه است. عنوانی که اصل مطلب را بگوید: %2$s تا %3$s کاراکتر.', $num( $length ), $num( HODIMA_SEO_DISCOVER_TITLE_MIN ), $num( HODIMA_SEO_DISCOVER_TITLE_MAX ) ) ),
 		$length > HODIMA_SEO_DISCOVER_TITLE_MAX => $row( 'title', 'warn', 'عنوان', sprintf( '%1$s کاراکتر؛ بیشتر از %2$s در کارت کوتاه می‌شود.', $num( $length ), $num( HODIMA_SEO_DISCOVER_TITLE_MAX ) ) ),
 		default => $row( 'title', 'ok', 'عنوان', sprintf( '%s کاراکتر.', $num( $length ) ) ),
@@ -266,11 +369,11 @@ function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
 
 	if ( $is_post && $target instanceof WP_Post ) {
 
-		// ۱۰. طول مطلب (Discover مطلب کامل و مفید را ترجیح می‌دهد)
+		// ۱۰. طول مطلب (دیسکاور مطلب کامل و مفید را ترجیح می‌دهد)
 		$words    = hodima_seo_discover_word_count( $target );
 		$checks[] = $words >= HODIMA_SEO_DISCOVER_MIN_WORDS
 			? $row( 'length', 'ok', 'عمق مطلب', sprintf( '%s کلمه.', $num( $words ) ) )
-			: $row( 'length', 'warn', 'عمق مطلب', sprintf( '%1$s کلمه؛ مطلب کوتاه است. Discover مطلبی را نشان می‌دهد که موضوع را کامل توضیح دهد (دست‌کم حدود %2$s کلمه).', $num( $words ), $num( HODIMA_SEO_DISCOVER_MIN_WORDS ) ) );
+			: $row( 'length', 'warn', 'عمق مطلب', sprintf( '%1$s کلمه؛ مطلب کوتاه است. دیسکاور مطلبی را نشان می‌دهد که موضوع را کامل توضیح دهد (دست‌کم حدود %2$s کلمه).', $num( $words ), $num( HODIMA_SEO_DISCOVER_MIN_WORDS ) ) );
 
 		// ۱۱. تازگی (فقط منتشرشده؛ پیش‌نویس هنوز تاریخ ندارد)
 		$modified = 'publish' === $target->post_status ? get_post_datetime( $target, 'modified', 'gmt' ) : false;
@@ -278,7 +381,7 @@ function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
 			$days     = max( 0, intdiv( time() - $modified->getTimestamp(), DAY_IN_SECONDS ) );
 			$checks[] = $days <= HODIMA_SEO_DISCOVER_STALE_DAYS
 				? $row( 'fresh', 'ok', 'تازگی', 0 === $days ? 'امروز به‌روز شده.' : sprintf( 'آخرین به‌روزرسانی %s روز پیش.', $num( $days ) ) )
-				: $row( 'fresh', 'warn', 'تازگی', sprintf( 'آخرین به‌روزرسانی %s روز پیش؛ Discover بیشتر مطالب تازه را نشان می‌دهد. اگر مطلب هنوز درست است، اطلاعاتش را به‌روز و دوباره منتشر کنید.', $num( $days ) ) );
+				: $row( 'fresh', 'warn', 'تازگی', sprintf( 'آخرین به‌روزرسانی %s روز پیش؛ دیسکاور بیشتر مطالب تازه را نشان می‌دهد. اگر مطلب هنوز درست است، اطلاعاتش را به‌روز و دوباره منتشر کنید.', $num( $days ) ) );
 		}
 
 		// ۱۲. نمایش تاریخ و نویسنده در صفحه (تنظیمات قالب هدیما)
@@ -324,7 +427,7 @@ function hodima_seo_discover_score( array $checks ): array {
  * ===================================================================== */
 
 /**
- * چند عنوان پیشنهادی برای کارت Discover، ساخته از داده واقعی صفحه:
+ * چند عنوان پیشنهادی برای کارت دیسکاور، ساخته از داده واقعی صفحه:
  *   - عنوان سئوی دستی (سئوباکس) اگر با نام صفحه فرق دارد؛
  *   - نام صفحه + دسته اصلی (زمینه: «کلیپس فلزی | گیره مو»)؛
  *   - دسته محصول: «۴۵ مدل کلیپس» از تعداد واقعی محصولات؛

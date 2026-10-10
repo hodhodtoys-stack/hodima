@@ -1,5 +1,5 @@
 /**
- * ماژول «Google Discover» — صفحه گزارش (ابزارهای هدیما ← Google Discover)
+ * ماژول «گوگل دیسکاور» — صفحه گزارش (ابزارهای هدیما ← گوگل دیسکاور)
  * Path: core/discover/assets/discover-report.css
  *
  * فقط زیر .hodima-dr (ظرف همین صفحه)؛ اجزای عمومی از admin-ui.css هسته (hd-*).
@@ -198,7 +198,8 @@
 		}
 	}
 
-	& .hodima-dr-daily {
+	& .hodima-dr-daily,
+	& .hodima-dr-skipped {
 		margin-block-start: 1rem;
 
 		& > summary {

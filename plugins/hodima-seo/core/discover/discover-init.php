@@ -1,16 +1,16 @@
 <?php
 /**
- * ماژول «Google Discover» — داده، تصویر و برش‌ها
+ * ماژول «گوگل دیسکاور» — داده، تصویر و برش‌ها
  * Path: core/discover/discover-init.php
  *
  * تا Hodima SEO 1.15.0 این بخش داخل «سیستم رسانه» افزونه Hodima Media بود
- * (media-discover.php) و با خاموش شدن آن ماژول، Discover هم خاموش می‌شد؛
+ * (media-discover.php) و با خاموش شدن آن ماژول، دیسکاور هم خاموش می‌شد؛
  * در حالی که همه مصرف‌کننده‌هایش (سئوباکس، اسکیمای مقاله، فید) اینجا،
  * در افزونه سئو هستند. حالا ماژول مستقل با کلید خودش در «ماژول‌های سئو».
  *
  * داده سایت عوض نشده (قانون ۵): همان کلیدهای متای قبلی
- *   _hook_discover_title      عنوان Discover
- *   _hook_discover_image_id   تصویر Discover (شناسه پیوست)
+ *   _hook_discover_title      عنوان دیسکاور
+ *   _hook_discover_image_id   تصویر دیسکاور (شناسه پیوست)
  *   _hook_key_entities        موضوعات اصلی («الف, ب»)
  * دسته‌های محصول (از SEO 1.17.0) همان‌ها در term meta با پیشوند «hook_»
  * (قرارداد سیستم رسانه برای ترم‌ها): hook_discover_title، hook_discover_image_id،
@@ -20,10 +20,10 @@
  * (hodima_media_discover_*، hook_modern_seo_enabled) در legacy.php فقط اگر
  * تعریف نشده باشند ساخته می‌شوند.
  *
- * هم‌زیستی با Hodima Media قدیمی (۱.۴ و پایین‌تر که Discover را خودش دارد):
+ * هم‌زیستی با Hodima Media قدیمی (۱.۴ و پایین‌تر که دیسکاور را خودش دارد):
  * این فایل فقط تابع تعریف می‌کند؛ هوک‌ها، کادر و نام‌های قدیمی در
  * plugins_loaded اولویت ۲۰ (بعد از لود ماژول‌های Media و SEO در اولویت ۵) و فقط وقتی
- * Media قدیمی Discover را نساخته ثبت می‌شوند. وگرنه همه چیز دو بار اجرا
+ * Media قدیمی دیسکاور را نساخته ثبت می‌شوند. وگرنه همه چیز دو بار اجرا
  * می‌شد (دو لینک فید، دو تصویر در فید، دو کادر) و نام‌های قدیمی خطای
  * «Cannot redeclare» می‌دادند.
  */
@@ -35,11 +35,11 @@ defined( 'ABSPATH' ) || exit;
 /** برش‌های تصویر: کلید ← [ عرض نسبت, ارتفاع نسبت ]. */
 const HODIMA_SEO_DISCOVER_CROPS = [ '16x9' => [ 16, 9 ], '4x3' => [ 4, 3 ], '1x1' => [ 1, 1 ] ];
 
-/** حداقل عرض تصویر بزرگ Discover (مستندات گوگل). */
+/** حداقل عرض تصویر بزرگ دیسکاور (مستندات گوگل). */
 const HODIMA_SEO_DISCOVER_MIN_WIDTH = 1200;
 
 /**
- * عبارت‌های طعمه کلیک و اغراق (گوگل Discover عنوان اغراق‌آمیز، پنهان‌کاری
+ * عبارت‌های طعمه کلیک و اغراق (گوگل دیسکاور عنوان اغراق‌آمیز، پنهان‌کاری
  * محتوا و تحریک احساس را جریمه می‌کند).
  *
  * مقایسه «کلمه کامل» است (hodima_seo_discover_clickbait_match)؛ «*» در آخر
@@ -63,7 +63,7 @@ const HODIMA_SEO_DISCOVER_CLICKBAIT = [
 	'!!', '؟؟', '??', '؟!', '!؟', '?!', '!?',
 ];
 
-/** طول پیشنهادی عنوان کارت Discover (کاراکتر): کوتاه‌تر مبهم، بلندتر کوتاه می‌شود. */
+/** طول پیشنهادی عنوان کارت دیسکاور (کاراکتر): کوتاه‌تر مبهم، بلندتر کوتاه می‌شود. */
 const HODIMA_SEO_DISCOVER_TITLE_MIN = 30;
 const HODIMA_SEO_DISCOVER_TITLE_MAX = 110;
 
@@ -80,12 +80,12 @@ function hodima_seo_discover_meta_key( string $field, string $context = 'post' )
 	return 'term' === $context ? ltrim( $key, '_' ) : $key;
 }
 
-// فهرست «آمادگی برای Discover» و پیشنهاد عنوان (فقط تابع)
+// فهرست «آمادگی برای دیسکاور» و پیشنهاد عنوان (فقط تابع)
 require_once __DIR__ . '/discover-checks.php';
 
 add_action( 'plugins_loaded', 'hodima_seo_discover_boot', 20 );
 
-/** ثبت هوک‌ها، کادر و نام‌های قدیمی — فقط اگر Hodima Media قدیمی Discover را ندارد. */
+/** ثبت هوک‌ها، کادر و نام‌های قدیمی — فقط اگر Hodima Media قدیمی دیسکاور را ندارد. */
 function hodima_seo_discover_boot(): void {
 
 	if ( hodima_seo_discover_provided_by_media() ) {
@@ -108,10 +108,10 @@ function hodima_seo_discover_boot(): void {
 }
 
 /**
- * ثبت متاهای Discover (register_post_meta / register_term_meta):
+ * ثبت متاهای دیسکاور (register_post_meta / register_term_meta):
  *   - REST و ویرایشگر بلوکی نوع و دسترسی آن‌ها را می‌شناسند (فقط ویرایشگر همان شیء)؛
  *   - نوع‌هایی که «نسخه‌ها» دارند (نوشته، برگه): بازگردانی یک نسخه، عنوان،
- *     تصویر و موضوعات Discover همان نسخه را هم برمی‌گرداند.
+ *     تصویر و موضوعات دیسکاور همان نسخه را هم برمی‌گرداند.
  * پاک‌سازی همان قاعده ذخیره کادر است (تکرار آن روی مقدار تمیز، همان را می‌دهد).
  */
 function hodima_seo_discover_register_meta(): void {
@@ -137,6 +137,14 @@ function hodima_seo_discover_register_meta(): void {
 				'revisions_enabled' => post_type_supports( $post_type, 'revisions' ),
 			] );
 		}
+		// «این صفحه برای گوگل دیسکاور نیست» (discover-checks.php)
+		register_post_meta( $post_type, HODIMA_SEO_DISCOVER_SKIP_META, [
+			'type'              => 'string',
+			'single'            => true,
+			'show_in_rest'      => true,
+			'sanitize_callback' => static fn( mixed $v ): string => '1' === ( is_scalar( $v ) ? (string) $v : '' ) ? '1' : '',
+			'auth_callback'     => static fn( bool $allowed, string $key, int $post_id ): bool => current_user_can( 'edit_post', $post_id ),
+		] );
 	}
 
 	foreach ( hodima_seo_discover_taxonomies() as $taxonomy ) {
@@ -152,10 +160,17 @@ function hodima_seo_discover_register_meta(): void {
 				'auth_callback'     => static fn( bool $allowed, string $key, int $term_id ): bool => current_user_can( 'edit_term', $term_id ),
 			] );
 		}
+		register_term_meta( $taxonomy, HODIMA_SEO_DISCOVER_SKIP_META, [
+			'type'              => 'string',
+			'single'            => true,
+			'show_in_rest'      => true,
+			'sanitize_callback' => static fn( mixed $v ): string => '1' === ( is_scalar( $v ) ? (string) $v : '' ) ? '1' : '',
+			'auth_callback'     => static fn( bool $allowed, string $key, int $term_id ): bool => current_user_can( 'edit_term', $term_id ),
+		] );
 	}
 }
 
-/** آیا Hodima Media قدیمی (۱.۴ و پایین‌تر) Discover را خودش ساخته است؟ */
+/** آیا Hodima Media قدیمی (۱.۴ و پایین‌تر) دیسکاور را خودش ساخته است؟ */
 function hodima_seo_discover_provided_by_media(): bool {
 	// ماژول‌های Media در plugins_loaded اولویت ۵ لود می‌شوند؛ این تابع در اولویت ۲۰ صدا زده می‌شود
 	return function_exists( 'hodima_media_discover_image' );
@@ -166,7 +181,7 @@ function hodima_seo_discover_provided_by_media(): bool {
  * ===================================================================== */
 
 /**
- * نوع‌های نوشته‌ای که Discover دارند: نوشته، برگه و (از SEO 1.17.0) محصول.
+ * نوع‌های نوشته‌ای که دیسکاور دارند: نوشته، برگه و (از SEO 1.17.0) محصول.
  * نام فیلتر همان نسخه‌های قبلی است تا کد سفارشی سایت کار کند.
  *
  * @return list<string>
@@ -176,7 +191,7 @@ function hodima_seo_discover_post_types(): array {
 }
 
 /**
- * تکسونومی‌هایی که Discover دارند: دسته محصول (صفحه‌اش را قالب با تصویر و
+ * تکسونومی‌هایی که دیسکاور دارند: دسته محصول (صفحه‌اش را قالب با تصویر و
  * متن معرفی کامل نمایش می‌دهد). دسته‌های وبلاگ نه.
  *
  * @return list<string>
@@ -186,7 +201,7 @@ function hodima_seo_discover_taxonomies(): array {
 }
 
 /**
- * آیا Discover برای این شیء فعال است؟
+ * آیا دیسکاور برای این شیء فعال است؟
  *
  * @param string     $context   post | term
  * @param int|string $object_id ۰ = از صفحه فعلی پیشخوان (نوع/تکسونومی)
@@ -209,12 +224,12 @@ function hodima_seo_discover_enabled( string $context, int|string $object_id = 0
 	return (bool) apply_filters( 'hook_modern_seo_enabled', $enabled, $context, $object_id ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- نام فیلتر قبلی سیستم رسانه
 }
 
-/** آیا Discover برای این نوشته/محصول فعال است؟ */
+/** آیا دیسکاور برای این نوشته/محصول فعال است؟ */
 function hodima_seo_discover_for_post( int $post_id ): bool {
 	return $post_id > 0 && hodima_seo_discover_enabled( 'post', $post_id );
 }
 
-/** آیا Discover برای این دسته فعال است؟ */
+/** آیا دیسکاور برای این دسته فعال است؟ */
 function hodima_seo_discover_for_term( int $term_id ): bool {
 	return $term_id > 0 && hodima_seo_discover_enabled( 'term', $term_id );
 }
@@ -296,7 +311,7 @@ function hodima_seo_discover_format_entities( array $items, string $glue = ', ' 
 }
 
 /**
- * داده Discover یک نوشته.
+ * داده دیسکاور یک نوشته.
  *
  * داده خیلی قدیمی (پیش از نسخه ۴ سیستم رسانه) بدون پیشوند ذخیره شده بود؛
  * فقط وقتی خوانده می‌شود که نوشته هرگز با کادر رسانه جدید ذخیره نشده
@@ -418,11 +433,11 @@ function hodima_seo_discover_is_clickbait( string $title ): bool {
 }
 
 /* =====================================================================
- * تصویر Discover و برش‌ها
+ * تصویر دیسکاور و برش‌ها
  * ===================================================================== */
 
 /**
- * تصویر Discover یک نوشته/محصول/دسته: تصویر انتخابی Discover ← تصویر
+ * تصویر دیسکاور یک نوشته/محصول/دسته: تصویر انتخابی دیسکاور ← تصویر
  * شاخص (نوشته/محصول) یا تصویر دسته.
  *
  * @return array{id: int, url: string, width: int, height: int, mime: string, alt: string}|null
@@ -466,7 +481,7 @@ function hodima_seo_discover_crop_size( int $src_w, int $src_h, int $rw, int $rh
 }
 
 /**
- * سه برش Discover را (اگر نیست) برای یک پیوست می‌سازد و تعداد برش تازه را برمی‌گرداند.
+ * سه برش دیسکاور را (اگر نیست) برای یک پیوست می‌سازد و تعداد برش تازه را برمی‌گرداند.
  * فقط هنگام ذخیره نوشته/تغییر تصویر شاخص و «ساخت برش برای همه» (گزارش)
  * اجرا می‌شود، نه هنگام بازدید.
  * برش‌ها در اطلاعات همان پیوست («sizes») ثبت می‌شوند؛ با حذف تصویر،
@@ -520,7 +535,7 @@ function hodima_seo_discover_make_crops( int $attachment_id ): int {
 }
 
 /**
- * تصاویر Discover آماده (برش‌های ساخته‌شده؛ یا خود تصویر وقتی همان نسبت را دارد).
+ * تصاویر دیسکاور آماده (برش‌های ساخته‌شده؛ یا خود تصویر وقتی همان نسبت را دارد).
  *
  * @return list<array{url: string, width: int, height: int, ratio: string, mime: string}>
  */
@@ -570,12 +585,42 @@ function hodima_seo_discover_wide_image( int $object_id, string $context = 'post
 	return null;
 }
 
+/**
+ * تصویر دیسکاور و برش‌هایش به شکل ImageObject اسکیما: اول خود تصویر (همان
+ * og:image و #primaryimage)، بعد برش‌های ۱۶:۹، ۴:۳ و ۱:۱ (بدون تکرار).
+ * تا SEO 2.1.4 برش‌ها فقط در اسکیمای مقاله بودند؛ برگه، محصول و دسته محصول
+ * فقط og:image داشتند.
+ *
+ * @return list<array{'@type': string, url: string, width: int, height: int}>
+ */
+function hodima_seo_discover_image_objects( int $object_id, string $context = 'post' ): array {
+
+	$image = hodima_seo_discover_image( $object_id, $context );
+
+	if ( null === $image ) {
+		return [];
+	}
+
+	$out  = [];
+	$seen = [];
+
+	foreach ( [ $image, ...hodima_seo_discover_images( $object_id, $context ) ] as $item ) {
+		if ( isset( $seen[ $item['url'] ] ) ) {
+			continue;
+		}
+		$seen[ $item['url'] ] = true;
+		$out[]                = [ '@type' => 'ImageObject', 'url' => $item['url'], 'width' => $item['width'], 'height' => $item['height'] ];
+	}
+
+	return $out;
+}
+
 /* =====================================================================
  * اسکیما
  * ===================================================================== */
 
 /**
- * عنوان Discover و موضوعات برای یک نود مقاله/صفحه:
+ * عنوان دیسکاور و موضوعات برای یک نود مقاله/صفحه:
  *   alternativeHeadline (headline همان عنوان اصلی صفحه می‌ماند)
  *   about → Thing برای هر موضوع، با sameAs اگر آدرس ویکی‌داده/ویکی‌پدیا دارد
  *   (به ارجاع‌های موجود، مثلا #organization، اضافه می‌شود)
@@ -618,7 +663,7 @@ const HODIMA_SEO_DISCOVER_AUTHOR_META = [
 
 /**
  * معرفی تخصص نویسنده: سمت، حوزه‌های تخصص و پروفایل‌های معتبر بیرونی
- * (اینستاگرام، لینکدین، آپارات، ویکی‌پدیا…). گوگل برای Discover و نتایج
+ * (اینستاگرام، لینکدین، آپارات، ویکی‌پدیا…). گوگل برای دیسکاور و نتایج
  * مقاله به «چه کسی نوشته و چرا قابل اعتماد است» وزن می‌دهد.
  *
  * @return array{job_title: string, knows_about: list<string>, same_as: list<string>}
@@ -638,17 +683,17 @@ function hodima_seo_discover_author( int $user_id ): array {
 }
 
 /* =====================================================================
- * آمار Search Console (فقط خواندن داده ذخیره‌شده؛ دریافت: discover-stats.php)
+ * آمار سرچ کنسول (فقط خواندن داده ذخیره‌شده؛ دریافت: discover-stats.php)
  * ===================================================================== */
 
-/** نام گزینه آمار Discover (autoload خاموش). */
+/** نام گزینه آمار دیسکاور (autoload خاموش). */
 const HODIMA_SEO_DISCOVER_STATS_OPTION = 'hodima_discover_sc_stats';
 
-/** پارامترهای ردیابی که آدرس دیگری نمی‌سازند (Search Console گاهی با آن‌ها گزارش می‌دهد؛ srsltid = لینک‌های فروشگاهی گوگل). */
+/** پارامترهای ردیابی که آدرس دیگری نمی‌سازند (سرچ کنسول گاهی با آن‌ها گزارش می‌دهد؛ srsltid = لینک‌های فروشگاهی گوگل). */
 const HODIMA_SEO_DISCOVER_TRACKING_PARAMS = '/^(utm_[a-z_]+|gclid|gbraid|wbraid|fbclid|srsltid|_gl|mc_[a-z]+)$/i';
 
 /**
- * کلید یکسان یک آدرس برای مقایسه با آدرس‌های Search Console: مسیر decode‌شده
+ * کلید یکسان یک آدرس برای مقایسه با آدرس‌های سرچ کنسول: مسیر decode‌شده
  * بدون اسلش پایانی، و پارامترها بدون پارامترهای ردیابی (مرتب‌شده).
  * باگ قبلی (تا SEO 2.1.1): «‎/x?utm_source=…» ردیف جدا از «‎/x» شمرده می‌شد.
  */
@@ -668,7 +713,7 @@ function hodima_seo_discover_url_key( string $url ): string {
 }
 
 /**
- * آمار ذخیره‌شده Discover.
+ * آمار ذخیره‌شده دیسکاور.
  *
  *   totals/rows: ۲۸ روز آخر (هر مسیر ← کلیک/نمایش)
  *   prev:        ۲۸ روز پیش از آن (برای مقایسه و «افت نمایش»)
@@ -712,7 +757,7 @@ function hodima_seo_discover_stats(): array {
 }
 
 /**
- * آمار Discover یک نوشته/محصول/دسته (۲۸ روز آخر Search Console و ۲۸ روز پیش از
+ * آمار دیسکاور یک نوشته/محصول/دسته (۲۸ روز آخر سرچ کنسول و ۲۸ روز پیش از
  * آن)، یا null اگر آماری نیست. prev_* = null وقتی دوره قبل گرفته نشده است.
  *
  * @return array{clicks: int, impressions: int, prev_clicks: int|null, prev_impressions: int|null}|null
