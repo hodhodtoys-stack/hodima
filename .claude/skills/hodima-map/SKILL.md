@@ -86,7 +86,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 - متاهای رسانه `_hook_*` / `hook_*` (Media)؛ Discover `_hook_discover_*` (SEO)؛ سئوباکس `_seobox_*`؛ دسته اصلی `_hodima_primary_{taxonomy}`.
 
 ## ۷. انتشار و به‌روزرسانی خودکار
-`plugins/hodima-core/includes/updates.php` (Plugin Update Checker) هر ۱۲ ساعت `release/<slug>.json` را از `raw.githubusercontent.com/hodhodtoys-stack/hodima/HEAD/release/` (شاخه پیش‌فرض = `claude/hodima`) می‌خواند و با نسخه نصب‌شده مقایسه می‌کند (`version_compare`؛ پس نسخه فقط باید بالا برود). نسخه هر بسته از سربرگ `Version` (+ ثابت `HODIMA_*_VERSION` در افزونه‌ها) — قاعده شماره‌گذاری: اسکیل `/release`. ساخت: `bin/build.sh` ← `dist/` و `release/`؛ متن «جزئیات» از `CHANGELOG.md` (`bin/build-meta.py`).
+`plugins/hodima-core/includes/updates.php` (Plugin Update Checker) هر ۱۲ ساعت `release/<slug>.json` را از `raw.githubusercontent.com/hodhodtoys-stack/hodima/HEAD/release/` (شاخه پیش‌فرض = `claude/hodima`) می‌خواند و با نسخه نصب‌شده مقایسه می‌کند (`version_compare`؛ پس نسخه فقط باید بالا برود). نسخه هر بسته از سربرگ `Version` (+ ثابت `HODIMA_*_VERSION` در افزونه‌ها) — قاعده شماره‌گذاری: قانون ۷ `CLAUDE.md`. ساخت: `bin/build.sh` ← `dist/` و `release/`؛ متن «جزئیات» از `CHANGELOG.md` (`bin/build-meta.py`).
 ثابت‌های نسخه داخلی اجزا (`HODIMA_GI_VERSION`، `HODIMA_CORE_VERSION` داخل IndexNow، `*_DB_VERSION`) نسخه پایگاه داده/جزء‌اند، نه نسخه انتشار؛ با قاعده انتشار عوضشان نکن.
 
 ## ۸. ابزارها و مستندات
