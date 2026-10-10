@@ -45,6 +45,7 @@ add_action( 'admin_enqueue_scripts', static function (): void {
 		'titleMin'  => HODIMA_SEO_DISCOVER_TITLE_MIN,
 		'titleMax'  => HODIMA_SEO_DISCOVER_TITLE_MAX,
 		'clickbait' => hodima_seo_discover_clickbait_phrases(),
+		'ajax'      => admin_url( 'admin-ajax.php' ),
 	], JSON_UNESCAPED_UNICODE ) . ';', 'before' );
 } );
 
@@ -180,7 +181,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 	$title_msg   = 'ok' === $title_state ? '' : (string) ( array_column( $checks, 'detail', 'key' )['title'] ?? '' );
 	$crops       = $status['crops'] ?? '';
 	?>
-	<div class="hodima-dc" data-hodima-dc data-context="<?php echo esc_attr( $context ); ?>" data-has-meta-desc="<?php echo '' !== $meta_desc ? '1' : '0'; ?>">
+	<div class="hodima-dc" data-hodima-dc data-context="<?php echo esc_attr( $context ); ?>" data-object-id="<?php echo (int) $id; ?>" data-refresh-nonce="<?php echo esc_attr( wp_create_nonce( 'hodima_discover_box_' . $context . '_' . $id ) ); ?>" data-has-meta-desc="<?php echo '' !== $meta_desc ? '1' : '0'; ?>">
 		<?php wp_nonce_field( 'hodima_discover_save_' . $context . '_' . $id, 'hodima_discover_nonce' ); ?>
 		<input type="hidden" name="hodima_discover[present]" value="1">
 
@@ -407,6 +408,33 @@ function hodima_seo_discover_render_check( array $check ): void {
 	</li>
 	<?php
 }
+
+/*
+ * کادر تازه بعد از ذخیره ویرایشگر بلوکی. ویرایشگر بلوکی با «به‌روزرسانی» صفحه
+ * را دوباره بارگذاری نمی‌کند: فیلدهای کادر را جدا می‌فرستد ولی خود کادر را
+ * از سرور نمی‌گیرد. باگ تا SEO 2.1.3: بعد از تغییر تصویر و ذخیره، کادر همچنان
+ * «برش بعد از ذخیره»، امتیاز و آمادگی کهنه را نشان می‌داد تا صفحه دوباره
+ * بارگذاری شود. حالا JS بعد از پایان ذخیره کادر را از اینجا می‌گیرد
+ * (discover-admin.js: refreshBox).
+ */
+add_action( 'wp_ajax_hodima_discover_box', static function (): void {
+
+	$context = isset( $_POST['context'] ) && 'term' === $_POST['context'] ? 'term' : 'post'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce پایین (نامش به همین دو مقدار بسته است)
+	$id      = isset( $_POST['id'] ) ? absint( $_POST['id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- همان
+	$nonce   = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+	$target  = 'term' === $context ? get_term( $id ) : get_post( $id );
+	$allowed = 'term' === $context
+		? $target instanceof WP_Term && current_user_can( 'edit_term', $id ) && hodima_seo_discover_for_term( $id )
+		: $target instanceof WP_Post && current_user_can( 'edit_post', $id ) && hodima_seo_discover_for_post( $id );
+
+	if ( ! $allowed || ! wp_verify_nonce( $nonce, 'hodima_discover_box_' . $context . '_' . $id ) ) {
+		wp_send_json_error( null, 403 );
+	}
+
+	ob_start();
+	hodima_seo_discover_render_fields( $target );
+	wp_send_json_success( [ 'html' => (string) ob_get_clean() ] );
+} );
 
 /** ذخیره کادر (نوشته/برگه/محصول یا دسته). */
 function hodima_seo_discover_save( int $object_id, string $context ): void {

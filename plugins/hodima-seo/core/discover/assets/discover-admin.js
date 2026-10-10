@@ -16,6 +16,8 @@
  *   - پیش‌نمایش کارت در <dialog>: Discover گوشی، Discover دسکتاپ، اشتراک‌گذاری
  *   - هماهنگی زنده با ویرایشگر بلوکی (wp.data) و کلاسیک/محصول: تصویر شاخص،
  *     عنوان و چکیده
+ *   - ویرایشگر بلوکی: بعد از «به‌روزرسانی» کادر خودش از سرور تازه می‌شود
+ *     (برش‌های ساخته‌شده، امتیاز و آمادگی واقعی؛ SEO 2.1.4)
  */
 (() => {
 	'use strict';
@@ -420,14 +422,58 @@
 		alt: Boolean(a.alt),
 	});
 
-	function watchBlockEditor(box) {
+	/** کادر نوشته فعلی (بعد از تازه شدن، عنصر DOM عوض می‌شود). */
+	const currentBox = () => document.querySelector('[data-hodima-dc][data-context="post"]');
+
+	/** مقدار فیلدهای ذخیره‌شونده کادر (برای فهمیدن تغییر حین ذخیره). */
+	const fieldState = (box) => ['[data-hodima-dc-title]', '[data-hodima-dc-image-id]', '[data-hodima-dc-entities]']
+		.map((sel) => box.querySelector(sel)?.value ?? '').join('\u0001');
+
+	/*
+	 * کادر تازه از سرور بعد از ذخیره ویرایشگر بلوکی (باگ تا SEO 2.1.3: ویرایشگر
+	 * بلوکی صفحه را دوباره بارگذاری نمی‌کند، پس برش‌های تازه، امتیاز و آمادگی
+	 * بعد از ذخیره کهنه می‌ماندند تا بارگذاری دستی). اگر مدیر حین ذخیره در کادر
+	 * چیزی را عوض کرده باشد، کادر دست نمی‌خورد تا تغییرش از دست نرود.
+	 */
+	async function refreshBox(savedState) {
+		const box = currentBox();
+		if (!box || !config.ajax || !box.dataset.refreshNonce) return;
+		if (fieldState(box) !== savedState) return;
+		try {
+			const body = new URLSearchParams({ action: 'hodima_discover_box', context: 'post', id: box.dataset.objectId || '', nonce: box.dataset.refreshNonce });
+			const res = await fetch(config.ajax, { method: 'POST', body, credentials: 'same-origin' });
+			const json = await res.json().catch(() => null);
+			if (!res.ok || !json?.success || fieldState(box) !== savedState) return;
+			const tpl = document.createElement('template');
+			tpl.innerHTML = String(json.data.html).trim();
+			const fresh = tpl.content.querySelector('[data-hodima-dc]');
+			if (!fresh) return;
+			const hadFocus = box.contains(document.activeElement);
+			box.replaceWith(fresh);
+			setupBox(fresh);
+			if (hadFocus) fresh.querySelector('[role="tab"][aria-selected="true"]')?.focus();
+		} catch {
+			// شبکه قطع: همان کادر قبلی می‌ماند؛ بارگذاری دوباره صفحه همیشه کار می‌کند
+		}
+	}
+
+	function watchBlockEditor() {
 		const { select, subscribe } = window.wp.data;
 		const editor = () => select('core/editor');
-		const last = { media: editor().getEditedPostAttribute('featured_media'), title: editor().getEditedPostAttribute('title'), excerpt: editor().getEditedPostAttribute('excerpt'), resolved: true };
+		const last = { media: editor().getEditedPostAttribute('featured_media'), title: editor().getEditedPostAttribute('title'), excerpt: editor().getEditedPostAttribute('excerpt'), resolved: true, savingBoxes: false, savedState: '' };
 
 		subscribe(() => {
 			const ed = editor();
-			if (!ed) return;
+			const box = currentBox();
+			if (!ed || !box) return;
+
+			// پایان ذخیره کادرها (بعد از ذخیره خود نوشته؛ ذخیره خودکار کادرها را نمی‌فرستد)
+			let savingBoxes = false;
+			try { savingBoxes = Boolean(select('core/edit-post')?.isSavingMetaBoxes?.()); } catch { /* ویرایشگر بدون این store */ }
+			if (savingBoxes && !last.savingBoxes) last.savedState = fieldState(box);
+			if (!savingBoxes && last.savingBoxes) refreshBox(last.savedState);
+			last.savingBoxes = savingBoxes;
+
 			const media = ed.getEditedPostAttribute('featured_media') || 0;
 			const title = ed.getEditedPostAttribute('title') || '';
 			const excerpt = ed.getEditedPostAttribute('excerpt') || '';
@@ -465,20 +511,22 @@
 		}).observe(thumbBox, { childList: true, subtree: true });
 	}
 
+	/** وضعیت اولیه یک کادر (بار اول و بعد از تازه شدن از سرور). */
+	function setupBox(box) {
+		// تصویر جدای Discover که از قبل ذخیره شده
+		const own = box.querySelector('[data-hodima-dc-image-id]');
+		ownImages.set(box, own?.value ? { url: own.dataset.ownUrl || '', width: Number(own.dataset.ownWidth) || 0, height: Number(own.dataset.ownHeight) || 0, alt: own.dataset.ownAlt === '1' } : null);
+
+		const saved = storage.get(TAB_KEY);
+		if (saved && box.querySelector(`[data-hodima-dc-tab="${saved}"]`)) selectTab(box, saved);
+	}
+
 	function init() {
 		document.querySelectorAll('[data-hodima-dc]').forEach((box) => {
-			// تصویر جدای Discover که از قبل ذخیره شده
-			const own = box.querySelector('[data-hodima-dc-image-id]');
-			if (own?.value) {
-				const d = own.dataset;
-				ownImages.set(box, { url: d.ownUrl || '', width: Number(d.ownWidth) || 0, height: Number(d.ownHeight) || 0, alt: d.ownAlt === '1' });
-			}
-
-			const saved = storage.get(TAB_KEY);
-			if (saved && box.querySelector(`[data-hodima-dc-tab="${saved}"]`)) selectTab(box, saved);
-
-			if (box.dataset.context !== 'post') return; // دسته محصول: تصویر دسته را ووکامرس بدون رویداد عوض می‌کند؛ بعد از ذخیره
-			if (window.wp?.data?.select?.('core/editor')?.getCurrentPostId?.()) watchBlockEditor(box);
+			setupBox(box);
+			if (box.dataset.context !== 'post') return; // دسته محصول: با ذخیره، صفحه کامل بارگذاری می‌شود
+			// ویرایشگر بلوکی: هماهنگی زنده + تازه شدن بعد از ذخیره؛ کلاسیک/محصول با ذخیره دوباره بارگذاری می‌شود
+			if (window.wp?.data?.select?.('core/editor')?.getCurrentPostId?.()) watchBlockEditor();
 			else watchClassicEditor(box);
 		});
 	}
