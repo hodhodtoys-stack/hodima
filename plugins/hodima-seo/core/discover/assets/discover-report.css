@@ -6,6 +6,34 @@
  * رنگ‌ها از توکن‌های پیشخوان هدیما (--hd-*)، با مقدار پشتیبان برای وقتی Core نیست.
  */
 
+/* پنجره «ویرایش سریع» (SEO 2.1.8) */
+.hodima-dr-quick-dialog {
+	inline-size: min(32rem, 92vw);
+	max-inline-size: none;
+
+	&[open] {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	& input[type="text"] {
+		inline-size: 100%;
+	}
+}
+
+.hodima-dr-quick-image {
+	display: flex;
+	gap: 0.75rem;
+	align-items: center;
+
+	& img {
+		inline-size: 8rem;
+		aspect-ratio: 16 / 9;
+		border-radius: 0.375rem;
+		object-fit: cover;
+	}
+}
+
 /* پنجره کلید (در لایه بالا؛ بیرون از .hodima-dr هم درست است) */
 .hodima-dr-key-dialog {
 	inline-size: min(34rem, 92vw);
@@ -330,6 +358,52 @@
 	& .button.hodima-dr-danger {
 		border-color: color-mix(in srgb, var(--hd-error, #b3261e) 35%, #ffffff);
 		color: var(--hd-error, #b3261e);
+	}
+
+	/* دستگاه و کشور (SEO 2.1.8): دو جدول کنار هم، زیر هم در صفحه باریک */
+	& .hodima-dr-split {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+		gap: 1rem;
+	}
+
+	& .hodima-dr-share {
+		display: inline-block;
+		inline-size: 4rem;
+		block-size: 0.5rem;
+		margin-inline-end: 0.375rem;
+		overflow: hidden;
+		border-radius: 999px;
+		background: var(--hd-soft, #eef1fc);
+		vertical-align: middle;
+
+		& span {
+			display: block;
+			block-size: 100%;
+			background: var(--hd-secondary, #607bbd);
+		}
+	}
+
+	& .hodima-dr-card-title {
+		color: var(--hd-accent, #6a2b9a);
+		font-size: 0.75rem;
+	}
+
+	& .hodima-dr-quick {
+		font-size: 0.75rem;
+	}
+
+	& .hodima-dr-check {
+		display: inline-flex;
+		gap: 0.5rem;
+		align-items: center;
+		font-size: 0.8125rem;
+		font-weight: 700;
+		cursor: pointer;
+
+		& input {
+			margin: 0;
+		}
 	}
 
 	& .hodima-dr-key__hint {

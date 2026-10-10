@@ -122,6 +122,103 @@
 		});
 	}
 
+	/* ── «ویرایش سریع» یک ردیف گزارش (SEO 2.1.8) ── */
+	const quick = document.querySelector('[data-hodima-dr-quick-dialog]');
+	if (quick) {
+		const field = (name) => quick.querySelector(`[data-hodima-dr-quick-${name}]`);
+		const nf = new Intl.NumberFormat('fa-IR');
+		let row = null;
+		let imageId = '';
+
+		const paintImage = (url, own) => {
+			const img = field('img');
+			img.hidden = !url;
+			if (url) img.src = url; else img.removeAttribute('src');
+			field('source').textContent = own ? 'تصویر جدای دیسکاور' : (url ? 'تصویر پیش‌فرض صفحه' : 'تصویری نیست');
+			field('clear').hidden = !own;
+		};
+		const count = () => {
+			const len = [...field('title').value.trim()].length;
+			field('count').textContent = len ? `${nf.format(len)} کاراکتر (بهتر است ۳۰ تا ۱۱۰).` : '';
+		};
+
+		document.addEventListener('click', (e) => {
+			const open = e.target.closest?.('[data-hodima-dr-quick]');
+			if (!open) return;
+			row = open.closest('[data-hodima-dr-row]');
+			if (!row) return;
+			const d = row.dataset;
+			imageId = d.imageId || '';
+			field('page').textContent = d.fallback || '';
+			field('title').value = d.title || '';
+			field('title').placeholder = d.fallback || '';
+			field('skip').checked = d.skip === '1';
+			field('msg').textContent = '';
+			field('msg').className = 'hodima-dr-key-dialog__preview';
+			paintImage(imageId ? d.imageUrl : d.defaultUrl, Boolean(imageId));
+			count();
+			if (typeof quick.showModal === 'function') quick.showModal(); else quick.setAttribute('open', '');
+			field('title').focus();
+		});
+
+		field('title').addEventListener('input', count);
+		field('cancel').addEventListener('click', () => quick.close?.());
+		quick.addEventListener('click', (e) => { if (e.target === quick) quick.close?.(); });
+		field('clear').addEventListener('click', () => { imageId = ''; paintImage(row?.dataset.defaultUrl || '', false); });
+		field('pick').addEventListener('click', () => {
+			if (!window.wp?.media) return;
+			const frame = wp.media({ title: 'انتخاب تصویر کارت دیسکاور', button: { text: 'انتخاب' }, multiple: false, library: { type: 'image' } });
+			frame.on('select', () => {
+				const a = frame.state().get('selection').first().toJSON();
+				imageId = String(a.id);
+				paintImage(a.sizes?.medium_large?.url || a.sizes?.large?.url || a.url, true);
+			});
+			frame.open();
+		});
+
+		field('save').addEventListener('click', async () => {
+			if (!row) return;
+			const save = field('save');
+			const msg = field('msg');
+			save.disabled = true;
+			msg.className = 'hodima-dr-key-dialog__preview';
+			msg.textContent = 'در حال ذخیره…';
+			try {
+				const body = new URLSearchParams({
+					action: 'hodima_discover_quick', context: row.dataset.context, id: row.dataset.id, nonce: row.dataset.nonce,
+					title: field('title').value, image_id: imageId, skip: field('skip').checked ? '1' : '',
+				});
+				const res = await fetch(config.ajax, { method: 'POST', body, credentials: 'same-origin' });
+				const json = await res.json().catch(() => null);
+				if (!json?.success) throw new Error(json?.data?.message || 'ذخیره نشد.');
+				if (json.data.html) {
+					const tpl = document.createElement('template');
+					tpl.innerHTML = json.data.html.trim();
+					const fresh = tpl.content.querySelector('tr');
+					if (fresh) { row.replaceWith(fresh); row = fresh; }
+				} else {
+					row.remove();
+					row = null;
+				}
+				msg.classList.add('is-ok');
+				msg.textContent = json.data.message;
+				setTimeout(() => quick.close?.(), 700);
+			} catch (err) {
+				msg.classList.add('is-error');
+				msg.textContent = err.message || 'ذخیره نشد.';
+			} finally {
+				save.disabled = false;
+			}
+		});
+	}
+
+	// دکمه‌هایی که پیش از ارسال می‌پرسند (بازگرداندن پیش‌فرض تنظیمات)
+	document.querySelectorAll('[data-hodima-dr-confirm-button]').forEach((button) => {
+		button.addEventListener('click', (e) => {
+			if (!window.confirm(button.dataset.hodimaDrConfirmButton)) e.preventDefault();
+		});
+	});
+
 	// حذف کلید: پرسش پیش از ارسال
 	document.querySelectorAll('form[data-hodima-dr-confirm]').forEach((form) => {
 		form.addEventListener('submit', (e) => {

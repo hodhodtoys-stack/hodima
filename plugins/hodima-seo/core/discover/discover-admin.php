@@ -46,6 +46,7 @@ add_action( 'admin_enqueue_scripts', static function (): void {
 		'titleMax'  => HODIMA_SEO_DISCOVER_TITLE_MAX,
 		'clickbait' => hodima_seo_discover_clickbait_phrases(),
 		'ajax'      => admin_url( 'admin-ajax.php' ),
+		'wikiNonce' => wp_create_nonce( 'hodima_discover_wikidata' ),
 	], JSON_UNESCAPED_UNICODE ) . ';', 'before' );
 } );
 
@@ -56,6 +57,26 @@ add_filter( 'wp_prepare_attachment_for_js', static function ( array $response, W
 	}
 	return $response;
 }, 10, 2 );
+
+/*
+ * پنل «گوگل دیسکاور» در نوار کناری ویرایشگر بلوکی (SEO 2.1.8): خلاصه کادر پایین
+ * صفحه با دکمه رفتن به آن؛ داده را از خود کادر می‌خواند و چیزی ذخیره نمی‌کند.
+ */
+add_action( 'enqueue_block_editor_assets', static function (): void {
+
+	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+	if ( ! $screen || 'post' !== $screen->base || ! hodima_seo_discover_enabled( 'post' ) ) {
+		return;
+	}
+
+	$file = __DIR__ . '/assets/discover-panel.js';
+	wp_enqueue_script( 'hodima-discover-panel', HODIMA_SEO_URL . '/core/discover/assets/discover-panel.js', [ 'wp-plugins', 'wp-element', 'wp-edit-post', 'wp-editor' ], is_file( $file ) ? (string) filemtime( $file ) : HODIMA_SEO_VERSION, true );
+
+	wp_register_style( 'hodima-discover-panel', false, [], HODIMA_SEO_VERSION );
+	wp_enqueue_style( 'hodima-discover-panel' );
+	wp_add_inline_style( 'hodima-discover-panel', '.hodima-dp{display:grid;gap:.5rem}.hodima-dp p{margin:0}.hodima-dp__score.is-ok strong{color:#1f7a4d}.hodima-dp__score.is-warn strong{color:#9a5b00}.hodima-dp__score.is-error strong{color:#b3261e}.hodima-dp__issues{margin:0;padding-inline-start:1rem}.hodima-dp__issues li.is-error{color:#b3261e}.hodima-dp__issues li.is-warn{color:#9a5b00}.hodima-dp__link{padding:0;border:0;background:none;color:inherit;font:inherit;text-align:start;text-decoration:underline;cursor:pointer}.hodima-dp__title span{color:#5d6785}.hodima-dp__actions{display:flex;flex-wrap:wrap;gap:.25rem}' );
+} );
 
 add_action( 'add_meta_boxes', static function ( string $post_type ): void {
 
@@ -174,6 +195,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 	$title     = '' !== $data['title'] ? $data['title'] : $fallback;
 	$length    = mb_strlen( $title );
 	$ideas     = hodima_seo_discover_title_ideas( $target );
+	$topics    = hodima_seo_discover_topic_suggestions( $target, array_column( $data['entity_items'], 'name' ) );
 	$meta_desc = trim( (string) get_metadata( $context, $id, '_seobox_description', true ) );
 	$summary   = '' !== $meta_desc ? $meta_desc : trim( wp_strip_all_tags( $target instanceof WP_Post ? $target->post_excerpt : $target->description ) );
 	$summary   = '' !== $summary && ! str_contains( $summary, '%' ) ? wp_html_excerpt( $summary, 160, '…' ) : '';
@@ -342,13 +364,30 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 					<?php foreach ( $data['entity_items'] as $item ) : ?>
 						<span class="hodima-dc__chip" data-value="<?php echo esc_attr( trim( $item['name'] . ' ' . $item['url'] ) ); ?>">
 							<span><?php echo esc_html( $item['name'] ); ?></span>
-							<?php if ( '' !== $item['url'] ) : ?><span class="hodima-dc__chip-link" title="<?php echo esc_attr( $item['url'] ); ?>">ویکی</span><?php endif; ?>
+							<?php if ( '' !== $item['url'] ) : ?>
+								<span class="hodima-dc__chip-link" title="<?php echo esc_attr( $item['url'] ); ?>">ویکی</span>
+							<?php else : ?>
+								<button type="button" class="hodima-dc__chip-wiki" data-hodima-dc-wiki aria-label="<?php echo esc_attr( 'پیدا کردن «' . $item['name'] . '» در ویکی‌داده' ); ?>" title="پیدا کردن در ویکی‌داده">Q?</button>
+							<?php endif; ?>
 							<button type="button" class="hodima-dc__chip-x" data-hodima-dc-chip-remove aria-label="<?php echo esc_attr( 'حذف ' . $item['name'] ); ?>">×</button>
 						</span>
 					<?php endforeach; ?>
 					<input type="text" id="hodima-dc-topic-input" class="hodima-dc__chip-input" placeholder="افزودن موضوع…" data-hodima-dc-topic-input>
 				</div>
 				<textarea name="hodima_discover[entities]" hidden data-hodima-dc-entities><?php echo esc_textarea( hodima_seo_discover_format_entities( $data['entity_items'], "\n" ) ); ?></textarea>
+				<?php if ( $topics ) : ?>
+					<div class="hodima-dc__ideas" role="group" aria-label="پیشنهاد موضوع">
+						<span class="hodima-dc__ideas-label"><span class="dashicons dashicons-tag" aria-hidden="true"></span> پیشنهاد</span>
+						<?php foreach ( $topics as $topic ) : ?>
+							<button type="button" class="hodima-dc__idea" data-hodima-dc-topic-suggest="<?php echo esc_attr( $topic ); ?>">+ <?php echo esc_html( $topic ); ?></button>
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
+				<div class="hodima-dc__wiki" data-hodima-dc-wiki-panel hidden>
+					<p class="hodima-dc__wiki-head"><strong data-hodima-dc-wiki-title></strong> <button type="button" class="button-link" data-hodima-dc-wiki-close>بستن</button></p>
+					<p class="hodima-dc__msg" data-hodima-dc-wiki-msg aria-live="polite"></p>
+					<ul class="hodima-dc__wiki-list" data-hodima-dc-wiki-list></ul>
+				</div>
 			</div>
 
 			<div class="hodima-dc__field">
@@ -398,7 +437,7 @@ function hodima_seo_discover_render_fields( WP_Post|WP_Term $target ): void {
 					<?php if ( ! $published ) : ?>
 						آمار دیسکاور بعد از انتشار و نمایش صفحه در گوگل اینجا می‌آید.
 					<?php elseif ( ! $all_stats['fetched'] ) : ?>
-						آمار سرچ کنسول هنوز گرفته نشده است.<?php if ( '' !== $report ) : ?> <a href="<?php echo esc_url( add_query_arg( 'tab', 'stats', $report ) ); ?>">اتصال به سرچ کنسول</a><?php endif; ?>
+						آمار سرچ کنسول هنوز گرفته نشده است.<?php if ( '' !== $report ) : ?> <a href="<?php echo esc_url( add_query_arg( 'tab', 'settings', $report ) ); ?>">اتصال به سرچ کنسول</a><?php endif; ?>
 					<?php else : ?>
 						این صفحه در ۲۸ روز آخر در دیسکاور نمایش نداشته است.
 					<?php endif; ?>
@@ -557,6 +596,28 @@ function hodima_seo_discover_save( int $object_id, string $context ): void {
 		return;
 	}
 
+	// تیک «برای دیسکاور نیست» بدون تیک اصلا فرستاده نمی‌شود
+	hodima_seo_discover_apply( $object_id, $context, [
+		'title'    => $get( 'title' ),
+		'image_id' => $get( 'image_id' ),
+		'entities' => $get( 'entities' ),
+		'focus'    => $get( 'focus' ),
+		'skip'     => $get( 'skip' ),
+	] );
+}
+
+/**
+ * ذخیره فیلدهای کارت یک شیء (کادر ویرایش و «ویرایش سریع» گزارش؛ SEO 2.1.8).
+ * کلیدی که در $in نیست دست نمی‌خورد. دسترسی و nonce با فراخوان است.
+ *
+ * @param array<string, string> $in  title، image_id، entities، focus، skip
+ */
+function hodima_seo_discover_apply( int $object_id, string $context, array $in ): void {
+
+	$context = hodima_seo_discover_context( $context );
+	$get     = static fn( string $key ): string => trim( (string) ( $in[ $key ] ?? '' ) );
+	$has     = static fn( string $key ): bool => array_key_exists( $key, $in );
+
 	$image_id = absint( $get( 'image_id' ) );
 
 	// حالت قبلی کارت برای «ثبت تغییرها» (discover-history.php)
@@ -565,11 +626,11 @@ function hodima_seo_discover_save( int $object_id, string $context ): void {
 	$before_focus   = $before_image ? hodima_seo_discover_focus_string( hodima_seo_discover_focus( $before_image ) ) : '';
 	$object_title   = hodima_seo_discover_object_title( $object_id, $context );
 
-	$values = [
-		'title'    => sanitize_text_field( $get( 'title' ) ),
-		'entities' => hodima_seo_discover_format_entities( hodima_seo_discover_entity_items( sanitize_textarea_field( $get( 'entities' ) ) ) ),
-		'image_id' => $image_id && wp_attachment_is_image( $image_id ) ? $image_id : 0,
-	];
+	$values = array_filter( [
+		'title'    => $has( 'title' ) ? sanitize_text_field( $get( 'title' ) ) : null,
+		'entities' => $has( 'entities' ) ? hodima_seo_discover_format_entities( hodima_seo_discover_entity_items( sanitize_textarea_field( $get( 'entities' ) ) ) ) : null,
+		'image_id' => $has( 'image_id' ) ? ( $image_id && wp_attachment_is_image( $image_id ) ? $image_id : 0 ) : null,
+	], static fn( mixed $v ): bool => null !== $v );
 
 	foreach ( $values as $field => $value ) {
 		$key = hodima_seo_discover_meta_key( $field, $context );
@@ -578,19 +639,21 @@ function hodima_seo_discover_save( int $object_id, string $context ): void {
 			: update_metadata( $context, $object_id, $key, $value );
 	}
 
+	$after = hodima_seo_discover_data( $object_id, $context );
+
 	/*
 	 * نقطه تمرکز برش‌ها روی تصویر مؤثر (تصویر جدای دیسکاور، وگرنه پیش‌فرض صفحه)؛
 	 * فقط اگر کاربر اجازه ویرایش همان تصویر را دارد. برش‌ها بعد از همین ذخیره
 	 * (save_post / saved_term، اولویت ۳۰) با نقطه تازه ساخته می‌شوند.
 	 */
-	$effective = $values['image_id'] ?: hodima_seo_discover_default_image_id( $object_id, $context );
+	$effective = $after['image_id'] ?: hodima_seo_discover_default_image_id( $object_id, $context );
 	if ( '' !== $get( 'focus' ) && $effective > 0 && current_user_can( 'edit_post', $effective ) ) {
 		hodima_seo_discover_set_focus( $effective, $get( 'focus' ) );
 	}
 
 	if ( function_exists( 'hodima_seo_discover_log_change' ) ) {
 		$focus_text = static fn( string $f ): string => '' === $f ? '' : implode( '، ', array_map( static fn( string $v ): string => number_format_i18n( 100 * (float) $v ) . '٪', explode( ',', $f ) ) );
-		hodima_seo_discover_log_change( $context, $object_id, 'title', '' !== $before['title'] ? $before['title'] : $object_title, '' !== $values['title'] ? $values['title'] : $object_title );
+		hodima_seo_discover_log_change( $context, $object_id, 'title', '' !== $before['title'] ? $before['title'] : $object_title, '' !== $after['title'] ? $after['title'] : $object_title );
 		if ( $before_image !== $effective ) {
 			hodima_seo_discover_log_change( $context, $object_id, 'image', hodima_seo_discover_change_image_text( (int) $before_image ), hodima_seo_discover_change_image_text( (int) $effective ) );
 		} elseif ( $effective > 0 ) {
@@ -599,9 +662,11 @@ function hodima_seo_discover_save( int $object_id, string $context ): void {
 	}
 
 	// «این صفحه برای گوگل دیسکاور نیست» (کلید تازه SEO 2.1.5؛ نبودنش = بررسی می‌شود)
-	'1' === $get( 'skip' )
-		? update_metadata( $context, $object_id, HODIMA_SEO_DISCOVER_SKIP_META, '1' )
-		: delete_metadata( $context, $object_id, HODIMA_SEO_DISCOVER_SKIP_META );
+	if ( $has( 'skip' ) ) {
+		'1' === $get( 'skip' )
+			? update_metadata( $context, $object_id, HODIMA_SEO_DISCOVER_SKIP_META, '1' )
+			: delete_metadata( $context, $object_id, HODIMA_SEO_DISCOVER_SKIP_META );
+	}
 }
 
 add_action( 'save_post', static function ( int $post_id ): void {
@@ -679,3 +744,132 @@ function hodima_seo_discover_profile_save( int $user_id ): void {
 
 add_action( 'personal_options_update', 'hodima_seo_discover_profile_save' );
 add_action( 'edit_user_profile_update', 'hodima_seo_discover_profile_save' );
+
+/* =====================================================================
+ * موضوعات: پیشنهاد از دسته‌ها/برچسب‌ها/ویژگی‌ها و جستجوی ویکی‌داده (SEO 2.1.8)
+ * ===================================================================== */
+
+/**
+ * پیشنهاد موضوع از داده واقعی صفحه: دسته اصلی و بقیه دسته‌ها، برچسب‌ها و
+ * ویژگی‌های محصول (pa_*)؛ برای دسته محصول، خودش و دسته والد. موضوع‌های
+ * موجود کنار گذاشته می‌شوند.
+ *
+ * @param list<string> $existing
+ * @return list<string>
+ */
+function hodima_seo_discover_topic_suggestions( WP_Post|WP_Term $target, array $existing = [] ): array {
+
+	$names = [];
+
+	if ( $target instanceof WP_Term ) {
+		$names[] = $target->name;
+		$parent  = $target->parent ? get_term( $target->parent ) : null;
+		if ( $parent instanceof WP_Term ) {
+			$names[] = $parent->name;
+		}
+	} else {
+		$taxonomies = 'product' === $target->post_type
+			? array_merge( [ 'product_cat', 'product_tag' ], function_exists( 'wc_get_attribute_taxonomy_names' ) ? wc_get_attribute_taxonomy_names() : [] )
+			: [ 'category', 'post_tag' ];
+		foreach ( $taxonomies as $taxonomy ) {
+			$primary = (int) get_post_meta( $target->ID, '_hodima_primary_' . $taxonomy, true );
+			$terms   = get_the_terms( $target, $taxonomy );
+			foreach ( is_array( $terms ) ? $terms : [] as $term ) {
+				if ( 'uncategorized' === $term->slug ) {
+					continue;
+				}
+				if ( $term->term_id === $primary ) {
+					array_unshift( $names, $term->name ); // دسته اصلی اول
+				} else {
+					$names[] = $term->name;
+				}
+			}
+		}
+	}
+
+	$seen = array_flip( array_map( 'hodima_seo_discover_text_norm', $existing ) );
+	$out  = [];
+
+	foreach ( $names as $name ) {
+		$name = trim( wp_strip_all_tags( html_entity_decode( (string) $name ) ) );
+		$key  = hodima_seo_discover_text_norm( $name );
+		if ( '' !== $name && ! isset( $seen[ $key ] ) && mb_strlen( $name ) <= 60 ) {
+			$seen[ $key ] = 0;
+			$out[]        = $name;
+		}
+	}
+
+	return array_slice( $out, 0, 8 );
+}
+
+/**
+ * جستجوی ویکی‌داده (wbsearchentities)؛ فقط از پیشخوان و فقط با کلیک مدیر،
+ * هرگز در بازدید سایت. پاسخ یک هفته کش می‌شود. اول فارسی، اگر نبود انگلیسی.
+ *
+ * @return list<array{id: string, label: string, description: string}>|WP_Error
+ */
+function hodima_seo_discover_wikidata_search( string $query ): array|WP_Error {
+
+	$query = trim( mb_substr( $query, 0, 80 ) );
+	$cache = 'hodima_discover_wd_' . md5( $query );
+	$hit   = get_transient( $cache );
+
+	if ( '' === $query ) {
+		return [];
+	}
+	if ( is_array( $hit ) ) {
+		return $hit;
+	}
+
+	$out = [];
+	foreach ( [ 'fa', 'en' ] as $lang ) {
+		$res = wp_remote_get( 'https://www.wikidata.org/w/api.php?' . http_build_query( [
+			'action'   => 'wbsearchentities',
+			'search'   => $query,
+			'language' => $lang,
+			'uselang'  => 'fa',
+			'type'     => 'item',
+			'limit'    => 6,
+			'format'   => 'json',
+		] ), [
+			'timeout'    => 10,
+			'user-agent' => 'HodimaSEO/' . HODIMA_SEO_VERSION . ' (' . home_url( '/' ) . ')', // ویکی‌مدیا بدون نام برنامه رد می‌کند
+		] );
+
+		if ( is_wp_error( $res ) ) {
+			return new WP_Error( 'hodima_discover_wd', 'اتصال به ویکی‌داده برقرار نشد: ' . $res->get_error_message() );
+		}
+
+		$body = json_decode( (string) wp_remote_retrieve_body( $res ), true );
+		foreach ( is_array( $body ) ? (array) ( $body['search'] ?? [] ) : [] as $item ) {
+			if ( is_array( $item ) && 1 === preg_match( '/^Q\d{1,12}$/', (string) ( $item['id'] ?? '' ) ) ) {
+				$out[] = [
+					'id'          => (string) $item['id'],
+					'label'       => sanitize_text_field( (string) ( $item['label'] ?? $item['id'] ) ),
+					'description' => sanitize_text_field( (string) ( $item['description'] ?? '' ) ),
+				];
+			}
+		}
+		if ( $out ) {
+			break;
+		}
+	}
+
+	set_transient( $cache, $out, WEEK_IN_SECONDS );
+
+	return $out;
+}
+
+add_action( 'wp_ajax_hodima_discover_wikidata', static function (): void {
+
+	if ( ! current_user_can( 'edit_posts' ) || ! check_ajax_referer( 'hodima_discover_wikidata', 'nonce', false ) ) {
+		wp_send_json_error( [ 'message' => 'دسترسی ندارید یا صفحه منقضی شده است.' ], 403 );
+	}
+
+	$query  = isset( $_POST['q'] ) ? sanitize_text_field( wp_unslash( $_POST['q'] ) ) : '';
+	$result = hodima_seo_discover_wikidata_search( $query );
+
+	is_wp_error( $result )
+		? wp_send_json_error( [ 'message' => $result->get_error_message() ] )
+		: wp_send_json_success( [ 'items' => $result ] );
+} );

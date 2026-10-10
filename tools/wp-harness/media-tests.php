@@ -456,6 +456,78 @@ if ( function_exists( 'hodima_seo_discover_clickbait_match' ) ) {
 		false === $value ? delete_option( $option ) : update_option( $option, $value, false );
 	}
 
+	echo "=== گوگل دیسکاور: تنظیمات، فرصت خودکار، بررسی‌های تازه، موضوعات، هشدارها، ویرایش سریع (SEO 2.1.8)\n";
+	if ( ! function_exists( 'hodima_seo_discover_apply' ) ) {
+		require_once WP_PLUGIN_DIR . '/hodima-seo/core/discover/discover-admin.php';
+	}
+	$saved_opts = get_option( 'hodima_discover_settings' );
+	hodima_t( 'تنظیمات پیش‌فرض: ۳۰۰ کلمه، ۳۶۵ روز', [ hodima_seo_discover_option( 'min_words' ), hodima_seo_discover_option( 'stale_days' ) ], [ 300, 365 ] );
+	hodima_t( 'محدوده تنظیمات', array_intersect_key( hodima_seo_discover_sanitize_options( [ 'min_words' => 5, 'opp_ctr_ratio' => 500, 'digest_email' => 'bad' ] ), array_flip( [ 'min_words', 'opp_ctr_ratio', 'digest_email' ] ) ), [ 'min_words' => 50, 'opp_ctr_ratio' => 100, 'digest_email' => '' ] );
+	update_option( 'hodima_discover_settings', [ 'clickbait' => [ 'تست*' ], 'min_words' => 1000 ], false );
+	hodima_t( 'فهرست طعمه کلیک از تنظیمات', [ hodima_seo_discover_clickbait_phrases(), hodima_seo_discover_option( 'min_words' ) ], [ [ 'تست*' ], 1000 ] );
+	hodima_t( 'مطلب ۴۰۰ کلمه‌ای با حداقل ۱۰۰۰: هشدار', array_column( hodima_seo_discover_checks( get_post( $p1 ) ), 'status', 'key' )['length'] ?? '', 'warn' );
+	false === $saved_opts ? delete_option( 'hodima_discover_settings' ) : update_option( 'hodima_discover_settings', $saved_opts, false );
+	hodima_t( 'آستانه خودکار فرصت در سایت کوچک', hodima_seo_discover_opp_min_impressions( [ 'rows' => [ '/a' => [ 'impressions' => 50 ], '/b' => [ 'impressions' => 30 ], '/c' => [ 'impressions' => 10 ] ] ] ), 20 );
+	hodima_t( 'آستانه خودکار فرصت در سایت پربازدید', hodima_seo_discover_opp_min_impressions( [ 'rows' => [ '/a' => [ 'impressions' => 1000 ], '/b' => [ 'impressions' => 600 ], '/c' => [ 'impressions' => 100 ] ] ] ), 200 );
+	hodima_t( 'آستانه خودکار: نصف میانه', hodima_seo_discover_opp_min_impressions( [ 'rows' => [ '/a' => [ 'impressions' => 180 ], '/b' => [ 'impressions' => 120 ], '/c' => [ 'impressions' => 90 ] ] ] ), 60 );
+
+	hodima_t( 'شکل تصویر عمودی: هشدار', hodima_seo_discover_shape_check( 1000, 1600 )['status'], 'warn' );
+	hodima_t( 'شکل تصویر افقی: درست', hodima_seo_discover_shape_check( 1600, 1000 )['status'], 'ok' );
+	hodima_t( 'حجم فایل تصویر خوانده شد', hodima_seo_discover_image_bytes( $img_a ) > 0, true );
+	hodima_t( 'ردیف‌های تازه در آمادگی', count( array_intersect( [ 'shape', 'image_size' ], array_column( hodima_seo_discover_checks( get_post( $p1 ) ), 'key' ) ) ), 2 );
+
+	wp_set_post_terms( $p1, [ 'کلیپس فلزی', 'گیره مو' ], 'post_tag' );
+	hodima_t( 'پیشنهاد موضوع از برچسب‌ها (بدون موجودها و دسته بی‌دسته)', hodima_seo_discover_topic_suggestions( get_post( $p1 ), [ 'گیره مو' ] ), [ 'کلیپس فلزی' ] );
+	$wd_calls = 0;
+	$wd_mock  = static function ( $pre, array $args, string $url ) use ( &$wd_calls ) {
+		if ( ! str_contains( $url, 'wikidata.org' ) ) {
+			return $pre;
+		}
+		++$wd_calls;
+		return [ 'headers' => [], 'response' => [ 'code' => 200, 'message' => 'OK' ], 'cookies' => [], 'body' => (string) wp_json_encode( [ 'search' => [ [ 'id' => 'Q1640824', 'label' => 'گیره مو', 'description' => 'وسیله‌ای برای نگه داشتن مو' ], [ 'id' => 'bad', 'label' => 'x' ] ] ] ) ];
+	};
+	add_filter( 'pre_http_request', $wd_mock, 10, 3 );
+	$wd = hodima_seo_discover_wikidata_search( 'گیره مو آزمون' );
+	hodima_seo_discover_wikidata_search( 'گیره مو آزمون' );
+	remove_filter( 'pre_http_request', $wd_mock, 10 );
+	hodima_t( 'ویکی‌داده: فقط شناسه معتبر، بار دوم از کش', [ is_array( $wd ) ? array_column( $wd, 'id' ) : $wd, $wd_calls ], [ [ 'Q1640824' ], 1 ] );
+	delete_transient( 'hodima_discover_wd_' . md5( 'گیره مو آزمون' ) );
+
+	// ویرایش سریع: فقط عنوان و «برای دیسکاور نیست»؛ موضوعات دست نمی‌خورد
+	update_post_meta( $p1, '_hook_key_entities', 'کلیپس Q1' );
+	hodima_seo_discover_apply( $p1, 'post', [ 'title' => 'عنوان سریع کارت برای آزمون ویرایش از گزارش دیسکاور', 'skip' => '1' ] );
+	hodima_t( 'ویرایش سریع: عنوان و کنار گذاشتن ذخیره، موضوعات ماند', [ get_post_meta( $p1, '_hook_discover_title', true ), get_post_meta( $p1, '_hodima_discover_skip', true ), get_post_meta( $p1, '_hook_key_entities', true ) ], [ 'عنوان سریع کارت برای آزمون ویرایش از گزارش دیسکاور', '1', 'کلیپس https://www.wikidata.org/wiki/Q1' ] );
+	hodima_seo_discover_apply( $p1, 'post', [ 'skip' => '' ] );
+	hodima_t( 'ویرایش سریع: برداشتن تیک', metadata_exists( 'post', $p1, '_hodima_discover_skip' ), false );
+
+	// هشدارها: ۷ روز آخر ۴۰ در برابر ۱۰۰ (افت ۶۰٪) و یک صفحه تازه
+	$saved_hist2  = get_option( 'hodima_discover_sc_history' );
+	$saved_stats2 = get_option( 'hodima_discover_sc_stats' );
+	$saved_alerts = get_option( 'hodima_discover_alerts' );
+	$days         = [];
+	for ( $i = 13; $i >= 0; $i-- ) {
+		$days[ gmdate( 'Y-m-d', strtotime( '2026-09-20 12:00 UTC' ) - $i * DAY_IN_SECONDS ) ] = [ 1, $i >= 7 ? 100 : 40 ];
+	}
+	update_option( 'hodima_discover_sc_history', [ 'property' => 'x', 'backfilled' => true, 'daily' => $days, 'months' => [], 'pages_daily' => [] ], false );
+	update_option( 'hodima_discover_sc_stats', [ 'fetched' => time(), 'rows' => [ '/new-page' => [ 'clicks' => 2, 'impressions' => 30 ], '/old' => [ 'clicks' => 1, 'impressions' => 9 ] ], 'prev' => [ 'start' => '2026-08-01', 'rows' => [ '/old' => [ 'clicks' => 1, 'impressions' => 9 ] ] ] ], false );
+	$week   = hodima_seo_discover_week_totals();
+	$alerts = hodima_seo_discover_alerts_update();
+	hodima_t( 'جمع ۷ روز آخر و ۷ روز قبل', [ $week['now']['impressions'], $week['before']['impressions'] ], [ 280, 700 ] );
+	hodima_t( 'هشدار افت ۶۰٪', $alerts['drop']['percent'] ?? null, 60 );
+	hodima_t( 'صفحه تازه در دیسکاور', array_column( $alerts['new'], 'key' ), [ '/new-page' ] );
+	$digest = hodima_seo_discover_digest_html();
+	hodima_t( 'خلاصه هفتگی: عنوان، افت و صفحه تازه', [ str_contains( $digest, 'خلاصه هفتگی' ), str_contains( $digest, '۶۰' ) || str_contains( $digest, '60' ), str_contains( $digest, '/new-page' ) ], [ true, true, true ] );
+	update_option( 'hodima_discover_settings', [ 'alert_drop' => 70 ], false );
+	hodima_t( 'آستانه هشدار ۷۰٪ ← بدون هشدار افت', hodima_seo_discover_alerts_update()['drop'], null );
+	false === $saved_opts ? delete_option( 'hodima_discover_settings' ) : update_option( 'hodima_discover_settings', $saved_opts, false );
+	foreach ( [ 'hodima_discover_sc_history' => $saved_hist2, 'hodima_discover_sc_stats' => $saved_stats2, 'hodima_discover_alerts' => $saved_alerts ] as $option => $value ) {
+		false === $value ? delete_option( $option ) : update_option( $option, $value, false );
+	}
+	if ( ! function_exists( 'hodima_seo_discover_device_label' ) ) {
+		require_once WP_PLUGIN_DIR . '/hodima-seo/core/discover/discover-insights.php';
+	}
+	hodima_t( 'نام دستگاه و کشور', [ hodima_seo_discover_device_label( 'MOBILE' ), hodima_seo_discover_country_label( 'irn' ), hodima_seo_discover_country_label( 'xyz' ) ], [ 'موبایل', 'ایران', 'XYZ' ] );
+
 	false === $old_privacy ? delete_option( 'wp_page_for_privacy_policy' ) : update_option( 'wp_page_for_privacy_policy', $old_privacy );
 	wp_delete_post( $privacy, true );
 

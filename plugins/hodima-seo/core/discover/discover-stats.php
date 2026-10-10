@@ -446,6 +446,9 @@ function hodima_seo_discover_sc_refresh(): bool|WP_Error {
 		$current = hodima_seo_discover_sc_rows( $result['rows'] );
 		$prev    = $query( $property, $range['prev_start'], $range['prev_end'], [ 'page' ] );
 		$daily   = $query( $property, $range['daily_start'], $range['end'], [ 'date' ] );
+		// تفکیک دستگاه و کشور ۲۸ روز آخر (SEO 2.1.8)
+		$devices = $query( $property, $range['start'], $range['end'], [ 'device' ] );
+		$country = $query( $property, $range['start'], $range['end'], [ 'country' ], 250 );
 
 		update_option( HODIMA_SEO_DISCOVER_STATS_OPTION, [
 			'property' => $property,
@@ -458,12 +461,19 @@ function hodima_seo_discover_sc_refresh(): bool|WP_Error {
 				? ( $old['prev'] ?? [] )
 				: [ 'start' => $range['prev_start'], 'end' => $range['prev_end'] ] + hodima_seo_discover_sc_rows( $prev['rows'] ),
 			'daily'    => is_wp_error( $daily ) ? ( $old['daily'] ?? [] ) : hodima_seo_discover_sc_rows( $daily['rows'], false )['rows'],
+			'devices'  => is_wp_error( $devices ) ? ( $old['devices'] ?? [] ) : hodima_seo_discover_sc_rows( $devices['rows'], false )['rows'],
+			'countries' => is_wp_error( $country ) ? ( $old['countries'] ?? [] ) : hodima_seo_discover_sc_rows( $country['rows'], false )['rows'],
 			'error'    => '',
 		], false );
 
 		// تاریخچه بلندمدت و روزانه صفحه‌های تغییرکرده (discover-history.php؛ شکستش آمار اصلی را خراب نمی‌کند)
 		if ( function_exists( 'hodima_seo_discover_history_update' ) ) {
 			hodima_seo_discover_history_update( $property, $query, $range, $daily );
+		}
+
+		// هشدار افت و صفحه‌های تازه در دیسکاور (discover-alerts.php)
+		if ( function_exists( 'hodima_seo_discover_alerts_update' ) ) {
+			hodima_seo_discover_alerts_update();
 		}
 
 		return true;

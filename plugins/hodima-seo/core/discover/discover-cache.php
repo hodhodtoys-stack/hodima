@@ -28,7 +28,7 @@ defined( 'ABSPATH' ) || exit;
 const HODIMA_SEO_DISCOVER_ROW_META = '_hodima_discover_row';
 
 /** نسخه ساختار ردیف؛ با تغییر فهرست بررسی بالا برود تا ردیف‌های قبلی دوباره ساخته شوند. */
-const HODIMA_SEO_DISCOVER_ROW_VERSION = 3;
+const HODIMA_SEO_DISCOVER_ROW_VERSION = 4; // ۴: شکل و حجم تصویر، موجودی و قیمت محصول (SEO 2.1.8)
 
 /** اعتبار هر ردیف (ثانیه)؛ فقط برای موارد وابسته به زمان مثل «تازگی». */
 const HODIMA_SEO_DISCOVER_ROW_TTL = WEEK_IN_SECONDS;

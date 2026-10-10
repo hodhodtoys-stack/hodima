@@ -80,7 +80,8 @@ function hodima_seo_discover_meta_key( string $field, string $context = 'post' )
 	return 'term' === $context ? ltrim( $key, '_' ) : $key;
 }
 
-// فهرست «آمادگی برای دیسکاور» و پیشنهاد عنوان (فقط تابع)
+// تنظیمات پیشخوان (حداقل کلمه، تازگی، طعمه کلیک، آستانه‌ها؛ SEO 2.1.8) و فهرست آمادگی (فقط تابع)
+require_once __DIR__ . '/discover-options.php';
 require_once __DIR__ . '/discover-checks.php';
 
 add_action( 'plugins_loaded', 'hodima_seo_discover_boot', 20 );
@@ -96,6 +97,7 @@ function hodima_seo_discover_boot(): void {
 	require_once __DIR__ . '/discover-front.php';
 	require_once __DIR__ . '/discover-stats.php'; // WP-Cron هم در درخواست غیر پیشخوان اجرا می‌شود
 	require_once __DIR__ . '/discover-history.php'; // تاریخچه آمار و ثبت تغییرها (ذخیره از REST هم)
+	require_once __DIR__ . '/discover-alerts.php';  // هشدارها، ابزارک پیشخوان و خلاصه هفتگی (کرون هم)
 	// کش ردیف گزارش: پاک شدن آن باید در REST (ویرایشگر بلوکی) و کرون هم رخ دهد، نه فقط پیشخوان
 	require_once __DIR__ . '/discover-cache.php';
 
@@ -105,6 +107,7 @@ function hodima_seo_discover_boot(): void {
 		require_once __DIR__ . '/discover-admin.php';
 		require_once __DIR__ . '/discover-insights.php';
 		require_once __DIR__ . '/discover-report.php';
+		require_once __DIR__ . '/discover-settings.php'; // تب «تنظیمات» (SEO 2.1.8)
 	}
 }
 
@@ -403,7 +406,9 @@ function hodima_seo_discover_text_norm( string $text ): string {
  * @return list<string>
  */
 function hodima_seo_discover_clickbait_phrases(): array {
-	$phrases = apply_filters( 'hodima_seo_discover_clickbait_phrases', HODIMA_SEO_DISCOVER_CLICKBAIT );
+	// فهرست ویرایش‌شده در تنظیمات (SEO 2.1.8)، وگرنه پیش‌فرض
+	$custom  = function_exists( 'hodima_seo_discover_option' ) ? hodima_seo_discover_option( 'clickbait' ) : null;
+	$phrases = apply_filters( 'hodima_seo_discover_clickbait_phrases', is_array( $custom ) ? $custom : HODIMA_SEO_DISCOVER_CLICKBAIT );
 	return array_values( array_filter( array_map( 'strval', is_array( $phrases ) ? $phrases : [] ), static fn( string $p ): bool => '' !== trim( $p, " *\t" ) ) );
 }
 
@@ -857,7 +862,7 @@ function hodima_seo_discover_url_key( string $url ): string {
  *   prev:        ۲۸ روز پیش از آن (برای مقایسه و «افت نمایش»)
  *   daily:       روز به روز کل سایت (حداکثر ۹۰ روز؛ نمودار)
  *
- * @return array{property: string, fetched: int, start: string, end: string, totals: array{clicks: int, impressions: int}, rows: array<string, array{clicks: int, impressions: int}>, prev: array{start: string, end: string, totals: array{clicks: int, impressions: int}, rows: array<string, array{clicks: int, impressions: int}>}, daily: array<string, array{clicks: int, impressions: int}>, error: string}
+ * @return array{property: string, fetched: int, start: string, end: string, totals: array{clicks: int, impressions: int}, rows: array<string, array{clicks: int, impressions: int}>, prev: array{start: string, end: string, totals: array{clicks: int, impressions: int}, rows: array<string, array{clicks: int, impressions: int}>}, daily: array<string, array{clicks: int, impressions: int}>, devices: array<string, array{clicks: int, impressions: int}>, countries: array<string, array{clicks: int, impressions: int}>, error: string}
  */
 function hodima_seo_discover_stats(): array {
 
@@ -890,6 +895,8 @@ function hodima_seo_discover_stats(): array {
 			'rows'   => $rows( $prev['rows'] ?? [] ),
 		],
 		'daily'    => $rows( $stored['daily'] ?? [] ),
+		'devices'  => $rows( $stored['devices'] ?? [] ),
+		'countries' => $rows( $stored['countries'] ?? [] ),
 		'error'    => (string) ( $stored['error'] ?? '' ),
 	];
 }

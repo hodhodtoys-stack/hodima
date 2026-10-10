@@ -34,7 +34,7 @@ const HODIMA_SEO_DISCOVER_OPP_LIMIT = 20;
  *
  * @param list<array<string, mixed>> $rows  ردیف‌های گزارش (hodima_seo_discover_report_rows)
  * @param array<string, mixed>       $stats hodima_seo_discover_stats()
- * @return array{low_ctr: list<array<string, mixed>>, dropping: list<array<string, mixed>>, not_ready: list<array<string, mixed>>, new_unseen: list<array<string, mixed>>, site_ctr: float}
+ * @return array{low_ctr: list<array<string, mixed>>, dropping: list<array<string, mixed>>, not_ready: list<array<string, mixed>>, new_unseen: list<array<string, mixed>>, site_ctr: float, min_impressions: int, ctr_ratio: float, drop_ratio: float}
  */
 function hodima_seo_discover_opportunities( array $rows, array $stats ): array {
 
@@ -43,6 +43,10 @@ function hodima_seo_discover_opportunities( array $rows, array $stats ): array {
 	$site_ctr  = ! empty( $stats['totals']['impressions'] ) ? (float) $stats['totals']['clicks'] / (float) $stats['totals']['impressions'] : 0.0;
 	$groups    = [ 'low_ctr' => [], 'dropping' => [], 'not_ready' => [], 'new_unseen' => [] ];
 	$now       = time();
+	// آستانه‌ها از تنظیمات (SEO 2.1.8؛ کمترین نمایش «خودکار» به اندازه سایت)
+	$min_imp   = function_exists( 'hodima_seo_discover_opp_min_impressions' ) ? hodima_seo_discover_opp_min_impressions( $stats ) : HODIMA_SEO_DISCOVER_OPP_MIN_IMPRESSIONS;
+	$ctr_ratio = function_exists( 'hodima_seo_discover_option' ) ? (int) hodima_seo_discover_option( 'opp_ctr_ratio' ) / 100 : HODIMA_SEO_DISCOVER_OPP_CTR_RATIO;
+	$drop      = function_exists( 'hodima_seo_discover_option' ) ? (int) hodima_seo_discover_option( 'opp_drop_ratio' ) / 100 : HODIMA_SEO_DISCOVER_OPP_DROP_RATIO;
 
 	foreach ( $rows as $row ) {
 
@@ -59,11 +63,11 @@ function hodima_seo_discover_opportunities( array $rows, array $stats ): array {
 		];
 		$needs = (int) $row['error'] + (int) $row['warn'] > 0;
 
-		if ( $has_stats && $imp >= HODIMA_SEO_DISCOVER_OPP_MIN_IMPRESSIONS && $site_ctr > 0 && $ctr < $site_ctr * HODIMA_SEO_DISCOVER_OPP_CTR_RATIO ) {
+		if ( $has_stats && $imp >= $min_imp && $site_ctr > 0 && $ctr < $site_ctr * $ctr_ratio ) {
 			$groups['low_ctr'][] = $item + [ 'lost' => max( 0, (int) round( $imp * $site_ctr ) - (int) $cur['clicks'] ) ];
 		}
 
-		if ( null !== $prev && $prev['impressions'] >= HODIMA_SEO_DISCOVER_OPP_MIN_IMPRESSIONS && $imp < $prev['impressions'] * HODIMA_SEO_DISCOVER_OPP_DROP_RATIO ) {
+		if ( null !== $prev && $prev['impressions'] >= $min_imp && $imp < $prev['impressions'] * $drop ) {
 			$groups['dropping'][] = $item;
 		}
 
@@ -88,7 +92,7 @@ function hodima_seo_discover_opportunities( array $rows, array $stats ): array {
 	$sort( $groups['not_ready'], static fn( array $a, array $b ): int => $b['impressions'] <=> $a['impressions'] );
 	$sort( $groups['new_unseen'], static fn( array $a, array $b ): int => $b['ts'] <=> $a['ts'] );
 
-	return $groups + [ 'site_ctr' => $site_ctr ];
+	return $groups + [ 'site_ctr' => $site_ctr, 'min_impressions' => $min_imp, 'ctr_ratio' => $ctr_ratio, 'drop_ratio' => $drop ];
 }
 
 /**
@@ -229,4 +233,54 @@ function hodima_seo_discover_chart( array $daily, string $metric, string $title,
 		esc_attr( (string) wp_json_encode( $marks ? $notes : [], JSON_UNESCAPED_UNICODE ) ),
 		$marked
 	);
+}
+
+/** نام فارسی دستگاه سرچ کنسول (MOBILE، DESKTOP، TABLET). */
+function hodima_seo_discover_device_label( string $device ): string {
+	return match ( strtoupper( $device ) ) {
+		'MOBILE'  => 'موبایل',
+		'DESKTOP' => 'دسکتاپ',
+		'TABLET'  => 'تبلت',
+		default   => $device,
+	};
+}
+
+/** نام فارسی کشور از کد سه‌حرفی سرچ کنسول (کشورهای رایج؛ بقیه همان کد). */
+function hodima_seo_discover_country_label( string $code ): string {
+	$names = [
+		'irn' => 'ایران', 'tur' => 'ترکیه', 'are' => 'امارات', 'deu' => 'آلمان', 'usa' => 'آمریکا', 'gbr' => 'انگلستان',
+		'can' => 'کانادا', 'nld' => 'هلند', 'fra' => 'فرانسه', 'swe' => 'سوئد', 'aus' => 'استرالیا', 'irq' => 'عراق',
+		'afg' => 'افغانستان', 'arm' => 'ارمنستان', 'aze' => 'آذربایجان', 'omn' => 'عمان', 'qat' => 'قطر', 'kwt' => 'کویت',
+		'sau' => 'عربستان', 'ita' => 'ایتالیا', 'esp' => 'اسپانیا', 'aut' => 'اتریش', 'che' => 'سوئیس', 'nor' => 'نروژ',
+		'dnk' => 'دانمارک', 'bel' => 'بلژیک', 'rus' => 'روسیه', 'geo' => 'گرجستان', 'tjk' => 'تاجیکستان', 'fin' => 'فنلاند',
+	];
+	return $names[ strtolower( $code ) ] ?? strtoupper( $code );
+}
+
+/**
+ * جدول سهم (دستگاه یا کشور): نام، نمایش با نوار سهم، کلیک، نرخ کلیک.
+ *
+ * @param array<string, array{clicks: int, impressions: int}> $rows
+ * @param callable(string): string                           $label
+ */
+function hodima_seo_discover_share_table( array $rows, callable $label, int $limit = 10 ): string {
+
+	uasort( $rows, static fn( array $a, array $b ): int => $b['impressions'] <=> $a['impressions'] );
+	$total = max( 1, array_sum( array_column( $rows, 'impressions' ) ) );
+	$html  = '';
+
+	foreach ( array_slice( $rows, 0, $limit, true ) as $key => $row ) {
+		$share = 100 * $row['impressions'] / $total;
+		$html .= sprintf(
+			'<tr><td>%1$s</td><td><span class="hodima-dr-share" aria-hidden="true"><span style="inline-size: %2$s%%"></span></span> %3$s <span class="hd-muted">(%4$s٪)</span></td><td>%5$s</td><td>%6$s</td></tr>',
+			esc_html( $label( (string) $key ) ),
+			esc_attr( (string) round( $share, 1 ) ),
+			esc_html( number_format_i18n( $row['impressions'] ) ),
+			esc_html( number_format_i18n( $share, 0 ) ),
+			esc_html( number_format_i18n( $row['clicks'] ) ),
+			esc_html( $row['impressions'] ? number_format_i18n( 100 * $row['clicks'] / $row['impressions'], 1 ) . '٪' : '—' )
+		);
+	}
+
+	return '<div class="hd-table-wrap"><table class="widefat striped"><thead><tr><th scope="col"></th><th scope="col">نمایش</th><th scope="col">کلیک</th><th scope="col">نرخ کلیک</th></tr></thead><tbody>' . $html . '</tbody></table></div>';
 }

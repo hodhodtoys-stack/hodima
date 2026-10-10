@@ -17,11 +17,36 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-/** کمترین تعداد کلمه مقاله (کمتر = «مطلب کوتاه»). */
+/** کمترین تعداد کلمه مقاله پیش‌فرض (کمتر = «مطلب کوتاه»؛ مقدار واقعی از تنظیمات). */
 const HODIMA_SEO_DISCOVER_MIN_WORDS = 300;
 
-/** مقاله‌ای که این مدت به‌روز نشده، هشدار «تازگی» می‌گیرد (روز). */
+/** مقاله‌ای که این مدت به‌روز نشده، هشدار «تازگی» می‌گیرد (روز؛ پیش‌فرض، مقدار واقعی از تنظیمات). */
 const HODIMA_SEO_DISCOVER_STALE_DAYS = 365;
+
+/** حجم فایل اصلی تصویر که بیشتر از آن هشدار «حجم تصویر» می‌گیرد (بایت). */
+const HODIMA_SEO_DISCOVER_MAX_IMAGE_BYTES = 1048576;
+
+/**
+ * ردیف «شکل تصویر» (همان پیام در JS کادر: discover-admin.js، shapeCheck).
+ *
+ * @return array{key: string, status: string, label: string, detail: string, link: string}
+ */
+function hodima_seo_discover_shape_check( int $width, int $height ): array {
+	$row = static fn( string $status, string $detail ): array => [ 'key' => 'shape', 'status' => $status, 'label' => 'شکل تصویر', 'detail' => $detail, 'link' => '' ];
+	return $height > $width * 1.05
+		? $row( 'warn', 'تصویر عمودی است؛ برش افقی ۱۶:۹ (کارت بزرگ دیسکاور) بخش زیادی از بالا و پایینش را می‌برد. تصویر افقی بهتر است، یا نقطه تمرکز برش را روی سوژه بگذارید.' )
+		: $row( 'ok', $height * 1.05 >= $width ? 'تصویر تقریبا مربع است.' : 'تصویر افقی است.' );
+}
+
+/** حجم فایل اصلی یک تصویر (بایت؛ از اطلاعات وردپرس، وگرنه خود فایل؛ ۰ اگر نامعلوم). */
+function hodima_seo_discover_image_bytes( int $attachment_id ): int {
+	$meta = wp_get_attachment_metadata( $attachment_id );
+	if ( is_array( $meta ) && ! empty( $meta['filesize'] ) ) {
+		return (int) $meta['filesize'];
+	}
+	$file = (string) get_attached_file( $attachment_id );
+	return '' !== $file && is_file( $file ) ? (int) filesize( $file ) : 0;
+}
 
 /* =====================================================================
  * نمایه سایت: تصویر و عنوان هر صفحه (برای «تکراری»)
@@ -318,6 +343,30 @@ function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
 		$checks[] = 0 === $shared
 			? $row( 'unique_image', 'ok', 'تصویر اختصاصی', 'تصویر فقط مال همین صفحه است.' )
 			: $row( 'unique_image', 'warn', 'تصویر اختصاصی', sprintf( 'همین تصویر، تصویر اصلی %s صفحه دیگر هم هست؛ کارت‌های با تصویر یکسان در دیسکاور تکراری دیده می‌شوند. برای این صفحه تصویر دیسکاور جدا انتخاب کنید.', $num( $shared ) ) );
+
+		// ۴ب. شکل تصویر (SEO 2.1.8): تصویر عمودی در برش افقی ۱۶:۹ بیشتر بالا و پایینش را از دست می‌دهد
+		$checks[] = hodima_seo_discover_shape_check( $image['width'], $image['height'] );
+
+		// ۴ج. حجم فایل اصلی (صفحه سنگین و کند؛ کارت دیسکاور از برش‌ها ساخته می‌شود)
+		$bytes = hodima_seo_discover_image_bytes( $image['id'] );
+		if ( $bytes > 0 ) {
+			$checks[] = $bytes <= HODIMA_SEO_DISCOVER_MAX_IMAGE_BYTES
+				? $row( 'image_size', 'ok', 'حجم تصویر', sprintf( '%s کیلوبایت.', $num( (int) round( $bytes / 1024 ) ) ) )
+				: $row( 'image_size', 'warn', 'حجم تصویر', sprintf( 'فایل اصلی تصویر %1$s مگابایت است؛ صفحه را کند می‌کند. تصویر را فشرده کنید (مثلا WebP یا JPEG با کیفیت ۸۰، حدود %2$s کیلوبایت یا کمتر).', number_format_i18n( $bytes / 1048576, 1 ), $num( (int) ( HODIMA_SEO_DISCOVER_MAX_IMAGE_BYTES / 1024 ) ) ), (string) get_edit_post_link( $image['id'], 'raw' ) );
+		}
+	}
+
+	// ۴د. محصول (SEO 2.1.8): ناموجود یا بی‌قیمت؛ کارتی که خرید ندارد بازدیدکننده را ناامید می‌کند
+	if ( $target instanceof WP_Post && 'product' === $type && function_exists( 'wc_get_product' ) ) {
+		$product = wc_get_product( $target->ID );
+		if ( $product instanceof WC_Product ) {
+			$checks[] = $product->is_in_stock()
+				? $row( 'stock', 'ok', 'موجودی', 'محصول موجود است.' )
+				: $row( 'stock', 'warn', 'موجودی', 'محصول ناموجود است؛ دیسکاور کارت محصولی را که نمی‌شود خرید کم‌ارزش می‌بیند و بازدیدکننده ناامید برمی‌گردد. تا موجود شدن، تبلیغ آن در دیسکاور فایده‌ای ندارد.', '#inventory_product_data' );
+			$checks[] = '' !== (string) $product->get_price()
+				? $row( 'price', 'ok', 'قیمت', 'قیمت دارد.' )
+				: $row( 'price', 'warn', 'قیمت', 'محصول قیمت ندارد؛ کارت بدون قیمت کمتر کلیک می‌خورد و گوگل اطلاعات خرید آن را نشان نمی‌دهد.', '#general_product_data' );
+		}
 	}
 
 	// ۵. ایندکس و پیش‌نمایش بزرگ تصویر
@@ -371,15 +420,16 @@ function hodima_seo_discover_checks( WP_Post|WP_Term $target ): array {
 
 		// ۱۰. طول مطلب (دیسکاور مطلب کامل و مفید را ترجیح می‌دهد)
 		$words    = hodima_seo_discover_word_count( $target );
-		$checks[] = $words >= HODIMA_SEO_DISCOVER_MIN_WORDS
+		$min_words = (int) hodima_seo_discover_option( 'min_words' ); // تنظیمات (پیش‌فرض HODIMA_SEO_DISCOVER_MIN_WORDS)
+		$checks[]  = $words >= $min_words
 			? $row( 'length', 'ok', 'عمق مطلب', sprintf( '%s کلمه.', $num( $words ) ) )
-			: $row( 'length', 'warn', 'عمق مطلب', sprintf( '%1$s کلمه؛ مطلب کوتاه است. دیسکاور مطلبی را نشان می‌دهد که موضوع را کامل توضیح دهد (دست‌کم حدود %2$s کلمه).', $num( $words ), $num( HODIMA_SEO_DISCOVER_MIN_WORDS ) ) );
+			: $row( 'length', 'warn', 'عمق مطلب', sprintf( '%1$s کلمه؛ مطلب کوتاه است. دیسکاور مطلبی را نشان می‌دهد که موضوع را کامل توضیح دهد (دست‌کم حدود %2$s کلمه).', $num( $words ), $num( $min_words ) ) );
 
 		// ۱۱. تازگی (فقط منتشرشده؛ پیش‌نویس هنوز تاریخ ندارد)
 		$modified = 'publish' === $target->post_status ? get_post_datetime( $target, 'modified', 'gmt' ) : false;
 		if ( $modified ) {
 			$days     = max( 0, intdiv( time() - $modified->getTimestamp(), DAY_IN_SECONDS ) );
-			$checks[] = $days <= HODIMA_SEO_DISCOVER_STALE_DAYS
+			$checks[] = $days <= (int) hodima_seo_discover_option( 'stale_days' )
 				? $row( 'fresh', 'ok', 'تازگی', 0 === $days ? 'امروز به‌روز شده.' : sprintf( 'آخرین به‌روزرسانی %s روز پیش.', $num( $days ) ) )
 				: $row( 'fresh', 'warn', 'تازگی', sprintf( 'آخرین به‌روزرسانی %s روز پیش؛ دیسکاور بیشتر مطالب تازه را نشان می‌دهد. اگر مطلب هنوز درست است، اطلاعاتش را به‌روز و دوباره منتشر کنید.', $num( $days ) ) );
 		}

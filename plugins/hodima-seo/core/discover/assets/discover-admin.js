@@ -123,6 +123,9 @@
 		if (passedBox) passedBox.hidden = ok === 0;
 		const okCount = box.querySelector('[data-hodima-dc-ok-count]');
 		if (okCount) okCount.textContent = nf.format(ok);
+
+		// پنل نوار کناری ویرایشگر بلوکی خلاصه را از کادر می‌خواند (discover-panel.js)
+		document.dispatchEvent(new CustomEvent('hodima-discover-change'));
 	}
 
 	/** یک ردیف آمادگی: وضعیت، متن، و جابه‌جایی بین «نیاز به توجه» و «موارد درست». */
@@ -222,6 +225,13 @@
 			setCheck(box, 'crops', 'warn', 'تصویر عوض شد؛ برش‌ها بعد از ذخیره ساخته می‌شوند.');
 		}
 		if (shown) setCheck(box, 'alt', shown.alt ? 'ok' : 'warn', shown.alt ? 'دارد.' : 'تصویر متن جایگزین (alt) ندارد؛ گوگل با آن می‌فهمد تصویر چه نشان می‌دهد و برای نابینایان هم لازم است.');
+		// شکل تصویر؛ همان hodima_seo_discover_shape_check در PHP
+		if (shown && shown.width && shown.height) {
+			const tall = shown.height > shown.width * 1.05;
+			setCheck(box, 'shape', tall ? 'warn' : 'ok', tall
+				? 'تصویر عمودی است؛ برش افقی ۱۶:۹ (کارت بزرگ دیسکاور) بخش زیادی از بالا و پایینش را می‌برد. تصویر افقی بهتر است، یا نقطه تمرکز برش را روی سوژه بگذارید.'
+				: (shown.height * 1.05 >= shown.width ? 'تصویر تقریبا مربع است.' : 'تصویر افقی است.'));
+		}
 
 		const status = field.querySelector('[data-hodima-dc-status]');
 		status.hidden = false;
@@ -359,6 +369,8 @@
 			link.title = m[2];
 			link.textContent = 'ویکی';
 			chip.append(link);
+		} else {
+			chip.append(wikiButton(name));
 		}
 		const x = document.createElement('button');
 		x.type = 'button';
@@ -369,6 +381,81 @@
 		chip.append(x);
 		chips.insertBefore(chip, chips.querySelector('[data-hodima-dc-topic-input]'));
 		syncTopics(box);
+	}
+
+	/* ── ویکی‌داده: پیدا کردن شناسه یک موضوع (SEO 2.1.8) ── */
+	const wikiChips = new WeakMap(); // موضوعی که پنل ویکی‌داده برایش باز است
+
+	function wikiButton(name) {
+		const b = document.createElement('button');
+		b.type = 'button';
+		b.className = 'hodima-dc__chip-wiki';
+		b.dataset.hodimaDcWiki = '';
+		b.title = 'پیدا کردن در ویکی‌داده';
+		b.setAttribute('aria-label', `پیدا کردن «${name}» در ویکی‌داده`);
+		b.textContent = 'Q?';
+		return b;
+	}
+
+	async function openWiki(box, chip) {
+		const panel = box.querySelector('[data-hodima-dc-wiki-panel]');
+		if (!panel || !chip) return;
+		const name = chip.firstElementChild.textContent.trim();
+		const list = panel.querySelector('[data-hodima-dc-wiki-list]');
+		const msg = panel.querySelector('[data-hodima-dc-wiki-msg]');
+		wikiChips.set(box, chip);
+		panel.querySelector('[data-hodima-dc-wiki-title]').textContent = `ویکی‌داده: «${name}»`;
+		list.replaceChildren();
+		msg.textContent = 'در حال جستجو…';
+		panel.hidden = false;
+		try {
+			const body = new URLSearchParams({ action: 'hodima_discover_wikidata', q: name, nonce: config.wikiNonce || '' });
+			const res = await fetch(config.ajax, { method: 'POST', body, credentials: 'same-origin' });
+			const json = await res.json().catch(() => null);
+			if (wikiChips.get(box) !== chip) return; // در این فاصله موضوع دیگری انتخاب شد
+			if (!json?.success) { msg.textContent = json?.data?.message || 'جستجو انجام نشد.'; return; }
+			const items = json.data.items || [];
+			msg.textContent = items.length ? 'موضوع درست را انتخاب کنید:' : 'چیزی پیدا نشد؛ شناسه را دستی هم می‌شود نوشت: «نام Q1234».';
+			items.forEach((item) => {
+				const li = document.createElement('li');
+				const pick = document.createElement('button');
+				pick.type = 'button';
+				pick.className = 'hodima-dc__wiki-pick';
+				pick.dataset.hodimaDcWikiPick = item.id;
+				const strong = document.createElement('strong');
+				strong.textContent = item.label;
+				const desc = document.createElement('span');
+				desc.textContent = item.description ? ` — ${item.description}` : '';
+				const id = document.createElement('code');
+				id.textContent = item.id;
+				pick.append(strong, desc, ' ', id);
+				li.append(pick);
+				list.append(li);
+			});
+		} catch {
+			msg.textContent = 'اتصال برقرار نشد؛ دوباره امتحان کنید.';
+		}
+	}
+
+	/** شناسه انتخاب‌شده روی موضوع: مقدار «نام Q123» و نشان «ویکی». */
+	function pickWiki(box, id) {
+		const chip = wikiChips.get(box);
+		if (!chip || !/^Q\d{1,12}$/.test(id)) return;
+		const name = chip.firstElementChild.textContent.trim();
+		chip.dataset.value = `${name} ${id}`;
+		const link = document.createElement('span');
+		link.className = 'hodima-dc__chip-link';
+		link.title = `https://www.wikidata.org/wiki/${id}`;
+		link.textContent = 'ویکی';
+		chip.querySelector('[data-hodima-dc-wiki]')?.replaceWith(link);
+		syncTopics(box);
+		closeWiki(box);
+	}
+
+	function closeWiki(box) {
+		const panel = box.querySelector('[data-hodima-dc-wiki-panel]');
+		if (panel) panel.hidden = true;
+		wikiChips.delete(box);
 	}
 
 	/* ── پنجره پیش‌نمایش ── */
@@ -440,6 +527,15 @@
 			closePreview(button.closest('dialog'));
 		} else if ('hodimaDcView' in d) {
 			selectView(box, d.hodimaDcView);
+		} else if ('hodimaDcTopicSuggest' in d) {
+			addTopic(box, d.hodimaDcTopicSuggest);
+			button.remove();
+		} else if ('hodimaDcWiki' in d) {
+			openWiki(box, button.closest('.hodima-dc__chip'));
+		} else if ('hodimaDcWikiPick' in d) {
+			pickWiki(box, d.hodimaDcWikiPick);
+		} else if ('hodimaDcWikiClose' in d) {
+			closeWiki(box);
 		} else if ('hodimaDcFocusReset' in d) {
 			setFocus(box, [0.5, 0.5]);
 			box.querySelector('[data-hodima-dc-focus-pad]')?.focus();
@@ -661,6 +757,7 @@
 
 		const saved = storage.get(TAB_KEY);
 		if (saved && box.querySelector(`[data-hodima-dc-tab="${saved}"]`)) selectTab(box, saved);
+		document.dispatchEvent(new CustomEvent('hodima-discover-change'));
 	}
 
 	function init() {

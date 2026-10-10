@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           2.1.7
+ * Version:           2.1.8
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '2.1.7';
+const HODIMA_SEO_VERSION = '2.1.8';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -197,8 +197,12 @@ add_action( 'plugins_loaded', static function (): void {
 		\Hodima\Core\Modules::load( 'seo' );
 
 		// ماژول دیسکاور خاموش: رویداد روزانه آمار سرچ کنسول یتیم نماند
-		if ( is_admin() && ! \Hodima\Core\Modules::is_loaded( 'seo', 'discover' ) && wp_next_scheduled( 'hodima_discover_sc_refresh' ) ) {
-			wp_clear_scheduled_hook( 'hodima_discover_sc_refresh' );
+		if ( is_admin() && ! \Hodima\Core\Modules::is_loaded( 'seo', 'discover' ) ) {
+			foreach ( [ 'hodima_discover_sc_refresh', 'hodima_discover_digest' ] as $hodima_seo_cron ) {
+				if ( wp_next_scheduled( $hodima_seo_cron ) ) {
+					wp_clear_scheduled_hook( $hodima_seo_cron ); // خلاصه هفتگی هم (SEO 2.1.8)
+				}
+			}
 		}
 		return;
 	}
@@ -230,4 +234,5 @@ register_deactivation_hook( __FILE__, static function (): void {
 	wp_clear_scheduled_hook( 'hodima_core_daily_cleanup' );
 	// آمار روزانه گوگل دیسکاور (با فعال‌سازی دوباره در اولین بازدید پیشخوان زمان‌بندی می‌شود)
 	wp_clear_scheduled_hook( 'hodima_discover_sc_refresh' );
+	wp_clear_scheduled_hook( 'hodima_discover_digest' ); // خلاصه هفتگی ایمیلی (SEO 2.1.8)
 } );
