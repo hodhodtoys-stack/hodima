@@ -3,12 +3,13 @@
  * قیمتی که اسکیما و ترب از محصول می‌بینند
  * Path: plugins/hodima-seo/inc/product-price.php
  *
- * «تنظیمات قالب ← صفحه محصول» دو قاب جدا دارد، هر کدام «قیمت تک» (پیش‌فرض) یا
+ * دو گزینه جدا، هر کدام «قیمت تک» (پیش‌فرض) یا
  * «حداقل سفارش» (فیلد حداقل مبلغ هر محصول، _wholesale_price، همان عددی که صفحه
  * محصول کنار «قیمت» نشان می‌دهد):
- * - «قیمت در اسکیما (گوگل)» (product_offer_price): اسکیمای محصول، متاتگ‌های قیمت
+ * - «تنظیمات قالب ← صفحه محصول ← قیمت در اسکیما (گوگل)» (product_offer_price): اسکیمای محصول، متاتگ‌های قیمت
  *   Open Graph، پیش‌نمایش لینک و AEO — هدف 'schema'.
- * - «قیمت در ترب» (product_torob_price، از 1.14.0): وب‌سرویس افزونه رسمی ترب — هدف 'torob'.
+ * - «ابزارهای هدیما ← ترب» (گزینه hodima_seo_torob، از 2.2.6؛ 1.14.0 تا 2.2.5 در تنظیمات
+ *   قالب، product_torob_price): وب‌سرویس افزونه رسمی ترب — هدف 'torob'.
  * تا 1.13.0 یک گزینه برای همه بود و ایمالز هم پوشش داده می‌شد (به خواست کاربر حذف شد).
  *
  * افزونه رسمی ترب («استخراج محصولات ووکامرس برای ترب»، products-extractor-for-woocommerce)
@@ -37,8 +38,12 @@ defined( 'ABSPATH' ) || exit;
 function hodima_seo_product_feed_price( WC_Product $product, string $target = 'schema' ): array {
 
 	$unit = hodima_seo_unit_price( $product );
-	$key  = 'torob' === $target ? 'product_torob_price' : 'product_offer_price';
-	$mode = function_exists( 'hodima_setting' ) ? (string) hodima_setting( $key ) : 'unit';
+	// ترب: تنظیم خود Hodima SEO (ابزارهای هدیما ← ترب؛ inc/torob.php)، اسکیما: تنظیمات قالب
+	$mode = match ( true ) {
+		'torob' === $target                   => function_exists( 'hodima_seo_torob_setting' ) ? hodima_seo_torob_setting( 'price' ) : 'unit',
+		function_exists( 'hodima_setting' ) => (string) hodima_setting( 'product_offer_price' ),
+		default                             => 'unit',
+	};
 
 	if ( 'min_order' !== $mode || ! is_numeric( $unit ) || (float) $unit <= 0 || $product->is_type( [ 'variable', 'variation' ] ) ) {
 		return [ 'amount' => $unit, 'min_order' => false ];
