@@ -25,7 +25,11 @@ final class Jalali_Date {
         add_filter( 'get_the_time', [ $this, 'convert_post_time' ], 10, 3 );
     }
 
-    public function convert_comment_date( string $date, string $format, $comment ): string {
+    /*
+     * چهار فیلتر زیر ورودی mixed دارند: get_the_time( 'U' ) و مانندش عدد برمی‌گردانند؛
+     * نوع string آن را به متن تبدیل می‌کرد و کدی که عدد می‌خواست خطا می‌گرفت.
+     */
+    public function convert_comment_date( mixed $date, string $format, $comment ): mixed {
         if ( $this->is_machine_format( $format ) ) {
             return $date;
         }
@@ -39,7 +43,7 @@ final class Jalali_Date {
         return $date;
     }
 
-    public function convert_comment_time( string $time, string $format, bool $gmt, bool $translate, $comment ): string {
+    public function convert_comment_time( mixed $time, string $format, bool $gmt, bool $translate, $comment ): mixed {
         if ( $this->is_machine_format( $format ) ) {
             return $time;
         }
@@ -53,7 +57,7 @@ final class Jalali_Date {
         return $time;
     }
 
-    public function convert_post_date( string $the_date, string $format, $post ): string {
+    public function convert_post_date( mixed $the_date, string $format, $post ): mixed {
         if ( $this->is_machine_format( $format ) ) {
             return $the_date;
         }
@@ -68,7 +72,7 @@ final class Jalali_Date {
         return $the_date;
     }
 
-    public function convert_post_time( string $the_time, string $format, $post ): string {
+    public function convert_post_time( mixed $the_time, string $format, $post ): mixed {
         if ( $this->is_machine_format( $format ) ) {
             return $the_time;
         }
@@ -158,11 +162,23 @@ final class Jalali_Date {
      * برمی‌گرداند؛ ابزارک «فعالیت» پیشخوان وردپرس آن را به gmdate() می‌دهد و با
      * TypeError کل صفحه پیشخوان از کار می‌افتاد. هر کدی که تاریخ را برای مقایسه
      * یا ذخیره می‌خواهد همین قالب‌ها را به کار می‌برد.
+     *
+     * باگ قبلی (داده سایت را خراب می‌کرد): ووکامرس مقدار فیلدهای فرم پیشخوان را
+     * با date_i18n( 'Y-m-d' ) و date_i18n( 'H' / 'i' / 's' ) پر می‌کند (تاریخ و ساعت
+     * سفارش، تاریخ حراج محصول و تنوع، انقضای دانلود). شمسی‌شده‌اش («۱۴۰۴-۰۷-۱۹»)
+     * هنگام ذخیره با strtotime خوانده نمی‌شد و تاریخ سفارش ۱۹۷۰-۰۱-۰۱ و تاریخ
+     * حراج خراب ذخیره می‌شد. قالب میلادی ISO/MySQL (با خط تیره، «Y-m-d…» و
+     * «Ymd…») و جزء تنهای ساعت هیچ‌جا قالب نمایش فارسی نیستند (نمایش با «/» یا
+     * نام ماه است)، پس همیشه ماشینی‌اند. «Y» و «F» تنها عمدا نمایشی می‌مانند
+     * (سال/ماه شمسی در عنوان‌ها و مسیر راهنما).
      */
     private function is_machine_format( string $format ): bool {
         static $machine = null;
-        $machine ??= [ 'U', 'G', 'u', 'v', 'Z', 'c', 'r', DATE_ATOM, DATE_COOKIE, DATE_ISO8601, DATE_RFC822, DATE_RFC850, DATE_RFC1036, DATE_RFC1123, DATE_RFC7231, DATE_RFC2822, DATE_RFC3339, DATE_RFC3339_EXTENDED, DATE_RSS, DATE_W3C ];
-        return in_array( $format, $machine, true ) || str_contains( $format, '\\T' );
+        $machine ??= [ 'U', 'G', 'u', 'v', 'Z', 'c', 'r', 'H', 'i', 's', DATE_ATOM, DATE_COOKIE, DATE_ISO8601, DATE_RFC822, DATE_RFC850, DATE_RFC1036, DATE_RFC1123, DATE_RFC7231, DATE_RFC2822, DATE_RFC3339, DATE_RFC3339_EXTENDED, DATE_RSS, DATE_W3C ];
+        return in_array( $format, $machine, true )
+            || str_contains( $format, '\\T' )
+            || str_starts_with( $format, 'Y-m-d' )
+            || str_starts_with( $format, 'Ymd' );
     }
 
     private function to_persian_numbers( string $string ): string {
