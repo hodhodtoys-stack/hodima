@@ -27,12 +27,13 @@ function hodima_seo_render_imageobject_schema(): void {
 	$site_url  = trailingslashit( home_url() );
 	$site_name = get_bloginfo( 'name' );
 
-	$page_name                = '';
-	$page_url                 = '';
-	$post_id                  = null;
-	$thumb_id                 = null;
-	$content                  = null;
-	$category_product_thumbs  = [];
+	$page_name               = '';
+	$page_url                = '';
+	$post_id                 = null;
+	$thumb_id                = null;
+	$content                 = null;
+	$category_product_thumbs = [];
+	$dims_owner              = null; // [ 'post'|'term', id ] — جای کش اندازه تصویرهای متن
 
 	if ( is_singular() ) {
 		if ( ! in_array( get_post_type(), $targets, true ) ) {
@@ -43,7 +44,8 @@ function hodima_seo_render_imageobject_schema(): void {
 		$page_url  = get_permalink( $post_id );
 		// تصاویر داخل متن نوشته رمزدار نباید در اسکیما فهرست شوند
 		$content  = post_password_required( $post_id ) ? '' : get_post_field( 'post_content', $post_id );
-		$thumb_id = get_post_thumbnail_id( $post_id );
+		$thumb_id   = get_post_thumbnail_id( $post_id );
+		$dims_owner = [ 'post', (int) $post_id ];
 	} elseif ( is_tax() || is_category() || is_tag() ) {
 		$term = get_queried_object();
 		if ( ! $term || ! in_array( $term->taxonomy, $targets, true ) ) {
@@ -55,6 +57,7 @@ function hodima_seo_render_imageobject_schema(): void {
 		$content   = get_term_meta( $term->term_id, 'hook_content', true ) . ' ' . term_description( $term->term_id );
 
 		$category_product_thumbs = hodima_seo_imageobject_term_thumbs( $term );
+		$dims_owner              = [ 'term', (int) $term->term_id ];
 	} else {
 		return;
 	}
@@ -141,19 +144,15 @@ function hodima_seo_render_imageobject_schema(): void {
 	// سقف تنظیمات فقط روی تصویرهای داخل متن است، نه تصویر شاخص/گالری/دسته
 	// (سقف کلی یک بار ImageObjectهای دسته را از ۹ به ۴ رساند).
 	if ( ! empty( $content ) ) {
-		foreach ( hodima_seo_imageobject_html_images( (string) $content, $opt_max_imgs ) as $img ) {
+		$images = hodima_seo_imageobject_html_images( (string) $content, $opt_max_imgs );
+		$dims   = hodima_seo_imageobject_missing_dims( $images, $dims_owner );
+
+		foreach ( $images as $img ) {
 			$width  = $img['width'];
 			$height = $img['height'];
 
-			if ( empty( $width ) || empty( $height ) ) {
-				$attachment_id = attachment_url_to_postid( $img['src'] );
-				if ( $attachment_id ) {
-					$img_data = wp_get_attachment_image_src( $attachment_id, 'full' );
-					if ( $img_data ) {
-						$width  = $img_data[1];
-						$height = $img_data[2];
-					}
-				}
+			if ( ( empty( $width ) || empty( $height ) ) && isset( $dims[ $img['src'] ][1] ) ) {
+				[ $width, $height ] = $dims[ $img['src'] ];
 			}
 
 			$add_schema( $img['src'], ! empty( $width ) ? $width : $opt_def_width, ! empty( $height ) ? $height : $opt_def_height, $img['alt'] );
@@ -209,6 +208,68 @@ function hodima_seo_imageobject_term_thumbs( WP_Term $term ): array {
 	return $cached_thumbs;
 }
 /**
+ * اندازه واقعی تصویرهای متنِ بدون width/height (از پیوست رسانه)، کش‌شده.
+ *
+ * هر تصویر بی‌اندازه یک attachment_url_to_postid (کوئری LIKE روی متای همه
+ * پیوست‌ها) و یک wp_get_attachment_image_src در *هر* بازدید بود. نتیجه حالا در
+ * متای همان نوشته/ترم (_hodima_schema_img_dims) می‌ماند — خواندنش کوئری ندارد
+ * (متای شیء صفحه از قبل لود است) — و فقط وقتی دوباره حساب می‌شود که فهرست
+ * تصویرهای بی‌اندازه عوض شود (ویرایش متن) یا ۳۰ روز بگذرد (عوض شدن فایل تصویر).
+ * نتیجه «پیدا نشد» هم کش می‌شود. خروجی همان قبلی است.
+ *
+ * @param list<array{src: string, alt: string, width: string, height: string}> $images
+ * @param array{0: string, 1: int}|null                                       $owner [ 'post'|'term', id ]
+ * @return array<string, array{}|array{0: int, 1: int}> src → [ عرض, ارتفاع ] یا [] (پیوست ندارد)
+ */
+function hodima_seo_imageobject_missing_dims( array $images, ?array $owner ): array {
+
+	$missing = [];
+	foreach ( $images as $img ) {
+		if ( empty( $img['width'] ) || empty( $img['height'] ) ) {
+			$missing[ $img['src'] ] = true;
+		}
+	}
+
+	if ( [] === $missing ) {
+		return [];
+	}
+
+	$key  = '_hodima_schema_img_dims';
+	$hash = md5( implode( "\n", array_keys( $missing ) ) );
+
+	if ( null !== $owner ) {
+		$cached = 'term' === $owner[0] ? get_term_meta( $owner[1], $key, true ) : get_post_meta( $owner[1], $key, true );
+		if ( is_array( $cached ) && ( $cached['hash'] ?? '' ) === $hash && (int) ( $cached['time'] ?? 0 ) > time() - 30 * DAY_IN_SECONDS && is_array( $cached['dims'] ?? null ) ) {
+			return $cached['dims'];
+		}
+	}
+
+	$dims = [];
+	foreach ( array_keys( $missing ) as $src ) {
+		$src           = (string) $src;
+		$dims[ $src ]  = [];
+		$attachment_id = attachment_url_to_postid( $src );
+		if ( $attachment_id ) {
+			$img_data = wp_get_attachment_image_src( $attachment_id, 'full' );
+			if ( $img_data ) {
+				$dims[ $src ] = [ (int) $img_data[1], (int) $img_data[2] ];
+			}
+		}
+	}
+
+	if ( null !== $owner ) {
+		$value = [ 'hash' => $hash, 'time' => time(), 'dims' => $dims ];
+		if ( 'term' === $owner[0] ) {
+			update_term_meta( $owner[1], $key, $value );
+		} else {
+			update_post_meta( $owner[1], $key, $value );
+		}
+	}
+
+	return $dims;
+}
+
+/**
  * تصویرهای داخل HTML (حداکثر $max تصویر با src واقعی).
  * src از ویژگی‌های رایج lazy-load هم خوانده می‌شود (data-src، data-lazy-src، data-original، data-echo).
  *
@@ -217,6 +278,11 @@ function hodima_seo_imageobject_term_thumbs( WP_Term $term ): array {
 function hodima_seo_imageobject_html_images( string $html, int $max ): array {
 
 	$html = wp_specialchars_decode( $html );
+
+	// بدون هیچ «<img» نیازی به ساختن DOM کل متن نیست
+	if ( false === stripos( $html, '<img' ) ) {
+		return [];
+	}
 
 	// DOMDocument ورودی را Latin-1 فرض می‌کند؛ نویسه‌های غیر ASCII → موجودیت عددی
 	// (mb_convert_encoding با «HTML-ENTITIES» در PHP 8.4 هشدار Deprecated می‌دهد)

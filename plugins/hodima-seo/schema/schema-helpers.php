@@ -133,13 +133,29 @@ function hodima_seo_schema_price_range(): string {
 /**
  * نود کامل سازمان (#organization) — تنها سازنده آن.
  *
- * homepage-schema.php (همه صفحه‌ها) و corporate-schema.php (درباره‌ما/تماس)
- * هر دو همین را چاپ می‌کنند، پس سازمان در همه صفحه‌ها یکسان است.
- */
-/**
+ * homepage-schema.php (همه صفحه‌ها)، corporate-schema.php (درباره‌ما/تماس) و
+ * سیستم رسانه (ناشر ویدیو) همین را می‌گیرند، پس سازمان در همه صفحه‌ها یکسان است.
+ * یک بار در هر درخواست ساخته می‌شود (به صفحه جاری وابسته نیست؛ ۲۰ گزینه و یک فیلتر).
+ *
  * @return array<string, mixed>
  */
 function hodima_seo_schema_organization_node(): array {
+
+	static $memo = null;
+
+	if ( null === $memo ) {
+		$memo = hodima_seo_schema_build_organization_node();
+	}
+
+	return $memo;
+}
+
+/**
+ * ساخت نود سازمان (بدون کش) — فقط از hodima_seo_schema_organization_node().
+ *
+ * @return array<string, mixed>
+ */
+function hodima_seo_schema_build_organization_node(): array {
 
 	$site_url = trailingslashit( home_url() );
 

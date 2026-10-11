@@ -472,6 +472,9 @@ function hodima_product_schema_variants( WC_Product $product, string $page_url, 
 	$items    = [];
 	$varies   = [];
 
+	// نوشته و متای همه تنوع‌ها با دو کوئری، نه دو کوئری برای *هر* تنوع (wc_get_product پایین)
+	_prime_post_caches( $children, false, true );
+
 	foreach ( $children as $variation_id ) {
 
 		$variation = wc_get_product( $variation_id );
