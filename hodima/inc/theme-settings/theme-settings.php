@@ -102,6 +102,7 @@ function hodima_settings_fields(): array {
 		// قیمت اعلام‌شده به بیرون؛ خواننده: Hodima SEO (inc/product-price.php). دو قاب جدا از 3.0.2
 		'product_offer_price'   => [ 'panel' => 'product_price_feed', 'type' => 'select', 'label' => 'قیمتی که اعلام شود', 'default' => 'unit', 'options' => [ 'unit' => 'قیمت تک محصول', 'min_order' => 'مبلغ حداقل سفارش' ], 'help' => '«حداقل سفارش» همان مبلغی است که در ویرایش هر محصول (فیلد حداقل مبلغ سفارش) وارد کرده‌اید و صفحه محصول کنار قیمت نشان می‌دهد. محصولی که حداقل سفارش ندارد یا متغیر است، همیشه قیمت تک را اعلام می‌کند. به افزونه Hodima SEO نیاز دارد.' ],
 		'product_torob_price'   => [ 'panel' => 'product_price_torob', 'type' => 'select', 'label' => 'قیمتی که ترب بگیرد', 'default' => 'unit', 'options' => [ 'unit' => 'قیمت تک محصول', 'min_order' => 'مبلغ حداقل سفارش' ], 'help' => 'مستقل از قاب اسکیما. محصولی که حداقل سفارش ندارد یا متغیر است، همیشه قیمت تک را می‌فرستد. به افزونه Hodima SEO 1.14.0 نیاز دارد.' ],
+		'product_torob_title'   => [ 'panel' => 'product_price_torob', 'type' => 'text', 'label' => 'شکل نام در ترب', 'default' => '{نام} (حداقل سفارش {تعداد} {واحد})', 'help' => 'وقتی ترب «مبلغ حداقل سفارش» را می‌گیرد، نام محصول در ترب با همین شکل ساخته می‌شود؛ مثلا «شانه سه شاخ (حداقل سفارش ۱۲ عدد)». {نام} = نام محصول، {تعداد} = ردیف «تعداد» جدول مشخصات (اگر نبود: مبلغ حداقل سفارش ÷ قیمت تک)، {واحد} = واحد نوشته‌شده در جدول یا «عدد». هر محصول را می‌توان در «ویرایش محصول ← داده‌های محصول ← ترب» جدا تنظیم کرد. نام محصول در سایت عوض نمی‌شود.' ],
 
 		// ── وبلاگ (قبلا ثابت در archive-blog.php و single-post.php) ──
 		'blog_title'           => [ 'panel' => 'blog_page', 'type' => 'text', 'label' => 'عنوان صفحه وبلاگ (H1)', 'default' => '', 'help' => 'خالی = عنوان برگه «نوشته‌ها» (تنظیمات ← خواندن). همین نام در مسیر راهنمای مقاله‌ها هم می‌آید.' ],
@@ -412,8 +413,8 @@ function hodima_settings_panels(): array {
 
 		'product_texts'      => [ 'section' => 'product', 'title' => 'متن‌ها', 'icon' => 'dashicons-editor-textcolor' ],
 		'product_sections'   => [ 'section' => 'product', 'title' => 'بخش‌های صفحه محصول', 'icon' => 'dashicons-visibility', 'layout' => 'toggles', 'help' => 'بخش خاموش برای همه محصولات پنهان می‌شود؛ بخش روشن فقط وقتی محتوا دارد دیده می‌شود (کادر «رسانه» هر محصول و نظرات ووکامرس).' ],
-		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت در اسکیما (گوگل)', 'icon' => 'dashicons-tag', 'half' => true, 'help' => 'عددی که گوگل (اسکیما)، پیش‌نمایش لینک در شبکه‌های اجتماعی (متاتگ قیمت) و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود. بعد از تغییر، کش لایت‌اسپید را پاک کنید.' ],
-		'product_price_torob' => [ 'section' => 'product', 'title' => 'قیمت در ترب', 'icon' => 'dashicons-store', 'half' => true, 'help' => 'عددی که ترب از افزونه رسمی‌اش («استخراج محصولات ووکامرس برای ترب») می‌گیرد. درستی را در «تنظیمات ترب ← مشاهده پیش‌نمایش محصولات» ببینید. ترب قیمت تازه را در بازدید بعدی خودش (معمولا تا یکی دو روز) می‌گیرد. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود.' ],
+		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت در اسکیما (گوگل)', 'icon' => 'dashicons-tag', 'help' => 'عددی که گوگل (اسکیما)، پیش‌نمایش لینک در شبکه‌های اجتماعی (متاتگ قیمت) و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود. بعد از تغییر، کش لایت‌اسپید را پاک کنید.' ],
+		'product_price_torob' => [ 'section' => 'product', 'title' => 'قیمت و نام در ترب', 'icon' => 'dashicons-store', 'layout' => 'torob', 'help' => 'قیمت و نامی که ترب از افزونه رسمی‌اش («استخراج محصولات ووکامرس برای ترب») می‌گیرد. درستی را در «تنظیمات ترب ← مشاهده پیش‌نمایش محصولات» یا تب «ترب» ویرایش هر محصول ببینید. ترب تغییر را در بازدید بعدی خودش (معمولا تا یکی دو روز) می‌گیرد. قیمت و نام در صفحه محصول، سبد و پرداخت عوض نمی‌شود.' ],
 		'product_upsells'    => [ 'section' => 'product', 'title' => 'محصولات پیشنهادی (Upsell)', 'icon' => 'dashicons-cart', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید.' ],
 
 		'blog_page'          => [ 'section' => 'blog', 'title' => 'صفحه وبلاگ', 'icon' => 'dashicons-welcome-write-blog' ],
@@ -1025,6 +1026,10 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 					<?php endforeach; ?>
 				</div>
 			<?php endif; ?>
+
+			<?php if ( 'torob' === $layout ) : ?>
+				<?php hodima_settings_torob_report(); ?>
+			<?php endif; ?>
 		</div>
 	<?php echo $collapse ? '</details>' : '</section>'; // phpcs:ignore WordPress.Security.EscapeOutput -- برچسب ثابت ?>
 	<?php
@@ -1279,6 +1284,71 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 
 		<?php if ( Hodima_Setting_Type::HostList === $type ) : // بعد از توضیح، مثل بقیه فیلدها (کنترل ← توضیح ← افزوده‌ها) ?>
 			<?php hodima_settings_render_host_suggestions( $id, (string) $value ); ?>
+		<?php endif; ?>
+	</div>
+	<?php
+}
+
+/**
+ * گزارش قاب «قیمت و نام در ترب»: چند محصول نام ترب‌شان از کجا ساخته می‌شود و
+ * کدام‌ها بررسی می‌خواهند (تعداد × قیمت تک با مبلغ حداقل سفارش نمی‌خواند).
+ * داده از Hodima SEO (hodima_seo_torob_report()، کش یک‌ساعته)؛ قالب فقط نمایش.
+ */
+function hodima_settings_torob_report(): void {
+
+	if ( ! function_exists( 'hodima_seo_torob_report' ) ) {
+		echo '<p class="hodima-hosts__note">برای نام ترب و این گزارش، افزونه Hodima SEO 2.2.5 لازم است.</p>';
+		return;
+	}
+
+	$report = hodima_seo_torob_report();
+	$counts = $report['counts'];
+	$edit   = static fn( int $id ): string => (string) get_edit_post_link( $id );
+	$items  = [
+		'table'   => 'تعداد از جدول مشخصات',
+		'cart'    => 'تعداد از حداقل سفارش ÷ قیمت تک',
+		'manual'  => 'تعداد دستی (تب ترب)',
+		'custom'  => 'نام کامل دلخواه',
+		'warning' => 'نیاز به بررسی',
+	];
+	?>
+	<div class="hodima-torob">
+		<p class="hodima-torob__title">وضعیت محصولات در ترب (ذخیره‌شده)</p>
+		<?php if ( 'min_order' !== $report['mode'] ) : ?>
+			<p class="hodima-hosts__note">«قیمتی که ترب بگیرد» روی قیمت تک است؛ نام خودکار ساخته نمی‌شود و فقط نام‌های کامل دلخواه به ترب می‌روند.</p>
+		<?php endif; ?>
+		<?php if ( 0 === $report['total'] ) : ?>
+			<p class="hodima-hosts__note">محصول ساده‌ای با «حداقل سفارش» یا نام دلخواه ترب پیدا نشد.</p>
+		<?php else : ?>
+			<ul class="hodima-torob__counts">
+				<li><strong><?php echo esc_html( number_format_i18n( $report['total'] ) ); ?></strong> محصول</li>
+				<?php foreach ( $items as $key => $label ) : ?>
+					<?php if ( ! empty( $counts[ $key ] ) ) : ?>
+						<li class="<?php echo esc_attr( 'warning' === $key ? 'is-warning' : '' ); ?>"><strong><?php echo esc_html( number_format_i18n( (int) $counts[ $key ] ) ); ?></strong> <?php echo esc_html( $label ); ?></li>
+					<?php endif; ?>
+				<?php endforeach; ?>
+			</ul>
+
+			<?php if ( $report['samples'] ) : ?>
+				<p class="hodima-hosts__note">نمونه نام در ترب:</p>
+				<ul class="hodima-torob__list">
+					<?php foreach ( $report['samples'] as $row ) : ?>
+						<li><a href="<?php echo esc_url( $edit( $row['id'] ) ); ?>"><?php echo esc_html( $row['title'] ); ?></a></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
+
+			<?php if ( $report['issues'] ) : ?>
+				<p class="hodima-hosts__note">نیاز به بررسی (عدد جدول یا مبلغ حداقل سفارش را درست کنید، یا در تب «ترب» همان محصول تعداد دستی بدهید):</p>
+				<ul class="hodima-torob__list hodima-torob__list--issues">
+					<?php foreach ( $report['issues'] as $row ) : ?>
+						<li>
+							<a href="<?php echo esc_url( $edit( $row['id'] ) ); ?>"><?php echo esc_html( $row['name'] ); ?></a>
+							<span><?php echo esc_html( $row['warning'] ); ?></span>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
 		<?php endif; ?>
 	</div>
 	<?php

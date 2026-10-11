@@ -16,6 +16,8 @@ parameters:
 		- plugins/hodima-core/includes/jalali.php
 		- plugins/hodima-commerce/core/time-jalali
 		- plugins/hodima-seo/schema
+		- plugins/hodima-seo/inc/product-price.php
+		- plugins/hodima-seo/inc/torob.php
 	excludePaths:
 		analyse:
 			- hodima/user-panel/*

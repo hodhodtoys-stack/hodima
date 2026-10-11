@@ -15,7 +15,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 | بسته | فایل اصلی | چه وقت کدش لود می‌شود |
 |---|---|---|
 | **Core** `plugins/hodima-core/` | `hodima-core.php` | **بلافاصله** هنگام include (نه در هوک) تا توابعش مستقل از ترتیب الفبا برای بقیه آماده باشد: `includes/helpers.php`، `jalali.php`، `modules.php`، `schema-graph.php`، `updates.php`، `litespeed.php`، `hardening.php`، `admin-font.php`؛ فقط پیشخوان: `admin-hub.php`، `admin-ui.php`، `admin-term-box.php`. اگر قالب نسخه ۱ فعال است (`hodima_legacy_theme_active()`) فقط updates + اعلان. |
-| **SEO** `plugins/hodima-seo/` | `hodima-seo.php` | `plugins_loaded`: بدون Core فالبک‌ها (`inc/schema-fallback.php`، `inc/admin-ui-fallback.php`)؛ همیشه `inc/product-price.php`، `inc/page-intro.php`؛ بعد ماژول‌های روشن از `hodima_seo_modules()` |
+| **SEO** `plugins/hodima-seo/` | `hodima-seo.php` | `plugins_loaded`: بدون Core فالبک‌ها (`inc/schema-fallback.php`، `inc/admin-ui-fallback.php`)؛ همیشه `inc/product-price.php`، `inc/torob.php` (نام و تب ترب؛ بعد از product-price)، `inc/page-intro.php`؛ بعد ماژول‌های روشن از `hodima_seo_modules()` |
 | **Commerce** `plugins/hodima-commerce/` | `hodima-commerce.php` | `plugins_loaded`: ماژول‌های `hodima_commerce_modules()`؛ `requires_wc` فقط با ووکامرس |
 | **Media** `plugins/hodima-media/` | `hodima-media.php` | `plugins_loaded`: فالبک‌ها، همیشه `inc/video-object.php`، بعد ماژول‌های `hodima_media_modules()` |
 | **قالب** `hodima/` | `functions.php` → `hodima_load_theme_files()` | ترتیب ثابت: `inc/classes/*` ← `home/logic.php`، `home/legacy.php` ← `inc/helpers.php` ← `media-sections` ← `theme-settings` ← `typography` ← `appearance` ← `extras` ← `home-layout` ← `blog` ← `breadcrumb` ← `setup` ← `enqueue` ← `header` ← `footer` ← `inc/performance/*` (الفبا، `00-litespeed.php` اول) ← اگر ووکامرس: `inc/woocommerce/*`. ترتیب = ترتیب ثبت هوک‌ها و CSSها؛ عوضش نکن. |
@@ -42,6 +42,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 | Media | `hodima_media_is_enabled()`، `hodima_media_get_data()`، `hodima_media_player_url()` | `page.php`، `inc/enqueue.php`، `inc/performance/ui-performance.php` |
 | Media | `hodima_media_videos_page_query()` | `template-page-videos.php` |
 | Media | `hodima_media_external_hosts()` | `inc/theme-settings/theme-settings.php` |
+| SEO | `hodima_seo_torob_report()` (`inc/torob.php`؛ گزارش قاب «قیمت و نام در ترب») | `inc/theme-settings/theme-settings.php` |
 | Media | شورت‌کدهای `hook_intro/video/voice/faq` فقط از راه `hodima_theme_media_html()` | `inc/media-sections.php`، `template-parts/media/*` |
 | Media | شورت‌کدهای `expand_*` (expandable-boxes) | `single-post.php`، `woocommerce/content-single-product.php`، `taxonomy-product_cat.php` |
 | Media ← قالب | فیلتر `hodima_media_displayed_taxonomies` (قالب اعلام می‌کند فقط `product_cat` بخش رسانه دارد) | `inc/media-sections.php` |
@@ -58,7 +59,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 |---|---|---|
 | Core | `function_exists( 'hodima_settings' )` = «قالب هدیما فعال است» ← لینک «تنظیمات قالب هدیما» در پنل و فوتر | `includes/admin-hub.php`، `admin-ui.php` |
 | Core و قالب | فیلتر مشترک `hodima_litespeed_active` (هر دو اجرا می‌کنند؛ نام تابع Core عمدا `hodima_core_litespeed_active` است تا با قالب قدیمی تداخل نکند) | `includes/litespeed.php`، `inc/performance/00-litespeed.php` |
-| SEO | `hodima_setting( 'phone' / 'phone_2' / 'logo_id' / product_offer_price / product_torob_price )` | AEO (`class-hodima-aeo-generator.php`)، `core/seobox/admin-ui.php`، `inc/product-price.php` |
+| SEO | `hodima_setting( 'phone' / 'phone_2' / 'logo_id' / product_offer_price / product_torob_price / product_torob_title )` و `hodima_settings_url( [ 'tab' => 'product' ] )` | AEO (`class-hodima-aeo-generator.php`)، `core/seobox/admin-ui.php`، `inc/product-price.php`، `inc/torob.php` |
 | SEO (Discover) | `hodima_setting( 'logo_id' / 'blog_meta_date' / 'blog_meta_updated' / 'blog_meta_author' )` و `hodima_settings_url( [ 'tab' => 'blog' ] )` — فهرست آمادگی (لوگو، نمایش تاریخ/نویسنده زیر عنوان مقاله)؛ با تغییر گزینه `hodima_theme_settings` کش ردیف‌ها کهنه می‌شود (فقط نام گزینه، بدون get_option) | `core/discover/discover-checks.php`، `core/discover/discover-cache.php` |
 | SEO | ثابت `hodima_VERSION` (حروف کوچک؛ نامش عوض نشود) | `google-indexing-api/modules/etag-handler.php` |
 | SEO | `hodima_litespeed_active()` | `class-hodima-bot-shield.php`، `google-indexing-api/core/helper.php` |
@@ -76,7 +77,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 
 **Media ← SEO:** `hodima_seo_schema_organization_node()` (`media-schema.php`، `media-video.php`)، `hodima_schema_webpage_emitted()` (`video-watch/videos-page.php`)؛ و Media به فیلترهای SEO وصل است: `hodima_breadcrumb_items`، `hodima_schema_webpage_node` (`video-watch/vid-w-schema.php`)، `hodima_product_additional_properties` (`hodima-table/hodima-table.php` ← مشخصات محصول در اسکیما).
 
-**SEO و Media ← Commerce:** کلاس `Hodima_Product_Specs_Table` (ردیف‌های جدول مشخصات؛ `product-schema-pro.php`، `hodima-table.php`)؛ SEO: `hodima_product_schema_availability()`، `hodima_product_stock_location()`.
+**SEO و Media ← Commerce:** کلاس `Hodima_Product_Specs_Table` (ردیف‌های جدول مشخصات؛ `product-schema-pro.php`، `hodima-table.php`؛ ردیف «تعداد» برای نام ترب در `inc/torob.php`)؛ SEO: `hodima_product_schema_availability()`، `hodima_product_stock_location()`.
 
 **شورت‌کدها:** SEO `[hook_intro]` (Media) را در `inc/page-intro.php` و `[woo_specs_table]` (Commerce) را در صفحه جدول‌های پیشخوان اسکیما (`schema/admin/views/view-tables.php`) به کار می‌برد.
 

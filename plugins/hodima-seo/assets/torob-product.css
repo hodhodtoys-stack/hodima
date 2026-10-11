@@ -1,0 +1,37 @@
+/* تب «ترب» ویرایش محصول (Hodima SEO، inc/torob.php) — فقط زیر ظرف همین تب */
+#hodima_torob_data .hodima-torob__preview {
+	margin: 12px;
+	padding: 12px 14px;
+	border: 1px solid #c3c4c7;
+	border-inline-start: 4px solid #25316a;
+	border-radius: 6px;
+	background: #f6f7f7;
+}
+
+#hodima_torob_data .hodima-torob__preview p {
+	margin: 0 0 6px;
+	padding: 0;
+	float: none;
+	width: auto;
+}
+
+#hodima_torob_data .hodima-torob__label {
+	color: #50575e;
+}
+
+#hodima_torob_data .hodima-torob__name {
+	font-size: 14px;
+}
+
+#hodima_torob_data .hodima-torob__warning {
+	color: #8a5a00;
+}
+
+#hodima_torob_data .hodima-torob__warning .dashicons {
+	color: #dba617;
+}
+
+#hodima_torob_data .hodima-torob__note {
+	color: #50575e;
+	font-style: italic;
+}

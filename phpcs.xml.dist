@@ -21,6 +21,9 @@
 	<file>plugins/hodima-core/includes/jalali.php</file>
 	<file>plugins/hodima-commerce/core/time-jalali</file>
 	<file>plugins/hodima-seo/schema</file>
+	<!-- قیمت و نام ترب (بخش ۱۰۱) -->
+	<file>plugins/hodima-seo/inc/product-price.php</file>
+	<file>plugins/hodima-seo/inc/torob.php</file>
 	<!-- داخل پوشه schema ولی اسکیما نیستند (سایت‌مپ، فید پادکست، صفحه‌های پیشخوان) -->
 	<exclude-pattern>plugins/hodima-seo/schema/admin/*</exclude-pattern>
 	<exclude-pattern>plugins/hodima-seo/schema/sitemap-core\.php</exclude-pattern>
