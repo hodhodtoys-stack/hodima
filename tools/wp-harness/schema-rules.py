@@ -19,6 +19,8 @@ compare.py فقط «قبل/بعد» را مقایسه می‌کند؛ اگر خ�
   ویدیو     نام، تصویر، تاریخ و contentUrl یا embedUrl
   بردکرامب  position پشت‌سرهم از ۱، هر پله نام و آدرس
   FAQ       سوال تکراری نه
+  فهرست     یک مجموعه آیتم فقط در یک فهرست (ItemList/OfferCatalog) — دسته وبلاگ
+            قبلا مقاله‌ها را هم در OfferCatalog و هم در ItemList داشت
 
   python3 schema-rules.py <outdir>        خروجی ۰ = همه قواعد قبول
 """
@@ -205,6 +207,21 @@ def check_page(name, html):
 
     for n in nodes:
         walk(n, rules)
+
+    # یک مجموعه آیتم در دو فهرست
+    lists = []
+
+    def collect_lists(node, _path):
+        if types(node) & {'ItemList', 'OfferCatalog'} and node.get('itemListElement'):
+            urls = frozenset(str(i.get('url') or i.get('item') or (i.get('@id') if len(i) > 1 else '')) for i in as_list(node['itemListElement']) if isinstance(i, dict))
+            if urls - {''}:
+                lists.append((node.get('@id', '/'.join(sorted(types(node)))), urls))
+    for n in nodes:
+        walk(n, collect_lists)
+    for i in range(len(lists)):
+        for j in range(i + 1, len(lists)):
+            if lists[i][1] == lists[j][1]:
+                err(f'یک فهرست دو بار: {lists[i][0]} و {lists[j][0]}')
 
     return errors
 

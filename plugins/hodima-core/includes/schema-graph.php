@@ -393,14 +393,20 @@ final class Schema_Graph {
 			$lines[] = sprintf( '  %s  %s  ← %s', $type, str_starts_with( $key, '#anon:' ) ? '(بدون @id)' : $key, '' !== $sources ? $sources : '?' );
 		}
 
-		$site     = trailingslashit( home_url() );
-		$dangling = [];
+		$site      = trailingslashit( home_url() );
+		$canonical = function_exists( 'hodima_get_canonical_url' ) ? hodima_get_canonical_url() : '';
+		$dangling  = [];
 
 		self::collect_refs( $nodes, $refs );
 
 		foreach ( array_unique( $refs ?? [] ) as $ref ) {
-			// ارجاع به صفحه‌ای دیگر از همین سایت (مثلا #product یک محصول مرتبط) مجاز است
-			if ( ! isset( $ids[ $ref ] ) && str_starts_with( $ref, $site . '#' ) ) {
+			/*
+			 * ارجاع بی‌مقصد به نود سطح سایت (#organization …) یا *همین صفحه* (#video،
+			 * #product، #breadcrumb …). قبلا فقط سطح سایت بررسی می‌شد و محتمل‌ترین
+			 * خطاها دیده نمی‌شد. ارجاع به صفحه‌ای دیگر از همین سایت (مثلا #product
+			 * یک محصول مرتبط) مجاز است.
+			 */
+			if ( ! isset( $ids[ $ref ] ) && ( str_starts_with( $ref, $site . '#' ) || ( '' !== $canonical && str_starts_with( $ref, $canonical . '#' ) ) ) ) {
 				$dangling[] = $ref;
 			}
 		}

@@ -63,7 +63,8 @@ function hodima_seo_render_imageobject_schema(): void {
 	}
 
 	$opt_credit     = sanitize_text_field( get_option( 'hodima_schema_image_credit', 'عکس متعلق به ' . $site_name . ' است.' ) );
-	$opt_license    = esc_url( get_option( 'hodima_schema_image_license', $site_url . 'terms/' ) );
+	// esc_url_raw (نه esc_url که «&» را «&#038;» می‌کرد و آدرس مجوز دارای ? در JSON خراب می‌شد)
+	$opt_license    = esc_url_raw( get_option( 'hodima_schema_image_license', $site_url . 'terms/' ) );
 	$opt_max_imgs   = (int) get_option( 'hodima_schema_image_max_count', 4 );
 	$opt_def_width  = get_option( 'hodima_schema_image_def_width', '500' );
 	$opt_def_height = get_option( 'hodima_schema_image_def_height', '500' );

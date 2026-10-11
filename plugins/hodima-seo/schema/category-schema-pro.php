@@ -127,24 +127,33 @@ function hodima_category_schema_fields(): ?array {
 			'@type'        => 'Audience',
 			'audienceType' => $audience_txt,
 		],
-		'mainEntity'  => [
+	];
+
+	/*
+	 * کاتالوگ فروش (OfferCatalog) فقط برای دسته محصول. باگ قبلی (تا SEO 2.2.0):
+	 * دسته مقاله هم OfferCatalog می‌گرفت که داخلش مقاله‌ها بودند (کاتالوگ فروشِ
+	 * مقاله!)، و همان مقاله‌ها یک بار دیگر در ItemList «#itemlist» آرشیو وبلاگ
+	 * (collection-lists-schema.php) می‌آمدند — دو فهرست از یک چیز در یک صفحه.
+	 */
+	if ( $is_product_cat ) {
+		$collection_page['mainEntity'] = [
 			'@type'         => 'OfferCatalog',
 			'@id'           => (string) $term_link . '#catalog',
 			'name'          => strtr( $catalog_tpl, $replace_vars ),
 			// شمارگر خود ترم (بدون کوئری اضافه)
 			'numberOfItems' => isset( $term->count ) ? (int) $term->count : 0,
-		],
-	];
+		];
+
+		// محصولات همین صفحه داخل همان OfferCatalog (زیرنوع ItemList)؛ نه یک ItemList جداگانه
+		$list_items = function_exists( 'hodima_get_archive_itemlist_elements' ) ? hodima_get_archive_itemlist_elements() : [];
+
+		if ( ! empty( $list_items ) ) {
+			$collection_page['mainEntity']['itemListElement'] = $list_items;
+		}
+	}
 
 	if ( ! empty( $image_url ) ) {
 		$collection_page['image'] = $image_url;
-	}
-
-	// محصولات همین صفحه داخل همان OfferCatalog (زیرنوع ItemList)؛ نه یک ItemList جداگانه
-	$list_items = function_exists( 'hodima_get_archive_itemlist_elements' ) ? hodima_get_archive_itemlist_elements() : [];
-
-	if ( ! empty( $list_items ) ) {
-		$collection_page['mainEntity']['itemListElement'] = $list_items;
 	}
 
 	/*

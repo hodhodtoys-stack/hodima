@@ -29,7 +29,7 @@ const HODIMA_SEO_FRONT_DEFAULT_CATEGORIES = [
 ];
 
 const HODIMA_SEO_FRONT_CATEGORIES_OPTION = 'hodima_schema_home_category_slugs';
-const HODIMA_SEO_FRONT_CACHE_KEY         = 'hodima_seo_front_extra_graph_v1';
+const HODIMA_SEO_FRONT_CACHE_KEY         = 'hodima_seo_front_extra_graph_v2'; // v2: ویدیوی hero (SEO 2.2.1) — کش قبلی خوانده نشود
 
 /**
  * نامک دسته‌های محصول برای ItemList صفحه اصلی، به ترتیب.
@@ -163,11 +163,26 @@ function hodima_seo_front_build_graph(): array {
 		'publisher'        => [ '@id' => $site_url . '#organization' ],
 	];
 
-	if ( preg_match( '/\.m(?:p4|3u8|kv|ebm)/i', $v_url ) ) {
+	/*
+	 * فایل مستقیم → contentUrl؛ صفحه آپارات/یوتیوب → embedUrl آدرس *پخش‌کننده*
+	 * (همان hodima_seo_schema_video_url بقیه ویدیوها). باگ‌های قبلی: «.webm»
+	 * (و .mov/.ogv) فایل شناخته نمی‌شد، و صفحه تماشای آپارات خودش embedUrl
+	 * می‌شد که گوگل نمی‌پذیرد.
+	 */
+	[ $v_prop, $v_player ] = hodima_seo_schema_video_url( $v_url );
+	$v_path                = strtolower( (string) wp_parse_url( $v_url, PHP_URL_PATH ) );
+
+	if ( 'contentUrl' === $v_prop || 1 === preg_match( '/\.(m3u8|mkv)$/', $v_path ) ) {
 		$video['contentUrl']     = $v_url;
-		$video['encodingFormat'] = str_contains( $v_url, '.m3u8' ) ? 'application/x-mpegURL' : 'video/mp4';
+		$video['encodingFormat'] = match ( pathinfo( $v_path, PATHINFO_EXTENSION ) ) {
+			'm3u8'       => 'application/x-mpegURL',
+			'webm'       => 'video/webm',
+			'mov'        => 'video/quicktime',
+			'ogv', 'ogg' => 'video/ogg',
+			default      => 'video/mp4',
+		};
 	} else {
-		$video['embedUrl'] = $v_url;
+		$video['embedUrl'] = $v_player;
 		$video['url']      = $site_url;
 	}
 

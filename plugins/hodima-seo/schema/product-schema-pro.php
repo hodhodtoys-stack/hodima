@@ -73,8 +73,12 @@ function hodima_seo_render_product_schema(): void {
 
 	$make_offer = hodima_product_schema_offer_factory(
 		[
-			// خطای «priceValidUntil not in ISO 8601» گوگل: wp_date روی این سایت شمسی می‌شد
-			'priceValidUntil'         => hodima_seo_schema_local_iso( strtotime( '+1 year' ), 'Y-m-d' ),
+			/*
+			 * پایان سال میلادی بعد (همیشه ۱ تا ۲ سال جلوتر). قبلا «یک سال از امروز» بود
+			 * و هر روز عوض می‌شد (اسکیمای همه محصولات هر روز «تغییر» می‌کرد).
+			 * خطای «priceValidUntil not in ISO 8601» گوگل: wp_date روی این سایت شمسی می‌شد.
+			 */
+			'priceValidUntil'         => ( (int) hodima_seo_schema_local_iso( time(), 'Y' ) + 1 ) . '-12-31',
 			'validFrom'               => $modified ? $modified->date( 'Y-m-d' ) : current_time( 'Y-m-d' ),
 			/*
 			 * فروشنده: سازمان درون‌خطی بدون @id. ارجاع به #organization عمدا نیست:
