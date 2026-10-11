@@ -12,7 +12,7 @@ compare.py فقط «قبل/بعد» را مقایسه می‌کند؛ اگر خ�
   آدرس      مطلق، بدون &#038; (esc_url به‌جای esc_url_raw)
   محصول     Offer با قیمت عددی و ارز ISO (هرگز IRT)، موجودی schema.org،
             ارسال و مرجوعی؛ تنوع‌ها inProductGroupWithID = productGroupID؛
-            وزن متریک (هرگز پوند/اونس)
+            وزن متریک (هرگز پوند/اونس)؛ بدون review تکی (فقط aggregateRating)
   مقاله     headline حداکثر ۱۱۰ نویسه، نویسنده و ناشر با @id
   تصویر     creator تصویرها بدون @id (اعتبارسنج Image Metadata گوگل
             WholesaleStore را برای creator نمی‌پذیرد)
@@ -172,6 +172,9 @@ def check_page(name, html):
                         err(f'{where}: تنوع {var.get("@id")} بدون Offer')
             if 'offers' in node and 'ProductGroup' in t:
                 err(f'{where}: ProductGroup خودش Offer دارد')
+            # فقط aggregateRating؛ نظرهای تکی هر کدام یک مورد جدا در گزارش گوگل می‌شدند (SEO 2.2.2)
+            if 'review' in node:
+                err(f'{where}: نظر تکی (review) در اسکیمای محصول؛ فقط aggregateRating')
 
         if t & {'BlogPosting', 'Article', 'NewsArticle'}:
             if len(str(node.get('headline', ''))) > 110:

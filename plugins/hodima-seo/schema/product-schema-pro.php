@@ -218,6 +218,12 @@ function hodima_seo_render_product_schema(): void {
 		$schema['subjectOf'] = [ '@id' => $video_node['@id'] ];
 	}
 
+	/*
+	 * فقط میانگین امتیاز (خلاصه همه نظرها در یک مورد؛ ستاره‌های نتایج گوگل از همین
+	 * است). نظرهای تکی (Review) عمدا نیستند: SEO 2.2.1 پنج نظر تازه را هم اعلام
+	 * می‌کرد و گزارش Review snippets گوگل برای هر محصول ۶ مورد هم‌نام نشان می‌داد،
+	 * بی‌فایده برای نمایش (خواست کاربر، SEO 2.2.2). دوباره اضافه نکنید.
+	 */
 	if ( $_product->get_review_count() > 0 ) {
 		$schema['aggregateRating'] = [
 			'@type'       => 'AggregateRating',
@@ -226,11 +232,6 @@ function hodima_seo_render_product_schema(): void {
 			'bestRating'  => '5',
 			'worstRating' => '1',
 		];
-
-		$reviews = hodima_product_schema_reviews( $_product );
-		if ( [] !== $reviews ) {
-			$schema['review'] = $reviews;
-		}
 	}
 
 	$graph = [ $schema ];
@@ -265,65 +266,6 @@ function hodima_product_schema_brand( WC_Product $product ): string {
 	}
 
 	return '';
-}
-
-/**
- * نظرهای مشتری (Review) — حداکثر ۵ نظر تأییدشده تازه که امتیاز دارند.
- * فقط وقتی نظرها روی صفحه نمایش داده می‌شوند (نظرهای ووکامرس روشن): اسکیما =
- * محتوای دیده‌شده. قبلا فقط میانگین امتیاز (aggregateRating) اعلام می‌شد.
- * نظر محصول روی صفحه همان فروشگاه برای گوگل مجاز است (محدودیت «نظر خودستایانه»
- * مال LocalBusiness/Organization است).
- *
- * @return list<array<string, mixed>>
- */
-function hodima_product_schema_reviews( WC_Product $product ): array {
-
-	if ( 'yes' !== get_option( 'woocommerce_enable_reviews', 'yes' ) || ( function_exists( 'wc_review_ratings_enabled' ) && ! wc_review_ratings_enabled() ) ) {
-		return [];
-	}
-
-	$comments = get_comments( [
-		'post_id'    => $product->get_id(),
-		'status'     => 'approve',
-		'type'       => 'review',
-		'number'     => 5,
-		'orderby'    => 'comment_date_gmt',
-		'order'      => 'DESC',
-		// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- فقط نظرهای یک محصول، ۵ ردیف
-		'meta_query' => [ [ 'key' => 'rating', 'value' => 0, 'compare' => '>', 'type' => 'NUMERIC' ] ],
-	] );
-
-	$reviews = [];
-
-	foreach ( (array) $comments as $comment ) {
-		if ( ! $comment instanceof WP_Comment ) {
-			continue;
-		}
-
-		$rating = (int) get_comment_meta( (int) $comment->comment_ID, 'rating', true );
-		$author = trim( wp_strip_all_tags( $comment->comment_author ) );
-		$date   = (string) $comment->comment_date_gmt;
-
-		if ( $rating < 1 || $rating > 5 || '' === $author || '' === $date || str_starts_with( $date, '0000' ) ) {
-			continue;
-		}
-
-		$review = [
-			'@type'         => 'Review',
-			'author'        => [ '@type' => 'Person', 'name' => $author ],
-			'datePublished' => gmdate( 'c', (int) strtotime( $date . ' UTC' ) ),
-			'reviewRating'  => [ '@type' => 'Rating', 'ratingValue' => $rating, 'bestRating' => 5, 'worstRating' => 1 ],
-		];
-
-		$body = trim( wp_strip_all_tags( $comment->comment_content ) );
-		if ( '' !== $body ) {
-			$review['reviewBody'] = wp_trim_words( $body, 60 );
-		}
-
-		$reviews[] = $review;
-	}
-
-	return $reviews;
 }
 
 /**
