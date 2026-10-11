@@ -107,7 +107,7 @@ function hodima_seo_render_product_schema(): void {
 		'description'      => hodima_product_schema_description( $_product ),
 		'sku'              => $sku,
 		// mpn عمدا نیست: قبلا همیشه برابر SKU فروشگاه بود (داده ساختگی)
-		'brand'            => [ '@type' => 'Brand', 'name' => get_option( 'hodima_schema_product_brand', 'هدهدلی' ) ],
+		'brand'            => [ '@type' => 'Brand', 'name' => hodima_product_schema_brand( $_product ) ?: get_option( 'hodima_schema_product_brand', 'هدهدلی' ) ],
 	];
 
 	$gtin = hodima_seo_schema_gtin( $_product );
@@ -226,6 +226,11 @@ function hodima_seo_render_product_schema(): void {
 			'bestRating'  => '5',
 			'worstRating' => '1',
 		];
+
+		$reviews = hodima_product_schema_reviews( $_product );
+		if ( [] !== $reviews ) {
+			$schema['review'] = $reviews;
+		}
 	}
 
 	$graph = [ $schema ];
@@ -234,6 +239,91 @@ function hodima_seo_render_product_schema(): void {
 	}
 
 	hodima_schema_add( [ '@graph' => $graph ], 'hodima-seo: product-schema-pro' );
+}
+
+/**
+ * برند خود محصول، یا رشته خالی (= برند پیش‌فرض پنل «اسکیما ← محصولات»).
+ * منبع: «برندها»ی خود ووکامرس (تکسونومی product_brand، ووکامرس ۹.۶+)، وگرنه
+ * ویژگی محصول به نام برند. قبلا همه محصولات برند پیش‌فرض را می‌گرفتند،
+ * حتی کالای برند دیگر.
+ */
+function hodima_product_schema_brand( WC_Product $product ): string {
+
+	if ( taxonomy_exists( 'product_brand' ) ) {
+		$terms = get_the_terms( $product->get_id(), 'product_brand' );
+		if ( is_array( $terms ) && isset( $terms[0] ) && $terms[0] instanceof WP_Term ) {
+			return wp_strip_all_tags( $terms[0]->name );
+		}
+	}
+
+	foreach ( [ 'pa_brand', 'pa_berand', 'brand', 'برند', 'نشان تجاری' ] as $attr ) {
+		// چند مقدار با «, » برمی‌گردد؛ برند اول
+		$value = trim( explode( ',', (string) $product->get_attribute( $attr ) )[0] );
+		if ( '' !== $value ) {
+			return wp_strip_all_tags( $value );
+		}
+	}
+
+	return '';
+}
+
+/**
+ * نظرهای مشتری (Review) — حداکثر ۵ نظر تأییدشده تازه که امتیاز دارند.
+ * فقط وقتی نظرها روی صفحه نمایش داده می‌شوند (نظرهای ووکامرس روشن): اسکیما =
+ * محتوای دیده‌شده. قبلا فقط میانگین امتیاز (aggregateRating) اعلام می‌شد.
+ * نظر محصول روی صفحه همان فروشگاه برای گوگل مجاز است (محدودیت «نظر خودستایانه»
+ * مال LocalBusiness/Organization است).
+ *
+ * @return list<array<string, mixed>>
+ */
+function hodima_product_schema_reviews( WC_Product $product ): array {
+
+	if ( 'yes' !== get_option( 'woocommerce_enable_reviews', 'yes' ) || ( function_exists( 'wc_review_ratings_enabled' ) && ! wc_review_ratings_enabled() ) ) {
+		return [];
+	}
+
+	$comments = get_comments( [
+		'post_id'    => $product->get_id(),
+		'status'     => 'approve',
+		'type'       => 'review',
+		'number'     => 5,
+		'orderby'    => 'comment_date_gmt',
+		'order'      => 'DESC',
+		// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- فقط نظرهای یک محصول، ۵ ردیف
+		'meta_query' => [ [ 'key' => 'rating', 'value' => 0, 'compare' => '>', 'type' => 'NUMERIC' ] ],
+	] );
+
+	$reviews = [];
+
+	foreach ( (array) $comments as $comment ) {
+		if ( ! $comment instanceof WP_Comment ) {
+			continue;
+		}
+
+		$rating = (int) get_comment_meta( (int) $comment->comment_ID, 'rating', true );
+		$author = trim( wp_strip_all_tags( $comment->comment_author ) );
+		$date   = (string) $comment->comment_date_gmt;
+
+		if ( $rating < 1 || $rating > 5 || '' === $author || '' === $date || str_starts_with( $date, '0000' ) ) {
+			continue;
+		}
+
+		$review = [
+			'@type'         => 'Review',
+			'author'        => [ '@type' => 'Person', 'name' => $author ],
+			'datePublished' => gmdate( 'c', (int) strtotime( $date . ' UTC' ) ),
+			'reviewRating'  => [ '@type' => 'Rating', 'ratingValue' => $rating, 'bestRating' => 5, 'worstRating' => 1 ],
+		];
+
+		$body = trim( wp_strip_all_tags( $comment->comment_content ) );
+		if ( '' !== $body ) {
+			$review['reviewBody'] = wp_trim_words( $body, 60 );
+		}
+
+		$reviews[] = $review;
+	}
+
+	return $reviews;
 }
 
 /**

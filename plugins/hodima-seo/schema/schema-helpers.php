@@ -232,6 +232,8 @@ function hodima_seo_schema_build_organization_node(): array {
 		}
 	}
 
+	$node = hodima_seo_schema_organization_extra( $node );
+
 	// نوع شماره‌ها از نسخه برگه تماس (دقیق‌تر): اولی فروش، بقیه پشتیبانی.
 	// قبلا صفحه اصلی همه را «customer service» و فقط با بیش از یک شماره می‌نوشت.
 	if ( [] !== $telephones ) {
@@ -272,6 +274,95 @@ function hodima_seo_schema_build_organization_node(): array {
 	unset( $node['audience'] );
 
 	return $node;
+}
+
+/** ارقام فارسی و عربی → لاتین. */
+function hodima_seo_schema_latin_digits( string $text ): string {
+	return strtr( $text, [
+		'۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+		'٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+		'٫' => '.', '،' => ',',
+	] );
+}
+
+/**
+ * اطلاعات حقوقی، تماس و موقعیت سازمان — فقط اگر در «اسکیما ← صفحه اصلی ←
+ * اطلاعات حقوقی و موقعیت» پر شده باشد (پیش‌فرض همه خالی؛ خروجی سایت‌هایی که
+ * پر نکرده‌اند عوض نمی‌شود): email، legalName، taxID، foundingDate، و برای
+ * نوع‌های کسب‌وکار محلی (WholesaleStore/LocalBusiness — زیرنوع Place) geo و hasMap.
+ *
+ * @param array<string, mixed> $node
+ * @return array<string, mixed>
+ */
+function hodima_seo_schema_organization_extra( array $node ): array {
+
+	$email = sanitize_email( (string) get_option( 'hodima_schema_org_email', '' ) );
+	if ( '' !== $email && is_email( $email ) ) {
+		$node['email'] = $email;
+	}
+
+	foreach ( [ 'legalName' => 'hodima_schema_org_legal_name', 'taxID' => 'hodima_schema_org_tax_id' ] as $prop => $option ) {
+		$value = trim( sanitize_text_field( (string) get_option( $option, '' ) ) );
+		if ( '' !== $value ) {
+			$node[ $prop ] = $value;
+		}
+	}
+
+	$founding = hodima_seo_schema_founding_date( (string) get_option( 'hodima_schema_org_founding_date', '' ) );
+	if ( '' !== $founding ) {
+		$node['foundingDate'] = $founding;
+	}
+
+	// geo و hasMap ویژگی Place اند؛ «سازمان عمومی» (Organization) آن‌ها را ندارد
+	if ( 'Organization' !== ( $node['@type'] ?? '' ) ) {
+		$lat = hodima_seo_schema_coordinate( (string) get_option( 'hodima_schema_geo_latitude', '' ), 90 );
+		$lng = hodima_seo_schema_coordinate( (string) get_option( 'hodima_schema_geo_longitude', '' ), 180 );
+		if ( null !== $lat && null !== $lng ) {
+			$node['geo'] = [ '@type' => 'GeoCoordinates', 'latitude' => $lat, 'longitude' => $lng ];
+		}
+
+		$map = esc_url_raw( (string) get_option( 'hodima_schema_geo_map_url', '' ) );
+		if ( '' !== $map ) {
+			$node['hasMap'] = $map;
+		}
+	}
+
+	return $node;
+}
+
+/**
+ * تاریخ تأسیس → «YYYY» یا «YYYY-MM-DD» میلادی، یا رشته خالی.
+ * سال شمسی تنها (۱۳۰۰ تا ۱۴۹۹) به سال میلادی شروع آن تبدیل می‌شود (۱۳۹۸ → 2019).
+ */
+function hodima_seo_schema_founding_date( string $raw ): string {
+
+	$raw = trim( hodima_seo_schema_latin_digits( $raw ) );
+
+	if ( 1 === preg_match( '/^(1[34][0-9]{2})$/', $raw, $m ) ) {
+		return (string) ( (int) $m[1] + 621 );
+	}
+
+	if ( 1 === preg_match( '/^(19|20)[0-9]{2}$/', $raw ) ) {
+		return $raw;
+	}
+
+	if ( 1 === preg_match( '/^((?:19|20)[0-9]{2})[-\/](0?[1-9]|1[0-2])[-\/](0?[1-9]|[12][0-9]|3[01])$/', $raw, $m ) && checkdate( (int) $m[2], (int) $m[3], (int) $m[1] ) ) {
+		return sprintf( '%04d-%02d-%02d', (int) $m[1], (int) $m[2], (int) $m[3] );
+	}
+
+	return '';
+}
+
+/** یک مختصات جغرافیایی (عرض: ۹۰، طول: ۱۸۰)، یا null اگر خالی/نامعتبر. */
+function hodima_seo_schema_coordinate( string $raw, int $limit ): ?float {
+
+	$raw = trim( hodima_seo_schema_latin_digits( $raw ) );
+
+	if ( 1 !== preg_match( '/^-?[0-9]{1,3}(\.[0-9]+)?$/', $raw ) || abs( (float) $raw ) > $limit ) {
+		return null;
+	}
+
+	return round( (float) $raw, 6 );
 }
 
 /**

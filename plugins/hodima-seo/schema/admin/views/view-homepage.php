@@ -49,6 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['hodima_homepage_schem
         if (isset($_POST['hodima_schema_homepage_slogan'])) update_option('hodima_schema_homepage_slogan', sanitize_text_field( wp_unslash( $_POST['hodima_schema_homepage_slogan'] ) ));
         if (isset($_POST['hodima_schema_geo_socials'])) update_option('hodima_schema_geo_socials', sanitize_textarea_field( wp_unslash( $_POST['hodima_schema_geo_socials'] ) ));
 
+        // ۵.۱ اطلاعات حقوقی و موقعیت (اختیاری؛ خالی = در اسکیما نمی‌آید — schema-helpers.php)
+        if (isset($_POST['hodima_schema_org_email'])) update_option('hodima_schema_org_email', sanitize_email( wp_unslash( $_POST['hodima_schema_org_email'] ) ));
+        if (isset($_POST['hodima_schema_org_legal_name'])) update_option('hodima_schema_org_legal_name', sanitize_text_field( wp_unslash( $_POST['hodima_schema_org_legal_name'] ) ));
+        if (isset($_POST['hodima_schema_org_tax_id'])) update_option('hodima_schema_org_tax_id', sanitize_text_field( wp_unslash( $_POST['hodima_schema_org_tax_id'] ) ));
+        if (isset($_POST['hodima_schema_org_founding_date'])) update_option('hodima_schema_org_founding_date', sanitize_text_field( wp_unslash( $_POST['hodima_schema_org_founding_date'] ) ));
+        if (isset($_POST['hodima_schema_geo_latitude'])) update_option('hodima_schema_geo_latitude', sanitize_text_field( wp_unslash( $_POST['hodima_schema_geo_latitude'] ) ));
+        if (isset($_POST['hodima_schema_geo_longitude'])) update_option('hodima_schema_geo_longitude', sanitize_text_field( wp_unslash( $_POST['hodima_schema_geo_longitude'] ) ));
+        if (isset($_POST['hodima_schema_geo_map_url'])) update_option('hodima_schema_geo_map_url', esc_url_raw( wp_unslash( $_POST['hodima_schema_geo_map_url'] ) ));
+
         // ۶. تنظیمات هوش مصنوعی (AI & GEO)
         if (isset($_POST['hodima_schema_ai_countries'])) update_option('hodima_schema_ai_countries', sanitize_textarea_field( wp_unslash( $_POST['hodima_schema_ai_countries'] ) ));
         if (isset($_POST['hodima_schema_ai_languages'])) update_option('hodima_schema_ai_languages', sanitize_text_field( wp_unslash( $_POST['hodima_schema_ai_languages'] ) ));
@@ -95,6 +104,15 @@ $catalog_name     = get_option('hodima_schema_homepage_catalog_name', 'خدما�
 $slogan           = get_option('hodima_schema_homepage_slogan', 'مرجع تخصصی خرید عمده و پخش سراسری در ایران');
 $knows_about      = get_option('hodima_schema_homepage_knows_about', "واردات اکسسوری مو\nپخش عمده کلیپس\nفروش عمده کش مو\nتولید و پخش گلسر\nلوازم خرازی و خرج‌کار");
 $socials          = get_option('hodima_schema_geo_socials', "https://instagram.com/hodima\nhttps://t.me/hodimaaccessory\nhttps://wa.me/989124093140");
+
+// اطلاعات حقوقی و موقعیت (پیش‌فرض خالی)
+$org_email        = get_option('hodima_schema_org_email', '');
+$org_legal_name   = get_option('hodima_schema_org_legal_name', '');
+$org_tax_id       = get_option('hodima_schema_org_tax_id', '');
+$org_founding     = get_option('hodima_schema_org_founding_date', '');
+$geo_latitude     = get_option('hodima_schema_geo_latitude', '');
+$geo_longitude    = get_option('hodima_schema_geo_longitude', '');
+$geo_map_url      = get_option('hodima_schema_geo_map_url', '');
 
 // دریافت مقادیر AI GEO
 $ai_countries     = get_option('hodima_schema_ai_countries', "Iran\nIraq\nUnited Arab Emirates\nAfghanistan\nPakistan\nOman\nTurkey");
@@ -259,6 +277,43 @@ $hodima_section = static function ( string $icon, string $title ): void {
                     <label>تا <input type="time" name="hodima_schema_geo_thursday_close" value="<?php echo esc_attr($th_close); ?>"></label>
                 </div>
             </td>
+        </tr>
+    </table>
+
+    <?php $hodima_section( 'dashicons-id-alt', 'اطلاعات حقوقی و موقعیت روی نقشه' ); ?>
+    <p class="description">همه این فیلدها اختیاری‌اند؛ هر کدام خالی بماند در اسکیما نمی‌آید. گوگل این اطلاعات را برای شناخت دقیق‌تر کسب‌وکار (پنل دانش و نقشه) می‌خواند.</p>
+    <table class="form-table" role="presentation">
+        <tr>
+            <th scope="row"><label for="hodima_schema_org_email">ایمیل تماس</label></th>
+            <td><input type="email" name="hodima_schema_org_email" id="hodima_schema_org_email" class="regular-text ltr" dir="ltr" value="<?php echo esc_attr($org_email); ?>" placeholder="info@example.com"></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_org_legal_name">نام ثبتی شرکت</label></th>
+            <td><input type="text" name="hodima_schema_org_legal_name" id="hodima_schema_org_legal_name" class="regular-text" value="<?php echo esc_attr($org_legal_name); ?>">
+                <p class="description">نام دقیق در روزنامه رسمی یا جواز کسب (legalName)، اگر با نام تجاری فرق دارد.</p></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_org_tax_id">شناسه ملی یا کد اقتصادی</label></th>
+            <td><input type="text" name="hodima_schema_org_tax_id" id="hodima_schema_org_tax_id" class="regular-text ltr" dir="ltr" value="<?php echo esc_attr($org_tax_id); ?>"></td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_org_founding_date">سال تأسیس</label></th>
+            <td><input type="text" name="hodima_schema_org_founding_date" id="hodima_schema_org_founding_date" class="regular-text ltr" dir="ltr" value="<?php echo esc_attr($org_founding); ?>" placeholder="1398">
+                <p class="description">سال شمسی (مثلا ۱۳۹۸) یا میلادی (2019)، یا تاریخ کامل میلادی (2019-04-21).</p></td>
+        </tr>
+        <tr>
+            <th scope="row">مختصات فروشگاه</th>
+            <td>
+                <div class="hd-inline">
+                    <label>عرض جغرافیایی <input type="text" name="hodima_schema_geo_latitude" class="ltr" dir="ltr" value="<?php echo esc_attr($geo_latitude); ?>" placeholder="35.7219"></label>
+                    <label>طول جغرافیایی <input type="text" name="hodima_schema_geo_longitude" class="ltr" dir="ltr" value="<?php echo esc_attr($geo_longitude); ?>" placeholder="51.3347"></label>
+                </div>
+                <p class="description">از نقشه گوگل یا نشان: روی محل فروشگاه کلیک کنید تا دو عدد مختصات نشان داده شود. فقط برای نوع «فروشگاه عمده‌فروشی» و «کسب‌وکار محلی».</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="hodima_schema_geo_map_url">لینک محل روی نقشه</label></th>
+            <td><input type="url" name="hodima_schema_geo_map_url" id="hodima_schema_geo_map_url" class="large-text ltr" dir="ltr" value="<?php echo esc_attr($geo_map_url); ?>"></td>
         </tr>
     </table>
 

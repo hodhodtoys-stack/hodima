@@ -117,7 +117,7 @@ function hodima_view_form_footer() {
 // «اسکیما» دیگر آیکون جداگانه در منوی اصلی پیشخوان ندارد؛ یک زیرمنو
 // در پنل «هدیما» (hodima-core) است، کنار «ماژول‌های سئو».
 //
-// سیزده صفحه تنظیمات همان آدرس‌های قبلی (admin.php?page=…) را دارند —
+// چهارده صفحه تنظیمات همان آدرس‌های قبلی (admin.php?page=…) را دارند —
 // لینک‌ها و بوک‌مارک‌ها خراب نمی‌شوند — ولی فقط «اسکیما» در منو دیده
 // می‌شود؛ بقیه از کارت‌های پیشخوان اسکیما و نوار بالای هر صفحه باز
 // می‌شوند. اگر Hodima Core فعال نباشد، منوی سطح بالای قبلی ساخته می‌شود.
@@ -130,6 +130,7 @@ function hodima_view_form_footer() {
 function hodima_schema_admin_pages(): array {
     return [
         'hodima-schema'            => [ 'پیشخوان اسکیما', 'پیشخوان', 'hodima_schema_dashboard_callback', 'dashicons-dashboard' ],
+        'hodima-schema-health'     => [ 'سلامت اسکیما', 'سلامت', 'hodima_schema_health_callback', 'dashicons-heart' ],
         'hodima-schema-homepage'   => [ 'اسکیمای صفحه اصلی', 'صفحه اصلی', 'hodima_schema_homepage_callback', 'dashicons-admin-home' ],
         'hodima-schema-breadcrumb' => [ 'اسکیمای بردکرامب', 'بردکرامب', 'hodima_schema_breadcrumb_callback', 'dashicons-editor-ol' ],
         'hodima-schema-blog'       => [ 'اسکیمای بلاگ', 'بلاگ', 'hodima_schema_blog_callback', 'dashicons-edit-page' ],
@@ -227,3 +228,4 @@ function hodima_podcast_callback()          { include __DIR__ . '/views/view-pod
 function hodima_schema_tables_callback()    { include __DIR__ . '/views/view-tables.php'; } 
 function hodima_llms_callback()             { include __DIR__ . '/views/view-llms.php'; }
 function hodima_schema_cleaner_callback()   { include __DIR__ . '/views/view-cleaner.php'; }
+function hodima_schema_health_callback()    { include __DIR__ . '/views/view-health.php'; }
