@@ -23,7 +23,13 @@ for f in files:
     out=[]
     for tag,i1,i2,j1,j2 in difflib.SequenceMatcher(None,a,b,autojunk=False).get_opcodes():
         if tag=='equal':
-            out.extend(orig[i1:i2])
+            for k, line in zip(range(j1, j2), orig[i1:i2]):
+                # آخرین خط فایل قدیمی بی‌newline بود؛ اگر حالا وسط فایل است، newline می‌گیرد
+                # (باگ قبلی: «}» آخر فایل قدیمی به خط بعدی فایل تازه می‌چسبید: «}/**»)
+                # همین‌طور آخر فایل اگر فایل تازه با newline تمام می‌شود (PHPCS: EndFileNewline)
+                if not line.endswith(('\n', '\r')) and (k != len(b) - 1 or cur[-1].endswith(('\n', '\r'))):
+                    line += dom
+                out.append(line)
         else:
             for k in range(j1,j2):
                 last = (k==len(b)-1) and not cur[-1].endswith(('\n','\r'))

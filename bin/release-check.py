@@ -360,6 +360,28 @@ def check_release(base, pkgs, bumped):
         ok('ZIP و JSON همه بسته‌ها با کد فعلی یکی‌اند')
 
 
+def eof_newline_only(path):
+    """تفاوت دو numstat فقط از «خط خالی پایان فایل» است؟ (فایل قبلی بدون newline پایانی
+    تمام می‌شد و حالا با آن — PHPCS برای فایل‌های زیر پوشش لازمش دارد؛ --ignore-cr-at-eol
+    این تفاوت را نادیده می‌گیرد و numstat دو حالت یک خط فرق می‌کند.)"""
+    orig = subprocess.run(['git', 'show', 'HEAD:' + path], cwd=ROOT, capture_output=True).stdout
+    try:
+        cur = open(os.path.join(ROOT, path), 'rb').read()
+    except OSError:
+        return False
+    if not orig or orig.endswith(b'\n') or not cur.endswith(b'\n'):
+        return False
+    strip = lambda l: l.rstrip(b'\r\n')
+    a, b = orig.splitlines(keepends=True), cur.splitlines(keepends=True)
+    import difflib
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, [strip(l) for l in a], [strip(l) for l in b], autojunk=False).get_opcodes():
+        if tag == 'equal':
+            for x, y in zip(a[i1:i2], b[j1:j2]):
+                if x != y and x is not a[-1]:
+                    return False  # خطی وسط فایل فقط پایان خطش عوض شده
+    return True
+
+
 def check_eol():
     print('== پایان خطوط')
     normal = git('diff', 'HEAD', '--numstat')
@@ -369,7 +391,7 @@ def check_eol():
         return
     a = {l.split('\t')[2]: l for l in normal.splitlines() if l.count('\t') >= 2}
     b = {l.split('\t')[2]: l for l in ignore.splitlines() if l.count('\t') >= 2}
-    bad = sorted(f for f in a if a[f] != b.get(f) and not f.endswith(('.zip', '.png', '.jpg', '.woff2')))
+    bad = sorted(f for f in a if a[f] != b.get(f) and not f.endswith(('.zip', '.png', '.jpg', '.woff2')) and not eof_newline_only(f))
     if bad:
         fail('پایان خط عوض شده (diff کل فایل) در: ' + '، '.join(bad[:6]) + ' — python3 tools/eol.py')
     else:

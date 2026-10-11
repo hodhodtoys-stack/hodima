@@ -11,9 +11,15 @@ parameters:
 	phpVersion: 80400
 	paths:
 		- hodima
+		# اسکیمای افزونه‌ها (همان مسیرهای phpcs.xml.dist)
+		- plugins/hodima-core/includes/schema-graph.php
+		- plugins/hodima-seo/schema
 	excludePaths:
 		analyse:
 			- hodima/user-panel/*
+			- plugins/hodima-seo/schema/admin/*
+			- plugins/hodima-seo/schema/sitemap-core.php
+			- plugins/hodima-seo/schema/podcast-feed-core.php
 	bootstrapFiles:
 		- tools/quality/phpstan-bootstrap.php
 	scanFiles:

@@ -15,8 +15,14 @@
 <ruleset name="Hodima">
 	<description>Hodima coding standard</description>
 
-	<!-- فعلا فقط قالب؛ برای افزونه‌ها مسیرشان را اینجا اضافه کنید -->
+	<!-- قالب + اسکیمای افزونه‌ها (گراف واحد Core و سازنده‌های SEO)؛ بقیه افزونه‌ها بعدا مسیرشان را اینجا اضافه کنند -->
 	<file>hodima</file>
+	<file>plugins/hodima-core/includes/schema-graph.php</file>
+	<file>plugins/hodima-seo/schema</file>
+	<!-- داخل پوشه schema ولی اسکیما نیستند (سایت‌مپ، فید پادکست، صفحه‌های پیشخوان) -->
+	<exclude-pattern>plugins/hodima-seo/schema/admin/*</exclude-pattern>
+	<exclude-pattern>plugins/hodima-seo/schema/sitemap-core\.php</exclude-pattern>
+	<exclude-pattern>plugins/hodima-seo/schema/podcast-feed-core\.php</exclude-pattern>
 
 	<exclude-pattern>*/vendor/*</exclude-pattern>
 	<exclude-pattern>*/node_modules/*</exclude-pattern>

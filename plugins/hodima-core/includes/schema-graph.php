@@ -65,7 +65,7 @@ final class Schema_Graph {
 
 	private const string CONTEXT = 'https://schema.org';
 
-	/** @var array<string, array> نودها به ترتیب ورود؛ کلید = @id یا «#anon:هش» */
+	/** @var array<string, array<string, mixed>> نودها به ترتیب ورود؛ کلید = @id یا «#anon:هش» */
 	private static array $nodes = [];
 
 	/** @var array<string, list<string>> منبع(های) هر نود — برای گزارش */
@@ -74,7 +74,7 @@ final class Schema_Graph {
 	/** @var list<string> تعارض‌های ادغام — برای گزارش */
 	private static array $conflicts = [];
 
-	/** @var list<array> payloadهایی که واژگان schema.org ندارند؛ دست‌نخورده چاپ می‌شوند */
+	/** @var list<array<mixed>> payloadهایی که واژگان schema.org ندارند؛ دست‌نخورده چاپ می‌شوند */
 	private static array $foreign = [];
 
 	public static bool $printed = false;
@@ -85,6 +85,8 @@ final class Schema_Graph {
 
 	/**
 	 * افزودن یک payload به گراف.
+	 *
+	 * @param array<mixed> $payload
 	 */
 	public static function add( array $payload, string $source = '' ): void {
 
@@ -95,7 +97,8 @@ final class Schema_Graph {
 		// payload دیرهنگام (بعد از چاپ گراف): جداگانه چاپ شود تا هیچ اسکیمایی گم نشود
 		if ( self::$printed ) {
 			static $late = 0;
-			self::echo_script( $payload, 'hodima-schema-late-' . ++$late );
+			++$late;
+			self::echo_script( $payload, 'hodima-schema-late-' . $late );
 			return;
 		}
 
@@ -114,7 +117,7 @@ final class Schema_Graph {
 		return isset( self::$nodes[ $id ] );
 	}
 
-	/** @return list<array> نودهای فعلی گراف (برای تست و ابزارها) */
+	/** @return list<array<string, mixed>> نودهای فعلی گراف (برای تست و ابزارها) */
 	public static function nodes(): array {
 		return array_values( self::$nodes );
 	}
@@ -148,7 +151,12 @@ final class Schema_Graph {
 	 * ورود نودها
 	 * ================================================================= */
 
-	/** سه شکل payload → فهرست نودها (بدون @context). */
+	/**
+	 * سه شکل payload → فهرست نودها (بدون @context).
+	 *
+	 * @param array<mixed> $payload
+	 * @return list<array<string, mixed>>
+	 */
 	private static function split( array $payload ): array {
 
 		if ( isset( $payload['@graph'] ) && is_array( $payload['@graph'] ) ) {
@@ -178,6 +186,7 @@ final class Schema_Graph {
 		return $out;
 	}
 
+	/** @param array<string, mixed> $node */
 	private static function add_node( array $node, string $source ): void {
 
 		$id = isset( $node['@id'] ) && is_string( $node['@id'] ) && '' !== $node['@id'] ? $node['@id'] : null;
@@ -208,6 +217,10 @@ final class Schema_Graph {
 
 	/**
 	 * ادغام دو شیء JSON-LD (هم‌شناسه، یا هر دو بدون شناسه).
+	 *
+	 * @param array<string, mixed> $base
+	 * @param array<string, mixed> $incoming
+	 * @return array<string, mixed>
 	 */
 	private static function merge( array $base, array $incoming, string $path ): array {
 
@@ -277,12 +290,16 @@ final class Schema_Graph {
 	 *   - عضو هم‌شناسه ادغام می‌شود
 	 *   - عضو دقیقا تکراری حذف می‌شود
 	 *   - Question با متن سوال یکسان یک بار (FAQ دو منبع)
+	 *
+	 * @param list<mixed> $items
+	 * @param list<mixed> $extra
+	 * @return list<mixed>
 	 */
-	private static function union( array $list, array $extra ): array {
+	private static function union( array $items, array $extra ): array {
 
 		foreach ( $extra as $item ) {
 
-			foreach ( $list as $i => $existing ) {
+			foreach ( $items as $i => $existing ) {
 
 				if ( self::same( $existing, $item ) ) {
 					continue 2;
@@ -291,7 +308,7 @@ final class Schema_Graph {
 				if ( is_array( $existing ) && is_array( $item ) ) {
 
 					if ( isset( $existing['@id'], $item['@id'] ) && $existing['@id'] === $item['@id'] ) {
-						$list[ $i ] = self::merge( $existing, $item, (string) $item['@id'] );
+						$items[ $i ] = self::merge( $existing, $item, (string) $item['@id'] );
 						continue 2;
 					}
 
@@ -302,10 +319,10 @@ final class Schema_Graph {
 				}
 			}
 
-			$list[] = $item;
+			$items[] = $item;
 		}
 
-		return $list;
+		return $items;
 	}
 
 	/* =================================================================
@@ -316,10 +333,12 @@ final class Schema_Graph {
 		return $a === $b || wp_json_encode( $a ) === wp_json_encode( $b );
 	}
 
+	/** @param array<mixed> $node */
 	private static function is_question( array $node ): bool {
 		return 'Question' === ( $node['@type'] ?? null ) && isset( $node['name'] ) && is_string( $node['name'] );
 	}
 
+	/** @param array<mixed> $node */
 	private static function question_key( array $node ): string {
 		$text = trim( wp_strip_all_tags( (string) $node['name'] ) );
 		return function_exists( 'mb_strtolower' ) ? mb_strtolower( $text ) : strtolower( $text );
@@ -334,6 +353,7 @@ final class Schema_Graph {
 		return mb_strimwidth( $json, 0, 90, '…' );
 	}
 
+	/** @param array<mixed> $payload */
 	private static function echo_script( array $payload, string $id ): void {
 
 		$json = wp_json_encode( $payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP );
@@ -354,7 +374,11 @@ final class Schema_Graph {
 		return (bool) apply_filters( 'hodima_schema_graph_debug', $enabled );
 	}
 
-	/** گزارش برای مدیر: منبع هر نود، تعارض‌ها و ارجاع‌های بدون مقصد. */
+	/**
+	 * گزارش برای مدیر: منبع هر نود، تعارض‌ها و ارجاع‌های بدون مقصد.
+	 *
+	 * @param list<array<string, mixed>> $nodes
+	 */
 	private static function debug_comment( array $nodes ): string {
 
 		// شناسه‌های تعریف‌شده، شامل نودهای تودرتو (مثل لوگو داخل Organization)
@@ -399,7 +423,12 @@ final class Schema_Graph {
 		return "\n<!--\n" . str_replace( '--', '- -', esc_html( implode( "\n", $lines ) ) ) . "\n-->\n";
 	}
 
-	/** شناسه همه نودهایی که تعریف شده‌اند (نه فقط ارجاع). */
+	/**
+	 * شناسه همه نودهایی که تعریف شده‌اند (نه فقط ارجاع).
+	 *
+	 * @param array<mixed>        $data
+	 * @param array<string, bool> $ids
+	 */
 	private static function collect_ids( array $data, array &$ids ): void {
 		foreach ( $data as $value ) {
 			if ( ! is_array( $value ) ) {
@@ -412,7 +441,12 @@ final class Schema_Graph {
 		}
 	}
 
-	/** همه ارجاع‌های {"@id": …} بدون ویژگی دیگر. */
+	/**
+	 * همه ارجاع‌های {"@id": …} بدون ویژگی دیگر.
+	 *
+	 * @param array<mixed>       $data
+	 * @param list<string>|null $refs
+	 */
 	private static function collect_refs( array $data, ?array &$refs ): void {
 		$refs ??= [];
 		foreach ( $data as $value ) {
@@ -429,4 +463,3 @@ final class Schema_Graph {
 }
 
 Schema_Graph::boot();
-

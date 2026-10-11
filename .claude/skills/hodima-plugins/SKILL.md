@@ -14,7 +14,7 @@ description: قانون‌های کد افزونه‌های هدیما (پوشه
 - `plugins/hodima-media/`: استوری، ویدیو، اسلایدر، سیستم رسانه (بدون Discover)، اعلان، جدول داینامیک
 
 ## اسکیما (JSON-LD) — قانون
-همه اسکیماها با `hodima_schema_add( $payload, 'منبع' )` به گراف واحد می‌روند و یک بار در `wp_footer` چاپ می‌شوند. **هرگز** `<script type="application/ld+json">` مستقیم echo نکن. نود صفحه (`{canonical}#webpage`) را فقط `schema/homepage-schema.php` می‌سازد؛ بقیه با فیلتر `hodima_schema_webpage_node` غنی‌اش می‌کنند. پایه همه `@id`ها `hodima_get_canonical_url()`. جزئیات: `HODIMA-AUDIT.md` بخش ۱۴.
+همه اسکیماها با `hodima_schema_add( $payload, 'منبع' )` به گراف واحد می‌روند و یک بار در `wp_footer` چاپ می‌شوند. **هرگز** `<script type="application/ld+json">` مستقیم echo نکن. نود صفحه (`{canonical}#webpage`) را فقط `schema/homepage-schema.php` می‌سازد؛ بقیه با فیلتر `hodima_schema_webpage_node` غنی‌اش می‌کنند. پایه همه `@id`ها `hodima_get_canonical_url()`. جزئیات: `HODIMA-AUDIT.md` بخش ۱۴. سازنده‌های `schema/*.php` را فقط خود ماژول «اسکیما» لود می‌کند (`admin/init.php` نه؛ بخش ۹۵). پوشه `schema/` (جز `admin/`، `sitemap-core.php`، `podcast-feed-core.php`) و `schema-graph.php` Core زیر PHPCS/PHPStan **بدون baseline** است: کد تازه باید تمیز باشد. قواعد خروجی در `tools/wp-harness/schema-rules.py` (ci-check اجرا می‌کند)؛ هر باگ اسکیمای رفع‌شده = یک قاعده تازه آنجا. بازنویسی بدون تغییر منطق را با مقایسه بایت‌به‌بایت JSON-LD قبل/بعد (چند حالت گزینه با `HARNESS_OPTS`) ثابت کن، نه فقط `compare-with-ref.sh`.
 
 ## قانون‌ها
 - ماژول‌ها: هر افزونه در `hodima_{seo|commerce|media}_modules()` ماژول‌هایش را تعریف می‌کند؛ کاربر در «هدیما ← ماژول‌های …» روشن/خاموش می‌کند. فراخوانی بین ماژول‌ها همیشه با `function_exists`/`class_exists` گارد شود.

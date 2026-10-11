@@ -28,32 +28,11 @@ if ( file_exists( $podcast_core_path ) ) {
 // llms-core.php حذف شد: فقط دو تابع خالی نمایشی داشت.
 // پیاده‌سازی واقعی llms.txt در components/indexnow-sync/includes/aeo/ است.
 
-// د) فراخوانی موتور اسکیمای اختصاصی برگه‌ها (جایگزین فید قدیمی ویدئو)
-$page_schema_path = HODIMA_SCHEMA_PATH . '/page-schema-pro.php';
-if ( file_exists( $page_schema_path ) ) {
-    require_once $page_schema_path;
-}
-
-// نکته: اگر سایر فایل‌های schema/*.php از طریق functions.php قالب (خارج از این
-// ZIP) لود می‌شوند، خطوط زیر تکراری اما کاملاً بی‌خطر هستند (require_once).
-// این تضمین می‌کند که حتی اگر آن مکانیزم به هر دلیلی فایل جدیدی مثل
-// corporate-schema.php را نمی‌شناسد، در سایت زنده هیچ اسکیمایی گم نشود.
-$hodima_all_schema_files = [
-    'blog-schema.php',
-    'breadcrumb-schema.php',
-    'category-schema-pro.php',
-    'corporate-schema.php',
-    'homepage-schema.php',
-    'imageobject-schema.php',
-    'product-schema-pro.php',
-    'schema-cleaner.php',
-];
-foreach ( $hodima_all_schema_files as $hodima_schema_file ) {
-    $hodima_schema_file_path = HODIMA_SCHEMA_PATH . '/' . $hodima_schema_file;
-    if ( file_exists( $hodima_schema_file_path ) ) {
-        require_once $hodima_schema_file_path;
-    }
-}
+// د) سازنده‌های اسکیما (schema/*.php) را فقط خود ماژول «اسکیما» لود می‌کند (hodima-seo.php).
+// باگ قبلی (تا SEO 2.1.9): اینجا همه آن‌ها دوباره لود می‌شدند، بدون schema-helpers.php؛
+// با خاموش بودن ماژول اسکیما و روشن بودن سایت‌مپ/پادکست، هر صفحه سایت خطای Fatal
+// «Call to undefined function hodima_seo_schema_org_name()» می‌داد. صفحه‌های پیشخوان
+// همه تابع‌های اسکیما را با function_exists گارد کرده‌اند.
 
 // ==============================================================
 // ۱. لود کردن فایل‌های استایل (CSS) + JS

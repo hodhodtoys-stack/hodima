@@ -4,6 +4,7 @@
 #   - هشدار/خطای PHP (Warning، Notice، Deprecated، Fatal) از کد هدیما در debug.log باشد؛
 #   - صفحه‌ای خالی یا ناقص باشد (بدون </html> در رندر کامل، بدون JSON-LD)؛
 #   - در یک تگ JSON-LD شناسه (@id) تکراری باشد؛
+#   - قواعد اسکیما (schema-rules.py: گراف واحد، هویت، تاریخ، آدرس، محصول، …) رد شوند؛
 #   - آزمون‌های خودکار سیستم رسانه و Google Discover (media-tests.php) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
@@ -41,6 +42,9 @@ echo "=== یکپارچگی اسکیما"
 python3 "$here/integrity.py" "$out" > "$out/integrity.txt"
 if grep -E "dup=\[[^]]" "$out/integrity.txt"; then fail=1; else echo "  ✔ بدون @id تکراری"; fi
 grep -E "dangling=\[[^]]" "$out/integrity.txt" | sed 's/^/  (ارجاع به صفحه دیگر — معمولا عمدی) /' || true
+
+echo "=== قواعد اسکیما (schema-rules.py)"
+python3 "$here/schema-rules.py" "$out" || fail=1
 
 echo "=== آزمون رسانه و Discover (media-tests.php)"
 if HARNESS=1 HODIMA_WP="$base/wp" php "$here/media-tests.php" > "$out/media-tests.txt" 2>&1; then

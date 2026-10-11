@@ -31,7 +31,11 @@ const HODIMA_SEO_FRONT_DEFAULT_CATEGORIES = [
 const HODIMA_SEO_FRONT_CATEGORIES_OPTION = 'hodima_schema_home_category_slugs';
 const HODIMA_SEO_FRONT_CACHE_KEY         = 'hodima_seo_front_extra_graph_v1';
 
-/** نامک دسته‌های محصول برای ItemList صفحه اصلی، به ترتیب. */
+/**
+ * نامک دسته‌های محصول برای ItemList صفحه اصلی، به ترتیب.
+ *
+ * @return list<string>
+ */
 function hodima_seo_front_category_slugs(): array {
 
 	$stored = get_option( HODIMA_SEO_FRONT_CATEGORIES_OPTION, false );
@@ -40,7 +44,11 @@ function hodima_seo_front_category_slugs(): array {
 	return array_values( array_filter( array_map( 'sanitize_title', (array) apply_filters( 'hodima_seo_front_category_slugs', $slugs ) ) ) );
 }
 
-/** ساخت گراف (بدون کش). */
+/**
+ * ساخت گراف (بدون کش).
+ *
+ * @return list<array<string, mixed>>
+ */
 function hodima_seo_front_build_graph(): array {
 
 	$site_url = trailingslashit( home_url( '/' ) );
@@ -175,7 +183,11 @@ function hodima_seo_front_build_graph(): array {
 	return $graph;
 }
 
-/** گراف با کش ۱۲ ساعته. */
+/**
+ * گراف با کش ۱۲ ساعته.
+ *
+ * @return list<array<string, mixed>>
+ */
 function hodima_seo_front_graph(): array {
 
 	$graph = get_transient( HODIMA_SEO_FRONT_CACHE_KEY );

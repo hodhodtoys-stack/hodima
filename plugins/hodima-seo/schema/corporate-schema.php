@@ -1,84 +1,63 @@
 <?php
 /**
- * Corporate & Contact Schema (E-E-A-T Booster for Wholesale)
- * Path: wp-content/plugins/hodima-seo/schema/corporate-schema.php
+ * اسکیمای برگه‌های درباره‌ما (AboutPage) و تماس (ContactPage)
+ * Path: plugins/hodima-seo/schema/corporate-schema.php
  *
- * توضیح مهم (رفع تکرار کد): این فایل دیگر مجموعه‌ی جداگانه‌ای از گزینه‌های
- * hodima_corp_* (نام شرکت، لوگو، تلفن‌ها، آدرس، شبکه‌های اجتماعی) نمی‌سازد.
- * تمام این اطلاعات از همان گزینه‌های واقعی که در «سیستم یکپارچه گراف دانش
- * گوگل و AI GEO» (admin/views/view-homepage.php) مدیریت می‌شوند خوانده می‌شود
- * (hodima_schema_homepage_*, hodima_schema_geo_*) — دقیقاً همان منبع داده‌ای
- * که homepage-schema.php هم برای نود Organization استفاده می‌کند. تنها دو
- * گزینه‌ی مخصوص همین فایل، hodima_corp_about_slug و hodima_corp_contact_slug
- * هستند که آن‌ها هم از قبل در همان صفحه‌ی view-homepage.php قابل ویرایش‌اند —
- * پس هیچ صفحه‌ی تنظیمات جدید یا گزینه‌ی تکراری لازم نیست.
- *
- * این اسکیما اعتبار قانونی و راه‌های ارتباطی سایت هدهد را به گوگل معرفی می‌کند.
+ * سازمان همان نود صفحه‌های دیگر است (schema-helpers.php؛ گزینه‌های
+ * hodima_schema_homepage_* و hodima_schema_geo_*) — قبلا این فایل نسخه دوم
+ * و ناقص‌تری از #organization می‌ساخت. تنها گزینه‌های خودش نامک دو برگه‌اند
+ * (hodima_corp_about_slug / hodima_corp_contact_slug، در همان صفحه تنظیمات).
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+declare(strict_types=1);
 
-add_action( 'wp_head', 'hook_render_corporate_schema' );
+defined( 'ABSPATH' ) || exit;
 
-function hook_render_corporate_schema() {
+add_action( 'wp_head', 'hodima_seo_render_corporate_schema' );
 
-    // همان کلید فعال/غیرفعال‌سازی که «سیستم یکپارچه گراف دانش» استفاده می‌کند؛
-    // یک سوییچ جداگانه برای این صفحه نگه‌داری نمی‌شود تا تکراری ایجاد نشود.
-    if ( get_option( 'hodima_schema_homepage_enable', '1' ) !== '1' ) {
-        return;
-    }
+function hodima_seo_render_corporate_schema(): void {
 
-    // خواندن اسلاگ برگه‌ها از همان تنظیمات مشترک (view-homepage.php)
-    $about_slug   = get_option( 'hodima_corp_about_slug', 'about-us' );
-    $contact_slug = get_option( 'hodima_corp_contact_slug', 'contact-us' );
+	// همان سوییچ «سیستم یکپارچه گراف دانش»؛ سوییچ جداگانه‌ای ندارد
+	if ( '1' !== get_option( 'hodima_schema_homepage_enable', '1' ) ) {
+		return;
+	}
 
-    $is_about   = is_page( $about_slug );
-    $is_contact = is_page( $contact_slug );
+	$is_about   = is_page( get_option( 'hodima_corp_about_slug', 'about-us' ) );
+	$is_contact = is_page( get_option( 'hodima_corp_contact_slug', 'contact-us' ) );
 
-    if ( ! $is_about && ! $is_contact ) {
-        return;
-    }
+	if ( ! $is_about && ! $is_contact ) {
+		return;
+	}
 
-    $site_url = trailingslashit( home_url() );
+	$site_url = trailingslashit( home_url() );
 
-    $page_type = $is_about ? 'AboutPage' : 'ContactPage';
-    // هم‌راستا با بقیه گراف: شناسه «#webpage» از موتور canonical مشترک
-    $page_url  = function_exists( 'hodima_get_canonical_url' ) && hodima_get_canonical_url() !== ''
-        ? hodima_get_canonical_url()
-        : get_permalink();
-    $page_name = get_the_title();
+	// شناسه «#webpage» از موتور canonical مشترک، دقیقا مثل homepage-schema.php (بدون trailingslashit)
+	$page_url = function_exists( 'hodima_get_canonical_url' ) && '' !== hodima_get_canonical_url()
+		? hodima_get_canonical_url()
+		: get_permalink();
 
-    // همان نود سازمان صفحه‌های دیگر (schema-helpers.php). قبلا این فایل نسخه
-    // جداگانه‌ای می‌ساخت که ساعت کاری، knowsAbout، شعار و areaServed نداشت،
-    // پس گوگل برای یک کسب‌وکار دو تعریف متفاوت می‌دید.
-    $organization_node = hodima_seo_schema_organization_node();
+	// پیش از فیلتر صفحه ساخته می‌شود (ترتیب قبلی اجرای فیلترها)
+	$organization_node = hodima_seo_schema_organization_node();
 
-    $webpage_node = [
-        '@type'       => $page_type,
-        '@id'         => $page_url . '#webpage', // بدون trailingslashit — دقیقا مثل homepage-schema
-        'url'         => $page_url,
-        'name'        => $page_name,
-        'isPartOf'    => [ '@id' => $site_url . '#website' ],
-        'about'       => [ '@id' => $site_url . '#organization' ],
-        'inLanguage'  => 'fa-IR',
-    ];
+	$webpage_node = [
+		'@type'      => $is_about ? 'AboutPage' : 'ContactPage',
+		'@id'        => $page_url . '#webpage',
+		'url'        => $page_url,
+		'name'       => get_the_title(),
+		'isPartOf'   => [ '@id' => $site_url . '#website' ],
+		'about'      => [ '@id' => $site_url . '#organization' ],
+		'inLanguage' => 'fa-IR',
+	];
 
-    // توضیح خالی ("") ویژگی بی‌معنا است؛ فقط وقتی متنی هست
-    $excerpt = wp_strip_all_tags( (string) get_the_excerpt() );
-    if ( '' !== $excerpt ) {
-        $webpage_node['description'] = $excerpt;
-    }
+	// توضیح خالی ("") ویژگی بی‌معنا است
+	$excerpt = wp_strip_all_tags( (string) get_the_excerpt() );
+	if ( '' !== $excerpt ) {
+		$webpage_node['description'] = $excerpt;
+	}
 
-    /*
-     * همان نقطه غنی‌سازی homepage-schema.php. قبلا نود صفحه درباره‌ما/تماس
-     * از این فیلتر رد نمی‌شد، پس بردکرامب همین صفحه (#breadcrumb) به هیچ
-     * نودی وصل نبود و رابطه‌های خوشه محتوایی به صورت نود جزئی جداگانه
-     * چاپ می‌شد.
-     */
-    $webpage_node = (array) apply_filters( 'hodima_schema_webpage_node', $webpage_node, $page_url );
-    $GLOBALS['hodima_schema_webpage_emitted'] = true;
+	// همان نقطه غنی‌سازی homepage-schema.php (بردکرامب، خوشه موضوعی، تاریخ‌ها)
+	$webpage_node = (array) apply_filters( 'hodima_schema_webpage_node', $webpage_node, $page_url );
+	hodima_schema_webpage_emitted( true );
 
-    hodima_schema_add( [ '@graph' => [ $organization_node, $webpage_node ] ], 'hodima-seo: corporate-schema' );
+	hodima_schema_add( [ '@graph' => [ $organization_node, $webpage_node ] ], 'hodima-seo: corporate-schema' );
 }

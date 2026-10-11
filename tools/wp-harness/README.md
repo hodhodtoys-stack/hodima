@@ -26,8 +26,12 @@ tools/wp-harness/important-audit.sh [--apply]      # !importantهای زائد �
 tools/wp-harness/css-equiv.sh            # CSS آخرین commit در برابر کار فعلی
 tools/wp-harness/css-equiv.sh --built    # سورس در برابر خروجی bin/build-css.mjs (bin/build.sh هم همین را اجبارا اجرا می‌کند)
 
-# بررسی GitHub Actions به‌صورت محلی: بدون هشدار PHP، بدون صفحه ناقص، بدون @id تکراری
+# بررسی GitHub Actions به‌صورت محلی: بدون هشدار PHP، بدون صفحه ناقص، بدون @id تکراری، قواعد اسکیما
 tools/wp-harness/ci-check.sh [ref]
+
+# فقط قواعد اسکیما روی خروجی run.sh (گراف واحد، #webpage = canonical، تاریخ ISO لاتین، آدرس بدون &#038;،
+# Offer با ارز ISO، تنوع‌ها، مقاله، creator تصویر بدون @id، ویدیو، بردکرامب، FAQ؛ ci-check هم اجرا می‌کند)
+python3 tools/wp-harness/schema-rules.py /tmp/hodima-harness/out-ci
 
 # آزمون خودکار سیستم رسانه و Google Discover (تجزیه‌گرها، سازنده VideoObject، بخش‌ها، REST؛ ci-check هم اجرا می‌کند)
 HARNESS=1 php tools/wp-harness/media-tests.php
@@ -58,6 +62,7 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 | `fixtures.php` | نصب تازه + داده آزمایشی. `HARNESS_OPTS` = کد PHP اضافه بعد از داده (مثلا خاموش کردن یک گزینه) |
 | `run.sh <src> <out>` | رندر همه صفحه‌ها و استخراج JSON-LD |
 | `render.php <path> <full\|hooks>` | رندر یک آدرس |
+| `schema-rules.py <out>` | قواعد اسکیما روی خروجی `run.sh` (خروجی ۰ = قبول). قاعده تازه = باگی که نباید برگردد |
 | `admin-render.php <slug>` | رندر یک صفحه پیشخوان با حساب مدیر |
 | `media-tests.php` | آزمون‌های خودکار سیستم رسانه و Discover (کد خروج ۱ = رد) |
 | `wp-eval.php '<php>'` | اجرای کد دلخواه روی سایت تست (`HARNESS=1 HODIMA_WP=… php wp-eval.php '…'`) |

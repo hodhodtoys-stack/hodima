@@ -28,10 +28,14 @@ function hodima_seo_lists_legacy_theme(): bool {
  * فقط فهرست محصولات به‌عنوان mainEntity آن اضافه می‌شود. اگر گراف اصلی در
  * پنل خاموش باشد، همان نود کامل در فوتر چاپ می‌شود.
  * ========================================================================= */
-add_filter( 'hodima_schema_webpage_node', 'hodima_seo_shop_enrich_webpage_node', 10, 2 );
+add_filter( 'hodima_schema_webpage_node', 'hodima_seo_shop_enrich_webpage_node' );
 add_action( 'wp_footer', 'hodima_seo_shop_fallback_schema', 20 );
 
-/** فهرست محصولات صفحه فروشگاه/برچسب، یا null. */
+/**
+ * فهرست محصولات صفحه فروشگاه/برچسب، یا null.
+ *
+ * @return array<string, mixed>|null
+ */
 function hodima_seo_shop_itemlist_node(): ?array {
 
 	static $memo = false;
@@ -57,14 +61,20 @@ function hodima_seo_shop_itemlist_node(): ?array {
 		return $memo;
 	}
 
-	return $memo = [
+	$memo = [
 		'@type'           => 'ItemList',
 		'numberOfItems'   => count( $items ),
 		'itemListElement' => $items,
 	];
+
+	return $memo;
 }
 
-function hodima_seo_shop_enrich_webpage_node( array $node, string $page_url = '' ): array {
+/**
+ * @param array<string, mixed> $node
+ * @return array<string, mixed>
+ */
+function hodima_seo_shop_enrich_webpage_node( array $node ): array {
 
 	$list = hodima_seo_shop_itemlist_node();
 

@@ -39,13 +39,18 @@ function hodima_seo_schema_logo_url(): string {
 		$logo = trailingslashit( home_url() ) . 'wp-content/uploads/2025/06/logo2.png';
 	}
 
-	return $memo = $logo;
+	$memo = $logo;
+
+	return $memo;
 }
 
 /**
  * نود لوگو (#logo) با ابعاد. گوگل لوگوی حداقل ۱۱۲×۱۱۲ می‌خواهد و بدون
  * width/height نمی‌تواند اندازه را بدون دانلود بسنجد (قبلا فقط url بود).
  * عمدا بدون contentUrl/creator: نود لوگو نباید در Image Metadata بررسی شود.
+ */
+/**
+ * @return array<string, mixed>
  */
 function hodima_seo_schema_logo_node(): array {
 
@@ -85,14 +90,23 @@ function hodima_seo_schema_org_name(): string {
 	return (string) ( get_option( 'hodima_schema_homepage_org_name' ) ?: get_bloginfo( 'name' ) ?: 'بازرگانی هدهد' );
 }
 
-/** فهرست چندخطی تنظیمات → آرایه بدون خط خالی. */
+/**
+ * فهرست چندخطی تنظیمات → آرایه بدون خط خالی.
+ *
+ * @return list<string>
+ */
 function hodima_seo_schema_lines( mixed $raw ): array {
 
 	if ( ! is_string( $raw ) || '' === trim( $raw ) ) {
 		return [];
 	}
 
-	return array_values( array_filter( array_map( 'trim', explode( "\n", $raw ) ), 'strlen' ) );
+	return array_values( array_filter( array_map( 'trim', explode( "\n", $raw ) ), 'hodima_seo_schema_filled' ) );
+}
+
+/** رشته خالی نیست (همان strlen برای array_filter؛ «0» می‌ماند). */
+function hodima_seo_schema_filled( string $value ): bool {
+	return '' !== $value;
 }
 
 /** شماره تلفن به قالب بین‌المللی (۰۲۱… → +9821…). */
@@ -122,6 +136,9 @@ function hodima_seo_schema_price_range(): string {
  * homepage-schema.php (همه صفحه‌ها) و corporate-schema.php (درباره‌ما/تماس)
  * هر دو همین را چاپ می‌کنند، پس سازمان در همه صفحه‌ها یکسان است.
  */
+/**
+ * @return array<string, mixed>
+ */
 function hodima_seo_schema_organization_node(): array {
 
 	$site_url = trailingslashit( home_url() );
@@ -129,7 +146,7 @@ function hodima_seo_schema_organization_node(): array {
 	$telephones = array_values( array_filter( array_map(
 		'hodima_seo_schema_phone',
 		hodima_seo_schema_lines( get_option( 'hodima_schema_geo_telephones', "+989124093140\n02177322684" ) )
-	), 'strlen' ) );
+	), 'hodima_seo_schema_filled' ) );
 
 	$node = [
 		'@type'       => get_option( 'hodima_schema_homepage_org_type', 'WholesaleStore' ) ?: 'WholesaleStore',
@@ -193,7 +210,7 @@ function hodima_seo_schema_organization_node(): array {
 
 	$lang_raw = (string) get_option( 'hodima_schema_ai_languages', '' );
 	if ( '' !== $lang_raw ) {
-		$languages = array_values( array_filter( array_map( 'trim', explode( ',', $lang_raw ) ), 'strlen' ) );
+		$languages = array_values( array_filter( array_map( 'trim', explode( ',', $lang_raw ) ), 'hodima_seo_schema_filled' ) );
 		if ( [] !== $languages ) {
 			$node['knowsLanguage'] = $languages;
 		}
@@ -233,7 +250,7 @@ function hodima_seo_schema_organization_node(): array {
 	}
 
 	// اتصال به ماژول AI GEO
-	$node = (array) apply_filters( 'wpgi_ai_geo_schema_data', $node );
+	$node = (array) apply_filters( 'wpgi_ai_geo_schema_data', $node ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- نام قدیمی ماژول AI GEO؛ عوض نشود
 
 	// audience روی Organization را اعتبارسنج گوگل نامعتبر گزارش می‌کرد
 	unset( $node['audience'] );
@@ -260,6 +277,23 @@ function hodima_seo_schema_iso_date( mixed $raw ): string {
 	$ts = ctype_digit( $raw ) ? (int) $raw : strtotime( $raw );
 
 	return ( $ts && $ts > 0 ) ? gmdate( 'c', $ts ) : '';
+}
+
+/**
+ * زمان یونیکس → تاریخ با تایم‌زون سایت (پیش‌فرض ISO 8601 کامل).
+ * DateTime بومی PHP + wp_timezone()، نه wp_date(): روی این سایت wp_date از
+ * مبدل تقویم شمسی رد می‌شود و تاریخ شمسی با ارقام فارسی می‌داد (خطای
+ * «not in ISO 8601 format» گوگل برای priceValidUntil و uploadDate).
+ */
+function hodima_seo_schema_local_iso( int|false $timestamp, string $format = 'c' ): string {
+
+	try {
+		$dt = new DateTime( '@' . $timestamp );
+		$dt->setTimezone( wp_timezone() );
+		return $dt->format( $format );
+	} catch ( Exception ) {
+		return gmdate( $format, (int) $timestamp );
+	}
 }
 
 /**
@@ -393,6 +427,9 @@ function hodima_seo_schema_panel_amount_rial( mixed $stored ): int {
  * سازمان (سیاست پیش‌فرض کل فروشگاه؛ گوگل از ۲۰۲۴ در سطح سازمان هم می‌خواند).
  * مهلت ۰ روز = مرجوعی پذیرفته نمی‌شود.
  */
+/**
+ * @return array<string, mixed>
+ */
 function hodima_seo_schema_return_policy(): array {
 
 	$days = (int) get_option( 'hodima_schema_product_return_days', 7 );
@@ -480,6 +517,9 @@ function hodima_seo_schema_person_id( int $user_id ): string {
  * نود Person نویسنده. مقاله با @id به آن ارجاع می‌دهد و صفحه نویسنده
  * (ProfilePage) آن را mainEntity دارد؛ قبلا نویسنده هر مقاله یک Person
  * جداگانه بدون شناسه بود و گوگل نمی‌توانست مقاله‌های یک نویسنده را به هم وصل کند.
+ */
+/**
+ * @return array<string, mixed>
  */
 function hodima_seo_schema_person_node( int $user_id ): array {
 
