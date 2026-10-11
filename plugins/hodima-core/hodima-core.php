@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Core
  * Plugin URI:        https://hodima.com
  * Description:       کتابخانه مشترک افزونه‌های هدیما: تشخیص IP واقعی (سازگار با Cloudflare)، محدودیت نرخ، تشخیص ربات موتور جستجو، موتور Canonical، گراف واحد اسکیما (JSON-LD) و بررسی محتوای محافظت‌شده. پیش‌نیاز Hodima SEO، Hodima Commerce و Hodima Media.
- * Version:           1.2.3
+ * Version:           1.2.4
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Author:            آرین فتحی
@@ -17,7 +17,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 // پیشوند HODIMA_CORE_PLUGIN_ چون HODIMA_CORE_* قبلا در ماژول IndexNow (افزونه SEO) استفاده شده است.
-const HODIMA_CORE_PLUGIN_VERSION = '1.2.3';
+const HODIMA_CORE_PLUGIN_VERSION = '1.2.4';
 define( 'HODIMA_CORE_PLUGIN_FILE', __FILE__ );
 define( 'HODIMA_CORE_PLUGIN_DIR', __DIR__ );
 define( 'HODIMA_CORE_PLUGIN_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -92,6 +92,9 @@ if ( hodima_legacy_theme_active() ) {
 // بلافاصله لود می‌شود (نه در plugins_loaded) تا توابع برای افزونه‌های دیگر و
 // قالب، مستقل از ترتیب الفبایی بارگذاری افزونه‌ها، در دسترس باشند.
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/helpers.php';
+
+// تاریخ شمسی مشترک (تبدیل و قالب‌بندی)؛ Commerce و SEO از این استفاده می‌کنند
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/jalali.php';
 
 // مدیریت ماژول‌ها (هر افزونه ماژول‌هایش را در plugins_loaded ثبت می‌کند)
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/modules.php';

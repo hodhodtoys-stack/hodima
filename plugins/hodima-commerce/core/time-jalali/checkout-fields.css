@@ -1,0 +1,50 @@
+/*
+ * فیلدهای ایرانی فرم آدرس ووکامرس (تسویه‌حساب و «حساب کاربری ← ویرایش آدرس»)؛ فقط همین صفحه‌ها لود می‌شود.
+ * رنگ‌ها از توکن‌های قالب هدیما؛ مقدار دوم فقط وقتی قالب دیگری فعال است.
+ * بدون nesting: CSS افزونه مثل قالب مرحله ساخت ندارد و Chrome 109 / Safari 15 قانون تودرتو را نادیده می‌گیرند.
+ */
+
+:is(#billing_phone, #shipping_phone, #billing_postcode, #shipping_postcode, #billing_national_id) {
+	direction: ltr;
+	text-align: start; /* با direction: ltr یعنی چپ */
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.05em;
+}
+
+:is(.woocommerce-checkout, .woocommerce-account) .form-row input.hodima-input-error {
+	border-color: var(--hodima-state-danger, #a32a2a);
+	box-shadow: 0 0 0 3px rgba(var(--hodima-state-danger-rgb, 163, 42, 42), 0.15);
+}
+
+:is(.woocommerce-checkout, .woocommerce-account) .form-row input.hodima-input-success {
+	border-color: var(--hodima-state-success, #2f7a55);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	:is(input.hodima-input-error, input.hodima-input-success) {
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+}
+
+/* «انتخاب از فهرست شهرها» زیر کادر نام شهر (بعد از «شهر من در فهرست نیست») */
+.hodima-city-back {
+	display: inline-block;
+	margin-block-start: 0.4rem;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--hodima-secondary, #607bbd);
+	font: inherit;
+	font-size: 0.875em;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.hodima-city-back:hover {
+	color: var(--hodima-primary, #25316a);
+}
+
+.hodima-city-back:focus-visible {
+	outline: 2px solid var(--hodima-secondary, #607bbd);
+	outline-offset: 2px;
+}

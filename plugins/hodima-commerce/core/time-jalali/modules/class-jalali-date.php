@@ -1,246 +1,214 @@
 <?php
+/**
+ * تاریخ شمسی در سراسر سایت و ووکامرس (فیلترهای تاریخ وردپرس).
+ *
+ * تبدیل و قالب‌بندی در Hodima Core است (includes/jalali.php، hodima_jalali_format)؛ این کلاس فقط
+ * تصمیم می‌گیرد کدام تاریخ نمایشی است و شمسی شود و کدام ماشینی است و دست نخورد.
+ *
+ * @package Hodima_Commerce
+ */
+
 declare( strict_types=1 );
 namespace Hodima\Core\Time_Jalali\Modules;
 
-use WC_DateTime;
 defined( 'ABSPATH' ) || exit;
 
+/** فیلترهای تاریخ وردپرس و ووکامرس ← شمسی با رقم فارسی. */
 final class Jalali_Date {
-    private array $date_cache = [];
-    
-    private const PERSIAN_MONTHS = [1=>'فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-    private const PERSIAN_DAYS = ['Saturday'=>'شنبه','Sunday'=>'یکشنبه','Monday'=>'دوشنبه','Tuesday'=>'سه‌شنبه','Wednesday'=>'چهارشنبه','Thursday'=>'پنجشنبه','Friday'=>'جمعه'];
 
-    public function __construct() {
-        add_filter( 'wc_format_datetime', [ $this, 'convert_to_jalali_html5' ], 10, 2 );
-        add_filter( 'woocommerce_rest_prepare_shop_order_object', [ $this, 'inject_jalali_to_rest_api' ], 10, 3 );
-        
-        add_filter( 'wp_date', [ $this, 'convert_wp_date_globally' ], 10, 4 );
-        add_filter( 'date_i18n', [ $this, 'convert_date_i18n_globally' ], 10, 4 );
-        
-        add_filter( 'get_comment_date', [ $this, 'convert_comment_date' ], 10, 3 );
-        add_filter( 'get_comment_time', [ $this, 'convert_comment_time' ], 10, 5 );
-        
-        add_filter( 'get_the_date', [ $this, 'convert_post_date' ], 10, 3 );
-        add_filter( 'get_the_time', [ $this, 'convert_post_time' ], 10, 3 );
-    }
+	/**
+	 * نتیجه قالب‌بندی‌های تکراری در همین درخواست.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $cache = [];
 
-    /*
-     * چهار فیلتر زیر ورودی mixed دارند: get_the_time( 'U' ) و مانندش عدد برمی‌گردانند؛
-     * نوع string آن را به متن تبدیل می‌کرد و کدی که عدد می‌خواست خطا می‌گرفت.
-     */
-    public function convert_comment_date( mixed $date, string $format, $comment ): mixed {
-        if ( $this->is_machine_format( $format ) ) {
-            return $date;
-        }
-        if ( isset( $comment->comment_date ) ) {
-            try {
-                $format = $format ?: get_option( 'date_format' );
-                $timestamp = strtotime( $comment->comment_date );
-                return $this->to_persian_numbers( $this->format_jalali_date( (int) $timestamp, $format ) );
-            } catch ( \Throwable $e ) {}
-        }
-        return $date;
-    }
+	/** بدون Hodima Core (کتابخانه شمسی) ماژول کاری نمی‌کند (Fatal نه). */
+	public static function available(): bool {
+		return function_exists( 'hodima_jalali_format' );
+	}
 
-    public function convert_comment_time( mixed $time, string $format, bool $gmt, bool $translate, $comment ): mixed {
-        if ( $this->is_machine_format( $format ) ) {
-            return $time;
-        }
-        if ( isset( $comment->comment_date ) ) {
-            try {
-                $format = $format ?: get_option( 'time_format' );
-                $timestamp = strtotime( $comment->comment_date );
-                return $this->to_persian_numbers( $this->format_jalali_date( (int) $timestamp, $format ) );
-            } catch ( \Throwable $e ) {}
-        }
-        return $time;
-    }
+	/** ثبت فیلترها. */
+	public function __construct() {
+		// فیلتر «wc_format_datetime» که اینجا بود در ووکامرس وجود ندارد و هرگز اجرا نمی‌شد (حذف شد)؛
+		// تاریخ‌های ووکامرس (wc_format_datetime ← date_i18n) از فیلتر date_i18n شمسی می‌شوند.
+		add_filter( 'woocommerce_rest_prepare_shop_order_object', [ $this, 'inject_jalali_to_rest_api' ] );
+		add_filter( 'wp_date', [ $this, 'convert_wp_date_globally' ], 10, 4 );
+		add_filter( 'date_i18n', [ $this, 'convert_date_i18n_globally' ], 10, 3 );
+		add_filter( 'get_comment_date', [ $this, 'convert_comment_date' ], 10, 3 );
+		add_filter( 'get_comment_time', [ $this, 'convert_comment_time' ], 10, 5 );
+		add_filter( 'get_the_date', [ $this, 'convert_post_date' ], 10, 3 );
+		add_filter( 'get_the_time', [ $this, 'convert_post_time' ], 10, 3 );
+	}
 
-    public function convert_post_date( mixed $the_date, string $format, $post ): mixed {
-        if ( $this->is_machine_format( $format ) ) {
-            return $the_date;
-        }
-        try {
-            $post = get_post( $post );
-            if ( $post ) {
-                $format = $format ?: get_option( 'date_format' );
-                $timestamp = strtotime( $post->post_date );
-                return $this->to_persian_numbers( $this->format_jalali_date( (int) $timestamp, $format ) );
-            }
-        } catch ( \Throwable $e ) {}
-        return $the_date;
-    }
+	/*
+	 * چهار فیلتر زیر ورودی mixed دارند: get_the_time( 'U' ) و مانندش عدد برمی‌گردانند؛
+	 * نوع string آن را به متن تبدیل می‌کرد و کدی که عدد می‌خواست خطا می‌گرفت.
+	 */
 
-    public function convert_post_time( mixed $the_time, string $format, $post ): mixed {
-        if ( $this->is_machine_format( $format ) ) {
-            return $the_time;
-        }
-        try {
-            $post = get_post( $post );
-            if ( $post ) {
-                $format = $format ?: get_option( 'time_format' );
-                $timestamp = strtotime( $post->post_date );
-                return $this->to_persian_numbers( $this->format_jalali_date( (int) $timestamp, $format ) );
-            }
-        } catch ( \Throwable $e ) {}
-        return $the_time;
-    }
+	/**
+	 * تاریخ دیدگاه.
+	 *
+	 * @param mixed  $date    مقدار وردپرس.
+	 * @param string $format  قالب درخواستی ('' = قالب تاریخ سایت).
+	 * @param mixed  $comment دیدگاه.
+	 */
+	public function convert_comment_date( mixed $date, string $format, mixed $comment ): mixed {
+		if ( $this->is_machine_format( $format ) || ! isset( $comment->comment_date ) ) {
+			return $date;
+		}
+		return $this->format_local( (string) $comment->comment_date, $format ?: (string) get_option( 'date_format' ), $date );
+	}
 
-    public function convert_wp_date_globally( string $date, string $format, int $timestamp, mixed $timezone ): string {
-        if ( $this->is_machine_format( $format ) ) {
-            return $date;
-        }
-        try { 
-            /*
-             * باگ قبلی: wp_date یک timestamp واقعی (UTC) می‌دهد ولی format_jalali_date
-             * با gmdate می‌سازد؛ پس ساعت به وقت UTC (۳:۳۰ عقب‌تر از تهران) و بین
-             * ۰۰:۰۰ تا ۰۳:۳۰ روز هم اشتباه بود. حالا اختلاف منطقه زمانی مقصد در همان
-             * لحظه اضافه می‌شود. date_i18n هم از همین مسیر با منطقه UTC رد می‌شود
-             * (اختلاف صفر)، پس دوبار جابه‌جا نمی‌شود.
-             */
-            $tz    = $timezone instanceof \DateTimeZone ? $timezone : wp_timezone();
-            $local = $timestamp + $tz->getOffset( new \DateTimeImmutable( '@' . $timestamp ) );
-            return $this->to_persian_numbers( $this->format_jalali_date( $local, $format ) ); 
-        } catch ( \Throwable $e ) { 
-            return $date; 
-        }
-    }
+	/**
+	 * ساعت دیدگاه.
+	 *
+	 * @param mixed  $time      مقدار وردپرس.
+	 * @param string $format    قالب درخواستی ('' = قالب ساعت سایت).
+	 * @param bool   $gmt       ساعت گرینویچ.
+	 * @param bool   $translate ترجمه.
+	 * @param mixed  $comment   دیدگاه.
+	 */
+	public function convert_comment_time( mixed $time, string $format, bool $gmt, bool $translate, mixed $comment ): mixed {
+		if ( $this->is_machine_format( $format ) || ! isset( $comment->comment_date ) ) {
+			return $time;
+		}
+		// باگ قبلی: ساعت گرینویچ خواسته‌شده هم از ساعت محلی ساخته می‌شد
+		$source = $gmt && isset( $comment->comment_date_gmt ) ? $comment->comment_date_gmt : $comment->comment_date;
+		return $this->format_local( (string) $source, $format ?: (string) get_option( 'time_format' ), $time );
+	}
 
-    public function convert_date_i18n_globally( string $date, string $format, int $timestamp, bool $gmt ): string {
-        if ( $this->is_machine_format( $format ) ) {
-            return $date;
-        }
-        try { 
-            return $this->to_persian_numbers( $this->format_jalali_date( $timestamp, $format ) ); 
-        } catch ( \Throwable $e ) { 
-            return $date; 
-        }
-    }
+	/**
+	 * تاریخ نوشته.
+	 *
+	 * @param mixed  $the_date مقدار وردپرس.
+	 * @param string $format   قالب درخواستی.
+	 * @param mixed  $post     نوشته.
+	 */
+	public function convert_post_date( mixed $the_date, string $format, mixed $post ): mixed {
+		if ( $this->is_machine_format( $format ) ) {
+			return $the_date;
+		}
+		$post = get_post( $post );
+		return $post ? $this->format_local( $post->post_date, $format ?: (string) get_option( 'date_format' ), $the_date ) : $the_date;
+	}
 
-    public function inject_jalali_to_rest_api( $response, $object, $request ) {
-        try {
-            $data = $response->get_data();
-            $date_fields = [ 'date_created', 'date_modified', 'date_completed', 'date_paid' ];
-            $format = get_option( 'date_format', 'Y/m/d' );
-            
-            foreach ( $date_fields as $field ) {
-                if ( ! empty( $data[$field] ) ) {
-                    $wc_date = new WC_DateTime( $data[$field] );
-                    $data[ $field . '_jalali' ] = $this->to_persian_numbers( $this->format_jalali_date( $wc_date->getOffsetTimestamp(), $format ) );
-                }
-            }
-            $response->set_data( $data );
-        } catch ( \Throwable $e ) {}
-        return $response;
-    }
+	/**
+	 * ساعت نوشته.
+	 *
+	 * @param mixed  $the_time مقدار وردپرس.
+	 * @param string $format   قالب درخواستی.
+	 * @param mixed  $post     نوشته.
+	 */
+	public function convert_post_time( mixed $the_time, string $format, mixed $post ): mixed {
+		if ( $this->is_machine_format( $format ) ) {
+			return $the_time;
+		}
+		$post = get_post( $post );
+		return $post ? $this->format_local( $post->post_date, $format ?: (string) get_option( 'time_format' ), $the_time ) : $the_time;
+	}
 
-    public function convert_to_jalali_html5( string $formatted_date, mixed $date_obj ): string {
-        if ( ! $date_obj instanceof WC_DateTime ) return $formatted_date;
-        try {
-            $timestamp   = $date_obj->getOffsetTimestamp();
-            $format      = get_option( 'date_format', 'Y/m/d' );
-            $jalali_date = $this->to_persian_numbers( $this->format_jalali_date( $timestamp, $format ) );
-            $iso_date    = gmdate( 'c', $timestamp );
+	/**
+	 * فیلتر wp_date: timestamp واقعی + منطقه زمانی مقصد.
+	 *
+	 * @param string $date      خروجی وردپرس.
+	 * @param string $format    قالب.
+	 * @param int    $timestamp Unix timestamp.
+	 * @param mixed  $timezone  DateTimeZone.
+	 */
+	public function convert_wp_date_globally( string $date, string $format, int $timestamp, mixed $timezone ): string {
+		if ( $this->is_machine_format( $format ) ) {
+			return $date;
+		}
+		return $this->format( $format, $timestamp, $timezone instanceof \DateTimeZone ? $timezone : wp_timezone() );
+	}
 
-            if ( function_exists( 'is_wc_endpoint_url' ) && ! is_admin() && ! is_wc_endpoint_url() && ! is_checkout() && ! is_account_page() ) {
-                return $jalali_date;
-            }
-            
-            return sprintf( 
-                '<time datetime="%s" class="hodima-wc-date" data-timestamp="%d">%s</time>', 
-                esc_attr( $iso_date ), 
-                esc_attr( (string) $timestamp ), 
-                esc_html( $jalali_date ) 
-            );
-        } catch ( \Throwable $e ) { return $formatted_date; }
-    }
+	/**
+	 * فیلتر date_i18n: timestamp از قبل اختلاف ساعت محلی را دارد (UTC بدون جابه‌جایی؛ دوبار جابه‌جا نمی‌شود).
+	 *
+	 * @param string $date      خروجی وردپرس.
+	 * @param string $format    قالب.
+	 * @param int    $timestamp timestamp با اختلاف محلی.
+	 */
+	public function convert_date_i18n_globally( string $date, string $format, int $timestamp ): string {
+		if ( $this->is_machine_format( $format ) ) {
+			return $date;
+		}
+		return $this->format( $format, $timestamp, null );
+	}
 
-    /**
-     * قالب ماشین‌خوان (timestamp، ISO 8601، RFC) نباید شمسی یا فارسی شود.
-     * باگ قبلی: get_the_time( 'U' ) به‌جای عدد timestamp حرف «U» (یا رقم فارسی)
-     * برمی‌گرداند؛ ابزارک «فعالیت» پیشخوان وردپرس آن را به gmdate() می‌دهد و با
-     * TypeError کل صفحه پیشخوان از کار می‌افتاد. هر کدی که تاریخ را برای مقایسه
-     * یا ذخیره می‌خواهد همین قالب‌ها را به کار می‌برد.
-     *
-     * باگ قبلی (داده سایت را خراب می‌کرد): ووکامرس مقدار فیلدهای فرم پیشخوان را
-     * با date_i18n( 'Y-m-d' ) و date_i18n( 'H' / 'i' / 's' ) پر می‌کند (تاریخ و ساعت
-     * سفارش، تاریخ حراج محصول و تنوع، انقضای دانلود). شمسی‌شده‌اش («۱۴۰۴-۰۷-۱۹»)
-     * هنگام ذخیره با strtotime خوانده نمی‌شد و تاریخ سفارش ۱۹۷۰-۰۱-۰۱ و تاریخ
-     * حراج خراب ذخیره می‌شد. قالب میلادی ISO/MySQL (با خط تیره، «Y-m-d…» و
-     * «Ymd…») و جزء تنهای ساعت هیچ‌جا قالب نمایش فارسی نیستند (نمایش با «/» یا
-     * نام ماه است)، پس همیشه ماشینی‌اند. «Y» و «F» تنها عمدا نمایشی می‌مانند
-     * (سال/ماه شمسی در عنوان‌ها و مسیر راهنما).
-     */
-    private function is_machine_format( string $format ): bool {
-        static $machine = null;
-        $machine ??= [ 'U', 'G', 'u', 'v', 'Z', 'c', 'r', 'H', 'i', 's', DATE_ATOM, DATE_COOKIE, DATE_ISO8601, DATE_RFC822, DATE_RFC850, DATE_RFC1036, DATE_RFC1123, DATE_RFC7231, DATE_RFC2822, DATE_RFC3339, DATE_RFC3339_EXTENDED, DATE_RSS, DATE_W3C ];
-        return in_array( $format, $machine, true )
-            || str_contains( $format, '\\T' )
-            || str_starts_with( $format, 'Y-m-d' )
-            || str_starts_with( $format, 'Ymd' );
-    }
+	/**
+	 * فیلدهای *_jalali در REST سفارش (date_created_jalali و …) برای برنامه‌های بیرونی.
+	 *
+	 * @param mixed $response WP_REST_Response.
+	 */
+	public function inject_jalali_to_rest_api( mixed $response ): mixed {
+		if ( ! $response instanceof \WP_REST_Response ) {
+			return $response;
+		}
+		$data   = $response->get_data();
+		$format = (string) get_option( 'date_format', 'Y/m/d' );
+		foreach ( [ 'date_created', 'date_modified', 'date_completed', 'date_paid' ] as $field ) {
+			if ( ! empty( $data[ $field ] ) && is_string( $data[ $field ] ) ) {
+				// مقدار REST زمان محلی بدون منطقه است («2025-10-11T13:00:00»)
+				$local = strtotime( $data[ $field ] . ' UTC' );
+				if ( false !== $local ) {
+					$data[ $field . '_jalali' ] = $this->format( $format, $local, null );
+				}
+			}
+		}
+		$response->set_data( $data );
+		return $response;
+	}
 
-    private function to_persian_numbers( string $string ): string {
-        return strtr( $string, ['0'=>'۰','1'=>'۱','2'=>'۲','3'=>'۳','4'=>'۴','5'=>'۵','6'=>'۶','7'=>'۷','8'=>'۸','9'=>'۹'] );
-    }
+	/**
+	 * قالب ماشین‌خوان (timestamp، ISO 8601، RFC) نباید شمسی یا فارسی شود.
+	 * باگ قبلی: get_the_time( 'U' ) به‌جای عدد timestamp حرف «U» (یا رقم فارسی)
+	 * برمی‌گرداند؛ ابزارک «فعالیت» پیشخوان وردپرس آن را به gmdate() می‌دهد و با
+	 * TypeError کل صفحه پیشخوان از کار می‌افتاد. هر کدی که تاریخ را برای مقایسه
+	 * یا ذخیره می‌خواهد همین قالب‌ها را به کار می‌برد.
+	 *
+	 * باگ قبلی (داده سایت را خراب می‌کرد): ووکامرس مقدار فیلدهای فرم پیشخوان را
+	 * با date_i18n( 'Y-m-d' ) و date_i18n( 'H' / 'i' / 's' ) پر می‌کند (تاریخ و ساعت
+	 * سفارش، تاریخ حراج محصول و تنوع، انقضای دانلود). شمسی‌شده‌اش («۱۴۰۴-۰۷-۱۹»)
+	 * هنگام ذخیره با strtotime خوانده نمی‌شد و تاریخ سفارش ۱۹۷۰-۰۱-۰۱ و تاریخ
+	 * حراج خراب ذخیره می‌شد. قالب میلادی ISO/MySQL (با خط تیره، «Y-m-d…» و
+	 * «Ymd…») و جزء تنهای ساعت هیچ‌جا قالب نمایش فارسی نیستند (نمایش با «/» یا
+	 * نام ماه است)، پس همیشه ماشینی‌اند. «Y» و «F» تنها عمدا نمایشی می‌مانند
+	 * (سال/ماه شمسی در عنوان‌ها و مسیر راهنما).
+	 *
+	 * @param string $format قالب.
+	 */
+	private function is_machine_format( string $format ): bool {
+		static $machine = null;
+		$machine      ??= [ 'U', 'G', 'u', 'v', 'Z', 'c', 'r', 'H', 'i', 's', DATE_ATOM, DATE_COOKIE, DATE_ISO8601, DATE_RFC822, DATE_RFC850, DATE_RFC1036, DATE_RFC1123, DATE_RFC7231, DATE_RFC2822, DATE_RFC3339, DATE_RFC3339_EXTENDED, DATE_RSS, DATE_W3C ];
+		return in_array( $format, $machine, true )
+			|| str_contains( $format, '\\T' )
+			|| str_starts_with( $format, 'Y-m-d' )
+			|| str_starts_with( $format, 'Ymd' );
+	}
 
-    private function format_jalali_date( int $timestamp, string $format ): string {
-        $cache_key = md5( (string) $timestamp . $format );
-        if ( isset( $this->date_cache[ $cache_key ] ) ) return $this->date_cache[ $cache_key ];
+	/**
+	 * زمان محلی متنی پایگاه داده («2025-10-11 13:00:00») ← شمسی.
+	 *
+	 * @param string $local    زمان محلی.
+	 * @param string $format   قالب.
+	 * @param mixed  $fallback مقدار وردپرس اگر زمان خوانده نشد.
+	 */
+	private function format_local( string $local, string $format, mixed $fallback ): mixed {
+		$timestamp = strtotime( $local . ' UTC' );
+		return false === $timestamp ? $fallback : $this->format( $format, $timestamp, null );
+	}
 
-        $gy = (int) gmdate( 'Y', $timestamp ); 
-        $gm = (int) gmdate( 'm', $timestamp ); 
-        $gd = (int) gmdate( 'd', $timestamp );
-        $day_name = gmdate( 'l', $timestamp );
-        
-        [ $jy, $jm, $jd ] = $this->gregorian_to_jalali( $gy, $gm, $gd );
-
-        $replacements = [
-            'Y' => $jy, 'y' => substr( (string) $jy, 2, 2 ), 'm' => sprintf( '%02d', $jm ), 'n' => $jm, 'd' => sprintf( '%02d', $jd ), 'j' => $jd,
-            'F' => self::PERSIAN_MONTHS[ $jm ] ?? '', 'l' => self::PERSIAN_DAYS[ $day_name ] ?? $day_name,
-            'a' => '', 'A' => '', 
-            'h' => gmdate( 'H', $timestamp ), 'g' => gmdate( 'G', $timestamp ),
-            'H' => gmdate( 'H', $timestamp ), 'i' => gmdate( 'i', $timestamp ), 's' => gmdate( 's', $timestamp ), 'G' => gmdate( 'G', $timestamp ),
-        ];
-
-        $output = ''; 
-        $length = strlen( $format );
-        
-        for ( $i = 0; $i < $length; $i++ ) {
-            $char = $format[ $i ];
-            if ( $char === '\\' ) { 
-                $i++; 
-                if ( $i < $length ) $output .= $format[ $i ]; 
-                continue; 
-            }
-            $output .= $replacements[ $char ] ?? $char;
-        }
-        
-        $output = trim( preg_replace( '/\s+/', ' ', $output ) );
-        $this->date_cache[ $cache_key ] = $output;
-        
-        return $output;
-    }
-
-    private function gregorian_to_jalali( int $gy, int $gm, int $gd ): array {
-        $g_d_m = [ 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 ];
-        $gy2   = ( $gm > 2 ) ? ( $gy + 1 ) : $gy;
-        $days  = 355666 + ( 365 * $gy ) + (int)( ( $gy2 + 3 ) / 4 ) - (int)( ( $gy2 + 99 ) / 100 ) + (int)( ( $gy2 + 399 ) / 400 ) + $gd + $g_d_m[ $gm - 1 ];
-        
-        $jy    = -1595 + 33 * (int)( $days / 12053 ); 
-        $days %= 12053;
-        $jy   += 4 * (int)( $days / 1461 ); 
-        $days %= 1461;
-        
-        if ( $days > 365 ) { 
-            $jy += (int)( ( $days - 1 ) / 365 ); 
-            $days = ( $days - 1 ) % 365; 
-        }
-        
-        $jm = ( $days < 186 ) ? 1 + (int)( $days / 31 ) : 7 + (int)( ( $days - 186 ) / 30 );
-        $jd = 1 + ( ( $days < 186 ) ? ( $days % 31 ) : ( ( $days - 186 ) % 30 ) );
-        
-        return [ $jy, $jm, $jd ];
-    }
+	/**
+	 * قالب‌بندی شمسی با حافظه درخواست.
+	 *
+	 * @param string             $format    قالب.
+	 * @param int                $timestamp Unix timestamp.
+	 * @param \DateTimeZone|null $timezone  منطقه (null = UTC).
+	 */
+	private function format( string $format, int $timestamp, ?\DateTimeZone $timezone ): string {
+		$key = $format . '|' . $timestamp . '|' . ( $timezone ? $timezone->getName() : '' );
+		return $this->cache[ $key ] ??= hodima_jalali_format( $format, $timestamp, $timezone );
+	}
 }

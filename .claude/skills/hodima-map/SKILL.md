@@ -14,7 +14,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 
 | بسته | فایل اصلی | چه وقت کدش لود می‌شود |
 |---|---|---|
-| **Core** `plugins/hodima-core/` | `hodima-core.php` | **بلافاصله** هنگام include (نه در هوک) تا توابعش مستقل از ترتیب الفبا برای بقیه آماده باشد: `includes/helpers.php`، `modules.php`، `schema-graph.php`، `updates.php`، `litespeed.php`، `hardening.php`، `admin-font.php`؛ فقط پیشخوان: `admin-hub.php`، `admin-ui.php`، `admin-term-box.php`. اگر قالب نسخه ۱ فعال است (`hodima_legacy_theme_active()`) فقط updates + اعلان. |
+| **Core** `plugins/hodima-core/` | `hodima-core.php` | **بلافاصله** هنگام include (نه در هوک) تا توابعش مستقل از ترتیب الفبا برای بقیه آماده باشد: `includes/helpers.php`، `jalali.php`، `modules.php`، `schema-graph.php`، `updates.php`، `litespeed.php`، `hardening.php`، `admin-font.php`؛ فقط پیشخوان: `admin-hub.php`، `admin-ui.php`، `admin-term-box.php`. اگر قالب نسخه ۱ فعال است (`hodima_legacy_theme_active()`) فقط updates + اعلان. |
 | **SEO** `plugins/hodima-seo/` | `hodima-seo.php` | `plugins_loaded`: بدون Core فالبک‌ها (`inc/schema-fallback.php`، `inc/admin-ui-fallback.php`)؛ همیشه `inc/product-price.php`، `inc/page-intro.php`؛ بعد ماژول‌های روشن از `hodima_seo_modules()` |
 | **Commerce** `plugins/hodima-commerce/` | `hodima-commerce.php` | `plugins_loaded`: ماژول‌های `hodima_commerce_modules()`؛ `requires_wc` فقط با ووکامرس |
 | **Media** `plugins/hodima-media/` | `hodima-media.php` | `plugins_loaded`: فالبک‌ها، همیشه `inc/video-object.php`، بعد ماژول‌های `hodima_media_modules()` |
@@ -24,7 +24,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 
 ### ماژول‌ها (روشن/خاموش در «هدیما ← ماژول‌ها»؛ تعریف در `includes/modules.php` Core)
 - **SEO:** `google-indexing` (`components/google-indexing-api/`)، `indexnow` (`components/indexnow-sync/` — AEO و llms.txt هم اینجاست)، `schema` (`schema/*.php` + پیشخوان `schema/admin/`)، `podcast`، `sitemap`، `manual-links` (`inc/manual_related_link/`)، `router` (`core/router/`)، `redirects`، `seobox`، `discover`، `robots` (`core/seobox/robots-txt.php`)، `topic-cluster` (`core/topiccluster/`)، `cat-blog`
-- **Commerce:** `phone`، `search`، `product-fields` (`inc/woocommerce/product-fields.php`)، `min-order` (`cart.php`)، `specs-table` (`inc/hodima-woo-table/`)، `store-optimizer`، `catalog-sorting`، `jalali` (`core/time-jalali/`)
+- **Commerce:** `phone`، `search`، `product-fields` (`inc/woocommerce/product-fields.php`)، `min-order` (`cart.php`)، `specs-table` (`inc/hodima-woo-table/`)، `store-optimizer`، `catalog-sorting`، `jalali` (`core/time-jalali/`: تاریخ شمسی، شهرها، فرم آدرس، کد ملی، تقویم پیشخوان)
 - **Media:** `expandable-boxes`، `slider`، `stories`، `notifications`، `video` (`components/video-watch/`)، `media-system`، `dynamic-table` (`inc/hodima-table/`)
 
 ماژول خاموش اصلا لود نمی‌شود ← هر فراخوانی بین ماژول‌ها/بسته‌ها با گارد `function_exists`/`class_exists`/`shortcode_exists`.
@@ -69,6 +69,8 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 
 ## ۵. افزونه ↔ افزونه
 **همه ← Core:** `hodima_get_client_ip()`، `hodima_rate_limit_key()`، `hodima_is_search_bot()`، `hodima_ip_in_cidr()`، `hodima_get_canonical_url()`، `hodima_is_noindex()`، `hodima_post_content_is_visible()`، `hodima_page_has_schema_identity()`، `hodima_get_archive_itemlist_elements()`، `hodima_schema_has()`، `hodima_video_player_url()`، `hodima_core_font_url()`، `hodima_core_litespeed_active()`، `hodima_legacy_theme_active()`/`_notice()`، کلاس ماژول‌ها. (همه در `includes/helpers.php` جز آخرها: `admin-font.php`، `litespeed.php`، `modules.php`.)
+
+**Commerce و SEO ← Core (تاریخ شمسی):** `hodima_jalali_format()`، `hodima_jalali_months()`/`_weekdays()` (`core/time-jalali/modules/class-jalali-date.php`، `class-jalali-admin.php`؛ بدون Core ماژول خاموش + اعلان)، `hodima_jalali_to_gregorian()` (SEO `schema/sitemap-core.php`، با فالبک قدیمی).
 
 **SEO ← Media** (اسکیما/سایت‌مپ داده رسانه را می‌خوانند): `hodima_media_get_data()`، `hodima_media_video_node()`، `hodima_media_video()`، `hodima_media_extra_videos()`/`_extra_video_nodes()`، `hodima_media_is_displayed()`، `hodima_media_part_shown()`، `hodima_media_schema_page_shows_media()`، `hodima_media_post_types()`، `hodima_media_is_direct_video()`، `hodima_media_iso_date()`/`_stable_date()`/`_duration_iso()`، `hodima_media_parse_entities()`، `hodima_media_has_legacy_data()`؛ با فالبک نام‌های قدیمی `hook_*` (`media-legacy.php`). فایل‌ها: `schema/sitemap-core.php`، `product-schema-pro.php`، `category-schema-pro.php`، `front-page-extra-schema.php`، `blog-schema.php`، `podcast-feed-core.php`، `schema-helpers.php`، `core/discover/discover-init.php`، `core/seobox/front-output.php`، `inc/page-intro.php`.
 

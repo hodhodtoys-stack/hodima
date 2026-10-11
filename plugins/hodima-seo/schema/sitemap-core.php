@@ -274,6 +274,10 @@ function hodima_sitemap_duration_seconds( $duration ) {
 }
 
 function hodima_sitemap_jalali_to_gregorian( $jy, $jm, $jd ) {
+    // تبدیل مشترک Hodima Core (همان الگوریتم؛ ۱۹۰۰ تا ۲۱۵۰ روزبه‌روز یکسان — بخش ۱۰۰)؛ پایین فقط اگر Core قدیمی است
+    if ( function_exists( 'hodima_jalali_to_gregorian' ) ) {
+        return hodima_jalali_to_gregorian( (int) $jy, (int) $jm, (int) $jd );
+    }
     $jy += 1595;
     $days = -355668 + ( 365 * $jy ) + (int) ( $jy / 33 ) * 8 + (int) ( ( ( $jy % 33 ) + 3 ) / 4 ) + $jd;
     if ( $jm < 7 ) {

@@ -18,6 +18,8 @@
 	<!-- قالب + اسکیمای افزونه‌ها (گراف واحد Core و سازنده‌های SEO)؛ بقیه افزونه‌ها بعدا مسیرشان را اینجا اضافه کنند -->
 	<file>hodima</file>
 	<file>plugins/hodima-core/includes/schema-graph.php</file>
+	<file>plugins/hodima-core/includes/jalali.php</file>
+	<file>plugins/hodima-commerce/core/time-jalali</file>
 	<file>plugins/hodima-seo/schema</file>
 	<!-- داخل پوشه schema ولی اسکیما نیستند (سایت‌مپ، فید پادکست، صفحه‌های پیشخوان) -->
 	<exclude-pattern>plugins/hodima-seo/schema/admin/*</exclude-pattern>

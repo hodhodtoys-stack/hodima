@@ -13,3 +13,8 @@ define( 'hodima_VERSION', '0.0.0' );
 define( 'hodima_URI', 'https://example.test/wp-content/themes/hodima' );
 define( 'hodima_DIR', '/tmp/wordpress/wp-content/themes/hodima' );
 define( 'HODIMA_USER_PANEL_ENABLED', false );
+
+// Hodima Commerce: hodima-commerce.php (ماژول تاریخ شمسی/شهرها، بخش ۱۰۰)
+define( 'HODIMA_COMMERCE_VERSION', '0.0.0' );
+define( 'HODIMA_COMMERCE_URL', 'https://example.test/wp-content/plugins/hodima-commerce' );
+define( 'HODIMA_COMMERCE_DIR', '/tmp/wordpress/wp-content/plugins/hodima-commerce' );

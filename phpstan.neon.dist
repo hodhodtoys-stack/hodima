@@ -13,6 +13,8 @@ parameters:
 		- hodima
 		# اسکیمای افزونه‌ها (همان مسیرهای phpcs.xml.dist)
 		- plugins/hodima-core/includes/schema-graph.php
+		- plugins/hodima-core/includes/jalali.php
+		- plugins/hodima-commerce/core/time-jalali
 		- plugins/hodima-seo/schema
 	excludePaths:
 		analyse:
