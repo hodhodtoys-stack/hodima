@@ -410,25 +410,31 @@ function hodima_seo_schema_health_page(): void {
 	if ( isset( $_POST['hodima_schema_health_nonce'] ) ) {
 		check_admin_referer( 'hodima_schema_health', 'hodima_schema_health_nonce' );
 
-		$custom  = isset( $_POST['hodima_health_url'] ) ? esc_url_raw( wp_unslash( $_POST['hodima_health_url'] ) ) : '';
-		$targets = hodima_seo_schema_health_sample_urls();
+		$custom = isset( $_POST['hodima_health_url'] ) ? esc_url_raw( wp_unslash( $_POST['hodima_health_url'] ) ) : '';
 
-		if ( '' !== $custom ) {
-			if ( hodima_seo_schema_health_is_local( $custom ) ) {
-				$targets = array_values( array_filter( $targets, static fn( array $t ): bool => $t['url'] !== $custom ) );
-				array_unshift( $targets, [ 'label' => 'آدرس دلخواه', 'url' => $custom ] );
-			} else {
-				$notice = hodima_admin_notice( 'آدرس دلخواه از همین سایت نیست و بررسی نشد؛ فقط صفحه‌های همین سایت.', 'warning', false );
+		/*
+		 * با آدرس دلخواه فقط همان صفحه (چند ثانیه)؛ بدون آن چکاپ کامل صفحه‌های نمونه.
+		 * قبلا (SEO 2.2.1 تا 2.2.2) آدرس دلخواه به اول فهرست کامل اضافه می‌شد و
+		 * بررسی یک صفحه هم همه صفحه‌ها را دریافت می‌کرد.
+		 */
+		$targets = null;
+		if ( '' === $custom ) {
+			$targets = hodima_seo_schema_health_sample_urls();
+		} elseif ( hodima_seo_schema_health_is_local( $custom ) ) {
+			$targets = [ [ 'label' => 'آدرس دلخواه', 'url' => $custom ] ];
+		} else {
+			$notice = hodima_admin_notice( 'این آدرس از همین سایت نیست و بررسی نشد؛ فقط صفحه‌های همین سایت بررسی می‌شوند.', 'warning', false );
+		}
+
+		if ( null !== $targets ) {
+			$results = [];
+			foreach ( $targets as $target ) {
+				$results[] = [ 'label' => $target['label'] ] + hodima_seo_schema_health_check_url( $target['url'] );
 			}
-		}
 
-		$results = [];
-		foreach ( $targets as $target ) {
-			$results[] = [ 'label' => $target['label'] ] + hodima_seo_schema_health_check_url( $target['url'] );
+			$last = [ 'time' => time(), 'results' => $results ];
+			update_option( 'hodima_schema_health_last', $last, false );
 		}
-
-		$last = [ 'time' => time(), 'results' => $results ];
-		update_option( 'hodima_schema_health_last', $last, false );
 	}
 
 	hodima_view_header(
@@ -449,7 +455,7 @@ function hodima_seo_schema_health_page(): void {
 		<?php echo hodima_admin_icon( 'dashicons-info-outline' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
 		<div>
 			<strong>چه چیزی بررسی می‌شود؟</strong>
-			<p>صفحه اصلی، آخرین مقاله و محصول، یک محصول متغیر، پرمحصول‌ترین دسته‌ها، وبلاگ، فروشگاه و درباره‌ما (و اگر بخواهید یک آدرس دلخواه از همین سایت). روی هر کدام: یک گراف واحد، نود سازمان و وب‌سایت، شناسه صفحه برابر canonical، ارجاع‌های بی‌مقصد، تاریخ استاندارد، آدرس‌های سالم، قیمت و ارز محصول، مقاله، ویدیو، مسیر راهنما، FAQ و فهرست تکراری. این بررسی جای ابزار «نتایج غنی» گوگل را نمی‌گیرد ولی خطاهای رایج را فوری نشان می‌دهد.</p>
+			<p>با آدرس دلخواه فقط همان صفحه بررسی می‌شود؛ بدون آدرس، چکاپ کامل: صفحه اصلی، آخرین مقاله و محصول، یک محصول متغیر، پرمحصول‌ترین دسته‌ها، وبلاگ، فروشگاه و درباره‌ما. روی هر صفحه: یک گراف واحد، نود سازمان و وب‌سایت، شناسه صفحه برابر canonical، ارجاع‌های بی‌مقصد، تاریخ استاندارد، آدرس‌های سالم، قیمت و ارز محصول، مقاله، ویدیو، مسیر راهنما، FAQ و فهرست تکراری. این بررسی جای ابزار «نتایج غنی» گوگل را نمی‌گیرد ولی خطاهای رایج را فوری نشان می‌دهد.</p>
 		</div>
 	</div>
 
@@ -460,7 +466,7 @@ function hodima_seo_schema_health_page(): void {
 			<label for="hodima_health_url">آدرس دلخواه (اختیاری)</label><br>
 			<input type="url" name="hodima_health_url" id="hodima_health_url" class="large-text ltr" dir="ltr" value="<?php echo esc_attr( $custom ); ?>" placeholder="<?php echo esc_attr( home_url( '/' ) ); ?>…">
 		</p>
-		<p class="description">بررسی چند ثانیه تا یک دقیقه طول می‌کشد (هر صفحه جداگانه دریافت می‌شود).</p>
+		<p class="description">خالی = چکاپ کامل سایت (تا یک دقیقه)؛ با آدرس = فقط همان صفحه (چند ثانیه). فقط صفحه‌های همین سایت.</p>
 		<?php submit_button( 'بررسی کن', 'primary', 'hodima_health_run', false ); ?>
 	</form>
 
