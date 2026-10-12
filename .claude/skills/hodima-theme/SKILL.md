@@ -31,6 +31,7 @@ description: قانون‌های کد قالب هدیما (پوشه hodima/) —
 
 ## بخش‌های افقی صفحه اصلی (از 3.1.4، بخش ۱۰۹)
 - کارت و باکس اسلایدرهای صفحه اصلی (محصولات یک دسته، جدیدترین، مقالات) فقط با `hodima_home_card_html()` و `hodima_home_cards_section()` (`home/logic.php`) و CSS `.arian-card` / `.arian-product-section`؛ برای یک نوع داده کلاس و CSS جدا (مثل قبلا `modern-blog-card`) نساز؛ تفاوت = پارامتر (قیمت، لینک عنوان، رنگ زمینه `tone`). تصویر کارت همیشه مربع با برش مرکزی؛ فقط یک تصویر صفحه با `hodima_home_claim_priority()` اولویت می‌گیرد.
+- **انواع بخش صفحه اصلی** (`hodima_home_section_types()` در `inc/home-layout.php`): فیلد تازه با نوع `text|lines|number|tone|select|toggle|category|categories|html|link`؛ **پیش‌فرض خنثی** (بدون متن/نامک مخصوص یک سایت)؛ مقدار قدیمی فقط در `hodima_home_legacy_section_args()` برای شورت‌کدهای قدیمی. گزینه‌های مشترک همه بخش‌ها (`device`، `start`، `end`) بیرون از فیلدهای نوع‌اند. منطق جدا از رندر باشد تا آزمون واحد شود (مثل `hodima_home_product_query_args()`). عنصر تعاملی که با JS ساخته می‌شود (فلش اسکرولر) HTML و کش صفحه را عوض نکند.
 
 ## طراحی پیشخوان تنظیمات (از 3.0.8 تا 3.1.2، بخش‌های ۱۰۰ تا ۱۰۸) — قانون
 فقط پیشخوان «تنظیمات قالب» (`inc/theme-settings/`)؛ هر قاب یا تب تازه با این قانون‌ها.

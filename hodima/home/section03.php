@@ -11,4 +11,5 @@
 declare(strict_types=1);
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-get_template_part( 'home/parts/categories' );
+// مقدارهای قدیمی سایت (3.1.6: پیش‌فرض بخش تازه خنثی شد؛ این شورت‌کد همان خروجی قبلی را می‌دهد)
+get_template_part( 'home/parts/categories', null, hodima_home_legacy_section_args( 'categories' ) );

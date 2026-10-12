@@ -6,7 +6,8 @@
  * فراخوانی: get_template_part( 'home/parts/categories', null, $args ) — از
  * چیدمان «تنظیمات قالب ← صفحه اصلی» یا شورت‌کد قدیمی [section03].
  *
- * @var array{title?:string, exclude?:list<string>} $args  exclude = نامک دسته‌ها
+ * @var array{title?:string, subtitle?:string, mode?:string, exclude?:list<string>, order?:string, limit?:int} $args
+ *      exclude = نامک دسته‌های تیک‌خورده (معنی: mode = exclude «به‌جز» / include «فقط»)
  */
 
 declare(strict_types=1);
@@ -20,12 +21,22 @@ if ( ! taxonomy_exists( 'product_cat' ) ) {
 }
 
 $args     = wp_parse_args( $args ?? [], hodima_home_section_defaults( 'categories' ) );
-$excluded = array_map( 'strval', (array) $args['exclude'] );
+$selected = array_map( 'strval', (array) $args['exclude'] ); // نام کلید ذخیره‌شده؛ معنایش را «حالت» تعیین می‌کند
+$only     = 'include' === $args['mode'];
 
+// حالت «به‌جز»: همه دسته‌های موجود مگر تیک‌خورده‌ها؛ حالت «فقط»: همان تیک‌خورده‌ها (دسته تازه خودکار اضافه نمی‌شود)
 $categories_data = array_values( array_filter(
 	hodima_home_categories_data(),
-	static fn( array $category ): bool => ! in_array( $category['slug'], $excluded, true )
+	static fn( array $category ): bool => $only === in_array( $category['slug'], $selected, true )
 ) );
+
+if ( 'count' === $args['order'] ) {
+	usort( $categories_data, static fn( array $a, array $b ): int => ( $b['count'] ?? 0 ) <=> ( $a['count'] ?? 0 ) );
+}
+
+if ( (int) $args['limit'] > 0 ) {
+	$categories_data = array_slice( $categories_data, 0, (int) $args['limit'] );
+}
 
 if ( ! $categories_data ) {
 	return;
@@ -37,6 +48,9 @@ $section_id = 'arian-cat-title-' . wp_unique_id();
 	<header class="arian-header">
 		<div class="arian-title-group">
 			<h2 id="<?php echo esc_attr( $section_id ); ?>" class="arian-title"><?php echo esc_html( $args['title'] ); ?></h2>
+			<?php if ( '' !== (string) $args['subtitle'] ) : ?>
+				<p class="arian-subtitle"><?php echo esc_html( $args['subtitle'] ); ?></p>
+			<?php endif; ?>
 			<div class="arian-line"></div>
 		</div>
 	</header>

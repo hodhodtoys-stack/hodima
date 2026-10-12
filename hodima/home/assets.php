@@ -24,3 +24,13 @@ add_action( 'wp_enqueue_scripts', static function (): void {
 	hodima_enqueue_asset( 'hodima-home-style', 'home/home.css' );
 	hodima_enqueue_asset( 'hodima-home-js', 'home/home.js', [], [ 'in_footer' => true ] ); // Vanilla JS؛ بدون jQuery
 }, 20 );
+
+// فلش اسکرولرها در «تنظیمات قالب ← صفحه اصلی» خاموش شده باشد، home.js و CSS آن‌ها را نشان نمی‌دهند
+add_filter( 'body_class', static function ( array $classes ): array {
+
+	if ( is_front_page() && function_exists( 'hodima_setting' ) && ! hodima_setting( 'home_scroll_arrows' ) ) {
+		$classes[] = 'hodima-no-scroll-arrows';
+	}
+
+	return $classes;
+} );

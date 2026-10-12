@@ -98,12 +98,13 @@ if ( ! function_exists( 'hodima_home_cards_section' ) ) {
 	/**
 	 * باکس بخش: سرتیتر (با خط گرادیان و لینک «مشاهده همه»)، و اسکرولر افقی کارت‌ها.
 	 *
-	 * @param array{id:string, title:string, title_url?:string, more_url?:string, more_text?:string, bg_color?:string, scroller_class?:string} $args
+	 * @param array{id:string, title:string, subtitle?:string, title_url?:string, more_url?:string, more_text?:string, bg_color?:string, scroller_class?:string} $args
 	 * @param string $cards_html خروجی hodima_home_card_html() (هر کدام escape شده)
 	 */
 	function hodima_home_cards_section( array $args, string $cards_html ): string {
 
 		$args = wp_parse_args( $args, [
+			'subtitle'       => '',
 			'title_url'      => '',
 			'more_url'       => '',
 			'more_text'      => 'مشاهده همه',
@@ -116,12 +117,14 @@ if ( ! function_exists( 'hodima_home_cards_section' ) ) {
 			$title = '<a class="arian-title-link" href="' . esc_url( (string) $args['title_url'] ) . '">' . $title . '</a>';
 		}
 
+		$subtitle = '' !== (string) $args['subtitle'] ? '<p class="arian-subtitle">' . esc_html( (string) $args['subtitle'] ) . '</p>' : '';
+
 		$more = '' !== (string) $args['more_url'] && '' !== (string) $args['more_text']
 			? '<a href="' . esc_url( (string) $args['more_url'] ) . '" class="arian-view-all">' . esc_html( (string) $args['more_text'] ) . '</a>'
 			: '';
 
 		return '<section class="arian-section arian-product-section" aria-labelledby="' . esc_attr( (string) $args['id'] ) . '" style="--section-bg: ' . esc_attr( (string) $args['bg_color'] ) . ';">'
-			. '<div class="arian-header"><div class="arian-title-group"><h2 id="' . esc_attr( (string) $args['id'] ) . '" class="arian-title">' . $title . '</h2><div class="arian-line"></div></div>' . $more . '</div>'
+			. '<div class="arian-header"><div class="arian-title-group"><h2 id="' . esc_attr( (string) $args['id'] ) . '" class="arian-title">' . $title . '</h2>' . $subtitle . '<div class="arian-line"></div></div>' . $more . '</div>'
 			. '<div class="' . esc_attr( trim( 'arian-scroller ' . (string) $args['scroller_class'] ) ) . '">' . $cards_html . '</div>'
 			. '</section>';
 	}

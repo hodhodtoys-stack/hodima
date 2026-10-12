@@ -82,6 +82,7 @@ function hodima_settings_fields(): array {
 
 		// ── صفحه اصلی (بخش‌ها: inc/theme-settings/home-layout-admin.php) ──
 		'home_builder'     => [ 'panel' => 'home_mode', 'type' => 'toggle', 'label' => 'ساخت صفحه اصلی از چیدمان پایین', 'default' => false, 'wide' => true, 'help' => 'خاموش: صفحه اصلی مثل قبل از متن برگه صفحه اصلی (ویرایشگر برگه و شورت‌کدهایش) ساخته می‌شود. روشن: از بخش‌های پایین، به همان ترتیب.' ],
+		'home_scroll_arrows' => [ 'panel' => 'home_mode', 'type' => 'toggle', 'label' => 'فلش قبلی/بعدی روی اسلایدرهای صفحه اصلی (دسکتاپ)', 'default' => true, 'wide' => true, 'help' => 'فقط برای کاربر با ماوس (در موبایل اسلایدر مثل قبل با لمس کشیده می‌شود). محصولات، مقالات و دسته‌ها.' ],
 
 		// ── فروشگاه و دسته‌ها ─────────────────────────────────────────
 		'shop_title'       => [ 'panel' => 'shop_header', 'type' => 'text', 'label' => 'عنوان', 'default' => '', 'help' => 'اگر خالی بماند عنوان برگه فروشگاه ووکامرس نمایش داده می‌شود.' ],

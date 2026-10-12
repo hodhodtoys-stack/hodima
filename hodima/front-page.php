@@ -26,7 +26,7 @@ if ( have_posts() ) {
 	the_post();
 }
 
-$hodima_sections = array_values( array_filter( hodima_home_layout(), static fn( array $item ): bool => $item['enabled'] ) );
+$hodima_sections = array_values( array_filter( hodima_home_layout(), static fn( array $item ): bool => $item['enabled'] && hodima_home_section_visible( $item ) ) );
 
 /*
  * عنوان اصلی (H1): بخش «معرفی» عنوان برگه را H1 می‌کند (وقتی متن معرفی

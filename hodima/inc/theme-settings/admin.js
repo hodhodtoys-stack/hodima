@@ -608,6 +608,43 @@
 			announce(`«${labelOf(item)}» جابه‌جا شد: ردیف ${items().indexOf(item) + 1} از ${items().length}`);
 		};
 
+		/** کپی بخش (فقط انواع چندنمونه‌ای): همه مقدارهای فعلی فرم، با شناسه تازه، درست زیر بخش اصلی. */
+		const duplicate = (item) => {
+			const uidOf = (element) => element.querySelector('[name]')?.getAttribute('name')?.match(/\[([^\]]+)\]/)?.[1];
+			const oldUid = uidOf(item);
+			if (!oldUid) {
+				return;
+			}
+			const uid = `n${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+			const copy = item.cloneNode(true);
+
+			copy.querySelectorAll('[name], [id], [for], [aria-controls]').forEach((element) => {
+				['name', 'id', 'for', 'aria-controls'].forEach((attribute) => {
+					const value = element.getAttribute(attribute);
+					if (value) {
+						element.setAttribute(attribute, value.replaceAll(`[${oldUid}]`, `[${uid}]`).replaceAll(`hodima-home-${oldUid}-`, `hodima-home-${uid}-`));
+					}
+				});
+			});
+
+			// cloneNode فقط مقدار «اولیه» را می‌برد؛ مقدار فعلی (تایپ‌شده/تیک‌خورده) را دستی می‌نویسیم
+			const from = [...item.querySelectorAll('input, select, textarea')];
+			[...copy.querySelectorAll('input, select, textarea')].forEach((field, index) => {
+				if (field.type === 'checkbox' || field.type === 'radio') {
+					field.checked = from[index].checked;
+				} else {
+					field.value = from[index].value;
+				}
+			});
+
+			item.after(copy);
+			refresh();
+			toggleBody(copy, true);
+			copy.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+			copy.querySelector('[data-hodima-home-toggle]')?.focus();
+			announce(`از «${labelOf(item)}» یک کپی ساخته شد (ردیف ${items().indexOf(copy) + 1})`);
+		};
+
 		root.querySelector('[data-hodima-home-add]')?.addEventListener('click', () => {
 			const template = root.querySelector(`template[data-hodima-home-template="${CSS.escape(typeSelect.value)}"]`);
 			if (!template) {
@@ -633,6 +670,10 @@
 				toggleBody(item);
 				return;
 			}
+			if (event.target.closest('[data-hodima-home-duplicate]')) {
+				duplicate(item);
+				return;
+			}
 			const mover = event.target.closest('[data-hodima-home-move]');
 			if (mover) {
 				move(item, mover.dataset.hodimaHomeMove);
@@ -649,6 +690,24 @@
 					(next?.querySelector('[data-hodima-home-toggle]') ?? typeSelect).focus();
 					announce(`بخش «${label}» حذف شد`);
 				}
+			}
+		});
+
+		// جستجو در فهرست دسته‌ها: فقط نمایش را فیلتر می‌کند (تیک‌های مخفی‌شده همچنان ارسال می‌شوند)
+		list.addEventListener('input', (event) => {
+			const filter = event.target.closest?.('[data-hodima-home-filter]');
+			if (!filter) {
+				return;
+			}
+			const needle = filter.value.trim().toLowerCase();
+			filter.closest('fieldset')?.querySelectorAll('[data-hodima-home-check]').forEach((label) => {
+				label.hidden = needle !== '' && !label.textContent.toLowerCase().includes(needle);
+			});
+		});
+		// Enter داخل کادر جستجو فرم را ارسال نکند
+		list.addEventListener('keydown', (event) => {
+			if (event.key === 'Enter' && event.target.closest?.('[data-hodima-home-filter]')) {
+				event.preventDefault();
 			}
 		});
 

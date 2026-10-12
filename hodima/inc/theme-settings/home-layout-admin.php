@@ -93,6 +93,7 @@ function hodima_home_admin_render(): void {
 				<button type="button" class="button" data-hodima-home-add>
 					<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> افزودن بخش
 				</button>
+				<a class="button-link hodima-home__view" href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener">دیدن صفحه اصلی <span class="dashicons dashicons-external" aria-hidden="true"></span></a>
 				<button type="submit" class="button-link hodima-home__import" name="<?php echo esc_attr( HODIMA_HOME_LAYOUT_OPTION ); ?>[_import]" value="1" data-hodima-home-import>
 					خواندن دوباره چیدمان از متن برگه صفحه اصلی
 				</button>
@@ -189,6 +190,9 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
 			<span class="hodima-home__actions">
 				<button type="button" class="button-link" data-hodima-home-move="up" aria-label="<?php echo esc_attr( 'بالا بردن «' . $def['label'] . '»' ); ?>"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
 				<button type="button" class="button-link" data-hodima-home-move="down" aria-label="<?php echo esc_attr( 'پایین بردن «' . $def['label'] . '»' ); ?>"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
+				<?php if ( empty( $def['single'] ) ) : ?>
+					<button type="button" class="button-link" data-hodima-home-duplicate aria-label="<?php echo esc_attr( 'کپی «' . $def['label'] . '»' ); ?>" title="کپی بخش"><span class="dashicons dashicons-admin-page" aria-hidden="true"></span></button>
+				<?php endif; ?>
 				<button type="button" class="button-link hodima-home__remove" data-hodima-home-remove aria-label="<?php echo esc_attr( 'حذف «' . $def['label'] . '»' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
 			</span>
 		</div>
@@ -202,6 +206,27 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
 					<?php endforeach; ?>
 				</div>
 			<?php endif; ?>
+
+			<?php // گزینه‌های مشترک همه بخش‌ها: نمایش در کدام دستگاه و زمان‌بندی ?>
+			<fieldset class="hodima-home__common">
+				<legend>نمایش</legend>
+				<div class="hodima-field">
+					<label class="hodima-field__label" for="<?php echo esc_attr( $idp ); ?>-device">در کدام دستگاه؟</label>
+					<select id="<?php echo esc_attr( $idp ); ?>-device" name="<?php echo esc_attr( $base ); ?>[device]">
+						<?php foreach ( hodima_home_devices() as $device => $label ) : ?>
+							<option value="<?php echo esc_attr( $device ); ?>" <?php selected( $item['device'] ?? 'all', $device ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+				<div class="hodima-field">
+					<label class="hodima-field__label" for="<?php echo esc_attr( $idp ); ?>-start">از تاریخ (اختیاری)</label>
+					<input type="date" id="<?php echo esc_attr( $idp ); ?>-start" name="<?php echo esc_attr( $base ); ?>[start]" value="<?php echo esc_attr( (string) ( $item['start'] ?? '' ) ); ?>" dir="ltr">
+				</div>
+				<div class="hodima-field">
+					<label class="hodima-field__label" for="<?php echo esc_attr( $idp ); ?>-end">تا تاریخ (اختیاری)</label>
+					<input type="date" id="<?php echo esc_attr( $idp ); ?>-end" name="<?php echo esc_attr( $base ); ?>[end]" value="<?php echo esc_attr( (string) ( $item['end'] ?? '' ) ); ?>" dir="ltr">
+				</div>
+			</fieldset>
 		</div>
 	</li>
 	<?php
@@ -225,14 +250,27 @@ function hodima_home_admin_field( string $name, string $id, array $field, mixed 
 				<input type="hidden" name="<?php echo esc_attr( $name ); ?>[]" value="">
 				<?php if ( ! $terms ) : ?>
 					<p class="hodima-field__help">دسته محصولی وجود ندارد (ووکامرس).</p>
+				<?php elseif ( count( $terms ) > 8 ) : ?>
+					<?php // جستجو در فهرست دسته‌ها (admin.js: فقط نمایش را فیلتر می‌کند؛ تیک‌ها دست‌نخورده می‌مانند) ?>
+					<input type="search" class="hodima-home__filter" data-hodima-home-filter placeholder="جستجو در دسته‌ها…" aria-label="<?php echo esc_attr( 'جستجو در ' . $field['label'] ); ?>">
 				<?php endif; ?>
-				<?php foreach ( $terms as $term ) : ?>
-					<label>
-						<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[]" value="<?php echo esc_attr( $term->slug ); ?>" <?php checked( in_array( $term->slug, (array) $value, true ) ); ?>>
-						<?php echo esc_html( $term->name ); ?>
-					</label>
-				<?php endforeach; ?>
+				<div class="hodima-home__checklist">
+					<?php foreach ( $terms as $term ) : ?>
+						<label data-hodima-home-check>
+							<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[]" value="<?php echo esc_attr( $term->slug ); ?>" <?php checked( in_array( $term->slug, (array) $value, true ) ); ?>>
+							<?php echo esc_html( $term->name ); ?>
+						</label>
+					<?php endforeach; ?>
+				</div>
 			</fieldset>
+
+		<?php elseif ( 'toggle' === $field['type'] ) : ?>
+			<?php // 0 + 1: کلید خاموش هم در فرم می‌آید و با «پیش‌فرض روشن» اشتباه نمی‌شود ?>
+			<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="0">
+			<label class="hodima-home__check" for="<?php echo esc_attr( $id ); ?>">
+				<input type="checkbox" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( ! empty( $value ) ); ?>>
+				<?php echo esc_html( $field['label'] ); ?>
+			</label>
 
 		<?php else : ?>
 			<label class="hodima-field__label" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
@@ -255,6 +293,13 @@ function hodima_home_admin_field( string $name, string $id, array $field, mixed 
 					<option value="">— انتخاب دسته —</option>
 					<?php foreach ( $terms as $term ) : ?>
 						<option value="<?php echo esc_attr( $term->slug ); ?>" <?php selected( $value, $term->slug ); ?>><?php echo esc_html( $term->name ); ?></option>
+					<?php endforeach; ?>
+				</select>
+
+			<?php elseif ( 'select' === $field['type'] ) : ?>
+				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>">
+					<?php foreach ( (array) $field['options'] as $option => $label ) : ?>
+						<option value="<?php echo esc_attr( (string) $option ); ?>" <?php selected( (string) $value, (string) $option ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>
 

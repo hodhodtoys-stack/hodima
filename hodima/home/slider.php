@@ -14,6 +14,46 @@ defined( 'ABSPATH' ) || exit;
 // ========================================================================
 // ۱. تابع مرکزی اسلایدر محصولات (موتور رندر)
 // ========================================================================
+/**
+ * آرگومان‌های wc_get_products برای یک بخش محصول (جدا از رندر تا جداگانه آزمون شود).
+ * برای «جدیدترین موجود» (پیش‌فرض) دقیقا همان آرگومان‌های قبلی است؛ پس کلید کش هم همان می‌ماند.
+ *
+ * @param array<string, mixed> $args limit، category، source (newest|bestselling|sale|featured)، only_instock
+ * @return array<string, mixed>
+ */
+function hodima_home_product_query_args( array $args ): array {
+
+	$query = [
+		'status'  => 'publish',
+		'limit'   => $args['limit'] ?? 10,
+		'orderby' => 'date',
+		'order'   => 'DESC',
+	];
+
+	if ( ! array_key_exists( 'only_instock', $args ) || $args['only_instock'] ) {
+		$query['stock_status'] = 'instock';
+	}
+
+	if ( ! empty( $args['category'] ) ) {
+		$query['category'] = (array) $args['category'];
+	}
+
+	switch ( (string) ( $args['source'] ?? 'newest' ) ) {
+		case 'bestselling':
+			$query['orderby'] = 'popularity'; // wc_get_products: meta total_sales، نزولی
+			break;
+		case 'featured':
+			$query['featured'] = true;
+			break;
+		case 'sale':
+			// فقط محصولات تخفیف‌دار فعلی؛ شناسه ۰ = «هیچ» (include خالی یعنی همه)
+			$query['include'] = function_exists( 'wc_get_product_ids_on_sale' ) ? ( array_map( 'intval', wc_get_product_ids_on_sale() ) ?: [ 0 ] ) : [ 0 ];
+			break;
+	}
+
+	return $query;
+}
+
 if ( ! function_exists( 'hodima_home_product_slider' ) ) {
 	/**
 	 * @param array<string, mixed> $args title، link، category، limit، bg_color، id.
@@ -25,11 +65,14 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
 		}
 
 		$defaults = [
-			'title'    => 'محصولات',
-			'link'     => '',
-			'category' => '',
-			'limit'    => 10,
-			'bg_color' => 'transparent',
+			'title'        => 'محصولات',
+			'subtitle'     => '',
+			'link'         => '',
+			'category'     => '',
+			'limit'        => 10,
+			'source'       => 'newest',
+			'only_instock' => true,
+			'bg_color'     => 'transparent',
 			// شناسه ثابت در هر بار ساخت صفحه (قبلا uniqid: HTML صفحه اصلی هر بار فرق می‌کرد)
 			'id'       => wp_unique_id( 'arian-sec-' ),
 		];
@@ -43,17 +86,7 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
 			default                                        => esc_url( home_url( '/' . $clean_slug . '/' ) ),
 		};
 
-		$query_args = [
-			'status'       => 'publish',
-			'limit'        => $args['limit'],
-			'orderby'      => 'date',
-			'order'        => 'DESC',
-			'stock_status' => 'instock',
-		];
-
-		if ( ! empty( $args['category'] ) ) {
-			$query_args['category'] = (array) $args['category'];
-		}
+		$query_args = hodima_home_product_query_args( $args );
 
 		// نسل کش در کلید: پاک کردن = بالا بردن نسل (hodima_home_flush_product_sliders)
 		$transient_key = 'arian_pslider_' . md5( (string) wp_json_encode( $query_args ) . '|' . hodima_home_slider_generation() );
@@ -99,6 +132,7 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
 		return hodima_home_cards_section( [
 			'id'            => (string) $args['id'],
 			'title'         => (string) $args['title'],
+			'subtitle'      => (string) $args['subtitle'],
 			'more_url'      => '' !== $clean_slug ? $final_link : '',
 			'more_text'     => 'مشاهده همه',
 			'bg_color'      => (string) $args['bg_color'],
@@ -119,11 +153,11 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
 /**
  * همه دسته‌های محصول دارای کالا: نامک، نام، لینک، شناسه تصویر.
  *
- * @return list<array{slug: string, name: string, link: string, thumbnail_id: int}>
+ * @return list<array{slug: string, name: string, link: string, thumbnail_id: int, count: int}>
  */
 function hodima_home_categories_data(): array {
 
-	$data = get_transient( 'hodima_home_categories_v5' );
+	$data = get_transient( 'hodima_home_categories_v6' );
 
 	if ( is_array( $data ) ) {
 		return $data;
@@ -147,11 +181,12 @@ function hodima_home_categories_data(): array {
 				'name'         => $term->name,
 				'link'         => $link,
 				'thumbnail_id' => (int) get_term_meta( $term->term_id, 'thumbnail_id', true ),
+				'count'        => (int) $term->count, // مرتب‌سازی «بیشترین محصول اول» (v6)
 			];
 		}
 	}
 
-	set_transient( 'hodima_home_categories_v5', $data, WEEK_IN_SECONDS );
+	set_transient( 'hodima_home_categories_v6', $data, WEEK_IN_SECONDS );
 
 	return $data;
 }

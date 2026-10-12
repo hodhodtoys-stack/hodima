@@ -9,7 +9,7 @@
  * hodima_home_cards_section در logic.php)؛ تصویر مربع با برش مرکزی، مقاله بدون
  * تصویر کادر جایگزین با رنگ برند می‌گیرد.
  *
- * @var array{title?:string, limit?:int, more_text?:string, tone?:string} $args
+ * @var array{title?:string, subtitle?:string, limit?:int, more_text?:string, tone?:string} $args
  */
 
 declare(strict_types=1);
@@ -44,6 +44,7 @@ foreach ( $posts_data as $index => $post_item ) {
 echo hodima_home_cards_section( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی ساخته‌شده و escape‌شده در logic.php
 	'id'        => wp_unique_id( 'arian-blog-title-' ),
 	'title'     => (string) $args['title'],
+	'subtitle'  => (string) $args['subtitle'],
 	'title_url' => $blog_url,
 	'more_url'  => '' !== (string) $args['more_text'] ? $blog_url : '',
 	'more_text' => (string) $args['more_text'],

@@ -97,7 +97,8 @@ if ( ! function_exists( 'hodima_home_flush_product_sliders' ) ) {
 
 /** ترنزینت دسته‌ها را پاک کن. */
 function hodima_home_clear_categories_cache(): void {
-	// v5: همه دسته‌ها با نامک؛ استثناها هنگام نمایش (home/parts/categories.php). v4 نسخه قبلی
+	// v6: همه دسته‌ها با نامک و تعداد؛ فیلتر و ترتیب هنگام نمایش (home/parts/categories.php). v5 و v4 نسخه‌های قبلی
+	delete_transient( 'hodima_home_categories_v6' );
 	delete_transient( 'hodima_home_categories_v5' );
 	delete_transient( 'arian_categories_hyper_v4' );
 

@@ -50,3 +50,55 @@
 		el.addEventListener( 'mouseup', endDrag );
 	} );
 } )();
+
+/**
+ * فلش قبلی/بعدی اسکرولرها (3.1.6): فقط برای ماوس (دسکتاپ)؛ لمس و کیبورد مثل قبل.
+ * دکمه‌ها با JS ساخته می‌شوند تا HTML و کش صفحه عوض نشود؛ از «تنظیمات قالب ← صفحه اصلی» خاموش می‌شود.
+ */
+( () => {
+	if ( document.body.classList.contains( 'hodima-no-scroll-arrows' ) || ! window.matchMedia( '(hover: hover) and (pointer: fine)' ).matches ) {
+		return;
+	}
+
+	const icon = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>';
+
+	document.querySelectorAll( '.arian-scroller' ).forEach( ( el ) => {
+		const host = el.parentElement;
+		if ( ! host ) {
+			return;
+		}
+
+		const make = ( kind, label ) => {
+			const button = document.createElement( 'button' );
+			button.type = 'button';
+			button.className = `arian-scroll-btn arian-scroll-btn--${ kind }`;
+			button.setAttribute( 'aria-label', label );
+			button.innerHTML = icon;
+			return button;
+		};
+		const prev = make( 'prev', 'قبلی' );
+		const next = make( 'next', 'بعدی' );
+		host.append( prev, next );
+
+		// scrollLeft در راست‌به‌چپ صفر یا منفی است؛ فاصله از ابتدا = قدر مطلق
+		const update = () => {
+			const max = el.scrollWidth - el.clientWidth;
+			const pos = Math.abs( el.scrollLeft );
+			prev.hidden = max <= 1 || pos <= 1;
+			next.hidden = max <= 1 || pos >= max - 1;
+			const top = `${ el.offsetTop + el.offsetHeight / 2 }px`;
+			prev.style.insetBlockStart = top;
+			next.style.insetBlockStart = top;
+		};
+		const go = ( towardEnd ) => {
+			const rtl = window.getComputedStyle( el ).direction === 'rtl';
+			el.scrollBy( { left: ( towardEnd ? 1 : -1 ) * ( rtl ? -1 : 1 ) * el.clientWidth * 0.8 } );
+		};
+
+		prev.addEventListener( 'click', () => go( false ) );
+		next.addEventListener( 'click', () => go( true ) );
+		el.addEventListener( 'scroll', update, { passive: true } );
+		new ResizeObserver( update ).observe( el );
+		update();
+	} );
+} )();

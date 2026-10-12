@@ -28,8 +28,8 @@ const HODIMA_HOME_LAYOUT_OPTION = 'hodima_home_layout';
  * ========================================================================= */
 
 /**
- * تعریف انواع بخش. هر فیلد: type (text|lines|number|tone|category|categories|html|link)،
- * label، default، و برای number: min/max.
+ * تعریف انواع بخش. هر فیلد: type (text|lines|number|tone|select|toggle|category|categories|html|link)،
+ * label، default، برای number: min/max، و برای select: options.
  *
  * @return array<string, array{label:string, icon:string, help:string, single:bool, fields:array<string, array<string, mixed>>}>
  */
@@ -44,13 +44,8 @@ function hodima_home_section_types(): array {
 			'single' => true,
 			'help'   => 'عنوان اصلی صفحه (H1) = عنوان برگه صفحه اصلی؛ متن معرفی و ویدیو از کادر «رسانه» همان برگه (افزونه Hodima Media). ستون وسط از تنظیمات زیر.',
 			'fields' => [
-				'features_title' => [ 'type' => 'text', 'label' => 'عنوان ستون وسط', 'default' => 'اهداف و مزایای ما' ],
-				'features'       => [ 'type' => 'lines', 'label' => 'موارد ستون وسط (هر خط یک مورد)', 'default' => [
-					'شبکه تأمین گسترده و تیمی مجرب در واردات',
-					'ارائه کالاهای پرفروش و هم‌راستا با ترندهای جهانی',
-					'تأمین نیاز بازار با قیمت رقابتی با حذف واسطه‌ها',
-					'تمرکز بر رضایت مشتریان در سراسر منطقه',
-				] ],
+				'features_title' => [ 'type' => 'text', 'label' => 'عنوان ستون وسط', 'default' => 'مزایای ما' ],
+				'features'       => [ 'type' => 'lines', 'label' => 'موارد ستون وسط (هر خط یک مورد)', 'default' => [] ],
 				'video_title'    => [ 'type' => 'text', 'label' => 'عنوان ستون ویدیو', 'default' => 'درباره ما' ],
 			],
 		],
@@ -58,34 +53,51 @@ function hodima_home_section_types(): array {
 			'label'  => 'دسته‌بندی کالاها',
 			'icon'   => 'dashicons-category',
 			'single' => true,
-			'help'   => 'همه دسته‌های محصول دارای کالا، با تصویر دسته (ووکامرس)، به‌جز دسته‌هایی که اینجا تیک بزنید.',
+			'help'   => 'دسته‌های محصول دارای کالا، با تصویر دسته (ووکامرس). «همه به‌جز» یا «فقط» دسته‌های تیک‌خورده را نشان می‌دهد.',
 			'fields' => [
-				'title'   => [ 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'دسته‌بندی کالاها' ],
-				'exclude' => [ 'type' => 'categories', 'label' => 'دسته‌هایی که نمایش داده نشوند', 'default' => [ 'latest-products', 'equipments', 'plasco', 'rhinestones', 'toys', 'shanci' ] ],
+				'title'    => [ 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'دسته‌بندی کالاها' ],
+				'subtitle' => [ 'type' => 'text', 'label' => 'زیرعنوان (اختیاری)', 'default' => '' ],
+				'mode'     => [ 'type' => 'select', 'label' => 'کدام دسته‌ها؟', 'default' => 'exclude', 'options' => [
+					'exclude' => 'همه به‌جز دسته‌های تیک‌خورده',
+					'include' => 'فقط دسته‌های تیک‌خورده',
+				] ],
+				'exclude'  => [ 'type' => 'categories', 'label' => 'دسته‌ها', 'default' => [] ],
+				'order'    => [ 'type' => 'select', 'label' => 'ترتیب', 'default' => 'name', 'options' => [
+					'name'  => 'بر پایه نام',
+					'count' => 'بیشترین محصول اول',
+				] ],
+				'limit'    => [ 'type' => 'number', 'label' => 'حداکثر تعداد (۰ = همه)', 'default' => 0, 'min' => 0, 'max' => 100 ],
 			],
 		],
 		'latest'     => [
 			'label'  => 'جدیدترین محصولات',
 			'icon'   => 'dashicons-star-filled',
 			'single' => false,
-			'help'   => 'آخرین محصولات موجود در انبار، از همه دسته‌ها.',
+			'help'   => 'محصولات همه دسته‌ها؛ منبع را می‌توانید به پرفروش، تخفیف‌دار یا ویژه عوض کنید.',
 			'fields' => [
-				'title' => [ 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'جدیدترین محصولات' ],
-				'limit' => [ 'type' => 'number', 'label' => 'تعداد محصول', 'default' => 12, 'min' => 1, 'max' => 30 ],
-				'link'  => [ 'type' => 'link', 'label' => 'لینک «مشاهده همه» (آدرس یا نامک؛ خالی = بدون لینک)', 'default' => 'latest-products' ],
-				'tone'  => [ 'type' => 'tone', 'label' => 'رنگ زمینه', 'default' => 'third' ],
+				'title'        => [ 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'جدیدترین محصولات' ],
+				'subtitle'     => [ 'type' => 'text', 'label' => 'زیرعنوان (اختیاری)', 'default' => '' ],
+				'source'       => [ 'type' => 'select', 'label' => 'کدام محصولات؟', 'default' => 'newest', 'options' => hodima_home_product_sources() ],
+				'only_instock' => [ 'type' => 'toggle', 'label' => 'فقط محصولات موجود', 'default' => true ],
+				'limit'        => [ 'type' => 'number', 'label' => 'تعداد محصول', 'default' => 12, 'min' => 1, 'max' => 30 ],
+				'link'         => [ 'type' => 'link', 'label' => 'لینک «مشاهده همه» (آدرس یا نامک؛ خالی = بدون لینک)', 'default' => '' ],
+				'tone'         => [ 'type' => 'tone', 'label' => 'رنگ زمینه', 'default' => 'third' ],
 			],
 		],
 		'products'   => [
 			'label'  => 'محصولات یک دسته',
 			'icon'   => 'dashicons-products',
 			'single' => false,
-			'help'   => 'آخرین محصولات موجود یک دسته، با لینک «مشاهده همه» به صفحه همان دسته. هر چند تا که لازم است اضافه کنید.',
+			'help'   => 'محصولات یک دسته (و اگر خواستید چند دسته)، با لینک «مشاهده همه» به صفحه دسته اول. هر چند تا که لازم است اضافه کنید.',
 			'fields' => [
-				'category' => [ 'type' => 'category', 'label' => 'دسته', 'default' => '' ],
-				'title'    => [ 'type' => 'text', 'label' => 'عنوان بخش (خالی = نام دسته)', 'default' => '' ],
-				'limit'    => [ 'type' => 'number', 'label' => 'تعداد محصول', 'default' => 12, 'min' => 1, 'max' => 30 ],
-				'tone'     => [ 'type' => 'tone', 'label' => 'رنگ زمینه', 'default' => 'primary' ],
+				'category'        => [ 'type' => 'category', 'label' => 'دسته', 'default' => '' ],
+				'categories_more' => [ 'type' => 'categories', 'label' => 'دسته‌های دیگر (اختیاری؛ محصولات همه با هم)', 'default' => [] ],
+				'title'           => [ 'type' => 'text', 'label' => 'عنوان بخش (خالی = نام دسته)', 'default' => '' ],
+				'subtitle'        => [ 'type' => 'text', 'label' => 'زیرعنوان (اختیاری)', 'default' => '' ],
+				'source'          => [ 'type' => 'select', 'label' => 'کدام محصولات؟', 'default' => 'newest', 'options' => hodima_home_product_sources() ],
+				'only_instock'    => [ 'type' => 'toggle', 'label' => 'فقط محصولات موجود', 'default' => true ],
+				'limit'           => [ 'type' => 'number', 'label' => 'تعداد محصول', 'default' => 12, 'min' => 1, 'max' => 30 ],
+				'tone'            => [ 'type' => 'tone', 'label' => 'رنگ زمینه', 'default' => 'primary' ],
 			],
 		],
 		'blog'       => [
@@ -94,7 +106,8 @@ function hodima_home_section_types(): array {
 			'single' => true,
 			'help'   => 'آخرین نوشته‌های وبلاگ با تصویر شاخص و لینک به برگه نوشته‌ها.',
 			'fields' => [
-				'title'     => [ 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'نبض بازار' ],
+				'title'     => [ 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'آخرین مقالات' ],
+				'subtitle'  => [ 'type' => 'text', 'label' => 'زیرعنوان (اختیاری)', 'default' => '' ],
 				'limit'     => [ 'type' => 'number', 'label' => 'تعداد مقاله', 'default' => 8, 'min' => 1, 'max' => 20 ],
 				'more_text' => [ 'type' => 'text', 'label' => 'متن لینک «همه مقالات» (خالی = بدون لینک)', 'default' => 'همه مقالات' ],
 				'tone'      => [ 'type' => 'tone', 'label' => 'رنگ زمینه', 'default' => 'third' ],
@@ -130,6 +143,102 @@ function hodima_home_section_defaults( string $type ): array {
 		static fn( array $field ): mixed => $field['default'],
 		hodima_home_section_types()[ $type ]['fields'] ?? []
 	);
+}
+
+/**
+ * مقدار قدیمی (پیش‌فرض سایت هدهدلی) فیلدهای هر نوع، فقط برای شورت‌کدهای قدیمی متن برگه
+ * ([section03] و …) و خواندن آن‌ها به چیدمان.
+ *
+ * تا 3.1.5 این مقدارها پیش‌فرض خود فیلدها بود؛ از 3.1.6 پیش‌فرض بخش تازه خنثی است (متن و
+ * نامک مخصوص یک سایت در کد نیست) ولی صفحه‌ای که هنوز با شورت‌کد ساخته می‌شود دقیقا همان
+ * خروجی قبلی را می‌گیرد.
+ *
+ * @return array<string, mixed>
+ */
+function hodima_home_legacy_section_args( string $type ): array {
+	return match ( $type ) {
+		'intro'      => [
+			'features_title' => 'اهداف و مزایای ما',
+			'features'       => [
+				'شبکه تأمین گسترده و تیمی مجرب در واردات',
+				'ارائه کالاهای پرفروش و هم‌راستا با ترندهای جهانی',
+				'تأمین نیاز بازار با قیمت رقابتی با حذف واسطه‌ها',
+				'تمرکز بر رضایت مشتریان در سراسر منطقه',
+			],
+		],
+		'categories' => [ 'exclude' => [ 'latest-products', 'equipments', 'plasco', 'rhinestones', 'toys', 'shanci' ] ],
+		'latest'     => [ 'link' => 'latest-products' ],
+		'blog'       => [ 'title' => 'نبض بازار' ],
+		default      => [],
+	};
+}
+
+/**
+ * منبع محصول بخش‌های «جدیدترین» و «محصولات یک دسته».
+ *
+ * @return array<string, string>
+ */
+function hodima_home_product_sources(): array {
+	return [
+		'newest'      => 'جدیدترین',
+		'bestselling' => 'پرفروش‌ترین',
+		'sale'        => 'تخفیف‌دار',
+		'featured'    => 'ویژه (ستاره‌دار)',
+	];
+}
+
+/**
+ * گزینه‌های مشترک همه بخش‌ها (جدا از فیلدهای هر نوع): نمایش در کدام دستگاه و زمان‌بندی.
+ *
+ * @return array{device:string, start:string, end:string}
+ */
+function hodima_home_common_defaults(): array {
+	return [ 'device' => 'all', 'start' => '', 'end' => '' ];
+}
+
+/** @return array<string, string> */
+function hodima_home_devices(): array {
+	return [
+		'all'     => 'همه دستگاه‌ها',
+		'desktop' => 'فقط دسکتاپ و تبلت افقی',
+		'mobile'  => 'فقط موبایل و تبلت عمودی',
+	];
+}
+
+/**
+ * مقدار تمیز گزینه‌های مشترک از یک ردیف (ذخیره‌شده یا ورودی فرم).
+ *
+ * @param array<mixed> $row
+ * @return array{device:string, start:string, end:string}
+ */
+function hodima_home_clean_common( array $row ): array {
+
+	$clean_date = static function ( mixed $raw ): string {
+		$raw = is_string( $raw ) ? trim( $raw ) : '';
+		return preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $raw, $m ) && checkdate( (int) $m[2], (int) $m[3], (int) $m[1] ) ? $raw : '';
+	};
+
+	return [
+		'device' => isset( hodima_home_devices()[ (string) ( $row['device'] ?? '' ) ] ) ? (string) $row['device'] : 'all',
+		'start'  => $clean_date( $row['start'] ?? '' ),
+		'end'    => $clean_date( $row['end'] ?? '' ),
+	];
+}
+
+/**
+ * آیا بخش در زمان‌بندی‌اش «الان» نمایش داده شود؟ (به وقت سایت؛ شروع و پایان هر دو شاملِ همان روزند.)
+ *
+ * @param array<string, mixed> $item
+ */
+function hodima_home_section_visible( array $item, ?int $now = null ): bool {
+
+	$today = wp_date( 'Y-m-d', $now );
+
+	if ( '' !== (string) ( $item['start'] ?? '' ) && $today < $item['start'] ) {
+		return false;
+	}
+
+	return ! ( '' !== (string) ( $item['end'] ?? '' ) && $today > $item['end'] );
 }
 
 /**
@@ -214,7 +323,8 @@ function hodima_home_normalize_layout( array $items ): array {
 
 		$entry = [ 'id' => $id, 'type' => $type, 'enabled' => ! empty( $item['enabled'] ) ]
 			+ array_intersect_key( $item, $types[ $type ]['fields'] )
-			+ hodima_home_section_defaults( $type );
+			+ hodima_home_section_defaults( $type )
+			+ hodima_home_clean_common( $item );
 
 		// «محتوای دلخواه» با چند شورت‌کد/بلوک پشت‌سرهم ← هر کدام بخش جدا (3.1.3)
 		if ( 'custom' === $type ) {
@@ -407,7 +517,7 @@ function hodima_home_sanitize_layout( $input ): array {
 			'id'      => sanitize_key( (string) ( $row['id'] ?? '' ) ),
 			'type'    => $type,
 			'enabled' => ! empty( $row['enabled'] ),
-		];
+		] + hodima_home_clean_common( (array) $row );
 
 		// فیلد نفرستاده = پیش‌فرض (فرم همه فیلدها را می‌فرستد؛ این برای ورودی از کد است)
 		foreach ( $types[ $type ]['fields'] as $key => $field ) {
@@ -430,6 +540,8 @@ function hodima_home_sanitize_field( array $field, mixed $raw ): mixed {
 	return match ( $field['type'] ) {
 		'number'     => min( (int) ( $field['max'] ?? 100 ), max( (int) ( $field['min'] ?? 1 ), (int) ( is_scalar( $raw ) ? $raw : $field['default'] ) ) ),
 		'tone'       => isset( hodima_home_tones()[ (string) $raw ] ) ? (string) $raw : (string) $field['default'],
+		'select'     => is_scalar( $raw ) && isset( $field['options'][ (string) $raw ] ) ? (string) $raw : (string) $field['default'],
+		'toggle'     => ! empty( $raw ),
 		'lines'      => array_values( array_filter( array_map(
 			static fn( string $line ): string => sanitize_text_field( $line ),
 			is_array( $raw ) ? array_map( 'strval', $raw ) : ( preg_split( '/\R/u', is_string( $raw ) ? $raw : '' ) ?: [] )
@@ -650,7 +762,8 @@ function hodima_home_layout_from_content( ?string $content = null ): array {
 		$flush();
 
 		if ( 'skip' !== $item['type'] ) {
-			$items[] = [ 'enabled' => true ] + $item;
+			// شورت‌کد قدیمی با مقدارهای قدیمی (سایت قبلی) خوانده می‌شود، نه پیش‌فرض‌های خنثی امروز
+			$items[] = [ 'enabled' => true ] + $item + hodima_home_legacy_section_args( $item['type'] );
 		}
 	}
 
@@ -708,7 +821,17 @@ add_filter( 'frontpage_template', static fn( $template ) => hodima_home_builder_
  */
 function hodima_home_render_section( array $item ): void {
 
-	$args = array_diff_key( $item, [ 'id' => 1, 'type' => 1, 'enabled' => 1 ] );
+	if ( ! hodima_home_section_visible( $item ) ) {
+		return;
+	}
+
+	$args   = array_diff_key( $item, [ 'id' => 1, 'type' => 1, 'enabled' => 1, 'device' => 1, 'start' => 1, 'end' => 1 ] );
+	$device = (string) ( $item['device'] ?? 'all' );
+
+	// «فقط دسکتاپ/موبایل»: پوشش بدون جعبه (display: contents) که CSS در عرض مناسب پنهانش می‌کند
+	if ( 'all' !== $device ) {
+		echo '<div class="hodima-device hodima-device--' . esc_attr( $device ) . '">';
+	}
 
 	switch ( $item['type'] ) {
 
@@ -720,12 +843,15 @@ function hodima_home_render_section( array $item ): void {
 
 		case 'latest':
 			if ( function_exists( 'hodima_home_product_slider' ) ) {
-				echo hodima_home_product_slider( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی ساخته‌شده و escape‌شده در logic.php
-					'title'    => $args['title'],
-					'link'     => hodima_home_link_url( (string) $args['link'] ),
-					'category' => '',
-					'limit'    => (int) $args['limit'],
-					'bg_color' => hodima_home_tones()[ $args['tone'] ]['css'] ?? 'transparent',
+				echo hodima_home_product_slider( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی ساخته‌شده و escape‌شده در home/slider.php
+					'title'        => $args['title'],
+					'subtitle'     => $args['subtitle'],
+					'link'         => hodima_home_link_url( (string) $args['link'] ),
+					'category'     => '',
+					'limit'        => (int) $args['limit'],
+					'source'       => $args['source'],
+					'only_instock' => (bool) $args['only_instock'],
+					'bg_color'     => hodima_home_tones()[ $args['tone'] ]['css'] ?? 'transparent',
 				] );
 			}
 			break;
@@ -734,12 +860,15 @@ function hodima_home_render_section( array $item ): void {
 			$term = '' !== $args['category'] ? get_term_by( 'slug', (string) $args['category'], 'product_cat' ) : false;
 			if ( $term instanceof WP_Term && function_exists( 'hodima_home_product_slider' ) ) {
 				$link = get_term_link( $term );
-				echo hodima_home_product_slider( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی ساخته‌شده و escape‌شده در logic.php
-					'title'    => '' !== (string) $args['title'] ? $args['title'] : $term->name,
-					'link'     => is_wp_error( $link ) ? '' : $link,
-					'category' => $term->slug,
-					'limit'    => (int) $args['limit'],
-					'bg_color' => hodima_home_tones()[ $args['tone'] ]['css'] ?? 'transparent',
+				echo hodima_home_product_slider( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی ساخته‌شده و escape‌شده در home/slider.php
+					'title'        => '' !== (string) $args['title'] ? $args['title'] : $term->name,
+					'subtitle'     => $args['subtitle'],
+					'link'         => is_wp_error( $link ) ? '' : $link,
+					'category'     => array_values( array_unique( array_merge( [ $term->slug ], (array) $args['categories_more'] ) ) ),
+					'limit'        => (int) $args['limit'],
+					'source'       => $args['source'],
+					'only_instock' => (bool) $args['only_instock'],
+					'bg_color'     => hodima_home_tones()[ $args['tone'] ]['css'] ?? 'transparent',
 				] );
 			}
 			break;
@@ -753,6 +882,10 @@ function hodima_home_render_section( array $item ): void {
 				echo do_shortcode( (string) $args['html'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- محتوای مدیر (هنگام ذخیره پاک‌سازی شد)
 			}
 			break;
+	}
+
+	if ( 'all' !== $device ) {
+		echo '</div>';
 	}
 }
 
@@ -770,7 +903,35 @@ add_action( 'update_option_' . HODIMA_HOME_LAYOUT_OPTION, 'hodima_home_layout_pu
 add_action( 'add_option_' . HODIMA_HOME_LAYOUT_OPTION, 'hodima_home_layout_purge' );
 
 function hodima_home_layout_purge(): void {
-	if ( function_exists( 'hodima_litespeed_purge_home' ) ) {
-		hodima_litespeed_purge_home();
+	hodima_home_purge_page_cache();
+	hodima_home_schedule_purges();
+}
+
+/**
+ * بخش زمان‌بندی‌شده (شروع/پایان): کش HTML صفحه اصلی باید درست در آغاز و پایان بازه پاک شود،
+ * وگرنه تا پایان عمر کش، بخش دیر پیدا یا دیر ناپدید می‌شود. برای هر تاریخ آینده یک رویداد
+ * یک‌باره ثبت می‌شود (آغاز روز شروع، و آغاز روز بعد از پایان؛ به وقت سایت).
+ */
+function hodima_home_schedule_purges(): void {
+
+	wp_unschedule_hook( 'hodima_home_scheduled_purge' );
+
+	$zone = wp_timezone();
+
+	foreach ( hodima_home_layout() as $item ) {
+		foreach ( [ 'start' => '+0 day', 'end' => '+1 day' ] as $key => $shift ) {
+			if ( '' === (string) $item[ $key ] ) {
+				continue;
+			}
+			try {
+				$when = ( new DateTimeImmutable( $item[ $key ] . ' 00:00:00', $zone ) )->modify( $shift )->getTimestamp();
+			} catch ( Exception ) {
+				continue;
+			}
+			if ( $when > time() ) {
+				wp_schedule_single_event( $when, 'hodima_home_scheduled_purge' );
+			}
+		}
 	}
 }
+add_action( 'hodima_home_scheduled_purge', 'hodima_home_purge_page_cache' );
