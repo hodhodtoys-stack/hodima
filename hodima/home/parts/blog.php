@@ -5,10 +5,11 @@
  *
  * فراخوانی: get_template_part( 'home/parts/blog', null, $args ) — از چیدمان
  * «تنظیمات قالب ← صفحه اصلی» یا شورت‌کد قدیمی [section09].
- * تصویر شاخص با شناسه کش می‌شود (srcset و WebP)؛ مقاله بدون تصویر کادر
- * جایگزین با رنگ برند می‌گیرد.
+ * کارت و باکس همان «محصولات یک دسته» است (hodima_home_card_html و
+ * hodima_home_cards_section در logic.php)؛ تصویر مربع با برش مرکزی، مقاله بدون
+ * تصویر کادر جایگزین با رنگ برند می‌گیرد.
  *
- * @var array{title?:string, limit?:int, more_text?:string} $args
+ * @var array{title?:string, limit?:int, more_text?:string, tone?:string} $args
  */
 
 declare(strict_types=1);
@@ -27,49 +28,24 @@ if ( ! $posts_data ) {
 // لینک صفحه بلاگ: برگه «نوشته‌ها» در «تنظیمات ← خواندن»
 $blog_page_id = (int) get_option( 'page_for_posts' );
 $blog_url     = $blog_page_id ? (string) get_permalink( $blog_page_id ) : home_url( '/blog/' );
-$section_id   = 'arian-blog-title-' . wp_unique_id();
-?>
-<section class="arian-section section-blog" aria-labelledby="<?php echo esc_attr( $section_id ); ?>">
-	<div class="arian-header">
-		<div class="arian-title-group">
-			<h2 id="<?php echo esc_attr( $section_id ); ?>" class="arian-title">
-				<a class="arian-title-link" href="<?php echo esc_url( $blog_url ); ?>"><?php echo esc_html( $args['title'] ); ?></a>
-			</h2>
-			<div class="arian-line"></div>
-		</div>
 
-		<?php if ( '' !== (string) $args['more_text'] ) : ?>
-			<a href="<?php echo esc_url( $blog_url ); ?>" class="arian-view-all"><?php echo esc_html( $args['more_text'] ); ?></a>
-		<?php endif; ?>
-	</div>
+// همان کارت و باکس «محصولات یک دسته» (logic.php)؛ فقط بدون قیمت
+$hodima_cards = '';
+foreach ( $posts_data as $index => $post_item ) {
+	$hodima_cards .= hodima_home_card_html( [
+		'link'         => $post_item['link'],
+		'title'        => $post_item['title'],
+		'thumbnail_id' => (int) $post_item['thumbnail_id'],
+		'first'        => 0 === $index,
+		'size'         => 'medium_large',
+	] );
+}
 
-	<div class="arian-scroller blog-wrapper">
-		<?php foreach ( $posts_data as $index => $post_item ) : ?>
-			<article class="modern-blog-card">
-				<a href="<?php echo esc_url( $post_item['link'] ); ?>" class="blog-card-img-link">
-					<?php if ( ! empty( $post_item['thumbnail_id'] ) ) : ?>
-						<?php
-						echo wp_get_attachment_image( (int) $post_item['thumbnail_id'], 'medium_large', false, [
-							'alt'      => $post_item['title'],
-							'decoding' => 'async',
-							...( 0 === $index && hodima_home_claim_priority() ? [ 'fetchpriority' => 'high' ] : [ 'loading' => 'lazy' ] ),
-						] );
-						?>
-					<?php else : ?>
-						<?php // مقاله بدون تصویر شاخص: کادر جایگزین با رنگ برند (فایل جایگزین در قالب نیست) ?>
-						<span class="blog-card-img-placeholder" role="img" aria-label="<?php echo esc_attr( $post_item['title'] ); ?>">
-							<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
-						</span>
-					<?php endif; ?>
-				</a>
-
-				<div class="blog-card-info">
-					<h3 class="blog-title">
-						<a href="<?php echo esc_url( $post_item['link'] ); ?>"><?php echo esc_html( $post_item['title'] ); ?></a>
-					</h3>
-					<a href="<?php echo esc_url( $post_item['link'] ); ?>" class="read-more-btn" aria-label="<?php echo esc_attr( 'مطالعه مقاله ' . $post_item['title'] ); ?>">مشاهده</a>
-				</div>
-			</article>
-		<?php endforeach; ?>
-	</div>
-</section>
+echo hodima_home_cards_section( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی ساخته‌شده و escape‌شده در logic.php
+	'id'        => wp_unique_id( 'arian-blog-title-' ),
+	'title'     => (string) $args['title'],
+	'title_url' => $blog_url,
+	'more_url'  => '' !== (string) $args['more_text'] ? $blog_url : '',
+	'more_text' => (string) $args['more_text'],
+	'bg_color'  => hodima_home_tones()[ $args['tone'] ]['css'] ?? 'transparent',
+], $hodima_cards );

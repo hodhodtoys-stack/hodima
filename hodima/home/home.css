@@ -579,89 +579,7 @@ h1.section-col-title {
 	50% { border-radius: 30% 60% 70% 40% / 50% 60% 30%; }
 }
 
-/* ================= Blog ================= */
-.arian-section.section-blog {
-	margin: var(--hodima-space-4) 0;
-	padding: var(--hodima-space-6);
-	background: rgba(var(--hodima-third-rgb, 182, 194, 243), 0.15) !important;
-	border-radius: calc(15px * var(--hodima-radius-scale));
-	box-shadow: 0 6px 12px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.03);
-	overflow: hidden;
-	position: relative;
-	z-index: 1;
-}
-
-.arian-scroller.blog-wrapper {
-	display: flex;
-	flex-wrap: nowrap;
-	overflow-x: auto;
-	gap: var(--hodima-space-5);
-	padding: 5px var(--hodima-space-5) var(--hodima-space-3);
-	-webkit-overflow-scrolling: touch;
-	scrollbar-width: none;
-
-	&::-webkit-scrollbar {
-		display: none;
-	}
-}
-
-.modern-blog-card {
-	flex: 0 0 170px;
-	max-width: 170px;
-	background: #fff;
-	border-radius: var(--hodima-radius-xl);
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
-	border: 1px solid var(--border-color);
-	box-shadow: 0 3px 8px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.05);
-	transition: transform 0.25s ease, box-shadow 0.25s ease;
-
-	&:hover {
-		transform: translateY(-4px);
-		box-shadow: 0 10px 20px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.1);
-	}
-
-	&:hover img {
-		transform: scale(1.04);
-	}
-}
-
-.blog-card-img-link {
-	width: 100%;
-	aspect-ratio: 1 / 0.8;
-	overflow: hidden;
-	display: block;
-	line-height: 0;
-
-	& img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.3s ease;
-		display: block;
-	}
-}
-
-/* مقاله بدون تصویر شاخص (قبلا فایل جایگزین ناموجود → تصویر شکسته) */
-.blog-card-img-placeholder {
-	display: grid;
-	place-items: center;
-	width: 100%;
-	height: 100%;
-	color: var(--hodima-secondary, #607bbd);
-	background: linear-gradient(135deg, var(--hodima-bg-light, #f6f8fc), color-mix(in srgb, var(--hodima-third, #b6c2f3) 45%, #fff));
-}
-
-.blog-card-info {
-	padding: var(--hodima-space-2) var(--hodima-space-3) var(--hodima-space-1);
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	text-align: center;
-}
-
-#arian-blog-title,
+/* ================= مقالات (کارت و باکس مشترک با محصولات) ================= */
 /* عنوان لینک‌دار بخش (مقالات): همرنگ عنوان بقیه بخش‌ها. تا 3.1.2 قانون برای #arian-blog-title بود ولی شناسه واقعی با wp_unique_id پسوند دارد (arian-blog-title-1)؛ پس عنوان به رنگ لینک (آبی) درمی‌آمد */
 .arian-title-link {
 	color: inherit;
@@ -670,57 +588,6 @@ h1.section-col-title {
 	&:hover,
 	&:focus-visible {
 		color: var(--arian-primary);
-	}
-}
-
-.blog-title {
-	margin: 0;
-	font-size: 13px;
-	font-weight: 500;
-	line-height: 1.35;
-	min-height: auto;
-	display: -webkit-box;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-	-webkit-line-clamp: 2;
-	line-clamp: 2;
-
-	& a {
-		color: #333 !important;
-		text-decoration: none !important;
-		transition: color 0.2s;
-
-		&:hover {
-			color: var(--arian-secondary) !important;
-		}
-	}
-}
-
-.read-more-btn {
-	display: none !important;
-}
-
-@media (width <= 768px) {
-	.arian-scroller.blog-wrapper {
-		gap: var(--hodima-space-3);
-		padding: 5px var(--hodima-space-3) var(--hodima-space-2);
-	}
-
-	.modern-blog-card {
-		flex: 0 0 40%;
-		max-width: 40%;
-	}
-
-	.blog-card-info {
-		padding: var(--hodima-space-2) 7px 3px;
-		gap: 2px;
-	}
-
-	.blog-title {
-		font-size: 12.5px;
-		line-height: 1.35;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
 	}
 }
 
@@ -773,6 +640,20 @@ h1.section-col-title {
 .arian-card img {
 	width: 100%;
 	height: auto;
+}
+
+/*
+ * کارت مقاله بدون تصویر شاخص: کادر جایگزین با رنگ برند (فایل جایگزین در قالب نیست).
+ * بقیه ظاهر مقاله همان کارت و باکس محصولات است (.arian-card، .arian-product-section)؛
+ * تا 3.1.3 مقالات CSS جدا (modern-blog-card، blog-wrapper…) داشتند و کوچک‌تر از محصول بودند.
+ */
+.arian-card-img--placeholder {
+	display: grid;
+	place-items: center;
+	inline-size: 100%;
+	aspect-ratio: 1 / 1;
+	color: var(--hodima-secondary, #607bbd);
+	background: linear-gradient(135deg, var(--hodima-bg-light, #f6f8fc), rgba(var(--hodima-third-rgb, 182, 194, 243), 0.45));
 }
 
 .arian-card-info {

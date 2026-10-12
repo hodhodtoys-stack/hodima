@@ -36,6 +36,99 @@ if ( ! function_exists( 'hodima_home_claim_priority' ) ) {
 }
 
 // ========================================================================
+// ۰.۱ کارت و باکس مشترک بخش‌های افقی صفحه اصلی (محصولات یک دسته، جدیدترین، آخرین مقالات)
+// ------------------------------------------------------------------------
+// تا 3.1.4 مقالات مارک‌آپ و CSS جدای خودشان را داشتند (modern-blog-card، blog-wrapper…)
+// و کوچک‌تر از کارت محصول درمی‌آمدند. حالا هر دو همین دو تابع و همین CSS (.arian-card،
+// .arian-product-section) را به کار می‌برند؛ تفاوت مقاله فقط نبود قیمت است.
+// ========================================================================
+if ( ! function_exists( 'hodima_home_card_html' ) ) {
+    /**
+     * یک کارت: تصویر مربع (برش مرکزی)، عنوان دو خطی و (اختیاری) قیمت.
+     *
+     * @param array{link:string, title:string, thumbnail_id?:int, price_html?:string, first?:bool, class?:string, size?:string, placeholder?:string} $card
+     *   first = اولین کارت بخش (می‌تواند اولویت بارگذاری تصویر بالای صفحه را بگیرد)،
+     *   class = کلاس اضافه روی article، placeholder = آدرس تصویر جایگزین (خالی ← آیکون برند).
+     */
+    function hodima_home_card_html( array $card ): string {
+
+        $card = wp_parse_args( $card, [
+            'thumbnail_id' => 0,
+            'price_html'   => '',
+            'first'        => false,
+            'class'        => '',
+            'size'         => 'medium_large',
+            'placeholder'  => '',
+        ] );
+
+        $title = (string) $card['title'];
+        $link  = (string) $card['link'];
+
+        if ( ! empty( $card['thumbnail_id'] ) ) {
+            $image_attrs = [
+                'alt'      => $title,
+                'decoding' => 'async',
+                'class'    => 'arian-card-img',
+                // کارت ۱۷۰px (در موبایل ۴۰٪ عرض)؛ بدون این، مرورگر نسخه‌ای به اندازه تمام صفحه می‌گرفت
+                'sizes'    => '(max-width: 768px) 40vw, 170px',
+            ];
+            if ( $card['first'] && hodima_home_claim_priority() ) {
+                $image_attrs['fetchpriority'] = 'high';
+            } else {
+                $image_attrs['loading'] = 'lazy';
+            }
+            $image = wp_get_attachment_image( (int) $card['thumbnail_id'], (string) $card['size'], false, $image_attrs );
+        } elseif ( '' !== $card['placeholder'] ) {
+            $image = '<img src="' . esc_url( (string) $card['placeholder'] ) . '" alt="' . esc_attr( $title ) . '" width="300" height="300" loading="lazy" decoding="async" class="arian-card-img">';
+        } else {
+            // بدون تصویر: کادر جایگزین با رنگ برند (فایل جایگزین در قالب نیست)
+            $image = '<span class="arian-card-img arian-card-img--placeholder" role="img" aria-label="' . esc_attr( $title ) . '"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>';
+        }
+
+        $classes = trim( 'arian-card ' . (string) $card['class'] );
+        $price   = '' !== (string) $card['price_html'] ? '<div class="arian-card-price">' . wp_kses_post( (string) $card['price_html'] ) . '</div>' : '';
+
+        return '<article class="' . esc_attr( $classes ) . '">'
+            . '<a href="' . esc_url( $link ) . '" class="arian-card-img-link">' . $image . '</a>'
+            . '<div class="arian-card-info"><h3 class="arian-card-name"><a href="' . esc_url( $link ) . '">' . esc_html( $title ) . '</a></h3>' . $price . '</div>'
+            . '</article>';
+    }
+}
+
+if ( ! function_exists( 'hodima_home_cards_section' ) ) {
+    /**
+     * باکس بخش: سرتیتر (با خط گرادیان و لینک «مشاهده همه»)، و اسکرولر افقی کارت‌ها.
+     *
+     * @param array{id:string, title:string, title_url?:string, more_url?:string, more_text?:string, bg_color?:string, scroller_class?:string} $args
+     * @param string $cards_html خروجی hodima_home_card_html() (هر کدام escape شده)
+     */
+    function hodima_home_cards_section( array $args, string $cards_html ): string {
+
+        $args = wp_parse_args( $args, [
+            'title_url'      => '',
+            'more_url'       => '',
+            'more_text'      => 'مشاهده همه',
+            'bg_color'       => 'transparent',
+            'scroller_class' => '',
+        ] );
+
+        $title = esc_html( (string) $args['title'] );
+        if ( '' !== (string) $args['title_url'] ) {
+            $title = '<a class="arian-title-link" href="' . esc_url( (string) $args['title_url'] ) . '">' . $title . '</a>';
+        }
+
+        $more = '' !== (string) $args['more_url'] && '' !== (string) $args['more_text']
+            ? '<a href="' . esc_url( (string) $args['more_url'] ) . '" class="arian-view-all">' . esc_html( (string) $args['more_text'] ) . '</a>'
+            : '';
+
+        return '<section class="arian-section arian-product-section" aria-labelledby="' . esc_attr( (string) $args['id'] ) . '" style="--section-bg: ' . esc_attr( (string) $args['bg_color'] ) . ';">'
+            . '<div class="arian-header"><div class="arian-title-group"><h2 id="' . esc_attr( (string) $args['id'] ) . '" class="arian-title">' . $title . '</h2><div class="arian-line"></div></div>' . $more . '</div>'
+            . '<div class="' . esc_attr( trim( 'arian-scroller ' . (string) $args['scroller_class'] ) ) . '">' . $cards_html . '</div>'
+            . '</section>';
+    }
+}
+
+// ========================================================================
 // ۱. تابع مرکزی اسلایدر محصولات (موتور رندر)
 // ========================================================================
 if ( ! function_exists( 'hodima_home_product_slider' ) ) {
@@ -105,56 +198,29 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
             return '';
         }
 
-        ob_start();
-        ?>
-        <section class="arian-section arian-product-section" aria-labelledby="<?php echo esc_attr( $args['id'] ); ?>" style="--section-bg: <?php echo esc_attr( $args['bg_color'] ); ?>;">
-            <div class="arian-header">
-                <div class="arian-title-group">
-                    <h2 id="<?php echo esc_attr( $args['id'] ); ?>" class="arian-title"><?php echo esc_html( $args['title'] ); ?></h2>
-                    <div class="arian-line"></div>
-                </div>
-                <?php if ( ! empty( $clean_slug ) ) : ?>
-                <a href="<?php echo $final_link; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- بالاتر با esc_url ساخته شد ?>" class="arian-view-all">مشاهده همه</a>
-                <?php endif; ?>
-            </div>
+        $cards = '';
 
-            <div class="arian-scroller product-wrapper">
-                <?php foreach ( $products_data as $index => $product ) : ?>
-                    <article class="arian-card product-card">
-                        <a href="<?php echo esc_url( $product['link'] ); ?>" class="arian-card-img-link">
-                            <?php
-                            if ( ! empty( $product['thumbnail_id'] ) ) {
-                                $image_attrs = [
-                                    'alt'      => esc_attr( $product['name'] ),
-                                    'decoding' => 'async',
-                                    'class'    => 'arian-card-img',
-                                ];
-                                if ( 0 === $index && hodima_home_claim_priority() ) {
-                                    $image_attrs['fetchpriority'] = 'high';
-                                } else {
-                                    $image_attrs['loading'] = 'lazy';
-                                }
-                                echo wp_get_attachment_image( $product['thumbnail_id'], 'woocommerce_thumbnail', false, $image_attrs );
-                            } else {
-                                echo '<img src="' . esc_url( wc_placeholder_img_src('woocommerce_thumbnail') ) . '" alt="' . esc_attr( $product['name'] ) . '" width="300" height="300" loading="lazy" decoding="async" class="arian-card-img">';
-                            }
-                            ?>
-                        </a>
+        foreach ( $products_data as $index => $product ) {
+            $cards .= hodima_home_card_html( [
+                'link'         => $product['link'],
+                'title'        => $product['name'],
+                'thumbnail_id' => (int) $product['thumbnail_id'],
+                'price_html'   => $product['price_html'],
+                'first'        => 0 === $index,
+                'class'        => 'product-card',
+                'size'         => 'woocommerce_thumbnail',
+                'placeholder'  => wc_placeholder_img_src( 'woocommerce_thumbnail' ),
+            ] );
+        }
 
-                        <div class="arian-card-info">
-                            <h3 class="arian-card-name">
-                                <a href="<?php echo esc_url( $product['link'] ); ?>"><?php echo esc_html( $product['name'] ); ?></a>
-                            </h3>
-                            <div class="arian-card-price">
-                                <?php echo wp_kses_post( $product['price_html'] ); ?>
-                            </div>
-                        </div>
-                    </article>
-                <?php endforeach; ?>
-            </div>
-        </section>
-        <?php
-        return (string) ob_get_clean();
+        return hodima_home_cards_section( [
+            'id'            => (string) $args['id'],
+            'title'         => (string) $args['title'],
+            'more_url'      => '' !== $clean_slug ? $final_link : '',
+            'more_text'     => 'مشاهده همه',
+            'bg_color'      => (string) $args['bg_color'],
+            'scroller_class' => 'product-wrapper',
+        ], $cards );
     }
 }
 

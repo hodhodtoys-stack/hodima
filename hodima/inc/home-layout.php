@@ -97,6 +97,7 @@ function hodima_home_section_types(): array {
 				'title'     => [ 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'نبض بازار' ],
 				'limit'     => [ 'type' => 'number', 'label' => 'تعداد مقاله', 'default' => 8, 'min' => 1, 'max' => 20 ],
 				'more_text' => [ 'type' => 'text', 'label' => 'متن لینک «همه مقالات» (خالی = بدون لینک)', 'default' => 'همه مقالات' ],
+				'tone'      => [ 'type' => 'tone', 'label' => 'رنگ زمینه', 'default' => 'third' ],
 			],
 		],
 		'content'    => [
