@@ -187,14 +187,14 @@ function hodima_typography_fields(): array {
 
 	$fields = [
 		'font_body'    => [ 'panel' => 'type_fonts', 'type' => 'select', 'label' => 'فونت متن', 'default' => 'vazirmatn', 'options' => $fonts, 'help' => 'متن، منو، دکمه‌ها و فرم‌ها.' ],
-		'font_heading' => [ 'panel' => 'type_fonts', 'type' => 'select', 'label' => 'فونت تیترها', 'default' => 'body', 'options' => [ 'body' => 'همان فونت متن' ] + $fonts, 'help' => 'H1 تا H6 و هر چه داخل تیتر است (مثلا لینک عنوان کارت‌ها).' ],
+		'font_heading' => [ 'panel' => 'type_headings', 'type' => 'select', 'label' => 'فونت تیترها', 'default' => 'body', 'options' => [ 'body' => 'همان فونت متن' ] + $fonts, 'help' => 'H1 تا H6 و هر چه داخل تیتر است (مثلا لینک عنوان کارت‌ها).' ],
 
-		'body_size'              => [ 'panel' => 'type_body', 'type' => 'number', 'label' => 'اندازه متن (پیکسل)', 'default' => 16, 'min' => 12, 'max' => 22, 'help' => 'متن مقاله‌ها، برگه‌ها و بدنه سایت. استاندارد خوانایی ۱۶ است.' ],
-		'body_line_height'       => [ 'panel' => 'type_body', 'type' => 'number', 'label' => 'فاصله خطوط متن', 'default' => 1.8, 'min' => 1.2, 'max' => 2.4, 'step' => 0.05, 'help' => 'ضریب اندازه متن؛ برای فارسی ۱٫۷ تا ۲ خواناتر است.' ],
+		'body_size'              => [ 'panel' => 'type_fonts', 'type' => 'number', 'label' => 'اندازه متن (پیکسل)', 'default' => 16, 'min' => 12, 'max' => 22, 'help' => 'متن مقاله‌ها، برگه‌ها و بدنه سایت. استاندارد خوانایی ۱۶ است.' ],
+		'body_line_height'       => [ 'panel' => 'type_fonts', 'type' => 'number', 'label' => 'فاصله خطوط متن', 'default' => 1.8, 'min' => 1.2, 'max' => 2.4, 'step' => 0.05, 'help' => 'ضریب اندازه متن؛ برای فارسی ۱٫۷ تا ۲ خواناتر است.' ],
 		'color_text'             => [ 'panel' => 'type_colors', 'type' => 'color', 'label' => 'رنگ متن و تیترها', 'default' => '#111111', 'help' => 'رنگ اصلی نوشته‌ها در کل سایت؛ تیترها جدا هم قابل تنظیم‌اند (قاب «تیترها»).' ],
 		'link_color'             => [ 'panel' => 'type_colors', 'type' => 'select', 'label' => 'رنگ لینک‌ها', 'default' => 'secondary', 'options' => $colors, 'swatch' => true, 'help' => 'از پالت برند؛ با عوض شدن پالت، لینک‌ها هم عوض می‌شوند.' ],
 		'link_hover_color'       => [ 'panel' => 'type_colors', 'type' => 'select', 'label' => 'رنگ لینک با ماوس', 'default' => 'primary', 'options' => $colors, 'swatch' => true, 'help' => 'وقتی نشانگر ماوس روی لینک می‌رود.' ],
-		'content_link_underline' => [ 'panel' => 'type_colors', 'type' => 'toggle', 'label' => 'زیرخط لینک‌های داخل متن', 'default' => true, 'wide' => true, 'help' => 'لینک‌های داخل متن مقاله، برگه و توضیح محصول/دسته. استاندارد دسترس‌پذیری (WCAG): لینک نباید فقط با رنگ از متن جدا شود. دکمه‌ها و کارت‌ها زیرخط نمی‌گیرند.' ],
+		'content_link_underline' => [ 'panel' => 'type_colors', 'type' => 'toggle', 'label' => 'زیرخط لینک‌های داخل متن', 'default' => true, 'wide' => false, 'help' => 'لینک‌های داخل متن مقاله، برگه و توضیح محصول/دسته. استاندارد دسترس‌پذیری (WCAG): لینک نباید فقط با رنگ از متن جدا شود. دکمه‌ها و کارت‌ها زیرخط نمی‌گیرند.' ],
 	];
 
 	foreach ( hodima_typography_heading_defaults() as $level => $default ) {
@@ -387,8 +387,7 @@ function hodima_settings_panels(): array {
 		'brand_palette'      => [ 'section' => 'brand', 'title' => 'پالت رنگ برند', 'icon' => 'dashicons-admin-appearance', 'layout' => 'swatches', 'help' => 'رنگ‌های کل سایت (و صفحه‌های تنظیمات پیشخوان) از این پنج رنگ ساخته می‌شوند. بعد از ذخیره، کش لایت‌اسپید خودکار پاک می‌شود.' ],
 
 		'type_preview'       => [ 'section' => 'typography', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'typepreview', 'collapsible' => true, 'help' => 'برای دیدن، باز کنید. با هر تغییر پایین همین‌جا به‌روز می‌شود (پیش از ذخیره). اندازه تیترها در عرض همین کادر نمایش داده می‌شود.' ],
-		'type_fonts'         => [ 'section' => 'typography', 'title' => 'فونت‌ها', 'icon' => 'dashicons-editor-textcolor', 'help' => 'فایل‌های وزیرمتن (هفت وزن ۳۰۰ تا ۹۰۰) همراه قالب‌اند و از همین سایت بارگذاری می‌شوند. مرورگر هر وزن را فقط وقتی دانلود می‌کند که در صفحه به کار رفته باشد.' ],
-		'type_body'          => [ 'section' => 'typography', 'title' => 'اندازه و فاصله متن', 'icon' => 'dashicons-editor-paragraph' ],
+		'type_fonts'         => [ 'section' => 'typography', 'title' => 'فونت و اندازه متن', 'icon' => 'dashicons-editor-textcolor', 'help' => 'فایل‌های وزیرمتن (هفت وزن ۳۰۰ تا ۹۰۰) همراه قالب‌اند و از همین سایت بارگذاری می‌شوند. مرورگر هر وزن را فقط وقتی دانلود می‌کند که در صفحه به کار رفته باشد.' ],
 		'type_colors'        => [ 'section' => 'typography', 'title' => 'رنگ متن و لینک‌ها', 'icon' => 'dashicons-art', 'layout' => 'colors', 'help' => 'رنگ اصلی نوشته‌ها، رنگ لینک‌ها و حالت زیر نشانگر ماوس. رنگ لینک‌ها از پالت برند است و با عوض شدن پالت، خودکار عوض می‌شود.' ],
 		'type_headings'      => [ 'section' => 'typography', 'title' => 'تیترها (H1 تا H6)', 'icon' => 'dashicons-heading', 'layout' => 'rows', 'headings' => true, 'columns' => [ 'تیتر', 'اندازه دسکتاپ (px)', 'اندازه موبایل (px)' ], 'columns_more' => [ 'تیتر', 'وزن', 'فاصله خطوط', 'رنگ' ], 'help' => 'اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند. پایه تیترهای داخل متن مقاله، برگه، توضیح محصول و دسته است؛ H1 عنوان همه صفحه‌ها هم هست (محصول، مقاله، دسته، فروشگاه، وبلاگ، برگه، جستجو، ویدیو). تیترهای طراحی‌شده بخش‌ها (کارت محصول، فوتر، عنوان بخش‌های صفحه اصلی) اندازه خودشان را دارند. ترتیب درست: هر سطح کوچک‌تر از سطح بالاتر.' ],
 		'type_custom'        => [ 'section' => 'typography', 'title' => 'فونت آپلودی', 'icon' => 'dashicons-upload', 'layout' => 'tiles', 'collapsible' => true, 'force_open' => 'hodima_typography_custom_selected', 'open_on' => [ 'font_body', 'font_heading' ], 'primary' => [ 'font_w400', 'font_w700' ], 'help' => 'برای فونتی که مجوز استفاده در وب را دارید (مثلا ایران‌سنس یا یکان‌بخ). فایل woff2 هر وزن را از کتابخانه رسانه انتخاب یا آپلود کنید؛ وزن «معمولی (۴۰۰)» لازم است و وزن خالی از نزدیک‌ترین وزن موجود ساخته می‌شود. بعد در قاب «فونت‌ها» گزینه «فونت آپلودی» را انتخاب کنید.' ],
@@ -999,7 +998,7 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 				<?php hodima_settings_backup_panel(); ?>
 			<?php endif; ?>
 
-			<?php if ( $loose ) : ?>
+			<?php if ( $loose && empty( $panel['headings'] ) ) : ?>
 				<div class="hodima-panel__fields">
 					<?php foreach ( $loose as $field_key => $field ) : ?>
 						<?php hodima_settings_render_field( $field_key, $field, $settings[ $field_key ] ); ?>
@@ -1009,7 +1008,7 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 
 			<?php if ( $grouped ) : ?>
 				<?php if ( ! empty( $panel['headings'] ) ) : ?>
-					<?php hodima_settings_render_headings( $panel, $grouped, $groups, $settings ); ?>
+					<?php hodima_settings_render_headings( $panel, $grouped, $groups, $settings, $loose ); ?>
 				<?php elseif ( 'tiles' === $layout ) : ?>
 					<?php hodima_settings_render_tiles( $panel, $grouped, $groups, $settings ); ?>
 				<?php else : ?>
@@ -1073,8 +1072,9 @@ function hodima_settings_render_items( array $grouped, array $groups, array $set
  * @param array<string, array<string, array<string, mixed>>> $grouped
  * @param array<string, array<string, mixed>>               $groups
  * @param array<string, mixed>                              $settings
+ * @param array<string, array<string, mixed>>               $loose فیلدهای آزاد قاب (فونت تیترها)؛ اول کارت «همه تیترها»
  */
-function hodima_settings_render_headings( array $panel, array $grouped, array $groups, array $settings ): void {
+function hodima_settings_render_headings( array $panel, array $grouped, array $groups, array $settings, array $loose = [] ): void {
 
 	$sizes  = [];
 	$others = [];
@@ -1090,11 +1090,14 @@ function hodima_settings_render_headings( array $panel, array $grouped, array $g
 
 	$shared = function_exists( 'hodima_typography_shared_heading_fields' ) ? hodima_typography_shared_heading_fields( $settings ) : [ 'fields' => [], 'differs' => false ];
 	?>
-	<?php if ( $shared['fields'] ) : ?>
+	<?php if ( $shared['fields'] || $loose ) : ?>
 		<div class="hodima-headings-all">
 			<h4 class="hodima-headings-all__title">همه تیترها</h4>
-			<p class="hodima-field__help">وزن، فاصله خطوط و رنگ یکسان برای H1 تا H6. اندازه هر تیتر در جدول کنار آن است.</p>
+			<p class="hodima-field__help">فونت، وزن، فاصله خطوط و رنگ یکسان برای H1 تا H6. اندازه هر تیتر در جدول کنار آن است.</p>
 			<div class="hodima-panel__fields hodima-headings-all__fields">
+				<?php foreach ( $loose as $field_key => $field ) : ?>
+					<?php hodima_settings_render_field( $field_key, $field, $settings[ $field_key ] ); ?>
+				<?php endforeach; ?>
 				<?php foreach ( $shared['fields'] as $field_key => $item ) : ?>
 					<?php hodima_settings_render_field( $field_key, $item['field'], $item['value'] ); ?>
 				<?php endforeach; ?>

@@ -647,8 +647,15 @@
 	}
 }
 
+/* قاب رنگ‌ها: کاشی کلید در ردیف کارت‌هاست؛ فقط در عرض کم تمام‌عرض می‌شود */
+.hodima-panel--colors .hodima-field--toggle {
+	@media (width <= 1100px) {
+		grid-column: 1 / -1;
+	}
+}
+
 /* کلید بیرون از قاب‌های «چند کلید کنار هم» همیشه یک ردیف کامل (تا 3.0.0 گاهی نیم و گاهی تمام‌عرض) */
-.hodima-panel:not(.hodima-panel--toggles, .hodima-panel--logo) .hodima-panel__fields > .hodima-field--toggle {
+.hodima-panel:not(.hodima-panel--toggles, .hodima-panel--logo, .hodima-panel--colors) .hodima-panel__fields > .hodima-field--toggle {
 	grid-column: 1 / -1;
 }
 
@@ -2023,8 +2030,8 @@ input.hodima-color__swatch {
 .hodima-tip__button {
 	display: inline-grid;
 	place-items: center;
-	inline-size: 1.25rem;
-	block-size: 1.25rem;
+	inline-size: 1.3125rem;
+	block-size: 1.3125rem;
 	margin: 0;
 	padding: 0;
 	border: 0;
@@ -2034,9 +2041,11 @@ input.hodima-color__swatch {
 	cursor: help;
 
 	& .hodima-tip__icon {
-		inline-size: 1.125rem;
-		block-size: 1.125rem;
-		font-size: 1.125rem;
+		inline-size: 1.1875rem;
+		block-size: 1.1875rem;
+		font-size: 1.1875rem;
+		/* علامت سؤال فارسی «؟» برعکس لاتین «?» است: آیکون افقی وارونه می‌شود */
+		transform: scaleX(-1);
 	}
 
 	&:hover,
@@ -2295,5 +2304,19 @@ input.hodima-color__swatch {
 
 	& .hodima-panel__fields {
 		grid-template-columns: minmax(0, 24rem);
+	}
+}
+
+/* قاب «فونت و اندازه متن»: سه کادر در یک ردیف (تا 3.1.2 دو قاب جدا بود) */
+.hodima-panel-type_fonts .hodima-panel__fields {
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+}
+
+/* قاب رنگ‌ها: سه کارت و کاشی «زیرخط لینک‌ها» در یک ردیف؛ در عرض کم خودکار می‌شکند */
+.hodima-panel--colors .hodima-panel__fields {
+	grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.7fr);
+
+	@media (width <= 1100px) {
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
 	}
 }
