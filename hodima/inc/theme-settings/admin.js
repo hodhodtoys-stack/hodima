@@ -450,6 +450,67 @@
 		});
 	};
 
+	/**
+	 * آیکون ؟ راهنما: با هاور و فوکوس باز می‌شود، با کلیک/لمس می‌ماند (موبایل)، با Esc یا کلیک بیرون بسته
+	 * می‌شود. حباب fixed است تا از برش قاب‌ها (overflow) در امان بماند و با لبه صفحه برخورد نکند.
+	 */
+	const initTips = () => {
+		const tips = [...document.querySelectorAll('.hodima-tip')];
+		if (!tips.length) {
+			return;
+		}
+
+		const timers = new WeakMap();
+		const place = (tip) => {
+			const button = tip.querySelector('.hodima-tip__button');
+			const bubble = tip.querySelector('.hodima-tip__bubble');
+			const anchor = button.getBoundingClientRect();
+			const { width, height } = bubble.getBoundingClientRect();
+			const margin = 8;
+			const left = Math.min(Math.max(anchor.left + anchor.width / 2 - width / 2, margin), Math.max(window.innerWidth - width - margin, margin));
+			const below = anchor.bottom + margin + height <= window.innerHeight || anchor.top - margin - height < 0;
+			bubble.style.insetInlineStart = 'auto';
+			bubble.style.left = `${left}px`;
+			bubble.style.top = `${below ? anchor.bottom + margin : anchor.top - margin - height}px`;
+		};
+		const show = (tip) => {
+			window.clearTimeout(timers.get(tip));
+			tip.classList.add('is-open');
+			tip.querySelector('.hodima-tip__button').setAttribute('aria-expanded', 'true');
+			place(tip);
+		};
+		const hide = (tip) => {
+			window.clearTimeout(timers.get(tip));
+			delete tip.dataset.pinned;
+			tip.classList.remove('is-open');
+			tip.querySelector('.hodima-tip__button').setAttribute('aria-expanded', 'false');
+		};
+		const hideAll = () => tips.forEach((tip) => tip.classList.contains('is-open') && hide(tip));
+		const later = (tip) => timers.set(tip, window.setTimeout(() => !tip.dataset.pinned && hide(tip), 150));
+
+		tips.forEach((tip) => {
+			const button = tip.querySelector('.hodima-tip__button');
+			tip.addEventListener('mouseenter', () => show(tip));
+			tip.addEventListener('mouseleave', () => later(tip));
+			button.addEventListener('focus', () => show(tip));
+			button.addEventListener('blur', () => later(tip));
+			button.addEventListener('click', () => {
+				if (tip.dataset.pinned) {
+					hide(tip);
+				} else {
+					hideAll();
+					show(tip);
+					tip.dataset.pinned = '1';
+				}
+			});
+		});
+
+		document.addEventListener('keydown', (event) => event.key === 'Escape' && hideAll());
+		document.addEventListener('click', (event) => !event.target.closest?.('.hodima-tip') && hideAll());
+		window.addEventListener('scroll', hideAll, { passive: true, capture: true });
+		window.addEventListener('resize', hideAll);
+	};
+
 	/** پیش‌نمایش لوگو روی رنگ هدر، هم‌زمان با کلید «لوگو سفید نمایش داده شود». */
 	const initLogoInvert = () => {
 		document.querySelectorAll('[data-hodima-invert-source]').forEach((preview) => {
@@ -737,6 +798,7 @@
 		initPalette();
 		initCollapsible();
 		initLogoInvert();
+		initTips();
 		initHeadingsAll();
 		initBuilderStatus();
 		initTypography();

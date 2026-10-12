@@ -145,8 +145,8 @@ function hodima_settings_fields(): array {
 
 		// ── دامنه ویدئو: اتصال زودهنگام به دامنه پخش رسانه (نوسازی قالب، مرحله ۲ و ۴؛ قبلا dl.hodima.com ثابت در کد) ──
 		'preconnect_hosts'      => [ 'panel' => 'speed_preconnect', 'type' => 'hostlist', 'label' => 'دامنه ویدئو و پادکست', 'default' => '', 'placeholder' => 'dl.example.com', 'help' => 'دامنه‌ای که فایل‌های ویدیو و پادکست سایت از آن پخش می‌شوند (مثلا هاست دانلود یا CDN)؛ اگر بیش از یکی است هر کدام در یک خط. در هر صفحه‌ای که ویدیو یا پادکستی از این دامنه دارد (کادر «رسانه»، صفحه ویدیو یا داخل متن نوشته)، مرورگر از همان ابتدای بارگذاری به آن وصل می‌شود تا پخش زودتر شروع شود؛ صفحه‌های دیگر اتصال اضافه نمی‌گیرند.' ],
-		'code_head'             => [ 'panel' => 'code_main', 'type' => 'code', 'label' => 'کد داخل <head> همه صفحه‌ها', 'default' => '', 'placeholder' => '<meta name="…" content="…">', 'help' => 'مثلا تأیید مالکیت سایت یا کد ابزارهای آمار. فقط مدیر با دسترسی «HTML نامحدود» می‌تواند ذخیره کند. کد اشتباه ممکن است ظاهر یا کارکرد سایت را خراب کند.' ],
-		'code_body_end'         => [ 'panel' => 'code_main', 'type' => 'code', 'label' => 'کد پایان صفحه (پیش از </body>)', 'default' => '', 'placeholder' => '<script>…</script>', 'help' => 'اسکریپت‌هایی که لازم نیست زود بارگذاری شوند (گفتگوی آنلاین، پیکسل‌ها). برای سرعت بهتر از کادر بالا این‌جاست.' ],
+		'code_head'             => [ 'panel' => 'code_main', 'type' => 'code', 'label' => 'کد داخل <head> همه صفحه‌ها', 'default' => '', 'placeholder' => '<meta name="…" content="…">', 'help_visible' => true, 'help' => 'مثلا تأیید مالکیت سایت یا کد ابزارهای آمار. فقط مدیر با دسترسی «HTML نامحدود» می‌تواند ذخیره کند. کد اشتباه ممکن است ظاهر یا کارکرد سایت را خراب کند.' ],
+		'code_body_end'         => [ 'panel' => 'code_main', 'type' => 'code', 'label' => 'کد پایان صفحه (پیش از </body>)', 'default' => '', 'placeholder' => '<script>…</script>', 'help_visible' => true, 'help' => 'اسکریپت‌هایی که لازم نیست زود بارگذاری شوند (گفتگوی آنلاین، پیکسل‌ها). برای سرعت بهتر از کادر بالا این‌جاست.' ],
 		'preconnect_media_auto' => [ 'panel' => 'speed_preconnect', 'type' => 'toggle', 'label' => 'تشخیص خودکار دامنه هر ویدیو و پادکست', 'default' => true, 'wide' => true, 'help' => 'دامنه ویدیو، کاور و پادکست هر صفحه (حتی آپارات و یوتیوب یا دامنه‌ای که بالا وارد نشده) خودکار تشخیص داده می‌شود. خاموش: فقط دامنه‌های کادر بالا.' ],
 	];
 }
@@ -1149,6 +1149,48 @@ function hodima_settings_render_tiles( array $panel, array $grouped, array $grou
 }
 
 
+/**
+ * راهنمای بلند ← یک جمله دیدنی + بقیه در آیکون ؟: جمله اول (تا اولین نقطه/؟/! با فاصله بعدش)
+ * همیشه دیده می‌شود؛ بقیه به حباب می‌رود. متن کوتاه (تا ۹۰ حرف) یا بدون جمله دوم دست نمی‌خورد.
+ *
+ * @return array{0: string, 1: string} [ دیدنی، حباب ]
+ */
+function hodima_settings_split_help( string $help ): array {
+
+	if ( mb_strlen( $help ) <= 90 || ! preg_match( '/^(.{20,}?[.؟!])\s+(.+)$/us', $help, $match ) ) {
+		return [ $help, '' ];
+	}
+
+	return [ $match[1], $match[2] ];
+}
+
+/**
+ * آیکون ؟ با حباب راهنما (admin.js: هاور، فوکوس، کلیک/لمس، Esc). متن راهنما در HTML می‌ماند
+ * و کنترل با aria-describedby به آن وصل است؛ پس صفحه‌خوان هم می‌خواند.
+ */
+function hodima_settings_tip_html( string $text, string $id, string $label ): string {
+
+	return '<span class="hodima-tip">'
+		. '<button type="button" class="hodima-tip__button" aria-expanded="false" aria-label="' . esc_attr( 'راهنما: ' . $label ) . '"><span class="dashicons dashicons-editor-help hodima-tip__icon" aria-hidden="true"></span></button>'
+		. '<span class="hodima-tip__bubble" role="tooltip" id="' . esc_attr( $id ) . '">' . esc_html( $text ) . '</span>'
+		. '</span>';
+}
+
+/**
+ * برچسب کادر؛ اگر راهنما دارد با آیکون ؟ کنارش در یک ردیف (3.1.1).
+ *
+ * @param string $label_html برچسب آماده (label یا span؛ escape شده توسط فراخواننده)
+ */
+function hodima_settings_field_head( string $label_html, string $help, string $help_id, string $label ): void {
+
+	if ( '' === $help ) {
+		echo $label_html; // phpcs:ignore WordPress.Security.EscapeOutput -- فراخواننده escape کرده
+		return;
+	}
+
+	echo '<span class="hodima-field__head">' . $label_html . hodima_settings_tip_html( $help, $help_id, $label ) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput -- برچسب و حباب escape شده‌اند
+}
+
 /** سرتیتر قاب (مشترک با قاب «بخش‌های صفحه اصلی» در home-layout-admin.php). */
 function hodima_settings_panel_head( string $id, string $title, string $help = '', string $icon = '', string $extra = '' ): void {
 	?>
@@ -1159,7 +1201,8 @@ function hodima_settings_panel_head( string $id, string $title, string $help = '
 		<div class="hodima-panel__heading">
 			<h3 class="hodima-panel__title" id="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $title ); ?></h3>
 			<?php if ( '' !== $help ) : ?>
-				<p class="hodima-panel__help"><?php echo esc_html( $help ); ?></p>
+				<?php [ $help_first, $help_rest ] = hodima_settings_split_help( $help ); ?>
+				<p class="hodima-panel__help"><?php echo esc_html( $help_first ); ?><?php echo '' !== $help_rest ? ' ' . hodima_settings_tip_html( $help_rest, $id . '-help', $title ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput -- hodima_settings_tip_html خروجی را escape کرده ?></p>
 			<?php endif; ?>
 		</div>
 		<?php echo $extra; // phpcs:ignore WordPress.Security.EscapeOutput -- نشانه‌گذاری ثابت فراخواننده ?>
@@ -1212,6 +1255,8 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 	$help_id   = $id . '-help';
 	$described = '' !== $help ? ' aria-describedby="' . esc_attr( $help_id ) . '"' : '';
 	$type      = hodima_setting_type( $field );
+	// راهنمای کادر ← آیکون ؟ کنار برچسب (3.1.1). می‌ماند: کلید (توضیح جزو کاشی است)، فیلد زیرگروه (ردیف جدول) و فیلد با help_visible (هشدار/شرط مهم)
+	$tip       = '' !== $help && ! isset( $field['group'] ) && empty( $field['help_visible'] ) && Hodima_Setting_Type::Toggle !== $type;
 	$wide      = ( $field['wide'] ?? $type->is_wide() ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
 	?>
 	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">
@@ -1239,7 +1284,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			 */
 			$default = strtolower( (string) $field['default'] );
 			?>
-			<label class="hodima-field__label" for="<?php echo esc_attr( $id ); ?>-hex"><?php echo esc_html( $field['label'] ); ?></label>
+			<?php hodima_settings_field_head( '<label class="hodima-field__label" for="' . esc_attr( $id ) . '-hex">' . esc_html( $field['label'] ) . '</label>', $tip ? $help : '', $help_id, (string) $field['label'] ); ?>
 			<span class="hodima-color">
 				<input
 					type="color"
@@ -1265,7 +1310,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				>
 			</span>
-			<?php if ( '' !== $help ) : ?>
+			<?php if ( '' !== $help && ! $tip ) : ?>
 				<p class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></p>
 			<?php endif; ?>
 			<button type="button" class="hodima-color__reset" title="بازگشت به پیش‌فرض" data-hodima-color-reset="<?php echo esc_attr( $default ); ?>" <?php echo strtolower( (string) $value ) === $default ? 'hidden' : ''; ?>>
@@ -1280,7 +1325,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			$header   = 'header' === ( $field['preview'] ?? '' );
 			$inverted = $header && hodima_setting( 'logo_invert' );
 			?>
-			<span class="hodima-field__label" id="<?php echo esc_attr( $id ); ?>-label"><?php echo esc_html( $field['label'] ); ?></span>
+			<?php hodima_settings_field_head( '<span class="hodima-field__label" id="' . esc_attr( $id ) . '-label">' . esc_html( $field['label'] ) . '</span>', $tip ? $help : '', $help_id, (string) $field['label'] ); ?>
 			<div class="hodima-media" data-hodima-media>
 				<input type="hidden" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $image_id ); ?>" data-hodima-media-input>
 				<figure
@@ -1321,7 +1366,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			</div>
 
 		<?php else : ?>
-			<label class="hodima-field__label" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
+			<?php hodima_settings_field_head( '<label class="hodima-field__label" for="' . esc_attr( $id ) . '">' . esc_html( $field['label'] ) . '</label>', $tip ? $help : '', $help_id, (string) $field['label'] ); ?>
 			<?php if ( Hodima_Setting_Type::Textarea === $type ) : ?>
 				<textarea id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" rows="4"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>><?php echo esc_textarea( (string) $value ); ?></textarea>
 			<?php elseif ( Hodima_Setting_Type::Number === $type ) : ?>
@@ -1392,7 +1437,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			<?php endif; ?>
 		<?php endif; ?>
 
-		<?php if ( '' !== $help ) : ?>
+		<?php if ( '' !== $help && ! $tip ) : ?>
 			<p class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></p>
 		<?php endif; ?>
 
