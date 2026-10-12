@@ -105,8 +105,9 @@
 	padding: var(--hodima-space-4) var(--hodima-space-6) var(--hodima-space-7);
 	overflow: auto hidden; /* افقی: اسکرول؛ عمودی: پنهان */
 
-	/* snap scroll */
+	/* snap scroll؛ scroll-padding = حاشیه داخلی تا اولین ستون با حاشیه‌اش snap شود (بدون آن، اسکرولر از همان اول ۱۵px جابه‌جا می‌شد و فلش «قبلی» بی‌دلیل ظاهر می‌شد) */
 	scroll-snap-type: x mandatory;
+	scroll-padding-inline: var(--hodima-space-6);
 
 	/* روان‌سازی اسکرول در موبایل و جلوگیری از قفل شدن تاچ */
 	-webkit-overflow-scrolling: touch;
@@ -122,27 +123,54 @@
 	}
 }
 
-/* ================= Mobile Scroll Hint (RTL - Persian) ================= */
+/* ================= فلش اسکرول دسته‌ها (RTL - فارسی) ================= */
 .cat-story-container {
 	position: relative;
 	overflow: hidden; /* جلوگیری از بیرون زدن گرادیانت لبه‌ها */
+}
 
-	&::after {
-		content: "\276E"; /* فلش سمت چپ برای سایت فارسی */
-		position: absolute;
-		top: 0;
-		inset-inline: auto 0; /* قرارگیری در لبه چپ */
-		width: 40px;
-		height: calc(100% - 20px);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 24px;
-		color: #003366;
-		pointer-events: none; /* عبور کلیک از روی فلش */
-		z-index: 10; /* قرارگیری بالاتر از اسکرول برای ثابت ماندن */
-		background: linear-gradient(to right, #fff 20%, rgb(255 255 255 / 0)); /* گرادیانت به سمت راست */
-		animation: pulse-arrow-rtl 2s infinite;
+/* همان فلش ❮ قدیمی لبه چپ؛ از 3.1.7 دکمه واقعی (home.js) است: کلیک ← اسکرول به جلو، و در ابتدا/انتها یا بی‌اسکرول پنهان */
+.cat-scroll-hint {
+	position: absolute;
+	inset-block-start: 0;
+	inset-inline: auto 0; /* لبه چپ */
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: 40px;
+	block-size: calc(100% - 20px);
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: linear-gradient(to right, #fff 20%, rgb(255 255 255 / 0)); /* گرادیانت به سمت راست */
+	box-shadow: none;
+	font-size: 24px;
+	line-height: 1;
+	cursor: pointer;
+	animation: pulse-arrow-rtl 2s infinite;
+
+	/* قانون عمومی button در style.css رنگ را !important سفید می‌کند؛ رنگ روی عنصر داخلی می‌نشیند (بی !important) */
+	& > span {
+		color: var(--arian-primary);
+	}
+
+	&[hidden] {
+		display: none;
+	}
+
+	&:hover {
+		transform: none; /* button:hover عمومی translateY(-1px) می‌دهد */
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--arian-primary);
+		outline-offset: -2px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		animation: none;
 	}
 }
 
@@ -670,13 +698,17 @@ h1.section-col-title {
 	border-radius: 50%;
 	background: #fff;
 	box-shadow: var(--shadow-md);
-	color: var(--arian-primary) !important; /* قانون عمومی button در style.css رنگ را !important سفید می‌کند */
 	cursor: pointer;
 	transform: translateY(-50%);
 	transition: opacity 0.2s ease, background-color 0.2s ease;
 
 	&[hidden] {
 		display: none;
+	}
+
+	/* رنگ آیکون روی svg (قانون عمومی button رنگ خودش را !important سفید می‌کند) */
+	& svg {
+		color: var(--arian-primary);
 	}
 
 	&:hover {

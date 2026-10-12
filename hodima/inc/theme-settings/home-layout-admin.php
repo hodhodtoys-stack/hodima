@@ -147,6 +147,42 @@ function hodima_home_admin_notices( array $layout ): array {
 	return $notices;
 }
 
+/** متن کوتاه نشانه «دستگاه» روی نوار بخش (خالی برای «همه»). */
+function hodima_home_device_chip( string $device ): string {
+	return match ( $device ) {
+		'desktop' => 'فقط دسکتاپ',
+		'mobile'  => 'فقط موبایل',
+		default   => '',
+	};
+}
+
+/**
+ * نشانه‌های کنار نام بخش: هشدار، دستگاه، زمان‌بندی (HTML escape شده).
+ *
+ * @param array<string, mixed> $item
+ */
+function hodima_home_admin_chips( array $item, string $warning ): string {
+
+	$out = '';
+
+	if ( '' !== $warning ) {
+		$out .= '<span class="hodima-home__chip hodima-home__chip--warn" title="' . esc_attr( $warning ) . '"><span class="dashicons dashicons-warning hodima-home__warn-icon" aria-hidden="true"></span>' . esc_html( $warning ) . '</span>';
+	}
+
+	$device = hodima_home_device_chip( (string) ( $item['device'] ?? 'all' ) );
+	if ( '' !== $device ) {
+		$out .= '<span class="hodima-home__chip" data-chip="device">' . esc_html( $device ) . '</span>';
+	}
+
+	$start = (string) ( $item['start'] ?? '' );
+	$end   = (string) ( $item['end'] ?? '' );
+	if ( '' !== $start || '' !== $end ) {
+		$out .= '<span class="hodima-home__chip" data-chip="schedule" title="' . esc_attr( trim( ( '' !== $start ? 'از ' . $start . ' ' : '' ) . ( '' !== $end ? 'تا ' . $end : '' ) ) ) . '">زمان‌بندی‌شده</span>';
+	}
+
+	return $out;
+}
+
 /**
  * یک بخش در فهرست.
  *
@@ -176,10 +212,9 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
 			<button type="button" class="hodima-home__title" aria-expanded="<?php echo $open ? 'true' : 'false'; ?>" aria-controls="<?php echo esc_attr( $idp ); ?>-body" data-hodima-home-toggle>
 				<strong><?php echo esc_html( $def['label'] ); ?></strong>
 				<span class="hodima-home__summary" data-hodima-home-summary><?php echo esc_html( $summary ); ?></span>
+				<?php // نشانه‌ها: هشدار، «فقط دسکتاپ/موبایل»، «زمان‌بندی‌شده» (admin.js با تغییر گزینه‌ها به‌روز می‌کند) ?>
+				<span class="hodima-home__chips" data-hodima-home-chips><?php echo hodima_home_admin_chips( $item, $warning ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی hodima_home_admin_chips escape شده ?></span>
 			</button>
-			<?php if ( '' !== $warning ) : ?>
-				<span class="hodima-home__warn" title="<?php echo esc_attr( $warning ); ?>"><span class="dashicons dashicons-warning hodima-home__warn-icon" aria-hidden="true"></span><?php echo esc_html( $warning ); ?></span>
-			<?php endif; ?>
 
 			<label class="hodima-toggle hodima-home__switch">
 				<input type="checkbox" role="switch" name="<?php echo esc_attr( $base ); ?>[enabled]" value="1" <?php checked( ! empty( $item['enabled'] ) ); ?>>
@@ -187,11 +222,14 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
 				<span class="hodima-toggle__label">نمایش</span>
 			</label>
 
+			<?php // چهار جای ثابت: بالا، پایین، کپی، حذف؛ جای «کپی» برای انواع تک‌نمونه‌ای خالی می‌ماند تا کلیدها در همه ردیف‌ها هم‌تراز باشند ?>
 			<span class="hodima-home__actions">
 				<button type="button" class="button-link" data-hodima-home-move="up" aria-label="<?php echo esc_attr( 'بالا بردن «' . $def['label'] . '»' ); ?>"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
 				<button type="button" class="button-link" data-hodima-home-move="down" aria-label="<?php echo esc_attr( 'پایین بردن «' . $def['label'] . '»' ); ?>"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
 				<?php if ( empty( $def['single'] ) ) : ?>
 					<button type="button" class="button-link" data-hodima-home-duplicate aria-label="<?php echo esc_attr( 'کپی «' . $def['label'] . '»' ); ?>" title="کپی بخش"><span class="dashicons dashicons-admin-page" aria-hidden="true"></span></button>
+				<?php else : ?>
+					<span class="hodima-home__slot" aria-hidden="true"></span>
 				<?php endif; ?>
 				<button type="button" class="button-link hodima-home__remove" data-hodima-home-remove aria-label="<?php echo esc_attr( 'حذف «' . $def['label'] . '»' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
 			</span>
@@ -207,26 +245,28 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
 				</div>
 			<?php endif; ?>
 
-			<?php // گزینه‌های مشترک همه بخش‌ها: نمایش در کدام دستگاه و زمان‌بندی ?>
-			<fieldset class="hodima-home__common">
-				<legend>نمایش</legend>
-				<div class="hodima-field">
-					<label class="hodima-field__label" for="<?php echo esc_attr( $idp ); ?>-device">در کدام دستگاه؟</label>
-					<select id="<?php echo esc_attr( $idp ); ?>-device" name="<?php echo esc_attr( $base ); ?>[device]">
-						<?php foreach ( hodima_home_devices() as $device => $label ) : ?>
-							<option value="<?php echo esc_attr( $device ); ?>" <?php selected( $item['device'] ?? 'all', $device ); ?>><?php echo esc_html( $label ); ?></option>
-						<?php endforeach; ?>
-					</select>
+			<?php // گزینه‌های مشترک همه بخش‌ها: جمع‌شونده (پیش‌فرض بسته)؛ اگر مقداری دارد باز است ?>
+			<details class="hodima-home__common" data-hodima-home-common <?php echo 'all' !== ( $item['device'] ?? 'all' ) || '' !== (string) ( $item['start'] ?? '' ) || '' !== (string) ( $item['end'] ?? '' ) ? 'open' : ''; ?>>
+				<summary>نمایش پیشرفته: دستگاه و زمان‌بندی</summary>
+				<div class="hodima-home__common-fields">
+					<div class="hodima-field">
+						<label class="hodima-field__label" for="<?php echo esc_attr( $idp ); ?>-device">در کدام دستگاه؟</label>
+						<select id="<?php echo esc_attr( $idp ); ?>-device" name="<?php echo esc_attr( $base ); ?>[device]" data-hodima-home-device>
+							<?php foreach ( hodima_home_devices() as $device => $label ) : ?>
+								<option value="<?php echo esc_attr( $device ); ?>" data-chip="<?php echo esc_attr( hodima_home_device_chip( $device ) ); ?>" <?php selected( $item['device'] ?? 'all', $device ); ?>><?php echo esc_html( $label ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div class="hodima-field">
+						<label class="hodima-field__label" for="<?php echo esc_attr( $idp ); ?>-start">از تاریخ (اختیاری)</label>
+						<input type="date" id="<?php echo esc_attr( $idp ); ?>-start" name="<?php echo esc_attr( $base ); ?>[start]" value="<?php echo esc_attr( (string) ( $item['start'] ?? '' ) ); ?>" dir="ltr" data-hodima-home-start>
+					</div>
+					<div class="hodima-field">
+						<label class="hodima-field__label" for="<?php echo esc_attr( $idp ); ?>-end">تا تاریخ (اختیاری)</label>
+						<input type="date" id="<?php echo esc_attr( $idp ); ?>-end" name="<?php echo esc_attr( $base ); ?>[end]" value="<?php echo esc_attr( (string) ( $item['end'] ?? '' ) ); ?>" dir="ltr" data-hodima-home-end>
+					</div>
 				</div>
-				<div class="hodima-field">
-					<label class="hodima-field__label" for="<?php echo esc_attr( $idp ); ?>-start">از تاریخ (اختیاری)</label>
-					<input type="date" id="<?php echo esc_attr( $idp ); ?>-start" name="<?php echo esc_attr( $base ); ?>[start]" value="<?php echo esc_attr( (string) ( $item['start'] ?? '' ) ); ?>" dir="ltr">
-				</div>
-				<div class="hodima-field">
-					<label class="hodima-field__label" for="<?php echo esc_attr( $idp ); ?>-end">تا تاریخ (اختیاری)</label>
-					<input type="date" id="<?php echo esc_attr( $idp ); ?>-end" name="<?php echo esc_attr( $base ); ?>[end]" value="<?php echo esc_attr( (string) ( $item['end'] ?? '' ) ); ?>" dir="ltr">
-				</div>
-			</fieldset>
+			</details>
 		</div>
 	</li>
 	<?php
@@ -243,10 +283,13 @@ function hodima_home_admin_field( string $name, string $id, array $field, mixed 
 	$summary = in_array( $key, [ 'title', 'category', 'label' ], true ) ? ' data-hodima-home-summary-source' : '';
 	$wide    = in_array( $field['type'], [ 'lines', 'categories', 'html' ], true ) ? ' hodima-field--wide' : '';
 	?>
-	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">
+	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?><?php echo 'toggle' === $field['type'] ? ' hodima-home__cell--toggle' : ''; ?>">
 		<?php if ( 'categories' === $field['type'] ) : ?>
 			<fieldset class="hodima-home__checks">
 				<legend class="hodima-field__label"><?php echo esc_html( $field['label'] ); ?></legend>
+				<?php if ( ! empty( $field['help'] ) ) : ?>
+					<p class="hodima-field__help"><?php echo esc_html( $field['help'] ); ?></p>
+				<?php endif; ?>
 				<input type="hidden" name="<?php echo esc_attr( $name ); ?>[]" value="">
 				<?php if ( ! $terms ) : ?>
 					<p class="hodima-field__help">دسته محصولی وجود ندارد (ووکامرس).</p>
@@ -273,7 +316,7 @@ function hodima_home_admin_field( string $name, string $id, array $field, mixed 
 			</label>
 
 		<?php else : ?>
-			<label class="hodima-field__label" for="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $field['label'] ); ?></label>
+			<?php hodima_settings_field_head( '<label class="hodima-field__label" for="' . esc_attr( $id ) . '">' . esc_html( $field['label'] ) . '</label>', (string) ( $field['help'] ?? '' ), $id . '-help', (string) $field['label'] ); ?>
 
 			<?php if ( 'lines' === $field['type'] ) : ?>
 				<textarea id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" rows="4"><?php echo esc_textarea( implode( "\n", (array) $value ) ); ?></textarea>

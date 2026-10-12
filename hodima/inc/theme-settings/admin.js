@@ -455,12 +455,8 @@
 	 * می‌شود. حباب fixed است تا از برش قاب‌ها (overflow) در امان بماند و با لبه صفحه برخورد نکند.
 	 */
 	const initTips = () => {
-		const tips = [...document.querySelectorAll('.hodima-tip')];
-		if (!tips.length) {
-			return;
-		}
-
 		const timers = new WeakMap();
+		const tipOf = (target) => target.closest?.('.hodima-tip') ?? null;
 		const place = (tip) => {
 			const button = tip.querySelector('.hodima-tip__button');
 			const bubble = tip.querySelector('.hodima-tip__bubble');
@@ -485,28 +481,52 @@
 			tip.classList.remove('is-open');
 			tip.querySelector('.hodima-tip__button').setAttribute('aria-expanded', 'false');
 		};
-		const hideAll = () => tips.forEach((tip) => tip.classList.contains('is-open') && hide(tip));
+		const hideAll = () => document.querySelectorAll('.hodima-tip.is-open').forEach(hide);
 		const later = (tip) => timers.set(tip, window.setTimeout(() => !tip.dataset.pinned && hide(tip), 150));
 
-		tips.forEach((tip) => {
-			const button = tip.querySelector('.hodima-tip__button');
-			tip.addEventListener('mouseenter', () => show(tip));
-			tip.addEventListener('mouseleave', () => later(tip));
-			button.addEventListener('focus', () => show(tip));
-			button.addEventListener('blur', () => later(tip));
-			button.addEventListener('click', () => {
-				if (tip.dataset.pinned) {
-					hide(tip);
-				} else {
-					hideAll();
-					show(tip);
-					tip.dataset.pinned = '1';
-				}
-			});
+		// رویدادها روی document (واگذاری): آیکون‌های بخش‌های تازه/کپی‌شده هم کار می‌کنند
+		document.addEventListener('mouseover', (event) => {
+			const tip = tipOf(event.target);
+			if (tip && !tip.contains(event.relatedTarget)) {
+				show(tip);
+			}
 		});
-
+		document.addEventListener('mouseout', (event) => {
+			const tip = tipOf(event.target);
+			if (tip && !tip.contains(event.relatedTarget)) {
+				later(tip);
+			}
+		});
+		document.addEventListener('focusin', (event) => {
+			const tip = tipOf(event.target);
+			if (tip && event.target.matches('.hodima-tip__button')) {
+				show(tip);
+			}
+		});
+		document.addEventListener('focusout', (event) => {
+			const tip = tipOf(event.target);
+			if (tip && event.target.matches('.hodima-tip__button')) {
+				later(tip);
+			}
+		});
+		document.addEventListener('click', (event) => {
+			const tip = tipOf(event.target);
+			if (!tip) {
+				hideAll();
+				return;
+			}
+			if (!event.target.closest('.hodima-tip__button')) {
+				return;
+			}
+			if (tip.dataset.pinned) {
+				hide(tip);
+			} else {
+				hideAll();
+				show(tip);
+				tip.dataset.pinned = '1';
+			}
+		});
 		document.addEventListener('keydown', (event) => event.key === 'Escape' && hideAll());
-		document.addEventListener('click', (event) => !event.target.closest?.('.hodima-tip') && hideAll());
 		window.addEventListener('scroll', hideAll, { passive: true, capture: true });
 		window.addEventListener('resize', hideAll);
 	};
@@ -607,6 +627,39 @@
 			}
 			announce(`«${labelOf(item)}» جابه‌جا شد: ردیف ${items().indexOf(item) + 1} از ${items().length}`);
 		};
+
+		/** نشانه‌های نوار بخش («فقط دسکتاپ»، «زمان‌بندی‌شده») با تغییر گزینه‌های «نمایش پیشرفته» به‌روز می‌شوند. */
+		const updateChips = (item) => {
+			const chips = item?.querySelector('[data-hodima-home-chips]');
+			if (!chips) {
+				return;
+			}
+			chips.querySelectorAll('[data-chip]').forEach((chip) => chip.remove());
+			const add = (text, kind, title = '') => {
+				const chip = document.createElement('span');
+				chip.className = 'hodima-home__chip';
+				chip.dataset.chip = kind;
+				chip.textContent = text;
+				if (title) {
+					chip.title = title;
+				}
+				chips.append(chip);
+			};
+			const device = item.querySelector('[data-hodima-home-device]')?.selectedOptions[0]?.dataset.chip ?? '';
+			const start = item.querySelector('[data-hodima-home-start]')?.value ?? '';
+			const end = item.querySelector('[data-hodima-home-end]')?.value ?? '';
+			if (device) {
+				add(device, 'device');
+			}
+			if (start || end) {
+				add('زمان‌بندی‌شده', 'schedule', [start && `از ${start}`, end && `تا ${end}`].filter(Boolean).join(' '));
+			}
+		};
+		list.addEventListener('change', (event) => {
+			if (event.target.closest?.('[data-hodima-home-common]')) {
+				updateChips(event.target.closest('[data-hodima-home-item]'));
+			}
+		});
 
 		/** کپی بخش (فقط انواع چندنمونه‌ای): همه مقدارهای فعلی فرم، با شناسه تازه، درست زیر بخش اصلی. */
 		const duplicate = (item) => {
