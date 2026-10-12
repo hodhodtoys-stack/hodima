@@ -42,6 +42,14 @@ PHP 8.4، HTML5، CSS مدرن، JavaScript خالص (بدون jQuery).
 
 پالت رنگ: `#25316a` · `#607bbd` · `#b6c2f3` · `#6a2b9a` · `#a341c8` (توکن‌ها در `hodima/assets/css/tokens.css`؛ قابل تغییر از «تنظیمات قالب ← برند»).
 
+## قوانین و نقشه کدبیس (برای هر کاری روی پروژه)
+هر قانون فقط یک جا نوشته شده؛ پیش از کار روی هر بخش، فایل همان بخش را بخوانید:
+- `CLAUDE.md` — قانون‌های همیشگی (زبان، شاخه، نسخه، انتشار) و ابزارهای تست.
+- `.claude/skills/hodima-theme/SKILL.md` — **قالب**: CSS، PHP، پالت، تایپوگرافی، تنظیمات قالب و قانون‌های طراحی پیشخوان (راست‌چین، راهنما با آیکون ؟، کارت رنگ، چیدمان بدون فضای خالی، چک‌لیست قاب/تب تازه).
+- `.claude/skills/hodima-plugins/SKILL.md` — افزونه‌ها (Core، SEO، Commerce، Media).
+- `.claude/skills/hodima-map/SKILL.md` — نقشه کدبیس: ترتیب لود و ارتباط قالب ↔ افزونه‌ها.
+- `.claude/skills/release/SKILL.md` — انتشار (نسخه، CHANGELOG، ساخت، push). تاریخچه هر مرحله: `HODIMA-AUDIT.md`.
+
 ## کیفیت کد و تست
 - `bash bin/lint.sh` — php -l (PHP 8.4)، PHPCS، PHPStan، Stylelint و ESLint با baseline (خطاهای قدیمی ثبت‌شده؛ فقط خطای جدید رد می‌شود). پیش‌نیاز: `composer install` و `npm ci` (در محیط ابری: `bash tools/quality/install-offline.sh`). تنظیمات: `phpcs.xml.dist`، `phpstan.neon.dist`، `stylelint.config.mjs`، `eslint.config.mjs`.
 - GitHub Actions (`.github/workflows/quality.yml`) روی هر push: همان lint + ساخت ۲۵ صفحه با وردپرس واقعی بدون هیچ هشدار PHP. نتیجه در تب Actions مخزن.

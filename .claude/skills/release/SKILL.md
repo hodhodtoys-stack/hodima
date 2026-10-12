@@ -40,6 +40,8 @@ python3 bin/release-check.py plan
 - **شماره نسخه بعدی: قانون ۷ `CLAUDE.md`** (یک پله؛ x.9.9 ← (x+1).0.0). `release-check.py plan` همان را پیشنهاد می‌دهد و بررسی پیش از commit غیر آن را رد می‌کند.
 - اگر قالب به امکان تازه یک افزونه نیاز دارد: کمترین نسخه در `$required` در `hodima/functions.php` (اعلان پیشخوان) را بالا ببر. اگر منطقی از قالب به افزونه رفت: مرز `hodima_theme_has_legacy_logic()` (بخش ۵۲).
 
+**کار بزرگ ← چند انتشار کوچک:** اگر خواسته چند بخش مستقل دارد (مثلا سازوکار تازه + چیدمان بر پایه آن)، هر بخش یک انتشار و یک پله نسخه؛ پیش از ادامه، کاربر نتیجه را ببیند تا باگ زود رفع شود. «اول تحلیل کن» ← فقط طرح و ریسک، تا «انجام بده» تغییری نده.
+
 ## ۳. CHANGELOG.md
 بالای فایل، زیر توضیح اول، یک عنوان برای همه بسته‌های این انتشار، **ارقام فارسی**:
 ```markdown
@@ -64,7 +66,7 @@ python3 bin/release-check.py plan
 | هر PHP که خروجی صفحه یا اسکیما را عوض می‌کند | `tools/wp-harness/compare-with-ref.sh` (هر `LOST` باید عمدی باشد) و `tools/wp-harness/ci-check.sh` |
 | CSS قالب | `tools/wp-harness/css-equiv.sh` و `tools/wp-harness/visual-compare.sh` (فروشگاه: `--wc`) |
 | JS/HTML قالب | `tools/wp-harness/visual-compare.sh` |
-| صفحه پیشخوان | `tools/wp-harness/admin-check.sh . /tmp/adm [slug…]` |
+| صفحه پیشخوان | `tools/wp-harness/admin-check.sh . /tmp/adm [slug…]`؛ برای تنظیمات قالب: عکس همه تب‌ها ۱۳۰۰ و ۳۹۰ (راست‌به‌چپ، با `admin.js`) + آزمون رفتار JS در Chromium (قانون «طراحی پیشخوان» اسکیل `hodima-theme`) |
 | تعریف تابع/کلاس سطح بالا یا ترتیب لود | بعد از مرحله ۶: `tools/wp-harness/zip-install-check.sh` (هر دو ترتیب فعال‌سازی) |
 | فقط ابزار/مستندات | اجرای واقعی همان ابزار روی یک نمونه |
 
