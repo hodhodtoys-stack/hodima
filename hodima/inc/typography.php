@@ -205,6 +205,56 @@ function hodima_typography_nearest_face( int $weight ): string {
 	return (string) reset( $faces );
 }
 
+/**
+ * «فونت آپلودی» برای متن یا تیترها انتخاب شده؟ (قاب «فونت آپلودی» پیشخوان در این حالت باز می‌ماند.)
+ */
+function hodima_typography_custom_selected(): bool {
+	return 'custom' === hodima_typography_body_font() || 'custom' === hodima_typography_heading_font();
+}
+
+/**
+ * کنترل‌های کمکی قاب «تیترها» (وزن، فاصله خطوط و رنگ برای همه): فقط پیشخوان؛ ارسال
+ * نمی‌شوند (بی name) و admin.js مقدار شش فیلد واقعی H1 تا H6 را هم‌زمان عوض می‌کند.
+ * اگر شش تیتر مقدار یکسان ندارند، کنترل خالی («متفاوت») و بخش «تنظیم جدا» باز است.
+ *
+ * @param array<string, mixed> $settings
+ * @return array{fields: array<string, array{field: array<string, mixed>, value: string}>, differs: bool}
+ */
+function hodima_typography_shared_heading_fields( array $settings ): array {
+
+	$all    = hodima_settings_fields();
+	$labels = [ 'weight' => 'وزن', 'line_height' => 'فاصله خطوط', 'color' => 'رنگ' ];
+	$out    = [];
+	$differs = false;
+
+	foreach ( $labels as $suffix => $label ) {
+		$base = $all[ "h1_{$suffix}" ] ?? null;
+		if ( ! is_array( $base ) ) {
+			continue;
+		}
+
+		$values = [];
+		foreach ( array_keys( hodima_typography_heading_defaults() ) as $level ) {
+			$raw      = $settings[ "h{$level}_{$suffix}" ] ?? $base['default'];
+			$values[] = is_numeric( $raw ) ? (string) (float) $raw : (string) $raw;
+		}
+		$same = 1 === count( array_unique( $values ) );
+
+		unset( $base['panel'], $base['group'] );
+		$base['label']       = $label;
+		$base['unsaved']     = true;
+		$base['placeholder'] = 'متفاوت';
+		if ( ! $same && isset( $base['options'] ) ) {
+			$base['options'] = [ '' => 'متفاوت (تنظیم جدا)' ] + (array) $base['options'];
+		}
+
+		$differs                 = $differs || ! $same;
+		$out[ "all_{$suffix}" ] = [ 'field' => $base, 'value' => $same ? (string) ( $settings[ "h1_{$suffix}" ] ?? $base['default'] ) : '' ];
+	}
+
+	return [ 'fields' => $out, 'differs' => $differs ];
+}
+
 /* =========================================================================
  * ۲. CSS تنظیمات (فقط مقدارهای تغییرکرده؛ پیش‌فرض‌ها در tokens.css)
  * ========================================================================= */

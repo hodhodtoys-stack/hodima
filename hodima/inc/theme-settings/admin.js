@@ -369,11 +369,22 @@
 	const initCollapsible = () => {
 		document.querySelectorAll('[data-hodima-collapsible]').forEach((panel) => {
 			const key = `hodima-panel-open-${panel.dataset.hodimaCollapsible}`;
-			try {
-				panel.open = window.localStorage.getItem(key) === '1';
-			} catch {
-				// بدون دسترسی به حافظه مرورگر: همان پیش‌فرض بسته
+			// باز اجباری از سرور (مثلا فونت آپلودی انتخاب شده): حافظه مرورگر رویش نمی‌نشیند
+			if (!panel.hasAttribute('data-hodima-keep-open')) {
+				try {
+					panel.open = window.localStorage.getItem(key) === '1';
+				} catch {
+					// بدون دسترسی به حافظه مرورگر: همان پیش‌فرض بسته
+				}
 			}
+			// با انتخاب «فونت آپلودی» در فهرست‌های فونت، قاب خودش باز می‌شود
+			(panel.dataset.hodimaOpenOn ?? '').split(' ').filter(Boolean).forEach((name) => {
+				document.getElementById(`hodima-setting-${name}`)?.addEventListener('change', (event) => {
+					if (event.target.value === 'custom') {
+						panel.open = true;
+					}
+				});
+			});
 			panel.addEventListener('toggle', () => {
 				try {
 					window.localStorage.setItem(key, panel.open ? '1' : '0');
@@ -381,6 +392,61 @@
 					// نادیده
 				}
 			});
+		});
+	};
+
+	/**
+	 * قاب «تیترها»: وزن، فاصله خطوط و رنگ «همه تیترها». کنترل کمکی (بی name) مقدار شش فیلد
+	 * واقعی H1 تا H6 را عوض می‌کند و رویدادها را می‌فرستد تا نمونه زنده و مربع رنگ هم به‌روز شوند.
+	 * عکس آن: با تغییر دستی یک تیتر، کنترل کمکی یا مقدار مشترک را نشان می‌دهد یا «متفاوت».
+	 */
+	const initHeadingsAll = () => {
+		document.querySelectorAll('[id^="hodima-setting-all_"]').forEach((control) => {
+			const kind = control.id.replace('hodima-setting-all_', '');
+			const targets = [1, 2, 3, 4, 5, 6].map((level) => document.getElementById(`hodima-setting-h${level}_${kind}`)).filter(Boolean);
+			const isSelect = control.tagName === 'SELECT';
+			const same = (value) => (isSelect ? value : String(Number.parseFloat(value)));
+			let applying = false; // هنگام نوشتن در شش فیلد، refresh کنترل کمکی را «متفاوت» نکند
+
+			const refresh = () => {
+				if (applying) {
+					return;
+				}
+				const values = new Set(targets.map((target) => same(target.value)));
+				if (values.size === 1) {
+					const shared = targets[0].value;
+					if (isSelect) {
+						control.querySelector('option[value=""]')?.remove();
+					}
+					control.value = shared;
+				} else {
+					if (isSelect && !control.querySelector('option[value=""]')) {
+						control.add(new Option('متفاوت (تنظیم جدا)', ''), 0);
+					}
+					control.value = '';
+				}
+				syncColorDots();
+			};
+
+			const apply = () => {
+				if (control.value === '') {
+					return;
+				}
+				applying = true;
+				targets.forEach((target) => {
+					if (target.value !== control.value) {
+						target.value = control.value;
+						target.dispatchEvent(new Event('input', { bubbles: true }));
+						target.dispatchEvent(new Event('change', { bubbles: true }));
+					}
+				});
+				applying = false;
+				syncColorDots();
+			};
+
+			control.addEventListener(isSelect ? 'change' : 'input', apply);
+			targets.forEach((target) => target.addEventListener('change', refresh));
+			targets.forEach((target) => target.addEventListener('input', refresh));
 		});
 	};
 
@@ -671,6 +737,7 @@
 		initPalette();
 		initCollapsible();
 		initLogoInvert();
+		initHeadingsAll();
 		initBuilderStatus();
 		initTypography();
 		initLook();

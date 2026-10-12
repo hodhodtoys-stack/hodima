@@ -786,8 +786,9 @@
 	color: var(--hs-primary);
 }
 
-/* کارت‌ها: نمادهای اعتماد کنار هم، به ترتیب ۱، ۲، ۳ */
-.hodima-panel--cards {
+/* کارت‌ها: نمادهای اعتماد کنار هم، به ترتیب ۱، ۲، ۳ (و کاشی وزن‌های فونت آپلودی) */
+.hodima-panel--cards,
+.hodima-panel--tiles {
 	& .hodima-panel__items {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
@@ -2087,5 +2088,102 @@ input.hodima-color__swatch {
 		grid-area: help;
 		margin: 0;
 		padding-inline: 0.75rem;
+	}
+}
+
+/* ── قاب تیترها و فونت آپلودی (3.0.9) ──────────────────────────── */
+/* «همه تیترها» و جدول اندازه‌ها کنار هم؛ «تنظیم جدا» زیرشان تمام‌عرض. در راست‌به‌چپ کارت سمت راست است. */
+.hodima-panel--headings .hodima-panel__body {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+	align-items: start;
+	gap: 1.125rem;
+
+	@media (width <= 1100px) {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.hodima-panel--headings .hodima-headings-more {
+	grid-column: 1 / -1;
+}
+
+.hodima-headings-all {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding: 1rem;
+	border: 1px solid var(--hs-border);
+	border-radius: var(--hs-radius-md);
+	background: var(--hs-surface-soft);
+}
+
+.hodima-headings-all__title {
+	margin: 0;
+	color: var(--hs-primary);
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.hodima-headings-all__fields {
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+	gap: 0.75rem;
+}
+
+.hodima-headings-sizes {
+	--row-cols: 4.5rem minmax(0, 1fr) minmax(0, 1fr);
+
+	display: flex;
+	flex-direction: column;
+	gap: 0.625rem;
+}
+
+.hodima-more {
+	border: 1px solid var(--hs-border);
+	border-radius: var(--hs-radius-md);
+	background: var(--hs-surface);
+	--row-cols: 4.5rem minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
+
+	& > .hodima-panel__columns,
+	& > .hodima-panel__items {
+		margin: 0 0.75rem 0.75rem;
+	}
+
+	& > .hodima-panel__items {
+		margin-block-start: 0.5rem;
+	}
+}
+
+.hodima-more__summary {
+	padding: 0.75rem 1rem;
+	color: var(--hs-primary);
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+
+	&:focus-visible {
+		outline: 2px solid var(--hs-secondary);
+		outline-offset: -2px;
+		border-radius: var(--hs-radius-md);
+	}
+}
+
+/* کاشی وزن فونت: «بدون فایل» و دکمه کنار هم (در کارت باریک زیر هم می‌شکند) */
+.hodima-panel--tiles {
+	& .hodima-media {
+		flex-flow: row wrap;
+		align-items: center;
+	}
+
+	& .hodima-panel__items--tiles {
+		margin-block-end: 0.75rem;
+	}
+
+	& .hodima-more .hodima-panel__items--tiles {
+		margin-inline: 0.75rem;
+	}
+
+	& .hodima-panel__fields {
+		grid-template-columns: minmax(0, 24rem);
 	}
 }

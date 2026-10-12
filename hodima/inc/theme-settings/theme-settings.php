@@ -389,8 +389,8 @@ function hodima_settings_panels(): array {
 		'type_preview'       => [ 'section' => 'typography', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'typepreview', 'collapsible' => true, 'help' => 'برای دیدن، باز کنید. با هر تغییر پایین همین‌جا به‌روز می‌شود (پیش از ذخیره). اندازه تیترها در عرض همین کادر نمایش داده می‌شود.' ],
 		'type_fonts'         => [ 'section' => 'typography', 'title' => 'فونت‌ها', 'icon' => 'dashicons-editor-textcolor', 'help' => 'فایل‌های وزیرمتن (هفت وزن ۳۰۰ تا ۹۰۰) همراه قالب‌اند و از همین سایت بارگذاری می‌شوند. مرورگر هر وزن را فقط وقتی دانلود می‌کند که در صفحه به کار رفته باشد.' ],
 		'type_body'          => [ 'section' => 'typography', 'title' => 'متن و لینک‌ها', 'icon' => 'dashicons-editor-paragraph' ],
-		'type_headings'      => [ 'section' => 'typography', 'title' => 'تیترها (H1 تا H6)', 'icon' => 'dashicons-heading', 'layout' => 'rows', 'columns' => [ 'تیتر', 'اندازه دسکتاپ (px)', 'اندازه موبایل (px)', 'وزن', 'فاصله خطوط', 'رنگ' ], 'help' => 'اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند. پایه تیترهای داخل متن مقاله، برگه، توضیح محصول و دسته است؛ H1 عنوان همه صفحه‌ها هم هست (محصول، مقاله، دسته، فروشگاه، وبلاگ، برگه، جستجو، ویدیو). تیترهای طراحی‌شده بخش‌ها (کارت محصول، فوتر، عنوان بخش‌های صفحه اصلی) اندازه خودشان را دارند. ترتیب درست: هر سطح کوچک‌تر از سطح بالاتر.' ],
-		'type_custom'        => [ 'section' => 'typography', 'title' => 'فونت آپلودی', 'icon' => 'dashicons-upload', 'layout' => 'rows', 'columns' => [ 'وزن', 'فایل فونت (woff2)' ], 'help' => 'برای فونتی که مجوز استفاده در وب را دارید (مثلا ایران‌سنس یا یکان‌بخ). فایل woff2 هر وزن را از کتابخانه رسانه انتخاب یا آپلود کنید؛ وزن «معمولی (۴۰۰)» لازم است و وزن خالی از نزدیک‌ترین وزن موجود ساخته می‌شود. بعد در قاب «فونت‌ها» گزینه «فونت آپلودی» را انتخاب کنید.' ],
+		'type_headings'      => [ 'section' => 'typography', 'title' => 'تیترها (H1 تا H6)', 'icon' => 'dashicons-heading', 'layout' => 'rows', 'headings' => true, 'columns' => [ 'تیتر', 'اندازه دسکتاپ (px)', 'اندازه موبایل (px)' ], 'columns_more' => [ 'تیتر', 'وزن', 'فاصله خطوط', 'رنگ' ], 'help' => 'اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند. پایه تیترهای داخل متن مقاله، برگه، توضیح محصول و دسته است؛ H1 عنوان همه صفحه‌ها هم هست (محصول، مقاله، دسته، فروشگاه، وبلاگ، برگه، جستجو، ویدیو). تیترهای طراحی‌شده بخش‌ها (کارت محصول، فوتر، عنوان بخش‌های صفحه اصلی) اندازه خودشان را دارند. ترتیب درست: هر سطح کوچک‌تر از سطح بالاتر.' ],
+		'type_custom'        => [ 'section' => 'typography', 'title' => 'فونت آپلودی', 'icon' => 'dashicons-upload', 'layout' => 'tiles', 'collapsible' => true, 'force_open' => 'hodima_typography_custom_selected', 'open_on' => [ 'font_body', 'font_heading' ], 'primary' => [ 'font_w400', 'font_w700' ], 'help' => 'برای فونتی که مجوز استفاده در وب را دارید (مثلا ایران‌سنس یا یکان‌بخ). فایل woff2 هر وزن را از کتابخانه رسانه انتخاب یا آپلود کنید؛ وزن «معمولی (۴۰۰)» لازم است و وزن خالی از نزدیک‌ترین وزن موجود ساخته می‌شود. بعد در قاب «فونت‌ها» گزینه «فونت آپلودی» را انتخاب کنید.' ],
 
 		'look_preview'       => [ 'section' => 'layout', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'lookpreview', 'help' => 'نمونه کارت و دکمه با انتخاب‌های پایین (پیش از ذخیره).' ],
 		'look_shape'         => [ 'section' => 'layout', 'title' => 'گوشه‌ها و دکمه‌ها', 'icon' => 'dashicons-art', 'half' => true ],
@@ -970,11 +970,15 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 	}
 
 	$collapse = ! empty( $panel['collapsible'] ); // قاب جمع‌شونده (<details>، پیش‌فرض بسته)؛ مثلا پیش‌نمایش تایپوگرافی
-	$classes  = 'hodima-panel hodima-panel--' . $layout . ' hodima-panel-' . $key . ( ! empty( $panel['half'] ) ? ' hodima-panel--half' : '' ) . ( $collapse ? ' hodima-panel--collapsible' : '' );
+	$classes  = 'hodima-panel hodima-panel--' . $layout . ' hodima-panel-' . $key . ( ! empty( $panel['half'] ) ? ' hodima-panel--half' : '' ) . ( $collapse ? ' hodima-panel--collapsible' : '' ) . ( ! empty( $panel['headings'] ) ? ' hodima-panel--headings' : '' );
 	$title    = 'hodima-panel-' . $key . '-title';
 	?>
 	<?php if ( $collapse ) : ?>
-		<details class="<?php echo esc_attr( $classes ); ?>" data-hodima-collapsible="<?php echo esc_attr( $key ); ?>">
+		<?php
+		// باز بودن اجباری (مثلا «فونت آپلودی» وقتی همان فونت انتخاب شده) و بازشدن با تغییر فیلدهای دیگر (admin.js)
+		$force_open = ! empty( $panel['force_open'] ) && is_callable( $panel['force_open'] ) && (bool) call_user_func( $panel['force_open'] );
+		?>
+		<details class="<?php echo esc_attr( $classes ); ?>" data-hodima-collapsible="<?php echo esc_attr( $key ); ?>"<?php echo $force_open ? ' open data-hodima-keep-open' : ''; ?><?php echo ! empty( $panel['open_on'] ) ? ' data-hodima-open-on="' . esc_attr( implode( ' ', (array) $panel['open_on'] ) ) . '"' : ''; ?>>
 			<summary class="hodima-panel__summary">
 				<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '', '<span class="hodima-panel__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>' ); ?>
 			</summary>
@@ -1003,31 +1007,146 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 			<?php endif; ?>
 
 			<?php if ( $grouped ) : ?>
-				<?php if ( ! empty( $panel['columns'] ) ) : ?>
-					<div class="hodima-panel__columns" aria-hidden="true">
-						<?php foreach ( $panel['columns'] as $column ) : ?>
-							<span><?php echo esc_html( $column ); ?></span>
-						<?php endforeach; ?>
-					</div>
+				<?php if ( ! empty( $panel['headings'] ) ) : ?>
+					<?php hodima_settings_render_headings( $panel, $grouped, $groups, $settings ); ?>
+				<?php elseif ( 'tiles' === $layout ) : ?>
+					<?php hodima_settings_render_tiles( $panel, $grouped, $groups, $settings ); ?>
+				<?php else : ?>
+					<?php if ( ! empty( $panel['columns'] ) ) : ?>
+						<?php hodima_settings_render_columns( (array) $panel['columns'] ); ?>
+					<?php endif; ?>
+					<?php hodima_settings_render_items( $grouped, $groups, $settings ); ?>
 				<?php endif; ?>
-				<div class="hodima-panel__items">
-					<?php foreach ( $grouped as $group => $group_fields ) : ?>
-						<fieldset class="hodima-group" data-group="<?php echo esc_attr( $group ); ?>">
-							<legend class="hodima-group__title"><?php echo esc_html( $groups[ $group ]['title'] ?? $group ); ?></legend>
-							<div class="hodima-group__fields">
-								<?php foreach ( $group_fields as $field_key => $field ) : ?>
-									<?php hodima_settings_render_field( $field_key, $field, $settings[ $field_key ] ); ?>
-								<?php endforeach; ?>
-							</div>
-						</fieldset>
-					<?php endforeach; ?>
-				</div>
 			<?php endif; ?>
-
 		</div>
 	<?php echo $collapse ? '</details>' : '</section>'; // phpcs:ignore WordPress.Security.EscapeOutput -- برچسب ثابت ?>
 	<?php
 }
+
+/**
+ * سرستون‌های جدول «ردیف‌ها» (فقط تزئینی؛ برچسب فیلدها برای صفحه‌خوان در خود ردیف است).
+ *
+ * @param array<int, string> $columns
+ */
+function hodima_settings_render_columns( array $columns ): void {
+	?>
+	<div class="hodima-panel__columns" aria-hidden="true">
+		<?php foreach ( $columns as $column ) : ?>
+			<span><?php echo esc_html( (string) $column ); ?></span>
+		<?php endforeach; ?>
+	</div>
+	<?php
+}
+
+/**
+ * ردیف‌های یک قاب (هر زیرگروه یک fieldset: نماد اعتماد، شبکه، تیتر).
+ *
+ * @param array<string, array<string, array<string, mixed>>> $grouped
+ * @param array<string, array<string, mixed>>               $groups
+ * @param array<string, mixed>                              $settings
+ */
+function hodima_settings_render_items( array $grouped, array $groups, array $settings, string $css_class = 'hodima-panel__items' ): void {
+	?>
+	<div class="<?php echo esc_attr( $css_class ); ?>">
+		<?php foreach ( $grouped as $group => $group_fields ) : ?>
+			<fieldset class="hodima-group" data-group="<?php echo esc_attr( $group ); ?>">
+				<legend class="hodima-group__title"><?php echo esc_html( $groups[ $group ]['title'] ?? $group ); ?></legend>
+				<div class="hodima-group__fields">
+					<?php foreach ( $group_fields as $field_key => $field ) : ?>
+						<?php hodima_settings_render_field( $field_key, $field, $settings[ $field_key ] ); ?>
+					<?php endforeach; ?>
+				</div>
+			</fieldset>
+		<?php endforeach; ?>
+	</div>
+	<?php
+}
+
+/**
+ * قاب «تیترها» (3.0.9): اندازه‌ها (فقط همین دو ستون برای هر تیتر فرق دارند) در جدول کوتاه،
+ * وزن/فاصله خطوط/رنگ یک بار برای همه (کنترل کمکی بی name که مقدار شش فیلد واقعی را
+ * هم‌زمان عوض می‌کند، admin.js) و «تنظیم جدا برای هر تیتر» جمع‌شونده. فیلدهای واقعی
+ * همان کلیدهای قبلی‌اند و همیشه در فرم هستند (جمع‌شده هم ارسال می‌شوند).
+ *
+ * @param array<string, mixed>                               $panel
+ * @param array<string, array<string, array<string, mixed>>> $grouped
+ * @param array<string, array<string, mixed>>               $groups
+ * @param array<string, mixed>                              $settings
+ */
+function hodima_settings_render_headings( array $panel, array $grouped, array $groups, array $settings ): void {
+
+	$sizes  = [];
+	$others = [];
+	foreach ( $grouped as $group => $group_fields ) {
+		foreach ( $group_fields as $field_key => $field ) {
+			if ( str_contains( $field_key, '_size' ) ) {
+				$sizes[ $group ][ $field_key ] = $field;
+			} else {
+				$others[ $group ][ $field_key ] = $field;
+			}
+		}
+	}
+
+	$shared = function_exists( 'hodima_typography_shared_heading_fields' ) ? hodima_typography_shared_heading_fields( $settings ) : [ 'fields' => [], 'differs' => false ];
+	?>
+	<?php if ( $shared['fields'] ) : ?>
+		<div class="hodima-headings-all">
+			<h4 class="hodima-headings-all__title">همه تیترها</h4>
+			<p class="hodima-field__help">وزن، فاصله خطوط و رنگ یکسان برای H1 تا H6. اندازه هر تیتر در جدول کنار آن است.</p>
+			<div class="hodima-panel__fields hodima-headings-all__fields">
+				<?php foreach ( $shared['fields'] as $field_key => $item ) : ?>
+					<?php hodima_settings_render_field( $field_key, $item['field'], $item['value'] ); ?>
+				<?php endforeach; ?>
+			</div>
+		</div>
+	<?php endif; ?>
+
+	<div class="hodima-headings-sizes">
+		<?php hodima_settings_render_columns( (array) ( $panel['columns'] ?? [] ) ); ?>
+		<?php hodima_settings_render_items( $sizes, $groups, $settings ); ?>
+	</div>
+
+	<details class="hodima-more hodima-headings-more" <?php echo $shared['differs'] ? 'open' : ''; ?>>
+		<summary class="hodima-more__summary">تنظیم جدا برای هر تیتر<?php echo $shared['differs'] ? ' (مقدارهای فعلی یکسان نیستند)' : ''; ?></summary>
+		<?php hodima_settings_render_columns( (array) ( $panel['columns_more'] ?? [] ) ); ?>
+		<?php hodima_settings_render_items( $others, $groups, $settings ); ?>
+	</details>
+	<?php
+}
+
+/**
+ * قاب «فونت آپلودی»: کاشی هر وزن؛ وزن‌های اصلی دیده می‌شوند و بقیه زیر «وزن‌های بیشتر»
+ * (اگر یکی‌شان فایل دارد خودکار باز است).
+ *
+ * @param array<string, mixed>                               $panel
+ * @param array<string, array<string, array<string, mixed>>> $grouped
+ * @param array<string, array<string, mixed>>               $groups
+ * @param array<string, mixed>                              $settings
+ */
+function hodima_settings_render_tiles( array $panel, array $grouped, array $groups, array $settings ): void {
+
+	$primary = (array) ( $panel['primary'] ?? [] );
+	$main    = array_intersect_key( $grouped, array_flip( $primary ) );
+	$more    = array_diff_key( $grouped, $main );
+	$filled  = false;
+
+	foreach ( $more as $group_fields ) {
+		foreach ( array_keys( $group_fields ) as $field_key ) {
+			$filled = $filled || ! empty( $settings[ $field_key ] );
+		}
+	}
+
+	hodima_settings_render_items( $main, $groups, $settings, 'hodima-panel__items hodima-panel__items--tiles' );
+	?>
+	<?php if ( $more ) : ?>
+		<details class="hodima-more" <?php echo $filled ? 'open' : ''; ?>>
+			<summary class="hodima-more__summary">وزن‌های بیشتر (نازک، متوسط، نیم‌ضخیم، خیلی ضخیم، سیاه)</summary>
+			<?php hodima_settings_render_items( $more, $groups, $settings, 'hodima-panel__items hodima-panel__items--tiles' ); ?>
+		</details>
+	<?php endif; ?>
+	<?php
+}
+
 
 /** سرتیتر قاب (مشترک با قاب «بخش‌های صفحه اصلی» در home-layout-admin.php). */
 function hodima_settings_panel_head( string $id, string $title, string $help = '', string $icon = '', string $extra = '' ): void {
@@ -1087,7 +1206,7 @@ function hodima_settings_palette_preview( array $settings ): void {
 function hodima_settings_render_field( string $key, array $field, mixed $value ): void {
 
 	$id        = 'hodima-setting-' . $key;
-	$name      = HODIMA_SETTINGS_OPTION . '[' . $key . ']';
+	$name      = empty( $field['unsaved'] ) ? HODIMA_SETTINGS_OPTION . '[' . $key . ']' : ''; // unsaved: کنترل کمکی پیشخوان («همه تیترها»)، ارسال نمی‌شود
 	$help      = $field['help'] ?? '';
 	$help_id   = $id . '-help';
 	$described = '' !== $help ? ' aria-describedby="' . esc_attr( $help_id ) . '"' : '';
