@@ -958,7 +958,8 @@
  * هم‌ارتفاع بقیه کادرها. تا 3.0.0 سه شکل بود: کارت با بلوک رنگ (پالت، رنگ متن)
  * و دایره کنار فهرست (رنگ لینک‌ها و تیترها).
  */
-.hodima-panel--swatches .hodima-panel__fields {
+.hodima-panel--swatches .hodima-panel__fields,
+.hodima-panel--colors .hodima-panel__fields {
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
 	gap: 1rem;
 }
@@ -2006,7 +2007,7 @@ input.hodima-color__swatch {
 }
 
 /* کارت رنگ پالت (3.0.8): بلوک رنگ بزرگ بالا، زیرش نام، کد رنگ و بازگشت به پیش‌فرض در یک کادر؛ فقط قاب «پالت» */
-.hodima-panel--swatches .hodima-field--color {
+:is(.hodima-panel--swatches, .hodima-panel--colors) :is(.hodima-field--color, .hodima-field--select:has([data-hodima-color-dot])) {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) auto;
 	grid-template-areas:
@@ -2034,7 +2035,8 @@ input.hodima-color__swatch {
 		display: contents;
 	}
 
-	& input.hodima-color__swatch {
+	& input.hodima-color__swatch,
+	& span.hodima-color__swatch {
 		grid-area: block;
 		inline-size: 100%;
 		block-size: 4.5rem;
@@ -2065,6 +2067,15 @@ input.hodima-color__swatch {
 		margin-inline: 0.75rem 0;
 		min-block-size: 0;
 		text-align: center;
+	}
+
+	/* انتخاب از پالت: فهرست زیر بلوک، تمام‌عرض کارت (دکمه بازگشت ندارد) */
+	& .hodima-color select {
+		grid-area: hex;
+		grid-column: 1 / -1;
+		inline-size: calc(100% - 1.5rem);
+		max-inline-size: none;
+		margin-inline: 0.75rem;
 	}
 
 	& .hodima-color__reset {
