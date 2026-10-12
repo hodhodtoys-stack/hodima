@@ -445,6 +445,11 @@
 		background: color-mix(in srgb, var(--hs-success) 12%, #ffffff);
 		color: var(--hs-success);
 	}
+
+	&.is-blocked {
+		background: color-mix(in srgb, var(--hs-warning) 12%, #ffffff);
+		color: var(--hs-warning);
+	}
 }
 
 .hodima-panel__body {

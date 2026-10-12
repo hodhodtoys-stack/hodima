@@ -523,12 +523,22 @@
 	const initBuilderStatus = () => {
 		const status = document.querySelector('[data-hodima-builder-status]');
 		const source = document.getElementById('hodima-setting-home_builder');
-		source?.addEventListener('change', () => {
-			if (status) {
-				status.classList.toggle('is-on', source.checked);
-				status.textContent = source.checked ? status.dataset.on : status.dataset.off;
-			}
-		});
+		if (!status || !source) {
+			return;
+		}
+
+		// کلید روشن + صفحه اصلی برگه + دست‌کم یک بخش روشن ← «در حال استفاده»؛ کلید روشن بدون این دو ← «اعمال نمی‌شود»
+		const update = () => {
+			const anyEnabled = document.querySelector('[data-hodima-home-item] .hodima-home__switch input:checked') !== null;
+			const state = !source.checked ? 'off' : (status.dataset.pageOk === '1' && anyEnabled ? 'on' : 'blocked');
+			status.classList.toggle('is-on', state === 'on');
+			status.classList.toggle('is-blocked', state === 'blocked');
+			status.textContent = status.dataset[state];
+		};
+
+		source.addEventListener('change', update);
+		document.addEventListener('change', (event) => event.target.closest?.('[data-hodima-home-item]') && update());
+		document.addEventListener('hodima:changed', update); // افزودن/حذف/جابه‌جایی بخش
 	};
 
 	/**

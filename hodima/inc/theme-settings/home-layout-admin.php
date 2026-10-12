@@ -31,11 +31,20 @@ function hodima_home_admin_render(): void {
 	$terms  = taxonomy_exists( 'product_cat' ) ? get_terms( [ 'taxonomy' => 'product_cat', 'hide_empty' => false, 'orderby' => 'name' ] ) : [];
 	$terms  = is_array( $terms ) ? $terms : [];
 
-	$active = function_exists( 'hodima_setting' ) && hodima_setting( 'home_builder' );
-	$status = sprintf(
-		'<span class="hodima-panel__status%1$s" data-hodima-builder-status data-on="در حال استفاده" data-off="استفاده نمی‌شود">%2$s</span>',
-		$active ? ' is-on' : '',
-		$active ? 'در حال استفاده' : 'استفاده نمی‌شود'
+	// وضعیت واقعی (3.1.5): کلید روشن ولی صفحه اصلی «برگه» نیست یا همه بخش‌ها خاموش‌اند ← «اعمال نمی‌شود»
+	$switch  = function_exists( 'hodima_setting' ) && hodima_setting( 'home_builder' );
+	$page_ok = 'page' === get_option( 'show_on_front' ) && (int) get_option( 'page_on_front' ) > 0;
+	$any_on  = (bool) array_filter( $layout, static fn( array $item ): bool => $item['enabled'] );
+	$state   = ! $switch ? 'off' : ( $page_ok && $any_on ? 'on' : 'blocked' );
+	$labels  = [ 'on' => 'در حال استفاده', 'off' => 'استفاده نمی‌شود', 'blocked' => 'روشن است ولی اعمال نمی‌شود' ];
+	$status  = sprintf(
+		'<span class="hodima-panel__status%1$s" data-hodima-builder-status data-page-ok="%2$s" data-on="%3$s" data-off="%4$s" data-blocked="%5$s">%6$s</span>',
+		'on' === $state ? ' is-on' : ( 'blocked' === $state ? ' is-blocked' : '' ),
+		$page_ok ? '1' : '0',
+		esc_attr( $labels['on'] ),
+		esc_attr( $labels['off'] ),
+		esc_attr( $labels['blocked'] ),
+		esc_html( $labels[ $state ] )
 	);
 	?>
 	<section class="hodima-panel hodima-panel--builder hodima-home" aria-labelledby="hodima-panel-home_layout-title" data-hodima-home>

@@ -46,10 +46,12 @@ $section_id = 'arian-cat-title-' . wp_unique_id();
 				<div class="cat-img-box">
 					<?php
 					if ( ! empty( $category['thumbnail_id'] ) ) {
-						echo wp_get_attachment_image( (int) $category['thumbnail_id'], 'woocommerce_thumbnail', false, [
+						// مربع ۸۰px (۷۲ در موبایل): نسخه ۱۵۰px کافی است؛ تا 3.1.4 نسخه ۳۰۰px گرفته می‌شد
+						echo wp_get_attachment_image( (int) $category['thumbnail_id'], 'thumbnail', false, [
 							'alt'      => $category['name'],
 							'loading'  => 'lazy',
 							'decoding' => 'async',
+							'sizes'    => '(max-width: 768px) 72px, 80px',
 						] );
 					} elseif ( function_exists( 'wc_placeholder_img_src' ) ) {
 						echo '<img src="' . esc_url( wc_placeholder_img_src() ) . '" alt="' . esc_attr( $category['name'] ) . '" width="150" height="150" loading="lazy" decoding="async">';
