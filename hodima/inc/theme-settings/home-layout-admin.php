@@ -52,6 +52,13 @@ function hodima_home_admin_render(): void {
 		<div class="hodima-panel__body">
 			<input type="hidden" name="<?php echo esc_attr( HODIMA_HOME_LAYOUT_OPTION ); ?>[_sent]" value="1">
 
+			<?php foreach ( hodima_home_admin_notices( $layout ) as $notice ) : ?>
+				<p class="hodima-home__notice hodima-home__notice--warn" role="note">
+					<span class="dashicons dashicons-warning hodima-home__notice-icon" aria-hidden="true"></span>
+					<?php echo esc_html( $notice ); ?>
+				</p>
+			<?php endforeach; ?>
+
 			<?php if ( ! $saved ) : ?>
 				<p class="hodima-home__notice" role="note">
 					<span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
@@ -96,6 +103,41 @@ function hodima_home_admin_render(): void {
 }
 
 /**
+ * اعلان‌های بالای فهرست: چیزهایی که باعث می‌شود چیدمان بی‌صدا کار نکند.
+ *
+ * @param list<array<string, mixed>> $layout
+ * @return list<string>
+ */
+function hodima_home_admin_notices( array $layout ): array {
+
+	$notices = [];
+	$builder = function_exists( 'hodima_setting' ) && hodima_setting( 'home_builder' );
+	$front   = (int) get_option( 'page_on_front' );
+	$enabled = array_values( array_filter( $layout, static fn( array $item ): bool => $item['enabled'] ) );
+
+	if ( 'page' !== get_option( 'show_on_front' ) || $front < 1 ) {
+		$notices[] = 'صفحه اصلی سایت یک «برگه» نیست؛ چیدمان فقط روی برگه کار می‌کند. در «تنظیمات ← خواندن» گزینه «یک برگه ایستا» را انتخاب کنید.';
+	}
+
+	if ( $builder && ! $enabled ) {
+		$notices[] = 'کلید «ساخت صفحه اصلی از چیدمان» روشن است ولی همه بخش‌ها خاموش‌اند؛ تا دست‌کم یکی روشن نشود، صفحه اصلی از متن برگه ساخته می‌شود.';
+	}
+
+	// «متن برگه» + شورت‌کدهای دیگر: ممکن است یک بخش دوبار نمایش داده شود
+	$has_content = false;
+	foreach ( $enabled as $item ) {
+		$has_content = $has_content || 'content' === $item['type'];
+	}
+	$page_text = $front > 0 ? (string) get_post_field( 'post_content', $front ) : '';
+	$legacy    = array_filter( [ 'section03', 'section07', 'section09', 'latest-products' ], static fn( string $tag ): bool => has_shortcode( $page_text, $tag ) );
+	if ( $has_content && count( $enabled ) > 1 && $legacy ) {
+		$notices[] = 'بخش «متن برگه صفحه اصلی» روشن است و متن برگه هنوز شورت‌کدهای قدیمی (مثل [section07]) دارد؛ اگر همان‌ها را بخش جدا هم ساخته‌اید، دوبار نمایش داده می‌شوند.';
+	}
+
+	return $notices;
+}
+
+/**
  * یک بخش در فهرست.
  *
  * @param array<int, WP_Term> $terms دسته‌های محصول
@@ -110,15 +152,9 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
 	$base  = HODIMA_HOME_LAYOUT_OPTION . '[' . $uid . ']';
 	$idp   = 'hodima-home-' . $uid;
 
-	// خلاصه جلوی نام بخش: عنوان، یا نام دسته
-	$summary = (string) ( $item['title'] ?? '' );
-	if ( 'products' === $type && '' === $summary ) {
-		foreach ( $terms as $term ) {
-			if ( $term->slug === ( $item['category'] ?? '' ) ) {
-				$summary = $term->name;
-			}
-		}
-	}
+	// خلاصه جلوی نام بخش: عنوان، نام دسته، یا برای «محتوای دلخواه» نام دلخواه/شورت‌کد
+	$summary = hodima_home_section_summary( $item, $terms );
+	$warning = isset( $item['enabled'] ) && '__UID__' !== $uid ? hodima_home_section_warning( $item ) : '';
 	?>
 	<li class="hodima-home__item" data-hodima-home-item data-type="<?php echo esc_attr( $type ); ?>">
 		<input type="hidden" name="<?php echo esc_attr( $base ); ?>[type]" value="<?php echo esc_attr( $type ); ?>">
@@ -131,6 +167,9 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
 				<strong><?php echo esc_html( $def['label'] ); ?></strong>
 				<span class="hodima-home__summary" data-hodima-home-summary><?php echo esc_html( $summary ); ?></span>
 			</button>
+			<?php if ( '' !== $warning ) : ?>
+				<span class="hodima-home__warn" title="<?php echo esc_attr( $warning ); ?>"><span class="dashicons dashicons-warning hodima-home__warn-icon" aria-hidden="true"></span><?php echo esc_html( $warning ); ?></span>
+			<?php endif; ?>
 
 			<label class="hodima-toggle hodima-home__switch">
 				<input type="checkbox" role="switch" name="<?php echo esc_attr( $base ); ?>[enabled]" value="1" <?php checked( ! empty( $item['enabled'] ) ); ?>>
@@ -167,7 +206,7 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
  */
 function hodima_home_admin_field( string $name, string $id, array $field, mixed $value, array $terms, string $key ): void {
 
-	$summary = in_array( $key, [ 'title', 'category' ], true ) ? ' data-hodima-home-summary-source' : '';
+	$summary = in_array( $key, [ 'title', 'category', 'label' ], true ) ? ' data-hodima-home-summary-source' : '';
 	$wide    = in_array( $field['type'], [ 'lines', 'categories', 'html' ], true ) ? ' hodima-field--wide' : '';
 	?>
 	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">

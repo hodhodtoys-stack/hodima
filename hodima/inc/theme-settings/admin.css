@@ -2320,3 +2320,34 @@ input.hodima-color__swatch {
 		grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
 	}
 }
+
+/* هشدار بخش‌های صفحه اصلی (3.1.3): اعلان بالای فهرست و نشان کنار نام بخش */
+.hodima-home__notice--warn {
+	border-inline-start-color: var(--hs-warning);
+	background: color-mix(in srgb, var(--hs-warning) 8%, #ffffff);
+}
+
+.hodima-home__notice--warn .hodima-home__notice-icon {
+	color: var(--hs-warning);
+}
+
+.hodima-home__warn {
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 1;
+	gap: 0.25rem;
+	min-inline-size: 0;
+	padding: 0.125rem 0.5rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--hs-warning) 12%, #ffffff);
+	color: var(--hs-warning);
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1.5;
+}
+
+.hodima-home__warn-icon {
+	inline-size: 0.875rem;
+	block-size: 0.875rem;
+	font-size: 0.875rem;
+}

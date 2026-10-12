@@ -13,6 +13,29 @@ declare(strict_types=1);
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 // ========================================================================
+// ۰. اولویت بارگذاری تصویر بالای صفحه (LCP)
+// ========================================================================
+if ( ! function_exists( 'hodima_home_claim_priority' ) ) {
+    /**
+     * فقط «اولین» تصویر صفحه اصلی fetchpriority=high بگیرد.
+     * باگ قبلی: اولین تصویر هر اسلایدر و مقالات این را می‌گرفت؛ چند تصویر (حتی زیر
+     * صفحه) هم‌زمان «فوری» می‌شد و اولین تصویر مهم (LCP) کند می‌شد. هر بخش پیش از چاپ
+     * تصویر اولش این تابع را صدا می‌زند؛ فقط اولین فراخوانی در هر درخواست true می‌گیرد.
+     */
+    function hodima_home_claim_priority(): bool {
+        static $claimed = false;
+
+        if ( $claimed ) {
+            return false;
+        }
+
+        $claimed = true;
+
+        return true;
+    }
+}
+
+// ========================================================================
 // ۱. تابع مرکزی اسلایدر محصولات (موتور رندر)
 // ========================================================================
 if ( ! function_exists( 'hodima_home_product_slider' ) ) {
@@ -106,7 +129,7 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
                                     'decoding' => 'async',
                                     'class'    => 'arian-card-img',
                                 ];
-                                if ( $index === 0 ) {
+                                if ( 0 === $index && hodima_home_claim_priority() ) {
                                     $image_attrs['fetchpriority'] = 'high';
                                 } else {
                                     $image_attrs['loading'] = 'lazy';
@@ -332,7 +355,7 @@ add_action('init', function() {
                 'link'     => 'latest-products',
                 'category' => '',
                 'limit'    => $atts['limit'],
-                'bg_color' => 'rgba(182, 194, 243, 0.25)',
+                'bg_color' => Hodima_Home_Tone::Third->css(),
             ]);
         });
     }
@@ -340,10 +363,11 @@ add_action('init', function() {
     // ج) شورت‌کد خودکار برای دسته‌بندی‌های ووکامرس (مثل [plasco])
     if ( function_exists('hodima_home_product_slider') ) {
 
+        // سه رنگ برند به نوبت (از پالت: با عوض شدن پالت همراه می‌شود)
         $brand_colors = [
-            'rgba(37, 49, 106, 0.08)',   // رنگ اصلی
-            'rgba(96, 123, 189, 0.1)',   // رنگ ثانویه
-            'rgba(182, 194, 243, 0.25)', // رنگ سوم
+            Hodima_Home_Tone::Primary->css(),
+            Hodima_Home_Tone::Secondary->css(),
+            Hodima_Home_Tone::Third->css(),
         ];
 
         $color_index = 0;
@@ -398,6 +422,14 @@ function hodima_home_slider_generation(): int {
 }
 
 if ( ! function_exists( 'hodima_home_flush_product_sliders' ) ) {
+    /**
+     * کش اسلایدرها را باطل کن.
+     *
+     * 3.1.3: در یک درخواست (درون‌ریزی گروهی صدها محصول) نسل فقط یک‌بار بالا می‌رود و
+     * پاکسازی ردیف‌های قدیمی (DELETE LIKE) و کش صفحه اصلی لایت‌اسپید فقط یک‌بار در
+     * پایان درخواست (shutdown) انجام می‌شود. قبلا هر ذخیره یک update_option و یک
+     * DELETE جدا می‌زد و با تغییر فقط وضعیت موجودی، کش HTML صفحه اصلی پاک نمی‌شد.
+     */
     function hodima_home_flush_product_sliders(): void {
 
         // جلوگیری از اجرای بی‌دلیل هنگام ذخیره خودکار (Autosave) وردپرس
@@ -405,12 +437,31 @@ if ( ! function_exists( 'hodima_home_flush_product_sliders' ) ) {
             return;
         }
 
+        static $scheduled = false;
+
+        if ( $scheduled ) {
+            return;
+        }
+
+        $scheduled = true;
+
+        update_option( 'hodima_home_slider_gen', hodima_home_slider_generation() + 1, true );
+        add_action( 'shutdown', 'hodima_home_flush_product_sliders_late' );
+    }
+
+    /** پایان درخواست: نسل دوباره (تغییرات بعد از اولین فراخوانی)، پاکسازی ردیف‌های قدیمی و کش صفحه اصلی. */
+    function hodima_home_flush_product_sliders_late(): void {
+
         update_option( 'hodima_home_slider_gen', hodima_home_slider_generation() + 1, true );
 
         // بدون کش شیء: ردیف‌های نسل قبلی را هم از جدول پاک کن (وگرنه تا انقضا می‌مانند)
         if ( ! wp_using_ext_object_cache() ) {
             global $wpdb;
             $wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_arian_pslider_%' OR option_name LIKE '_transient_timeout_arian_pslider_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- پاکسازی گروهی ترنزینت‌ها؛ API وردپرس برای الگو ندارد
+        }
+
+        if ( function_exists( 'hodima_litespeed_purge_home' ) ) {
+            hodima_litespeed_purge_home();
         }
     }
 }

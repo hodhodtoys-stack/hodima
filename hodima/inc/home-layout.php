@@ -110,9 +110,10 @@ function hodima_home_section_types(): array {
 			'label'  => 'محتوای دلخواه',
 			'icon'   => 'dashicons-shortcode',
 			'single' => false,
-			'help'   => 'شورت‌کد (مثلا اسلایدر یا استوری افزونه Hodima Media) یا HTML ساده.',
+			'help'   => 'یک شورت‌کد (مثلا اسلایدر یا استوری افزونه Hodima Media) یا HTML ساده. هر شورت‌کد را در بخش جدا بگذارید تا ترتیب و روشن/خاموش‌اش مستقل باشد.',
 			'fields' => [
-				'html' => [ 'type' => 'html', 'label' => 'شورت‌کد یا HTML', 'default' => '' ],
+				'label' => [ 'type' => 'text', 'label' => 'نام این بخش (فقط برای شما در پیشخوان)', 'default' => '' ],
+				'html'  => [ 'type' => 'html', 'label' => 'شورت‌کد یا HTML', 'default' => '' ],
 			],
 		],
 	] );
@@ -210,12 +211,137 @@ function hodima_home_normalize_layout( array $items ): array {
 		$seen[ $type ] = true;
 		$id            = sanitize_key( (string) ( $item['id'] ?? '' ) ) ?: 's' . substr( md5( $type . count( $clean ) ), 0, 8 );
 
-		$clean[] = [ 'id' => $id, 'type' => $type, 'enabled' => ! empty( $item['enabled'] ) ]
+		$entry = [ 'id' => $id, 'type' => $type, 'enabled' => ! empty( $item['enabled'] ) ]
 			+ array_intersect_key( $item, $types[ $type ]['fields'] )
 			+ hodima_home_section_defaults( $type );
+
+		// «محتوای دلخواه» با چند شورت‌کد/بلوک پشت‌سرهم ← هر کدام بخش جدا (3.1.3)
+		if ( 'custom' === $type ) {
+			foreach ( hodima_home_split_custom( $entry ) as $part ) {
+				$clean[] = $part;
+			}
+			continue;
+		}
+
+		$clean[] = $entry;
 	}
 
 	return $clean;
+}
+
+/**
+ * یک متن را به تکه‌ها بشکن: متن عادی و شورت‌کدها. هر تکه شورت‌کد می‌گوید «تنها در خط خودش»
+ * (standalone) هست یا نه؛ فقط شورت‌کد تنها از متن جدا می‌شود (شورت‌کد داخل <div> یا وسط
+ * جمله دست نمی‌خورد). نشانه‌های بلوک گوتنبرگ (<!-- wp:shortcode -->) و <p> دور شورت‌کد حذف می‌شوند.
+ *
+ * @return list<array{text?:string, match?:array<int, array{0:string, 1:int}>, raw?:string, standalone?:bool}>
+ */
+function hodima_home_scan_content( string $content ): array {
+
+	$content = (string) preg_replace( '/<!--\s*\/?wp:[^>]*?-->/', "\n", $content );
+
+	if ( ! preg_match_all( '/' . get_shortcode_regex() . '/s', $content, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE ) ) {
+		return [ [ 'text' => $content ] ];
+	}
+
+	$parts      = [];
+	$offset     = 0;
+	$prev_alone = false;
+
+	foreach ( $matches as $m ) {
+
+		$start = (int) $m[0][1];
+		$raw   = (string) $m[0][0];
+		$end   = $start + strlen( $raw );
+		$gap   = substr( $content, $offset, $start - $offset );
+		$tail  = substr( $content, $end, 120 );
+
+		$gap_blank  = '' === trim( (string) preg_replace( '#</?p[^>]*>#i', '', $gap ) );
+		$line_start = (bool) preg_match( '/(?:^|\R)[ \t]*(?:<p[^>]*>\s*)?$/', $gap )
+			&& ( ! $gap_blank || 0 === $offset || $prev_alone || (bool) preg_match( '/\R/', $gap ) );
+		$line_end   = (bool) preg_match( '/^[ \t]*(?:<\/p>)?[ \t]*(?:\R|$)/', $tail ) || (bool) preg_match( '/^[ \t]*\[/', $tail );
+		$alone      = $line_start && $line_end;
+
+		if ( $alone ) {
+			$gap = (string) preg_replace( '/<p[^>]*>\s*$/i', '', $gap );
+			if ( preg_match( '/^[ \t]*<\/p>/i', $tail, $closing ) ) {
+				$end += strlen( $closing[0] );
+			}
+		}
+
+		if ( '' !== $gap ) {
+			$parts[] = [ 'text' => $gap ];
+		}
+
+		$parts[]    = [ 'match' => $m, 'raw' => $raw, 'standalone' => $alone ];
+		$offset     = $end;
+		$prev_alone = $alone;
+	}
+
+	$rest = substr( $content, $offset );
+	if ( '' !== $rest ) {
+		$parts[] = [ 'text' => (string) preg_replace( '/^\s*<\/p>/i', '', $rest ) ];
+	}
+
+	return $parts;
+}
+
+/** متنی که ارزش یک بخش را دارد؟ (فقط <p>/فاصله خالی دور شورت‌کدها نه؛ تصویر/ویدیو/جدول بله) */
+function hodima_home_text_has_content( string $text ): bool {
+	return '' !== trim( wp_strip_all_tags( str_replace( '&nbsp;', ' ', $text ) ) ) || (bool) preg_match( '/<(img|iframe|video|figure|table)\b/i', $text );
+}
+
+/**
+ * یک بخش «محتوای دلخواه» که چند شورت‌کد/بلوک دارد ← چند بخش (هر شورت‌کد تنها، و متن بین‌شان).
+ * با یک تکه همان بخش بی‌تغییر برمی‌گردد. شناسه اولی همان قبلی و بقیه «شناسه-۲»، «شناسه-۳»…
+ *
+ * @param array<string, mixed> $item بخش یکدست‌شده (type=custom)
+ * @return list<array<string, mixed>>
+ */
+function hodima_home_split_custom( array $item ): array {
+
+	$html = (string) $item['html'];
+
+	if ( '' === trim( $html ) || ! str_contains( $html, '[' ) ) {
+		return [ $item ];
+	}
+
+	$segments = [];
+	$pending  = '';
+	$flush    = static function () use ( &$pending, &$segments ): void {
+		$text = trim( (string) preg_replace( [ '/<p[^>]*>\s*$/i', '/^\s*<\/p>/i' ], '', trim( $pending ) ) );
+		if ( hodima_home_text_has_content( $text ) ) {
+			$segments[] = $text;
+		}
+		$pending = '';
+	};
+
+	foreach ( hodima_home_scan_content( $html ) as $part ) {
+		if ( isset( $part['text'] ) ) {
+			$pending .= $part['text'];
+		} elseif ( ! empty( $part['standalone'] ) ) {
+			$flush();
+			$segments[] = trim( (string) $part['raw'] );
+		} else {
+			$pending .= (string) $part['raw'];
+		}
+	}
+	$flush();
+
+	if ( count( $segments ) < 2 ) {
+		return [ $item ];
+	}
+
+	$items = [];
+	foreach ( $segments as $n => $segment ) {
+		$items[] = [
+			'id'    => 0 === $n ? $item['id'] : $item['id'] . '-' . ( $n + 1 ),
+			'html'  => $segment,
+			'label' => 0 === $n ? $item['label'] : '',
+		] + $item;
+	}
+
+	return $items;
 }
 
 /**
@@ -258,8 +384,18 @@ function hodima_home_sanitize_layout( $input ): array {
 
 	$types = hodima_home_section_types();
 	$items = [];
+	$seen  = [];
 
 	foreach ( $input as $row ) {
+
+		// بخش تک‌نمونه‌ی تکراری حذف می‌شود؛ بی‌صدا نباشد
+		$row_type = (string) ( $row['type'] ?? '' );
+		if ( isset( $types[ $row_type ] ) && $types[ $row_type ]['single'] ) {
+			if ( isset( $seen[ $row_type ] ) ) {
+				function_exists( 'add_settings_error' ) && add_settings_error( 'hodima_theme_settings', 'hodima_home_dup_' . $row_type, sprintf( 'بخش «%s» فقط یک‌بار می‌تواند در صفحه اصلی باشد؛ نمونه دوم حذف شد.', $types[ $row_type ]['label'] ), 'warning' );
+			}
+			$seen[ $row_type ] = true;
+		}
 
 		$type = (string) ( $row['type'] ?? '' );
 		if ( ! isset( $types[ $type ] ) ) {
@@ -325,6 +461,99 @@ function hodima_home_sanitize_link( string $raw ): string {
 	return implode( '/', $parts );
 }
 
+/**
+ * آیا لینک ذخیره‌شده به چیزی می‌رسد؟ (فقط برای هشدار پیشخوان؛ در سایت لینک بدون بررسی چاپ می‌شود.)
+ * آدرس کامل همیشه درست؛ مسیر داخلی: برگه، دسته محصول با همان نامک، یا هر نوشته/برگه با همان آدرس.
+ */
+function hodima_home_link_resolves( string $link ): bool {
+
+	$path = trim( rawurldecode( $link ), '/' );
+
+	if ( '' === $path || preg_match( '#^https?://#i', $link ) ) {
+		return true;
+	}
+
+	if ( get_page_by_path( $path ) instanceof WP_Post ) {
+		return true;
+	}
+
+	if ( taxonomy_exists( 'product_cat' ) && get_term_by( 'slug', sanitize_title( basename( $path ) ), 'product_cat' ) instanceof WP_Term ) {
+		return true;
+	}
+
+	return url_to_postid( home_url( '/' . $path . '/' ) ) > 0;
+}
+
+/**
+ * مشکل یک بخش که باعث می‌شود چیزی چاپ نشود یا لینکش خراب باشد (برای نشان کنار نام بخش در پیشخوان).
+ *
+ * @param array<string, mixed> $item
+ */
+function hodima_home_section_warning( array $item ): string {
+
+	switch ( $item['type'] ) {
+
+		case 'products':
+			$slug = (string) $item['category'];
+			if ( '' === $slug ) {
+				return 'دسته انتخاب نشده؛ این بخش نمایش داده نمی‌شود';
+			}
+			$term = taxonomy_exists( 'product_cat' ) ? get_term_by( 'slug', $slug, 'product_cat' ) : false;
+			if ( ! $term instanceof WP_Term ) {
+				return 'این دسته دیگر وجود ندارد؛ بخش نمایش داده نمی‌شود';
+			}
+			return 0 === $term->count ? 'این دسته محصولی ندارد؛ بخش نمایش داده نمی‌شود' : '';
+
+		case 'latest':
+			return ! hodima_home_link_resolves( (string) $item['link'] ) ? 'لینک «مشاهده همه» به صفحه‌ای نمی‌رسد' : '';
+
+		case 'custom':
+			$html = trim( (string) $item['html'] );
+			if ( '' === $html ) {
+				return 'خالی است؛ نمایش داده نمی‌شود';
+			}
+			if ( preg_match( '/^\[([^\s\]\/]+)[^\]]*\]$/', $html, $tag ) && ! shortcode_exists( $tag[1] ) ) {
+				return sprintf( 'شورت‌کد [%s] ثبت نشده (افزونه‌اش فعال است؟)', $tag[1] );
+			}
+			return '';
+	}
+
+	return '';
+}
+
+/**
+ * خلاصه جلوی نام بخش در پیشخوان: عنوان، نام دسته، یا برای «محتوای دلخواه» نام دلخواه / نام شورت‌کد / ابتدای متن.
+ *
+ * @param array<string, mixed> $item
+ * @param array<int, WP_Term>  $terms
+ */
+function hodima_home_section_summary( array $item, array $terms = [] ): string {
+
+	$summary = trim( (string) ( $item['title'] ?? '' ) ) ?: trim( (string) ( $item['label'] ?? '' ) );
+
+	if ( '' !== $summary ) {
+		return $summary;
+	}
+
+	if ( 'products' === $item['type'] ) {
+		foreach ( $terms as $term ) {
+			if ( $term->slug === ( $item['category'] ?? '' ) ) {
+				return $term->name;
+			}
+		}
+	}
+
+	if ( 'custom' === $item['type'] ) {
+		$html = trim( (string) $item['html'] );
+		if ( preg_match( '/^\[([^\s\]\/]+)/', $html, $tag ) ) {
+			return '[' . $tag[1] . ']';
+		}
+		return mb_strimwidth( trim( wp_strip_all_tags( $html ) ), 0, 40, '…' );
+	}
+
+	return '';
+}
+
 /** آدرس کامل یک لینک ذخیره‌شده. */
 function hodima_home_link_url( string $link ): string {
 	if ( '' === $link ) {
@@ -356,68 +585,74 @@ function hodima_home_layout_from_content( ?string $content = null ): array {
 	$pending    = '';
 	$cat_map    = function_exists( 'hodima_home_category_shortcode_map' ) ? hodima_home_category_shortcode_map() : [];
 	$cat_tones  = hodima_home_legacy_category_tones( $cat_map );
-	$tone_by_css = array_flip( array_map( static fn( array $t ): string => $t['css'], hodima_home_tones() ) );
+	$tone_by_css = [];
+	foreach ( Hodima_Home_Tone::cases() as $tone_case ) {
+		$tone_by_css[ $tone_case->legacy_css() ] = $tone_case->value; // bg_color قدیمی شورت‌کد ← رنگ زمینه امروز
+	}
 
 	$flush = static function () use ( &$pending, &$items ): void {
-		$text = trim( $pending );
+		$text = trim( (string) preg_replace( [ '/<p[^>]*>\s*$/i', '/^\s*<\/p>/i' ], '', trim( $pending ) ) );
 		// فقط پاراگراف/فاصله خالی (wpautop دور شورت‌کدها) بخش نمی‌سازد
-		if ( '' !== trim( wp_strip_all_tags( str_replace( '&nbsp;', ' ', $text ) ) ) || preg_match( '/<(img|iframe|video|figure|table)\b/i', $text ) ) {
+		if ( hodima_home_text_has_content( $text ) ) {
 			$items[] = [ 'type' => 'custom', 'enabled' => true, 'html' => $text ];
 		}
 		$pending = '';
 	};
 
-	$offset = 0;
-	$regex  = '/' . get_shortcode_regex() . '/s';
+	foreach ( hodima_home_scan_content( $content ) as $part ) {
 
-	if ( preg_match_all( $regex, $content, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE ) ) {
+		if ( isset( $part['text'] ) ) {
+			$pending .= $part['text'];
+			continue;
+		}
 
-		foreach ( $matches as $m ) {
+		$m    = $part['match'];
+		$tag  = $m[2][0];
+		$atts = shortcode_parse_atts( $m[3][0] );
+		$atts = is_array( $atts ) ? $atts : [];
+		$item = null;
 
-			$pending .= substr( $content, $offset, $m[0][1] - $offset );
-			$offset   = $m[0][1] + strlen( $m[0][0] );
+		// شورت‌کد دوطرفه ([x]…[/x]) یا با escape ([[x]]) دست‌نخورده می‌ماند
+		$plain = '' === ( $m[1][0] ?? '' ) && '' === ( $m[6][0] ?? '' ) && '' === ( $m[5][0] ?? '' );
 
-			$tag  = $m[2][0];
-			$atts = shortcode_parse_atts( $m[3][0] );
-			$atts = is_array( $atts ) ? $atts : [];
-			$item = null;
+		if ( $plain ) {
+			$item = match ( true ) {
+				'section07' === $tag       => [ 'type' => 'intro' ],
+				'section03' === $tag       => [ 'type' => 'categories' ],
+				'section09' === $tag       => [ 'type' => 'blog' ],
+				'section10' === $tag       => [ 'type' => 'skip' ],
+				// شورت‌کد latest-products فقط limit را می‌پذیرفت
+				'latest-products' === $tag => [ 'type' => 'latest', 'limit' => (int) ( $atts['limit'] ?? 12 ) ],
+				isset( $cat_map[ $tag ] ) && ( ! isset( $atts['bg_color'] ) || isset( $tone_by_css[ $atts['bg_color'] ] ) ) => [
+					'type'     => 'products',
+					'category' => $tag,
+					'title'    => isset( $atts['title'] ) ? sanitize_text_field( (string) $atts['title'] ) : '',
+					'limit'    => (int) ( $atts['limit'] ?? 12 ),
+					'tone'     => isset( $atts['bg_color'] ) ? $tone_by_css[ $atts['bg_color'] ] : ( $cat_tones[ $tag ] ?? 'primary' ),
+				],
+				default                    => null,
+			};
+		}
 
-			// شورت‌کد دوطرفه ([x]…[/x]) یا با escape ([[x]]) دست‌نخورده می‌ماند
-			$plain = '' === ( $m[1][0] ?? '' ) && '' === ( $m[6][0] ?? '' ) && '' === ( $m[5][0] ?? '' );
-
-			if ( $plain ) {
-				$item = match ( true ) {
-					'section07' === $tag       => [ 'type' => 'intro' ],
-					'section03' === $tag       => [ 'type' => 'categories' ],
-					'section09' === $tag       => [ 'type' => 'blog' ],
-					'section10' === $tag       => [ 'type' => 'skip' ],
-					// شورت‌کد latest-products فقط limit را می‌پذیرفت
-					'latest-products' === $tag => [ 'type' => 'latest', 'limit' => (int) ( $atts['limit'] ?? 12 ) ],
-					isset( $cat_map[ $tag ] ) && ( ! isset( $atts['bg_color'] ) || isset( $tone_by_css[ $atts['bg_color'] ] ) ) => [
-						'type'     => 'products',
-						'category' => $tag,
-						'title'    => isset( $atts['title'] ) ? sanitize_text_field( (string) $atts['title'] ) : '',
-						'limit'    => (int) ( $atts['limit'] ?? 12 ),
-						'tone'     => isset( $atts['bg_color'] ) ? $tone_by_css[ $atts['bg_color'] ] : ( $cat_tones[ $tag ] ?? 'primary' ),
-					],
-					default                    => null,
-				};
+		// شورت‌کد ناشناخته: اگر تنها در خط خودش بود (مثل [hodima-Stories] یا [hodima-slider1]) بخش جدا؛
+		// وگرنه (داخل متن/تگ) جزو متن اطرافش می‌ماند
+		if ( null === $item ) {
+			if ( ! empty( $part['standalone'] ) ) {
+				$flush();
+				$items[] = [ 'type' => 'custom', 'enabled' => true, 'html' => trim( (string) $part['raw'] ) ];
+			} else {
+				$pending .= (string) $part['raw'];
 			}
+			continue;
+		}
 
-			if ( null === $item ) {
-				$pending .= $m[0][0];
-				continue;
-			}
+		$flush();
 
-			$flush();
-
-			if ( 'skip' !== $item['type'] ) {
-				$items[] = [ 'enabled' => true ] + $item;
-			}
+		if ( 'skip' !== $item['type'] ) {
+			$items[] = [ 'enabled' => true ] + $item;
 		}
 	}
 
-	$pending .= substr( $content, $offset );
 	$flush();
 
 	$id = 0;

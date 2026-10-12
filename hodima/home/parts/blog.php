@@ -33,7 +33,7 @@ $section_id   = 'arian-blog-title-' . wp_unique_id();
 	<div class="arian-header">
 		<div class="arian-title-group">
 			<h2 id="<?php echo esc_attr( $section_id ); ?>" class="arian-title">
-				<a href="<?php echo esc_url( $blog_url ); ?>"><?php echo esc_html( $args['title'] ); ?></a>
+				<a class="arian-title-link" href="<?php echo esc_url( $blog_url ); ?>"><?php echo esc_html( $args['title'] ); ?></a>
 			</h2>
 			<div class="arian-line"></div>
 		</div>
@@ -52,7 +52,7 @@ $section_id   = 'arian-blog-title-' . wp_unique_id();
 						echo wp_get_attachment_image( (int) $post_item['thumbnail_id'], 'medium_large', false, [
 							'alt'      => $post_item['title'],
 							'decoding' => 'async',
-							...( 0 === $index ? [ 'fetchpriority' => 'high' ] : [ 'loading' => 'lazy' ] ),
+							...( 0 === $index && hodima_home_claim_priority() ? [ 'fetchpriority' => 'high' ] : [ 'loading' => 'lazy' ] ),
 						] );
 						?>
 					<?php else : ?>

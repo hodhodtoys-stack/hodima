@@ -11,11 +11,13 @@
 
 	document.querySelectorAll( '.arian-scroller' ).forEach( ( el ) => {
 		let isDown = false;
+		let moved = false; // بعد از کشیدن واقعی، رها کردن روی کارت نباید لینک را باز کند
 		let startX = 0;
 		let scrollLeft = 0;
 
 		el.addEventListener( 'mousedown', ( event ) => {
 			isDown = true;
+			moved = false;
 			el.classList.add( 'active' );
 			startX = event.pageX - el.getBoundingClientRect().left;
 			scrollLeft = el.scrollLeft;
@@ -27,8 +29,18 @@
 			}
 			event.preventDefault();
 			const x = event.pageX - el.getBoundingClientRect().left;
+			moved = moved || Math.abs( x - startX ) > 5;
 			el.scrollLeft = scrollLeft - ( x - startX ) * 2;
 		} );
+
+		// فاز capture: پیش از لینک کارت اجرا می‌شود
+		el.addEventListener( 'click', ( event ) => {
+			if ( moved ) {
+				event.preventDefault();
+				event.stopPropagation();
+				moved = false;
+			}
+		}, true );
 
 		const endDrag = () => {
 			isDown = false;

@@ -75,7 +75,7 @@ $features = array_values( array_filter( array_map( 'trim', (array) $args['featur
 				<div class="video-content-wrapper">
 					<?php
 					// بخش H1 صفحه اصلی، بالای صفحه: کاور ویدیو بدون lazy و با اولویت بالا (LCP؛ Media 1.7+، نسخه قبلی نادیده می‌گیرد)
-					echo hodima_theme_media_html( 'video', [ 'priority' => 'high' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media
+					echo hodima_theme_media_html( 'video', hodima_home_claim_priority() ? [ 'priority' => 'high' ] : [] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media
 					?>
 				</div>
 			</div>
