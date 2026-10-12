@@ -40,7 +40,7 @@ function hodima_settings_fields(): array {
 	return [
 		// ── برند ────────────────────────────────────────────────────
 		'logo_id'          => [ 'panel' => 'brand_logo', 'type' => 'image', 'label' => 'تصویر لوگو', 'default' => 0, 'preview' => 'header', 'help' => 'بهتر است نسخه SVG یا WebP با پس‌زمینه شفاف باشد. اگر خالی بماند نام سایت نمایش داده می‌شود.' ],
-		'logo_invert'      => [ 'panel' => 'brand_logo', 'type' => 'toggle', 'label' => 'لوگو سفید نمایش داده شود', 'default' => true, 'wide' => true, 'help' => 'برای لوگوی رنگی روی پس‌زمینه تیره هدر. نتیجه را در پیش‌نمایش کنار تصویر ببینید.' ],
+		'logo_invert'      => [ 'panel' => 'brand_logo', 'type' => 'toggle', 'label' => 'لوگو سفید نمایش داده شود', 'default' => true, 'help' => 'برای لوگوی رنگی روی پس‌زمینه تیره هدر. نتیجه را در پیش‌نمایش کنار تصویر ببینید.' ],
 
 		// ── پالت رنگ برند (بازسازی قالب، مرحله ۵؛ توکن‌های assets/css/tokens.css) ──
 		'color_primary'      => [ 'panel' => 'brand_palette', 'type' => 'color', 'label' => 'رنگ اصلی', 'default' => '#25316a', 'help' => 'هدر، دکمه‌ها و عنوان‌ها؛ نسخه تیره و سایه‌ها خودکار ساخته می‌شوند.' ],
@@ -383,7 +383,7 @@ function hodima_settings_sections(): array {
  */
 function hodima_settings_panels(): array {
 	return [
-		'brand_logo'         => [ 'section' => 'brand', 'title' => 'لوگو', 'icon' => 'dashicons-format-image', 'help' => 'لوگوی هدر سایت؛ پیش‌نمایش روی رنگ هدر است.' ],
+		'brand_logo'         => [ 'section' => 'brand', 'title' => 'لوگو', 'icon' => 'dashicons-format-image', 'layout' => 'logo', 'help' => 'لوگوی هدر سایت؛ پیش‌نمایش روی رنگ هدر است.' ],
 		'brand_palette'      => [ 'section' => 'brand', 'title' => 'پالت رنگ برند', 'icon' => 'dashicons-admin-appearance', 'layout' => 'swatches', 'help' => 'رنگ‌های کل سایت (و صفحه‌های تنظیمات پیشخوان) از این پنج رنگ ساخته می‌شوند. بعد از ذخیره، کش لایت‌اسپید خودکار پاک می‌شود.' ],
 
 		'type_preview'       => [ 'section' => 'typography', 'title' => 'پیش‌نمایش', 'icon' => 'dashicons-visibility', 'layout' => 'typepreview', 'collapsible' => true, 'help' => 'برای دیدن، باز کنید. با هر تغییر پایین همین‌جا به‌روز می‌شود (پیش از ذخیره). اندازه تیترها در عرض همین کادر نمایش داده می‌شود.' ],
@@ -1148,7 +1148,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			<?php if ( '' !== $help ) : ?>
 				<p class="hodima-field__help" id="<?php echo esc_attr( $help_id ); ?>"><?php echo esc_html( $help ); ?></p>
 			<?php endif; ?>
-			<button type="button" class="hodima-color__reset" data-hodima-color-reset="<?php echo esc_attr( $default ); ?>" <?php echo strtolower( (string) $value ) === $default ? 'hidden' : ''; ?>>
+			<button type="button" class="hodima-color__reset" title="بازگشت به پیش‌فرض" data-hodima-color-reset="<?php echo esc_attr( $default ); ?>" <?php echo strtolower( (string) $value ) === $default ? 'hidden' : ''; ?>>
 				<span class="dashicons dashicons-undo" aria-hidden="true"></span>
 				بازگشت به پیش‌فرض <code dir="ltr"><?php echo esc_html( $default ); ?></code>
 			</button>
