@@ -141,6 +141,95 @@
 	}
 }
 
+/* تعداد ستون (تنظیمات قالب ← وبلاگ): تبلت و موبایل خودکار کمتر می‌شود. ۴ ستون همان پیش‌فرض بالاست */
+.blog-page-grid--cols-3 {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.blog-page-grid--cols-2 {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (width <= 768px) {
+	.blog-page-grid--cols-3 {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (width <= 480px) {
+	.blog-page-grid--cols-2,
+	.blog-page-grid--cols-3 {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* شکل تصویر کارت (تنظیمات قالب ← وبلاگ) */
+.blog-page-grid--ratio-4-3 :is(.blog-page-thumbnail, .blog-page-thumbnail--empty) {
+	aspect-ratio: 4 / 3;
+}
+
+.blog-page-grid--ratio-1-1 :is(.blog-page-thumbnail, .blog-page-thumbnail--empty) {
+	aspect-ratio: 1 / 1;
+}
+
+/* مقاله ویژه: اولین کارت صفحه اول وبلاگ، تمام‌عرض و افقی (تصویر ۵۵٪) */
+.blog-page-card--featured {
+	grid-column: 1 / -1;
+	flex-direction: row;
+	height: auto;
+
+	& :is(.blog-page-thumbnail, .blog-page-thumbnail--empty) {
+		flex: 0 0 55%;
+		inline-size: 55%;
+		aspect-ratio: 16 / 9;
+		border-bottom: 0;
+		border-inline-end: 1px solid var(--hodima-border-light, #d9e1f0);
+	}
+
+	& .blog-page-content {
+		justify-content: center;
+		gap: var(--hodima-space-3);
+		padding: var(--hodima-space-8);
+	}
+
+	& .blog-page-title {
+		font-size: 22px;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+	}
+
+	& .blog-page-excerpt {
+		font-size: 15px;
+		-webkit-line-clamp: 4;
+	}
+
+	& .blog-page-meta {
+		margin-top: 0;
+		font-size: 13px;
+	}
+}
+
+@media (width <= 768px) {
+	.blog-page-card--featured {
+		flex-direction: column;
+
+		& :is(.blog-page-thumbnail, .blog-page-thumbnail--empty) {
+			flex-basis: auto;
+			inline-size: 100%;
+			border-inline-end: 0;
+			border-bottom: 1px solid var(--hodima-border-light, #d9e1f0);
+		}
+
+		& .blog-page-content {
+			padding: var(--hodima-space-6);
+		}
+
+		& .blog-page-title {
+			font-size: 18px;
+		}
+	}
+}
+
 /*
  * دکمه‌ی کپسولی لینک (نوار دسته‌های وبلاگ، برچسب‌ها و اشتراک‌گذاری مقاله).
  * یک بار اینجا؛ قبلا فقط برای نوار دسته‌ها در archive-blog.css بود.

@@ -22,15 +22,14 @@ function hodima_is_blog_archive(): bool {
 	return is_home() || is_category() || is_tag() || ( is_archive() && 'post' === get_post_type() );
 }
 
-/** نام وبلاگ: تنظیم قالب ← عنوان برگه «نوشته‌ها» ← «وبلاگ». */
+/**
+ * نام وبلاگ: عنوان برگه «نوشته‌ها» (تنظیمات ← خواندن) ← «وبلاگ».
+ * تا 3.3.6 کادر «عنوان صفحه وبلاگ (H1)» در تنظیمات قالب هم بود؛ حذف شد.
+ */
 function hodima_blog_name(): string {
 
-	$name = function_exists( 'hodima_setting' ) ? trim( (string) hodima_setting( 'blog_title' ) ) : '';
-
-	if ( '' === $name ) {
-		$page_id = (int) get_option( 'page_for_posts' );
-		$name    = $page_id > 0 ? trim( (string) get_the_title( $page_id ) ) : '';
-	}
+	$page_id = (int) get_option( 'page_for_posts' );
+	$name    = $page_id > 0 ? trim( (string) get_the_title( $page_id ) ) : '';
 
 	return '' !== $name ? $name : 'وبلاگ';
 }
@@ -148,33 +147,43 @@ function hodima_post_meta_html( int $post_id ): string {
  * قبلا آرشیو `blog-page-card` و مقاله `related-post-card` جدا (HTML و CSS تکراری، مرتبط‌ها
  * بدون تاریخ و تصویر جایگزین) بودند. CSS: assets/css/blog-card.css.
  *
- * @param array{heading?:string, lazy?:bool, empty_label?:string, meta_text?:string} $args
+ * @param array{heading?:string, lazy?:bool, empty_label?:string, meta_text?:string, featured?:bool, cols?:int} $args
  *        heading: تگ عنوان (h2 در فهرست، h3 زیر عنوان بخش)؛ lazy: بارگذاری تنبل تصویر (زیر صفحه)؛
- *        empty_label: متن کادر بی‌تصویر؛ meta_text: به‌جای تاریخ/زمان مطالعه (مثل نوع محتوا در جستجو).
+ *        empty_label: متن کادر بی‌تصویر؛ meta_text: به‌جای تاریخ/زمان مطالعه (مثل نوع محتوا در جستجو)؛
+ *        featured: کارت بزرگ تمام‌عرض (مقاله ویژه، با خلاصه و تصویر اولویت‌دار)؛ cols: تعداد ستون شبکه (برای اندازه تصویر).
  */
 function hodima_blog_card_html( int $post_id, array $args = [] ): string {
 
 	$heading = in_array( $args['heading'] ?? 'h2', [ 'h2', 'h3', 'h4' ], true ) ? (string) ( $args['heading'] ?? 'h2' ) : 'h2';
 	$title   = get_the_title( $post_id );
 
+	$featured = ! empty( $args['featured'] );
+	$cols     = max( 2, min( 4, (int) ( $args['cols'] ?? 4 ) ) );
+
 	if ( has_post_thumbnail( $post_id ) ) {
 		// alt خالی: عنوان همان کارت کنارش خوانده می‌شود (تکرارش برای صفحه‌خوان زائد بود)
 		$thumb_args = [
 			'class' => 'blog-page-thumbnail',
 			'alt'   => '',
-			'sizes' => '(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1140px) 33vw, 25vw',
+			'sizes' => $featured
+				? '(max-width: 768px) 100vw, 55vw'
+				: '(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1140px) ' . ( 2 === $cols ? '50' : '33' ) . 'vw, ' . (string) (int) ( 100 / $cols ) . 'vw',
 		];
-		if ( ! empty( $args['lazy'] ) ) {
+		if ( $featured ) {
+			// بزرگ‌ترین عنصر بالای صفحه (LCP): بدون lazy و با اولویت بالا
+			$thumb_args['loading']       = 'eager';
+			$thumb_args['fetchpriority'] = 'high';
+		} elseif ( ! empty( $args['lazy'] ) ) {
 			$thumb_args['loading'] = 'lazy';
 		}
-		$thumb = (string) get_the_post_thumbnail( $post_id, 'medium', $thumb_args );
+		$thumb = (string) get_the_post_thumbnail( $post_id, ( $featured || 2 === $cols ) ? 'large' : 'medium', $thumb_args );
 	} else {
 		$thumb = '<div class="blog-page-thumbnail blog-page-thumbnail--empty"><span>' . esc_html( (string) ( $args['empty_label'] ?? 'بدون تصویر' ) ) . '</span></div>';
 	}
 
 	$excerpt = '';
-	if ( hodima_setting( 'blog_card_excerpt' ) && empty( $args['meta_text'] ) ) {
-		$excerpt = '<p class="blog-page-excerpt">' . esc_html( wp_trim_words( get_the_excerpt( $post_id ), 22 ) ) . '</p>';
+	if ( ( $featured || hodima_setting( 'blog_card_excerpt' ) ) && empty( $args['meta_text'] ) ) {
+		$excerpt = '<p class="blog-page-excerpt">' . esc_html( wp_trim_words( get_the_excerpt( $post_id ), $featured ? 40 : 22 ) ) . '</p>';
 	}
 
 	$meta = '';
@@ -189,7 +198,7 @@ function hodima_blog_card_html( int $post_id, array $args = [] ): string {
 		}
 	}
 
-	return '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '" class="blog-page-card">'
+	return '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '" class="blog-page-card' . ( $featured ? ' blog-page-card--featured' : '' ) . '">'
 		. $thumb
 		. '<div class="blog-page-content">'
 		. '<' . $heading . ' class="blog-page-title">' . esc_html( $title ) . '</' . $heading . '>'
@@ -222,26 +231,67 @@ function hodima_post_main_category( int $post_id ): ?WP_Term {
 
 /**
  * دسته‌های اصلی (سطح اول) وبلاگ برای نوار دسته‌ها؛ فقط دسته‌های دارای مقاله و بدون
- * «بدون دسته‌بندی». فیلتر hodima_blog_category_chips_args برای تغییر کوئری (مثلا زیردسته‌ها).
+ * «بدون دسته‌بندی». شمارش هر دسته شامل زیردسته‌هایش است (pad_counts).
+ * فیلتر hodima_blog_category_chips_args برای تغییر کوئری.
  *
  * @return list<WP_Term>
  */
 function hodima_blog_category_chips(): array {
 
+	// بدون پارامتر parent: با آن وردپرس شمارش پدر را با زیردسته‌هایش جمع نمی‌کند (pad_counts)
 	$terms = get_categories( (array) apply_filters( 'hodima_blog_category_chips_args', [ // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- پیشوند hodima_ دارد
 		'taxonomy'   => 'category',
-		'parent'     => 0,
 		'hide_empty' => true,
+		'pad_counts' => true,
 		'exclude'    => [ (int) get_option( 'default_category' ) ],
 		'orderby'    => 'name',
 	] ) );
 
-	return array_values( array_filter( $terms, static fn( mixed $term ): bool => $term instanceof WP_Term ) );
+	return array_values( array_filter( $terms, static fn( mixed $term ): bool => $term instanceof WP_Term && 0 === $term->parent && $term->count > 0 ) );
+}
+
+/**
+ * زیردسته‌های دارای مقاله‌ی یک دسته (برای ردیف دوم نوار دسته‌ها).
+ *
+ * @return list<WP_Term>
+ */
+function hodima_blog_subcategory_chips( int $parent_id ): array {
+
+	$terms = get_categories( [
+		'taxonomy'   => 'category',
+		'child_of'   => $parent_id,
+		'hide_empty' => true,
+		'pad_counts' => true,
+		'orderby'    => 'name',
+	] );
+
+	return array_values( array_filter( $terms, static fn( mixed $term ): bool => $term instanceof WP_Term && $term->parent === $parent_id && $term->count > 0 ) );
+}
+
+/**
+ * یک ردیف دکمه‌های دسته (ul).
+ *
+ * @param list<array{name:string, url:string, active:bool, count:int}> $items
+ */
+function hodima_blog_chips_list_html( array $items, bool $counts, string $modifier = '' ): string {
+
+	$html = '';
+	foreach ( $items as $item ) {
+		if ( '' === $item['url'] ) {
+			continue;
+		}
+		$count = $counts && $item['count'] > 0 ? '<span class="blog-cats__count">' . esc_html( hodima_fa_digits( $item['count'] ) ) . '</span>' : '';
+		$html .= '<li><a class="hodima-chip blog-cats__link" href="' . esc_url( $item['url'] ) . '"' . ( $item['active'] ? ' aria-current="page"' : '' ) . '>' . esc_html( $item['name'] ) . $count . '</a></li>';
+	}
+
+	return '' !== $html ? '<ul class="blog-cats__list' . $modifier . '">' . $html . '</ul>' : '';
 }
 
 /**
  * نوار دسته‌های وبلاگ (صفحه وبلاگ، دسته و برچسب). «همه» + هر دسته؛ دسته جاری (یا پدر
- * دسته جاری) aria-current می‌گیرد. کلید «نوار دسته‌های وبلاگ» یا کمتر از دو دسته ← رشته خالی.
+ * دسته جاری) aria-current می‌گیرد. در صفحه دسته‌ای که زیردسته دارد، ردیف دوم زیردسته‌ها
+ * (یا هم‌ردیف‌های دسته جاری، وقتی خودش زیردسته است) می‌آید. تعداد مقاله کنار هر دسته با
+ * کلید «تعداد مقاله کنار هر دسته». کلید «نوار دسته‌های وبلاگ» یا کمتر از دو دسته ← رشته خالی.
  */
 function hodima_blog_categories_bar_html(): string {
 
@@ -254,8 +304,9 @@ function hodima_blog_categories_bar_html(): string {
 		return '';
 	}
 
+	$counts  = (bool) hodima_setting( 'blog_cats_count' );
 	$current = is_category() ? (int) get_queried_object_id() : 0;
-	$items   = [ [ 'name' => 'همه', 'url' => hodima_blog_url(), 'active' => is_home() ] ];
+	$items   = [ [ 'name' => 'همه', 'url' => hodima_blog_url(), 'active' => is_home(), 'count' => (int) wp_count_posts( 'post' )->publish ] ];
 
 	foreach ( $terms as $term ) {
 		$link    = get_term_link( $term );
@@ -263,16 +314,45 @@ function hodima_blog_categories_bar_html(): string {
 			'name'   => $term->name,
 			'url'    => is_string( $link ) ? $link : '',
 			'active' => $current > 0 && ( $current === $term->term_id || cat_is_ancestor_of( $term, $current ) ),
+			'count'  => (int) $term->count,
 		];
 	}
 
-	$html = '';
-	foreach ( $items as $item ) {
-		if ( '' === $item['url'] ) {
-			continue;
+	$html = hodima_blog_chips_list_html( $items, $counts );
+
+	// ردیف دوم: زیردسته‌های دسته اصلی که در آن هستیم (دسته جاری یا پدر سطح اولش)
+	if ( $current > 0 ) {
+		$ancestors = get_ancestors( $current, 'category' );
+		$top_id    = [] === $ancestors ? $current : (int) end( $ancestors );
+		$sub_items = [];
+
+		foreach ( hodima_blog_subcategory_chips( $top_id ) as $child ) {
+			$link        = get_term_link( $child );
+			$sub_items[] = [
+				'name'   => $child->name,
+				'url'    => is_string( $link ) ? $link : '',
+				'active' => $current === $child->term_id || cat_is_ancestor_of( $child, $current ),
+				'count'  => (int) $child->count,
+			];
 		}
-		$html .= '<li><a class="hodima-chip blog-cats__link" href="' . esc_url( $item['url'] ) . '"' . ( $item['active'] ? ' aria-current="page"' : '' ) . '>' . esc_html( $item['name'] ) . '</a></li>';
+
+		$html .= hodima_blog_chips_list_html( $sub_items, $counts, ' blog-cats__list--sub' );
 	}
 
-	return '<nav class="blog-cats" aria-label="دسته‌های وبلاگ"><ul class="blog-cats__list">' . $html . '</ul></nav>';
+	return '<nav class="blog-cats" aria-label="دسته‌های وبلاگ">' . $html . '</nav>';
+}
+
+/** کادر جستجوی مقاله‌ها (فقط نوشته‌ها: post_type=post)؛ کلید «جستجوی مقاله‌ها». */
+function hodima_blog_search_form_html(): string {
+
+	if ( ! hodima_setting( 'blog_search' ) ) {
+		return '';
+	}
+
+	return '<form class="blog-search" role="search" method="get" action="' . esc_url( home_url( '/' ) ) . '">'
+		. '<label class="screen-reader-text" for="blog-search-input">جستجو در مقاله‌ها</label>'
+		. '<input id="blog-search-input" class="blog-search__input" type="search" name="s" value="" placeholder="جستجو در مقاله‌ها…" autocomplete="off">'
+		. '<input type="hidden" name="post_type" value="post">'
+		. '<button class="blog-search__button" type="submit">جستجو</button>'
+		. '</form>';
 }

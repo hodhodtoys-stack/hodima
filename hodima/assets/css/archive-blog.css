@@ -89,6 +89,34 @@
 	list-style: none;
 }
 
+/* ردیف دوم نوار دسته‌ها (زیردسته‌های دسته جاری) و تعداد مقاله کنار هر دسته */
+.blog-cats__list--sub {
+	margin-block-start: var(--hodima-space-3);
+}
+
+.blog-cats__count {
+	margin-inline-start: var(--hodima-space-2);
+	font-size: 0.8em;
+	opacity: 0.7;
+}
+
+/* جستجوی مقاله‌ها بالای کارت‌ها (ورودی و دکمه: ظاهر عمومی سایت) */
+.blog-search {
+	display: flex;
+	gap: var(--hodima-space-3);
+	max-inline-size: 480px;
+	margin: 0 auto var(--hodima-space-6);
+}
+
+.blog-search__input {
+	flex: 1 1 auto;
+	min-inline-size: 0;
+}
+
+.blog-search__button {
+	padding-inline: var(--hodima-space-8);
+}
+
 .blog-page-container {
 	margin: 0 auto;
 	padding: var(--hodima-space-7);

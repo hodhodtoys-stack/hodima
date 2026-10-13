@@ -26,14 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         <div class="blog-page-container">
             
             <?php if ( is_home() ) : ?>
-                <?php
-                /*
-                 * صفحه اصلی وبلاگ: قبلا هیچ H1 و معرفی‌ای نداشت. عنوان و متن از
-                 * «تنظیمات قالب ← وبلاگ» (خالی = عنوان برگه «نوشته‌ها»).
-                 */
-                $hodima_blog_intro = (string) hodima_setting( 'blog_intro' );
-                $hodima_blog_paged = max( 1, (int) get_query_var( 'paged' ) );
-                ?>
+                <?php $hodima_blog_paged = max( 1, (int) get_query_var( 'paged' ) ); ?>
                 <header class="blog-archive-header">
                     <h1 class="blog-archive-title">
                         <?php echo esc_html( hodima_blog_name() ); ?>
@@ -41,9 +34,6 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                             <span class="blog-archive-page">— صفحه <?php echo (int) $hodima_blog_paged; ?></span>
                         <?php endif; ?>
                     </h1>
-                    <?php if ( '' !== $hodima_blog_intro && 1 === $hodima_blog_paged ) : ?>
-                        <div class="blog-archive-desc"><?php echo wp_kses_post( wpautop( esc_html( $hodima_blog_intro ) ) ); ?></div>
-                    <?php endif; ?>
                 </header>
             <?php elseif ( is_archive() ) : ?>
                 <header class="blog-archive-header">
@@ -65,13 +55,21 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <?php endif; ?>
 
             <?php
-            // نوار دسته‌های وبلاگ (تنظیمات قالب ← وبلاگ)؛ فقط صفحه وبلاگ، دسته و برچسب
+            // جستجوی مقاله‌ها و نوار دسته‌های وبلاگ (تنظیمات قالب ← وبلاگ)؛ فقط صفحه وبلاگ، دسته و برچسب
             if ( is_home() || is_category() || is_tag() ) {
+                echo hodima_blog_search_form_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_blog_search_form_html
                 echo hodima_blog_categories_bar_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_blog_categories_bar_html
             }
+
+            // شکل شبکه از تنظیمات (ستون‌ها، نسبت تصویر)؛ مقدار تنظیم فقط از فهرست مجاز
+            $hodima_cols        = in_array( (string) hodima_setting( 'blog_columns' ), [ '2', '3', '4' ], true ) ? (int) hodima_setting( 'blog_columns' ) : 4;
+            $hodima_ratio       = in_array( (string) hodima_setting( 'blog_card_ratio' ), [ '16-9', '4-3', '1-1' ], true ) ? (string) hodima_setting( 'blog_card_ratio' ) : '16-9';
+            $hodima_grid_class  = 'blog-page-grid blog-page-grid--cols-' . $hodima_cols . ' blog-page-grid--ratio-' . $hodima_ratio;
+            // مقاله ویژه: اولین مقاله صفحه اول وبلاگ (وردپرس مقاله سنجاق‌شده را اول می‌گذارد)
+            $hodima_featured_on = is_home() && 1 === max( 1, (int) get_query_var( 'paged' ) ) && hodima_setting( 'blog_featured' );
             ?>
 
-            <div class="blog-page-grid" id="blog-grid">
+            <div class="<?php echo esc_attr( $hodima_grid_class ); ?>" id="blog-grid">
 
                 <?php 
                 global $wp_query;
@@ -83,7 +81,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 if ( have_posts() ) : ?>
                     <?php while ( have_posts() ) : the_post(); ?>
                         <?php // کارت واحد وبلاگ (inc/blog.php)؛ عنوان کامل، دو خط را CSS می‌بُرد ?>
-                        <?php echo hodima_blog_card_html( (int) get_the_ID() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_blog_card_html ?>
+                        <?php echo hodima_blog_card_html( (int) get_the_ID(), [ 'cols' => $hodima_cols, 'featured' => $hodima_featured_on && 0 === $wp_query->current_post ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_blog_card_html ?>
                     <?php endwhile; ?>
 
                 <?php else : ?>
