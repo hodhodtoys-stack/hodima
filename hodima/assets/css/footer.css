@@ -415,8 +415,19 @@ p.footer-copyright {
 .hodima-socials {
 	--socials-tile: 3.5rem;
 
-	/* ۱۴px کم‌تر از عرض محتوای قالب (تنظیمات ← ظاهر عمومی؛ پیش‌فرض ۱۴۴۰ ← ۱۴۲۶) تا لبه‌هایش با بخش‌های بالا تراز شود؛ ۲px فاصله از بخش بالایی. قبلا زمینه نوار تمام‌عرض بود */
-	max-inline-size: calc(var(--hodima-container) - 14px);
+	/*
+	 * هم‌عرض بخش‌های صفحه (داخل .hodima-container): حاشیه ۱۰px (از ۷۶۸px به بالا ۲۰px) از هر طرف و سقف
+	 * «بیشترین عرض محتوا − ۲ حاشیه» (تنظیمات ← ظاهر عمومی؛ پیش‌فرض ۱۴۴۰ ← ۱۴۰۰). عدد ثابت نیست تا با
+	 * تنظیم عرض و هر صفحه‌نمایشی همیشه با بخش بالایی تراز بماند. ۲px فاصله از بخش بالایی.
+	 */
+	--socials-gutter: var(--hodima-space-4);
+
+	@media (width >= 768px) {
+		--socials-gutter: var(--hodima-space-7);
+	}
+
+	inline-size: calc(100% - 2 * var(--socials-gutter));
+	max-inline-size: calc(var(--hodima-container) - 2 * var(--socials-gutter));
 	margin-block-start: 2px;
 	margin-inline: auto;
 	/* گوشه‌های بالا ۵px گرد تا با بخش بالایی یکی شود؛ پایین به فوتر چسبیده است */
