@@ -365,6 +365,13 @@
 
 			input.addEventListener('input', sync);
 			reset?.addEventListener('click', () => {
+				// تا 3.2.0 بی‌پرسش رنگ انتخابی را پاک می‌کرد؛ حالا مثل حذف بخش صفحه اصلی تایید می‌گیرد
+				const name = field?.querySelector('.hodima-field__label')?.textContent?.trim() ?? 'این رنگ';
+				// eslint-disable-next-line no-alert
+				if (!window.confirm(`رنگ «${name}» از ${input.value.toLowerCase()} به پیش‌فرض ${reset.dataset.hodimaColorReset} برگردد؟ (بعد از «ذخیره» قطعی می‌شود)`)) {
+					input.focus();
+					return;
+				}
 				input.value = reset.dataset.hodimaColorReset;
 				input.dispatchEvent(new Event('input', { bubbles: true }));
 				input.focus();
