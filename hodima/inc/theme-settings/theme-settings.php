@@ -109,12 +109,20 @@ function hodima_settings_fields(): array {
 		'blog_infinite_scroll' => [ 'panel' => 'blog_page', 'type' => 'toggle', 'label' => 'بارگذاری خودکار مقاله‌های بعدی با اسکرول', 'default' => true, 'help' => 'صفحه‌بندی واقعی برای موتورهای جستجو در هر حال سر جایش است.' ],
 		'blog_card_excerpt'    => [ 'panel' => 'blog_page', 'type' => 'toggle', 'label' => 'خلاصه مقاله در کارت‌ها', 'default' => false, 'wide' => true, 'help' => 'چند خط اول هر مقاله (یا «خلاصه» ویرایشگر) زیر عنوان کارت.' ],
 		'blog_cats_bar'        => [ 'panel' => 'blog_page', 'type' => 'toggle', 'label' => 'نوار دسته‌های وبلاگ', 'default' => true, 'wide' => true, 'help' => 'دسته‌های اصلی وبلاگ به‌صورت دکمه بالای مقاله‌ها در صفحه وبلاگ، دسته‌ها و برچسب‌ها؛ دسته جاری برجسته است. دسته «بدون دسته‌بندی» نمایش داده نمی‌شود.' ],
+		'blog_per_page'        => [ 'panel' => 'blog_page', 'type' => 'number', 'label' => 'تعداد مقاله در هر صفحه', 'default' => 0, 'min' => 0, 'max' => 60, 'help' => 'برای صفحه وبلاگ، دسته‌ها، برچسب‌ها و آرشیوها. ۰ = همان عدد وردپرس (تنظیمات ← خواندن). با تغییر آن مقاله‌های هر صفحه (/page/N/) جابه‌جا می‌شوند.' ],
 		// صفحه هر مقاله (3.0.0): اطلاعات زیر عنوان و جمع شدن متن بلند
 		'blog_meta_date'       => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'تاریخ انتشار', 'default' => true ],
 		'blog_meta_updated'    => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'تاریخ به‌روزرسانی', 'default' => true, 'help' => 'فقط وقتی مقاله بعد از انتشار ویرایش شده باشد.' ],
 		'blog_meta_reading'    => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'زمان مطالعه', 'default' => true, 'help' => 'تخمینی از تعداد کلمه‌ها؛ در کارت‌های وبلاگ هم.' ],
 		'blog_meta_category'   => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'دسته مقاله (لینک)', 'default' => true, 'help' => 'دسته اصلی مقاله (همان دسته مسیر راهنما) با لینک به صفحه دسته.' ],
 		'blog_meta_author'     => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'نویسنده', 'default' => false ],
+		// امکانات صفحه مقاله (3.3.6)
+		'blog_toc'             => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'فهرست مطالب', 'default' => true, 'help' => 'از تیترهای H2 و H3 متن مقاله، بالای متن (دست‌کم سه تیتر). روی لینک‌ها کلیک کنید تا به بخش بروید.' ],
+		'blog_progress'        => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'نوار پیشرفت مطالعه', 'default' => true, 'help' => 'خط باریک بالای صفحه که با اسکرول در متن مقاله پر می‌شود.' ],
+		'blog_tags'            => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'برچسب‌های مقاله', 'default' => true, 'help' => 'زیر متن مقاله، با لینک به صفحه هر برچسب.' ],
+		'blog_share'           => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'اشتراک‌گذاری', 'default' => true, 'help' => 'کپی لینک، تلگرام و واتساپ.' ],
+		'blog_author_box'      => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'کادر نویسنده', 'default' => true, 'help' => 'فقط وقتی نویسنده در پروفایلش «معرفی» نوشته باشد (کاربران ← پروفایل).' ],
+		'blog_prev_next'       => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'مقاله قبلی و بعدی', 'default' => true, 'help' => 'پایین مقاله؛ اول از همان دسته، اگر نبود از کل وبلاگ.' ],
 		'blog_content_collapse' => [ 'panel' => 'blog_post_content', 'type' => 'toggle', 'label' => 'متن بلند مقاله جمع شود («نمایش بیشتر»)', 'default' => true, 'wide' => true, 'help' => 'به افزونه Hodima Media نیاز دارد. خاموش: کل متن یک‌جا نمایش داده می‌شود.' ],
 		'blog_content_height'  => [ 'panel' => 'blog_post_content', 'type' => 'number', 'label' => 'ارتفاع متن جمع‌شده (پیکسل)', 'default' => 400, 'min' => 200, 'max' => 1500 ],
 		'blog_related_title'   => [ 'panel' => 'blog_related', 'type' => 'text', 'label' => 'عنوان', 'default' => 'مقالات مرتبط' ],
@@ -403,6 +411,7 @@ function hodima_settings_panels(): array {
 
 		'blog_page'          => [ 'section' => 'blog', 'title' => 'صفحه وبلاگ', 'icon' => 'dashicons-welcome-write-blog' ],
 		'blog_post_meta'     => [ 'section' => 'blog', 'title' => 'اطلاعات زیر عنوان مقاله', 'icon' => 'dashicons-calendar-alt', 'layout' => 'toggles', 'help' => 'تاریخ، زمان مطالعه و نویسنده به خواننده و گوگل نشان می‌دهد مقاله تازه و معتبر است.' ],
+		'blog_post_extra'    => [ 'section' => 'blog', 'title' => 'امکانات صفحه مقاله', 'icon' => 'dashicons-admin-generic', 'layout' => 'toggles', 'help' => 'فهرست مطالب، نوار پیشرفت، برچسب‌ها، اشتراک‌گذاری، کادر نویسنده و مقاله قبلی/بعدی.' ],
 		'blog_post_content'  => [ 'section' => 'blog', 'title' => 'متن مقاله', 'icon' => 'dashicons-editor-expand' ],
 		'blog_related'       => [ 'section' => 'blog', 'title' => 'مقالات مرتبط', 'icon' => 'dashicons-admin-links', 'help' => 'فهرست مقاله‌های دیگر زیر هر مقاله، بعد از دیدگاه‌ها.' ],
 

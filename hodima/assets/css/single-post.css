@@ -319,3 +319,194 @@
 .single-post-media {
 	margin-block-start: var(--hodima-space-7);
 }
+
+/* =========================================================================
+ * امکانات صفحه مقاله (3.3.6؛ تنظیمات قالب ← وبلاگ ← امکانات صفحه مقاله)
+ * فهرست مطالب، نوار پیشرفت، برچسب‌ها، اشتراک‌گذاری، کادر نویسنده، قبلی/بعدی.
+ * دکمه‌های کپسولی: .hodima-chip در blog-card.css
+ * ========================================================================= */
+
+/* نوار پیشرفت مطالعه؛ عرضش را single-post.js با --reading-progress (۰ تا ۱) می‌دهد */
+.reading-progress {
+	position: fixed;
+	inset-block-start: 0;
+	inset-inline: 0;
+	block-size: 3px;
+	z-index: 1000;
+	pointer-events: none;
+}
+
+.reading-progress__bar {
+	display: block;
+	block-size: 100%;
+	inline-size: calc(var(--reading-progress, 0) * 100%);
+	background: linear-gradient(to left, var(--hodima-secondary, #607bbd), var(--hodima-primary, #25316a));
+}
+
+/* فهرست مطالب بالای متن (بیرون از کادر «نمایش بیشتر») */
+.single-post-toc {
+	margin-block-end: var(--hodima-space-7);
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	border-radius: var(--hodima-radius-lg);
+	background: var(--hodima-bg-light, #f6f8fc);
+}
+
+.single-post-toc__title {
+	padding: var(--hodima-space-5) var(--hodima-space-6);
+	font-weight: 700;
+	color: var(--hodima-text-dark, #111111);
+	cursor: pointer;
+
+	&:focus-visible {
+		outline: 2px solid var(--hodima-secondary, #607bbd);
+		outline-offset: -2px;
+	}
+}
+
+.single-post-toc__list {
+	margin: 0;
+	padding: 0 var(--hodima-space-8) var(--hodima-space-6);
+	line-height: 2;
+
+	& ol {
+		padding-inline-start: var(--hodima-space-7);
+		list-style-type: disc;
+	}
+
+}
+
+.single-post-toc .single-post-toc__list a {
+	color: var(--hodima-primary, #25316a);
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+/* تیتری که با لینک فهرست باز می‌شود زیر هدر نرود */
+.single-post-content :is(h2, h3) {
+	scroll-margin-block-start: 90px;
+}
+
+/* زیر متن: برچسب‌ها، اشتراک‌گذاری، نویسنده */
+.section-post-extras {
+	display: flex;
+	flex-direction: column;
+	gap: var(--hodima-space-6);
+}
+
+.single-post-tags,
+.single-post-share {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--hodima-space-3) var(--hodima-space-5);
+}
+
+.single-post-tags__label,
+.single-post-share__label {
+	font-weight: 700;
+	color: var(--hodima-text-dark, #111111);
+}
+
+.single-post-tags__list,
+.single-post-share__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--hodima-space-3);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.single-post-author {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--hodima-space-6);
+	padding: var(--hodima-space-6);
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	border-radius: var(--hodima-radius-lg);
+	background: var(--hodima-bg-light, #f6f8fc);
+}
+
+.single-post-author__avatar {
+	flex-shrink: 0;
+	inline-size: 64px;
+	block-size: 64px;
+	border-radius: 50%;
+}
+
+.single-post-author__name {
+	font-weight: 700;
+	color: var(--hodima-primary, #25316a);
+	text-decoration: none;
+}
+
+.single-post-author__bio {
+	margin: var(--hodima-space-2) 0 0;
+	color: var(--hodima-text-muted, #5d6785);
+	line-height: 1.9;
+}
+
+/* مقاله قبلی / بعدی */
+.single-post-nav {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--hodima-space-5);
+	margin: 5px 0;
+}
+
+.single-post-nav__link {
+	display: flex;
+	flex-direction: column;
+	gap: var(--hodima-space-2);
+	padding: var(--hodima-space-6);
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	border-radius: var(--hodima-radius-lg);
+	background: var(--hodima-surface, #fff);
+	color: var(--hodima-text-dark, #111111);
+	text-decoration: none;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+	&:hover {
+		border-color: var(--hodima-primary, #25316a);
+		box-shadow: var(--hodima-shadow-xs);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hodima-secondary, #607bbd);
+		outline-offset: 2px;
+	}
+}
+
+/* فقط «بعدی» (بدون قبلی) همچنان در ستون خودش (سمت چپ) می‌ماند */
+.single-post-nav__link--next {
+	grid-column: 2;
+	text-align: end;
+}
+
+.single-post-nav__label {
+	font-size: 0.85rem;
+	color: var(--hodima-text-muted, #5d6785);
+}
+
+.single-post-nav__title {
+	font-weight: 600;
+	line-height: 1.7;
+}
+
+@media (width <= 768px) {
+	.single-post-nav {
+		grid-template-columns: 1fr;
+	}
+
+	.single-post-nav__link--next {
+		grid-column: auto;
+		text-align: start;
+	}
+
+	.single-post-author {
+		flex-direction: column;
+	}
+}

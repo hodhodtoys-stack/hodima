@@ -271,7 +271,7 @@ function hodima_blog_categories_bar_html(): string {
 		if ( '' === $item['url'] ) {
 			continue;
 		}
-		$html .= '<li><a class="blog-cats__link" href="' . esc_url( $item['url'] ) . '"' . ( $item['active'] ? ' aria-current="page"' : '' ) . '>' . esc_html( $item['name'] ) . '</a></li>';
+		$html .= '<li><a class="hodima-chip blog-cats__link" href="' . esc_url( $item['url'] ) . '"' . ( $item['active'] ? ' aria-current="page"' : '' ) . '>' . esc_html( $item['name'] ) . '</a></li>';
 	}
 
 	return '<nav class="blog-cats" aria-label="دسته‌های وبلاگ"><ul class="blog-cats__list">' . $html . '</ul></nav>';

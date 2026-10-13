@@ -13,6 +13,12 @@ get_header();
 ?>
 
 <div class="hodima-page-wrapper">
+    <?php
+    // نوار پیشرفت مطالعه (تنظیمات قالب ← وبلاگ ← امکانات صفحه مقاله؛ رفتار: single-post.js)
+    if ( hodima_setting( 'blog_progress' ) ) :
+    ?>
+        <div class="reading-progress" aria-hidden="true"><span class="reading-progress__bar"></span></div>
+    <?php endif; ?>
     <?php 
     // شروع حلقه وردپرس برای نمایش محتوای مقاله
     while ( have_posts() ) : the_post(); 
@@ -46,11 +52,16 @@ get_header();
         ?>
 
         <!-- 3. بخش محتوای متنی مقاله -->
+        <?php
+        // دریافت محتوای اصلی مقاله + فهرست مطالب (به تیترها id می‌دهد؛ خاموش = متن بی‌تغییر)
+        $hodima_post_content = apply_filters( 'the_content', get_the_content() ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- فیلتر خود وردپرس
+        $hodima_toc          = hodima_setting( 'blog_toc' ) ? hodima_post_toc( $hodima_post_content ) : [ 'content' => $hodima_post_content, 'toc' => '' ];
+        $hodima_post_content = $hodima_toc['content'];
+        ?>
         <section class="hodima-section-box section-description">
+            <?php echo $hodima_toc['toc']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_post_toc ?>
             <div class="single-post-content">
-                <?php 
-                // دریافت محتوای اصلی مقاله
-                $hodima_post_content = apply_filters( 'the_content', get_the_content() ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- فیلتر خود وردپرس
+                <?php
 
                 // «نمایش بیشتر» (افزونه Hodima Media) با کلید و ارتفاع «تنظیمات قالب ← وبلاگ ← متن مقاله»؛ تا 2.9.9 همیشه و ثابت ۴۰۰
                 if ( hodima_setting( 'blog_content_collapse' ) && shortcode_exists('expand_blog_content') ) {
@@ -61,6 +72,16 @@ get_header();
                 ?>
             </div>
         </section>
+
+        <?php
+        // 3.1 زیر متن: برچسب‌ها، اشتراک‌گذاری، کادر نویسنده (هر کدام با کلید خودش؛ همه خاموش/خالی = بخش چاپ نمی‌شود)
+        $hodima_post_extras = hodima_post_tags_html( $hodima_post_id ) . hodima_post_share_html( $hodima_post_id ) . hodima_post_author_box_html( $hodima_post_id );
+        ?>
+        <?php if ( '' !== $hodima_post_extras ) : ?>
+        <section class="hodima-section-box section-post-extras">
+            <?php echo $hodima_post_extras; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در توابع inc/blog-post.php ?>
+        </section>
+        <?php endif; ?>
 
         <?php
         // 4. پادکست و سوالات متداول؛ بدون افزونه Hodima Media (یا بدون محتوا) کل بخش نمایش داده نمی‌شود
@@ -115,6 +136,8 @@ get_header();
             </div>
         </section>
         <?php endif; ?>
+
+        <?php echo hodima_post_nav_html( $hodima_post_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_post_nav_html ?>
 
     <?php endwhile; // پایان حلقه وردپرس ?>
 </div>

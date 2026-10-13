@@ -155,6 +155,11 @@ function hodima_enqueue_scripts(): void {
 	// کارت مقاله در «مقالات مرتبط» (همان کارت آرشیو وبلاگ)
 	if ( is_singular( 'post' ) ) {
 		hodima_enqueue_asset( 'hodima-blog-card', 'assets/css/blog-card.css' );
+
+		// کپی لینک، نوار پیشرفت و فهرست مطالب موبایل (فقط اگر یکی‌شان روشن است)
+		if ( hodima_setting( 'blog_share' ) || hodima_setting( 'blog_progress' ) || hodima_setting( 'blog_toc' ) ) {
+			hodima_enqueue_asset( 'hodima-single-post', 'assets/js/single-post.js', [], [ 'in_footer' => true, 'strategy' => 'defer' ] );
+		}
 	}
 
 	// 7.0 آرشیو وبلاگ (صفحه وبلاگ، دسته، برچسب...): کارت‌ها، نوار دسته‌ها و بارگذاری خودکار
