@@ -415,8 +415,9 @@ p.footer-copyright {
 .hodima-socials {
 	--socials-tile: 3.5rem;
 
-	/* ۱۰px کم‌تر از عرض محتوای قالب (تنظیمات ← ظاهر عمومی؛ پیش‌فرض ۱۴۴۰ ← ۱۴۳۰)؛ قبلا زمینه نوار تمام‌عرض بود */
-	max-inline-size: calc(var(--hodima-container) - 10px);
+	/* ۱۴px کم‌تر از عرض محتوای قالب (تنظیمات ← ظاهر عمومی؛ پیش‌فرض ۱۴۴۰ ← ۱۴۲۶) تا لبه‌هایش با بخش‌های بالا تراز شود؛ ۲px فاصله از بخش بالایی. قبلا زمینه نوار تمام‌عرض بود */
+	max-inline-size: calc(var(--hodima-container) - 14px);
+	margin-block-start: 2px;
 	margin-inline: auto;
 	/* گوشه‌های بالا ۵px گرد تا با بخش بالایی یکی شود؛ پایین به فوتر چسبیده است */
 	border-start-start-radius: calc(5px * var(--hodima-radius-scale));
