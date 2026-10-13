@@ -310,27 +310,35 @@
 	const syncColorDots = () => {
 		document.querySelectorAll('[data-hodima-color-dot]').forEach((dot) => {
 			const select = dot.parentElement?.querySelector('select');
-			// «رنگ دلخواه»: رنگ از کادر رنگ جداگانه (data-hodima-custom-key)
-			const source = select && document.getElementById(select.value === 'custom' ? `hodima-setting-${dot.dataset.hodimaCustomKey}` : `hodima-setting-color_${select.value.replace('-', '_')}`);
+			const source = select && document.getElementById(`hodima-setting-color_${select.value.replace('-', '_')}`);
 			if (source) {
 				dot.style.background = source.value;
 			}
 		});
 	};
 
-	/** فیلد وابسته (رنگ دلخواه لینک): فقط وقتی فهرست مرجع روی مقدار لازم است دیده می‌شود. */
-	const initDepends = () => {
-		const update = () => {
-			document.querySelectorAll('[data-hodima-depends]').forEach((box) => {
-				const [key, wanted] = box.dataset.hodimaDepends.split('=');
-				const source = document.getElementById(`hodima-setting-${key}`);
-				box.hidden = !source || source.value !== wanted;
-			});
-		};
+	/**
+	 * «دلخواه» در فهرست رنگ لینک: مربع رنگ همان کارت انتخاب‌گر می‌شود و کد رنگ زیر فهرست
+	 * می‌آید؛ با رنگ پالت، مربع فقط رنگ پالت را نشان می‌دهد (data-hodima-when-custom).
+	 */
+	const initCustomColor = () => {
 		document.addEventListener('change', (event) => {
-			if (event.target instanceof HTMLSelectElement) {
-				update();
+			const select = event.target;
+			const card = select instanceof HTMLSelectElement ? select.closest('.hodima-field') : null;
+			if (!card?.querySelector('[data-hodima-when-custom]')) {
+				return;
 			}
+			const custom = select.value === 'custom';
+			card.querySelectorAll('[data-hodima-when-custom]').forEach((part) => {
+				part.hidden = !custom;
+			});
+			// «بازگشت به پیش‌فرض» فقط وقتی رنگ دلخواه با پیش‌فرضش فرق دارد
+			const reset = card.querySelector('[data-hodima-color-reset]');
+			const picker = card.querySelector('input[type="color"]');
+			if (custom && reset && picker) {
+				reset.hidden = picker.value.toLowerCase() === reset.dataset.hodimaColorReset;
+			}
+			card.querySelector('[data-hodima-color-dot]').hidden = custom;
 		});
 	};
 
@@ -902,7 +910,7 @@
 		document.querySelectorAll('[data-hodima-home]').forEach(initHomeLayout);
 		initDirty(initNav());
 		initPalette();
-		initDepends();
+		initCustomColor();
 		initCollapsible();
 		initLogoInvert();
 		initTips();

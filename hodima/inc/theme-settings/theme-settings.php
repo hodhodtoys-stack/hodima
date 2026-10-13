@@ -194,10 +194,10 @@ function hodima_typography_fields(): array {
 		'body_size'              => [ 'panel' => 'type_fonts', 'type' => 'number', 'label' => 'اندازه متن (پیکسل)', 'default' => 16, 'min' => 12, 'max' => 22, 'help' => 'متن مقاله‌ها، برگه‌ها و بدنه سایت. استاندارد خوانایی ۱۶ است.' ],
 		'body_line_height'       => [ 'panel' => 'type_fonts', 'type' => 'number', 'label' => 'فاصله خطوط متن', 'default' => 1.8, 'min' => 1.2, 'max' => 2.4, 'step' => 0.05, 'help' => 'ضریب اندازه متن؛ برای فارسی ۱٫۷ تا ۲ خواناتر است.' ],
 		'color_text'             => [ 'panel' => 'type_colors', 'type' => 'color', 'label' => 'رنگ متن و تیترها', 'default' => '#111111', 'help' => 'رنگ اصلی نوشته‌ها در کل سایت؛ تیترها جدا هم قابل تنظیم‌اند (قاب «تیترها»).' ],
-		'link_color'             => [ 'panel' => 'type_colors', 'type' => 'select', 'label' => 'رنگ لینک‌ها', 'default' => 'secondary', 'options' => $links, 'swatch' => true, 'custom_key' => 'link_color_custom', 'help' => 'از پالت برند (با عوض شدن پالت، لینک‌ها هم عوض می‌شوند) یا «رنگ دلخواه».' ],
-		'link_color_custom'      => [ 'panel' => 'type_colors', 'type' => 'color', 'label' => 'رنگ دلخواه لینک‌ها', 'default' => '#607bbd', 'depends' => [ 'link_color' => 'custom' ], 'help' => 'هر رنگی که می‌خواهید؛ از پالت برند مستقل است و با عوض شدن پالت تغییر نمی‌کند.' ],
+		'link_color'             => [ 'panel' => 'type_colors', 'type' => 'select', 'label' => 'رنگ لینک‌ها', 'default' => 'secondary', 'options' => $links, 'swatch' => true, 'custom_key' => 'link_color_custom', 'help' => 'از پالت برند (با عوض شدن پالت، لینک‌ها هم عوض می‌شوند) یا «دلخواه»: هر رنگی با انتخاب‌گر یا کد رنگ، مستقل از پالت.' ],
+		'link_color_custom'      => [ 'panel' => 'type_colors', 'type' => 'color', 'label' => 'رنگ دلخواه لینک‌ها', 'default' => '#607bbd', 'embedded' => true ], // در کارت «رنگ لینک‌ها» چاپ می‌شود
 		'link_hover_color'       => [ 'panel' => 'type_colors', 'type' => 'select', 'label' => 'رنگ لینک با ماوس', 'default' => 'primary', 'options' => $links, 'swatch' => true, 'custom_key' => 'link_hover_color_custom', 'help' => 'وقتی نشانگر ماوس روی لینک می‌رود.' ],
-		'link_hover_color_custom' => [ 'panel' => 'type_colors', 'type' => 'color', 'label' => 'رنگ دلخواه لینک با ماوس', 'default' => '#25316a', 'depends' => [ 'link_hover_color' => 'custom' ] ],
+		'link_hover_color_custom' => [ 'panel' => 'type_colors', 'type' => 'color', 'label' => 'رنگ دلخواه لینک با ماوس', 'default' => '#25316a', 'embedded' => true ],
 		'content_link_underline' => [ 'panel' => 'type_colors', 'type' => 'toggle', 'label' => 'زیرخط لینک‌های داخل متن', 'default' => true, 'wide' => false, 'help' => 'لینک‌های داخل متن مقاله، برگه و توضیح محصول/دسته. استاندارد دسترس‌پذیری (WCAG): لینک نباید فقط با رنگ از متن جدا شود. دکمه‌ها و کارت‌ها زیرخط نمی‌گیرند.' ],
 	];
 
@@ -1252,9 +1252,14 @@ function hodima_settings_palette_preview( array $settings ): void {
 }
 
 /**
- * @param array{panel:string, type:string, label:string, default:mixed, group?:string, help?:string, placeholder?:string, wide?:bool, preview?:string, options?:array<string, string>, min?:int, max?:int, custom_key?:string, depends?:array<string, string>} $field
+ * @param array{panel:string, type:string, label:string, default:mixed, group?:string, help?:string, placeholder?:string, wide?:bool, preview?:string, options?:array<string, string>, min?:int, max?:int, custom_key?:string, embedded?:bool} $field
  */
 function hodima_settings_render_field( string $key, array $field, mixed $value ): void {
+
+	// رنگ دلخواه (embedded): داخل کارت فهرست مالکش (custom_key) چاپ می‌شود، نه جدا
+	if ( ! empty( $field['embedded'] ) ) {
+		return;
+	}
 
 	$id        = 'hodima-setting-' . $key;
 	$name      = empty( $field['unsaved'] ) ? HODIMA_SETTINGS_OPTION . '[' . $key . ']' : ''; // unsaved: کنترل کمکی پیشخوان («همه تیترها»)، ارسال نمی‌شود
@@ -1265,12 +1270,8 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 	// راهنمای کادر ← آیکون ؟ کنار برچسب (3.1.1). می‌ماند: کلید (توضیح جزو کاشی است)، فیلد زیرگروه (ردیف جدول) و فیلد با help_visible (هشدار/شرط مهم)
 	$tip       = '' !== $help && ! isset( $field['group'] ) && empty( $field['help_visible'] ) && Hodima_Setting_Type::Toggle !== $type;
 	$wide      = ( $field['wide'] ?? $type->is_wide() ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
-	// فیلد وابسته (مثل رنگ دلخواه): فقط وقتی فیلد مرجع همان مقدار را دارد دیده می‌شود (admin.js با تغییر فهرست به‌روز می‌کند)
-	$depends   = (array) ( $field['depends'] ?? [] );
-	$dep_key   = (string) array_key_first( $depends );
-	$dep_attr  = '' !== $dep_key ? ' data-hodima-depends="' . esc_attr( $dep_key . '=' . $depends[ $dep_key ] ) . '"' . ( (string) hodima_setting( $dep_key ) === (string) $depends[ $dep_key ] ? '' : ' hidden' ) : '';
 	?>
-	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>"<?php echo $dep_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
+	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">
 		<?php if ( Hodima_Setting_Type::Toggle === $type ) : ?>
 			<?php /* کاشی کلید: کل کادر قابل کلیک؛ توضیح داخل همان کادر */ ?>
 			<label class="hodima-toggle" for="<?php echo esc_attr( $id ); ?>">
@@ -1397,16 +1398,46 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>
 				>
 			<?php elseif ( Hodima_Setting_Type::Select === $type ) : ?>
-				<?php $hodima_swatch = ! empty( $field['swatch'] ); // انتخاب از پالت: همان کنترل رنگ (.hodima-color)، مربع رنگ کنار فهرست (admin.js با پالت زنده) ?>
+				<?php
+				$hodima_swatch = ! empty( $field['swatch'] );
+				$custom_key    = (string) ( $field['custom_key'] ?? '' );
+				$custom_on     = '' !== $custom_key && 'custom' === (string) $value;
+				$custom_val    = '' !== $custom_key ? (string) hodima_setting( $custom_key ) : '';
+				$custom_def    = '' !== $custom_key ? strtolower( (string) ( hodima_settings_fields()[ $custom_key ]['default'] ?? '' ) ) : '';
+				// انتخاب از پالت: همان کنترل رنگ (.hodima-color)، مربع رنگ کنار فهرست (admin.js با پالت زنده)
+				?>
 				<?php if ( $hodima_swatch ) : ?>
+					<?php
+					// «دلخواه»: مربع رنگ همین کارت انتخاب‌گر می‌شود و کد رنگ زیر فهرست می‌آید (3.2.0)؛ با فهرست روی رنگ پالت پنهان‌اند (admin.js)
+					?>
 					<span class="hodima-color">
-						<span class="hodima-color__swatch" data-hodima-color-dot<?php echo ! empty( $field['custom_key'] ) ? ' data-hodima-custom-key="' . esc_attr( (string) $field['custom_key'] ) . '"' : ''; ?> style="background: <?php echo esc_attr( 'custom' === (string) $value && ! empty( $field['custom_key'] ) ? (string) hodima_setting( (string) $field['custom_key'] ) : hodima_settings_palette_hex( (string) $value ) ); ?>" aria-hidden="true"></span>
+						<span class="hodima-color__swatch" data-hodima-color-dot style="background: <?php echo esc_attr( hodima_settings_palette_hex( (string) $value ) ); ?>" aria-hidden="true"<?php echo $custom_on ? ' hidden' : ''; ?>></span>
+					<?php if ( '' !== $custom_key ) : ?>
+						<input
+							type="color"
+							class="hodima-color__swatch"
+							id="hodima-setting-<?php echo esc_attr( $custom_key ); ?>"
+							name="<?php echo esc_attr( HODIMA_SETTINGS_OPTION . '[' . $custom_key . ']' ); ?>"
+							value="<?php echo esc_attr( $custom_val ); ?>"
+							data-hodima-color="<?php echo esc_attr( str_replace( '_', '-', $custom_key ) ); ?>"
+							data-hodima-when-custom
+							aria-label="<?php echo esc_attr( sprintf( 'انتخاب %s از جعبه رنگ', $field['label'] ) ); ?>"
+							<?php echo $custom_on ? '' : 'hidden'; ?>
+						>
+					<?php endif; ?>
 				<?php endif; ?>
 				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
 					<?php foreach ( (array) ( $field['options'] ?? [] ) as $option => $label ) : ?>
 						<option value="<?php echo esc_attr( (string) $option ); ?>" <?php selected( (string) $value, (string) $option ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>
+				<?php if ( $hodima_swatch && '' !== $custom_key ) : ?>
+					<input type="text" class="hodima-color__hex" id="hodima-setting-<?php echo esc_attr( $custom_key ); ?>-hex" value="<?php echo esc_attr( $custom_val ); ?>" dir="ltr" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#25316a" aria-label="<?php echo esc_attr( sprintf( 'کد %s', $field['label'] ) ); ?>" data-hodima-color-value data-hodima-when-custom<?php echo $custom_on ? '' : ' hidden'; ?>>
+					<button type="button" class="hodima-color__reset" title="بازگشت به پیش‌فرض" data-hodima-color-reset="<?php echo esc_attr( $custom_def ); ?>" data-hodima-when-custom <?php echo $custom_on && strtolower( $custom_val ) !== $custom_def ? '' : 'hidden'; ?>>
+						<span class="dashicons dashicons-undo" aria-hidden="true"></span>
+						بازگشت به پیش‌فرض <code dir="ltr"><?php echo esc_html( $custom_def ); ?></code>
+					</button>
+				<?php endif; ?>
 				<?php if ( $hodima_swatch ) : ?>
 					</span>
 				<?php endif; ?>
