@@ -13,6 +13,15 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * آرشیوهایی که با بدنه وبلاگ (template-parts/blog/archive.php) نمایش داده می‌شوند:
+ * صفحه وبلاگ و آرشیو نوشته‌ها (دسته، برچسب، نویسنده، تاریخ).
+ */
+function hodima_is_blog_archive(): bool {
+	// دسته/برچسب بدون مقاله get_post_type() خالی می‌دهد؛ جداگانه بررسی می‌شوند تا قالب وبلاگ را بگیرند
+	return is_home() || is_category() || is_tag() || ( is_archive() && 'post' === get_post_type() );
+}
+
 /** نام وبلاگ: تنظیم قالب ← عنوان برگه «نوشته‌ها» ← «وبلاگ». */
 function hodima_blog_name(): string {
 
@@ -116,6 +125,14 @@ function hodima_post_meta_html( int $post_id ): string {
 		$items[] = '<span class="single-post-meta__item">' . esc_html( hodima_reading_label( $post_id ) ) . '</span>';
 	}
 
+	if ( hodima_setting( 'blog_meta_category' ) ) {
+		$term = hodima_post_main_category( $post_id );
+		$link = $term ? get_term_link( $term ) : null;
+		if ( $term && is_string( $link ) ) {
+			$items[] = '<span class="single-post-meta__item">دسته: <a href="' . esc_url( $link ) . '">' . esc_html( $term->name ) . '</a></span>';
+		}
+	}
+
 	if ( hodima_setting( 'blog_meta_author' ) ) {
 		$author = (string) get_the_author_meta( 'display_name', (int) get_post_field( 'post_author', $post_id ) );
 		if ( '' !== $author ) {
@@ -179,4 +196,83 @@ function hodima_blog_card_html( int $post_id, array $args = [] ): string {
 		. $excerpt
 		. ( '' !== $meta ? '<div class="blog-page-meta">' . $meta . '</div>' : '' )
 		. '</div></a>';
+}
+
+/**
+ * دسته اصلی مقاله: همان دسته مسیر راهنما (افزونه SEO؛ انتخاب دستی یا عمیق‌ترین دسته)،
+ * وگرنه اولین دسته غیر از «بدون دسته‌بندی». بدون دسته معنادار: null.
+ */
+function hodima_post_main_category( int $post_id ): ?WP_Term {
+
+	$default = (int) get_option( 'default_category' );
+	$term    = function_exists( 'hodima_breadcrumb_primary_term' ) ? hodima_breadcrumb_primary_term( $post_id, 'category' ) : null;
+
+	if ( $term instanceof WP_Term && $term->term_id !== $default ) {
+		return $term;
+	}
+
+	foreach ( (array) get_the_category( $post_id ) as $category ) {
+		if ( $category instanceof WP_Term && $category->term_id !== $default ) {
+			return $category;
+		}
+	}
+
+	return null;
+}
+
+/**
+ * دسته‌های اصلی (سطح اول) وبلاگ برای نوار دسته‌ها؛ فقط دسته‌های دارای مقاله و بدون
+ * «بدون دسته‌بندی». فیلتر hodima_blog_category_chips_args برای تغییر کوئری (مثلا زیردسته‌ها).
+ *
+ * @return list<WP_Term>
+ */
+function hodima_blog_category_chips(): array {
+
+	$terms = get_categories( (array) apply_filters( 'hodima_blog_category_chips_args', [ // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- پیشوند hodima_ دارد
+		'taxonomy'   => 'category',
+		'parent'     => 0,
+		'hide_empty' => true,
+		'exclude'    => [ (int) get_option( 'default_category' ) ],
+		'orderby'    => 'name',
+	] ) );
+
+	return array_values( array_filter( $terms, static fn( mixed $term ): bool => $term instanceof WP_Term ) );
+}
+
+/**
+ * نوار دسته‌های وبلاگ (صفحه وبلاگ، دسته و برچسب). «همه» + هر دسته؛ دسته جاری (یا پدر
+ * دسته جاری) aria-current می‌گیرد. کلید «نوار دسته‌های وبلاگ» یا کمتر از دو دسته ← رشته خالی.
+ */
+function hodima_blog_categories_bar_html(): string {
+
+	if ( ! hodima_setting( 'blog_cats_bar' ) ) {
+		return '';
+	}
+
+	$terms = hodima_blog_category_chips();
+	if ( count( $terms ) < 2 ) {
+		return '';
+	}
+
+	$current = is_category() ? (int) get_queried_object_id() : 0;
+	$items   = [ [ 'name' => 'همه', 'url' => hodima_blog_url(), 'active' => is_home() ] ];
+
+	foreach ( $terms as $term ) {
+		$link    = get_term_link( $term );
+		$items[] = [
+			'name'   => $term->name,
+			'url'    => is_string( $link ) ? $link : '',
+			'active' => $current > 0 && ( $current === $term->term_id || cat_is_ancestor_of( $term, $current ) ),
+		];
+	}
+
+	$html = '';
+	foreach ( $items as $item ) {
+		if ( '' === $item['url'] ) {
+			continue;
+		}
+		$html .= '<li><a class="blog-cats__link" href="' . esc_url( $item['url'] ) . '"' . ( $item['active'] ? ' aria-current="page"' : '' ) . '>' . esc_html( $item['name'] ) . '</a></li>';
+	}
+
+	return '<nav class="blog-cats" aria-label="دسته‌های وبلاگ"><ul class="blog-cats__list">' . $html . '</ul></nav>';
 }

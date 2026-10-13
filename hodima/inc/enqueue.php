@@ -156,6 +156,17 @@ function hodima_enqueue_scripts(): void {
 		hodima_enqueue_asset( 'hodima-blog-card', 'assets/css/blog-card.css' );
 	}
 
+	// 7.0 آرشیو وبلاگ (صفحه وبلاگ، دسته، برچسب...): کارت‌ها، نوار دسته‌ها و بارگذاری خودکار
+	if ( hodima_is_blog_archive() ) {
+		hodima_enqueue_asset( 'hodima-blog-card', 'assets/css/blog-card.css' );
+		hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css', [ 'hodima-blog-card' ] );
+
+		// بارگذاری خودکار با اسکرول (قبلا اسکریپت inline پایین archive-blog.php)
+		if ( hodima_setting( 'blog_infinite_scroll' ) ) {
+			hodima_enqueue_asset( 'hodima-archive-blog', 'assets/js/archive-blog.js', [], [ 'in_footer' => true, 'strategy' => 'defer' ] );
+		}
+	}
+
 	// 7.1 جستجوی سایت (search.php): کارت‌ها و صفحه‌بندی آرشیو وبلاگ؛ جستجوی محصول قالب فروشگاه است
 	if ( is_search() && ! $is_prod_src ) {
 		hodima_enqueue_asset( 'hodima-blog-card', 'assets/css/blog-card.css' );

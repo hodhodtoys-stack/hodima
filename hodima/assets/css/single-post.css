@@ -138,6 +138,16 @@
 	line-height: 1.6;
 }
 
+/* لینک دسته در اطلاعات زیر عنوان */
+.single-post-meta .single-post-meta__item a {
+	color: var(--hodima-primary, #25316a);
+	text-decoration: none;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
 .single-post-content {
 	line-height: var(--hodima-body-line-height);
 	font-size: calc(var(--hodima-body-size) * 0.0625rem);

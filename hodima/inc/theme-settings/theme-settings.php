@@ -108,10 +108,12 @@ function hodima_settings_fields(): array {
 		'blog_intro'           => [ 'panel' => 'blog_page', 'type' => 'textarea', 'label' => 'متن کوتاه زیر عنوان', 'default' => '' ],
 		'blog_infinite_scroll' => [ 'panel' => 'blog_page', 'type' => 'toggle', 'label' => 'بارگذاری خودکار مقاله‌های بعدی با اسکرول', 'default' => true, 'help' => 'صفحه‌بندی واقعی برای موتورهای جستجو در هر حال سر جایش است.' ],
 		'blog_card_excerpt'    => [ 'panel' => 'blog_page', 'type' => 'toggle', 'label' => 'خلاصه مقاله در کارت‌ها', 'default' => false, 'wide' => true, 'help' => 'چند خط اول هر مقاله (یا «خلاصه» ویرایشگر) زیر عنوان کارت.' ],
+		'blog_cats_bar'        => [ 'panel' => 'blog_page', 'type' => 'toggle', 'label' => 'نوار دسته‌های وبلاگ', 'default' => true, 'wide' => true, 'help' => 'دسته‌های اصلی وبلاگ به‌صورت دکمه بالای مقاله‌ها در صفحه وبلاگ، دسته‌ها و برچسب‌ها؛ دسته جاری برجسته است. دسته «بدون دسته‌بندی» نمایش داده نمی‌شود.' ],
 		// صفحه هر مقاله (3.0.0): اطلاعات زیر عنوان و جمع شدن متن بلند
 		'blog_meta_date'       => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'تاریخ انتشار', 'default' => true ],
 		'blog_meta_updated'    => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'تاریخ به‌روزرسانی', 'default' => true, 'help' => 'فقط وقتی مقاله بعد از انتشار ویرایش شده باشد.' ],
 		'blog_meta_reading'    => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'زمان مطالعه', 'default' => true, 'help' => 'تخمینی از تعداد کلمه‌ها؛ در کارت‌های وبلاگ هم.' ],
+		'blog_meta_category'   => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'دسته مقاله (لینک)', 'default' => true, 'help' => 'دسته اصلی مقاله (همان دسته مسیر راهنما) با لینک به صفحه دسته.' ],
 		'blog_meta_author'     => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'نویسنده', 'default' => false ],
 		'blog_content_collapse' => [ 'panel' => 'blog_post_content', 'type' => 'toggle', 'label' => 'متن بلند مقاله جمع شود («نمایش بیشتر»)', 'default' => true, 'wide' => true, 'help' => 'به افزونه Hodima Media نیاز دارد. خاموش: کل متن یک‌جا نمایش داده می‌شود.' ],
 		'blog_content_height'  => [ 'panel' => 'blog_post_content', 'type' => 'number', 'label' => 'ارتفاع متن جمع‌شده (پیکسل)', 'default' => 400, 'min' => 200, 'max' => 1500 ],

@@ -132,8 +132,8 @@ if ( HODIMA_USER_PANEL_ENABLED ) {
 add_filter( 'template_include', 'hodima_route_blog_archive_template', 99 );
 
 function hodima_route_blog_archive_template( mixed $template ): mixed {
-    // بررسی می‌کنیم که آیا کاربر در صفحه اصلی وبلاگ یا آرشیو استاندارد پست‌ها (دسته‌بندی/برچسب) است
-    if ( is_home() || ( is_archive() && get_post_type() === 'post' ) ) {
+    // صفحه وبلاگ و آرشیوهای نویسنده/تاریخ؛ دسته و برچسب قالب خودشان را دارند (category.php، tag.php)
+    if ( hodima_is_blog_archive() && ! is_category() && ! is_tag() ) {
         $custom_template = locate_template( 'archive-blog.php' );
         
         // اگر فایل پیدا شد، آن را به جای فایل پیش‌فرض لود کن
