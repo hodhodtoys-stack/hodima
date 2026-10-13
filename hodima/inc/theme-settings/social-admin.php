@@ -73,8 +73,8 @@ function hodima_social_admin_item( array $item ): void {
 	?>
 	<li class="hodima-socials-admin__item" data-hodima-social-item>
 		<span class="hodima-socials-admin__move">
-			<button type="button" class="button-link" data-hodima-social-move="up" aria-label="انتقال به بالا"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
-			<button type="button" class="button-link" data-hodima-social-move="down" aria-label="انتقال به پایین"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
+			<button type="button" class="hodima-socials-admin__btn" data-hodima-social-move="up" aria-label="انتقال به بالا"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
+			<button type="button" class="hodima-socials-admin__btn" data-hodima-social-move="down" aria-label="انتقال به پایین"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
 		</span>
 
 		<span class="hodima-socials-admin__cell">
@@ -84,8 +84,7 @@ function hodima_social_admin_item( array $item ): void {
 
 		<span class="hodima-socials-admin__cell hodima-socials-admin__cell--url">
 			<label class="hodima-field__label" for="<?php echo esc_attr( $dom_id ); ?>-url">آدرس صفحه</label>
-			<input type="text" inputmode="url" id="<?php echo esc_attr( $dom_id ); ?>-url" name="<?php echo esc_attr( $base ); ?>[url]" value="<?php echo esc_attr( $item['url'] ); ?>" dir="ltr" placeholder="https://" autocomplete="off" spellcheck="false" data-hodima-social-url>
-			<span class="hodima-socials-admin__hint" data-hodima-social-hint<?php echo '' !== $item['url'] ? ' hidden' : ''; ?>>بدون آدرس ذخیره نمی‌شود</span>
+			<input type="text" inputmode="url" id="<?php echo esc_attr( $dom_id ); ?>-url" name="<?php echo esc_attr( $base ); ?>[url]" value="<?php echo esc_attr( $item['url'] ); ?>" dir="ltr" placeholder="آدرس صفحه را بنویسید؛ بدون آدرس ذخیره نمی‌شود" autocomplete="off" spellcheck="false" data-hodima-social-url>
 		</span>
 
 		<span class="hodima-socials-admin__cell hodima-socials-admin__cell--icon">
@@ -103,7 +102,7 @@ function hodima_social_admin_item( array $item ): void {
 			</span>
 		</span>
 
-		<button type="button" class="button-link hodima-socials-admin__remove" data-hodima-social-remove aria-label="حذف این شبکه"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
+		<button type="button" class="hodima-socials-admin__btn hodima-socials-admin__btn--remove" data-hodima-social-remove aria-label="حذف این شبکه"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
 	</li>
 	<?php
 }

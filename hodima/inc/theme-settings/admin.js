@@ -651,13 +651,6 @@
 			item.querySelector('[data-hodima-social-label]').focus();
 		});
 
-		// ردیف بدون آدرس ذخیره نمی‌شود؛ تا آدرس نوشته نشده، یادآوری زیر کادر آدرس دیده می‌شود
-		list.addEventListener('input', (event) => {
-			if (event.target.matches('[data-hodima-social-url]')) {
-				event.target.closest('[data-hodima-social-item]').querySelector('[data-hodima-social-hint]').hidden = event.target.value.trim() !== '';
-			}
-		});
-
 		list.addEventListener('click', (event) => {
 			const item = event.target.closest('[data-hodima-social-item]');
 			if (!item) {

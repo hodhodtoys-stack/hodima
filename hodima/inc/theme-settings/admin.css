@@ -1004,6 +1004,7 @@
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	gap: 0.25rem;
 
 	@media (width <= 782px) {
 		flex-direction: row;
@@ -1022,6 +1023,11 @@
 		inline-size: 100%;
 		max-inline-size: none;
 		min-block-size: 2.25rem;
+	}
+
+	/* آدرس چپ‌به‌راست تایپ می‌شود، ولی متن راهنمای فارسی خالی‌بودنش راست‌به‌چپ */
+	& input[data-hodima-social-url]:placeholder-shown {
+		direction: rtl;
 	}
 
 	@media (width <= 782px) {
@@ -1048,25 +1054,39 @@
 	background: var(--hs-surface-tint);
 }
 
-.hodima-socials-admin__remove {
+/* دکمه‌های کوچک ردیف (جابه‌جایی و حذف): مستقل از .button-link وردپرس (زیرخط و حاشیه خودش را دارد) */
+.hodima-socials-admin__btn {
 	display: inline-grid;
 	place-items: center;
-	inline-size: 2.25rem;
-	block-size: 2.25rem;
+	inline-size: 2rem;
+	block-size: 2rem;
 	padding: 0;
 	border: 1px solid var(--hs-border);
 	border-radius: 0.5rem;
 	background: var(--hs-surface);
-	color: var(--hs-danger, #b32d2e);
+	color: var(--hs-primary);
+	text-decoration: none;
 	cursor: pointer;
 
-	&:hover {
-		border-color: currentcolor;
+	&:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 
-	@media (width <= 782px) {
-		grid-column: 2;
-		grid-row: 1;
+	&:hover:not(:disabled) {
+		border-color: var(--hs-border-strong);
+		background: var(--hs-surface-tint);
+	}
+
+	&.hodima-socials-admin__btn--remove {
+		inline-size: 2.25rem;
+		block-size: 2.25rem;
+		color: var(--hs-danger, #b32d2e);
+
+		@media (width <= 782px) {
+			grid-column: 2;
+			grid-row: 1;
+		}
 	}
 }
 
@@ -1080,15 +1100,6 @@
 
 .hodima-socials-admin__toolbar {
 	display: flex;
-}
-
-.hodima-socials-admin__hint {
-	color: var(--hs-warning, #996800);
-	font-size: 0.75rem;
-
-	&[hidden] {
-		display: none;
-	}
 }
 
 /* ── رنگ (3.0.1) ───────────────────────────────────────────────

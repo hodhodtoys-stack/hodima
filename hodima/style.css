@@ -4,7 +4,7 @@ Theme URI: https://hodima.com
 Author: آرین فتحی
 Author URI: https://hodima.com
 Description: قالب اختصاصی فروشگاه عمده‌فروشی (فقط نمایش). امکانات سئو، فروشگاه و رسانه در افزونه‌های همراه Hodima Core، Hodima SEO، Hodima Commerce و Hodima Media هستند.
-Version: 3.2.5
+Version: 3.2.6
 Requires at least: 6.5
 Requires PHP: 8.4
 Text Domain: hodima
@@ -363,6 +363,19 @@ body {
 
 .user-panel-wrapper {
 	min-height: 100vh;
+}
+
+/* متنی که فقط صفحه‌خوان و موتور جستجو می‌بینند (نام استاندارد وردپرس؛ تا 3.2.5 قاعده‌اش بیرون پیشخوان نبود و عنوان نوار شبکه‌ها دیده می‌شد). جایگزین .hodima-sr-only و .hp-sr-only */
+.screen-reader-text {
+	position: absolute;
+	inline-size: 1px;
+	block-size: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
 }
 
 

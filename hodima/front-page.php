@@ -41,7 +41,7 @@ $hodima_has_h1 = hodima_theme_media_available( 'intro' ) && in_array( 'intro', a
 		<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
 
 			<?php if ( ! $hodima_has_h1 ) : ?>
-				<h1 class="hodima-sr-only"><?php echo esc_html( get_the_title() ?: get_bloginfo( 'name' ) ); ?></h1>
+				<h1 class="screen-reader-text"><?php echo esc_html( get_the_title() ?: get_bloginfo( 'name' ) ); ?></h1>
 			<?php endif; ?>
 
 			<div class="entry-content">
