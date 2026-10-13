@@ -180,6 +180,8 @@ function hodima_settings_export(): void {
 		'exported_at'   => gmdate( 'c' ),
 		'settings'      => get_option( HODIMA_SETTINGS_OPTION, [] ),
 		'home_layout'   => defined( 'HODIMA_HOME_LAYOUT_OPTION' ) ? get_option( HODIMA_HOME_LAYOUT_OPTION, null ) : null,
+		// فهرست شبکه‌های اجتماعی (۳.۲.۳)؛ فایل‌های قدیمی‌تر کلیدهای social_*_url را در settings دارند
+		'social_links'  => hodima_social_links(),
 	];
 
 	nocache_headers();
@@ -218,7 +220,7 @@ function hodima_settings_import(): void {
 /**
  * فایل آپلودی ← داده پشتیبان، یا متن خطا.
  *
- * @return array{settings: array<string, mixed>, home_layout: mixed}|string
+ * @return array{settings: array<string, mixed>, home_layout: mixed, social_links: mixed}|string
  */
 function hodima_settings_backup_read( mixed $file ): array|string {
 
@@ -236,14 +238,14 @@ function hodima_settings_backup_read( mixed $file ): array|string {
 		return 'این فایل، فایل پشتیبان تنظیمات قالب هدیما نیست (از دکمه «دریافت فایل تنظیمات» ساخته می‌شود). چیزی تغییر نکرد.';
 	}
 
-	return [ 'settings' => $json['settings'], 'home_layout' => $json['home_layout'] ?? null ];
+	return [ 'settings' => $json['settings'], 'home_layout' => $json['home_layout'] ?? null, 'social_links' => $json['social_links'] ?? null ];
 }
 
 /**
  * ذخیره داده پشتیبان با همان پاک‌سازی فرم تنظیمات (کلید ناشناخته کنار گذاشته
  * می‌شود؛ تصویر/فونتی که در این سایت نیست خالی می‌ماند؛ کد سفارشی فقط با unfiltered_html).
  *
- * @param array{settings: array<string, mixed>, home_layout: mixed} $data
+ * @param array{settings: array<string, mixed>, home_layout: mixed, social_links?: mixed} $data
  */
 function hodima_settings_backup_apply( array $data ): void {
 
@@ -257,6 +259,17 @@ function hodima_settings_backup_apply( array $data ): void {
 		remove_filter( 'sanitize_option_' . HODIMA_HOME_LAYOUT_OPTION, 'hodima_home_sanitize_layout' );
 		update_option( HODIMA_HOME_LAYOUT_OPTION, hodima_home_sanitize_layout( $data['home_layout'] ) );
 	}
+
+	// شبکه‌های اجتماعی: فهرست تازه، یا (فایل قدیمی) تبدیل کلیدهای social_{شبکه}_url از settings
+	$social = is_array( $data['social_links'] ?? null ) && array_is_list( $data['social_links'] )
+		? $data['social_links']
+		: hodima_social_legacy_items( $data['settings'] );
+	$rows   = [ '_sent' => 1 ];
+	foreach ( $social as $index => $row ) {
+		$rows[ is_array( $row ) && isset( $row['id'] ) ? (string) $row['id'] : 'n' . $index ] = $row;
+	}
+	remove_filter( 'sanitize_option_' . HODIMA_SOCIAL_OPTION, 'hodima_social_sanitize' );
+	update_option( HODIMA_SOCIAL_OPTION, hodima_social_sanitize( $rows ) );
 }
 
 /** قاب تب «پشتیبان تنظیمات» (داخل فرم اصلی؛ ورودی‌ها با form= به فرم جدای بازگردانی وصل‌اند). */

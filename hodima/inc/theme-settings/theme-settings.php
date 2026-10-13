@@ -136,7 +136,6 @@ function hodima_settings_fields(): array {
 
 		// ── شبکه‌های اجتماعی ─────────────────────────────────────────
 		'social_hide_urls' => [ 'panel' => 'social_visibility', 'type' => 'urllist', 'label' => 'صفحه‌هایی که نوار در آن‌ها نمایش داده نشود', 'default' => '', 'placeholder' => "https://example.com/cart/\n/checkout/\n/product/*", 'help' => 'هر آدرس در یک خط؛ آدرس کامل صفحه یا فقط مسیر آن (مثلا /cart/). برای صفحه اصلی / و برای یک صفحه و همه زیرصفحه‌هایش * در انتها (مثلا /blog/*). پارامترهای بعد از ? در نظر گرفته نمی‌شوند.' ],
-		...hodima_social_fields(),
 
 		// ── Google Analytics ───────────────────────────────────────
 		'ga_id'            => [ 'panel' => 'analytics_ga', 'type' => 'ga', 'label' => 'شناسه اندازه‌گیری (Measurement ID)', 'default' => '', 'placeholder' => 'G-XXXXXXXXXX', 'help' => 'خالی = کد آمار چاپ نمی‌شود.' ],
@@ -277,10 +276,6 @@ function hodima_settings_groups(): array {
 		$groups[ "trust_{$i}" ] = [ 'title' => 'نماد ' . hodima_fa_digits( $i ) ];
 	}
 
-	foreach ( hodima_social_networks() as $key => $label ) {
-		$groups[ "social_{$key}" ] = [ 'title' => $label ];
-	}
-
 	foreach ( array_keys( hodima_typography_heading_defaults() ) as $level ) {
 		$groups[ "type_h{$level}" ] = [ 'title' => "H{$level}" ];
 	}
@@ -292,8 +287,12 @@ function hodima_settings_groups(): array {
 	return $groups;
 }
 
+/** گزینه فهرست شبکه‌های اجتماعی (فهرست پویا از ۳.۲.۳؛ تا ۳.۲.۲ هر شبکه دو کلید ثابت در گزینه تنظیمات بود). */
+const HODIMA_SOCIAL_OPTION = 'hodima_social_links';
+const HODIMA_SOCIAL_MAX    = 20; // سقف منطقی تعداد شبکه‌ها
+
 /**
- * شبکه‌های اجتماعی قابل تنظیم (ترتیب نمایش در صفحه اصلی).
+ * شبکه‌های آماده در منوی «افزودن شبکه» (فقط نام پیشنهادی؛ آیکون را مدیر از کتابخانه رسانه می‌گذارد).
  *
  * @return array<string, string> شناسه => نام نمایشی
  */
@@ -309,23 +308,6 @@ function hodima_social_networks(): array {
 		'youtube'   => 'یوتیوب',
 		'linkedin'  => 'لینکدین',
 	] );
-}
-
-/**
- * برای هر شبکه دو فیلد در یک ردیف: آدرس صفحه و آیکون (پر کردن آیکون لازم نیست).
- *
- * @return array<string, array<string, mixed>>
- */
-function hodima_social_fields(): array {
-
-	$fields = [];
-
-	foreach ( hodima_social_networks() as $key => $label ) {
-		$fields[ "social_{$key}_url" ]  = [ 'panel' => 'social_networks', 'group' => "social_{$key}", 'type' => 'url', 'label' => $label, 'default' => '', 'placeholder' => 'https://' ];
-		$fields[ "social_{$key}_icon" ] = [ 'panel' => 'social_networks', 'group' => "social_{$key}", 'type' => 'image', 'label' => 'آیکون ' . $label, 'default' => 0 ];
-	}
-
-	return $fields;
 }
 
 /**
@@ -428,7 +410,6 @@ function hodima_settings_panels(): array {
 		'contact_messengers' => [ 'section' => 'contact', 'title' => 'پیام‌رسان‌ها', 'icon' => 'dashicons-format-chat', 'help' => 'دکمه‌های پنجره پشتیبانی هدر.' ],
 		'contact_address'    => [ 'section' => 'contact', 'title' => 'آدرس', 'icon' => 'dashicons-location' ],
 
-		'social_networks'    => [ 'section' => 'social', 'title' => 'شبکه‌ها', 'icon' => 'dashicons-share', 'layout' => 'rows', 'columns' => [ 'شبکه', 'آدرس صفحه', 'آیکون' ], 'help' => 'شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد.' ],
 		'social_visibility'  => [ 'section' => 'social', 'title' => 'نمایش در صفحه‌ها', 'icon' => 'dashicons-visibility' ],
 
 		'analytics_ga'       => [ 'section' => 'analytics', 'title' => 'Google Analytics 4', 'icon' => 'dashicons-chart-area' ],
@@ -910,6 +891,11 @@ function hodima_settings_render_page(): void {
 
 						<div class="hodima-settings__panels">
 							<?php
+							// تب «شبکه‌های اجتماعی»: فهرست پویا (گزینه جدا، همین فرم) بالای قاب «نمایش در صفحه‌ها»
+							if ( 'social' === $section_key && function_exists( 'hodima_social_admin_render' ) ) {
+								hodima_social_admin_render();
+							}
+
 							foreach ( $panels as $panel_key => $panel ) {
 								if ( $panel['section'] === $section_key ) {
 									hodima_settings_render_panel(
@@ -1581,27 +1567,116 @@ function hodima_contact_channels(): array {
 }
 
 /**
- * شبکه‌های اجتماعی پیکربندی‌شده، به ترتیب hodima_social_networks().
+ * یک ردیف شبکه ← شکل استاندارد (نامعتبر = null). نام خالی از شبکه آماده یا دامنه آدرس ساخته می‌شود.
  *
- * @return list<array{key:string, label:string, url:string, icon_id:int}>
+ * @param array<string, mixed> $row
+ * @return array{id:string, key:string, label:string, url:string, icon_id:int}|null
  */
-function hodima_social_links(): array {
+function hodima_social_clean_item( array $row ): ?array {
 
-	$links = [];
+	$url = esc_url_raw( trim( (string) ( $row['url'] ?? '' ) ), [ 'https', 'http' ] );
+	if ( '' === $url ) {
+		return null;
+	}
+
+	$presets = hodima_social_networks();
+	$key     = sanitize_key( (string) ( $row['key'] ?? '' ) );
+	$key     = isset( $presets[ $key ] ) ? $key : 'custom';
+	$label   = mb_substr( sanitize_text_field( (string) ( $row['label'] ?? '' ) ), 0, 40 );
+	if ( '' === $label ) {
+		$label = $presets[ $key ] ?? (string) preg_replace( '/^www\./', '', (string) wp_parse_url( $url, PHP_URL_HOST ) );
+	}
+
+	$icon = absint( $row['icon_id'] ?? 0 );
+
+	return [
+		'id'      => preg_replace( '/[^a-z0-9]/', '', strtolower( (string) ( $row['id'] ?? '' ) ) ) ?: 'n' . substr( md5( $url . $label ), 0, 8 ),
+		'key'     => $key,
+		'label'   => $label,
+		'url'     => $url,
+		'icon_id' => $icon && wp_attachment_is_image( $icon ) ? $icon : 0,
+	];
+}
+
+/**
+ * شبکه‌های قدیمی (۳.۲.۲ و پیش از آن): دو کلید social_{شبکه}_url و _icon در گزینه تنظیمات.
+ *
+ * @param array<string, mixed> $settings گزینه خام تنظیمات
+ * @return list<array{id:string, key:string, label:string, url:string, icon_id:int}>
+ */
+function hodima_social_legacy_items( array $settings ): array {
+
+	$items = [];
 
 	foreach ( hodima_social_networks() as $key => $label ) {
-		$url = (string) hodima_setting( "social_{$key}_url" );
-		if ( '' !== $url ) {
-			$links[] = [
-				'key'     => $key,
-				'label'   => $label,
-				'url'     => $url,
-				'icon_id' => (int) hodima_setting( "social_{$key}_icon" ),
-			];
+		$item = hodima_social_clean_item( [
+			'id'      => 'legacy' . $key,
+			'key'     => $key,
+			'label'   => $label,
+			'url'     => (string) ( $settings[ "social_{$key}_url" ] ?? '' ),
+			'icon_id' => (int) ( $settings[ "social_{$key}_icon" ] ?? 0 ),
+		] );
+		if ( $item ) {
+			$items[] = $item;
 		}
 	}
 
-	return $links;
+	return $items;
+}
+
+/** آیا مدیر فهرست تازه را ذخیره کرده؟ تا آن موقع شبکه‌های قدیمی خوانده می‌شوند (بدون مهاجرت مخرب). */
+function hodima_social_saved(): bool {
+	return is_array( get_option( HODIMA_SOCIAL_OPTION, false ) );
+}
+
+/**
+ * شبکه‌های اجتماعی نوار فوتر، به ترتیب مدیر.
+ *
+ * @return list<array{id:string, key:string, label:string, url:string, icon_id:int}>
+ */
+function hodima_social_links(): array {
+
+	if ( ! hodima_social_saved() ) {
+		return hodima_social_legacy_items( (array) get_option( HODIMA_SETTINGS_OPTION, [] ) );
+	}
+
+	$items = [];
+
+	foreach ( (array) get_option( HODIMA_SOCIAL_OPTION, [] ) as $row ) {
+		$item = is_array( $row ) ? hodima_social_clean_item( $row ) : null;
+		if ( $item ) {
+			$items[] = $item;
+		}
+	}
+
+	return array_slice( $items, 0, HODIMA_SOCIAL_MAX );
+}
+
+/**
+ * پاک‌سازی فرم: هر ردیف با کلید یکتا، ترتیب = ترتیب ارسال؛ ردیف بی‌آدرس کنار گذاشته می‌شود.
+ * بدون نشانه _sent (ذخیره از جای دیگر) مقدار قبلی می‌ماند.
+ *
+ * @return list<array{id:string, key:string, label:string, url:string, icon_id:int}>
+ */
+function hodima_social_sanitize( mixed $input ): array {
+
+	if ( ! is_array( $input ) || ! isset( $input['_sent'] ) ) {
+		return hodima_social_links();
+	}
+
+	$items = [];
+
+	foreach ( $input as $uid => $row ) {
+		if ( ! is_array( $row ) ) {
+			continue;
+		}
+		$item = hodima_social_clean_item( [ 'id' => (string) $uid ] + $row );
+		if ( $item ) {
+			$items[] = $item;
+		}
+	}
+
+	return array_slice( $items, 0, HODIMA_SOCIAL_MAX );
 }
 
 /**
@@ -1827,3 +1902,8 @@ add_action( 'update_option_' . HODIMA_SETTINGS_OPTION, static function (): void 
 	// هدر و فوتر در همه صفحات کش‌شده تغییر کرده‌اند
 	do_action( 'litespeed_purge_all' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- API خود لایت‌اسپید
 } );
+
+// فهرست پویای شبکه‌های اجتماعی (فقط پیشخوان)
+if ( is_admin() ) {
+	require_once __DIR__ . '/social-admin.php';
+}

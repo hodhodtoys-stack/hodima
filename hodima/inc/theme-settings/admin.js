@@ -594,6 +594,100 @@
 	};
 
 	/**
+	 * تب «شبکه‌های اجتماعی»: فهرست پویا (inc/theme-settings/social-admin.php) — افزودن از شبکه‌های آماده
+	 * یا دلخواه، حذف با تایید، جابه‌جایی با دکمه‌های بالا/پایین (همان ترتیب ارسال فرم = ترتیب نوار).
+	 */
+	const initSocials = (root) => {
+		const list = root.querySelector('[data-hodima-social-list]');
+		const empty = root.querySelector('[data-hodima-social-empty]');
+		const preset = root.querySelector('[data-hodima-social-preset]');
+		const addBtn = root.querySelector('[data-hodima-social-add]');
+		const template = root.querySelector('template[data-hodima-social-template]');
+
+		if (!list || !preset || !addBtn || !template) {
+			return;
+		}
+
+		const max = Number(addBtn.dataset.max ?? 20);
+		const live = document.createElement('p');
+		live.className = 'screen-reader-text';
+		live.setAttribute('aria-live', 'polite');
+		root.append(live);
+
+		const items = () => [...list.querySelectorAll(':scope > [data-hodima-social-item]')];
+		const nameOf = (item) => item.querySelector('[data-hodima-social-label]')?.value.trim() || 'بدون نام';
+
+		const refresh = () => {
+			const all = items();
+			if (empty) {
+				empty.hidden = all.length > 0;
+			}
+			addBtn.disabled = all.length >= max;
+			all.forEach((item, index) => {
+				item.querySelector('[data-hodima-social-move="up"]').disabled = index === 0;
+				item.querySelector('[data-hodima-social-move="down"]').disabled = index === all.length - 1;
+			});
+		};
+
+		// جابه‌جایی/افزودن/حذف رویداد input ندارد؛ برای نشانه «ذخیره‌نشده» و اعلان صفحه‌خوان
+		const announce = (text) => {
+			live.textContent = '';
+			window.setTimeout(() => { live.textContent = text; }, 50);
+			root.dispatchEvent(new CustomEvent('hodima:changed', { bubbles: true }));
+			refresh();
+		};
+
+		addBtn.addEventListener('click', () => {
+			if (items().length >= max) {
+				return;
+			}
+			const uid = `n${Math.random().toString(36).slice(2, 10)}`;
+			const holder = document.createElement('div');
+			holder.innerHTML = template.innerHTML.replaceAll('__UID__', uid);
+			const item = holder.firstElementChild;
+			const key = preset.value;
+			item.querySelector(`input[name$="[key]"]`).value = key;
+			if (key !== 'custom') {
+				item.querySelector('[data-hodima-social-label]').value = preset.selectedOptions[0].textContent.trim();
+			}
+			list.append(item);
+			item.querySelectorAll('[data-hodima-media]').forEach(initMediaField);
+			announce(`شبکه ${nameOf(item)} اضافه شد`);
+			item.querySelector('[data-hodima-social-url]').focus();
+		});
+
+		list.addEventListener('click', (event) => {
+			const item = event.target.closest('[data-hodima-social-item]');
+			if (!item) {
+				return;
+			}
+
+			const mover = event.target.closest('[data-hodima-social-move]');
+			if (mover) {
+				const other = mover.dataset.hodimaSocialMove === 'up' ? item.previousElementSibling : item.nextElementSibling;
+				if (other) {
+					mover.dataset.hodimaSocialMove === 'up' ? other.before(item) : other.after(item);
+					announce(`${nameOf(item)} جابه‌جا شد`);
+					(mover.disabled ? item.querySelector('[data-hodima-social-move]:not(:disabled)') : mover)?.focus();
+				}
+				return;
+			}
+
+			if (event.target.closest('[data-hodima-social-remove]')) {
+				const name = nameOf(item);
+				// eslint-disable-next-line no-alert
+				if (window.confirm(`شبکه «${name}» حذف شود؟ (بعد از «ذخیره» قطعی می‌شود)`)) {
+					item.remove();
+					announce(`${name} حذف شد`);
+					addBtn.focus();
+				}
+			}
+		});
+
+		refresh();
+	};
+
+	/**
 	 * تب «صفحه اصلی»: فهرست بخش‌ها (inc/theme-settings/home-layout-admin.php).
 	 * ترتیب ذخیره = ترتیب بخش‌ها در فرم؛ پس جابه‌جایی فقط جابه‌جایی عنصر است.
 	 * کشیدن با دستگیره، و برای کیبورد/صفحه‌خوان دکمه‌های بالا/پایین.
@@ -915,6 +1009,7 @@
 	document.addEventListener('DOMContentLoaded', () => {
 		document.querySelectorAll('[data-hodima-media]').forEach(initMediaField);
 		document.querySelectorAll('[data-hodima-home]').forEach(initHomeLayout);
+		document.querySelectorAll('[data-hodima-socials]').forEach(initSocials);
 		initDirty(initNav());
 		initPalette();
 		initCustomColor();
