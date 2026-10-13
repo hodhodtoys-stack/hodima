@@ -415,9 +415,12 @@ p.footer-copyright {
 .hodima-socials {
 	--socials-tile: 3.5rem;
 
-	/* عرض محتوای قالب (تنظیمات ← ظاهر عمومی؛ پیش‌فرض ۱۴۴۰): قبلا زمینه نوار تمام‌عرض بود */
-	max-inline-size: var(--hodima-container);
+	/* ۱۰px کم‌تر از عرض محتوای قالب (تنظیمات ← ظاهر عمومی؛ پیش‌فرض ۱۴۴۰ ← ۱۴۳۰)؛ قبلا زمینه نوار تمام‌عرض بود */
+	max-inline-size: calc(var(--hodima-container) - 10px);
 	margin-inline: auto;
+	/* گوشه‌های بالا ۵px گرد تا با بخش بالایی یکی شود؛ پایین به فوتر چسبیده است */
+	border-start-start-radius: calc(5px * var(--hodima-radius-scale));
+	border-start-end-radius: calc(5px * var(--hodima-radius-scale));
 	direction: rtl;
 	padding: 1.75rem 1.25rem 2rem;
 	background: linear-gradient(180deg, color-mix(in srgb, var(--hodima-third, #b6c2f3) 22%, #ffffff) 0%, #ffffff 100%);
