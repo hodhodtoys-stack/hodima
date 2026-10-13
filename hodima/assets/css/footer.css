@@ -415,16 +415,14 @@ p.footer-copyright {
 .hodima-socials {
 	--socials-tile: 3.5rem;
 
+	/* عرض محتوای قالب (تنظیمات ← ظاهر عمومی؛ پیش‌فرض ۱۴۴۰): قبلا زمینه نوار تمام‌عرض بود */
+	max-inline-size: var(--hodima-container);
+	margin-inline: auto;
 	direction: rtl;
 	padding: 1.75rem 1.25rem 2rem;
 	background: linear-gradient(180deg, color-mix(in srgb, var(--hodima-third, #b6c2f3) 22%, #ffffff) 0%, #ffffff 100%);
 	border-block-start: 1px solid color-mix(in srgb, var(--hodima-third, #b6c2f3) 60%, transparent);
 	font-family: inherit;
-}
-
-.hodima-socials__inner {
-	max-inline-size: var(--hodima-container);
-	margin-inline: auto;
 }
 
 .hodima-socials__list {

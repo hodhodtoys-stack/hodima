@@ -45,7 +45,7 @@
 					name.textContent = '';
 				}
 				removeBtn.hidden = true;
-				selectBtn.textContent = `انتخاب ${noun}`;
+				selectBtn.textContent = selectBtn.dataset.hodimaMediaLabel ?? `انتخاب ${noun}`;
 				input.dispatchEvent(new Event('change', { bubbles: true }));
 				return;
 			}
@@ -67,7 +67,7 @@
 			preview.classList.remove('is-empty');
 			input.value = String(attachment.id);
 			removeBtn.hidden = false;
-			selectBtn.textContent = `تغییر ${noun}`;
+			selectBtn.textContent = selectBtn.dataset.hodimaMediaLabel ?? `تغییر ${noun}`;
 			// فیلد مخفی رویداد ندارد؛ برای نشانه «ذخیره‌نشده»
 			input.dispatchEvent(new Event('change', { bubbles: true }));
 		};

@@ -68,7 +68,6 @@ function hodima_social_admin_render(): void {
 function hodima_social_admin_item( array $item ): void {
 
 	$base    = HODIMA_SOCIAL_OPTION . '[' . $item['id'] . ']';
-	$dom_id  = 'hodima-social-' . $item['id'];
 	$icon_id = (int) $item['icon_id'];
 	?>
 	<li class="hodima-socials-admin__item" data-hodima-social-item>
@@ -77,18 +76,12 @@ function hodima_social_admin_item( array $item ): void {
 			<button type="button" class="hodima-socials-admin__btn" data-hodima-social-move="down" aria-label="انتقال به پایین"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
 		</span>
 
-		<span class="hodima-socials-admin__cell">
-			<label class="hodima-field__label" for="<?php echo esc_attr( $dom_id ); ?>-label">نام شبکه</label>
-			<input type="text" id="<?php echo esc_attr( $dom_id ); ?>-label" name="<?php echo esc_attr( $base ); ?>[label]" value="<?php echo esc_attr( $item['label'] ); ?>" maxlength="40" placeholder="مثلا اینستاگرام" data-hodima-social-label>
-		</span>
+		<?php // بدون برچسب بالای کادرها: نام کادر همان متن داخلش است (placeholder + aria-label)؛ راهنمای قاب آدرس را توضیح می‌دهد ?>
+		<input type="text" class="hodima-socials-admin__name" name="<?php echo esc_attr( $base ); ?>[label]" value="<?php echo esc_attr( $item['label'] ); ?>" maxlength="40" placeholder="نام شبکه" aria-label="نام شبکه" data-hodima-social-label>
 
-		<span class="hodima-socials-admin__cell hodima-socials-admin__cell--url">
-			<label class="hodima-field__label" for="<?php echo esc_attr( $dom_id ); ?>-url">آدرس صفحه</label>
-			<input type="text" inputmode="url" id="<?php echo esc_attr( $dom_id ); ?>-url" name="<?php echo esc_attr( $base ); ?>[url]" value="<?php echo esc_attr( $item['url'] ); ?>" dir="ltr" placeholder="آدرس صفحه را بنویسید؛ بدون آدرس ذخیره نمی‌شود" autocomplete="off" spellcheck="false" data-hodima-social-url>
-		</span>
+		<input type="text" class="hodima-socials-admin__url" inputmode="url" name="<?php echo esc_attr( $base ); ?>[url]" value="<?php echo esc_attr( $item['url'] ); ?>" dir="ltr" placeholder="آدرس صفحه (بدون آدرس ذخیره نمی‌شود)" aria-label="آدرس صفحه" autocomplete="off" spellcheck="false" data-hodima-social-url>
 
-		<span class="hodima-socials-admin__cell hodima-socials-admin__cell--icon">
-			<span class="hodima-field__label" id="<?php echo esc_attr( $dom_id ); ?>-icon-label">آیکون</span>
+		<span class="hodima-socials-admin__icon">
 			<span class="hodima-media hodima-media--compact" data-hodima-media>
 				<input type="hidden" name="<?php echo esc_attr( $base ); ?>[icon_id]" value="<?php echo esc_attr( (string) $icon_id ); ?>" data-hodima-media-input>
 				<span class="hodima-media__preview<?php echo $icon_id ? '' : ' is-empty'; ?>" data-hodima-media-preview>
@@ -96,8 +89,8 @@ function hodima_social_admin_item( array $item ): void {
 					<span class="hodima-media__empty" aria-hidden="true"><span class="dashicons dashicons-format-image"></span></span>
 				</span>
 				<span class="hodima-media__buttons">
-					<button type="button" class="button" data-hodima-media-select aria-describedby="<?php echo esc_attr( $dom_id ); ?>-icon-label" data-title="آیکون شبکه"><?php echo $icon_id ? 'تغییر' : 'انتخاب'; ?></button>
-					<button type="button" class="button-link hodima-media__remove" data-hodima-media-remove aria-describedby="<?php echo esc_attr( $dom_id ); ?>-icon-label" <?php echo $icon_id ? '' : 'hidden'; ?>>حذف</button>
+					<button type="button" class="button" data-hodima-media-select data-hodima-media-label="آیکون" data-title="آیکون شبکه">آیکون</button>
+					<button type="button" class="button-link hodima-media__remove" data-hodima-media-remove aria-label="حذف آیکون" <?php echo $icon_id ? '' : 'hidden'; ?>>حذف</button>
 				</span>
 			</span>
 		</span>
