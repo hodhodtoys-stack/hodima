@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Media
  * Plugin URI:        https://hodima.com
  * Description:       رسانه و محتوای تعاملی هدیما: استوری، ویدیو با شمارش بازدید، اسلایدر، سیستم رسانه (ویدیو، پادکست، FAQ)، اعلان‌ها، باکس‌های بازشونده و جدول داینامیک.
- * Version:           1.8.4
+ * Version:           1.8.5
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_MEDIA_VERSION = '1.8.4';
+const HODIMA_MEDIA_VERSION = '1.8.5';
 define( 'HODIMA_MEDIA_FILE', __FILE__ );
 define( 'HODIMA_MEDIA_DIR', __DIR__ );
 define( 'HODIMA_MEDIA_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -155,4 +155,12 @@ function hodima_media_video_tweaks(): void {
 }
 
 register_activation_hook( __FILE__, static fn() => delete_option( 'rewrite_rules' ) );
-register_deactivation_hook( __FILE__, static fn() => delete_option( 'rewrite_rules' ) );
+register_deactivation_hook(
+	__FILE__,
+	static function (): void {
+		delete_option( 'rewrite_rules' );
+		// زمان‌بندی‌های آمار استوری (قبلا با تعویض قالب پاک می‌شدند و دیگر ساخته نمی‌شدند؛ جای درستش غیرفعال‌سازی افزونه است)
+		wp_clear_scheduled_hook( 'wp_story_flush_counters_event' );
+		wp_clear_scheduled_hook( 'wp_story_cleanup_interactions_event' );
+	}
+);

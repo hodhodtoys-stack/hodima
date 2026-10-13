@@ -36,6 +36,9 @@ python3 tools/wp-harness/schema-rules.py /tmp/hodima-harness/out-ci
 # آزمون خودکار سیستم رسانه و Google Discover (تجزیه‌گرها، سازنده VideoObject، بخش‌ها، REST؛ ci-check هم اجرا می‌کند)
 HARNESS=1 php tools/wp-harness/media-tests.php
 
+# آزمون خودکار ماژول استوری (ذخیره پنل بدون حذف بی‌صدا، حذف آمار فقط استوری حذف‌شده، فرم ناقص، nonce کهنه صفحه کش‌شده، زمان‌بندی‌ها، جمع‌بندی، نوار سایت؛ ci-check هم اجرا می‌کند)
+HARNESS=1 php tools/wp-harness/stories-tests.php
+
 # آزمون خودکار Commerce (تاریخ شمسی، کتابخانه شمسی Core، شهرها، موبایل/کد پستی/کد ملی؛ ci-check هم اجرا می‌کند)
 HARNESS=1 php tools/wp-harness/commerce-tests.php
 
@@ -68,6 +71,7 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 | `schema-rules.py <out>` | قواعد اسکیما روی خروجی `run.sh` (خروجی ۰ = قبول). قاعده تازه = باگی که نباید برگردد |
 | `admin-render.php <slug>` | رندر یک صفحه پیشخوان با حساب مدیر |
 | `media-tests.php` | آزمون‌های خودکار سیستم رسانه و Discover (کد خروج ۱ = رد) |
+| `stories-tests.php` | آزمون‌های خودکار ماژول استوری (کد خروج ۱ = رد). قفل `FOR UPDATE` جمع‌بندی را SQLite ندارد؛ آزمون فقط همان عبارت را برمی‌دارد |
 | `commerce-tests.php` | آزمون‌های خودکار Commerce — تاریخ شمسی، شهرها، موبایل/کد پستی/کد ملی (کد خروج ۱ = رد) |
 | `wp-eval.php '<php>'` | اجرای کد دلخواه روی سایت تست (`HARNESS=1 HODIMA_WP=… php wp-eval.php '…'`) |
 | `extract.py` / `compare.py` / `integrity.py` | استخراج، مقایسه و بررسی گراف |

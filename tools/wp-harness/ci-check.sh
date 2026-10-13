@@ -6,6 +6,7 @@
 #   - در یک تگ JSON-LD شناسه (@id) تکراری باشد؛
 #   - قواعد اسکیما (schema-rules.py: گراف واحد، هویت، تاریخ، آدرس، محصول، …) رد شوند؛
 #   - آزمون‌های خودکار سیستم رسانه و Google Discover (media-tests.php) رد شوند؛
+#   - آزمون‌های ماژول استوری (stories-tests.php) رد شوند؛
 #   - آزمون‌های Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
@@ -52,6 +53,13 @@ if HARNESS=1 HODIMA_WP="$base/wp" php "$here/media-tests.php" > "$out/media-test
 	tail -1 "$out/media-tests.txt" | sed 's/^/  /'
 else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/media-tests.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
+
+echo "=== آزمون استوری (stories-tests.php: ذخیره پنل، آمار، nonce کهنه، زمان‌بندی، نوار)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/stories-tests.php" > "$out/stories-tests.txt" 2>&1; then
+	tail -1 "$out/stories-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/stories-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
 echo "=== آزمون Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس)"

@@ -14,7 +14,8 @@ export default [
 	},
 	js.configs.recommended,
 	{
-		files: [ 'hodima/**/*.js' ],
+		// قالب + ماژول استوری Hodima Media (بقیه افزونه‌ها بعدا)
+		files: [ 'hodima/**/*.js', 'plugins/hodima-media/components/hodima-Stories/**/*.js' ],
 		languageOptions: {
 			ecmaVersion: 2024,
 			sourceType: 'script',

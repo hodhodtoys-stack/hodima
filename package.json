@@ -8,8 +8,8 @@
 	},
 	"scripts": {
 		"lint": "bash bin/lint.sh",
-		"lint:css": "stylelint \"hodima/**/*.css\"",
-		"lint:js": "eslint hodima",
+		"lint:css": "stylelint \"hodima/**/*.css\" \"plugins/hodima-media/components/hodima-Stories/**/*.css\"",
+		"lint:js": "eslint hodima plugins/hodima-media/components/hodima-Stories",
 		"build:css": "node bin/build-css.mjs --check"
 	},
 	"devDependencies": {
