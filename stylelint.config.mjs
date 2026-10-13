@@ -53,4 +53,19 @@ export default {
 				'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height' ],
 		} ],
 	},
+	overrides: [
+		{
+			/*
+			 * CSS افزونه‌ها مرحله ساخت (Lightning CSS قالب) ندارد و همان‌طور که نوشته شده
+			 * به مرورگر می‌رسد: media query بازه‌ای (width <= …؛ Chrome 104+، Safari 16.4+)
+			 * برای مرورگرهای هدف قدیمی (package.json ← browserslist) کار نمی‌کند و پیشوند
+			 * -webkit- (mask در Safari 15.3 و قبل) لازم است.
+			 */
+			files: [ 'plugins/**/*.css' ],
+			rules: {
+				'media-feature-range-notation': 'prefix',
+				'property-no-vendor-prefix': null,
+			},
+		},
+	],
 };

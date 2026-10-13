@@ -21,6 +21,7 @@ parameters:
 		- plugins/hodima-seo/inc/torob-admin.php
 		- plugins/hodima-seo/core/router/report.php
 		- plugins/hodima-seo/core/router/links.php
+		- plugins/hodima-media/components/hodima-Stories
 	excludePaths:
 		analyse:
 			- hodima/user-panel/*
