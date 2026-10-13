@@ -52,47 +52,46 @@
 } )();
 
 /**
- * فلش اسکرولرها (3.1.6؛ بازنویسی 3.1.7). دکمه‌ها با JS ساخته می‌شوند تا HTML و کش صفحه عوض نشود.
- *  - محصولات و مقالات: دو دکمه گرد «قبلی/بعدی» فقط برای ماوس (از «تنظیمات قالب ← صفحه اصلی» خاموش می‌شود).
- *  - دسته‌ها: فقط همان فلش قدیمی لبه چپ (از 3.1.8 رو به راست: ❯) (که قبلا فقط یک نشانه CSS بود)؛ حالا کلیک‌پذیر است
- *    (کلیک ← اسکرول به جلو) و وقتی اسکرول لازم نیست یا به آخر رسیده‌ایم پنهان می‌شود. در لمس هم هست.
+ * فلش اسکرولرها (3.1.6؛ بازنویسی 3.1.7 و 3.3.2). دکمه‌ها با JS ساخته می‌شوند تا HTML و کش صفحه عوض نشود.
+ * محصولات، مقالات و دسته‌ها همه یک شکل دارند: دو دکمه گرد «قبلی/بعدی»، روی دسکتاپ و موبایل (تا 3.3.1 فقط
+ * برای ماوس بود و دسته‌ها فلش جدا داشتند). هر دکمه وقتی اسکرول لازم نیست یا به ابتدا/انتها رسیده‌ایم پنهان
+ * می‌شود؛ از «تنظیمات قالب ← صفحه اصلی» برای همه خاموش می‌شود (کلاس hodima-no-scroll-arrows).
  */
 ( () => {
-	const fine = window.matchMedia( '(hover: hover) and (pointer: fine)' ).matches;
-	const circles = fine && ! document.body.classList.contains( 'hodima-no-scroll-arrows' );
+	if ( document.body.classList.contains( 'hodima-no-scroll-arrows' ) ) {
+		return;
+	}
+
 	const chevron = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>';
 	const edge = 4; // تلورانس پیکسل: گردشدن مرورگر یا snap نباید «اسکرول شده» حساب شود
 
 	document.querySelectorAll( '.arian-scroller' ).forEach( ( el ) => {
 		const host = el.parentElement;
-		const story = el.classList.contains( 'cat-story-wrapper' );
-		if ( ! host || ( ! story && ! circles ) ) {
+		if ( ! host ) {
 			return;
 		}
 
-		const make = ( kind, label, html ) => {
+		const make = ( kind, label ) => {
 			const button = document.createElement( 'button' );
 			button.type = 'button';
-			button.className = story ? 'cat-scroll-hint' : `arian-scroll-btn arian-scroll-btn--${ kind }`;
+			button.className = `arian-scroll-btn arian-scroll-btn--${ kind }`;
 			button.setAttribute( 'aria-label', label );
-			button.innerHTML = html;
+			button.innerHTML = chevron;
 			return button;
 		};
-		const next = make( 'next', 'بعدی', story ? '<span aria-hidden="true">\u276F</span>' : chevron );
-		const prev = story ? null : make( 'prev', 'قبلی', chevron );
-		host.append( ...( prev ? [ prev, next ] : [ next ] ) );
+		const next = make( 'next', 'بعدی' );
+		const prev = make( 'prev', 'قبلی' );
+		host.append( prev, next );
 
 		// scrollLeft در راست‌به‌چپ صفر یا منفی است؛ فاصله از ابتدا = قدر مطلق
 		const update = () => {
 			const max = el.scrollWidth - el.clientWidth;
 			const pos = Math.abs( el.scrollLeft );
+			const top = `${ el.offsetTop + el.offsetHeight / 2 }px`;
 			next.hidden = max <= edge || pos >= max - edge;
-			if ( prev ) {
-				prev.hidden = max <= edge || pos <= edge;
-				const top = `${ el.offsetTop + el.offsetHeight / 2 }px`;
-				prev.style.insetBlockStart = top;
-				next.style.insetBlockStart = top;
-			}
+			prev.hidden = max <= edge || pos <= edge;
+			prev.style.insetBlockStart = top;
+			next.style.insetBlockStart = top;
 		};
 		const go = ( towardEnd ) => {
 			const rtl = window.getComputedStyle( el ).direction === 'rtl';
@@ -100,7 +99,7 @@
 		};
 
 		next.addEventListener( 'click', () => go( true ) );
-		prev?.addEventListener( 'click', () => go( false ) );
+		prev.addEventListener( 'click', () => go( false ) );
 		el.addEventListener( 'scroll', update, { passive: true } );
 		new ResizeObserver( update ).observe( el );
 		update();

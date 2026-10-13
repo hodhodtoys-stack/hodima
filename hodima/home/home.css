@@ -122,66 +122,10 @@
 	}
 }
 
-/* ================= فلش اسکرول دسته‌ها (RTL - فارسی) ================= */
+/* ================= ظرف اسکرول دسته‌ها (فلش‌ها: .arian-scroll-btn پایین فایل) ================= */
 .cat-story-container {
 	position: relative;
 	overflow: hidden; /* جلوگیری از بیرون زدن گرادیانت لبه‌ها */
-}
-
-/* همان فلش ❮ قدیمی لبه چپ؛ از 3.1.7 دکمه واقعی (home.js) است: کلیک ← اسکرول به جلو، و در ابتدا/انتها یا بی‌اسکرول پنهان */
-.cat-scroll-hint {
-	position: absolute;
-	inset-block-start: 0;
-	inset-inline: auto 0; /* لبه چپ */
-	z-index: 10;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	inline-size: 40px;
-	block-size: calc(100% - 20px);
-	margin: 0;
-	padding: 0;
-	border: 0;
-	border-radius: 0;
-	background: linear-gradient(to right, #fff 20%, rgb(255 255 255 / 0)); /* گرادیانت به سمت راست */
-	box-shadow: none;
-	font-size: 24px;
-	line-height: 1;
-	cursor: pointer;
-	animation: pulse-arrow-rtl 2s infinite;
-
-	/* قانون عمومی button در style.css رنگ را !important سفید می‌کند؛ رنگ روی عنصر داخلی می‌نشیند (بی !important) */
-	& > span {
-		color: var(--arian-primary);
-	}
-
-	&[hidden] {
-		display: none;
-	}
-
-	/* style.css روی button:hover گرادیان آبی دکمه، سایه و جابه‌جایی می‌گذارد؛ برای این فلش نباید تغییری ببیند (تا 3.1.7 هنگام رفتن ماوس یک مستطیل آبی می‌افتاد) */
-	&:hover,
-	&:active,
-	&:focus {
-		background: linear-gradient(to right, #fff 20%, rgb(255 255 255 / 0));
-		box-shadow: none;
-		transform: none;
-	}
-
-	&:focus-visible {
-		outline: 2px solid var(--arian-primary);
-		outline-offset: -2px;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		animation: none;
-	}
-}
-
-@keyframes pulse-arrow-rtl {
-	0%,
-	100% { opacity: 0.8; transform: translateX(0); }
-	50% { opacity: 1; transform: translateX(3px); } /* حرکت هم‌جهت با فلش ❯ */
 }
 
 /* ================= Items ================= */
@@ -740,7 +684,7 @@ h1.section-col-title {
 	line-height: 1.5;
 }
 
-/* فلش قبلی/بعدی (home.js؛ فقط ماوس)؛ جای عمودی را JS وسط کارت‌ها می‌گذارد (.arian-product-section برای آن position: relative دارد) */
+/* فلش قبلی/بعدی محصولات، مقالات و دسته‌ها (home.js؛ دسکتاپ و موبایل)؛ جای عمودی را JS وسط کارت‌ها می‌گذارد (.arian-product-section برای آن position: relative دارد) */
 .arian-scroll-btn {
 	position: absolute;
 	z-index: 2;
@@ -774,6 +718,12 @@ h1.section-col-title {
 	&:focus-visible {
 		outline: 2px solid var(--arian-primary);
 		outline-offset: 2px;
+	}
+
+	/* موبایل: کوچک‌تر تا روی کارت‌ها (۴۰٪ عرض) کم‌تر بیفتد */
+	@media (width <= 768px) {
+		inline-size: 2rem;
+		block-size: 2rem;
 	}
 }
 
