@@ -79,15 +79,7 @@ remove_action( 'woocommerce_shop_loop_header', 'woocommerce_product_taxonomy_arc
  * ۴. صفحه‌بندی: اعداد انگلیسی
  * ===================================================================== */
 add_filter( 'woocommerce_pagination_args', static function ( array $args ): array {
-	return array_merge( $args, [
-		'mid_size'           => 1,
-		'end_size'           => 1,
-		'prev_text' => '<span aria-hidden="true">&lsaquo;</span> قبلی',
-		'next_text' => 'بعدی <span aria-hidden="true">&rsaquo;</span>',
-		// عدد در عنصر جدا تا CSS فونت لاتین برایش بگذارد
-		'before_page_number' => '<span class="hodima-num">',
-		'after_page_number'  => '</span>',
-	] );
+	return array_merge( $args, hodima_pagination_args() );
 } );
 
 /**
@@ -101,12 +93,7 @@ add_filter( 'paginate_links_output', static function ( $html ) {
 		return $html;
 	}
 
-	return strtr( (string) $html, [
-		'۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
-		'۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
-		'٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
-		'٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
-	] );
+	return hodima_latin_digits( (string) $html );
 } );
 
 /**

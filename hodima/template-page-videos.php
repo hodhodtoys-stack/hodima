@@ -72,6 +72,7 @@ if ( $hodima_vp_paged > 1 && $hodima_vp_paged > (int) $hodima_vp_video_query->ma
 }
 
 add_action( 'wp_enqueue_scripts', static function (): void {
+	hodima_enqueue_asset( 'hodima-pagination', 'assets/css/pagination.css' );
 	hodima_enqueue_asset( 'hodima-template-videos', 'assets/css/template-page-videos.css' );
 } );
 

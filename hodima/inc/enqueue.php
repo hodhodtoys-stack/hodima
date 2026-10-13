@@ -121,6 +121,7 @@ function hodima_enqueue_scripts(): void {
 	// 4. دسته، برچسب، فروشگاه و جستجوی محصول: نوار مرتب‌سازی و صفحه‌بندی مشترک
 	// اسکریپت Vanilla JS است و به jQuery وابستگی ندارد.
 	if ( $is_cat_tag || $is_shop || $is_prod_src ) {
+		hodima_enqueue_asset( 'hodima-pagination', 'assets/css/pagination.css' );
 		hodima_enqueue_asset( 'hodima-taxonomy-cat', 'assets/css/taxonomy-product_cat.css' );
 		hodima_enqueue_asset( 'hodima-taxonomy-js', 'assets/js/taxonomy-product_cat.js', [], $in_footer );
 	}
@@ -158,6 +159,7 @@ function hodima_enqueue_scripts(): void {
 
 	// 7.0 آرشیو وبلاگ (صفحه وبلاگ، دسته، برچسب...): کارت‌ها، نوار دسته‌ها و بارگذاری خودکار
 	if ( hodima_is_blog_archive() ) {
+		hodima_enqueue_asset( 'hodima-pagination', 'assets/css/pagination.css' );
 		hodima_enqueue_asset( 'hodima-blog-card', 'assets/css/blog-card.css' );
 		hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css', [ 'hodima-blog-card' ] );
 
@@ -169,6 +171,7 @@ function hodima_enqueue_scripts(): void {
 
 	// 7.1 جستجوی سایت (search.php): کارت‌ها و صفحه‌بندی آرشیو وبلاگ؛ جستجوی محصول قالب فروشگاه است
 	if ( is_search() && ! $is_prod_src ) {
+		hodima_enqueue_asset( 'hodima-pagination', 'assets/css/pagination.css' );
 		hodima_enqueue_asset( 'hodima-blog-card', 'assets/css/blog-card.css' );
 		hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css', [ 'hodima-blog-card' ] );
 	}

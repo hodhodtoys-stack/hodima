@@ -181,7 +181,7 @@
 }
 
 /* =========================================================================
- * نسخه ۲ — صفحه‌بندی (جایگزین اسکرول بی‌نهایت)
+ * نسخه ۲ — صفحه‌بندی واقعی (ظاهرش: pagination.css)
  * ========================================================================= */
 
 /* h1 داخل مسیر راهنما، هم‌شکل متن معمولی مسیر */
@@ -200,92 +200,3 @@
 	}
 }
 
-.videos-pagination {
-	margin: 28px 0 var(--hodima-space-3);
-	display: flex;
-	justify-content: center;
-
-	/* فهرست (ul) خودش هم کلاس page-numbers دارد؛ ظاهر دکمه فقط برای لینک‌ها */
-	& ul.page-numbers {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: center;
-		gap: var(--hodima-space-3);
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		height: auto;
-		min-width: 0;
-		border: 0;
-		border-radius: 0;
-		background: none;
-		box-shadow: none;
-	}
-
-	& li {
-		margin: 0;
-	}
-
-	& .page-numbers {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--hodima-space-1);
-		min-width: 42px;
-		height: 42px;
-		padding: 0 14px;
-		font-size: 15px;
-		font-weight: 600;
-		text-decoration: none;
-		color: var(--hodima-primary, #25316a);
-		background: #fff;
-		border: 1px solid var(--hodima-border-light, #d9e1f0);
-		border-radius: calc(21px * var(--hodima-radius-scale));
-		box-sizing: border-box;
-		transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-
-		&.current {
-			color: #fff;
-			background: var(--hodima-primary, #25316a);
-			border-color: var(--hodima-primary, #25316a);
-		}
-
-		&.dots {
-			min-width: auto;
-			padding: 0 4px;
-			background: none;
-			border: 0;
-		}
-	}
-
-	& a.page-numbers:hover,
-	& a.page-numbers:focus-visible {
-		color: #fff;
-		background: var(--hodima-secondary, #607bbd);
-		border-color: var(--hodima-secondary, #607bbd);
-		outline: none;
-	}
-}
-
-@media (width <= 480px) {
-	.videos-pagination .page-numbers {
-		min-width: 38px;
-		height: 38px;
-		padding: 0 var(--hodima-space-4);
-		font-size: 14px;
-	}
-}
-
-/*
- * شماره صفحه‌ها با ارقام انگلیسی.
- * PHP رقم‌ها را لاتین می‌کند؛ این فونت تضمین می‌کند که حتی اگر فونت
- * فارسی قالب (مثل نسخه‌های FD وزیرمتن) ارقام لاتین را به شکل فارسی رسم
- * کند، اعداد انگلیسی نمایش داده شوند. «قبلی» و «بعدی» همان وزیرمتن می‌مانند.
- */
-.hvp-num {
-	font-family: inherit;
-	font-variant-numeric: lining-nums tabular-nums;
-	direction: ltr;
-	unicode-bidi: isolate;
-}

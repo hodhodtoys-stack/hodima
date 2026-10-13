@@ -1,0 +1,103 @@
+/* =========================================================================
+ * صفحه‌بندی مشترک سایت
+ * وبلاگ/دسته/برچسب/جستجو (.hodima-pagination)، دسته و فروشگاه ووکامرس
+ * (.woocommerce-pagination)، صفحه ویدئوها (.videos-pagination) و برگه چندصفحه‌ای.
+ * تا 3.3.4 همین ظاهر سه بار (taxonomy-product_cat.css، template-page-videos.css،
+ * archive-blog.css) و هر بار کمی متفاوت نوشته شده بود؛ صفحه‌بندی وبلاگ ساده‌تر از
+ * بقیه بود. متن‌ها و ارقام: hodima_pagination_args() در inc/pagination.php.
+ * ========================================================================= */
+
+:is(.hodima-pagination, .videos-pagination, .section-products .woocommerce-pagination) {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--hodima-space-3);
+	margin: 28px 0 var(--hodima-space-2);
+	padding: 0;
+	border: 0;
+
+	/* ووکامرس و ویدئوها فهرست می‌دهند (type=list)؛ وردپرس برای وبلاگ لینک‌های پشت‌سرهم */
+	& ul.page-numbers {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: var(--hodima-space-3);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border: 0 !important;
+		background: none;
+		box-shadow: none;
+		white-space: normal;
+
+		& li {
+			display: block;
+			margin: 0;
+			border: 0 !important;
+			overflow: visible;
+			float: none;
+		}
+	}
+
+	& :is(.page-numbers:not(ul), .post-page-numbers) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--hodima-space-1);
+		min-width: 42px;
+		height: 42px;
+		padding: 0 14px;
+		font-size: 15px;
+		font-weight: 600;
+		line-height: 1;
+		text-decoration: none;
+		color: var(--hodima-primary, #25316a);
+		background: var(--hodima-surface, #fff);
+		border: 1px solid var(--hodima-border-light, #d9e1f0);
+		border-radius: calc(21px * var(--hodima-radius-scale));
+		box-sizing: border-box;
+		transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+	}
+
+	& :is(a.page-numbers, a.post-page-numbers):is(:hover, :focus-visible) {
+		color: #fff;
+		background: var(--hodima-secondary, #607bbd);
+		border-color: var(--hodima-secondary, #607bbd);
+		outline: none;
+	}
+
+	& :is(.page-numbers.current, span.post-page-numbers) {
+		color: #fff;
+		background: var(--hodima-primary, #25316a);
+		border-color: var(--hodima-primary, #25316a);
+	}
+
+	& .page-numbers.dots {
+		min-width: auto;
+		padding: 0 4px;
+		background: none;
+		border: 0;
+	}
+}
+
+/*
+ * شماره‌ها با ارقام انگلیسی. PHP رقم‌ها را لاتین می‌کند؛ این فونت تضمین
+ * می‌کند که حتی اگر فونت فارسی ارقام لاتین را فارسی رسم کند، انگلیسی بمانند.
+ * (.hvp-num: نام قدیمی همین در قالب صفحه ویدئوها)
+ */
+:is(.hodima-num, .hvp-num) {
+	font-family: inherit;
+	font-variant-numeric: lining-nums tabular-nums;
+	direction: ltr;
+	unicode-bidi: isolate;
+}
+
+@media (width <= 480px) {
+	:is(.hodima-pagination, .videos-pagination, .section-products .woocommerce-pagination) :is(.page-numbers:not(ul), .post-page-numbers) {
+		min-width: 38px;
+		height: 38px;
+		padding: 0 var(--hodima-space-4);
+		font-size: 14px;
+	}
+}

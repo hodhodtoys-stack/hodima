@@ -52,12 +52,9 @@ get_header();
 				</div>
 
 				<?php
-				$hodima_links = paginate_links( [
-					'total'     => (int) $wp_query->max_num_pages,
-					'current'   => $hodima_paged,
-					'mid_size'  => 1,
-					'prev_text' => 'قبلی',
-					'next_text' => 'بعدی',
+				$hodima_links = hodima_paginate_links( [
+					'total'   => (int) $wp_query->max_num_pages,
+					'current' => $hodima_paged,
 				] );
 				?>
 				<?php if ( $hodima_links ) : ?>

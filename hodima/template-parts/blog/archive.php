@@ -108,8 +108,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <?php if ( $wp_query->max_num_pages > 1 ) : ?>
                 <div class="hodima-pagination<?php echo hodima_setting( 'blog_infinite_scroll' ) ? ' hodima-pagination--auto' : ''; ?>">
                     <?php
-                    echo paginate_links( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده خود وردپرس
-                        'total'   => $wp_query->max_num_pages,
+                    echo hodima_paginate_links( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده خود وردپرس (inc/pagination.php)
+                        'total'   => (int) $wp_query->max_num_pages,
                         'current' => $hodima_paged,
                     ] );
                     ?>
