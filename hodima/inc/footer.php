@@ -41,11 +41,10 @@ function hodima_render_social_bar(): void {
         return;
     }
 
-    $title = (string) hodima_setting( 'social_title' );
     ?>
     <section class="hodima-socials" aria-labelledby="hodima-socials-title">
         <div class="hodima-socials__inner">
-            <h2 id="hodima-socials-title" class="hodima-socials__title"><?php echo esc_html( $title ); ?></h2>
+            <h2 id="hodima-socials-title" class="screen-reader-text">شبکه‌های اجتماعی</h2>
 
             <ul class="hodima-socials__list" role="list">
                 <?php foreach ( $socials as $social ) : ?>

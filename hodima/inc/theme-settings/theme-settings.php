@@ -135,8 +135,7 @@ function hodima_settings_fields(): array {
 		'map_url'          => [ 'panel' => 'contact_address', 'type' => 'url', 'label' => 'لینک نقشه', 'default' => '', 'placeholder' => 'https://maps.app.goo.gl/...' ],
 
 		// ── شبکه‌های اجتماعی ─────────────────────────────────────────
-		'social_title'     => [ 'panel' => 'social_bar', 'type' => 'text', 'label' => 'عنوان نوار', 'default' => 'شبکه‌های اجتماعی' ],
-		'social_hide_urls' => [ 'panel' => 'social_bar', 'type' => 'urllist', 'label' => 'صفحه‌هایی که نوار در آن‌ها نمایش داده نشود', 'default' => '', 'placeholder' => "https://example.com/cart/\n/checkout/\n/product/*", 'help' => 'هر آدرس در یک خط؛ آدرس کامل صفحه یا فقط مسیر آن (مثلا /cart/). برای صفحه اصلی / و برای یک صفحه و همه زیرصفحه‌هایش * در انتها (مثلا /blog/*). پارامترهای بعد از ? در نظر گرفته نمی‌شوند.' ],
+		'social_hide_urls' => [ 'panel' => 'social_visibility', 'type' => 'urllist', 'label' => 'صفحه‌هایی که نوار در آن‌ها نمایش داده نشود', 'default' => '', 'placeholder' => "https://example.com/cart/\n/checkout/\n/product/*", 'help' => 'هر آدرس در یک خط؛ آدرس کامل صفحه یا فقط مسیر آن (مثلا /cart/). برای صفحه اصلی / و برای یک صفحه و همه زیرصفحه‌هایش * در انتها (مثلا /blog/*). پارامترهای بعد از ? در نظر گرفته نمی‌شوند.' ],
 		...hodima_social_fields(),
 
 		// ── Google Analytics ───────────────────────────────────────
@@ -429,8 +428,8 @@ function hodima_settings_panels(): array {
 		'contact_messengers' => [ 'section' => 'contact', 'title' => 'پیام‌رسان‌ها', 'icon' => 'dashicons-format-chat', 'help' => 'دکمه‌های پنجره پشتیبانی هدر.' ],
 		'contact_address'    => [ 'section' => 'contact', 'title' => 'آدرس', 'icon' => 'dashicons-location' ],
 
-		'social_bar'         => [ 'section' => 'social', 'title' => 'نوار شبکه‌ها', 'icon' => 'dashicons-admin-settings' ],
 		'social_networks'    => [ 'section' => 'social', 'title' => 'شبکه‌ها', 'icon' => 'dashicons-share', 'layout' => 'rows', 'columns' => [ 'شبکه', 'آدرس صفحه', 'آیکون' ], 'help' => 'شبکه‌ای که آدرس نداشته باشد نمایش داده نمی‌شود؛ بدون آیکون، نام شبکه نمایش داده می‌شود. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد.' ],
+		'social_visibility'  => [ 'section' => 'social', 'title' => 'نمایش در صفحه‌ها', 'icon' => 'dashicons-visibility' ],
 
 		'analytics_ga'       => [ 'section' => 'analytics', 'title' => 'Google Analytics 4', 'icon' => 'dashicons-chart-area' ],
 
