@@ -104,16 +104,13 @@ get_header();
         <section class="hodima-section-box section-upsells">
             <?php // h2/h3 (تا 2.9.9 h3/h4: بعد از H1 مقاله سطح H2 جا افتاده بود)؛ اندازه از کلاس، همان قبلی ?>
             <h2 class="upsells-title"><?php echo esc_html( (string) hodima_setting( 'blog_related_title' ) ); ?></h2>
-            <div class="related-posts-grid">
+            <?php
+            // پر کردن یک‌جای کش نوشته‌ها و تصویرها (به‌جای چند کوئری برای هر کارت)
+            _prime_post_caches( $hodima_related, false, true );
+            ?>
+            <div class="blog-page-grid blog-page-grid--related">
                 <?php foreach ( $hodima_related as $hodima_related_id ) : ?>
-                    <div class="related-post-card">
-                        <a href="<?php echo esc_url( get_permalink( $hodima_related_id ) ); ?>">
-                            <?php echo get_the_post_thumbnail( $hodima_related_id, 'medium' ); ?>
-                        </a>
-                        <h3 class="related-post-title">
-                            <a href="<?php echo esc_url( get_permalink( $hodima_related_id ) ); ?>"><?php echo esc_html( get_the_title( $hodima_related_id ) ); ?></a>
-                        </h3>
-                    </div>
+                    <?php echo hodima_blog_card_html( $hodima_related_id, [ 'heading' => 'h3', 'lazy' => true ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_blog_card_html ?>
                 <?php endforeach; ?>
             </div>
         </section>

@@ -1,6 +1,6 @@
 {
 	"hodima/assets/css/archive-blog.css": {
-		"declaration-no-important": 9
+		"declaration-no-important": 5
 	},
 	"hodima/assets/css/cart-page.css": {
 		"declaration-no-important": 7
@@ -21,16 +21,14 @@
 		"declaration-no-important": 23
 	},
 	"hodima/assets/css/single-post.css": {
-		"declaration-no-important": 3,
-		"no-descending-specificity": 1
+		"declaration-no-important": 3
 	},
 	"hodima/assets/css/single-product.css": {
 		"csstools/use-logical": 3,
 		"declaration-block-no-redundant-longhand-properties": 9,
-		"declaration-no-important": 127,
+		"declaration-no-important": 126,
 		"declaration-property-value-keyword-no-deprecated": 1,
 		"no-descending-specificity": 12,
-		"property-no-deprecated": 1,
 		"property-no-vendor-prefix": 1,
 		"selector-attribute-quotes": 2
 	},
@@ -43,7 +41,7 @@
 		"declaration-no-important": 18
 	},
 	"hodima/home/home.css": {
-		"declaration-no-important": 26,
+		"declaration-no-important": 25,
 		"no-descending-specificity": 3
 	},
 	"hodima/inc/theme-settings/admin.css": {

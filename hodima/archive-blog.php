@@ -10,7 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 // فراخوانی فایل استایل اختصاصی این صفحه
 add_action( 'wp_enqueue_scripts', static function (): void {
-    hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css' );
+    hodima_enqueue_asset( 'hodima-blog-card', 'assets/css/blog-card.css' );
+    hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css', [ 'hodima-blog-card' ] );
 
     // بارگذاری خودکار با اسکرول (قبلا اسکریپت inline پایین همین فایل)
     if ( hodima_setting( 'blog_infinite_scroll' ) ) {
@@ -79,34 +80,8 @@ get_header(); ?>
                 // schema/collection-lists-schema.php (قبلا همین‌جا) — بازسازی قالب، مرحله ۲
                 if ( have_posts() ) : ?>
                     <?php while ( have_posts() ) : the_post(); ?>
-                        <a href="<?php the_permalink(); ?>" class="blog-page-card">
-
-                            <?php if ( has_post_thumbnail() ) : ?>
-                                <?php the_post_thumbnail( 'medium', [
-                                    'class' => 'blog-page-thumbnail',
-                                    'alt'   => get_the_title(),
-                                ] ); ?>
-                            <?php else : ?>
-                                <div class="blog-page-thumbnail blog-page-thumbnail--empty">
-                                    <span>بدون تصویر</span>
-                                </div>
-                            <?php endif; ?>
-
-                            <div class="blog-page-content">
-                                <?php // عنوان کامل؛ دو خط را CSS می‌بُرد (تا 2.9.9 بریدن ۴۵ حرفی PHP عنوان کوتاه دوخطی را هم می‌برید) ?>
-                                <h2 class="blog-page-title"><?php echo esc_html( get_the_title() ); ?></h2>
-                                <?php if ( hodima_setting( 'blog_card_excerpt' ) ) : ?>
-                                    <p class="blog-page-excerpt"><?php echo esc_html( wp_trim_words( get_the_excerpt(), 22 ) ); ?></p>
-                                <?php endif; ?>
-                                <div class="blog-page-meta">
-                                    <span class="blog-date"><?php echo esc_html( (string) get_the_date( 'j F Y' ) ); ?></span>
-                                    <?php if ( hodima_setting( 'blog_meta_reading' ) ) : ?>
-                                        <span class="blog-reading"><?php echo esc_html( hodima_reading_label( (int) get_the_ID() ) ); ?></span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-
-                        </a>
+                        <?php // کارت واحد وبلاگ (inc/blog.php)؛ عنوان کامل، دو خط را CSS می‌بُرد ?>
+                        <?php echo hodima_blog_card_html( (int) get_the_ID() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_blog_card_html ?>
                     <?php endwhile; ?>
 
                 <?php else : ?>

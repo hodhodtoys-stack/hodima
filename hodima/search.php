@@ -44,20 +44,10 @@ get_header();
 
 				<div class="blog-page-grid">
 					<?php while ( have_posts() ) : the_post(); ?>
-						<a href="<?php the_permalink(); ?>" class="blog-page-card">
-							<?php if ( has_post_thumbnail() ) : ?>
-								<?php the_post_thumbnail( 'medium', [ 'class' => 'blog-page-thumbnail', 'alt' => get_the_title(), 'loading' => 'lazy' ] ); ?>
-							<?php else : ?>
-								<div class="blog-page-thumbnail blog-page-thumbnail--empty"><span><?php echo esc_html( get_post_type_object( get_post_type() )->labels->singular_name ?? '' ); ?></span></div>
-							<?php endif; ?>
-
-							<div class="blog-page-content">
-								<h2 class="blog-page-title"><?php the_title(); ?></h2>
-								<div class="blog-page-meta">
-									<span class="blog-date"><?php echo esc_html( get_post_type_object( get_post_type() )->labels->singular_name ?? '' ); ?></span>
-								</div>
-							</div>
-						</a>
+						<?php
+						$hodima_type_label = (string) ( get_post_type_object( get_post_type() )->labels->singular_name ?? '' );
+						echo hodima_blog_card_html( (int) get_the_ID(), [ 'lazy' => true, 'empty_label' => $hodima_type_label, 'meta_text' => $hodima_type_label ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_blog_card_html
+						?>
 					<?php endwhile; ?>
 				</div>
 

@@ -125,3 +125,58 @@ function hodima_post_meta_html( int $post_id ): string {
 
 	return $items ? '<p class="single-post-meta">' . implode( '', $items ) . '</p>' : '';
 }
+
+/**
+ * کارت مقاله — یک کارت برای آرشیو وبلاگ، نتایج جستجو و «مقالات مرتبط».
+ * قبلا آرشیو `blog-page-card` و مقاله `related-post-card` جدا (HTML و CSS تکراری، مرتبط‌ها
+ * بدون تاریخ و تصویر جایگزین) بودند. CSS: assets/css/blog-card.css.
+ *
+ * @param array{heading?:string, lazy?:bool, empty_label?:string, meta_text?:string} $args
+ *        heading: تگ عنوان (h2 در فهرست، h3 زیر عنوان بخش)؛ lazy: بارگذاری تنبل تصویر (زیر صفحه)؛
+ *        empty_label: متن کادر بی‌تصویر؛ meta_text: به‌جای تاریخ/زمان مطالعه (مثل نوع محتوا در جستجو).
+ */
+function hodima_blog_card_html( int $post_id, array $args = [] ): string {
+
+	$heading = in_array( $args['heading'] ?? 'h2', [ 'h2', 'h3', 'h4' ], true ) ? (string) ( $args['heading'] ?? 'h2' ) : 'h2';
+	$title   = get_the_title( $post_id );
+
+	if ( has_post_thumbnail( $post_id ) ) {
+		// alt خالی: عنوان همان کارت کنارش خوانده می‌شود (تکرارش برای صفحه‌خوان زائد بود)
+		$thumb_args = [
+			'class' => 'blog-page-thumbnail',
+			'alt'   => '',
+			'sizes' => '(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1140px) 33vw, 25vw',
+		];
+		if ( ! empty( $args['lazy'] ) ) {
+			$thumb_args['loading'] = 'lazy';
+		}
+		$thumb = (string) get_the_post_thumbnail( $post_id, 'medium', $thumb_args );
+	} else {
+		$thumb = '<div class="blog-page-thumbnail blog-page-thumbnail--empty"><span>' . esc_html( (string) ( $args['empty_label'] ?? 'بدون تصویر' ) ) . '</span></div>';
+	}
+
+	$excerpt = '';
+	if ( hodima_setting( 'blog_card_excerpt' ) && empty( $args['meta_text'] ) ) {
+		$excerpt = '<p class="blog-page-excerpt">' . esc_html( wp_trim_words( get_the_excerpt( $post_id ), 22 ) ) . '</p>';
+	}
+
+	$meta = '';
+	if ( ! empty( $args['meta_text'] ) ) {
+		$meta = '<span class="blog-date">' . esc_html( (string) $args['meta_text'] ) . '</span>';
+	} else {
+		if ( hodima_setting( 'blog_meta_date' ) ) {
+			$meta .= '<span class="blog-date">' . esc_html( (string) get_the_date( 'j F Y', $post_id ) ) . '</span>';
+		}
+		if ( hodima_setting( 'blog_meta_reading' ) ) {
+			$meta .= '<span class="blog-reading">' . esc_html( hodima_reading_label( $post_id ) ) . '</span>';
+		}
+	}
+
+	return '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '" class="blog-page-card">'
+		. $thumb
+		. '<div class="blog-page-content">'
+		. '<' . $heading . ' class="blog-page-title">' . esc_html( $title ) . '</' . $heading . '>'
+		. $excerpt
+		. ( '' !== $meta ? '<div class="blog-page-meta">' . $meta . '</div>' : '' )
+		. '</div></a>';
+}

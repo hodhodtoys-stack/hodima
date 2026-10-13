@@ -151,9 +151,15 @@ function hodima_enqueue_scripts(): void {
 		hodima_enqueue_asset( 'hodima-single-post', 'assets/css/single-post.css' );
 	}
 
+	// کارت مقاله در «مقالات مرتبط» (همان کارت آرشیو وبلاگ)
+	if ( is_singular( 'post' ) ) {
+		hodima_enqueue_asset( 'hodima-blog-card', 'assets/css/blog-card.css' );
+	}
+
 	// 7.1 جستجوی سایت (search.php): کارت‌ها و صفحه‌بندی آرشیو وبلاگ؛ جستجوی محصول قالب فروشگاه است
 	if ( is_search() && ! $is_prod_src ) {
-		hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css' );
+		hodima_enqueue_asset( 'hodima-blog-card', 'assets/css/blog-card.css' );
+		hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css', [ 'hodima-blog-card' ] );
 	}
 
 	// 8. استایل صفحه ۴۰۴
