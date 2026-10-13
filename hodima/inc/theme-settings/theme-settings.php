@@ -1653,14 +1653,17 @@ function hodima_social_links(): array {
 }
 
 /**
- * پاک‌سازی فرم: هر ردیف با کلید یکتا، ترتیب = ترتیب ارسال؛ ردیف بی‌آدرس کنار گذاشته می‌شود.
- * بدون نشانه _sent (ذخیره از جای دیگر) مقدار قبلی می‌ماند.
+ * پاک‌سازی گزینه. دو شکل ورودی:
+ * - فرم پیشخوان: کلید `_sent` + هر ردیف با کلید یکتا (ترتیب = ترتیب ارسال)؛ ردیف بی‌آدرس کنار گذاشته می‌شود.
+ * - فهرست تمیز (list): وردپرس هنگام ساخته شدن اولین‌باره گزینه (update_option ← add_option) callback را
+ *   «دوباره» روی مقدار پاک‌شده اجرا می‌کند؛ بدون این شاخه اولین ذخیره همیشه فهرست خالی می‌شد (باگ 3.2.3 و 3.2.4).
+ * هر چیز دیگر (ذخیره از جای دیگر): مقدار قبلی می‌ماند.
  *
  * @return list<array{id:string, label:string, url:string, icon_id:int}>
  */
 function hodima_social_sanitize( mixed $input ): array {
 
-	if ( ! is_array( $input ) || ! isset( $input['_sent'] ) ) {
+	if ( ! is_array( $input ) || ( ! isset( $input['_sent'] ) && ! array_is_list( $input ) ) ) {
 		return hodima_social_links();
 	}
 
@@ -1670,7 +1673,7 @@ function hodima_social_sanitize( mixed $input ): array {
 		if ( ! is_array( $row ) ) {
 			continue;
 		}
-		$item = hodima_social_clean_item( [ 'id' => (string) $uid ] + $row );
+		$item = hodima_social_clean_item( ( is_string( $uid ) ? [ 'id' => $uid ] : [] ) + $row );
 		if ( $item ) {
 			$items[] = $item;
 		}
