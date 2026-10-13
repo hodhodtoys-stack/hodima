@@ -11,6 +11,7 @@
  *   canonical.php   ۳۰۱ به آدرس اصلی
  *   slug-guard.php  جلوگیری از نامک تکراری بین انواع + گزارش تداخل‌ها
  *   admin.php       «ابزارهای هدیما ← آدرس تمیز»
+ *   report.php      گزارش‌های فقط‌خواندنی همان صفحه (بررسی گروهی، زیردسته‌ها)
  *   legacy.php      نام‌های قدیمی arian_*
  *
  * API برای ماژول‌های دیگر (همیشه با function_exists):
@@ -33,6 +34,7 @@ require_once HODIMA_ROUTER_DIR . '/slug-guard.php';
 require_once HODIMA_ROUTER_DIR . '/legacy.php';
 
 if ( is_admin() ) {
+	require_once HODIMA_ROUTER_DIR . '/report.php';
 	require_once HODIMA_ROUTER_DIR . '/admin.php';
 }
 

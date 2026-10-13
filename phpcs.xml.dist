@@ -25,6 +25,8 @@
 	<file>plugins/hodima-seo/inc/product-price.php</file>
 	<file>plugins/hodima-seo/inc/torob.php</file>
 	<file>plugins/hodima-seo/inc/torob-admin.php</file>
+	<!-- گزارش‌های آدرس تمیز (بخش ۱۲۵) -->
+	<file>plugins/hodima-seo/core/router/report.php</file>
 	<!-- داخل پوشه schema ولی اسکیما نیستند (سایت‌مپ، فید پادکست، صفحه‌های پیشخوان) -->
 	<exclude-pattern>plugins/hodima-seo/schema/admin/*</exclude-pattern>
 	<exclude-pattern>plugins/hodima-seo/schema/sitemap-core\.php</exclude-pattern>

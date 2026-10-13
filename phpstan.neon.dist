@@ -19,6 +19,7 @@ parameters:
 		- plugins/hodima-seo/inc/product-price.php
 		- plugins/hodima-seo/inc/torob.php
 		- plugins/hodima-seo/inc/torob-admin.php
+		- plugins/hodima-seo/core/router/report.php
 	excludePaths:
 		analyse:
 			- hodima/user-panel/*
