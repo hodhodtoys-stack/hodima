@@ -301,11 +301,15 @@ function hodima_typography_vars(): array {
 	if ( $text && $changed( 'color_text' ) ) {
 		$vars['--hodima-text-dark'] = strtolower( $text );
 	}
-	if ( $changed( 'link_color' ) ) {
-		$vars['--hodima-link'] = hodima_typography_color_var( (string) hodima_setting( 'link_color' ) );
-	}
-	if ( $changed( 'link_hover_color' ) ) {
-		$vars['--hodima-link-hover'] = hodima_typography_color_var( (string) hodima_setting( 'link_hover_color' ) );
+	foreach ( [ 'link_color' => '--hodima-link', 'link_hover_color' => '--hodima-link-hover' ] as $key => $var ) {
+		if ( 'custom' === hodima_setting( $key ) ) { // رنگ دلخواه (3.1.9): مقدار ثابت، مستقل از پالت
+			$custom = sanitize_hex_color( (string) hodima_setting( $key . '_custom' ) );
+			if ( $custom ) {
+				$vars[ $var ] = strtolower( $custom );
+			}
+		} elseif ( $changed( $key ) ) {
+			$vars[ $var ] = hodima_typography_color_var( (string) hodima_setting( $key ) );
+		}
 	}
 	if ( ! hodima_setting( 'content_link_underline' ) ) {
 		$vars['--hodima-content-link-line'] = 'none';

@@ -107,7 +107,7 @@
 
 		const stacks = JSON.parse(preview.dataset.stacks ?? '{}');
 		const field = (key) => document.getElementById(`hodima-setting-${key}`);
-		const colorVar = (key) => (key === 'text' ? 'var(--hodima-text-dark)' : `var(--hodima-${key})`);
+		const colorVar = (key, custom) => (key === 'custom' ? custom : key === 'text' ? 'var(--hodima-text-dark)' : `var(--hodima-${key})`);
 		const set = (name, value) => {
 			if (value !== undefined && value !== '') {
 				preview.style.setProperty(name, value);
@@ -122,8 +122,8 @@
 			set('--hodima-body-size', field('body_size')?.value);
 			set('--hodima-body-line-height', field('body_line_height')?.value);
 			set('--hodima-text-dark', field('color_text')?.value);
-			set('--hodima-link', colorVar(field('link_color')?.value ?? 'secondary'));
-			set('--hodima-link-hover', colorVar(field('link_hover_color')?.value ?? 'primary'));
+			set('--hodima-link', colorVar(field('link_color')?.value ?? 'secondary', field('link_color_custom')?.value));
+			set('--hodima-link-hover', colorVar(field('link_hover_color')?.value ?? 'primary', field('link_hover_color_custom')?.value));
 			set('--hodima-content-link-line', field('content_link_underline')?.checked === false ? 'none' : 'underline');
 
 			for (let level = 1; level <= 6; level++) {
@@ -310,9 +310,26 @@
 	const syncColorDots = () => {
 		document.querySelectorAll('[data-hodima-color-dot]').forEach((dot) => {
 			const select = dot.parentElement?.querySelector('select');
-			const source = select && document.getElementById(`hodima-setting-color_${select.value.replace('-', '_')}`);
+			// «رنگ دلخواه»: رنگ از کادر رنگ جداگانه (data-hodima-custom-key)
+			const source = select && document.getElementById(select.value === 'custom' ? `hodima-setting-${dot.dataset.hodimaCustomKey}` : `hodima-setting-color_${select.value.replace('-', '_')}`);
 			if (source) {
 				dot.style.background = source.value;
+			}
+		});
+	};
+
+	/** فیلد وابسته (رنگ دلخواه لینک): فقط وقتی فهرست مرجع روی مقدار لازم است دیده می‌شود. */
+	const initDepends = () => {
+		const update = () => {
+			document.querySelectorAll('[data-hodima-depends]').forEach((box) => {
+				const [key, wanted] = box.dataset.hodimaDepends.split('=');
+				const source = document.getElementById(`hodima-setting-${key}`);
+				box.hidden = !source || source.value !== wanted;
+			});
+		};
+		document.addEventListener('change', (event) => {
+			if (event.target instanceof HTMLSelectElement) {
+				update();
 			}
 		});
 	};
@@ -885,6 +902,7 @@
 		document.querySelectorAll('[data-hodima-home]').forEach(initHomeLayout);
 		initDirty(initNav());
 		initPalette();
+		initDepends();
 		initCollapsible();
 		initLogoInvert();
 		initTips();

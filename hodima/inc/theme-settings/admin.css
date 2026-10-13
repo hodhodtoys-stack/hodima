@@ -654,11 +654,9 @@
 	}
 }
 
-/* قاب رنگ‌ها: کاشی کلید در ردیف کارت‌هاست؛ فقط در عرض کم تمام‌عرض می‌شود */
+/* قاب رنگ‌ها: کاشی کلید همیشه یک ردیف کامل زیر کارت‌ها */
 .hodima-panel--colors .hodima-field--toggle {
-	@media (width <= 1100px) {
-		grid-column: 1 / -1;
-	}
+	grid-column: 1 / -1;
 }
 
 /* کلید بیرون از قاب‌های «چند کلید کنار هم» همیشه یک ردیف کامل (تا 3.0.0 گاهی نیم و گاهی تمام‌عرض) */
@@ -2394,13 +2392,18 @@ input.hodima-color__swatch {
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
 }
 
-/* قاب رنگ‌ها: سه کارت و کاشی «زیرخط لینک‌ها» در یک ردیف؛ در عرض کم خودکار می‌شکند */
+/* قاب رنگ‌ها: کارت‌ها چهارتایی (رنگ دلخواه لینک فقط با انتخاب «رنگ دلخواه» پیدا می‌شود) و کلید «زیرخط لینک‌ها» یک ردیف کامل؛ در عرض کم خودکار می‌شکند */
 .hodima-panel--colors .hodima-panel__fields {
-	grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.7fr);
+	grid-template-columns: repeat(4, minmax(0, 1fr));
 
 	@media (width <= 1100px) {
 		grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
 	}
+}
+
+/* فیلد وابسته (رنگ دلخواه): display کارت رنگ قاعده hidden مرورگر را خنثی می‌کرد */
+.hodima-panel .hodima-field[hidden][data-hodima-depends] {
+	display: none;
 }
 
 /* هشدار بخش‌های صفحه اصلی (3.1.3): اعلان بالای فهرست و نشان کنار نام بخش */
