@@ -50,7 +50,7 @@ function hodima_render_social_bar(): void {
                 <?php foreach ( $socials as $social ) : ?>
                     <li>
                         <a
-                            class="hodima-socials__link hodima-socials__link--<?php echo esc_attr( $social['key'] ); ?>"
+                            class="hodima-socials__link"
                             href="<?php echo esc_url( $social['url'] ); ?>"
                             target="_blank"
                             rel="nofollow noopener noreferrer"

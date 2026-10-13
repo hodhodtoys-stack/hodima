@@ -24,15 +24,14 @@ add_action( 'admin_init', static function (): void {
 /** قاب «شبکه‌ها» (بالای قاب «نمایش در صفحه‌ها»). */
 function hodima_social_admin_render(): void {
 
-	$items   = hodima_social_links();
-	$presets = hodima_social_networks();
+	$items = hodima_social_links();
 	?>
 	<section class="hodima-panel hodima-socials-admin" aria-labelledby="hodima-panel-social_list-title" data-hodima-socials>
 		<?php
 		hodima_settings_panel_head(
 			'hodima-panel-social_list-title',
 			'شبکه‌ها',
-			'به ترتیب از راست به چپ در نوار بالای فوتر دیده می‌شوند. با دکمه‌های بالا/پایین ترتیب را عوض کنید؛ ردیف بدون آدرس ذخیره نمی‌شود. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد؛ بدون آیکون، نام شبکه نمایش داده می‌شود.',
+			'با «افزودن شبکه» یک ردیف تازه می‌آید؛ نام، آدرس و آیکون را خودتان پر کنید. به ترتیب از راست به چپ در نوار بالای فوتر دیده می‌شوند و با دکمه‌های بالا/پایین جابه‌جا می‌شوند. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد؛ بدون آیکون، نام شبکه نمایش داده می‌شود.',
 			'dashicons-share'
 		);
 		?>
@@ -48,20 +47,13 @@ function hodima_social_admin_render(): void {
 			<p class="hodima-socials-admin__empty" data-hodima-social-empty <?php echo $items ? 'hidden' : ''; ?>>هنوز شبکه‌ای اضافه نکرده‌اید؛ از پایین اضافه کنید. تا شبکه‌ای نباشد، نوار نمایش داده نمی‌شود.</p>
 
 			<div class="hodima-socials-admin__toolbar">
-				<label class="screen-reader-text" for="hodima-social-add-preset">شبکه‌ای که اضافه شود</label>
-				<select id="hodima-social-add-preset" data-hodima-social-preset>
-					<?php foreach ( $presets as $key => $label ) : ?>
-						<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></option>
-					<?php endforeach; ?>
-					<option value="custom">شبکه دلخواه…</option>
-				</select>
 				<button type="button" class="button" data-hodima-social-add data-max="<?php echo (int) HODIMA_SOCIAL_MAX; ?>">
 					<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> افزودن شبکه
 				</button>
 			</div>
 
 			<template data-hodima-social-template>
-				<?php hodima_social_admin_item( [ 'id' => '__UID__', 'key' => 'custom', 'label' => '', 'url' => '', 'icon_id' => 0 ] ); ?>
+				<?php hodima_social_admin_item( [ 'id' => '__UID__', 'label' => '', 'url' => '', 'icon_id' => 0 ] ); ?>
 			</template>
 		</div>
 	</section>
@@ -71,7 +63,7 @@ function hodima_social_admin_render(): void {
 /**
  * یک ردیف شبکه.
  *
- * @param array{id:string, key:string, label:string, url:string, icon_id:int} $item
+ * @param array{id:string, label:string, url:string, icon_id:int} $item
  */
 function hodima_social_admin_item( array $item ): void {
 
@@ -80,8 +72,6 @@ function hodima_social_admin_item( array $item ): void {
 	$icon_id = (int) $item['icon_id'];
 	?>
 	<li class="hodima-socials-admin__item" data-hodima-social-item>
-		<input type="hidden" name="<?php echo esc_attr( $base ); ?>[key]" value="<?php echo esc_attr( $item['key'] ); ?>">
-
 		<span class="hodima-socials-admin__move">
 			<button type="button" class="button-link" data-hodima-social-move="up" aria-label="انتقال به بالا"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
 			<button type="button" class="button-link" data-hodima-social-move="down" aria-label="انتقال به پایین"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
@@ -94,7 +84,8 @@ function hodima_social_admin_item( array $item ): void {
 
 		<span class="hodima-socials-admin__cell hodima-socials-admin__cell--url">
 			<label class="hodima-field__label" for="<?php echo esc_attr( $dom_id ); ?>-url">آدرس صفحه</label>
-			<input type="url" id="<?php echo esc_attr( $dom_id ); ?>-url" name="<?php echo esc_attr( $base ); ?>[url]" value="<?php echo esc_attr( $item['url'] ); ?>" dir="ltr" placeholder="https://" data-hodima-social-url>
+			<input type="text" inputmode="url" id="<?php echo esc_attr( $dom_id ); ?>-url" name="<?php echo esc_attr( $base ); ?>[url]" value="<?php echo esc_attr( $item['url'] ); ?>" dir="ltr" placeholder="https://" autocomplete="off" spellcheck="false" data-hodima-social-url>
+			<span class="hodima-socials-admin__hint" data-hodima-social-hint<?php echo '' !== $item['url'] ? ' hidden' : ''; ?>>بدون آدرس ذخیره نمی‌شود</span>
 		</span>
 
 		<span class="hodima-socials-admin__cell hodima-socials-admin__cell--icon">

@@ -292,12 +292,12 @@ const HODIMA_SOCIAL_OPTION = 'hodima_social_links';
 const HODIMA_SOCIAL_MAX    = 20; // سقف منطقی تعداد شبکه‌ها
 
 /**
- * شبکه‌های آماده در منوی «افزودن شبکه» (فقط نام پیشنهادی؛ آیکون را مدیر از کتابخانه رسانه می‌گذارد).
+ * نام شبکه‌های ثابت قدیمی (۳.۲.۲ و پیش از آن) — فقط برای خواندن داده قدیمی؛ شبکه تازه را مدیر خودش پر می‌کند.
  *
  * @return array<string, string> شناسه => نام نمایشی
  */
-function hodima_social_networks(): array {
-	return (array) apply_filters( 'hodima_social_networks', [
+function hodima_social_legacy_networks(): array {
+	return [
 		'instagram' => 'اینستاگرام',
 		'telegram'  => 'تلگرام',
 		'whatsapp'  => 'واتس‌اپ',
@@ -307,7 +307,7 @@ function hodima_social_networks(): array {
 		'bale'      => 'بله',
 		'youtube'   => 'یوتیوب',
 		'linkedin'  => 'لینکدین',
-	] );
+	];
 }
 
 /**
@@ -1567,31 +1567,32 @@ function hodima_contact_channels(): array {
 }
 
 /**
- * یک ردیف شبکه ← شکل استاندارد (نامعتبر = null). نام خالی از شبکه آماده یا دامنه آدرس ساخته می‌شود.
+ * یک ردیف شبکه ← شکل استاندارد (بی‌آدرس = null). آدرس بدون http(s) با https:// کامل می‌شود؛
+ * نام خالی از دامنه آدرس ساخته می‌شود.
  *
  * @param array<string, mixed> $row
- * @return array{id:string, key:string, label:string, url:string, icon_id:int}|null
+ * @return array{id:string, label:string, url:string, icon_id:int}|null
  */
 function hodima_social_clean_item( array $row ): ?array {
 
-	$url = esc_url_raw( trim( (string) ( $row['url'] ?? '' ) ), [ 'https', 'http' ] );
+	$url = trim( (string) ( $row['url'] ?? '' ) );
+	if ( '' !== $url && ! preg_match( '#^[a-z][a-z0-9+.-]*:#i', $url ) ) {
+		$url = 'https://' . ltrim( $url, '/' );
+	}
+	$url = esc_url_raw( $url, [ 'https', 'http' ] );
 	if ( '' === $url ) {
 		return null;
 	}
 
-	$presets = hodima_social_networks();
-	$key     = sanitize_key( (string) ( $row['key'] ?? '' ) );
-	$key     = isset( $presets[ $key ] ) ? $key : 'custom';
-	$label   = mb_substr( sanitize_text_field( (string) ( $row['label'] ?? '' ) ), 0, 40 );
+	$label = mb_substr( sanitize_text_field( (string) ( $row['label'] ?? '' ) ), 0, 40 );
 	if ( '' === $label ) {
-		$label = $presets[ $key ] ?? (string) preg_replace( '/^www\./', '', (string) wp_parse_url( $url, PHP_URL_HOST ) );
+		$label = (string) preg_replace( '/^www\./', '', (string) wp_parse_url( $url, PHP_URL_HOST ) );
 	}
 
 	$icon = absint( $row['icon_id'] ?? 0 );
 
 	return [
 		'id'      => preg_replace( '/[^a-z0-9]/', '', strtolower( (string) ( $row['id'] ?? '' ) ) ) ?: 'n' . substr( md5( $url . $label ), 0, 8 ),
-		'key'     => $key,
 		'label'   => $label,
 		'url'     => $url,
 		'icon_id' => $icon && wp_attachment_is_image( $icon ) ? $icon : 0,
@@ -1602,16 +1603,15 @@ function hodima_social_clean_item( array $row ): ?array {
  * شبکه‌های قدیمی (۳.۲.۲ و پیش از آن): دو کلید social_{شبکه}_url و _icon در گزینه تنظیمات.
  *
  * @param array<string, mixed> $settings گزینه خام تنظیمات
- * @return list<array{id:string, key:string, label:string, url:string, icon_id:int}>
+ * @return list<array{id:string, label:string, url:string, icon_id:int}>
  */
 function hodima_social_legacy_items( array $settings ): array {
 
 	$items = [];
 
-	foreach ( hodima_social_networks() as $key => $label ) {
+	foreach ( hodima_social_legacy_networks() as $key => $label ) {
 		$item = hodima_social_clean_item( [
 			'id'      => 'legacy' . $key,
-			'key'     => $key,
 			'label'   => $label,
 			'url'     => (string) ( $settings[ "social_{$key}_url" ] ?? '' ),
 			'icon_id' => (int) ( $settings[ "social_{$key}_icon" ] ?? 0 ),
@@ -1632,7 +1632,7 @@ function hodima_social_saved(): bool {
 /**
  * شبکه‌های اجتماعی نوار فوتر، به ترتیب مدیر.
  *
- * @return list<array{id:string, key:string, label:string, url:string, icon_id:int}>
+ * @return list<array{id:string, label:string, url:string, icon_id:int}>
  */
 function hodima_social_links(): array {
 
@@ -1656,7 +1656,7 @@ function hodima_social_links(): array {
  * پاک‌سازی فرم: هر ردیف با کلید یکتا، ترتیب = ترتیب ارسال؛ ردیف بی‌آدرس کنار گذاشته می‌شود.
  * بدون نشانه _sent (ذخیره از جای دیگر) مقدار قبلی می‌ماند.
  *
- * @return list<array{id:string, key:string, label:string, url:string, icon_id:int}>
+ * @return list<array{id:string, label:string, url:string, icon_id:int}>
  */
 function hodima_social_sanitize( mixed $input ): array {
 

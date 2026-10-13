@@ -1080,9 +1080,15 @@
 
 .hodima-socials-admin__toolbar {
 	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 0.5rem;
+}
+
+.hodima-socials-admin__hint {
+	color: var(--hs-warning, #996800);
+	font-size: 0.75rem;
+
+	&[hidden] {
+		display: none;
+	}
 }
 
 /* ── رنگ (3.0.1) ───────────────────────────────────────────────

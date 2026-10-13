@@ -594,17 +594,17 @@
 	};
 
 	/**
-	 * تب «شبکه‌های اجتماعی»: فهرست پویا (inc/theme-settings/social-admin.php) — افزودن از شبکه‌های آماده
-	 * یا دلخواه، حذف با تایید، جابه‌جایی با دکمه‌های بالا/پایین (همان ترتیب ارسال فرم = ترتیب نوار).
+	 * تب «شبکه‌های اجتماعی»: فهرست پویا (inc/theme-settings/social-admin.php) — «افزودن شبکه» یک ردیف
+	 * خالی می‌آورد (نام، آدرس و آیکون را مدیر پر می‌کند)، حذف با تایید، جابه‌جایی با دکمه‌های بالا/پایین
+	 * (همان ترتیب ارسال فرم = ترتیب نوار).
 	 */
 	const initSocials = (root) => {
 		const list = root.querySelector('[data-hodima-social-list]');
 		const empty = root.querySelector('[data-hodima-social-empty]');
-		const preset = root.querySelector('[data-hodima-social-preset]');
 		const addBtn = root.querySelector('[data-hodima-social-add]');
 		const template = root.querySelector('template[data-hodima-social-template]');
 
-		if (!list || !preset || !addBtn || !template) {
+		if (!list || !addBtn || !template) {
 			return;
 		}
 
@@ -645,15 +645,17 @@
 			const holder = document.createElement('div');
 			holder.innerHTML = template.innerHTML.replaceAll('__UID__', uid);
 			const item = holder.firstElementChild;
-			const key = preset.value;
-			item.querySelector(`input[name$="[key]"]`).value = key;
-			if (key !== 'custom') {
-				item.querySelector('[data-hodima-social-label]').value = preset.selectedOptions[0].textContent.trim();
-			}
 			list.append(item);
 			item.querySelectorAll('[data-hodima-media]').forEach(initMediaField);
-			announce(`شبکه ${nameOf(item)} اضافه شد`);
-			item.querySelector('[data-hodima-social-url]').focus();
+			announce('ردیف شبکه تازه اضافه شد');
+			item.querySelector('[data-hodima-social-label]').focus();
+		});
+
+		// ردیف بدون آدرس ذخیره نمی‌شود؛ تا آدرس نوشته نشده، یادآوری زیر کادر آدرس دیده می‌شود
+		list.addEventListener('input', (event) => {
+			if (event.target.matches('[data-hodima-social-url]')) {
+				event.target.closest('[data-hodima-social-item]').querySelector('[data-hodima-social-hint]').hidden = event.target.value.trim() !== '';
+			}
 		});
 
 		list.addEventListener('click', (event) => {
