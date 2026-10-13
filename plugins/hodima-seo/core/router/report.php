@@ -161,6 +161,130 @@ function hodima_router_inspect_base( string $path ): ?array {
 }
 
 /**
+ * آدرس با شناسه در رشته پرس‌وجو (?p=12، ?post_type=product&p=12، ?page_id=،
+ * ?cat=، ?product_cat=…). وردپرس خودش شیء را پیدا می‌کند و redirect_canonical
+ * با ۳۰۱ به آدرس اصلی می‌برد؛ پیش‌نویس، زباله‌دان یا نوع نادرست = ۴۰۴.
+ * باگ پیداشده: بخش پرس‌وجو نادیده گرفته می‌شد و /?post_type=product&p=1264
+ * «صفحه اصلی» گزارش می‌شد.
+ *
+ * @param array<string, mixed> $result
+ * @return array<string, mixed>|null null = پرس‌وجوی شناسه‌دار ندارد (مسیر تعیین می‌کند)
+ */
+function hodima_router_inspect_query( string $url, array $result ): ?array {
+
+	$query = (string) wp_parse_url( $url, PHP_URL_QUERY );
+	if ( '' === $query ) {
+		return null;
+	}
+
+	$vars = [];
+	parse_str( $query, $vars );
+
+	if ( isset( $vars['s'] ) || isset( $vars['attachment_id'] ) ) {
+		return [ 'status' => 'other' ] + $result;
+	}
+
+	$object = false; // false = این پرس‌وجو شیء مشخص نمی‌کند
+	$id     = (int) ( $vars['p'] ?? $vars['page_id'] ?? 0 );
+
+	if ( $id > 0 ) {
+		$post   = get_post( $id );
+		$type   = isset( $vars['post_type'] ) ? (string) $vars['post_type'] : '';
+		$object = $post instanceof WP_Post && 'publish' === $post->post_status && is_post_type_viewable( $post->post_type )
+			&& ( '' === $type || $type === $post->post_type ) ? $post : null;
+	} elseif ( isset( $vars['cat'] ) && (int) $vars['cat'] > 0 ) {
+		$term   = get_term( (int) $vars['cat'], 'category' );
+		$object = $term instanceof WP_Term ? $term : null;
+	} else {
+		foreach ( [ 'product_cat' => 'product_cat', 'category_name' => 'category', 'product_tag' => 'product_tag', 'tag' => 'post_tag' ] as $var => $taxonomy ) {
+			if ( isset( $vars[ $var ] ) && is_string( $vars[ $var ] ) && taxonomy_exists( $taxonomy ) ) {
+				$term   = get_term_by( 'slug', hodima_router_normalize_slug( (string) wp_basename( $vars[ $var ] ) ), $taxonomy );
+				$object = $term instanceof WP_Term ? $term : null;
+				break;
+			}
+		}
+		if ( false === $object && isset( $vars['product'] ) && is_string( $vars['product'] ) ) {
+			$posts  = get_posts( [ 'post_type' => 'product', 'name' => hodima_router_normalize_slug( $vars['product'] ), 'post_status' => 'publish', 'numberposts' => 1 ] );
+			$object = $posts[0] ?? null;
+		}
+	}
+
+	if ( false === $object ) {
+		return null;
+	}
+
+	if ( ! ( $object instanceof WP_Post || $object instanceof WP_Term ) ) {
+		return $result; // missing
+	}
+
+	return [ 'status' => 'redirect', 'object' => $object, 'target' => hodima_router_object_url( $object ), 'code' => 301 ] + $result;
+}
+
+/**
+ * کلید نمایشی یک بررسی: وضعیت، و برای قانون ریدایرکت وضعیت *مقصد* آن.
+ *   rule_ok       قانون به صفحه موجود می‌برد
+ *   rule_chain    مقصد قانون خودش دوباره ریدایرکت می‌شود
+ *   rule_broken   مقصد قانون ۴۰۴ است
+ *   rule_gone     قانون عمدا ۴۰۴/۴۱۰ می‌دهد
+ *   rule_external قانون به سایت دیگر می‌برد
+ *
+ * @param array<string, mixed> $check خروجی hodima_router_inspect_url()
+ */
+function hodima_router_check_key( array $check ): string {
+
+	if ( 'rule' !== $check['status'] ) {
+		return (string) $check['status'];
+	}
+
+	if ( in_array( (int) $check['code'], [ 404, 410 ], true ) ) {
+		return 'rule_gone';
+	}
+
+	$next = is_array( $check['next'] ?? null ) ? $check['next'] : null;
+
+	return match ( null !== $next ? (string) $next['status'] : 'missing' ) {
+		'main', 'shared', 'home', 'other' => 'rule_ok',
+		'redirect', 'rule'                => 'rule_chain',
+		'external'                        => 'rule_external',
+		default                           => 'rule_broken',
+	};
+}
+
+/**
+ * آدرس نهایی که بازدیدکننده بعد از ریدایرکت‌ها می‌بیند، یا '' اگر به ۴۰۴ می‌رسد.
+ *
+ * @param array<string, mixed> $check خروجی hodima_router_inspect_url()
+ */
+function hodima_router_final_url( array $check ): string {
+
+	for ( $hop = 0; $hop < 3; $hop++ ) {
+
+		switch ( $check['status'] ) {
+			case 'main':
+			case 'shared':
+			case 'home':
+			case 'other':
+			case 'external':
+				return (string) $check['url'];
+			case 'redirect':
+				$check = hodima_router_inspect_url( (string) $check['target'] );
+				break;
+			case 'rule':
+				$next = is_array( $check['next'] ?? null ) ? $check['next'] : null;
+				if ( null === $next || in_array( (int) $check['code'], [ 404, 410 ], true ) ) {
+					return '';
+				}
+				$check = $next;
+				break;
+			default:
+				return '';
+		}
+	}
+
+	return (string) $check['url'];
+}
+
+/**
  * وضعیت یک آدرس همان‌طور که بازدیدکننده و گوگل می‌بینند.
  *
  * status:
@@ -173,11 +297,13 @@ function hodima_router_inspect_base( string $path ): ?array {
  *   home     صفحه اصلی سایت
  *   external دامنه دیگر
  *
- * @return array{url:string, status:string, object:WP_Post|WP_Term|null, target:string, code:int, others:list<WP_Post|WP_Term>}
+ * next: برای قانون ریدایرکت، بررسی همین تابع روی مقصد قانون (یک قدم)، وگرنه null.
+ *
+ * @return array{url:string, status:string, object:WP_Post|WP_Term|null, target:string, code:int, others:list<WP_Post|WP_Term>, next:array<string, mixed>|null}
  */
-function hodima_router_inspect_url( string $url ): array {
+function hodima_router_inspect_url( string $url, int $depth = 0 ): array {
 
-	$result = [ 'url' => $url, 'status' => 'missing', 'object' => null, 'target' => '', 'code' => 0, 'others' => [] ];
+	$result = [ 'url' => $url, 'status' => 'missing', 'object' => null, 'target' => '', 'code' => 0, 'others' => [], 'next' => null ];
 
 	$path = hodima_router_url_path( $url );
 	if ( null === $path ) {
@@ -186,7 +312,18 @@ function hodima_router_inspect_url( string $url ): array {
 
 	$rule = hodima_router_redirect_rule( '/' . $path . '/' );
 	if ( null !== $rule ) {
-		return [ 'status' => 'rule', 'target' => $rule['target'], 'code' => $rule['status'] ] + $result;
+		$next = null;
+		// مقصد قانون هم سنجیده می‌شود (یک قدم؛ قانون پشت قانون = زنجیره)
+		if ( 0 === $depth && '' !== $rule['target'] && ! in_array( $rule['status'], [ 404, 410 ], true ) ) {
+			$absolute = preg_match( '#^https?://#i', $rule['target'] ) ? $rule['target'] : home_url( '/' . ltrim( $rule['target'], '/' ) );
+			$next     = hodima_router_inspect_url( $absolute, $depth + 1 );
+		}
+		return [ 'status' => 'rule', 'target' => $rule['target'], 'code' => $rule['status'], 'next' => $next ] + $result;
+	}
+
+	$by_query = hodima_router_as_visitor( static fn(): ?array => hodima_router_inspect_query( $url, $result ) );
+	if ( null !== $by_query ) {
+		return $by_query;
 	}
 
 	if ( '' === $path ) {

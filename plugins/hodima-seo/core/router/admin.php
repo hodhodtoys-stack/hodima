@@ -27,7 +27,7 @@ function hodima_router_admin_menu(): void {
 
 	if ( is_string( $hook ) && '' !== $hook ) {
 		// CSS همین صفحه فقط روی همین صفحه (بعد از ثبت admin-ui.css در اولویت ۵ Core)
-		add_action( 'load-' . $hook, static fn() => add_action( 'admin_enqueue_scripts', 'hodima_router_admin_styles', 20 ) );
+		add_action( 'load-' . $hook, static fn() => add_action( 'admin_enqueue_scripts', 'hodima_router_admin_assets', 20 ) );
 	}
 }
 
@@ -69,7 +69,15 @@ function hodima_router_object_label( WP_Post|WP_Term $object ): string {
  * پایه‌ها: کد «/product-category/» در کارت وضعیت سر خط تیره دو تکه می‌شد و در
  * متن راست‌به‌چپ مثل «/product-» و «/product/» خوانده می‌شد.
  */
-function hodima_router_admin_styles(): void {
+function hodima_router_admin_assets(): void {
+
+	// جستجوی دسته‌ای لینک‌ها (links.php)
+	$file = HODIMA_ROUTER_DIR . '/assets/router-links.js';
+	wp_enqueue_script( 'hodima-router-links', HODIMA_SEO_URL . '/core/router/assets/router-links.js', [], is_file( $file ) ? (string) filemtime( $file ) : HODIMA_SEO_VERSION, [ 'in_footer' => true, 'strategy' => 'defer' ] );
+	wp_add_inline_script( 'hodima-router-links', 'window.hodimaRouterLinks = ' . wp_json_encode( [
+		'ajax'  => admin_url( 'admin-ajax.php' ),
+		'nonce' => wp_create_nonce( 'hodima_router_links' ),
+	] ) . ';', 'before' );
 
 	if ( ! defined( 'HODIMA_ADMIN_UI_HANDLE' ) ) {
 		return; // بدون Hodima Core هدر ساده فالبک؛ ظاهر پیش‌فرض وردپرس کافی است
@@ -85,26 +93,35 @@ function hodima_router_admin_styles(): void {
 .hodima-router .hodima-router__more { margin-block-start: 1rem; }
 .hodima-router .hodima-router__more > summary { cursor: pointer; color: var(--hd-primary); font-weight: 700; }
 .hodima-router .hodima-router__more[open] > summary { margin-block-end: 0.75rem; }
+.hodima-router .hodima-router__progress { display: block; inline-size: 100%; block-size: 0.5rem; margin-block: 0.75rem; accent-color: var(--hd-primary); }
+.hodima-router .hodima-router__progress[hidden] { display: none; }
+.hodima-router .hodima-router__field { display: block; color: var(--hd-muted); font-size: 0.75rem; }
 ' );
 }
 
 /**
- * نشان وضعیت یک آدرس (خروجی hodima_router_inspect_url).
+ * نشان وضعیت یک آدرس: کلید hodima_router_check_key() (بررسی آدرس) یا وضعیت
+ * گزارش زیردسته‌ها (ok، rule، taken، lost).
  */
-function hodima_router_status_pill( string $status, int $code = 0, ?int $count = null ): string {
+function hodima_router_status_pill( string $key, ?int $count = null ): string {
 
-	[ $class, $text ] = match ( $status ) {
-		'main'     => [ 'ok', 'آدرس اصلی' ],
-		'shared'   => [ 'warn', 'آدرس اصلی، نامک مشترک' ],
-		'redirect' => [ 'ok', '۳۰۱ به آدرس اصلی' ],
-		'rule'     => in_array( $code, [ 404, 410 ], true ) ? [ 'error', 'قانون ' . number_format_i18n( $code ) ] : [ 'info', trim( 'قانون ریدایرکت ' . ( $code > 0 ? number_format_i18n( $code ) : '' ) ) ],
-		'other'    => [ 'info', 'بخش دیگر وردپرس' ],
-		'home'     => [ 'ok', 'صفحه اصلی' ],
-		'external' => [ 'warn', 'دامنه دیگر' ],
-		'ok'       => [ 'ok', 'ریدایرکت سالم' ],
-		'taken'    => [ 'error', 'گرفته شده' ],
-		'lost'     => [ 'error', 'به دسته نمی‌رسد' ],
-		default    => [ 'error', 'پیدا نشد (۴۰۴)' ],
+	[ $class, $text ] = match ( $key ) {
+		'main'          => [ 'ok', 'آدرس اصلی' ],
+		'shared'        => [ 'warn', 'آدرس اصلی، نامک مشترک' ],
+		'redirect'      => [ 'ok', '۳۰۱ به آدرس اصلی' ],
+		'rule_ok'       => [ 'ok', 'ریدایرکت سالم (قانون دستی)' ],
+		'rule_chain'    => [ 'warn', 'قانون به ریدایرکت دوباره' ],
+		'rule_broken'   => [ 'error', 'قانون به صفحه ۴۰۴' ],
+		'rule_gone'     => [ 'info', 'حذف عمدی (قانون ۴۰۴/۴۱۰)' ],
+		'rule_external' => [ 'info', 'قانون به سایت دیگر' ],
+		'rule'          => [ 'info', 'قانون ریدایرکت' ],
+		'other'         => [ 'info', 'بخش دیگر وردپرس' ],
+		'home'          => [ 'ok', 'صفحه اصلی' ],
+		'external'      => [ 'warn', 'دامنه دیگر' ],
+		'ok'            => [ 'ok', 'ریدایرکت سالم' ],
+		'taken'         => [ 'error', 'گرفته شده' ],
+		'lost'          => [ 'error', 'به دسته نمی‌رسد' ],
+		default         => [ 'error', 'پیدا نشد (۴۰۴)' ],
 	};
 
 	if ( null !== $count ) {
@@ -122,7 +139,7 @@ function hodima_router_url_code( string $url ): string {
 /**
  * توضیح وضعیت یک آدرس، به زبان مدیر سایت.
  *
- * @param array{url:string, status:string, object:WP_Post|WP_Term|null, target:string, code:int, others:list<WP_Post|WP_Term>} $check
+ * @param array<string, mixed> $check خروجی hodima_router_inspect_url()
  */
 function hodima_router_status_text( array $check ): string {
 
@@ -135,13 +152,36 @@ function hodima_router_status_text( array $check ): string {
 			. implode( '، ', array_map( 'hodima_router_object_label', $check['others'] ) )
 			. ' — اگر این آدرس قبلا مال یکی از آن‌ها بوده (مثلا در سرچ کنسول هست)، حالا صفحه دیگری نشان داده می‌شود.',
 		'redirect' => 'با ۳۰۱ به آدرس اصلی ' . $label . ' می‌رود: ' . hodima_router_url_code( $check['target'] ),
-		'rule'     => in_array( $check['code'], [ 404, 410 ], true )
-			? 'در «ابزارهای هدیما ← ریدایرکت‌ها» قانونی دارد که کد ' . number_format_i18n( (int) $check['code'] ) . ' برمی‌گرداند.'
-			: 'در «ابزارهای هدیما ← ریدایرکت‌ها» قانونی دارد که به این آدرس می‌برد: ' . hodima_router_url_code( $check['target'] ),
+		'rule'     => hodima_router_rule_text( $check ),
 		'other'    => 'مال بخش دیگری از وردپرس است (برچسب، نویسنده، بایگانی تاریخ، فید، فروشگاه و…)؛ روتر به آن دست نمی‌زند و باز شدن یا ۴۰۴ بودنش را خود وردپرس تعیین می‌کند.',
 		'home'     => 'صفحه اصلی سایت است.',
 		'external' => 'آدرس سایت دیگری است.',
 		default    => 'هیچ محصول، نوشته، برگه یا دسته‌ای با این آدرس پیدا نمی‌شود؛ بازدیدکننده صفحه ۴۰۴ می‌بیند.',
+	};
+}
+
+/**
+ * توضیح یک قانون ماژول «ریدایرکت‌ها» و سلامت مقصدش.
+ *
+ * @param array<string, mixed> $check خروجی hodima_router_inspect_url() با status=rule
+ */
+function hodima_router_rule_text( array $check ): string {
+
+	$key  = hodima_router_check_key( $check );
+	$base = 'در «ابزارهای هدیما ← ریدایرکت‌ها» قانونی دارد';
+
+	if ( 'rule_gone' === $key ) {
+		return $base . ' که کد ' . number_format_i18n( (int) $check['code'] ) . ' برمی‌گرداند (به گوگل می‌گوید صفحه عمدا حذف شده).';
+	}
+
+	$text = $base . ' که به این آدرس می‌برد: ' . hodima_router_url_code( (string) $check['target'] );
+	$next = is_array( $check['next'] ?? null ) ? $check['next'] : [];
+
+	return $text . match ( $key ) {
+		'rule_ok'       => ' — مقصد سالم است' . ( ( $next['object'] ?? null ) instanceof WP_Post || ( $next['object'] ?? null ) instanceof WP_Term ? ' (' . hodima_router_object_label( $next['object'] ) . ')' : '' ) . '.',
+		'rule_chain'    => ' — ولی مقصد خودش دوباره ریدایرکت می‌شود؛ مقصد قانون را این بگذارید: ' . hodima_router_url_code( hodima_router_final_url( $check ) ),
+		'rule_external' => ' (سایت دیگر).',
+		default         => ' — ولی مقصد ۴۰۴ است؛ در «ریدایرکت‌ها» مقصد قانون را به صفحه موجودی عوض کنید.',
 	};
 }
 
@@ -221,12 +261,7 @@ function hodima_router_render_admin(): void {
 		<?php
 		if ( '' !== $check ) {
 			$result = hodima_router_inspect_url( $check );
-			$tone   = match ( $result['status'] ) {
-				'missing', 'external' => 'warning',
-				'shared'              => 'warning',
-				'rule'                => in_array( $result['code'], [ 404, 410 ], true ) ? 'warning' : 'success',
-				default               => 'success',
-			};
+			$tone   = in_array( hodima_router_check_key( $result ), [ 'missing', 'external', 'shared', 'rule_chain', 'rule_broken' ], true ) ? 'warning' : 'success';
 			echo '<div class="hd-callout hd-callout--' . esc_attr( $tone ) . '">' . hodima_admin_icon( 'success' === $tone ? 'dashicons-yes-alt' : 'dashicons-warning' ) . '<p>' . wp_kses_post( hodima_router_status_text( $result ) ) . '</p></div>'; // phpcs:ignore
 		}
 		?>
@@ -248,13 +283,14 @@ function hodima_router_render_admin(): void {
 
 		if ( $bulk ) {
 			// مشکل‌دارها اول؛ ترتیب ورودی در هر گروه حفظ می‌شود
-			$severity = [ 'missing' => 0, 'shared' => 1, 'external' => 2, 'rule' => 3, 'other' => 4, 'redirect' => 5, 'main' => 6, 'home' => 7 ];
+			$keys     = array_map( 'hodima_router_check_key', $bulk );
+			$severity = [ 'missing' => 0, 'rule_broken' => 1, 'shared' => 2, 'rule_chain' => 3, 'external' => 4, 'rule_external' => 5, 'rule_gone' => 6, 'other' => 7, 'rule_ok' => 8, 'redirect' => 9, 'main' => 10, 'home' => 11 ];
 			$indexed  = array_keys( $bulk );
-			usort( $indexed, static fn( int $a, int $b ): int => [ $severity[ $bulk[ $a ]['status'] ] ?? 0, $a ] <=> [ $severity[ $bulk[ $b ]['status'] ] ?? 0, $b ] );
+			usort( $indexed, static fn( int $a, int $b ): int => [ $severity[ $keys[ $a ] ] ?? 0, $a ] <=> [ $severity[ $keys[ $b ] ] ?? 0, $b ] );
 
 			echo '<div class="hodima-router__summary">';
-			foreach ( array_count_values( array_column( $bulk, 'status' ) ) as $status => $count ) {
-				echo hodima_router_status_pill( (string) $status, 0, (int) $count ); // phpcs:ignore
+			foreach ( array_count_values( $keys ) as $key => $count ) {
+				echo hodima_router_status_pill( (string) $key, (int) $count ); // phpcs:ignore
 			}
 			echo '</div>';
 			?>
@@ -265,7 +301,7 @@ function hodima_router_render_admin(): void {
 					<?php foreach ( $indexed as $i ) : ?>
 						<tr>
 							<td class="hodima-router__url"><?php echo esc_html( rawurldecode( $bulk[ $i ]['url'] ) ); ?></td>
-							<td><?php echo hodima_router_status_pill( $bulk[ $i ]['status'], $bulk[ $i ]['code'] ); // phpcs:ignore ?></td>
+							<td><?php echo hodima_router_status_pill( $keys[ $i ] ); // phpcs:ignore ?></td>
 							<td><?php echo wp_kses_post( hodima_router_status_text( $bulk[ $i ] ) ); ?></td>
 						</tr>
 					<?php endforeach; ?>
@@ -275,6 +311,24 @@ function hodima_router_render_admin(): void {
 			<?php
 		}
 		?>
+	</section>
+
+	<section class="hd-card" data-hodima-router-links>
+		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-admin-links' ); // phpcs:ignore ?> لینک‌های داخلی قدیمی و خراب</h2>
+		<p class="hd-text">لینک‌هایی داخل خود سایت را پیدا می‌کند که به آدرس قدیمی (ریدایرکت‌شونده)، صفحه ۴۰۴ یا آدرس اشتباه‌نوشته‌شده می‌روند: متن و توضیح کوتاه نوشته‌ها، برگه‌ها و محصولات منتشرشده، توضیح دسته‌ها، «پیوند دلخواه» منوها و تنظیمات قالب. برای هر لینک جای آن (با دکمه ویرایش) و آدرس درست را می‌گوید؛ اصلاح با شماست و چیزی خودکار عوض نمی‌شود. جستجو دسته‌دسته انجام می‌شود و ممکن است چند دقیقه طول بکشد؛ تا پایان، صفحه را نبندید.</p>
+		<p class="hd-inline">
+			<button type="button" class="button button-primary" data-hodima-router-links-start>جستجوی لینک‌ها</button>
+			<span class="hd-muted" data-hodima-router-links-msg role="status" aria-live="polite"></span>
+		</p>
+		<progress class="hodima-router__progress" max="100" value="0" hidden data-hodima-router-links-progress></progress>
+		<div class="hodima-router__summary" hidden data-hodima-router-links-summary></div>
+		<div class="hd-table-wrap" hidden data-hodima-router-links-table>
+			<table class="widefat striped">
+				<thead><tr><th scope="col">کجا</th><th scope="col">لینک</th><th scope="col">مشکل</th><th scope="col">چه کنید</th></tr></thead>
+				<tbody></tbody>
+			</table>
+		</div>
+		<noscript><p class="hd-text">این جستجو به جاوااسکریپت نیاز دارد.</p></noscript>
 	</section>
 
 	<section class="hd-card">
@@ -288,7 +342,7 @@ function hodima_router_render_admin(): void {
 				<?php
 				foreach ( [ 'ok', 'rule', 'taken', 'lost' ] as $state ) {
 					if ( ! empty( $counts[ $state ] ) ) {
-						echo hodima_router_status_pill( $state, 0, (int) $counts[ $state ] ); // phpcs:ignore
+						echo hodima_router_status_pill( $state, (int) $counts[ $state ] ); // phpcs:ignore
 					}
 				}
 				?>
@@ -364,7 +418,7 @@ function hodima_router_render_nested_table( array $rows ): void {
 				<tr>
 					<td><?php echo hodima_router_object_label( $row['term'] ); // phpcs:ignore -- escaped inside ?></td>
 					<td class="hodima-router__url"><?php echo esc_html( rawurldecode( $row['old'] ) ); ?></td>
-					<td><?php echo hodima_router_status_pill( $row['state'], (int) ( $row['detail']['code'] ?? 0 ) ); // phpcs:ignore ?></td>
+					<td><?php echo hodima_router_status_pill( $row['state'] ); // phpcs:ignore ?></td>
 					<td>
 						<?php
 						echo match ( $row['state'] ) { // phpcs:ignore -- خروجی توابع escape شده
