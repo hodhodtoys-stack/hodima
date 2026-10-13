@@ -430,9 +430,9 @@ p.footer-copyright {
 	max-inline-size: calc(var(--hodima-container) - 2 * var(--socials-gutter));
 	margin-block-start: 2px;
 	margin-inline: auto;
-	/* گوشه‌های بالا ۵px گرد تا با بخش بالایی یکی شود؛ پایین به فوتر چسبیده است */
-	border-start-start-radius: calc(5px * var(--hodima-radius-scale));
-	border-start-end-radius: calc(5px * var(--hodima-radius-scale));
+	/* گوشه‌های بالا ۱۰px گرد (تا 3.3.0: ۵px) تا با بخش‌های دیگر یکدست شود؛ پایین به فوتر چسبیده است */
+	border-start-start-radius: calc(10px * var(--hodima-radius-scale));
+	border-start-end-radius: calc(10px * var(--hodima-radius-scale));
 	direction: rtl;
 	padding: 1.75rem 1.25rem 2rem;
 	background: linear-gradient(180deg, color-mix(in srgb, var(--hodima-third, #b6c2f3) 22%, #ffffff) 0%, #ffffff 100%);
