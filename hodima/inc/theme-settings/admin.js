@@ -628,39 +628,6 @@
 			announce(`«${labelOf(item)}» جابه‌جا شد: ردیف ${items().indexOf(item) + 1} از ${items().length}`);
 		};
 
-		/** نشانه‌های نوار بخش («فقط دسکتاپ»، «زمان‌بندی‌شده») با تغییر گزینه‌های «نمایش پیشرفته» به‌روز می‌شوند. */
-		const updateChips = (item) => {
-			const chips = item?.querySelector('[data-hodima-home-chips]');
-			if (!chips) {
-				return;
-			}
-			chips.querySelectorAll('[data-chip]').forEach((chip) => chip.remove());
-			const add = (text, kind, title = '') => {
-				const chip = document.createElement('span');
-				chip.className = 'hodima-home__chip';
-				chip.dataset.chip = kind;
-				chip.textContent = text;
-				if (title) {
-					chip.title = title;
-				}
-				chips.append(chip);
-			};
-			const device = item.querySelector('[data-hodima-home-device]')?.selectedOptions[0]?.dataset.chip ?? '';
-			const start = item.querySelector('[data-hodima-home-start]')?.value ?? '';
-			const end = item.querySelector('[data-hodima-home-end]')?.value ?? '';
-			if (device) {
-				add(device, 'device');
-			}
-			if (start || end) {
-				add('زمان‌بندی‌شده', 'schedule', [start && `از ${start}`, end && `تا ${end}`].filter(Boolean).join(' '));
-			}
-		};
-		list.addEventListener('change', (event) => {
-			if (event.target.closest?.('[data-hodima-home-common]')) {
-				updateChips(event.target.closest('[data-hodima-home-item]'));
-			}
-		});
-
 		/** کپی بخش (فقط انواع چندنمونه‌ای): همه مقدارهای فعلی فرم، با شناسه تازه، درست زیر بخش اصلی. */
 		const duplicate = (item) => {
 			const uidOf = (element) => element.querySelector('[name]')?.getAttribute('name')?.match(/\[([^\]]+)\]/)?.[1];

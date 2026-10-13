@@ -1582,37 +1582,7 @@ input.hodima-color__swatch {
 }
 
 /* گزینه‌های مشترک هر بخش: نمایش در دستگاه و زمان‌بندی */
-.hodima-home__common {
-	margin: 0;
-	padding: 0.5rem 0 0;
-	border-block-start: 1px dashed var(--hs-border);
-
-	& > summary {
-		color: var(--hs-secondary);
-		font-size: 0.8125rem;
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	& > summary:focus-visible {
-		outline: 2px solid var(--hs-secondary);
-		outline-offset: 2px;
-		border-radius: 0.25rem;
-	}
-}
-
-.hodima-home__common-fields {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 0.75rem 1.25rem;
-	padding-block-start: 0.75rem;
-
-	@media (width <= 782px) {
-		grid-template-columns: minmax(0, 1fr);
-	}
-}
-
-/* نشانه‌های نوار بخش: هشدار، دستگاه، زمان‌بندی */
+/* نشانه هشدار کنار نام بخش */
 .hodima-home__chips {
 	display: inline-flex;
 	flex-wrap: wrap;

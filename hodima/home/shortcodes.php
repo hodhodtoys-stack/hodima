@@ -128,44 +128,99 @@ add_action('init', function() {
 			]);
 		});
 	}
+	// ج) شورت‌کد هر دسته‌بندی (مثل [plasco]): دیگر هنگام init برای همه دسته‌ها ثبت نمی‌شود؛ فقط وقتی
+	// متنی از آن استفاده کند (hodima_home_ensure_category_shortcodes پایین)
+} );
 
-	// ج) شورت‌کد خودکار برای دسته‌بندی‌های ووکامرس (مثل [plasco])
-	if ( function_exists('hodima_home_product_slider') ) {
+// ========================================================================
+// شورت‌کد هر دسته‌بندی (مثل [plasco])، تنبل
+// ------------------------------------------------------------------------
+// تا 3.1.7 هر درخواست (فرانت، پیشخوان، ajax) برای همه دسته‌ها یک شورت‌کد ثبت می‌کرد، حتی در
+// صفحه‌ای که هیچ‌کدام در آن نیست. حالا فقط شورت‌کدهای به‌کاررفته در متن همان لحظه ثبت می‌شوند.
+// ========================================================================
 
-		// سه رنگ برند به نوبت (از پالت: با عوض شدن پالت همراه می‌شود)
-		$brand_colors = [
-			Hodima_Home_Tone::Primary->css(),
-			Hodima_Home_Tone::Secondary->css(),
-			Hodima_Home_Tone::Third->css(),
-		];
+/**
+ * رنگ زمینه شورت‌کد هر دسته: سه رنگ برند به نوبت، به ترتیب فهرست دسته‌ها (همان منطق قبلی)؛ دسته‌ای
+ * که نامکش شورت‌کد دیگری است نوبت نمی‌گیرد. در هر درخواست یک‌بار محاسبه می‌شود.
+ *
+ * @return array<string, string> نامک ← مقدار CSS
+ */
+function hodima_home_category_shortcode_colors(): array {
 
-		$color_index = 0;
+	static $colors = null;
 
-		foreach ( hodima_home_category_shortcode_map() as $slug => $name ) {
-
-			// شورت‌کدهای ثبت‌شده بالاتر را بازنویسی نکن
-			if ( shortcode_exists( $slug ) ) {
-				continue;
-			}
-
-			$bg_color = $brand_colors[ $color_index % 3 ];
-			$color_index++;
-
-			add_shortcode( $slug, function($atts) use ( $slug, $name, $bg_color ) {
-				$atts = shortcode_atts([
-					'limit'    => 12,
-					'title'    => $name,
-					'bg_color' => $bg_color
-				], $atts);
-
-				return hodima_home_product_slider([
-					'title'    => $atts['title'],
-					'link'     => $slug,
-					'category' => $slug,
-					'limit'    => $atts['limit'],
-					'bg_color' => $atts['bg_color'],
-				]);
-			});
-		}
+	if ( null !== $colors ) {
+		return $colors;
 	}
-});
+
+	$cycle  = [ Hodima_Home_Tone::Primary->css(), Hodima_Home_Tone::Secondary->css(), Hodima_Home_Tone::Third->css() ];
+	$colors = [];
+	$index  = 0;
+
+	foreach ( array_keys( hodima_home_category_shortcode_map() ) as $slug ) {
+		$slug = (string) $slug;
+		if ( shortcode_exists( $slug ) ) {
+			continue;
+		}
+		$colors[ $slug ] = $cycle[ $index % 3 ];
+		++$index;
+	}
+
+	return $colors;
+}
+
+/**
+ * شورت‌کد دسته‌هایی که در این متن آمده‌اند را ثبت کن (پیش از do_shortcode).
+ */
+function hodima_home_ensure_category_shortcodes( string $text ): void {
+
+	if ( ! function_exists( 'hodima_home_product_slider' ) || ! str_contains( $text, '[' ) || ! preg_match_all( '/\[([^\s\]\/<>&=\[]+)/u', $text, $found ) ) {
+		return;
+	}
+
+	$map  = hodima_home_category_shortcode_map();
+	$tags = array_intersect( array_unique( $found[1] ), array_map( 'strval', array_keys( $map ) ) );
+
+	if ( ! $tags ) {
+		return;
+	}
+
+	$colors = hodima_home_category_shortcode_colors();
+
+	foreach ( $tags as $slug ) {
+
+		// شورت‌کدی که قبلا ثبت شده (از جمله همین‌جا) یا نامک بی‌رنگ (شورت‌کد دیگری است) را دوباره ثبت نکن
+		if ( ! isset( $colors[ $slug ] ) || shortcode_exists( $slug ) ) {
+			continue;
+		}
+
+		$name     = (string) $map[ $slug ];
+		$bg_color = $colors[ $slug ];
+
+		add_shortcode( $slug, static function ( mixed $atts ) use ( $slug, $name, $bg_color ): string {
+			$atts = shortcode_atts( [
+				'limit'    => 12,
+				'title'    => $name,
+				'bg_color' => $bg_color,
+			], is_array( $atts ) ? $atts : [] );
+
+			return hodima_home_product_slider( [
+				'title'    => $atts['title'],
+				'link'     => $slug,
+				'category' => $slug,
+				'limit'    => $atts['limit'],
+				'bg_color' => $atts['bg_color'],
+			] );
+		} );
+	}
+}
+
+// پیش از do_shortcode (اولویت ۱۱) و wpautop (۱۰) محتوا
+add_filter( 'the_content', static function ( mixed $content ): mixed {
+
+	if ( is_string( $content ) ) {
+		hodima_home_ensure_category_shortcodes( $content );
+	}
+
+	return $content;
+}, 9 );

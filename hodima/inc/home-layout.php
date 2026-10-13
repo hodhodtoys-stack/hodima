@@ -113,6 +113,30 @@ function hodima_home_section_types(): array {
 				'tone'      => [ 'type' => 'tone', 'label' => 'رنگ زمینه', 'default' => 'third' ],
 			],
 		],
+		'features'   => [
+			'label'  => 'مزایا',
+			'icon'   => 'dashicons-awards',
+			'single' => false,
+			'help'   => 'چند کاشی کوتاه برای معرفی مزیت‌ها (مثل ارسال سریع، ضمانت اصالت). مستقل از ستون وسط «معرفی و ویدیو» است.',
+			'fields' => [
+				'title'    => [ 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'چرا هدهدلی؟' ],
+				'subtitle' => [ 'type' => 'text', 'label' => 'زیرعنوان (اختیاری)', 'default' => '' ],
+				'items'    => [ 'type' => 'lines', 'label' => 'مزیت‌ها', 'help' => 'هر خط یک مزیت. برای افزودن توضیح کوتاه، بعد از عنوان علامت | بگذارید؛ مثل: ارسال سریع | سفارش‌ها تا ۴۸ ساعت ارسال می‌شود.', 'default' => [] ],
+				'tone'     => [ 'type' => 'tone', 'label' => 'رنگ زمینه', 'default' => 'none' ],
+			],
+		],
+		'cta'        => [
+			'label'  => 'دعوت به اقدام',
+			'icon'   => 'dashicons-megaphone',
+			'single' => false,
+			'help'   => 'یک نوار با عنوان، متن کوتاه و دکمه (مثل «ثبت‌نام همکاری در فروش»).',
+			'fields' => [
+				'title'       => [ 'type' => 'text', 'label' => 'عنوان', 'default' => '' ],
+				'text'        => [ 'type' => 'text', 'label' => 'متن کوتاه', 'default' => '' ],
+				'button_text' => [ 'type' => 'text', 'label' => 'متن دکمه', 'default' => '' ],
+				'link'        => [ 'type' => 'link', 'label' => 'لینک دکمه', 'help' => 'آدرس کامل یا نامک؛ بدون لینک دکمه نمایش داده نمی‌شود.', 'default' => '' ],
+			],
+		],
 		'content'    => [
 			'label'  => 'متن برگه صفحه اصلی',
 			'icon'   => 'dashicons-media-text',
@@ -185,60 +209,6 @@ function hodima_home_product_sources(): array {
 		'sale'        => 'تخفیف‌دار',
 		'featured'    => 'ویژه (ستاره‌دار)',
 	];
-}
-
-/**
- * گزینه‌های مشترک همه بخش‌ها (جدا از فیلدهای هر نوع): نمایش در کدام دستگاه و زمان‌بندی.
- *
- * @return array{device:string, start:string, end:string}
- */
-function hodima_home_common_defaults(): array {
-	return [ 'device' => 'all', 'start' => '', 'end' => '' ];
-}
-
-/** @return array<string, string> */
-function hodima_home_devices(): array {
-	return [
-		'all'     => 'همه دستگاه‌ها',
-		'desktop' => 'فقط دسکتاپ و تبلت افقی',
-		'mobile'  => 'فقط موبایل و تبلت عمودی',
-	];
-}
-
-/**
- * مقدار تمیز گزینه‌های مشترک از یک ردیف (ذخیره‌شده یا ورودی فرم).
- *
- * @param array<mixed> $row
- * @return array{device:string, start:string, end:string}
- */
-function hodima_home_clean_common( array $row ): array {
-
-	$clean_date = static function ( mixed $raw ): string {
-		$raw = is_string( $raw ) ? trim( $raw ) : '';
-		return preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $raw, $m ) && checkdate( (int) $m[2], (int) $m[3], (int) $m[1] ) ? $raw : '';
-	};
-
-	return [
-		'device' => isset( hodima_home_devices()[ (string) ( $row['device'] ?? '' ) ] ) ? (string) $row['device'] : 'all',
-		'start'  => $clean_date( $row['start'] ?? '' ),
-		'end'    => $clean_date( $row['end'] ?? '' ),
-	];
-}
-
-/**
- * آیا بخش در زمان‌بندی‌اش «الان» نمایش داده شود؟ (به وقت سایت؛ شروع و پایان هر دو شاملِ همان روزند.)
- *
- * @param array<string, mixed> $item
- */
-function hodima_home_section_visible( array $item, ?int $now = null ): bool {
-
-	$today = wp_date( 'Y-m-d', $now );
-
-	if ( '' !== (string) ( $item['start'] ?? '' ) && $today < $item['start'] ) {
-		return false;
-	}
-
-	return ! ( '' !== (string) ( $item['end'] ?? '' ) && $today > $item['end'] );
 }
 
 /**
@@ -323,8 +293,7 @@ function hodima_home_normalize_layout( array $items ): array {
 
 		$entry = [ 'id' => $id, 'type' => $type, 'enabled' => ! empty( $item['enabled'] ) ]
 			+ array_intersect_key( $item, $types[ $type ]['fields'] )
-			+ hodima_home_section_defaults( $type )
-			+ hodima_home_clean_common( $item );
+			+ hodima_home_section_defaults( $type );
 
 		// «محتوای دلخواه» با چند شورت‌کد/بلوک پشت‌سرهم ← هر کدام بخش جدا (3.1.3)
 		if ( 'custom' === $type ) {
@@ -517,7 +486,7 @@ function hodima_home_sanitize_layout( $input ): array {
 			'id'      => sanitize_key( (string) ( $row['id'] ?? '' ) ),
 			'type'    => $type,
 			'enabled' => ! empty( $row['enabled'] ),
-		] + hodima_home_clean_common( (array) $row );
+		];
 
 		// فیلد نفرستاده = پیش‌فرض (فرم همه فیلدها را می‌فرستد؛ این برای ورودی از کد است)
 		foreach ( $types[ $type ]['fields'] as $key => $field ) {
@@ -617,6 +586,15 @@ function hodima_home_section_warning( array $item ): string {
 			}
 			return 0 === $term->count ? 'این دسته محصولی ندارد؛ بخش نمایش داده نمی‌شود' : '';
 
+		case 'features':
+			return [] === (array) $item['items'] ? 'مزیتی نوشته نشده؛ نمایش داده نمی‌شود' : '';
+
+		case 'cta':
+			if ( '' === trim( (string) $item['title'] ) ) {
+				return 'عنوان خالی است؛ نمایش داده نمی‌شود';
+			}
+			return '' !== (string) $item['link'] && ! hodima_home_link_resolves( (string) $item['link'] ) ? 'لینک دکمه به صفحه‌ای نمی‌رسد' : '';
+
 		case 'latest':
 			return ! hodima_home_link_resolves( (string) $item['link'] ) ? 'لینک «مشاهده همه» به صفحه‌ای نمی‌رسد' : '';
 
@@ -625,6 +603,7 @@ function hodima_home_section_warning( array $item ): string {
 			if ( '' === $html ) {
 				return 'خالی است؛ نمایش داده نمی‌شود';
 			}
+			hodima_home_ensure_category_shortcodes( $html );
 			if ( preg_match( '/^\[([^\s\]\/]+)[^\]]*\]$/', $html, $tag ) && ! shortcode_exists( $tag[1] ) ) {
 				return sprintf( 'شورت‌کد [%s] ثبت نشده (افزونه‌اش فعال است؟)', $tag[1] );
 			}
@@ -693,6 +672,8 @@ function hodima_home_layout_from_content( ?string $content = null ): array {
 		$front_id = (int) get_option( 'page_on_front' );
 		$content  = $front_id > 0 ? (string) get_post_field( 'post_content', $front_id ) : '';
 	}
+
+	hodima_home_ensure_category_shortcodes( $content ); // شورت‌کد دسته‌ها تنبل ثبت می‌شوند؛ خواندن متن به آن‌ها نیاز دارد
 
 	$items      = [];
 	$pending    = '';
@@ -821,23 +802,15 @@ add_filter( 'frontpage_template', static fn( $template ) => hodima_home_builder_
  */
 function hodima_home_render_section( array $item ): void {
 
-	if ( ! hodima_home_section_visible( $item ) ) {
-		return;
-	}
-
-	$args   = array_diff_key( $item, [ 'id' => 1, 'type' => 1, 'enabled' => 1, 'device' => 1, 'start' => 1, 'end' => 1 ] );
-	$device = (string) ( $item['device'] ?? 'all' );
-
-	// «فقط دسکتاپ/موبایل»: پوشش بدون جعبه (display: contents) که CSS در عرض مناسب پنهانش می‌کند
-	if ( 'all' !== $device ) {
-		echo '<div class="hodima-device hodima-device--' . esc_attr( $device ) . '">';
-	}
+	$args = array_diff_key( $item, [ 'id' => 1, 'type' => 1, 'enabled' => 1 ] );
 
 	switch ( $item['type'] ) {
 
 		case 'intro':
 		case 'categories':
 		case 'blog':
+		case 'features':
+		case 'cta':
 			get_template_part( 'home/parts/' . $item['type'], null, $args );
 			break;
 
@@ -879,14 +852,12 @@ function hodima_home_render_section( array $item ): void {
 
 		case 'custom':
 			if ( '' !== (string) $args['html'] ) {
+				hodima_home_ensure_category_shortcodes( (string) $args['html'] ); // شورت‌کد دسته (مثل [plasco]) فقط هنگام نیاز ثبت می‌شود
 				echo do_shortcode( (string) $args['html'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- محتوای مدیر (هنگام ذخیره پاک‌سازی شد)
 			}
 			break;
 	}
 
-	if ( 'all' !== $device ) {
-		echo '</div>';
-	}
 }
 
 /* =========================================================================
@@ -904,34 +875,5 @@ add_action( 'add_option_' . HODIMA_HOME_LAYOUT_OPTION, 'hodima_home_layout_purge
 
 function hodima_home_layout_purge(): void {
 	hodima_home_purge_page_cache();
-	hodima_home_schedule_purges();
+	wp_unschedule_hook( 'hodima_home_scheduled_purge' ); // رویدادهای زمان‌بندی 3.1.6 (حذف‌شده)؛ اگر مانده‌اند پاک شوند
 }
-
-/**
- * بخش زمان‌بندی‌شده (شروع/پایان): کش HTML صفحه اصلی باید درست در آغاز و پایان بازه پاک شود،
- * وگرنه تا پایان عمر کش، بخش دیر پیدا یا دیر ناپدید می‌شود. برای هر تاریخ آینده یک رویداد
- * یک‌باره ثبت می‌شود (آغاز روز شروع، و آغاز روز بعد از پایان؛ به وقت سایت).
- */
-function hodima_home_schedule_purges(): void {
-
-	wp_unschedule_hook( 'hodima_home_scheduled_purge' );
-
-	$zone = wp_timezone();
-
-	foreach ( hodima_home_layout() as $item ) {
-		foreach ( [ 'start' => '+0 day', 'end' => '+1 day' ] as $key => $shift ) {
-			if ( '' === (string) $item[ $key ] ) {
-				continue;
-			}
-			try {
-				$when = ( new DateTimeImmutable( $item[ $key ] . ' 00:00:00', $zone ) )->modify( $shift )->getTimestamp();
-			} catch ( Exception ) {
-				continue;
-			}
-			if ( $when > time() ) {
-				wp_schedule_single_event( $when, 'hodima_home_scheduled_purge' );
-			}
-		}
-	}
-}
-add_action( 'hodima_home_scheduled_purge', 'hodima_home_purge_page_cache' );

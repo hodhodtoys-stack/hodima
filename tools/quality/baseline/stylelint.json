@@ -43,7 +43,7 @@
 		"declaration-no-important": 18
 	},
 	"hodima/home/home.css": {
-		"declaration-no-important": 34,
+		"declaration-no-important": 26,
 		"no-descending-specificity": 3
 	},
 	"hodima/inc/theme-settings/admin.css": {
