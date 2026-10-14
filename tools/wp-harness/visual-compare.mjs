@@ -101,6 +101,30 @@ async function snapshot( browser, htmlFile, root, vp, shotPath ) {
 		}
 		return out;
 	} );
+	/*
+	 * HODIMA_VISUAL_FORCE="<انتخابگر>": حالت‌های :hover/:focus/:focus-visible/:active روی عنصرهای آن
+	 * انتخابگر (با CDP) روشن می‌شود و استایل محاسبه‌شان هم مقایسه می‌شود (نمونه‌های تزریق‌شده
+	 * important-compare.sh؛ عنصری که در صفحه نیست حالت‌دارش را ندیده‌ایم).
+	 */
+	if ( process.env.HODIMA_VISUAL_FORCE ) {
+		const sel = process.env.HODIMA_VISUAL_FORCE;
+		const cdp = await ctx.newCDPSession( page );
+		await cdp.send( 'DOM.enable' );
+		await cdp.send( 'CSS.enable' );
+		const { root } = await cdp.send( 'DOM.getDocument', { depth: 0 } );
+		const { nodeIds } = await cdp.send( 'DOM.querySelectorAll', { nodeId: root.nodeId, selector: sel } );
+		for ( const state of [ 'hover', 'focus', 'focus-visible', 'active' ] ) {
+			for ( const nodeId of nodeIds ) await cdp.send( 'CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [ state ] } );
+			const extra = await page.evaluate( ( [ q, st ] ) => [ ...document.querySelectorAll( q ) ].map( ( el ) => {
+				const cs = getComputedStyle( el );
+				const props = {};
+				for ( let i = 0; i < cs.length; i++ ) props[ cs[ i ] ] = cs.getPropertyValue( cs[ i ] );
+				return { el: `[${ st }] ${ el.tagName.toLowerCase() }${ el.id ? `#${ el.id }` : '' }${ el.classList.length ? `.${ [ ...el.classList ].join( '.' ) }` : '' }`, props };
+			} ), [ sel, state ] );
+			styles.push( ...extra );
+			for ( const nodeId of nodeIds ) await cdp.send( 'CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] } );
+		}
+	}
 	await page.screenshot( { path: shotPath, fullPage: true } );
 	await ctx.close();
 	return styles;

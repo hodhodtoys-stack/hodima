@@ -138,7 +138,7 @@
 	gap: 0.5rem;
 	align-items: flex-start;
 	margin-bottom: 0.75rem;
-	color: var(--footer-text) !important;
+	color: var(--footer-text);
 	text-decoration: none;
 	font-style: normal;
 }

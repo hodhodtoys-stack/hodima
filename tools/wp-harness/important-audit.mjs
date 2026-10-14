@@ -228,7 +228,9 @@ for ( const [ outDir, wpRoot ] of pairs ) {
 				if ( '/__page__' === p ) {
 					// فایل‌های CSS که این صفحه‌ها نمی‌گیرند ولی عنصرشان را دارند (مثلا home/home.css روی صفحه‌های دارای بخش معرفی/FAQ): HODIMA_AUDIT_EXTRA_CSS=home/home.css
 					const extra = ( process.env.HODIMA_AUDIT_EXTRA_CSS || '' ).split( ',' ).filter( Boolean ).map( ( x ) => `<link rel="stylesheet" href="/wp-content/themes/hodima/${ x }">` ).join( '' );
-					const html = fs.readFileSync( path.join( outDir, f ), 'utf8' ).replace( '</head>', `${ extra }</head>` );
+					// HODIMA_AUDIT_INJECT=فایل.html: عنصرهای نمونه‌ای که در داده آزمایشی نیستند (پاپ‌آپ هدر، منوی باز، ویدیوی embed…) پیش از </body> به همه صفحه‌ها اضافه می‌شوند
+					const inject = process.env.HODIMA_AUDIT_INJECT ? fs.readFileSync( process.env.HODIMA_AUDIT_INJECT, 'utf8' ) : '';
+					const html = fs.readFileSync( path.join( outDir, f ), 'utf8' ).replace( '</head>', `${ extra }</head>` ).replace( '</body>', `${ inject }</body>` );
 					return route.fulfill( { contentType: 'text/html; charset=utf-8', body: html } );
 				}
 				if ( p.startsWith( '/wp-content/themes/hodima/' ) ) {
@@ -320,6 +322,7 @@ for ( const [ id, d ] of decls ) {
 }
 console.log( 'فایل'.padEnd( 34 ), 'کل', 'حذف', 'بی‌عنصر', 'ووکامرس', 'لازم' );
 for ( const [ f, s ] of [ ...byFile ].sort() ) console.log( f.padEnd( 36 ), String( s.total ).padStart( 3 ), String( s.removable ).padStart( 4 ), String( s.unmatched ).padStart( 6 ), String( s.foreign ).padStart( 6 ), String( s.needed ).padStart( 5 ) );
+if ( process.env.HODIMA_AUDIT_VERBOSE ) for ( const [ id, d ] of decls ) if ( ! matched.has( id ) ) console.log( `  بی‌عنصر ${ d.file }:${ d.line } ${ d.prop } ← ${ d.selectors.join( ' | ' ).slice( 0, 90 ) }` );
 if ( process.env.HODIMA_AUDIT_VERBOSE ) for ( const [ id, why ] of reasons ) console.log( `  لازم ${ decls.get( id ).file }:${ decls.get( id ).line } ${ decls.get( id ).prop } ← ${ why }` );
 
 if ( apply ) {

@@ -88,7 +88,7 @@
 	width: 100%;
 	/* stylelint-disable-next-line declaration-no-important -- رنگ ووکامرس a.button.alt */
 	background: var(--hodima-button-bg) !important;
-	color: #fff !important;
+	color: #fff;
 	font-size: 1rem;
 	font-weight: 800;
 	text-align: center;

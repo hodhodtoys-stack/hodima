@@ -275,7 +275,7 @@
 
 .btn-support {
 	background-color: var(--clr-white);
-	color: var(--clr-text-dark) !important;
+	color: var(--clr-text-dark);
 	border: 1px solid rgb(255 255 255 / 0.08);
 	border-radius: var(--hodima-radius-lg);
 	padding: 0.625rem 1.125rem;
@@ -293,14 +293,14 @@
 	&:hover,
 	&:focus-visible {
 		transform: translateY(-2px);
-		color: var(--clr-text-dark) !important;
+		color: var(--clr-text-dark);
 		box-shadow: var(--shadow-button-hover);
 		outline: none;
 	}
 
 	& svg {
-		stroke: var(--clr-secondary) !important;
-		fill: none !important;
+		stroke: var(--clr-secondary);
+		fill: none;
 		stroke-width: 2;
 		width: 1.25rem;
 		height: 1.25rem;
@@ -577,10 +577,10 @@ dialog.overlay {
 	position: absolute;
 	top: 0.625rem;
 	inset-inline-end: 0.625rem;
-	background: transparent !important;
-	border: none !important;
-	box-shadow: none !important;
-	outline: none !important;
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	outline: none;
 	appearance: none;
 	width: 2.1875rem;
 	height: 2.1875rem;
@@ -589,8 +589,8 @@ dialog.overlay {
 	justify-content: center;
 	font-size: 1.75rem;
 	line-height: 1;
-	border-radius: 0 !important;
-	color: var(--clr-secondary) !important;
+	border-radius: 0;
+	color: var(--clr-secondary);
 	cursor: pointer;
 	transition: color var(--transition-base), transform var(--transition-fast);
 
@@ -598,16 +598,16 @@ dialog.overlay {
 	&:focus,
 	&:active,
 	&:focus-visible {
-		background: transparent !important;
-		border: none !important;
-		box-shadow: none !important;
-		outline: none !important;
+		background: transparent;
+		border: none;
+		box-shadow: none;
+		outline: none;
 		appearance: none;
 	}
 
 	&:hover,
 	&:focus-visible {
-		color: var(--clr-primary) !important;
+		color: var(--clr-primary);
 		transform: scale(1.08);
 	}
 }
@@ -630,7 +630,7 @@ dialog.overlay {
 	&:hover,
 	&:focus-visible {
 		transform: scale(1.03);
-		color: var(--clr-white) !important;
+		color: var(--clr-white);
 		outline: 2px solid var(--clr-secondary);
 		outline-offset: 2px;
 	}
@@ -639,8 +639,8 @@ dialog.overlay {
 	& i {
 		width: 1.375rem;
 		height: 1.375rem;
-		fill: #ffffff !important;
-		color: #ffffff !important;
+		fill: #ffffff;
+		color: #ffffff;
 	}
 }
 
@@ -655,7 +655,7 @@ dialog.overlay {
    ۸. سیستم قفل اسکرول حرفه‌ای و بهینه
 ========================================================== */
 body.menu-is-open {
-	overflow: hidden !important;
+	overflow: hidden;
 }
 
 /* ==========================================================
@@ -669,7 +669,7 @@ body.menu-is-open {
 .btn-support:hover,
 .btn-support:focus,
 .btn-support:active {
-	color: #f2eded !important;
+	color: #f2eded;
 }
 
 /* آیکون دکمه پشتیبانی - هماهنگ با رنگ متن */
@@ -677,8 +677,8 @@ body.menu-is-open {
 .btn-support:hover svg,
 .btn-support:focus svg,
 .btn-support:active svg {
-	stroke: #f2eded !important;
-	fill: none !important;
+	stroke: #f2eded;
+	fill: none;
 }
 
 /* ==========================================================

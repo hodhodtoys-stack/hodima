@@ -21,6 +21,8 @@ HODIMA_VISUAL_WIDTHS="1180,1000,800,420" tools/wp-harness/visual-compare.sh   # 
 # ووکامرس واقعی (نسخه دوم ابزار در /tmp/hodima-harness-wc؛ بار اول wc-setup.sh خودکار)
 tools/wp-harness/visual-compare.sh --wc            # محصول ساده/متغیر/ناموجود/حراج، فروشگاه، دسته، سبد، پرداخت…
 tools/wp-harness/important-audit.sh [--apply]      # !importantهای زائد قالب (آبشار واقعی همه CSSها، ۴۰ صفحه × ۱۰ عرض)
+# عنصرهای غایب از داده آزمایشی: HODIMA_AUDIT_INJECT=tools/wp-harness/important-audit-inject.html (+ HODIMA_AUDIT_EXTRA_CSS) روی important-audit.sh
+tools/wp-harness/important-compare.sh [ref] [صفحه…]  # استایل محاسبه‌شده همان نمونه‌های تزریق‌شده قبل/بعد (hover/focus/active اجباری)
 
 # هم‌ارزی CSS قانون‌به‌قانون (بدون صفحه؛ همه فایل‌ها حتی single-product.css که صفحه‌اش در ابزار تست نیست)
 tools/wp-harness/css-equiv.sh            # CSS آخرین commit در برابر کار فعلی

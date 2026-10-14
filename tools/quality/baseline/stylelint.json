@@ -1,13 +1,8 @@
 {
-	"hodima/assets/css/cart-page.css": {
-		"declaration-no-important": 1
-	},
 	"hodima/assets/css/footer.css": {
-		"declaration-no-important": 1,
 		"no-descending-specificity": 4
 	},
 	"hodima/assets/css/header.css": {
-		"declaration-no-important": 22,
 		"no-descending-specificity": 3
 	},
 	"hodima/assets/css/product-card.css": {
@@ -17,7 +12,7 @@
 	"hodima/assets/css/single-product.css": {
 		"csstools/use-logical": 3,
 		"declaration-block-no-redundant-longhand-properties": 9,
-		"declaration-no-important": 22,
+		"declaration-no-important": 9,
 		"declaration-property-value-keyword-no-deprecated": 1,
 		"no-descending-specificity": 11,
 		"property-no-vendor-prefix": 1,
@@ -25,14 +20,12 @@
 	},
 	"hodima/assets/css/taxonomy-product_cat.css": {
 		"csstools/use-logical": 4,
-		"declaration-no-important": 8,
 		"no-descending-specificity": 7
 	},
 	"hodima/assets/css/template-page-videos.css": {
 		"declaration-no-important": 1
 	},
 	"hodima/home/home.css": {
-		"declaration-no-important": 24,
 		"no-descending-specificity": 3
 	},
 	"hodima/inc/theme-settings/admin.css": {
@@ -43,7 +36,7 @@
 	},
 	"hodima/style.css": {
 		"csstools/use-logical": 1,
-		"declaration-no-important": 3,
+		"declaration-no-important": 2,
 		"no-descending-specificity": 12
 	}
 }

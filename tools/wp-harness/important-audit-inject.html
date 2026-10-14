@@ -1,0 +1,57 @@
+<!-- عنصرهای نمونه برای important-audit.sh (HODIMA_AUDIT_INJECT): عنصرهایی که در داده آزمایشی نیستند.
+     نشانه‌گذاری از قالب‌های واقعی کپی شده (header.php، footer.php، home/parts/intro.php، home/cards.php،
+     woocommerce/content-single-product.php، archive-product.php)؛ هر قالبی عوض شد این فایل را هم به‌روز کن. -->
+<div id="hximp-sample">
+	<!-- هدر: دکمه پشتیبانی و پاپ‌آپ -->
+	<div class="header__left">
+		<button class="btn-support" id="supportTrigger" type="button"><svg viewBox="0 0 24 24"><path d="M3 18v-6"/></svg><span>پشتیبانی</span></button>
+	</div>
+	<dialog class="overlay" id="supportOverlay"><article class="popup">
+		<button class="popup__close" id="supportClose" type="button">&times;</button>
+		<h3 class="popup__title">ارتباط</h3>
+		<a href="#" class="popup__link popup__link--whatsapp"><svg viewBox="0 0 24 24"><path d="M1 1"/></svg> واتساپ</a>
+		<a href="#" class="popup__link popup__link--phone"><i></i> تلفن</a>
+	</article></dialog>
+	<!-- فوتر -->
+	<address class="footer-address"><a class="footer-address__link" href="#">آدرس</a><span>متن</span></address>
+	<!-- سبد -->
+	<div class="woocommerce"><div class="cart-collaterals"><div class="wc-proceed-to-checkout"><a href="#" class="checkout-button button alt wc-forward">پرداخت</a></div></div></div>
+	<!-- نوار مسیر و مرتب‌سازی دسته -->
+	<div class="section-breadcrumb"><nav class="woocommerce-breadcrumb"><p>a</p><ul><li><span>b</span></li></ul><span>c</span></nav></div>
+	<div class="hodima-sort-bar">
+		<button type="button" class="hodima-sort-btn active" aria-pressed="true">محبوب</button>
+		<button type="button" class="hodima-sort-btn has-dropdown">قیمت</button>
+		<div class="hodima-sort-dropdown"><button type="button" class="hodima-sort-sub-btn active" aria-pressed="true">ارزان</button></div>
+	</div>
+	<!-- عمومی -->
+	<div class="alignfull">پهن</div>
+	<div class="woocommerce product-card-scope"><ul class="products"><li class="product"><a class="button" href="#">افزودن</a><span class="star-rating"><span>★</span></span><h3>t</h3></li></ul></div>
+	<!-- صفحه اصلی: معرفی، ویدیو، کارت -->
+	<section class="arian-section section-intro-media"><div class="intro-media-wrapper">
+		<div class="intro-content-box"><h1 class="section-col-title">عنوان</h1><div class="intro-hook-content"><p>الف</p><p>ب</p></div></div>
+		<div class="intro-middle-space"><div class="about-features-inline"><h2 class="section-col-title">اهداف</h2><ul class="features-list"><li>یک</li></ul></div></div>
+		<div class="intro-video-box"><h2 class="section-col-title">ویدیو</h2><div class="video-content-wrapper"><p><br><iframe src="about:blank"></iframe></p><div class="fluid-width-video-wrapper"><iframe src="about:blank"></iframe></div><video></video></div></div>
+	</div></section>
+	<div class="arian-card"><div class="arian-card-info"><h3 class="arian-card-name"><a href="#">نام</a></h3><div class="arian-card-price"><p><span class="price"><del><span class="woocommerce-Price-amount amount"><bdi>10</bdi></span></del> <ins><span class="woocommerce-Price-amount amount"><bdi>9</bdi></span></ins></span></p></div></div></div>
+	<!-- صفحه محصول -->
+	<div class="woocommerce"><div class="hodima-page-wrapper custom-product-page-container">
+		<main class="hodima-section-box section-product-main"><div class="product custom-single-product-wrapper">
+			<div class="custom-product-gallery"><div class="sp-gallery"><button type="button" class="sp-gallery__zoom"><span>+</span></button></div></div>
+			<div class="custom-product-summary">
+				<h1 class="product_title entry-title">محصول</h1>
+				<div class="product-rating-box"></div>
+				<dl class="wholesale-price-container"><div class="unit-price-line"><dt>قیمت</dt><dd class="unit-price"><span class="price"><del><bdi>1</bdi></del><ins><bdi>2</bdi></ins></span></dd></div></dl>
+				<div class="woocommerce-product-details__short-description"><p>خلاصه</p></div>
+				<div class="woocommerce-variation-price"><span class="price"><del><span class="amount"><bdi>1</bdi></span></del><ins><span class="amount"><bdi>2</bdi></span></ins></span></div>
+				<div class="hp-buy-row"><div class="product-add-to-cart-box"><form class="cart"><div class="woocommerce-variation-add-to-cart"><button type="submit" class="single_add_to_cart_button button alt">خرید</button></div></form></div></div>
+			</div>
+		</div></main>
+		<section class="hodima-section-box section-upsells product-card-scope">
+			<section class="up-sells upsells products"><ul class="products"><li class="product">1</li><li class="product">2</li><li class="product">3</li><li class="product">4</li><li class="product">5</li><li class="product">6</li><li class="product">7</li><li class="product">8</li></ul></section>
+			<section class="related products"><ul class="products"><li class="product">r</li></ul></section>
+		</section>
+		<section class="hodima-section-box section-reviews"><div id="reviews"><div id="comments"><ol class="commentlist"><li><div class="comment-text"><p class="meta">متا</p></div></li></ol></div>
+			<div id="review_form"><form><p class="stars selected"><span><a class="star-1" href="#">1</a><a class="star-2 active" href="#">2</a><a class="star-3" href="#">3</a></span></p></form></div></div></section>
+	</div></div>
+</div>
+<script>document.body.classList.add('menu-is-open');</script>

@@ -244,8 +244,8 @@
 	gap: 24px;
 	align-items: start;
 	/* حذف هرگونه فاصله از پایین گرید */
-	padding-bottom: 0 !important;
-	margin-bottom: 0 !important;
+	padding-bottom: 0;
+	margin-bottom: 0;
 }
 
 /* --- ساختار ستون‌ها --- */
@@ -256,7 +256,7 @@
 	display: flex;
 	flex-direction: column;
 	width: 100%;
-	margin-bottom: 0 !important;
+	margin-bottom: 0;
 }
 
 /* --- تنظیمات یکپارچه عنوان‌ها --- */
@@ -286,9 +286,9 @@ h1.section-col-title {
 
 /* 🔥 راهکار قطعی: کشیدن ویدئو به سمت بالا با Margin منفی برای خنثی کردن فواصل مخفی وردپرس 🔥 */
 .intro-video-box .section-col-title {
-	margin-bottom: -15px !important; /* این عدد ویدئو را به زور بالا می‌کشد */
-	padding-bottom: 0 !important;
-	line-height: 1 !important;
+	margin-bottom: -15px; /* این عدد ویدئو را به زور بالا می‌کشد */
+	padding-bottom: 0;
+	line-height: 1;
 	position: relative;
 	z-index: 5; /* تا عنوان زیر ویدیو نرود */
 }
@@ -317,8 +317,8 @@ h1.section-col-title {
 	/* 🔥 از بین بردن فاصله پایین آخرین پاراگراف که باعث کش آمدن کل باکس می‌شود 🔥 */
 	& > *:last-child,
 	& p:last-child {
-		margin-bottom: 0 !important;
-		padding-bottom: 0 !important;
+		margin-bottom: 0;
+		padding-bottom: 0;
 	}
 }
 
@@ -330,7 +330,7 @@ h1.section-col-title {
 .features-list {
 	list-style: none;
 	padding: 0;
-	margin: 0 !important;
+	margin: 0;
 	display: grid;
 	grid-template-columns: 1fr;
 	gap: var(--hodima-space-4);
@@ -373,18 +373,18 @@ h1.section-col-title {
 	width: 100%;
 	display: flex;
 	flex-direction: column;
-	margin-top: 0 !important;
-	margin-bottom: 0 !important;
+	margin-top: 0;
+	margin-bottom: 0;
 
 	/* 🔥 قتل عام تگ‌های مخفی وردپرس (br و p) 🔥 */
 	& br {
-		display: none !important;
+		display: none;
 	}
 
 	& p {
-		margin: 0 !important;
-		padding: 0 !important;
-		line-height: 0 !important;
+		margin: 0;
+		padding: 0;
+		line-height: 0;
 	}
 
 	& iframe,
@@ -393,8 +393,8 @@ h1.section-col-title {
 	& object,
 	& .wp-video,
 	& .fluid-width-video-wrapper {
-		display: block !important;
-		width: 100% !important;
+		display: block;
+		width: 100%;
 		height: auto;
 		max-width: 100%;
 		border: 0;
@@ -402,8 +402,8 @@ h1.section-col-title {
 		box-shadow: 0 4px 16px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.06);
 		aspect-ratio: 16 / 9;
 		object-fit: cover;
-		margin: 0 !important;
-		padding: 0 !important;
+		margin: 0;
+		padding: 0;
 	}
 }
 
@@ -427,7 +427,7 @@ h1.section-col-title {
 
 	/* تنظیم مجدد مارجین منفی در موبایل اگر نیاز بود */
 	.intro-video-box .section-col-title {
-		margin-bottom: -10px !important;
+		margin-bottom: -10px;
 	}
 }
 
@@ -527,7 +527,7 @@ h1.section-col-title {
 	line-height: 1.3;
 	color: var(--arian-text);
 	/* !important لازم: قانون عمومی لینک‌های محتوا زیرخط می‌گذارد (با پیکسل‌دیف سنجیده شد) */
-	text-decoration: none !important;
+	text-decoration: none;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
@@ -555,8 +555,8 @@ h1.section-col-title {
 	& ins,
 	& del,
 	& bdi {
-		margin: 0 !important;
-		padding: 0 !important;
+		margin: 0;
+		padding: 0;
 		line-height: inherit;
 	}
 
@@ -564,7 +564,7 @@ h1.section-col-title {
 		color: var(--arian-muted);
 		font-size: 0.85em;
 		/* !important لازم: قانون بالاتر margin را صفر می‌کند */
-		margin-inline-end: var(--hodima-space-1) !important;
+		margin-inline-end: var(--hodima-space-1);
 		font-weight: normal;
 	}
 }
