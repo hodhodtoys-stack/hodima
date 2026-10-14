@@ -27,7 +27,7 @@ get_header();
     ?>
 
         <!-- 1. بخش مسیرنما (Breadcrumb): همان مسیر اسکیما (inc/breadcrumb.php) -->
-        <section class="hodima-section-box section-breadcrumb">
+        <section class="section-breadcrumb">
             <?php echo hodima_breadcrumb_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در inc/breadcrumb.php ?>
         </section>
 

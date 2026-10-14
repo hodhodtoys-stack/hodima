@@ -6,59 +6,13 @@
  * ========================================================================= */
 
 :root {
-	--cat-max-width: var(--hodima-container);
-	--section-gap: 10px;
-	--cat-radius: var(--hodima-radius-xl);
-	--cat-shadow: var(--hodima-shadow-xs);
-	--cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
-	--cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
 	--cat-grid-gap: 15px;
 	--cat-grid-gap-mobile: 10px;
-}
-
-.hodima-section-box {
-	width: 100%;
-	border-radius: var(--cat-radius); /* 12px مطابق مرجع */
-	box-shadow: var(--cat-shadow);
-	box-sizing: border-box;
-	padding: var(--hodima-space-7);
-	background: #fff;
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-}
-
-.section-breadcrumb {
-	background-color: var(--cat-bg-light-blue, var(--hodima-surface-soft, #f7f9fd));
-	padding: var(--hodima-space-4) var(--hodima-space-7); /* مطابق مرجع */
-	border-radius: var(--hodima-radius-md); /* مطابق مرجع */
-	margin: 0 auto;
-	font-size: 0.85rem;
-	color: var(--hodima-text-muted, #5d6785);
-	display: block;
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	max-width: calc(var(--hodima-container) - 40px); /* مطابق مرجع (۴۰px کمتر از عرض محتوا) */
-	width: 100%;
-	box-sizing: border-box;
-	font-family: inherit;
-	line-height: 1.5;
-
-	& a {
-		color: var(--hodima-text-dark, #111111);
-		text-decoration: none;
-		transition: color 0.25s ease;
-		font-weight: 500;
-		font-family: inherit;
-
-		&:hover {
-			color: var(--hodima-primary, #25316a);
-		}
-	}
 }
 
 .shop-custom-header {
 	background: linear-gradient(135deg, var(--hodima-surface-soft, #f7f9fd) 0%, var(--hodima-bg-gray, #eef2f8) 100%);
 	text-align: center;
-	padding: var(--hodima-space-8) var(--hodima-space-6);
-	border-radius: var(--cat-radius);
 }
 
 .shop-header-content {
@@ -129,14 +83,6 @@
 }
 
 @media (width <= 768px) {
-	:root {
-		--section-gap: 8px;
-	}
-
-	.shop-custom-header {
-		padding: var(--hodima-space-7) var(--hodima-space-4);
-	}
-
 	.shop-header-content p {
 		font-size: 1rem;
 	}
@@ -156,15 +102,9 @@
 	}
 }
 
-@media (width <= 480px) {
-	:root {
-		--section-gap: 6px;
-	}
-}
-
 /* سربرگ فشرده: صفحات ۲ به بعد، برچسب‌ها، جستجو */
 .shop-custom-header--compact {
-	padding: 14px var(--hodima-space-7);
+	padding-block: var(--hodima-space-6);
 }
 
 /* از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۱۹٫۲px */

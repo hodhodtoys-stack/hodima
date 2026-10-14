@@ -14,9 +14,6 @@
 		"declaration-no-important": 18,
 		"font-family-no-missing-generic-family-keyword": 1
 	},
-	"hodima/assets/css/single-post.css": {
-		"no-descending-specificity": 4
-	},
 	"hodima/assets/css/single-product.css": {
 		"csstools/use-logical": 3,
 		"declaration-block-no-redundant-longhand-properties": 9,
@@ -28,11 +25,11 @@
 	},
 	"hodima/assets/css/taxonomy-product_cat.css": {
 		"csstools/use-logical": 4,
-		"declaration-no-important": 18,
+		"declaration-no-important": 16,
 		"no-descending-specificity": 7
 	},
 	"hodima/assets/css/template-page-videos.css": {
-		"declaration-no-important": 13
+		"declaration-no-important": 12
 	},
 	"hodima/home/home.css": {
 		"declaration-no-important": 25,

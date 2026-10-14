@@ -4,52 +4,15 @@
  * ========================================================================= */
 
 :root {
-	--cat-max-width: var(--hodima-container);
-	--cat-gap: 8px;
-	--cat-radius: var(--hodima-radius-xl);
-	--cat-shadow: var(--hodima-shadow-xs);
-	--cat-bg-light-blue: var(--hodima-bg-light, #f6f8fc);
-	--cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
 	--cat-grid-gap: 15px;
 	--cat-grid-gap-mobile: 8px;
 }
 
-.hodima-page-wrapper {
-	display: block; /* قاب مشترک (page-layout.css) ستونی است؛ فاصله بخش‌های مقاله margin خودشان است */
-	max-width: var(--cat-max-width);
-	margin: 0 auto;
-	padding: 5px var(--hodima-space-4);
-	box-sizing: border-box;
-}
-
-.hodima-section-box {
-	background: #fff;
-	border-radius: var(--cat-radius);
-	box-shadow: var(--cat-shadow);
-	margin: 5px 0;
-	padding: var(--hodima-space-8);
-	box-sizing: border-box;
-}
-
-.hodima-section-box.section-breadcrumb {
-	background-color: var(--cat-bg-light-blue);
-	padding: 1px var(--hodima-space-4);
-	border-radius: var(--hodima-radius-lg);
-	margin: 5px auto;
-	font-size: 0.85rem;
-	line-height: 1.5;
-	color: var(--hodima-text-muted, #5d6785);
-	display: block;
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	max-width: var(--cat-max-width);
-	width: 100%;
-	box-sizing: border-box;
-	font-family: inherit;
-
-	/* مسیر راهنما (inc/breadcrumb.php): همان فاصله و رنگ‌های مسیر قبلی (<p> با استایل inline) */
+/* نوار مسیر راهنما (inc/breadcrumb.php): ظاهر مشترک page-layout.css؛ فاصله بالا و پایین با padding نوار است نه margin فهرست */
+.section-breadcrumb {
 	& .hodima-breadcrumb {
 		& .hodima-breadcrumb__list {
-			margin-block: 1em;
+			margin-block: 0;
 		}
 
 		& a {
@@ -65,7 +28,6 @@
 
 .section-intro-media {
 	background-color: var(--cat-bg-light-blue);
-	padding: var(--hodima-space-7) var(--hodima-space-8);
 }
 
 .section-description,
@@ -75,7 +37,6 @@
 
 .section-voice-faq {
 	background-color: var(--cat-bg-light-blue);
-	padding: var(--hodima-space-4) var(--hodima-space-8);
 }
 
 .video-thumbnail-wrapper {
@@ -452,7 +413,6 @@
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: var(--hodima-space-5);
-	margin: 5px 0;
 }
 
 .single-post-nav__link {

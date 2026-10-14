@@ -4,42 +4,15 @@
  * ========================================================================= */
 
 :root {
-	--cat-max-width: var(--hodima-container);
-	--cat-gap: 10px;
-	--cat-radius: var(--hodima-radius-xl);
-	--cat-shadow: var(--hodima-shadow-xs);
-	--cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
-	--cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
 	--cat-grid-gap: 1px;
 	--cat-grid-gap-mobile: 8px;
-	--section-gap: 10px;
 }
 
-.hodima-section-box {
-	width: 100%;
-	border-radius: var(--cat-radius);
-	box-shadow: var(--cat-shadow);
-	box-sizing: border-box;
-	padding: var(--hodima-space-4);
-	background: #fff;
-}
-
-/* --- تنظیمات جدید بردکرامب --- */
+/* نوار مسیر راهنما (ووکامرس): ظاهر مشترک page-layout.css؛ این‌جا فقط چیدمان flex و پاک‌کردن فاصله تگ‌های ووکامرس */
 .section-breadcrumb {
-	background-color: var(--cat-bg-light-blue);
-	padding: var(--hodima-space-2) var(--hodima-space-6);
-	border-radius: var(--hodima-radius-lg);
-	margin: 0 auto;
-	font-size: 0.85rem;
-	color: var(--hodima-text-muted, #5d6785);
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	max-width: var(--cat-max-width);
-	box-sizing: border-box;
-	font-family: inherit !important;
-	line-height: 1.5;
 	min-height: 35px;
 
 	/* حذف مارجین تگ‌های داخلی که باعث کش آمدن ارتفاع می‌شوند */
@@ -54,10 +27,6 @@
 
 	& a {
 		color: var(--hodima-text-dark, #111111) !important;
-		text-decoration: none;
-		transition: color 0.25s ease;
-		font-weight: 500;
-		font-family: inherit !important;
 
 		&:hover {
 			color: var(--hodima-primary, #25316a) !important;
@@ -102,10 +71,10 @@
 	border-bottom-right-radius: 0;
 
 	& + .section-faq {
-		margin-top: calc(var(--cat-gap) * -1) !important;
+		margin-top: calc(var(--hodima-section-gap) * -1) !important;
 		border-top-left-radius: 0 !important;
 		border-top-right-radius: 0 !important;
-		box-shadow: var(--cat-shadow) !important;
+		box-shadow: var(--hodima-shadow-xs) !important;
 	}
 }
 
@@ -368,11 +337,6 @@
 	.section-products.is-loading ul.products {
 		transition: none;
 	}
-}
-
-/* سربرگ فشرده archive-product.php (برچسب‌های محصول و جستجو هم از این قالب استفاده می‌کنند) */
-.shop-custom-header--compact {
-	padding: 14px var(--hodima-space-7);
 }
 
 /* از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۱۹٫۲px */

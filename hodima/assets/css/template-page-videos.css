@@ -4,49 +4,11 @@
  * «.videos-pagination ul.page-numbers» یکی شدند. ظاهر بدون تغییر.
  * ========================================================================= */
 
-.section-breadcrumb {
-	background-color: var(--cat-bg-light-blue, var(--hodima-surface-soft, #f7f9fd));
-	padding: var(--hodima-space-4) var(--hodima-space-7);
-	border-radius: var(--hodima-radius-lg);
-	margin: 0 auto;
-	font-size: 0.85rem;
-	color: var(--hodima-text-muted, #5d6785);
-	display: block;
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	max-width: var(--cat-max-width, var(--hodima-container));
-	width: 100%;
-	box-sizing: border-box;
-	font-family: inherit;
-	min-height: auto;
-	line-height: 1.4;
-
-	& a {
-		color: var(--hodima-text-dark, #111111);
-		text-decoration: none;
-		transition: color 0.25s ease;
-		font-weight: 500;
-		font-family: inherit !important;
-
-		&:hover {
-			color: var(--hodima-primary, #25316a);
-		}
-	}
-}
-
 .video-page-section {
 	margin: 0 auto;
 	padding: 0;
-	max-width: var(--cat-max-width, var(--hodima-container));
+	max-width: var(--hodima-container);
 	width: 100%;
-	box-sizing: border-box;
-}
-
-.videos-page-container {
-	background: #fff;
-	padding: var(--hodima-space-4) var(--hodima-space-7);
-	border-radius: var(--hodima-radius-xl);
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	box-shadow: var(--hodima-shadow-xs);
 	box-sizing: border-box;
 }
 
@@ -143,13 +105,6 @@
 		gap: var(--hodima-space-4);
 	}
 
-	.videos-page-container {
-		padding: var(--hodima-space-4);
-	}
-
-	.section-breadcrumb {
-		padding: var(--hodima-space-4);
-	}
 }
 
 @media (width <= 768px) {

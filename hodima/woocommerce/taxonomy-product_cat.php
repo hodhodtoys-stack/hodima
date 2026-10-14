@@ -52,7 +52,7 @@ get_header( 'shop' );
 	<?php do_action( 'woocommerce_before_main_content' ); ?>
 
 	<?php // woocommerce_breadcrumb() خودش <nav aria-label> چاپ می‌کند؛ اینجا فقط ظرف ?>
-	<div class="hodima-section-box section-breadcrumb">
+	<div class="section-breadcrumb">
 		<?php woocommerce_breadcrumb(); ?>
 	</div>
 

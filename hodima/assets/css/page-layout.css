@@ -1,18 +1,30 @@
 /* =========================================================================
- * قاب مشترک صفحه‌های محتوایی (.hodima-page-wrapper)
- * وبلاگ و جستجو، فروشگاه، دسته محصول و برگه ویدیوها هر کدام قاب را جدا (با مقدار کمی
- * متفاوت) تعریف می‌کردند و شیوه فروشگاه !important می‌خواست تا از قاب وبلاگ جلو بیفتد.
- * مقدار «مطابق مرجع» وبلاگ/فروشگاه مبنا شد. هر صفحه فاصله خودش را با --section-gap
- * عوض می‌کند (همان متغیر صفحه). مقاله (single-post.css) ساختار دیگری دارد و بازنویسی می‌کند.
+ * ریتم و باکس مشترک صفحه‌های محتوایی (3.5.0)
+ *
+ * تا 3.4.x هر صفحه (محصول، مقاله، فروشگاه، دسته، وبلاگ، ویدیوها) قاب، باکس سکشن و نوار مسیر
+ * را جدا و با مقدار خودش تعریف می‌کرد: فاصله سکشن‌ها ۵ تا ۱۰، padding باکس ۱۰ تا ۲۵،
+ * حاشیه و سایه گاهی بود و گاهی نه، عرض محتوا ۱۲۶۰ یا ۱۲۸۰. این رقابت قانون‌های هم‌وزن
+ * دلیل بیشتر !importantهای زائد بود. حالا یک جا:
+ *   .hodima-page-wrapper  قاب صفحه: عرض، فاصله از لبه، فاصله بین سکشن‌ها (--hodima-section-gap)
+ *   .hodima-section-box   باکس سکشن: padding --hodima-section-pad، حاشیه، گوشه، سایه
+ *   .section-breadcrumb   نوار مسیر راهنما
+ * مقدارها: tokens.css. هر صفحه فقط چیزی را اضافه می‌کند که واقعا مال خودش است (رنگ زمینه،
+ * چیدمان داخلی)، نه اندازه و فاصله. استثنا: مقاله (single-post.css، ساختار بلوکی) قاب را
+ * flex نمی‌کند، و صفحه محصول قاب خودش (.custom-product-page-container) را دارد.
  * ========================================================================= */
 
+:root {
+	--cat-bg-light-blue: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
+	--cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
+}
+
 .hodima-page-wrapper {
-	max-width: var(--cat-max-width, var(--hodima-container));
-	margin: var(--section-gap, 10px) auto;
+	max-width: var(--hodima-container);
+	margin: var(--hodima-section-gap) auto;
 	padding: 0 var(--hodima-space-7);
 	display: flex;
 	flex-direction: column;
-	gap: var(--section-gap, 10px);
+	gap: var(--hodima-section-gap);
 	box-sizing: border-box;
 	font-family: inherit;
 }
@@ -26,5 +38,44 @@
 @media (width <= 480px) {
 	.hodima-page-wrapper {
 		padding: 0 var(--hodima-space-4);
+	}
+}
+
+.hodima-section-box,
+.blog-page-container,
+.videos-page-container {
+	width: 100%;
+	box-sizing: border-box;
+	padding: var(--hodima-section-pad);
+	background: #fff;
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	border-radius: var(--hodima-radius-xl);
+	box-shadow: var(--hodima-shadow-xs);
+}
+
+.section-breadcrumb {
+	display: block;
+	width: 100%;
+	box-sizing: border-box;
+	margin: 0 auto;
+	padding: var(--hodima-space-2) var(--hodima-space-6);
+	background-color: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	border-radius: var(--hodima-radius-lg);
+	font-family: inherit;
+	font-size: 0.85rem;
+	line-height: 1.5;
+	color: var(--hodima-text-muted, #5d6785);
+
+	& a {
+		color: var(--hodima-text-dark, #111111);
+		text-decoration: none;
+		transition: color 0.25s ease;
+		font-weight: 500;
+		font-family: inherit;
+
+		&:hover {
+			color: var(--hodima-primary, #25316a);
+		}
 	}
 }

@@ -117,6 +117,11 @@
     --hodima-space-m:        var(--hodima-space-6);
     --hodima-space-l:        var(--hodima-space-8);
 
+    /* ── ریتم صفحه (3.5.0): فاصله بین سکشن‌ها و padding داخل باکس‌ها در همه صفحه‌ها یکی است.
+       تا 3.4.x هر صفحه مقدار خودش را داشت (فاصله ۵ تا ۱۰، padding از ۱۰ تا ۲۵). */
+    --hodima-section-gap:    10px;    /* بین سکشن‌ها و در قاب صفحه (تبلت ۸، موبایل ۶) */
+    --hodima-section-pad:    25px;    /* padding داخل باکس سکشن (تبلت ۲۰، موبایل ۱۵) */
+
     /* ── نقطه‌های شکست (فقط مرجع: متغیر CSS در @media کار نمی‌کند) ──
        نگارش واحد: بازه‌ای با <= و >=، مثلا @media (width <= 768px) و
        (width >= 993px) برای مکمل (992 + 1). < و > ممنوع است: نسخه پایین‌آورده
@@ -170,4 +175,19 @@
     --hodima-h4-size-max: 19;  --hodima-h4-size-min: 17;  --hodima-h4-weight: 700;  --hodima-h4-line-height: 1.5;  --hodima-h4-color: var(--hodima-text-dark);
     --hodima-h5-size-max: 17;  --hodima-h5-size-min: 16;  --hodima-h5-weight: 700;  --hodima-h5-line-height: 1.5;  --hodima-h5-color: var(--hodima-text-dark);
     --hodima-h6-size-max: 15;  --hodima-h6-size-min: 14;  --hodima-h6-weight: 700;  --hodima-h6-line-height: 1.5;  --hodima-h6-color: var(--hodima-text-dark);
+}
+
+/* ریتم صفحه در عرض‌های کوچک‌تر (نقطه‌های شکست اصلی قالب: ۷۶۸ و ۴۸۰) */
+@media (width <= 768px) {
+	:root {
+		--hodima-section-gap: 8px;
+		--hodima-section-pad: 20px;
+	}
+}
+
+@media (width <= 480px) {
+	:root {
+		--hodima-section-gap: 6px;
+		--hodima-section-pad: 15px;
+	}
 }

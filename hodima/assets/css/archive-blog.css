@@ -3,44 +3,10 @@
  * نوسازی قالب، مرحله ۶: nesting، خصوصیات منطقی و توکن‌ها؛ ظاهر بدون تغییر.
  * ========================================================================= */
 
-:root {
-	--section-gap: 10px;
-}
-
-.section-breadcrumb,
-.blog-page-container {
-	background: var(--hodima-bg-light, #f6f8fc);
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	box-sizing: border-box;
-}
-
-.section-breadcrumb {
-	padding: var(--hodima-space-4) var(--hodima-space-7); /* مطابق مرجع */
-	border-radius: var(--hodima-radius-md); /* مطابق مرجع */
-	margin: 0 auto;
-	font-size: 0.85rem;
-	color: var(--hodima-text-muted, #5d6785);
-	display: block;
-	max-width: calc(var(--hodima-container) - 40px); /* مطابق مرجع (۴۰px کمتر از عرض محتوا) */
-	width: 100%;
-	font-family: inherit;
-
-	& a {
-		color: var(--hodima-text-dark, #111111);
-		text-decoration: none;
-		transition: color 0.25s ease;
-		font-weight: 500;
-
-		&:hover {
-			color: var(--hodima-primary, #25316a);
-		}
-	}
-}
-
 .blog-page-section {
 	margin: 0 auto;
 	padding: 0;
-	max-width: var(--cat-max-width, var(--hodima-container));
+	max-width: var(--hodima-container);
 	width: 100%;
 	box-sizing: border-box;
 }
@@ -108,8 +74,7 @@
 
 .blog-page-container {
 	margin: 0 auto;
-	padding: var(--hodima-space-7);
-	border-radius: var(--hodima-radius-xl); /* مطابق مرجع */
+	background: var(--hodima-bg-light, #f6f8fc);
 }
 
 .blog-page-empty,
@@ -127,24 +92,6 @@
 	border-radius: var(--hodima-radius-3xl);
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
 	box-shadow: 0 2px 5px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.05);
-}
-
-@media (width <= 992px) {
-	.blog-page-container {
-		padding: var(--hodima-space-6);
-	}
-}
-
-@media (width <= 768px) {
-	:root {
-		--section-gap: 8px;
-	}
-}
-
-@media (width <= 480px) {
-	:root {
-		--section-gap: 6px;
-	}
 }
 
 .blog-archive-page {
