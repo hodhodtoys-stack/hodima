@@ -12,9 +12,9 @@
 	"hodima/assets/css/single-product.css": {
 		"csstools/use-logical": 3,
 		"declaration-block-no-redundant-longhand-properties": 9,
-		"declaration-no-important": 9,
+		"declaration-no-important": 4,
 		"declaration-property-value-keyword-no-deprecated": 1,
-		"no-descending-specificity": 11,
+		"no-descending-specificity": 10,
 		"property-no-vendor-prefix": 1,
 		"selector-attribute-quotes": 2
 	},

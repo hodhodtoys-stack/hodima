@@ -60,6 +60,15 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: flex-start;
+
+	/* فاصله بین بخش‌ها فقط اینجاست (بالا/پایین ۴، بین ۸)؛ فرزندان مستقیم margin ندارند (بخش ۱۲). تا 3.5.0 هر فرزند ۴+۴ با !important بود */
+	gap: 8px;
+	padding-block: 4px;
+
+	/* فرزندان مستقیم margin ندارند؛ فاصله از gap (استثناها: توضیح کوتاه، عنوان، ردیف خرید موبایل) */
+	& > * {
+		margin-block: 0;
+	}
 }
 
 /* ==========================================================================
@@ -433,15 +442,12 @@
 
 /* اندازه، وزن، رنگ و فاصله خطوط از تنظیم H1 (تب تایپوگرافی)؛ تا 2.9.8 ثابت ۲۷٫۲px */
 .custom-product-summary .product_title {
-	margin-top: 0;
-	margin-bottom: 15px;
 	text-align: center;
 	width: 100%;
 	display: block;
 }
 
 .product-rating-box {
-	margin-bottom: 15px;
 	font-size: 0.9rem;
 
 	& .woocommerce-product-rating {
@@ -504,8 +510,7 @@
 	}
 
 	& .woocommerce-product-details__short-description {
-		margin-top: 4px;
-		margin-bottom: 8px !important;
+		margin-bottom: 4px; /* بعد از توضیح کوتاه ۴ پیکسل بیشتر از فاصله عادی */
 
 		& table {
 			width: 100%;
@@ -540,8 +545,6 @@
 	}
 
 	& .wholesale-price-container {
-		margin-top: 8px;
-		margin-bottom: 12px;
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
@@ -677,7 +680,6 @@
 }
 
 .custom-voice-shortcode {
-	margin: 15px 0;
 	width: 100%;
 
 	& audio {
@@ -1164,9 +1166,33 @@
 		margin-top: 6px;
 	}
 
-	& > * {
-		margin-top: 4px !important;
-		margin-bottom: 4px !important;
+}
+
+/* عنوان: قانون تایپوگرافی ووکامرس قالب (style.css، margin-bottom ۱۰) را بی !important با وزن بیشتر می‌برد */
+.woocommerce div.product .custom-product-summary > .product_title {
+	margin-block: 0;
+}
+
+/*
+ * تا ۷۶۸ پیکسل خلاصه block است (بخش ۳، display: block) و gap کار نمی‌کند؛ اینجا همان فاصله‌های
+ * قبلی با margin عادی (در block روی هم می‌خوابند: ۴ پیکسل بین بخش‌ها). تبدیل این بازه به flex
+ * فاصله موبایل را ۴ به ۸ می‌برد و تصمیم ظاهری است، نه تمیزکاری.
+ */
+@media (width <= 768px) {
+	.custom-product-summary {
+		padding-block: 0;
+
+		& > * {
+			margin-block: 4px;
+		}
+
+		& .woocommerce-product-details__short-description {
+			margin-block: 4px 8px;
+		}
+	}
+
+	.woocommerce div.product .custom-product-summary > .product_title {
+		margin-block: 4px;
 	}
 }
 
@@ -1306,9 +1332,13 @@ dialog.sp-lightbox {
 			flex-wrap: nowrap;
 			align-items: center;
 			gap: 8px;
-			margin: 0 !important;
 			padding: 0;
 			border: 0;
+		}
+
+		/* margin-bottom ۲em ووکامرس (.woocommerce div.product form.cart) را بی !important با وزن بیشتر می‌برد */
+		& .product-add-to-cart-box form.cart {
+			margin: 0;
 		}
 
 		& form.cart .quantity input.qty {
@@ -1368,15 +1398,10 @@ dialog.sp-lightbox {
  * می‌افتاد. این قوانین در صفحه محصول ردیف را حفظ می‌کنند.
  * ========================================================================= */
 
-/* * فاصله از بخش بالایی.
- * قانون عمومی «.custom-product-summary > * { margin-top: 4px !important }»
- * فاصله را ۴ پیکسل نگه می‌داشت؛ اینجا ۲ پیکسل بیشتر (۶ پیکسل). */
+/* فاصله پادکست از بخش بالایی را gap خلاصه می‌دهد (تا 3.5.0 چند قانون margin-top اینجا بود که
+ * !important عمومی همه را بی‌اثر می‌کرد). */
 
 .custom-product-summary {
-	& > .custom-voice-shortcode {
-		margin-top: 6px;
-	}
-
 	& .hook-voice-wrapper--inline {
 		max-width: 100%;
 		margin: 0;
@@ -1597,13 +1622,9 @@ dialog.sp-lightbox {
 			margin-bottom: 0;
 		}
 
-		& > .custom-voice-shortcode {
-			margin-top: 4px;
-		}
-
 		/* فاصله بیشتر بین پادکست و ردیف خرید */
 		& > .hp-buy-row {
-			margin-top: 12px !important;
+			margin-top: 12px;
 			padding-top: 12px;
 		}
 	}
@@ -1708,9 +1729,5 @@ dialog.sp-lightbox {
 	& .woocommerce-product-details__short-description > :last-child,
 	& .hodima-specs-wrap {
 		margin-bottom: 0;
-	}
-
-	& > .custom-voice-shortcode {
-		margin-top: 4px;
 	}
 }
