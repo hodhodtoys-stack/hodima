@@ -18,8 +18,9 @@ $hodima_404_shop    = function_exists( 'wc_get_page_permalink' ) && ( ! function
 get_header();
 ?>
 
-<div class="error404-page">
-    <div class="error404-box">
+<?php // قاب و باکس مشترک صفحه‌ها (page-layout.css)؛ این‌جا فقط وسط‌چین بودن و محتوای خود ۴۰۴ ?>
+<main id="primary" class="site-main hodima-page-wrapper error404-page">
+    <section class="hodima-section-box error404-box">
 
         <h1 class="error404-code">404</h1>
 
@@ -51,7 +52,7 @@ get_header();
             <?php endif; ?>
         </div>
 
-    </div>
-</div>
+    </section>
+</main>
 
 <?php get_footer(); ?>

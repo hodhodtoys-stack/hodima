@@ -18,45 +18,18 @@
 	--primary-gradient: var(--hodima-gradient-main, linear-gradient(135deg, #25316a 0%, #3b4d8f 55%, #607bbd 100%));
 	--text-main: var(--hodima-text-dark, #111111);
 	--text-muted: var(--hodima-text-muted, #5d6785);
-	--bg-box: var(--hodima-surface, #ffffff);
-	--shadow-soft: 0 25px 50px -12px rgb(0 0 0 / 0.08);
 	--transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-	min-height: 80vh;
-	display: flex;
-	align-items: center;
+	/* قاب مشترک صفحه‌ها؛ باکس ۴۰۴ وسط ارتفاع صفحه */
+	min-block-size: 60vh;
 	justify-content: center;
-	padding: 60px var(--hodima-space-7);
-	direction: rtl;
 }
 
+/* ظاهر باکس (حاشیه، گوشه، سایه، padding) از .hodima-section-box مشترک؛ تا 3.4.6 باکس جدا با گوشه ۳۲، padding ۶۰/۵۰ و هاله رنگی بود */
 .error404-box {
-	max-width: 650px;
-	width: 100%;
-	background: var(--bg-box);
-	border-radius: calc(32px * var(--hodima-radius-scale));
-	padding: 60px 50px;
+	max-inline-size: 650px;
+	margin-inline: auto;
 	text-align: center;
-	box-shadow: var(--shadow-soft);
-	border: 1px solid rgb(0 0 0 / 0.04);
-	position: relative;
-	z-index: 1;
-	overflow: hidden;
-
-	/* هاله رنگی پس‌زمینه (دکوراتیو) */
-	&::before {
-		content: "";
-		position: absolute;
-		top: -50px;
-		inset-inline-start: -50px;
-		width: 200px;
-		height: 200px;
-		background: var(--primary-gradient);
-		filter: blur(80px);
-		opacity: 0.15;
-		z-index: -1;
-		border-radius: var(--hodima-radius-round);
-	}
 }
 
 /* انیمیشن شناور برای عدد 404 */
@@ -173,11 +146,6 @@
 
 /* موبایل */
 @media (width <= 768px) {
-	.error404-box {
-		padding: var(--hodima-space-9) var(--hodima-space-8);
-		border-radius: calc(24px * var(--hodima-radius-scale));
-	}
-
 	.error404-code {
 		font-size: 100px;
 	}

@@ -272,7 +272,7 @@
 	padding: 0;
 	border: 1px solid rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.16);
 	background: rgb(255 255 255 / 0.92);
-	color: var(--hodima-primary, #25316a) !important;
+	color: var(--hodima-primary, #25316a);
 	box-shadow: 0 2px 10px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.10);
 	-webkit-backdrop-filter: blur(6px);
 	backdrop-filter: blur(6px);
@@ -281,7 +281,7 @@
 	&:hover {
 		background: var(--hodima-primary, #25316a);
 		border-color: var(--hodima-primary, #25316a);
-		color: #fff !important;
+		color: #fff;
 		box-shadow: 0 6px 18px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.24);
 		transform: translateY(-1px) scale(1.04);
 	}

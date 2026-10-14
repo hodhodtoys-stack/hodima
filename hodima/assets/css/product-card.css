@@ -5,6 +5,16 @@
  * پایین آورده نمی‌شود (HODIMA-AUDIT.md ۶۳).
  * ========================================================================= */
 
+/* آیکن ستاره‌ها فونت `star` ووکامرس است؛ هر قانون فونت دیگری (سراسری !important هم) نباید آن را بشکند */
+.woocommerce .star-rating,
+.woocommerce .star-rating::before,
+.woocommerce .star-rating span::before,
+.product-card-scope .star-rating,
+.product-card-scope .star-rating::before,
+.product-card-scope .star-rating span::before {
+	font-family: star !important;
+}
+
 .product-card-scope {
 	--brand-primary: var(--hodima-primary, #25316a);
 	--brand-dark: var(--hodima-text-dark, #111111);
@@ -25,11 +35,15 @@
 			display: none;
 		}
 
-		& li.product {
-			width: 100% !important;
+		/*
+		 * li.product.product: یک کلاس بیشتر تا وزن قانون‌های ووکامرس (.woocommerce ul.products li.product …)
+		 * برابر یا بیشتر شود و چون این فایل بعد از CSS ووکامرس می‌آید، !important لازم نباشد.
+		 */
+		& li.product.product {
+			width: 100%;
 			max-width: 100%;
-			margin: 0 !important;
-			float: none !important;
+			margin: 0;
+			float: none;
 			background: var(--card-bg);
 			border: 1px solid var(--card-border);
 			border-radius: var(--hodima-radius-md);
@@ -48,7 +62,7 @@
 			}
 
 			& > a {
-				display: flex !important;
+				display: flex;
 				flex-direction: column;
 				flex-grow: 1;
 				text-decoration: none;
@@ -60,7 +74,7 @@
 				aspect-ratio: 1 / 1;
 				object-fit: contain;
 				border-radius: var(--hodima-radius-md);
-				margin-bottom: var(--hodima-space-5) !important;
+				margin-bottom: var(--hodima-space-5);
 				background: transparent;
 				transition: transform 0.25s ease;
 			}
@@ -82,41 +96,46 @@
 				display: -webkit-box;
 				-webkit-box-orient: vertical;
 				-webkit-line-clamp: 1;
-				line-clamp: 1 !important;
+				line-clamp: 1;
 				overflow: hidden;
 				text-overflow: ellipsis;
 				white-space: normal;
 				padding: 0 5px;
 				margin: 0 0 var(--hodima-space-3);
 			}
-		}
-	}
 
-	/* --- ستاره‌ها --- */
-	& .star-rating {
-		font-size: 0.85rem !important;
-		margin: 0 auto var(--hodima-space-5) !important;
-		color: var(--brand-primary);
-		display: flex !important;
-		justify-content: center;
-	}
+			/* --- ستاره‌ها --- */
+			& .star-rating {
+				font-size: 0.85rem;
+				margin: 0 auto var(--hodima-space-5);
+				color: var(--brand-primary);
+				display: flex;
+				justify-content: center;
+			}
 
-	/* --- قیمت: تراز شده در انتهای کارت --- */
-	& .price {
-		color: var(--brand-dark);
-		font-size: 1rem !important;
-		font-weight: 700 !important;
-		display: block;
-		padding: 0 5px 5px;
-		/* این تغییر باعث می‌شود قیمت به انتهای کارت چسبیده و هم‌ترازی کارت‌ها حفظ شود */
-		margin-top: auto;
-		margin-bottom: 0 !important;
+			/* --- قیمت: تراز شده در انتهای کارت --- */
+			& .price {
+				color: var(--brand-dark);
+				font-size: 1rem;
+				font-weight: 700;
+				display: block;
+				padding: 0 5px 5px;
+				/* این تغییر باعث می‌شود قیمت به انتهای کارت چسبیده و هم‌ترازی کارت‌ها حفظ شود */
+				margin-top: auto;
+				margin-bottom: 0;
 
-		& del {
-			color: var(--brand-muted) !important;
-			font-size: 0.83rem;
-			opacity: 0.75 !important;
-			margin-inline-end: 5px;
+				/* رنگ مبلغ و تخفیف در همه حالت‌ها (hover و focus هم) */
+				& * {
+					color: var(--brand-dark);
+				}
+
+				& del {
+					color: var(--brand-muted);
+					font-size: 0.83rem;
+					opacity: 0.75;
+					margin-inline-end: 5px;
+				}
+			}
 		}
 	}
 
@@ -125,26 +144,6 @@
 	& span.onsale {
 		display: none;
 	}
-}
-
-.woocommerce .star-rating,
-.woocommerce .star-rating::before,
-.woocommerce .star-rating span::before,
-.product-card-scope .star-rating,
-.product-card-scope .star-rating::before,
-.product-card-scope .star-rating span::before {
-	font-family: star !important;
-}
-
-.product-card-scope .price,
-.product-card-scope .price *,
-.product-card-scope a:hover .price,
-.product-card-scope a:hover .price *,
-.product-card-scope a:focus .price,
-.product-card-scope a:focus .price *,
-.product-card-scope ul.products li.product:hover .price,
-.product-card-scope ul.products li.product:hover .price * {
-	color: var(--brand-dark) !important;
 }
 
 /* --- Media Queries --- */
@@ -159,19 +158,19 @@
 		& ul.products {
 			grid-template-columns: repeat(2, 1fr);
 
-			& li.product .woocommerce-loop-product__title,
-			& li.product h2,
-			& li.product h3 {
+			& li.product.product .woocommerce-loop-product__title,
+			& li.product.product h2,
+			& li.product.product h3 {
 				font-size: 0.88rem;
 				line-height: 1.55;
 			}
-		}
 
-		& .price {
-			font-size: 0.96rem !important;
+			& li.product.product .price {
+				font-size: 0.96rem;
 
-			& del {
-				font-size: 0.8rem;
+				& del {
+					font-size: 0.8rem;
+				}
 			}
 		}
 	}

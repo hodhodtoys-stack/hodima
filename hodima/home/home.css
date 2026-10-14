@@ -204,7 +204,7 @@
 .section-intro-media {
 	margin: var(--hodima-space-5) 0;
 	/* پدینگ پایین کاملا 0 شد تا کل باکس از پایین بسته شود */
-	padding: var(--hodima-section-pad) var(--hodima-section-pad) 0 !important;
+	padding: var(--hodima-section-pad) var(--hodima-section-pad) 0;
 	position: relative;
 	background: linear-gradient(135deg, rgb(255 255 255 / 0.98) 0%, rgba(var(--hodima-third-rgb, 182, 194, 243), 0.12) 100%);
 	border: 1px solid var(--arian-border);

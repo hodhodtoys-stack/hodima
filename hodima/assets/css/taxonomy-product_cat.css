@@ -58,10 +58,10 @@
 	border-bottom-right-radius: 0;
 
 	& + .section-faq {
-		margin-top: calc(var(--hodima-section-gap) * -1) !important;
-		border-top-left-radius: 0 !important;
-		border-top-right-radius: 0 !important;
-		box-shadow: var(--hodima-shadow-xs) !important;
+		margin-top: calc(var(--hodima-section-gap) * -1);
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
+		box-shadow: var(--hodima-shadow-xs);
 	}
 }
 
@@ -86,7 +86,7 @@
 }
 
 .woocommerce-ordering {
-	display: none !important;
+	display: none;
 }
 
 .hodima-custom-sort-wrapper {
@@ -277,7 +277,7 @@
 .hodima-custom-sort-wrapper .hodima-sort-sub-btn *,
 .hodima-custom-sort-wrapper .sort-title-box,
 .hodima-custom-sort-wrapper .sort-title-box * {
-	color: var(--hodima-text-dark, #111111) !important;
+	color: var(--hodima-text-dark, #111111);
 	fill: var(--hodima-text-dark, #111111);
 	stroke: var(--hodima-text-dark, #111111);
 }

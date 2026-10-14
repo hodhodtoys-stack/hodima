@@ -15,6 +15,7 @@
  *   - هدفش کلاس خود قالب باشد (نه کلاس ووکامرس/وردپرس که CSS افزونه‌های سایت
  *     واقعی — که در ابزار تست نیستند — ممکن است هدف بگیرند)،
  *   - و حذف هم‌زمان همه موارد قابل حذف برنده هیچ عنصر/خصوصیتی را عوض نکند.
+ * HODIMA_AUDIT_EXTRA_CSS=home/home.css,...: این CSSها به همه صفحه‌ها اضافه می‌شوند (صفحه‌ای که عنصر دارد ولی فایل را نمی‌گیرد).
  * HODIMA_AUDIT_ALLOW_FOREIGN=1: هدف کلاس ووکامرس/وردپرس هم بررسی شود (فقط ووکامرس واقعی ابزار تست در آبشار است؛ CSS افزونه‌های دیگر سایت دیده نمی‌شود).
  * --apply: «!important» همان اعلان‌ها را از سورس برمی‌دارد (بقیه فایل دست نمی‌خورد).
  */
@@ -224,7 +225,12 @@ for ( const [ outDir, wpRoot ] of pairs ) {
 			await page.route( '**/*', ( route ) => {
 				const u = new URL( route.request().url() );
 				const p = decodeURIComponent( u.pathname );
-				if ( '/__page__' === p ) return route.fulfill( { contentType: 'text/html; charset=utf-8', body: fs.readFileSync( path.join( outDir, f ) ) } );
+				if ( '/__page__' === p ) {
+					// فایل‌های CSS که این صفحه‌ها نمی‌گیرند ولی عنصرشان را دارند (مثلا home/home.css روی صفحه‌های دارای بخش معرفی/FAQ): HODIMA_AUDIT_EXTRA_CSS=home/home.css
+					const extra = ( process.env.HODIMA_AUDIT_EXTRA_CSS || '' ).split( ',' ).filter( Boolean ).map( ( x ) => `<link rel="stylesheet" href="/wp-content/themes/hodima/${ x }">` ).join( '' );
+					const html = fs.readFileSync( path.join( outDir, f ), 'utf8' ).replace( '</head>', `${ extra }</head>` );
+					return route.fulfill( { contentType: 'text/html; charset=utf-8', body: html } );
+				}
 				if ( p.startsWith( '/wp-content/themes/hodima/' ) ) {
 					const rel = p.slice( 26 );
 					if ( served.has( rel ) ) return route.fulfill( { contentType: 'text/css', body: served.get( rel ) } );
