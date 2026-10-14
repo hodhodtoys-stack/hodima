@@ -795,7 +795,6 @@
 		& ul.products {
 			display: grid;
 			grid-template-columns: repeat(6, minmax(0, 1fr));
-			gap: 20px;
 		}
 
 		& ul.products > li:nth-child(n+7) {
@@ -1005,7 +1004,6 @@
 @media (width <= 1024px) {
 	.section-upsells .up-sells ul.products {
 		grid-template-columns: repeat(3, 1fr);
-		gap: 15px;
 	}
 
 	.sp-gallery__thumb {
@@ -1056,7 +1054,6 @@
 
 	.section-upsells .up-sells ul.products {
 		grid-template-columns: repeat(3, 1fr);
-		gap: 10px;
 	}
 
 	.sp-gallery__zoom {
@@ -1133,7 +1130,6 @@
 
 	.section-upsells .up-sells ul.products {
 		grid-template-columns: repeat(2, 1fr);
-		gap: 10px;
 	}
 
 	.sp-gallery__main {

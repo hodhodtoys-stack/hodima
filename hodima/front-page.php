@@ -36,8 +36,8 @@ $hodima_sections = array_values( array_filter( hodima_home_layout(), static fn( 
 $hodima_has_h1 = hodima_theme_media_available( 'intro' ) && in_array( 'intro', array_column( $hodima_sections, 'type' ), true );
 ?>
 
-<main id="primary" class="site-main hodima-home">
-	<div class="hodima-container hodima-page__container">
+<main id="primary" class="site-main hodima-home hodima-page-wrapper hodima-page__container">
+	<div class="hodima-home__inner">
 		<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
 
 			<?php if ( ! $hodima_has_h1 ) : ?>

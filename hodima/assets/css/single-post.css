@@ -3,11 +3,6 @@
  * نوسازی قالب، مرحله ۶: nesting، خصوصیات منطقی و توکن‌ها؛ ظاهر بدون تغییر.
  * ========================================================================= */
 
-:root {
-	--cat-grid-gap: 15px;
-	--cat-grid-gap-mobile: 8px;
-}
-
 /* نوار مسیر راهنما (inc/breadcrumb.php): ظاهر مشترک page-layout.css؛ فاصله بالا و پایین با padding نوار است نه margin فهرست */
 .section-breadcrumb {
 	& .hodima-breadcrumb {

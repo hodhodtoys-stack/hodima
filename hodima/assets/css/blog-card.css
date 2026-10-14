@@ -7,7 +7,7 @@
 
 .blog-page-grid {
 	display: grid;
-	gap: var(--hodima-space-6);
+	gap: var(--hodima-grid-gap);
 	grid-template-columns: repeat(4, minmax(0, 1fr));
 	align-items: start;
 	width: 100%;
@@ -123,7 +123,6 @@
 @media (width <= 768px) {
 	.blog-page-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: var(--hodima-space-4);
 	}
 }
 

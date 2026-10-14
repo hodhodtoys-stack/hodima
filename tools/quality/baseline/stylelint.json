@@ -43,7 +43,7 @@
 	},
 	"hodima/style.css": {
 		"csstools/use-logical": 1,
-		"declaration-no-important": 6,
+		"declaration-no-important": 4,
 		"no-descending-specificity": 12
 	}
 }

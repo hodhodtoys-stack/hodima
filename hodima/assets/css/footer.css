@@ -377,14 +377,18 @@ p.footer-copyright {
 	--socials-tile: 3.5rem;
 
 	/*
-	 * هم‌عرض بخش‌های صفحه (داخل .hodima-container): حاشیه ۱۰px (از ۷۶۸px به بالا ۲۰px) از هر طرف و سقف
+	 * هم‌عرض بخش‌های صفحه (قاب .hodima-page-wrapper، page-layout.css): حاشیه ۲۰px (تا ۷۶۸px ۱۵، تا ۴۸۰px ۱۰) از هر طرف و سقف
 	 * «بیشترین عرض محتوا − ۲ حاشیه» (تنظیمات ← ظاهر عمومی؛ پیش‌فرض ۱۴۴۰ ← ۱۴۰۰). عدد ثابت نیست تا با
 	 * تنظیم عرض و هر صفحه‌نمایشی همیشه با بخش بالایی تراز بماند. ۲px فاصله از بخش بالایی.
 	 */
-	--socials-gutter: var(--hodima-space-4);
+	--socials-gutter: var(--hodima-space-7);
 
-	@media (width >= 768px) {
-		--socials-gutter: var(--hodima-space-7);
+	@media (width <= 768px) {
+		--socials-gutter: var(--hodima-space-6);
+	}
+
+	@media (width <= 480px) {
+		--socials-gutter: var(--hodima-space-4);
 	}
 
 	inline-size: calc(100% - 2 * var(--socials-gutter));

@@ -14,7 +14,7 @@
 
 .videos-page-grid {
 	display: grid;
-	gap: var(--hodima-space-4);
+	gap: var(--hodima-grid-gap);
 	grid-template-columns: repeat(6, minmax(0, 1fr));
 	align-items: start;
 	width: 100%;
@@ -102,15 +102,12 @@
 @media (width <= 992px) {
 	.videos-page-grid {
 		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: var(--hodima-space-4);
 	}
-
 }
 
 @media (width <= 768px) {
 	.videos-page-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: var(--hodima-space-3);
 	}
 }
 

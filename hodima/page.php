@@ -48,12 +48,23 @@ while ( have_posts() ) :
 	$hodima_faq   = $hodima_media ? hodima_theme_media_html( 'faq', $hodima_atts ) : '';
 	?>
 
-	<main id="primary" class="site-main hodima-page">
-		<div class="hodima-container hodima-page__container">
-			<article id="post-<?php the_ID(); ?>" <?php post_class( 'hodima-page__article' ); ?>>
+	<?php
+	// ریتم مشترک صفحه‌ها (page-layout.css): قاب flex با فاصله --hodima-section-gap؛ متن برگه داخل باکس.
+	// سبد ووکامرس باکس‌های خودش را دارد (باکس تو در تو نمی‌شود)؛ پرداخت و حساب کاربری در باکس مشترک.
+	$hodima_main_class   = 'hodima-page__main' . ( function_exists( 'is_cart' ) && is_cart() ? '' : ' hodima-section-box' );
+	$hodima_has_top      = '' !== $hodima_intro || '' !== $hodima_video;
+	$hodima_link_pages   = (string) wp_link_pages( [
+		'before' => '<nav class="hodima-pagination" aria-label="صفحه‌های این برگه">',
+		'after'  => '</nav>',
+		'echo'   => 0,
+	] );
+	?>
+	<main id="primary" class="site-main hodima-page hodima-page-wrapper hodima-page__container">
+		<article id="post-<?php the_ID(); ?>" <?php post_class( 'hodima-page__article' ); ?>>
 
+			<?php if ( $hodima_has_top ) : ?>
 				<?php if ( ! $hodima_has_h1 ) : ?>
-					<header class="entry-header">
+					<header class="entry-header <?php echo esc_attr( $hodima_main_class ); ?>">
 						<?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
 					</header>
 				<?php endif; ?>
@@ -63,26 +74,35 @@ while ( have_posts() ) :
 				get_template_part( 'template-parts/media/intro-media', null, [ 'layout' => 'page', 'intro' => $hodima_intro, 'video' => $hodima_video ] );
 				?>
 
-				<div class="entry-content">
-					<?php echo $hodima_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی the_content ?>
+				<div class="<?php echo esc_attr( $hodima_main_class ); ?>">
+					<div class="entry-content">
+						<?php echo $hodima_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی the_content ?>
+					</div>
+					<?php echo $hodima_link_pages; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی خود وردپرس ?>
 				</div>
+			<?php else : ?>
+				<div class="<?php echo esc_attr( $hodima_main_class ); ?>">
+					<?php if ( ! $hodima_has_h1 ) : ?>
+						<header class="entry-header">
+							<?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
+						</header>
+					<?php endif; ?>
 
-				<?php get_template_part( 'template-parts/media/voice-faq', null, [ 'layout' => 'post', 'voice' => $hodima_voice, 'faq' => $hodima_faq ] ); ?>
-
-				<?php
-				wp_link_pages( [
-					'before' => '<nav class="hodima-pagination" aria-label="صفحه‌های این برگه">',
-					'after'  => '</nav>',
-				] );
-				?>
-			</article>
-
-			<?php if ( comments_open() || get_comments_number() ) : ?>
-				<section class="hodima-section-box section-comments">
-					<div class="comments-wrapper"><?php comments_template(); ?></div>
-				</section>
+					<div class="entry-content">
+						<?php echo $hodima_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی the_content ?>
+					</div>
+					<?php echo $hodima_link_pages; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی خود وردپرس ?>
+				</div>
 			<?php endif; ?>
-		</div>
+
+			<?php get_template_part( 'template-parts/media/voice-faq', null, [ 'layout' => 'post', 'voice' => $hodima_voice, 'faq' => $hodima_faq ] ); ?>
+		</article>
+
+		<?php if ( comments_open() || get_comments_number() ) : ?>
+			<section class="hodima-section-box section-comments">
+				<div class="comments-wrapper"><?php comments_template(); ?></div>
+			</section>
+		<?php endif; ?>
 	</main>
 
 	<?php

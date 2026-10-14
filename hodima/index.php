@@ -19,8 +19,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 get_header(); ?>
 
-<main id="primary" class="site-main">
-    <div class="hodima-container hodima-page__container">
+<?php // ریتم مشترک صفحه‌ها (page-layout.css)؛ صفحه اصلی قدیمی (شورت‌کد) بدون باکس، بقیه (آرشیو/فهرست) داخل یک باکس ?>
+<main id="primary" class="site-main hodima-page-wrapper hodima-page__container">
+    <div class="hodima-page__main<?php echo is_front_page() ? '' : ' hodima-section-box'; ?>">
         <?php if ( have_posts() ) : ?>
 
             <?php if ( ! is_singular() ) : ?>

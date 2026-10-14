@@ -204,7 +204,7 @@
 .section-intro-media {
 	margin: var(--hodima-space-5) 0;
 	/* پدینگ پایین کاملا 0 شد تا کل باکس از پایین بسته شود */
-	padding: 16px 16px 0 !important;
+	padding: var(--hodima-section-pad) var(--hodima-section-pad) 0 !important;
 	position: relative;
 	background: linear-gradient(135deg, rgb(255 255 255 / 0.98) 0%, rgba(var(--hodima-third-rgb, 182, 194, 243), 0.12) 100%);
 	border: 1px solid var(--arian-border);
@@ -460,6 +460,18 @@ h1.section-col-title {
 
 	& .arian-scroller {
 		padding: 0 var(--hodima-space-5);
+	}
+}
+
+/* صفحه اصلی با چیدمان قالب: بخش‌ها زیر هم با فاصله مشترک صفحه (--hodima-section-gap)؛ margin جداگانه بخش‌ها حذف می‌شود */
+.hodima-home .entry-content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--hodima-section-gap);
+
+	& > .arian-product-section,
+	& > .section-intro-media {
+		margin-block: 0;
 	}
 }
 

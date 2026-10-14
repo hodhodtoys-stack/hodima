@@ -15,7 +15,7 @@
 	& ul.products {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: var(--hodima-space-7);
+		gap: var(--hodima-grid-gap);
 		list-style: none;
 		padding: 0;
 		margin: 0;
@@ -151,7 +151,6 @@
 @media (width <= 1024px) {
 	.product-card-scope ul.products {
 		grid-template-columns: repeat(3, 1fr);
-		gap: var(--hodima-space-6);
 	}
 }
 
@@ -159,7 +158,6 @@
 	.product-card-scope {
 		& ul.products {
 			grid-template-columns: repeat(2, 1fr);
-			gap: var(--hodima-space-4);
 
 			& li.product .woocommerce-loop-product__title,
 			& li.product h2,

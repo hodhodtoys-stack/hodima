@@ -19,7 +19,7 @@
 	direction: rtl;
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--hodima-space-7);
+	gap: var(--hodima-section-gap);
 }
 
 /* اصلاح فاصله پیام‌های ووکامرس (مثل "سبد خرید بروز شد") */
@@ -33,9 +33,10 @@
 .woocommerce-cart-form {
 	flex: 2;
 	background: #fff;
-	padding: var(--hodima-space-7);
+	padding: var(--hodima-section-pad);
 	border-radius: var(--hodima-radius-xl);
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	box-shadow: var(--hodima-shadow-xs);
 
 	/* کد تخفیف: ووکامرس ۸۰ پیکسل؛ متن راهنما بریده می‌شد */
 	& .coupon .input-text {
@@ -71,12 +72,13 @@
 		order: -1;
 		background: var(--hodima-surface-soft, #f7f9fd);
 		border-radius: var(--hodima-radius-xl);
-		padding: var(--hodima-space-7);
+		padding: var(--hodima-section-pad);
 		border: 1px solid var(--hodima-border-light, #d9e1f0);
+		box-shadow: var(--hodima-shadow-xs);
 	}
 
 	& .cross-sells {
-		margin-top: var(--hodima-space-7);
+		margin-top: var(--hodima-section-gap);
 	}
 }
 
