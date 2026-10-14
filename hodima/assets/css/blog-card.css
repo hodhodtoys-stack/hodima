@@ -14,29 +14,8 @@
 }
 
 .blog-page-card {
-	background: var(--hodima-surface, #fff);
-	border-radius: var(--hodima-radius-lg);
-	overflow: hidden;
-	box-shadow: var(--hodima-shadow-xs);
-	transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-	display: flex;
-	flex-direction: column;
-	text-decoration: none;
-	box-sizing: border-box;
-	min-width: 0;
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	/* شکل کارت (گوشه، padding، حاشیه، سایه، hover): page-layout.css */
 	height: 100%;
-
-	&:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 8px 18px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.09);
-		border-color: var(--hodima-border, #b8c4de);
-	}
-
-	&:focus-visible {
-		outline: 2px solid var(--hodima-secondary, #607bbd);
-		outline-offset: 2px;
-	}
 }
 
 .blog-page-thumbnail,
@@ -44,12 +23,12 @@
 	width: 100%;
 	aspect-ratio: 16 / 9;
 	display: block;
+	border-radius: var(--hodima-card-img-radius);
 }
 
 .blog-page-thumbnail {
 	height: auto;
 	object-fit: cover;
-	border-bottom: 1px solid var(--hodima-border-light, #d9e1f0);
 }
 
 .blog-page-thumbnail--empty {
@@ -181,8 +160,6 @@
 		flex: 0 0 55%;
 		inline-size: 55%;
 		aspect-ratio: 16 / 9;
-		border-bottom: 0;
-		border-inline-end: 1px solid var(--hodima-border-light, #d9e1f0);
 	}
 
 	& .blog-page-content {
@@ -215,8 +192,6 @@
 		& :is(.blog-page-thumbnail, .blog-page-thumbnail--empty) {
 			flex-basis: auto;
 			inline-size: 100%;
-			border-inline-end: 0;
-			border-bottom: 1px solid var(--hodima-border-light, #d9e1f0);
 		}
 
 		& .blog-page-content {

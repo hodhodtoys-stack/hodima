@@ -476,22 +476,9 @@ h1.section-col-title {
 }
 
 .arian-card {
+	/* شکل کارت (گوشه، padding، حاشیه، سایه، hover): page-layout.css */
 	flex: 0 0 170px;
 	max-width: 170px;
-	background: #fff;
-	border-radius: var(--hodima-radius-xl);
-	border: 1px solid var(--arian-border);
-	box-shadow: 0 3px 8px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.05); /* استفاده از رنگ سازمانی در سایه */
-	overflow: hidden;
-	text-decoration: none;
-	display: flex;
-	flex-direction: column;
-	transition: transform 0.25s ease, box-shadow 0.25s ease;
-
-	&:hover {
-		transform: translateY(-4px);
-		box-shadow: 0 10px 20px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.12);
-	}
 }
 
 .arian-card-img-link {
@@ -504,6 +491,7 @@ h1.section-col-title {
 	aspect-ratio: 1 / 1;
 	object-fit: cover;
 	display: block;
+	border-radius: var(--hodima-card-img-radius);
 }
 
 .arian-card img {

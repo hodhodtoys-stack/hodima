@@ -96,3 +96,53 @@
 		}
 	}
 }
+
+/* =========================================================================
+ * کارت مشترک (3.4.8): محصول (فروشگاه، دسته، مشابه)، صفحه اصلی (اسلایدر)، مقاله و ویدیو
+ * قبلا چهار شکل: گوشه ۸/۱۰/۱۰/۱۲، padding ۶/۰/۰/۰، بالا آمدن hover ۵/۴/۳/۳ و رنگ حاشیه و سایه
+ * متفاوت. مقدارها: tokens.css (--hodima-card-*). هر کارت فقط چیدمان داخلی خودش را دارد.
+ * کارت ویدیوی افزونه رسانه (.hs-related-card) همین توکن‌ها را در CSS خودش می‌خواند.
+ * ========================================================================= */
+
+.arian-card,
+.blog-page-card,
+.videos-page-card,
+.product-card-scope ul.products li.product.product {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	overflow: hidden;
+	padding: var(--hodima-card-pad);
+	background: #fff;
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	border-radius: var(--hodima-card-radius);
+	box-shadow: var(--hodima-card-shadow);
+	text-decoration: none;
+	transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.arian-card:hover,
+.blog-page-card:hover,
+.videos-page-card:hover,
+.product-card-scope ul.products li.product.product:hover {
+	transform: translateY(calc(var(--hodima-card-lift) * -1));
+	box-shadow: var(--hodima-card-shadow-hover);
+	border-color: var(--hodima-border, #b8c4de);
+}
+
+.arian-card:focus-visible,
+.blog-page-card:focus-visible,
+.videos-page-card:focus-visible {
+	outline: 2px solid var(--hodima-secondary, #607bbd);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.arian-card:hover,
+	.blog-page-card:hover,
+	.videos-page-card:hover,
+	.product-card-scope ul.products li.product.product:hover {
+		transform: none;
+	}
+}

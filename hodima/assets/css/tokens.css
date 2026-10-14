@@ -123,6 +123,14 @@
     --hodima-section-pad:    25px;    /* padding داخل باکس سکشن (تبلت ۲۰، موبایل ۱۵) */
     --hodima-grid-gap:       15px;    /* فاصله کارت‌ها در همه شبکه‌ها: محصول، مقاله، ویدیو (موبایل ۱۰) */
 
+    /* کارت (3.4.8): محصول، صفحه اصلی، مقاله و ویدیو یک شکل: گوشه ۱۰، padding ۴، hover ۴px بالا */
+    --hodima-card-radius:    var(--hodima-radius-lg);
+    --hodima-card-pad:       4px;
+    --hodima-card-lift:      4px;
+    --hodima-card-img-radius: calc(var(--hodima-card-radius) - var(--hodima-card-pad));   /* گوشه تصویر داخل کارت */
+    --hodima-card-shadow:    var(--hodima-shadow-xs);
+    --hodima-card-shadow-hover: 0 8px 18px rgb(var(--hodima-primary-rgb), 0.09);
+
     /* ── نقطه‌های شکست (فقط مرجع: متغیر CSS در @media کار نمی‌کند) ──
        نگارش واحد: بازه‌ای با <= و >=، مثلا @media (width <= 768px) و
        (width >= 993px) برای مکمل (992 + 1). < و > ممنوع است: نسخه پایین‌آورده

@@ -20,37 +20,18 @@
 	width: 100%;
 }
 
-.videos-page-card {
-	background: #fff;
-	border-radius: var(--hodima-radius-lg);
-	overflow: hidden;
-	box-shadow: var(--hodima-shadow-xs);
-	transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-	display: flex;
-	flex-direction: column;
-	text-decoration: none;
-	box-sizing: border-box;
-	min-width: 0;
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-
-	&:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 8px 18px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.09);
-		border-color: var(--hodima-border, var(--hodima-third, #b6c2f3));
-	}
-}
-
+/* شکل کارت (گوشه، padding، حاشیه، سایه، hover): page-layout.css */
 .videos-page-thumbnail,
 .videos-page-thumbnail--empty {
 	width: 100%;
 	aspect-ratio: 16 / 9;
 	display: block;
+	border-radius: var(--hodima-card-img-radius);
 }
 
 .videos-page-thumbnail {
 	height: auto;
 	object-fit: cover;
-	border-bottom: 1px solid var(--hodima-border-light, #d9e1f0);
 }
 
 .videos-page-thumbnail--empty {

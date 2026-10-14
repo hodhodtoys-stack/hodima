@@ -19,8 +19,6 @@
 	--brand-primary: var(--hodima-primary, #25316a);
 	--brand-dark: var(--hodima-text-dark, #111111);
 	--brand-muted: var(--hodima-text-muted, #5d6785);
-	--card-bg: #ffffff;
-	--card-border: var(--hodima-border-light, #d9e1f0);
 
 	& ul.products {
 		display: grid;
@@ -44,22 +42,9 @@
 			max-width: 100%;
 			margin: 0;
 			float: none;
-			background: var(--card-bg);
-			border: 1px solid var(--card-border);
-			border-radius: var(--hodima-radius-md);
-			padding: var(--hodima-space-2);
 			text-align: center;
-			box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.03);
-			transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-			display: flex;
-			flex-direction: column;
 			height: 100%;
-
-			&:hover {
-				transform: translateY(-5px);
-				box-shadow: 0 12px 25px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.11);
-				border-color: var(--brand-primary);
-			}
+			/* شکل کارت (گوشه، padding، حاشیه، سایه، hover): page-layout.css */
 
 			& > a {
 				display: flex;
@@ -73,7 +58,7 @@
 				height: auto;
 				aspect-ratio: 1 / 1;
 				object-fit: contain;
-				border-radius: var(--hodima-radius-md);
+				border-radius: var(--hodima-card-img-radius);
 				margin-bottom: var(--hodima-space-5);
 				background: transparent;
 				transition: transform 0.25s ease;
