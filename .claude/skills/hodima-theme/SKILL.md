@@ -29,6 +29,49 @@ description: قانون‌های کد قالب هدیما (پوشه hodima/) —
 - **پیشخوان تنظیمات:** هر کنترل هم‌ارتفاع `--hs-control-h`، تمام‌عرض ستون؛ رنگ فقط با جزء `.hodima-color` (نوع Color یا select با `'swatch' => true`)؛ کلید بیرون از قاب `toggles` یک ردیف کامل و رنگ کارت ثابت؛ کارت‌های داخل قاب `--hs-radius-md`.
 - **پیش از تحویل:** عکس همه تب‌های پیشخوان (CSS واقعی و راست‌به‌چپ پیشخوان، ۱۳۰۰ و ۳۹۰) و اندازه‌گیری دکمه/کادرهای همه صفحه‌ها، نه فقط بخش تغییرکرده.
 
+## ریتم صفحه، باکس، نوار مسیر و کارت‌ها (از 3.4.4 تا 3.4.8، بخش‌های ۱۴۱ تا ۱۴۶ `HODIMA-AUDIT.md`) — قانون و راهنمای تکرار
+**هدف:** هر صفحه اندازه‌ی خودش را نداشته باشد. تا 3.4.3 فاصله سکشن‌ها ۵ تا ۱۰، padding باکس ۱۰ تا ۲۵، عرض ۱۲۶۰/۱۲۸۰، گوشه کارت ۸ تا ۱۲، hover ۳ تا ۵، شبکه کارت‌ها ۱px تا ۲۰px بود و همین رقابت قانون‌های هم‌وزن دلیل بیشتر `!important`ها بود.
+
+**توکن‌ها (فقط `assets/css/tokens.css`؛ عدد ثابت در CSS صفحه ننویس):**
+| توکن | مقدار | کجا |
+|---|---|---|
+| `--hodima-section-gap` | ۱۰px (≤۷۶۸: ۸، ≤۴۸۰: ۶) | فاصله بین سکشن‌ها و بالا/پایین قاب |
+| `--hodima-section-pad` | ۲۵px (≤۷۶۸: ۲۰، ≤۴۸۰: ۱۵) | padding داخل `.hodima-section-box` |
+| `--hodima-grid-gap` | ۱۵px (≤۷۶۸: ۱۰) | فاصله کارت‌ها در همه شبکه‌ها (محصول، مقاله، ویدیو) |
+| `--hodima-card-radius` | `--hodima-radius-lg` = ۱۰px × مقیاس گردی | گوشه کارت |
+| `--hodima-card-pad` | ۴px | padding داخل کارت |
+| `--hodima-card-lift` | ۴px | بالا آمدن hover |
+| `--hodima-card-img-radius` | گوشه − padding = ۶px | گوشه تصویر داخل کارت |
+| `--hodima-card-shadow` / `-hover` | `--hodima-shadow-xs` / `0 8px 18px rgb(primary / 0.09)` | سایه |
+باکس: حاشیه ۱px `--hodima-border-light`، گوشه `--hodima-radius-xl` (۱۲)، سایه `--hodima-shadow-xs`. نوار مسیر: padding ۶/۱۵، گوشه `--hodima-radius-lg` (۱۰). عرض محتوا همه‌جا ۱۲۶۰ (قاب `--hodima-container` + padding ۲۰/۱۵/۱۰). حاشیه رنگی باکس اصلی محصول (`--hodima-border`) استثنای عمدی (تصمیم کاربر).
+
+**کجا تعریف می‌شود:** `assets/css/page-layout.css` (در بسته مشترک `HODIMA_COMMON_CSS`، پس درخواست اضافه ندارد): `.hodima-page-wrapper` (قاب flex ستونی)، `.hodima-section-box` (+ `.blog-page-container`، `.videos-page-container`)، `.section-breadcrumb` (+ خنثی‌کردن margin/اندازه `nav.woocommerce-breadcrumb` ووکامرس) و **کارت مشترک** (`.arian-card`، `.blog-page-card`، `.videos-page-card`، `.product-card-scope ul.products li.product.product`: padding/پس‌زمینه/حاشیه/گوشه/سایه/hover/focus/`prefers-reduced-motion`).
+
+**قانون صفحه یا کارت تازه:**
+- صفحه محتوایی: `<main class="hodima-page-wrapper">` و هر بخش `class="hodima-section-box …"` یا `.section-breadcrumb`؛ فاصله را با `margin` ننویس (gap قاب). CSS صفحه فقط رنگ زمینه و چیدمان داخلی می‌گذارد، نه اندازه/فاصله/حاشیه. `--section-gap`/`--cat-*` صفحه‌ای ننویس (حذف شدند).
+- کارت تازه: همان شکل را بخواهد → انتخابگرش را به لیست کارت مشترک `page-layout.css` اضافه کن (نه کپی شکل در فایل صفحه) و تصویرش `border-radius: var(--hodima-card-img-radius)` بدون `border-bottom`. نیاز به `&:hover` زیر انتخابگر چندتایی نیست: قانون‌های hover/focus در همان فایل جدا نوشته شده‌اند.
+- شبکه کارت: `gap: var(--hodima-grid-gap)` (قبلا کارت‌های فروشگاه/دسته ۱px و محصولات مشابه ۲۰px بودند).
+- افزونه‌ها (مثل `video-watch.front.css` در Media): همین توکن‌ها با fallback (`var(--hodima-card-pad, 4px)`)؛ قانون قاب/باکس/نوار مسیر افزونه فقط با `:where()` (وزن صفر) تا در قالب هدیما قانون مشترک برنده شود و بی `!important`.
+
+**استثناها (عمدا دست نخورد):** صفحه ۴۰۴ فقط `main.hodima-page-wrapper` + `section.hodima-section-box` (باکس جدا و هاله حذف شد)؛ سبد ووکامرس باکس بیرونی نمی‌گیرد (باکس‌های خودش را دارد، `page.php`)؛ پرداخت و حساب کاربری داخل باکس مشترک؛ کارت «لینک‌های مرتبط/محصولات مکمل» افزونه SEO (`.hodima-rl__card`، توکن‌های `--rl-*`) به تصمیم کاربر همان‌طور ماند؛ سربرگ فشرده فروشگاه padding عمودی ۱۵ (نه ۲۵).
+
+**روش کار (برای تغییر دوباره، همین ترتیب):**
+1. **اندازه‌گیری پیش از تغییر** در Chromium با سه‌گانه: فاصله بین سکشن‌ها، padding/حاشیه/گوشه/سایه/عرض هر باکس، و برای کارت‌ها گوشه/padding/سایه/hover محاسبه‌شده. (نمونه‌ی کد: بخش ۱۴۲ و ۱۴۵ `HODIMA-AUDIT.md`؛ HTML صفحه‌ها در `/tmp/hodima-harness/aout` و `…-wc/aout`، Playwright با route برای CSS قالب.) برای تصمیم کاربر **عکس مقایسه‌ای** بساز و بفرست، نه فقط عدد.
+2. **تصمیم کاربر روی عددها** (مرحله ۰) پیش از کد؛ تغییر ظاهری را در CHANGELOG و گزارش «عمدی» بنویس.
+3. **مهاجرت صفحه‌به‌صفحه**، هر مرحله یک انتشار: ابتدا توکن + `page-layout.css`، بعد وبلاگ/ویدیو/فروشگاه/دسته/مقاله، بعد محصول، بعد برگه‌ها/سبد/صفحه اصلی/شبکه‌ها، آخر ۴۰۴ و کارت‌ها.
+4. **تست هر مرحله:** `bash bin/lint.sh`؛ `visual-compare.sh` و `--wc` (تفاوت ظاهری فقط صفحه‌های عمدی؛ بقیه `pixels: 0`)؛ عکس‌ها را خودت ببین؛ `important-audit.sh` (با `HODIMA_AUDIT_ALLOW_FOREIGN=1`، و `HODIMA_AUDIT_EXTRA_CSS=home/home.css` برای CSSی که صفحه‌ها نمی‌گیرند)؛ بعد از هر تغییر آبشار حتما اندازه‌گیری مجدد.
+5. `lint.sh --update-baseline` بعد از برداشتن CSS/`!important` (عدد baseline پایین می‌آید).
+
+**تله‌هایی که پیش آمد (دوباره نیفت):**
+- `.hodima-container` (`padding … !important`) باعث می‌شد `padding-block: 40px` برگه‌ها همیشه بی‌اثر باشد (متن چسبیده به هدر)؛ حذف شد. `!important` روی شورت‌هند `padding` کل ویژگی‌های منطقی را هم می‌کُشد.
+- قانون هم‌وزن دیرتر در آبشار برنده است: ترتیب فایل‌ها مهم است (`page-layout.css` در بسته مشترک پیش از CSS هر صفحه). قانون عمومی کارت نباید از قانون صفحه‌ی خودش ضعیف‌تر شود؛ تغییر نقطه‌ی شکست/media هم‌وزن را با `li.product.product` (یک کلاس بیشتر) هم‌پا کن، وگرنه قانون پایه موبایل را می‌برد (قیمت کارت ۱۵٫۴←۱۶px شد تا اصلاح شد).
+- ووکامرس `.woocommerce ul.products li.product …` (۰،۴،۳) و `margin-bottom ۱em` نوار مسیرش را باید با وزن بیشتر یا `nav.woocommerce-breadcrumb` خنثی کرد، نه `!important`. `@layer` ممنوع است.
+- `style.css` قبلا به **همه** `button`ها `color: #fff !important` می‌داد و ریشه‌ی بیشتر `!important`های محلی دکمه‌ها (گالری، مرتب‌سازی، «×» جستجوی زنده) بود؛ حالا بدون `!important`. `display: none !important` دکمه `.button` کارت محصول (`style.css`) لازم است (با تزریق عنصر سنجیده شد).
+- برای `!important`ی که عنصرش در داده آزمایشی نیست: عنصر نمونه را در صفحه **تزریق** کن و استایل محاسبه‌شده را با HEAD (`git worktree add … HEAD`) مقایسه کن؛ بدون شاهد برنداشتن.
+- کلاس CSS «بی‌مصرف» را قبل از حذف در **همه** بسته‌ها (قالب و ۴ افزونه) و رشته‌های پویا جست‌وجو کن؛ ووکامرس/وردپرس خودش کلاس می‌سازد (سبد، دیدگاه، `sub-menu`…).
+- افزونه Media هم کلاس‌های قالب (`hodima-page-wrapper`…) را می‌پوشاند و با `!important` جدا استایل داده بود؛ هر تغییر ریتم را روی صفحه ویدیو (افزونه) هم بسنج.
+- `!important`های باقی‌مانده (۸۷ در 3.4.7) عمدی/غیرقابل‌سنجش‌اند: فونت سراسری `style.css` (تنظیم تایپوگرافی باید روی افزونه‌ها غلبه کند) و `font-family: inherit` در برابر آن، زنجیره‌ی قدیمی فاصله‌ی خلاصه محصول (`.custom-product-summary > *`، نیاز به بازطراحی با flex/gap و آزمون ۵ نوع محصول)، هدر/صفحه اصلی/محصول/دسته که حالتشان (منوی باز، ویدیوی embed) در داده آزمایشی نیست.
+
 ## بخش‌های افقی صفحه اصلی (از 3.1.4، بخش ۱۰۹)
 - کارت و باکس اسلایدرهای صفحه اصلی (محصولات یک دسته، جدیدترین، مقالات) فقط با `hodima_home_card_html()` و `hodima_home_cards_section()` (`home/logic.php`) و CSS `.arian-card` / `.arian-product-section`؛ برای یک نوع داده کلاس و CSS جدا (مثل قبلا `modern-blog-card`) نساز؛ تفاوت = پارامتر (قیمت، لینک عنوان، رنگ زمینه `tone`). تصویر کارت همیشه مربع با برش مرکزی؛ فقط یک تصویر صفحه با `hodima_home_claim_priority()` اولویت می‌گیرد.
 - **انواع بخش صفحه اصلی** (`hodima_home_section_types()` در `inc/home-layout.php`): فیلد تازه با نوع `text|lines|number|tone|select|toggle|category|categories|html|link`؛ **پیش‌فرض خنثی** (بدون متن/نامک مخصوص یک سایت)؛ مقدار قدیمی فقط در `hodima_home_legacy_section_args()` برای شورت‌کدهای قدیمی. گزینه‌های مشترک همه بخش‌ها (`device`، `start`، `end`) بیرون از فیلدهای نوع‌اند. منطق جدا از رندر باشد تا آزمون واحد شود (مثل `hodima_home_product_query_args()`). عنصر تعاملی که با JS ساخته می‌شود (فلش اسکرولر) HTML و کش صفحه را عوض نکند.
