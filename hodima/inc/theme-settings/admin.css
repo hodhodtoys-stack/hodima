@@ -2554,21 +2554,6 @@ input.hodima-color__swatch {
 	color: var(--hs-warning);
 }
 
-.hodima-home__warn {
-	display: inline-flex;
-	align-items: center;
-	flex-shrink: 1;
-	gap: 0.25rem;
-	min-inline-size: 0;
-	padding: 0.125rem 0.5rem;
-	border-radius: 999px;
-	background: color-mix(in srgb, var(--hs-warning) 12%, #ffffff);
-	color: var(--hs-warning);
-	font-size: 0.75rem;
-	font-weight: 600;
-	line-height: 1.5;
-}
-
 .hodima-home__warn-icon {
 	inline-size: 0.875rem;
 	block-size: 0.875rem;

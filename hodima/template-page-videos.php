@@ -33,14 +33,6 @@ $hodima_vp_per_page = max( 1, (int) apply_filters( 'hodima_videos_per_page', 24 
 // /video/page/N/ — قانون بازنویسی اختصاصی در video-watch/vid-w-schema.php
 $hodima_vp_paged    = max( 1, (int) get_query_var( 'paged' ), (int) get_query_var( 'page' ) );
 
-/** ارقام فارسی و عربی → انگلیسی */
-$hodima_vp_latin = static fn( $v ): string => strtr( (string) $v, [
-	'۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
-	'۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
-	'٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
-	'٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
-] );
-
 /*
  * کوئری از افزونه Hodima Media (components/video-watch/videos-page.php)؛ همان
  * کوئری که ItemList اسکیمای این صفحه را می‌سازد (قبلا اسکیما همین‌جا بود —
@@ -171,29 +163,19 @@ get_header(); ?>
 				</div>
 
 				<?php
-				$hodima_vp_links = paginate_links( [
+				// صفحه‌بندی مشترک قالب (inc/pagination.php: ارقام انگلیسی)؛ فقط جهت فلش‌ها و کلاس عدد همین صفحه
+				$hodima_vp_links = hodima_paginate_links( [
 					'base'               => user_trailingslashit( trailingslashit( $hodima_vp_page_url ) . 'page/%#%', 'paged' ),
 					'format'             => '',
 					'current'            => $hodima_vp_paged,
 					'total'              => (int) $hodima_vp_video_query->max_num_pages,
-					'mid_size'           => 1,
-					'end_size'           => 1,
 					'prev_text'          => '<span aria-hidden="true">&rsaquo;</span> قبلی',
 					'next_text'          => 'بعدی <span aria-hidden="true">&lsaquo;</span>',
 					'type'               => 'list',
-					// اعداد در عنصر جدا تا CSS فونت لاتین برایشان بگذارد
 					'before_page_number' => '<span class="hvp-num">',
-					'after_page_number'  => '</span>',
 				] );
 
 				if ( $hodima_vp_links ) :
-					/*
-					 * اعداد انگلیسی. paginate_links شماره‌ها را با
-					 * number_format_i18n() می‌سازد که با زبان فارسی رقم فارسی
-					 * برمی‌گرداند.
-					 */
-					$hodima_vp_links = $hodima_vp_latin( $hodima_vp_links );
-
 					// صفحه ۱ بدون /page/1/ (آدرس تکراری صفحه اول)
 					$hodima_vp_links = str_replace( trailingslashit( $hodima_vp_page_url ) . 'page/1/', $hodima_vp_page_url, $hodima_vp_links );
 					?>

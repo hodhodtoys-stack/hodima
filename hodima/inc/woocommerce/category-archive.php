@@ -110,10 +110,7 @@ add_filter( 'woocommerce_get_breadcrumb', static function ( $crumbs ) {
 	$last = count( $crumbs ) - 1;
 	if ( isset( $crumbs[ $last ][0] ) ) {
 		// فقط ارقام؛ متن خود ووکامرس («برگه» / «صفحه») دست‌نخورده می‌ماند
-		$crumbs[ $last ][0] = strtr( (string) $crumbs[ $last ][0], [
-			'۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
-			'۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
-		] );
+		$crumbs[ $last ][0] = hodima_latin_digits( (string) $crumbs[ $last ][0] );
 	}
 
 	return $crumbs;
