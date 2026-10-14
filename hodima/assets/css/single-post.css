@@ -67,17 +67,14 @@
 	padding: var(--hodima-space-7) var(--hodima-space-8);
 }
 
-.section-description {
+.section-description,
+.section-comments {
 	background-color: var(--cat-bg-light-green);
 }
 
 .section-voice-faq {
 	background-color: var(--cat-bg-light-blue);
 	padding: var(--hodima-space-4) var(--hodima-space-8);
-}
-
-.section-comments {
-	background-color: var(--cat-bg-light-green);
 }
 
 .video-thumbnail-wrapper {

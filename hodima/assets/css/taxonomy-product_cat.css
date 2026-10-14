@@ -339,13 +339,6 @@
 	stroke: var(--hodima-text-dark, #111111) !important;
 }
 
-.hodima-custom-sort-wrapper .hodima-sort-btn.active,
-.hodima-custom-sort-wrapper .hodima-sort-btn.active *,
-.hodima-custom-sort-wrapper .hodima-sort-sub-btn.active,
-.hodima-custom-sort-wrapper .hodima-sort-sub-btn.active * {
-	color: var(--hodima-text-dark, #111111) !important;
-}
-
 /* =========================================================================
  * نسخه ۲ — صفحه‌بندی استاندارد (۳۶ محصول در هر صفحه)
  * ========================================================================= */

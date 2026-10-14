@@ -105,7 +105,8 @@
 	gap: 1.5rem;
 }
 
-.header__right {
+.header__right,
+.header__left {
 	display: flex;
 	align-items: center;
 	gap: 1.25rem;
@@ -119,13 +120,6 @@
 	justify-content: flex-start;
 	padding-inline-start: 2rem;
 	min-width: 0;
-}
-
-.header__left {
-	display: flex;
-	align-items: center;
-	gap: 1.25rem;
-	flex-shrink: 0;
 }
 
 /* ==========================================================
