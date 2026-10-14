@@ -36,6 +36,14 @@
 		// بدون جاوااسکریپت این مورد دیده نمی‌شود (hidden در HTML)
 		button.closest( 'li' )?.removeAttribute( 'hidden' );
 
+		// role=button روی لینک: با فاصله هم فعال شود (مثل دکمه واقعی)
+		button.addEventListener( 'keydown', ( event ) => {
+			if ( ' ' === event.key ) {
+				event.preventDefault();
+				button.click();
+			}
+		} );
+
 		button.addEventListener( 'click', async ( event ) => {
 			event.preventDefault();
 			let message;

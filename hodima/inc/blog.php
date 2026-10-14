@@ -198,12 +198,16 @@ function hodima_blog_card_html( int $post_id, array $args = [] ): string {
 		}
 	}
 
-	return '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '" class="blog-page-card' . ( $featured ? ' blog-page-card--featured' : '' ) . '">'
+	// نام قابل‌خواندن لینک = فقط عنوان (نه عنوان + تاریخ + زمان مطالعه)؛ متای کارت توضیح آن است
+	$title_id = wp_unique_id( 'blog-card-title-' );
+	$meta_id  = wp_unique_id( 'blog-card-meta-' );
+
+	return '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '" class="blog-page-card' . ( $featured ? ' blog-page-card--featured' : '' ) . '" aria-labelledby="' . $title_id . '"' . ( '' !== $meta ? ' aria-describedby="' . $meta_id . '"' : '' ) . '>'
 		. $thumb
 		. '<div class="blog-page-content">'
-		. '<' . $heading . ' class="blog-page-title">' . esc_html( $title ) . '</' . $heading . '>'
+		. '<' . $heading . ' class="blog-page-title" id="' . $title_id . '">' . esc_html( $title ) . '</' . $heading . '>'
 		. $excerpt
-		. ( '' !== $meta ? '<div class="blog-page-meta">' . $meta . '</div>' : '' )
+		. ( '' !== $meta ? '<div class="blog-page-meta" id="' . $meta_id . '">' . $meta . '</div>' : '' )
 		. '</div></a>';
 }
 
@@ -273,7 +277,7 @@ function hodima_blog_subcategory_chips( int $parent_id ): array {
  *
  * @param list<array{name:string, url:string, active:bool, count:int}> $items
  */
-function hodima_blog_chips_list_html( array $items, bool $counts, string $modifier = '' ): string {
+function hodima_blog_chips_list_html( array $items, bool $counts, string $modifier = '', string $label = '' ): string {
 
 	$html = '';
 	foreach ( $items as $item ) {
@@ -284,7 +288,7 @@ function hodima_blog_chips_list_html( array $items, bool $counts, string $modifi
 		$html .= '<li><a class="hodima-chip blog-cats__link" href="' . esc_url( $item['url'] ) . '"' . ( $item['active'] ? ' aria-current="page"' : '' ) . '>' . esc_html( $item['name'] ) . $count . '</a></li>';
 	}
 
-	return '' !== $html ? '<ul class="blog-cats__list' . $modifier . '">' . $html . '</ul>' : '';
+	return '' !== $html ? '<ul class="blog-cats__list' . $modifier . '"' . ( '' !== $label ? ' aria-label="' . esc_attr( $label ) . '"' : '' ) . '>' . $html . '</ul>' : '';
 }
 
 /**
@@ -318,7 +322,7 @@ function hodima_blog_categories_bar_html(): string {
 		];
 	}
 
-	$html = hodima_blog_chips_list_html( $items, $counts );
+	$html = hodima_blog_chips_list_html( $items, $counts, '', 'دسته‌ها' );
 
 	// ردیف دوم: زیردسته‌های دسته اصلی که در آن هستیم (دسته جاری یا پدر سطح اولش)
 	if ( $current > 0 ) {
@@ -336,7 +340,7 @@ function hodima_blog_categories_bar_html(): string {
 			];
 		}
 
-		$html .= hodima_blog_chips_list_html( $sub_items, $counts, ' blog-cats__list--sub' );
+		$html .= hodima_blog_chips_list_html( $sub_items, $counts, ' blog-cats__list--sub', 'زیردسته‌ها' );
 	}
 
 	return '<nav class="blog-cats" aria-label="دسته‌های وبلاگ">' . $html . '</nav>';

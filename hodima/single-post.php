@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
 get_header(); 
 ?>
 
-<div class="hodima-page-wrapper">
+<main id="primary" class="hodima-page-wrapper">
     <?php
     // نوار پیشرفت مطالعه (تنظیمات قالب ← وبلاگ ← امکانات صفحه مقاله؛ رفتار: single-post.js)
     if ( hodima_setting( 'blog_progress' ) ) :
@@ -140,6 +140,6 @@ get_header();
         <?php echo hodima_post_nav_html( $hodima_post_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_post_nav_html ?>
 
     <?php endwhile; // پایان حلقه وردپرس ?>
-</div>
+</main>
 
 <?php get_footer(); ?>

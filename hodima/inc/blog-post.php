@@ -173,7 +173,8 @@ function hodima_post_nav_html( int $post_id ): string {
 			continue;
 		}
 
-		$label  = 'prev' === $rel ? '‹ مقاله قبلی' : 'مقاله بعدی ›';
+		// فلش تزئینی است و صفحه‌خوان آن را نمی‌خواند
+		$label  = 'prev' === $rel ? '<span aria-hidden="true">‹</span> مقاله قبلی' : 'مقاله بعدی <span aria-hidden="true">›</span>';
 		$links .= '<a class="single-post-nav__link single-post-nav__link--' . $rel . '" rel="' . $rel . '" href="' . esc_url( (string) get_permalink( $adjacent ) ) . '">'
 			. '<span class="single-post-nav__label">' . $label . '</span>'
 			. '<span class="single-post-nav__title">' . esc_html( get_the_title( $adjacent ) ) . '</span></a>';

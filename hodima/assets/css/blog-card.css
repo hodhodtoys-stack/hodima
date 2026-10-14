@@ -264,3 +264,15 @@
 		color: #fff;
 	}
 }
+
+/* کاربر «کاهش حرکت» را خواسته: بدون بالا آمدن و انیمیشن کارت و دکمه‌ها */
+@media (prefers-reduced-motion: reduce) {
+	.blog-page-card,
+	.hodima-chip {
+		transition: none;
+	}
+
+	.blog-page-card:hover {
+		transform: none;
+	}
+}

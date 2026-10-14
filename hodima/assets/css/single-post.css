@@ -510,3 +510,9 @@
 		flex-direction: column;
 	}
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.single-post-nav__link {
+		transition: none;
+	}
+}
