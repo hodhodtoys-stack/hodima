@@ -70,7 +70,12 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 
 ?>
 
-<div class="custom-product-page-container">
+<div class="hodima-page-wrapper custom-product-page-container">
+
+	<?php // مسیر راهنما داخل همین قاب (مثل فروشگاه و دسته)؛ نسخه پیش‌فرض ووکامرس بیرون قاب بود ?>
+	<div class="section-breadcrumb">
+		<?php woocommerce_breadcrumb(); ?>
+	</div>
 
 	<main id="main-content" class="hodima-section-box section-product-main">
 		<div id="product-<?php the_ID(); ?>" <?php wc_product_class( 'custom-single-product-wrapper', $product ); ?>>

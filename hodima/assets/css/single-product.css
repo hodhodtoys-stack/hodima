@@ -24,57 +24,7 @@
 	--brand-hover: var(--hodima-primary-dark, #1b244d);
 	--star-color: var(--hodima-secondary, #607bbd);
 	--brand-gradient: linear-gradient(135deg, var(--hodima-primary, #25316a) 0%, var(--hodima-primary, #25316a) 55%, var(--hodima-secondary, #607bbd) 100%);
-	--space-xs: 6px;
-	--space-s: 10px;
-	--space-m: 15px;
-	--space-l: 25px;
 	--radius: var(--hodima-radius-md);
-	--section-gap: 10px;
-}
-
-/* ==========================================================================
-   1. Layout and breadcrumb
-   ========================================================================== */
-
-.custom-product-page-container {
-	max-width: var(--hodima-container);
-	margin: 0 auto;
-	padding: 0 20px;
-	direction: rtl;
-	box-sizing: border-box;
-}
-
-.woocommerce-breadcrumb {
-	background-color: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
-	padding: 10px 20px !important;
-	border-radius: var(--hodima-radius-md);
-	margin: var(--section-gap) auto !important;
-	font-size: 0.85rem !important;
-	color: var(--hodima-text-muted, #5d6785) !important;
-	display: block;
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	max-width: calc(var(--hodima-container) - 40px);
-	box-sizing: border-box;
-}
-
-@media (width <= 1140px) {
-	.woocommerce-breadcrumb {
-		margin-inline: 10px 0 !important;
-		width: calc(100% - 20px);
-	}
-}
-
-.woocommerce-breadcrumb {
-	& a {
-		color: var(--hodima-text-dark, #111111) !important;
-		text-decoration: none;
-		transition: color 0.25s ease;
-		font-weight: 500;
-
-		&:hover {
-			color: var(--hodima-primary, #25316a) !important;
-		}
-	}
 }
 
 /* ==========================================================================
@@ -89,11 +39,7 @@
 	align-items: flex-start;
 	gap: 30px;
 	background: var(--hodima-bg-gray, #eef2f8);
-	border: 1px solid var(--hodima-border, var(--hodima-third, #b6c2f3));
-	border-radius: var(--hodima-radius-xl);
-	box-shadow: none;
-	box-sizing: border-box;
-	margin-bottom: var(--section-gap);
+	border-color: var(--hodima-border, var(--hodima-third, #b6c2f3)); /* حاشیه رنگی عمدی (تصمیم کاربر) */
 }
 
 .custom-single-product-wrapper {
@@ -147,7 +93,6 @@
 		flex-direction: column;
 		flex-wrap: wrap;
 		gap: 15px;
-		border-radius: var(--hodima-radius-lg);
 	}
 
 	.custom-product-gallery,
@@ -816,19 +761,10 @@
    ========================================================================== */
 
 .video-wrapper {
-	margin-bottom: var(--space-s);
+	margin-bottom: var(--hodima-space-4);
 	width: 100%;
 	border-radius: var(--hodima-radius-xl);
 	overflow: hidden;
-}
-
-.hodima-section-box {
-	border-radius: var(--hodima-radius-xl);
-	padding: var(--space-m);
-	box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.03);
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	margin-bottom: var(--space-s) !important;
-	background: #fff;
 }
 
 .section-description {
@@ -844,9 +780,6 @@
    ========================================================================== */
 
 .section-upsells {
-	margin-top: var(--section-gap);
-	margin-bottom: var(--section-gap);
-
 	& .related.products {
 		display: none !important;
 	}
@@ -1082,12 +1015,6 @@
 }
 
 @media (width <= 768px) {
-	:root {
-		--space-m: 12px;
-		--space-l: 20px;
-		--section-gap: 8px;
-	}
-
 	.custom-single-product-wrapper {
 		flex-wrap: wrap;
 		padding: 15px;
@@ -1181,14 +1108,6 @@
 }
 
 @media (width <= 480px) {
-	:root {
-		--section-gap: 6px;
-	}
-
-	.custom-product-page-container {
-		padding: 0 10px;
-	}
-
 	.custom-single-product-wrapper {
 		padding: 10px;
 		border-radius: var(--hodima-radius-xl);

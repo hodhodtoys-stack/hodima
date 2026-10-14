@@ -78,4 +78,21 @@
 			color: var(--hodima-primary, #25316a);
 		}
 	}
+
+	/* نوار مسیر ووکامرس (فروشگاه، دسته، محصول): همان فاصله و رنگ نوار؛ قانون خود ووکامرس margin پایین ۱em و اندازه ۰٫۹۲em می‌گذارد */
+	& nav.woocommerce-breadcrumb {
+		margin: 0;
+		padding: 0;
+		font-size: inherit;
+		color: inherit;
+
+		/* وزن (0,2,2) از قانون لینک ووکامرس (0,2,1) بیشتر است؛ بی !important */
+		& a {
+			color: var(--hodima-text-dark, #111111);
+
+			&:hover {
+				color: var(--hodima-primary, #25316a);
+			}
+		}
+	}
 }

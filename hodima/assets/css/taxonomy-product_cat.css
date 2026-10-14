@@ -24,14 +24,6 @@
 		padding: 0 !important;
 		line-height: 1.5 !important;
 	}
-
-	& a {
-		color: var(--hodima-text-dark, #111111) !important;
-
-		&:hover {
-			color: var(--hodima-primary, #25316a) !important;
-		}
-	}
 }
 
 /* ------------------------------- */
