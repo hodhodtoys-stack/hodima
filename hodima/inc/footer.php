@@ -30,10 +30,6 @@ add_action( 'wp_enqueue_scripts', 'hodima_footer_assets', 20 );
  */
 function hodima_render_social_bar(): void {
 
-    if ( ! function_exists( 'hodima_social_links' ) || ! function_exists( 'hodima_socials_visible_here' ) ) {
-        return;
-    }
-
     $socials = hodima_social_links();
 
     // بدون هیچ شبکه‌ای، یا در صفحه مستثنا، نوار اصلا چاپ نمی‌شود

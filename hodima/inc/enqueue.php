@@ -35,13 +35,6 @@ function hodima_asset_version( string $rel_path ): string {
 }
 
 /**
- * true اگر فایل استاتیک واقعا روی دیسک وجود داشته باشد.
- */
-function hodima_asset_exists( string $rel_path ): bool {
-	return is_file( hodima_DIR . '/' . ltrim( $rel_path, '/' ) );
-}
-
-/**
  * یک فایل CSS/JS قالب را در صف بارگذاری بگذار (فایل ناموجود رد می‌شود).
  *
  * @param list<string>               $deps

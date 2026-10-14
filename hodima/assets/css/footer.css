@@ -19,7 +19,6 @@
 	--footer-text: rgb(255 255 255 / 0.82);
 	--footer-heading: #ffffff;
 	--footer-link-hover: var(--hodima-third, #b6c2f3);
-	--footer-note-text: rgb(255 255 255 / 0.78);
 	--footer-copyright-text: rgb(255 255 255 / 0.7);
 
 	--footer-shadow: 0 -0.75rem 2rem rgb(20 28 64 / 0.18);
@@ -123,30 +122,6 @@
 /* ==========================================================
    ۵. لیست‌ها و آیکون‌ها
    ========================================================== */
-.footer-list {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-
-	& li,
-	& a {
-		display: flex;
-		align-items: center;
-		gap: 0.625rem;
-		color: var(--footer-text);
-		text-decoration: none;
-		margin-bottom: 0.75rem;
-		font-size: 0.875rem; /* افزایش سایز متن لینک‌ها و لیست‌ها */
-		font-weight: 400;
-		transition: color 0.3s ease, transform 0.3s ease;
-	}
-
-	& a:hover {
-		color: var(--footer-link-hover);
-		transform: translateX(-0.1875rem);
-	}
-}
-
 .f-icon {
 	width: 1.0625rem;
 	height: 1.0625rem;
@@ -170,20 +145,6 @@
 
 .footer-address .f-icon {
 	margin-top: 0.25rem;
-}
-
-.footer-note {
-	font-size: 0.6875rem;
-	font-weight: 400;
-	color: var(--footer-note-text);
-	background: var(--footer-surface);
-	border: 1px solid var(--footer-border);
-	backdrop-filter: blur(8px);
-	padding: 0.375rem 0.75rem;
-	border-radius: var(--hodima-radius-md);
-	display: inline-block;
-	margin: 0;
-	box-shadow: var(--footer-card-shadow);
 }
 
 /* ==========================================================

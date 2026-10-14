@@ -195,8 +195,7 @@ function hodima_dequeue_woo_heavy_assets(): void {
         wp_dequeue_script( 'photoswipe-ui-default' );
         wp_deregister_script( 'photoswipe-ui-default' );
 
-        // ✅✅ اسکریپت زیر برای تبدیل باکس به ستاره الزامی است و نباید حذف شود:
-        // wp_dequeue_script( 'wc-single-product' ); 
+        // اسکریپت wc-single-product برای تبدیل باکس به ستاره الزامی است و عمدا حذف نمی‌شود.
 
         wp_dequeue_style( 'photoswipe' );
         wp_dequeue_style( 'photoswipe-default-skin' );

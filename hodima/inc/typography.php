@@ -469,7 +469,7 @@ function hodima_typography_editor_styles(): void {
 
 /** CSS تنظیمات پیشخوان برای ویرایشگرها (پالت + تایپوگرافی). */
 function hodima_typography_editor_css(): string {
-	return ( function_exists( 'hodima_palette_css' ) ? hodima_palette_css() : '' ) . hodima_typography_css();
+	return hodima_palette_css() . hodima_typography_css();
 }
 
 add_filter( 'block_editor_settings_all', 'hodima_typography_block_editor_settings' );

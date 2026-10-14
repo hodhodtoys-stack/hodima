@@ -677,7 +677,7 @@ function hodima_home_layout_from_content( ?string $content = null ): array {
 
 	$items      = [];
 	$pending    = '';
-	$cat_map    = function_exists( 'hodima_home_category_shortcode_map' ) ? hodima_home_category_shortcode_map() : [];
+	$cat_map    = hodima_home_category_shortcode_map();
 	$cat_tones  = hodima_home_legacy_category_tones( $cat_map );
 	$tone_by_css = [];
 	foreach ( Hodima_Home_Tone::cases() as $tone_case ) {

@@ -24,7 +24,7 @@ $hodima_about_text  = (string) ( $hodima_s['about_text'] ?? '' );
 $hodima_guide_text  = (string) ( $hodima_s['guide_text'] ?? '' );
 $hodima_address     = (string) ( $hodima_s['address'] ?? '' );
 $hodima_map_url     = (string) ( $hodima_s['map_url'] ?? '' );
-$hodima_trust      = function_exists( 'hodima_trust_badges' ) ? hodima_trust_badges() : [];
+$hodima_trust      = hodima_trust_badges();
 $hodima_trust_title = (string) ( $hodima_s['trust_title'] ?? '' );
 $hodima_has_form    = shortcode_exists( 'hodima_phone_form' );
 $hodima_copyright   = (string) ( $hodima_s['copyright'] ?? '' ) ?: get_bloginfo( 'name' );
@@ -33,9 +33,7 @@ $hodima_copyright   = (string) ( $hodima_s['copyright'] ?? '' ) ?: get_bloginfo(
 <!-- پایان محتوای اصلی سایت -->
 
 <?php
-if ( function_exists( 'hodima_render_social_bar' ) ) {
-    hodima_render_social_bar();
-}
+hodima_render_social_bar();
 ?>
 
 <footer class="custom-site-footer">

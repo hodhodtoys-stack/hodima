@@ -34,7 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; ?>
 <a class="skip-link" href="#site-content">پرش به محتوای اصلی</a>
 <?php
 // کانال‌های تماس از «نمایش ← تنظیمات هدیما»؛ بدون کانال، دکمه و پنجره پشتیبانی چاپ نمی‌شوند.
-$hodima_channels = function_exists( 'hodima_contact_channels' ) ? hodima_contact_channels() : [];
+$hodima_channels = hodima_contact_channels();
 $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'logo_invert' ) ) ? ' header__logo--invert' : '';
 ?>
 
@@ -66,7 +66,7 @@ $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'log
 
                     <!-- لوگو از تنظیمات قالب؛ در صورت فعال بودن گزینه، با CSS سفید نمایش داده می‌شود -->
                     <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="header__logo<?php echo esc_attr( $hodima_logo_cls ); ?>" aria-label="<?php echo esc_attr( 'صفحه اصلی ' . get_bloginfo( 'name' ) ); ?>" rel="home">
-                        <?php echo function_exists( 'hodima_logo_html' ) ? hodima_logo_html() : esc_html( get_bloginfo( 'name' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hodima_logo_html خودش escape می‌کند ?>
+                        <?php echo hodima_logo_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hodima_logo_html خودش escape می‌کند ?>
                     </a>
 
                     <!-- منوی اصلی (یکپارچه برای دسکتاپ و موبایل) -->

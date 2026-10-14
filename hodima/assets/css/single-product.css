@@ -815,66 +815,9 @@
 	}
 }
 
-.product-meta-box {
-	margin-top: 20px;
-	font-size: 0.85rem;
-	color: var(--hodima-text-muted, #5d6785);
-}
-
 /* ==========================================================================
    8. Bottom sections
    ========================================================================== */
-
-.custom-bottom-section {
-	display: flex;
-	flex-direction: column;
-	gap: var(--section-gap);
-	margin-bottom: var(--section-gap);
-}
-
-.info-card {
-	border-radius: var(--hodima-radius-xl);
-	padding: var(--space-m) !important;
-	box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.03);
-	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	margin-bottom: var(--space-s) !important;
-	background: #fff;
-}
-
-.desc-card {
-	background: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
-	padding: var(--space-m) !important;
-	margin-bottom: var(--space-s) !important;
-}
-
-.reviews-card {
-	background: var(--hodima-bg-gray, #eef2f8) !important;
-	padding: var(--space-m) !important;
-	margin-bottom: var(--space-s) !important;
-}
-
-.info-card-title {
-	font-size: 1.25rem;
-	font-weight: 700;
-	margin-top: 0;
-	margin-bottom: var(--space-s) !important;
-	padding-bottom: var(--space-xs) !important;
-	border-bottom: 2px solid rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.08);
-	display: inline-block;
-	position: relative;
-	color: var(--hodima-text-dark, #111111);
-
-	&::after {
-		content: '';
-		position: absolute;
-		bottom: -2px;
-		inset-inline-start: 0;
-		width: 50px;
-		height: 3px;
-		background: var(--hodima-primary, #25316a);
-		border-radius: calc(2px * var(--hodima-radius-scale));
-	}
-}
 
 .video-wrapper {
 	margin-bottom: var(--space-s);
@@ -1188,14 +1131,6 @@
 		}
 	}
 
-	.custom-bottom-section {
-		margin-bottom: var(--section-gap);
-	}
-
-	.info-card {
-		padding: 20px 15px;
-	}
-
 	.section-upsells .up-sells ul.products {
 		grid-template-columns: repeat(3, 1fr) !important;
 		gap: 10px !important;
@@ -1281,11 +1216,6 @@
 		}
 	}
 
-	.info-card {
-		padding: 15px 10px;
-		border-radius: var(--hodima-radius-lg);
-	}
-
 	.section-upsells .up-sells ul.products {
 		grid-template-columns: repeat(2, 1fr) !important;
 		gap: 10px !important;
@@ -1326,9 +1256,7 @@
 		display: none !important;
 	}
 
-	& .product-voice,
-	& .voice-player,
-	& .audio-player {
+	& .product-voice {
 		margin-top: 4px !important;
 		margin-bottom: 8px !important;
 	}
@@ -1388,12 +1316,6 @@
 			padding: 0;
 			display: inline;
 		}
-	}
-
-	& .hp-min-qty-line dd {
-		font-size: 1.15rem;
-		font-weight: 700;
-		color: var(--hodima-text-dark, #111111);
 	}
 
 	/* کد محصول و آخرین به‌روزرسانی: کوچک و کم‌رنگ */

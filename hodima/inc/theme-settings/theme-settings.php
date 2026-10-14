@@ -192,7 +192,7 @@ function hodima_typography_fields(): array {
 
 	// نام دلخواه فونت آپلودی در فهرست انتخاب (گزینه خام: hodima_setting() این‌جا حلقه بی‌پایان می‌سازد)
 	$custom  = (string) ( ( (array) get_option( HODIMA_SETTINGS_OPTION, [] ) )['font_custom_name'] ?? '' );
-	$custom  = function_exists( 'hodima_typography_clean_font_name' ) ? hodima_typography_clean_font_name( $custom ) : '';
+	$custom  = hodima_typography_clean_font_name( $custom );
 	$fonts   = [ 'vazirmatn' => 'وزیرمتن (همراه قالب)', 'custom' => '' !== $custom ? $custom . ' (فونت آپلودی)' : 'فونت آپلودی (قاب «فونت آپلودی»)', 'system' => 'فونت سیستم کاربر (بدون دانلود فونت)' ];
 	$weights = hodima_typography_weights();
 	$colors  = hodima_typography_color_options();
@@ -524,8 +524,8 @@ add_action( 'admin_init', static function (): void {
  */
 add_action( 'admin_menu', static function (): void {
 	add_menu_page(
-		'تنظیمات قالب هدیما',
-		'تنظیمات قالب هدیما',
+		'تنظیمات قالب هدیما', // عنوان تب مرورگر
+		'قالب هدیما',          // نام منوی پیشخوان
 		'manage_options',
 		HODIMA_SETTINGS_PAGE,
 		'hodima_settings_render_page',
@@ -577,7 +577,7 @@ function hodima_settings_sanitize( $input ): array {
 	}
 
 	// «فونت آپلودی» بدون فایل (inc/typography.php)
-	return function_exists( 'hodima_typography_validate' ) ? hodima_typography_validate( $clean ) : $clean;
+	return hodima_typography_validate( $clean );
 }
 
 /**
@@ -993,9 +993,9 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 		<div class="hodima-panel__body">
 			<?php if ( 'swatches' === $layout ) : ?>
 				<?php hodima_settings_palette_preview( $settings ); ?>
-			<?php elseif ( 'typepreview' === $layout && function_exists( 'hodima_typography_preview' ) ) : ?>
+			<?php elseif ( 'typepreview' === $layout ) : ?>
 				<?php hodima_typography_preview(); ?>
-			<?php elseif ( 'lookpreview' === $layout && function_exists( 'hodima_appearance_preview' ) ) : ?>
+			<?php elseif ( 'lookpreview' === $layout ) : ?>
 				<?php hodima_appearance_preview(); ?>
 			<?php elseif ( 'backup' === $layout && function_exists( 'hodima_settings_backup_panel' ) ) : ?>
 				<?php hodima_settings_backup_panel(); ?>
@@ -1091,7 +1091,7 @@ function hodima_settings_render_headings( array $panel, array $grouped, array $g
 		}
 	}
 
-	$shared = function_exists( 'hodima_typography_shared_heading_fields' ) ? hodima_typography_shared_heading_fields( $settings ) : [ 'fields' => [], 'differs' => false ];
+	$shared = hodima_typography_shared_heading_fields( $settings );
 	?>
 	<?php if ( $shared['fields'] || $loose ) : ?>
 		<div class="hodima-headings-all">
@@ -1370,7 +1370,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<button type="button" class="button" data-hodima-media-select aria-describedby="<?php echo esc_attr( $id ); ?>-label" data-title="<?php echo esc_attr( $field['label'] ); ?>"><?php echo $font_id ? 'تغییر فایل' : 'انتخاب فایل'; ?></button>
 					<button type="button" class="button-link hodima-media__remove" data-hodima-media-remove aria-describedby="<?php echo esc_attr( $id ); ?>-label" <?php echo $font_id ? '' : 'hidden'; ?>>حذف</button>
 				</div>
-				<?php if ( preg_match( '/^font_custom_(\d+)$/', $key, $hodima_w ) && function_exists( 'hodima_typography_custom_family' ) ) : ?>
+				<?php if ( preg_match( '/^font_custom_(\d+)$/', $key, $hodima_w ) ) : ?>
 					<?php // نمونه همین وزن با فونت آپلودی (پیش از ذخیره هم: admin.js همان خانواده را با FontFace اضافه می‌کند) ?>
 					<span class="hodima-font-sample" data-hodima-font-sample style="<?php echo esc_attr( sprintf( "font-family: '%s', Tahoma, sans-serif; font-weight: %d", hodima_typography_custom_family(), (int) $hodima_w[1] ) ); ?>" <?php echo $font_id ? '' : 'hidden'; ?>>نمونه متن فارسی ۱۲۳ Abc</span>
 				<?php endif; ?>
