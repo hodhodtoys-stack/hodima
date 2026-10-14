@@ -45,14 +45,14 @@
 }
 
 .woocommerce-breadcrumb {
-	background-color: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd)) !important;
+	background-color: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
 	padding: 10px 20px !important;
-	border-radius: var(--hodima-radius-md) !important;
+	border-radius: var(--hodima-radius-md);
 	margin: var(--section-gap) auto !important;
 	font-size: 0.85rem !important;
 	color: var(--hodima-text-muted, #5d6785) !important;
-	display: block !important;
-	border: 1px solid var(--hodima-border-light, #d9e1f0) !important;
+	display: block;
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
 	max-width: calc(var(--hodima-container) - 40px);
 	box-sizing: border-box;
 }
@@ -60,16 +60,16 @@
 @media (width <= 1140px) {
 	.woocommerce-breadcrumb {
 		margin-inline: 10px 0 !important;
-		width: calc(100% - 20px) !important;
+		width: calc(100% - 20px);
 	}
 }
 
 .woocommerce-breadcrumb {
 	& a {
 		color: var(--hodima-text-dark, #111111) !important;
-		text-decoration: none !important;
-		transition: color 0.25s ease !important;
-		font-weight: 500 !important;
+		text-decoration: none;
+		transition: color 0.25s ease;
+		font-weight: 500;
 
 		&:hover {
 			color: var(--hodima-primary, #25316a) !important;
@@ -349,8 +349,8 @@
 		width: 18px;
 		height: 18px;
 		display: block;
-		stroke: currentcolor !important;
-		fill: none !important;
+		stroke: currentcolor;
+		fill: none;
 		stroke-width: 2;
 	}
 
@@ -501,7 +501,7 @@
 .custom-product-summary .product_title {
 	margin-top: 0;
 	margin-bottom: 15px;
-	text-align: center !important;
+	text-align: center;
 	width: 100%;
 	display: block;
 }
@@ -570,7 +570,7 @@
 	}
 
 	& .woocommerce-product-details__short-description {
-		margin-top: 4px !important;
+		margin-top: 4px;
 		margin-bottom: 8px !important;
 
 		& table {
@@ -581,7 +581,7 @@
 			border-radius: var(--hodima-radius-md);
 			overflow: hidden;
 			background: #fff;
-			border: none !important;
+			border: none;
 		}
 
 		& table td {
@@ -593,11 +593,11 @@
 		}
 
 		& table tr:nth-of-type(odd) {
-			background-color: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd)) !important;
+			background-color: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
 		}
 
 		& table tr:nth-of-type(even) {
-			background-color: #ffffff !important;
+			background-color: #ffffff;
 		}
 
 		& table tr:last-of-type {
@@ -645,7 +645,7 @@
 	& .wholesale-price * {
 		font-size: 1.15rem;
 		font-weight: 700;
-		color: var(--hodima-text-dark, #111111) !important;
+		color: var(--hodima-text-dark, #111111);
 	}
 
 	& .unit-price-line {
@@ -762,7 +762,7 @@
 		display: flex;
 		gap: 15px;
 		align-items: center;
-		margin-top: 25px !important;
+		margin-top: 25px;
 		flex-wrap: wrap;
 		padding-top: 20px;
 		border-top: 1px solid rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.08);
@@ -792,16 +792,16 @@
 
 		& button.single_add_to_cart_button {
 			background: var(--hodima-gradient-main) !important;
-			color: #ffffff !important;
-			border: none !important;
-			border-radius: var(--hodima-radius-md) !important;
-			padding: 0 25px !important;
-			height: var(--hodima-control-h) !important;
-			font-size: 0.9rem !important;
-			font-weight: 700 !important;
+			color: #ffffff;
+			border: none;
+			border-radius: var(--hodima-radius-md);
+			padding: 0 25px;
+			height: var(--hodima-control-h);
+			font-size: 0.9rem;
+			font-weight: 700;
 			cursor: pointer;
-			transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease !important;
-			flex: 0 0 auto !important;
+			transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+			flex: 0 0 auto;
 			display: flex;
 			justify-content: center;
 			align-items: center;
@@ -809,7 +809,7 @@
 
 		& button.single_add_to_cart_button:hover {
 			filter: brightness(1.02);
-			box-shadow: 0 5px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.18) !important;
+			box-shadow: 0 5px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.18);
 			transform: translateY(-2px);
 		}
 	}
@@ -857,16 +857,16 @@
 
 	& .up-sells {
 		& h2 {
-			font-size: 1.4rem !important;
-			font-weight: 700 !important;
-			margin-bottom: 25px !important;
-			color: var(--hodima-text-dark, #111111) !important;
+			font-size: 1.4rem;
+			font-weight: 700;
+			margin-bottom: 25px;
+			color: var(--hodima-text-dark, #111111);
 		}
 
 		& ul.products {
-			display: grid !important;
-			grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-			gap: 20px !important;
+			display: grid;
+			grid-template-columns: repeat(6, minmax(0, 1fr));
+			gap: 20px;
 		}
 
 		& ul.products > li:nth-child(n+7) {
@@ -875,7 +875,7 @@
 
 		& ul.products::before,
 		& ul.products::after {
-			display: none !important;
+			display: none;
 		}
 	}
 }
@@ -1075,8 +1075,8 @@
 
 @media (width <= 1024px) {
 	.section-upsells .up-sells ul.products {
-		grid-template-columns: repeat(3, 1fr) !important;
-		gap: 15px !important;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 15px;
 	}
 
 	.sp-gallery__thumb {
@@ -1119,21 +1119,21 @@
 
 	.custom-product-summary {
 		& form.cart {
-			flex-wrap: nowrap !important;
+			flex-wrap: nowrap;
 			justify-content: center;
 			gap: 10px;
 
 			& button.single_add_to_cart_button {
-				width: auto !important;
+				width: auto;
 				flex-grow: 1;
-				padding: 0 15px !important;
+				padding: 0 15px;
 			}
 		}
 	}
 
 	.section-upsells .up-sells ul.products {
-		grid-template-columns: repeat(3, 1fr) !important;
-		gap: 10px !important;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 10px;
 	}
 
 	.sp-gallery__zoom {
@@ -1168,8 +1168,8 @@
 	.woocommerce {
 		& #reviews {
 			& .comment-text {
-				font-size: 0.95rem !important;
-				line-height: 1.7 !important;
+				font-size: 0.95rem;
+				line-height: 1.7;
 			}
 
 			& .meta {
@@ -1179,7 +1179,7 @@
 
 		& #review_form #respond .comment-form-author,
 		& #review_form #respond .comment-form-email {
-			min-width: 100% !important;
+			min-width: 100%;
 		}
 	}
 }
@@ -1206,8 +1206,8 @@
 
 		& form.cart {
 			& button.single_add_to_cart_button {
-				font-size: 0.95rem !important;
-				padding: 0 10px !important;
+				font-size: 0.95rem;
+				padding: 0 10px;
 			}
 
 			& .quantity input.qty {
@@ -1217,8 +1217,8 @@
 	}
 
 	.section-upsells .up-sells ul.products {
-		grid-template-columns: repeat(2, 1fr) !important;
-		gap: 10px !important;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 10px;
 	}
 
 	.sp-gallery__main {
@@ -1253,7 +1253,7 @@
 .custom-product-summary {
 	& .woocommerce-review-link,
 	& .woocommerce-product-rating {
-		display: none !important;
+		display: none;
 	}
 
 	& .product-voice {
@@ -1262,7 +1262,7 @@
 	}
 
 	& form.cart {
-		margin-top: 6px !important;
+		margin-top: 6px;
 	}
 
 	& > * {
@@ -1399,12 +1399,12 @@ dialog.sp-lightbox {
 		border-top: 1px solid rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.08);
 
 		& .product-add-to-cart-box {
-			margin: 0 !important;
+			margin: 0;
 		}
 
 		& form.cart {
 			display: flex;
-			flex-wrap: nowrap !important;
+			flex-wrap: nowrap;
 			align-items: center;
 			gap: 8px;
 			margin: 0 !important;
@@ -1422,18 +1422,18 @@ dialog.sp-lightbox {
 		}
 
 		& form.cart button.single_add_to_cart_button {
-			height: var(--hodima-control-h) !important;
-			padding: 0 18px !important;
-			font-size: 0.85rem !important;
-			border-radius: var(--hodima-radius-md) !important;
-			box-shadow: none !important;
-			flex-grow: 0 !important;
+			height: var(--hodima-control-h);
+			padding: 0 18px;
+			font-size: 0.85rem;
+			border-radius: var(--hodima-radius-md);
+			box-shadow: none;
+			flex-grow: 0;
 		}
 
 		& form.cart button.single_add_to_cart_button:hover {
 			transform: none;
 			filter: brightness(1.06);
-			box-shadow: 0 3px 10px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.15) !important;
+			box-shadow: 0 3px 10px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.15);
 		}
 
 		/* وضعیت پیش‌خرید / پیش‌فاکتور: قرص کوچک هم‌ارتفاع دکمه */
@@ -1597,7 +1597,7 @@ dialog.sp-lightbox {
 			}
 
 			& form.cart {
-				gap: 6px !important;
+				gap: 6px;
 				width: 100%;
 			}
 
@@ -1607,10 +1607,10 @@ dialog.sp-lightbox {
 			}
 
 			& form.cart button.single_add_to_cart_button {
-				flex: 1 1 auto !important;
+				flex: 1 1 auto;
 				min-width: 0;
-				padding: 0 10px !important;
-				font-size: 0.8rem !important;
+				padding: 0 10px;
+				font-size: 0.8rem;
 				white-space: nowrap;
 			}
 
@@ -1663,8 +1663,8 @@ dialog.sp-lightbox {
 .custom-product-summary {
 	& .hp-buy-row {
 		& form.cart button.single_add_to_cart_button {
-			padding: 0 14px !important;
-			font-size: 0.8rem !important;
+			padding: 0 14px;
+			font-size: 0.8rem;
 		}
 	}
 }
@@ -1678,24 +1678,24 @@ dialog.sp-lightbox {
 	.custom-product-summary {
 		& .hp-buy-row,
 		& .hp-buy-row form.cart {
-			gap: 4px !important;
+			gap: 4px;
 		}
 
 		& .hp-buy-row {
 			& form.cart button.single_add_to_cart_button {
-				padding: 0 8px !important;
-				font-size: 0.76rem !important;
+				padding: 0 8px;
+				font-size: 0.76rem;
 			}
 		}
 
 		/* فاصله کمتر بین جدول مشخصات و پادکست */
 		& .woocommerce-product-details__short-description table,
 		& .hodima-specs-table {
-			margin-bottom: 4px !important;
+			margin-bottom: 4px;
 		}
 
 		& .woocommerce-product-details__short-description > :last-child {
-			margin-bottom: 0 !important;
+			margin-bottom: 0;
 		}
 
 		& > .custom-voice-shortcode {
@@ -1748,7 +1748,7 @@ dialog.sp-lightbox {
 	.custom-product-summary {
 		& .hp-buy-row {
 			flex-wrap: wrap;
-			gap: 8px !important;
+			gap: 8px;
 
 			/* ردیف ۱: تعداد + دکمه، تمام‌عرض */
 
@@ -1757,7 +1757,7 @@ dialog.sp-lightbox {
 			}
 
 			& form.cart {
-				gap: 8px !important;
+				gap: 8px;
 			}
 
 			& form.cart .quantity input.qty {
@@ -1766,9 +1766,9 @@ dialog.sp-lightbox {
 			}
 
 			& form.cart button.single_add_to_cart_button {
-				flex: 1 1 auto !important;
-				padding: 0 14px !important;
-				font-size: 0.85rem !important;
+				flex: 1 1 auto;
+				padding: 0 14px;
+				font-size: 0.85rem;
 			}
 
 			/* ردیف ۲: وضعیت انبار + پیش‌خرید، دو ستون مساوی */
@@ -1789,7 +1789,7 @@ dialog.sp-lightbox {
 			& form.cart button.single_add_to_cart_button,
 			& .hp-stock-pill,
 			& .custom-stock-notice {
-				height: var(--hodima-control-h) !important;
+				height: var(--hodima-control-h);
 			}
 		}
 	}
@@ -1803,12 +1803,12 @@ dialog.sp-lightbox {
 .custom-product-summary {
 	& .woocommerce-product-details__short-description table,
 	& .hodima-specs-table {
-		margin-bottom: 4px !important;
+		margin-bottom: 4px;
 	}
 
 	& .woocommerce-product-details__short-description > :last-child,
 	& .hodima-specs-wrap {
-		margin-bottom: 0 !important;
+		margin-bottom: 0;
 	}
 
 	& > .custom-voice-shortcode {

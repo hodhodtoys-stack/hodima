@@ -27,7 +27,7 @@
 .woocommerce-message,
 .woocommerce-error,
 .woocommerce-info {
-	margin-bottom: var(--hodima-space-6) !important;
+	margin-bottom: var(--hodima-space-6);
 }
 
 .woocommerce-cart-form {
@@ -113,13 +113,13 @@
 
 	/* نمایش عکس محصول در موبایل و استایل‌دهی آن */
 	.woocommerce-page table.cart .product-thumbnail {
-		display: block !important;
+		display: block;
 		text-align: center;
-		border: none !important;
-		padding-bottom: var(--hodima-space-4) !important;
+		border: none;
+		padding-bottom: var(--hodima-space-4);
 
 		& img {
-			max-width: 80px !important;
+			max-width: 80px;
 			height: auto;
 			margin: 0 auto;
 			border-radius: var(--hodima-radius-md);
@@ -128,7 +128,7 @@
 
 		/* مخفی کردن لیبل پیش‌فرض ووکامرس کنار عکس در موبایل */
 		&::before {
-			display: none !important;
+			display: none;
 		}
 	}
 }

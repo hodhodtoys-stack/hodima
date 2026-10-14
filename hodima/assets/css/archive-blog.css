@@ -37,13 +37,13 @@
 	font-family: inherit;
 
 	& a {
-		color: var(--hodima-text-dark, #111111) !important;
-		text-decoration: none !important;
-		transition: color 0.25s ease !important;
-		font-weight: 500 !important;
+		color: var(--hodima-text-dark, #111111);
+		text-decoration: none;
+		transition: color 0.25s ease;
+		font-weight: 500;
 
 		&:hover {
-			color: var(--hodima-primary, #25316a) !important;
+			color: var(--hodima-primary, #25316a);
 		}
 	}
 }

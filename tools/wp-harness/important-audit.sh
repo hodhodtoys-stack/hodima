@@ -2,6 +2,7 @@
 # کدام !important قالب لازم نیست؟ (important-audit.mjs؛ نوسازی قالب، مرحله ۶)
 #   important-audit.sh            فقط گزارش
 #   important-audit.sh --apply    برداشتن !important‌های قابل حذف از سورس
+#   HODIMA_AUDIT_ALLOW_FOREIGN=1 ...   هدف کلاس ووکامرس/وردپرس هم سنجیده شود (CSS افزونه‌های دیگر سایت زنده دیده نمی‌شود)
 # صفحه‌های ابزار تست اصلی (۲۵) و ووکامرس واقعی (wc-run.sh) کار فعلی ساخته می‌شوند و
 # در ۱۰ عرض بررسی می‌شوند. بعد از --apply حتما visual-compare.sh و visual-compare.sh --wc.
 set -uo pipefail

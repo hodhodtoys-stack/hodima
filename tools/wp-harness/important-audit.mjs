@@ -15,6 +15,7 @@
  *   - هدفش کلاس خود قالب باشد (نه کلاس ووکامرس/وردپرس که CSS افزونه‌های سایت
  *     واقعی — که در ابزار تست نیستند — ممکن است هدف بگیرند)،
  *   - و حذف هم‌زمان همه موارد قابل حذف برنده هیچ عنصر/خصوصیتی را عوض نکند.
+ * HODIMA_AUDIT_ALLOW_FOREIGN=1: هدف کلاس ووکامرس/وردپرس هم بررسی شود (فقط ووکامرس واقعی ابزار تست در آبشار است؛ CSS افزونه‌های دیگر سایت دیده نمی‌شود).
  * --apply: «!important» همان اعلان‌ها را از سورس برمی‌دارد (بقیه فایل دست نمی‌خورد).
  */
 import fs from 'node:fs';
@@ -274,10 +275,10 @@ const winner = ( cands, removed ) => cands.reduce( ( best, c ) => ( ! best || cm
 
 // هدف کلاس خود قالب؟ (کلاس‌های ووکامرس/وردپرس را CSS افزونه‌های سایت واقعی هم هدف می‌گیرند)
 const FOREIGN = /^(woocommerce|wc-|wp-|wc_|product|products|price|amount|star-rating|button|onsale|added_to_cart|cart|cart_totals|cart-collaterals|checkout|quantity|qty|single_add_to_cart_button|comment|commentlist|children|reply|page-numbers|current|dots|related|up-sells|upsells|summary|images|tabs|alignfull|entry-|menu-item|sub-menu|current-menu|screen-reader|is-|has-|active|open|selected|stars|meta)/;
-const themeOwned = ( selectors ) => selectors.length > 0 && selectors.every( ( full ) => {
+const themeOwned = ( selectors ) => selectors.length > 0 && ( process.env.HODIMA_AUDIT_ALLOW_FOREIGN || selectors.every( ( full ) => {
 	const subject = full.trim().split( /\s*[\s>+~]\s*(?![^(]*\))/ ).pop().replace( /::?[a-z-]+(\([^)]*\))?/g, '' );
 	return [ ...subject.matchAll( /[.#]([\w-]+)/g ) ].some( ( m ) => ! FOREIGN.test( m[ 1 ] ) );
-} );
+} ) );
 
 const removed = new Set( [ ...decls.keys() ].filter( ( id ) => matched.has( id ) && themeOwned( decls.get( id ).selectors ) ) );
 const reasons = new Map();

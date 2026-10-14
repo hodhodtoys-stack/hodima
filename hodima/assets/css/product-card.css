@@ -13,60 +13,60 @@
 	--card-border: var(--hodima-border-light, #d9e1f0);
 
 	& ul.products {
-		display: grid !important;
-		grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-		gap: var(--hodima-space-7) !important;
-		list-style: none !important;
-		padding: 0 !important;
-		margin: 0 !important;
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: var(--hodima-space-7);
+		list-style: none;
+		padding: 0;
+		margin: 0;
 
 		&::before,
 		&::after {
-			display: none !important;
+			display: none;
 		}
 
 		& li.product {
 			width: 100% !important;
-			max-width: 100% !important;
+			max-width: 100%;
 			margin: 0 !important;
 			float: none !important;
-			background: var(--card-bg) !important;
-			border: 1px solid var(--card-border) !important;
-			border-radius: var(--hodima-radius-md) !important;
-			padding: var(--hodima-space-2) !important;
-			text-align: center !important;
-			box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.03) !important;
-			transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
-			display: flex !important;
-			flex-direction: column !important;
-			height: 100% !important;
+			background: var(--card-bg);
+			border: 1px solid var(--card-border);
+			border-radius: var(--hodima-radius-md);
+			padding: var(--hodima-space-2);
+			text-align: center;
+			box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.03);
+			transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+			display: flex;
+			flex-direction: column;
+			height: 100%;
 
 			&:hover {
-				transform: translateY(-5px) !important;
-				box-shadow: 0 12px 25px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.11) !important;
-				border-color: var(--brand-primary) !important;
+				transform: translateY(-5px);
+				box-shadow: 0 12px 25px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.11);
+				border-color: var(--brand-primary);
 			}
 
 			& > a {
 				display: flex !important;
-				flex-direction: column !important;
-				flex-grow: 1 !important;
-				text-decoration: none !important;
+				flex-direction: column;
+				flex-grow: 1;
+				text-decoration: none;
 			}
 
 			& img {
-				width: 100% !important;
-				height: auto !important;
-				aspect-ratio: 1 / 1 !important;
-				object-fit: contain !important;
-				border-radius: var(--hodima-radius-md) !important;
+				width: 100%;
+				height: auto;
+				aspect-ratio: 1 / 1;
+				object-fit: contain;
+				border-radius: var(--hodima-radius-md);
 				margin-bottom: var(--hodima-space-5) !important;
-				background: transparent !important;
-				transition: transform 0.25s ease !important;
+				background: transparent;
+				transition: transform 0.25s ease;
 			}
 
 			&:hover img {
-				transform: scale(1.04) !important;
+				transform: scale(1.04);
 			}
 
 			/* --- عنوان محصول --- */
@@ -74,20 +74,20 @@
 			& h2,
 			& h3 {
 				font-family: inherit !important;
-				font-size: 0.92rem !important;
-				font-weight: 500 !important;
-				color: var(--brand-dark) !important;
-				line-height: 1.6 !important;
-				letter-spacing: 0 !important;
-				display: -webkit-box !important;
-				-webkit-box-orient: vertical !important;
-				-webkit-line-clamp: 1 !important;
+				font-size: 0.92rem;
+				font-weight: 500;
+				color: var(--brand-dark);
+				line-height: 1.6;
+				letter-spacing: 0;
+				display: -webkit-box;
+				-webkit-box-orient: vertical;
+				-webkit-line-clamp: 1;
 				line-clamp: 1 !important;
-				overflow: hidden !important;
-				text-overflow: ellipsis !important;
-				white-space: normal !important;
-				padding: 0 5px !important;
-				margin: 0 0 var(--hodima-space-3) !important;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: normal;
+				padding: 0 5px;
+				margin: 0 0 var(--hodima-space-3);
 			}
 		}
 	}
@@ -96,34 +96,34 @@
 	& .star-rating {
 		font-size: 0.85rem !important;
 		margin: 0 auto var(--hodima-space-5) !important;
-		color: var(--brand-primary) !important;
+		color: var(--brand-primary);
 		display: flex !important;
-		justify-content: center !important;
+		justify-content: center;
 	}
 
 	/* --- قیمت: تراز شده در انتهای کارت --- */
 	& .price {
-		color: var(--brand-dark) !important;
+		color: var(--brand-dark);
 		font-size: 1rem !important;
 		font-weight: 700 !important;
-		display: block !important;
-		padding: 0 5px 5px !important;
+		display: block;
+		padding: 0 5px 5px;
 		/* این تغییر باعث می‌شود قیمت به انتهای کارت چسبیده و هم‌ترازی کارت‌ها حفظ شود */
-		margin-top: auto !important;
+		margin-top: auto;
 		margin-bottom: 0 !important;
 
 		& del {
 			color: var(--brand-muted) !important;
-			font-size: 0.83rem !important;
+			font-size: 0.83rem;
 			opacity: 0.75 !important;
-			margin-inline-end: 5px !important;
+			margin-inline-end: 5px;
 		}
 	}
 
 	& .added_to_cart,
 	& a.button,
 	& span.onsale {
-		display: none !important;
+		display: none;
 	}
 }
 
@@ -150,22 +150,22 @@
 /* --- Media Queries --- */
 @media (width <= 1024px) {
 	.product-card-scope ul.products {
-		grid-template-columns: repeat(3, 1fr) !important;
-		gap: var(--hodima-space-6) !important;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--hodima-space-6);
 	}
 }
 
 @media (width <= 768px) {
 	.product-card-scope {
 		& ul.products {
-			grid-template-columns: repeat(2, 1fr) !important;
-			gap: var(--hodima-space-4) !important;
+			grid-template-columns: repeat(2, 1fr);
+			gap: var(--hodima-space-4);
 
 			& li.product .woocommerce-loop-product__title,
 			& li.product h2,
 			& li.product h3 {
-				font-size: 0.88rem !important;
-				line-height: 1.55 !important;
+				font-size: 0.88rem;
+				line-height: 1.55;
 			}
 		}
 
@@ -173,7 +173,7 @@
 			font-size: 0.96rem !important;
 
 			& del {
-				font-size: 0.8rem !important;
+				font-size: 0.8rem;
 			}
 		}
 	}

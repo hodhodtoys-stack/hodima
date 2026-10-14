@@ -65,9 +65,9 @@
 
 	& a {
 		color: var(--hodima-text-dark, #111111) !important;
-		text-decoration: none !important;
-		transition: color 0.25s ease !important;
-		font-weight: 500 !important;
+		text-decoration: none;
+		transition: color 0.25s ease;
+		font-weight: 500;
 		font-family: inherit !important;
 
 		&:hover {
@@ -124,20 +124,20 @@
 .section-description > *:last-child,
 .section-voice > *:last-child,
 .section-faq > *:last-child {
-	margin-bottom: 0 !important;
+	margin-bottom: 0;
 }
 
 .product-card-scope ul.products {
-	display: grid !important;
-	grid-template-columns: repeat(6, 1fr) !important;
-	gap: var(--cat-grid-gap) !important;
-	list-style: none !important;
-	padding: 0 !important;
-	margin: 0 !important;
+	display: grid;
+	grid-template-columns: repeat(6, 1fr);
+	gap: var(--cat-grid-gap);
+	list-style: none;
+	padding: 0;
+	margin: 0;
 
 	&::before,
 	&::after {
-		display: none !important;
+		display: none;
 	}
 }
 
@@ -174,11 +174,11 @@
 
 .sort-title-box,
 .sort-title-box * {
-	color: var(--hodima-text-dark, #111111) !important;
+	color: var(--hodima-text-dark, #111111);
 }
 
 .sort-title-box svg {
-	color: var(--hodima-text-dark, #111111) !important;
+	color: var(--hodima-text-dark, #111111);
 	display: block;
 }
 
@@ -289,13 +289,13 @@
 	}
 
 	.product-card-scope ul.products {
-		grid-template-columns: repeat(4, 1fr) !important;
+		grid-template-columns: repeat(4, 1fr);
 	}
 }
 
 @media (width <= 992px) {
 	.product-card-scope ul.products {
-		grid-template-columns: repeat(3, 1fr) !important;
+		grid-template-columns: repeat(3, 1fr);
 	}
 
 	.hodima-custom-sort-wrapper {
@@ -312,8 +312,8 @@
 
 @media (width <= 768px) {
 	.product-card-scope ul.products {
-		grid-template-columns: repeat(2, 1fr) !important;
-		gap: var(--cat-grid-gap-mobile) !important;
+		grid-template-columns: repeat(2, 1fr);
+		gap: var(--cat-grid-gap-mobile);
 	}
 
 	.section-intro-video {
@@ -335,8 +335,8 @@
 .hodima-custom-sort-wrapper .sort-title-box,
 .hodima-custom-sort-wrapper .sort-title-box * {
 	color: var(--hodima-text-dark, #111111) !important;
-	fill: var(--hodima-text-dark, #111111) !important;
-	stroke: var(--hodima-text-dark, #111111) !important;
+	fill: var(--hodima-text-dark, #111111);
+	stroke: var(--hodima-text-dark, #111111);
 }
 
 /* =========================================================================
