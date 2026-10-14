@@ -175,6 +175,12 @@ function hodima_enqueue_scripts(): void {
 		hodima_enqueue_asset( 'hodima-archive-blog', 'assets/css/archive-blog.css', [ 'hodima-blog-card' ] );
 	}
 
+	// 7.2 برگه «ویدئوها» (template-page-videos.php): کارت‌ها و صفحه‌بندی مشترک
+	if ( is_page_template( 'template-page-videos.php' ) ) {
+		hodima_enqueue_asset( 'hodima-pagination', 'assets/css/pagination.css' );
+		hodima_enqueue_asset( 'hodima-template-videos', 'assets/css/template-page-videos.css' );
+	}
+
 	// 8. استایل صفحه ۴۰۴
 	if ( is_404() ) {
 		hodima_enqueue_asset( 'hodima-404', 'assets/css/404.css', [ 'hodima-tokens' ] );

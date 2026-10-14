@@ -2,7 +2,6 @@
 /**
  * Template Name: صفحه ویدئوها
  * File: template-page-videos.php
- * Version: 2.0.0
  *
  * ─────────────────────────────────────────────────────────────────────
  * صفحه‌بندی واقعی به جای اسکرول بی‌نهایت
@@ -63,11 +62,6 @@ if ( $hodima_vp_paged > 1 && $hodima_vp_paged > (int) $hodima_vp_video_query->ma
 	exit;
 }
 
-add_action( 'wp_enqueue_scripts', static function (): void {
-	hodima_enqueue_asset( 'hodima-pagination', 'assets/css/pagination.css' );
-	hodima_enqueue_asset( 'hodima-template-videos', 'assets/css/template-page-videos.css' );
-} );
-
 /*
  * عنوان سند صفحات ۲ به بعد.
  * سئوباکس عنوان را خودش می‌سازد و شماره صفحه را اضافه نمی‌کند؛ بدون این،
@@ -105,7 +99,7 @@ get_header(); ?>
 		<?php if ( $hodima_vp_paged > 1 ) : ?>
 			<?php // h1 همچنان موضوع صفحه است (نه فقط «صفحه ۲») و به صفحه اول لینک می‌دهد ?>
 			<h1 class="section-breadcrumb__title"><a href="<?php echo esc_url( $hodima_vp_page_url ); ?>"><?php echo esc_html( $hodima_vp_page_title ); ?></a></h1> /
-			<span aria-current="page">صفحه <span class="hvp-num"><?php echo (int) $hodima_vp_paged; ?></span></span>
+			<span aria-current="page">صفحه <span class="hodima-num"><?php echo (int) $hodima_vp_paged; ?></span></span>
 		<?php else : ?>
 			<h1 class="section-breadcrumb__title" aria-current="page"><?php echo esc_html( $hodima_vp_page_title ); ?></h1>
 		<?php endif; ?>
@@ -172,14 +166,13 @@ get_header(); ?>
 					'prev_text'          => '<span aria-hidden="true">&rsaquo;</span> قبلی',
 					'next_text'          => 'بعدی <span aria-hidden="true">&lsaquo;</span>',
 					'type'               => 'list',
-					'before_page_number' => '<span class="hvp-num">',
 				] );
 
 				if ( $hodima_vp_links ) :
 					// صفحه ۱ بدون /page/1/ (آدرس تکراری صفحه اول)
 					$hodima_vp_links = str_replace( trailingslashit( $hodima_vp_page_url ) . 'page/1/', $hodima_vp_page_url, $hodima_vp_links );
 					?>
-					<nav class="videos-pagination" aria-label="صفحه‌بندی ویدئوها">
+					<nav class="hodima-pagination" aria-label="صفحه‌بندی ویدئوها">
 						<?php echo wp_kses_post( $hodima_vp_links ); ?>
 					</nav>
 				<?php endif; ?>
