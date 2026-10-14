@@ -7,17 +7,6 @@
 	--section-gap: 10px;
 }
 
-.hodima-page-wrapper {
-	max-width: var(--cat-max-width, var(--hodima-container));
-	margin: var(--section-gap) auto;
-	padding: 0 var(--hodima-space-7); /* مطابق مرجع */
-	display: flex;
-	flex-direction: column;
-	gap: var(--section-gap); /* مطابق مرجع */
-	box-sizing: border-box;
-	font-family: inherit;
-}
-
 .section-breadcrumb,
 .blog-page-container {
 	background: var(--hodima-bg-light, #f6f8fc);
@@ -150,22 +139,12 @@
 	:root {
 		--section-gap: 8px;
 	}
-
-	.hodima-page-wrapper {
-		padding: 0 var(--hodima-space-6);
-	}
-
 }
 
 @media (width <= 480px) {
 	:root {
 		--section-gap: 6px;
 	}
-
-	.hodima-page-wrapper {
-		padding: 0 var(--hodima-space-4);
-	}
-
 }
 
 .blog-archive-page {

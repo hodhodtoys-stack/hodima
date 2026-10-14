@@ -52,6 +52,7 @@ function hodima_enqueue_asset( string $handle, string $path, array $deps = [], a
 const HODIMA_COMMON_CSS = [
 	'hodima-tokens' => 'assets/css/tokens.css',
 	'hodima-style'  => 'style.css',
+	'hodima-layout' => 'assets/css/page-layout.css', // قاب مشترک صفحه‌ها (.hodima-page-wrapper)
 	'hodima-header' => 'assets/css/header.css',
 	'hodima-footer' => 'assets/css/footer.css',
 	'hodima-extras' => 'assets/css/extras.css', // بازگشت به بالا و نوار موبایل (2.9.8؛ بدون عنصر بی‌اثر)

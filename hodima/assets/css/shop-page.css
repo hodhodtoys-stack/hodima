@@ -16,18 +16,6 @@
 	--cat-grid-gap-mobile: 10px;
 }
 
-.hodima-page-wrapper {
-	max-width: var(--cat-max-width, var(--hodima-container)) !important;
-	margin: var(--section-gap) auto !important;
-	padding: 0 var(--hodima-space-7) !important; /* مطابق مرجع */
-	display: flex;
-	flex-direction: column;
-	gap: var(--section-gap) !important; /* یکپارچه‌سازی گپ */
-	box-sizing: border-box;
-	font-family: inherit;
-	direction: rtl;
-}
-
 .hodima-section-box {
 	width: 100%;
 	border-radius: var(--cat-radius); /* 12px مطابق مرجع */
@@ -145,10 +133,6 @@
 		--section-gap: 8px;
 	}
 
-	.hodima-page-wrapper {
-		padding: 0 var(--hodima-space-6) !important;
-	}
-
 	.shop-custom-header {
 		padding: var(--hodima-space-7) var(--hodima-space-4);
 	}
@@ -175,10 +159,6 @@
 @media (width <= 480px) {
 	:root {
 		--section-gap: 6px;
-	}
-
-	.hodima-page-wrapper {
-		padding: 0 var(--hodima-space-4) !important;
 	}
 }
 

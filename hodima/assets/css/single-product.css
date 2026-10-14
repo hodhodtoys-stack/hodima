@@ -81,18 +81,17 @@
    2. Main product section
    ========================================================================== */
 
-.section-product-main {
+.hodima-section-box.section-product-main {
 	display: flex;
 	flex-direction: row;
 	flex-wrap: nowrap;
 	justify-content: space-between;
 	align-items: flex-start;
 	gap: 30px;
-	padding: var(--section-padding, 30px);
-	background: var(--hodima-bg-gray, #eef2f8) !important;
-	border: 1px solid var(--hodima-border, var(--hodima-third, #b6c2f3)) !important;
-	border-radius: var(--hodima-radius-xl) !important;
-	box-shadow: none !important;
+	background: var(--hodima-bg-gray, #eef2f8);
+	border: 1px solid var(--hodima-border, var(--hodima-third, #b6c2f3));
+	border-radius: var(--hodima-radius-xl);
+	box-shadow: none;
 	box-sizing: border-box;
 	margin-bottom: var(--section-gap);
 }
@@ -129,11 +128,10 @@
    ========================================================================== */
 
 @media (width <= 992px) {
-	.section-product-main {
+	.hodima-section-box.section-product-main {
 		flex-direction: column;
 		flex-wrap: wrap;
 		gap: 20px;
-		padding: var(--section-padding, 20px);
 	}
 
 	.custom-product-gallery,
@@ -145,12 +143,11 @@
 }
 
 @media (width <= 600px) {
-	.section-product-main {
+	.hodima-section-box.section-product-main {
 		flex-direction: column;
 		flex-wrap: wrap;
 		gap: 15px;
-		padding: var(--section-padding, 15px);
-		border-radius: var(--hodima-radius-lg) !important;
+		border-radius: var(--hodima-radius-lg);
 	}
 
 	.custom-product-gallery,
@@ -176,10 +173,9 @@
 }
 
 @media (width <= 400px) {
-	.section-product-main {
+	.hodima-section-box.section-product-main {
 		gap: 12px;
-		padding: var(--section-padding, 12px);
-		border-width: 1px !important;
+		border-width: 1px;
 	}
 }
 

@@ -15,6 +15,7 @@
 }
 
 .hodima-page-wrapper {
+	display: block; /* قاب مشترک (page-layout.css) ستونی است؛ فاصله بخش‌های مقاله margin خودشان است */
 	max-width: var(--cat-max-width);
 	margin: 0 auto;
 	padding: 5px var(--hodima-space-4);
@@ -30,9 +31,9 @@
 	box-sizing: border-box;
 }
 
-.section-breadcrumb {
+.hodima-section-box.section-breadcrumb {
 	background-color: var(--cat-bg-light-blue);
-	padding: 1px var(--hodima-space-4) !important;
+	padding: 1px var(--hodima-space-4);
 	border-radius: var(--hodima-radius-lg);
 	margin: 5px auto;
 	font-size: 0.85rem;

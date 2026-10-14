@@ -15,17 +15,6 @@
 	--section-gap: 10px;
 }
 
-.hodima-page-wrapper {
-	max-width: var(--cat-max-width);
-	margin: 5px auto;
-	padding: 0 var(--hodima-space-4);
-	display: flex;
-	flex-direction: column;
-	gap: var(--cat-gap);
-	box-sizing: border-box;
-	font-family: inherit;
-}
-
 .hodima-section-box {
 	width: 100%;
 	border-radius: var(--cat-radius);
