@@ -93,16 +93,40 @@
 			}
 		} );
 
-		// زیرمنو در موبایل: کلیک روی والد باز/بسته می‌کند
+		// زیرمنو در موبایل: دکمه کنار والد (inc/header.php) باز/بسته می‌کند و aria-expanded را نگه می‌دارد.
+		// لینک والد مثل هر لینک به صفحه‌اش می‌رود؛ فقط والد «#»/خالی (فقط عنوان گروه) یا والدی که
+		// دکمه ندارد (منوی بیرون از فیلتر قالب) مثل قبل با کلیک روی خود لینک باز می‌شود.
+		const setSubmenu = ( item, open ) => {
+			item.classList.toggle( 'submenu-active', open );
+			item.querySelector( ':scope > .submenu-toggle' )?.setAttribute( 'aria-expanded', String( open ) );
+		};
+
+		nav.querySelectorAll( '.submenu-toggle' ).forEach( ( button, index ) => {
+			const submenu = button.parentElement.querySelector( ':scope > .sub-menu' );
+			if ( submenu ) {
+				submenu.id ||= `hodima-submenu-${ index + 1 }`;
+				button.setAttribute( 'aria-controls', submenu.id );
+			}
+		} );
+
 		nav.addEventListener( 'click', ( event ) => {
 			if ( 'none' === window.getComputedStyle( toggle ).display ) {
 				return;
 			}
-			const link = event.target.closest( '.menu-item-has-children > a' );
-			if ( link ) {
-				event.preventDefault();
-				link.parentElement.classList.toggle( 'submenu-active' );
+			const control = event.target.closest( '.submenu-toggle, .menu-item-has-children > a' );
+			if ( ! control ) {
+				return;
 			}
+			const item = control.parentElement;
+			if ( control.matches( 'a' ) ) {
+				const href = control.getAttribute( 'href' ) ?? '';
+				const hasButton = null !== item.querySelector( ':scope > .submenu-toggle' );
+				if ( hasButton && '' !== href && '#' !== href ) {
+					return;
+				}
+			}
+			event.preventDefault();
+			setSubmenu( item, ! item.classList.contains( 'submenu-active' ) );
 		} );
 
 		// دسکتاپ: منو همیشه برای صفحه‌خوان در دسترس (بدون aria-hidden)

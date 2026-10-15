@@ -170,6 +170,11 @@
 		margin-top: -2px;
 	}
 
+	/* دکمه باز/بسته‌کردن زیرمنو فقط در منوی موبایل است (دسکتاپ با hover/focus باز می‌شود) */
+	& .submenu-toggle {
+		display: none;
+	}
+
 	& > li > a:hover,
 	& > li > a:focus-visible {
 		color: var(--clr-white);
@@ -423,7 +428,15 @@
 		gap: 0;
 		padding-bottom: 0;
 
+		/* والد: لینک و دکمه زیرمنو در یک ردیف، خود زیرمنو ردیف بعد (flex لینک: همین قانون و .sub-menu a؛ زیرمنو: قانون .sub-menu) */
+		& li.menu-item-has-children {
+			display: flex;
+			flex-wrap: wrap;
+		}
+
 		& > li > a {
+			flex: 1 1 0;
+			min-width: 0;
 			padding: 0.75rem 1.5625rem;
 			color: var(--clr-text-dark);
 			font-weight: 500;
@@ -447,12 +460,57 @@
 			padding-inline-start: 2rem;
 		}
 
+		/* فلش به دکمه رفت */
 		& li.menu-item-has-children > a::after {
-			border-color: #7b8794 transparent transparent;
-			margin-top: 0;
+			display: none;
 		}
 
-		& li.menu-item-has-children.submenu-active > a::after {
+		& .submenu-toggle {
+			display: flex;
+			flex: 0 0 auto;
+			align-items: center;
+			justify-content: center;
+			padding-block: 0;
+			padding-inline: 0.75rem 1.5625rem; /* فلش همان‌جای قبلی (۲۵px از لبه)، هدف لمسی ≥ ۴۴px */
+			border: 0;
+			border-bottom: 1px solid rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.06);
+			border-radius: 0;
+			background: transparent;
+			box-shadow: none;
+			color: var(--clr-text-dark);
+			cursor: pointer;
+
+			&::after {
+				content: '';
+				border-width: 5px;
+				border-style: solid;
+				border-color: #7b8794 transparent transparent;
+				transition: transform var(--transition-base);
+			}
+
+			&:hover,
+			&:focus-visible {
+				transform: none;
+				box-shadow: none;
+				background-color: var(--clr-primary-light);
+			}
+
+			&:focus-visible {
+				outline: 2px solid var(--clr-secondary);
+				outline-offset: -2px;
+			}
+		}
+
+		& .sub-menu .submenu-toggle {
+			border-bottom-color: #edf1f7;
+		}
+
+		/* hover/فوکوس لینک والد کل ردیف (لینک + دکمه) را هم‌رنگ می‌کند؛ قبلا فلش داخل لینک بود */
+		& a:is(:hover, :focus-visible) + .submenu-toggle {
+			background-color: var(--clr-primary-light);
+		}
+
+		& li.menu-item-has-children.submenu-active > .submenu-toggle::after {
 			transform: rotate(180deg);
 			border-color: var(--clr-secondary) transparent transparent;
 		}
@@ -463,9 +521,10 @@
 
 		& .sub-menu,
 		& .sub-menu .sub-menu {
+			flex: 0 0 100%;
 			position: static;
 			opacity: 1;
-			visibility: visible;
+			visibility: hidden;
 			transform: none;
 			box-shadow: none;
 			border: none;
@@ -476,14 +535,24 @@
 			border-radius: 0;
 			max-height: 0;
 			overflow: hidden;
-			transition: max-height 0.4s ease;
+			/* بعد از بسته‌شدن مخفی می‌شود تا لینک‌های جمع‌شده از Tab و صفحه‌خوان بیرون بروند (قبلا visible بودند) */
+			transition: max-height 0.4s ease, visibility 0s 0.4s;
 		}
 
 		& li.submenu-active > .sub-menu {
 			max-height: 60rem;
+			visibility: visible;
+			transition: max-height 0.4s ease, visibility 0s;
+		}
+
+		/* وزن بالاتر از hover/focus-within دسکتاپ (که visible می‌کنند): زیرمنوی بسته همیشه مخفی */
+		& li.menu-item-has-children:not(.submenu-active) > .sub-menu {
+			visibility: hidden;
 		}
 
 		& .sub-menu a {
+			flex: 1 1 0;
+			min-width: 0;
 			padding: 0.625rem 1.5625rem;
 			color: var(--clr-text-muted);
 			font-size: 0.875rem;

@@ -47,6 +47,17 @@ $plain = p( [ 'post_type' => 'page', 'post_title' => 'راهنمای خرید', 
 update_post_meta( $plain, '_hodima_table_data', [ 'headers' => [ 'ویژگی', 'مقدار' ], 'rows' => [ [ 'جنس', 'فلز' ], [ 'رنگ', 'طلایی' ] ] ] );
 $videos = p( [ 'post_type' => 'page', 'post_title' => 'ویدئوها', 'post_name' => 'videos' ], [ '_wp_page_template' => 'template-page-videos.php' ] );
 
+// منوی اصلی هدر با زیرمنو (3.5.8): والد با لینک واقعی، والد با «#»، و یک آیتم بی‌زیرمنو؛ پوشش منوی دسکتاپ و موبایل.
+$menu_id = wp_create_nav_menu( 'منوی اصلی' );
+$mi = static fn( string $title, string $url, int $parent = 0 ): int => (int) wp_update_nav_menu_item( $menu_id, 0, [ 'menu-item-title' => $title, 'menu-item-url' => $url, 'menu-item-type' => 'custom', 'menu-item-status' => 'publish', 'menu-item-parent-id' => $parent ] );
+$mi( 'خانه', 'https://hodima.test/' );
+$shop_item = $mi( 'فروشگاه', 'https://hodima.test/shop/' );
+$mi( 'اکسسوری مو', 'https://hodima.test/hair/', $shop_item );
+$mi( 'گلسر', 'https://hodima.test/pin-simple/', $shop_item );
+$guide_item = $mi( 'راهنما', '#' );
+$mi( 'راهنمای خرید', 'https://hodima.test/guide/', $guide_item );
+$mi( 'درباره ما', 'https://hodima.test/about-us/' );
+set_theme_mod( 'nav_menu_locations', [ 'primary' => $menu_id ] );
 $cat = wp_insert_term( 'اخبار', 'category', [ 'slug' => 'news', 'description' => 'اخبار بازار' ] )['term_id'];
 $tag = wp_insert_term( 'کلیپس', 'post_tag', [ 'slug' => 'clips' ] )['term_id'];
 
