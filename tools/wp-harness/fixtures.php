@@ -49,6 +49,116 @@ $videos = p( [ 'post_type' => 'page', 'post_title' => 'ویدئوها', 'post_na
 
 $cat = wp_insert_term( 'اخبار', 'category', [ 'slug' => 'news', 'description' => 'اخبار بازار' ] )['term_id'];
 $tag = wp_insert_term( 'کلیپس', 'post_tag', [ 'slug' => 'clips' ] )['term_id'];
+
+// محتوای ساخته‌شده با ویرایشگر بلوکی (۳.۵.۶): ستون، جدول، نقل‌قول، گالری، دکمه، تراز تصویر، رنگ/اندازه آماده، جداکننده، کد، امبد.
+// استایل بلوک‌ها فقط وقتی لود می‌شود که محتوا بلوک داشته باشد (inc/performance/wp-cleanup.php)؛ «about-us» بدون بلوک است و شاهد بدون‌تغییر.
+$blocks = <<<'HTML'
+<!-- wp:paragraph {"fontSize":"large"} -->
+<p class="has-large-font-size">پاراگراف با اندازه آماده «بزرگ» و <a href="https://hodima.test/guide/">لینک</a>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">تیتر بلوکی</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph {"textColor":"vivid-red","fontSize":"small"} -->
+<p class="has-vivid-red-color has-text-color has-small-font-size">پاراگراف با رنگ آماده و اندازه کوچک.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"align":"right","width":200,"height":150,"sizeSlug":"large"} -->
+<figure class="wp-block-image alignright size-large is-resized"><img src="https://hodima.test/wp-content/uploads/2025/01/post.jpg" alt="تصویر راست" width="200" height="150"/><figcaption class="wp-element-caption">عنوان تصویر</figcaption></figure>
+<!-- /wp:image -->
+
+<!-- wp:paragraph -->
+<p>متنی که دور تصویر راست‌چین می‌پیچد؛ باید کنار تصویر بیاید و نه زیر آن. متن نمونه برای پر کردن چند خط و دیدن پیچیدن متن دور تصویر در صفحه مقاله.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:columns -->
+<div class="wp-block-columns"><!-- wp:column -->
+<div class="wp-block-column"><!-- wp:paragraph -->
+<p>ستون اول با متن نمونه.</p>
+<!-- /wp:paragraph --></div>
+<!-- /wp:column -->
+
+<!-- wp:column -->
+<div class="wp-block-column"><!-- wp:paragraph -->
+<p>ستون دوم با متن نمونه.</p>
+<!-- /wp:paragraph --></div>
+<!-- /wp:column -->
+
+<!-- wp:column -->
+<div class="wp-block-column"><!-- wp:paragraph -->
+<p>ستون سوم با متن نمونه.</p>
+<!-- /wp:paragraph --></div>
+<!-- /wp:column --></div>
+<!-- /wp:columns -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table><thead><tr><th>ویژگی</th><th>مقدار</th></tr></thead><tbody><tr><td>جنس</td><td>فلز</td></tr><tr><td>رنگ</td><td>طلایی</td></tr></tbody></table><figcaption class="wp-element-caption">جدول بلوکی</figcaption></figure>
+<!-- /wp:table -->
+
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p>نقل‌قول بلوکی نمونه.</p>
+<!-- /wp:paragraph --><cite>گوینده</cite></blockquote>
+<!-- /wp:quote -->
+
+<!-- wp:pullquote -->
+<figure class="wp-block-pullquote"><blockquote><p>نقل‌قول برجسته</p><cite>منبع</cite></blockquote></figure>
+<!-- /wp:pullquote -->
+
+<!-- wp:gallery {"linkTo":"none"} -->
+<figure class="wp-block-gallery has-nested-images columns-default is-cropped"><!-- wp:image {"sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="https://hodima.test/wp-content/uploads/2025/01/gal.jpg" alt="۱"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:image {"sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="https://hodima.test/wp-content/uploads/2025/01/gal.jpg" alt="۲"/></figure>
+<!-- /wp:image --></figure>
+<!-- /wp:gallery -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button">دکمه بلوکی</a></div>
+<!-- /wp:button -->
+
+<!-- wp:button {"className":"is-style-outline"} -->
+<div class="wp-block-button is-style-outline"><a class="wp-block-button__link wp-element-button">دکمه حاشیه‌دار</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><!-- wp:list-item -->
+<li>مورد اول</li>
+<!-- /wp:list-item -->
+
+<!-- wp:list-item -->
+<li>مورد دوم</li>
+<!-- /wp:list-item --></ul>
+<!-- /wp:list -->
+
+<!-- wp:group {"backgroundColor":"pale-cyan-blue","layout":{"type":"constrained"}} -->
+<div class="wp-block-group has-pale-cyan-blue-background-color has-background"><!-- wp:paragraph -->
+<p>گروه با رنگ زمینه آماده.</p>
+<!-- /wp:paragraph --></div>
+<!-- /wp:group -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>echo 'hodima';</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:embed {"url":"https://www.youtube.com/watch?v=aqz-KE-bpKQ","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->
+<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+https://www.youtube.com/watch?v=aqz-KE-bpKQ
+</div></figure>
+<!-- /wp:embed -->
+HTML;
+p( [ 'post_title' => 'نمونه بلوک‌ها', 'post_name' => 'blocks-demo', 'post_content' => $blocks, 'post_excerpt' => 'نمونه بلوک', 'post_category' => [ $cat ] ] );
+p( [ 'post_type' => 'page', 'post_title' => 'برگه بلوکی', 'post_name' => 'blocks-page', 'post_content' => $blocks ] );
 $pillar = p( [ 'post_title' => 'راهنمای جامع کلیپس', 'post_name' => 'clips-guide', 'post_content' => '<p>پیلار</p><img src="https://hodima.test/wp-content/uploads/2025/01/post.jpg" width="640" height="480" alt="p">', 'post_excerpt' => 'خلاصه پیلار', 'post_category' => [ $cat ], 'tags_input' => [ 'کلیپس' ] ], $media( [ '_hook_key_entities' => 'کلیپس، گلسر', '_h_ai_text' => 'متن AEO' ] ) );
 set_post_thumbnail( $pillar, $img2 );
 $child = p( [ 'post_title' => 'انواع کلیپس فلزی', 'post_name' => 'metal-clips', 'post_content' => 'فرزند', 'post_category' => [ $cat ], 'post_date' => '2025-03-02 10:00:00', 'post_date_gmt' => '2025-03-02 06:30:00' ], [ '_h_ai_text' => 'متن هوش مصنوعی فرزند' ] );
