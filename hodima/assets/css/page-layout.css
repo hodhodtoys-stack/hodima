@@ -58,7 +58,7 @@
 	width: 100%;
 	box-sizing: border-box;
 	margin: 0 auto;
-	padding: var(--hodima-breadcrumb-pad-y, 7px) var(--hodima-space-6);
+	padding: var(--hodima-breadcrumb-pad-y, 8px) var(--hodima-space-6);
 	background-color: var(--hodima-bg-light, var(--hodima-surface-soft, #f7f9fd));
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
 	border-radius: var(--hodima-radius-lg);

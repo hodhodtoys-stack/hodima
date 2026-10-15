@@ -43,7 +43,7 @@ description: قانون‌های کد قالب هدیما (پوشه hodima/) —
 | `--hodima-card-lift` | ۴px | بالا آمدن hover |
 | `--hodima-card-img-radius` | گوشه − padding = ۶px | گوشه تصویر داخل کارت |
 | `--hodima-card-shadow` / `-hover` | `--hodima-shadow-xs` / `0 8px 18px rgb(primary / 0.09)` | سایه |
-باکس: حاشیه ۱px `--hodima-border-light`، گوشه `--hodima-radius-xl` (۱۲)، سایه `--hodima-shadow-xs`. نوار مسیر: padding ۷/۱۵ (`--hodima-breadcrumb-pad-y`، ارتفاع ≈۳۶٫۴px؛ تا 3.5.3 ۶)، گوشه `--hodima-radius-lg` (۱۰). عرض محتوا همه‌جا ۱۲۶۰ (قاب `--hodima-container` + padding ۲۰/۱۵/۱۰). حاشیه رنگی باکس اصلی محصول (`--hodima-border`) استثنای عمدی (تصمیم کاربر).
+باکس: حاشیه ۱px `--hodima-border-light`، گوشه `--hodima-radius-xl` (۱۲)، سایه `--hodima-shadow-xs`. نوار مسیر: padding ۸/۱۵ (`--hodima-breadcrumb-pad-y`، ارتفاع ≈۳۸٫۴px؛ تا 3.5.3 ۶، 3.5.4 ۷)، گوشه `--hodima-radius-lg` (۱۰). عرض محتوا همه‌جا ۱۲۶۰ (قاب `--hodima-container` + padding ۲۰/۱۵/۱۰). حاشیه رنگی باکس اصلی محصول (`--hodima-border`) استثنای عمدی (تصمیم کاربر).
 
 **کجا تعریف می‌شود:** `assets/css/page-layout.css` (در بسته مشترک `HODIMA_COMMON_CSS`، پس درخواست اضافه ندارد): `.hodima-page-wrapper` (قاب flex ستونی)، `.hodima-section-box` (+ `.blog-page-container`، `.videos-page-container`)، `.section-breadcrumb` (+ خنثی‌کردن margin/اندازه `nav.woocommerce-breadcrumb` ووکامرس) و **کارت مشترک** (`.arian-card`، `.blog-page-card`، `.videos-page-card`، `.product-card-scope ul.products li.product.product`: padding/پس‌زمینه/حاشیه/گوشه/سایه/hover/focus/`prefers-reduced-motion`).
 
