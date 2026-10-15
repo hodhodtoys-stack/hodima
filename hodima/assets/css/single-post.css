@@ -16,7 +16,7 @@
 		}
 
 		& [aria-current="page"] {
-			color: #888;
+			color: var(--hodima-text-muted, #5d6785);
 		}
 	}
 }
