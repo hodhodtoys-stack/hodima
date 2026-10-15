@@ -60,6 +60,13 @@ while ( have_posts() ) :
 	] );
 	?>
 	<main id="primary" class="site-main hodima-page hodima-page-wrapper hodima-page__container">
+		<?php // مسیر راهنما (همان مسیر اسکیمای BreadcrumbList)؛ سبد، پرداخت و حساب کاربری ووکامرس طراحی خودشان را دارند ?>
+		<?php if ( ! $hodima_wc_page ) : ?>
+			<section class="section-breadcrumb">
+				<?php echo hodima_breadcrumb_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در inc/breadcrumb.php ?>
+			</section>
+		<?php endif; ?>
+
 		<article id="post-<?php the_ID(); ?>" <?php post_class( 'hodima-page__article' ); ?>>
 
 			<?php if ( $hodima_has_top ) : ?>

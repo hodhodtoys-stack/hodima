@@ -1,6 +1,6 @@
 <?php
 /**
- * مسیر راهنمای دیده‌شده — مقاله‌ها و آرشیو وبلاگ
+ * مسیر راهنمای دیده‌شده — مقاله‌ها، آرشیو وبلاگ و برگه‌ها (page.php، به‌جز سبد/پرداخت/حساب ووکامرس)
  * Path: hodima/inc/breadcrumb.php
  *
  * قبلا single-post.php و archive-blog.php هر کدام مسیر خودشان را دستی
@@ -45,6 +45,12 @@ function hodima_breadcrumb_trail(): array {
 
 	if ( is_singular( 'post' ) ) {
 		$trail[] = [ 'name' => hodima_blog_name(), 'url' => hodima_blog_url() ];
+		$trail[] = [ 'name' => wp_strip_all_tags( get_the_title() ), 'url' => '' ];
+	} elseif ( is_page() ) {
+		// برگه: زنجیره برگه‌های مادر (مثل اسکیمای افزونه SEO)
+		foreach ( array_reverse( get_post_ancestors( get_the_ID() ) ) as $ancestor_id ) {
+			$trail[] = [ 'name' => wp_strip_all_tags( get_the_title( $ancestor_id ) ), 'url' => (string) get_permalink( $ancestor_id ) ];
+		}
 		$trail[] = [ 'name' => wp_strip_all_tags( get_the_title() ), 'url' => '' ];
 	} elseif ( is_category() || is_tag() || is_tax() ) {
 		$trail[] = [ 'name' => (string) single_term_title( '', false ), 'url' => '' ];
