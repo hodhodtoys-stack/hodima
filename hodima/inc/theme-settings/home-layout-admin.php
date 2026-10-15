@@ -139,9 +139,9 @@ function hodima_home_admin_notices( array $layout ): array {
 		$has_content = $has_content || 'content' === $item['type'];
 	}
 	$page_text = $front > 0 ? (string) get_post_field( 'post_content', $front ) : '';
-	$legacy    = array_filter( [ 'section03', 'section07', 'section09', 'latest-products' ], static fn( string $tag ): bool => has_shortcode( $page_text, $tag ) );
+	$legacy    = array_filter( [ 'latest-products' ], static fn( string $tag ): bool => has_shortcode( $page_text, $tag ) );
 	if ( $has_content && count( $enabled ) > 1 && $legacy ) {
-		$notices[] = 'بخش «متن برگه صفحه اصلی» روشن است و متن برگه هنوز شورت‌کدهای قدیمی (مثل [section07]) دارد؛ اگر همان‌ها را بخش جدا هم ساخته‌اید، دوبار نمایش داده می‌شوند.';
+		$notices[] = 'بخش «متن برگه صفحه اصلی» روشن است و متن برگه هنوز شورت‌کدهای قدیمی (مثل [latest-products]) دارد؛ اگر همان‌ها را بخش جدا هم ساخته‌اید، دوبار نمایش داده می‌شوند.';
 	}
 
 	return $notices;

@@ -43,7 +43,6 @@ function hodima_load_theme_files(): void {
 
 		// ۱. صفحه اصلی
 		'home/logic.php',
-		'home/legacy.php',                       // نام‌های قدیمی arian_* (سازگاری)
 
 		// ۲. هسته قالب
 		'inc/helpers.php',

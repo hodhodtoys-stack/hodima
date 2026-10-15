@@ -1,6 +1,7 @@
 <?php
 /**
- * شورت‌کدهای قدیمی صفحه اصلی: [section03/07/09/10]، [latest-products] و یک شورت‌کد برای هر دسته
+ * شورت‌کدهای صفحه اصلی: [latest-products] و یک شورت‌کد برای هر دسته
+ * (3.5.2: [section03/07/09/10] و نام‌های قدیمی arian_* حذف شدند؛ بخش‌ها از «تنظیمات قالب ← صفحه اصلی» می‌آیند)
  * Path: hodima/home/shortcodes.php
  *
  * 3.1.5: logic.php (۶۷۰ خط، چند کار) به چند فایل با یک کار تقسیم شد؛ نام توابع و هوک‌ها
@@ -12,27 +13,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 // ========================================================================
-// ۲. تابع لود سکشن‌های فیزیکی (برای section01 تا section20)
-// ========================================================================
-if ( ! function_exists( 'hodima_home_load_section' ) ) {
-	function hodima_home_load_section( string $tag ): string {
-		$tag = sanitize_key( $tag );
-		if ( empty( $tag ) ) return '';
-
-		$php_file = get_stylesheet_directory() . "/home/{$tag}.php";
-
-		if ( ! file_exists( $php_file ) ) {
-			return "<!-- خطای هدیما: فایل {$tag}.php در مسیر {$php_file} پیدا نشد -->";
-		}
-
-		ob_start();
-		include $php_file;
-		return trim( (string) ob_get_clean() ); // strict_types: ob_get_clean ممکن است false باشد
-	}
-}
-
-// ========================================================================
-// ۳. ثبت تمامی شورت‌کدها در یک هوک یکپارچه
+// ۲. ثبت تمامی شورت‌کدها در یک هوک یکپارچه
 // ========================================================================
 /**
  * فهرست دسته‌بندی‌های محصول برای ثبت شورت‌کد، با کش.
@@ -98,24 +79,7 @@ add_action('init', function() {
 		return;
 	}
 
-	// الف) شورت‌کد برای فایل‌های بخش موجود.
-	// نسخه قبلی کورکورانه section01 تا section20 را ثبت می‌کرد در حالی که
-	// فقط چهار فایل وجود دارد؛ ۱۶ شورت‌کد مرده که خروجی‌شان یک کامنت خطا بود.
-	// (array) false = [false] و basename(false) با strict_types خطا می‌داد
-	foreach ( glob( get_stylesheet_directory() . '/home/section*.php' ) ?: [] as $section_file ) {
-
-		$tag = basename( $section_file, '.php' );
-
-		if ( ! preg_match( '/^section\d{2}$/', $tag ) ) {
-			continue;
-		}
-
-		add_shortcode( $tag, function( $atts, $content, $shortcode_tag ) {
-			return hodima_home_load_section( $shortcode_tag );
-		} );
-	}
-
-	// ب) شورت‌کد اختصاصی «جدیدترین محصولات»
+	// الف) شورت‌کد اختصاصی «جدیدترین محصولات»
 	if ( function_exists('hodima_home_product_slider') ) {
 		add_shortcode( 'latest-products', function($atts) {
 			$atts = shortcode_atts(['limit' => 12], $atts);
@@ -128,7 +92,7 @@ add_action('init', function() {
 			]);
 		});
 	}
-	// ج) شورت‌کد هر دسته‌بندی (مثل [plasco]): دیگر هنگام init برای همه دسته‌ها ثبت نمی‌شود؛ فقط وقتی
+	// ب) شورت‌کد هر دسته‌بندی (مثل [plasco]): دیگر هنگام init برای همه دسته‌ها ثبت نمی‌شود؛ فقط وقتی
 	// متنی از آن استفاده کند (hodima_home_ensure_category_shortcodes پایین)
 } );
 
