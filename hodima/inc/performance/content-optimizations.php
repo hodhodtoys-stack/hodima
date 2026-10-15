@@ -1,6 +1,6 @@
 <?php
 /**
- * Module: Content Optimizations (Lazyload Iframes & JS Defer)
+ * Module: Content Optimizations (Lazyload Iframes)
  * Path: hodima/inc/performance/content-optimizations.php
  */
 
@@ -49,72 +49,16 @@ function hodima_lazyload_content_iframes( mixed $content ): mixed {
 }
 
 /* ============================================================
- * ۲. Defer کردن جاوااسکریپت‌ها
+ * Defer کردن جاوااسکریپت: فیلتر دستی script_loader_tag حذف شد (قالب 3.5.7)
  * ------------------------------------------------------------
- * نسخه قبلی همه چیز را به جز jquery-core و jquery-migrate defer می‌کرد.
- * مشکل اصلی: وقتی اسکریپتی inline از نوع "after" داشته باشد، وردپرس آن
- * inline را بلافاصله بعد از تگ اصلی و بدون defer چاپ می‌کند. پس کد inline
- * زودتر از اسکریپت defer شده اجرا می‌شود و با خطای undefined می‌شکند —
- * دقیقا همان چیزی که اسکریپت‌های ووکامرس را از کار می‌اندازد.
+ * رشته «src=» را در تگ همه اسکریپت‌ها به «defer src=» عوض می‌کرد و فقط اسکریپتی را
+ * که خودش inline بعد از خودش (after) داشت کنار می‌گذاشت، نه وابستگی‌های آن را. اگر
+ * اسکریپت A (بدون inline) در head و B (وابسته به A، با inline بعد از خودش) در فوتر
+ * بود، A «defer» می‌شد و B فوری اجرا می‌شد، یعنی B و inline آن پیش از A اجرا
+ * می‌شدند و می‌شکستند (بازتولید با ابزار تست، بخش ۱۵۵ HODIMA-AUDIT.md).
+ *
+ * از وردپرس 6.3 همین کار بومی است (wp_enqueue_script با 'strategy' => 'defer')
+ * و وردپرس خودش وابستگی‌ها، وابسته‌ها و اسکریپت inline را می‌سنجد و اسکریپت ناایمن
+ * را بدون defer می‌گذارد. حداقل وردپرس قالب 6.5 است. اسکریپت‌های خود قالب همه
+ * 'strategy' => 'defer' بومی دارند؛ اسکریپت افزونه‌ها هر کدام خودشان تصمیم می‌گیرند.
  * ============================================================ */
-// دو آرگومان کافی است (src استفاده نمی‌شد)
-add_filter( 'script_loader_tag', 'hodima_defer_script_tag', 10, 2 );
-
-function hodima_defer_script_tag( mixed $tag, mixed $handle ): mixed {
-
-    /*
-     * اگر لایت‌اسپید فعال است، این کار را به او واگذار کن.
-     *
-     * دلیلش فقط تکراری بودن نیست. لایت‌اسپید گزینه «JS Combine» دارد که
-     * چند فایل را در یکی ادغام می‌کند. وقتی قالب بعضی تگ‌ها را defer کرده
-     * و بعضی را نه، ادغام آن‌ها ترتیب اجرا را عوض می‌کند و نتیجه‌اش
-     * خطاهای «undefined is not a function» است که بازتولیدشان سخت است.
-     *
-     * لایت‌اسپید defer و combine را با هم و آگاهانه مدیریت می‌کند.
-     *
-     * برای برگرداندن کنترل به قالب:
-     *     add_filter( 'hodima_litespeed_handles_js_defer', '__return_false' );
-     */
-    if ( function_exists( 'hodima_litespeed_handles' ) && hodima_litespeed_handles( 'js_defer' ) ) {
-        return $tag;
-    }
-
-    if ( is_admin() || is_customize_preview() || is_feed() ) {
-        return $tag;
-    }
-
-    if ( ! is_string( $tag ) || ! str_contains( $tag, ' src=' ) ) {
-        return $tag;
-    }
-
-    /**
-     * هندل‌هایی که هرگز نباید defer شوند.
-     * برای افزودن مورد جدید از همین فیلتر استفاده کنید.
-     */
-    $never_defer = (array) apply_filters( 'hodima_no_defer_handles', [
-        'jquery',
-        'jquery-core',
-        'jquery-migrate',
-    ] );
-
-    if ( in_array( $handle, $never_defer, true ) ) {
-        return $tag;
-    }
-
-    // اسکریپت inline از نوع after → defer کردن آن را می‌شکند
-    $scripts = wp_scripts();
-    if ( isset( $scripts->registered[ $handle ] ) ) {
-        $extra = $scripts->registered[ $handle ]->extra;
-        if ( ! empty( $extra['after'] ) ) {
-            return $tag;
-        }
-    }
-
-    // از قبل async / defer / module دارد
-    if ( preg_match( '/\s(async|defer)[\s=>]/i', $tag ) || str_contains( $tag, 'type="module"' ) ) {
-        return $tag;
-    }
-
-    // نکته: ' src=' و نه ' src' تا با srcset تداخل نکند
-    return str_replace( ' src=', ' defer src=', $tag );
-}

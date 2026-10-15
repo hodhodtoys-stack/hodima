@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function hodima_footer_assets(): void {
     // CSS فوتر با CSS مشترک همه صفحه‌ها (hodima_enqueue_common_css در inc/enqueue.php)
-    hodima_enqueue_asset( 'hodima-footer', 'assets/js/footer.js', [], [ 'in_footer' => true ] );
+    hodima_enqueue_asset( 'hodima-footer', 'assets/js/footer.js', [], [ 'in_footer' => true, 'strategy' => 'defer' ] );
 }
 add_action( 'wp_enqueue_scripts', 'hodima_footer_assets', 20 );
 

@@ -100,7 +100,8 @@ function hodima_enqueue_scripts(): void {
 	$is_shop     = $wc && is_shop();
 	$is_cat_tag  = $wc && ( is_product_category() || is_product_tag() );
 	$is_prod_src = is_search() && 'product' === get_query_var( 'post_type' );
-	$in_footer   = [ 'in_footer' => true ];
+	// defer بومی وردپرس (6.3+): خودش وابستگی‌ها و اسکریپت inline را می‌سنجد؛ فیلتر دستی script_loader_tag حذف شد (3.5.7)
+	$in_footer   = [ 'in_footer' => true, 'strategy' => 'defer' ];
 
 	// 2. کارت محصول (همه صفحات فروشگاهی و نتایج جستجو)
 	if ( $is_shop || $is_cat_tag || $is_product || is_search() ) {
@@ -254,7 +255,7 @@ add_action( 'wp_enqueue_scripts', 'hodima_enqueue_product_gallery', 20 );
 
 function hodima_enqueue_product_gallery(): void {
 	if ( hodima_wc_active() && is_product() ) {
-		hodima_enqueue_asset( 'sp-gallery-js', 'assets/js/sp-gallery.js', [], [ 'in_footer' => true ] );
+		hodima_enqueue_asset( 'sp-gallery-js', 'assets/js/sp-gallery.js', [], [ 'in_footer' => true, 'strategy' => 'defer' ] );
 	}
 }
 
