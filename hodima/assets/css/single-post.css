@@ -196,7 +196,7 @@
 			text-decoration: none;
 			font-size: 12px;
 			font-weight: 600;
-			transition: all 0.2s ease;
+			transition: background-color 0.2s ease, color 0.2s ease;
 
 			&:hover {
 				background: var(--hodima-bg-gray, #eef2f8);

@@ -140,7 +140,7 @@
 	color: var(--hodima-text-dark, #111111);
 	font-size: 13px;
 	cursor: pointer;
-	transition: all 0.25s ease;
+	transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 	font-family: inherit;
 	flex-shrink: 0;
 
@@ -192,7 +192,7 @@
 	opacity: 0;
 	visibility: hidden;
 	transform: translateX(-50%) translateY(-10px);
-	transition: all 0.25s ease;
+	transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease;
 	min-width: 105px;
 }
 
@@ -210,7 +210,7 @@
 	color: var(--hodima-text-dark, #111111);
 	font-size: 13px;
 	cursor: pointer;
-	transition: all 0.25s ease;
+	transition: background-color 0.25s ease, color 0.25s ease;
 	font-family: inherit;
 	text-align: center;
 	width: 100%;

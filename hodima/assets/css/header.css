@@ -249,7 +249,7 @@
 		text-decoration: none;
 		padding: 0.75rem 1.25rem;
 		font-size: 0.875rem;
-		transition: all var(--transition-fast);
+		transition: background-color var(--transition-fast), color var(--transition-fast), padding-inline-start var(--transition-fast);
 		border-bottom: 1px solid #edf1f7;
 		display: flex;
 		justify-content: space-between;
@@ -305,7 +305,7 @@
 	align-items: center;
 	gap: 0.5rem;
 	box-shadow: var(--shadow-button);
-	transition: all var(--transition-base);
+	transition: transform var(--transition-base), box-shadow var(--transition-base), color var(--transition-base);
 	text-decoration: none;
 	white-space: nowrap;
 
@@ -596,7 +596,7 @@
 	justify-content: center;
 	opacity: 0;
 	visibility: hidden;
-	transition: all var(--transition-base);
+	transition: opacity var(--transition-base), visibility var(--transition-base);
 	z-index: 2147483647;
 
 	&.is-active {
@@ -635,7 +635,7 @@ dialog.overlay {
 	box-shadow: var(--shadow-popup);
 	text-align: center;
 	transform: scale(0.8);
-	transition: all var(--transition-bounce);
+	transition: transform var(--transition-bounce);
 	position: relative;
 }
 
@@ -840,7 +840,8 @@ body.menu-is-open {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.skip-link {
-		transition: none;
+	/* افتادن هدر هنگام چسبیدن (header-drop): بدون انیمیشن، هدر همان‌جا ظاهر می‌شود */
+	.header.is-fixed {
+		animation: none;
 	}
 }

@@ -18,7 +18,7 @@
 	--primary-gradient: var(--hodima-gradient-main, linear-gradient(135deg, #25316a 0%, #3b4d8f 55%, #607bbd 100%));
 	--text-main: var(--hodima-text-dark, #111111);
 	--text-muted: var(--hodima-text-muted, #5d6785);
-	--transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	--transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
 	/* قاب مشترک صفحه‌ها؛ باکس ۴۰۴ وسط ارتفاع صفحه */
 	min-block-size: 60vh;
@@ -161,5 +161,12 @@
 	.error404-btn {
 		width: 100%;
 		justify-content: center;
+	}
+}
+
+/* کاهش حرکت: عدد ۴۰۴ ثابت می‌ماند (انیمیشن بی‌پایان شناور، WCAG 2.2.2) */
+@media (prefers-reduced-motion: reduce) {
+	.error404-code {
+		animation: none;
 	}
 }

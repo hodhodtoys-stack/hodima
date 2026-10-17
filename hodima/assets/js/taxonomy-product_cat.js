@@ -110,7 +110,9 @@
 
 				const top = scope.getBoundingClientRect().top + window.scrollY - 100;
 				if ( top < window.scrollY ) {
-					window.scrollTo( { top, behavior: 'smooth' } );
+					// کاربر با «کاهش حرکت» اسکرول نرم نمی‌خواهد (WCAG 2.3.3)
+					const reduceMotion = window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+					window.scrollTo( { top, behavior: reduceMotion ? 'auto' : 'smooth' } );
 				}
 			} catch ( err ) {
 				if ( 'AbortError' !== err?.name ) {
