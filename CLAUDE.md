@@ -65,6 +65,7 @@ tools/wp-harness/visual-compare.sh [--built] [ref] [صفحه…]  # ظاهر ق�
 tools/wp-harness/css-equiv.sh [--built|ref]       # هم‌ارزی CSS قانون‌به‌قانون در Chromium (همه فایل‌ها؛ منطقی=فیزیکی در RTL؛ ترتیب قانون‌های هم‌وزن)
 tools/wp-harness/visual-compare.sh --wc [ref]     # همان مقایسه ظاهر روی ووکامرس *واقعی* (محصول، فروشگاه، دسته، سبد، پرداخت؛ wc-setup.sh)
 tools/wp-harness/important-audit.sh [--apply]     # !importantهای زائد قالب (آبشار واقعی همه CSSها در ۴۰ صفحه × ۱۰ عرض)
+tools/wp-harness/a11y-audit.sh [--wc] [--ref HEAD]  # دسترس‌پذیری WCAG 2.2 AA: axe-core + فوکوس صفحه‌کلید (قبل/بعد با --ref)
 ```
 برای هر تغییری که روی خروجی صفحه یا اسکیما اثر دارد، قبل از commit اجرا کن و نتیجه را در گزارش بیاور؛ هر تفاوت باید عمدی باشد. اگر تعریف تابع/کلاس سطح بالا یا ترتیب لود عوض شد، فعال‌سازی واقعی از ZIP را در هر دو ترتیب هم تست کن: `bash bin/build.sh && tools/wp-harness/zip-install-check.sh` — ابزار تست اصلی افزونه‌ها را از قبل فعال می‌کند و خطای «Cannot redeclare» هنگام فعال‌سازی را نمی‌بیند (بخش ۲۲، ۵۹). `php -l` روی همه فایل‌های PHP تغییرکرده.
 

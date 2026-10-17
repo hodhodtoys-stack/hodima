@@ -37,6 +37,6 @@
 	"hodima/style.css": {
 		"csstools/use-logical": 1,
 		"declaration-no-important": 2,
-		"no-descending-specificity": 12
+		"no-descending-specificity": 9
 	}
 }

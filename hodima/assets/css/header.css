@@ -86,6 +86,14 @@
 	min-height: var(--header-h);
 }
 
+/*
+ * هدر چسبان روی محتوا می‌نشیند (fixed)؛ بدون این، عنصری که با Tab یا Shift+Tab فوکوس می‌گیرد (یا
+ * لینک #بخش) گاهی زیر هدر می‌رفت و دیده نمی‌شد (WCAG 2.4.11). فاصله = ارتفاع هدر + ۰٫۷۵rem.
+ */
+html {
+	scroll-padding-block-start: calc(var(--header-height, 5.3125rem) + 0.75rem);
+}
+
 .header {
 	background: var(--grad-header);
 	border-radius: 0 0 var(--header-radius) var(--header-radius);
@@ -193,7 +201,11 @@
 	& > li > a:focus-visible {
 		color: var(--clr-white);
 		opacity: 1;
-		outline: none;
+	}
+
+	/* گرادیان تیره هدر: حلقه فوکوس سفید (تا 3.6.6 outline برداشته می‌شد و فقط خط زیر لینک تغییر می‌کرد) */
+	& > li > a:focus-visible {
+		outline-color: var(--hodima-focus-on-dark, #ffffff);
 	}
 
 	& > li > a::before {
@@ -266,7 +278,10 @@
 		background-color: var(--clr-primary-light);
 		color: var(--clr-primary);
 		padding-inline-start: 1.75rem;
-		outline: none;
+	}
+
+	& .sub-menu li a:focus-visible {
+		outline-offset: -2px;
 	}
 }
 
@@ -284,6 +299,10 @@
 	&:hover img,
 	&:focus-visible img {
 		transform: scale(1.05);
+	}
+
+	&:focus-visible {
+		outline-color: var(--hodima-focus-on-dark, #ffffff);
 	}
 }
 
@@ -314,7 +333,10 @@
 		transform: translateY(-2px);
 		color: var(--clr-text-dark);
 		box-shadow: var(--shadow-button-hover);
-		outline: none;
+	}
+
+	&:focus-visible {
+		outline-color: var(--hodima-focus-on-dark, #ffffff);
 	}
 
 	& svg {
@@ -368,13 +390,15 @@
 		cursor: pointer;
 		padding: 0.3125rem;
 		z-index: 1000;
-		outline: none;
 		-webkit-tap-highlight-color: transparent;
 
 		&:focus,
 		&:active {
-			outline: none;
 			background: transparent;
+		}
+
+		&:focus-visible {
+			outline-color: var(--hodima-focus-on-dark, #ffffff);
 		}
 
 		& svg {
@@ -472,6 +496,9 @@
 			background-color: var(--clr-primary-light);
 			color: var(--clr-primary);
 			padding-inline-start: 2rem;
+			/* پنل روشن موبایل: حلقه فوکوس تیره و داخل کادر (نه سفید هدر) */
+			outline-color: var(--hodima-focus-base, #25316a);
+			outline-offset: -2px;
 		}
 
 		/* فلش به دکمه رفت */
@@ -579,6 +606,10 @@
 	.site-header-area {
 		--header-h: var(--header-height-mobile);
 	}
+
+	html {
+		scroll-padding-block-start: calc(var(--header-height-mobile, 4.375rem) + 0.75rem);
+	}
 }
 
 /* ==========================================================
@@ -663,7 +694,6 @@ dialog.overlay {
 	background: transparent;
 	border: none;
 	box-shadow: none;
-	outline: none;
 	appearance: none;
 	width: 2.1875rem;
 	height: 2.1875rem;
@@ -684,7 +714,6 @@ dialog.overlay {
 		background: transparent;
 		border: none;
 		box-shadow: none;
-		outline: none;
 		appearance: none;
 	}
 

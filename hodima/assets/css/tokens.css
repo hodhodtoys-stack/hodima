@@ -74,6 +74,15 @@
     --hodima-shadow-medium:  0 0.625rem 1.875rem rgba(var(--hodima-primary-rgb), 0.1);
     --hodima-ring:           0 0 0 3px rgb(var(--hodima-secondary-rgb), 0.15);  /* حلقه فوکوس فیلدها */
 
+    /* ── حلقه فوکوس صفحه‌کلید (WCAG 2.4.7 / 1.4.11، قالب 3.6.7) ─────────
+       یک خط ۲px یکدست و پررنگ؛ روی گرادیان تیره هدر و فوتر سفید می‌شود
+       (آن‌جا --hodima-focus-color را به --hodima-focus-on-dark برگردان). */
+    --hodima-focus-base:     var(--hodima-primary);
+    --hodima-focus-on-dark:  #ffffff;
+    --hodima-focus-color:    var(--hodima-focus-base);
+    --hodima-focus-width:    2px;
+    --hodima-focus-offset:   2px;
+
     /* ── شعاع گوشه (نوسازی قالب، مرحله ۵) ──────────────────────────
        مقدارها همان‌هایی‌اند که در CSS قالب بیشترین استفاده را داشتند؛
        جایگزینی مقدار ثابت با توکن ظاهر را عوض نمی‌کند.

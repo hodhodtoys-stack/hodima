@@ -64,7 +64,6 @@
 		color: #fff;
 		background: var(--hodima-secondary, #607bbd);
 		border-color: var(--hodima-secondary, #607bbd);
-		outline: none;
 	}
 
 	& :is(.page-numbers.current, span.post-page-numbers) {

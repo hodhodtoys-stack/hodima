@@ -685,7 +685,6 @@
 	& audio {
 		width: 100%;
 		border-radius: 50px;
-		outline: none;
 	}
 }
 
@@ -957,6 +956,11 @@
 			height: 16px;
 			accent-color: var(--hodima-secondary);
 			flex-shrink: 0;
+		}
+
+		/* دکمه ارسال و چک‌باکس حاشیه‌شان رنگ عوض نمی‌کند: حلقه فوکوس عمومی (style.css) برمی‌گردد */
+		& input:is([type="submit"], [type="checkbox"]):focus-visible {
+			outline: var(--hodima-focus-width, 2px) solid var(--hodima-focus-color, #25316a);
 		}
 
 		& input#submit {
