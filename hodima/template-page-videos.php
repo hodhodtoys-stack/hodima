@@ -69,7 +69,7 @@ if ( $hodima_vp_paged > 1 && $hodima_vp_paged > (int) $hodima_vp_video_query->ma
  * کنسول). اگر سئوباکس عنوانی برنگرداند، وردپرس خودش شماره را اضافه می‌کند.
  */
 if ( $hodima_vp_paged > 1 ) {
-	add_filter( 'pre_get_document_title', static function ( $title ) use ( $hodima_vp_paged ) {
+	add_filter( 'pre_get_document_title', static function ( mixed $title ) use ( $hodima_vp_paged ): mixed {
 		return '' === (string) $title ? $title : $title . ' - صفحه ' . $hodima_vp_paged;
 	}, 10000 ); // بعد از سئوباکس (اولویت ۹۹۹۹)
 

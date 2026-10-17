@@ -1793,7 +1793,7 @@ function hodima_hex_rgb( string $hex ): array {
  * @param array<int, int|float> $rgb
  */
 function hodima_rgb_hex( array $rgb ): string {
-	return '#' . implode( '', array_map( static fn( $c ): string => str_pad( dechex( max( 0, min( 255, (int) round( $c ) ) ) ), 2, '0', STR_PAD_LEFT ), $rgb ) );
+	return '#' . implode( '', array_map( static fn( int|float $c ): string => str_pad( dechex( max( 0, min( 255, (int) round( $c ) ) ) ), 2, '0', STR_PAD_LEFT ), $rgb ) );
 }
 
 /** CSS پالت تنظیم‌شده، یا رشته خالی برای پالت پیش‌فرض. */
@@ -1827,12 +1827,12 @@ function hodima_palette_css(): string {
 	$secondary = hodima_hex_rgb( (string) hodima_setting( 'color_secondary' ) );
 
 	if ( isset( $changed['primary'] ) ) {
-		$vars['--hodima-primary-dark'] = hodima_rgb_hex( array_map( static fn( $c ) => $c * 0.73, $primary ) );
+		$vars['--hodima-primary-dark'] = hodima_rgb_hex( array_map( static fn( int|float $c ): float => $c * 0.73, $primary ) );
 	}
 
 	if ( isset( $changed['primary'] ) || isset( $changed['secondary'] ) ) {
-		$vars['--hodima-gradient-mid']  = hodima_rgb_hex( array_map( static fn( $a, $b ) => $a + ( $b - $a ) * 0.4, $primary, $secondary ) );
-		$vars['--hodima-gradient-deep'] = hodima_rgb_hex( array_map( static fn( $a, $b ) => $a + ( $b - $a ) * 0.26, $primary, $secondary ) );
+		$vars['--hodima-gradient-mid']  = hodima_rgb_hex( array_map( static fn( int|float $a, int|float $b ): float => $a + ( $b - $a ) * 0.4, $primary, $secondary ) );
+		$vars['--hodima-gradient-deep'] = hodima_rgb_hex( array_map( static fn( int|float $a, int|float $b ): float => $a + ( $b - $a ) * 0.26, $primary, $secondary ) );
 	}
 
 	$css = '';

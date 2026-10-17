@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // ۱. جلوگیری از لود فایل‌های سنگین ووکامرس در صفحات غیر مرتبط
-add_action( 'wp_enqueue_scripts', function() {
+add_action( 'wp_enqueue_scripts', static function (): void {
     if ( function_exists( 'is_woocommerce' ) ) {
         if ( ! is_woocommerce() && ! is_cart() && ! is_checkout() && ! is_account_page() ) {
             wp_dequeue_style( 'woocommerce-layout' );
@@ -26,7 +26,7 @@ add_action( 'wp_enqueue_scripts', function() {
 }, 99 );
 
 // ۲. حذف استایل‌های حجیم بلاک‌های گوتنبرگی ووکامرس
-add_action( 'wp_enqueue_scripts', function() {
+add_action( 'wp_enqueue_scripts', static function (): void {
     wp_dequeue_style( 'wc-blocks-style' );
     wp_dequeue_style( 'wc-blocks-integration' );
     wp_dequeue_style( 'wc-blocks-vendors-style' );
@@ -51,7 +51,7 @@ add_action( 'init', static function (): void {
 // (inc/woocommerce/store-optimizer.php) — بازسازی قالب، مرحله ۲.
 
 // ۸. غیرفعال کردن SelectWoo در صفحات غیرضروری
-add_action( 'wp_enqueue_scripts', function() {
+add_action( 'wp_enqueue_scripts', static function (): void {
     if ( function_exists( 'is_checkout' ) && ! is_checkout() && ! is_account_page() ) {
         wp_dequeue_style( 'select2' );
         wp_dequeue_script( 'selectWoo' );

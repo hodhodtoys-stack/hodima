@@ -46,7 +46,7 @@ function hodima_cleanup_wp_core(): void {
     remove_filter( 'comment_text_rss', 'wp_staticize_emoji' );
     remove_filter( 'wp_mail', 'wp_staticize_emoji_for_email' );
 
-    add_filter( 'tiny_mce_plugins', static fn( $plugins ) => is_array( $plugins ) ? array_diff( $plugins, [ 'wpemoji' ] ) : [] );
+    add_filter( 'tiny_mce_plugins', static fn( mixed $plugins ): array => is_array( $plugins ) ? array_diff( $plugins, [ 'wpemoji' ] ) : [] );
 }
 
 /* ============================================================
@@ -70,7 +70,7 @@ function hodima_filter_core_resource_hints( array $urls, string $relation_type )
 
     return array_values( array_filter(
         $urls,
-        static function ( $url ): bool {
+        static function ( mixed $url ): bool {
             $host = (string) ( is_array( $url ) ? ( $url['href'] ?? '' ) : $url );
             return ! str_contains( $host, 's.w.org' ) && ! str_contains( $host, 'wp.org' );
         }

@@ -51,7 +51,7 @@ $hp_stock_texts = function_exists( 'hodima_product_stock_texts' ) ? hodima_produ
 	'out'   => [ 'label' => 'اتمام موجودی', 'notice' => '' ],
 ];
 
-$hp_stock_labels = array_filter( array_map( static fn( $t ): string => (string) ( $t['label'] ?? '' ), $hp_stock_texts ) );
+$hp_stock_labels = array_filter( array_map( static fn( mixed $t ): string => (string) ( is_array( $t ) ? ( $t['label'] ?? '' ) : '' ), $hp_stock_texts ) );
 
 $hp_notices = [];
 foreach ( $hp_stock_texts as $hp_key => $hp_text ) {

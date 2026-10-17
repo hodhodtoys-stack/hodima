@@ -45,7 +45,7 @@ add_filter( 'loop_shop_per_page', static function (): int {
  * گاهی صفحه ۲ را نماینده دسته انتخاب می‌کرد — یکی از علت‌های محتمل
  * نوسان رتبه.
  * ===================================================================== */
-add_filter( 'pre_get_document_title', static function ( $title ) {
+add_filter( 'pre_get_document_title', static function ( mixed $title ): mixed {
 
 	$paged = (int) get_query_var( 'paged' );
 
@@ -87,7 +87,7 @@ add_filter( 'woocommerce_pagination_args', static function ( array $args ): arra
  * paginate_links() شماره‌ها را با number_format_i18n() می‌سازد که با
  * زبان فارسی رقم فارسی برمی‌گرداند.
  */
-add_filter( 'paginate_links_output', static function ( $html ) {
+add_filter( 'paginate_links_output', static function ( mixed $html ): mixed {
 
 	if ( ! hodima_is_product_archive() ) {
 		return $html;
@@ -99,11 +99,11 @@ add_filter( 'paginate_links_output', static function ( $html ) {
 /**
  * آیتم «صفحه N» مسیر راهنمای ووکامرس هم با رقم انگلیسی.
  */
-add_filter( 'woocommerce_get_breadcrumb', static function ( $crumbs ) {
+add_filter( 'woocommerce_get_breadcrumb', static function ( mixed $crumbs ): mixed {
 
 	$paged = (int) get_query_var( 'paged' );
 
-	if ( $paged < 2 || ! hodima_is_product_archive() || empty( $crumbs ) ) {
+	if ( ! is_array( $crumbs ) || $paged < 2 || ! hodima_is_product_archive() || empty( $crumbs ) ) {
 		return $crumbs;
 	}
 

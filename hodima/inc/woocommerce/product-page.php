@@ -147,7 +147,7 @@ function hodima_render_upsells( int $limit = 6 ): void {
  * «نظرات کاربران» به تنهایی برای موتورهای پاسخ‌گو (AEO) بدون زمینه است؛
  * «نظرات کاربران درباره چهل گیس» یک بخش قابل‌استناد و مستقل می‌سازد.
  * ===================================================================== */
-add_filter( 'woocommerce_reviews_title', static function ( $title, $count = 0, $product = null ) {
+add_filter( 'woocommerce_reviews_title', static function ( mixed $title, mixed $count = 0, mixed $product = null ): string {
 	return $product instanceof WC_Product
 		? 'نظرات کاربران درباره ' . $product->get_name()
 		: 'نظرات کاربران';

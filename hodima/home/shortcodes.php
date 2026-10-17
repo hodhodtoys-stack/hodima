@@ -71,7 +71,7 @@ add_action( 'delete_product_cat',  'hodima_home_clear_category_shortcode_map' );
 // ========================================================================
 // ۳. ثبت تمامی شورت‌کدها در یک هوک یکپارچه
 // ========================================================================
-add_action('init', function() {
+add_action( 'init', static function (): void {
 
 	// شورت‌کدها فقط جایی لازم‌اند که محتوا رندر می‌شود.
 	// کرون هیچ‌وقت شورت‌کد پردازش نمی‌کند.
@@ -81,8 +81,8 @@ add_action('init', function() {
 
 	// الف) شورت‌کد اختصاصی «جدیدترین محصولات»
 	if ( function_exists('hodima_home_product_slider') ) {
-		add_shortcode( 'latest-products', function($atts) {
-			$atts = shortcode_atts(['limit' => 12], $atts);
+		add_shortcode( 'latest-products', static function ( mixed $atts ): string {
+			$atts = shortcode_atts( [ 'limit' => 12 ], $atts );
 			return hodima_home_product_slider([
 				'title'    => 'جدیدترین محصولات',
 				'link'     => 'latest-products',

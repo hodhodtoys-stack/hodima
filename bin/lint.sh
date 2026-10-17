@@ -8,6 +8,7 @@
 # ۱. php -l (PHP 8.4) همه فایل‌های قالب و افزونه‌ها؛ هشدار Deprecated هم خطاست
 # ۲. PHPCS (phpcs.xml.dist)        ← tools/quality/baseline/phpcs.json
 # ۳. PHPStan (phpstan.neon.dist)   ← tools/quality/baseline/phpstan.neon
+#    + نوع کلوژرها (tools/quality/closure-types.php؛ بدون baseline)
 # ۴. Stylelint (stylelint.config.mjs) ← tools/quality/baseline/stylelint.json
 # ۵. ESLint (eslint.config.mjs)    ← tools/quality/baseline/eslint.json
 # ۶. ساخت CSS قالب (bin/build-css.mjs --check): سورس با Lightning CSS برای مرورگرهای
@@ -81,6 +82,13 @@ if want php; then
 		else
 			echo "  ✘ phpstan: خطای جدید:"; grep -v '^ *$' "$tmp/phpstan.txt" | head -40 | sed 's/^/    /'; fail=1
 		fi
+	fi
+
+	# ۴. نوع کلوژرها و arrow functionهای قالب (PHPStan سطح ۶ آن‌ها را نمی‌خواهد؛ بدون baseline)
+	if ! php tools/quality/closure-types.php hodima > "$tmp/closure-types.txt" 2>&1; then
+		echo "  ✘ نوع کلوژرها:"; grep -v '^ *$' "$tmp/closure-types.txt" | head -30 | sed 's/^/    /'; fail=1
+	else
+		cat "$tmp/closure-types.txt"
 	fi
 fi
 

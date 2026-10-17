@@ -793,7 +793,7 @@ function hodima_home_legacy_category_tones( array $cat_map ): array {
  * قبل از نبودن این فایل پیش می‌رود (قالب برگه انتخاب‌شده در ویرایشگر،
  * page.php یا index.php) — هیچ تغییری برای سایتی که چیدمان را روشن نکرده.
  */
-add_filter( 'frontpage_template', static fn( $template ) => hodima_home_builder_active() ? $template : '' );
+add_filter( 'frontpage_template', static fn( mixed $template ): mixed => hodima_home_builder_active() ? $template : '' );
 
 /**
  * چاپ یک بخش چیدمان.
