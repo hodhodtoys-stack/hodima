@@ -139,6 +139,23 @@
         }
     }
 
+    /* یادداشت هدف جمع‌آوری شماره و لینک سیاست حریم خصوصی (زیر فرم) */
+    .hodima-phone-note {
+        margin-block: 0.5rem 0;
+        text-align: center;
+        font-size: 0.75rem;
+        line-height: 1.8;
+        color: var(--hodima-phone-text-soft);
+
+        a {
+            color: inherit;
+            text-decoration: underline;
+            text-underline-offset: 0.15em;
+
+            &:hover { color: var(--hodima-phone-primary); }
+        }
+    }
+
     .hodima-phone-msg {
         margin-block-start: 0.5rem;
         padding: 0.4375rem;

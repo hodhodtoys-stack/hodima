@@ -50,6 +50,18 @@ class WP_Story_Setup {
 		add_action( self::CLEANUP_EVENT, [ self::class, 'cleanup_interactions' ] );
 		add_action( 'wp_dashboard_setup', [ self::class, 'add_dashboard_widget' ] );
 		add_action( 'admin_head-index.php', [ self::class, 'widget_styles' ] );
+		add_action( 'admin_init', [ self::class, 'privacy_policy_text' ] );
+	}
+
+	/** متن پیشنهادی صفحه سیاست حریم خصوصی (ابزارها ← راهنمای سیاست حریم خصوصی). */
+	public static function privacy_policy_text(): void {
+		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+			return;
+		}
+		$text  = '<h3>' . esc_html( 'آمار بازدید استوری‌ها' ) . '</h3>';
+		$text .= '<p class="privacy-policy-tutorial">' . esc_html( 'این متن پیشنهادی است؛ مطابق وضع کسب‌وکار خود ویرایش کنید.' ) . '</p>';
+		$text .= '<p>' . esc_html( sprintf( 'برای شمارش بازدید و اشتراک یکتای هر استوری در روز، یک نشانه یک‌طرفه (هش) از نشانی IP، نام مرورگر و تاریخ همان روز همراه شناسه استوری ذخیره می‌شود. خود IP ذخیره نمی‌شود و نشانه هر روز فرق می‌کند، پس بازدیدکننده را بین روزها دنبال نمی‌کند. این ردیف‌ها %d ماه بعد خودکار پاک می‌شوند.', self::RETENTION_MONTHS ) ) . '</p>';
+		wp_add_privacy_policy_content( 'هدیما — استوری', wp_kses_post( $text ) );
 	}
 
 	/** استایل ویجت، فقط در صفحه پیشخوان. */

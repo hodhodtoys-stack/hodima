@@ -36,6 +36,14 @@ final class Checkout_Optimizer {
             add_filter( "woocommerce_process_myaccount_field_{$key}", $filter );
         }
 
+        // حریم خصوصی: کد ملی ذخیره‌شده با ابزار «خروجی/حذف داده شخصی» وردپرس هم دیده و پاک شود
+        // (حتی اگر فیلد بعدا خاموش شده باشد، داده قبلی هنوز هست؛ پس خارج از شرط بالا)
+        add_filter( 'woocommerce_privacy_export_customer_personal_data', [ $this, 'privacy_export_customer' ], 10, 2 );
+        add_filter( 'woocommerce_privacy_export_order_personal_data_meta', [ $this, 'privacy_order_meta_label' ] );
+        add_filter( 'woocommerce_privacy_erase_personal_data_customer', [ $this, 'privacy_erase_customer' ], 10, 2 );
+        add_filter( 'woocommerce_privacy_remove_order_personal_data_meta', [ $this, 'privacy_order_meta_remove' ] );
+        add_action( 'admin_init', [ $this, 'privacy_policy_text' ] );
+
         add_action( 'woocommerce_after_checkout_validation', [ $this, 'validate_checkout' ], 10, 2 );
         add_action( 'woocommerce_after_save_address_validation', [ $this, 'validate_account_address' ], 10, 2 );
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ], 20 );
@@ -105,6 +113,70 @@ final class Checkout_Optimizer {
             'custom_attributes' => [ 'inputmode' => 'numeric', 'maxlength' => '10', 'dir' => 'ltr' ],
         ];
         return $fields;
+    }
+
+    /**
+     * خروجی داده شخصی مشتری: کد ملی حساب کاربری.
+     *
+     * @param array<int, array<string, mixed>> $personal_data آیتم‌های خروجی ووکامرس.
+     * @param \WC_Customer                     $customer      مشتری.
+     * @return array<int, array<string, mixed>>
+     */
+    public function privacy_export_customer( array $personal_data, \WC_Customer $customer ): array {
+        $national_id = (string) get_user_meta( $customer->get_id(), 'billing_national_id', true );
+        if ( '' !== $national_id ) {
+            $personal_data[] = [ 'name' => 'کد ملی', 'value' => $national_id ];
+        }
+        return $personal_data;
+    }
+
+    /**
+     * کد ملی در متای سفارش به خروجی داده شخصی سفارش اضافه شود.
+     *
+     * @param array<string, string> $meta کلید متا ← برچسب.
+     * @return array<string, string>
+     */
+    public function privacy_order_meta_label( array $meta ): array {
+        $meta['_billing_national_id'] = 'کد ملی';
+        return $meta;
+    }
+
+    /**
+     * حذف داده شخصی مشتری: کد ملی حساب کاربری پاک می‌شود.
+     *
+     * @param array<string, mixed> $response پاسخ ووکامرس (messages، items_removed، …).
+     * @param \WC_Customer         $customer مشتری.
+     * @return array<string, mixed>
+     */
+    public function privacy_erase_customer( array $response, \WC_Customer $customer ): array {
+        if ( '' !== (string) get_user_meta( $customer->get_id(), 'billing_national_id', true ) ) {
+            delete_user_meta( $customer->get_id(), 'billing_national_id' );
+            $response['messages'][]    = 'کد ملی مشتری حذف شد.';
+            $response['items_removed'] = true;
+        }
+        return $response;
+    }
+
+    /**
+     * کد ملی در متای سفارش هنگام ناشناس‌سازی سفارش (طبق تنظیم ووکامرس «حذف داده سفارش») پاک شود.
+     *
+     * @param array<string, string> $meta کلید متا ← نوع ناشناس‌سازی.
+     * @return array<string, string>
+     */
+    public function privacy_order_meta_remove( array $meta ): array {
+        $meta['_billing_national_id'] = 'text';
+        return $meta;
+    }
+
+    /** متن پیشنهادی صفحه سیاست حریم خصوصی (ابزارها ← راهنمای سیاست حریم خصوصی). */
+    public function privacy_policy_text(): void {
+        if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+            return;
+        }
+        $text  = '<h3>' . esc_html( 'کد ملی در تسویه‌حساب' ) . '</h3>';
+        $text .= '<p class="privacy-policy-tutorial">' . esc_html( 'این متن پیشنهادی است؛ مطابق وضع کسب‌وکار خود ویرایش کنید.' ) . '</p>';
+        $text .= '<p>' . esc_html( 'در تسویه‌حساب و «ویرایش آدرس» حساب کاربری، فیلد اختیاری «کد ملی» برای صدور فاکتور رسمی دریافت می‌شود. کد ملی همراه سفارش و در حساب مشتری نگه داشته می‌شود و فقط برای فاکتور رسمی استفاده می‌شود. با ابزارهای وردپرس (ابزارها ← خروجی/حذف داده شخصی) در خروجی داده مشتری می‌آید و با حذف داده مشتری پاک می‌شود؛ در سفارش‌ها طبق تنظیم ووکامرس «حذف داده سفارش» ناشناس می‌شود.' ) . '</p>';
+        wp_add_privacy_policy_content( 'هدیما — کد ملی', wp_kses_post( $text ) );
     }
 
     /**

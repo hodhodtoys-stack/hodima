@@ -69,6 +69,13 @@ else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/commerce-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
+echo "=== آزمون حریم خصوصی (privacy-tests.php: خروجی/حذف داده لید، متن سیاست، یادداشت فرم؛ ووکامرس واقعی جدا)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/privacy-tests.php" > "$out/privacy-tests.txt" 2>&1; then
+	tail -1 "$out/privacy-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/privacy-tests.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
+
 if [ -n "$ref" ] && git -C "$repo" rev-parse -q --verify "$ref^{commit}" >/dev/null; then
 	echo "=== تفاوت اسکیما با $ref (فقط گزارش)"
 	git -C "$repo" worktree remove --force "$base/ref" >/dev/null 2>&1 || true

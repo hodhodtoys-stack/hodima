@@ -155,6 +155,10 @@ function render_hodima_phone_form(): string {
         default => null,
     } : null;
 
+    // اعلام هدف جمع‌آوری شماره + لینک سیاست حریم خصوصی (اگر در «تنظیمات ← حریم خصوصی» صفحه‌ای انتخاب شده)
+    $note_text = (string) apply_filters( 'hodima_phone_privacy_note', 'با ثبت شماره، با تماس همکاران ما برای مشاوره و ارسال کاتالوگ موافقت می‌کنید.' );
+    $policy    = function_exists( 'get_privacy_policy_url' ) ? get_privacy_policy_url() : '';
+
     ob_start();
     ?>
     <div class="hodima-phone-wrapper" id="<?= esc_attr( $uid ); ?>">
@@ -177,7 +181,7 @@ function render_hodima_phone_form(): string {
                 autocomplete="tel"
                 maxlength="20"
                 required
-                aria-describedby="<?= esc_attr( $uid ); ?>-title <?= esc_attr( $uid ); ?>-msg"
+                aria-describedby="<?= esc_attr( $uid ); ?>-title <?= esc_attr( $uid ); ?>-note <?= esc_attr( $uid ); ?>-msg"
             >
 
             <div class="hodima-phone-hp" aria-hidden="true">
@@ -187,6 +191,15 @@ function render_hodima_phone_form(): string {
 
             <button type="submit" class="hodima-phone-submit">ثبت درخواست</button>
         </form>
+
+        <?php if ( '' !== $note_text ) : ?>
+            <p class="hodima-phone-note" id="<?= esc_attr( $uid ); ?>-note">
+                <?= esc_html( $note_text ); ?>
+                <?php if ( '' !== $policy ) : ?>
+                    <a href="<?= esc_url( $policy ); ?>">سیاست حریم خصوصی</a>
+                <?php endif; ?>
+            </p>
+        <?php endif; ?>
 
         <div
             class="hodima-phone-msg<?= $message ? ' hodima-msg-' . esc_attr( $message[0] ) : ''; ?>"

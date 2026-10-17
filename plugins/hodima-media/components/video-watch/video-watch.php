@@ -48,6 +48,20 @@ function hod_video_watch_front_assets(): void
 }
 add_action('wp_enqueue_scripts', 'hod_video_watch_front_assets');
 
+/** متن پیشنهادی صفحه سیاست حریم خصوصی (ابزارها ← راهنمای سیاست حریم خصوصی). */
+function hod_video_watch_privacy_policy_text(): void
+{
+    if (!function_exists('wp_add_privacy_policy_content')) {
+        return;
+    }
+
+    $text  = '<h3>' . esc_html('شمارنده بازدید ویدیوها') . '</h3>';
+    $text .= '<p class="privacy-policy-tutorial">' . esc_html('این متن پیشنهادی است؛ مطابق وضع کسب‌وکار خود ویرایش کنید.') . '</p>';
+    $text .= '<p>' . esc_html('برای اینکه یک بازدیدکننده در یک روز چند بار شمرده نشود، یک نشانه یک‌طرفه (هش) از نشانی IP، نام مرورگر و تاریخ همان روز به‌صورت موقت (حداکثر یک روز) نگه داشته می‌شود؛ نشانی IP ذخیره نمی‌شود.') . '</p>';
+    wp_add_privacy_policy_content('هدیما — ویدیو', wp_kses_post($text));
+}
+add_action('admin_init', 'hod_video_watch_privacy_policy_text');
+
 function hod_video_watch_preload_poster(): void
 {
     if (!is_singular('video')) {

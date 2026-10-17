@@ -274,6 +274,18 @@ final class Hodima_Bot_Shield {
         add_action( 'admin_post_hodima_clear_ai_logs', [ __CLASS__, 'clear_logs' ] );
         add_action( 'admin_post_hodima_export_ai_logs', [ __CLASS__, 'export_logs' ] );
         add_action( 'admin_post_hodima_unban_ip', [ __CLASS__, 'unban_ip' ] );
+        add_action( 'admin_init', [ __CLASS__, 'privacy_policy_text' ] );
+    }
+
+    /** متن پیشنهادی صفحه سیاست حریم خصوصی (ابزارها ← راهنمای سیاست حریم خصوصی). */
+    public static function privacy_policy_text(): void {
+        if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+            return;
+        }
+        $text  = '<h3>' . esc_html( 'ربات‌های هوش مصنوعی و موتورهای جستجو' ) . '</h3>';
+        $text .= '<p class="privacy-policy-tutorial">' . esc_html( 'این متن پیشنهادی است؛ مطابق وضع کسب‌وکار خود ویرایش کنید.' ) . '</p>';
+        $text .= '<p>' . esc_html( 'درخواست‌هایی که با نام مرورگر (User-Agent) به‌عنوان ربات هوش مصنوعی شناسایی شوند (مثلا GPTBot) با نشانی IP، نام مرورگر، آدرس صفحه و زمان در پیشخوان ثبت می‌شوند و ۳۰ روز بعد خودکار پاک می‌شوند. کسی که آدرس تله‌ای را باز کند که فقط ربات‌ها می‌بینند (فایل ai-internal-data.md)، نشانی IP او برای مدت کوتاه (پیش‌فرض یک ساعت) در فهرست مسدودها می‌ماند و بعد خودکار پاک می‌شود. از ربات‌های موتور جستجو فقط شمارش بازدید هر موتور (بدون IP) تا ۱۸۰ روز نگه داشته می‌شود. این داده‌ها به شخص مشخصی وصل نیستند و با ایمیل قابل جستجو نیستند.' ) . '</p>';
+        wp_add_privacy_policy_content( 'هدیما — ربات‌های هوش مصنوعی', wp_kses_post( $text ) );
     }
 
     /**
