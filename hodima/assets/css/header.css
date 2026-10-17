@@ -72,6 +72,20 @@
 /* ==========================================================
    ۲. ساختار اصلی هدر
 ========================================================== */
+/*
+ * جای هدر در صفحه. بعد از اسکرول هدر fixed می‌شود و از جریان صفحه بیرون می‌رود؛ این ارتفاع
+ * (همان ارتفاع .header__container) جایش را نگه می‌دارد تا محتوا زیر هدر نپرد.
+ * تا 3.5.8 JS هنگام fixed شدن offsetHeight را padding می‌گذاشت و با تغییر عرض (چرخش گوشی،
+ * عبور از ۷۶۸px) یا زوم کهنه می‌ماند: ۱۵px فاصله خالی یا محتوای زیر هدر.
+ * position: sticky جایگزین مناسب نیست: html و body هر دو overflow: hidden auto دارند و
+ * body کانتینر اسکرول می‌شود، پس هدر نمی‌چسبد (overflow-x: clip هم در Safari 14/15 نیست).
+ */
+.site-header-area {
+	--header-h: var(--header-height);
+
+	min-height: var(--header-h);
+}
+
 .header {
 	background: var(--grad-header);
 	border-radius: 0 0 var(--header-radius) var(--header-radius);
@@ -100,7 +114,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	height: var(--header-height);
+	height: var(--header-h);
 	position: relative;
 	gap: 1.5rem;
 }
@@ -562,8 +576,8 @@
 }
 
 @media (width <= 768px) {
-	.header__container {
-		height: var(--header-height-mobile);
+	.site-header-area {
+		--header-h: var(--header-height-mobile);
 	}
 }
 

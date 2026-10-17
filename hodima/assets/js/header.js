@@ -10,29 +10,22 @@
 	 * ──────────────────────────────────────────
 	 * ۱. هدر چسبان
 	 * ──────────────────────────────────────────
-	 * قبلا در هر فریم اسکرول ارتفاع هدر خوانده و padding نوشته می‌شد (خواندن و
-	 * نوشتن چیدمان پشت سر هم). حالا فقط وقتی وضعیت (چسبان/عادی) عوض می‌شود.
+	 * فقط کلاس is-fixed را با اسکرول عوض می‌کند (سبک و انیمیشن: header.css). جای هدر را CSS نگه
+	 * می‌دارد (min-height روی .site-header-area)؛ تا 3.5.8 اینجا ارتفاع هدر خوانده و padding
+	 * نوشته می‌شد که با تغییر عرض یا زوم کهنه می‌ماند. classList.toggle با مقدار تکراری
+	 * هیچ‌کاری نمی‌کند، پس انیمیشن فقط هنگام چسبیدن اجرا می‌شود.
 	 */
 	const initStickyHeader = () => {
 		const header = document.getElementById( 'mainHeader' );
-		const wrapper = document.getElementById( 'headerWrapper' );
-		if ( ! header || ! wrapper ) {
+		if ( ! header ) {
 			return;
 		}
 
-		let fixed = false;
 		let ticking = false;
 
 		const update = () => {
 			ticking = false;
-			const shouldFix = window.scrollY > 10;
-			if ( shouldFix === fixed ) {
-				return;
-			}
-			fixed = shouldFix;
-			// ارتفاع پیش از fixed شدن (جای خالی هدر تا صفحه نپرد)
-			wrapper.style.paddingTop = fixed ? `${ header.offsetHeight }px` : '0';
-			header.classList.toggle( 'is-fixed', fixed );
+			header.classList.toggle( 'is-fixed', window.scrollY > 10 );
 		};
 
 		window.addEventListener( 'scroll', () => {
