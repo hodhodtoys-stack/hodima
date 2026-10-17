@@ -27,7 +27,7 @@
 	--clr-header-bg-soft: var(--hodima-secondary, #607bbd);
 	--clr-menu-text: #ffffff;
 	--clr-text-dark: var(--hodima-text-dark, #111111);
-	--clr-text-muted: #4b5563;
+	--clr-text-muted: var(--hodima-text-muted, #5d6785);
 	--clr-mobile-menu-bg: var(--hodima-bg-light, #f6f8fc);
 	--clr-white: var(--hodima-surface, #ffffff);
 	--clr-overlay: rgb(17 17 17 / 0.6);

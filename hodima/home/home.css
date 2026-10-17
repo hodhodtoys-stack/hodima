@@ -12,9 +12,10 @@
 
 	--home-grad: linear-gradient(135deg, var(--home-primary), var(--home-secondary), var(--home-third));
 	--home-grad-soft: linear-gradient(135deg, rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.08), rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.1), rgba(var(--hodima-third-rgb, 182, 194, 243), 0.18));
-	--home-text: #333;
-	--home-price: #000;
-	--home-muted: #bbb;
+	/* خاکستری‌های صفحه اصلی از توکن‌های قالب (3.6.6): قبلا #333 / #000 / #bbb ثابت بودند */
+	--home-text: var(--hodima-text-body, #444);
+	--home-price: var(--hodima-text-dark, #111);
+	--home-muted: var(--hodima-text-muted, #5d6785); /* قیمت خط‌خورده؛ #bbb کنتراست ۱٫۹ داشت و استاندارد دسترس‌پذیری را رد می‌کرد */
 	--home-border: rgba(var(--hodima-third-rgb, 182, 194, 243), 0.45);
 	--home-shadow-sm: 0 2px 5px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.05);
 	--home-shadow-md: 0 8px 24px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.08);
@@ -146,7 +147,7 @@
 	}
 
 	&:hover .cat-story-name {
-		color: #000;
+		color: var(--hodima-text-dark, #111);
 	}
 
 	&:focus-visible {
@@ -187,7 +188,7 @@
 	display: block;
 	font-size: 0.9rem;
 	font-weight: inherit;
-	color: #333;
+	color: var(--home-text);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -308,7 +309,7 @@ h1.section-col-title {
 
 /* --- محتوای متنی ستون اول --- */
 .intro-hook-content {
-	color: #4b5563;
+	color: var(--hodima-text-muted, #5d6785);
 	font-size: 14px;
 	line-height: 1.8;
 	text-align: justify;
@@ -341,7 +342,7 @@ h1.section-col-title {
 	& li {
 		position: relative;
 		margin: 0;
-		color: #4b5563;
+		color: var(--hodima-text-muted, #5d6785);
 		font-size: 14px;
 		line-height: 1.6;
 		background: rgb(255 255 255 / 0.72);
