@@ -41,7 +41,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 | Core | `hodima_core_litespeed_active()` | `inc/performance/00-litespeed.php` (قالب `hodima_litespeed_active()` خودش را روی آن می‌سازد) |
 | Media | `hodima_media_is_enabled()`، `hodima_media_get_data()`، `hodima_media_player_url()` | `page.php`، `inc/enqueue.php`، `inc/performance/ui-performance.php` |
 | Media | `hodima_media_videos_page_query()` | `template-page-videos.php` |
-| Media | `hodima_media_external_hosts()` | `inc/theme-settings/theme-settings.php` |
+| Media | `hodima_media_external_hosts()` | `inc/theme-settings/admin-fields.php` |
 | Media | شورت‌کدهای `hook_intro/video/voice/faq` فقط از راه `hodima_theme_media_html()` | `inc/media-sections.php`، `template-parts/media/*` |
 | Media | شورت‌کدهای `expand_*` (expandable-boxes) | `single-post.php`، `woocommerce/content-single-product.php`، `taxonomy-product_cat.php` |
 | Media ← قالب | فیلتر `hodima_media_displayed_taxonomies` (قالب اعلام می‌کند فقط `product_cat` بخش رسانه دارد) | `inc/media-sections.php` |
