@@ -51,7 +51,7 @@ function hodima_litespeed_active(): bool {
  * دو دسته تصمیم وجود دارد:
  *
  *   الف) قابلیت‌های پرتداخل (Critical CSS؛ defer جاوااسکریپت تا 3.5.6 اینجا بود،
- *        حالا قالب فیلتر دستی ندارد).
+ *        حالا قالب فیلتر دستی ندارد؛ بخش ب برای ui-performance).
  *        اینجا صرفِ فعال بودن لایت‌اسپید کافی است تا قالب کنار بکشد،
  *        چون اجرای همزمان هر دو می‌تواند ترتیب اجرای اسکریپت‌ها را
  *        به هم بریزد یا CSS حیاتی اشتباه را غالب کند.
@@ -62,6 +62,12 @@ function hodima_litespeed_active(): bool {
  *        «هیچ‌وقت چیزی را بی‌گدار خاموش نکن».
  */
 function hodima_litespeed_handles( string $feature ): bool {
+
+    // Hodima Core 1.2.5+ همین تصمیم را (با همان فیلترها) می‌گیرد؛ پاکسازی هسته وردپرس
+    // هم آنجاست. این نسخه فقط برای ui-performance و Core قدیمی می‌ماند.
+    if ( function_exists( 'hodima_core_litespeed_handles' ) ) {
+        return hodima_core_litespeed_handles( $feature );
+    }
 
     if ( ! hodima_litespeed_active() ) {
         return false;

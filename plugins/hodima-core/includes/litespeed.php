@@ -8,9 +8,8 @@
  * با عوض شدن قالب نباید از کار بیفتد. افزونه SEO هم تشخیص لایت‌اسپید را از
  * همین‌جا می‌خواند (قبلا از قالب).
  *
- * تشخیص hodima_litespeed_handles() (کنار کشیدن بهینه‌سازی‌های ظاهری قالب وقتی
- * لایت‌اسپید همان کار را می‌کند) و پاکسازی صفحه اصلی بعد از تغییر بخش‌های آن
- * در قالب می‌مانند.
+ * پاکسازی صفحه اصلی بعد از تغییر بخش‌های آن در قالب می‌ماند؛ تشخیص «لایت‌اسپید
+ * خودش این کار را می‌کند» (hodima_core_litespeed_handles) از 1.2.5 اینجاست.
  */
 
 declare(strict_types=1);
@@ -36,6 +35,43 @@ function hodima_core_litespeed_active(): bool {
 	}
 
 	return $active;
+}
+
+/**
+ * آیا لایت‌اسپید خودش این قابلیت را بر عهده دارد؟ (از قالب منتقل شد، 3.6.5 / Core 1.2.5)
+ *
+ * الف) قابلیت‌های پرتداخل (Critical CSS): صرفِ فعال بودن لایت‌اسپید کافی است تا ما کنار
+ *      بکشیم؛ اجرای همزمان هر دو می‌تواند ترتیب اسکریپت‌ها یا CSS حیاتی را به هم بریزد.
+ * ب) قابلیت‌های کم‌خطر (ایموجی، lazy آیفریم، resource hints، heartbeat): تنظیم واقعی
+ *    افزونه خوانده می‌شود؛ اگر نشد خواند، کنار نمی‌کشیم («هیچ‌وقت چیزی را بی‌گدار خاموش نکن»).
+ * فیلتر قبلی `hodima_litespeed_handles_{feature}` همچنان کار می‌کند.
+ */
+function hodima_core_litespeed_handles( string $feature ): bool {
+
+	if ( ! hodima_core_litespeed_active() ) {
+		return false;
+	}
+
+	if ( 'critical_css' === $feature ) {
+		return (bool) apply_filters( "hodima_litespeed_handles_{$feature}", true );
+	}
+
+	$option_map = [
+		'emoji'          => 'litespeed.conf.optm-emoji_rm',
+		'iframe_lazy'    => 'litespeed.conf.media-iframe_lazy',
+		'resource_hints' => 'litespeed.conf.optm-dns_prefetch',
+		'heartbeat'      => 'litespeed.conf.misc-heartbeat_front',
+	];
+
+	$handles = false;
+
+	if ( isset( $option_map[ $feature ] ) ) {
+		$value = get_option( $option_map[ $feature ], null );
+		// null یعنی نتوانستیم تنظیم را بخوانیم ← کنار نمی‌کشیم
+		$handles = ( null !== $value ) && ! empty( $value );
+	}
+
+	return (bool) apply_filters( "hodima_litespeed_handles_{$feature}", $handles );
 }
 
 /* ============================================================

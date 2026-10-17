@@ -38,7 +38,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 ## ۳. قالب ← افزونه‌ها (قالب از افزونه می‌خواند؛ همه با گارد)
 | از | چه | کجای قالب |
 |---|---|---|
-| Core | `hodima_core_litespeed_active()` | `inc/performance/00-litespeed.php` (قالب `hodima_litespeed_active()` خودش را روی آن می‌سازد) |
+| Core | `hodima_core_litespeed_active()`، `hodima_core_litespeed_handles()` | `inc/performance/00-litespeed.php` (قالب `hodima_litespeed_active()/_handles()` خودش را روی آن می‌سازد؛ `_handles` برای `ui-performance`) |
 | Media | `hodima_media_is_enabled()`، `hodima_media_get_data()`، `hodima_media_player_url()` | `page.php`، `inc/enqueue.php`، `inc/performance/ui-performance.php` |
 | Media | `hodima_media_videos_page_query()` | `template-page-videos.php` |
 | Media | `hodima_media_external_hosts()` | `inc/theme-settings/admin-fields.php` |
@@ -63,10 +63,9 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 | SEO (Discover) | `hodima_setting( 'logo_id' / 'blog_meta_date' / 'blog_meta_updated' / 'blog_meta_author' )` و `hodima_settings_url( [ 'tab' => 'blog' ] )` — فهرست آمادگی (لوگو، نمایش تاریخ/نویسنده زیر عنوان مقاله)؛ با تغییر گزینه `hodima_theme_settings` کش ردیف‌ها کهنه می‌شود (فقط نام گزینه، بدون get_option) | `core/discover/discover-checks.php`، `core/discover/discover-cache.php` |
 | SEO | ثابت `hodima_VERSION` (حروف کوچک؛ نامش عوض نشود) | `google-indexing-api/modules/etag-handler.php` |
 | SEO | `hodima_litespeed_active()` | `class-hodima-bot-shield.php`، `google-indexing-api/core/helper.php` |
-| Media | (فقط نام هم‌خانواده `hodima_table_exists` در قالب؛ hodima-table عمدا پیشوند دیگری دارد) | `inc/hodima-table/hodima-table.php` |
 
 گزینه تنظیمات قالب: `hodima_theme_settings` (ثابت `HODIMA_SETTINGS_OPTION`) — افزونه مستقیم `get_option` نکند، `hodima_setting()` با گارد.
-مرز انتقال منطق از قالب: `hodima_theme_has_legacy_logic()` (Core؛ قالب < 2.3.0) در SEO (`cat-blog`، `breadcrumb-schema`، `collection-lists-schema`، `front-page-extra-schema`)، Commerce (`catalog-sorting`، `store-optimizer`)، Media (`video-watch/videos-page.php`).
+مرز انتقال منطق از قالب: `hodima_theme_has_legacy_logic( $before = '2.3.0' )` (Core؛ قالب < مرز؛ پاکسازی هسته وردپرس Core `includes/wp-cleanup.php` مرز `'3.6.5'`)؛ مرز پیش‌فرض 2.3.0 در SEO (`cat-blog`، `breadcrumb-schema`، `collection-lists-schema`، `front-page-extra-schema`)، Commerce (`catalog-sorting`، `store-optimizer`)، Media (`video-watch/videos-page.php`).
 
 ## ۵. افزونه ↔ افزونه
 **همه ← Core:** `hodima_get_client_ip()`، `hodima_rate_limit_key()`، `hodima_is_search_bot()`، `hodima_ip_in_cidr()`، `hodima_get_canonical_url()`، `hodima_is_noindex()`، `hodima_post_content_is_visible()`، `hodima_page_has_schema_identity()`، `hodima_get_archive_itemlist_elements()`، `hodima_schema_has()`، `hodima_video_player_url()`، `hodima_core_font_url()`، `hodima_core_litespeed_active()`، `hodima_legacy_theme_active()`/`_notice()`، کلاس ماژول‌ها. (همه در `includes/helpers.php` جز آخرها: `admin-font.php`، `litespeed.php`، `modules.php`.)

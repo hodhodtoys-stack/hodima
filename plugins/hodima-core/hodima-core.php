@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Core
  * Plugin URI:        https://hodima.com
  * Description:       کتابخانه مشترک افزونه‌های هدیما: تشخیص IP واقعی (سازگار با Cloudflare)، محدودیت نرخ، تشخیص ربات موتور جستجو، موتور Canonical، گراف واحد اسکیما (JSON-LD) و بررسی محتوای محافظت‌شده. پیش‌نیاز Hodima SEO، Hodima Commerce و Hodima Media.
- * Version:           1.2.4
+ * Version:           1.2.5
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Author:            آرین فتحی
@@ -17,7 +17,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 // پیشوند HODIMA_CORE_PLUGIN_ چون HODIMA_CORE_* قبلا در ماژول IndexNow (افزونه SEO) استفاده شده است.
-const HODIMA_CORE_PLUGIN_VERSION = '1.2.4';
+const HODIMA_CORE_PLUGIN_VERSION = '1.2.5';
 define( 'HODIMA_CORE_PLUGIN_FILE', __FILE__ );
 define( 'HODIMA_CORE_PLUGIN_DIR', __DIR__ );
 define( 'HODIMA_CORE_PLUGIN_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -50,16 +50,20 @@ function hodima_legacy_theme_active(): bool {
  * افزونه‌ها زودتر از قالب به‌روز شوند، نسخه افزونه این کارها را انجام نمی‌دهد
  * تا دوبار اجرا نشوند (مثلا دو ویرایشگر توضیحات با یک شناسه در فرم دسته).
  * نام توابع افزونه با قالب قدیمی فرق دارد، پس خطای «Cannot redeclare» هم نیست.
+ *
+ * $before مرز نسخه است (پیش‌فرض 2.3.0: انتقال‌های مرحله ۲). هر انتقال تازه مرز خودش را
+ * می‌دهد (مثلا '3.6.5' برای پاکسازی هسته وردپرس) تا مرز مشترک بالا نرود و ماژول‌های قبلی
+ * که قالب ۲٫۳ تا ۳٫۶٫۴ را درست می‌شناسند بی‌دلیل ساکت نشوند.
  */
-function hodima_theme_has_legacy_logic(): bool {
-	static $legacy = null;
+function hodima_theme_has_legacy_logic( string $before = '2.3.0' ): bool {
+	static $legacy = [];
 
-	if ( null === $legacy ) {
-		$theme  = wp_get_theme( get_template() );
-		$legacy = 'Hodima' === $theme->get( 'Name' ) && version_compare( (string) $theme->get( 'Version' ), '2.3.0', '<' );
+	if ( ! isset( $legacy[ $before ] ) ) {
+		$theme              = wp_get_theme( get_template() );
+		$legacy[ $before ] = 'Hodima' === $theme->get( 'Name' ) && version_compare( (string) $theme->get( 'Version' ), $before, '<' );
 	}
 
-	return $legacy;
+	return $legacy[ $before ];
 }
 
 /** اعلان پیشخوان برای افزونه‌ای که به‌خاطر قالب قدیمی متوقف شده است. */
@@ -110,6 +114,7 @@ require_once HODIMA_CORE_PLUGIN_DIR . '/includes/updates.php';
 // فونت پیشخوان (hodima_core_font_url در فرانت هم برای نقشه سایت XSL لازم است)
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/litespeed.php';
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/hardening.php';
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/wp-cleanup.php';
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-font.php';
 
 // پنل «ابزارهای هدیما» در پیشخوان: وضعیت، روشن/خاموش کردن ماژول‌ها و
