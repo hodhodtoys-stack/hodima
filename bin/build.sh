@@ -23,7 +23,7 @@ package() {
 # minify می‌شود (bin/build-css.mjs، Lightning CSS) و هم‌ارزی هر قانون با سورس
 # در Chromium بررسی می‌شود (tools/wp-harness/css-equiv.mjs). بدون node_modules:
 #   npm ci   (یک بار؛ در محیط ابری مثل GitHub Actions خودکار)
-[ -d "$root/node_modules/lightningcss" ] || ( cd "$root" && npm ci --no-audit --no-fund --silent )
+[ -d "$root/node_modules/lightningcss" ] && [ -d "$root/node_modules/esbuild" ] || ( cd "$root" && npm ci --no-audit --no-fund --silent )
 stage="$dist/.stage"
 mkdir -p "$stage" && cp -r "$root/hodima" "$stage/hodima"
 ( cd "$root" && node bin/build-css.mjs "$stage/hodima" )
@@ -33,11 +33,18 @@ mkdir -p "$stage" && cp -r "$root/hodima" "$stage/hodima"
 	exit 1
 }
 echo "✔ CSS ساخته‌شده با سورس هم‌ارز است"
-package "$stage" hodima
-rm -rf "$stage"
+# JavaScript: سورس خوانا می‌ماند و فقط کپی بسته کوچک می‌شود (bin/build-js.mjs، esbuild).
+# افزونه‌ها هم از کپی ساخته می‌شوند تا سورس مخزن دست نخورد.
+mkdir -p "$stage/plugins"
 for plugin in hodima-core hodima-seo hodima-commerce hodima-media; do
-	package "$root/plugins" "$plugin"
+	cp -r "$root/plugins/$plugin" "$stage/plugins/$plugin"
 done
+( cd "$root" && node bin/build-js.mjs "$stage/hodima" "$stage/plugins" )
+package "$stage" hodima
+for plugin in hodima-core hodima-seo hodima-commerce hodima-media; do
+	package "$stage/plugins" "$plugin"
+done
+rm -rf "$stage"
 
 # انتشار: ZIPها و فایل‌های JSON به‌روزرسانی در release/
 # ZIP هر بسته فقط وقتی جایگزین می‌شود که محتوایش (نام، اندازه و CRC هر فایل)

@@ -115,10 +115,15 @@ def changed_files(base):
     return {f for f in files if f}
 
 
+# ابزار ساخت: خروجی ZIP همه بسته‌ها را عوض می‌کند (مثلا minify جاوااسکریپت)، پس همه نسخه می‌گیرند
+BUILD_TOOLS = {'bin/build.sh', 'bin/build-css.mjs', 'bin/build-js.mjs'}
+
+
 def changed_packages(files):
     out = {}
+    tools = sorted(files & BUILD_TOOLS)
     for slug, (folder, *_rest) in PACKAGES.items():
-        hits = sorted(f for f in files if f.startswith(folder + '/'))
+        hits = sorted(f for f in files if f.startswith(folder + '/')) + tools
         if hits:
             out[slug] = hits
     return out
@@ -293,21 +298,32 @@ def source_entries_at(parent, name):
     return out
 
 
-def built_theme_entries():
-    """فایل‌های قالب همان‌طور که bin/build.sh در ZIP می‌گذارد: کپی موقت + bin/build-css.mjs
-    (CSS پایین‌آورده/minify و hodima-common.css؛ کمتر از یک ثانیه). بدون node: None."""
+def built_entries():
+    """فایل‌های هر بسته همان‌طور که bin/build.sh در ZIP می‌گذارد: کپی موقت + bin/build-css.mjs
+    (CSS قالب پایین‌آورده/minify و hodima-common.css) + bin/build-js.mjs (JS همه بسته‌ها
+    minify)؛ چند ثانیه. بدون node_modules: None."""
     import shutil
     import tempfile
-    if not os.path.isdir(os.path.join(ROOT, 'node_modules', 'lightningcss')):
+    if not (os.path.isdir(os.path.join(ROOT, 'node_modules', 'lightningcss')) and os.path.isdir(os.path.join(ROOT, 'node_modules', 'esbuild'))):
         return None
     tmp = tempfile.mkdtemp(prefix='hodima-release-check-')
     try:
         shutil.copytree(os.path.join(ROOT, 'hodima'), os.path.join(tmp, 'hodima'))
-        r = subprocess.run(['node', 'bin/build-css.mjs', os.path.join(tmp, 'hodima')], cwd=ROOT, capture_output=True, text=True)
-        if r.returncode != 0:
-            fail('ساخت CSS قالب رد شد: ' + (r.stderr or r.stdout).strip()[:300])
-            return None
-        return source_entries_at(tmp, 'hodima')
+        os.makedirs(os.path.join(tmp, 'plugins'))
+        for slug, (folder, *_rest) in PACKAGES.items():
+            if folder.startswith('plugins/'):
+                shutil.copytree(os.path.join(ROOT, folder), os.path.join(tmp, folder))
+        for cmd in (['node', 'bin/build-css.mjs', os.path.join(tmp, 'hodima')],
+                    ['node', 'bin/build-js.mjs', os.path.join(tmp, 'hodima'), os.path.join(tmp, 'plugins')]):
+            r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+            if r.returncode != 0:
+                fail('ساخت CSS/JS رد شد: ' + (r.stderr or r.stdout).strip()[:300])
+                return None
+        out = {'hodima': source_entries_at(tmp, 'hodima')}
+        for slug, (folder, *_rest) in PACKAGES.items():
+            if folder.startswith('plugins/'):
+                out[slug] = source_entries_at(os.path.join(tmp, 'plugins'), os.path.basename(folder))
+        return out
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
@@ -315,6 +331,7 @@ def built_theme_entries():
 def check_release(base, pkgs, bumped):
     print('== release/ (ZIP و JSON به‌روزرسانی)')
     before = len(errors)
+    built = built_entries()
     for slug, (folder, head_file, _c, _l) in PACKAGES.items():
         now = header_version(read(head_file))
         zpath = os.path.join(ROOT, 'release', slug + '.zip')
@@ -330,20 +347,20 @@ def check_release(base, pkgs, bumped):
         if jver != now:
             fail(f'{slug}: release/{slug}.json نسخه {jver} دارد، کد {now} — bash bin/build.sh')
         is_theme = slug == 'hodima'
-        src = built_theme_entries() if is_theme else source_entries(folder)
-        loose = src is None  # بدون node: CSS قالب مقایسه نمی‌شود
+        src = built[slug] if built else None
+        loose = src is None  # بدون node: CSS قالب و JS همه بسته‌ها مقایسه نمی‌شود
         if loose:
             src = source_entries(folder)
-            warn('node_modules نیست: CSS داخل ZIP قالب بررسی نشد (npm ci)')
+            warn('node_modules نیست: CSS و JS داخل ZIP بررسی نشد (npm ci)')
         zipped = zip_entries(zpath)
         stale = []
         for rel, data in src.items():
             if rel not in zipped:
                 stale.append(f'نیست: {rel}')
-            elif not (loose and rel.endswith('.css')) and zipped[rel] != data:
+            elif not (loose and rel.endswith(('.css', '.js'))) and zipped[rel] != data:
                 stale.append(f'قدیمی: {rel}')
         for rel in zipped:
-            if rel not in src and not (loose and rel.endswith('.css')):
+            if rel not in src and not (loose and rel.endswith(('.css', '.js'))):
                 stale.append(f'اضافه: {rel}')
         if is_theme and 'hodima/style.css' in zipped and header_version(zipped['hodima/style.css'].decode('utf-8', 'replace')) != now:
             stale.append('نسخه style.css داخل ZIP')
