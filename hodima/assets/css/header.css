@@ -28,8 +28,8 @@
 	--clr-menu-text: #ffffff;
 	--clr-text-dark: var(--hodima-text-dark, #111111);
 	--clr-text-muted: #4b5563;
-	--clr-mobile-menu-bg: #f8f9fc;
-	--clr-white: #ffffff;
+	--clr-mobile-menu-bg: var(--hodima-bg-light, #f6f8fc);
+	--clr-white: var(--hodima-surface, #ffffff);
 	--clr-overlay: rgb(17 17 17 / 0.6);
 
 	--grad-underline: linear-gradient(90deg, var(--clr-secondary), var(--clr-third));

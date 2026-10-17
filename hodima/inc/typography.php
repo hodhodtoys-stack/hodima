@@ -300,6 +300,7 @@ function hodima_typography_vars(): array {
 	$text = sanitize_hex_color( (string) hodima_setting( 'color_text' ) );
 	if ( $text && $changed( 'color_text' ) ) {
 		$vars['--hodima-text-dark'] = strtolower( $text );
+		$vars['--hodima-text-body'] = strtolower( $text ); // متن مقاله/دیدگاه هم رنگ انتخابی را می‌گیرد (تا 3.6.2 #444 ثابت بود)
 	}
 	foreach ( [ 'link_color' => '--hodima-link', 'link_hover_color' => '--hodima-link-hover' ] as $key => $var ) {
 		if ( 'custom' === hodima_setting( $key ) ) { // رنگ دلخواه (3.1.9): مقدار ثابت، مستقل از پالت

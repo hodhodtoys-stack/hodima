@@ -32,7 +32,7 @@
 
 .woocommerce-cart-form {
 	flex: 2;
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	padding: var(--hodima-section-pad);
 	border-radius: var(--hodima-radius-xl);
 	border: 1px solid var(--hodima-border-light, #d9e1f0);

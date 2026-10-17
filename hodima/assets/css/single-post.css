@@ -105,7 +105,7 @@
 .single-post-content {
 	line-height: var(--hodima-body-line-height);
 	font-size: calc(var(--hodima-body-size) * 0.0625rem);
-	color: #444;
+	color: var(--hodima-text-body, #444444);
 }
 
 .comments-wrapper {
@@ -130,7 +130,7 @@
 
 	& .comment-list > li,
 	& .children > li {
-		background: #fff;
+		background: var(--hodima-surface, #ffffff);
 		border: 1px solid var(--hodima-border-light, #d9e1f0);
 		border-radius: var(--hodima-radius-lg);
 		padding: 16px;
@@ -177,7 +177,7 @@
 
 	& .comment-content {
 		line-height: 1.8;
-		color: #444;
+		color: var(--hodima-text-body, #444444);
 		font-size: 15px;
 	}
 
@@ -190,7 +190,7 @@
 			justify-content: center;
 			padding: var(--hodima-space-2) var(--hodima-space-5);
 			border-radius: var(--hodima-radius-3xl);
-			background: #f8f9fc;
+			background: var(--hodima-bg-light, #f6f8fc);
 			border: 1px solid var(--hodima-border-light, #d9e1f0);
 			color: var(--hodima-text-dark, #111111);
 			text-decoration: none;
@@ -207,7 +207,7 @@
 
 	& .comment-respond {
 		margin-top: 18px;
-		background: #fff;
+		background: var(--hodima-surface, #ffffff);
 		border: 1px solid var(--hodima-border-light, #d9e1f0);
 		border-radius: var(--hodima-radius-lg);
 		padding: 16px;
@@ -225,7 +225,7 @@
 		padding: 0 var(--hodima-space-5); /* ارتفاع از کادر عمومی (--hodima-control-h)؛ تا 3.0.0 با فاصله عمودی ۴۵ پیکسل */
 		font-family: inherit;
 		color: var(--hodima-text-dark, #111111);
-		background: #fff;
+		background: var(--hodima-surface, #ffffff);
 	}
 
 	& .comment-form-comment textarea {

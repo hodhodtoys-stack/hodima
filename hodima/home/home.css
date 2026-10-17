@@ -163,7 +163,7 @@
 	align-items: center;
 	justify-content: center;
 	overflow: hidden;
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	box-shadow: var(--arian-shadow-sm);
 	transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
@@ -619,7 +619,7 @@ h1.section-col-title {
 	gap: var(--hodima-space-1);
 	padding: var(--hodima-space-4);
 	text-align: center;
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	border: 1px solid var(--arian-border);
 	border-radius: var(--hodima-radius-xl);
 	box-shadow: var(--arian-shadow-sm);
@@ -666,7 +666,7 @@ h1.section-col-title {
 	font-weight: 700;
 	text-decoration: none;
 	color: var(--arian-primary);
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	border-radius: 999px;
 
 	&:hover,
@@ -695,7 +695,7 @@ h1.section-col-title {
 	padding: 0;
 	border: 1px solid var(--arian-border);
 	border-radius: 50%;
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	box-shadow: var(--arian-shadow-md);
 	cursor: pointer;
 	transform: translateY(-50%);

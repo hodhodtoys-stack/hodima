@@ -120,7 +120,7 @@
 
 .error404-home {
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	color: var(--hodima-primary, #25316a);
 
 	&:hover {

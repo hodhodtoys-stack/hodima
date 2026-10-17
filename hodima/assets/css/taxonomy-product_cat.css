@@ -92,7 +92,7 @@
 	display: flex;
 	align-items: center;
 	gap: var(--hodima-space-6);
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	padding: var(--hodima-space-5) var(--hodima-space-6);
 	border-radius: var(--hodima-radius-lg);
 	margin-bottom: var(--hodima-space-7);
@@ -180,7 +180,7 @@
 	position: absolute;
 	top: calc(100% + 8px);
 	inset-inline: auto 50%;
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
 	border-radius: var(--hodima-radius-lg);
 	box-shadow: 0 4px 15px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.08);

@@ -37,7 +37,7 @@
 	& li {
 		font-size: 0.95rem;
 		color: var(--hodima-primary, #25316a);
-		background: #fff;
+		background: var(--hodima-surface, #ffffff);
 		padding: var(--hodima-space-3) var(--hodima-space-7);
 		border-radius: 50px;
 		box-shadow: 0 2px 6px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.04);
@@ -114,7 +114,7 @@
 
 /* باکس محصولات فروشگاه سفید می‌ماند (کلاس section-products رنگ دسته‌ها را دارد) */
 .shop-content-area.section-products {
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 }
 
 .shop-description {

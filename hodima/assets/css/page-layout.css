@@ -47,7 +47,7 @@
 	width: 100%;
 	box-sizing: border-box;
 	padding: var(--hodima-section-pad);
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
 	border-radius: var(--hodima-radius-xl);
 	box-shadow: var(--hodima-shadow-xs);
@@ -114,7 +114,7 @@
 	min-width: 0;
 	overflow: hidden;
 	padding: var(--hodima-card-pad);
-	background: #fff;
+	background: var(--hodima-surface, #ffffff);
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
 	border-radius: var(--hodima-card-radius);
 	box-shadow: var(--hodima-card-shadow);
