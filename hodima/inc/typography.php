@@ -187,9 +187,17 @@ function hodima_typography_preload_urls(): array {
 function hodima_typography_vazirmatn_url( int $weight ): string {
 
 	$names = [ 300 => 'Light', 400 => 'Regular', 500 => 'Medium', 600 => 'SemiBold', 700 => 'Bold', 800 => 'ExtraBold', 900 => 'Black' ];
-	$file  = 'assets/fonts/Vazirmatn-' . ( $names[ $weight ] ?? 'Regular' ) . '.woff2';
+	$stem  = 'assets/fonts/Vazirmatn-' . ( $names[ $weight ] ?? 'Regular' );
 
-	return is_file( get_theme_file_path( $file ) ) ? get_theme_file_uri( $file ) : '';
+	// preload فایل کوچک `-base` (متن فارسی/لاتین پایه؛ همان که style.css برای اغلب صفحه‌ها می‌گیرد)؛
+	// نبودنش (قالب فرزند/نسخه قدیمی) به فایل کامل برمی‌گردد
+	foreach ( [ $stem . '-base.woff2', $stem . '.woff2' ] as $file ) {
+		if ( is_file( get_theme_file_path( $file ) ) ) {
+			return get_theme_file_uri( $file );
+		}
+	}
+
+	return '';
 }
 
 /** فایل فونت آپلودی با نزدیک‌ترین وزن (همان انتخاب مرورگر در نبود وزن دقیق، تقریبی). */
