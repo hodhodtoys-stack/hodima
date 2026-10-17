@@ -4,14 +4,14 @@
 (() => {
     'use strict';
 
-    const config = window.ArianExpandableBoxesData || {};
+    const config = window.HodimaExpandableBoxesData || {};
     const sel    = config.selectors || {};
 
     const SELECTORS = {
         container: sel.container || '[data-expandable-container]',
         content:   sel.content   || '[data-expandable-content]',
         toggle:    sel.toggle    || '[data-expandable-toggle]',
-        inner:     sel.inner     || '.arian-expandable-inner'
+        inner:     sel.inner     || '.hodima-expandable-inner'
     };
 
     const DEFAULT_MORE  = config.defaultMoreText || 'نمایش بیشتر';
@@ -44,17 +44,17 @@
 
     const collapsedHeight = (w) => num(w.dataset.height, 600);
     const fullHeight = (p) => p.inner ? p.inner.scrollHeight : p.wrapper.scrollHeight;
-    const isExpanded = (p) => p.wrapper.classList.contains('arian-expanded');
+    const isExpanded = (p) => p.wrapper.classList.contains('hodima-expanded');
 
     const setButton = (p, expanded) => {
         const text = expanded ? (p.wrapper.dataset.less || DEFAULT_LESS) : (p.wrapper.dataset.more || DEFAULT_MORE);
-        const span = p.button.querySelector('.arian-btn-text');
+        const span = p.button.querySelector('.hodima-btn-text');
         if (span) span.textContent = text; else p.button.textContent = text;
         p.button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     };
 
     const finish = (p) => {
-        p.wrapper.classList.remove('arian-animating');
+        p.wrapper.classList.remove('hodima-animating');
         if (isExpanded(p)) p.wrapper.style.maxHeight = 'none';
     };
 
@@ -71,13 +71,13 @@
         const from = p.wrapper.getBoundingClientRect().height;
         const to   = expanded ? fullHeight(p) : collapsedHeight(p.wrapper);
 
-        p.wrapper.classList.toggle('arian-expanded', expanded);
+        p.wrapper.classList.toggle('hodima-expanded', expanded);
         setButton(p, expanded);
 
         if (reducedMotion) {
             p.wrapper.style.maxHeight = expanded ? 'none' : `${to}px`;
         } else {
-            p.wrapper.classList.add('arian-animating');
+            p.wrapper.classList.add('hodima-animating');
             p.wrapper.style.maxHeight = `${from}px`;
             
             // خواندن پویا زمان ترنزیشن از CSS
@@ -109,7 +109,7 @@
 
         if (full <= collapsed + (smart ? 40 : 0)) {
             p.button.hidden = true;
-            p.wrapper.classList.add('arian-expanded');
+            p.wrapper.classList.add('hodima-expanded');
             p.wrapper.style.maxHeight = 'none';
             setButton(p, false);
             return;
@@ -215,7 +215,7 @@
         observe();
         revealHash();
 
-        window.ArianExpandableBoxes = {
+        window.ArianExpandableBoxes = window.HodimaExpandableBoxes = { // ArianExpandableBoxes: نام قدیمی برای کد بیرونی
             refresh: refreshAll,
             expand: id => {
                 const w = document.getElementById(id);

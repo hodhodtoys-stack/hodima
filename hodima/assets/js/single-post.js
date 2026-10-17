@@ -104,7 +104,7 @@
 				return;
 			}
 			const wrapper = target?.closest( '[data-expandable-content]' );
-			if ( ! target || ! wrapper || wrapper.classList.contains( 'arian-expanded' ) ) {
+			if ( ! target || ! wrapper || wrapper.classList.contains( 'hodima-expanded' ) || wrapper.classList.contains( 'arian-expanded' ) ) {
 				return;
 			}
 			const wait = ( parseFloat( getComputedStyle( wrapper ).transitionDuration ) || 0 ) * 1000 + 150;

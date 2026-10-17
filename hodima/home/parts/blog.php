@@ -42,7 +42,7 @@ foreach ( $posts_data as $index => $post_item ) {
 }
 
 echo hodima_home_cards_section( [ // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی ساخته‌شده و escape‌شده در logic.php
-	'id'        => wp_unique_id( 'arian-blog-title-' ),
+	'id'        => wp_unique_id( 'hodima-blog-title-' ),
 	'title'     => (string) $args['title'],
 	'subtitle'  => (string) $args['subtitle'],
 	'title_url' => $blog_url,

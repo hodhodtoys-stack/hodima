@@ -217,6 +217,7 @@ update_term_meta( $cat, '_hodima_rl_groups', [ 'categories' => [ [ 'kind' => 'te
 update_option( 'posts_per_page', 1 );
 // داده خوشه بالا با مدل فعلی ساخته شده؛ بدون این، مهاجرت نسخه‌های قدیمی خوشه (اولین بارگذاری پیشخوان) آن را داده قدیمی می‌خواند
 update_option( 'hodima_tc_storage_version', '5' );
+if ( getenv( 'HARNESS_HOME' ) ) { require __DIR__ . '/home-layout.php'; }
 if ( $o = getenv( 'HARNESS_OPTS' ) ) { eval( $o ); }
 flush_rewrite_rules( true );
 file_put_contents( dirname( $harness_wp ) . '/ids.json', json_encode( compact( 'gchild', 'home', 'blog', 'about', 'contact', 'plain', 'videos', 'pillar', 'child', 'vid', 'prod', 'prod2', 'prod3', 'shop', 'cat', 'tag', 'pcat', 'ptag' ) ) );

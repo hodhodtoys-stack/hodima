@@ -11,9 +11,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-final class Arian_Expandable_Boxes {
+final class Hodima_Expandable_Boxes {
 
-    private const POST_META_KEY = '_has_arian_expandable';
+    private const POST_META_KEY = '_has_hodima_expandable';
+    private const LEGACY_META_KEY = '_has_arian_expandable'; // نام قدیمی (تا Media 1.8.6): خوانده می‌شود و هنگام ذخیره پاک می‌شود
     private const VERSION       = '3.0.0';
 
     private static ?self $instance = null;
@@ -40,7 +41,10 @@ final class Arian_Expandable_Boxes {
 
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
         add_action( 'save_post', [ $this, 'update_post_meta_on_save' ], 10, 2 );
-        add_action( 'before_delete_post', fn( int $post_id ) => delete_post_meta( $post_id, self::POST_META_KEY ) );
+        add_action( 'before_delete_post', function ( int $post_id ): void {
+            delete_post_meta( $post_id, self::POST_META_KEY );
+            delete_post_meta( $post_id, self::LEGACY_META_KEY );
+        } );
     }
 
     public static function wrap( string $rendered_html, string $context = '', array $atts = [] ): string {
@@ -60,6 +64,7 @@ final class Arian_Expandable_Boxes {
         $this->content_has_expandable_shortcode( (string) $post->post_content )
             ? update_post_meta( $post_id, self::POST_META_KEY, '1' )
             : delete_post_meta( $post_id, self::POST_META_KEY );
+        delete_post_meta( $post_id, self::LEGACY_META_KEY );
     }
 
     public function enqueue_assets(): void {
@@ -69,10 +74,10 @@ final class Arian_Expandable_Boxes {
 
         $base = '/components/expandable-boxes/';
 
-        wp_enqueue_style( 'arian-expandable-style', HODIMA_MEDIA_URL . '/' . ltrim( $base . 'expandable-boxes.css', '/' ), [], $this->asset_version( $base . 'expandable-boxes.css' ) );
-        wp_enqueue_script( 'arian-expandable-script', HODIMA_MEDIA_URL . '/' . ltrim( $base . 'expandable-boxes.js', '/' ), [], $this->asset_version( $base . 'expandable-boxes.js' ), true );
+        wp_enqueue_style( 'hodima-expandable-style', HODIMA_MEDIA_URL . '/' . ltrim( $base . 'expandable-boxes.css', '/' ), [], $this->asset_version( $base . 'expandable-boxes.css' ) );
+        wp_enqueue_script( 'hodima-expandable-script', HODIMA_MEDIA_URL . '/' . ltrim( $base . 'expandable-boxes.js', '/' ), [], $this->asset_version( $base . 'expandable-boxes.js' ), true );
 
-        wp_localize_script( 'arian-expandable-script', 'ArianExpandableBoxesData', [
+        wp_localize_script( 'hodima-expandable-script', 'HodimaExpandableBoxesData', [
             'transitionMs'        => 600,
             'defaultMoreText'     => 'نمایش بیشتر',
             'defaultLessText'     => 'نمایش کمتر',
@@ -82,7 +87,7 @@ final class Arian_Expandable_Boxes {
                 'container' => '[data-expandable-container]',
                 'content'   => '[data-expandable-content]',
                 'toggle'    => '[data-expandable-toggle]',
-                'inner'     => '.arian-expandable-inner',
+                'inner'     => '.hodima-expandable-inner',
             ],
         ] );
     }
@@ -93,7 +98,8 @@ final class Arian_Expandable_Boxes {
     }
 
     private function supports_post_type( string $post_type ): bool {
-        $supported = (array) apply_filters( 'arian_expandable_boxes_supported_post_types', [ 'post', 'page', 'product' ] );
+        // arian_expandable_boxes_*: نام قدیمی هوک‌ها (تا Media 1.8.6) برای کد بیرونی؛ اول قدیمی، بعد جدید
+        $supported = (array) apply_filters( 'hodima_expandable_boxes_supported_post_types', apply_filters( 'arian_expandable_boxes_supported_post_types', [ 'post', 'page', 'product' ] ) );
         return in_array( $post_type, $supported, true );
     }
 
@@ -112,7 +118,7 @@ final class Arian_Expandable_Boxes {
 
         if ( is_singular() ) {
             $post_id = (int) get_queried_object_id();
-            if ( $post_id && get_post_meta( $post_id, self::POST_META_KEY, true ) ) return true;
+            if ( $post_id && ( get_post_meta( $post_id, self::POST_META_KEY, true ) || get_post_meta( $post_id, self::LEGACY_META_KEY, true ) ) ) return true;
             
             $post = get_post( $post_id );
             return $post instanceof WP_Post && $this->content_has_expandable_shortcode( (string) $post->post_content );
@@ -128,7 +134,7 @@ final class Arian_Expandable_Boxes {
             default => 600,
         };
 
-        return (array) apply_filters( "arian_expandable_boxes_defaults_{$shortcode_tag}", [
+        $defaults = [
             'height'        => $dynamic_height,
             'more'          => 'نمایش بیشتر',
             'less'          => 'نمایش کمتر',
@@ -138,7 +144,9 @@ final class Arian_Expandable_Boxes {
             'bg'            => '',
             'fade_height'   => 80,
             'smart'         => 'yes',
-        ] );
+        ];
+
+        return (array) apply_filters( "hodima_expandable_boxes_defaults_{$shortcode_tag}", apply_filters( "arian_expandable_boxes_defaults_{$shortcode_tag}", $defaults ) );
     }
 
     private function parse_atts( array|string $atts, string $shortcode_tag ): array {
@@ -176,26 +184,26 @@ final class Arian_Expandable_Boxes {
     }
 
     private function build_wrapper_classes( array $atts ): string {
-        $classes = [ 'arian-expandable-box' ];
+        $classes = [ 'hodima-expandable-box' ];
         if ( $atts['class'] !== '' ) $classes[] = $atts['class'];
-        if ( $atts['gradient'] === 'no' ) $classes[] = 'arian-no-gradient';
-        if ( $atts['smart'] === 'yes' ) $classes[] = 'arian-smart-mode';
+        if ( $atts['gradient'] === 'no' ) $classes[] = 'hodima-no-gradient';
+        if ( $atts['smart'] === 'yes' ) $classes[] = 'hodima-smart-mode';
 
         return $this->sanitize_html_classes( implode( ' ', $classes ) );
     }
 
     private function build_inline_css_vars( array $atts ): string {
         $styles = [
-            '--arian-collapsed-height:' . (int) $atts['height'] . 'px',
-            '--arian-fade-height:' . (int) $atts['fade_height'] . 'px',
+            '--xb-collapsed-height:' . (int) $atts['height'] . 'px',
+            '--xb-fade-height:' . (int) $atts['fade_height'] . 'px',
         ];
-        if ( $atts['bg'] !== '' ) $styles[] = '--arian-bg:' . $atts['bg'];
+        if ( $atts['bg'] !== '' ) $styles[] = '--xb-bg:' . $atts['bg'];
 
         return implode( ';', $styles );
     }
 
     private function maybe_kses( string $content, string $context ): string {
-        return apply_filters( 'arian_expandable_boxes_kses_output', false, $context )
+        return apply_filters( 'hodima_expandable_boxes_kses_output', apply_filters( 'arian_expandable_boxes_kses_output', false, $context ), $context )
             ? wp_kses_post( $content )
             : $content;
     }
@@ -215,15 +223,15 @@ final class Arian_Expandable_Boxes {
         $content = $this->maybe_kses( $content, $context );
         if ( ! $this->has_meaningful_content( $content ) ) return '';
 
-        $content_id = wp_unique_id( 'arian-box-' );
-        $button_id  = wp_unique_id( 'arian-box-toggle-' );
+        $content_id = wp_unique_id( 'hodima-box-' );
+        $button_id  = wp_unique_id( 'hodima-box-toggle-' );
 
         return sprintf(
             '<div class="%1$s" data-expandable-container data-context="%2$s" style="%3$s">'
-                . '<div id="%4$s" class="arian-expandable-wrapper" data-expandable-content data-height="%5$d" data-more="%6$s" data-less="%7$s" data-scroll-offset="%8$d" data-smart="%9$s" tabindex="-1" role="region" aria-labelledby="%11$s">'
-                    . '<div class="arian-expandable-inner">%10$s</div>'
+                . '<div id="%4$s" class="hodima-expandable-wrapper" data-expandable-content data-height="%5$d" data-more="%6$s" data-less="%7$s" data-scroll-offset="%8$d" data-smart="%9$s" tabindex="-1" role="region" aria-labelledby="%11$s">'
+                    . '<div class="hodima-expandable-inner">%10$s</div>'
                 . '</div>'
-                . '<button id="%11$s" type="button" class="arian-expand-toggle-btn" data-expandable-toggle aria-controls="%4$s" aria-expanded="false"><span class="arian-btn-text">%12$s</span></button>'
+                . '<button id="%11$s" type="button" class="hodima-expand-toggle-btn" data-expandable-toggle aria-controls="%4$s" aria-expanded="false"><span class="hodima-btn-text">%12$s</span></button>'
             . '</div>',
             esc_attr( $this->build_wrapper_classes( $atts ) ),
             esc_attr( $context ),
@@ -302,7 +310,7 @@ final class Arian_Expandable_Boxes {
         return $this->with_render_guard( 'comments_template', static function () use ( $class ): string {
             ob_start();
             comments_template();
-            return '<div class="arian-product-reviews-wrapper ' . esc_attr( $class ) . '">' . ob_get_clean() . '</div>';
+            return '<div class="hodima-product-reviews-wrapper ' . esc_attr( $class ) . '">' . ob_get_clean() . '</div>';
         } );
     }
 
@@ -328,8 +336,8 @@ final class Arian_Expandable_Boxes {
     }
 }
 
-Arian_Expandable_Boxes::init();
+Hodima_Expandable_Boxes::init();
 
 function hodima_expandable_box( string $rendered_html, string $context = '', array $atts = [] ): string {
-    return Arian_Expandable_Boxes::wrap( $rendered_html, $context, $atts );
+    return Hodima_Expandable_Boxes::wrap( $rendered_html, $context, $atts );
 }

@@ -104,7 +104,7 @@
  * کارت ویدیوی افزونه رسانه (.hs-related-card) همین توکن‌ها را در CSS خودش می‌خواند.
  * ========================================================================= */
 
-.arian-card,
+.hodima-home-card,
 .blog-page-card,
 .videos-page-card,
 .product-card-scope ul.products li.product.product {
@@ -122,7 +122,7 @@
 	transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
-.arian-card:hover,
+.hodima-home-card:hover,
 .blog-page-card:hover,
 .videos-page-card:hover,
 .product-card-scope ul.products li.product.product:hover {
@@ -131,7 +131,7 @@
 	border-color: var(--hodima-border, #b8c4de);
 }
 
-.arian-card:focus-visible,
+.hodima-home-card:focus-visible,
 .blog-page-card:focus-visible,
 .videos-page-card:focus-visible {
 	outline: 2px solid var(--hodima-secondary, #607bbd);
@@ -139,7 +139,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.arian-card:hover,
+	.hodima-home-card:hover,
 	.blog-page-card:hover,
 	.videos-page-card:hover,
 	.product-card-scope ul.products li.product.product:hover {

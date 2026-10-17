@@ -37,13 +37,13 @@ $page_title = match ( true ) {
 
 $features = array_values( array_filter( array_map( 'trim', (array) $args['features'] ) ) );
 ?>
-<section class="arian-section section-intro-media" aria-labelledby="arian-section01-title">
+<section class="hodima-home-section section-intro-media" aria-labelledby="hodima-intro-title">
 
 	<div class="intro-media-wrapper">
 
 		<?php if ( hodima_theme_media_available( 'intro' ) ) : ?>
 			<div class="intro-content-box">
-				<h1 id="arian-section01-title" class="section-col-title"><?php echo esc_html( $page_title ); ?></h1>
+				<h1 id="hodima-intro-title" class="section-col-title"><?php echo esc_html( $page_title ); ?></h1>
 				<div class="intro-hook-content">
 					<?php echo hodima_theme_media_html( 'intro' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media ?>
 				</div>

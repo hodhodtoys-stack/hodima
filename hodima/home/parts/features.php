@@ -23,14 +23,14 @@ if ( ! $items ) {
 
 $section_id = wp_unique_id( 'hodima-features-title-' );
 ?>
-<section class="arian-section hodima-features" aria-labelledby="<?php echo esc_attr( $section_id ); ?>" style="--section-bg: <?php echo esc_attr( hodima_home_tones()[ $args['tone'] ]['css'] ?? 'transparent' ); ?>;">
-	<div class="arian-header">
-		<div class="arian-title-group">
-			<h2 id="<?php echo esc_attr( $section_id ); ?>" class="arian-title"><?php echo esc_html( (string) $args['title'] ); ?></h2>
+<section class="hodima-home-section hodima-features" aria-labelledby="<?php echo esc_attr( $section_id ); ?>" style="--section-bg: <?php echo esc_attr( hodima_home_tones()[ $args['tone'] ]['css'] ?? 'transparent' ); ?>;">
+	<div class="hodima-home-header">
+		<div class="hodima-title-group">
+			<h2 id="<?php echo esc_attr( $section_id ); ?>" class="hodima-section-title"><?php echo esc_html( (string) $args['title'] ); ?></h2>
 			<?php if ( '' !== (string) $args['subtitle'] ) : ?>
-				<p class="arian-subtitle"><?php echo esc_html( (string) $args['subtitle'] ); ?></p>
+				<p class="hodima-section-subtitle"><?php echo esc_html( (string) $args['subtitle'] ); ?></p>
 			<?php endif; ?>
-			<div class="arian-line"></div>
+			<div class="hodima-title-line"></div>
 		</div>
 	</div>
 	<ul class="hodima-features__grid">

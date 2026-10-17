@@ -20,7 +20,7 @@ if ( '' === trim( (string) $args['title'] ) ) {
 
 $button_url = hodima_home_link_url( (string) $args['link'] );
 ?>
-<section class="arian-section hodima-cta">
+<section class="hodima-home-section hodima-cta">
 	<div class="hodima-cta__box">
 		<h2 class="hodima-cta__title"><?php echo esc_html( (string) $args['title'] ); ?></h2>
 		<?php if ( '' !== (string) $args['text'] ) : ?>

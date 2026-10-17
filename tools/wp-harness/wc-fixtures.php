@@ -139,6 +139,7 @@ WC_Comments::clear_transients( $main );
 
 // تعداد در صفحه فروشگاه کم تا صفحه‌بندی دیده شود (تنظیمات قالب ← فروشگاه)
 update_option( 'hodima_theme_settings', array_merge( (array) get_option( 'hodima_theme_settings', [] ), [ 'shop_per_page' => 8 ] ) );
+if ( getenv( 'HARNESS_HOME' ) ) { require __DIR__ . '/home-layout.php'; }
 if ( $o = getenv( 'HARNESS_OPTS' ) ) { eval( $o ); }
 flush_rewrite_rules( true );
 file_put_contents( dirname( $harness_wp ) . '/ids.json', json_encode( compact( 'home', 'main', 'var', 'out', 'sale', 'cat', 'sub', 'tag' ) ) );

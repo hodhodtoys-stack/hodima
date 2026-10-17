@@ -42,19 +42,19 @@ if ( ! $categories_data ) {
 	return;
 }
 
-$section_id = 'arian-cat-title-' . wp_unique_id();
+$section_id = 'hodima-cat-title-' . wp_unique_id();
 ?>
-<section class="arian-section cat-story-container" aria-labelledby="<?php echo esc_attr( $section_id ); ?>" data-nosnippet>
-	<header class="arian-header">
-		<div class="arian-title-group">
-			<h2 id="<?php echo esc_attr( $section_id ); ?>" class="arian-title"><?php echo esc_html( $args['title'] ); ?></h2>
+<section class="hodima-home-section cat-story-container" aria-labelledby="<?php echo esc_attr( $section_id ); ?>" data-nosnippet>
+	<header class="hodima-home-header">
+		<div class="hodima-title-group">
+			<h2 id="<?php echo esc_attr( $section_id ); ?>" class="hodima-section-title"><?php echo esc_html( $args['title'] ); ?></h2>
 			<?php if ( '' !== (string) $args['subtitle'] ) : ?>
-				<p class="arian-subtitle"><?php echo esc_html( $args['subtitle'] ); ?></p>
+				<p class="hodima-section-subtitle"><?php echo esc_html( $args['subtitle'] ); ?></p>
 			<?php endif; ?>
-			<div class="arian-line"></div>
+			<div class="hodima-title-line"></div>
 		</div>
 	</header>
-	<div class="arian-scroller cat-story-wrapper">
+	<div class="hodima-scroller cat-story-wrapper">
 		<?php foreach ( $categories_data as $category ) : ?>
 			<a href="<?php echo esc_url( $category['link'] ); ?>" class="cat-story-item" aria-label="<?php echo esc_attr( $category['name'] ); ?>">
 				<div class="cat-img-box">

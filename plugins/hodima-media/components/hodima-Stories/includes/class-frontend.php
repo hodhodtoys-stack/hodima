@@ -74,8 +74,8 @@ class Frontend {
 		 * شناسه ثابت story-container حذف شد: با دو شورت‌کد در یک صفحه تکراری می‌شد.
 		 */
 		?>
-		<section class="arian-section section-stories is-ready" data-nosnippet data-seen-to-end="<?php echo $seen_to_end ? '1' : '0'; ?>">
-			<div class="arian-scroller story-wrapper">
+		<section class="hodima-home-section arian-section section-stories is-ready" data-nosnippet data-seen-to-end="<?php echo $seen_to_end ? '1' : '0'; ?>">
+			<div class="hodima-scroller arian-scroller story-wrapper">
 				<?php
 				foreach ( $items as $position => $story ) {
 					$uid      = absint( $story['uid'] ?? 0 );

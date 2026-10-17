@@ -38,8 +38,8 @@ if ( ! function_exists( 'hodima_home_claim_priority' ) ) {
 // کارت و باکس مشترک بخش‌های افقی صفحه اصلی (محصولات یک دسته، جدیدترین، آخرین مقالات)
 // ------------------------------------------------------------------------
 // تا 3.1.4 مقالات مارک‌آپ و CSS جدای خودشان را داشتند (modern-blog-card، blog-wrapper…)
-// و کوچک‌تر از کارت محصول درمی‌آمدند. حالا هر دو همین دو تابع و همین CSS (.arian-card،
-// .arian-product-section) را به کار می‌برند؛ تفاوت مقاله فقط نبود قیمت است.
+// و کوچک‌تر از کارت محصول درمی‌آمدند. حالا هر دو همین دو تابع و همین CSS (.hodima-home-card،
+// .hodima-product-section) را به کار می‌برند؛ تفاوت مقاله فقط نبود قیمت است.
 // ========================================================================
 if ( ! function_exists( 'hodima_home_card_html' ) ) {
 	/**
@@ -67,7 +67,7 @@ if ( ! function_exists( 'hodima_home_card_html' ) ) {
 			$image_attrs = [
 				'alt'      => $title,
 				'decoding' => 'async',
-				'class'    => 'arian-card-img',
+				'class'    => 'hodima-home-card-img',
 				// کارت ۱۷۰px (در موبایل ۴۰٪ عرض)؛ بدون این، مرورگر نسخه‌ای به اندازه تمام صفحه می‌گرفت
 				'sizes'    => '(max-width: 768px) 40vw, 170px',
 			];
@@ -78,18 +78,18 @@ if ( ! function_exists( 'hodima_home_card_html' ) ) {
 			}
 			$image = wp_get_attachment_image( (int) $card['thumbnail_id'], (string) $card['size'], false, $image_attrs );
 		} elseif ( '' !== $card['placeholder'] ) {
-			$image = '<img src="' . esc_url( (string) $card['placeholder'] ) . '" alt="' . esc_attr( $title ) . '" width="300" height="300" loading="lazy" decoding="async" class="arian-card-img">';
+			$image = '<img src="' . esc_url( (string) $card['placeholder'] ) . '" alt="' . esc_attr( $title ) . '" width="300" height="300" loading="lazy" decoding="async" class="hodima-home-card-img">';
 		} else {
 			// بدون تصویر: کادر جایگزین با رنگ برند (فایل جایگزین در قالب نیست)
-			$image = '<span class="arian-card-img arian-card-img--placeholder" role="img" aria-label="' . esc_attr( $title ) . '"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>';
+			$image = '<span class="hodima-home-card-img hodima-home-card-img--placeholder" role="img" aria-label="' . esc_attr( $title ) . '"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>';
 		}
 
-		$classes = trim( 'arian-card ' . (string) $card['class'] );
-		$price   = '' !== (string) $card['price_html'] ? '<div class="arian-card-price">' . wp_kses_post( (string) $card['price_html'] ) . '</div>' : '';
+		$classes = trim( 'hodima-home-card ' . (string) $card['class'] );
+		$price   = '' !== (string) $card['price_html'] ? '<div class="hodima-home-card-price">' . wp_kses_post( (string) $card['price_html'] ) . '</div>' : '';
 
 		return '<article class="' . esc_attr( $classes ) . '">'
-			. '<a href="' . esc_url( $link ) . '" class="arian-card-img-link">' . $image . '</a>'
-			. '<div class="arian-card-info"><h3 class="arian-card-name"><a href="' . esc_url( $link ) . '">' . esc_html( $title ) . '</a></h3>' . $price . '</div>'
+			. '<a href="' . esc_url( $link ) . '" class="hodima-home-card-img-link">' . $image . '</a>'
+			. '<div class="hodima-home-card-info"><h3 class="hodima-home-card-name"><a href="' . esc_url( $link ) . '">' . esc_html( $title ) . '</a></h3>' . $price . '</div>'
 			. '</article>';
 	}
 }
@@ -114,18 +114,18 @@ if ( ! function_exists( 'hodima_home_cards_section' ) ) {
 
 		$title = esc_html( (string) $args['title'] );
 		if ( '' !== (string) $args['title_url'] ) {
-			$title = '<a class="arian-title-link" href="' . esc_url( (string) $args['title_url'] ) . '">' . $title . '</a>';
+			$title = '<a class="hodima-section-title-link" href="' . esc_url( (string) $args['title_url'] ) . '">' . $title . '</a>';
 		}
 
-		$subtitle = '' !== (string) $args['subtitle'] ? '<p class="arian-subtitle">' . esc_html( (string) $args['subtitle'] ) . '</p>' : '';
+		$subtitle = '' !== (string) $args['subtitle'] ? '<p class="hodima-section-subtitle">' . esc_html( (string) $args['subtitle'] ) . '</p>' : '';
 
 		$more = '' !== (string) $args['more_url'] && '' !== (string) $args['more_text']
-			? '<a href="' . esc_url( (string) $args['more_url'] ) . '" class="arian-view-all">' . esc_html( (string) $args['more_text'] ) . '</a>'
+			? '<a href="' . esc_url( (string) $args['more_url'] ) . '" class="hodima-view-all">' . esc_html( (string) $args['more_text'] ) . '</a>'
 			: '';
 
-		return '<section class="arian-section arian-product-section" aria-labelledby="' . esc_attr( (string) $args['id'] ) . '" style="--section-bg: ' . esc_attr( (string) $args['bg_color'] ) . ';">'
-			. '<div class="arian-header"><div class="arian-title-group"><h2 id="' . esc_attr( (string) $args['id'] ) . '" class="arian-title">' . $title . '</h2>' . $subtitle . '<div class="arian-line"></div></div>' . $more . '</div>'
-			. '<div class="' . esc_attr( trim( 'arian-scroller ' . (string) $args['scroller_class'] ) ) . '">' . $cards_html . '</div>'
+		return '<section class="hodima-home-section hodima-product-section" aria-labelledby="' . esc_attr( (string) $args['id'] ) . '" style="--section-bg: ' . esc_attr( (string) $args['bg_color'] ) . ';">'
+			. '<div class="hodima-home-header"><div class="hodima-title-group"><h2 id="' . esc_attr( (string) $args['id'] ) . '" class="hodima-section-title">' . $title . '</h2>' . $subtitle . '<div class="hodima-title-line"></div></div>' . $more . '</div>'
+			. '<div class="' . esc_attr( trim( 'hodima-scroller ' . (string) $args['scroller_class'] ) ) . '">' . $cards_html . '</div>'
 			. '</section>';
 	}
 }

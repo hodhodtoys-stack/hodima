@@ -1,6 +1,6 @@
 /**
  * صفحه اصلی: کشیدن اسلایدرها با ماوس (دسکتاپ).
- * «Lazy Load Enhancer» برای img.arian-lazy در 2.8.0 حذف شد: هیچ تصویری این کلاس را نداشت.
+ * «Lazy Load Enhancer» برای img.hodima-lazy در 2.8.0 حذف شد: هیچ تصویری این کلاس را نداشت.
  * نسخه 3.0.0 (نوسازی قالب، مرحله ۴): بدون انتظار DOMContentLoaded (اسکریپت در فوتر).
  */
 ( () => {
@@ -9,7 +9,7 @@
 		return;
 	}
 
-	document.querySelectorAll( '.arian-scroller' ).forEach( ( el ) => {
+	document.querySelectorAll( '.hodima-scroller, .arian-scroller' ).forEach( ( el ) => {
 		let isDown = false;
 		let moved = false; // بعد از کشیدن واقعی، رها کردن روی کارت نباید لینک را باز کند
 		let startX = 0;
@@ -65,7 +65,7 @@
 	const chevron = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>';
 	const edge = 4; // تلورانس پیکسل: گردشدن مرورگر یا snap نباید «اسکرول شده» حساب شود
 
-	document.querySelectorAll( '.arian-scroller' ).forEach( ( el ) => {
+	document.querySelectorAll( '.hodima-scroller, .arian-scroller' ).forEach( ( el ) => {
 		const host = el.parentElement;
 		if ( ! host ) {
 			return;
@@ -74,7 +74,7 @@
 		const make = ( kind, label ) => {
 			const button = document.createElement( 'button' );
 			button.type = 'button';
-			button.className = `arian-scroll-btn arian-scroll-btn--${ kind }`;
+			button.className = `hodima-scroll-btn hodima-scroll-btn--${ kind }`;
 			button.setAttribute( 'aria-label', label );
 			button.innerHTML = chevron;
 			return button;

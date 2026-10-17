@@ -1,5 +1,5 @@
 /* ================= نوار استوری =================
- * بخش راست‌به‌چپ است (.arian-section قالب)؛ خصوصیات منطقی: inline-end = چپ.
+ * بخش راست‌به‌چپ است (.hodima-home-section قالب؛ تا 3.6.3 .arian-section)؛ خصوصیات منطقی: inline-end = چپ.
  * CSS افزونه مرحله ساخت ندارد: بدون nesting و media query بازه‌ای (مرورگرهای قدیمی). */
 .section-stories {
 	padding-top: 2px;

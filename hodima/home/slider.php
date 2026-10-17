@@ -74,7 +74,7 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
 			'only_instock' => true,
 			'bg_color'     => 'transparent',
 			// شناسه ثابت در هر بار ساخت صفحه (قبلا uniqid: HTML صفحه اصلی هر بار فرق می‌کرد)
-			'id'       => wp_unique_id( 'arian-sec-' ),
+			'id'       => wp_unique_id( 'hodima-sec-' ),
 		];
 		$args = wp_parse_args( $args, $defaults );
 
@@ -89,7 +89,7 @@ if ( ! function_exists( 'hodima_home_product_slider' ) ) {
 		$query_args = hodima_home_product_query_args( $args );
 
 		// نسل کش در کلید: پاک کردن = بالا بردن نسل (hodima_home_flush_product_sliders)
-		$transient_key = 'arian_pslider_' . md5( (string) wp_json_encode( $query_args ) . '|' . hodima_home_slider_generation() );
+		$transient_key = 'hodima_pslider_' . md5( (string) wp_json_encode( $query_args ) . '|' . hodima_home_slider_generation() );
 		$products_data = get_transient( $transient_key );
 
 		if ( false === $products_data ) {

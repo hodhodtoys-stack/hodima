@@ -81,10 +81,10 @@ if ( ! function_exists( 'hodima_home_flush_product_sliders' ) ) {
 
 		update_option( 'hodima_home_slider_gen', hodima_home_slider_generation() + 1, true );
 
-		// بدون کش شیء: ردیف‌های نسل قبلی را هم از جدول پاک کن (وگرنه تا انقضا می‌مانند)
+		// بدون کش شیء: ردیف‌های نسل قبلی را هم از جدول پاک کن (وگرنه تا انقضا می‌مانند)؛ پیشوند arian_ نام قدیمی تا 3.6.3 است
 		if ( ! wp_using_ext_object_cache() ) {
 			global $wpdb;
-			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_arian_pslider_%' OR option_name LIKE '_transient_timeout_arian_pslider_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- پاکسازی گروهی ترنزینت‌ها؛ API وردپرس برای الگو ندارد
+			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_hodima_pslider_%' OR option_name LIKE '_transient_timeout_hodima_pslider_%' OR option_name LIKE '_transient_arian_pslider_%' OR option_name LIKE '_transient_timeout_arian_pslider_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- پاکسازی گروهی ترنزینت‌ها؛ API وردپرس برای الگو ندارد
 		}
 
 		hodima_home_purge_page_cache();

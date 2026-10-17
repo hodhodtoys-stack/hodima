@@ -29,7 +29,7 @@ defined( 'ABSPATH' ) || exit;
 /** @return array<string, string> نامک => نام دسته */
 function hodima_home_category_shortcode_map(): array {
 
-	$cached = get_transient( 'arian_cat_shortcode_map' );
+	$cached = get_transient( 'hodima_cat_shortcode_map' );
 
 	if ( is_array( $cached ) ) {
 		return $cached;
@@ -56,13 +56,14 @@ function hodima_home_category_shortcode_map(): array {
 		}
 	}
 
-	set_transient( 'arian_cat_shortcode_map', $map, DAY_IN_SECONDS );
+	set_transient( 'hodima_cat_shortcode_map', $map, DAY_IN_SECONDS );
 
 	return $map;
 }
 
 function hodima_home_clear_category_shortcode_map(): void {
-	delete_transient( 'arian_cat_shortcode_map' );
+	delete_transient( 'hodima_cat_shortcode_map' );
+	delete_transient( 'arian_cat_shortcode_map' ); // نام قدیمی تا 3.6.3
 }
 add_action( 'created_product_cat', 'hodima_home_clear_category_shortcode_map' );
 add_action( 'edited_product_cat',  'hodima_home_clear_category_shortcode_map' );
