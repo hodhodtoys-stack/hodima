@@ -4,7 +4,7 @@
 #   پیش‌فرض: کار فعلی. --ref: همان بررسی روی commit دیگر (مثلا HEAD) برای مقایسه قبل/بعد.
 #   --wc: صفحه‌های ووکامرس *واقعی* (wc-run.sh)؛ بدون آن ابزار تست اصلی (ووکامرس شبیه‌سازی).
 # axe-core (برچسب‌های wcag2a/aa/21a/21aa/22aa) + بررسی صفحه‌کلید (فوکوس نامرئی/پوشیده)؛
-# گزارش JSON در $base/a11y-<work|ref>.json. جزئیات: tools/wp-harness/a11y-audit.mjs
+# گزارش JSON در $base/a11y-<work|ref>.json. جزئیات: tools/wp-harness/a11y-audit.mjs; اندازه هدف لمسی: target-size.mjs و target-size-fixtures.mjs
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; repo="$(cd "$here/../.." && pwd)"
 base="${HODIMA_HARNESS:-/tmp/hodima-harness}"; runner="$here/run.sh"; ref=""
@@ -28,5 +28,8 @@ fi
 HARNESS_HOME=1 "$runner" "$src" "$base/out-a11y-$tag" >/dev/null 2>&1
 ( cd "$repo" && node "$here/a11y-audit.mjs" "$base/out-a11y-$tag" "$src" "$base/a11y-$tag.json" "$@" )
 rc=$?
+# اندازه هدف لمسی کنترل‌هایی که در صفحه‌های بالا نیستند (پنجره پشتیبانی، اسلایدر، استوری، اعلان)
+echo; echo "اندازه هدف لمسی — نمونه‌های جدا (پنجره پشتیبانی، نقطه‌های اسلایدر، مینی‌پلیر و پخش استوری، اعلان):"
+( cd "$repo" && node "$here/target-size-fixtures.mjs" "$src" ) || rc=1
 [ -n "$ref" ] && git -C "$repo" worktree remove --force "$base/a11yref"
 exit $rc

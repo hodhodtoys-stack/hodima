@@ -18,6 +18,7 @@ import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { targetSize } from './target-size.mjs';
 
 const require = createRequire( import.meta.url );
 const axePath = require.resolve( 'axe-core/axe.min.js' );
@@ -235,8 +236,9 @@ async function audit( browser, htmlFile, vp ) {
 		if ( info ) keyboard.push( info );
 	}
 	const gradient = await sampleGradients( page, gradTargets );
+	const targets = await targetSize( page );
 	await ctx.close();
-	return { axe, keyboard, gradient };
+	return { axe, keyboard, gradient, targets };
 }
 
 const browser = await chromium.launch( { executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' } ).catch( () => chromium.launch() );
@@ -287,6 +289,14 @@ for ( const [ key, r ] of Object.entries( report ) ) {
 console.log( `\nکیبورد: ${ Object.keys( inv ).length } عنصر هنگام فوکوس هیچ تغییر استایلی ندارند (فوکوس نامرئی)، ${ Object.keys( cov ).length } عنصر پوشیده` );
 for ( const [ k, v ] of Object.entries( inv ).slice( 0, 40 ) ) console.log( `   نامرئی: ${ k } (${ v.size } نما)` );
 for ( const [ k, v ] of Object.entries( cov ).slice( 0, 15 ) ) console.log( `   پوشیده: ${ k } (${ v.size } نما)` );
+
+const tgt = {};
+for ( const [ key, r ] of Object.entries( report ) ) {
+	for ( const t of r.targets ) ( tgt[ t.label ] ??= { ...t, pages: new Set() } ).pages.add( key );
+}
+const tgtRows = Object.values( tgt ).sort( ( a, b ) => b.pages.size - a.pages.size );
+console.log( `\nاندازه هدف لمسی (۲٫۵٫۸، کمتر از ۲۴px و بدون استثنای فاصله): ${ tgtRows.length } کنترل` );
+for ( const t of tgtRows.slice( 0, 40 ) ) console.log( `   ${ t.w }×${ t.h }  ${ t.label.slice( 0, 70 ) }  ← نزدیک ${ t.near.slice( 0, 40 ) } (${ t.state }؛ ${ t.pages.size } نما)\n        داخل: ${ t.in }` );
 
 const over = Object.entries( reflowReport ).filter( ( [ , r ] ) => r.scrollW > r.w + 1 || r.bad.length );
 console.log( `\nبازچینی ۳۲۰px (اسکرول افقی): ${ over.length } صفحه از ${ Object.keys( reflowReport ).length } مشکل دارند` );

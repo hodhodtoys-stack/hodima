@@ -80,11 +80,12 @@
 .h-effect-flip .h-slide.active { opacity: 1; transform: rotateY(0deg); }
 
 .h-controls { position: absolute; bottom: .9rem; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: .6rem; z-index: 10; margin: 0; padding: 0; }
-.h-dots { display: flex; gap: .5rem; margin: 0; padding: 0; }
+/* فاصله ۱۴px = دو لبه ناحیه لمس ۲۴px نقطه‌ها (۲٫۵٫۸ WCAG): ناحیه‌ها هم‌پوشانی نمی‌کنند. تا 1.8.9 فاصله ۸px و ناحیه ۱۸px پهن بود. */
+.h-dots { display: flex; gap: .875rem; margin: 0; padding: 0; }
 
 .h-dot { position: relative; width: 10px; height: 10px; border-radius: 50%; border: none; background: var(--hodima-third, #b6c2f3); cursor: pointer; padding: 0; transition: background 0.3s, width 0.3s; }
-/* ناحیه لمس بزرگ‌تر از خود نقطه ۱۰ پیکسلی */
-.h-dot::before { content: ""; position: absolute; inset: -8px -4px; }
+/* ناحیه لمس ۲۴×۲۴ دور نقطه ۱۰ پیکسلی */
+.h-dot::before { content: ""; position: absolute; inset: -7px; }
 .h-dot.active { width: 30px; border-radius: 5px; background: var(--hodima-primary, #25316a); }
 
 .h-slider.h-has-custom-size { aspect-ratio: auto; }
