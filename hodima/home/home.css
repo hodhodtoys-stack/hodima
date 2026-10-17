@@ -537,7 +537,7 @@ h1.section-col-title {
 	overflow: hidden;
 	-webkit-line-clamp: 2;
 	line-clamp: 2;
-	height: calc(1.3em * 2);
+	/* فقط min-height (نه height ثابت): با فاصله خط بیشتر کاربر (WCAG 1.4.12) خط دوم بریده نمی‌شود؛ ۲ خط همچنان سقف است */
 	min-height: calc(1.3em * 2);
 	margin: 0;
 }
@@ -590,7 +590,6 @@ h1.section-col-title {
 		line-height: 1.25;
 		-webkit-line-clamp: 2;
 		line-clamp: 2;
-		height: calc(1.25em * 2);
 		min-height: calc(1.25em * 2);
 	}
 

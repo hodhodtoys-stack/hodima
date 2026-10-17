@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { targetSize } from './target-size.mjs';
+import { textScaling } from './text-scaling.mjs';
 
 const require = createRequire( import.meta.url );
 const axePath = require.resolve( 'axe-core/axe.min.js' );
@@ -176,6 +177,24 @@ async function reflow( browser, htmlFile ) {
 	return res;
 }
 
+/** صفحه رندرشده را (مثل audit) در نمای داده‌شده باز می‌کند؛ برای تست‌های بزرگ‌نمایی/فاصله متن. */
+async function openHtml( browser, htmlFile, vp ) {
+	const ctx = await browser.newContext( { viewport: { width: vp.width, height: vp.height }, locale: 'fa-IR', reducedMotion: 'reduce' } );
+	const page = await ctx.newPage();
+	await page.route( '**/*', async ( route ) => {
+		const url = route.request().url();
+		if ( url === 'https://hodima.test/__page__' ) return route.fulfill( { status: 200, contentType: 'text/html; charset=utf-8', body: fs.readFileSync( htmlFile ) } );
+		const file = localFile( url );
+		if ( file && fs.existsSync( file ) && fs.statSync( file ).isFile() ) return route.fulfill( { status: 200, contentType: MIME[ path.extname( file ) ] || 'application/octet-stream', body: fs.readFileSync( file ) } );
+		if ( route.request().resourceType() === 'image' ) return route.fulfill( { status: 200, contentType: 'image/png', body: GREY } );
+		return route.fulfill( { status: 404, body: '' } );
+	} );
+	await page.goto( 'https://hodima.test/__page__', { waitUntil: 'load' } );
+	await page.evaluate( async () => { await document.fonts.ready; document.querySelectorAll( 'img[loading="lazy"]' ).forEach( ( i ) => i.setAttribute( 'loading', 'eager' ) ); } );
+	await page.waitForTimeout( 250 );
+	return { ctx, page };
+}
+
 async function audit( browser, htmlFile, vp ) {
 	const ctx = await browser.newContext( { viewport: { width: vp.width, height: vp.height }, locale: 'fa-IR', reducedMotion: 'reduce' } );
 	const page = await ctx.newPage();
@@ -245,14 +264,16 @@ const browser = await chromium.launch( { executablePath: process.env.CHROMIUM ||
 const pages = fs.readdirSync( outDir ).filter( ( f ) => f.endsWith( '.html' ) ).map( ( f ) => f.slice( 0, -5 ) ).filter( ( p ) => ! only.length || only.includes( p ) ).sort();
 const report = {};
 const reflowReport = {};
+const textReport = {};
 for ( const p of pages ) {
 	for ( const vp of VIEWPORTS ) {
 		report[ `${ p }@${ vp.name }` ] = await audit( browser, path.join( outDir, `${ p }.html` ), vp );
 	}
 	reflowReport[ p ] = await reflow( browser, path.join( outDir, `${ p }.html` ) );
+	if ( ! process.env.A11Y_SKIP_TEXT ) textReport[ p ] = await textScaling( ( vp ) => openHtml( browser, path.join( outDir, `${ p }.html` ), vp ) );
 }
 await browser.close();
-fs.writeFileSync( reportFile, JSON.stringify( { ...report, __reflow: reflowReport }, null, 1 ) );
+fs.writeFileSync( reportFile, JSON.stringify( { ...report, __reflow: reflowReport, __text: textReport }, null, 1 ) );
 
 // خلاصه گروه‌شده
 const group = {};
@@ -301,3 +322,17 @@ for ( const t of tgtRows.slice( 0, 40 ) ) console.log( `   ${ t.w }×${ t.h }  $
 const over = Object.entries( reflowReport ).filter( ( [ , r ] ) => r.scrollW > r.w + 1 || r.bad.length );
 console.log( `\nبازچینی ۳۲۰px (اسکرول افقی): ${ over.length } صفحه از ${ Object.keys( reflowReport ).length } مشکل دارند` );
 for ( const [ k, r ] of over.slice( 0, 12 ) ) console.log( `   ${ k }: عرض محتوا ${ r.scrollW } > ${ r.w }؛ ${ r.bad.slice( 0, 3 ).join( ' | ' ) }` );
+
+// فاصله متن (1.4.12) و بزرگ‌نمایی متن (1.4.4): فقط مشکل تازه نسبت به حالت پایه همان صفحه
+const txt = {};
+for ( const [ pg, rows ] of Object.entries( textReport ) ) {
+	for ( const r of rows ) {
+		const g = ( txt[ `${ r.mode }|${ r.kind }|${ r.label }` ] ??= { ...r, pages: new Set() } );
+		g.pages.add( `${ pg }@${ r.vp }` );
+	}
+}
+for ( const mode of [ 'spacing', 'text200' ] ) {
+	const list = Object.values( txt ).filter( ( g ) => g.mode === mode ).sort( ( a, b ) => b.pages.size - a.pages.size );
+	console.log( `\n${ mode === 'spacing' ? 'فاصله متن (۱٫۴٫۱۲)' : 'متن ۲۰۰٪ (۱٫۴٫۴)' }: ${ list.length } مورد تازه نسبت به حالت پایه` );
+	for ( const g of list.slice( 0, 40 ) ) console.log( `   ${ g.kind }  ${ g.label.slice( 0, 70 ) }  ${ g.detail } (${ g.state }؛ ${ g.pages.size } نما؛ مثلا ${ [ ...g.pages ][ 0 ] })${ process.env.A11Y_TEXT_DEBUG ? `\n        ${ g.html ?? '' }` : '' }` );
+}

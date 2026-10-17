@@ -21,7 +21,7 @@
     position: relative;
     width: 100%;
     max-width: 22rem;      /* به 352px کاهش یافت تا جمع‌وجور باشد */
-    min-width: 14rem;      /* به 224px کاهش یافت تا جای انعطاف داشته باشد */
+    min-width: min(14rem, 100%); /* ۲۲۴px؛ با متن بزرگ‌شده (rem دو برابر) از ظرف هدر بیرون نمی‌زند (WCAG 1.4.4) */
     margin: 0 auto;
     direction: rtl;
     
