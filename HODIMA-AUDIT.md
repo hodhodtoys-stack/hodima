@@ -167,7 +167,7 @@
 - **فایل:** `components/indexnow-sync/includes/class-hodima-helpers.php:50-66`
 - در بازبینی دقیق‌تر مشخص شد تابع `is_noindex` مقدار متا را هم بررسی می‌کند (فقط `1`/`yes`/`true`/`on` یا مقدار حاوی `noindex`)؛ پس مقدار `0`/`2` یواست به اشتباه noindex حساب نمی‌شود. تغییری لازم نیست.
 
-### 🟡 ۴.۱۷ ثبت نشدن صحیح قابلیت‌های پایه قالب
+### ✅ ۴.۱۷ ثبت نشدن صحیح قابلیت‌های پایه قالب (بیشترش رفع شد — بررسی کد در بخش ۱۶۹؛ دو مورد باز)
 - **فایل:** `inc/setup.php`
 - موارد غایب: `html5`، `responsive-embeds`، `automatic-feed-links`، `custom-logo`، `editor-styles`، `align-wide`، `load_theme_textdomain`، و `theme.json`.
 - کلید مکان منو یک رشته فارسی است (`'منوی اصلی'`) و در `header.php` با `'menu' => 'منوی اصلی'` (نام منو) فراخوانی می‌شود نه `theme_location`؛ تغییر نام منو در پیشخوان، هدر را خالی می‌کند.
@@ -182,7 +182,7 @@
 - فرم تلفن چک‌باکس رضایت یا لینک سیاست حریم خصوصی ندارد.
 - Google Analytics بدون مکانیزم رضایت (Consent Mode) بارگذاری می‌شود.
 
-### ⚪ ۴.۲۰ موارد پایین‌تر
+### ⚪ ۴.۲۰ موارد پایین‌تر (بیشترشان رفع شده یا مربوط به پنل کاربری‌اند — وضعیت هر مورد در بخش ۱۶۹)
 - `hodima_check_admin_unread_callback` (`user-panel/core/admin-menu.php:470`) فقط nonce دارد و `current_user_can` ندارد.
 - `hodima_load_more_videos` (`inc/enqueue.php:290-330`) کد مرده است؛ nonce آن هیچ‌جا ساخته نمی‌شود و هیچ JS آن را صدا نمی‌زند.
 - تگ بسته `?>` در انتهای `user-panel/loader.php:584` (ریسک «headers already sent»).
@@ -3439,7 +3439,19 @@ Media 1.8.5 (ماژول استوری 3.1.0). کاربر پس از تحلیل ک�
 - **تست:** `bin/lint.sh` قبول. `a11y-audit.sh` (شبیه‌سازی): axe و کیبورد و بازچینی مثل قبل (۰ نامرئی، ۲۷ از ۲۷ سالم؛ `html-has-lang` فقط نماهای HEAD-only ابزار)، اندازه هدف ۰؛ نمونه‌های جدا: همه ✔ (قبل از رفع ۱۲ نقض در ۳ عرض اسلایدر → بعد ۰)؛ ووکامرس واقعی (`--wc`): اندازه هدف ۰. `visual-compare.sh` (همه نماها، سورس): همه یکسان با `pixels: 0` (نقطه‌های اسلایدر در صفحه‌های آزمایشی نیستند). تنها CSS افزونه Media عوض شد (قالب بدون تغییر).
 - **محدودیت:** (۱) نمونه‌های جدا نشانه‌گذاری را از قالب‌های PHP/JS کپی می‌کنند؛ عوض‌شدن آن‌ها باید با `target-size-fixtures.mjs` هماهنگ شود. (۲) کنترل‌هایی که فقط با JS و داده سرور ساخته می‌شوند (نتایج جستجوی زنده، فهرست شهر) سنجیده نشدند؛ CSS آن‌ها هم اندازه ثابت زیر ۲۴px ندارد. (۳) ابزار «لینک داخل متن» را فقط با `display: inline` و متن هم‌ردیف تشخیص می‌دهد. (۴) روی دستگاه واقعی لمسی آزموده نشد. (۵) فاصله متن (1.4.12) و بزرگ‌نمایی (1.4.4) مرحله بعد؛ `span.onsale` ووکامرس هنوز باقی است.
 
-## ۱۶۹. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
+## ۱۶۹. به‌روزرسانی وضعیت ۴.۱۷ و ۴.۲۰ با کد فعلی (فقط مستندات) — مرحله ۱۶۲
+بررسی کد فعلی `claude/hodima` (بدون تغییر کد؛ چیزی اجرا یا آزموده نشد جز خواندن و `grep`):
+
+**۴.۱۷ — رفع شده:** `html5`، `custom-logo`، `responsive-embeds`، `align-wide` و `load_theme_textdomain` در `inc/setup.php` ثبت‌اند؛ `editor-styles` در `inc/typography.php`؛ مکان منو با کلید لاتین `HODIMA_MENU_PRIMARY` ثبت و هدر با `theme_location` صدا زده می‌شود (مهاجرت یک‌باره منوی قبلی `hodima_migrate_primary_menu`)؛ `wc-product-gallery-*` دیگر ثبت نمی‌شود (`remove_theme_support` بی‌اثر در `product-hooks.php` ماند). **باز:** (۱) `automatic-feed-links` ثبت نشده (لینک کشف فید اصلی در head چاپ نمی‌شود؛ با تصمیم ۴.۱۸ که فید اصلی را باز گذاشت هم‌خوان نیست — تصمیم با کاربر)؛ (۲) `theme.json` عمدا انجام نشده (دلیل: بخش ۱۳).
+
+**۴.۲۰ — وضعیت هر مورد:**
+- مربوط به `user-panel` (کنار گذاشته؛ قانون ۳): `hodima_check_admin_unread_callback` بدون `current_user_can`، تگ `?>` پایان `loader.php` — تا بازگشت پنل باز می‌مانند.
+- رفع شد: `hodima_load_more_videos` (کد مرده) در مخزن نیست؛ `add_google_analytics_to_header` با `hodima_enqueue_google_analytics` جایگزین شد؛ `WC_Session_Handler_Bot_Dummy` ← `Hodima_Commerce_Bot_Session`؛ `WP_Story_Analytics` حالا داخل فضای نام `Hodima\Stories\Analytics` است (تداخل با نام رزروشده منتفی)؛ «Critical CSS» دستی حذف شد (بخش ۶۵)؛ `index.php` برای فهرست‌ها `the_excerpt()` می‌گذارد نه محتوای کامل.
+- هنوز باز: توابع سراسری بدون پیشوند `add_wholesale_price_custom_field` (Commerce `product-fields.php`) و `handle_hodima_phone_submission`؛ دو Text Domain (`hodima` و `hod-video`) و رشته‌های فارسی مستقیم (فقط با تصمیم ترجمه‌پذیرکردن)؛ `hreflang="en"` روی لینک Markdown در `class-hodima-aeo-schema.php`؛ ETag با `Cache-Control: no-cache` در `etag-handler.php` (تعامل با Cloudflare بدون لایت‌اسپید آزموده نشد).
+
+**محدودیت:** این فقط مقایسه متن با کد است؛ رفتار صفحه‌ها در این مرحله آزموده نشد.
+
+## ۱۷۰. پیوست: فهرست ماژول‌ها (پیشنهاد اولیه)
 
 | مسیر | کارکرد | پیشنهاد مکان |
 |---|---|---|
