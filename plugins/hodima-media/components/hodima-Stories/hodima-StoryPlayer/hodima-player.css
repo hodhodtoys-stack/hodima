@@ -75,7 +75,6 @@
 .hs-modal__close:focus-visible {
   transform: scale(1.08);
   background: var(--hs-hover);
-  outline: none;
 }
 
 /* --- Player Container --- */
@@ -163,7 +162,6 @@
 .hs-mute-toggle:hover,
 .hs-mute-toggle:focus-visible {
   background: rgb(96 123 189 / 0.9);
-  outline: none;
 }
 
 .hs-mute-toggle .hs-icon-muted,
@@ -232,7 +230,6 @@
 .hs-nav:focus-visible {
   background: rgb(96 123 189 / 0.9);
   transform: translateY(-50%) scale(1.06);
-  outline: none;
 }
 
 .hs-nav:disabled {
@@ -295,7 +292,6 @@
 .hs-play-toggle:focus-visible {
   transform: scale(1.08);
   background: rgb(96 123 189 / 0.88);
-  outline: none;
 }
 
 .hs-play-icon {
@@ -357,7 +353,6 @@
   transform: translateY(-1px);
   background: var(--hs-hover);
   color: var(--hs-text);
-  outline: none;
 }
 
 .hs-cta-text {
@@ -401,7 +396,13 @@
 .hs-action-item:focus-visible {
   transform: translateY(-1px);
   background: var(--hs-hover);
-  outline: none;
+}
+
+/* حلقه فوکوس سفید با هاله تیره روی هر فریم ویدیو (WCAG 2.4.7/1.4.11؛ قبلا فقط رنگ زمینه عوض می‌شد) */
+#hs-video-modal :is(button, a, [tabindex]):focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgb(0 0 0 / 0.6);
 }
 
 .hs-icon {

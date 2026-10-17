@@ -49,7 +49,8 @@
 .hs-mini-player__close:hover,
 .hs-mini-player__close:focus-visible {
   background: rgb(0 0 0 / 0.85);
-  outline: none;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 /* Shown only when the browser blocked unmuted autoplay and the mini-player

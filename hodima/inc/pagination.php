@@ -46,3 +46,22 @@ function hodima_latin_digits( string $html ): string {
 function hodima_paginate_links( array $args ): string {
 	return hodima_latin_digits( (string) paginate_links( array_merge( hodima_pagination_args(), $args ) ) );
 }
+
+/*
+ * وردپرس برای صفحه فعلی <span aria-label="Page 1" aria-current="page" class="page-numbers current"> می‌سازد؛
+ * aria-label روی span بدون نقش مجاز نیست (ARIA: aria-prohibited-attr) و خوانش‌گرها آن را نادیده
+ * می‌گیرند یا مبهم می‌خوانند. خود شماره نام قابل‌خواندن است و aria-current="page" وضعیت را می‌گوید.
+ * روی خروجی همه paginate_links (وبلاگ، جستجو، دسته و فروشگاه ووکامرس؛ برچسب را خود ووکامرس هم اضافه می‌کند) اعمال می‌شود.
+ */
+add_filter( 'paginate_links_output', static function ( mixed $html ): mixed {
+
+	if ( ! is_string( $html ) || ! str_contains( $html, 'page-numbers current' ) ) {
+		return $html;
+	}
+
+	return (string) preg_replace_callback(
+		'/<span\b[^>]*\bclass="page-numbers current"[^>]*>/',
+		static fn( array $found ): string => (string) preg_replace( '/\saria-label="[^"]*"/', '', $found[0] ),
+		$html
+	);
+}, 20 ); // اولویت ۲۰: ووکامرس (wc_add_aria_label_to_pagination_numbers) این aria-label را در اولویت ۱۰ اضافه می‌کند

@@ -22,7 +22,7 @@
 
     --xb-shadow: 0 4px 14px rgba(37, 49, 106, 0.16);
     --xb-shadow-hover: 0 8px 22px rgba(37, 49, 106, 0.22);
-    --xb-focus-ring: 0 0 0 3px rgba(96, 123, 189, 0.35);
+    --xb-focus-ring: 0 0 0 2px var(--hodima-surface, #ffffff), 0 0 0 4px var(--hodima-focus-color, #25316a); /* تا 1.8.7 سایه ۳۵٪ شفاف (تقریبا نامرئی) */
 
     position: relative;
     inline-size: 100%;

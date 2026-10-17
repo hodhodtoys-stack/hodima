@@ -77,7 +77,7 @@
 }
 
 /* رفع قطعی هاله آبی قالب یا وردپرس در فوکوس */
-.hd-notif-close:focus,
+.hd-notif-close:focus:not(:focus-visible),
 .hd-notif-close:active {
     outline: none !important;
     box-shadow: none !important;
@@ -117,8 +117,13 @@
 .hd-notification-popup:focus { outline: none; }
 .hd-notif-close:focus-visible,
 .hd-notif-half-link:focus-visible {
-    outline: 2px solid var(--hodima-secondary, #607bbd);
+    outline: 2px solid var(--hodima-secondary-text, #5169a8);
     outline-offset: 2px;
+}
+/* دکمه بستن روی تصویر/زمینه تیره و روشن می‌نشیند و outline بالا با !important خاموش می‌شد: سفید با هاله تیره */
+.hd-notif-close:focus-visible {
+    outline: 2px solid #fff !important;
+    box-shadow: 0 0 0 4px rgba(0,0,0,.6) !important;
 }
 @media (prefers-reduced-motion: reduce) {
     .hd-notif-wrapper,

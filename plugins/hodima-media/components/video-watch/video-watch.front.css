@@ -82,18 +82,22 @@
 
 .hs-topbar { position: absolute; top: 0; left: 0; right: 0; z-index: 4; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,.4), transparent); pointer-events: none; }
 .hs-control-btn { background: transparent; border: none; color: white; border-radius: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, transform 0.1s; }
-.hs-control-btn:hover, .hs-control-btn:focus-visible { background: rgba(255,255,255,0.2); outline: none; }
+.hs-control-btn:hover, .hs-control-btn:focus-visible { background: rgba(255,255,255,0.2); }
+/* حلقه فوکوس سفید با هاله تیره: روی هر فریم ویدیو دیده شود (WCAG 2.4.7/1.4.11) */
+.hs-player :is(button, [tabindex], input[type="range"], a):focus-visible { outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 4px rgba(0,0,0,.6); }
 .hs-control-btn:active { transform: scale(0.95); }
 
 .hs-more-options-container { position: relative; display: inline-block; }
 .hs-more-menu { position: absolute; bottom: 42px; right: 0; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(37,49,106,.08); opacity: 0; visibility: hidden; transition: all 0.25s ease; overflow: hidden; min-width: 140px; z-index: 10; border: 1px solid var(--cat-border); padding: 6px; display: flex; flex-direction: column; gap: 3px; }
 .hs-more-menu.is-open { opacity: 1; visibility: visible; }
 .hs-menu-option, .hs-share-link { padding: 6px 8px; color: var(--color-text) !important; text-decoration: none; display: block; font-size: 13px; font-weight: 500; text-align: right; transition: all 0.25s ease; cursor: pointer; border: none; width: 100%; background: transparent; font-family: inherit; border-radius: 6px;}
-.hs-menu-option:hover, .hs-share-link:hover, .hs-menu-option:focus-visible { background: var(--cat-bg-light-blue) !important; color: var(--color-primary) !important; outline: none; }
+.hs-menu-option:hover, .hs-share-link:hover, .hs-menu-option:focus-visible { background: var(--cat-bg-light-blue) !important; color: var(--color-primary) !important; }
+.hs-player .hs-menu-option:focus-visible, .hs-player .hs-share-link:focus-visible { outline: 2px solid var(--hodima-focus-color, #25316a); outline-offset: -2px; box-shadow: none; }
 .hs-menu-option.is-active { background: var(--color-primary) !important; color: #fff !important; font-weight: 700; }
 
 .hs-bottombar { position: absolute; bottom: 0; left: 0; right: 0; z-index: 4; padding: 10px 15px; background: linear-gradient(to top, rgba(0,0,0,.85) 0, rgba(0,0,0,.65) 65%, transparent); pointer-events: none; display: flex; flex-direction: column; gap: 8px; direction: ltr !important; transition: opacity 0.4s ease; }
-.hs-progress-wrap { cursor: pointer; padding: 4px 0; pointer-events: auto; width: 100%; outline: none; }
+/* ناحیه لمس ۲۴px (WCAG 2.5.8): padding ۱۰px + margin منفی تا ارتفاع چیدمان همان ۱۲px قبلی بماند */
+.hs-progress-wrap { cursor: pointer; padding: 10px 0; margin-block: -6px; pointer-events: auto; width: 100%; outline: none; }
 .hs-progress-item { height: 4px; background: rgba(255,255,255,0.3); border-radius: 10px; overflow: hidden; direction: ltr !important; transition: height 0.2s; }
 .hs-progress-wrap:hover .hs-progress-item, .hs-progress-wrap:focus-visible .hs-progress-item { height: 6px; }
 .hs-progress-fill { height: 100%; background: var(--hs-grad); width: 0%; transition: width 0.1s linear; position: relative;}
@@ -117,9 +121,10 @@
 
 .hs-btn-primary, .hs-btn-outline, .hs-view-count { width: 100%; height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 18px; white-space: nowrap; transition: all 0.25s ease; box-sizing: border-box; font-family: inherit; }
 .hs-btn-primary { background: var(--hs-grad); color: #ffffff !important; text-decoration: none; border: none; box-shadow: 0 2px 8px rgba(37,49,106,.18); }
-.hs-btn-primary:hover, .hs-btn-primary:focus-visible { opacity: 0.9; transform: translateY(-1px); outline: none; }
+.hs-btn-primary:hover, .hs-btn-primary:focus-visible { opacity: 0.9; transform: translateY(-1px); }
+.hs-btn-primary:focus-visible, .hs-btn-outline:focus-visible { outline: 2px solid var(--hodima-focus-color, #25316a); outline-offset: 2px; }
 .hs-btn-outline { background: var(--hodima-surface-soft, #f7f9fd); color: var(--color-text); border: 1px solid var(--cat-border); cursor: pointer; }
-.hs-btn-outline:hover, .hs-btn-outline:focus-visible { background: var(--cat-bg-light-green); color: var(--color-text); border-color: var(--cat-border); outline: none; }
+.hs-btn-outline:hover, .hs-btn-outline:focus-visible { background: var(--cat-bg-light-green); color: var(--color-text); border-color: var(--cat-border); }
 .hs-view-count { color: var(--color-text); background: var(--hodima-surface-soft, #f7f9fd); border: 1px solid var(--cat-border); cursor: default; }
 
 .hs-btn-primary svg, .hs-btn-outline svg, .hs-view-count svg { width: 18px; height: 18px; flex-shrink: 0; stroke: var(--color-text) !important; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; fill: none !important; opacity: 1 !important; }

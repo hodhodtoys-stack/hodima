@@ -228,7 +228,7 @@ final class Hodima_Expandable_Boxes {
 
         return sprintf(
             '<div class="%1$s" data-expandable-container data-context="%2$s" style="%3$s">'
-                . '<div id="%4$s" class="hodima-expandable-wrapper" data-expandable-content data-height="%5$d" data-more="%6$s" data-less="%7$s" data-scroll-offset="%8$d" data-smart="%9$s" tabindex="-1" role="region" aria-labelledby="%11$s">'
+                . '<div id="%4$s" class="hodima-expandable-wrapper" data-expandable-content data-height="%5$d" data-more="%6$s" data-less="%7$s" data-scroll-offset="%8$d" data-smart="%9$s" tabindex="-1">'
                     . '<div class="hodima-expandable-inner">%10$s</div>'
                 . '</div>'
                 . '<button id="%11$s" type="button" class="hodima-expand-toggle-btn" data-expandable-toggle aria-controls="%4$s" aria-expanded="false"><span class="hodima-btn-text">%12$s</span></button>'

@@ -1340,6 +1340,13 @@ dialog.sp-lightbox {
 			border: 0;
 		}
 
+		/* محصول متغیر: جدول انتخاب + دکمه (عرض طبیعی ≈ ۳۲۴) زیر ۳۹۰ از کنار صفحه بیرون می‌زد و برچسب بریده می‌شد (WCAG 1.4.10)؛ ۳۹۰ به بالا همان تک‌ردیف قبلی */
+		@media (width <= 389px) {
+			& form.variations_form {
+				flex-wrap: wrap;
+			}
+		}
+
 		/* margin-bottom ۲em ووکامرس (.woocommerce div.product form.cart) را بی !important با وزن بیشتر می‌برد */
 		& .product-add-to-cart-box form.cart {
 			margin: 0;

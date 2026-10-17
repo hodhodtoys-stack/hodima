@@ -141,6 +141,40 @@ async function sampleGradients( page, targets ) {
 	return res;
 }
 
+/*
+ * بازچینی (WCAG 1.4.10): در عرض ۳۲۰px (برابر بزرگنمایی ۴۰۰٪ روی ۱۲۸۰) نباید اسکرول افقی صفحه پیدا شود.
+ * عنصرهایی که از لبه راست/چپ بیرون می‌زنند و داخل کانتینر اسکرول‌شونده (overflow auto/scroll/hidden
+ * مثل جدول یا اسلایدر) نیستند گزارش می‌شوند.
+ */
+async function reflow( browser, htmlFile ) {
+	const ctx = await browser.newContext( { viewport: { width: 320, height: 640 }, locale: 'fa-IR', reducedMotion: 'reduce' } );
+	const page = await ctx.newPage();
+	await page.route( '**/*', async ( route ) => {
+		const url = route.request().url();
+		if ( url === 'https://hodima.test/__page__' ) return route.fulfill( { status: 200, contentType: 'text/html; charset=utf-8', body: fs.readFileSync( htmlFile ) } );
+		const file = localFile( url );
+		if ( file && fs.existsSync( file ) && fs.statSync( file ).isFile() ) return route.fulfill( { status: 200, contentType: MIME[ path.extname( file ) ] || 'application/octet-stream', body: fs.readFileSync( file ) } );
+		if ( route.request().resourceType() === 'image' ) return route.fulfill( { status: 200, contentType: 'image/png', body: GREY } );
+		return route.fulfill( { status: 404, body: '' } );
+	} );
+	await page.goto( 'https://hodima.test/__page__', { waitUntil: 'load' } );
+	await page.waitForTimeout( 300 );
+	const res = await page.evaluate( () => {
+		const w = document.documentElement.clientWidth;
+		const scrollW = Math.max( document.documentElement.scrollWidth, document.body.scrollWidth );
+		const bad = [];
+		const clipped = ( el ) => { for ( let p = el.parentElement; p && p !== document.body; p = p.parentElement ) { const o = getComputedStyle( p ).overflowX; if ( o !== 'visible' ) return true; } return false; };
+		for ( const el of document.querySelectorAll( 'body *' ) ) {
+			const r = el.getBoundingClientRect();
+			if ( r.width < 1 || r.height < 1 ) continue;
+			if ( ( r.right > w + 1 || r.left < -1 ) && ! clipped( el ) && getComputedStyle( el ).position !== 'fixed' ) bad.push( el.tagName.toLowerCase() + ( el.id ? `#${ el.id }` : '' ) + ( el.classList.length ? `.${ [ ...el.classList ].slice( 0, 3 ).join( '.' ) }` : '' ) + ` [${ Math.round( r.left ) },${ Math.round( r.right ) }]` );
+		}
+		return { w, scrollW, bad: bad.slice( 0, 6 ) };
+	} );
+	await ctx.close();
+	return res;
+}
+
 async function audit( browser, htmlFile, vp ) {
 	const ctx = await browser.newContext( { viewport: { width: vp.width, height: vp.height }, locale: 'fa-IR', reducedMotion: 'reduce' } );
 	const page = await ctx.newPage();
@@ -156,11 +190,11 @@ async function audit( browser, htmlFile, vp ) {
 	await page.evaluate( async () => { await document.fonts.ready; document.querySelectorAll( 'img[loading="lazy"]' ).forEach( ( i ) => i.setAttribute( 'loading', 'eager' ) ); } );
 	await page.waitForTimeout( 300 );
 	await page.addScriptTag( { path: axePath } );
-	const axe = await page.evaluate( async () => {
-		const res = await window.axe.run( document, { runOnly: { type: 'tag', values: [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa' ] }, resultTypes: [ 'violations', 'incomplete' ] } );
+	const axe = await page.evaluate( async ( best ) => {
+		const res = await window.axe.run( document, { runOnly: { type: 'tag', values: best ? [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice' ] : [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa' ] }, resultTypes: [ 'violations', 'incomplete' ] } );
 		const pick = ( list ) => list.map( ( r ) => ( { id: r.id, impact: r.impact, help: r.help, nodes: r.nodes.map( ( n ) => ( { target: n.target.join( ' ' ), html: n.html.slice( 0, 160 ), msg: ( n.any[ 0 ] || n.all[ 0 ] || n.none[ 0 ] || {} ).message || '' } ) ) } ) );
 		return { violations: pick( res.violations ), incomplete: pick( res.incomplete ) };
-	} );
+	}, !! process.env.A11Y_BEST );
 
 	const gradTargets = [ ...new Set( axe.incomplete.filter( ( v ) => v.id === 'color-contrast' ).flatMap( ( v ) => v.nodes.map( ( n ) => n.target ) ) ) ].slice( 0, 400 );
 	// کیبورد: فوکوس نامرئی (استایل با/بدون فوکوس یکی است) و فوکوس پوشیده
@@ -208,13 +242,15 @@ async function audit( browser, htmlFile, vp ) {
 const browser = await chromium.launch( { executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' } ).catch( () => chromium.launch() );
 const pages = fs.readdirSync( outDir ).filter( ( f ) => f.endsWith( '.html' ) ).map( ( f ) => f.slice( 0, -5 ) ).filter( ( p ) => ! only.length || only.includes( p ) ).sort();
 const report = {};
+const reflowReport = {};
 for ( const p of pages ) {
 	for ( const vp of VIEWPORTS ) {
 		report[ `${ p }@${ vp.name }` ] = await audit( browser, path.join( outDir, `${ p }.html` ), vp );
 	}
+	reflowReport[ p ] = await reflow( browser, path.join( outDir, `${ p }.html` ) );
 }
 await browser.close();
-fs.writeFileSync( reportFile, JSON.stringify( report, null, 1 ) );
+fs.writeFileSync( reportFile, JSON.stringify( { ...report, __reflow: reflowReport }, null, 1 ) );
 
 // خلاصه گروه‌شده
 const group = {};
@@ -251,3 +287,7 @@ for ( const [ key, r ] of Object.entries( report ) ) {
 console.log( `\nکیبورد: ${ Object.keys( inv ).length } عنصر هنگام فوکوس هیچ تغییر استایلی ندارند (فوکوس نامرئی)، ${ Object.keys( cov ).length } عنصر پوشیده` );
 for ( const [ k, v ] of Object.entries( inv ).slice( 0, 40 ) ) console.log( `   نامرئی: ${ k } (${ v.size } نما)` );
 for ( const [ k, v ] of Object.entries( cov ).slice( 0, 15 ) ) console.log( `   پوشیده: ${ k } (${ v.size } نما)` );
+
+const over = Object.entries( reflowReport ).filter( ( [ , r ] ) => r.scrollW > r.w + 1 || r.bad.length );
+console.log( `\nبازچینی ۳۲۰px (اسکرول افقی): ${ over.length } صفحه از ${ Object.keys( reflowReport ).length } مشکل دارند` );
+for ( const [ k, r ] of over.slice( 0, 12 ) ) console.log( `   ${ k }: عرض محتوا ${ r.scrollW } > ${ r.w }؛ ${ r.bad.slice( 0, 3 ).join( ' | ' ) }` );

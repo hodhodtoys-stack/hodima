@@ -58,7 +58,7 @@ if (have_posts()) :
                         </div>
 
                         <div class="hs-bottombar">
-                            <div class="hs-progress-wrap" tabindex="0" aria-label="<?php esc_attr_e('نوار پیشرفت ویدئو', 'hod-video'); ?>">
+                            <div class="hs-progress-wrap" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-label="<?php esc_attr_e('نوار پیشرفت ویدئو', 'hod-video'); ?>">
                                 <div class="hs-progress-item"><div class="hs-progress-fill"></div></div>
                             </div>
                             

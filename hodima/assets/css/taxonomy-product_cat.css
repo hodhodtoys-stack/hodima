@@ -253,6 +253,19 @@
 	}
 }
 
+/* موبایل کوچک (کمتر از ۳۹۰، مثل ۳۲۰ تا ۳۷۵): نوار مرتب‌سازی (عرض طبیعی ≈ ۳۴۰) از کنار صفحه بیرون می‌زد و بخشی از دکمه‌ها قابل‌دسترس نبود (WCAG 1.4.10)؛ حالا می‌شکند. ۳۹۰ به بالا همان تک‌ردیف قبلی است */
+@media (width <= 389px) {
+	.hodima-custom-sort-wrapper {
+		flex-wrap: wrap;
+		white-space: normal;
+	}
+
+	.sort-box,
+	.sort-options-box {
+		flex-wrap: wrap;
+	}
+}
+
 @media (width <= 768px) {
 	.product-card-scope ul.products {
 		grid-template-columns: repeat(2, 1fr);
