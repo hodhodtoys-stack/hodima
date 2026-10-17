@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * قابل‌جستجو، هر دو نیازمند بازسازی کامل ایندکس‌اند.
  */
 define( 'HODIMA_SEARCH_DB_VERSION', '3.0' );
-define( 'HODIMA_SEARCH_ASSET_VERSION', '3.0.0' );
+define( 'HODIMA_SEARCH_ASSET_VERSION', '3.0.1' );
 
 function hodima_search_table(): string {
 	global $wpdb;

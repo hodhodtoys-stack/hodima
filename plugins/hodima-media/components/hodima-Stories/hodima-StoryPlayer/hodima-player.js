@@ -186,11 +186,17 @@
 
 		const btnPrev = $( '.hs-nav--prev' );
 		const btnNext = $( '.hs-nav--next' );
+		// دکمه‌ای که فوکوس دارد و غیرفعال شود (مثلا «بعدی» در آخرین استوری) فوکوس را گم می‌کند و
+		// Tab بعدی از ابتدای صفحه شروع می‌شود؛ پس فوکوس به دکمه پخش/توقف می‌رود (WCAG 2.4.3)
+		const focusedNav = modalOpen ? [ btnPrev, btnNext ].find( ( b ) => b && b === document.activeElement ) : null;
 		if ( btnPrev ) {
 			btnPrev.disabled = currentIndex <= 0 && ! S.loopPlaylist;
 		}
 		if ( btnNext ) {
 			btnNext.disabled = currentIndex >= playlist.length - 1 && ! S.loopPlaylist;
+		}
+		if ( focusedNav?.disabled ) {
+			$( '.hs-play-toggle' )?.focus();
 		}
 
 		$$( '.hs-progress-item' ).forEach( ( it, i ) => {

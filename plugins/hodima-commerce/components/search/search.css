@@ -254,7 +254,8 @@
 }
 
 .woo-search-results__all:hover,
-.woo-search-results__all:focus {
+.woo-search-results__all:focus,
+.woo-search-results__all.is-active {
     background-color: var(--wls-third-color);
     border-color: var(--hodima-third, #b6c2f3);
     color: var(--wls-primary-color);
@@ -334,4 +335,17 @@ button.woo-live-search__clear:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
     .woo-live-search__spinner { animation-duration: 2s; }
+}
+
+/* ناحیه اعلام وضعیت برای صفحه‌خوان (فقط شنیداری) */
+.woo-live-search__status {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }

@@ -64,6 +64,12 @@
 
         var timer = null, abortCtrl = null, activeIndex = -1, items = [];
 
+        // ناحیه اعلام وضعیت برای صفحه‌خوان (WCAG 4.1.3): تعداد نتایج یا پیام خطا. بیرون از listbox
+        // است، چون فرزند listbox فقط گزینه می‌تواند باشد (قبلا پیام role=status داخل listbox بود).
+        var status = el('div', { className: 'woo-live-search__status', role: 'status', 'aria-live': 'polite' });
+        wrapper.appendChild(status);
+        function announce(text) { status.textContent = text; }
+
         function open() {
             results.classList.add('is-open');
             input.setAttribute('aria-expanded', 'true');
@@ -75,6 +81,7 @@
             input.removeAttribute('aria-activedescendant');
             activeIndex = -1;
             items.forEach(function (i) { i.classList.remove('is-active'); i.setAttribute('aria-selected', 'false'); });
+            announce('');
         }
 
         function setLoading(state) { wrapper.classList.toggle('is-loading', state); }
@@ -96,10 +103,12 @@
         function message(text, isError) {
             results.textContent = '';
             items = [];
+            // فقط دیداری؛ صفحه‌خوان همین متن را از ناحیه وضعیت می‌شنود
             results.appendChild(el('div', {
                 className: 'woo-search-results__message' + (isError ? ' is-error' : ''),
-                role: 'status'
+                'aria-hidden': 'true'
             }, text));
+            announce(text);
             open();
         }
 
@@ -124,9 +133,11 @@
                 results.appendChild(a);
             });
 
-            results.appendChild(el('a', { href: allUrl(term), className: 'woo-search-results__all' }, 'مشاهده همه نتایج'));
+            // «مشاهده همه» هم گزینه‌ی listbox است (با پیکان‌ها قابل رسیدن)
+            results.appendChild(el('a', { href: allUrl(term), className: 'woo-search-results__all', role: 'option', id: listId + '-all', 'aria-selected': 'false' }, 'مشاهده همه نتایج'));
 
-            items = Array.prototype.slice.call(results.querySelectorAll('.woo-search-results__item'));
+            items = Array.prototype.slice.call(results.querySelectorAll('.woo-search-results__item, .woo-search-results__all'));
+            announce(data.length.toLocaleString('fa-IR') + ' محصول پیشنهادی؛ با کلیدهای بالا و پایین انتخاب کنید.');
             open();
         }
 

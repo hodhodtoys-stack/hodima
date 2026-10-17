@@ -31,5 +31,10 @@ rc=$?
 # اندازه هدف لمسی کنترل‌هایی که در صفحه‌های بالا نیستند (پنجره پشتیبانی، اسلایدر، استوری، اعلان)
 echo; echo "اندازه هدف لمسی — نمونه‌های جدا (پنجره پشتیبانی، نقطه‌های اسلایدر، مینی‌پلیر و پخش استوری، اعلان):"
 ( cd "$repo" && node "$here/target-size-fixtures.mjs" "$src" ) || rc=1
+# رفتار پویا با Tab/Esc/Enter/فلش (منوی موبایل، جستجوی زنده، پنجره پشتیبانی، استوری، اعلان) — فقط کار فعلی
+if [ -z "$ref" ]; then
+	echo; echo "رفتار پویا (صفحه‌کلید) — a11y-dynamic.mjs:"
+	( cd "$repo" && node "$here/a11y-dynamic.mjs" "$base/out-a11y-$tag" "$src" ) || rc=1
+fi
 [ -n "$ref" ] && git -C "$repo" worktree remove --force "$base/a11yref"
 exit $rc
