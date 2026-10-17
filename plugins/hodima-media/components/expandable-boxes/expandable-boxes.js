@@ -46,11 +46,16 @@
     const fullHeight = (p) => p.inner ? p.inner.scrollHeight : p.wrapper.scrollHeight;
     const isExpanded = (p) => p.wrapper.classList.contains('hodima-expanded');
 
+    // فقط اگر چیزی عوض شود می‌نویسد. تا 3.1.0 هر بار متن دکمه دوباره نوشته می‌شد و MutationObserver
+    // (observe) آن را «تغییر محتوا» می‌دید و هر ۲۵۰ میلی‌ثانیه refresh را بی‌پایان تکرار می‌کرد:
+    // خواندن scrollHeight بعد از نوشتن DOM = بازچینی اجباری دائمی روی صفحه بیکار.
     const setButton = (p, expanded) => {
         const text = expanded ? (p.wrapper.dataset.less || DEFAULT_LESS) : (p.wrapper.dataset.more || DEFAULT_MORE);
         const span = p.button.querySelector('.hodima-btn-text');
-        if (span) span.textContent = text; else p.button.textContent = text;
-        p.button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        const target = span || p.button;
+        if (target.textContent !== text) target.textContent = text;
+        const pressed = expanded ? 'true' : 'false';
+        if (p.button.getAttribute('aria-expanded') !== pressed) p.button.setAttribute('aria-expanded', pressed);
     };
 
     const finish = (p) => {
@@ -99,13 +104,18 @@
         }
     };
 
-    const refresh = (container) => {
+    // اندازه‌گیری (فقط خواندن) و اعمال (فقط نوشتن) جدا هستند تا چند جعبه یک صفحه یک بازچینی بگیرند،
+    // نه یکی برای هر جعبه (خواندن و نوشتنِ پشت‌سرهم هر بار چیدمان را اجباری می‌کند).
+    const measure = (container) => {
         const p = parts(container);
-        if (!p) return;
+        if (!p) return null;
+        return { p, collapsed: collapsedHeight(p.wrapper), full: fullHeight(p) };
+    };
 
-        const collapsed = collapsedHeight(p.wrapper);
-        const full      = fullHeight(p);
-        const smart     = (p.wrapper.dataset.smart || 'yes') === 'yes';
+    const apply = (m) => {
+        if (!m) return;
+        const { p, collapsed, full } = m;
+        const smart = (p.wrapper.dataset.smart || 'yes') === 'yes';
 
         if (full <= collapsed + (smart ? 40 : 0)) {
             p.button.hidden = true;
@@ -126,7 +136,9 @@
         }
     };
 
-    const refreshAll = () => document.querySelectorAll(SELECTORS.container).forEach(refresh);
+    const refreshMany = (containers) => [ ...containers ].map(measure).forEach(apply);
+    const refresh = (container) => refreshMany([ container ]);
+    const refreshAll = () => refreshMany(document.querySelectorAll(SELECTORS.container));
 
     const revealTarget = (el, opts) => {
         if (!el) return false;
@@ -160,8 +172,9 @@
                 const done = new Set();
                 entries.forEach(entry => {
                     const c = entry.target.closest(SELECTORS.container);
-                    if (c && !done.has(c)) { done.add(c); refresh(c); }
+                    if (c) done.add(c);
                 });
+                refreshMany(done);
             }, 120));
 
             document.querySelectorAll(SELECTORS.container).forEach(c => {

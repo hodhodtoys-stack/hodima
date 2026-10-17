@@ -65,6 +65,10 @@
 	const chevron = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>';
 	const edge = 4; // تلورانس پیکسل: گردشدن مرورگر یا snap نباید «اسکرول شده» حساب شود
 
+	// همه فلش‌ها اول ساخته (نوشتن) و بعد اندازه‌ها یک‌جا خوانده و نوشته می‌شوند. تا 3.7.2 هر بخش
+	// دکمه‌هایش را می‌ساخت و بلافاصله scrollWidth می‌خواند؛ با N بخش، N بازچینی اجباری
+	// (خواندن بعد از نوشتن) پشت‌سرهم (گزارش PageSpeed: «Forced reflow»).
+	const scrollers = [];
 	document.querySelectorAll( '.hodima-scroller, .arian-scroller' ).forEach( ( el ) => {
 		const host = el.parentElement;
 		if ( ! host ) {
@@ -82,26 +86,35 @@
 		const next = make( 'next', 'بعدی' );
 		const prev = make( 'prev', 'قبلی' );
 		host.append( prev, next );
-
-		// scrollLeft در راست‌به‌چپ صفر یا منفی است؛ فاصله از ابتدا = قدر مطلق
-		const update = () => {
-			const max = el.scrollWidth - el.clientWidth;
-			const pos = Math.abs( el.scrollLeft );
-			const top = `${ el.offsetTop + el.offsetHeight / 2 }px`;
-			next.hidden = max <= edge || pos >= max - edge;
-			prev.hidden = max <= edge || pos <= edge;
-			prev.style.insetBlockStart = top;
-			next.style.insetBlockStart = top;
-		};
-		const go = ( towardEnd ) => {
-			const rtl = window.getComputedStyle( el ).direction === 'rtl';
-			el.scrollBy( { left: ( towardEnd ? 1 : -1 ) * ( rtl ? -1 : 1 ) * el.clientWidth * 0.8 } );
-		};
-
-		next.addEventListener( 'click', () => go( true ) );
-		prev.addEventListener( 'click', () => go( false ) );
-		el.addEventListener( 'scroll', update, { passive: true } );
-		new ResizeObserver( update ).observe( el );
-		update();
+		scrollers.push( { el, next, prev } );
 	} );
+
+	// scrollLeft در راست‌به‌چپ صفر یا منفی است؛ فاصله از ابتدا = قدر مطلق
+	const measure = ( { el } ) => ( {
+		max: el.scrollWidth - el.clientWidth,
+		pos: Math.abs( el.scrollLeft ),
+		top: `${ el.offsetTop + el.offsetHeight / 2 }px`,
+	} );
+	const apply = ( { next, prev }, { max, pos, top } ) => {
+		next.hidden = max <= edge || pos >= max - edge;
+		prev.hidden = max <= edge || pos <= edge;
+		prev.style.insetBlockStart = top;
+		next.style.insetBlockStart = top;
+	};
+	const update = ( list ) => list.map( measure ).forEach( ( m, i ) => apply( list[ i ], m ) );
+	const byElement = new Map( scrollers.map( ( s ) => [ s.el, s ] ) );
+
+	const go = ( el, towardEnd ) => {
+		const rtl = window.getComputedStyle( el ).direction === 'rtl';
+		el.scrollBy( { left: ( towardEnd ? 1 : -1 ) * ( rtl ? -1 : 1 ) * el.clientWidth * 0.8 } );
+	};
+	const observer = new ResizeObserver( ( entries ) => update( entries.map( ( e ) => byElement.get( e.target ) ).filter( Boolean ) ) );
+
+	scrollers.forEach( ( s ) => {
+		s.next.addEventListener( 'click', () => go( s.el, true ) );
+		s.prev.addEventListener( 'click', () => go( s.el, false ) );
+		s.el.addEventListener( 'scroll', () => update( [ s ] ), { passive: true } );
+		observer.observe( s.el );
+	} );
+	update( scrollers );
 } )();
