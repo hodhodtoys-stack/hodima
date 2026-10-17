@@ -649,7 +649,8 @@ h1.section-col-title {
 	padding: var(--hodima-space-6) var(--hodima-space-5);
 	text-align: center;
 	color: #fff;
-	background: var(--home-grad);
+	/* گرادیان ساده تا رنگ دوم متنی (نه --home-grad که تا آبی روشن می‌رود): متن سفید ۱۴px روی بخش روشن گرادیان کنتراست ۳٫۷ داشت */
+	background: linear-gradient(135deg, var(--home-primary), var(--hodima-secondary-text, #5169a8));
 	border-radius: var(--hodima-radius-xl);
 }
 

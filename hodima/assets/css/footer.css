@@ -19,7 +19,7 @@
 	--footer-text: rgb(255 255 255 / 0.82);
 	--footer-heading: #ffffff;
 	--footer-link-hover: var(--hodima-third, #b6c2f3);
-	--footer-copyright-text: rgb(255 255 255 / 0.7);
+	--footer-copyright-text: rgb(255 255 255 / 0.8); /* تا 3.6.7 ۰٫۷: کنتراست ۴٫۳۸ روی گرادیان فوتر */
 
 	--footer-shadow: 0 -0.75rem 2rem rgb(20 28 64 / 0.18);
 	--footer-card-shadow: 0 0.625rem 1.5rem rgb(16 24 40 / 0.12);

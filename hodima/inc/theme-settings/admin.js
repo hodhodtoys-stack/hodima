@@ -122,7 +122,7 @@
 			set('--hodima-body-size', field('body_size')?.value);
 			set('--hodima-body-line-height', field('body_line_height')?.value);
 			set('--hodima-text-dark', field('color_text')?.value);
-			set('--hodima-link', colorVar(field('link_color')?.value ?? 'secondary', field('link_color_custom')?.value));
+			set('--hodima-link', field('link_color')?.value === 'secondary' ? 'var(--hodima-secondary-text)' : colorVar(field('link_color')?.value ?? 'secondary', field('link_color_custom')?.value));
 			set('--hodima-link-hover', colorVar(field('link_hover_color')?.value ?? 'primary', field('link_hover_color_custom')?.value));
 			set('--hodima-content-link-line', field('content_link_underline')?.checked === false ? 'none' : 'underline');
 

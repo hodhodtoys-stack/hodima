@@ -42,6 +42,105 @@ function localFile( url ) {
 	return null;
 }
 
+
+/*
+ * axe نمی‌تواند کنتراست روی گرادیان/تصویر را حساب کند («incomplete»). برای آن عنصرها متن را شفاف
+ * می‌کنیم، عکس کل صفحه می‌گیریم و بدترین کنتراست رنگ متن با پیکسل‌های پشت خط‌های متن را می‌سنجیم
+ * (آستانه ۳ برای متن بزرگ ≥۲۴px یا ≥۱۸٫۶۶px پررنگ، وگرنه ۴٫۵). رنگ متن نیمه‌شفاف روی بدترین پیکسل ترکیب می‌شود.
+ */
+async function sampleGradients( page, targets ) {
+	const info = await page.evaluate( ( list ) => {
+		const out = [];
+		const seen = new Set();
+		const describe = ( e ) => e.tagName.toLowerCase() + ( e.id ? `#${ e.id }` : '' ) + ( e.classList.length ? `.${ [ ...e.classList ].slice( 0, 3 ).join( '.' ) }` : '' );
+		for ( const t of list ) {
+			let all = [];
+			try { all = [ ...document.querySelectorAll( t ) ]; } catch { /* انتخابگر ناسازگار */ }
+			for ( const el of all ) {
+				// رنگ و اندازه از والد مستقیم هر گره متنی (عنصر ریشه ممکن است فرزندهای رنگی دیگری داشته باشد)
+				const walker = document.createTreeWalker( el, NodeFilter.SHOW_TEXT );
+				const byParent = new Map();
+				for ( let n = walker.nextNode(); n; n = walker.nextNode() ) {
+					if ( ! n.textContent.trim() ) continue;
+					const par = n.parentElement;
+					if ( ! par || seen.has( par ) ) continue;
+					if ( ! par.checkVisibility( { checkOpacity: true, checkVisibilityCSS: true } ) ) continue; // پنهان (منوی بسته، opacity: 0)
+					const r = document.createRange();
+					r.selectNodeContents( n );
+					for ( const q of r.getClientRects() ) {
+						if ( q.width <= 1 || q.height <= 1 || q.right < 0 || q.bottom < 0 ) continue;
+						if ( ! byParent.has( par ) ) byParent.set( par, [] );
+						byParent.get( par ).push( { x: q.x + scrollX, y: q.y + scrollY, w: q.width, h: q.height } );
+					}
+				}
+				for ( const [ par, rects ] of byParent ) {
+					seen.add( par );
+					const cs = getComputedStyle( par );
+					// متن با گرادیان (background-clip: text) یا پر‌شدن شفاف را نمی‌شود با رنگ عادی سنجید
+					if ( cs.webkitTextFillColor === 'rgba(0, 0, 0, 0)' || cs.backgroundClip === 'text' || cs.webkitBackgroundClip === 'text' ) continue;
+					par.setAttribute( 'data-a11y-c', String( out.length ) );
+					out.push( { t: describe( par ), color: cs.color, size: parseFloat( cs.fontSize ), bold: parseInt( cs.fontWeight, 10 ) >= 700, rects: [] } );
+				}
+			}
+		}
+		return out;
+	}, targets );
+	if ( ! info.length ) return [];
+	await page.addStyleTag( { content: '*{color:transparent!important;-webkit-text-fill-color:transparent!important;text-shadow:none!important}' } );
+	const res = [];
+	for ( let i = 0; i < info.length; i++ ) {
+		// هر عنصر در نمای واقعی مرورگر (نه fullPage: هدر fixed آن‌جا جابه‌جا می‌شود)
+		const geo = await page.evaluate( ( idx ) => {
+			const par = document.querySelector( `[data-a11y-c="${ idx }"]` );
+			if ( ! par ) return null;
+			par.scrollIntoView( { block: 'center', inline: 'nearest' } );
+			const rects = [];
+			const walker = document.createTreeWalker( par, NodeFilter.SHOW_TEXT );
+			for ( let n = walker.nextNode(); n; n = walker.nextNode() ) {
+				if ( ! n.textContent.trim() || n.parentElement !== par ) continue;
+				const r = document.createRange();
+				r.selectNodeContents( n );
+				for ( const q of r.getClientRects() ) if ( q.width > 1 && q.height > 1 ) rects.push( { x: q.x, y: q.y, w: q.width, h: q.height } );
+			}
+			return rects;
+		}, i );
+		if ( ! geo || ! geo.length ) continue;
+		const x0 = Math.max( 0, Math.floor( Math.min( ...geo.map( ( q ) => q.x ) ) ) ), y0 = Math.max( 0, Math.floor( Math.min( ...geo.map( ( q ) => q.y ) ) ) );
+		const x1 = Math.min( page.viewportSize().width, Math.ceil( Math.max( ...geo.map( ( q ) => q.x + q.w ) ) ) ), y1 = Math.min( page.viewportSize().height, Math.ceil( Math.max( ...geo.map( ( q ) => q.y + q.h ) ) ) );
+		if ( x1 - x0 < 1 || y1 - y0 < 1 ) continue;
+		const b64 = ( await page.screenshot( { clip: { x: x0, y: y0, width: x1 - x0, height: y1 - y0 } } ) ).toString( 'base64' );
+		const item = info[ i ];
+		const one = await page.evaluate( async ( [ data, rects, ox, oy, color ] ) => {
+			const img = await createImageBitmap( await ( await fetch( `data:image/png;base64,${ data }` ) ).blob() );
+			const cv = new OffscreenCanvas( img.width, img.height );
+			const ctx = cv.getContext( '2d', { willReadFrequently: true } );
+			ctx.drawImage( img, 0, 0 );
+			const lum = ( r, g, b ) => { const f = ( c ) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ( ( c + 0.055 ) / 1.055 ) ** 2.4; }; return 0.2126 * f( r ) + 0.7152 * f( g ) + 0.0722 * f( b ); };
+			const m = color.match( /rgba?\(([^)]+)\)/ );
+			if ( ! m ) return null;
+			const [ r, g, b, a = 1 ] = m[ 1 ].split( /[ ,/]+/ ).filter( Boolean ).map( Number );
+			let worst = 99, worstBg = '';
+			for ( const q of rects ) {
+				const x = Math.max( 0, Math.floor( q.x - ox ) ), y = Math.max( 0, Math.floor( q.y - oy ) );
+				const w = Math.min( img.width - x, Math.ceil( q.w ) ), h = Math.min( img.height - y, Math.ceil( q.h ) );
+				if ( w < 1 || h < 1 ) continue;
+				const d = ctx.getImageData( x, y, w, h ).data;
+				for ( let k = 0; k < d.length; k += 16 ) {
+					const fr = r * a + d[ k ] * ( 1 - a ), fg = g * a + d[ k + 1 ] * ( 1 - a ), fb = b * a + d[ k + 2 ] * ( 1 - a );
+					const l1 = lum( fr, fg, fb ), l2 = lum( d[ k ], d[ k + 1 ], d[ k + 2 ] );
+					const ratio = ( Math.max( l1, l2 ) + 0.05 ) / ( Math.min( l1, l2 ) + 0.05 );
+					if ( ratio < worst ) { worst = ratio; worstBg = `rgb(${ d[ k ] },${ d[ k + 1 ] },${ d[ k + 2 ] })`; }
+				}
+			}
+			return { worst, worstBg };
+		}, [ b64, geo, x0, y0, item.color ] );
+		if ( ! one ) continue;
+		const large = item.size >= 24 || ( item.size >= 18.66 && item.bold );
+		res.push( { target: item.t, ratio: Math.round( one.worst * 100 ) / 100, need: large ? 3 : 4.5, fg: item.color, bg: one.worstBg, size: item.size } );
+	}
+	return res;
+}
+
 async function audit( browser, htmlFile, vp ) {
 	const ctx = await browser.newContext( { viewport: { width: vp.width, height: vp.height }, locale: 'fa-IR', reducedMotion: 'reduce' } );
 	const page = await ctx.newPage();
@@ -63,6 +162,7 @@ async function audit( browser, htmlFile, vp ) {
 		return { violations: pick( res.violations ), incomplete: pick( res.incomplete ) };
 	} );
 
+	const gradTargets = [ ...new Set( axe.incomplete.filter( ( v ) => v.id === 'color-contrast' ).flatMap( ( v ) => v.nodes.map( ( n ) => n.target ) ) ) ].slice( 0, 400 );
 	// کیبورد: فوکوس نامرئی (استایل با/بدون فوکوس یکی است) و فوکوس پوشیده
 	const keyboard = [];
 	const snap = ( el ) => {
@@ -100,8 +200,9 @@ async function audit( browser, htmlFile, vp ) {
 		} );
 		if ( info ) keyboard.push( info );
 	}
+	const gradient = await sampleGradients( page, gradTargets );
 	await ctx.close();
-	return { axe, keyboard };
+	return { axe, keyboard, gradient };
 }
 
 const browser = await chromium.launch( { executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' } ).catch( () => chromium.launch() );
@@ -130,6 +231,16 @@ for ( const g of Object.values( group ).sort( ( a, b ) => ( a.kind === b.kind ? 
 	console.log( `${ g.kind === 'violations' ? '✘' : '?' } ${ g.id } [${ g.impact ?? '-' }] ${ g.nodes } مورد در ${ g.pages.size } نما — ${ g.help }` );
 	for ( const s of g.samples ) console.log( `      ${ s.target.slice( 0, 90 ) } | ${ s.msg.slice( 0, 110 ) }` );
 }
+const grad = {};
+for ( const [ key, r ] of Object.entries( report ) ) {
+	for ( const g of r.gradient ) {
+		if ( g.ratio >= g.need ) continue;
+		( grad[ g.target ] ??= { ...g, pages: new Set() } ).pages.add( key );
+	}
+}
+const gradRows = Object.values( grad ).sort( ( a, b ) => a.ratio - b.ratio );
+console.log( `\nکنتراست روی گرادیان/تصویر (نمونه‌برداری پیکسلی): ${ gradRows.length } عنصر زیر آستانه` );
+for ( const g of gradRows.slice( 0, 40 ) ) console.log( `   ${ g.ratio } < ${ g.need }  ${ g.target.slice( 0, 70 ) }  متن ${ g.fg } روی ${ g.bg } (${ g.size }px، ${ g.pages.size } نما)` );
 const inv = {}; const cov = {};
 for ( const [ key, r ] of Object.entries( report ) ) {
 	for ( const k of r.keyboard ) {

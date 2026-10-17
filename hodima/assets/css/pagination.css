@@ -62,8 +62,8 @@
 
 	& :is(a.page-numbers, a.post-page-numbers):is(:hover, :focus-visible) {
 		color: #fff;
-		background: var(--hodima-secondary, #607bbd);
-		border-color: var(--hodima-secondary, #607bbd);
+		background: var(--hodima-secondary-text, #5169a8);
+		border-color: var(--hodima-secondary-text, #5169a8);
 	}
 
 	& :is(.page-numbers.current, span.post-page-numbers) {

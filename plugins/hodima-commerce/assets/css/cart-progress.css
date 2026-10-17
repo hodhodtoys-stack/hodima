@@ -71,7 +71,7 @@
 
 .hodima-cart-progress__note {
 	margin-block-start: 0.75rem !important;
-	color: color-mix(in srgb, var(--hcp-primary) 65%, #ffffff);
+	color: color-mix(in srgb, var(--hcp-primary) 72%, #ffffff);
 	font-size: 0.875rem;
 	font-weight: 600;
 }

@@ -6,7 +6,7 @@
 
 .hodima-table-container {
     --hdt-primary: var(--hodima-primary, #25316a);
-    --hdt-head: var(--hodima-secondary, #607bbd);
+    --hdt-head: var(--hodima-secondary-text, #5169a8);
     --hdt-border: var(--hodima-border-light, #d9e1f0);
     --hdt-border-strong: var(--hodima-third, #b6c2f3);
     --hdt-text: var(--hodima-text-dark, #111111);

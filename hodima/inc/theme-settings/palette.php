@@ -44,6 +44,62 @@ function hodima_rgb_hex( array $rgb ): string {
 	return '#' . implode( '', array_map( static fn( int|float $c ): string => str_pad( dechex( max( 0, min( 255, (int) round( $c ) ) ) ), 2, '0', STR_PAD_LEFT ), $rgb ) );
 }
 
+/**
+ * روشنایی نسبی WCAG یک رنگ [r, g, b].
+ *
+ * @param array<int, int|float> $rgb
+ */
+function hodima_relative_luminance( array $rgb ): float {
+
+	[ $r, $g, $b ] = array_map(
+		static function ( int|float $c ): float {
+			$c /= 255;
+			return $c <= 0.03928 ? $c / 12.92 : ( ( $c + 0.055 ) / 1.055 ) ** 2.4;
+		},
+		$rgb
+	);
+
+	return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
+}
+
+/**
+ * نسبت کنتراست WCAG دو رنگ [r, g, b].
+ *
+ * @param array<int, int|float> $a
+ * @param array<int, int|float> $b
+ */
+function hodima_contrast_ratio( array $a, array $b ): float {
+
+	$l1 = hodima_relative_luminance( $a );
+	$l2 = hodima_relative_luminance( $b );
+
+	return ( max( $l1, $l2 ) + 0.05 ) / ( min( $l1, $l2 ) + 0.05 );
+}
+
+/**
+ * --hodima-secondary-text: رنگ دوم پالت، به‌اندازه لازم به سمت رنگ اصلی تیره‌شده تا روی تیره‌ترین
+ * زمینه روشن قالب (--hodima-bg-gray، #eef2f8) کنتراست ≥ ۴٫۶ داشته باشد و با سفید هم؛ حداقل یک
+ * چهارم راه (برابر مقدار ثابت tokens.css برای پالت پیش‌فرض). اگر حتی رنگ اصلی کافی نبود، همان.
+ *
+ * @param array<int, int|float> $primary
+ * @param array<int, int|float> $secondary
+ */
+function hodima_palette_text_variant( array $primary, array $secondary ): string {
+
+	$light = [ 0xee, 0xf2, 0xf8 ];
+	$white = [ 255, 255, 255 ];
+	$mix   = $secondary;
+
+	for ( $t = 0.25; $t <= 1.0001; $t += 0.05 ) {
+		$mix = array_map( static fn( int|float $a, int|float $b ): float => $a + ( $b - $a ) * $t, $secondary, $primary );
+		if ( hodima_contrast_ratio( $mix, $light ) >= 4.6 && hodima_contrast_ratio( $mix, $white ) >= 4.6 ) {
+			break;
+		}
+	}
+
+	return hodima_rgb_hex( $mix );
+}
+
 /** CSS پالت تنظیم‌شده، یا رشته خالی برای پالت پیش‌فرض. */
 function hodima_palette_css(): string {
 
@@ -81,6 +137,10 @@ function hodima_palette_css(): string {
 	if ( isset( $changed['primary'] ) || isset( $changed['secondary'] ) ) {
 		$vars['--hodima-gradient-mid']  = hodima_rgb_hex( array_map( static fn( int|float $a, int|float $b ): float => $a + ( $b - $a ) * 0.4, $primary, $secondary ) );
 		$vars['--hodima-gradient-deep'] = hodima_rgb_hex( array_map( static fn( int|float $a, int|float $b ): float => $a + ( $b - $a ) * 0.26, $primary, $secondary ) );
+	}
+
+	if ( isset( $changed['primary'] ) || isset( $changed['secondary'] ) ) {
+		$vars['--hodima-secondary-text'] = hodima_palette_text_variant( $primary, $secondary );
 	}
 
 	$css = '';

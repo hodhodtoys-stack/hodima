@@ -33,7 +33,7 @@
 	padding: 0;
 	border: 0;
 	background: none;
-	color: var(--hodima-secondary, #607bbd);
+	color: var(--hodima-secondary-text, #5169a8);
 	font: inherit;
 	font-size: 0.875em;
 	text-decoration: underline;

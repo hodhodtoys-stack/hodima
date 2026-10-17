@@ -149,7 +149,7 @@
 }
 
 .story-item.is-seen .story-text {
-	color: #607bbd;
+	color: var(--hodima-secondary-text, #5169a8);
 }
 
 @media (max-width: 768px) {

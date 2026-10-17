@@ -611,7 +611,7 @@
 
 	& .stock-status-china_stock {
 		background: var(--hodima-surface-soft, #f7f9fd);
-		color: var(--hodima-secondary);
+		color: var(--hodima-secondary-text, #5169a8); /* تا 3.6.7 secondary: کنتراست ۳٫۹۳ */
 		border: 1px solid var(--hodima-border-light, #d9e1f0);
 	}
 
@@ -670,7 +670,7 @@
 .custom-stock-notice-china {
 	background: var(--hodima-surface-soft, #f7f9fd);
 	border: 1px solid var(--hodima-border-light, #d9e1f0);
-	color: var(--hodima-secondary);
+	color: var(--hodima-secondary-text, #5169a8);
 }
 
 .custom-stock-notice-out {

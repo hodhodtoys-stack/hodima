@@ -46,6 +46,11 @@
        به var(--hodima-secondary) تغییر دهید. */
     --hodima-primary-hover:  var(--hodima-primary-dark);
 
+    /* رنگ دوم برای متن و پس‌زمینه‌ای که متن سفید دارد (WCAG 1.4.3، قالب 3.6.8): خود --hodima-secondary با
+       سفید ۴٫۱۵ و روی زمینه‌های روشن (#f7f9fd) ۳٫۹۳ کنتراست دارد و از ۴٫۵ کمتر است؛ این یکی چهارم راه به
+       رنگ اصلی نزدیک‌تر است (≥۴٫۸ روی همه زمینه‌های روشن قالب). با تغییر پالت از پیشخوان دوباره محاسبه می‌شود. */
+    --hodima-secondary-text: #5169a8;
+
     /* ── گرادیان‌ها ──────────────────────────────────────────────── */
     /* نقطه میانی گرادیان: --hodima-gradient-mid (با تغییر پالت از پیشخوان دوباره محاسبه می‌شود) */
     --hodima-gradient-mid:  #3b4d8f;
@@ -182,8 +187,8 @@
     --hodima-body-size:        16;      /* اندازه متن (px) */
     --hodima-body-line-height: 1.8;
 
-    /* لینک‌ها: رنگ دوم پالت؛ hover رنگ اصلی (تا 2.9.5 آبی ثابت #0d6efd) */
-    --hodima-link:             var(--hodima-secondary);
+    /* لینک‌ها: رنگ دوم پالت (نسخه تیره‌تر برای متن)؛ hover رنگ اصلی (تا 2.9.5 آبی ثابت #0d6efd) */
+    --hodima-link:             var(--hodima-secondary-text);   /* تا 3.6.7 خود secondary (کنتراست ۴٫۱۵) */
     --hodima-link-hover:       var(--hodima-primary);
     --hodima-content-link-line: underline;   /* زیرخط لینک‌های داخل متن (none = بدون) */
 
