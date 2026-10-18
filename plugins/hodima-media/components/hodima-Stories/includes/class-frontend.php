@@ -100,7 +100,8 @@ class Frontend {
 							data-cta-text="<?php echo esc_attr( $cta_text ); ?>"
 							<?php endif; ?>>
 							<div class="story-ring">
-								<img src="<?php echo Helpers::esc_img_src( Helpers::get_cover_url( $cover_id, $thumb_size ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_url در esc_img_src ?>" alt="<?php echo esc_attr( $label ); ?>" loading="<?php echo $eager ? 'eager' : 'lazy'; ?>" width="75" height="75" decoding="async">
+								<?php $ring_img = Helpers::get_cover_ring_img( $cover_id, $thumb_size ); ?>
+								<img src="<?php echo Helpers::esc_img_src( $ring_img['src'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_url در esc_img_src ?>"<?php echo '' !== $ring_img['srcset'] ? ' srcset="' . esc_attr( $ring_img['srcset'] ) . '" sizes="66px"' : ''; ?> alt="<?php echo esc_attr( $label ); ?>" loading="<?php echo $eager ? 'eager' : 'lazy'; ?>" width="75" height="75" decoding="async">
 							</div>
 							<span class="story-text"><?php echo esc_html( $label ); ?></span>
 						</a>

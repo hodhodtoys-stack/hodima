@@ -15,6 +15,7 @@
  * ووکامرس)، کاربر واردشده (نوار مدیریت، سفارشی‌ساز) و پیش‌نمایش دست‌نخورده می‌مانند.
  * اگر کدی (افزونه دیگر) jQuery را درون‌خطی و بدون وابستگی ثبت‌شده صدا بزند، با این کار می‌شکند:
  *     add_filter( 'hodima_defer_jquery', '__return_false' );
+ * یا از تنظیمات قالب ← سرعت و PageSpeed (پیش‌فرض روشن).
  */
 
 declare(strict_types=1);
@@ -33,7 +34,7 @@ add_action( 'wp_enqueue_scripts', static function (): void {
         return;
     }
 
-    if ( ! (bool) apply_filters( 'hodima_defer_jquery', true ) ) {
+    if ( ! (bool) apply_filters( 'hodima_defer_jquery', (bool) hodima_setting( 'defer_jquery' ) ) ) {
         return;
     }
 

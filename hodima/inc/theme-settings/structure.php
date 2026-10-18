@@ -76,7 +76,7 @@ function hodima_settings_sections(): array {
 		'contact'   => [ 'nav' => 'contact', 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی نمایش داده نمی‌شود.' ],
 		'social'    => [ 'nav' => 'contact', 'title' => 'شبکه‌های اجتماعی', 'icon' => 'dashicons-share', 'description' => 'نوار شبکه‌های اجتماعی بالای فوتر همه صفحه‌ها. بدون هیچ شبکه‌ای نوار نمایش داده نمی‌شود.' ],
 		'analytics' => [ 'nav' => 'tools', 'title' => 'Google Analytics', 'icon' => 'dashicons-chart-area', 'description' => 'کد آمار GA4 با بارگذاری async و بدون مسدود کردن رندر صفحه اضافه می‌شود.' ],
-		'speed'     => [ 'nav' => 'tools', 'title' => 'دامنه ویدئو', 'icon' => 'dashicons-video-alt3', 'description' => 'دامنه‌ای که ویدیو و پادکست‌های سایت از آن پخش می‌شوند؛ مرورگر در صفحه‌های دارای ویدیو از ابتدا به آن وصل می‌شود تا پخش زودتر شروع شود.' ],
+		'speed'     => [ 'nav' => 'tools', 'title' => 'سرعت و PageSpeed', 'icon' => 'dashicons-performance', 'description' => 'همه تنظیم‌های سرعت سایت یک‌جا: بارگذاری کد آمار و jQuery، اندازه تصویر کارت محصولات، و اتصال زودهنگام به دامنه ویدیو. هر گزینه می‌گوید کدام مورد گزارش PageSpeed را بهتر می‌کند.' ],
 		'code'      => [ 'nav' => 'tools', 'title' => 'کد سفارشی', 'icon' => 'dashicons-editor-code', 'description' => 'کد HTML یا اسکریپت دلخواه در همه صفحه‌های سایت (نه پیشخوان).' ],
 		'backup'    => [ 'nav' => 'tools', 'title' => 'پشتیبان تنظیمات', 'icon' => 'dashicons-backup', 'description' => 'همه تنظیمات این صفحه (و چیدمان صفحه اصلی) در یک فایل؛ برای نگه‌داری یا انتقال به سایت دیگر.' ],
 	];
@@ -145,6 +145,8 @@ function hodima_settings_panels(): array {
 		'extras_mobile_nav'  => [ 'section' => 'extras', 'title' => 'نوار پایین موبایل', 'icon' => 'dashicons-smartphone', 'layout' => 'toggles', 'help' => '«خانه» همیشه هست؛ فروشگاه و سبد فقط با ووکامرس. بیشتر از ۵ مورد نیست تا روی صفحه کوچک جا شود.' ],
 		'code_main'          => [ 'section' => 'code', 'title' => 'کد دلخواه', 'icon' => 'dashicons-editor-code' ],
 		'backup_main'        => [ 'section' => 'backup', 'title' => 'دریافت و بازگردانی', 'icon' => 'dashicons-backup', 'layout' => 'backup', 'help' => 'تصویرها (لوگو، نمادها، فونت‌ها) با شناسه کتابخانه رسانه ذخیره می‌شوند؛ روی سایت دیگر اگر همان فایل نباشد خالی می‌مانند و باید دوباره انتخاب شوند.' ],
+		'speed_scripts'      => [ 'section' => 'speed', 'title' => 'بارگذاری اسکریپت‌ها', 'icon' => 'dashicons-media-code', 'help' => 'گزارش PageSpeed: «Eliminate render-blocking resources»، «Reduce unused JavaScript» و «Third-party code». اثرش را بعد از ذخیره و پاک‌کردن کش لایت‌اسپید در pagespeed.web.dev ببینید.' ],
+		'speed_images'       => [ 'section' => 'speed', 'title' => 'تصاویر', 'icon' => 'dashicons-format-image', 'help' => 'گزارش PageSpeed: «Improve image delivery». تبدیل تصویرها به WebP و کیفیت آن‌ها در افزونه لایت‌اسپید (Image Optimization ← WebP Quality حدود ۷۵ تا ۸۰) تنظیم می‌شود، نه اینجا.' ],
 		'speed_preconnect'   => [ 'section' => 'speed', 'title' => 'دامنه پخش ویدیو و پادکست', 'icon' => 'dashicons-video-alt3', 'help' => 'اگر ویدیو و پادکست‌ها روی دامنه جدا (هاست دانلود یا CDN) هستند، اتصال زودهنگام چند صدم ثانیه از شروع پخش کم می‌کند. دامنه را خودتان وارد کنید یا از «دامنه‌های پیدا شده» زیر کادر انتخاب کنید.' ],
 	];
 }

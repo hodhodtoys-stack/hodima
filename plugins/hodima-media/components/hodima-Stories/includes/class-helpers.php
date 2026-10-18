@@ -125,6 +125,31 @@ class Helpers {
 	}
 
 	/**
+	 * src و srcset دایره کوچک استوری (۶۶px).
+	 *
+	 * باگ قبلی: تصویر `woocommerce_thumbnail` (۵۰۰px؛ یک PNG کاور تا ۳۱۴KB) برای دایره ۶۶px
+	 * دانلود می‌شد (PageSpeed صفحه اصلی: «Improve image delivery»، چند صد KB). حالا نسخه ۱۵۰px
+	 * (صفحه‌نمایش عادی) یا ۳۰۰px (۲× و بالاتر) انتخاب می‌شود؛ ظاهر عوض نمی‌شود.
+	 *
+	 * @return array{src: string, srcset: string}
+	 */
+	public static function get_cover_ring_img( int $id, string $fallback_size ): array {
+
+		$small = $id ? wp_get_attachment_image_src( $id, 'thumbnail' ) : false;
+		$large = $id ? wp_get_attachment_image_src( $id, 'medium' ) : false;
+
+		// نسخه‌ها نبود (تصویر کوچک‌تر از اندازه، یا بدون کاور): رفتار قبلی
+		if ( ! is_array( $small ) || ! is_array( $large ) || $small[0] === $large[0] || (int) $small[1] < 1 || (int) $large[1] <= (int) $small[1] ) {
+			return [ 'src' => self::get_cover_url( $id, $fallback_size ), 'srcset' => '' ];
+		}
+
+		return [
+			'src'    => (string) $large[0],
+			'srcset' => esc_url( (string) $small[0] ) . ' ' . (int) $small[1] . 'w, ' . esc_url( (string) $large[0] ) . ' ' . (int) $large[1] . 'w',
+		];
+	}
+
+	/**
 	 * پاک‌سازی آدرس تصویر برای خروجی؛ data: هم مجاز است.
 	 *
 	 * باگ قبلی: esc_url پروتکل data: را نمی‌پذیرد، پس تصویر جایگزین استوری
