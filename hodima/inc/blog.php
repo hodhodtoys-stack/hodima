@@ -147,8 +147,9 @@ function hodima_post_meta_html( int $post_id ): string {
  * قبلا آرشیو `blog-page-card` و مقاله `related-post-card` جدا (HTML و CSS تکراری، مرتبط‌ها
  * بدون تاریخ و تصویر جایگزین) بودند. CSS: assets/css/blog-card.css.
  *
- * @param array{heading?:string, lazy?:bool, empty_label?:string, meta_text?:string, featured?:bool, cols?:int} $args
+ * @param array{heading?:string, lazy?:bool, eager?:bool, priority?:bool, empty_label?:string, meta_text?:string, featured?:bool, cols?:int} $args
  *        heading: تگ عنوان (h2 در فهرست، h3 زیر عنوان بخش)؛ lazy: بارگذاری تنبل تصویر (زیر صفحه)؛
+ *        eager: کارت بالای صفحه (بدون lazy و از تنبل‌سازی لایت‌اسپید مستثنا)؛ priority: فقط برای اولین کارت، fetchpriority=high؛
  *        empty_label: متن کادر بی‌تصویر؛ meta_text: به‌جای تاریخ/زمان مطالعه (مثل نوع محتوا در جستجو)؛
  *        featured: کارت بزرگ تمام‌عرض (مقاله ویژه، با خلاصه و تصویر اولویت‌دار)؛ cols: تعداد ستون شبکه (برای اندازه تصویر).
  */
@@ -173,6 +174,18 @@ function hodima_blog_card_html( int $post_id, array $args = [] ): string {
 			// بزرگ‌ترین عنصر بالای صفحه (LCP): بدون lazy و با اولویت بالا
 			$thumb_args['loading']       = 'eager';
 			$thumb_args['fetchpriority'] = 'high';
+			$thumb_args['data-no-lazy']  = '1';
+		} elseif ( ! empty( $args['eager'] ) ) {
+			/*
+			 * کارت‌های ردیف اول: بدون این، لایت‌اسپید تصویر را «تنبل» می‌کرد (src خالی تا اجرای
+			 * اسکریپتش) و مرورگر آن را دیر پیدا می‌کرد (PageSpeed وبلاگ: تأخیر پیدا کردن ۲٫۷ از ۴٫۵ ثانیه LCP).
+			 * data-no-lazy را لایت‌اسپید می‌شناسد.
+			 */
+			$thumb_args['loading']      = 'eager';
+			$thumb_args['data-no-lazy'] = '1';
+			if ( ! empty( $args['priority'] ) ) {
+				$thumb_args['fetchpriority'] = 'high';
+			}
 		} elseif ( ! empty( $args['lazy'] ) ) {
 			$thumb_args['loading'] = 'lazy';
 		}

@@ -504,7 +504,8 @@
 	color: var(--hm-primary) !important;
 	font: inherit;
 	font-size: 12px;
-	font-weight: 800;
+	/* ۷۰۰ (نه ۸۰۰): وزن ۸۰۰ فقط برای همین دکمه کوچک یک فایل فونت ۳۱KB جدا (ExtraBold) در هر صفحه دارای پخش‌کننده می‌گرفت */
+	font-weight: 700;
 	line-height: 1;
 	box-shadow: none;
 	cursor: pointer;

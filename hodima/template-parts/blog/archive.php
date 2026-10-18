@@ -81,7 +81,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 if ( have_posts() ) : ?>
                     <?php while ( have_posts() ) : the_post(); ?>
                         <?php // کارت واحد وبلاگ (inc/blog.php)؛ عنوان کامل، دو خط را CSS می‌بُرد ?>
-                        <?php echo hodima_blog_card_html( (int) get_the_ID(), [ 'cols' => $hodima_cols, 'featured' => $hodima_featured_on && 0 === $wp_query->current_post ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_blog_card_html ?>
+                        <?php echo hodima_blog_card_html( (int) get_the_ID(), [ 'cols' => $hodima_cols, 'featured' => $hodima_featured_on && 0 === $wp_query->current_post, 'eager' => 1 === $hodima_paged && $wp_query->current_post < $hodima_cols, 'priority' => 1 === $hodima_paged && 0 === $wp_query->current_post ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در hodima_blog_card_html ?>
                     <?php endwhile; ?>
 
                 <?php else : ?>

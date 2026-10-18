@@ -40,7 +40,7 @@ get_header();
         $hodima_intro_output = hodima_theme_media_html( 'intro', $hodima_media_atts ); // ترتیب قبلی: اول معرفی، بعد ویدیو
         $hodima_video_output = hodima_theme_media_html( 'video', $hodima_media_atts );
         if ( '' === $hodima_video_output || ! str_contains( $hodima_video_output, '<' ) ) {
-            $hodima_video_output = has_post_thumbnail() ? (string) get_the_post_thumbnail( null, 'large', [ 'class' => 'single-post-image' ] ) : '';
+            $hodima_video_output = has_post_thumbnail() ? (string) get_the_post_thumbnail( null, 'large', [ 'class' => 'single-post-image', 'loading' => 'eager', 'fetchpriority' => 'high', 'data-no-lazy' => '1' ] ) : '';
         }
         get_template_part( 'template-parts/media/intro-media', null, [
             'layout' => 'post',
