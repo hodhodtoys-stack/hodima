@@ -227,6 +227,8 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 				<?php hodima_appearance_preview(); ?>
 			<?php elseif ( 'backup' === $layout && function_exists( 'hodima_settings_backup_panel' ) ) : ?>
 				<?php hodima_settings_backup_panel(); ?>
+			<?php elseif ( 'ccss' === $layout && function_exists( 'hodima_ccss_admin_panel' ) ) : ?>
+				<?php hodima_ccss_admin_panel(); // inc/performance/critical-css.php ?>
 			<?php endif; ?>
 
 			<?php if ( $loose && empty( $panel['headings'] ) ) : ?>

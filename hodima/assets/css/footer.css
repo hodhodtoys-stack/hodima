@@ -36,7 +36,8 @@
 	padding: 2.5rem 1.25rem 0.75rem;
 	direction: rtl;
 	line-height: 1.85;
-	font-weight: 300;
+	/* ۴۰۰ نه ۳۰۰ (3.8.0، خواست کاربر): وزن Light فقط در فوتر بود و یک فایل فونت ۳۱KB جدا روی همه صفحه‌ها می‌آورد */
+	font-weight: 400;
 	box-sizing: border-box;
 	width: 100%;
 	border-top: 1px solid rgb(255 255 255 / 0.08);
@@ -114,7 +115,7 @@
 
 .footer-content {
 	font-size: 0.875rem; /* افزایش سایز متن داخلی */
-	font-weight: 300;
+	font-weight: 400;
 	text-align: justify;
 	flex-grow: 1;
 }
@@ -154,7 +155,7 @@
 	width: 100%;
 	text-align: center;
 	font-size: 0.75rem;
-	font-weight: 300;
+	font-weight: 400;
 	color: var(--footer-copyright-text);
 	padding-top: 1rem;
 	padding-bottom: 0.75rem;
