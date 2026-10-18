@@ -273,12 +273,12 @@ add_action( 'wp_head', static function (): void {
 }, 7 );
 
 /**
- * stylesheet بدون مسدودکردن نمایش: preload + onload و نسخه noscript (بدون شناسه، تا تکراری نشود).
- * فقط وقتی CSS حیاتی همین صفحه چاپ شده؛ چاپ (media="print") دست‌نخورده.
+ * یک تگ <link rel="stylesheet"> ← preload + onload و نسخه noscript (بدون شناسه، تا تکراری نشود).
+ * تگ چاپ (media="print") یا با data-no-async همان می‌ماند.
  */
-add_filter( 'style_loader_tag', static function ( mixed $tag, mixed $handle = '', mixed $href = '', mixed $media = '' ): mixed {
+function hodima_ccss_async_tag( string $tag ): string {
 
-	if ( ! is_string( $tag ) || '' === hodima_ccss_for_request() || 'print' === $media || str_contains( $tag, 'data-no-async' ) ) {
+	if ( str_contains( $tag, 'data-no-async' ) || preg_match( '/\bmedia=([\'"])print\1/', $tag ) ) {
 		return $tag;
 	}
 
@@ -290,8 +290,61 @@ add_filter( 'style_loader_tag', static function ( mixed $tag, mixed $handle = ''
 
 	$noscript = (string) preg_replace( '/\sid=([\'"])[^\'"]*\1/', '', trim( $tag ), 1 );
 
-	return $async . '<noscript>' . $noscript . '</noscript>' . "\n";
-}, 20, 4 );
+	return $async . '<noscript>' . $noscript . '</noscript>';
+}
+
+/** لایت‌اسپید فعال است؟ آن‌وقت CSS را بعد از ترکیب خودش async می‌کنیم (پایین)، نه پیش از آن. */
+function hodima_ccss_litespeed(): bool {
+	return function_exists( 'hodima_litespeed_active' ) && hodima_litespeed_active();
+}
+
+/*
+ * بدون لایت‌اسپید: هر stylesheet وردپرس همان لحظه چاپ async می‌شود.
+ */
+add_filter( 'style_loader_tag', static function ( mixed $tag ): mixed {
+
+	if ( ! is_string( $tag ) || hodima_ccss_litespeed() || '' === hodima_ccss_for_request() ) {
+		return $tag;
+	}
+
+	return hodima_ccss_async_tag( $tag ) . "\n";
+}, 20 );
+
+/*
+ * با لایت‌اسپید: stylesheetها دست‌نخورده می‌مانند تا لایت‌اسپید مثل همیشه همه را در *یک* فایل
+ * کوچک‌شده ترکیب کند؛ بعد از کار آن (finalize اولویت ۲۰) همان فایل نهایی async می‌شود.
+ * باگ نسخه اول (۳.۸.۰، دیده‌شده در PageSpeed سایت زنده): preload در سطح وردپرس ترکیب لایت‌اسپید را
+ * دور می‌زد و به‌جای یک فایل، ۱۸ فایل CSS هم‌زمان با بالاترین اولویت دانلود می‌شد؛ روی مسیر کُند
+ * تهران–گوگل فونت Bold و عکس اصلی محصول تا ۷٫۵ ثانیه عقب افتاد و جابه‌جایی فونت CLS ۰٫۹ ساخت.
+ */
+add_filter( 'litespeed_buffer_finalize', static function ( mixed $buffer ): mixed {
+
+	if ( ! is_string( $buffer ) || ! str_contains( $buffer, 'id="hodima-critical-css"' ) ) {
+		return $buffer;
+	}
+
+	// محتوای <noscript> و <script> دست نخورد
+	$parts = preg_split( '#(<noscript\b.*?</noscript>|<script\b.*?</script>)#is', $buffer, -1, PREG_SPLIT_DELIM_CAPTURE );
+	if ( ! is_array( $parts ) ) {
+		return $buffer;
+	}
+
+	foreach ( $parts as $i => $part ) {
+		if ( 1 === $i % 2 ) {
+			continue;
+		}
+		$parts[ $i ] = (string) preg_replace_callback( '#<link\b[^>]*\brel=([\'"])stylesheet\1[^>]*>#i', static fn( array $m ): string => hodima_ccss_async_tag( $m[0] ), $part );
+	}
+
+	return implode( '', $parts );
+}, 25 );
+
+/*
+ * با CSS حیاتی، لایت‌اسپید <style>های درون‌خطی (متغیرهای پالت و تایپوگرافی…) را به فایل ترکیبی
+ * نبرد: آن فایل حالا async است و این مقدارها باید از اول اعمال شوند. (نسخه اول: همین‌ها یک فایل
+ * ۲KB مسدودکننده جدا ساخته بودند.)
+ */
+add_filter( 'litespeed_optm_css_comb_ext_inl', static fn( mixed $combine ): mixed => '' !== hodima_ccss_for_request() ? false : $combine );
 
 // قاب ساخت: بدون نوار مدیریت (عنصرها و CSS آن در CSS حیاتی مهمان لازم نیست)
 add_filter( 'show_admin_bar', static fn( mixed $show ): mixed => hodima_ccss_is_build_request() ? false : $show, 99 );
