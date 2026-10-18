@@ -260,7 +260,29 @@
 		}
 	} );
 
-	// پیش‌بارگذاری اولیه اسلایدهای مجاور
-	loadFull( slides[ wrap( 1 ) ] );
-	loadFull( slides[ wrap( -1 ) ] );
+	/*
+	 * پیش‌بارگذاری اولیه اسلایدهای مجاور: بعد از بارگذاری کامل صفحه (و بیکاری مرورگر)، یا زودتر
+	 * با اولین تعامل کاربر با گالری. باگ قبلی (تا 3.7.8): همان لحظه اجرای اسکریپت دو تصویر کامل
+	 * دیگر هم‌زمان با تصویر اصلی (LCP) دانلود می‌شد و پهنای باند آن را می‌گرفت (PageSpeed محصول
+	 * موبایل: «مدت دانلود» LCP ۲٫۳ ثانیه برای ۸۷KB).
+	 */
+	let neighboursLoaded = false;
+	const loadNeighbours = () => {
+		if ( neighboursLoaded ) {
+			return;
+		}
+		neighboursLoaded = true;
+		loadFull( slides[ wrap( 1 ) ] );
+		loadFull( slides[ wrap( -1 ) ] );
+	};
+	const whenIdle = () => ( 'requestIdleCallback' in window ? window.requestIdleCallback( loadNeighbours, { timeout: 2000 } ) : setTimeout( loadNeighbours, 300 ) );
+
+	for ( const type of [ 'pointerenter', 'touchstart', 'focusin' ] ) {
+		gallery.addEventListener( type, loadNeighbours, { once: true, passive: true } );
+	}
+	if ( 'complete' === document.readyState ) {
+		whenIdle();
+	} else {
+		window.addEventListener( 'load', whenIdle, { once: true } );
+	}
 } )();

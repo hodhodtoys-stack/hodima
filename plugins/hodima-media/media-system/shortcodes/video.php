@@ -1,9 +1,13 @@
 <?php
 /**
- * [hook_video id="" context="" heading="h2|h3|…|none" facade="yes|no" priority="high"]
+ * [hook_video id="" context="" heading="h2|h3|…|none" facade="yes|no" priority="high" poster="lazy"]
  *
  *   priority="high": ویدیو بالای صفحه است (مثلا بخش معرفی صفحه اصلی)؛ کاور
  *   «نما» بدون lazy و با fetchpriority بالا (بزرگ‌ترین تصویر دید اول = LCP).
+ *   poster="lazy" (از 1.9.8): ویدیو پایین صفحه است (مثلا بعد از توضیح محصول)؛ پوستر
+ *   فایل ویدیو (و ویدیوهای بیشتر) تا نزدیک شدن به دید دانلود نمی‌شود (data-poster، media-style.js).
+ *   باگ قبلی: مرورگر پوستر <video> را همیشه فورا می‌گیرد (loading=lazy ندارد)؛ در صفحه محصول
+ *   پوستر ۱۰۶KB پایین صفحه هم‌زمان با تصویر اصلی (LCP) دانلود می‌شد.
  *
  * نسخه ۴:
  *   - آپارات/یوتیوب/ویمئو: پخش‌کننده رسمی از روی آدرس (نه oEmbed وردپرس
@@ -47,6 +51,9 @@ function hodima_media_shortcode_video( mixed $atts ): string {
 	// کاور در اندازه صفحه (نه full): پوستر MP4 و تصویر «نما»
 	$cover = hodima_media_video_cover( $object_id, $context, 'large' );
 
+	// پوستر تنبل فقط برای ویدیوی پایین صفحه؛ اولویت بالا (بالای صفحه) همیشه برنده است
+	$lazy_poster = 'lazy' === strtolower( (string) ( $atts['poster'] ?? '' ) ) && 'high' !== strtolower( (string) ( $atts['priority'] ?? '' ) );
+
 	if ( $video['is_file'] ) {
 
 		/*
@@ -57,7 +64,7 @@ function hodima_media_shortcode_video( mixed $atts ): string {
 		$media = sprintf(
 			'<video class="hook-video-el" controls playsinline preload="%1$s"%2$s width="%3$d" height="%4$d" aria-label="%5$s"><source src="%6$s" type="%7$s">%8$s<p>مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند. <a href="%6$s">دانلود ویدیو</a></p></video>',
 			null !== $cover ? 'none' : 'metadata',
-			null !== $cover ? ' poster="' . esc_url( set_url_scheme( $cover['url'] ) ) . '"' : '',
+			null !== $cover ? hodima_media_poster_attr( $cover['url'], $lazy_poster ) : '',
 			$rw * 80,
 			$rh * 80,
 			esc_attr( $label ),
@@ -99,8 +106,17 @@ function hodima_media_shortcode_video( mixed $atts ): string {
 		$media,
 		hodima_media_chapters_html( $video['chapters'] ),
 		hodima_media_transcript_html( $video['transcript'], 'متن کامل ویدیو' ),
-		hodima_media_extra_html( $extras )
+		hodima_media_extra_html( $extras, $lazy_poster )
 	);
+}
+
+/**
+ * صفت پوستر تگ video: عادی `poster`، یا تنبل `data-poster` که media-style.js نزدیک دید
+ * (۴۰۰px پیش از رسیدن) به `poster` تبدیل می‌کند. بدون جاوااسکریپت پوستر تنبل نمایش داده
+ * نمی‌شود ولی ویدیو پخش می‌شود (تصویر بندانگشتی گوگل از اسکیمای VideoObject است).
+ */
+function hodima_media_poster_attr( string $url, bool $lazy = false ): string {
+	return sprintf( ' %s="%s"', $lazy ? 'data-poster' : 'poster', esc_url( set_url_scheme( $url ) ) );
 }
 
 /**
@@ -108,8 +124,9 @@ function hodima_media_shortcode_video( mixed $atts ): string {
  * با «نما» (پخش‌کننده فقط بعد از کلیک)، فایل با تگ video.
  *
  * @param list<array<string, mixed>> $extras hodima_media_extra_videos()
+ * @param bool $lazy_poster پوستر فایل‌ها تنبل (data-poster)؛ همان ویدیوی اصلی
  */
-function hodima_media_extra_html( array $extras ): string {
+function hodima_media_extra_html( array $extras, bool $lazy_poster = false ): string {
 
 	if ( ! $extras ) {
 		return '';
@@ -127,7 +144,7 @@ function hodima_media_extra_html( array $extras ): string {
 		$media = match ( true ) {
 			$video['is_file'] => sprintf(
 				'<video class="hook-video-el" controls playsinline preload="none"%1$s aria-label="%2$s"><source src="%3$s" type="%4$s"></video>',
-				null !== $cover ? ' poster="' . esc_url( set_url_scheme( $cover['url'] ) ) . '"' : '',
+				null !== $cover ? hodima_media_poster_attr( $cover['url'], $lazy_poster ) : '',
 				esc_attr( $label ),
 				esc_url( $video['url'] ),
 				esc_attr( $video['mime'] )

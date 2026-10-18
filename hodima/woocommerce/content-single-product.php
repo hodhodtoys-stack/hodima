@@ -234,7 +234,8 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 	</section>
 
 	<?php
-	$hp_video   = $hp_show( 'video' ) ? hodima_theme_media_html( 'video' ) : '';
+	// ویدیو بعد از توضیح محصول، پایین صفحه است: پوستر تا نزدیک دید دانلود نشود (Media 1.9.8+؛ نسخه قبلی این گزینه را نادیده می‌گیرد)
+	$hp_video   = $hp_show( 'video' ) ? hodima_theme_media_html( 'video', [ 'poster' => 'lazy' ] ) : '';
 	$hp_reviews = shortcode_exists( 'expand_product_reviews' ) && $hp_show( 'reviews' ) ? trim( do_shortcode( '[expand_product_reviews]' ) ) : '';
 	$hp_upsells = max( 0, (int) hodima_setting( 'product_upsells_limit' ) );
 	?>

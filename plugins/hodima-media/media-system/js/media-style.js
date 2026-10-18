@@ -365,7 +365,37 @@
 		}, true);
 	}
 
+	/*
+	 * پوستر تنبل ویدیوی پایین صفحه ([hook_video poster="lazy"]): data-poster ← poster کمی
+	 * پیش از رسیدن به دید. مرورگر پوستر <video> را بدون این همیشه فورا دانلود می‌کرد و با
+	 * تصویر اصلی صفحه (LCP) رقابت می‌کرد. بدون IntersectionObserver: همان لحظه.
+	 */
+	function initLazyPosters() {
+		const videos = document.querySelectorAll('video[data-poster]');
+		if (!videos.length) return;
+		const show = (video) => {
+			if (video.dataset.poster) {
+				video.poster = video.dataset.poster;
+				delete video.dataset.poster;
+			}
+		};
+		if (!('IntersectionObserver' in window)) {
+			videos.forEach(show);
+			return;
+		}
+		const lazy = new IntersectionObserver((entries) => {
+			for (const { isIntersecting, target } of entries) {
+				if (isIntersecting) {
+					show(target);
+					lazy.unobserve(target);
+				}
+			}
+		}, { rootMargin: '400px 0px' });
+		videos.forEach((video) => lazy.observe(video));
+	}
+
 	function init() {
+		initLazyPosters();
 		// نوار پخش پادکست + سرعت ذخیره‌شده (دکمه سرعت بدون JS پنهان است)
 		for (const audio of document.querySelectorAll('.hook-voice-container audio.hook-audio-el')) buildPlayer(audio);
 		const rate = storedRate();
