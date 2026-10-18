@@ -92,7 +92,7 @@ function hodima_custom_product_gallery(): void {
 
     $total = count( $all_image_ids );
     $name  = $product->get_name();
-    $sizes = function_exists( 'hodima_gallery_sizes' ) ? hodima_gallery_sizes() : '(max-width: 768px) 100vw, 600px';
+    $sizes = function_exists( 'hodima_gallery_sizes' ) ? hodima_gallery_sizes() : '(max-width: 480px) calc(100vw - 54px), (max-width: 768px) calc(100vw - 74px), (max-width: 992px) calc(100vw - 94px), 458px';
     ?>
     <div class="sp-gallery" data-total="<?php echo esc_attr( (string) $total ); ?>" role="region" aria-roledescription="گالری" aria-label="<?php echo esc_attr( 'تصاویر ' . $name ); ?>">
         <div class="sp-gallery__main">
@@ -100,7 +100,7 @@ function hodima_custom_product_gallery(): void {
                 <?php foreach ( $all_image_ids as $index => $image_id ) :
                     $meta   = wp_get_attachment_image_src( $image_id, 'woocommerce_single' );
                     $full   = wp_get_attachment_image_url( $image_id, 'full' );
-                    $srcset = wp_get_attachment_image_srcset( $image_id, 'woocommerce_single' );
+                    $srcset = function_exists( 'hodima_gallery_srcset' ) ? hodima_gallery_srcset( (int) $image_id ) : (string) wp_get_attachment_image_srcset( $image_id, 'woocommerce_single' );
                     $alt    = get_post_meta( $image_id, '_wp_attachment_image_alt', true ) ?: $name;
                     if ( ! $meta ) continue;
 

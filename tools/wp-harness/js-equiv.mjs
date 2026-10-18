@@ -32,11 +32,15 @@ function localFile( url, jsRoot ) {
 	if ( p.startsWith( '/wp-content/themes/hodima/' ) ) return path.join( root, 'hodima', p.slice( '/wp-content/themes/hodima/'.length ) );
 	const m = p.match( /^\/wp-content\/plugins\/(hodima-[a-z]+)\/(.*)$/ );
 	if ( m ) return path.join( root, 'plugins', m[ 1 ], m[ 2 ] );
+	// وردپرس ابزار تست بدون فایل‌های jQuery هسته است؛ بدون آن اسکریپت‌های ووکامرس اجرا نمی‌شوند
+	if ( p === '/wp-includes/js/jquery/jquery.min.js' && ! fs.existsSync( path.join( wpRoot, p ) ) ) return process.env.HODIMA_JQUERY || '/usr/share/javascript/jquery/jquery.min.js';
 	if ( p.startsWith( '/wp-includes/' ) || p.startsWith( '/wp-content/plugins/' ) ) return path.join( wpRoot, p );
 	return null;
 }
 
 const pages = fs.readdirSync( outDir ).filter( ( f ) => f.endsWith( '.html' ) && ( ! only.length || only.includes( f.replace( /\.html$/, '' ) ) ) ).sort();
+// HODIMA_JS_EQUIV_HTML2: پوشه HTML دیگر برای اجرای سوم (مثلا HTML بعد از تغییر PHP که چاپ اسکریپت‌ها را عوض می‌کند)
+const html2 = process.env.HODIMA_JS_EQUIV_HTML2 || outDir;
 const browser = await chromium.launch( { executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' } ).catch( () => chromium.launch() );
 
 // DOM نهایی بدون چیزهایی که هر اجرا فرق می‌کنند (زمان، شناسه تصادفی، سبک‌های انیمیشنی)
@@ -46,10 +50,11 @@ const snapshot = () => {
 	return clone.outerHTML
 		.replace( /\sstyle="[^"]*"/g, '' )
 		.replace( /woo-sr-[a-z0-9]+/g, 'woo-sr-X' )
-		.replace( /\?ver=[^"'&]+/g, '' );
+		.replace( /\?ver=[^"'&]+/g, '' )
+		.replace( /\d{4}-\d\d-\d\dT[\d:+]+/g, 'T' ); // زمان انتشار/به‌روزرسانی در متا
 };
 
-async function run( file, width, jsRoot ) {
+async function run( file, width, jsRoot, htmlDir = outDir ) {
 	const ctx = await browser.newContext( { viewport: { width, height: 800 }, locale: 'fa-IR', reducedMotion: 'reduce' } );
 	const page = await ctx.newPage();
 	const errors = [];
@@ -57,7 +62,7 @@ async function run( file, width, jsRoot ) {
 	page.on( 'console', ( m ) => m.type() === 'error' && ! /Failed to load resource/.test( m.text() ) && errors.push( m.text().split( '\n' )[ 0 ] ) );
 	await page.route( '**/*', async ( route ) => {
 		const url = route.request().url();
-		if ( url === 'https://hodima.test/__page__' ) return route.fulfill( { status: 200, contentType: 'text/html; charset=utf-8', body: fs.readFileSync( path.join( outDir, file ) ) } );
+		if ( url === 'https://hodima.test/__page__' ) return route.fulfill( { status: 200, contentType: 'text/html; charset=utf-8', body: fs.readFileSync( path.join( htmlDir, file ) ) } );
 		const f = localFile( url, jsRoot );
 		if ( f && fs.existsSync( f ) && fs.statSync( f ).isFile() ) return route.fulfill( { status: 200, contentType: MIME[ path.extname( f ) ] || 'application/octet-stream', body: fs.readFileSync( f ) } );
 		if ( route.request().resourceType() === 'image' ) return route.fulfill( { status: 200, contentType: 'image/png', body: GREY } );
@@ -87,7 +92,7 @@ for ( const file of pages ) {
 	for ( const width of [ 390, 1300 ] ) {
 		const a = await run( file, width, srcRoot );
 		const c = await run( file, width, srcRoot ); // کنترل نویز
-		const b = await run( file, width, builtRoot );
+		const b = await run( file, width, builtRoot, html2 );
 		const control = a.html === c.html;
 		const same = a.html === b.html && JSON.stringify( a.errors ) === JSON.stringify( b.errors );
 		if ( ! control ) noisy++;
@@ -95,7 +100,7 @@ for ( const file of pages ) {
 			bad++;
 			let i = 0;
 			while ( i < a.html.length && a.html[ i ] === b.html[ i ] ) i++;
-			console.log( `✘ ${ file }@${ width }: تفاوت DOM/خطا؛ نزدیک «${ a.html.slice( Math.max( 0, i - 60 ), i + 80 ).replace( /\s+/g, ' ' ) }» ← «${ b.html.slice( Math.max( 0, i - 60 ), i + 80 ).replace( /\s+/g, ' ' ) }» | خطا سورس=${ a.errors.length } ساخته=${ b.errors.length } ${ b.errors[ 0 ] ?? '' }` );
+			console.log( `✘ ${ file }@${ width }: تفاوت DOM/خطا؛ نزدیک «${ a.html.slice( Math.max( 0, i - 60 ), i + 80 ).replace( /\s+/g, ' ' ) }» ← «${ b.html.slice( Math.max( 0, i - 60 ), i + 80 ).replace( /\s+/g, ' ' ) }» | خطا سورس=${ a.errors.length } ساخته=${ b.errors.length } ${ JSON.stringify( b.errors.filter( ( e ) => ! a.errors.includes( e ) ) ) }` );
 		} else if ( ! control ) {
 			console.log( `~ ${ file }@${ width }: کنترل خودش پایدار نبود (نویز)؛ مقایسه نشد` );
 		}

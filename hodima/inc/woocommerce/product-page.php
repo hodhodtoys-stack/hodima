@@ -62,9 +62,42 @@ add_action( 'wp', static function (): void {
  * srcset/sizes تگ img را داشته باشد، وگرنه مرورگر دو بار دانلود می‌کند.
  * ===================================================================== */
 
-/** srcset و sizes مشترک بین preload و خود تصویر. */
+/**
+ * sizes مشترک بین preload و خود تصویر = عرض واقعی کادر تصویر اصلی گالری (اندازه‌گیری‌شده در
+ * Chromium با CSS قالب): تا ۴۸۰px برابر عرض صفحه منهای ۵۴px، تا ۷۶۸ منهای ۷۴px، تا ۹۹۲ منهای ۹۴px،
+ * و دو ستونه از ۹۹۳px که کادر حداکثر ۴۵۸px است.
+ *
+ * تا 3.7.3 «۱۰۰vw» و «۶۰۰px» بود: روی گوشی ۳۹۰px با صفحه نمایش ۳برابر، مرورگر ۱۱۷۰px می‌خواست
+ * (و ۱۵۳۶ را می‌گرفت) برای کادر ۳۳۶px؛ روی دسکتاپ ۶۰۰px برای کادر ۴۵۸px. اگر فاصله‌های
+ * کنار گالری در single-product.css عوض شد، این اعداد باید دوباره اندازه‌گیری شوند.
+ */
 function hodima_gallery_sizes(): string {
-	return (string) apply_filters( 'hodima_gallery_sizes', '(max-width: 768px) 100vw, 600px' );
+	return (string) apply_filters( 'hodima_gallery_sizes', '(max-width: 480px) calc(100vw - 54px), (max-width: 768px) calc(100vw - 74px), (max-width: 992px) calc(100vw - 94px), 458px' );
+}
+
+/**
+ * srcset تصویر اصلی گالری، حداکثر ۱۰۲۴px. وردپرس همه اندازه‌ها تا ۲۰۴۸px را می‌گذارد، ولی کادر
+ * هیچ‌وقت بیشتر از ۴۵۸ تا ۸۹۸px CSS نیست؛ ۱۰۲۴px برای صفحه ۳برابر هم کافی است و تصویر بزرگ‌تر
+ * فقط زمان LCP را بالا می‌برد. بزرگنمایی گالری از data-full (تصویر کامل) می‌آید، نه از این srcset.
+ * preload و تصویر باید دقیقا همین را بگیرند، وگرنه مرورگر دو بار دانلود می‌کند.
+ */
+function hodima_gallery_srcset( int $image_id ): string {
+
+	$srcset = (string) wp_get_attachment_image_srcset( $image_id, 'woocommerce_single' );
+
+	if ( '' === $srcset ) {
+		return '';
+	}
+
+	$max_width = max( 500, (int) apply_filters( 'hodima_gallery_srcset_max_width', 1024 ) );
+	$kept      = array_filter(
+		array_map( 'trim', explode( ',', $srcset ) ),
+		static function ( string $candidate ) use ( $max_width ): bool {
+			return 1 !== preg_match( '/\s(\d+)w$/', $candidate, $match ) || (int) $match[1] <= $max_width;
+		}
+	);
+
+	return [] === $kept ? $srcset : implode( ', ', $kept );
 }
 
 add_action( 'wp_head', static function (): void {
@@ -81,7 +114,7 @@ add_action( 'wp_head', static function (): void {
 	}
 
 	$src    = wp_get_attachment_image_url( $img_id, 'woocommerce_single' );
-	$srcset = wp_get_attachment_image_srcset( $img_id, 'woocommerce_single' );
+	$srcset = hodima_gallery_srcset( $img_id );
 
 	if ( ! $src ) {
 		return;
