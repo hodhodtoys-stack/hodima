@@ -85,7 +85,7 @@ if (have_posts()) :
                                 </button>
 
                                 <div class="hs-more-options-container">
-                                    <button class="hs-control-btn hs-speed-btn" aria-label="<?php esc_attr_e('سرعت پخش', 'hod-video'); ?>" tabindex="0">1x</button>
+                                    <button class="hs-control-btn hs-speed-btn" aria-label="1x <?php esc_attr_e('سرعت پخش', 'hod-video'); ?>" tabindex="0">1x</button>
                                     <div class="hs-more-menu hs-speed-menu">
                                         <button class="hs-menu-option" data-speed="0.5">0.5x</button>
                                         <button class="hs-menu-option is-active" data-speed="1">1x (<?php esc_html_e('عادی', 'hod-video'); ?>)</button>

@@ -80,13 +80,16 @@
 .h-effect-flip .h-slide.active { opacity: 1; transform: rotateY(0deg); }
 
 .h-controls { position: absolute; bottom: .9rem; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: .6rem; z-index: 10; margin: 0; padding: 0; }
-/* فاصله ۱۴px = دو لبه ناحیه لمس ۲۴px نقطه‌ها (۲٫۵٫۸ WCAG): ناحیه‌ها هم‌پوشانی نمی‌کنند. تا 1.8.9 فاصله ۸px و ناحیه ۱۸px پهن بود. */
-.h-dots { display: flex; gap: .875rem; margin: 0; padding: 0; }
+/*
+ * ناحیه لمس ۲۴×۲۴ خود دکمه است (نقطه ۱۰px + padding ۷px؛ رنگ فقط روی محتوا با background-clip).
+ * باگ قبلی (1.9.0 تا 1.9.6): ناحیه با ::before بزرگ می‌شد، ولی Lighthouse/axe اندازه خود عنصر
+ * (۱۰px) را می‌سنجد و چون نقطه‌ها روی لینک اسلاید هستند «target-size» رد می‌شد. فاصله مرکزها
+ * همان ۲۴px است (gap ۰) و margin منفی ارتفاع ردیف را همان ۱۰px نگه می‌دارد: ظاهر عوض نمی‌شود.
+ */
+.h-dots { display: flex; gap: 0; margin: -7px 0; padding: 0; }
 
-.h-dot { position: relative; width: 10px; height: 10px; border-radius: 50%; border: none; background: var(--hodima-third, #b6c2f3); cursor: pointer; padding: 0; transition: background 0.3s, width 0.3s; }
-/* ناحیه لمس ۲۴×۲۴ دور نقطه ۱۰ پیکسلی */
-.h-dot::before { content: ""; position: absolute; inset: -7px; }
-.h-dot.active { width: 30px; border-radius: 5px; background: var(--hodima-primary, #25316a); }
+.h-dot { position: relative; box-sizing: content-box; width: 10px; height: 10px; border-radius: 12px; border: none; background: var(--hodima-third, #b6c2f3); background-clip: content-box; cursor: pointer; padding: 7px; transition: background-color 0.3s, width 0.3s; }
+.h-dot.active { width: 30px; background-color: var(--hodima-primary, #25316a); }
 
 .h-slider.h-has-custom-size { aspect-ratio: auto; }
 
@@ -125,6 +128,8 @@
     outline: 2px solid var(--hodima-secondary, #607bbd);
     outline-offset: 2px;
 }
+/* حلقه همان فاصله ۲px از نقطه دیدنی (نه از لبه ناحیه لمس ۲۴px) */
+.h-dot:focus-visible { outline-offset: -5px; }
 
 @media (prefers-reduced-motion: reduce) {
     .h-slide { transition: opacity 0.2s linear !important; transform: none !important; }

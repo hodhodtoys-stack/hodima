@@ -14,6 +14,8 @@
  *
  * فقط حلقه اصلی فروشگاه/دسته/جستجو (نه «محصولات مرتبط»، بالابر فروش و صفحه اصلی؛ شبکه آن‌ها فرق دارد).
  * خاموش‌کردن: تنظیمات قالب ← سرعت و PageSpeed، یا `add_filter( 'hodima_card_image_sizes', '__return_empty_string' )`.
+ *
+ * از 3.7.8: چند کارت اول شبکه‌ای که بالای صفحه است بدون lazy (پایین همین فایل؛ فیلتر hodima_card_eager_count).
  */
 
 declare(strict_types=1);
@@ -53,6 +55,71 @@ add_filter( 'wp_get_attachment_image_attributes', static function ( mixed $attr,
 
 	if ( '' !== $sizes ) {
 		$attr['sizes'] = $sizes;
+	}
+
+	return $attr;
+}, 20, 3 );
+
+/*
+ * ============================================================
+ * کارت‌های بالای صفحه: بدون lazy (از 3.7.8)
+ * ============================================================
+ * باگ قبلی: همه تصویرهای کارت lazy بودند و لایت‌اسپید هم تنبلشان می‌کرد (src ← data-src)؛ تصویر
+ * اولین کارت فروشگاه، که بزرگ‌ترین عنصر صفحه موبایل (LCP) است، تا اجرای اسکریپت لایت‌اسپید کشف
+ * نمی‌شد (PageSpeed فروشگاه موبایل: «تأخیر بارگذاری» ۴٫۸ ثانیه، requestDiscoverable نادرست).
+ * حالا قالب صفحه (archive-product.php، taxonomy-product_cat.php) پیش از حلقه اعلام می‌کند که شبکه
+ * بالای صفحه است یا نه؛ چند کارت اول loading="eager" + data-no-lazy (لایت‌اسپید دست نمی‌زند) و
+ * اولی fetchpriority="high" می‌گیرد. دسته با ویدیو/معرفی بالای شبکه ← هیچ (تصویر ویدیو LCP است و
+ * کارت‌ها زیر صفحه‌اند؛ دانلود زودشان با آن رقابت می‌کرد).
+ */
+
+/** چند کارت اول حلقه که بدون lazy چاپ می‌شوند (۴ = دو ردیف موبایل). فیلتر hodima_card_eager_count؛ ۰ = همه lazy مثل قبل. */
+function hodima_card_eager_count(): int {
+	return max( 0, (int) apply_filters( 'hodima_card_eager_count', 4 ) );
+}
+
+/**
+ * شمارنده کارت‌های بالای صفحه.
+ *
+ * با عدد: شروع (پیش از حلقه، تعداد مجاز) یا پایان (بعد از حلقه، ۰)؛ خروجی ۰.
+ * بدون عدد: شماره تصویر فعلی (۱ = اولین) و یکی جلو می‌رود؛ ۰ = بیرون از بازه.
+ */
+function hodima_card_eager_slot( ?int $reset = null ): int {
+
+	static $limit = 0;
+	static $used  = 0;
+
+	if ( null !== $reset ) {
+		$limit = max( 0, $reset );
+		$used  = 0;
+		return 0;
+	}
+
+	if ( $used >= $limit ) {
+		return 0;
+	}
+
+	return ++$used;
+}
+
+add_filter( 'wp_get_attachment_image_attributes', static function ( mixed $attr, mixed $attachment = null, mixed $size = '' ): mixed {
+
+	// فقط تصویر کارت در حلقه اصلی (نه «مرتبط/بالابر/تکمیلی» که نام حلقه دارند)
+	if ( ! is_array( $attr ) || 'woocommerce_thumbnail' !== $size || ! function_exists( 'wc_get_loop_prop' ) || '' !== (string) wc_get_loop_prop( 'name' ) ) {
+		return $attr;
+	}
+
+	$slot = hodima_card_eager_slot();
+
+	if ( 0 === $slot ) {
+		return $attr;
+	}
+
+	$attr['loading']      = 'eager';
+	$attr['data-no-lazy'] = '1';
+
+	if ( 1 === $slot ) {
+		$attr['fetchpriority'] = 'high';
 	}
 
 	return $attr;

@@ -148,7 +148,12 @@ final class Frontend {
         return (string) preg_replace_callback('/' . preg_quote(self::PRIO_TOKEN, '/') . '/', static function () use ($is_first_slider, &$first_image): string {
             if ($is_first_slider && $first_image) {
                 $first_image = false;
-                return ' fetchpriority="high" loading="eager"';
+                /*
+                 * data-no-lazy: لایت‌اسپید تصویر را تنبل می‌کند (src ← data-src) مگر این صفت را
+                 * داشته باشد. باگ قبلی: بنر اول با وجود preload و fetchpriority تنبل می‌شد و
+                 * تا اجرای اسکریپت لایت‌اسپید دیده نمی‌شد (PageSpeed صفحه اصلی: «تأخیر نمایش» LCP ≈ ۲ثانیه).
+                 */
+                return ' fetchpriority="high" loading="eager" data-no-lazy="1"';
             }
             return $is_first_slider ? ' loading="eager"' : ' loading="lazy"';
         }, $html);

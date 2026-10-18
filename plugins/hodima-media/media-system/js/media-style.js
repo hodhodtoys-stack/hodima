@@ -145,7 +145,8 @@
 		}
 		button.dataset.hookSpeed = String(rate);
 		button.textContent = `${fa(rate)}×`;
-		button.setAttribute('aria-label', `سرعت پخش: ${fa(rate)} برابر (برای تغییر بزنید)`);
+		// نام دکمه با متن دیدنی («۱×») شروع می‌شود (WCAG 2.5.3، label-content-name-mismatch در Lighthouse)
+		button.setAttribute('aria-label', `${fa(rate)}× سرعت پخش (برای تغییر بزنید)`);
 		button.classList.toggle('is-fast', rate !== 1);
 	}
 

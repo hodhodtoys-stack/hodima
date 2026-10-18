@@ -43,6 +43,9 @@ if ( ! $categories_data ) {
 }
 
 $section_id = 'hodima-cat-title-' . wp_unique_id();
+
+// چند تصویر اول اولین بخش در دید اولیه است: بدون lazy و بیرون از تنبل‌سازی لایت‌اسپید (home/cards.php)
+$eager_count = hodima_home_categories_eager_count();
 ?>
 <section class="hodima-home-section cat-story-container" aria-labelledby="<?php echo esc_attr( $section_id ); ?>" data-nosnippet>
 	<header class="hodima-home-header">
@@ -55,20 +58,22 @@ $section_id = 'hodima-cat-title-' . wp_unique_id();
 		</div>
 	</header>
 	<div class="hodima-scroller cat-story-wrapper">
-		<?php foreach ( $categories_data as $category ) : ?>
+		<?php foreach ( $categories_data as $index => $category ) : ?>
+			<?php
+			$loading_attrs = $index < $eager_count ? [ 'loading' => 'eager', 'data-no-lazy' => '1' ] : [ 'loading' => 'lazy' ];
+			?>
 			<a href="<?php echo esc_url( $category['link'] ); ?>" class="cat-story-item" aria-label="<?php echo esc_attr( $category['name'] ); ?>">
 				<div class="cat-img-box">
 					<?php
 					if ( ! empty( $category['thumbnail_id'] ) ) {
 						// مربع ۸۰px (۷۲ در موبایل): نسخه ۱۵۰px کافی است؛ تا 3.1.4 نسخه ۳۰۰px گرفته می‌شد
-						echo wp_get_attachment_image( (int) $category['thumbnail_id'], 'thumbnail', false, [
+						echo wp_get_attachment_image( (int) $category['thumbnail_id'], 'thumbnail', false, $loading_attrs + [
 							'alt'      => $category['name'],
-							'loading'  => 'lazy',
 							'decoding' => 'async',
 							'sizes'    => '(max-width: 768px) 72px, 80px',
 						] );
 					} elseif ( function_exists( 'wc_placeholder_img_src' ) ) {
-						echo '<img src="' . esc_url( wc_placeholder_img_src() ) . '" alt="' . esc_attr( $category['name'] ) . '" width="150" height="150" loading="lazy" decoding="async">';
+						echo '<img src="' . esc_url( wc_placeholder_img_src() ) . '" alt="' . esc_attr( $category['name'] ) . '" width="150" height="150"' . ( $index < $eager_count ? ' loading="eager" data-no-lazy="1"' : ' loading="lazy"' ) . ' decoding="async">';
 					}
 					?>
 				</div>

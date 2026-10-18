@@ -211,16 +211,17 @@ function hodima_blog_card_html( int $post_id, array $args = [] ): string {
 		}
 	}
 
-	// نام قابل‌خواندن لینک = فقط عنوان (نه عنوان + تاریخ + زمان مطالعه)؛ متای کارت توضیح آن است
-	$title_id = wp_unique_id( 'blog-card-title-' );
-	$meta_id  = wp_unique_id( 'blog-card-meta-' );
-
-	return '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '" class="blog-page-card' . ( $featured ? ' blog-page-card--featured' : '' ) . '" aria-labelledby="' . $title_id . '"' . ( '' !== $meta ? ' aria-describedby="' . $meta_id . '"' : '' ) . '>'
+	/*
+	 * نام لینک = متن دیدنی خود کارت (عنوان، خلاصه، تاریخ، زمان مطالعه؛ به همین ترتیب).
+	 * باگ قبلی (3.3.8 تا 3.7.7): aria-labelledby فقط عنوان را نام لینک می‌کرد و تاریخ/زمان مطالعه
+	 * دیدنی در نام نبود ← Lighthouse «label-content-name-mismatch» (WCAG 2.5.3) روی همه کارت‌های وبلاگ.
+	 */
+	return '<a href="' . esc_url( (string) get_permalink( $post_id ) ) . '" class="blog-page-card' . ( $featured ? ' blog-page-card--featured' : '' ) . '">'
 		. $thumb
 		. '<div class="blog-page-content">'
-		. '<' . $heading . ' class="blog-page-title" id="' . $title_id . '">' . esc_html( $title ) . '</' . $heading . '>'
+		. '<' . $heading . ' class="blog-page-title">' . esc_html( $title ) . '</' . $heading . '>'
 		. $excerpt
-		. ( '' !== $meta ? '<div class="blog-page-meta" id="' . $meta_id . '">' . $meta . '</div>' : '' )
+		. ( '' !== $meta ? '<div class="blog-page-meta">' . $meta . '</div>' : '' )
 		. '</div></a>';
 }
 

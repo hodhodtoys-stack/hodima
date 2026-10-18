@@ -158,6 +158,11 @@ get_header( 'shop' );
 
 			<?php woocommerce_product_loop_start(); ?>
 
+			<?php
+			// شبکه زیر سربرگ کوتاه، پس ردیف اول در دید اولیه است: چند تصویر اول بدون lazy (inc/performance/card-image-sizes.php)
+			hodima_card_eager_slot( hodima_card_eager_count() );
+			?>
+
 			<?php if ( wc_get_loop_prop( 'total' ) ) : ?>
 				<?php while ( have_posts() ) : the_post(); ?>
 					<?php
@@ -166,6 +171,8 @@ get_header( 'shop' );
 					?>
 				<?php endwhile; ?>
 			<?php endif; ?>
+
+			<?php hodima_card_eager_slot( 0 ); ?>
 
 			<?php woocommerce_product_loop_end(); ?>
 

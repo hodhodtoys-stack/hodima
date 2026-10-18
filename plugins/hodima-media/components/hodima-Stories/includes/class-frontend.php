@@ -85,7 +85,8 @@ class Frontend {
 					$cta_link = (string) ( $story['cta_link'] ?? '' );
 					$cta_text = (string) ( $story['cta_text'] ?? '' );
 					$label    = '' !== $title ? $title : __( 'مشاهده', 'hodima' );
-					// چند کاور اول در دید اولیه‌اند؛ lazy آن‌ها را دیرتر از لازم نمایش می‌داد
+					// چند کاور اول در دید اولیه‌اند؛ lazy آن‌ها را دیرتر از لازم نمایش می‌داد. data-no-lazy: لایت‌اسپید هم تنبلشان نکند
+					// (باگ قبلی: loading=eager بود ولی لایت‌اسپید src را data-src می‌کرد و دایره‌ها تا اجرای اسکریپتش خالی می‌ماندند)
 					$eager = $position < 6;
 					?>
 					<div class="story-item">
@@ -101,7 +102,7 @@ class Frontend {
 							<?php endif; ?>>
 							<div class="story-ring">
 								<?php $ring_img = Helpers::get_cover_ring_img( $cover_id, $thumb_size ); ?>
-								<img src="<?php echo Helpers::esc_img_src( $ring_img['src'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_url در esc_img_src ?>"<?php echo '' !== $ring_img['srcset'] ? ' srcset="' . esc_attr( $ring_img['srcset'] ) . '" sizes="66px"' : ''; ?> alt="<?php echo esc_attr( $label ); ?>" loading="<?php echo $eager ? 'eager' : 'lazy'; ?>" width="75" height="75" decoding="async">
+								<img src="<?php echo Helpers::esc_img_src( $ring_img['src'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_url در esc_img_src ?>"<?php echo '' !== $ring_img['srcset'] ? ' srcset="' . esc_attr( $ring_img['srcset'] ) . '" sizes="66px"' : ''; ?> alt="<?php echo esc_attr( $label ); ?>" loading="<?php echo $eager ? 'eager' : 'lazy'; ?>"<?php echo $eager ? ' data-no-lazy="1"' : ''; ?> width="75" height="75" decoding="async">
 							</div>
 							<span class="story-text"><?php echo esc_html( $label ); ?></span>
 						</a>

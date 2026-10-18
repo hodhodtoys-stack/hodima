@@ -176,7 +176,11 @@
             option.addEventListener('click', function () {
                 var speed = parseFloat(option.getAttribute('data-speed'));
                 v.playbackRate = speed;
-                if (self.speedBtn) self.speedBtn.textContent = speed + 'x';
+                if (self.speedBtn) {
+                    self.speedBtn.textContent = speed + 'x';
+                    // نام دکمه متن دیدنی را در خود دارد (WCAG 2.5.3)
+                    self.speedBtn.setAttribute('aria-label', speed + 'x سرعت پخش');
+                }
                 self.speedOptions.forEach(function (o) { o.classList.remove('is-active'); });
                 option.classList.add('is-active');
                 if (self.speedMenu) self.speedMenu.classList.remove('is-open');

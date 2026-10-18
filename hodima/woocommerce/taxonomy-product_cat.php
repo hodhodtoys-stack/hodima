@@ -72,12 +72,15 @@ get_header( 'shop' );
 	<?php if ( $hodima_is_first ) : ?>
 
 		<?php
+		$hodima_intro_html = hodima_theme_media_html( 'intro' );
+		$hodima_video_html = hodima_theme_media_html( 'video' );
+
 		// template-parts/media/intro-media.php (چیدمان دسته)؛ ستون ویدیو فقط با محتوا
 		get_template_part( 'template-parts/media/intro-media', null, [
 			'layout' => 'category',
 			'title'  => esc_html( $hodima_title ),
-			'intro'  => hodima_theme_media_html( 'intro' ),
-			'video'  => hodima_theme_media_html( 'video' ),
+			'intro'  => $hodima_intro_html,
+			'video'  => $hodima_video_html,
 		] );
 		?>
 
@@ -136,12 +139,23 @@ get_header( 'shop' );
 
 			<?php woocommerce_product_loop_start(); ?>
 
+			<?php
+			/*
+			 * چند تصویر اول بدون lazy فقط وقتی شبکه بالای صفحه است: صفحه ۲ به بعد، یا صفحه اول بدون
+			 * معرفی و ویدیو. با ویدیو/معرفی، کارت‌ها زیر صفحه‌اند و تصویر ویدیو LCP است (inc/performance/card-image-sizes.php).
+			 */
+			$hodima_grid_on_top = ! $hodima_is_first || ( '' === trim( $hodima_intro_html ?? '' ) && '' === trim( $hodima_video_html ?? '' ) );
+			hodima_card_eager_slot( $hodima_grid_on_top ? hodima_card_eager_count() : 0 );
+			?>
+
 			<?php while ( have_posts() ) : the_post(); ?>
 				<?php
 				do_action( 'woocommerce_shop_loop' );
 				wc_get_template_part( 'content', 'product' );
 				?>
 			<?php endwhile; ?>
+
+			<?php hodima_card_eager_slot( 0 ); ?>
 
 			<?php woocommerce_product_loop_end(); ?>
 
