@@ -1,0 +1,310 @@
+/*
+ * «ساختار تیترها» زیر ویرایشگر توضیح دسته (Hodima SEO — core/cat-blog، از 2.3.1)
+ * فقط صفحه‌های دسته (edit-tags.php / term.php) و فقط زیر .hodima-hg؛ رنگ‌ها پالت برند.
+ * admin-ui.css هسته روی این صفحه‌ها لود نمی‌شود، پس متغیرها همین‌جا تعریف شده‌اند.
+ */
+.hodima-hg {
+	--hg-primary: #25316a;
+	--hg-secondary: #607bbd;
+	--hg-third: #b6c2f3;
+	--hg-accent: #6a2b9a;
+	--hg-text: #1d2340;
+	--hg-muted: #5d6785;
+	--hg-ok: #1f7a4d;
+	--hg-warn: #9a5b00;
+	--hg-soft: #f4f6fd;
+	--hg-border: #d9dff5;
+
+	box-sizing: border-box;
+	max-inline-size: 100%;
+	margin-block: 0.75rem 0;
+	padding: 1rem 1.125rem;
+	border: 1px solid var(--hg-border);
+	border-inline-start: 4px solid var(--hg-primary);
+	border-radius: 0.75rem;
+	background: #ffffff;
+	color: var(--hg-text);
+	font-family: inherit;
+	line-height: 1.7;
+}
+
+.hodima-hg[hidden] {
+	display: none;
+}
+
+.hodima-hg__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 0.625rem;
+}
+
+.hodima-hg__head > .dashicons {
+	color: var(--hg-primary);
+}
+
+.hodima-hg .hodima-hg__title {
+	margin: 0;
+	padding: 0;
+	color: var(--hg-primary);
+	font-size: 1rem;
+	font-weight: 700;
+}
+
+.hodima-hg__status {
+	margin-inline-start: auto;
+	padding: 0.125rem 0.75rem;
+	border-radius: 999px;
+	background: var(--hg-soft);
+	color: var(--hg-muted);
+	font-size: 0.8125rem;
+	font-weight: 600;
+}
+
+.hodima-hg__status[data-state="ok"] {
+	background: #e6f4ec;
+	color: var(--hg-ok);
+}
+
+.hodima-hg__status[data-state="warn"] {
+	background: #fdf1dc;
+	color: var(--hg-warn);
+}
+
+.hodima-hg__lead {
+	margin-block: 0.5rem 0.75rem;
+	color: var(--hg-muted);
+	font-size: 0.8125rem;
+}
+
+/* فهرست تیترها: هر سطح یک پله تورفتگی، خط راهنمای عمودی */
+.hodima-hg__outline {
+	margin: 0;
+	padding: 0.375rem;
+	border-radius: 0.5rem;
+	background: var(--hg-soft);
+	list-style: none;
+}
+
+.hodima-hg__item {
+	--hg-depth: 0;
+
+	margin: 0;
+	padding-inline-start: calc(var(--hg-depth) * 1.25rem);
+}
+
+.hodima-hg__item + .hodima-hg__item {
+	margin-block-start: 0.125rem;
+}
+
+.hodima-hg__jump {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	inline-size: 100%;
+	min-block-size: 2.25rem;
+	margin: 0;
+	padding: 0.25rem 0.5rem;
+	border: 1px solid transparent;
+	border-radius: 0.5rem;
+	background: transparent;
+	color: var(--hg-text);
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.hodima-hg__jump:hover {
+	border-color: var(--hg-border);
+	background: #ffffff;
+}
+
+.hodima-hg__jump:focus-visible {
+	outline: 2px solid var(--hg-primary);
+	outline-offset: 1px;
+}
+
+.hodima-hg__text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.hodima-hg__badge {
+	flex: none;
+	display: inline-block;
+	min-inline-size: 2.25rem;
+	padding: 0 0.375rem;
+	border-radius: 0.375rem;
+	background: var(--hg-primary);
+	color: #ffffff;
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1.6rem;
+	text-align: center;
+	direction: ltr;
+}
+
+.hodima-hg__badge[data-level="3"] {
+	background: #3e4f93;
+}
+
+.hodima-hg__badge[data-level="4"] {
+	background: #4e64a8;
+}
+
+.hodima-hg__badge[data-level="5"],
+.hodima-hg__badge[data-level="6"] {
+	background: #5a6fae;
+}
+
+.hodima-hg__badge[data-level="1"] {
+	background: var(--hg-accent);
+}
+
+/* تیتر دارای ایراد: نوار کهربایی + توضیح زیر آن */
+.hodima-hg__item.is-issue > .hodima-hg__jump {
+	border-color: #f0d49c;
+	background: #fffaf0;
+}
+
+.hodima-hg__issue {
+	display: block;
+	margin-block: 0.125rem 0.25rem;
+	padding-inline-start: 3.25rem;
+	color: var(--hg-warn);
+	font-size: 0.8125rem;
+}
+
+.hodima-hg__issue::before {
+	content: "⚠ ";
+}
+
+.hodima-hg__empty {
+	padding: 0.5rem 0.625rem;
+	color: var(--hg-muted);
+	font-size: 0.8125rem;
+}
+
+.hodima-hg__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 0.75rem;
+	margin-block-start: 0.75rem;
+}
+
+.hodima-hg__actions .button {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	min-block-size: 2.25rem;
+}
+
+.hodima-hg__actions .button .dashicons {
+	font-size: 1.125rem;
+	inline-size: 1.125rem;
+	block-size: 1.125rem;
+}
+
+.hodima-hg__actions .button-primary:not(:disabled) {
+	border-color: var(--hg-primary);
+	background: var(--hg-primary);
+}
+
+.hodima-hg__actions .button-primary:not(:disabled):hover {
+	border-color: var(--hg-secondary);
+	background: var(--hg-secondary);
+}
+
+.hodima-hg__msg {
+	color: var(--hg-ok);
+	font-size: 0.8125rem;
+	font-weight: 600;
+}
+
+/* راهنما (بازشونده) */
+.hodima-hg__help {
+	margin-block-start: 0.875rem;
+	border-block-start: 1px dashed var(--hg-border);
+	padding-block-start: 0.625rem;
+}
+
+.hodima-hg__help > summary {
+	color: var(--hg-primary);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.hodima-hg__help > summary:focus-visible {
+	outline: 2px solid var(--hg-primary);
+	outline-offset: 2px;
+	border-radius: 0.25rem;
+}
+
+.hodima-hg__table {
+	inline-size: 100%;
+	margin-block: 0.625rem;
+	border-collapse: collapse;
+	font-size: 0.8125rem;
+}
+
+.hodima-hg__table th,
+.hodima-hg__table td {
+	padding: 0.375rem 0.5rem;
+	border-block-end: 1px solid var(--hg-border);
+	text-align: start;
+	vertical-align: middle;
+}
+
+.hodima-hg__table thead th {
+	color: var(--hg-muted);
+	font-weight: 600;
+}
+
+.hodima-hg__table tbody th {
+	white-space: nowrap;
+	font-weight: 600;
+}
+
+.hodima-hg__sample {
+	color: var(--hg-muted);
+}
+
+.hodima-hg__tips {
+	margin: 0;
+	padding-inline-start: 1.25rem;
+	list-style: disc;
+	font-size: 0.8125rem;
+}
+
+.hodima-hg__tips li {
+	margin-block-end: 0.25rem;
+}
+
+@media (max-width: 782px) {
+	.hodima-hg {
+		padding: 0.875rem;
+	}
+
+	.hodima-hg__status {
+		margin-inline-start: 0;
+	}
+
+	.hodima-hg__table thead {
+		display: none;
+	}
+
+	.hodima-hg__table tr {
+		display: block;
+		padding-block: 0.375rem;
+		border-block-end: 1px solid var(--hg-border);
+	}
+
+	.hodima-hg__table th,
+	.hodima-hg__table td {
+		display: block;
+		padding: 0.125rem 0;
+		border: 0;
+	}
+}

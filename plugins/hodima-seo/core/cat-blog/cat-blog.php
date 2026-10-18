@@ -7,6 +7,11 @@
  * قالب — بازسازی قالب، مرحله ۲). قالب پیش‌فرض وردپرس را پنهان و نام فیلدش را
  * حذف می‌کند تا دو فیلد «description» در یک فرم نباشند (نسخه قالب فقط پنهان
  * می‌کرد). تصویر دسته فقط برای دسته نوشته‌ها؛ دسته محصول تصویر ووکامرس را دارد.
+ *
+ * از 2.3.1: «ساختار تیترها» زیر ویرایشگر (assets/heading-guide.js|css): منوی قالب‌بندی بدون H1
+ * و با نام فارسی سطح‌ها، بررسی زنده ترتیب تیترها (پرش سطح، H1، تیتر خالی) و «مرتب‌سازی خودکار».
+ * چرا: عنوان دسته H1 صفحه است و PageSpeed (heading-order) پرش سطح در توضیح دسته را ایراد
+ * می‌گرفت (دسته «اکسسوری»: h5 بعد از h3). متن ذخیره‌شده فقط با کار خود مدیر عوض می‌شود.
  */
 declare(strict_types=1);
 
@@ -60,7 +65,24 @@ class Cat_Blog {
         if (in_array($hook, ['edit-tags.php', 'term.php'])) {
             wp_enqueue_media();
             wp_enqueue_editor(); 
+
+            if ( $this->is_category_screen() ) {
+                $this->enqueue_heading_guide();
+            }
         }
+    }
+
+    /** CSS/JS «ساختار تیترها»؛ نسخه = زمان تغییر فایل (به‌روزرسانی از کش مرورگر پنهان نماند). */
+    private function enqueue_heading_guide(): void {
+        $ver = static function ( string $file ): string {
+            $path = __DIR__ . '/assets/' . $file;
+            return is_file( $path ) ? (string) filemtime( $path ) : HODIMA_SEO_VERSION;
+        };
+
+        wp_enqueue_style( 'hodima-heading-guide', HODIMA_SEO_URL . '/core/cat-blog/assets/heading-guide.css', [ 'dashicons' ], $ver( 'heading-guide.css' ) );
+        wp_enqueue_script( 'hodima-heading-guide', HODIMA_SEO_URL . '/core/cat-blog/assets/heading-guide.js', [ 'editor' ], $ver( 'heading-guide.js' ), [
+            'in_footer' => true,
+        ] );
     }
 
     private function is_category_screen(): bool {
@@ -93,8 +115,10 @@ class Cat_Blog {
             'media_buttons' => true,
             'quicktags'     => true, 
             'tinymce'       => [
-                'toolbar1' => 'formatselect,fontsizeselect,bold,italic,underline,forecolor,backcolor,bullist,numlist,alignleft,aligncenter,alignright,link,unlink',
-                'toolbar2' => 'strikethrough,hr,blockquote,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help'
+                'toolbar1'      => 'formatselect,fontsizeselect,bold,italic,underline,forecolor,backcolor,bullist,numlist,alignleft,aligncenter,alignright,link,unlink',
+                'toolbar2'      => 'strikethrough,hr,blockquote,pastetext,removeformat,charmap,outdent,indent,undo,redo,wp_help',
+                // H1 نیست (عنوان دسته H1 صفحه است)؛ نام هر سطح کاربردش را می‌گوید (راهنما: «ساختار تیترها» زیر ویرایشگر)
+                'block_formats' => 'پاراگراف=p;تیتر بخش (H2)=h2;زیربخش (H3)=h3;جزئیات (H4)=h4;ریزجزئیات (H5)=h5;ریزترین (H6)=h6',
             ]
         ];
     }
@@ -138,6 +162,7 @@ class Cat_Blog {
         <div class="form-field form-required term-description-wrap-custom" id="hodima-cat-editor-add">
             <label for="category_description_add">توضیحات حرفه‌ای دسته‌بندی</label>
             <?php wp_editor('', 'category_description_add', $this->get_advanced_editor_settings(10)); ?>
+            <?php $this->render_heading_guide( 'category_description_add' ); ?>
         </div>
         <?php
     }
@@ -148,8 +173,81 @@ class Cat_Blog {
             <th scope="row" valign="top"><label for="category_description_edit">توضیحات حرفه‌ای دسته‌بندی</label></th>
             <td>
                 <?php wp_editor(htmlspecialchars_decode($term->description ?? ''), 'category_description_edit', $this->get_advanced_editor_settings(15)); ?>
+                <?php $this->render_heading_guide( 'category_description_edit' ); ?>
             </td>
         </tr>
+        <?php
+    }
+
+    /**
+     * کادر «ساختار تیترها» زیر ویرایشگر.
+     *
+     * بخش‌های ثابت (عنوان، توضیح، راهنما) همین‌جا؛ فهرست تیترها، وضعیت و دکمه‌ها را
+     * assets/heading-guide.js زنده پر می‌کند. بدون جاوااسکریپت پنهان می‌ماند (hidden).
+     */
+    private function render_heading_guide( string $editor_id ): void {
+        $levels = [
+            [ 'پاراگراف', '—', 'متن معمولی', 'کلیپس‌های ما در سه سایز تولید می‌شوند…' ],
+            [ 'تیتر بخش', 'H2', 'بخش‌های اصلی متن', 'انواع کلیپس · بسته‌بندی و ارسال' ],
+            [ 'زیربخش', 'H3', 'زیر یک «تیتر بخش»', 'کلیپس پلومریا · کلیپس فلزی' ],
+            [ 'جزئیات', 'H4', 'زیر یک «زیربخش»', 'سایزها · رنگ‌بندی' ],
+            [ 'ریزجزئیات', 'H5', 'زیر «جزئیات»', 'سایز کوچک' ],
+            [ 'ریزترین', 'H6', 'زیر «ریزجزئیات» (به‌ندرت لازم می‌شود)', '—' ],
+        ];
+        ?>
+        <div class="hodima-hg" data-editor="<?php echo esc_attr( $editor_id ); ?>" hidden>
+            <div class="hodima-hg__head">
+                <span class="dashicons dashicons-editor-ol" aria-hidden="true"></span>
+                <h3 class="hodima-hg__title">ساختار تیترها</h3>
+                <span class="hodima-hg__status" data-state="empty"></span>
+            </div>
+
+            <p class="hodima-hg__lead">
+                عنوان دسته خودش تیتر اصلی (H1) صفحه است؛ پس تیترهای این متن از <strong>«تیتر بخش (H2)»</strong> شروع می‌شوند
+                و هر تیتر <strong>حداکثر یک پله</strong> پایین‌تر از تیتر بالایی‌اش است. گوگل و صفحه‌خوان نابینایان ساختار صفحه را
+                از همین ترتیب می‌فهمند (PageSpeed ← «ترتیب تیترها»).
+            </p>
+
+            <ol class="hodima-hg__outline" aria-label="فهرست تیترهای متن"></ol>
+
+            <div class="hodima-hg__actions">
+                <button type="button" class="button button-primary hodima-hg__fix" disabled>
+                    <span class="dashicons dashicons-sort" aria-hidden="true"></span>
+                    مرتب‌سازی خودکار تیترها
+                </button>
+                <button type="button" class="button hodima-hg__undo" hidden>
+                    <span class="dashicons dashicons-undo" aria-hidden="true"></span>
+                    بازگردانی
+                </button>
+                <span class="hodima-hg__msg" role="status" aria-live="polite"></span>
+            </div>
+
+            <details class="hodima-hg__help">
+                <summary>راهنمای سطح تیترها</summary>
+                <table class="hodima-hg__table">
+                    <thead>
+                        <tr><th scope="col">گزینه منوی ویرایشگر</th><th scope="col">کاربرد</th><th scope="col">نمونه</th></tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ( $levels as [ $name, $tag, $use, $sample ] ) : ?>
+                            <tr>
+                                <th scope="row"><?php echo esc_html( $name ); ?><?php if ( '—' !== $tag ) : ?> <span class="hodima-hg__badge"><?php echo esc_html( $tag ); ?></span><?php endif; ?></th>
+                                <td><?php echo esc_html( $use ); ?></td>
+                                <td class="hodima-hg__sample"><?php echo esc_html( $sample ); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <ul class="hodima-hg__tips">
+                    <li><strong>پایین رفتن فقط یک پله:</strong> H2 ← H3 ← H4. پرش (مثلا H2 ← H4 یا H3 ← H5) ایراد است.</li>
+                    <li><strong>بالا رفتن آزاد است:</strong> بعد از H4 می‌توانید بخش تازه را دوباره با H2 شروع کنید.</li>
+                    <li><strong>برای کوچک یا پررنگ کردن یک خط، سطح تیتر را پایین نبرید؛</strong> از «پررنگ» (B) یا اندازه قلم استفاده کنید.</li>
+                    <li><strong>H1 در منو نیست:</strong> عنوان دسته همیشه H1 است و هر صفحه فقط یک H1 دارد.</li>
+                    <li><strong>متن چسبانده‌شده</strong> (از Word یا سایت دیگر) را همین‌جا بررسی کنید؛ «مرتب‌سازی خودکار» فقط سطح تیترها را درست می‌کند و متن، لینک و قالب‌بندی را دست نمی‌زند.</li>
+                    <li>روی هر تیتر فهرست بالا بزنید تا در ویرایشگر انتخاب شود.</li>
+                </ul>
+            </details>
+        </div>
         <?php
     }
 
