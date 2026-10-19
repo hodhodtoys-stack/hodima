@@ -73,11 +73,12 @@ if want php; then
 	fi
 
 	# ۳. PHPStan (baseline خودش)
+	# حافظه 3G (تا 3.9.2: 2G): بزرگ‌ترین worker محلی ≈1.6GB؛ در GitHub Actions (commit d66af30) یک worker از 2G گذشت و بررسی بی‌خطای کد رد شد
 	if need vendor/bin/phpstan PHPStan "composer install"; then
 		if [ "$update" = 1 ]; then
-			vendor/bin/phpstan analyse --no-progress --memory-limit=2G --generate-baseline "$base/phpstan.neon" -q --allow-empty-baseline \
+			vendor/bin/phpstan analyse --no-progress --memory-limit=3G --generate-baseline "$base/phpstan.neon" -q --allow-empty-baseline \
 				&& echo "  phpstan: baseline به‌روز شد"
-		elif vendor/bin/phpstan analyse --no-progress --memory-limit=2G --error-format=raw > "$tmp/phpstan.txt" 2>/dev/null; then
+		elif vendor/bin/phpstan analyse --no-progress --memory-limit=3G --error-format=raw > "$tmp/phpstan.txt" 2>/dev/null; then
 			echo "  ✔ phpstan: بدون خطای جدید"
 		else
 			echo "  ✘ phpstan: خطای جدید:"; grep -v '^ *$' "$tmp/phpstan.txt" | head -40 | sed 's/^/    /'; fail=1
