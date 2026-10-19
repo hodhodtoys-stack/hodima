@@ -9,7 +9,12 @@
 هر وزن دو فایل دارد (hodima/style.css، بخش ۱۷۳ HODIMA-AUDIT.md): `-base` برای نویسه‌های رایج و فایل
 کامل برای بقیه. unicode-range هر دو را اینجا از cmap همان فایل کامل حساب می‌کنیم تا دو بازه هم‌پوشانی
 نداشته باشند و هیچ نویسه‌ای (که فایل کامل دارد) بی‌فونت نماند. بعد از تغییر BASE_RANGES خروجی چاپ‌شده
-را جای هفت جفت @font-face بخش «Local fonts» style.css بگذار و آزمون تصویری بخش ۱۷۳ را دوباره اجرا کن.
+را جای @font-faceهای بخش «Local fonts» style.css بگذار و آزمون تصویری بخش ۱۷۳ را دوباره اجرا کن.
+
+از قالب 3.8.7 (بخش ۱۹۱ HODIMA-AUDIT.md) وزن‌های ۴۰۰ تا ۷۰۰ فایل -base جدا ندارند: یک فایل وریبل
+`Vazirmatn-Variable-base.woff2` (محور wght محدود به ۴۰۰–۷۰۰، همان بازه BASE_RANGES) از فونت وریبل
+همان نسخه (`tools/fonts/Vazirmatn[wght].woff2`، بسته npm vazirmatn) ساخته می‌شود: ≈۵۴KB به‌جای چهار
+فایل ≈۱۲۳KB. فایل کامل هر وزن (نویسه‌های نادر) و -base وزن‌های ۳۰۰/۸۰۰/۹۰۰ مثل قبل ایستا می‌مانند.
 """
 from __future__ import annotations
 
@@ -19,9 +24,14 @@ from pathlib import Path
 
 from fontTools import subset
 from fontTools.ttLib import TTFont
+from fontTools.varLib import instancer
 
 FONTS = Path(__file__).resolve().parents[2] / "hodima" / "assets" / "fonts"
 WEIGHTS = {"Light": 300, "Regular": 400, "Medium": 500, "SemiBold": 600, "Bold": 700, "ExtraBold": 800, "Black": 900}
+# وزن‌هایی که -baseشان یک فایل وریبل است (محدوده محور wght)؛ منبع: فونت وریبل همان نسخه فونت‌های ایستا
+VARIABLE_RANGE = (400, 700)
+VARIABLE_SRC = Path(__file__).resolve().parent / "Vazirmatn[wght].woff2"
+VARIABLE_STEM = "Variable-base"
 
 # نویسه‌های فایل -base: ASCII، چند نماد رایج لاتین-۱ (nbsp © « » ° ± · × ÷)، بلوک عربی، نشانه‌گذاری
 # عمومی، ارزها، № ™ −، علامت ریال ﷼ و BOM. لاتین گسترده/ترکیبی/شکل‌های ارائه‌ای عربی در فایل کامل می‌مانند.
@@ -54,9 +64,11 @@ def main() -> int:
 
     in_base = lambda c: any(a <= c <= b for a, b in BASE_RANGES)  # noqa: E731
     rest_ranges = None
-    for name in WEIGHTS:
+    for name, weight in WEIGHTS.items():
         src = FONTS / f"Vazirmatn-{name}.woff2"
         full = set(TTFont(src).getBestCmap())
+        if VARIABLE_RANGE[0] <= weight <= VARIABLE_RANGE[1]:
+            continue  # -base این وزن در فایل وریبل است (پایین)
         options = subset.Options()
         options.layout_features = ["*"]  # اتصال حروف، نیم‌فاصله، kern، mark همه می‌مانند
         options.flavor = "woff2"
@@ -84,15 +96,47 @@ def main() -> int:
         size = dst.stat().st_size if dst.exists() else 0
         print(f"# {name}: کامل {src.stat().st_size} بایت ← base {size} بایت", file=sys.stderr)
 
+    make_variable_base(write, in_base)
+
     base = fmt(BASE_RANGES)
     rest = fmt(rest_ranges or [])
-    for name, weight in WEIGHTS.items():
-        for stem, rng in ((f"{name}-base", base), (name, rest)):
-            print(
-                f"@font-face {{ font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-{stem}.woff2') format('woff2'); "
-                f"font-weight: {weight}; font-style: normal; font-display: swap; unicode-range: {rng}; }}"
-            )
+    lo, hi = VARIABLE_RANGE
+    faces = [(f"{name}-base", str(weight), base) for name, weight in WEIGHTS.items() if not lo <= weight <= hi]
+    faces.append((VARIABLE_STEM, f"{lo} {hi}", base))
+    faces += [(name, str(weight), rest) for name, weight in WEIGHTS.items()]
+    faces.sort(key=lambda f: (int(f[1].split()[0]), f[0] != VARIABLE_STEM and f[0].endswith("-base") is False))
+    for stem, weight, rng in faces:
+        print(
+            f"@font-face {{ font-family: 'Vazirmatn'; src: url('assets/fonts/Vazirmatn-{stem}.woff2') format('woff2'); "
+            f"font-weight: {weight}; font-style: normal; font-display: swap; unicode-range: {rng}; }}"
+        )
     return 0
+
+
+def make_variable_base(write: bool, in_base) -> None:
+    """-base وزن‌های VARIABLE_RANGE: زیرمجموعه BASE_RANGES فونت وریبل با محور wght محدود."""
+    lo, hi = VARIABLE_RANGE
+    regular = TTFont(FONTS / "Vazirmatn-Regular.woff2")
+    font = TTFont(VARIABLE_SRC, recalcBBoxes=False)
+    options = subset.Options()
+    options.layout_features = ["*"]
+    options.notdef_outline = True
+    options.name_IDs = ["*"]
+    sub = subset.Subsetter(options)
+    # همان نویسه‌های -base ایستا (cmap فایل کامل Regular)، نه cmap فونت وریبل
+    sub.populate(unicodes=sorted(c for c in regular.getBestCmap() if in_base(c) and c not in SKIP))
+    sub.subset(font)
+    font = instancer.instantiateVariableFont(font, {"wght": (lo, hi)})
+    # کادر محدودکننده و پهنای میانگین = Regular کامل (پهنای پیش‌فرض کادرهای ورودی Chrome؛ بالا)
+    for table, keys in (("head", ("xMin", "yMin", "xMax", "yMax")), ("hhea", ("advanceWidthMax", "minLeftSideBearing", "minRightSideBearing", "xMaxExtent")), ("OS/2", ("xAvgCharWidth",))):
+        for key in keys:
+            setattr(font[table], key, getattr(regular[table], key))
+    dst = FONTS / f"Vazirmatn-{VARIABLE_STEM}.woff2"
+    if write:
+        font.flavor = "woff2"
+        font.save(dst)
+    size = dst.stat().st_size if dst.exists() else 0
+    print(f"# وریبل {lo}–{hi}: منبع {VARIABLE_SRC.stat().st_size} بایت ← base {size} بایت", file=sys.stderr)
 
 
 if __name__ == "__main__":

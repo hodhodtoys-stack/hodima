@@ -159,7 +159,7 @@ function hodima_typography_font_faces_css( bool $always = false ): string {
 /**
  * فایل‌هایی که پیش از CSS بارگذاری شوند: وزن ۴۰۰ فونت متن و ۷۰۰ فونت تیترها
  * (یا نزدیک‌ترین وزن موجود فونت آپلودی). فونت سیستم فایلی ندارد.
- * پیش‌فرض همان دو فایل قبلی: Vazirmatn-Regular و Vazirmatn-Bold.
+ * پیش‌فرض: یک فایل Vazirmatn-Variable-base (از 3.8.7 هر دو وزن در همان فایل؛ قبلا Regular و Bold).
  *
  * @return list<string>
  */
@@ -190,8 +190,10 @@ function hodima_typography_vazirmatn_url( int $weight ): string {
 	$stem  = 'assets/fonts/Vazirmatn-' . ( $names[ $weight ] ?? 'Regular' );
 
 	// preload فایل کوچک `-base` (متن فارسی/لاتین پایه؛ همان که style.css برای اغلب صفحه‌ها می‌گیرد)؛
-	// نبودنش (قالب فرزند/نسخه قدیمی) به فایل کامل برمی‌گردد
-	foreach ( [ $stem . '-base.woff2', $stem . '.woff2' ] as $file ) {
+	// نبودنش (قالب فرزند/نسخه قدیمی) به فایل کامل برمی‌گردد. از 3.8.7 وزن‌های ۴۰۰ تا ۷۰۰ یک فایل
+	// وریبل مشترک دارند، پس preload متن (۴۰۰) و تیتر (۷۰۰) یک درخواست می‌شود (تکرار حذف می‌شود).
+	$files = $weight >= 400 && $weight <= 700 ? [ 'assets/fonts/Vazirmatn-Variable-base.woff2' ] : [];
+	foreach ( [ ...$files, $stem . '-base.woff2', $stem . '.woff2' ] as $file ) {
 		if ( is_file( get_theme_file_path( $file ) ) ) {
 			return get_theme_file_uri( $file );
 		}
