@@ -125,12 +125,14 @@ function hodima_settings_panels(): array {
 		'product_sections'   => [ 'section' => 'product', 'title' => 'بخش‌های صفحه محصول', 'icon' => 'dashicons-visibility', 'layout' => 'toggles', 'help' => 'بخش خاموش برای همه محصولات پنهان می‌شود؛ بخش روشن فقط وقتی محتوا دارد دیده می‌شود (کادر «رسانه» هر محصول و نظرات ووکامرس).' ],
 		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت در اسکیما (گوگل)', 'icon' => 'dashicons-tag', 'help' => 'عددی که گوگل (اسکیما)، پیش‌نمایش لینک در شبکه‌های اجتماعی (متاتگ قیمت) و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود. بعد از تغییر، کش لایت‌اسپید را پاک کنید. قیمت و نام محصولات در ترب: «ابزارهای هدیما ← ترب».' ],
 		'product_reviews'    => [ 'section' => 'product', 'title' => 'نظرات کاربران', 'icon' => 'dashicons-format-chat', 'help' => 'عنوان بالای نظرات و فرم ثبت نظر. اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند، مثل تیترهای تب «تایپوگرافی».' ],
+		'product_reviews_display' => [ 'section' => 'product', 'title' => 'نمایش نظرات', 'icon' => 'dashicons-star-filled', 'layout' => 'toggles', 'help' => 'بخش‌های کمکی کنار فهرست نظرات محصول. اطلاعات از خود ووکامرس است و چیزی ذخیره نمی‌کنند.' ],
 		'product_upsells'    => [ 'section' => 'product', 'title' => 'محصولات پیشنهادی (Upsell)', 'icon' => 'dashicons-cart', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید. اندازه عنوان از «موبایل» (۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند.' ],
 
 		'blog_page'          => [ 'section' => 'blog', 'title' => 'صفحه وبلاگ', 'icon' => 'dashicons-welcome-write-blog' ],
 		'blog_post_meta'     => [ 'section' => 'blog', 'title' => 'اطلاعات زیر عنوان مقاله', 'icon' => 'dashicons-calendar-alt', 'layout' => 'toggles', 'help' => 'تاریخ، زمان مطالعه و نویسنده به خواننده و گوگل نشان می‌دهد مقاله تازه و معتبر است.' ],
 		'blog_post_extra'    => [ 'section' => 'blog', 'title' => 'امکانات صفحه مقاله', 'icon' => 'dashicons-admin-generic', 'layout' => 'toggles', 'help' => 'فهرست مطالب، نوار پیشرفت، برچسب‌ها، اشتراک‌گذاری، کادر نویسنده و مقاله قبلی/بعدی.' ],
 		'blog_post_content'  => [ 'section' => 'blog', 'title' => 'متن مقاله', 'icon' => 'dashicons-editor-expand' ],
+		'blog_comments'      => [ 'section' => 'blog', 'title' => 'دیدگاه‌ها', 'icon' => 'dashicons-admin-comments', 'help' => 'دیدگاه‌های پایین مقاله‌ها و برگه‌ها. باز یا بسته بودن دیدگاه‌ها: «تنظیمات ← گفت‌وگو» وردپرس یا ویرایش هر مقاله.' ],
 		'blog_related'       => [ 'section' => 'blog', 'title' => 'مقالات مرتبط', 'icon' => 'dashicons-admin-links', 'help' => 'فهرست مقاله‌های دیگر زیر هر مقاله، بعد از دیدگاه‌ها.' ],
 
 		'notfound_main'      => [ 'section' => 'notfound', 'title' => 'متن‌ها و دکمه‌ها', 'icon' => 'dashicons-editor-textcolor' ],

@@ -1,6 +1,6 @@
 /* ==========================================================================
-   دیدگاه‌ها و نظرات محصول (3.9.0)
-   فهرست: inc/comments.php؛ دکمه «نمایش همه»: assets/js/comments.js.
+   دیدگاه‌ها و نظرات محصول (3.9.0؛ خلاصه امتیاز، نشان خریدار و مرتب‌سازی 3.9.1)
+   فهرست: inc/comments.php؛ دکمه «نمایش همه» و مرتب‌سازی: assets/js/comments.js.
    ظاهر کارت دیدگاه‌ها: single-post.css (.comments-wrapper) و single-product.css (#reviews).
    ========================================================================== */
 
@@ -10,10 +10,11 @@
 	outline-offset: var(--hodima-focus-offset);
 }
 
-/* فهرست بلند: فقط سه رشته اول (HODIMA_COMMENTS_VISIBLE) تا «نمایش همه»؛ بقیه در HTML هستند */
-.hodima-comments.is-collapsed > li:nth-child(n + 4) {
-	display: none;
-}
+/*
+ * فهرست بلند: فقط N رشته اول تا «نمایش همه»؛ بقیه در HTML هستند. N از تنظیمات قالب است،
+ * پس قانون nth-child کنار همین فایل چاپ می‌شود (hodima_comments_collapse_css در inc/comments.php؛
+ * تا 3.9.0 اینجا «n + 4» ثابت بود).
+ */
 
 /* دکمه ثانویه (روشن)، نه گرادیان دکمه عمومی: کار اصلی بخش، فرم ثبت نظر است */
 .hodima-comments-more {
@@ -91,4 +92,127 @@
 	& .no-comments {
 		color: var(--hodima-text-muted, #5d6785);
 	}
+}
+
+/* ── صفحه محصول (3.9.1) ── */
+
+/* «خریدار این محصول»: کادر روشن (جدا از «فروشگاه» پررنگ) */
+.hodima-comment-badge--buyer {
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	background: var(--hodima-bg-light, #f6f8fc);
+	color: var(--hodima-primary, #25316a);
+}
+
+/* خلاصه امتیازها: میانگین + ستاره‌ها | نوار هر امتیاز */
+.hodima-rating-summary {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	gap: var(--hodima-space-5) var(--hodima-space-7);
+	margin-block-end: var(--hodima-space-6);
+	padding: var(--hodima-space-5);
+	border: 1px solid var(--hodima-border-light, #d9e1f0);
+	border-radius: var(--hodima-radius-lg);
+	background: var(--hodima-surface, #ffffff);
+}
+
+.hodima-rating-summary__score {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--hodima-space-2);
+	min-inline-size: 7rem;
+	text-align: center;
+
+	& .star-rating {
+		float: none;
+		margin: 0;
+	}
+}
+
+.hodima-rating-summary__average {
+	color: var(--hodima-text-dark, #111111);
+	font-size: 2.25rem;
+	font-weight: 800;
+	line-height: 1.2;
+}
+
+.hodima-rating-summary__total {
+	color: var(--hodima-text-muted, #5d6785);
+	font-size: 0.8125rem;
+}
+
+.hodima-rating-summary__bars {
+	display: flex;
+	flex-direction: column;
+	gap: var(--hodima-space-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-rating-summary__row {
+	display: grid;
+	grid-template-columns: 4.5rem minmax(0, 1fr) 4rem;
+	align-items: center;
+	gap: var(--hodima-space-3);
+	font-size: 0.8125rem;
+}
+
+.hodima-rating-summary__label {
+	color: var(--hodima-text-dark, #111111);
+	white-space: nowrap;
+}
+
+.hodima-rating-summary__count {
+	color: var(--hodima-text-muted, #5d6785);
+	white-space: nowrap;
+}
+
+.hodima-rating-summary__bar {
+	block-size: 8px;
+	border-radius: var(--hodima-radius-pill);
+	background: var(--hodima-bg-gray, #eef2f8);
+	overflow: hidden;
+
+	& > span {
+		display: block;
+		block-size: 100%;
+		border-radius: inherit;
+		background: var(--hodima-secondary, #607bbd);
+	}
+}
+
+@media (width <= 480px) {
+	.hodima-rating-summary {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+/* «مرتب‌سازی نظرها» (hidden تا comments.js آماده شود) */
+.hodima-comments-sort {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--hodima-space-3);
+	margin-block-end: var(--hodima-space-5);
+
+	&[hidden] {
+		display: none;
+	}
+
+	& label {
+		color: var(--hodima-text-muted, #5d6785);
+		font-size: 0.875rem;
+	}
+
+	& select {
+		inline-size: auto;
+		min-inline-size: min(12rem, 100%);
+	}
+}
+
+/* بدون تصویر پروفایل (تنظیمات قالب): جای خالی ستون آواتار ووکامرس برداشته می‌شود */
+.woocommerce #reviews #comments ol.commentlist.hodima-comments--no-avatars li .comment-text {
+	margin-inline: 0;
 }

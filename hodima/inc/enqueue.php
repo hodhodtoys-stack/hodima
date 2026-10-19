@@ -190,6 +190,7 @@ function hodima_enqueue_scripts(): void {
 	$comments_shown = ! is_singular( 'product' ) || hodima_setting( 'product_show_reviews' );
 	if ( $comments_shown && is_singular() && ! is_front_page() && ( comments_open() || get_comments_number() ) ) {
 		hodima_enqueue_asset( 'hodima-comments', 'assets/css/comments.css' );
+		wp_add_inline_style( 'hodima-comments', hodima_comments_collapse_css() ); // تعداد نظر پیش از «نمایش همه» (3.9.1، تنظیمات قالب)
 
 		// «پاسخ» فرم را زیر همان دیدگاه می‌برد (comment-reply.js وردپرس، بدون jQuery)؛ بدون آن
 		// صفحه دوباره بار می‌شد و آدرس تکراری ?replytocom= می‌ساخت. نظرات محصول دکمه پاسخ ندارند.

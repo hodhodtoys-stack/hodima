@@ -93,9 +93,15 @@ function hodima_settings_fields(): array {
 		'product_show_video'    => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'ویدیو', 'default' => true ],
 		'product_show_reviews'  => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'نظرات کاربران', 'default' => true ],
 		// عنوان بخش نظرات (از 3.8.9؛ قبلا ثابت در inc/woocommerce/product-page.php) و اندازه عنوان‌ها؛ پیش‌فرض‌ها = اندازه قبلی (۲۴ و ۲۲٫۴)
-		'product_reviews_title'             => [ 'panel' => 'product_reviews', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'نظرات کاربران درباره {product}', 'wide' => true, 'help_visible' => true, 'help' => '{product} به‌جای نام همان محصول می‌نشیند (عنوان همراه نام محصول برای گوگل و موتورهای پاسخ‌گو گویاتر است). خالی = همین پیش‌فرض.' ],
+		'product_reviews_title'             => [ 'panel' => 'product_reviews', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'نظرات کاربران درباره {product}', 'help_visible' => true, 'help' => '{product} به‌جای نام همان محصول می‌نشیند (عنوان همراه نام محصول برای گوگل و موتورهای پاسخ‌گو گویاتر است). خالی = همین پیش‌فرض.' ],
+		'product_reviews_visible'           => [ 'panel' => 'product_reviews', 'type' => 'number', 'label' => 'تعداد نظر پیش از «نمایش همه»', 'default' => 3, 'min' => 1, 'max' => 20, 'help' => 'بقیه نظرها با دکمه «نمایش همه نظرات» باز می‌شوند (همه در صفحه هستند و گوگل آن‌ها را می‌بیند). فرم ثبت نظر همیشه دیده می‌شود.' ],
 		'product_reviews_title_size'        => [ 'panel' => 'product_reviews', 'type' => 'number', 'label' => 'اندازه عنوان دسکتاپ (پیکسل)', 'default' => 24, 'min' => 12, 'max' => 48, 'step' => 0.1 ],
 		'product_reviews_title_size_mobile' => [ 'panel' => 'product_reviews', 'type' => 'number', 'label' => 'اندازه عنوان موبایل (پیکسل)', 'default' => 24, 'min' => 12, 'max' => 48, 'step' => 0.1 ],
+		// نمایش نظرات محصول (3.9.1)
+		'product_reviews_summary'  => [ 'panel' => 'product_reviews_display', 'type' => 'toggle', 'label' => 'خلاصه امتیازها', 'default' => true, 'help' => 'میانگین ستاره‌ها، تعداد نظر و نوار درصد هر امتیاز (۵ تا ۱ ستاره)، بالای نظرها. فقط وقتی دست‌کم یک نظر امتیازدار هست.' ],
+		'product_reviews_verified' => [ 'panel' => 'product_reviews_display', 'type' => 'toggle', 'label' => 'نشان «خریدار این محصول»', 'default' => true, 'help' => 'کنار نام کسی که این محصول را واقعا از سایت خریده (تشخیص با ووکامرس). خاموش: همان رفتار ووکامرس (ووکامرس ← تنظیمات ← محصولات).' ],
+		'product_reviews_sort'     => [ 'panel' => 'product_reviews_display', 'type' => 'toggle', 'label' => 'مرتب‌سازی نظرها', 'default' => true, 'help' => 'جدیدترین، قدیمی‌ترین، بیشترین و کمترین امتیاز؛ در خود صفحه و بدون بارگذاری دوباره. فقط وقتی دست‌کم دو نظر هست.' ],
+		'product_reviews_avatars'  => [ 'panel' => 'product_reviews_display', 'type' => 'toggle', 'label' => 'تصویر پروفایل', 'default' => true, 'help' => 'تصویر Gravatar کنار هر نظر. خاموش: صفحه سبک‌تر (بدون دانلود تصویر از Gravatar).' ],
 		'product_upsells_title' => [ 'panel' => 'product_upsells', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'محصولات مشابه' ],
 		'product_upsells_limit' => [ 'panel' => 'product_upsells', 'type' => 'number', 'label' => 'تعداد', 'default' => 6, 'min' => 0, 'max' => 24, 'help' => '۰ = بخش نمایش داده نشود.' ],
 		'product_upsells_title_size'        => [ 'panel' => 'product_upsells', 'type' => 'number', 'label' => 'اندازه عنوان دسکتاپ (پیکسل)', 'default' => 22.4, 'min' => 12, 'max' => 48, 'step' => 0.1 ],
@@ -128,6 +134,9 @@ function hodima_settings_fields(): array {
 		'blog_prev_next'       => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'مقاله قبلی و بعدی', 'default' => true, 'help' => 'پایین مقاله؛ اول از همان دسته، اگر نبود از کل وبلاگ.' ],
 		'blog_content_collapse' => [ 'panel' => 'blog_post_content', 'type' => 'toggle', 'label' => 'متن بلند مقاله جمع شود («نمایش بیشتر»)', 'default' => true, 'wide' => true, 'help' => 'به افزونه Hodima Media نیاز دارد. خاموش: کل متن یک‌جا نمایش داده می‌شود.' ],
 		'blog_content_height'  => [ 'panel' => 'blog_post_content', 'type' => 'number', 'label' => 'ارتفاع متن جمع‌شده (پیکسل)', 'default' => 400, 'min' => 200, 'max' => 1500 ],
+		// دیدگاه‌های مقاله و برگه (3.9.1)
+		'blog_comments_avatars'  => [ 'panel' => 'blog_comments', 'type' => 'toggle', 'label' => 'تصویر پروفایل کنار دیدگاه‌ها', 'default' => true, 'wide' => true, 'help' => 'تصویر Gravatar هر نویسنده دیدگاه (اگر در «تنظیمات ← گفت‌وگو» نمایش آواتار روشن باشد). خاموش: صفحه سبک‌تر.' ],
+		'blog_comments_visible'  => [ 'panel' => 'blog_comments', 'type' => 'number', 'label' => 'تعداد دیدگاه پیش از «نمایش همه»', 'default' => 3, 'min' => 1, 'max' => 20, 'help' => 'در مقاله‌ها و برگه‌ها. بقیه با دکمه «نمایش همه دیدگاه‌ها» باز می‌شوند؛ فرم همیشه دیده می‌شود.' ],
 		'blog_related_title'   => [ 'panel' => 'blog_related', 'type' => 'text', 'label' => 'عنوان', 'default' => 'مقالات مرتبط' ],
 		'blog_related_limit'   => [ 'panel' => 'blog_related', 'type' => 'number', 'label' => 'تعداد', 'default' => 4, 'min' => 0, 'max' => 12, 'help' => '۰ = بخش نمایش داده نشود.' ],
 		'blog_related_source'  => [ 'panel' => 'blog_related', 'type' => 'select', 'label' => 'کدام مقاله‌ها', 'default' => 'category', 'options' => [ 'category' => 'هم‌دسته (آخرین مقاله‌های همان دسته)', 'cluster' => 'هم‌خوشه (خوشه موضوعی افزونه سئو)، و اگر کم بود هم‌دسته' ] ],

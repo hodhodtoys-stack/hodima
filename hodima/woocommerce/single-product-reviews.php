@@ -10,9 +10,10 @@
  *   - عنوان همیشه از فیلتر woocommerce_reviews_title (inc/woocommerce/product-page.php:
  *     «تنظیمات قالب ← صفحه محصول ← نظرات کاربران»)، با نظر یا بی‌نظر؛ قبلا محصول
  *     بی‌نظر «Reviews» ثابت ووکامرس را می‌گرفت.
- *   - فهرست با hodima_comments_list(): بعد از چند نظر اول «نمایش همه نظرات» و برچسب
- *     «فروشگاه» (inc/comments.php). فرم همیشه دیدنی است (قبلا با فهرست در کادر
- *     جمع‌شونده افزونه Media بود).
+ *   - فهرست با hodima_comments_list(): بعد از چند نظر اول «نمایش همه نظرات»، برچسب
+ *     «فروشگاه» و (3.9.1) کادر «مرتب‌سازی نظرها» (inc/comments.php). فرم همیشه دیدنی است
+ *     (قبلا با فهرست در کادر جمع‌شونده افزونه Media بود).
+ *   - (3.9.1) خلاصه امتیازها زیر عنوان: hodima_reviews_summary().
  *
  * @see     https://woocommerce.com/document/template-structure/
  * @package Hodima\WooCommerce
@@ -44,6 +45,8 @@ $count = $product->get_review_count();
 			echo wp_kses_post( (string) apply_filters( 'woocommerce_reviews_title', $reviews_title, $count, $product ) );
 			?>
 		</h2>
+
+		<?php hodima_reviews_summary( $product ); ?>
 
 		<?php if ( have_comments() ) : ?>
 			<?php hodima_comments_list( (array) apply_filters( 'woocommerce_product_review_list_args', [ 'callback' => 'woocommerce_comments' ] ), 'commentlist', 'نظرات' ); ?>

@@ -30,7 +30,7 @@ $hodima_comment_count = (int) get_comments_number();
 			[
 				'style'       => 'ol',
 				'short_ping'  => true,
-				'avatar_size' => 40,
+				'avatar_size' => hodima_comments_avatars() ? 40 : 0, // ۰ = بدون تصویر (تنظیمات قالب ← وبلاگ ← دیدگاه‌ها)
 			],
 			'comment-list',
 			'دیدگاه‌ها'

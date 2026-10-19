@@ -2,9 +2,11 @@
 /**
  * The template to display the reviewers meta data (name, verified owner, review date)
  *
- * بازنویسی قالب single-product/review-meta.php ووکامرس (از قالب 3.9.0) فقط برای برچسب
- * «فروشگاه» کنار نام پاسخ‌دهنده‌ای که از کارکنان فروشگاه است (hodima_comment_badge در
- * inc/comments.php)؛ بقیه همان قالب اصلی. شماره @version همان نسخه قالب اصلی است.
+ * بازنویسی قالب single-product/review-meta.php ووکامرس (از قالب 3.9.0)؛ بقیه همان قالب اصلی.
+ * شماره @version همان نسخه قالب اصلی است. تفاوت‌ها (inc/comments.php):
+ *   - برچسب «فروشگاه» کنار نام پاسخ‌دهنده‌ای که از کارکنان فروشگاه است (hodima_comment_badge)؛
+ *   - از 3.9.1 نشان «خریدار این محصول» به‌جای «(verified owner)» ووکامرس، اگر در تنظیمات قالب روشن است؛
+ *   - data-rating و data-time روی p.meta برای «مرتب‌سازی نظرها» (assets/js/comments.js).
  *
  * @see     https://woocommerce.com/document/template-structure/
  * @package Hodima\WooCommerce
@@ -25,10 +27,11 @@ if ( ! $comment instanceof WP_Comment ) {
 }
 
 $verified = wc_review_is_from_verified_owner( (int) $comment->comment_ID );
+$sort_data = sprintf( ' data-rating="%d" data-time="%d"', (int) get_comment_meta( (int) $comment->comment_ID, 'rating', true ), (int) get_comment_date( 'U', $comment ) );
 
 if ( '0' === $comment->comment_approved ) { ?>
 
-	<p class="meta">
+	<p class="meta"<?php echo $sort_data; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- فقط عدد صحیح (%d) ?>>
 		<em class="woocommerce-review__awaiting-approval">
 			<?php esc_html_e( 'Your review is awaiting approval', 'woocommerce' ); ?>
 		</em>
@@ -36,12 +39,14 @@ if ( '0' === $comment->comment_approved ) { ?>
 
 <?php } else { ?>
 
-	<p class="meta">
+	<p class="meta"<?php echo $sort_data; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- فقط عدد صحیح (%d) ?>>
 		<strong class="woocommerce-review__author"><?php comment_author(); ?> </strong>
 		<?php
 		echo wp_kses_post( hodima_comment_badge( $comment ) );
 
-		if ( 'yes' === get_option( 'woocommerce_review_rating_verification_label' ) && $verified ) {
+		if ( hodima_setting( 'product_reviews_verified' ) ) {
+			echo wp_kses_post( hodima_review_verified_badge( $comment ) );
+		} elseif ( 'yes' === get_option( 'woocommerce_review_rating_verification_label' ) && $verified ) {
 			echo '<em class="woocommerce-review__verified verified">(' . esc_attr__( 'verified owner', 'woocommerce' ) . ')</em> ';
 		}
 
