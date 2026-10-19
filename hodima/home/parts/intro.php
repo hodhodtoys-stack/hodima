@@ -74,8 +74,10 @@ $features = array_values( array_filter( array_map( 'trim', (array) $args['featur
 				<?php endif; ?>
 				<div class="video-content-wrapper">
 					<?php
-					// بخش H1 صفحه اصلی، بالای صفحه: کاور ویدیو بدون lazy و با اولویت بالا (LCP؛ Media 1.7+، نسخه قبلی نادیده می‌گیرد)
-					echo hodima_theme_media_html( 'video', hodima_home_claim_priority() ? [ 'priority' => 'high' ] : [] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media
+					// بخش H1 صفحه اصلی، بالای صفحه: کاور ویدیو بدون lazy و با اولویت بالا (LCP؛ Media 1.7+، نسخه قبلی نادیده می‌گیرد).
+					// اگر بنر/بخش دیگری اولویت را گرفته، ویدیو زیر دید اول است: پوستر تنبل (Media 1.9.8+).
+					// باگ قبلی: پوستر JPG ۸۸KB هم‌زمان با بنر (LCP موبایل) دانلود می‌شد.
+					echo hodima_theme_media_html( 'video', hodima_home_claim_priority() ? [ 'priority' => 'high' ] : [ 'poster' => 'lazy' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی افزونه Hodima Media
 					?>
 				</div>
 			</div>

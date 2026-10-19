@@ -853,7 +853,14 @@ function hodima_home_render_section( array $item ): void {
 		case 'custom':
 			if ( '' !== (string) $args['html'] ) {
 				hodima_home_ensure_category_shortcodes( (string) $args['html'] ); // شورت‌کد دسته (مثل [plasco]) فقط هنگام نیاز ثبت می‌شود
-				echo do_shortcode( (string) $args['html'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- محتوای مدیر (هنگام ذخیره پاک‌سازی شد)
+				$html = do_shortcode( (string) $args['html'] );
+				// بنر بالای صفحه (مثل [hodima-slider1] افزونه Media) خودش تصویر اولویت‌دار (LCP) دارد: اولویت
+				// صفحه را بگیرد تا بخش‌های بعدی (ویدیوی معرفی، اولین کارت) آن را نگیرند. باگ قبلی: بنر
+				// fetchpriority=high داشت ولی ویدیوی معرفی هم اولویت را می‌گرفت و پوستر ۸۸KB آن هم‌زمان دانلود می‌شد.
+				if ( str_contains( $html, 'fetchpriority="high"' ) ) {
+					hodima_home_claim_priority();
+				}
+				echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- محتوای مدیر (هنگام ذخیره پاک‌سازی شد)
 			}
 			break;
 	}
