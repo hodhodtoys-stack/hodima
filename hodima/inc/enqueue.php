@@ -182,6 +182,22 @@ function hodima_enqueue_scripts(): void {
 		hodima_enqueue_asset( 'hodima-template-videos', 'assets/css/template-page-videos.css' );
 	}
 
+	/*
+	 * 7.3 دیدگاه‌ها و نظرات محصول (3.9.0؛ inc/comments.php): دکمه «نمایش همه» و برچسب
+	 * فروشگاه/نویسنده. فقط صفحه‌ای که بخش دیدگاه دارد (همان شرط قالب‌ها)؛ اسکریپت دکمه را
+	 * خود فهرست وقتی لازم است اضافه می‌کند.
+	 */
+	$comments_shown = ! is_singular( 'product' ) || hodima_setting( 'product_show_reviews' );
+	if ( $comments_shown && is_singular() && ! is_front_page() && ( comments_open() || get_comments_number() ) ) {
+		hodima_enqueue_asset( 'hodima-comments', 'assets/css/comments.css' );
+
+		// «پاسخ» فرم را زیر همان دیدگاه می‌برد (comment-reply.js وردپرس، بدون jQuery)؛ بدون آن
+		// صفحه دوباره بار می‌شد و آدرس تکراری ?replytocom= می‌ساخت. نظرات محصول دکمه پاسخ ندارند.
+		if ( get_option( 'thread_comments' ) && comments_open() && ! is_singular( 'product' ) ) {
+			wp_enqueue_script( 'comment-reply' );
+		}
+	}
+
 	// 8. استایل صفحه ۴۰۴
 	if ( is_404() ) {
 		hodima_enqueue_asset( 'hodima-404', 'assets/css/404.css', [ 'hodima-tokens' ] );

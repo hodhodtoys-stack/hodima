@@ -240,7 +240,13 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 	<?php
 	// ویدیو بعد از توضیح محصول، پایین صفحه است: پوستر تا نزدیک دید دانلود نشود (Media 1.9.8+؛ نسخه قبلی این گزینه را نادیده می‌گیرد)
 	$hp_video   = $hp_show( 'video' ) ? hodima_theme_media_html( 'video', [ 'poster' => 'lazy' ] ) : '';
-	$hp_reviews = shortcode_exists( 'expand_product_reviews' ) && $hp_show( 'reviews' ) ? trim( do_shortcode( '[expand_product_reviews]' ) ) : '';
+	$hp_reviews = '';
+	if ( $hp_show( 'reviews' ) ) {
+		// از 3.9.0 خود قالب (woocommerce/single-product-reviews.php)؛ قبلا فقط شورت‌کد expand_product_reviews افزونه Media و بدون آن هیچ (حتی فرم)
+		ob_start();
+		comments_template();
+		$hp_reviews = trim( (string) ob_get_clean() );
+	}
 	$hp_upsells = max( 0, (int) hodima_setting( 'product_upsells_limit' ) );
 	?>
 	<?php if ( '' !== $hp_video || '' !== $hp_reviews ) : ?>
@@ -249,7 +255,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 			<div class="video-wrapper"><?php echo $hp_video; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه Hodima Media ?></div>
 		<?php endif; ?>
 
-		<?php echo $hp_reviews; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی شورت‌کد افزونه ?>
+		<?php echo $hp_reviews; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی قالب نظرات (single-product-reviews.php) ?>
 	</section>
 	<?php endif; ?>
 

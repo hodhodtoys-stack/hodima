@@ -55,6 +55,7 @@ function hodima_load_theme_files(): void {
 		'inc/pagination.php',                    // متن‌ها و ارقام مشترک صفحه‌بندی
 		'inc/blog.php',                          // نام وبلاگ و مقالات مرتبط (تب «وبلاگ»)
 		'inc/blog-post.php',                     // فهرست مطالب، اشتراک‌گذاری، نویسنده، قبلی/بعدی (صفحه مقاله)
+		'inc/comments.php',                      // فهرست دیدگاه‌ها/نظرات، «نمایش همه»، برچسب فروشگاه/نویسنده
 		'inc/breadcrumb.php',                    // مسیر راهنمای مقاله‌ها و آرشیو وبلاگ (یکی با اسکیما)
 		'inc/setup.php',
 		'inc/enqueue.php',

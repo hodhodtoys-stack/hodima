@@ -96,14 +96,10 @@ get_header();
         <section class="hodima-section-box section-comments">
             <div class="comments-wrapper">
                 <?php 
+                // از 3.9.0 همیشه comments.php قالب (فهرست جمع‌شونده، فرم همیشه دیدنی)؛
+                // قبلا با افزونه Media شورت‌کد expand_blog_comments فرم را هم در کادر ۵۰۰px جمع می‌کرد
                 if ( comments_open() || get_comments_number() ) :
-                    if ( shortcode_exists('expand_blog_comments') ) {
-                        // شورت‌کد نظرات نیازی به محتوا دهی بین دو تگ ندارد
-                        // خودش وظیفه فراخوانی کامنت‌ها را بر عهده دارد
-                        echo do_shortcode('[expand_blog_comments height="500"]');
-                    } else {
-                        comments_template();
-                    }
+                    comments_template();
                 endif;
                 ?>
             </div>

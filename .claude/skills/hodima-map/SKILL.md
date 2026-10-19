@@ -43,7 +43,7 @@ description: نقشه کدبیس هدیما — ساختار قالب و ۴ اف
 | Media | `hodima_media_videos_page_query()` | `template-page-videos.php` |
 | Media | `hodima_media_external_hosts()` | `inc/theme-settings/admin-fields.php` |
 | Media | شورت‌کدهای `hook_intro/video/voice/faq` فقط از راه `hodima_theme_media_html()` | `inc/media-sections.php`، `template-parts/media/*` |
-| Media | شورت‌کدهای `expand_*` (expandable-boxes) | `single-post.php`، `woocommerce/content-single-product.php`، `taxonomy-product_cat.php` |
+| Media | شورت‌کدهای `expand_*` (expandable-boxes) فقط برای متن (`expand_blog_content`، `expand_product_description`، توضیح دسته)؛ دیدگاه/نظرات از 3.9.0 بدون Media (`comments.php`، `woocommerce/single-product-reviews.php`، `inc/comments.php`) | `single-post.php`، `woocommerce/content-single-product.php`، `taxonomy-product_cat.php` |
 | Media ← قالب | فیلتر `hodima_media_displayed_taxonomies` (قالب اعلام می‌کند فقط `product_cat` بخش رسانه دارد) | `inc/media-sections.php` |
 | Commerce | `hodima_product_stock_location()`، `hodima_product_stock_texts()`، `hodima_product_schema_availability()` (`inc/woocommerce/product-fields.php`)، کلاس `Hodima_Product_Specs_Table` (`inc/hodima-woo-table/woo-table.php`) | `woocommerce/content-single-product.php`، `inc/woocommerce/product-page.php` |
 | Commerce | شورت‌کد `hodima_phone_form` (`components/phone/`) و `woo_live_search` (`components/search/`) | `footer.php`، `header.php` |

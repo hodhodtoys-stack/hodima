@@ -180,10 +180,10 @@ function hodima_render_upsells( int $limit = 6 ): void {
  * «نظرات کاربران» به تنهایی برای موتورهای پاسخ‌گو (AEO) بدون زمینه است؛
  * «نظرات کاربران درباره چهل گیس» یک بخش قابل‌استناد و مستقل می‌سازد.
  * از 3.8.9 متن از تنظیمات قالب (تب «صفحه محصول ← نظرات کاربران»، فیلد
- * product_reviews_title؛ {product} = نام محصول) و برای محصول بدون نظر هم
- * (قبلا آنجا «نقد و بررسی‌ها»ی ووکامرس می‌آمد، چون این فیلتر فقط با نظر
- * صدا زده می‌شود). متن خام برمی‌گردد: فیلتر woocommerce_reviews_title را ووکامرس
- * بدون escape چاپ می‌کند (esc_html همان‌جا)، ولی gettext را خود esc_html_e.
+ * product_reviews_title؛ {product} = نام محصول) و برای محصول بدون نظر هم: قالب
+ * woocommerce/single-product-reviews.php (از 3.9.0) فیلتر را در هر دو حالت صدا می‌زند
+ * (ووکامرس فقط با نظر؛ در 3.8.9 محصول بی‌نظر از راه gettext «Reviews» می‌گرفت).
+ * متن خام برمی‌گردد؛ esc_html در فیلتر.
  * ===================================================================== */
 function hodima_product_reviews_title( mixed $product = null ): string {
 
@@ -202,16 +202,6 @@ function hodima_product_reviews_title( mixed $product = null ): string {
 add_filter( 'woocommerce_reviews_title', static function ( mixed $title, mixed $count = 0, mixed $product = null ): string {
 	return esc_html( hodima_product_reviews_title( $product ) );
 }, 99, 3 );
-
-// محصول بدون نظر: قالب ووکامرس (single-product-reviews.php) عنوان ثابت «Reviews» را بدون فیلتر بالا چاپ می‌کند
-add_action( 'wp', static function (): void {
-	if ( ! function_exists( 'is_product' ) || ! is_product() ) {
-		return;
-	}
-	add_filter( 'gettext_woocommerce', static function ( mixed $translation, mixed $text ): mixed {
-		return 'Reviews' === $text ? hodima_product_reviews_title() : $translation;
-	}, 10, 2 );
-} );
 
 /* =====================================================================
  * ۸. اندازه عنوان «نظرات کاربران» و «محصولات پیشنهادی» (از 3.8.9)
