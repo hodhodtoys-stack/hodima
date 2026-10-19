@@ -122,8 +122,11 @@ function hodima_review_verified_badge( WP_Comment $comment ): string {
 }
 
 /**
- * خلاصه امتیازها بالای نظرات محصول: میانگین، ستاره‌ها، تعداد و نوار هر امتیاز.
- * همان داده ووکامرس که اسکیمای aggregateRating (افزونه SEO) می‌خواند.
+ * خلاصه امتیازها بالای نظرات محصول، در یک ردیف: «۴٫۵ ★★★★★ از ۲۰ نظر».
+ * همان داده ووکامرس که اسکیمای aggregateRating (افزونه SEO) می‌خواند؛ گوگل فقط دیده‌شدن
+ * میانگین و تعداد را می‌خواهد. نوارهای هر امتیاز (۵ تا ۱ ستاره، 3.9.1) در 3.9.3 به خواست
+ * کاربر حذف شد: در موبایل جای زیادی می‌گرفت و برای سئو اثری نداشت.
+ * ارقام فارسی و جداکننده «٫»: number_format_i18n روی سایت «4,0» لاتین می‌داد.
  */
 function hodima_reviews_summary( WC_Product $product ): void {
 
@@ -131,37 +134,22 @@ function hodima_reviews_summary( WC_Product $product ): void {
 		return;
 	}
 
-	$counts = array_map( 'intval', (array) $product->get_rating_counts() );
-	$total  = array_sum( $counts );
+	$total = array_sum( array_map( 'intval', (array) $product->get_rating_counts() ) );
 
 	if ( $total < 1 ) {
 		return;
 	}
 
 	$average = (float) $product->get_average_rating();
+	$score   = hodima_fa_digits( number_format( $average, 1, '٫', '' ) );
 	?>
 	<div class="hodima-rating-summary">
-		<div class="hodima-rating-summary__score">
-			<span class="hodima-rating-summary__average" aria-hidden="true"><?php echo esc_html( number_format_i18n( $average, 1 ) ); ?></span>
-			<span aria-hidden="true"><?php echo wp_kses_post( wc_get_rating_html( $average, $total ) ); ?></span>
-			<span class="hodima-rating-summary__total">
-				<span class="screen-reader-text"><?php echo esc_html( sprintf( 'میانگین امتیاز %s از ۵،', number_format_i18n( $average, 1 ) ) ); ?></span>
-				<?php echo esc_html( sprintf( 'از %s نظر', number_format_i18n( $total ) ) ); ?>
-			</span>
-		</div>
-		<ul class="hodima-rating-summary__bars">
-			<?php for ( $star = 5; $star >= 1; $star-- ) : ?>
-				<?php
-				$count   = $counts[ $star ] ?? 0;
-				$percent = (int) round( 100 * $count / $total );
-				?>
-				<li class="hodima-rating-summary__row">
-					<span class="hodima-rating-summary__label"><?php echo esc_html( sprintf( '%s ستاره', number_format_i18n( $star ) ) ); ?></span>
-					<span class="hodima-rating-summary__bar" aria-hidden="true"><span style="inline-size: <?php echo (int) $percent; ?>%"></span></span>
-					<span class="hodima-rating-summary__count"><?php echo esc_html( sprintf( '%s نظر', number_format_i18n( $count ) ) ); ?></span>
-				</li>
-			<?php endfor; ?>
-		</ul>
+		<span class="hodima-rating-summary__average" aria-hidden="true"><?php echo esc_html( $score ); ?></span>
+		<span class="hodima-rating-summary__stars" aria-hidden="true"><?php echo wp_kses_post( wc_get_rating_html( $average, $total ) ); ?></span>
+		<span class="hodima-rating-summary__total">
+			<span class="screen-reader-text"><?php echo esc_html( sprintf( 'میانگین امتیاز %s از ۵،', $score ) ); ?></span>
+			<?php echo esc_html( sprintf( 'از %s نظر', hodima_fa_digits( (string) $total ) ) ); ?>
+		</span>
 	</div>
 	<?php
 }
