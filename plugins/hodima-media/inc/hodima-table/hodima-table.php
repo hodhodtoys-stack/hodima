@@ -1127,6 +1127,19 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 			$row_header = self::column_count( $table ) > 1;
 			$label      = '' !== $caption ? $caption : $default_label;
 
+			// نام یکتای ناحیه: دو جدول بی‌عنوان در یک صفحه هر دو «جدول مشخصات» بودند و صفحه‌خوان
+			// دو ناحیه هم‌نام نشان می‌داد (axe «landmark-unique»)؛ جدول دوم «جدول مشخصات ۲» می‌شود.
+			// شمارش با کلاس جدول، نه هر بار ساخت: قالب توضیح دسته را دو بار می‌خواند (بالا).
+			static $labels = [];
+			$labels[ $label ] ??= [];
+			if ( ! in_array( $css_class, $labels[ $label ], true ) ) {
+				$labels[ $label ][] = $css_class;
+			}
+			$nth = (int) array_search( $css_class, $labels[ $label ], true ) + 1;
+			if ( $nth > 1 ) {
+				$label .= ' ' . number_format_i18n( $nth );
+			}
+
 			$html  = '<div class="hodima-table-container" role="region" tabindex="0" aria-label="' . esc_attr( $label ) . '">';
 			$html .= '<table class="hodima-dynamic-table ' . esc_attr( $css_class ) . '">';
 

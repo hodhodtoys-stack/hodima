@@ -66,14 +66,16 @@ $eager_count = hodima_home_categories_eager_count();
 				<div class="cat-img-box">
 					<?php
 					if ( ! empty( $category['thumbnail_id'] ) ) {
-						// مربع ۸۰px (۷۲ در موبایل): نسخه ۱۵۰px کافی است؛ تا 3.1.4 نسخه ۳۰۰px گرفته می‌شد
+						// مربع ۸۰px (۷۲ در موبایل): نسخه ۱۵۰px کافی است؛ تا 3.1.4 نسخه ۳۰۰px گرفته می‌شد.
+						// alt خالی: نام دسته همین کنار تصویر نوشته شده و نام لینک است؛ alt برابر نام، آن را دو بار
+						// برای صفحه‌خوان می‌خواند (axe «image-redundant-alt»).
 						echo wp_get_attachment_image( (int) $category['thumbnail_id'], 'thumbnail', false, $loading_attrs + [
-							'alt'      => $category['name'],
+							'alt'      => '',
 							'decoding' => 'async',
 							'sizes'    => '(max-width: 768px) 72px, 80px',
 						] );
 					} elseif ( function_exists( 'wc_placeholder_img_src' ) ) {
-						echo '<img src="' . esc_url( wc_placeholder_img_src() ) . '" alt="' . esc_attr( $category['name'] ) . '" width="150" height="150"' . ( $index < $eager_count ? ' loading="eager" data-no-lazy="1"' : ' loading="lazy"' ) . ' decoding="async">';
+						echo '<img src="' . esc_url( wc_placeholder_img_src() ) . '" alt="" width="150" height="150"' . ( $index < $eager_count ? ' loading="eager" data-no-lazy="1"' : ' loading="lazy"' ) . ' decoding="async">';
 					}
 					?>
 				</div>

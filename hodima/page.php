@@ -69,6 +69,14 @@ while ( have_posts() ) :
 
 		<article id="post-<?php the_ID(); ?>" <?php post_class( 'hodima-page__article' ); ?>>
 
+			<?php
+			// سبد/پرداخت/حساب کاربری عنوان دیدنی ندارند (طراحی خودشان)، ولی صفحه بدون h1 برای صفحه‌خوان
+			// سرفصل ندارد (axe «page-has-heading-one»): عنوان فقط برای صفحه‌خوان؛ ظاهر همان است.
+			if ( $hodima_wc_page && ! preg_match( '/<h1[\s>]/i', $hodima_content ) ) {
+				the_title( '<h1 class="screen-reader-text">', '</h1>' );
+			}
+			?>
+
 			<?php if ( $hodima_has_top ) : ?>
 				<?php if ( ! $hodima_has_h1 ) : ?>
 					<header class="entry-header <?php echo esc_attr( $hodima_main_class ); ?>">

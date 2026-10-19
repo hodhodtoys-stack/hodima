@@ -4,7 +4,7 @@ Theme URI: https://hodima.com
 Author: آرین فتحی
 Author URI: https://hodima.com
 Description: قالب اختصاصی فروشگاه عمده‌فروشی (فقط نمایش). امکانات سئو، فروشگاه و رسانه در افزونه‌های همراه Hodima Core، Hodima SEO، Hodima Commerce و Hodima Media هستند.
-Version: 3.8.7
+Version: 3.8.8
 Requires at least: 6.5
 Requires PHP: 8.4
 Text Domain: hodima
@@ -166,6 +166,9 @@ h3 { --hodima-heading-min: var(--hodima-h3-size-min); --hodima-heading-max: var(
 h4 { --hodima-heading-min: var(--hodima-h4-size-min); --hodima-heading-max: var(--hodima-h4-size-max); --hodima-heading-weight: var(--hodima-h4-weight); --hodima-heading-line-height: var(--hodima-h4-line-height); --hodima-heading-color: var(--hodima-h4-color); }
 h5 { --hodima-heading-min: var(--hodima-h5-size-min); --hodima-heading-max: var(--hodima-h5-size-max); --hodima-heading-weight: var(--hodima-h5-weight); --hodima-heading-line-height: var(--hodima-h5-line-height); --hodima-heading-color: var(--hodima-h5-color); }
 h6 { --hodima-heading-min: var(--hodima-h6-size-min); --hodima-heading-max: var(--hodima-h6-size-max); --hodima-heading-weight: var(--hodima-h6-weight); --hodima-heading-line-height: var(--hodima-h6-line-height); --hodima-heading-color: var(--hodima-h6-color); }
+
+/* عنوان فرم دیدگاه از 3.8.8 h2 است (ترتیب تیترها)، ولی ظاهرش همان پله h3 می‌ماند */
+h2.comment-reply-title { --hodima-heading-min: var(--hodima-h3-size-min); --hodima-heading-max: var(--hodima-h3-size-max); --hodima-heading-weight: var(--hodima-h3-weight); --hodima-heading-line-height: var(--hodima-h3-line-height); --hodima-heading-color: var(--hodima-h3-color); }
 
 /* ==========================================================
    5. Global UI elements

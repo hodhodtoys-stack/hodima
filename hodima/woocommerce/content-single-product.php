@@ -70,14 +70,18 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 
 ?>
 
-<div class="hodima-page-wrapper custom-product-page-container">
+<?php
+// کل صفحه محصول یک <main> است (مثل بقیه صفحه‌ها): قبلا فقط باکس بالا <main> بود و توضیحات، ویدیو،
+// دیدگاه‌ها و محصولات مرتبط بیرون از هر ناحیه (landmark) می‌ماندند (axe «region»، WCAG 1.3.1).
+?>
+<main id="main-content" class="hodima-page-wrapper custom-product-page-container">
 
 	<?php // مسیر راهنما داخل همین قاب (مثل فروشگاه و دسته)؛ نسخه پیش‌فرض ووکامرس بیرون قاب بود ?>
 	<div class="section-breadcrumb">
 		<?php woocommerce_breadcrumb(); ?>
 	</div>
 
-	<main id="main-content" class="hodima-section-box section-product-main">
+	<div class="hodima-section-box section-product-main">
 		<div id="product-<?php the_ID(); ?>" <?php wc_product_class( 'custom-single-product-wrapper', $product ); ?>>
 
 			<div class="custom-product-gallery">
@@ -216,7 +220,7 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 
 			</div>
 		</div>
-	</main>
+	</div>
 
 	<section class="hodima-section-box section-description" aria-label="<?php echo esc_attr( 'توضیحات ' . $product->get_name() ); ?>">
 		<?php
@@ -255,6 +259,6 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 		</section>
 	<?php endif; ?>
 
-</div>
+</main>
 
 <?php do_action( 'woocommerce_after_single_product' );

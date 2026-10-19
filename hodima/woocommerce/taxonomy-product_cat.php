@@ -47,7 +47,8 @@ remove_action( 'woocommerce_after_main_content', 'woocommerce_output_content_wra
 get_header( 'shop' );
 ?>
 
-<div class="hodima-page-wrapper">
+<?php // کل صفحه دسته یک <main> است: عنوان، معرفی/ویدیو، توضیحات و FAQ قبلا بیرون از هر ناحیه بودند (axe «region») ?>
+<main id="main-content" class="hodima-page-wrapper">
 
 	<?php do_action( 'woocommerce_before_main_content' ); ?>
 
@@ -100,7 +101,7 @@ get_header( 'shop' );
 	do_action( 'woocommerce_shop_loop_header' );
 	?>
 
-	<main id="main-content" class="hodima-section-box section-products product-card-scope">
+	<div class="hodima-section-box section-products product-card-scope">
 
 		<?php if ( woocommerce_product_loop() ) : ?>
 
@@ -167,7 +168,7 @@ get_header( 'shop' );
 
 		<?php endif; ?>
 
-	</main>
+	</div>
 
 	<?php if ( $hodima_is_first ) : ?>
 
@@ -190,6 +191,6 @@ get_header( 'shop' );
 
 	<?php do_action( 'woocommerce_after_main_content' ); ?>
 
-</div>
+</main>
 
 <?php get_footer( 'shop' );

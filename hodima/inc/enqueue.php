@@ -246,6 +246,21 @@ function hodima_comment_textarea_placeholder( mixed $comment_field ): mixed {
 	return $comment_field;
 }
 
+// ─── ۳. عنوان فرم دیدگاه h2 به‌جای h3 ───
+// وردپرس «ارسال دیدگاه» را h3 چاپ می‌کند؛ در برگه و مقاله‌ای که پیش از فرم h2 ندارد پرش h1 ← h3 است
+// (axe «heading-order»). اندازه و وزن از .comment-reply-title می‌آید، پس ظاهر همان است.
+add_filter( 'comment_form_defaults', 'hodima_comment_form_heading', 20 );
+
+function hodima_comment_form_heading( mixed $defaults ): mixed {
+
+	if ( is_array( $defaults ) && str_starts_with( (string) ( $defaults['title_reply_before'] ?? '' ), '<h3' ) ) {
+		$defaults['title_reply_before'] = (string) preg_replace( '/^<h3/', '<h2', (string) $defaults['title_reply_before'] );
+		$defaults['title_reply_after']  = (string) preg_replace( '/<\/h3>$/', '</h2>', (string) ( $defaults['title_reply_after'] ?? '' ) );
+	}
+
+	return $defaults;
+}
+
 /* ============================================================
  * Custom Product Gallery (SP Gallery)
  * استایل گالری داخل assets/css/single-product.css است.

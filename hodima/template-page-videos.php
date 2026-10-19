@@ -125,9 +125,10 @@ get_header(); ?>
 						$hodima_vp_cover_url = (string) get_post_meta( $hodima_vp_post_id, '_hod_video_thumbnail', true );
 						$hodima_vp_cover_id  = $hodima_vp_cover_url ? (int) attachment_url_to_postid( $hodima_vp_cover_url ) : 0;
 						$hodima_vp_eager     = ( 1 === $hodima_vp_paged && $hodima_vp_index++ < 6 );
+						// alt خالی: عنوان ویدیو همین زیر تصویر داخل همان لینک است (تکرار برای صفحه‌خوان، axe «image-redundant-alt»)
 						$hodima_vp_img_attrs = [
 							'class'    => 'videos-page-thumbnail',
-							'alt'      => $hodima_vp_title,
+							'alt'      => '',
 							'loading'  => $hodima_vp_eager ? 'eager' : 'lazy',
 							'decoding' => 'async',
 						];
@@ -139,7 +140,7 @@ get_header(); ?>
 							<?php elseif ( has_post_thumbnail() ) : ?>
 								<?php the_post_thumbnail( 'medium', $hodima_vp_img_attrs ); ?>
 							<?php elseif ( $hodima_vp_cover_url ) : ?>
-								<img src="<?php echo esc_url( $hodima_vp_cover_url ); ?>" class="videos-page-thumbnail" alt="<?php echo esc_attr( $hodima_vp_title ); ?>" loading="<?php echo $hodima_vp_eager ? 'eager' : 'lazy'; ?>" decoding="async" width="300" height="169">
+								<img src="<?php echo esc_url( $hodima_vp_cover_url ); ?>" class="videos-page-thumbnail" alt="" loading="<?php echo $hodima_vp_eager ? 'eager' : 'lazy'; ?>" decoding="async" width="300" height="169">
 							<?php else : ?>
 								<div class="videos-page-thumbnail videos-page-thumbnail--empty"><span>بدون تصویر</span></div>
 							<?php endif; ?>
