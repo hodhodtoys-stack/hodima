@@ -179,9 +179,85 @@ function hodima_render_upsells( int $limit = 6 ): void {
  * ---------------------------------------------------------------------
  * «نظرات کاربران» به تنهایی برای موتورهای پاسخ‌گو (AEO) بدون زمینه است؛
  * «نظرات کاربران درباره چهل گیس» یک بخش قابل‌استناد و مستقل می‌سازد.
+ * از 3.8.9 متن از تنظیمات قالب (تب «صفحه محصول ← نظرات کاربران»، فیلد
+ * product_reviews_title؛ {product} = نام محصول) و برای محصول بدون نظر هم
+ * (قبلا آنجا «نقد و بررسی‌ها»ی ووکامرس می‌آمد، چون این فیلتر فقط با نظر
+ * صدا زده می‌شود). متن خام برمی‌گردد: فیلتر woocommerce_reviews_title را ووکامرس
+ * بدون escape چاپ می‌کند (esc_html همان‌جا)، ولی gettext را خود esc_html_e.
  * ===================================================================== */
+function hodima_product_reviews_title( mixed $product = null ): string {
+
+	$title = trim( (string) hodima_setting( 'product_reviews_title' ) ); // خالی = پیش‌فرض (hodima_settings)
+
+	$product = $product instanceof WC_Product ? $product : wc_get_product( get_the_ID() );
+	if ( ! $product instanceof WC_Product ) {
+		// بیرون از صفحه محصول نام نداریم؛ «درباره {product}» بی‌معنا می‌شود
+		$title = trim( (string) preg_replace( '/\s*(درباره\s*)?\{product\}\s*/u', ' ', $title ) );
+		return '' !== $title ? $title : 'نظرات کاربران';
+	}
+
+	return str_replace( '{product}', $product->get_name(), $title );
+}
+
 add_filter( 'woocommerce_reviews_title', static function ( mixed $title, mixed $count = 0, mixed $product = null ): string {
-	return $product instanceof WC_Product
-		? 'نظرات کاربران درباره ' . $product->get_name()
-		: 'نظرات کاربران';
+	return esc_html( hodima_product_reviews_title( $product ) );
 }, 99, 3 );
+
+// محصول بدون نظر: قالب ووکامرس (single-product-reviews.php) عنوان ثابت «Reviews» را بدون فیلتر بالا چاپ می‌کند
+add_action( 'wp', static function (): void {
+	if ( ! function_exists( 'is_product' ) || ! is_product() ) {
+		return;
+	}
+	add_filter( 'gettext_woocommerce', static function ( mixed $translation, mixed $text ): mixed {
+		return 'Reviews' === $text ? hodima_product_reviews_title() : $translation;
+	}, 10, 2 );
+} );
+
+/* =====================================================================
+ * ۸. اندازه عنوان «نظرات کاربران» و «محصولات پیشنهادی» (از 3.8.9)
+ * ---------------------------------------------------------------------
+ * پیش‌فرض‌ها در tokens.css (همان اندازه ثابت قبلی)؛ مثل تایپوگرافی فقط
+ * مقدار تغییرکرده بعد از tokens.css چاپ می‌شود و فقط در صفحه محصول.
+ * قانون‌ها: single-product.css (اندازه روان ۳۹۰ تا ۱۲۰۰، مثل تیترها).
+ * ===================================================================== */
+
+/**
+ * متغیرهای :root که با پیش‌فرض فرق دارند.
+ *
+ * @return array<string, string>
+ */
+function hodima_product_title_size_vars(): array {
+
+	$fields = hodima_settings_fields();
+	$map    = [
+		'product_reviews_title_size'        => '--hodima-product-reviews-title-max',
+		'product_reviews_title_size_mobile' => '--hodima-product-reviews-title-min',
+		'product_upsells_title_size'        => '--hodima-product-upsells-title-max',
+		'product_upsells_title_size_mobile' => '--hodima-product-upsells-title-min',
+	];
+
+	$vars = [];
+	foreach ( $map as $key => $var ) {
+		$value = (float) hodima_setting( $key );
+		if ( $value > 0 && $value !== (float) ( $fields[ $key ]['default'] ?? 0 ) ) {
+			$vars[ $var ] = hodima_number_text( $value );
+		}
+	}
+
+	return $vars;
+}
+
+add_action( 'wp_enqueue_scripts', static function (): void {
+
+	if ( ! function_exists( 'is_product' ) || ! is_product() || ! wp_style_is( 'hodima-tokens', 'enqueued' ) ) {
+		return;
+	}
+
+	$css = '';
+	foreach ( hodima_product_title_size_vars() as $name => $value ) {
+		$css .= $name . ':' . $value . ';';
+	}
+	if ( '' !== $css ) {
+		wp_add_inline_style( 'hodima-tokens', ':root{' . $css . '}' );
+	}
+}, 21 );

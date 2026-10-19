@@ -789,8 +789,12 @@
 	}
 
 	& .up-sells {
+		/* اندازه از تنظیمات قالب (3.8.9؛ قبلا 1.4rem ثابت)، روان مثل تیترها (style.css بخش ۴) */
 		& h2 {
-			font-size: 1.4rem;
+			--hodima-heading-min: var(--hodima-product-upsells-title-min);
+			--hodima-heading-max: var(--hodima-product-upsells-title-max);
+
+			font-size: var(--hodima-heading-size);
 			font-weight: 700;
 			margin-bottom: 25px;
 			color: var(--hodima-text-dark, #111111);
@@ -821,6 +825,14 @@
 		& * {
 			direction: rtl;
 			text-align: right;
+		}
+
+		/* اندازه از تنظیمات قالب (3.8.9؛ قبلا 1.5rem ثابت از style.css)، روان مثل تیترها */
+		& .woocommerce-Reviews-title {
+			--hodima-heading-min: var(--hodima-product-reviews-title-min);
+			--hodima-heading-max: var(--hodima-product-reviews-title-max);
+
+			font-size: var(--hodima-heading-size);
 		}
 
 		& .commentlist {

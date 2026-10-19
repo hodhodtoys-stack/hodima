@@ -92,8 +92,14 @@ function hodima_settings_fields(): array {
 		'product_show_faq'      => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'سوالات متداول', 'default' => true ],
 		'product_show_video'    => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'ویدیو', 'default' => true ],
 		'product_show_reviews'  => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'نظرات کاربران', 'default' => true ],
+		// عنوان بخش نظرات (از 3.8.9؛ قبلا ثابت در inc/woocommerce/product-page.php) و اندازه عنوان‌ها؛ پیش‌فرض‌ها = اندازه قبلی (۲۴ و ۲۲٫۴)
+		'product_reviews_title'             => [ 'panel' => 'product_reviews', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'نظرات کاربران درباره {product}', 'wide' => true, 'help_visible' => true, 'help' => '{product} به‌جای نام همان محصول می‌نشیند (عنوان همراه نام محصول برای گوگل و موتورهای پاسخ‌گو گویاتر است). خالی = همین پیش‌فرض.' ],
+		'product_reviews_title_size'        => [ 'panel' => 'product_reviews', 'type' => 'number', 'label' => 'اندازه عنوان دسکتاپ (پیکسل)', 'default' => 24, 'min' => 12, 'max' => 48, 'step' => 0.1 ],
+		'product_reviews_title_size_mobile' => [ 'panel' => 'product_reviews', 'type' => 'number', 'label' => 'اندازه عنوان موبایل (پیکسل)', 'default' => 24, 'min' => 12, 'max' => 48, 'step' => 0.1 ],
 		'product_upsells_title' => [ 'panel' => 'product_upsells', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'محصولات مشابه' ],
 		'product_upsells_limit' => [ 'panel' => 'product_upsells', 'type' => 'number', 'label' => 'تعداد', 'default' => 6, 'min' => 0, 'max' => 24, 'help' => '۰ = بخش نمایش داده نشود.' ],
+		'product_upsells_title_size'        => [ 'panel' => 'product_upsells', 'type' => 'number', 'label' => 'اندازه عنوان دسکتاپ (پیکسل)', 'default' => 22.4, 'min' => 12, 'max' => 48, 'step' => 0.1 ],
+		'product_upsells_title_size_mobile' => [ 'panel' => 'product_upsells', 'type' => 'number', 'label' => 'اندازه عنوان موبایل (پیکسل)', 'default' => 22.4, 'min' => 12, 'max' => 48, 'step' => 0.1 ],
 		// قیمت اعلام‌شده به گوگل؛ خواننده: Hodima SEO (inc/product-price.php). قیمت و نام ترب از 3.0.7 در «ابزارهای هدیما ← ترب» (Hodima SEO)
 		'product_offer_price'   => [ 'panel' => 'product_price_feed', 'type' => 'select', 'label' => 'قیمتی که اعلام شود', 'default' => 'unit', 'options' => [ 'unit' => 'قیمت تک محصول', 'min_order' => 'مبلغ حداقل سفارش' ], 'help' => '«حداقل سفارش» همان مبلغی است که در ویرایش هر محصول (فیلد حداقل مبلغ سفارش) وارد کرده‌اید و صفحه محصول کنار قیمت نشان می‌دهد. محصولی که حداقل سفارش ندارد یا متغیر است، همیشه قیمت تک را اعلام می‌کند. به افزونه Hodima SEO نیاز دارد.' ],
 

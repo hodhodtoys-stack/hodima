@@ -202,6 +202,12 @@
     --hodima-h4-size-max: 19;  --hodima-h4-size-min: 17;  --hodima-h4-weight: 700;  --hodima-h4-line-height: 1.5;  --hodima-h4-color: var(--hodima-text-dark);
     --hodima-h5-size-max: 17;  --hodima-h5-size-min: 16;  --hodima-h5-weight: 700;  --hodima-h5-line-height: 1.5;  --hodima-h5-color: var(--hodima-text-dark);
     --hodima-h6-size-max: 15;  --hodima-h6-size-min: 14;  --hodima-h6-weight: 700;  --hodima-h6-line-height: 1.5;  --hodima-h6-color: var(--hodima-text-dark);
+
+    /* عنوان بخش «نظرات کاربران» و «محصولات پیشنهادی» صفحه محصول (تب «صفحه محصول»
+       تنظیمات قالب؛ از 3.8.9). مثل تیترها: موبایل (min) تا دسکتاپ (max)؛ پیش‌فرض
+       همان اندازه ثابت قبلی (1.5rem و 1.4rem). */
+    --hodima-product-reviews-title-max: 24;    --hodima-product-reviews-title-min: 24;
+    --hodima-product-upsells-title-max: 22.4;  --hodima-product-upsells-title-min: 22.4;
 }
 
 /* ریتم صفحه در عرض‌های کوچک‌تر (نقطه‌های شکست اصلی قالب: ۷۶۸ و ۴۸۰) */
