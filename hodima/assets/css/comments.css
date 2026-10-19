@@ -1,6 +1,6 @@
 /* ==========================================================================
-   دیدگاه‌ها و نظرات محصول (3.9.0؛ خلاصه امتیاز، نشان خریدار و مرتب‌سازی 3.9.1)
-   فهرست: inc/comments.php؛ دکمه «نمایش همه» و مرتب‌سازی: assets/js/comments.js.
+   دیدگاه‌ها و نظرات محصول (3.9.0؛ خلاصه امتیاز و نشان خریدار 3.9.1)
+   فهرست: inc/comments.php؛ دکمه «نمایش همه»: assets/js/comments.js.
    ظاهر کارت دیدگاه‌ها: single-post.css (.comments-wrapper) و single-product.css (#reviews).
    ========================================================================== */
 
@@ -179,36 +179,13 @@
 		display: block;
 		block-size: 100%;
 		border-radius: inherit;
-		background: var(--hodima-secondary, #607bbd);
+		background: var(--hodima-star-color, var(--hodima-secondary, #607bbd)); /* همان رنگ ستاره‌ها (3.9.2) */
 	}
 }
 
 @media (width <= 480px) {
 	.hodima-rating-summary {
 		grid-template-columns: minmax(0, 1fr);
-	}
-}
-
-/* «مرتب‌سازی نظرها» (hidden تا comments.js آماده شود) */
-.hodima-comments-sort {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--hodima-space-3);
-	margin-block-end: var(--hodima-space-5);
-
-	&[hidden] {
-		display: none;
-	}
-
-	& label {
-		color: var(--hodima-text-muted, #5d6785);
-		font-size: 0.875rem;
-	}
-
-	& select {
-		inline-size: auto;
-		min-inline-size: min(12rem, 100%);
 	}
 }
 

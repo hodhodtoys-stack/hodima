@@ -22,7 +22,7 @@
 	--review-meta: var(--hodima-text-muted, #5d6785);
 	--brand-primary: var(--hodima-primary, #25316a);
 	--brand-hover: var(--hodima-primary-dark, #1b244d);
-	--star-color: var(--hodima-secondary, #607bbd);
+	--star-color: var(--hodima-star-color, var(--hodima-secondary, #607bbd)); /* تنظیم «رنگ ستاره‌ها» (3.9.2) */
 	--brand-gradient: linear-gradient(135deg, var(--hodima-primary, #25316a) 0%, var(--hodima-primary, #25316a) 55%, var(--hodima-secondary, #607bbd) 100%);
 	--radius: var(--hodima-radius-md);
 }
@@ -779,6 +779,24 @@
 	background: var(--hodima-bg-gray, #eef2f8);
 }
 
+/* قاب خود بخش نظرات (3.9.2): عنوان، خلاصه، فهرست و فرم یک «سکشن» جدا داخل باکس (ویدیو بیرون قاب) */
+.section-reviews #reviews {
+	padding: var(--hodima-space-7);
+	border: 2px solid var(--hodima-border, #b8c4de);
+	border-radius: var(--hodima-radius-xl);
+}
+
+/* موبایل: قاب کم‌حاشیه‌تر تا چک‌باکس و دکمه «ثبت» در یک ردیف جا شوند (تنگ‌تر: دکمه زیر می‌رود) */
+@media (width <= 480px) {
+	.section-reviews #reviews {
+		padding: var(--hodima-space-5);
+	}
+
+	.woocommerce #review_form .hodima-review-submit {
+		column-gap: var(--hodima-space-5);
+	}
+}
+
 /* ==========================================================================
    9. Upsells
    ========================================================================== */
@@ -1008,6 +1026,23 @@
 			align-items: center;
 			gap: 8px;
 			margin-bottom: 15px;
+		}
+
+		/* ردیف آخر فرم (3.9.2): چک‌باکس «ذخیره نام و ایمیل» کنار دکمه «ثبت»؛ «امتیاز شما» بالای آن.
+		   تنگ شد، دکمه زیر می‌رود */
+		& .hodima-review-submit {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: space-between;
+			gap: var(--hodima-space-5) var(--hodima-space-7);
+			padding-block-start: var(--hodima-space-6);
+			border-block-start: 1px solid var(--hodima-border-light, #d9e1f0);
+
+			& .comment-form-cookies-consent,
+			& .form-submit {
+				margin: 0;
+			}
 		}
 
 		& .comment-form-rating label {

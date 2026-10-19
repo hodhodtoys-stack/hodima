@@ -238,9 +238,8 @@ function hodima_review_form_placeholders( mixed $comment_form ): mixed {
 		. 'placeholder="ایمیل *" value="' . esc_attr( $commenter['comment_author_email'] ) . '" '
 		. 'size="30" required /></p>';
 
-	$comment_form['comment_notes_before'] = '<p class="comment-notes-before">'
-		. '<span class="email-notes">نشانی ایمیل شما منتشر نخواهد شد. '
-		. 'بخش‌های موردنیاز علامت‌گذاری شده‌اند <span class="required">*</span></span></p>';
+	// 3.9.2: یادداشت «نشانی ایمیل شما منتشر نخواهد شد…» حذف شد (فرم ساده‌تر به خواست کاربر؛ ستاره‌ها در placeholder هست)
+	$comment_form['comment_notes_before'] = '';
 
 	return $comment_form;
 }

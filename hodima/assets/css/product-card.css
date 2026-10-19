@@ -93,7 +93,7 @@
 			& .star-rating {
 				font-size: 0.85rem;
 				margin: 0 auto var(--hodima-space-5);
-				color: var(--brand-primary);
+				color: var(--hodima-star-color, var(--brand-primary)); /* تنظیم «رنگ ستاره‌ها» (3.9.2)؛ پیش‌فرض همان رنگ اصلی */
 				display: flex;
 				justify-content: center;
 			}

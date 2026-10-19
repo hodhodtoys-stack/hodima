@@ -1,7 +1,7 @@
 <?php
 /**
  * دیدگاه‌های مقاله/برگه و نظرات محصول: فهرست، «نمایش همه»، برچسب فروشگاه/نویسنده،
- * و برای محصول خلاصه امتیازها، نشان «خریدار این محصول» و مرتب‌سازی
+ * و برای محصول خلاصه امتیازها و نشان «خریدار این محصول»
  * Path: hodima/inc/comments.php
  *
  * از 3.9.0. تا پیش از آن فهرست و فرم نظرات صفحه محصول فقط از شورت‌کد
@@ -12,6 +12,7 @@
  * دیده می‌شوند، بقیه با دکمه «نمایش همه» (assets/js/comments.js). همه نظرها در
  * HTML می‌مانند (گوگل و اسکیمای امتیاز همان را می‌بینند).
  * تنظیمات (3.9.1): «صفحه محصول ← نظرات کاربران / نمایش نظرات» و «وبلاگ ← دیدگاه‌ها».
+ * «مرتب‌سازی نظرها» (3.9.1) در 3.9.2 به خواست کاربر حذف شد.
  * استایل: assets/css/comments.css (+ single-post.css و single-product.css).
  */
 
@@ -58,7 +59,7 @@ add_action(
 
 /**
  * رشته‌های سطح اول همین صفحه. با صفحه‌بندی دیدگاه‌ها (تنظیمات ← گفت‌وگو) ۰: هر صفحه
- * خودش کوتاه است و جمع/مرتب‌سازی فقط همان صفحه را می‌دید.
+ * خودش کوتاه است و جمع شدن فقط همان صفحه را می‌دید.
  * پاسخ بی‌والد (والد تأییدنشده) را وردپرس سطح اول چاپ می‌کند و اینجا شمرده نمی‌شود؛
  * پس شمارش هرگز بیشتر از واقعی نیست و چیزی بی‌دکمه پنهان نمی‌ماند.
  */
@@ -166,34 +167,7 @@ function hodima_reviews_summary( WC_Product $product ): void {
 }
 
 /**
- * کادر «مرتب‌سازی» نظرات محصول (comments.js مرتب می‌کند). hidden تا جاوااسکریپت آماده
- * شود: بدون آن کادری که کار نمی‌کند دیده نمی‌شود. ترتیب اول همان ترتیب «تنظیمات ← گفت‌وگو».
- */
-function hodima_reviews_sort_control( string $list_id ): void {
-
-	$options = [
-		'newest'  => 'جدیدترین',
-		'oldest'  => 'قدیمی‌ترین',
-		'highest' => 'بیشترین امتیاز',
-		'lowest'  => 'کمترین امتیاز',
-	];
-	$current = 'desc' === get_option( 'comment_order' ) ? 'newest' : 'oldest';
-	$id      = $list_id . '-sort';
-	?>
-	<div class="hodima-comments-sort" data-hodima-comments-sort hidden>
-		<label for="<?php echo esc_attr( $id ); ?>">مرتب‌سازی نظرها</label>
-		<select id="<?php echo esc_attr( $id ); ?>" aria-controls="<?php echo esc_attr( $list_id ); ?>">
-			<?php foreach ( $options as $value => $label ) : ?>
-				<option value="<?php echo esc_attr( $value ); ?>"<?php selected( $current, $value ); ?>><?php echo esc_html( $label ); ?></option>
-			<?php endforeach; ?>
-		</select>
-	</div>
-	<?php
-}
-
-/**
- * فهرست دیدگاه‌ها با دکمه «نمایش همه» (اگر رشته‌ها بیشتر از hodima_comments_visible() باشند)
- * و برای محصول کادر مرتب‌سازی (اگر روشن و دست‌کم دو رشته).
+ * فهرست دیدگاه‌ها با دکمه «نمایش همه» (اگر رشته‌ها بیشتر از hodima_comments_visible() باشند).
  *
  * @param array<string, mixed> $args       آرگومان‌های wp_list_comments
  * @param string               $list_class کلاس ol (مقاله: comment-list؛ ووکامرس: commentlist)
@@ -203,13 +177,8 @@ function hodima_comments_list( array $args, string $list_class, string $noun ): 
 
 	$top      = hodima_comments_top_level_count();
 	$collapse = $top > hodima_comments_visible();
-	$sort     = hodima_comments_is_product() && $top > 1 && hodima_setting( 'product_reviews_sort' );
 	$list_id  = wp_unique_id( 'hodima-comments-' );
 	$classes  = $list_class . ' hodima-comments' . ( $collapse ? ' is-collapsed' : '' ) . ( hodima_comments_avatars() ? '' : ' hodima-comments--no-avatars' );
-
-	if ( $sort ) {
-		hodima_reviews_sort_control( $list_id );
-	}
 
 	// برچسب کنار نام، فقط در همین فهرست (ابزارک «آخرین دیدگاه‌ها» و پیشخوان دست نمی‌خورند)
 	$badge = static function ( mixed $link, mixed $author = '', mixed $comment_id = 0 ): string {
@@ -232,8 +201,8 @@ function hodima_comments_list( array $args, string $list_class, string $noun ): 
 		);
 	}
 
-	// فقط وقتی دکمه یا مرتب‌سازی هست؛ در پایان صفحه چاپ می‌شود (in_footer)
-	if ( $collapse || $sort ) {
+	// فقط وقتی دکمه هست؛ در پایان صفحه چاپ می‌شود (in_footer)
+	if ( $collapse ) {
 		hodima_enqueue_asset( 'hodima-comments', 'assets/js/comments.js', [], [ 'in_footer' => true, 'strategy' => 'defer' ] );
 	}
 }

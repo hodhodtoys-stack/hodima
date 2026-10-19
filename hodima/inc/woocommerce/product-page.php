@@ -251,3 +251,25 @@ add_action( 'wp_enqueue_scripts', static function (): void {
 		wp_add_inline_style( 'hodima-tokens', ':root{' . $css . '}' );
 	}
 }, 21 );
+
+/* =====================================================================
+ * ۹. رنگ ستاره‌های امتیاز (از 3.9.2)
+ * ---------------------------------------------------------------------
+ * «تنظیمات قالب ← صفحه محصول ← رنگ ستاره‌ها». با مقدار پیش‌فرض چیزی چاپ
+ * نمی‌شود و هر جا رنگ قبلی خودش را دارد (صفحه محصول: رنگ دوم پالت از
+ * --star-color در single-product.css؛ کارت‌ها: رنگ اصلی در product-card.css).
+ * رنگ دیگر ← --hodima-star-color روی :root برای همه صفحه‌ها (کارت محصول در
+ * فروشگاه، دسته، صفحه اصلی و «محصولات پیشنهادی» هم هست).
+ * ===================================================================== */
+function hodima_star_color(): string {
+	$fields = hodima_settings_fields();
+	$color  = strtolower( (string) sanitize_hex_color( (string) hodima_setting( 'product_star_color' ) ) );
+	return '' === $color || strtolower( (string) ( $fields['product_star_color']['default'] ?? '' ) ) === $color ? '' : $color;
+}
+
+add_action( 'wp_enqueue_scripts', static function (): void {
+	$color = hodima_star_color();
+	if ( '' !== $color && wp_style_is( 'hodima-tokens', 'enqueued' ) ) {
+		wp_add_inline_style( 'hodima-tokens', ':root{--hodima-star-color:' . $color . '}' );
+	}
+}, 21 );

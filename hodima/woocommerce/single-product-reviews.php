@@ -10,10 +10,13 @@
  *   - عنوان همیشه از فیلتر woocommerce_reviews_title (inc/woocommerce/product-page.php:
  *     «تنظیمات قالب ← صفحه محصول ← نظرات کاربران»)، با نظر یا بی‌نظر؛ قبلا محصول
  *     بی‌نظر «Reviews» ثابت ووکامرس را می‌گرفت.
- *   - فهرست با hodima_comments_list(): بعد از چند نظر اول «نمایش همه نظرات»، برچسب
- *     «فروشگاه» و (3.9.1) کادر «مرتب‌سازی نظرها» (inc/comments.php). فرم همیشه دیدنی است
- *     (قبلا با فهرست در کادر جمع‌شونده افزونه Media بود).
+ *   - فهرست با hodima_comments_list(): بعد از چند نظر اول «نمایش همه نظرات» و برچسب
+ *     «فروشگاه» (inc/comments.php). فرم همیشه دیدنی است (قبلا با فهرست در کادر
+ *     جمع‌شونده افزونه Media بود).
  *   - (3.9.1) خلاصه امتیازها زیر عنوان: hodima_reviews_summary().
+ *   - (3.9.2) فرم: «امتیاز شما» از بالای کادر متن به بعد از ایمیل، و ردیف آخر چک‌باکس «ذخیره
+ *     نام و ایمیل در مرورگر» کنار دکمه «ثبت» (در خود HTML، نه با order در CSS، تا ترتیب Tab با
+ *     ترتیب دیدن یکی باشد)؛ یادداشت «نشانی ایمیل شما منتشر نخواهد شد…» حذف (inc/enqueue.php).
  *
  * @see     https://woocommerce.com/document/template-structure/
  * @package Hodima\WooCommerce
@@ -129,8 +132,17 @@ $count = $product->get_review_count();
 					$comment_form['must_log_in'] = '<p class="must-log-in">' . sprintf( esc_html__( 'You must be %1$slogged in%2$s to post a review.', 'woocommerce' ), '<a href="' . esc_url( $account_page_url ) . '">', '</a>' ) . '</p>';
 				}
 
+				// همان چک‌باکس وردپرس (همان name و شرط)، با متن کوتاه‌تر؛ جایش ردیف آخر کنار «ثبت» (submit_field
+				// پایین). کلید خالی در fields لازم است، وگرنه comment_form() نسخه خودش را بعد از ایمیل اضافه می‌کند.
+				$cookies_field = '';
+				if ( get_option( 'show_comments_cookies_opt_in' ) ) {
+					$cookies_field = '<p class="comment-form-cookies-consent"><input id="wp-comment-cookies-consent" name="wp-comment-cookies-consent" type="checkbox" value="yes"' . ( '' === $commenter['comment_author_email'] ? '' : ' checked="checked"' ) . ' /> <label for="wp-comment-cookies-consent">ذخیره نام و ایمیل در مرورگر</label></p>';
+				}
+				$comment_form['fields']['cookies'] = '';
+
+				$rating_field = '';
 				if ( wc_review_ratings_enabled() ) {
-					$comment_form['comment_field'] = '<div class="comment-form-rating"><label for="rating" id="comment-form-rating-label">' . esc_html__( 'Your rating', 'woocommerce' ) . ( wc_review_ratings_required() ? '&nbsp;<span class="required">*</span>' : '' ) . '</label><select name="rating" id="rating" required>
+					$rating_field = '<div class="comment-form-rating"><label for="rating" id="comment-form-rating-label">' . esc_html__( 'Your rating', 'woocommerce' ) . ( wc_review_ratings_required() ? '&nbsp;<span class="required">*</span>' : '' ) . '</label><select name="rating" id="rating" required>
 						<option value="">' . esc_html__( 'Rate&hellip;', 'woocommerce' ) . '</option>
 						<option value="5">' . esc_html__( 'Perfect', 'woocommerce' ) . '</option>
 						<option value="4">' . esc_html__( 'Good', 'woocommerce' ) . '</option>
@@ -139,6 +151,9 @@ $count = $product->get_review_count();
 						<option value="1">' . esc_html__( 'Very poor', 'woocommerce' ) . '</option>
 					</select></div>';
 				}
+
+				// بعد از ایمیل: امتیاز؛ ردیف آخر: چک‌باکس کنار دکمه ثبت (%1$s دکمه، %2$s فیلدهای پنهان وردپرس)
+				$comment_form['submit_field'] = str_replace( '%', '%%', $rating_field ) . '<div class="hodima-review-submit">' . str_replace( '%', '%%', $cookies_field ) . '<p class="form-submit">%1$s %2$s</p></div>';
 
 				$comment_form['comment_field'] .= '<p class="comment-form-comment"><label for="comment">' . esc_html__( 'Your review', 'woocommerce' ) . '&nbsp;<span class="required">*</span></label><textarea id="comment" name="comment" cols="45" rows="8" required></textarea></p>';
 
