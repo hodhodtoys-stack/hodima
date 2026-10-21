@@ -2,7 +2,7 @@
 /**
  * Expandable Boxes — «نمایش بیشتر / کمتر»
  * Path: components/expandable-boxes/expandable-boxes.php
- * Version: 3.0.0 (PHP 8.4)
+ * Version: 3.2.0 (PHP 8.4)
  */
 
 declare(strict_types=1);
@@ -15,11 +15,13 @@ final class Hodima_Expandable_Boxes {
 
     private const POST_META_KEY = '_has_hodima_expandable';
     private const LEGACY_META_KEY = '_has_arian_expandable'; // نام قدیمی (تا Media 1.8.6): خوانده می‌شود و هنگام ذخیره پاک می‌شود
-    private const VERSION       = '3.0.0';
+    private const VERSION       = '3.2.0';
 
     private static ?self $instance = null;
+    /** @var array<string, true> */
     private static array $active_render_stack = [];
 
+    /** @var list<string> */
     private array $shortcodes = [
         'product_description',
         'category_description',
@@ -47,6 +49,7 @@ final class Hodima_Expandable_Boxes {
         } );
     }
 
+    /** @param array<string, mixed> $atts */
     public static function wrap( string $rendered_html, string $context = '', array $atts = [] ): string {
         $self = self::init();
         return $self->render_box( $rendered_html, $self->parse_atts( $atts, "expand_{$context}" ), $context );
@@ -78,7 +81,6 @@ final class Hodima_Expandable_Boxes {
         wp_enqueue_script( 'hodima-expandable-script', HODIMA_MEDIA_URL . '/' . ltrim( $base . 'expandable-boxes.js', '/' ), [], $this->asset_version( $base . 'expandable-boxes.js' ), true );
 
         wp_localize_script( 'hodima-expandable-script', 'HodimaExpandableBoxesData', [
-            'transitionMs'        => 600,
             'defaultMoreText'     => 'نمایش بیشتر',
             'defaultLessText'     => 'نمایش کمتر',
             'defaultScrollOffset' => 120,
@@ -99,7 +101,7 @@ final class Hodima_Expandable_Boxes {
 
     private function supports_post_type( string $post_type ): bool {
         // arian_expandable_boxes_*: نام قدیمی هوک‌ها (تا Media 1.8.6) برای کد بیرونی؛ اول قدیمی، بعد جدید
-        $supported = (array) apply_filters( 'hodima_expandable_boxes_supported_post_types', apply_filters( 'arian_expandable_boxes_supported_post_types', [ 'post', 'page', 'product' ] ) );
+        $supported = (array) apply_filters( 'hodima_expandable_boxes_supported_post_types', apply_filters( 'arian_expandable_boxes_supported_post_types', [ 'post', 'page', 'product' ] ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- نام قدیمی برای سازگاری
         return in_array( $post_type, $supported, true );
     }
 
@@ -127,6 +129,7 @@ final class Hodima_Expandable_Boxes {
         return false;
     }
 
+    /** @return array<string, mixed> */
     private function get_default_atts( string $shortcode_tag ): array {
         // تعیین ارتفاع پویا بر اساس نوع محتوا (۶۰۰ برای محتوا، ۳۵۰ برای نظرات)
         $dynamic_height = match ( $shortcode_tag ) {
@@ -141,14 +144,17 @@ final class Hodima_Expandable_Boxes {
             'scroll_offset' => 120,
             'class'         => '',
             'gradient'      => 'yes',
-            'bg'            => '',
             'fade_height'   => 80,
             'smart'         => 'yes',
         ];
 
-        return (array) apply_filters( "hodima_expandable_boxes_defaults_{$shortcode_tag}", apply_filters( "arian_expandable_boxes_defaults_{$shortcode_tag}", $defaults ) );
+        return (array) apply_filters( "hodima_expandable_boxes_defaults_{$shortcode_tag}", apply_filters( "arian_expandable_boxes_defaults_{$shortcode_tag}", $defaults ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- نام قدیمی برای سازگاری
     }
 
+    /**
+     * @param array<string, mixed>|string $atts
+     * @return array<string, mixed>
+     */
     private function parse_atts( array|string $atts, string $shortcode_tag ): array {
         $atts = shortcode_atts( $this->get_default_atts( $shortcode_tag ), (array) $atts, $shortcode_tag );
 
@@ -160,7 +166,6 @@ final class Hodima_Expandable_Boxes {
         $atts['class']         = $this->sanitize_html_classes( (string) $atts['class'] );
         $atts['gradient']      = match( strtolower( trim( (string) $atts['gradient'] ) ) ) { 'yes', 'true', '1', 'on' => 'yes', default => 'no' };
         $atts['smart']         = match( strtolower( trim( (string) $atts['smart'] ) ) ) { 'yes', 'true', '1', 'on' => 'yes', default => 'no' };
-        $atts['bg']            = $this->sanitize_css_color( (string) $atts['bg'] );
 
         return $atts;
     }
@@ -168,11 +173,6 @@ final class Hodima_Expandable_Boxes {
     private function sanitize_html_classes( string $classes ): string {
         $parts = preg_split( '/\s+/', trim( $classes ) ) ?: [];
         return implode( ' ', array_unique( array_filter( array_map( 'sanitize_html_class', $parts ) ) ) );
-    }
-
-    private function sanitize_css_color( string $value ): string {
-        $value = trim( wp_strip_all_tags( $value ) );
-        return (bool) preg_match( '/^(#[0-9a-fA-F]{3,8}|rgba?\([\d\s.,%\/]+\)|hsla?\([\d\s.,%\/deg]+\)|var\(--[a-zA-Z0-9_-]+\)|[a-zA-Z]{3,20})$/', $value ) ? $value : '';
     }
 
     private function has_meaningful_content( string $content ): bool {
@@ -183,6 +183,7 @@ final class Hodima_Expandable_Boxes {
             || (bool) preg_match( '/<(img|video|iframe|audio|picture|canvas|svg|object|table)\b/i', $content );
     }
 
+    /** @param array<string, mixed> $atts */
     private function build_wrapper_classes( array $atts ): string {
         $classes = [ 'hodima-expandable-box' ];
         if ( $atts['class'] !== '' ) $classes[] = $atts['class'];
@@ -192,18 +193,23 @@ final class Hodima_Expandable_Boxes {
         return $this->sanitize_html_classes( implode( ' ', $classes ) );
     }
 
+    /**
+     * ویژگی bg (رنگ --xb-bg) از Media 2.0.1 حذف شد: از وقتی محو شدن انتها با mask-image است
+     * هیچ قانونی آن رنگ را نمی‌خواند (شورت‌کد قدیمی با bg="…" بی‌خطا همان قبلی نمایش داده می‌شود).
+     *
+     * @param array<string, mixed> $atts
+     */
     private function build_inline_css_vars( array $atts ): string {
         $styles = [
             '--xb-collapsed-height:' . (int) $atts['height'] . 'px',
             '--xb-fade-height:' . (int) $atts['fade_height'] . 'px',
         ];
-        if ( $atts['bg'] !== '' ) $styles[] = '--xb-bg:' . $atts['bg'];
 
         return implode( ';', $styles );
     }
 
     private function maybe_kses( string $content, string $context ): string {
-        return apply_filters( 'hodima_expandable_boxes_kses_output', apply_filters( 'arian_expandable_boxes_kses_output', false, $context ), $context )
+        return apply_filters( 'hodima_expandable_boxes_kses_output', apply_filters( 'arian_expandable_boxes_kses_output', false, $context ), $context ) // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- نام قدیمی برای سازگاری
             ? wp_kses_post( $content )
             : $content;
     }
@@ -219,6 +225,7 @@ final class Hodima_Expandable_Boxes {
         }
     }
 
+    /** @param array<string, mixed> $atts */
     private function render_box( string $content, array $atts, string $context = '' ): string {
         $content = $this->maybe_kses( $content, $context );
         if ( ! $this->has_meaningful_content( $content ) ) return '';
@@ -253,9 +260,10 @@ final class Hodima_Expandable_Boxes {
     }
 
     private function render_source( string $raw ): string {
-        return (string) apply_filters( 'the_content', $raw );
+        return (string) apply_filters( 'the_content', $raw ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- فیلتر خود وردپرس
     }
 
+    /** @param array<string, mixed> $atts */
     private function render_comments_box( array $atts, string $context ): string {
         return $this->with_render_guard( 'comments_template', function () use ( $atts, $context ): string {
             ob_start();
@@ -264,10 +272,11 @@ final class Hodima_Expandable_Boxes {
         } );
     }
 
-    public function render_product_description( $atts, $content = null ): string {
+    /** @param array<string, string>|string $atts شورت‌کد بدون ویژگی رشته خالی می‌دهد */
+    public function render_product_description( array|string $atts, ?string $content = null ): string {
         if ( ! function_exists( 'is_product' ) || ! is_product() || ! function_exists( 'wc_get_product' ) ) return '';
 
-        $atts = $this->parse_atts( $atts ?? [], 'expand_product_description' );
+        $atts = $this->parse_atts( $atts, 'expand_product_description' );
 
         return $this->with_render_guard( 'product_description', function () use ( $atts, $content ): string {
             if ( $content !== null && trim( (string) $content ) !== '' ) {
@@ -280,28 +289,31 @@ final class Hodima_Expandable_Boxes {
         } );
     }
 
-    public function render_category_description( $atts, $content = null ): string {
+    /** @param array<string, string>|string $atts شورت‌کد بدون ویژگی رشته خالی می‌دهد */
+    public function render_category_description( array|string $atts, ?string $content = null ): string {
         if ( ! is_tax( 'product_cat' ) && ! is_category() ) return '';
 
-        $atts = $this->parse_atts( $atts ?? [], 'expand_category_description' );
+        $atts = $this->parse_atts( $atts, 'expand_category_description' );
 
         return $this->with_render_guard( 'category_description', function () use ( $atts, $content ): string {
             if ( $content !== null && trim( (string) $content ) !== '' ) {
                 $html = $this->enclosed( (string) $content );
             } else {
                 $term = get_queried_object();
-                $html = $term instanceof WP_Term ? (string) term_description( $term ) : '';
+                $html = $term instanceof WP_Term ? (string) term_description( $term->term_id ) : '';
             }
             return $this->render_box( $html, $atts, 'category_description' );
         } );
     }
 
-    public function render_product_reviews( $atts ): string {
+    /** @param array<string, string>|string $atts */
+    public function render_product_reviews( array|string $atts ): string {
         if ( ! function_exists( 'is_product' ) || ! is_product() ) return '';
-        return $this->render_comments_box( $this->parse_atts( $atts ?? [], 'expand_product_reviews' ), 'product_reviews' );
+        return $this->render_comments_box( $this->parse_atts( $atts, 'expand_product_reviews' ), 'product_reviews' );
     }
 
-    public function render_reviews_only( $atts = [] ): string {
+    /** @param array<string, string>|string $atts */
+    public function render_reviews_only( array|string $atts = [] ): string {
         if ( ! function_exists( 'is_product' ) || ! is_product() ) return '';
 
         $atts  = shortcode_atts( [ 'class' => '' ], (array) $atts, 'product_reviews_only' );
@@ -314,10 +326,11 @@ final class Hodima_Expandable_Boxes {
         } );
     }
 
-    public function render_blog_content( $atts, $content = null ): string {
+    /** @param array<string, string>|string $atts شورت‌کد بدون ویژگی رشته خالی می‌دهد */
+    public function render_blog_content( array|string $atts, ?string $content = null ): string {
         if ( ! is_singular( 'post' ) ) return '';
 
-        $atts = $this->parse_atts( $atts ?? [], 'expand_blog_content' );
+        $atts = $this->parse_atts( $atts, 'expand_blog_content' );
 
         return $this->with_render_guard( 'blog_content', function () use ( $atts, $content ): string {
             if ( $content !== null && trim( (string) $content ) !== '' ) {
@@ -330,14 +343,20 @@ final class Hodima_Expandable_Boxes {
         } );
     }
 
-    public function render_blog_comments( $atts ): string {
+    /** @param array<string, string>|string $atts */
+    public function render_blog_comments( array|string $atts ): string {
         if ( ! is_singular( 'post' ) ) return '';
-        return $this->render_comments_box( $this->parse_atts( $atts ?? [], 'expand_blog_comments' ), 'blog_comments' );
+        return $this->render_comments_box( $this->parse_atts( $atts, 'expand_blog_comments' ), 'blog_comments' );
     }
 }
 
 Hodima_Expandable_Boxes::init();
 
-function hodima_expandable_box( string $rendered_html, string $context = '', array $atts = [] ): string {
+/**
+ * رابط عمومی برای کد بیرونی (قالب‌ها/افزونه‌های دیگر): HTML آماده را در جعبه می‌گذارد.
+ *
+ * @param array<string, mixed> $atts
+ */
+function hodima_expandable_box( string $rendered_html, string $context = '', array $atts = [] ): string { // phpcs:ignore Universal.Files.SeparateFunctionsFromOO.Mixed -- رابط قدیمی کنار کلاس؛ ماژول فقط همین فایل را لود می‌کند
     return Hodima_Expandable_Boxes::wrap( $rendered_html, $context, $atts );
 }

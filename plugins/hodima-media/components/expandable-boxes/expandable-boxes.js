@@ -1,5 +1,5 @@
 /**
- * Expandable Boxes — v3.1.0 (Modern Vanilla JS - Dynamic Transition)
+ * Expandable Boxes — v3.2.0 (Vanilla JS)
  */
 (() => {
     'use strict';
@@ -31,7 +31,7 @@
 
     const num = (v, fallback) => {
         const n = parseInt(v, 10);
-        return isNaN(n) ? fallback : n;
+        return Number.isNaN(n) ? fallback : n;
     };
 
     const parts = (container) => {
@@ -45,6 +45,12 @@
     const collapsedHeight = (w) => num(w.dataset.height, 600);
     const fullHeight = (p) => p.inner ? p.inner.scrollHeight : p.wrapper.scrollHeight;
     const isExpanded = (p) => p.wrapper.classList.contains('hodima-expanded');
+    // «باز» فقط چون متن کوتاه بود (دکمه پنهان)، نه چون کاربر باز کرده (data-xb-short).
+    // تا 3.2.0 هر دو یکی بودند: اگر متن بعدا بلند می‌شد (عکس دیرلود، چرخش گوشی) دکمه «نمایش کمتر»
+    // ظاهر می‌شد و جعبه برای همیشه کامل باز می‌ماند.
+    const isAutoExpanded = (p) => 'xbShort' in p.wrapper.dataset;
+    const isAnimating = (p) => p.wrapper.classList.contains('hodima-animating');
+    const timers = new WeakMap();
 
     // فقط اگر چیزی عوض شود می‌نویسد. تا 3.1.0 هر بار متن دکمه دوباره نوشته می‌شد و MutationObserver
     // (observe) آن را «تغییر محتوا» می‌دید و هر ۲۵۰ میلی‌ثانیه refresh را بی‌پایان تکرار می‌کرد:
@@ -59,8 +65,11 @@
     };
 
     const finish = (p) => {
+        timers.delete(p.wrapper);
         p.wrapper.classList.remove('hodima-animating');
         if (isExpanded(p)) p.wrapper.style.maxHeight = 'none';
+        // اندازه‌گیری‌هایی که وسط انیمیشن کنار گذاشته شدند (apply)
+        refresh(p.container);
     };
 
     // تابع جدید برای استخراج زمان ترنزیشن از CSS
@@ -76,6 +85,7 @@
         const from = p.wrapper.getBoundingClientRect().height;
         const to   = expanded ? fullHeight(p) : collapsedHeight(p.wrapper);
 
+        delete p.wrapper.dataset.xbShort;
         p.wrapper.classList.toggle('hodima-expanded', expanded);
         setButton(p, expanded);
 
@@ -91,13 +101,14 @@
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => { p.wrapper.style.maxHeight = `${to}px`; });
             });
-            // استفاده از زمان پویای محاسبه شده
-            setTimeout(() => finish(p), dynamicTransitionMs + 60); 
+            // کلیک دوباره وسط انیمیشن: زمان‌سنج قبلی نباید انیمیشن تازه را نیمه‌کاره تمام کند
+            clearTimeout(timers.get(p.wrapper));
+            timers.set(p.wrapper, setTimeout(() => finish(p), dynamicTransitionMs + 60));
         }
 
         if (!expanded && !opts.skipScroll) {
-            const top = p.wrapper.getBoundingClientRect().top + window.pageYOffset - num(p.wrapper.dataset.scrollOffset, DEFAULT_OFFSET);
-            if (top < window.pageYOffset) {
+            const top = p.wrapper.getBoundingClientRect().top + window.scrollY - num(p.wrapper.dataset.scrollOffset, DEFAULT_OFFSET);
+            if (top < window.scrollY) {
                 window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? 'auto' : 'smooth' });
             }
             try { p.button.focus({ preventScroll: true }); } catch (e) { p.button.focus(); }
@@ -115,9 +126,13 @@
     const apply = (m) => {
         if (!m) return;
         const { p, collapsed, full } = m;
+        // وسط انیمیشن max-height دست نخورد؛ finish دوباره اندازه می‌گیرد. تا 3.2.0 عوض شدن متن دکمه
+        // (MutationObserver) بعد از ۲۵۰ms همین‌جا max-height را none می‌کرد و باز شدن ۰٫۶ ثانیه‌ای نیمه‌راه می‌پرید.
+        if (isAnimating(p)) return;
         const smart = (p.wrapper.dataset.smart || 'yes') === 'yes';
 
         if (full <= collapsed + (smart ? 40 : 0)) {
+            if (!isExpanded(p)) p.wrapper.dataset.xbShort = '';
             p.button.hidden = true;
             p.wrapper.classList.add('hodima-expanded');
             p.wrapper.style.maxHeight = 'none';
@@ -126,6 +141,10 @@
         }
 
         p.button.hidden = false;
+        if (isAutoExpanded(p)) {
+            delete p.wrapper.dataset.xbShort;
+            p.wrapper.classList.remove('hodima-expanded');
+        }
 
         if (isExpanded(p)) {
             p.wrapper.style.maxHeight = 'none';
@@ -193,8 +212,12 @@
 
         if ('MutationObserver' in window) {
             document.querySelectorAll(SELECTORS.container).forEach(c => {
-                new MutationObserver(debounce(() => refresh(c), 250))
-                    .observe(c, { childList: true, subtree: true });
+                const p = parts(c);
+                const r = debounce(() => refresh(c), 250);
+                // تغییر متن خود دکمه (setButton) تغییر محتوا نیست
+                new MutationObserver(records => {
+                    if (records.some(rec => !p?.button.contains(rec.target))) r();
+                }).observe(c, { childList: true, subtree: true });
             });
         }
     };

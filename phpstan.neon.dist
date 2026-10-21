@@ -22,6 +22,7 @@ parameters:
 		- plugins/hodima-seo/core/router/report.php
 		- plugins/hodima-seo/core/router/links.php
 		- plugins/hodima-media/components/hodima-Stories
+		- plugins/hodima-media/components/expandable-boxes
 	excludePaths:
 		analyse:
 			- hodima/user-panel/*

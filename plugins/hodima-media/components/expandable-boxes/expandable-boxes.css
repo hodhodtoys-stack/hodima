@@ -1,169 +1,220 @@
 /* =========================================================================
- * Expandable Boxes — v3.0.0 (Modern CSS)
+ * Expandable Boxes — v3.2.0
+ * بدون nesting (از Media 2.0.1): CSS افزونه مرحله ساخت ندارد و همین فایل به مرورگر
+ * می‌رسد؛ تا 2.0.0 تودرتو بود و Chrome 109 (ویندوز ۷)، Safari 14–16.4 و اندرویدهای
+ * قدیمی همه قانون‌های داخلی را دور می‌ریختند: متن جمع نمی‌شد و دکمه استایل نداشت
+ * (Chrome 112–119 و Safari تا 17.1 هم قانون‌های img/video داخل جعبه را).
+ * انتخابگرها و وزنشان همان نسخه تودرتوی قبلی است.
  * ========================================================================= */
 
 .hodima-expandable-box {
-    --xb-bg: var(--bg-color, #ffffff);
     --xb-fade-height: 80px;
-    --xb-collapsed-height: 600px; 
+    --xb-collapsed-height: 600px;
 
     --xb-btn-bg: var(--hodima-primary, #25316a);
-    --xb-btn-bg-hover: var(--hodima-secondary, #607bbd);
+    /* تا 2.0.0 خود --hodima-secondary (#607bbd): متن سفید رویش ۴٫۱۵ کنتراست، کمتر از ۴٫۵ لازم (WCAG 1.4.3)؛
+       --hodima-secondary-text همان آبی است کمی تیره‌تر (۵٫۴ با سفید) و با پالت پیشخوان دوباره محاسبه می‌شود */
+    --xb-btn-bg-hover: var(--hodima-secondary-text, #5169a8);
     --xb-btn-color: #ffffff;
-    /* هم‌اندازه و هم‌شکل دکمه‌های قالب (--hodima-control-*، گوشه md؛ قالب 3.0.1)؛ تا 1.3.3 قرص ۴۰ (موبایل ۳۸) پیکسلی */
     --xb-btn-radius: var(--hodima-radius-md, 8px);
-    --xb-btn-height: var(--hodima-control-h, 44px);
-    --xb-btn-padding-x: 18px;
-    --xb-btn-font-size: var(--hodima-control-font, 15px);
-    --xb-btn-font-weight: 700;
+    /* از 2.0.1 کوچک‌تر از دکمه‌های اصلی قالب (خواست کاربر): ۳۸ به‌جای ۴۴px، متن ۱۴ به‌جای ۱۵ و وزن ۶۰۰ به‌جای ۷۰۰؛
+       rem تا با بزرگ‌نمایی متن مرورگر دکمه هم بزرگ شود (WCAG 1.4.4). حداقل هدف لمسی AA ۲۴px است (2.5.8). */
+    --xb-btn-height: max(38px, 2.375rem);
+    --xb-btn-padding-x: 14px;
+    --xb-btn-font-size: 0.875rem;
+    --xb-btn-font-weight: 600;
 
     --xb-transition-duration: 0.6s;
     --xb-transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
-    --xb-shadow: 0 4px 14px rgba(37, 49, 106, 0.16);
-    --xb-shadow-hover: 0 8px 22px rgba(37, 49, 106, 0.22);
+    --xb-shadow: 0 2px 8px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.14);
+    --xb-shadow-hover: 0 4px 14px rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.2);
     --xb-focus-ring: 0 0 0 2px var(--hodima-surface, #ffffff), 0 0 0 4px var(--hodima-focus-color, #25316a); /* تا 1.8.7 سایه ۳۵٪ شفاف (تقریبا نامرئی) */
 
     position: relative;
     inline-size: 100%;
+}
 
-    /* ── جعبه ── */
-    .hodima-expandable-wrapper {
-        position: relative;
-        inline-size: 100%;
-        max-height: var(--xb-collapsed-height);
-        margin-block-end: 10px;
-        overflow: hidden;
-        scroll-margin-block-start: 120px;
-        transition: max-height var(--xb-transition-duration) var(--xb-transition-ease);
+/* ── جعبه ── */
+.hodima-expandable-box .hodima-expandable-wrapper {
+    position: relative;
+    inline-size: 100%;
+    max-height: var(--xb-collapsed-height);
+    margin-block-end: 10px;
+    overflow: hidden;
+    scroll-margin-block-start: 120px;
+    transition: max-height var(--xb-transition-duration) var(--xb-transition-ease);
+}
 
-        &:focus { outline: none; }
-        &:focus-visible { box-shadow: var(--xb-focus-ring); border-radius: 6px; }
-        &.hodima-animating { will-change: max-height; }
+.hodima-expandable-box .hodima-expandable-wrapper:focus {
+    outline: none;
+}
 
-        &:not(.hodima-expanded) {
-            -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--xb-fade-height)), transparent 100%);
-            mask-image: linear-gradient(to bottom, #000 calc(100% - var(--xb-fade-height)), transparent 100%);
-        }
+.hodima-expandable-box .hodima-expandable-wrapper:focus-visible {
+    border-radius: 6px;
+    box-shadow: var(--xb-focus-ring);
+}
 
-        &.hodima-expanded {
-            -webkit-mask-image: none;
-            mask-image: none;
-        }
-    }
+.hodima-expandable-box .hodima-expandable-wrapper.hodima-animating {
+    will-change: max-height;
+}
 
-    &.hodima-no-gradient .hodima-expandable-wrapper {
-        -webkit-mask-image: none;
-        mask-image: none;
-    }
+.hodima-expandable-box .hodima-expandable-wrapper:not(.hodima-expanded) {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--xb-fade-height)), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - var(--xb-fade-height)), transparent 100%);
+}
 
-    /* ── محتوا ── */
-    .hodima-expandable-inner {
-        inline-size: 100%;
-        max-inline-size: 100%;
-        min-inline-size: 0;
-        overflow-wrap: break-word;
+.hodima-expandable-box .hodima-expandable-wrapper.hodima-expanded,
+.hodima-expandable-box.hodima-no-gradient .hodima-expandable-wrapper {
+    -webkit-mask-image: none;
+    mask-image: none;
+}
 
-        img, video, iframe, embed, object, canvas {
-            max-inline-size: 100%;
-            block-size: auto;
-        }
+/* ── محتوا ── */
+.hodima-expandable-box .hodima-expandable-inner {
+    inline-size: 100%;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+}
 
-        img:not(.avatar):not(.emoji):not(.wp-smiley),
-        video, iframe, embed, object, canvas {
-            display: block;
-            margin-block: 10px;
-            margin-inline: auto;
-        }
+.hodima-expandable-box .hodima-expandable-inner img,
+.hodima-expandable-box .hodima-expandable-inner video,
+.hodima-expandable-box .hodima-expandable-inner iframe,
+.hodima-expandable-box .hodima-expandable-inner embed,
+.hodima-expandable-box .hodima-expandable-inner object,
+.hodima-expandable-box .hodima-expandable-inner canvas {
+    max-inline-size: 100%;
+    block-size: auto;
+}
 
-        iframe, video { inline-size: 100%; }
+/* :not() زنجیره‌ای عمدی: :not(a, b, c) وزن را از سه کلاس به یک کلاس پایین می‌آورد و قانون‌های قالب جابه‌جا می‌شوند */
+/* stylelint-disable selector-not-notation */
+.hodima-expandable-box .hodima-expandable-inner img:not(.avatar):not(.emoji):not(.wp-smiley),
+.hodima-expandable-box .hodima-expandable-inner video,
+.hodima-expandable-box .hodima-expandable-inner iframe,
+.hodima-expandable-box .hodima-expandable-inner embed,
+.hodima-expandable-box .hodima-expandable-inner object,
+.hodima-expandable-box .hodima-expandable-inner canvas {
+    display: block;
+    margin-block: 10px;
+    margin-inline: auto;
+}
+/* stylelint-enable selector-not-notation */
 
-        iframe[src*="aparat"],
-        iframe[src*="youtube"],
-        iframe[src*="youtu.be"] {
-            aspect-ratio: 16 / 9;
-            block-size: auto;
-        }
+.hodima-expandable-box .hodima-expandable-inner iframe,
+.hodima-expandable-box .hodima-expandable-inner video {
+    inline-size: 100%;
+}
 
-        figure, .wp-block-image, .wp-block-video, .wp-block-embed {
-            max-inline-size: 100%;
-            margin-inline: auto;
-        }
+.hodima-expandable-box .hodima-expandable-inner iframe[src*="aparat"],
+.hodima-expandable-box .hodima-expandable-inner iframe[src*="youtube"],
+.hodima-expandable-box .hodima-expandable-inner iframe[src*="youtu.be"] {
+    aspect-ratio: 16 / 9;
+    block-size: auto;
+}
 
-        a, code { overflow-wrap: anywhere; }
+.hodima-expandable-box .hodima-expandable-inner figure,
+.hodima-expandable-box .hodima-expandable-inner .wp-block-image,
+.hodima-expandable-box .hodima-expandable-inner .wp-block-video,
+.hodima-expandable-box .hodima-expandable-inner .wp-block-embed {
+    max-inline-size: 100%;
+    margin-inline: auto;
+}
 
-        pre, .wp-block-table {
-            max-inline-size: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        pre { white-space: pre; }
+.hodima-expandable-box .hodima-expandable-inner a,
+.hodima-expandable-box .hodima-expandable-inner code {
+    overflow-wrap: anywhere;
+}
 
-        blockquote { margin-inline: 0; }
+.hodima-expandable-box .hodima-expandable-inner pre,
+.hodima-expandable-box .hodima-expandable-inner .wp-block-table {
+    max-inline-size: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
 
-        input, select, textarea { max-inline-size: 100%; }
-    }
+.hodima-expandable-box .hodima-expandable-inner pre {
+    white-space: pre;
+}
 
-    /* ── دکمه ── */
-    .hodima-expand-toggle-btn {
-        position: relative;
-        z-index: 3;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        inline-size: fit-content;
-        min-block-size: var(--xb-btn-height);
-        margin-block-start: 12px;
-        margin-inline: auto 0;
-        margin-inline: auto;
-        padding-inline: var(--xb-btn-padding-x);
-        font: inherit;
-        font-size: var(--xb-btn-font-size);
-        font-weight: var(--xb-btn-font-weight);
-        line-height: 1;
-        white-space: nowrap;
-        color: var(--xb-btn-color);
-        background: var(--xb-btn-bg);
-        border: none;
-        border-radius: var(--xb-btn-radius);
-        box-shadow: var(--xb-shadow);
-        cursor: pointer;
-        transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+.hodima-expandable-box .hodima-expandable-inner blockquote {
+    margin-inline: 0;
+}
 
-        &:hover {
-            background: var(--xb-btn-bg-hover);
-            box-shadow: var(--xb-shadow-hover);
-            transform: translateY(-1px);
-        }
+.hodima-expandable-box .hodima-expandable-inner input,
+.hodima-expandable-box .hodima-expandable-inner select,
+.hodima-expandable-box .hodima-expandable-inner textarea {
+    max-inline-size: 100%;
+}
 
-        &:active { transform: translateY(0); }
-        &:focus { outline: none; }
-        &:focus-visible { box-shadow: var(--xb-shadow), var(--xb-focus-ring); }
-        
-        /* وزن [hidden] به صورت طبیعی از خود کلاس بالاتر است، نیازی به !important نیست */
-        &[hidden] { display: none; }
-    }
+/* ── دکمه ── */
+.hodima-expandable-box .hodima-expand-toggle-btn {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    inline-size: fit-content;
+    min-block-size: var(--xb-btn-height);
+    margin-block-start: 12px;
+    margin-inline: auto;
+    padding-inline: var(--xb-btn-padding-x);
+    font: inherit;
+    font-size: var(--xb-btn-font-size);
+    font-weight: var(--xb-btn-font-weight);
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--xb-btn-color);
+    background: var(--xb-btn-bg);
+    border: none;
+    border-radius: var(--xb-btn-radius);
+    box-shadow: var(--xb-shadow);
+    cursor: pointer;
+    transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+}
+
+.hodima-expandable-box .hodima-expand-toggle-btn:hover {
+    background: var(--xb-btn-bg-hover);
+    box-shadow: var(--xb-shadow-hover);
+    transform: translateY(-1px);
+}
+
+.hodima-expandable-box .hodima-expand-toggle-btn:active {
+    transform: translateY(0);
+}
+
+.hodima-expandable-box .hodima-expand-toggle-btn:focus {
+    outline: none;
+}
+
+.hodima-expandable-box .hodima-expand-toggle-btn:focus-visible {
+    box-shadow: var(--xb-shadow), var(--xb-focus-ring);
+}
+
+/* وزن [hidden] به صورت طبیعی از خود کلاس بالاتر است، نیازی به !important نیست */
+.hodima-expandable-box .hodima-expand-toggle-btn[hidden] {
+    display: none;
 }
 
 /* ── موبایل ── */
 @media (max-width: 767px) {
     .hodima-expandable-box {
         --xb-fade-height: 64px;
-        --xb-btn-padding-x: 16px;
+    }
 
-        .hodima-expandable-inner table:not(.hodima-dynamic-table):not(.hodima-specs-table) {
-            display: block;
-            max-inline-size: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+    /* stylelint-disable-next-line selector-not-notation -- وزن همان نسخه قبلی (بالا) */
+    .hodima-expandable-box .hodima-expandable-inner table:not(.hodima-dynamic-table):not(.hodima-specs-table) {
+        display: block;
+        max-inline-size: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 }
 
 /* ── دسترس‌پذیری و چاپ ── */
 @media (prefers-reduced-motion: reduce) {
-    /* با افزودن والد، وزن کلاس با کدهای بالا برابر شده و !important حذف می‌شود */
     .hodima-expandable-box .hodima-expandable-wrapper,
     .hodima-expandable-box .hodima-expand-toggle-btn {
         transition: none;
@@ -171,13 +222,13 @@
 }
 
 @media print {
-    /* هم‌تراز کردن وزن کلاس‌ها برای لغو استایل‌های قبلی بدون !important */
     .hodima-expandable-box .hodima-expandable-wrapper {
         max-height: none;
         overflow: visible;
         -webkit-mask-image: none;
         mask-image: none;
     }
+
     .hodima-expandable-box .hodima-expand-toggle-btn {
         display: none;
     }

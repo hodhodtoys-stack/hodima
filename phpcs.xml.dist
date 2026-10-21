@@ -30,6 +30,8 @@
 	<file>plugins/hodima-seo/core/router/links.php</file>
 	<!-- ماژول استوری Hodima Media (بخش ۱۲۷) -->
 	<file>plugins/hodima-media/components/hodima-Stories</file>
+	<!-- باکس‌های بازشونده Hodima Media (بخش ۲۰۷) -->
+	<file>plugins/hodima-media/components/expandable-boxes</file>
 	<!-- داخل پوشه schema ولی اسکیما نیستند (سایت‌مپ، فید پادکست، صفحه‌های پیشخوان) -->
 	<exclude-pattern>plugins/hodima-seo/schema/admin/*</exclude-pattern>
 	<exclude-pattern>plugins/hodima-seo/schema/sitemap-core\.php</exclude-pattern>
