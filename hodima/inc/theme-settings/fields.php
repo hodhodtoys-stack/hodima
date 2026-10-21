@@ -92,6 +92,9 @@ function hodima_settings_fields(): array {
 		'product_show_faq'      => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'سوالات متداول', 'default' => true ],
 		'product_show_video'    => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'ویدیو', 'default' => true ],
 		'product_show_reviews'  => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'نظرات کاربران', 'default' => true ],
+		// لینک دسته و برچسب زیر ردیف خرید (از 3.9.4)؛ برچسب پیش‌فرض خاموش: صفحه برچسب کم‌محتوا لینک داخلی را هدر می‌دهد
+		'product_show_cats'     => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'لینک دسته‌ها', 'default' => true, 'help' => 'دسته‌های محصول به‌صورت دکمه‌های لینک‌دار زیر ردیف خرید (دسته «بدون دسته‌بندی» و دسته‌های noindex نمایش داده نمی‌شوند).' ],
+		'product_show_tags'     => [ 'panel' => 'product_sections', 'type' => 'toggle', 'label' => 'لینک برچسب‌ها', 'default' => false, 'help' => 'برچسب‌های محصول کنار دسته‌ها. فقط وقتی صفحه برچسب‌هایتان محتوای کافی دارد روشن کنید.' ],
 		// عنوان بخش نظرات (از 3.8.9؛ قبلا ثابت در inc/woocommerce/product-page.php) و اندازه عنوان‌ها؛ پیش‌فرض‌ها = اندازه قبلی (۲۴ و ۲۲٫۴)
 		'product_reviews_title'             => [ 'panel' => 'product_reviews', 'type' => 'text', 'label' => 'عنوان بخش', 'default' => 'نظرات کاربران درباره {product}', 'help_visible' => true, 'help' => '{product} به‌جای نام همان محصول می‌نشیند (عنوان همراه نام محصول برای گوگل و موتورهای پاسخ‌گو گویاتر است). خالی = همین پیش‌فرض.' ],
 		'product_reviews_visible'           => [ 'panel' => 'product_reviews', 'type' => 'number', 'label' => 'تعداد نظر پیش از «نمایش همه»', 'default' => 3, 'min' => 1, 'max' => 20, 'help' => 'بقیه نظرها با دکمه «نمایش همه نظرات» باز می‌شوند (همه در صفحه هستند و گوگل آن‌ها را می‌بیند). فرم ثبت نظر همیشه دیده می‌شود.' ],

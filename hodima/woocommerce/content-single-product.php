@@ -210,6 +210,9 @@ $hp_table_shown = class_exists( 'Hodima_Product_Specs_Table' )
 						</div>
 					<?php endif; ?>
 				</div>
+
+				<?php // دسته و برچسب‌ها زیر ردیف خرید (دکمه خرید از دید اول پایین نمی‌رود)؛ بدون ترم قابل نمایش چیزی چاپ نمی‌شود ?>
+				<?php echo hodima_product_terms_html( $product ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی پاک‌سازی‌شده تابع (esc_url/esc_html) ?>
 				<?php
 				/*
 				 * باگ قبلی: endif بلوک پادکست اینجا (بعد از ردیف خرید) بود؛ بدون افزونه

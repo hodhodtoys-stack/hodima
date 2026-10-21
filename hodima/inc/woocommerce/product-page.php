@@ -273,3 +273,54 @@ add_action( 'wp_enqueue_scripts', static function (): void {
 		wp_add_inline_style( 'hodima-tokens', ':root{--hodima-star-color:' . $color . '}' );
 	}
 }, 21 );
+
+/* =====================================================================
+ * ۱۰. لینک دسته و برچسب محصول (از 3.9.4)
+ * ---------------------------------------------------------------------
+ * ووکامرس خط «دسته/برچسب» را در هوک summary (که این قالب صدا نمی‌زند) چاپ
+ * می‌کرد؛ جز نوار مسیر هیچ لینکی به دسته یا برچسب در صفحه محصول نبود (لینک داخلی
+ * کم و بن‌بست برای مشتری). اینجا دکمه‌های کپسولی با همان شکل برچسب مقاله
+ * (hodima_post_tags_html). دسته پیش‌فرض ووکامرس («بدون دسته‌بندی») و ترم‌های
+ * noindex لینک نمی‌گیرند؛ بدون ترم قابل نمایش رشته خالی.
+ * ===================================================================== */
+function hodima_product_terms_html( WC_Product $product ): string {
+
+	$groups = [];
+	if ( hodima_setting( 'product_show_cats' ) ) {
+		$groups['product_cat'] = 'دسته‌ها:';
+	}
+	if ( hodima_setting( 'product_show_tags' ) ) {
+		$groups['product_tag'] = 'برچسب‌ها:';
+	}
+
+	$default_cat = (int) get_option( 'default_product_cat' );
+	$html        = '';
+
+	foreach ( $groups as $taxonomy => $label ) {
+		$terms = get_the_terms( $product->get_id(), $taxonomy );
+		if ( ! is_array( $terms ) ) {
+			continue;
+		}
+
+		$items = '';
+		foreach ( $terms as $term ) {
+			if ( 'product_cat' === $taxonomy && $term->term_id === $default_cat ) {
+				continue;
+			}
+			if ( function_exists( 'hodima_is_noindex' ) && hodima_is_noindex( $term->term_id, 'term' ) ) {
+				continue;
+			}
+			$link = get_term_link( $term );
+			if ( is_wp_error( $link ) ) {
+				continue;
+			}
+			$items .= '<li><a class="hp-terms__link" href="' . esc_url( $link ) . '">' . esc_html( $term->name ) . '</a></li>';
+		}
+
+		if ( '' !== $items ) {
+			$html .= '<div class="hp-terms__group"><span class="hp-terms__label">' . esc_html( $label ) . '</span><ul class="hp-terms__list">' . $items . '</ul></div>';
+		}
+	}
+
+	return '' !== $html ? '<div class="hp-terms">' . $html . '</div>' : '';
+}
