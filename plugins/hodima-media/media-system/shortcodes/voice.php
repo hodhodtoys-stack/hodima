@@ -91,6 +91,6 @@ function hodima_media_shortcode_voice( mixed $atts ): string {
  * بدون جاوااسکریپت پنهان است.
  */
 function hodima_media_speed_html(): string {
-	// نام دکمه متن دیدنی «۱×» را در خود دارد (WCAG 2.5.3)؛ تا 1.9.6 «سرعت پخش: ۱ برابر» بود و Lighthouse رد می‌کرد
-	return '<button type="button" class="hook-audio-speed" data-hook-speed="1" aria-label="۱× سرعت پخش (برای تغییر بزنید)" hidden>۱×</button>';
+	// نام دکمه متن دیدنی «1×» را در خود دارد (WCAG 2.5.3)؛ تا 1.9.6 «سرعت پخش: ۱ برابر» بود و Lighthouse رد می‌کرد. ارقام لاتین از 2.0.0 (هم‌سبک media-style.js)
+	return '<button type="button" class="hook-audio-speed" data-hook-speed="1" aria-label="1× سرعت پخش (برای تغییر بزنید)" hidden>1×</button>';
 }

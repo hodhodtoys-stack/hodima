@@ -386,7 +386,7 @@
 	& .hook-player__time {
 		flex-shrink: 0;
 		padding-inline: 2px 4px;
-		font-size: 13px;
+		font-size: 14px; /* از 2.0.0: ۱۳ ← ۱۴ */
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
 		color: var(--hm-text);
@@ -503,7 +503,7 @@
 	/* stylelint-disable-next-line declaration-no-important -- رقیب: color: #fff !important قالب روی همه button */
 	color: var(--hm-primary) !important;
 	font: inherit;
-	font-size: 12px;
+	font-size: 14px; /* از 2.0.0: ۱۲ ← ۱۴ تا با متن‌های صفحه هم‌اندازه باشد؛ «1×» در دایره ۳۲px جا می‌شود */
 	/* ۷۰۰ (نه ۸۰۰): وزن ۸۰۰ فقط برای همین دکمه کوچک یک فایل فونت ۳۱KB جدا (ExtraBold) در هر صفحه دارای پخش‌کننده می‌گرفت */
 	font-weight: 700;
 	line-height: 1;

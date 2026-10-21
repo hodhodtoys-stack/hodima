@@ -1503,14 +1503,16 @@ dialog.sp-lightbox {
 			gap: 10px;
 			min-height: 52px;
 			padding: 6px 8px 6px 16px;
-			border-radius: var(--hodima-radius-pill);
+
+			/* از 3.9.6: کادر مستطیلی ۴px هم‌خانواده کادر دسته‌ها (.hp-terms)؛ حاشیه ۱px (رنگ اصلی ۱۸٪) و زمینه surface-soft همان مقدار افزونه Media است. نوار سفید داخلی گرد می‌ماند */
+			border-radius: var(--hodima-radius-xs);
 			box-shadow: none;
 		}
 
 		& .hook-voice-label {
 			flex: 0 0 auto;
 			padding-inline-start: 4px;
-			font-size: 14px;
+			font-size: 15px;
 			line-height: 1;
 			white-space: nowrap;
 		}

@@ -126,7 +126,6 @@
 	const RATE_KEY = 'hodimaPodcastRate';
 	// ۱ ← ۲ ← ۳ ← ۱ (خواسته کاربر: پله‌های ساده؛ قبلا ۱٫۲۵ و ۱٫۵ هم داشت)
 	const RATES = [1, 2, 3];
-	const fa = (n) => new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 }).format(n);
 
 	function storedRate() {
 		try {
@@ -144,9 +143,10 @@
 			audio.defaultPlaybackRate = rate;
 		}
 		button.dataset.hookSpeed = String(rate);
-		button.textContent = `${fa(rate)}×`;
-		// نام دکمه با متن دیدنی («۱×») شروع می‌شود (WCAG 2.5.3، label-content-name-mismatch در Lighthouse)
-		button.setAttribute('aria-label', `${fa(rate)}× سرعت پخش (برای تغییر بزنید)`);
+		// ارقام لاتین (از 2.0.0): هم‌سبک قیمت و تعداد صفحه؛ «۱» فارسی کنار آن‌ها ریز و نقطه‌مانند بود
+		button.textContent = `${rate}×`;
+		// نام دکمه با متن دیدنی («1×») شروع می‌شود (WCAG 2.5.3، label-content-name-mismatch در Lighthouse)
+		button.setAttribute('aria-label', `${rate}× سرعت پخش (برای تغییر بزنید)`);
 		button.classList.toggle('is-fast', rate !== 1);
 	}
 
@@ -174,14 +174,14 @@
 		muted: svg('<path fill="currentColor" d="M4 9.5v5h3.5L12 19V5L7.5 9.5z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m15.5 9.5 5 5m0-5-5 5"/>'),
 		more: svg('<circle fill="currentColor" cx="12" cy="5.5" r="2"/><circle fill="currentColor" cx="12" cy="12" r="2"/><circle fill="currentColor" cx="12" cy="18.5" r="2"/>'),
 	};
-	const faDigits = (str) => str.replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
 
+	// زمان با ارقام لاتین (از 2.0.0؛ قبلا فارسی: صفر فارسی در وزیرمتن نقطه‌ای ریز است و «۰:۰۰» شبیه «°:°°» دیده می‌شد)
 	function clock(seconds) {
 		const s = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
 		const two = (n) => String(n).padStart(2, '0');
 		const h = Math.floor(s / 3600);
 		const m = Math.floor((s % 3600) / 60);
-		return faDigits(h ? `${h}:${two(m)}:${two(s % 60)}` : `${m}:${two(s % 60)}`);
+		return h ? `${h}:${two(m)}:${two(s % 60)}` : `${m}:${two(s % 60)}`;
 	}
 
 	function iconButton(cls, label, icon) {
