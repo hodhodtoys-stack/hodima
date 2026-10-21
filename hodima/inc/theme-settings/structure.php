@@ -73,7 +73,7 @@ function hodima_settings_sections(): array {
 		'home'      => [ 'nav' => 'pages', 'title' => 'صفحه اصلی', 'icon' => 'dashicons-admin-home', 'description' => 'بخش‌های صفحه اصلی سایت: ترتیب، روشن/خاموش و تنظیمات هر بخش.' ],
 		'shop'      => [ 'nav' => 'pages', 'title' => 'فروشگاه', 'icon' => 'dashicons-store', 'description' => 'سربرگ صفحه فروشگاه و تعداد محصول در هر صفحه.' ],
 		'product'   => [ 'nav' => 'pages', 'tips' => true, 'title' => 'صفحه محصول', 'icon' => 'dashicons-products', 'description' => 'متن‌ها و بخش‌های صفحه هر محصول.' ],
-		'blog'      => [ 'nav' => 'pages', 'title' => 'وبلاگ', 'icon' => 'dashicons-welcome-write-blog', 'description' => 'صفحه وبلاگ و کارت‌ها، اطلاعات و متن هر مقاله، و «مقالات مرتبط».' ],
+		'blog'      => [ 'nav' => 'pages', 'tips' => true, 'title' => 'وبلاگ', 'icon' => 'dashicons-welcome-write-blog', 'description' => 'صفحه وبلاگ و کارت‌ها، اطلاعات و متن هر مقاله، و «مقالات مرتبط».' ],
 		'notfound'  => [ 'nav' => 'pages', 'title' => 'صفحه ۴۰۴', 'icon' => 'dashicons-warning', 'description' => 'صفحه‌ای که بازدیدکننده با آدرس اشتباه یا حذف‌شده می‌بیند. متن خالی به پیش‌فرض برمی‌گردد.' ],
 		'contact'   => [ 'nav' => 'contact', 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی نمایش داده نمی‌شود.' ],
 		'social'    => [ 'nav' => 'contact', 'title' => 'شبکه‌های اجتماعی', 'icon' => 'dashicons-share', 'description' => 'نوار شبکه‌های اجتماعی بالای فوتر همه صفحه‌ها. بدون هیچ شبکه‌ای نوار نمایش داده نمی‌شود.' ],
@@ -132,6 +132,7 @@ function hodima_settings_panels(): array {
 		'product_upsells'    => [ 'section' => 'product', 'title' => 'محصولات پیشنهادی (Upsell)', 'icon' => 'dashicons-cart', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید. اندازه عنوان از «موبایل» (۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند.' ],
 
 		'blog_page'          => [ 'section' => 'blog', 'title' => 'صفحه وبلاگ', 'icon' => 'dashicons-welcome-write-blog' ],
+		'blog_page_parts'    => [ 'section' => 'blog', 'title' => 'بخش‌های صفحه وبلاگ', 'icon' => 'dashicons-visibility', 'layout' => 'toggles' ],
 		'blog_post_meta'     => [ 'section' => 'blog', 'title' => 'اطلاعات زیر عنوان مقاله', 'icon' => 'dashicons-calendar-alt', 'layout' => 'toggles', 'help' => 'تاریخ، زمان مطالعه و نویسنده به خواننده و گوگل نشان می‌دهد مقاله تازه و معتبر است.' ],
 		'blog_post_extra'    => [ 'section' => 'blog', 'title' => 'امکانات صفحه مقاله', 'icon' => 'dashicons-admin-generic', 'layout' => 'toggles', 'help' => 'فهرست مطالب، نوار پیشرفت، برچسب‌ها، اشتراک‌گذاری، کادر نویسنده و مقاله قبلی/بعدی.' ],
 		'blog_post_content'  => [ 'section' => 'blog', 'title' => 'متن مقاله', 'icon' => 'dashicons-editor-expand' ],

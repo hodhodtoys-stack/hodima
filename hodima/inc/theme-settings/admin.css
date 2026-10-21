@@ -2494,12 +2494,16 @@ input.hodima-color__swatch {
 .hodima-toggle--tip {
 	align-items: center;
 
-	/* برچسب بلند خودش خط می‌شکند؛ آیکون ؟ کنارش می‌ماند (نه خط جدا) تا کاشی کوتاه بماند */
+	/* برچسب بلند خودش خط می‌شکند؛ آیکون ؟ کنار جعبه برچسب می‌ماند و هرگز تنها در خط بعد نمی‌افتد (آزمون اتصال‌دهنده U+2060 و ؟ درون‌خطی جواب نداد) */
 	& .hodima-toggle__text {
 		flex-direction: row;
 		align-items: center;
 		gap: 0.25rem;
 		min-inline-size: 0;
+	}
+
+	& .hodima-toggle__label {
+		text-wrap: balance;
 	}
 
 	& .hodima-toggle__label::after {
