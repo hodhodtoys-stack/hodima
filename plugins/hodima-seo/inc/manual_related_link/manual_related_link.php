@@ -9,6 +9,7 @@
  * [manual_related_products] خود کادر «محصولات مکمل» است (۲.۱). «دسته‌بندی‌های
  * مرتبط» در ۲.۲ حذف شد؛ ۲.۳: کادر ویرایشگر ساده (پیشنهاد خرید | مقاله در یک ردیف).
  * ۲.۴: عنوان سایت «پیشنهاد خرید»، خانه‌های هم‌اندازه، بدون تصویر دلخواه.
+ * ۲.۴.۱: هاور و فوکوس کارت‌ها مثل بقیه سایت (بدون بنفش).
  * جزئیات: HODIMA-AUDIT.md بخش‌های ۳۱ تا ۳۳، ۴۴ و ۴۵.
  *
  *   includes/group.php       دو گروه (enum)
@@ -17,7 +18,7 @@
  *   includes/admin.php       کادر ویرایشگر، جستجوی زنده، ذخیره
  *   includes/admin-page.php  «ابزارهای هدیما ← لینک‌های مرتبط»: تنظیمات و گزارش سلامت
  *
- * @version 2.4.0
+ * @version 2.4.1
  */
 
 declare(strict_types=1);
@@ -28,7 +29,7 @@ defined( 'ABSPATH' ) || exit;
 
 if ( ! defined( __NAMESPACE__ . '\VERSION' ) ) {
 
-	define( __NAMESPACE__ . '\VERSION', '2.4.0' );
+	define( __NAMESPACE__ . '\VERSION', '2.4.1' );
 
 	require_once __DIR__ . '/includes/group.php';
 	require_once __DIR__ . '/includes/store.php';

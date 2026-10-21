@@ -7,6 +7,11 @@
  * عنوان داشت، و با grid-auto-flow: column کارت‌ها در موبایل باریک می‌شدند.
  * حالا: فقط پالت برند (توکن‌های قالب با مقدار پشتیبان)، همه‌چیز زیر .hodima-rl،
  * خصوصیات منطقی، فوکوس کیبورد و احترام به prefers-reduced-motion.
+ *
+ * هاور و فوکوس مثل کارت‌های خود قالب (page-layout.css): کارت بالا می‌آید، حاشیه
+ * و سایه عوض می‌شود، رنگ عنوان همان می‌ماند؛ حلقه فوکوس همان توکن‌های فوکوس سراسری قالب است.
+ * (تا ۲.۴ عنوان با هاور بنفش می‌شد و فوکوس هم بنفش بود؛ رنگ کلیک‌های اصلی
+ * سایت این نیست.)
  */
 
 .hodima-rl {
@@ -21,6 +26,7 @@
 	--rl-radius: 0.75rem;
 	--rl-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--rl-primary) 7%, transparent);
 	--rl-shadow-hover: 0 0.75rem 1.75rem color-mix(in srgb, var(--rl-primary) 14%, transparent);
+	--rl-border-hover: var(--hodima-border, #b8c4de);
 
 	box-sizing: border-box;
 	margin-block: 1.75rem;
@@ -66,12 +72,8 @@
 
 		&:hover {
 			transform: translateY(-2px);
-			border-color: var(--rl-secondary);
+			border-color: var(--rl-border-hover);
 			box-shadow: var(--rl-shadow-hover);
-
-			& .hodima-rl__name {
-				color: var(--rl-accent);
-			}
 
 			& .hodima-rl__img {
 				transform: scale(1.04);
@@ -79,8 +81,8 @@
 		}
 
 		&:focus-visible {
-			outline: 3px solid var(--rl-accent);
-			outline-offset: 3px;
+			outline: var(--hodima-focus-width, 2px) solid var(--hodima-focus-color, var(--rl-primary));
+			outline-offset: var(--hodima-focus-offset, 2px);
 		}
 	}
 
@@ -141,7 +143,6 @@
 		line-height: 1.5;
 		color: var(--rl-primary);
 		overflow-wrap: anywhere;
-		transition: color 0.25s ease;
 	}
 }
 
@@ -208,6 +209,11 @@
 		margin-inline: auto;
 		padding: 0.375rem;
 		border-inline-start: 4px solid var(--rl-accent);
+
+		/* hover رنگ کل حاشیه را عوض می‌کند؛ نوار کناری نباید با آن بپرد */
+		&:hover {
+			border-inline-start-color: var(--rl-accent);
+		}
 	}
 
 	& .hodima-rl__media {
@@ -268,8 +274,7 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.hodima-rl .hodima-rl__card,
-	.hodima-rl .hodima-rl__img,
-	.hodima-rl .hodima-rl__name {
+	.hodima-rl .hodima-rl__img {
 		transition: none;
 	}
 
