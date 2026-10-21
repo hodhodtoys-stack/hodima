@@ -1383,6 +1383,9 @@ dialog.sp-lightbox {
 		padding-top: 14px;
 		border-top: 1px solid rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.08);
 
+		/* از 3.9.7: کادر تعداد، دکمه، قرص‌های وضعیت و انتخاب تنوع ۴۸px (قبلا ۴۴)؛ rem تا با بزرگ‌نمایی متن مرورگر بزرگ شوند */
+		--hodima-control-h: max(48px, 3rem);
+
 		& .product-add-to-cart-box {
 			margin: 0;
 		}
@@ -1430,19 +1433,22 @@ dialog.sp-lightbox {
 			margin: 0;
 		}
 
+		/* از 3.9.7: کادر تعداد پهن‌تر و عدد درشت و پررنگ تا تایپ عدد راحت باشد (قبلا ۵۲px و ۰٫۹rem) */
 		& form.cart .quantity input.qty {
-			width: 52px;
+			width: max(68px, 4.25rem);
 			height: var(--hodima-control-h);
-			padding: 0 4px;
-			font-size: 0.9rem;
+			padding: 0 6px;
+			font-size: 1.1rem;
+			font-weight: 700;
 			border-radius: var(--hodima-radius-md);
 			font-family: inherit;
 		}
 
+		/* از 3.9.7: دکمه اندازه متن خودش (موبایل هم کشیده نمی‌شود) و متن ۰٫۹۵rem (قبلا ۰٫۸rem با کشیدگی) */
 		& form.cart button.single_add_to_cart_button {
 			height: var(--hodima-control-h);
-			padding: 0 18px;
-			font-size: 0.85rem;
+			padding: 0 22px;
+			font-size: 0.95rem;
 			border-radius: var(--hodima-radius-md);
 			box-shadow: none;
 			flex-grow: 0;
@@ -1675,15 +1681,6 @@ dialog.sp-lightbox {
  * دکمه «افزودن به سبد خرید» کمی کوچک‌تر
  * ========================================================================= */
 
-.custom-product-summary {
-	& .hp-buy-row {
-		& form.cart button.single_add_to_cart_button {
-			padding: 0 14px;
-			font-size: 0.8rem;
-		}
-	}
-}
-
 /* =========================================================================
  * موبایل: فاصله‌ها
  * ========================================================================= */
@@ -1769,17 +1766,19 @@ dialog.sp-lightbox {
 
 			& form.cart {
 				gap: 8px;
+				justify-content: center;
 			}
 
+			/* از 3.9.7: همان اندازه‌های قانون پایه (۶۸px و ۱٫۱rem)؛ دکمه به اندازه متن و وسط ردیف، نه کشیده */
 			& form.cart .quantity input.qty {
-				width: 56px;
-				padding: 0 4px;
+				width: max(68px, 4.25rem);
+				padding: 0 6px;
 			}
 
 			& form.cart button.single_add_to_cart_button {
-				flex: 1 1 auto;
-				padding: 0 14px;
-				font-size: 0.85rem;
+				flex: 0 0 auto;
+				padding: 0 22px;
+				font-size: 0.95rem;
 			}
 
 			/* ردیف ۲: وضعیت انبار + پیش‌خرید، دو ستون مساوی */
