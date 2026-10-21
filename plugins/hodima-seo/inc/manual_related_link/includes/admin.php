@@ -357,13 +357,14 @@ final class Admin {
 		$ids   = [];
 
 		// کد محصول (SKU) — برای فروشگاه عمده رایج‌ترین راه پیدا کردن محصول
+		// (تا ۲.۴.۰ فقط تطبیق کامل بود: با تایپ بخشی از کد هیچ محصولی پیدا نمی‌شد)
 		if ( '' !== $query && in_array( 'product', $types, true ) ) {
 			$ids = get_posts( [
 				'post_type'      => $types,
 				'post_status'    => 'publish',
 				'posts_per_page' => 5,
 				'fields'         => 'ids',
-				'meta_query'     => [ [ 'key' => '_sku', 'value' => $query ] ], // phpcs:ignore WordPress.DB.SlowDBQuery
+				'meta_query'     => [ [ 'key' => '_sku', 'value' => $query, 'compare' => 'LIKE' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery
 			] );
 		}
 

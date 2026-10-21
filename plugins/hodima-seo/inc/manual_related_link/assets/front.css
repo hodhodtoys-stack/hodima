@@ -9,184 +9,187 @@
  * خصوصیات منطقی، فوکوس کیبورد و احترام به prefers-reduced-motion.
  *
  * هاور و فوکوس مثل کارت‌های خود قالب (page-layout.css): کارت بالا می‌آید، حاشیه
- * و سایه عوض می‌شود، رنگ عنوان همان می‌ماند؛ حلقه فوکوس همان توکن‌های فوکوس سراسری قالب است.
- * (تا ۲.۴ عنوان با هاور بنفش می‌شد و فوکوس هم بنفش بود؛ رنگ کلیک‌های اصلی
- * سایت این نیست.)
+ * و سایه عوض می‌شود، رنگ عنوان همان می‌ماند؛ حلقه فوکوس همان توکن‌های فوکوس
+ * سراسری قالب است. (تا ۲.۴ عنوان با هاور بنفش می‌شد و فوکوس هم بنفش بود؛ رنگ
+ * کلیک‌های اصلی سایت این نیست.) برچسب و نوار کارت مقاله هم آبی پالت است (برچسب متن است: --hodima-secondary-text).
+ *
+ * بدون nesting و color-mix(var): افزونه مرحله ساخت ندارد و Chrome ≤ ۱۱۲ /
+ * Safari ≤ ۱۶٫۴ کل قانون را نادیده می‌گرفتند (کارت‌ها بی‌استایل می‌شدند).
+ * رنگ نیمه‌شفاف برند همان rgba(var(--hodima-*-rgb), a) قالب است.
  */
 
 .hodima-rl {
 	--rl-primary: var(--hodima-primary, #25316a);
 	--rl-secondary: var(--hodima-secondary, #607bbd);
-	--rl-third: var(--hodima-third, #b6c2f3);
-	--rl-accent: var(--hodima-accent-light, #a341c8);
+	--rl-secondary-text: var(--hodima-secondary-text, #5169a8);
 	--rl-surface: var(--hodima-surface, #ffffff);
 	--rl-soft: var(--hodima-surface-soft, #f7f9fd);
 	--rl-text: var(--hodima-text-dark, #111111);
-	--rl-border: color-mix(in srgb, var(--rl-third) 60%, transparent);
-	--rl-radius: 0.75rem;
-	--rl-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--rl-primary) 7%, transparent);
-	--rl-shadow-hover: 0 0.75rem 1.75rem color-mix(in srgb, var(--rl-primary) 14%, transparent);
+	--rl-border: rgba(var(--hodima-third-rgb, 182, 194, 243), 0.6);
 	--rl-border-hover: var(--hodima-border, #b8c4de);
+	--rl-radius: 0.75rem;
+	--rl-shadow: 0 0.25rem 1rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.07);
+	--rl-shadow-hover: 0 0.75rem 1.75rem rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.14);
 
 	box-sizing: border-box;
 	margin-block: 1.75rem;
 	font-family: inherit;
 	color: var(--rl-text);
-
-	& *,
-	& *::before,
-	& *::after {
-		box-sizing: inherit;
-	}
-
-	/* ── فهرست (خنثی کردن استایل ul/li محتوا) ── */
-	& .hodima-rl__list {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	& .hodima-rl__item {
-		margin: 0;
-		padding: 0;
-		min-inline-size: 0;
-
-		&::before,
-		&::after {
-			content: none;
-		}
-	}
-
-	/* ── کارت: کل کارت یک لینک است و عنوان داخل لینک (متن لینک برای گوگل) ── */
-	& .hodima-rl__card {
-		position: relative;
-		display: flex;
-		block-size: 100%;
-		color: inherit;
-		text-decoration: none;
-		background: var(--rl-surface);
-		border: 1px solid var(--rl-border);
-		border-radius: var(--rl-radius);
-		box-shadow: var(--rl-shadow);
-		transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-
-		&:hover {
-			transform: translateY(-2px);
-			border-color: var(--rl-border-hover);
-			box-shadow: var(--rl-shadow-hover);
-
-			& .hodima-rl__img {
-				transform: scale(1.04);
-			}
-		}
-
-		&:focus-visible {
-			outline: var(--hodima-focus-width, 2px) solid var(--hodima-focus-color, var(--rl-primary));
-			outline-offset: var(--hodima-focus-offset, 2px);
-		}
-	}
-
-	& .hodima-rl__media {
-		position: relative;
-		display: block;
-		flex-shrink: 0;
-		overflow: hidden;
-		aspect-ratio: 1;
-		background: var(--hodima-bg-gray, #eef2f8);
-		border-radius: calc(var(--rl-radius) - 0.25rem);
-	}
-
-	/*
-	 * جعبه «نمایش بیشتر» محتوا با گزینش‌گر قوی‌تر به همه img ها margin-block و
-	 * block-size: auto می‌دهد. با ارتفاع auto عکس کادر را پر نمی‌کرد و فقط
-	 * بالای آن دیده می‌شد (ایراد گزارش‌شده در موبایل). پس این سه ویژگی
-	 * !important‌اند و برش همیشه از وسط عکس است.
-	 */
-	& .hodima-rl__img {
-		display: block;
-		inline-size: 100%;
-		block-size: 100% !important;
-		max-inline-size: none;
-		margin: 0 !important;
-		object-fit: cover;
-		object-position: center !important;
-		transition: transform 0.35s ease;
-	}
-
-	/* کارت بدون تصویر: نماد گروه به جای عکس (نسخه ۱ کارت را بی‌صدا حذف می‌کرد) */
-	& .hodima-rl__placeholder {
-		display: grid;
-		place-items: center;
-		block-size: 100%;
-		color: var(--rl-secondary);
-		background: linear-gradient(135deg, color-mix(in srgb, var(--rl-third) 45%, #ffffff), color-mix(in srgb, var(--rl-secondary) 25%, #ffffff));
-	}
-
-	& .hodima-rl__icon {
-		inline-size: 40%;
-		block-size: 40%;
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 1.6;
-		stroke-linecap: round;
-		stroke-linejoin: round;
-	}
-
-	& .hodima-rl__name {
-		display: -webkit-box;
-		overflow: hidden;
-		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
-		font-size: 0.9rem;
-		font-weight: 600;
-		line-height: 1.5;
-		color: var(--rl-primary);
-		overflow-wrap: anywhere;
-	}
 }
 
-/* ── محصولات مکمل: کارت‌های تصویری با عنوان کادر ── */
+.hodima-rl *,
+.hodima-rl *::before,
+.hodima-rl *::after {
+	box-sizing: inherit;
+}
+
+/* ── فهرست (خنثی کردن استایل ul/li محتوا) ── */
+.hodima-rl .hodima-rl__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-rl .hodima-rl__item {
+	margin: 0;
+	padding: 0;
+	min-inline-size: 0;
+}
+
+.hodima-rl .hodima-rl__item::before,
+.hodima-rl .hodima-rl__item::after {
+	content: none;
+}
+
+/* ── کارت: کل کارت یک لینک است و عنوان داخل لینک (متن لینک برای گوگل) ── */
+.hodima-rl .hodima-rl__card {
+	position: relative;
+	display: flex;
+	block-size: 100%;
+	color: inherit;
+	text-decoration: none;
+	background: var(--rl-surface);
+	border: 1px solid var(--rl-border);
+	border-radius: var(--rl-radius);
+	box-shadow: var(--rl-shadow);
+	transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.hodima-rl .hodima-rl__card:hover {
+	transform: translateY(-2px);
+	border-color: var(--rl-border-hover);
+	box-shadow: var(--rl-shadow-hover);
+}
+
+.hodima-rl .hodima-rl__card:hover .hodima-rl__img {
+	transform: scale(1.04);
+}
+
+.hodima-rl .hodima-rl__card:focus-visible {
+	outline: var(--hodima-focus-width, 2px) solid var(--hodima-focus-color, var(--rl-primary));
+	outline-offset: var(--hodima-focus-offset, 2px);
+}
+
+.hodima-rl .hodima-rl__media {
+	position: relative;
+	display: block;
+	flex-shrink: 0;
+	overflow: hidden;
+	aspect-ratio: 1;
+	background: var(--hodima-bg-gray, #eef2f8);
+	border-radius: calc(var(--rl-radius) - 0.25rem);
+}
+
+/*
+ * جعبه «نمایش بیشتر» محتوا با گزینش‌گر قوی‌تر به همه img ها margin-block و
+ * block-size: auto می‌دهد. با ارتفاع auto عکس کادر را پر نمی‌کرد و فقط
+ * بالای آن دیده می‌شد (ایراد گزارش‌شده در موبایل). پس این سه ویژگی
+ * !important‌اند و برش همیشه از وسط عکس است.
+ */
+.hodima-rl .hodima-rl__img {
+	display: block;
+	inline-size: 100%;
+	block-size: 100% !important;
+	max-inline-size: none;
+	margin: 0 !important;
+	object-fit: cover;
+	object-position: center !important;
+	transition: transform 0.35s ease;
+}
+
+/* کارت بدون تصویر: نماد گروه به جای عکس (نسخه ۱ کارت را بی‌صدا حذف می‌کرد) */
+.hodima-rl .hodima-rl__placeholder {
+	display: grid;
+	place-items: center;
+	block-size: 100%;
+	color: var(--rl-secondary);
+	background: linear-gradient(135deg, rgba(var(--hodima-third-rgb, 182, 194, 243), 0.45), rgba(var(--hodima-secondary-rgb, 96, 123, 189), 0.25)), var(--rl-surface);
+}
+
+.hodima-rl .hodima-rl__icon {
+	inline-size: 40%;
+	block-size: 40%;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.6;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.hodima-rl .hodima-rl__name {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	font-size: 0.9rem;
+	font-weight: 600;
+	line-height: 1.5;
+	color: var(--rl-primary);
+	overflow-wrap: anywhere;
+}
+
+/* ── پیشنهاد خرید: کارت‌های تصویری با عنوان کادر ── */
 .hodima-rl--products {
 	padding: 1rem;
 	background: var(--rl-soft);
 	border: 1px solid var(--rl-border);
 	border-radius: calc(var(--rl-radius) + 0.25rem);
 	border-block-start: 3px solid var(--rl-primary);
+}
 
-	& .hodima-rl__title {
-		margin: 0 0 0.5rem;
-		padding: 0;
-		font-size: 1.05rem;
-		font-weight: 700;
-		line-height: 1.5;
-		text-align: center;
-		color: var(--rl-primary);
+.hodima-rl--products .hodima-rl__title {
+	margin: 0 0 0.5rem;
+	padding: 0;
+	font-size: 1.05rem;
+	font-weight: 700;
+	line-height: 1.5;
+	text-align: center;
+	color: var(--rl-primary);
+}
 
-		&::before,
-		&::after {
-			content: none;
-		}
-	}
+.hodima-rl--products .hodima-rl__title::before,
+.hodima-rl--products .hodima-rl__title::after {
+	content: none;
+}
 
-	& .hodima-rl__list {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 12rem));
-		justify-content: center;
-		gap: 0.75rem;
-	}
+.hodima-rl--products .hodima-rl__list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 12rem));
+	justify-content: center;
+	gap: 0.75rem;
+}
 
-	& .hodima-rl__card {
-		flex-direction: column;
-		gap: 0.5rem;
-		padding: 0.5rem;
-	}
+.hodima-rl--products .hodima-rl__card {
+	flex-direction: column;
+	gap: 0.5rem;
+	padding: 0.5rem;
+}
 
-	/* نسخه قبل با min-block-size: 3em زیر نام یک‌خطی فضای خالی می‌ماند */
-	& .hodima-rl__name {
-		padding-inline: 0.25rem;
-		text-align: center;
-	}
+/* نسخه قبل با min-block-size: 3em زیر نام یک‌خطی فضای خالی می‌ماند */
+.hodima-rl--products .hodima-rl__name {
+	padding-inline: 0.25rem;
+	text-align: center;
 }
 
 .hodima-rl--products .hodima-rl__media {
@@ -194,81 +197,77 @@
 }
 
 /* ── مقاله پیشنهادی: بدون هیچ عنوانی بالای کادر؛ کارت کوچک، نیمی عکس و نیمی برچسب + عنوان ── */
-.hodima-rl--article {
-	& .hodima-rl__list {
-		display: grid;
-		gap: 0.625rem;
-	}
+.hodima-rl--article .hodima-rl__list {
+	display: grid;
+	gap: 0.625rem;
+}
 
-	& .hodima-rl__card {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		align-items: center;
-		gap: 0.75rem;
-		max-inline-size: 24rem;
-		margin-inline: auto;
-		padding: 0.375rem;
-		border-inline-start: 4px solid var(--rl-accent);
+.hodima-rl--article .hodima-rl__card {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	align-items: center;
+	gap: 0.75rem;
+	max-inline-size: 24rem;
+	margin-inline: auto;
+	padding: 0.375rem;
+	border-inline-start: 4px solid var(--rl-secondary);
+}
 
-		/* hover رنگ کل حاشیه را عوض می‌کند؛ نوار کناری نباید با آن بپرد */
-		&:hover {
-			border-inline-start-color: var(--rl-accent);
-		}
-	}
+/* hover رنگ کل حاشیه را عوض می‌کند؛ نوار کناری نباید با آن بپرد */
+.hodima-rl--article .hodima-rl__card:hover {
+	border-inline-start-color: var(--rl-secondary);
+}
 
-	& .hodima-rl__media {
-		inline-size: 100%;
-		aspect-ratio: 16 / 10;
-	}
+.hodima-rl--article .hodima-rl__media {
+	inline-size: 100%;
+	aspect-ratio: 16 / 10;
+}
 
-	& .hodima-rl__body {
-		display: flex;
-		flex-direction: column;
-		gap: 0.125rem;
-		min-inline-size: 0;
-		padding-inline-end: 0.375rem;
+.hodima-rl--article .hodima-rl__body {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	min-inline-size: 0;
+	padding-inline-end: 0.375rem;
+}
 
-		/* برچسب «مطالب مرتبط» — محتوای CSS است تا جزو متن لینک نشود */
-		&::before {
-			content: attr(data-label);
-			font-size: 0.72rem;
-			font-weight: 700;
-			line-height: 1.4;
-			color: var(--rl-accent);
-		}
-	}
+/* برچسب «مطالب مرتبط» — محتوای CSS است تا جزو متن لینک نشود */
+.hodima-rl--article .hodima-rl__body::before {
+	content: attr(data-label);
+	font-size: 0.72rem;
+	font-weight: 700;
+	line-height: 1.4;
+	color: var(--rl-secondary-text);
+}
 
-	& .hodima-rl__name {
-		-webkit-line-clamp: 3;
-		line-clamp: 3;
-		font-size: 0.9rem;
-		line-height: 1.6;
-	}
+.hodima-rl--article .hodima-rl__name {
+	-webkit-line-clamp: 3;
+	line-clamp: 3;
+	font-size: 0.9rem;
+	line-height: 1.6;
 }
 
 @media (max-width: 48rem) {
 	.hodima-rl--products {
 		padding: 0.75rem;
-
-		& .hodima-rl__list {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			gap: 0.5rem;
-		}
-
-		& .hodima-rl__name {
-			font-size: 0.82rem;
-		}
 	}
 
-	.hodima-rl--article {
-		& .hodima-rl__card {
-			max-inline-size: none;
-			gap: 0.625rem;
-		}
+	.hodima-rl--products .hodima-rl__list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.5rem;
+	}
 
-		& .hodima-rl__name {
-			font-size: 0.85rem;
-		}
+	.hodima-rl--products .hodima-rl__name {
+		font-size: 0.82rem;
+	}
+
+	.hodima-rl--article .hodima-rl__card {
+		max-inline-size: none;
+		gap: 0.625rem;
+	}
+
+	.hodima-rl--article .hodima-rl__name {
+		font-size: 0.85rem;
 	}
 }
 

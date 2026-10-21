@@ -218,7 +218,8 @@ final class AdminPage {
 		global $wpdb;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery
-		$post_ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s LIMIT %d", Store::META, self::REPORT_LIMIT ) ) );
+		// نوشته‌های حذف‌شده (زباله) و پیش‌نویس خودکار در گزارش شمرده نمی‌شوند
+		$post_ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT m.post_id FROM {$wpdb->postmeta} m INNER JOIN {$wpdb->posts} p ON p.ID = m.post_id WHERE m.meta_key = %s AND p.post_status NOT IN ('trash', 'auto-draft') LIMIT %d", Store::META, self::REPORT_LIMIT ) ) );
 		$term_ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT term_id FROM {$wpdb->termmeta} WHERE meta_key = %s LIMIT %d", Store::META, self::REPORT_LIMIT ) ) );
 		$legacy   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key IN (%s, %s)", Store::LEGACY_META, '_internal_link_1_url' ) )
 			+ (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->termmeta} WHERE meta_key IN (%s, %s)", Store::LEGACY_META, '_internal_link_1_url' ) );
