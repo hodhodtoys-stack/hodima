@@ -592,6 +592,11 @@
 	}
 }
 
+/* کاشی با ؟: کلید (track) position دارد و بالاتر از ::after برچسب می‌نشست؛ کلیک باید به برچسب برسد (پایین‌تر، بخش آیکون راهنما) */
+.hodima-toggle--tip .hodima-toggle__track {
+	pointer-events: none;
+}
+
 .hodima-toggle input:checked ~ .hodima-toggle__track {
 	background: var(--hs-primary);
 
@@ -2472,6 +2477,43 @@ input.hodima-color__swatch {
 
 .hodima-panel__help .hodima-tip {
 	vertical-align: middle;
+}
+
+/* تب با قانون «توضیح فقط داخل ؟» (tips): آیکون کنار عنوان قاب، سرتیتر تک‌خطی و هم‌ارتفاع */
+.hodima-panel__heading--tip {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+/*
+ * کاشی کلید با ؟: برچسب فقط متن کلید است و با ::after کل کاشی را می‌پوشاند (کل کادر قابل کلیک)؛
+ * آیکون ؟ (دکمه) بالاتر از آن (z-index) و بیرون <label> است تا نام قابل‌دسترس کلید همان متن بماند.
+ */
+.hodima-toggle--tip {
+	align-items: center;
+
+	/* برچسب بلند خودش خط می‌شکند؛ آیکون ؟ کنارش می‌ماند (نه خط جدا) تا کاشی کوتاه بماند */
+	& .hodima-toggle__text {
+		flex-direction: row;
+		align-items: center;
+		gap: 0.25rem;
+		min-inline-size: 0;
+	}
+
+	& .hodima-toggle__label::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		cursor: pointer;
+	}
+
+	& .hodima-tip {
+		position: relative;
+		z-index: 1;
+	}
 }
 
 /* کارت رنگ پالت (3.0.8): بلوک رنگ بزرگ بالا، زیرش نام، کد رنگ و بازگشت به پیش‌فرض در یک کادر؛ فقط قاب «پالت» */

@@ -66,7 +66,7 @@ python3 bin/release-check.py plan
 | هر PHP که خروجی صفحه یا اسکیما را عوض می‌کند | `tools/wp-harness/compare-with-ref.sh` (هر `LOST` باید عمدی باشد) و `tools/wp-harness/ci-check.sh` |
 | CSS قالب | `tools/wp-harness/css-equiv.sh` و `tools/wp-harness/visual-compare.sh` (فروشگاه: `--wc`) |
 | JS/HTML قالب | `tools/wp-harness/visual-compare.sh` |
-| صفحه پیشخوان | `tools/wp-harness/admin-check.sh . /tmp/adm [slug…]`؛ برای تنظیمات قالب: عکس همه تب‌ها ۱۳۰۰ و ۳۹۰ (راست‌به‌چپ، با `admin.js`) + آزمون رفتار JS در Chromium (قانون «طراحی پیشخوان» اسکیل `hodima-theme`) |
+| صفحه پیشخوان | `tools/wp-harness/admin-check.sh . /tmp/adm [slug…]`؛ برای تنظیمات قالب: `tools/wp-harness/settings-tab-check.sh <تب> --ref HEAD` (عکس ۱۳۰۰ و ۳۹۰ راست‌به‌چپ با `admin.js` + axe + آزمون رفتار ؟؛ قانون «طراحی پیشخوان» اسکیل `hodima-theme`) |
 | تعریف تابع/کلاس سطح بالا یا ترتیب لود | بعد از مرحله ۶: `tools/wp-harness/zip-install-check.sh` (هر دو ترتیب فعال‌سازی) |
 | فقط ابزار/مستندات | اجرای واقعی همان ابزار روی یک نمونه |
 

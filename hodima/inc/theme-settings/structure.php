@@ -58,7 +58,9 @@ function hodima_settings_nav_groups(): array {
  * حالا تب‌ها به ترتیب جای‌شان در سایت (بالا به پایین، بعد صفحه‌ها) و در
  * چهار گروه‌اند. کلید تب‌ها همان قبلی است (لینک‌های ?tab=… قدیمی کار می‌کنند).
  *
- * @return array<string, array{title:string, description:string, icon:string, nav:string}>
+ * tips: تب قانون «توضیح هر باکس فقط داخل آیکون ؟» را گرفته (اسکیل hodima-theme؛ تب‌به‌تب فعال می‌شود).
+ *
+ * @return array<string, array{title:string, description:string, icon:string, nav:string, tips?:bool}>
  */
 function hodima_settings_sections(): array {
 	return [
@@ -70,7 +72,7 @@ function hodima_settings_sections(): array {
 		'footer'    => [ 'nav' => 'look', 'title' => 'فوتر', 'icon' => 'dashicons-table-row-after', 'description' => 'ستون‌های پایین همه صفحه‌ها. ستونی که محتوا نداشته باشد نمایش داده نمی‌شود.' ],
 		'home'      => [ 'nav' => 'pages', 'title' => 'صفحه اصلی', 'icon' => 'dashicons-admin-home', 'description' => 'بخش‌های صفحه اصلی سایت: ترتیب، روشن/خاموش و تنظیمات هر بخش.' ],
 		'shop'      => [ 'nav' => 'pages', 'title' => 'فروشگاه', 'icon' => 'dashicons-store', 'description' => 'سربرگ صفحه فروشگاه و تعداد محصول در هر صفحه.' ],
-		'product'   => [ 'nav' => 'pages', 'title' => 'صفحه محصول', 'icon' => 'dashicons-products', 'description' => 'متن‌ها و بخش‌های صفحه هر محصول.' ],
+		'product'   => [ 'nav' => 'pages', 'tips' => true, 'title' => 'صفحه محصول', 'icon' => 'dashicons-products', 'description' => 'متن‌ها و بخش‌های صفحه هر محصول.' ],
 		'blog'      => [ 'nav' => 'pages', 'title' => 'وبلاگ', 'icon' => 'dashicons-welcome-write-blog', 'description' => 'صفحه وبلاگ و کارت‌ها، اطلاعات و متن هر مقاله، و «مقالات مرتبط».' ],
 		'notfound'  => [ 'nav' => 'pages', 'title' => 'صفحه ۴۰۴', 'icon' => 'dashicons-warning', 'description' => 'صفحه‌ای که بازدیدکننده با آدرس اشتباه یا حذف‌شده می‌بیند. متن خالی به پیش‌فرض برمی‌گردد.' ],
 		'contact'   => [ 'nav' => 'contact', 'title' => 'اطلاعات تماس', 'icon' => 'dashicons-phone', 'description' => 'در پنجره «پشتیبانی» هدر و فوتر نمایش داده می‌شود. هر گزینه خالی نمایش داده نمی‌شود.' ],

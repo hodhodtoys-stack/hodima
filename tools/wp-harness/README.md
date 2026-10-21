@@ -47,6 +47,9 @@ HARNESS=1 php tools/wp-harness/commerce-tests.php
 # صفحه‌های پیشخوان (دسترسی، عنوان، منوی فعال، هشدار PHP)
 tools/wp-harness/admin-check.sh . /tmp/adm                 # صفحه‌های پیش‌فرض
 tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های دلخواه
+
+# یک تب «تنظیمات قالب هدیما» با CSS/JS واقعی راست‌به‌چپ: عکس ۱۳۰۰ و ۳۹۰ (قبل/بعد با --ref)، axe، آزمون رفتار آیکون ؟ (هاور، کلیک، Esc، کاشی کلید)
+tools/wp-harness/settings-tab-check.sh product --ref HEAD   # خروجی: /tmp/hodima-harness/settings-product/
 ```
 بار اول `setup.sh` خودکار اجرا می‌شود. مسیر کار: `$HODIMA_HARNESS` (پیش‌فرض `/tmp/hodima-harness`).
 
@@ -71,7 +74,8 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 | `run.sh <src> <out>` | رندر همه صفحه‌ها و استخراج JSON-LD |
 | `render.php <path> <full\|hooks>` | رندر یک آدرس |
 | `schema-rules.py <out>` | قواعد اسکیما روی خروجی `run.sh` (خروجی ۰ = قبول). قاعده تازه = باگی که نباید برگردد |
-| `admin-render.php <slug>` | رندر یک صفحه پیشخوان با حساب مدیر |
+| `admin-render.php <slug> [query]` | رندر یک صفحه پیشخوان با حساب مدیر (آرگومان دوم اختیاری: پارامتر آدرس، مثلا `tab=product`) |
+| `settings-tab-check.sh/.mjs` | بررسی یک تب تنظیمات قالب در Chromium (عکس، axe، رفتار ؟)؛ وردپرس ابزار تست `wp.media` و فونت dashicons ندارد (فونت با شبیه‌ساز از dashicons.svg) |
 | `media-tests.php` | آزمون‌های خودکار سیستم رسانه و Discover (کد خروج ۱ = رد) |
 | `stories-tests.php` | آزمون‌های خودکار ماژول استوری (کد خروج ۱ = رد). قفل `FOR UPDATE` جمع‌بندی را SQLite ندارد؛ آزمون فقط همان عبارت را برمی‌دارد |
 | `commerce-tests.php` | آزمون‌های خودکار Commerce — تاریخ شمسی، شهرها، موبایل/کد پستی/کد ملی (کد خروج ۱ = رد) |

@@ -203,6 +203,7 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 	$collapse = ! empty( $panel['collapsible'] ); // قاب جمع‌شونده (<details>، پیش‌فرض بسته)؛ مثلا پیش‌نمایش تایپوگرافی
 	$classes  = 'hodima-panel hodima-panel--' . $layout . ' hodima-panel-' . $key . ( ! empty( $panel['half'] ) ? ' hodima-panel--half' : '' ) . ( $collapse ? ' hodima-panel--collapsible' : '' ) . ( ! empty( $panel['headings'] ) ? ' hodima-panel--headings' : '' );
 	$title    = 'hodima-panel-' . $key . '-title';
+	$tips     = hodima_settings_section_tips( (string) $panel['section'] ); // تب با قانون «توضیح فقط داخل ؟»
 	?>
 	<?php if ( $collapse ) : ?>
 		<?php
@@ -211,11 +212,11 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 		?>
 		<details class="<?php echo esc_attr( $classes ); ?>" data-hodima-collapsible="<?php echo esc_attr( $key ); ?>"<?php echo $force_open ? ' open data-hodima-keep-open' : ''; ?><?php echo ! empty( $panel['open_on'] ) ? ' data-hodima-open-on="' . esc_attr( implode( ' ', (array) $panel['open_on'] ) ) . '"' : ''; ?>>
 			<summary class="hodima-panel__summary">
-				<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '', '<span class="hodima-panel__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>' ); ?>
+				<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '', '<span class="hodima-panel__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>', $tips ); ?>
 			</summary>
 	<?php else : ?>
 	<section class="<?php echo esc_attr( $classes ); ?>" aria-labelledby="<?php echo esc_attr( $title ); ?>">
-		<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '' ); ?>
+		<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '', '', $tips ); ?>
 	<?php endif; ?>
 
 		<div class="hodima-panel__body">
