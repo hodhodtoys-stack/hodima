@@ -1808,6 +1808,8 @@ dialog.sp-lightbox {
  * لینک دسته و برچسب (hodima_product_terms_html): دکمه‌های کپسولی هم‌شکل
  * برچسب مقاله (.hodima-chip در blog-card.css که در صفحه محصول لود نمی‌شود).
  * ارتفاع هدف لمسی ≥ ۲۴px (۱٫۸ × ۰٫۸۵rem ≈ ۲۴٫۵ + حاشیه ۱px).
+ * از 3.9.5 کل ردیف داخل کادر مستطیلی (گوشه ۴px) هم‌خانواده قاب پادکست
+ * (media-style.css: حاشیه ۱px از رنگ اصلی ۱۸٪ و زمینه surface-soft)؛ چیپ‌ها همان کپسول.
  * ========================================================================= */
 
 .custom-product-summary .hp-terms {
@@ -1815,6 +1817,10 @@ dialog.sp-lightbox {
 	flex-direction: column;
 	gap: var(--hodima-space-3);
 	margin-block-start: var(--hodima-space-5);
+	padding: var(--hodima-space-4) 14px;
+	border: 1px solid rgba(var(--hodima-primary-rgb, 37, 49, 106), 0.18);
+	border-radius: var(--hodima-radius-xs);
+	background: var(--hodima-surface-soft, #f7f9fd);
 
 	& .hp-terms__group {
 		display: flex;
