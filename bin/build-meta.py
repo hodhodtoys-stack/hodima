@@ -95,6 +95,9 @@ def main():
                 'changelog': changelog_html(slug),
             },
         }
+        icons = plugin_icons(out_dir, slug)
+        if icons:
+            data['icons'] = icons
         write(out_dir, slug, data)
 
     slug, path = THEME
@@ -104,6 +107,13 @@ def main():
         'details_url': REPO + '/blob/HEAD/CHANGELOG.md',
         'download_url': BASE + slug + '.zip',
     })
+
+
+def plugin_icons(out_dir, slug):
+    """آیکون صفحه «به‌روزرسانی‌ها» (release/icons/، ساخته tools/plugin-icons.py) — فقط فایل‌های موجود."""
+    return {key: f'{BASE}icons/{slug}-{size}.png'
+            for key, size in (('1x', 128), ('2x', 256))
+            if os.path.exists(os.path.join(out_dir, 'icons', f'{slug}-{size}.png'))}
 
 
 def write(out_dir, slug, data):
