@@ -7,6 +7,11 @@
  *   - شبکه انعطاف‌پذیر به جای ۸ ستون ثابت که عنوان‌های بلند فارسی را له می‌کرد
  *   - :focus-visible برای کاربر کیبورد، prefers-reduced-motion
  *   - بدون !important (قالب با کلاس‌های قدیمی هم می‌تواند بازنویسی کند)
+ *
+ * ۴.۱.۲ (چیدمان شبکه): عنوان «زیرمجموعه‌ها» فقط برای صفحه‌خوان، کارت‌ها
+ * تمام‌عرض (auto-fit). باگ قبلی: عنوان ستونی کنار کارت‌ها می‌گرفت و
+ * auto-fill ستون‌های خالی می‌ساخت، پس نیمه کادر در دسکتاپ خالی می‌ماند و در
+ * موبایل ۳ کارت + یک کارت تنها در ردیف دوم می‌افتاد.
  */
 
 .hodima-tc {
@@ -105,7 +110,7 @@
     & .hodima-tc__links {
         display: grid;
         flex: 1 1 24rem;
-        grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
         gap: .6rem;
 
         /* کارت هم‌ارتفاع ردیف (به جای block-size: 100% که ردیف را دو برابر بلند می‌کرد) */
@@ -119,7 +124,7 @@
         gap: .4rem;
         min-block-size: 2.9rem;
         padding: .5rem .6rem;
-        font-size: .78rem;
+        font-size: .84rem;
         font-weight: 500;
         line-height: 1.5;
         text-align: center;
@@ -150,6 +155,24 @@
                 background: var(--htc-primary);
                 transform: scale(1.5);
             }
+        }
+    }
+
+    /*
+     * چیدمان شبکه: کادر جمع‌وجور و عنوان زیرمجموعه‌ها پنهان از دید (نه حذف):
+     * برای سئو بی‌اثر است (تگ p پیش‌فرض، data-nosnippet) و ul همچنان با
+     * aria-labelledby نام «زیرمجموعه‌ها» را برای صفحه‌خوان دارد.
+     */
+    &.hodima-tc--grid {
+        padding: 1rem;
+
+        & .hodima-tc__group--children > .hodima-tc__title {
+            position: absolute;
+            inline-size: 1px;
+            block-size: 1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
         }
     }
 
@@ -184,6 +207,8 @@
     @media (max-width: 48rem) {
         padding: 1rem;
 
+        &.hodima-tc--grid { padding: .75rem; }
+
         /*
          * عنوان بالای فهرست. با grid، نه flex ستونی: در flex ستونی
          * flex-basis ارتفاع می‌شد و ارتفاع ردیف‌های کارت با عرض حداقلی
@@ -196,13 +221,14 @@
         }
 
         & .hodima-tc__links {
-            grid-template-columns: repeat(auto-fill, minmax(min(100%, 7.5rem), 1fr));
+            /* ۸.۵rem: ۴ کارت در موبایل ۲×۲ (نه ۳ + ۱) */
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
             gap: .5rem;
         }
 
         & .hodima-tc__link {
-            font-size: .72rem;
-            min-block-size: 2.6rem;
+            font-size: .78rem;
+            min-block-size: 2.75rem;
         }
     }
 
