@@ -34,10 +34,8 @@
 	<file>plugins/hodima-media/components/expandable-boxes</file>
 	<!-- اعلان‌ها Hodima Media (بخش ۲۱۰) -->
 	<file>plugins/hodima-media/components/notification</file>
-	<!-- آمار ویدیوها Hodima Media (بخش ۲۱۶؛ بقیه فایل‌های video-watch بعدا) -->
-	<file>plugins/hodima-media/components/video-watch/db-video-watch.php</file>
-	<file>plugins/hodima-media/components/video-watch/includes</file>
-	<file>plugins/hodima-media/components/video-watch/meta-boxes.php</file>
+	<!-- ماژول ویدیوها Hodima Media (بخش ۲۱۶؛ کل پوشه از بخش ۲۲۱) -->
+	<file>plugins/hodima-media/components/video-watch</file>
 	<!-- داخل پوشه schema ولی اسکیما نیستند (سایت‌مپ، فید پادکست، صفحه‌های پیشخوان) -->
 	<exclude-pattern>plugins/hodima-seo/schema/admin/*</exclude-pattern>
 	<exclude-pattern>plugins/hodima-seo/schema/sitemap-core\.php</exclude-pattern>

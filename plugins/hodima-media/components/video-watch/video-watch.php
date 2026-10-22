@@ -1,110 +1,122 @@
 <?php
+/**
+ * ماژول «ویدیوها» (Hodima Media): بارگذار، دارایی‌ها، قالب صفحه ویدیو
+ * Path: components/video-watch/video-watch.php
+ *
+ * همه فایل‌های ماژول زیر PHPCS/PHPStan/ESLint/Stylelint بدون baseline
+ * (HODIMA-AUDIT.md بخش ۲۲۱). نام‌های قدیمی hod_video_* و HOD_VIDEO_WATCH_*
+ * برای سازگاری (کد بیرونی، آزمون‌ها) عوض نشده‌اند.
+ *
+ * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- نام‌های قدیمی hod_video_* / HOD_VIDEO_WATCH_*
+ */
+
 declare(strict_types=1);
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+defined( 'ABSPATH' ) || exit;
 
-define('HOD_VIDEO_WATCH_PATH', trailingslashit(__DIR__));
-define('HOD_VIDEO_WATCH_URL', trailingslashit(HODIMA_MEDIA_URL . '/components/video-watch'));
+define( 'HOD_VIDEO_WATCH_PATH', trailingslashit( __DIR__ ) );
+define( 'HOD_VIDEO_WATCH_URL', trailingslashit( HODIMA_MEDIA_URL . '/components/video-watch' ) );
 
 /** نسخه دارایی = زمان تغییر فایل (نسخه ثابت «1.2.2» به‌روزرسانی را پنهان می‌کرد). */
-function hod_video_watch_ver(string $file): string
-{
-    $path = HOD_VIDEO_WATCH_PATH . $file;
-    return file_exists($path) ? (string) filemtime($path) : '2.0.0';
+function hod_video_watch_ver( string $file ): string {
+	$path = HOD_VIDEO_WATCH_PATH . $file;
+	return file_exists( $path ) ? (string) filemtime( $path ) : HODIMA_MEDIA_VERSION;
 }
 
-$hod_video_watch_files = [
-    'post-type.php',
-    'meta-boxes.php',
-    'vid-w-schema.php',
-    'db-video-watch.php',
-    'videos-page.php', // کوئری و اسکیمای صفحه فهرست ویدئوها (قبلا داخل قالب)
-];
-
-foreach ($hod_video_watch_files as $hod_video_watch_file) {
-    $hod_video_watch_file_path = HOD_VIDEO_WATCH_PATH . $hod_video_watch_file;
-    if (file_exists($hod_video_watch_file_path)) {
-        require_once $hod_video_watch_file_path;
-    }
+foreach ( [ 'post-type.php', 'meta-boxes.php', 'vid-w-schema.php', 'db-video-watch.php', 'videos-page.php' ] as $hodima_vw_file ) {
+	require_once HOD_VIDEO_WATCH_PATH . $hodima_vw_file;
 }
+unset( $hodima_vw_file );
 
-function hod_video_watch_front_assets(): void
-{
-    if (!is_singular('video') && !is_post_type_archive('video')) {
-        return;
-    }
+/**
+ * CSS و JS صفحه ویدیو.
+ * فقط صفحه تک ویدیو؛ تا Media 2.1.3 «آرشیو نوع ویدیو» هم شرط بود که از Media 1.x
+ * خاموش است (فهرست ویدیوها یک برگه است، hodima-media.php).
+ */
+function hod_video_watch_front_assets(): void {
+	if ( ! is_singular( 'video' ) ) {
+		return;
+	}
 
-    wp_enqueue_style('hod-video-watch-front', HOD_VIDEO_WATCH_URL . 'video-watch.front.css', [], hod_video_watch_ver('video-watch.front.css'));
-    wp_enqueue_script('hod-video-watch-front', HOD_VIDEO_WATCH_URL . 'video-watch.front.js', [], hod_video_watch_ver('video-watch.front.js'), true);
-    
-    // تزریق Nonce امنیتی به جاوااسکریپت (به‌همراه آدرس بازیابی نانس تازه برای صفحات کش‌شده)
-    wp_localize_script('hod-video-watch-front', 'hvwData', [
-        'restUrl'  => esc_url_raw(rest_url('video-watch/v1/track')),
-        'nonceUrl' => esc_url_raw(rest_url('video-watch/v1/nonce')),
-        // کلید مستقل از کاربر (db-video-watch.php)؛ nonce وردپرس برای کاربر واردشده همیشه رد می‌شد
-        'nonce'    => class_exists('Hodima_Video_Watch_Analytics') ? Hodima_Video_Watch_Analytics::token() : ''
-    ]);
+	wp_enqueue_style( 'hod-video-watch-front', HOD_VIDEO_WATCH_URL . 'video-watch.front.css', [], hod_video_watch_ver( 'video-watch.front.css' ) );
+	wp_enqueue_script( 'hod-video-watch-front', HOD_VIDEO_WATCH_URL . 'video-watch.front.js', [], hod_video_watch_ver( 'video-watch.front.js' ), true );
+
+	// آدرس ثبت آمار و کلید (به‌همراه آدرس کلید تازه برای صفحه‌های کش‌شده)
+	wp_localize_script(
+		'hod-video-watch-front',
+		'hvwData',
+		[
+			'restUrl'  => esc_url_raw( rest_url( 'video-watch/v1/track' ) ),
+			'nonceUrl' => esc_url_raw( rest_url( 'video-watch/v1/nonce' ) ),
+			// کلید مستقل از کاربر (db-video-watch.php)؛ nonce وردپرس برای کاربر واردشده همیشه رد می‌شد
+			'nonce'    => class_exists( 'Hodima_Video_Watch_Analytics' ) ? Hodima_Video_Watch_Analytics::token() : '',
+		]
+	);
 }
-add_action('wp_enqueue_scripts', 'hod_video_watch_front_assets');
+add_action( 'wp_enqueue_scripts', 'hod_video_watch_front_assets' );
 
 /** جعبه «نمایش بیشتر / کمتر» متن کامل ویدیو: CSS و JS ماژول باکس‌های بازشونده روی همین صفحه هم لود شوند. */
-add_filter('hodima_expandable_boxes_enqueue', static function (bool $enqueue): bool {
-    return $enqueue || (is_singular('video') && '' !== trim((string) get_post_meta((int) get_queried_object_id(), '_hod_video_transcript', true)));
-});
+add_filter(
+	'hodima_expandable_boxes_enqueue',
+	static fn( bool $enqueue ): bool => $enqueue || ( is_singular( 'video' ) && '' !== trim( (string) get_post_meta( (int) get_queried_object_id(), '_hod_video_transcript', true ) ) )
+);
 
 /** متن پیشنهادی صفحه سیاست حریم خصوصی (ابزارها ← راهنمای سیاست حریم خصوصی). */
-function hod_video_watch_privacy_policy_text(): void
-{
-    if (!function_exists('wp_add_privacy_policy_content')) {
-        return;
-    }
+function hod_video_watch_privacy_policy_text(): void {
+	if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+		return;
+	}
 
-    $text  = '<h3>' . esc_html('شمارنده بازدید ویدیوها') . '</h3>';
-    $text .= '<p class="privacy-policy-tutorial">' . esc_html('این متن پیشنهادی است؛ مطابق وضع کسب‌وکار خود ویرایش کنید.') . '</p>';
-    $text .= '<p>' . esc_html('برای اینکه یک بازدیدکننده در یک روز چند بار شمرده نشود و بازدید جعلی ثبت نشود، دو نشانه یک‌طرفه (هش) — یکی از نشانی IP، نام مرورگر و تاریخ همان روز و دیگری از نشانی IP و تاریخ — به‌صورت موقت (حداکثر یک روز) نگه داشته می‌شود؛ نشانی IP ذخیره نمی‌شود.') . '</p>';
-    wp_add_privacy_policy_content('هدیما — ویدیو', wp_kses_post($text));
+	$text  = '<h3>' . esc_html( 'شمارنده بازدید ویدیوها' ) . '</h3>';
+	$text .= '<p class="privacy-policy-tutorial">' . esc_html( 'این متن پیشنهادی است؛ مطابق وضع کسب‌وکار خود ویرایش کنید.' ) . '</p>';
+	$text .= '<p>' . esc_html( 'برای اینکه یک بازدیدکننده در یک روز چند بار شمرده نشود و بازدید جعلی ثبت نشود، دو نشانه یک‌طرفه (هش) — یکی از نشانی IP، نام مرورگر و تاریخ همان روز و دیگری از نشانی IP و تاریخ — به‌صورت موقت (حداکثر یک روز) نگه داشته می‌شود؛ نشانی IP ذخیره نمی‌شود.' ) . '</p>';
+	wp_add_privacy_policy_content( 'هدیما — ویدیو', wp_kses_post( $text ) );
 }
-add_action('admin_init', 'hod_video_watch_privacy_policy_text');
+add_action( 'admin_init', 'hod_video_watch_privacy_policy_text' );
 
-function hod_video_watch_preload_poster(): void
-{
-    if (!is_singular('video')) {
-        return;
-    }
+/** پیش‌بارگذاری کاور (بزرگ‌ترین عنصر بالای صفحه ویدیو = LCP). */
+function hod_video_watch_preload_poster(): void {
+	if ( ! is_singular( 'video' ) ) {
+		return;
+	}
 
-    $post_id = (int) get_queried_object_id();
-    // همان آدرسی که پلیر در poster دارد (includes/poster.php)؛ وگرنه دو بار دانلود می‌شد
-    $video_thumb = function_exists('hodima_video_watch_poster_url') ? hodima_video_watch_poster_url($post_id) : (get_post_meta($post_id, '_hod_video_thumbnail', true) ?: get_the_post_thumbnail_url($post_id, 'full'));
+	$post_id = (int) get_queried_object_id();
+	// همان آدرسی که پلیر در poster دارد (includes/poster.php)؛ وگرنه دو بار دانلود می‌شد
+	$video_thumb = function_exists( 'hodima_video_watch_poster_url' )
+		? hodima_video_watch_poster_url( $post_id )
+		: (string) ( get_post_meta( $post_id, '_hod_video_thumbnail', true ) ?: get_the_post_thumbnail_url( $post_id, 'full' ) );
 
-    if ($video_thumb) {
-        // کاور، بزرگ‌ترین عنصر بالای صفحه ویدئو (LCP) است؛ fetchpriority آن را جلو می‌اندازد
-        echo '<link rel="preload" as="image" fetchpriority="high" href="' . esc_url((string) $video_thumb) . '">' . "\n";
-    }
+	if ( '' !== $video_thumb ) {
+		echo '<link rel="preload" as="image" fetchpriority="high" href="' . esc_url( $video_thumb ) . '">' . "\n";
+	}
 }
-add_action('wp_head', 'hod_video_watch_preload_poster', 1);
+add_action( 'wp_head', 'hod_video_watch_preload_poster', 1 );
 
-function hod_video_watch_admin_assets(string $hook_suffix): void
-{
-    $screen = get_current_screen();
-    if (!$screen || 'video' !== $screen->post_type) {
-        return;
-    }
-    wp_enqueue_media();
-    wp_enqueue_style('hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.css', [], hod_video_watch_ver('video-watch.admin.css'));
-    wp_enqueue_script('hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.js', [], hod_video_watch_ver('video-watch.admin.js'), true);
+/**
+ * CSS/JS کادر «تنظیمات ویدیو».
+ * فقط صفحه افزودن/ویرایش ویدیو؛ تا Media 2.1.3 فهرست ویدیوها هم کتابخانه
+ * رسانه (wp_enqueue_media) و اسکریپت کادر را بی‌دلیل لود می‌کرد.
+ */
+function hod_video_watch_admin_assets(): void {
+	$screen = get_current_screen();
+	if ( ! $screen || 'video' !== $screen->post_type || 'post' !== $screen->base ) {
+		return;
+	}
+	wp_enqueue_media();
+	wp_enqueue_style( 'hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.css', [], hod_video_watch_ver( 'video-watch.admin.css' ) );
+	wp_enqueue_script( 'hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.js', [], hod_video_watch_ver( 'video-watch.admin.js' ), true );
 }
-add_action('admin_enqueue_scripts', 'hod_video_watch_admin_assets');
+add_action( 'admin_enqueue_scripts', 'hod_video_watch_admin_assets' );
 
-function hod_video_watch_template_include(string $template): string
-{
-    if (is_singular('video')) {
-        $video_template = HOD_VIDEO_WATCH_PATH . 'template-video.php';
-        if (file_exists($video_template)) {
-            return $video_template;
-        }
-    }
-    return $template;
+/**
+ * قالب صفحه ویدیو.
+ * قالب سایت می‌تواند single-video.php خودش را داشته باشد (تا Media 2.1.3
+ * همیشه قالب افزونه به‌زور جایگزین می‌شد)؛ قالب هدیما ندارد و همین قالب افزونه لود می‌شود.
+ */
+function hod_video_watch_template_include( string $template ): string {
+	if ( ! is_singular( 'video' ) || '' !== locate_template( [ 'single-video.php' ] ) ) {
+		return $template;
+	}
+	return HOD_VIDEO_WATCH_PATH . 'template-video.php';
 }
-add_filter('template_include', 'hod_video_watch_template_include');
+add_filter( 'template_include', 'hod_video_watch_template_include' );

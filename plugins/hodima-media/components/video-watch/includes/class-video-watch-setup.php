@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Hodima_Video_Watch_Setup {
 
-	public const DB_VERSION     = '1.4.0';
+	public const DB_VERSION     = '1.5.0';
 	public const VERSION_OPTION = 'video_watch_db_version';
 	public const FLUSH_EVENT    = 'video_watch_flush_counters_event';
 
@@ -41,7 +41,6 @@ final class Hodima_Video_Watch_Setup {
 			video_id bigint(20) unsigned NOT NULL,
 			views bigint(20) unsigned NOT NULL DEFAULT 0,
 			shares bigint(20) unsigned NOT NULL DEFAULT 0,
-			status tinyint(1) NOT NULL DEFAULT 1,
 			last_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY (video_id)
 			) $charset;"
@@ -98,10 +97,7 @@ final class Hodima_Video_Watch_Setup {
 		$installed = (string) get_option( self::VERSION_OPTION, '0' );
 
 		if ( version_compare( $installed, self::DB_VERSION, '<' ) ) {
-			if ( '0' !== $installed && version_compare( $installed, '1.3.0', '<' ) ) {
-				self::drop_popularity();
-			}
-			self::install_tables();
+			self::upgrade( $installed );
 		}
 
 		self::ensure_scheduled_events();
@@ -128,11 +124,23 @@ final class Hodima_Video_Watch_Setup {
 		if ( ! version_compare( $installed, self::DB_VERSION, '<' ) ) {
 			return false;
 		}
+		self::upgrade( $installed );
+		return true;
+	}
+
+	/**
+	 * ستون‌های قدیمی که dbDelta حذف نمی‌کند، بعد ساخت/ارتقای جدول‌ها.
+	 *
+	 * @param string $installed نسخه جدول نصب‌شده ('0' = نصب تازه).
+	 */
+	private static function upgrade( string $installed ): void {
 		if ( '0' !== $installed && version_compare( $installed, '1.3.0', '<' ) ) {
 			self::drop_popularity();
 		}
+		if ( '0' !== $installed && version_compare( $installed, '1.5.0', '<' ) ) {
+			self::drop_status_column();
+		}
 		self::install_tables();
-		return true;
 	}
 
 	/**
@@ -152,6 +160,20 @@ final class Hodima_Video_Watch_Setup {
 		// phpcs:enable
 		$wpdb->suppress_errors( $prev_suppress );
 		wp_clear_scheduled_hook( self::LEGACY_DECAY_EVENT );
+	}
+
+	/**
+	 * حذف ستون «status» جدول آمار (تا DB 1.4.0).
+	 *
+	 * از نسخه اول ساخته می‌شد (همیشه ۱) ولی هیچ کدی نمی‌خواندش؛ فقط در شاخص
+	 * امتیاز محبوبیت بود که در DB 1.3.0 حذف شد. بعد از drop_popularity (شاخص
+	 * popularity_idx همین ستون را داشت).
+	 */
+	private static function drop_status_column(): void {
+		global $wpdb;
+		$prev_suppress = $wpdb->suppress_errors( true );
+		$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i DROP COLUMN status', $wpdb->prefix . 'video_watch_stats' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange -- ارتقای یک‌باره جدول خود افزونه
+		$wpdb->suppress_errors( $prev_suppress );
 	}
 
 	/**

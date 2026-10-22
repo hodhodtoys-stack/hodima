@@ -93,12 +93,34 @@ wp_schedule_event( time(), 'daily', Hodima_Video_Watch_Setup::LEGACY_DECAY_EVENT
 Hodima_Video_Watch_Setup::check_version();
 $cols = array_keys( (array) $wpdb->get_row( "SELECT * FROM {$stats} WHERE video_id = 999", ARRAY_A ) );
 hodima_vw( 'ستون popularity_score حذف شد', in_array( 'popularity_score', $cols, true ), false );
+hodima_vw( 'ستون بی‌استفاده status حذف شد', in_array( 'status', $cols, true ), false );
 hodima_vw( 'آمار قبلی ماند', (int) $wpdb->get_var( "SELECT views FROM {$stats} WHERE video_id = 999" ), 7 );
-hodima_vw( 'نسخه جدول 1.4.0', get_option( Hodima_Video_Watch_Setup::VERSION_OPTION ), Hodima_Video_Watch_Setup::DB_VERSION );
+hodima_vw( 'نسخه جدول 1.5.0', get_option( Hodima_Video_Watch_Setup::VERSION_OPTION ), Hodima_Video_Watch_Setup::DB_VERSION );
 hodima_vw( 'رویداد روزانه قدیمی پاک شد', wp_next_scheduled( Hodima_Video_Watch_Setup::LEGACY_DECAY_EVENT ), false );
 hodima_vw( 'جدول شمارنده‌های کوتاه‌مدت ساخته شد', Hodima_Video_Watch_Limits::table() === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', Hodima_Video_Watch_Limits::table() ) ), true );
 hodima_vw( 'جمع‌بندی ۵ دقیقه‌ای زمان‌بندی شد', 'five_minutes' === wp_get_schedule( Hodima_Video_Watch_Setup::FLUSH_EVENT ), true );
 $wpdb->delete( $stats, [ 'video_id' => 999 ] );
+
+echo "=== ارتقای جدول از DB 1.4.0: حذف ستون status\n";
+$wpdb->query( "DROP TABLE IF EXISTS {$stats}" );
+$wpdb->query(
+	"CREATE TABLE {$stats} (
+	video_id bigint(20) unsigned NOT NULL,
+	views bigint(20) unsigned NOT NULL DEFAULT 0,
+	shares bigint(20) unsigned NOT NULL DEFAULT 0,
+	status tinyint(1) NOT NULL DEFAULT 1,
+	last_updated datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (video_id)
+	)"
+);
+$wpdb->insert( $stats, [ 'video_id' => 998, 'views' => 12, 'shares' => 3 ] );
+update_option( Hodima_Video_Watch_Setup::VERSION_OPTION, '1.4.0', false );
+Hodima_Video_Watch_Setup::check_version();
+$row = (array) $wpdb->get_row( "SELECT * FROM {$stats} WHERE video_id = 998", ARRAY_A );
+hodima_vw( '1.4.0: ستون status حذف شد', array_key_exists( 'status', $row ), false );
+hodima_vw( '1.4.0: بازدید و اشتراک ماند', [ (int) ( $row['views'] ?? 0 ), (int) ( $row['shares'] ?? 0 ) ], [ 12, 3 ] );
+hodima_vw( '1.4.0: نسخه جدول به‌روز شد', get_option( Hodima_Video_Watch_Setup::VERSION_OPTION ), Hodima_Video_Watch_Setup::DB_VERSION );
+$wpdb->delete( $stats, [ 'video_id' => 998 ] );
 
 echo "=== زمان‌بندی: تعویض قالب پاکش نمی‌کند، غیرفعال‌سازی افزونه پاک می‌کند\n";
 do_action( 'switch_theme', 'x', new WP_Theme( 'x', get_theme_root() ), new WP_Theme( 'y', get_theme_root() ) );

@@ -1,228 +1,921 @@
-:root {
-  --color-primary: var(--hodima-primary, #25316a);
-  --color-secondary: var(--hodima-secondary, #607bbd);
-  --color-third: var(--hodima-third, #b6c2f3);
-  --color-text: var(--hodima-text-dark, #111111);
-  /* مقدارها از ریتم مشترک قالب هدیما (tokens.css)؛ عددها فقط زمانی که قالب دیگری فعال است */
-  --cat-max-width: var(--hodima-container, 1440px);
-  --cat-gap: var(--hodima-section-gap, 10px);
-  --cat-radius: var(--hodima-radius-xl, 12px);
-  --cat-shadow: var(--hodima-shadow-xs, 0 2px 10px rgba(37,49,106,.04));
-  --cat-bg-light-blue: var(--hodima-bg-light, #f7f9fd);
-  --cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
-  --cat-border: var(--hodima-border-light, #d9e1f0);
-  --cat-text-muted: var(--hodima-text-muted, #5d6785);
-  --cat-grid-gap: var(--hodima-grid-gap, 15px);
-  --hs-primary: var(--color-primary);
-  --hs-hover: var(--color-secondary);
-  --hs-grad: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-  --hs-bg: #000;
-  --hs-text: #fff;
-  --hs-radius: 14px;
+/**
+ * صفحه تماشای ویدیو (Hodima Media، template-video.php)
+ *
+ * زیر Stylelint بدون baseline (HODIMA-AUDIT.md بخش ۲۲۱). CSS افزونه مرحله ساخت
+ * ندارد: بدون nesting و media query بازه‌ای.
+ *
+ * همه قانون‌ها زیر .hvw-page (همان <main> صفحه ویدیو): پخش‌کننده استوری همان
+ * کلاس‌ها (.hs-player، .hs-loader، .hs-bottombar…) را بی‌پیشوند دارد و وقتی
+ * بازدیدکننده از لینک یک استوری به صفحه ویدیو می‌آید CSS آن هم لود می‌شود. تا
+ * Media 2.1.3 با ۴۴ !important جلویش گرفته می‌شد و متغیرها روی :root بودند
+ * (بقیه صفحه، مثل سربرگ و پانویس، را هم عوض می‌کردند).
+ */
+
+.hvw-page {
+	--color-primary: var(--hodima-primary, #25316a);
+	--color-secondary: var(--hodima-secondary, #607bbd);
+	--color-third: var(--hodima-third, #b6c2f3);
+	--color-text: var(--hodima-text-dark, #111);
+
+	/* مقدارها از ریتم مشترک قالب هدیما (tokens.css)؛ عددها فقط زمانی که قالب دیگری فعال است */
+	--cat-max-width: var(--hodima-container, 1440px);
+	--cat-gap: var(--hodima-section-gap, 10px);
+	--cat-radius: var(--hodima-radius-xl, 12px);
+	--cat-shadow: var(--hodima-shadow-xs, 0 2px 10px rgb(37 49 106 / 0.04));
+	--cat-bg-light-blue: var(--hodima-bg-light, #f7f9fd);
+	--cat-bg-light-green: var(--hodima-bg-gray, #eef2f8);
+	--cat-border: var(--hodima-border-light, #d9e1f0);
+	--cat-text-muted: var(--hodima-text-muted, #5d6785);
+	--cat-grid-gap: var(--hodima-grid-gap, 15px);
+	--hs-primary: var(--color-primary);
+	--hs-hover: var(--color-secondary);
+	--hs-grad: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+	--hs-radius: 14px;
 }
 
+/* پیش‌فرض‌ها فقط وقتی قالب هدیما نیست (وزن صفر: قانون مشترک قالب برنده است) */
 :where(.hodima-page-wrapper) {
-    max-width: var(--cat-max-width);
-    margin: var(--cat-gap) auto;
-    padding: 0 var(--hodima-space-7, 20px);
-    display: flex;
-    flex-direction: column;
-    gap: var(--cat-gap);
-    box-sizing: border-box;
-    font-family: inherit;
-    direction: rtl;
+	max-width: var(--cat-max-width);
+	margin: var(--cat-gap) auto;
+	padding: 0 var(--hodima-space-7, 20px);
+	display: flex;
+	flex-direction: column;
+	gap: var(--cat-gap);
+	box-sizing: border-box;
+	font-family: inherit;
+	direction: rtl;
 }
 
 :where(.hodima-section-box) {
-    width: 100%;
-    border-radius: var(--cat-radius);
-    box-shadow: var(--cat-shadow);
-    box-sizing: border-box;
-    padding: var(--hodima-section-pad, 25px);
-    background: #fff;
-    border: 1px solid var(--cat-border);
+	width: 100%;
+	border-radius: var(--cat-radius);
+	box-shadow: var(--cat-shadow);
+	box-sizing: border-box;
+	padding: var(--hodima-section-pad, 25px);
+	background: #fff;
+	border: 1px solid var(--cat-border);
 }
 
 :where(.section-breadcrumb) {
-    background-color: var(--cat-bg-light-blue);
-    padding: var(--hodima-space-2, 6px) var(--hodima-space-6, 15px);
-    border-radius: var(--hodima-radius-lg, 10px);
-    margin: 0 auto;
-    font-size: .85rem;
-    line-height: 1.5;
-    color: var(--cat-text-muted);
-    display: block;
-    border: 1px solid var(--cat-border);
-    width: 100%;
-    box-sizing: border-box;
-    font-family: inherit;
+	background-color: var(--cat-bg-light-blue);
+	padding: var(--hodima-space-2, 6px) var(--hodima-space-6, 15px);
+	border-radius: var(--hodima-radius-lg, 10px);
+	margin: 0 auto;
+	font-size: 0.85rem;
+	line-height: 1.5;
+	color: var(--cat-text-muted);
+	display: block;
+	border: 1px solid var(--cat-border);
+	width: 100%;
+	box-sizing: border-box;
+	font-family: inherit;
 }
-:where(.section-breadcrumb) a { color: var(--color-text); text-decoration: none; transition: color .25s ease; font-weight: 500; }
-:where(.section-breadcrumb) a:hover { color: var(--color-primary); }
 
-.hs-intro-section { background: var(--cat-bg-light-blue); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-start; }
-.hs-content-col { flex: 1; min-width: 300px; order: 1; }
-.hs-video-col { flex: 1; min-width: 300px; order: 2; }
+:where(.section-breadcrumb) a {
+	color: var(--color-text);
+	text-decoration: none;
+	transition: color 0.25s ease;
+	font-weight: 500;
+}
+
+:where(.section-breadcrumb) a:hover {
+	color: var(--color-primary);
+}
+
+/* ── معرفی: متن و پلیر کنار هم ── */
+/* رنگ زمینه با وزن کم: در قالب هدیما .hodima-section-box (سفید) برنده است، مثل قبل */
+:where(.hvw-page) .hs-intro-section {
+	background: var(--cat-bg-light-blue);
+}
+
+.hvw-page .hs-intro-section {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 15px;
+	align-items: flex-start;
+}
+
+.hvw-page .hs-content-col {
+	flex: 1;
+	min-width: 300px;
+	order: 1;
+}
+
+.hvw-page .hs-video-col {
+	flex: 1;
+	min-width: 300px;
+	order: 2;
+}
+
 /* اندازه، وزن، رنگ و فاصله خطوط از تنظیم H1 قالب (تب تایپوگرافی)؛ تا 1.3.2 ثابت ۲۴px */
-.hs-content-col .hs-title { margin: 0 0 12px; text-align: right; font-family: inherit; }
-.hs-content-col .hs-content-box { color: var(--cat-text-muted); font-size: 15px; line-height: 1.8; }
-
-.hs-flex-center { display: flex; align-items: center; justify-content: center; }
-
-.hs-player {
-    position: relative; width: 100%; margin: 0; cursor: default; overflow: hidden !important;
-    border: 2px solid var(--hodima-secondary, #607bbd) !important; border-radius: var(--hs-radius) !important; background: #ffffff !important; box-shadow: 0 6px 18px rgba(37, 49, 106, 0.12) !important;
+.hvw-page .hs-content-col .hs-title {
+	margin: 0 0 12px;
+	text-align: start;
+	font-family: inherit;
 }
-.hs-player:-webkit-full-screen { width: 100vw !important; height: 100vh !important; max-width: none !important; border-radius: 0 !important; border: none !important; background: #000 !important; display:flex; align-items:center; justify-content:center;}
-.hs-player:fullscreen { width: 100vw !important; height: 100vh !important; max-width: none !important; border-radius: 0 !important; border: none !important; background: #000 !important; display:flex; align-items:center; justify-content:center;}
-.hs-player:-webkit-full-screen .hs-main-video { max-height: 100vh; height: 100%; width:100%; object-fit: contain; }
-.hs-player:fullscreen .hs-main-video { max-height: 100vh; height: 100%; width:100%; object-fit: contain; }
 
-.hs-main-video { display: block; width: 100%; height: auto; aspect-ratio: 16/9; object-fit: contain; background: #000000 !important; border-radius: 0 !important; cursor: pointer; }
+.hvw-page .hs-content-col .hs-content-box {
+	color: var(--cat-text-muted);
+	font-size: 15px;
+	line-height: 1.8;
+}
 
-.hs-topbar { position: absolute; top: 0; left: 0; right: 0; z-index: 4; padding: 15px; background: linear-gradient(to bottom, rgba(0,0,0,.4), transparent); pointer-events: none; }
-.hs-control-btn { background: transparent; border: none; color: white; border-radius: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, transform 0.1s; }
-.hs-control-btn:hover, .hs-control-btn:focus-visible { background: rgba(255,255,255,0.2); }
+.hvw-page .hs-flex-center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* ── پلیر ── */
+.hvw-page .hs-player {
+	position: relative;
+	width: 100%;
+	margin: 0;
+	cursor: default;
+	overflow: hidden;
+	border: 2px solid var(--hodima-secondary, #607bbd);
+	border-radius: var(--hs-radius);
+	background: #fff;
+	box-shadow: 0 6px 18px rgb(37 49 106 / 0.12);
+}
+
+.hvw-page .hs-main-video {
+	display: block;
+	width: 100%;
+	height: auto;
+	aspect-ratio: 16 / 9;
+	object-fit: contain;
+	background: #000;
+	border-radius: 0;
+	cursor: pointer;
+}
+
+/* Safari پیش از 16.4 فقط نام پیشونددار تمام‌صفحه را می‌شناسد (آیپد) */
+/* stylelint-disable-next-line selector-no-vendor-prefix */
+.hvw-page .hs-player:-webkit-full-screen {
+	width: 100vw;
+	height: 100vh;
+	max-width: none;
+	border-radius: 0;
+	border: none;
+	background: #000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.hvw-page .hs-player:fullscreen {
+	width: 100vw;
+	height: 100vh;
+	max-width: none;
+	border-radius: 0;
+	border: none;
+	background: #000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* stylelint-disable-next-line selector-no-vendor-prefix */
+.hvw-page .hs-player:-webkit-full-screen .hs-main-video {
+	max-height: 100vh;
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+.hvw-page .hs-player:fullscreen .hs-main-video {
+	max-height: 100vh;
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+.hvw-page .hs-control-btn {
+	background: transparent;
+	border: none;
+	color: #fff;
+	border-radius: 6px;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s;
+}
+
+.hvw-page .hs-control-btn:hover,
+.hvw-page .hs-control-btn:focus-visible {
+	background: rgb(255 255 255 / 0.2);
+}
+
 /* حلقه فوکوس سفید با هاله تیره: روی هر فریم ویدیو دیده شود (WCAG 2.4.7/1.4.11) */
-.hs-player :is(button, [tabindex], input[type="range"], a):focus-visible { outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 4px rgba(0,0,0,.6); }
-.hs-control-btn:active { transform: scale(0.95); }
-
-.hs-more-options-container { position: relative; display: inline-block; }
-.hs-more-menu { position: absolute; bottom: 42px; right: 0; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(37,49,106,.08); opacity: 0; visibility: hidden; transition: all 0.25s ease; overflow: hidden; min-width: 140px; z-index: 10; border: 1px solid var(--cat-border); padding: 6px; display: flex; flex-direction: column; gap: 3px; }
-.hs-more-menu.is-open { opacity: 1; visibility: visible; }
-.hs-menu-option, .hs-share-link { padding: 6px 8px; color: var(--color-text) !important; text-decoration: none; display: block; font-size: 13px; font-weight: 500; text-align: right; transition: background-color 0.25s ease, color 0.25s ease; cursor: pointer; border: none; width: 100%; background: transparent; font-family: inherit; border-radius: 6px;}
-.hs-menu-option:hover, .hs-share-link:hover, .hs-menu-option:focus-visible { background: var(--cat-bg-light-blue) !important; color: var(--color-primary) !important; }
-.hs-player .hs-menu-option:focus-visible, .hs-player .hs-share-link:focus-visible { outline: 2px solid var(--hodima-focus-color, #25316a); outline-offset: -2px; box-shadow: none; }
-.hs-menu-option.is-active { background: var(--color-primary) !important; color: #fff !important; font-weight: 700; }
-
-.hs-bottombar { position: absolute; bottom: 0; left: 0; right: 0; z-index: 4; padding: 10px 15px; background: linear-gradient(to top, rgba(0,0,0,.85) 0, rgba(0,0,0,.65) 65%, transparent); pointer-events: none; display: flex; flex-direction: column; gap: 8px; direction: ltr !important; transition: opacity 0.4s ease; }
-/* ناحیه لمس ۲۴px (WCAG 2.5.8): padding ۱۰px + margin منفی تا ارتفاع چیدمان همان ۱۲px قبلی بماند */
-.hs-progress-wrap { cursor: pointer; padding: 10px 0; margin-block: -6px; pointer-events: auto; width: 100%; outline: none; touch-action: none; /* کشیدن با لمس: صفحه اسکرول نشود */ }
-.hs-progress-item { height: 4px; background: rgba(255,255,255,0.3); border-radius: 10px; overflow: hidden; direction: ltr !important; transition: height 0.2s; }
-.hs-progress-wrap:hover .hs-progress-item, .hs-progress-wrap:focus-visible .hs-progress-item { height: 6px; }
-.hs-progress-fill { height: 100%; background: var(--hs-grad); width: 0%; transition: width 0.1s linear; position: relative;}
-.hs-bottom-controls { display: flex; align-items: center; gap: 6px; pointer-events: auto; width: 100%; direction: ltr !important; }
-
-.hs-volume-container { display: flex; align-items: center; gap: 4px; transition: width 0.3s; overflow: hidden; }
-.hs-volume-slider { width: 0; opacity: 0; transition: width 0.3s, opacity 0.3s; cursor: pointer; -webkit-appearance: none; appearance: none; background: rgba(255,255,255,0.3); height: 4px; border-radius: 2px; }
-.hs-volume-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; height: 10px; width: 10px; border-radius: 50%; background: var(--color-primary); cursor: pointer; }
-.hs-volume-container:hover .hs-volume-slider, .hs-volume-container:focus-within .hs-volume-slider { width: 60px; opacity: 1; }
-
-.hs-time-display { color: #fff; font-size: 12px; font-family: monospace, inherit; font-weight: 500; letter-spacing: 0.5px; opacity: 0.9; margin-left: 8px;}
-.hs-center-control { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3; pointer-events: none; transition: opacity 0.4s ease; }
-
-.hs-player.hs-controls-hidden { cursor: none; }
-.hs-player.hs-controls-hidden .hs-bottombar, .hs-player.hs-controls-hidden .hs-center-control, .hs-player.hs-controls-hidden .hs-topbar { opacity: 0; pointer-events: none; }
-.hs-play-toggle { width: 60px; height: 60px; border-radius: 50%; background: rgba(0,0,0,0.5); border: none; color: white; font-size: 24px; cursor: pointer; backdrop-filter: blur(4px); transition: opacity 0.3s ease; pointer-events: auto; opacity: 1; outline: none; }
-.hs-play-toggle:focus-visible { box-shadow: 0 0 0 3px rgba(255,255,255,0.5); }
-
-.hs-video-action-bar { display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid var(--cat-border); border-radius: 10px; padding: 8px 12px; margin: 10px 0 0 0; box-shadow: var(--cat-shadow); flex-wrap: nowrap; gap: 8px; width: 100%; box-sizing: border-box; }
-.hs-action-item { flex: 1; display: flex; justify-content: center; position: relative; min-width: 0; }
-
-.hs-btn-primary, .hs-btn-outline, .hs-view-count { width: 100%; height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 18px; white-space: nowrap; transition: all 0.25s ease; box-sizing: border-box; font-family: inherit; }
-.hs-btn-primary { background: var(--hs-grad); color: #ffffff !important; text-decoration: none; border: none; box-shadow: 0 2px 8px rgba(37,49,106,.18); }
-.hs-btn-primary:hover, .hs-btn-primary:focus-visible { opacity: 0.9; transform: translateY(-1px); }
-.hs-btn-primary:focus-visible, .hs-btn-outline:focus-visible { outline: 2px solid var(--hodima-focus-color, #25316a); outline-offset: 2px; }
-.hs-btn-outline { background: var(--hodima-surface-soft, #f7f9fd); color: var(--color-text); border: 1px solid var(--cat-border); cursor: pointer; }
-.hs-btn-outline:hover, .hs-btn-outline:focus-visible { background: var(--cat-bg-light-green); color: var(--color-text); border-color: var(--cat-border); }
-.hs-view-count { color: var(--color-text); background: var(--hodima-surface-soft, #f7f9fd); border: 1px solid var(--cat-border); cursor: default; }
-
-.hs-btn-primary svg, .hs-btn-outline svg, .hs-view-count svg { width: 18px; height: 18px; flex-shrink: 0; stroke: var(--color-text) !important; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; fill: none !important; opacity: 1 !important; }
-.hs-btn-primary svg path[fill], .hs-btn-outline svg path[fill], .hs-view-count svg path[fill] { fill: currentColor !important; stroke: none !important; }
-.hs-btn-primary svg { stroke: #ffffff !important; }
-.hs-btn-primary svg path[fill] { fill: #ffffff !important; }
-
-.hs-action-menu { position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%) translateY(10px); background: #ffffff; border-radius: 10px; box-shadow: 0 4px 15px rgba(37,49,106,.08); min-width: 150px; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: all 0.25s ease; z-index: 100; overflow: hidden; border: 1px solid var(--cat-border); padding: 6px; gap: 3px; }
-.hs-action-menu.is-open { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
-
-.section-related-videos { background: var(--cat-bg-light-green); }
-.hs-related-section-title { font-size: 20px; font-weight: 600; color: var(--color-text); margin: 0 0 15px 0; font-family: inherit; }
-.hs-related-cards-wrapper { display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: var(--cat-grid-gap) !important; width: 100% !important; }
-/* کارت: همان شکل مشترک کارت‌های قالب (گوشه ۱۰، padding ۴، hover ۴px بالا؛ tokens.css --hodima-card-*) */
-.hs-related-card { display: flex; flex-direction: column; box-sizing: border-box; padding: var(--hodima-card-pad, 4px); background: #fff; border: 1px solid var(--cat-border); border-radius: var(--hodima-card-radius, 10px); text-decoration: none; color: var(--color-text); overflow: hidden; transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; box-shadow: var(--hodima-card-shadow, var(--cat-shadow)); }
-.hs-related-card:hover, .hs-related-card:focus-visible { border-color: var(--hodima-border, #b8c4de); transform: translateY(calc(var(--hodima-card-lift, 4px) * -1)); box-shadow: var(--hodima-card-shadow-hover, 0 8px 18px rgba(37,49,106,.09)); outline: none; }
-.hs-related-cover-container { width: 100%; aspect-ratio: 16 / 9; background: var(--cat-bg-light-blue); position: relative; overflow: hidden; border-radius: var(--hodima-card-img-radius, 6px); }
-.hs-card-cover-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hs-related-icon-placeholder { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: var(--hodima-text-muted, #5d6785); background: #f7f9fd; }
-.hs-related-title { padding: 8px 10px 10px; font-weight: 600; font-size: 14px; line-height: 1.5; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;}
-
-@media (max-width: 1140px) { .hs-related-cards-wrapper { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } }
-@media (max-width: 992px) { .hs-related-cards-wrapper { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
-@media (max-width: 768px) { .hs-intro-section { flex-direction: column; gap: 12px; } .hs-content-col { order: 2; width: 100%; min-width: unset; } .hs-video-col { order: 1; width: 100%; min-width: unset; } .hs-content-col .hs-title { text-align: center; } .hs-related-cards-wrapper { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
-@media (max-width: 480px) { .hs-video-action-bar { padding: 6px 8px; gap: 6px; margin: 8px 0 0 0; } .hs-btn-primary, .hs-btn-outline, .hs-view-count { height: 34px; padding: 4px 8px; font-size: 12.5px; } .hs-btn-primary svg, .hs-btn-outline svg, .hs-view-count svg { width: 16px; height: 16px; } .hs-volume-container:focus-within .hs-volume-slider { width: 50px; opacity: 1; } .hs-related-title { font-size: 13px; } }
-
-/* =========================================================================
- * نسخه ۲ — جایگزین style درون‌خطی قالب
- * ========================================================================= */
-.hs-spacer { flex: 1; }
-.hs-speed-btn { font-family: inherit; font-size: 12px; font-weight: 700; }
-.hs-menu-icon { margin-left: 5px; vertical-align: middle; }
-.hs-breadcrumb-current { color: inherit; }
-
-.hs-copy-link {
-    width: 100%;
-    font-family: inherit;
-    text-align: right;
-    background: transparent;
-    border: none;
-    cursor: pointer;
+.hvw-page .hs-player :is(button, [tabindex], input[type="range"], a):focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px rgb(0 0 0 / 0.6);
 }
 
-/* نام دسترس‌پذیر دکمه محصول (برای صفحه‌خوان؛ ظاهر دکمه تغییر نمی‌کند) */
-.hs-action-label {
-    position: absolute !important;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+.hvw-page .hs-control-btn:active {
+	transform: scale(0.95);
 }
 
-.hs-card-cover-img { width: 100%; height: auto; }
+/* منوهای سرعت و «بیشتر» (داخل نوار پایین که LTR است) */
+.hvw-page .hs-more-options-container {
+	position: relative;
+	display: inline-block;
+}
 
-.hs-pip-btn[hidden] { display: none !important; }
+.hvw-page .hs-more-menu {
+	position: absolute;
+	bottom: 42px;
+	inset-inline-end: 0;
+	background: #fff;
+	border-radius: 10px;
+	box-shadow: 0 4px 15px rgb(37 49 106 / 0.08);
+	opacity: 0;
+	visibility: hidden;
+	transition: all 0.25s ease;
+	overflow: hidden;
+	min-width: 140px;
+	z-index: 10;
+	border: 1px solid var(--cat-border);
+	padding: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
 
-/* =========================================================================
- * مرحله ۳ بازنگری ویدیوها (HODIMA-AUDIT.md بخش ۲۱۸): وضعیت‌های پلیر و دسترس‌پذیری
- * (بدون nesting و media query بازه‌ای: CSS افزونه مرحله ساخت ندارد)
- * ========================================================================= */
-/* دکمه بزرگ وسط هنگام پخش (JS: is-hidden + tabindex=-1)؛ قبلا style درون‌خطی */
-.hs-play-toggle.is-hidden { opacity: 0; pointer-events: none; }
+.hvw-page .hs-more-menu.is-open {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* گزینه منو (LTR) و «کپی لینک» (RTL): هر دو راست‌چین */
+.hvw-page .hs-menu-option,
+.hvw-page .hs-share-link {
+	padding: 6px 8px;
+	color: var(--color-text);
+	text-decoration: none;
+	display: block;
+	font-size: 13px;
+	font-weight: 500;
+	transition: background-color 0.25s ease, color 0.25s ease;
+	cursor: pointer;
+	border: none;
+	width: 100%;
+	background: transparent;
+	font-family: inherit;
+	border-radius: 6px;
+}
+
+.hvw-page .hs-menu-option {
+	text-align: end;
+}
+
+.hvw-page .hs-share-link {
+	text-align: start;
+}
+
+.hvw-page .hs-menu-option:hover,
+.hvw-page .hs-share-link:hover,
+.hvw-page .hs-menu-option:focus-visible {
+	background: var(--cat-bg-light-blue);
+	color: var(--color-primary);
+}
+
+.hvw-page .hs-player .hs-menu-option:focus-visible,
+.hvw-page .hs-player .hs-share-link:focus-visible {
+	outline: 2px solid var(--hodima-focus-color, #25316a);
+	outline-offset: -2px;
+	box-shadow: none;
+}
+
+.hvw-page .hs-menu-option.is-active {
+	background: var(--color-primary);
+	color: #fff;
+	font-weight: 700;
+}
+
+/* ── نوار پایین پلیر (LTR مثل همه پلیرها) ── */
+.hvw-page .hs-bottombar {
+	position: absolute;
+	bottom: 0;
+	inset-inline: 0;
+	z-index: 4;
+	padding: 10px 15px;
+	background: linear-gradient(to top, rgb(0 0 0 / 0.85) 0, rgb(0 0 0 / 0.65) 65%, transparent);
+	pointer-events: none;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	direction: ltr;
+	transition: opacity 0.4s ease;
+}
+
+/* ناحیه لمس ۲۴px (WCAG 2.5.8): padding ۱۰px + margin منفی تا ارتفاع چیدمان همان ۱۲px بماند؛ touch-action: کشیدن با لمس صفحه را اسکرول نکند */
+.hvw-page .hs-progress-wrap {
+	cursor: pointer;
+	padding: 10px 0;
+	margin-block: -6px;
+	pointer-events: auto;
+	width: 100%;
+	outline: none;
+	touch-action: none;
+}
+
+.hvw-page .hs-progress-item {
+	height: 4px;
+	background: rgb(255 255 255 / 0.3);
+	border-radius: 10px;
+	overflow: hidden;
+	direction: ltr;
+	transition: height 0.2s;
+}
+
+.hvw-page .hs-progress-wrap:hover .hs-progress-item,
+.hvw-page .hs-progress-wrap:focus-visible .hs-progress-item {
+	height: 6px;
+}
+
+.hvw-page .hs-progress-fill {
+	height: 100%;
+	background: var(--hs-grad);
+	width: 0%;
+	transition: width 0.1s linear;
+	position: relative;
+}
+
+.hvw-page .hs-bottom-controls {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	pointer-events: auto;
+	width: 100%;
+	direction: ltr;
+}
+
+.hvw-page .hs-volume-container {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	transition: width 0.3s;
+	overflow: hidden;
+}
+
+.hvw-page .hs-volume-slider {
+	width: 0;
+	opacity: 0;
+	transition: width 0.3s, opacity 0.3s;
+	cursor: pointer;
+	-webkit-appearance: none;
+	appearance: none;
+	background: rgb(255 255 255 / 0.3);
+	height: 4px;
+	border-radius: 2px;
+}
+
+.hvw-page .hs-volume-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	height: 10px;
+	width: 10px;
+	border-radius: 50%;
+	background: var(--color-primary);
+	cursor: pointer;
+}
+
+.hvw-page .hs-volume-container:hover .hs-volume-slider,
+.hvw-page .hs-volume-container:focus-within .hs-volume-slider {
+	width: 60px;
+	opacity: 1;
+}
+
+/* font-family «monospace, inherit» تا 2.1.3 نامعتبر بود و مرورگر نادیده‌اش می‌گرفت (همان فونت ارثی) */
+.hvw-page .hs-time-display {
+	color: #fff;
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.5px;
+	opacity: 0.9;
+	margin-inline-start: 8px;
+}
+
+/* مرکز با left + translate فیزیکی (در RTL هم همان وسط) */
+.hvw-page .hs-center-control {
+	position: absolute;
+	top: 50%;
+	/* stylelint-disable-next-line csstools/use-logical */
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 3;
+	pointer-events: none;
+	transition: opacity 0.4s ease;
+}
+
+.hvw-page .hs-player.hs-controls-hidden {
+	cursor: none;
+}
+
+.hvw-page .hs-player.hs-controls-hidden .hs-bottombar,
+.hvw-page .hs-player.hs-controls-hidden .hs-center-control {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.hvw-page .hs-play-toggle {
+	width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	background: rgb(0 0 0 / 0.5);
+	border: none;
+	color: #fff;
+	font-size: 24px;
+	cursor: pointer;
+	backdrop-filter: blur(4px);
+	transition: opacity 0.3s ease;
+	pointer-events: auto;
+	opacity: 1;
+	outline: none;
+}
+
+.hvw-page .hs-play-toggle:focus-visible {
+	box-shadow: 0 0 0 3px rgb(255 255 255 / 0.5);
+}
+
+/* ── نوار زیر پلیر: محصول، بازدید، اشتراک ── */
+.hvw-page .hs-video-action-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: #fff;
+	border: 1px solid var(--cat-border);
+	border-radius: 10px;
+	padding: 8px 12px;
+	margin: 10px 0 0;
+	box-shadow: var(--cat-shadow);
+	flex-wrap: nowrap;
+	gap: 8px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.hvw-page .hs-action-item {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	position: relative;
+	min-width: 0;
+}
+
+.hvw-page .hs-btn-primary,
+.hvw-page .hs-btn-outline,
+.hvw-page .hs-view-count {
+	width: 100%;
+	height: 36px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 5px;
+	font-size: 13px;
+	font-weight: 600;
+	padding: 6px 12px;
+	border-radius: 18px;
+	white-space: nowrap;
+	transition: all 0.25s ease;
+	box-sizing: border-box;
+	font-family: inherit;
+}
+
+.hvw-page .hs-btn-primary {
+	background: var(--hs-grad);
+	color: #fff;
+	text-decoration: none;
+	border: none;
+	box-shadow: 0 2px 8px rgb(37 49 106 / 0.18);
+}
+
+.hvw-page .hs-btn-outline {
+	background: var(--hodima-surface-soft, #f7f9fd);
+	color: var(--color-text);
+	border: 1px solid var(--cat-border);
+	cursor: pointer;
+}
+
+.hvw-page .hs-btn-primary:hover,
+.hvw-page .hs-btn-primary:focus-visible {
+	opacity: 0.9;
+	transform: translateY(-1px);
+}
+
+.hvw-page .hs-btn-primary:focus-visible,
+.hvw-page .hs-btn-outline:focus-visible {
+	outline: 2px solid var(--hodima-focus-color, #25316a);
+	outline-offset: 2px;
+}
+
+.hvw-page .hs-btn-outline:hover,
+.hvw-page .hs-btn-outline:focus-visible {
+	background: var(--cat-bg-light-green);
+	color: var(--color-text);
+	border-color: var(--cat-border);
+}
+
+.hvw-page .hs-view-count {
+	color: var(--color-text);
+	background: var(--hodima-surface-soft, #f7f9fd);
+	border: 1px solid var(--cat-border);
+	cursor: default;
+}
+
+.hvw-page .hs-btn-primary svg,
+.hvw-page .hs-btn-outline svg,
+.hvw-page .hs-view-count svg {
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+	stroke: var(--color-text);
+	stroke-width: 1.5;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	fill: none;
+	opacity: 1;
+}
+
+.hvw-page .hs-btn-primary svg {
+	stroke: #fff;
+}
+
+/* منوی اشتراک: وسط دکمه با left + translate فیزیکی */
+.hvw-page .hs-action-menu {
+	position: absolute;
+	bottom: 120%;
+	/* stylelint-disable-next-line csstools/use-logical */
+	left: 50%;
+	transform: translateX(-50%) translateY(10px);
+	background: #fff;
+	border-radius: 10px;
+	box-shadow: 0 4px 15px rgb(37 49 106 / 0.08);
+	min-width: 150px;
+	display: flex;
+	flex-direction: column;
+	opacity: 0;
+	visibility: hidden;
+	transition: all 0.25s ease;
+	z-index: 100;
+	overflow: hidden;
+	border: 1px solid var(--cat-border);
+	padding: 6px;
+	gap: 3px;
+}
+
+.hvw-page .hs-action-menu.is-open {
+	opacity: 1;
+	visibility: visible;
+	transform: translateX(-50%) translateY(0);
+}
+
 /* منوی باز: visibility بی‌درنگ visible (با transition: all در لحظه اول هنوز hidden بود و فوکوس صفحه‌کلید به گزینه نمی‌رسید)؛ بستن همان محو قبلی */
-.hs-more-menu.is-open, .hs-action-menu.is-open { transition: opacity 0.25s ease, transform 0.25s ease; }
-.hs-play-toggle .hs-play-icon { display: block; }
+.hvw-page .hs-more-menu.is-open,
+.hvw-page .hs-action-menu.is-open {
+	transition: opacity 0.25s ease, transform 0.25s ease;
+}
 
-.hs-player.hs-is-scrubbing .hs-progress-fill { transition: none; }
+/* ── ویدئوهای مرتبط ── */
+/* وزن کم، مثل زمینه بخش معرفی: در قالب هدیما .hodima-section-box برنده است */
+:where(.hvw-page) .section-related-videos {
+	background: var(--cat-bg-light-green);
+}
+
+.hvw-page .hs-related-section-title {
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--color-text);
+	margin: 0 0 15px;
+	font-family: inherit;
+}
+
+.hvw-page .hs-related-cards-wrapper {
+	display: grid;
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+	gap: var(--cat-grid-gap);
+	width: 100%;
+}
+
+/* کارت: همان شکل مشترک کارت‌های قالب (گوشه ۱۰، padding ۴، hover ۴px بالا؛ tokens.css --hodima-card-*) */
+.hvw-page .hs-related-card {
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	padding: var(--hodima-card-pad, 4px);
+	background: #fff;
+	border: 1px solid var(--cat-border);
+	border-radius: var(--hodima-card-radius, 10px);
+	text-decoration: none;
+	color: var(--color-text);
+	overflow: hidden;
+	transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+	box-shadow: var(--hodima-card-shadow, var(--cat-shadow));
+}
+
+.hvw-page .hs-related-card:hover,
+.hvw-page .hs-related-card:focus-visible {
+	border-color: var(--hodima-border, #b8c4de);
+	transform: translateY(calc(var(--hodima-card-lift, 4px) * -1));
+	box-shadow: var(--hodima-card-shadow-hover, 0 8px 18px rgb(37 49 106 / 0.09));
+	outline: none;
+}
+
+.hvw-page .hs-related-cover-container {
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	background: var(--cat-bg-light-blue);
+	position: relative;
+	overflow: hidden;
+	border-radius: var(--hodima-card-img-radius, 6px);
+}
+
+/* عکس کارت کادر ۱۶:۹ را پر کند (تا 2.1.3 قانون دوم height: auto داشت و object-fit بی‌اثر بود: عکس مربعی از پایین بریده می‌شد) */
+.hvw-page .hs-card-cover-img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.hvw-page .hs-related-icon-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	color: var(--hodima-text-muted, #5d6785);
+	background: #f7f9fd;
+}
+
+.hvw-page .hs-related-title {
+	padding: 8px 10px 10px;
+	font-weight: 600;
+	font-size: 14px;
+	line-height: 1.5;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: block;
+}
+
+@media (max-width: 1140px) {
+	.hvw-page .hs-related-cards-wrapper {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 992px) {
+	.hvw-page .hs-related-cards-wrapper {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 768px) {
+	.hvw-page .hs-intro-section {
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.hvw-page .hs-content-col {
+		order: 2;
+		width: 100%;
+		min-width: unset;
+	}
+
+	.hvw-page .hs-video-col {
+		order: 1;
+		width: 100%;
+		min-width: unset;
+	}
+
+	.hvw-page .hs-content-col .hs-title {
+		text-align: center;
+	}
+
+	.hvw-page .hs-related-cards-wrapper {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 480px) {
+	.hvw-page .hs-video-action-bar {
+		padding: 6px 8px;
+		gap: 6px;
+		margin: 8px 0 0;
+	}
+
+	.hvw-page .hs-btn-primary,
+	.hvw-page .hs-btn-outline,
+	.hvw-page .hs-view-count {
+		height: 34px;
+		padding: 4px 8px;
+		font-size: 12.5px;
+	}
+
+	.hvw-page .hs-btn-primary svg,
+	.hvw-page .hs-btn-outline svg,
+	.hvw-page .hs-view-count svg {
+		width: 16px;
+		height: 16px;
+	}
+
+	.hvw-page .hs-volume-container:focus-within .hs-volume-slider {
+		width: 50px;
+		opacity: 1;
+	}
+
+	.hvw-page .hs-related-title {
+		font-size: 13px;
+	}
+}
+
+/* ── باقی اجزا ── */
+.hvw-page .hs-spacer {
+	flex: 1;
+}
+
+.hvw-page .hs-speed-btn {
+	font-family: inherit;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.hvw-page .hs-menu-icon {
+	margin-inline-start: 5px;
+	vertical-align: middle;
+}
+
+.hvw-page .hs-breadcrumb-current {
+	color: inherit;
+}
+
+.hvw-page .hs-copy-link {
+	width: 100%;
+	font-family: inherit;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+}
+
+/* نام دسترس‌پذیر (فقط صفحه‌خوان): دکمه محصول، «بازدید»، وضعیت اشتراک */
+.hvw-page .hs-action-label {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+.hvw-page .hs-pip-btn[hidden] {
+	display: none;
+}
+
+/* ── وضعیت‌های پلیر (مرحله ۳، بخش ۲۱۸) ── */
+
+/* دکمه بزرگ وسط هنگام پخش (JS: is-hidden + tabindex=-1) */
+.hvw-page .hs-play-toggle.is-hidden {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.hvw-page .hs-play-toggle .hs-play-icon {
+	display: block;
+}
+
+.hvw-page .hs-player.hs-is-scrubbing .hs-progress-fill {
+	transition: none;
+}
 
 /* نشانگر بارگذاری (فقط وقتی انتظار بیش از ۳۰۰ میلی‌ثانیه شد) */
-.hs-loader { display: none; position: absolute; top: 50%; inset-inline-start: 50%; z-index: 3; width: 46px; height: 46px; margin-block-start: -23px; margin-inline-start: -23px; border: 4px solid rgb(255 255 255 / 0.3); border-top-color: #fff; border-radius: 50%; animation: hs-spin 0.9s linear infinite; pointer-events: none; }
-.hs-player.hs-is-loading .hs-loader { display: block; }
-.hs-player.hs-is-loading .hs-center-control { opacity: 0; }
-@keyframes hs-spin { to { transform: rotate(360deg); } }
-
-/* پیام خطا / «ویدیو آماده نیست» */
-.hs-player-message { display: none; position: absolute; inset-inline: 12px; top: 50%; z-index: 5; transform: translateY(-50%); margin: 0; padding: 10px 14px; border-radius: 10px; background: rgb(0 0 0 / 0.78); color: #fff; font-size: 14px; line-height: 1.7; text-align: center; }
-.hs-player-message.is-visible { display: block; }
-/* خطا: دکمه وسط کنار می‌رود (روی صفحه کوچک زیر پیام می‌افتاد و فوکوسش پوشیده بود)؛ دوباره امتحان = دکمه پخش نوار پایین */
-.hs-player.hs-has-error .hs-center-control { display: none; }
-/* بدون فایل چیزی برای جلو/عقب رفتن نیست؛ نوار پیشرفت هم (روی صفحه کوچک زیر پیام می‌افتاد) */
-.hs-player.hs-has-error .hs-progress-wrap { visibility: hidden; }
-
-.hs-player--empty .hs-stage { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; }
-.hs-player--empty .hs-empty-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.45; }
-
-@media (prefers-reduced-motion: reduce) {
-    .hs-player *, .hs-video-action-bar *, .hs-related-card { transition: none; }
-    .hs-loader { animation: none; border-top-color: rgb(255 255 255 / 0.3); border-inline-end-color: #fff; }
-    .hs-control-btn:active, .hs-btn-primary:hover, .hs-btn-primary:focus-visible, .hs-related-card:hover, .hs-related-card:focus-visible { transform: none; }
+.hvw-page .hs-loader {
+	display: none;
+	position: absolute;
+	top: 50%;
+	inset-inline-start: 50%;
+	z-index: 3;
+	width: 46px;
+	height: 46px;
+	margin-block-start: -23px;
+	margin-inline-start: -23px;
+	border: 4px solid rgb(255 255 255 / 0.3);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: hs-spin 0.9s linear infinite;
+	pointer-events: none;
 }
 
-/* متن کامل ویدیو (مرحله ۴، بخش ۲۱۹)؛ جعبه بازشونده ظاهر خودش را از ماژول باکس‌های بازشونده دارد */
-.hs-transcript { color: var(--cat-text-muted); font-size: 15px; line-height: 1.9; }
-.hs-transcript p { margin: 0 0 0.8em; }
-.hs-transcript-details summary { cursor: pointer; color: var(--color-primary); font-weight: 600; }
-.hs-transcript-details[open] summary { margin-block-end: 10px; }
+.hvw-page .hs-player.hs-is-loading .hs-loader {
+	display: block;
+}
 
+.hvw-page .hs-player.hs-is-loading .hs-center-control {
+	opacity: 0;
+}
+
+@keyframes hs-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* پیام خطا / «ویدیو آماده نیست» */
+.hvw-page .hs-player-message {
+	display: none;
+	position: absolute;
+	inset-inline: 12px;
+	top: 50%;
+	z-index: 5;
+	transform: translateY(-50%);
+	margin: 0;
+	padding: 10px 14px;
+	border-radius: 10px;
+	background: rgb(0 0 0 / 0.78);
+	color: #fff;
+	font-size: 14px;
+	line-height: 1.7;
+	text-align: center;
+}
+
+.hvw-page .hs-player-message.is-visible {
+	display: block;
+}
+
+/* خطا: دکمه وسط و نوار پیشرفت کنار می‌روند (روی صفحه کوچک زیر پیام می‌افتادند)؛ دوباره امتحان = دکمه پخش نوار پایین */
+.hvw-page .hs-player.hs-has-error .hs-center-control {
+	display: none;
+}
+
+.hvw-page .hs-player.hs-has-error .hs-progress-wrap {
+	visibility: hidden;
+}
+
+.hvw-page .hs-player--empty .hs-stage {
+	position: relative;
+	aspect-ratio: 16 / 9;
+	background: #000;
+	overflow: hidden;
+}
+
+.hvw-page .hs-player--empty .hs-empty-poster {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	opacity: 0.45;
+}
+
+/* ── متن کامل ویدیو (مرحله ۴، بخش ۲۱۹)؛ جعبه بازشونده ظاهر خودش را از ماژول باکس‌های بازشونده دارد ── */
+.hvw-page .hs-transcript {
+	color: var(--cat-text-muted);
+	font-size: 15px;
+	line-height: 1.9;
+}
+
+.hvw-page .hs-transcript p {
+	margin: 0 0 0.8em;
+}
+
+.hvw-page .hs-transcript-details summary {
+	cursor: pointer;
+	color: var(--color-primary);
+	font-weight: 600;
+}
+
+.hvw-page .hs-transcript-details[open] summary {
+	margin-block-end: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hvw-page .hs-player *,
+	.hvw-page .hs-video-action-bar *,
+	.hvw-page .hs-related-card {
+		transition: none;
+	}
+
+	.hvw-page .hs-loader {
+		animation: none;
+		border-top-color: rgb(255 255 255 / 0.3);
+		border-inline-end-color: #fff;
+	}
+
+	.hvw-page .hs-control-btn:active,
+	.hvw-page .hs-btn-primary:hover,
+	.hvw-page .hs-btn-primary:focus-visible,
+	.hvw-page .hs-related-card:hover,
+	.hvw-page .hs-related-card:focus-visible {
+		transform: none;
+	}
+}
