@@ -46,6 +46,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 const removeBtn = document.querySelector(removeBtnSelector);
                 if (removeBtn) removeBtn.style.display = 'inline-block';
+                // عکس PNG معمولا پس‌زمینه ندارد: حالت شفاف (بدون کادر سفید) خودکار روشن شود
+                const transparent = $('hd_notif_bg_transparent');
+                if (transparent && attachment.subtype === 'png') transparent.checked = true;
             });
             mediaUploader.open();
         });
@@ -121,8 +124,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 width:${width}px;
                 max-width:95%;
                 background:${bgColor};
-                padding:15px;
-                border-radius:12px;
+                padding:${isTransparent ? 0 : 15}px;
+                border-radius:${isTransparent ? 0 : 12}px;
                 z-index:9999;
                 box-sizing: border-box;
             `;
@@ -138,16 +141,20 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // استفاده از تگ button و خنثی کردن تمام هاله‌های آبی و outline در مرورگر 
+            // حالت شفاف (PNG): دکمه بستن با دایره سفید، مثل سایت
+            const closeBase = isTransparent
+                ? 'top:4px; right:4px; width:36px; height:36px; display:grid; place-items:center; border-radius:50%; background:rgba(255,255,255,0.92); box-shadow:0 2px 8px rgba(0,0,0,0.25); font-size:26px; text-shadow:none;'
+                : 'top:35px; right:35px; font-size:32px; background:transparent; box-shadow:none; text-shadow: 0 1px 4px rgba(0,0,0,0.4);';
             const closeHtml = hasCloseBtn 
-                ? `<button type="button" style="position:absolute; top:35px; right:35px; cursor:pointer; font-size:32px; font-weight:bold; opacity:0.9; color:${closeColor}; z-index:10; text-shadow: 0 1px 4px rgba(0,0,0,0.4); background:transparent; border:none; outline:none; box-shadow:none; padding:0;" onfocus="this.style.outline='none'; this.style.boxShadow='none';" onclick="this.style.outline='none'; this.style.boxShadow='none'; return false;">&times;</button>` 
+                ? `<button type="button" style="position:absolute; ${closeBase} cursor:pointer; font-weight:bold; opacity:0.9; color:${closeColor}; z-index:10; border:none; outline:none; padding:0;" onclick="return false;">&times;</button>` 
                 : '';
 
             const imageHtml = bgImage 
-                ? `<img src="${bgImage}" style="width: 100%; height: ${height > 0 ? '100%' : 'auto'}; object-fit: cover; display: block; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">`
+                ? `<img src="${bgImage}" style="width: 100%; height: ${height > 0 ? '100%' : 'auto'}; display: block; ${isTransparent ? 'object-fit: contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,0.25));' : 'object-fit: cover; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);'}">`
                 : `<div style="width:100%; height:150px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#9ca3af;">تصویر انتخاب نشده است</div>`;
 
             const linkHtml = mainLink 
-                ? `<a href="${mainLink}" onclick="return false;" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; z-index: 5; display: block; cursor: pointer;"></a>` 
+                ? `<a href="${mainLink}" onclick="return false;" style="position: absolute; inset: 0; z-index: 5; display: block; cursor: pointer;"></a>` 
                 : '';
 
             const html = `

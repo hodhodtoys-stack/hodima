@@ -71,7 +71,6 @@ final class HodimaNotificationSettings
             'hd_notif_trigger_inactivity' => '0',
             'hd_notif_anim_in'            => 'zoom_in',
             'hd_notif_anim_out'           => 'fade_out',
-            'hd_notif_shadow'             => 'soft',
             'hd_notif_target_role'        => 'all',
             'hd_notif_target_post_type'   => 'all',
             'hd_notif_target_utm'         => '',
@@ -173,7 +172,7 @@ final class HodimaNotificationSettings
                         <td>
                             <div class="hdn-flex-row" style="align-items: flex-start;">
                                 <div class="hdn-flex-col" style="flex: 1;">
-                                    <label>آپلود تصویر اصلی</label>
+                                    <label>آپلود تصویر اصلی (JPG، PNG یا WebP)</label>
                                     <div class="hdn-media-container" style="display:inline-flex;">
                                         <div class="hdn-img-preview-box <?php echo empty($meta['hd_notif_bg_image']) ? 'empty' : ''; ?>">
                                             <span class="placeholder dashicons dashicons-format-image" aria-hidden="true"></span>
@@ -190,7 +189,7 @@ final class HodimaNotificationSettings
                                 <div class="hdn-flex-col" style="flex: 2; padding-top: 25px;">
                                     <label for="hd_notif_main_link">لینک مقصد (کاربر با کلیک روی عکس به این لینک می‌رود)</label>
                                     <input type="url" id="hd_notif_main_link" name="hd_notif_main_link" value="<?php echo esc_url($meta['hd_notif_main_link']); ?>" placeholder="https://..." style="text-align: left; direction: ltr;">
-                                    <span style="font-size: 11px; color: #94a3b8; margin-top: 4px;">در صورت خالی بودن، پاپ‌آپ قابلیت کلیک نخواهد داشت.</span>
+                                    <span style="font-size: 11px; color: #64748b; margin-top: 4px;">کل عکس قابل کلیک است؛ در صورت خالی بودن، پاپ‌آپ قابلیت کلیک نخواهد داشت.</span>
                                 </div>
                             </div>
                         </td>
@@ -213,9 +212,9 @@ final class HodimaNotificationSettings
                                 <div class="hdn-flex-col" style="flex: 1;">
                                     <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
                                         <input type="checkbox" id="hd_notif_bg_transparent" name="hd_notif_bg_transparent" value="1" <?php checked($meta['hd_notif_bg_transparent'], '1'); ?>>
-                                        <strong>پس‌زمینه کاملاً شفاف باشد</strong>
+                                        <strong>پس‌زمینه کاملاً شفاف باشد (مناسب عکس PNG بدون پس‌زمینه)</strong>
                                     </label>
-                                    <span style="font-size: 11px; color: #94a3b8;">در این حالت فقط عکسی که آپلود کرده‌اید دیده می‌شود.</span>
+                                    <span style="font-size: 11px; color: #64748b;">فقط خود عکس دیده می‌شود: بدون کادر، فاصله و گوشه گرد، و سایه دور خود شکل می‌افتد. با انتخاب عکس PNG خودکار روشن می‌شود.</span>
                                 </div>
                             </div>
                         </td>
@@ -247,6 +246,12 @@ final class HodimaNotificationSettings
                                 <div class="hdn-flex-col" style="flex: 1;">
                                     <label for="hd_notif_trigger_inactivity">عدم فعالیت (ثانیه)</label>
                                     <input type="number" id="hd_notif_trigger_inactivity" name="hd_notif_trigger_inactivity" value="<?php echo esc_attr($meta['hd_notif_trigger_inactivity']); ?>" min="0" style="width: 100px;">
+                                </div>
+                                <?php /* قبلا فیلد نداشت و هر ذخیره آن را ۰ می‌کرد */ ?>
+                                <div class="hdn-flex-col" style="flex: 1;">
+                                    <label for="hd_notif_auto_close_time">بستن خودکار بعد از (ثانیه)</label>
+                                    <input type="number" id="hd_notif_auto_close_time" name="hd_notif_auto_close_time" value="<?php echo esc_attr($meta['hd_notif_auto_close_time']); ?>" min="0" style="width: 100px;">
+                                    <span style="font-size: 11px; color: #64748b;">۰ = خاموش؛ تا وقتی نشانگر روی پاپ‌آپ است بسته نمی‌شود.</span>
                                 </div>
                             </div>
                         </td>
@@ -309,6 +314,17 @@ final class HodimaNotificationSettings
                                         <option value="all" <?php selected($meta['hd_notif_device'], 'all'); ?>>همه دستگاه‌ها</option>
                                         <option value="desktop" <?php selected($meta['hd_notif_device'], 'desktop'); ?>>فقط دسکتاپ</option>
                                         <option value="mobile" <?php selected($meta['hd_notif_device'], 'mobile'); ?>>فقط موبایل</option>
+                                    </select>
+                                </div>
+
+                                <?php /* قبلا فیلد نداشت و هر ذخیره آن را «همه» می‌کرد */ ?>
+                                <div class="hdn-flex-col" style="flex: 1; min-width: 200px;">
+                                    <label for="hd_notif_target_role">نقش کاربر</label>
+                                    <select id="hd_notif_target_role" name="hd_notif_target_role">
+                                        <option value="all" <?php selected($meta['hd_notif_target_role'], 'all'); ?>>همه نقش‌ها</option>
+                                        <option value="customer" <?php selected($meta['hd_notif_target_role'], 'customer'); ?>>فقط مشتری‌ها (وارد شده)</option>
+                                        <option value="subscriber" <?php selected($meta['hd_notif_target_role'], 'subscriber'); ?>>فقط مشترک‌ها (وارد شده)</option>
+                                        <option value="administrator" <?php selected($meta['hd_notif_target_role'], 'administrator'); ?>>فقط مدیران (برای آزمایش)</option>
                                     </select>
                                 </div>
 

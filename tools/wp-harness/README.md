@@ -40,6 +40,7 @@ HARNESS=1 php tools/wp-harness/media-tests.php
 
 # آزمون خودکار ماژول استوری (ذخیره پنل بدون حذف بی‌صدا، حذف آمار فقط استوری حذف‌شده، فرم ناقص، nonce کهنه صفحه کش‌شده، زمان‌بندی‌ها، جمع‌بندی، نوار سایت؛ ci-check هم اجرا می‌کند)
 HARNESS=1 php tools/wp-harness/stories-tests.php
+HARNESS=1 php tools/wp-harness/notification-tests.php
 
 # آزمون خودکار Commerce (تاریخ شمسی، کتابخانه شمسی Core، شهرها، موبایل/کد پستی/کد ملی؛ ci-check هم اجرا می‌کند)
 HARNESS=1 php tools/wp-harness/commerce-tests.php
@@ -75,9 +76,12 @@ tools/wp-harness/settings-tab-check.sh product --ref HEAD   # خروجی: /tmp/h
 | `render.php <path> <full\|hooks>` | رندر یک آدرس |
 | `schema-rules.py <out>` | قواعد اسکیما روی خروجی `run.sh` (خروجی ۰ = قبول). قاعده تازه = باگی که نباید برگردد |
 | `admin-render.php <slug> [query]` | رندر یک صفحه پیشخوان با حساب مدیر (آرگومان دوم اختیاری: پارامتر آدرس، مثلا `tab=product`) |
+| `admin-render-screen.php <script.php> [query]` | همان برای صفحه‌های خود وردپرس: فهرست (`edit.php post_type=hd_notification`)، ویرایش (`post.php "post=12&action=edit"`)، افزودن (`post-new.php`). با `HARNESS=1 HARNESS_USER=1` |
+| `admin-shot.mjs <html> <out-prefix> <wp-root> <src> [عرض‌ها] [انتخابگر]` | عکس (کل صفحه یا یک انتخابگر) و axe یک صفحه پیشخوان رندرشده با CSS/JS واقعی؛ CSS پیشخوان هسته را که بسته playground ندارد یک بار از مخزن رسمی وردپرس 6.7 در `~/.cache/hodima/wp-core-6.7` می‌گیرد |
 | `settings-tab-check.sh/.mjs` | بررسی یک تب تنظیمات قالب در Chromium (عکس، axe، رفتار ؟)؛ وردپرس ابزار تست `wp.media` و فونت dashicons ندارد (فونت با شبیه‌ساز از dashicons.svg) |
 | `media-tests.php` | آزمون‌های خودکار سیستم رسانه و Discover (کد خروج ۱ = رد) |
 | `stories-tests.php` | آزمون‌های خودکار ماژول استوری (کد خروج ۱ = رد). قفل `FOR UPDATE` جمع‌بندی را SQLite ندارد؛ آزمون فقط همان عبارت را برمی‌دارد |
+| `notification-tests.php` | آزمون‌های خودکار ماژول اعلان‌ها: پاک شدن کش با هر تغییر وضعیت، ذخیره فرم، ستون وضعیت فهرست، خروجی سایت (حالت شفاف PNG، موقعیت، ترتیب) |
 | `commerce-tests.php` | آزمون‌های خودکار Commerce — تاریخ شمسی، شهرها، موبایل/کد پستی/کد ملی (کد خروج ۱ = رد) |
 | `privacy-tests.php` | آزمون‌های حریم خصوصی: خروجی/حذف داده لیدهای تلفنی (از ایمیل ← شماره‌های حساب و سفارش)، کد ملی در خروجی/حذف ووکامرس، متن‌های سیاست حریم خصوصی همه بسته‌ها، یادداشت و لینک زیر فرم (کد خروج ۱ = رد). با `HODIMA_WP=/tmp/hodima-harness-wc/wp` (بعد از `HODIMA_HARNESS=/tmp/hodima-harness-wc tools/wp-harness/link.sh .`) بخش ووکامرس واقعی هم اجرا می‌شود؛ بدون آن رد می‌شود. `ci-check.sh` هم اجرا می‌کند |
 | `wp-eval.php '<php>'` | اجرای کد دلخواه روی سایت تست (`HARNESS=1 HODIMA_WP=… php wp-eval.php '…'`) |

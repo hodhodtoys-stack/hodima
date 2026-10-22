@@ -10,9 +10,21 @@ add_action('deleted_post', 'hodima_clear_notification_cache');
 add_action('trashed_post', 'hodima_clear_notification_cache');
 // بازگردانی از زباله‌دان هم فهرست فعال‌ها را عوض می‌کند
 add_action('untrashed_post', 'hodima_clear_notification_cache');
+/*
+ * هر تغییر وضعیت (ویرایش سریع، کارهای دسته‌جمعی، انتشار زمان‌بندی‌شده).
+ * قبلا کش فقط در ذخیره فرم کامل پاک می‌شد (بعد از بررسی nonce)؛ اعلانی که
+ * از فهرست پیش‌نویس می‌شد یا سر وقتش منتشر می‌شد تا ۱۲ ساعت وضع قبلی را داشت.
+ */
+add_action('transition_post_status', 'hodima_notification_status_changed', 10, 3);
 
 function hodima_clear_notification_cache(int $post_id): void {
     if (get_post_type($post_id) === 'hd_notification') {
+        delete_transient('hd_active_notifications');
+    }
+}
+
+function hodima_notification_status_changed(string $new_status, string $old_status, WP_Post $post): void {
+    if ($post->post_type === 'hd_notification') {
         delete_transient('hd_active_notifications');
     }
 }
@@ -82,7 +94,8 @@ function hodima_save_notification_data(int $post_id): void
         'hd_notif_target_type' => ['all', 'specific', 'exclude'],
         'hd_notif_device' => ['all', 'desktop', 'mobile'],
         'hd_notif_user_status' => ['all', 'logged_in', 'logged_out'],
-        'hd_notif_position' => ['center', 'top_bar', 'bottom_bar', 'bottom_right', 'bottom_left', 'middle_right', 'middle_left'],
+        // فقط موقعیت‌هایی که فرم دارد و سایت برایشان ظاهر دارد (نوارها و وسط کناره‌ها ظاهری نداشتند)
+        'hd_notif_position' => ['center', 'bottom_right', 'bottom_left'],
         'hd_notif_anim_in' => ['fade_in', 'slide_up', 'bounce', 'zoom_in'],
         'hd_notif_anim_out' => ['fade_out', 'slide_down'],
         'hd_notif_target_role' => ['all', 'administrator', 'subscriber', 'customer'],

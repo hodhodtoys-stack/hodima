@@ -37,13 +37,10 @@
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* لینک نامرئی که دقیقا ۵۰ درصد پایین تصویر را می‌پوشاند */
+/* لینک نامرئی روی کل تصویر (قبلا فقط نیمه پایین؛ کلیک روی نیمه بالا کاری نمی‌کرد) */
 .hd-notif-half-link {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 50%;
+    inset: 0;
     z-index: 5;
     display: block;
     text-decoration: none;
@@ -131,4 +128,60 @@
         animation: none !important;
         transition: none !important;
     }
+
+    /*
+     * پاپ‌آپ فقط با انیمیشن ورود پیدا می‌شد (opacity پایه ۰)؛ با «کاهش حرکت»
+     * سیستم‌عامل انیمیشن خاموش بود و کاربر فقط پرده تیره می‌دید.
+     */
+    .hd-notif-wrapper.hd-show .hd-notification-popup {
+        opacity: 1;
+    }
+}
+
+/*
+ * عکس PNG بدون پس‌زمینه («پس‌زمینه کاملا شفاف»): بدون کادر، فاصله و گوشه
+ * گرد؛ سایه با drop-shadow دور خود شکل می‌افتد نه دور مستطیل عکس. دکمه
+ * بستن روی بخش شفاف عکس هم دیده شود: دایره سفید کوچک پشتش.
+ */
+.hd-notification-popup.hd-notif-transparent {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.hd-notif-transparent .hd-notif-main-area,
+.hd-notif-transparent .hd-notif-main-area img {
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.hd-notif-transparent .hd-notif-main-area img {
+    object-fit: contain;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25));
+}
+
+.hd-notif-transparent .hd-notif-close {
+    top: 4px;
+    right: 4px;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+    font-size: 26px;
+    text-shadow: none;
+}
+
+.hd-notif-transparent .hd-notif-close:focus:not(:focus-visible),
+.hd-notif-transparent .hd-notif-close:active {
+    background: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+.hd-notif-transparent .hd-notif-close:focus-visible {
+    outline: 2px solid var(--hodima-primary, #25316a) !important;
+    box-shadow: 0 0 0 4px #fff !important;
 }

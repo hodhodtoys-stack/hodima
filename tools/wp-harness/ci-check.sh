@@ -7,6 +7,7 @@
 #   - قواعد اسکیما (schema-rules.py: گراف واحد، هویت، تاریخ، آدرس، محصول، …) رد شوند؛
 #   - آزمون‌های خودکار سیستم رسانه و Google Discover (media-tests.php) رد شوند؛
 #   - آزمون‌های ماژول استوری (stories-tests.php) رد شوند؛
+#   - آزمون‌های ماژول اعلان‌ها (notification-tests.php) رد شوند؛
 #   - آزمون‌های Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
@@ -53,6 +54,13 @@ if HARNESS=1 HODIMA_WP="$base/wp" php "$here/media-tests.php" > "$out/media-test
 	tail -1 "$out/media-tests.txt" | sed 's/^/  /'
 else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/media-tests.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
+
+echo "=== آزمون اعلان‌ها (notification-tests.php: کش، ذخیره، ستون وضعیت، خروجی)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/notification-tests.php" > "$out/notification-tests.txt" 2>&1; then
+	tail -1 "$out/notification-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/notification-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
 echo "=== آزمون استوری (stories-tests.php: ذخیره پنل، آمار، nonce کهنه، زمان‌بندی، نوار)"

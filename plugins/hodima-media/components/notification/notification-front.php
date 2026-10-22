@@ -215,7 +215,8 @@ final class HodimaNotificationFront
         if ($meta['hd_notif_bg_transparent'] === '0') {
             $styles .= 'background-color: ' . esc_attr($meta['hd_notif_bg_color']) . '; ';
         } else {
-            $styles .= 'background-color: transparent; border: none; box-shadow: none; ';
+            // عکس PNG بی‌پس‌زمینه: بدون کادر، فاصله و سایه مستطیلی (سایه دور خود شکل با CSS)
+            $styles .= 'background-color: transparent; ';
         }
 
         if ((int) $meta['hd_notif_width'] > 0) {
@@ -227,6 +228,20 @@ final class HodimaNotificationFront
         }
 
         return $styles;
+    }
+
+    /**
+     * موقعیت‌هایی که سایت برایشان ظاهر دارد. «نوار بالا/پایین» و «وسط کناره‌ها»
+     * قبلا در ذخیره پذیرفته می‌شدند ولی CSS نداشتند و پاپ‌آپ گوشه بالای صفحه
+     * بی‌جا می‌افتاد؛ داده قدیمی به نزدیک‌ترین گوشه (غیرمسدودکننده) می‌رود.
+     */
+    private function normalizePosition(string $position): string
+    {
+        return match (true) {
+            in_array($position, ['center', 'bottom_right', 'bottom_left'], true) => $position,
+            str_ends_with($position, '_left') => 'bottom_left',
+            default => 'bottom_right',
+        };
     }
 
     /** مرز روز در منطقه زمانی سایت → میلی‌ثانیه UTC برای مقایسه در مرورگر. */
@@ -251,7 +266,8 @@ final class HodimaNotificationFront
 
         $inlineStyles = $this->buildInlineStyles($meta);
         $hasCloseBtn  = ($meta['hd_notif_close_btn'] !== '0');
-        $position     = (string) $meta['hd_notif_position'];
+        $position     = $this->normalizePosition((string) $meta['hd_notif_position']);
+        $transparent  = ($meta['hd_notif_bg_transparent'] === '1');
         $isModal      = ('center' === $position);
         $title        = trim((string) ($meta['_title'] ?? '')) ?: 'اطلاعیه';
         $mainLink     = esc_url((string) $meta['hd_notif_main_link']);
@@ -270,7 +286,7 @@ final class HodimaNotificationFront
              */
             ?>
             <div id="hd-notification-<?php echo (int) $postId; ?>"
-                 class="hd-notification-popup hd-pos-<?php echo esc_attr($position); ?>"
+                 class="hd-notification-popup hd-pos-<?php echo esc_attr($position); ?><?php echo $transparent ? ' hd-notif-transparent' : ''; ?>"
                  style="<?php echo esc_attr($inlineStyles); ?>"
                  role="<?php echo $isModal ? 'dialog' : 'region'; ?>"
                  <?php echo $isModal ? 'aria-modal="true"' : ''; ?>

@@ -167,7 +167,22 @@
                     if (maxCount > 0) {
                         try { if (ls) ls.setItem(countKey, String(count + 1)); } catch (e) {}
                     }
-                    if (autoClose > 0) autoTimer = setTimeout(close, autoClose);
+                    if (autoClose > 0) {
+                        // بستن خودکار تا وقتی نشانگر روی پاپ‌آپ است (و در جعبه گوشه، تا وقتی
+                        // فوکوس صفحه‌کلید داخلش است) صبر می‌کند تا کاربر وسط کار آن را از دست ندهد.
+                        // پنجره وسط فوکوس را خودش می‌گیرد، پس آنجا فقط نشانگر حساب است.
+                        var arm = function () { clearTimeout(autoTimer); autoTimer = setTimeout(close, autoClose); };
+                        var hold = function () { clearTimeout(autoTimer); };
+                        var busy = function () { return p.matches(':hover') || (!isModal && p.contains(document.activeElement)); };
+                        var release = function () { if (state === 'shown' && !busy()) arm(); };
+                        p.addEventListener('mouseenter', hold);
+                        p.addEventListener('mouseleave', release);
+                        if (!isModal) {
+                            p.addEventListener('focusin', hold);
+                            p.addEventListener('focusout', function () { setTimeout(release, 0); });
+                        }
+                        release();
+                    }
                 });
             });
         }
