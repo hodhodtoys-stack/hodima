@@ -90,14 +90,14 @@
 .hs-more-options-container { position: relative; display: inline-block; }
 .hs-more-menu { position: absolute; bottom: 42px; right: 0; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(37,49,106,.08); opacity: 0; visibility: hidden; transition: all 0.25s ease; overflow: hidden; min-width: 140px; z-index: 10; border: 1px solid var(--cat-border); padding: 6px; display: flex; flex-direction: column; gap: 3px; }
 .hs-more-menu.is-open { opacity: 1; visibility: visible; }
-.hs-menu-option, .hs-share-link { padding: 6px 8px; color: var(--color-text) !important; text-decoration: none; display: block; font-size: 13px; font-weight: 500; text-align: right; transition: all 0.25s ease; cursor: pointer; border: none; width: 100%; background: transparent; font-family: inherit; border-radius: 6px;}
+.hs-menu-option, .hs-share-link { padding: 6px 8px; color: var(--color-text) !important; text-decoration: none; display: block; font-size: 13px; font-weight: 500; text-align: right; transition: background-color 0.25s ease, color 0.25s ease; cursor: pointer; border: none; width: 100%; background: transparent; font-family: inherit; border-radius: 6px;}
 .hs-menu-option:hover, .hs-share-link:hover, .hs-menu-option:focus-visible { background: var(--cat-bg-light-blue) !important; color: var(--color-primary) !important; }
 .hs-player .hs-menu-option:focus-visible, .hs-player .hs-share-link:focus-visible { outline: 2px solid var(--hodima-focus-color, #25316a); outline-offset: -2px; box-shadow: none; }
 .hs-menu-option.is-active { background: var(--color-primary) !important; color: #fff !important; font-weight: 700; }
 
 .hs-bottombar { position: absolute; bottom: 0; left: 0; right: 0; z-index: 4; padding: 10px 15px; background: linear-gradient(to top, rgba(0,0,0,.85) 0, rgba(0,0,0,.65) 65%, transparent); pointer-events: none; display: flex; flex-direction: column; gap: 8px; direction: ltr !important; transition: opacity 0.4s ease; }
 /* ناحیه لمس ۲۴px (WCAG 2.5.8): padding ۱۰px + margin منفی تا ارتفاع چیدمان همان ۱۲px قبلی بماند */
-.hs-progress-wrap { cursor: pointer; padding: 10px 0; margin-block: -6px; pointer-events: auto; width: 100%; outline: none; }
+.hs-progress-wrap { cursor: pointer; padding: 10px 0; margin-block: -6px; pointer-events: auto; width: 100%; outline: none; touch-action: none; /* کشیدن با لمس: صفحه اسکرول نشود */ }
 .hs-progress-item { height: 4px; background: rgba(255,255,255,0.3); border-radius: 10px; overflow: hidden; direction: ltr !important; transition: height 0.2s; }
 .hs-progress-wrap:hover .hs-progress-item, .hs-progress-wrap:focus-visible .hs-progress-item { height: 6px; }
 .hs-progress-fill { height: 100%; background: var(--hs-grad); width: 0%; transition: width 0.1s linear; position: relative;}
@@ -184,3 +184,36 @@
 .hs-card-cover-img { width: 100%; height: auto; }
 
 .hs-pip-btn[hidden] { display: none !important; }
+
+/* =========================================================================
+ * مرحله ۳ بازنگری ویدیوها (HODIMA-AUDIT.md بخش ۲۱۸): وضعیت‌های پلیر و دسترس‌پذیری
+ * (بدون nesting و media query بازه‌ای: CSS افزونه مرحله ساخت ندارد)
+ * ========================================================================= */
+/* دکمه بزرگ وسط هنگام پخش (JS: is-hidden + tabindex=-1)؛ قبلا style درون‌خطی */
+.hs-play-toggle.is-hidden { opacity: 0; pointer-events: none; }
+/* منوی باز: visibility بی‌درنگ visible (با transition: all در لحظه اول هنوز hidden بود و فوکوس صفحه‌کلید به گزینه نمی‌رسید)؛ بستن همان محو قبلی */
+.hs-more-menu.is-open, .hs-action-menu.is-open { transition: opacity 0.25s ease, transform 0.25s ease; }
+.hs-play-toggle .hs-play-icon { display: block; }
+
+.hs-player.hs-is-scrubbing .hs-progress-fill { transition: none; }
+
+/* نشانگر بارگذاری (فقط وقتی انتظار بیش از ۳۰۰ میلی‌ثانیه شد) */
+.hs-loader { display: none; position: absolute; top: 50%; inset-inline-start: 50%; z-index: 3; width: 46px; height: 46px; margin-block-start: -23px; margin-inline-start: -23px; border: 4px solid rgb(255 255 255 / 0.3); border-top-color: #fff; border-radius: 50%; animation: hs-spin 0.9s linear infinite; pointer-events: none; }
+.hs-player.hs-is-loading .hs-loader { display: block; }
+.hs-player.hs-is-loading .hs-center-control { opacity: 0; }
+@keyframes hs-spin { to { transform: rotate(360deg); } }
+
+/* پیام خطا / «ویدیو آماده نیست» */
+.hs-player-message { display: none; position: absolute; inset-inline: 12px; top: 50%; z-index: 5; transform: translateY(-50%); margin: 0; padding: 10px 14px; border-radius: 10px; background: rgb(0 0 0 / 0.78); color: #fff; font-size: 14px; line-height: 1.7; text-align: center; }
+.hs-player-message.is-visible { display: block; }
+.hs-player.hs-has-error .hs-center-control { top: auto; bottom: 64px; transform: translateX(-50%); }
+.hs-player.hs-has-error .hs-player-message { top: 38%; }
+
+.hs-player--empty .hs-stage { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; }
+.hs-player--empty .hs-empty-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.45; }
+
+@media (prefers-reduced-motion: reduce) {
+    .hs-player *, .hs-video-action-bar *, .hs-related-card { transition: none; }
+    .hs-loader { animation: none; border-top-color: rgb(255 255 255 / 0.3); border-inline-end-color: #fff; }
+    .hs-control-btn:active, .hs-btn-primary:hover, .hs-btn-primary:focus-visible, .hs-related-card:hover, .hs-related-card:focus-visible { transform: none; }
+}
