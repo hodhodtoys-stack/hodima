@@ -134,6 +134,28 @@ function hod_video_time_to_seconds(string $value): ?int {
 }
 
 /**
+ * مدت ویدیو (ISO «PT1M30S» یا «۱:۳۰») → ثانیه، یا ۰.
+ *
+ * تابع مشترک سیستم رسانه (hodima_media_duration_seconds، media-helpers.php) اگر
+ * ماژول «سیستم رسانه» روشن است؛ وگرنه همان قاعده اینجا. تا Media 2.1.1 اسکیما
+ * الگوی خودش را داشت که ثانیه اعشاری («PT1M30.5S») را نمی‌شناخت: مدت صفر و
+ * پایان آخرین «لحظه کلیدی» (endOffset) حذف می‌شد.
+ */
+function hod_video_duration_seconds(string $value): int {
+
+    if (function_exists('hodima_media_duration_seconds')) {
+        return hodima_media_duration_seconds($value);
+    }
+
+    $value = strtoupper(trim($value));
+    if (preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)(?:\.\d+)?S)?$/', $value, $d) && strlen($value) > 2) {
+        return ((int) ($d[1] ?? 0)) * 3600 + ((int) ($d[2] ?? 0)) * 60 + (int) ($d[3] ?? 0);
+    }
+
+    return (int) hod_video_time_to_seconds($value);
+}
+
+/**
  * بخش‌بندی ویدیو: هر خط «زمان عنوان»، مثلا «۱:۲۵ معرفی رنگ‌بندی».
  *
  * @return array<int, array{start:int, name:string}>
@@ -241,12 +263,13 @@ add_action('wp_head', static function (): void {
     $chapters   = hod_video_parse_chapters((string) get_post_meta($post_id, '_hod_video_chapters', true));
 
     // مدت به ثانیه (پایان آخرین فصل)
-    $total = ('' !== $duration && preg_match('/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/', $duration, $d))
-        ? ((int) ($d[1] ?? 0)) * 3600 + ((int) ($d[2] ?? 0)) * 60 + (int) ($d[3] ?? 0)
-        : 0;
+    $total = hod_video_duration_seconds($duration);
 
-    $tags     = get_the_tags($post_id);
-    $keywords = $tags ? implode(', ', wp_list_pluck($tags, 'name')) : '';
+    /*
+     * keywords حذف شد: از «برچسب‌ها» خوانده می‌شد ولی نوع پست ویدیو برچسب
+     * ندارد (get_the_tags همیشه false) و گوگل keywords را برای نتایج ویدیو
+     * نمی‌خواند.
+     */
 
     // تاریخ به وقت گرینویچ. نسخه قبلی post_date *محلی* را با date() قالب‌بندی
     // می‌کرد که منطقه زمانی +00:00 می‌چسباند — ۳.۵ ساعت اختلاف.
@@ -277,7 +300,6 @@ add_action('wp_head', static function (): void {
         'duration'      => $duration,
         'seconds'       => $total,
         'transcript'    => $transcript,
-        'keywords'      => $keywords,
         'chapters'      => array_map(static fn(array $c): array => ['start' => $c['start'], 'title' => $c['name']], $chapters),
         'seekable'      => true,
         'views'         => $views,

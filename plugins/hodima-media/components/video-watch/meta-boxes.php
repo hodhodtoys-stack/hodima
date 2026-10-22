@@ -42,8 +42,9 @@ function hod_video_sanitize_duration(string $value): string
         return '';
     }
 
-    if (function_exists('hook_format_duration_iso')) {
-        return hook_format_duration_iso($value);
+    // تابع مشترک سیستم رسانه با نام تازه (نام قدیمی hook_format_duration_iso فقط برای کد بیرونی است)
+    if (function_exists('hodima_media_duration_iso')) {
+        return hodima_media_duration_iso($value);
     }
 
     if (preg_match('/^PT(?:\d+H)?(?:\d+M)?(?:\d+S)?$/i', $value) && strlen($value) > 2) {

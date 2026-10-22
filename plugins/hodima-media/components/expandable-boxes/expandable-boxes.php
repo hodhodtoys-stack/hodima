@@ -115,6 +115,9 @@ final class Hodima_Expandable_Boxes {
     private function should_enqueue_assets(): bool {
         if ( is_admin() ) return false;
 
+        // صفحه‌ای که جعبه را با hodima_expandable_box() در PHP می‌سازد (مثلا متن کامل صفحه ویدیو)
+        if ( apply_filters( 'hodima_expandable_boxes_enqueue', false ) ) return true;
+
         if ( is_singular( 'post' ) || ( function_exists( 'is_product' ) && is_product() ) ) return true;
         if ( is_tax( 'product_cat' ) || is_category() ) return true;
 

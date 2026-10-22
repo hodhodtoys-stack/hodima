@@ -228,6 +228,30 @@ function hodima_seo_schema_health_check_html( string $html ): array {
 		} );
 	}
 
+	// اسکیما = محتوای دیده‌شده (همان قاعده schema-rules.py): متن کامل ویدیو در صفحه هم باشد؛ آخرین Clip با مدت، endOffset
+	$visible = null;
+	foreach ( $nodes as $node ) {
+		hodima_seo_schema_health_walk( $node, static function ( array $obj ) use ( $html, &$visible, &$warnings ): void {
+			if ( ! in_array( 'VideoObject', (array) ( $obj['@type'] ?? [] ), true ) || count( $obj ) < 2 ) {
+				return;
+			}
+			$transcript = trim( (string) preg_replace( '/\s+/u', ' ', is_string( $obj['transcript'] ?? null ) ? $obj['transcript'] : '' ) );
+			if ( '' !== $transcript ) {
+				if ( null === $visible ) {
+					$body    = (string) preg_replace( '#<(script|style|template)\b.*?</\1>#is', ' ', $html );
+					$visible = trim( (string) preg_replace( '/\s+/u', ' ', html_entity_decode( wp_strip_all_tags( $body ), ENT_QUOTES, 'UTF-8' ) ) );
+				}
+				if ( ! str_contains( $visible, mb_substr( $transcript, 0, 40 ) ) ) {
+					$warnings[] = 'متن کامل ویدیو (transcript) در اسکیما هست ولی در صفحه دیده نمی‌شود؛ گوگل اسکیمای محتوای پنهان را نمی‌پسندد.';
+				}
+			}
+			$clips = array_values( array_filter( (array) ( $obj['hasPart'] ?? [] ), static fn( $c ): bool => is_array( $c ) && in_array( 'Clip', (array) ( $c['@type'] ?? [] ), true ) ) );
+			if ( ! empty( $obj['duration'] ) && $clips && ! isset( $clips[ count( $clips ) - 1 ]['endOffset'] ) ) {
+				$warnings[] = 'ویدیو مدت دارد ولی پایان آخرین «لحظه کلیدی» (endOffset) مشخص نیست.';
+			}
+		} );
+	}
+
 	// یک مجموعه آیتم فقط در یک فهرست (ItemList/OfferCatalog)
 	$lists = [];
 	foreach ( $nodes as $node ) {

@@ -178,7 +178,7 @@ add_post_meta( $child, '_hodima_pillar_id', $cat );
 update_post_meta( $plain, '_hodima_is_pillar', '1' );
 $gchild = p( [ 'post_type' => 'page', 'post_title' => 'زیرراهنما', 'post_name' => 'guide-child', 'post_content' => 'فرزند برگه' ], [ '_hodima_pillar_id' => $plain ] );
 
-$vid = p( [ 'post_type' => 'video', 'post_title' => 'ویدیو معرفی گلسر', 'post_name' => 'hairpin-video', 'post_excerpt' => 'معرفی گلسر' ], [ '_hod_video_url' => 'https://hodima.test/v/pin.mp4', '_hod_video_thumbnail' => 'https://hodima.test/v/pin.jpg', '_hod_video_duration' => 'PT1M10S', '_hod_video_chapters' => "00:00 شروع\n00:30 جنس" ] );
+$vid = p( [ 'post_type' => 'video', 'post_title' => 'ویدیو معرفی گلسر', 'post_name' => 'hairpin-video', 'post_excerpt' => 'معرفی گلسر' ], [ '_hod_video_url' => 'https://hodima.test/v/pin.mp4', '_hod_video_thumbnail' => 'https://hodima.test/v/pin.jpg', '_hod_video_duration' => 'PT1M10.5S', '_hod_video_chapters' => "00:00 شروع\n00:30 جنس", '_hod_video_transcript' => "سلام، در این ویدیو گلسر فلزی را معرفی می‌کنیم.\n\nجنس آن استیل ضدزنگ است." ] ); // ثانیه اعشاری و ترنسکریپت: قواعد ویدیو schema-rules.py
 
 // WooCommerce side
 $pcat = wp_insert_term( 'اکسسوری مو', 'product_cat', [ 'slug' => 'hair', 'description' => 'اکسسوری' ] )['term_id'];

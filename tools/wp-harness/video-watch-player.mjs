@@ -292,6 +292,23 @@ console.log( '=== بارگذاری و خطا' );
 }
 {
 	const { ctx, page, errors } = await open( '', { broken: true, wait: false } );
+	// خطای فایل پیش از اجرای اسکریپت پلیر هم (تأخیر JS لایت‌اسپید) باید پیام بدهد: همان حالت با اسکریپت دیرتر
+	const late = await browser.newContext();
+	const lp = await late.newPage();
+	await lp.route( '**/*', async ( route ) => {
+		const url = route.request().url();
+		if ( url.startsWith( 'https://hodima.test/video/hairpin-video/' ) ) return route.fulfill( { status: 200, contentType: 'text/html; charset=utf-8', body: html.replace( /<script[^>]+video-watch\.front\.js[^>]*><\/script>/, '' ) } );
+		if ( url.includes( '/v/pin.mp4' ) ) return route.fulfill( { status: 404, body: '' } );
+		const file = localFile( url );
+		if ( file && fs.existsSync( file ) && fs.statSync( file ).isFile() ) return route.fulfill( { status: 200, contentType: MIME[ path.extname( file ) ] || 'application/octet-stream', body: fs.readFileSync( file ) } );
+		return route.fulfill( { status: 404, body: '' } );
+	} );
+	await lp.goto( 'https://hodima.test/video/hairpin-video/' );
+	await lp.waitForFunction( () => !! document.querySelector( '.hs-main-video' )?.error, null, { timeout: 10000 } ).catch( () => {} );
+	await lp.addScriptTag( { path: path.join( root, 'plugins/hodima-media/components/video-watch/video-watch.front.js' ) } );
+	await lp.waitForTimeout( 200 );
+	log( await lp.evaluate( () => document.querySelector( '.hs-player-message' ).classList.contains( 'is-visible' ) ), 'خطا پیش از اجرای اسکریپت پلیر: باز هم پیام خطا' );
+	await late.close();
 	await page.waitForFunction( () => document.querySelector( '.hs-player-message' )?.classList.contains( 'is-visible' ), null, { timeout: 10000 } ).catch( () => {} );
 	const msg = await page.evaluate( () => { const m = document.querySelector( '.hs-player-message' ); return { text: m.textContent, role: m.getAttribute( 'role' ), shown: getComputedStyle( m ).display !== 'none' }; } );
 	log( msg.shown && msg.text.includes( 'پخش ویدیو ممکن نشد' ) && msg.role === 'status', 'فایل ویدیو در دسترس نیست: پیام خطا (role=status)', JSON.stringify( msg ) );
@@ -308,6 +325,28 @@ console.log( '=== ویدیوی بدون آدرس' );
 	log( empty.includes( 'hs-player--empty' ) && empty.includes( 'ویدیو هنوز آماده نیست' ), 'پیام «ویدیو هنوز آماده نیست»' );
 	const { ctx, page, errors } = await open( '', { body: empty, wait: false } );
 	await page.waitForTimeout( 500 );
+	log( errors.length === 0, 'بدون خطای JS', errors.join( ' | ' ) );
+	await ctx.close();
+}
+
+console.log( '=== متن کامل ویدیو در جعبه «نمایش بیشتر» (مرحله ۴)' );
+{
+	const long = Array.from( { length: 12 }, ( _, i ) => `بخش ${ i + 1 }: در این ویدیو گلسر فلزی و رنگ‌بندی آن را معرفی می‌کنیم و نحوه سفارش عمده را توضیح می‌دهیم.` ).join( '\\n\\n' );
+	execFileSync( 'php', [ path.join( here, 'wp-eval.php' ), `$v = get_page_by_path( 'harness-transcript', OBJECT, 'video' ); $id = $v ? $v->ID : wp_insert_post( [ 'post_type' => 'video', 'post_title' => 'ویدیو با متن کامل', 'post_name' => 'harness-transcript', 'post_status' => 'publish' ] ); update_post_meta( $id, '_hod_video_url', 'https://hodima.test/v/pin.mp4' ); update_post_meta( $id, '_hod_video_transcript', "${ long }" );` ], { env: { ...process.env, HARNESS: '1', HODIMA_WP: wp } } );
+	const page2 = execFileSync( 'php', [ path.join( here, 'render.php' ), '/video/harness-transcript/', 'full' ], { env: { ...process.env, HARNESS: '1', HODIMA_WP: wp }, maxBuffer: 32 * 1024 * 1024 } ).toString();
+	log( /<h2[^>]*>متن کامل ویدیو<\/h2>/.test( page2 ), 'تیتر h2 «متن کامل ویدیو»' );
+	log( page2.includes( 'data-expandable-container' ) && page2.includes( 'expandable-boxes.js' ), 'داخل جعبه باکس‌های بازشونده، با JS و CSS همان ماژول' );
+	const { ctx, page, errors } = await open( '', { body: page2 } );
+	await page.waitForTimeout( 500 );
+	const before = await page.evaluate( () => { const w = document.querySelector( '.hs-transcript .hodima-expandable-wrapper' ); const b = document.querySelector( '.hs-transcript [data-expandable-toggle]' ); return { h: w.getBoundingClientRect().height, full: w.scrollHeight, exp: b.getAttribute( 'aria-expanded' ), shown: getComputedStyle( b ).display !== 'none' }; } );
+	log( before.shown && before.exp === 'false' && before.h < before.full, 'بسته: کوتاه‌تر از کل متن و دکمه «نمایش بیشتر»', JSON.stringify( before ) );
+	await page.click( '.hs-transcript [data-expandable-toggle]' );
+	await page.waitForTimeout( 900 );
+	const after = await page.evaluate( () => { const w = document.querySelector( '.hs-transcript .hodima-expandable-wrapper' ); return { h: w.getBoundingClientRect().height, full: w.scrollHeight, exp: document.querySelector( '.hs-transcript [data-expandable-toggle]' ).getAttribute( 'aria-expanded' ) }; } );
+	log( after.exp === 'true' && after.h >= after.full - 2, 'کلیک: کل متن باز شد (aria-expanded=true)', JSON.stringify( after ) );
+	await page.addScriptTag( { path: axePath } );
+	const axe = await page.evaluate( async () => ( await window.axe.run( '.hs-transcript-section', { runOnly: [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa' ] } ) ).violations.map( ( v ) => `${ v.id } (${ v.nodes.length })` ) );
+	log( axe.length === 0, 'axe روی بخش متن کامل', axe.join( ', ' ) );
 	log( errors.length === 0, 'بدون خطای JS', errors.join( ' | ' ) );
 	await ctx.close();
 }

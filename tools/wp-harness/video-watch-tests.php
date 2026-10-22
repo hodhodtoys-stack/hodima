@@ -276,6 +276,14 @@ set_post_thumbnail( $pub, $att );
 hodima_vw( 'بدون کاور ← تصویر شاخص در همان اندازه', basename( hodima_video_watch_poster_url( $pub ) ), 'cover-1536x864.jpg' );
 wp_delete_attachment( $att, true );
 
+echo "=== مدت ویدیو (مرحله ۴)\n";
+foreach ( [ 'PT1M10S' => 70, 'PT1M10.5S' => 70, 'PT1H2M3S' => 3723, '1:10' => 70, '۱:۰۲:۰۳' => 3723, '' => 0 ] as $in => $want ) {
+	hodima_vw( "ثانیه «{$in}»", hod_video_duration_seconds( (string) $in ), $want );
+}
+hodima_vw( 'فرم: «۲:۳۵» ← ISO', hod_video_sanitize_duration( '۲:۳۵' ), 'PT2M35S' );
+hodima_vw( 'فرم: ISO اعشاری دست‌نخورده', hod_video_sanitize_duration( 'PT1M30.5S' ), 'PT1M30.5S' );
+hodima_vw( 'فرم: نمایش «PT1M30.5S» همان ISO (ذخیره دوباره اعشار را نمی‌برد)', hod_video_iso_to_clock( 'PT1M30.5S' ), 'PT1M30.5S' );
+
 echo "=== حذف ویدیو آمارش را پاک می‌کند\n";
 wp_delete_post( $pub, true );
 hodima_vw( 'آمار حذف شد', (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$stats} WHERE video_id = %d", $pub ) ), 0 );

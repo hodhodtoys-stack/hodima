@@ -176,8 +176,36 @@ if (have_posts()) :
                 </div>
             </section>
 
-            <?php // نمایش فرانت متن ترنسکریپت برداشته شد: همان مقداری که در vid-w-schema.php
-                  // به‌صورت JSON-LD (فیلد transcript در Schema.org VideoObject) به گوگل سیگنال داده می‌شود کافی است. ?>
+            <?php
+            /*
+             * متن کامل ویدیو (ترنسکریپت) — مرحله ۴ بازنگری ویدیوها (HODIMA-AUDIT.md بخش ۲۱۹).
+             * تا Media 2.1.1 فقط در اسکیما (VideoObject.transcript) بود و در صفحه دیده
+             * نمی‌شد؛ خلاف «اسکیما = محتوای دیده‌شده» و راهنمای گوگل. خواست کاربر: داخل
+             * همان جعبه «نمایش بیشتر / کمتر» سایت (ماژول باکس‌های بازشونده)؛ اگر آن ماژول
+             * خاموش است، کادر بازشونده خود مرورگر (<details>). متن داخل جعبه بسته هم در
+             * HTML است و گوگل آن را می‌خواند.
+             */
+            $transcript = trim((string) get_post_meta($post_id, '_hod_video_transcript', true));
+            if ('' !== $transcript) :
+                $hvw_transcript_html = wpautop(esc_html($transcript));
+                $hvw_transcript_id   = 'hvw-transcript-' . (int) $post_id;
+                ?>
+                <section class="hodima-section-box hs-transcript-section" aria-labelledby="<?php echo esc_attr($hvw_transcript_id); ?>">
+                    <h2 id="<?php echo esc_attr($hvw_transcript_id); ?>" class="hs-related-section-title"><?php esc_html_e('متن کامل ویدیو', 'hod-video'); ?></h2>
+                    <div class="hs-transcript">
+                        <?php
+                        if (function_exists('hodima_expandable_box')) {
+                            // خروجی جعبه از قبل escape شده (متن با esc_html، ویژگی‌ها با esc_attr در render_box)
+                            echo hodima_expandable_box($hvw_transcript_html, 'video_transcript', ['height' => 240, 'fade_height' => 60]); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                        } else { ?>
+                            <details class="hs-transcript-details">
+                                <summary><?php esc_html_e('نمایش متن کامل', 'hod-video'); ?></summary>
+                                <?php echo wp_kses_post($hvw_transcript_html); ?>
+                            </details>
+                        <?php } ?>
+                    </div>
+                </section>
+            <?php endif; ?>
 
             <?php if(!empty($related_cards) && is_array($related_cards)): ?>
                 <section class="hodima-section-box section-related-videos">

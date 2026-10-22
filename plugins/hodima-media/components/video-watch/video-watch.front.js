@@ -142,6 +142,10 @@
 			this.setupMediaSession();
 			this.setupKeyboard();
 			this.syncPlayState( false );
+			// خطای فایل پیش از اجرای این اسکریپت (مثلا با «تأخیر JS» لایت‌اسپید): رویداد error از دست رفته
+			if ( this.video.error ) {
+				this.showError();
+			}
 			this.applyStartTime();
 		}
 
@@ -703,7 +707,11 @@
 			if ( ! this.video.error ) {
 				return;
 			}
+			const hadFocus = document.activeElement === this.centerBtn;
 			this.container.classList.add( 'hs-has-error' );
+			if ( hadFocus ) {
+				this.smallPlayBtn?.focus(); // دکمه وسط در حالت خطا پنهان است
+			}
 			if ( this.messageEl ) {
 				this.messageEl.textContent = this.messageEl.getAttribute( 'data-error' ) || '';
 				this.messageEl.classList.add( 'is-visible' );

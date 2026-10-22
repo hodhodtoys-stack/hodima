@@ -206,8 +206,10 @@
 /* پیام خطا / «ویدیو آماده نیست» */
 .hs-player-message { display: none; position: absolute; inset-inline: 12px; top: 50%; z-index: 5; transform: translateY(-50%); margin: 0; padding: 10px 14px; border-radius: 10px; background: rgb(0 0 0 / 0.78); color: #fff; font-size: 14px; line-height: 1.7; text-align: center; }
 .hs-player-message.is-visible { display: block; }
-.hs-player.hs-has-error .hs-center-control { top: auto; bottom: 64px; transform: translateX(-50%); }
-.hs-player.hs-has-error .hs-player-message { top: 38%; }
+/* خطا: دکمه وسط کنار می‌رود (روی صفحه کوچک زیر پیام می‌افتاد و فوکوسش پوشیده بود)؛ دوباره امتحان = دکمه پخش نوار پایین */
+.hs-player.hs-has-error .hs-center-control { display: none; }
+/* بدون فایل چیزی برای جلو/عقب رفتن نیست؛ نوار پیشرفت هم (روی صفحه کوچک زیر پیام می‌افتاد) */
+.hs-player.hs-has-error .hs-progress-wrap { visibility: hidden; }
 
 .hs-player--empty .hs-stage { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; }
 .hs-player--empty .hs-empty-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.45; }
@@ -217,3 +219,10 @@
     .hs-loader { animation: none; border-top-color: rgb(255 255 255 / 0.3); border-inline-end-color: #fff; }
     .hs-control-btn:active, .hs-btn-primary:hover, .hs-btn-primary:focus-visible, .hs-related-card:hover, .hs-related-card:focus-visible { transform: none; }
 }
+
+/* متن کامل ویدیو (مرحله ۴، بخش ۲۱۹)؛ جعبه بازشونده ظاهر خودش را از ماژول باکس‌های بازشونده دارد */
+.hs-transcript { color: var(--cat-text-muted); font-size: 15px; line-height: 1.9; }
+.hs-transcript p { margin: 0 0 0.8em; }
+.hs-transcript-details summary { cursor: pointer; color: var(--color-primary); font-weight: 600; }
+.hs-transcript-details[open] summary { margin-block-end: 10px; }
+

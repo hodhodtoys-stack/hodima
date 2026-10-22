@@ -16,7 +16,9 @@ compare.py فقط «قبل/بعد» را مقایسه می‌کند؛ اگر خ�
   مقاله     headline حداکثر ۱۱۰ نویسه، نویسنده و ناشر با @id
   تصویر     creator تصویرها بدون @id (اعتبارسنج Image Metadata گوگل
             WholesaleStore را برای creator نمی‌پذیرد)
-  ویدیو     نام، تصویر، تاریخ و contentUrl یا embedUrl
+  ویدیو     نام، تصویر، تاریخ و contentUrl یا embedUrl؛ transcript در متن دیدنی صفحه
+            هم هست (تا Media 2.1.1 فقط در اسکیما)؛ با duration آخرین Clip
+            endOffset دارد (ثانیه اعشاری «PT1M10.5S» مدت را صفر می‌کرد)
   بردکرامب  position پشت‌سرهم از ۱، هر پله نام و آدرس
   FAQ       سوال تکراری نه
   فهرست     یک مجموعه آیتم فقط در یک فهرست (ItemList/OfferCatalog) — دسته وبلاگ
@@ -25,6 +27,7 @@ compare.py فقط «قبل/بعد» را مقایسه می‌کند؛ اگر خ�
   python3 schema-rules.py <outdir>        خروجی ۰ = همه قواعد قبول
 """
 import glob
+import html as html_lib
 import json
 import os
 import re
@@ -210,6 +213,27 @@ def check_page(name, html):
 
     for n in nodes:
         walk(n, rules)
+
+    # اسکیما = محتوای دیده‌شده: متن کامل ویدیو در صفحه هم باشد
+    visible = None
+
+    def video_page_rules(node, _path):
+        nonlocal visible
+        if 'VideoObject' not in types(node) or len(node) < 2:
+            return
+        where = node.get('@id', 'VideoObject')
+        transcript = ' '.join(str(node.get('transcript') or '').split())
+        if transcript:
+            if visible is None:
+                body = re.sub(r'<(script|style|template)\b.*?</\1>', ' ', html, flags=re.S | re.I)
+                visible = ' '.join(html_lib.unescape(re.sub(r'<[^>]+>', ' ', body)).split())
+            if transcript[:40] not in visible:
+                err(f'{where}: transcript در اسکیما هست ولی در متن صفحه نه')
+        clips = [c for c in as_list(node.get('hasPart', [])) if isinstance(c, dict) and 'Clip' in types(c)]
+        if node.get('duration') and clips and 'endOffset' not in clips[-1]:
+            err(f'{where}: ویدیو مدت دارد ولی آخرین Clip بدون endOffset است')
+    for n in nodes:
+        walk(n, video_page_rules)
 
     # یک مجموعه آیتم در دو فهرست
     lists = []
