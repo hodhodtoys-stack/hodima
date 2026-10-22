@@ -259,7 +259,13 @@ function hodima_notification_stats_reset( int $post_id ): void {
 add_filter(
 	'manage_hd_notification_posts_columns',
 	static function ( array $columns ): array {
+		// پیش از ستون تاریخ
+		$date = $columns['date'] ?? null;
+		unset( $columns['date'] );
 		$columns['notif_stats'] = 'آمار';
+		if ( null !== $date ) {
+			$columns['date'] = $date;
+		}
 		return $columns;
 	},
 	20

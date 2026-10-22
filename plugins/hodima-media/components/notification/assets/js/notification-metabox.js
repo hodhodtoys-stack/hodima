@@ -8,6 +8,10 @@
  * - تاریخ شمسی کنار هر تاریخ (مقدار فیلد همیشه میلادی می‌ماند).
  * - پیش‌نمایش زنده با همان کلاس‌ها و CSS سایت؛ با DOM ساخته می‌شود (نسخه قبلی
  *   مقدار فیلدها را بدون escape در innerHTML می‌گذاشت).
+ * - نسخه ۵: بخش‌ها در تب (فلش، Home/End؛ آخرین تب در همان نشست به خاطر سپرده
+ *   می‌شود؛ فیلد نامعتبر هنگام ذخیره تب خودش را باز می‌کند) و پیش‌نمایش یک
+ *   صفحه مجازی ۱۲۸۰×۸۰۰ (موبایل ۳۹۰×۷۸۰) با اندازه‌های واقعی که کوچک می‌شود
+ *   تا در ستون کنار فرم جا شود.
  */
 ( () => {
 	'use strict';
@@ -17,6 +21,57 @@
 		if ( ! root ) {
 			return;
 		}
+		/* ── تب‌ها ───────────────────────────────────────────────── */
+		const tablist = root.querySelector( '[data-hdn-tabs]' );
+		const tabs = tablist ? [ ...tablist.querySelectorAll( '[role="tab"]' ) ] : [];
+		const panels = tabs.map( ( t ) => document.getElementById( t.getAttribute( 'aria-controls' ) ) );
+		const selectTab = ( index, focus = false ) => {
+			tabs.forEach( ( tab, i ) => {
+				const on = i === index;
+				tab.setAttribute( 'aria-selected', String( on ) );
+				tab.tabIndex = on ? 0 : -1;
+				panels[ i ].hidden = ! on;
+			} );
+			if ( focus ) {
+				tabs[ index ].focus();
+			}
+			try {
+				sessionStorage.setItem( 'hdn-tab', tabs[ index ].id );
+			} catch {
+				/* بدون حافظه */
+			}
+		};
+		if ( tabs.length ) {
+			tablist.hidden = false;
+			root.classList.add( 'hdn-has-tabs' );
+			tabs.forEach( ( tab, i ) => tab.addEventListener( 'click', () => selectTab( i ) ) );
+			// راست‌به‌چپ: ← تب بعدی، → تب قبلی
+			tablist.addEventListener( 'keydown', ( e ) => {
+				const i = tabs.indexOf( document.activeElement );
+				const next = { ArrowLeft: i + 1, ArrowRight: i - 1, Home: 0, End: tabs.length - 1 }[ e.key ];
+				if ( i < 0 || next === undefined ) {
+					return;
+				}
+				e.preventDefault();
+				selectTab( ( next + tabs.length ) % tabs.length, true );
+			} );
+			let start = 0;
+			try {
+				start = Math.max( 0, tabs.findIndex( ( t ) => t.id === sessionStorage.getItem( 'hdn-tab' ) ) );
+			} catch {
+				/* بدون حافظه */
+			}
+			selectTab( start );
+			// فیلد نامعتبر در تب پنهان: مرورگر نمی‌تواند نشانش دهد؛ تب خودش باز شود
+			root.addEventListener( 'invalid', ( e ) => {
+				const panel = e.target.closest( '[data-hdn-panel]' );
+				const index = panels.indexOf( panel );
+				if ( index >= 0 && panel.hidden ) {
+					selectTab( index );
+				}
+			}, true );
+		}
+
 		const field = ( name ) => root.querySelector( `[name="${ name }"]` );
 		const value = ( name ) => field( name )?.value ?? '';
 		const checked = ( name ) => !! field( name )?.checked;
@@ -105,6 +160,56 @@
 
 		/* ── پیش‌نمایش ───────────────────────────────────────────── */
 		const stage = root.querySelector( '[data-hdn-preview]' );
+		const previewBox = root.querySelector( '[data-hdn-frame]' );
+		const SCREENS = { desktop: [ 1280, 800 ], mobile: [ 390, 780 ] };
+		// صفحه مجازی با اندازه واقعی، کوچک‌شده تا عرض ستون پر شود (موبایل حداکثر اندازه واقعی)
+		const zoom = root.querySelector( '[data-hdn-zoom-dialog]' );
+		const zoomBox = root.querySelector( '[data-hdn-zoom-frame]' );
+		// قاب فعلی: ستون کنار فرم، یا پنجره بزرگ‌نمایی وقتی باز است
+		const box = () => ( zoom?.open ? zoomBox : previewBox );
+		const fit = () => {
+			const frame = box();
+			if ( ! stage || ! frame ) {
+				return;
+			}
+			const [ w, h ] = SCREENS[ stage.dataset.device ] || SCREENS.desktop;
+			// در پنجره بزرگ ارتفاع صفحه هم محدود است
+			const maxH = zoom?.open ? window.innerHeight * 0.75 : Infinity;
+			const scale = Math.min( 1, frame.clientWidth / w, maxH / h );
+			stage.style.width = `${ w }px`;
+			stage.style.height = `${ h }px`;
+			stage.style.transform = `scale(${ scale })`;
+			frame.style.height = `${ Math.round( h * scale ) }px`;
+		};
+		if ( previewBox && 'ResizeObserver' in window ) {
+			const observer = new ResizeObserver( fit );
+			observer.observe( previewBox );
+			if ( zoomBox ) {
+				observer.observe( zoomBox );
+			}
+		}
+		// ستون باریک: نمای دسکتاپ خیلی کوچک می‌شود؛ پیش‌فرض موبایل
+		if ( stage && previewBox && previewBox.clientWidth > 0 && previewBox.clientWidth < 480 ) {
+			stage.dataset.device = 'mobile';
+			root.querySelectorAll( '[data-hdn-device]' ).forEach( ( b ) => b.setAttribute( 'aria-pressed', String( b.dataset.hdnDevice === 'mobile' ) ) );
+		}
+		// بزرگ‌نمایی: همان صفحه مجازی به پنجره می‌رود و با بستن برمی‌گردد
+		root.querySelector( '[data-hdn-zoom]' )?.addEventListener( 'click', () => {
+			if ( typeof zoom?.showModal !== 'function' ) {
+				return;
+			}
+			zoomBox.append( stage );
+			zoom.showModal();
+			// هدف بزرگ‌نمایی دیدن نمای دسکتاپ است؛ با بستن نمای قبلی برمی‌گردد
+			zoom.dataset.device = stage.dataset.device;
+			setDevice( 'desktop' );
+		} );
+		root.querySelector( '[data-hdn-zoom-close]' )?.addEventListener( 'click', () => zoom.close() );
+		zoom?.addEventListener( 'close', () => {
+			previewBox.append( stage );
+			setDevice( zoom.dataset.device || stage.dataset.device );
+			root.querySelector( '[data-hdn-zoom]' )?.focus();
+		} );
 		const el = ( tag, attrs = {}, ...children ) => {
 			const node = document.createElement( tag );
 			Object.entries( attrs ).forEach( ( [ k, v ] ) => node.setAttribute( k, String( v ) ) );
@@ -175,17 +280,21 @@
 		root.addEventListener( 'input', refresh );
 		root.addEventListener( 'change', refresh );
 
+		// دکمه‌های دسکتاپ/موبایل ستون کنار و پنجره بزرگ‌نمایی با هم
+		function setDevice( device ) {
+			stage.dataset.device = device;
+			root.querySelectorAll( '[data-hdn-device]' ).forEach( ( b ) => b.setAttribute( 'aria-pressed', String( b.dataset.hdnDevice === device ) ) );
+			fit();
+			renderPreview( true );
+		}
 		root.querySelectorAll( '[data-hdn-device]' ).forEach( ( button ) => {
-			button.addEventListener( 'click', () => {
-				stage.dataset.device = button.dataset.hdnDevice;
-				root.querySelectorAll( '[data-hdn-device]' ).forEach( ( b ) => b.setAttribute( 'aria-pressed', String( b === button ) ) );
-				renderPreview( true );
-			} );
+			button.addEventListener( 'click', () => setDevice( button.dataset.hdnDevice ) );
 		} );
 		root.querySelector( '[data-hdn-replay]' )?.addEventListener( 'click', () => renderPreview( true ) );
 
 		syncDependents();
 		syncDates();
+		fit();
 		renderPreview();
 	};
 

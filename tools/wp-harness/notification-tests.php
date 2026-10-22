@@ -11,7 +11,8 @@
  * آدرس)، کش قالب قدیمی، ذخیره فقط فیلدهای فرستاده‌شده و محدوده عددها؛ و نسخه ۵
  * (بخش ۲۱۱): آمار (شمارنده اتمی، فقط منتشرشده، محدودیت نرخ، صفر کردن)، کپی،
  * دسته محصول، فیلدهای تازه؛ و نسخه ۶ (بخش ۲۱۲): آمار روزانه (جدول، افزایش اتمی،
- * روزهای خالی صفر، بازه، صفر کردن و حذف) و صفحه «آمار».
+ * روزهای خالی صفر، بازه، صفر کردن و حذف) و صفحه «آمار»؛ و نسخه ۷ (بخش ۲۱۳): سربرگ
+ * فهرست و کلید روشن/خاموش فهرست (nonce، دسترسی، پاک شدن کش).
  */
 
 declare(strict_types=1);
@@ -297,6 +298,38 @@ hodima_nt( 'کپی: آمار کپی نمی‌شود', get_post_meta( $copy, '_hd
 hodima_nt( 'کپی: به صفحه ویرایش کپی می‌رود', str_contains( $redirect, 'post=' . $copy ), true );
 
 hodima_nt( 'شناسه‌ها: آرایه چک‌باکس با خالی و تکراری', hodima_notification_sanitize( hodima_notification_fields()['hd_notif_target_product_cat'], [ '', '5', '5', 'x', '12' ] ), '5,12' );
+
+// پیشخوان: سربرگ و تب‌های فهرست، کلید روشن/خاموش فهرست
+require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
+require_once ABSPATH . 'wp-admin/includes/screen.php';
+set_current_screen( 'edit-hd_notification' );
+ob_start();
+hodima_notification_admin_header();
+$head = (string) ob_get_clean();
+hodima_nt( 'سربرگ فهرست: تب‌ها، «نوتیفیکیشن‌ها» فعال، بدون wp-header-end دوم', [ substr_count( $head, 'hd-tabs__item' ), 1 === preg_match( '/edit\.php\?post_type=hd_notification"[^>]*aria-current="page"/', $head ), str_contains( $head, 'wp-header-end' ) ], [ 3, true, false ] );
+$tid = hodima_nt_create( [ 'hd_notif_bg_image' => 'https://hodima.test/a.jpg' ] );
+set_transient( 'hd_active_notifications', [ 'stale' ], HOUR_IN_SECONDS );
+$toggle = static function ( array $post ): string {
+	$_POST = $post;
+	$_REQUEST = $post;
+	ob_start();
+	try {
+		hodima_notification_toggle();
+	} catch ( Hodima_Nt_Stop ) {
+		// پایان هندلر
+	}
+	$_POST = $_REQUEST = [];
+	return (string) ob_get_clean();
+};
+$res = $toggle( [ 'id' => (string) $tid, 'active' => '0', 'nonce' => wp_create_nonce( 'hodima_notif_toggle' ) ] );
+hodima_nt( 'کلید فهرست: خاموش، کش پاک، پاسخ «غیرفعال»', [ get_post_meta( $tid, '_hd_notif_is_active', true ), get_transient( 'hd_active_notifications' ), str_contains( $res, '"label":"\u063a\u06cc\u0631\u0641\u0639\u0627\u0644"' ) || str_contains( $res, '"label":"غیرفعال"' ) ], [ '0', false, true ] );
+$toggle( [ 'id' => (string) $tid, 'active' => '1', 'nonce' => 'bad' ] );
+hodima_nt( 'کلید فهرست: nonce نادرست کاری نمی‌کند', get_post_meta( $tid, '_hd_notif_is_active', true ), '0' );
+wp_set_current_user( 0 );
+$toggle( [ 'id' => (string) $tid, 'active' => '1', 'nonce' => wp_create_nonce( 'hodima_notif_toggle' ) ] );
+wp_set_current_user( 1 );
+hodima_nt( 'کلید فهرست: بدون دسترسی کاری نمی‌کند', get_post_meta( $tid, '_hd_notif_is_active', true ), '0' );
+$GLOBALS['current_screen'] = null;
 
 // دسته محصول: صفحه دسته و زیردسته و محصول
 if ( ! taxonomy_exists( 'product_cat' ) ) {

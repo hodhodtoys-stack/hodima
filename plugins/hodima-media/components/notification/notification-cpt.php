@@ -82,10 +82,8 @@ function hodima_custom_notification_column_content( string $column, int $post_id
 
 	if ( 'notif_status' === $column ) {
 		[ $type, $label, $note ] = hodima_notification_display_state( $post_id );
-		printf( '<span class="hd-pill hd-pill--%1$s">%2$s</span>', esc_attr( $type ), esc_html( $label ) );
-		if ( '' !== $note ) {
-			printf( '<br><small class="hd-muted">%s</small>', esc_html( $note ) );
-		}
+		// توضیح همیشه چاپ می‌شود (خالی هم) تا کلید روشن/خاموش فهرست آن را به‌روز کند
+		printf( '<span class="hd-pill hd-pill--%1$s">%2$s</span><br><small class="hd-muted">%3$s</small>', esc_attr( $type ), esc_html( $label ), esc_html( $note ) );
 		return;
 	}
 
