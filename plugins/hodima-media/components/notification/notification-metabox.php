@@ -99,6 +99,7 @@ final class Hodima_Notification_Metabox {
 						<button type="button" role="tab" class="hdn-tabs__tab" id="hdn-tab-time" aria-controls="hdn-panel-time" aria-selected="false" tabindex="-1"><?php echo $this->icon( 'clock' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?><span>زمان و دفعات</span></button>
 						<button type="button" role="tab" class="hdn-tabs__tab" id="hdn-tab-audience" aria-controls="hdn-panel-audience" aria-selected="false" tabindex="-1"><?php echo $this->icon( 'groups' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?><span>مخاطب</span></button>
 						<button type="button" role="tab" class="hdn-tabs__tab" id="hdn-tab-look" aria-controls="hdn-panel-look" aria-selected="false" tabindex="-1"><?php echo $this->icon( 'admin-appearance' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?><span>دکمه و انیمیشن</span></button>
+						<button type="button" role="tab" class="hdn-tabs__tab" id="hdn-tab-preview" aria-controls="hdn-panel-preview" aria-selected="false" tabindex="-1"><?php echo $this->icon( 'welcome-view-site' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?><span>پیش‌نمایش</span></button>
 					</div>
 
 					<section class="hdn-panel" id="hdn-panel-media" role="tabpanel" aria-labelledby="hdn-tab-media" data-hdn-panel>
@@ -366,12 +367,11 @@ final class Hodima_Notification_Metabox {
 							?>
 						</div>
 					</section>
-				</div>
 
-				<aside class="hdn-side" aria-labelledby="hdn-preview-title">
-					<div class="hdn-side__sticky">
-						<h2 class="hdn-panel__title" id="hdn-preview-title"><?php echo $this->icon( 'welcome-view-site' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>پیش‌نمایش</h2>
-						<p class="hd-field__help">همان ظاهر سایت؛ با هر تغییر فرم (پیش از ذخیره) به‌روز می‌شود.</p>
+					<?php // تب آخر: پیش‌نمایش تمام‌عرض (تا 2.0.6 ستون باریک کنار فرم بود و فرم را تنگ می‌کرد) ?>
+					<section class="hdn-panel" id="hdn-panel-preview" role="tabpanel" aria-labelledby="hdn-tab-preview" data-hdn-panel>
+						<h2 class="hdn-panel__title"><?php echo $this->icon( 'welcome-view-site' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>پیش‌نمایش</h2>
+						<p class="hd-field__help hdn-panel__desc">همان ظاهر سایت؛ تغییرهای تب‌های دیگر (پیش از ذخیره) اینجا دیده می‌شوند.</p>
 						<div class="hdn-preview__bar" role="group" aria-label="اندازه پیش‌نمایش">
 							<button type="button" class="button" data-hdn-device="desktop" aria-pressed="true">دسکتاپ</button>
 							<button type="button" class="button" data-hdn-device="mobile" aria-pressed="false">موبایل</button>
@@ -384,8 +384,8 @@ final class Hodima_Notification_Metabox {
 								<p class="hdn-preview__text" aria-hidden="true">متن صفحه سایت پشت پاپ‌آپ…</p>
 							</div>
 						</div>
-					</div>
-				</aside>
+					</section>
+				</div>
 			</div>
 
 			<?php // همان صفحه مجازی پیش‌نمایش در اندازه بزرگ (JS آن را به اینجا می‌برد و برمی‌گرداند) ?>

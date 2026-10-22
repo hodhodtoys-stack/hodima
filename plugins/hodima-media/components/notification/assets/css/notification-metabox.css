@@ -1,10 +1,8 @@
 /**
  * کادر تنظیمات نوتیفیکیشن (پیشخوان) — نسخه ۵
  *
- * نسخه ۵: نوار وضعیت بالا، بخش‌ها در تب (بدون JS زیر هم)، پیش‌نمایش در ستون
- * کنار فرم که با اسکرول می‌ماند (عرض کادر ≥ ۴۴rem؛ کمتر زیر فرم). چیدمان با
- * container query روی خود کادر (عرض کادر به ستون کناری وردپرس بستگی دارد،
- * نه عرض صفحه).
+ * نسخه ۵: نوار وضعیت بالا، بخش‌ها در تب (بدون JS زیر هم). پیش‌نمایش تب آخر
+ * و تمام‌عرض است (تا 2.0.6 ستون کنار فرم بود و فرم را تنگ می‌کرد؛ خواست کاربر).
  *
  * کارت‌ها، فیلدها و کلیدها از سیستم طراحی هسته (admin-ui.css، کلاس‌های hd-*)؛
  * اینجا فقط چیدمان خود کادر، انتخاب عکس و صحنه پیش‌نمایش. همه زیر .hdn
@@ -97,13 +95,8 @@
 }
 
 /* ── نوار وضعیت، تب‌ها و چیدمان دو ستونه ─────────────────────────── */
-.hdn {
-	container-type: inline-size;
-}
-
 .hdn-status,
-.hdn-main,
-.hdn-side__sticky {
+.hdn-main {
 	border: 1px solid var(--hd-border, #dde3f7);
 	border-radius: var(--hd-radius, 0.875rem);
 	background: var(--hd-surface, #fff);
@@ -122,28 +115,6 @@
 .hdn-layout {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
-	gap: 1rem;
-	align-items: start;
-}
-
-/* صفحه مجازی ۱۲۸۰px پیش‌نمایش نباید ستون را پهن کند */
-.hdn-main,
-.hdn-side,
-.hdn-preview__frame {
-	min-inline-size: 0;
-	max-inline-size: 100%;
-}
-
-/* کادر کنار ستون «انتشار» وردپرس در صفحه ۱۳۰۰px حدود ۷۵۰px است */
-@container (min-width: 44rem) {
-	.hdn-layout {
-		grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
-	}
-
-	.hdn-side__sticky {
-		position: sticky;
-		inset-block-start: calc(var(--wp-admin--admin-bar--height, 32px) + 1rem);
-	}
 }
 
 .hdn-main {
@@ -247,10 +218,6 @@
 	font-weight: 700;
 }
 
-.hdn-side__sticky {
-	padding: 1rem;
-}
-
 /* ── بزرگ‌نمایی پیش‌نمایش ─────────────────────────────────────────── */
 .hdn-zoom {
 	inline-size: min(92vw, 1320px);
@@ -347,9 +314,11 @@
 	color: #fff;
 }
 
-/* قاب: صفحه مجازی (اندازه واقعی، با JS کوچک‌شده) وسطش */
+/* قاب: صفحه مجازی (اندازه واقعی، با JS کوچک‌شده) وسطش؛ صفحه ۱۲۸۰px ستون را پهن نکند */
 .hdn-preview__frame {
 	display: flex;
+	min-inline-size: 0;
+	max-inline-size: 100%;
 	justify-content: center;
 	block-size: 20rem;
 	overflow: hidden;

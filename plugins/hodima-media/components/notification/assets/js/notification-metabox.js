@@ -9,9 +9,9 @@
  * - پیش‌نمایش زنده با همان کلاس‌ها و CSS سایت؛ با DOM ساخته می‌شود (نسخه قبلی
  *   مقدار فیلدها را بدون escape در innerHTML می‌گذاشت).
  * - نسخه ۵: بخش‌ها در تب (فلش، Home/End؛ آخرین تب در همان نشست به خاطر سپرده
- *   می‌شود؛ فیلد نامعتبر هنگام ذخیره تب خودش را باز می‌کند) و پیش‌نمایش یک
- *   صفحه مجازی ۱۲۸۰×۸۰۰ (موبایل ۳۹۰×۷۸۰) با اندازه‌های واقعی که کوچک می‌شود
- *   تا در ستون کنار فرم جا شود.
+ *   می‌شود؛ فیلد نامعتبر هنگام ذخیره تب خودش را باز می‌کند) و پیش‌نمایش (تب
+ *   آخر) یک صفحه مجازی ۱۲۸۰×۸۰۰ (موبایل ۳۹۰×۷۸۰) با اندازه‌های واقعی که کوچک
+ *   می‌شود تا در عرض تب جا شود؛ با باز شدن تب انیمیشن دوباره اجرا می‌شود.
  */
 ( () => {
 	'use strict';
@@ -25,6 +25,7 @@
 		const tablist = root.querySelector( '[data-hdn-tabs]' );
 		const tabs = tablist ? [ ...tablist.querySelectorAll( '[role="tab"]' ) ] : [];
 		const panels = tabs.map( ( t ) => document.getElementById( t.getAttribute( 'aria-controls' ) ) );
+		let onPreviewTab = null; // پایین‌تر، بعد از ساخت پیش‌نمایش
 		const selectTab = ( index, focus = false ) => {
 			tabs.forEach( ( tab, i ) => {
 				const on = i === index;
@@ -32,6 +33,9 @@
 				tab.tabIndex = on ? 0 : -1;
 				panels[ i ].hidden = ! on;
 			} );
+			if ( panels[ index ]?.querySelector( '[data-hdn-preview]' ) ) {
+				onPreviewTab?.();
+			}
 			if ( focus ) {
 				tabs[ index ].focus();
 			}
@@ -291,6 +295,12 @@
 			button.addEventListener( 'click', () => setDevice( button.dataset.hdnDevice ) );
 		} );
 		root.querySelector( '[data-hdn-replay]' )?.addEventListener( 'click', () => renderPreview( true ) );
+
+		// تب پیش‌نمایش: اندازه قاب تازه حساب شود (پنهان بود) و انیمیشن ورود دیده شود
+		onPreviewTab = () => {
+			fit();
+			renderPreview( true );
+		};
 
 		syncDependents();
 		syncDates();
