@@ -284,6 +284,68 @@ hodima_vw( 'فرم: «۲:۳۵» ← ISO', hod_video_sanitize_duration( '۲:۳۵'
 hodima_vw( 'فرم: ISO اعشاری دست‌نخورده', hod_video_sanitize_duration( 'PT1M30.5S' ), 'PT1M30.5S' );
 hodima_vw( 'فرم: نمایش «PT1M30.5S» همان ISO (ذخیره دوباره اعشار را نمی‌برد)', hod_video_iso_to_clock( 'PT1M30.5S' ), 'PT1M30.5S' );
 
+echo "=== کادر ویرایش (مرحله ۵): رفت‌وبرگشت فرم بدون تغییر داده\n";
+/** فرم رندرشده را مثل مرورگر می‌فرستد (بیرون از <template>، کلید بدون name نه). @return array<string, mixed> */
+function hodima_vw_form_post( string $html ): array {
+	$doc = new DOMDocument();
+	libxml_use_internal_errors( true );
+	$doc->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>' );
+	libxml_clear_errors();
+	$pairs = [];
+	foreach ( ( new DOMXPath( $doc ) )->query( '//*[self::input or self::textarea][@name][not(ancestor::template)]' ) as $node ) {
+		if ( ! $node instanceof DOMElement || $node->hasAttribute( 'disabled' ) ) {
+			continue;
+		}
+		if ( in_array( $node->getAttribute( 'type' ), [ 'checkbox', 'radio' ], true ) && ! $node->hasAttribute( 'checked' ) ) {
+			continue;
+		}
+		$pairs[] = rawurlencode( $node->getAttribute( 'name' ) ) . '=' . rawurlencode( 'textarea' === $node->tagName ? $node->textContent : $node->getAttribute( 'value' ) );
+	}
+	parse_str( implode( '&', $pairs ), $out );
+	return $out;
+}
+$box_keys = [ '_hod_video_url', '_hod_video_thumbnail', '_hod_video_duration', '_hod_video_chapters', '_hod_video_transcript', '_hod_related_product_url', '_hod_related_links' ];
+$box_meta = [
+	'کامل'        => [
+		'_hod_video_url'           => 'https://hodima.test/v/pin.mp4',
+		'_hod_video_thumbnail'     => 'https://hodima.test/v/pin.jpg',
+		'_hod_video_duration'      => 'PT1M10.5S',
+		'_hod_video_chapters'      => "0:00 شروع\n0:30 جنس \"ویژه\"",
+		'_hod_video_transcript'    => "سلام، این «گلسر» است.\n\nپاراگراف دوم با 'کوتیشن' و \\ بک‌اسلش.",
+		'_hod_related_product_url' => 'https://hodima.test/product/x/',
+		'_hod_related_links'       => [
+			[ 'title' => 'گلسر "ویژه" و \'جدید\'', 'url' => 'https://hodima.test/a/', 'cover' => 'https://hodima.test/c.jpg' ],
+			[ 'title' => 'کش مو', 'url' => 'https://hodima.test/b/', 'cover' => '' ],
+		],
+	],
+	'مدت ساده'    => [ '_hod_video_url' => 'https://hodima.test/v/a.mp4', '_hod_video_duration' => 'PT2M35S' ],
+	'خالی'        => [],
+];
+foreach ( $box_meta as $label => $meta ) {
+	$box_id = wp_insert_post( [ 'post_type' => 'video', 'post_title' => 'کادر ' . $label, 'post_status' => 'publish' ] );
+	foreach ( $meta as $k => $v ) {
+		update_post_meta( $box_id, $k, wp_slash( $v ) );
+	}
+	$snapshot = static fn(): array => array_map( static fn( string $k ): mixed => get_post_meta( $box_id, $k, true ), array_combine( $box_keys, $box_keys ) );
+	$before   = $snapshot();
+	ob_start();
+	hod_video_watch_render_meta_box( get_post( $box_id ) );
+	$html = (string) ob_get_clean();
+	$form = hodima_vw_form_post( $html );
+	if ( 'کامل' === $label ) {
+		hodima_vw( 'کادر: نام همه فیلدهای قبلی فرستاده می‌شود', array_values( array_diff( [ 'hod_video_url', 'hod_video_thumbnail', 'hod_video_duration', 'hod_video_chapters', 'hod_video_transcript', 'hod_related_product_url', 'hod_related_links', 'hod_video_watch_meta_nonce' ], array_keys( $form ) ) ), [] );
+		hodima_vw( 'کادر: الگوی کارت تازه (<template>) فرستاده نمی‌شود', array_keys( (array) $form['hod_related_links'] ), [ 0, 1 ] );
+		hodima_vw( 'کادر: فیلد آدرس ویدیو همان جعبه متن لینک (بدون کتابخانه رسانه)', (bool) preg_match( '/<input type="url" id="hod_video_url" name="hod_video_url"/', $html ), true );
+		hodima_vw( 'کادر: هر کارت برچسب وصل به فیلد دارد', substr_count( $html, 'for="hvw-link-0-' ) + substr_count( $html, 'for="hvw-link-1-' ), 6 );
+		hodima_vw( 'کادر: کلید دکمه محصول روشن (لینک دارد) و بدون name', (bool) preg_match( '/<input type="checkbox"[^>]*id="hvw-product-switch"(?![^>]*name=)[^>]*checked/', $html ), true );
+	}
+	$_POST = wp_slash( $form );
+	hod_video_watch_save_meta_boxes( $box_id );
+	$_POST = [];
+	hodima_vw( "کادر ({$label}): ذخیره بدون تغییر هیچ متایی", array_keys( array_filter( $snapshot(), static fn( mixed $v, string $k ): bool => $v !== $before[ $k ], ARRAY_FILTER_USE_BOTH ) ), [] );
+	wp_delete_post( $box_id, true );
+}
+
 echo "=== حذف ویدیو آمارش را پاک می‌کند\n";
 wp_delete_post( $pub, true );
 hodima_vw( 'آمار حذف شد', (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$stats} WHERE video_id = %d", $pub ) ), 0 );

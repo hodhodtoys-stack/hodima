@@ -26,6 +26,7 @@ parameters:
 		- plugins/hodima-media/components/notification
 		- plugins/hodima-media/components/video-watch/db-video-watch.php
 		- plugins/hodima-media/components/video-watch/includes
+		- plugins/hodima-media/components/video-watch/meta-boxes.php
 	excludePaths:
 		analyse:
 			- hodima/user-panel/*

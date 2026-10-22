@@ -126,8 +126,10 @@ function hodima_media_video_object( array $v ): array {
 	 * زمان شروع می‌کند (?t=ثانیه؛ media-style.js و پلیر صفحه ویدیو اجرا
 	 * می‌کنند). پایان هر فصل = شروع فصل بعد؛ آخرین = مدت ویدیو (اگر معلوم است).
 	 */
-	$chapters = $v['chapters'] ?? [];
 	$seconds  = (int) ( $v['seconds'] ?? 0 );
+	// فصلی که بعد از پایان ویدیو شروع می‌شود کنار می‌رود؛ تا Media 2.1.2 فقط خودش حذف می‌شد و
+	// فصل قبلی «تا» شروع همان (بیرون از ویدیو) می‌رفت: endOffset بزرگ‌تر از مدت
+	$chapters = array_values( array_filter( $v['chapters'] ?? [], static fn( array $c ): bool => $seconds <= 0 || (int) $c['start'] < $seconds ) );
 	$clips    = [];
 
 	foreach ( $chapters as $i => $chapter ) {

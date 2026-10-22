@@ -249,6 +249,10 @@ function hodima_seo_schema_health_check_html( string $html ): array {
 			if ( ! empty( $obj['duration'] ) && $clips && ! isset( $clips[ count( $clips ) - 1 ]['endOffset'] ) ) {
 				$warnings[] = 'ویدیو مدت دارد ولی پایان آخرین «لحظه کلیدی» (endOffset) مشخص نیست.';
 			}
+			$total = preg_match( '/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)(?:\.\d+)?S)?$/', is_string( $obj['duration'] ?? null ) ? $obj['duration'] : '', $d ) ? (int) ( $d[1] ?? 0 ) * 3600 + (int) ( $d[2] ?? 0 ) * 60 + (int) ( $d[3] ?? 0 ) : 0;
+			if ( $total > 0 && array_filter( $clips, static fn( array $c ): bool => (int) ( $c['endOffset'] ?? 0 ) > $total ) ) {
+				$warnings[] = 'پایان یک «لحظه کلیدی» بعد از پایان ویدیو است (بخشی بعد از مدت ویدیو شروع می‌شود؛ زمان آن یا مدت را درست کنید).';
+			}
 		} );
 	}
 

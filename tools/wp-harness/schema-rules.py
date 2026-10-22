@@ -18,7 +18,8 @@ compare.py فقط «قبل/بعد» را مقایسه می‌کند؛ اگر خ�
             WholesaleStore را برای creator نمی‌پذیرد)
   ویدیو     نام، تصویر، تاریخ و contentUrl یا embedUrl؛ transcript در متن دیدنی صفحه
             هم هست (تا Media 2.1.1 فقط در اسکیما)؛ با duration آخرین Clip
-            endOffset دارد (ثانیه اعشاری «PT1M10.5S» مدت را صفر می‌کرد)
+            endOffset دارد (ثانیه اعشاری «PT1M10.5S» مدت را صفر می‌کرد)؛ هیچ
+            endOffset بعد از پایان ویدیو نیست (فصل بعد از پایان، پایان فصل قبل می‌شد)
   بردکرامب  position پشت‌سرهم از ۱، هر پله نام و آدرس
   FAQ       سوال تکراری نه
   فهرست     یک مجموعه آیتم فقط در یک فهرست (ItemList/OfferCatalog) — دسته وبلاگ
@@ -232,6 +233,10 @@ def check_page(name, html):
         clips = [c for c in as_list(node.get('hasPart', [])) if isinstance(c, dict) and 'Clip' in types(c)]
         if node.get('duration') and clips and 'endOffset' not in clips[-1]:
             err(f'{where}: ویدیو مدت دارد ولی آخرین Clip بدون endOffset است')
+        d = re.match(r'^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)(?:\.\d+)?S)?$', str(node.get('duration') or ''))
+        total = int(d.group(1) or 0) * 3600 + int(d.group(2) or 0) * 60 + int(d.group(3) or 0) if d else 0
+        if total and any(int(c.get('endOffset') or 0) > total for c in clips):
+            err(f'{where}: endOffset یک Clip بعد از پایان ویدیو ({total} ثانیه) است')
     for n in nodes:
         walk(n, video_page_rules)
 

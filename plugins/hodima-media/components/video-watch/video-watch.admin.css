@@ -1,141 +1,395 @@
-.post-type-video {
-    --hvw-primary: var(--hodima-primary, #25316a);
-    --hvw-primary-hover: var(--hodima-secondary, #607bbd);
-    --hvw-primary-soft: rgba(37, 49, 106, 0.12);
-    --hvw-grad: linear-gradient(45deg, #25316a, #607bbd);
-    --hvw-bg: var(--hodima-surface-soft, #f7f9fd);
-    --hvw-card: #fff;
-    --hvw-text: var(--hodima-text-dark, #111111);
-    --hvw-muted: var(--hodima-text-muted, #5d6785);
-    --hvw-border: var(--hodima-third, #b6c2f3);
-    --hvw-shadow: 0 4px 12px rgba(37, 49, 106, 0.05);
+/**
+ * کادر «تنظیمات ویدیو» در ویرایش ویدیو (پیشخوان) — نشانه‌گذاری: meta-boxes.php
+ *
+ * استاندارد طراحی پیشخوان (اسکیل hodima-admin-ui؛ HODIMA-AUDIT.md بخش ۲۲۰).
+ * کارت، فیلد، کارت گزینه، کلید و خلاصه از admin-ui.css هسته‌اند؛ اینجا فقط
+ * چیدمان خود کادر (همه زیر .hvw). تا Media 2.1.2 متغیرها روی .post-type-video
+ * و ظاهر جدای خودش را داشت. بدون Hodima Core هم چیدمان پایه می‌ماند.
+ * CSS افزونه مرحله ساخت ندارد: بدون nesting و media query بازه‌ای.
+ */
+
+/* کادر داخل جعبه وردپرس: عرض و فاصله .hd-wrap صفحه‌ها را نگیرد */
+#hod-video-watch-meta .inside {
+	margin: 0;
+	padding: 0;
 }
 
-.post-type-video .hvw-metabox {
-    direction: rtl;
-    color: var(--hvw-text);
+.hodima-admin .hd-wrap.hvw,
+.hvw {
+	display: grid;
+	/* ستون به عرض کادر (بدون آن پهن‌ترین محتوا ستون را از جعبه بیرون می‌برد؛ در ۳۹۰px دیده شد) */
+	grid-template-columns: minmax(0, 1fr);
+	gap: 1rem;
+	box-sizing: border-box;
+	inline-size: auto;
+	margin: 0;
+	padding: 1rem;
+	background: var(--hd-bg, #f4f6fb);
+	color: var(--hd-text, #1d2340);
 }
 
-.post-type-video .hvw-card {
-    padding: 20px;
-    border: 1px solid var(--hvw-border);
-    border-radius: 12px;
-    background: var(--hvw-card);
-    box-shadow: var(--hvw-shadow);
+.hvw *,
+.hvw *::before,
+.hvw *::after {
+	box-sizing: border-box;
 }
 
-.post-type-video .hvw-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px 20px;
+/* چیدمان پایه بدون Hodima Core (admin-ui.css لود نشده) */
+.hvw .hd-card {
+	min-inline-size: 0;
+	padding: 1.25rem;
+	border: 1px solid var(--hd-border, #dfe5f8);
+	border-radius: var(--hd-radius, 0.875rem);
+	background: var(--hd-surface, #fff);
 }
 
-.post-type-video .hvw-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+.hvw .hd-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+	min-inline-size: 0;
 }
 
-.post-type-video .hvw-field--full { grid-column: 1 / -1; }
-.post-type-video .hvw-label { font-size: 13px; font-weight: 600; color: var(--hvw-text); }
-
-.post-type-video .hvw-input, .post-type-video .hvw-textarea {
-    width: 100%;
-    border: 1px solid var(--hvw-border);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    color: var(--hvw-text);
-    background: #fff;
+.hvw .hd-field__help {
+	margin: 0;
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+	line-height: 1.9;
 }
 
-.post-type-video .hvw-input:focus, .post-type-video .hvw-textarea:focus {
-    border-color: var(--hvw-primary);
-    box-shadow: 0 0 0 2px var(--hvw-primary-soft);
-    outline: none;
+.hvw .hd-opt__body .hd-field {
+	margin-block-start: 0.5rem;
 }
 
-.post-type-video .hvw-repeater-row {
-    display: flex;
-    gap: 15px;
-    align-items: flex-end;
-    margin-bottom: 15px;
-    padding: 15px;
-    background: #fdfdfd;
-    border: 1px dashed var(--hvw-border);
-    border-radius: 8px;
+.hvw .hd-card .hd-field + .hd-field {
+	margin-block-start: 1rem;
 }
 
-.post-type-video .hvw-repeater-row .hvw-field {
-    flex: 1;
-    margin: 0;
+.hvw :is(input[type="text"], input[type="url"], textarea) {
+	inline-size: 100%;
+	max-inline-size: 100%;
 }
 
-.post-type-video .hvw-remove-row {
-    background: var(--hvw-primary);
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    width: 36px;
-    height: 36px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: filter 0.2s;
-    flex-shrink: 0;
+.hvw textarea {
+	min-block-size: 7rem;
+	line-height: 1.9;
 }
 
-.post-type-video .hvw-remove-row:hover { filter: brightness(0.8); }
-
-.post-type-video .hvw-add-row-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--hvw-primary);
-    color: #fff;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    margin-top: 15px;
-    transition: background 0.2s;
-    box-shadow: 0 2px 6px rgba(37, 49, 106, 0.18);
+/* هشدارهای خلاصه جمله‌اند، نه برچسب کوتاه: در عرض کم بشکنند (hd-pill هسته nowrap است) */
+.hvw .hd-summary__warn .hd-pill {
+	white-space: normal;
 }
 
-.post-type-video .hvw-add-row-btn:hover { background: var(--hvw-primary-hover); }
+/* دو کارت کنار هم (ویدیو، کاور)؛ در عرض کم زیر هم */
+.hvw-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+	gap: 1rem;
+}
 
-/* منتقل‌شده از <style> درون‌خطی متاباکس */
-.post-type-video .hvw-metabox h3 {
-    margin-top: 30px;
-    padding-bottom: 10px;
-    color: var(--hvw-primary) !important;
-    border-bottom: 1px solid var(--hvw-border);
+/* وضعیت زیر فیلد (آدرس ویدیو، بخش‌ها) */
+.hvw .hvw-status.is-ok,
+.hvw .hd-field__help.is-ok {
+	color: var(--hd-ok, #1f7a4d);
+	font-weight: 700;
 }
-.post-type-video .hvw-subtitle {
-    margin-top: 30px;
-    padding-bottom: 8px;
-    font-size: 15px;
-    color: var(--hvw-primary-hover);
-    border-bottom: 1px dashed var(--hvw-border);
+
+.hvw .hvw-status.is-warn,
+.hvw .hd-field__help.is-warn {
+	color: var(--hd-warn, #9a5b00);
+	font-weight: 700;
 }
-.post-type-video .hvw-btn-action {
-    color: #fff !important;
-    background-color: var(--hvw-primary-hover) !important;
-    border: none !important;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.3s ease;
+
+/* ── کاور ── */
+.hvw-cover {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem;
+	margin-block-end: 1rem;
 }
-.post-type-video .hvw-btn-action:hover { background-color: var(--hvw-primary) !important; }
-.post-type-video .hvw-add-btn { margin-top: 10px; padding: 8px 16px !important; }
-.post-type-video .hvw-inline { display: flex; gap: 10px; width: 100%; }
-.post-type-video .hvw-inline .button { height: auto; white-space: nowrap; }
-.post-type-video .hvw-flex-1 { flex: 1; }
-.post-type-video .hvw-flex-15 { flex: 1.5; }
-.post-type-video .hvw-input--short { max-width: 220px; }
-.post-type-video .hvw-textarea--tall { min-height: 150px; }
+
+.hvw-cover__preview {
+	position: relative;
+	display: grid;
+	flex: none;
+	place-items: center;
+	overflow: hidden;
+	inline-size: 10rem;
+	aspect-ratio: 16 / 9;
+	border: 1px solid var(--hd-border, #dfe5f8);
+	border-radius: 0.625rem;
+	background: var(--hd-soft, #eef1fb);
+	color: var(--hd-muted, #5d6785);
+}
+
+.hvw-cover__preview img,
+.hvw-row__thumb img {
+	position: absolute;
+	inset: 0;
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+
+.hvw-cover__preview img[hidden],
+.hvw-row__thumb img[hidden] {
+	display: none;
+}
+
+.hvw-cover__actions {
+	display: flex;
+	flex: 1 1 12rem;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.hvw-cover__actions .button {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.375rem;
+	min-block-size: 2.5rem;
+}
+
+.hvw-cover.is-empty [data-hvw-clear] {
+	display: none;
+}
+
+/* ── مدت و بخش‌ها ── */
+.hvw-time {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+	gap: 1rem 1.5rem;
+	align-items: start;
+}
+
+.hvw-unit {
+	display: flex;
+	align-items: stretch;
+	overflow: hidden;
+	max-inline-size: 14rem;
+	border: 1px solid var(--hd-border-strong, #b9c6e4);
+	border-radius: var(--hd-radius-sm, 0.5rem);
+	background: var(--hd-softer, #f7f8fd);
+}
+
+.hvw .hvw-unit input[type="text"] {
+	flex: 1;
+	min-inline-size: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+}
+
+.hvw .hvw-unit input[type="text"]:focus {
+	box-shadow: inset 0 0 0 2px var(--hd-secondary, #607bbd);
+}
+
+.hvw-unit__label {
+	display: grid;
+	place-items: center;
+	padding-inline: 0.75rem;
+	background: var(--hd-soft, #eef1fb);
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+	white-space: nowrap;
+}
+
+.hvw-chapters {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding: 0.875rem;
+	border: 1px dashed var(--hd-border-strong, #b9c6e4);
+	border-radius: 0.75rem;
+	background: var(--hd-softer, #f7f8fd);
+}
+
+.hvw-chapters[hidden] {
+	display: none;
+}
+
+.hvw-chapters__label {
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+	font-weight: 700;
+}
+
+.hvw-chapters__list {
+	display: grid;
+	gap: 0.375rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hvw-chapters__item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.625rem;
+	margin: 0;
+	padding: 0.5rem 0.625rem;
+	border: 1px solid var(--hd-border, #dfe5f8);
+	border-radius: 0.625rem;
+	background: var(--hd-surface, #fff);
+	font-size: 0.8125rem;
+}
+
+.hvw-chapters__time {
+	direction: ltr;
+	color: var(--hd-primary, #25316a);
+	font-weight: 700;
+}
+
+.hvw-chapters__end {
+	margin-inline-start: auto;
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+}
+
+.hvw-chapters__item.is-bad {
+	border-color: var(--hd-warn, #9a5b00);
+}
+
+.hvw-chapters__item.is-bad .hvw-chapters__end {
+	color: var(--hd-warn, #9a5b00);
+	font-weight: 700;
+}
+
+/* ── زیر ویدیو: کارت‌های مرتبط ── */
+.hvw .hd-opts {
+	margin-block-end: 1.25rem;
+}
+
+.hvw-related {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.hvw .hvw-related__title {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0;
+	color: var(--hd-primary, #25316a);
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.hvw-repeater-rows {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.hvw-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 0.75rem 1rem;
+	padding: 0.875rem;
+	border: 1px solid var(--hd-border, #dfe5f8);
+	border-radius: 0.75rem;
+	background: var(--hd-surface, #fff);
+}
+
+.hvw-row.is-no-cover {
+	border-color: color-mix(in srgb, var(--hd-warn, #9a5b00) 35%, #fff);
+	background: color-mix(in srgb, var(--hd-warn, #9a5b00) 4%, #fff);
+}
+
+.hvw-row__thumb {
+	position: relative;
+	display: grid;
+	flex: none;
+	place-items: center;
+	overflow: hidden;
+	inline-size: 6rem;
+	aspect-ratio: 16 / 9;
+	border-radius: 0.5rem;
+	background: var(--hd-soft, #eef1fb);
+	color: var(--hd-muted, #5d6785);
+}
+
+.hvw-row__fields {
+	display: grid;
+	flex: 1 1 18rem;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+	gap: 0.625rem 0.75rem;
+	min-inline-size: 0;
+}
+
+.hvw .hvw-row__fields .hd-field + .hd-field {
+	margin-block-start: 0;
+}
+
+.hvw-row__fields .hd-field--wide {
+	grid-column: 1 / -1;
+}
+
+.hvw-row__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+}
+
+.hvw .button.hvw-icon-btn {
+	display: grid;
+	place-items: center;
+	inline-size: 2.5rem;
+	min-block-size: 2.5rem;
+	padding: 0;
+}
+
+.hvw .button.hvw-icon-btn--danger {
+	color: var(--hd-error, #b3261e);
+}
+
+.hvw .button.hvw-icon-btn:disabled {
+	opacity: 0.45;
+}
+
+.hvw-related__empty {
+	margin: 0;
+	padding: 1rem;
+	border: 1px dashed var(--hd-border-strong, #b9c6e4);
+	border-radius: 0.75rem;
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.8125rem;
+	text-align: center;
+}
+
+.hvw-related__empty[hidden] {
+	display: none;
+}
+
+.hvw-related__undo {
+	font-size: 0.8125rem;
+}
+
+.hvw-related__undo:empty {
+	display: none;
+}
+
+.hvw .button.hvw-add {
+	display: inline-flex;
+	justify-self: start;
+	align-items: center;
+	gap: 0.375rem;
+	min-block-size: 2.75rem;
+	padding-inline: 1.125rem;
+	border-style: dashed;
+}
+
+.hvw .button-link.hvw-undo-btn {
+	min-block-size: 2.5rem;
+	font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hvw * {
+		transition: none;
+	}
+}
