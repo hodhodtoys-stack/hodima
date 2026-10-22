@@ -1,12 +1,15 @@
 /**
- * عکس و axe یک صفحه پیشخوان رندرشده (admin-render.php / admin-render-screen.php) با CSS/JS واقعی راست‌به‌چپ.
+ * عکس و axe یک صفحه پیشخوان رندرشده (admin-render.php / admin-render-screen.php) با CSS/JS واقعی.
  *
- *   node admin-shot.mjs <html-file> <out-prefix> <wp-root> <src-root> [عرض‌ها=1300,390] [انتخابگر-عکس]
+ *   [HODIMA_RTL=1] node admin-shot.mjs <html-file> <out-prefix> <wp-root> <src-root> [عرض‌ها=1300,390] [انتخابگر]
  *
  * خروجی: <out-prefix>-<عرض>.png (کل صفحه یا فقط انتخابگر) و خلاصه axe (wcag2a/aa، 21a/aa، 22aa) فقط برای
- * داخل #wpbody-content. CSS/JS قالب و افزونه‌ها از <src-root>، بقیه از وردپرس ابزار تست؛ jQuery و wp.media
- * (load-scripts.php) در ابزار تست نیستند، پس فقط اسکریپت‌هایی که بدون آن‌ها راه می‌افتند اجرا می‌شوند.
- * کد خروج ۱ اگر axe نقضی در محدوده پیدا کند یا JS خطا بدهد.
+ * داخل انتخابگر (پیش‌فرض #wpbody-content). CSS/JS قالب و افزونه‌ها از <src-root>، بقیه از وردپرس ابزار تست.
+ * CSS خود پیشخوان (load-styles.php) که بسته playground ندارد یک بار از مخزن رسمی وردپرس 6.7 در
+ * ~/.cache/hodima/wp-core-6.7 گرفته می‌شود. سایت ابزار تست انگلیسی و چپ‌به‌راست است؛ با HODIMA_RTL=1 صفحه و
+ * CSS وردپرس راست‌به‌چپ می‌شوند (مثل پیشخوان فارسی سایت). jQuery و wp.media (load-scripts.php) نیستند، پس فقط
+ * اسکریپت‌هایی که بدون آن‌ها راه می‌افتند اجرا می‌شوند؛ خطای اسکریپت‌های درون‌خطی خود وردپرس شمرده نمی‌شود.
+ * کد خروج ۱ اگر axe نقضی در محدوده پیدا کند یا JS هدیما خطا بدهد.
  */
 import { chromium } from 'playwright-core';
 import fs from 'node:fs';
@@ -98,7 +101,12 @@ for ( const width of widthsArg.split( ',' ).map( Number ) ) {
 			return route.abort();
 		}
 		if ( u.pathname === '/__page' ) {
-			return route.fulfill( { contentType: 'text/html; charset=utf-8', body: fs.readFileSync( htmlFile ) } );
+			let html = fs.readFileSync( htmlFile, 'utf8' );
+			// HODIMA_RTL=1: پیشخوان راست‌به‌چپ مثل سایت فارسی (وردپرس ابزار تست انگلیسی است)
+			if ( process.env.HODIMA_RTL ) {
+				html = html.replace( /<html([^>]*) dir="ltr"/, '<html$1 dir="rtl"' ).replace( /<html(?![^>]*dir=)/, '<html dir="rtl"' ).replaceAll( 'dir=ltr', 'dir=rtl' ).replace( /<body class="/, '<body class="rtl ' );
+			}
+			return route.fulfill( { contentType: 'text/html; charset=utf-8', body: html } );
 		}
 		if ( u.pathname.endsWith( '/load-styles.php' ) ) {
 			return route.fulfill( { contentType: 'text/css', body: wpStyles( u.searchParams ) } );

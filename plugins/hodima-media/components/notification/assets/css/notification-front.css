@@ -1,141 +1,175 @@
-.hd-notif-wrapper { position: fixed; z-index: 9999998; opacity: 0; visibility: hidden; pointer-events: none; display: none; }
-.hd-notif-wrapper.hd-show { opacity: 1; visibility: visible; }
+/**
+ * Hodima Notifications — نمایش در سایت (نسخه ۴: <dialog> بومی)
+ *
+ * - پنجره وسط: showModal() — پرده ::backdrop، بقیه صفحه inert. جعبه گوشه:
+ *   ویژگی open (فوکوس را نمی‌گیرد). مرورگر بدون <dialog> (Safari زیر 15.4):
+ *   کلاس hd-notif-fallback همان ظاهر را با position: fixed می‌دهد.
+ * - اندازه و رنگ‌ها از متغیرهای درون‌خطی (--hd-notif-w، -h، -bg، -close).
+ * - بدون nesting و !important: CSS افزونه مرحله ساخت ندارد و مرورگرهای قدیمی
+ *   هدف (Chrome 109، Safari 15) قانون تودرتو را دور می‌ریزند؛ وزن انتخابگرها
+ *   (دو کلاس) از قانون عمومی button قالب بیشتر است.
+ * - پاپ‌آپ بدون انیمیشن هم دیده می‌شود (opacity پایه ۱؛ تا 2.0.1 فقط انیمیشن
+ *   آن را نمایان می‌کرد و «کاهش حرکت» سیستم‌عامل پنجره را نامرئی می‌کرد).
+ */
 
-.hd-wrap-center { top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; transition: all 0.3s ease; pointer-events: auto; }
-.hd-wrap-bottom_right { bottom: 20px; right: 20px; pointer-events: none; }
-.hd-wrap-bottom_left { bottom: 20px; left: 20px; pointer-events: none; }
-
-.hd-notification-popup { 
-    display: flex; 
-    flex-direction: column;
-    position: relative; 
-    direction: rtl; 
-    overflow: visible;
-    pointer-events: auto; 
-    opacity: 0; 
-    padding: 15px; 
-    border-radius: 12px;
-    box-sizing: border-box;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.15); /* پیشفرض ملایم اگر ترنسپرنت نبود */
+.hd-notification-popup {
+	box-sizing: border-box;
+	inline-size: var(--hd-notif-w, 400px);
+	max-inline-size: 95vw;
+	max-block-size: 90vh;
+	margin: auto;
+	padding: 15px;
+	border: 0;
+	border-radius: 12px;
+	background: var(--hd-notif-bg, #fff);
+	color: inherit;
+	box-shadow: 0 10px 40px rgb(0 0 0 / 0.15);
+	overflow: visible;
+	direction: rtl;
 }
 
-/* باکس اصلی حاوی عکس و لینک */
+/* مرورگر بدون <dialog> هم پنهان نگه دارد */
+.hd-notification-popup:not([open]) {
+	display: none;
+}
+
+.hd-notification-popup[open] {
+	display: block;
+}
+
+.hd-notification-popup::backdrop {
+	background: rgb(0 0 0 / 0.6);
+	backdrop-filter: blur(4px);
+}
+
+/* پنجره وسط در مرورگر بدون <dialog>: وسط صفحه و پرده با سایه بزرگ */
+.hd-notification-popup.hd-notif-fallback {
+	position: fixed;
+	inset: 0;
+	z-index: 2147483000;
+	block-size: fit-content;
+	box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.6);
+}
+
+/* جعبه گوشه (و پنجره وسطی که در موبایل گوشه می‌شود): غیرمسدودکننده */
+.hd-notification-popup.hd-pos-bottom_right,
+.hd-notification-popup.hd-pos-bottom_left,
+.hd-notification-popup.hd-as-corner {
+	position: fixed;
+	inset: auto;
+	bottom: 20px;
+	z-index: 9999998;
+	margin: 0;
+	box-shadow: 0 10px 40px rgb(0 0 0 / 0.2);
+}
+
+/* «راست» و «چپ» نام خود گزینه است (فیزیکی، مستقل از جهت نوشتار) */
+/* stylelint-disable csstools/use-logical */
+.hd-notification-popup.hd-pos-bottom_right,
+.hd-notification-popup.hd-as-corner {
+	right: 20px;
+}
+
+.hd-notification-popup.hd-pos-bottom_left {
+	left: 20px;
+}
+
+@media (max-width: 768px) {
+	.hd-notification-popup.hd-pos-bottom_right,
+	.hd-notification-popup.hd-pos-bottom_left,
+	.hd-notification-popup.hd-as-corner {
+		right: 5%;
+		left: 5%;
+		inline-size: auto;
+		max-inline-size: none;
+	}
+
+	.hd-notification-popup.hd-pos-center {
+		inline-size: min(var(--hd-notif-w, 400px), 90vw);
+	}
+}
+/* stylelint-enable csstools/use-logical */
+
+/* ── عکس و لینک ──────────────────────────────────────────────────── */
 .hd-notif-main-area {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    border-radius: 8px;
+	position: relative;
+	border-radius: 8px;
 }
 
 .hd-notif-main-area img {
-    width: 100%;
-    height: 100%; 
-    object-fit: cover;
-    display: block;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+	display: block;
+	inline-size: 100%;
+	block-size: auto;
+	max-block-size: calc(90vh - 30px);
+	border-radius: 8px;
+	box-shadow: 0 4px 15px rgb(0 0 0 / 0.1);
+	object-fit: cover;
 }
 
-/* لینک نامرئی روی کل تصویر (قبلا فقط نیمه پایین؛ کلیک روی نیمه بالا کاری نمی‌کرد) */
-.hd-notif-half-link {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    display: block;
-    text-decoration: none;
-    cursor: pointer;
+/* کل عکس لینک است (تا 2.0.1 فقط نیمه پایین) */
+.hd-notification-popup .hd-notif-half-link {
+	display: block;
+	border-radius: inherit;
+	text-decoration: none;
 }
 
-.hd-pos-center[style*="height: auto"] .hd-notif-main-area img,
-.hd-pos-center:not([style*="height"]) .hd-notif-main-area img {
-    height: auto;
+/* ارتفاع دستی (به‌جای خودکار به اندازه عکس) */
+.hd-notification-popup.hd-notif-fixed-height {
+	block-size: var(--hd-notif-h);
 }
 
-/* دکمه بستن پاپ آپ */
-.hd-notif-close { 
-    background: transparent !important; 
-    border: none !important; 
-    outline: none !important;
-    box-shadow: none !important;
-    -webkit-tap-highlight-color: transparent;
-    font-size: 32px; 
-    font-weight: bold;
-    cursor: pointer; 
-    opacity: 0.9; 
-    transition: opacity 0.3s, transform 0.3s; 
-    position: absolute; 
-    padding: 0 !important; 
-    line-height: 1; 
-    z-index: 10;
-    top: 35px; 
-    right: 35px; 
-    text-shadow: 0 1px 4px rgba(0,0,0,0.4); 
+.hd-notif-fixed-height .hd-notif-main-area,
+.hd-notif-fixed-height .hd-notif-half-link,
+.hd-notif-fixed-height .hd-notif-main-area img {
+	block-size: 100%;
+	max-block-size: none;
 }
 
-/* رفع قطعی هاله آبی قالب یا وردپرس در فوکوس */
-.hd-notif-close:focus:not(:focus-visible),
-.hd-notif-close:active {
-    outline: none !important;
-    box-shadow: none !important;
-    background: transparent !important;
-    border: none !important;
+/* ── دکمه بستن ───────────────────────────────────────────────────── */
+.hd-notification-popup .hd-notif-close {
+	position: absolute;
+	inset-block-start: 35px;
+	inset-inline-start: 35px; /* پاپ‌آپ direction: rtl دارد: گوشه راست */
+	z-index: 10;
+	display: grid;
+	place-items: center;
+	min-inline-size: 32px;
+	min-block-size: 32px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	box-shadow: none;
+	color: var(--hd-notif-close, #f00);
+	font-size: 32px;
+	font-weight: 700;
+	line-height: 1;
+	text-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
+	opacity: 0.9;
+	cursor: pointer;
+	transition: opacity 0.3s, transform 0.3s;
+	-webkit-tap-highlight-color: transparent;
 }
 
-.hd-notif-close:hover { 
-    opacity: 1; 
-    transform: scale(1.15);
+.hd-notification-popup .hd-notif-close:hover {
+	background: transparent;
+	box-shadow: none;
+	opacity: 1;
+	transform: scale(1.15);
 }
 
-/* انیمیشن‌ها */
-@keyframes hdFadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes hdSlideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes hdBounce { 0% { transform: scale(0.8); opacity: 0; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
-@keyframes hdZoomIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
-@keyframes hdFadeOut { from { opacity: 1; } to { opacity: 0; } }
-@keyframes hdSlideDown { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(50px); } }
-
-.anim-in-fade_in { animation: hdFadeIn 0.5s ease forwards; }
-.anim-in-slide_up { animation: hdSlideUp 0.5s ease forwards; }
-.anim-in-bounce { animation: hdBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-.anim-in-zoom_in { animation: hdZoomIn 0.4s ease forwards; }
-.anim-out-fade_out { animation: hdFadeOut 0.4s ease forwards; }
-.anim-out-slide_down { animation: hdSlideDown 0.4s ease forwards; }
-
-.hd-pos-center { width: 400px; max-width: 95vw; }
-.hd-pos-bottom_right, .hd-pos-bottom_left { width: 350px; max-width: 90vw; }
-
-@media (max-width: 768px) {
-    .hd-pos-center { width: 90vw; }
-    .hd-pos-bottom_right, .hd-pos-bottom_left { width: 90vw !important; max-width: 90vw !important; bottom: 20px; left: 5%; right: 5%; }
+/* دکمه روی عکس تیره یا روشن می‌نشیند: حلقه سفید با هاله تیره همه‌جا دیده می‌شود */
+.hd-notification-popup .hd-notif-close:focus-visible,
+.hd-notification-popup .hd-notif-half-link:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px rgb(0 0 0 / 0.6);
 }
-
-/* نسخه ۳ — دسترس‌پذیری */
-.hd-notification-popup:focus { outline: none; }
-.hd-notif-close:focus-visible,
-.hd-notif-half-link:focus-visible {
-    outline: 2px solid var(--hodima-secondary-text, #5169a8);
-    outline-offset: 2px;
-}
-/* دکمه بستن روی تصویر/زمینه تیره و روشن می‌نشیند و outline بالا با !important خاموش می‌شد: سفید با هاله تیره */
-.hd-notif-close:focus-visible {
-    outline: 2px solid #fff !important;
-    box-shadow: 0 0 0 4px rgba(0,0,0,.6) !important;
-}
-@media (prefers-reduced-motion: reduce) {
-    .hd-notif-wrapper,
-    .hd-notification-popup {
-        animation: none !important;
-        transition: none !important;
-    }
-
-    /*
-     * پاپ‌آپ فقط با انیمیشن ورود پیدا می‌شد (opacity پایه ۰)؛ با «کاهش حرکت»
-     * سیستم‌عامل انیمیشن خاموش بود و کاربر فقط پرده تیره می‌دید.
-     */
-    .hd-notif-wrapper.hd-show .hd-notification-popup {
-        opacity: 1;
-    }
+/* فوکوس خود پنجره هنگام باز شدن خودکار حلقه نمی‌خواهد (قانون [tabindex] قالب هم‌وزن است) */
+dialog.hd-notification-popup:focus,
+dialog.hd-notification-popup:focus-visible {
+	outline: none;
 }
 
 /*
@@ -144,44 +178,80 @@
  * بستن روی بخش شفاف عکس هم دیده شود: دایره سفید کوچک پشتش.
  */
 .hd-notification-popup.hd-notif-transparent {
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
+	padding: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
 }
 
 .hd-notif-transparent .hd-notif-main-area,
 .hd-notif-transparent .hd-notif-main-area img {
-    border-radius: 0;
-    box-shadow: none;
+	border-radius: 0;
+	box-shadow: none;
 }
 
 .hd-notif-transparent .hd-notif-main-area img {
-    object-fit: contain;
-    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25));
+	max-block-size: 90vh;
+	object-fit: contain;
+	filter: drop-shadow(0 8px 18px rgb(0 0 0 / 0.25));
 }
 
-.hd-notif-transparent .hd-notif-close {
-    top: 4px;
-    right: 4px;
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.92) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
-    font-size: 26px;
-    text-shadow: none;
+.hd-notification-popup.hd-notif-transparent .hd-notif-close,
+.hd-notification-popup.hd-notif-transparent .hd-notif-close:hover {
+	inset-block-start: 4px;
+	inset-inline-start: 4px;
+	inline-size: 36px;
+	block-size: 36px;
+	background: rgb(255 255 255 / 0.92);
+	box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+	font-size: 26px;
+	text-shadow: none;
 }
 
-.hd-notif-transparent .hd-notif-close:focus:not(:focus-visible),
-.hd-notif-transparent .hd-notif-close:active {
-    background: rgba(255, 255, 255, 0.92) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+.hd-notification-popup.hd-notif-transparent .hd-notif-close:focus-visible {
+	outline-color: var(--hodima-primary, #25316a);
+	box-shadow: 0 0 0 4px #fff;
 }
 
-.hd-notif-transparent .hd-notif-close:focus-visible {
-    outline: 2px solid var(--hodima-primary, #25316a) !important;
-    box-shadow: 0 0 0 4px #fff !important;
+/* ── انیمیشن‌ها ──────────────────────────────────────────────────── */
+@keyframes hdFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hdSlideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hdBounce { 0% { opacity: 0; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes hdZoomIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+@keyframes hdFadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes hdSlideDown { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(50px); } }
+@keyframes hdBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+
+.hd-notification-popup.anim-in-fade_in { animation: hdFadeIn 0.5s ease both; }
+.hd-notification-popup.anim-in-slide_up { animation: hdSlideUp 0.5s ease both; }
+.hd-notification-popup.anim-in-bounce { animation: hdBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+.hd-notification-popup.anim-in-zoom_in { animation: hdZoomIn 0.4s ease both; }
+.hd-notification-popup.anim-out-fade_out { animation: hdFadeOut 0.4s ease both; }
+.hd-notification-popup.anim-out-slide_down { animation: hdSlideDown 0.4s ease both; }
+
+.hd-notification-popup[class*="anim-in-"]::backdrop {
+	animation: hdBackdropIn 0.3s ease both;
+}
+
+.hd-notification-popup[class*="anim-out-"]::backdrop {
+	animation: hdFadeOut 0.4s ease both;
+}
+
+/* اسکرول صفحه پشت پنجره وسط قفل است */
+html.hd-notif-lock {
+	overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hd-notification-popup,
+	.hd-notification-popup::backdrop,
+	.hd-notification-popup .hd-notif-close {
+		transition: none;
+		animation: none;
+	}
+
+	.hd-notification-popup[class*="anim-"],
+	.hd-notification-popup[class*="anim-"]::backdrop {
+		animation: none;
+	}
 }

@@ -1,92 +1,264 @@
-:root {
-    --hdn-primary: var(--hodima-primary, #25316a);
-    --hdn-primary-hover: var(--hodima-primary-dark, #1b244d);
-    --hdn-secondary: var(--hodima-secondary, #607bbd);
-    --hdn-light: var(--hodima-third, #b6c2f3);
-    --hdn-bg: var(--hodima-surface-soft, #f7f9fd);
-    --hdn-card: #ffffff;
-    --hdn-text: var(--hodima-text-dark, #111111);
-    --hdn-muted: var(--hodima-text-muted, #5d6785);
-    --hdn-border: var(--hodima-border-light, #d9e1f0);
-    --hdn-shadow: 0 10px 25px rgba(37, 49, 106, 0.2);
+/**
+ * کادر تنظیمات نوتیفیکیشن (پیشخوان) — نسخه ۴
+ *
+ * کارت‌ها، فیلدها و کلیدها از سیستم طراحی هسته (admin-ui.css، کلاس‌های hd-*)؛
+ * اینجا فقط چیدمان خود کادر، انتخاب عکس و صحنه پیش‌نمایش. همه زیر .hdn
+ * (تا 2.0.2 متغیرها روی :root و قانون سراسری .form-table داشت که روی کل
+ * صفحه ویرایش اثر می‌گذاشت). بدون Hodima Core هم چیدمان پایه می‌ماند.
+ */
+
+/* کادر داخل جعبه وردپرس: عرض و فاصله .hd-wrap صفحه‌ها را نگیرد */
+#hd_notification_settings .inside {
+	margin: 0;
+	padding: 0;
 }
 
-#hd_notification_settings .inside { margin: 0; padding: 0; }
-.hdn-admin-wrapper { max-width: 100%; margin: 0; font-family: inherit; direction: rtl; background: var(--hdn-bg); padding: 20px; box-sizing: border-box; }
-.hdn-header { background: linear-gradient(90deg, var(--hdn-primary), var(--hdn-secondary)); color: white; padding: 15px 25px; border-radius: 16px; margin-bottom: 25px; box-shadow: var(--hdn-shadow); display: flex; align-items: center; justify-content: space-between; }
-.hdn-header-info { display: flex; align-items: center; gap: 20px; }
-.hdn-header h1 { color: #fff !important; margin: 0 !important; font-size: 18px; font-weight: 600; line-height: 1.4; }
-.hdn-header p { margin: 5px 0 0; opacity: 0.9; font-size: 13px; }
-.hdn-icon .dashicons { inline-size: 28px; block-size: 28px; font-size: 28px; color: #fff; }
-.hdn-icon { font-size: 26px; background: rgba(255, 255, 255, 0.2); width: 55px; height: 55px; display: flex; align-items: center; justify-content: center; border-radius: 14px; backdrop-filter: blur(5px); }
-.hdn-version-badge { background: rgba(255, 255, 255, 0.25); color: #fff; padding: 6px 14px; border-radius: 30px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.3); }
-.hdn-card { background: var(--hdn-card); padding: 30px; border-radius: 16px; border: 1px solid var(--hdn-border); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); margin-bottom: 20px; }
-.hdn-card-title { font-size: 16px; font-weight: bold; color: var(--hdn-primary); border-bottom: 2px solid var(--hdn-border); padding-bottom: 10px; margin-bottom: 10px; margin-top: 0; text-align: center; position: relative; }
-.form-table { margin-top: 0; width: 100%; }
-.form-table th { font-weight: 600; color: var(--hdn-text); width: 220px; padding: 20px 10px; vertical-align: middle; }
-.form-table td { padding: 20px 10px; vertical-align: middle; }
-.hdn-row-divider th, .hdn-row-divider td { border-bottom: 1px dashed var(--hodima-border-light, #d9e1f0); padding-bottom: 25px !important; }
-.hdn-row-divider + tr th, .hdn-row-divider + tr td { padding-top: 25px !important; }
-.form-table input[type="text"], .form-table input[type="url"], .form-table input[type="date"], .form-table input[type="number"], .form-table select { width: 100%; border-radius: 10px; border: 1px solid var(--hdn-border); padding: 10px 15px; background: var(--hodima-surface-soft, #f7f9fd); transition: all 0.3s ease; font-size: 13px; text-align: center; }
-.form-table input[type="text"], .form-table input[type="url"] { text-align: right; }
-.form-table input:focus, .form-table select:focus { border-color: var(--hdn-primary); box-shadow: 0 0 0 4px rgba(37, 49, 106, 0.1); background: #fff; outline: none; }
-.form-table input[type="color"] { border-radius: 6px; border: 1px solid var(--hdn-border); height: 35px; cursor: pointer; padding: 2px; width: 60px; }
-.form-table select optgroup { font-weight: bold; color: var(--hdn-primary); background: var(--hodima-surface-soft, #f7f9fd); }
-.form-table select option { color: var(--hodima-text-dark, #111111); background: #fff; padding: 5px; }
-.hdn-status-toggle { display: inline-flex; align-items: center; gap: 10px; background: rgba(47, 122, 85, 0.1); padding: 12px 20px; border-radius: 10px; border: 1px solid rgba(47, 122, 85, 0.3); color: var(--hodima-state-success, #2f7a55); font-weight: bold; cursor: pointer; transition: 0.3s; }
-.hdn-status-toggle.inactive { background: var(--hodima-state-danger-bg, #f8ecec); border-color: rgba(163, 42, 42, 0.3); color: var(--hodima-state-danger, #a32a2a); }
-.hdn-flex-row { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
-.hdn-flex-col { display: flex; flex-direction: column; gap: 8px; }
-.hdn-flex-col label { font-size: 12px; font-weight: 600; color: var(--hodima-text-muted, #5d6785); }
-.hdn-media-container { display: flex; align-items: center; gap: 15px; background: var(--hodima-surface-soft, #f7f9fd); padding: 12px; border-radius: 10px; border: 1px solid var(--hodima-border-light, #d9e1f0); min-height: 104px; box-sizing: border-box; }
-.hdn-img-preview-box { width: 80px; height: 80px; border-radius: 8px; border: 2px dashed var(--hodima-border-light, #d9e1f0); display: flex; align-items: center; justify-content: center; background: #ffffff; overflow: hidden; flex-shrink: 0; position: relative; }
-.hdn-img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
-.hdn-img-preview-box .placeholder { inline-size: 32px; block-size: 32px; font-size: 32px; color: var(--hodima-text-muted, #5d6785); display: none; }
-.hdn-img-preview-box.empty .placeholder { display: block; }
-.hdn-img-preview-box.empty img { display: none; }
-.hdn-media-actions { display: flex; gap: 8px; flex-direction: column; justify-content: center; }
-.hdn-upload-btn, .hdn-remove-btn { border-radius: 6px !important; transition: 0.3s !important; padding: 4px 12px !important; }
-.hdn-upload-btn { background: #ffffff !important; border-color: var(--hodima-border-light, #d9e1f0) !important; color: var(--hodima-text-dark, #111111) !important; }
-.hdn-upload-btn:hover { background: var(--hodima-bg-gray, #eef2f8) !important; border-color: var(--hodima-text-muted, #5d6785) !important; }
-.hdn-remove-btn { background: var(--hodima-state-danger-bg, #f8ecec) !important; border-color: rgba(163, 42, 42, 0.4) !important; color: var(--hodima-state-danger, #a32a2a) !important; }
-.hdn-remove-btn:hover { background: rgba(163, 42, 42, 0.3) !important; color: var(--hodima-state-danger, #a32a2a) !important; }
-.hdn-inline-addon { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
-.hdn-inline-addon input[type="number"] { max-width: 120px !important; text-align: center; }
-.hdn-section-separated { margin-top: 25px; padding-top: 15px; border-top: 1px dashed var(--hodima-border-light, #d9e1f0); display: block; width: 100%; }
-.hdn-target-page-wrapper { transition: all 0.3s ease; }
-.hdn-target-page-wrapper.disabled { opacity: 0.5; pointer-events: none; }
-.wp-editor-container { border: 1px solid var(--hdn-border); border-radius: 0 0 8px 8px; overflow: hidden; }
-.wp-editor-tabs { float: right; }
-.wp-switch-editor { border-radius: 8px 8px 0 0 !important; }
-.hdn-preview-section { text-align: center; }
-.hdn-preview-canvas { display: none; width: 100%; height: 500px; background-color: var(--hodima-text-dark, #111111); background-image: radial-gradient(rgba(255, 255, 255, 0.4) 1.5px, transparent 1.5px); background-size: 20px 20px; border-radius: 12px; margin-top: 20px; position: relative; overflow: hidden; border: 4px solid var(--hodima-text-dark, #111111); }
-.hdn-preview-canvas.active { display: block; }
-.hdn-live-notif { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; padding: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); background-size: cover; background-position: center; overflow: hidden; z-index: 99; transition: all 0.3s ease; }
-.hdn-live-notif-close { position: absolute; top: 10px; right: 10px; cursor: pointer; color: inherit; opacity: 0.7; font-size: 18px; z-index: 10; }
-.hdn-live-notif-close:hover { opacity: 1; }
-.hdn-live-notif-img { max-width: 100px; max-height: 100px; object-fit: cover; margin-bottom: 15px; }
-.hdn-live-notif-content { text-align: center; width: 100%; z-index: 2; position: relative; }
-.hdn-live-notif-btn { display: inline-block; padding: 10px 24px; margin-top: 15px; text-decoration: none; border-radius: 8px; font-weight: bold; transition: 0.2s; z-index: 2; position: relative; }
+.hodima-admin .hd-wrap.hdn,
+.hdn {
+	display: grid;
+	gap: 1rem;
+	box-sizing: border-box;
+	inline-size: auto;
+	margin: 0;
+	padding: 1rem;
+	background: var(--hd-bg, #f4f6fb);
+}
 
-/* استایل‌های مربوط به چینش متن ویرایشگر وردپرس */
-.hdn-live-notif-content .has-text-align-right { text-align: right; }
-.hdn-live-notif-content .has-text-align-left { text-align: left; }
-.hdn-live-notif-content .has-text-align-center { text-align: center; }
-.hdn-live-notif-content .has-text-align-justify { text-align: justify; }
-.hdn-live-notif-content > div { width: 100%; }
+/* چیدمان پایه بدون Hodima Core (admin-ui.css لود نشده) */
+.hdn .hd-card {
+	padding: 1.25rem;
+	border: 1px solid var(--hd-border, #dde3f7);
+	border-radius: var(--hd-radius, 0.875rem);
+	background: var(--hd-surface, #fff);
+}
 
-/* Modern Features */
-.hd-glassmorphism { backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2) !important; }
-.hd-shadow-soft { box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1); }
-.hd-shadow-hard { box-shadow: 15px 15px 0px 0px rgba(0,0,0,0.2); }
-.hd-shadow-neon { box-shadow: 0 0 20px 5px var(--hdn-primary); }
+.hdn .hd-card__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 0.75rem;
+}
 
-@keyframes hdFadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes hdSlideUp { from { opacity: 0; transform: translate(-50%, 50px); } to { opacity: 1; transform: translate(-50%, -50%); } }
-@keyframes hdBounce { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.05); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
-@keyframes hdZoomIn { from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.hdn .hd-card__title {
+	margin: 0;
+	font-size: 1rem;
+}
 
-.anim-fade_in { animation: hdFadeIn 0.5s ease forwards; }
-.anim-slide_up { animation: hdSlideUp 0.5s ease forwards; }
-.anim-bounce { animation: hdBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-.anim-zoom_in { animation: hdZoomIn 0.4s ease forwards; }
+.hdn .hd-fields {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+	gap: 1.25rem 1.5rem;
+}
+
+.hdn .hd-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+	min-inline-size: 0;
+}
+
+.hdn .hd-field--wide {
+	grid-column: 1 / -1;
+}
+
+.hdn .hd-field[hidden] {
+	display: none;
+}
+
+.hdn .hd-field__help {
+	margin: 0;
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+	line-height: 1.9;
+}
+
+.hdn .hd-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.75rem;
+	cursor: pointer;
+}
+
+.hdn input[type="color"] {
+	inline-size: 4rem;
+	block-size: 2.5rem;
+	padding: 0.125rem;
+	border: 1px solid var(--hd-border-strong, #b0bce6);
+	border-radius: var(--hd-radius-sm, 0.5rem);
+	cursor: pointer;
+}
+
+/* فقط خود فیلد غیرفعال کم‌رنگ شود؛ برچسب و راهنما خوانا بمانند (کنتراست) */
+.hdn .is-disabled :is(input, textarea, select) {
+	opacity: 0.5;
+}
+
+.hdn .ltr {
+	direction: ltr;
+	text-align: start;
+}
+
+/* ── انتخاب عکس ──────────────────────────────────────────────────── */
+.hdn-media {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.75rem;
+	border: 1px dashed var(--hd-border-strong, #b0bce6);
+	border-radius: var(--hd-radius-sm, 0.5rem);
+	background: var(--hd-softer, #f8f9fe);
+}
+
+.hdn-media__preview {
+	display: grid;
+	flex-shrink: 0;
+	place-items: center;
+	inline-size: 6rem;
+	block-size: 6rem;
+	overflow: hidden;
+	border-radius: 0.5rem;
+
+	/* شطرنجی: بخش شفاف عکس PNG دیده شود */
+	background: repeating-conic-gradient(#e6e9f2 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+}
+
+.hdn-media__preview img {
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: contain;
+}
+
+.hdn-media__placeholder {
+	display: none;
+	color: var(--hd-muted, #5d6785);
+	font-size: 2rem;
+	inline-size: 2rem;
+	block-size: 2rem;
+}
+
+.hdn-media.is-empty .hdn-media__placeholder {
+	display: block;
+}
+
+.hdn-media.is-empty img,
+.hdn-media.is-empty [data-hdn-remove] {
+	display: none;
+}
+
+.hdn-media__actions {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.5rem;
+}
+
+/* ── پیش‌نمایش ──────────────────────────────────────────────────── */
+.hdn-preview__bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-block-end: 0.75rem;
+}
+
+.hdn-preview__bar .button[aria-pressed="true"] {
+	border-color: var(--hd-primary, #25316a);
+	background: var(--hd-primary, #25316a);
+	color: #fff;
+}
+
+.hdn-preview {
+	position: relative;
+	box-sizing: border-box;
+	inline-size: 100%;
+	block-size: 32rem;
+	margin-inline: auto;
+	overflow: hidden;
+	border: 4px solid #1d2340;
+	border-radius: 0.75rem;
+	background: #f4f6fb radial-gradient(rgb(37 49 106 / 0.15) 1.5px, transparent 1.5px) 0 0 / 20px 20px;
+	transition: inline-size 0.3s ease;
+}
+
+.hdn-preview[data-device="mobile"] {
+	inline-size: 390px;
+	max-inline-size: 100%;
+	block-size: 40rem;
+}
+
+.hdn-preview__text {
+	margin: 1.5rem;
+	color: #5d6785;
+}
+
+/* پرده پنجره وسط */
+.hdn-preview.is-modal::after {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background: rgb(0 0 0 / 0.6);
+	content: "";
+}
+
+/* پاپ‌آپ داخل صحنه (در سایت position: fixed روی کل صفحه است) */
+.hdn-preview .hd-notification-popup {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	block-size: fit-content;
+	max-inline-size: 95%;
+	max-block-size: 95%;
+	margin: auto;
+}
+
+.hdn-preview .hd-notification-popup.hd-notif-fixed-height {
+	block-size: var(--hd-notif-h);
+}
+
+/* stylelint-disable csstools/use-logical -- «راست/چپ» نام خود گزینه است */
+.hdn-preview .hd-notification-popup.hd-pos-bottom_right,
+.hdn-preview .hd-notification-popup.hd-pos-bottom_left,
+.hdn-preview .hd-notification-popup.hd-as-corner {
+	inset: auto;
+	bottom: 20px;
+	margin: 0;
+}
+
+.hdn-preview .hd-notification-popup.hd-pos-bottom_right,
+.hdn-preview .hd-notification-popup.hd-as-corner {
+	right: 20px;
+}
+
+.hdn-preview .hd-notification-popup.hd-pos-bottom_left {
+	left: 20px;
+}
+
+/* موبایل در صحنه ۳۹۰px: همان قانون‌های media query سایت */
+.hdn-preview[data-device="mobile"] .hd-notification-popup.hd-pos-bottom_right,
+.hdn-preview[data-device="mobile"] .hd-notification-popup.hd-pos-bottom_left,
+.hdn-preview[data-device="mobile"] .hd-notification-popup.hd-as-corner {
+	right: 5%;
+	left: 5%;
+	inline-size: auto;
+	max-inline-size: none;
+}
+/* stylelint-enable csstools/use-logical */
+
+.hdn-preview[data-device="mobile"] .hd-notification-popup.hd-pos-center:not(.hd-as-corner) {
+	inline-size: min(var(--hd-notif-w, 400px), 90%);
+}
+
+.hdn-preview__empty {
+	display: grid;
+	place-items: center;
+	block-size: 10rem;
+	border-radius: 8px;
+	background: #e5e7eb;
+	color: #5d6785;
+}
+
+@media (max-width: 782px) {
+	.hdn-media {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+}

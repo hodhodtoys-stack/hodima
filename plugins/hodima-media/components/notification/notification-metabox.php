@@ -1,428 +1,399 @@
 <?php
 /**
- * Meta Boxes for Notification Settings
+ * کادر تنظیمات نوتیفیکیشن در صفحه ویرایش.
  *
- * @version 2.0.4
+ * طراحی پیشخوان هدیما (کارت‌ها، فیلدها و کلیدهای hd-* از admin-ui.css هسته)؛
+ * پیش‌نمایش با همان CSS سایت (notification-front.css) ساخته می‌شود تا با
+ * چیزی که بازدیدکننده می‌بیند یکی باشد.
+ *
+ * @package Hodima\Media
  */
 
 declare(strict_types=1);
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+defined( 'ABSPATH' ) || exit;
 
+require_once __DIR__ . '/notification-settings.php';
 require_once __DIR__ . '/notification-save.php';
 
-final class HodimaNotificationSettings
-{
-    private const POST_TYPE = 'hd_notification';
-    private const NONCE_ACTION = 'hodima_save_notification_data';
-    public const NONCE_NAME = 'hodima_notification_meta_nonce';
+/**
+ * کادر تنظیمات نوتیفیکیشن.
+ */
+final class Hodima_Notification_Metabox {
 
-    public function __construct()
-    {
-        add_action('admin_enqueue_scripts', [$this, 'enqueueScripts']);
-        add_action('add_meta_boxes', [$this, 'addMetaBox']);
-    }
+	public const NONCE_ACTION = 'hodima_save_notification_data';
+	public const NONCE_NAME   = 'hodima_notification_meta_nonce';
 
-    public function enqueueScripts(string $hook): void
-    {
-        global $typenow;
+	/** ثبت هوک‌ها. */
+	public function __construct() {
+		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue' ] );
+		add_action( 'add_meta_boxes_' . HODIMA_NOTIFICATION_POST_TYPE, [ $this, 'add' ] );
+	}
 
-        if ($typenow === self::POST_TYPE) {
-            wp_enqueue_media();
-            $base = '/components/notification/assets/';
-            $ver  = static fn(string $f): string => (string) (@filemtime(HODIMA_MEDIA_DIR . $base . $f) ?: '3.0.0');
-            wp_enqueue_style('hd-notification-metabox-css', HODIMA_MEDIA_URL . $base . 'css/notification-metabox.css', [], $ver('css/notification-metabox.css'));
-            wp_enqueue_script('hd-notification-metabox-js', HODIMA_MEDIA_URL . $base . 'js/notification-metabox.js', [], $ver('js/notification-metabox.js'), true);
-        }
-    }
+	/** CSS/JS فقط در صفحه ویرایش/افزودن نوتیفیکیشن. */
+	public function enqueue( string $hook ): void {
+		$screen = get_current_screen();
+		if ( ! in_array( $hook, [ 'post.php', 'post-new.php' ], true ) || ! $screen || HODIMA_NOTIFICATION_POST_TYPE !== $screen->post_type ) {
+			return;
+		}
+		wp_enqueue_media();
+		// پیش‌نمایش با CSS خود سایت
+		wp_enqueue_style( 'hd-notification-front-css', hodima_notification_asset_url( 'css/notification-front.css' ), [], hodima_notification_asset_version( 'css/notification-front.css' ) );
+		wp_enqueue_style( 'hd-notification-metabox-css', hodima_notification_asset_url( 'css/notification-metabox.css' ), [ 'hd-notification-front-css' ], hodima_notification_asset_version( 'css/notification-metabox.css' ) );
+		wp_enqueue_script( 'hd-notification-metabox-js', hodima_notification_asset_url( 'js/notification-metabox.js' ), [], hodima_notification_asset_version( 'js/notification-metabox.js' ), [ 'in_footer' => true ] );
+	}
 
-    public function addMetaBox(): void
-    {
-        add_meta_box('hd_notification_settings', 'تنظیمات پیشرفته نوتفیکیشن', [$this, 'renderMetaBox'], self::POST_TYPE, 'normal', 'high');
-    }
+	/** ثبت کادر. */
+	public function add(): void {
+		add_meta_box( 'hd_notification_settings', 'تنظیمات نوتیفیکیشن', [ $this, 'render' ], HODIMA_NOTIFICATION_POST_TYPE, 'normal', 'high' );
+	}
 
-    private function getDefaults(): array
-    {
-        return [
-            'hd_notif_is_active'          => '1',
-            'hd_notif_priority'           => '01', // پیش‌فرض 01
-            'hd_notif_main_link'          => '',
-            'hd_notif_bg_color'           => '#ffffff',
-            'hd_notif_bg_transparent'     => '0',
-            'hd_notif_close_color'        => '#ff0000',
-            'hd_notif_bg_image'           => '',
-            'hd_notif_start_date'         => '',
-            'hd_notif_end_date'           => '',
-            'hd_notif_show_count'         => '0',
-            'hd_notif_target_type'        => 'all',
-            'hd_notif_target_page'        => '',
-            'hd_notif_delay'              => '0',
-            'hd_notif_close_btn'          => '1',
-            'hd_notif_auto_close_time'    => '0',
-            'hd_notif_device'             => 'all',
-            'hd_notif_user_status'        => 'all',
-            'hd_notif_position'           => 'center',
-            'hd_notif_width'              => '400',
-            'hd_notif_height'             => '0',
-            'hd_notif_trigger_exit'       => '0',
-            'hd_notif_trigger_scroll'     => '0',
-            'hd_notif_trigger_inactivity' => '0',
-            'hd_notif_anim_in'            => 'zoom_in',
-            'hd_notif_anim_out'           => 'fade_out',
-            'hd_notif_target_role'        => 'all',
-            'hd_notif_target_post_type'   => 'all',
-            'hd_notif_target_utm'         => '',
-            'hd_notif_target_referrer'    => '',
-        ];
-    }
+	/** محتوای کادر. */
+	public function render( WP_Post $post ): void {
+		wp_nonce_field( self::NONCE_ACTION, self::NONCE_NAME );
 
-    public function renderMetaBox(WP_Post $post): void
-    {
-        wp_nonce_field(self::NONCE_ACTION, self::NONCE_NAME);
+		$m = hodima_notification_meta( $post->ID );
+		// نوتیفیکیشن تازه: پنجره وسط در موبایل جعبه گوشه شود (توصیه گوگل)؛
+		// اعلان‌های قبلی همان رفتار قبلی را نگه می‌دارند
+		if ( 'auto-draft' === $post->post_status ) {
+			$m['hd_notif_mobile_mode'] = 'corner';
+		}
+		$m['hd_notif_position'] = hodima_notification_normalize_position( $m['hd_notif_position'] );
+		$image_id               = (int) $m['hd_notif_bg_image_id'];
+		$thumb                  = $image_id > 0 ? wp_get_attachment_image_url( $image_id, 'medium' ) : false;
+		$thumb                  = $thumb ? $thumb : $m['hd_notif_bg_image'];
+		?>
+		<div class="hd-wrap hdn" data-hdn>
 
-        $defaults = $this->getDefaults();
-        $meta = [];
+			<section class="hd-card">
+				<div class="hd-card__head">
+					<?php echo $this->icon( 'visibility' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+					<h2 class="hd-card__title">وضعیت</h2>
+				</div>
+				<div class="hd-fields">
+					<div class="hd-field">
+						<label class="hd-toggle">
+							<input type="checkbox" class="hd-switch" name="hd_notif_is_active" value="1" <?php checked( $m['hd_notif_is_active'], '1' ); ?>>
+							<span>نمایش در سایت روشن است</span>
+						</label>
+						<p class="hd-field__help">خاموش: ذخیره می‌ماند ولی در سایت دیده نمی‌شود.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_priority">اولویت در صف نمایش</label>
+						<input type="number" class="small-text" id="hd_notif_priority" name="hd_notif_priority" value="<?php echo esc_attr( (string) (int) $m['hd_notif_priority'] ); ?>" min="1" max="99" inputmode="numeric">
+						<p class="hd-field__help">۱ تا ۹۹؛ عدد کمتر زودتر نمایش داده می‌شود.</p>
+					</div>
+				</div>
+			</section>
 
-        foreach ($defaults as $key => $default_value) {
-            $saved_value = get_post_meta($post->ID, '_' . $key, true);
-            $meta[$key] = ($saved_value !== '') ? $saved_value : $default_value;
-        }
-        ?>
-        <div class="hdn-admin-wrapper">
-            <header class="hdn-header">
-                <div class="hdn-header-info">
-                    <div class="hdn-icon"><span class="dashicons dashicons-megaphone" aria-hidden="true"></span></div>
-                    <div>
-                        <h1>تنظیمات نوتفیکیشن پاپ‌آپ</h1>
-                        <p>تصویر پاپ‌آپ را آپلود کنید و لینک دلخواه خود را قرار دهید.</p>
-                    </div>
-                </div>
-                <div class="hdn-version-badge">v 2.0.4</div>
-            </header>
+			<section class="hd-card">
+				<div class="hd-card__head">
+					<?php echo $this->icon( 'format-image' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+					<h2 class="hd-card__title">عکس و لینک</h2>
+				</div>
+				<div class="hd-fields">
+					<div class="hd-field">
+						<span class="hd-field__label" id="hdn-image-label">عکس پاپ‌آپ (JPG، PNG یا WebP)</span>
+						<div class="hdn-media<?php echo '' === $m['hd_notif_bg_image'] ? ' is-empty' : ''; ?>" data-hdn-media>
+							<div class="hdn-media__preview">
+								<?php echo $this->icon( 'format-image', 'hdn-media__placeholder' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+								<img src="<?php echo esc_url( (string) $thumb ); ?>" alt="" data-hdn-thumb>
+							</div>
+							<div class="hdn-media__actions">
+								<input type="hidden" name="hd_notif_bg_image" value="<?php echo esc_url( $m['hd_notif_bg_image'] ); ?>" data-hdn-image-url>
+								<input type="hidden" name="hd_notif_bg_image_id" value="<?php echo esc_attr( (string) $image_id ); ?>" data-hdn-image-id>
+								<button type="button" class="button" data-hdn-pick aria-describedby="hdn-image-label">انتخاب عکس</button>
+								<button type="button" class="button-link button-link-delete" data-hdn-remove>حذف عکس</button>
+							</div>
+						</div>
+						<p class="hd-field__help">بدون عکس، نوتیفیکیشن نمایش داده نمی‌شود. عکس از کتابخانه رسانه بیاید تا موبایل نسخه کوچک‌ترش را بگیرد.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_main_link">لینک مقصد</label>
+						<input type="url" class="ltr" id="hd_notif_main_link" name="hd_notif_main_link" value="<?php echo esc_url( $m['hd_notif_main_link'] ); ?>" placeholder="https://…">
+						<p class="hd-field__help">کل عکس به این لینک می‌رود؛ خالی = عکس کلیک نمی‌خورد.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-toggle">
+							<input type="checkbox" class="hd-switch" name="hd_notif_bg_transparent" value="1" <?php checked( $m['hd_notif_bg_transparent'], '1' ); ?> data-hdn-transparent>
+							<span>پس‌زمینه کاملاً شفاف (عکس PNG بدون پس‌زمینه)</span>
+						</label>
+						<p class="hd-field__help">فقط خود شکل عکس دیده می‌شود: بدون کادر و گوشه گرد، و سایه دور خود شکل. با انتخاب عکس PNG خودکار روشن می‌شود.</p>
+					</div>
+					<div class="hd-field" data-hdn-bg-field>
+						<label class="hd-field__label" for="hd_notif_bg_color">رنگ کادر دور عکس</label>
+						<input type="color" id="hd_notif_bg_color" name="hd_notif_bg_color" value="<?php echo esc_attr( $m['hd_notif_bg_color'] ); ?>">
+						<p class="hd-field__help">وقتی پس‌زمینه شفاف نیست.</p>
+					</div>
+				</div>
+			</section>
 
-            <section class="hdn-card">
-                <h4 class="hdn-card-title">وضعیت و اولویت</h4>
-                <table class="form-table">
-                    <tr class="hdn-row-divider">
-                        <th>فعال بودن</th>
-                        <td>
-                            <label class="hdn-status-toggle <?php echo ($meta['hd_notif_is_active'] === '1') ? '' : 'inactive'; ?>" id="hd_status_label">
-                                <input type="checkbox" id="hd_notif_is_active" name="hd_notif_is_active" value="1" <?php checked($meta['hd_notif_is_active'], '1'); ?>>
-                                <span id="hd_status_text"><?php echo ($meta['hd_notif_is_active'] === '1') ? esc_html('نوتفیکیشن فعال است و در سایت نمایش داده می‌شود') : esc_html('نوتفیکیشن غیرفعال است'); ?></span>
-                            </label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><label for="hd_notif_priority">اولویت در صف نمایش</label></th>
-                        <td>
-                            <div class="hdn-inline-addon">
-                                <!-- تبدیل به فیلد متنی برای نمایش دقیق صفرِ پشت عدد -->
-                                <input type="text" id="hd_notif_priority" name="hd_notif_priority" value="<?php echo esc_attr($meta['hd_notif_priority']); ?>" maxlength="2" pattern="[0-9]*" style="width: 80px; text-align: center;">
-                            </div>
-                            <span style="font-size: 11px; color: #64748b; margin-right: 10px;">(از 01 الی 99. پیش‌فرض: 01)</span>
-                        </td>
-                    </tr>
-                </table>
-            </section>
+			<section class="hd-card">
+				<div class="hd-card__head">
+					<?php echo $this->icon( 'layout' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+					<h2 class="hd-card__title">جا و اندازه</h2>
+				</div>
+				<div class="hd-fields">
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_position">جای نمایش</label>
+						<select id="hd_notif_position" name="hd_notif_position">
+							<?php foreach ( hodima_notification_positions() as $position ) : ?>
+								<option value="<?php echo esc_attr( $position ); ?>" <?php selected( $m['hd_notif_position'], $position ); ?>><?php echo esc_html( hodima_notification_position_label( $position ) ); ?></option>
+							<?php endforeach; ?>
+						</select>
+						<p class="hd-field__help">پنجره وسط بقیه صفحه را می‌پوشاند تا بسته شود؛ جعبه گوشه مزاحم خواندن صفحه نیست.</p>
+					</div>
+					<div class="hd-field" data-hdn-mobile-field>
+						<label class="hd-field__label" for="hd_notif_mobile_mode">پنجره وسط در موبایل</label>
+						<select id="hd_notif_mobile_mode" name="hd_notif_mobile_mode">
+							<option value="corner" <?php selected( $m['hd_notif_mobile_mode'], 'corner' ); ?>>جعبه گوشه پایین (پیشنهادی)</option>
+							<option value="modal" <?php selected( $m['hd_notif_mobile_mode'], 'modal' ); ?>>همان پنجره وسط</option>
+						</select>
+						<p class="hd-field__help">گوگل صفحه‌ای را که در موبایل با پنجره‌ای محتوا را می‌پوشاند پایین‌تر نشان می‌دهد؛ جعبه گوشه این مشکل را ندارد.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_width">عرض (پیکسل)</label>
+						<input type="number" class="small-text" id="hd_notif_width" name="hd_notif_width" value="<?php echo esc_attr( $m['hd_notif_width'] ); ?>" min="100" max="2000" inputmode="numeric">
+						<p class="hd-field__help">در موبایل حداکثر ۹۰٪ عرض صفحه.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_height">ارتفاع (پیکسل)</label>
+						<input type="number" class="small-text" id="hd_notif_height" name="hd_notif_height" value="<?php echo esc_attr( $m['hd_notif_height'] ); ?>" min="0" max="2000" inputmode="numeric">
+						<p class="hd-field__help">۰ = خودکار به اندازه عکس (پیشنهادی).</p>
+					</div>
+				</div>
+			</section>
 
-            <section class="hdn-card" id="hdn-appearance-box">
-                <h4 class="hdn-card-title">محتوا و عکس پاپ‌آپ</h4>
-                <table class="form-table">
-                    <tr class="hdn-row-divider">
-                        <th><label for="hd_notif_position">موقعیت و ابعاد نمایش</label></th>
-                        <td>
-                            <div class="hdn-flex-row">
-                                <div class="hdn-flex-col">
-                                    <label for="hd_notif_position">موقعیت</label>
-                                    <select id="hd_notif_position" name="hd_notif_position" style="min-width: 200px; text-align: right;">
-                                        <optgroup label="پاپ‌آپ (مرکز صفحه)">
-                                            <option value="center" <?php selected($meta['hd_notif_position'], 'center'); ?>>پاپ‌آپ وسط صفحه (Modal)</option>
-                                        </optgroup>
-                                        <optgroup label="موقعیت‌های گوشه (کوچک)">
-                                            <option value="bottom_right" <?php selected($meta['hd_notif_position'], 'bottom_right'); ?>>گوشه پایین سمت راست</option>
-                                            <option value="bottom_left" <?php selected($meta['hd_notif_position'], 'bottom_left'); ?>>گوشه پایین سمت چپ</option>
-                                        </optgroup>
-                                    </select>
-                                </div>
+			<section class="hd-card">
+				<div class="hd-card__head">
+					<?php echo $this->icon( 'clock' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+					<h2 class="hd-card__title">کی باز شود و کی بسته شود</h2>
+					<p class="hd-card__desc">بدون هیچ محرکی، پاپ‌آپ بعد از «تأخیر» باز می‌شود. با چند محرک، اولین اتفاق آن را باز می‌کند.</p>
+				</div>
+				<div class="hd-fields">
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_delay">تأخیر بعد از باز شدن صفحه (ثانیه)</label>
+						<input type="number" class="small-text" id="hd_notif_delay" name="hd_notif_delay" value="<?php echo esc_attr( $m['hd_notif_delay'] ); ?>" min="0" max="3600" inputmode="numeric">
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_trigger_scroll">بعد از اسکرول (درصد صفحه)</label>
+						<input type="number" class="small-text" id="hd_notif_trigger_scroll" name="hd_notif_trigger_scroll" value="<?php echo esc_attr( $m['hd_notif_trigger_scroll'] ); ?>" min="0" max="100" inputmode="numeric">
+						<p class="hd-field__help">۰ = خاموش.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_trigger_inactivity">بعد از بی‌کاری کاربر (ثانیه)</label>
+						<input type="number" class="small-text" id="hd_notif_trigger_inactivity" name="hd_notif_trigger_inactivity" value="<?php echo esc_attr( $m['hd_notif_trigger_inactivity'] ); ?>" min="0" max="3600" inputmode="numeric">
+						<p class="hd-field__help">۰ = خاموش.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-toggle">
+							<input type="checkbox" class="hd-switch" name="hd_notif_trigger_exit" value="1" <?php checked( $m['hd_notif_trigger_exit'], '1' ); ?>>
+							<span>هنگام ترک صفحه (بردن ماوس به بالای پنجره)</span>
+						</label>
+						<p class="hd-field__help">فقط دسکتاپ؛ موبایل ماوس ندارد.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_auto_close_time">بستن خودکار بعد از (ثانیه)</label>
+						<input type="number" class="small-text" id="hd_notif_auto_close_time" name="hd_notif_auto_close_time" value="<?php echo esc_attr( $m['hd_notif_auto_close_time'] ); ?>" min="0" max="3600" inputmode="numeric">
+						<p class="hd-field__help">۰ = خاموش. تا وقتی ماوس روی پاپ‌آپ است بسته نمی‌شود.</p>
+					</div>
+				</div>
+			</section>
 
-                                <div class="hdn-flex-col">
-                                    <label for="hd_notif_width">عرض (Width)</label>
-                                    <div class="hdn-inline-addon">
-                                        <input type="number" id="hd_notif_width" name="hd_notif_width" value="<?php echo esc_attr($meta['hd_notif_width']); ?>" min="100" max="2000" style="width: 100px;">
-                                        <span>پیکسل</span>
-                                    </div>
-                                </div>
+			<section class="hd-card">
+				<div class="hd-card__head">
+					<?php echo $this->icon( 'groups' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+					<h2 class="hd-card__title">به چه کسی و در کدام صفحه</h2>
+				</div>
+				<div class="hd-fields">
+					<?php
+					$this->select(
+						'hd_notif_device',
+						'دستگاه',
+						$m,
+						[
+							'all'     => 'همه دستگاه‌ها',
+							'desktop' => 'فقط دسکتاپ',
+							'mobile'  => 'فقط موبایل',
+						]
+					);
+					$this->select(
+						'hd_notif_user_status',
+						'وضعیت ورود',
+						$m,
+						[
+							'all'        => 'همه بازدیدکننده‌ها',
+							'logged_in'  => 'فقط کاربران وارد شده',
+							'logged_out' => 'فقط مهمان‌ها',
+						]
+					);
+					$this->select(
+						'hd_notif_target_role',
+						'نقش کاربر',
+						$m,
+						[
+							'all'           => 'همه نقش‌ها',
+							'customer'      => 'فقط مشتری‌ها (وارد شده)',
+							'subscriber'    => 'فقط مشترک‌ها (وارد شده)',
+							'administrator' => 'فقط مدیران (برای آزمایش)',
+						]
+					);
+					$this->select(
+						'hd_notif_target_post_type',
+						'نوع صفحه',
+						$m,
+						[
+							'all'     => 'همه صفحه‌های سایت',
+							'post'    => 'فقط مقاله‌ها',
+							'page'    => 'فقط برگه‌ها',
+							'product' => 'فقط محصولات',
+						]
+					);
+					$this->select(
+						'hd_notif_target_type',
+						'بر اساس آدرس',
+						$m,
+						[
+							'all'      => 'همه آدرس‌ها',
+							'specific' => 'فقط آدرس‌های زیر',
+							'exclude'  => 'همه به‌جز آدرس‌های زیر',
+						]
+					);
+					?>
+					<div class="hd-field hd-field--wide" data-hdn-pages-field>
+						<label class="hd-field__label" for="hd_notif_target_page">آدرس‌ها</label>
+						<textarea id="hd_notif_target_page" name="hd_notif_target_page" rows="4" class="ltr" placeholder="/shop/&#10;/product-category/hair/&#10;123"><?php echo esc_textarea( $m['hd_notif_target_page'] ); ?></textarea>
+						<p class="hd-field__help">هر خط یک آدرس یا شناسه نوشته؛ زیرصفحه‌های هر آدرس هم حساب می‌شوند (حداکثر ۵۰ خط).</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_target_utm">فقط بازدید از تبلیغ (UTM)</label>
+						<input type="text" class="ltr" id="hd_notif_target_utm" name="hd_notif_target_utm" value="<?php echo esc_attr( $m['hd_notif_target_utm'] ); ?>" placeholder="yektanet">
+						<p class="hd-field__help">اگر پر باشد، فقط کسی که با این مقدار در utm_… آدرس آمده (تا آخر همان بازدید).</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_target_referrer">فقط آمده از سایت</label>
+						<input type="text" class="ltr" id="hd_notif_target_referrer" name="hd_notif_target_referrer" value="<?php echo esc_attr( $m['hd_notif_target_referrer'] ); ?>" placeholder="instagram.com">
+					</div>
+					<div class="hd-field">
+						<label class="hd-toggle">
+							<input type="checkbox" class="hd-switch" name="hd_notif_skip_search" value="1" <?php checked( $m['hd_notif_skip_search'], '1' ); ?>>
+							<span>به کسی که همین الان از جستجوی گوگل آمده نشان نده</span>
+						</label>
+						<p class="hd-field__help">فقط در همان صفحه اول؛ از صفحه دوم بازدید نمایش داده می‌شود. برای سئو امن‌تر است.</p>
+					</div>
+				</div>
+			</section>
 
-                                <div class="hdn-flex-col">
-                                    <label for="hd_notif_height">ارتفاع (Height)</label>
-                                    <div class="hdn-inline-addon">
-                                        <input type="number" id="hd_notif_height" name="hd_notif_height" value="<?php echo esc_attr($meta['hd_notif_height']); ?>" min="0" max="2000" style="width: 100px;">
-                                        <span>پیکسل</span>
-                                    </div>
-                                    <span style="font-size: 11px; color: #94a3b8; margin-top: 4px; text-align: center;">(عدد 0 = ارتفاع خودکار براساس تصویر)</span>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
+			<section class="hd-card">
+				<div class="hd-card__head">
+					<?php echo $this->icon( 'calendar-alt' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+					<h2 class="hd-card__title">تاریخ و دفعات</h2>
+				</div>
+				<div class="hd-fields">
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_start_date">تاریخ شروع</label>
+						<input type="date" id="hd_notif_start_date" name="hd_notif_start_date" value="<?php echo esc_attr( $m['hd_notif_start_date'] ); ?>" data-hdn-date>
+						<p class="hd-field__help" data-hdn-jalali aria-live="polite"></p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_end_date">تاریخ پایان (تا آخر همان روز)</label>
+						<input type="date" id="hd_notif_end_date" name="hd_notif_end_date" value="<?php echo esc_attr( $m['hd_notif_end_date'] ); ?>" data-hdn-date>
+						<p class="hd-field__help" data-hdn-jalali aria-live="polite"></p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_show_count">حداکثر دفعات نمایش به هر نفر</label>
+						<input type="number" class="small-text" id="hd_notif_show_count" name="hd_notif_show_count" value="<?php echo esc_attr( $m['hd_notif_show_count'] ); ?>" min="0" max="1000" inputmode="numeric">
+						<p class="hd-field__help">۰ = نامحدود. بعد از بستن، در همان بازدید دوباره باز نمی‌شود.</p>
+					</div>
+				</div>
+			</section>
 
-                    <tr>
-                        <th>تصویر و لینک پاپ‌آپ</th>
-                        <td>
-                            <div class="hdn-flex-row" style="align-items: flex-start;">
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label>آپلود تصویر اصلی (JPG، PNG یا WebP)</label>
-                                    <div class="hdn-media-container" style="display:inline-flex;">
-                                        <div class="hdn-img-preview-box <?php echo empty($meta['hd_notif_bg_image']) ? 'empty' : ''; ?>">
-                                            <span class="placeholder dashicons dashicons-format-image" aria-hidden="true"></span>
-                                            <img id="hd_notif_bg_preview" src="<?php echo esc_url($meta['hd_notif_bg_image']); ?>" alt="Background Preview">
-                                        </div>
-                                        <div class="hdn-media-actions">
-                                            <input type="hidden" id="hd_notif_bg_image" name="hd_notif_bg_image" value="<?php echo esc_url($meta['hd_notif_bg_image']); ?>">
-                                            <button type="button" class="button hdn-upload-btn" data-target="#hd_notif_bg_image" data-preview="#hd_notif_bg_preview" data-remove="#hd_remove_bg_btn">انتخاب تصویر</button>
-                                            <button type="button" class="button hdn-remove-btn" id="hd_remove_bg_btn" <?php echo empty($meta['hd_notif_bg_image']) ? 'style="display:none;"' : ''; ?>>حذف تصویر</button>
-                                        </div>
-                                    </div>
-                                </div>
+			<section class="hd-card">
+				<div class="hd-card__head">
+					<?php echo $this->icon( 'admin-appearance' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+					<h2 class="hd-card__title">دکمه بستن و انیمیشن</h2>
+				</div>
+				<div class="hd-fields">
+					<div class="hd-field">
+						<label class="hd-toggle">
+							<input type="checkbox" class="hd-switch" name="hd_notif_close_btn" value="1" <?php checked( $m['hd_notif_close_btn'], '1' ); ?>>
+							<span>دکمه بستن (×)</span>
+						</label>
+						<p class="hd-field__help">بدون آن، پنجره با Escape، کلیک بیرون یا «بستن خودکار» بسته می‌شود.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_close_color">رنگ دکمه بستن</label>
+						<input type="color" id="hd_notif_close_color" name="hd_notif_close_color" value="<?php echo esc_attr( $m['hd_notif_close_color'] ); ?>">
+					</div>
+					<?php
+					$this->select(
+						'hd_notif_anim_in',
+						'انیمیشن باز شدن',
+						$m,
+						[
+							'zoom_in'  => 'بزرگ شدن',
+							'fade_in'  => 'محو شدن',
+							'slide_up' => 'بالا آمدن',
+							'bounce'   => 'جهش',
+						]
+					);
+					$this->select(
+						'hd_notif_anim_out',
+						'انیمیشن بسته شدن',
+						$m,
+						[
+							'fade_out'   => 'محو شدن',
+							'slide_down' => 'پایین رفتن',
+						]
+					);
+					?>
+				</div>
+			</section>
 
-                                <div class="hdn-flex-col" style="flex: 2; padding-top: 25px;">
-                                    <label for="hd_notif_main_link">لینک مقصد (کاربر با کلیک روی عکس به این لینک می‌رود)</label>
-                                    <input type="url" id="hd_notif_main_link" name="hd_notif_main_link" value="<?php echo esc_url($meta['hd_notif_main_link']); ?>" placeholder="https://..." style="text-align: left; direction: ltr;">
-                                    <span style="font-size: 11px; color: #64748b; margin-top: 4px;">کل عکس قابل کلیک است؛ در صورت خالی بودن، پاپ‌آپ قابلیت کلیک نخواهد داشت.</span>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </section>
+			<section class="hd-card">
+				<div class="hd-card__head">
+					<?php echo $this->icon( 'welcome-view-site' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+					<h2 class="hd-card__title">پیش‌نمایش</h2>
+					<p class="hd-card__desc">با همان ظاهر سایت؛ تغییرهای فرم بلافاصله دیده می‌شوند (پیش از ذخیره).</p>
+				</div>
+				<div class="hdn-preview__bar" role="group" aria-label="اندازه پیش‌نمایش">
+					<button type="button" class="button" data-hdn-device="desktop" aria-pressed="true">دسکتاپ</button>
+					<button type="button" class="button" data-hdn-device="mobile" aria-pressed="false">موبایل</button>
+					<button type="button" class="button" data-hdn-replay>اجرای دوباره انیمیشن</button>
+				</div>
+				<div class="hdn-preview" data-hdn-preview data-device="desktop">
+					<p class="hdn-preview__text" aria-hidden="true">متن صفحه سایت پشت پاپ‌آپ…</p>
+				</div>
+			</section>
+		</div>
+		<?php
+	}
 
-            <section class="hdn-card">
-                <h4 class="hdn-card-title">تنظیمات پس‌زمینه و استایل</h4>
-                <table class="form-table">
-                    <tr>
-                        <th>استایل پس‌زمینه</th>
-                        <td>
-                            <div class="hdn-flex-row" style="align-items: center;">
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_bg_color">رنگ پس‌زمینه (در صورت عدم شفافیت)</label>
-                                    <input type="color" id="hd_notif_bg_color" name="hd_notif_bg_color" value="<?php echo esc_attr($meta['hd_notif_bg_color']); ?>">
-                                </div>
+	/**
+	 * یک فیلد انتخابی.
+	 *
+	 * @param string                $key     کلید فیلد.
+	 * @param string                $label   برچسب.
+	 * @param array<string, string> $meta    مقدارهای فعلی.
+	 * @param array<string, string> $options مقدار ← متن.
+	 */
+	private function select( string $key, string $label, array $meta, array $options ): void {
+		?>
+		<div class="hd-field">
+			<label class="hd-field__label" for="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label>
+			<select id="<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>">
+				<?php foreach ( $options as $value => $text ) : ?>
+					<option value="<?php echo esc_attr( $value ); ?>" <?php selected( $meta[ $key ], $value ); ?>><?php echo esc_html( $text ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		<?php
+	}
 
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-                                        <input type="checkbox" id="hd_notif_bg_transparent" name="hd_notif_bg_transparent" value="1" <?php checked($meta['hd_notif_bg_transparent'], '1'); ?>>
-                                        <strong>پس‌زمینه کاملاً شفاف باشد (مناسب عکس PNG بدون پس‌زمینه)</strong>
-                                    </label>
-                                    <span style="font-size: 11px; color: #64748b;">فقط خود عکس دیده می‌شود: بدون کادر، فاصله و گوشه گرد، و سایه دور خود شکل می‌افتد. با انتخاب عکس PNG خودکار روشن می‌شود.</span>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </section>
-
-            <section class="hdn-card">
-                <h4 class="hdn-card-title">تریگرها و انیمیشن</h4>
-                <table class="form-table">
-                    <tr class="hdn-row-divider">
-                        <th>محرک‌های نمایش (Triggers)</th>
-                        <td>
-                            <div class="hdn-flex-row">
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-                                        <input type="checkbox" id="hd_notif_trigger_exit" name="hd_notif_trigger_exit" value="1" <?php checked($meta['hd_notif_trigger_exit'], '1'); ?>>
-                                        <strong>خروج از صفحه (Exit Intent)</strong>
-                                    </label>
-                                </div>
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_trigger_scroll">پس از اسکرول صفحه (%)</label>
-                                    <input type="number" id="hd_notif_trigger_scroll" name="hd_notif_trigger_scroll" value="<?php echo esc_attr($meta['hd_notif_trigger_scroll']); ?>" min="0" max="100" style="width: 100px;">
-                                </div>
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_delay">تاخیر زمانی (ثانیه)</label>
-                                    <input type="number" id="hd_notif_delay" name="hd_notif_delay" value="<?php echo esc_attr($meta['hd_notif_delay']); ?>" min="0" style="width: 100px;">
-                                </div>
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_trigger_inactivity">عدم فعالیت (ثانیه)</label>
-                                    <input type="number" id="hd_notif_trigger_inactivity" name="hd_notif_trigger_inactivity" value="<?php echo esc_attr($meta['hd_notif_trigger_inactivity']); ?>" min="0" style="width: 100px;">
-                                </div>
-                                <?php /* قبلا فیلد نداشت و هر ذخیره آن را ۰ می‌کرد */ ?>
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_auto_close_time">بستن خودکار بعد از (ثانیه)</label>
-                                    <input type="number" id="hd_notif_auto_close_time" name="hd_notif_auto_close_time" value="<?php echo esc_attr($meta['hd_notif_auto_close_time']); ?>" min="0" style="width: 100px;">
-                                    <span style="font-size: 11px; color: #64748b;">۰ = خاموش؛ تا وقتی نشانگر روی پاپ‌آپ است بسته نمی‌شود.</span>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr class="hdn-row-divider">
-                        <th>انیمیشن‌ها</th>
-                        <td>
-                            <div class="hdn-flex-row">
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_anim_in">انیمیشن ورود</label>
-                                    <select id="hd_notif_anim_in" name="hd_notif_anim_in">
-                                        <option value="zoom_in" <?php selected($meta['hd_notif_anim_in'], 'zoom_in'); ?>>بزرگ‌نمایی (Zoom In)</option>
-                                        <option value="fade_in" <?php selected($meta['hd_notif_anim_in'], 'fade_in'); ?>>محو شدن (Fade In)</option>
-                                        <option value="slide_up" <?php selected($meta['hd_notif_anim_in'], 'slide_up'); ?>>پرش به بالا (Slide Up)</option>
-                                        <option value="bounce" <?php selected($meta['hd_notif_anim_in'], 'bounce'); ?>>جهش (Bounce)</option>
-                                    </select>
-                                </div>
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_anim_out">انیمیشن خروج</label>
-                                    <select id="hd_notif_anim_out" name="hd_notif_anim_out">
-                                        <option value="fade_out" <?php selected($meta['hd_notif_anim_out'], 'fade_out'); ?>>محو شدن (Fade Out)</option>
-                                        <option value="slide_down" <?php selected($meta['hd_notif_anim_out'], 'slide_down'); ?>>سقوط (Slide Down)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </section>
-
-            <section class="hdn-card" id="hdn-rules-box">
-                <h4 class="hdn-card-title">قوانین و رفتار نمایش</h4>
-                <table class="form-table">
-                    <tr class="hdn-row-divider">
-                        <th><label for="hd_notif_close_btn">دکمه بستن (X)</label></th>
-                        <td>
-                            <div class="hdn-flex-row" style="align-items: center;">
-                                <div class="hdn-flex-col">
-                                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-                                        <input type="checkbox" id="hd_notif_close_btn" name="hd_notif_close_btn" value="1" <?php checked($meta['hd_notif_close_btn'], '1'); ?>>
-                                        فعال بودن دکمه بستن پاپ‌آپ
-                                    </label>
-                                </div>
-                                <div class="hdn-flex-col" style="margin-right: 30px;">
-                                    <label for="hd_notif_close_color" style="display:inline-block; margin-left: 10px;">رنگ دکمه بستن</label>
-                                    <input type="color" id="hd_notif_close_color" name="hd_notif_close_color" value="<?php echo esc_attr($meta['hd_notif_close_color']); ?>">
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr class="hdn-row-divider">
-                        <th><label>دستگاه و کاربران هدف</label></th>
-                        <td>
-                            <div class="hdn-flex-row">
-                                <div class="hdn-flex-col" style="flex: 1; min-width: 200px;">
-                                    <label for="hd_notif_device">دستگاه هدف</label>
-                                    <select id="hd_notif_device" name="hd_notif_device">
-                                        <option value="all" <?php selected($meta['hd_notif_device'], 'all'); ?>>همه دستگاه‌ها</option>
-                                        <option value="desktop" <?php selected($meta['hd_notif_device'], 'desktop'); ?>>فقط دسکتاپ</option>
-                                        <option value="mobile" <?php selected($meta['hd_notif_device'], 'mobile'); ?>>فقط موبایل</option>
-                                    </select>
-                                </div>
-
-                                <?php /* قبلا فیلد نداشت و هر ذخیره آن را «همه» می‌کرد */ ?>
-                                <div class="hdn-flex-col" style="flex: 1; min-width: 200px;">
-                                    <label for="hd_notif_target_role">نقش کاربر</label>
-                                    <select id="hd_notif_target_role" name="hd_notif_target_role">
-                                        <option value="all" <?php selected($meta['hd_notif_target_role'], 'all'); ?>>همه نقش‌ها</option>
-                                        <option value="customer" <?php selected($meta['hd_notif_target_role'], 'customer'); ?>>فقط مشتری‌ها (وارد شده)</option>
-                                        <option value="subscriber" <?php selected($meta['hd_notif_target_role'], 'subscriber'); ?>>فقط مشترک‌ها (وارد شده)</option>
-                                        <option value="administrator" <?php selected($meta['hd_notif_target_role'], 'administrator'); ?>>فقط مدیران (برای آزمایش)</option>
-                                    </select>
-                                </div>
-
-                                <div class="hdn-flex-col" style="flex: 1; min-width: 200px;">
-                                    <label for="hd_notif_user_status">وضعیت لاگین</label>
-                                    <select id="hd_notif_user_status" name="hd_notif_user_status">
-                                        <option value="all" <?php selected($meta['hd_notif_user_status'], 'all'); ?>>همه کاربران</option>
-                                        <option value="logged_in" <?php selected($meta['hd_notif_user_status'], 'logged_in'); ?>>کاربران وارد شده (لاگین)</option>
-                                        <option value="logged_out" <?php selected($meta['hd_notif_user_status'], 'logged_out'); ?>>کاربران مهمان</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr class="hdn-row-divider">
-                        <th><label>محتوا و صفحات نمایش</label></th>
-                        <td>
-                            <div class="hdn-flex-row">
-                                <div class="hdn-flex-col" style="flex: 1; min-width: 200px;">
-                                    <label for="hd_notif_target_post_type">نوع پست (Post Type)</label>
-                                    <select id="hd_notif_target_post_type" name="hd_notif_target_post_type">
-                                        <option value="all" <?php selected($meta['hd_notif_target_post_type'], 'all'); ?>>همه صفحات سایت</option>
-                                        <option value="post" <?php selected($meta['hd_notif_target_post_type'], 'post'); ?>>فقط مقاله‌ها (Posts)</option>
-                                        <option value="page" <?php selected($meta['hd_notif_target_post_type'], 'page'); ?>>فقط برگه‌ها (Pages)</option>
-                                        <option value="product" <?php selected($meta['hd_notif_target_post_type'], 'product'); ?>>فقط محصولات (Products)</option>
-                                    </select>
-                                </div>
-
-                                <div class="hdn-flex-col" style="flex: 1; min-width: 200px;">
-                                    <label for="hd_notif_target_type">نمایش بر اساس لینک</label>
-                                    <select id="hd_notif_target_type" name="hd_notif_target_type">
-                                        <option value="all" <?php selected($meta['hd_notif_target_type'], 'all'); ?>>همه صفحات</option>
-                                        <option value="specific" <?php selected($meta['hd_notif_target_type'], 'specific'); ?>>چند صفحه / چند لینک خاص</option>
-                                        <option value="exclude" <?php selected($meta['hd_notif_target_type'], 'exclude'); ?>>همه صفحات به‌جز لینک‌های زیر</option>
-                                    </select>
-                                </div>
-
-                                <div class="hdn-flex-col hdn-target-page-wrapper" id="hdn_target_page_wrapper" style="flex: 2; min-width: 250px;">
-                                    <label for="hd_notif_target_page">لینک یا لیست لینک‌ها</label>
-                                    <textarea id="hd_notif_target_page" name="hd_notif_target_page" rows="4" style="width: 100%; min-height: 110px;" placeholder="/about-us/"><?php echo esc_textarea($meta['hd_notif_target_page']); ?></textarea>
-                                </div>
-                            </div>
-                            
-                            <div class="hdn-flex-row" style="margin-top: 15px;">
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_target_utm">پارامتر تبلیغاتی (UTM Source)</label>
-                                    <input type="text" id="hd_notif_target_utm" name="hd_notif_target_utm" value="<?php echo esc_attr($meta['hd_notif_target_utm']); ?>" placeholder="مثال: yektanet">
-                                </div>
-
-                                <div class="hdn-flex-col" style="flex: 1;">
-                                    <label for="hd_notif_target_referrer">ارجاع‌دهنده (Referrer)</label>
-                                    <input type="text" id="hd_notif_target_referrer" name="hd_notif_target_referrer" value="<?php echo esc_attr($meta['hd_notif_target_referrer']); ?>" placeholder="مثال: google.com یا yektanet.com">
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr class="hdn-row-divider">
-                        <th><label>زمان و دفعات نمایش</label></th>
-                        <td>
-                            <div class="hdn-flex-row">
-                                <div class="hdn-flex-col" style="flex: 1; min-width: 150px;">
-                                    <label for="hd_notif_start_date">تاریخ شروع</label>
-                                    <input type="date" id="hd_notif_start_date" name="hd_notif_start_date" value="<?php echo esc_attr($meta['hd_notif_start_date']); ?>">
-                                </div>
-
-                                <div class="hdn-flex-col" style="flex: 1; min-width: 150px;">
-                                    <label for="hd_notif_end_date">تاریخ پایان</label>
-                                    <input type="date" id="hd_notif_end_date" name="hd_notif_end_date" value="<?php echo esc_attr($meta['hd_notif_end_date']); ?>">
-                                </div>
-
-                                <div class="hdn-flex-col" style="flex: 1; min-width: 150px;">
-                                    <label for="hd_notif_show_count">دفعات نمایش (0 = نامحدود)</label>
-                                    <div class="hdn-inline-addon">
-                                        <input type="number" id="hd_notif_show_count" name="hd_notif_show_count" value="<?php echo esc_attr($meta['hd_notif_show_count']); ?>" min="0" style="width: 100px;">
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </section>
-
-            <section class="hdn-card hdn-preview-section" style="margin-bottom:0;">
-                <h4 class="hdn-card-title" style="text-align: right;">پیش‌نمایش زنده</h4>
-                <p style="text-align: right; color: var(--hdn-muted); font-size: 13px; margin-bottom: 20px;">
-                    با کلیک روی دکمه زیر، ظاهر پاپ‌آپ خود را مشاهده کنید. 
-                </p>
-                <button type="button" id="hdn_btn_generate_preview" class="button button-primary button-large" style="background: var(--hdn-primary); border-color: var(--hdn-primary); box-shadow: none;">
-                    مشاهده پیش‌نمایش زنده
-                </button>
-
-                <div id="hdn_preview_canvas" class="hdn-preview-canvas"></div>
-            </section>
-        </div>
-        <?php
-    }
+	/** آیکون Dashicons (با Core همان تابع مشترک). */
+	private function icon( string $name, string $extra_class = '' ): string {
+		return sprintf( '<span class="dashicons dashicons-%1$s %2$s" aria-hidden="true"></span>', esc_attr( $name ), esc_attr( $extra_class ) );
+	}
 }
 
-new HodimaNotificationSettings();
+new Hodima_Notification_Metabox();

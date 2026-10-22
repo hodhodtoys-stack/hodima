@@ -60,14 +60,12 @@ const SUPPORT_DIALOG = `<dialog class="overlay" id="supportOverlay" aria-labelle
 const STORY_BAR = `<section class="section-stories" style="padding:16px"><div class="stories-wrap">${ [ 1, 2, 3 ].map( ( i ) => `<div class="story-item"><a href="/v.webm" class="story-link" rel="nofollow noopener" data-video="https://hodima.test/v.webm" data-story-id="${ i }" data-views="${ i * 10 }" data-title="استوری ${ i }"${ i === 2 ? ' data-cta-link="https://hodima.test/shop/" data-cta-text="مشاهده محصول"' : '' }><div class="story-ring"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="استوری ${ i }" width="75" height="75"></div><span class="story-text">استوری ${ i }</span></a></div>` ).join( '' ) }</div></section>`;
 const STORY_MODAL = `<div id="hs-video-modal" class="hs-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="پخش کننده استوری"><div class="hs-modal__overlay" data-close="1"></div><div class="hs-modal__content" role="document" tabindex="-1"><button class="hs-modal__close hs-flex-center" type="button" aria-label="بستن"><span aria-hidden="true">&times;</span></button><div class="hs-player is-loading"><div class="hs-loader hs-flex-center" aria-hidden="true"></div><div class="hs-topbar"><div class="hs-progress-wrap" role="group" aria-label="پیشرفت استوری‌ها"></div><div class="hs-meta"><button class="hs-mute-toggle hs-flex-center" type="button" aria-pressed="false" aria-label="بی‌صدا"><svg class="hs-icon-sound" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M11 5 6 9H2v6h4l5 4z"/></svg><svg class="hs-icon-muted" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M11 5 6 9H2v6h4l5 4z"/></svg></button><div class="hs-meta__text"><div class="hs-title" id="hs-story-title"></div><div class="hs-subtitle" id="hs-story-position"></div></div></div></div><div class="hs-stage"><video id="hs-modal-video" playsinline preload="metadata"></video><button class="hs-nav hs-flex-center hs-nav--prev" type="button" aria-label="استوری قبلی"><span aria-hidden="true">&#10094;</span></button><button class="hs-nav hs-flex-center hs-nav--next" type="button" aria-label="استوری بعدی"><span aria-hidden="true">&#10095;</span></button><div class="hs-tap-zone hs-tap-zone--left" data-tap="next" aria-hidden="true"></div><div class="hs-tap-zone hs-tap-zone--center" data-tap="toggle" aria-hidden="true"></div><div class="hs-tap-zone hs-tap-zone--right" data-tap="prev" aria-hidden="true"></div><div class="hs-center-control hs-flex-center"><button class="hs-play-toggle hs-flex-center" type="button" aria-label="پخش / توقف"><span class="hs-play-icon hs-icon-play" aria-hidden="true">▶</span><span class="hs-play-icon hs-icon-pause" aria-hidden="true">❚❚</span></button></div></div><div class="hs-bottombar"><div class="hs-message" id="hs-player-message" aria-live="polite"></div><div class="hs-actions hs-flex-center"><div class="hs-action-item hs-flex-center hs-view-stat" title="بازدید"><span id="hs-view-count">0</span></div><button class="hs-action-item hs-flex-center hs-share-btn" type="button" aria-label="اشتراک گذاری"><span class="hs-icon hs-share-icon" aria-hidden="true">⤴</span></button><a href="#" id="hs-cta-box" class="hs-cta-box" hidden><span class="hs-cta-text" id="hs-cta-text"></span><span class="hs-cta-arrow" aria-hidden="true">&#8592;</span></a></div></div></div></div><div class="hs-toast" id="hs-player-toast" aria-live="polite" aria-atomic="true"></div></div>`;
 const STR = { playHint: 'برای پخش کلیک کنید.', playError: 'خطا', playlistEnd: 'پایان', ctaDefault: 'مشاهده محصول', storyN: 'استوری %s', selectors: { storyLink: '.story-link', playlistScope: '[data-story-group], .section-stories' }, settings: { autoplayNext: false, loopPlaylist: false, tapNavigation: true, swipeNavigation: true, preloadAdjacent: false } };
-const notif = ( position ) => {
-	const modal = position === 'center';
-	return `<div id="hd-notif-wrapper-7" class="hd-notif-wrapper hd-wrap-${ position }"><div id="hd-notification-7" class="hd-notification-popup hd-pos-${ position }" role="${ modal ? 'dialog' : 'region' }"${ modal ? ' aria-modal="true"' : '' } aria-label="اطلاعیه" tabindex="-1" data-id="7" data-delay="1000" data-auto-close="0" data-max-count="0" data-anim-in="fade_in" data-anim-out="fade_out" data-trigger-exit="0" data-trigger-scroll="0" data-trigger-inactivity="0" data-position="${ position }" data-device="all" data-start="0" data-end="0" data-utm="" data-referrer=""><button type="button" class="hd-notif-close" aria-label="بستن">&times;</button><div class="hd-notif-main-area"><img data-src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="اطلاعیه" decoding="async" width="300" height="200"><a href="#promo" class="hd-notif-half-link" aria-label="مشاهده: اطلاعیه"></a></div></div></div>`;
-};
+// همان خروجی notification-front.php نسخه ۴ (<dialog>)؛ mobileMode «corner» = پنجره وسط در موبایل جعبه گوشه
+const notif = ( position, mobileMode = 'modal' ) => `<dialog id="hd-notification-7" class="hd-notification-popup hd-pos-${ position }" aria-label="اطلاعیه" tabindex="-1" style="--hd-notif-w:300px;--hd-notif-bg:#ffffff;--hd-notif-close:#ff0000;" data-id="7" data-delay="1000" data-auto-close="0" data-max-count="0" data-anim-in="fade_in" data-anim-out="fade_out" data-trigger-exit="0" data-trigger-scroll="0" data-trigger-inactivity="0" data-position="${ position }" data-mobile-mode="${ mobileMode }" data-device="all" data-start="0" data-end="0" data-utm="" data-referrer="" data-skip-search="0"><button type="button" class="hd-notif-close" aria-label="بستن"><span aria-hidden="true">&times;</span></button><div class="hd-notif-main-area"><a class="hd-notif-half-link" href="#promo"><img data-src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" width="300" height="200" alt="اطلاعیه" decoding="async"></a></div></dialog>`;
 
 const base = fs.readFileSync( path.join( outDir, 'home.html' ), 'utf8' );
 const MEDIA_LINK = ( f ) => `<link rel="stylesheet" href="https://hodima.test/${ MEDIA }/${ f }">`;
-function build( { support, story, notification } ) {
+function build( { support, story, notification, mobileMode } ) {
 	let html = base;
 	let head = '';
 	let tail = '';
@@ -82,7 +80,7 @@ function build( { support, story, notification } ) {
 	}
 	if ( notification ) {
 		head += MEDIA_LINK( 'notification/assets/css/notification-front.css' );
-		tail += `${ notif( notification ) }<script src="https://hodima.test/${ MEDIA }/notification/assets/js/notification-front.js"></script>`;
+		tail += `${ notif( notification, mobileMode ) }<script src="https://hodima.test/${ MEDIA }/notification/assets/js/notification-front.js"></script>`;
 	}
 	return html.replace( '</head>', `${ head }</head>` ).replace( /<\/body>/, `${ tail }</body>` );
 }
@@ -413,30 +411,49 @@ const SCENARIOS = {
 		}
 	},
 
-	// ───────────── پاپ‌آپ اعلان ─────────────
+	// ───────────── پاپ‌آپ اعلان (<dialog> بومی؛ نسخه ۴) ─────────────
 	async 'notification'() {
-		for ( const [ pos, width ] of [ [ 'center', 1300 ], [ 'center', 390 ], [ 'bottom_right', 1300 ] ] ) {
-			const { ctx, page, errors } = await open( build( { notification: pos } ), width, 800 );
-			const tag = `notification-${ pos }@${ width }`;
+		const state = () => {
+			const d = document.querySelector( 'dialog.hd-notification-popup' );
+			const r = d.getBoundingClientRect();
+			const a = document.activeElement;
+			return {
+				open: d.hasAttribute( 'open' ),
+				modal: d.matches( ':modal' ),
+				// واقعا دیده می‌شود (تا 2.0.1 با «کاهش حرکت» opacity صفر می‌ماند)
+				visible: getComputedStyle( d ).opacity === '1' && r.width > 50 && r.height > 50,
+				inside: !! a?.closest( '.hd-notification-popup' ),
+				active: a === document.body ? 'body' : `${ a.tagName.toLowerCase() }.${ a.className }`.slice( 0, 40 ),
+			};
+		};
+		for ( const [ pos, width, mobileMode ] of [ [ 'center', 1300, 'modal' ], [ 'center', 390, 'modal' ], [ 'center', 390, 'corner' ], [ 'bottom_right', 1300, 'modal' ] ] ) {
+			const { ctx, page, errors } = await open( build( { notification: pos, mobileMode } ), width, 800 );
+			const tag = `notification-${ pos }${ mobileMode === 'corner' ? '(موبایل: گوشه)' : '' }@${ width }`;
+			const modal = pos === 'center' && ! ( mobileMode === 'corner' && width <= 768 );
 			log( errors.length === 0, `${ tag }: بدون خطای JS`, errors.join( '|' ) );
 			await page.locator( 'a[href]' ).first().focus();
 			await page.waitForTimeout( 1600 );
-			const s = await page.evaluate( () => ( { shown: document.querySelector( '.hd-notif-wrapper' ).classList.contains( 'hd-show' ), active: document.activeElement.className, inside: !! document.activeElement.closest( '.hd-notification-popup' ) } ) );
-			if ( pos === 'center' ) {
-				log( s.shown && s.inside, `${ tag }: نمایش داده شد و فوکوس داخل پاپ‌آپ`, s.active );
+			const s = await page.evaluate( state );
+			log( s.open && s.visible, `${ tag }: باز و واقعا دیده می‌شود (با «کاهش حرکت»)`, JSON.stringify( s ) );
+			if ( modal ) {
+				log( s.modal && s.inside, `${ tag }: پنجره مودال (showModal) و فوکوس داخل آن`, s.active );
+				// <dialog> بومی: Tab از آخرین عنصر به رابط مرورگر (در ابزار تست: body) می‌رود و برمی‌گردد؛ استاندارد است
+				const ok = ( x ) => x === 'body' || /hd-notif/.test( x );
 				const seq = await tabs( page, 10 );
-				const outside = seq.filter( ( x ) => ! /hd-notif|^a\.hd/.test( x ) );
-				log( outside.length === 0, `${ tag }: ۱۰ بار Tab — فوکوس بیرون نمی‌رود (aria-modal=true)`, outside.length ? [ ...new Set( outside ) ].join( ', ' ) : [ ...new Set( seq ) ].join( ' ← ' ) );
+				log( seq.every( ok ), `${ tag }: ۱۰ بار Tab — فوکوس به صفحه پشت پنجره نمی‌رود`, [ ...new Set( seq ) ].join( ' ← ' ) );
 				const bwd = await tabs( page, 10, true );
-				log( bwd.every( ( x ) => /hd-notif|^a\.hd/.test( x ) ), `${ tag }: ۱۰ بار Shift+Tab — داخل می‌ماند`, [ ...new Set( bwd ) ].join( ' ← ' ) );
+				log( bwd.every( ok ), `${ tag }: ۱۰ بار Shift+Tab — داخل می‌ماند`, [ ...new Set( bwd ) ].join( ' ← ' ) );
+				const locked = await page.evaluate( () => document.documentElement.classList.contains( 'hd-notif-lock' ) );
+				log( locked, `${ tag }: اسکرول صفحه پشت پنجره قفل است` );
 			} else {
-				log( s.shown, `${ tag }: نمایش داده شد (غیرمسدودکننده؛ فوکوس به آن نمی‌رود)`, s.active );
+				log( ! s.modal && ! s.inside, `${ tag }: غیرمسدودکننده (فوکوس به آن نمی‌رود)`, s.active );
 			}
 			await page.keyboard.press( 'Escape' );
 			await page.waitForTimeout( 700 );
-			const c = await page.evaluate( () => ( { shown: document.querySelector( '.hd-notif-wrapper' ).classList.contains( 'hd-show' ), display: document.querySelector( '.hd-notif-wrapper' ).style.display, active: document.activeElement === document.body ? 'body' : ( document.activeElement.tagName.toLowerCase() + '.' + document.activeElement.className ).slice( 0, 40 ) } ) );
-			log( ! c.shown && c.display === 'none', `${ tag }: Esc می‌بندد`, JSON.stringify( c ) );
-			if ( pos === 'center' ) {
+			const c = await page.evaluate( state );
+			const unlocked = await page.evaluate( () => ! document.documentElement.classList.contains( 'hd-notif-lock' ) );
+			log( ! c.open && unlocked, `${ tag }: Esc می‌بندد`, JSON.stringify( c ) );
+			if ( modal ) {
 				log( c.active !== 'body', `${ tag }: فوکوس بعد از بستن به جای قبلی برمی‌گردد (نه body)`, c.active );
 			}
 			await ctx.close();

@@ -14,8 +14,8 @@ export default [
 	},
 	js.configs.recommended,
 	{
-		// قالب + ماژول‌های استوری و باکس‌های بازشونده Hodima Media (بقیه افزونه‌ها بعدا)
-		files: [ 'hodima/**/*.js', 'plugins/hodima-media/components/hodima-Stories/**/*.js', 'plugins/hodima-media/components/expandable-boxes/*.js' ],
+		// قالب + ماژول‌های استوری، باکس‌های بازشونده و اعلان‌های Hodima Media (بقیه افزونه‌ها بعدا)
+		files: [ 'hodima/**/*.js', 'plugins/hodima-media/components/hodima-Stories/**/*.js', 'plugins/hodima-media/components/expandable-boxes/*.js', 'plugins/hodima-media/components/notification/**/*.js' ],
 		languageOptions: {
 			ecmaVersion: 2024,
 			sourceType: 'script',

@@ -1,175 +1,197 @@
-document.addEventListener("DOMContentLoaded", () => {
+/**
+ * کادر تنظیمات نوتیفیکیشن (پیشخوان) — نسخه ۴
+ *
+ * - انتخاب عکس از کتابخانه رسانه (آدرس + شناسه پیوست برای srcset)؛ عکس PNG
+ *   حالت «پس‌زمینه شفاف» را روشن می‌کند.
+ * - فیلدهای وابسته: رنگ کادر فقط بدون شفافیت، «پنجره وسط در موبایل» فقط برای
+ *   پنجره وسط، فهرست آدرس‌ها فقط وقتی «همه آدرس‌ها» نیست.
+ * - تاریخ شمسی کنار هر تاریخ (مقدار فیلد همیشه میلادی می‌ماند).
+ * - پیش‌نمایش زنده با همان کلاس‌ها و CSS سایت؛ با DOM ساخته می‌شود (نسخه قبلی
+ *   مقدار فیلدها را بدون escape در innerHTML می‌گذاشت).
+ */
+( () => {
+	'use strict';
 
-    const $ = (id) => document.getElementById(id);
-    const getVal = (id, def = '') => ($(id) ? $(id).value : def);
-    const getChecked = (id) => ($(id) ? $(id).checked : false);
+	const init = () => {
+		const root = document.querySelector( '[data-hdn]' );
+		if ( ! root ) {
+			return;
+		}
+		const field = ( name ) => root.querySelector( `[name="${ name }"]` );
+		const value = ( name ) => field( name )?.value ?? '';
+		const checked = ( name ) => !! field( name )?.checked;
 
-    const activeCheckbox = $('hd_notif_is_active');
-    const activeLabel = $('hd_status_label');
-    const activeText = $('hd_status_text');
+		/* ── عکس ─────────────────────────────────────────────────── */
+		const media = root.querySelector( '[data-hdn-media]' );
+		const urlInput = root.querySelector( '[data-hdn-image-url]' );
+		const idInput = root.querySelector( '[data-hdn-image-id]' );
+		const thumb = root.querySelector( '[data-hdn-thumb]' );
+		const transparent = root.querySelector( '[data-hdn-transparent]' );
+		let frame = null;
 
-    const syncActiveState = () => {
-        if (!activeCheckbox || !activeLabel || !activeText) return;
-        if (activeCheckbox.checked) {
-            activeLabel.classList.remove('inactive');
-            activeText.textContent = 'نوتیفیکیشن فعال است و در سایت نمایش داده می‌شود';
-        } else {
-            activeLabel.classList.add('inactive');
-            activeText.textContent = 'نوتیفیکیشن غیرفعال است';
-        }
-    };
+		const setImage = ( url, id, preview ) => {
+			urlInput.value = url;
+			idInput.value = id ? String( id ) : '0';
+			if ( preview ) {
+				thumb.src = preview;
+			} else {
+				thumb.removeAttribute( 'src' );
+			}
+			media.classList.toggle( 'is-empty', ! url );
+			root.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+		};
 
-    if (activeCheckbox) {
-        activeCheckbox.addEventListener('change', syncActiveState);
-        syncActiveState();
-    }
+		root.querySelector( '[data-hdn-pick]' )?.addEventListener( 'click', () => {
+			if ( ! window.wp?.media ) {
+				return;
+			}
+			frame = frame || wp.media( { title: 'انتخاب عکس پاپ‌آپ', button: { text: 'انتخاب' }, library: { type: 'image' }, multiple: false } );
+			frame.off( 'select' ).on( 'select', () => {
+				const a = frame.state().get( 'selection' ).first().toJSON();
+				// PNG معمولا پس‌زمینه ندارد: بدون کادر سفید نمایش داده شود
+				if ( a.subtype === 'png' && transparent ) {
+					transparent.checked = true;
+				}
+				setImage( a.url, a.id, a.sizes?.medium?.url || a.url );
+			} );
+			frame.open();
+		} );
+		root.querySelector( '[data-hdn-remove]' )?.addEventListener( 'click', () => setImage( '', 0, '' ) );
 
-    document.querySelectorAll('.hdn-upload-btn').forEach(button => {
-        button.addEventListener('click', function (e) {
-            e.preventDefault();
-            if (typeof wp === 'undefined' || !wp.media) { alert('لودر مدیا در دسترس نیست.'); return; }
+		/* ── فیلدهای وابسته ───────────────────────────────────────── */
+		const bgField = root.querySelector( '[data-hdn-bg-field]' );
+		const mobileField = root.querySelector( '[data-hdn-mobile-field]' );
+		const pagesField = root.querySelector( '[data-hdn-pages-field]' );
+		const syncDependents = () => {
+			const isTransparent = checked( 'hd_notif_bg_transparent' );
+			bgField?.classList.toggle( 'is-disabled', isTransparent );
+			if ( field( 'hd_notif_bg_color' ) ) {
+				field( 'hd_notif_bg_color' ).disabled = isTransparent;
+			}
+			if ( mobileField ) {
+				mobileField.hidden = value( 'hd_notif_position' ) !== 'center';
+			}
+			const allPages = value( 'hd_notif_target_type' ) === 'all';
+			pagesField?.classList.toggle( 'is-disabled', allPages );
+			if ( field( 'hd_notif_target_page' ) ) {
+				field( 'hd_notif_target_page' ).disabled = allPages;
+			}
+		};
 
-            const targetInputSelector = this.getAttribute('data-target');
-            const previewImgSelector = this.getAttribute('data-preview');
-            const removeBtnSelector = this.getAttribute('data-remove');
+		/* ── تاریخ شمسی کنار تاریخ میلادی ─────────────────────────── */
+		const jalali = ( () => {
+			try {
+				return new Intl.DateTimeFormat( 'fa-IR-u-ca-persian', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' } );
+			} catch {
+				return null;
+			}
+		} )();
+		const syncDates = () => {
+			root.querySelectorAll( '[data-hdn-date]' ).forEach( ( input ) => {
+				const out = input.parentElement.querySelector( '[data-hdn-jalali]' );
+				if ( ! out ) {
+					return;
+				}
+				const date = input.value ? new Date( `${ input.value }T12:00:00Z` ) : null;
+				if ( ! date || ! jalali || Number.isNaN( date.getTime() ) ) {
+					out.textContent = 'خالی = بدون محدودیت';
+					return;
+				}
+				// ترتیب format() مرورگرها برای fa «۱۴۰۵ آذر ۳۰, دوشنبه» است؛ از اجزا: «دوشنبه ۳۰ آذر ۱۴۰۵»
+				const part = Object.fromEntries( jalali.formatToParts( date ).map( ( p ) => [ p.type, p.value ] ) );
+				out.textContent = `شمسی: ${ part.weekday } ${ part.day } ${ part.month } ${ part.year }`;
+			} );
+		};
 
-            const mediaUploader = wp.media({ title: 'انتخاب تصویر', button: { text: 'انتخاب' }, library: { type: 'image' }, multiple: false });
+		/* ── پیش‌نمایش ───────────────────────────────────────────── */
+		const stage = root.querySelector( '[data-hdn-preview]' );
+		const el = ( tag, attrs = {}, ...children ) => {
+			const node = document.createElement( tag );
+			Object.entries( attrs ).forEach( ( [ k, v ] ) => node.setAttribute( k, String( v ) ) );
+			node.append( ...children );
+			return node;
+		};
 
-            mediaUploader.on('select', () => {
-                const attachment = mediaUploader.state().get('selection').first().toJSON();
-                const targetInput = document.querySelector(targetInputSelector);
-                if (targetInput) targetInput.value = attachment.url;
-                const previewImg = document.querySelector(previewImgSelector);
-                if (previewImg) {
-                    previewImg.src = attachment.url;
-                    if (previewImg.parentElement) previewImg.parentElement.classList.remove('empty');
-                }
-                const removeBtn = document.querySelector(removeBtnSelector);
-                if (removeBtn) removeBtn.style.display = 'inline-block';
-                // عکس PNG معمولا پس‌زمینه ندارد: حالت شفاف (بدون کادر سفید) خودکار روشن شود
-                const transparent = $('hd_notif_bg_transparent');
-                if (transparent && attachment.subtype === 'png') transparent.checked = true;
-            });
-            mediaUploader.open();
-        });
-    });
+		const renderPreview = ( animate = false ) => {
+			if ( ! stage ) {
+				return;
+			}
+			const mobile = stage.dataset.device === 'mobile';
+			const position = value( 'hd_notif_position' ) || 'center';
+			const asCorner = mobile && position === 'center' && value( 'hd_notif_mobile_mode' ) === 'corner';
+			const isTransparent = checked( 'hd_notif_bg_transparent' );
+			const height = Number( value( 'hd_notif_height' ) ) || 0;
+			const width = Number( value( 'hd_notif_width' ) ) || 400;
 
-    document.querySelectorAll('.hdn-remove-btn').forEach(btn => {
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            const uploadBtn = this.previousElementSibling;
-            if (uploadBtn) {
-                const targetInput = document.querySelector(uploadBtn.getAttribute('data-target'));
-                if (targetInput) targetInput.value = '';
-                const previewImg = document.querySelector(uploadBtn.getAttribute('data-preview'));
-                if (previewImg) {
-                    previewImg.removeAttribute('src');
-                    if (previewImg.parentElement) previewImg.parentElement.classList.add('empty');
-                }
-            }
-            this.style.display = 'none';
-        });
-    });
+			const classes = [ 'hd-notification-popup', `hd-pos-${ position }` ];
+			if ( isTransparent ) {
+				classes.push( 'hd-notif-transparent' );
+			}
+			if ( height > 0 ) {
+				classes.push( 'hd-notif-fixed-height' );
+			}
+			if ( asCorner ) {
+				classes.push( 'hd-as-corner' );
+			}
+			if ( animate ) {
+				classes.push( `anim-in-${ value( 'hd_notif_anim_in' ) || 'zoom_in' }` );
+			}
 
-    const displayTypeSelect = $('hd_notif_target_type');
-    const targetPageWrapper = $('hdn_target_page_wrapper');
-    const targetPageInput = $('hd_notif_target_page');
+			const popup = el( 'div', { class: classes.join( ' ' ), open: '' } );
+			popup.style.setProperty( '--hd-notif-w', `${ width }px` );
+			if ( height > 0 ) {
+				popup.style.setProperty( '--hd-notif-h', `${ height }px` );
+			}
+			if ( ! isTransparent ) {
+				popup.style.setProperty( '--hd-notif-bg', value( 'hd_notif_bg_color' ) || '#ffffff' );
+			}
+			popup.style.setProperty( '--hd-notif-close', value( 'hd_notif_close_color' ) || '#ff0000' );
 
-    function toggleTargetPageField() {
-        if (!displayTypeSelect || !targetPageWrapper || !targetPageInput) return;
-        const type = displayTypeSelect.value;
-        if (type === 'all') {
-            targetPageWrapper.classList.add('disabled');
-            targetPageInput.disabled = true;
-        } else {
-            targetPageWrapper.classList.remove('disabled');
-            targetPageInput.disabled = false;
-        }
-    }
-    if (displayTypeSelect) {
-        displayTypeSelect.addEventListener('change', toggleTargetPageField);
-        toggleTargetPageField();
-    }
+			if ( checked( 'hd_notif_close_btn' ) ) {
+				popup.append( el( 'button', { type: 'button', class: 'hd-notif-close', 'aria-label': 'بستن (پیش‌نمایش)', tabindex: '-1' }, el( 'span', { 'aria-hidden': 'true' }, '×' ) ) );
+			}
+			const url = urlInput?.value || '';
+			const visual = url
+				? el( 'img', { src: url, alt: '' } )
+				: el( 'div', { class: 'hdn-preview__empty' }, 'عکسی انتخاب نشده' );
+			const area = el( 'div', { class: 'hd-notif-main-area' } );
+			area.append( value( 'hd_notif_main_link' ) ? el( 'span', { class: 'hd-notif-half-link' }, visual ) : visual );
+			popup.append( area );
 
-    const previewBtn = $('hdn_btn_generate_preview');
-    const previewCanvas = $('hdn_preview_canvas');
+			stage.classList.toggle( 'is-modal', position === 'center' && ! asCorner );
+			stage.querySelector( '.hd-notification-popup' )?.remove();
+			stage.append( popup );
+		};
 
-    if (previewBtn && previewCanvas) {
-        previewBtn.addEventListener('click', function (e) {
-            e.preventDefault();
+		let raf = 0;
+		const refresh = () => {
+			cancelAnimationFrame( raf );
+			raf = requestAnimationFrame( () => {
+				syncDependents();
+				syncDates();
+				renderPreview();
+			} );
+		};
+		root.addEventListener( 'input', refresh );
+		root.addEventListener( 'change', refresh );
 
-            const position = getVal('hd_notif_position', 'center');
-            const width = parseInt(getVal('hd_notif_width', '400'), 10) || 400;
-            const height = parseInt(getVal('hd_notif_height', '0'), 10) || 0;
+		root.querySelectorAll( '[data-hdn-device]' ).forEach( ( button ) => {
+			button.addEventListener( 'click', () => {
+				stage.dataset.device = button.dataset.hdnDevice;
+				root.querySelectorAll( '[data-hdn-device]' ).forEach( ( b ) => b.setAttribute( 'aria-pressed', String( b === button ) ) );
+				renderPreview( true );
+			} );
+		} );
+		root.querySelector( '[data-hdn-replay]' )?.addEventListener( 'click', () => renderPreview( true ) );
 
-            const bgImage = getVal('hd_notif_bg_image', '');
-            const mainLink = getVal('hd_notif_main_link', '#');
-            
-            const isTransparent = getChecked('hd_notif_bg_transparent');
-            const bgColor = isTransparent ? 'transparent' : getVal('hd_notif_bg_color', '#ffffff');
-            
-            const hasCloseBtn = getChecked('hd_notif_close_btn');
-            const closeColor = getVal('hd_notif_close_color', '#ff0000');
+		syncDependents();
+		syncDates();
+		renderPreview();
+	};
 
-            let posStyles = '';
-            switch (position) {
-                case 'center': posStyles = 'top:50%;left:50%;transform:translate(-50%,-50%);'; break;
-                case 'bottom_right': posStyles = 'bottom:20px;right:20px;'; break;
-                case 'bottom_left': posStyles = 'bottom:20px;left:20px;'; break;
-            }
-
-            let style = `
-                position:absolute;
-                ${posStyles}
-                width:${width}px;
-                max-width:95%;
-                background:${bgColor};
-                padding:${isTransparent ? 0 : 15}px;
-                border-radius:${isTransparent ? 0 : 12}px;
-                z-index:9999;
-                box-sizing: border-box;
-            `;
-
-            if (isTransparent) {
-                style += 'box-shadow: none; border: none;';
-            } else {
-                style += 'box-shadow: 0 10px 30px rgba(0,0,0,0.15);';
-            }
-
-            if (height > 0) {
-                style += `height:${height}px;`;
-            }
-
-            // استفاده از تگ button و خنثی کردن تمام هاله‌های آبی و outline در مرورگر 
-            // حالت شفاف (PNG): دکمه بستن با دایره سفید، مثل سایت
-            const closeBase = isTransparent
-                ? 'top:4px; right:4px; width:36px; height:36px; display:grid; place-items:center; border-radius:50%; background:rgba(255,255,255,0.92); box-shadow:0 2px 8px rgba(0,0,0,0.25); font-size:26px; text-shadow:none;'
-                : 'top:35px; right:35px; font-size:32px; background:transparent; box-shadow:none; text-shadow: 0 1px 4px rgba(0,0,0,0.4);';
-            const closeHtml = hasCloseBtn 
-                ? `<button type="button" style="position:absolute; ${closeBase} cursor:pointer; font-weight:bold; opacity:0.9; color:${closeColor}; z-index:10; border:none; outline:none; padding:0;" onclick="return false;">&times;</button>` 
-                : '';
-
-            const imageHtml = bgImage 
-                ? `<img src="${bgImage}" style="width: 100%; height: ${height > 0 ? '100%' : 'auto'}; display: block; ${isTransparent ? 'object-fit: contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,0.25));' : 'object-fit: cover; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);'}">`
-                : `<div style="width:100%; height:150px; background:#e5e7eb; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#9ca3af;">تصویر انتخاب نشده است</div>`;
-
-            const linkHtml = mainLink 
-                ? `<a href="${mainLink}" onclick="return false;" style="position: absolute; inset: 0; z-index: 5; display: block; cursor: pointer;"></a>` 
-                : '';
-
-            const html = `
-                <div style="${style}">
-                    ${closeHtml}
-                    <div style="position: relative; display: block; width: 100%; height: 100%; border-radius: 8px;">
-                        ${imageHtml}
-                        ${linkHtml}
-                    </div>
-                </div>
-            `;
-            
-            previewCanvas.classList.add('active');
-            previewCanvas.innerHTML = html;
-            previewCanvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-    }
-});
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', init );
+	} else {
+		init();
+	}
+} )();

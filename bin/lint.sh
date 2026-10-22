@@ -36,6 +36,7 @@ want() { [ -z "$only" ] || [ "$only" = "$1" ]; }
 # افزونه‌هایی که CSS/JS آن‌ها هم بررسی می‌شود (PHP: مسیرهای phpcs.xml.dist و phpstan.neon.dist)
 stories="plugins/hodima-media/components/hodima-Stories"
 expandable="plugins/hodima-media/components/expandable-boxes"
+notification="plugins/hodima-media/components/notification"
 
 fail=0
 need() {
@@ -97,7 +98,7 @@ fi
 if want css; then
 	echo "== CSS"
 	if need node_modules/.bin/stylelint Stylelint "npm ci"; then
-		node_modules/.bin/stylelint "hodima/**/*.css" "$stories/**/*.css" "$expandable/*.css" -f json > /dev/null 2> "$tmp/stylelint.json"
+		node_modules/.bin/stylelint "hodima/**/*.css" "$stories/**/*.css" "$expandable/*.css" "$notification/**/*.css" -f json > /dev/null 2> "$tmp/stylelint.json"
 		ratchet stylelint "$tmp/stylelint.json" "$base/stylelint.json"
 	fi
 	if need node_modules/lightningcss "Lightning CSS" "npm ci"; then
@@ -112,7 +113,7 @@ fi
 if want js; then
 	echo "== JS"
 	if need node_modules/.bin/eslint ESLint "npm ci"; then
-		node_modules/.bin/eslint hodima "$stories" "$expandable" -f json > "$tmp/eslint.json" 2> "$tmp/eslint.err"
+		node_modules/.bin/eslint hodima "$stories" "$expandable" "$notification" -f json > "$tmp/eslint.json" 2> "$tmp/eslint.err"
 		ratchet eslint "$tmp/eslint.json" "$base/eslint.json"
 	fi
 fi
