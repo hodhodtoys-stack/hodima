@@ -83,10 +83,15 @@ final class Hodima_Notification_Metabox {
 						<input type="number" class="small-text" id="hd_notif_priority" name="hd_notif_priority" value="<?php echo esc_attr( (string) (int) $m['hd_notif_priority'] ); ?>" min="1" max="99" inputmode="numeric">
 						<p class="hd-field__help">۱ تا ۹۹؛ عدد کمتر زودتر نمایش داده می‌شود.</p>
 					</div>
+					<?php if ( 'auto-draft' !== $post->post_status && function_exists( 'hodima_notification_stats_url' ) ) : ?>
+						<div class="hd-field">
+							<span class="hd-field__label">آمار</span>
+							<a class="button" href="<?php echo esc_url( hodima_notification_stats_url( [ 'notif' => $post->ID ] ) ); ?>"><?php echo $this->icon( 'chart-bar' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?> آمار این نوتیفیکیشن</a>
+							<p class="hd-field__help">نمایش، کلیک و نمودار روزانه در تب «آمار».</p>
+						</div>
+					<?php endif; ?>
 				</div>
 			</section>
-
-			<?php $this->render_stats( $post ); ?>
 
 			<section class="hd-card">
 				<div class="hd-card__head">
@@ -391,45 +396,6 @@ final class Hodima_Notification_Metabox {
 				</div>
 			</section>
 		</div>
-		<?php
-	}
-
-	/** کارت آمار (فقط نوتیفیکیشن ذخیره‌شده). */
-	private function render_stats( WP_Post $post ): void {
-		if ( 'auto-draft' === $post->post_status || ! function_exists( 'hodima_notification_stats' ) ) {
-			return;
-		}
-		$s     = hodima_notification_stats( $post->ID );
-		$since = '' !== $s['since'] && function_exists( 'hodima_notification_format_date' ) ? hodima_notification_format_date( $s['since'] ) : '';
-		$tiles = [
-			'نمایش'    => number_format_i18n( $s['views'] ),
-			'کلیک'     => number_format_i18n( $s['clicks'] ),
-			'نرخ کلیک' => number_format_i18n( $s['ctr'], 1 ) . '٪',
-			'بستن'     => number_format_i18n( $s['closes'] ),
-		];
-		?>
-		<section class="hd-card">
-			<div class="hd-card__head">
-				<?php echo $this->icon( 'chart-bar' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
-				<h2 class="hd-card__title">آمار</h2>
-				<p class="hd-card__desc">
-					<?php echo esc_html( '' !== $since ? 'از ' . $since . '؛ ' : '' ); ?>
-					نمایش = بار باز شدن پاپ‌آپ؛ کلیک = رفتن به لینک. ربات‌های جستجو شمرده نمی‌شوند. اگر گوگل آنالیتیکس روشن است، همین‌ها به‌عنوان view_promotion و select_promotion هم آنجا ثبت می‌شوند.
-				</p>
-			</div>
-			<dl class="hdn-stats">
-				<?php foreach ( $tiles as $label => $value ) : ?>
-					<div class="hdn-stats__item">
-						<dt><?php echo esc_html( $label ); ?></dt>
-						<dd><?php echo esc_html( $value ); ?></dd>
-					</div>
-				<?php endforeach; ?>
-			</dl>
-			<label class="hd-toggle hdn-stats__reset">
-				<input type="checkbox" class="hd-switch" name="hd_notif_stats_reset" value="1">
-				<span>صفر کردن آمار هنگام ذخیره (مثلا بعد از عوض کردن عکس)</span>
-			</label>
-		</section>
 		<?php
 	}
 

@@ -66,10 +66,6 @@ function hodima_save_notification_data( int $post_id ): void {
 		update_post_meta( $post_id, '_hd_notif_target_page', '' );
 	}
 
-	if ( isset( $_POST['hd_notif_stats_reset'] ) && function_exists( 'hodima_notification_stats_reset' ) ) {
-		hodima_notification_stats_reset( $post_id );
-	}
-
 	// شناسه پیوست فقط وقتی معتبر است که همان عکس انتخاب‌شده باشد
 	$image_id = (int) get_post_meta( $post_id, '_hd_notif_bg_image_id', true );
 	if ( $image_id > 0 && ( ! wp_attachment_is_image( $image_id ) || '' === (string) get_post_meta( $post_id, '_hd_notif_bg_image', true ) ) ) {

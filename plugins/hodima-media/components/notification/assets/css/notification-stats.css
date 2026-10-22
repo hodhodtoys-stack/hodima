@@ -1,0 +1,329 @@
+/**
+ * صفحه «آمار» نوتیفیکیشن‌ها (پیشخوان)
+ *
+ * کارت‌ها، کاشی‌ها، جدول و دیالوگ از سیستم طراحی هسته (hd-*)؛ اینجا فقط
+ * فیلتر بازه، تغییر نسبت به دوره قبل، نمودار ستونی و جدول. همه زیر
+ * .hdn-stats-page. نمودار: ستون حداکثر ۲۴px با گوشه گرد ۴px بالا، خط‌های
+ * راهنمای مویی و کم‌رنگ، یک رنگ برند برای هر نمودار تک‌سری.
+ */
+
+.hdn-stats-page {
+	--hdn-bar: var(--hd-secondary, #607bbd);
+	--hdn-bar-hover: var(--hd-primary, #25316a);
+	--hdn-grid: color-mix(in srgb, var(--hd-third, #b6c2f3) 45%, #fff);
+}
+
+.hdn-stats-page .hd-card + .hd-card,
+.hdn-stats-page .hdn-tiles + .hd-card,
+.hdn-stats-page .hdn-tiles__note + .hd-card {
+	margin-block-start: 1.25rem;
+}
+
+/* ── فیلتر ──────────────────────────────────────────────────────── */
+.hdn-filter {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem 1rem;
+	margin-block: 1.25rem;
+}
+
+.hdn-filter__ranges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+}
+
+.hdn-filter__notif {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.8125rem;
+}
+
+.hdn-filter__notif select {
+	min-inline-size: 14rem;
+}
+
+/* با JS انتخاب خودش فیلتر می‌کند */
+.hdn-js .hdn-filter__go {
+	display: none;
+}
+
+/* ── کاشی‌ها ────────────────────────────────────────────────────── */
+.hdn-delta {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.125rem;
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.hdn-delta .dashicons {
+	inline-size: 1rem;
+	block-size: 1rem;
+	font-size: 1rem;
+}
+
+.hdn-delta--up .dashicons {
+	color: var(--hd-ok, #1f7a4d);
+}
+
+.hdn-delta--down .dashicons {
+	color: var(--hd-error, #b3261e);
+}
+
+/* چهار کاشی کل عرض را پر کنند (نه ستون‌های خالی کنار) */
+.hdn-stats-page .hdn-tiles {
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+}
+
+.hdn-tiles__note {
+	margin-block: 0.5rem 0;
+}
+
+/* ── نمودار ─────────────────────────────────────────────────────── */
+.hdn-charts__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	gap: 1.5rem;
+}
+
+.hdn-chart {
+	margin: 0;
+}
+
+.hdn-chart__head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-block-end: 0.5rem;
+}
+
+.hdn-chart__title {
+	color: var(--hd-primary, #25316a);
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.hdn-chart__sum {
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+}
+
+.hdn-chart__plot {
+	position: relative;
+}
+
+.hdn-chart__plot svg {
+	display: block;
+	inline-size: 100%;
+	block-size: 180px;
+	overflow: visible;
+}
+
+.hdn-chart__grid,
+.hdn-chart__base {
+	stroke: var(--hdn-grid);
+	stroke-width: 1;
+	vector-effect: non-scaling-stroke;
+}
+
+.hdn-chart__base {
+	stroke: color-mix(in srgb, var(--hd-third, #b6c2f3) 80%, #000 5%);
+}
+
+.hdn-chart__bar {
+	fill: var(--hdn-bar);
+}
+
+.hdn-chart__hit {
+	fill: transparent;
+	cursor: crosshair;
+}
+
+.hdn-chart__col.is-active .hdn-chart__bar {
+	fill: var(--hdn-bar-hover);
+}
+
+.hdn-chart__col.is-active .hdn-chart__hit {
+	fill: color-mix(in srgb, var(--hd-third, #b6c2f3) 22%, transparent);
+}
+
+.hdn-chart__ticks {
+	position: absolute;
+	inset-block: 0 22px;
+	inset-inline-start: 0;
+	pointer-events: none;
+}
+
+.hdn-chart__ticks span {
+	position: absolute;
+	inset-inline-start: 0;
+	transform: translateY(-50%);
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.6875rem;
+	line-height: 1;
+}
+
+.hdn-chart__axis {
+	display: flex;
+	justify-content: space-between;
+	margin-block-start: -18px;
+	padding-inline-start: 36px;
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.6875rem;
+	pointer-events: none;
+}
+
+.hdn-chart__tip {
+	position: absolute;
+	inset-block-start: 0;
+	z-index: 2;
+	padding: 0.375rem 0.625rem;
+	border: 1px solid var(--hd-border, #dde3f7);
+	border-radius: var(--hd-radius-sm, 0.5rem);
+	background: #fff;
+	box-shadow: var(--hd-shadow-lg, 0 0.75rem 2rem rgb(37 49 106 / 0.12));
+	color: var(--hd-text, #1d2340);
+	font-size: 0.75rem;
+	white-space: nowrap;
+	pointer-events: none;
+	transform: translateX(-50%);
+}
+
+.hdn-chart__tip strong {
+	display: block;
+	font-size: 0.9375rem;
+}
+
+.hdn-daily-table {
+	margin-block-start: 1rem;
+}
+
+.hdn-daily-table summary {
+	color: var(--hd-primary, #25316a);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.hdn-daily-table .hd-table-wrap {
+	max-block-size: 24rem;
+	margin-block-start: 0.75rem;
+	overflow-y: auto;
+}
+
+/* ── جدول نوتیفیکیشن‌ها ────────────────────────────────────────── */
+.hdn-table__table td,
+.hdn-table__table th {
+	vertical-align: middle;
+}
+
+.hdn-table__table tbody tr.is-selected {
+	background: color-mix(in srgb, var(--hd-third, #b6c2f3) 22%, #fff);
+}
+
+.hdn-table__name {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	min-inline-size: 16rem;
+}
+
+.hdn-table__title {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.25rem;
+	font-weight: 600;
+}
+
+.hdn-thumb {
+	display: grid;
+	flex-shrink: 0;
+	place-items: center;
+	inline-size: 3rem;
+	block-size: 3rem;
+	overflow: hidden;
+	border: 1px solid var(--hd-border, #dde3f7);
+	border-radius: 0.5rem;
+	background: var(--hd-softer, #f8f9fe);
+}
+
+/* شطرنجی پشت PNG بی‌پس‌زمینه */
+.hdn-thumb.is-transparent {
+	background: repeating-conic-gradient(#e6e9f2 0% 25%, #fff 0% 50%) 50% / 10px 10px;
+}
+
+.hdn-thumb img {
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+
+.hdn-thumb.is-transparent img {
+	object-fit: contain;
+}
+
+.hdn-table__actions {
+	white-space: nowrap;
+}
+
+.hdn-table__actions form {
+	display: inline;
+}
+
+.hdn-sort a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	color: inherit;
+	text-decoration: none;
+}
+
+.hdn-sort__icon::after {
+	content: "↕";
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+}
+
+.hdn-sort.is-asc .hdn-sort__icon::after {
+	content: "▲";
+	color: var(--hd-primary, #25316a);
+}
+
+.hdn-sort.is-desc .hdn-sort__icon::after {
+	content: "▼";
+	color: var(--hd-primary, #25316a);
+}
+
+/* ── دیالوگ تأیید ──────────────────────────────────────────────── */
+.hdn-confirm p {
+	margin-block: 0 1rem;
+	line-height: 1.9;
+}
+
+.hdn-confirm__actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
+@media (max-width: 782px) {
+	.hdn-filter {
+		align-items: stretch;
+	}
+
+	.hdn-filter__notif,
+	.hdn-filter__notif select {
+		inline-size: 100%;
+		min-inline-size: 0;
+	}
+
+	.hdn-table__name {
+		min-inline-size: 12rem;
+	}
+}

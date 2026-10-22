@@ -10,7 +10,8 @@
  * (بخش ۲۱۰): <dialog>، srcset با شناسه پیوست (و پیدا کردن پیوست اعلان قدیمی از
  * آدرس)، کش قالب قدیمی، ذخیره فقط فیلدهای فرستاده‌شده و محدوده عددها؛ و نسخه ۵
  * (بخش ۲۱۱): آمار (شمارنده اتمی، فقط منتشرشده، محدودیت نرخ، صفر کردن)، کپی،
- * دسته محصول، فیلدهای تازه.
+ * دسته محصول، فیلدهای تازه؛ و نسخه ۶ (بخش ۲۱۲): آمار روزانه (جدول، افزایش اتمی،
+ * روزهای خالی صفر، بازه، صفر کردن و حذف) و صفحه «آمار».
  */
 
 declare(strict_types=1);
@@ -44,6 +45,10 @@ if ( ! class_exists( 'Hodima_Notification_Front' ) || ! function_exists( 'hodima
 }
 
 wp_set_current_user( 1 );
+if ( function_exists( 'hodima_notification_daily_install' ) ) {
+	delete_option( 'hodima_notif_daily_db' ); // جدول روزانه (در سایت admin_init، در admin-ajax هم)
+	hodima_notification_daily_install();
+}
 
 /** یک اعلان منتشرشده با متاهای داده‌شده. */
 function hodima_nt_create( array $meta = [], string $status = 'publish', string $title = 'اعلان آزمون' ): int {
@@ -202,6 +207,8 @@ echo "=== آمار، کپی و دسته محصول\n";
 final class Hodima_Nt_Stop extends Exception {}
 add_filter( 'wp_doing_ajax', '__return_true' );
 add_filter( 'wp_die_ajax_handler', static fn() => static function (): void { throw new Hodima_Nt_Stop(); } );
+// پیش از فیلتر خود ابزار تست (mu-plugins) که ریدایرکت را چاپ و لغو می‌کند
+add_filter( 'wp_redirect', static function ( string $to ): string { throw new Hodima_Nt_Stop( $to ); }, 0 );
 $ajax = static function ( array $post ): string {
 	$_POST = $post;
 	ob_start();
@@ -224,6 +231,11 @@ $st  = hodima_notification_stats( $sid );
 hodima_nt( 'شمارنده‌ها (۲ نمایش، ۱ کلیک، ۱ بستن)', [ $st['views'], $st['clicks'], $st['closes'] ], [ 2, 1, 1 ] );
 hodima_nt( 'نرخ کلیک', $st['ctr'], 50.0 );
 hodima_nt( 'تاریخ شروع آمار ثبت می‌شود', $st['since'], current_time( 'Y-m-d' ) );
+$today = current_time( 'Y-m-d' );
+$daily = hodima_notification_daily( [ $sid ], wp_date( 'Y-m-d', time() - 2 * DAY_IN_SECONDS ), $today );
+hodima_nt( 'آمار روزانه: امروز ۲ نمایش، ۱ کلیک، ۱ بستن', $daily[ $today ], [ 'views' => 2, 'clicks' => 1, 'closes' => 1 ] );
+hodima_nt( 'آمار روزانه: ۳ روز با روزهای خالی صفر', [ count( $daily ), array_sum( array_column( $daily, 'views' ) ) ], [ 3, 2 ] );
+hodima_nt( 'جمع بازه هر نوتیفیکیشن', hodima_notification_range_totals( $today, $today )[ $sid ] ?? [], [ 'views' => 2, 'clicks' => 1, 'closes' => 1 ] );
 hodima_nt( 'پاسخ JSON ثبت شد', str_contains( $out, '"recorded":true' ), true );
 $draft = hodima_nt_create( [], 'draft' );
 $ajax( [ 'id' => (string) $draft, 'event' => 'view' ] );
@@ -240,11 +252,35 @@ hodima_nt( 'محدودیت نرخ: حداکثر ۶۰ رویداد در دقیق�
 $_POST = [ 'hodima_notification_meta_nonce' => wp_create_nonce( 'hodima_save_notification_data' ), 'hd_notif_stats_reset' => '1' ];
 hodima_save_notification_data( $sid );
 $_POST = [];
-hodima_nt( 'صفر کردن آمار هنگام ذخیره', hodima_notification_stats( $sid )['views'], 0 );
+hodima_nt( 'ذخیره فرم دیگر آمار را صفر نمی‌کند (صفر کردن در تب آمار)', hodima_notification_stats( $sid )['views'], 58 );
+// صفحه آمار: خروجی کامل (سیستم طراحی Core فقط در پیشخوان لود می‌شود)
+if ( ! function_exists( 'hodima_admin_page_open' ) ) {
+	require_once WP_PLUGIN_DIR . '/hodima-core/includes/admin-ui.php';
+}
+$_GET = [ 'page' => 'hodima-notification-stats', 'range' => '7' ];
+ob_start();
+hodima_notification_stats_render();
+$page = (string) ob_get_clean();
+$_GET = [];
+hodima_nt( 'صفحه آمار: کاشی‌ها، دو نمودار، جدول', [ substr_count( $page, 'class="hd-stat"' ), substr_count( $page, 'class="hdn-chart"' ), str_contains( $page, 'hodima_notif_stats_reset' ) ], [ 4, 2, true ] );
+hodima_nt( 'صفحه آمار: نمودار ۷ ستون روز', substr_count( $page, 'class="hdn-chart__col"' ), 14 );
+hodima_nt( 'صفحه آمار: تب «آمار» فعال', 1 === preg_match( '/aria-current="page"[^>]*>|<a class="[^"]*hd-tabs__item[^"]*" href="[^"]*hodima-notification-stats"[^>]*aria-current="page"/', $page ), true );
+// صفر کردن از صفحه آمار (کل و روزانه)
+$_POST = [ 'post' => (string) $sid, '_wpnonce' => wp_create_nonce( 'hodima_notif_stats_reset_' . $sid ) ];
+$_REQUEST = $_POST;
+try {
+	hodima_notification_stats_reset_action();
+} catch ( Hodima_Nt_Stop ) {
+	// ریدایرکت
+}
+$_POST = $_REQUEST = [];
+hodima_nt( 'صفر کردن از تب آمار: کل و روزانه', [ hodima_notification_stats( $sid )['views'], hodima_notification_daily( [ $sid ], $today, $today )[ $today ]['views'] ], [ 0, 0 ] );
+$gone = hodima_nt_create( [ 'hd_notif_bg_image' => 'https://hodima.test/a.jpg' ] );
+hodima_notification_stat_increment( $gone, 'view' );
+wp_delete_post( $gone, true );
+hodima_nt( 'حذف نوتیفیکیشن آمار روزانه‌اش را پاک می‌کند', hodima_notification_range_totals( $today, $today )[ $gone ] ?? 'none', 'none' );
 
 update_post_meta( $sid, '_hd_notif_cooldown_days', '7' );
-// پیش از فیلتر خود ابزار تست (mu-plugins) که ریدایرکت را چاپ و لغو می‌کند
-add_filter( 'wp_redirect', static function ( string $to ): string { throw new Hodima_Nt_Stop( $to ); }, 0 );
 $_GET = [ 'post' => (string) $sid, '_wpnonce' => wp_create_nonce( 'hodima_notif_duplicate_' . $sid ) ];
 $_REQUEST = $_GET;
 try {
