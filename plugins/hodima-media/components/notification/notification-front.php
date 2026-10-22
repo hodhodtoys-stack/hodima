@@ -47,6 +47,9 @@ final class Hodima_Notification_Front {
 		}
 		wp_enqueue_style( 'hd-notification-front-css', hodima_notification_asset_url( 'css/notification-front.css' ), [], hodima_notification_asset_version( 'css/notification-front.css' ) );
 		wp_enqueue_script( 'hd-notification-front-js', hodima_notification_asset_url( 'js/notification-front.js' ), [], hodima_notification_asset_version( 'js/notification-front.js' ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
+		// آدرس ثبت آمار (نمایش/کلیک/بستن)؛ بدون ماژول آمار خالی
+		$stats = function_exists( 'hodima_notification_track_event' ) ? admin_url( 'admin-ajax.php' ) : '';
+		wp_add_inline_script( 'hd-notification-front-js', 'window.hodimaNotif=' . wp_json_encode( [ 'stats' => $stats ] ) . ';', 'before' );
 	}
 
 	/** چاپ همه اعلان‌های این صفحه. */
@@ -152,9 +155,35 @@ final class Hodima_Notification_Front {
 			}
 		}
 
+		$cats = hodima_notification_ids( $meta['hd_notif_target_product_cat'] );
+		if ( $cats && ! $this->in_product_cats( $cats ) ) {
+			return false;
+		}
+
 		// اعلان تمام‌شده چاپ نشود؛ شروع/پایان دقیق در مرورگر (صفحه کش‌شده روزها می‌ماند)
 		$end = $meta['hd_notif_end_date'];
 		return '' === $end || current_time( 'Y-m-d' ) <= $end;
+	}
+
+	/**
+	 * صفحه فعلی دسته محصول (یا زیردسته) از این دسته‌هاست، یا محصولی در آن‌ها؟
+	 *
+	 * @param list<int> $cats شناسه دسته‌ها.
+	 */
+	private function in_product_cats( array $cats ): bool {
+		$terms = [];
+		if ( is_tax( 'product_cat' ) ) {
+			$terms = [ get_queried_object_id() ];
+		} elseif ( is_singular( 'product' ) ) {
+			$terms = wp_get_post_terms( get_queried_object_id(), 'product_cat', [ 'fields' => 'ids' ] );
+			$terms = is_array( $terms ) ? array_map( 'intval', $terms ) : [];
+		}
+		foreach ( $terms as $term ) {
+			if ( in_array( $term, $cats, true ) || array_intersect( array_map( 'intval', get_ancestors( $term, 'product_cat', 'taxonomy' ) ), $cats ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** یک خط هدف (شناسه نوشته یا آدرس/مسیر) با صفحه فعلی جور است؟ زیرمسیرها هم. */
@@ -238,6 +267,9 @@ final class Hodima_Notification_Front {
 			'utm'                => mb_strtolower( trim( (string) $meta['hd_notif_target_utm'] ) ),
 			'referrer'           => mb_strtolower( trim( (string) $meta['hd_notif_target_referrer'] ) ),
 			'skip-search'        => $meta['hd_notif_skip_search'],
+			'visitor'            => $meta['hd_notif_visitor'],
+			'min-pv'             => (int) $meta['hd_notif_min_pageviews'],
+			'cooldown'           => (int) $meta['hd_notif_cooldown_days'],
 		];
 		$attrs = '';
 		foreach ( $data as $name => $value ) {

@@ -26,7 +26,8 @@ const HODIMA_NOTIFICATION_CACHE = 'hd_active_notifications';
  * همه فیلدهای یک اعلان: کلید (بدون `_` متا) ← نوع و پیش‌فرض.
  *
  * نوع‌ها: bool ('1'/'0')، int (با min/max)، priority (۰۱ تا ۹۹)، url، color،
- * date (Y-m-d میلادی)، text، lines (هر خط یک آدرس)، choice (یکی از choices)، id (پیوست).
+ * date (Y-m-d میلادی)، text، lines (هر خط یک آدرس)، choice (یکی از choices)، id (پیوست)،
+ * ids (شناسه‌های جدا با ویرگول، مثلا دسته‌های محصول).
  *
  * @return array<string, array{type: string, default: string, min?: int, max?: int, choices?: list<string>}>
  */
@@ -62,11 +63,19 @@ function hodima_notification_fields(): array {
 		'hd_notif_target_page'        => [ 'type' => 'lines', 'default' => '' ],
 		'hd_notif_target_utm'         => [ 'type' => 'text', 'default' => '' ],
 		'hd_notif_target_referrer'    => [ 'type' => 'text', 'default' => '' ],
+		// فقط محصولات و صفحه‌های این دسته‌ها (و زیردسته‌هایشان)
+		'hd_notif_target_product_cat' => [ 'type' => 'ids', 'default' => '' ],
+		// بازدیدکننده تازه (اولین بازدید از سایت) یا برگشتی
+		'hd_notif_visitor'            => [ 'type' => 'choice', 'default' => 'all', 'choices' => [ 'all', 'new', 'returning' ] ],
+		// از چندمین صفحه همان بازدید نمایش داده شود (۰ و ۱ = از صفحه اول)
+		'hd_notif_min_pageviews'      => [ 'type' => 'int', 'default' => '0', 'min' => 0, 'max' => 50 ],
 		// بازدیدکننده‌ای که همین الان از نتیجه جستجو (گوگل، بینگ…) آمده، در صفحه ورود نبیند
 		'hd_notif_skip_search'        => [ 'type' => 'bool', 'default' => '0' ],
 		'hd_notif_start_date'         => [ 'type' => 'date', 'default' => '' ],
 		'hd_notif_end_date'           => [ 'type' => 'date', 'default' => '' ],
 		'hd_notif_show_count'         => [ 'type' => 'int', 'default' => '0', 'min' => 0, 'max' => 1000 ],
+		// بعد از بستن یا کلیک، تا چند روز دوباره نشان نده (۰ = فقط تا آخر همان بازدید، مثل قبل)
+		'hd_notif_cooldown_days'      => [ 'type' => 'int', 'default' => '0', 'min' => 0, 'max' => 365 ],
 	];
 }
 
@@ -99,6 +108,11 @@ function hodima_notification_normalize_position( string $position ): string {
  * @param mixed                                                                               $raw   مقدار خام (بدون slash).
  */
 function hodima_notification_sanitize( array $field, mixed $raw ): string {
+	if ( 'ids' === $field['type'] ) {
+		$list = is_array( $raw ) ? $raw : explode( ',', is_scalar( $raw ) ? (string) $raw : '' );
+		$ids  = array_unique( array_filter( array_map( static fn( mixed $id ): int => is_scalar( $id ) ? absint( $id ) : 0, $list ) ) );
+		return implode( ',', array_slice( $ids, 0, 200 ) );
+	}
 	$value = is_scalar( $raw ) ? trim( (string) $raw ) : '';
 
 	return match ( $field['type'] ) {
@@ -136,6 +150,15 @@ function hodima_notification_meta( int $post_id ): array {
 		$meta[ $key ] = is_scalar( $value ) && '' !== (string) $value ? (string) $value : $field['default'];
 	}
 	return $meta;
+}
+
+/**
+ * شناسه‌های ذخیره‌شده (ids) ← آرایه عدد.
+ *
+ * @return list<int>
+ */
+function hodima_notification_ids( string $value ): array {
+	return array_values( array_filter( array_map( 'absint', explode( ',', $value ) ) ) );
 }
 
 /** کش فهرست اعلان‌های فعال را پاک کن (هر تغییری که روی نمایش اثر دارد). */

@@ -86,6 +86,8 @@ final class Hodima_Notification_Metabox {
 				</div>
 			</section>
 
+			<?php $this->render_stats( $post ); ?>
+
 			<section class="hd-card">
 				<div class="hd-card__head">
 					<?php echo $this->icon( 'format-image' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
@@ -260,6 +262,24 @@ final class Hodima_Notification_Metabox {
 						]
 					);
 					?>
+					<?php
+					$this->select(
+						'hd_notif_visitor',
+						'بازدیدکننده',
+						$m,
+						[
+							'all'       => 'همه',
+							'new'       => 'فقط بار اول (اولین بازدید از سایت)',
+							'returning' => 'فقط برگشتی‌ها (قبلا آمده‌اند)',
+						]
+					);
+					?>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_min_pageviews">از چندمین صفحه بازدید</label>
+						<input type="number" class="small-text" id="hd_notif_min_pageviews" name="hd_notif_min_pageviews" value="<?php echo esc_attr( $m['hd_notif_min_pageviews'] ); ?>" min="0" max="50" inputmode="numeric">
+						<p class="hd-field__help">مثلا ۳: فقط به کسی که دست‌کم سه صفحه دیده (علاقه‌مند). ۰ = از صفحه اول.</p>
+					</div>
+					<?php $this->render_product_cats( $m ); ?>
 					<div class="hd-field hd-field--wide" data-hdn-pages-field>
 						<label class="hd-field__label" for="hd_notif_target_page">آدرس‌ها</label>
 						<textarea id="hd_notif_target_page" name="hd_notif_target_page" rows="4" class="ltr" placeholder="/shop/&#10;/product-category/hair/&#10;123"><?php echo esc_textarea( $m['hd_notif_target_page'] ); ?></textarea>
@@ -304,6 +324,11 @@ final class Hodima_Notification_Metabox {
 						<label class="hd-field__label" for="hd_notif_show_count">حداکثر دفعات نمایش به هر نفر</label>
 						<input type="number" class="small-text" id="hd_notif_show_count" name="hd_notif_show_count" value="<?php echo esc_attr( $m['hd_notif_show_count'] ); ?>" min="0" max="1000" inputmode="numeric">
 						<p class="hd-field__help">۰ = نامحدود. بعد از بستن، در همان بازدید دوباره باز نمی‌شود.</p>
+					</div>
+					<div class="hd-field">
+						<label class="hd-field__label" for="hd_notif_cooldown_days">بعد از بستن یا کلیک، تا چند روز دوباره نشان نده</label>
+						<input type="number" class="small-text" id="hd_notif_cooldown_days" name="hd_notif_cooldown_days" value="<?php echo esc_attr( $m['hd_notif_cooldown_days'] ); ?>" min="0" max="365" inputmode="numeric">
+						<p class="hd-field__help">۰ = فقط تا آخر همان بازدید (بازدید بعدی دوباره نمایش داده می‌شود).</p>
 					</div>
 				</div>
 			</section>
@@ -367,6 +392,115 @@ final class Hodima_Notification_Metabox {
 			</section>
 		</div>
 		<?php
+	}
+
+	/** کارت آمار (فقط نوتیفیکیشن ذخیره‌شده). */
+	private function render_stats( WP_Post $post ): void {
+		if ( 'auto-draft' === $post->post_status || ! function_exists( 'hodima_notification_stats' ) ) {
+			return;
+		}
+		$s     = hodima_notification_stats( $post->ID );
+		$since = '' !== $s['since'] && function_exists( 'hodima_notification_format_date' ) ? hodima_notification_format_date( $s['since'] ) : '';
+		$tiles = [
+			'نمایش'    => number_format_i18n( $s['views'] ),
+			'کلیک'     => number_format_i18n( $s['clicks'] ),
+			'نرخ کلیک' => number_format_i18n( $s['ctr'], 1 ) . '٪',
+			'بستن'     => number_format_i18n( $s['closes'] ),
+		];
+		?>
+		<section class="hd-card">
+			<div class="hd-card__head">
+				<?php echo $this->icon( 'chart-bar' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ثابت ?>
+				<h2 class="hd-card__title">آمار</h2>
+				<p class="hd-card__desc">
+					<?php echo esc_html( '' !== $since ? 'از ' . $since . '؛ ' : '' ); ?>
+					نمایش = بار باز شدن پاپ‌آپ؛ کلیک = رفتن به لینک. ربات‌های جستجو شمرده نمی‌شوند. اگر گوگل آنالیتیکس روشن است، همین‌ها به‌عنوان view_promotion و select_promotion هم آنجا ثبت می‌شوند.
+				</p>
+			</div>
+			<dl class="hdn-stats">
+				<?php foreach ( $tiles as $label => $value ) : ?>
+					<div class="hdn-stats__item">
+						<dt><?php echo esc_html( $label ); ?></dt>
+						<dd><?php echo esc_html( $value ); ?></dd>
+					</div>
+				<?php endforeach; ?>
+			</dl>
+			<label class="hd-toggle hdn-stats__reset">
+				<input type="checkbox" class="hd-switch" name="hd_notif_stats_reset" value="1">
+				<span>صفر کردن آمار هنگام ذخیره (مثلا بعد از عوض کردن عکس)</span>
+			</label>
+		</section>
+		<?php
+	}
+
+	/**
+	 * انتخاب دسته‌های محصول (فقط اگر ووکامرس هست).
+	 *
+	 * @param array<string, string> $meta مقدارهای فعلی.
+	 */
+	private function render_product_cats( array $meta ): void {
+		if ( ! taxonomy_exists( 'product_cat' ) ) {
+			return;
+		}
+		$terms = get_terms(
+			[
+				'taxonomy'   => 'product_cat',
+				'hide_empty' => false,
+				'number'     => 300,
+				'orderby'    => 'name',
+			]
+		);
+		if ( ! is_array( $terms ) || ! $terms ) {
+			return;
+		}
+		$chosen = hodima_notification_ids( $meta['hd_notif_target_product_cat'] );
+		?>
+		<fieldset class="hd-field hd-field--wide">
+			<legend class="hd-field__label">فقط در این دسته‌های محصول</legend>
+			<?php // بدون تیک هم کلید فرستاده شود (وگرنه برداشتن همه تیک‌ها ذخیره نمی‌شد) ?>
+			<input type="hidden" name="hd_notif_target_product_cat[]" value="">
+			<div class="hd-choices hdn-cats">
+				<?php foreach ( $this->sorted_terms( $terms ) as [ $term, $depth ] ) : ?>
+					<label style="<?php echo esc_attr( sprintf( 'padding-inline-start:%.2frem', 0.5 + $depth * 1.25 ) ); ?>">
+						<input type="checkbox" name="hd_notif_target_product_cat[]" value="<?php echo (int) $term->term_id; ?>" <?php checked( in_array( (int) $term->term_id, $chosen, true ) ); ?>>
+						<?php echo esc_html( $term->name ); ?>
+					</label>
+				<?php endforeach; ?>
+			</div>
+			<p class="hd-field__help">هیچ‌کدام = همه صفحه‌ها. با انتخاب، فقط صفحه همین دسته‌ها (و زیردسته‌هایشان) و محصولاتشان.</p>
+		</fieldset>
+		<?php
+	}
+
+	/**
+	 * ترم‌ها به ترتیب درختی (والد، بعد فرزندها) با عمق.
+	 *
+	 * @param array<int|string, mixed> $terms ترم‌ها.
+	 * @return list<array{0: WP_Term, 1: int}>
+	 */
+	private function sorted_terms( array $terms ): array {
+		$children = [];
+		foreach ( $terms as $term ) {
+			if ( $term instanceof WP_Term ) {
+				$children[ $term->parent ][] = $term;
+			}
+		}
+		$out  = [];
+		$walk = static function ( int $parent_id, int $depth ) use ( &$walk, &$out, $children ): void {
+			foreach ( $children[ $parent_id ] ?? [] as $term ) {
+				$out[] = [ $term, $depth ];
+				$walk( $term->term_id, $depth + 1 );
+			}
+		};
+		$walk( 0, 0 );
+		// دسته‌ای که والدش در این فهرست نیامده (سقف ۳۰۰) گم نشود
+		$shown = array_map( static fn( array $row ): int => $row[0]->term_id, $out );
+		foreach ( $terms as $term ) {
+			if ( $term instanceof WP_Term && ! in_array( $term->term_id, $shown, true ) ) {
+				$out[] = [ $term, 0 ];
+			}
+		}
+		return $out;
 	}
 
 	/**

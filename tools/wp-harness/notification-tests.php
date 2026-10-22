@@ -8,7 +8,9 @@
  * انتشار زمان‌بندی‌شده)، ذخیره «بستن خودکار» و «نقش کاربر»، موقعیت‌های بی‌ظاهر،
  * ستون وضعیت فهرست، حالت شفاف (PNG) و لینک روی کل عکس (بخش ۲۰۹)؛ و نسخه ۴
  * (بخش ۲۱۰): <dialog>، srcset با شناسه پیوست (و پیدا کردن پیوست اعلان قدیمی از
- * آدرس)، کش قالب قدیمی، ذخیره فقط فیلدهای فرستاده‌شده و محدوده عددها.
+ * آدرس)، کش قالب قدیمی، ذخیره فقط فیلدهای فرستاده‌شده و محدوده عددها؛ و نسخه ۵
+ * (بخش ۲۱۱): آمار (شمارنده اتمی، فقط منتشرشده، محدودیت نرخ، صفر کردن)، کپی،
+ * دسته محصول، فیلدهای تازه.
  */
 
 declare(strict_types=1);
@@ -193,6 +195,105 @@ foreach ( get_posts( [ 'post_type' => 'hd_notification', 'post_status' => 'any',
 	wp_delete_post( (int) $old, true );
 }
 wp_delete_post( $att, true );
+delete_transient( 'hd_active_notifications' );
+
+echo "=== آمار، کپی و دسته محصول\n";
+/** فراخوانی هندلر ajax بدون پایان اسکریپت: خروجی JSON. */
+final class Hodima_Nt_Stop extends Exception {}
+add_filter( 'wp_doing_ajax', '__return_true' );
+add_filter( 'wp_die_ajax_handler', static fn() => static function (): void { throw new Hodima_Nt_Stop(); } );
+$ajax = static function ( array $post ): string {
+	$_POST = $post;
+	ob_start();
+	try {
+		hodima_notification_track_event();
+	} catch ( Hodima_Nt_Stop ) {
+		// پایان هندلر
+	}
+	$_POST = [];
+	return (string) ob_get_clean();
+};
+// سهمیه محدودیت نرخ اجرای قبلی (یک دقیقه) پاک شود
+delete_transient( function_exists( 'hodima_rate_limit_key' ) ? hodima_rate_limit_key( 'hd_notif_rl_' ) : 'hd_notif_rl_' . md5( '203.0.113.10' ) );
+$sid = hodima_nt_create( [ 'hd_notif_bg_image' => 'https://hodima.test/a.jpg' ] );
+$ajax( [ 'id' => (string) $sid, 'event' => 'view' ] );
+$ajax( [ 'id' => (string) $sid, 'event' => 'view' ] );
+$ajax( [ 'id' => (string) $sid, 'event' => 'click' ] );
+$out = $ajax( [ 'id' => (string) $sid, 'event' => 'close' ] );
+$st  = hodima_notification_stats( $sid );
+hodima_nt( 'شمارنده‌ها (۲ نمایش، ۱ کلیک، ۱ بستن)', [ $st['views'], $st['clicks'], $st['closes'] ], [ 2, 1, 1 ] );
+hodima_nt( 'نرخ کلیک', $st['ctr'], 50.0 );
+hodima_nt( 'تاریخ شروع آمار ثبت می‌شود', $st['since'], current_time( 'Y-m-d' ) );
+hodima_nt( 'پاسخ JSON ثبت شد', str_contains( $out, '"recorded":true' ), true );
+$draft = hodima_nt_create( [], 'draft' );
+$ajax( [ 'id' => (string) $draft, 'event' => 'view' ] );
+hodima_nt( 'پیش‌نویس شمرده نمی‌شود', hodima_notification_stats( $draft )['views'], 0 );
+$ajax( [ 'id' => (string) $sid, 'event' => 'hack' ] );
+$ajax( [ 'id' => '1', 'event' => 'view' ] ); // نوشته معمولی
+hodima_nt( 'رویداد نامعتبر/نوشته دیگر شمرده نمی‌شود', [ hodima_notification_stats( $sid )['views'], (int) get_post_meta( 1, '_hd_notif_stats_views', true ) ], [ 2, 0 ] );
+for ( $i = 0; $i < 70; $i++ ) {
+	$ajax( [ 'id' => (string) $sid, 'event' => 'view' ] );
+}
+delete_transient( function_exists( 'hodima_rate_limit_key' ) ? hodima_rate_limit_key( 'hd_notif_rl_' ) : 'hd_notif_rl_' . md5( '203.0.113.10' ) );
+// ۴ رویداد معتبر بالا هم از همان سهمیه ۶۰ تایی بودند: ۲ + (۶۰ − ۴) = ۵۸
+hodima_nt( 'محدودیت نرخ: حداکثر ۶۰ رویداد در دقیقه از یک IP', hodima_notification_stats( $sid )['views'], 58 );
+$_POST = [ 'hodima_notification_meta_nonce' => wp_create_nonce( 'hodima_save_notification_data' ), 'hd_notif_stats_reset' => '1' ];
+hodima_save_notification_data( $sid );
+$_POST = [];
+hodima_nt( 'صفر کردن آمار هنگام ذخیره', hodima_notification_stats( $sid )['views'], 0 );
+
+update_post_meta( $sid, '_hd_notif_cooldown_days', '7' );
+// پیش از فیلتر خود ابزار تست (mu-plugins) که ریدایرکت را چاپ و لغو می‌کند
+add_filter( 'wp_redirect', static function ( string $to ): string { throw new Hodima_Nt_Stop( $to ); }, 0 );
+$_GET = [ 'post' => (string) $sid, '_wpnonce' => wp_create_nonce( 'hodima_notif_duplicate_' . $sid ) ];
+$_REQUEST = $_GET;
+try {
+	hodima_notification_duplicate();
+	$redirect = '';
+} catch ( Hodima_Nt_Stop $e ) {
+	$redirect = $e->getMessage();
+}
+$_GET = $_REQUEST = [];
+$copies = get_posts( [ 'post_type' => 'hd_notification', 'post_status' => 'draft', 'title' => get_the_title( $sid ) . ' (کپی)', 'fields' => 'ids' ] );
+$copy   = (int) ( $copies[0] ?? 0 );
+hodima_nt( 'کپی: پیش‌نویس با تنظیمات', [ $copy > 0, get_post_meta( $copy, '_hd_notif_cooldown_days', true ), get_post_meta( $copy, '_hd_notif_bg_image', true ) ], [ true, '7', 'https://hodima.test/a.jpg' ] );
+hodima_nt( 'کپی: آمار کپی نمی‌شود', get_post_meta( $copy, '_hd_notif_stats_views', true ), '' );
+hodima_nt( 'کپی: به صفحه ویرایش کپی می‌رود', str_contains( $redirect, 'post=' . $copy ), true );
+
+hodima_nt( 'شناسه‌ها: آرایه چک‌باکس با خالی و تکراری', hodima_notification_sanitize( hodima_notification_fields()['hd_notif_target_product_cat'], [ '', '5', '5', 'x', '12' ] ), '5,12' );
+
+// دسته محصول: صفحه دسته و زیردسته و محصول
+if ( ! taxonomy_exists( 'product_cat' ) ) {
+	register_post_type( 'product', [ 'public' => true ] );
+	register_taxonomy( 'product_cat', 'product', [ 'public' => true, 'hierarchical' => true, 'rewrite' => false ] );
+}
+$parent  = (int) ( term_exists( 'nt-hair', 'product_cat' )['term_id'] ?? wp_insert_term( 'nt-hair', 'product_cat' )['term_id'] );
+$child   = (int) ( term_exists( 'nt-clips', 'product_cat' )['term_id'] ?? wp_insert_term( 'nt-clips', 'product_cat', [ 'parent' => $parent ] )['term_id'] );
+$other   = (int) ( term_exists( 'nt-bags', 'product_cat' )['term_id'] ?? wp_insert_term( 'nt-bags', 'product_cat' )['term_id'] );
+$product = (int) wp_insert_post( [ 'post_type' => 'product', 'post_status' => 'publish', 'post_title' => 'گل‌سر آزمون' ] );
+wp_set_object_terms( $product, [ $child ], 'product_cat' );
+$cat_notif = hodima_nt_create( [ 'hd_notif_bg_image' => 'https://hodima.test/a.jpg', 'hd_notif_target_product_cat' => (string) $parent, 'hd_notif_visitor' => 'returning', 'hd_notif_min_pageviews' => '3', 'hd_notif_cooldown_days' => '7' ], 'publish', 'دسته' );
+$on = static function ( array $query ) use ( $cat_notif ): bool {
+	$GLOBALS['wp_query']     = new WP_Query( $query );
+	$GLOBALS['wp_the_query'] = $GLOBALS['wp_query'];
+	return str_contains( hodima_nt_render(), 'hd-notification-' . $cat_notif . '"' );
+};
+hodima_nt( 'دسته انتخاب‌شده: نمایش', $on( [ 'taxonomy' => 'product_cat', 'term' => 'nt-hair', 'tax_query' => [ [ 'taxonomy' => 'product_cat', 'terms' => $parent ] ] ] ), true );
+hodima_nt( 'زیردسته: نمایش', $on( [ 'tax_query' => [ [ 'taxonomy' => 'product_cat', 'terms' => $child ] ], 'product_cat' => 'nt-clips' ] ), true );
+hodima_nt( 'دسته دیگر: نه', $on( [ 'tax_query' => [ [ 'taxonomy' => 'product_cat', 'terms' => $other ] ], 'product_cat' => 'nt-bags' ] ), false );
+hodima_nt( 'محصول زیردسته: نمایش', $on( [ 'p' => $product, 'post_type' => 'product' ] ), true );
+hodima_nt( 'صفحه اصلی: نه', $on( [] ), false );
+$on( [ 'p' => $product, 'post_type' => 'product' ] );
+$html = hodima_nt_render();
+hodima_nt( 'data بازدیدکننده/حداقل صفحه/روزهای مکث', str_contains( $html, 'data-visitor="returning" data-min-pv="3" data-cooldown="7"' ), true );
+$GLOBALS['wp_query'] = $GLOBALS['wp_the_query'] = new WP_Query();
+wp_delete_post( $product, true );
+foreach ( [ $child, $parent, $other ] as $t ) {
+	wp_delete_term( $t, 'product_cat' );
+}
+foreach ( get_posts( [ 'post_type' => 'hd_notification', 'post_status' => 'any', 'numberposts' => -1, 'fields' => 'ids' ] ) as $old ) {
+	wp_delete_post( (int) $old, true );
+}
 delete_transient( 'hd_active_notifications' );
 
 echo "\n" . ( $failed ? "✘ {$failed} آزمون رد شد، {$passed} قبول" : "✔ همه {$passed} آزمون اعلان‌ها قبول" ) . "\n";

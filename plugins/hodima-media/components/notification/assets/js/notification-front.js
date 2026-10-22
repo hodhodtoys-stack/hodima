@@ -10,7 +10,11 @@
  *   UTM و ارجاع‌دهنده در طول نشست می‌مانند.
  * - پنجره وسط در موبایل با گزینه «جعبه گوشه» غیرمسدودکننده می‌شود (گوگل
  *   پنجره‌ای را که در موبایل محتوا را می‌پوشاند جریمه می‌کند).
- * - بستن در همان نشست به خاطر سپرده می‌شود؛ عکس فقط پیش از نمایش دانلود می‌شود.
+ * - بستن در همان نشست (و با «تا چند روز» در localStorage) به خاطر سپرده می‌شود؛
+ *   عکس فقط پیش از نمایش دانلود می‌شود.
+ * - نسخه ۵: بازدیدکننده تازه/برگشتی، «از چندمین صفحه»، حداکثر یک پنجره وسط در
+ *   هر صفحه، آمار نمایش/کلیک/بستن (sendBeacon به admin-ajax، هر رویداد یک بار
+ *   در هر صفحه) و رویداد استاندارد GA4 (view_promotion / select_promotion).
  */
 ( () => {
 	'use strict';
@@ -73,15 +77,71 @@
 			/* ارجاع نامعتبر */
 		}
 	}
+	// بازدیدکننده تازه: اولین نشست روی این مرورگر (تاریخ اولین بازدید در localStorage)
+	if ( session.nv === undefined ) {
+		let seen = null;
+		try {
+			seen = ls?.getItem( 'hd_notif_first' ) ?? null;
+			if ( ! seen ) {
+				ls?.setItem( 'hd_notif_first', String( Date.now() ) );
+			}
+		} catch {
+			/* بدون حافظه: تازه حساب شود */
+		}
+		session.nv = seen ? 0 : 1;
+	}
 	saveSession();
+
+	const config = window.hodimaNotif || {};
+	let pageModalShown = false; // حداکثر یک پنجره وسط در هر صفحه
+
+	/** آمار سایت و رویداد GA4 (هر رویداد هر اعلان یک بار در هر صفحه). */
+	const sent = new Set();
+	const track = ( d, event ) => {
+		const id = d.dataset.id;
+		if ( sent.has( `${ id }:${ event }` ) ) {
+			return;
+		}
+		sent.add( `${ id }:${ event }` );
+		if ( config.stats ) {
+			const body = new FormData();
+			body.append( 'action', 'hodima_notif_event' );
+			body.append( 'id', id );
+			body.append( 'event', event );
+			try {
+				if ( ! navigator.sendBeacon?.( config.stats, body ) ) {
+					fetch( config.stats, { method: 'POST', body, keepalive: true, credentials: 'same-origin' } ).catch( () => {} );
+				}
+			} catch {
+				/* شبکه: آمار مهم‌تر از صفحه نیست */
+			}
+		}
+		const ga = { view: 'view_promotion', click: 'select_promotion' }[ event ];
+		if ( ga ) {
+			const detail = { promotion_id: `notification-${ id }`, promotion_name: d.getAttribute( 'aria-label' ) || '', creative_slot: d.dataset.position || '' };
+			if ( typeof window.gtag === 'function' ) {
+				window.gtag( 'event', ga, { ...detail, transport_type: 'beacon' } );
+			} else if ( Array.isArray( window.dataLayer ) ) {
+				window.dataLayer.push( { event: ga, ecommerce: { ...detail } } );
+			}
+		}
+	};
 
 	const isMobile = () => window.matchMedia?.( MOBILE ).matches ?? window.innerWidth <= 768;
 	const reducedMotion = () => window.matchMedia?.( '(prefers-reduced-motion: reduce)' ).matches ?? false;
 
-	const dismiss = ( id ) => {
+	/** «دیده شد»: تا آخر نشست، و با days > 0 تا چند روز (localStorage). */
+	const dismiss = ( id, days = 0 ) => {
 		session.dismissed = session.dismissed || {};
 		session.dismissed[ id ] = 1;
 		saveSession();
+		if ( days > 0 ) {
+			try {
+				ls?.setItem( `hd_notif_hide_${ id }`, String( Date.now() + ( days * 86400000 ) ) );
+			} catch {
+				/* بدون حافظه */
+			}
+		}
 	};
 
 	/** صف: هر بار فقط یک اعلان باز است. */
@@ -133,6 +193,23 @@
 			return false;
 		}
 
+		const visitor = d.dataset.visitor || 'all';
+		if ( ( visitor === 'new' && session.nv !== 1 ) || ( visitor === 'returning' && session.nv !== 0 ) ) {
+			return false;
+		}
+
+		if ( session.pv < ( Number( d.dataset.minPv ) || 0 ) ) {
+			return false;
+		}
+
+		try {
+			if ( Number( ls?.getItem( `hd_notif_hide_${ d.dataset.id }` ) ) > now ) {
+				return false;
+			}
+		} catch {
+			/* بدون حافظه */
+		}
+
 		return ! session.dismissed?.[ d.dataset.id ];
 	};
 
@@ -180,6 +257,7 @@
 		const trigScroll = Number( d.dataset.triggerScroll ) || 0;
 		const trigInact = Number( d.dataset.triggerInactivity ) || 0;
 		const countKey = `hd_notif_count_${ id }`;
+		const cooldown = Number( d.dataset.cooldown ) || 0;
 		const native = typeof d.showModal === 'function';
 
 		let count = 0;
@@ -214,7 +292,8 @@
 			}
 			state = 'closed';
 			clearTimeout( autoTimer );
-			dismiss( id ); // در این نشست دوباره نمایش داده نشود (از هر راهی بسته شود)
+			dismiss( id, cooldown ); // دوباره نمایش داده نشود (از هر راهی بسته شود)
+			track( d, 'close' );
 			document.removeEventListener( 'keydown', onKey );
 			document.removeEventListener( 'click', onOutside, true );
 			// مرورگر بدون <dialog> ویژگی d.open ندارد
@@ -299,11 +378,15 @@
 			release();
 		};
 
+		// پنجره وسط در موبایل با گزینه «جعبه گوشه» غیرمسدودکننده است
+		const asCorner = () => position === 'center' && d.dataset.mobileMode === 'corner' && isMobile();
+
 		const open = () => {
-			// پنجره وسط در موبایل با گزینه «جعبه گوشه» غیرمسدودکننده است
-			const asCorner = position === 'center' && d.dataset.mobileMode === 'corner' && isMobile();
-			modal = position === 'center' && ! asCorner;
-			d.classList.toggle( 'hd-as-corner', asCorner );
+			modal = position === 'center' && ! asCorner();
+			d.classList.toggle( 'hd-as-corner', ! modal && position === 'center' );
+			if ( modal ) {
+				pageModalShown = true;
+			}
 			lastFocus = document.activeElement;
 
 			if ( modal && native ) {
@@ -336,13 +419,22 @@
 				}
 			}
 			armAutoClose();
+			track( d, 'view' );
 		};
 
 		const show = () => {
 			if ( state !== 'scheduled' ) {
 				return;
 			}
-			queue.add( () => loadImage( d ).then( open ) );
+			queue.add( () => {
+				// یک پنجره وسط در هر صفحه کافی است؛ بقیه پنجره‌های وسط این صفحه باز نمی‌شوند
+				if ( pageModalShown && position === 'center' && ! asCorner() ) {
+					state = 'closed';
+					queue.done();
+					return;
+				}
+				loadImage( d ).then( open );
+			} );
 		};
 
 		const schedule = () => {
@@ -376,7 +468,10 @@
 		d.querySelector( '.hd-notif-close' )?.addEventListener( 'click', close );
 
 		// کلیک روی لینک یعنی «دیده شد»: در صفحه بعد دوباره باز نشود
-		d.querySelector( '.hd-notif-half-link' )?.addEventListener( 'click', () => dismiss( id ) );
+		d.querySelector( '.hd-notif-half-link' )?.addEventListener( 'click', () => {
+			dismiss( id, cooldown );
+			track( d, 'click' );
+		} );
 
 		if ( ! trigExit && trigScroll <= 0 && trigInact <= 0 ) {
 			schedule();

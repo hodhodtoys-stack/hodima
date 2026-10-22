@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Media
  * Plugin URI:        https://hodima.com
  * Description:       رسانه و محتوای تعاملی هدیما: استوری، ویدیو با شمارش بازدید، اسلایدر، سیستم رسانه (ویدیو، پادکست، FAQ)، اعلان‌ها، باکس‌های بازشونده و جدول داینامیک.
- * Version:           2.0.3
+ * Version:           2.0.4
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_MEDIA_VERSION = '2.0.3';
+const HODIMA_MEDIA_VERSION = '2.0.4';
 define( 'HODIMA_MEDIA_FILE', __FILE__ );
 define( 'HODIMA_MEDIA_DIR', __DIR__ );
 define( 'HODIMA_MEDIA_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -51,11 +51,12 @@ function hodima_media_modules(): array {
 		],
 		'notifications' => [
 			'title'       => 'اعلان‌ها',
-			'description' => 'نوار و پنجره اعلان با زمان‌بندی و هدف‌گیری (صفحه، UTM، ارجاع‌دهنده).',
+			'description' => 'پاپ‌آپ اعلان با زمان‌بندی، هدف‌گیری (صفحه، دسته محصول، UTM، ارجاع‌دهنده، بازدیدکننده تازه/برگشتی) و آمار نمایش و کلیک.',
 			'files'       => [
 				'components/notification/notification-cpt.php',
 				'components/notification/notification-metabox.php',
 				'components/notification/notification-front.php',
+				'components/notification/notification-stats.php',
 			],
 			'settings'    => 'edit.php?post_type=hd_notification',
 			'icon'        => 'dashicons-megaphone',
