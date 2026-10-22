@@ -55,11 +55,18 @@ function hodima_vw_track( int $id, string $action, ?string $token = null ): arra
 	return [ $res->get_status(), $res->get_data() ];
 }
 
-/** پاک کردن شمارنده‌های موقت (تکراری، سقف IP، محدودیت نرخ، کش عدد). */
+/** پاک کردن شمارنده‌های کوتاه‌مدت (تکراری، سقف IP، محدودیت نرخ) و کش عدد. */
 function hodima_vw_reset_transients(): void {
 	global $wpdb;
 	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '\_transient\_%hvw\_%' OR option_name LIKE '\_transient\_timeout\_%hvw\_%'" );
+	$wpdb->query( 'DELETE FROM ' . Hodima_Video_Watch_Limits::table() );
 	wp_cache_flush();
+}
+
+/** تعداد ردیف‌های wp_options. */
+function hodima_vw_options_rows(): int {
+	global $wpdb;
+	return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options}" );
 }
 
 // قفل جمع‌بندی SELECT … FOR UPDATE است که SQLite ابزار تست ندارد (سایت MySQL است): فقط همان عبارت برداشته می‌شود
@@ -87,8 +94,9 @@ Hodima_Video_Watch_Setup::check_version();
 $cols = array_keys( (array) $wpdb->get_row( "SELECT * FROM {$stats} WHERE video_id = 999", ARRAY_A ) );
 hodima_vw( 'ستون popularity_score حذف شد', in_array( 'popularity_score', $cols, true ), false );
 hodima_vw( 'آمار قبلی ماند', (int) $wpdb->get_var( "SELECT views FROM {$stats} WHERE video_id = 999" ), 7 );
-hodima_vw( 'نسخه جدول 1.3.0', get_option( Hodima_Video_Watch_Setup::VERSION_OPTION ), Hodima_Video_Watch_Setup::DB_VERSION );
+hodima_vw( 'نسخه جدول 1.4.0', get_option( Hodima_Video_Watch_Setup::VERSION_OPTION ), Hodima_Video_Watch_Setup::DB_VERSION );
 hodima_vw( 'رویداد روزانه قدیمی پاک شد', wp_next_scheduled( Hodima_Video_Watch_Setup::LEGACY_DECAY_EVENT ), false );
+hodima_vw( 'جدول شمارنده‌های کوتاه‌مدت ساخته شد', Hodima_Video_Watch_Limits::table() === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', Hodima_Video_Watch_Limits::table() ) ), true );
 hodima_vw( 'جمع‌بندی ۵ دقیقه‌ای زمان‌بندی شد', 'five_minutes' === wp_get_schedule( Hodima_Video_Watch_Setup::FLUSH_EVENT ), true );
 $wpdb->delete( $stats, [ 'video_id' => 999 ] );
 
@@ -198,6 +206,75 @@ remove_filter( 'query', $no_lock );
 echo "=== جمع‌بندی دستی (/cron)\n";
 $cron = rest_do_request( new WP_REST_Request( 'GET', '/video-watch/v1/cron' ) );
 hodima_vw( 'مهمان بدون کلید: ۴۰۳', $cron->get_status(), 403 );
+
+echo "=== کارایی: ثبت بازدید در wp_options نمی‌نویسد (مرحله ۲)\n";
+hodima_vw_reset_transients();
+$before = hodima_vw_options_rows();
+$_SERVER['HTTP_USER_AGENT'] = 'PerfBrowser/1.0';
+[ , $data ] = hodima_vw_track( $pub, 'views' );
+hodima_vw( 'بازدید تازه شمرده شد', is_array( $data ) ? $data['counted'] : null, true );
+hodima_vw_track( $pub, 'views' );
+hodima_vw_track( $pub, 'shares' );
+Hodima_Video_Watch_Analytics::get_total_views( $pub );
+hodima_vw( 'سه درخواست + خواندن عدد: صفر ردیف تازه در wp_options', hodima_vw_options_rows() - $before, 0 );
+hodima_vw( 'هیچ transient آمار ویدیو', (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '\_transient%hvw\_%' AND option_name NOT LIKE '%hvw\_videos\_page\_id'" ), 0 );
+$limits = Hodima_Video_Watch_Limits::table();
+// seen + ipcap برای بازدید، seen + ipcap برای اشتراک، یک ردیف نرخ دقیقه
+hodima_vw( 'ردیف‌های جدول شمارنده‌ها', (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$limits}" ), 5 );
+hodima_vw( 'شمارنده نرخ این دقیقه = ۳', (int) $wpdb->get_var( "SELECT hits FROM {$limits} WHERE expires_at = " . Hodima_Video_Watch_Limits::end_of_minute() ), 3 );
+hodima_vw( 'کلیدها فقط هش (بدون IP خام)', (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$limits} WHERE seen_key LIKE '%203.0.113%'" ), 0 );
+hodima_vw( 'انقضای روزانه = نیمه‌شب گرینویچ', (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$limits} WHERE expires_at = " . Hodima_Video_Watch_Limits::end_of_day() ), 4 );
+
+$wpdb->insert( $limits, [ 'seen_key' => md5( 'old' ), 'hits' => 3, 'expires_at' => time() - 10 ] );
+Hodima_Video_Watch_Limits::cleanup();
+hodima_vw( 'پاک‌سازی: منقضی حذف شد', (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$limits} WHERE seen_key = %s", md5( 'old' ) ) ), 0 );
+hodima_vw( 'پاک‌سازی: معتبرها ماندند', (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$limits}" ), 5 );
+hodima_vw( 'پاک‌سازی به جمع‌بندی ۵ دقیقه‌ای وصل است', (bool) has_action( Hodima_Video_Watch_Setup::FLUSH_EVENT, [ Hodima_Video_Watch_Limits::class, 'cleanup' ] ), true );
+
+echo "=== به‌روزرسانی خودکار بدون باز شدن پیشخوان: جدول تازه خودش ساخته می‌شود\n";
+$wpdb->query( "DROP TABLE {$limits}" );
+update_option( Hodima_Video_Watch_Setup::VERSION_OPTION, '1.3.0', false );
+$_SERVER['HTTP_USER_AGENT'] = 'AfterUpdate/1.0';
+$prev = $wpdb->suppress_errors( true );
+[ $status, $data ] = hodima_vw_track( $pub, 'views' );
+$wpdb->suppress_errors( $prev );
+hodima_vw( 'درخواست سالم', $status, 200 );
+hodima_vw( 'بازدید شمرده شد', is_array( $data ) ? $data['counted'] : null, true );
+hodima_vw( 'جدول ساخته شد', $limits === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $limits ) ), true );
+hodima_vw( 'نسخه جدول به‌روز شد', get_option( Hodima_Video_Watch_Setup::VERSION_OPTION ), Hodima_Video_Watch_Setup::DB_VERSION );
+
+echo "=== کاور پلیر در اندازه مناسب (مرحله ۲)\n";
+$upload = wp_get_upload_dir();
+$att    = wp_insert_attachment( [ 'post_title' => 'کاور', 'post_mime_type' => 'image/jpeg', 'guid' => $upload['baseurl'] . '/2026/10/cover.jpg' ], '2026/10/cover.jpg' );
+update_post_meta( $att, '_wp_attached_file', '2026/10/cover.jpg' );
+wp_update_attachment_metadata(
+	$att,
+	[
+		'width'  => 4000,
+		'height' => 2250,
+		'file'   => '2026/10/cover.jpg',
+		'sizes'  => [
+			'medium'    => [ 'file' => 'cover-300x169.jpg', 'width' => 300, 'height' => 169, 'mime-type' => 'image/jpeg' ],
+			'large'     => [ 'file' => 'cover-1024x576.jpg', 'width' => 1024, 'height' => 576, 'mime-type' => 'image/jpeg' ],
+			'1536x1536' => [ 'file' => 'cover-1536x864.jpg', 'width' => 1536, 'height' => 864, 'mime-type' => 'image/jpeg' ],
+			'2048x2048' => [ 'file' => 'cover-2048x1152.jpg', 'width' => 2048, 'height' => 1152, 'mime-type' => 'image/jpeg' ],
+		],
+	]
+);
+$full = $upload['baseurl'] . '/2026/10/cover.jpg';
+update_post_meta( $pub, '_hod_video_thumbnail', $full );
+hodima_vw( 'کاور پیوست: اندازه ۱۵۳۶ به‌جای اصلی ۴۰۰۰', basename( hodima_video_watch_poster_url( $pub ) ), 'cover-1536x864.jpg' );
+hodima_vw( 'شناسه پیوست با امضای آدرس نگه داشته شد', get_post_meta( $pub, '_hod_video_thumbnail_id', true ), md5( $full ) . ':' . $att );
+$queries = $wpdb->num_queries;
+hodima_video_watch_poster_id( $pub );
+hodima_vw( 'بار دوم: بدون جست‌وجوی آدرس در متاها', $wpdb->num_queries - $queries, 0 );
+update_post_meta( $pub, '_hod_video_thumbnail', 'https://cdn.example.com/c.jpg' );
+hodima_vw( 'آدرس بیرونی: همان آدرس', hodima_video_watch_poster_url( $pub ), 'https://cdn.example.com/c.jpg' );
+hodima_vw( 'آدرس عوض شد ← امضا تازه', get_post_meta( $pub, '_hod_video_thumbnail_id', true ), md5( 'https://cdn.example.com/c.jpg' ) . ':0' );
+delete_post_meta( $pub, '_hod_video_thumbnail' );
+set_post_thumbnail( $pub, $att );
+hodima_vw( 'بدون کاور ← تصویر شاخص در همان اندازه', basename( hodima_video_watch_poster_url( $pub ) ), 'cover-1536x864.jpg' );
+wp_delete_attachment( $att, true );
 
 echo "=== حذف ویدیو آمارش را پاک می‌کند\n";
 wp_delete_post( $pub, true );

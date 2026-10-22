@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Hodima_Video_Watch_Setup {
 
-	public const DB_VERSION     = '1.3.0';
+	public const DB_VERSION     = '1.4.0';
 	public const VERSION_OPTION = 'video_watch_db_version';
 	public const FLUSH_EVENT    = 'video_watch_flush_counters_event';
 
@@ -23,6 +23,7 @@ final class Hodima_Video_Watch_Setup {
 		add_filter( 'cron_schedules', [ self::class, 'add_cron_schedules' ] ); // phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval -- صف سبک عمدا هر ۵ دقیقه جمع‌بندی می‌شود
 		add_action( 'admin_init', [ self::class, 'check_version' ] );
 		add_action( self::FLUSH_EVENT, [ Hodima_Video_Watch_Analytics::class, 'flush_counters' ] );
+		add_action( self::FLUSH_EVENT, [ Hodima_Video_Watch_Limits::class, 'cleanup' ] );
 		add_action( 'delete_post', [ self::class, 'cleanup_on_delete_post' ], 10, 2 );
 		// پاک کردن زمان‌بندی‌ها با غیرفعال‌سازی افزونه است (hodima-media.php)؛ تا Media 2.0.8
 		// با «تعویض قالب» پاک می‌شدند که بی‌ربط بود (همان باگ استوری، بخش ۱۲۷).
@@ -55,6 +56,17 @@ final class Hodima_Video_Watch_Setup {
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (id),
 			UNIQUE KEY video_counter_idx (video_id, counter_type)
+			) $charset;"
+		);
+
+		// شمارنده‌های کوتاه‌مدت (تکراری، سقف IP، محدودیت نرخ) — از DB 1.4.0 به‌جای transient
+		dbDelta(
+			"CREATE TABLE {$p}video_watch_seen (
+			seen_key char(32) NOT NULL,
+			hits int(10) unsigned NOT NULL DEFAULT 0,
+			expires_at int(10) unsigned NOT NULL,
+			PRIMARY KEY (seen_key),
+			KEY expires_idx (expires_at)
 			) $charset;"
 		);
 
@@ -93,6 +105,34 @@ final class Hodima_Video_Watch_Setup {
 		}
 
 		self::ensure_scheduled_events();
+	}
+
+	/**
+	 * ساخت جدول‌ها وقتی نوشتن شکست خورد و نسخه جدول کهنه است.
+	 *
+	 * ارتقا معمولا در پیشخوان است (check_version)؛ ولی بعد از به‌روزرسانی
+	 * خودکار، تا مدیری پیشخوان را باز نکرده جدول تازه نیست و ثبت بازدید
+	 * شکست می‌خورد. فقط بعد از خطا صدا زده می‌شود (هزینه‌ای برای حالت عادی
+	 * ندارد) و در هر درخواست حداکثر یک بار.
+	 *
+	 * @return bool true اگر جدول‌ها همین الان ساخته/ارتقا شدند (ارزش تکرار دارد).
+	 */
+	public static function repair_tables(): bool {
+		static $tried = false;
+		if ( $tried ) {
+			return false;
+		}
+		$tried = true;
+
+		$installed = (string) get_option( self::VERSION_OPTION, '0' );
+		if ( ! version_compare( $installed, self::DB_VERSION, '<' ) ) {
+			return false;
+		}
+		if ( '0' !== $installed && version_compare( $installed, '1.3.0', '<' ) ) {
+			self::drop_popularity();
+		}
+		self::install_tables();
+		return true;
 	}
 
 	/**
@@ -150,6 +190,6 @@ final class Hodima_Video_Watch_Setup {
 		foreach ( [ 'video_watch_stats', 'video_watch_counter_queue' ] as $t ) {
 			$wpdb->delete( $wpdb->prefix . $t, [ 'video_id' => $post_id ], [ '%d' ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		}
-		delete_transient( 'hvw_total_views_calc_' . $post_id );
+		Hodima_Video_Watch_Analytics::forget_views( $post_id );
 	}
 }

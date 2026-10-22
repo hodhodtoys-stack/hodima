@@ -65,12 +65,9 @@ final class Hodima_Video_Watch_Rest {
 			? hodima_get_client_ip()
 			: (string) filter_var( sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ) ), FILTER_VALIDATE_IP );
 
-		$rate_key = function_exists( 'hodima_rate_limit_key' ) ? hodima_rate_limit_key( 'hvw_rate_' ) : 'hvw_rate_' . md5( $client_ip );
-		$requests = (int) get_transient( $rate_key );
-		if ( $requests >= Hodima_Video_Watch_Analytics::RATE_PER_MINUTE ) {
+		if ( Hodima_Video_Watch_Analytics::over_rate_limit( $client_ip ) ) {
 			return new WP_Error( 'rate_limit_exceeded', __( 'تعداد درخواست‌ها بیش از حد مجاز است.', 'hodima' ), [ 'status' => 429 ] );
 		}
-		set_transient( $rate_key, $requests + 1, MINUTE_IN_SECONDS );
 
 		$video_id = (int) $request->get_param( 'id' );
 		$type     = Hodima_Video_Watch_Counter::tryFrom( (string) $request->get_param( 'action' ) );

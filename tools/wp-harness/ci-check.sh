@@ -71,7 +71,7 @@ else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/stories-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
-echo "=== آزمون آمار ویدیوها (video-watch-tests.php: فقط ویدیوی منتشرشده، تکراری/سقف IP، کلید، جمع‌بندی امن، زمان‌بندی)"
+echo "=== آزمون آمار ویدیوها (video-watch-tests.php: فقط ویدیوی منتشرشده، تکراری/سقف IP، کلید، جمع‌بندی امن، زمان‌بندی، بدون wp_options، کاور)"
 if HARNESS=1 HODIMA_WP="$base/wp" php "$here/video-watch-tests.php" > "$out/video-watch-tests.txt" 2>&1; then
 	tail -1 "$out/video-watch-tests.txt" | sed 's/^/  /'
 else

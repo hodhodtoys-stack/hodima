@@ -195,7 +195,9 @@ function hod_video_watch_save_meta_boxes(int $post_id): void
 
     empty($links) ? delete_post_meta($post_id, '_hod_related_links') : update_post_meta($post_id, '_hod_related_links', $links);
 
-    delete_transient('hvw_total_views_calc_' . $post_id);
+    if (class_exists('Hodima_Video_Watch_Analytics')) {
+        Hodima_Video_Watch_Analytics::forget_views($post_id);
+    }
 }
 add_action('save_post', 'hod_video_watch_save_meta_boxes');
 

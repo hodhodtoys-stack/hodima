@@ -26,13 +26,19 @@ final class Hodima_Video_Watch_Analytics {
 	/** محدودیت نرخ: بیشترین درخواست ثبت از یک IP در دقیقه. */
 	public const RATE_PER_MINUTE = 45;
 
+	public const CACHE_GROUP = 'hodima_video_watch';
+
 	/**
 	 * تعداد کل بازدید (ثبت‌شده + در صف) — منبع واحد قالب، اسکیما و REST.
 	 */
 	public static function get_total_views( int $video_id ): int {
-		$cache_key = 'hvw_total_views_calc_' . $video_id;
-		$cached    = get_transient( $cache_key );
-
+		/*
+		 * کش شیء، نه transient: تا Media 2.0.9 هر ۲۰ ثانیه و بعد از هر بازدید
+		 * شمرده‌شده دو ردیف wp_options نوشته می‌شد، گران‌تر از خود این دو
+		 * جست‌وجوی کلید اصلی. بدون کش شیء ماندگار فقط در همان درخواست (اسکیما +
+		 * قالب) نگه داشته می‌شود؛ با Redis/Memcached بیست ثانیه.
+		 */
+		$cached = wp_cache_get( 'views_' . $video_id, self::CACHE_GROUP );
 		if ( false !== $cached ) {
 			return (int) $cached;
 		}
@@ -49,9 +55,14 @@ final class Hodima_Video_Watch_Analytics {
 			)
 		);
 
-		set_transient( $cache_key, $views, 20 );
+		wp_cache_set( 'views_' . $video_id, $views, self::CACHE_GROUP, 20 );
 
 		return $views;
+	}
+
+	/** پاک کردن عدد کش‌شده (بعد از ثبت، ذخیره یا حذف ویدیو). */
+	public static function forget_views( int $video_id ): void {
+		wp_cache_delete( 'views_' . $video_id, self::CACHE_GROUP );
 	}
 
 	/**
@@ -82,28 +93,34 @@ final class Hodima_Video_Watch_Analytics {
 	 *
 	 * تکراری = همان ویدیو و نوع، از همان IP و مرورگر، در همان روز (به وقت
 	 * گرینویچ). علاوه بر آن سقف روزانه هر IP (IP_DAILY_CAP). IP خام ذخیره
-	 * نمی‌شود، فقط هش کلید (متن سیاست حریم خصوصی، video-watch.php).
+	 * نمی‌شود، فقط هش کلید (Hodima_Video_Watch_Limits؛ متن سیاست حریم خصوصی،
+	 * video-watch.php). با خطای دیتابیس شمرده نمی‌شود (بازدید جعلی بدتر از گم‌شده است).
 	 */
 	public static function accept( int $video_id, Hodima_Video_Watch_Counter $type, string $client_ip ): bool {
-		$ua   = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
-		$day  = gmdate( 'Y-m-d' );
-		$seen = 'hvw_seen_' . md5( $video_id . '|' . $type->value . '|' . $client_ip . '|' . $ua . '|' . $day );
+		$ua    = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
+		$day   = gmdate( 'Y-m-d' );
+		$until = Hodima_Video_Watch_Limits::end_of_day();
 
-		if ( get_transient( $seen ) ) {
+		if ( true !== Hodima_Video_Watch_Limits::first( 'seen|' . $video_id . '|' . $type->value . '|' . $client_ip . '|' . $ua . '|' . $day, $until ) ) {
 			return false;
 		}
 
-		$cap_key = 'hvw_ipcap_' . md5( $video_id . '|' . $type->value . '|' . $client_ip . '|' . $day );
-		$count   = (int) get_transient( $cap_key );
-		$cap     = max( 1, (int) apply_filters( 'hodima_video_watch_ip_daily_cap', self::IP_DAILY_CAP, $video_id, $type->value ) );
+		$cap  = max( 1, (int) apply_filters( 'hodima_video_watch_ip_daily_cap', self::IP_DAILY_CAP, $video_id, $type->value ) );
+		$hits = Hodima_Video_Watch_Limits::hit( 'ipcap|' . $video_id . '|' . $type->value . '|' . $client_ip . '|' . $day, $until );
 
-		if ( $count >= $cap ) {
-			return false;
-		}
+		return $hits > 0 && $hits <= $cap;
+	}
 
-		set_transient( $seen, 1, DAY_IN_SECONDS );
-		set_transient( $cap_key, $count + 1, DAY_IN_SECONDS );
-		return true;
+	/**
+	 * محدودیت نرخ: آیا این درخواست از سقف دقیقه‌ای گذشته؟
+	 *
+	 * IP خالی (تشخیص‌ناپذیر) ← نام مرورگر، تا همه در یک سطل مشترک نیفتند
+	 * (همان قاعده hodima_rate_limit_key هسته). خطای دیتابیس = محدود نکن.
+	 */
+	public static function over_rate_limit( string $client_ip ): bool {
+		$ident = '' !== $client_ip ? $client_ip : 'ua:' . ( isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '' );
+		$hits  = Hodima_Video_Watch_Limits::hit( 'rate|' . $ident . '|' . intdiv( time(), MINUTE_IN_SECONDS ), Hodima_Video_Watch_Limits::end_of_minute() );
+		return $hits > self::RATE_PER_MINUTE;
 	}
 
 	public static function record_interaction( int $video_id, Hodima_Video_Watch_Counter $type ): void {
@@ -117,7 +134,7 @@ final class Hodima_Video_Watch_Analytics {
 				gmdate( 'Y-m-d H:i:s' )
 			)
 		);
-		delete_transient( 'hvw_total_views_calc_' . $video_id );
+		self::forget_views( $video_id );
 	}
 
 	/**

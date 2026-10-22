@@ -8,7 +8,8 @@ if (have_posts()) :
     while (have_posts()) : the_post();
         $post_id = get_the_ID();
         $video_url = get_post_meta($post_id, '_hod_video_url', true);
-        $video_thumb = get_post_meta($post_id, '_hod_video_thumbnail', true) ?: get_the_post_thumbnail_url($post_id, 'full');
+        // کاور در اندازه مناسب، نه اصلی (includes/poster.php)
+        $video_thumb = function_exists('hodima_video_watch_poster_url') ? hodima_video_watch_poster_url((int) $post_id) : (get_post_meta($post_id, '_hod_video_thumbnail', true) ?: get_the_post_thumbnail_url($post_id, 'full'));
 
         $views_display = number_format_i18n(class_exists('Hodima_Video_Watch_Analytics') ? Hodima_Video_Watch_Analytics::get_total_views((int) $post_id) : 0);
 

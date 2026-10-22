@@ -15,8 +15,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-foreach ( [ 'counter', 'setup', 'analytics', 'rest' ] as $hodima_vw_part ) {
-	require_once __DIR__ . '/includes/class-video-watch-' . $hodima_vw_part . '.php';
+foreach ( [ 'class-video-watch-counter', 'class-video-watch-setup', 'class-video-watch-limits', 'class-video-watch-analytics', 'class-video-watch-rest', 'poster' ] as $hodima_vw_part ) {
+	require_once __DIR__ . '/includes/' . $hodima_vw_part . '.php';
 }
 unset( $hodima_vw_part );
 

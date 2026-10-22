@@ -70,7 +70,8 @@ function hod_video_watch_preload_poster(): void
     }
 
     $post_id = (int) get_queried_object_id();
-    $video_thumb = get_post_meta($post_id, '_hod_video_thumbnail', true) ?: get_the_post_thumbnail_url($post_id, 'full');
+    // همان آدرسی که پلیر در poster دارد (includes/poster.php)؛ وگرنه دو بار دانلود می‌شد
+    $video_thumb = function_exists('hodima_video_watch_poster_url') ? hodima_video_watch_poster_url($post_id) : (get_post_meta($post_id, '_hod_video_thumbnail', true) ?: get_the_post_thumbnail_url($post_id, 'full'));
 
     if ($video_thumb) {
         // کاور، بزرگ‌ترین عنصر بالای صفحه ویدئو (LCP) است؛ fetchpriority آن را جلو می‌اندازد
