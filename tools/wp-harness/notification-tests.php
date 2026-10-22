@@ -365,5 +365,89 @@ foreach ( get_posts( [ 'post_type' => 'hd_notification', 'post_status' => 'any',
 }
 delete_transient( 'hd_active_notifications' );
 
+echo "=== کادر ویرایش (بازطراحی نسخه ۶: داده نباید عوض شود)\n";
+/**
+ * فرم رندرشده کادر را مثل مرورگر می‌فرستد: فیلدهای غیر disabled، چک‌باکس/رادیوی
+ * تیک‌خورده، گزینه انتخاب‌شده، متن textarea (نام‌های [] آرایه).
+ *
+ * @return array<string, mixed>
+ */
+function hodima_nt_form_post( string $html ): array {
+	$doc = new DOMDocument();
+	libxml_use_internal_errors( true );
+	$doc->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>' );
+	libxml_clear_errors();
+	$post = [];
+	$add  = static function ( string $name, string $value ) use ( &$post ): void {
+		if ( str_ends_with( $name, '[]' ) ) {
+			$post[ substr( $name, 0, -2 ) ][] = $value;
+		} else {
+			$post[ $name ] = $value;
+		}
+	};
+	foreach ( ( new DOMXPath( $doc ) )->query( '//input[@name] | //select[@name] | //textarea[@name]' ) as $node ) {
+		if ( ! $node instanceof DOMElement || $node->hasAttribute( 'disabled' ) ) {
+			continue;
+		}
+		$name = $node->getAttribute( 'name' );
+		if ( 'select' === $node->tagName ) {
+			$chosen = null;
+			foreach ( $node->getElementsByTagName( 'option' ) as $opt ) {
+				if ( null === $chosen || $opt->hasAttribute( 'selected' ) ) {
+					$chosen = $opt->getAttribute( 'value' );
+				}
+			}
+			$add( $name, (string) $chosen );
+		} elseif ( 'textarea' === $node->tagName ) {
+			$add( $name, $node->textContent );
+		} elseif ( in_array( $node->getAttribute( 'type' ), [ 'checkbox', 'radio' ], true ) ) {
+			if ( $node->hasAttribute( 'checked' ) ) {
+				$add( $name, $node->getAttribute( 'value' ) );
+			}
+		} else {
+			$add( $name, $node->getAttribute( 'value' ) );
+		}
+	}
+	return $post;
+}
+$box_meta = [
+	'hd_notif_bg_image'           => 'https://hodima.test/a.png',
+	'hd_notif_position'           => 'bottom_left',
+	'hd_notif_delay'              => '35',
+	'hd_notif_trigger_scroll'     => '40',
+	'hd_notif_trigger_exit'       => '1',
+	'hd_notif_show_count'         => '3',
+	'hd_notif_cooldown_days'      => '7',
+	'hd_notif_device'             => 'mobile',
+	'hd_notif_visitor'            => 'returning',
+	'hd_notif_target_type'        => 'exclude',
+	'hd_notif_target_page'        => "/shop/\n/cart/",
+	'hd_notif_anim_in'            => 'bounce',
+	'hd_notif_close_btn'          => '0',
+	'hd_notif_bg_transparent'     => '1',
+	'hd_notif_min_pageviews'      => '1',
+	'hd_notif_mobile_mode'        => 'corner',
+];
+$box_htmls = [];
+foreach ( [ 'سفارشی' => $box_meta, 'پیش‌فرض' => [] ] as $label => $meta ) {
+	$box_id = hodima_nt_create( $meta );
+	$before = hodima_notification_meta( $box_id );
+	ob_start();
+	( new ReflectionClass( Hodima_Notification_Metabox::class ) )->newInstanceWithoutConstructor()->render( get_post( $box_id ) );
+	$box_html = (string) ob_get_clean();
+	$box_htmls[ $label ] = $box_html;
+	$names    = array_keys( hodima_nt_form_post( $box_html ) );
+	$missing  = array_values( array_filter( array_keys( hodima_notification_fields() ), static fn( string $k ): bool => 'bool' !== hodima_notification_fields()[ $k ]['type'] && ! in_array( $k, $names, true ) ) );
+	hodima_nt( "کادر ({$label}): همه فیلدهای غیر روشن/خاموش فرستاده می‌شوند", $missing, [] );
+	$_POST = wp_slash( hodima_nt_form_post( $box_html ) + [ 'hodima_notification_meta_nonce' => wp_create_nonce( 'hodima_save_notification_data' ) ] );
+	hodima_save_notification_data( $box_id );
+	$_POST   = [];
+	$changed = array_keys( array_diff_assoc( hodima_notification_meta( $box_id ), $before ) );
+	hodima_nt( "کادر ({$label}): ذخیره بدون تغییر هیچ متایی", $changed, [] );
+	wp_delete_post( $box_id, true );
+}
+hodima_nt( 'کادر: حالت دفعات نمایش از مقدار (۳ = چند بار، ۰ = بی‌محدودیت)', [ (bool) preg_match( '/value="some"\s+checked=/', $box_htmls['سفارشی'] ), (bool) preg_match( '/value="all"\s+checked=/', $box_htmls['پیش‌فرض'] ) ], [ true, true ] );
+hodima_nt( 'کادر: کلید کارت گزینه از مقدار عدد (اسکرول ۴۰ روشن، بی‌کاری ۰ خاموش)', [ (bool) preg_match( '/id="hd_notif_trigger_scroll-switch"[^>]*checked=/', $box_htmls['سفارشی'] ), (bool) preg_match( '/id="hd_notif_trigger_inactivity-switch"[^>]*checked=/', $box_htmls['سفارشی'] ) ], [ true, false ] );
+
 echo "\n" . ( $failed ? "✘ {$failed} آزمون رد شد، {$passed} قبول" : "✔ همه {$passed} آزمون اعلان‌ها قبول" ) . "\n";
 exit( $failed ? 1 : 0 );

@@ -1,18 +1,18 @@
 ---
 name: hodima-notifications
-description: ماژول نوتیفیکیشن‌ها (پاپ‌آپ اعلان) افزونه Hodima Media — ساختار فایل‌ها، قانون‌ها، آمار، پیشخوان (فهرست، ویرایش تب‌دار، تب آمار)، آزمون‌ها، تاریخچه نسخه‌های ۲.۰.۲ تا ۲.۰.۷ و کارهای باقی‌مانده. پیش از خواندن یا تغییر هر فایل زیر plugins/hodima-media/components/notification/ یا هر کار مربوط به پاپ‌آپ، آمار نوتیفیکیشن یا صفحه‌های پیشخوان آن به کار ببر.
+description: ماژول نوتیفیکیشن‌ها (پاپ‌آپ اعلان) افزونه Hodima Media — ساختار فایل‌ها، قانون‌ها، آمار، پیشخوان (فهرست، ویرایش تب‌دار، تب آمار)، آزمون‌ها، تاریخچه نسخه‌های ۲.۰.۲ تا ۲.۰.۸ و کارهای باقی‌مانده. پیش از خواندن یا تغییر هر فایل زیر plugins/hodima-media/components/notification/ یا هر کار مربوط به پاپ‌آپ، آمار نوتیفیکیشن یا صفحه‌های پیشخوان آن به کار ببر.
 ---
 
 # نوتیفیکیشن‌ها (Hodima Media)
 
-مسیر: `plugins/hodima-media/components/notification/`؛ ماژول `notifications` در `hodima_media_modules()` (`hodima-media.php`). زیر PHPCS/PHPStan/ESLint/Stylelint **بدون baseline** (کد تازه باید تمیز باشد). قانون‌های عمومی افزونه‌ها (طراحی پیشخوان، حریم خصوصی، نسخه) در اسکیل `hodima-plugins`؛ انتشار با `/release`. تاریخچه کامل: `HODIMA-AUDIT.md` بخش‌های ۲۰۹ تا ۲۱۴.
+مسیر: `plugins/hodima-media/components/notification/`؛ ماژول `notifications` در `hodima_media_modules()` (`hodima-media.php`). زیر PHPCS/PHPStan/ESLint/Stylelint **بدون baseline** (کد تازه باید تمیز باشد). قانون‌های عمومی افزونه‌ها (طراحی پیشخوان، حریم خصوصی، نسخه) در اسکیل `hodima-plugins`؛ انتشار با `/release`. تاریخچه کامل: `HODIMA-AUDIT.md` بخش‌های ۲۰۹ تا ۲۱۵. **طراحی پیشخوان: اسکیل `hodima-admin-ui`.**
 
 ## فایل‌ها (ترتیب لود در فهرست ماژول)
 | فایل | کار |
 |---|---|
 | `notification-settings.php` | **تنها منبع فیلدها**: `hodima_notification_fields()` (نوع، پیش‌فرض، محدوده/گزینه)، `hodima_notification_sanitize()`، `hodima_notification_meta()`، `hodima_notification_ids()`، `hodima_notification_normalize_position()`، `hodima_notification_clear_cache()`، ثابت‌های `HODIMA_NOTIFICATION_POST_TYPE` (`hd_notification`) و `HODIMA_NOTIFICATION_CACHE` (`hd_active_notifications`) |
 | `notification-cpt.php` | پست‌تایپ (زیر «ابزارهای هدیما»؛ بدون Core منوی سطح اول)، ستون‌های «وضعیت نمایش» (`hodima_notification_display_state()`) و «جای نمایش»، `hodima_notification_format_date()` (شمسی با Core)، آیکون منو |
-| `notification-metabox.php` | کادر ویرایش (`Hodima_Notification_Metabox`)؛ require می‌کند `notification-save.php` |
+| `notification-metabox.php` | کادر ویرایش (`Hodima_Notification_Metabox`؛ سازنده‌ها: `card_open/close`، `num`، `opt_value`، `opt_switch`، `seg`، `select`)؛ require می‌کند `notification-save.php` |
 | `notification-save.php` | ذخیره کادر (فقط فیلدهای فرستاده‌شده؛ کلید روشن/خاموش نیامده = خاموش) و پاک کردن کش (`transition_post_status`، حذف، زباله‌دان) |
 | `notification-front.php` | نمایش در سایت (`Hodima_Notification_Front`): کش فعال‌ها، قوانین سرور، خروجی `<dialog>` |
 | `notification-stats.php` | آمار: هندلر عمومی، شمارنده‌ها، جدول روزانه، ستون آمار فهرست، کپی گرفتن، متن حریم خصوصی |
@@ -29,7 +29,7 @@ description: ماژول نوتیفیکیشن‌ها (پاپ‌آپ اعلان) �
 - مرورگر: sessionStorage `hd_notif_session` (pv، utm، ref، nv، dismissed)، localStorage `hd_notif_first`، `hd_notif_count_{id}`، `hd_notif_hide_{id}`.
 
 ## قانون‌ها
-- **فیلد تازه فقط در `hodima_notification_fields()`**؛ کادر، ذخیره و نمایش همه از آن می‌خوانند. پیش‌فرض فیلد تازه = رفتار قبلی نوتیفیکیشن‌های موجود (پیشنهاد تازه فقط برای `auto-draft` در کادر، مثل `hd_notif_mobile_mode = corner`). فیلد را در تب مناسب کادر بگذار؛ اگر روی ظاهر اثر دارد، پیش‌نمایش (`renderPreview` در `notification-metabox.js`) را هم به‌روز کن. نوع `ids` برای چک‌باکس‌ها با ورودی پنهان خالی (برداشتن همه تیک‌ها هم ذخیره شود).
+- **فیلد تازه فقط در `hodima_notification_fields()`**؛ کادر، ذخیره و نمایش همه از آن می‌خوانند. در کادر با سازنده مناسب (اسکیل `hodima-admin-ui`): عدد «۰ = خاموش» ← `opt_value()`، روشن/خاموش ← `opt_switch()`، ۲ تا ۴ گزینه ← `seg()`، بیشتر ← `select()`؛ و جمله خلاصه (`summarize()` در `notification-metabox.js`) را هم به‌روز کن. «تأخیر» محرک نیست، مکث *بعد از* محرک است (`schedule()` سایت). پیش‌فرض فیلد تازه = رفتار قبلی نوتیفیکیشن‌های موجود (پیشنهاد تازه فقط برای `auto-draft` در کادر، مثل `hd_notif_mobile_mode = corner`). فیلد را در تب مناسب کادر بگذار؛ اگر روی ظاهر اثر دارد، پیش‌نمایش (`renderPreview` در `notification-metabox.js`) را هم به‌روز کن. نوع `ids` برای چک‌باکس‌ها با ورودی پنهان خالی (برداشتن همه تیک‌ها هم ذخیره شود).
 - **کش:** هر مسیر تازه‌ای که روی نمایش اثر دارد `hodima_notification_clear_cache()` بزند.
 - **کش لایت‌اسپید:** صفحه‌ها برای همه یکسان کش می‌شوند؛ پس قوانین وابسته به بازدیدکننده/زمان (تاریخ دقیق، UTM، ارجاع‌دهنده، دستگاه، «تازه از جستجو»، حالت موبایل، بازدیدکننده تازه/برگشتی، حداقل صفحه، فاصله روزها) **در مرورگر** با `data-*`. سرور فقط قوانین آدرس/کاربر/دسته محصول و حذف اعلان منقضی.
 - **سایت:** هر اعلان `<dialog tabindex="-1">`. پنجره وسط `showModal()` و فوکوس روی خود dialog (نه دکمه بستن؛ باز شدن خودکار حلقه فوکوس نشان می‌داد)؛ جعبه گوشه با ویژگی `open` (نه `show()` که فوکوس می‌برد)؛ Escape با `cancel` و انیمیشن بستن؛ قفل اسکرول `html.hd-notif-lock`؛ حالت بدون dialog (`hd-notif-fallback`، Safari زیر 15.4) نگه داشته شود. حداکثر یک پنجره وسط در هر صفحه. پاپ‌آپ نباید فقط با انیمیشن دیده شود (opacity پایه ۱؛ باگ «کاهش حرکت»). موقعیت فقط `center|bottom_right|bottom_left` (قدیمی‌ها به گوشه). «شفاف» = PNG بی‌پس‌زمینه (`hd-notif-transparent`: بدون کادر، `drop-shadow`). عکس با `_hd_notif_bg_image_id` (srcset/sizes و ابعاد؛ `data-src` تا لحظه نمایش). کلاس‌های قدیمی (`hd-notification-popup`، `hd-pos-*`، `hd-notif-close`، `hd-notif-main-area`، `hd-notif-half-link`) عوض نشوند. CSS سایت بدون nesting و `!important` (مرحله ساخت ندارد)؛ «راست/چپ» گوشه‌ها فیزیکی با `stylelint-disable` و دلیل.
@@ -38,7 +38,7 @@ description: ماژول نوتیفیکیشن‌ها (پاپ‌آپ اعلان) �
 - **نمودار آمار:** SVG سمت سرور، دو نمودار تک‌سری کنار هم (نمایش و کلیک؛ دو مقیاس ← دو نمودار، نه محور دوم)، رنگ `--hd-secondary`، عدد محور در HTML (SVG کش می‌آید)، راست‌به‌چپ امروز سمت چپ، راهنما با ماوس/لمس/فلش و «جدول روز به روز» برای دسترسی.
 
 ## آزمون
-- `HARNESS=1 php tools/wp-harness/notification-tests.php` (در `ci-check.sh`؛ ۶۷ آزمون: کش، ذخیره، ستون وضعیت، خروجی dialog/srcset، آمار کل و روزانه، محدودیت نرخ، صفحه آمار، صفر کردن، کپی، دسته محصول، سربرگ و کلید فهرست). سهمیه محدودیت نرخ و جدول روزانه را خود آزمون آماده می‌کند.
+- `HARNESS=1 php tools/wp-harness/notification-tests.php` (در `ci-check.sh`؛ ۷۳ آزمون — رفت‌وبرگشت فرم کادر هم: کش، ذخیره، ستون وضعیت، خروجی dialog/srcset، آمار کل و روزانه، محدودیت نرخ، صفحه آمار، صفر کردن، کپی، دسته محصول، سربرگ و کلید فهرست). سهمیه محدودیت نرخ و جدول روزانه را خود آزمون آماده می‌کند.
 - `node tools/wp-harness/a11y-dynamic.mjs <out> . notification` (نمونه `notif()` باید با خروجی `notification-front.php` هماهنگ بماند) و `target-size-fixtures.mjs`.
 - پیشخوان: `HARNESS=1 HARNESS_USER=1 php tools/wp-harness/admin-render-screen.php edit.php "post_type=hd_notification"` (یا `post.php "post=ID&action=edit"`، `admin-render.php hodima-notification-stats`) سپس `HODIMA_RTL=1 node tools/wp-harness/admin-shot.mjs <html> <out> /tmp/hodima-harness/wp . 1300,390 [انتخابگر]` (عکس + axe؛ CSS پیشخوان وردپرس 6.7 در `~/.cache/hodima/wp-core-6.7`). `wp.media` و jQuery در ابزار تست نیستند.
 - `ci-check.sh` پایگاه داده را از نو می‌سازد: نوتیفیکیشن آزمایشی را بعد از آن دوباره بساز.
@@ -50,6 +50,7 @@ description: ماژول نوتیفیکیشن‌ها (پاپ‌آپ اعلان) �
 - **۲.۰.۵** (بخش ۲۱۲): تب «آمار» با بازه، مقایسه دوره قبل، نمودار و جدول؛ آمار روزانه.
 - **۲.۰.۶** (بخش ۲۱۳): سربرگ و تب‌ها، عکس کوچک و کلید فهرست، کادر ویرایش تب‌دار.
 - **۲.۰.۷** (بخش ۲۱۴): پیش‌نمایش تب آخر و تمام‌عرض.
+- **۲.۰.۸** (بخش ۲۱۵، با Core ۱.۲.۷): بازطراحی کادر با استاندارد `hodima-admin-ui`: خلاصه زنده، کارت‌های گزینه، شمارنده، دکمه‌های کنار هم، کاشی جای نمایش؛ آزمون رفت‌وبرگشت فرم.
 
 ## پیشنهادهای باقی‌مانده (کاربر هنوز انتخاب نکرده)
 - پاپ‌آپ متنی: متن + دکمه، شمارش معکوس، کد تخفیف (الان فقط عکسی).

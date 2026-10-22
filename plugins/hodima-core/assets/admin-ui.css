@@ -1145,3 +1145,361 @@
 		animation: none !important;
 	}
 }
+
+/* ── اجزای فرم مدرن: کارت گزینه، شمارنده، انتخاب بخش‌بندی‌شده، کاشی، خلاصه ──
+ * استاندارد طراحی پیشخوان (اسکیل hodima-admin-ui): به‌جای «۰ = خاموش» زیر
+ * هر عدد، کلید روی کارت؛ واحد کنار عدد؛ چند گزینه کوتاه به‌شکل دکمه‌های
+ * کنار هم؛ و یک جمله خلاصه بالای فرم. رفتار اضافه در admin-ui.js؛ بدون JS
+ * فرم همان فیلدهای معمولی است. ویژگی انتخابگرها عمدا از قانون عمومی
+ * ورودی‌های .hd-wrap بیشتر است (آن قانون عرض ۱۰۰٪ و پس‌زمینه می‌دهد).
+ */
+
+/* کارت گزینه: یک امکان روشن/خاموش با تنظیم خودش */
+.hd-opts {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+	gap: 1rem;
+}
+
+.hd-opt {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	min-inline-size: 0;
+	padding: 1rem 1.125rem;
+	border: 1.5px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+
+	&:has(.hd-opt__switch:checked) {
+		border-color: var(--hd-secondary);
+		background: var(--hd-softer);
+		box-shadow: 0 0 0 4px color-mix(in srgb, var(--hd-secondary) 12%, transparent);
+	}
+
+	/* خاموش: فقط کنترل‌ها کم‌رنگ (متن خوانا بماند؛ کنتراست) */
+	&:has(.hd-opt__switch:not(:checked)) .hd-opt__body :is(.hd-num, .hd-seg, input, select, textarea) {
+		opacity: 0.45;
+	}
+}
+
+.hd-opt__head {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+/* ویژگی بیشتر از .dashicons خود وردپرس (عرض ۲۰px) */
+.hd-opt__head > .hd-opt__icon {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.5rem;
+	block-size: 2.5rem;
+	border-radius: 0.75rem;
+	background: var(--hd-soft);
+	color: var(--hd-primary);
+
+	&.dashicons::before {
+		font-size: 1.25rem;
+	}
+}
+
+.hd-opt__title {
+	flex: 1;
+	min-inline-size: 0;
+	color: var(--hd-text);
+	font-size: 0.875rem;
+	font-weight: 700;
+	line-height: 1.7;
+	cursor: pointer;
+}
+
+.hd-opt__body {
+	display: flex;
+	flex-direction: column;
+	gap: 0.625rem;
+}
+
+.hd-opt__desc {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	line-height: 1.9;
+}
+
+/* شمارنده: − عدد + واحد */
+.hd-num {
+	display: inline-flex;
+	align-self: flex-start;
+	align-items: stretch;
+	block-size: 2.75rem;
+	overflow: hidden;
+	border: 1.5px solid var(--hd-border-strong);
+	border-radius: 0.75rem;
+	background: #ffffff;
+
+	&:focus-within {
+		border-color: var(--hd-secondary);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--hd-secondary) 22%, transparent);
+	}
+}
+
+.hd-wrap .hd-num input[type="number"] {
+	inline-size: 4.5rem;
+	min-block-size: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: var(--hd-primary);
+	font-size: 1rem;
+	font-weight: 700;
+	text-align: center;
+	box-shadow: none;
+	appearance: textfield;
+
+	&:focus {
+		background: transparent;
+		box-shadow: none;
+	}
+
+	&::-webkit-inner-spin-button,
+	&::-webkit-outer-spin-button {
+		margin: 0;
+		appearance: none;
+	}
+}
+
+.hd-num__btn {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.75rem;
+	padding: 0;
+	border: 0;
+	background: var(--hd-softer);
+	color: var(--hd-primary);
+	font-size: 1.25rem;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+
+	&:hover {
+		background: var(--hd-soft);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--hd-accent-light);
+		outline-offset: -2px;
+	}
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.hd-num__unit {
+	display: flex;
+	align-items: center;
+	padding-inline: 0.25rem 0.875rem;
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+/* انتخاب بخش‌بندی‌شده: رادیوهای واقعی به‌شکل دکمه‌های کنار هم */
+.hd-wrap fieldset.hd-seg {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-self: flex-start;
+	gap: 0.25rem;
+	min-inline-size: 0;
+	max-inline-size: 100%;
+	margin: 0;
+	padding: 0.25rem;
+	border: 0;
+	border-radius: 0.75rem;
+	background: var(--hd-soft);
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.hd-seg__opt {
+	position: relative;
+	display: flex;
+	flex: 1 0 auto;
+
+	& > span {
+		display: flex;
+		flex: 1;
+		align-items: center;
+		justify-content: center;
+		min-block-size: 2.5rem;
+		padding-block: 0.375rem;
+		padding-inline: 0.875rem;
+		border-radius: 0.5625rem;
+		color: var(--hd-muted);
+		font-size: 0.8125rem;
+		font-weight: 600;
+		line-height: 1.5;
+		text-align: center;
+		cursor: pointer;
+		transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	& > span:hover {
+		color: var(--hd-primary);
+	}
+}
+
+.hd-wrap .hd-seg__opt input[type="radio"],
+.hd-wrap .hd-tile input[type="radio"] {
+	position: absolute;
+	inset: 0;
+	inline-size: 100%;
+	block-size: 100%;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.hd-seg__opt input:checked + span {
+	background: #ffffff;
+	box-shadow: 0 1px 3px color-mix(in srgb, var(--hd-primary) 16%, transparent);
+	color: var(--hd-primary);
+}
+
+.hd-seg__opt input:focus-visible + span {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: 1px;
+}
+
+/* کاشی تصویری: گزینه‌ای که با شکل بهتر فهمیده می‌شود (تصویر .hd-tile__art را صفحه می‌کشد) */
+.hd-tiles {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
+	gap: 0.75rem;
+}
+
+.hd-tile {
+	position: relative;
+	display: flex;
+}
+
+.hd-tile__box {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 0.375rem;
+	padding: 0.75rem;
+	border: 1.5px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hd-tile:hover .hd-tile__box {
+	border-color: var(--hd-border-strong);
+}
+
+.hd-tile input:checked + .hd-tile__box {
+	border-color: var(--hd-secondary);
+	background: var(--hd-softer);
+	box-shadow: 0 0 0 4px color-mix(in srgb, var(--hd-secondary) 12%, transparent);
+}
+
+.hd-tile input:focus-visible + .hd-tile__box {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: 2px;
+}
+
+.hd-tile__art {
+	position: relative;
+	display: block;
+	block-size: 4.5rem;
+	margin-block-end: 0.25rem;
+	overflow: hidden;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.5rem;
+	background: var(--hd-soft);
+}
+
+.hd-tile__title {
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	font-weight: 700;
+}
+
+.hd-tile__desc {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	line-height: 1.8;
+}
+
+/* خلاصه زنده: رفتار فرم در یک جمله ساده (متن را JS صفحه می‌سازد) */
+.hd-summary {
+	display: flex;
+	align-items: flex-start;
+	gap: 1rem;
+	padding: 1rem 1.25rem;
+	border: 1px solid var(--hd-border-strong);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.hd-summary > .hd-summary__icon {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.75rem;
+	block-size: 2.75rem;
+	border-radius: 0.75rem;
+	background: var(--hd-primary);
+	color: #ffffff;
+
+	&.dashicons::before {
+		font-size: 1.375rem;
+	}
+}
+
+.hd-summary__body {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-inline-size: 0;
+}
+
+.hd-summary__label {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.hodima-admin .hd-summary__text {
+	margin: 0;
+	color: var(--hd-primary);
+	font-size: 0.9375rem;
+	font-weight: 600;
+	line-height: 2;
+}
+
+.hd-summary__warn {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+
+	&:empty {
+		display: none;
+	}
+}

@@ -261,8 +261,19 @@ add_action( 'admin_enqueue_scripts', static function (): void {
 		is_file( $file ) ? (string) filemtime( $file ) : HODIMA_CORE_PLUGIN_VERSION
 	);
 
+	// رفتار اجزای فرم (شمارنده +/−، کارت گزینه)؛ بدون آن فرم همان فیلدهای معمولی است
+	$js = HODIMA_CORE_PLUGIN_DIR . '/assets/admin-ui.js';
+	wp_register_script(
+		HODIMA_ADMIN_UI_HANDLE,
+		HODIMA_CORE_PLUGIN_URL . '/assets/admin-ui.js',
+		[],
+		is_file( $js ) ? (string) filemtime( $js ) : HODIMA_CORE_PLUGIN_VERSION,
+		[ 'in_footer' => true, 'strategy' => 'defer' ]
+	);
+
 	if ( hodima_admin_is_screen() ) {
 		wp_enqueue_style( HODIMA_ADMIN_UI_HANDLE );
+		wp_enqueue_script( HODIMA_ADMIN_UI_HANDLE );
 	}
 }, 5 );
 

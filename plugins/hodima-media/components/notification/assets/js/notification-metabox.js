@@ -12,6 +12,11 @@
  *   می‌شود؛ فیلد نامعتبر هنگام ذخیره تب خودش را باز می‌کند) و پیش‌نمایش (تب
  *   آخر) یک صفحه مجازی ۱۲۸۰×۸۰۰ (موبایل ۳۹۰×۷۸۰) با اندازه‌های واقعی که کوچک
  *   می‌شود تا در عرض تب جا شود؛ با باز شدن تب انیمیشن دوباره اجرا می‌شود.
+ * - نسخه ۶ (اسکیل hodima-admin-ui): خلاصه رفتار در یک جمله بالای تب‌ها (با
+ *   همان منطق سایت: محرک‌ها «هر کدام زودتر»، تأخیر = مکث *بعد از* محرک)،
+ *   حالت «یک بار / چند بار / بی‌محدودیت» برای دفعات نمایش (مقدار همان
+ *   hd_notif_show_count)، و چند فیلد رادیویی شدند (value() رادیوی انتخاب‌شده
+ *   را می‌خواند). کلید کارت‌ها و دکمه‌های +/− در admin-ui.js هسته‌اند.
  */
 ( () => {
 	'use strict';
@@ -77,7 +82,15 @@
 		}
 
 		const field = ( name ) => root.querySelector( `[name="${ name }"]` );
-		const value = ( name ) => field( name )?.value ?? '';
+		// رادیو: مقدار گزینه انتخاب‌شده (چند فیلد از select به دکمه‌های کنار هم رسیدند)
+		const value = ( name ) => {
+			for ( const input of root.querySelectorAll( `[name="${ name }"]` ) ) {
+				if ( input.type !== 'radio' || input.checked ) {
+					return input.value;
+				}
+			}
+			return '';
+		};
 		const checked = ( name ) => !! field( name )?.checked;
 
 		/* ── عکس ─────────────────────────────────────────────────── */
@@ -121,23 +134,55 @@
 		const bgField = root.querySelector( '[data-hdn-bg-field]' );
 		const mobileField = root.querySelector( '[data-hdn-mobile-field]' );
 		const pagesField = root.querySelector( '[data-hdn-pages-field]' );
+		// فیلد وابسته فقط وقتی معنا دارد دیده می‌شود (پنهان، نه disabled: مقدارش ذخیره بماند)
 		const syncDependents = () => {
 			const isTransparent = checked( 'hd_notif_bg_transparent' );
-			bgField?.classList.toggle( 'is-disabled', isTransparent );
-			if ( field( 'hd_notif_bg_color' ) ) {
-				field( 'hd_notif_bg_color' ).disabled = isTransparent;
+			if ( bgField ) {
+				bgField.hidden = isTransparent;
 			}
 			if ( mobileField ) {
 				mobileField.hidden = value( 'hd_notif_position' ) !== 'center';
 			}
-			const allPages = value( 'hd_notif_target_type' ) === 'all';
-			pagesField?.classList.toggle( 'is-disabled', allPages );
-			if ( field( 'hd_notif_target_page' ) ) {
-				field( 'hd_notif_target_page' ).disabled = allPages;
+			if ( pagesField ) {
+				pagesField.hidden = value( 'hd_notif_target_type' ) === 'all';
 			}
 		};
 
+		/* ── دفعات نمایش: یک بار / چند بار / بی‌محدودیت ───────────────── */
+		const countMode = root.querySelector( '[data-hdn-count-mode]' );
+		const countField = root.querySelector( '[data-hdn-count-field]' );
+		const countInput = field( 'hd_notif_show_count' );
+		if ( countMode && countField && countInput ) {
+			let lastSome = Number( countInput.value ) > 1 ? countInput.value : '3';
+			const applyMode = ( mode ) => {
+				countField.hidden = mode !== 'some';
+				// پنهان با min=2 جلوی ذخیره را می‌گرفت (فیلد نامعتبر پنهان)
+				countInput.min = mode === 'some' ? '2' : '0';
+				if ( mode === 'once' ) {
+					countInput.value = '1';
+				} else if ( mode === 'all' ) {
+					countInput.value = '0';
+				} else if ( Number( countInput.value ) < 2 ) {
+					countInput.value = lastSome;
+				}
+			};
+			countMode.hidden = false;
+			countMode.addEventListener( 'change', ( e ) => applyMode( e.target.value ) );
+			countInput.addEventListener( 'input', () => {
+				if ( Number( countInput.value ) > 1 ) {
+					lastSome = countInput.value;
+				}
+			} );
+			applyMode( value( 'hdn_count_mode' ) || 'all' );
+		}
+
 		/* ── تاریخ شمسی کنار تاریخ میلادی ─────────────────────────── */
+		const el = ( tag, attrs = {}, ...children ) => {
+			const node = document.createElement( tag );
+			Object.entries( attrs ).forEach( ( [ k, v ] ) => node.setAttribute( k, String( v ) ) );
+			node.append( ...children );
+			return node;
+		};
 		const jalali = ( () => {
 			try {
 				return new Intl.DateTimeFormat( 'fa-IR-u-ca-persian', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' } );
@@ -145,6 +190,15 @@
 				return null;
 			}
 		} )();
+		// «دوشنبه ۳۰ آذر ۱۴۰۵» (ترتیب format() مرورگرها برای fa «۱۴۰۵ آذر ۳۰, دوشنبه» است؛ از اجزا)
+		const jalaliText = ( ymd, weekday = false ) => {
+			const date = new Date( `${ ymd }T12:00:00Z` );
+			if ( ! jalali || Number.isNaN( date.getTime() ) ) {
+				return ymd;
+			}
+			const part = Object.fromEntries( jalali.formatToParts( date ).map( ( p ) => [ p.type, p.value ] ) );
+			return `${ weekday ? `${ part.weekday } ` : '' }${ part.day } ${ part.month } ${ part.year }`;
+		};
 		const syncDates = () => {
 			root.querySelectorAll( '[data-hdn-date]' ).forEach( ( input ) => {
 				const out = input.parentElement.querySelector( '[data-hdn-jalali]' );
@@ -156,10 +210,117 @@
 					out.textContent = 'خالی = بدون محدودیت';
 					return;
 				}
-				// ترتیب format() مرورگرها برای fa «۱۴۰۵ آذر ۳۰, دوشنبه» است؛ از اجزا: «دوشنبه ۳۰ آذر ۱۴۰۵»
-				const part = Object.fromEntries( jalali.formatToParts( date ).map( ( p ) => [ p.type, p.value ] ) );
-				out.textContent = `شمسی: ${ part.weekday } ${ part.day } ${ part.month } ${ part.year }`;
+				out.textContent = `شمسی: ${ jalaliText( input.value, true ) }`;
 			} );
+		};
+
+		/* ── خلاصه به زبان ساده (همان منطق notification-front.js) ─────── */
+		const summary = root.querySelector( '[data-hdn-summary]' );
+		const summaryText = root.querySelector( '[data-hdn-summary-text]' );
+		const summaryWarn = root.querySelector( '[data-hdn-summary-warn]' );
+		const triggerCount = root.querySelector( '[data-hdn-trigger-count]' );
+		const fa = ( n ) => Number( n ).toLocaleString( 'fa-IR' );
+		const num = ( name ) => Number( value( name ) ) || 0;
+		const list = ( items ) => ( items.length < 2 ? items.join( '' ) : `${ items.slice( 0, -1 ).join( '، ' ) } یا ${ items.at( -1 ) }` );
+		const lineCount = ( name ) => value( name ).split( '\n' ).filter( ( line ) => line.trim() ).length;
+
+		const summarize = () => {
+			const warn = [];
+			if ( ! urlInput?.value ) {
+				warn.push( 'بدون عکس در سایت نمایش داده نمی‌شود' );
+			}
+			const end = value( 'hd_notif_end_date' );
+			if ( end && end < new Date().toISOString().slice( 0, 10 ) ) {
+				warn.push( 'تاریخ پایان گذشته است' );
+			}
+			if ( ! checked( 'hd_notif_is_active' ) ) {
+				return { text: 'خاموش است: ذخیره می‌ماند ولی در سایت به کسی نشان داده نمی‌شود.', warn, triggers: 0 };
+			}
+
+			// کی و کجا: محرک‌ها (هر کدام زودتر) و بعد مکث
+			const triggers = [];
+			if ( num( 'hd_notif_trigger_scroll' ) > 0 ) {
+				triggers.push( `بعد از خواندن ${ fa( num( 'hd_notif_trigger_scroll' ) ) }٪ صفحه` );
+			}
+			if ( num( 'hd_notif_trigger_inactivity' ) > 0 ) {
+				triggers.push( `بعد از ${ fa( num( 'hd_notif_trigger_inactivity' ) ) } ثانیه بی‌کاری` );
+			}
+			if ( checked( 'hd_notif_trigger_exit' ) ) {
+				triggers.push( 'هنگام ترک صفحه در دسکتاپ' );
+			}
+			const delay = num( 'hd_notif_delay' );
+			let when = triggers.length ? list( triggers ) + ( triggers.length > 1 ? ' (هر کدام زودتر)' : '' ) : 'همان لحظه باز شدن صفحه';
+			if ( delay > 0 ) {
+				when = triggers.length ? `${ when } و ${ fa( delay ) } ثانیه بعد از آن` : `${ fa( delay ) } ثانیه بعد از باز شدن صفحه`;
+			}
+			const position = value( 'hd_notif_position' ) || 'center';
+			const place = { center: 'وسط صفحه', bottom_right: 'گوشه پایین راست', bottom_left: 'گوشه پایین چپ' }[ position ] || 'وسط صفحه';
+			let first = `پاپ‌آپ ${ when }، ${ place }${ position === 'center' && value( 'hd_notif_mobile_mode' ) === 'corner' ? ' (در موبایل جعبه گوشه)' : '' } باز می‌شود`;
+			if ( num( 'hd_notif_auto_close_time' ) > 0 ) {
+				first += ` و بعد از ${ fa( num( 'hd_notif_auto_close_time' ) ) } ثانیه خودش بسته می‌شود`;
+			}
+
+			// به چه کسی و کجا
+			const who = [];
+			const pick = ( name, map ) => map[ value( name ) ] && who.push( map[ value( name ) ] );
+			pick( 'hd_notif_device', { desktop: 'فقط دسکتاپ', mobile: 'فقط موبایل' } );
+			pick( 'hd_notif_user_status', { logged_in: 'کاربران واردشده', logged_out: 'مهمان‌ها' } );
+			pick( 'hd_notif_target_role', { customer: 'مشتری‌ها', subscriber: 'مشترک‌ها', administrator: 'مدیران' } );
+			pick( 'hd_notif_visitor', { new: 'اولین بازدید از سایت', returning: 'بازدیدکننده‌های برگشتی' } );
+			if ( num( 'hd_notif_min_pageviews' ) > 1 ) {
+				who.push( `از صفحه ${ fa( num( 'hd_notif_min_pageviews' ) ) } بازدید به بعد` );
+			}
+			pick( 'hd_notif_target_post_type', { post: 'فقط مقاله‌ها', page: 'فقط برگه‌ها', product: 'فقط محصولات' } );
+			const pages = lineCount( 'hd_notif_target_page' );
+			if ( value( 'hd_notif_target_type' ) === 'specific' ) {
+				who.push( pages ? `فقط ${ fa( pages ) } آدرس انتخاب‌شده` : 'فقط آدرس‌هایی که هنوز نوشته نشده' );
+				if ( ! pages ) {
+					warn.push( 'آدرسی برای «فقط این آدرس‌ها» نوشته نشده' );
+				}
+			} else if ( value( 'hd_notif_target_type' ) === 'exclude' && pages ) {
+				who.push( `همه صفحه‌ها به‌جز ${ fa( pages ) } آدرس` );
+			}
+			const cats = root.querySelectorAll( '[name="hd_notif_target_product_cat[]"]:checked' ).length;
+			if ( cats ) {
+				who.push( `${ fa( cats ) } دسته محصول` );
+			}
+			if ( value( 'hd_notif_target_utm' ).trim() ) {
+				who.push( `آمده از تبلیغ «${ value( 'hd_notif_target_utm' ).trim() }»` );
+			}
+			if ( value( 'hd_notif_target_referrer' ).trim() ) {
+				who.push( `آمده از ${ value( 'hd_notif_target_referrer' ).trim() }` );
+			}
+			if ( checked( 'hd_notif_skip_search' ) ) {
+				who.push( 'نه برای تازه‌واردِ جستجو' );
+			}
+			const second = who.length ? `مخاطب: ${ who.join( '، ' ) }` : 'به همه بازدیدکننده‌ها در همه صفحه‌ها نشان داده می‌شود';
+
+			// چند بار
+			const count = num( 'hd_notif_show_count' );
+			const cooldown = num( 'hd_notif_cooldown_days' );
+			let third = 0 === count ? 'تعداد نمایش محدود نیست' : `به هر نفر ${ 1 === count ? 'فقط یک بار' : `حداکثر ${ fa( count ) } بار` }`;
+			third += cooldown > 0 ? `؛ بعد از بستن یا کلیک تا ${ fa( cooldown ) } روز دیده نمی‌شود` : '؛ بعد از بستن تا آخر همان بازدید دیده نمی‌شود';
+
+			const start = value( 'hd_notif_start_date' );
+			const dates = [ start && `از ${ jalaliText( start ) }`, end && `تا ${ jalaliText( end ) }` ].filter( Boolean ).join( ' ' );
+
+			return { text: `${ [ first, second, third, dates ].filter( Boolean ).join( '. ' ) }.`, warn, triggers: triggers.length };
+		};
+
+		const renderSummary = () => {
+			if ( ! summary ) {
+				return;
+			}
+			const { text, warn, triggers } = summarize();
+			summary.hidden = false;
+			if ( summaryText.textContent !== text ) {
+				summaryText.textContent = text;
+			}
+			summaryWarn.replaceChildren( ...warn.map( ( w ) => el( 'span', { class: 'hd-pill hd-pill--warn' }, w ) ) );
+			if ( triggerCount ) {
+				triggerCount.hidden = false;
+				triggerCount.textContent = triggers ? `${ fa( triggers ) } محرک روشن` : 'بدون محرک';
+			}
 		};
 
 		/* ── پیش‌نمایش ───────────────────────────────────────────── */
@@ -214,13 +375,6 @@
 			setDevice( zoom.dataset.device || stage.dataset.device );
 			root.querySelector( '[data-hdn-zoom]' )?.focus();
 		} );
-		const el = ( tag, attrs = {}, ...children ) => {
-			const node = document.createElement( tag );
-			Object.entries( attrs ).forEach( ( [ k, v ] ) => node.setAttribute( k, String( v ) ) );
-			node.append( ...children );
-			return node;
-		};
-
 		const renderPreview = ( animate = false ) => {
 			if ( ! stage ) {
 				return;
@@ -278,6 +432,7 @@
 			raf = requestAnimationFrame( () => {
 				syncDependents();
 				syncDates();
+				renderSummary();
 				renderPreview();
 			} );
 		};
@@ -304,6 +459,7 @@
 
 		syncDependents();
 		syncDates();
+		renderSummary();
 		fit();
 		renderPreview();
 	};
