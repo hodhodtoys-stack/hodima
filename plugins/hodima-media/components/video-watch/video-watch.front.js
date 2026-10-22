@@ -16,6 +16,8 @@
  *   - نوار پیشرفت با کشیدن (موس و لمس)، نه فقط کلیک.
  *   - نشانگر بارگذاری و پیام خطا؛ با خطا، دکمه پخش دوباره فایل را بار می‌کند.
  *   - راه‌اندازی مستقل از DOMContentLoaded (سازگار با Delay JS لایت‌اسپید).
+ *   - دکمه «متن» نوار زیر پلیر، باکس متن کامل را باز/بسته می‌کند (initTranscripts؛
+ *     مستقل از پلیر، ویدیوی بدون فایل هم دارد؛ بخش ۲۲۲).
  */
 ( () => {
 	'use strict';
@@ -382,8 +384,9 @@
 				} );
 			} );
 
+			// کلیک بیرون منو می‌بندد؛ دکمه «متن» هم بیرون حساب می‌شود (تا 2.1.4 همه جعبه‌های نوار مستثنا بودند)
 			document.addEventListener( 'click', ( e ) => {
-				if ( ! e.target.closest( '.hs-more-options-container' ) && ! e.target.closest( '.hs-action-item' ) ) {
+				if ( ! e.target.closest( '.hs-more-options-container' ) && ! e.target.closest( '.hs-action-share' ) ) {
 					this.closeMenus();
 				}
 			} );
@@ -898,8 +901,51 @@
 		}
 	}
 
+	/**
+	 * باکس متن کامل ویدیو (template-video.php).
+	 * بسته = hidden="until-found" (جستجوی مرورگر بازش می‌کند و رویداد beforematch
+	 * می‌دهد)؛ باز کردن فوکوس را به تیتر باکس می‌برد، «بستن متن» و Esc آن را به دکمه برمی‌گرداند.
+	 */
+	const initTranscripts = () => {
+		const reduceMotion = window.matchMedia?.( '(prefers-reduced-motion: reduce)' ).matches;
+		document.querySelectorAll( '.hs-transcript-btn[aria-controls]' ).forEach( ( btn ) => {
+			const panel = document.getElementById( btn.getAttribute( 'aria-controls' ) );
+			if ( ! panel || btn.dataset.hvwReady ) {
+				return;
+			}
+			btn.dataset.hvwReady = '1';
+			const title = panel.querySelector( '.hs-transcript-title' );
+
+			const close = ( returnFocus ) => {
+				panel.setAttribute( 'hidden', 'until-found' );
+				btn.setAttribute( 'aria-expanded', 'false' );
+				if ( returnFocus ) {
+					btn.focus();
+				}
+			};
+			const open = () => {
+				panel.removeAttribute( 'hidden' );
+				btn.setAttribute( 'aria-expanded', 'true' );
+				title?.focus( { preventScroll: true } );
+				panel.scrollIntoView( { block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' } );
+			};
+
+			btn.addEventListener( 'click', () => ( panel.hasAttribute( 'hidden' ) ? open() : close( false ) ) );
+			panel.querySelector( '.hs-transcript-close' )?.addEventListener( 'click', () => close( true ) );
+			panel.addEventListener( 'keydown', ( e ) => {
+				if ( e.key === 'Escape' ) {
+					e.preventDefault();
+					close( true );
+				}
+			} );
+			// جستجوی مرورگر باکس را خودش باز کرد
+			panel.addEventListener( 'beforematch', () => btn.setAttribute( 'aria-expanded', 'true' ) );
+		} );
+	};
+
 	const boot = () => {
 		document.querySelectorAll( '[data-player-instance]' ).forEach( ( c ) => new HodVideoPlayer( c ) );
+		initTranscripts();
 	};
 
 	if ( document.readyState === 'loading' ) {

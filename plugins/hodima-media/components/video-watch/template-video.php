@@ -30,6 +30,10 @@ while ( have_posts() ) :
 	$hodima_vw_cards   = is_array( $hodima_vw_cards ) ? $hodima_vw_cards : [];
 	$hodima_vw_uid     = 'hvw-' . $hodima_vw_id;
 
+	// متن کامل ویدیو (ترنسکریپت، بخش ۲۱۹/۲۲۲): دکمه «متن» در نوار زیر پلیر و باکس زیر همان نوار
+	$hodima_vw_transcript    = trim( (string) get_post_meta( $hodima_vw_id, '_hod_video_transcript', true ) );
+	$hodima_vw_transcript_id = 'hvw-transcript-' . $hodima_vw_id;
+
 	/*
 	 * مسیر راهنما: همان آدرس پله «ویدئوها» در اسکیمای مسیر راهنما.
 	 * اگر برگه فهرست ویدیوها نیست، پله حذف می‌شود (تا Media 2.1.3 لینک با href خالی
@@ -112,7 +116,7 @@ while ( have_posts() ) :
 								</div>
 
 								<div class="hs-time-display">
-									<span class="hs-current-time">0:00</span> / <span class="hs-duration">0:00</span>
+									<span class="hs-current-time">0:00</span><span class="hs-time-total"> / <span class="hs-duration">0:00</span></span>
 								</div>
 
 								<div class="hs-spacer"></div>
@@ -152,7 +156,7 @@ while ( have_posts() ) :
 					<?php endif; ?>
 
 					<div class="hs-video-action-bar">
-						<?php // سه جعبه: محصول (فقط با لینک)، بازدید، اشتراک ?>
+						<?php // محصول (فقط با لینک)، بازدید، متن (فقط با متن کامل)، اشتراک ?>
 						<?php if ( '' !== $hodima_vw_product ) : ?>
 						<div class="hs-action-item hs-action-product">
 							<a href="<?php echo esc_url( $hodima_vw_product ); ?>" class="hs-btn-primary" title="<?php esc_attr_e( 'مشاهده محصول', 'hodima' ); ?>">
@@ -170,6 +174,16 @@ while ( have_posts() ) :
 							</div>
 						</div>
 
+						<?php if ( '' !== $hodima_vw_transcript ) : ?>
+						<div class="hs-action-item hs-action-transcript">
+							<?php // نام دسترس‌پذیر با کلمه دیدنی «متن» شروع می‌شود (WCAG 2.5.3) ?>
+							<button type="button" class="hs-btn-outline hs-transcript-btn" aria-expanded="false" aria-controls="<?php echo esc_attr( $hodima_vw_transcript_id ); ?>" aria-label="<?php esc_attr_e( 'متن کامل ویدیو', 'hodima' ); ?>" title="<?php esc_attr_e( 'متن کامل ویدیو', 'hodima' ); ?>">
+								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><polyline points="14 3 14 8 19 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="13" y2="17"></line></svg>
+								<span class="hs-transcript-btn-text"><?php esc_html_e( 'متن', 'hodima' ); ?></span>
+							</button>
+						</div>
+						<?php endif; ?>
+
 						<div class="hs-action-item hs-action-share">
 							<button type="button" class="hs-btn-outline hs-share-btn" aria-label="<?php esc_attr_e( 'اشتراک‌گذاری', 'hodima' ); ?>" aria-expanded="false" aria-controls="<?php echo esc_attr( $hodima_vw_uid ); ?>-share">
 								<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
@@ -181,37 +195,29 @@ while ( have_posts() ) :
 							<span class="hs-action-label hs-share-status" role="status" aria-live="polite"></span>
 						</div>
 					</div>
+
+					<?php
+					/*
+					 * باکس متن کامل: باز/بسته با دکمه «متن» (video-watch.front.js).
+					 * متن از اول در HTML است (گوگل و اسکیمای VideoObject.transcript)؛
+					 * hidden="until-found": جستجوی مرورگر (Ctrl+F) هم بازش می‌کند. قاب و
+					 * فاصله روی فرزند است، چون جعبه until-found خودش رسم می‌شود.
+					 * تا Media 2.1.4 بخش جدا زیر کادر معرفی با جعبه «نمایش بیشتر» بود.
+					 */
+					if ( '' !== $hodima_vw_transcript ) :
+						?>
+					<div class="hs-transcript-panel" id="<?php echo esc_attr( $hodima_vw_transcript_id ); ?>" hidden="until-found">
+						<section class="hs-transcript-card" aria-labelledby="<?php echo esc_attr( $hodima_vw_transcript_id ); ?>-title">
+							<h2 class="hs-transcript-title" id="<?php echo esc_attr( $hodima_vw_transcript_id ); ?>-title" tabindex="-1"><?php esc_html_e( 'متن کامل ویدیو', 'hodima' ); ?></h2>
+							<div class="hs-transcript">
+								<?php echo wp_kses_post( wpautop( esc_html( $hodima_vw_transcript ) ) ); ?>
+							</div>
+							<button type="button" class="hs-transcript-close"><?php esc_html_e( 'بستن متن', 'hodima' ); ?></button>
+						</section>
+					</div>
+					<?php endif; ?>
 				</div>
 			</section>
-
-			<?php
-			/*
-			 * متن کامل ویدیو (ترنسکریپت، HODIMA-AUDIT.md بخش ۲۱۹): داخل جعبه «نمایش
-			 * بیشتر / کمتر» (ماژول باکس‌های بازشونده)؛ اگر آن ماژول خاموش است، کادر
-			 * بازشونده خود مرورگر (<details>). متن جعبه بسته هم در HTML است.
-			 */
-			$hodima_vw_transcript = trim( (string) get_post_meta( $hodima_vw_id, '_hod_video_transcript', true ) );
-			if ( '' !== $hodima_vw_transcript ) :
-				$hodima_vw_transcript_html = wpautop( esc_html( $hodima_vw_transcript ) );
-				$hodima_vw_transcript_id   = 'hvw-transcript-' . $hodima_vw_id;
-				?>
-				<section class="hodima-section-box hs-transcript-section" aria-labelledby="<?php echo esc_attr( $hodima_vw_transcript_id ); ?>">
-					<h2 id="<?php echo esc_attr( $hodima_vw_transcript_id ); ?>" class="hs-related-section-title"><?php esc_html_e( 'متن کامل ویدیو', 'hodima' ); ?></h2>
-					<div class="hs-transcript">
-						<?php if ( function_exists( 'hodima_expandable_box' ) ) : ?>
-							<?php
-							// خروجی جعبه از قبل escape شده (متن با esc_html، ویژگی‌ها با esc_attr در render_box)
-							echo hodima_expandable_box( $hodima_vw_transcript_html, 'video_transcript', [ 'height' => 240, 'fade_height' => 60 ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped, WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound
-							?>
-						<?php else : ?>
-							<details class="hs-transcript-details">
-								<summary><?php esc_html_e( 'نمایش متن کامل', 'hodima' ); ?></summary>
-								<?php echo wp_kses_post( $hodima_vw_transcript_html ); ?>
-							</details>
-						<?php endif; ?>
-					</div>
-				</section>
-			<?php endif; ?>
 
 			<?php if ( $hodima_vw_cards ) : ?>
 				<section class="hodima-section-box section-related-videos">

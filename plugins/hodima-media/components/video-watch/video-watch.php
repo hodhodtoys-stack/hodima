@@ -55,12 +55,6 @@ function hod_video_watch_front_assets(): void {
 }
 add_action( 'wp_enqueue_scripts', 'hod_video_watch_front_assets' );
 
-/** جعبه «نمایش بیشتر / کمتر» متن کامل ویدیو: CSS و JS ماژول باکس‌های بازشونده روی همین صفحه هم لود شوند. */
-add_filter(
-	'hodima_expandable_boxes_enqueue',
-	static fn( bool $enqueue ): bool => $enqueue || ( is_singular( 'video' ) && '' !== trim( (string) get_post_meta( (int) get_queried_object_id(), '_hod_video_transcript', true ) ) )
-);
-
 /** متن پیشنهادی صفحه سیاست حریم خصوصی (ابزارها ← راهنمای سیاست حریم خصوصی). */
 function hod_video_watch_privacy_policy_text(): void {
 	if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {

@@ -60,8 +60,8 @@ const log = ( ok, name, detail = '' ) => {
  * صفحه را باز می‌کند؛ tracks = بدنه درخواست‌های ثبت آمار.
  * broken = فایل ویدیو ۴۰۴؛ body = HTML دیگر (مثلا ویدیوی بدون آدرس).
  */
-async function open( query = '', { broken = false, body = html, wait = true } = {} ) {
-	const ctx = await browser.newContext( { viewport: { width: 1300, height: 900 } } );
+async function open( query = '', { broken = false, body = html, wait = true, width = 1300 } = {} ) {
+	const ctx = await browser.newContext( { viewport: { width, height: 900 } } );
 	const page = await ctx.newPage();
 	const tracks = [];
 	const errors = [];
@@ -329,25 +329,78 @@ console.log( '=== ویدیوی بدون آدرس' );
 	await ctx.close();
 }
 
-console.log( '=== متن کامل ویدیو در جعبه «نمایش بیشتر» (مرحله ۴)' );
+console.log( '=== دکمه «متن» و باکس متن کامل (بخش ۲۲۲؛ تا 2.1.4 جعبه «نمایش بیشتر» جدا)' );
 {
 	const long = Array.from( { length: 12 }, ( _, i ) => `بخش ${ i + 1 }: در این ویدیو گلسر فلزی و رنگ‌بندی آن را معرفی می‌کنیم و نحوه سفارش عمده را توضیح می‌دهیم.` ).join( '\\n\\n' );
 	execFileSync( 'php', [ path.join( here, 'wp-eval.php' ), `$v = get_page_by_path( 'harness-transcript', OBJECT, 'video' ); $id = $v ? $v->ID : wp_insert_post( [ 'post_type' => 'video', 'post_title' => 'ویدیو با متن کامل', 'post_name' => 'harness-transcript', 'post_status' => 'publish' ] ); update_post_meta( $id, '_hod_video_url', 'https://hodima.test/v/pin.mp4' ); update_post_meta( $id, '_hod_video_transcript', "${ long }" );` ], { env: { ...process.env, HARNESS: '1', HODIMA_WP: wp } } );
 	const page2 = execFileSync( 'php', [ path.join( here, 'render.php' ), '/video/harness-transcript/', 'full' ], { env: { ...process.env, HARNESS: '1', HODIMA_WP: wp }, maxBuffer: 32 * 1024 * 1024 } ).toString();
 	log( /<h2[^>]*>متن کامل ویدیو<\/h2>/.test( page2 ), 'تیتر h2 «متن کامل ویدیو»' );
-	log( page2.includes( 'data-expandable-container' ) && page2.includes( 'expandable-boxes.js' ), 'داخل جعبه باکس‌های بازشونده، با JS و CSS همان ماژول' );
+	log( /hidden="until-found"/.test( page2 ) && page2.includes( 'بخش 12:' ), 'کل متن از اول در HTML (بسته با hidden="until-found")' );
+	log( ! page2.includes( 'hs-transcript-section' ) && ! page2.includes( 'expandable-boxes.js' ), 'بخش جدای قدیمی و دارایی‌های جعبه «نمایش بیشتر» نیست' );
 	const { ctx, page, errors } = await open( '', { body: page2 } );
 	await page.waitForTimeout( 500 );
-	const before = await page.evaluate( () => { const w = document.querySelector( '.hs-transcript .hodima-expandable-wrapper' ); const b = document.querySelector( '.hs-transcript [data-expandable-toggle]' ); return { h: w.getBoundingClientRect().height, full: w.scrollHeight, exp: b.getAttribute( 'aria-expanded' ), shown: getComputedStyle( b ).display !== 'none' }; } );
-	log( before.shown && before.exp === 'false' && before.h < before.full, 'بسته: کوتاه‌تر از کل متن و دکمه «نمایش بیشتر»', JSON.stringify( before ) );
-	await page.click( '.hs-transcript [data-expandable-toggle]' );
-	await page.waitForTimeout( 900 );
-	const after = await page.evaluate( () => { const w = document.querySelector( '.hs-transcript .hodima-expandable-wrapper' ); return { h: w.getBoundingClientRect().height, full: w.scrollHeight, exp: document.querySelector( '.hs-transcript [data-expandable-toggle]' ).getAttribute( 'aria-expanded' ) }; } );
-	log( after.exp === 'true' && after.h >= after.full - 2, 'کلیک: کل متن باز شد (aria-expanded=true)', JSON.stringify( after ) );
+	const state = () => page.evaluate( () => {
+		const b = document.querySelector( '.hs-transcript-btn' );
+		const p = document.getElementById( b.getAttribute( 'aria-controls' ) );
+		return { exp: b.getAttribute( 'aria-expanded' ), shown: p.querySelector( '.hs-transcript-card' ).checkVisibility(), h: Math.round( p.getBoundingClientRect().height ), focus: document.activeElement.className, name: b.getAttribute( 'aria-label' ), text: b.textContent.trim() };
+	} );
+	let st = await state();
+	log( st.exp === 'false' && ! st.shown && st.h === 0, 'بسته: باکس دیده نمی‌شود و جا نمی‌گیرد', JSON.stringify( st ) );
+	log( st.name.startsWith( st.text ) && st.text === 'متن', 'نام دسترس‌پذیر با کلمه دیدنی «متن» شروع می‌شود', JSON.stringify( st ) );
+	const order = await page.evaluate( () => [ ...document.querySelectorAll( '.hs-video-action-bar > .hs-action-item' ) ].map( ( i ) => i.className.replace( 'hs-action-item ', '' ) ).join( ',' ) );
+	log( order === 'hs-action-stats,hs-action-transcript,hs-action-share', 'ترتیب: بازدید، متن، اشتراک', order );
+	await page.focus( '.hs-transcript-btn' );
+	await page.keyboard.press( 'Enter' );
+	await page.waitForTimeout( 200 );
+	st = await state();
+	log( st.exp === 'true' && st.shown && st.focus === 'hs-transcript-title', 'Enter: باز شد، فوکوس روی تیتر باکس', JSON.stringify( st ) );
+	const full = await page.evaluate( () => [ ...document.querySelectorAll( '.hs-transcript p' ) ].filter( ( x ) => x.checkVisibility() ).length );
+	log( full === 12, 'متن کامل یک‌جا (بدون «نمایش بیشتر» دوم)', String( full ) );
+	await page.keyboard.press( 'Escape' );
+	await page.waitForTimeout( 100 );
+	st = await state();
+	log( st.exp === 'false' && ! st.shown && st.focus.includes( 'hs-transcript-btn' ), 'Esc: بسته شد، فوکوس به دکمه برگشت', JSON.stringify( st ) );
+	await page.click( '.hs-transcript-btn' );
+	await page.click( '.hs-transcript-close' );
+	await page.waitForTimeout( 100 );
+	st = await state();
+	log( st.exp === 'false' && ! st.shown && st.focus.includes( 'hs-transcript-btn' ), '«بستن متن»: بسته شد، فوکوس به دکمه برگشت', JSON.stringify( st ) );
+	await page.click( '.hs-transcript-btn' );
+	await page.click( '.hs-transcript-btn' );
+	st = await state();
+	log( st.exp === 'false' && ! st.shown, 'کلیک دوم روی دکمه: بسته', JSON.stringify( st ) );
+	// جستجوی مرورگر (Ctrl+F) در Playwright نیست: همان کاری که مرورگر می‌کند شبیه‌سازی می‌شود
+	await page.evaluate( () => { const p = document.querySelector( '.hs-transcript-panel' ); p.dispatchEvent( new Event( 'beforematch' ) ); p.removeAttribute( 'hidden' ); } );
+	st = await state();
+	log( st.exp === 'true' && st.shown, 'باز شدن با جستجوی مرورگر (beforematch): دکمه هم «باز» می‌شود', JSON.stringify( st ) );
 	await page.addScriptTag( { path: axePath } );
-	const axe = await page.evaluate( async () => ( await window.axe.run( '.hs-transcript-section', { runOnly: [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa' ] } ) ).violations.map( ( v ) => `${ v.id } (${ v.nodes.length })` ) );
-	log( axe.length === 0, 'axe روی بخش متن کامل', axe.join( ', ' ) );
+	const axe = await page.evaluate( async () => ( await window.axe.run( '.hs-intro-section', { runOnly: [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa' ] } ) ).violations.map( ( v ) => `${ v.id } (${ v.nodes.length })` ) );
+	log( axe.length === 0, 'axe روی کادر ویدیو با باکس باز', axe.join( ', ' ) );
 	log( errors.length === 0, 'بدون خطای JS', errors.join( ' | ' ) );
+	await ctx.close();
+
+	// ویدیوی بدون فایل هم دکمه «متن» دارد و کار می‌کند (مستقل از پلیر)
+	execFileSync( 'php', [ path.join( here, 'wp-eval.php' ), "$v = get_page_by_path( 'harness-no-url', OBJECT, 'video' ); update_post_meta( $v->ID, '_hod_video_transcript', 'متن آزمایشی ویدیوی بدون فایل' );" ], { env: { ...process.env, HARNESS: '1', HODIMA_WP: wp } } );
+	const noUrl = execFileSync( 'php', [ path.join( here, 'render.php' ), '/video/harness-no-url/', 'full' ], { env: { ...process.env, HARNESS: '1', HODIMA_WP: wp }, maxBuffer: 32 * 1024 * 1024 } ).toString();
+	execFileSync( 'php', [ path.join( here, 'wp-eval.php' ), "$v = get_page_by_path( 'harness-no-url', OBJECT, 'video' ); delete_post_meta( $v->ID, '_hod_video_transcript' );" ], { env: { ...process.env, HARNESS: '1', HODIMA_WP: wp } } );
+	const o2 = await open( '', { body: noUrl, wait: false } );
+	await o2.page.waitForTimeout( 400 );
+	await o2.page.click( '.hs-transcript-btn' );
+	log( await o2.page.evaluate( () => document.querySelector( '.hs-transcript-card' ).checkVisibility() ), 'ویدیوی بدون فایل: دکمه «متن» باز می‌کند' );
+	await o2.ctx.close();
+}
+
+console.log( '=== ساعت پلیر روی گوشی (تا 2.1.4 در ۳۹۰ دوخطی و در ۳۲۰ سه‌خطی؛ دکمه صدا له می‌شد)' );
+for ( const [ width, total ] of [ [ 414, true ], [ 390, true ], [ 360, false ], [ 320, false ] ] ) {
+	const { ctx, page } = await open( '', { width } );
+	await page.waitForTimeout( 300 );
+	const m = await page.evaluate( () => {
+		const bc = document.querySelector( '.hs-bottom-controls' );
+		const t = document.querySelector( '.hs-time-display' );
+		const btns = [ ...bc.querySelectorAll( 'button' ) ].map( ( b ) => Math.round( b.getBoundingClientRect().width ) );
+		return { lines: Math.round( t.getBoundingClientRect().height / parseFloat( getComputedStyle( t ).lineHeight || 18 ) ), h: Math.round( t.getBoundingClientRect().height ), clipped: t.scrollWidth > t.clientWidth, total: document.querySelector( '.hs-time-total' ).checkVisibility(), minBtn: Math.min( ...btns ), overflow: bc.scrollWidth - bc.clientWidth, page: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+	} );
+	log( m.h <= 24 && ! m.clipped && m.total === total && m.minBtn >= 24 && m.overflow <= 0 && m.page <= 0, `عرض ${ width }: ساعت یک‌خطی${ total ? ' با مدت' : ' (فقط زمان فعلی)' }، دکمه‌ها ≥۲۴px، بدون بیرون‌زدگی`, JSON.stringify( m ) );
 	await ctx.close();
 }
 

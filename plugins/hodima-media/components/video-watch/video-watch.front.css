@@ -312,6 +312,8 @@
 	gap: 8px;
 	direction: ltr;
 	transition: opacity 0.4s ease;
+	/* پله‌های @container نوار کنترل (پایین‌تر)؛ عنصر نمی‌تواند اندازه خودش را بپرسد، پس روی والد */
+	container-type: inline-size;
 }
 
 /* ناحیه لمس ۲۴px (WCAG 2.5.8): padding ۱۰px + margin منفی تا ارتفاع چیدمان همان ۱۲px بماند؛ touch-action: کشیدن با لمس صفحه را اسکرول نکند */
@@ -356,12 +358,21 @@
 	direction: ltr;
 }
 
+/*
+ * دکمه‌ها جمع نشوند (تا 2.1.4 در عرض ۳۹۰ ساعت «۰:۰۰ / ۰:۰۰» دوخطی و در ۳۲۰ سه‌خطی می‌شد
+ * و دکمه صدا تا ۴px له می‌شد)؛ جای کم را فاصله‌گیر و پله‌های @container پایین می‌گیرند.
+ */
+.hvw-page .hs-bottom-controls .hs-control-btn {
+	flex-shrink: 0;
+}
+
 .hvw-page .hs-volume-container {
 	display: flex;
 	align-items: center;
 	gap: 4px;
 	transition: width 0.3s;
 	overflow: hidden;
+	min-width: 32px;
 }
 
 .hvw-page .hs-volume-slider {
@@ -400,6 +411,40 @@
 	letter-spacing: 0.5px;
 	opacity: 0.9;
 	margin-inline-start: 8px;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+/* عرض نوار کنترل (نه صفحه): ۳۴۰ ≈ گوشی ۳۷۵–۴۱۴، ۲۹۰ ≈ ۳۶۰، ۲۵۰ ≈ ۳۲۰ */
+@container (max-width: 340px) {
+	.hvw-page .hs-bottom-controls {
+		gap: 4px;
+	}
+
+	.hvw-page .hs-time-display {
+		margin-inline-start: 4px;
+	}
+}
+
+/* جای «/ مدت» نیست: فقط زمان فعلی (مدت در نوار پیشرفت برای صفحه‌خوان هست) */
+@container (max-width: 290px) {
+	.hvw-page .hs-time-total {
+		display: none;
+	}
+}
+
+@container (max-width: 250px) {
+	.hvw-page .hs-bottom-controls {
+		gap: 2px;
+	}
+
+	.hvw-page .hs-bottom-controls .hs-control-btn {
+		width: 28px;
+	}
+
+	.hvw-page .hs-volume-container {
+		min-width: 28px;
+	}
 }
 
 /* مرکز با left + translate فیزیکی (در RTL هم همان وسط) */
@@ -706,6 +751,21 @@
 }
 
 @media (max-width: 480px) {
+	/*
+	 * منوی اشتراک (آخرین جعبه، لبه چپ در RTL) از لبه بیرونی دکمه باز شود نه وسطش:
+	 * با ۴ دکمه جعبه باریک‌تر از منو (۱۵۰px) است و منوی وسط‌چین از صفحه بیرون می‌زد.
+	 */
+	.hvw-page .hs-action-menu {
+		/* stylelint-disable-next-line csstools/use-logical */
+		left: auto;
+		inset-inline-end: 0;
+		transform: translateY(10px);
+	}
+
+	.hvw-page .hs-action-menu.is-open {
+		transform: translateY(0);
+	}
+
 	.hvw-page .hs-video-action-bar {
 		padding: 6px 8px;
 		gap: 6px;
@@ -877,7 +937,41 @@
 	opacity: 0.45;
 }
 
-/* ── متن کامل ویدیو (مرحله ۴، بخش ۲۱۹)؛ جعبه بازشونده ظاهر خودش را از ماژول باکس‌های بازشونده دارد ── */
+/* ── دکمه «متن» و باکس متن کامل ویدیو (بخش ۲۲۲؛ تا 2.1.4 بخش جدا با جعبه «نمایش بیشتر») ── */
+.hvw-page .hs-transcript-btn[aria-expanded="true"] {
+	background: color-mix(in srgb, var(--color-third) 30%, #fff);
+	border-color: var(--color-secondary);
+	color: var(--color-primary);
+}
+
+.hvw-page .hs-transcript-btn[aria-expanded="true"] svg {
+	stroke: var(--color-primary);
+}
+
+/* باکس hidden="until-found" خودش رسم می‌شود (حتی بسته): قاب و فاصله فقط روی فرزند */
+.hvw-page .hs-transcript-card {
+	margin-block-start: 10px;
+	background: #fff;
+	border: 1px solid var(--cat-border);
+	border-radius: 10px;
+	box-shadow: var(--cat-shadow);
+	padding: 16px 18px;
+}
+
+.hvw-page .hs-transcript-title {
+	font-family: inherit;
+	font-size: 17px;
+	font-weight: 700;
+	line-height: 1.6;
+	color: var(--color-text);
+	margin: 0 0 8px;
+}
+
+/* فوکوس برنامه‌ای بعد از باز شدن: حلقه فقط برای صفحه‌کلید */
+.hvw-page .hs-transcript-title:focus {
+	outline: none;
+}
+
 .hvw-page .hs-transcript {
 	color: var(--cat-text-muted);
 	font-size: 15px;
@@ -888,14 +982,30 @@
 	margin: 0 0 0.8em;
 }
 
-.hvw-page .hs-transcript-details summary {
-	cursor: pointer;
-	color: var(--color-primary);
+.hvw-page .hs-transcript-close {
+	display: inline-flex;
+	align-items: center;
+	min-height: 36px;
+	padding: 6px 14px;
+	border-radius: 18px;
+	border: 1px solid var(--cat-border);
+	background: var(--hodima-surface-soft, #f7f9fd);
+	color: var(--color-text);
+	font-family: inherit;
+	font-size: 13px;
 	font-weight: 600;
+	cursor: pointer;
 }
 
-.hvw-page .hs-transcript-details[open] summary {
-	margin-block-end: 10px;
+.hvw-page .hs-transcript-close:hover,
+.hvw-page .hs-transcript-close:focus-visible {
+	background: var(--cat-bg-light-green);
+}
+
+.hvw-page .hs-transcript-title:focus-visible,
+.hvw-page .hs-transcript-close:focus-visible {
+	outline: 2px solid var(--hodima-focus-color, #25316a);
+	outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
