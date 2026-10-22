@@ -18,6 +18,15 @@
 
     var SKIP = 5;
 
+    /*
+     * بازدید = تماشای واقعی: ۱۵٪ مدت ویدیو، و حداکثر ۳۰ ثانیه برای ویدیوی بلند.
+     * تا Media 2.0.8 «رسیدن جای پخش به ۱۵٪» بود؛ پرش (لینک ?t= لحظه‌های کلیدی
+     * گوگل، کلیک روی نوار) بدون تماشا بازدید می‌شد و ویدیوی یک‌ساعته ۹ دقیقه
+     * تماشا لازم داشت.
+     */
+    var VIEW_RATIO = 0.15;
+    var VIEW_MAX_SECONDS = 30;
+
     function formatTime(t) {
         if (!isFinite(t)) return '0:00';
         var h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = Math.floor(t % 60);
@@ -80,6 +89,8 @@
         this.viewCounterEl = scope.querySelector('.hs-live-view-count');
 
         this.viewTracked     = false;
+        this.watched         = 0;    // ثانیه‌های واقعا پخش‌شده (بدون پرش)
+        this.lastPos         = null; // جای پخش در timeupdate قبلی
         this.idleTimer       = null;
         this.ignoreNextClick = false;
         this.pendingStart    = startTimeFromUrl();
@@ -135,6 +146,7 @@
             if (self.durationEl) self.durationEl.textContent = formatTime(v.duration);
         });
         v.addEventListener('timeupdate', function () { self.onTimeUpdate(); });
+        v.addEventListener('seeking', function () { self.lastPos = null; });
         v.addEventListener('click', function (e) {
             if (self.ignoreNextClick) { e.preventDefault(); return; }
             self.togglePlayState();
@@ -385,6 +397,7 @@
     };
 
     P.onPause = function () {
+        this.lastPos = null;
         this.syncPlayState(false);
         this.container.classList.remove('hs-controls-hidden');
         clearTimeout(this.idleTimer);
@@ -410,7 +423,6 @@
         var v = this.video;
         if (!v.duration) return;
 
-        var pct = (v.currentTime / v.duration) * 100;
         requestAnimationFrame(function () { self.updateProgress(); });
 
         if ('mediaSession' in navigator && navigator.mediaSession.setPositionState && isFinite(v.duration)) {
@@ -419,10 +431,27 @@
             } catch (e) {}
         }
 
-        if (pct >= 15 && !this.viewTracked) {
+        this.countWatched();
+
+        if (!this.viewTracked && this.watched >= Math.min(v.duration * VIEW_RATIO, VIEW_MAX_SECONDS)) {
             this.viewTracked = true;
             this.trackInteraction('views');
         }
+    };
+
+    /** فقط پیشروی عادی پخش جمع می‌شود؛ پرش (نوار، ?t=، فلش‌ها) جهش بزرگ است و حساب نمی‌شود. */
+    P.countWatched = function () {
+        var v = this.video;
+        if (v.paused || v.seeking) {
+            this.lastPos = null;
+            return;
+        }
+        var now = v.currentTime;
+        if (this.lastPos !== null) {
+            var step = now - this.lastPos;
+            if (step > 0 && step < 2 * Math.max(1, v.playbackRate)) this.watched += step;
+        }
+        this.lastPos = now;
     };
 
     P.togglePlayState = function () {

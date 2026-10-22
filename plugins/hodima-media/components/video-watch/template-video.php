@@ -10,7 +10,7 @@ if (have_posts()) :
         $video_url = get_post_meta($post_id, '_hod_video_url', true);
         $video_thumb = get_post_meta($post_id, '_hod_video_thumbnail', true) ?: get_the_post_thumbnail_url($post_id, 'full');
 
-        $views_display = number_format_i18n(class_exists('Video_Watch_Analytics') ? Video_Watch_Analytics::get_total_views((int) $post_id) : 0);
+        $views_display = number_format_i18n(class_exists('Hodima_Video_Watch_Analytics') ? Hodima_Video_Watch_Analytics::get_total_views((int) $post_id) : 0);
 
         $related_url   = get_post_meta($post_id, '_hod_related_product_url', true);
         $related_cards = get_post_meta($post_id, '_hod_related_links', true) ?: [];

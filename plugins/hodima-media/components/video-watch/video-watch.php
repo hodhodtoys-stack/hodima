@@ -43,7 +43,8 @@ function hod_video_watch_front_assets(): void
     wp_localize_script('hod-video-watch-front', 'hvwData', [
         'restUrl'  => esc_url_raw(rest_url('video-watch/v1/track')),
         'nonceUrl' => esc_url_raw(rest_url('video-watch/v1/nonce')),
-        'nonce'    => wp_create_nonce('hvw_track_action')
+        // کلید مستقل از کاربر (db-video-watch.php)؛ nonce وردپرس برای کاربر واردشده همیشه رد می‌شد
+        'nonce'    => class_exists('Hodima_Video_Watch_Analytics') ? Hodima_Video_Watch_Analytics::token() : ''
     ]);
 }
 add_action('wp_enqueue_scripts', 'hod_video_watch_front_assets');
@@ -57,7 +58,7 @@ function hod_video_watch_privacy_policy_text(): void
 
     $text  = '<h3>' . esc_html('شمارنده بازدید ویدیوها') . '</h3>';
     $text .= '<p class="privacy-policy-tutorial">' . esc_html('این متن پیشنهادی است؛ مطابق وضع کسب‌وکار خود ویرایش کنید.') . '</p>';
-    $text .= '<p>' . esc_html('برای اینکه یک بازدیدکننده در یک روز چند بار شمرده نشود، یک نشانه یک‌طرفه (هش) از نشانی IP، نام مرورگر و تاریخ همان روز به‌صورت موقت (حداکثر یک روز) نگه داشته می‌شود؛ نشانی IP ذخیره نمی‌شود.') . '</p>';
+    $text .= '<p>' . esc_html('برای اینکه یک بازدیدکننده در یک روز چند بار شمرده نشود و بازدید جعلی ثبت نشود، دو نشانه یک‌طرفه (هش) — یکی از نشانی IP، نام مرورگر و تاریخ همان روز و دیگری از نشانی IP و تاریخ — به‌صورت موقت (حداکثر یک روز) نگه داشته می‌شود؛ نشانی IP ذخیره نمی‌شود.') . '</p>';
     wp_add_privacy_policy_content('هدیما — ویدیو', wp_kses_post($text));
 }
 add_action('admin_init', 'hod_video_watch_privacy_policy_text');

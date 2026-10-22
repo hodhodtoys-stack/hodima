@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Media
  * Plugin URI:        https://hodima.com
  * Description:       رسانه و محتوای تعاملی هدیما: استوری، ویدیو با شمارش بازدید، اسلایدر، سیستم رسانه (ویدیو، پادکست، FAQ)، اعلان‌ها، باکس‌های بازشونده و جدول داینامیک.
- * Version:           2.0.8
+ * Version:           2.0.9
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_MEDIA_VERSION = '2.0.8';
+const HODIMA_MEDIA_VERSION = '2.0.9';
 define( 'HODIMA_MEDIA_FILE', __FILE__ );
 define( 'HODIMA_MEDIA_DIR', __DIR__ );
 define( 'HODIMA_MEDIA_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -65,7 +65,7 @@ function hodima_media_modules(): array {
 		],
 		'video' => [
 			'title'       => 'ویدیوها',
-			'description' => 'پست‌تایپ ویدیو با پخش‌کننده، زیرنویس، شمارش بازدید و اسکیمای VideoObject.',
+			'description' => 'پست‌تایپ ویدیو با پخش‌کننده، شمارش بازدید و اسکیمای VideoObject.',
 			'files'       => [ 'components/video-watch/video-watch.php' ],
 			'settings'    => 'edit.php?post_type=video',
 			'recommends'  => [ 'media-system' ],
@@ -165,5 +165,8 @@ register_deactivation_hook(
 		// زمان‌بندی‌های آمار استوری (قبلا با تعویض قالب پاک می‌شدند و دیگر ساخته نمی‌شدند؛ جای درستش غیرفعال‌سازی افزونه است)
 		wp_clear_scheduled_hook( 'wp_story_flush_counters_event' );
 		wp_clear_scheduled_hook( 'wp_story_cleanup_interactions_event' );
+		// جمع‌بندی آمار ویدیوها (تا 2.0.8 با تعویض قالب پاک می‌شد) و رویداد قدیمی «امتیاز محبوبیت»
+		wp_clear_scheduled_hook( 'video_watch_flush_counters_event' );
+		wp_clear_scheduled_hook( 'video_watch_decay_popularity_event' );
 	}
 );

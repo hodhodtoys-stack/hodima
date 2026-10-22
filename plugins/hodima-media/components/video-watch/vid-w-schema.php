@@ -234,7 +234,7 @@ add_action('wp_head', static function (): void {
     if ('' === $raw_thumb) return;
     $video_thumb = esc_url_raw((string) preg_replace('/\s+/', '%20', trim($raw_thumb)));
 
-    $views      = class_exists('Video_Watch_Analytics') ? Video_Watch_Analytics::get_total_views($post_id) : 0;
+    $views      = class_exists('Hodima_Video_Watch_Analytics') ? Hodima_Video_Watch_Analytics::get_total_views($post_id) : 0;
     $transcript = (string) get_post_meta($post_id, '_hod_video_transcript', true);
     $duration   = (string) get_post_meta($post_id, '_hod_video_duration', true);
     $product    = (string) get_post_meta($post_id, '_hod_related_product_url', true);

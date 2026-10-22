@@ -8,6 +8,7 @@
 #   - آزمون‌های خودکار سیستم رسانه و Google Discover (media-tests.php) رد شوند؛
 #   - آزمون‌های ماژول استوری (stories-tests.php) رد شوند؛
 #   - آزمون‌های ماژول اعلان‌ها (notification-tests.php) رد شوند؛
+#   - آزمون‌های آمار ویدیوها (video-watch-tests.php) رد شوند؛
 #   - آزمون‌های Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
@@ -68,6 +69,13 @@ if HARNESS=1 HODIMA_WP="$base/wp" php "$here/stories-tests.php" > "$out/stories-
 	tail -1 "$out/stories-tests.txt" | sed 's/^/  /'
 else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/stories-tests.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
+
+echo "=== آزمون آمار ویدیوها (video-watch-tests.php: فقط ویدیوی منتشرشده، تکراری/سقف IP، کلید، جمع‌بندی امن، زمان‌بندی)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/video-watch-tests.php" > "$out/video-watch-tests.txt" 2>&1; then
+	tail -1 "$out/video-watch-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/video-watch-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
 echo "=== آزمون Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس)"
