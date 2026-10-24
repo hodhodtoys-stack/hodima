@@ -19,21 +19,14 @@ export function measureInPage() {
 		return el.tagName.toLowerCase() + ( el.id ? '#' + el.id : '' ) + ( cls ? '.' + cls : '' );
 	};
 
-	// ارتفاع محتوا: از بالای محتوا تا پایین آخرین عنصر دیدنی (فوتر وردپرس/هدیما حساب نمی‌شود)
-	const top = root.getBoundingClientRect().top + window.scrollY;
-	let bottom = top;
-	root.querySelectorAll( '.wrap *' ).forEach( ( el ) => {
-		if ( ! visible( el ) ) {
-			return;
-		}
-		const r = el.getBoundingClientRect();
-		bottom = Math.max( bottom, r.bottom + window.scrollY );
-	} );
-	const height = Math.round( bottom - top );
+	// ارتفاع محتوا = ارتفاع جریان عادی .wrap (عنصرهای absolute/fixed مثل حباب ؟ و متن فقط‌صفحه‌خوان آن را بزرگ نمی‌کنند)
+	const wrap = root.querySelector( '.wrap' ) || root;
+	const height = Math.round( wrap.getBoundingClientRect().height );
 
 	// کارت هم‌سطح (تودرتو شمرده نمی‌شود)
 	const cardSel = '.hd-card, .hodima-panel, .hdt-card, .hds-card, .hdm-card, .hdc-card, .hd-body > section';
-	const cards = [ ...root.querySelectorAll( cardSel ) ].filter( ( el ) => visible( el ) && ! el.parentElement.closest( cardSel ) );
+	// کارت جمع‌شونده بسته (details اختیاری) کارت دیدنی نیست
+	const cards = [ ...root.querySelectorAll( cardSel ) ].filter( ( el ) => visible( el ) && ! el.parentElement.closest( cardSel ) && ! ( 'DETAILS' === el.tagName && ! el.open ) );
 
 	// دکمه پر در هر کارت (primary)
 	const primarySel = '.button-primary, .hd-button--primary, button[type="submit"].button-primary, .hodima-settings__save';
