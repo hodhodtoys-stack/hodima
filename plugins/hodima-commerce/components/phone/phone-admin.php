@@ -38,15 +38,9 @@ function hodima_phone_fa( string|int $text ): string {
         : strtr( $text, [ '0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴', '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹' ] );
 }
 
-/** شماره برای خواندن راحت‌تر: 0912 345 6789 / 021 2233 4455. */
+/** شماره برای نمایش: بدون فاصله، مثل 09351726611 (کپی و خواندنش راحت‌تر است). */
 function hodima_phone_pretty( string $phone ): string {
-    if ( 1 === preg_match( '/^(09\d{2})(\d{3})(\d{4})$/', $phone, $m ) ) {
-        return "{$m[1]} {$m[2]} {$m[3]}";
-    }
-    if ( 1 === preg_match( '/^(0\d{2})(\d{4})(\d{4})$/', $phone, $m ) ) {
-        return "{$m[1]} {$m[2]} {$m[3]}";
-    }
-    return $phone;
+    return preg_replace( '/\D+/', '', $phone ) ?? $phone;
 }
 
 /** ساعت محلی سایت به‌صورت timestamp «جابه‌جاشده» (برای قالب‌بندی با منطقه UTC). */
@@ -418,11 +412,11 @@ function hodima_phone_render_list(): void {
     ?>
     <dialog class="hd-leads__dialog" id="hd-leads-dialog" aria-labelledby="hd-leads-dialog-title">
         <form method="dialog">
-            <h2 id="hd-leads-dialog-title">حذف همیشگی</h2>
-            <p>این کار قابل بازگشت نیست. ادامه می‌دهید؟</p>
+            <h2 id="hd-leads-dialog-title" data-hd-dialog-title>حذف همیشگی</h2>
+            <p data-hd-dialog-text>این کار قابل بازگشت نیست. ادامه می‌دهید؟</p>
             <div class="hd-leads__dialog-actions">
                 <button class="button" value="cancel">انصراف</button>
-                <button class="button button-primary hd-leads__danger" value="ok">بله، حذف شود</button>
+                <button class="button button-primary hd-leads__danger" value="ok" data-hd-dialog-ok>بله، حذف شود</button>
             </div>
         </form>
     </dialog>
@@ -549,10 +543,10 @@ function hodima_phone_render_row( WP_Post $post, bool $trash ): void {
             echo hodima_phone_icon_button( 'clipboard', 'کپی شماره ' . $phone, 'type="button" data-hd-copy="' . esc_attr( $phone ) . '"', '', 'کپی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape در سازنده
             if ( $trash ) {
                 echo hodima_phone_icon_button( 'undo', 'بازگردانی ' . $phone, 'type="submit" name="op" value="restore:' . $id . '"', '', 'بازگردانی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-                echo hodima_phone_icon_button( 'trash', 'حذف همیشگی ' . $phone, 'type="submit" name="op" value="delete:' . $id . '" data-hd-confirm', 'is-danger', 'حذف' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                echo hodima_phone_icon_button( 'trash', 'حذف همیشگی ' . $phone, 'type="submit" name="op" value="delete:' . $id . '" data-hd-confirm="delete"', 'is-danger', 'حذف' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
             } else {
                 echo hodima_phone_icon_button( $is_new ? 'visibility' : 'hidden', ( $is_new ? 'علامت: دیده شد — ' : 'علامت: جدید — ' ) . $phone, 'type="submit" name="op" value="' . ( $is_new ? 'seen' : 'unseen' ) . ':' . $id . '"', '', $is_new ? 'دیدم' : 'جدید' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-                echo hodima_phone_icon_button( 'trash', 'انتقال به زباله‌دان ' . $phone, 'type="submit" name="op" value="trash:' . $id . '"', 'is-danger', 'حذف' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                echo hodima_phone_icon_button( 'trash', 'انتقال به زباله‌دان ' . $phone, 'type="submit" name="op" value="trash:' . $id . '" data-hd-confirm="trash"', 'is-danger', 'حذف' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
             }
             ?>
         </td>
@@ -635,10 +629,10 @@ function hodima_phone_render_detail( int $lead_id ): void {
         echo hodima_phone_icon_button( 'clipboard', 'کپی شماره ' . $phone, 'type="button" data-hd-copy="' . esc_attr( $phone ) . '"', '', 'کپی شماره' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape در سازنده
         if ( $trashed ) {
             echo hodima_phone_icon_button( 'undo', 'بازگردانی', 'type="submit" name="op" value="restore:' . $lead_id . '"', '', 'بازگردانی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-            echo hodima_phone_icon_button( 'trash', 'حذف همیشگی', 'type="submit" name="op" value="delete:' . $lead_id . '" data-hd-confirm', 'is-danger', 'حذف همیشگی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            echo hodima_phone_icon_button( 'trash', 'حذف همیشگی', 'type="submit" name="op" value="delete:' . $lead_id . '" data-hd-confirm="delete"', 'is-danger', 'حذف همیشگی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         } else {
             echo hodima_phone_icon_button( 'hidden', 'علامت: جدید', 'type="submit" name="op" value="unseen:' . $lead_id . '"', '', 'علامت: جدید' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-            echo hodima_phone_icon_button( 'trash', 'انتقال به زباله‌دان', 'type="submit" name="op" value="trash:' . $lead_id . '"', 'is-danger', 'حذف' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            echo hodima_phone_icon_button( 'trash', 'انتقال به زباله‌دان', 'type="submit" name="op" value="trash:' . $lead_id . '" data-hd-confirm="trash"', 'is-danger', 'حذف' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         }
         ?>
     </form>
@@ -687,11 +681,11 @@ function hodima_phone_render_detail( int $lead_id ): void {
     <div class="screen-reader-text" id="hd-leads-live" role="status" aria-live="polite"></div>
     <dialog class="hd-leads__dialog" id="hd-leads-dialog" aria-labelledby="hd-leads-dialog-title">
         <form method="dialog">
-            <h2 id="hd-leads-dialog-title">حذف همیشگی</h2>
-            <p>این کار قابل بازگشت نیست. ادامه می‌دهید؟</p>
+            <h2 id="hd-leads-dialog-title" data-hd-dialog-title>حذف همیشگی</h2>
+            <p data-hd-dialog-text>این کار قابل بازگشت نیست. ادامه می‌دهید؟</p>
             <div class="hd-leads__dialog-actions">
                 <button class="button" value="cancel">انصراف</button>
-                <button class="button button-primary hd-leads__danger" value="ok">بله، حذف شود</button>
+                <button class="button button-primary hd-leads__danger" value="ok" data-hd-dialog-ok>بله، حذف شود</button>
             </div>
         </form>
     </dialog>

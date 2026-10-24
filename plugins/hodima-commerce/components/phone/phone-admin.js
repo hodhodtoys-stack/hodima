@@ -83,18 +83,30 @@
 		sync();
 	}
 
-	// ── تأیید حذف همیشگی (بدون JS خود دکمه مستقیم می‌فرستد) ──
+	// ── تأیید حذف (بدون JS خود دکمه مستقیم می‌فرستد): انتقال به زباله‌دان و حذف همیشگی ──
 	const dialog = document.getElementById('hd-leads-dialog');
 	if (dialog instanceof HTMLDialogElement) {
+		const titleEl = dialog.querySelector('[data-hd-dialog-title]');
+		const textEl = dialog.querySelector('[data-hd-dialog-text]');
+		const okEl = dialog.querySelector('[data-hd-dialog-ok]');
+		const TEXTS = {
+			trash: ['انتقال به زباله‌دان', 'شماره به زباله‌دان می‌رود و از آنجا می‌توانید برش گردانید. ادامه می‌دهید؟', 'بله، به زباله‌دان برود'],
+			delete: ['حذف همیشگی', 'این کار قابل بازگشت نیست. ادامه می‌دهید؟', 'بله، حذف شود'],
+		};
 		let pending = null;
 
 		root.addEventListener('click', (e) => {
 			const target = e.target instanceof Element ? e.target.closest('[data-hd-confirm], [data-hd-bulk-apply]') : null;
-			// «اجرا» فقط وقتی کار انتخاب‌شده «حذف همیشگی» است تأیید می‌خواهد
-			const button = target && (target.hasAttribute('data-hd-confirm') || bulkSelect?.value === 'delete') ? target : null;
-			if (!button || button.dataset.hdConfirmed) return;
+			if (!target || target.dataset.hdConfirmed) return;
+			// «اجرا» فقط برای کار «زباله‌دان» یا «حذف همیشگی» تأیید می‌خواهد
+			const kind = target.hasAttribute('data-hd-bulk-apply') ? bulkSelect?.value : target.getAttribute('data-hd-confirm');
+			if (!(kind in TEXTS)) return;
 			e.preventDefault();
-			pending = button;
+			pending = target;
+			const [title, text, ok] = TEXTS[kind];
+			if (titleEl) titleEl.textContent = title;
+			if (textEl) textEl.textContent = text;
+			if (okEl) okEl.textContent = ok;
 			dialog.showModal();
 		});
 
