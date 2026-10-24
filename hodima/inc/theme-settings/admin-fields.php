@@ -153,7 +153,9 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 	$tips_tab  = hodima_settings_panel_tips( (string) ( $field['panel'] ?? '' ) ); // تب با قانون «همه توضیح‌ها داخل ؟»
 	// راهنمای کادر ← آیکون ؟ کنار برچسب (3.1.1). در تب‌های قدیمی می‌ماند: کلید (توضیح جزو کاشی است)، فیلد زیرگروه (ردیف جدول) و فیلد با help_visible (هشدار/شرط مهم).
 	// در تب با tips: help_visible نادیده است و توضیح کاشی کلید هم داخل ؟ می‌رود (فقط فیلد زیرگروه همان ردیف جدول می‌ماند)
-	$tip       = '' !== $help && ! isset( $field['group'] ) && ( empty( $field['help_visible'] ) || $tips_tab ) && Hodima_Setting_Type::Toggle !== $type;
+	// فیلد زیرگروه در قاب «cards» (کارت‌های نماد اعتماد فوتر) برچسب دیدنی دارد؛ در تب tips توضیحش هم داخل ؟ می‌رود (ردیف‌های جدول برچسب دیدنی ندارند و بدون ؟ می‌مانند)
+	$in_cards  = $tips_tab && isset( $field['group'] ) && 'cards' === ( hodima_settings_panels()[ $field['panel'] ?? '' ]['layout'] ?? '' );
+	$tip       = '' !== $help && ( ! isset( $field['group'] ) || $in_cards ) && ( empty( $field['help_visible'] ) || $tips_tab ) && Hodima_Setting_Type::Toggle !== $type;
 	$wide      = ( $field['wide'] ?? $type->is_wide() ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
 	?>
 	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">

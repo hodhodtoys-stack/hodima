@@ -212,7 +212,8 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 		?>
 		<details class="<?php echo esc_attr( $classes ); ?>" data-hodima-collapsible="<?php echo esc_attr( $key ); ?>"<?php echo $force_open ? ' open data-hodima-keep-open' : ''; ?><?php echo ! empty( $panel['open_on'] ) ? ' data-hodima-open-on="' . esc_attr( implode( ' ', (array) $panel['open_on'] ) ) . '"' : ''; ?>>
 			<summary class="hodima-panel__summary">
-				<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '', '<span class="hodima-panel__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>', $tips ); ?>
+				<?php // دکمه ؟ داخل <summary> تودرتو است (axe nested-interactive) و بیرونش هم با بسته بودن <details> پنهان می‌شد: در تب tips توضیح قاب جمع‌شونده اولین سطر بدنه است (فقط وقتی باز شد دیده می‌شود) ?>
+				<?php hodima_settings_panel_head( $title, $panel['title'], $tips ? '' : ( $panel['help'] ?? '' ), $panel['icon'] ?? '', '<span class="hodima-panel__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>', $tips ); ?>
 			</summary>
 	<?php else : ?>
 	<section class="<?php echo esc_attr( $classes ); ?>" aria-labelledby="<?php echo esc_attr( $title ); ?>">
@@ -220,6 +221,9 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 	<?php endif; ?>
 
 		<div class="hodima-panel__body">
+			<?php if ( $collapse && $tips && '' !== ( $panel['help'] ?? '' ) ) : ?>
+				<p class="hodima-panel__note"><?php echo esc_html( (string) $panel['help'] ); ?></p>
+			<?php endif; ?>
 			<?php if ( 'swatches' === $layout ) : ?>
 				<?php hodima_settings_palette_preview( $settings ); ?>
 			<?php elseif ( 'typepreview' === $layout ) : ?>
@@ -326,8 +330,7 @@ function hodima_settings_render_headings( array $panel, array $grouped, array $g
 	?>
 	<?php if ( $shared['fields'] || $loose ) : ?>
 		<div class="hodima-headings-all">
-			<h4 class="hodima-headings-all__title">همه تیترها</h4>
-			<p class="hodima-field__help">فونت، وزن، فاصله خطوط و رنگ یکسان برای H1 تا H6. اندازه هر تیتر در جدول کنار آن است.</p>
+			<h4 class="hodima-headings-all__title">همه تیترها <?php echo hodima_settings_tip_html( 'فونت، وزن، فاصله خطوط و رنگ یکسان برای H1 تا H6. اندازه هر تیتر در جدول کنار آن است.', 'hodima-headings-all-help', 'همه تیترها' ); // phpcs:ignore WordPress.Security.EscapeOutput -- hodima_settings_tip_html خروجی را escape کرده ?></h4>
 			<div class="hodima-panel__fields hodima-headings-all__fields">
 				<?php foreach ( $loose as $field_key => $field ) : ?>
 					<?php hodima_settings_render_field( $field_key, $field, $settings[ $field_key ] ); ?>

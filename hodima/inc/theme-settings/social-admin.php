@@ -32,7 +32,9 @@ function hodima_social_admin_render(): void {
 			'hodima-panel-social_list-title',
 			'شبکه‌ها',
 			'با «افزودن شبکه» یک ردیف تازه می‌آید؛ نام، آدرس و آیکون را خودتان پر کنید. به ترتیب از راست به چپ در نوار بالای فوتر دیده می‌شوند و با دکمه‌های بالا/پایین جابه‌جا می‌شوند. آیکون مربعی و شفاف (SVG یا PNG) بهترین نتیجه را دارد؛ بدون آیکون، نام شبکه نمایش داده می‌شود.',
-			'dashicons-share'
+			'dashicons-share',
+			'',
+			true
 		);
 		?>
 		<div class="hodima-panel__body">

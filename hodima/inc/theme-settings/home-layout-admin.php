@@ -54,7 +54,8 @@ function hodima_home_admin_render(): void {
 			'بخش‌های صفحه اصلی',
 			'به ترتیب از بالا به پایین. ترتیب را با کشیدن دستگیره یا دکمه‌های بالا/پایین عوض کنید؛ با کلیک روی نام هر بخش تنظیماتش باز می‌شود. بخش خاموش ذخیره می‌ماند ولی نمایش داده نمی‌شود.',
 			'dashicons-layout',
-			$status
+			$status,
+			true
 		);
 		?>
 
@@ -213,7 +214,7 @@ function hodima_home_admin_item( array $item, array $terms, bool $open = false )
 		</div>
 
 		<div class="hodima-home__body" id="<?php echo esc_attr( $idp ); ?>-body" <?php echo $open ? '' : 'hidden'; ?>>
-			<p class="hodima-field__help"><?php echo esc_html( $def['help'] ); ?></p>
+			<p class="hodima-panel__note"><?php echo esc_html( $def['help'] ); ?></p>
 			<?php if ( $def['fields'] ) : ?>
 				<div class="hodima-home__fields">
 					<?php foreach ( $def['fields'] as $key => $field ) : ?>
@@ -242,11 +243,11 @@ function hodima_home_admin_field( string $name, string $id, array $field, mixed 
 			<fieldset class="hodima-home__checks">
 				<legend class="hodima-field__label"><?php echo esc_html( $field['label'] ); ?></legend>
 				<?php if ( ! empty( $field['help'] ) ) : ?>
-					<p class="hodima-field__help"><?php echo esc_html( $field['help'] ); ?></p>
+					<p class="hodima-panel__note"><?php echo esc_html( $field['help'] ); ?></p>
 				<?php endif; ?>
 				<input type="hidden" name="<?php echo esc_attr( $name ); ?>[]" value="">
 				<?php if ( ! $terms ) : ?>
-					<p class="hodima-field__help">دسته محصولی وجود ندارد (ووکامرس).</p>
+					<p class="hodima-panel__note">دسته محصولی وجود ندارد (ووکامرس).</p>
 				<?php elseif ( count( $terms ) > 8 ) : ?>
 					<?php // جستجو در فهرست دسته‌ها (admin.js: فقط نمایش را فیلتر می‌کند؛ تیک‌ها دست‌نخورده می‌مانند) ?>
 					<input type="search" class="hodima-home__filter" data-hodima-home-filter placeholder="جستجو در دسته‌ها…" aria-label="<?php echo esc_attr( 'جستجو در ' . $field['label'] ); ?>">

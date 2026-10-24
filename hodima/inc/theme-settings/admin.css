@@ -13,8 +13,9 @@
 	--hs-primary: var(--hodima-primary, #25316a);
 	--hs-secondary: var(--hodima-secondary, #607bbd);
 	--hs-third: var(--hodima-third, #b6c2f3);
-	--hs-accent: var(--hodima-accent, #6a2b9a);
-	--hs-accent-light: var(--hodima-accent-light, #a341c8);
+	/* پیشخوان بنفش ندارد: رنگ تأکید سبز و روشن آبی (پالت سایت فقط در پیش‌نمایش‌ها دیده می‌شود) */
+	--hs-accent: #1f7a4d;
+	--hs-accent-light: #607bbd;
 
 	--hs-surface: #ffffff;
 	--hs-surface-soft: color-mix(in srgb, var(--hs-third) 12%, #ffffff);
@@ -84,7 +85,7 @@
 	margin-block: 1.25rem 0;
 	padding: 1.5rem 1.75rem;
 	border-radius: var(--hs-radius);
-	background: linear-gradient(135deg, var(--hs-primary) 0%, var(--hs-secondary) 70%, var(--hs-accent) 100%);
+	background: linear-gradient(135deg, var(--hs-primary) 0%, var(--hs-secondary) 100%);
 	color: #ffffff;
 	box-shadow: var(--hs-shadow);
 
@@ -1405,15 +1406,15 @@ input.hodima-color__swatch {
 	padding-inline: 2rem;
 	border: 0;
 	border-radius: 999px;
-	background: var(--hodima-gradient-accent, linear-gradient(135deg, var(--hs-accent), var(--hs-accent-light)));
+	background: linear-gradient(135deg, var(--hs-primary), var(--hs-secondary));
 	color: #ffffff;
 	font-weight: 700;
-	box-shadow: 0 0.375rem 1rem color-mix(in srgb, var(--hs-accent) 35%, transparent);
+	box-shadow: 0 0.375rem 1rem color-mix(in srgb, var(--hs-primary) 30%, transparent);
 	cursor: pointer;
 
 	&:hover,
 	&:focus {
-		background: linear-gradient(135deg, var(--hs-primary), var(--hs-accent));
+		background: linear-gradient(135deg, color-mix(in srgb, var(--hs-primary) 85%, #000000), var(--hs-primary));
 		color: #ffffff;
 	}
 
@@ -2106,6 +2107,9 @@ input.hodima-color__swatch {
 	}
 
 	& .hodima-backup__title {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
 		margin: 0;
 		color: var(--hs-primary);
 		font-size: 0.9375rem;
@@ -2127,6 +2131,24 @@ input.hodima-color__swatch {
 	display: grid;
 	gap: 1rem;
 	margin-block-end: 1rem;
+
+	& .hodima-ccss__guide > summary {
+		min-block-size: 2.75rem;
+		display: flex;
+		align-items: center;
+		color: var(--hs-primary);
+		font-weight: 700;
+		cursor: pointer;
+
+		&:focus-visible {
+			outline: 2px solid var(--hs-secondary);
+			outline-offset: 2px;
+		}
+	}
+
+	& .hodima-ccss__guide[open] > summary {
+		margin-block-end: 0.5rem;
+	}
 
 	& .hodima-ccss__steps {
 		display: grid;
@@ -2353,6 +2375,14 @@ input.hodima-color__swatch {
 	font-size: 0.75rem;
 }
 
+/* توضیح قاب جمع‌شونده در تب tips: سطر اول بدنه، فقط وقتی قاب باز است دیده می‌شود */
+.hodima-panel__note {
+	margin: 0 0 0.75rem;
+	color: var(--hs-muted);
+	font-size: 0.75rem;
+	line-height: 1.8;
+}
+
 /* ── قاب جمع‌شونده (پیش‌نمایش تایپوگرافی؛ <details>) ── */
 .hodima-panel--collapsible {
 	& > .hodima-panel__summary {
@@ -2371,7 +2401,7 @@ input.hodima-color__swatch {
 		}
 
 		& .hodima-panel__head {
-			border-block-end: 0;
+			border-block-end: 1px solid transparent; /* هم‌ارتفاع با قاب‌های دیگر */
 		}
 	}
 
@@ -2668,6 +2698,9 @@ input.hodima-color__swatch {
 }
 
 .hodima-headings-all__title {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
 	margin: 0;
 	color: var(--hs-primary);
 	font-size: 0.875rem;

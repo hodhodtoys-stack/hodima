@@ -279,15 +279,13 @@ function hodima_settings_backup_panel(): void {
 	?>
 	<div class="hodima-backup">
 		<div class="hodima-backup__item">
-			<h4 class="hodima-backup__title">دریافت فایل تنظیمات</h4>
-			<p class="hodima-field__help">همه تنظیمات ذخیره‌شده این صفحه در یک فایل JSON (تغییرهای ذخیره‌نشده در فایل نیستند).</p>
+			<h4 class="hodima-backup__title">دریافت فایل تنظیمات <?php echo hodima_settings_tip_html( 'همه تنظیمات ذخیره‌شده این صفحه در یک فایل JSON (تغییرهای ذخیره‌نشده در فایل نیستند).', 'hodima-backup-export-help', 'دریافت فایل تنظیمات' ); // phpcs:ignore WordPress.Security.EscapeOutput -- hodima_settings_tip_html خروجی را escape کرده ?></h4>
 			<a class="button hodima-backup__button" href="<?php echo esc_url( $export ); ?>">
 				<span class="dashicons dashicons-download" aria-hidden="true"></span> دریافت فایل تنظیمات
 			</a>
 		</div>
 		<div class="hodima-backup__item">
-			<h4 class="hodima-backup__title"><label for="hodima-settings-file">بازگردانی از فایل</label></h4>
-			<p class="hodima-field__help" id="hodima-settings-file-help">همه تنظیمات فعلی با فایل جایگزین می‌شوند. بهتر است اول از تنظیمات فعلی فایل بگیرید.</p>
+			<h4 class="hodima-backup__title"><label for="hodima-settings-file">بازگردانی از فایل</label> <?php echo hodima_settings_tip_html( 'همه تنظیمات فعلی با فایل جایگزین می‌شوند. بهتر است اول از تنظیمات فعلی فایل بگیرید.', 'hodima-settings-file-help', 'بازگردانی از فایل' ); // phpcs:ignore WordPress.Security.EscapeOutput -- hodima_settings_tip_html خروجی را escape کرده ?></h4>
 			<?php // دکمه فایل هم‌شکل بقیه دکمه‌ها (3.0.1؛ قبلا دکمه خام مرورگر «Choose File»)؛ input واقعی فقط از دید پنهان است تا required کار کند ?>
 			<span class="hodima-file">
 				<input type="file" class="hodima-file__input" id="hodima-settings-file" name="hodima_settings_file" accept=".json,application/json" form="hodima-import-form" aria-describedby="hodima-settings-file-help" required data-hodima-file>
