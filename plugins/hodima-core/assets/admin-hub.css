@@ -106,35 +106,6 @@
 	gap: 0.5rem;
 }
 
-.hodima-module__icon {
-	color: var(--hh-secondary);
-}
-
-.hodima-module.is-on .hodima-module__icon {
-	color: var(--hh-accent);
-}
-
-/* اثر خاموش کردن: روی ماژول روشن فقط یک توضیح کم‌رنگ، روی ماژول خاموش هشدار */
-.hodima-module__warning {
-	margin: 0;
-	padding: 0.5rem 0.75rem;
-	border-radius: 0.5rem;
-	background: color-mix(in srgb, var(--hh-warn) 10%, #ffffff);
-	color: var(--hh-warn);
-	font-size: 0.75rem;
-}
-
-.hodima-module.is-on .hodima-module__warning {
-	background: color-mix(in srgb, var(--hh-secondary) 7%, #ffffff);
-	color: color-mix(in srgb, var(--hh-secondary) 70%, #000000);
-}
-
-.hodima-module__hint {
-	margin: 0;
-	color: var(--hh-accent);
-	font-size: 0.75rem;
-}
-
 .hodima-module__link {
 	color: var(--hh-accent);
 	font-weight: 600;
@@ -566,5 +537,126 @@
 @media (prefers-reduced-motion: reduce) {
 	.hodima-env__more > summary::before {
 		transition: none;
+	}
+}
+
+/* ── صفحه ماژول‌های هر افزونه: یک کادر با سطر برای هر ماژول (بخش ۲۴۲ AUDIT) ── */
+.hodima-modlist {
+	overflow: hidden;
+	margin-block-end: 1rem;
+	border: 1px solid var(--hh-border);
+	border-radius: var(--hh-radius);
+	background: var(--hh-surface);
+	box-shadow: var(--hh-shadow);
+}
+
+.hodima-module {
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	padding: 0.75rem 1.125rem;
+	border-block-end: 1px solid color-mix(in srgb, var(--hh-third) 30%, #ffffff);
+
+	&:last-child {
+		border-block-end: 0;
+	}
+
+	/* ماژول خاموش: فقط کم‌رنگ (متن خوانا می‌ماند) */
+	&.is-off .hodima-module__title,
+	&.is-off .hodima-module__desc {
+		opacity: 0.68;
+	}
+
+	& > .hodima-module__icon {
+		display: grid;
+		flex: none;
+		place-items: center;
+		inline-size: 2.375rem;
+		block-size: 2.375rem;
+		border-radius: 0.625rem;
+		background: var(--hh-soft);
+		color: var(--hh-primary);
+
+		&.dashicons::before {
+			font-size: 1.125rem;
+		}
+	}
+
+	& .hodima-switch {
+		margin-inline-start: 0;
+	}
+}
+
+.hodima-module__text {
+	flex: 1;
+	min-inline-size: 0;
+}
+
+.hodima-module__title {
+	margin: 0;
+	color: var(--hh-text);
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.hodima-module__desc {
+	margin: 0.125rem 0 0;
+	color: var(--hh-muted);
+	font-size: 0.8125rem;
+	line-height: 1.8;
+}
+
+.hodima-module__meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.875rem;
+	margin-block-start: 0.125rem;
+	font-size: 0.75rem;
+}
+
+.hodima-module__hint {
+	color: var(--hh-muted);
+}
+
+details.hodima-module__warning {
+	margin: 0;
+	padding: 0;
+	background: none;
+	color: var(--hh-muted);
+
+	& > summary {
+		min-block-size: 1.5rem;
+		color: var(--hh-primary);
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	& > p {
+		margin: 0.125rem 0 0.25rem;
+		line-height: 1.8;
+	}
+}
+
+@media (max-width: 782px) {
+	/* موبایل: آیکون | متن | کلید در یک ردیف؛ لینک «تنظیمات» زیر متن */
+	.hodima-module {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: start;
+	}
+
+	.hodima-module .hodima-switch {
+		grid-row: 1;
+		grid-column: 3;
+		margin-block-start: 0.25rem;
+	}
+
+	.hodima-module__link {
+		display: inline-flex;
+		grid-row: 2;
+		grid-column: 2 / -1;
+		align-items: center;
+		min-block-size: 2.75rem;
 	}
 }

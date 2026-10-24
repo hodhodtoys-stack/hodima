@@ -401,22 +401,32 @@ function render_modules_page( string $plugin ): void {
 		<form method="post" action="options.php" class="hodima-modules" data-hodima-modules>
 			<?php settings_fields( 'hodima_modules_group_' . $plugin ); ?>
 
-			<p class="hodima-hub__intro">
-				ماژول خاموش اصلا بارگذاری نمی‌شود (نه منو، نه هوک، نه کوئری). داده‌هایش پاک نمی‌شود و با روشن کردن دوباره برمی‌گردد.
-			</p>
+			<?php
+			$module_total   = count( $data['modules'] );
+			$module_enabled = count( array_filter( array_keys( $data['modules'] ), static fn( string $mid ): bool => Modules::is_enabled( $plugin, $mid ) ) );
+			$all_enabled    = $module_enabled === $module_total;
+			?>
+			<section class="hodima-statusbar<?php echo $all_enabled ? '' : ' is-warn'; ?>" aria-label="خلاصه ماژول‌ها">
+				<span class="dashicons <?php echo esc_attr( $all_enabled ? 'dashicons-yes-alt' : 'dashicons-info' ); ?>" aria-hidden="true"></span>
+				<div class="hodima-statusbar__body">
+					<h2 class="hodima-statusbar__title"><?php echo esc_html( $all_enabled ? sprintf( 'همه %s ماژول روشن‌اند', number_format_i18n( $module_total ) ) : sprintf( '%1$s از %2$s ماژول روشن است', number_format_i18n( $module_enabled ), number_format_i18n( $module_total ) ) ); ?></h2>
+					<p class="hodima-statusbar__text">ماژول خاموش اصلا بارگذاری نمی‌شود (نه منو، نه هوک، نه کوئری). داده‌هایش پاک نمی‌شود و با روشن کردن دوباره برمی‌گردد.</p>
+				</div>
+				<span class="hodima-pill <?php echo $all_enabled ? 'hodima-pill--ok' : 'hodima-pill--warn'; ?>"><?php echo esc_html( $all_enabled ? 'همه روشن' : 'برخی خاموش' ); ?></span>
+			</section>
 
-			<div class="hodima-hub__grid">
+			<section class="hodima-modlist" aria-label="ماژول‌ها">
 				<?php foreach ( $data['modules'] as $id => $module ) : ?>
 					<?php
 					$enabled  = Modules::is_enabled( $plugin, $id );
 					$loaded   = Modules::is_loaded( $plugin, $id );
 					$field_id = 'hodima-module-' . $plugin . '-' . $id;
 
-					[ $status_class, $status_text ] = match ( true ) {
-						! $module->available => [ 'hodima-pill--warn', 'نیاز به ووکامرس' ],
-						$loaded              => [ 'hodima-pill--ok', 'فعال' ],
-						$enabled             => [ 'hodima-pill--info', 'پس از ذخیره فعال می‌شود' ],
-						default              => [ 'hodima-pill--muted', 'خاموش' ],
+					// فقط وضعیت‌های استثنا نوشته می‌شود؛ «فعال/خاموش» را خود کلید می‌گوید
+					$note = match ( true ) {
+						! $module->available => 'نیاز به ووکامرس',
+						$enabled && ! $loaded => 'پس از ذخیره فعال می‌شود',
+						default              => '',
 					};
 
 					$recommends = array_values( array_filter( array_map(
@@ -424,53 +434,56 @@ function render_modules_page( string $plugin ): void {
 						$module->recommends
 					) ) );
 					?>
-					<article class="hodima-card hodima-module <?php echo $enabled ? 'is-on' : 'is-off'; ?>" data-hodima-module>
-						<header class="hodima-card__head">
-							<span class="dashicons <?php echo esc_attr( $module->icon ); ?> hodima-module__icon" aria-hidden="true"></span>
-							<h3 class="hodima-card__title" id="<?php echo esc_attr( $field_id ); ?>-title"><?php echo esc_html( $module->title ); ?></h3>
+					<article class="hodima-module <?php echo $enabled ? 'is-on' : 'is-off'; ?>" data-hodima-module>
+						<span class="dashicons <?php echo esc_attr( $module->icon ); ?> hodima-module__icon" aria-hidden="true"></span>
 
-							<label class="hodima-switch" for="<?php echo esc_attr( $field_id ); ?>">
-								<input
-									type="checkbox"
-									role="switch"
-									id="<?php echo esc_attr( $field_id ); ?>"
-									name="<?php echo esc_attr( $option . '[' . $id . ']' ); ?>"
-									value="1"
-									aria-labelledby="<?php echo esc_attr( $field_id ); ?>-title"
-									<?php checked( $enabled ); ?>
-									<?php echo '' !== $module->warning ? 'data-warning="' . esc_attr( $module->warning ) . '"' : ''; ?>
-								>
-								<span class="hodima-switch__track" aria-hidden="true"></span>
-							</label>
-						</header>
-
-						<p class="hodima-card__desc"><?php echo esc_html( $module->description ); ?></p>
-
-						<?php
-						/*
-						 * هشدار «اثر خاموش کردن» است، نه وضعیت فعلی. قبلا بدون هیچ
-						 * توضیحی و همیشه با رنگ هشدار نمایش داده می‌شد؛ روی ماژول روشن
-						 * طوری خوانده می‌شد که انگار همین الان چیزی کار نمی‌کند.
-						 * حالا با «اگر خاموش شود:» و روی ماژول روشن کم‌رنگ (admin-hub.css).
-						 */
-						?>
-						<?php if ( '' !== $module->warning ) : ?>
-							<p class="hodima-module__warning"><strong>اگر خاموش شود:</strong> <?php echo esc_html( $module->warning ); ?></p>
-						<?php endif; ?>
-
-						<?php if ( $recommends ) : ?>
-							<p class="hodima-module__hint">بهتر است همراه با: <?php echo esc_html( implode( '، ', $recommends ) ); ?></p>
-						<?php endif; ?>
-
-						<footer class="hodima-card__foot">
-							<span class="hodima-pill <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_text ); ?></span>
-							<?php if ( $loaded && '' !== $module->settings ) : ?>
-								<a class="hodima-module__link" href="<?php echo esc_url( admin_url( $module->settings ) ); ?>">تنظیمات ماژول ←</a>
+						<div class="hodima-module__text">
+							<h3 class="hodima-module__title" id="<?php echo esc_attr( $field_id ); ?>-title"><?php echo esc_html( $module->title ); ?></h3>
+							<p class="hodima-module__desc"><?php echo esc_html( $module->description ); ?></p>
+							<?php if ( '' !== $note || $recommends || '' !== $module->warning ) : ?>
+								<div class="hodima-module__meta">
+									<?php if ( '' !== $note ) : ?>
+										<span class="hodima-pill <?php echo esc_attr( ! $module->available ? 'hodima-pill--warn' : 'hodima-pill--info' ); ?>"><?php echo esc_html( $note ); ?></span>
+									<?php endif; ?>
+									<?php if ( $recommends ) : ?>
+										<span class="hodima-module__hint">بهتر است همراه با: <?php echo esc_html( implode( '، ', $recommends ) ); ?></span>
+									<?php endif; ?>
+									<?php
+									/*
+									 * هشدار «اثر خاموش کردن» است، نه وضعیت فعلی (قبلا کادر زردِ همیشه‌پیدا
+									 * بود). حالا جمع‌شونده؛ پنجره تأیید هنگام خاموش‌کردن همان متن را می‌گوید.
+									 */
+									?>
+									<?php if ( '' !== $module->warning ) : ?>
+										<details class="hodima-module__warning">
+											<summary>اگر خاموش شود؟</summary>
+											<p><?php echo esc_html( $module->warning ); ?></p>
+										</details>
+									<?php endif; ?>
+								</div>
 							<?php endif; ?>
-						</footer>
+						</div>
+
+						<?php if ( $loaded && '' !== $module->settings ) : ?>
+							<a class="hodima-module__link" href="<?php echo esc_url( admin_url( $module->settings ) ); ?>">تنظیمات ←</a>
+						<?php endif; ?>
+
+						<label class="hodima-switch" for="<?php echo esc_attr( $field_id ); ?>">
+							<input
+								type="checkbox"
+								role="switch"
+								id="<?php echo esc_attr( $field_id ); ?>"
+								name="<?php echo esc_attr( $option . '[' . $id . ']' ); ?>"
+								value="1"
+								aria-labelledby="<?php echo esc_attr( $field_id ); ?>-title"
+								<?php checked( $enabled ); ?>
+								<?php echo '' !== $module->warning ? 'data-warning="' . esc_attr( $module->warning ) . '"' : ''; ?>
+							>
+							<span class="hodima-switch__track" aria-hidden="true"></span>
+						</label>
 					</article>
 				<?php endforeach; ?>
-			</div>
+			</section>
 
 			<footer class="hodima-hub__actions">
 				<span class="hodima-hub__dirty" data-hodima-dirty hidden>تغییرات ذخیره نشده‌اند.</span>
