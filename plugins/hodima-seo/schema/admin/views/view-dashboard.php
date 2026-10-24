@@ -30,25 +30,15 @@ $descriptions = [
 ];
 ?>
 
-<div class="hs-groups">
-    <?php
-    $pages = hodima_schema_admin_pages();
-    foreach ( hodima_schema_admin_groups() as [ $group_label, $group_slugs ] ) :
-        ?>
-        <section class="hs-group" aria-label="<?php echo esc_attr( $group_label ); ?>">
-            <h2 class="hs-group__title"><?php echo esc_html( $group_label ); ?><span><?php echo esc_html( sprintf( '%s صفحه', number_format_i18n( count( $group_slugs ) ) ) ); ?></span></h2>
-            <?php foreach ( $group_slugs as $slug ) : ?>
-                <?php if ( 'hodima-schema' === $slug ) continue; ?>
-                <a class="hs-row" href="<?php echo esc_url( admin_url( 'admin.php?page=' . $slug ) ); ?>">
-                    <?php echo hodima_admin_icon( $pages[ $slug ][3] ?? 'dashicons-editor-code', 'hs-row__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-                    <span class="hs-row__text">
-                        <b><?php echo esc_html( $pages[ $slug ][0] ); ?></b>
-                        <span><?php echo esc_html( $descriptions[ $slug ] ?? '' ); ?></span>
-                    </span>
-                    <span class="hs-row__go" aria-hidden="true">←</span>
-                </a>
-            <?php endforeach; ?>
-        </section>
+<div class="hd-grid">
+    <?php foreach ( hodima_schema_admin_pages() as $slug => $page ) : ?>
+        <?php if ( 'hodima-schema' === $slug ) continue; ?>
+        <a href="<?php echo esc_url( admin_url( 'admin.php?page=' . $slug ) ); ?>" class="hd-link-card">
+            <?php echo hodima_admin_icon( $page[3] ?? 'dashicons-editor-code' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+            <h2 class="hd-link-card__title"><?php echo esc_html( $page[0] ); ?></h2>
+            <p class="hd-link-card__desc"><?php echo esc_html( $descriptions[ $slug ] ?? '' ); ?></p>
+            <span class="hd-link-card__more">تنظیمات ←</span>
+        </a>
     <?php endforeach; ?>
 </div>
 
