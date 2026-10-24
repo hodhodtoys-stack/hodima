@@ -180,7 +180,7 @@
 }
 
 .hvw-row__more > summary:focus-visible {
-	outline: 2px solid var(--hd-accent-light, #a341c8);
+	outline: 2px solid var(--hd-accent-light, #607bbd);
 	outline-offset: 2px;
 }
 

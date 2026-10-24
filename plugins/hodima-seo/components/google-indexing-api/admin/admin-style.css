@@ -15,7 +15,7 @@
 .in-tabs { display: flex; gap: 4px; margin: 0.875rem 0 0; padding: 6px; overflow-x: auto; background: #fff; border: 1px solid var(--in-border); border-radius: var(--hd-radius, 12px) var(--hd-radius, 12px) 0 0; box-shadow: var(--hd-shadow, none); }
 .in-tab-btn { flex-shrink: 0; background: transparent; border: none; padding: 8px 14px; color: var(--in-primary); font-weight: 600; cursor: pointer; border-radius: 10px; font-size: 13px; white-space: nowrap; }
 .in-tab-btn:hover { background: var(--in-soft-bg); }
-.in-tab-btn:focus-visible { outline: 2px solid var(--hd-accent-light, #a341c8); outline-offset: 1px; }
+.in-tab-btn:focus-visible { outline: 2px solid var(--hd-accent-light, #607bbd); outline-offset: 1px; }
 .in-tab-btn.active { color: #fff; background: var(--in-primary); }
 .in-tab-content { display: none; background: #fff; padding: 1.5rem; border: 1px solid var(--in-border); border-top: none; border-radius: 0 0 var(--hd-radius, 12px) var(--hd-radius, 12px); box-shadow: var(--hd-shadow, none); }
 @media (width < 783px) { .in-tab-content { padding: 1rem; } }
@@ -91,7 +91,7 @@ th.col-url { text-align: left; direction: ltr; width: 50%; padding-left: 15px;}
  * ========================================================================= */
 .in-admin {
     & .in-btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; line-height: 1.6; }
-    & .in-btn:focus-visible { outline: 2px solid var(--hd-accent-light, #a341c8); outline-offset: 2px; }
+    & .in-btn:focus-visible { outline: 2px solid var(--hd-accent-light, #607bbd); outline-offset: 2px; }
     & .in-btn:disabled { opacity: .6; cursor: default; }
     & .in-btn .dashicons { inline-size: 16px; block-size: 16px; font-size: 16px; }
     & a.in-btn-primary:is(:hover, :focus) { color: #fff; }
@@ -136,7 +136,7 @@ th.col-url { text-align: left; direction: ltr; width: 50%; padding-left: 15px;}
     & .in-key-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block: 16px 12px; }
     & .in-key-file { direction: ltr; unicode-bidi: isolate; font-size: 12.5px; color: var(--hd-muted, #5d6785); }
     & .in-key-paste summary { cursor: pointer; font-size: 13px; color: var(--in-primary); }
-    & .in-key-paste summary:focus-visible { outline: 2px solid var(--hd-accent-light, #a341c8); outline-offset: 2px; }
+    & .in-key-paste summary:focus-visible { outline: 2px solid var(--hd-accent-light, #607bbd); outline-offset: 2px; }
     & .in-key-paste textarea { margin-block-start: 8px; }
     & .in-key-preview { min-block-size: 1.5em; margin: 10px 0 0; font-size: 13px; }
     & .in-key-preview.is-ok { color: var(--hd-ok, #1f7a4d); }

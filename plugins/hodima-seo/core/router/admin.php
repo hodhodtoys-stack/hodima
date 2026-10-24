@@ -95,7 +95,7 @@ function hodima_router_admin_assets(): void {
 .hodima-router .hd-table-wrap > table { min-inline-size: 44rem; }
 .hodima-router .hodima-router__summary { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-block: 1rem; }
 .hodima-router .hodima-router__more { margin-block-start: 1rem; }
-.hodima-router .hodima-router__more > summary { cursor: pointer; color: var(--hd-primary); font-weight: 700; }
+.hodima-router .hodima-router__more > summary { cursor: pointer; color: var(--hd-primary); font-weight: 700; min-block-size: 2.75rem; display: flex; align-items: center; }
 .hodima-router .hodima-router__more[open] > summary { margin-block-end: 0.75rem; }
 .hodima-router .hodima-router__progress { display: block; inline-size: 100%; block-size: 0.5rem; margin-block: 0.75rem; accent-color: var(--hd-primary); }
 .hodima-router .hodima-router__progress[hidden] { display: none; }
@@ -263,7 +263,7 @@ function hodima_router_render_admin(): void {
 			<?php wp_nonce_field( 'hodima_router_bulk', '_hodima_router_bulk' ); ?>
 			<label class="screen-reader-text" for="hodima-router-urls">آدرس‌ها</label>
 			<textarea id="hodima-router-urls" name="hodima_router_urls" class="hodima-router__urls" dir="ltr" rows="8" placeholder="<?php echo esc_attr( home_url( '/plumeria-hair-clips/' ) ); ?>"><?php echo esc_textarea( $bulk_text ); ?></textarea>
-			<p><button type="submit" class="button button-primary">بررسی همه</button></p>
+			<p><button type="submit" class="button">بررسی همه</button></p>
 		</form>
 		<?php
 		if ( '' !== $bulk_text && ! $bulk ) {

@@ -362,6 +362,32 @@
 		} else {
 			metaEl?.remove();
 		}
+		refreshSteps();
+	}
+
+	/** نوار گام‌های ویزارد (PHP: hodima_ccss_admin_panel): شمار «آماده» و گام جاری را با هر تغییر ردیف تازه می‌کند. */
+	function refreshSteps() {
+		const steps = root?.querySelectorAll( '.hodima-ccss__step' );
+		if ( ! steps || 3 !== steps.length ) {
+			return;
+		}
+		const badges = root.querySelectorAll( '.hodima-ccss__state' );
+		const ready = Array.from( badges ).filter( ( b ) => 'ok' === b.dataset.state ).length;
+		const label = steps[ 0 ].querySelector( 'small' );
+		if ( label ) {
+			label.textContent = `${ ready.toLocaleString( 'fa-IR' ) } از ${ badges.length.toLocaleString( 'fa-IR' ) } نوع صفحه آماده`;
+		}
+		const allBuilt = ready === badges.length;
+		const on = document.getElementById( 'hodima-setting-critical_css' )?.checked ?? false;
+		steps.forEach( ( step ) => {
+			step.classList.remove( 'is-cur' );
+			step.removeAttribute( 'aria-current' );
+		} );
+		steps[ 0 ].classList.toggle( 'is-done', allBuilt );
+		steps[ 2 ].classList.toggle( 'is-done', allBuilt && on );
+		const current = allBuilt ? ( on ? null : steps[ 2 ] ) : steps[ 0 ];
+		current?.classList.add( 'is-cur' );
+		current?.setAttribute( 'aria-current', 'step' );
 	}
 
 	/** نمایش پیشرفت در قاب صفحه تنظیمات (ساخت دستی و خودکار همین‌جا). */

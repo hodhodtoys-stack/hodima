@@ -2132,6 +2132,69 @@ input.hodima-color__swatch {
 	gap: 1rem;
 	margin-block-end: 1rem;
 
+	/* نوار سه‌گامی ویزارد (Z7): گام جاری حاشیه سبز، گام انجام‌شده تیک سبز */
+	& .hodima-ccss__steps-bar {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.625rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+
+		@media (width <= 599px) {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	& .hodima-ccss__step {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		min-block-size: 3.5rem;
+		padding: 0.625rem 0.75rem;
+		border: 1px solid var(--hs-border);
+		border-radius: var(--hs-radius-md);
+		background: var(--hs-surface-soft);
+
+		&.is-cur {
+			border-color: var(--hs-accent);
+			box-shadow: 0 0 0 2px color-mix(in srgb, var(--hs-accent) 14%, #ffffff);
+		}
+	}
+
+	& .hodima-ccss__step-n {
+		display: grid;
+		flex: none;
+		place-items: center;
+		inline-size: 1.75rem;
+		block-size: 1.75rem;
+		border-radius: 50%;
+		background: var(--hs-surface);
+		color: var(--hs-primary);
+		font-weight: 700;
+	}
+
+	& .hodima-ccss__step.is-done .hodima-ccss__step-n {
+		background: color-mix(in srgb, var(--hs-accent) 14%, #ffffff);
+		color: var(--hs-accent);
+	}
+
+	& .hodima-ccss__step.is-cur .hodima-ccss__step-n {
+		background: var(--hs-accent);
+		color: #ffffff;
+	}
+
+	& .hodima-ccss__step-t {
+		display: grid;
+		gap: 0.125rem;
+		color: var(--hs-primary);
+
+		& small {
+			color: var(--hs-muted);
+			font-size: 0.75rem;
+		}
+	}
+
 	& .hodima-ccss__guide > summary {
 		min-block-size: 2.75rem;
 		display: flex;

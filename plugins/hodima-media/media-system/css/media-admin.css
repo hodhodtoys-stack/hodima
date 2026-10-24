@@ -12,8 +12,8 @@
 	--mb-primary: #25316a;
 	--mb-secondary: #607bbd;
 	--mb-third: #b6c2f3;
-	--mb-accent: #6a2b9a;
-	--mb-accent-light: #a341c8;
+	--mb-accent: #1f7a4d;
+	--mb-accent-light: #607bbd;
 	--mb-text: #1d2340;
 	--mb-muted: #5d6785;
 	--mb-soft: color-mix(in srgb, var(--mb-third) 14%, #ffffff);
@@ -102,7 +102,7 @@
 		}
 
 		&:checked {
-			background: linear-gradient(135deg, var(--mb-primary), var(--mb-accent));
+			background: var(--mb-accent);
 
 			&::before {
 				inset-inline-start: 1.4375rem;

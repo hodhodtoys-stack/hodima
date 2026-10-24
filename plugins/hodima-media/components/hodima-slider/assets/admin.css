@@ -104,7 +104,7 @@
 .h-input-dim { width: 80px; }
 
 .h-btn { display: inline-flex; align-items: center; justify-content: center; gap: .25rem; cursor: pointer; padding: .6rem 1rem; border-radius: 8px; border: 1px solid transparent; font-weight: 700; transition: background 0.2s, color 0.2s; }
-.h-btn:focus-visible { outline: 2px solid var(--hd-accent-light, #a341c8); outline-offset: 2px; }
+.h-btn:focus-visible { outline: 2px solid var(--hd-accent-light, #607bbd); outline-offset: 2px; }
 .h-btn-primary { background: var(--hd-gradient-accent, var(--h-primary)); color: #fff; min-inline-size: 10rem; }
 .h-btn-primary:hover { background: var(--h-primary); color: #fff; }
 .h-btn-add { background: #fff; color: var(--h-primary); border-color: var(--hd-border-strong, var(--h-border)); }

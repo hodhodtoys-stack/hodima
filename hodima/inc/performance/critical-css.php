@@ -490,6 +490,21 @@ function hodima_ccss_admin_panel(): void {
 	];
 	?>
 	<div class="hodima-ccss" data-hodima-ccss="<?php echo esc_attr( (string) wp_json_encode( $config ) ); ?>">
+		<?php
+		// ویزارد سه‌گامی (Z7، مرجع نوع ۵): ۱ ساخت ← ۲ آزمون (اختیاری) ← ۳ روشن کردن؛ گام جاری از وضعیت واقعی
+		$built    = count( array_filter( $rows, static fn( array $row ): bool => null !== $row['data'] && $row['fresh'] ) );
+		$all_done = $built === count( $rows );
+		$is_on    = (bool) hodima_setting( 'critical_css' );
+		$cur      = $all_done ? ( $is_on ? 0 : 3 ) : 1;
+		$step_cls = static fn( int $n, bool $done ): string => 'hodima-ccss__step' . ( $done ? ' is-done' : '' ) . ( $cur === $n ? ' is-cur' : '' );
+		$step_cur = static fn( int $n ): string => $cur === $n ? ' aria-current="step"' : '';
+		?>
+		<ol class="hodima-ccss__steps-bar" aria-label="گام‌های CSS حیاتی">
+			<li class="<?php echo esc_attr( $step_cls( 1, $all_done ) ); ?>"<?php echo $step_cur( 1 ); // phpcs:ignore WordPress.Security.EscapeOutput -- رشته ثابت ?>><span class="hodima-ccss__step-n" aria-hidden="true">۱</span><span class="hodima-ccss__step-t"><b>ساخت</b><small><?php echo esc_html( sprintf( '%s از %s نوع صفحه آماده', number_format_i18n( $built ), number_format_i18n( count( $rows ) ) ) ); ?></small></span></li>
+			<li class="<?php echo esc_attr( $step_cls( 2, false ) ); ?>"><span class="hodima-ccss__step-n" aria-hidden="true">۲</span><span class="hodima-ccss__step-t"><b>آزمون (اختیاری)</b><small>بعد از ساخت در PageSpeed ببینید</small></span></li>
+			<li class="<?php echo esc_attr( $step_cls( 3, $all_done && $is_on ) ); ?>"<?php echo $step_cur( 3 ); // phpcs:ignore WordPress.Security.EscapeOutput -- رشته ثابت ?>><span class="hodima-ccss__step-n" aria-hidden="true">۳</span><span class="hodima-ccss__step-t"><b>روشن کردن</b><small>کلید پایین را روشن و ذخیره کنید</small></span></li>
+		</ol>
+
 		<details class="hodima-ccss__guide">
 			<summary>راهنمای ساخت (چهار مرحله)</summary>
 			<ol class="hodima-ccss__steps">

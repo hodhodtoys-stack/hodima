@@ -199,7 +199,7 @@
 }
 
 .hdn-tabs__tab:focus-visible {
-	outline: 2px solid var(--hd-accent-light, #a341c8);
+	outline: 2px solid var(--hd-accent-light, #607bbd);
 	outline-offset: 1px;
 }
 
@@ -236,7 +236,7 @@
 }
 
 .hdn-panel__title .dashicons {
-	color: var(--hd-accent, #6a2b9a);
+	color: var(--hd-accent, #1f7a4d);
 }
 
 /* با تب، نام بخش همان تب است: فقط برای صفحه‌خوان */
@@ -432,7 +432,7 @@
 }
 
 .hdn-toggle-group__btn:focus-visible {
-	outline: 2px solid var(--hd-accent-light, #a341c8);
+	outline: 2px solid var(--hd-accent-light, #607bbd);
 	outline-offset: 1px;
 }
 
