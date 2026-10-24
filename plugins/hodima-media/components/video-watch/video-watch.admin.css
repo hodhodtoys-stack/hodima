@@ -194,6 +194,8 @@
 	display: grid;
 	place-items: center;
 	overflow: hidden;
+	/* هیچ‌وقت بزرگ‌تر از ۱۶rem (در ستون کناری همان عرض ستون)؛ عکس کاور تمام‌عرض صفحه نشود */
+	inline-size: min(100%, 16rem);
 	aspect-ratio: 16 / 9;
 	border: 1px solid var(--hd-border, #dfe5f8);
 	border-radius: 0.5rem;

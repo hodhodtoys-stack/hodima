@@ -100,6 +100,9 @@
 		const pillWrap = $( '[data-hvw-pill-wrap]' );
 		const tabCount = $( '[data-hvw-tab-count]' );
 		const side = root.querySelectorAll( '[data-hvw-pv], [data-hvw-ck]' );
+		// Core قدیمی‌تر از ۱.۲.۸ (یا CSS آن لود نشده) چیدمان کناری را ندارد: کارت‌های کناری بی‌قید و عکس غول‌پیکر می‌شد.
+		// پس فقط وقتی Core آماده است نشان داده می‌شوند؛ وگرنه همان فرم ساده (همه بخش‌ها زیر هم) می‌ماند.
+		const coreUi = 'grid' === getComputedStyle( $( '.hd-layout__grid' ) ).display;
 		const pvImg = $( '[data-hvw-pv-img]' );
 		const pvDur = $( '[data-hvw-pv-dur]' );
 		const pvChips = $( '[data-hvw-pv-chips]' );
@@ -262,7 +265,7 @@
 			}
 			pvProduct.hidden = ! hasProduct;
 			side.forEach( ( node ) => {
-				node.hidden = false;
+				node.hidden = ! coreUi;
 			} );
 		};
 
