@@ -175,7 +175,7 @@ function environment_checks(): array {
 			'detail' => (string) $wp_version . ' — حداقل 6.5',
 		],
 		[
-			'label'  => 'قالب هدیما نسخه ۲',
+			'label'  => 'ورژن قالب هدیما',
 			'ok'     => $is_hodima && version_compare( $theme_ver, '2.0.0', '>=' ),
 			'level'  => 'warning',
 			'detail' => $is_hodima ? 'نسخه ' . $theme_ver : 'قالب فعال: ' . $theme->get( 'Name' ),
