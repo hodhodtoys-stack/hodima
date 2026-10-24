@@ -459,3 +459,63 @@
 		transition: none;
 	}
 }
+
+/* ── جزئیات اختیاری بخش ویدیو (بخش ۲۴۲ AUDIT): ضروری‌ها باز، بقیه پشت جمع‌شونده ── */
+.hodima-mb .hodima-mb__more {
+	margin-block-start: 0.75rem;
+	border: 1px dashed var(--mb-secondary);
+	border-radius: var(--mb-radius);
+	background: color-mix(in srgb, var(--mb-secondary) 4%, #ffffff);
+}
+
+.hodima-mb .hodima-mb__more > summary {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-block-size: 2.75rem;
+	padding-inline: 0.875rem;
+	color: var(--mb-primary);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	cursor: pointer;
+	list-style: none;
+}
+
+.hodima-mb .hodima-mb__more > summary::-webkit-details-marker {
+	display: none;
+}
+
+.hodima-mb .hodima-mb__more > summary::after {
+	content: "";
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	margin-inline-start: auto;
+	border-block-end: 2px solid var(--mb-secondary);
+	border-inline-end: 2px solid var(--mb-secondary);
+	transform: rotate(45deg);
+	transition: transform 0.2s ease;
+}
+
+.hodima-mb .hodima-mb__more[open] > summary::after {
+	transform: rotate(-135deg);
+}
+
+.hodima-mb .hodima-mb__more > summary:focus-visible {
+	outline: 2px solid var(--mb-secondary);
+	outline-offset: -2px;
+}
+
+.hodima-mb .hodima-mb__more-body {
+	padding: 0 0.875rem 0.875rem;
+}
+
+.hodima-mb .hodima-mb__badge--soft {
+	background: color-mix(in srgb, var(--mb-secondary) 14%, #ffffff);
+	color: color-mix(in srgb, var(--mb-secondary) 60%, #000000);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-mb .hodima-mb__more > summary::after {
+		transition: none;
+	}
+}

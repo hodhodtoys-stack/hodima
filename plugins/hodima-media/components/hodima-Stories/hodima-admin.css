@@ -58,34 +58,91 @@
 .hdn-btn-outline { background: #fff; color: var(--hdn-primary); border: 1px solid var(--hdn-primary); padding: 12px 28px; font-size: 14px; margin: 0; box-shadow: none; }
 .hdn-btn-outline:hover { background: var(--hdn-primary); color: #fff; }
 
-.hdn-actions-bar { display: flex; gap: 15px; margin-bottom: 30px; align-items: center; border-bottom: 2px solid var(--hdn-border); padding-bottom: 25px; flex-wrap: wrap; }
+.hdn-actions-bar { display: flex; gap: 12px; margin-bottom: 8px; align-items: center; border-bottom: 1px solid var(--hdn-border); padding-bottom: 14px; flex-wrap: wrap; }
 .hdn-actions-bar .hdn-btn-primary { margin-inline-start: auto; }
 
+/* ردیف استوری فشرده (بخش ۲۴۲ AUDIT): ترتیب | کاور | عنوان | لینک ویدیو | حذف؛ دکمه محصول پشت «بیشتر» */
 .hodima-story-row {
 	display: grid;
-	grid-template-columns: auto 1fr 1.6fr 1.3fr 1.1fr;
-	gap: 24px;
+	grid-template-columns: auto 10rem minmax(0, 1fr) minmax(0, 1.4fr) auto;
+	gap: 10px 14px;
 	align-items: center;
-	padding-bottom: 30px;
-	margin-bottom: 30px;
-	border-bottom: 1px dashed var(--hdn-border);
+	padding-block: 10px;
+	border-bottom: 1px solid var(--hd-softer, #eef1fa);
 	transition: background 0.3s ease;
 }
-.hodima-story-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.hodima-story-row:last-child { border-bottom: none; }
+
+.hodima-story-row .hdn-flex-col { height: auto; }
+.hodima-story-row .hdn-input { height: 40px; padding: 8px 12px; font-size: 13px; }
+.hodima-story-row .hdn-media-container { min-height: 0; gap: 8px; padding: 6px; border-radius: 10px; }
+.hodima-story-row .hdn-img-preview-box { width: 44px; height: 44px; border-width: 1px; }
+.hodima-story-row .hdn-media-actions { gap: 0; }
+.hodima-story-row .hdn-btn { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
+.hs-row-actions { display: flex; align-items: center; }
+
+/* دکمه محصول (اختیاری) */
+.hs-more { grid-column: 2 / -1; margin-top: -4px; }
+.hs-more > summary {
+	min-height: 28px;
+	color: var(--hdn-primary);
+	font-size: 12.5px;
+	font-weight: 600;
+	cursor: pointer;
+}
+.hs-more__fields { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; padding-block: 6px 4px; }
+.hs-more summary:focus-visible { outline: 2px solid var(--hd-accent-light, #607bbd); outline-offset: 2px; }
 
 @media (max-width: 992px) {
-	.hodima-story-row { grid-template-columns: 1fr 1fr; gap: 20px; }
-	.hs-order-col { grid-column: 1 / -1; flex-direction: row; justify-content: flex-start; }
-	.hdn-flex-col:last-child, .hdn-cta-col { grid-column: span 2; }
+	.hodima-story-row { grid-template-columns: auto 10rem minmax(0, 1fr); }
+	.hodima-story-row .hs-order-col { flex-direction: row; }
+	.hodima-story-row > .hdn-flex-col:nth-of-type(3) { grid-column: 2 / -1; }
+	.hs-row-actions { grid-column: 2 / -1; }
+	.hs-more { grid-column: 1 / -1; }
 }
 
 @media (max-width: 768px) {
-	.hodima-story-row { grid-template-columns: 1fr; gap: 15px; }
-	.hdn-flex-col:last-child { grid-column: auto; }
-	.hdn-actions-bar { flex-direction: column; align-items: flex-start; }
+	.hodima-story-row { grid-template-columns: auto minmax(0, 1fr); }
+	.hodima-story-row > .hdn-flex-col { grid-column: 2 / -1; }
+	.hs-more__fields { grid-template-columns: 1fr; }
+	.hs-more > summary { min-height: 44px; display: flex; align-items: center; }
+	.hodima-story-row .hdn-btn { min-height: 44px; }
+	.hdn-actions-bar { flex-direction: column; align-items: stretch; }
 	.hdn-actions-bar .hdn-btn { width: 100%; }
 	.hdn-actions-bar .hdn-btn-primary { margin-inline-start: 0; }
 }
+
+/* نوار وضعیت بالای صفحه */
+.hs-status {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px 14px;
+	margin-block: 1rem;
+	padding: 14px 16px;
+	border: 1px solid var(--hdn-border);
+	border-radius: 14px;
+	background: #fff;
+	box-shadow: 0 4px 16px rgb(37 49 106 / 0.07);
+}
+.hs-status > .hs-status__icon {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.5rem;
+	block-size: 2.5rem;
+	border-radius: 0.75rem;
+	background: var(--hd-ok, #1f7a4d);
+	color: #fff;
+}
+.hs-status.is-warn > .hs-status__icon { background: var(--hd-warn, #9a5b00); }
+.hs-status > .hs-status__icon.dashicons::before { font-size: 1.25rem; }
+.hs-status__body { flex: 1 1 14rem; min-inline-size: 0; }
+.hs-status__title { margin: 0; color: var(--hdn-primary); font-size: 1rem; font-weight: 700; line-height: 1.7; }
+.hs-status__text { margin: 0; color: var(--hdn-muted); font-size: 0.8125rem; line-height: 1.8; }
+
+.hdn-card.hs-card { padding: 0 20px 6px; }
+.hs-tools { margin: 0; padding-block: 14px; border-bottom: 1px solid var(--hdn-border); }
 
 .hd-shadow-soft { box-shadow: 0 10px 30px -5px rgb(37 49 106 / 0.12); }
 @keyframes hdSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -150,7 +207,7 @@
 	align-items: center;
 	justify-content: center;
 	width: 28px;
-	height: 24px;
+	height: 28px;
 	padding: 0;
 	color: var(--hdn-primary);
 	background: transparent;
@@ -212,3 +269,9 @@
 	.hodima-story-row.is-moved,
 	.anim-slide_up { animation: none; }
 }
+
+/* بازنویسی‌های ردیف فشرده و نوار ابزار (بعد از تعریف پایه تا ویژگی نزولی نشود) */
+/* ستون ترتیب در ردیف فشرده افقی است (قبلا عمودی و ردیف را بلند می‌کرد) */
+.hodima-story-row .hs-order-col { flex-direction: row; gap: 4px; }
+.hodima-story-row .hs-drag-handle { width: 28px; height: 28px; }
+.hs-tools .hs-setting { margin: 0; padding: 8px 12px; flex: 1; }

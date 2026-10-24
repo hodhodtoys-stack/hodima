@@ -332,6 +332,25 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 				'https://www.aparat.com/v/…'
 			);
 			hodima_media_field_text( 'video_title', 'عنوان ویدیو', (string) ( $data['video_title'] ?? '' ), 'بالای پلیر و در نتایج ویدیویی گوگل. خالی = «ویدیوی معرفی: عنوان صفحه» (برای آپارات، یوتیوب و ویمئو هنگام ذخیره از خود ویدیو پر می‌شود).' );
+			?>
+			<?php
+			hodima_media_field_picker(
+				'video_cover',
+				'کاور ویدیو',
+				$cover,
+				'image',
+				'قبل از پخش نمایش داده می‌شود و تصویر ویدیو در گوگل است. خالی = تصویر شاخص.',
+				$cover_id
+			);
+			// فیلدهای کم‌کاربرد پشت جمع‌شونده‌اند؛ اگر چیزی در آن‌ها پر باشد باز می‌ماند تا داده پنهان نشود
+			$more_a = '' !== trim( (string) ( $data['video_description'] ?? '' ) ) || '' !== trim( (string) ( $data['video_duration'] ?? '' ) ) || 'auto' !== (string) ( $data['video_ratio'] ?? 'auto' );
+			$more_b = '' !== trim( (string) ( $data['video_chapters'] ?? '' ) ) || '' !== trim( (string) ( $data['video_captions'] ?? '' ) ) || '' !== trim( (string) ( $data['video_transcript'] ?? '' ) );
+			$more_c = (bool) ( $data['video_extra'] ?? [] );
+			?>
+			<details class="hodima-mb__more"<?php echo $more_a ? ' open' : ''; ?>>
+				<summary>توضیح، نسبت تصویر و مدت <span class="hodima-mb__badge hodima-mb__badge--soft">اختیاری</span></summary>
+				<div class="hodima-mb__more-body">
+				<?php
 			hodima_media_field_textarea(
 				'video_description',
 				'توضیح ویدیو',
@@ -354,15 +373,12 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 				hodima_media_field_text( 'video_duration', 'مدت', (string) ( $data['video_duration'] ?? '' ), 'مثلا <code>2:35</code> یا <code>1:05:20</code>. برای فایل کتابخانه خودکار پر می‌شود.', [ 'dir' => 'ltr', 'inputmode' => 'numeric', 'placeholder' => '2:35', 'data-hodima-duration' => '' ] );
 				?>
 			</div>
-			<?php
-			hodima_media_field_picker(
-				'video_cover',
-				'کاور ویدیو',
-				$cover,
-				'image',
-				'قبل از پخش نمایش داده می‌شود و تصویر ویدیو در گوگل است. خالی = تصویر شاخص.',
-				$cover_id
-			);
+				</div>
+			</details>
+			<details class="hodima-mb__more"<?php echo $more_b ? ' open' : ''; ?>>
+				<summary>فصل‌ها، زیرنویس و متن کامل <span class="hodima-mb__badge hodima-mb__badge--soft">اختیاری</span></summary>
+				<div class="hodima-mb__more-body">
+				<?php
 			hodima_media_field_textarea(
 				'video_chapters',
 				'فصل‌های ویدیو',
@@ -386,7 +402,12 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 				'زیر پلیر به صورت بسته («متن کامل ویدیو») نمایش داده می‌شود و در اسکیما (transcript) به گوگل می‌رسد.',
 				[ 'rows' => 4 ]
 			);
-			?>
+				?>
+				</div>
+			</details>
+			<details class="hodima-mb__more"<?php echo $more_c ? ' open' : ''; ?>>
+				<summary>ویدیوهای بیشتر (تا ۱۲) <span class="hodima-mb__badge hodima-mb__badge--soft">اختیاری</span></summary>
+				<div class="hodima-mb__more-body">
 			<div class="hodima-mb__field">
 				<span class="hodima-mb__label">ویدیوهای بیشتر</span>
 				<p class="hodima-mb__help">زیر ویدیوی اصلی به صورت کارت نمایش داده می‌شوند و هر کدام جدا به گوگل اعلام می‌شود (با کاور؛ آپارات/یوتیوب/ویمئو عنوان، مدت و کاورشان هنگام ذخیره خودکار پر می‌شود). حداکثر <?php echo esc_html( number_format_i18n( HODIMA_MEDIA_EXTRA_MAX ) ); ?> ویدیو.</p>
@@ -400,6 +421,8 @@ function hodima_media_render_fields( array $data, string $context, int $object_i
 				<template data-hodima-template="extra"><?php echo hodima_media_extra_row( '__i__', [] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- داخل تابع escape شده ?></template>
 				<button type="button" class="button" data-hodima-add="extra"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> افزودن ویدیو</button>
 			</div>
+				</div>
+			</details>
 		<?php hodima_media_section_close(); ?>
 
 		<?php hodima_media_section_open( 'voice', 'dashicons-microphone', 'پادکست (صوت)', $voice_set, $voice_set, $data ); ?>

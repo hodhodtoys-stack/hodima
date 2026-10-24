@@ -246,10 +246,25 @@ class Admin {
 			<form method="post" id="hodima-stories-form">
 				<?php wp_nonce_field( 'hodima_stories_save', 'hodima_stories_nonce' ); ?>
 				<input type="hidden" name="hodima_stories_count" id="hs-row-count" value="<?php echo esc_attr( (string) count( $items ) ); ?>">
-				<div class="hdn-card hd-shadow-soft">
-					<h2 class="hdn-card-title"><?php esc_html_e( 'پنل تنظیمات', 'hodima' ); ?></h2>
+				<?php
+				$visible = count( $items ) - count( $problems );
+				$has_bad = count( $problems ) > 0;
+				?>
+				<section class="hs-status<?php echo $has_bad ? ' is-warn' : ''; ?>" aria-label="<?php esc_attr_e( 'خلاصه استوری‌ها', 'hodima' ); ?>">
+					<span class="dashicons <?php echo esc_attr( $has_bad ? 'dashicons-warning' : 'dashicons-yes-alt' ); ?> hs-status__icon" aria-hidden="true"></span>
+					<div class="hs-status__body">
+						<h2 class="hs-status__title"><?php echo esc_html( sprintf( /* translators: %s: تعداد استوری */ __( '%s استوری در سایت نمایش داده می‌شود', 'hodima' ), number_format_i18n( max( 0, $visible ) ) ) ); ?></h2>
+						<p class="hs-status__text"><?php echo esc_html( $has_bad ? sprintf( __( '%s استوری لینک نامعتبر یا تکراری دارد و تا درست شدن نمایش داده نمی‌شود.', 'hodima' ), number_format_i18n( count( $problems ) ) ) : __( 'ترتیب نمایش در سایت همان ترتیب زیر است؛ با کشیدن دستگیره یا دکمه‌های بالا و پایین جابه‌جا کنید و ذخیره بزنید.', 'hodima' ) ); ?></p>
+					</div>
+					<span class="hd-pill <?php echo $has_bad ? 'hd-pill--warn' : 'hd-pill--ok'; ?>"><?php echo esc_html( $has_bad ? __( 'نیاز به بررسی', 'hodima' ) : __( 'همه معتبر', 'hodima' ) ); ?></span>
+				</section>
 
-					<div class="hdn-actions-bar">
+				<div class="hdn-card hd-shadow-soft hs-card">
+					<div class="hdn-actions-bar hs-tools">
+						<label class="hs-setting">
+							<input type="checkbox" name="hodima_stories_seen_to_end" value="1" <?php checked( $settings['seen_to_end'] ); ?>>
+							<strong><?php esc_html_e( 'استوری‌های دیده‌شده به انتهای ردیف بروند', 'hodima' ); ?></strong>
+						</label>
 						<button type="button" class="hdn-btn hdn-btn-outline" id="hs-add-new"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> <?php esc_html_e( 'افزودن استوری جدید', 'hodima' ); ?></button>
 						<p class="hs-limit-msg" id="hs-limit-msg" role="status" hidden></p>
 						<button type="submit" class="hdn-btn hdn-btn-primary">
@@ -258,14 +273,6 @@ class Admin {
 						</button>
 					</div>
 
-					<label class="hs-setting">
-						<input type="checkbox" name="hodima_stories_seen_to_end" value="1" <?php checked( $settings['seen_to_end'] ); ?>>
-						<span>
-							<strong><?php esc_html_e( 'استوری‌های دیده‌شده به انتهای ردیف بروند', 'hodima' ); ?></strong>
-						</span>
-					</label>
-
-					<p class="hs-order-help"><?php esc_html_e( 'ترتیب نمایش در سایت همان ترتیب زیر است. با کشیدن دستگیره یا دکمه‌های بالا و پایین جابه‌جا کنید و در پایان «ذخیره تنظیمات» را بزنید.', 'hodima' ); ?></p>
 
 					<div id="hodima-stories-list">
 						<?php
@@ -308,6 +315,16 @@ class Admin {
 				<button type="button" class="hs-move hs-move-down" aria-label="<?php esc_attr_e( 'انتقال به پایین', 'hodima' ); ?>"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
 			</div>
 			<input type="hidden" class="hs-uid-input"<?php echo $name( 'uid' ); ?> value="<?php echo esc_attr( (string) absint( $item['uid'] ?? 0 ) ?: '' ); ?>">
+			<?php // ترتیب ردیف فشرده: ترتیب | کاور | عنوان | لینک ویدیو | حذف؛ لینک و متن دکمه محصول پشت «بیشتر» ?>
+			<div class="hdn-flex-col">
+				<div class="hdn-media-container">
+					<div class="hdn-img-preview-box"><img src="<?php echo Helpers::esc_img_src( Helpers::get_cover_url( $cover_id, 'thumbnail' ) ); ?>" alt="" class="hs-cover-preview"></div>
+					<div class="hdn-media-actions">
+						<input type="hidden" class="hs-cover-id"<?php echo $name( 'cover_id' ); ?> value="<?php echo esc_attr( $cover_id ? (string) $cover_id : '' ); ?>">
+						<button type="button" class="hdn-btn hdn-upload-btn hs-select-cover"><?php esc_html_e( 'انتخاب کاور', 'hodima' ); ?></button>
+					</div>
+				</div>
+			</div>
 			<div class="hdn-flex-col">
 				<input type="text" class="hs-title-input hdn-input"<?php echo $name( 'title' ); ?> value="<?php echo esc_attr( (string) ( $item['title'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'عنوان استوری', 'hodima' ); ?>" aria-label="<?php esc_attr_e( 'عنوان استوری', 'hodima' ); ?>">
 			</div>
@@ -317,20 +334,16 @@ class Admin {
 					<p class="hs-row-problem" id="<?php echo esc_attr( $row_id . '-problem' ); ?>"><?php echo esc_html( $message ); ?></p>
 				<?php endif; ?>
 			</div>
-			<div class="hdn-flex-col hdn-cta-col">
+			<div class="hs-row-actions">
+				<button type="button" class="hdn-btn hdn-remove-btn hs-remove-row"><?php esc_html_e( 'حذف', 'hodima' ); ?></button>
+			</div>
+			<details class="hs-more">
+				<summary><?php esc_html_e( 'دکمه محصول زیر استوری (اختیاری)', 'hodima' ); ?></summary>
+			<div class="hs-more__fields">
 				<input type="url" class="hs-cta-link-input hdn-input" dir="ltr"<?php echo $name( 'cta_link' ); ?> value="<?php echo esc_url( (string) ( $item['cta_link'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'لینک محصول (اختیاری)', 'hodima' ); ?>" aria-label="<?php esc_attr_e( 'لینک محصول', 'hodima' ); ?>">
 				<input type="text" class="hs-cta-text-input hdn-input"<?php echo $name( 'cta_text' ); ?> value="<?php echo esc_attr( (string) ( $item['cta_text'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'متن دکمه', 'hodima' ); ?>" aria-label="<?php esc_attr_e( 'متن دکمه محصول', 'hodima' ); ?>">
 			</div>
-			<div class="hdn-flex-col">
-				<div class="hdn-media-container">
-					<div class="hdn-img-preview-box"><img src="<?php echo Helpers::esc_img_src( Helpers::get_cover_url( $cover_id, 'thumbnail' ) ); ?>" alt="" class="hs-cover-preview"></div>
-					<div class="hdn-media-actions">
-						<input type="hidden" class="hs-cover-id"<?php echo $name( 'cover_id' ); ?> value="<?php echo esc_attr( $cover_id ? (string) $cover_id : '' ); ?>">
-						<button type="button" class="hdn-btn hdn-upload-btn hs-select-cover"><?php esc_html_e( 'انتخاب کاور', 'hodima' ); ?></button>
-						<button type="button" class="hdn-btn hdn-remove-btn hs-remove-row"><?php esc_html_e( 'حذف', 'hodima' ); ?></button>
-					</div>
-				</div>
-			</div>
+			</details>
 			<div class="hs-removed-bar" role="status" hidden>
 				<span><?php esc_html_e( 'این استوری با «ذخیره تنظیمات» حذف می‌شود و آمار بازدیدش هم پاک می‌شود.', 'hodima' ); ?></span>
 				<button type="button" class="hdn-btn hdn-upload-btn hs-restore-row"><?php esc_html_e( 'بازگردانی', 'hodima' ); ?></button>
