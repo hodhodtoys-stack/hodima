@@ -40,6 +40,8 @@ for plugin in hodima-core hodima-seo hodima-commerce hodima-media; do
 	cp -r "$root/plugins/$plugin" "$stage/plugins/$plugin"
 done
 ( cd "$root" && node bin/build-js.mjs "$stage/hodima" "$stage/plugins" )
+# کیت UI مشترک پیشخوان (tools/ui-kit): بعد از minify تا کپی‌ها بایت‌به‌بایت با منبع (با پیشوند بسته) یکی بمانند
+python3 "$root/tools/ui-kit/kit.py" install "$stage"
 package "$stage" hodima
 for plugin in hodima-core hodima-seo hodima-commerce hodima-media; do
 	package "$stage/plugins" "$plugin"

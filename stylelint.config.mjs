@@ -61,7 +61,7 @@ export default {
 			 * برای مرورگرهای هدف قدیمی (package.json ← browserslist) کار نمی‌کند و پیشوند
 			 * -webkit- (mask در Safari 15.3 و قبل) لازم است.
 			 */
-			files: [ 'plugins/**/*.css' ],
+			files: [ 'plugins/**/*.css', 'tools/ui-kit/*.css' ],
 			rules: {
 				'media-feature-range-notation': 'prefix',
 				'property-no-vendor-prefix': null,

@@ -1,0 +1,583 @@
+/**
+ * کیت UI مشترک پیشخوان هدیما — منبع واحد (اسکیل hodima-admin-ui؛ docs/admin-redesign-plan.md Z1)
+ *
+ * اجزای نوع صفحه «ورود محتوا»: نوار وضعیت، تب‌ها، چیدمان اصلی + ستون کناری، کارت کناری،
+ * چک‌لیست آمادگی، جمع‌شونده، وضعیت زیر فیلد، انتخاب‌گر رسانه و لیست تکرارشونده.
+ * رفتارشان در ui-kit.js. این فایل را مستقیم لود نکن و کپی‌اش را دستی ویرایش نکن:
+ * bin/build.sh (tools/ui-kit/kit.py) در هر بسته با پیشوند همان بسته می‌نویسدش
+ * (hdk → hds SEO، hdm Media، hdc Commerce، hdt قالب؛ مثلا .hdm-ui .hdm-statusbar) و
+ * release-check.py یکسانی کپی‌ها را می‌سنجد. ریشه هر صفحه کلاس .{پیشوند}-ui دارد.
+ * فقط توکن‌های --hd-* و کارت/فیلد قدیمی Core لازم است. بدون nesting و media query بازه‌ای.
+ */
+
+/* نوار وضعیت: عنوان، یک جمله خلاصه (حداکثر دو خط) و نشان وضعیت */
+.hdk-ui .hdk-statusbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem 0.875rem;
+	padding: 0.875rem 1rem;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+}
+
+.hdk-ui .hdk-statusbar > .hdk-statusbar__icon {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.5rem;
+	block-size: 2.5rem;
+	border-radius: 0.75rem;
+	background: var(--hd-primary);
+	color: #ffffff;
+}
+
+.hdk-ui .hdk-statusbar > .hdk-statusbar__icon.dashicons::before {
+	font-size: 1.25rem;
+}
+
+.hdk-ui .hdk-statusbar__body {
+	display: grid;
+	flex: 1 1 14rem;
+	gap: 0.125rem;
+	min-inline-size: 0;
+}
+
+.hodima-admin .hdk-ui .hdk-statusbar__title {
+	margin: 0;
+	padding: 0;
+	color: var(--hd-primary);
+	font-size: 1rem;
+	font-weight: 700;
+	line-height: 1.7;
+}
+
+.hdk-ui .hdk-statusbar__text {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+	line-height: 1.8;
+}
+
+.hdk-ui .hdk-statusbar__aside {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.hdk-ui .hdk-statusbar__aside[hidden] {
+	display: none;
+}
+
+/* ظرف تب‌ها + محتوا */
+.hdk-ui .hdk-tabset {
+	display: grid;
+	gap: 1rem;
+	min-inline-size: 0;
+}
+
+/* تب‌ها (الگوی ARIA tabs؛ بدون JS پنهان) */
+.hdk-ui .hdk-tablist {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+	padding: 0.375rem;
+	border-radius: var(--hd-radius);
+	background: var(--hd-soft);
+}
+
+.hdk-ui .hdk-tablist[hidden] {
+	display: none;
+}
+
+.hdk-ui .hdk-tab {
+	display: inline-flex;
+	flex: 1 1 auto;
+	justify-content: center;
+	align-items: center;
+	gap: 0.5rem;
+	min-block-size: 2.75rem;
+	padding-inline: 1rem;
+	border: 0;
+	border-radius: 0.625rem;
+	background: transparent;
+	color: var(--hd-muted);
+	font: inherit;
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.hdk-ui .hdk-tab:hover {
+	color: var(--hd-primary);
+}
+
+.hdk-ui .hdk-tab[aria-selected="true"] {
+	background: var(--hd-surface);
+	color: var(--hd-primary);
+	box-shadow: 0 1px 3px color-mix(in srgb, var(--hd-primary) 16%, transparent);
+}
+
+.hdk-ui .hdk-tab:focus-visible {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: 2px;
+}
+
+/* موبایل: تب‌ها کم‌فاصله تا بیشتر در یک ردیف جا شوند */
+@media (max-width: 599.98px) {
+	.hdk-ui .hdk-tab {
+		padding-inline: 0.625rem;
+	}
+}
+
+.hdk-ui .hdk-tab__count {
+	display: inline-grid;
+	place-items: center;
+	min-inline-size: 1.375rem;
+	block-size: 1.375rem;
+	padding-inline: 0.375rem;
+	border-radius: 999px;
+	background: var(--hd-third);
+	color: var(--hd-primary);
+	font-size: 0.75rem;
+	font-weight: 700;
+}
+
+.hdk-ui .hdk-tabpanel {
+	display: grid;
+	gap: 1rem;
+	min-inline-size: 0;
+}
+
+.hdk-ui .hdk-tabpanel[hidden] {
+	display: none;
+}
+
+/* چیدمان: اصلی + ستون کناری. عرض خود کادر تعیین می‌کند (نه عرض صفحه؛ سایدبار وردپرس عرض را کم می‌کند).
+ * کم‌عرض: پیش‌نمایش، اصلی، چک‌لیست؛ پهن: اصلی کنار پیش‌نمایش و چک‌لیست. */
+.hdk-ui .hdk-layout {
+	container-type: inline-size;
+	min-inline-size: 0;
+}
+
+.hdk-ui .hdk-layout__grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-areas: "preview" "main" "aside";
+	align-items: start;
+	gap: 1rem;
+}
+
+@container (min-width: 46rem) {
+	.hdk-ui .hdk-layout__grid {
+		grid-template:
+			"main preview" auto
+			"main aside" 1fr / minmax(0, 1fr) 16.5rem;
+	}
+}
+
+.hdk-ui .hdk-layout__main {
+	display: grid;
+	grid-area: main;
+	gap: 1rem;
+	min-inline-size: 0;
+}
+
+.hdk-ui .hdk-layout__preview {
+	grid-area: preview;
+}
+
+.hdk-ui .hdk-layout__aside {
+	grid-area: aside;
+}
+
+/* کارت کناری (پیش‌نمایش، چک‌لیست) */
+.hdk-ui .hdk-side {
+	display: grid;
+	gap: 0.75rem;
+	min-inline-size: 0;
+	padding: 1rem;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+}
+
+.hdk-ui .hdk-side[hidden] {
+	display: none;
+}
+
+.hodima-admin .hdk-ui .hdk-side__title {
+	margin: 0;
+	padding: 0;
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	line-height: 1.7;
+}
+
+/* چک‌لیست آمادگی: data-state = ok | warn | opt (علامت با CSS، بدون فونت/ایموجی) */
+.hdk-ui .hdk-checklist {
+	display: grid;
+	gap: 0.125rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hdk-ui .hdk-checklist__item {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	gap: 0.125rem 0.625rem;
+	padding-block: 0.375rem;
+}
+
+.hdk-ui .hdk-checklist__icon {
+	display: grid;
+	place-items: center;
+	inline-size: 1.375rem;
+	block-size: 1.375rem;
+	border-radius: 50%;
+	background: var(--hd-soft);
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.hdk-ui .hdk-checklist__icon::before {
+	content: "";
+	inline-size: 0.5rem;
+	block-size: 2px;
+	border-radius: 1px;
+	background: currentcolor;
+}
+
+.hdk-ui .hdk-checklist__item[data-state="ok"] .hdk-checklist__icon {
+	background: color-mix(in srgb, var(--hd-ok) 12%, #ffffff);
+	color: var(--hd-ok);
+}
+
+.hdk-ui .hdk-checklist__item[data-state="ok"] .hdk-checklist__icon::before {
+	inline-size: 0.3125rem;
+	block-size: 0.5625rem;
+	margin-block-start: -0.125rem;
+	border: solid currentcolor;
+	border-width: 0 2px 2px 0;
+	border-radius: 0;
+	background: none;
+	rotate: 45deg;
+}
+
+.hdk-ui .hdk-checklist__item[data-state="warn"] .hdk-checklist__icon {
+	background: color-mix(in srgb, var(--hd-warn) 14%, #ffffff);
+	color: var(--hd-warn);
+}
+
+.hdk-ui .hdk-checklist__item[data-state="warn"] .hdk-checklist__icon::before {
+	content: "!";
+	inline-size: auto;
+	block-size: auto;
+	background: none;
+}
+
+.hdk-ui .hdk-checklist__label {
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+}
+
+.hdk-ui .hdk-checklist__tag {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hdk-ui .hdk-checklist__item[data-state="ok"] .hdk-checklist__tag {
+	color: var(--hd-ok);
+}
+
+.hdk-ui .hdk-checklist__item[data-state="warn"] .hdk-checklist__tag {
+	color: var(--hd-warn);
+	font-weight: 700;
+}
+
+.hdk-ui .hdk-checklist__note {
+	grid-column: 2 / -1;
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	line-height: 1.8;
+}
+
+.hdk-ui .hdk-checklist__note:empty {
+	display: none;
+}
+
+/* جمع‌شونده «بخش اختیاری» */
+.hdk-ui .hdk-more {
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+}
+
+.hdk-ui .hdk-more__summary {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	min-block-size: 3.25rem;
+	padding-inline: 1.5rem;
+	color: var(--hd-primary);
+	font-size: 1rem;
+	font-weight: 700;
+	list-style: none;
+	cursor: pointer;
+}
+
+.hdk-ui .hdk-more__summary::-webkit-details-marker {
+	display: none;
+}
+
+.hdk-ui .hdk-more__summary::after {
+	content: "";
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	border: solid var(--hd-muted);
+	border-width: 0 2px 2px 0;
+	rotate: 45deg;
+	transition: rotate 0.2s ease;
+}
+
+.hdk-ui .hdk-more__summary:focus-visible {
+	border-radius: var(--hd-radius);
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: -2px;
+}
+
+.hdk-ui .hdk-more[open] > .hdk-more__summary::after {
+	rotate: -135deg;
+}
+
+.hdk-ui .hdk-more__hint {
+	margin-inline-start: auto;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	font-weight: 400;
+}
+
+.hdk-ui .hdk-more__body {
+	display: grid;
+	gap: 0.75rem;
+	padding: 0 1.5rem 1.5rem;
+}
+
+/* وضعیت زیر فیلد: data-level = ok | warn */
+.hdk-ui .hdk-field__status {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1.9;
+}
+
+.hdk-ui .hdk-field__status[data-level="ok"] {
+	color: var(--hd-ok);
+}
+
+.hdk-ui .hdk-field__status[data-level="warn"] {
+	color: var(--hd-warn);
+}
+
+/* انتخاب‌گر رسانه: پیش‌نمایش، انتخاب از کتابخانه، برداشتن و آدرس (فیلد [data-hd-media-input]) */
+.hdk-ui .hdk-media {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 1rem;
+}
+
+.hdk-ui .hdk-media__preview {
+	position: relative;
+	display: grid;
+	flex: none;
+	place-items: center;
+	overflow: hidden;
+	inline-size: 9rem;
+	aspect-ratio: 16 / 9;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.625rem;
+	background: var(--hd-soft);
+	color: var(--hd-muted);
+}
+
+.hdk-ui .hdk-media__preview img {
+	position: absolute;
+	inset: 0;
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+
+.hdk-ui .hdk-media__preview img[hidden] {
+	display: none;
+}
+
+.hdk-ui .hdk-media__preview--s {
+	inline-size: 4.75rem;
+	border-radius: 0.5rem;
+}
+
+/* بندانگشتی که خودش دکمه انتخاب عکس است */
+.hdk-ui button.hdk-media__pick {
+	padding: 0;
+	font: inherit;
+	cursor: pointer;
+}
+
+.hdk-ui button.hdk-media__pick:hover {
+	border-color: var(--hd-secondary);
+}
+
+.hdk-ui button.hdk-media__pick:focus-visible {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: 2px;
+}
+
+.hdk-ui .hdk-media__side {
+	display: grid;
+	flex: 1 1 14rem;
+	gap: 0.75rem;
+	min-inline-size: 0;
+}
+
+.hdk-ui .hdk-media__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.hdk-ui .hdk-media__actions .button {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.375rem;
+	min-block-size: 2.5rem;
+}
+
+.hdk-ui .hdk-media.is-empty [data-hd-media-clear] {
+	display: none;
+}
+
+/* لیست تکرارشونده: ردیف فشرده؛ افزودن، جابه‌جایی، حذف با بازگردانی */
+.hdk-ui .hdk-repeat {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.hdk-ui .hdk-repeat__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--hd-primary);
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.hdk-ui .hdk-repeat__rows {
+	display: grid;
+	gap: 0.625rem;
+}
+
+.hdk-ui .hdk-repeat__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.625rem 0.875rem;
+	padding: 0.625rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+	background: var(--hd-surface);
+}
+
+.hdk-ui .hdk-repeat__row.is-warn {
+	border-color: color-mix(in srgb, var(--hd-warn) 35%, #ffffff);
+	background: color-mix(in srgb, var(--hd-warn) 4%, #ffffff);
+}
+
+.hdk-ui .hdk-repeat__fields {
+	display: grid;
+	flex: 1 1 12rem;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+	gap: 0.5rem;
+	min-inline-size: 0;
+}
+
+.hdk-ui .hdk-repeat__actions {
+	display: flex;
+	gap: 0.375rem;
+}
+
+.hdk-ui .hdk-repeat__empty {
+	margin: 0;
+	padding: 0.875rem;
+	border: 1px dashed var(--hd-border-strong);
+	border-radius: 0.75rem;
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+	text-align: center;
+}
+
+.hdk-ui .hdk-repeat__empty[hidden] {
+	display: none;
+}
+
+.hdk-ui .hdk-repeat__undo {
+	font-size: 0.8125rem;
+}
+
+.hdk-ui .hdk-repeat__undo:empty {
+	display: none;
+}
+
+.hdk-ui .button.hdk-repeat__add {
+	display: inline-flex;
+	justify-self: start;
+	align-items: center;
+	gap: 0.375rem;
+	min-block-size: 2.5rem;
+	padding-inline: 1.125rem;
+	border-style: dashed;
+}
+
+.hdk-ui .button.hdk-icon-btn {
+	display: grid;
+	place-items: center;
+	inline-size: 2.5rem;
+	min-block-size: 2.5rem;
+	padding: 0;
+}
+
+.hdk-ui .button.hdk-icon-btn:disabled {
+	opacity: 0.45;
+}
+
+.hdk-ui .button.hdk-icon-btn--danger {
+	color: var(--hd-error);
+}
+
+.hdk-ui .button-link.hdk-undo-btn {
+	min-block-size: 2.5rem;
+	font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hdk-ui .hdk-tab,
+	.hdk-ui .hdk-more__summary::after {
+		transition: none;
+	}
+}

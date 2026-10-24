@@ -118,12 +118,18 @@ def changed_files(base):
 # ابزار ساخت: خروجی ZIP همه بسته‌ها را عوض می‌کند (مثلا minify جاوااسکریپت)، پس همه نسخه می‌گیرند
 BUILD_TOOLS = {'bin/build.sh', 'bin/build-css.mjs', 'bin/build-js.mjs'}
 
+# کیت UI مشترک (tools/ui-kit): منبع و ابزار کپی؛ در ZIP هر بسته‌ای که پیشوند دارد می‌آید
+sys.path.insert(0, os.path.join(ROOT, 'tools', 'ui-kit'))
+import kit  # noqa: E402
+
 
 def changed_packages(files):
     out = {}
     tools = sorted(files & BUILD_TOOLS)
     for slug, (folder, *_rest) in PACKAGES.items():
         hits = sorted(f for f in files if f.startswith(folder + '/')) + tools
+        if folder in kit.targets():
+            hits += sorted(f for f in files if f.startswith('tools/ui-kit/'))
         if hits:
             out[slug] = hits
     return out
@@ -319,6 +325,7 @@ def built_entries():
             if r.returncode != 0:
                 fail('ساخت CSS/JS رد شد: ' + (r.stderr or r.stdout).strip()[:300])
                 return None
+        kit.install(tmp)  # مثل build.sh: بعد از minify
         out = {'hodima': source_entries_at(tmp, 'hodima')}
         for slug, (folder, *_rest) in PACKAGES.items():
             if folder.startswith('plugins/'):
@@ -375,6 +382,33 @@ def check_release(base, pkgs, bumped):
                 warn(f'{rel} عوض شده ولی نسخه {slug} همان است — git checkout {base} -- {rel}')
     if len(errors) == before:
         ok('ZIP و JSON همه بسته‌ها با کد فعلی یکی‌اند')
+
+
+def check_kit():
+    """Z3: کپی کیت UI در ZIP هر بسته بایت‌به‌بایت = منبع tools/ui-kit با پیشوند همان بسته؛
+    در سورس بسته‌ها هم کپی دستی نباشد (ویرایش فقط در منبع)."""
+    print('== کیت UI مشترک (tools/ui-kit)')
+    before = len(errors)
+    for slug, (folder, *_rest) in PACKAGES.items():
+        prefix = kit.targets().get(folder)
+        stray = [n for n in kit.FILES if os.path.exists(os.path.join(ROOT, folder, 'ui', n))]
+        if stray:
+            fail(f'{slug}: کپی دستی کیت در سورس ({folder}/ui/{stray[0]}) — فقط tools/ui-kit ویرایش شود')
+        zpath = os.path.join(ROOT, 'release', slug + '.zip')
+        if not os.path.exists(zpath):
+            continue  # نبودن ZIP را check_release می‌گوید
+        zipped = zip_entries(zpath)
+        for name in kit.FILES:
+            key = f'{os.path.basename(folder)}/ui/{name}'
+            if prefix is None:
+                if key in zipped:
+                    fail(f'{slug}: کیت UI نباید در ZIP باشد ({key})')
+            elif key not in zipped:
+                fail(f'{slug}: {key} در ZIP نیست — bash bin/build.sh')
+            elif zipped[key] != kit.render(name, prefix):
+                fail(f'{slug}: {key} با منبع tools/ui-kit (پیشوند {prefix}-) یکی نیست — bash bin/build.sh')
+    if len(errors) == before:
+        ok('کپی کیت UI در همه ZIPها با منبع یکی است')
 
 
 def eof_newline_only(path):
@@ -460,6 +494,7 @@ def cmd_pre(base):
     bumped = check_versions(base, pkgs)
     check_changelog(bumped)
     check_release(base, pkgs, bumped)
+    check_kit()
     check_eol()
     check_docs(base, files, pkgs, bumped)
     untracked = [f for f in git('ls-files', '--others', '--exclude-standard').split('\n') if f]
