@@ -2413,8 +2413,8 @@ input.hodima-color__swatch {
 .hodima-tip__button {
 	display: inline-grid;
 	place-items: center;
-	inline-size: 1.3125rem;
-	block-size: 1.3125rem;
+	inline-size: 1.5rem;
+	block-size: 1.5rem;
 	margin: 0;
 	padding: 0;
 	border: 0;
@@ -2424,9 +2424,9 @@ input.hodima-color__swatch {
 	cursor: help;
 
 	& .hodima-tip__icon {
-		inline-size: 1.1875rem;
-		block-size: 1.1875rem;
-		font-size: 1.1875rem;
+		inline-size: 1.3125rem;
+		block-size: 1.3125rem;
+		font-size: 1.3125rem;
 		/* علامت سؤال فارسی «؟» برعکس لاتین «?» است: آیکون افقی وارونه می‌شود */
 		transform: scaleX(-1);
 	}
