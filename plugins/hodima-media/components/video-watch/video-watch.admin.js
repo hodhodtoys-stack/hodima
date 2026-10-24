@@ -6,7 +6,7 @@
  *   - وضعیت آدرس ویدیو، شمارش متن کامل، شمارنده روی تب «زیر ویدیو»
  *   - «آنچه گوگل می‌بیند»: بخش‌ها همان‌طور که سرور می‌خواند (hod_video_parse_chapters)
  * تب‌ها، انتخاب‌گر کاور و لیست کارت‌های مرتبط (افزودن، جابه‌جایی، حذف با بازگردانی)
- * رفتارشان در admin-ui.js هسته است؛ اینجا فقط به رویدادهایشان گوش می‌دهیم.
+ * رفتارشان در video-watch.ui.js (کیت محلی همین ماژول) است؛ اینجا فقط به رویدادهایشان گوش می‌دهیم.
  * فقط ظاهر و کمک است؛ نام و مقدار فیلدها همان است و بدون JS فرم کار می‌کند.
  * زیر ESLint بدون baseline.
  */
@@ -100,9 +100,6 @@
 		const pillWrap = $( '[data-hvw-pill-wrap]' );
 		const tabCount = $( '[data-hvw-tab-count]' );
 		const side = root.querySelectorAll( '[data-hvw-pv], [data-hvw-ck]' );
-		// Core قدیمی‌تر از ۱.۲.۸ (یا CSS آن لود نشده) چیدمان کناری را ندارد: کارت‌های کناری بی‌قید و عکس غول‌پیکر می‌شد.
-		// پس فقط وقتی Core آماده است نشان داده می‌شوند؛ وگرنه همان فرم ساده (همه بخش‌ها زیر هم) می‌ماند.
-		const coreUi = 'grid' === getComputedStyle( $( '.hd-layout__grid' ) ).display;
 		const pvImg = $( '[data-hvw-pv-img]' );
 		const pvDur = $( '[data-hvw-pv-dur]' );
 		const pvChips = $( '[data-hvw-pv-chips]' );
@@ -265,7 +262,7 @@
 			}
 			pvProduct.hidden = ! hasProduct;
 			side.forEach( ( node ) => {
-				node.hidden = ! coreUi;
+				node.hidden = false;
 			} );
 		};
 

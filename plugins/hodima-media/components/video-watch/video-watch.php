@@ -97,8 +97,11 @@ function hod_video_watch_admin_assets(): void {
 		return;
 	}
 	wp_enqueue_media();
-	wp_enqueue_style( 'hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.css', [], hod_video_watch_ver( 'video-watch.admin.css' ) );
-	wp_enqueue_script( 'hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.js', [], hod_video_watch_ver( 'video-watch.admin.js' ), true );
+	// کیت UI محلی ماژول (تب، رسانه، لیست تکرارشونده، …) جدا از کادر؛ بعدا اگر به Core رفت فقط این دو خط برداشته می‌شود
+	wp_enqueue_style( 'hod-video-watch-ui', HOD_VIDEO_WATCH_URL . 'video-watch.ui.css', [], hod_video_watch_ver( 'video-watch.ui.css' ) );
+	wp_enqueue_script( 'hod-video-watch-ui', HOD_VIDEO_WATCH_URL . 'video-watch.ui.js', [], hod_video_watch_ver( 'video-watch.ui.js' ), true );
+	wp_enqueue_style( 'hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.css', [ 'hod-video-watch-ui' ], hod_video_watch_ver( 'video-watch.admin.css' ) );
+	wp_enqueue_script( 'hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.js', [ 'hod-video-watch-ui' ], hod_video_watch_ver( 'video-watch.admin.js' ), true );
 }
 add_action( 'admin_enqueue_scripts', 'hod_video_watch_admin_assets' );
 
