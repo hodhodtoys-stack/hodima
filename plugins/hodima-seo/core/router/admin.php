@@ -84,9 +84,13 @@ function hodima_router_admin_assets(): void {
 	}
 
 	wp_add_inline_style( HODIMA_ADMIN_UI_HANDLE, '
-.hodima-router .hodima-router__bases { display: flex; flex-wrap: wrap; gap: 0.375rem; font-size: 0.875rem; }
+.hodima-router .hodima-router__status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.hodima-router .hodima-router__bases { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; font-size: 0.875rem; }
+.hodima-router .hodima-router__ok { margin: 0; color: var(--hd-muted); }
+.hodima-router .hodima-router__ok span { color: var(--hd-ok); font-weight: 700; margin-inline-end: 0.25rem; }
+.hodima-router .hodima-router__urls { inline-size: 100%; }
 .hodima-router .hodima-router__bases code { white-space: nowrap; }
-.hodima-router .hodima-router__urls { min-block-size: 9rem; font-family: inherit; }
+.hodima-router .hodima-router__urls { min-block-size: 6rem; font-family: inherit; }
 .hodima-router .hodima-router__url { min-inline-size: 14rem; direction: ltr; text-align: left; overflow-wrap: anywhere; }
 .hodima-router .hd-table-wrap > table { min-inline-size: 44rem; }
 .hodima-router .hodima-router__summary { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-block: 1rem; }
@@ -229,29 +233,16 @@ function hodima_router_render_admin(): void {
 	// وضعیت
 	?>
 	<section class="hd-card hd-card--accent">
-		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-admin-site-alt3' ); // phpcs:ignore ?> وضعیت</h2>
-		<div class="hd-grid hd-grid--stats">
-			<div class="hd-stat">
-				<span class="hd-stat__label">روتر</span>
-				<span class="hd-stat__value"><?php echo $active ? '<span class="hd-pill hd-pill--ok">فعال</span>' : '<span class="hd-pill hd-pill--warn">غیرفعال</span>'; ?></span>
-			</div>
-			<div class="hd-stat">
-				<span class="hd-stat__label">پایه‌هایی که حذف می‌شوند</span>
-				<span class="hd-stat__value hodima-router__bases"><code dir="ltr">/<?php echo esc_html( $bases['product'] ); ?>/</code> <code dir="ltr">/<?php echo esc_html( $bases['product_cat'] ); ?>/</code> <code dir="ltr">/<?php echo esc_html( $bases['category'] ); ?>/</code></span>
-			</div>
-			<div class="hd-stat">
-				<span class="hd-stat__label">آدرس‌های مشترک بین دو شیء</span>
-				<span class="hd-stat__value"><?php echo esc_html( number_format_i18n( count( $conflicts ) ) ); ?></span>
-			</div>
-			<div class="hd-stat">
-				<span class="hd-stat__label">آدرس کوتاه قدیمی زیردسته‌ها با مشکل</span>
-				<span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $problems ) ); ?></span>
-			</div>
+		<div class="hodima-router__status">
+			<?php echo $active ? '<span class="hd-pill hd-pill--ok">روتر فعال</span>' : '<span class="hd-pill hd-pill--warn">روتر غیرفعال</span>'; ?>
+			<span class="hodima-router__bases"><span class="hd-muted">پایه‌های حذف‌شده:</span> <code dir="ltr">/<?php echo esc_html( $bases['product'] ); ?>/</code> <code dir="ltr">/<?php echo esc_html( $bases['product_cat'] ); ?>/</code> <code dir="ltr">/<?php echo esc_html( $bases['category'] ); ?>/</code></span>
+			<span class="hd-pill hd-pill--<?php echo $conflicts ? 'warn' : 'ok'; ?>">آدرس مشترک: <?php echo esc_html( number_format_i18n( count( $conflicts ) ) ); ?></span>
+			<span class="hd-pill hd-pill--<?php echo $problems ? 'warn' : 'ok'; ?>">زیردسته با مشکل: <?php echo esc_html( number_format_i18n( $problems ) ); ?></span>
 		</div>
 	</section>
 
 	<section class="hd-card">
-		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-search' ); // phpcs:ignore ?> بررسی یک آدرس</h2>
+		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-search' ); // phpcs:ignore ?> بررسی آدرس</h2>
 		<form method="get" class="hd-inline">
 			<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_ROUTER_PAGE ); ?>">
 			<label class="screen-reader-text" for="hodima-router-check">آدرس</label>
@@ -265,11 +256,9 @@ function hodima_router_render_admin(): void {
 			echo '<div class="hd-callout hd-callout--' . esc_attr( $tone ) . '">' . hodima_admin_icon( 'success' === $tone ? 'dashicons-yes-alt' : 'dashicons-warning' ) . '<p>' . wp_kses_post( hodima_router_status_text( $result ) ) . '</p></div>'; // phpcs:ignore
 		}
 		?>
-	</section>
-
-	<section class="hd-card">
-		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-editor-ul' ); // phpcs:ignore ?> بررسی گروهی آدرس‌ها</h2>
-		<p class="hd-text">هر خط یک آدرس. می‌توانید فهرست صفحه‌ها را از سرچ کنسول کپی کنید: «Pages» (مثلا گروه «Page with redirect» یا «Not found (404)») یا «Performance ← Pages»، دکمه «Export» و بعد ستون آدرس‌ها. حداکثر ۳۰۰ آدرس در هر بار؛ چیزی ذخیره یا عوض نمی‌شود.</p>
+		<details class="hodima-router__more"<?php echo '' !== $bulk_text ? ' open' : ''; ?>>
+		<summary>بررسی گروهی آدرس‌ها (تا ۳۰۰ آدرس)</summary>
+		<p class="hd-text">هر خط یک آدرس. می‌توانید فهرست صفحه‌ها را از سرچ کنسول کپی کنید: «Pages» (مثلا گروه «Page with redirect» یا «Not found (404)») یا «Performance ← Pages»، دکمه «Export» و بعد ستون آدرس‌ها. چیزی ذخیره یا عوض نمی‌شود.</p>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=' . HODIMA_ROUTER_PAGE ) ); ?>">
 			<?php wp_nonce_field( 'hodima_router_bulk', '_hodima_router_bulk' ); ?>
 			<label class="screen-reader-text" for="hodima-router-urls">آدرس‌ها</label>
@@ -311,11 +300,15 @@ function hodima_router_render_admin(): void {
 			<?php
 		}
 		?>
+		</details>
 	</section>
 
 	<section class="hd-card" data-hodima-router-links>
 		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-admin-links' ); // phpcs:ignore ?> لینک‌های داخلی قدیمی و خراب</h2>
+		<p class="hd-text">لینک‌های داخل سایت را که به آدرس قدیمی (ریدایرکت‌شونده)، صفحه ۴۰۴ یا آدرس اشتباه می‌روند پیدا می‌کند؛ اصلاح با شماست.</p>
+		<details class="hodima-router__more"><summary>جاهایی که جستجو می‌شود و توضیح بیشتر</summary>
 		<p class="hd-text">لینک‌هایی داخل خود سایت را پیدا می‌کند که به آدرس قدیمی (ریدایرکت‌شونده)، صفحه ۴۰۴ یا آدرس اشتباه‌نوشته‌شده می‌روند: متن و توضیح کوتاه نوشته‌ها، برگه‌ها و محصولات منتشرشده، توضیح دسته‌ها، «پیوند دلخواه» منوها و تنظیمات قالب. برای هر لینک جای آن (با دکمه ویرایش) و آدرس درست را می‌گوید؛ اصلاح با شماست و چیزی خودکار عوض نمی‌شود. جستجو دسته‌دسته انجام می‌شود و ممکن است چند دقیقه طول بکشد؛ تا پایان، صفحه را نبندید.</p>
+		</details>
 		<p class="hd-inline">
 			<button type="button" class="button button-primary" data-hodima-router-links-start>جستجوی لینک‌ها</button>
 			<span class="hd-muted" data-hodima-router-links-msg role="status" aria-live="polite"></span>
@@ -333,9 +326,11 @@ function hodima_router_render_admin(): void {
 
 	<section class="hd-card">
 		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-category' ); // phpcs:ignore ?> آدرس کوتاه قدیمی زیردسته‌ها</h2>
+		<details class="hodima-router__more"><summary>این فهرست چه می‌کند؟</summary>
 		<p class="hd-text">آدرس اصلی زیردسته‌ها مسیر دسته‌های والد را دارد (مثل <code dir="ltr">/accessory/hair-clips/plumeria-hair-clips/</code>). اگر آدرس کوتاه همان دسته (<code dir="ltr">/plumeria-hair-clips/</code>) قبلا در گوگل بوده، باید با ۳۰۱ به آدرس اصلی برسد. این فهرست برای هر زیردسته همین را بررسی می‌کند، همان‌طور که بازدیدکننده می‌بیند.</p>
+		</details>
 		<?php if ( ! $nested['total'] ) : ?>
-			<div class="hd-empty"><?php echo hodima_admin_icon( 'dashicons-yes-alt' ); // phpcs:ignore ?><p>زیردسته‌ای با آدرس سلسله‌مراتبی نیست.</p></div>
+			<p class="hodima-router__ok"><span aria-hidden="true">✓</span> زیردسته‌ای با آدرس سلسله‌مراتبی نیست.</p>
 		<?php else : ?>
 			<div class="hodima-router__summary">
 				<span class="hd-muted"><?php echo esc_html( number_format_i18n( $nested['total'] ) ); ?> زیردسته با آدرس کامل:</span>
@@ -376,7 +371,7 @@ function hodima_router_render_admin(): void {
 	<section class="hd-card">
 		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore ?> آدرس‌های مشترک (نامک تکراری)</h2>
 		<?php if ( ! $conflicts ) : ?>
-			<div class="hd-empty"><?php echo hodima_admin_icon( 'dashicons-yes-alt' ); // phpcs:ignore ?><p>هیچ دو صفحه‌ای آدرس یکسان ندارند.</p></div>
+			<p class="hodima-router__ok"><span aria-hidden="true">✓</span> هیچ دو صفحه‌ای آدرس یکسان ندارند.</p>
 		<?php else : ?>
 			<div class="hd-callout hd-callout--warning">
 				<?php echo hodima_admin_icon( 'dashicons-info' ); // phpcs:ignore ?>

@@ -28,6 +28,24 @@ final class AdminPage {
 	public static function init(): void {
 		add_action( 'admin_menu', [ self::class, 'menu' ], 20 );
 		add_action( 'admin_init', [ self::class, 'handle_save' ] );
+		add_action( 'admin_enqueue_scripts', [ self::class, 'assets' ], 20 );
+	}
+
+	/** CSS همین صفحه (بعد از ثبت admin-ui.css در Core)؛ بخش‌های جمع‌شونده و دو ستونه. */
+	public static function assets(): void {
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تشخیص صفحه
+		if ( self::SLUG !== sanitize_key( (string) wp_unslash( $_GET['page'] ?? '' ) ) || ! defined( 'HODIMA_ADMIN_UI_HANDLE' ) ) {
+			return;
+		}
+
+		wp_add_inline_style( HODIMA_ADMIN_UI_HANDLE, '
+.hodima-rl-page .hodima-rl-groups-grid { align-items: start; }
+.hodima-rl-page .hodima-rl-more > summary { cursor: pointer; color: var(--hd-primary); font-weight: 700; min-block-size: 2.75rem; display: flex; align-items: center; }
+.hodima-rl-page .hodima-rl-more > summary:focus-visible { outline: 2px solid var(--hd-ok); outline-offset: 2px; }
+.hodima-rl-page .hodima-rl-more:not(.hodima-rl-more--card) { margin-block-start: 0.75rem; }
+.hodima-rl-page .hodima-rl-more[open] > summary { margin-block-end: 0.75rem; }
+' );
 	}
 
 	public static function menu(): void {
@@ -104,6 +122,7 @@ final class AdminPage {
 		<form method="post" action="<?php echo esc_url( self::url() ); ?>" class="hd-body">
 			<?php wp_nonce_field( self::SAVE ); ?>
 
+			<div class="hd-grid hd-grid--wide hodima-rl-groups-grid">
 			<?php foreach ( Group::cases() as $group ) : $g = $s['groups'][ $group->value ]; $f = 'hodima_rl[groups][' . $group->value . ']'; ?>
 				<section class="hd-card">
 					<header class="hd-card__head">
@@ -118,7 +137,7 @@ final class AdminPage {
 						<div class="hd-field">
 							<label class="hd-field__label" for="hodima-rl-count-<?php echo esc_attr( $group->value ); ?>">تعداد لینک نمایشی</label>
 							<input type="number" min="1" max="<?php echo esc_attr( (string) Store::MAX_SLOTS ); ?>" id="hodima-rl-count-<?php echo esc_attr( $group->value ); ?>" name="<?php echo esc_attr( $f ); ?>[count]" value="<?php echo esc_attr( (string) $g['count'] ); ?>">
-							<p class="hd-field__help">ویرایشگر به همین تعداد خانه جستجو نشان می‌دهد. اگر تعداد را کم کنید، لینک‌های اضافه پاک نمی‌شوند و به‌عنوان «ذخیره» می‌مانند.</p>
+							<p class="hd-field__help">ویرایشگر به همین تعداد خانه نشان می‌دهد؛ اگر کم کنید، لینک‌های اضافه پاک نمی‌شوند.</p>
 						</div>
 						<?php if ( $group->has_title() ) : ?>
 							<div class="hd-field">
@@ -139,7 +158,11 @@ final class AdminPage {
 								?>
 							</p>
 						</div>
-						<?php if ( Group::Article === $group ) : ?>
+					</div>
+					<?php if ( Group::Article === $group ) : ?>
+						<details class="hodima-rl-more">
+							<summary>برچسب و جایگاه (اختیاری)</summary>
+							<div class="hd-fields">
 							<div class="hd-field">
 								<label class="hd-field__label" for="hodima-rl-label">برچسب داخل کارت (بالای عنوان مقاله)</label>
 								<input type="text" id="hodima-rl-label" name="hodima_rl[article_label]" value="<?php echo esc_attr( (string) $s['article_label'] ); ?>" placeholder="خالی = بدون برچسب">
@@ -150,16 +173,15 @@ final class AdminPage {
 								<input type="number" min="0" max="50" id="hodima-rl-paragraph" name="hodima_rl[article_paragraph]" value="<?php echo esc_attr( (string) $s['article_paragraph'] ); ?>">
 								<p class="hd-field__help">۰ یعنی انتهای محتوا؛ اگر متن پاراگراف کمتری داشته باشد هم انتها می‌آید.</p>
 							</div>
-						<?php endif; ?>
-					</div>
+							</div>
+						</details>
+					<?php endif; ?>
 				</section>
 			<?php endforeach; ?>
+			</div>
 
-			<section class="hd-card">
-				<header class="hd-card__head">
-					<?php echo hodima_admin_icon( 'dashicons-admin-generic' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-					<h2 class="hd-card__title">عمومی</h2>
-				</header>
+			<details class="hd-card hodima-rl-more hodima-rl-more--card">
+				<summary>تنظیمات عمومی (اختیاری)</summary>
 				<div class="hd-fields">
 					<div class="hd-field">
 						<label class="hd-field__label" for="hodima-rl-heading">تگ عنوان کادرها</label>
@@ -185,13 +207,10 @@ final class AdminPage {
 						<p class="hd-field__help">رویداد <code>select_content</code> با <code>content_type=related_link</code> و گروه و جایگاه کارت (از gtag، یا رویداد <code>hodima_related_click</code> در dataLayer). فقط وقتی کد Analytics روی سایت نصب باشد اثر دارد.</p>
 					</div>
 				</div>
-			</section>
+			</details>
 
-			<section class="hd-card">
-				<header class="hd-card__head">
-					<?php echo hodima_admin_icon( 'dashicons-editor-help' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-					<h2 class="hd-card__title">راهنمای شورت‌کدها</h2>
-				</header>
+			<details class="hd-card hodima-rl-more hodima-rl-more--card">
+				<summary>راهنمای شورت‌کدها</summary>
 				<ul class="hd-list">
 					<li><code>[manual_related_products]</code> پیشنهاد خرید (عنوان کادر در سایت از همین صفحه قابل تغییر) · <code>[hodima_related_article]</code> مقاله پیشنهادی</li>
 					<li>«دسته‌بندی‌های مرتبط» حذف شد (لینک دسته‌ها را خوشه موضوعی می‌سازد). اگر <code>[hodima_related_categories]</code> جایی در متن مانده باشد چیزی نمایش نمی‌دهد.</li>
@@ -200,7 +219,7 @@ final class AdminPage {
 					<li><code>[manual_related_products]</code> که از قبل در محتوای سایت است، حالا همان کادر «پیشنهاد خرید» است و لازم نیست پاک شود. <code>[manual_related_links]</code> و <code>[hodima_complementary_products]</code> هم همین کادر را نشان می‌دهند.</li>
 					<li>در توضیح دسته‌ها هم شورت‌کد کار می‌کند (قبلا به شکل متن خام دیده می‌شد).</li>
 				</ul>
-			</section>
+			</details>
 
 			<div class="hd-actions">
 				<?php submit_button( 'ذخیره تنظیمات', 'primary', 'hodima_rl_settings_submit', false ); ?>

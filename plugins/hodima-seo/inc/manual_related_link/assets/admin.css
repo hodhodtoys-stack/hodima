@@ -10,7 +10,7 @@
 	--rl-primary: #25316a;
 	--rl-secondary: #607bbd;
 	--rl-third: #b6c2f3;
-	--rl-accent: #6a2b9a;
+	--rl-accent: #1f7a4d;
 	--rl-soft: color-mix(in srgb, var(--rl-third) 14%, #ffffff);
 	--rl-border: color-mix(in srgb, var(--rl-third) 60%, #ffffff);
 	--rl-muted: #5d6785;

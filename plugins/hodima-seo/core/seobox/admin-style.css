@@ -9,7 +9,7 @@
     --sb-primary: var(--hodima-primary, #25316a);
     --sb-secondary: var(--hodima-secondary, #607bbd);
     --sb-third: var(--hodima-third, #b6c2f3);
-    --sb-accent: var(--hodima-accent, #6a2b9a);
+    --sb-accent: #1f7a4d; /* پیشخوان بنفش ندارد */
     --sb-border: color-mix(in srgb, var(--sb-third) 55%, #fff);
     --sb-border-strong: color-mix(in srgb, var(--sb-secondary) 45%, #fff);
     --sb-soft: color-mix(in srgb, var(--sb-third) 14%, #fff);
@@ -190,7 +190,7 @@
     & .seobox__counter {
         padding: 0.1rem 0.6rem;
         font-size: 11px;
-        color: var(--sb-secondary);
+        color: var(--sb-primary);
         background: var(--sb-soft);
         border: 1px solid var(--sb-border);
         border-radius: 999px;

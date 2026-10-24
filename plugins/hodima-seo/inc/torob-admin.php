@@ -25,6 +25,23 @@ add_action( 'admin_menu', static function (): void {
 	add_menu_page( 'ترب', 'ترب', 'manage_options', 'hodima-torob', 'hodima_seo_torob_render_page', 'dashicons-store', 58 );
 } );
 
+/** CSS همین صفحه (بعد از ثبت admin-ui.css در Core): راهنمای جمع‌شونده، نوار نشان‌ها و حالت خالی کوچک. */
+add_action( 'admin_enqueue_scripts', static function (): void {
+
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تشخیص صفحه
+	if ( 'hodima-torob' !== sanitize_key( (string) wp_unslash( $_GET['page'] ?? '' ) ) || ! defined( 'HODIMA_ADMIN_UI_HANDLE' ) ) {
+		return;
+	}
+
+	wp_add_inline_style( HODIMA_ADMIN_UI_HANDLE, '
+.hodima-torob-page .hodima-torob__stats { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-inline-end: auto; }
+.hodima-torob-page .hodima-torob__more > summary { cursor: pointer; color: var(--hd-primary); font-weight: 700; min-block-size: 2.75rem; display: flex; align-items: center; }
+.hodima-torob-page .hodima-torob__more > summary:focus-visible { outline: 2px solid var(--hd-ok); outline-offset: 2px; }
+.hodima-torob-page .hodima-torob__ok { margin: 0; color: var(--hd-muted); }
+.hodima-torob-page .hodima-torob__ok span { color: var(--hd-ok); font-weight: 700; margin-inline-end: 0.25rem; }
+' );
+}, 20 );
+
 /** ذخیره تنظیم‌ها (admin-post). */
 add_action( 'admin_post_hodima_seo_torob_save', static function (): void {
 
@@ -151,28 +168,30 @@ function hodima_seo_torob_render_page(): void {
 					<div class="hd-field">
 						<label class="hd-field__label" for="hodima-torob-title">شکل نام در ترب</label>
 						<input type="text" id="hodima-torob-title" name="torob_title" value="<?php echo esc_attr( $settings['title'] ); ?>" maxlength="200">
-						<p class="hd-field__help">وقتی ترب «مبلغ حداقل سفارش» را می‌گیرد. {نام} = نام محصول، {تعداد} = ردیف «تعداد» جدول مشخصات (اگر نبود: مبلغ حداقل سفارش تقسیم بر قیمت تک)، {واحد} = واحد نوشته‌شده در جدول یا «عدد». هر محصول را در «ویرایش محصول ← داده‌های محصول ← ترب» می‌توان جدا تنظیم کرد.</p>
+							<details class="hodima-torob__more">
+								<summary>راهنمای {نام} {تعداد} {واحد}</summary>
+							<p class="hd-field__help">وقتی ترب «مبلغ حداقل سفارش» را می‌گیرد. {نام} = نام محصول، {تعداد} = ردیف «تعداد» جدول مشخصات (اگر نبود: مبلغ حداقل سفارش تقسیم بر قیمت تک)، {واحد} = واحد نوشته‌شده در جدول یا «عدد». هر محصول را در «ویرایش محصول ← داده‌های محصول ← ترب» می‌توان جدا تنظیم کرد.</p>
+							</details>
 					</div>
 				</div>
 			</section>
 
 			<div class="hd-actions">
+				<span class="hodima-torob__stats">
+					<span class="hd-pill hd-pill--info">با حداقل سفارش یا نام دلخواه: <?php echo esc_html( number_format_i18n( $report['total'] ) ); ?></span>
+					<?php foreach ( [ 'table', 'cart', 'manual', 'custom' ] as $key ) : ?>
+						<?php if ( ! empty( $counts[ $key ] ) ) : ?>
+							<span class="hd-pill hd-pill--info"><?php echo esc_html( $labels[ $key ] . ': ' . number_format_i18n( (int) $counts[ $key ] ) ); ?></span>
+						<?php endif; ?>
+					<?php endforeach; ?>
+					<span class="hd-pill <?php echo esc_attr( $counts['warning'] ? 'hd-pill--warn' : 'hd-pill--ok' ); ?>">نیاز به بررسی: <?php echo esc_html( number_format_i18n( (int) $counts['warning'] ) ); ?></span>
+				</span>
 				<?php if ( $torob_on ) : ?>
 					<a class="button" href="<?php echo esc_url( $preview ); ?>">پیش‌نمایش محصولات در افزونه ترب</a>
 				<?php endif; ?>
 				<button type="submit" class="button button-primary">ذخیره تنظیم‌ها</button>
 			</div>
 		</form>
-
-		<div class="hd-grid hd-grid--stats">
-			<div class="hd-stat"><span class="hd-stat__label">محصول با حداقل سفارش یا نام دلخواه</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( $report['total'] ) ); ?></span></div>
-			<?php foreach ( [ 'table', 'cart', 'manual', 'custom' ] as $key ) : ?>
-				<?php if ( ! empty( $counts[ $key ] ) ) : ?>
-					<div class="hd-stat"><span class="hd-stat__label"><?php echo esc_html( 'تعداد ' . $labels[ $key ] ); ?></span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( (int) $counts[ $key ] ) ); ?></span></div>
-				<?php endif; ?>
-			<?php endforeach; ?>
-			<div class="hd-stat"><span class="hd-stat__label">نیاز به بررسی</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( (int) $counts['warning'] ) ); ?></span></div>
-		</div>
 
 		<?php if ( 'min_order' !== $report['mode'] ) : ?>
 			<div class="hd-callout">
@@ -208,15 +227,19 @@ function hodima_seo_torob_render_page(): void {
 				<span class="dashicons dashicons-warning" aria-hidden="true"></span>
 				<h2 class="hd-card__title">نیاز به بررسی</h2>
 				<span class="hd-pill <?php echo esc_attr( $counts['warning'] ? 'hd-pill--warn' : 'hd-pill--ok' ); ?>"><?php echo esc_html( number_format_i18n( (int) $counts['warning'] ) ); ?> محصول</span>
-				<p class="hd-card__desc">
+			</div>
+
+			<details class="hodima-torob__more">
+				<summary>این بخش چه می‌گوید؟</summary>
+				<p class="hd-field__help">
 					تعداد این محصولات با مبلغ حداقل سفارش نمی‌خواند، پس نام یا قیمتی که ترب می‌بیند احتمالا غلط است.
 					«اختلاف جزئی» معمولا اشتباه تایپی در مبلغ حداقل سفارش است؛ «چند برابر» معمولا یعنی عدد ردیف «تعداد» جدول با حداقل سفارش واقعی فرق دارد.
 					عدد جدول یا مبلغ حداقل سفارش را درست کنید، یا در تب «ترب» همان محصول تعداد دستی بدهید.
 				</p>
-			</div>
+			</details>
 
 			<?php if ( ! $report['issues'] ) : ?>
-				<p class="hd-empty"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>موردی نیست؛ تعداد همه محصولات با مبلغ حداقل سفارش می‌خواند.</p>
+					<p class="hodima-torob__ok"><span aria-hidden="true">✓</span> موردی برای بررسی نیست؛ تعداد همه محصولات با مبلغ حداقل سفارش می‌خواند.</p>
 			<?php else : ?>
 				<div class="hd-table-wrap">
 					<table class="widefat striped">
