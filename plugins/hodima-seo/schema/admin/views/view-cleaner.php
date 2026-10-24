@@ -48,79 +48,89 @@ hodima_view_header(
     'dashicons-shield'
 );
 
-// گزینه‌های «فعال / غیرفعال» هر سلکت (قبلا با ایموجی تیک و ضربدر)
-$hodima_yes_no = static function ( string $name, string $value, bool $recommend_yes = true, string $id = '' ): void {
-    printf( '<select name="%1$s"%2$s>', esc_attr( $name ), '' !== $id ? ' id="' . esc_attr( $id ) . '"' : '' );
-    $options = $recommend_yes
-        ? [ 'yes' => 'فعال (پیشنهادی)', 'no' => 'غیرفعال' ]
-        : [ 'no' => 'غیرفعال (پیشنهادی)', 'yes' => 'فعال' ];
-    foreach ( $options as $key => $label ) {
-        printf( '<option value="%1$s"%2$s>%3$s</option>', esc_attr( $key ), selected( $value, $key, false ), esc_html( $label ) );
-    }
-    echo '</select>';
+// نوار وضعیت: چند حفاظت اصلی (ووکامرس و hentry) روشن است
+$protections_on = ( 'yes' === $cleaner_woo ? 1 : 0 ) + ( 'yes' === $cleaner_hentry ? 1 : 0 );
+$all_on         = 2 === $protections_on;
+
+/**
+ * یک سطر کلید: hidden «no» + چک‌باکس «yes» (همان مقدارهای yes/no گزینه‌های قبلی).
+ * عنوان همان label کلید است تا نام قابل‌خواندن برای صفحه‌خوان داشته باشد (قبلا select بی‌نام بود).
+ */
+$hodima_switch_row = static function ( string $name, bool $on, string $icon, string $title, string $desc, bool $recommended = false ): void {
+    ?>
+    <div class="hs-opt">
+        <?php echo hodima_admin_icon( $icon, 'hs-opt__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+        <div class="hs-opt__text">
+            <label class="hs-opt__title" for="<?php echo esc_attr( $name ); ?>"><?php echo esc_html( $title ); ?></label>
+            <?php if ( $recommended ) : ?><span class="hd-pill hs-opt__tag">پیشنهادی</span><?php endif; ?>
+            <p class="hs-opt__desc"><?php echo esc_html( $desc ); ?></p>
+        </div>
+        <input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="no">
+        <input type="checkbox" class="hd-switch" id="<?php echo esc_attr( $name ); ?>" name="<?php echo esc_attr( $name ); ?>" value="yes" role="switch" <?php checked( $on ); ?>>
+    </div>
+    <?php
 };
 ?>
 
 <?php echo $notice_msg; ?>
 
-<div class="hd-callout">
-    <?php echo hodima_admin_icon( 'dashicons-shield-alt' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-    <div>
-        <strong>دیوار آتش اسکیما</strong>
-        <p>همه اسکیماهای سایت از قالب و افزونه‌های هدیما در یک گراف واحد می‌آیند. گزینه‌های زیر اسکیمای تکراری ووکامرس و نشانه‌گذاری قدیمی <code>hentry</code> را حذف می‌کنند تا فقط گراف دانش یکپارچه سایت به گوگل معرفی شود.</p>
+<section class="hs-status<?php echo $all_on ? '' : ' is-warn'; ?>" aria-label="وضعیت پاکسازی اسکیما">
+    <?php echo hodima_admin_icon( 'dashicons-shield-alt', 'hs-status__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+    <div class="hs-status__body">
+        <h2 class="hs-status__title"><?php echo esc_html( $all_on ? 'دیوار آتش اسکیما کامل فعال است' : sprintf( '%s از ۲ حفاظت روشن است', number_format_i18n( $protections_on ) ) ); ?></h2>
+        <p class="hs-status__text">همه اسکیماهای سایت از قالب و افزونه‌های هدیما در یک گراف واحد می‌آیند؛ این گزینه‌ها اسکیمای تکراری را حذف می‌کنند تا فقط گراف یکپارچه به گوگل معرفی شود.</p>
     </div>
-</div>
+    <span class="hd-pill <?php echo $all_on ? 'hd-pill--ok' : 'hd-pill--warn'; ?>"><?php echo esc_html( $all_on ? 'همه روشن' : 'پیشنهاد: روشن کنید' ); ?></span>
+</section>
 
-<form method="post" action="" class="hd-card">
+<form method="post" action="">
     <?php wp_nonce_field( 'hodima_schema_cleaner_nonce' ); ?>
-
-    <table class="form-table" role="presentation">
-        <tr>
-            <th scope="row">حذف اسکیماهای پیش‌فرض ووکامرس</th>
-            <td>
-                <?php $hodima_yes_no( 'hodima_cleaner_woo', (string) $cleaner_woo ); ?>
-                <p class="description">غیرفعال‌سازی اسکیماهای پایه WooCommerce برای اولویت دادن به اسکیمای اختصاصی محصولات.</p>
-            </td>
-        </tr>
-
-        <tr>
-            <th scope="row">حذف کلاس hentry قالب</th>
-            <td>
-                <?php $hodima_yes_no( 'hodima_cleaner_hentry', (string) $cleaner_hentry ); ?>
-                <p class="description">حذف کلاس <code>hentry</code> از HTML برای جلوگیری از خطاهای <code>Missing author</code> و <code>Missing updated</code> در سرچ کنسول.</p>
-            </td>
-        </tr>
-
-        <tr>
-            <th scope="row"><label for="hodima_schema_graph_debug">گراف واحد اسکیما</label></th>
-            <td>
-                <p class="hd-text">
-                    همه اسکیماهای سایت (قالب و افزونه‌های هدیما) در <strong>یک</strong> تگ و یک <code>@graph</code> در انتهای صفحه چاپ می‌شوند — همیشه فعال است.
-                    نودهای هم‌شناسه (<code>@id</code> یکسان) <strong>ادغام</strong> می‌شوند، نه حذف؛ پس هیچ اسکیمایی به اشتباه دور ریخته نمی‌شود.
-                </p>
-                <?php $hodima_yes_no( 'hodima_schema_graph_debug', (string) $graph_debug, false, 'hodima_schema_graph_debug' ); ?>
-                <p class="description">
-                    «گزارش گراف برای مدیر»: وقتی فعال است و با حساب مدیر وارد شده‌اید، در سورس هر صفحه (کنار اسکیما) یک کامنت HTML می‌بینید: هر نود از کدام بخش آمده، کدام مقادیر تعارض داشتند و کدام ارجاع‌ها نود مقصد ندارند. بازدیدکنندگان و گوگل این گزارش را نمی‌بینند.
-                </p>
-            </td>
-        </tr>
-    </table>
-
-    <?php hodima_view_form_footer(); ?>
     <input type="hidden" name="hodima_save_schema_cleaner" value="1">
-</form>
 
-<?php if ( is_array( $rankmath_cleanup ) && ( (int) $rankmath_cleanup['meta'] + (int) $rankmath_cleanup['options'] + count( (array) $rankmath_cleanup['tables'] ) + (int) $rankmath_cleanup['cron'] ) > 0 ) : ?>
-    <div class="hd-callout hd-callout--success">
-        <?php echo hodima_admin_icon( 'dashicons-yes-alt' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-        <p>
-            داده‌های باقی‌مانده Rank Math یک بار خودکار پاک شد
-            (<?php echo esc_html( sprintf( '%s ردیف متا، %s گزینه، %s جدول، %s کار زمان‌بندی‌شده', number_format_i18n( (int) $rankmath_cleanup['meta'] ), number_format_i18n( (int) $rankmath_cleanup['options'] ), number_format_i18n( count( (array) $rankmath_cleanup['tables'] ) ), number_format_i18n( (int) $rankmath_cleanup['cron'] ) ) ); ?>).
-            <?php if ( (int) $rankmath_cleanup['primary'] > 0 ) : ?>
-                «دسته اصلی» <?php echo esc_html( number_format_i18n( (int) $rankmath_cleanup['primary'] ) ); ?> نوشته/محصول پیش از حذف منتقل شد و مسیر راهنما (بردکرامب) تغییری نکرد.
-            <?php endif; ?>
-        </p>
+    <section class="hd-card hs-card" aria-labelledby="hs-protections">
+        <h2 class="hd-section-title" id="hs-protections">حفاظت‌ها</h2>
+        <?php
+        $hodima_switch_row( 'hodima_cleaner_woo', 'yes' === $cleaner_woo, 'dashicons-cart', 'حذف اسکیماهای پیش‌فرض ووکامرس', 'اسکیمای اختصاصی محصولات اولویت دارد؛ اسکیمای پایه ووکامرس چاپ نمی‌شود.', true );
+        $hodima_switch_row( 'hodima_cleaner_hentry', 'yes' === $cleaner_hentry, 'dashicons-editor-code', 'حذف کلاس hentry قالب', 'جلوی خطاهای «Missing author» و «Missing updated» در سرچ کنسول را می‌گیرد.', true );
+        $hodima_switch_row( 'hodima_schema_graph_debug', 'yes' === $graph_debug, 'dashicons-visibility', 'گزارش گراف برای مدیر', 'کامنتی در سورس صفحه (فقط وقتی با حساب مدیر وارد شده‌اید) می‌گوید هر نود از کدام بخش آمده، کدام مقادیر تعارض داشتند و کدام ارجاع‌ها مقصد ندارند. بازدیدکننده و گوگل نمی‌بینند.' );
+        ?>
+        <details class="hs-more">
+            <summary>گراف واحد چطور کار می‌کند؟</summary>
+            <p>
+                همه اسکیماهای سایت (قالب و افزونه‌های هدیما) در <strong>یک</strong> تگ و یک <code>@graph</code> در انتهای صفحه چاپ می‌شوند و همیشه فعال است.
+                نودهای هم‌شناسه (<code>@id</code> یکسان) <strong>ادغام</strong> می‌شوند، نه حذف؛ پس هیچ اسکیمایی به اشتباه دور ریخته نمی‌شود.
+            </p>
+        </details>
+    </section>
+
+    <?php if ( is_array( $rankmath_cleanup ) && ( (int) $rankmath_cleanup['meta'] + (int) $rankmath_cleanup['options'] + count( (array) $rankmath_cleanup['tables'] ) + (int) $rankmath_cleanup['cron'] ) > 0 ) : ?>
+        <section class="hd-card hs-card" aria-labelledby="hs-rankmath">
+            <h2 class="hd-section-title" id="hs-rankmath">پاکسازی یک‌باره Rank Math (انجام شده)</h2>
+            <div class="hs-results">
+                <?php
+                foreach ( [
+                    [ 'ردیف متا', (int) $rankmath_cleanup['meta'] ],
+                    [ 'گزینه', (int) $rankmath_cleanup['options'] ],
+                    [ 'جدول', count( (array) $rankmath_cleanup['tables'] ) ],
+                    [ 'کار زمان‌بندی‌شده', (int) $rankmath_cleanup['cron'] ],
+                    [ '«دسته اصلی» منتقل شد', (int) $rankmath_cleanup['primary'] ],
+                ] as [ $label, $number ] ) {
+                    if ( $number > 0 || 'گزینه' === $label ) {
+                        printf( '<div><b>%1$s</b><span>%2$s</span></div>', esc_html( number_format_i18n( $number ) ), esc_html( $label ) );
+                    }
+                }
+                ?>
+            </div>
+            <p class="hs-results__note">
+                این پاکسازی یک بار خودکار انجام شد.
+                <?php if ( (int) $rankmath_cleanup['primary'] > 0 ) : ?>مسیر راهنما (بردکرامب) تغییری نکرد.<?php endif; ?>
+            </p>
+        </section>
+    <?php endif; ?>
+
+    <div class="hs-save">
+        <?php submit_button( 'ذخیره تنظیمات', 'primary', 'submit', false ); ?>
     </div>
-<?php endif; ?>
+</form>
 
 <?php hodima_view_footer(); ?>

@@ -92,3 +92,170 @@ body:not(.hodima-admin) .hodima-wrapper {
 		text-decoration: none;
 	}
 }
+
+
+/* ── صفحه «پاکسازی هوشمند اسکیما» (نوار وضعیت، سطرهای کلید، نتیجه Rank Math) ── */
+.hodima-wrapper {
+	& .hs-status {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem 0.875rem;
+		margin-block-end: 1rem;
+		padding: 0.875rem 1rem;
+		border: 1px solid var(--hd-border);
+		border-radius: var(--hd-radius);
+		background: var(--hd-surface);
+		box-shadow: var(--hd-shadow);
+
+		& > .hs-status__icon {
+			display: grid;
+			flex: none;
+			place-items: center;
+			inline-size: 2.5rem;
+			block-size: 2.5rem;
+			border-radius: 0.75rem;
+			background: var(--hd-ok);
+			color: #ffffff;
+
+			&.dashicons::before {
+				font-size: 1.25rem;
+			}
+		}
+
+		&.is-warn > .hs-status__icon {
+			background: var(--hd-warn);
+		}
+	}
+
+	& .hs-status__body {
+		flex: 1 1 16rem;
+		min-inline-size: 0;
+	}
+
+	& .hs-status__title {
+		margin: 0;
+		color: var(--hd-primary);
+		font-size: 1rem;
+		font-weight: 700;
+		line-height: 1.7;
+	}
+
+	& .hs-status__text {
+		margin: 0;
+		color: var(--hd-muted);
+		font-size: 0.8125rem;
+		line-height: 1.8;
+	}
+
+	& .hs-card {
+		margin-block-end: 1rem;
+	}
+
+	/* سطر کلید: آیکون، عنوان + توضیح، کلید */
+	& .hs-opt {
+		display: flex;
+		align-items: center;
+		gap: 0.875rem;
+		padding-block: 0.875rem;
+		border-block-end: 1px solid var(--hd-softer);
+
+		&:last-of-type {
+			border-block-end: 0;
+		}
+	}
+
+	& .hs-opt > .hs-opt__icon {
+		display: grid;
+		flex: none;
+		place-items: center;
+		inline-size: 2.25rem;
+		block-size: 2.25rem;
+		border-radius: 0.625rem;
+		background: var(--hd-soft);
+		color: var(--hd-primary);
+
+		&.dashicons::before {
+			font-size: 1.125rem;
+		}
+	}
+
+	& .hs-opt__text {
+		flex: 1;
+		min-inline-size: 0;
+	}
+
+	& .hs-opt__title {
+		color: var(--hd-text);
+		font-size: 0.875rem;
+		font-weight: 700;
+		line-height: 1.7;
+		cursor: pointer;
+	}
+
+	& .hs-opt__tag {
+		margin-inline-start: 0.5rem;
+	}
+
+	& .hs-opt__desc {
+		margin: 0.125rem 0 0;
+		color: var(--hd-muted);
+		font-size: 0.8125rem;
+		line-height: 1.8;
+	}
+
+	& .hs-more {
+		padding-block-start: 0.5rem;
+		color: var(--hd-muted);
+		font-size: 0.8125rem;
+		line-height: 1.9;
+
+		& summary {
+			min-block-size: 1.5rem;
+			color: var(--hd-primary);
+			font-weight: 600;
+			cursor: pointer;
+		}
+
+		& p {
+			margin: 0.25rem 0 0;
+		}
+	}
+
+	/* نتیجه پاکسازی Rank Math: عددهای جدا */
+	& .hs-results {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+		gap: 0.625rem;
+		margin-block-start: 0.5rem;
+
+		& > div {
+			display: flex;
+			flex-direction: column;
+			gap: 0.125rem;
+			padding: 0.625rem 0.75rem;
+			border: 1px solid var(--hd-border);
+			border-radius: var(--hd-radius-sm);
+		}
+
+		& b {
+			color: var(--hd-primary);
+			font-size: 1.25rem;
+		}
+
+		& span {
+			color: var(--hd-muted);
+			font-size: 0.75rem;
+		}
+	}
+
+	& .hs-results__note {
+		margin: 0.75rem 0 0;
+		color: var(--hd-muted);
+		font-size: 0.8125rem;
+	}
+
+	& .hs-save {
+		margin-block: 0.25rem 1rem;
+	}
+}
