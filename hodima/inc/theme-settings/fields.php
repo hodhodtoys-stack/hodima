@@ -65,10 +65,10 @@ function hodima_settings_fields(): array {
 		'header_search'        => [ 'panel' => 'header_main', 'type' => 'toggle', 'label' => 'جستجو در هدر', 'default' => true, 'help' => 'کادر جستجوی محصولات و مقاله‌ها.' ],
 
 		// ── فوتر ────────────────────────────────────────────────────
-		'about_title'      => [ 'panel' => 'footer_about', 'type' => 'text', 'label' => 'عنوان ستون', 'default' => 'درباره ما' ],
-		'about_text'       => [ 'panel' => 'footer_about', 'type' => 'textarea', 'label' => 'متن', 'default' => '' ],
-		'guide_title'      => [ 'panel' => 'footer_guide', 'type' => 'text', 'label' => 'عنوان ستون', 'default' => 'راهنمای خرید' ],
-		'guide_text'       => [ 'panel' => 'footer_guide', 'type' => 'textarea', 'label' => 'متن', 'default' => '', 'help' => 'آدرس تب «اطلاعات تماس» زیر همین متن نمایش داده می‌شود.' ],
+		'about_title'      => [ 'panel' => 'footer_about', 'type' => 'text', 'label' => 'عنوان ستون «درباره ما»', 'default' => 'درباره ما' ],
+		'guide_title'      => [ 'panel' => 'footer_about', 'type' => 'text', 'label' => 'عنوان ستون «راهنمای خرید»', 'default' => 'راهنمای خرید' ],
+		'about_text'       => [ 'panel' => 'footer_about', 'type' => 'textarea', 'wide' => false, 'label' => 'متن «درباره ما»', 'default' => '' ],
+		'guide_text'       => [ 'panel' => 'footer_about', 'type' => 'textarea', 'wide' => false, 'label' => 'متن «راهنمای خرید»', 'default' => '', 'help' => 'آدرس تب «اطلاعات تماس» زیر همین متن نمایش داده می‌شود.' ],
 		'consult_title'    => [ 'panel' => 'footer_consult', 'type' => 'text', 'label' => 'عنوان ستون فرم مشاوره', 'default' => 'مشاوره خرید' ],
 		'copyright'        => [ 'panel' => 'footer_consult', 'type' => 'text', 'label' => 'متن کپی‌رایت (پایین فوتر)', 'default' => '', 'help' => 'اگر خالی بماند نام سایت نمایش داده می‌شود.' ],
 		'trust_title'      => [ 'panel' => 'footer_trust', 'type' => 'text', 'label' => 'عنوان ستون', 'default' => 'نماد اعتماد' ],
@@ -101,7 +101,7 @@ function hodima_settings_fields(): array {
 		'product_reviews_title_size'        => [ 'panel' => 'product_reviews', 'type' => 'number', 'label' => 'اندازه عنوان دسکتاپ (پیکسل)', 'default' => 24, 'min' => 12, 'max' => 48, 'step' => 0.1 ],
 		'product_reviews_title_size_mobile' => [ 'panel' => 'product_reviews', 'type' => 'number', 'label' => 'اندازه عنوان موبایل (پیکسل)', 'default' => 24, 'min' => 12, 'max' => 48, 'step' => 0.1 ],
 		// رنگ ستاره‌های امتیاز (3.9.2): پیش‌فرض = رنگ فعلی؛ فقط مقدار تغییرکرده چاپ می‌شود (inc/woocommerce/product-page.php)
-		'product_star_color'       => [ 'panel' => 'product_stars', 'type' => 'color', 'label' => 'رنگ ستاره‌ها', 'default' => '#607bbd', 'help' => 'زیر عنوان محصول، هر نظر، خلاصه امتیاز، فرم نظر و کارت محصولات (فروشگاه، دسته‌ها، محصولات پیشنهادی). پیش‌فرض: صفحه محصول رنگ دوم پالت، کارت‌ها رنگ اصلی. رنگ خیلی روشن روی زمینه سفید دیده نمی‌شود.', 'help_visible' => true ],
+		'product_star_color'       => [ 'panel' => 'product_price_feed', 'type' => 'color', 'label' => 'رنگ ستاره‌ها', 'default' => '#607bbd', 'help' => 'زیر عنوان محصول، هر نظر، خلاصه امتیاز، فرم نظر و کارت محصولات (فروشگاه، دسته‌ها، محصولات پیشنهادی). پیش‌فرض: صفحه محصول رنگ دوم پالت، کارت‌ها رنگ اصلی. رنگ خیلی روشن روی زمینه سفید دیده نمی‌شود.', 'help_visible' => true ],
 		// نمایش نظرات محصول (3.9.1)
 		'product_reviews_summary'  => [ 'panel' => 'product_reviews_display', 'type' => 'toggle', 'label' => 'خلاصه امتیازها', 'default' => true, 'help' => 'میانگین امتیاز، ستاره‌ها و تعداد نظر در یک ردیف بالای نظرها. فقط وقتی دست‌کم یک نظر امتیازدار هست.' ],
 		'product_reviews_verified' => [ 'panel' => 'product_reviews_display', 'type' => 'toggle', 'label' => 'نشان «خریدار این محصول»', 'default' => true, 'help' => 'کنار نام کسی که این محصول را واقعا از سایت خریده (تشخیص با ووکامرس). خاموش: همان رفتار ووکامرس (ووکامرس ← تنظیمات ← محصولات).' ],
@@ -130,20 +130,20 @@ function hodima_settings_fields(): array {
 		'blog_meta_category'   => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'دسته مقاله (لینک)', 'default' => true, 'help' => 'دسته اصلی مقاله (همان دسته مسیر راهنما) با لینک به صفحه دسته.' ],
 		'blog_meta_author'     => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'نویسنده', 'default' => false ],
 		// امکانات صفحه مقاله (3.3.6)
-		'blog_toc'             => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'فهرست مطالب', 'default' => true, 'help' => 'از تیترهای H2 و H3 متن مقاله، بالای متن (دست‌کم سه تیتر). روی لینک‌ها کلیک کنید تا به بخش بروید.' ],
-		'blog_progress'        => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'نوار پیشرفت مطالعه', 'default' => true, 'help' => 'خط باریک بالای صفحه که با اسکرول در متن مقاله پر می‌شود.' ],
-		'blog_tags'            => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'برچسب‌های مقاله', 'default' => true, 'help' => 'زیر متن مقاله، با لینک به صفحه هر برچسب.' ],
-		'blog_share'           => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'اشتراک‌گذاری', 'default' => true, 'help' => 'کپی لینک، تلگرام و واتساپ.' ],
-		'blog_author_box'      => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'کادر نویسنده', 'default' => true, 'help' => 'فقط وقتی نویسنده در پروفایلش «معرفی» نوشته باشد (کاربران ← پروفایل).' ],
-		'blog_prev_next'       => [ 'panel' => 'blog_post_extra', 'type' => 'toggle', 'label' => 'مقاله قبلی و بعدی', 'default' => true, 'help' => 'پایین مقاله؛ اول از همان دسته، اگر نبود از کل وبلاگ.' ],
+		'blog_toc'             => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'فهرست مطالب', 'default' => true, 'help' => 'از تیترهای H2 و H3 متن مقاله، بالای متن (دست‌کم سه تیتر). روی لینک‌ها کلیک کنید تا به بخش بروید.' ],
+		'blog_progress'        => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'نوار پیشرفت مطالعه', 'default' => true, 'help' => 'خط باریک بالای صفحه که با اسکرول در متن مقاله پر می‌شود.' ],
+		'blog_tags'            => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'برچسب‌های مقاله', 'default' => true, 'help' => 'زیر متن مقاله، با لینک به صفحه هر برچسب.' ],
+		'blog_share'           => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'اشتراک‌گذاری', 'default' => true, 'help' => 'کپی لینک، تلگرام و واتساپ.' ],
+		'blog_author_box'      => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'کادر نویسنده', 'default' => true, 'help' => 'فقط وقتی نویسنده در پروفایلش «معرفی» نوشته باشد (کاربران ← پروفایل).' ],
+		'blog_prev_next'       => [ 'panel' => 'blog_post_meta', 'type' => 'toggle', 'label' => 'مقاله قبلی و بعدی', 'default' => true, 'help' => 'پایین مقاله؛ اول از همان دسته، اگر نبود از کل وبلاگ.' ],
 		'blog_content_collapse' => [ 'panel' => 'blog_post_content', 'type' => 'toggle', 'label' => 'متن بلند مقاله جمع شود («نمایش بیشتر»)', 'default' => true, 'wide' => true, 'help' => 'به افزونه Hodima Media نیاز دارد. خاموش: کل متن یک‌جا نمایش داده می‌شود.' ],
 		'blog_content_height'  => [ 'panel' => 'blog_post_content', 'type' => 'number', 'label' => 'ارتفاع متن جمع‌شده (پیکسل)', 'default' => 400, 'min' => 200, 'max' => 1500 ],
 		// دیدگاه‌های مقاله و برگه (3.9.1)
 		'blog_comments_avatars'  => [ 'panel' => 'blog_comments', 'type' => 'toggle', 'label' => 'تصویر پروفایل کنار دیدگاه‌ها', 'default' => true, 'wide' => true, 'help' => 'تصویر Gravatar هر نویسنده دیدگاه (اگر در «تنظیمات ← گفت‌وگو» نمایش آواتار روشن باشد). خاموش: صفحه سبک‌تر.' ],
 		'blog_comments_visible'  => [ 'panel' => 'blog_comments', 'type' => 'number', 'label' => 'تعداد دیدگاه پیش از «نمایش همه»', 'default' => 3, 'min' => 1, 'max' => 20, 'help' => 'در مقاله‌ها و برگه‌ها. بقیه با دکمه «نمایش همه دیدگاه‌ها» باز می‌شوند؛ فرم همیشه دیده می‌شود.' ],
-		'blog_related_title'   => [ 'panel' => 'blog_related', 'type' => 'text', 'label' => 'عنوان', 'default' => 'مقالات مرتبط' ],
-		'blog_related_limit'   => [ 'panel' => 'blog_related', 'type' => 'number', 'label' => 'تعداد', 'default' => 4, 'min' => 0, 'max' => 12, 'help' => '۰ = بخش نمایش داده نشود.' ],
-		'blog_related_source'  => [ 'panel' => 'blog_related', 'type' => 'select', 'label' => 'کدام مقاله‌ها', 'default' => 'category', 'options' => [ 'category' => 'هم‌دسته (آخرین مقاله‌های همان دسته)', 'cluster' => 'هم‌خوشه (خوشه موضوعی افزونه سئو)، و اگر کم بود هم‌دسته' ] ],
+		'blog_related_title'   => [ 'panel' => 'blog_comments', 'type' => 'text', 'label' => 'عنوان', 'default' => 'مقالات مرتبط' ],
+		'blog_related_limit'   => [ 'panel' => 'blog_comments', 'type' => 'number', 'label' => 'تعداد', 'default' => 4, 'min' => 0, 'max' => 12, 'help' => '۰ = بخش نمایش داده نشود.' ],
+		'blog_related_source'  => [ 'panel' => 'blog_comments', 'type' => 'select', 'label' => 'کدام مقاله‌ها', 'default' => 'category', 'options' => [ 'category' => 'هم‌دسته (آخرین مقاله‌های همان دسته)', 'cluster' => 'هم‌خوشه (خوشه موضوعی افزونه سئو)، و اگر کم بود هم‌دسته' ] ],
 
 		// ── صفحه ۴۰۴ (بازسازی قالب، مرحله ۴؛ قبلا ثابت در 404.php) ──
 		'notfound_title'       => [ 'panel' => 'notfound_main', 'type' => 'text', 'label' => 'عنوان', 'default' => 'صفحه مورد نظر پیدا نشد!' ],

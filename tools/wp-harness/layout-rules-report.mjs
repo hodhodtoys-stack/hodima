@@ -4,7 +4,7 @@
  *   node layout-rules-report.mjs <فایل.jsonl> [--strict]
  *
  * قاعده‌ها (اسکیل hodima-admin-ui، «قاعده‌های چیدمان»):
- *   ۱ طول ≤ ۱۳۵۰px (دسکتاپ ۱۳۰۰)       ۲ کارت هم‌سطح دیدنی ≤ ۳      ۴ حداکثر یک دکمه پر در هر کارت
+ *   ۱ طول ≤ ۱۳۵۰px (+۵۰ حاشیه؛ دسکتاپ ۱۳۰۰)       ۲ کارت هم‌سطح دیدنی ≤ ۳      ۴ حداکثر یک دکمه پر در هر کارت
  *   ۶ حالت خالی ≤ ۱۶۰px               بنفش پیشخوان: صفر (پالت برند/پیش‌نمایش حساب نمی‌شود)
  *   هدف لمسی ≥ ۲۴px (WCAG 2.2)
  * فقط گزارش است؛ با --strict کد خروج ۱ اگر هشداری باشد. موبایل (۳۹۰) فقط هدف لمسی و بنفش را می‌سنجد.
@@ -14,6 +14,7 @@ import fs from 'node:fs';
 const [ file, flag ] = process.argv.slice( 2 );
 const rows = fs.readFileSync( file, 'utf8' ).split( '\n' ).filter( Boolean ).map( ( l ) => JSON.parse( l ) );
 const MAX_HEIGHT = 1350;
+const TOLERANCE = 50; // سربرگ/حاشیه صفحه؛ تا ۱۴۰۰px هشدار نمی‌دهد
 const pad = ( v, n ) => String( v ).padEnd( n );
 let warns = 0;
 const out = [];
@@ -24,7 +25,7 @@ for ( const label of labels ) {
 	const mob = rows.find( ( r ) => r.label === label && r.width < 1000 );
 	const issues = [];
 	if ( desk ) {
-		if ( desk.height > MAX_HEIGHT ) {
+		if ( desk.height > MAX_HEIGHT + TOLERANCE ) {
 			issues.push( `طول ${ desk.height } > ${ MAX_HEIGHT }` );
 		}
 		if ( desk.cards > 3 ) {

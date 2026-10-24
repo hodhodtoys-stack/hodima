@@ -458,7 +458,7 @@ add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
 		$config = [
 			'ajax'     => admin_url( 'admin-ajax.php' ),
 			'nonce'    => wp_create_nonce( 'hodima_ccss' ),
-			'settings' => function_exists( 'hodima_settings_url' ) ? hodima_settings_url( [ 'tab' => 'pagespeed' ] ) : '',
+			'settings' => function_exists( 'hodima_settings_url' ) ? hodima_settings_url( [ 'tab' => 'ccss' ] ) : '',
 			'recheck'  => 600, // ثانیه؛ حداقل فاصله دو بررسی «چیزی لازم نبود» در یک مرورگر
 		];
 		wp_add_inline_script( 'hodima-critical-css-admin', 'window.hodimaCcssAuto=' . wp_json_encode( $config ) . ';', 'before' );

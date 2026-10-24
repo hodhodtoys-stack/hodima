@@ -25,7 +25,7 @@ if [ ${#pages[@]} -eq 0 ]; then
 		hodima-schema-blog hodima-schema-category hodima-schema-product hodima-schema-image hodima-schema-page hodima-sitemap hodima-podcast
 		hodima-schema-tables hodima-llms hodima-schema-cleaner hodima-router hodima-related-links hodima-torob hodima-discover hodima-redirects
 		hodima-tc-orphans hodima-tc-map hodima-tc-health hodima-tc-settings hodima-core hodima-slider )
-	for t in brand typography layout extras header footer home shop notfound contact social analytics speed pagespeed code backup product product_more blog blog_posts; do
+	for t in brand typography headings layout extras header footer home shop notfound contact social analytics speed pagespeed ccss code backup product product_more blog blog_posts; do
 		pages+=( "hodima-settings?tab=$t" )
 	done
 fi

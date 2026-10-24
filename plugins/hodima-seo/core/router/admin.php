@@ -86,6 +86,8 @@ function hodima_router_admin_assets(): void {
 	wp_add_inline_style( HODIMA_ADMIN_UI_HANDLE, '
 .hodima-router .hodima-router__status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
 .hodima-router .hodima-router__bases { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; font-size: 0.875rem; }
+.hodima-router .hodima-router__sub { margin: 1rem 0 0.5rem; color: var(--hd-primary); font-size: 0.875rem; font-weight: 700; }
+.hodima-router .hodima-router__sub:first-of-type { margin-block-start: 0; }
 .hodima-router .hodima-router__ok { margin: 0; color: var(--hd-muted); }
 .hodima-router .hodima-router__ok span { color: var(--hd-ok); font-weight: 700; margin-inline-end: 0.25rem; }
 .hodima-router .hodima-router__urls { inline-size: 100%; }
@@ -325,7 +327,8 @@ function hodima_router_render_admin(): void {
 	</section>
 
 	<section class="hd-card">
-		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-category' ); // phpcs:ignore ?> آدرس کوتاه قدیمی زیردسته‌ها</h2>
+		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore ?> مشکل‌های آدرس</h2>
+		<h3 class="hodima-router__sub">آدرس کوتاه قدیمی زیردسته‌ها</h3>
 		<details class="hodima-router__more"><summary>این فهرست چه می‌کند؟</summary>
 		<p class="hd-text">آدرس اصلی زیردسته‌ها مسیر دسته‌های والد را دارد (مثل <code dir="ltr">/accessory/hair-clips/plumeria-hair-clips/</code>). اگر آدرس کوتاه همان دسته (<code dir="ltr">/plumeria-hair-clips/</code>) قبلا در گوگل بوده، باید با ۳۰۱ به آدرس اصلی برسد. این فهرست برای هر زیردسته همین را بررسی می‌کند، همان‌طور که بازدیدکننده می‌بیند.</p>
 		</details>
@@ -366,10 +369,7 @@ function hodima_router_render_admin(): void {
 				</details>
 			<?php endif; ?>
 		<?php endif; ?>
-	</section>
-
-	<section class="hd-card">
-		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore ?> آدرس‌های مشترک (نامک تکراری)</h2>
+		<h3 class="hodima-router__sub">آدرس‌های مشترک (نامک تکراری)</h3>
 		<?php if ( ! $conflicts ) : ?>
 			<p class="hodima-router__ok"><span aria-hidden="true">✓</span> هیچ دو صفحه‌ای آدرس یکسان ندارند.</p>
 		<?php else : ?>

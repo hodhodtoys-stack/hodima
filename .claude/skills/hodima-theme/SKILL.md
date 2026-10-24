@@ -121,6 +121,7 @@ description: قانون‌های کد قالب هدیما (پوشه hodima/) —
 | `product` (صفحه محصول) | ✅ 3.9.8 (4.0.2: نظرات/Upsell به تب `product_more` رفت) |
 | `blog` (وبلاگ) | ✅ 3.9.9 (4.0.2: بخش‌های مقاله به تب `blog_posts` رفت) |
 | `blog_posts` `product_more` (تب‌های تازه) | ✅ 4.0.2 |
+| `headings` `ccss` (تب‌های تازه) | ✅ 4.0.5 (تیترها از تایپوگرافی، ویزارد CSS حیاتی از پیج اسپید جدا شد؛ فوتر/محصول/مقاله‌ها کادرها ادغام شد) |
 | `brand` `typography` `layout` `extras` `header` `footer` `home` `shop` `notfound` `contact` `social` `analytics` `speed` `pagespeed` `code` `backup` | ✅ 4.0.3 |
 
 ## تست ظاهر
