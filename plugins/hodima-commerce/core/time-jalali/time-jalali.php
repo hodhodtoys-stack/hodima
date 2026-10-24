@@ -53,6 +53,7 @@ final class Hodima_Localizer_WC {
 			// وردپرس برای صفحه‌ای که زیر «تنظیمات» نیست پیش از admin_init «اجازه دسترسی ندارید» می‌دهد؛
 			// این هوک درست پیش از همان پیام اجرا می‌شود
 			add_action( 'admin_page_access_denied', [ $this, 'redirect_old_page' ] );
+			add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_page_assets' ] );
 		}
 	}
 
@@ -142,6 +143,22 @@ final class Hodima_Localizer_WC {
 		}
 	}
 
+	/** CSS صفحه تنظیمات (نوار وضعیت و سطر کلیدها)؛ فقط روی همین صفحه، بدون وابستگی به Core تازه. */
+	public function enqueue_page_assets(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تشخیص صفحه
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( self::PAGE !== $page ) {
+			return;
+		}
+		$file = __DIR__ . '/loc-admin.css';
+		wp_enqueue_style(
+			'hodima-loc-admin',
+			HODIMA_COMMERCE_URL . '/core/time-jalali/loc-admin.css',
+			wp_style_is( 'hodima-admin-ui', 'registered' ) ? [ 'hodima-admin-ui' ] : [],
+			is_file( $file ) ? (string) filemtime( $file ) : HODIMA_COMMERCE_VERSION
+		);
+	}
+
 	/** صفحه تنظیمات با سیستم طراحی مشترک «ابزارهای هدیما». */
 	public function render_admin_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -168,18 +185,32 @@ final class Hodima_Localizer_WC {
 			<form method="post" action="options.php" class="hd-body">
 				<?php settings_fields( self::GROUP ); ?>
 
-				<div class="hd-grid">
+				<?php
+				$total   = count( self::SWITCHES );
+				$enabled = count( array_filter( array_keys( self::SWITCHES ), static fn( string $o ): bool => self::enabled( $o ) ) );
+				$all_on  = $enabled === $total;
+				?>
+				<section class="hl-status<?php echo $all_on ? '' : ' is-warn'; ?>" aria-label="خلاصه بخش‌ها">
+					<?php echo hodima_admin_icon( $all_on ? 'dashicons-yes-alt' : 'dashicons-info', 'hl-status__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی hodima_admin_icon از پیش امن است ?>
+					<div class="hl-status__body">
+						<h2 class="hl-status__title"><?php echo esc_html( $all_on ? sprintf( 'همه %s بخش روشن‌اند', number_format_i18n( $total ) ) : sprintf( '%1$s از %2$s بخش روشن است', number_format_i18n( $enabled ), number_format_i18n( $total ) ) ); ?></h2>
+						<p class="hl-status__text">هر بخش جدا روشن و خاموش می‌شود؛ تغییر با دکمه ذخیره اعمال می‌شود.</p>
+					</div>
+					<span class="hd-pill <?php echo $all_on ? 'hd-pill--ok' : 'hd-pill--warn'; ?>"><?php echo esc_html( $all_on ? 'همه روشن' : 'برخی خاموش' ); ?></span>
+				</section>
+
+				<section class="hl-list" aria-label="بخش‌های بومی‌سازی">
 					<?php foreach ( self::SWITCHES as $option => [ $title, $desc, $icon ] ) : ?>
-						<section class="hd-card">
-							<header class="hd-card__head">
-								<?php echo hodima_admin_icon( $icon ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی hodima_admin_icon از پیش امن است ?>
-								<h2 class="hd-card__title" id="<?php echo esc_attr( $option ); ?>-title"><?php echo esc_html( $title ); ?></h2>
-								<input type="checkbox" class="hd-switch" role="switch" name="<?php echo esc_attr( $option ); ?>" value="yes" aria-labelledby="<?php echo esc_attr( $option ); ?>-title" <?php checked( self::enabled( $option ) ); ?> />
-							</header>
-							<p class="hd-text"><?php echo esc_html( $desc ); ?></p>
-						</section>
+						<div class="hl-item<?php echo self::enabled( $option ) ? '' : ' is-off'; ?>">
+							<?php echo hodima_admin_icon( $icon, 'hl-item__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی hodima_admin_icon از پیش امن است ?>
+							<div class="hl-item__text">
+								<h3 class="hl-item__title"><label for="<?php echo esc_attr( $option ); ?>"><?php echo esc_html( $title ); ?></label></h3>
+								<p class="hl-item__desc"><?php echo esc_html( $desc ); ?></p>
+							</div>
+							<input type="checkbox" class="hd-switch" role="switch" id="<?php echo esc_attr( $option ); ?>" name="<?php echo esc_attr( $option ); ?>" value="yes" <?php checked( self::enabled( $option ) ); ?> />
+						</div>
 					<?php endforeach; ?>
-				</div>
+				</section>
 
 				<div class="hd-actions">
 					<button type="submit" name="submit" class="button button-primary">ذخیره تنظیمات</button>

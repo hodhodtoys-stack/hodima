@@ -132,7 +132,27 @@ final class Admin {
             <form method="post" class="h-card">
                 <?php wp_nonce_field('h_save', 'h_nonce'); ?>
 
-                <section class="h-section">
+                <?php
+                // شمار اسلایدها روی تب‌ها (اسلایدر ۲ = مجموع چهار ستون)
+                $count_s2 = 0;
+                foreach ($s2_columns as $col_data) $count_s2 += count($col_data['items']);
+                $tab_defs = [
+                    'base' => [__('تنظیمات پایه', 'hodima'), null],
+                    's1'   => [__('اسلایدر 1', 'hodima'), count($itemsS1)],
+                    's2'   => [__('اسلایدر 2', 'hodima'), $count_s2],
+                    's3'   => [__('اسلایدر 3', 'hodima'), count($itemsS3)],
+                ];
+                ?>
+                <div class="h-tabs" role="tablist" aria-label="<?php esc_attr_e('بخش‌های اسلایدر', 'hodima'); ?>">
+                    <?php foreach ($tab_defs as $tab_id => [$tab_label, $tab_count]): ?>
+                        <button type="button" class="h-tab<?php echo 'base' === $tab_id ? ' is-active' : ''; ?>" role="tab" id="h-tab-<?php echo esc_attr($tab_id); ?>" aria-controls="h-panel-<?php echo esc_attr($tab_id); ?>" aria-selected="<?php echo 'base' === $tab_id ? 'true' : 'false'; ?>"<?php echo 'base' === $tab_id ? '' : ' tabindex="-1"'; ?>>
+                            <?php echo esc_html($tab_label); ?>
+                            <?php if (null !== $tab_count): ?><span class="h-tab__count"><?php echo esc_html(number_format_i18n($tab_count)); ?></span><?php endif; ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+
+                <section class="h-section h-tabpanel" role="tabpanel" id="h-panel-base" aria-labelledby="h-tab-base">
                     <h2 class="h-section-title"><?php esc_html_e('تنظیمات پایه و افکت‌ها', 'hodima'); ?></h2>
                     <div class="h-cache-field">
                         <label for="h-cache-time"><?php esc_html_e('زمان کش مرورگر (ساعت):', 'hodima'); ?></label>
@@ -145,7 +165,7 @@ final class Admin {
                             <div class="h-dim-row">
                                 <strong class="h-dim-header">
                                     <?php echo esc_html($label); ?>
-                                    <select name="h_settings[<?php echo esc_attr($k); ?>][effect]" class="h-effect-select">
+                                    <select name="h_settings[<?php echo esc_attr($k); ?>][effect]" class="h-effect-select" aria-label="<?php echo esc_attr(sprintf(__('افکت %s', 'hodima'), $label)); ?>">
                                         <option value="fade" <?php selected($curr_effect, 'fade'); ?>><?php esc_html_e('محو شدن (Fade)', 'hodima'); ?></option>
                                         <option value="slide" <?php selected($curr_effect, 'slide'); ?>><?php esc_html_e('لغزنده (Slide)', 'hodima'); ?></option>
                                         <option value="zoom" <?php selected($curr_effect, 'zoom'); ?>><?php esc_html_e('زوم (Zoom In)', 'hodima'); ?></option>
@@ -167,13 +187,13 @@ final class Admin {
                     </div>
                 </section>
 
-                <section class="h-section">
+                <section class="h-section h-tabpanel" role="tabpanel" id="h-panel-s1" aria-labelledby="h-tab-s1">
                     <h2 class="h-section-title"><?php esc_html_e('اسلایدر 1 : نمایش در فرانت', 'hodima'); ?><span class="h-shortcode-tag" dir="ltr">[hodima-slider1]</span></h2>
                     <div id="h-list-s1"><?php foreach ($itemsS1 as $i => $item) self::row($i, $item, 'hodima_slider1', true); ?></div>
                     <button type="button" class="h-btn h-btn-add" data-h-add data-list="h-list-s1" data-template="h-template-s1"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> <?php esc_html_e('افزودن اسلاید', 'hodima'); ?></button>
                 </section>
 
-                <section class="h-section">
+                <section class="h-section h-tabpanel" role="tabpanel" id="h-panel-s2" aria-labelledby="h-tab-s2">
                     <h2 class="h-section-title"><?php esc_html_e('اسلایدر 2 : نمایش در فرانت (دارای ۴ ستون)', 'hodima'); ?><span class="h-shortcode-tag" dir="ltr">[hodima-slider2]</span></h2>
                     
                     <?php foreach ($s2_columns as $col_id => $col_data): ?>
@@ -186,7 +206,7 @@ final class Admin {
                     <?php endforeach; ?>
                 </section>
 
-                <section class="h-section">
+                <section class="h-section h-tabpanel" role="tabpanel" id="h-panel-s3" aria-labelledby="h-tab-s3">
                     <h2 class="h-section-title"><?php esc_html_e('اسلایدر 3 : نمایش در فرانت', 'hodima'); ?><span class="h-shortcode-tag" dir="ltr">[hodima-slider3]</span></h2>
                     <div id="h-list-s3"><?php foreach ($itemsS3 as $i => $item) self::row($i, $item, 'hodima_slider3', true); ?></div>
                     <button type="button" class="h-btn h-btn-add" data-h-add data-list="h-list-s3" data-template="h-template-s3"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> <?php esc_html_e('افزودن اسلاید', 'hodima'); ?></button>

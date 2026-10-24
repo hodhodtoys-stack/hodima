@@ -71,10 +71,42 @@
         gap: 8px;
         align-items: center;
 
+        /* دکمه‌های یک‌دست با برند (قبلا آبی وردپرس)؛ اصلی = سرمه‌ای، بقیه = حاشیه‌دار */
         & .button {
             display: inline-flex;
             align-items: center;
             gap: 4px;
+            min-block-size: 36px;
+            padding-inline: 14px;
+            border-color: var(--hdt-third);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--hdt-primary, #25316a);
+            font-weight: 600;
+
+            &:hover,
+            &:focus-visible {
+                background: var(--hdt-soft);
+                color: var(--hdt-primary, #25316a);
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--hdt-secondary, #607bbd);
+                outline-offset: 2px;
+            }
+        }
+
+        & .button.button-primary {
+            border: 0;
+            background: linear-gradient(135deg, var(--hdt-primary, #25316a), var(--hdt-secondary, #607bbd));
+            color: #fff;
+            font-weight: 700;
+
+            &:hover,
+            &:focus-visible {
+                background: var(--hdt-primary, #25316a);
+                color: #fff;
+            }
         }
 
         & .dashicons {

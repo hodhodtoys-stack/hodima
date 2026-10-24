@@ -145,6 +145,42 @@
         renumberAll();
     }
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-    else init();
+
+    /* تب‌ها: بدون JS همه بخش‌ها پشت‌سرهم دیده می‌شوند (hidden را همین کد می‌گذارد) */
+    function initTabs() {
+        const tabs = [...document.querySelectorAll('.h-tabs .h-tab')];
+        if (!tabs.length) return;
+        const panel = (tab) => document.getElementById(tab.getAttribute('aria-controls'));
+        const select = (tab, focus) => {
+            tabs.forEach((item) => {
+                const on = item === tab;
+                item.classList.toggle('is-active', on);
+                item.setAttribute('aria-selected', String(on));
+                item.tabIndex = on ? 0 : -1;
+                panel(item).hidden = !on;
+            });
+            if (focus) tab.focus();
+        };
+        tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => select(tab, false));
+            tab.addEventListener('keydown', (e) => {
+                const step = { ArrowLeft: 1, ArrowRight: -1 }[e.key]; // راست‌به‌چپ
+                if (step) {
+                    e.preventDefault();
+                    select(tabs[(index + step + tabs.length) % tabs.length], true);
+                }
+            });
+        });
+        select(tabs[0], false);
+        // فیلد نامعتبر در تب پنهان: تبش را باز کن
+        document.addEventListener('invalid', (e) => {
+            const owner = e.target.closest('.h-tabpanel');
+            const tab = owner && tabs.find((item) => panel(item) === owner);
+            if (tab && owner.hidden) select(tab, false);
+        }, true);
+    }
+
+    const boot = () => { init(); initTabs(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
 })();
