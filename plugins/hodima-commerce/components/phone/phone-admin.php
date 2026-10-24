@@ -1,10 +1,10 @@
 <?php
 /**
- * پیشخوان لیدهای تلفنی: صفحه «شماره‌های تماس» (فهرست، جزئیات، کارهای گروهی، CSV) و نگهداری خودکار
+ * پیشخوان لیدهای تلفنی: صفحه «شماره‌های تماس» (فهرست، جزئیات، کارهای گروهی، CSV)
  * Path: components/phone/phone-admin.php
  *
  * به‌جای فهرست پیش‌فرض وردپرس (edit.php) یک صفحه اختصاصی با استاندارد پیشخوان هدیما (نوع «فهرست و جدول»):
- * خلاصه ۴ عددی ← فیلتر و جستجو ← جدول (در موبایل کارت) ← نگهداری خودکار. داده همان پست‌های
+ * خلاصه ۴ عددی ← نوار ابزار یک‌ردیفه (کار گروهی، نماها، جستجو، CSV) ← جدول (در موبایل کارت). داده همان پست‌های
  * `hodima_phone_lead` است (عنوان = شماره، متاها بدون تغییر)؛ edit.php و post.php این نوع به همین صفحه می‌روند.
  * اجزا از Core فعلی (hd-wrap، hd-stat، hd-card، hd-opt، hd-num، hd-table-wrap، hd-empty) و بقیه در phone-admin.css/js.
  * زیر PHPCS/PHPStan/ESLint/Stylelint بدون baseline است.
@@ -18,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 const HODIMA_PHONE_PAGE            = 'hodima-phone-leads';
 const HODIMA_PHONE_CAP             = 'edit_others_posts';
+/** فقط برای پاکسازی نسخه ۱.۳.۱ (نگهداری خودکار برداشته شد). */
 const HODIMA_PHONE_SETTINGS        = 'hodima_phone_settings';
 const HODIMA_PHONE_RETENTION_EVENT = 'hodima_phone_retention_event';
 
@@ -344,17 +345,11 @@ function hodima_phone_render_list(): void {
     }
     $query = new WP_Query( $args );
 
-    $export = wp_nonce_url( add_query_arg( [ 'export_hodima_phones' => 1 ], hodima_phone_page_url() ), 'hodima_export_csv' );
-    $csv    = current_user_can( 'manage_options' )
-        ? '<a class="button hd-leads__csv" href="' . esc_url( $export ) . '"><span class="dashicons dashicons-download" aria-hidden="true"></span> دانلود فایل CSV</a>'
-        : '';
-
     hodima_admin_header( [
         'title'       => 'شماره‌های تماس',
         'description' => 'کسانی که از فرم «دریافت مشاوره» فوتر سایت شماره گذاشته‌اند.',
         'icon'        => 'dashicons-phone',
         'badge'       => 'مشاوره و کاتالوگ',
-        'actions'     => $csv,
     ] );
 
     $stats = [
@@ -384,7 +379,13 @@ function hodima_phone_render_list(): void {
         $views['trash'] = [ 'زباله‌دان', $counts['trash'] ];
     }
 
-    echo '<div class="hd-leads__bar"><nav class="hd-leads__seg" aria-label="نمایش">';
+    // یک ردیف: کار گروهی ← نماها ← جستجو ← CSV (بدون فضای خالی؛ در عرض کم می‌شکند)
+    echo '<div class="hd-leads__toolbar">';
+    if ( $query->have_posts() ) {
+        hodima_phone_render_bulk( 'trash' === $state );
+    }
+
+    echo '<nav class="hd-leads__seg" aria-label="نمایش">';
     foreach ( $views as $key => [ $label, $count ] ) {
         printf(
             '<a class="hd-leads__seg-item%1$s" href="%2$s"%3$s>%4$s <span class="hd-leads__seg-count">%5$s</span></a>',
@@ -406,18 +407,18 @@ function hodima_phone_render_list(): void {
         <span class="dashicons dashicons-search" aria-hidden="true"></span>
         <input type="search" id="hd-leads-search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="جستجوی شماره…" inputmode="numeric" autocomplete="off">
     </form>
-    </div>
     <?php
+    if ( current_user_can( 'manage_options' ) ) {
+        $export = wp_nonce_url( add_query_arg( [ 'export_hodima_phones' => 1 ], hodima_phone_page_url() ), 'hodima_export_csv' );
+        echo '<a class="button hd-leads__csv" href="' . esc_url( $export ) . '"><span class="dashicons dashicons-download" aria-hidden="true"></span> دانلود فایل CSV</a>';
+    }
+    echo '</div>';
 
     if ( ! $query->have_posts() ) {
         hodima_phone_render_empty( $counts['total'] + $counts['trash'] > 0, $search, $state );
     } else {
         hodima_phone_render_table( $query, $state );
         hodima_phone_render_pager( $query, $state, $search, $paged );
-    }
-
-    if ( current_user_can( 'manage_options' ) ) {
-        hodima_phone_render_retention();
     }
     ?>
     <dialog class="hd-leads__dialog" id="hd-leads-dialog" aria-labelledby="hd-leads-dialog-title">
@@ -456,6 +457,26 @@ function hodima_phone_render_empty( bool $has_any, string $search, string $state
     echo '</div></div>';
 }
 
+/** کار گروهی؛ عنصرها بیرون از <form> جدول‌اند و با ویژگی form به آن وصل می‌شوند (تا در ردیف نوار ابزار بنشینند). */
+function hodima_phone_render_bulk( bool $trash ): void {
+    ?>
+    <div class="hd-leads__bulk">
+        <label class="screen-reader-text" for="hd-leads-bulk">کار گروهی روی شماره‌های انتخاب‌شده</label>
+        <select name="bulk_op" id="hd-leads-bulk" form="hd-leads-form">
+            <?php if ( $trash ) : ?>
+                <option value="restore">بازگردانی</option>
+                <option value="delete">حذف همیشگی</option>
+            <?php else : ?>
+                <option value="seen">علامت: دیده شد</option>
+                <option value="unseen">علامت: جدید</option>
+                <option value="trash">انتقال به زباله‌دان</option>
+            <?php endif; ?>
+        </select>
+        <button type="submit" class="button" name="op" value="bulk" form="hd-leads-form" data-hd-bulk-apply>اجرا</button>
+    </div>
+    <?php
+}
+
 function hodima_phone_render_table( WP_Query $query, string $state ): void {
     $back = hodima_phone_page_url( array_filter( [
         'state' => 'all' === $state ? '' : $state,
@@ -470,22 +491,6 @@ function hodima_phone_render_table( WP_Query $query, string $state ): void {
         <input type="hidden" name="action" value="hodima_phone_leads">
         <input type="hidden" name="back" value="<?php echo esc_url( $back ); ?>">
         <?php wp_nonce_field( 'hodima_phone_leads' ); ?>
-
-        <div class="hd-leads__bulk">
-            <label class="screen-reader-text" for="hd-leads-bulk">کار گروهی روی شماره‌های انتخاب‌شده</label>
-            <select name="bulk_op" id="hd-leads-bulk">
-                <?php if ( $trash ) : ?>
-                    <option value="restore">بازگردانی</option>
-                    <option value="delete">حذف همیشگی</option>
-                <?php else : ?>
-                    <option value="seen">علامت: دیده شد</option>
-                    <option value="unseen">علامت: جدید</option>
-                    <option value="trash">انتقال به زباله‌دان</option>
-                <?php endif; ?>
-            </select>
-            <button type="submit" class="button" name="op" value="bulk" data-hd-bulk-apply>اجرا</button>
-            <span class="hd-leads__selected" data-hd-selected></span>
-        </div>
 
         <div class="hd-table-wrap">
             <table class="hd-leads__table">
@@ -629,7 +634,7 @@ function hodima_phone_render_detail( int $lead_id ): void {
         <input type="hidden" name="action" value="hodima_phone_leads">
         <input type="hidden" name="back" value="<?php echo esc_url( $here ); ?>">
         <?php wp_nonce_field( 'hodima_phone_leads' ); ?>
-        <span class="hd-pill <?php echo $trashed ? 'hd-pill--error' : 'hd-pill--ok'; ?>"><?php echo $trashed ? 'در زباله‌دان' : 'دیده‌شده'; ?></span>
+        <span class="hd-pill<?php echo $trashed ? ' hd-pill--error' : ''; ?>"><?php echo $trashed ? 'در زباله‌دان' : 'دیده‌شده'; ?></span>
         <span class="hd-leads__bar-spacer"></span>
         <?php
         echo hodima_phone_icon_button( 'clipboard', 'کپی شماره ' . $phone, 'type="button" data-hd-copy="' . esc_attr( $phone ) . '"', '', 'کپی شماره' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape در سازنده
@@ -699,133 +704,18 @@ function hodima_phone_render_detail( int $lead_id ): void {
 }
 
 /* =====================================================================
- * نگهداری خودکار
- * ===================================================================== */
-
-/** ماه‌های نگهداری؛ ۰ = خاموش (شماره‌ها تا حذف دستی می‌مانند). */
-function hodima_phone_retention_months(): int {
-    $settings = get_option( HODIMA_PHONE_SETTINGS, [] );
-    $months   = is_array( $settings ) ? (int) ( $settings['retention_months'] ?? 0 ) : 0;
-    return max( 0, min( 120, $months ) );
-}
-
-function hodima_phone_render_retention(): void {
-    $months = hodima_phone_retention_months();
-    $on     = $months > 0;
-    ?>
-    <details class="hd-card hd-leads__ret"<?php echo $on ? ' open' : ''; ?>>
-        <summary>
-            <span class="hd-leads__ret-head">
-                <strong>نگهداری شماره‌ها</strong>
-                <span><?php echo $on ? esc_html( sprintf( 'شماره‌ای که %s ماه از آخرین درخواستش گذشته باشد خودکار پاک می‌شود.', hodima_phone_fa( $months ) ) ) : 'فعلا خاموش: شماره‌ها تا زمانی که خودتان پاک کنید می‌مانند.'; ?></span>
-            </span>
-            <span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
-        </summary>
-        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-            <input type="hidden" name="action" value="hodima_phone_retention">
-            <?php wp_nonce_field( 'hodima_phone_retention' ); ?>
-            <div class="hd-opt">
-                <div class="hd-opt__head">
-                    <span class="dashicons dashicons-trash hd-opt__icon" aria-hidden="true"></span>
-                    <label class="hd-opt__title" for="hodima-retention-switch">پاک کردن خودکار شماره‌های قدیمی</label>
-                    <input type="checkbox" class="hd-switch hd-opt__switch" id="hodima-retention-switch" role="switch" data-hd-opt-switch <?php checked( $on ); ?>>
-                </div>
-                <div class="hd-opt__body">
-                    <p class="hd-opt__desc">مدت از آخرین درخواست هر شماره حساب می‌شود. هر شب یک بار بررسی می‌شود و پاک‌شده‌ها برنمی‌گردند.</p>
-                    <div class="hd-num">
-                        <button type="button" class="hd-num__btn" data-hd-step="-1" aria-label="کم کردن" hidden>−</button>
-                        <input type="number" id="hodima-retention-months" name="retention_months" value="<?php echo esc_attr( (string) $months ); ?>" min="0" max="120" inputmode="numeric" aria-label="مدت نگهداری (ماه)" data-hd-opt-value data-hd-opt-default="12">
-                        <button type="button" class="hd-num__btn" data-hd-step="1" aria-label="زیاد کردن" hidden>+</button>
-                        <span class="hd-num__unit" aria-hidden="true">ماه</span>
-                    </div>
-                </div>
-            </div>
-            <p class="hd-leads__ret-note">با روشن بودن، متن پیشنهادی «سیاست حریم خصوصی» وردپرس هم مدت را می‌نویسد. صفر یعنی خاموش.</p>
-            <p class="hd-leads__ret-actions"><button type="submit" class="button button-primary">ذخیره</button></p>
-        </form>
-    </details>
-    <?php
-}
-
-add_action( 'admin_post_hodima_phone_retention', static function (): void {
-    check_admin_referer( 'hodima_phone_retention' );
-    if ( ! current_user_can( 'manage_options' ) ) {
-        wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
-    }
-
-    $months = max( 0, min( 120, absint( wp_unslash( $_POST['retention_months'] ?? 0 ) ) ) );
-    $saved  = get_option( HODIMA_PHONE_SETTINGS, [] );
-    $saved  = is_array( $saved ) ? $saved : [];
-    update_option( HODIMA_PHONE_SETTINGS, array_merge( $saved, [ 'retention_months' => $months ] ), false );
-    hodima_phone_retention_schedule();
-
-    if ( function_exists( 'hodima_admin_flash' ) ) {
-        hodima_admin_flash( $months > 0
-            ? sprintf( 'ذخیره شد: شماره‌های قدیمی‌تر از %s ماه خودکار پاک می‌شوند.', hodima_phone_fa( $months ) )
-            : 'ذخیره شد: پاک کردن خودکار خاموش است.' );
-    }
-
-    wp_safe_redirect( hodima_phone_page_url() );
-    exit;
-} );
-
-/** زمان‌بندی خودترمیم: با روشن بودن هر شب؛ با خاموشی حذف. */
-function hodima_phone_retention_schedule(): void {
-    $next = wp_next_scheduled( HODIMA_PHONE_RETENTION_EVENT );
-    if ( hodima_phone_retention_months() > 0 ) {
-        if ( false === $next ) {
-            wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', HODIMA_PHONE_RETENTION_EVENT );
-        }
-    } elseif ( false !== $next ) {
-        wp_clear_scheduled_hook( HODIMA_PHONE_RETENTION_EVENT );
-    }
-}
-
-add_action( 'admin_init', 'hodima_phone_retention_schedule' );
-add_action( HODIMA_PHONE_RETENTION_EVENT, static function (): void {
-    hodima_phone_retention_run();
-} );
-register_deactivation_hook( HODIMA_COMMERCE_FILE, static function (): void {
-    wp_clear_scheduled_hook( HODIMA_PHONE_RETENTION_EVENT );
-} );
-
-/**
- * لیدهایی که آخرین درخواستشان (post_date) از مدت نگهداری گذشته حذف می‌شوند (زباله‌دان هم).
- *
- * @return int تعداد حذف‌شده
+ * پاک نشدن خودکار شماره‌ها
+ * =====================================================================
+ * نگهداری خودکار (۱.۳.۱) به خواست کاربر برداشته شد: شماره‌ها مهم‌اند و مدیر ممکن است اشتباه
+ * مدتی بگذارد. سایتی که آن را روشن کرده بود رویداد شبانه و گزینه‌اش را یک بار پاک می‌کنیم
+ * (هیچ شماره‌ای پاک نمی‌شود؛ فقط زمان‌بندی برداشته می‌شود).
  */
-function hodima_phone_retention_run(): int {
-    $months = hodima_phone_retention_months();
-    if ( $months < 1 ) {
-        return 0;
+add_action( 'admin_init', static function (): void {
+    if ( false !== wp_next_scheduled( HODIMA_PHONE_RETENTION_EVENT ) ) {
+        wp_clear_scheduled_hook( HODIMA_PHONE_RETENTION_EVENT );
+        delete_option( HODIMA_PHONE_SETTINGS );
     }
-
-    $cutoff  = ( new DateTimeImmutable( 'now', wp_timezone() ) )->modify( "-{$months} months" )->format( 'Y-m-d H:i:s' );
-    $deleted = 0;
-    $started = time();
-
-    do {
-        $ids = get_posts( [
-            'post_type'      => 'hodima_phone_lead',
-            'post_status'    => [ 'publish', 'draft', 'pending', 'private', 'trash' ],
-            'date_query'     => [ [ 'column' => 'post_date', 'before' => $cutoff ] ],
-            'posts_per_page' => 100,
-            'fields'         => 'ids',
-            'orderby'        => 'ID',
-            'order'          => 'ASC',
-            'no_found_rows'  => true,
-        ] );
-
-        foreach ( $ids as $id ) {
-            if ( wp_delete_post( (int) $id, true ) ) {
-                ++$deleted;
-            }
-        }
-    } while ( [] !== $ids && time() - $started < 20 && $deleted < 5000 );
-
-    hodima_phone_counts( true );
-    return $deleted;
-}
+} );
 
 /* =====================================================================
  * خروجی CSV

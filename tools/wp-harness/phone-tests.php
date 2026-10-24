@@ -312,30 +312,39 @@ hodima_ph( 'منوی «شماره‌های تماس» ثبت شد', in_array( HO
 hodima_ph( 'منوی خودکار پست‌تایپ برداشته شد', in_array( 'edit.php?post_type=hodima_phone_lead', $slugs, true ), false );
 hodima_ph( 'نشانی صفحه', hodima_phone_page_url( [ 'lead' => 5 ] ), admin_url( 'admin.php?page=hodima-phone-leads&lead=5' ) );
 
-echo "=== نگهداری خودکار\n";
-delete_option( HODIMA_PHONE_SETTINGS );
-hodima_ph( 'پیش‌فرض خاموش', hodima_phone_retention_months(), 0 );
-hodima_ph( 'خاموش: چیزی پاک نمی‌شود', hodima_phone_retention_run(), 0 );
-update_option( HODIMA_PHONE_SETTINGS, [ 'retention_months' => 999 ] );
-hodima_ph( 'سقف ۱۲۰ ماه', hodima_phone_retention_months(), 120 );
-update_option( HODIMA_PHONE_SETTINGS, [ 'retention_months' => -5 ] );
-hodima_ph( 'منفی = خاموش', hodima_phone_retention_months(), 0 );
-$old_date = wp_date( 'Y-m-d H:i:s', strtotime( '-14 months' ) );
-$new_date = wp_date( 'Y-m-d H:i:s', strtotime( '-2 months' ) );
-$old = $mk( '09130000001', [ 'post_date' => $old_date, 'post_date_gmt' => get_gmt_from_date( $old_date ) ] );
-$fresh = $mk( '09130000002', [ 'post_date' => $new_date, 'post_date_gmt' => get_gmt_from_date( $new_date ) ] );
-$oldtrash = $mk( '09130000003', [ 'post_date' => $old_date, 'post_date_gmt' => get_gmt_from_date( $old_date ) ] );
-wp_trash_post( $oldtrash );
+echo "=== نگهداری خودکار برداشته شد؛ پاکسازی سایت‌هایی که روشنش کرده بودند\n";
+hodima_ph( 'تابع حذف خودکار دیگر وجود ندارد', function_exists( 'hodima_phone_retention_run' ), false );
+$old_date = wp_date( 'Y-m-d H:i:s', strtotime( '-30 months' ) );
+$ancient  = $mk( '09130000001', [ 'post_date' => $old_date, 'post_date_gmt' => get_gmt_from_date( $old_date ) ] );
 update_option( HODIMA_PHONE_SETTINGS, [ 'retention_months' => 12 ] );
-hodima_phone_retention_schedule();
-hodima_ph( 'روشن: رویداد شبانه زمان‌بندی شد', false !== wp_next_scheduled( HODIMA_PHONE_RETENTION_EVENT ), true );
-hodima_ph( 'قدیمی‌تر از ۱۲ ماه (حتی زباله‌دان) پاک شد', hodima_phone_retention_run(), 2 );
-hodima_ph( 'لید قدیمی رفت و تازه ماند', [ get_post( $old ), get_post( $oldtrash ), get_post( $fresh ) instanceof WP_Post ], [ null, null, true ] );
-update_option( HODIMA_PHONE_SETTINGS, [ 'retention_months' => 0 ] );
-hodima_phone_retention_schedule();
-hodima_ph( 'خاموش: رویداد برداشته شد', wp_next_scheduled( HODIMA_PHONE_RETENTION_EVENT ), false );
-delete_option( HODIMA_PHONE_SETTINGS );
-wp_delete_post( $fresh, true );
+wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', HODIMA_PHONE_RETENTION_EVENT );
+do_action( 'admin_init' );
+hodima_ph( 'رویداد شبانه قدیمی برداشته شد', wp_next_scheduled( HODIMA_PHONE_RETENTION_EVENT ), false );
+hodima_ph( 'گزینه قدیمی پاک شد', get_option( HODIMA_PHONE_SETTINGS, 'none' ), 'none' );
+do_action( HODIMA_PHONE_RETENTION_EVENT );
+hodima_ph( 'حتی لید ۳۰ ماهه هیچ‌وقت خودکار پاک نمی‌شود', get_post( $ancient ) instanceof WP_Post, true );
+wp_delete_post( $ancient, true );
+
+echo "=== نوار ابزار یک‌ردیفه و طراحی هم‌شکل\n";
+$mk( '09140000001' );
+$_GET = [];
+$html = $render( 'hodima_phone_render_list' );
+$pos  = [
+	'bulk'   => strpos( $html, 'hd-leads__bulk' ),
+	'tabs'   => strpos( $html, 'hd-leads__seg' ),
+	'search' => strpos( $html, 'hd-leads__search' ),
+	'csv'    => strpos( $html, 'hd-leads__csv' ),
+];
+hodima_ph( 'ترتیب نوار ابزار: کار گروهی ← نماها ← جستجو ← CSV', $pos['bulk'] < $pos['tabs'] && $pos['tabs'] < $pos['search'] && $pos['search'] < $pos['csv'], true );
+hodima_ph( 'همه در یک نوار ابزار', substr_count( $html, 'hd-leads__toolbar' ), 1 );
+$toolbar = substr( $html, (int) strpos( $html, 'hd-leads__toolbar' ), (int) strpos( $html, 'hd-leads__form' ) - (int) strpos( $html, 'hd-leads__toolbar' ) );
+hodima_ph( 'CSV داخل نوار ابزار است نه هدر', str_contains( $toolbar, 'export_hodima_phones' ) && substr_count( $html, 'export_hodima_phones' ) === 1, true );
+hodima_ph( 'کار گروهی با ویژگی form به فرم جدول وصل است', str_contains( $html, 'form="hd-leads-form"' ) && str_contains( $html, 'id="hd-leads-form"' ), true );
+hodima_ph( 'کارت «نگهداری شماره‌ها» نیست', str_contains( $html, 'نگهداری شماره‌ها' ) || str_contains( $html, 'hd-leads__ret' ), false );
+$css = (string) file_get_contents( HODIMA_PHONE_DIR . '/phone-admin.css' );
+hodima_ph( 'بنفش در CSS صفحه نیست (قانون: سبز --hd-ok)', (bool) preg_match( '/6a2b9a|a341c8|--hd-accent/i', $css ), false );
+hodima_ph( 'هر نما کادر خودش را دارد (border روی همه، نه فقط فعال)', (bool) preg_match( '/\.hd-leads \.hd-leads__seg-item \{[^}]*border: 1\.5px solid/s', $css ), true );
+wp_delete_post( (int) get_posts( [ 'post_type' => 'hodima_phone_lead', 'title' => '09140000001', 'fields' => 'ids', 'posts_per_page' => 1 ] )[0], true );
 wp_set_current_user( 0 );
 
 echo "=== CSV\n";

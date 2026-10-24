@@ -5,7 +5,7 @@
  *
  * می‌سنجد: فهرست (آمار، ۲۰ ردیف، منو با نشان «جدید»)، انتخاب همه و فعال شدن «اجرا»، «دیده شد» ردیف،
  * کار گروهی «زباله‌دان»، بازگردانی، حذف همیشگی با پنجره تأیید (انصراف و تأیید)، کپی شماره، جزئیات (دیده شد خودکار)،
- * ریدایرکت نشانی‌های قدیمی (edit.php و post.php)، ذخیره نگهداری خودکار با کلید، دانلود CSV،
+ * ریدایرکت نشانی‌های قدیمی (edit.php و post.php)، نوار ابزار یک‌ردیفه، کادر هم‌شکل نماها، نبودن بنفش و کارت نگهداری، دانلود CSV،
  * و axe + عکس در ۱۳۰۰ و ۳۹۰. خروجی: ✔/✘؛ کد خروج ۱ اگر یکی رد شود. عکس‌ها: $HODIMA_HARNESS/phone-admin.
  */
 import { chromium } from 'playwright-core';
@@ -140,7 +140,7 @@ console.log( '۲) انتخاب' );
 await page.locator( '[data-hd-select-all]' ).check();
 log( ( await page.locator( '[data-hd-row]:checked' ).count() ) === 20, 'انتخاب همه: ۲۰ ردیف' );
 log( ! ( await page.locator( '[data-hd-bulk-apply]' ).isDisabled() ), 'دکمه «اجرا» فعال شد' );
-log( /۲۰/.test( await page.locator( '[data-hd-selected]' ).textContent() ), 'شمارنده انتخاب «۲۰ شماره»' );
+log( /۲۰/.test( await page.locator( '[data-hd-bulk-apply]' ).textContent() ), 'شمار انتخاب روی دکمه «اجرا (۲۰)»' );
 await page.locator( '[data-hd-select-all]' ).uncheck();
 log( ( await page.locator( '[data-hd-row]:checked' ).count() ) === 0, 'برداشتن همه' );
 
@@ -216,22 +216,33 @@ log( page.url().includes( 'page=hodima-phone-leads' ), 'edit.php ← صفحه ت
 await gotoFollow( page, `${ site }/wp-admin/post.php?post=${ idn }&action=edit` );
 log( page.url().includes( `lead=${ idn }` ), 'post.php ← جزئیات', page.url() );
 
-/* ---------- ۹) نگهداری خودکار ---------- */
-console.log( '۹) نگهداری خودکار' );
+/* ---------- ۹) نوار ابزار یک‌ردیفه و طراحی هم‌شکل ---------- */
+console.log( '۹) نوار ابزار و طراحی' );
 await page.goto( list, { waitUntil: 'load' } );
-await page.locator( '.hd-leads__ret summary' ).click();
-await page.locator( '#hodima-retention-switch' ).check();
-const def = await page.locator( '#hodima-retention-months' ).inputValue();
-log( def === '12', 'روشن کردن کلید: مقدار پیشنهادی ۱۲ ماه', def );
-await page.locator( '#hodima-retention-months' ).fill( '6' );
-await act( page, () => page.locator( '.hd-leads__ret button[type="submit"]' ).click() );
-log( db( 'echo hodima_phone_retention_months();' ) === '6', 'ذخیره شد: ۶ ماه' );
-log( db( 'echo wp_next_scheduled(HODIMA_PHONE_RETENTION_EVENT) ? "yes":"no";' ) === 'yes', 'رویداد شبانه زمان‌بندی شد' );
-log( /۶ ماه/.test( await page.locator( '.hd-leads__ret-head span' ).textContent() ), 'خلاصه کارت «۶ ماه» را می‌گوید' );
-// کارت وقتی روشن است باز می‌آید؛ بازش نکن (کلیک روی summary می‌بندد)
-await page.locator( '#hodima-retention-switch' ).uncheck();
-await act( page, () => page.locator( '.hd-leads__ret button[type="submit"]' ).click() );
-log( db( 'echo hodima_phone_retention_months();' ) === '0' && db( 'echo wp_next_scheduled(HODIMA_PHONE_RETENTION_EVENT) ? "yes":"no";' ) === 'no', 'خاموش: ۰ و رویداد برداشته شد' );
+const tops = await page.evaluate( () => [ '.hd-leads__bulk', '.hd-leads__seg', '.hd-leads__search', '.hd-leads__csv' ].map( ( sel ) => {
+	const r = document.querySelector( sel ).getBoundingClientRect();
+	return Math.round( r.top + r.height / 2 );
+} ) );
+log( Math.max( ...tops ) - Math.min( ...tops ) <= 4, 'کار گروهی، نماها، جستجو و CSV در یک ردیف', tops.join( ',' ) );
+log( ( await page.locator( '.hd-leads .hd-header__actions' ).count() ) === 0, 'CSV در هدر نیست' );
+const borders = await page.evaluate( () => [ ...document.querySelectorAll( '.hd-leads__seg-item' ) ].map( ( e ) => `${ getComputedStyle( e ).borderTopWidth }|${ getComputedStyle( e ).borderTopLeftRadius }` ) );
+log( borders.length >= 3 && new Set( borders ).size === 1 && ! borders[ 0 ].startsWith( '0px' ), 'همه نماها کادر هم‌شکل دارند', borders.join( ' ' ) );
+const purple = await page.evaluate( () => {
+	let n = 0;
+	document.querySelectorAll( '.hd-leads *' ).forEach( ( e ) => {
+		if ( e.closest( '.hd-header' ) ) return; // هدر مشترک Core (گرادیان) خارج از این صفحه است
+		const c = getComputedStyle( e );
+		for ( const k of [ 'color', 'backgroundColor', 'borderTopColor', 'borderInlineStartColor', 'boxShadow' ] ) {
+			if ( /106, 43, 154|163, 65, 200/.test( c[ k ] ) ) n++;
+		}
+	} );
+	return n;
+} );
+log( purple === 0, 'هیچ عنصری بنفش نیست (جدیدها سبز)', String( purple ) );
+const greenDot = await page.locator( 'tr.is-new .hd-leads__dot' ).first().evaluate( ( e ) => getComputedStyle( e ).backgroundColor );
+log( greenDot === 'rgb(31, 122, 77)', 'نقطه «جدید» سبز است', greenDot );
+log( ( await page.locator( '.hd-leads__ret, .hd-leads details' ).count() ) === 0, 'کارت «نگهداری شماره‌ها» نیست' );
+log( ( await page.locator( 'body' ).innerText() ).includes( 'نگهداری شماره' ) === false, 'متنی از نگهداری خودکار در صفحه نیست' );
 
 /* ---------- ۱۰) CSV ---------- */
 console.log( '۱۰) CSV' );

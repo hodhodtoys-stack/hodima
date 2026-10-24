@@ -52,18 +52,21 @@
 		}, 1800);
 	});
 
-	// ── انتخاب و کار گروهی ──
+	// ── انتخاب و کار گروهی (دکمه «اجرا» بیرون از فرم جدول و با ویژگی form وصل است) ──
+	const apply = document.querySelector('[data-hd-bulk-apply]');
+	const bulkSelect = document.getElementById('hd-leads-bulk');
 	const form = document.getElementById('hd-leads-form');
 	if (form) {
 		const all = form.querySelector('[data-hd-select-all]');
 		const rows = [...form.querySelectorAll('[data-hd-row]')];
-		const apply = form.querySelector('[data-hd-bulk-apply]');
-		const counter = form.querySelector('[data-hd-selected]');
+		const applyText = apply?.textContent || 'اجرا';
 
 		const sync = () => {
 			const picked = rows.filter((row) => row.checked).length;
-			if (apply) apply.disabled = picked === 0;
-			if (counter) counter.textContent = picked > 0 ? `${new Intl.NumberFormat('fa-IR').format(picked)} شماره انتخاب شده` : '';
+			if (apply) {
+				apply.disabled = picked === 0;
+				apply.textContent = picked > 0 ? `${applyText} (${new Intl.NumberFormat('fa-IR').format(picked)})` : applyText;
+			}
 			if (all) {
 				all.checked = picked > 0 && picked === rows.length;
 				all.indeterminate = picked > 0 && picked < rows.length;
@@ -86,7 +89,9 @@
 		let pending = null;
 
 		root.addEventListener('click', (e) => {
-			const button = e.target instanceof Element ? e.target.closest('[data-hd-confirm]') : null;
+			const target = e.target instanceof Element ? e.target.closest('[data-hd-confirm], [data-hd-bulk-apply]') : null;
+			// «اجرا» فقط وقتی کار انتخاب‌شده «حذف همیشگی» است تأیید می‌خواهد
+			const button = target && (target.hasAttribute('data-hd-confirm') || bulkSelect?.value === 'delete') ? target : null;
 			if (!button || button.dataset.hdConfirmed) return;
 			e.preventDefault();
 			pending = button;
