@@ -14,7 +14,7 @@
 export default {
 	extends: [ 'stylelint-config-standard' ],
 	plugins: [ 'stylelint-use-logical' ],
-	ignoreFiles: [ '**/vendor/**', '**/node_modules/**' ],
+	ignoreFiles: [ '**/vendor/**', '**/node_modules/**', '**/ui/ui-kit.css' ],
 	rules: {
 		// ظاهری
 		'selector-class-pattern': null,

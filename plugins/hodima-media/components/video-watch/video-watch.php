@@ -23,6 +23,11 @@ function hod_video_watch_ver( string $file ): string {
 	return file_exists( $path ) ? (string) filemtime( $path ) : HODIMA_MEDIA_VERSION;
 }
 
+/** نسخه فایل کیت UI = زمان تغییرش (مثل hod_video_watch_ver). */
+function hod_video_watch_kit_ver( string $path ): string {
+	return file_exists( $path ) ? (string) filemtime( $path ) : HODIMA_MEDIA_VERSION;
+}
+
 foreach ( [ 'post-type.php', 'meta-boxes.php', 'vid-w-schema.php', 'db-video-watch.php', 'videos-page.php' ] as $hodima_vw_file ) {
 	require_once HOD_VIDEO_WATCH_PATH . $hodima_vw_file;
 }
@@ -97,9 +102,11 @@ function hod_video_watch_admin_assets(): void {
 		return;
 	}
 	wp_enqueue_media();
-	// کیت UI محلی ماژول (تب، رسانه، لیست تکرارشونده، …) جدا از کادر؛ بعدا اگر به Core رفت فقط این دو خط برداشته می‌شود
-	wp_enqueue_style( 'hod-video-watch-ui', HOD_VIDEO_WATCH_URL . 'video-watch.ui.css', [], hod_video_watch_ver( 'video-watch.ui.css' ) );
-	wp_enqueue_script( 'hod-video-watch-ui', HOD_VIDEO_WATCH_URL . 'video-watch.ui.js', [], hod_video_watch_ver( 'video-watch.ui.js' ), true );
+	// کیت UI مشترک پیشخوان (tools/ui-kit؛ تب، رسانه، لیست تکرارشونده، …) با پیشوند hdm-؛ کپی آن را bin/build.sh (و link.sh) در ui/ می‌نویسد
+	$kit_path = HODIMA_MEDIA_DIR . '/ui/';
+	$kit_url  = HODIMA_MEDIA_URL . '/ui/';
+	wp_enqueue_style( 'hod-video-watch-ui', $kit_url . 'ui-kit.css', [], hod_video_watch_kit_ver( $kit_path . 'ui-kit.css' ) );
+	wp_enqueue_script( 'hod-video-watch-ui', $kit_url . 'ui-kit.js', [], hod_video_watch_kit_ver( $kit_path . 'ui-kit.js' ), true );
 	wp_enqueue_style( 'hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.css', [ 'hod-video-watch-ui' ], hod_video_watch_ver( 'video-watch.admin.css' ) );
 	wp_enqueue_script( 'hod-video-watch-admin', HOD_VIDEO_WATCH_URL . 'video-watch.admin.js', [ 'hod-video-watch-ui' ], hod_video_watch_ver( 'video-watch.admin.js' ), true );
 }

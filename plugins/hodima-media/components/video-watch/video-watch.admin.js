@@ -6,7 +6,7 @@
  *   - وضعیت آدرس ویدیو، شمارش متن کامل، شمارنده روی تب «زیر ویدیو»
  *   - «آنچه گوگل می‌بیند»: بخش‌ها همان‌طور که سرور می‌خواند (hod_video_parse_chapters)
  * تب‌ها، انتخاب‌گر کاور و لیست کارت‌های مرتبط (افزودن، جابه‌جایی، حذف با بازگردانی)
- * رفتارشان در video-watch.ui.js (کیت محلی همین ماژول) است؛ اینجا فقط به رویدادهایشان گوش می‌دهیم.
+ * رفتارشان در ui/ui-kit.js (کیت UI مشترک؛ tools/ui-kit) است؛ اینجا فقط به رویدادهایشان گوش می‌دهیم.
  * فقط ظاهر و کمک است؛ نام و مقدار فیلدها همان است و بدون JS فرم کار می‌کند.
  * زیر ESLint بدون baseline.
  */
@@ -104,7 +104,7 @@
 		const pvDur = $( '[data-hvw-pv-dur]' );
 		const pvChips = $( '[data-hvw-pv-chips]' );
 		const pvProduct = $( '[data-hvw-pv-product]' );
-		const rows = $( '[data-hd-rows]' );
+		const rows = $( '[data-hdm-rows]' );
 
 		/* ── آدرس ویدیو ── */
 		const urlState = () => {
@@ -172,8 +172,8 @@
 				return;
 			}
 			item.dataset.state = state;
-			item.querySelector( '.hd-checklist__tag' ).textContent = tag || STATES[ state ];
-			item.querySelector( '.hd-checklist__note' ).textContent = note;
+			item.querySelector( '.hdm-checklist__tag' ).textContent = tag || STATES[ state ];
+			item.querySelector( '.hdm-checklist__note' ).textContent = note;
 		};
 
 		/* ── به‌روزرسانی همه‌چیز ── */
@@ -188,9 +188,9 @@
 			const ch = renderChapters();
 			const words = transcriptStats();
 			const hasProduct = '' !== product.value.trim();
-			const cards = [ ...rows.querySelectorAll( ':scope > [data-hd-row]' ) ];
-			const incomplete = cards.filter( ( r ) => ! r.querySelector( '[data-hd-row-title]' ).value.trim() || ! r.querySelector( 'input[type="url"]' ).value.trim() );
-			const noCover = cards.filter( ( r ) => ! /^https?:\/\//i.test( r.querySelector( '[data-hd-media-input]' ).value.trim() ) );
+			const cards = [ ...rows.querySelectorAll( ':scope > [data-hdm-row]' ) ];
+			const incomplete = cards.filter( ( r ) => ! r.querySelector( '[data-hdm-row-title]' ).value.trim() || ! r.querySelector( 'input[type="url"]' ).value.trim() );
+			const noCover = cards.filter( ( r ) => ! /^https?:\/\//i.test( r.querySelector( '[data-hdm-media-input]' ).value.trim() ) );
 			cards.forEach( ( r ) => r.classList.toggle( 'is-warn', incomplete.includes( r ) ) );
 
 			let warns = 0;
@@ -269,7 +269,7 @@
 		/* ── رویدادها (تغییر فیلد، لیست کارت‌ها، انتخاب کاور؛ همه حباب‌دار) ── */
 		root.addEventListener( 'input', update );
 		root.addEventListener( 'change', update );
-		root.addEventListener( 'hd:repeat-change', update );
+		root.addEventListener( 'hdm:repeat-change', update );
 
 		update();
 	};

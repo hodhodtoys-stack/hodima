@@ -39,7 +39,7 @@ expandable="plugins/hodima-media/components/expandable-boxes"
 notification="plugins/hodima-media/components/notification"
 # ویدیوها: فقط فایل‌هایی که بازنویسی شده‌اند (بقیه مرحله ۶، HODIMA-AUDIT.md ۴.۲۲)
 videowatch_css="plugins/hodima-media/components/video-watch/*.css"
-videowatch_js="plugins/hodima-media/components/video-watch/video-watch.front.js plugins/hodima-media/components/video-watch/video-watch.admin.js plugins/hodima-media/components/video-watch/video-watch.ui.js"
+videowatch_js="plugins/hodima-media/components/video-watch/video-watch.front.js plugins/hodima-media/components/video-watch/video-watch.admin.js"
 # فرم لید تلفنی Commerce (بدون baseline)
 phone="plugins/hodima-commerce/components/phone"
 # کیت UI مشترک پیشخوان (منبع واحد؛ بدون baseline)

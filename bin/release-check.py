@@ -391,7 +391,8 @@ def check_kit():
     before = len(errors)
     for slug, (folder, *_rest) in PACKAGES.items():
         prefix = kit.targets().get(folder)
-        stray = [n for n in kit.FILES if os.path.exists(os.path.join(ROOT, folder, 'ui', n))]
+        tracked = set(git('ls-files', folder + '/ui').split('\n'))
+        stray = [n for n in kit.FILES if f'{folder}/ui/{n}' in tracked]
         if stray:
             fail(f'{slug}: کپی دستی کیت در سورس ({folder}/ui/{stray[0]}) — فقط tools/ui-kit ویرایش شود')
         zpath = os.path.join(ROOT, 'release', slug + '.zip')

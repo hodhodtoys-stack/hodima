@@ -75,7 +75,7 @@ description: استاندارد طراحی UI/UX پیشخوان هدیما (سط
 | خلاصه زنده | `.hd-summary` > `.hd-summary__icon` + `.hd-summary__body` (`.hd-summary__label` + `p.hd-summary__text[aria-live]` + `.hd-summary__warn`) | متن را JS صفحه می‌سازد؛ بدون JS پنهان |
 | کلید | `input[type=checkbox].hd-switch` | |
 
-**اجزای نوع «ورود محتوا» — کیت محلی ماژول ویدیو (`plugins/hodima-media/components/video-watch/video-watch.ui.css` + `video-watch.ui.js`؛ همه زیر `.hvw`؛ در Core نیستند؛ قرار است به `tools/ui-kit/` (منبع واحد) و از آنجا به کیت هر افزونه بروند — قانون بند ۳ روند کار). ماژول دیگری که همین اجزا را لازم دارد: از همین نام‌ها و ساختار پیروی کند، نه نسخه تازه. رفتار بدون JS: تب‌ها پنهان و همه بخش‌ها پشت‌سرهم:**
+**اجزای نوع «ورود محتوا» — کیت UI مشترک (`tools/ui-kit/ui-kit.css` + `ui-kit.js`، منبع واحد؛ در ZIP هر بسته با پیشوند همان بسته می‌آید: `<بسته>/ui/ui-kit.*`، ریشه `.hdm-ui` در Media؛ در سورس `bash tools/ui-kit/kit.py install .` یا `tools/wp-harness/link.sh` کپی git-نشده می‌سازد). ماژول ویدیو (از Media 2.2.0) اولین مصرف‌کننده است؛ ریشه کادرش `hvw hdm-ui`. ماژول دیگری که همین اجزا را لازم دارد: از همین نام‌ها و ساختار پیروی کند، نه نسخه تازه. رفتار بدون JS: تب‌ها پنهان و همه بخش‌ها پشت‌سرهم:**
 - نوار وضعیت: `header.hd-statusbar` > `.hd-statusbar__icon` + `.hd-statusbar__body` (`h3.hd-statusbar__title` + `p.hd-statusbar__text[aria-live]`) + `.hd-statusbar__aside` (نشان `hd-pill`).
 - تب‌ها: `.hd-tabset[data-hd-tabset]` > `div.hd-tablist[role=tablist][hidden]` (`button.hd-tab[role=tab][aria-controls][aria-selected]` + `.hd-tab__count`) + پنل‌ها `.hd-tabpanel[role=tabpanel][aria-labelledby]`. **نام `hd-tabs` برای تب‌های زیر سربرگ همه صفحه‌هاست؛ برای کادر `hd-tablist` بگذار** (برخورد نام در ساخت Core ۱.۲.۸ پیدا شد؛ پیش از ساختن کلاس تازه همیشه در همه `plugins/` و `admin-ui.css` جستجو کن). JS: فلش (راست‌به‌چپ: چپ = بعدی)، Home/End، رویداد `hd:tab-change`، فیلد نامعتبر تبش را باز می‌کند.
 - چیدمان: `.hd-layout` (ظرف؛ عرض خودِ کادر را می‌سنجد) > `.hd-layout__grid` > `.hd-layout__preview`، `.hd-layout__main`، `.hd-layout__aside`؛ باریک: پیش‌نمایش ← اصلی ← چک‌لیست؛ ≥۴۶rem: اصلی کنار پیش‌نمایش و چک‌لیست. کارت کناری `section.hd-side` (+ `.hd-side__title`).
@@ -85,7 +85,7 @@ description: استاندارد طراحی UI/UX پیشخوان هدیما (سط
 - لیست تکرارشونده: `[data-hd-repeat]` (`data-hd-name` پیشوند نام، `data-hd-id` پیشوند شناسه، `data-hd-max`، `data-hd-item`، `data-hd-count-text`) > `[data-hd-rows]` + ردیف‌ها `.hd-repeat__row[data-hd-row]` (`[data-hd-row-title]`، `[data-hd-move=±1]`، `[data-hd-remove]`، `[data-hd-n]`، `data-hd-label` با `%s`) + `[data-hd-empty]`، `[data-hd-undo]`، `[data-hd-count]`، `[data-hd-add]`، `<template data-hd-row-template>` با `__i__`/`__n__`. رویداد `hd:repeat-change`.
 - چک‌لیست/خلاصه/پیش‌نمایش را JS خود صفحه می‌سازد (نمونه: `video-watch.admin.js`).
 
-**جدول نام‌های اجزای کیت مشترک آینده (`tools/ui-kit/`؛ ✅ = در کیت محلی ویدیو ساخته شده و نام همان است؛ نوتیفیکیشن هنوز نسخه خودش `hdn-…` را دارد):**
+**جدول نام‌های اجزای کیت مشترک (`tools/ui-kit/`؛ ✅ = ساخته شده؛ نام‌ها در سورس `hdk-…` و در هر بسته با پیشوند آن؛ نوتیفیکیشن هنوز نسخه خودش `hdn-…` را دارد):**
 
 | جزء | نسخه قدیمی | نام در کیت محلی (و نام Core آینده) |
 |---|---|---|

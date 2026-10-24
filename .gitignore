@@ -1,4 +1,7 @@
 dist/
+# کپی کیت UI مشترک (تولید tools/ui-kit/kit.py در ساخت و در link.sh؛ منبع tools/ui-kit)
+/hodima/ui/
+/plugins/*/ui/
 __pycache__/
 # ابزارهای کیفیت کد (composer install / npm ci؛ در محیط ابری vendor لینک نمادین است)
 /vendor

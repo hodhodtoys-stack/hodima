@@ -1,5 +1,5 @@
 /**
- * آزمون رفتار کادر «تنظیمات ویدیو» در ویرایش ویدیو (پیشخوان؛ meta-boxes.php + video-watch.admin.js + اجزای Core: تب، رسانه، لیست تکرارشونده) در Chromium.
+ * آزمون رفتار کادر «تنظیمات ویدیو» در ویرایش ویدیو (پیشخوان؛ meta-boxes.php + video-watch.admin.js + کیت UI مشترک: تب، رسانه، لیست تکرارشونده) در Chromium.
  *   node tools/wp-harness/video-watch-admin.mjs [root]
  * کادر را با PHP همین کد (admin-render-screen.php، حساب مدیر) برای ویدیوی آزمایشی می‌سازد
  * و تب‌ها، نوار وضعیت، چک‌لیست، پیش‌نمایش، وضعیت آدرس، «آنچه گوگل می‌بیند»، کلید دکمه محصول،
@@ -42,7 +42,7 @@ const page = await browser.newPage( { viewport: { width: 1300, height: 900 } } )
 const errors = [];
 // فقط خطای فایل‌های خود کادر (اسکریپت‌های هسته وردپرس در ابزار تست لود نمی‌شوند: wp/jQuery تعریف‌نشده)
 page.on( 'pageerror', ( e ) => {
-	if ( /video-watch\.admin\.js|admin-ui\.js/.test( e.stack || '' ) ) errors.push( e.message );
+	if ( /video-watch\.admin\.js|ui-kit\.js|admin-ui\.js/.test( e.stack || '' ) ) errors.push( e.message );
 } );
 await page.route( '**/*', async ( route ) => {
 	const u = new URL( route.request().url() );
@@ -57,19 +57,19 @@ await page.waitForTimeout( 300 );
 
 const q = ( fn, arg ) => page.evaluate( fn, arg );
 const summary = () => q( () => ( { shown: ! document.querySelector( '[data-hvw-summary]' ).hidden, text: document.querySelector( '[data-hvw-summary]' ).textContent, pill: document.querySelector( '[data-hvw-pill]' ).textContent, pillCls: document.querySelector( '[data-hvw-pill]' ).className } ) );
-const check = ( key ) => q( ( k ) => { const li = document.querySelector( `[data-hvw-check="${ k }"]` ); return { state: li.dataset.state, tag: li.querySelector( '.hd-checklist__tag' ).textContent, note: li.querySelector( '.hd-checklist__note' ).textContent }; }, key );
+const check = ( key ) => q( ( k ) => { const li = document.querySelector( `[data-hvw-check="${ k }"]` ); return { state: li.dataset.state, tag: li.querySelector( '.hdm-checklist__tag' ).textContent, note: li.querySelector( '.hdm-checklist__note' ).textContent }; }, key );
 const typeInto = async ( sel, value ) => {
 	await page.fill( sel, value );
 	await page.waitForTimeout( 50 );
 };
-const names = () => q( () => [ ...document.querySelectorAll( '[data-hd-rows] [name^="hod_related_links"]' ) ].map( ( i ) => `${ i.name }=${ i.value }` ) );
+const names = () => q( () => [ ...document.querySelectorAll( '[data-hdm-rows] [name^="hod_related_links"]' ) ].map( ( i ) => `${ i.name }=${ i.value }` ) );
 const openTab = async ( id ) => {
 	await page.click( `#hvw-tab-${ id }` );
 	await page.waitForTimeout( 50 );
 };
 
 console.log( '=== تب‌ها (Core)' );
-let tabs = await q( () => ( { listShown: ! document.querySelector( '#hod-video-watch-meta .hd-tablist' ).hidden, selected: [ ...document.querySelectorAll( '#hod-video-watch-meta [role="tab"]' ) ].map( ( t ) => t.getAttribute( 'aria-selected' ) ), panels: [ ...document.querySelectorAll( '#hod-video-watch-meta [role="tabpanel"]' ) ].map( ( p ) => ! p.hidden ), count: document.querySelector( '[data-hvw-tab-count]' ).textContent } ) );
+let tabs = await q( () => ( { listShown: ! document.querySelector( '#hod-video-watch-meta .hdm-tablist' ).hidden, selected: [ ...document.querySelectorAll( '#hod-video-watch-meta [role="tab"]' ) ].map( ( t ) => t.getAttribute( 'aria-selected' ) ), panels: [ ...document.querySelectorAll( '#hod-video-watch-meta [role="tabpanel"]' ) ].map( ( p ) => ! p.hidden ), count: document.querySelector( '[data-hvw-tab-count]' ).textContent } ) );
 log( tabs.listShown && tabs.selected.join() === 'true,false,false' && tabs.panels.join() === 'true,false,false', 'نوار تب دیده می‌شود، فقط تب اول باز', JSON.stringify( tabs ) );
 log( '۲' === tabs.count, 'شمارنده روی تب «زیر ویدیو» = تعداد کارت‌ها', tabs.count );
 await page.focus( '#hvw-tab-video' );
@@ -114,7 +114,7 @@ await typeInto( '#hod_video_chapters', '0:00 شروع\n0:30 جنس' );
 
 console.log( '=== متن کامل (جمع‌شونده) و دکمه محصول' );
 log( ( await q( () => document.querySelector( '[data-hvw-transcript-count]' ).textContent ) ).includes( '۵ کلمه · ۲ پاراگراف' ), 'شمارش کلمه و پاراگراف روی عنوان جمع‌شونده' );
-log( await q( () => document.querySelector( '.hd-more' ).open ), 'متن دارد ← جمع‌شونده باز است' );
+log( await q( () => document.querySelector( '.hdm-more' ).open ), 'متن دارد ← جمع‌شونده باز است' );
 await typeInto( '#hod_video_transcript', '' );
 log( ( await check( 'transcript' ) ).state === 'opt', 'متن خالی ← اختیاری' );
 await typeInto( '#hod_video_transcript', 'یک دو سه.\n\nچهار پنج.' );
@@ -130,23 +130,23 @@ prod = await q( () => ( { v: document.querySelector( '#hod_related_product_url' 
 log( 'https://hodima.test/product/x/' === prod.v && ! prod.inert && prod.btn, 'کلید روشن: همان لینک قبلی برگشت و دکمه در پیش‌نمایش', JSON.stringify( prod ) );
 
 console.log( '=== کارت‌های مرتبط (لیست تکرارشونده Core)' );
-await page.click( '[data-hd-add]' );
+await page.click( '[data-hdm-add]' );
 await page.waitForTimeout( 100 );
-const added = await q( () => ( { count: document.querySelectorAll( '[data-hd-rows] > [data-hd-row]' ).length, focus: document.activeElement?.name, label: document.querySelector( `label[for="${ document.activeElement?.id }"]` )?.textContent.trim(), pill: document.querySelector( '[data-hd-count]' ).textContent, tab: document.querySelector( '[data-hvw-tab-count]' ).textContent } ) );
+const added = await q( () => ( { count: document.querySelectorAll( '[data-hdm-rows] > [data-hdm-row]' ).length, focus: document.activeElement?.name, label: document.querySelector( `label[for="${ document.activeElement?.id }"]` )?.textContent.trim(), pill: document.querySelector( '[data-hdm-count]' ).textContent, tab: document.querySelector( '[data-hvw-tab-count]' ).textContent } ) );
 log( 3 === added.count && 'hod_related_links[2][title]' === added.focus && added.label === 'عنوان کارت ۳' && added.pill === '۳ کارت' && '۳' === added.tab, 'افزودن: کارت سوم، فوکوس روی عنوانش، برچسب وصل، شمارنده تب', JSON.stringify( added ) );
-log( ( await check( 'related' ) ).state === 'warn' && ( await q( () => document.querySelector( '[data-hd-rows] > [data-hd-row]:nth-child(3)' ).classList.contains( 'is-warn' ) ) ), 'کارت ناقص: ردیف و چک‌لیست هشدار' );
+log( ( await check( 'related' ) ).state === 'warn' && ( await q( () => document.querySelector( '[data-hdm-rows] > [data-hdm-row]:nth-child(3)' ).classList.contains( 'is-warn' ) ) ), 'کارت ناقص: ردیف و چک‌لیست هشدار' );
 await page.keyboard.type( 'سوم' );
 await page.fill( '[name="hod_related_links[2][url]"]', 'https://hodima.test/c/' );
-await page.click( '[data-hd-rows] > [data-hd-row]:nth-child(3) [data-hd-move="-1"]' );
+await page.click( '[data-hdm-rows] > [data-hdm-row]:nth-child(3) [data-hdm-move="-1"]' );
 await page.waitForTimeout( 50 );
 let n = await names();
 log( n.includes( 'hod_related_links[1][title]=سوم' ) && n.includes( 'hod_related_links[2][title]=دوم' ), 'جابه‌جایی بالا: نام فیلدها به ترتیب تازه', n.filter( ( x ) => x.includes( 'title' ) ).join( ' | ' ) );
 log( ( await q( () => document.activeElement?.getAttribute( 'aria-label' ) ) ) === 'کارت ۲ یکی بالاتر', 'فوکوس روی همان دکمه با نام تازه' );
 
-await page.click( '[data-hd-rows] > [data-hd-row]:nth-child(1) [data-hd-remove]' );
+await page.click( '[data-hdm-rows] > [data-hdm-row]:nth-child(1) [data-hdm-remove]' );
 await page.waitForTimeout( 50 );
 n = await names();
-const undo = await q( () => ( { text: document.querySelector( '[data-hd-undo]' ).textContent, focus: document.activeElement?.textContent } ) );
+const undo = await q( () => ( { text: document.querySelector( '[data-hdm-undo]' ).textContent, focus: document.activeElement?.textContent } ) );
 log( n[ 0 ] === 'hod_related_links[0][title]=سوم' && n.length === 6, 'حذف کارت اول: بقیه از ۰ شماره‌گذاری شدند', n.filter( ( x ) => x.includes( 'title' ) ).join( ' | ' ) );
 log( undo.text.includes( '«اول» حذف شد' ) && undo.focus === 'بازگردانی', 'پیام حذف با دکمه «بازگردانی» (فوکوس روی آن؛ بدون پنجره تأیید)', JSON.stringify( undo ) );
 await page.keyboard.press( 'Enter' );
@@ -155,22 +155,22 @@ n = await names();
 log( n[ 0 ] === 'hod_related_links[0][title]=اول' && n.length === 9 && n.includes( 'hod_related_links[0][cover]=https://hodima.test/c.jpg' ), 'بازگردانی: همان کارت با عکسش سر جای قبلی', n.filter( ( x ) => x.includes( 'title' ) ).join( ' | ' ) );
 
 for ( let i = 0; i < 3; i++ ) {
-	await page.click( '[data-hd-rows] > [data-hd-row]:nth-child(1) [data-hd-remove]' );
+	await page.click( '[data-hdm-rows] > [data-hdm-row]:nth-child(1) [data-hdm-remove]' );
 }
 await page.waitForTimeout( 50 );
-log( await q( () => ! document.querySelector( '[data-hd-empty]' ).hidden && document.querySelector( '[data-hd-count]' ).textContent === '۰ کارت' && document.querySelector( '[data-hvw-tab-count]' ).hidden ), 'همه حذف: پیام «هنوز کارتی اضافه نشده» و شمارنده تب پنهان' );
+log( await q( () => ! document.querySelector( '[data-hdm-empty]' ).hidden && document.querySelector( '[data-hdm-count]' ).textContent === '۰ کارت' && document.querySelector( '[data-hvw-tab-count]' ).hidden ), 'همه حذف: پیام «هنوز کارتی اضافه نشده» و شمارنده تب پنهان' );
 log( ( await check( 'related' ) ).state === 'opt', 'چک‌لیست: ویدیوهای مرتبط اختیاری' );
 
 console.log( '=== کاور (انتخاب‌گر رسانه Core)' );
 await openTab( 'video' );
-await page.click( '[data-hd-media]:not([data-hd-row]) [data-hd-media-clear]' );
+await page.click( '[data-hdm-media]:not([data-hdm-row]) [data-hdm-media-clear]' );
 await page.waitForTimeout( 50 );
-let cover = await q( () => ( { v: document.querySelector( '#hod_video_thumbnail' ).value, empty: document.querySelector( '[data-hd-media]:not([data-hd-row])' ).classList.contains( 'is-empty' ), focus: document.activeElement?.id, img: document.querySelector( '[data-hvw-pv-img]' ).hidden } ) );
+let cover = await q( () => ( { v: document.querySelector( '#hod_video_thumbnail' ).value, empty: document.querySelector( '[data-hdm-media]:not([data-hdm-row])' ).classList.contains( 'is-empty' ), focus: document.activeElement?.id, img: document.querySelector( '[data-hvw-pv-img]' ).hidden } ) );
 log( '' === cover.v && cover.empty && 'hod_video_thumbnail' === cover.focus && cover.img, 'برداشتن کاور: فیلد خالی، فوکوس روی آن، پیش‌نمایش بدون عکس', JSON.stringify( cover ) );
 const c1 = await check( 'cover' );
 log( c1.state === 'warn' && c1.tag === 'لازم' && ( await summary() ).text.includes( 'کاور ندارد' ), 'چک‌لیست و جمله: کاور لازم است' );
 await typeInto( '#hod_video_thumbnail', 'https://hodima.test/v/new.jpg' );
-cover = await q( () => ( { src: document.querySelector( '[data-hd-media]:not([data-hd-row]) [data-hd-media-img]' ).getAttribute( 'src' ), pv: document.querySelector( '[data-hvw-pv-img]' ).getAttribute( 'src' ) } ) );
+cover = await q( () => ( { src: document.querySelector( '[data-hdm-media]:not([data-hdm-row]) [data-hdm-media-img]' ).getAttribute( 'src' ), pv: document.querySelector( '[data-hvw-pv-img]' ).getAttribute( 'src' ) } ) );
 log( 'https://hodima.test/v/new.jpg' === cover.src && cover.src === cover.pv, 'آدرس تازه: پیش‌نمایش کاور و پیش‌نمایش سایت عوض شد' );
 
 console.log( '=== موبایل ۳۹۰: بدون سرریز، ترتیب منطقی' );
