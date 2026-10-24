@@ -203,7 +203,7 @@
 			color: var(--hd-warn, #9a5b00);
 		}
 
-		&[aria-pressed="true"] {
+		&[aria-current="true"] {
 			border-color: var(--hd-warn, #9a5b00);
 			background: color-mix(in srgb, var(--hd-warn, #9a5b00) 12%, #ffffff);
 			color: var(--hd-warn, #9a5b00);
@@ -344,7 +344,7 @@
 		position: absolute;
 		inset-block: 0;
 		inline-size: 0;
-		border-inline-start: 2px dashed var(--hd-accent, #6a2b9a);
+		border-inline-start: 2px dashed var(--hd-accent, #1f7a4d);
 		opacity: 0.7;
 		translate: -1px 0;
 	}
@@ -353,7 +353,7 @@
 		display: block;
 		max-inline-size: 18rem;
 		margin-block-start: 0.25rem;
-		color: var(--hd-accent, #6a2b9a);
+		color: var(--hd-accent, #1f7a4d);
 		font-size: 0.75rem;
 		white-space: normal;
 	}
@@ -483,7 +483,7 @@
 	}
 
 	& .hodima-dr-card-title {
-		color: var(--hd-accent, #6a2b9a);
+		color: var(--hd-accent, #1f7a4d);
 		font-size: 0.75rem;
 	}
 
@@ -551,4 +551,42 @@
 	.hodima-dr .hodima-dr-progress > span {
 		transition: none;
 	}
+}
+
+/* موارد یک ردیف آمادگی: سه مورد اول و «+N» */
+.hodima-dr .hodima-dr-more {
+	display: inline-block;
+	vertical-align: middle;
+
+	& > summary {
+		display: inline-flex;
+		align-items: center;
+		min-block-size: 1.5rem;
+		padding-inline: 0.5rem;
+		border-radius: 999px;
+		background: var(--hd-soft, #eef1fc);
+		color: var(--hd-primary, #25316a);
+		font-size: 0.75rem;
+		font-weight: 700;
+		cursor: pointer;
+		list-style: none;
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--hd-ok, #1f7a4d);
+			outline-offset: 2px;
+		}
+	}
+
+	&[open] > summary {
+		margin-block-end: 0.375rem;
+	}
+}
+
+/* ردیف آمادگی در موبایل: ستون عنوان خیلی باریک نشود */
+.hodima-dr [data-hodima-dr-row] > td:first-child {
+	min-inline-size: 7.5rem;
 }

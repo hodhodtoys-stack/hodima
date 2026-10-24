@@ -18,7 +18,7 @@
 	--hd-primary: #25316a;
 	--hd-secondary: #607bbd;
 	--hd-third: #b6c2f3;
-	--hd-accent: #6a2b9a;
+	--hd-accent: #1f7a4d;
 	--hd-surface: #ffffff;
 	--hd-soft: color-mix(in srgb, var(--hd-third) 14%, #ffffff);
 	--hd-softer: color-mix(in srgb, var(--hd-third) 7%, #ffffff);

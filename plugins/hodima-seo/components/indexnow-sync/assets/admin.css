@@ -173,3 +173,27 @@
         border-inline: 0 !important;
     }
 }
+
+/* نمای کلی: پنج آمار در یک ردیف، سلامت جمع‌شونده، نمودار خالی یک خط */
+.hodima-wrap .hodima-stats5 {
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+}
+
+.hodima-wrap .hodima-more > summary {
+	display: flex;
+	align-items: center;
+	min-block-size: 2.75rem;
+	color: var(--hd-primary);
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.hodima-wrap .hodima-more > summary:focus-visible {
+	outline: 2px solid var(--hd-ok);
+	outline-offset: 2px;
+}
+
+.hodima-wrap .hodima-empty-line {
+	margin: 0;
+	color: var(--hd-muted);
+}

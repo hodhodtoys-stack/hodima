@@ -8,8 +8,8 @@
     --htc-primary: var(--hodima-primary, #25316a);
     --htc-secondary: var(--hodima-secondary, #607bbd);
     --htc-third: var(--hodima-third, #b6c2f3);
-    --htc-accent: var(--hodima-accent, #6a2b9a);
-    --htc-accent-light: #a341c8;
+    --htc-accent: #1f7a4d;
+    --htc-accent-light: #607bbd;
     --htc-border: color-mix(in srgb, var(--htc-third) 55%, #fff);
     --htc-border-strong: color-mix(in srgb, var(--htc-secondary) 45%, #fff);
     --htc-soft: color-mix(in srgb, var(--htc-third) 14%, #fff);
@@ -687,7 +687,21 @@
     }
 
     & .htc-tree-card__title { font-size: 15px; font-weight: 700; color: var(--htc-primary); }
-    & .htc-tree-card__edit { margin-inline-start: auto; }
+    & .htc-tree-card__edit { margin-block: 8px 0; }
+    & .htc-tree-card__edit a { display: inline-block; padding-block: 6px; }
+
+    /* بخش جمع‌شونده «اختیاری» در تنظیمات */
+    & .htc-more > summary {
+        display: flex;
+        align-items: center;
+        min-block-size: 44px;
+        color: var(--htc-primary);
+        font-weight: 700;
+        cursor: pointer;
+        &:focus-visible { outline: 2px solid var(--htc-accent); outline-offset: 2px; }
+    }
+    & .htc-more[open] > summary { margin-block-end: 12px; }
+    & .htc-more:not(.htc-more--card) { margin-block-start: 12px; }
 
     & .htc-tree {
         margin: 0;

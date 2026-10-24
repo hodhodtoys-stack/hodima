@@ -101,7 +101,7 @@ $hodima_nonce_field = static function (): void {
             [ ! $is_locked, 'صف ارسال آزاد است', 'صف به دلیل محدودیت بینگ موقتا قفل است (خودکار آزاد می‌شود)', 'queue' ],
         ];
         ?>
-        <div class="hd-grid hd-grid--stats">
+        <div class="hd-grid hd-grid--stats hodima-stats5">
             <div class="hd-stat"><span class="hd-stat__label">بازدید ربات‌های هوش مصنوعی (۳۰ روز)</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( (int) $ai_summary['logs'] ) ); ?></span></div>
             <div class="hd-stat"><span class="hd-stat__label">آی‌پی‌های مسدود</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( (int) $ai_summary['banned'] ) ); ?></span></div>
             <div class="hd-stat"><span class="hd-stat__label">صف انتظار</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( (int) ( $queue_stats->pending ?? 0 ) ) ); ?></span></div>
@@ -109,11 +109,18 @@ $hodima_nonce_field = static function (): void {
             <div class="hd-stat hodima-stat--error"><span class="hd-stat__label">ارسال ناموفق</span><span class="hd-stat__value"><?php echo esc_html( number_format_i18n( (int) ( $queue_stats->failed ?? 0 ) ) ); ?></span></div>
         </div>
 
+        <?php $hodima_all_ok = ! in_array( false, array_map( static fn( array $c ): bool => (bool) $c[0], $hodima_checks ), true ); ?>
         <section class="hd-card">
                 <div class="hd-card__head">
                     <span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
                     <h2 class="hd-card__title">وضعیت سلامت</h2>
+                    <?php if ( $hodima_all_ok ) : ?>
+                        <span class="hd-pill hd-pill--ok"><?php echo esc_html( 'همه ' . number_format_i18n( count( $hodima_checks ) ) . ' بررسی سالم' ); ?></span>
+                    <?php endif; ?>
                 </div>
+                <?php if ( $hodima_all_ok ) : ?>
+                <details class="hodima-more">
+                    <summary>جزئیات بررسی‌ها</summary>
                 <ul class="hodima-checks">
                     <?php foreach ( $hodima_checks as [ $ok, $ok_text, $bad_text, $tab ] ) : ?>
                         <li class="<?php echo $ok ? 'is-ok' : 'is-bad'; ?>">
@@ -125,6 +132,20 @@ $hodima_nonce_field = static function (): void {
                         </li>
                     <?php endforeach; ?>
                 </ul>
+                </details>
+                <?php else : ?>
+                <ul class="hodima-checks">
+                    <?php foreach ( $hodima_checks as [ $ok, $ok_text, $bad_text, $tab ] ) : ?>
+                        <li class="<?php echo $ok ? 'is-ok' : 'is-bad'; ?>">
+                            <span class="dashicons <?php echo $ok ? 'dashicons-yes-alt' : 'dashicons-warning'; ?>" aria-hidden="true"></span>
+                            <span><?php echo esc_html( $ok ? $ok_text : $bad_text ); ?></span>
+                            <?php if ( ! $ok ) : ?>
+                                <a href="<?php echo esc_url( $hodima_tab_url( $tab ) . ( 'settings' === $tab && str_contains( $bad_text, 'لایت‌اسپید' ) ? '#hodima-cache' : '' ) ); ?>">رفع</a>
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php endif; ?>
         </section>
 
         <?php // تمام‌عرض: نمودار SVG با viewBox ثابت در کارت نیم‌عرض، برچسب‌های ۶ پیکسلی داشت ?>
@@ -133,9 +154,13 @@ $hodima_nonce_field = static function (): void {
                     <span class="dashicons dashicons-chart-area" aria-hidden="true"></span>
                     <h2 class="hd-card__title">بازدید ربات‌های هوش مصنوعی (۷ روز گذشته)</h2>
                 </div>
+                <?php if ( 0 === (int) array_sum( array_map( 'intval', wp_list_pluck( $ai_chart_7d, 'count' ) ) ) ) : ?>
+                    <p class="hodima-empty-line"><span aria-hidden="true">—</span> هنوز بازدیدی ثبت نشده؛ با اولین بازدید ربات نمودار اینجا می‌آید.</p>
+                <?php else : ?>
                 <div id="hodimaAiChart" class="hodima-chart"
                     data-labels="<?php echo esc_attr( wp_json_encode( wp_list_pluck( $ai_chart_7d, 'label' ) ) ); ?>"
                     data-values="<?php echo esc_attr( wp_json_encode( wp_list_pluck( $ai_chart_7d, 'count' ) ) ); ?>"></div>
+                <?php endif; ?>
         </section>
 
     <?php elseif ( 'queue' === $active_tab ) : ?>

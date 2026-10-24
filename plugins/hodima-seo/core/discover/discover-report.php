@@ -206,14 +206,14 @@ function hodima_seo_discover_report_row_html( array $row, array $stats ): string
 		data-skip="<?php echo '1' === (string) get_metadata( $context, $id, HODIMA_SEO_DISCOVER_SKIP_META, true ) ? '1' : ''; ?>">
 		<td>
 			<strong><a href="<?php echo esc_url( (string) $row['edit'] ); ?>"><?php echo esc_html( '' !== $row['title'] ? (string) $row['title'] : '(بدون عنوان)' ); ?></a></strong>
-			<div class="hd-muted"><?php echo esc_html( hodima_seo_discover_type_label( (string) $row['type'] ) . ( '' !== $row['date'] ? ' · ' . $row['date'] : '' ) ); ?></div>
+			<div class="hd-muted"><?php echo esc_html( hodima_seo_discover_type_label( (string) $row['type'] ) . ( '' !== $row['date'] ? ' · ' . $row['date'] : '' ) ); ?> ·
+				<button type="button" class="button-link hodima-dr-quick" data-hodima-dr-quick aria-haspopup="dialog"><?php echo esc_html( 'ویرایش سریع' ); ?></button></div>
 			<?php if ( '' !== $data['title'] ) : ?>
 				<div class="hodima-dr-card-title"><?php echo esc_html( 'عنوان کارت: ' . $data['title'] ); ?></div>
 			<?php endif; ?>
-			<button type="button" class="button-link hodima-dr-quick" data-hodima-dr-quick aria-haspopup="dialog"><?php echo esc_html( 'ویرایش سریع' ); ?></button>
 		</td>
 		<td><span class="hd-pill <?php echo esc_attr( $class ); ?>"><?php echo esc_html( sprintf( '%1$s · %2$s از %3$s', $label, number_format_i18n( (int) $row['ok'] ), number_format_i18n( (int) $row['total'] ) ) ); ?></span></td>
-		<td><?php hodima_seo_discover_render_issue_pills( (array) $row['issues'] ); ?></td>
+		<td><?php hodima_seo_discover_render_issue_pills( (array) $row['issues'], 3 ); ?></td>
 		<?php if ( ! empty( $stats['fetched'] ) ) : ?>
 			<td dir="ltr"><?php echo esc_html( number_format_i18n( $metric( 'clicks' ) ) . ' / ' . number_format_i18n( $metric( 'impressions' ) ) ); ?></td>
 		<?php endif; ?>
@@ -610,7 +610,7 @@ function hodima_seo_discover_render_report(): void {
 					<a href="<?php echo esc_url( hodima_seo_discover_page_url( [ 'type' => $t ] + $args ) ); ?>"<?php echo $t === $type ? ' aria-current="true"' : ''; ?>><?php echo esc_html( hodima_seo_discover_type_label( $t ) ); ?> <span class="hodima-dr-seg__count"><?php echo esc_html( $num( (int) ( $by_type[ $t ] ?? 0 ) ) ); ?></span></a>
 				<?php endforeach; ?>
 			</nav>
-			<a class="hodima-dr-toggle" href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'issues' => $only ? '' : '1' ] + $args ) ) ); ?>" aria-pressed="<?php echo $only ? 'true' : 'false'; ?>">
+			<a class="hodima-dr-toggle" href="<?php echo esc_url( hodima_seo_discover_page_url( array_filter( [ 'issues' => $only ? '' : '1' ] + $args ) ) ); ?>" <?php echo $only ? ' aria-current="true"' : ''; ?>>
 				<?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در تابع ?>
 				فقط نیازمند توجه <span class="hodima-dr-seg__count"><?php echo esc_html( $num( $needing ) ); ?></span>
 			</a>
@@ -698,14 +698,30 @@ function hodima_seo_discover_render_report(): void {
  *
  * @param list<array{status: string, label: string, detail: string}> $issues
  */
-function hodima_seo_discover_render_issue_pills( array $issues ): void {
-	foreach ( $issues as $issue ) {
-		printf(
-			'<span class="hd-pill %1$s" title="%2$s">%3$s</span> ',
-			esc_attr( 'error' === $issue['status'] ? 'hd-pill--error' : 'hd-pill--warn' ),
-			esc_attr( $issue['detail'] ),
-			esc_html( $issue['label'] )
-		);
+function hodima_seo_discover_render_issue_pills( array $issues, int $limit = 0 ): void {
+
+	// خطاها اول؛ با سقف، بقیه پشت «+N» می‌رود (ردیف‌های جدول کوتاه بماند)
+	if ( $limit > 0 && count( $issues ) > $limit ) {
+		usort( $issues, static fn( array $a, array $b ): int => ( 'error' === $b['status'] ) <=> ( 'error' === $a['status'] ) );
+	}
+
+	$pill = static fn( array $issue ): string => sprintf(
+		'<span class="hd-pill %1$s" title="%2$s">%3$s</span> ',
+		esc_attr( 'error' === $issue['status'] ? 'hd-pill--error' : 'hd-pill--warn' ),
+		esc_attr( $issue['detail'] ),
+		esc_html( $issue['label'] )
+	);
+
+	foreach ( array_slice( $issues, 0, $limit > 0 ? $limit : null ) as $issue ) {
+		echo $pill( $issue ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در $pill
+	}
+
+	if ( $limit > 0 && count( $issues ) > $limit ) {
+		echo '<details class="hodima-dr-more"><summary><span dir="ltr">' . esc_html( '+' . number_format_i18n( count( $issues ) - $limit ) ) . '</span><span class="screen-reader-text"> مورد دیگر</span></summary>';
+		foreach ( array_slice( $issues, $limit ) as $issue ) {
+			echo $pill( $issue ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape‌شده در $pill
+		}
+		echo '</details>';
 	}
 }
 

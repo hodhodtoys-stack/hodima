@@ -445,8 +445,8 @@ final class Pages {
 				<span class="htc-pill htc-pill--muted"><?php echo esc_html( Health::type_label( $node['kind'], $node['type'] ) ); ?></span>
 				<span class="htc-pill htc-pill--ok"><?php echo esc_html( number_format_i18n( $count ) . ' زیرمجموعه' ); ?></span>
 				<?php if ( ! Render::has_box( $root ) ) : ?><span class="htc-pill htc-pill--warn">کادر خوشه نمایش داده نمی‌شود</span><?php endif; ?>
-				<a class="htc-tree-card__edit" href="<?php echo esc_url( Health::edit_link( $node['kind'], (int) $node['id'] ) ); ?>">ویرایش</a>
 			</summary>
+			<p class="htc-tree-card__edit"><a href="<?php echo esc_url( Health::edit_link( $node['kind'], (int) $node['id'] ) ); ?>">ویرایش</a></p>
 			<?php self::tree( $root, $shown, 0 ); ?>
 		</details>
 		<?php
@@ -549,8 +549,8 @@ final class Pages {
 					<span class="htc-score htc-score--<?php echo esc_attr( $level ); ?>"><?php echo esc_html( $cluster['score'] . '٪' ); ?></span>
 					<span class="htc-tree-card__title"><?php echo esc_html( $pillar['title'] ); ?></span>
 					<span class="htc-pill htc-pill--muted"><?php echo esc_html( number_format_i18n( count( $cluster['children'] ) ) . ' زیرمجموعه' ); ?></span>
-					<a class="htc-tree-card__edit" href="<?php echo esc_url( Health::edit_link( $pillar['kind'], (int) $pillar['id'] ) ); ?>">ویرایش پیلار</a>
 				</summary>
+				<p class="htc-tree-card__edit"><a href="<?php echo esc_url( Health::edit_link( $pillar['kind'], (int) $pillar['id'] ) ); ?>">ویرایش پیلار</a></p>
 
 				<?php if ( $cluster['issues'] ) : ?>
 					<ul class="htc-issues">
@@ -631,7 +631,7 @@ final class Pages {
 			<section class="hd-card">
 				<header class="hd-card__head">
 					<?php echo self::icon( 'dashicons-networking' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-					<h2 class="hd-card__title">ساختار خوشه</h2>
+					<h2 class="hd-card__title">ساختار و نمایش خوشه</h2>
 				</header>
 				<div class="hd-fields">
 					<div class="hd-field hd-field--wide">
@@ -641,15 +641,6 @@ final class Pages {
 						</label>
 						<p class="hd-field__help">صفحه‌ای که والد دستی ندارد، خودکار زیر نزدیک‌ترین پیلار می‌رود: نوشته و محصول ← دسته اصلی‌شان (یا والد آن دسته)، زیردسته ← دسته والد، زیربرگه ← برگه والد. والد دستی همیشه مقدم است و «خارج از خوشه» هم والد خودکار ندارد.</p>
 					</div>
-				</div>
-			</section>
-
-			<section class="hd-card">
-				<header class="hd-card__head">
-					<?php echo self::icon( 'dashicons-visibility' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-					<h2 class="hd-card__title">نمایش کادر خوشه</h2>
-				</header>
-				<div class="hd-fields">
 					<div class="hd-field hd-field--wide">
 						<span class="hd-field__label">نمایش خودکار (بدون شورت‌کد)</span>
 						<div class="hd-choices">
@@ -662,6 +653,24 @@ final class Pages {
 						</div>
 						<p class="hd-field__help">اگر شورت‌کد <code>[hodima_topic_cluster]</code> در متن باشد، کادر همان‌جا و فقط یک بار نمایش داده می‌شود.</p>
 					</div>
+					<div class="hd-field hd-field--wide">
+						<label class="hd-toggle">
+							<input type="checkbox" class="hd-switch" role="switch" name="hodima_tc[show_children]" value="1" <?php checked( $s['show_children'] ); ?>>
+							<span>روی پیلار: فهرست زیرمجموعه‌ها</span>
+						</label>
+						<label class="hd-toggle">
+							<input type="checkbox" class="hd-switch" role="switch" name="hodima_tc[show_siblings]" value="1" <?php checked( $s['show_siblings'] ); ?>>
+							<span>روی زیرمجموعه‌ها: «مطالب هم‌خوشه» (لینک مقاله‌های یک خوشه به هم)</span>
+						</label>
+						<label class="hd-toggle">
+							<input type="checkbox" class="hd-switch" role="switch" name="hodima_tc[hide_noindex]" value="1" <?php checked( $s['hide_noindex'] ); ?>>
+							<span>لینک به صفحه‌های noindex در کادر نمایش داده نشود</span>
+						</label>
+					</div>
+				</div>
+				<details class="htc-more">
+					<summary>جایگاه، چیدمان و عنوان‌ها (اختیاری)</summary>
+					<div class="hd-fields">
 					<div class="hd-field">
 						<label class="hd-field__label" for="htc-paragraph">جایگاه در نوشته‌ها: بعد از پاراگراف</label>
 						<input type="number" min="0" max="50" id="htc-paragraph" name="hodima_tc[paragraph]" value="<?php echo esc_attr( (string) $s['paragraph'] ); ?>">
@@ -681,20 +690,6 @@ final class Pages {
 							<option value="grid" <?php selected( $s['layout'], 'grid' ); ?>>شبکه‌ای (کارت)</option>
 							<option value="list" <?php selected( $s['layout'], 'list' ); ?>>فهرست ساده</option>
 						</select>
-					</div>
-					<div class="hd-field hd-field--wide">
-						<label class="hd-toggle">
-							<input type="checkbox" class="hd-switch" role="switch" name="hodima_tc[show_children]" value="1" <?php checked( $s['show_children'] ); ?>>
-							<span>روی پیلار: فهرست زیرمجموعه‌ها</span>
-						</label>
-						<label class="hd-toggle">
-							<input type="checkbox" class="hd-switch" role="switch" name="hodima_tc[show_siblings]" value="1" <?php checked( $s['show_siblings'] ); ?>>
-							<span>روی زیرمجموعه‌ها: «مطالب هم‌خوشه» (لینک مقاله‌های یک خوشه به هم)</span>
-						</label>
-						<label class="hd-toggle">
-							<input type="checkbox" class="hd-switch" role="switch" name="hodima_tc[hide_noindex]" value="1" <?php checked( $s['hide_noindex'] ); ?>>
-							<span>لینک به صفحه‌های noindex در کادر نمایش داده نشود</span>
-						</label>
 					</div>
 					<div class="hd-field">
 						<label class="hd-field__label" for="htc-climit">حداکثر زیرمجموعه در کادر</label>
@@ -717,7 +712,8 @@ final class Pages {
 						<label class="hd-field__label" for="htc-ls">عنوان بخش هم‌خوشه‌ها</label>
 						<input type="text" id="htc-ls" name="hodima_tc[label_siblings]" value="<?php echo esc_attr( (string) $s['label_siblings'] ); ?>">
 					</div>
-				</div>
+					</div>
+				</details>
 			</section>
 
 			<section class="hd-card">
@@ -738,18 +734,15 @@ final class Pages {
 				</div>
 			</section>
 
-			<section class="hd-card">
-				<header class="hd-card__head">
-					<?php echo self::icon( 'dashicons-editor-help' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-					<h2 class="hd-card__title">راهنمای شورت‌کد</h2>
-				</header>
+			<details class="hd-card htc-more htc-more--card">
+				<summary>راهنمای شورت‌کد</summary>
 				<ul class="hd-list">
 					<li><code>[hodima_topic_cluster]</code> کادر خوشه همین صفحه: مرجع (پیلار)، زیرمجموعه‌ها یا مطالب هم‌خوشه.</li>
 					<li><code>show="parents,children,siblings"</code> فقط بخش‌های دلخواه · <code>limit="8"</code> حداکثر لینک هر بخش.</li>
 					<li><code>heading="h3"</code> تگ عنوان · <code>layout="list"</code> فهرست ساده به جای کارت.</li>
 					<li><code>id="12" type="term"</code> نمایش خوشه دسته یا صفحه‌ای دیگر.</li>
 				</ul>
-			</section>
+			</details>
 
 			<div class="hd-actions">
 				<button type="submit" name="hodima_tc_settings_submit" value="1" class="button button-primary">ذخیره تنظیمات</button>
