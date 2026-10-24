@@ -234,58 +234,135 @@ function render_dashboard(): void {
 	}
 
 	$registered = Modules::plugins();
+
+	// بررسی‌های محیط: «نیازمند توجه» (هشدار/خطا)، «توصیه» (info) و سالم؛ سالم‌ها جمع‌شده می‌آیند
+	$healthy = [];
+	$notes   = [];
+	foreach ( environment_checks() as $check ) {
+		if ( $check['ok'] ) {
+			$healthy[] = $check;
+		} else {
+			$notes[] = $check;
+		}
+	}
+	$problems = count( array_filter( $notes, static fn( array $c ): bool => 'info' !== $c['level'] ) );
+	$advice   = count( $notes ) - $problems;
+	$has_err  = (bool) array_filter( $notes, static fn( array $c ): bool => 'error' === $c['level'] );
+	$state    = $has_err ? 'error' : ( $problems > 0 ? 'warn' : 'ok' );
+
+	$active_count  = 0;
+	$enabled_total = 0;
+	foreach ( family() as $item ) {
+		if ( defined( $item['constant'] ) ) {
+			++$active_count;
+		}
+		$data = $item['plugin'] ? ( $registered[ $item['plugin'] ] ?? null ) : null;
+		if ( $data ) {
+			foreach ( array_keys( $data['modules'] ) as $id ) {
+				$enabled_total += Modules::is_enabled( $item['plugin'], $id ) ? 1 : 0;
+			}
+		}
+	}
+
+	$title = match ( $state ) {
+		'error' => 'مشکلی نیاز به رفع دارد',
+		'warn'  => 'چند مورد نیاز به بررسی دارد',
+		default => 'همه‌چیز سالم است',
+	};
+	$text  = sprintf( '%1$s افزونه فعال، %2$s ماژول روشن.', number_format_i18n( $active_count ), number_format_i18n( $enabled_total ) );
+	if ( $problems > 0 ) {
+		$text .= sprintf( ' %s مورد در «بررسی محیط» نیاز به رفع دارد.', number_format_i18n( $problems ) );
+	} elseif ( $advice > 0 ) {
+		$text .= sprintf( ' %s توصیه برای بهبود پایین آمده است.', number_format_i18n( $advice ) );
+	}
 	?>
 	<div class="wrap hd-wrap hodima-hub">
 		<?php render_header( 'ابزارهای هدیما', 'وضعیت افزونه‌ها و ماژول‌ها، و بررسی آمادگی سرور.' ); ?>
 
-		<section class="hodima-hub__section" aria-labelledby="hodima-hub-plugins">
-			<h2 id="hodima-hub-plugins">افزونه‌ها</h2>
-			<div class="hodima-hub__grid">
-				<?php foreach ( family() as $key => $item ) : ?>
-					<?php
-					$active  = defined( $item['constant'] );
-					$data    = $item['plugin'] ? ( $registered[ $item['plugin'] ] ?? null ) : null;
-					$total   = $data ? count( $data['modules'] ) : 0;
-					$enabled = $data ? count( array_filter( array_keys( $data['modules'] ), static fn( string $id ): bool => Modules::is_enabled( $item['plugin'], $id ) ) ) : 0;
-					?>
-					<article class="hodima-card <?php echo $active ? 'is-on' : 'is-off'; ?>">
-						<header class="hodima-card__head">
-							<h3 class="hodima-card__title"><?php echo esc_html( $item['title'] ); ?></h3>
-							<span class="hodima-pill <?php echo $active ? 'hodima-pill--ok' : 'hodima-pill--muted'; ?>">
-								<?php echo $active ? esc_html( 'فعال · ' . constant( $item['constant'] ) ) : 'غیرفعال'; ?>
-							</span>
-						</header>
-						<p class="hodima-card__desc">
-							<?php
-							echo esc_html( match ( true ) {
-								'core' === $key => 'کتابخانه مشترک و همین پنل.',
-								null !== $data  => sprintf( '%1$s از %2$s ماژول روشن', number_format_i18n( $enabled ), number_format_i18n( $total ) ),
-								default         => 'برای استفاده، افزونه را از «افزونه‌ها» فعال کنید.',
-							} );
-							?>
-						</p>
-						<?php if ( $data ) : ?>
-							<a class="button hodima-button" href="<?php echo esc_url( modules_page_url( $item['plugin'] ) ); ?>">مدیریت ماژول‌ها</a>
-						<?php elseif ( ! $active ) : ?>
-							<a class="button" href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">افزونه‌ها</a>
-						<?php endif; ?>
-					</article>
-				<?php endforeach; ?>
+		<section class="hodima-statusbar is-<?php echo esc_attr( $state ); ?>" aria-label="خلاصه وضعیت">
+			<span class="dashicons <?php echo esc_attr( 'ok' === $state ? 'dashicons-yes-alt' : 'dashicons-warning' ); ?>" aria-hidden="true"></span>
+			<div class="hodima-statusbar__body">
+				<h2 class="hodima-statusbar__title"><?php echo esc_html( $title ); ?></h2>
+				<p class="hodima-statusbar__text"><?php echo esc_html( $text ); ?></p>
 			</div>
+			<span class="hodima-pill <?php echo esc_attr( match ( $state ) { 'ok' => 'hodima-pill--ok', 'warn' => 'hodima-pill--warn', default => 'hodima-pill--error' } ); ?>">
+				<?php echo esc_html( match ( $state ) { 'ok' => 'سالم', 'warn' => 'نیاز به بررسی', default => 'خطا' } ); ?>
+			</span>
 		</section>
 
-		<section class="hodima-hub__section" aria-labelledby="hodima-hub-env">
-			<h2 id="hodima-hub-env">بررسی محیط</h2>
-			<ul class="hodima-checks">
-				<?php foreach ( environment_checks() as $check ) : ?>
-					<li class="hodima-check hodima-check--<?php echo esc_attr( $check['ok'] ? 'ok' : $check['level'] ); ?>">
-						<span class="hodima-check__icon" aria-hidden="true"></span>
-						<span class="hodima-check__label"><?php echo esc_html( $check['label'] ); ?></span>
-						<span class="hodima-check__detail"><?php echo esc_html( $check['detail'] ); ?></span>
-						<span class="screen-reader-text"><?php echo $check['ok'] ? 'درست' : 'نیاز به بررسی'; ?></span>
-					</li>
-				<?php endforeach; ?>
-			</ul>
+		<section class="hodima-kpis" aria-label="افزونه‌ها">
+			<?php foreach ( family() as $key => $item ) : ?>
+				<?php
+				$active  = defined( $item['constant'] );
+				$data    = $item['plugin'] ? ( $registered[ $item['plugin'] ] ?? null ) : null;
+				$total   = $data ? count( $data['modules'] ) : 0;
+				$enabled = $data ? count( array_filter( array_keys( $data['modules'] ), static fn( string $id ): bool => Modules::is_enabled( $item['plugin'], $id ) ) ) : 0;
+				?>
+				<article class="hodima-kpi <?php echo $active ? 'is-on' : 'is-off'; ?>">
+					<div class="hodima-kpi__top">
+						<h3 class="hodima-kpi__title"><?php echo esc_html( $item['title'] ); ?></h3>
+						<?php if ( $active ) : ?>
+							<span class="hodima-kpi__ver"><?php echo esc_html( (string) constant( $item['constant'] ) ); ?></span>
+						<?php else : ?>
+							<span class="hodima-pill hodima-pill--muted">غیرفعال</span>
+						<?php endif; ?>
+					</div>
+					<?php if ( $data ) : ?>
+						<p class="hodima-kpi__text">
+							<b><?php echo esc_html( number_format_i18n( $enabled ) ); ?></b><?php echo esc_html( sprintf( 'از %s ماژول روشن', number_format_i18n( $total ) ) ); ?>
+						</p>
+						<div class="hodima-kpi__bar" aria-hidden="true"><i style="inline-size: <?php echo esc_attr( (string) ( $total > 0 ? round( 100 * $enabled / $total ) : 0 ) ); ?>%"></i></div>
+						<a class="hodima-kpi__link" href="<?php echo esc_url( modules_page_url( $item['plugin'] ) ); ?>">مدیریت ماژول‌ها</a>
+					<?php elseif ( ! $active ) : ?>
+						<p class="hodima-kpi__text">برای استفاده، افزونه را از «افزونه‌ها» فعال کنید.</p>
+						<a class="hodima-kpi__link" href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">افزونه‌ها</a>
+					<?php else : ?>
+						<p class="hodima-kpi__text">کتابخانه مشترک و همین پنل.</p>
+					<?php endif; ?>
+				</article>
+			<?php endforeach; ?>
+		</section>
+
+		<section class="hodima-env" aria-labelledby="hodima-hub-env">
+			<div class="hodima-env__head">
+				<h2 id="hodima-hub-env">بررسی محیط</h2>
+				<div class="hodima-env__counts">
+					<?php if ( $problems > 0 ) : ?>
+						<span class="hodima-pill hodima-pill--warn"><?php echo esc_html( sprintf( '%s نیاز به بررسی', number_format_i18n( $problems ) ) ); ?></span>
+					<?php endif; ?>
+					<?php if ( $advice > 0 ) : ?>
+						<span class="hodima-pill hodima-pill--info"><?php echo esc_html( sprintf( '%s توصیه', number_format_i18n( $advice ) ) ); ?></span>
+					<?php endif; ?>
+					<span class="hodima-pill hodima-pill--ok"><?php echo esc_html( sprintf( '%s سالم', number_format_i18n( count( $healthy ) ) ) ); ?></span>
+				</div>
+			</div>
+			<?php if ( $notes ) : ?>
+				<ul class="hodima-checks">
+					<?php foreach ( $notes as $check ) : ?>
+						<li class="hodima-check hodima-check--<?php echo esc_attr( $check['level'] ); ?>">
+							<span class="hodima-check__icon" aria-hidden="true"></span>
+							<span class="hodima-check__label"><?php echo esc_html( $check['label'] ); ?></span>
+							<span class="hodima-check__detail"><?php echo esc_html( $check['detail'] ); ?></span>
+							<span class="screen-reader-text">نیاز به بررسی</span>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
+			<?php if ( $healthy ) : ?>
+				<details class="hodima-env__more"<?php echo $notes ? '' : ' open'; ?>>
+					<summary><?php echo esc_html( sprintf( '%s مورد سالم', number_format_i18n( count( $healthy ) ) ) ); ?></summary>
+					<ul class="hodima-checks">
+						<?php foreach ( $healthy as $check ) : ?>
+							<li class="hodima-check hodima-check--ok">
+								<span class="hodima-check__icon" aria-hidden="true"></span>
+								<span class="hodima-check__label"><?php echo esc_html( $check['label'] ); ?></span>
+								<span class="hodima-check__detail"><?php echo esc_html( $check['detail'] ); ?></span>
+								<span class="screen-reader-text">درست</span>
+							</li>
+						<?php endforeach; ?>
+					</ul>
+				</details>
+			<?php endif; ?>
 		</section>
 
 		<?php if ( function_exists( 'hodima_settings' ) ) : ?>
