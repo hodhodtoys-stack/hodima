@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function hodima_phone_privacy_phones( string $email ): array {
     $email = sanitize_email( $email );
-    if ( '' === $email || ! function_exists( 'hodima_phone_normalize' ) ) {
+    if ( '' === $email || ! function_exists( 'hodima_phone_normalize' ) || ! function_exists( 'hodima_phone_lead_ids' ) ) {
         return [];
     }
 
@@ -69,45 +69,12 @@ function hodima_phone_privacy_phones( string $email ): array {
 }
 
 /**
- * شناسه لیدهای یک شماره (شماره همان عنوان پست لید است).
+ * شناسه لیدهای یک شماره، با لیدهای داخل زباله‌دان (تا حذف دائمی هنوز شماره را دارند و باید حذف/خروجی شوند).
  *
  * @return list<int>
  */
 function hodima_phone_privacy_lead_ids( string $phone ): array {
-    $ids = get_posts( [
-        'post_type'      => 'hodima_phone_lead',
-        'title'          => $phone,
-        'post_status'    => 'any',
-        'posts_per_page' => -1,
-        'fields'         => 'ids',
-        'no_found_rows'  => true,
-    ] );
-
-    return array_map( 'intval', $ids );
-}
-
-/**
- * داده ذخیره‌شده یک لید؛ با بازگشت به متاهای قدیمی (همان الگوی hodima_phone_process).
- *
- * @return array{count:int,last_url:string,last_title:string,last_time:string,history:list<array<string,string>>}
- */
-function hodima_phone_privacy_lead_data( int $lead_id ): array {
-    $data = get_post_meta( $lead_id, '_hodima_lead_data', true );
-    if ( ! is_array( $data ) ) {
-        $data = [
-            'count'     => (int) get_post_meta( $lead_id, 'hodima_request_count', true ),
-            'last_url'  => (string) get_post_meta( $lead_id, 'hodima_page_url', true ),
-            'last_time' => (string) get_post_meta( $lead_id, 'hodima_submit_time', true ),
-        ];
-    }
-
-    return [
-        'count'      => max( 1, (int) ( $data['count'] ?? 1 ) ),
-        'last_url'   => (string) ( $data['last_url'] ?? '' ),
-        'last_title' => (string) ( $data['last_title'] ?? '' ),
-        'last_time'  => (string) ( $data['last_time'] ?? '' ),
-        'history'    => is_array( $data['history'] ?? null ) ? array_values( $data['history'] ) : [],
-    ];
+    return hodima_phone_lead_ids( $phone, true );
 }
 
 add_filter( 'wp_privacy_personal_data_exporters', static function ( array $exporters ): array {
@@ -131,12 +98,13 @@ add_filter( 'wp_privacy_personal_data_erasers', static function ( array $erasers
  *
  * @return array{data:list<array<string,mixed>>,done:bool}
  */
+// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- امضای ثابت exporter وردپرس
 function hodima_phone_privacy_export( string $email_address, int $page = 1 ): array {
     $export = [];
 
     foreach ( hodima_phone_privacy_phones( $email_address ) as $phone ) {
         foreach ( hodima_phone_privacy_lead_ids( $phone ) as $lead_id ) {
-            $lead    = hodima_phone_privacy_lead_data( $lead_id );
+            $lead    = hodima_phone_lead_data( $lead_id );
             $history = [];
             foreach ( $lead['history'] as $row ) {
                 $history[] = trim( ( $row['time'] ?? '' ) . ' — ' . ( $row['title'] ?? '' ) . ' — ' . ( $row['url'] ?? '' ), ' —' );
@@ -165,6 +133,7 @@ function hodima_phone_privacy_export( string $email_address, int $page = 1 ): ar
  *
  * @return array{items_removed:bool,items_retained:bool,messages:list<string>,done:bool}
  */
+// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- امضای ثابت eraser وردپرس
 function hodima_phone_privacy_erase( string $email_address, int $page = 1 ): array {
     $removed = 0;
 
@@ -194,7 +163,7 @@ function hodima_phone_privacy_policy_text(): void {
 
     $text  = '<h3>' . esc_html( 'فرم «شماره تماس» (مشاوره و کاتالوگ)' ) . '</h3>';
     $text .= '<p class="privacy-policy-tutorial">' . esc_html( 'این متن پیشنهادی است؛ مطابق وضع کسب‌وکار خود ویرایش کنید.' ) . '</p>';
-    $text .= '<p><strong>' . esc_html( 'چه چیزی ذخیره می‌شود:' ) . '</strong> ' . esc_html( 'شماره تماسی که بازدیدکننده در فرم وارد می‌کند، آدرس و عنوان صفحه‌ای که فرم را در آن پر کرده، زمان ثبت، و تعداد دفعات ثبت همان شماره (تاریخچه ۱۰ ثبت آخر). نشانی IP در فهرست شماره‌ها ذخیره نمی‌شود؛ فقط برای محدودیت یک ثبت در هر ۱۵ ثانیه، یک نشانه رمزشده موقت نگه داشته می‌شود.' ) . '</p>';
+    $text .= '<p><strong>' . esc_html( 'چه چیزی ذخیره می‌شود:' ) . '</strong> ' . esc_html( 'شماره تماسی که بازدیدکننده در فرم وارد می‌کند، آدرس و عنوان صفحه‌ای که فرم را در آن پر کرده، زمان ثبت، و تعداد دفعات ثبت همان شماره (تاریخچه ۱۰ ثبت آخر). نشانی IP در فهرست شماره‌ها ذخیره نمی‌شود؛ فقط برای ضد اسپم، یک نشانه رمزشده و موقت از آن (حداکثر یک ساعت) و از خود شماره (یک دقیقه) نگه داشته می‌شود.' ) . '</p>';
     $text .= '<p><strong>' . esc_html( 'چرا:' ) . '</strong> ' . esc_html( 'تماس برای مشاوره و ارسال کاتالوگ به درخواست خود بازدیدکننده.' ) . '</p>';
     $text .= '<p><strong>' . esc_html( 'تا کی:' ) . '</strong> ' . esc_html( 'تا زمانی که مدیر سایت آن شماره را از «شماره‌های تماس» در پیشخوان حذف کند. مدت نگهداری را خودتان بنویسید.' ) . '</p>';
     $text .= '<p><strong>' . esc_html( 'درخواست خروجی یا حذف:' ) . '</strong> ' . esc_html( 'اگر درخواست‌دهنده حساب کاربری یا سفارش با همان شماره دارد، ابزارهای وردپرس (ابزارها ← خروجی/حذف داده شخصی) با ایمیل او شماره را هم پیدا می‌کنند. اگر فقط فرم را پر کرده است، شماره را در «شماره‌های تماس» جستجو و حذف کنید.' ) . '</p>';

@@ -36,6 +36,8 @@
 	<file>plugins/hodima-media/components/notification</file>
 	<!-- ماژول ویدیوها Hodima Media (بخش ۲۱۶؛ کل پوشه از بخش ۲۲۱) -->
 	<file>plugins/hodima-media/components/video-watch</file>
+	<!-- فرم لید تلفنی Hodima Commerce (بخش ۲۲۸) -->
+	<file>plugins/hodima-commerce/components/phone</file>
 	<!-- داخل پوشه schema ولی اسکیما نیستند (سایت‌مپ، فید پادکست، صفحه‌های پیشخوان) -->
 	<exclude-pattern>plugins/hodima-seo/schema/admin/*</exclude-pattern>
 	<exclude-pattern>plugins/hodima-seo/schema/sitemap-core\.php</exclude-pattern>

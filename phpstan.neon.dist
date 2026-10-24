@@ -25,6 +25,7 @@ parameters:
 		- plugins/hodima-media/components/expandable-boxes
 		- plugins/hodima-media/components/notification
 		- plugins/hodima-media/components/video-watch
+		- plugins/hodima-commerce/components/phone
 	excludePaths:
 		analyse:
 			- hodima/user-panel/*

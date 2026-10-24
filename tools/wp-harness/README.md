@@ -45,6 +45,9 @@ HARNESS=1 php tools/wp-harness/notification-tests.php
 # آزمون خودکار Commerce (تاریخ شمسی، کتابخانه شمسی Core، شهرها، موبایل/کد پستی/کد ملی؛ ci-check هم اجرا می‌کند)
 HARNESS=1 php tools/wp-harness/commerce-tests.php
 
+# آزمون خودکار فرم لید تلفنی Commerce (شماره، توکن امضاشده و حداقل زمان، نرخ/تکراری، ذخیره و تاریخچه، شکست ذخیره، CSV؛ ci-check هم اجرا می‌کند)
+HARNESS=1 php tools/wp-harness/phone-tests.php
+
 # صفحه‌های پیشخوان (دسترسی، عنوان، منوی فعال، هشدار PHP)
 tools/wp-harness/admin-check.sh . /tmp/adm                 # صفحه‌های پیش‌فرض
 tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های دلخواه

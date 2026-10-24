@@ -40,6 +40,8 @@ notification="plugins/hodima-media/components/notification"
 # ویدیوها: فقط فایل‌هایی که بازنویسی شده‌اند (بقیه مرحله ۶، HODIMA-AUDIT.md ۴.۲۲)
 videowatch_css="plugins/hodima-media/components/video-watch/*.css"
 videowatch_js="plugins/hodima-media/components/video-watch/video-watch.front.js plugins/hodima-media/components/video-watch/video-watch.admin.js plugins/hodima-media/components/video-watch/video-watch.ui.js"
+# فرم لید تلفنی Commerce (بدون baseline)
+phone="plugins/hodima-commerce/components/phone"
 
 fail=0
 need() {
@@ -101,7 +103,7 @@ fi
 if want css; then
 	echo "== CSS"
 	if need node_modules/.bin/stylelint Stylelint "npm ci"; then
-		node_modules/.bin/stylelint "hodima/**/*.css" "$stories/**/*.css" "$expandable/*.css" "$notification/**/*.css" "$videowatch_css" -f json > /dev/null 2> "$tmp/stylelint.json"
+		node_modules/.bin/stylelint "hodima/**/*.css" "$stories/**/*.css" "$expandable/*.css" "$notification/**/*.css" "$videowatch_css" "$phone/*.css" -f json > /dev/null 2> "$tmp/stylelint.json"
 		ratchet stylelint "$tmp/stylelint.json" "$base/stylelint.json"
 	fi
 	if need node_modules/lightningcss "Lightning CSS" "npm ci"; then
@@ -117,7 +119,7 @@ if want js; then
 	echo "== JS"
 	if need node_modules/.bin/eslint ESLint "npm ci"; then
 		# shellcheck disable=SC2086 # دو مسیر جدا
-		node_modules/.bin/eslint hodima "$stories" "$expandable" "$notification" $videowatch_js -f json > "$tmp/eslint.json" 2> "$tmp/eslint.err"
+		node_modules/.bin/eslint hodima "$stories" "$expandable" "$notification" $videowatch_js "$phone/phone-script.js" -f json > "$tmp/eslint.json" 2> "$tmp/eslint.err"
 		ratchet eslint "$tmp/eslint.json" "$base/eslint.json"
 	fi
 fi

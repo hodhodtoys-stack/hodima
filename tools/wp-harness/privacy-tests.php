@@ -87,46 +87,54 @@ $cleanup[] = static function () use ( $lead_a, $lead_b ): void {
 	wp_delete_post( $lead_b, true );
 };
 hodima_pt( 'لید شماره حساب پیدا می‌شود', hodima_phone_privacy_lead_ids( $phone ), [ $lead_a ] );
+$lead_trash = hodima_pt_lead( $phone, [] );
+wp_trash_post( $lead_trash );
+$found = hodima_phone_privacy_lead_ids( $phone );
+sort( $found );
+hodima_pt( 'لید داخل زباله‌دان هم پیدا می‌شود', $found, [ $lead_a, $lead_trash ] );
 
 echo "=== خروجی داده شخصی لید\n";
 $export = hodima_phone_privacy_export( $email );
-hodima_pt( 'فقط لید همین شماره (نه شماره دیگر)', count( $export['data'] ), 1 );
+hodima_pt( 'لیدهای همین شماره (حتی زباله‌دان؛ نه شماره دیگر)', count( $export['data'] ), 2 );
+$item_a = array_values( array_filter( $export['data'], static fn( array $item ): bool => ( $item['item_id'] ?? '' ) === 'hodima-phone-lead-' . $lead_a ) )[0] ?? [];
 hodima_pt( 'خروجی کامل است (done)', $export['done'], true );
-$values = array_column( $export['data'][0]['data'] ?? [], 'value', 'name' );
+$values = array_column( $item_a['data'] ?? [], 'value', 'name' );
 hodima_pt( 'شماره در خروجی', $values['شماره تماس'] ?? null, $phone );
 hodima_pt( 'تعداد دفعات در خروجی', $values['تعداد دفعات ثبت'] ?? null, '3' );
 hodima_pt( 'تاریخچه در خروجی', str_contains( (string) ( $values['تاریخچه ثبت‌ها'] ?? '' ), 'خانه' ), true );
-hodima_pt( 'گروه و شناسه آیتم', [ $export['data'][0]['group_id'] ?? '', $export['data'][0]['item_id'] ?? '' ], [ 'hodima-phone-leads', 'hodima-phone-lead-' . $lead_a ] );
+hodima_pt( 'گروه و شناسه آیتم', [ $item_a['group_id'] ?? '', $item_a['item_id'] ?? '' ], [ 'hodima-phone-leads', 'hodima-phone-lead-' . $lead_a ] );
 hodima_pt( 'ایمیل ناشناس: خروجی خالی', hodima_phone_privacy_export( 'nobody@example.com' ), [ 'data' => [], 'done' => true ] );
 
 echo "=== لید با متاهای قدیمی (قبل از _hodima_lead_data)\n";
-$legacy = hodima_phone_privacy_lead_data( $lead_b );
+$legacy = hodima_phone_lead_data( $lead_b );
 hodima_pt( 'داده لید قدیمی خوانده می‌شود', [ $legacy['count'], $legacy['last_url'], $legacy['last_time'] ], [ 2, 'https://hodima.test/x/', '2026-10-01 08:00' ] );
 
 echo "=== حذف داده شخصی لید\n";
 $erase = hodima_phone_privacy_erase( $email );
 hodima_pt( 'حذف انجام شد', [ $erase['items_removed'], $erase['items_retained'], $erase['done'] ], [ true, false, true ] );
 hodima_pt( 'لید شماره حساب پاک شد', get_post( $lead_a ), null );
+hodima_pt( 'لید داخل زباله‌دان هم پاک شد', get_post( $lead_trash ), null );
 hodima_pt( 'لید شماره دیگر دست‌نخورده', get_post( $lead_b ) instanceof WP_Post, true );
 hodima_pt( 'حذف دوباره: چیزی نمانده', hodima_phone_privacy_erase( $email )['items_removed'], false );
 
 echo "=== یادداشت زیر فرم و لینک سیاست حریم خصوصی\n";
 $html = do_shortcode( '[hodima_phone_form]' );
-hodima_pt( 'یادداشت هدف جمع‌آوری چاپ می‌شود', str_contains( $html, 'class="hodima-phone-note"' ), true );
-hodima_pt( 'یادداشت در aria-describedby ورودی است', (bool) preg_match( '/aria-describedby="[^"]*hodima-phone-1-note/', $html ), true );
-hodima_pt( 'بدون صفحه سیاست: لینکی نیست', str_contains( $html, 'سیاست حریم خصوصی</a>' ), false );
+hodima_pt( 'پیش‌فرض: جمله موافقت چاپ نمی‌شود', str_contains( $html, 'موافقت' ), false );
+hodima_pt( 'بدون صفحه سیاست و بدون متن: یادداشتی نیست', str_contains( $html, 'hodima-phone-note' ), false );
+hodima_pt( 'بدون یادداشت: aria-describedby به یادداشت اشاره نمی‌کند', str_contains( $html, 'hodima-phone-1-note' ), false );
 $policy_page = wp_insert_post( [ 'post_type' => 'page', 'post_title' => 'سیاست حریم خصوصی', 'post_status' => 'publish', 'post_name' => 'privacy-test' ] );
 update_option( 'wp_page_for_privacy_policy', (int) $policy_page );
 $cleanup[] = static function () use ( $policy_page ): void {
 	delete_option( 'wp_page_for_privacy_policy' );
 	wp_delete_post( (int) $policy_page, true );
 };
-// شمارنده static نمونه فرم همین فرایند ادامه دارد؛ نمونه دوم hodima-phone-2 است
+// شمارنده static نمونه فرم همین فرایند ادامه دارد؛ نمونه‌ها hodima-phone-2، 3، … هستند
 $html = do_shortcode( '[hodima_phone_form]' );
-hodima_pt( 'با صفحه سیاست: لینک به آن', str_contains( $html, 'href="' . esc_url( (string) get_permalink( $policy_page ) ) . '">سیاست حریم خصوصی</a>' ), true );
-add_filter( 'hodima_phone_privacy_note', '__return_empty_string' );
-hodima_pt( 'فیلتر خالی: یادداشت چاپ نمی‌شود', str_contains( do_shortcode( '[hodima_phone_form]' ), 'hodima-phone-note' ), false );
-remove_filter( 'hodima_phone_privacy_note', '__return_empty_string' );
+hodima_pt( 'با صفحه سیاست: فقط لینک به آن (بدون جمله موافقت)', str_contains( $html, 'href="' . esc_url( (string) get_permalink( $policy_page ) ) . '">سیاست حریم خصوصی</a>' ) && ! str_contains( $html, 'موافقت' ), true );
+hodima_pt( 'لینک سیاست در aria-describedby ورودی است', (bool) preg_match( '/aria-describedby="[^"]*hodima-phone-2-note/', $html ), true );
+add_filter( 'hodima_phone_privacy_note', static fn(): string => 'متن دلخواه مدیر' );
+hodima_pt( 'فیلتر: متن دلخواه چاپ می‌شود', str_contains( do_shortcode( '[hodima_phone_form]' ), 'متن دلخواه مدیر' ), true );
+remove_all_filters( 'hodima_phone_privacy_note' );
 
 echo "=== متن پیشنهادی سیاست حریم خصوصی\n";
 define( 'WP_ADMIN', true ); // wp_add_privacy_policy_content فقط در پیشخوان و بعد از admin_init کار می‌کند
