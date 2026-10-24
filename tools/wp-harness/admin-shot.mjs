@@ -12,6 +12,8 @@
  * ~/.cache/hodima/wp-core-6.7 گرفته می‌شود. سایت ابزار تست انگلیسی و چپ‌به‌راست است؛ با HODIMA_RTL=1 صفحه و
  * CSS وردپرس راست‌به‌چپ می‌شوند (مثل پیشخوان فارسی سایت). jQuery و wp.media (load-scripts.php) نیستند، پس فقط
  * اسکریپت‌هایی که بدون آن‌ها راه می‌افتند اجرا می‌شوند؛ خطای اسکریپت‌های درون‌خطی خود وردپرس شمرده نمی‌شود.
+ * HODIMA_MEASURE=<فایل jsonl> (+ HODIMA_LABEL=<نام صفحه>): اندازه‌گیری قاعده‌های چیدمان عددی هم انجام و یک خط JSON
+ * اضافه می‌شود (layout-metrics.mjs؛ فقط گزارش، کد خروج را عوض نمی‌کند؛ ابزار: layout-rules.sh).
  * کد خروج ۱ اگر axe نقضی در محدوده پیدا کند یا JS هدیما خطا بدهد.
  */
 import { chromium } from 'playwright-core';
@@ -20,6 +22,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { measureInPage } from './layout-metrics.mjs';
 
 const require = createRequire( import.meta.url );
 const axePath = require.resolve( 'axe-core/axe.min.js' );
@@ -138,6 +141,10 @@ for ( const width of widthsArg.split( ',' ).map( Number ) ) {
 		await page.locator( selector ).first().screenshot( { path: file } );
 	} else {
 		await page.screenshot( { path: file, fullPage: true } );
+	}
+	if ( process.env.HODIMA_MEASURE ) {
+		const m = await page.evaluate( measureInPage );
+		fs.appendFileSync( process.env.HODIMA_MEASURE, JSON.stringify( { label: process.env.HODIMA_LABEL || path.basename( htmlFile ), width, ...m } ) + '\n' );
 	}
 	await page.addScriptTag( { path: axePath } );
 	const res = await page.evaluate( async ( sel ) => window.axe.run( { include: [ sel || '#wpbody-content' ] }, { runOnly: { type: 'tag', values: [ 'wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa' ] } } ), selector );
