@@ -144,6 +144,13 @@ $hodima_section = static function ( string $icon, string $title ): void {
 <form method="post" action="" class="hd-card">
     <?php wp_nonce_field('hodima_save_homepage_schema', 'hodima_homepage_schema_nonce'); ?>
 
+    <div class="hs-tabs" role="tablist" aria-label="بخش‌های تنظیمات صفحه اصلی">
+        <button type="button" class="hs-tab is-active" role="tab" id="hs-tab-biz" aria-controls="hs-panel-biz" aria-selected="true">کسب‌وکار</button>
+        <button type="button" class="hs-tab" role="tab" id="hs-tab-contact" aria-controls="hs-panel-contact" aria-selected="false" tabindex="-1">تماس و ساعات کاری</button>
+        <button type="button" class="hs-tab" role="tab" id="hs-tab-legal" aria-controls="hs-panel-legal" aria-selected="false" tabindex="-1">حقوقی و تجاری</button>
+    </div>
+
+    <div class="hs-tabpanel" role="tabpanel" id="hs-panel-biz" aria-labelledby="hs-tab-biz">
     <?php $hodima_section( 'dashicons-admin-settings', 'تنظیمات عمومی' ); ?>
     <table class="form-table" role="presentation">
         <tr>
@@ -233,6 +240,9 @@ $hodima_section = static function ( string $icon, string $title ): void {
         </tr>
     </table>
 
+    </div>
+
+    <div class="hs-tabpanel" role="tabpanel" id="hs-panel-contact" aria-labelledby="hs-tab-contact">
     <?php $hodima_section( 'dashicons-location', 'اطلاعات تماس و آدرس' ); ?>
     <table class="form-table" role="presentation">
         <tr>
@@ -280,6 +290,9 @@ $hodima_section = static function ( string $icon, string $title ): void {
         </tr>
     </table>
 
+    </div>
+
+    <div class="hs-tabpanel" role="tabpanel" id="hs-panel-legal" aria-labelledby="hs-tab-legal">
     <?php $hodima_section( 'dashicons-id-alt', 'اطلاعات حقوقی و موقعیت روی نقشه' ); ?>
     <p class="description">همه این فیلدها اختیاری‌اند؛ هر کدام خالی بماند در اسکیما نمی‌آید. گوگل این اطلاعات را برای شناخت دقیق‌تر کسب‌وکار (پنل دانش و نقشه) می‌خواند.</p>
     <table class="form-table" role="presentation">
@@ -366,7 +379,52 @@ $hodima_section = static function ( string $icon, string $title ): void {
         <?php endif; ?>
     <?php endif; ?>
 
+    </div>
+
     <?php hodima_view_form_footer(); ?>
 </form>
+
+<script>
+// تب‌های صفحه اصلی: بدون JS همه بخش‌ها پشت‌سرهم دیده می‌شوند (hidden را خود JS می‌گذارد)
+( () => {
+	const form = document.querySelector( '.hs-tabs' )?.closest( 'form' );
+	if ( ! form ) {
+		return;
+	}
+	const tabs = [ ...form.querySelectorAll( '.hs-tab' ) ];
+	const panel = ( tab ) => document.getElementById( tab.getAttribute( 'aria-controls' ) );
+	const select = ( tab, focus ) => {
+		tabs.forEach( ( item ) => {
+			const on = item === tab;
+			item.classList.toggle( 'is-active', on );
+			item.setAttribute( 'aria-selected', String( on ) );
+			item.tabIndex = on ? 0 : -1;
+			panel( item ).hidden = ! on;
+		} );
+		if ( focus ) {
+			tab.focus();
+		}
+	};
+	tabs.forEach( ( tab, index ) => {
+		tab.addEventListener( 'click', () => select( tab, false ) );
+		tab.addEventListener( 'keydown', ( e ) => {
+			const step = { ArrowLeft: 1, ArrowRight: -1 }[ e.key ]; // راست‌به‌چپ
+			if ( step ) {
+				e.preventDefault();
+				select( tabs[ ( index + step + tabs.length ) % tabs.length ], true );
+			}
+		} );
+	} );
+	select( tabs[ 0 ], false );
+	// فیلد نامعتبر در تب پنهان: تبش را باز کن تا پیام اعتبارسنجی دیده شود
+	form.addEventListener( 'invalid', ( e ) => {
+		const owner = e.target.closest( '.hs-tabpanel' );
+		const tab = owner && tabs.find( ( item ) => panel( item ) === owner );
+		if ( tab && owner.hidden ) {
+			select( tab, false );
+		}
+	}, true );
+} )();
+</script>
 
 <?php hodima_view_footer(); ?>

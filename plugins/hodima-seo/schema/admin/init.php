@@ -77,25 +77,68 @@ function hodima_view_header($title, $desc, $icon = '') {
         $icon = $pages[ $current ][3] ?? 'dashicons-editor-code';
     }
 
-    $tabs = array();
-    foreach ( $pages as $slug => $page ) {
-        $tabs[ $slug ] = array(
-            'label' => $page[1],
-            'url'   => admin_url( 'admin.php?page=' . $slug ),
-            'icon'  => $page[3] ?? '',
-        );
-    }
-
     echo '<div class="wrap hd-wrap hodima-wrapper">';
     hodima_admin_header( array(
         'title'       => $title,
         'description' => $desc,
         'icon'        => $icon,
-        'tabs'        => '' !== $current ? $tabs : array(),
+        'tabs'        => array(),
         'current'     => $current,
-        'tabs_label'  => 'صفحه‌های اسکیما',
     ) );
+    // ناوبری دو سطحی (گروه ← صفحه‌های گروه)؛ قبلا ۱۴ تب در دو ردیف بود
+    if ( '' !== $current ) {
+        hodima_schema_render_nav( $current );
+    }
     echo '<div class="hd-body h-card-container">';
+}
+
+/**
+ * گروه‌های ناوبری صفحه‌های اسکیما: شناسه ← [برچسب، فهرست اسلاگ صفحه‌ها].
+ * اسلاگ‌ها و آدرس صفحه‌ها همان قبلی است؛ فقط شکل نوار عوض شده.
+ */
+function hodima_schema_admin_groups(): array {
+    return [
+        'over'   => [ 'نمای کلی', [ 'hodima-schema', 'hodima-schema-health' ] ],
+        'schema' => [ 'اسکیمای صفحه‌ها', [ 'hodima-schema-homepage', 'hodima-schema-breadcrumb', 'hodima-schema-blog', 'hodima-schema-category', 'hodima-schema-product', 'hodima-schema-image', 'hodima-schema-page' ] ],
+        'out'    => [ 'خروجی‌ها', [ 'hodima-sitemap', 'hodima-podcast', 'hodima-llms' ] ],
+        'tools'  => [ 'ابزارها', [ 'hodima-schema-tables', 'hodima-schema-cleaner' ] ],
+    ];
+}
+
+/** نوار دو سطحی: چهار گروه، و زیر آن صفحه‌های گروهِ صفحه فعلی. */
+function hodima_schema_render_nav( string $current ): void {
+    $pages  = hodima_schema_admin_pages();
+    $groups = hodima_schema_admin_groups();
+    $active = '';
+    foreach ( $groups as $id => [ , $slugs ] ) {
+        if ( in_array( $current, $slugs, true ) ) {
+            $active = $id;
+        }
+    }
+    ?>
+    <nav class="hs-nav" aria-label="صفحه‌های اسکیما">
+        <ul class="hs-nav__groups">
+            <?php foreach ( $groups as $id => [ $label, $slugs ] ) : ?>
+                <li>
+                    <a class="hs-nav__group<?php echo $id === $active ? ' is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=' . $slugs[0] ) ); ?>"<?php echo $id === $active ? ' aria-current="true"' : ''; ?>>
+                        <?php echo esc_html( $label ); ?><i><?php echo esc_html( number_format_i18n( count( $slugs ) ) ); ?></i>
+                    </a>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+        <?php if ( '' !== $active ) : ?>
+            <ul class="hs-nav__pages">
+                <?php foreach ( $groups[ $active ][1] as $slug ) : ?>
+                    <li>
+                        <a class="hs-nav__page<?php echo $slug === $current ? ' is-active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=' . $slug ) ); ?>"<?php echo $slug === $current ? ' aria-current="page"' : ''; ?>>
+                            <?php echo esc_html( $pages[ $slug ][1] ); ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </nav>
+    <?php
 }
 
 function hodima_view_footer() {
