@@ -1,10 +1,11 @@
 /**
  * کادر «تنظیمات ویدیو» در ویرایش ویدیو (پیشخوان) — نشانه‌گذاری: meta-boxes.php
  *
- * استاندارد طراحی پیشخوان (اسکیل hodima-admin-ui؛ HODIMA-AUDIT.md بخش ۲۲۰).
- * کارت، فیلد، کارت گزینه، کلید و خلاصه از admin-ui.css هسته‌اند؛ اینجا فقط
- * چیدمان خود کادر (همه زیر .hvw). تا Media 2.1.2 متغیرها روی .post-type-video
- * و ظاهر جدای خودش را داشت. بدون Hodima Core هم چیدمان پایه می‌ماند.
+ * استاندارد طراحی پیشخوان، نوع «ورود محتوا» (اسکیل hodima-admin-ui؛ HODIMA-AUDIT.md بخش ۲۲۴).
+ * نوار وضعیت، تب‌ها، چیدمان اصلی + کناری، چک‌لیست، جمع‌شونده، انتخاب‌گر رسانه، لیست
+ * تکرارشونده، کارت و فیلد از admin-ui.css هسته‌اند؛ اینجا فقط آنچه مخصوص ویدیوست:
+ * مدت و بخش‌ها، پیش‌نمایش کارت ویدیو و جزئیات ردیف. همه زیر .hvw.
+ * (تا Media 2.1.5 کاور، ردیف و لیست تکرارشونده CSS و JS خود را داشتند؛ اکنون Core.)
  * CSS افزونه مرحله ساخت ندارد: بدون nesting و media query بازه‌ای.
  */
 
@@ -34,35 +35,21 @@
 	box-sizing: border-box;
 }
 
-/* چیدمان پایه بدون Hodima Core (admin-ui.css لود نشده) */
-.hvw .hd-card {
-	min-inline-size: 0;
-	padding: 1.25rem;
-	border: 1px solid var(--hd-border, #dfe5f8);
-	border-radius: var(--hd-radius, 0.875rem);
-	background: var(--hd-surface, #fff);
+.hvw .hd-field + .hd-field {
+	margin-block-start: 1rem;
 }
 
-.hvw .hd-field {
-	display: flex;
-	flex-direction: column;
-	gap: 0.375rem;
-	min-inline-size: 0;
+.hvw .hd-opts {
+	margin-block-end: 1.25rem;
 }
 
-.hvw .hd-field__help {
-	margin: 0;
-	color: var(--hd-muted, #5d6785);
-	font-size: 0.75rem;
-	line-height: 1.9;
+/* ردیف کارت مرتبط: فیلدهای عنوان و لینک بدون فاصله‌ی «فیلد بعد از فیلد» (ردیف فشرده بماند) */
+.hvw .hd-repeat__fields .hd-field {
+	margin-block-start: 0;
 }
 
 .hvw .hd-opt__body .hd-field {
 	margin-block-start: 0.5rem;
-}
-
-.hvw .hd-card .hd-field + .hd-field {
-	margin-block-start: 1rem;
 }
 
 .hvw :is(input[type="text"], input[type="url"], textarea) {
@@ -75,93 +62,12 @@
 	line-height: 1.9;
 }
 
-/* هشدارهای خلاصه جمله‌اند، نه برچسب کوتاه: در عرض کم بشکنند (hd-pill هسته nowrap است) */
-.hvw .hd-summary__warn .hd-pill {
-	white-space: normal;
-}
-
-/* دو کارت کنار هم (ویدیو، کاور)؛ در عرض کم زیر هم */
-.hvw-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
-	gap: 1rem;
-}
-
-/* وضعیت زیر فیلد (آدرس ویدیو، بخش‌ها) */
-.hvw .hvw-status.is-ok,
-.hvw .hd-field__help.is-ok {
-	color: var(--hd-ok, #1f7a4d);
-	font-weight: 700;
-}
-
-.hvw .hvw-status.is-warn,
-.hvw .hd-field__help.is-warn {
-	color: var(--hd-warn, #9a5b00);
-	font-weight: 700;
-}
-
-/* ── کاور ── */
-.hvw-cover {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 1rem;
-	margin-block-end: 1rem;
-}
-
-.hvw-cover__preview {
-	position: relative;
-	display: grid;
-	flex: none;
-	place-items: center;
-	overflow: hidden;
-	inline-size: 10rem;
-	aspect-ratio: 16 / 9;
-	border: 1px solid var(--hd-border, #dfe5f8);
-	border-radius: 0.625rem;
-	background: var(--hd-soft, #eef1fb);
-	color: var(--hd-muted, #5d6785);
-}
-
-.hvw-cover__preview img,
-.hvw-row__thumb img {
-	position: absolute;
-	inset: 0;
-	inline-size: 100%;
-	block-size: 100%;
-	object-fit: cover;
-}
-
-.hvw-cover__preview img[hidden],
-.hvw-row__thumb img[hidden] {
-	display: none;
-}
-
-.hvw-cover__actions {
-	display: flex;
-	flex: 1 1 12rem;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.hvw-cover__actions .button {
-	display: inline-flex;
-	justify-content: center;
-	align-items: center;
-	gap: 0.375rem;
-	min-block-size: 2.5rem;
-}
-
-.hvw-cover.is-empty [data-hvw-clear] {
-	display: none;
-}
-
-/* ── مدت و بخش‌ها ── */
+/* ── مدت و بخش‌ها: ورودی‌ها کنار «آنچه گوگل می‌بیند»؛ در عرض کم زیر هم ── */
 .hvw-time {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
 	gap: 1rem 1.5rem;
-	align-items: start;
+	align-items: stretch;
 }
 
 .hvw-unit {
@@ -199,11 +105,12 @@
 .hvw-chapters {
 	display: flex;
 	flex-direction: column;
+	align-content: flex-start;
 	gap: 0.5rem;
 	padding: 0.875rem;
-	border: 1px dashed var(--hd-border-strong, #b9c6e4);
+	border: 1px solid var(--hd-border, #dfe5f8);
 	border-radius: 0.75rem;
-	background: var(--hd-softer, #f7f8fd);
+	background: var(--hd-bg, #f4f6fb);
 }
 
 .hvw-chapters[hidden] {
@@ -258,138 +165,155 @@
 	font-weight: 700;
 }
 
-/* ── زیر ویدیو: کارت‌های مرتبط ── */
-.hvw .hd-opts {
-	margin-block-end: 1.25rem;
+/* ── ردیف کارت مرتبط: آدرس عکس پشت «بیشتر» ── */
+.hvw-row__more {
+	flex-basis: 100%;
 }
 
-.hvw-related {
-	display: grid;
-	gap: 0.75rem;
-}
-
-.hvw .hvw-related__title {
+.hvw-row__more > summary {
 	display: flex;
-	flex-wrap: wrap;
 	align-items: center;
-	gap: 0.5rem;
-	margin: 0;
-	color: var(--hd-primary, #25316a);
-	font-size: 0.875rem;
-	font-weight: 700;
+	min-block-size: 2.5rem;
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+	cursor: pointer;
 }
 
-.hvw-repeater-rows {
-	display: grid;
-	gap: 0.75rem;
+.hvw-row__more > summary:focus-visible {
+	outline: 2px solid var(--hd-accent-light, #a341c8);
+	outline-offset: 2px;
 }
 
-.hvw-row {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-start;
-	gap: 0.75rem 1rem;
-	padding: 0.875rem;
-	border: 1px solid var(--hd-border, #dfe5f8);
-	border-radius: 0.75rem;
-	background: var(--hd-surface, #fff);
+.hvw .hvw-row__more .hd-field {
+	padding-block-end: 0.5rem;
 }
 
-.hvw-row.is-no-cover {
-	border-color: color-mix(in srgb, var(--hd-warn, #9a5b00) 35%, #fff);
-	background: color-mix(in srgb, var(--hd-warn, #9a5b00) 4%, #fff);
-}
-
-.hvw-row__thumb {
+/* ── پیش‌نمایش کارت ویدیو (ستون کناری) ── */
+.hvw-pv__thumb {
 	position: relative;
 	display: grid;
-	flex: none;
 	place-items: center;
 	overflow: hidden;
-	inline-size: 6rem;
 	aspect-ratio: 16 / 9;
+	border: 1px solid var(--hd-border, #dfe5f8);
 	border-radius: 0.5rem;
 	background: var(--hd-soft, #eef1fb);
 	color: var(--hd-muted, #5d6785);
 }
 
-.hvw-row__fields {
+.hvw-pv__thumb img {
+	position: absolute;
+	inset: 0;
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+
+.hvw-pv__thumb img[hidden] {
+	display: none;
+}
+
+.hvw-pv__thumb .hvw-pv__ph {
+	inline-size: 2rem;
+	block-size: 2rem;
+	font-size: 2rem;
+}
+
+.hvw-pv__play {
+	position: absolute;
+	inset-block-start: 50%;
+	inset-inline-start: 50%;
 	display: grid;
-	flex: 1 1 18rem;
-	grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
-	gap: 0.625rem 0.75rem;
-	min-inline-size: 0;
+	place-items: center;
+	inline-size: 2.25rem;
+	block-size: 2.25rem;
+	margin-block-start: -1.125rem;
+	margin-inline-start: -1.125rem;
+	border-radius: 50%;
+	background: color-mix(in srgb, var(--hd-primary, #25316a) 88%, transparent);
+	color: #ffffff;
 }
 
-.hvw .hvw-row__fields .hd-field + .hd-field {
-	margin-block-start: 0;
+.hvw-pv__play .dashicons {
+	inline-size: 1.25rem;
+	block-size: 1.25rem;
+	font-size: 1.25rem;
 }
 
-.hvw-row__fields .hd-field--wide {
-	grid-column: 1 / -1;
+.hvw-pv__dur {
+	position: absolute;
+	inset-block-end: 0.375rem;
+	inset-inline-end: 0.375rem;
+	padding: 0.0625rem 0.375rem;
+	border-radius: 0.25rem;
+	background: color-mix(in srgb, var(--hd-text, #1d2340) 88%, transparent);
+	color: #ffffff;
+	font-size: 0.6875rem;
+	direction: ltr;
 }
 
-.hvw-row__actions {
+.hvw-pv__dur[hidden] {
+	display: none;
+}
+
+.hvw .hvw-pv__title {
+	margin: 0;
+	font-size: 0.875rem;
+	font-weight: 700;
+	line-height: 1.8;
+}
+
+.hvw-pv__chips {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.375rem;
 }
 
-.hvw .button.hvw-icon-btn {
-	display: grid;
-	place-items: center;
-	inline-size: 2.5rem;
-	min-block-size: 2.5rem;
-	padding: 0;
-}
-
-.hvw .button.hvw-icon-btn--danger {
-	color: var(--hd-error, #b3261e);
-}
-
-.hvw .button.hvw-icon-btn:disabled {
-	opacity: 0.45;
-}
-
-.hvw-related__empty {
-	margin: 0;
-	padding: 1rem;
-	border: 1px dashed var(--hd-border-strong, #b9c6e4);
-	border-radius: 0.75rem;
-	color: var(--hd-muted, #5d6785);
-	font-size: 0.8125rem;
-	text-align: center;
-}
-
-.hvw-related__empty[hidden] {
+.hvw-pv__chips:empty {
 	display: none;
 }
 
-.hvw-related__undo {
-	font-size: 0.8125rem;
+.hvw-pv__chip {
+	padding: 0.1875rem 0.625rem;
+	border-radius: 999px;
+	background: var(--hd-soft, #eef1fb);
+	color: var(--hd-primary, #25316a);
+	font-size: 0.75rem;
+	font-weight: 600;
 }
 
-.hvw-related__undo:empty {
-	display: none;
-}
-
-.hvw .button.hvw-add {
-	display: inline-flex;
-	justify-self: start;
+.hvw-pv__btn {
+	display: flex;
+	justify-content: center;
 	align-items: center;
-	gap: 0.375rem;
-	min-block-size: 2.75rem;
-	padding-inline: 1.125rem;
-	border-style: dashed;
-}
-
-.hvw .button-link.hvw-undo-btn {
-	min-block-size: 2.5rem;
+	gap: 0.5rem;
+	min-block-size: 2.25rem;
+	border-radius: 0.5rem;
+	background: var(--hd-primary, #25316a);
+	color: #ffffff;
+	font-size: 0.8125rem;
 	font-weight: 700;
 }
 
-@media (prefers-reduced-motion: reduce) {
-	.hvw * {
-		transition: none;
+.hvw-pv__btn[hidden] {
+	display: none;
+}
+
+.hvw-pv__info {
+	display: grid;
+	gap: 0.75rem;
+	min-inline-size: 0;
+}
+
+/* موبایل و کادر باریک: بندانگشتی کنار اطلاعاتش، تا فرم زیر صفحه نیفتد (عرض کادر، نه صفحه) */
+@container (max-width: 45.99rem) {
+	.hvw-pvcard {
+		grid-template-columns: 9.5rem minmax(0, 1fr);
+		align-items: start;
+		gap: 0.75rem 1rem;
+	}
+
+	.hvw-pvcard > .hd-side__title {
+		grid-column: 1 / -1;
 	}
 }

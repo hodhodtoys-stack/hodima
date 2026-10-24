@@ -246,7 +246,7 @@ const orderDiffs = ( ma, mb ) => {
 	return out;
 };
 
-const browser = await chromium.launch();
+const browser = await chromium.launch( { executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' } ).catch( () => chromium.launch() );
 const page = await browser.newPage();
 /*
  * توکن‌های assets/css/tokens.css هر طرف (متغیرهای :root) در همان طرف جایگزین

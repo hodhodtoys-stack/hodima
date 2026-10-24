@@ -3,11 +3,13 @@
  * کادر «تنظیمات ویدیو» در ویرایش ویدیو (پیشخوان)
  * Path: components/video-watch/meta-boxes.php
  *
- * استاندارد طراحی پیشخوان (اسکیل hodima-admin-ui؛ HODIMA-AUDIT.md بخش ۲۲۰):
- * خلاصه زنده بالای کادر و هر کارت یک سؤال ساده. اجزای کارت، فیلد، کارت گزینه
- * و خلاصه از admin-ui.css هسته‌اند؛ چیدمان خود کادر در video-watch.admin.css و
- * رفتار (خلاصه، پیش‌نمایش لحظه‌های کلیدی، کاور، کارت‌های مرتبط) در
- * video-watch.admin.js. بدون JS همه فیلدها همان فیلدهای معمولی‌اند.
+ * استاندارد طراحی پیشخوان، نوع «ورود محتوا» (اسکیل hodima-admin-ui؛ HODIMA-AUDIT.md بخش ۲۲۰ و ۲۲۴):
+ * نوار وضعیت، سه تب (ویدیو و کاور / زمان و بخش‌ها و متن / زیر ویدیو)، ستون کناری
+ * پیش‌نمایش و چک‌لیست آمادگی. اجزا (تب، نوار وضعیت، چیدمان، چک‌لیست، جمع‌شونده،
+ * انتخاب‌گر رسانه، لیست تکرارشونده، کارت گزینه) از admin-ui.css/js هسته‌اند؛ اینجا
+ * فقط محتوای ویدیو در video-watch.admin.css و رفتار ویدیو (وضعیت آدرس، «آنچه گوگل
+ * می‌بیند»، چک‌لیست، پیش‌نمایش) در video-watch.admin.js. بدون JS همه فیلدها پشت‌سرهم
+ * دیده می‌شوند و همان فیلدهای معمولی‌اند.
  *
  * داده: نام و مقدار همه فیلدها همان نسخه‌های قبل است (آزمون رفت‌وبرگشت در
  * video-watch-tests.php). فیلد «آدرس ویدئو» به خواست کاربر همان جعبه متن
@@ -71,12 +73,17 @@ function hod_video_watch_icon( string $name, string $extra_class = '' ): string 
 	return sprintf( '<span class="dashicons dashicons-%1$s %2$s" aria-hidden="true"></span>', esc_attr( $name ), esc_attr( $extra_class ) );
 }
 
+/** چاپ آیکون (همه بخش‌ها escape شده‌اند). */
+function hod_video_watch_e_icon( string $name, string $extra_class = '' ): void {
+	echo hod_video_watch_icon( $name, $extra_class ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده
+}
+
 /** آغاز کارت با یک سؤال (`.hd-card` هسته). */
 function hod_video_watch_card_open( string $id, string $icon, string $title, string $desc = '', string $extra_class = '' ): void {
 	?>
 	<section class="hd-card hvw-card <?php echo esc_attr( $extra_class ); ?>" aria-labelledby="hvw-h-<?php echo esc_attr( $id ); ?>">
 		<div class="hd-card__head">
-			<?php echo hod_video_watch_icon( $icon ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?>
+			<?php hod_video_watch_e_icon( $icon ); ?>
 			<h3 class="hd-card__title" id="hvw-h-<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $title ); ?></h3>
 			<?php if ( '' !== $desc ) : ?>
 				<p class="hd-card__desc"><?php echo esc_html( $desc ); ?></p>
@@ -86,7 +93,8 @@ function hod_video_watch_card_open( string $id, string $icon, string $title, str
 }
 
 /**
- * یک کارت «ویدئوی مرتبط». $i خالی = الگوی JS («__i__»/«__n__» جایگزین می‌شود).
+ * یک کارت «ویدئوی مرتبط» (ردیف فشرده `.hd-repeat__row` هسته). $i خالی = الگوی JS («__i__»/«__n__» جایگزین می‌شود).
+ * برچسب فیلدهای بدون عنوان دیدنی `screen-reader-text` است (ذخیره همان ترتیب و نام قبلی).
  *
  * @param array{title?: string, url?: string, cover?: string} $link داده کارت.
  */
@@ -95,32 +103,47 @@ function hod_video_watch_related_row( array $link, string $i = '__i__', string $
 	$id    = 'hvw-link-' . $i;
 	$name  = 'hod_related_links[' . $i . ']';
 	?>
-	<div class="hvw-row<?php echo '' === $cover ? ' is-no-cover' : ''; ?>" data-hvw-row>
-		<div class="hvw-row__thumb" aria-hidden="true">
-			<?php echo hod_video_watch_icon( 'format-image', 'hvw-row__placeholder' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?>
-			<img<?php echo '' !== $cover ? ' src="' . esc_url( $cover ) . '"' : ' hidden'; ?> alt="" data-hvw-thumb>
-		</div>
-		<div class="hvw-row__fields">
+	<div class="hd-repeat__row<?php echo '' === $cover ? ' is-empty' : ''; ?>" data-hd-row data-hd-media>
+		<?php // خود بندانگشتی دکمه انتخاب عکس است (ردیف یک‌خطی بماند) ?>
+		<button type="button" class="hd-media__preview hd-media__preview--s hd-media__pick" data-hd-media-pick data-hd-label="انتخاب عکس کارت %s" aria-label="انتخاب عکس کارت <?php echo esc_attr( $n ); ?>">
+			<?php hod_video_watch_e_icon( 'format-image' ); ?>
+			<img<?php echo '' !== $cover ? ' src="' . esc_url( $cover ) . '"' : ' hidden'; ?> alt="" data-hd-media-img>
+		</button>
+		<div class="hd-repeat__fields">
 			<div class="hd-field">
-				<label class="hd-field__label" for="<?php echo esc_attr( $id ); ?>-title">عنوان کارت <span data-hvw-n><?php echo esc_html( $n ); ?></span></label>
-				<input type="text" id="<?php echo esc_attr( $id ); ?>-title" name="<?php echo esc_attr( $name ); ?>[title]" value="<?php echo esc_attr( (string) ( $link['title'] ?? '' ) ); ?>" data-hvw-row-title>
+				<label class="screen-reader-text" for="<?php echo esc_attr( $id ); ?>-title">عنوان کارت <span data-hd-n><?php echo esc_html( $n ); ?></span></label>
+				<input type="text" id="<?php echo esc_attr( $id ); ?>-title" name="<?php echo esc_attr( $name ); ?>[title]" placeholder="عنوان کارت" value="<?php echo esc_attr( (string) ( $link['title'] ?? '' ) ); ?>" data-hd-row-title>
 			</div>
 			<div class="hd-field">
-				<label class="hd-field__label" for="<?php echo esc_attr( $id ); ?>-url">لینک</label>
-				<input type="url" id="<?php echo esc_attr( $id ); ?>-url" name="<?php echo esc_attr( $name ); ?>[url]" dir="ltr" value="<?php echo esc_attr( (string) ( $link['url'] ?? '' ) ); ?>">
-			</div>
-			<div class="hd-field hd-field--wide">
-				<label class="hd-field__label" for="<?php echo esc_attr( $id ); ?>-cover">آدرس عکس کارت</label>
-				<input type="url" id="<?php echo esc_attr( $id ); ?>-cover" name="<?php echo esc_attr( $name ); ?>[cover]" dir="ltr" value="<?php echo esc_attr( $cover ); ?>" data-hvw-row-cover>
+				<label class="screen-reader-text" for="<?php echo esc_attr( $id ); ?>-url">لینک کارت <span data-hd-n><?php echo esc_html( $n ); ?></span></label>
+				<input type="url" id="<?php echo esc_attr( $id ); ?>-url" name="<?php echo esc_attr( $name ); ?>[url]" placeholder="لینک" dir="ltr" value="<?php echo esc_attr( (string) ( $link['url'] ?? '' ) ); ?>">
 			</div>
 		</div>
-		<div class="hvw-row__actions">
-			<button type="button" class="button hvw-icon-btn" data-hvw-pick data-hvw-label="انتخاب عکس کارت %s" aria-label="انتخاب عکس کارت <?php echo esc_attr( $n ); ?>"><?php echo hod_video_watch_icon( 'format-image' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?></button>
-			<button type="button" class="button hvw-icon-btn" data-hvw-move="-1" data-hvw-label="کارت %s یکی بالاتر" aria-label="کارت <?php echo esc_attr( $n ); ?> یکی بالاتر"><?php echo hod_video_watch_icon( 'arrow-up-alt2' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?></button>
-			<button type="button" class="button hvw-icon-btn" data-hvw-move="1" data-hvw-label="کارت %s یکی پایین‌تر" aria-label="کارت <?php echo esc_attr( $n ); ?> یکی پایین‌تر"><?php echo hod_video_watch_icon( 'arrow-down-alt2' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?></button>
-			<button type="button" class="button hvw-icon-btn hvw-icon-btn--danger" data-hvw-remove data-hvw-label="حذف کارت %s" aria-label="حذف کارت <?php echo esc_attr( $n ); ?>"><?php echo hod_video_watch_icon( 'trash' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?></button>
+		<div class="hd-repeat__actions">
+			<button type="button" class="button hd-icon-btn" data-hd-move="-1" data-hd-label="کارت %s یکی بالاتر" aria-label="کارت <?php echo esc_attr( $n ); ?> یکی بالاتر"><?php hod_video_watch_e_icon( 'arrow-up-alt2' ); ?></button>
+			<button type="button" class="button hd-icon-btn" data-hd-move="1" data-hd-label="کارت %s یکی پایین‌تر" aria-label="کارت <?php echo esc_attr( $n ); ?> یکی پایین‌تر"><?php hod_video_watch_e_icon( 'arrow-down-alt2' ); ?></button>
+			<button type="button" class="button hd-icon-btn hd-icon-btn--danger" data-hd-remove data-hd-label="حذف کارت %s" aria-label="حذف کارت <?php echo esc_attr( $n ); ?>"><?php hod_video_watch_e_icon( 'trash' ); ?></button>
 		</div>
+		<details class="hvw-row__more">
+			<summary>آدرس عکس کارت</summary>
+			<div class="hd-field">
+				<label class="hd-field__label" for="<?php echo esc_attr( $id ); ?>-cover">آدرس عکس کارت <span data-hd-n><?php echo esc_html( $n ); ?></span></label>
+				<input type="url" id="<?php echo esc_attr( $id ); ?>-cover" name="<?php echo esc_attr( $name ); ?>[cover]" dir="ltr" value="<?php echo esc_attr( $cover ); ?>" data-hd-media-input>
+			</div>
+		</details>
 	</div>
+	<?php
+}
+
+/** یک ردیف چک‌لیست آمادگی (حالت، برچسب و توضیح را video-watch.admin.js می‌نویسد). */
+function hod_video_watch_check_item( string $key, string $label ): void {
+	?>
+	<li class="hd-checklist__item" data-hvw-check="<?php echo esc_attr( $key ); ?>" data-state="opt">
+		<span class="hd-checklist__icon" aria-hidden="true"></span>
+		<span class="hd-checklist__label"><?php echo esc_html( $label ); ?></span>
+		<span class="hd-checklist__tag"></span>
+		<p class="hd-checklist__note"></p>
+	</li>
 	<?php
 }
 
@@ -135,112 +158,178 @@ function hod_video_watch_render_meta_box( WP_Post $post ): void {
 	$related_product_url = (string) get_post_meta( $post->ID, '_hod_related_product_url', true );
 	$related_links       = get_post_meta( $post->ID, '_hod_related_links', true );
 	$related_links       = is_array( $related_links ) ? array_values( array_filter( $related_links, 'is_array' ) ) : [];
+	$preview_title       = '' !== trim( $post->post_title ) ? $post->post_title : 'عنوان ویدیو';
 	?>
-	<div class="hd-wrap hvw" data-hvw>
+	<div class="hd-wrap hd-metabox hvw" data-hvw>
 
-		<?php // خلاصه رفتار در یک جمله (متن را video-watch.admin.js می‌سازد؛ بدون JS پنهان) ?>
-		<div class="hd-summary" data-hvw-summary hidden>
-			<?php echo hod_video_watch_icon( 'lightbulb', 'hd-summary__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?>
-			<div class="hd-summary__body">
-				<span class="hd-summary__label">خلاصه به زبان ساده</span>
-				<p class="hd-summary__text" data-hvw-summary-text aria-live="polite"></p>
-				<div class="hd-summary__warn" data-hvw-summary-warn></div>
+		<?php // نوار وضعیت: یک جمله + نشان (متن را video-watch.admin.js می‌سازد؛ بدون JS پنهان) ?>
+		<header class="hd-statusbar">
+			<?php hod_video_watch_e_icon( 'format-video', 'hd-statusbar__icon' ); ?>
+			<div class="hd-statusbar__body">
+				<h3 class="hd-statusbar__title">وضعیت ویدیو</h3>
+				<p class="hd-statusbar__text" data-hvw-summary aria-live="polite" hidden></p>
+			</div>
+			<div class="hd-statusbar__aside" hidden data-hvw-pill-wrap>
+				<span class="hd-pill" data-hvw-pill></span>
+			</div>
+		</header>
+
+		<div class="hd-tabset" data-hd-tabset>
+			<div class="hd-tablist" role="tablist" aria-label="بخش‌های تنظیمات ویدیو" hidden>
+				<button type="button" class="hd-tab" role="tab" id="hvw-tab-video" aria-controls="hvw-panel-video" aria-selected="true">ویدیو و کاور</button>
+				<button type="button" class="hd-tab" role="tab" id="hvw-tab-time" aria-controls="hvw-panel-time" aria-selected="false">زمان، بخش‌ها و متن</button>
+				<button type="button" class="hd-tab" role="tab" id="hvw-tab-below" aria-controls="hvw-panel-below" aria-selected="false">زیر ویدیو <span class="hd-tab__count" data-hvw-tab-count hidden></span></button>
+			</div>
+
+			<div class="hd-layout">
+				<div class="hd-layout__grid">
+
+					<?php // پیش‌نمایش: آنچه در سایت دیده می‌شود (بدون JS پنهان) ?>
+					<section class="hd-side hd-layout__preview hvw-pvcard" aria-labelledby="hvw-pv-title" data-hvw-pv hidden>
+						<h3 class="hd-side__title" id="hvw-pv-title">همان‌طور که در سایت دیده می‌شود</h3>
+						<div class="hvw-pv__thumb">
+							<?php hod_video_watch_e_icon( 'format-image', 'hvw-pv__ph' ); ?>
+							<img alt="" hidden data-hvw-pv-img>
+							<span class="hvw-pv__play" aria-hidden="true"><?php hod_video_watch_e_icon( 'controls-play' ); ?></span>
+							<span class="hvw-pv__dur" data-hvw-pv-dur hidden></span>
+						</div>
+						<div class="hvw-pv__info">
+							<p class="hvw-pv__title"><?php echo esc_html( $preview_title ); ?></p>
+							<div class="hvw-pv__chips" data-hvw-pv-chips></div>
+							<span class="hvw-pv__btn" data-hvw-pv-product hidden><?php hod_video_watch_e_icon( 'cart' ); ?> مشاهده محصول</span>
+						</div>
+					</section>
+
+					<div class="hd-layout__main">
+
+						<div class="hd-tabpanel" role="tabpanel" id="hvw-panel-video" aria-labelledby="hvw-tab-video">
+							<?php hod_video_watch_card_open( 'video', 'video-alt3', 'کدام ویدیو پخش شود؟', 'لینک فایل ویدیو را مثل همیشه همین‌جا بگذارید.' ); ?>
+								<div class="hd-field">
+									<label class="hd-field__label" for="hod_video_url">آدرس ویدئو (فرمت MP4)</label>
+									<input type="url" id="hod_video_url" name="hod_video_url" dir="ltr" value="<?php echo esc_attr( $video_url ); ?>" aria-describedby="hvw-url-status">
+									<p class="hd-field__status" id="hvw-url-status" data-hvw-url-status>بدون آدرس، به‌جای پلیر «ویدیو هنوز آماده نیست» نمایش داده می‌شود.</p>
+								</div>
+							</section>
+
+							<?php hod_video_watch_card_open( 'cover', 'format-image', 'پیش از پخش چه عکسی دیده شود؟', 'بدون کاور، گوگل ویدیو را در نتایج ویدیویی نشان نمی‌دهد.' ); ?>
+								<div class="hd-media<?php echo '' === $video_thumbnail ? ' is-empty' : ''; ?>" data-hd-media>
+									<div class="hd-media__preview" aria-hidden="true">
+										<?php hod_video_watch_e_icon( 'format-image' ); ?>
+										<img<?php echo '' !== $video_thumbnail ? ' src="' . esc_url( $video_thumbnail ) . '"' : ' hidden'; ?> alt="" data-hd-media-img>
+									</div>
+									<div class="hd-media__side">
+										<div class="hd-media__actions">
+											<button type="button" class="button button-primary" data-hd-media-pick><?php hod_video_watch_e_icon( 'upload' ); ?> انتخاب از کتابخانه رسانه</button>
+											<button type="button" class="button hd-button--danger" data-hd-media-clear>برداشتن کاور</button>
+										</div>
+										<div class="hd-field">
+											<label class="hd-field__label" for="hod_video_thumbnail">یا آدرس عکس</label>
+											<input type="url" id="hod_video_thumbnail" name="hod_video_thumbnail" dir="ltr" value="<?php echo esc_attr( $video_thumbnail ); ?>" data-hd-media-input>
+										</div>
+									</div>
+								</div>
+							</section>
+						</div>
+
+						<div class="hd-tabpanel" role="tabpanel" id="hvw-panel-time" aria-labelledby="hvw-tab-time">
+							<?php hod_video_watch_card_open( 'time', 'clock', 'چقدر طول می‌کشد و چه بخش‌هایی دارد؟', 'گوگل بخش‌ها را «لحظه‌های کلیدی» زیر ویدیو نشان می‌دهد و هر کدام از همان ثانیه پخش می‌شود.' ); ?>
+								<div class="hvw-time">
+									<div class="hvw-time__fields">
+										<div class="hd-field">
+											<label class="hd-field__label" for="hod_video_duration">مدت ویدیو</label>
+											<div class="hvw-unit">
+												<input type="text" id="hod_video_duration" name="hod_video_duration" dir="ltr" inputmode="numeric" value="<?php echo esc_attr( $video_duration ); ?>" placeholder="2:35" aria-describedby="hvw-duration-help">
+												<span class="hvw-unit__label" aria-hidden="true">دقیقه:ثانیه</span>
+											</div>
+											<p class="hd-field__help" id="hvw-duration-help">مثلا ۲:۳۵ یا ۱:۰۵:۲۰ (ساعت:دقیقه:ثانیه).</p>
+										</div>
+										<div class="hd-field">
+											<label class="hd-field__label" for="hod_video_chapters">بخش‌ها (هر خط: زمان و عنوان)</label>
+											<textarea id="hod_video_chapters" name="hod_video_chapters" rows="5" placeholder="0:00 مقدمه&#10;1:25 معرفی رنگ‌بندی&#10;3:10 نحوه سفارش عمده"><?php echo esc_textarea( $chapters ); ?></textarea>
+										</div>
+									</div>
+									<div class="hvw-chapters" data-hvw-chapters hidden>
+										<span class="hvw-chapters__label">آنچه گوگل می‌بیند</span>
+										<ol class="hvw-chapters__list" data-hvw-chapters-list></ol>
+										<p class="hd-field__status" data-hvw-chapters-status aria-live="polite"></p>
+									</div>
+								</div>
+							</section>
+
+							<details class="hd-more"<?php echo '' !== trim( $transcript ) ? ' open' : ''; ?>>
+								<summary class="hd-more__summary">
+									<?php hod_video_watch_e_icon( 'text-page' ); ?>
+									متن کامل ویدیو
+									<span class="hd-more__hint">اختیاری<span data-hvw-transcript-count></span></span>
+								</summary>
+								<div class="hd-more__body">
+									<p class="hd-field__help">زیر پلیر در جعبه «نمایش بیشتر / کمتر» دیده می‌شود و برای گوگل هم فرستاده می‌شود.</p>
+									<div class="hd-field">
+										<label class="hd-field__label" for="hod_video_transcript">متن گفته‌شده در ویدیو</label>
+										<textarea id="hod_video_transcript" name="hod_video_transcript" rows="7"><?php echo esc_textarea( $transcript ); ?></textarea>
+									</div>
+								</div>
+							</details>
+						</div>
+
+						<div class="hd-tabpanel" role="tabpanel" id="hvw-panel-below" aria-labelledby="hvw-tab-below">
+							<?php hod_video_watch_card_open( 'below', 'cart', 'زیر ویدیو چه چیزی پیشنهاد شود؟', 'دکمه خرید و کارت‌های «ویدئوهای مرتبط».' ); ?>
+								<div class="hd-opts">
+									<?php // کلید بدون name: فیلد لینک را خالی/پر می‌کند (admin-ui.js هسته)؛ ذخیره همان لینک است ?>
+									<div class="hd-opt">
+										<div class="hd-opt__head">
+											<?php hod_video_watch_e_icon( 'cart', 'hd-opt__icon' ); ?>
+											<label class="hd-opt__title" for="hvw-product-switch">دکمه «مشاهده محصول» زیر پلیر</label>
+											<input type="checkbox" class="hd-switch hd-opt__switch" id="hvw-product-switch" role="switch" data-hd-opt-switch <?php checked( '' !== $related_product_url ); ?>>
+										</div>
+										<div class="hd-opt__body">
+											<div class="hd-field">
+												<label class="hd-field__label" for="hod_related_product_url">لینک محصول</label>
+												<input type="url" id="hod_related_product_url" name="hod_related_product_url" dir="ltr" value="<?php echo esc_attr( $related_product_url ); ?>" data-hd-opt-value data-hd-opt-off="">
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="hd-repeat" data-hd-repeat data-hd-max="<?php echo (int) HOD_VIDEO_MAX_RELATED; ?>" data-hd-name="hod_related_links" data-hd-id="hvw-link" data-hd-item="کارت" data-hd-count-text="%s کارت">
+									<div class="hd-repeat__head" id="hvw-related-title">کارت‌های «ویدئوهای مرتبط» <span class="hd-pill" data-hd-count><?php echo esc_html( number_format_i18n( count( $related_links ) ) ); ?> کارت</span></div>
+									<p class="hd-field__help">عنوان و لینک لازم است؛ کارت بدون این دو ذخیره نمی‌شود. ترتیب همین ترتیب سایت است.</p>
+									<div class="hd-repeat__rows" data-hd-rows aria-labelledby="hvw-related-title" role="group">
+										<?php
+										foreach ( $related_links as $index => $link ) {
+											hod_video_watch_related_row( $link, (string) $index, (string) number_format_i18n( $index + 1 ) );
+										}
+										?>
+									</div>
+									<p class="hd-repeat__empty" data-hd-empty<?php echo $related_links ? ' hidden' : ''; ?>>هنوز کارتی اضافه نشده؛ بخش «ویدئوهای مرتبط» زیر ویدیو نمایش داده نمی‌شود.</p>
+									<div class="hd-repeat__undo" data-hd-undo aria-live="polite"></div>
+									<button type="button" class="button hd-repeat__add" id="hvw-add-link-btn" data-hd-add><?php hod_video_watch_e_icon( 'plus-alt2' ); ?> افزودن کارت</button>
+									<template data-hd-row-template><?php hod_video_watch_related_row( [] ); ?></template>
+								</div>
+							</section>
+						</div>
+
+					</div>
+
+					<?php // چک‌لیست آمادگی (بدون JS پنهان) ?>
+					<section class="hd-side hd-layout__aside" aria-labelledby="hvw-ck-title" data-hvw-ck hidden>
+						<h3 class="hd-side__title" id="hvw-ck-title">آمادگی ویدیو</h3>
+						<ul class="hd-checklist">
+							<?php
+							hod_video_watch_check_item( 'url', 'آدرس ویدیو' );
+							hod_video_watch_check_item( 'cover', 'کاور' );
+							hod_video_watch_check_item( 'duration', 'مدت ویدیو' );
+							hod_video_watch_check_item( 'chapters', 'بخش‌ها' );
+							hod_video_watch_check_item( 'transcript', 'متن کامل' );
+							hod_video_watch_check_item( 'product', 'دکمه محصول' );
+							hod_video_watch_check_item( 'related', 'ویدیوهای مرتبط' );
+							?>
+						</ul>
+					</section>
+
+				</div>
 			</div>
 		</div>
-
-		<div class="hvw-grid">
-			<?php hod_video_watch_card_open( 'video', 'video-alt3', 'کدام ویدیو پخش شود؟', 'لینک فایل ویدیو را مثل همیشه همین‌جا بگذارید.' ); ?>
-				<div class="hd-field">
-					<label class="hd-field__label" for="hod_video_url">آدرس ویدئو (فرمت MP4)</label>
-					<input type="url" id="hod_video_url" name="hod_video_url" dir="ltr" value="<?php echo esc_attr( $video_url ); ?>" aria-describedby="hvw-url-status">
-					<p class="hd-field__help hvw-status" id="hvw-url-status" data-hvw-url-status>بدون آدرس، به‌جای پلیر «ویدیو هنوز آماده نیست» نمایش داده می‌شود.</p>
-				</div>
-			</section>
-
-			<?php hod_video_watch_card_open( 'cover', 'format-image', 'پیش از پخش چه عکسی دیده شود؟', 'بدون کاور، گوگل ویدیو را در نتایج ویدیویی نشان نمی‌دهد.' ); ?>
-				<div class="hvw-cover<?php echo '' === $video_thumbnail ? ' is-empty' : ''; ?>" data-hvw-cover>
-					<div class="hvw-cover__preview" aria-hidden="true">
-						<?php echo hod_video_watch_icon( 'format-image', 'hvw-cover__placeholder' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?>
-						<img<?php echo '' !== $video_thumbnail ? ' src="' . esc_url( $video_thumbnail ) . '"' : ' hidden'; ?> alt="" data-hvw-thumb>
-					</div>
-					<div class="hvw-cover__actions">
-						<button type="button" class="button button-primary" data-hvw-pick><?php echo hod_video_watch_icon( 'upload' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?> انتخاب از کتابخانه رسانه</button>
-						<button type="button" class="button hd-button--danger" data-hvw-clear>برداشتن کاور</button>
-					</div>
-				</div>
-				<div class="hd-field">
-					<label class="hd-field__label" for="hod_video_thumbnail">یا آدرس عکس</label>
-					<input type="url" id="hod_video_thumbnail" name="hod_video_thumbnail" dir="ltr" value="<?php echo esc_attr( $video_thumbnail ); ?>" data-hvw-cover-input>
-				</div>
-			</section>
-		</div>
-
-		<?php hod_video_watch_card_open( 'time', 'clock', 'چقدر طول می‌کشد و چه بخش‌هایی دارد؟', 'گوگل بخش‌ها را «لحظه‌های کلیدی» زیر ویدیو نشان می‌دهد و هر کدام از همان ثانیه پخش می‌شود.' ); ?>
-			<div class="hvw-time">
-				<div class="hvw-time__fields">
-					<div class="hd-field">
-						<label class="hd-field__label" for="hod_video_duration">مدت ویدیو</label>
-						<div class="hvw-unit">
-							<input type="text" id="hod_video_duration" name="hod_video_duration" dir="ltr" inputmode="numeric" value="<?php echo esc_attr( $video_duration ); ?>" placeholder="2:35" aria-describedby="hvw-duration-help">
-							<span class="hvw-unit__label" aria-hidden="true">دقیقه:ثانیه</span>
-						</div>
-						<p class="hd-field__help" id="hvw-duration-help">مثلا ۲:۳۵ یا ۱:۰۵:۲۰ (ساعت:دقیقه:ثانیه).</p>
-					</div>
-					<div class="hd-field">
-						<label class="hd-field__label" for="hod_video_chapters">بخش‌ها (هر خط: زمان و عنوان)</label>
-						<textarea id="hod_video_chapters" name="hod_video_chapters" rows="5" placeholder="0:00 مقدمه&#10;1:25 معرفی رنگ‌بندی&#10;3:10 نحوه سفارش عمده"><?php echo esc_textarea( $chapters ); ?></textarea>
-					</div>
-				</div>
-				<div class="hvw-chapters" data-hvw-chapters hidden>
-					<span class="hvw-chapters__label">آنچه گوگل می‌بیند</span>
-					<ol class="hvw-chapters__list" data-hvw-chapters-list></ol>
-					<p class="hd-field__help" data-hvw-chapters-status aria-live="polite"></p>
-				</div>
-			</div>
-		</section>
-
-		<?php hod_video_watch_card_open( 'transcript', 'text-page', 'متن کامل ویدیو', 'زیر پلیر در جعبه «نمایش بیشتر / کمتر» دیده می‌شود و برای گوگل هم فرستاده می‌شود.' ); ?>
-			<div class="hd-field">
-				<label class="hd-field__label" for="hod_video_transcript">متن گفته‌شده در ویدیو</label>
-				<textarea id="hod_video_transcript" name="hod_video_transcript" rows="7" aria-describedby="hvw-transcript-count"><?php echo esc_textarea( $transcript ); ?></textarea>
-				<p class="hd-field__help" id="hvw-transcript-count" data-hvw-transcript-count></p>
-			</div>
-		</section>
-
-		<?php hod_video_watch_card_open( 'below', 'cart', 'زیر ویدیو چه چیزی پیشنهاد شود؟', 'دکمه خرید و کارت‌های «ویدئوهای مرتبط».' ); ?>
-			<div class="hd-opts">
-				<?php // کلید بدون name: فیلد لینک را خالی/پر می‌کند (admin-ui.js هسته)؛ ذخیره همان لینک است ?>
-				<div class="hd-opt">
-					<div class="hd-opt__head">
-						<?php echo hod_video_watch_icon( 'cart', 'hd-opt__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?>
-						<label class="hd-opt__title" for="hvw-product-switch">دکمه «مشاهده محصول» زیر پلیر</label>
-						<input type="checkbox" class="hd-switch hd-opt__switch" id="hvw-product-switch" role="switch" data-hd-opt-switch <?php checked( '' !== $related_product_url ); ?>>
-					</div>
-					<div class="hd-opt__body">
-						<div class="hd-field">
-							<label class="hd-field__label" for="hod_related_product_url">لینک محصول</label>
-							<input type="url" id="hod_related_product_url" name="hod_related_product_url" dir="ltr" value="<?php echo esc_attr( $related_product_url ); ?>" data-hd-opt-value data-hd-opt-off="">
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="hvw-related" id="hvw-links-repeater-container" data-hvw-related data-hvw-max="<?php echo (int) HOD_VIDEO_MAX_RELATED; ?>">
-				<h4 class="hvw-related__title" id="hvw-related-title">کارت‌های «ویدئوهای مرتبط» <span class="hd-pill" data-hvw-related-count><?php echo esc_html( number_format_i18n( count( $related_links ) ) ); ?> کارت</span></h4>
-				<p class="hd-field__help">عنوان و لینک لازم است؛ کارت بدون این دو ذخیره نمی‌شود. ترتیب همین ترتیب سایت است.</p>
-				<div class="hvw-repeater-rows" data-hvw-rows aria-labelledby="hvw-related-title" role="group">
-					<?php
-					foreach ( $related_links as $index => $link ) {
-						hod_video_watch_related_row( $link, (string) $index, (string) number_format_i18n( $index + 1 ) );
-					}
-					?>
-				</div>
-				<p class="hvw-related__empty" data-hvw-empty<?php echo $related_links ? ' hidden' : ''; ?>>هنوز کارتی اضافه نشده؛ بخش «ویدئوهای مرتبط» زیر ویدیو نمایش داده نمی‌شود.</p>
-				<div class="hvw-related__undo" data-hvw-undo aria-live="polite"></div>
-				<button type="button" class="button hvw-add" id="hvw-add-link-btn" data-hvw-add><?php echo hod_video_watch_icon( 'plus-alt2' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape شده ?> افزودن کارت</button>
-				<template data-hvw-row-template><?php hod_video_watch_related_row( [] ); ?></template>
-			</div>
-		</section>
 	</div>
 	<?php
 }

@@ -3,6 +3,9 @@
  *
  *   [HODIMA_RTL=1] node admin-shot.mjs <html-file> <out-prefix> <wp-root> <src-root> [عرض‌ها=1300,390] [انتخابگر]
  *
+ * HODIMA_CLICK='#tab-a|#tab-b': انتخابگرهایی که پیش از عکس و axe به ترتیب کلیک می‌شوند (باز کردن تب/جمع‌شونده؛
+ * هر تب جدا عکس و axe می‌خواهد چون بخش‌های بسته در axe دیده نمی‌شوند).
+ *
  * خروجی: <out-prefix>-<عرض>.png (کل صفحه یا فقط انتخابگر) و خلاصه axe (wcag2a/aa، 21a/aa، 22aa) فقط برای
  * داخل انتخابگر (پیش‌فرض #wpbody-content). CSS/JS قالب و افزونه‌ها از <src-root>، بقیه از وردپرس ابزار تست.
  * CSS خود پیشخوان (load-styles.php) که بسته playground ندارد یک بار از مخزن رسمی وردپرس 6.7 در
@@ -126,6 +129,10 @@ for ( const width of widthsArg.split( ',' ).map( Number ) ) {
 	await page.goto( 'https://hodima.test/__page' );
 	await page.addStyleTag( { content: shim } );
 	await page.waitForTimeout( 400 );
+	for ( const sel of ( process.env.HODIMA_CLICK || '' ).split( '|' ).filter( Boolean ) ) {
+		await page.click( sel );
+		await page.waitForTimeout( 150 );
+	}
 	const file = `${ outPrefix }-${ width }.png`;
 	if ( selector ) {
 		await page.locator( selector ).first().screenshot( { path: file } );

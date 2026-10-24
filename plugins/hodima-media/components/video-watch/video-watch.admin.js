@@ -1,11 +1,12 @@
 /**
  * کادر «تنظیمات ویدیو» در ویرایش ویدیو (پیشخوان) — نشانه‌گذاری: meta-boxes.php
  *
- * استاندارد طراحی پیشخوان (اسکیل hodima-admin-ui؛ HODIMA-AUDIT.md بخش ۲۲۰):
- *   - خلاصه زنده بالای کادر + هشدار کمبودها (بدون آدرس ویدیو، بدون کاور…)
- *   - وضعیت آدرس ویدیو، پیش‌نمایش کاور، شمارش متن کامل
+ * استاندارد طراحی پیشخوان، نوع «ورود محتوا» (اسکیل hodima-admin-ui؛ HODIMA-AUDIT.md بخش ۲۲۴):
+ *   - نوار وضعیت (یک جمله + نشان «N مورد برای بررسی»)، چک‌لیست آمادگی، پیش‌نمایش کارت ویدیو
+ *   - وضعیت آدرس ویدیو، شمارش متن کامل، شمارنده روی تب «زیر ویدیو»
  *   - «آنچه گوگل می‌بیند»: بخش‌ها همان‌طور که سرور می‌خواند (hod_video_parse_chapters)
- *   - کارت‌های مرتبط: افزودن، جابه‌جایی، حذف با بازگردانی (بدون alert/confirm)
+ * تب‌ها، انتخاب‌گر کاور و لیست کارت‌های مرتبط (افزودن، جابه‌جایی، حذف با بازگردانی)
+ * رفتارشان در admin-ui.js هسته است؛ اینجا فقط به رویدادهایشان گوش می‌دهیم.
  * فقط ظاهر و کمک است؛ نام و مقدار فیلدها همان است و بدون JS فرم کار می‌کند.
  * زیر ESLint بدون baseline.
  */
@@ -15,10 +16,6 @@
 	const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
 	const latin = ( s ) => String( s ).replace( /[۰-۹]/g, ( d ) => String( FA_DIGITS.indexOf( d ) ) );
 	const faNum = ( n ) => new Intl.NumberFormat( 'fa-IR' ).format( n );
-	const fire = ( input ) => {
-		input.dispatchEvent( new Event( 'input', { bubbles: true } ) );
-		input.dispatchEvent( new Event( 'change', { bubbles: true } ) );
-	};
 
 	/** «۱:۲۵» یا «۱:۰۲:۱۰» → ثانیه، یا null (همان hod_video_time_to_seconds سرور). */
 	const clockToSeconds = ( value ) => {
@@ -82,42 +79,14 @@
 		return node;
 	};
 
-	/** انتخاب عکس از کتابخانه رسانه وردپرس؛ بدون wp.media (ابزار تست) کاری نمی‌کند. */
-	const pickImage = ( onSelect ) => {
-		if ( typeof wp === 'undefined' || ! wp.media ) {
-			return;
-		}
-		const frame = wp.media( {
-			title: 'انتخاب تصویر',
-			button: { text: 'استفاده از این تصویر' },
-			library: { type: 'image' },
-			multiple: false,
-		} );
-		frame.on( 'select', () => onSelect( frame.state().get( 'selection' ).first().toJSON().url ) );
-		frame.open();
-	};
-
-	/** پیش‌نمایش عکس از فیلد آدرس. */
-	const syncThumb = ( input, img, box ) => {
-		const url = input.value.trim();
-		const ok = /^https?:\/\//i.test( url );
-		if ( ok ) {
-			img.src = url;
-		} else {
-			img.removeAttribute( 'src' );
-		}
-		img.hidden = ! ok;
-		box?.classList.toggle( 'is-empty', ! ok );
-		box?.classList.toggle( 'is-no-cover', ! ok );
-	};
+	/** ردیف‌های چک‌لیست: [کلید، حالت، برچسب، توضیح]. */
+	const STATES = { ok: 'انجام شد', warn: 'لازم', opt: 'اختیاری' };
 
 	const init = ( root ) => {
 		const $ = ( s ) => root.querySelector( s );
 		const urlInput = $( '#hod_video_url' );
 		const urlStatus = $( '[data-hvw-url-status]' );
-		const coverBox = $( '[data-hvw-cover]' );
-		const coverInput = $( '[data-hvw-cover-input]' );
-		const coverImg = coverBox?.querySelector( '[data-hvw-thumb]' );
+		const coverInput = $( '#hod_video_thumbnail' );
 		const duration = $( '#hod_video_duration' );
 		const chaptersInput = $( '#hod_video_chapters' );
 		const chaptersBox = $( '[data-hvw-chapters]' );
@@ -127,22 +96,21 @@
 		const transcriptCount = $( '[data-hvw-transcript-count]' );
 		const product = $( '#hod_related_product_url' );
 		const summary = $( '[data-hvw-summary]' );
-		const summaryText = $( '[data-hvw-summary-text]' );
-		const summaryWarn = $( '[data-hvw-summary-warn]' );
-		const related = $( '[data-hvw-related]' );
-		const rows = $( '[data-hvw-rows]' );
-		const template = $( '[data-hvw-row-template]' );
-		const addBtn = $( '[data-hvw-add]' );
-		const empty = $( '[data-hvw-empty]' );
-		const undoBox = $( '[data-hvw-undo]' );
-		const countPill = $( '[data-hvw-related-count]' );
-		const max = Number( related?.dataset.hvwMax || 99 );
+		const pill = $( '[data-hvw-pill]' );
+		const pillWrap = $( '[data-hvw-pill-wrap]' );
+		const tabCount = $( '[data-hvw-tab-count]' );
+		const side = root.querySelectorAll( '[data-hvw-pv], [data-hvw-ck]' );
+		const pvImg = $( '[data-hvw-pv-img]' );
+		const pvDur = $( '[data-hvw-pv-dur]' );
+		const pvChips = $( '[data-hvw-pv-chips]' );
+		const pvProduct = $( '[data-hvw-pv-product]' );
+		const rows = $( '[data-hd-rows]' );
 
 		/* ── آدرس ویدیو ── */
 		const urlState = () => {
 			const url = urlInput.value.trim();
 			if ( '' === url ) {
-				return { level: 'warn', text: 'بدون آدرس، به‌جای پلیر «ویدیو هنوز آماده نیست» نمایش داده می‌شود.' };
+				return { level: 'warn', empty: true, text: 'بدون آدرس، به‌جای پلیر «ویدیو هنوز آماده نیست» نمایش داده می‌شود.' };
 			}
 			if ( ! /^https?:\/\//i.test( url ) ) {
 				return { level: 'warn', text: 'آدرس باید با https:// شروع شود.' };
@@ -184,7 +152,7 @@
 			const parts = [ items.length ? `${ faNum( items.length - late ) } بخش شناخته شد.` : 'هنوز بخشی شناخته نشد.' ];
 			bad.slice( 0, 3 ).forEach( ( b ) => parts.push( `خط ${ faNum( b.line ) } خوانده نشد («${ b.text.slice( 0, 30 ) }»): اول زمان مثل 1:25 بعد عنوان.` ) );
 			chaptersStatus.textContent = parts.join( ' ' );
-			chaptersStatus.classList.toggle( 'is-warn', bad.length > 0 || late > 0 );
+			chaptersStatus.dataset.level = bad.length > 0 || late > 0 ? 'warn' : 'ok';
 			return { count: items.length - late, bad: bad.length + late };
 		};
 
@@ -193,191 +161,116 @@
 			const text = transcript.value.trim();
 			const words = text ? text.split( /\s+/u ).length : 0;
 			const paras = text ? text.split( /\n\s*\n/ ).filter( ( p ) => p.trim() ).length : 0;
-			transcriptCount.textContent = words ? `${ faNum( words ) } کلمه · ${ faNum( paras ) } پاراگراف` : 'خالی: بخش «متن کامل ویدیو» در صفحه نمایش داده نمی‌شود.';
+			transcriptCount.textContent = words ? ` · ${ faNum( words ) } کلمه · ${ faNum( paras ) } پاراگراف` : ' · خالی';
 			return words;
 		};
 
-		/* ── کارت‌های مرتبط ── */
-		const rowEls = () => [ ...rows.querySelectorAll( ':scope > [data-hvw-row]' ) ];
-
-		/** نام، شناسه، برچسب و aria-label هر کارت به ترتیب فعلی (ذخیره همان ترتیب آرایه است). */
-		const reindex = () => {
-			const list = rowEls();
-			list.forEach( ( row, i ) => {
-				const n = faNum( i + 1 );
-				row.querySelectorAll( '[name^="hod_related_links["]' ).forEach( ( input ) => {
-					input.name = input.name.replace( /^hod_related_links\[[^\]]*\]/, `hod_related_links[${ i }]` );
-				} );
-				row.querySelectorAll( '[id^="hvw-link-"]' ).forEach( ( node ) => {
-					node.id = node.id.replace( /^hvw-link-[^-]+-/, `hvw-link-${ i }-` );
-				} );
-				row.querySelectorAll( 'label[for^="hvw-link-"]' ).forEach( ( label ) => {
-					label.htmlFor = label.htmlFor.replace( /^hvw-link-[^-]+-/, `hvw-link-${ i }-` );
-				} );
-				row.querySelectorAll( '[data-hvw-n]' ).forEach( ( node ) => {
-					node.textContent = n;
-				} );
-				row.querySelectorAll( '[data-hvw-label]' ).forEach( ( btn ) => {
-					btn.setAttribute( 'aria-label', btn.dataset.hvwLabel.replace( '%s', n ) );
-				} );
-				row.querySelector( '[data-hvw-move="-1"]' ).disabled = 0 === i;
-				row.querySelector( '[data-hvw-move="1"]' ).disabled = i === list.length - 1;
-			} );
-			empty.hidden = list.length > 0;
-			countPill.textContent = `${ faNum( list.length ) } کارت`;
-			addBtn.disabled = list.length >= max;
-			addBtn.title = addBtn.disabled ? `حداکثر ${ faNum( max ) } کارت` : '';
-		};
-
-		const bindRow = ( row ) => {
-			const cover = row.querySelector( '[data-hvw-row-cover]' );
-			const img = row.querySelector( '[data-hvw-thumb]' );
-			cover.addEventListener( 'input', () => syncThumb( cover, img, row ) );
-		};
-
-		const addRow = () => {
-			if ( rowEls().length >= max ) {
+		/* ── چک‌لیست ── */
+		const setCheck = ( key, state, tag, note = '' ) => {
+			const item = $( `[data-hvw-check="${ key }"]` );
+			if ( ! item ) {
 				return;
 			}
-			const fragment = template.content.cloneNode( true );
-			const row = fragment.querySelector( '[data-hvw-row]' );
-			rows.append( row );
-			bindRow( row );
-			reindex();
-			undoBox.replaceChildren();
-			row.querySelector( '[data-hvw-row-title]' ).focus();
-			update();
+			item.dataset.state = state;
+			item.querySelector( '.hd-checklist__tag' ).textContent = tag || STATES[ state ];
+			item.querySelector( '.hd-checklist__note' ).textContent = note;
 		};
 
-		const removeRow = ( row ) => {
-			const list = rowEls();
-			const index = list.indexOf( row );
-			const title = row.querySelector( '[data-hvw-row-title]' ).value.trim() || `کارت ${ faNum( index + 1 ) }`;
-			row.remove();
-			reindex();
-			update();
-
-			// بازگردانی به‌جای پنجره تأیید: کارت تا ذخیره نوشته از دست نرفته است
-			const undo = el( 'button', 'button-link hvw-undo-btn', 'بازگردانی' );
-			undo.type = 'button';
-			undo.addEventListener( 'click', () => {
-				rows.insertBefore( row, rowEls()[ index ] || null );
-				undoBox.replaceChildren();
-				reindex();
-				update();
-				row.querySelector( '[data-hvw-row-title]' ).focus();
-			} );
-			undoBox.replaceChildren( el( 'span', '', `«${ title }» حذف شد. ` ), undo );
-			undo.focus();
-		};
-
-		const moveRow = ( row, dir ) => {
-			const list = rowEls();
-			const i = list.indexOf( row );
-			const j = i + dir;
-			if ( j < 0 || j >= list.length ) {
-				return;
-			}
-			if ( dir < 0 ) {
-				rows.insertBefore( row, list[ j ] );
-			} else {
-				rows.insertBefore( list[ j ], row );
-			}
-			reindex();
-			// فوکوس روی همان دکمه بماند تا چند بار پشت سر هم جابه‌جا شود (اگر هنوز فعال است)
-			const same = row.querySelector( `[data-hvw-move="${ dir }"]` );
-			( same.disabled ? row.querySelector( `[data-hvw-move="${ -dir }"]` ) : same ).focus();
-		};
-
-		/* ── خلاصه ── */
+		/* ── به‌روزرسانی همه‌چیز ── */
 		const update = () => {
-			const parts = [];
-			const warns = [];
 			const url = urlState();
-
 			urlStatus.textContent = url.text;
-			urlStatus.classList.toggle( 'is-ok', 'ok' === url.level );
-			urlStatus.classList.toggle( 'is-warn', 'warn' === url.level );
+			urlStatus.dataset.level = url.level;
 
-			const hasCover = /^https?:\/\//i.test( coverInput.value.trim() );
+			const coverUrl = coverInput.value.trim();
+			const hasCover = /^https?:\/\//i.test( coverUrl );
 			const secs = durationSeconds( duration.value );
 			const ch = renderChapters();
 			const words = transcriptStats();
 			const hasProduct = '' !== product.value.trim();
-			const cards = rowEls();
-			const noCover = cards.filter( ( r ) => ! /^https?:\/\//i.test( r.querySelector( '[data-hvw-row-cover]' ).value.trim() ) );
-			const incomplete = cards.filter( ( r ) => ! r.querySelector( '[data-hvw-row-title]' ).value.trim() || ! r.querySelector( 'input[type="url"]' ).value.trim() );
+			const cards = [ ...rows.querySelectorAll( ':scope > [data-hd-row]' ) ];
+			const incomplete = cards.filter( ( r ) => ! r.querySelector( '[data-hd-row-title]' ).value.trim() || ! r.querySelector( 'input[type="url"]' ).value.trim() );
+			const noCover = cards.filter( ( r ) => ! /^https?:\/\//i.test( r.querySelector( '[data-hd-media-input]' ).value.trim() ) );
+			cards.forEach( ( r ) => r.classList.toggle( 'is-warn', incomplete.includes( r ) ) );
 
+			let warns = 0;
+			const flag = ( key, state, tag, note ) => {
+				if ( 'warn' === state ) {
+					warns++;
+				}
+				setCheck( key, state, tag, note );
+			};
 			if ( 'ok' === url.level ) {
-				parts.push( 'ویدیو آماده نمایش است' );
+				flag( 'url', 'ok' );
 			} else {
-				parts.push( 'ویدیو هنوز آماده نمایش نیست' );
-				warns.push( url.text );
+				flag( 'url', 'warn', url.empty ? 'لازم' : 'بررسی کنید', url.text );
 			}
-			parts.push( hasCover ? 'کاور دارد' : 'کاور ندارد' );
-			if ( ! hasCover ) {
-				warns.push( 'بدون کاور، گوگل این ویدیو را در نتایج ویدیویی نشان نمی‌دهد.' );
-			}
+			flag( 'cover', hasCover ? 'ok' : 'warn', hasCover ? '' : 'لازم', hasCover ? '' : 'بدون کاور، گوگل این ویدیو را در نتایج ویدیویی نشان نمی‌دهد.' );
 			if ( null !== secs && secs > 0 ) {
-				parts.push( `${ clock( secs ) } ${ secs >= 3600 ? 'ساعت' : 'دقیقه' }${ ch.count ? ` با ${ faNum( ch.count ) } لحظه کلیدی برای گوگل` : '' }` );
+				flag( 'duration', 'ok' );
 			} else if ( '' !== duration.value.trim() ) {
-				warns.push( 'مدت ویدیو خوانده نشد؛ مثل ۲:۳۵ بنویسید.' );
+				flag( 'duration', 'warn', 'بررسی کنید', 'مدت ویدیو خوانده نشد؛ مثل ۲:۳۵ بنویسید.' );
+			} else {
+				flag( 'duration', 'opt', 'پیشنهادی' );
 			}
 			if ( ch.bad ) {
-				warns.push( `${ faNum( ch.bad ) } خط از بخش‌ها نادیده گرفته می‌شود.` );
+				flag( 'chapters', 'warn', 'بررسی کنید', `${ faNum( ch.bad ) } خط از بخش‌ها نادیده گرفته می‌شود.` );
+			} else {
+				flag( 'chapters', ch.count ? 'ok' : 'opt' );
 			}
-			parts.push( words ? 'متن کامل زیر پلیر دیده می‌شود' : 'متن کامل ندارد' );
-			parts.push( hasProduct ? 'دکمه «مشاهده محصول» روشن است' : 'دکمه «مشاهده محصول» نمایش داده نمی‌شود' );
-			parts.push( cards.length ? `${ faNum( cards.length ) } کارت مرتبط زیر ویدیو می‌آید` : 'کارت مرتبطی زیر ویدیو نیست' );
+			flag( 'transcript', words ? 'ok' : 'opt' );
+			flag( 'product', hasProduct ? 'ok' : 'opt' );
 			if ( incomplete.length ) {
-				warns.push( `${ faNum( incomplete.length ) } کارت عنوان یا لینک ندارد و ذخیره نمی‌شود.` );
-			}
-			if ( noCover.length ) {
-				warns.push( `${ faNum( noCover.length ) } کارت عکس ندارد (جای عکس خالی می‌ماند).` );
+				flag( 'related', 'warn', 'بررسی کنید', `${ faNum( incomplete.length ) } کارت عنوان یا لینک ندارد و ذخیره نمی‌شود.` );
+			} else {
+				flag( 'related', cards.length ? 'ok' : 'opt', '', noCover.length ? `${ faNum( noCover.length ) } کارت عکس ندارد (جای عکس خالی می‌ماند).` : '' );
 			}
 
-			summaryText.textContent = `${ parts.join( '، ' ) }.`;
-			summaryWarn.replaceChildren( ...warns.map( ( w ) => el( 'span', 'hd-pill hd-pill--warn', w ) ) );
+			// نوار وضعیت: یک جمله ساده
+			const parts = [ 'ok' === url.level ? 'ویدیو آماده نمایش است' : 'ویدیو هنوز آماده نمایش نیست' ];
+			if ( null !== secs && secs > 0 ) {
+				parts.push( `${ clock( secs ) } ${ secs >= 3600 ? 'ساعت' : 'دقیقه' }${ ch.count ? ` با ${ faNum( ch.count ) } لحظه کلیدی` : '' }` );
+			}
+			if ( ! hasCover ) {
+				parts.push( 'کاور ندارد' );
+			}
+			summary.textContent = `${ parts.join( '، ' ) }.`;
 			summary.hidden = false;
+			pill.textContent = warns ? `${ faNum( warns ) } مورد برای بررسی` : 'آماده نمایش';
+			pill.className = `hd-pill ${ warns ? 'hd-pill--warn' : 'hd-pill--ok' }`;
+			pillWrap.hidden = false;
+
+			// شمارنده تب «زیر ویدیو»
+			tabCount.textContent = faNum( cards.length );
+			tabCount.hidden = 0 === cards.length;
+
+			// پیش‌نمایش
+			pvImg.hidden = ! hasCover;
+			if ( hasCover ) {
+				pvImg.src = coverUrl;
+			} else {
+				pvImg.removeAttribute( 'src' );
+			}
+			pvDur.hidden = ! ( secs > 0 );
+			pvDur.textContent = secs > 0 ? clock( secs ) : '';
+			pvChips.replaceChildren();
+			if ( ch.count ) {
+				pvChips.append( el( 'span', 'hvw-pv__chip', `${ faNum( ch.count ) } لحظه کلیدی` ) );
+			}
+			if ( words ) {
+				pvChips.append( el( 'span', 'hvw-pv__chip', 'متن کامل' ) );
+			}
+			pvProduct.hidden = ! hasProduct;
+			side.forEach( ( node ) => {
+				node.hidden = false;
+			} );
 		};
 
-		/* ── رویدادها ── */
+		/* ── رویدادها (تغییر فیلد، لیست کارت‌ها، انتخاب کاور؛ همه حباب‌دار) ── */
 		root.addEventListener( 'input', update );
 		root.addEventListener( 'change', update );
+		root.addEventListener( 'hd:repeat-change', update );
 
-		coverInput.addEventListener( 'input', () => syncThumb( coverInput, coverImg, coverBox ) );
-		$( '[data-hvw-cover] [data-hvw-pick]' )?.addEventListener( 'click', () => pickImage( ( url ) => {
-			coverInput.value = url;
-			fire( coverInput );
-		} ) );
-		$( '[data-hvw-clear]' )?.addEventListener( 'click', () => {
-			coverInput.value = '';
-			fire( coverInput );
-			coverInput.focus();
-		} );
-
-		rowEls().forEach( bindRow );
-		addBtn.addEventListener( 'click', addRow );
-		rows.addEventListener( 'click', ( e ) => {
-			const btn = e.target.closest( 'button' );
-			const row = btn?.closest( '[data-hvw-row]' );
-			if ( ! row ) {
-				return;
-			}
-			if ( btn.hasAttribute( 'data-hvw-remove' ) ) {
-				removeRow( row );
-			} else if ( btn.hasAttribute( 'data-hvw-move' ) ) {
-				moveRow( row, Number( btn.dataset.hvwMove ) );
-			} else if ( btn.hasAttribute( 'data-hvw-pick' ) ) {
-				const cover = row.querySelector( '[data-hvw-row-cover]' );
-				pickImage( ( url ) => {
-					cover.value = url;
-					fire( cover );
-				} );
-			}
-		} );
-
-		reindex();
 		update();
 	};
 

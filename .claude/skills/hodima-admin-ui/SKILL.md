@@ -75,18 +75,28 @@ description: استاندارد طراحی UI/UX پیشخوان هدیما (سط
 | خلاصه زنده | `.hd-summary` > `.hd-summary__icon` + `.hd-summary__body` (`.hd-summary__label` + `p.hd-summary__text[aria-live]` + `.hd-summary__warn`) | متن را JS صفحه می‌سازد؛ بدون JS پنهان |
 | کلید | `input[type=checkbox].hd-switch` | |
 
-**اجزایی که الان فقط محلی‌اند و باید به Core بروند** (هر کدام دست‌کم دو بار جدا ساخته شده؛ هنگام نخستین کار تازه که لازمشان دارد در Core با نام `hd-*` ساخته و صفحه‌های قبلی روی آن بنشینند؛ تا آن موقع نسخه محلی نساز، همان جزء Core را بساز):
+**اجزای نوع «ورود محتوا» (Core ۱.۲.۸، اولین بار در کادر ویدیو؛ همه در `admin-ui.css/js`، رفتار بدون JS: تب‌ها پنهان و همه بخش‌ها پشت‌سرهم):**
+- نوار وضعیت: `header.hd-statusbar` > `.hd-statusbar__icon` + `.hd-statusbar__body` (`h3.hd-statusbar__title` + `p.hd-statusbar__text[aria-live]`) + `.hd-statusbar__aside` (نشان `hd-pill`).
+- تب‌ها: `.hd-tabset[data-hd-tabset]` > `div.hd-tablist[role=tablist][hidden]` (`button.hd-tab[role=tab][aria-controls][aria-selected]` + `.hd-tab__count`) + پنل‌ها `.hd-tabpanel[role=tabpanel][aria-labelledby]`. **نام `hd-tabs` برای تب‌های زیر سربرگ همه صفحه‌هاست؛ برای کادر `hd-tablist` بگذار** (برخورد نام در ساخت Core ۱.۲.۸ پیدا شد؛ پیش از ساختن کلاس تازه همیشه در همه `plugins/` و `admin-ui.css` جستجو کن). JS: فلش (راست‌به‌چپ: چپ = بعدی)، Home/End، رویداد `hd:tab-change`، فیلد نامعتبر تبش را باز می‌کند.
+- چیدمان: `.hd-layout` (ظرف؛ عرض خودِ کادر را می‌سنجد) > `.hd-layout__grid` > `.hd-layout__preview`، `.hd-layout__main`، `.hd-layout__aside`؛ باریک: پیش‌نمایش ← اصلی ← چک‌لیست؛ ≥۴۶rem: اصلی کنار پیش‌نمایش و چک‌لیست. کارت کناری `section.hd-side` (+ `.hd-side__title`).
+- چک‌لیست: `ul.hd-checklist` > `li.hd-checklist__item[data-state=ok|warn|opt]` (`.hd-checklist__icon` + `__label` + `__tag` + `p.__note`)؛ علامت با CSS است؛ حالت‌ها را JS صفحه می‌نویسد.
+- جمع‌شونده: `details.hd-more` > `summary.hd-more__summary` (+ `.hd-more__hint`) + `.hd-more__body`. وضعیت زیر فیلد: `p.hd-field__status[data-level=ok|warn]`.
+- انتخاب‌گر رسانه: `[data-hd-media]` (کلاس `is-empty` را JS می‌گذارد) با `[data-hd-media-input]` (فیلد آدرس)، `[data-hd-media-img]`، `[data-hd-media-pick]`، `[data-hd-media-clear]`؛ `data-hd-media-title/-button` برای پنجره کتابخانه. بندانگشتی دکمه: `button.hd-media__preview.hd-media__pick`.
+- لیست تکرارشونده: `[data-hd-repeat]` (`data-hd-name` پیشوند نام، `data-hd-id` پیشوند شناسه، `data-hd-max`، `data-hd-item`، `data-hd-count-text`) > `[data-hd-rows]` + ردیف‌ها `.hd-repeat__row[data-hd-row]` (`[data-hd-row-title]`، `[data-hd-move=±1]`، `[data-hd-remove]`، `[data-hd-n]`، `data-hd-label` با `%s`) + `[data-hd-empty]`، `[data-hd-undo]`، `[data-hd-count]`، `[data-hd-add]`، `<template data-hd-row-template>` با `__i__`/`__n__`. رویداد `hd:repeat-change`.
+- چک‌لیست/خلاصه/پیش‌نمایش را JS خود صفحه می‌سازد (نمونه: `video-watch.admin.js`).
+
+**جدول قدیمی «باید به Core بروند» (انجام شد برای ویدیو؛ نوتیفیکیشن هنوز نسخه محلی دارد و هنگام کار بعدی روی آن به Core منتقل شود):**
 
 | جزء | الان کجاست | نام هدف در Core |
 |---|---|---|
-| تب‌های کادر (ARIA tabs، فلش، Home/End، تب فیلد نامعتبر باز شود) | `.hdn-tabs` نوتیفیکیشن | `.hd-tabs` |
-| نوار وضعیت کادر (عنوان + نشان + کلید/آمار) | `.hdn-status` | `.hd-statusbar` |
-| انتخاب‌گر رسانه (پیش‌نمایش + انتخاب از کتابخانه + برداشتن + آدرس) | `.hdn-media`، `.hvw-cover` | `.hd-media` |
-| لیست تکرارشونده (افزودن، جابه‌جایی، حذف با بازگردانی، `<template>`، شماره‌گذاری دوباره) | `.hvw-row` ویدیو | `.hd-repeat` |
-| فیلد آدرس با وضعیت (✓/هشدار زیر فیلد) | `hvw-status` | `.hd-field__status` |
-| متن بلند با شمارنده/پیش‌نمایش | ویدیو (بخش‌ها، متن کامل) | `.hd-textarea` |
-| چک‌لیست آمادگی | تازه | `.hd-checklist` |
-| جمع‌شونده «بیشتر» | تازه | `details.hd-more` |
+| تب‌های کادر (ARIA tabs، فلش، Home/End، تب فیلد نامعتبر باز شود) | `.hdn-tabs` نوتیفیکیشن | `.hd-tablist` + `.hd-tab` ✅ |
+| نوار وضعیت کادر (عنوان + نشان + کلید/آمار) | `.hdn-status` | `.hd-statusbar` ✅ |
+| انتخاب‌گر رسانه (پیش‌نمایش + انتخاب از کتابخانه + برداشتن + آدرس) | `.hdn-media`، `.hvw-cover` | `.hd-media` ✅ |
+| لیست تکرارشونده (افزودن، جابه‌جایی، حذف با بازگردانی، `<template>`، شماره‌گذاری دوباره) | `.hvw-row` ویدیو | `.hd-repeat` ✅ |
+| فیلد آدرس با وضعیت (✓/هشدار زیر فیلد) | `hvw-status` | `.hd-field__status` ✅ |
+| متن بلند با شمارنده/پیش‌نمایش | ویدیو (بخش‌ها، متن کامل) | جزء جدا نشد: `textarea` + `p.hd-field__help`/`hd-field__status` + پیش‌نمایش صفحه |
+| چک‌لیست آمادگی | ویدیو | `.hd-checklist` ✅ |
+| جمع‌شونده «بیشتر» | ویدیو | `details.hd-more` ✅ |
 | گروه دکمه‌ای (toggle group) | `.hdn-toggle-group` | همان `.hd-seg` (اگر کافی بود) |
 
 ## ظاهر
@@ -139,5 +149,6 @@ description: استاندارد طراحی UI/UX پیشخوان هدیما (سط
 گزارش به کاربر: «دروازه کیفیت ۱۱/۱۱» یا «۹/۱۱: بندهای ۶ و ۸ — چرا».
 
 ## ثبت تصمیم‌ها
+- ۲ آبان ۱۴۰۵: کادر ویدیو بر نسخه ۲ ساخته شد (Core ۱.۲.۸، Media ۲.۱.۶؛ `HODIMA-AUDIT.md` ۲۲۴): نوار وضعیت + ۳ تب + کناری (پیش‌نمایش و چک‌لیست). درس‌ها: (۱) ردیف تکرارشونده وقتی ۴ دکمه دارد در ستون ≈۵۰۰px می‌شکند ← خود بندانگشتی دکمه انتخاب عکس شد و فقط ۳ دکمه ماند؛ (۲) عرض واقعی کادر ویرایش با منوی پیشخوان ≈۸۲۰px در نمای ۱۰۰۰ است، پس ستون اصلی ≈۵۰۰px (طرح را روی همین عرض بسنج، نه ۱۰۰۰ کامل)؛ (۳) در موبایل پیش‌نمایش بزرگ فرم را تا وسط صفحه پایین می‌برد ← بندانگشتی کنار اطلاعاتش (`@container`)؛ (۴) نام `hd-tabs` از قبل مال Core بود و CSS تازه همه سربرگ‌ها را عوض می‌کرد ← `hd-tablist`.
 - ۲ آبان ۱۴۰۵: **دسکتاپ مبناست و موبایل هم خوب** (بخش بالا؛ برد ۳۹۰ در هر طرح، بند ۱۱ دروازه).
 - ۲ آبان ۱۴۰۵: نسخه ۲ اسکیل (نوع صفحه، قاعده‌های عددی، دروازه کیفیت، فهرست اجزای محلی برای Core). پیش‌فرض‌ها تا نظر کاربر: اجزای تازه Core هم‌زمان با بازسازی ویدیو ساخته شود؛ هم‌شکل کردن SeoBox کار جدا بعد از آن.
