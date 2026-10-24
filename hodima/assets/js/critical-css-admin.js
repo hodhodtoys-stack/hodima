@@ -11,28 +11,44 @@
  * قانون‌های @media همه نگه داشته می‌شوند (نه فقط عرض ساخت) تا تبلت هم درست باشد؛ از فهرست انتخابگر
  * فقط بخش‌های لازم؛ @font-face فقط وزن‌هایی که بالای صفحه به کار رفته؛
  * @keyframes فقط اگر نامش به کار رفته. url() نسبی نسبت به آدرس فایل CSS مطلق می‌شود (CSS درون صفحه).
+ *
+ * ساخت خودکار (4.0.0): اگر PHP متغیر window.hodimaCcssAuto را گذاشته باشد (کلید روشن، مدیر، صفحه مجاز)،
+ * چند ثانیه بعد از بارگذاری همین سازنده از سرور می‌پرسد «کاری هست؟»؛ فقط نوع‌های کهنه/ساخته‌نشده ساخته
+ * می‌شوند. در صفحه تنظیمات پیشرفت در همان قاب دیده می‌شود، در بقیه پیشخوان با یک اعلان وردپرس.
  */
 ( () => {
 	'use strict';
 
-	const root = document.querySelector( '[data-hodima-ccss]' );
-	if ( ! root ) {
+	const root = document.querySelector( '[data-hodima-ccss]' ); // قاب صفحه تنظیمات (ساخت دستی)
+	const auto = window.hodimaCcssAuto || null; // ساخت خودکار پس‌زمینه (هر صفحه پیشخوان مجاز؛ PHP فقط با کلید روشن می‌گذارد)
+
+	if ( ! root && ! auto ) {
 		return;
 	}
 
-	let config;
-	try {
-		config = JSON.parse( root.dataset.hodimaCcss );
-	} catch {
+	// صفحه پیشخوانی که خودش داخل قاب باز شده (مثلا پنجره‌های Thickbox) کاری نکند
+	if ( ! root && window.top !== window ) {
 		return;
 	}
 
-	const buildBtn = root.querySelector( '[data-hodima-ccss-build]' );
-	const clearBtn = root.querySelector( '[data-hodima-ccss-clear]' );
-	const progressBox = root.querySelector( '.hodima-ccss__progress' );
-	const progress = progressBox.querySelector( 'progress' );
-	const log = root.querySelector( '.hodima-ccss__log' );
-	const stage = root.querySelector( '.hodima-ccss__stage' );
+	let config = null;
+	if ( root ) {
+		try {
+			config = JSON.parse( root.dataset.hodimaCcss );
+		} catch {
+			return;
+		}
+	}
+
+	const api = config ?? auto; // ajax و nonce (هر دو یک اکشن nonce)
+	const buildBtn = root?.querySelector( '[data-hodima-ccss-build]' );
+	const clearBtn = root?.querySelector( '[data-hodima-ccss-clear]' );
+	const progressBox = root?.querySelector( '.hodima-ccss__progress' );
+	const progress = progressBox?.querySelector( 'progress' );
+	const log = root?.querySelector( '.hodima-ccss__log' );
+	let stage = root?.querySelector( '.hodima-ccss__stage' );
+	let busy = false; // یک ساخت در هر صفحه (دستی یا خودکار)
+	const autoState = { token: '', built: 0 }; // token خالی = ساخت خودکار در جریان نیست
 
 	const VIEWPORTS = [ [ 390, 844 ], [ 1300, 900 ] ];
 	const FOLD = 1.5; // ۱٫۵ برابر ارتفاع: تبلت عمودی (۸۲۰×۱۱۸۰) بلندتر از دو اندازه ساخت است
@@ -182,11 +198,24 @@
 		} );
 	}
 
+	/** جای قاب‌های پنهان: در صفحه تنظیمات از CSS همان صفحه، در بقیه پیشخوان با استایل درون‌خطی. */
+	function ensureStage() {
+		if ( ! stage ) {
+			stage = document.createElement( 'div' );
+			stage.setAttribute( 'aria-hidden', 'true' );
+			Object.assign( stage.style, { position: 'fixed', insetBlockStart: '0', insetInlineStart: '-30000px', pointerEvents: 'none' } );
+			document.body.append( stage );
+		}
+		return stage;
+	}
+
 	/** بارگذاری یک آدرس در قاب پنهان با اندازه داده‌شده. */
 	function loadFrame( url, width, height ) {
 		return new Promise( ( resolve, reject ) => {
 			const frame = document.createElement( 'iframe' );
 			frame.className = 'hodima-ccss__frame';
+			frame.style.border = '0';
+			frame.style.background = '#ffffff';
 			frame.style.width = `${ width }px`;
 			frame.style.height = `${ height }px`;
 			frame.setAttribute( 'tabindex', '-1' );
@@ -209,7 +238,7 @@
 			const target = new URL( url, location.href );
 			target.searchParams.set( 'hodima_ccss_build', '1' );
 			frame.src = target.href;
-			stage.replaceChildren( frame );
+			ensureStage().replaceChildren( frame );
 		} );
 	}
 
@@ -290,7 +319,7 @@
 
 		const body = items.filter( ( item ) => ! item.keyframe ).map( ( item ) => item.text ).join( '' );
 		const frames = items.filter( ( item ) => item.keyframe && body.includes( item.keyframe ) ).map( ( item ) => item.text ).join( '' );
-		stage.replaceChildren();
+		ensureStage().replaceChildren();
 
 		return body + frames;
 	}
@@ -298,7 +327,7 @@
 	async function post( action, data ) {
 		const form = new FormData();
 		form.append( 'action', action );
-		form.append( 'nonce', config.nonce );
+		form.append( 'nonce', api.nonce );
 		for ( const [ key, value ] of Object.entries( data ) ) {
 			if ( Array.isArray( value ) ) {
 				value.forEach( ( v ) => form.append( `${ key }[]`, v ) );
@@ -306,7 +335,7 @@
 				form.append( key, value );
 			}
 		}
-		const response = await fetch( config.ajax, { method: 'POST', body: form, credentials: 'same-origin' } );
+		const response = await fetch( api.ajax, { method: 'POST', body: form, credentials: 'same-origin' } );
 		const json = await response.json().catch( () => null );
 		if ( ! response.ok || ! json?.success ) {
 			throw new Error( json?.data?.message || `خطای سرور (${ response.status })` );
@@ -315,7 +344,7 @@
 	}
 
 	function setRow( type, state, text, meta ) {
-		const row = root.querySelector( `tr[data-type="${ type }"]` );
+		const row = root?.querySelector( `tr[data-type="${ type }"]` );
 		const badge = row?.querySelector( '.hodima-ccss__state' );
 		if ( ! badge ) {
 			return;
@@ -335,34 +364,142 @@
 		}
 	}
 
-	async function build() {
-		const entries = Object.entries( config.types ).filter( ( [ , t ] ) => t.urls.length );
+	/** نمایش پیشرفت در قاب صفحه تنظیمات (ساخت دستی و خودکار همین‌جا). */
+	const panelUi = root && {
+		begin() {
+			buildBtn.disabled = clearBtn.disabled = true;
+			progressBox.hidden = false;
+			progress.value = 0;
+		},
+		type( type, label ) {
+			log.textContent = `در حال ساخت: ${ label }…`;
+			setRow( type, 'busy', 'در حال ساخت…' );
+		},
+		step( done, total ) {
+			progress.value = Math.round( ( done / total ) * 100 );
+		},
+		ok( type, meta ) {
+			setRow( type, 'ok', 'آماده', meta );
+		},
+		fail( type, message ) {
+			setRow( type, 'error', `خطا: ${ message }` );
+		},
+		end( { failed } ) {
+			progress.value = 100;
+			log.textContent = failed
+				? `ساخت تمام شد؛ ${ fa( failed ) } نوع صفحه خطا داشت (ردیف قرمز). بقیه آماده‌اند و کش لایت‌اسپید پاک شد.`
+				: 'ساخت تمام شد؛ همه نوع‌ها آماده‌اند و کش لایت‌اسپید پاک شد. حالا لینک «آزمون» را در PageSpeed ببینید یا کلید پایین را روشن کنید.';
+			buildBtn.disabled = clearBtn.disabled = false;
+		},
+	};
+
+	/** نمایش پیشرفت ساخت خودکار در بقیه پیشخوان: یک اعلان استاندارد وردپرس بالای صفحه. */
+	let notice = null;
+	let current = '';
+
+	function showNotice( kind, text, link ) {
+		const host = document.getElementById( 'wpbody-content' );
+		if ( ! host ) {
+			return;
+		}
+		if ( ! notice ) {
+			notice = document.createElement( 'div' );
+			notice.setAttribute( 'role', 'status' );
+			notice.append( document.createElement( 'p' ) );
+			const anchor = host.querySelector( '.wp-header-end' ) ?? host.querySelector( '.wrap > h1' );
+			if ( anchor ) {
+				anchor.after( notice );
+			} else {
+				host.prepend( notice );
+			}
+		}
+		notice.className = `notice notice-${ kind } inline`;
+		const p = notice.firstElementChild;
+		p.textContent = text;
+		if ( link ) {
+			const a = document.createElement( 'a' );
+			a.href = link;
+			a.textContent = ' تنظیمات CSS حیاتی';
+			p.append( a );
+		}
+	}
+
+	function hideNotice( delay ) {
+		setTimeout( () => {
+			notice?.remove();
+			notice = null;
+		}, delay );
+	}
+
+	const noticeUi = {
+		begin() {
+			current = '';
+			showNotice( 'info', 'CSS حیاتی سایت در حال به‌روزرسانی در پس‌زمینه است؛ لطفا تا پایان کار این صفحه را نبندید.' );
+		},
+		type( type, label ) {
+			current = label;
+		},
+		step( done, total ) {
+			showNotice( 'info', `CSS حیاتی سایت در حال به‌روزرسانی در پس‌زمینه است (${ current }، ${ fa( Math.round( ( done / total ) * 100 ) ) }٪)؛ لطفا تا پایان کار این صفحه را نبندید.` );
+		},
+		ok() {},
+		fail() {},
+		end( { built, failed } ) {
+			if ( failed ) {
+				showNotice( 'warning', `CSS حیاتی: ${ fa( built ) } نوع صفحه ساخته شد و ${ fa( failed ) } نوع خطا داشت؛ تا چند ساعت دیگر دوباره تلاش نمی‌شود.`, auto?.settings );
+				hideNotice( 30000 );
+			} else {
+				showNotice( 'success', 'CSS حیاتی سایت به‌روز شد.' );
+				hideNotice( 8000 );
+			}
+		},
+	};
+
+	/**
+	 * ساخت چند نوع صفحه؛ هر نوع که تمام شد همان لحظه ذخیره می‌شود (نیمه‌کاره ماندن چیزی را از دست نمی‌دهد).
+	 * خروجی: تعداد ساخته‌شده و خطادار. token = قفل ساخت خودکار (با هر ذخیره تمدید می‌شود).
+	 */
+	async function buildEntries( entries, ui, token = '' ) {
 		const total = entries.reduce( ( sum, [ , t ] ) => sum + t.urls.length, 0 ) || 1;
 		let done = 0;
+		let built = 0;
 		let failed = 0;
 
-		buildBtn.disabled = clearBtn.disabled = true;
-		progressBox.hidden = false;
-		progress.value = 0;
+		ui.begin();
 
 		for ( const [ type, info ] of entries ) {
-			log.textContent = `در حال ساخت: ${ info.label }…`;
-			setRow( type, 'busy', 'در حال ساخت…' );
+			ui.type( type, info.label );
 			try {
 				const css = await buildType( type, info.urls, () => {
 					done++;
-					progress.value = Math.round( ( done / total ) * 100 );
+					ui.step( done, total );
 				} );
 				if ( ! css ) {
 					throw new Error( 'قانونی پیدا نشد' );
 				}
-				const result = await post( 'hodima_ccss_save', { type, css, urls: info.urls } );
-				setRow( type, 'ok', 'آماده', result.meta );
+				const result = await post( 'hodima_ccss_save', { type, css, urls: info.urls, ...( token ? { token } : {} ) } );
+				built++;
+				autoState.built = built;
+				ui.ok( type, result.meta );
 			} catch ( error ) {
 				failed++;
-				setRow( type, 'error', `خطا: ${ error.message }` );
+				// ساخت پس‌زمینه است؛ علت خطا برای عیب‌یابی در کنسول مرورگر مدیر می‌ماند
+				console.warn( `[hodima-ccss] ${ type }:`, error );
+				ui.fail( type, error.message );
 			}
 		}
+
+		return { built, failed };
+	}
+
+	async function build() {
+		if ( busy ) {
+			return;
+		}
+		busy = true;
+
+		const entries = Object.entries( config.types ).filter( ( [ , t ] ) => t.urls.length );
+		const { failed } = await buildEntries( entries, panelUi );
 
 		try {
 			await post( 'hodima_ccss_finish', {} );
@@ -370,14 +507,14 @@
 			// پاک‌کردن کش اختیاری است
 		}
 
-		progress.value = 100;
-		log.textContent = failed
-			? `ساخت تمام شد؛ ${ fa( failed ) } نوع صفحه خطا داشت (ردیف قرمز). بقیه آماده‌اند و کش لایت‌اسپید پاک شد.`
-			: 'ساخت تمام شد؛ همه نوع‌ها آماده‌اند و کش لایت‌اسپید پاک شد. حالا لینک «آزمون» را در PageSpeed ببینید یا کلید پایین را روشن کنید.';
-		buildBtn.disabled = clearBtn.disabled = false;
+		panelUi.end( { failed } );
+		busy = false;
 	}
 
 	async function clear() {
+		if ( busy ) {
+			return;
+		}
 		// eslint-disable-next-line no-alert -- تأیید ساده پیش از حذف همه
 		if ( ! window.confirm( 'CSS حیاتی همه نوع‌های صفحه حذف شود؟ سایت مثل قبل (بدون CSS حیاتی) نمایش داده می‌شود.' ) ) {
 			return;
@@ -398,6 +535,109 @@
 		buildBtn.disabled = clearBtn.disabled = false;
 	}
 
-	buildBtn.addEventListener( 'click', build );
-	clearBtn.addEventListener( 'click', clear );
+	if ( root ) {
+		buildBtn.addEventListener( 'click', build );
+		clearBtn.addEventListener( 'click', clear );
+	}
+
+	/* ============================================================
+	 * ساخت خودکار: «کاری هست؟» (سرور تصمیم می‌گیرد) ← ساخت فقط نوع‌های کهنه ← پایان و آزاد کردن قفل
+	 * ============================================================ */
+
+	const CHECK_KEY = 'hodimaCcssAutoCheck';
+
+	function lastCheck() {
+		try {
+			return Number( window.localStorage.getItem( CHECK_KEY ) ) || 0;
+		} catch {
+			return 0;
+		}
+	}
+
+	function rememberCheck() {
+		try {
+			window.localStorage.setItem( CHECK_KEY, String( Date.now() ) );
+		} catch {
+			// حافظه مرورگر بسته است؛ فقط محدودیت فاصله بررسی کار نمی‌کند
+		}
+	}
+
+	/** تا تب جلوی چشم نیست شروع نکن (مرورگر تایمرهای تب پنهان را کُند می‌کند). */
+	function whenVisible() {
+		if ( 'visible' === document.visibilityState ) {
+			return Promise.resolve();
+		}
+		return new Promise( ( resolve ) => {
+			const onChange = () => {
+				if ( 'visible' === document.visibilityState ) {
+					document.removeEventListener( 'visibilitychange', onChange );
+					resolve();
+				}
+			};
+			document.addEventListener( 'visibilitychange', onChange );
+		} );
+	}
+
+	async function autoRun() {
+		if ( busy || Date.now() - lastCheck() < ( auto.recheck ?? 600 ) * 1000 ) {
+			return;
+		}
+
+		await whenVisible();
+
+		let claim;
+		try {
+			claim = await post( 'hodima_ccss_auto_claim', {} );
+		} catch {
+			return; // خطای شبکه/سرور: بی‌صدا؛ صفحه بعد دوباره
+		}
+
+		if ( ! claim.build ) {
+			rememberCheck(); // چیزی لازم نیست (یا ساخت دیگری در جریان است): تا ۱۰ دقیقه دوباره نپرس
+			return;
+		}
+
+		busy = true;
+		autoState.token = claim.token;
+		autoState.built = 0;
+
+		const ui = panelUi ?? noticeUi;
+		const { built, failed } = await buildEntries( Object.entries( claim.types ), ui, claim.token );
+
+		try {
+			await post( 'hodima_ccss_auto_end', { token: claim.token, built, failed } );
+		} catch {
+			// قفل خودش تا ۱۰ دقیقه بعد آزاد می‌شود
+		}
+
+		autoState.token = '';
+		rememberCheck();
+		ui.end( { built, failed } );
+		busy = false;
+	}
+
+	if ( auto ) {
+		// صفحه را رها کردند (بستن تب، رفتن به آدرس دیگر): قفل آزاد شود تا صفحه بعد از همان‌جا ادامه دهد
+		window.addEventListener( 'pagehide', () => {
+			if ( ! autoState.token ) {
+				return;
+			}
+			const form = new FormData();
+			form.append( 'action', 'hodima_ccss_auto_end' );
+			form.append( 'nonce', api.nonce );
+			form.append( 'token', autoState.token );
+			form.append( 'built', String( autoState.built ) );
+			form.append( 'failed', '0' );
+			navigator.sendBeacon( api.ajax, form );
+			autoState.token = '';
+		} );
+
+		// چند ثانیه بعد از بارگذاری کامل صفحه، تا خود صفحه پیشخوان کند نشود
+		const start = () => setTimeout( autoRun, 2500 );
+		if ( 'complete' === document.readyState ) {
+			start();
+		} else {
+			window.addEventListener( 'load', start, { once: true } );
+		}
+	}
 } )();

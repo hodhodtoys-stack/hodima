@@ -16,6 +16,9 @@
  *      لایت‌اسپید؛ لایت‌اسپید فقط rel="stylesheet" را ترکیب می‌کند، پس دست نمی‌زند).
  *   ۳. ایمنی: اگر وردپرس/قالب/افزونه‌ای به‌روز شود یا چیدمان صفحه اصلی عوض شود (امضا)، CSS حیاتی
  *      آن نوع کنار گذاشته می‌شود و صفحه مثل قبل (CSS مسدودکننده) چاپ می‌شود تا دوباره ساخته شود.
+ *   ۴. ساخت خودکار (4.0.0): ساخت فقط در مرورگر مدیر ممکن است (اندازه‌گیری چیدمان واقعی)، پس وقتی مدیر
+ *      وارد پیشخوان می‌شود همان سازنده بی‌صدا در پس‌زمینه می‌دوید و فقط نوع‌های کهنه/ساخته‌نشده را
+ *      می‌سازد. سرور فقط تصمیم می‌گیرد (قفل، فاصله بعد از خطا، فهرست نمونه‌ها) و ذخیره می‌کند.
  */
 
 declare(strict_types=1);
@@ -166,7 +169,7 @@ function hodima_ccss_get( string $type ): ?array {
 
 /**
  * امضای «همان CSSی که ساخته شد»: نسخه وردپرس، قالب، افزونه‌های فعال و ووکامرس، تنظیمات قالب
- * (هدر، چیدمان…؛ جز خود کلید CSS حیاتی)؛ برای صفحه اصلی چیدمان بخش‌ها هم. هر تغییر ← امضا عوض ←
+ * (هدر، چیدمان…؛ جز خود کلیدهای CSS حیاتی)؛ برای صفحه اصلی چیدمان بخش‌ها هم. هر تغییر ← امضا عوض ←
  * آن نوع تا ساخت دوباره کنار گذاشته می‌شود. از نسخه‌ها (نه فهرست stylesheetهای صفحه) چون دو محصول
  * ممکن است CSSهای متفاوتی بگیرند. گزینه‌ها با پیش‌فرض صریح خوانده می‌شوند: register_setting در
  * پیشخوان پیش‌فرض دیگری می‌دهد و امضای admin-ajax با سایت فرق می‌کرد (باگ پیدا‌شده در آزمون).
@@ -186,7 +189,7 @@ function hodima_ccss_signature( string $type ): string {
 
 	$settings = get_option( 'hodima_theme_settings', [] );
 	if ( is_array( $settings ) ) {
-		unset( $settings['critical_css'] );
+		unset( $settings['critical_css'], $settings['critical_css_auto'] );
 	}
 	$parts[] = md5( (string) wp_json_encode( $settings ) );
 
@@ -363,13 +366,103 @@ add_filter( 'show_admin_bar', static fn( mixed $show ): mixed => hodima_ccss_is_
  * ۴. پیشخوان: قاب «CSS حیاتی» و ذخیره با admin-ajax
  * ============================================================ */
 
+/* ============================================================
+ * ۵. ساخت خودکار در پس‌زمینه پیشخوان (4.0.0)
+ * ============================================================ */
+
+/** گزینه قفل ساخت خودکار و فاصله بعد از خطا (autoload خاموش). */
+const HODIMA_CCSS_AUTO_OPTION  = 'hodima_ccss_auto';
+const HODIMA_CCSS_AUTO_LOCK    = 600;   // ثانیه؛ با هر ذخیره نوع تمدید می‌شود
+const HODIMA_CCSS_AUTO_BACKOFF = 21600; // ۶ ساعت بعد از ساختی که نوعی از آن خطا داد
+
+/** ساخت خودکار روشن است؟ (کلید CSS حیاتی هم باید روشن باشد: وگرنه بازدیدکننده اثری نمی‌بیند.) */
+function hodima_ccss_auto_enabled(): bool {
+
+	$on = (bool) hodima_setting( 'critical_css' ) && (bool) hodima_setting( 'critical_css_auto' );
+
+	return (bool) apply_filters( 'hodima_ccss_auto_enabled', $on );
+}
+
+/**
+ * نوع‌هایی که CSS حیاتی ندارند یا امضایشان کهنه است.
+ *
+ * @return list<string>
+ */
+function hodima_ccss_stale_types(): array {
+
+	$stale = [];
+
+	foreach ( array_keys( hodima_ccss_types() ) as $type ) {
+		$data = hodima_ccss_get( $type );
+		if ( null === $data || ! hash_equals( $data['sig'], hodima_ccss_signature( $type ) ) ) {
+			$stale[] = $type;
+		}
+	}
+
+	return $stale;
+}
+
+/**
+ * وضعیت قفل: lock (تا کی)، token (مالک قفل)، fail (تا کی دوباره تلاش نکن).
+ *
+ * @return array{lock: int, token: string, fail: int}
+ */
+function hodima_ccss_auto_state(): array {
+
+	$state = get_option( HODIMA_CCSS_AUTO_OPTION, [] );
+	$state = is_array( $state ) ? $state : [];
+
+	return [
+		'lock'  => (int) ( $state['lock'] ?? 0 ),
+		'token' => (string) ( $state['token'] ?? '' ),
+		'fail'  => (int) ( $state['fail'] ?? 0 ),
+	];
+}
+
+/** @param array{lock: int, token: string, fail: int} $state */
+function hodima_ccss_auto_save_state( array $state ): void {
+	update_option( HODIMA_CCSS_AUTO_OPTION, $state, false );
+}
+
+/**
+ * این صفحه پیشخوان برای ساخت خودکار مناسب است؟ همه صفحه‌ها جز ویرایش نوشته/محصول و ویرایشگر بلوکی
+ * (سنگین‌اند و نباید وسط نوشتن قاب‌های پنهان باز شود) و سفارشی‌سازی.
+ */
+function hodima_ccss_auto_screen(): bool {
+
+	if ( ! hodima_ccss_auto_enabled() || ! current_user_can( 'manage_options' ) ) {
+		return false;
+	}
+
+	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+	if ( $screen instanceof WP_Screen && ( $screen->is_block_editor() || in_array( $screen->base, [ 'post', 'customize' ], true ) ) ) {
+		return false;
+	}
+
+	return (bool) apply_filters( 'hodima_ccss_auto_screen', true, $screen );
+}
+
 add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {
 
-	if ( ! defined( 'HODIMA_SETTINGS_HOOK' ) || HODIMA_SETTINGS_HOOK !== $hook ) {
+	$on_settings = defined( 'HODIMA_SETTINGS_HOOK' ) && HODIMA_SETTINGS_HOOK === $hook;
+	$auto        = hodima_ccss_auto_screen();
+
+	if ( ! $on_settings && ! $auto ) {
 		return;
 	}
 
 	hodima_enqueue_asset( 'hodima-critical-css-admin', 'assets/js/critical-css-admin.js', [], [ 'in_footer' => true, 'strategy' => 'defer' ] );
+
+	if ( $auto ) {
+		$config = [
+			'ajax'     => admin_url( 'admin-ajax.php' ),
+			'nonce'    => wp_create_nonce( 'hodima_ccss' ),
+			'settings' => function_exists( 'hodima_settings_url' ) ? hodima_settings_url( [ 'tab' => 'pagespeed' ] ) : '',
+			'recheck'  => 600, // ثانیه؛ حداقل فاصله دو بررسی «چیزی لازم نبود» در یک مرورگر
+		];
+		wp_add_inline_script( 'hodima-critical-css-admin', 'window.hodimaCcssAuto=' . wp_json_encode( $config ) . ';', 'before' );
+	}
 } );
 
 /** محتوای قاب «CSS حیاتی» در تب «پیج اسپید» (قاب با layout «ccss»؛ کلید روشن/خاموش زیر آن). */
@@ -401,6 +494,7 @@ function hodima_ccss_admin_panel(): void {
 			<li><strong>ساخت:</strong> دکمه «ساخت CSS حیاتی» را بزنید و تا پایان این صفحه را باز نگه دارید (برای هر نوع صفحه چند ثانیه). مرورگر شما نمونه هر نوع صفحه را پشت صحنه در اندازه موبایل و دسکتاپ باز می‌کند.</li>
 			<li><strong>آزمون (اختیاری):</strong> لینک «آزمون» هر ردیف را در <a href="https://pagespeed.web.dev/" target="_blank" rel="noopener noreferrer">PageSpeed</a> یا پنجره ناشناس مرورگر باز کنید؛ فقط همان آدرس با CSS حیاتی نمایش داده می‌شود.</li>
 			<li><strong>روشن کردن:</strong> کلید پایین را روشن و «ذخیره تنظیمات» را بزنید. اگر ظاهر جایی به‌هم ریخت، خاموش کنید؛ سایت فورا مثل قبل می‌شود.</li>
+			<li><strong>خودکار:</strong> با کلید «به‌روزرسانی خودکار» (پایین) دیگر لازم نیست دکمه را بزنید؛ هر بار که وارد پیشخوان می‌شوید، نوع صفحه‌ای که کهنه یا ساخته‌نشده باشد همان‌جا در پس‌زمینه ساخته می‌شود.</li>
 		</ol>
 
 		<div class="hodima-ccss__table-wrap">
@@ -500,6 +594,14 @@ add_action( 'wp_ajax_hodima_ccss_save', static function (): void {
 
 	update_option( hodima_ccss_option( $type ), $data, false );
 
+	// ساخت خودکار طولانی: با هر نوع ذخیره‌شده قفل تمدید می‌شود تا ساخت دوم هم‌زمان شروع نشود
+	$token = isset( $_POST['token'] ) ? sanitize_text_field( wp_unslash( $_POST['token'] ) ) : '';
+	$state = hodima_ccss_auto_state();
+	if ( '' !== $token && hash_equals( $state['token'], $token ) ) {
+		$state['lock'] = time() + HODIMA_CCSS_AUTO_LOCK;
+		hodima_ccss_auto_save_state( $state );
+	}
+
 	wp_send_json_success( [
 		'type'  => $type,
 		'state' => 'ok',
@@ -523,6 +625,82 @@ add_action( 'wp_ajax_hodima_ccss_finish', static function (): void {
 	}
 
 	do_action( 'litespeed_purge_all' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- API پاک‌سازی کش افزونه LiteSpeed Cache
+
+	wp_send_json_success();
+} );
+
+/**
+ * ساخت خودکار ۱: «کاری هست؟» — فقط وقتی کلید روشن است، قفل آزاد است، بعد از خطای اخیر نیست و
+ * نوعی کهنه/ساخته‌نشده با نمونه دارد پاسخ build=true و نشانه قفل می‌دهد.
+ */
+add_action( 'wp_ajax_hodima_ccss_auto_claim', static function (): void {
+
+	check_ajax_referer( 'hodima_ccss', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( [ 'message' => 'دسترسی ندارید.' ], 403 );
+	}
+
+	if ( ! hodima_ccss_auto_enabled() ) {
+		wp_send_json_success( [ 'build' => false, 'reason' => 'off' ] );
+	}
+
+	$state = hodima_ccss_auto_state();
+	$now   = time();
+
+	if ( $state['lock'] > $now ) {
+		wp_send_json_success( [ 'build' => false, 'reason' => 'busy' ] );
+	}
+
+	if ( $state['fail'] > $now ) {
+		wp_send_json_success( [ 'build' => false, 'reason' => 'backoff' ] );
+	}
+
+	$labels = hodima_ccss_types();
+	$types  = [];
+
+	foreach ( hodima_ccss_stale_types() as $type ) {
+		$urls = hodima_ccss_sample_urls( $type );
+		if ( $urls ) {
+			$types[ $type ] = [ 'label' => $labels[ $type ], 'urls' => $urls ];
+		}
+	}
+
+	if ( ! $types ) {
+		wp_send_json_success( [ 'build' => false, 'reason' => 'fresh' ] );
+	}
+
+	$token = wp_generate_password( 12, false );
+
+	hodima_ccss_auto_save_state( [ 'lock' => $now + HODIMA_CCSS_AUTO_LOCK, 'token' => $token, 'fail' => 0 ] );
+
+	wp_send_json_success( [ 'build' => true, 'token' => $token, 'types' => $types ] );
+} );
+
+/**
+ * ساخت خودکار ۲: پایان (یا رها شدن با بستن صفحه): قفل آزاد می‌شود؛ اگر نوعی خطا داد ۶ ساعت دوباره
+ * تلاش نمی‌شود (حلقه نسازد)؛ اگر چیزی ساخته شده کش صفحه‌ها پاک می‌شود.
+ */
+add_action( 'wp_ajax_hodima_ccss_auto_end', static function (): void {
+
+	check_ajax_referer( 'hodima_ccss', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( [ 'message' => 'دسترسی ندارید.' ], 403 );
+	}
+
+	$token  = isset( $_POST['token'] ) ? sanitize_text_field( wp_unslash( $_POST['token'] ) ) : '';
+	$built  = isset( $_POST['built'] ) ? absint( wp_unslash( $_POST['built'] ) ) : 0;
+	$failed = isset( $_POST['failed'] ) ? absint( wp_unslash( $_POST['failed'] ) ) : 0;
+	$state  = hodima_ccss_auto_state();
+
+	if ( '' !== $token && hash_equals( $state['token'], $token ) ) {
+		hodima_ccss_auto_save_state( [ 'lock' => 0, 'token' => '', 'fail' => $failed > 0 ? time() + HODIMA_CCSS_AUTO_BACKOFF : 0 ] );
+	}
+
+	if ( $built > 0 ) {
+		do_action( 'litespeed_purge_all' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- API پاک‌سازی کش افزونه LiteSpeed Cache
+	}
 
 	wp_send_json_success();
 } );

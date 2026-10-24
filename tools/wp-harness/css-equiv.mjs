@@ -312,8 +312,10 @@ for ( const rel of files ) {
 	const diffs = [];
 	for ( const key of new Set( [ ...ma.keys(), ...mb.keys() ] ) ) {
 		const [ x, y ] = [ ma.get( key ), mb.get( key ) ];
-		// shorthand «border» (minify) border-image را هم initial می‌کند؛ قالب جایی border-image ندارد
-		if ( /\{ border-image-/.test( key ) && 'initial' === ( x ?? y ).value && ! ( x ?? y ).prio && ( ! x || ! y ) ) continue;
+		// shorthand «border» (minify) border-image را هم initial می‌کند؛ قالب جایی border-image ندارد.
+		// Chromium تازه (۱۵۳) به‌جای «initial» مقدار پیش‌فرض صریح می‌نویسد (none، 100%، 1، 0، stretch): همان معنا
+		const borderImageInitial = [ 'initial', 'none', '100%', '1', '0', 'stretch' ];
+		if ( /\{ border-image-/.test( key ) && borderImageInitial.includes( ( x ?? y ).value ) && ! ( x ?? y ).prio && ( ! x || ! y ) ) continue;
 		if ( x?.value !== y?.value || x?.prio !== y?.prio ) {
 			diffs.push( `${ key.trim() }: ${ x ? `${ x.value }${ x.prio ? ' !important' : '' }` : '∅' } → ${ y ? `${ y.value }${ y.prio ? ' !important' : '' }` : '∅' }` );
 		}
