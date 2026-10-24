@@ -193,20 +193,48 @@ function import_csv(): array {
  * صفحه
  * ===================================================================== */
 
+/** نمای هر دسته از فهرست: کلید ← [برچسب، شرط روی قانون]. */
+function views(): array {
+	return [
+		'all'        => [ 'همه', static fn( array $rule, string $key ): bool => true ],
+		'permanent'  => [ 'دائم', static fn( array $rule, string $key ): bool => in_array( (int) $rule['status'], [ 301, 308 ], true ) ],
+		'temporary'  => [ 'موقت', static fn( array $rule, string $key ): bool => in_array( (int) $rule['status'], [ 302, 307 ], true ) ],
+		'gone'       => [ 'حذف‌شده', static fn( array $rule, string $key ): bool => in_array( (int) $rule['status'], [ 404, 410 ], true ) ],
+		'auto'       => [ 'خودکار', static fn( array $rule, string $key ): bool => ! empty( $rule['auto'] ) ],
+		'suspicious' => [ 'مشکوک', static fn( array $rule, string $key ): bool => is_suspicious( $key ) ],
+	];
+}
+
 function render_page(): void {
 
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
 
-	$rules = array_reverse( get_rules(), true );
-	$hits  = (array) get_option( HITS_OPTION, [] );
+	$all  = array_reverse( get_rules(), true );
+	$hits = (array) get_option( HITS_OPTION, [] );
 
 	$msg = get_transient( 'hodima_redirect_msg_' . get_current_user_id() );
 	delete_transient( 'hodima_redirect_msg_' . get_current_user_id() );
 
 	$edit_key  = isset( $_GET['edit'] ) ? normalize_path( rawurldecode( (string) wp_unslash( $_GET['edit'] ) ) ) : '';
-	$edit_rule = ( '' !== $edit_key && isset( $rules[ $edit_key ] ) ) ? $rules[ $edit_key ] : null;
+	$edit_rule = ( '' !== $edit_key && isset( $all[ $edit_key ] ) ) ? $all[ $edit_key ] : null;
+
+	// شمار هر نما روی کل قانون‌ها (نه فقط نتیجه جستجو)
+	$views  = views();
+	$counts = [];
+	foreach ( $views as $id => [ , $match ] ) {
+		$counts[ $id ] = count( array_filter( $all, static fn( $rule, $key ): bool => $match( $rule, (string) $key ), ARRAY_FILTER_USE_BOTH ) );
+	}
+	// «مشکوک» فقط وقتی هست که قانون مشکوکی وجود داشته باشد
+	if ( 0 === $counts['suspicious'] ) {
+		unset( $views['suspicious'] );
+	}
+
+	$view = sanitize_key( (string) wp_unslash( $_GET['view'] ?? 'all' ) );
+	$view = isset( $views[ $view ] ) ? $view : 'all';
+
+	$rules = array_filter( $all, static fn( $rule, $key ): bool => $views[ $view ][1]( $rule, (string) $key ), ARRAY_FILTER_USE_BOTH );
 
 	$search = trim( (string) wp_unslash( $_GET['s'] ?? '' ) );
 	if ( '' !== $search ) {
@@ -216,15 +244,21 @@ function render_page(): void {
 		}, ARRAY_FILTER_USE_BOTH );
 	}
 
-	$suspicious = array_filter( array_keys( $rules ), __NAMESPACE__ . '\\is_suspicious' );
-
 	$per_page     = 25;
 	$total        = count( $rules );
 	$pages        = max( 1, (int) ceil( $total / $per_page ) );
 	$current_page = min( $pages, max( 1, (int) ( $_GET['paged'] ?? 1 ) ) );
-	$page_rules   = array_slice( $rules, ( $current_page - 1 ) * $per_page, $per_page, true );
+	$offset       = ( $current_page - 1 ) * $per_page;
+	$page_rules   = array_slice( $rules, $offset, $per_page, true );
 
 	$labels = [ 301 => 'انتقال دائم', 302 => 'موقت', 307 => 'موقت', 308 => 'دائم', 404 => 'پیدا نشد', 410 => 'حذف همیشگی' ];
+	$icons  = [ 'edit' => 'dashicons-edit', 'delete' => 'dashicons-trash' ];
+	$stats  = [
+		[ 'کل قانون‌ها', $counts['all'] ],
+		[ 'انتقال دائم (۳۰۱/۳۰۸)', $counts['permanent'] ],
+		[ 'انتقال موقت', $counts['temporary'] ],
+		[ 'حذف‌شده (۴۱۰/۴۰۴)', $counts['gone'] ],
+	];
 	?>
 	<div class="wrap hd-wrap h-admin">
 
@@ -243,140 +277,159 @@ function render_page(): void {
 		}
 		?>
 
-		<?php if ( ! empty( $suspicious ) && '' === $search ) : ?>
+		<?php if ( $counts['suspicious'] > 0 && '' === $search && 'all' === $view ) : ?>
 			<?php
 			hodima_admin_notice(
-				esc_html( sprintf( '%s قانون مشکوک پیدا شد (با نشان «مشکوک» در فهرست).', number_format_i18n( count( $suspicious ) ) ) )
+				esc_html( sprintf( '%s قانون مشکوک پیدا شد (با نشان «مشکوک» در فهرست).', number_format_i18n( $counts['suspicious'] ) ) )
 				. ' نسخه قبلی آدرس‌های فارسی کپی‌شده از مرورگر را هنگام ذخیره خراب می‌کرد و این قوانین هرگز اجرا نمی‌شدند. آن‌ها را حذف و با آدرس درست دوباره بسازید.',
 				'warning'
 			);
 			?>
 		<?php endif; ?>
 
-		<div class="h-section h-card">
-			<h2 class="h-section-title"><?php echo $edit_rule ? 'ویرایش قانون' : 'افزودن مسیر جدید'; ?></h2>
+		<section class="h-stats" aria-label="خلاصه قانون‌ها">
+			<?php foreach ( $stats as [ $label, $number ] ) : ?>
+				<div class="h-stat"><span><?php echo esc_html( $label ); ?></span><b><?php echo esc_html( number_format_i18n( $number ) ); ?></b></div>
+			<?php endforeach; ?>
+		</section>
 
-			<form method="post" action="<?php echo esc_url( page_url() ); ?>">
-				<?php wp_nonce_field( 'hodima_redirect_save' ); ?>
-				<input type="hidden" name="hodima_redirect_action" value="save">
-				<input type="hidden" name="original_key" value="<?php echo esc_attr( $edit_rule ? $edit_key : '' ); ?>">
+		<form class="h-card h-add" method="post" action="<?php echo esc_url( page_url() ); ?>" aria-label="<?php echo $edit_rule ? 'ویرایش قانون' : 'افزودن مسیر جدید'; ?>">
+			<?php wp_nonce_field( 'hodima_redirect_save' ); ?>
+			<input type="hidden" name="hodima_redirect_action" value="save">
+			<input type="hidden" name="original_key" value="<?php echo esc_attr( $edit_rule ? $edit_key : '' ); ?>">
 
-				<div class="h-form-grid">
-					<div>
-						<label for="h-old">آدرس قدیمی (مبدا)</label>
-						<input type="text" id="h-old" name="old_url" class="h-input" dir="ltr" required
-							value="<?php echo esc_attr( $edit_rule ? (string) ( $edit_rule['source'] ?? $edit_key ) : '' ); ?>"
-							placeholder="/old-path/ یا آدرس کامل">
-					</div>
-					<div>
-						<label for="h-target">آدرس جدید (مقصد)</label>
-						<input type="text" id="h-target" name="target_url" class="h-input" dir="ltr"
-							value="<?php echo esc_attr( $edit_rule ? (string) $edit_rule['target'] : '' ); ?>"
-							placeholder="/new-path/ یا https://…">
-					</div>
-					<div>
-						<label for="h-status">نوع</label>
-						<select id="h-status" name="status_code" class="h-input">
-							<?php
-							$current = $edit_rule ? (int) $edit_rule['status'] : 301;
-							foreach ( [
-								301 => '301 — انتقال دائم (استاندارد سئو)',
-								302 => '302 — انتقال موقت',
-								307 => '307 — موقت، حفظ متد فرم',
-								308 => '308 — دائم، حفظ متد فرم',
-								404 => '404 — پیدا نشد',
-								410 => '410 — حذف همیشگی',
-							] as $code => $text ) {
-								printf( '<option value="%d"%s>%s</option>', $code, selected( $current, $code, false ), esc_html( $text ) );
-							}
-							?>
-						</select>
-					</div>
-					<div class="h-form-actions">
-						<button type="submit" class="h-btn h-btn-primary h-w-full"><?php echo $edit_rule ? 'ذخیره تغییرات' : 'ذخیره مسیر'; ?></button>
-						<?php if ( $edit_rule ) : ?>
-							<a class="h-btn h-btn-outline h-w-full" href="<?php echo esc_url( page_url() ); ?>">انصراف</a>
-						<?php endif; ?>
-					</div>
+			<?php if ( $edit_rule ) : ?>
+				<p class="h-add__mode">ویرایش قانون <code><?php echo esc_html( $edit_key ); ?></code></p>
+			<?php endif; ?>
+
+			<div class="h-form-grid">
+				<div>
+					<label for="h-old">آدرس قدیمی (مبدا)</label>
+					<input type="text" id="h-old" name="old_url" class="h-input" dir="ltr" required
+						value="<?php echo esc_attr( $edit_rule ? (string) ( $edit_rule['source'] ?? $edit_key ) : '' ); ?>"
+						placeholder="/old-path/ یا آدرس کامل">
 				</div>
-
-				<p class="h-help">
-					آدرس را می‌توانید مستقیم از نوار آدرس مرورگر کپی کنید (حتی به شکل کدگذاری‌شده %D8%…).
-					زنجیره‌ها خودکار صاف می‌شوند (A→B و B→C به A→C) و قانونی که حلقه بسازد ذخیره نمی‌شود.
-					با تغییر نامک دسته‌بندی، محصول یا نوشته، ریدایرکت ۳۰۱ خودکار ساخته می‌شود.
-				</p>
-			</form>
-		</div>
-
-		<div class="h-section h-card">
-			<div class="h-list-head">
-				<h2 class="h-section-title">قوانین (<?php echo esc_html( number_format_i18n( $total ) ); ?>)</h2>
-
-				<div class="h-tools">
-					<a class="h-btn h-btn-outline" href="<?php echo esc_url( wp_nonce_url( page_url( [ 'action' => 'export' ] ), 'hodima_redirect_export' ) ); ?>">خروجی CSV</a>
-
-					<form method="post" enctype="multipart/form-data" action="<?php echo esc_url( page_url() ); ?>" class="h-import">
-						<?php wp_nonce_field( 'hodima_redirect_import' ); ?>
-						<input type="hidden" name="hodima_redirect_action" value="import">
-						<label class="h-btn h-btn-outline">
-							ورود CSV
-							<input type="file" name="redirects_csv" accept=".csv,text/csv" class="h-file" onchange="this.form.submit()">
-						</label>
-					</form>
+				<div>
+					<label for="h-target">آدرس جدید (مقصد)</label>
+					<input type="text" id="h-target" name="target_url" class="h-input" dir="ltr"
+						value="<?php echo esc_attr( $edit_rule ? (string) $edit_rule['target'] : '' ); ?>"
+						placeholder="/new-path/ یا https://…">
+				</div>
+				<div>
+					<label for="h-status">نوع</label>
+					<select id="h-status" name="status_code" class="h-input">
+						<?php
+						$current = $edit_rule ? (int) $edit_rule['status'] : 301;
+						foreach ( [
+							301 => '301 — انتقال دائم (استاندارد سئو)',
+							302 => '302 — انتقال موقت',
+							307 => '307 — موقت، حفظ متد فرم',
+							308 => '308 — دائم، حفظ متد فرم',
+							404 => '404 — پیدا نشد',
+							410 => '410 — حذف همیشگی',
+						] as $code => $text ) {
+							printf( '<option value="%d"%s>%s</option>', $code, selected( $current, $code, false ), esc_html( $text ) );
+						}
+						?>
+					</select>
+				</div>
+				<div class="h-form-actions">
+					<button type="submit" class="h-btn h-btn-primary"><?php echo $edit_rule ? 'ذخیره تغییرات' : 'افزودن مسیر'; ?></button>
+					<?php if ( $edit_rule ) : ?>
+						<a class="h-btn h-btn-outline" href="<?php echo esc_url( page_url() ); ?>">انصراف</a>
+					<?php endif; ?>
 				</div>
 			</div>
 
-			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="h-search-bar">
-				<input type="hidden" name="page" value="hodima-redirects">
-				<input type="search" name="s" class="h-input" value="<?php echo esc_attr( $search ); ?>" placeholder="جستجوی آدرس مبدا یا مقصد…">
-				<button type="submit" class="h-btn h-btn-secondary">جستجو</button>
-				<?php if ( '' !== $search ) : ?>
-					<a href="<?php echo esc_url( page_url() ); ?>" class="h-btn h-btn-outline">لغو</a>
-				<?php endif; ?>
-			</form>
+			<details class="h-help">
+				<summary>راهنما: آدرس فارسی، زنجیره‌ها و تست</summary>
+				<p>
+					آدرس را می‌توانید مستقیم از نوار آدرس مرورگر کپی کنید (حتی به شکل کدگذاری‌شده %D8%…).
+					زنجیره‌ها خودکار صاف می‌شوند (A→B و B→C به A→C) و قانونی که حلقه بسازد ذخیره نمی‌شود.
+					با تغییر نامک دسته‌بندی، محصول یا نوشته، ریدایرکت ۳۰۱ خودکار ساخته می‌شود.
+					مرورگرها ریدایرکت ۳۰۱ را به خاطر می‌سپارند؛ برای تست قانون تازه از پنجره ناشناس استفاده کنید.
+				</p>
+			</details>
+		</form>
+
+		<section class="h-card h-list" aria-label="قوانین">
+			<div class="h-toolbar">
+				<nav class="h-views" aria-label="نمای قوانین">
+					<?php foreach ( $views as $id => [ $label ] ) : ?>
+						<a class="h-view<?php echo $id === $view ? ' is-active' : ''; ?>"
+							href="<?php echo esc_url( page_url( 'all' === $id ? [] : [ 'view' => $id ] ) ); ?>"<?php echo $id === $view ? ' aria-current="page"' : ''; ?>>
+							<?php echo esc_html( $label ); ?><i><?php echo esc_html( number_format_i18n( $counts[ $id ] ) ); ?></i>
+						</a>
+					<?php endforeach; ?>
+				</nav>
+
+				<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="h-search-bar" role="search">
+					<input type="hidden" name="page" value="hodima-redirects">
+					<?php if ( 'all' !== $view ) : ?>
+						<input type="hidden" name="view" value="<?php echo esc_attr( $view ); ?>">
+					<?php endif; ?>
+					<input type="search" name="s" class="h-input" value="<?php echo esc_attr( $search ); ?>" placeholder="جستجوی مبدا یا مقصد…" aria-label="جستجوی مبدا یا مقصد">
+				</form>
+
+				<a class="h-btn h-btn-outline h-btn-sm" href="<?php echo esc_url( wp_nonce_url( page_url( [ 'action' => 'export' ] ), 'hodima_redirect_export' ) ); ?>">خروجی CSV</a>
+
+				<form method="post" enctype="multipart/form-data" action="<?php echo esc_url( page_url() ); ?>" class="h-import">
+					<?php wp_nonce_field( 'hodima_redirect_import' ); ?>
+					<input type="hidden" name="hodima_redirect_action" value="import">
+					<label class="h-btn h-btn-outline h-btn-sm">
+						ورود CSV
+						<input type="file" name="redirects_csv" accept=".csv,text/csv" class="h-file" onchange="this.form.submit()">
+					</label>
+				</form>
+			</div>
 
 			<div class="h-table-wrapper">
 				<table class="h-table">
 					<thead>
 						<tr>
-							<th>آدرس مبدا</th>
-							<th>آدرس مقصد</th>
+							<th>مبدا ← مقصد</th>
 							<th>کد</th>
-							<th>نوع</th>
 							<th>آخرین استفاده</th>
-							<th>عملیات</th>
+							<th><span class="screen-reader-text">عملیات</span></th>
 						</tr>
 					</thead>
 					<tbody>
 					<?php if ( empty( $page_rules ) ) : ?>
-						<tr><td colspan="6" class="h-empty">هیچ قانونی یافت نشد.</td></tr>
+						<tr><td colspan="4" class="h-empty">
+							<?php echo '' !== $search || 'all' !== $view ? 'قانونی با این فیلتر پیدا نشد.' : 'هنوز ریدایرکتی ثبت نشده. اولین مسیر را از کادر بالا اضافه کنید.'; ?>
+						</td></tr>
 					<?php else : ?>
 						<?php foreach ( $page_rules as $key => $rule ) : ?>
 							<?php
 							$status  = (int) $rule['status'];
 							$target  = (string) ( $rule['target'] ?? '' );
-							$used_at = isset( $hits[ $key ] ) ? human_time_diff( (int) $hits[ $key ] ) . ' پیش' : 'هنوز استفاده نشده';
+							$used_at = isset( $hits[ $key ] ) ? human_time_diff( (int) $hits[ $key ] ) . ' پیش' : 'استفاده نشده';
 							?>
 							<tr<?php echo is_suspicious( (string) $key ) ? ' class="is-suspicious"' : ''; ?>>
-								<td class="h-ltr">
-									<a href="<?php echo esc_url( build_location( (string) $key ) ); ?>" target="_blank" rel="noopener noreferrer"><code><?php echo esc_html( (string) $key ); ?></code></a>
-									<?php if ( is_suspicious( (string) $key ) ) : ?><span class="h-tag h-tag--danger">مشکوک</span><?php endif; ?>
-								</td>
-								<td class="h-ltr">
-									<?php if ( '' !== $target ) : ?>
-										<a href="<?php echo esc_url( build_location( $target ) ); ?>" target="_blank" rel="noopener noreferrer"><code><?php echo esc_html( $target ); ?></code></a>
-										<?php if ( is_external( $target ) ) : ?><span class="h-tag">خارجی</span><?php endif; ?>
-									<?php else : ?>
-										<span class="h-muted">—</span>
-									<?php endif; ?>
+								<td>
+									<div class="h-route">
+										<a href="<?php echo esc_url( build_location( (string) $key ) ); ?>" target="_blank" rel="noopener noreferrer"><code><?php echo esc_html( (string) $key ); ?></code></a>
+										<span class="h-route__arrow" aria-hidden="true">←</span>
+										<?php if ( '' !== $target ) : ?>
+											<a href="<?php echo esc_url( build_location( $target ) ); ?>" target="_blank" rel="noopener noreferrer"><code><?php echo esc_html( $target ); ?></code></a>
+											<?php if ( is_external( $target ) ) : ?><span class="h-tag">خارجی</span><?php endif; ?>
+										<?php else : ?>
+											<span class="h-muted"><?php echo esc_html( $labels[ $status ] ?? '' ); ?></span>
+										<?php endif; ?>
+										<?php if ( ! empty( $rule['auto'] ) ) : ?><span class="h-tag">خودکار</span><?php endif; ?>
+										<?php if ( is_suspicious( (string) $key ) ) : ?><span class="h-tag h-tag--danger">مشکوک</span><?php endif; ?>
+									</div>
 								</td>
 								<td><span class="h-badge bg-<?php echo (int) $status; ?>" title="<?php echo esc_attr( $labels[ $status ] ?? '' ); ?>"><?php echo (int) $status; ?></span></td>
-								<td><?php echo ! empty( $rule['auto'] ) ? '<span class="h-tag">خودکار</span>' : '<span class="h-muted">دستی</span>'; ?></td>
 								<td class="h-muted"><?php echo esc_html( $used_at ); ?></td>
 								<td class="h-actions">
-									<a class="h-btn h-btn-outline h-btn-sm" href="<?php echo esc_url( page_url( [ 'edit' => rawurlencode( (string) $key ) ] ) ); ?>">ویرایش</a>
-									<a class="h-btn h-btn-danger h-btn-sm js-confirm" data-confirm="این قانون حذف شود؟"
-										href="<?php echo esc_url( wp_nonce_url( page_url( [ 'action' => 'delete', 'rule' => rawurlencode( (string) $key ) ] ), 'hodima_redirect_delete' ) ); ?>">حذف</a>
+									<a class="h-icon-btn" href="<?php echo esc_url( page_url( [ 'edit' => rawurlencode( (string) $key ) ] ) ); ?>" aria-label="<?php echo esc_attr( 'ویرایش ' . $key ); ?>" title="ویرایش">
+										<span class="dashicons <?php echo esc_attr( $icons['edit'] ); ?>" aria-hidden="true"></span>
+									</a>
+									<a class="h-icon-btn h-icon-btn--danger js-confirm" data-confirm="این قانون حذف شود؟" aria-label="<?php echo esc_attr( 'حذف ' . $key ); ?>" title="حذف"
+										href="<?php echo esc_url( wp_nonce_url( page_url( [ 'action' => 'delete', 'rule' => rawurlencode( (string) $key ) ] ), 'hodima_redirect_delete' ) ); ?>">
+										<span class="dashicons <?php echo esc_attr( $icons['delete'] ); ?>" aria-hidden="true"></span>
+									</a>
 								</td>
 							</tr>
 						<?php endforeach; ?>
@@ -385,26 +438,31 @@ function render_page(): void {
 				</table>
 			</div>
 
-			<?php if ( $pages > 1 ) : ?>
-				<div class="h-pagination">
+			<div class="h-pager">
+				<span class="h-muted">
 					<?php
-					echo wp_kses_post( (string) paginate_links( [
-						'base'      => add_query_arg( 'paged', '%#%' ),
-						'format'    => '',
-						'prev_text' => '&rsaquo;',
-						'next_text' => '&lsaquo;',
-						'total'     => $pages,
-						'current'   => $current_page,
-					] ) );
+					echo esc_html( $total > 0
+						? sprintf( 'نمایش %1$s تا %2$s از %3$s قانون', number_format_i18n( $offset + 1 ), number_format_i18n( $offset + count( $page_rules ) ), number_format_i18n( $total ) )
+						: 'بدون قانون' );
 					?>
-				</div>
-			<?php endif; ?>
-
-			<p class="h-help">
-				«آخرین استفاده» حداکثر ساعتی یک بار به‌روز می‌شود. قانونی که ماه‌ها استفاده نشده معمولا قابل حذف است.
-				توجه: مرورگرها ریدایرکت ۳۰۱ را به خاطر می‌سپارند؛ برای تست قانون تازه از پنجره ناشناس استفاده کنید.
-			</p>
-		</div>
+					— «آخرین استفاده» حداکثر ساعتی یک بار به‌روز می‌شود.
+				</span>
+				<?php if ( $pages > 1 ) : ?>
+					<div class="h-pagination">
+						<?php
+						echo wp_kses_post( (string) paginate_links( [
+							'base'      => add_query_arg( 'paged', '%#%' ),
+							'format'    => '',
+							'prev_text' => '&rsaquo;',
+							'next_text' => '&lsaquo;',
+							'total'     => $pages,
+							'current'   => $current_page,
+						] ) );
+						?>
+					</div>
+				<?php endif; ?>
+			</div>
+		</section>
 	</div>
 
 	<script>
