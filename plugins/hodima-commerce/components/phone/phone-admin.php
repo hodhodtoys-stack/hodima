@@ -139,13 +139,8 @@ function hodima_phone_state(): string {
  * ===================================================================== */
 
 add_action( 'admin_menu', static function (): void {
-    $counts = hodima_phone_counts();
-    $label  = 'شماره‌های تماس';
-    if ( $counts['new'] > 0 ) {
-        $label .= sprintf( ' <span class="awaiting-mod" aria-label="%1$s جدید"><span aria-hidden="true">%2$s</span></span>', esc_attr( hodima_phone_fa( $counts['new'] ) ), esc_html( hodima_phone_fa( $counts['new'] ) ) );
-    }
-
-    add_menu_page( 'شماره‌های تماس', $label, HODIMA_PHONE_CAP, HODIMA_PHONE_PAGE, 'hodima_phone_render_page', 'dashicons-phone', 26 );
+    // بدون نشان عدد کنار نام منو (خواست کاربر ۲ آبان ۱۴۰۵)؛ شمار «جدید» فقط داخل صفحه است
+    add_menu_page( 'شماره‌های تماس', 'شماره‌های تماس', HODIMA_PHONE_CAP, HODIMA_PHONE_PAGE, 'hodima_phone_render_page', 'dashicons-phone', 26 );
 } );
 
 add_action( 'admin_enqueue_scripts', static function ( string $hook ): void {

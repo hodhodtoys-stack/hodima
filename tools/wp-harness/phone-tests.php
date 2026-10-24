@@ -309,6 +309,7 @@ $menu = [];
 do_action( 'admin_menu' );
 $slugs = array_column( (array) $menu, 2 );
 hodima_ph( 'منوی «شماره‌های تماس» ثبت شد', in_array( HODIMA_PHONE_PAGE, $slugs, true ), true );
+hodima_ph( 'منو بدون نشان عدد', str_contains( (string) wp_json_encode( $menu, JSON_UNESCAPED_UNICODE ), 'awaiting-mod' ), false );
 hodima_ph( 'منوی خودکار پست‌تایپ برداشته شد', in_array( 'edit.php?post_type=hodima_phone_lead', $slugs, true ), false );
 hodima_ph( 'نشانی صفحه', hodima_phone_page_url( [ 'lead' => 5 ] ), admin_url( 'admin.php?page=hodima-phone-leads&lead=5' ) );
 
