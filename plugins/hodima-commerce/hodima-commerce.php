@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Commerce
  * Plugin URI:        https://hodima.com
  * Description:       امکانات فروشگاهی هدیما برای ووکامرس: تاریخ جلالی و شهرهای ایران در تسویه‌حساب، جستجوی زنده محصولات با ایندکس فارسی، فرم لید تلفنی، جدول مشخصات محصول، حداقل مبلغ و تعداد سفارش عمده و فیلدهای سفارشی محصول.
- * Version:           1.3.0
+ * Version:           1.3.1
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_COMMERCE_VERSION = '1.3.0';
+const HODIMA_COMMERCE_VERSION = '1.3.1';
 define( 'HODIMA_COMMERCE_FILE', __FILE__ );
 define( 'HODIMA_COMMERCE_DIR', __DIR__ );
 define( 'HODIMA_COMMERCE_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -45,9 +45,9 @@ function hodima_commerce_modules(): array {
 	return [
 		'phone' => [
 			'title'       => 'فرم لید تلفنی',
-			'description' => 'فرم «شماره تماس» (شورت‌کد hodima_phone_form) با ضد اسپم، فهرست لیدها در پیشخوان و خروجی CSV.',
-			'files'       => [ 'components/phone/phone-form.php', 'components/phone/phone-privacy.php' ],
-			'settings'    => 'edit.php?post_type=hodima_phone_lead',
+			'description' => 'فرم «شماره تماس» (شورت‌کد hodima_phone_form) با ضد اسپم، صفحه «شماره‌های تماس» در پیشخوان (فهرست، جزئیات، نگهداری خودکار) و خروجی CSV.',
+			'files'       => [ 'components/phone/phone-form.php', 'components/phone/phone-privacy.php', 'components/phone/phone-admin.php' ],
+			'settings'    => 'admin.php?page=hodima-phone-leads',
 			'icon'        => 'dashicons-phone',
 		],
 		'search' => [

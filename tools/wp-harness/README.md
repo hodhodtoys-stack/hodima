@@ -48,6 +48,9 @@ HARNESS=1 php tools/wp-harness/commerce-tests.php
 # آزمون خودکار فرم لید تلفنی Commerce (شماره، توکن امضاشده و حداقل زمان، نرخ/تکراری، ذخیره و تاریخچه، شکست ذخیره، CSV؛ ci-check هم اجرا می‌کند)
 HARNESS=1 php tools/wp-harness/phone-tests.php
 
+# صفحه «شماره‌های تماس» پیشخوان با ورود واقعی مدیر در Chromium (php -S؛ فهرست، کارها، پنجره تأیید، کپی، جزئیات، ریدایرکت، نگهداری، CSV، axe، عکس ۱۳۰۰/۳۹۰؛ چند دقیقه؛ در ci-check نیست)
+tools/wp-harness/phone-admin-check.sh   # عکس‌ها: /tmp/hodima-harness/phone-admin
+
 # صفحه‌های پیشخوان (دسترسی، عنوان، منوی فعال، هشدار PHP)
 tools/wp-harness/admin-check.sh . /tmp/adm                 # صفحه‌های پیش‌فرض
 tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های دلخواه

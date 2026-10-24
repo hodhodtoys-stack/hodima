@@ -207,6 +207,137 @@ $_GET = [ 'hodima_phone' => 'hack<script>', 'form_id' => 'hodima-phone-3' ];
 hodima_ph( 'مقدار ناشناخته پیامی نمی‌سازد', str_contains( hodima_phone_render_form(), 'hodima-msg-' ), false );
 $_GET = [];
 
+echo "=== پیشخوان: کارها (دیده شد، زباله‌دان، بازگردانی، حذف همیشگی)\n";
+$cleanup();
+hodima_ph_reset();
+$admin_id = 1;
+wp_set_current_user( $admin_id );
+$mk = static function ( string $phone, array $extra = [] ): int {
+	$id = wp_insert_post( [ 'post_type' => 'hodima_phone_lead', 'post_title' => $phone, 'post_status' => 'publish' ] + $extra );
+	update_post_meta( (int) $id, HODIMA_PHONE_META, [ 'count' => 2, 'last_title' => 'کلیپس مو', 'last_url' => 'https://hodima.test/hair/', 'last_time' => '2026-10-20 10:00', 'history' => [ [ 'url' => 'https://hodima.test/hair/', 'title' => 'کلیپس مو', 'time' => '2026-10-20 10:00' ] ] ] );
+	return (int) $id;
+};
+$l1 = $mk( '09121110001' );
+$l2 = $mk( '09121110002' );
+$l3 = $mk( '09121110003' );
+hodima_ph( 'سه لید جدید', hodima_phone_counts( true )['new'], 3 );
+hodima_ph( 'seen: دو لید', hodima_phone_apply_op( 'seen', [ $l1, $l2 ] ), 2 );
+hodima_ph( 'شمارنده‌ها: ۱ جدید، ۲ دیده‌شده', [ hodima_phone_counts()['new'], hodima_phone_counts()['seen'] ], [ 1, 2 ] );
+hodima_ph( 'unseen', hodima_phone_apply_op( 'unseen', [ $l2 ] ), 1 );
+hodima_ph( 'شناسه نامربوط (نوشته معمولی) نادیده', hodima_phone_apply_op( 'trash', [ (int) wp_insert_post( [ 'post_title' => 'x', 'post_status' => 'publish' ] ) ] ), 0 );
+hodima_ph( 'trash', hodima_phone_apply_op( 'trash', [ $l3 ] ), 1 );
+hodima_ph( 'زباله‌دان: ۱ و کل ۲', [ hodima_phone_counts()['trash'], hodima_phone_counts()['total'] ], [ 1, 2 ] );
+hodima_ph( 'delete روی لید غیر زباله‌دان انجام نمی‌شود', hodima_phone_apply_op( 'delete', [ $l1 ] ), 0 );
+hodima_ph( 'restore', hodima_phone_apply_op( 'restore', [ $l3 ] ), 1 );
+hodima_ph( 'بازگردانده‌شده دوباره «منتشرشده» است', get_post_status( $l3 ), 'publish' );
+hodima_phone_apply_op( 'trash', [ $l3 ] );
+hodima_ph( 'حذف همیشگی از زباله‌دان', hodima_phone_apply_op( 'delete', [ $l3 ] ), 1 );
+hodima_ph( 'لید دیگر نیست', get_post( $l3 ), null );
+require_once ABSPATH . 'wp-admin/includes/user.php'; // wp_delete_user
+$old_sub = get_user_by( 'login', 'phone-test-sub' );
+if ( $old_sub instanceof WP_User ) {
+	wp_delete_user( $old_sub->ID ); // بقایای اجرای نیمه‌کاره
+}
+$sub = wp_insert_user( [ 'user_login' => 'phone-test-sub', 'user_pass' => 'x', 'user_email' => 'phone-test-sub@example.com', 'role' => 'subscriber' ] );
+wp_set_current_user( is_wp_error( $sub ) ? 0 : (int) $sub );
+hodima_ph( 'کاربر بدون دسترسی: هیچ‌چیز تغییر نمی‌کند', hodima_phone_apply_op( 'trash', [ $l1 ] ), 0 );
+wp_set_current_user( $admin_id );
+if ( ! is_wp_error( $sub ) ) {
+	wp_delete_user( (int) $sub );
+}
+
+echo "=== پیشخوان: صفحه فهرست و جزئیات\n";
+if ( ! function_exists( 'hodima_admin_header' ) ) {
+	require_once HODIMA_COMMERCE_DIR . '/inc/admin-ui-fallback.php'; // هدر پیشخوان فقط در is_admin() لود می‌شود
+}
+$render = static function ( callable $fn, mixed ...$args ): string {
+	hodima_phone_counts( true ); // شمارنده‌ها در هر درخواست واقعی تازه‌اند؛ اینجا همه در یک پردازه‌اند
+	ob_start();
+	$fn( ...$args );
+	return (string) ob_get_clean();
+};
+$_GET = [];
+$html = $render( 'hodima_phone_render_list' );
+hodima_ph( 'جدول و هر دو لید', str_contains( $html, 'hd-leads__table' ) && str_contains( $html, '0912 111 0001' ) && str_contains( $html, '0912 111 0002' ), true );
+hodima_ph( 'لید جدید با نقطه و برچسب صفحه‌خوان', str_contains( $html, 'is-new' ) && str_contains( $html, '(جدید)' ), true );
+hodima_ph( 'کنترل‌ها دسترس‌پذیرند (برچسب کپی، چک‌باکس)', str_contains( $html, 'aria-label="کپی شماره 09121110001"' ) && str_contains( $html, 'aria-label="انتخاب 09121110001"' ), true );
+hodima_ph( 'بدون زباله‌دان وقتی خالی است', str_contains( $html, 'state=trash' ), false );
+$_GET = [ 'state' => 'new' ];
+$html = $render( 'hodima_phone_render_list' );
+hodima_ph( 'نمای جدید: فقط لید دیده‌نشده', str_contains( $html, '0912 111 0002' ) && ! str_contains( $html, '0912 111 0001' ), true );
+$_GET = [ 's' => '۰۹۱۲۱۱۱۰۰۰۱' ];
+$html = $render( 'hodima_phone_render_list' );
+hodima_ph( 'جستجو با ارقام فارسی', str_contains( $html, '0912 111 0001' ) && ! str_contains( $html, '0912 111 0002' ), true );
+$_GET = [ 's' => '99999' ];
+$html = $render( 'hodima_phone_render_list' );
+hodima_ph( 'جستجوی بی‌نتیجه: حالت خالی', str_contains( $html, 'موردی پیدا نشد' ) && ! str_contains( $html, 'hd-leads__table' ), true );
+$_GET = [];
+hodima_phone_apply_op( 'trash', [ $l2 ] );
+$_GET = [ 'state' => 'trash' ];
+$html = $render( 'hodima_phone_render_list' );
+hodima_ph( 'زباله‌دان: بازگردانی و حذف همیشگی با تأیید', str_contains( $html, 'value="restore:' . $l2 . '"' ) && str_contains( $html, 'data-hd-confirm' ), true );
+hodima_phone_apply_op( 'restore', [ $l2 ] );
+$_GET = [];
+$many = [];
+for ( $i = 0; $i < 25; $i++ ) {
+	$many[] = $mk( sprintf( '0935%07d', $i ) );
+}
+$_GET = [ 'paged' => '2' ];
+$html = $render( 'hodima_phone_render_list' );
+hodima_ph( 'صفحه‌بندی: ۲۷ شماره ← صفحه ۲ فقط ۷ ردیف', substr_count( $html, 'data-hd-row' ), 7 );
+hodima_ph( 'پیوند صفحه‌ها', str_contains( $html, 'page-numbers' ), true );
+$_GET = [];
+$empty_html = '';
+foreach ( array_merge( $many, [ $l1, $l2 ] ) as $id ) {
+	wp_delete_post( $id, true );
+}
+$empty_html = $render( 'hodima_phone_render_list' );
+hodima_ph( 'بدون لید: توضیح فرم فوتر', str_contains( $empty_html, 'هنوز شماره‌ای ثبت نشده' ), true );
+
+$d = $mk( '09126667788' );
+hodima_ph( 'لید تازه جدید است', hodima_lead_state( $d ), 'new' );
+$html = $render( 'hodima_phone_render_detail', $d );
+hodima_ph( 'جزئیات: شماره، تاریخچه، خلاصه', str_contains( $html, '0912 666 7788' ) && str_contains( $html, 'hd-leads__timeline' ) && str_contains( $html, 'تعداد درخواست‌ها' ), true );
+hodima_ph( 'جداساز چپ‌به‌راست دور شماره عنوان', str_contains( $html, "\u{2066}0912 666 7788\u{2069}" ), true );
+hodima_ph( 'باز کردن جزئیات = دیده شد', hodima_lead_state( $d ), 'seen' );
+wp_delete_post( $d, true );
+
+echo "=== پیشخوان: منو و ریدایرکت پیشخوان قدیمی\n";
+global $menu;
+require_once ABSPATH . 'wp-admin/includes/plugin.php'; // add_menu_page
+$menu = [];
+do_action( 'admin_menu' );
+$slugs = array_column( (array) $menu, 2 );
+hodima_ph( 'منوی «شماره‌های تماس» ثبت شد', in_array( HODIMA_PHONE_PAGE, $slugs, true ), true );
+hodima_ph( 'منوی خودکار پست‌تایپ برداشته شد', in_array( 'edit.php?post_type=hodima_phone_lead', $slugs, true ), false );
+hodima_ph( 'نشانی صفحه', hodima_phone_page_url( [ 'lead' => 5 ] ), admin_url( 'admin.php?page=hodima-phone-leads&lead=5' ) );
+
+echo "=== نگهداری خودکار\n";
+delete_option( HODIMA_PHONE_SETTINGS );
+hodima_ph( 'پیش‌فرض خاموش', hodima_phone_retention_months(), 0 );
+hodima_ph( 'خاموش: چیزی پاک نمی‌شود', hodima_phone_retention_run(), 0 );
+update_option( HODIMA_PHONE_SETTINGS, [ 'retention_months' => 999 ] );
+hodima_ph( 'سقف ۱۲۰ ماه', hodima_phone_retention_months(), 120 );
+update_option( HODIMA_PHONE_SETTINGS, [ 'retention_months' => -5 ] );
+hodima_ph( 'منفی = خاموش', hodima_phone_retention_months(), 0 );
+$old_date = wp_date( 'Y-m-d H:i:s', strtotime( '-14 months' ) );
+$new_date = wp_date( 'Y-m-d H:i:s', strtotime( '-2 months' ) );
+$old = $mk( '09130000001', [ 'post_date' => $old_date, 'post_date_gmt' => get_gmt_from_date( $old_date ) ] );
+$fresh = $mk( '09130000002', [ 'post_date' => $new_date, 'post_date_gmt' => get_gmt_from_date( $new_date ) ] );
+$oldtrash = $mk( '09130000003', [ 'post_date' => $old_date, 'post_date_gmt' => get_gmt_from_date( $old_date ) ] );
+wp_trash_post( $oldtrash );
+update_option( HODIMA_PHONE_SETTINGS, [ 'retention_months' => 12 ] );
+hodima_phone_retention_schedule();
+hodima_ph( 'روشن: رویداد شبانه زمان‌بندی شد', false !== wp_next_scheduled( HODIMA_PHONE_RETENTION_EVENT ), true );
+hodima_ph( 'قدیمی‌تر از ۱۲ ماه (حتی زباله‌دان) پاک شد', hodima_phone_retention_run(), 2 );
+hodima_ph( 'لید قدیمی رفت و تازه ماند', [ get_post( $old ), get_post( $oldtrash ), get_post( $fresh ) instanceof WP_Post ], [ null, null, true ] );
+update_option( HODIMA_PHONE_SETTINGS, [ 'retention_months' => 0 ] );
+hodima_phone_retention_schedule();
+hodima_ph( 'خاموش: رویداد برداشته شد', wp_next_scheduled( HODIMA_PHONE_RETENTION_EVENT ), false );
+delete_option( HODIMA_PHONE_SETTINGS );
+wp_delete_post( $fresh, true );
+wp_set_current_user( 0 );
+
 echo "=== CSV\n";
 $cleanup();
 hodima_ph_reset();

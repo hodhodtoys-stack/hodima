@@ -1,0 +1,758 @@
+/* ==========================================================
+   صفحه «شماره‌های تماس» پیشخوان (phone-admin.php) — فقط زیر .hd-leads
+   اجزا از Core (hd-stat، hd-card، hd-pill، hd-table-wrap، hd-empty، hd-opt، hd-num) و بقیه همین‌جا.
+   بدون nesting (CSS افزونه مرحله ساخت ندارد) و media query پیشوندی؛ رنگ‌ها فقط توکن‌های --hd-*.
+   ========================================================== */
+
+.hd-leads {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+/* ── خلاصه ─────────────────────────────────────────────────────── */
+.hd-leads .hd-leads__stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.hd-leads .hd-leads__stat--new {
+    border-color: color-mix(in srgb, var(--hd-accent, #6a2b9a) 40%, #fff);
+    border-inline-start-color: var(--hd-accent, #6a2b9a);
+}
+
+.hd-leads .hd-leads__stat--new .hd-stat__value {
+    color: var(--hd-accent, #6a2b9a);
+}
+
+/* ── نوار فیلتر و جستجو ───────────────────────────────────────── */
+.hd-leads .hd-leads__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+}
+
+.hd-leads .hd-leads__seg {
+    display: inline-flex;
+    gap: 0.125rem;
+    padding: 0.25rem;
+    border-radius: 0.875rem;
+    background: var(--hd-soft, #eef1f9);
+}
+
+.hd-leads .hd-leads__seg-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-block-size: 2.5rem;
+    padding-inline: 1rem;
+    border-radius: 0.625rem;
+    color: var(--hd-muted, #5d6785);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.hd-leads .hd-leads__seg-item:hover {
+    color: var(--hd-primary, #25316a);
+}
+
+.hd-leads .hd-leads__seg-item.is-active {
+    background: var(--hd-surface, #fff);
+    color: var(--hd-primary, #25316a);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--hd-primary, #25316a) 16%, transparent);
+}
+
+.hd-leads .hd-leads__seg-count {
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: 1.5rem;
+    block-size: 1.5rem;
+    padding-inline: 0.375rem;
+    border-radius: 999px;
+    background: var(--hd-border, #dfe5f4);
+    color: var(--hd-primary, #25316a);
+    font-size: 0.75rem;
+}
+
+.hd-leads .hd-leads__seg-item.is-active .hd-leads__seg-count {
+    background: var(--hd-primary, #25316a);
+    color: #fff;
+}
+
+.hd-leads .hd-leads__search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    inline-size: min(100%, 19rem);
+    block-size: 2.75rem;
+    padding-inline: 0.875rem;
+    border: 1.5px solid var(--hd-border-strong, #c7d0ea);
+    border-radius: 0.75rem;
+    background: var(--hd-surface, #fff);
+    color: var(--hd-muted, #5d6785);
+}
+
+.hd-leads .hd-leads__search:focus-within {
+    border-color: var(--hd-secondary, #607bbd);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--hd-secondary, #607bbd) 22%, transparent);
+}
+
+.hd-leads .hd-leads__search input[type="search"] {
+    flex: 1;
+    min-inline-size: 0;
+    min-block-size: 0;
+    block-size: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--hd-text, #1d2340);
+    font-size: 0.875rem;
+}
+
+.hd-leads .hd-leads__search input[type="search"]:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* ── کار گروهی ─────────────────────────────────────────────────── */
+.hd-leads .hd-leads__bulk {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-block-end: 0.75rem;
+}
+
+.hd-leads .hd-leads__bulk :is(select, .button) {
+    min-block-size: 2.5rem;
+    border-radius: 0.625rem;
+}
+
+.hd-leads .hd-leads__selected {
+    color: var(--hd-muted, #5d6785);
+    font-size: 0.8125rem;
+}
+
+/* ── جدول (دسکتاپ) ─────────────────────────────────────────────── */
+.hd-leads .hd-leads__table {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.hd-leads .hd-leads__table thead :is(th, td) {
+    padding: 0.75rem 1rem;
+    border-block-end: 1px solid var(--hd-border, #dfe5f4);
+    background: var(--hd-soft, #eef1f9);
+    color: var(--hd-muted, #5d6785);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: start;
+}
+
+.hd-leads .hd-leads__table tbody :is(th, td) {
+    padding: 0.75rem 1rem;
+    border-block-end: 1px solid var(--hd-border, #dfe5f4);
+    background: transparent;
+    font-weight: 400;
+    text-align: start;
+    vertical-align: middle;
+}
+
+.hd-leads .hd-leads__table tbody tr:last-child :is(th, td) {
+    border-block-end: 0;
+}
+
+.hd-leads .hd-leads__table tbody tr:hover {
+    background: var(--hd-softer, #f7f9fd);
+}
+
+.hd-leads .hd-leads__cb {
+    inline-size: 2.75rem;
+}
+
+.hd-leads .hd-leads__table input[type="checkbox"] {
+    margin: 0;
+}
+
+.hd-leads .hd-leads__phone a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-block-size: 2.5rem;
+    color: var(--hd-text, #1d2340);
+    font-size: 1rem;
+    text-decoration: none;
+}
+
+.hd-leads .hd-leads__num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    unicode-bidi: isolate;
+}
+
+.hd-leads .is-new .hd-leads__num {
+    font-weight: 700;
+}
+
+.hd-leads .hd-leads__dot {
+    inline-size: 0.625rem;
+    block-size: 0.625rem;
+    flex: none;
+    border-radius: 50%;
+}
+
+.hd-leads .is-new .hd-leads__dot {
+    background: var(--hd-accent, #6a2b9a);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--hd-accent, #6a2b9a) 16%, transparent);
+}
+
+.hd-leads .hd-leads__page {
+    max-inline-size: 28rem;
+}
+
+.hd-leads .hd-leads__page a {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    color: var(--hd-primary, #25316a);
+    line-height: 1.8;
+    text-decoration: none;
+}
+
+.hd-leads .hd-leads__none {
+    color: var(--hd-muted, #5d6785);
+}
+
+.hd-leads .hd-leads__count {
+    inline-size: 7rem;
+}
+
+.hd-leads .hd-leads__pill {
+    display: inline-flex;
+    align-items: center;
+    block-size: 1.5rem;
+    padding-inline: 0.625rem;
+    border-radius: 999px;
+    color: var(--hd-muted, #5d6785);
+    font-size: 0.75rem;
+}
+
+.hd-leads .hd-leads__pill.is-many {
+    background: var(--hd-soft, #eef1f9);
+    color: var(--hd-primary, #25316a);
+    font-weight: 700;
+}
+
+.hd-leads .hd-leads__time {
+    inline-size: 10.5rem;
+    line-height: 1.7;
+}
+
+.hd-leads .hd-leads__time strong {
+    display: block;
+    font-weight: 700;
+}
+
+.hd-leads .hd-leads__time span {
+    color: var(--hd-muted, #5d6785);
+    font-size: 0.75rem;
+}
+
+.hd-leads .hd-leads__acts {
+    inline-size: 11rem;
+    white-space: nowrap;
+    text-align: end;
+}
+
+/* ── دکمه‌های آیکونی ───────────────────────────────────────────── */
+.hd-leads .hd-leads__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-inline-size: 2.5rem;
+    block-size: 2.5rem;
+    padding-inline: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.625rem;
+    background: transparent;
+    color: var(--hd-muted, #5d6785);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.hd-leads .hd-leads__btn:hover {
+    background: var(--hd-soft, #eef1f9);
+    color: var(--hd-primary, #25316a);
+}
+
+.hd-leads .hd-leads__btn.is-danger:hover {
+    background: color-mix(in srgb, var(--hd-error, #b3261e) 10%, #fff);
+    color: var(--hd-error, #b3261e);
+}
+
+/* در جدول دسکتاپ فقط آیکون (نام کامل در aria-label و title) */
+.hd-leads .hd-leads__acts .hd-leads__btn-text {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* ── پایین جدول و صفحه‌بندی ───────────────────────────────────── */
+.hd-leads .hd-leads__foot {
+    margin: 0;
+    color: var(--hd-muted, #5d6785);
+    font-size: 0.8125rem;
+}
+
+.hd-leads .hd-leads__pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.hd-leads .hd-leads__pager ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.hd-leads .hd-leads__pager .page-numbers {
+    display: inline-grid;
+    place-items: center;
+    min-inline-size: 2.5rem;
+    block-size: 2.5rem;
+    padding-inline: 0.5rem;
+    border: 1px solid var(--hd-border, #dfe5f4);
+    border-radius: 0.625rem;
+    background: var(--hd-surface, #fff);
+    color: var(--hd-primary, #25316a);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.hd-leads .hd-leads__pager a.page-numbers:hover {
+    border-color: var(--hd-secondary, #607bbd);
+}
+
+.hd-leads .hd-leads__pager .page-numbers.current {
+    border-color: var(--hd-primary, #25316a);
+    background: var(--hd-primary, #25316a);
+    color: #fff;
+}
+
+.hd-leads .hd-leads__pager .page-numbers.dots {
+    border-color: transparent;
+    background: transparent;
+}
+
+/* ── جزئیات یک شماره ──────────────────────────────────────────── */
+.hd-leads .hd-leads__bar-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hd-leads .hd-leads__bar-spacer {
+    flex: 1;
+}
+
+.hd-leads .hd-leads__bar-card .hd-leads__btn {
+    border-color: var(--hd-border-strong, #c7d0ea);
+    background: var(--hd-surface, #fff);
+    color: var(--hd-primary, #25316a);
+}
+
+.hd-leads .hd-leads__bar-card .hd-leads__btn.is-danger {
+    border-color: transparent;
+    background: transparent;
+    color: var(--hd-error, #b3261e);
+}
+
+.hd-leads .hd-leads__detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.hd-leads .hd-leads__timeline {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.hd-leads .hd-leads__timeline li {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: start;
+    padding-block: 0.75rem;
+}
+
+.hd-leads .hd-leads__timeline li + li {
+    border-block-start: 1px solid var(--hd-border, #dfe5f4);
+}
+
+.hd-leads .hd-leads__tl-dot {
+    inline-size: 0.625rem;
+    block-size: 0.625rem;
+    margin-block-start: 0.5rem;
+    justify-self: center;
+    border-radius: 50%;
+    background: var(--hd-secondary, #607bbd);
+}
+
+.hd-leads .hd-leads__timeline li:first-child .hd-leads__tl-dot {
+    background: var(--hd-accent, #6a2b9a);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--hd-accent, #6a2b9a) 16%, transparent);
+}
+
+.hd-leads .hd-leads__tl-page a {
+    color: var(--hd-primary, #25316a);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.hd-leads .hd-leads__tl-time {
+    color: var(--hd-muted, #5d6785);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.hd-leads .hd-leads__facts {
+    display: grid;
+    margin: 0;
+}
+
+.hd-leads .hd-leads__facts div {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-block: 0.625rem;
+    font-size: 0.8125rem;
+}
+
+.hd-leads .hd-leads__facts div + div {
+    border-block-start: 1px solid var(--hd-border, #dfe5f4);
+}
+
+.hd-leads .hd-leads__facts dt {
+    color: var(--hd-muted, #5d6785);
+}
+
+.hd-leads .hd-leads__facts dd {
+    margin: 0;
+    font-weight: 700;
+}
+
+/* ── نگهداری خودکار ───────────────────────────────────────────── */
+.hd-leads .hd-leads__ret summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    list-style: none;
+    cursor: pointer;
+}
+
+.hd-leads .hd-leads__ret summary::-webkit-details-marker {
+    display: none;
+}
+
+.hd-leads .hd-leads__ret-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.hd-leads .hd-leads__ret-head strong {
+    color: var(--hd-primary, #25316a);
+    font-size: 1rem;
+}
+
+.hd-leads .hd-leads__ret-head span {
+    color: var(--hd-muted, #5d6785);
+    font-size: 0.8125rem;
+}
+
+.hd-leads .hd-leads__ret[open] summary .dashicons {
+    transform: rotate(180deg);
+}
+
+.hd-leads .hd-leads__ret form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-block-start: 1rem;
+}
+
+.hd-leads__ret-actions .button {
+    min-block-size: 2.5rem;
+    border-radius: 0.625rem;
+}
+
+.hd-leads .hd-leads__ret-note,
+.hd-leads .hd-leads__ret-actions {
+    margin: 0;
+    color: var(--hd-muted, #5d6785);
+    font-size: 0.8125rem;
+}
+
+/* ── حالت‌های hover و فوکوس (بعد از قاعده‌های پایه: ترتیب وزن انتخابگر) ── */
+.hd-leads .hd-leads__phone a:hover {
+    color: var(--hd-accent, #6a2b9a);
+}
+
+.hd-leads .hd-leads__page a:hover {
+    text-decoration: underline;
+}
+
+.hd-leads .hd-leads__tl-page a:hover {
+    text-decoration: underline;
+}
+
+.hd-leads .hd-leads__btn:focus-visible,
+.hd-leads .hd-leads__seg-item:focus-visible,
+.hd-leads .hd-leads__phone a:focus-visible,
+.hd-leads .hd-leads__page a:focus-visible,
+.hd-leads .hd-leads__ret summary:focus-visible {
+    outline: 2px solid var(--hd-secondary, #607bbd);
+    outline-offset: 2px;
+}
+
+.hd-leads .hd-leads__empty .hd-empty strong {
+    color: var(--hd-primary, #25316a);
+}
+
+/* ── پنجره تأیید حذف همیشگی ───────────────────────────────────── */
+.hd-leads__dialog {
+    max-inline-size: 22rem;
+    padding: 1.25rem;
+    border: 1px solid var(--hd-border, #dfe5f4);
+    border-radius: 0.875rem;
+    color: var(--hd-text, #1d2340);
+    box-shadow: 0 0.75rem 2rem color-mix(in srgb, var(--hd-primary, #25316a) 22%, transparent);
+}
+
+.hd-leads__dialog::backdrop {
+    background: color-mix(in srgb, var(--hd-primary, #25316a) 45%, transparent);
+}
+
+.hd-leads__dialog h2 {
+    margin: 0 0 0.5rem;
+    color: var(--hd-primary, #25316a);
+    font-size: 1rem;
+}
+
+.hd-leads__dialog p {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+}
+
+.hd-leads__dialog .button {
+    min-block-size: 2.5rem;
+    border-radius: 0.625rem;
+}
+
+.hd-leads__dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.hd-leads__dialog .hd-leads__danger {
+    border-color: var(--hd-error, #b3261e);
+    background: var(--hd-error, #b3261e);
+}
+
+/* ── تبلت و موبایل: جدول کارت می‌شود ──────────────────────────── */
+@media (max-width: 64rem) {
+    .hd-leads .hd-leads__detail {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 48rem) {
+    .hd-leads .hd-leads__stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.625rem;
+    }
+
+    .hd-leads .hd-leads__seg {
+        display: flex;
+        inline-size: 100%;
+    }
+
+    .hd-leads .hd-leads__seg-item {
+        flex: 1;
+        justify-content: center;
+        padding-inline: 0.5rem;
+    }
+
+    .hd-leads .hd-leads__search {
+        inline-size: 100%;
+    }
+
+    .hd-leads .hd-table-wrap {
+        overflow: visible;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .hd-leads .hd-leads__table,
+    .hd-leads .hd-leads__table tbody {
+        display: block;
+    }
+
+    .hd-leads .hd-leads__table thead {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    .hd-leads .hd-leads__table tbody tr {
+        display: grid;
+        grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+        grid-template-areas:
+            "cb phone count"
+            "pg pg pg"
+            "tm tm tm"
+            "ac ac ac";
+        align-items: center;
+        margin-block-end: 0.75rem;
+        padding: 0.5rem 0.75rem 0.25rem;
+        border: 1px solid var(--hd-border, #dfe5f4);
+        border-radius: 0.875rem;
+        background: var(--hd-surface, #fff);
+    }
+
+    .hd-leads .hd-leads__table tbody tr:hover {
+        background: var(--hd-surface, #fff);
+    }
+
+    .hd-leads .hd-leads__table tbody :is(th, td),
+    .hd-leads .hd-leads__table tbody tr:last-child :is(th, td) {
+        padding: 0.125rem 0;
+        border-block-end: 0;
+    }
+
+    .hd-leads .hd-leads__cb {
+        grid-area: cb;
+    }
+
+    .hd-leads .hd-leads__phone {
+        grid-area: phone;
+    }
+
+    .hd-leads .hd-leads__count {
+        grid-area: count;
+        inline-size: auto;
+    }
+
+    .hd-leads .hd-leads__page {
+        grid-area: pg;
+        max-inline-size: none;
+        padding-inline-start: 2.75rem;
+    }
+
+    .hd-leads .hd-leads__time {
+        grid-area: tm;
+        inline-size: auto;
+        padding-inline-start: 2.75rem;
+    }
+
+    .hd-leads .hd-leads__time strong {
+        display: inline;
+    }
+
+    /* تاریخ کامل فقط در دسکتاپ؛ زمان نسبی خودش «۳۰ مهر ۲۰:۵۲» می‌گوید */
+    .hd-leads .hd-leads__time span {
+        display: none;
+    }
+
+    .hd-leads .hd-header__actions {
+        flex-basis: 100%;
+    }
+
+    .hd-leads .hd-header__actions .button {
+        inline-size: 100%;
+        justify-content: center;
+    }
+
+    .hd-leads .hd-leads__acts {
+        grid-area: ac;
+        display: flex;
+        inline-size: auto;
+        gap: 0.25rem;
+        margin-block-start: 0.25rem;
+        padding-block-start: 0.25rem;
+        border-block-start: 1px solid var(--hd-border, #dfe5f4);
+        text-align: start;
+    }
+
+    .hd-leads .hd-leads__acts .hd-leads__btn {
+        flex: 1;
+        block-size: 2.75rem;
+    }
+
+    .hd-leads .hd-leads__acts .hd-leads__btn-text {
+        position: static;
+        inline-size: auto;
+        block-size: auto;
+        overflow: visible;
+        clip-path: none;
+    }
+
+    .hd-leads .hd-leads__bar-card {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hd-leads .hd-leads__bar-card .hd-pill,
+    .hd-leads .hd-leads__bar-card .hd-leads__btn.is-danger {
+        grid-column: 1 / -1;
+    }
+
+    .hd-leads .hd-leads__bar-card .hd-pill {
+        justify-self: start;
+    }
+
+    .hd-leads .hd-leads__bar-card .hd-leads__btn {
+        block-size: 2.75rem;
+    }
+
+    .hd-leads .hd-leads__bar-spacer {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hd-leads .hd-leads__ret[open] summary .dashicons {
+        transition: none;
+    }
+}

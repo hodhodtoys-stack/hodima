@@ -156,6 +156,30 @@ if ( class_exists( 'Hodima\\Stories\\Analytics\\WP_Story_Setup' ) ) {
 }
 $prop = ( new ReflectionClass( 'WP_Privacy_Policy_Content' ) )->getProperty( 'policy_content' );
 $all  = (string) wp_json_encode( $prop->getValue(), JSON_UNESCAPED_UNICODE );
+hodima_pt( 'نگهداری خاموش: متن سیاست «تا حذف مدیر» می‌گوید', str_contains( $all, 'تا زمانی که مدیر سایت آن شماره را' ), true );
+// نگهداری خودکار روشن: همان متن مدت را می‌نویسد
+update_option( HODIMA_PHONE_SETTINGS, [ 'retention_months' => 9 ] );
+$prop->setValue( null, [] );
+hodima_phone_privacy_policy_text();
+$with = (string) wp_json_encode( $prop->getValue(), JSON_UNESCAPED_UNICODE );
+hodima_pt( 'نگهداری ۹ ماهه: متن سیاست مدت را می‌گوید', str_contains( $with, 'هر شماره 9 ماه پس از آخرین درخواستش خودکار حذف می‌شود' ), true );
+delete_option( HODIMA_PHONE_SETTINGS );
+hodima_phone_privacy_policy_text();
+$prop->setValue( null, [] );
+hodima_phone_privacy_policy_text();
+if ( class_exists( 'Hodima\\Core\\Time_Jalali\\Modules\\Checkout_Optimizer' ) ) {
+	( new Hodima\Core\Time_Jalali\Modules\Checkout_Optimizer() )->privacy_policy_text();
+}
+if ( class_exists( 'Hodima_Bot_Shield' ) ) {
+	Hodima_Bot_Shield::privacy_policy_text();
+}
+if ( function_exists( 'hod_video_watch_privacy_policy_text' ) ) {
+	hod_video_watch_privacy_policy_text();
+}
+if ( class_exists( 'Hodima\\Stories\\Analytics\\WP_Story_Setup' ) ) {
+	Hodima\Stories\Analytics\WP_Story_Setup::privacy_policy_text();
+}
+$all = (string) wp_json_encode( $prop->getValue(), JSON_UNESCAPED_UNICODE );
 foreach ( [ 'هدیما — فرم شماره تماس', 'هدیما — کد ملی', 'هدیما — ربات‌های هوش مصنوعی', 'هدیما — ویدیو', 'هدیما — استوری' ] as $needle ) {
 	hodima_pt( "متن شامل «{$needle}»", str_contains( $all, $needle ), true );
 }
