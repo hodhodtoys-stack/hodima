@@ -481,6 +481,17 @@ if ( hodima_router_active() ) {
 	hodima_ad( 'سقف لینک ۲ ← دو مورد و «۱ صفحه دیگر»', [ count( $few['items'] ), $few['more'] ], [ 2, 1 ] );
 	hodima_ad( 'عبارتی که هیچ صفحه‌ای ندارد ← بدون مورد', hodima_seo_advisor_link_sources( 'عبارت ناموجود زرد', $target ), [ 'items' => [], 'more' => 0 ] );
 
+	// ی/ک عربی در متن صفحه، توضیح کوتاه (excerpt) و href با حروف بزرگ دیگر مانع پیدا شدن نمی‌شوند
+	$ar_id = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'منبع عربی ' . 'پلومریا', 'post_name' => 'steps-src-arabic', 'post_content' => '<p>بهترین كليپس پلومريا را ببينيد</p>' ] );
+	$ex_id = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'منبع خلاصه', 'post_name' => 'steps-src-excerpt', 'post_content' => '<p>متن</p>', 'post_excerpt' => 'کلیپس پلومریا عمده' ] );
+	$up_id = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'منبع لینک بزرگ', 'post_name' => 'steps-src-upper', 'post_content' => '<p>کلیپس پلومریا <a href="' . strtoupper( home_url( '/steps-target/' ) ) . '">اینجا</a></p>' ] );
+	$ids[] = $ar_id;
+	$ids[] = $ex_id;
+	$ids[] = $up_id;
+	$src2   = hodima_seo_advisor_link_sources( 'کلیپس پلومریا', $target );
+	$titles = array_column( $src2['items'], 'title' );
+	hodima_ad( 'لینک‌دهنده: ی/ک عربی و توضیح کوتاه پیدا می‌شوند؛ href با حروف بزرگ یعنی قبلا لینک دارد', [ in_array( 'منبع عربی پلومریا', $titles, true ), in_array( 'منبع خلاصه', $titles, true ), in_array( 'منبع لینک بزرگ', $titles, true ) ], [ true, true, false ] );
+
 	$analysis = hodima_seo_advisor_analyze( '/steps-target/' );
 	$by_rule  = [];
 	foreach ( $analysis['suggestions'] as $item ) {
@@ -507,6 +518,20 @@ foreach ( [ ...$ids, $t_id ] as $pid ) {
 	wp_delete_post( $pid, true );
 }
 wp_delete_term( $cat_id, 'category' );
+
+echo "=== مرحله ۵: کیفیت پیشنهادها (مرز کلمه، برند، هدف واقع‌بینانه)\n";
+$hay = hodima_seo_advisor_normalize( 'گیره موبایل و کلیپس‌ها، همراه با مو‌های بلند' );
+hodima_ad( 'مرز کلمه: «مو» داخل «موبایل» نیست ولی «مو‌های» و «کلیپس‌ها» هست', [ hodima_seo_advisor_text_has( $hay, 'مو' ), hodima_seo_advisor_text_has( $hay, 'موبایل' ), hodima_seo_advisor_text_has( $hay, 'کلیپس' ), hodima_seo_advisor_text_has( hodima_seo_advisor_normalize( 'گیره موبایل' ), 'مو' ), hodima_seo_advisor_text_has( $hay, 'گیر' ) ], [ true, true, true, false, false ] );
+hodima_ad( 'ی/ک عربی در متن با کلمه فارسی یکی است', hodima_seo_advisor_text_has( hodima_seo_advisor_normalize( 'كليپس' ), 'کلیپس' ), true );
+hodima_ad( 'رتبه هدف: ≤۷ همان؛ ۱۵ ← ۱۰؛ ۹ ← ۷؛ ۲۰ ← ۱۰', [ hodima_seo_advisor_target_position( 5.0 ), hodima_seo_advisor_target_position( 15.0 ), hodima_seo_advisor_target_position( 9.0 ), hodima_seo_advisor_target_position( 20.0 ) ], [ 5.0, 10.0, 7.0, 10.0 ] );
+add_filter( 'hodima_seo_advisor_brand_terms', $brand_filter = static fn(): array => [ 'هدهدلی' ] );
+hodima_ad( 'کلمه برندی شناخته می‌شود (نه کلمه‌ای که فقط شبیه است)', [ hodima_seo_advisor_is_brand( 'هدهدلی کلیپس' ), hodima_seo_advisor_is_brand( 'خرید کلیپس' ) ], [ true, false ] );
+$brand_rows = [ [ 'term' => 'هدهدلی کلیپس', 'clicks' => 1, 'impressions' => 900, 'position' => 9.0 ], [ 'term' => 'کلیپس عمده', 'clicks' => 1, 'impressions' => 900, 'position' => 9.0 ] ];
+$sb = hodima_seo_advisor_suggestions( [ 'path' => '/b/', 'clicks' => 2, 'impressions' => 400, 'position' => 9.0, 'prev_clicks' => 0 ], $brand_rows, [ 'title_headings' => '', 'content' => '' ] );
+hodima_ad( 'کلمه برندی پیشنهاد نمی‌گیرد، کلمه عادی می‌گیرد', array_column( $sb, 'term' ), [ 'کلیپس عمده' ] );
+remove_filter( 'hodima_seo_advisor_brand_terms', $brand_filter );
+$sp = hodima_seo_advisor_suggestions( [ 'path' => '/p/', 'clicks' => 2, 'impressions' => 400, 'position' => 15.0, 'prev_clicks' => 0 ], [ [ 'term' => 'کلیپس', 'clicks' => 0, 'impressions' => 1000, 'position' => 15.0 ] ], null );
+hodima_ad( 'کلیک بالقوه رتبه ۱۵ با هدف ۱۰ (۳٫۵٪) حساب می‌شود، نه ۷ (۵٫۵٪)', $sp[0]['potential'] ?? null, 35 );
 
 echo "=== مرحله ۱: ذخیره امن (تراکنش، کلمه تکراری، قفل)\n";
 // کلمه‌هایی که فقط در ی/ک عربی، حروف بزرگ و اعراب فرق دارند یکی می‌شوند (کلید اصلی جدول آن‌ها را یکی می‌دید)

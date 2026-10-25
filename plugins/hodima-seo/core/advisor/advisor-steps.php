@@ -177,25 +177,26 @@ function hodima_seo_advisor_link_sources( string $term, array $row, int $limit =
 	usort( $tokens, static fn( string $a, string $b ): int => mb_strlen( $b ) <=> mb_strlen( $a ) );
 
 	$like   = '%' . $wpdb->esc_like( $tokens[0] ) . '%';
+	$arabic = '%' . $wpdb->esc_like( strtr( $tokens[0], [ 'ی' => 'ي', 'ک' => 'ك' ] ) ) . '%'; // متن‌هایی که با ی/ک عربی نوشته شده‌اند (پیش‌فیلتر قبل از یکسان‌سازی)
 	$target = rtrim( (string) $row['path'], '/' );
-	$links  = '#' . preg_quote( $target, '#' ) . '/?(?:["\'\s?\#]|$)#u'; // نشانی هدف در href
+	$links  = '#' . preg_quote( $target, '#' ) . '/?(?:["\'\s?\#]|$)#ui'; // نشانی هدف در href (حروف بزرگ و کوچک یکی)
 	$found  = [];
 
 	$types = array_values( array_intersect( [ 'post', 'page', 'product' ], hodima_seo_advisor_box_post_types_all() ) );
 
 	if ( $types ) {
 		$posts = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				'SELECT ID, post_type, post_title, post_content FROM %i WHERE post_status = %s AND post_type IN (' . implode( ',', array_fill( 0, count( $types ), '%s' ) ) . ') AND ID <> %d AND post_content LIKE %s LIMIT 80', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها با array_fill هم‌اندازه نوع‌هاست
+			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- ۴ placeholder ثابت + array_fill هم‌اندازه نوع‌ها
+				'SELECT ID, post_type, post_title, post_content, post_excerpt FROM %i WHERE post_status = %s AND post_type IN (' . implode( ',', array_fill( 0, count( $types ), '%s' ) ) . ') AND ID <> %d AND (post_content LIKE %s OR post_content LIKE %s OR post_excerpt LIKE %s OR post_excerpt LIKE %s) ORDER BY post_modified DESC LIMIT 200', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها: ۴ ثابت + array_fill هم‌اندازه نوع‌ها
 				$wpdb->posts,
 				'publish',
 				...$types,
-				...[ 'post' === (string) $row['kind'] || post_type_exists( (string) $row['kind'] ) ? (int) $row['object_id'] : 0, $like ]
+				...[ 'post' === (string) $row['kind'] || post_type_exists( (string) $row['kind'] ) ? (int) $row['object_id'] : 0, $like, $arabic, $like, $arabic ]
 			),
 			ARRAY_A
 		);
 		foreach ( $posts as $post ) {
-			$html = strip_shortcodes( (string) $post['post_content'] );
+			$html = strip_shortcodes( (string) $post['post_content'] . ' ' . (string) $post['post_excerpt'] );
 			if ( hodima_seo_advisor_text_has( hodima_seo_advisor_normalize( $html ), $term ) && 1 !== preg_match( $links, $html ) && 1 !== preg_match( $links, rawurldecode( $html ) ) ) {
 				$found[] = [ 'id' => (int) $post['ID'], 'kind' => (string) $post['post_type'], 'title' => trim( wp_strip_all_tags( (string) $post['post_title'] ) ), 'url' => (string) get_permalink( (int) $post['ID'] ) ];
 			}
@@ -204,13 +205,14 @@ function hodima_seo_advisor_link_sources( string $term, array $row, int $limit =
 
 	$terms = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare(
-			'SELECT t.term_id, tt.taxonomy, t.name, tt.description FROM %i tt INNER JOIN %i t ON t.term_id = tt.term_id WHERE tt.taxonomy IN (%s, %s) AND tt.term_id <> %d AND tt.description LIKE %s LIMIT 40',
+			'SELECT t.term_id, tt.taxonomy, t.name, tt.description FROM %i tt INNER JOIN %i t ON t.term_id = tt.term_id WHERE tt.taxonomy IN (%s, %s) AND tt.term_id <> %d AND (tt.description LIKE %s OR tt.description LIKE %s) LIMIT 100',
 			$wpdb->term_taxonomy,
 			$wpdb->terms,
 			'product_cat',
 			'category',
 			taxonomy_exists( (string) $row['kind'] ) ? (int) $row['object_id'] : 0,
-			$like
+			$like,
+			$arabic
 		),
 		ARRAY_A
 	);

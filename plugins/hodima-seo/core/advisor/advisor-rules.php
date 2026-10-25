@@ -15,7 +15,8 @@
  *
  * «کلیک بالقوه» (potential) تخمین کلیکی است که در همین بازه اضافه می‌شد:
  *   نرخ کلیک: نمایش × (نرخ معمول رتبه − نرخ فعلی)؛ کلمه‌ها: همین حساب برای نمایش آن کلمه با
- *   فرض رسیدن به رتبه ۷ (یا همان رتبه فعلی اگر بهتر است)؛ افت: کلیکی که از دست رفته.
+ *   فرض رسیدن به رتبه‌ای ۴ پله بهتر، بین ۷ و ۱۰ (hodima_seo_advisor_target_position)؛ کلمه‌های
+ *   برندی (نام سایت) کنار گذاشته می‌شوند؛ افت: کلیکی که از دست رفته.
  *   قاعده‌ها روی هم می‌افتند، پس عدد صفحه «بزرگ‌ترین پیشنهاد» است، نه جمع.
  *
  * نرخ معمول هر رتبه (٪؛ ≤۲: ۲۵، ≤۳: ۱۴، ≤۵: ۹، ≤۷: ۵٫۵، ≤۱۰: ۳٫۵، بالاتر: ۱٫۵) و آستانه‌ها
@@ -105,18 +106,64 @@ function hodima_seo_advisor_normalize( string $text ): string {
 	return trim( (string) preg_replace( '/\s+/u', ' ', mb_strtolower( $text ) ) );
 }
 
+/**
+ * آیا یک واژه (یکسان‌شده) در متن به‌عنوان «کلمه» هست؟ مرز کلمه از چپ و راست؛ پسوندهای رایج
+ * فارسی (ها، های، ی، ان، تر…) پذیرفته می‌شوند. «مو» داخل «موبایل» حساب نمی‌شود (قبلا زیررشته بود).
+ */
+function hodima_seo_advisor_word_in( string $haystack, string $word ): bool {
+	return 1 === preg_match( '/(?<![\p{L}\p{N}])' . preg_quote( $word, '/' ) . '(?:ها|های|هایی|ی|ای|ان|ات|تر|ترین)?(?![\p{L}\p{N}])/u', $haystack );
+}
+
 /** آیا همه کلمه‌های عبارت در متن (از پیش یکسان‌شده) هستند؟ عبارت بدون کلمه قابل‌سنجش «هست» حساب می‌شود (پیشنهاد نمی‌دهیم). */
 function hodima_seo_advisor_text_has( string $haystack, string $term ): bool {
 
 	$tokens = array_filter( explode( ' ', hodima_seo_advisor_normalize( $term ) ), static fn( string $t ): bool => mb_strlen( $t ) >= 2 );
 
 	foreach ( $tokens as $token ) {
-		if ( ! str_contains( $haystack, $token ) ) {
+		if ( ! hodima_seo_advisor_word_in( $haystack, $token ) ) {
 			return false;
 		}
 	}
 
 	return true;
+}
+
+/**
+ * واژه‌های نام سایت (برند): نام سایت و بخش اول دامنه. کلمه‌ای که برند را دارد نرخ کلیک بسیار بالاتر از
+ * جدول عمومی دارد و برایش «کلیک بالقوه» ساختن گمراه‌کننده است. با فیلتر hodima_seo_advisor_brand_terms عوض می‌شود.
+ *
+ * @return list<string>
+ */
+function hodima_seo_advisor_brand_terms(): array {
+
+	$host  = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+	$label = explode( '.', (string) preg_replace( '/^www\./', '', $host ) )[0];
+	$words = array_merge( explode( ' ', hodima_seo_advisor_normalize( (string) get_bloginfo( 'name' ) ) ), [ hodima_seo_advisor_normalize( $label ) ] );
+	$words = array_filter( $words, static fn( string $w ): bool => mb_strlen( $w ) >= 4 );
+
+	return array_values( array_unique( array_map( 'strval', (array) apply_filters( 'hodima_seo_advisor_brand_terms', $words ) ) ) );
+}
+
+/** آیا کلمه جستجو برندی است؟ */
+function hodima_seo_advisor_is_brand( string $term ): bool {
+
+	$normalized = hodima_seo_advisor_normalize( $term );
+
+	foreach ( hodima_seo_advisor_brand_terms() as $brand ) {
+		if ( '' !== $brand && hodima_seo_advisor_word_in( $normalized, $brand ) ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * رتبه‌ای که واقع‌بینانه می‌شود به آن رسید: ۴ پله بهتر، نه بهتر از ۷ و نه بدتر از ۱۰ (هدف: صفحه اول؛
+ * رتبه ۱۵ ← ۱۰، نه ۷).
+ */
+function hodima_seo_advisor_target_position( float $position ): float {
+	return $position <= 7.0 ? $position : max( 7.0, min( 10.0, $position - 4.0 ) );
 }
 
 /**
@@ -224,10 +271,10 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 	$near    = [];
 	$missing = [];
 	foreach ( $queries as $query ) {
-		if ( $query['impressions'] < $cfg['query_min_impressions'] ) {
-			continue;
+		if ( $query['impressions'] < $cfg['query_min_impressions'] || hodima_seo_advisor_is_brand( $query['term'] ) ) {
+			continue; // برندی: نرخ کلیکش از جدول عمومی بالاتر است و پیشنهاد/عدد گمراه‌کننده می‌شود
 		}
-		$gain = (int) round( $query['impressions'] * ( hodima_seo_advisor_expected_ctr( min( $query['position'], 7.0 ) ) - $ctr( $query['clicks'], $query['impressions'] ) ) / 100 );
+		$gain = (int) round( $query['impressions'] * ( hodima_seo_advisor_expected_ctr( hodima_seo_advisor_target_position( $query['position'] ) ) - $ctr( $query['clicks'], $query['impressions'] ) ) / 100 );
 		$info = sprintf( '%1$s نمایش با رتبه %2$s.', hodima_seo_advisor_num( $query['impressions'] ), hodima_seo_advisor_num( $query['position'], 1 ) );
 
 		if ( $gain <= 0 ) {
@@ -274,7 +321,7 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 	$cannibal = [];
 	foreach ( $queries as $query ) {
 		$others = $competitors[ $query['term'] ] ?? [];
-		if ( $query['impressions'] >= $cfg['cannibal_min_impressions'] && $others ) {
+		if ( $query['impressions'] >= $cfg['cannibal_min_impressions'] && $others && ! hodima_seo_advisor_is_brand( $query['term'] ) ) {
 			$cannibal[] = [
 				'rule'      => 'cannibal',
 				'term'      => $query['term'],
