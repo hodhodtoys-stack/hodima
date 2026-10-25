@@ -129,7 +129,10 @@ def changed_packages(files):
     for slug, (folder, *_rest) in PACKAGES.items():
         hits = sorted(f for f in files if f.startswith(folder + '/')) + tools
         if folder in kit.targets():
-            hits += sorted(f for f in files if f.startswith('tools/ui-kit/'))
+            hits += sorted(f for f in files if f.startswith('tools/ui-kit/') and os.path.basename(f) in kit.FILES)  # kit.py خودش در ZIP نیست
+        if folder in kit.CORE_TARGETS:
+            # کپی استایل مشترک Core در ZIP این افزونه‌ها هم هست (ui/core-ui.*)
+            hits += sorted(f for f in files if f.startswith(kit.CORE_SOURCE + '/') and os.path.basename(f) in kit.CORE_COPIES)
         if hits:
             out[slug] = hits
     return out
@@ -408,6 +411,27 @@ def check_kit():
                 fail(f'{slug}: {key} در ZIP نیست — bash bin/build.sh')
             elif zipped[key] != kit.render(name, prefix):
                 fail(f'{slug}: {key} با منبع tools/ui-kit (پیشوند {prefix}-) یکی نیست — bash bin/build.sh')
+    # کپی استایل مشترک Core: در ZIP افزونه‌های بدون-Core-هم-کامل بایت‌به‌بایت = فایل همان Core در ZIP Core
+    core_zip = os.path.join(ROOT, 'release', 'hodima-core.zip')
+    core_entries = zip_entries(core_zip) if os.path.exists(core_zip) else {}
+    for slug, (folder, *_rest) in PACKAGES.items():
+        if folder not in kit.CORE_TARGETS:
+            continue
+        tracked = set(git('ls-files', folder + '/ui').split('\n'))
+        for dst in kit.CORE_COPIES.values():
+            if f'{folder}/ui/{dst}' in tracked:
+                fail(f'{slug}: کپی دستی {folder}/ui/{dst} در سورس — فقط منبع Core ویرایش شود')
+        zpath = os.path.join(ROOT, 'release', slug + '.zip')
+        if not os.path.exists(zpath) or not core_entries:
+            continue
+        zipped = zip_entries(zpath)
+        for src_name, dst in kit.CORE_COPIES.items():
+            key = f'{os.path.basename(folder)}/ui/{dst}'
+            want = core_entries.get(f'hodima-core/assets/{src_name}')
+            if key not in zipped:
+                fail(f'{slug}: {key} در ZIP نیست — bash bin/build.sh')
+            elif want is not None and zipped[key] != want:
+                fail(f'{slug}: {key} با {src_name} Core یکی نیست — bash bin/build.sh')
     if len(errors) == before:
         ok('کپی کیت UI در همه ZIPها با منبع یکی است')
 

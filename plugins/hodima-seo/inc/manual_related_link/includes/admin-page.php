@@ -31,15 +31,15 @@ final class AdminPage {
 		add_action( 'admin_enqueue_scripts', [ self::class, 'assets' ], 20 );
 	}
 
-	/** CSS همین صفحه (بعد از ثبت admin-ui.css در Core)؛ بخش‌های جمع‌شونده و دو ستونه. */
+	/** CSS همین صفحه (بعد از ثبت admin-ui.css؛ Core یا کپی فالبک)؛ بخش‌های جمع‌شونده و دو ستونه. */
 	public static function assets(): void {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تشخیص صفحه
-		if ( self::SLUG !== sanitize_key( (string) wp_unslash( $_GET['page'] ?? '' ) ) || ! defined( 'HODIMA_ADMIN_UI_HANDLE' ) ) {
+		if ( self::SLUG !== sanitize_key( (string) wp_unslash( $_GET['page'] ?? '' ) ) || ! wp_style_is( 'hodima-admin-ui', 'registered' ) ) { // بدون Core هم استایل مشترک از کپی فالبک ثبت می‌شود
 			return;
 		}
 
-		wp_add_inline_style( HODIMA_ADMIN_UI_HANDLE, '
+		wp_add_inline_style( 'hodima-admin-ui', '
 .hodima-rl-page .hodima-rl-groups-grid { align-items: start; }
 .hodima-rl-page .hodima-rl-more > summary { cursor: pointer; color: var(--hd-primary); font-weight: 700; min-block-size: 2.75rem; display: flex; align-items: center; }
 .hodima-rl-page .hodima-rl-more > summary:focus-visible { outline: 2px solid var(--hd-ok); outline-offset: 2px; }

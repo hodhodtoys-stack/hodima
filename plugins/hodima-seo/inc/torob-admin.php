@@ -25,15 +25,15 @@ add_action( 'admin_menu', static function (): void {
 	add_menu_page( 'ترب', 'ترب', 'manage_options', 'hodima-torob', 'hodima_seo_torob_render_page', 'dashicons-store', 58 );
 } );
 
-/** CSS همین صفحه (بعد از ثبت admin-ui.css در Core): راهنمای جمع‌شونده، نوار نشان‌ها و حالت خالی کوچک. */
+/** CSS همین صفحه (بعد از ثبت admin-ui.css؛ Core یا کپی فالبک): راهنمای جمع‌شونده، نوار نشان‌ها و حالت خالی کوچک. */
 add_action( 'admin_enqueue_scripts', static function (): void {
 
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تشخیص صفحه
-	if ( 'hodima-torob' !== sanitize_key( (string) wp_unslash( $_GET['page'] ?? '' ) ) || ! defined( 'HODIMA_ADMIN_UI_HANDLE' ) ) {
+	if ( 'hodima-torob' !== sanitize_key( (string) wp_unslash( $_GET['page'] ?? '' ) ) || ! wp_style_is( 'hodima-admin-ui', 'registered' ) ) { // بدون Core هم استایل مشترک از کپی فالبک ثبت می‌شود
 		return;
 	}
 
-	wp_add_inline_style( HODIMA_ADMIN_UI_HANDLE, '
+	wp_add_inline_style( 'hodima-admin-ui', '
 .hodima-torob-page .hodima-torob__stats { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-inline-end: auto; }
 .hodima-torob-page .hodima-torob__more > summary { cursor: pointer; color: var(--hd-primary); font-weight: 700; min-block-size: 2.75rem; display: flex; align-items: center; }
 .hodima-torob-page .hodima-torob__more > summary:focus-visible { outline: 2px solid var(--hd-ok); outline-offset: 2px; }

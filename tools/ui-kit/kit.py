@@ -27,6 +27,14 @@ def targets():
     return dict(PACKAGES)
 
 
+# کپی استایل/رفتار مشترک Core (plugins/hodima-core/assets/admin-ui.*) در افزونه‌هایی که
+# بدون Core هم باید صفحه‌هایشان کامل و استایل‌دار باشند. فایل‌ها بدون تغییر پیشوند کپی
+# می‌شوند (فقط وقتی Core نیست لود می‌شوند: inc/admin-ui-fallback.php)؛ منبع همان Core است.
+CORE_SOURCE = 'plugins/hodima-core/assets'
+CORE_COPIES = {'admin-ui.css': 'core-ui.css', 'admin-ui.js': 'core-ui.js'}
+CORE_TARGETS = ('plugins/hodima-seo', 'plugins/hodima-commerce', 'plugins/hodima-media')
+
+
 def render(name, prefix):
     with open(os.path.join(HERE, name), encoding='utf-8', newline='') as f:
         text = f.read()
@@ -41,6 +49,18 @@ def install(root):
             with open(os.path.join(folder, name), 'wb') as f:
                 f.write(render(name, prefix))
         print(f'✔ {pkg}/ui (پیشوند {prefix}-)')
+    for src_name, dst_name in CORE_COPIES.items():
+        src = os.path.join(root, CORE_SOURCE, src_name)
+        if not os.path.isfile(src):
+            continue
+        with open(src, 'rb') as f:
+            data = f.read()
+        for pkg in CORE_TARGETS:
+            folder = os.path.join(root, pkg, 'ui')
+            os.makedirs(folder, exist_ok=True)
+            with open(os.path.join(folder, dst_name), 'wb') as f:
+                f.write(data)
+    print('✔ کپی استایل مشترک Core در افزونه‌ها (ui/core-ui.*)')
 
 
 if __name__ == '__main__':
