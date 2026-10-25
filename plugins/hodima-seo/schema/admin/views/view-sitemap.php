@@ -60,6 +60,13 @@ $all_taxonomies = get_taxonomies(['public' => true], 'objects');
 
 $sitemap_url = site_url('/sitemap.xml');
 
+// خلاصه برای کارت‌های آمار (فقط نوع‌هایی که واقعا وجود دارند شمرده می‌شوند)
+$live_pts  = array_values( array_filter( (array) $saved_pts, static fn( $name ) => isset( $all_post_types[ $name ] ) ) );
+$live_taxs = array_values( array_filter( (array) $saved_taxs, static fn( $name ) => isset( $all_taxonomies[ $name ] ) ) );
+
+/** نام‌ها را هر کدام در یک code (نامی که ممکن است حرف خاص داشته باشد escape می‌شود). */
+$hodima_codes = static fn( array $names ): string => implode( ' ', array_map( static fn( $name ): string => '<code class="hds-code">' . esc_html( (string) $name ) . '</code>', $names ) );
+
 hodima_view_header(
     'نقشه سایت اختصاصی (XML Sitemap)',
     'نقشه سایت یکپارچه با صفحه‌بندی، تصاویر، ویدیو و متادیتای پیشرفته، منطبق با به‌روزرسانی‌های ایندکس گوگل.',
@@ -67,94 +74,110 @@ hodima_view_header(
 );
 ?>
 
-<?php echo $message; ?>
+<?php echo $message; // phpcs:ignore WordPress.Security.EscapeOutput -- پیام ثابت همین فایل ?>
 
-<section class="hd-card hd-card--accent">
-    <header class="hd-card__head">
-        <?php echo hodima_admin_icon( 'dashicons-admin-links' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-        <h2 class="hd-card__title">آدرس نقشه سایت برای معرفی به گوگل</h2>
-    </header>
-    <div class="hd-code">
-        <span><?php echo esc_html($sitemap_url); ?></span>
-        <a href="<?php echo esc_url($sitemap_url); ?>" target="_blank" rel="noopener">مشاهده</a>
+<div class="hds-ui"><div class="hds-page__body">
+
+<?php
+hodima_seo_ui_stats( [
+    [
+        'label' => 'موتور نقشه سایت',
+        'value' => '1' === (string) $status ? '<span class="hds-pill">فعال</span>' : '<span class="hds-pill hds-pill--warn">غیرفعال</span>',
+        'sub'   => '1' === (string) $status ? 'نقشه با کش سریع سرو می‌شود' : 'نقشه‌ای ساخته نمی‌شود',
+    ],
+    [
+        'label' => 'پست‌تایپ در نقشه',
+        'value' => esc_html( number_format_i18n( count( $live_pts ) ) ),
+        'sub'   => $hodima_codes( array_slice( $live_pts, 0, 4 ) ),
+    ],
+    [
+        'label' => 'طبقه‌بندی در نقشه',
+        'value' => esc_html( number_format_i18n( count( $live_taxs ) ) ),
+        'sub'   => $hodima_codes( array_slice( $live_taxs, 0, 3 ) ),
+    ],
+    [
+        'label' => 'لینک در هر نقشه',
+        'value' => esc_html( number_format_i18n( (int) $limit ) ),
+        'sub'   => 'صفحه‌بندی برای سبکی سرور',
+    ],
+] );
+
+hodima_seo_ui_card_open( 'آدرس نقشه سایت برای معرفی به گوگل', 'این آدرس را در سرچ کنسول (Sitemaps) ثبت کنید. ویدیوها و مقالات درون همین نقشه (تگ‌های &lt;video:video&gt;) معرفی می‌شوند؛ ثبت آدرس جداگانه لازم نیست.', 'dashicons-admin-links' );
+?>
+    <div class="hds-action">
+        <label class="screen-reader-text" for="hodima-sitemap-url">آدرس نقشه سایت</label>
+        <input type="text" id="hodima-sitemap-url" class="hds-input" dir="ltr" readonly value="<?php echo esc_attr( $sitemap_url ); ?>">
+        <button type="button" class="hds-btn hds-btn--outline" data-hds-copy="<?php echo esc_attr( $sitemap_url ); ?>">کپی آدرس</button>
+        <a class="hds-btn hds-btn--outline" href="<?php echo esc_url( $sitemap_url ); ?>" target="_blank" rel="noopener">مشاهده</a>
     </div>
-    <p class="description">ویدیوها و مقالات به‌صورت ساختاریافته درون همین نقشه یکپارچه (تگ‌های &lt;video:video&gt;) معرفی می‌شوند؛ ثبت آدرس جداگانه لازم نیست.</p>
-</section>
+<?php hodima_seo_ui_card_close(); ?>
 
-<form method="post" action="" class="hd-body">
-    <?php wp_nonce_field('hodima_sitemap_nonce_action', 'hodima_sitemap_nonce'); ?>
+<form method="post" action="">
+    <?php wp_nonce_field( 'hodima_sitemap_nonce_action', 'hodima_sitemap_nonce' ); ?>
     <input type="hidden" name="hodima_save_sitemap_settings" value="1">
 
-    <section class="hd-card">
-        <header class="hd-card__head">
-            <?php echo hodima_admin_icon( 'dashicons-admin-settings' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-            <h2 class="hd-card__title">تنظیمات عمومی</h2>
-        </header>
-
-        <div class="hd-fields">
-            <div class="hd-field">
-                <label class="hd-toggle">
-                    <input type="checkbox" class="hd-switch" role="switch" name="sitemap_status" value="1" <?php checked($status, '1'); ?>>
+    <?php hodima_seo_ui_card_open( 'تنظیمات نقشه سایت', '', 'dashicons-admin-settings' ); ?>
+        <div class="hds-row">
+            <div class="hds-field">
+                <label class="hds-toggle">
+                    <input type="checkbox" class="hds-switch" role="switch" name="sitemap_status" value="1" <?php checked( $status, '1' ); ?>>
                     <span>فعال‌سازی موتور نقشه سایت هدیما</span>
                 </label>
             </div>
-
-            <div class="hd-field">
-                <label class="hd-field__label" for="sitemap_links_limit">تعداد لینک در هر نقشه سایت (صفحه‌بندی)</label>
-                <input type="number" name="sitemap_links_limit" id="sitemap_links_limit" value="<?php echo esc_attr($limit); ?>" min="100" max="5000">
-                <p class="hd-field__help">برای جلوگیری از فشار به سرور لینک‌ها صفحه‌بندی می‌شوند. مقدار پیشنهادی: 1000</p>
+            <div class="hds-field">
+                <label class="hds-field__label" for="sitemap_links_limit">تعداد لینک در هر نقشه (صفحه‌بندی)</label>
+                <div class="hds-unit">
+                    <input type="number" class="hds-input" name="sitemap_links_limit" id="sitemap_links_limit" value="<?php echo esc_attr( $limit ); ?>" min="100" max="5000">
+                    <span>لینک</span>
+                </div>
+                <p class="hds-field__help">برای سبک ماندن سرور؛ پیشنهاد: ۱۰۰۰ (بین ۱۰۰ تا ۵۰۰۰).</p>
             </div>
         </div>
-    </section>
 
-    <section class="hd-card">
-        <header class="hd-card__head">
-            <?php echo hodima_admin_icon( 'dashicons-admin-post' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-            <h2 class="hd-card__title">پست‌تایپ‌ها (Post Types)</h2>
-            <p class="hd-card__desc">موارد noindex یا دارای رمز عبور خودکار کنار گذاشته می‌شوند.</p>
-        </header>
-        <div class="hd-choices">
-            <?php foreach ( $all_post_types as $pt ) : ?>
-                <?php if ( $pt->name === 'attachment' ) continue; ?>
-                <label>
-                    <input type="checkbox" name="sitemap_post_types[]" value="<?php echo esc_attr($pt->name); ?>" <?php checked(in_array($pt->name, $saved_pts, true)); ?>>
-                    <?php echo esc_html($pt->labels->name); ?>
-                    <code><?php echo esc_html($pt->name); ?></code>
-                </label>
-            <?php endforeach; ?>
+        <div class="hds-groups">
+            <fieldset class="hds-fieldset">
+                <legend class="hds-groups__title">پست‌تایپ‌هایی که در نقشه بیایند</legend>
+                <p class="hds-field__help">موارد noindex یا دارای رمز عبور خودکار کنار گذاشته می‌شوند.</p>
+                <div class="hds-chips">
+                    <?php foreach ( $all_post_types as $pt ) : ?>
+                        <?php if ( 'attachment' === $pt->name ) { continue; } ?>
+                        <label class="hds-chip">
+                            <input type="checkbox" name="sitemap_post_types[]" value="<?php echo esc_attr( $pt->name ); ?>" <?php checked( in_array( $pt->name, $saved_pts, true ) ); ?>>
+                            <span><?php echo esc_html( $pt->labels->name ); ?></span>
+                            <code class="hds-code"><?php echo esc_html( $pt->name ); ?></code>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </fieldset>
+
+            <fieldset class="hds-fieldset">
+                <legend class="hds-groups__title">طبقه‌بندی‌هایی که در نقشه بیایند</legend>
+                <p class="hds-field__help">صفحه‌بندی‌شده و همراه رسانه‌هایشان در نقشه می‌آیند.</p>
+                <div class="hds-chips">
+                    <?php foreach ( $all_taxonomies as $tax ) : ?>
+                        <label class="hds-chip">
+                            <input type="checkbox" name="sitemap_taxonomies[]" value="<?php echo esc_attr( $tax->name ); ?>" <?php checked( in_array( $tax->name, $saved_taxs, true ) ); ?>>
+                            <span><?php echo esc_html( $tax->labels->name ); ?></span>
+                            <code class="hds-code"><?php echo esc_html( $tax->name ); ?></code>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </fieldset>
         </div>
-    </section>
 
-    <section class="hd-card">
-        <header class="hd-card__head">
-            <?php echo hodima_admin_icon( 'dashicons-category' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-            <h2 class="hd-card__title">دسته‌بندی‌ها و طبقه‌بندی‌ها (Taxonomies)</h2>
-            <p class="hd-card__desc">طبقه‌بندی‌های انتخاب‌شده به‌صورت صفحه‌بندی‌شده همراه با رسانه‌هایشان در سایت‌مپ می‌آیند.</p>
-        </header>
-        <div class="hd-choices">
-            <?php foreach ( $all_taxonomies as $tax ) : ?>
-                <label>
-                    <input type="checkbox" name="sitemap_taxonomies[]" value="<?php echo esc_attr($tax->name); ?>" <?php checked(in_array($tax->name, $saved_taxs, true)); ?>>
-                    <?php echo esc_html($tax->labels->name); ?>
-                    <code><?php echo esc_html($tax->name); ?></code>
-                </label>
-            <?php endforeach; ?>
+        <div class="hds-foot">
+            <?php // دکمه ذخیره اول می‌آید تا Enter در فرم، ذخیره کند نه پاک‌سازی کش ?>
+            <button type="submit" class="hds-btn">ذخیره تنظیمات</button>
+            <button
+                type="submit"
+                name="hodima_clear_sitemap_cache"
+                class="hds-btn hds-btn--outline"
+                onclick="return confirm('آیا از پاک کردن کش تمام نسخه‌های نقشه سایت مطمئن هستید؟');"
+            >پاک‌سازی دستی کش سایت‌مپ</button>
         </div>
-    </section>
-
-    <div class="hd-actions">
-        <?php // دکمه ذخیره اول می‌آید تا Enter در فرم، ذخیره کند نه پاک‌سازی کش ?>
-        <button type="submit" class="button button-primary">ذخیره تنظیمات</button>
-        <button
-            type="submit"
-            name="hodima_clear_sitemap_cache"
-            class="button"
-            onclick="return confirm('آیا از پاک کردن کش تمام نسخه‌های نقشه سایت مطمئن هستید؟');"
-        >
-            <?php echo hodima_admin_icon( 'dashicons-update' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-            پاک‌سازی دستی کش سایت‌مپ
-        </button>
-    </div>
+    <?php hodima_seo_ui_card_close(); ?>
 </form>
+
+</div></div>
 
 <?php hodima_view_footer(); ?>

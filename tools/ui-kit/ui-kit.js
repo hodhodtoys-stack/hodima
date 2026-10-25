@@ -279,7 +279,26 @@
 		reindex();
 	};
 
+	/* ── دکمه «کپی»: متن data-hdk-copy را در کلیپ‌بورد می‌گذارد و چند لحظه «کپی شد» نشان می‌دهد ── */
+	const initCopy = () => {
+		document.addEventListener( 'click', ( e ) => {
+			const btn = e.target.closest?.( '.hdk-ui [data-hdk-copy]' );
+			if ( ! btn || ! navigator.clipboard ) {
+				return;
+			}
+			navigator.clipboard.writeText( btn.dataset.hdkCopy ).then( () => {
+				const before = btn.textContent;
+				btn.textContent = btn.dataset.hdkCopied || 'کپی شد';
+				btn.setAttribute( 'aria-live', 'polite' );
+				setTimeout( () => {
+					btn.textContent = before;
+				}, 1600 );
+			} ).catch( () => {} );
+		} );
+	};
+
 	const init = () => {
+		initCopy();
 		document.querySelectorAll( '.hdk-ui .hdk-tabset' ).forEach( initTabset );
 		document.querySelectorAll( '.hdk-ui [data-hdk-repeat]' ).forEach( initRepeat );
 		initMedia();

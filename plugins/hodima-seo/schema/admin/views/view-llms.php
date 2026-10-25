@@ -13,123 +13,103 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 $base_url = untrailingslashit( home_url() );
 
+/**
+ * یک ردیف مرجع: عنوان و توضیح، زیرش مسیر ماشین‌خوان و دکمه‌ها (کپی / مشاهده).
+ * متن عنوان و توضیح HTML امن‌شده‌اند (code، strong)؛ مسیر و آدرس‌ها در خود تابع escape می‌شوند.
+ *
+ * @param string      $title  عنوان (HTML امن)
+ * @param string      $desc   توضیح یک‌خطی (HTML امن؛ خالی = بدون توضیح)
+ * @param string      $path   مسیر نمایشی
+ * @param string|null $link   آدرس کامل برای «کپی» و «مشاهده»؛ null = فقط نمایش مسیر
+ * @param string      $view   متن دکمه باز کردن آدرس
+ * @param string|null $copy   متن کپی‌شدنی (پیش‌فرض $link)؛ برای تگ‌های هدر
+ */
+$hodima_aeo_row = static function ( string $title, string $desc, string $path, ?string $link = null, string $view = 'مشاهده', ?string $copy = null ): void {
+    echo '<div class="hds-item"><div><div class="hds-item__title">' . wp_kses_post( $title ) . '</div>';
+    if ( '' !== $desc ) {
+        echo '<p class="hds-item__desc">' . wp_kses_post( $desc ) . '</p>';
+    }
+    echo '</div><div class="hds-item__body"><span class="hds-path" dir="ltr">' . esc_html( $path ) . '</span>';
+    $copy = $copy ?? $link;
+    if ( null !== $copy ) {
+        printf( '<button type="button" class="hds-btn hds-btn--outline" data-hds-copy="%s">کپی</button>', esc_attr( $copy ) );
+    }
+    if ( null !== $link && '' !== $view ) {
+        printf( '<a class="hds-btn hds-btn--outline" href="%1$s" target="_blank" rel="noopener">%2$s</a>', esc_url( $link ), esc_html( $view ) );
+    }
+    echo '</div></div>';
+};
+
 hodima_view_header(
     'هوش مصنوعی (AEO و وب معنایی)',
     'همه مسیرها، فایل‌ها و وب‌سرویس‌هایی که سایت را برای ربات‌های هوش مصنوعی خوانا می‌کنند.',
     'dashicons-lightbulb'
 );
-
-/**
- * یک ردیف آدرس ماشین‌خوان.
- *
- * @param string      $path  مسیر نمایشی
- * @param string|null $link  آدرس کامل برای لینک؛ null = بدون لینک
- * @param string      $label متن لینک، یا برچسب کنار مسیر وقتی لینکی نیست
- */
-$hodima_aeo_row = static function ( string $path, ?string $link = null, string $label = 'مشاهده' ): void {
-    echo '<div class="hd-code"><span>' . esc_html( $path ) . '</span>';
-    if ( null !== $link ) {
-        printf( '<a href="%1$s" target="_blank" rel="noopener">%2$s</a>', esc_url( $link ), esc_html( $label ) );
-    } elseif ( '' !== $label ) {
-        echo '<span class="hd-code__tag">' . esc_html( $label ) . '</span>';
-    }
-    echo '</div>';
-};
 ?>
 
-<section class="hd-card hd-card--accent">
-    <header class="hd-card__head">
-        <?php echo hodima_admin_icon( 'dashicons-tag' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-        <h2 class="hd-card__title">تگ‌های معرفی در هدر صفحه</h2>
-    </header>
+<div class="hds-ui"><div class="hds-page__body">
 
-    <div class="hd-fields">
-        <div class="hd-field">
-            <span class="hd-field__label">۱. دروازه ورود اصلی (Global Discovery Tag)</span>
-            <p class="hd-field__help">نقشه راه کل سایت (<code>llms.txt</code>) را به هوش مصنوعی معرفی می‌کند.</p>
-            <div class="hd-code">&lt;link rel="llms" href="<?php echo esc_url($base_url); ?>/llms.txt"&gt;</div>
-        </div>
-        <div class="hd-field">
-            <span class="hd-field__label">۲. کشف سطح صفحه (Page-Level Discovery Tag)</span>
-            <p class="hd-field__help">در محصولات و مقالات چاپ می‌شود تا نسخه Markdown همان صفحه را معرفی کند.</p>
-            <div class="hd-code">&lt;link rel="alternate" type="text/markdown" href="<?php echo esc_url($base_url); ?>/product-url.md"&gt;</div>
-        </div>
-    </div>
-</section>
+<?php
+hodima_seo_ui_card_open( 'نقشه‌های راه برای هوش مصنوعی', 'این دو فایل نقطه شروع ربات‌هاست. نیازی به تنظیم نیست؛ فقط آدرس را دارید.', 'dashicons-location-alt' );
+$hodima_aeo_row( 'نقشه سبک و سیلویی <code class="hds-code">llms.txt</code>', 'معماری سایت، اطلاعات شرکت و ۱۰ محصول به‌روز آخر هر دسته.', $base_url . '/llms.txt', $base_url . '/llms.txt' );
+$hodima_aeo_row( 'نقشه کامل کاتالوگ <code class="hds-code">llms-full.txt</code>', 'تا ۵۰۰ لینک از همه محصولات و مقالات برای خزش عمیق.', $base_url . '/llms-full.txt', $base_url . '/llms-full.txt' );
+hodima_seo_ui_card_close();
 
-<div class="hd-grid hd-grid--wide">
-    <section class="hd-card">
-        <header class="hd-card__head">
-            <?php echo hodima_admin_icon( 'dashicons-location-alt' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-            <h2 class="hd-card__title">نقشه‌های راه (AI Sitemaps)</h2>
-        </header>
-        <div class="hd-field">
-            <span class="hd-field__label">نقشه سبک و سیلویی <code>llms.txt</code></span>
-            <p class="hd-field__help">معماری سایت، اطلاعات شرکت و ۱۰ محصول به‌روز آخر هر دسته.</p>
-            <?php $hodima_aeo_row( '/llms.txt', $base_url . '/llms.txt' ); ?>
-        </div>
-        <hr class="hd-divider">
-        <div class="hd-field">
-            <span class="hd-field__label">نقشه کامل کاتالوگ <code>llms-full.txt</code></span>
-            <p class="hd-field__help">تا ۵۰۰ لینک از همه محصولات و مقالات برای خزش عمیق.</p>
-            <?php $hodima_aeo_row( '/llms-full.txt', $base_url . '/llms-full.txt' ); ?>
-        </div>
-    </section>
+echo '<section class="hds-card">';
+hodima_seo_ui_tabs( 'hodima-llms', 'بخش‌های هوش مصنوعی', [
+    'tags' => [
+        'label' => 'تگ‌های هدر',
+        'count' => '۲',
+        'html'  => static function () use ( $hodima_aeo_row, $base_url ): void {
+            $hodima_aeo_row(
+                'دروازه ورود اصلی (Global Discovery Tag)',
+                'نقشه راه کل سایت (<code class="hds-code">llms.txt</code>) را در هدر هر صفحه به هوش مصنوعی معرفی می‌کند.',
+                '<link rel="llms" href="' . $base_url . '/llms.txt">',
+                null,
+                '',
+                '<link rel="llms" href="' . $base_url . '/llms.txt">'
+            );
+            $hodima_aeo_row(
+                'کشف سطح صفحه (Page-Level Discovery Tag)',
+                'در محصولات و مقالات چاپ می‌شود تا نسخه Markdown همان صفحه را معرفی کند.',
+                '<link rel="alternate" type="text/markdown" href="' . $base_url . '/product-url.md">',
+                null,
+                '',
+                '<link rel="alternate" type="text/markdown" href="' . $base_url . '/product-url.md">'
+            );
+        },
+    ],
+    'md'   => [
+        'label' => 'صفحه‌های .md',
+        'count' => '۳',
+        'html'  => static function () use ( $hodima_aeo_row ): void {
+            echo '<p class="hds-card__desc">با افزودن <code class="hds-code">.md</code> به انتهای آدرس هر محصول، دسته یا مقاله، نسخه پردازش‌شده (متادیتا، MOQ و گراف دانش) را ببینید.</p>';
+            $hodima_aeo_row( 'محصولات', '', '/product-name.md' );
+            $hodima_aeo_row( 'دسته‌بندی‌ها', '', '/category-name.md' );
+            $hodima_aeo_row( 'مقالات', '', '/article-name.md' );
+        },
+    ],
+    'api'  => [
+        'label' => 'وب‌سرویس‌ها و فیدها',
+        'count' => '۳',
+        'html'  => static function () use ( $hodima_aeo_row, $base_url ): void {
+            $hodima_aeo_row( 'جستجوی زنده (Live Search)', 'جستجو در محصولات با خروجی Markdown برای هوش مصنوعی.', '/llm-search?q=keyword', $base_url . '/llm-search?q=کلیپس', 'آزمایش', $base_url . '/llm-search?q=keyword' );
+            $hodima_aeo_row( 'فید تازه‌ها (۲۴ ساعت)', 'خروجی JSON از موجودیت‌هایی که در ۲۴ ساعت گذشته به‌روز شده‌اند.', '/ai-feed.json', $base_url . '/ai-feed.json' );
+            $hodima_aeo_row( 'معرفی وب‌سرویس (OpenAPI)', 'استاندارد اتصال Custom GPTها به جستجوی سایت.', '/openapi.json', $base_url . '/openapi.json' );
+        },
+    ],
+    'sec'  => [
+        'label' => 'امنیت و مانیتورینگ',
+        'count' => '۲',
+        'html'  => static function () use ( $hodima_aeo_row, $base_url ): void {
+            $hodima_aeo_row( 'تله امنیتی (Honeypot) <span class="hds-tag hds-tag--warn">خودتان باز نکنید</span>', 'اسکرپرها با باز کردن این آدرس بلافاصله مسدود می‌شوند.', '/ai-internal-data.md' );
+            $hodima_aeo_row( 'لاگ ربات‌ها (AI Analytics)', 'گزارش JSON رفتار و IP ربات‌های هوش مصنوعی (فقط مدیر).', '/ai-analytics.json', $base_url . '/ai-analytics.json' );
+        },
+    ],
+] );
+echo '</section>';
+?>
 
-    <section class="hd-card">
-        <header class="hd-card__head">
-            <?php echo hodima_admin_icon( 'dashicons-media-text' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-            <h2 class="hd-card__title">صفحه‌های خوانا برای ماشین (.md)</h2>
-        </header>
-        <p class="hd-text">با افزودن <code>.md</code> به انتهای آدرس هر محصول یا مقاله، نسخه پردازش‌شده (متادیتا، MOQ و گراف دانش) را ببینید.</p>
-        <?php
-        $hodima_aeo_row( '/product-name.md', null, 'محصولات' );
-        $hodima_aeo_row( '/category-name.md', null, 'دسته‌بندی‌ها' );
-        $hodima_aeo_row( '/article-name.md', null, 'مقالات' );
-        ?>
-    </section>
-
-    <section class="hd-card">
-        <header class="hd-card__head">
-            <?php echo hodima_admin_icon( 'dashicons-rest-api' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-            <h2 class="hd-card__title">وب‌سرویس‌ها و فیدهای زنده</h2>
-        </header>
-        <div class="hd-field">
-            <span class="hd-field__label">جستجوی زنده (Live Search)</span>
-            <p class="hd-field__help">جستجو در محصولات با خروجی Markdown برای هوش مصنوعی.</p>
-            <?php $hodima_aeo_row( '/llm-search?q=keyword', $base_url . '/llm-search?q=کلیپس', 'تست' ); ?>
-        </div>
-        <hr class="hd-divider">
-        <div class="hd-field">
-            <span class="hd-field__label">فید تازه‌ها (۲۴ ساعت)</span>
-            <p class="hd-field__help">خروجی JSON از موجودیت‌هایی که در ۲۴ ساعت گذشته به‌روز شده‌اند.</p>
-            <?php $hodima_aeo_row( '/ai-feed.json', $base_url . '/ai-feed.json' ); ?>
-        </div>
-        <hr class="hd-divider">
-        <div class="hd-field">
-            <span class="hd-field__label">معرفی وب‌سرویس (OpenAPI)</span>
-            <p class="hd-field__help">استاندارد اتصال Custom GPTها به جستجوی سایت.</p>
-            <?php $hodima_aeo_row( '/openapi.json', $base_url . '/openapi.json' ); ?>
-        </div>
-    </section>
-
-    <section class="hd-card">
-        <header class="hd-card__head">
-            <?php echo hodima_admin_icon( 'dashicons-lock' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
-            <h2 class="hd-card__title">امنیت و مانیتورینگ</h2>
-        </header>
-        <div class="hd-field">
-            <span class="hd-field__label">تله امنیتی (Honeypot)</span>
-            <p class="hd-field__help">اسکرپرها با باز کردن این آدرس بلافاصله مسدود می‌شوند. <strong>خودتان باز نکنید.</strong></p>
-            <?php $hodima_aeo_row( '/ai-internal-data.md', null, '' ); ?>
-        </div>
-        <hr class="hd-divider">
-        <div class="hd-field">
-            <span class="hd-field__label">لاگ ربات‌ها (AI Analytics)</span>
-            <p class="hd-field__help">گزارش JSON رفتار و IP ربات‌های هوش مصنوعی (فقط مدیر).</p>
-            <?php $hodima_aeo_row( '/ai-analytics.json', $base_url . '/ai-analytics.json' ); ?>
-        </div>
-    </section>
-</div>
+</div></div>
 
 <?php hodima_view_footer(); ?>

@@ -4,6 +4,9 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+// کالبد ثابت صفحه‌های پیشخوان SEO (سربرگ ← آمار ← کنش اصلی ← محتوا)
+require_once HODIMA_SEO_DIR . '/inc/ui-skeleton.php';
+
 // ۰. تعریف مسیر ریشه افزونه (پوشه schema) برای فایل‌های بیرون از admin
 if ( ! defined( 'HODIMA_SCHEMA_PATH' ) ) {
     define( 'HODIMA_SCHEMA_PATH', dirname( __DIR__ ) );
@@ -54,6 +57,11 @@ function hodima_schema_assets($hook) {
         $css_ver = file_exists( $css_file ) ? filemtime( $css_file ) : false;
 
         wp_enqueue_style('hodima-init-css', $schema_uri . '/admin/assets/css/init.css', wp_style_is( 'hodima-admin-ui', 'registered' ) ? array( 'hodima-admin-ui' ) : array(), $css_ver);
+
+        // صفحه‌هایی که با کالبد ثابت (کیت UI همین افزونه) ساخته شده‌اند
+        if ( in_array( hodima_schema_current_admin_page(), array( 'hodima-sitemap', 'hodima-llms' ), true ) ) {
+            hodima_seo_ui_enqueue();
+        }
     }
 }
 
