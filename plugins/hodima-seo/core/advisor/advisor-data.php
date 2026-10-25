@@ -195,11 +195,15 @@ function hodima_seo_advisor_aggregate_queries( array $rows ): array {
 		if ( null === $path || '' === $term || mb_strlen( $term ) > HODIMA_SEO_ADVISOR_KEY_LENGTH ) {
 			continue;
 		}
+		// کلمه‌هایی که فقط در اعراب، کشیده، حروف بزرگ یا ی/ک عربی فرق دارند یکی می‌شوند؛ ستون term
+		// با مقایسه بدون حساسیت به این تفاوت‌ها کلید اصلی است و دو کلمه «متفاوت» آن را می‌شکستند
+		$key         = hodima_seo_advisor_normalize( $term );
+		$key         = '' !== $key ? $key : $term;
 		$impressions = (int) round( (float) ( $row['impressions'] ?? 0 ) );
-		$sums[ $path ][ $term ] ??= [ 'clicks' => 0, 'impressions' => 0, 'weighted' => 0.0 ];
-		$sums[ $path ][ $term ]['clicks']      += (int) round( (float) ( $row['clicks'] ?? 0 ) );
-		$sums[ $path ][ $term ]['impressions'] += $impressions;
-		$sums[ $path ][ $term ]['weighted']    += (float) ( $row['position'] ?? 0 ) * $impressions;
+		$sums[ $path ][ $key ] ??= [ 'term' => $term, 'clicks' => 0, 'impressions' => 0, 'weighted' => 0.0 ];
+		$sums[ $path ][ $key ]['clicks']      += (int) round( (float) ( $row['clicks'] ?? 0 ) );
+		$sums[ $path ][ $key ]['impressions'] += $impressions;
+		$sums[ $path ][ $key ]['weighted']    += (float) ( $row['position'] ?? 0 ) * $impressions;
 	}
 
 	$out = [];
@@ -207,8 +211,8 @@ function hodima_seo_advisor_aggregate_queries( array $rows ): array {
 	foreach ( $sums as $path => $terms ) {
 		$terms = array_filter( $terms, static fn( array $s ): bool => $s['impressions'] >= HODIMA_SEO_ADVISOR_MIN_QUERY_IMPRESSIONS );
 		uasort( $terms, static fn( array $a, array $b ): int => $b['impressions'] <=> $a['impressions'] );
-		foreach ( array_slice( $terms, 0, HODIMA_SEO_ADVISOR_QUERIES_PER_PAGE, true ) as $term => $s ) {
-			$out[ $path ][ (string) $term ] = [
+		foreach ( array_slice( $terms, 0, HODIMA_SEO_ADVISOR_QUERIES_PER_PAGE, true ) as $s ) {
+			$out[ $path ][ $s['term'] ] = [
 				'clicks'      => $s['clicks'],
 				'impressions' => $s['impressions'],
 				'position'    => round( $s['weighted'] / $s['impressions'], 2 ),
@@ -265,18 +269,86 @@ function hodima_seo_advisor_object_title( string $kind, int $id ): string {
 	return mb_substr( trim( html_entity_decode( wp_strip_all_tags( $title ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ), 0, HODIMA_SEO_ADVISOR_KEY_LENGTH );
 }
 
+/* ── تراکنش و قفل ── */
+
+/** کلید قفل دریافت داده و حداکثر عمر آن (ثانیه)؛ قفل مانده از اجرای نیمه‌کاره بعد از این مدت آزاد می‌شود. */
+const HODIMA_SEO_ADVISOR_LOCK_OPTION = 'hodima_advisor_lock';
+const HODIMA_SEO_ADVISOR_LOCK_TTL    = 600;
+
+/**
+ * قفل دریافت داده (کلیک دستی و کرون هم‌زمان نشوند). add_option اتمی است: دومی شکست می‌خورد.
+ */
+function hodima_seo_advisor_lock(): bool {
+
+	$now = time();
+
+	if ( add_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, $now, '', false ) ) {
+		return true;
+	}
+
+	if ( $now - (int) get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, 0 ) > HODIMA_SEO_ADVISOR_LOCK_TTL ) {
+		update_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, $now, false ); // اجرای قبلی وسط کار مرده
+		return true;
+	}
+
+	return false;
+}
+
+function hodima_seo_advisor_unlock(): void {
+	delete_option( HODIMA_SEO_ADVISOR_LOCK_OPTION );
+}
+
+/**
+ * کار را در یک تراکنش اجرا می‌کند: اگر WP_Error برگرداند یا استثنا بیندازد، همه تغییرها برمی‌گردند
+ * (داده قبلی سالم می‌ماند). تودرتو امن است: فقط بیرونی‌ترین فراخوانی COMMIT/ROLLBACK می‌زند و
+ * اگر درونی خطا بدهد، نتیجه خطا همان‌جا به بیرونی می‌رسد. روی موتور بدون تراکنش (MyISAM) کار
+ * همان‌طور اجرا می‌شود ولی برگشت‌پذیر نیست.
+ *
+ * @template T
+ * @param callable(): T $work
+ * @return T|WP_Error
+ */
+function hodima_seo_advisor_transaction( callable $work ): mixed {
+
+	global $wpdb;
+	static $depth = 0;
+
+	if ( $depth > 0 ) {
+		return $work();
+	}
+
+	++$depth;
+	$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+	try {
+		$result = $work();
+	} catch ( Throwable $e ) {
+		$result = new WP_Error( 'hodima_advisor_exception', 'خطای داخلی: ' . $e->getMessage() );
+	}
+
+	$end = is_wp_error( $result ) ? 'ROLLBACK' : 'COMMIT';
+	$wpdb->query( $end ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- فقط دو رشته ثابت
+	--$depth;
+
+	return $result;
+}
+
 /* ── ذخیره ── */
 
 /**
  * جایگزینی کامل داده: آدرس‌های بازه فعلی و قبلی (آدرسی که فقط قبلا نمایش داشته
  * هم می‌ماند، با عدد فعلی صفر، برای قاعده «افت») و کلمه‌ها.
  *
+ * همه‌چیز در یک تراکنش است و نتیجه هر دستور بررسی می‌شود: اگر چیزی ذخیره نشود، داده قبلی
+ * سر جایش می‌ماند و WP_Error برمی‌گردد (نه داده نصفه با پیام موفقیت). ردیف تکراری که
+ * مقایسه پایگاه داده آن را همان ردیف دیگر می‌بیند رد می‌شود (skipped) نه اینکه کل دسته بیفتد.
+ *
  * @param array<string, array{clicks: int, impressions: int, position: float}> $current
  * @param array<string, array{clicks: int, impressions: int, position: float}> $previous
  * @param array<string, array<string, array{clicks: int, impressions: int, position: float}>> $queries
- * @return array{pages: int, queries: int}
+ * @return array{pages: int, queries: int, skipped: int}|WP_Error
  */
-function hodima_seo_advisor_store( array $current, array $previous, array $queries ): array {
+function hodima_seo_advisor_store( array $current, array $previous, array $queries ): array|WP_Error {
 
 	global $wpdb;
 
@@ -309,30 +381,59 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 	$pages_table   = hodima_seo_advisor_table( 'pages' );
 	$queries_table = hodima_seo_advisor_table( 'queries' );
 
-	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $pages_table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $queries_table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_rows, $query_rows, $pages_table, $queries_table ): array|WP_Error {
 
-	foreach ( array_chunk( $page_rows, 200 ) as $chunk ) {
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها با array_fill هم‌اندازه ردیف‌هاست؛ PHPCS تعداد را ایستا نمی‌شمارد
-				'INSERT INTO %i (path, clicks, impressions, avg_position, prev_clicks, prev_impressions, prev_position, kind, object_id, title, potential, advice_count, advice) VALUES ' . implode( ',', array_fill( 0, count( $chunk ), '(%s,%d,%d,%f,%d,%d,%f,%s,%d,%s,%d,%d,%s)' ) ),
-				$pages_table,
-				...array_merge( ...$chunk )
-			)
-		);
-	}
+		$skipped = 0;
+		$fail    = static fn( string $what ): WP_Error => new WP_Error( 'hodima_advisor_store', sprintf( 'ذخیره %1$s در پایگاه داده ناموفق بود (%2$s)؛ داده قبلی دست‌نخورده ماند.', $what, $wpdb->last_error ) );
 
-	foreach ( array_chunk( $query_rows, 200 ) as $chunk ) {
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها با array_fill هم‌اندازه ردیف‌هاست؛ PHPCS تعداد را ایستا نمی‌شمارد
-				'INSERT INTO %i (path, term, clicks, impressions, avg_position) VALUES ' . implode( ',', array_fill( 0, count( $chunk ), '(%s,%s,%d,%d,%f)' ) ),
-				$queries_table,
-				...array_merge( ...$chunk )
-			)
-		);
-	}
+		foreach ( [ $pages_table, $queries_table ] as $table ) {
+			if ( false === $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $table ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				return $fail( 'داده' );
+			}
+		}
 
-	return [ 'pages' => count( $page_rows ), 'queries' => count( $query_rows ) ];
+		$insert = [
+			[ $pages_table, 'path, clicks, impressions, avg_position, prev_clicks, prev_impressions, prev_position, kind, object_id, title, potential, advice_count, advice', '(%s,%d,%d,%f,%d,%d,%f,%s,%d,%s,%d,%d,%s)', $page_rows, 'آدرس‌ها' ],
+			[ $queries_table, 'path, term, clicks, impressions, avg_position', '(%s,%s,%d,%d,%f)', $query_rows, 'کلمه‌ها' ],
+		];
+
+		foreach ( $insert as [ $table, $columns, $row_format, $rows, $what ] ) {
+			foreach ( array_chunk( $rows, 200 ) as $chunk ) {
+				if ( false !== hodima_seo_advisor_insert( $table, $columns, $row_format, $chunk ) ) {
+					continue;
+				}
+				// دسته افتاد (معمولا یک ردیف تکراری): تک‌تک؛ ردیف مشکل‌دار رد می‌شود نه همه
+				foreach ( $chunk as $one ) {
+					if ( false === hodima_seo_advisor_insert( $table, $columns, $row_format, [ $one ] ) ) {
+						++$skipped;
+					}
+				}
+			}
+			if ( $skipped > max( 5, (int) ( count( $rows ) * 0.05 ) ) ) {
+				return $fail( $what );
+			}
+		}
+
+		return [ 'pages' => count( $page_rows ), 'queries' => count( $query_rows ) - $skipped, 'skipped' => $skipped ];
+	} );
+}
+
+/**
+ * درج چند ردیف هم‌قالب در یک دستور؛ false اگر پایگاه داده خطا داد.
+ *
+ * @param list<list<scalar>> $rows
+ */
+function hodima_seo_advisor_insert( string $table, string $columns, string $row_format, array $rows ): int|bool {
+
+	global $wpdb;
+
+	return $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها با array_fill هم‌اندازه ردیف‌هاست و ستون‌ها/قالب از فراخواننده‌های همین فایل‌اند، نه ورودی کاربر
+			'INSERT INTO %i (' . $columns . ') VALUES ' . implode( ',', array_fill( 0, count( $rows ), $row_format ) ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- ستون‌ها و قالب ردیف از فراخواننده‌های همین فایل‌اند، نه ورودی کاربر
+			$table,
+			...array_merge( ...$rows )
+		)
+	);
 }
 
 /* ── خواندن ── */

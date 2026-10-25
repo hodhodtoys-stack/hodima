@@ -487,6 +487,45 @@ foreach ( [ ...$ids, $t_id ] as $pid ) {
 }
 wp_delete_term( $cat_id, 'category' );
 
+echo "=== مرحله ۱: ذخیره امن (تراکنش، کلمه تکراری، قفل)\n";
+// کلمه‌هایی که فقط در ی/ک عربی، حروف بزرگ و اعراب فرق دارند یکی می‌شوند (کلید اصلی جدول آن‌ها را یکی می‌دید)
+$dedup = hodima_seo_advisor_aggregate_queries( [
+	[ 'keys' => [ 'https://hodima.test/safe/', 'کلیپس پلومريا' ], 'clicks' => 3, 'impressions' => 100, 'position' => 4.0 ],
+	[ 'keys' => [ 'https://hodima.test/safe/', 'کلیپس پلومریا' ], 'clicks' => 1, 'impressions' => 100, 'position' => 6.0 ],
+	[ 'keys' => [ 'https://hodima.test/safe/', 'Clips' ], 'clicks' => 0, 'impressions' => 50, 'position' => 2.0 ],
+	[ 'keys' => [ 'https://hodima.test/safe/', 'clips' ], 'clicks' => 0, 'impressions' => 50, 'position' => 4.0 ],
+] );
+hodima_ad( 'کلمه‌های هم‌ارز یکی می‌شوند (جمع نمایش، رتبه با وزن)', [ count( $dedup['/safe/'] ), array_sum( array_column( $dedup['/safe/'], 'impressions' ) ), array_values( $dedup['/safe/'] )[0]['position'] ], [ 2, 300, 5.0 ] );
+
+$stored = hodima_seo_advisor_store( [ '/safe/a/' => [ 'clicks' => 5, 'impressions' => 900, 'position' => 3.0 ] ], [], [ '/safe/a/' => [ 'اول' => [ 'clicks' => 1, 'impressions' => 50, 'position' => 3.0 ] ] ] );
+hodima_ad( 'ذخیره موفق: شمارش و بدون ردیف رد‌شده', is_array( $stored ) ? [ $stored['pages'], $stored['queries'], $stored['skipped'] ] : 'error', [ 1, 1, 0 ] );
+
+$rolled = hodima_seo_advisor_transaction( static function (): WP_Error {
+	hodima_seo_advisor_store( [ '/safe/new/' => [ 'clicks' => 1, 'impressions' => 10, 'position' => 1.0 ] ], [], [] );
+	return new WP_Error( 'x', 'شکست عمدی' );
+} );
+hodima_ad( 'خطا وسط کار ← تراکنش برمی‌گردد و داده قبلی سالم می‌ماند', [ is_wp_error( $rolled ), hodima_seo_advisor_pages()['total'], null !== hodima_seo_advisor_page( '/safe/a/' ), null === hodima_seo_advisor_page( '/safe/new/' ), count( hodima_seo_advisor_queries( '/safe/a/' ) ) ], [ true, 1, true, true, 1 ] );
+
+$thrown = hodima_seo_advisor_transaction( static function (): never {
+	hodima_seo_advisor_store( [], [], [] );
+	throw new RuntimeException( 'boom' );
+} );
+hodima_ad( 'استثنا وسط کار ← WP_Error و داده قبلی سالم', [ is_wp_error( $thrown ), hodima_seo_advisor_pages()['total'] ], [ true, 1 ] );
+
+$nested = hodima_seo_advisor_transaction( static fn(): string => hodima_seo_advisor_transaction( static fn(): string => 'inner' ) . '+outer' );
+hodima_ad( 'تراکنش تودرتو کار می‌کند', $nested, 'inner+outer' );
+
+delete_option( HODIMA_SEO_ADVISOR_LOCK_OPTION );
+$l1 = hodima_seo_advisor_lock();
+$l2 = hodima_seo_advisor_lock();
+$busy = hodima_seo_advisor_refresh();
+hodima_ad( 'قفل: اولی می‌گیرد، دومی نه، دریافت داده «در حال انجام» می‌گوید', [ $l1, $l2, is_wp_error( $busy ) ? $busy->get_error_code() : 'ok' ], [ true, false, 'hodima_advisor_busy' ] );
+hodima_seo_advisor_unlock();
+hodima_ad( 'بعد از آزاد کردن دوباره قابل‌گرفتن است', hodima_seo_advisor_lock(), true );
+update_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, time() - HODIMA_SEO_ADVISOR_LOCK_TTL - 5, false );
+hodima_ad( 'قفل مانده از اجرای مرده بعد از مهلت آزاد می‌شود', hodima_seo_advisor_lock(), true );
+hodima_seo_advisor_unlock();
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );

@@ -368,27 +368,39 @@ function hodima_seo_advisor_analyze( string $path ): ?array {
 }
 
 /**
- * تحلیل یک آدرس و ذخیره نتیجه در ردیف جدول (آدرس نادیده‌گرفته‌شده: بدون پیشنهاد).
- * true = پیشنهاد دارد.
+ * تحلیل یک آدرس ← ستون‌های ردیف جدول (آدرس نادیده‌گرفته‌شده: بدون پیشنهاد). فقط می‌سازد، نمی‌نویسد.
+ *
+ * @return array{potential: int, advice_count: int, advice: string}
+ */
+function hodima_seo_advisor_advice_fields( string $path ): array {
+
+	$result = in_array( $path, hodima_seo_advisor_ignored(), true ) ? null : hodima_seo_advisor_analyze( $path );
+
+	if ( null === $result || [] === $result['suggestions'] ) {
+		return [ 'potential' => 0, 'advice_count' => 0, 'advice' => '' ];
+	}
+
+	return [ 'potential' => $result['potential'], 'advice_count' => count( $result['suggestions'] ), 'advice' => (string) wp_json_encode( $result['suggestions'], JSON_UNESCAPED_UNICODE ) ];
+}
+
+/**
+ * تحلیل یک آدرس و ذخیره نتیجه در ردیف جدول. true = پیشنهاد دارد.
  */
 function hodima_seo_advisor_save_advice( string $path ): bool {
 
 	global $wpdb;
 
-	$result = in_array( $path, hodima_seo_advisor_ignored(), true ) ? null : hodima_seo_advisor_analyze( $path );
-	$found  = null !== $result && [] !== $result['suggestions'];
+	$fields = hodima_seo_advisor_advice_fields( $path );
 
 	$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		hodima_seo_advisor_table( 'pages' ),
-		$found
-			? [ 'potential' => $result['potential'], 'advice_count' => count( $result['suggestions'] ), 'advice' => (string) wp_json_encode( $result['suggestions'], JSON_UNESCAPED_UNICODE ) ]
-			: [ 'potential' => 0, 'advice_count' => 0, 'advice' => '' ],
+		$fields,
 		[ 'path' => $path ],
 		[ '%d', '%d', '%s' ],
 		[ '%s' ]
 	);
 
-	return $found;
+	return $fields['advice_count'] > 0;
 }
 
 /**
@@ -409,27 +421,44 @@ function hodima_seo_advisor_set_ignored( string $path, bool $ignore ): void {
 /**
  * تحلیل همه آدرس‌های قابل‌بررسی و ذخیره نتیجه در جدول؛ بعد از هر دریافت داده.
  * قابل‌بررسی: نمایش ≥ حداقل، یا کلیک بازه قبل ≥ حداقل افت. تعداد آدرس دارای پیشنهاد را برمی‌گرداند.
+ *
+ * اول نتیجه همه آدرس‌ها در حافظه ساخته می‌شود، بعد یک‌جا (در تراکنش) جایگزین پیشنهادهای قبلی؛
+ * اگر وسط ساخت خطایی شود یا نوشتن نگیرد، پیشنهادهای قبلی می‌مانند و فهرست خالی نمی‌شود.
+ *
+ * @return int|WP_Error
  */
-function hodima_seo_advisor_analyze_all(): int {
+function hodima_seo_advisor_analyze_all(): int|WP_Error {
 
 	global $wpdb;
 
 	$cfg   = hodima_seo_advisor_config();
 	$table = hodima_seo_advisor_table( 'pages' );
 
-	$wpdb->query( $wpdb->prepare( 'UPDATE %i SET potential = 0, advice_count = 0, advice = %s', $table, '' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-
 	$paths = (array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare( 'SELECT path FROM %i WHERE impressions >= %d OR prev_clicks >= %d ORDER BY impressions DESC LIMIT %d', $table, $cfg['min_impressions'], $cfg['decline_min_clicks'], HODIMA_SEO_ADVISOR_ANALYZE_LIMIT )
 	);
 
-	$advised = 0;
+	$advice = [];
 
 	foreach ( $paths as $path ) {
-		if ( hodima_seo_advisor_save_advice( (string) $path ) ) {
-			++$advised;
+		$fields = hodima_seo_advisor_advice_fields( (string) $path );
+		if ( $fields['advice_count'] > 0 ) {
+			$advice[ (string) $path ] = $fields;
 		}
 	}
 
-	return $advised;
+	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $table, $advice ): int|WP_Error {
+
+		if ( false === $wpdb->query( $wpdb->prepare( 'UPDATE %i SET potential = 0, advice_count = 0, advice = %s', $table, '' ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			return new WP_Error( 'hodima_advisor_store', 'ذخیره پیشنهادها ناموفق بود؛ پیشنهادهای قبلی دست‌نخورده ماند.' );
+		}
+
+		foreach ( $advice as $path => $fields ) {
+			if ( false === $wpdb->update( $table, $fields, [ 'path' => $path ], [ '%d', '%d', '%s' ], [ '%s' ] ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				return new WP_Error( 'hodima_advisor_store', 'ذخیره پیشنهادها ناموفق بود؛ پیشنهادهای قبلی دست‌نخورده ماند.' );
+			}
+		}
+
+		return count( $advice );
+	} );
 }

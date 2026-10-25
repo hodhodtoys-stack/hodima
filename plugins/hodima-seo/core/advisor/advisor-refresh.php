@@ -55,6 +55,29 @@ function hodima_seo_advisor_store_error( string $message ): void {
  */
 function hodima_seo_advisor_refresh(): bool|WP_Error {
 
+	// کلیک دستی و کرون هم‌زمان نشوند (دو دریافت داده روی هم، جدول را قاطی می‌کنند)
+	if ( ! hodima_seo_advisor_lock() ) {
+		return new WP_Error( 'hodima_advisor_busy', 'دریافت داده هم‌اکنون در حال انجام است؛ چند دقیقه بعد دوباره امتحان کنید.' );
+	}
+
+	try {
+		return hodima_seo_advisor_run_refresh();
+	} finally {
+		hodima_seo_advisor_unlock();
+	}
+}
+
+/**
+ * بدنه دریافت داده (بعد از گرفتن قفل).
+ *
+ * @return true|WP_Error
+ */
+function hodima_seo_advisor_run_refresh(): bool|WP_Error {
+
+	if ( function_exists( 'set_time_limit' ) ) {
+		set_time_limit( 180 ); // کرون هم مثل دکمه دستی: سه درخواست بزرگ و تحلیل همه آدرس‌ها
+	}
+
 	$token = hodima_seo_sc_token();
 
 	if ( is_wp_error( $token ) ) {
@@ -96,13 +119,31 @@ function hodima_seo_advisor_refresh(): bool|WP_Error {
 			}
 		}
 
-		$stored = hodima_seo_advisor_store(
-			hodima_seo_advisor_aggregate_pages( $current['rows'] ),
-			hodima_seo_advisor_aggregate_pages( $previous['rows'] ),
-			hodima_seo_advisor_aggregate_queries( $queries['rows'] )
-		);
+		// ذخیره داده و ساخت پیشنهادها یک تراکنش‌اند: یا هر دو، یا هیچ‌کدام (داده قبلی می‌ماند)
+		$saved = hodima_seo_advisor_transaction( static function () use ( $current, $previous, $queries ): array|WP_Error {
 
-		$advised = hodima_seo_advisor_analyze_all(); // پیشنهادها یک‌جا ساخته می‌شوند تا فهرست پیشخوان با SQL فیلتر و مرتب شود
+			$stored = hodima_seo_advisor_store(
+				hodima_seo_advisor_aggregate_pages( $current['rows'] ),
+				hodima_seo_advisor_aggregate_pages( $previous['rows'] ),
+				hodima_seo_advisor_aggregate_queries( $queries['rows'] )
+			);
+
+			if ( is_wp_error( $stored ) ) {
+				return $stored;
+			}
+
+			$advised = hodima_seo_advisor_analyze_all(); // پیشنهادها یک‌جا ساخته می‌شوند تا فهرست پیشخوان با SQL فیلتر و مرتب شود
+
+			return is_wp_error( $advised ) ? $advised : $stored + [ 'advised' => $advised ];
+		} );
+
+		if ( is_wp_error( $saved ) ) {
+			hodima_seo_advisor_store_error( $saved->get_error_message() );
+			return $saved;
+		}
+
+		$stored  = $saved;
+		$advised = $saved['advised'];
 
 		update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [
 			'advised'    => $advised,
