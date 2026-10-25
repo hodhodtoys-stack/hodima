@@ -141,6 +141,10 @@ add_filter(
 				return $json( 200, [ 'rows' => $query_rows ] );
 			}
 			$is_prev = $body['startDate'] === $range['prev_start'];
+			if ( 'paged' === $mode && ! $is_prev ) {
+				$first = 0 === ( $body['startRow'] ?? 0 );
+				return $json( 200, [ 'rows' => $first ? array_map( fn( int $n ): array => [ 'keys' => [ 'https://' . $host . "/bulk/{$n}/" ], 'clicks' => 0, 'impressions' => 1, 'position' => 9.0 ], range( 1, 25000 ) ) : [ [ 'keys' => [ 'https://' . $host . '/tail-a/' ], 'clicks' => 0, 'impressions' => 2, 'position' => 9.0 ], [ 'keys' => [ 'https://' . $host . '/tail-b/' ], 'clicks' => 0, 'impressions' => 3, 'position' => 9.0 ] ] ] );
+			}
 			if ( $is_prev && 'prev_fails' === $mode ) {
 				return $json( 500, [ 'error' => [ 'message' => 'backend error' ] ] );
 			}
@@ -203,6 +207,23 @@ $mode = 'ok';
 delete_option( 'hodima_discover_sc_key' );
 $res = hodima_seo_advisor_refresh();
 hodima_ad( 'بدون کلید ← خطای کلید، داده دست‌نخورده', [ is_wp_error( $res ) ? $res->get_error_code() : '', hodima_seo_advisor_page( '/accessory/hair-clips/' )['clicks'] ], [ 'hodima_sc_no_key', 12 ] );
+
+echo "=== مرحله ۶: صفحه‌بندی دریافت، CSV بزرگ، آدرس با/بی‌اسلش، کش لینک‌دهنده\n";
+if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-steps-view.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
+}
+update_option( 'hodima_discover_sc_key', $key_json, false );
+$calls = [];
+$mode  = 'paged';
+$res   = hodima_seo_advisor_refresh();
+$mode  = 'normal';
+$page_calls = array_values( array_filter( $calls, static fn( array $b ): bool => [ 'page' ] === $b['dimensions'] && $b['startDate'] === $range['start'] ) );
+hodima_ad( 'دریافت صفحه‌بندی‌شده: صفحه دوم با startRow ۲۵۰۰۰ خواسته شد و ردیف‌های آن ذخیره شد', [ $res, count( $page_calls ), $page_calls[1]['startRow'] ?? null, hodima_seo_advisor_page( '/tail-b/' )['impressions'] ?? null, hodima_seo_advisor_pages()['total'] ], [ true, 2, 25000, 3, 25004 ] );
+hodima_ad( 'خروجی CSV بیش از ۵۰۰ ردیف: تا ۵۰۰۰ (+ سربرگ)', count( hodima_seo_advisor_csv_rows( [] ) ), HODIMA_SEO_ADVISOR_CSV_MAX + 1 );
+hodima_ad( 'آدرس با و بی‌اسلش پایانی یکی است؛ آدرس فایل دست‌نخورده', [ hodima_seo_advisor_path_key( $u( '/hair' ) ), hodima_seo_advisor_path_key( $u( '/hair/' ) ), hodima_seo_advisor_path_key( $u( '/files/a.pdf' ) ) ], [ '/hair/', '/hair/', '/files/a.pdf' ] );
+hodima_ad( 'آدرس کامل از مسیر ذخیره‌شده (دامنه + مسیر، بدون دوبار گذاشتن پیشوند زیرپوشه)', [ hodima_seo_advisor_url( '/a/b/' ), hodima_seo_advisor_path_key( hodima_seo_advisor_url( '/a/b' ) ) ], [ ( (string) wp_parse_url( home_url( '/' ), PHP_URL_SCHEME ) ) . '://' . ( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ) . ( wp_parse_url( home_url( '/' ), PHP_URL_PORT ) ? ':' . wp_parse_url( home_url( '/' ), PHP_URL_PORT ) : '' ) . '/a/b/', '/a/b/' ] );
+hodima_seo_advisor_store( [], [], [] );
 
 echo "=== قاعده‌ها: نرخ کلیک معمول و متن\n";
 hodima_ad( 'نرخ معمول هر رتبه', array_map( 'hodima_seo_advisor_expected_ctr', [ 1.5, 2.0, 2.01, 3.0, 5.0, 5.81, 7.0, 10.0, 10.01 ] ), [ 25.0, 25.0, 14.0, 14.0, 9.0, 5.5, 5.5, 3.5, 1.5 ] );
@@ -491,6 +512,14 @@ if ( hodima_router_active() ) {
 	$src2   = hodima_seo_advisor_link_sources( 'کلیپس پلومریا', $target );
 	$titles = array_column( $src2['items'], 'title' );
 	hodima_ad( 'لینک‌دهنده: ی/ک عربی و توضیح کوتاه پیدا می‌شوند؛ href با حروف بزرگ یعنی قبلا لینک دارد', [ in_array( 'منبع عربی پلومریا', $titles, true ), in_array( 'منبع خلاصه', $titles, true ), in_array( 'منبع لینک بزرگ', $titles, true ) ], [ true, true, false ] );
+
+	$c1 = hodima_seo_advisor_link_sources_cached( 'کلیپس پلومریا', $target );
+	$c2 = hodima_seo_advisor_link_sources_cached( 'کلیپس پلومریا', $target );
+	$f0 = hodima_seo_advisor_link_sources( 'کلیپس پلومریا', $target );
+	$new_id = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'منبع تازه کش', 'post_name' => 'steps-src-cache', 'post_content' => '<p>کلیپس پلومریا</p>' ] );
+	$ids[]  = $new_id;
+	$c3     = hodima_seo_advisor_link_sources_cached( 'کلیپس پلومریا', $target );
+	hodima_ad( 'کش لینک‌دهنده: همان نتیجه بدون کش؛ با نوشته تازه خودکار نو می‌شود', [ $c1 === $f0, $c1 === $c2, in_array( 'منبع تازه کش', array_column( $c3['items'], 'title' ), true ) ], [ true, true, true ] );
 
 	$analysis = hodima_seo_advisor_analyze( '/steps-target/' );
 	$by_rule  = [];

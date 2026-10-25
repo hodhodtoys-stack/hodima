@@ -18,6 +18,9 @@ defined( 'ABSPATH' ) || exit;
 const HODIMA_SEO_ADVISOR_PAGE     = 'hodima-advisor';
 const HODIMA_SEO_ADVISOR_PER_PAGE = 15;
 
+/** حداکثر ردیف خروجی CSV (در دسته‌های ۵۰۰ تایی خوانده می‌شود). */
+const HODIMA_SEO_ADVISOR_CSV_MAX = 5000;
+
 require_once HODIMA_SEO_DIR . '/inc/ui-skeleton.php'; // کالبد کیت SEO؛ صفحه بدون ماژول‌های اسکیما/آدرس تمیز هم کامل است
 
 add_action( 'admin_menu', 'hodima_seo_advisor_admin_menu', 30 );
@@ -206,7 +209,16 @@ function hodima_seo_advisor_csv_rows( array $args ): array {
 
 	$rows = [ [ 'عنوان', 'آدرس', 'نوع', 'نمایش', 'کلیک', 'نرخ کلیک (٪)', 'رتبه', 'کلیک بالقوه', 'مهم‌ترین پیشنهاد', 'تعداد پیشنهاد' ] ];
 
-	foreach ( hodima_seo_advisor_pages( [ 'limit' => 500 ] + $args )['rows'] as $row ) {
+	$pages = [];
+	for ( $offset = 0; $offset < HODIMA_SEO_ADVISOR_CSV_MAX; $offset += 500 ) {
+		$part = hodima_seo_advisor_pages( [ 'limit' => 500, 'offset' => $offset ] + $args )['rows'];
+		array_push( $pages, ...$part );
+		if ( count( $part ) < 500 ) {
+			break;
+		}
+	}
+
+	foreach ( $pages as $row ) {
 		$rows[] = [
 			hodima_seo_advisor_csv_cell( hodima_seo_advisor_row_title( $row ) ),
 			hodima_seo_advisor_csv_cell( $row['path'] ),
@@ -512,7 +524,7 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 				<?php if ( ! $ignored_view && '' !== $edit ) : ?>
 					<a class="hds-btn" href="<?php echo esc_url( $edit ); ?>">ویرایش و رفع ایرادها</a>
 				<?php elseif ( ! $ignored_view ) : ?>
-					<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( home_url( (string) $row['path'] ) ); ?>" target="_blank" rel="noopener">دیدن در سایت</a>
+					<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( hodima_seo_advisor_url( (string) $row['path'] ) ); ?>" target="_blank" rel="noopener">دیدن در سایت</a>
 				<?php endif; ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="hodima_advisor_ignore">

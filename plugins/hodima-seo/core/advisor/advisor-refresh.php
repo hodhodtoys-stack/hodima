@@ -6,7 +6,7 @@
  * سه درخواست برای یک property (جستجوی وب، نه دیسکاور):
  *   ۱ همه آدرس‌ها، بازه فعلی        ۲ همه آدرس‌ها، بازه قبلی هم‌اندازه (مقایسه)
  *   ۳ آدرس + کلمه، بازه فعلی
- * هر کدام تا ۲۵ هزار ردیف (سقف سرچ کنسول؛ سایت‌های بزرگ‌تر فقط پرنمایش‌ترین‌ها).
+ * هر کدام با صفحه‌بندی تا ۴ × ۲۵ هزار ردیف (hodima_seo_advisor_fetch).
  * اگر درخواست ۲ یا ۳ شکست بخورد هیچ چیز ذخیره نمی‌شود و داده قبلی می‌ماند، تا
  * دو بازه هرگز نصفه‌کاره قاطی نشوند.
  *
@@ -38,6 +38,35 @@ function hodima_seo_advisor_ranges( int $days ): array {
 		'prev_start' => $day( 2 * $days - 1 ),
 		'prev_end'   => $day( $days ),
 	];
+}
+
+/** حداکثر صفحه‌های درخواست برای یک گزارش (هر صفحه ۲۵ هزار ردیف، سقف سرچ کنسول). */
+const HODIMA_SEO_ADVISOR_FETCH_PAGES = 4;
+
+/**
+ * همه ردیف‌های یک گزارش با صفحه‌بندی (startRow)؛ سرچ کنسول بر اساس کلیک مرتب می‌دهد، پس بدون صفحه‌بندی
+ * آدرس‌های «نمایش زیاد، کلیک صفر» (همان فرصت‌ها) آخر فهرست می‌افتادند و بریده می‌شدند. هر صفحه شکست
+ * بخورد کل گزارش خطا می‌دهد (داده نصفه ذخیره نمی‌شود).
+ *
+ * @param list<string> $dimensions
+ * @return array{rows: list<array<string, mixed>>}|WP_Error
+ */
+function hodima_seo_advisor_fetch( string $property, string $start, string $end, array $dimensions ): array|WP_Error {
+
+	$rows = [];
+
+	for ( $page = 0; $page < HODIMA_SEO_ADVISOR_FETCH_PAGES; $page++ ) {
+		$part = hodima_seo_sc_request( $property, $start, $end, $dimensions, 25000, 'web', $page * 25000 );
+		if ( is_wp_error( $part ) ) {
+			return $part;
+		}
+		array_push( $rows, ...$part['rows'] );
+		if ( count( $part['rows'] ) < 25000 ) {
+			break;
+		}
+	}
+
+	return [ 'rows' => $rows ];
 }
 
 /** ثبت خطا بدون پاک کردن آخرین داده موفق. */
@@ -97,7 +126,7 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 
 	foreach ( hodima_seo_sc_candidates() as $property ) {
 
-		$current = hodima_seo_sc_request( $property, $range['start'], $range['end'], [ 'page' ], 25000 );
+		$current = hodima_seo_advisor_fetch( $property, $range['start'], $range['end'], [ 'page' ] );
 
 		if ( is_wp_error( $current ) ) {
 			if ( hodima_seo_sc_is_key_error( $current ) ) {
@@ -108,8 +137,8 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 			continue;
 		}
 
-		$previous = hodima_seo_sc_request( $property, $range['prev_start'], $range['prev_end'], [ 'page' ], 25000 );
-		$queries  = is_wp_error( $previous ) ? $previous : hodima_seo_sc_request( $property, $range['start'], $range['end'], [ 'page', 'query' ], 25000 );
+		$previous = hodima_seo_advisor_fetch( $property, $range['prev_start'], $range['prev_end'], [ 'page' ] );
+		$queries  = is_wp_error( $previous ) ? $previous : hodima_seo_advisor_fetch( $property, $range['start'], $range['end'], [ 'page', 'query' ] );
 
 		foreach ( [ $previous, $queries ] as $part ) {
 			if ( is_wp_error( $part ) ) {

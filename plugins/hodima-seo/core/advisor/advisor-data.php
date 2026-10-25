@@ -121,6 +121,18 @@ add_action( 'admin_init', 'hodima_seo_advisor_ensure_tables' );
 /* ── یکسان‌سازی ── */
 
 /**
+ * مسیر ذخیره‌شده ← آدرس کامل سایت. مسیرها همان مسیر آدرس واقعی‌اند (اگر وردپرس در زیرپوشه نصب باشد،
+ * با پیشوند آن زیرپوشه)، پس باید به دامنه چسبانده شوند نه به home_url() که خودش پیشوند دارد.
+ */
+function hodima_seo_advisor_url( string $path ): string {
+
+	$home   = (array) wp_parse_url( home_url( '/' ) );
+	$origin = ( $home['scheme'] ?? 'https' ) . '://' . ( $home['host'] ?? '' ) . ( isset( $home['port'] ) ? ':' . $home['port'] : '' );
+
+	return $origin . '/' . ltrim( $path, '/' );
+}
+
+/**
  * آدرس صفحه (از سرچ کنسول) ← مسیر یکسان‌شده، یا null (دامنه دیگر، بلندتر از ستون).
  *
  *   https://www.example.com/Hair/#toc-1 ← /hair/
@@ -142,6 +154,11 @@ function hodima_seo_advisor_path_key( string $url ): ?string {
 	}
 
 	$path = '/' . ltrim( strtolower( rawurldecode( (string) ( $parts['path'] ?? '/' ) ) ), '/' );
+
+	// /hair و /hair/ یکی‌اند (وردپرس به شکل با اسلش ریدایرکت می‌کند)؛ آدرس فایل مثل /a.pdf دست‌نخورده می‌ماند
+	if ( ! str_ends_with( $path, '/' ) && ! str_contains( (string) basename( $path ), '.' ) ) {
+		$path .= '/';
+	}
 
 	return mb_strlen( $path ) > HODIMA_SEO_ADVISOR_KEY_LENGTH ? null : $path;
 }
@@ -237,7 +254,7 @@ function hodima_seo_advisor_classify( string $path ): array {
 	}
 
 	if ( function_exists( 'hodima_router_resolve_url' ) ) {
-		$match = hodima_router_resolve_url( home_url( $path ), true );
+		$match = hodima_router_resolve_url( hodima_seo_advisor_url( $path ), true );
 		if ( null !== $match ) {
 			return [ 'kind' => (string) $match['type'], 'id' => (int) $match['id'] ];
 		}
@@ -537,7 +554,7 @@ function hodima_seo_advisor_page( string $path_or_url ): ?array {
 
 	global $wpdb;
 
-	$path = str_contains( $path_or_url, '://' ) ? hodima_seo_advisor_path_key( $path_or_url ) : hodima_seo_advisor_path_key( home_url( '/' . ltrim( $path_or_url, '/' ) ) );
+	$path = str_contains( $path_or_url, '://' ) ? hodima_seo_advisor_path_key( $path_or_url ) : hodima_seo_advisor_path_key( hodima_seo_advisor_url( $path_or_url ) );
 
 	if ( null === $path ) {
 		return null;

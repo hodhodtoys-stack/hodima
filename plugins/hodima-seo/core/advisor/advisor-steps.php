@@ -253,6 +253,29 @@ function hodima_seo_advisor_link_sources( string $term, array $row, int $limit =
 }
 
 /**
+ * hodima_seo_advisor_link_sources با کش کوتاه: باز کردن کادر ویرایش (و ساخت پیشنهاد همه آدرس‌ها) هر بار چند
+ * جستجوی LIKE روی متن همه نوشته‌ها می‌زد. کلید شامل «آخرین تغییر نوشته‌ها و دسته‌ها» و زمان آخرین دریافت داده
+ * است؛ با هر ویرایش یا دریافت تازه خودکار نو می‌شود.
+ *
+ * @param array<string, mixed> $row
+ * @return array{items: list<array{id: int, kind: string, title: string, impressions: int}>, more: int}
+ */
+function hodima_seo_advisor_link_sources_cached( string $term, array $row ): array {
+
+	$key    = 'hodima_adv_ls_' . md5( implode( '|', [ $term, (string) $row['path'], wp_cache_get_last_changed( 'posts' ), wp_cache_get_last_changed( 'terms' ), (string) hodima_seo_advisor_status()['fetched'] ] ) );
+	$cached = get_transient( $key );
+
+	if ( is_array( $cached ) && isset( $cached['items'], $cached['more'] ) ) {
+		return $cached;
+	}
+
+	$fresh = hodima_seo_advisor_link_sources( $term, $row );
+	set_transient( $key, $fresh, 10 * MINUTE_IN_SECONDS );
+
+	return $fresh;
+}
+
+/**
  * نوع‌های نوشته‌ای که متن‌شان برای لینک‌دهی جستجو می‌شود (همان نوع‌های سئوباکس).
  *
  * @return list<string>
@@ -350,10 +373,10 @@ function hodima_seo_advisor_enrich( array $suggestions, array $row, array $queri
 				if ( null !== $fields ) {
 					$steps[] = hodima_seo_advisor_step_headings( $fields['headings'], $term, $queries );
 				}
-				$steps[] = [ 'type' => 'links' ] + hodima_seo_advisor_link_sources( $term, $row ) + [ 'term' => $term ];
+				$steps[] = [ 'type' => 'links' ] + hodima_seo_advisor_link_sources_cached( $term, $row ) + [ 'term' => $term ];
 				break;
 			case 'near_first':
-				$steps[] = [ 'type' => 'links' ] + hodima_seo_advisor_link_sources( $term, $row ) + [ 'term' => $term ];
+				$steps[] = [ 'type' => 'links' ] + hodima_seo_advisor_link_sources_cached( $term, $row ) + [ 'term' => $term ];
 				break;
 			case 'cannibal':
 				$steps[] = hodima_seo_advisor_step_canonical( $term, hodima_seo_advisor_term_pages( $term ), (string) $row['path'] );
