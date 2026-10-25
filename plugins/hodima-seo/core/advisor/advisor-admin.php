@@ -165,8 +165,9 @@ function hodima_seo_advisor_handle_ignore(): void {
 
 	check_admin_referer( 'hodima_advisor_ignore' );
 
-	$path    = isset( $_POST['path'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['path'] ) ) : '';
-	$restore = ! empty( $_POST['restore'] );
+	// فرم فهرست POST می‌فرستد؛ لینک «بازگرداندن» کادر ویرایش (که داخل فرم خود وردپرس است و فرم تودرتو نمی‌شود) GET با nonce
+	$path    = isset( $_REQUEST['path'] ) ? sanitize_text_field( wp_unslash( (string) $_REQUEST['path'] ) ) : '';
+	$restore = ! empty( $_REQUEST['restore'] );
 
 	if ( null !== hodima_seo_advisor_page( $path ) ) {
 		hodima_seo_advisor_set_ignored( $path, ! $restore );

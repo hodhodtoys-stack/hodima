@@ -11,7 +11,8 @@
  *   ۳ داده: جدول‌ها و دریافت روزانه (advisor-data.php، advisor-refresh.php) ← انجام شد
  *   ۴ موتور قاعده‌ها (advisor-rules.php) ← انجام شد
  *   ۵ صفحه پیشخوان (advisor-admin.php، advisor-admin.css) ← انجام شد
- *   ۶ کادر ویرایش، ۷ هشدار ← بعدا
+ *   ۶ کادر داخل ویرایش (advisor-box.php، advisor-box.css) ← انجام شد
+ *   ۷ هشدار ← بعدا
  *
  * این ماژول به ماژول «گوگل دیسکاور» وابسته نیست؛ اتصال از inc/search-console.php
  * می‌آید و کلید همان «کلید جدای دیسکاور» یا سرویس اکانت Google Indexing است.
@@ -28,4 +29,5 @@ require_once __DIR__ . '/advisor-refresh.php';
 
 if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-admin.php';
+	require_once __DIR__ . '/advisor-box.php';
 }

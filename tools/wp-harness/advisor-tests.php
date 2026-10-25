@@ -328,6 +328,72 @@ $html = (string) ob_get_clean();
 hodima_ad( 'بدون کلید: راهنمای اتصال، دکمه غیرفعال، بدون جدول', [ str_contains( $html, 'کلید حساب سرویس گوگل ثبت نشده است' ), str_contains( $html, 'hodima-advisor__refresh" disabled' ) || str_contains( $html, "hodima-advisor__refresh\"  disabled='disabled'" ) || str_contains( $html, 'disabled' ), str_contains( $html, 'hodima-advisor__item' ) ], [ true, true, false ] );
 wp_set_current_user( 0 );
 
+echo "=== کادر داخل ویرایش صفحه\n";
+if ( ! function_exists( 'hodima_seo_advisor_render_box' ) ) {
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-box.php';
+}
+// add_meta_box و WP_Screen فقط در پیشخوان لود می‌شوند
+require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
+require_once ABSPATH . 'wp-admin/includes/screen.php';
+require_once ABSPATH . 'wp-admin/includes/template.php';
+foreach ( get_posts( [ 'post_type' => 'page', 'name' => 'advisor-box-test', 'post_status' => 'any', 'numberposts' => -1 ] ) as $leftover ) {
+	wp_delete_post( $leftover->ID, true );
+}
+$box_id = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'کلیپس مو', 'post_name' => 'advisor-box-test', 'post_content' => '<h2>گیره مو</h2><p>متن</p>' ] );
+$box_draft = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'draft', 'post_title' => 'پیش‌نویس', 'post_name' => 'advisor-box-draft' ] );
+hodima_seo_advisor_store(
+	[ '/advisor-box-test/' => [ 'clicks' => 496, 'impressions' => 36492, 'position' => 5.81 ] ],
+	[],
+	[ '/advisor-box-test/' => [ 'پلومریا کلیپس' => [ 'clicks' => 25, 'impressions' => 2318, 'position' => 4.71 ] ] ]
+);
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 1, 'advised' => 1, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+
+$meta_has = static function ( string $type, WP_Post $post ): bool {
+	global $wp_meta_boxes;
+	unset( $wp_meta_boxes[ $type ] );
+	hodima_seo_advisor_register_box( $type, $post );
+	return isset( $wp_meta_boxes[ $type ]['normal']['default']['hodima_advisor_box'] );
+};
+wp_set_current_user( 1 );
+hodima_ad( 'کادر فقط برای صفحه منتشرشده و مدیر ثبت می‌شود', [ $meta_has( 'page', get_post( $box_id ) ), $meta_has( 'page', get_post( $box_draft ) ) ], [ true, false ] );
+hodima_ad( 'نوع نوشته‌ای که سئوباکس ندارد کادر ندارد', $meta_has( 'revision', get_post( $box_id ) ), false );
+wp_set_current_user( 0 );
+hodima_ad( 'بدون ورود (غیرمدیر) ثبت نمی‌شود', $meta_has( 'page', get_post( $box_id ) ), false );
+wp_set_current_user( 1 );
+
+ob_start();
+hodima_seo_advisor_render_box( (string) get_permalink( $box_id ) );
+$box = (string) ob_get_clean();
+hodima_ad( 'کادر: وضعیت، پیشنهاد نرخ کلیک، کلمه برتر، عددها', [ str_contains( $box, 'hodima-advisor-box__pill--warn' ), str_contains( $box, 'عنوان و توضیح متا را بازنویسی کنید' ), str_contains( $box, 'پلومریا کلیپس' ), str_contains( $box, '36,492' ) || str_contains( $box, '۳۶٬۴۹۲' ) ], [ true, true, true, true ] );
+hodima_ad( 'کادر: متن تازه صفحه سنجیده می‌شود (کلمه «پلومریا» در عنوان، تیترها و متن صفحه نیست)', str_contains( $box, 'در متن صفحه نیست' ), true );
+hodima_ad( 'کادر: لینک به صفحه مشاور با جستجوی همین آدرس، بدون لینک بازگرداندن', [ str_contains( $box, 'page=hodima-advisor' ) && str_contains( $box, 'q=/advisor-box-test/' ), str_contains( $box, 'restore=1' ) ], [ true, false ] );
+
+hodima_seo_advisor_set_ignored( '/advisor-box-test/', true );
+ob_start();
+hodima_seo_advisor_render_box( (string) get_permalink( $box_id ) );
+$box = (string) ob_get_clean();
+hodima_ad( 'نادیده‌گرفته‌شده: پیشنهادی نیست و لینک بازگرداندن با nonce هست', [ str_contains( $box, 'نادیده گرفته شده' ), str_contains( $box, 'hodima-advisor-box__item' ), str_contains( $box, 'restore=1' ) && str_contains( $box, '_wpnonce=' ) && str_contains( $box, 'action=hodima_advisor_ignore' ) ], [ true, false, true ] );
+hodima_seo_advisor_set_ignored( '/advisor-box-test/', false );
+
+ob_start();
+hodima_seo_advisor_render_box( (string) get_permalink( $box_draft ) );
+$box = (string) ob_get_clean();
+hodima_ad( 'آدرسی که داده ندارد: پیام روشن، بدون پیشنهاد', [ str_contains( $box, 'هنوز داده‌ای در سرچ کنسول ثبت نشده' ), str_contains( $box, 'hodima-advisor-box__item' ) ], [ true, false ] );
+
+delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION );
+ob_start();
+hodima_seo_advisor_render_box( (string) get_permalink( $box_id ) );
+$box = (string) ob_get_clean();
+hodima_ad( 'بدون دریافت داده در وضعیت: سربرگ «هنوز داده‌ای گرفته نشده»', str_contains( $box, 'هنوز داده‌ای گرفته نشده' ), true );
+
+ob_start();
+hodima_seo_advisor_render_box( '' );
+$box = (string) ob_get_clean();
+hodima_ad( 'آدرس نامعتبر خطا نمی‌دهد', str_contains( $box, 'hodima-advisor-box' ), true );
+wp_delete_post( $box_id, true );
+wp_delete_post( $box_draft, true );
+wp_set_current_user( 0 );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );
