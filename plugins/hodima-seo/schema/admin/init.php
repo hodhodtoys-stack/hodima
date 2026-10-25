@@ -59,7 +59,7 @@ function hodima_schema_assets($hook) {
         wp_enqueue_style('hodima-init-css', $schema_uri . '/admin/assets/css/init.css', wp_style_is( 'hodima-admin-ui', 'registered' ) ? array( 'hodima-admin-ui' ) : array(), $css_ver);
 
         // صفحه‌هایی که با کالبد ثابت (کیت UI همین افزونه) ساخته شده‌اند
-        if ( in_array( hodima_schema_current_admin_page(), array( 'hodima-sitemap', 'hodima-llms' ), true ) ) {
+        if ( in_array( hodima_schema_current_admin_page(), array( 'hodima-sitemap', 'hodima-llms', 'hodima-schema-product' ), true ) ) {
             hodima_seo_ui_enqueue();
         }
     }

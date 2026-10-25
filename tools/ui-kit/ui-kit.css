@@ -1214,7 +1214,61 @@
 	color: color-mix(in srgb, var(--hd-warn) 85%, #000);
 }
 
+/* شبکه فیلدهای فرم (دو ستون؛ wide = تمام‌عرض)، فهرست انتخابی، بازه «حداقل تا حداکثر»، بخش جداشده داخل تب */
+.hdk-ui .hdk-fields {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1.125rem 1.5rem;
+	margin-block-start: 1rem;
+}
+
+.hdk-ui .hdk-field--wide {
+	grid-column: 1 / -1;
+}
+
+.hdk-ui .hdk-field[hidden] {
+	display: none;
+}
+
+.hdk-ui select.hdk-input {
+	inline-size: 100%;
+	padding-inline: 0.875rem;
+}
+
+.hdk-ui .hdk-fields .hdk-input {
+	inline-size: 100%;
+}
+
+.hdk-ui .hdk-range {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 0.625rem;
+}
+
+.hdk-ui .hdk-range .hdk-input {
+	flex: none;
+	inline-size: 5.5rem;
+	text-align: center;
+	direction: ltr;
+}
+
+.hdk-ui .hdk-range__txt {
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+}
+
+.hdk-ui .hdk-section {
+	margin-block-start: 1.375rem;
+	padding-block-start: 1.125rem;
+	border-block-start: 1px solid var(--hd-border);
+}
+
 @media (max-width: 782px) {
+	.hdk-ui .hdk-fields {
+		grid-template-columns: 1fr;
+	}
+
 	.hdk-ui .hdk-groups {
 		grid-template-columns: 1fr;
 	}

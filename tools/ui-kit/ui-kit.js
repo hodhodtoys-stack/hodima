@@ -297,7 +297,26 @@
 		} );
 	};
 
+	/* ── نمایش شرطی: data-hdk-when="شناسه‌فیلد=مقدار۱|مقدار۲" ← فقط وقتی مقدار فیلد یکی از آن‌ها باشد دیده می‌شود
+	 *    (مقدار پنهان‌شده ذخیره می‌شود؛ بدون JS همه دیده می‌شوند) ── */
+	const initWhen = () => {
+		document.querySelectorAll( '.hdk-ui [data-hdk-when]' ).forEach( ( node ) => {
+			const [ id, values = '' ] = node.dataset.hdkWhen.split( '=' );
+			const source = document.getElementById( id );
+			if ( ! source ) {
+				return;
+			}
+			const wanted = values.split( '|' );
+			const sync = () => {
+				node.hidden = ! wanted.includes( source.value );
+			};
+			source.addEventListener( 'change', sync );
+			sync();
+		} );
+	};
+
 	const init = () => {
+		initWhen();
 		initCopy();
 		document.querySelectorAll( '.hdk-ui .hdk-tabset' ).forEach( initTabset );
 		document.querySelectorAll( '.hdk-ui [data-hdk-repeat]' ).forEach( initRepeat );
