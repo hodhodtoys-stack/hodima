@@ -102,7 +102,10 @@ function hodima_seo_advisor_refresh(): bool|WP_Error {
 			hodima_seo_advisor_aggregate_queries( $queries['rows'] )
 		);
 
+		$advised = hodima_seo_advisor_analyze_all(); // پیشنهادها یک‌جا ساخته می‌شوند تا فهرست پیشخوان با SQL فیلتر و مرتب شود
+
 		update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [
+			'advised'    => $advised,
 			'fetched'    => time(),
 			'property'   => $property,
 			'days'       => $days,

@@ -20,7 +20,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.0.0';
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.1.0';
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -75,8 +75,12 @@ function hodima_seo_advisor_install_tables(): void {
 		prev_position decimal(6,2) NOT NULL DEFAULT 0,
 		kind varchar(32) NOT NULL DEFAULT '',
 		object_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		potential int(10) unsigned NOT NULL DEFAULT 0,
+		advice_count smallint(5) unsigned NOT NULL DEFAULT 0,
+		advice longtext NOT NULL,
 		PRIMARY KEY (path),
-		KEY impressions_idx (impressions)
+		KEY impressions_idx (impressions),
+		KEY potential_idx (potential)
 		) {$charset};"
 	);
 
@@ -258,7 +262,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 		$now   = $current[ $path ] ?? $zero;
 		$prev  = $previous[ $path ] ?? $zero;
 		$class = $i < HODIMA_SEO_ADVISOR_CLASSIFY_LIMIT ? hodima_seo_advisor_classify( $path ) : [ 'kind' => '', 'id' => 0 ];
-		$page_rows[] = [ $path, $now['clicks'], $now['impressions'], $now['position'], $prev['clicks'], $prev['impressions'], $prev['position'], $class['kind'], $class['id'] ];
+		$page_rows[] = [ $path, $now['clicks'], $now['impressions'], $now['position'], $prev['clicks'], $prev['impressions'], $prev['position'], $class['kind'], $class['id'], 0, 0, '' ];
 	}
 
 	$query_rows = [];
@@ -277,7 +281,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 	foreach ( array_chunk( $page_rows, 200 ) as $chunk ) {
 		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها با array_fill هم‌اندازه ردیف‌هاست؛ PHPCS تعداد را ایستا نمی‌شمارد
-				'INSERT INTO %i (path, clicks, impressions, avg_position, prev_clicks, prev_impressions, prev_position, kind, object_id) VALUES ' . implode( ',', array_fill( 0, count( $chunk ), '(%s,%d,%d,%f,%d,%d,%f,%s,%d)' ) ),
+				'INSERT INTO %i (path, clicks, impressions, avg_position, prev_clicks, prev_impressions, prev_position, kind, object_id, potential, advice_count, advice) VALUES ' . implode( ',', array_fill( 0, count( $chunk ), '(%s,%d,%d,%f,%d,%d,%f,%s,%d,%d,%d,%s)' ) ),
 				$pages_table,
 				...array_merge( ...$chunk )
 			)
@@ -303,9 +307,10 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
  * ردیف جدول pages ← آرایه با نوع‌های درست.
  *
  * @param array<string, mixed> $row
- * @return array{path: string, clicks: int, impressions: int, position: float, prev_clicks: int, prev_impressions: int, prev_position: float, kind: string, object_id: int}
+ * @return array{path: string, clicks: int, impressions: int, position: float, prev_clicks: int, prev_impressions: int, prev_position: float, kind: string, object_id: int, potential: int, advice_count: int, advice: list<array<string, mixed>>}
  */
 function hodima_seo_advisor_page_row( array $row ): array {
+	$advice = json_decode( (string) $row['advice'], true );
 	return [
 		'path'             => (string) $row['path'],
 		'clicks'           => (int) $row['clicks'],
@@ -316,13 +321,16 @@ function hodima_seo_advisor_page_row( array $row ): array {
 		'prev_position'    => (float) $row['prev_position'],
 		'kind'             => (string) $row['kind'],
 		'object_id'        => (int) $row['object_id'],
+		'potential'        => (int) $row['potential'],
+		'advice_count'     => (int) $row['advice_count'],
+		'advice'           => is_array( $advice ) ? array_values( $advice ) : [],
 	];
 }
 
 /**
  * فهرست آدرس‌ها با فیلتر و صفحه‌بندی.
  *
- * @param array{min_impressions?: int, kind?: string|list<string>, search?: string, orderby?: string, order?: string, limit?: int, offset?: int} $args
+ * @param array{min_impressions?: int, kind?: string|list<string>, search?: string, has_advice?: bool, orderby?: string, order?: string, limit?: int, offset?: int} $args
  * @return array{rows: list<array<string, mixed>>, total: int}
  */
 function hodima_seo_advisor_pages( array $args = [] ): array {
@@ -338,6 +346,10 @@ function hodima_seo_advisor_pages( array $args = [] ): array {
 		$params[] = (int) $args['min_impressions'];
 	}
 
+	if ( ! empty( $args['has_advice'] ) ) {
+		$where[] = 'advice_count > 0';
+	}
+
 	$kinds = array_values( array_filter( (array) ( $args['kind'] ?? [] ), static fn( mixed $k ): bool => is_string( $k ) && '' !== $k ) );
 	if ( $kinds ) {
 		$where[] = 'kind IN (' . implode( ',', array_fill( 0, count( $kinds ), '%s' ) ) . ')';
@@ -350,7 +362,7 @@ function hodima_seo_advisor_pages( array $args = [] ): array {
 	}
 
 	$clause  = $where ? ' WHERE ' . implode( ' AND ', $where ) : '';
-	$orderby = in_array( $args['orderby'] ?? '', [ 'clicks', 'impressions', 'avg_position', 'path' ], true ) ? $args['orderby'] : 'impressions';
+	$orderby = in_array( $args['orderby'] ?? '', [ 'clicks', 'impressions', 'avg_position', 'potential', 'path' ], true ) ? $args['orderby'] : 'impressions';
 	$order   = 'ASC' === strtoupper( (string) ( $args['order'] ?? 'DESC' ) ) ? 'ASC' : 'DESC';
 	$limit   = max( 1, min( 500, (int) ( $args['limit'] ?? 50 ) ) );
 	$offset  = max( 0, (int) ( $args['offset'] ?? 0 ) );
@@ -412,7 +424,7 @@ function hodima_seo_advisor_queries( string $path, int $limit = 20 ): array {
 /**
  * وضعیت آخرین دریافت.
  *
- * @return array{fetched: int, property: string, days: int, start: string, end: string, prev_start: string, prev_end: string, pages: int, queries: int, error: string}
+ * @return array{advised: int, fetched: int, property: string, days: int, start: string, end: string, prev_start: string, prev_end: string, pages: int, queries: int, error: string}
  */
 function hodima_seo_advisor_status(): array {
 
@@ -420,6 +432,7 @@ function hodima_seo_advisor_status(): array {
 	$stored = is_array( $stored ) ? $stored : [];
 
 	return [
+		'advised'    => (int) ( $stored['advised'] ?? 0 ),
 		'fetched'    => (int) ( $stored['fetched'] ?? 0 ),
 		'property'   => (string) ( $stored['property'] ?? '' ),
 		'days'       => (int) ( $stored['days'] ?? 0 ),

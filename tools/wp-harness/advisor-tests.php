@@ -2,7 +2,8 @@
 /**
  * آزمون خودکار ماژول «مشاور سئو» (SEO، core/advisor): یکسان‌سازی آدرس، جمع‌بندی ردیف‌های
  * سرچ کنسول، ذخیره و خواندن، سه درخواست دریافت (با پاسخ ساختگی گوگل)، شکست بدون خراب
- * کردن داده قبلی، بازه‌ها.
+ * کردن داده قبلی، بازه‌ها، و قاعده‌های پیشنهاد (نرخ کلیک، کلمه نزدیک صفحه اول، کلمه غایب
+ * در تیترها/متن، رقابت داخلی، افت).
  *   HARNESS=1 php tools/wp-harness/advisor-tests.php
  * خروجی: هر آزمون ✔/✘؛ کد خروج ۱ اگر یکی رد شود. هیچ درخواستی به گوگل نمی‌رود
  * (فیلتر pre_http_request). ci-check.sh هم اجرا می‌کند. (HODIMA-AUDIT.md بخش ۲۵۶)
@@ -198,6 +199,87 @@ $mode = 'ok';
 delete_option( 'hodima_discover_sc_key' );
 $res = hodima_seo_advisor_refresh();
 hodima_ad( 'بدون کلید ← خطای کلید، داده دست‌نخورده', [ is_wp_error( $res ) ? $res->get_error_code() : '', hodima_seo_advisor_page( '/accessory/hair-clips/' )['clicks'] ], [ 'hodima_sc_no_key', 12 ] );
+
+echo "=== قاعده‌ها: نرخ کلیک معمول و متن\n";
+hodima_ad( 'نرخ معمول هر رتبه', array_map( 'hodima_seo_advisor_expected_ctr', [ 1.5, 2.0, 2.01, 3.0, 5.0, 5.81, 7.0, 10.0, 10.01 ] ), [ 25.0, 25.0, 14.0, 14.0, 9.0, 5.5, 5.5, 3.5, 1.5 ] );
+hodima_ad( 'یکسان‌سازی متن (ی/ک عربی، نیم‌فاصله، رقم عربی)', [ hodima_seo_advisor_normalize( 'كيك گل‌سر ١٢٣ ۴۵' ), hodima_seo_advisor_text_has( hodima_seo_advisor_normalize( 'انواع گل سر زیبا' ), 'گل‌سر' ), hodima_seo_advisor_text_has( 'کلیپس مو', 'پلومریا' ) ], [ 'کیک گل سر 123 45', true, false ] );
+
+$page_for_text = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'کلیپس مو', 'post_name' => 'advisor-text-page', 'post_content' => '<h2>پلومریا مو</h2><p>متن [shortcode_x] درباره گیره</p>' ] );
+update_post_meta( $page_for_text, '_seobox_title', 'عنوان سئو سفارشی' );
+add_shortcode( 'shortcode_x', static fn(): string => '' ); // strip_shortcodes فقط شورت‌کدهای ثبت‌شده را برمی‌دارد
+$text = hodima_seo_advisor_page_text( [ 'kind' => 'page', 'object_id' => $page_for_text ] );
+hodima_ad( 'متن صفحه: عنوان سئو، نام، تیترها در یک دسته؛ متن در دسته دیگر؛ شورت‌کد حذف', [ str_contains( (string) $text['title_headings'], 'عنوان سئو سفارشی' ) && str_contains( (string) $text['title_headings'], 'پلومریا مو' ), str_contains( (string) $text['content'], 'درباره گیره' ), str_contains( (string) $text['content'], 'shortcode_x' ) ], [ true, true, false ] );
+hodima_ad( 'شیء ناشناخته و صفحه اصلی ← null', [ hodima_seo_advisor_page_text( [ 'kind' => '', 'object_id' => 0 ] ), hodima_seo_advisor_page_text( [ 'kind' => 'home', 'object_id' => 0 ] ), hodima_seo_advisor_page_text( [ 'kind' => 'page', 'object_id' => 99999999 ] ) ], [ null, null, null ] );
+remove_shortcode( 'shortcode_x' );
+wp_delete_post( $page_for_text, true );
+
+echo "=== قاعده‌ها: پیشنهادها (داده واقعی گزارش ۶ ماهه کاربر)\n";
+$base = [ 'path' => '/x/', 'clicks' => 496, 'impressions' => 36492, 'position' => 5.81, 'prev_clicks' => 0 ];
+$rules = static fn( array $list ): array => array_column( $list, 'rule' );
+$low   = hodima_seo_advisor_suggestions( $base, [], null );
+hodima_ad( 'نرخ کلیک پایین (۱٫۳۶٪ در رتبه ۵٫۸): کلیک بالقوه ۱۵۱۱', [ $rules( $low ), $low[0]['potential'] ], [ [ 'low_ctr' ], 1511 ] );
+hodima_ad( 'متن پیشنهاد کلمه اصلی را می‌آورد', str_contains( hodima_seo_advisor_suggestions( $base, [ [ 'term' => 'کلیپس پلومریا', 'clicks' => 116, 'impressions' => 15480, 'position' => 5.08 ] ], null )[0]['detail'], 'کلیپس پلومریا' ), true );
+hodima_ad( 'کمتر از حداقل نمایش یا نرخ کلیک خوب ← پیشنهادی نیست', [ hodima_seo_advisor_suggestions( [ 'impressions' => 999 ] + $base, [], null ), hodima_seo_advisor_suggestions( [ 'clicks' => 5000 ] + $base, [], null ) ], [ [], [] ] );
+hodima_ad( 'صفحه‌بندی آرشیو پیشنهاد ندارد', hodima_seo_advisor_suggestions( [ 'path' => '/accessory/page/2/' ] + $base, [], null ), [] );
+
+$near = hodima_seo_advisor_suggestions( [ 'impressions' => 100, 'clicks' => 5 ] + $base, [ [ 'term' => 'پلومریا', 'clicks' => 11, 'impressions' => 3064, 'position' => 8.0 ] ], null );
+hodima_ad( 'کلمه رتبه ۸: نزدیک صفحه اول، کلیک بالقوه ۱۵۸', [ $rules( $near ), $near[0]['potential'] ?? null ], [ [ 'near_first' ], 158 ] );
+
+$haystack = [ 'title_headings' => hodima_seo_advisor_normalize( 'کلیپس مو' ), 'content' => hodima_seo_advisor_normalize( 'کلیپس مو پلومریا زیبا' ) ];
+$q        = static fn( string $term ): array => [ 'term' => $term, 'clicks' => 0, 'impressions' => 1000, 'position' => 4.0 ];
+$small    = [ 'impressions' => 100, 'clicks' => 5 ] + $base;
+hodima_ad( 'کلمه فقط در متن: «در تیترها نیست»', $rules( hodima_seo_advisor_suggestions( $small, [ $q( 'پلومریا' ) ], $haystack ) ), [ 'missing_headings' ] );
+hodima_ad( 'کلمه هیچ‌جا نیست: «در متن نیست»', $rules( hodima_seo_advisor_suggestions( $small, [ $q( 'ناموجود' ) ], $haystack ) ), [ 'missing_content' ] );
+hodima_ad( 'کلمه در عنوان هست ← پیشنهادی نیست', hodima_seo_advisor_suggestions( $small, [ $q( 'کلیپس' ) ], $haystack ), [] );
+hodima_ad( 'متن صفحه معلوم نیست ← قاعده متن اجرا نمی‌شود', hodima_seo_advisor_suggestions( $small, [ $q( 'ناموجود' ) ], null ), [] );
+hodima_ad( 'کلمه کم‌نمایش (زیر ۳۰۰) بررسی نمی‌شود', hodima_seo_advisor_suggestions( $small, [ [ 'impressions' => 299 ] + $q( 'ناموجود' ) ], $haystack ), [] );
+
+$dec = static fn( int $clicks ): array => hodima_seo_advisor_suggestions( [ 'impressions' => 100, 'clicks' => $clicks, 'prev_clicks' => 1000 ] + $base, [], null );
+hodima_ad( 'افت کلیک (۱۰۰۰ ← ۶۰۰): کلیک از دست‌رفته ۴۰۰', [ $rules( $dec( 600 ) ), $dec( 600 )[0]['potential'] ], [ [ 'decline' ], 400 ] );
+hodima_ad( 'افت کم (۱۰۰۰ ← ۸۰۰) پیشنهادی نیست', $dec( 800 ), [] );
+
+$many = [];
+for ( $n = 0; $n < 8; ++$n ) {
+	$many[] = [ 'term' => "نزدیک{$n}", 'clicks' => 0, 'impressions' => 1000 + $n, 'position' => 9.0 ];
+	$many[] = [ 'term' => "غایب{$n}", 'clicks' => 0, 'impressions' => 2000 + $n, 'position' => 4.0 ];
+}
+$list = hodima_seo_advisor_suggestions( $base, $many, $haystack );
+$counts = array_count_values( $rules( $list ) );
+hodima_ad( 'سقف: حداکثر ۶ پیشنهاد و ۲ تا از هر قاعده کلمه‌محور؛ مرتب بر اساس کلیک بالقوه', [ count( $list ) <= 6, ( $counts['near_first'] ?? 0 ) <= 2, ( $counts['missing_content'] ?? 0 ) <= 2, $list === array_values( $list ) && array_column( $list, 'potential' ) === ( static function ( array $p ): array { rsort( $p ); return $p; } )( array_column( $list, 'potential' ) ) ], [ true, true, true, true ] );
+
+add_filter( 'hodima_seo_advisor_config', $cfg_filter = static fn( array $c ): array => [ 'min_impressions' => 50000 ] + $c );
+hodima_ad( 'فیلتر آستانه: حداقل نمایش ۵۰٬۰۰۰ ← پیشنهادی نیست', hodima_seo_advisor_suggestions( $base, [], null ), [] );
+remove_filter( 'hodima_seo_advisor_config', $cfg_filter );
+add_filter( 'hodima_seo_advisor_ctr_table', $tbl_filter = static fn(): array => [ 10 => 1.0 ] );
+hodima_ad( 'فیلتر جدول نرخ کلیک معمول', [ hodima_seo_advisor_expected_ctr( 5.0 ), hodima_seo_advisor_suggestions( $base, [], null ) ], [ 1.0, [] ] );
+remove_filter( 'hodima_seo_advisor_ctr_table', $tbl_filter );
+
+echo "=== قاعده‌ها: ذخیره در جدول، رقابت داخلی، فهرست\n";
+$z   = [ 'clicks' => 0, 'impressions' => 0, 'position' => 0.0 ];
+$cur = [
+	'/rules/a/'       => [ 'clicks' => 496, 'impressions' => 36492, 'position' => 5.81 ],
+	'/rules/b/'       => [ 'clicks' => 5, 'impressions' => 500, 'position' => 6.0 ],
+	'/rules/decline/' => [ 'clicks' => 600, 'impressions' => 6000, 'position' => 6.0 ],
+	'/rules/can1/'    => [ 'clicks' => 200, 'impressions' => 2000, 'position' => 4.0 ],
+	'/rules/can2/'    => [ 'clicks' => 200, 'impressions' => 2000, 'position' => 4.0 ],
+];
+$prv = [ '/rules/decline/' => [ 'clicks' => 1000, 'impressions' => 6000, 'position' => 6.0 ] ];
+$qs  = [
+	'/rules/can1/' => [ 'پلومریا' => [ 'clicks' => 50, 'impressions' => 500, 'position' => 4.0 ] ],
+	'/rules/can2/' => [ 'پلومریا' => [ 'clicks' => 40, 'impressions' => 400, 'position' => 6.0 ] ],
+];
+hodima_seo_advisor_store( $cur, $prv, $qs );
+$advised = hodima_seo_advisor_analyze_all();
+hodima_ad( 'تحلیل همه: ۴ آدرس پیشنهاد دارند (b زیر حداقل نمایش است)', $advised, 4 );
+$listed = hodima_seo_advisor_pages( [ 'has_advice' => true, 'orderby' => 'potential' ] );
+hodima_ad( 'فهرست مرتب بر اساس کلیک بالقوه: a (۱۵۱۱)، افت (۴۰۰)، دو رقیب (۰)', [ $listed['total'], array_slice( array_column( $listed['rows'], 'path' ), 0, 2 ), array_column( $listed['rows'], 'potential' ) ], [ 4, [ '/rules/a/', '/rules/decline/' ], [ 1511, 400, 0, 0 ] ] );
+hodima_ad( 'آدرس b (زیر حداقل نمایش) پیشنهاد ندارد', [ hodima_seo_advisor_page( '/rules/b/' )['advice_count'], hodima_seo_advisor_page( '/rules/b/' )['advice'] ], [ 0, [] ] );
+$a = hodima_seo_advisor_page( '/rules/a/' );
+hodima_ad( 'پیشنهادها در ردیف ذخیره می‌شوند و با متن فارسی برمی‌گردند', [ $a['advice_count'], $a['advice'][0]['rule'], str_contains( $a['advice'][0]['title'], 'عنوان' ) ], [ 1, 'low_ctr', true ] );
+$can = hodima_seo_advisor_analyze( '/rules/can1/' );
+hodima_ad( 'رقابت داخلی: صفحه دیگر برای «پلومریا» پیدا می‌شود و پیشنهاد بدون کلیک بالقوه است', [ $rules( $can['suggestions'] ), str_contains( $can['suggestions'][0]['detail'], '/rules/can2/' ), $can['potential'] ], [ [ 'cannibal' ], true, 0 ] );
+hodima_ad( 'تحلیل آدرس ناشناخته ← null', hodima_seo_advisor_analyze( '/no-such-page/' ), null );
+hodima_ad( 'تحلیل دوباره قبلی‌ها را پاک می‌کند (نه روی هم)', [ hodima_seo_advisor_analyze_all(), hodima_seo_advisor_pages( [ 'has_advice' => true ] )['total'] ], [ 4, 4 ] );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
