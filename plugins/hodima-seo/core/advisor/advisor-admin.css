@@ -218,8 +218,17 @@
 	min-inline-size: 0;
 }
 
+.hodima-advisor .hodima-advisor__name {
+	color: var(--hd-text);
+	font-size: 0.875rem;
+	font-weight: 700;
+	line-height: 1.7;
+	overflow-wrap: anywhere;
+}
+
 .hodima-advisor .hodima-advisor__path {
-	font-weight: 600;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
 	overflow-wrap: anywhere;
 	text-align: start;
 }

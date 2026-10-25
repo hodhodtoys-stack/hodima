@@ -310,7 +310,7 @@ hodima_ad( 'فیلترهای فهرست: نما ← نوع، جستجو و قا�
 hodima_ad( 'نمای ناشناخته ← همه؛ نمای نادیده‌ها ← مسیرها', [ hodima_seo_advisor_list_filters( [ 'view' => 'zzz' ] )['view'], isset( hodima_seo_advisor_list_filters( [ 'view' => 'ignored' ] )['args']['has_advice'] ) ], [ 'all', false ] );
 
 $csv = hodima_seo_advisor_csv_rows( hodima_seo_advisor_list_filters( [] )['args'] );
-hodima_ad( 'CSV: سربرگ + ۴ آدرس، اولی بیشترین کلیک بالقوه', [ count( $csv ), $csv[0][0], $csv[1][0], $csv[1][6] ], [ 5, 'آدرس', '/rules/a/', '1511' ] );
+hodima_ad( 'CSV: سربرگ + ۴ آدرس، اولی بیشترین کلیک بالقوه؛ ستون اول عنوان، دوم آدرس', [ count( $csv ), $csv[0][0], $csv[0][1], $csv[1][1], $csv[1][7] ], [ 5, 'عنوان', 'آدرس', '/rules/a/', '1511' ] );
 hodima_ad( 'CSV: ورودی شبیه فرمول بی‌اثر می‌شود', [ hodima_seo_advisor_csv_cell( '=HYPERLINK("x")' ), hodima_seo_advisor_csv_cell( '+1' ), hodima_seo_advisor_csv_cell( '@x' ), hodima_seo_advisor_csv_cell( '/ok/' ) ], [ "'=HYPERLINK(\"x\")", "'+1", "'@x", '/ok/' ] );
 
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -347,6 +347,16 @@ hodima_seo_advisor_store(
 	[ '/advisor-box-test/' => [ 'پلومریا کلیپس' => [ 'clicks' => 25, 'impressions' => 2318, 'position' => 4.71 ] ] ]
 );
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 1, 'advised' => 1, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+
+$titled = hodima_seo_advisor_page( '/advisor-box-test/' );
+hodima_ad( 'عنوان صفحه (نام شیء) ذخیره می‌شود و با عنوان هم جستجو می‌شود', [ $titled['title'], array_column( hodima_seo_advisor_pages( [ 'search' => 'کلیپس' ] )['rows'], 'path' ) ], hodima_router_active() ? [ 'کلیپس مو', [ '/advisor-box-test/' ] ] : [ '', [] ] );
+wp_update_post( [ 'ID' => $box_id, 'post_title' => 'عنوان تازه صفحه' ] );
+ob_start();
+hodima_seo_advisor_render_row( hodima_seo_advisor_page( '/advisor-box-test/' ), 1, false );
+$row_html = (string) ob_get_clean();
+hodima_ad( 'ردیف فهرست: عنوان تازه شیء درشت و آدرس زیرش (نه فقط آدرس)', [ str_contains( $row_html, 'hodima-advisor__name' ) && str_contains( $row_html, 'عنوان تازه صفحه' ), str_contains( $row_html, '/advisor-box-test/' ) ], hodima_router_active() ? [ true, true ] : [ false, true ] );
+hodima_ad( 'CSV: ستون عنوان', hodima_seo_advisor_csv_rows( [ 'search' => 'advisor-box' ] )[1][0], hodima_router_active() ? 'عنوان تازه صفحه' : '' );
+wp_update_post( [ 'ID' => $box_id, 'post_title' => 'کلیپس مو' ] );
 
 $meta_has = static function ( string $type, WP_Post $post ): bool {
 	global $wp_meta_boxes;

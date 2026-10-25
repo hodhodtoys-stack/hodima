@@ -20,7 +20,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.1.0';
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.2.0';
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -85,6 +85,7 @@ function hodima_seo_advisor_install_tables(): void {
 		prev_position decimal(6,2) NOT NULL DEFAULT 0,
 		kind varchar(32) NOT NULL DEFAULT '',
 		object_id bigint(20) unsigned NOT NULL DEFAULT 0,
+		title varchar(191) NOT NULL DEFAULT '',
 		potential int(10) unsigned NOT NULL DEFAULT 0,
 		advice_count smallint(5) unsigned NOT NULL DEFAULT 0,
 		advice longtext NOT NULL,
@@ -241,6 +242,29 @@ function hodima_seo_advisor_classify( string $path ): array {
 	return [ 'kind' => '', 'id' => 0 ];
 }
 
+/**
+ * عنوان صفحه برای نمایش در پیشخوان: نام محصول/نوشته/برگه یا نام دسته (همان H1 صفحه، نه عنوان سئو)،
+ * یا رشته خالی اگر شیء پیدا نشد.
+ */
+function hodima_seo_advisor_object_title( string $kind, int $id ): string {
+
+	if ( $id <= 0 || '' === $kind ) {
+		return '';
+	}
+
+	if ( taxonomy_exists( $kind ) ) {
+		$term  = get_term( $id, $kind );
+		$title = $term instanceof WP_Term ? $term->name : '';
+	} elseif ( post_type_exists( $kind ) ) {
+		$post  = get_post( $id );
+		$title = $post instanceof WP_Post ? $post->post_title : '';
+	} else {
+		return '';
+	}
+
+	return mb_substr( trim( html_entity_decode( wp_strip_all_tags( $title ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ), 0, HODIMA_SEO_ADVISOR_KEY_LENGTH );
+}
+
 /* ── ذخیره ── */
 
 /**
@@ -272,7 +296,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 		$now   = $current[ $path ] ?? $zero;
 		$prev  = $previous[ $path ] ?? $zero;
 		$class = $i < HODIMA_SEO_ADVISOR_CLASSIFY_LIMIT ? hodima_seo_advisor_classify( $path ) : [ 'kind' => '', 'id' => 0 ];
-		$page_rows[] = [ $path, $now['clicks'], $now['impressions'], $now['position'], $prev['clicks'], $prev['impressions'], $prev['position'], $class['kind'], $class['id'], 0, 0, '' ];
+		$page_rows[] = [ $path, $now['clicks'], $now['impressions'], $now['position'], $prev['clicks'], $prev['impressions'], $prev['position'], $class['kind'], $class['id'], hodima_seo_advisor_object_title( $class['kind'], $class['id'] ), 0, 0, '' ];
 	}
 
 	$query_rows = [];
@@ -291,7 +315,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 	foreach ( array_chunk( $page_rows, 200 ) as $chunk ) {
 		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها با array_fill هم‌اندازه ردیف‌هاست؛ PHPCS تعداد را ایستا نمی‌شمارد
-				'INSERT INTO %i (path, clicks, impressions, avg_position, prev_clicks, prev_impressions, prev_position, kind, object_id, potential, advice_count, advice) VALUES ' . implode( ',', array_fill( 0, count( $chunk ), '(%s,%d,%d,%f,%d,%d,%f,%s,%d,%d,%d,%s)' ) ),
+				'INSERT INTO %i (path, clicks, impressions, avg_position, prev_clicks, prev_impressions, prev_position, kind, object_id, title, potential, advice_count, advice) VALUES ' . implode( ',', array_fill( 0, count( $chunk ), '(%s,%d,%d,%f,%d,%d,%f,%s,%d,%s,%d,%d,%s)' ) ),
 				$pages_table,
 				...array_merge( ...$chunk )
 			)
@@ -317,7 +341,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
  * ردیف جدول pages ← آرایه با نوع‌های درست.
  *
  * @param array<string, mixed> $row
- * @return array{path: string, clicks: int, impressions: int, position: float, prev_clicks: int, prev_impressions: int, prev_position: float, kind: string, object_id: int, potential: int, advice_count: int, advice: list<array<string, mixed>>}
+ * @return array{path: string, clicks: int, impressions: int, position: float, prev_clicks: int, prev_impressions: int, prev_position: float, kind: string, object_id: int, title: string, potential: int, advice_count: int, advice: list<array<string, mixed>>}
  */
 function hodima_seo_advisor_page_row( array $row ): array {
 	$advice = json_decode( (string) $row['advice'], true );
@@ -331,6 +355,7 @@ function hodima_seo_advisor_page_row( array $row ): array {
 		'prev_position'    => (float) $row['prev_position'],
 		'kind'             => (string) $row['kind'],
 		'object_id'        => (int) $row['object_id'],
+		'title'            => (string) $row['title'],
 		'potential'        => (int) $row['potential'],
 		'advice_count'     => (int) $row['advice_count'],
 		'advice'           => is_array( $advice ) ? array_values( $advice ) : [],
@@ -382,8 +407,9 @@ function hodima_seo_advisor_pages( array $args = [] ): array {
 	}
 
 	if ( '' !== trim( (string) ( $args['search'] ?? '' ) ) ) {
-		$where[]  = 'path LIKE %s';
+		$where[]  = '(path LIKE %s OR title LIKE %s)';
 		$params[] = '%' . $wpdb->esc_like( strtolower( trim( (string) $args['search'] ) ) ) . '%';
+		$params[] = '%' . $wpdb->esc_like( trim( (string) $args['search'] ) ) . '%';
 	}
 
 	$clause  = $where ? ' WHERE ' . implode( ' AND ', $where ) : '';

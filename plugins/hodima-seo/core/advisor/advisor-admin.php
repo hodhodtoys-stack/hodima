@@ -186,6 +186,16 @@ function hodima_seo_advisor_csv_cell( string $value ): string {
 }
 
 /**
+ * عنوان نمایشی یک ردیف: نام فعلی شیء (تازه، نه نسخه ذخیره‌شده)، وگرنه عنوان ذخیره‌شده؛ خالی اگر معلوم نیست.
+ *
+ * @param array<string, mixed> $row
+ */
+function hodima_seo_advisor_row_title( array $row ): string {
+	$live = hodima_seo_advisor_object_title( (string) $row['kind'], (int) $row['object_id'] );
+	return '' !== $live ? $live : (string) $row['title'];
+}
+
+/**
  * ردیف‌های CSV (همه آدرس‌های فیلترشده تا ۵۰۰۰).
  *
  * @param array<string, mixed> $args آرگومان‌های hodima_seo_advisor_pages()
@@ -193,10 +203,11 @@ function hodima_seo_advisor_csv_cell( string $value ): string {
  */
 function hodima_seo_advisor_csv_rows( array $args ): array {
 
-	$rows = [ [ 'آدرس', 'نوع', 'نمایش', 'کلیک', 'نرخ کلیک (٪)', 'رتبه', 'کلیک بالقوه', 'مهم‌ترین پیشنهاد', 'تعداد پیشنهاد' ] ];
+	$rows = [ [ 'عنوان', 'آدرس', 'نوع', 'نمایش', 'کلیک', 'نرخ کلیک (٪)', 'رتبه', 'کلیک بالقوه', 'مهم‌ترین پیشنهاد', 'تعداد پیشنهاد' ] ];
 
 	foreach ( hodima_seo_advisor_pages( [ 'limit' => 500 ] + $args )['rows'] as $row ) {
 		$rows[] = [
+			hodima_seo_advisor_csv_cell( hodima_seo_advisor_row_title( $row ) ),
 			hodima_seo_advisor_csv_cell( $row['path'] ),
 			hodima_seo_advisor_kind_label( $row['kind'] ),
 			(string) $row['impressions'],
@@ -388,8 +399,8 @@ function hodima_seo_advisor_render_list( array $status ): void {
 			<?php endforeach; ?>
 		</nav>
 		<div class="hodima-advisor__search">
-			<label class="screen-reader-text" for="hodima-advisor-q">جستجو در آدرس صفحه</label>
-			<input type="search" id="hodima-advisor-q" name="q" class="hds-input" value="<?php echo esc_attr( $filters['q'] ); ?>" placeholder="جستجو در آدرس صفحه…">
+			<label class="screen-reader-text" for="hodima-advisor-q">جستجو در عنوان یا آدرس صفحه</label>
+			<input type="search" id="hodima-advisor-q" name="q" class="hds-input" value="<?php echo esc_attr( $filters['q'] ); ?>" placeholder="جستجو در عنوان یا آدرس…">
 			<button type="submit" class="hodima-advisor__go" aria-label="اعمال جستجو و فیلتر"><span class="dashicons dashicons-search" aria-hidden="true"></span></button>
 		</div>
 		<label class="hodima-advisor__rule">
@@ -457,6 +468,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view ): void {
 
 	$impressions = (int) $row['impressions'];
+	$title       = hodima_seo_advisor_row_title( $row );
 	$ctr         = $impressions > 0 ? $row['clicks'] / $impressions * 100 : 0.0;
 	$expected    = hodima_seo_advisor_expected_ctr( (float) $row['position'] );
 	$advice      = (array) $row['advice'];
@@ -475,6 +487,9 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 	<details class="hodima-advisor__item">
 		<summary class="hodima-advisor__grid">
 			<span class="hodima-advisor__page">
+				<?php if ( '' !== $title ) : ?>
+					<strong class="hodima-advisor__name"><?php echo esc_html( $title ); ?></strong>
+				<?php endif; ?>
 				<span class="hodima-advisor__path" dir="ltr"><?php echo esc_html( rawurldecode( (string) $row['path'] ) ); ?></span>
 				<span class="hds-pill hds-pill--info"><?php echo esc_html( hodima_seo_advisor_kind_label( (string) $row['kind'] ) ); ?></span>
 			</span>
