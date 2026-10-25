@@ -90,3 +90,47 @@
 	outline: 2px solid var(--hd-secondary, #607bbd);
 	outline-offset: 2px;
 }
+
+.hodima-advisor-steps__table {
+	inline-size: 100%;
+	border-collapse: collapse;
+	border: 1px solid var(--hd-border, #dfe4f3);
+	border-radius: 0.5rem;
+	background: #ffffff;
+	font-variant-numeric: tabular-nums;
+}
+
+.hodima-advisor-steps__table th {
+	padding: 0.375rem 0.75rem;
+	background: var(--hd-soft, #f6f8fd);
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-align: start;
+}
+
+.hodima-advisor-steps__table td {
+	padding: 0.375rem 0.75rem;
+	border-block-start: 1px solid var(--hd-border, #dfe4f3);
+	overflow-wrap: anywhere;
+}
+
+.hodima-advisor-steps__table td small {
+	display: block;
+}
+
+.hodima-advisor-steps__table th:not(:first-child),
+.hodima-advisor-steps__table td:not(:first-child) {
+	text-align: end;
+	white-space: nowrap;
+}
+
+.hodima-advisor-steps__table .is-me td {
+	background: color-mix(in srgb, var(--hd-secondary, #607bbd) 12%, #ffffff);
+	font-weight: 600;
+}
+
+.hodima-advisor-steps__main {
+	color: var(--hd-ok, #1f7a4d);
+	font-weight: 600;
+}

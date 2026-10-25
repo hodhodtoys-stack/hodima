@@ -425,7 +425,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 	?>
 	<div class="hodima-advisor__table">
 		<div class="hodima-advisor__head" aria-hidden="true">
-			<span>صفحه</span><span>نمایش</span><span>نرخ کلیک</span><span>رتبه</span><span>مهم‌ترین پیشنهاد</span><span>کلیک بالقوه</span><span></span>
+			<span>صفحه</span><span>نمایش</span><span>نرخ کلیک</span><span>رتبه</span><span>ایرادها</span><span>کلیک بالقوه</span><span></span>
 		</div>
 		<?php foreach ( $result['rows'] as $row ) : ?>
 			<?php hodima_seo_advisor_render_row( $row, $max, 'ignored' === $view ); ?>
@@ -462,7 +462,8 @@ function hodima_seo_advisor_render_list( array $status ): void {
 }
 
 /**
- * یک ردیف فهرست: خلاصه + جزئیات (details).
+ * یک ردیف فهرست: فقط گزارش تیتری (عنوان صفحه، عددها، همه ایرادها به‌صورت تیتر کوتاه). جزئیات و
+ * گام‌های رفع در کادر «مشاور سئو» صفحه ویرایش همان آدرس است؛ دکمه ردیف به آنجا می‌برد.
  *
  * @param array<string, mixed> $row
  */
@@ -473,20 +474,10 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 	$ctr         = $impressions > 0 ? $row['clicks'] / $impressions * 100 : 0.0;
 	$expected    = hodima_seo_advisor_expected_ctr( (float) $row['position'] );
 	$advice      = (array) $row['advice'];
-	$top         = (array) ( $advice[0] ?? [] );
-	$url         = home_url( (string) $row['path'] );
-	$edit        = '';
-
-	if ( $row['object_id'] > 0 ) {
-		$edit = taxonomy_exists( (string) $row['kind'] )
-			? (string) get_edit_term_link( (int) $row['object_id'], (string) $row['kind'] )
-			: (string) get_edit_post_link( (int) $row['object_id'], 'raw' );
-	}
-
-	$queries = hodima_seo_advisor_queries( (string) $row['path'], 5 );
+	$edit        = $row['object_id'] > 0 ? hodima_seo_advisor_edit_link( (string) $row['kind'], (int) $row['object_id'] ) : '';
 	?>
-	<details class="hodima-advisor__item">
-		<summary class="hodima-advisor__grid">
+	<div class="hodima-advisor__item">
+		<div class="hodima-advisor__grid">
 			<span class="hodima-advisor__page">
 				<?php if ( '' !== $title ) : ?>
 					<strong class="hodima-advisor__name"><?php echo esc_html( $title ); ?></strong>
@@ -500,16 +491,15 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 				<small>انتظار ≈ <?php echo esc_html( number_format_i18n( $expected, 1 ) ); ?>٪</small>
 			</span>
 			<span class="hodima-advisor__num" data-label="رتبه"><?php echo esc_html( number_format_i18n( (float) $row['position'], 1 ) ); ?></span>
-			<span class="hodima-advisor__suggest">
-				<?php if ( $top ) : ?>
-					<strong><?php echo esc_html( (string) $top['title'] ); ?></strong>
-					<?php if ( count( $advice ) > 1 ) : ?>
-						<small><?php echo esc_html( sprintf( '+%s پیشنهاد دیگر', number_format_i18n( count( $advice ) - 1 ) ) ); ?></small>
-					<?php endif; ?>
-				<?php else : ?>
-					<small>نادیده گرفته شده</small>
-				<?php endif; ?>
-			</span>
+			<?php if ( $advice ) : ?>
+				<ul class="hodima-advisor__issues">
+					<?php foreach ( $advice as $item ) : ?>
+						<li data-rule="<?php echo esc_attr( (string) $item['rule'] ); ?>"><?php echo esc_html( (string) $item['title'] ); ?></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php else : ?>
+				<span class="hodima-advisor__issues"><small>نادیده گرفته شده</small></span>
+			<?php endif; ?>
 			<span class="hodima-advisor__potential">
 				<?php if ( $row['potential'] > 0 ) : ?>
 					<strong>≈ <?php echo esc_html( number_format_i18n( (int) $row['potential'] ) ); ?></strong>
@@ -518,34 +508,12 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 					<small>—</small>
 				<?php endif; ?>
 			</span>
-			<span class="hodima-advisor__toggle hds-btn hds-btn--outline">جزئیات</span>
-		</summary>
-		<div class="hodima-advisor__detail">
-			<?php foreach ( $advice as $item ) : ?>
-				<div class="hodima-advisor__advice">
-					<h3><?php echo esc_html( (string) $item['title'] ); ?> <span class="hds-pill"><?php echo esc_html( hodima_seo_advisor_rule_label( (string) $item['rule'] ) ); ?></span></h3>
-					<p><?php echo esc_html( (string) $item['detail'] ); ?></p>
-					<?php if ( (int) $item['potential'] > 0 ) : ?>
-						<small><?php echo esc_html( sprintf( 'کلیک بالقوه ≈ %s', number_format_i18n( (int) $item['potential'] ) ) ); ?></small>
-					<?php endif; ?>
-					<?php hodima_seo_advisor_render_steps( (array) ( $item['steps'] ?? [] ) ); ?>
-				</div>
-			<?php endforeach; ?>
-			<?php if ( $queries ) : ?>
-				<div class="hodima-advisor__queries">
-					<h3>کلمه‌های برتر <small>(نمایش · نرخ کلیک · رتبه)</small></h3>
-					<ul>
-						<?php foreach ( $queries as $query ) : ?>
-							<li><span><?php echo esc_html( $query['term'] ); ?></span> <small><?php echo esc_html( sprintf( '%1$s · %2$s٪ · %3$s', number_format_i18n( $query['impressions'] ), number_format_i18n( $query['impressions'] > 0 ? $query['clicks'] / $query['impressions'] * 100 : 0, 2 ), number_format_i18n( $query['position'], 1 ) ) ); ?></small></li>
-						<?php endforeach; ?>
-					</ul>
-				</div>
-			<?php endif; ?>
-			<div class="hodima-advisor__links">
-				<?php if ( '' !== $edit ) : ?>
-					<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( $edit ); ?>">ویرایش صفحه</a>
+			<span class="hodima-advisor__actions">
+				<?php if ( ! $ignored_view && '' !== $edit ) : ?>
+					<a class="hds-btn" href="<?php echo esc_url( $edit ); ?>">ویرایش و رفع ایرادها</a>
+				<?php elseif ( ! $ignored_view ) : ?>
+					<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( home_url( (string) $row['path'] ) ); ?>" target="_blank" rel="noopener">دیدن در سایت</a>
 				<?php endif; ?>
-				<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( $url ); ?>" target="_blank" rel="noopener">دیدن در سایت</a>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="hodima_advisor_ignore">
 					<input type="hidden" name="path" value="<?php echo esc_attr( (string) $row['path'] ); ?>">
@@ -553,10 +521,10 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 						<input type="hidden" name="restore" value="1">
 					<?php endif; ?>
 					<?php wp_nonce_field( 'hodima_advisor_ignore' ); ?>
-					<button type="submit" class="hds-btn hds-btn--outline"><?php echo $ignored_view ? 'بازگرداندن به فهرست' : 'نادیده گرفتن این آدرس'; ?></button>
+					<button type="submit" class="hodima-advisor__ignore"><?php echo $ignored_view ? 'بازگرداندن به فهرست' : 'نادیده گرفتن'; ?></button>
 				</form>
-			</div>
+			</span>
 		</div>
-	</details>
+	</div>
 	<?php
 }

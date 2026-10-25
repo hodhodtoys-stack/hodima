@@ -110,20 +110,26 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true ): voi
 				break;
 
 			case 'canonical':
-				printf( '<h5>صفحه‌هایی که برای «%s» نمایش می‌گیرند</h5><ul class="hodima-advisor-steps__list">', esc_html( (string) $step['term'] ) );
+				printf( '<h5>صفحه‌هایی که برای «%s» نمایش می‌گیرند</h5>', esc_html( (string) $step['term'] ) );
+				echo '<table class="hodima-advisor-steps__table"><thead><tr><th>صفحه</th><th>رتبه</th><th>نمایش</th><th>کلیک</th></tr></thead><tbody>';
 				foreach ( (array) $step['pages'] as $page ) {
+					$is_me = (string) $page['path'] === (string) ( $step['current'] ?? '' );
+					$edit  = $is_me ? '' : hodima_seo_advisor_edit_link( (string) $page['kind'], (int) $page['object_id'] );
+					$name  = '' !== (string) $page['title'] ? (string) $page['title'] : rawurldecode( (string) $page['path'] );
 					printf(
-						'<li><span dir="ltr">%1$s</span>%2$s <small>%3$s نمایش · رتبه %4$s</small></li>',
+						'<tr%1$s><td>%2$s<small dir="ltr">%3$s</small></td><td>%4$s</td><td>%5$s</td><td>%6$s</td></tr>',
+						$is_me ? ' class="is-me"' : '',
+						$is_me ? 'همین صفحه · ' . esc_html( $name ) : ( '' !== $edit ? '<a href="' . esc_url( $edit ) . '">' . esc_html( $name ) . ' ↗</a>' : esc_html( $name ) ),
 						esc_html( rawurldecode( (string) $page['path'] ) ),
-						'' !== (string) $page['title'] ? ' — ' . esc_html( (string) $page['title'] ) : '',
+						esc_html( $n( (float) $page['position'], 1 ) ),
 						esc_html( $n( (int) $page['impressions'] ) ),
-						esc_html( $n( (float) $page['position'], 1 ) )
+						esc_html( $n( (int) $page['clicks'] ) )
 					);
 				}
-				echo '</ul>';
-				echo '<p class="hodima-advisor-steps__tip">' . esc_html( $step['is_main']
-					? 'این صفحه بهترین رتبه را دارد و مرجع پیشنهادی است؛ صفحه‌های دیگر را با همین عبارت به آن لینک بدهید.'
-					: sprintf( 'مرجع پیشنهادی (بهترین رتبه): %s. در صفحه‌های دیگر عبارت «%s» را به آن لینک بدهید و در این صفحه از تکرار آن به‌عنوان موضوع اصلی بپرهیزید.', rawurldecode( (string) $step['main'] ), (string) $step['term'] ) ) . '</p>';
+				echo '</tbody></table>';
+				echo '<p class="hodima-advisor-steps__tip hodima-advisor-steps__main">' . esc_html( $step['is_main']
+					? 'صفحه مرجع پیشنهادی: همین صفحه (بهترین رتبه). صفحه‌های دیگر را با همین عبارت به آن لینک بدهید.'
+					: sprintf( 'صفحه مرجع پیشنهادی (بهترین رتبه): %s. در این صفحه عبارت «%s» را موضوع اصلی نکنید و از صفحه‌های دیگر با همین عبارت به مرجع لینک بدهید.', rawurldecode( (string) $step['main'] ), (string) $step['term'] ) ) . '</p>';
 				break;
 		}
 

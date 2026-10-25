@@ -282,6 +282,23 @@ $a = hodima_seo_advisor_page( '/rules/a/' );
 hodima_ad( 'پیشنهادها در ردیف ذخیره می‌شوند و با متن فارسی برمی‌گردند', [ $a['advice_count'], $a['advice'][0]['rule'], str_contains( $a['advice'][0]['title'], 'عنوان' ) ], [ 1, 'low_ctr', true ] );
 $can = hodima_seo_advisor_analyze( '/rules/can1/' );
 hodima_ad( 'رقابت داخلی: صفحه دیگر برای «پلومریا» پیدا می‌شود و پیشنهاد بدون کلیک بالقوه است', [ $rules( $can['suggestions'] ), str_contains( $can['suggestions'][0]['detail'], '/rules/can2/' ), $can['potential'] ], [ [ 'cannibal' ], true, 0 ] );
+$can2 = hodima_seo_advisor_analyze( '/rules/can2/' );
+hodima_ad( 'رقابت دوطرفه: هر دو صفحه رقیب این ایراد را در گزارش خود دارند و هر کدام دیگری را نام می‌برد', [ $rules( $can2['suggestions'] ), str_contains( $can2['suggestions'][0]['detail'], '/rules/can1/' ), $can['suggestions'][0]['title'] ], [ [ 'cannibal' ], true, 'رقابت با ' . hodima_seo_advisor_num( 1 ) . ' صفحه برای «پلومریا»' ] );
+$many_q = [];
+foreach ( [ 'یک', 'دو', 'سه', 'چهار' ] as $k => $w ) {
+	$many_q[ "کلمه {$w}" ] = [ 'clicks' => 10, 'impressions' => 400 - $k, 'position' => 4.0 ];
+}
+$compet = [];
+foreach ( array_keys( $many_q ) as $t ) {
+	$compet[ $t ] = [ [ 'path' => '/other/', 'impressions' => 200 ] ];
+}
+$sg = hodima_seo_advisor_suggestions(
+	[ 'path' => '/many/', 'clicks' => 40, 'impressions' => 1600, 'position' => 4.0, 'prev_clicks' => 0 ],
+	array_map( static fn( string $t, array $q ): array => [ 'term' => $t ] + $q, array_keys( $many_q ), $many_q ),
+	null,
+	$compet
+);
+hodima_ad( 'رقابت داخلی: تا ۳ کلمه، هر کلمه یک ردیف', array_count_values( array_column( $sg, 'rule' ) )['cannibal'] ?? 0, 3 );
 hodima_ad( 'تحلیل آدرس ناشناخته ← null', hodima_seo_advisor_analyze( '/no-such-page/' ), null );
 hodima_ad( 'تحلیل دوباره قبلی‌ها را پاک می‌کند (نه روی هم)', [ hodima_seo_advisor_analyze_all(), hodima_seo_advisor_pages( [ 'has_advice' => true ] )['total'] ], [ 4, 4 ] );
 
@@ -320,8 +337,10 @@ wp_set_current_user( 1 );
 ob_start();
 hodima_seo_advisor_render_admin();
 $html = (string) ob_get_clean();
-hodima_ad( 'صفحه: سربرگ، ۴ کارت آمار، ردیف‌ها، دکمه به‌روزرسانی و نادیده گرفتن', [ str_contains( $html, 'hds-hero__title' ), substr_count( $html, 'class="hds-stat"' ), substr_count( $html, 'hodima-advisor__item' ) >= 4, str_contains( $html, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $html, 'نادیده گرفتن این آدرس' ) ], [ true, 4, true, true, true ] );
+hodima_ad( 'صفحه: سربرگ، ۴ کارت آمار، ردیف‌ها، دکمه به‌روزرسانی و نادیده گرفتن', [ str_contains( $html, 'hds-hero__title' ), substr_count( $html, 'class="hds-stat"' ), substr_count( $html, 'hodima-advisor__item' ) >= 4, str_contains( $html, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $html, 'نادیده گرفتن' ) ], [ true, 4, true, true, true ] );
 hodima_ad( 'صفحه: بازه فعلی انتخاب‌شده و خروجی CSV با nonce', [ str_contains( $html, 'value="90" checked' ), str_contains( $html, 'action=hodima_advisor_csv' ) && str_contains( $html, '_wpnonce=' ) ], [ true, true ] );
+hodima_ad( 'فهرست فقط تیتر: بدون جزئیات و گام، با دکمه «ویرایش و رفع ایرادها» یا «دیدن در سایت»', [ str_contains( $html, 'hodima-advisor__issues' ), str_contains( $html, '<details' ), str_contains( $html, 'ببینید دقیقا چه کنید' ), str_contains( $html, 'ویرایش و رفع ایرادها' ) || str_contains( $html, 'دیدن در سایت' ) ], [ true, false, false, true ] );
+hodima_ad( 'فهرست: همه ایرادها یک‌یک (رقابت با N صفحه برای کلمه)', [ str_contains( $html, 'رقابت با ' . hodima_seo_advisor_num( 1 ) . ' صفحه برای «پلومریا»' ), str_contains( $html, 'data-rule="low_ctr"' ), str_contains( $html, 'data-rule="decline"' ) ], [ true, true, true ] );
 delete_option( 'hodima_discover_sc_key' );
 ob_start();
 hodima_seo_advisor_render_admin();
@@ -383,6 +402,7 @@ hodima_seo_advisor_set_ignored( '/advisor-box-test/', true );
 ob_start();
 hodima_seo_advisor_render_box( (string) get_permalink( $box_id ) );
 $box = (string) ob_get_clean();
+hodima_ad( 'کادر: پنل داده با سه خانه هم‌اندازه و جدول کلمه‌ها (بدون ستون کناری)', [ substr_count( $box, 'hodima-advisor-box__value' ), str_contains( $box, 'hodima-advisor-box__table' ), str_contains( $box, 'hodima-advisor-box__aside' ), str_contains( $box, 'href="#seobox_description"' ) === str_contains( $box, 'href="#seobox_title"' ) ], [ 3, true, false, true ] );
 hodima_ad( 'نادیده‌گرفته‌شده: پیشنهادی نیست و لینک بازگرداندن با nonce هست', [ str_contains( $box, 'نادیده گرفته شده' ), str_contains( $box, 'hodima-advisor-box__item' ), str_contains( $box, 'restore=1' ) && str_contains( $box, '_wpnonce=' ) && str_contains( $box, 'action=hodima_advisor_ignore' ) ], [ true, false, true ] );
 hodima_seo_advisor_set_ignored( '/advisor-box-test/', false );
 
@@ -477,6 +497,7 @@ if ( hodima_router_active() ) {
 	hodima_seo_advisor_render_steps( $by_rule['cannibal'][0]['steps'] );
 	$steps_html = (string) ob_get_clean();
 	hodima_ad( 'نمایش: لینک ویرایش صفحه‌ها، عبارت لینک، عنوان فعلی و پیشنهادی، صفحه مرجع', [ str_contains( $steps_html, 'post=' . $ids[2] ), str_contains( $steps_html, 'عبارت «کلیپس پلومریا» را پیدا کنید' ), str_contains( $steps_html, 'عنوان پیشنهادی' ), str_contains( $steps_html, 'مرجع پیشنهادی' ) ], [ true, true, true, true ] );
+	hodima_ad( 'رقابت در گام‌ها: جدول، ردیف همین صفحه پررنگ، لینک ویرایش رقیب', [ str_contains( $steps_html, 'hodima-advisor-steps__table' ), str_contains( $steps_html, 'class="is-me"' ), str_contains( $steps_html, 'hodima-advisor-steps__main' ) ], [ true, true, true ] );
 	wp_set_current_user( 0 );
 	$saved_advice = hodima_seo_advisor_save_advice( '/steps-target/' );
 	hodima_ad( 'گام‌ها همراه پیشنهاد در جدول ذخیره و برگردانده می‌شود', [ $saved_advice, hodima_seo_advisor_page( '/steps-target/' )['advice'][0]['steps'] !== [] ], [ true, true ] );

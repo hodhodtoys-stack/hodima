@@ -111,9 +111,32 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	$queries = hodima_seo_advisor_queries( (string) $row['path'], 5 );
 	$ctr     = $row['impressions'] > 0 ? $row['clicks'] / $row['impressions'] * 100 : 0.0;
 
-	echo '<div class="hodima-advisor-box__body">';
+	// پنل داده: سه عدد هم‌اندازه با همان ظاهر کادر «عنوان سئو و توضیح متا» (برچسب بالا، مقدار در کادر) + جدول کلمه‌ها
+	echo '<section class="hodima-advisor-box__data" aria-label="داده گوگل برای این صفحه"><h4>داده گوگل برای این صفحه</h4>';
+	printf(
+		'<div class="hodima-advisor-box__metrics"><div><span class="hodima-advisor-box__label">نمایش <small>(%1$s روز)</small></span><div class="hodima-advisor-box__value">%2$s</div></div><div><span class="hodima-advisor-box__label">نرخ کلیک</span><div class="hodima-advisor-box__value">%3$s٪</div></div><div><span class="hodima-advisor-box__label">رتبه</span><div class="hodima-advisor-box__value">%4$s</div></div></div>',
+		esc_html( $n( $status['days'] ) ),
+		esc_html( $n( $row['impressions'] ) ),
+		esc_html( $n( $ctr, 2 ) ),
+		esc_html( $n( (float) $row['position'], 1 ) )
+	);
 
-	// ستون اصلی: پیشنهادها
+	if ( $queries ) {
+		echo '<div><span class="hodima-advisor-box__label">کلمه‌های برتر</span><table class="hodima-advisor-box__table"><thead><tr><th>کلمه</th><th>نمایش</th><th>نرخ کلیک</th><th>رتبه</th></tr></thead><tbody>';
+		foreach ( $queries as $query ) {
+			printf(
+				'<tr><td>%1$s</td><td>%2$s</td><td>%3$s٪</td><td>%4$s</td></tr>',
+				esc_html( $query['term'] ),
+				esc_html( $n( $query['impressions'] ) ),
+				esc_html( $n( $query['impressions'] > 0 ? $query['clicks'] / $query['impressions'] * 100 : 0, 2 ) ),
+				esc_html( $n( $query['position'], 1 ) )
+			);
+		}
+		echo '</tbody></table></div>';
+	}
+	echo '</section>';
+
+	// ایرادها و گام‌های رفع
 	echo '<div class="hodima-advisor-box__main">';
 	if ( $ignored ) {
 		echo '<p class="hodima-advisor-box__empty">این آدرس در «مشاور سئو» نادیده گرفته شده و پیشنهادی نمی‌گیرد.</p>';
@@ -122,15 +145,19 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	}
 
 	$position = 0;
+	$has_box  = function_exists( 'seobox_post_types' );
 	// تحلیل زنده خودش نادیده‌گرفتن را نمی‌داند؛ آدرس نادیده‌گرفته‌شده پیشنهادی نشان نمی‌دهد
 	foreach ( $ignored ? [] : $analysis['suggestions'] as $item ) {
+		$jump = 'low_ctr' === $item['rule'] && $has_box
+			? '<a class="button" href="#seobox_title">' . esc_html( 'رفتن به عنوان سئو' ) . '</a><a class="button" href="#seobox_description">' . esc_html( 'رفتن به توضیح متا' ) . '</a>'
+			: '';
 		echo '<section class="hodima-advisor-box__item">';
 		printf(
 			'<h4>%1$s</h4><p>%2$s</p>%3$s',
 			esc_html( (string) $item['title'] ),
 			esc_html( (string) $item['detail'] ),
-			(int) $item['potential'] > 0 || 'low_ctr' === $item['rule']
-				? '<div class="hodima-advisor-box__meta">' . ( 'low_ctr' === $item['rule'] && function_exists( 'seobox_post_types' ) ? '<a class="button" href="#seobox_title">رفتن به عنوان سئو</a>' : '' ) . ( (int) $item['potential'] > 0 ? '<small>' . esc_html( sprintf( 'کلیک بالقوه ≈ %s', $n( (int) $item['potential'] ) ) ) . '</small>' : '' ) . '</div>'
+			'' !== $jump || (int) $item['potential'] > 0
+				? '<div class="hodima-advisor-box__meta">' . wp_kses_post( $jump ) . ( (int) $item['potential'] > 0 ? '<small>' . esc_html( sprintf( 'کلیک بالقوه ≈ %s', $n( (int) $item['potential'] ) ) ) . '</small>' : '' ) . '</div>'
 				: ''
 		);
 		hodima_seo_advisor_render_steps( (array) ( $item['steps'] ?? [] ), 0 === $position++ );
@@ -138,27 +165,7 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	}
 	echo '</div>';
 
-	// ستون کناری: عددها و کلمه‌های برتر
-	echo '<aside class="hodima-advisor-box__aside" aria-label="داده این صفحه">';
-	printf(
-		'<ul class="hodima-advisor-box__metrics"><li><span>نمایش</span><strong>%1$s</strong></li><li><span>نرخ کلیک</span><strong>%2$s٪</strong></li><li><span>رتبه</span><strong>%3$s</strong></li></ul>',
-		esc_html( $n( $row['impressions'] ) ),
-		esc_html( $n( $ctr, 2 ) ),
-		esc_html( $n( (float) $row['position'], 1 ) )
-	);
-
-	if ( $queries ) {
-		echo '<h4>کلمه‌های برتر <small>(نمایش · نرخ کلیک · رتبه)</small></h4><ul class="hodima-advisor-box__queries">';
-		foreach ( $queries as $query ) {
-			printf(
-				'<li><span>%1$s</span><small>%2$s</small></li>',
-				esc_html( $query['term'] ),
-				esc_html( sprintf( '%1$s · %2$s٪ · %3$s', $n( $query['impressions'] ), $n( $query['impressions'] > 0 ? $query['clicks'] / $query['impressions'] * 100 : 0, 2 ), $n( $query['position'], 1 ) ) )
-			);
-		}
-		echo '</ul>';
-	}
-
+	echo '<footer class="hodima-advisor-box__foot">';
 	printf( '<a class="hodima-advisor-box__link" href="%s">دیدن در صفحه مشاور سئو</a>', esc_url( hodima_seo_advisor_page_url( [ 'q' => (string) $row['path'] ] ) ) );
 
 	if ( $ignored ) {
@@ -168,5 +175,5 @@ function hodima_seo_advisor_render_box( string $url ): void {
 		);
 	}
 
-	echo '</aside></div></div>';
+	echo '</footer></div>';
 }

@@ -38,6 +38,9 @@ const HODIMA_SEO_ADVISOR_MAX_SUGGESTIONS = 6;
 /** حداکثر پیشنهاد از هر قاعده کلمه‌محور برای یک آدرس. */
 const HODIMA_SEO_ADVISOR_MAX_PER_QUERY_RULE = 2;
 
+/** حداکثر کلمه رقابت داخلی در گزارش یک آدرس (جدا از سقف بالا؛ هر کلمه یک ردیف). */
+const HODIMA_SEO_ADVISOR_MAX_CANNIBAL = 3;
+
 /** حداکثر آدرسی که در یک بار تحلیل کامل بررسی می‌شود. */
 const HODIMA_SEO_ADVISOR_ANALYZE_LIMIT = 1500;
 
@@ -267,18 +270,21 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 		array_push( $list, ...array_slice( $group, 0, HODIMA_SEO_ADVISOR_MAX_PER_QUERY_RULE ) );
 	}
 
-	// ۴. رقابت داخلی (فقط اطلاع؛ بدون کلیک بالقوه)
+	// ۴. رقابت داخلی (فقط اطلاع؛ بدون کلیک بالقوه): هر کلمه رقابتی یک ردیف، پرنمایش‌ترین‌ها اول
+	$cannibal = [];
 	foreach ( $queries as $query ) {
 		$others = $competitors[ $query['term'] ] ?? [];
 		if ( $query['impressions'] >= $cfg['cannibal_min_impressions'] && $others ) {
-			$list[] = [
+			$cannibal[] = [
 				'rule'      => 'cannibal',
 				'term'      => $query['term'],
-				'title'     => 'چند صفحه برای «' . $query['term'] . '» رقابت می‌کنند',
+				'title'     => sprintf( 'رقابت با %1$s صفحه برای «%2$s»', hodima_seo_advisor_num( count( $others ) ), $query['term'] ),
 				'detail'    => 'علاوه بر این صفحه، ' . implode( '، ', array_map( static fn( array $o ): string => $o['path'], array_slice( $others, 0, 3 ) ) ) . ' هم برای این کلمه نمایش می‌گیرد. یکی را صفحه اصلی کلمه کنید و بقیه را با لینک داخلی به آن وصل کنید.',
 				'potential' => 0,
 			];
-			break; // یک مورد کافی است؛ پرنمایش‌ترین کلمه
+			if ( count( $cannibal ) >= HODIMA_SEO_ADVISOR_MAX_CANNIBAL ) {
+				break;
+			}
 		}
 	}
 
@@ -300,7 +306,8 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 
 	usort( $list, static fn( array $a, array $b ): int => $b['potential'] <=> $a['potential'] );
 
-	return array_slice( $list, 0, HODIMA_SEO_ADVISOR_MAX_SUGGESTIONS );
+	// رقابت داخلی جدا از سقف می‌آید تا با پیشنهادهای پرکلیک‌تر بریده نشود (هر دو صفحه رقیب باید آن را ببینند)
+	return [ ...array_slice( $list, 0, HODIMA_SEO_ADVISOR_MAX_SUGGESTIONS ), ...$cannibal ];
 }
 
 /**

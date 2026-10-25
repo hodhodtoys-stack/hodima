@@ -263,7 +263,7 @@ function hodima_seo_advisor_box_post_types_all(): array {
 /**
  * آدرس‌هایی که برای یک کلمه نمایش می‌گیرند (برای انتخاب صفحه مرجع).
  *
- * @return list<array{path: string, title: string, impressions: int, clicks: int, position: float}>
+ * @return list<array{path: string, title: string, kind: string, object_id: int, impressions: int, clicks: int, position: float}>
  */
 function hodima_seo_advisor_term_pages( string $term, int $limit = 5 ): array {
 
@@ -271,7 +271,7 @@ function hodima_seo_advisor_term_pages( string $term, int $limit = 5 ): array {
 
 	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare(
-			'SELECT q.path, q.impressions, q.clicks, q.avg_position, p.title FROM %i q LEFT JOIN %i p ON p.path = q.path WHERE q.term = %s AND q.impressions >= %d ORDER BY q.impressions DESC LIMIT %d',
+			'SELECT q.path, q.impressions, q.clicks, q.avg_position, p.title, p.kind, p.object_id FROM %i q LEFT JOIN %i p ON p.path = q.path WHERE q.term = %s AND q.impressions >= %d ORDER BY q.impressions DESC LIMIT %d',
 			hodima_seo_advisor_table( 'queries' ),
 			hodima_seo_advisor_table( 'pages' ),
 			$term,
@@ -285,6 +285,8 @@ function hodima_seo_advisor_term_pages( string $term, int $limit = 5 ): array {
 		static fn( array $r ): array => [
 			'path'        => (string) $r['path'],
 			'title'       => (string) $r['title'],
+			'kind'        => (string) $r['kind'],
+			'object_id'   => (int) $r['object_id'],
 			'impressions' => (int) $r['impressions'],
 			'clicks'      => (int) $r['clicks'],
 			'position'    => (float) $r['avg_position'],
@@ -296,7 +298,7 @@ function hodima_seo_advisor_term_pages( string $term, int $limit = 5 ): array {
 /**
  * گام «رقابت داخلی»: صفحه‌های رقیب برای کلمه و صفحه مرجع پیشنهادی (بهترین رتبه؛ مساوی ← بیشترین کلیک).
  *
- * @param list<array{path: string, title: string, impressions: int, clicks: int, position: float}> $pages
+ * @param list<array{path: string, title: string, kind: string, object_id: int, impressions: int, clicks: int, position: float}> $pages
  * @return array<string, mixed>
  */
 function hodima_seo_advisor_step_canonical( string $term, array $pages, string $current_path ): array {
@@ -308,6 +310,7 @@ function hodima_seo_advisor_step_canonical( string $term, array $pages, string $
 		'type'    => 'canonical',
 		'term'    => $term,
 		'pages'   => $pages,
+		'current' => $current_path,
 		'main'    => (string) ( $best[0]['path'] ?? '' ),
 		'is_main' => ( $best[0]['path'] ?? '' ) === $current_path,
 	];
