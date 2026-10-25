@@ -404,18 +404,34 @@ function render_modules_page( string $plugin ): void {
 			<?php
 			$module_total   = count( $data['modules'] );
 			$module_enabled = count( array_filter( array_keys( $data['modules'] ), static fn( string $mid ): bool => Modules::is_enabled( $plugin, $mid ) ) );
-			$all_enabled    = $module_enabled === $module_total;
 			?>
-			<section class="hodima-statusbar<?php echo $all_enabled ? '' : ' is-warn'; ?>" aria-label="خلاصه ماژول‌ها">
-				<span class="dashicons <?php echo esc_attr( $all_enabled ? 'dashicons-yes-alt' : 'dashicons-info' ); ?>" aria-hidden="true"></span>
-				<div class="hodima-statusbar__body">
-					<h2 class="hodima-statusbar__title"><?php echo esc_html( $all_enabled ? sprintf( 'همه %s ماژول روشن‌اند', number_format_i18n( $module_total ) ) : sprintf( '%1$s از %2$s ماژول روشن است', number_format_i18n( $module_enabled ), number_format_i18n( $module_total ) ) ); ?></h2>
-					<p class="hodima-statusbar__text">ماژول خاموش اصلا بارگذاری نمی‌شود (نه منو، نه هوک، نه کوئری). داده‌هایش پاک نمی‌شود و با روشن کردن دوباره برمی‌گردد.</p>
-				</div>
-				<span class="hodima-pill <?php echo $all_enabled ? 'hodima-pill--ok' : 'hodima-pill--warn'; ?>"><?php echo esc_html( $all_enabled ? 'همه روشن' : 'برخی خاموش' ); ?></span>
+			<section class="hodima-kpis hodima-modstats" aria-label="خلاصه ماژول‌ها">
+				<article class="hodima-kpi">
+					<h3 class="hodima-kpi__title">روشن</h3>
+					<p class="hodima-kpi__text"><b data-hodima-count="on"><?php echo esc_html( number_format_i18n( $module_enabled ) ); ?></b><span class="hodima-kpi__sub"> از <?php echo esc_html( number_format_i18n( $module_total ) ); ?> ماژول بارگذاری می‌شوند</span></p>
+				</article>
+				<article class="hodima-kpi">
+					<h3 class="hodima-kpi__title">خاموش</h3>
+					<p class="hodima-kpi__text"><b data-hodima-count="off"><?php echo esc_html( number_format_i18n( $module_total - $module_enabled ) ); ?></b><span class="hodima-kpi__sub"> ماژول؛ اصلا بارگذاری نمی‌شوند و داده‌هایشان می‌ماند</span></p>
+				</article>
+				<article class="hodima-kpi">
+					<h3 class="hodima-kpi__title">ذخیره‌نشده</h3>
+					<p class="hodima-kpi__text"><b data-hodima-count="dirty">۰</b><span class="hodima-kpi__sub"> تغییر منتظر ذخیره</span></p>
+				</article>
 			</section>
 
 			<section class="hodima-modlist" aria-label="ماژول‌ها">
+				<?php // جستجو و فیلتر فقط با جاوااسکریپت کار می‌کنند؛ بدون آن پنهان‌اند و فهرست کامل دیده می‌شود ?>
+				<div class="hodima-modtools" data-hodima-tools hidden>
+					<label class="screen-reader-text" for="hodima-module-search">جستجوی ماژول</label>
+					<input type="search" id="hodima-module-search" class="hodima-modtools__search" placeholder="جستجوی ماژول…" data-hodima-search autocomplete="off">
+					<div class="hodima-modtools__filters" role="group" aria-label="فیلتر ماژول‌ها">
+						<button type="button" class="hodima-modtools__filter" data-hodima-filter="all" aria-pressed="true">همه <span class="hodima-modtools__n" data-hodima-count="all"><?php echo esc_html( number_format_i18n( $module_total ) ); ?></span></button>
+						<button type="button" class="hodima-modtools__filter" data-hodima-filter="on" aria-pressed="false">روشن <span class="hodima-modtools__n" data-hodima-count="on"><?php echo esc_html( number_format_i18n( $module_enabled ) ); ?></span></button>
+						<button type="button" class="hodima-modtools__filter" data-hodima-filter="off" aria-pressed="false">خاموش <span class="hodima-modtools__n" data-hodima-count="off"><?php echo esc_html( number_format_i18n( $module_total - $module_enabled ) ); ?></span></button>
+					</div>
+				</div>
+
 				<?php foreach ( $data['modules'] as $id => $module ) : ?>
 					<?php
 					$enabled  = Modules::is_enabled( $plugin, $id );
@@ -434,39 +450,40 @@ function render_modules_page( string $plugin ): void {
 						$module->recommends
 					) ) );
 					?>
-					<article class="hodima-module <?php echo $enabled ? 'is-on' : 'is-off'; ?>" data-hodima-module>
+					<article class="hodima-module <?php echo $enabled ? 'is-on' : 'is-off'; ?>" data-hodima-module data-hodima-text="<?php echo esc_attr( $module->title . ' ' . $module->description ); ?>">
 						<span class="dashicons <?php echo esc_attr( $module->icon ); ?> hodima-module__icon" aria-hidden="true"></span>
 
 						<div class="hodima-module__text">
-							<h3 class="hodima-module__title" id="<?php echo esc_attr( $field_id ); ?>-title"><?php echo esc_html( $module->title ); ?></h3>
+							<h3 class="hodima-module__title" id="<?php echo esc_attr( $field_id ); ?>-title">
+								<?php echo esc_html( $module->title ); ?>
+								<?php if ( '' !== $note ) : ?>
+									<span class="hodima-pill <?php echo esc_attr( ! $module->available ? 'hodima-pill--warn' : 'hodima-pill--info' ); ?>"><?php echo esc_html( $note ); ?></span>
+								<?php endif; ?>
+							</h3>
 							<p class="hodima-module__desc"><?php echo esc_html( $module->description ); ?></p>
-							<?php if ( '' !== $note || $recommends || '' !== $module->warning ) : ?>
-								<div class="hodima-module__meta">
-									<?php if ( '' !== $note ) : ?>
-										<span class="hodima-pill <?php echo esc_attr( ! $module->available ? 'hodima-pill--warn' : 'hodima-pill--info' ); ?>"><?php echo esc_html( $note ); ?></span>
-									<?php endif; ?>
-									<?php if ( $recommends ) : ?>
-										<span class="hodima-module__hint">بهتر است همراه با: <?php echo esc_html( implode( '، ', $recommends ) ); ?></span>
-									<?php endif; ?>
-									<?php
-									/*
-									 * هشدار «اثر خاموش کردن» است، نه وضعیت فعلی (قبلا کادر زردِ همیشه‌پیدا
-									 * بود). حالا جمع‌شونده؛ پنجره تأیید هنگام خاموش‌کردن همان متن را می‌گوید.
-									 */
-									?>
-									<?php if ( '' !== $module->warning ) : ?>
-										<details class="hodima-module__warning">
-											<summary>اگر خاموش شود؟</summary>
-											<p><?php echo esc_html( $module->warning ); ?></p>
-										</details>
-									<?php endif; ?>
-								</div>
-							<?php endif; ?>
+							<?php
+							/*
+							 * توضیح کامل، «بهتر است همراه با» و هشدار «اگر خاموش شود؟» پشت دکمه «جزئیات»‌اند تا ردیف‌ها
+							 * کوتاه بمانند (قبلا هر ردیف تا چهار خط بود و صفحه موبایل ۳۶۰۰px می‌شد). بدون جاوااسکریپت
+							 * توضیح کامل خود ردیف دیده می‌شود و دکمه و بدنه پنهان‌اند. هشدار اثر خاموش‌کردن است نه وضعیت فعلی.
+							 */
+							?>
+							<div class="hodima-module__body" id="<?php echo esc_attr( $field_id ); ?>-more" hidden>
+								<?php if ( $recommends ) : ?>
+									<p class="hodima-module__hint">بهتر است همراه با: <?php echo esc_html( implode( '، ', $recommends ) ); ?></p>
+								<?php endif; ?>
+								<?php if ( '' !== $module->warning ) : ?>
+									<p><strong>اگر خاموش شود؟</strong> <?php echo esc_html( $module->warning ); ?></p>
+								<?php endif; ?>
+							</div>
 						</div>
 
-						<?php if ( $loaded && '' !== $module->settings ) : ?>
-							<a class="hodima-module__link" href="<?php echo esc_url( admin_url( $module->settings ) ); ?>">تنظیمات ←</a>
-						<?php endif; ?>
+						<div class="hodima-module__acts">
+							<button type="button" class="hodima-module__toggle" aria-expanded="false" aria-controls="<?php echo esc_attr( $field_id ); ?>-more" data-hodima-more hidden>جزئیات</button>
+							<?php if ( $loaded && '' !== $module->settings ) : ?>
+								<a class="hodima-module__link" href="<?php echo esc_url( admin_url( $module->settings ) ); ?>">تنظیمات ←</a>
+							<?php endif; ?>
+						</div>
 
 						<label class="hodima-switch" for="<?php echo esc_attr( $field_id ); ?>">
 							<input
@@ -483,9 +500,10 @@ function render_modules_page( string $plugin ): void {
 						</label>
 					</article>
 				<?php endforeach; ?>
+				<p class="hodima-modlist__empty" data-hodima-empty hidden>ماژولی با این جستجو پیدا نشد.</p>
 			</section>
 
-			<footer class="hodima-hub__actions">
+			<footer class="hodima-hub__actions" data-hodima-actions>
 				<span class="hodima-hub__dirty" data-hodima-dirty hidden>تغییرات ذخیره نشده‌اند.</span>
 				<?php submit_button( 'ذخیره ماژول‌ها', 'primary hodima-button', 'submit', false ); ?>
 			</footer>
