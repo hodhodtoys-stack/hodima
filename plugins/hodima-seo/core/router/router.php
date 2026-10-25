@@ -35,6 +35,7 @@ require_once HODIMA_ROUTER_DIR . '/slug-guard.php';
 require_once HODIMA_ROUTER_DIR . '/legacy.php';
 
 if ( is_admin() ) {
+	require_once HODIMA_SEO_DIR . '/inc/ui-skeleton.php';
 	require_once HODIMA_ROUTER_DIR . '/report.php';
 	require_once HODIMA_ROUTER_DIR . '/links.php';
 	require_once HODIMA_ROUTER_DIR . '/admin.php';

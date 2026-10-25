@@ -181,7 +181,7 @@ function hodima_router_link_pill( string $issue ): string {
 		default     => [ 'warn', 'قدیمی (ریدایرکت می‌شود)' ],
 	};
 
-	return sprintf( '<span class="hd-pill hd-pill--%s">%s</span>', esc_attr( $class ), esc_html( $text ) );
+	return sprintf( '<span class="hds-pill hds-pill--%s">%s</span>', esc_attr( $class ), esc_html( $text ) );
 }
 
 /**
@@ -218,7 +218,7 @@ function hodima_router_link_place_post( WP_Post $post ): array {
 	$title = '' !== $post->post_title ? $post->post_title : '#' . $post->ID;
 
 	return [
-		'where' => sprintf( '<span class="hd-pill hd-pill--info">%s</span> %s', esc_html( hodima_router_type_label( $post->post_type ) ), esc_html( $title ) ),
+		'where' => sprintf( '<span class="hds-pill hds-pill--info">%s</span> %s', esc_html( hodima_router_type_label( $post->post_type ) ), esc_html( $title ) ),
 		'edit'  => (string) get_edit_post_link( $post->ID, 'raw' ),
 	];
 }
@@ -280,7 +280,7 @@ function hodima_router_links_batch( string $source, int $cursor ): array {
 
 			foreach ( $terms as $term ) {
 				$rows = array_merge( $rows, hodima_router_link_rows( $term->description, [
-					'where' => sprintf( '<span class="hd-pill hd-pill--info">%s</span> %s', esc_html( hodima_router_type_label( $term->taxonomy ) ), esc_html( $term->name ) ),
+					'where' => sprintf( '<span class="hds-pill hds-pill--info">%s</span> %s', esc_html( hodima_router_type_label( $term->taxonomy ) ), esc_html( $term->name ) ),
 					'edit'  => (string) get_edit_term_link( $term->term_id, $term->taxonomy ),
 					'field' => 'توضیح دسته',
 				] ) );
@@ -302,7 +302,7 @@ function hodima_router_links_batch( string $source, int $cursor ): array {
 				$menu  = is_array( $menus ) && isset( $menus[0] ) && $menus[0] instanceof WP_Term ? $menus[0] : null;
 				$link  = (string) get_post_meta( $item->ID, '_menu_item_url', true );
 				$rows  = array_merge( $rows, hodima_router_link_rows( '<a href="' . esc_attr( $link ) . '"></a>', [
-					'where' => sprintf( '<span class="hd-pill hd-pill--info">منو</span> %s ← %s', esc_html( null !== $menu ? $menu->name : '—' ), esc_html( '' !== $item->post_title ? $item->post_title : $link ) ),
+					'where' => sprintf( '<span class="hds-pill hds-pill--info">منو</span> %s ← %s', esc_html( null !== $menu ? $menu->name : '—' ), esc_html( '' !== $item->post_title ? $item->post_title : $link ) ),
 					'edit'  => null !== $menu ? admin_url( 'nav-menus.php?action=edit&menu=' . $menu->term_id ) : admin_url( 'nav-menus.php' ),
 					'field' => 'پیوند دلخواه',
 				] ) );
@@ -330,7 +330,7 @@ function hodima_router_links_batch( string $source, int $cursor ): array {
 				$html  = str_contains( $value, '<' ) || 'url' !== $type ? $value : '<a href="' . esc_attr( $value ) . '"></a>';
 				$label = (string) ( $fields[ $key ]['label'] ?? $key );
 				$rows  = array_merge( $rows, hodima_router_link_rows( $html, [
-					'where' => '<span class="hd-pill hd-pill--info">تنظیمات قالب</span> ' . esc_html( $label ),
+					'where' => '<span class="hds-pill hds-pill--info">تنظیمات قالب</span> ' . esc_html( $label ),
 					'edit'  => $edit,
 					'field' => (string) $key,
 				] ) );

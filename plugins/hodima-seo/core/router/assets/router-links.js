@@ -52,7 +52,7 @@
 		for (const [issue, count] of Object.entries(counts)) {
 			if (!count) continue;
 			const pill = document.createElement('span');
-			pill.className = `hd-pill hd-pill--${issue === 'old' ? 'warn' : 'error'}`;
+			pill.className = `hds-pill hds-pill--${issue === 'old' ? 'warn' : 'error'}`;
 			pill.textContent = `${LABELS[issue]}: ${nf.format(count)}`;
 			box.append(pill);
 		}
@@ -110,6 +110,16 @@
 			tbody.append(...rows.map(([tr]) => tr));
 
 			const total = counts.malformed + counts.broken + counts.old;
+
+			// کارت آمار بالای صفحه هم با نتیجه جستجو تازه شود
+			const stat = document.querySelector('[data-hodima-router-links-stat]');
+			if (stat) {
+				stat.textContent = nf.format(total);
+				stat.toggleAttribute('data-empty', false);
+				const sub = document.querySelector('[data-hodima-router-links-stat-sub]');
+				if (sub) sub.textContent = total ? 'لینک نیاز به اصلاح دارد' : 'همه لینک‌ها سالم‌اند';
+			}
+
 			msg.textContent = total
 				? `تمام شد؛ ${nf.format(total)} لینک نیاز به اصلاح دارد.`
 				: 'تمام شد؛ هیچ لینک داخلی قدیمی یا خرابی پیدا نشد.';

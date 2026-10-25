@@ -56,7 +56,7 @@ function hodima_router_object_label( WP_Post|WP_Term $object ): string {
 		$type  = $object->taxonomy;
 	}
 
-	$label = sprintf( '<span class="hd-pill hd-pill--info">%s</span> ', esc_html( hodima_router_type_label( $type ) ) );
+	$label = sprintf( '<span class="hds-pill hds-pill--info">%s</span> ', esc_html( hodima_router_type_label( $type ) ) );
 
 	return $label . ( '' !== $edit
 		? sprintf( '<a href="%s">%s</a>', esc_url( $edit ), esc_html( $title ) )
@@ -79,29 +79,18 @@ function hodima_router_admin_assets(): void {
 		'nonce' => wp_create_nonce( 'hodima_router_links' ),
 	] ) . ';', 'before' );
 
-	if ( ! defined( 'HODIMA_ADMIN_UI_HANDLE' ) ) {
-		return; // بدون Hodima Core هدر ساده فالبک؛ ظاهر پیش‌فرض وردپرس کافی است
-	}
+	// کالبد و استایل از کیت خود افزونه SEO (ui/، بدون وابستگی به Core)
+	hodima_seo_ui_enqueue();
 
-	wp_add_inline_style( HODIMA_ADMIN_UI_HANDLE, '
-.hodima-router .hodima-router__status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
-.hodima-router .hodima-router__bases { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; font-size: 0.875rem; }
-.hodima-router .hodima-router__sub { margin: 1rem 0 0.5rem; color: var(--hd-primary); font-size: 0.875rem; font-weight: 700; }
-.hodima-router .hodima-router__sub:first-of-type { margin-block-start: 0; }
-.hodima-router .hodima-router__ok { margin: 0; color: var(--hd-muted); }
-.hodima-router .hodima-router__ok span { color: var(--hd-ok); font-weight: 700; margin-inline-end: 0.25rem; }
-.hodima-router .hodima-router__urls { inline-size: 100%; }
-.hodima-router .hodima-router__bases code { white-space: nowrap; }
-.hodima-router .hodima-router__urls { min-block-size: 6rem; font-family: inherit; }
+	wp_add_inline_style( 'hodima-seo-ui', '
 .hodima-router .hodima-router__url { min-inline-size: 14rem; direction: ltr; text-align: left; overflow-wrap: anywhere; }
-.hodima-router .hd-table-wrap > table { min-inline-size: 44rem; }
-.hodima-router .hodima-router__summary { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-block: 1rem; }
-.hodima-router .hodima-router__more { margin-block-start: 1rem; }
-.hodima-router .hodima-router__more > summary { cursor: pointer; color: var(--hd-primary); font-weight: 700; min-block-size: 2.75rem; display: flex; align-items: center; }
-.hodima-router .hodima-router__more[open] > summary { margin-block-end: 0.75rem; }
+.hodima-router .hodima-router__summary { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-block: 1rem; }
+.hodima-router .hodima-router__summary[hidden] { display: none; }
+.hodima-router .hodima-router__msg { color: var(--hd-muted); font-size: 0.8125rem; }
 .hodima-router .hodima-router__progress { display: block; inline-size: 100%; block-size: 0.5rem; margin-block: 0.75rem; accent-color: var(--hd-primary); }
 .hodima-router .hodima-router__progress[hidden] { display: none; }
 .hodima-router .hodima-router__field { display: block; color: var(--hd-muted); font-size: 0.75rem; }
+.hodima-router .hds-action > .hodima-router__msg { align-self: center; }
 ' );
 }
 
@@ -134,7 +123,7 @@ function hodima_router_status_pill( string $key, ?int $count = null ): string {
 		$text .= ': ' . number_format_i18n( $count );
 	}
 
-	return sprintf( '<span class="hd-pill hd-pill--%s">%s</span>', esc_attr( $class ), esc_html( $text ) );
+	return sprintf( '<span class="hds-pill hds-pill--%s">%s</span>', esc_attr( $class ), esc_html( $text ) );
 }
 
 /** آدرس خوانا (فارسی رمزگشایی‌شده) در یک code چپ‌به‌راست. */
@@ -214,12 +203,11 @@ function hodima_router_render_admin(): void {
 		$bulk      = array_map( 'hodima_router_inspect_url', hodima_router_extract_urls( $bulk_text ) );
 	}
 
-	echo '<div class="wrap hd-wrap hodima-router">';
-
-	hodima_admin_header( [
+	hodima_seo_ui_open( [
 		'title'       => 'آدرس تمیز',
 		'description' => 'محصول، دسته محصول و دسته نوشته بدون /product/، /product-category/ و /category/؛ هر صفحه فقط یک آدرس دارد و شکل‌های دیگر با ۳۰۱ به آن می‌روند.',
 		'icon'        => 'dashicons-admin-site-alt3',
+		'class'       => 'hodima-router',
 	] );
 
 	if ( ! $active ) {
@@ -230,113 +218,189 @@ function hodima_router_render_admin(): void {
 		hodima_admin_notice( 'فرم منقضی شده بود؛ صفحه را تازه کنید و دوباره بررسی کنید.', 'warning' );
 	}
 
-	echo '<div class="hd-body">';
+	hodima_seo_ui_body_open();
 
-	// وضعیت
+	// ردیف آمار: وضعیت روتر و سه شمارنده
+	$bases_html = sprintf(
+		'حذف‌شده: <code class="hds-code">/%s/</code> <code class="hds-code">/%s/</code> <code class="hds-code">/%s/</code>',
+		esc_html( $bases['product'] ),
+		esc_html( $bases['product_cat'] ),
+		esc_html( $bases['category'] )
+	);
+
+	hodima_seo_ui_stats( [
+		[
+			'label' => 'روتر',
+			'value' => $active ? '<span class="hds-pill">فعال</span>' : '<span class="hds-pill hds-pill--warn">غیرفعال</span>',
+			'sub'   => $bases_html,
+		],
+		[
+			'label' => 'آدرس مشترک',
+			'value' => esc_html( number_format_i18n( count( $conflicts ) ) ),
+			'sub'   => $conflicts ? 'نامک تکراری؛ فقط اولی نمایش داده می‌شود' : 'هیچ دو صفحه‌ای آدرس یکسان ندارند',
+		],
+		[
+			'label' => 'زیردسته با مشکل',
+			'value' => esc_html( number_format_i18n( $problems ) ),
+			'sub'   => $nested['total'] ? 'از ' . esc_html( number_format_i18n( $nested['total'] ) ) . ' زیردسته با آدرس کامل' : 'زیردسته‌ای با آدرس سلسله‌مراتبی نیست',
+		],
+		[
+			'label' => 'لینک داخلی خراب',
+			'value' => '<span data-hodima-router-links-stat data-empty>—</span>',
+			'sub'   => '<span data-hodima-router-links-stat-sub>با تب «لینک‌های داخلی» جستجو کنید</span>',
+		],
+	] );
+
+	// کنش اصلی: بررسی یک آدرس
+	hodima_seo_ui_card_open( 'بررسی یک آدرس', 'آدرس را بچسبانید تا ببینید سایت با آن چه می‌کند: نمایش صفحه، ۳۰۱ یا ۴۰۴. چیزی ذخیره یا عوض نمی‌شود.', 'dashicons-search' );
 	?>
-	<section class="hd-card hd-card--accent">
-		<div class="hodima-router__status">
-			<?php echo $active ? '<span class="hd-pill hd-pill--ok">روتر فعال</span>' : '<span class="hd-pill hd-pill--warn">روتر غیرفعال</span>'; ?>
-			<span class="hodima-router__bases"><span class="hd-muted">پایه‌های حذف‌شده:</span> <code dir="ltr">/<?php echo esc_html( $bases['product'] ); ?>/</code> <code dir="ltr">/<?php echo esc_html( $bases['product_cat'] ); ?>/</code> <code dir="ltr">/<?php echo esc_html( $bases['category'] ); ?>/</code></span>
-			<span class="hd-pill hd-pill--<?php echo $conflicts ? 'warn' : 'ok'; ?>">آدرس مشترک: <?php echo esc_html( number_format_i18n( count( $conflicts ) ) ); ?></span>
-			<span class="hd-pill hd-pill--<?php echo $problems ? 'warn' : 'ok'; ?>">زیردسته با مشکل: <?php echo esc_html( number_format_i18n( $problems ) ); ?></span>
-		</div>
-	</section>
+	<form method="get" class="hds-action">
+		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_ROUTER_PAGE ); ?>">
+		<label class="screen-reader-text" for="hodima-router-check">آدرس</label>
+		<input type="text" id="hodima-router-check" name="check" class="hds-input" dir="ltr" value="<?php echo esc_attr( $check ); ?>" placeholder="<?php echo esc_attr( home_url( '/product/...' ) ); ?>">
+		<button type="submit" class="hds-btn">بررسی آدرس</button>
+	</form>
+	<?php
+	if ( '' !== $check ) {
+		$result = hodima_router_inspect_url( $check );
+		$level  = in_array( hodima_router_check_key( $result ), [ 'missing', 'external', 'shared', 'rule_chain', 'rule_broken' ], true ) ? 'warn' : 'ok';
+		echo '<div class="hds-result" role="status" data-level="' . esc_attr( $level ) . '"><span class="dashicons ' . ( 'ok' === $level ? 'dashicons-yes-alt' : 'dashicons-warning' ) . '" aria-hidden="true"></span><p>' . wp_kses_post( hodima_router_status_text( $result ) ) . '</p></div>'; // phpcs:ignore WordPress.Security.EscapeOutput
+	}
+	hodima_seo_ui_card_close();
 
-	<section class="hd-card">
-		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-search' ); // phpcs:ignore ?> بررسی آدرس</h2>
-		<form method="get" class="hd-inline">
-			<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_ROUTER_PAGE ); ?>">
-			<label class="screen-reader-text" for="hodima-router-check">آدرس</label>
-			<input type="text" id="hodima-router-check" name="check" class="regular-text" dir="ltr" value="<?php echo esc_attr( $check ); ?>" placeholder="<?php echo esc_attr( home_url( '/product/...' ) ); ?>">
-			<button type="submit" class="button button-primary">بررسی</button>
-		</form>
-		<?php
-		if ( '' !== $check ) {
-			$result = hodima_router_inspect_url( $check );
-			$tone   = in_array( hodima_router_check_key( $result ), [ 'missing', 'external', 'shared', 'rule_chain', 'rule_broken' ], true ) ? 'warning' : 'success';
-			echo '<div class="hd-callout hd-callout--' . esc_attr( $tone ) . '">' . hodima_admin_icon( 'success' === $tone ? 'dashicons-yes-alt' : 'dashicons-warning' ) . '<p>' . wp_kses_post( hodima_router_status_text( $result ) ) . '</p></div>'; // phpcs:ignore
-		}
-		?>
-		<details class="hodima-router__more"<?php echo '' !== $bulk_text ? ' open' : ''; ?>>
-		<summary>بررسی گروهی آدرس‌ها (تا ۳۰۰ آدرس)</summary>
-		<p class="hd-text">هر خط یک آدرس. می‌توانید فهرست صفحه‌ها را از سرچ کنسول کپی کنید: «Pages» (مثلا گروه «Page with redirect» یا «Not found (404)») یا «Performance ← Pages»، دکمه «Export» و بعد ستون آدرس‌ها. چیزی ذخیره یا عوض نمی‌شود.</p>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=' . HODIMA_ROUTER_PAGE ) ); ?>">
-			<?php wp_nonce_field( 'hodima_router_bulk', '_hodima_router_bulk' ); ?>
-			<label class="screen-reader-text" for="hodima-router-urls">آدرس‌ها</label>
-			<textarea id="hodima-router-urls" name="hodima_router_urls" class="hodima-router__urls" dir="ltr" rows="8" placeholder="<?php echo esc_attr( home_url( '/plumeria-hair-clips/' ) ); ?>"><?php echo esc_textarea( $bulk_text ); ?></textarea>
-			<p><button type="submit" class="button">بررسی همه</button></p>
-		</form>
-		<?php
-		if ( '' !== $bulk_text && ! $bulk ) {
-			echo '<div class="hd-callout hd-callout--warning">' . hodima_admin_icon( 'dashicons-warning' ) . '<p>آدرسی پیدا نشد؛ هر خط باید با https:// یا / شروع شود.</p></div>'; // phpcs:ignore
-		}
+	// تب پیش‌فرض: نتیجه بررسی گروهی، وگرنه اولین جایی که مشکل دارد
+	$active_tab = '' !== $bulk_text ? 'bulk' : ( $conflicts ? 'shared' : ( $problems ? 'nested' : 'bulk' ) );
 
-		if ( $bulk ) {
-			// مشکل‌دارها اول؛ ترتیب ورودی در هر گروه حفظ می‌شود
-			$keys     = array_map( 'hodima_router_check_key', $bulk );
-			$severity = [ 'missing' => 0, 'rule_broken' => 1, 'shared' => 2, 'rule_chain' => 3, 'external' => 4, 'rule_external' => 5, 'rule_gone' => 6, 'other' => 7, 'rule_ok' => 8, 'redirect' => 9, 'main' => 10, 'home' => 11 ];
-			$indexed  = array_keys( $bulk );
-			usort( $indexed, static fn( int $a, int $b ): int => [ $severity[ $keys[ $a ] ] ?? 0, $a ] <=> [ $severity[ $keys[ $b ] ] ?? 0, $b ] );
+	echo '<section class="hds-card">';
+	hodima_seo_ui_tabs( 'hodima-router', 'ابزارهای بررسی آدرس', [
+		'bulk'   => [
+			'label' => 'بررسی گروهی',
+			'html'  => static function () use ( $bulk_text, $bulk ): void {
+				hodima_router_render_bulk_panel( $bulk_text, $bulk );
+			},
+		],
+		'links'  => [
+			'label' => 'لینک‌های داخلی',
+			'html'  => static function (): void {
+				hodima_router_render_links_panel();
+			},
+		],
+		'nested' => [
+			'label' => 'زیردسته‌ها',
+			'count' => number_format_i18n( $problems ),
+			'html'  => static function () use ( $nested, $counts, $problems ): void {
+				hodima_router_render_nested_panel( $nested, $counts, $problems );
+			},
+		],
+		'shared' => [
+			'label' => 'آدرس‌های مشترک',
+			'count' => number_format_i18n( count( $conflicts ) ),
+			'html'  => static function () use ( $conflicts ): void {
+				hodima_router_render_shared_panel( $conflicts );
+			},
+		],
+	], $active_tab );
+	echo '</section>';
 
-			echo '<div class="hodima-router__summary">';
-			foreach ( array_count_values( $keys ) as $key => $count ) {
-				echo hodima_router_status_pill( (string) $key, (int) $count ); // phpcs:ignore
-			}
-			echo '</div>';
-			?>
-			<div class="hd-table-wrap">
-				<table class="widefat striped">
-					<thead><tr><th scope="col">آدرس</th><th scope="col">وضعیت</th><th scope="col">توضیح</th></tr></thead>
-					<tbody>
-					<?php foreach ( $indexed as $i ) : ?>
-						<tr>
-							<td class="hodima-router__url"><?php echo esc_html( rawurldecode( $bulk[ $i ]['url'] ) ); ?></td>
-							<td><?php echo hodima_router_status_pill( $keys[ $i ] ); // phpcs:ignore ?></td>
-							<td><?php echo wp_kses_post( hodima_router_status_text( $bulk[ $i ] ) ); ?></td>
-						</tr>
-					<?php endforeach; ?>
-					</tbody>
-				</table>
-			</div>
-			<?php
-		}
-		?>
-		</details>
-	</section>
+	hodima_seo_ui_close();
+}
 
-	<section class="hd-card" data-hodima-router-links>
-		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-admin-links' ); // phpcs:ignore ?> لینک‌های داخلی قدیمی و خراب</h2>
-		<p class="hd-text">لینک‌های داخل سایت را که به آدرس قدیمی (ریدایرکت‌شونده)، صفحه ۴۰۴ یا آدرس اشتباه می‌روند پیدا می‌کند؛ اصلاح با شماست.</p>
-		<details class="hodima-router__more"><summary>جاهایی که جستجو می‌شود و توضیح بیشتر</summary>
-		<p class="hd-text">لینک‌هایی داخل خود سایت را پیدا می‌کند که به آدرس قدیمی (ریدایرکت‌شونده)، صفحه ۴۰۴ یا آدرس اشتباه‌نوشته‌شده می‌روند: متن و توضیح کوتاه نوشته‌ها، برگه‌ها و محصولات منتشرشده، توضیح دسته‌ها، «پیوند دلخواه» منوها و تنظیمات قالب. برای هر لینک جای آن (با دکمه ویرایش) و آدرس درست را می‌گوید؛ اصلاح با شماست و چیزی خودکار عوض نمی‌شود. جستجو دسته‌دسته انجام می‌شود و ممکن است چند دقیقه طول بکشد؛ تا پایان، صفحه را نبندید.</p>
-		</details>
-		<p class="hd-inline">
-			<button type="button" class="button button-primary" data-hodima-router-links-start>جستجوی لینک‌ها</button>
-			<span class="hd-muted" data-hodima-router-links-msg role="status" aria-live="polite"></span>
+/** پنل «بررسی گروهی»: چند آدرس (مثلا خروجی سرچ کنسول) را یک‌جا می‌سنجد.
+ *
+ * @param array<int, array<string, mixed>> $bulk
+ */
+function hodima_router_render_bulk_panel( string $bulk_text, array $bulk ): void {
+	?>
+	<h3 class="hds-card__title">بررسی گروهی آدرس‌ها</h3>
+	<p class="hds-card__desc">هر خط یک آدرس، تا ۳۰۰ آدرس. می‌توانید فهرست صفحه‌ها را از سرچ کنسول کپی کنید: «Pages» (مثلا گروه «Page with redirect» یا «Not found (404)») یا «Performance ← Pages»، دکمه «Export» و بعد ستون آدرس‌ها. چیزی ذخیره یا عوض نمی‌شود؛ مشکل‌دارها بالا می‌آیند.</p>
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=' . HODIMA_ROUTER_PAGE ) ); ?>">
+		<?php wp_nonce_field( 'hodima_router_bulk', '_hodima_router_bulk' ); ?>
+		<label class="screen-reader-text" for="hodima-router-urls">آدرس‌ها</label>
+		<textarea id="hodima-router-urls" name="hodima_router_urls" class="hds-input" dir="ltr" rows="8" placeholder="<?php echo esc_attr( home_url( '/plumeria-hair-clips/' ) ); ?>"><?php echo esc_textarea( $bulk_text ); ?></textarea>
+		<p><button type="submit" class="hds-btn hds-btn--outline">بررسی همه</button></p>
+	</form>
+	<?php
+	if ( '' !== $bulk_text && ! $bulk ) {
+		echo '<div class="hds-result" role="status" data-level="warn"><span class="dashicons dashicons-warning" aria-hidden="true"></span><p>آدرسی پیدا نشد؛ هر خط باید با https:// یا / شروع شود.</p></div>';
+	}
+
+	if ( ! $bulk ) {
+		return;
+	}
+
+	// مشکل‌دارها اول؛ ترتیب ورودی در هر گروه حفظ می‌شود
+	$keys     = array_map( 'hodima_router_check_key', $bulk );
+	$severity = [ 'missing' => 0, 'rule_broken' => 1, 'shared' => 2, 'rule_chain' => 3, 'external' => 4, 'rule_external' => 5, 'rule_gone' => 6, 'other' => 7, 'rule_ok' => 8, 'redirect' => 9, 'main' => 10, 'home' => 11 ];
+	$indexed  = array_keys( $bulk );
+	usort( $indexed, static fn( int $a, int $b ): int => [ $severity[ $keys[ $a ] ] ?? 0, $a ] <=> [ $severity[ $keys[ $b ] ] ?? 0, $b ] );
+
+	echo '<div class="hodima-router__summary">';
+	foreach ( array_count_values( $keys ) as $key => $count ) {
+		echo hodima_router_status_pill( (string) $key, (int) $count ); // phpcs:ignore
+	}
+	echo '</div>';
+	?>
+	<div class="hds-table-wrap">
+		<table class="widefat striped">
+			<thead><tr><th scope="col">آدرس</th><th scope="col">وضعیت</th><th scope="col">توضیح</th></tr></thead>
+			<tbody>
+			<?php foreach ( $indexed as $i ) : ?>
+				<tr>
+					<td class="hodima-router__url"><?php echo esc_html( rawurldecode( $bulk[ $i ]['url'] ) ); ?></td>
+					<td><?php echo hodima_router_status_pill( $keys[ $i ] ); // phpcs:ignore ?></td>
+					<td><?php echo wp_kses_post( hodima_router_status_text( $bulk[ $i ] ) ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
+	<?php
+}
+
+/** پنل «لینک‌های داخلی»: جستجوی دسته‌ای با router-links.js (فقط می‌خواند). */
+function hodima_router_render_links_panel(): void {
+	?>
+	<div data-hodima-router-links>
+		<h3 class="hds-card__title">لینک‌های داخلی قدیمی و خراب</h3>
+		<p class="hds-card__desc">لینک‌های داخل سایت را که به آدرس قدیمی (ریدایرکت‌شونده)، صفحه ۴۰۴ یا آدرس اشتباه می‌روند پیدا می‌کند؛ اصلاح با شماست.</p>
+		<p class="hds-action">
+			<button type="button" class="hds-btn hds-btn--outline" data-hodima-router-links-start>جستجوی لینک‌ها</button>
+			<span class="hodima-router__msg" data-hodima-router-links-msg role="status" aria-live="polite"></span>
 		</p>
 		<progress class="hodima-router__progress" max="100" value="0" hidden data-hodima-router-links-progress></progress>
 		<div class="hodima-router__summary" hidden data-hodima-router-links-summary></div>
-		<div class="hd-table-wrap" hidden data-hodima-router-links-table>
+		<div class="hds-table-wrap" hidden data-hodima-router-links-table>
 			<table class="widefat striped">
 				<thead><tr><th scope="col">کجا</th><th scope="col">لینک</th><th scope="col">مشکل</th><th scope="col">چه کنید</th></tr></thead>
 				<tbody></tbody>
 			</table>
 		</div>
-		<noscript><p class="hd-text">این جستجو به جاوااسکریپت نیاز دارد.</p></noscript>
-	</section>
-
-	<section class="hd-card">
-		<h2 class="hd-section-title"><?php echo hodima_admin_icon( 'dashicons-warning' ); // phpcs:ignore ?> مشکل‌های آدرس</h2>
-		<h3 class="hodima-router__sub">آدرس کوتاه قدیمی زیردسته‌ها</h3>
-		<details class="hodima-router__more"><summary>این فهرست چه می‌کند؟</summary>
-		<p class="hd-text">آدرس اصلی زیردسته‌ها مسیر دسته‌های والد را دارد (مثل <code dir="ltr">/accessory/hair-clips/plumeria-hair-clips/</code>). اگر آدرس کوتاه همان دسته (<code dir="ltr">/plumeria-hair-clips/</code>) قبلا در گوگل بوده، باید با ۳۰۱ به آدرس اصلی برسد. این فهرست برای هر زیردسته همین را بررسی می‌کند، همان‌طور که بازدیدکننده می‌بیند.</p>
+		<details class="hds-more">
+			<summary class="hds-more__summary">جاهایی که جستجو می‌شود و توضیح بیشتر</summary>
+			<div class="hds-more__body">
+				<p class="hds-card__desc">لینک‌هایی داخل خود سایت را پیدا می‌کند که به آدرس قدیمی (ریدایرکت‌شونده)، صفحه ۴۰۴ یا آدرس اشتباه‌نوشته‌شده می‌روند: متن و توضیح کوتاه نوشته‌ها، برگه‌ها و محصولات منتشرشده، توضیح دسته‌ها، «پیوند دلخواه» منوها و تنظیمات قالب. برای هر لینک جای آن (با دکمه ویرایش) و آدرس درست را می‌گوید؛ اصلاح با شماست و چیزی خودکار عوض نمی‌شود. جستجو دسته‌دسته انجام می‌شود و ممکن است چند دقیقه طول بکشد؛ تا پایان، صفحه را نبندید.</p>
+			</div>
 		</details>
+		<noscript><p class="hds-card__desc">این جستجو به جاوااسکریپت نیاز دارد.</p></noscript>
+	</div>
+	<?php
+}
+
+/**
+ * پنل «زیردسته‌ها»: آدرس کوتاه قدیمی هر زیردسته باید به آدرس اصلی برسد.
+ *
+ * @param array<string, mixed> $nested
+ * @param array<string, int>   $counts
+ */
+function hodima_router_render_nested_panel( array $nested, array $counts, int $problems ): void {
+	?>
+		<h3 class="hds-card__title">آدرس کوتاه قدیمی زیردسته‌ها</h3>
+		<p class="hds-card__desc">آدرس اصلی زیردسته‌ها مسیر دسته‌های والد را دارد (مثل <code class="hds-code">/accessory/hair-clips/plumeria-hair-clips/</code>). اگر آدرس کوتاه همان دسته (<code class="hds-code">/plumeria-hair-clips/</code>) قبلا در گوگل بوده، باید با ۳۰۱ به آدرس اصلی برسد. این فهرست برای هر زیردسته همین را بررسی می‌کند، همان‌طور که بازدیدکننده می‌بیند.</p>
 		<?php if ( ! $nested['total'] ) : ?>
-			<p class="hodima-router__ok"><span aria-hidden="true">✓</span> زیردسته‌ای با آدرس سلسله‌مراتبی نیست.</p>
+			<?php hodima_seo_ui_empty( 'زیردسته‌ای با آدرس سلسله‌مراتبی نیست' ); ?>
 		<?php else : ?>
 			<div class="hodima-router__summary">
-				<span class="hd-muted"><?php echo esc_html( number_format_i18n( $nested['total'] ) ); ?> زیردسته با آدرس کامل:</span>
+				<span class="hodima-router__msg"><?php echo esc_html( number_format_i18n( $nested['total'] ) ); ?> زیردسته با آدرس کامل:</span>
 				<?php
 				foreach ( [ 'ok', 'rule', 'taken', 'lost' ] as $state ) {
 					if ( ! empty( $counts[ $state ] ) ) {
@@ -346,11 +410,11 @@ function hodima_router_render_admin(): void {
 				?>
 			</div>
 			<?php if ( $nested['capped'] ) : ?>
-				<div class="hd-callout hd-callout--warning"><?php echo hodima_admin_icon( 'dashicons-info' ); // phpcs:ignore ?><p>دسته‌ها بیش از حد زیاد بودند؛ فقط ۲۰۰۰ دسته اول هر نوع بررسی شد.</p></div>
+				<div class="hds-result" role="status" data-level="warn"><span class="dashicons dashicons-info" aria-hidden="true"></span><p>دسته‌ها بیش از حد زیاد بودند؛ فقط ۲۰۰۰ دسته اول هر نوع بررسی شد.</p></div>
 			<?php endif; ?>
 			<?php if ( $problems ) : ?>
-				<div class="hd-callout hd-callout--warning">
-					<?php echo hodima_admin_icon( 'dashicons-info' ); // phpcs:ignore ?>
+				<div class="hds-result" role="status" data-level="warn">
+					<span class="dashicons dashicons-info" aria-hidden="true"></span>
 					<div>
 						<p><strong>«گرفته شده»:</strong> آدرس کوتاه دسته الان صفحه دیگری را نشان می‌دهد. اگر آن آدرس در گوگل مال همان صفحه است، کاری لازم نیست. اگر مال دسته بوده (مثلا در سرچ کنسول هست): نامک صفحه‌ای را که آن را گرفته در ویرایش همان صفحه عوض کنید؛ ماژول ریدایرکت‌ها خودکار قانونی از آدرس کوتاه به آدرس تازه آن صفحه می‌سازد و این ردیف «قانون ریدایرکت» می‌شود — آن قانون را در «ابزارهای هدیما ← ریدایرکت‌ها» حذف کنید تا آدرس کوتاه با ۳۰۱ به دسته برسد.</p>
 						<p><strong>«به دسته نمی‌رسد»:</strong> آدرس کوتاه ۴۰۴ است یا مال بخش دیگری از وردپرس؛ اگر در گوگل بوده، در «ریدایرکت‌ها» یک ریدایرکت از آن به آدرس اصلی دسته بسازید.</p>
@@ -359,25 +423,35 @@ function hodima_router_render_admin(): void {
 				</div>
 				<?php hodima_router_render_nested_table( array_filter( $nested['rows'], static fn( array $row ): bool => 'ok' !== $row['state'] ) ); ?>
 			<?php else : ?>
-				<div class="hd-callout hd-callout--success"><?php echo hodima_admin_icon( 'dashicons-yes-alt' ); // phpcs:ignore ?><p>آدرس کوتاه قدیمی همه زیردسته‌ها به دسته خودشان می‌رسد.</p></div>
+				<?php hodima_seo_ui_empty( 'همه زیردسته‌ها سالم‌اند', 'آدرس کوتاه قدیمی همه زیردسته‌ها به دسته خودشان می‌رسد.' ); ?>
 			<?php endif; ?>
 			<?php $healthy = array_filter( $nested['rows'], static fn( array $row ): bool => 'ok' === $row['state'] ); ?>
 			<?php if ( $healthy ) : ?>
-				<details class="hodima-router__more">
-					<summary><?php echo esc_html( number_format_i18n( count( $healthy ) ) ); ?> زیردسته بدون مشکل (نمایش فهرست)</summary>
-					<?php hodima_router_render_nested_table( $healthy ); ?>
+				<details class="hds-more">
+					<summary class="hds-more__summary"><?php echo esc_html( number_format_i18n( count( $healthy ) ) ); ?> زیردسته بدون مشکل (نمایش فهرست)</summary>
+					<div class="hds-more__body"><?php hodima_router_render_nested_table( $healthy ); ?></div>
 				</details>
 			<?php endif; ?>
 		<?php endif; ?>
-		<h3 class="hodima-router__sub">آدرس‌های مشترک (نامک تکراری)</h3>
+	<?php
+}
+
+/**
+ * پنل «آدرس‌های مشترک»: دو صفحه با نامک یکسان؛ فقط اولی نمایش داده می‌شود.
+ *
+ * @param array<int, array<string, mixed>> $conflicts
+ */
+function hodima_router_render_shared_panel( array $conflicts ): void {
+	?>
+		<h3 class="hds-card__title">آدرس‌های مشترک (نامک تکراری)</h3>
 		<?php if ( ! $conflicts ) : ?>
-			<p class="hodima-router__ok"><span aria-hidden="true">✓</span> هیچ دو صفحه‌ای آدرس یکسان ندارند.</p>
+			<?php hodima_seo_ui_empty( 'هیچ تداخلی نیست', 'هیچ دو صفحه‌ای آدرس یکسان ندارند.' ); ?>
 		<?php else : ?>
-			<div class="hd-callout hd-callout--warning">
-				<?php echo hodima_admin_icon( 'dashicons-info' ); // phpcs:ignore ?>
+			<div class="hds-result" role="status" data-level="warn">
+				<span class="dashicons dashicons-info" aria-hidden="true"></span>
 				<p><strong>این آدرس‌ها مال بیش از یک صفحه‌اند و فقط اولی نمایش داده می‌شود.</strong> نامک صفحه پنهان‌مانده را در ویرایش آن عوض کنید (نامک تکراری جدید دیگر ساخته نمی‌شود). آدرس فعلی برای صفحه نمایش‌داده‌شده می‌ماند و ریدایرکت خودکار برایش ساخته نمی‌شود.</p>
 			</div>
-			<div class="hd-table-wrap">
+			<div class="hds-table-wrap">
 				<table class="widefat striped">
 					<thead><tr><th scope="col">آدرس</th><th scope="col">نمایش داده می‌شود</th><th scope="col">پنهان مانده</th></tr></thead>
 					<tbody>
@@ -392,10 +466,7 @@ function hodima_router_render_admin(): void {
 				</table>
 			</div>
 		<?php endif; ?>
-	</section>
 	<?php
-
-	echo '</div></div>';
 }
 
 /**
@@ -405,7 +476,7 @@ function hodima_router_render_admin(): void {
  */
 function hodima_router_render_nested_table( array $rows ): void {
 	?>
-	<div class="hd-table-wrap">
+	<div class="hds-table-wrap">
 		<table class="widefat striped">
 			<thead><tr><th scope="col">زیردسته</th><th scope="col">آدرس کوتاه قدیمی</th><th scope="col">وضعیت</th><th scope="col">آدرس اصلی / توضیح</th></tr></thead>
 			<tbody>
