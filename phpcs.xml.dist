@@ -24,6 +24,7 @@
 	<!-- قیمت و نام ترب (بخش ۱۰۱) -->
 	<file>plugins/hodima-seo/inc/product-price.php</file>
 	<file>plugins/hodima-seo/inc/torob.php</file>
+	<file>plugins/hodima-seo/inc/search-console.php</file>
 	<file>plugins/hodima-seo/inc/torob-admin.php</file>
 	<!-- گزارش‌های آدرس تمیز (بخش ۱۲۵، ۱۲۶) -->
 	<file>plugins/hodima-seo/core/router/report.php</file>

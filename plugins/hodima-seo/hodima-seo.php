@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           2.4.9
+ * Version:           2.5.0
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '2.4.9';
+const HODIMA_SEO_VERSION = '2.5.0';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -168,6 +168,9 @@ add_action( 'plugins_loaded', static function (): void {
 
 	// قیمت محصول برای اسکیما، Open Graph و AEO (گزینه «قیمت تک / حداقل سفارش» تنظیمات قالب)
 	require_once __DIR__ . '/inc/product-price.php';
+
+	// اتصال مشترک به سرچ کنسول (کلید، property، توکن، کوئری): گوگل دیسکاور و مشاور سئو از همین‌جا می‌خوانند
+	require_once __DIR__ . '/inc/search-console.php';
 
 	// نام محصول در ترب با حداقل تعداد سفارش + تب «ترب» ویرایش محصول (به product-price.php نیاز دارد)
 	require_once __DIR__ . '/inc/torob.php';

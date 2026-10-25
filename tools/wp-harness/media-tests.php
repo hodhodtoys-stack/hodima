@@ -345,6 +345,15 @@ if ( function_exists( 'hodima_seo_discover_clickbait_match' ) ) {
 	hodima_t( 'بدون کلید جدا ← کلید ماژول Indexing', [ hodima_seo_discover_sc_key_source(), hodima_seo_discover_sc_email() ], [ 'indexing', 'indexing@test.iam.gserviceaccount.com' ] );
 	update_option( 'hodima_discover_sc_key', $own_key, false );
 	hodima_t( 'کلید جدای دیسکاور مقدم (ایمیل عوض شد)', [ hodima_seo_discover_sc_key_source(), hodima_seo_discover_sc_email() ], [ 'own', 'discover@test.iam.gserviceaccount.com' ] );
+	// اتصال مشترک سرچ کنسول (SEO 2.5.0): نام‌های قدیمی دیسکاور همان نتیجه نام‌های تازه را می‌دهند
+	hodima_t( 'اتصال مشترک: کلید/ایمیل/منبع با نام قدیمی یکی است', [ hodima_seo_sc_key_source(), hodima_seo_sc_email(), hodima_seo_sc_key_json() === hodima_seo_discover_sc_key_json() ], [ hodima_seo_discover_sc_key_source(), hodima_seo_discover_sc_email(), true ] );
+	hodima_t( 'اتصال مشترک: property و فهرست حدس‌ها یکی است', [ hodima_seo_sc_property(), hodima_seo_sc_candidates() ], [ hodima_seo_discover_sc_property(), hodima_seo_discover_sc_candidates() ] );
+	delete_option( 'hodima_discover_sc_key' );
+	delete_option( 'hodima_gi_json_key' );
+	$no_key = hodima_seo_sc_token();
+	hodima_t( 'بدون کلید: توکن خطای hodima_sc_no_key و خطای کلید حساب می‌شود', [ is_wp_error( $no_key ) ? $no_key->get_error_code() : '', is_wp_error( $no_key ) && hodima_seo_sc_is_key_error( $no_key ) ], [ 'hodima_sc_no_key', true ] );
+	hodima_t( 'خطای API یک property خطای کلید نیست (property بعدی امتحان شود)', hodima_seo_sc_is_key_error( new WP_Error( 'hodima_sc_api_403', '' ) ), false );
+	hodima_t( 'خطای انتقال شبکه (http_request_failed) خطای کلید نیست', hodima_seo_sc_is_key_error( new WP_Error( 'http_request_failed', '' ) ), false );
 	false === $saved_own ? delete_option( 'hodima_discover_sc_key' ) : update_option( 'hodima_discover_sc_key', $saved_own, false );
 	false === $saved_gi ? delete_option( 'hodima_gi_json_key' ) : update_option( 'hodima_gi_json_key', $saved_gi, false );
 
