@@ -253,6 +253,15 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 		}
 	}
 
+	// کلمه‌ای که هم «در تیتر/متن نیست» و هم «نزدیک صفحه اول» است یک کارت می‌گیرد (فهرست لینک‌دهی تکراری نشود)
+	$near_terms = array_column( $near, 'term' );
+	$near       = array_values( array_filter( $near, static fn( array $n ): bool => ! in_array( $n['term'], array_column( $missing, 'term' ), true ) ) );
+	foreach ( $missing as $i => $item ) {
+		if ( in_array( $item['term'], $near_terms, true ) ) {
+			$missing[ $i ]['detail'] .= ' رتبه این کلمه به صفحه اول نزدیک است؛ لینک داخلی از صفحه‌های مرتبط هم کمک می‌کند.';
+		}
+	}
+
 	foreach ( [ $missing, $near ] as $group ) {
 		usort( $group, static fn( array $a, array $b ): int => $b['potential'] <=> $a['potential'] );
 		array_push( $list, ...array_slice( $group, 0, HODIMA_SEO_ADVISOR_MAX_PER_QUERY_RULE ) );
@@ -345,7 +354,11 @@ function hodima_seo_advisor_analyze( string $path ): ?array {
 	}
 
 	$queries     = hodima_seo_advisor_queries( $row['path'], HODIMA_SEO_ADVISOR_QUERIES_PER_PAGE );
-	$suggestions = hodima_seo_advisor_suggestions( $row, $queries, hodima_seo_advisor_page_text( $row ), hodima_seo_advisor_competitors( $row['path'], $queries ) );
+	$suggestions = hodima_seo_advisor_enrich(
+		hodima_seo_advisor_suggestions( $row, $queries, hodima_seo_advisor_page_text( $row ), hodima_seo_advisor_competitors( $row['path'], $queries ) ),
+		$row,
+		$queries
+	);
 
 	return [
 		'row'         => $row,

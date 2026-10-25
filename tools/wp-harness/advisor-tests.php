@@ -288,6 +288,7 @@ hodima_ad( 'تحلیل دوباره قبلی‌ها را پاک می‌کند (�
 echo "=== صفحه پیشخوان: خلاصه، فیلتر، نادیده گرفتن، CSV، نمایش\n";
 // صفحه پیشخوان فقط در پیشخوان لود می‌شود؛ آزمون خط فرمان خودش لودش می‌کند
 if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-steps-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
 }
 $totals   = hodima_seo_advisor_totals();
@@ -403,6 +404,88 @@ hodima_ad( 'آدرس نامعتبر خطا نمی‌دهد', str_contains( $box,
 wp_delete_post( $box_id, true );
 wp_delete_post( $box_draft, true );
 wp_set_current_user( 0 );
+
+echo "=== گام‌های دقیق: عنوان، تیترها، لینک از کدام صفحه‌ها، صفحه مرجع\n";
+foreach ( get_posts( [ 'post_type' => 'page', 'post_status' => 'any', 'numberposts' => -1, 'name__in' => [ 'steps-target', 'steps-src-a', 'steps-src-b', 'steps-src-c', 'steps-src-d' ] ] ) as $leftover ) {
+	wp_delete_post( $leftover->ID, true );
+}
+$mk = static fn( string $slug, string $title, string $content ): int => (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => $title, 'post_name' => $slug, 'post_content' => $content ] );
+$t_id = $mk( 'steps-target', 'کلیپس مو', '<h2>کلیپس پلومریا</h2><p>متن</p>' );
+$ids  = [
+	$mk( 'steps-src-a', 'درباره پلومریا', '<p>ما کلیپس پلومریا می‌فروشیم.</p>' ),
+	$mk( 'steps-src-b', 'منبع لینک‌دار', '<p>کلیپس پلومریا <a href="' . home_url( '/steps-target/' ) . '">اینجا</a></p>' ),
+	$mk( 'steps-src-c', 'منبع قوی', '<p>بهترین کلیپس پلومریا</p>' ),
+	$mk( 'steps-src-d', 'بی‌ربط', '<p>متن دیگر</p>' ),
+];
+$cat = wp_insert_term( 'دسته منبع', 'category', [ 'slug' => 'steps-cat', 'description' => 'همه مدل‌های کلیپس پلومریا' ] );
+$cat_id = is_wp_error( $cat ) ? (int) get_term_by( 'slug', 'steps-cat', 'category' )->term_id : (int) $cat['term_id'];
+hodima_seo_advisor_store(
+	[
+		'/steps-target/' => [ 'clicks' => 100, 'impressions' => 5000, 'position' => 7.0 ],
+		'/steps-src-a/'  => [ 'clicks' => 1, 'impressions' => 100, 'position' => 9.0 ],
+		'/steps-src-c/'  => [ 'clicks' => 20, 'impressions' => 900, 'position' => 6.0 ],
+		'/steps-cat/'    => [ 'clicks' => 10, 'impressions' => 400, 'position' => 6.0 ],
+		'/rival/'        => [ 'clicks' => 80, 'impressions' => 3000, 'position' => 3.0 ],
+	],
+	[],
+	[
+		'/steps-target/' => [
+			'کلیپس پلومریا' => [ 'clicks' => 0, 'impressions' => 1000, 'position' => 9.0 ],
+			'گیره قیچی'      => [ 'clicks' => 0, 'impressions' => 500, 'position' => 10.0 ],
+		],
+		'/rival/'        => [ 'کلیپس پلومریا' => [ 'clicks' => 60, 'impressions' => 2000, 'position' => 3.0 ] ],
+	]
+);
+$target = hodima_seo_advisor_page( '/steps-target/' );
+
+$fields = hodima_seo_advisor_seo_fields( $target );
+hodima_ad( 'فیلدهای سئو: نام، تیترها، توضیح خودکار', [ $fields['name'], $fields['headings'], $fields['custom_description'] ], hodima_router_active() ? [ 'کلیپس مو', [ 'کلیپس پلومریا' ], false ] : [ null, null, null ] );
+
+if ( hodima_router_active() ) {
+	$step = hodima_seo_advisor_step_title( $fields, 'کلیپس پلومریا' );
+	hodima_ad( 'عنوان: کلمه اصلی نیست ← عنوان پیشنهادی (کلمه | نام) و توضیح متای خودکار هشدار می‌گیرد', [ $step['suggested'], str_contains( $step['meta']['tip'], 'توضیح متا ندارید' ), $step['custom'] ], [ 'کلیپس پلومریا | کلیپس مو', true, false ] );
+	hodima_ad( 'عنوان: کلمه ابتدای عنوان ← پیشنهاد جدید نیست', [ hodima_seo_advisor_step_title( $fields, 'کلیپس' )['suggested'], str_contains( hodima_seo_advisor_step_title( $fields, 'کلیپس' )['tip'], 'شروع می‌شود' ) ], [ '', true ] );
+	hodima_ad( 'عنوان: کلمه وسط عنوان ← به ابتدا ببرید', str_contains( hodima_seo_advisor_step_title( [ 'name' => 'گل سر کلیپس مو' ] + $fields, 'کلیپس' )['tip'], 'ابتدایش نیست' ), true );
+	hodima_ad( 'عنوان: طول عنوان پیشنهادی ≤ ۶۰', mb_strlen( hodima_seo_advisor_step_title( [ 'name' => str_repeat( 'الف ', 40 ) ] + $fields, 'کلیپس پلومریا' )['suggested'] ) <= 60, true );
+	$meta_tip = static fn( string $text, bool $custom ): string => hodima_seo_advisor_step_title( [ 'description' => $text, 'custom_description' => $custom ] + $fields, 'کلیپس پلومریا' )['meta']['tip'];
+	hodima_ad( 'توضیح متا: کوتاه، بلند، بی‌کلمه، سالم', [ str_contains( $meta_tip( 'کوتاه', true ), 'کوتاه است' ), str_contains( $meta_tip( str_repeat( 'ب', 200 ), true ), 'بلند است' ), str_contains( $meta_tip( str_repeat( 'متن بدون کلمه اصلی ', 6 ), true ), 'در توضیح متا نیست' ), $meta_tip( 'کلیپس پلومریا ' . str_repeat( 'خوب ', 25 ), true ) ], [ true, true, true, '' ] );
+}
+
+$h = hodima_seo_advisor_step_headings( [ 'گیره مو', 'انواع کلیپس' ], 'کلیپس پلومریا', [ [ 'term' => 'کلیپس پلومریا', 'impressions' => 9 ], [ 'term' => 'گیره مو', 'impressions' => 8 ], [ 'term' => 'پلومریا', 'impressions' => 7 ], [ 'term' => 'الف ب', 'impressions' => 6 ], [ 'term' => 'ج د', 'impressions' => 5 ] ] );
+hodima_ad( 'تیترها: ایده فقط از کلمه‌هایی که در تیترها نیست، اولی خود کلمه، حداکثر ۳', $h['ideas'], [ 'کلیپس پلومریا', 'پلومریا', 'الف ب' ] );
+
+if ( hodima_router_active() ) {
+	$src = hodima_seo_advisor_link_sources( 'کلیپس پلومریا', $target );
+	hodima_ad( 'لینک از کدام صفحه‌ها: قوی‌ترین اول؛ صفحه‌ای که قبلا لینک دارد، بی‌ربط و خود هدف نیست؛ دسته هم', [ array_column( $src['items'], 'title' ), array_column( $src['items'], 'impressions' ), $src['more'] ], [ [ 'منبع قوی', 'دسته منبع', 'درباره پلومریا' ], [ 900, 400, 100 ], 0 ] );
+	$few = hodima_seo_advisor_link_sources( 'کلیپس پلومریا', $target, 2 );
+	hodima_ad( 'سقف لینک ۲ ← دو مورد و «۱ صفحه دیگر»', [ count( $few['items'] ), $few['more'] ], [ 2, 1 ] );
+	hodima_ad( 'عبارتی که هیچ صفحه‌ای ندارد ← بدون مورد', hodima_seo_advisor_link_sources( 'عبارت ناموجود زرد', $target ), [ 'items' => [], 'more' => 0 ] );
+
+	$analysis = hodima_seo_advisor_analyze( '/steps-target/' );
+	$by_rule  = [];
+	foreach ( $analysis['suggestions'] as $item ) {
+		$by_rule[ $item['rule'] ][] = $item;
+	}
+	hodima_ad( 'تحلیل: نرخ کلیک ← گام عنوان؛ کلمه نزدیک صفحه اول ← گام لینک؛ کلمه غایب ← تیتر و لینک', [ $by_rule['low_ctr'][0]['steps'][0]['type'] ?? '', $by_rule['near_first'][0]['steps'][0]['type'] ?? '', array_column( $by_rule['missing_content'][0]['steps'] ?? [], 'type' ) ], [ 'title', 'links', [ 'headings', 'links' ] ] );
+	hodima_ad( 'کلمه‌ای که هم غایب است و هم نزدیک صفحه اول یک کارت می‌گیرد (لینک‌دهی تکراری نیست)', [ count( $by_rule['near_first'] ?? [] ), str_contains( $by_rule['missing_content'][0]['detail'] ?? '', 'نزدیک است' ), $by_rule['missing_content'][0]['term'] ?? '' ], [ 1, true, 'گیره قیچی' ] );
+	hodima_ad( 'تحلیل: رقابت داخلی ← صفحه مرجع (بهترین رتبه) /rival/', [ ( $by_rule['cannibal'][0]['steps'][0]['type'] ?? '' ), ( $by_rule['cannibal'][0]['steps'][0]['main'] ?? '' ), ( $by_rule['cannibal'][0]['steps'][0]['is_main'] ?? null ) ], [ 'canonical', '/rival/', false ] );
+
+	wp_set_current_user( 1 ); // لینک ویرایش فقط برای کاربر مجاز ساخته می‌شود
+	ob_start();
+	hodima_seo_advisor_render_steps( $by_rule['near_first'][0]['steps'] );
+	hodima_seo_advisor_render_steps( $by_rule['low_ctr'][0]['steps'] );
+	hodima_seo_advisor_render_steps( $by_rule['cannibal'][0]['steps'] );
+	$steps_html = (string) ob_get_clean();
+	hodima_ad( 'نمایش: لینک ویرایش صفحه‌ها، عبارت لینک، عنوان فعلی و پیشنهادی، صفحه مرجع', [ str_contains( $steps_html, 'post=' . $ids[2] ), str_contains( $steps_html, 'عبارت «کلیپس پلومریا» را پیدا کنید' ), str_contains( $steps_html, 'عنوان پیشنهادی' ), str_contains( $steps_html, 'مرجع پیشنهادی' ) ], [ true, true, true, true ] );
+	wp_set_current_user( 0 );
+	$saved_advice = hodima_seo_advisor_save_advice( '/steps-target/' );
+	hodima_ad( 'گام‌ها همراه پیشنهاد در جدول ذخیره و برگردانده می‌شود', [ $saved_advice, hodima_seo_advisor_page( '/steps-target/' )['advice'][0]['steps'] !== [] ], [ true, true ] );
+}
+
+foreach ( [ ...$ids, $t_id ] as $pid ) {
+	wp_delete_post( $pid, true );
+}
+wp_delete_term( $cat_id, 'category' );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

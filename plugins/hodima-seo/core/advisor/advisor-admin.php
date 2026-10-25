@@ -43,6 +43,7 @@ function hodima_seo_advisor_admin_menu(): void {
 function hodima_seo_advisor_admin_assets(): void {
 
 	hodima_seo_ui_enqueue();
+	hodima_seo_advisor_enqueue_steps_css();
 
 	$file = HODIMA_SEO_DIR . '/core/advisor/advisor-admin.css';
 	wp_enqueue_style( 'hodima-seo-advisor', HODIMA_SEO_URL . '/core/advisor/advisor-admin.css', [ 'hodima-seo-ui' ], is_file( $file ) ? (string) filemtime( $file ) : HODIMA_SEO_VERSION );
@@ -527,6 +528,7 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 					<?php if ( (int) $item['potential'] > 0 ) : ?>
 						<small><?php echo esc_html( sprintf( 'کلیک بالقوه ≈ %s', number_format_i18n( (int) $item['potential'] ) ) ); ?></small>
 					<?php endif; ?>
+					<?php hodima_seo_advisor_render_steps( (array) ( $item['steps'] ?? [] ) ); ?>
 				</div>
 			<?php endforeach; ?>
 			<?php if ( $queries ) : ?>

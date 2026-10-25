@@ -29,8 +29,7 @@ add_action( 'init', static function (): void {
  * @return list<string>
  */
 function hodima_seo_advisor_box_post_types(): array {
-	$types = function_exists( 'seobox_post_types' ) ? seobox_post_types() : [ 'post', 'page', 'product' ];
-	return array_values( array_filter( (array) $types, static fn( mixed $t ): bool => is_string( $t ) && post_type_exists( $t ) ) );
+	return hodima_seo_advisor_box_post_types_all();
 }
 
 /**
@@ -59,6 +58,7 @@ function hodima_seo_advisor_box_assets( string $hook ): void {
 	}
 
 	$file = HODIMA_SEO_DIR . '/core/advisor/advisor-box.css';
+	hodima_seo_advisor_enqueue_steps_css();
 	wp_enqueue_style( 'hodima-seo-advisor-box', HODIMA_SEO_URL . '/core/advisor/advisor-box.css', [], is_file( $file ) ? (string) filemtime( $file ) : HODIMA_SEO_VERSION );
 }
 
@@ -121,16 +121,20 @@ function hodima_seo_advisor_render_box( string $url ): void {
 		echo '<p class="hodima-advisor-box__empty">با آمار این بازه پیشنهادی برای این صفحه نیست؛ نرخ کلیک و کلمه‌های اصلی در حد معمول‌اند.</p>';
 	}
 
+	$position = 0;
 	// تحلیل زنده خودش نادیده‌گرفتن را نمی‌داند؛ آدرس نادیده‌گرفته‌شده پیشنهادی نشان نمی‌دهد
 	foreach ( $ignored ? [] : $analysis['suggestions'] as $item ) {
+		echo '<section class="hodima-advisor-box__item">';
 		printf(
-			'<section class="hodima-advisor-box__item"><h4>%1$s</h4><p>%2$s</p>%3$s</section>',
+			'<h4>%1$s</h4><p>%2$s</p>%3$s',
 			esc_html( (string) $item['title'] ),
 			esc_html( (string) $item['detail'] ),
 			(int) $item['potential'] > 0 || 'low_ctr' === $item['rule']
 				? '<div class="hodima-advisor-box__meta">' . ( 'low_ctr' === $item['rule'] && function_exists( 'seobox_post_types' ) ? '<a class="button" href="#seobox_title">رفتن به عنوان سئو</a>' : '' ) . ( (int) $item['potential'] > 0 ? '<small>' . esc_html( sprintf( 'کلیک بالقوه ≈ %s', $n( (int) $item['potential'] ) ) ) . '</small>' : '' ) . '</div>'
 				: ''
 		);
+		hodima_seo_advisor_render_steps( (array) ( $item['steps'] ?? [] ), 0 === $position++ );
+		echo '</section>';
 	}
 	echo '</div>';
 
