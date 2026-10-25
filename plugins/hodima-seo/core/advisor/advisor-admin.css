@@ -1,0 +1,456 @@
+/*
+ * مشاور سئو — استایل صفحه پیشخوان (core/advisor/advisor-admin.php)
+ * فقط روی همین صفحه و زیر .hodima-advisor؛ توکن‌ها و اجزای پایه از کیت SEO (ui/ui-kit.css).
+ * بدون nesting و media query بازه‌ای (CSS افزونه مرحله ساخت ندارد).
+ */
+
+/* کنش اصلی: بازه + وضعیت + دکمه در یک ردیف */
+.hodima-advisor .hodima-advisor__bar {
+	padding-block: 0.875rem;
+}
+
+.hodima-advisor .hodima-advisor__form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem 1rem;
+}
+
+.hodima-advisor .hodima-advisor__form > .hds-pill {
+	margin-inline-end: auto;
+	white-space: normal;
+	line-height: 1.7;
+}
+
+.hodima-advisor .hodima-advisor__seg {
+	display: inline-flex;
+	margin: 0;
+	padding: 0;
+	border: 1px solid var(--hd-border-strong);
+	border-radius: 0.75rem;
+	overflow: hidden;
+}
+
+.hodima-advisor .hodima-advisor__seg-opt {
+	display: block;
+	position: relative;
+}
+
+.hodima-advisor .hodima-advisor__seg-opt input {
+	position: absolute;
+	inset: 0;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.hodima-advisor .hodima-advisor__seg-opt span {
+	display: block;
+	min-inline-size: 4.5rem;
+	padding: 0.7rem 1rem;
+	background: var(--hd-surface);
+	color: var(--hd-primary);
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-align: center;
+}
+
+.hodima-advisor .hodima-advisor__seg-opt input:checked + span {
+	background: var(--hd-primary);
+	color: #fff;
+}
+
+.hodima-advisor .hodima-advisor__seg-opt input:focus-visible + span {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: -2px;
+}
+
+.hodima-advisor .hodima-advisor__refresh[disabled] {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+/* نوار ابزار یک‌ردیفه: نماها ← جستجو ← نوع پیشنهاد ← اعمال ← CSV */
+.hodima-advisor .hodima-advisor__toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.625rem;
+	margin-block: 0.875rem;
+}
+
+.hodima-advisor .hodima-advisor__views {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.hodima-advisor .hodima-advisor__view {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-block-size: 2.625rem;
+	padding-inline: 0.875rem;
+	border: 1px solid var(--hd-border-strong);
+	border-radius: 0.75rem;
+	background: var(--hd-surface);
+	color: var(--hd-primary);
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.hodima-advisor .hodima-advisor__view[aria-current="page"] {
+	border-color: var(--hd-primary);
+	background: var(--hd-primary);
+	color: #fff;
+}
+
+.hodima-advisor .hodima-advisor__view:focus-visible {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: 2px;
+}
+
+.hodima-advisor .hodima-advisor__count {
+	font-size: 0.75rem;
+	opacity: 0.85;
+}
+
+.hodima-advisor .hodima-advisor__search {
+	position: relative;
+	flex: 1 1 9rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__search .hds-input,
+.hodima-advisor .hodima-advisor__rule .hds-input {
+	inline-size: 100%;
+	min-block-size: 2.625rem;
+}
+
+.hodima-advisor .hodima-advisor__search .hds-input {
+	padding-inline-end: 2.75rem;
+}
+
+.hodima-advisor .hodima-advisor__go {
+	position: absolute;
+	inset-block: 0;
+	inset-inline-end: 0;
+	display: grid;
+	place-items: center;
+	inline-size: 2.625rem;
+	border: 0;
+	border-radius: 0 0.625rem 0.625rem 0;
+	background: transparent;
+	color: var(--hd-primary);
+	cursor: pointer;
+}
+
+.hodima-advisor .hodima-advisor__go:focus-visible {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: -2px;
+}
+
+.hodima-advisor .hodima-advisor__rule {
+	flex: 0 1 10.5rem;
+}
+
+.hodima-advisor .hodima-advisor__toolbar .hds-btn {
+	min-block-size: 2.625rem;
+	padding-inline: 1rem;
+	text-decoration: none;
+}
+
+/* جدول: سربرگ ستون‌ها و ردیف‌های جمع‌شونده با یک شبکه مشترک */
+.hodima-advisor .hodima-advisor__table {
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	overflow: hidden;
+}
+
+.hodima-advisor .hodima-advisor__head,
+.hodima-advisor .hodima-advisor__grid {
+	display: grid;
+	grid-template-columns: minmax(0, 2.4fr) 5.5rem 6.5rem 3.5rem minmax(0, 2.2fr) 8rem 5.5rem;
+	align-items: center;
+	gap: 0.875rem;
+	padding-inline: 1.25rem;
+}
+
+.hodima-advisor .hodima-advisor__head {
+	min-block-size: 2.75rem;
+	border-block-end: 1px solid var(--hd-border);
+	background: var(--hd-surface-2, #f6f8fd);
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__item {
+	border-block-end: 1px solid var(--hd-border);
+}
+
+.hodima-advisor .hodima-advisor__item:last-child {
+	border-block-end: 0;
+}
+
+.hodima-advisor .hodima-advisor__grid {
+	min-block-size: 4.5rem;
+	padding-block: 0.625rem;
+	font-size: 0.8125rem;
+	cursor: pointer;
+	list-style: none;
+}
+
+.hodima-advisor .hodima-advisor__grid::-webkit-details-marker {
+	display: none;
+}
+
+.hodima-advisor .hodima-advisor__grid:focus-visible {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: -2px;
+}
+
+.hodima-advisor .hodima-advisor__page {
+	display: grid;
+	justify-items: start;
+	gap: 0.375rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__path {
+	font-weight: 600;
+	overflow-wrap: anywhere;
+	text-align: start;
+}
+
+.hodima-advisor .hodima-advisor__num,
+.hodima-advisor .hodima-advisor__suggest,
+.hodima-advisor .hodima-advisor__potential {
+	display: grid;
+	gap: 0.25rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__num small,
+.hodima-advisor .hodima-advisor__suggest small,
+.hodima-advisor .hodima-advisor__potential small {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__low {
+	color: #8a4a06;
+}
+
+.hodima-advisor .hodima-advisor__bar-track {
+	display: block;
+	block-size: 0.5rem;
+	border-radius: 99px;
+	background: var(--hd-border);
+	overflow: hidden;
+}
+
+.hodima-advisor .hodima-advisor__bar-track > span {
+	display: block;
+	block-size: 100%;
+	border-radius: 99px;
+	background: var(--hd-secondary);
+}
+
+.hodima-advisor .hodima-advisor__toggle {
+	min-block-size: 2.5rem;
+	padding-inline: 0.75rem;
+	pointer-events: none;
+}
+
+.hodima-advisor .hodima-advisor__item[open] .hodima-advisor__toggle {
+	background: var(--hd-primary);
+	color: #fff;
+}
+
+/* جزئیات هر ردیف */
+.hodima-advisor .hodima-advisor__detail {
+	display: grid;
+	gap: 0.875rem;
+	padding: 1rem 1.25rem 1.25rem;
+	border-block-start: 1px solid var(--hd-border);
+	background: var(--hd-surface-2, #f6f8fd);
+}
+
+.hodima-advisor .hodima-advisor__advice {
+	display: grid;
+	gap: 0.375rem;
+	padding: 0.875rem 1rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+	background: var(--hd-surface);
+}
+
+.hodima-advisor .hodima-advisor__advice h3,
+.hodima-advisor .hodima-advisor__queries h3 {
+	margin: 0;
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__advice p {
+	margin: 0;
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	line-height: 1.9;
+}
+
+.hodima-advisor .hodima-advisor__advice small,
+.hodima-advisor .hodima-advisor__queries small {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	font-weight: 400;
+}
+
+.hodima-advisor .hodima-advisor__queries ul {
+	display: grid;
+	gap: 0;
+	margin: 0.375rem 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-advisor .hodima-advisor__queries li {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding-block: 0.4rem;
+	border-block-end: 1px solid var(--hd-border);
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__queries li:last-child {
+	border-block-end: 0;
+}
+
+.hodima-advisor .hodima-advisor__links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.625rem;
+}
+
+.hodima-advisor .hodima-advisor__links form {
+	margin: 0;
+}
+
+.hodima-advisor .hodima-advisor__links .hds-btn {
+	min-block-size: 2.5rem;
+	text-decoration: none;
+}
+
+.hodima-advisor .hodima-advisor__foot {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.75rem;
+	margin-block-start: 0.875rem;
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__pager {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+}
+
+.hodima-advisor .hodima-advisor__foot .page-numbers {
+	display: inline-block;
+	min-inline-size: 2.5rem;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--hd-border-strong);
+	border-radius: 0.625rem;
+	background: var(--hd-surface);
+	color: var(--hd-primary);
+	text-align: center;
+	text-decoration: none;
+}
+
+.hodima-advisor .hodima-advisor__foot .page-numbers.current {
+	border-color: var(--hd-primary);
+	background: var(--hd-primary);
+	color: #fff;
+}
+
+/* موبایل: هر ردیف یک کارت (آدرس ← سه عدد ← پیشنهاد ← کلیک بالقوه ← دکمه) */
+@media (max-width: 782px) {
+	.hodima-advisor .hodima-advisor__head {
+		display: none;
+	}
+
+	.hodima-advisor .hodima-advisor__grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.625rem;
+		padding: 1rem;
+	}
+
+	.hodima-advisor .hodima-advisor__page,
+	.hodima-advisor .hodima-advisor__suggest {
+		grid-column: 1 / -1;
+	}
+
+	.hodima-advisor .hodima-advisor__potential {
+		grid-column: span 2;
+	}
+
+	.hodima-advisor .hodima-advisor__num {
+		padding: 0.5rem 0.625rem;
+		border-radius: 0.625rem;
+		background: var(--hd-surface-2, #f6f8fd);
+	}
+
+	.hodima-advisor .hodima-advisor__num::before {
+		content: attr(data-label);
+		color: var(--hd-muted);
+		font-size: 0.75rem;
+	}
+
+	.hodima-advisor .hodima-advisor__toolbar > * {
+		flex: 1 1 100%;
+	}
+
+	.hodima-advisor .hodima-advisor__views {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		padding-block-end: 0.125rem;
+	}
+
+	.hodima-advisor .hodima-advisor__view {
+		flex: none;
+	}
+
+	.hodima-advisor .hodima-advisor__form {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.hodima-advisor .hodima-advisor__seg {
+		display: flex;
+	}
+
+	.hodima-advisor .hodima-advisor__seg-opt {
+		flex: 1;
+	}
+
+	.hodima-advisor .hodima-advisor__form > .hds-pill {
+		margin-inline-end: 0;
+	}
+
+	.hodima-advisor .hodima-advisor__links > *,
+	.hodima-advisor .hodima-advisor__links .hds-btn {
+		inline-size: 100%;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-advisor * {
+		transition: none;
+	}
+}

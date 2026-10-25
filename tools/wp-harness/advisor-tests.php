@@ -72,9 +72,10 @@ openssl_pkey_export( openssl_pkey_new( [ 'private_key_bits' => 2048, 'private_ke
 $key_json = (string) wp_json_encode( [ 'type' => 'service_account', 'client_email' => 'advisor@test.iam.gserviceaccount.com', 'private_key' => $pem, 'token_uri' => 'https://oauth2.googleapis.com/token' ] );
 
 $saved = [];
-foreach ( [ 'hodima_discover_sc_key', 'hodima_gi_json_key', 'hodima_discover_sc_settings', 'hodima_discover_sc_sites', HODIMA_SEO_ADVISOR_STATUS_OPTION ] as $opt ) {
+foreach ( [ 'hodima_discover_sc_key', 'hodima_gi_json_key', 'hodima_discover_sc_settings', 'hodima_discover_sc_sites', HODIMA_SEO_ADVISOR_STATUS_OPTION, HODIMA_SEO_ADVISOR_IGNORED_OPTION ] as $opt ) {
 	$saved[ $opt ] = get_option( $opt );
 }
+delete_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION ); // آزمون‌ها مستقل از آدرس‌های نادیده‌گرفته‌شده خود سایت
 delete_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor@test.iam.gserviceaccount.com' ), 0, 12 ) );
 update_option( 'hodima_discover_sc_key', $key_json, false );
 delete_option( 'hodima_gi_json_key' );
@@ -82,6 +83,9 @@ delete_option( 'hodima_discover_sc_settings' );
 update_option( 'hodima_discover_sc_sites', [ 'sc-domain:' . $host ], false );
 
 // صفحه واقعی برای شناسایی نوع شیء
+foreach ( get_posts( [ 'post_type' => 'page', 'name' => 'advisor-test-page', 'post_status' => 'any', 'numberposts' => -1 ] ) as $leftover ) {
+	wp_delete_post( $leftover->ID, true ); // بازمانده اجرای نیمه‌کاره قبلی نامک را اشغال نکند
+}
 $page_id = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Advisor Test', 'post_name' => 'advisor-test-page' ] );
 
 // پاسخ‌ها
@@ -280,6 +284,49 @@ $can = hodima_seo_advisor_analyze( '/rules/can1/' );
 hodima_ad( 'رقابت داخلی: صفحه دیگر برای «پلومریا» پیدا می‌شود و پیشنهاد بدون کلیک بالقوه است', [ $rules( $can['suggestions'] ), str_contains( $can['suggestions'][0]['detail'], '/rules/can2/' ), $can['potential'] ], [ [ 'cannibal' ], true, 0 ] );
 hodima_ad( 'تحلیل آدرس ناشناخته ← null', hodima_seo_advisor_analyze( '/no-such-page/' ), null );
 hodima_ad( 'تحلیل دوباره قبلی‌ها را پاک می‌کند (نه روی هم)', [ hodima_seo_advisor_analyze_all(), hodima_seo_advisor_pages( [ 'has_advice' => true ] )['total'] ], [ 4, 4 ] );
+
+echo "=== صفحه پیشخوان: خلاصه، فیلتر، نادیده گرفتن، CSV، نمایش\n";
+// صفحه پیشخوان فقط در پیشخوان لود می‌شود؛ آزمون خط فرمان خودش لودش می‌کند
+if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
+}
+$totals   = hodima_seo_advisor_totals();
+$weighted = ( 5.81 * 36492 + 6.0 * 500 + 6.0 * 6000 + 4.0 * 2000 + 4.0 * 2000 ) / 46992;
+hodima_ad( 'خلاصه کل: آدرس‌ها، دارای پیشنهاد، کلیک، نمایش، رتبه با وزن نمایش', [ $totals['pages'], $totals['advised'], $totals['clicks'], $totals['impressions'], $totals['position'] ], [ 5, 4, 1501, 46992, round( $weighted, 1 ) ] );
+hodima_ad( 'گروه‌های نوع (آدرس‌های ناشناخته در هیچ گروهی نیستند)', hodima_seo_advisor_group_counts(), [ 'product' => 0, 'category' => 0, 'content' => 0 ] );
+hodima_ad( 'بیشترین کلیک بالقوه', hodima_seo_advisor_max_potential(), 1511 );
+hodima_ad( 'فیلتر قاعده: افت و رقابت', [ array_column( hodima_seo_advisor_pages( [ 'rule' => 'decline' ] )['rows'], 'path' ), hodima_seo_advisor_pages( [ 'rule' => 'cannibal' ] )['total'] ], [ [ '/rules/decline/' ], 2 ] );
+hodima_ad( 'قاعده نامعتبر نادیده گرفته می‌شود (نه SQL)', hodima_seo_advisor_pages( [ 'rule' => 'x"; DROP TABLE y' ] )['total'], 5 );
+hodima_ad( 'فیلتر مسیرها: خالی ← هیچ، دو مسیر ← همان دو', [ hodima_seo_advisor_pages( [ 'paths' => [] ] )['total'], hodima_seo_advisor_pages( [ 'paths' => [ '/rules/a/', '/rules/b/' ] ] )['total'] ], [ 0, 2 ] );
+
+hodima_seo_advisor_set_ignored( '/rules/a/', true );
+hodima_ad( 'نادیده گرفتن: پیشنهادش پاک می‌شود و در فهرست نادیده‌ها می‌آید', [ hodima_seo_advisor_page( '/rules/a/' )['advice_count'], hodima_seo_advisor_pages( [ 'has_advice' => true ] )['total'], hodima_seo_advisor_ignored() ], [ 0, 3, [ '/rules/a/' ] ] );
+hodima_ad( 'تحلیل همه آدرس نادیده‌گرفته‌شده را دوباره پیشنهاد نمی‌دهد', [ hodima_seo_advisor_analyze_all(), hodima_seo_advisor_page( '/rules/a/' )['advice_count'] ], [ 3, 0 ] );
+hodima_seo_advisor_set_ignored( '/rules/a/', false );
+hodima_ad( 'بازگرداندن: همان لحظه دوباره تحلیل می‌شود', [ hodima_seo_advisor_page( '/rules/a/' )['advice'][0]['rule'], hodima_seo_advisor_ignored(), hodima_seo_advisor_pages( [ 'has_advice' => true ] )['total'] ], [ 'low_ctr', [], 4 ] );
+
+$f = hodima_seo_advisor_list_filters( [ 'view' => 'product', 'q' => '  <b>/Hair</b> ', 'rule' => 'low_ctr' ] );
+hodima_ad( 'فیلترهای فهرست: نما ← نوع، جستجو و قاعده پاک‌سازی می‌شود', [ $f['view'], $f['args']['kind'], $f['args']['has_advice'], $f['q'], $f['rule'] ], [ 'product', [ 'product' ], true, '/Hair', 'low_ctr' ] );
+hodima_ad( 'نمای ناشناخته ← همه؛ نمای نادیده‌ها ← مسیرها', [ hodima_seo_advisor_list_filters( [ 'view' => 'zzz' ] )['view'], isset( hodima_seo_advisor_list_filters( [ 'view' => 'ignored' ] )['args']['has_advice'] ) ], [ 'all', false ] );
+
+$csv = hodima_seo_advisor_csv_rows( hodima_seo_advisor_list_filters( [] )['args'] );
+hodima_ad( 'CSV: سربرگ + ۴ آدرس، اولی بیشترین کلیک بالقوه', [ count( $csv ), $csv[0][0], $csv[1][0], $csv[1][6] ], [ 5, 'آدرس', '/rules/a/', '1511' ] );
+hodima_ad( 'CSV: ورودی شبیه فرمول بی‌اثر می‌شود', [ hodima_seo_advisor_csv_cell( '=HYPERLINK("x")' ), hodima_seo_advisor_csv_cell( '+1' ), hodima_seo_advisor_csv_cell( '@x' ), hodima_seo_advisor_csv_cell( '/ok/' ) ], [ "'=HYPERLINK(\"x\")", "'+1", "'@x", '/ok/' ] );
+
+update_option( 'hodima_discover_sc_key', $key_json, false );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 5, 'queries' => 2, 'advised' => 4, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+wp_set_current_user( 1 );
+ob_start();
+hodima_seo_advisor_render_admin();
+$html = (string) ob_get_clean();
+hodima_ad( 'صفحه: سربرگ، ۴ کارت آمار، ردیف‌ها، دکمه به‌روزرسانی و نادیده گرفتن', [ str_contains( $html, 'hds-hero__title' ), substr_count( $html, 'class="hds-stat"' ), substr_count( $html, 'hodima-advisor__item' ) >= 4, str_contains( $html, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $html, 'نادیده گرفتن این آدرس' ) ], [ true, 4, true, true, true ] );
+hodima_ad( 'صفحه: بازه فعلی انتخاب‌شده و خروجی CSV با nonce', [ str_contains( $html, 'value="90" checked' ), str_contains( $html, 'action=hodima_advisor_csv' ) && str_contains( $html, '_wpnonce=' ) ], [ true, true ] );
+delete_option( 'hodima_discover_sc_key' );
+ob_start();
+hodima_seo_advisor_render_admin();
+$html = (string) ob_get_clean();
+hodima_ad( 'بدون کلید: راهنمای اتصال، دکمه غیرفعال، بدون جدول', [ str_contains( $html, 'کلید حساب سرویس گوگل ثبت نشده است' ), str_contains( $html, 'hodima-advisor__refresh" disabled' ) || str_contains( $html, "hodima-advisor__refresh\"  disabled='disabled'" ) || str_contains( $html, 'disabled' ), str_contains( $html, 'hodima-advisor__item' ) ], [ true, true, false ] );
+wp_set_current_user( 0 );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

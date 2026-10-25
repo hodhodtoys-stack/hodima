@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           2.5.2
+ * Version:           2.5.3
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '2.5.2';
+const HODIMA_SEO_VERSION = '2.5.3';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -129,6 +129,7 @@ function hodima_seo_modules(): array {
 			'title'       => 'مشاور سئو',
 			'description' => 'با داده Search Console همین سایت برای هر صفحه می‌گوید چه کاری بیشترین کلیک اضافه را می‌آورد: عنوان و توضیح متا، کلمه‌های نزدیک صفحه اول، کلمه‌ای که در تیترها نیست. فقط پیشنهاد می‌دهد و چیزی را خودکار عوض نمی‌کند؛ روزی یک بار داده را از سرچ کنسول می‌گیرد (کلید همان «گوگل دیسکاور ← آمار سرچ کنسول» است).',
 			'files'       => [ 'core/advisor/advisor-init.php' ],
+			'settings'    => 'admin.php?page=hodima-advisor',
 			'warning'     => 'دریافت روزانه داده سرچ کنسول متوقف می‌شود (داده ذخیره‌شده پاک نمی‌شود).',
 			'recommends'  => [ 'seobox' ],
 			'icon'        => 'dashicons-chart-line',

@@ -26,6 +26,16 @@ const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
 const HODIMA_SEO_ADVISOR_STATUS_OPTION   = 'hodima_advisor_status';
 
+/** آدرس‌هایی که مدیر «نادیده گرفتن» زده (مثلا صفحه‌های برندی مثل /about-us/): پیشنهاد ندارند. */
+const HODIMA_SEO_ADVISOR_IGNORED_OPTION = 'hodima_advisor_ignored';
+
+/** گروه‌های فهرست پیشخوان ← نوع شیء‌ها. */
+const HODIMA_SEO_ADVISOR_KIND_GROUPS = [
+	'product'  => [ 'product' ],
+	'category' => [ 'product_cat', 'category' ],
+	'content'  => [ 'post', 'page' ],
+];
+
 /** بازه‌های مجاز (روز). */
 const HODIMA_SEO_ADVISOR_DAYS = [ 28, 90, 180 ];
 
@@ -330,7 +340,7 @@ function hodima_seo_advisor_page_row( array $row ): array {
 /**
  * فهرست آدرس‌ها با فیلتر و صفحه‌بندی.
  *
- * @param array{min_impressions?: int, kind?: string|list<string>, search?: string, has_advice?: bool, orderby?: string, order?: string, limit?: int, offset?: int} $args
+ * @param array{min_impressions?: int, kind?: string|list<string>, search?: string, has_advice?: bool, rule?: string, paths?: list<string>, orderby?: string, order?: string, limit?: int, offset?: int} $args
  * @return array{rows: list<array<string, mixed>>, total: int}
  */
 function hodima_seo_advisor_pages( array $args = [] ): array {
@@ -348,6 +358,21 @@ function hodima_seo_advisor_pages( array $args = [] ): array {
 
 	if ( ! empty( $args['has_advice'] ) ) {
 		$where[] = 'advice_count > 0';
+	}
+
+	if ( 1 === preg_match( '/^[a-z_]+$/', (string) ( $args['rule'] ?? '' ) ) ) {
+		$where[]  = 'advice LIKE %s';
+		$params[] = '%' . $wpdb->esc_like( '"rule":"' . $args['rule'] . '"' ) . '%';
+	}
+
+	if ( isset( $args['paths'] ) ) {
+		$paths = array_values( array_filter( (array) $args['paths'], 'is_string' ) );
+		if ( $paths ) {
+			$where[] = 'path IN (' . implode( ',', array_fill( 0, count( $paths ), '%s' ) ) . ')';
+			array_push( $params, ...$paths );
+		} else {
+			$where[] = '1 = 0';
+		}
 	}
 
 	$kinds = array_values( array_filter( (array) ( $args['kind'] ?? [] ), static fn( mixed $k ): bool => is_string( $k ) && '' !== $k ) );
@@ -444,4 +469,73 @@ function hodima_seo_advisor_status(): array {
 		'queries'    => (int) ( $stored['queries'] ?? 0 ),
 		'error'      => (string) ( $stored['error'] ?? '' ),
 	];
+}
+
+/* ── خلاصه و گروه‌ها (پیشخوان) ── */
+
+/**
+ * جمع کل آدرس‌های ذخیره‌شده.
+ *
+ * @return array{pages: int, advised: int, clicks: int, impressions: int, position: float}
+ */
+function hodima_seo_advisor_totals(): array {
+
+	global $wpdb;
+
+	$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare( 'SELECT COUNT(*) AS pages, SUM(advice_count > 0) AS advised, SUM(clicks) AS clicks, SUM(impressions) AS impressions, SUM(avg_position * impressions) AS weighted FROM %i', hodima_seo_advisor_table( 'pages' ) ),
+		ARRAY_A
+	);
+	$row = is_array( $row ) ? $row : [];
+
+	$impressions = (int) ( $row['impressions'] ?? 0 );
+
+	return [
+		'pages'       => (int) ( $row['pages'] ?? 0 ),
+		'advised'     => (int) ( $row['advised'] ?? 0 ),
+		'clicks'      => (int) ( $row['clicks'] ?? 0 ),
+		'impressions' => $impressions,
+		'position'    => $impressions > 0 ? round( (float) ( $row['weighted'] ?? 0 ) / $impressions, 1 ) : 0.0,
+	];
+}
+
+/**
+ * تعداد آدرس‌های دارای پیشنهاد در هر گروه (محصول، دسته، مقاله و برگه).
+ *
+ * @return array<string, int>
+ */
+function hodima_seo_advisor_group_counts(): array {
+
+	global $wpdb;
+
+	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare( 'SELECT kind, COUNT(*) AS n FROM %i WHERE advice_count > 0 GROUP BY kind', hodima_seo_advisor_table( 'pages' ) ),
+		ARRAY_A
+	);
+
+	$out = array_fill_keys( array_keys( HODIMA_SEO_ADVISOR_KIND_GROUPS ), 0 );
+
+	foreach ( $rows as $row ) {
+		foreach ( HODIMA_SEO_ADVISOR_KIND_GROUPS as $group => $kinds ) {
+			if ( in_array( (string) $row['kind'], $kinds, true ) ) {
+				$out[ $group ] += (int) $row['n'];
+			}
+		}
+	}
+
+	return $out;
+}
+
+/** بیشترین کلیک بالقوه (برای طول نوار هر ردیف). */
+function hodima_seo_advisor_max_potential(): int {
+	global $wpdb;
+	return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT MAX(potential) FROM %i', hodima_seo_advisor_table( 'pages' ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+}
+
+/* ── نادیده گرفتن ── */
+
+/** @return list<string> */
+function hodima_seo_advisor_ignored(): array {
+	$ignored = get_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION, [] );
+	return is_array( $ignored ) ? array_values( array_filter( $ignored, 'is_string' ) ) : [];
 }

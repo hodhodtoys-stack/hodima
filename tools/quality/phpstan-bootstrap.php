@@ -22,3 +22,8 @@ define( 'HODIMA_MEDIA_DIR', '/tmp/wordpress/wp-content/plugins/hodima-media' );
 define( 'HODIMA_COMMERCE_VERSION', '0.0.0' );
 define( 'HODIMA_COMMERCE_URL', 'https://example.test/wp-content/plugins/hodima-commerce' );
 define( 'HODIMA_COMMERCE_DIR', '/tmp/wordpress/wp-content/plugins/hodima-commerce' );
+
+// Hodima SEO: hodima-seo.php (مشاور سئو، صفحه پیشخوان)
+define( 'HODIMA_SEO_VERSION', '0.0.0' );
+define( 'HODIMA_SEO_URL', 'https://example.test/wp-content/plugins/hodima-seo' );
+define( 'HODIMA_SEO_DIR', '/tmp/wordpress/wp-content/plugins/hodima-seo' );

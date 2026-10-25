@@ -355,6 +355,45 @@ function hodima_seo_advisor_analyze( string $path ): ?array {
 }
 
 /**
+ * تحلیل یک آدرس و ذخیره نتیجه در ردیف جدول (آدرس نادیده‌گرفته‌شده: بدون پیشنهاد).
+ * true = پیشنهاد دارد.
+ */
+function hodima_seo_advisor_save_advice( string $path ): bool {
+
+	global $wpdb;
+
+	$result = in_array( $path, hodima_seo_advisor_ignored(), true ) ? null : hodima_seo_advisor_analyze( $path );
+	$found  = null !== $result && [] !== $result['suggestions'];
+
+	$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		hodima_seo_advisor_table( 'pages' ),
+		$found
+			? [ 'potential' => $result['potential'], 'advice_count' => count( $result['suggestions'] ), 'advice' => (string) wp_json_encode( $result['suggestions'], JSON_UNESCAPED_UNICODE ) ]
+			: [ 'potential' => 0, 'advice_count' => 0, 'advice' => '' ],
+		[ 'path' => $path ],
+		[ '%d', '%d', '%s' ],
+		[ '%s' ]
+	);
+
+	return $found;
+}
+
+/**
+ * نادیده گرفتن یک آدرس (یا بازگرداندنش). بازگرداندن همان لحظه دوباره تحلیلش می‌کند.
+ */
+function hodima_seo_advisor_set_ignored( string $path, bool $ignore ): void {
+
+	$ignored = array_values( array_diff( hodima_seo_advisor_ignored(), [ $path ] ) );
+
+	if ( $ignore ) {
+		$ignored[] = $path;
+	}
+
+	update_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION, array_values( array_unique( $ignored ) ), false );
+	hodima_seo_advisor_save_advice( $path );
+}
+
+/**
  * تحلیل همه آدرس‌های قابل‌بررسی و ذخیره نتیجه در جدول؛ بعد از هر دریافت داده.
  * قابل‌بررسی: نمایش ≥ حداقل، یا کلیک بازه قبل ≥ حداقل افت. تعداد آدرس دارای پیشنهاد را برمی‌گرداند.
  */
@@ -374,18 +413,9 @@ function hodima_seo_advisor_analyze_all(): int {
 	$advised = 0;
 
 	foreach ( $paths as $path ) {
-		$result = hodima_seo_advisor_analyze( (string) $path );
-		if ( null === $result || ! $result['suggestions'] ) {
-			continue;
+		if ( hodima_seo_advisor_save_advice( (string) $path ) ) {
+			++$advised;
 		}
-		++$advised;
-		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$table,
-			[ 'potential' => $result['potential'], 'advice_count' => count( $result['suggestions'] ), 'advice' => (string) wp_json_encode( $result['suggestions'], JSON_UNESCAPED_UNICODE ) ],
-			[ 'path' => (string) $path ],
-			[ '%d', '%d', '%s' ],
-			[ '%s' ]
-		);
 	}
 
 	return $advised;

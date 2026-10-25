@@ -10,7 +10,8 @@
  *   ۱ اتصال مشترک (inc/search-console.php)   ← انجام شد
  *   ۳ داده: جدول‌ها و دریافت روزانه (advisor-data.php، advisor-refresh.php) ← انجام شد
  *   ۴ موتور قاعده‌ها (advisor-rules.php) ← انجام شد
- *   ۵ صفحه پیشخوان، ۶ کادر ویرایش، ۷ هشدار ← بعدا
+ *   ۵ صفحه پیشخوان (advisor-admin.php، advisor-admin.css) ← انجام شد
+ *   ۶ کادر ویرایش، ۷ هشدار ← بعدا
  *
  * این ماژول به ماژول «گوگل دیسکاور» وابسته نیست؛ اتصال از inc/search-console.php
  * می‌آید و کلید همان «کلید جدای دیسکاور» یا سرویس اکانت Google Indexing است.
@@ -24,3 +25,7 @@ require_once dirname( __DIR__, 2 ) . '/inc/search-console.php';
 require_once __DIR__ . '/advisor-data.php';
 require_once __DIR__ . '/advisor-rules.php';
 require_once __DIR__ . '/advisor-refresh.php';
+
+if ( is_admin() ) {
+	require_once __DIR__ . '/advisor-admin.php';
+}
