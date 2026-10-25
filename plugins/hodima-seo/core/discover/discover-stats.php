@@ -262,18 +262,7 @@ function hodima_seo_discover_sc_refresh(): bool|WP_Error {
 		return true;
 	}
 
-	$status  = null !== $last ? (int) ( $last->get_error_data()['status'] ?? 0 ) : 0;
-	$known   = hodima_seo_discover_sc_sites();
-	$hint    = $known
-		? ' propertyهایی که این حساب به آن‌ها دسترسی دارد: ' . implode( '، ', $known ) . '.'
-		: ' این حساب هنوز به هیچ property دسترسی ندارد.';
-	$message = match ( true ) {
-		403 === $status => 'سرچ کنسول اجازه نداد: ایمیل حساب سرویس (' . hodima_seo_discover_sc_email() . ') را در سرچ کنسول ← تنظیمات ← کاربران و مجوزها به property سایت اضافه کنید، یا property درست را پایین انتخاب کنید.' . $hint,
-		404 === $status => 'این property در سرچ کنسول پیدا نشد؛ property درست را پایین انتخاب کنید (مثلا https://example.com/ یا sc-domain:example.com).' . $hint,
-		400 === $status => 'سرچ کنسول property را نپذیرفت (' . $last?->get_error_message() . '). property درست را پایین انتخاب کنید یا خالی بگذارید.' . $hint,
-		null !== $last  => 'خطای سرچ کنسول: ' . $last->get_error_message(),
-		default         => 'property برای امتحان وجود ندارد.',
-	};
+	$message = hodima_seo_sc_failure_message( $last );
 
 	hodima_seo_discover_sc_store_error( $message );
 

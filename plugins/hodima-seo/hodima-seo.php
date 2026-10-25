@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           2.5.0
+ * Version:           2.5.1
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '2.5.0';
+const HODIMA_SEO_VERSION = '2.5.1';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -125,6 +125,14 @@ function hodima_seo_modules(): array {
 			'recommends'  => [ 'seobox', 'schema' ],
 			'icon'        => 'dashicons-visibility',
 		],
+		'advisor' => [
+			'title'       => 'مشاور سئو',
+			'description' => 'با داده Search Console همین سایت برای هر صفحه می‌گوید چه کاری بیشترین کلیک اضافه را می‌آورد: عنوان و توضیح متا، کلمه‌های نزدیک صفحه اول، کلمه‌ای که در تیترها نیست. فقط پیشنهاد می‌دهد و چیزی را خودکار عوض نمی‌کند؛ روزی یک بار داده را از سرچ کنسول می‌گیرد (کلید همان «گوگل دیسکاور ← آمار سرچ کنسول» است).',
+			'files'       => [ 'core/advisor/advisor-init.php' ],
+			'warning'     => 'دریافت روزانه داده سرچ کنسول متوقف می‌شود (داده ذخیره‌شده پاک نمی‌شود).',
+			'recommends'  => [ 'seobox' ],
+			'icon'        => 'dashicons-chart-line',
+		],
 		'robots' => [
 			'title'       => 'robots.txt هوشمند',
 			'description' => 'ساخت کامل robots.txt هماهنگ با ووکامرس، سایت‌مپ و تنظیمات ربات‌گیر (هر گروه ربات قوانین پایه را هم دارد).',
@@ -209,6 +217,10 @@ add_action( 'plugins_loaded', static function (): void {
 				}
 			}
 		}
+		// ماژول مشاور سئو خاموش: رویداد روزانه دریافت داده یتیم نماند
+		if ( is_admin() && ! \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) && wp_next_scheduled( 'hodima_advisor_refresh' ) ) {
+			wp_clear_scheduled_hook( 'hodima_advisor_refresh' );
+		}
 		return;
 	}
 
@@ -240,4 +252,5 @@ register_deactivation_hook( __FILE__, static function (): void {
 	// آمار روزانه گوگل دیسکاور (با فعال‌سازی دوباره در اولین بازدید پیشخوان زمان‌بندی می‌شود)
 	wp_clear_scheduled_hook( 'hodima_discover_sc_refresh' );
 	wp_clear_scheduled_hook( 'hodima_discover_digest' ); // خلاصه هفتگی ایمیلی (SEO 2.1.8)
+	wp_clear_scheduled_hook( 'hodima_advisor_refresh' ); // دریافت روزانه داده مشاور سئو
 } );

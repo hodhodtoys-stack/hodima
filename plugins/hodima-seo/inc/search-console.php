@@ -305,9 +305,10 @@ function hodima_seo_sc_is_key_error( WP_Error $error ): bool {
  *
  * @param list<string> $dimensions page، query، date، device، country
  * @param string       $type       discover، web، …
+ * @param int          $start_row  شروع صفحه‌بندی (هر درخواست حداکثر ۲۵ هزار ردیف)
  * @return array{rows: list<array<string, mixed>>}|WP_Error
  */
-function hodima_seo_sc_query( string $property, string $token, string $start, string $end, array $dimensions = [ 'page' ], int $row_limit = 5000, string $type = 'web' ): array|WP_Error {
+function hodima_seo_sc_query( string $property, string $token, string $start, string $end, array $dimensions = [ 'page' ], int $row_limit = 5000, string $type = 'web', int $start_row = 0 ): array|WP_Error {
 
 	$res = wp_remote_post(
 		'https://searchconsole.googleapis.com/webmasters/v3/sites/' . rawurlencode( $property ) . '/searchAnalytics/query',
@@ -320,7 +321,7 @@ function hodima_seo_sc_query( string $property, string $token, string $start, st
 				'type'       => $type,
 				'dimensions' => $dimensions,
 				'rowLimit'   => max( 1, min( 25000, $row_limit ) ), // سقف خود سرچ کنسول ۲۵ هزار
-			] ),
+			] + ( $start_row > 0 ? [ 'startRow' => $start_row ] : [] ) ),
 		]
 	);
 
@@ -337,4 +338,55 @@ function hodima_seo_sc_query( string $property, string $token, string $start, st
 	}
 
 	return [ 'rows' => is_array( $body ) && is_array( $body['rows'] ?? null ) ? array_values( $body['rows'] ) : [] ];
+}
+
+/**
+ * کوئری با توکن خودکار: توکن را خودش می‌گیرد و اگر منقضی بود (۴۰۱) یک بار با
+ * توکن تازه تکرار می‌کند.
+ *
+ * @param list<string> $dimensions
+ * @return array{rows: list<array<string, mixed>>}|WP_Error
+ */
+function hodima_seo_sc_request( string $property, string $start, string $end, array $dimensions, int $row_limit = 5000, string $type = 'web', int $start_row = 0 ): array|WP_Error {
+
+	$token = hodima_seo_sc_token();
+
+	if ( is_wp_error( $token ) ) {
+		return $token;
+	}
+
+	$result = hodima_seo_sc_query( $property, $token, $start, $end, $dimensions, $row_limit, $type, $start_row );
+
+	if ( is_wp_error( $result ) && 401 === (int) ( $result->get_error_data()['status'] ?? 0 ) ) {
+		$token = hodima_seo_sc_token( true );
+		if ( is_wp_error( $token ) ) {
+			return $token;
+		}
+		$result = hodima_seo_sc_query( $property, $token, $start, $end, $dimensions, $row_limit, $type, $start_row );
+	}
+
+	return $result;
+}
+
+/**
+ * پیام فارسی شکست دریافت داده (همه propertyها خطا دادند).
+ *
+ * @param WP_Error|null $last آخرین خطای API؛ null = property برای امتحان نبود
+ */
+function hodima_seo_sc_failure_message( ?WP_Error $last ): string {
+
+	$status = null !== $last ? (int) ( $last->get_error_data()['status'] ?? 0 ) : 0;
+	$known  = hodima_seo_sc_sites();
+	$hint   = $known
+		? ' propertyهایی که این حساب به آن‌ها دسترسی دارد: ' . implode( '، ', $known ) . '.'
+		: ' این حساب هنوز به هیچ property دسترسی ندارد.';
+	$where  = ' در «گوگل دیسکاور ← آمار سرچ کنسول»';
+
+	return match ( true ) {
+		403 === $status => 'سرچ کنسول اجازه نداد: ایمیل حساب سرویس (' . hodima_seo_sc_email() . ') را در سرچ کنسول ← تنظیمات ← کاربران و مجوزها به property سایت اضافه کنید، یا property درست را' . $where . ' انتخاب کنید.' . $hint,
+		404 === $status => 'این property در سرچ کنسول پیدا نشد؛ property درست را' . $where . ' انتخاب کنید (مثلا https://example.com/ یا sc-domain:example.com).' . $hint,
+		400 === $status => 'سرچ کنسول property را نپذیرفت (' . $last?->get_error_message() . '). property درست را' . $where . ' انتخاب کنید یا خالی بگذارید.' . $hint,
+		null !== $last  => 'خطای سرچ کنسول: ' . $last->get_error_message(),
+		default         => 'property برای امتحان وجود ندارد.',
+	};
 }
