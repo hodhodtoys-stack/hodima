@@ -159,6 +159,7 @@ add_filter(
 hodima_ad( 'تابع‌ها و ماژول لود شده‌اند', [ function_exists( 'hodima_seo_sc_request' ), class_exists( '\Hodima\Core\Modules' ) && \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) ], [ true, true ] );
 hodima_ad( 'رویداد روزانه به تابع دریافت وصل است', has_action( HODIMA_SEO_ADVISOR_CRON ) !== false, true );
 
+add_filter( 'hodima_seo_advisor_health_enabled', '__return_false' );
 add_filter( 'hodima_seo_advisor_trend_enabled', '__return_false' );
 add_filter( 'hodima_seo_advisor_breakdown_enabled', '__return_false' ); // بخش‌بندی در آزمون‌های دریافت اصلی خاموش؛ پایین جدا آزمون می‌شود
 // تاریخچه هفتگی را از پیش پر می‌کنیم تا شمار درخواست‌های آزمون‌های دریافت فقط سه‌تای اصلی باشد (خودش پایین آزمون می‌شود)
@@ -794,6 +795,7 @@ require_once HODIMA_SEO_DIR . '/core/advisor/advisor-insights-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-breakdown-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-trend-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-health-view.php';
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 update_option( 'hodima_discover_sc_key', $key_json, false );
 wp_set_current_user( 1 );
@@ -1089,6 +1091,65 @@ hodima_ad( 'صفحه‌ها با حداقل بالقوه ۱۰۰ و ۵۰۰ و ۱�
 delete_option( 'hodima_discover_sc_key' );
 false === $saved_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $saved_tasks, false );
 $_GET = [];
+
+echo "=== سلامت آدرس‌ها: بدون نمایش و آدرس مرده\n";
+$mk_page = static function ( string $slug, string $title, int $days_old ): int {
+	$id = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => $title, 'post_name' => $slug ] );
+	if ( $days_old > 0 ) {
+		$date = gmdate( 'Y-m-d H:i:s', time() - $days_old * DAY_IN_SECONDS );
+		wp_update_post( [ 'ID' => $id, 'post_date' => $date, 'post_date_gmt' => $date, 'edit_date' => true ] );
+	}
+	return $id;
+};
+foreach ( [ 'hl-seen', 'hl-old', 'hl-new', 'hl-secret' ] as $slug ) {
+	foreach ( get_posts( [ 'post_type' => 'page', 'name' => $slug, 'post_status' => 'any', 'numberposts' => -1 ] ) as $left ) {
+		wp_delete_post( $left->ID, true );
+	}
+}
+$h_seen = $mk_page( 'hl-seen', 'دیده‌شده', 200 );
+$h_old  = $mk_page( 'hl-old', 'قدیمی بدون نمایش', 120 );
+$h_new  = $mk_page( 'hl-new', 'تازه بدون نمایش', 3 );
+$h_sec  = $mk_page( 'hl-secret', 'رمزدار', 120 );
+wp_update_post( [ 'ID' => $h_sec, 'post_password' => 'x' ] );
+hodima_seo_advisor_store(
+	[
+		hodima_seo_advisor_path_key( (string) get_permalink( $h_seen ) ) => [ 'clicks' => 5, 'impressions' => 500, 'position' => 8.0 ],
+		'/hl-missing-page/' => [ 'clicks' => 3, 'impressions' => 800, 'position' => 9.0 ],
+		'/hl-low-views/'      => [ 'clicks' => 0, 'impressions' => 10, 'position' => 9.0 ],
+		'/'                  => [ 'clicks' => 3, 'impressions' => 900, 'position' => 9.0 ],
+	],
+	[],
+	[]
+);
+$unseen = hodima_seo_advisor_health_unseen();
+$un_ids = array_column( $unseen['unseen'], 'id' );
+hodima_ad( 'بدون نمایش: صفحه قدیمی در فهرست، تازه جدا شمرده، دیده‌شده و رمزدار نه', [ in_array( $h_old, $un_ids, true ), in_array( $h_new, $un_ids, true ), in_array( $h_seen, $un_ids, true ), in_array( $h_sec, $un_ids, true ), $unseen['fresh'] >= 1, $unseen['seen'] >= 1 ], [ true, false, false, false, true, true ] );
+$old_entry = array_values( array_filter( $unseen['unseen'], static fn( array $u ): bool => $u['id'] === $h_old ) )[0] ?? [];
+hodima_ad( 'سن صفحه قدیمی حدود ۱۲۰ روز و نوع page؛ فهرست مرتب بر سن (قدیمی‌ترین اول)', [ abs( ( $old_entry['days'] ?? 0 ) - 120 ) <= 1, $old_entry['type'] ?? '', array_column( $unseen['unseen'], 'days' ) === ( static function ( array $d ): array { rsort( $d ); return $d; } )( array_column( $unseen['unseen'], 'days' ) ) ], [ true, 'page', true ] );
+
+$dead = hodima_seo_advisor_health_dead_urls();
+$dead_by = array_column( $dead, null, 'path' );
+hodima_ad( 'آدرس مرده: /hl-missing-page/ با ۸۰۰ نمایش ← missing؛ صفحه اصلی، کم‌نمایش (<۲۰) و صفحه سالم نمی‌آیند', [ $dead_by['/hl-missing-page/']['state'] ?? '', isset( $dead_by['/'] ), isset( $dead_by['/hl-low-views/'] ), isset( $dead_by[ hodima_seo_advisor_path_key( (string) get_permalink( $h_seen ) ) ?? '' ] ) ], [ 'missing', false, false, false ] );
+
+remove_filter( 'hodima_seo_advisor_health_enabled', '__return_false' );
+hodima_seo_advisor_health_sync();
+$hs = hodima_seo_advisor_health();
+hodima_ad( 'همگام‌سازی: گزینه ساخته می‌شود با جمع‌ها و فهرست‌ها', [ isset( $hs['computed'] ), $hs['router'] ?? null, ( $hs['total'] ?? 0 ) >= 3, count( $hs['unseen'] ?? [] ) >= 1, count( $hs['dead'] ?? [] ) >= 1 ], [ true, true, true, true, true ] );
+add_filter( 'hodima_seo_advisor_health_enabled', '__return_false' );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 4, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+update_option( 'hodima_discover_sc_key', $key_json, false );
+wp_set_current_user( 1 );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'health' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$health_html = (string) ob_get_clean();
+hodima_ad( 'تب سلامت: ۴ کارت آمار، جدول آدرس مرده با «۴۰۴» و دستور، جدول صفحه بدون نمایش', [ substr_count( $health_html, 'class="hds-stat"' ), str_contains( $health_html, '/hl-missing-page/' ), str_contains( $health_html, 'ریدایرکت ۳۰۱ به آن ببرید' ), str_contains( $health_html, 'قدیمی بدون نمایش' ), str_contains( $health_html, 'tab=health' ) ], [ 4, true, true, true, true ] );
+delete_option( 'hodima_discover_sc_key' );
+$_GET = [];
+hodima_ad( 'پاک کردن داده‌های مشاور سلامت را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), hodima_seo_advisor_health() ], [ true, [] ] );
+foreach ( [ $h_seen, $h_old, $h_new, $h_sec ] as $hid ) {
+	wp_delete_post( $hid, true );
+}
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

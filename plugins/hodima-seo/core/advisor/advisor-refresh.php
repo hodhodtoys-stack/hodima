@@ -193,6 +193,9 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 		// روند ماهانه ۱۶ ماه و کلمه‌های تازه/از دست رفته؛ شکستش دریافت اصلی را رد نمی‌کند (hodima_seo_advisor_trend_sync)
 		hodima_seo_advisor_trend_sync( $property );
 
+		// صفحه‌های بدون نمایش و آدرس‌های مرده‌ای که هنوز در گوگل‌اند (hodima_seo_advisor_health_sync)
+		hodima_seo_advisor_health_sync();
+
 		// تاریخچه هفتگی؛ شکستش دریافت اصلی را رد نمی‌کند (هفته‌های ناموفق دفعه بعد دوباره امتحان می‌شوند)
 		hodima_seo_advisor_history_sync( $property );
 
