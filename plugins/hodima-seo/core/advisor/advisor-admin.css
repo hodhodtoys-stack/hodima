@@ -466,6 +466,29 @@
 	white-space: nowrap;
 }
 
+.hodima-advisor .hodima-advisor__setting--wide {
+	grid-column: 1 / -1;
+}
+
+.hodima-advisor .hodima-advisor__key {
+	inline-size: 100%;
+	min-block-size: 5.5rem;
+	block-size: 5.5rem;
+	font-family: ui-monospace, monospace;
+	font-size: 0.75rem;
+	resize: vertical;
+}
+
+.hodima-advisor .hodima-advisor__setting-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.625rem;
+}
+
+.hodima-advisor .hodima-advisor__setting .hds-pill {
+	white-space: normal;
+}
+
 .hodima-advisor .hodima-advisor__confirm {
 	display: flex;
 	align-items: center;

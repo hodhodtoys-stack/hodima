@@ -15,7 +15,11 @@
  * فقط به این فایل می‌سپارد.
  *
  * کلید: «کلید جدای دیسکاور» (گزینه hodima_discover_sc_key)، وگرنه «سرویس
- * اکانت» ماژول Google Indexing (روشن یا خاموش). دسترسی فقط‌خواندنی
+ * اکانت» ماژول Google Indexing (روشن یا خاموش). مشاور سئو (پارامتر
+ * $consumer = HODIMA_SEO_SC_ADVISOR) اول کلید مخصوص خودش را می‌خواند (ثابت
+ * HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON در wp-config، وگرنه گزینه
+ * hodima_advisor_sc_key) تا فقط‌خواندنی و جدا از دیسکاور و Indexing باشد؛
+ * اگر نبود همان ترتیب بالا (سایتی که هنوز کلید مخصوص نساخته خراب نشود). دسترسی فقط‌خواندنی
  * (webmasters.readonly؛ توکن جدا برای هر حساب). ایمیل حساب سرویس باید در
  * سرچ کنسول کاربر همان property باشد. هیچ بازدیدی از سایت به گوگل درخواست
  * نمی‌زند؛ فراخوانی‌ها فقط از WP-Cron و پیشخوان‌اند.
@@ -38,11 +42,31 @@ const HODIMA_SEO_SC_KEY_OPTION = 'hodima_discover_sc_key';
 /** گزینه propertyهایی که حساب سرویس در سرچ کنسول به آن‌ها دسترسی دارد (از آخرین اتصال). */
 const HODIMA_SEO_SC_SITES_OPTION = 'hodima_discover_sc_sites';
 
+/** مصرف‌کننده‌ای که کلید و فهرست property مخصوص خودش را دارد (مشاور سئو). خالی = اتصال مشترک دیسکاور. */
+const HODIMA_SEO_SC_ADVISOR = 'advisor';
+
+/** «کلید مخصوص مشاور» (JSON حساب سرویس؛ autoload خاموش). ثابت wp-config با همین نام‌گذاری امن‌تر است و اولویت دارد. */
+const HODIMA_SEO_SC_ADVISOR_KEY_OPTION = 'hodima_advisor_sc_key';
+
+/** propertyهای در دسترس «کلید مخصوص مشاور» (جدا از فهرست مشترک تا با دیسکاور قاطی نشود). */
+const HODIMA_SEO_SC_ADVISOR_SITES_OPTION = 'hodima_advisor_sc_sites';
+
 /**
- * منبع کلید فعلی: own (کلید جدای دیسکاور)، indexing (ماژول Google Indexing یا
- * ثابت HODIMA_GI_SERVICE_ACCOUNT_JSON در wp-config)، یا رشته خالی.
+ * منبع کلید فعلی: advisor_config (ثابت HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON در wp-config)،
+ * advisor_own (کلید مخصوص مشاور در پیشخوان) — این دو فقط برای مصرف‌کننده advisor — own (کلید
+ * جدای دیسکاور)، indexing (ماژول Google Indexing یا ثابت HODIMA_GI_SERVICE_ACCOUNT_JSON در
+ * wp-config)، یا رشته خالی.
  */
-function hodima_seo_sc_key_source(): string {
+function hodima_seo_sc_key_source( string $consumer = '' ): string {
+
+	if ( HODIMA_SEO_SC_ADVISOR === $consumer ) {
+		if ( defined( 'HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON' ) && '' !== trim( (string) constant( 'HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON' ) ) ) {
+			return 'advisor_config';
+		}
+		if ( '' !== trim( (string) get_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, '' ) ) ) {
+			return 'advisor_own';
+		}
+	}
 
 	if ( '' !== trim( (string) get_option( HODIMA_SEO_SC_KEY_OPTION, '' ) ) ) {
 		return 'own';
@@ -65,10 +89,19 @@ function hodima_seo_sc_indexing_json(): string {
 	return (string) get_option( 'hodima_gi_json_key', '' ); // همان HODIMA_GI_OPTION_JSON؛ ماژول خاموش ثابتش را تعریف نکرده
 }
 
-/** JSON سرویس اکانت (کلید جدا، وگرنه ماژول Google Indexing)، یا رشته خالی. */
-function hodima_seo_sc_key_json(): string {
-	$own = trim( (string) get_option( HODIMA_SEO_SC_KEY_OPTION, '' ) );
-	return '' !== $own ? $own : hodima_seo_sc_indexing_json();
+/**
+ * JSON سرویس اکانت، یا رشته خالی. برای مشاور اول کلید مخصوص خودش، بعد همان ترتیب مشترک
+ * (کلید جدای دیسکاور، وگرنه ماژول Google Indexing) تا سایتی که هنوز کلید مخصوص نساخته خراب نشود.
+ */
+function hodima_seo_sc_key_json( string $consumer = '' ): string {
+
+	return match ( hodima_seo_sc_key_source( $consumer ) ) {
+		'advisor_config' => trim( (string) constant( 'HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON' ) ),
+		'advisor_own'    => trim( (string) get_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, '' ) ),
+		'own'            => trim( (string) get_option( HODIMA_SEO_SC_KEY_OPTION, '' ) ),
+		'indexing'       => hodima_seo_sc_indexing_json(),
+		default          => '',
+	};
 }
 
 /**
@@ -107,8 +140,8 @@ function hodima_seo_sc_validate_key( string $json ): array {
 }
 
 /** ایمیل سرویس اکانت (برای راهنمای افزودن کاربر در سرچ کنسول). */
-function hodima_seo_sc_email(): string {
-	$key = json_decode( hodima_seo_sc_key_json(), true );
+function hodima_seo_sc_email( string $consumer = '' ): string {
+	$key = json_decode( hodima_seo_sc_key_json( $consumer ), true );
 	return is_array( $key ) ? sanitize_email( (string) ( $key['client_email'] ?? '' ) ) : '';
 }
 
@@ -194,13 +227,18 @@ function hodima_seo_sc_list_sites( string $token ): array|WP_Error {
 	return $sites;
 }
 
+/** گزینه فهرست propertyها: کلید مخصوص مشاور فهرست خودش را دارد، بقیه فهرست مشترک. */
+function hodima_seo_sc_sites_option( string $consumer = '' ): string {
+	return in_array( hodima_seo_sc_key_source( $consumer ), [ 'advisor_config', 'advisor_own' ], true ) ? HODIMA_SEO_SC_ADVISOR_SITES_OPTION : HODIMA_SEO_SC_SITES_OPTION;
+}
+
 /**
  * propertyهای ذخیره‌شده از آخرین اتصال.
  *
  * @return list<string>
  */
-function hodima_seo_sc_sites(): array {
-	$sites = get_option( HODIMA_SEO_SC_SITES_OPTION, [] );
+function hodima_seo_sc_sites( string $consumer = '' ): array {
+	$sites = get_option( hodima_seo_sc_sites_option( $consumer ), [] );
 	return is_array( $sites ) ? array_values( array_map( 'strval', $sites ) ) : [];
 }
 
@@ -211,7 +249,7 @@ function hodima_seo_sc_sites(): array {
  *
  * @return list<string>
  */
-function hodima_seo_sc_candidates(): array {
+function hodima_seo_sc_candidates( string $consumer = '' ): array {
 
 	$chosen = hodima_seo_sc_property();
 
@@ -221,7 +259,7 @@ function hodima_seo_sc_candidates(): array {
 
 	$host   = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) );
 	$guess  = [ trailingslashit( home_url() ), 'sc-domain:' . $host ];
-	$owned  = array_filter( hodima_seo_sc_sites(), static function ( string $site ) use ( $host ): bool {
+	$owned  = array_filter( hodima_seo_sc_sites( $consumer ), static function ( string $site ) use ( $host ): bool {
 		$site_host = str_starts_with( $site, 'sc-domain:' ) ? substr( $site, 10 ) : (string) wp_parse_url( $site, PHP_URL_HOST );
 		return preg_replace( '/^www\./', '', strtolower( $site_host ) ) === $host;
 	} );
@@ -232,12 +270,12 @@ function hodima_seo_sc_candidates(): array {
 /**
  * توکن دسترسی فقط‌خواندنی سرچ کنسول، یا پیام خطا (WP_Error).
  */
-function hodima_seo_sc_token( bool $force = false ): string|WP_Error {
+function hodima_seo_sc_token( bool $force = false, string $consumer = '' ): string|WP_Error {
 
-	$key = json_decode( hodima_seo_sc_key_json(), true );
+	$key = json_decode( hodima_seo_sc_key_json( $consumer ), true );
 
 	if ( ! is_array( $key ) || empty( $key['client_email'] ) || empty( $key['private_key'] ) || empty( $key['token_uri'] ) ) {
-		return new WP_Error( 'hodima_sc_no_key', 'کلید حساب سرویس گوگل تنظیم نشده است؛ در «گوگل دیسکاور ← آمار سرچ کنسول» فایل JSON حساب سرویس را وارد کنید.' );
+		return new WP_Error( 'hodima_sc_no_key', 'کلید حساب سرویس گوگل تنظیم نشده است؛ در ' . ( HODIMA_SEO_SC_ADVISOR === $consumer ? '«مشاور سئو ← تنظیمات مشاور»' : '«گوگل دیسکاور ← آمار سرچ کنسول»' ) . ' فایل JSON حساب سرویس را وارد کنید.' );
 	}
 
 	// توکن هر حساب جدا: با عوض شدن کلید (ایمیل)، توکن حساب قبلی استفاده نمی‌شود
@@ -347,9 +385,9 @@ function hodima_seo_sc_query( string $property, string $token, string $start, st
  * @param list<string> $dimensions
  * @return array{rows: list<array<string, mixed>>}|WP_Error
  */
-function hodima_seo_sc_request( string $property, string $start, string $end, array $dimensions, int $row_limit = 5000, string $type = 'web', int $start_row = 0 ): array|WP_Error {
+function hodima_seo_sc_request( string $property, string $start, string $end, array $dimensions, int $row_limit = 5000, string $type = 'web', int $start_row = 0, string $consumer = '' ): array|WP_Error {
 
-	$token = hodima_seo_sc_token();
+	$token = hodima_seo_sc_token( false, $consumer );
 
 	if ( is_wp_error( $token ) ) {
 		return $token;
@@ -358,7 +396,7 @@ function hodima_seo_sc_request( string $property, string $start, string $end, ar
 	$result = hodima_seo_sc_query( $property, $token, $start, $end, $dimensions, $row_limit, $type, $start_row );
 
 	if ( is_wp_error( $result ) && 401 === (int) ( $result->get_error_data()['status'] ?? 0 ) ) {
-		$token = hodima_seo_sc_token( true );
+		$token = hodima_seo_sc_token( true, $consumer );
 		if ( is_wp_error( $token ) ) {
 			return $token;
 		}
@@ -373,17 +411,17 @@ function hodima_seo_sc_request( string $property, string $start, string $end, ar
  *
  * @param WP_Error|null $last آخرین خطای API؛ null = property برای امتحان نبود
  */
-function hodima_seo_sc_failure_message( ?WP_Error $last ): string {
+function hodima_seo_sc_failure_message( ?WP_Error $last, string $consumer = '' ): string {
 
 	$status = null !== $last ? (int) ( $last->get_error_data()['status'] ?? 0 ) : 0;
-	$known  = hodima_seo_sc_sites();
+	$known  = hodima_seo_sc_sites( $consumer );
 	$hint   = $known
 		? ' propertyهایی که این حساب به آن‌ها دسترسی دارد: ' . implode( '، ', $known ) . '.'
 		: ' این حساب هنوز به هیچ property دسترسی ندارد.';
-	$where  = ' در «گوگل دیسکاور ← آمار سرچ کنسول»';
+	$where  = HODIMA_SEO_SC_ADVISOR === $consumer ? ' در «مشاور سئو ← تنظیمات مشاور»' : ' در «گوگل دیسکاور ← آمار سرچ کنسول»';
 
 	return match ( true ) {
-		403 === $status => 'سرچ کنسول اجازه نداد: ایمیل حساب سرویس (' . hodima_seo_sc_email() . ') را در سرچ کنسول ← تنظیمات ← کاربران و مجوزها به property سایت اضافه کنید، یا property درست را' . $where . ' انتخاب کنید.' . $hint,
+		403 === $status => 'سرچ کنسول اجازه نداد: ایمیل حساب سرویس (' . hodima_seo_sc_email( $consumer ) . ') را در سرچ کنسول ← تنظیمات ← کاربران و مجوزها به property سایت اضافه کنید، یا property درست را' . $where . ' انتخاب کنید.' . $hint,
 		404 === $status => 'این property در سرچ کنسول پیدا نشد؛ property درست را' . $where . ' انتخاب کنید (مثلا https://example.com/ یا sc-domain:example.com).' . $hint,
 		400 === $status => 'سرچ کنسول property را نپذیرفت (' . $last?->get_error_message() . '). property درست را' . $where . ' انتخاب کنید یا خالی بگذارید.' . $hint,
 		null !== $last  => 'خطای سرچ کنسول: ' . $last->get_error_message(),

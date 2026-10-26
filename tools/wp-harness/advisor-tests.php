@@ -623,7 +623,7 @@ hodima_ad( 'محدوده مجاز حداقل نمایش', HODIMA_SEO_ADVISOR_MIN
 ob_start();
 hodima_seo_advisor_render_settings( true );
 $settings_html = (string) ob_get_clean();
-hodima_ad( 'کارت تنظیمات: مقدار فعلی در فیلد و هر دو فرم با nonce', [ str_contains( $settings_html, 'value="250"' ), str_contains( $settings_html, 'name="action" value="hodima_advisor_settings"' ), str_contains( $settings_html, 'name="action" value="hodima_advisor_clear"' ), substr_count( $settings_html, 'name="_wpnonce"' ) ], [ true, true, true, 2 ] );
+hodima_ad( 'کارت تنظیمات: مقدار فعلی در فیلد و هر دو فرم با nonce', [ str_contains( $settings_html, 'value="250"' ), str_contains( $settings_html, 'name="action" value="hodima_advisor_settings"' ), str_contains( $settings_html, 'name="action" value="hodima_advisor_clear"' ), substr_count( $settings_html, 'name="_wpnonce"' ) ], [ true, true, true, 3 ] );
 ob_start();
 hodima_seo_advisor_render_settings( false );
 hodima_ad( 'بدون داده دکمه پاک کردن غیرفعال است', substr_count( (string) ob_get_clean(), 'disabled' ) >= 2, true );
@@ -713,6 +713,41 @@ $cat_html = (string) ob_get_clean();
 hodima_ad( 'دسته (بدون تاریخ ویرایش): نمودار هست، جمله قبل/بعد نیست', [ str_contains( $cat_html, 'hodima-advisor-box__bars' ), str_contains( $cat_html, 'hodima-advisor-box__compare' ) ], [ true, false ] );
 wp_delete_post( $modified_post, true );
 $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'history' ) ) );
+delete_option( 'hodima_discover_sc_key' );
+
+echo "=== کلید مخصوص مشاور\n";
+$own_key = (string) wp_json_encode( [ 'type' => 'service_account', 'client_email' => 'advisor-only@test.iam.gserviceaccount.com', 'private_key' => $pem, 'token_uri' => 'https://oauth2.googleapis.com/token' ] );
+delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION );
+delete_option( HODIMA_SEO_SC_ADVISOR_SITES_OPTION );
+update_option( 'hodima_discover_sc_key', $key_json, false );
+hodima_ad( 'بدون کلید مخصوص: مشاور همان کلید مشترک را می‌خواند', [ hodima_seo_sc_key_source( HODIMA_SEO_SC_ADVISOR ), hodima_seo_sc_email( HODIMA_SEO_SC_ADVISOR ), hodima_seo_sc_sites_option( HODIMA_SEO_SC_ADVISOR ) ], [ 'own', 'advisor@test.iam.gserviceaccount.com', 'hodima_discover_sc_sites' ] );
+update_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, $own_key, false );
+hodima_ad( 'کلید مخصوص مشاور اولویت دارد؛ دیسکاور (بدون پارامتر) همان قبلی می‌ماند', [ hodima_seo_sc_key_source( HODIMA_SEO_SC_ADVISOR ), hodima_seo_sc_email( HODIMA_SEO_SC_ADVISOR ), hodima_seo_sc_key_source(), hodima_seo_sc_email(), hodima_seo_sc_sites_option( HODIMA_SEO_SC_ADVISOR ), hodima_seo_sc_sites_option() ], [ 'advisor_own', 'advisor-only@test.iam.gserviceaccount.com', 'own', 'advisor@test.iam.gserviceaccount.com', 'hodima_advisor_sc_sites', 'hodima_discover_sc_sites' ] );
+
+delete_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor-only@test.iam.gserviceaccount.com' ), 0, 12 ) );
+delete_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor@test.iam.gserviceaccount.com' ), 0, 12 ) );
+$shared_sites_before = hodima_seo_sc_sites();
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [], false );
+$mode = 'ok';
+hodima_ad( 'دریافت با کلید مخصوص موفق است', hodima_seo_advisor_refresh(), true );
+hodima_ad( 'توکن با ایمیل کلید مخصوص ساخته شد (نه کلید مشترک)', [ is_string( get_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor-only@test.iam.gserviceaccount.com' ), 0, 12 ) ) ), get_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor@test.iam.gserviceaccount.com' ), 0, 12 ) ) ], [ true, false ] );
+hodima_ad( 'فهرست property مشاور جدا نوشته شد و فهرست مشترک دیسکاور دست‌نخورده', [ hodima_seo_sc_sites( HODIMA_SEO_SC_ADVISOR ) !== [], hodima_seo_sc_sites() ], [ true, $shared_sites_before ] );
+
+define( 'HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON', $key_json );
+hodima_ad( 'ثابت wp-config از کلید پیشخوان جلوتر است', [ hodima_seo_sc_key_source( HODIMA_SEO_SC_ADVISOR ), hodima_seo_sc_email( HODIMA_SEO_SC_ADVISOR ) ], [ 'advisor_config', 'advisor@test.iam.gserviceaccount.com' ] );
+
+// صفحه: کارت کلید و منبع
+ob_start();
+hodima_seo_advisor_render_settings( true );
+$key_html = (string) ob_get_clean();
+hodima_ad( 'کارت: منبع «کلید ثابت wp-config» نشان داده می‌شود و فیلد چسباندن نیست', [ str_contains( $key_html, 'از کلید ثابت wp-config' ), str_contains( $key_html, 'name="key_json"' ) ], [ true, false ] );
+
+hodima_ad( 'اعتبارسنجی: JSON خراب رد می‌شود', hodima_seo_sc_validate_key( '{"a":1}' )['ok'], false );
+hodima_ad( 'اعتبارسنجی: کلید درست قبول و ایمیل برمی‌گردد', [ hodima_seo_sc_validate_key( $own_key )['ok'], hodima_seo_sc_validate_key( $own_key )['email'] ], [ true, 'advisor-only@test.iam.gserviceaccount.com' ] );
+
+delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION );
+delete_option( HODIMA_SEO_SC_ADVISOR_SITES_OPTION );
+delete_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor-only@test.iam.gserviceaccount.com' ), 0, 12 ) );
 delete_option( 'hodima_discover_sc_key' );
 
 echo "=== پاکسازی\n";

@@ -56,7 +56,7 @@ function hodima_seo_advisor_fetch( string $property, string $start, string $end,
 	$rows = [];
 
 	for ( $page = 0; $page < HODIMA_SEO_ADVISOR_FETCH_PAGES; $page++ ) {
-		$part = hodima_seo_sc_request( $property, $start, $end, $dimensions, 25000, 'web', $page * 25000 );
+		$part = hodima_seo_sc_request( $property, $start, $end, $dimensions, 25000, 'web', $page * 25000, HODIMA_SEO_SC_ADVISOR );
 		if ( is_wp_error( $part ) ) {
 			return $part;
 		}
@@ -107,7 +107,7 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 		set_time_limit( 180 ); // کرون هم مثل دکمه دستی: سه درخواست بزرگ و تحلیل همه آدرس‌ها
 	}
 
-	$token = hodima_seo_sc_token();
+	$token = hodima_seo_sc_token( false, HODIMA_SEO_SC_ADVISOR );
 
 	if ( is_wp_error( $token ) ) {
 		hodima_seo_advisor_store_error( $token->get_error_message() );
@@ -117,14 +117,14 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 	// propertyهای در دسترس حساب (برای انتخاب خودکار و پیام خطا)؛ شکستش مانع کار نیست
 	$sites = hodima_seo_sc_list_sites( $token );
 	if ( is_array( $sites ) ) {
-		update_option( HODIMA_SEO_SC_SITES_OPTION, $sites, false );
+		update_option( hodima_seo_sc_sites_option( HODIMA_SEO_SC_ADVISOR ), $sites, false );
 	}
 
 	$days  = hodima_seo_advisor_days();
 	$range = hodima_seo_advisor_ranges( $days );
 	$last  = null;
 
-	foreach ( hodima_seo_sc_candidates() as $property ) {
+	foreach ( hodima_seo_sc_candidates( HODIMA_SEO_SC_ADVISOR ) as $property ) {
 
 		$current = hodima_seo_advisor_fetch( $property, $range['start'], $range['end'], [ 'page' ] );
 
@@ -190,7 +190,7 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 		return true;
 	}
 
-	$message = hodima_seo_sc_failure_message( $last );
+	$message = hodima_seo_sc_failure_message( $last, HODIMA_SEO_SC_ADVISOR );
 	hodima_seo_advisor_store_error( $message );
 
 	return new WP_Error( 'hodima_advisor_failed', $message );
@@ -198,13 +198,13 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 
 /* ── زمان‌بندی روزانه (فقط وقتی کلید هست) ── */
 add_action( HODIMA_SEO_ADVISOR_CRON, static function (): void {
-	if ( '' !== hodima_seo_sc_key_json() ) {
+	if ( '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR ) ) {
 		hodima_seo_advisor_refresh();
 	}
 } );
 
 add_action( 'admin_init', static function (): void {
-	$has_key   = '' !== hodima_seo_sc_key_json();
+	$has_key   = '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR );
 	$scheduled = (bool) wp_next_scheduled( HODIMA_SEO_ADVISOR_CRON );
 	if ( $has_key && ! $scheduled ) {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', HODIMA_SEO_ADVISOR_CRON );

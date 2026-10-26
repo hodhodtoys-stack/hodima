@@ -29,6 +29,7 @@ add_action( 'admin_post_hodima_advisor_ignore', 'hodima_seo_advisor_handle_ignor
 add_action( 'admin_post_hodima_advisor_csv', 'hodima_seo_advisor_handle_csv' );
 add_action( 'admin_post_hodima_advisor_settings', 'hodima_seo_advisor_handle_settings' );
 add_action( 'admin_post_hodima_advisor_clear', 'hodima_seo_advisor_handle_clear' );
+add_action( 'admin_post_hodima_advisor_key', 'hodima_seo_advisor_handle_key' );
 
 function hodima_seo_advisor_admin_menu(): void {
 
@@ -206,6 +207,51 @@ function hodima_seo_advisor_handle_settings(): void {
 	exit;
 }
 
+/**
+ * ذخیره یا برداشتن «کلید مخصوص مشاور». کلید پیش از ذخیره بررسی می‌شود؛ بعد از هر تغییر توکن و
+ * فهرست propertyهای قبلی پاک می‌شوند (حساب عوض شده) و خطای قدیمی دریافت داده می‌رود.
+ */
+function hodima_seo_advisor_handle_key(): void {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
+	}
+
+	check_admin_referer( 'hodima_advisor_key' );
+
+	$old_email = hodima_seo_sc_email( HODIMA_SEO_SC_ADVISOR );
+
+	if ( ! empty( $_POST['remove'] ) ) {
+		delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION );
+		$message = [ 'کلید مخصوص مشاور برداشته شد؛ مشاور از کلید مشترک (دیسکاور یا ایندکس گوگل) می‌خواند.', 'success' ];
+	} else {
+		$json  = isset( $_POST['key_json'] ) ? trim( wp_unslash( (string) $_POST['key_json'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON کلید است؛ پیش از ذخیره با hodima_seo_sc_validate_key بررسی می‌شود
+		$check = hodima_seo_sc_validate_key( $json );
+
+		if ( ! $check['ok'] ) {
+			hodima_admin_flash( '<strong>مشاور سئو:</strong> ' . esc_html( $check['message'] ), 'error' );
+			wp_safe_redirect( hodima_seo_advisor_page_url() );
+			exit;
+		}
+
+		update_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, $json, false );
+		$message = [ sprintf( 'کلید مخصوص مشاور ذخیره شد (%s). این ایمیل را در Search Console با دسترسی «محدود» اضافه کنید، بعد «به‌روزرسانی داده» را بزنید.', esc_html( $check['email'] ) ), 'success' ];
+	}
+
+	if ( $old_email !== hodima_seo_sc_email( HODIMA_SEO_SC_ADVISOR ) ) {
+		delete_option( HODIMA_SEO_SC_ADVISOR_SITES_OPTION );
+		$status = get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [] );
+		if ( is_array( $status ) ) {
+			$status['error'] = '';
+			update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $status, false );
+		}
+	}
+
+	hodima_admin_flash( '<strong>مشاور سئو:</strong> ' . $message[0], $message[1] );
+	wp_safe_redirect( hodima_seo_advisor_page_url() );
+	exit;
+}
+
 function hodima_seo_advisor_handle_clear(): void {
 
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -343,7 +389,7 @@ function hodima_seo_advisor_render_admin(): void {
 		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
 	}
 
-	$has_key = '' !== hodima_seo_sc_key_json();
+	$has_key = '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR );
 	$status  = hodima_seo_advisor_status();
 	$totals  = hodima_seo_advisor_totals();
 	$has_data = $status['fetched'] > 0 && $totals['pages'] > 0;
@@ -436,8 +482,8 @@ function hodima_seo_advisor_render_settings( bool $has_data ): void {
 	$min            = hodima_seo_advisor_config()['min_impressions'];
 	?>
 	<section class="hds-card hodima-advisor__settings" aria-label="تنظیمات مشاور">
-		<details class="hds-more">
-			<summary class="hds-more__summary">تنظیمات مشاور <span class="hds-more__hint">اختیاری · حداقل نمایش و پاک کردن داده‌ها</span></summary>
+		<details class="hds-more"<?php echo '' === hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR ) ? ' open' : ''; // بدون کلید، کارت باز است: اولین کار وارد کردن کلید ?>>
+			<summary class="hds-more__summary">تنظیمات مشاور <span class="hds-more__hint">کلید گوگل · حداقل نمایش · پاک کردن داده‌ها</span></summary>
 			<div class="hds-more__body hodima-advisor__settings-grid">
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__setting">
 					<input type="hidden" name="action" value="hodima_advisor_settings">
@@ -461,12 +507,45 @@ function hodima_seo_advisor_render_settings( bool $has_data ): void {
 					</label>
 					<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__danger"<?php disabled( ! $has_data ); ?>>پاک کردن داده‌ها</button>
 				</form>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__setting hodima-advisor__setting--wide">
+					<input type="hidden" name="action" value="hodima_advisor_key">
+					<?php wp_nonce_field( 'hodima_advisor_key' ); ?>
+					<h3 class="hodima-advisor__setting-title"><label for="hodima-advisor-key">کلید حساب سرویس مخصوص مشاور</label></h3>
+					<?php
+					$source = hodima_seo_sc_key_source( HODIMA_SEO_SC_ADVISOR );
+					$email  = hodima_seo_sc_email( HODIMA_SEO_SC_ADVISOR );
+					$labels = [
+						'advisor_config' => [ 'از کلید ثابت wp-config', '' ],
+						'advisor_own'    => [ 'از کلید مخصوص مشاور', '' ],
+						'own'            => [ 'از کلید مشترک دیسکاور', 'hds-pill--info' ],
+						'indexing'       => [ 'از حساب سرویس ایندکس گوگل', 'hds-pill--info' ],
+					];
+					[ $source_label, $source_class ] = $labels[ $source ] ?? [ 'کلیدی تنظیم نشده', 'hds-pill--warn' ];
+					?>
+					<p class="hodima-advisor__setting-help">
+						<span class="hds-pill <?php echo esc_attr( $source_class ); ?>"><?php echo esc_html( $source_label ); ?></span>
+						<?php if ( '' !== $email ) : ?>
+							<bdi class="hds-code"><?php echo esc_html( $email ); ?></bdi>
+						<?php endif; ?>
+					</p>
+					<p class="hodima-advisor__setting-help">بهتر است برای مشاور یک حساب سرویس جدا بسازید و در Search Console فقط با دسترسی «محدود» (فقط خواندن) به سایت اضافه کنید؛ این‌طور با دیسکاور و ایندکس گوگل قاطی نمی‌شود. تا کلید مخصوص نگذاشته‌اید، همان کلید مشترک کار می‌کند.</p>
+					<?php if ( 'advisor_config' === $source ) : ?>
+						<p class="hodima-advisor__setting-help">کلید از ثابت <bdi class="hds-code">HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON</bdi> در wp-config.php خوانده می‌شود و از اینجا عوض نمی‌شود.</p>
+					<?php else : ?>
+						<textarea id="hodima-advisor-key" name="key_json" class="hds-input hodima-advisor__key" rows="4" dir="ltr" autocomplete="off" spellcheck="false" placeholder="کل محتوای فایل JSON حساب سرویس را اینجا بچسبانید"></textarea>
+						<p class="hodima-advisor__setting-help">امن‌تر: به‌جای چسباندن اینجا، در wp-config.php بنویسید <bdi class="hds-code">define( 'HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON', '…' );</bdi> (کلید پیشخوان در دیتابیس و بکاپ دیده می‌شود). کلید ذخیره‌شده دوباره نمایش داده نمی‌شود.</p>
+						<div class="hodima-advisor__setting-actions">
+							<button type="submit" class="hds-btn">ذخیره کلید</button>
+							<?php if ( 'advisor_own' === $source ) : ?>
+								<button type="submit" name="remove" value="1" class="hds-btn hds-btn--outline hodima-advisor__danger">برداشتن کلید مخصوص</button>
+							<?php endif; ?>
+						</div>
+					<?php endif; ?>
+				</form>
 				<div class="hodima-advisor__note">
 					<strong>چرا جمع کلمه‌ها از نمایش صفحه کمتر است؟</strong>
 					گوگل کلمه‌های ناشناس را نمی‌دهد و برای هر صفحه فقط ۵۰ کلمه با دست‌کم ۵ نمایش ذخیره می‌شود.
-					<br>
-					<strong>کلید حساب سرویس:</strong>
-					کلیدی که در پیشخوان ذخیره شود در بکاپ دیتابیس دیده می‌شود. امن‌تر این است که در <bdi class="hds-code">wp-config.php</bdi> با ثابت <bdi class="hds-code">HODIMA_GI_SERVICE_ACCOUNT_JSON</bdi> گذاشته شود؛ ولی تا کلید پیشخوان خالی نشود، همان خوانده می‌شود.
+
 				</div>
 			</div>
 		</details>
@@ -480,7 +559,7 @@ function hodima_seo_advisor_render_no_key(): void {
 	hodima_seo_ui_empty(
 		'کلید حساب سرویس گوگل ثبت نشده است',
 		sprintf(
-			'فایل JSON حساب سرویس را در <a href="%s">«گوگل دیسکاور ← آمار سرچ کنسول»</a> وارد کنید و ایمیل آن را در Search Console (تنظیمات ← کاربران و مجوزها) با دسترسی «محدود» اضافه کنید. همان کلید برای مشاور سئو هم کار می‌کند.',
+			'فایل JSON حساب سرویس را در پایین همین صفحه (کارت «تنظیمات مشاور») وارد کنید، یا کلید «گوگل دیسکاور» را در <a href="%s">آمار سرچ کنسول</a> بگذارید که مشاور هم از آن استفاده می‌کند. ایمیل حساب را در Search Console (تنظیمات ← کاربران و مجوزها) با دسترسی «محدود» اضافه کنید.',
 			esc_url( admin_url( 'admin.php?page=hodima-discover&tab=settings' ) )
 		)
 	);

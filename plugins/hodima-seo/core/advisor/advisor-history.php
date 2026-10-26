@@ -123,7 +123,7 @@ function hodima_seo_advisor_history_sync( string $property ): array {
 		}
 
 		$start = ( new DateTimeImmutable( $end ) )->modify( '-6 days' )->format( 'Y-m-d' );
-		$part  = hodima_seo_sc_request( $property, $start, $end, [ 'page' ], 25000 );
+		$part  = hodima_seo_sc_request( $property, $start, $end, [ 'page' ], 25000, 'web', 0, HODIMA_SEO_SC_ADVISOR );
 
 		if ( is_wp_error( $part ) ) {
 			++$result['failed'];
