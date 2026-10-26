@@ -71,6 +71,7 @@ function hodima_seo_advisor_rule_label( string $rule ): string {
 		'missing_headings' => 'کلمه در تیترها نیست',
 		'missing_content'  => 'کلمه در متن نیست',
 		'cannibal'         => 'رقابت داخلی',
+		'weak_query'       => 'کلمه بدون صفحه اختصاصی',
 		'decline'          => 'افت کلیک',
 		default            => $rule,
 	};
@@ -537,7 +538,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 			<span class="screen-reader-text">نوع پیشنهاد</span>
 			<select name="rule" class="hds-input">
 				<option value="">همه پیشنهادها</option>
-				<?php foreach ( [ 'low_ctr', 'near_first', 'missing_headings', 'missing_content', 'cannibal', 'decline' ] as $rule ) : ?>
+				<?php foreach ( [ 'low_ctr', 'near_first', 'missing_headings', 'missing_content', 'weak_query', 'cannibal', 'decline' ] as $rule ) : ?>
 					<option value="<?php echo esc_attr( $rule ); ?>"<?php selected( $filters['rule'], $rule ); ?>><?php echo esc_html( hodima_seo_advisor_rule_label( $rule ) ); ?></option>
 				<?php endforeach; ?>
 			</select>

@@ -257,6 +257,10 @@ hodima_ad( 'صفحه‌بندی آرشیو پیشنهاد ندارد', hodima_se
 $near = hodima_seo_advisor_suggestions( [ 'impressions' => 100, 'clicks' => 5 ] + $base, [ [ 'term' => 'پلومریا', 'clicks' => 11, 'impressions' => 3064, 'position' => 8.0 ] ], null );
 hodima_ad( 'کلمه رتبه ۸: نزدیک صفحه اول، کلیک بالقوه ۱۵۸', [ $rules( $near ), $near[0]['potential'] ?? null ], [ [ 'near_first' ], 158 ] );
 
+$weak = hodima_seo_advisor_suggestions( [ 'impressions' => 100, 'clicks' => 5 ] + $base, [ [ 'term' => 'گیره مو عمده', 'clicks' => 2, 'impressions' => 2000, 'position' => 31.0 ], [ 'term' => 'دور', 'clicks' => 0, 'impressions' => 2000, 'position' => 75.0 ], [ 'term' => 'کم‌نمایش', 'clicks' => 0, 'impressions' => 100, 'position' => 40.0 ] ], null );
+hodima_ad( 'کلمه رتبه ۳۱ با نمایش کافی: «صفحه اختصاصی»؛ رتبه ۷۵ و کم‌نمایش نه', [ $rules( $weak ), $weak[0]['term'] ?? '', ( $weak[0]['potential'] ?? 0 ) > 0 ], [ [ 'weak_query' ], 'گیره مو عمده', true ] );
+
+
 $haystack = [ 'title_headings' => hodima_seo_advisor_normalize( 'کلیپس مو' ), 'content' => hodima_seo_advisor_normalize( 'کلیپس مو پلومریا زیبا' ) ];
 $q        = static fn( string $term ): array => [ 'term' => $term, 'clicks' => 0, 'impressions' => 1000, 'position' => 4.0 ];
 $small    = [ 'impressions' => 100, 'clicks' => 5 ] + $base;
@@ -562,6 +566,8 @@ hodima_ad( 'ی/ک عربی در متن با کلمه فارسی یکی است', 
 hodima_ad( 'رتبه هدف: ≤۷ همان؛ ۱۵ ← ۱۰؛ ۹ ← ۷؛ ۲۰ ← ۱۰', [ hodima_seo_advisor_target_position( 5.0 ), hodima_seo_advisor_target_position( 15.0 ), hodima_seo_advisor_target_position( 9.0 ), hodima_seo_advisor_target_position( 20.0 ) ], [ 5.0, 10.0, 7.0, 10.0 ] );
 add_filter( 'hodima_seo_advisor_brand_terms', $brand_filter = static fn(): array => [ 'هدهدلی' ] );
 hodima_ad( 'کلمه برندی شناخته می‌شود (نه کلمه‌ای که فقط شبیه است)', [ hodima_seo_advisor_is_brand( 'هدهدلی کلیپس' ), hodima_seo_advisor_is_brand( 'خرید کلیپس' ) ], [ true, false ] );
+$brand_weak = hodima_seo_advisor_suggestions( [ 'impressions' => 100, 'clicks' => 5 ] + [ 'path' => '/x/', 'position' => 5.81, 'prev_clicks' => 0 ], [ [ 'term' => 'هدهدلی کلیپس', 'clicks' => 2, 'impressions' => 2000, 'position' => 31.0 ] ], null );
+hodima_ad( 'قاعده «کلمه بدون صفحه اختصاصی» هم کلمه برندی را کنار می‌گذارد', array_column( $brand_weak, 'rule' ), [] );
 $brand_rows = [ [ 'term' => 'هدهدلی کلیپس', 'clicks' => 1, 'impressions' => 900, 'position' => 9.0 ], [ 'term' => 'کلیپس عمده', 'clicks' => 1, 'impressions' => 900, 'position' => 9.0 ] ];
 $sb = hodima_seo_advisor_suggestions( [ 'path' => '/b/', 'clicks' => 2, 'impressions' => 400, 'position' => 9.0, 'prev_clicks' => 0 ], $brand_rows, [ 'title_headings' => '', 'content' => '' ] );
 hodima_ad( 'کلمه برندی پیشنهاد نمی‌گیرد، کلمه عادی می‌گیرد', array_column( $sb, 'term' ), [ 'کلیپس عمده' ] );

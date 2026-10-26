@@ -10,6 +10,7 @@
  *   near_first        کلمه پرنمایشی که رتبه ۸ تا ۲۰ دارد (تقویت در تیتر/متن، لینک داخلی)
  *   missing_headings  کلمه پرنمایش که در عنوان و تیترهای صفحه نیست ولی در متن هست
  *   missing_content   کلمه پرنمایش که در متن صفحه هم نیست
+ *   weak_query        کلمه پرنمایشی که رتبه ۲۱ تا ۶۰ دارد (صفحه یا بخش اختصاصی لازم است)
  *   cannibal          چند آدرس برای یک کلمه نمایش می‌گیرند (رقابت داخلی؛ فقط اطلاع)
  *   decline           کلیک نسبت به بازه قبلی افت کرده
  *
@@ -48,7 +49,7 @@ const HODIMA_SEO_ADVISOR_ANALYZE_LIMIT = 1500;
 /**
  * آستانه‌ها (گزینه پیشخوان: فقط min_impressions؛ بقیه با فیلتر).
  *
- * @return array{min_impressions: int, query_min_impressions: int, near_first_min: float, near_first_max: float, decline_min_clicks: int, decline_ratio: float, cannibal_min_impressions: int}
+ * @return array{min_impressions: int, query_min_impressions: int, near_first_min: float, near_first_max: float, decline_min_clicks: int, decline_ratio: float, cannibal_min_impressions: int, weak_max_position: float}
  */
 function hodima_seo_advisor_config(): array {
 
@@ -61,6 +62,7 @@ function hodima_seo_advisor_config(): array {
 		'decline_min_clicks'       => 50,
 		'decline_ratio'            => 0.7,
 		'cannibal_min_impressions' => 100,
+		'weak_max_position'        => 60.0,
 	] );
 
 	return [
@@ -71,6 +73,7 @@ function hodima_seo_advisor_config(): array {
 		'decline_min_clicks'       => max( 1, (int) ( $config['decline_min_clicks'] ?? 50 ) ),
 		'decline_ratio'            => (float) ( $config['decline_ratio'] ?? 0.7 ),
 		'cannibal_min_impressions' => max( 1, (int) ( $config['cannibal_min_impressions'] ?? 100 ) ),
+		'weak_max_position'        => max( 21.0, (float) ( $config['weak_max_position'] ?? 60.0 ) ),
 	];
 }
 
@@ -270,6 +273,7 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 	// ۲ و ۳. کلمه‌ها
 	$near    = [];
 	$missing = [];
+	$weak    = [];
 	foreach ( $queries as $query ) {
 		if ( $query['impressions'] < $cfg['query_min_impressions'] || hodima_seo_advisor_is_brand( $query['term'] ) ) {
 			continue; // برندی: نرخ کلیکش از جدول عمومی بالاتر است و پیشنهاد/عدد گمراه‌کننده می‌شود
@@ -288,6 +292,17 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				'term'      => $query['term'],
 				'title'     => $in_content ? 'کلمه «' . $query['term'] . '» در عنوان و تیترها نیست' : 'کلمه «' . $query['term'] . '» در متن صفحه نیست',
 				'detail'    => $info . ( $in_content ? ' آن را در عنوان یا یک تیتر (H2) بیاورید.' : ' آن را در عنوان، یک تیتر و پاراگراف اول بیاورید، یا بخش پرسش‌های متداول برایش بنویسید.' ),
+				'potential' => $gain,
+			];
+		}
+
+		// رتبه خیلی عقب (بعد از صفحه دوم): این صفحه فقط حاشیه‌ای به کلمه جواب می‌دهد؛ صفحه یا بخش اختصاصی لازم است
+		if ( $query['position'] > $cfg['near_first_max'] && $query['position'] <= $cfg['weak_max_position'] ) {
+			$weak[] = [
+				'rule'      => 'weak_query',
+				'term'      => $query['term'],
+				'title'     => 'برای «' . $query['term'] . '» صفحه یا بخش اختصاصی بنویسید',
+				'detail'    => $info . ' این صفحه جواب اصلی این کلمه نیست. یک مقاله یا صفحه (یا دست‌کم یک بخش با تیتر) مخصوص همین کلمه بسازید و از این صفحه و صفحه‌های مرتبط به آن لینک بدهید.',
 				'potential' => $gain,
 			];
 		}
@@ -312,7 +327,7 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 		}
 	}
 
-	foreach ( [ $missing, $near ] as $group ) {
+	foreach ( [ $missing, $near, $weak ] as $group ) {
 		usort( $group, static fn( array $a, array $b ): int => $b['potential'] <=> $a['potential'] );
 		array_push( $list, ...array_slice( $group, 0, HODIMA_SEO_ADVISOR_MAX_PER_QUERY_RULE ) );
 	}
