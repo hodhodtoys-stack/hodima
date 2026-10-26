@@ -27,6 +27,8 @@ add_action( 'admin_menu', 'hodima_seo_advisor_admin_menu', 30 );
 add_action( 'admin_post_hodima_advisor_refresh', 'hodima_seo_advisor_handle_refresh' );
 add_action( 'admin_post_hodima_advisor_ignore', 'hodima_seo_advisor_handle_ignore' );
 add_action( 'admin_post_hodima_advisor_csv', 'hodima_seo_advisor_handle_csv' );
+add_action( 'admin_post_hodima_advisor_settings', 'hodima_seo_advisor_handle_settings' );
+add_action( 'admin_post_hodima_advisor_clear', 'hodima_seo_advisor_handle_clear' );
 
 function hodima_seo_advisor_admin_menu(): void {
 
@@ -155,6 +157,71 @@ function hodima_seo_advisor_handle_refresh(): void {
 			),
 			'success'
 		);
+	}
+
+	wp_safe_redirect( hodima_seo_advisor_page_url() );
+	exit;
+}
+
+/** کمترین و بیشترین «حداقل نمایش» قابل ذخیره. */
+const HODIMA_SEO_ADVISOR_MIN_IMPRESSIONS_RANGE = [ 10, 100000 ];
+
+function hodima_seo_advisor_handle_settings(): void {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
+	}
+
+	check_admin_referer( 'hodima_advisor_settings' );
+
+	[ $low, $high ] = HODIMA_SEO_ADVISOR_MIN_IMPRESSIONS_RANGE;
+	$value          = isset( $_POST['min_impressions'] ) ? absint( $_POST['min_impressions'] ) : 0;
+
+	if ( $value < $low || $value > $high ) {
+		hodima_admin_flash( sprintf( 'حداقل نمایش باید بین %1$s و %2$s باشد؛ تنظیم قبلی ماند.', esc_html( number_format_i18n( $low ) ), esc_html( number_format_i18n( $high ) ) ), 'error' );
+		wp_safe_redirect( hodima_seo_advisor_page_url() );
+		exit;
+	}
+
+	$settings                    = get_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, [] );
+	$settings                    = is_array( $settings ) ? $settings : [];
+	$settings['min_impressions'] = $value;
+	update_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, $settings, false );
+
+	// پیشنهادها از داده ذخیره‌شده ساخته می‌شوند؛ بدون درخواست تازه به گوگل همین حالا با آستانه جدید دوباره ساخته شوند
+	$message = 'تنظیم ذخیره شد.';
+	if ( hodima_seo_advisor_totals()['pages'] > 0 ) {
+		$count = hodima_seo_advisor_analyze_all();
+		if ( is_wp_error( $count ) ) {
+			hodima_admin_flash( '<strong>مشاور سئو:</strong> ' . esc_html( $count->get_error_message() ), 'error' );
+			wp_safe_redirect( hodima_seo_advisor_page_url() );
+			exit;
+		}
+		$message = sprintf( 'تنظیم ذخیره شد؛ پیشنهادها دوباره ساخته شد (%s آدرس پیشنهاد دارد).', esc_html( number_format_i18n( $count ) ) );
+	}
+
+	hodima_admin_flash( '<strong>مشاور سئو:</strong> ' . $message, 'success' );
+	wp_safe_redirect( hodima_seo_advisor_page_url() );
+	exit;
+}
+
+function hodima_seo_advisor_handle_clear(): void {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
+	}
+
+	check_admin_referer( 'hodima_advisor_clear' );
+
+	if ( empty( $_POST['confirm'] ) ) {
+		hodima_admin_flash( '<strong>مشاور سئو:</strong> برای پاک کردن باید کادر تأیید را علامت بزنید؛ چیزی پاک نشد.', 'warning' );
+	} else {
+		$result = hodima_seo_advisor_clear_data();
+		if ( is_wp_error( $result ) ) {
+			hodima_admin_flash( '<strong>مشاور سئو:</strong> ' . esc_html( $result->get_error_message() ), 'error' );
+		} else {
+			hodima_admin_flash( '<strong>مشاور سئو:</strong> داده‌های مشاور پاک شد. برای دریافت دوباره، «به‌روزرسانی داده» را بزنید.', 'success' );
+		}
 	}
 
 	wp_safe_redirect( hodima_seo_advisor_page_url() );
@@ -315,6 +382,8 @@ function hodima_seo_advisor_render_admin(): void {
 		hodima_seo_advisor_render_list( $status );
 	}
 
+	hodima_seo_advisor_render_settings( $has_data );
+
 	hodima_seo_ui_close();
 }
 
@@ -352,6 +421,54 @@ function hodima_seo_advisor_render_action( bool $has_key, array $status ): void 
 				<span class="dashicons dashicons-update" aria-hidden="true"></span> به‌روزرسانی داده
 			</button>
 		</form>
+	</section>
+	<?php
+}
+
+/**
+ * کارت اختیاری «تنظیمات مشاور» (جمع‌شده): حداقل نمایش، پاک کردن داده‌ها و دو یادداشت.
+ * طرح تأییدشده: Artifact «طرح کارت تنظیمات مشاور سئو» (۴ آبان ۱۴۰۵).
+ */
+function hodima_seo_advisor_render_settings( bool $has_data ): void {
+
+	[ $low, $high ] = HODIMA_SEO_ADVISOR_MIN_IMPRESSIONS_RANGE;
+	$min            = hodima_seo_advisor_config()['min_impressions'];
+	?>
+	<section class="hds-card hodima-advisor__settings" aria-label="تنظیمات مشاور">
+		<details class="hds-more">
+			<summary class="hds-more__summary">تنظیمات مشاور <span class="hds-more__hint">اختیاری · حداقل نمایش و پاک کردن داده‌ها</span></summary>
+			<div class="hds-more__body hodima-advisor__settings-grid">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__setting">
+					<input type="hidden" name="action" value="hodima_advisor_settings">
+					<?php wp_nonce_field( 'hodima_advisor_settings' ); ?>
+					<h3 class="hodima-advisor__setting-title"><label for="hodima-advisor-min">از چند نمایش به بالا پیشنهاد بدهم؟</label></h3>
+					<div class="hds-unit">
+						<input type="number" id="hodima-advisor-min" name="min_impressions" class="hds-input" min="<?php echo esc_attr( (string) $low ); ?>" max="<?php echo esc_attr( (string) $high ); ?>" step="10" value="<?php echo esc_attr( (string) $min ); ?>">
+						<span>نمایش در بازه</span>
+					</div>
+					<p class="hodima-advisor__setting-help">پیش‌فرض ۱٬۰۰۰. عدد کمتر یعنی صفحه‌های کم‌بازدیدتر هم پیشنهاد می‌گیرند. بعد از ذخیره، پیشنهادها همین حالا با داده موجود دوباره ساخته می‌شوند.</p>
+					<button type="submit" class="hds-btn">ذخیره</button>
+				</form>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__setting">
+					<input type="hidden" name="action" value="hodima_advisor_clear">
+					<?php wp_nonce_field( 'hodima_advisor_clear' ); ?>
+					<h3 class="hodima-advisor__setting-title">داده‌های مشاور را پاک کنم؟</h3>
+					<p class="hodima-advisor__setting-help">جدول‌های دریافت‌شده از Search Console و فهرست «نادیده گرفتن» پاک می‌شوند. کلید حساب سرویس و تنظیمات دیگر می‌مانند و با «به‌روزرسانی داده» دوباره گرفته می‌شود. بازگشت ندارد.</p>
+					<label class="hodima-advisor__confirm">
+						<input type="checkbox" name="confirm" value="1"<?php disabled( ! $has_data ); ?>>
+						<span>مطمئنم؛ داده‌ها پاک شود</span>
+					</label>
+					<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__danger"<?php disabled( ! $has_data ); ?>>پاک کردن داده‌ها</button>
+				</form>
+				<div class="hodima-advisor__note">
+					<strong>چرا جمع کلمه‌ها از نمایش صفحه کمتر است؟</strong>
+					گوگل کلمه‌های ناشناس را نمی‌دهد و برای هر صفحه فقط ۵۰ کلمه با دست‌کم ۵ نمایش ذخیره می‌شود.
+					<br>
+					<strong>کلید حساب سرویس:</strong>
+					کلیدی که در پیشخوان ذخیره شود در بکاپ دیتابیس دیده می‌شود. امن‌تر این است که در <bdi class="hds-code">wp-config.php</bdi> با ثابت <bdi class="hds-code">HODIMA_GI_SERVICE_ACCOUNT_JSON</bdi> گذاشته شود؛ ولی تا کلید پیشخوان خالی نشود، همان خوانده می‌شود.
+				</div>
+			</div>
+		</details>
 	</section>
 	<?php
 }

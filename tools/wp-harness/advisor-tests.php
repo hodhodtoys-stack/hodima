@@ -360,7 +360,7 @@ hodima_seo_advisor_render_admin();
 $html = (string) ob_get_clean();
 hodima_ad( 'صفحه: سربرگ، ۴ کارت آمار، ردیف‌ها، دکمه به‌روزرسانی و نادیده گرفتن', [ str_contains( $html, 'hds-hero__title' ), substr_count( $html, 'class="hds-stat"' ), substr_count( $html, 'hodima-advisor__item' ) >= 4, str_contains( $html, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $html, 'نادیده گرفتن' ) ], [ true, 4, true, true, true ] );
 hodima_ad( 'صفحه: بازه فعلی انتخاب‌شده و خروجی CSV با nonce', [ str_contains( $html, 'value="90" checked' ), str_contains( $html, 'action=hodima_advisor_csv' ) && str_contains( $html, '_wpnonce=' ) ], [ true, true ] );
-hodima_ad( 'فهرست فقط تیتر: بدون جزئیات و گام، با دکمه «ویرایش و رفع ایرادها» یا «دیدن در سایت»', [ str_contains( $html, 'hodima-advisor__issues' ), str_contains( $html, '<details' ), str_contains( $html, 'ببینید دقیقا چه کنید' ), str_contains( $html, 'ویرایش و رفع ایرادها' ) || str_contains( $html, 'دیدن در سایت' ) ], [ true, false, false, true ] );
+hodima_ad( 'فهرست فقط تیتر: بدون جزئیات و گام، با دکمه «ویرایش و رفع ایرادها» یا «دیدن در سایت»', [ str_contains( $html, 'hodima-advisor__issues' ), str_contains( strstr( $html, 'hodima-advisor__settings', true ) ?: $html, '<details' ), str_contains( $html, 'ببینید دقیقا چه کنید' ), str_contains( $html, 'ویرایش و رفع ایرادها' ) || str_contains( $html, 'دیدن در سایت' ) ], [ true, false, false, true ] );
 hodima_ad( 'فهرست: همه ایرادها یک‌یک (رقابت با N صفحه برای کلمه)', [ str_contains( $html, 'رقابت با ' . hodima_seo_advisor_num( 1 ) . ' صفحه برای «پلومریا»' ), str_contains( $html, 'data-rule="low_ctr"' ), str_contains( $html, 'data-rule="decline"' ) ], [ true, true, true ] );
 delete_option( 'hodima_discover_sc_key' );
 ob_start();
@@ -600,6 +600,34 @@ hodima_ad( 'بعد از آزاد کردن دوباره قابل‌گرفتن ا�
 update_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, time() - HODIMA_SEO_ADVISOR_LOCK_TTL - 5, false );
 hodima_ad( 'قفل مانده از اجرای مرده بعد از مهلت آزاد می‌شود', hodima_seo_advisor_lock(), true );
 hodima_seo_advisor_unlock();
+
+echo "=== تنظیمات و پاک کردن داده\n";
+$before_cfg = hodima_seo_advisor_config()['min_impressions'];
+$cfg_settings = get_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, [] );
+update_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, [ 'min_impressions' => 250, 'days' => 28 ], false );
+hodima_ad( 'حداقل نمایش از تنظیمات خوانده می‌شود', hodima_seo_advisor_config()['min_impressions'], 250 );
+hodima_ad( 'محدوده مجاز حداقل نمایش', HODIMA_SEO_ADVISOR_MIN_IMPRESSIONS_RANGE, [ 10, 100000 ] );
+ob_start();
+hodima_seo_advisor_render_settings( true );
+$settings_html = (string) ob_get_clean();
+hodima_ad( 'کارت تنظیمات: مقدار فعلی در فیلد و هر دو فرم با nonce', [ str_contains( $settings_html, 'value="250"' ), str_contains( $settings_html, 'name="action" value="hodima_advisor_settings"' ), str_contains( $settings_html, 'name="action" value="hodima_advisor_clear"' ), substr_count( $settings_html, 'name="_wpnonce"' ) ], [ true, true, true, 2 ] );
+ob_start();
+hodima_seo_advisor_render_settings( false );
+hodima_ad( 'بدون داده دکمه پاک کردن غیرفعال است', substr_count( (string) ob_get_clean(), 'disabled' ) >= 2, true );
+
+hodima_seo_advisor_store( [ '/clear-me/' => [ 'clicks' => 1, 'impressions' => 5000, 'position' => 6.0 ] ], [], [] );
+update_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION, [ '/clear-me/' ], false );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time(), 'pages' => 1 ], false );
+update_option( 'hodima_discover_sc_key', 'KEEP-KEY', false );
+update_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, time(), false );
+$busy_clear = hodima_seo_advisor_clear_data();
+hodima_ad( 'پاک کردن وقتی دریافت داده در حال اجراست رد می‌شود و چیزی پاک نمی‌شود', [ is_wp_error( $busy_clear ) ? $busy_clear->get_error_code() : 'ok', hodima_seo_advisor_pages()['total'] ], [ 'hodima_advisor_busy', 1 ] );
+hodima_seo_advisor_unlock();
+hodima_ad( 'پاک کردن داده موفق', hodima_seo_advisor_clear_data(), true );
+hodima_ad( 'بعد از پاک کردن: جدول‌ها، وضعیت و نادیده‌ها خالی، قفل آزاد', [ hodima_seo_advisor_pages()['total'], hodima_seo_advisor_status()['fetched'], hodima_seo_advisor_ignored(), get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, false ) ], [ 0, 0, [], false ] );
+hodima_ad( 'کلید حساب سرویس و تنظیمات می‌مانند', [ get_option( 'hodima_discover_sc_key' ), hodima_seo_advisor_config()['min_impressions'], hodima_seo_advisor_days() ], [ 'KEEP-KEY', 250, 28 ] );
+delete_option( 'hodima_discover_sc_key' );
+update_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, $cfg_settings, false );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
