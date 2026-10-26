@@ -744,14 +744,14 @@ $kcap = static function ( callable $fn ): string { ob_start(); $fn(); return (st
 wp_set_current_user( 1 );
 $_GET = [];
 update_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, $own_key, false );
-$bar_own = $kcap( static fn() => hodima_seo_advisor_render_toolbar( '' ) );
+$bar_own = $kcap( static fn() => hodima_seo_advisor_render_settings( true, true ) );
 hodima_ad( 'ردیف کلید مدرن: کلید فعال، ایمیل، منبع، جایگزینی و حذف (کلید مخصوص)، پنجره با انتخاب فایل', [ str_contains( $bar_own, 'کلید فعال' ), str_contains( $bar_own, 'advisor-only@test.iam.gserviceaccount.com' ), str_contains( $bar_own, 'data-hdsa-key-open' ), str_contains( $bar_own, 'name="remove"' ), str_contains( $bar_own, 'data-hdsa-key-dialog' ), str_contains( $bar_own, 'data-hdsa-key-file' ) ], [ true, true, true, true, true, true ] );
 delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION );
 update_option( 'hodima_discover_sc_key', $key_json, false );
-$bar_shared = $kcap( static fn() => hodima_seo_advisor_render_toolbar( '' ) );
+$bar_shared = $kcap( static fn() => hodima_seo_advisor_render_settings( true, true ) );
 hodima_ad( 'کلید مشترک: «جایگزینی» هست ولی «حذف کلید» نیست', [ str_contains( $bar_shared, 'data-hdsa-key-open' ), str_contains( $bar_shared, 'name="remove"' ) ], [ true, false ] );
 delete_option( 'hodima_discover_sc_key' );
-$bar_none = $kcap( static fn() => hodima_seo_advisor_render_toolbar( '' ) );
+$bar_none = $kcap( static fn() => hodima_seo_advisor_render_settings( true, true ) );
 hodima_ad( 'بدون کلید: «افزودن کلید» و پنل باز است', [ str_contains( $bar_none, 'افزودن کلید' ), 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\\shidden/', $bar_none ) ], [ true, false ] );
 delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION );
 
@@ -1421,30 +1421,32 @@ hodima_seo_advisor_store( [ '/tb/a/' => [ 'clicks' => 5, 'impressions' => 5000, 
 wp_set_current_user( 1 );
 $_GET = [];
 $bar = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'competition' ) );
-hodima_ad( 'ردیف بالا در تب: دکمه به‌روزرسانی، تب برگشت و دکمه تنظیمات (لینک settings=1 برای بدون JS)', [ str_contains( $bar, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $bar, 'name="tab" value="competition"' ), str_contains( $bar, 'data-hdsa-settings-toggle' ), str_contains( $bar, 'tab=competition&#038;settings=1' ) || str_contains( $bar, 'tab=competition&settings=1' ) ], [ true, true, true, true ] );
-hodima_ad( 'پنل تنظیمات با کلید موجود بسته است (hidden)؛ عنوانش «تنظیمات»', [ str_contains( $bar, 'id="hodima-advisor-settings"' ), 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $bar ), str_contains( $bar, '>تنظیمات</h2>' ) ], [ true, true, true ] );
-$_GET = [ 'settings' => '1' ];
-$bar_open = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'trend' ) );
-hodima_ad( 'با settings=1 پنل باز می‌آید', [ 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $bar_open ), str_contains( $bar_open, 'aria-expanded="true"' ) ], [ false, true ] );
+hodima_ad( 'ردیف بالا در تب: دکمه به‌روزرسانی با تب برگشت؛ «تنظیمات» در آن تکرار نمی‌شود', [ str_contains( $bar, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $bar, 'name="tab" value="competition"' ), str_contains( $bar, 'data-hdsa-settings-toggle' ), str_contains( $bar, 'id="hodima-advisor-settings"' ) ], [ true, true, false, false ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
+$page_html = $cap( static fn() => hodima_seo_advisor_render_admin() );
+hodima_ad( 'صفحه کامل: «تنظیمات» فقط یک بار و در سربرگ؛ پنل یک بار و بسته', [ substr_count( $page_html, 'data-hdsa-settings-toggle' ), 1 === preg_match( '#hds-hero__actions">\s*<a [^>]*data-hdsa-settings-toggle#', $page_html ), substr_count( $page_html, 'id="hodima-advisor-settings"' ), 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $page_html ), str_contains( $page_html, 'tab=competition&#038;settings=1' ) || str_contains( $page_html, 'tab=competition&settings=1' ) ], [ 1, true, 1, true, true ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'trend', 'settings' => '1' ];
+$page_open = $cap( static fn() => hodima_seo_advisor_render_admin() );
+hodima_ad( 'با settings=1 پنل باز می‌آید و دکمه سربرگ aria-expanded=true دارد', [ 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $page_open ), str_contains( $page_open, 'aria-expanded="true"' ) ], [ false, true ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
+$page_tasks = $cap( static fn() => hodima_seo_advisor_render_admin() );
+hodima_ad( 'تب کارهای من: ردیف دریافت نیست ولی دکمه تنظیمات سربرگ هست', [ str_contains( $page_tasks, 'value="hodima_advisor_refresh"' ), substr_count( $page_tasks, 'data-hdsa-settings-toggle' ) ], [ false, 1 ] );
 $_GET = [];
-$bar_tasks = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'tasks', false ) );
-hodima_ad( 'تب «کارهای من»: بدون دکمه به‌روزرسانی و بازه، با تنظیمات', [ str_contains( $bar_tasks, 'hodima_advisor_refresh' ), str_contains( $bar_tasks, 'name="days"' ), str_contains( $bar_tasks, 'data-hdsa-settings-toggle' ) ], [ false, false, true ] );
-hodima_ad( 'ثابت wp-config: بدون «جایگزینی» و بدون پنجره کلید', [ str_contains( $bar, 'data-hdsa-key-open' ), str_contains( $bar, 'data-hdsa-key-dialog' ), str_contains( $bar, 'ثابت wp-config' ) ], [ false, false, true ] );
 foreach ( [ 'competition' => 'hodima_seo_advisor_render_competition', 'terms' => 'hodima_seo_advisor_render_terms', 'breakdown' => 'hodima_seo_advisor_render_breakdown', 'health' => 'hodima_seo_advisor_render_health' ] as $t => $fn ) {
 	$html_t = $cap( static fn() => $fn( hodima_seo_advisor_status() ) );
-	hodima_ad( "تب {$t}: دکمه به‌روزرسانی و تنظیمات همان‌جاست", [ str_contains( $html_t, 'value="hodima_advisor_refresh"' ), str_contains( $html_t, 'name="tab" value="' . $t . '"' ), str_contains( $html_t, 'data-hdsa-settings-toggle' ) ], [ true, true, true ] );
+	hodima_ad( "تب {$t}: دکمه به‌روزرسانی همان‌جاست و تنظیمات تکرار نمی‌شود", [ str_contains( $html_t, 'value="hodima_advisor_refresh"' ), str_contains( $html_t, 'name="tab" value="' . $t . '"' ), str_contains( $html_t, 'data-hdsa-settings-toggle' ) ], [ true, true, false ] );
 }
 foreach ( [ 'trend' => 'hodima_seo_advisor_render_trend_tab', 'indexing' => 'hodima_seo_advisor_render_indexing' ] as $t => $fn ) {
 	$html_t = $cap( static fn() => $fn() );
-	hodima_ad( "تب {$t}: دکمه به‌روزرسانی و تنظیمات همان‌جاست", [ str_contains( $html_t, 'value="hodima_advisor_refresh"' ), str_contains( $html_t, 'name="tab" value="' . $t . '"' ) ], [ true, true ] );
+	hodima_ad( "تب {$t}: دکمه به‌روزرسانی همان‌جاست", [ str_contains( $html_t, 'value="hodima_advisor_refresh"' ), str_contains( $html_t, 'name="tab" value="' . $t . '"' ) ], [ true, true ] );
 }
-hodima_ad( 'تب کارهای من: فقط تنظیمات', ( static function () use ( $cap ): array { $h = $cap( static fn() => hodima_seo_advisor_render_tasks() ); return [ str_contains( $h, 'value="hodima_advisor_refresh"' ), str_contains( $h, 'data-hdsa-settings-toggle' ) ]; } )(), [ false, true ] );
 
 $pg = static fn( int $cur, int $tot ): string => $cap( static fn() => hodima_seo_ui_pager( $cur, $tot, static fn( int $i ): string => '/p/?paged=' . $i ) );
 hodima_ad( 'صفحه‌بندی: یک صفحه = هیچ؛ صفحه اول بدون «قبلی»، با «بعدی»', [ $pg( 1, 1 ), str_contains( $pg( 1, 5 ), 'قبلی' ), str_contains( $pg( 1, 5 ), 'rel="next"' ), substr_count( $pg( 1, 5 ), 'hds-pager__page' ) ], [ '', false, true, 3 ] );
 hodima_ad( 'صفحه‌بندی: وسط ۱۰ صفحه: اول، آخر، همسایه‌ها و «…»', [ substr_count( $pg( 5, 10 ), '<a class="hds-pager__page"' ), substr_count( $pg( 5, 10 ), 'hds-pager__gap' ), str_contains( $pg( 5, 10 ), 'rel="prev"' ), str_contains( $pg( 5, 10 ), 'rel="next"' ) ], [ 4, 2, true, true ] );
 hodima_ad( 'صفحه‌بندی: صفحه جاری aria-current و بدون لینک؛ صفحه آخر بدون «بعدی»', [ str_contains( $pg( 3, 3 ), 'aria-current="page"' ), str_contains( $pg( 3, 3 ), 'rel="next"' ), str_contains( $pg( 3, 3 ), '?paged=3' ) ], [ true, false, false ] );
 $_GET = [];
+delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION ); // کلید آزمایشی این بخش نماند (اجرای بعدی آزمون را خراب می‌کرد)
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

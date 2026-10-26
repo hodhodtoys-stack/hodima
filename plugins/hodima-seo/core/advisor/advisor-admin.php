@@ -435,11 +435,15 @@ function hodima_seo_advisor_render_admin(): void {
 	$totals  = hodima_seo_advisor_totals();
 	$has_data = $status['fetched'] > 0 && $totals['pages'] > 0;
 
+	$tab = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
+	$tab = $has_data && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : 'opportunities';
+
 	hodima_seo_ui_open( [
 		'title'       => 'دستار سئو',
 		'description' => 'با داده Search Console همین سایت می‌گوید هر صفحه چه کاری بیشترین کلیک اضافه را می‌آورد. فقط پیشنهاد می‌دهد؛ چیزی را خودکار عوض نمی‌کند.',
 		'icon'        => 'dashicons-chart-line',
 		'class'       => 'hodima-advisor',
+		'actions'     => hodima_seo_advisor_settings_button( $tab ),
 	] );
 
 	if ( '' !== $status['error'] ) {
@@ -447,11 +451,10 @@ function hodima_seo_advisor_render_admin(): void {
 	}
 
 	hodima_seo_ui_body_open();
+	hodima_seo_advisor_render_settings( $has_data, hodima_seo_advisor_settings_open() ); // یک بار برای همه تب‌ها؛ دکمه‌اش در سربرگ است
 
 	$n     = static fn( int|float $value ): string => number_format_i18n( $value );
 	$empty = ! $has_data;
-	$tab   = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
-	$tab   = $has_data && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : 'opportunities';
 
 	if ( $has_data ) {
 		hodima_seo_advisor_render_tabs( $tab );
@@ -497,39 +500,39 @@ function hodima_seo_advisor_render_admin(): void {
 }
 
 /**
- * ردیف بالای هر تب: کنش اصلی («به‌روزرسانی داده» با انتخاب بازه) + «تنظیمات»، و زیرش پنل تنظیمات.
- * همه تب‌هایی که از داده Search Console می‌خوانند همین ردیف را زیر آمار خودشان دارند تا مدیر برای
- * دریافت داده مجبور نباشد به تب «فرصت‌های بهتر شدن» برگردد. تب «کارهای من» داده نمی‌گیرد: فقط وضعیت و تنظیمات.
- *
- * @param string $tab کلید تب (برای برگشت بعد از دریافت و لینک تنظیمات)؛ خالی = تب اول
- * @param bool $refresh دکمه «به‌روزرسانی داده» و انتخاب بازه نشان داده شود؟
+ * پنل «تنظیمات» باز باشد؟ بدون کلید همیشه (اولین کار وارد کردن کلید است)، وگرنه فقط با `settings=1`.
  */
-function hodima_seo_advisor_render_toolbar( string $tab = '', bool $refresh = true ): void {
+function hodima_seo_advisor_settings_open(): bool {
+	return '' === hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR ) || ! empty( $_GET['settings'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط باز بودن پنل
+}
 
-	$has_key  = '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR );
-	$status   = hodima_seo_advisor_status();
-	$has_data = $status['fetched'] > 0 && hodima_seo_advisor_totals()['pages'] > 0;
-	$days     = hodima_seo_advisor_days();
-	$labels   = [ 28 => '۲۸ روز', 90 => '۳ ماه', 180 => '۶ ماه' ];
-	$open     = ! $has_key || ! empty( $_GET['settings'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط باز بودن پنل
-	$tag      = $refresh ? 'form' : 'div';
+/**
+ * ردیف بالای هر تب داده‌دار: انتخاب بازه + نشان وضعیت + «به‌روزرسانی داده». زیر آمار خود تب می‌آید تا مدیر برای
+ * دریافت داده به تب «فرصت‌های بهتر شدن» برنگردد. «تنظیمات» اینجا نیست: یک بار در سربرگ صفحه است.
+ *
+ * @param string $tab کلید تب (برای برگشت بعد از دریافت)؛ خالی = تب اول
+ */
+function hodima_seo_advisor_render_toolbar( string $tab = '' ): void {
+
+	$has_key = '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR );
+	$status  = hodima_seo_advisor_status();
+	$days    = hodima_seo_advisor_days();
+	$labels  = [ 28 => '۲۸ روز', 90 => '۳ ماه', 180 => '۶ ماه' ];
 	?>
-	<section class="hds-card hodima-advisor__bar" aria-label="دریافت داده و تنظیمات">
-		<<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- فقط form یا div ثابت ?><?php echo $refresh ? ' method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- آدرس escape شده ?> class="hodima-advisor__form">
-			<?php if ( $refresh ) : ?>
-				<input type="hidden" name="action" value="hodima_advisor_refresh">
-				<input type="hidden" name="tab" value="<?php echo esc_attr( $tab ); ?>">
-				<?php wp_nonce_field( 'hodima_advisor_refresh' ); ?>
-				<fieldset class="hodima-advisor__seg">
-					<legend class="screen-reader-text">بازه داده</legend>
-					<?php foreach ( $labels as $value => $label ) : ?>
-						<label class="hodima-advisor__seg-opt">
-							<input type="radio" name="days" value="<?php echo esc_attr( (string) $value ); ?>"<?php checked( $days, $value ); ?>>
-							<span><?php echo esc_html( $label ); ?></span>
-						</label>
-					<?php endforeach; ?>
-				</fieldset>
-			<?php endif; ?>
+	<section class="hds-card hodima-advisor__bar" aria-label="دریافت داده">
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__form">
+			<input type="hidden" name="action" value="hodima_advisor_refresh">
+			<input type="hidden" name="tab" value="<?php echo esc_attr( $tab ); ?>">
+			<?php wp_nonce_field( 'hodima_advisor_refresh' ); ?>
+			<fieldset class="hodima-advisor__seg">
+				<legend class="screen-reader-text">بازه داده</legend>
+				<?php foreach ( $labels as $value => $label ) : ?>
+					<label class="hodima-advisor__seg-opt">
+						<input type="radio" name="days" value="<?php echo esc_attr( (string) $value ); ?>"<?php checked( $days, $value ); ?>>
+						<span><?php echo esc_html( $label ); ?></span>
+					</label>
+				<?php endforeach; ?>
+			</fieldset>
 			<?php if ( $has_key && $status['fetched'] > 0 && '' === $status['error'] ) : ?>
 				<span class="hds-pill"><?php echo esc_html( sprintf( 'متصل به %1$s · آخرین دریافت %2$s پیش', $status['property'], human_time_diff( $status['fetched'] ) ) ); ?></span>
 			<?php elseif ( $has_key ) : ?>
@@ -537,20 +540,25 @@ function hodima_seo_advisor_render_toolbar( string $tab = '', bool $refresh = tr
 			<?php else : ?>
 				<span class="hds-pill hds-pill--warn">به Search Console وصل نیست</span>
 			<?php endif; ?>
-			<span class="hodima-advisor__bar-actions">
-				<?php if ( $refresh ) : ?>
-					<button type="submit" class="hds-btn hodima-advisor__refresh"<?php disabled( ! $has_key ); ?>>
-						<span class="dashicons dashicons-update" aria-hidden="true"></span> به‌روزرسانی داده
-					</button>
-				<?php endif; ?>
-				<a class="hds-btn hds-btn--outline hodima-advisor__settings-toggle" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'tab' => $tab, 'settings' => 1 ] ) . '#hodima-advisor-settings' ); ?>" role="button" aria-controls="hodima-advisor-settings" aria-expanded="<?php echo $open ? 'true' : 'false'; ?>" data-hdsa-settings-toggle>
-					<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span> تنظیمات
-				</a>
-			</span>
-		</<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- فقط form یا div ثابت ?>>
+			<button type="submit" class="hds-btn hodima-advisor__refresh"<?php disabled( ! $has_key ); ?>>
+				<span class="dashicons dashicons-update" aria-hidden="true"></span> به‌روزرسانی داده
+			</button>
+		</form>
 	</section>
 	<?php
-	hodima_seo_advisor_render_settings( $has_data, $open );
+}
+
+/**
+ * دکمه «تنظیمات» آخر سربرگ (یک بار برای کل صفحه). لینک `settings=1` است تا بدون JS هم پنل باز شود.
+ */
+function hodima_seo_advisor_settings_button( string $tab ): string {
+
+	return sprintf(
+		'<a class="hds-btn hds-btn--outline" href="%1$s" role="button" aria-controls="hodima-advisor-settings" aria-expanded="%2$s" data-hdsa-settings-toggle><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span> %3$s</a>',
+		esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'opportunities' === $tab ? '' : $tab, 'settings' => 1 ] ) . '#hodima-advisor-settings' ),
+		hodima_seo_advisor_settings_open() ? 'true' : 'false',
+		esc_html( 'تنظیمات' )
+	);
 }
 
 /**

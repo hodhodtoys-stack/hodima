@@ -130,3 +130,50 @@
 		transition: none;
 	}
 }
+
+/* دکمه‌های آخر سربرگ (hodima_seo_ui_open: actions): روی پس‌زمینه تیره شیشه‌ای */
+.hds-ui .hds-hero {
+	flex-wrap: wrap;
+}
+
+.hds-ui .hds-hero__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.625rem;
+	margin-inline-start: auto;
+}
+
+.hds-ui .hds-hero__actions .hds-btn {
+	min-block-size: 2.5rem;
+	padding-inline: 1.125rem;
+	border-color: color-mix(in srgb, #fff 45%, transparent);
+	background: color-mix(in srgb, #fff 16%, transparent);
+	color: #fff;
+	text-decoration: none;
+}
+
+.hds-ui .hds-hero__actions .hds-btn:hover {
+	background: color-mix(in srgb, #fff 28%, transparent);
+}
+
+.hds-ui .hds-hero__actions .hds-btn:focus-visible {
+	outline: 2px solid #fff;
+	outline-offset: 2px;
+}
+
+.hds-ui .hds-hero__actions .hds-btn .dashicons {
+	inline-size: 1rem;
+	block-size: 1rem;
+	font-size: 1rem;
+}
+
+@media (max-width: 782px) {
+	.hds-ui .hds-hero__actions {
+		flex-basis: 100%;
+		margin-inline-start: 0;
+	}
+
+	.hds-ui .hds-hero__actions .hds-btn {
+		flex: 1;
+	}
+}

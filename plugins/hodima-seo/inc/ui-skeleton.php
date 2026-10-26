@@ -38,7 +38,7 @@ function hodima_seo_ui_enqueue(): void {
  * شروع صفحه: ریشه کیت + سربرگ. هشدارهای وردپرس بعد از `wp-header-end` جابه‌جا می‌شوند،
  * پس پیام‌های صفحه را بعد از این تابع و پیش از hodima_seo_ui_body_open() بنویس.
  *
- * @param array{title:string, description?:string, icon?:string, badge?:string, class?:string} $args
+ * @param array{title:string, description?:string, icon?:string, badge?:string, class?:string, actions?:string} $args actions = HTML امن‌شده دکمه‌های آخر سربرگ (مثلا «تنظیمات»؛ یک بار برای کل صفحه، نه تکرار در هر تب)
  */
 function hodima_seo_ui_open( array $args ): void {
 
@@ -59,6 +59,9 @@ function hodima_seo_ui_open( array $args ): void {
 				<p class="hds-hero__desc"><?php echo esc_html( $desc ); ?></p>
 			<?php endif; ?>
 		</div>
+		<?php if ( '' !== (string) ( $args['actions'] ?? '' ) ) : ?>
+			<div class="hds-hero__actions"><?php echo $args['actions']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در فراخواننده ?></div>
+		<?php endif; ?>
 	</header>
 	<hr class="wp-header-end">
 	<?php

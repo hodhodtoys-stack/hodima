@@ -124,8 +124,6 @@ function hodima_seo_advisor_render_tasks(): void {
 		[ 'label' => 'با اثر مثبت', 'value' => $empty ? '—' : esc_html( $n( $positive ) ), 'sub' => $empty ? '' : 'کلیک هفتگی بهتر از روند سایت', 'empty' => $empty ],
 	] );
 
-	hodima_seo_advisor_render_toolbar( 'tasks', false );
-
 	hodima_seo_ui_card_open( 'کارهای من', 'هر پیشنهاد را که اجرا کردید («انجام شد»)، در حال انجام است یا قبول ندارید («رد شد»)، از کادر «دستار سئو» داخل ویرایش صفحه علامت بزنید. اثر کارهای «انجام شد» اینجا با کلیک هفتگی اندازه می‌شود. این فهرست فقط یادداشت شماست و چیزی را در سایت عوض نمی‌کند.' );
 
 	if ( $empty ) {
