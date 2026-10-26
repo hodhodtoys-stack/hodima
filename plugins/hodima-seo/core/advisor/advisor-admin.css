@@ -501,6 +501,12 @@
 	min-inline-size: 0;
 }
 
+.hodima-advisor .hodima-advisor__rival-links {
+	display: block;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
 .hodima-advisor .hodima-advisor__rival-path {
 	display: inline-block;
 	max-inline-size: 100%;

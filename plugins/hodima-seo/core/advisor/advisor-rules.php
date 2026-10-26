@@ -417,9 +417,10 @@ function hodima_seo_advisor_decline_cause( array $row, ?array $site ): array {
  * @param array<string, list<array{path: string, impressions: int}>> $competitors کلمه ← آدرس‌های دیگری که برایش نمایش می‌گیرند
  * @param array{clicks_ratio: float|null, impressions_ratio: float|null}|null $site تغییر کل سایت نسبت به بازه قبل (hodima_seo_advisor_site_change)؛ null = ناشناخته
  * @param array{healthy: bool, title_len: int, meta_len: int, problems: list<string>}|null $meta طول عنوان و متا طبق خزش SF (hodima_seo_advisor_crawl_meta_health)؛ null = ناشناخته
+ * @param array{total: int, text: int, score: float, depth: int, anchors: list<array{anchor: string, count: int}>}|null $links لینک‌های ورودی طبق خزش (hodima_seo_advisor_crawl_links_info)؛ null = ناشناخته
  * @return list<array{rule: string, term: string, title: string, detail: string, potential: int}>
  */
-function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $text, array $competitors = [], ?array $site = null, ?array $meta = null ): array {
+function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $text, array $competitors = [], ?array $site = null, ?array $meta = null, ?array $links = null ): array {
 
 	if ( 1 === preg_match( '#/page/\d+/?$#', $row['path'] ) ) {
 		return []; // صفحه‌بندی آرشیو: پیشنهاد جدا ندارد
@@ -517,7 +518,7 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				'rule'      => 'near_first',
 				'term'      => $query['term'],
 				'title'     => 'کلمه «' . $query['term'] . '» نزدیک صفحه اول است',
-				'detail'    => $info . ' آن را در عنوان، یک تیتر و اولین پاراگراف تقویت کنید و از ۲ تا ۳ صفحه مرتبط به این صفحه لینک بدهید.',
+				'detail'    => $info . ' آن را در عنوان، یک تیتر و اولین پاراگراف تقویت کنید و از ۲ تا ۳ صفحه مرتبط به این صفحه لینک بدهید.' . hodima_seo_advisor_links_evidence( $links, $query['term'] ),
 				'potential' => $gain,
 			];
 		}
@@ -642,7 +643,7 @@ function hodima_seo_advisor_analyze( string $path ): ?array {
 
 	$queries     = hodima_seo_advisor_queries( $row['path'], HODIMA_SEO_ADVISOR_QUERIES_PER_PAGE );
 	$suggestions = hodima_seo_advisor_enrich(
-		hodima_seo_advisor_suggestions( $row, $queries, hodima_seo_advisor_page_text( $row ), hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change(), hodima_seo_advisor_crawl_meta_health( $row['path'] ) ),
+		hodima_seo_advisor_suggestions( $row, $queries, hodima_seo_advisor_page_text( $row ), hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change(), hodima_seo_advisor_crawl_meta_health( $row['path'] ), hodima_seo_advisor_crawl_links_info( $row['path'] ) ),
 		$row,
 		$queries
 	);

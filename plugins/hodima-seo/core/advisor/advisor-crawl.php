@@ -296,7 +296,7 @@ function hodima_seo_advisor_crawl_parse_links( string $file ): array|WP_Error {
 /**
  * همه صفحه‌های خزش‌شده، آدرس ← وضعیت. یک بار در هر درخواست خوانده می‌شود (تحلیل صدها آدرس را صدا می‌زند).
  *
- * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int}>
+ * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float}>
  */
 function hodima_seo_advisor_crawl_map( bool $reset = false ): array {
 
@@ -312,8 +312,8 @@ function hodima_seo_advisor_crawl_map( bool $reset = false ): array {
 	if ( null === $map ) {
 		hodima_seo_advisor_ensure_tables();
 		$map = [];
-		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT path, status, indexable, reason, title_len, meta_len FROM %i', hodima_seo_advisor_table( 'crawl_pages' ) ), ARRAY_A ) as $r ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$map[ (string) $r['path'] ] = [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'] ];
+		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT path, status, indexable, reason, title_len, meta_len, inlinks, text_links, depth, score FROM %i', hodima_seo_advisor_table( 'crawl_pages' ) ), ARRAY_A ) as $r ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$map[ (string) $r['path'] ] = [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'], 'inlinks' => (int) $r['inlinks'], 'text_links' => (int) $r['text_links'], 'depth' => (int) $r['depth'], 'score' => (float) $r['score'] ];
 		}
 	}
 
@@ -323,7 +323,7 @@ function hodima_seo_advisor_crawl_map( bool $reset = false ): array {
 /**
  * وضعیت خزش یک صفحه، یا null اگر در خزش نیست.
  *
- * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int}|null
+ * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float}|null
  */
 function hodima_seo_advisor_crawl_row( string $path ): ?array {
 	return hodima_seo_advisor_crawl_map()[ $path ] ?? null;
@@ -401,6 +401,130 @@ function hodima_seo_advisor_crawl_meta_health( string $path ): ?array {
 	}
 
 	return [ 'healthy' => [] === $problems, 'title_len' => $r['title_len'], 'meta_len' => $r['meta_len'], 'problems' => $problems ];
+}
+
+/* ── شواهد لینک داخلی (انتشار ۳) ── */
+
+/**
+ * متن لینک‌های ورودی یک صفحه (فقط لینک متنی بدنه و follow)، پرتکرارترین اول؛ هر متن با شمار صفحه‌های مبدأ یکتا.
+ *
+ * @return list<array{anchor: string, count: int}>
+ */
+function hodima_seo_advisor_crawl_anchors( string $path, int $limit = 40 ): array {
+
+	global $wpdb;
+
+	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare(
+			"SELECT anchor, COUNT(DISTINCT source_path) AS n FROM %i WHERE dest_path = %s AND link_position = 'content' AND is_follow = 1 AND anchor <> '' GROUP BY anchor ORDER BY n DESC, anchor ASC LIMIT %d",
+			hodima_seo_advisor_table( 'crawl_links' ),
+			$path,
+			max( 1, $limit )
+		),
+		ARRAY_A
+	);
+
+	return array_map( static fn( array $r ): array => [ 'anchor' => (string) $r['anchor'], 'count' => (int) $r['n'] ], $rows );
+}
+
+/**
+ * لینک‌های ورودی یک صفحه طبق خزش، یا null اگر در خزش نیست یا فایل لینک‌ها (all_inlinks.csv) خوانده نشده.
+ *
+ * @return array{total: int, text: int, score: float, depth: int, anchors: list<array{anchor: string, count: int}>}|null
+ */
+function hodima_seo_advisor_crawl_links_info( string $path ): ?array {
+
+	$r = hodima_seo_advisor_crawl_row( $path );
+
+	if ( null === $r || $r['text_links'] < 0 ) {
+		return null;
+	}
+
+	return [ 'total' => $r['inlinks'], 'text' => $r['text_links'], 'score' => $r['score'], 'depth' => $r['depth'], 'anchors' => hodima_seo_advisor_crawl_anchors( $path ) ];
+}
+
+/**
+ * شمار لینک‌هایی (از متن‌های لینک) که عبارت کلمه را دارند. کلمه و متن یکسان‌سازی می‌شوند (ی/ی، اعراب، حروف).
+ *
+ * @param list<array{anchor: string, count: int}> $anchors
+ */
+function hodima_seo_advisor_crawl_term_links( array $anchors, string $term ): int {
+
+	$sum = 0;
+
+	foreach ( $anchors as $a ) {
+		if ( hodima_seo_advisor_text_has( hodima_seo_advisor_normalize( $a['anchor'] ), $term ) ) {
+			$sum += $a['count'];
+		}
+	}
+
+	return $sum;
+}
+
+/**
+ * جمله شواهد لینک داخلی برای «کلمه نزدیک صفحه اول» (تابع خالص؛ فقط از ورودی می‌خواند). خالی = خزش/لینک‌ها نیست.
+ *
+ * @param array{total: int, text: int, score: float, depth: int, anchors: list<array{anchor: string, count: int}>}|null $links
+ */
+function hodima_seo_advisor_links_evidence( ?array $links, string $term ): string {
+
+	if ( null === $links ) {
+		return '';
+	}
+
+	$num        = static fn( int|float $v, int $d = 0 ): string => number_format_i18n( $v, $d );
+	$term_links = hodima_seo_advisor_crawl_term_links( $links['anchors'], $term );
+	$text       = sprintf( ' طبق خزش این صفحه %1$s لینک ورودی یکتا دارد (%2$s از متن)%3$s.', $num( $links['total'] ), $num( $links['text'] ), $links['score'] > 0 ? '، Link Score ' . $num( $links['score'], 1 ) : '' );
+
+	if ( 0 === $term_links ) {
+		$text .= sprintf( ' هیچ لینک متنی با عبارت «%s» به آن نیست؛ لینک‌های موجود را با همین متن بنویسید و از صفحه‌های مرتبط لینک تازه با همین متن بدهید.', $term );
+	} else {
+		$text .= sprintf( ' %1$s لینک با متن «%2$s» دارد.', $num( $term_links ), $term );
+		if ( $links['text'] <= 3 ) {
+			$text .= ' لینک متنی کم است؛ ۳ تا ۵ لینک از صفحه‌های مرتبط بدهید.';
+		}
+	}
+
+	if ( $links['depth'] >= 4 ) {
+		$text .= sprintf( ' عمق خزش %s است؛ آن را از منو یا صفحه اصلی نزدیک‌تر کنید.', $num( $links['depth'] ) );
+	}
+
+	return $text;
+}
+
+/**
+ * جمله مقایسه لینک متنی با کلمه بین صفحه‌های یک گروه رقابت (برنده اول). خالی = شواهد کافی نیست.
+ *
+ * @param list<array<string, mixed>> $pages صفحه‌ها با کلید term_links (int|null)، برنده اول
+ */
+function hodima_seo_advisor_competition_links_note( string $term, array $pages ): string {
+
+	$known = array_values( array_filter( $pages, static fn( array $p ): bool => null !== ( $p['term_links'] ?? null ) ) );
+
+	if ( count( $known ) < 2 || $known[0]['path'] !== $pages[0]['path'] ) {
+		return '';
+	}
+
+	$winner = $known[0];
+	$rival  = $known[1];
+
+	foreach ( array_slice( $known, 1 ) as $p ) {
+		if ( $p['term_links'] > $rival['term_links'] ) {
+			$rival = $p;
+		}
+	}
+
+	$n = static fn( int $v ): string => number_format_i18n( $v );
+
+	if ( $rival['term_links'] > $winner['term_links'] ) {
+		return sprintf( ' لینک‌های داخلی: برنده فقط %1$s لینک با متن «%2$s» دارد ولی %3$s %4$s لینک؛ لینک‌ها را به برنده منتقل کنید.', $n( $winner['term_links'] ), $term, $rival['path'], $n( $rival['term_links'] ) );
+	}
+
+	if ( $winner['term_links'] - $rival['term_links'] <= 2 ) {
+		return sprintf( ' لینک‌های داخلی: برنده %1$s و %2$s %3$s لینک با متن «%4$s» دارند؛ تقریبا برابر است و گوگل بین آن‌ها مردد می‌ماند. لینک‌های رقیب را به برنده بدهید.', $n( $winner['term_links'] ), $rival['path'], $n( $rival['term_links'] ), $term );
+	}
+
+	return sprintf( ' لینک‌های داخلی: برنده %1$s لینک با متن «%2$s» دارد در برابر %3$s لینک رقیب؛ همین لینک‌دهی را حفظ کنید.', $n( $winner['term_links'] ), $term, $n( $rival['term_links'] ) );
 }
 
 /* ── ذخیره ── */

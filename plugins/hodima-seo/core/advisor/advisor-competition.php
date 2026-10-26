@@ -234,8 +234,21 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 		}
 	}
 
+	$rows = array_slice( $groups, max( 0, (int) ( $args['offset'] ?? 0 ) ), isset( $args['limit'] ) ? max( 1, (int) $args['limit'] ) : null );
+
+	// شواهد لینک داخلی فقط برای گروه‌های نمایش‌داده‌شده (هزینه پرسش پایگاه داده)؛ بدون limit (CSV) نیست
+	if ( isset( $args['limit'] ) && ! $want_settled ) {
+		foreach ( $rows as $i => $group ) {
+			foreach ( $group['pages'] as $j => $page ) {
+				$info = hodima_seo_advisor_crawl_links_info( $page['path'] );
+				$rows[ $i ]['pages'][ $j ] += [ 'term_links' => null === $info ? null : hodima_seo_advisor_crawl_term_links( $info['anchors'], $group['term'] ), 'links_total' => $info['total'] ?? null ];
+			}
+			$rows[ $i ]['advice']['detail'] .= hodima_seo_advisor_competition_links_note( $group['term'], $rows[ $i ]['pages'] );
+		}
+	}
+
 	return [
-		'rows'      => array_slice( $groups, max( 0, (int) ( $args['offset'] ?? 0 ) ), isset( $args['limit'] ) ? max( 1, (int) $args['limit'] ) : null ),
+		'rows'      => $rows,
 		'total'     => count( $groups ),
 		'pages'     => count( $page_set ),
 		'potential' => (int) array_sum( array_column( $groups, 'potential' ) ),

@@ -1652,6 +1652,86 @@ $home = hodima_seo_advisor_url_link( '/' );
 hodima_ad( 'صفحه اصلی هم آدرس کامل دارد، نه فقط «/»', str_contains( $home, '>' . esc_html( rawurldecode( hodima_seo_advisor_url( '/' ) ) ) . '<' ), true );
 hodima_ad( 'عنوان صفحه اصلی بدون عنوان «صفحه اصلی» است نه «/»', [ hodima_seo_advisor_competition_page_title( [ 'kind' => '', 'object_id' => 0, 'title' => '', 'path' => '/' ] ), hodima_seo_advisor_competition_page_title( [ 'kind' => '', 'object_id' => 0, 'title' => '', 'path' => '/x/' ] ) ], [ 'صفحه اصلی', '/x/' ] );
 
+echo "=== انتشار ۳: شواهد لینک داخلی در «نزدیک صفحه اول» و رقابت\n";
+$crawl_dir3 = sys_get_temp_dir() . '/hodima-crawl-test3-' . getmypid();
+@mkdir( $crawl_dir3 );
+$crawl_filter3 = static fn(): string => $crawl_dir3;
+add_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter3 );
+$csv3 = static function ( string $name, array $rows ) use ( $crawl_dir3 ): void {
+	$h = fopen( "{$crawl_dir3}/{$name}", 'wb' );
+	fwrite( $h, "\xEF\xBB\xBF" );
+	foreach ( $rows as $r ) {
+		fputcsv( $h, $r, ',', '"', '' );
+	}
+	fclose( $h );
+	touch( "{$crawl_dir3}/{$name}", time() - 3600 );
+};
+$t3 = static fn( int $imp, float $pos, int $clicks ): array => [ 'clicks' => $clicks, 'impressions' => $imp, 'position' => $pos ];
+hodima_seo_advisor_store(
+	[ '/near/' => [ 'clicks' => 5, 'impressions' => 4000, 'position' => 8.5 ], '/bow-a/' => [ 'clicks' => 60, 'impressions' => 3000, 'position' => 5.0 ], '/bow-b/' => [ 'clicks' => 40, 'impressions' => 2500, 'position' => 6.0 ] ],
+	[],
+	[ '/near/' => [ 'کلیپس سنجاقی' => $t3( 3000, 8.5, 3 ) ], '/bow-a/' => [ 'کلیپس پاپیونی' => $t3( 2800, 5.0, 55 ) ], '/bow-b/' => [ 'کلیپس پاپیونی' => $t3( 2400, 6.0, 38 ) ] ]
+);
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time(), 'pages' => 3, 'days' => 90, 'property' => 'sc-domain:x' ], false );
+$ok3 = str_repeat( 'عنوان سالم ', 5 );
+$page3 = static fn( string $p, int $in, int $depth, string $score ): array => [ $u( $p ), '200', 'Indexable', '', $ok3, (string) mb_strlen( $ok3 ), '130', 'تیتر', '0.4', (string) $in, (string) $depth, $score, '' ];
+$csv3( 'internal_html.csv', [
+	[ 'Address', 'Status Code', 'Indexability', 'Indexability Status', 'Title 1', 'Title 1 Length', 'Meta Description 1 Length', 'H1-1', 'Response Time', 'Unique Inlinks', 'Crawl Depth', 'Link Score', 'Redirect URL' ],
+	$page3( '/near/', 2, 5, '1' ), $page3( '/bow-a/', 17, 2, '40' ), $page3( '/bow-b/', 16, 2, '38' ),
+] );
+$links3 = [ [ 'Type', 'Source', 'Destination', 'Anchor', 'Follow', 'Link Position' ] ];
+foreach ( [ 1, 2 ] as $i ) {
+	$links3[] = [ 'Hyperlink', $u( "/s{$i}/" ), $u( '/near/' ), 'گیره', 'true', 'Content' ];
+}
+for ( $i = 1; $i <= 17; $i++ ) {
+	$links3[] = [ 'Hyperlink', $u( "/s{$i}/" ), $u( '/bow-a/' ), 'کلیپس پاپیونی', 'true', 'Content' ];
+}
+for ( $i = 1; $i <= 16; $i++ ) {
+	$links3[] = [ 'Hyperlink', $u( "/s{$i}/" ), $u( '/bow-b/' ), 'کلیپس پاپیونی مدل ب', 'true', 'Content' ];
+}
+$links3[] = [ 'Hyperlink', $u( '/s3/' ), $u( '/bow-b/' ), 'منو', 'true', 'Navigation' ]; // منو نمی‌شمارد
+$csv3( 'all_inlinks.csv', $links3 );
+delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
+$imp3 = hodima_seo_advisor_crawl_import();
+hodima_ad( 'خواندن ۳ صفحه و لینک‌ها', is_wp_error( $imp3 ) ? $imp3->get_error_message() : $imp3['pages'], 3 );
+
+$li = hodima_seo_advisor_crawl_links_info( '/near/' );
+hodima_ad( 'شواهد لینک صفحه: یکتا، از متن، Link Score، عمق و متن لینک‌ها', [ $li['total'], $li['text'], $li['score'], $li['depth'], $li['anchors'] ], [ 2, 2, 1.0, 5, [ [ 'anchor' => 'گیره', 'count' => 2 ] ] ] );
+hodima_ad( 'بدون فایل لینک‌ها شواهد null است', hodima_seo_advisor_crawl_links_info( '/not-crawled/' ), null );
+hodima_ad( 'لینک منو در متن لینک‌ها نیست', array_column( hodima_seo_advisor_crawl_anchors( '/bow-b/' ), 'anchor' ), [ 'کلیپس پاپیونی مدل ب' ] );
+hodima_ad( 'شمار لینک با عبارت کلمه (املای ی/ي یکی)', [ hodima_seo_advisor_crawl_term_links( $li['anchors'], 'کلیپس سنجاقی' ), hodima_seo_advisor_crawl_term_links( [ [ 'anchor' => 'کليپس پاپیونی', 'count' => 3 ] ], 'کلیپس پاپیونی' ) ], [ 0, 3 ] );
+
+$ev = hodima_seo_advisor_links_evidence( $li, 'کلیپس سنجاقی' );
+hodima_ad( 'جمله شواهد: لینک‌ها، Link Score، نبود لینک با عبارت و عمق خزش', [ str_contains( $ev, 'طبق خزش این صفحه ' . number_format_i18n( 2 ) . ' لینک ورودی یکتا دارد (' . number_format_i18n( 2 ) . ' از متن)، Link Score ' . number_format_i18n( 1.0, 1 ) ), str_contains( $ev, 'هیچ لینک متنی با عبارت «کلیپس سنجاقی»' ), str_contains( $ev, 'عمق خزش ' . number_format_i18n( 5 ) . ' است' ) ], [ true, true, true ] );
+hodima_ad( 'بدون شواهد جمله خالی است', hodima_seo_advisor_links_evidence( null, 'x' ), '' );
+$ev_has = hodima_seo_advisor_links_evidence( [ 'total' => 2, 'text' => 2, 'score' => 0.0, 'depth' => 1, 'anchors' => [ [ 'anchor' => 'کلیپس سنجاقی ارزان', 'count' => 2 ] ] ], 'کلیپس سنجاقی' );
+hodima_ad( 'لینک با عبارت هست ولی کم: «۲ لینک با متن» و «لینک متنی کم است»', [ str_contains( $ev_has, number_format_i18n( 2 ) . ' لینک با متن «کلیپس سنجاقی»' ), str_contains( $ev_has, 'لینک متنی کم است' ), str_contains( $ev_has, 'Link Score' ) ], [ true, true, false ] );
+
+$an = hodima_seo_advisor_analyze( '/near/' );
+$near_s = array_values( array_filter( (array) ( $an['suggestions'] ?? [] ), static fn( array $x ): bool => 'near_first' === $x['rule'] ) )[0] ?? null;
+hodima_ad( 'پیشنهاد «نزدیک صفحه اول» شواهد لینک خزش را دارد', [ null !== $near_s, str_contains( (string) ( $near_s['detail'] ?? '' ), 'طبق خزش این صفحه' ) ], [ true, true ] );
+
+$cmp = hodima_seo_advisor_competition( [ 'limit' => 15 ] );
+$grp = array_values( array_filter( $cmp['rows'], static fn( array $g ): bool => 'کلیپس پاپیونی' === $g['term'] ) )[0] ?? null;
+hodima_ad( 'رقابت: لینک با متن کلمه برای هر صفحه (۱۷ و ۱۶؛ منو نشمرده)', null === $grp ? null : array_column( $grp['pages'], 'term_links', 'path' ), [ '/bow-a/' => 17, '/bow-b/' => 16 ] );
+hodima_ad( 'رقابت: دستور می‌گوید لینک‌ها تقریبا برابرند', null !== $grp && str_contains( $grp['advice']['detail'], 'تقریبا برابر است' ), true );
+$csv_rows = hodima_seo_advisor_competition();
+hodima_ad( 'بدون limit (CSV) شواهد پرسش اضافه نمی‌سازد', isset( $csv_rows['rows'][0]['pages'][0]['term_links'] ), false );
+$w = static fn( string $path, ?int $tl ): array => [ 'path' => $path, 'term_links' => $tl ];
+hodima_ad( 'مقایسه: رقیب لینک بیشتر دارد ← منتقل کنید', str_contains( hodima_seo_advisor_competition_links_note( 'ک', [ $w( '/w/', 3 ), $w( '/r/', 9 ) ] ), 'منتقل کنید' ), true );
+hodima_ad( 'مقایسه: برنده خیلی جلوتر ← حفظ کنید', str_contains( hodima_seo_advisor_competition_links_note( 'ک', [ $w( '/w/', 30 ), $w( '/r/', 9 ) ] ), 'حفظ کنید' ), true );
+hodima_ad( 'مقایسه: شواهد یک صفحه کافی نیست ← خالی', hodima_seo_advisor_competition_links_note( 'ک', [ $w( '/w/', 3 ), $w( '/r/', null ) ] ), '' );
+
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
+$ch3 = $cap( static fn() => hodima_seo_advisor_render_competition( hodima_seo_advisor_status() ) );
+hodima_ad( 'تب رقابت: زیر هر صفحه «لینک با متن کلمه · لینک ورودی»', [ str_contains( $ch3, '۱۷ لینک با متن «کلیپس پاپیونی» · ۱۷ لینک ورودی' ) || str_contains( $ch3, '17 لینک با متن «کلیپس پاپیونی» · 17 لینک ورودی' ) ], [ true ] );
+$_GET = [];
+
+hodima_seo_advisor_clear_data();
+remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter3 );
+array_map( 'unlink', glob( "{$crawl_dir3}/{,.}*", GLOB_BRACE ) ?: [] );
+@rmdir( $crawl_dir3 );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );

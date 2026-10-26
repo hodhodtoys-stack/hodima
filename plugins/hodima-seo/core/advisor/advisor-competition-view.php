@@ -223,6 +223,9 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 							<?php elseif ( 0 === $i && 'settled' !== $advice['type'] ) : ?>
 								<span class="hds-pill">برنده پیشنهادی</span>
 							<?php endif; ?>
+							<?php if ( isset( $page['term_links'] ) ) : ?>
+								<small class="hodima-advisor__rival-links"><?php echo esc_html( sprintf( '%1$s لینک با متن «%2$s» · %3$s لینک ورودی', $n( $page['term_links'] ), $group['term'], $n( (int) ( $page['links_total'] ?? 0 ) ) ) ); ?></small>
+							<?php endif; ?>
 							<?php echo hodima_seo_advisor_url_link( (string) $page['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?>
 						</div>
 						<div class="hodima-advisor__rival-share">
