@@ -389,7 +389,7 @@ function hodima_seo_advisor_handle_csv(): void {
 /* ── صفحه ── */
 
 /**
- * تب‌های بالای صفحه: فرصت‌ها | رقابت صفحه‌ها | کلمه‌ها | دستگاه و کشور | روند و فصل‌ها | سلامت آدرس‌ها | کارهای من.
+ * تب‌های بالای صفحه: فرصت‌ها | رقابت صفحه‌ها | کلمه‌ها | دستگاه و کشور | روند و فصل‌ها | سلامت آدرس‌ها | ایندکس | کارهای من.
  */
 function hodima_seo_advisor_render_tabs( string $active ): void {
 
@@ -400,6 +400,7 @@ function hodima_seo_advisor_render_tabs( string $active ): void {
 		'breakdown'     => [ 'دستگاه و کشور', hodima_seo_advisor_page_url( [ 'tab' => 'breakdown' ] ) ],
 		'trend'         => [ 'روند و فصل‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'trend' ] ) ],
 		'health'        => [ 'سلامت آدرس‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'health' ] ) ],
+		'indexing'      => [ 'ایندکس', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
 		'tasks'         => [ 'کارهای من', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
 	];
 
@@ -437,7 +438,7 @@ function hodima_seo_advisor_render_admin(): void {
 	$n     = static fn( int|float $value ): string => number_format_i18n( $value );
 	$empty = ! $has_data;
 	$tab   = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
-	$tab   = $has_data && in_array( $tab, [ 'competition', 'terms', 'breakdown', 'trend', 'health', 'tasks' ], true ) ? $tab : 'opportunities';
+	$tab   = $has_data && in_array( $tab, [ 'competition', 'terms', 'breakdown', 'trend', 'health', 'indexing', 'tasks' ], true ) ? $tab : 'opportunities';
 
 	if ( $has_data ) {
 		hodima_seo_advisor_render_tabs( $tab );
@@ -449,6 +450,7 @@ function hodima_seo_advisor_render_admin(): void {
 			'breakdown' => hodima_seo_advisor_render_breakdown( $status ),
 			'trend'     => hodima_seo_advisor_render_trend_tab(),
 			'health'    => hodima_seo_advisor_render_health( $status ),
+			'indexing'  => hodima_seo_advisor_render_indexing(),
 			'tasks'     => hodima_seo_advisor_render_tasks(),
 			default     => hodima_seo_advisor_render_competition( $status ),
 		};

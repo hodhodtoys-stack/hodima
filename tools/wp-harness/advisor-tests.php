@@ -159,6 +159,7 @@ add_filter(
 hodima_ad( 'تابع‌ها و ماژول لود شده‌اند', [ function_exists( 'hodima_seo_sc_request' ), class_exists( '\Hodima\Core\Modules' ) && \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) ], [ true, true ] );
 hodima_ad( 'رویداد روزانه به تابع دریافت وصل است', has_action( HODIMA_SEO_ADVISOR_CRON ) !== false, true );
 
+add_filter( 'hodima_seo_advisor_inspect_enabled', '__return_false' );
 add_filter( 'hodima_seo_advisor_health_enabled', '__return_false' );
 add_filter( 'hodima_seo_advisor_trend_enabled', '__return_false' );
 add_filter( 'hodima_seo_advisor_breakdown_enabled', '__return_false' ); // بخش‌بندی در آزمون‌های دریافت اصلی خاموش؛ پایین جدا آزمون می‌شود
@@ -796,6 +797,7 @@ require_once HODIMA_SEO_DIR . '/core/advisor/advisor-breakdown-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-trend-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-health-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-inspect-view.php';
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 update_option( 'hodima_discover_sc_key', $key_json, false );
 wp_set_current_user( 1 );
@@ -1150,6 +1152,78 @@ hodima_ad( 'پاک کردن داده‌های مشاور سلامت را هم پ
 foreach ( [ $h_seen, $h_old, $h_new, $h_sec ] as $hid ) {
 	wp_delete_post( $hid, true );
 }
+
+echo "=== بررسی ایندکس (URL Inspection)\n";
+$ins = static fn( string $coverage, string $verdict = 'NEUTRAL', string $indexing = '', string $google = '', string $user = '' ): array => hodima_seo_advisor_inspect_parse( [ 'indexStatusResult' => [ 'verdict' => $verdict, 'coverageState' => $coverage, 'indexingState' => $indexing, 'lastCrawlTime' => '2026-10-01T10:00:00Z', 'googleCanonical' => $google, 'userCanonical' => $user, 'pageFetchState' => 'SUCCESSFUL', 'robotsTxtState' => 'ALLOWED', 'crawledAs' => 'MOBILE' ] ] );
+$rec = $ins( 'Submitted and indexed', 'PASS' );
+hodima_ad( 'پاسخ گوگل ← رکورد فشرده', [ $rec['verdict'], $rec['coverage'], $rec['last_crawl'], $rec['crawled_as'], $rec['checked'] > 0 ], [ 'PASS', 'Submitted and indexed', '2026-10-01T10:00:00Z', 'MOBILE', true ] );
+hodima_ad( 'وضعیت‌ها از متن coverage', array_map( static fn( array $r ): string => hodima_seo_advisor_inspect_state( $r ), [
+	$ins( 'Submitted and indexed', 'PASS' ), $ins( 'Indexed, not submitted in sitemap', 'PASS' ), $ins( 'Crawled - currently not indexed' ), $ins( 'Discovered - currently not indexed' ),
+	$ins( 'Duplicate, Google chose different canonical than user' ), $ins( 'Alternate page with proper canonical tag' ), $ins( 'Excluded by ‘noindex’ tag' ), $ins( 'Blocked by robots.txt' ),
+	$ins( 'Soft 404' ), $ins( 'Not found (404)' ), $ins( 'Server error (5xx)' ), $ins( 'Page with redirect' ), $ins( 'URL is unknown to Google' ), $ins( 'Something new' ), $ins( '', 'NEUTRAL', 'BLOCKED_BY_ROBOTS_TXT' ),
+] ), [ 'indexed', 'indexed', 'crawled_not_indexed', 'discovered_not_indexed', 'duplicate', 'duplicate', 'noindex', 'robots', 'soft404', 'not_found', 'server_error', 'redirect', 'unknown_to_google', 'other', 'robots' ] );
+hodima_ad( 'اختلاف canonical: فرق مسیر (بعد از یکسان‌سازی) ← بله؛ www/اسلش ← نه؛ ناشناخته ← نه', [ hodima_seo_advisor_inspect_canonical_mismatch( $ins( 'x', 'PASS', '', 'https://' . $host . '/a/', 'https://' . $host . '/b/' ) ), hodima_seo_advisor_inspect_canonical_mismatch( $ins( 'x', 'PASS', '', 'https://www.' . $host . '/a', 'https://' . $host . '/a/' ) ), hodima_seo_advisor_inspect_canonical_mismatch( $ins( 'x', 'PASS' ) ) ], [ true, false, false ] );
+
+// صف: بدون نمایش‌ها اول، بعد دارای پیشنهاد، بعد پرنمایش؛ تازه‌بررسی‌شده و صفحه‌بندی کنار
+hodima_seo_advisor_store(
+	[ '/q/a/' => [ 'clicks' => 5, 'impressions' => 9000, 'position' => 7.0 ], '/q/b/' => [ 'clicks' => 5, 'impressions' => 3000, 'position' => 7.0 ], '/q/c/' => [ 'clicks' => 5, 'impressions' => 8000, 'position' => 7.0 ], '/q/page/2/' => [ 'clicks' => 1, 'impressions' => 99999, 'position' => 7.0 ] ],
+	[],
+	[]
+);
+$wpdb->update( hodima_seo_advisor_table( 'pages' ), [ 'potential' => 500, 'advice_count' => 1 ], [ 'path' => '/q/b/' ] );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, [ 'computed' => time(), 'unseen' => [ [ 'path' => '/q/unseen/' ] ] ], false );
+hodima_ad( 'ترتیب صف: بدون نمایش ← دارای پیشنهاد (بیشترین بالقوه) ← پرنمایش‌ترین؛ صفحه‌بندی نه', hodima_seo_advisor_inspect_queue( 10 ), [ '/q/unseen/', '/q/b/', '/q/a/', '/q/c/' ] );
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/q/unseen/' => [ 'checked' => time() - DAY_IN_SECONDS ] + $rec, '/q/a/' => [ 'checked' => time() - 20 * DAY_IN_SECONDS ] + $rec ], false );
+hodima_ad( 'تازه‌بررسی‌شده (۱ روز) دوباره نمی‌آید؛ قدیمی (۲۰ روز) می‌آید؛ سقف دسته', [ hodima_seo_advisor_inspect_queue( 10 ), hodima_seo_advisor_inspect_queue( 2 ), hodima_seo_advisor_inspect_pending() ], [ [ '/q/b/', '/q/a/', '/q/c/' ], [ '/q/b/', '/q/a/' ], 3 ] );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+
+// همگام‌سازی با پاسخ ساختگی
+remove_filter( 'hodima_seo_advisor_inspect_enabled', '__return_false' );
+update_option( 'hodima_discover_sc_key', $key_json, false );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 4, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+$in_calls = [];
+$GLOBALS['inspect_quota_after'] = 99;
+add_filter(
+	'pre_http_request',
+	$in_filter = static function ( mixed $pre, array $args, string $url ) use ( &$in_calls ): mixed {
+		if ( ! str_contains( $url, '/urlInspection/index:inspect' ) ) {
+			return $pre;
+		}
+		$body       = json_decode( (string) $args['body'], true );
+		$in_calls[] = $body;
+		if ( count( $in_calls ) > $GLOBALS['inspect_quota_after'] ) {
+			return [ 'response' => [ 'code' => 429 ], 'body' => (string) wp_json_encode( [ 'error' => [ 'message' => 'quota' ] ] ) ];
+		}
+		$coverage = str_contains( $body['inspectionUrl'], '/q/b/' ) ? 'Crawled - currently not indexed' : 'Submitted and indexed';
+		return [ 'response' => [ 'code' => 200 ], 'body' => (string) wp_json_encode( [ 'inspectionResult' => [ 'indexStatusResult' => [ 'verdict' => 'Submitted and indexed' === $coverage ? 'PASS' : 'NEUTRAL', 'coverageState' => $coverage, 'lastCrawlTime' => '2026-10-02T08:00:00Z', 'googleCanonical' => $body['inspectionUrl'], 'userCanonical' => $body['inspectionUrl'] ] ] ] ) ];
+	},
+	20,
+	3
+);
+$batch = hodima_seo_advisor_inspect_batch( 3 );
+$stored_in = hodima_seo_advisor_inspections();
+hodima_ad( 'دسته: ۳ آدرس پرسیده، property درست، رکوردها ذخیره، وضعیت‌ها درست', [ $batch, count( $in_calls ), $in_calls[0]['siteUrl'], array_keys( $stored_in ), hodima_seo_advisor_inspect_state( $stored_in['/q/b/'] ) ], [ [ 'checked' => 3, 'error' => '', 'quota' => false ], 3, 'sc-domain:' . $host, [ '/q/unseen/', '/q/b/', '/q/a/' ], 'crawled_not_indexed' ] );
+hodima_ad( 'inspectionUrl آدرس کامل سایت است', str_starts_with( $in_calls[0]['inspectionUrl'], 'https://' . $host ), true );
+$in_calls = [];
+$GLOBALS['inspect_quota_after'] = 1;
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+$batch2 = hodima_seo_advisor_inspect_batch( 5 );
+hodima_ad( 'سهمیه (۴۲۹) ← فورا می‌ایستد، آنچه پرسیده شده ذخیره می‌شود', [ $batch2['checked'], $batch2['quota'], '' !== $batch2['error'], count( $in_calls ), count( hodima_seo_advisor_inspections() ) ], [ 1, true, true, 2, 1 ] );
+
+// نما
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'indexing' ];
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/q/b/' => $ins( 'Crawled - currently not indexed' ), '/q/a/' => $ins( 'Submitted and indexed', 'PASS' ), '/q/c/' => $ins( 'Duplicate, Google chose different canonical than user', 'NEUTRAL', '', 'https://' . $host . '/q/a/', 'https://' . $host . '/q/c/' ) ], false );
+wp_set_current_user( 1 );
+ob_start();
+hodima_seo_advisor_render_admin();
+$in_html = (string) ob_get_clean();
+hodima_ad( 'تب ایندکس: ۴ کارت آمار، دکمه با nonce، مشکل‌دارها (خزیده ولی ایندکس نشد و canonical دیگر) و دستورشان', [ substr_count( $in_html, 'class="hds-stat"' ), str_contains( $in_html, 'name="action" value="hodima_advisor_inspect_now"' ), str_contains( $in_html, 'خزیده شد ولی ایندکس نشد' ), str_contains( $in_html, 'تکراری / canonical دیگر' ), str_contains( $in_html, '/q/a/' ), str_contains( $in_html, 'درخواست ایندکس' ), str_contains( $in_html, 'tab=indexing' ) ], [ 4, true, true, true, true, true, true ] );
+$_GET = [];
+remove_filter( 'pre_http_request', $in_filter, 20 );
+hodima_ad( 'پاک کردن داده‌های مشاور نتیجه بررسی ایندکس را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), hodima_seo_advisor_inspections() ], [ true, [] ] );
+add_filter( 'hodima_seo_advisor_inspect_enabled', '__return_false' );
+delete_option( 'hodima_discover_sc_key' );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

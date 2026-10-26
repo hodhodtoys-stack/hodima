@@ -379,6 +379,51 @@ function hodima_seo_sc_query( string $property, string $token, string $start, st
 }
 
 /**
+ * بررسی ایندکس یک آدرس (URL Inspection API؛ فقط‌خواندنی، همان دسترسی webmasters.readonly).
+ * سهمیه گوگل حدود ۲۰۰۰ بررسی در روز برای هر property و ۶۰۰ در دقیقه است. کد خطای سهمیه: hodima_sc_api_429.
+ *
+ * @return array<string, mixed>|WP_Error بخش inspectionResult پاسخ
+ */
+function hodima_seo_sc_inspect_url( string $property, string $url, string $consumer = '' ): array|WP_Error {
+
+	$send = static function ( string $token ) use ( $property, $url ): array|WP_Error {
+		$res = wp_remote_post( 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', [
+			'timeout' => 30,
+			'headers' => [ 'Authorization' => 'Bearer ' . $token, 'Content-Type' => 'application/json' ],
+			'body'    => (string) wp_json_encode( [ 'inspectionUrl' => $url, 'siteUrl' => $property, 'languageCode' => 'en-US' ] ),
+		] );
+
+		if ( is_wp_error( $res ) ) {
+			return $res;
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $res );
+		$body = json_decode( (string) wp_remote_retrieve_body( $res ), true );
+
+		if ( 200 !== $code ) {
+			return new WP_Error( 'hodima_sc_api_' . $code, is_array( $body ) ? (string) ( $body['error']['message'] ?? '' ) : '', [ 'status' => $code ] );
+		}
+
+		return is_array( $body ) && is_array( $body['inspectionResult'] ?? null ) ? $body['inspectionResult'] : [];
+	};
+
+	$token = hodima_seo_sc_token( false, $consumer );
+
+	if ( is_wp_error( $token ) ) {
+		return $token;
+	}
+
+	$result = $send( $token );
+
+	if ( is_wp_error( $result ) && 401 === (int) ( $result->get_error_data()['status'] ?? 0 ) ) {
+		$token = hodima_seo_sc_token( true, $consumer );
+		return is_wp_error( $token ) ? $token : $send( $token );
+	}
+
+	return $result;
+}
+
+/**
  * کوئری با توکن خودکار: توکن را خودش می‌گیرد و اگر منقضی بود (۴۰۱) یک بار با
  * توکن تازه تکرار می‌کند.
  *

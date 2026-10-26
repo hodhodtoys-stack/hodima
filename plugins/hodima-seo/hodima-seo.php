@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           2.7.2
+ * Version:           2.7.3
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '2.7.2';
+const HODIMA_SEO_VERSION = '2.7.3';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -219,8 +219,9 @@ add_action( 'plugins_loaded', static function (): void {
 			}
 		}
 		// ماژول مشاور سئو خاموش: رویداد روزانه دریافت داده یتیم نماند
-		if ( is_admin() && ! \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) && wp_next_scheduled( 'hodima_advisor_refresh' ) ) {
+		if ( is_admin() && ! \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) && ( wp_next_scheduled( 'hodima_advisor_refresh' ) || wp_next_scheduled( 'hodima_advisor_inspect' ) ) ) {
 			wp_clear_scheduled_hook( 'hodima_advisor_refresh' );
+			wp_clear_scheduled_hook( 'hodima_advisor_inspect' );
 		}
 		return;
 	}
@@ -254,4 +255,5 @@ register_deactivation_hook( __FILE__, static function (): void {
 	wp_clear_scheduled_hook( 'hodima_discover_sc_refresh' );
 	wp_clear_scheduled_hook( 'hodima_discover_digest' ); // خلاصه هفتگی ایمیلی (SEO 2.1.8)
 	wp_clear_scheduled_hook( 'hodima_advisor_refresh' ); // دریافت روزانه داده مشاور سئو
+	wp_clear_scheduled_hook( 'hodima_advisor_inspect' ); // بررسی ایندکس مشاور سئو
 } );

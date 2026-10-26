@@ -31,6 +31,7 @@ require_once __DIR__ . '/advisor-breakdown.php';
 require_once __DIR__ . '/advisor-trend.php';
 require_once __DIR__ . '/advisor-tasks.php';
 require_once __DIR__ . '/advisor-health.php';
+require_once __DIR__ . '/advisor-inspect.php';
 require_once __DIR__ . '/advisor-rules.php';
 require_once __DIR__ . '/advisor-steps.php';
 require_once __DIR__ . '/advisor-refresh.php';
@@ -44,5 +45,6 @@ if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-trend-view.php';
 	require_once __DIR__ . '/advisor-tasks-view.php';
 	require_once __DIR__ . '/advisor-health-view.php';
+	require_once __DIR__ . '/advisor-inspect-view.php';
 	require_once __DIR__ . '/advisor-box.php';
 }
