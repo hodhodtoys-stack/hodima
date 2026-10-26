@@ -1424,13 +1424,13 @@ $bar = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'competition' ) )
 hodima_ad( 'ردیف بالا در تب: دکمه به‌روزرسانی با تب برگشت؛ «تنظیمات» در آن تکرار نمی‌شود', [ str_contains( $bar, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $bar, 'name="tab" value="competition"' ), str_contains( $bar, 'data-hdsa-settings-toggle' ), str_contains( $bar, 'id="hodima-advisor-settings"' ) ], [ true, true, false, false ] );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
 $page_html = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( 'صفحه کامل: «تنظیمات» فقط یک بار و در سربرگ؛ پنل یک بار و بسته', [ substr_count( $page_html, 'data-hdsa-settings-toggle' ), 1 === preg_match( '#hds-hero__actions">\s*<a [^>]*data-hdsa-settings-toggle#', $page_html ), substr_count( $page_html, 'id="hodima-advisor-settings"' ), 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $page_html ), str_contains( $page_html, 'tab=competition&#038;settings=1' ) || str_contains( $page_html, 'tab=competition&settings=1' ) ], [ 1, true, 1, true, true ] );
+hodima_ad( 'صفحه کامل: «تنظیمات» فقط یک بار، آخر ردیف تب‌ها؛ پنل یک بار و بسته', [ substr_count( $page_html, 'data-hdsa-settings-toggle' ), 1 === preg_match( '#hodima-advisor__tabrow">.*</nav>\s*<a [^>]*data-hdsa-settings-toggle#s', $page_html ), substr_count( $page_html, 'id="hodima-advisor-settings"' ), 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $page_html ), str_contains( $page_html, 'tab=competition&#038;settings=1' ) || str_contains( $page_html, 'tab=competition&settings=1' ) ], [ 1, true, 1, true, true ] );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'trend', 'settings' => '1' ];
 $page_open = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( 'با settings=1 پنل باز می‌آید و دکمه سربرگ aria-expanded=true دارد', [ 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $page_open ), str_contains( $page_open, 'aria-expanded="true"' ) ], [ false, true ] );
+hodima_ad( 'با settings=1 پنل باز می‌آید و دکمه ردیف تب‌ها aria-expanded=true دارد', [ 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $page_open ), str_contains( $page_open, 'aria-expanded="true"' ) ], [ false, true ] );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
 $page_tasks = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( 'تب کارهای من: ردیف دریافت نیست ولی دکمه تنظیمات سربرگ هست', [ str_contains( $page_tasks, 'value="hodima_advisor_refresh"' ), substr_count( $page_tasks, 'data-hdsa-settings-toggle' ) ], [ false, 1 ] );
+hodima_ad( 'تب کارهای من: ردیف دریافت نیست ولی دکمه تنظیمات هست', [ str_contains( $page_tasks, 'value="hodima_advisor_refresh"' ), substr_count( $page_tasks, 'data-hdsa-settings-toggle' ) ], [ false, 1 ] );
 $_GET = [];
 foreach ( [ 'competition' => 'hodima_seo_advisor_render_competition', 'terms' => 'hodima_seo_advisor_render_terms', 'breakdown' => 'hodima_seo_advisor_render_breakdown', 'health' => 'hodima_seo_advisor_render_health' ] as $t => $fn ) {
 	$html_t = $cap( static fn() => $fn( hodima_seo_advisor_status() ) );

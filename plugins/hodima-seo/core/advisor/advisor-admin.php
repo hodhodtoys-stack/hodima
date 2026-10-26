@@ -404,7 +404,7 @@ function hodima_seo_advisor_tab_keys(): array {
 /**
  * تب‌های بالای صفحه: فرصت‌ها | رقابت صفحه‌ها | کلمه‌ها | دستگاه و کشور | روند و فصل‌ها | سلامت آدرس‌ها | ایندکس | کارهای من.
  */
-function hodima_seo_advisor_render_tabs( string $active ): void {
+function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true ): void {
 
 	$tabs = [
 		'opportunities' => [ 'فرصت‌های بهتر شدن', hodima_seo_advisor_page_url() ],
@@ -417,11 +417,16 @@ function hodima_seo_advisor_render_tabs( string $active ): void {
 		'tasks'         => [ 'کارهای من', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
 	];
 
-	echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
-	foreach ( $tabs as $key => [ $label, $url ] ) {
-		printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>%3$s</a>', esc_url( $url ), $key === $active ? ' aria-current="page"' : '', esc_html( $label ) );
+	echo '<div class="hodima-advisor__tabrow">';
+	if ( $with_tabs ) {
+		echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
+		foreach ( $tabs as $key => [ $label, $url ] ) {
+			printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>%3$s</a>', esc_url( $url ), $key === $active ? ' aria-current="page"' : '', esc_html( $label ) );
+		}
+		echo '</nav>';
 	}
-	echo '</nav>';
+	echo hodima_seo_advisor_settings_button( $active ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در همان تابع
+	echo '</div>';
 }
 
 function hodima_seo_advisor_render_admin(): void {
@@ -443,7 +448,6 @@ function hodima_seo_advisor_render_admin(): void {
 		'description' => 'با داده Search Console همین سایت می‌گوید هر صفحه چه کاری بیشترین کلیک اضافه را می‌آورد. فقط پیشنهاد می‌دهد؛ چیزی را خودکار عوض نمی‌کند.',
 		'icon'        => 'dashicons-chart-line',
 		'class'       => 'hodima-advisor',
-		'actions'     => hodima_seo_advisor_settings_button( $tab ),
 	] );
 
 	if ( '' !== $status['error'] ) {
@@ -451,14 +455,12 @@ function hodima_seo_advisor_render_admin(): void {
 	}
 
 	hodima_seo_ui_body_open();
-	hodima_seo_advisor_render_settings( $has_data, hodima_seo_advisor_settings_open() ); // یک بار برای همه تب‌ها؛ دکمه‌اش در سربرگ است
 
 	$n     = static fn( int|float $value ): string => number_format_i18n( $value );
 	$empty = ! $has_data;
 
-	if ( $has_data ) {
-		hodima_seo_advisor_render_tabs( $tab );
-	}
+	hodima_seo_advisor_render_tabs( $tab, $has_data ); // «تنظیمات» آخر ردیف تب‌هاست (یک بار برای کل صفحه)
+	hodima_seo_advisor_render_settings( $has_data, hodima_seo_advisor_settings_open() ); // پنلش یک بار، زیر همین ردیف
 
 	if ( 'opportunities' !== $tab ) {
 		match ( $tab ) {
@@ -549,7 +551,7 @@ function hodima_seo_advisor_render_toolbar( string $tab = '' ): void {
 }
 
 /**
- * دکمه «تنظیمات» آخر سربرگ (یک بار برای کل صفحه). لینک `settings=1` است تا بدون JS هم پنل باز شود.
+ * دکمه «تنظیمات» آخر ردیف تب‌ها (یک بار برای کل صفحه). لینک `settings=1` است تا بدون JS هم پنل باز شود.
  */
 function hodima_seo_advisor_settings_button( string $tab ): string {
 
