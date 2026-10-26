@@ -133,8 +133,7 @@ function hodima_seo_advisor_trend_terms( array $current, array $previous ): arra
 			if ( '' === $term || mb_strlen( $term ) > HODIMA_SEO_ADVISOR_KEY_LENGTH ) {
 				continue;
 			}
-			$key = hodima_seo_advisor_normalize( $term );
-			$key = '' !== $key ? $key : $term;
+			$key = hodima_seo_advisor_term_key( $term );
 			$out[ $key ] ??= [ 'term' => $term, 'clicks' => 0, 'impressions' => 0, 'weighted' => 0.0 ];
 			$impressions                  = (int) round( (float) ( $row['impressions'] ?? 0 ) );
 			$out[ $key ]['clicks']       += (int) round( (float) ( $row['clicks'] ?? 0 ) );

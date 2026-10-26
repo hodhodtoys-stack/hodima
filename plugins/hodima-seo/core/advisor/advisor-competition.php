@@ -82,40 +82,48 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 	$queries = hodima_seo_advisor_table( 'queries' );
 	$ignored = hodima_seo_advisor_ignored();
 
+	// گروه‌بندی با term_key (کلمه یکسان‌شده): املای متفاوت یک کلمه در آدرس‌های مختلف (ي/ی، اعراب، حروف) یک گروه می‌شود
 	// سقف ۳۰۰ گروه پرنمایش؛ صفحه‌بندی آرشیو و نادیده‌گرفته‌ها بعدا در PHP کنار می‌روند (REGEXP روی همه پایگاه‌ها یکسان نیست)
-	$terms = (array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	$keys = (array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare(
-			'SELECT term FROM (SELECT term, COUNT(*) AS n, SUM(impressions) AS s FROM %i WHERE impressions >= %d GROUP BY term) AS t WHERE n >= 2 ORDER BY s DESC LIMIT %d', // HAVING با تجمیع در مترجم SQLite ابزار تست خراب می‌شود؛ زیرپرسش روی هر دو کار می‌کند (path کلید اصلی است، پس COUNT(*) = شمار صفحه)
+			'SELECT term_key FROM (SELECT term_key, COUNT(*) AS n, SUM(impressions) AS s FROM %i WHERE impressions >= %d GROUP BY term_key) AS t WHERE n >= 2 ORDER BY s DESC LIMIT %d', // HAVING با تجمیع در مترجم SQLite ابزار تست خراب می‌شود؛ زیرپرسش روی هر دو کار می‌کند (path + term_key یکتاست، پس COUNT(*) = شمار صفحه)
 			$queries,
 			$min,
 			HODIMA_SEO_ADVISOR_COMPETITION_MAX_GROUPS
 		)
 	);
 
-	$terms = array_values( array_filter( array_map( 'strval', $terms ), static fn( string $t ): bool => ! hodima_seo_advisor_is_brand( $t ) ) );
+	$keys = array_values( array_filter( array_map( 'strval', $keys ), static fn( string $k ): bool => ! hodima_seo_advisor_is_brand( $k ) ) );
 
-	if ( ! $terms ) {
+	if ( ! $keys ) {
 		return [ 'rows' => [], 'total' => 0, 'pages' => 0, 'potential' => 0 ];
 	}
 
 	$pages_table = hodima_seo_advisor_table( 'pages' );
 	$found       = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQL.NotPrepared -- تعداد %s با array_fill هم‌اندازه کلمه‌هاست
-			'SELECT q.term, q.path, q.clicks, q.impressions, q.avg_position, p.title, p.kind, p.object_id FROM %i q LEFT JOIN %i p ON p.path = q.path WHERE q.impressions >= %d AND q.term IN (' . implode( ',', array_fill( 0, count( $terms ), '%s' ) ) . ')',
+			'SELECT q.term, q.term_key, q.path, q.clicks, q.impressions, q.avg_position, p.title, p.kind, p.object_id FROM %i q LEFT JOIN %i p ON p.path = q.path WHERE q.impressions >= %d AND q.term_key IN (' . implode( ',', array_fill( 0, count( $keys ), '%s' ) ) . ')',
 			$queries,
 			$pages_table,
 			$min,
-			...$terms
+			...$keys
 		),
 		ARRAY_A
 	);
 
 	$by_term = [];
+	$labels  = []; // کلید ← املای پرنمایش‌ترین (برای نمایش)
+	$best    = [];
 	foreach ( $found as $r ) {
 		if ( in_array( (string) $r['path'], $ignored, true ) || 1 === preg_match( '#/page/\d+/?$#', (string) $r['path'] ) ) { // صفحه‌بندی آرشیو رقیب حساب نمی‌شود
 			continue;
 		}
-		$by_term[ (string) $r['term'] ][] = [
+		$key = (string) $r['term_key'];
+		if ( (int) $r['impressions'] > ( $best[ $key ] ?? -1 ) ) {
+			$best[ $key ]   = (int) $r['impressions'];
+			$labels[ $key ] = (string) $r['term'];
+		}
+		$by_term[ $key ][] = [
 			'path'        => (string) $r['path'],
 			'title'       => (string) $r['title'],
 			'kind'        => (string) $r['kind'],
@@ -127,8 +135,9 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 	}
 
 	$groups = [];
-	foreach ( $terms as $term ) {
-		$pages = $by_term[ $term ] ?? [];
+	foreach ( $keys as $key ) {
+		$pages = $by_term[ $key ] ?? [];
+		$term  = $labels[ $key ] ?? $key;
 		if ( count( $pages ) < 2 ) {
 			continue;
 		}

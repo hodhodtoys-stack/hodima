@@ -6,7 +6,8 @@
  * دو جدول (هر دریافت جدید همه ردیف‌ها را عوض می‌کند، نه افزودن):
  *   hodima_advisor_pages    یک ردیف برای هر آدرس: کلیک، نمایش، رتبه برای بازه فعلی و
  *                           بازه قبلی هم‌اندازه (مقایسه)، به‌علاوه نوع و شناسه شیء سایت
- *   hodima_advisor_queries  کلمه‌های هر آدرس (حداکثر ۵۰ کلمه پرنمایش)
+ *   hodima_advisor_queries  کلمه‌های هر آدرس (حداکثر ۵۰ کلمه پرنمایش)؛ ستون term_key همان کلمه
+ *                           یکسان‌شده است و کلید وصل کردن کلمه‌ها بین آدرس‌هاست (رقابت، برند)
  *
  * آدرس همیشه «مسیر یکسان‌شده» است (hodima_seo_advisor_path_key): بدون دامنه، پارامتر و
  * #بخش، رمزگشایی‌شده، حروف لاتین کوچک؛ آدرس‌های هم‌مسیر (با #toc، www، http) یکی
@@ -20,7 +21,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.3.0';
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.4.0';
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -50,6 +51,16 @@ const HODIMA_SEO_ADVISOR_CLASSIFY_LIMIT = 1500;
 
 /** حداکثر طول آدرس و کلمه (ستون varchar(191)). */
 const HODIMA_SEO_ADVISOR_KEY_LENGTH = 191;
+
+/**
+ * کلید یکسان‌شده یک کلمه جستجو: «ي/ی»، اعراب، کشیده، ارقام و حروف بزرگ و کوچک یکی می‌شوند.
+ * کلمه‌های فقط-املایی‌متفاوت از آدرس‌های مختلف باید به یک کلید برسند، وگرنه رقابت داخلی دیده نمی‌شود
+ * (باگ قبلی: مقایسه خام term در SQL). کلمه بدون نویسه قابل‌مقایسه همان خودش می‌ماند.
+ */
+function hodima_seo_advisor_term_key( string $term ): string {
+	$key = hodima_seo_advisor_normalize( $term );
+	return mb_substr( '' !== $key ? $key : trim( $term ), 0, HODIMA_SEO_ADVISOR_KEY_LENGTH );
+}
 
 /** نام کامل جدول: «pages» یا «queries». */
 function hodima_seo_advisor_table( string $name ): string {
@@ -113,12 +124,17 @@ function hodima_seo_advisor_install_tables(): void {
 		"CREATE TABLE {$queries} (
 		path varchar(191) NOT NULL,
 		term varchar(191) NOT NULL,
+		term_key varchar(191) NOT NULL DEFAULT '',
 		clicks int(10) unsigned NOT NULL DEFAULT 0,
 		impressions int(10) unsigned NOT NULL DEFAULT 0,
 		avg_position decimal(6,2) NOT NULL DEFAULT 0,
-		PRIMARY KEY (path, term)
+		PRIMARY KEY (path, term),
+		KEY term_key_idx (term_key)
 		) {$charset};"
 	);
+
+	// ردیف‌های قبل از ۱٫۴٫۰ term_key ندارند: موقتا همان کلمه خام (رفتار قبلی)؛ دریافت بعدی همه را یکسان‌شده می‌سازد
+	$wpdb->query( $wpdb->prepare( "UPDATE %i SET term_key = term WHERE term_key = ''", $queries ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 	update_option( HODIMA_SEO_ADVISOR_VERSION_OPTION, HODIMA_SEO_ADVISOR_DB_VERSION, false );
 }
@@ -228,8 +244,7 @@ function hodima_seo_advisor_aggregate_queries( array $rows ): array {
 		}
 		// کلمه‌هایی که فقط در اعراب، کشیده، حروف بزرگ یا ی/ک عربی فرق دارند یکی می‌شوند؛ ستون term
 		// با مقایسه بدون حساسیت به این تفاوت‌ها کلید اصلی است و دو کلمه «متفاوت» آن را می‌شکستند
-		$key         = hodima_seo_advisor_normalize( $term );
-		$key         = '' !== $key ? $key : $term;
+		$key         = hodima_seo_advisor_term_key( $term );
 		$impressions = (int) round( (float) ( $row['impressions'] ?? 0 ) );
 		$sums[ $path ][ $key ] ??= [ 'term' => $term, 'clicks' => 0, 'impressions' => 0, 'weighted' => 0.0 ];
 		$sums[ $path ][ $key ]['clicks']      += (int) round( (float) ( $row['clicks'] ?? 0 ) );
@@ -405,7 +420,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 	$query_rows = [];
 	foreach ( $queries as $path => $terms ) {
 		foreach ( $terms as $term => $s ) {
-			$query_rows[] = [ $path, $term, $s['clicks'], $s['impressions'], $s['position'] ];
+			$query_rows[] = [ $path, $term, hodima_seo_advisor_term_key( (string) $term ), $s['clicks'], $s['impressions'], $s['position'] ];
 		}
 	}
 
@@ -425,7 +440,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 
 		$insert = [
 			[ $pages_table, 'path, clicks, impressions, avg_position, prev_clicks, prev_impressions, prev_position, kind, object_id, title, potential, advice_count, advice', '(%s,%d,%d,%f,%d,%d,%f,%s,%d,%s,%d,%d,%s)', $page_rows, 'آدرس‌ها' ],
-			[ $queries_table, 'path, term, clicks, impressions, avg_position', '(%s,%s,%d,%d,%f)', $query_rows, 'کلمه‌ها' ],
+			[ $queries_table, 'path, term, term_key, clicks, impressions, avg_position', '(%s,%s,%s,%d,%d,%f)', $query_rows, 'کلمه‌ها' ],
 		];
 
 		foreach ( $insert as [ $table, $columns, $row_format, $rows, $what ] ) {

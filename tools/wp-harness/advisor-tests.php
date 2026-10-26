@@ -1225,6 +1225,42 @@ hodima_ad( 'پاک کردن داده‌های مشاور نتیجه بررسی �
 add_filter( 'hodima_seo_advisor_inspect_enabled', '__return_false' );
 delete_option( 'hodima_discover_sc_key' );
 
+echo "=== کلید کلمه (term_key): املای متفاوت یک کلمه بین آدرس‌ها یکی است (بخش ۲۷۹)\n";
+hodima_ad( 'term_key: ی/ي عربی، اعراب، کشیده، ارقام و حروف بزرگ یکی می‌شوند', [ hodima_seo_advisor_term_key( 'کيف مو ۲' ) === hodima_seo_advisor_term_key( 'کیف مو 2' ), hodima_seo_advisor_term_key( 'کِیـف' ) === hodima_seo_advisor_term_key( 'کیف' ), hodima_seo_advisor_term_key( 'Hair CLIP' ), hodima_seo_advisor_term_key( '  ' ) ], [ true, true, 'hair clip', '' ] );
+$arabic = "کيف مو"; // ي عربی
+$farsi  = 'کیف مو';
+hodima_seo_advisor_store(
+	[
+		'/k/a/' => [ 'clicks' => 40, 'impressions' => 3000, 'position' => 6.0 ],
+		'/k/b/' => [ 'clicks' => 10, 'impressions' => 2000, 'position' => 9.0 ],
+		'/k/c/' => [ 'clicks' => 5, 'impressions' => 800, 'position' => 12.0 ],
+	],
+	[],
+	[
+		'/k/a/' => [ $arabic => [ 'clicks' => 40, 'impressions' => 3000, 'position' => 6.0 ] ],
+		'/k/b/' => [ $farsi => [ 'clicks' => 10, 'impressions' => 2000, 'position' => 9.0 ] ],
+		'/k/c/' => [ 'Hair Clip' => [ 'clicks' => 5, 'impressions' => 800, 'position' => 12.0 ] ],
+	]
+);
+$keyed = $wpdb->get_col( $wpdb->prepare( 'SELECT term_key FROM %i ORDER BY path, term_key', hodima_seo_advisor_table( 'queries' ) ) );
+hodima_ad( 'ذخیره: term_key هر ردیف پر و یکسان‌شده است', $keyed, [ hodima_seo_advisor_term_key( $arabic ), hodima_seo_advisor_term_key( $farsi ), 'hair clip' ] );
+$kcomp = hodima_seo_advisor_competition();
+hodima_ad( 'رقابت: دو املای ي/ی دو آدرس یک گروه است (قبلا اصلا دیده نمی‌شد)', [ $kcomp['total'], $kcomp['rows'][0]['count'] ?? 0, array_column( $kcomp['rows'][0]['pages'] ?? [], 'path' ) ], [ 1, 2, [ '/k/a/', '/k/b/' ] ] );
+hodima_ad( 'رقابت: برچسب گروه املای پرنمایش‌تر است', $kcomp['rows'][0]['term'] ?? '', $arabic );
+$kq = [ [ 'term' => $arabic, 'clicks' => 40, 'impressions' => 3000, 'position' => 6.0 ] ];
+$kc = hodima_seo_advisor_competitors( '/k/a/', $kq );
+hodima_ad( 'رقبای یک آدرس: با term_key وصل می‌شود و کلید خروجی term_key است', [ array_keys( $kc ), array_column( $kc[ hodima_seo_advisor_term_key( $arabic ) ] ?? [], 'path' ) ], [ [ hodima_seo_advisor_term_key( $arabic ) ], [ '/k/b/' ] ] );
+$ks = hodima_seo_advisor_suggestions( [ 'path' => '/k/a/', 'clicks' => 40, 'impressions' => 3000, 'position' => 6.0, 'prev_clicks' => 0 ], $kq, null, $kc );
+hodima_ad( 'قاعده cannibal با املای متفاوت فعال می‌شود', in_array( 'cannibal', array_column( $ks, 'rule' ), true ), true );
+hodima_ad( 'صفحه‌های رقیب برای گام «صفحه مرجع» با املای دیگر هم پیدا می‌شود', array_column( hodima_seo_advisor_term_pages( $farsi ), 'path' ), [ '/k/a/', '/k/b/' ] );
+$ksplit = hodima_seo_advisor_brand_split();
+hodima_ad( 'سهم برندی: املاهای یک کلمه یک ردیف می‌شود', [ $ksplit['other']['terms'], $ksplit['other']['impressions'] ], [ 2, 5800 ] );
+// مهاجرت ۱٫۳٫۰ ← ۱٫۴٫۰: ردیف بدون term_key موقتا همان کلمه خام می‌شود
+$wpdb->query( $wpdb->prepare( "UPDATE %i SET term_key = ''", hodima_seo_advisor_table( 'queries' ) ) );
+update_option( HODIMA_SEO_ADVISOR_VERSION_OPTION, '1.3.0', false );
+hodima_seo_advisor_ensure_tables();
+hodima_ad( 'مهاجرت: ردیف‌های قدیمی term_key خالی نمی‌مانند و نسخه بالا می‌رود', [ (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE term_key = ''", hodima_seo_advisor_table( 'queries' ) ) ), get_option( HODIMA_SEO_ADVISOR_VERSION_OPTION ) ], [ 0, HODIMA_SEO_ADVISOR_DB_VERSION ] );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );

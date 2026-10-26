@@ -335,7 +335,7 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 	// ۴. رقابت داخلی (فقط اطلاع؛ بدون کلیک بالقوه): هر کلمه رقابتی یک ردیف، پرنمایش‌ترین‌ها اول
 	$cannibal = [];
 	foreach ( $queries as $query ) {
-		$others = $competitors[ $query['term'] ] ?? [];
+		$others = $competitors[ hodima_seo_advisor_term_key( $query['term'] ) ] ?? $competitors[ $query['term'] ] ?? [];
 		if ( $query['impressions'] >= $cfg['cannibal_min_impressions'] && $others && ! hodima_seo_advisor_is_brand( $query['term'] ) ) {
 			$cannibal[] = [
 				'rule'      => 'cannibal',
@@ -373,17 +373,18 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 }
 
 /**
- * آدرس‌های دیگری که برای همان کلمه‌های این آدرس نمایش می‌گیرند.
+ * آدرس‌های دیگری که برای همان کلمه‌های این آدرس نمایش می‌گیرند. کلمه‌ها با term_key (املای یکسان‌شده)
+ * وصل می‌شوند، پس «کیف ي» و «کیف ی» یک کلمه‌اند.
  *
  * @param list<array{term: string, impressions: int}> $queries
- * @return array<string, list<array{path: string, impressions: int}>>
+ * @return array<string, list<array{path: string, impressions: int}>> term_key ← آدرس‌ها
  */
 function hodima_seo_advisor_competitors( string $path, array $queries ): array {
 
 	global $wpdb;
 
 	$min   = hodima_seo_advisor_config()['cannibal_min_impressions'];
-	$terms = array_values( array_map( static fn( array $q ): string => $q['term'], array_filter( $queries, static fn( array $q ): bool => $q['impressions'] >= $min ) ) );
+	$terms = array_values( array_unique( array_map( static fn( array $q ): string => hodima_seo_advisor_term_key( $q['term'] ), array_filter( $queries, static fn( array $q ): bool => $q['impressions'] >= $min ) ) ) );
 
 	if ( ! $terms ) {
 		return [];
@@ -391,7 +392,7 @@ function hodima_seo_advisor_competitors( string $path, array $queries ): array {
 
 	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare(
-			'SELECT term, path, impressions FROM %i WHERE term IN (' . implode( ',', array_fill( 0, count( $terms ), '%s' ) ) . ') AND path <> %s AND impressions >= %d ORDER BY impressions DESC', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها با array_fill هم‌اندازه کلمه‌هاست
+			'SELECT term_key, path, impressions FROM %i WHERE term_key IN (' . implode( ',', array_fill( 0, count( $terms ), '%s' ) ) . ') AND path <> %s AND impressions >= %d ORDER BY impressions DESC', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها با array_fill هم‌اندازه کلمه‌هاست
 			hodima_seo_advisor_table( 'queries' ),
 			...$terms,
 			...[ $path, $min ]
@@ -402,7 +403,7 @@ function hodima_seo_advisor_competitors( string $path, array $queries ): array {
 	$out = [];
 	foreach ( $rows as $row ) {
 		if ( 1 !== preg_match( '#/page/\d+/?$#', (string) $row['path'] ) ) {
-			$out[ (string) $row['term'] ][] = [ 'path' => (string) $row['path'], 'impressions' => (int) $row['impressions'] ];
+			$out[ (string) $row['term_key'] ][] = [ 'path' => (string) $row['path'], 'impressions' => (int) $row['impressions'] ];
 		}
 	}
 

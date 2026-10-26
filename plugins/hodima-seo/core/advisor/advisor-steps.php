@@ -296,10 +296,10 @@ function hodima_seo_advisor_term_pages( string $term, int $limit = 5 ): array {
 
 	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare(
-			'SELECT q.path, q.impressions, q.clicks, q.avg_position, p.title, p.kind, p.object_id FROM %i q LEFT JOIN %i p ON p.path = q.path WHERE q.term = %s AND q.impressions >= %d ORDER BY q.impressions DESC LIMIT %d',
+			'SELECT q.path, q.impressions, q.clicks, q.avg_position, p.title, p.kind, p.object_id FROM %i q LEFT JOIN %i p ON p.path = q.path WHERE q.term_key = %s AND q.impressions >= %d ORDER BY q.impressions DESC LIMIT %d',
 			hodima_seo_advisor_table( 'queries' ),
 			hodima_seo_advisor_table( 'pages' ),
-			$term,
+			hodima_seo_advisor_term_key( $term ),
 			hodima_seo_advisor_config()['cannibal_min_impressions'],
 			$limit
 		),

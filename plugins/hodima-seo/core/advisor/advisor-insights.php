@@ -158,7 +158,7 @@ function hodima_seo_advisor_brand_split( int $top = 10 ): array {
 	global $wpdb;
 
 	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->prepare( 'SELECT term, COUNT(*) AS pages, SUM(clicks) AS total_clicks, SUM(impressions) AS total_impressions, SUM(avg_position * impressions) AS weighted FROM %i GROUP BY term ORDER BY total_impressions DESC LIMIT 5000', hodima_seo_advisor_table( 'queries' ) ),
+		$wpdb->prepare( 'SELECT MAX(term) AS term, COUNT(*) AS pages, SUM(clicks) AS total_clicks, SUM(impressions) AS total_impressions, SUM(avg_position * impressions) AS weighted FROM %i GROUP BY term_key ORDER BY total_impressions DESC LIMIT 5000', hodima_seo_advisor_table( 'queries' ) ),
 		ARRAY_A
 	);
 
