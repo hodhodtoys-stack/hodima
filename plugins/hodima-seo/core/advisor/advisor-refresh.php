@@ -184,6 +184,9 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 			'error'      => '',
 		] + $range, false );
 
+		// تاریخچه هفتگی؛ شکستش دریافت اصلی را رد نمی‌کند (هفته‌های ناموفق دفعه بعد دوباره امتحان می‌شوند)
+		hodima_seo_advisor_history_sync( $property );
+
 		return true;
 	}
 

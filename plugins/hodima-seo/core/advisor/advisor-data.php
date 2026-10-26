@@ -20,7 +20,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.2.0';
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.3.0';
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -73,6 +73,20 @@ function hodima_seo_advisor_install_tables(): void {
 	$charset = $wpdb->get_charset_collate();
 	$pages   = hodima_seo_advisor_table( 'pages' );
 	$queries = hodima_seo_advisor_table( 'queries' );
+	$history = hodima_seo_advisor_table( 'history' );
+
+	// تاریخچه هفتگی (advisor-history.php)؛ با دریافت کامل جایگزین نمی‌شود
+	dbDelta(
+		"CREATE TABLE {$history} (
+		path varchar(191) NOT NULL,
+		week_end date NOT NULL,
+		clicks int(10) unsigned NOT NULL DEFAULT 0,
+		impressions int(10) unsigned NOT NULL DEFAULT 0,
+		avg_position decimal(6,2) NOT NULL DEFAULT 0,
+		PRIMARY KEY (path, week_end),
+		KEY week_idx (week_end)
+		) {$charset};"
+	);
 
 	dbDelta(
 		"CREATE TABLE {$pages} (

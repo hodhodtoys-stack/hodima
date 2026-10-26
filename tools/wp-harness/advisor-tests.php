@@ -159,6 +159,13 @@ add_filter(
 hodima_ad( 'تابع‌ها و ماژول لود شده‌اند', [ function_exists( 'hodima_seo_sc_request' ), class_exists( '\Hodima\Core\Modules' ) && \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) ], [ true, true ] );
 hodima_ad( 'رویداد روزانه به تابع دریافت وصل است', has_action( HODIMA_SEO_ADVISOR_CRON ) !== false, true );
 
+// تاریخچه هفتگی را از پیش پر می‌کنیم تا شمار درخواست‌های آزمون‌های دریافت فقط سه‌تای اصلی باشد (خودش پایین آزمون می‌شود)
+hodima_seo_advisor_ensure_tables();
+$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'history' ) ) );
+foreach ( hodima_seo_advisor_history_week_ends() as $seed_week ) {
+	hodima_seo_advisor_history_store_week( $seed_week, [ '/seed/' => [ 'clicks' => 1, 'impressions' => 100, 'position' => 5.0 ] ] );
+}
+
 $result = hodima_seo_advisor_refresh();
 hodima_ad( 'دریافت موفق', $result, true );
 hodima_ad( 'سه درخواست: صفحه فعلی، صفحه قبلی، صفحه+کلمه (جستجوی وب، ۲۵ هزار ردیف)', array_map( static fn( array $b ): array => [ $b['dimensions'], $b['type'], $b['rowLimit'] ], $calls ), [ [ [ 'page' ], 'web', 25000 ], [ [ 'page' ], 'web', 25000 ], [ [ 'page', 'query' ], 'web', 25000 ] ] );
@@ -628,6 +635,60 @@ hodima_ad( 'بعد از پاک کردن: جدول‌ها، وضعیت و ناد�
 hodima_ad( 'کلید حساب سرویس و تنظیمات می‌مانند', [ get_option( 'hodima_discover_sc_key' ), hodima_seo_advisor_config()['min_impressions'], hodima_seo_advisor_days() ], [ 'KEEP-KEY', 250, 28 ] );
 delete_option( 'hodima_discover_sc_key' );
 update_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, $cfg_settings, false );
+
+echo "=== تاریخچه هفتگی\n";
+update_option( 'hodima_discover_sc_key', $key_json, false );
+$week_ends = hodima_seo_advisor_history_week_ends();
+hodima_ad( 'هشت یکشنبه پشت‌سرهم، تازه‌ترین اول، همه یکشنبه و دست‌کم ۲ روز پیش', [ count( $week_ends ), count( array_unique( $week_ends ) ), array_unique( array_map( static fn( string $d ): string => ( new DateTimeImmutable( $d ) )->format( 'w' ), $week_ends ) ), $week_ends[0] <= hodima_seo_advisor_ranges( 1 )['end'], $week_ends[0] > $week_ends[1] ], [ 8, 8, [ '0' ], true, true ] );
+
+$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'history' ) ) );
+$calls = [];
+$mode  = 'ok';
+$sync  = hodima_seo_advisor_history_sync( 'sc-domain:' . $host );
+hodima_ad( 'همگام‌سازی اول: ۸ هفته با ۸ درخواست جدا (هر هفته ۷ روز)', [ $sync, count( $calls ), count( array_unique( array_map( static fn( array $b ): string => $b['startDate'] . '|' . $b['endDate'], $calls ) ) ), array_unique( array_map( static fn( array $b ): int => ( new DateTimeImmutable( $b['endDate'] ) )->diff( new DateTimeImmutable( $b['startDate'] ) )->days, $calls ) ) ], [ [ 'added' => 8, 'failed' => 0 ], 8, 8, [ 6 ] ] );
+hodima_ad( 'هفته‌های ذخیره‌شده', hodima_seo_advisor_history_known_weeks(), $week_ends );
+
+$calls = [];
+$sync2 = hodima_seo_advisor_history_sync( 'sc-domain:' . $host );
+hodima_ad( 'همگام‌سازی دوم: همه ذخیره‌اند، درخواستی نمی‌رود', [ $sync2, count( $calls ) ], [ [ 'added' => 0, 'failed' => 0 ], 0 ] );
+
+$trend = hodima_seo_advisor_history( '/accessory/hair-clips/', 12 );
+hodima_ad( 'روند یک آدرس: ۸ هفته، قدیمی‌ترین اول، با عدد هفته', [ count( $trend ), $trend[0]['week'] === $week_ends[7], $trend[7]['week'] === $week_ends[0], $trend[7]['clicks'] > 0 ], [ 8, true, true, true ] );
+$none = hodima_seo_advisor_history( '/not-in-history/', 12 );
+hodima_ad( 'آدرسی که در عکس‌ها نیست: همان هفته‌ها با صفر', [ count( $none ), array_sum( array_column( $none, 'clicks' ) ), array_sum( array_column( $none, 'impressions' ) ) ], [ 8, 0, 0 ] );
+
+$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE week_end = %s', hodima_seo_advisor_table( 'history' ), $week_ends[0] ) );
+$calls = [];
+$mode  = 'denied';
+$sync3 = hodima_seo_advisor_history_sync( 'sc-domain:' . $host );
+$mode  = 'ok';
+hodima_ad( 'شکست یک هفته: خطا شمرده می‌شود و داده دیگر هفته‌ها سالم می‌ماند', [ $sync3['failed'] >= 1, count( hodima_seo_advisor_history_known_weeks() ) ], [ true, 7 ] );
+
+$tiny = [ '/few/' => [ 'clicks' => 1, 'impressions' => HODIMA_SEO_ADVISOR_HISTORY_MIN_IMPRESSIONS - 1, 'position' => 3.0 ], '/enough/' => [ 'clicks' => 1, 'impressions' => HODIMA_SEO_ADVISOR_HISTORY_MIN_IMPRESSIONS, 'position' => 3.0 ] ];
+hodima_ad( 'کم‌نمایش (زیر ۱۰) ذخیره نمی‌شود', [ hodima_seo_advisor_history_store_week( '2020-01-05', $tiny ), array_sum( array_column( hodima_seo_advisor_history( '/few/', 400 ), 'impressions' ) ) ], [ 1, 0 ] );
+hodima_seo_advisor_history_prune();
+hodima_ad( 'هفته بسیار قدیمی (بیش از ۱۰۴ هفته) پاک می‌شود', in_array( '2020-01-05', hodima_seo_advisor_history_known_weeks( 400 ), true ), false );
+
+// پاک کردن داده‌های مشاور تاریخچه را نگه می‌دارد
+hodima_seo_advisor_store( [ '/hist-keep/' => [ 'clicks' => 1, 'impressions' => 5000, 'position' => 6.0 ] ], [], [] );
+hodima_seo_advisor_clear_data();
+hodima_ad( 'پاک کردن داده‌های مشاور، تاریخچه هفتگی را نگه می‌دارد', count( hodima_seo_advisor_history_known_weeks() ), 7 );
+
+$h = [
+	[ 'week' => '2026-09-06', 'clicks' => 10, 'impressions' => 1000, 'position' => 8.0 ],
+	[ 'week' => '2026-09-13', 'clicks' => 20, 'impressions' => 1000, 'position' => 8.0 ],
+	[ 'week' => '2026-09-20', 'clicks' => 30, 'impressions' => 1000, 'position' => 8.0 ],
+	[ 'week' => '2026-09-27', 'clicks' => 40, 'impressions' => 1000, 'position' => 7.0 ],
+	[ 'week' => '2026-10-04', 'clicks' => 60, 'impressions' => 2000, 'position' => 6.0 ],
+];
+$ba = hodima_seo_advisor_before_after( $h, '2026-09-23' );
+hodima_ad( 'قبل/بعد ویرایش وسط هفته: هفته‌ای که ویرایش وسطش است (۲۷ شهریور) شمرده نمی‌شود', [ $ba['before']['weeks'] ?? 0, $ba['before']['clicks'] ?? 0, $ba['after']['weeks'] ?? 0, $ba['after']['clicks'] ?? 0, $ba['after']['position'] ?? 0 ], [ 3, 20.0, 1, 60.0, 6.0 ] );
+hodima_ad( 'قبل/بعد: بدون هفته بعد از ویرایش، یا بدون تاریخ ← null', [ hodima_seo_advisor_before_after( $h, '2026-10-02' ), hodima_seo_advisor_before_after( $h, '' ), hodima_seo_advisor_before_after( $h, '2026-09-01' ) ], [ null, null, null ] );
+$modified_post = (int) wp_insert_post( [ 'post_title' => 'modified test', 'post_status' => 'publish', 'post_type' => 'page' ] );
+hodima_ad( 'تاریخ ویرایش: نوشته واقعی، و خالی برای دسته/ناشناس', [ preg_match( '/^\d{4}-\d{2}-\d{2}$/', hodima_seo_advisor_object_modified( 'page', $modified_post ) ), hodima_seo_advisor_object_modified( 'product_cat', 1 ), hodima_seo_advisor_object_modified( '', 0 ) ], [ 1, '', '' ] );
+wp_delete_post( $modified_post, true );
+$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'history' ) ) );
+delete_option( 'hodima_discover_sc_key' );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
