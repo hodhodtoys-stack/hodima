@@ -1560,6 +1560,90 @@ remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter );
 array_map( 'unlink', glob( "{$crawl_dir}/{,.}*", GLOB_BRACE ) ?: [] );
 @rmdir( $crawl_dir );
 
+echo "=== انتشار ۲: رقابت‌های حل‌شده و نرخ کلیک با داده خزش\n";
+$crawl_dir2 = sys_get_temp_dir() . '/hodima-crawl-test2-' . getmypid();
+@mkdir( $crawl_dir2 );
+$crawl_filter2 = static fn(): string => $crawl_dir2;
+add_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter2 );
+$csv2 = static function ( string $name, array $rows ) use ( $crawl_dir2 ): void {
+	$h = fopen( "{$crawl_dir2}/{$name}", 'wb' );
+	fwrite( $h, "\xEF\xBB\xBF" );
+	foreach ( $rows as $r ) {
+		fputcsv( $h, $r, ',', '"', '' );
+	}
+	fclose( $h );
+	touch( "{$crawl_dir2}/{$name}", time() - 3600 );
+};
+$term_row = static fn( int $imp, float $pos, int $clicks = 5 ): array => [ 'clicks' => $clicks, 'impressions' => $imp, 'position' => $pos ];
+$ok_title = str_repeat( 'عنوان سالم ', 5 );
+// دو گروه: «کلیپس ماری» بین /a-live/ و /a-moved/ (ریدایرکت طبق SF)؛ «کلیپس گل» بین سه صفحه که یکی (/b-gone/) ۴۰۴ است
+hodima_seo_advisor_store(
+	[
+		'/a-live/' => [ 'clicks' => 40, 'impressions' => 3000, 'position' => 6.0 ], '/a-moved/' => [ 'clicks' => 10, 'impressions' => 1500, 'position' => 8.0 ],
+		'/b-one/' => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ], '/b-two/' => [ 'clicks' => 20, 'impressions' => 1800, 'position' => 9.0 ], '/b-gone/' => [ 'clicks' => 5, 'impressions' => 900, 'position' => 12.0 ],
+		'/ctr-ok/' => [ 'clicks' => 10, 'impressions' => 6000, 'position' => 3.0 ], '/ctr-bad/' => [ 'clicks' => 10, 'impressions' => 6000, 'position' => 3.0 ],
+	],
+	[],
+	[
+		'/a-live/' => [ 'کلیپس ماری' => $term_row( 2500, 6.0 ) ], '/a-moved/' => [ 'کلیپس ماری' => $term_row( 1400, 8.0 ) ],
+		'/b-one/' => [ 'کلیپس گل' => $term_row( 1800, 7.0 ) ], '/b-two/' => [ 'کلیپس گل' => $term_row( 1700, 9.0 ) ], '/b-gone/' => [ 'کلیپس گل' => $term_row( 800, 12.0 ) ],
+		'/ctr-ok/' => [ 'کلمه خنثی' => $term_row( 5000, 3.0, 5 ) ], '/ctr-bad/' => [ 'کلمه خنثی' => $term_row( 5000, 3.0, 5 ) ],
+	]
+);
+$bare = static fn( string $path ): array => [ $u( $path ), '200', 'Indexable', '', $ok_title, (string) mb_strlen( $ok_title ), '130', 'تیتر', '0.4', '5', '1', '1', '' ];
+$csv2( 'internal_html.csv', [
+	[ 'Address', 'Status Code', 'Indexability', 'Indexability Status', 'Title 1', 'Title 1 Length', 'Meta Description 1 Length', 'H1-1', 'Response Time', 'Unique Inlinks', 'Crawl Depth', 'Link Score', 'Redirect URL' ],
+	$bare( '/a-live/' ),
+	[ $u( '/a-moved/' ), '301', 'Non-Indexable', 'Redirected', '', '0', '0', '', '0.2', '4', '2', '0', $u( '/a-live/' ) ],
+	$bare( '/b-one/' ), $bare( '/b-two/' ), $bare( '/ctr-ok/' ),
+	[ $u( '/ctr-bad/' ), '200', 'Indexable', '', 'کوتاه', '5', '0', 'تیتر', '0.4', '5', '1', '1', '' ],
+] );
+update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, [ 'computed' => time(), 'router' => true, 'dead' => [ [ 'path' => '/b-gone/', 'impressions' => 900, 'clicks' => 5, 'state' => 'missing', 'target' => '', 'code' => 404 ] ], 'total' => 0, 'seen' => 0, 'fresh' => 0, 'unseen' => [] ], false );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time(), 'pages' => 7, 'days' => 90, 'property' => 'sc-domain:x' ], false );
+delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
+hodima_seo_advisor_crawl_map( true );
+$imp2 = hodima_seo_advisor_crawl_import();
+hodima_ad( 'خواندن فایل‌ها پیشنهادها را دوباره می‌سازد و نوبتی باقی نمی‌ماند', [ is_wp_error( $imp2 ) ? $imp2->get_error_message() : 'ok', hodima_seo_advisor_pipeline_pending() ], [ 'ok', false ] );
+
+$rp = hodima_seo_advisor_resolved_paths();
+hodima_ad( 'صفحه‌های حل‌شده: ریدایرکت طبق خزش، ۴۰۴ طبق سلامت آدرس‌ها؛ صفحه سالم نه', [ $rp['/a-moved/'] ?? '', $rp['/b-gone/'] ?? '', isset( $rp['/a-live/'] ) ], [ 'redirect', 'gone', false ] );
+$comp = hodima_seo_advisor_competition();
+$terms_main = array_column( $comp['rows'], 'term' );
+hodima_ad( 'رقابت اصلی: گروه ریدایرکت‌شده کنار رفت؛ گروه سه‌صفحه‌ای با دو صفحه زنده می‌ماند', [ in_array( 'کلیپس ماری', $terms_main, true ), in_array( 'کلیپس گل', $terms_main, true ) ], [ false, true ] );
+$flower = array_values( array_filter( $comp['rows'], static fn( array $g ): bool => 'کلیپس گل' === $g['term'] ) )[0];
+hodima_ad( 'صفحه ۴۰۴ از گروه باقی‌مانده حذف شده (۲ صفحه)', [ $flower['count'], array_column( $flower['pages'], 'path' ) ], [ 2, [ '/b-one/', '/b-two/' ] ] );
+hodima_ad( 'شمار حل‌شده‌ها برای یادداشت بالای فهرست', [ $comp['resolved']['groups'], $comp['resolved']['potential'] >= 0 ], [ 1, true ] );
+$settled_rows = hodima_seo_advisor_competition( [ 'resolved' => true ] );
+hodima_ad( 'نمای حل‌شده‌ها فقط همان گروه را با دلیل هر صفحه دارد', [ array_column( $settled_rows['rows'], 'term' ), $settled_rows['rows'][0]['advice']['type'], array_column( $settled_rows['rows'][0]['pages'], 'resolved', 'path' ) ], [ [ 'کلیپس ماری' ], 'settled', [ '/a-live/' => '', '/a-moved/' => 'redirect' ] ] );
+hodima_ad( 'رقیب‌های یک صفحه: صفحه حل‌شده نمی‌آید؛ خود صفحه حل‌شده رقیب ندارد', [ array_keys( hodima_seo_advisor_competitors( '/b-one/', [ [ 'term' => 'کلیپس گل', 'impressions' => 1800 ] ] ) ), hodima_seo_advisor_competitors( '/b-gone/', [ [ 'term' => 'کلیپس گل', 'impressions' => 800 ] ] ) ], [ [ hodima_seo_advisor_term_key( 'کلیپس گل' ) ], [] ] );
+
+// قاعده نرخ کلیک
+$ok_adv = hodima_seo_advisor_analyze( '/ctr-ok/' );
+$bad_adv = hodima_seo_advisor_analyze( '/ctr-bad/' );
+$find = static fn( ?array $a ): ?array => array_values( array_filter( (array) ( $a['suggestions'] ?? [] ), static fn( array $s ): bool => 'low_ctr' === $s['rule'] ) )[0] ?? null;
+$ok_s  = $find( $ok_adv );
+$bad_s = $find( $bad_adv );
+hodima_ad( 'عنوان و متا سالم: تشخیص «طول سالم است» و ضریب اطمینان روی کلیک بالقوه', [ $ok_s['title'] ?? '', str_contains( (string) ( $ok_s['detail'] ?? '' ), 'ایرادی ندارد' ), ( $ok_s['potential'] ?? 0 ) < ( $bad_s['potential'] ?? 0 ) ], [ 'نرخ کلیک کم است؛ طول عنوان و متا سالم است', true, true ] );
+hodima_ad( 'عنوان کوتاه و بدون متا: همان بازنویسی با ایراد خزش و بدون کاهش تخمین', [ $bad_s['title'] ?? '', str_contains( (string) ( $bad_s['detail'] ?? '' ), 'طبق خزش: عنوان کوتاه است؛ توضیح متا ندارد' ), (int) round( ( $ok_s['potential'] ?? 0 ) / HODIMA_SEO_ADVISOR_LOW_CTR_HEALTHY_FACTOR ) >= ( $bad_s['potential'] ?? 0 ) - 1 ], [ 'عنوان و توضیح متا را بازنویسی کنید', true, true ] );
+$no_crawl = $find( [ 'suggestions' => hodima_seo_advisor_suggestions( [ 'path' => '/z/', 'clicks' => 10, 'impressions' => 6000, 'position' => 3.0, 'prev_clicks' => 0 ], [], null ) ] );
+hodima_ad( 'بدون داده خزش: متن قبلی بازنویسی بدون تغییر', $no_crawl['title'] ?? '', 'عنوان و توضیح متا را بازنویسی کنید' );
+
+// نمای تب
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
+$ch = $cap( static fn() => hodima_seo_advisor_render_competition( hodima_seo_advisor_status() ) );
+hodima_ad( 'تب رقابت: یادداشت «۱ گروه کنار رفت» با لینک دیدن', [ str_contains( $ch, '1 گروه رقابت از این فهرست کنار رفت' ) || str_contains( $ch, '۱ گروه رقابت از این فهرست کنار رفت' ), str_contains( $ch, 'resolved=1' ) ], [ true, true ] );
+$_GET['resolved'] = '1';
+$ch2 = $cap( static fn() => hodima_seo_advisor_render_competition( hodima_seo_advisor_status() ) );
+hodima_ad( 'نمای حل‌شده‌ها: عنوان، نشان دلیل هر صفحه و بدون «برنده پیشنهادی»', [ str_contains( $ch2, 'رقابت‌های حل‌شده' ), str_contains( $ch2, 'ریدایرکت می‌شود' ), str_contains( $ch2, 'برنده پیشنهادی' ) ], [ true, true, false ] );
+$_GET = [];
+
+hodima_seo_advisor_clear_data();
+delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION );
+hodima_ad( 'پاک کردن داده: نقشه خزش و حل‌شده‌ها خالی', [ hodima_seo_advisor_crawl_map(), hodima_seo_advisor_resolved_paths() ], [ [], [] ] );
+remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter2 );
+array_map( 'unlink', glob( "{$crawl_dir2}/{,.}*", GLOB_BRACE ) ?: [] );
+@rmdir( $crawl_dir2 );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );

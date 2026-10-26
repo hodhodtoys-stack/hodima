@@ -38,6 +38,10 @@ const HODIMA_SEO_ADVISOR_CRAWL_SLOW_MS = 2000;
 /** صفحه با این تعداد لینک ورودی یکتا یا کمتر «لینک ورودی کم» دارد. */
 const HODIMA_SEO_ADVISOR_CRAWL_LOW_INLINKS = 2;
 
+/** طول توضیح متا که سالم حساب می‌شود (نویسه). */
+const HODIMA_SEO_ADVISOR_CRAWL_META_MIN = 70;
+const HODIMA_SEO_ADVISOR_CRAWL_META_MAX = 170;
+
 /** صفحه‌ای با این نمایش یا بیشتر «پرنمایش» است (آمار «ایراد در صفحه‌های پرنمایش»). */
 const HODIMA_SEO_ADVISOR_CRAWL_BIG_IMPRESSIONS = 1000;
 
@@ -287,6 +291,118 @@ function hodima_seo_advisor_crawl_parse_links( string $file ): array|WP_Error {
 	return [ 'links' => $links, 'text' => $text ];
 }
 
+/* ── نقشه خزش و صفحه‌های حل‌شده (برای رقابت و قاعده نرخ کلیک) ── */
+
+/**
+ * همه صفحه‌های خزش‌شده، آدرس ← وضعیت. یک بار در هر درخواست خوانده می‌شود (تحلیل صدها آدرس را صدا می‌زند).
+ *
+ * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int}>
+ */
+function hodima_seo_advisor_crawl_map( bool $reset = false ): array {
+
+	global $wpdb;
+	static $map = null;
+
+	if ( $reset ) {
+		$map = null;
+		hodima_seo_advisor_resolved_paths( true );
+		return [];
+	}
+
+	if ( null === $map ) {
+		hodima_seo_advisor_ensure_tables();
+		$map = [];
+		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT path, status, indexable, reason, title_len, meta_len FROM %i', hodima_seo_advisor_table( 'crawl_pages' ) ), ARRAY_A ) as $r ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$map[ (string) $r['path'] ] = [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'] ];
+		}
+	}
+
+	return $map;
+}
+
+/**
+ * وضعیت خزش یک صفحه، یا null اگر در خزش نیست.
+ *
+ * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int}|null
+ */
+function hodima_seo_advisor_crawl_row( string $path ): ?array {
+	return hodima_seo_advisor_crawl_map()[ $path ] ?? null;
+}
+
+/**
+ * صفحه‌هایی که دیگر «رقیب» نیستند: طبق خزش ریدایرکت‌اند، خطا می‌دهند یا noindex/canonical به صفحه دیگرند، یا
+ * (طبق بررسی روتر در «سلامت آدرس‌ها») در سایت ۴۰۴‌اند یا ریدایرکت می‌شوند.
+ *
+ * @return array<string, string> آدرس ← redirect | gone | noindex
+ */
+function hodima_seo_advisor_resolved_paths( bool $reset = false ): array {
+
+	static $cache = null;
+
+	if ( $reset ) {
+		$cache = null;
+		return [];
+	}
+
+	if ( null !== $cache ) {
+		return $cache;
+	}
+
+	$cache = [];
+
+	foreach ( hodima_seo_advisor_crawl_map() as $path => $r ) {
+		if ( $r['status'] >= 300 ) {
+			$cache[ $path ] = $r['status'] < 400 ? 'redirect' : 'gone';
+		} elseif ( 200 === $r['status'] && ! $r['indexable'] ) {
+			$cache[ $path ] = 'noindex';
+		}
+	}
+
+	foreach ( (array) ( hodima_seo_advisor_health()['dead'] ?? [] ) as $dead ) {
+		if ( is_array( $dead ) && isset( $dead['path'], $dead['state'] ) ) {
+			$cache[ (string) $dead['path'] ] ??= in_array( $dead['state'], [ 'redirect', 'rule' ], true ) ? 'redirect' : 'gone';
+		}
+	}
+
+	return $cache;
+}
+
+/** برچسب کوتاه دلیل حل‌شدن. */
+function hodima_seo_advisor_resolved_label( string $code ): string {
+	return [ 'redirect' => 'ریدایرکت می‌شود', 'gone' => 'در سایت ۴۰۴ است', 'noindex' => 'noindex یا canonical' ][ $code ] ?? '';
+}
+
+/**
+ * طول عنوان و متا یک صفحه طبق خزش: ok (هر دو سالم)، یا فهرست ایرادها، یا null (در خزش نیست/صفحه سالم نیست).
+ *
+ * @return array{healthy: bool, title_len: int, meta_len: int, problems: list<string>}|null
+ */
+function hodima_seo_advisor_crawl_meta_health( string $path ): ?array {
+
+	$r = hodima_seo_advisor_crawl_row( $path );
+
+	if ( null === $r || 200 !== $r['status'] || ! $r['indexable'] ) {
+		return null;
+	}
+
+	$problems = [];
+
+	if ( $r['title_len'] < HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN ) {
+		$problems[] = 'عنوان کوتاه است';
+	} elseif ( $r['title_len'] > HODIMA_SEO_ADVISOR_CRAWL_TITLE_MAX ) {
+		$problems[] = 'عنوان بلند است';
+	}
+	if ( $r['meta_len'] <= 0 ) {
+		$problems[] = 'توضیح متا ندارد';
+	} elseif ( $r['meta_len'] < HODIMA_SEO_ADVISOR_CRAWL_META_MIN ) {
+		$problems[] = 'توضیح متا کوتاه است';
+	} elseif ( $r['meta_len'] > HODIMA_SEO_ADVISOR_CRAWL_META_MAX ) {
+		$problems[] = 'توضیح متا بلند است';
+	}
+
+	return [ 'healthy' => [] === $problems, 'title_len' => $r['title_len'], 'meta_len' => $r['meta_len'], 'problems' => $problems ];
+}
+
 /* ── ذخیره ── */
 
 /**
@@ -301,6 +417,7 @@ function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_
 	global $wpdb;
 
 	hodima_seo_advisor_ensure_tables();
+	hodima_seo_advisor_crawl_map( true );
 
 	$page_table = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_table = hodima_seo_advisor_table( 'crawl_links' );
@@ -447,7 +564,17 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 		return $fail( $stored->get_error_message() );
 	}
 
+	hodima_seo_advisor_crawl_map( true );
 	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $stored['pages'], 'links' => $stored['links'], 'files' => $files, 'source' => 'screamingfrog' ], false );
+
+	// پیشنهادهای ذخیره‌شده (نرخ کلیک و رقابت) با داده خزش دوباره ساخته می‌شوند؛ اگر نوبتی در کار است همان بعدا از خزش استفاده می‌کند
+	$status = hodima_seo_advisor_status();
+	if ( $status['fetched'] > 0 && ! hodima_seo_advisor_pipeline_pending() ) {
+		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [ 'stages' => [ 'analyze' ], 'property' => $status['property'], 'range' => [], 'days' => $status['days'] ], false );
+		hodima_seo_advisor_pipeline_run();
+	}
+
 	hodima_seo_advisor_unlock();
 
 	return $stored;

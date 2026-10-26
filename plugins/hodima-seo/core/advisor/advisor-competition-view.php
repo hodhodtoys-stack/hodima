@@ -87,8 +87,10 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 
 	$filters = hodima_seo_advisor_competition_filters( $_GET ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش؛ مقدارها پاک‌سازی می‌شوند
 	$paged   = max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$all     = hodima_seo_advisor_competition();
-	$result  = hodima_seo_advisor_competition( [ 'search' => $filters['q'], 'type' => $filters['type'], 'limit' => HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE, 'offset' => ( $paged - 1 ) * HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE ] );
+	$settled = ! empty( $_GET['resolved'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط نمای «حل‌شده‌ها»
+	$base    = $settled ? [ 'resolved' => true ] : [];
+	$all     = hodima_seo_advisor_competition( $base );
+	$result  = hodima_seo_advisor_competition( $base + [ 'search' => $filters['q'], 'type' => $settled ? '' : $filters['type'], 'limit' => HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE, 'offset' => ( $paged - 1 ) * HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE ] );
 	$n       = static fn( int|float $value ): string => number_format_i18n( $value );
 
 	$counts = array_fill_keys( array_keys( hodima_seo_advisor_competition_types() ), 0 );
@@ -101,13 +103,29 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 	hodima_seo_ui_stats( [
 		[ 'label' => 'کلمه با رقابت', 'value' => $empty ? '—' : esc_html( $n( $all['total'] ) ), 'empty' => $empty ],
 		[ 'label' => 'صفحه درگیر', 'value' => $empty ? '—' : esc_html( $n( $all['pages'] ) ), 'empty' => $empty ],
-		[ 'label' => 'کلیک بالقوه', 'value' => $empty ? '—' : esc_html( $n( $all['potential'] ) ), 'sub' => $empty ? '' : 'تخمین رفع رقابت', 'empty' => $empty ],
+		[ 'label' => 'کلیک بالقوه', 'value' => $empty ? '—' : esc_html( $n( $all['potential'] ) ), 'sub' => $empty ? '' : ( $settled ? 'ساختگی؛ اقدام لازم نیست' : 'تخمین رفع رقابت' ), 'empty' => $empty ],
 		[ 'label' => 'برنده روشن', 'value' => $empty ? '—' : esc_html( $n( $counts['strengthen'] ) ), 'empty' => $empty ],
 	] );
 
 	hodima_seo_advisor_render_toolbar( 'competition' );
 
-	hodima_seo_ui_card_open( 'رقابت صفحه‌ها', sprintf( 'کلمه‌هایی که چند صفحه همین سایت برایشان نمایش می‌گیرند (داده %s روز اخیر)؛ مرتب بر اساس «کلیک بالقوه» رفع رقابت (تخمین).', $n( $status['days'] ) ) );
+	hodima_seo_ui_card_open(
+		$settled ? 'رقابت‌های حل‌شده' : 'رقابت صفحه‌ها',
+		$settled
+			? 'کلمه‌هایی که ظاهرا چند صفحه برایشان نمایش می‌گیرند ولی یکی از صفحه‌ها در سایت ریدایرکت، ۴۰۴ یا noindex است؛ پس رقابت واقعی نیستند.'
+			: sprintf( 'کلمه‌هایی که چند صفحه همین سایت برایشان نمایش می‌گیرند (داده %s روز اخیر)؛ مرتب بر اساس «کلیک بالقوه» رفع رقابت (تخمین).', $n( $status['days'] ) )
+	);
+
+	if ( $settled ) {
+		echo '<p class="hodima-advisor__advice"><a href="' . esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ) . '">برگشت به رقابت‌های واقعی</a></p>';
+	} elseif ( $all['resolved']['groups'] > 0 ) {
+		printf(
+			'<p class="hodima-advisor__advice">%1$s گروه رقابت از این فهرست کنار رفت (حدود %2$s «کلیک بالقوه» ساختگی)، چون یکی از صفحه‌هایشان ریدایرکت، ۴۰۴ یا noindex است. <a href="%3$s">دیدن آن‌ها</a></p>',
+			esc_html( $n( $all['resolved']['groups'] ) ),
+			esc_html( $n( $all['resolved']['potential'] ) ),
+			esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'competition', 'resolved' => 1 ] ) )
+		);
+	}
 
 	if ( $empty ) {
 		hodima_seo_ui_empty( 'رقابتی پیدا نشد', 'در این بازه هیچ کلمه‌ای نیست که دو صفحه برایش دست‌کم ۱۰۰ نمایش داشته باشند. بعد از دریافت داده تازه دوباره ببینید.' );
@@ -115,7 +133,7 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 		return;
 	}
 
-	$keep = [ 'tab' => 'competition', 'ctype' => $filters['type'], 'q' => $filters['q'] ];
+	$keep = [ 'tab' => 'competition', 'ctype' => $settled ? '' : $filters['type'], 'q' => $filters['q'], 'resolved' => $settled ? 1 : '' ];
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
@@ -123,6 +141,10 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 		<?php if ( '' !== $filters['type'] ) : ?>
 			<input type="hidden" name="ctype" value="<?php echo esc_attr( $filters['type'] ); ?>">
 		<?php endif; ?>
+		<?php if ( $settled ) : ?>
+			<input type="hidden" name="resolved" value="1">
+		<?php endif; ?>
+		<?php if ( ! $settled ) : ?>
 		<nav class="hodima-advisor__views" aria-label="نوع دستور">
 			<a class="hodima-advisor__view" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'competition', 'q' => $filters['q'] ] ) ); ?>"<?php echo '' === $filters['type'] ? ' aria-current="page"' : ''; ?>>
 				همه <span class="hodima-advisor__count"><?php echo esc_html( $n( $all['total'] ) ); ?></span>
@@ -133,6 +155,7 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 				</a>
 			<?php endforeach; ?>
 		</nav>
+		<?php endif; ?>
 		<div class="hodima-advisor__search">
 			<label class="screen-reader-text" for="hodima-advisor-cq">جستجو در کلمه یا آدرس صفحه</label>
 			<input type="search" id="hodima-advisor-cq" name="q" class="hds-input" value="<?php echo esc_attr( $filters['q'] ); ?>" placeholder="جستجو در کلمه یا آدرس…">
@@ -173,8 +196,8 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 
 	$n      = static fn( int|float $value ): string => number_format_i18n( $value );
 	$advice = $group['advice'];
-	$label  = hodima_seo_advisor_competition_types()[ $advice['type'] ] ?? '';
-	$class  = [ 'strengthen' => 'hds-pill', 'choose' => 'hds-pill hds-pill--warn', 'category' => 'hds-pill hds-pill--info' ][ $advice['type'] ] ?? 'hds-pill';
+	$label  = hodima_seo_advisor_competition_types()[ $advice['type'] ] ?? ( 'settled' === $advice['type'] ? 'حل‌شده' : '' );
+	$class  = [ 'strengthen' => 'hds-pill', 'choose' => 'hds-pill hds-pill--warn', 'category' => 'hds-pill hds-pill--info', 'settled' => 'hds-pill hds-pill--info' ][ $advice['type'] ] ?? 'hds-pill';
 	?>
 	<details class="hodima-advisor__group">
 		<summary class="hodima-advisor__group-head">
@@ -182,7 +205,7 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 			<span class="hodima-advisor__group-meta">
 				<span><?php echo esc_html( sprintf( '%s نمایش', $n( $group['impressions'] ) ) ); ?></span>
 				<span><?php echo esc_html( sprintf( '%s صفحه', $n( $group['count'] ) ) ); ?></span>
-				<?php if ( $group['potential'] > 0 ) : ?>
+				<?php if ( $group['potential'] > 0 && 'settled' !== $advice['type'] ) : ?>
 					<span class="hodima-advisor__group-potential"><?php echo esc_html( sprintf( 'کلیک بالقوه ≈ %s', $n( $group['potential'] ) ) ); ?></span>
 				<?php endif; ?>
 			</span>
@@ -195,7 +218,9 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 					<li class="hodima-advisor__rival<?php echo 0 === $i ? ' is-winner' : ''; ?>">
 						<div class="hodima-advisor__rival-name">
 							<strong><?php echo esc_html( hodima_seo_advisor_competition_page_title( $page ) ); ?></strong>
-							<?php if ( 0 === $i ) : ?>
+							<?php if ( ! empty( $page['resolved'] ) ) : ?>
+								<span class="hds-pill hds-pill--warn"><?php echo esc_html( hodima_seo_advisor_resolved_label( (string) $page['resolved'] ) ); ?></span>
+							<?php elseif ( 0 === $i && 'settled' !== $advice['type'] ) : ?>
 								<span class="hds-pill">برنده پیشنهادی</span>
 							<?php endif; ?>
 							<bdi class="hodima-advisor__rival-path"><?php echo esc_html( (string) $page['path'] ); ?></bdi>

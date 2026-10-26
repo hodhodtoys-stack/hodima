@@ -48,6 +48,9 @@ const HODIMA_SEO_ADVISOR_MAX_CANNIBAL = 3;
 /** حداکثر آدرسی که در یک بار تحلیل کامل بررسی می‌شود. */
 const HODIMA_SEO_ADVISOR_ANALYZE_LIMIT = 1500;
 
+/** وقتی خزش نشان می‌دهد طول عنوان و متا سالم است، «کلیک بالقوه» نرخ کلیک کم‌اطمینان‌تر است و در این ضریب ضرب می‌شود. */
+const HODIMA_SEO_ADVISOR_LOW_CTR_HEALTHY_FACTOR = 0.4;
+
 /**
  * آستانه‌ها (گزینه پیشخوان: فقط min_impressions؛ بقیه با فیلتر).
  *
@@ -413,9 +416,10 @@ function hodima_seo_advisor_decline_cause( array $row, ?array $site ): array {
  * @param array{title_headings: string, content: string}|null $text null = متن صفحه معلوم نیست؛ قاعده‌های متن اجرا نمی‌شوند
  * @param array<string, list<array{path: string, impressions: int}>> $competitors کلمه ← آدرس‌های دیگری که برایش نمایش می‌گیرند
  * @param array{clicks_ratio: float|null, impressions_ratio: float|null}|null $site تغییر کل سایت نسبت به بازه قبل (hodima_seo_advisor_site_change)؛ null = ناشناخته
+ * @param array{healthy: bool, title_len: int, meta_len: int, problems: list<string>}|null $meta طول عنوان و متا طبق خزش SF (hodima_seo_advisor_crawl_meta_health)؛ null = ناشناخته
  * @return list<array{rule: string, term: string, title: string, detail: string, potential: int}>
  */
-function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $text, array $competitors = [], ?array $site = null ): array {
+function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $text, array $competitors = [], ?array $site = null, ?array $meta = null ): array {
 
 	if ( 1 === preg_match( '#/page/\d+/?$#', $row['path'] ) ) {
 		return []; // صفحه‌بندی آرشیو: پیشنهاد جدا ندارد
@@ -433,19 +437,39 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 		$expected = hodima_seo_advisor_expected_ctr( $position );
 		$gain     = (int) round( $row['impressions'] * ( $expected - $now ) / 100 );
 		if ( $gain > 0 ) {
-			$list[] = [
-				'rule'      => 'low_ctr',
-				'term'      => '',
-				'title'     => 'عنوان و توضیح متا را بازنویسی کنید',
-				'detail'    => sprintf(
-					'این صفحه %1$s بار نمایش گرفته ولی فقط %2$s٪ کلیک شده؛ برای رتبه %3$s معمولا حدود %4$s٪ انتظار می‌رود%6$s.%5$s',
+			$detail = sprintf(
+				'این صفحه %1$s بار نمایش گرفته ولی فقط %2$s٪ کلیک شده؛ برای رتبه %3$s معمولا حدود %4$s٪ انتظار می‌رود%6$s.%5$s',
+				hodima_seo_advisor_num( $row['impressions'] ),
+				hodima_seo_advisor_num( $now, 2 ),
+				hodima_seo_advisor_num( $position, 1 ),
+				hodima_seo_advisor_num( $expected, 1 ),
+				'' !== $top ? ' مهم‌ترین کلمه این صفحه «' . $top . '» است؛ آن را ابتدای عنوان بیاورید.' : '',
+				hodima_seo_advisor_ctr_learned_share() >= 0.4 ? ' (این نرخ معمول از داده خود سایت تنظیم شده)' : ''
+			);
+			$title  = 'عنوان و توضیح متا را بازنویسی کنید';
+
+			if ( null !== $meta && $meta['healthy'] ) {
+				// طبق خزش طول عنوان و متا سالم است؛ بازنویسی طولی کمکی نمی‌کند و تخمین کلیک بالقوه کم‌اطمینان‌تر است
+				$title  = 'نرخ کلیک کم است؛ طول عنوان و متا سالم است';
+				$detail = sprintf(
+					'این صفحه %1$s بار نمایش گرفته ولی فقط %2$s٪ کلیک شده؛ برای رتبه %3$s معمولا حدود %4$s٪ انتظار می‌رود. طبق خزش، عنوان %5$s و توضیح متا %6$s نویسه است و از نظر طول ایرادی ندارد؛ پس مشکل احتمالا طول نیست. نتیجه این صفحه را در خود گوگل ببینید: عنوان جذاب و متفاوت از رقبا باشد، با قصد جستجو بخواند، و نتیجه‌های تصویر/ویدیو/دسته بالاتر از آن نباشند. فقط در صورت لزوم متن عنوان را بازنویسی کنید.',
 					hodima_seo_advisor_num( $row['impressions'] ),
 					hodima_seo_advisor_num( $now, 2 ),
 					hodima_seo_advisor_num( $position, 1 ),
 					hodima_seo_advisor_num( $expected, 1 ),
-					'' !== $top ? ' مهم‌ترین کلمه این صفحه «' . $top . '» است؛ آن را ابتدای عنوان بیاورید.' : '',
-					hodima_seo_advisor_ctr_learned_share() >= 0.4 ? ' (این نرخ معمول از داده خود سایت تنظیم شده)' : ''
-				),
+					hodima_seo_advisor_num( $meta['title_len'] ),
+					hodima_seo_advisor_num( $meta['meta_len'] )
+				);
+				$gain   = max( 1, (int) round( $gain * HODIMA_SEO_ADVISOR_LOW_CTR_HEALTHY_FACTOR ) );
+			} elseif ( null !== $meta ) {
+				$detail .= ' طبق خزش: ' . implode( '؛ ', $meta['problems'] ) . '.';
+			}
+
+			$list[] = [
+				'rule'      => 'low_ctr',
+				'term'      => '',
+				'title'     => $title,
+				'detail'    => $detail,
 				'potential' => $gain,
 			];
 		}
@@ -570,6 +594,12 @@ function hodima_seo_advisor_competitors( string $path, array $queries ): array {
 
 	global $wpdb;
 
+	$resolved = hodima_seo_advisor_resolved_paths();
+
+	if ( isset( $resolved[ $path ] ) ) {
+		return []; // این صفحه خودش ریدایرکت/۴۰۴/noindex است؛ رقابتی ندارد
+	}
+
 	$min   = hodima_seo_advisor_config()['cannibal_min_impressions'];
 	$terms = array_values( array_unique( array_map( static fn( array $q ): string => hodima_seo_advisor_term_key( $q['term'] ), array_filter( $queries, static fn( array $q ): bool => $q['impressions'] >= $min ) ) ) );
 
@@ -589,7 +619,7 @@ function hodima_seo_advisor_competitors( string $path, array $queries ): array {
 
 	$out = [];
 	foreach ( $rows as $row ) {
-		if ( 1 !== preg_match( '#/page/\d+/?$#', (string) $row['path'] ) ) {
+		if ( 1 !== preg_match( '#/page/\d+/?$#', (string) $row['path'] ) && ! isset( $resolved[ (string) $row['path'] ] ) ) {
 			$out[ (string) $row['term_key'] ][] = [ 'path' => (string) $row['path'], 'impressions' => (int) $row['impressions'] ];
 		}
 	}
@@ -612,7 +642,7 @@ function hodima_seo_advisor_analyze( string $path ): ?array {
 
 	$queries     = hodima_seo_advisor_queries( $row['path'], HODIMA_SEO_ADVISOR_QUERIES_PER_PAGE );
 	$suggestions = hodima_seo_advisor_enrich(
-		hodima_seo_advisor_suggestions( $row, $queries, hodima_seo_advisor_page_text( $row ), hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change() ),
+		hodima_seo_advisor_suggestions( $row, $queries, hodima_seo_advisor_page_text( $row ), hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change(), hodima_seo_advisor_crawl_meta_health( $row['path'] ) ),
 		$row,
 		$queries
 	);

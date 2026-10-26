@@ -71,8 +71,12 @@ function hodima_seo_advisor_competition_advice( string $term, array $pages, floa
  * هر کلمه‌ای که دست‌کم دو صفحه (غیرصفحه‌بندی) هرکدام دست‌کم `cannibal_min_impressions` نمایش برایش
  * دارند؛ کلمه‌های برندی و آدرس‌های نادیده‌گرفته‌شده کنار می‌روند.
  *
- * @param array{limit?: int, offset?: int, search?: string, type?: string} $args
- * @return array{rows: list<array<string, mixed>>, total: int, pages: int, potential: int}
+ * رقابت «حل‌شده»: اگر بعد از کنار گذاشتن صفحه‌هایی که ریدایرکت، ۴۰۴ یا noindex/canonical‌اند (طبق خزش SF یا
+ * بررسی روتر؛ hodima_seo_advisor_resolved_paths) کمتر از دو صفحه بماند، گروه از فهرست اصلی کنار می‌رود و
+ * `resolved` آن را می‌شمارد؛ با `resolved => true` فقط همین گروه‌ها (با دلیل هر صفحه) برمی‌گردند.
+ *
+ * @param array{limit?: int, offset?: int, search?: string, type?: string, resolved?: bool} $args
+ * @return array{rows: list<array<string, mixed>>, total: int, pages: int, potential: int, resolved: array{groups: int, potential: int}}
  */
 function hodima_seo_advisor_competition( array $args = [] ): array {
 
@@ -96,7 +100,7 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 	$keys = array_values( array_filter( array_map( 'strval', $keys ), static fn( string $k ): bool => ! hodima_seo_advisor_is_brand( $k ) ) );
 
 	if ( ! $keys ) {
-		return [ 'rows' => [], 'total' => 0, 'pages' => 0, 'potential' => 0 ];
+		return [ 'rows' => [], 'total' => 0, 'pages' => 0, 'potential' => 0, 'resolved' => [ 'groups' => 0, 'potential' => 0 ] ];
 	}
 
 	$pages_table = hodima_seo_advisor_table( 'pages' );
@@ -134,7 +138,11 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 		];
 	}
 
-	$groups = [];
+	$resolved     = hodima_seo_advisor_resolved_paths();
+	$want_settled = ! empty( $args['resolved'] );
+	$settled_n    = 0;
+	$settled_gain = 0;
+	$groups       = [];
 	foreach ( $keys as $key ) {
 		$pages = $by_term[ $key ] ?? [];
 		$term  = $labels[ $key ] ?? $key;
@@ -147,6 +155,17 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 			static fn( array $a, array $b ): int => [ $b['clicks'], $a['position'], $b['impressions'] ] <=> [ $a['clicks'], $b['position'], $a['impressions'] ]
 		);
 
+		$live    = array_values( array_filter( $pages, static fn( array $p ): bool => ! isset( $resolved[ $p['path'] ] ) ) );
+		$settled = count( $live ) < 2;
+
+		if ( $settled ) {
+			foreach ( $pages as $i => $page ) {
+				$pages[ $i ]['resolved'] = $resolved[ $page['path'] ] ?? '';
+			}
+		} else {
+			$pages = $live; // صفحه حل‌شده رقیب حساب نمی‌شود
+		}
+
 		$impressions = array_sum( array_column( $pages, 'impressions' ) );
 		$clicks      = array_sum( array_column( $pages, 'clicks' ) );
 		$best        = min( array_column( $pages, 'position' ) );
@@ -157,8 +176,19 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 			$pages[ $i ]['share'] = $impressions > 0 ? $page['impressions'] / $impressions : 0.0;
 		}
 
+		if ( $settled ) {
+			++$settled_n;
+			$settled_gain += $potential;
+		}
+
+		if ( $settled !== $want_settled ) {
+			continue;
+		}
+
 		$top_share = max( array_column( $pages, 'share' ) );
-		$advice    = hodima_seo_advisor_competition_advice( $term, $pages, $top_share );
+		$advice    = $settled
+			? [ 'type' => 'settled', 'title' => 'رقابت حل‌شده', 'detail' => 'یکی از این صفحه‌ها در سایت ریدایرکت می‌شود، noindex است یا ۴۰۴ می‌دهد؛ پس دیگر با صفحه دیگر رقابت نمی‌کند و گوگل کم‌کم آن را کنار می‌گذارد. فقط لینک‌های داخلی را مستقیم به صفحه مقصد بدهید.' ]
+			: hodima_seo_advisor_competition_advice( $term, $pages, $top_share );
 
 		if ( '' !== (string) ( $args['type'] ?? '' ) && $advice['type'] !== $args['type'] ) {
 			continue;
@@ -209,5 +239,6 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 		'total'     => count( $groups ),
 		'pages'     => count( $page_set ),
 		'potential' => (int) array_sum( array_column( $groups, 'potential' ) ),
+		'resolved'  => [ 'groups' => $settled_n, 'potential' => $settled_gain ],
 	];
 }
