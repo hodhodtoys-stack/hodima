@@ -25,6 +25,7 @@ defined( 'ABSPATH' ) || exit;
 require_once dirname( __DIR__, 2 ) . '/inc/search-console.php';
 require_once __DIR__ . '/advisor-data.php';
 require_once __DIR__ . '/advisor-history.php';
+require_once __DIR__ . '/advisor-competition.php';
 require_once __DIR__ . '/advisor-rules.php';
 require_once __DIR__ . '/advisor-steps.php';
 require_once __DIR__ . '/advisor-refresh.php';

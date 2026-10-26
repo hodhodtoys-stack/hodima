@@ -750,6 +750,46 @@ delete_option( HODIMA_SEO_SC_ADVISOR_SITES_OPTION );
 delete_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor-only@test.iam.gserviceaccount.com' ), 0, 12 ) );
 delete_option( 'hodima_discover_sc_key' );
 
+echo "=== رقابت صفحه‌ها (گزارش کل سایت)\n";
+hodima_seo_advisor_store(
+	[
+		'/c/a/' => [ 'clicks' => 80, 'impressions' => 4000, 'position' => 6.0 ],
+		'/c/b/' => [ 'clicks' => 10, 'impressions' => 1000, 'position' => 9.0 ],
+		'/c/m/' => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ],
+		'/c/n/' => [ 'clicks' => 28, 'impressions' => 2000, 'position' => 7.5 ],
+		'/c/p/' => [ 'clicks' => 20, 'impressions' => 1500, 'position' => 8.0 ],
+		'/c/page/2/' => [ 'clicks' => 1, 'impressions' => 900, 'position' => 8.0 ],
+		'/c/lone/' => [ 'clicks' => 5, 'impressions' => 900, 'position' => 8.0 ],
+	],
+	[],
+	[
+		'/c/a/' => [ 'کلیپس پلومریا' => [ 'clicks' => 80, 'impressions' => 4000, 'position' => 6.0 ] ],
+		'/c/b/' => [ 'کلیپس پلومریا' => [ 'clicks' => 10, 'impressions' => 1000, 'position' => 9.0 ] ],
+		'/c/m/' => [ 'گیره مو' => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ] ],
+		'/c/n/' => [ 'گیره مو' => [ 'clicks' => 28, 'impressions' => 2000, 'position' => 7.5 ] ],
+		'/c/p/' => [ 'گیره مو' => [ 'clicks' => 20, 'impressions' => 1500, 'position' => 8.0 ], 'هدهدلی کلیپس' => [ 'clicks' => 20, 'impressions' => 1500, 'position' => 1.0 ] ],
+		'/c/page/2/' => [ 'کلیپس پلومریا' => [ 'clicks' => 1, 'impressions' => 900, 'position' => 8.0 ] ],
+		'/c/lone/' => [ 'تنها' => [ 'clicks' => 5, 'impressions' => 900, 'position' => 8.0 ] ],
+	]
+);
+update_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION, [], false );
+$comp = hodima_seo_advisor_competition();
+$by   = array_column( $comp['rows'], null, 'term' );
+hodima_ad( 'فقط کلمه‌هایی که دو صفحه یا بیشتر دارند؛ تک‌صفحه، صفحه‌بندی آرشیو و کلمه برندی کنار می‌رود', ( static function ( array $k ): array { sort( $k ); return $k; } )( array_keys( $by ) ), [ 'کلیپس پلومریا', 'گیره مو' ] );
+hodima_ad( 'برنده بیشترین کلیک است و سهم‌ها جمع ۱', [ $by['کلیپس پلومریا']['pages'][0]['path'], $by['کلیپس پلومریا']['count'], round( array_sum( array_column( $by['کلیپس پلومریا']['pages'], 'share' ) ), 2 ), round( $by['کلیپس پلومریا']['pages'][0]['share'], 2 ) ], [ '/c/a/', 2, 1.0, 0.8 ] );
+hodima_ad( 'سهم ۸۰٪ ← «برنده روشن» (strengthen)؛ سه صفحه هم‌وزن ← «یکی را اصلی کنید» (choose)', [ $by['کلیپس پلومریا']['advice']['type'], $by['گیره مو']['advice']['type'], $by['گیره مو']['count'] ], [ 'strengthen', 'choose', 3 ] );
+hodima_ad( 'کلیک بالقوه رفع رقابت مثبت و فهرست مرتب بر اساس آن', [ $by['کلیپس پلومریا']['potential'] > 0, array_column( $comp['rows'], 'potential' ) === ( static function ( array $p ): array { rsort( $p ); return $p; } )( array_column( $comp['rows'], 'potential' ) ) ], [ true, true ] );
+hodima_ad( 'جمع‌ها: گروه‌ها، صفحه‌های درگیر', [ $comp['total'], $comp['pages'] ], [ 2, 5 ] );
+update_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION, [ '/c/b/' ], false );
+hodima_ad( 'صفحه نادیده‌گرفته‌شده از گروه می‌رود و گروهی که یک صفحه‌اش ماند حذف می‌شود', array_column( hodima_seo_advisor_competition()['rows'], 'term' ), [ 'گیره مو' ] );
+update_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION, [], false );
+hodima_ad( 'جستجو در کلمه و آدرس + فیلتر نوع دستور', [ array_column( hodima_seo_advisor_competition( [ 'search' => 'گیره' ] )['rows'], 'term' ), array_column( hodima_seo_advisor_competition( [ 'search' => '/c/b/' ] )['rows'], 'term' ), array_column( hodima_seo_advisor_competition( [ 'type' => 'strengthen' ] )['rows'], 'term' ) ], [ [ 'گیره مو' ], [ 'کلیپس پلومریا' ], [ 'کلیپس پلومریا' ] ] );
+hodima_ad( 'صفحه‌بندی: limit/offset', [ count( hodima_seo_advisor_competition( [ 'limit' => 1 ] )['rows'] ), hodima_seo_advisor_competition( [ 'limit' => 1, 'offset' => 1 ] )['rows'][0]['term'] ?? '' ], [ 1, array_column( $comp['rows'], 'term' )[1] ] );
+
+$cat_advice = hodima_seo_advisor_competition_advice( 'گیره', [ [ 'kind' => 'product', 'path' => '/p/' ], [ 'kind' => 'product_cat', 'path' => '/c/' ] ], 0.9 );
+hodima_ad( 'برنده محصول و رقیب دسته ← «دسته را اصلی کنید»', $cat_advice['type'], 'category' );
+hodima_seo_advisor_store( [], [], [] );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );
