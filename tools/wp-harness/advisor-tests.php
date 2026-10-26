@@ -686,6 +686,25 @@ hodima_ad( 'قبل/بعد ویرایش وسط هفته: هفته‌ای که و�
 hodima_ad( 'قبل/بعد: بدون هفته بعد از ویرایش، یا بدون تاریخ ← null', [ hodima_seo_advisor_before_after( $h, '2026-10-02' ), hodima_seo_advisor_before_after( $h, '' ), hodima_seo_advisor_before_after( $h, '2026-09-01' ) ], [ null, null, null ] );
 $modified_post = (int) wp_insert_post( [ 'post_title' => 'modified test', 'post_status' => 'publish', 'post_type' => 'page' ] );
 hodima_ad( 'تاریخ ویرایش: نوشته واقعی، و خالی برای دسته/ناشناس', [ preg_match( '/^\d{4}-\d{2}-\d{2}$/', hodima_seo_advisor_object_modified( 'page', $modified_post ) ), hodima_seo_advisor_object_modified( 'product_cat', 1 ), hodima_seo_advisor_object_modified( '', 0 ) ], [ 1, '', '' ] );
+// کارت روند در کادر ویرایش: ۸ هفته عکس برای یک آدرس + تاریخ ویرایش در وسط
+$trend_ends = array_reverse( hodima_seo_advisor_history_week_ends() );
+foreach ( $trend_ends as $i => $trend_end ) {
+	hodima_seo_advisor_history_store_week( $trend_end, [ '/trend-page/' => [ 'clicks' => $i < 5 ? 20 : 60, 'impressions' => 1000, 'position' => $i < 5 ? 8.0 : 6.0 ] ] );
+}
+$edit_day = ( new DateTimeImmutable( $trend_ends[4] ) )->modify( '+3 days' )->format( 'Y-m-d' ); // وسط هفته ششم (۱۲ ام شمرده نمی‌شود)
+$wpdb->update( $wpdb->posts, [ 'post_modified' => $edit_day . ' 10:00:00' ], [ 'ID' => $modified_post ] );
+clean_post_cache( $modified_post );
+ob_start();
+hodima_seo_advisor_render_trend( [ 'path' => '/trend-page/', 'kind' => 'page', 'object_id' => $modified_post ] );
+$trend_html = (string) ob_get_clean();
+hodima_ad( 'کارت روند: ۸ میله، ۲ هفته کامل بعد از ویرایش سبز، جمله قبل/بعد', [ substr_count( $trend_html, 'hodima-advisor-box__bar-label' ), substr_count( $trend_html, 'class="is-after"' ), str_contains( $trend_html, 'hodima-advisor-box__compare' ), str_contains( $trend_html, sprintf( 'از %s به %s رسیده', number_format_i18n( 20, 1 ), number_format_i18n( 60, 1 ) ) ) ], [ 8, 2, true, true ] );
+ob_start();
+hodima_seo_advisor_render_trend( [ 'path' => '/no-history/', 'kind' => 'page', 'object_id' => $modified_post ] );
+hodima_ad( 'آدرس بدون نمایش در تاریخچه: کارت روند نمی‌آید', ob_get_clean(), '' );
+ob_start();
+hodima_seo_advisor_render_trend( [ 'path' => '/trend-page/', 'kind' => 'product_cat', 'object_id' => 1 ] );
+$cat_html = (string) ob_get_clean();
+hodima_ad( 'دسته (بدون تاریخ ویرایش): نمودار هست، جمله قبل/بعد نیست', [ str_contains( $cat_html, 'hodima-advisor-box__bars' ), str_contains( $cat_html, 'hodima-advisor-box__compare' ) ], [ true, false ] );
 wp_delete_post( $modified_post, true );
 $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'history' ) ) );
 delete_option( 'hodima_discover_sc_key' );

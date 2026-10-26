@@ -210,6 +210,99 @@
 }
 
 /* کادر بسیار باریک: سه عدد زیر هم (در موبایل ۳۹۰ هنوز سه‌ستونه است) */
+/* روند کلیک هفتگی */
+.hodima-advisor-box__trend {
+	display: grid;
+	gap: 0.625rem;
+	padding: 0.875rem 1rem;
+	border: 2px solid var(--hd-ok);
+	border-radius: 0.75rem;
+	background: #ffffff;
+}
+
+.hodima-advisor-box__trend-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.hodima-advisor-box__trend h5 {
+	margin: 0;
+	color: var(--hd-text);
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.hodima-advisor-box__bars {
+	display: flex;
+	align-items: stretch;
+	gap: 0.625rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-advisor-box__bars li {
+	display: grid;
+	flex: 1 1 0;
+	grid-template-rows: auto 6rem auto;
+	justify-items: center;
+	gap: 0.25rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor-box__bar-value {
+	color: var(--hd-muted);
+	font-size: 0.6875rem;
+}
+
+.hodima-advisor-box__bar {
+	align-self: end;
+	inline-size: 100%;
+	max-inline-size: 2.125rem;
+	block-size: max(var(--h), 2%);
+	border-radius: 0.375rem 0.375rem 0 0;
+	background: var(--hd-secondary);
+}
+
+.hodima-advisor-box__bars .is-after .hodima-advisor-box__bar {
+	background: var(--hd-ok);
+}
+
+.hodima-advisor-box__bar-label {
+	color: var(--hd-muted);
+	font-size: 0.625rem;
+	text-align: center;
+	white-space: nowrap;
+}
+
+.hodima-advisor-box__compare {
+	margin: 0;
+	padding: 0.625rem 0.75rem;
+	border-radius: 0.625rem;
+	background: color-mix(in srgb, var(--hd-ok) 12%, #ffffff);
+	color: color-mix(in srgb, var(--hd-ok) 80%, #000000);
+	line-height: 1.8;
+}
+
+.hodima-advisor-box__trend-note {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	line-height: 1.7;
+}
+
+@container (max-width: 30rem) {
+	.hodima-advisor-box__bars {
+		gap: 0.25rem;
+	}
+
+	.hodima-advisor-box__bars li:not(:first-child, :last-child) .hodima-advisor-box__bar-label {
+		visibility: hidden;
+	}
+}
+
 @container (max-width: 18rem) {
 	.hodima-advisor-box__metrics {
 		grid-template-columns: minmax(0, 1fr);

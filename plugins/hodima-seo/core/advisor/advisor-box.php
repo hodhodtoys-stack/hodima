@@ -81,6 +81,76 @@ function hodima_seo_advisor_render_term_box( mixed $term ): void {
 	<?php
 }
 
+/**
+ * برچسب کوتاه یک هفته (پایان هفته): «۲ آبان» با تقویم شمسی Core، وگرنه «Nov 2».
+ */
+function hodima_seo_advisor_week_label( string $date ): string {
+
+	$time = strtotime( $date . ' 12:00:00 UTC' );
+	if ( false === $time ) {
+		return $date;
+	}
+
+	return function_exists( 'hodima_jalali_format' ) ? hodima_jalali_format( 'j F', $time ) : gmdate( 'M j', $time );
+}
+
+/**
+ * کارت «روند کلیک هفتگی» + جمله «قبل/بعد از آخرین ویرایش» (طرح تأییدشده Artifact «طرح روند هفتگی
+ * مشاور سئو»). بدون عکس هفتگی یا بدون هیچ نمایش در این هفته‌ها چیزی نشان داده نمی‌شود.
+ *
+ * @param array<string, mixed> $row ردیف آدرس (hodima_seo_advisor_page_row)
+ */
+function hodima_seo_advisor_render_trend( array $row ): void {
+
+	$weeks = hodima_seo_advisor_history( (string) $row['path'], HODIMA_SEO_ADVISOR_HISTORY_WEEKS );
+
+	if ( count( $weeks ) < 2 || array_sum( array_column( $weeks, 'impressions' ) ) <= 0 ) {
+		return;
+	}
+
+	$n        = static fn( int|float $value, int $decimals = 0 ): string => number_format_i18n( $value, $decimals );
+	$modified = hodima_seo_advisor_object_modified( (string) $row['kind'], (int) $row['object_id'] );
+	$max      = max( 1, ...array_column( $weeks, 'clicks' ) );
+
+	echo '<div class="hodima-advisor-box__trend"><div class="hodima-advisor-box__trend-head"><h5>روند کلیک هفتگی</h5>';
+	echo '<small>' . esc_html( sprintf( '%s هفته اخیر', $n( count( $weeks ) ) ) ) . '</small></div><ol class="hodima-advisor-box__bars">';
+
+	foreach ( $weeks as $week ) {
+		$after = '' !== $modified && ( new DateTimeImmutable( $week['week'] ) )->modify( '-6 days' )->format( 'Y-m-d' ) > $modified;
+		printf(
+			'<li%1$s><span class="hodima-advisor-box__bar-value">%2$s</span><span class="hodima-advisor-box__bar" style="--h:%3$d%%" aria-hidden="true"></span><span class="hodima-advisor-box__bar-label">%4$s</span></li>',
+			$after ? ' class="is-after"' : '',
+			esc_html( $n( $week['clicks'] ) ),
+			(int) round( $week['clicks'] / $max * 100 ),
+			esc_html( hodima_seo_advisor_week_label( $week['week'] ) )
+		);
+	}
+
+	echo '</ol>';
+
+	$compare = hodima_seo_advisor_before_after( $weeks, $modified );
+	if ( null !== $compare ) {
+		printf(
+			'<p class="hodima-advisor-box__compare"><strong>%1$s</strong> %2$s</p>',
+			esc_html( sprintf( 'بعد از آخرین ویرایش (%s):', hodima_seo_advisor_week_label( $compare['modified'] ) ) ),
+			esc_html(
+				sprintf(
+					'میانگین کلیک هفتگی از %1$s به %2$s %3$s (%4$s هفته قبل ← %5$s هفته بعد)؛ رتبه از %6$s به %7$s.',
+					$n( $compare['before']['clicks'], 1 ),
+					$n( $compare['after']['clicks'], 1 ),
+					$compare['after']['clicks'] >= $compare['before']['clicks'] ? 'رسیده' : 'افتاده',
+					$n( $compare['before']['weeks'] ),
+					$n( $compare['after']['weeks'] ),
+					$n( $compare['before']['position'], 1 ),
+					$n( $compare['after']['position'], 1 )
+				)
+			)
+		);
+	}
+
+	echo '<p class="hodima-advisor-box__trend-note">' . esc_html( 'هفته‌ها دوشنبه تا یکشنبه‌اند. تغییر کلیک می‌تواند از فصل یا ویرایش دیگری هم باشد؛ این فقط مقایسه است.' ) . '</p></div>';
+}
+
 /** محتوای کادر برای یک آدرس. */
 function hodima_seo_advisor_render_box( string $url ): void {
 
@@ -120,6 +190,8 @@ function hodima_seo_advisor_render_box( string $url ): void {
 		esc_html( $n( $ctr, 2 ) ),
 		esc_html( $n( (float) $row['position'], 1 ) )
 	);
+
+	hodima_seo_advisor_render_trend( $row );
 
 	if ( $queries ) {
 		echo '<div><span class="hodima-advisor-box__label">کلمه‌های برتر</span><table class="hodima-advisor-box__table"><thead><tr><th>کلمه</th><th>نمایش</th><th>نرخ کلیک</th><th>رتبه</th></tr></thead><tbody>';
