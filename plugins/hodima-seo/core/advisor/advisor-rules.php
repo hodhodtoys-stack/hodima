@@ -21,7 +21,8 @@
  *   برندی (نام سایت) کنار گذاشته می‌شوند؛ افت: کلیکی که از دست رفته.
  *   قاعده‌ها روی هم می‌افتند، پس عدد صفحه «بزرگ‌ترین پیشنهاد» است، نه جمع.
  *
- * نرخ معمول هر رتبه (٪؛ ≤۲: ۲۵، ≤۳: ۱۴، ≤۵: ۹، ≤۷: ۵٫۵، ≤۱۰: ۳٫۵، بالاتر: ۱٫۵) و آستانه‌ها
+ * نرخ معمول هر رتبه (٪؛ ≤۲: ۲۵، ≤۳: ۱۴، ≤۵: ۹، ≤۷: ۵٫۵، ≤۱۰: ۳٫۵، بالاتر: ۱٫۵) با داده خود سایت
+ * تنظیم می‌شود (hodima_seo_advisor_ctr_learn: کلمه‌های غیربرندی هر سطل رتبه، با وزن به نسبت حجم نمایش) و آستانه‌ها
  * (حداقل نمایش ۱٬۰۰۰ برای آدرس، ۳۰۰ برای کلمه، …) با فیلترهای hodima_seo_advisor_ctr_table
  * و hodima_seo_advisor_config عوض می‌شوند. حدس‌اند نه ادعای گوگل: برند و کلمه‌های
  * «نام سایت» نرخ کلیک بسیار بالاتر دارند و این جدول را بالا می‌برند.
@@ -78,10 +79,135 @@ function hodima_seo_advisor_config(): array {
 	];
 }
 
-/** نرخ کلیک معمول (٪) برای یک رتبه. */
+/** گزینه جدول نرخ کلیک آموخته‌شده از داده سایت (autoload خاموش). */
+const HODIMA_SEO_ADVISOR_CTR_OPTION = 'hodima_advisor_ctr';
+
+/** کم‌ترین نمایش یک سطل رتبه برای استفاده از آن؛ نمایشی که وزن را به بیشینه می‌رساند؛ و بیشینه وزن داده سایت. */
+const HODIMA_SEO_ADVISOR_CTR_MIN_IMPRESSIONS  = 2000;
+const HODIMA_SEO_ADVISOR_CTR_FULL_IMPRESSIONS = 20000;
+const HODIMA_SEO_ADVISOR_CTR_MAX_WEIGHT       = 0.8;
+
+/**
+ * جدول عمومی نرخ کلیک (٪): بیشینه رتبه هر سطل ← نرخ. حدس‌اند نه ادعای گوگل؛ سطل «تا رتبه ۲۰» همان ۱٫۵ ثابت قبلی است.
+ *
+ * @return array<int, float>
+ */
+function hodima_seo_advisor_ctr_default(): array {
+	return [ 2 => 25.0, 3 => 14.0, 5 => 9.0, 7 => 5.5, 10 => 3.5, 20 => 1.5 ];
+}
+
+/**
+ * جدول نرخ کلیک را از داده خود سایت می‌سازد و ذخیره می‌کند: برای هر سطل رتبه، نرخ کلیک واقعی کلمه‌های غیربرندی
+ * (کلیک ÷ نمایش) با جدول عمومی ترکیب می‌شود؛ وزن داده سایت = (نمایش سطل ÷ ۲۰٬۰۰۰، حداکثر ۱) × ۰٫۸، و سطلی
+ * که کمتر از ۲٬۰۰۰ نمایش دارد فقط جدول عمومی را می‌گیرد. آخر سر رتبه بهتر هرگز نرخ کمتر از رتبه بدتر نمی‌گیرد.
+ * کلمه‌های برندی (واژه برند داخل کلمه) کنار می‌روند چون نرخشان بالاست.
+ *
+ * @return array{computed: int, impressions: int, buckets: array<int, array{impressions: int, clicks: int, weight: float, ctr: float}>, table: array<int, float>}
+ */
+function hodima_seo_advisor_ctr_learn(): array {
+
+	global $wpdb;
+
+	$generic = hodima_seo_advisor_ctr_default();
+	ksort( $generic );
+	$keys = array_keys( $generic );
+	$max  = (float) max( $keys );
+
+	$case = 'CASE';
+	foreach ( $keys as $key ) {
+		$case .= sprintf( ' WHEN avg_position <= %F THEN %d', (float) $key, (int) $key ); // فقط عدد؛ ورودی کاربر نیست
+	}
+	$case .= ' END';
+
+	$brand_sql  = '';
+	$brand_args = [];
+	foreach ( hodima_seo_advisor_brand_terms() as $brand ) {
+		if ( '' !== $brand ) {
+			$brand_sql   .= ' AND term_key NOT LIKE %s';
+			$brand_args[] = '%' . $wpdb->esc_like( $brand ) . '%';
+		}
+	}
+
+	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد placeholderها: ۳ ثابت + یکی برای هر واژه برند
+			'SELECT ' . $case . ' AS bucket, SUM(clicks) AS clicks, SUM(impressions) AS impressions FROM %i WHERE avg_position > 0 AND avg_position <= %f AND impressions >= %d' . $brand_sql . ' GROUP BY bucket', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- CASE فقط از کلیدهای عددی جدول ساخته شده
+			hodima_seo_advisor_table( 'queries' ),
+			$max,
+			HODIMA_SEO_ADVISOR_MIN_QUERY_IMPRESSIONS,
+			...$brand_args
+		),
+		ARRAY_A
+	);
+
+	$by_bucket = [];
+	foreach ( $rows as $row ) {
+		$by_bucket[ (int) $row['bucket'] ] = [ 'impressions' => (int) $row['impressions'], 'clicks' => (int) $row['clicks'] ];
+	}
+
+	$table   = [];
+	$buckets = [];
+	$total   = 0;
+	$prev    = INF;
+
+	foreach ( $generic as $key => $base ) {
+		$impressions = $by_bucket[ $key ]['impressions'] ?? 0;
+		$clicks      = $by_bucket[ $key ]['clicks'] ?? 0;
+		$weight      = $impressions >= HODIMA_SEO_ADVISOR_CTR_MIN_IMPRESSIONS ? min( 1.0, $impressions / HODIMA_SEO_ADVISOR_CTR_FULL_IMPRESSIONS ) * HODIMA_SEO_ADVISOR_CTR_MAX_WEIGHT : 0.0;
+		$observed    = $impressions > 0 ? $clicks / $impressions * 100 : 0.0;
+		$value       = min( $prev, $weight * $observed + ( 1 - $weight ) * $base );
+
+		$table[ $key ]   = round( $value, 2 );
+		$buckets[ $key ] = [ 'impressions' => $impressions, 'clicks' => $clicks, 'weight' => round( $weight, 2 ), 'ctr' => round( $observed, 2 ) ];
+		$total          += $impressions;
+		$prev            = $value;
+	}
+
+	$learned = [ 'computed' => time(), 'impressions' => $total, 'buckets' => $buckets, 'table' => $table ];
+	update_option( HODIMA_SEO_ADVISOR_CTR_OPTION, $learned, false );
+
+	return $learned;
+}
+
+/**
+ * جدول آموخته‌شده ذخیره‌شده (بیشینه رتبه ← نرخ)، یا آرایه خالی اگر هنوز ساخته نشده است.
+ *
+ * @return array<int, float>
+ */
+function hodima_seo_advisor_ctr_learned(): array {
+
+	$stored = get_option( HODIMA_SEO_ADVISOR_CTR_OPTION, [] );
+	$table  = is_array( $stored ) && is_array( $stored['table'] ?? null ) ? $stored['table'] : [];
+	$out    = [];
+
+	foreach ( $table as $key => $value ) {
+		if ( is_numeric( $key ) && is_numeric( $value ) ) {
+			$out[ (int) $key ] = (float) $value;
+		}
+	}
+
+	return $out;
+}
+
+/** سهم داده خود سایت در جدول نرخ کلیک (۰ تا ۱؛ میانگین وزن سطل‌ها به نسبت نمایش). */
+function hodima_seo_advisor_ctr_learned_share(): float {
+
+	$stored   = get_option( HODIMA_SEO_ADVISOR_CTR_OPTION, [] );
+	$buckets  = is_array( $stored ) && is_array( $stored['buckets'] ?? null ) ? $stored['buckets'] : [];
+	$weighted = 0.0;
+	$total    = 0;
+
+	foreach ( $buckets as $bucket ) {
+		$weighted += (float) ( $bucket['weight'] ?? 0 ) * (int) ( $bucket['impressions'] ?? 0 );
+		$total    += (int) ( $bucket['impressions'] ?? 0 );
+	}
+
+	return $total > 0 ? $weighted / $total : 0.0;
+}
+
+/** نرخ کلیک معمول (٪) برای یک رتبه: جدول آموخته‌شده از سایت، وگرنه عمومی؛ فیلتر hodima_seo_advisor_ctr_table آخر. */
 function hodima_seo_advisor_expected_ctr( float $position ): float {
 
-	$table = (array) apply_filters( 'hodima_seo_advisor_ctr_table', [ 2 => 25.0, 3 => 14.0, 5 => 9.0, 7 => 5.5, 10 => 3.5 ] ); // بیشینه رتبه ← نرخ
+	$table = (array) apply_filters( 'hodima_seo_advisor_ctr_table', hodima_seo_advisor_ctr_learned() ?: hodima_seo_advisor_ctr_default() ); // بیشینه رتبه ← نرخ
 	ksort( $table );
 
 	foreach ( $table as $max => $ctr ) {
@@ -312,12 +438,13 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				'term'      => '',
 				'title'     => 'عنوان و توضیح متا را بازنویسی کنید',
 				'detail'    => sprintf(
-					'این صفحه %1$s بار نمایش گرفته ولی فقط %2$s٪ کلیک شده؛ برای رتبه %3$s معمولا حدود %4$s٪ انتظار می‌رود.%5$s',
+					'این صفحه %1$s بار نمایش گرفته ولی فقط %2$s٪ کلیک شده؛ برای رتبه %3$s معمولا حدود %4$s٪ انتظار می‌رود%6$s.%5$s',
 					hodima_seo_advisor_num( $row['impressions'] ),
 					hodima_seo_advisor_num( $now, 2 ),
 					hodima_seo_advisor_num( $position, 1 ),
 					hodima_seo_advisor_num( $expected, 1 ),
-					'' !== $top ? ' مهم‌ترین کلمه این صفحه «' . $top . '» است؛ آن را ابتدای عنوان بیاورید.' : ''
+					'' !== $top ? ' مهم‌ترین کلمه این صفحه «' . $top . '» است؛ آن را ابتدای عنوان بیاورید.' : '',
+					hodima_seo_advisor_ctr_learned_share() >= 0.4 ? ' (این نرخ معمول از داده خود سایت تنظیم شده)' : ''
 				),
 				'potential' => $gain,
 			];

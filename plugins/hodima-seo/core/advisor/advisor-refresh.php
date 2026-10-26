@@ -15,7 +15,7 @@
  * ۲ روز پیش تمام می‌شود، چون داده روزهای اخیر ناقص است.
  *
  * مرحله‌بندی (SEO 2.7.5): درخواست اصلی فقط می‌گیرد و ذخیره می‌کند. کارهای سنگین بعدی «نوبت» (stage)اند:
- * analyze (ساخت پیشنهادها، نوبت‌به‌نوبت)، breakdown، trend، health، history. هر درخواست تا
+ * ctr (جدول نرخ کلیک از داده سایت، پیش از analyze)، analyze (ساخت پیشنهادها، نوبت‌به‌نوبت)، breakdown، trend، health، history. هر درخواست تا
  * HODIMA_SEO_ADVISOR_STAGE_BUDGET ثانیه نوبت‌ها را پیش می‌برد و اگر چیزی ماند، رویداد کرون
  * hodima_advisor_stage ادامه می‌دهد؛ پس یک درخواست طولانی هاست را نمی‌کشد و شکست یک نوبت بقیه را نمی‌اندازد.
  */
@@ -51,7 +51,7 @@ const HODIMA_SEO_ADVISOR_STAGE_CRON      = 'hodima_advisor_stage';
 const HODIMA_SEO_ADVISOR_STAGE_BUDGET    = 90;
 
 /** نوبت‌های بعد از ذخیره داده، به ترتیب. */
-const HODIMA_SEO_ADVISOR_STAGES = [ 'analyze', 'breakdown', 'trend', 'health', 'history' ];
+const HODIMA_SEO_ADVISOR_STAGES = [ 'ctr', 'analyze', 'breakdown', 'trend', 'health', 'history' ];
 
 /** حداکثر صفحه‌های درخواست برای یک گزارش (هر صفحه ۲۵ هزار ردیف، سقف سرچ کنسول). */
 const HODIMA_SEO_ADVISOR_FETCH_PAGES = 4;
@@ -231,6 +231,9 @@ function hodima_seo_advisor_pipeline_stage( string $stage, array $state, float $
 	$days     = (int) ( $state['days'] ?? 0 );
 
 	switch ( $stage ) {
+		case 'ctr':
+			hodima_seo_advisor_ctr_learn(); // پیش از analyze تا پیشنهادها با جدول تازه ساخته شوند
+			break;
 		case 'analyze':
 			$result = hodima_seo_advisor_analyze_batch( $deadline );
 			if ( is_wp_error( $result ) ) {

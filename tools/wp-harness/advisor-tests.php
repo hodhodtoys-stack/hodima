@@ -237,6 +237,7 @@ hodima_ad( 'آدرس کامل از مسیر ذخیره‌شده (دامنه + م
 hodima_seo_advisor_store( [], [], [] );
 
 echo "=== قاعده‌ها: نرخ کلیک معمول و متن\n";
+delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION ); // دریافت‌های ساختگی بالا جدول آموخته‌شده ساخته‌اند؛ این بخش جدول عمومی را می‌سنجد
 hodima_ad( 'نرخ معمول هر رتبه', array_map( 'hodima_seo_advisor_expected_ctr', [ 1.5, 2.0, 2.01, 3.0, 5.0, 5.81, 7.0, 10.0, 10.01 ] ), [ 25.0, 25.0, 14.0, 14.0, 9.0, 5.5, 5.5, 3.5, 1.5 ] );
 hodima_ad( 'یکسان‌سازی متن (ی/ک عربی، نیم‌فاصله، رقم عربی)', [ hodima_seo_advisor_normalize( 'كيك گل‌سر ١٢٣ ۴۵' ), hodima_seo_advisor_text_has( hodima_seo_advisor_normalize( 'انواع گل سر زیبا' ), 'گل‌سر' ), hodima_seo_advisor_text_has( 'کلیپس مو', 'پلومریا' ) ], [ 'کیک گل سر 123 45', true, false ] );
 
@@ -1355,6 +1356,45 @@ hodima_ad( 'صفحه ثابت و سایت ۵۰٪ بالا ← below', [ $vs3['pa
 hodima_ad( 'متن مقایسه سه حالت', [ str_contains( hodima_seo_advisor_effect_vs_site_text( $vs1 ), 'بهتر از روند کل سایت' ), str_contains( hodima_seo_advisor_effect_vs_site_text( $vs2 ), 'هم‌راستا' ), str_contains( hodima_seo_advisor_effect_vs_site_text( $vs3 ), 'ضعیف‌تر از روند کل سایت' ), hodima_seo_advisor_effect_vs_site_text( null ) ], [ true, true, true, '' ] );
 hodima_ad( 'هفته‌های عکس‌نشده سایت ← مقایسه ممکن نیست (null)', hodima_seo_advisor_effect_vs_site( [ 'before' => [ 'clicks' => 5.0 ], 'after' => [ 'clicks' => 9.0 ], 'before_weeks' => [ '2020-03-01' ], 'after_weeks' => [ '2020-03-08' ] ] ), null );
 $wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE week_end < '2025-03-01'", hodima_seo_advisor_table( 'history' ) ) );
+
+echo "=== نرخ کلیک معمول از داده خود سایت (بخش ۲۸۲)\n";
+delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION );
+hodima_seo_advisor_store( [], [], [] );
+$empty_learn = hodima_seo_advisor_ctr_learn();
+hodima_ad( 'بدون داده: جدول آموخته‌شده همان جدول عمومی است و سهم سایت صفر', [ $empty_learn['table'], hodima_seo_advisor_ctr_learned_share() ], [ [ 2 => 25.0, 3 => 14.0, 5 => 9.0, 7 => 5.5, 10 => 3.5, 20 => 1.5 ], 0.0 ] );
+hodima_ad( 'بدون داده: نرخ معمول مثل قبل (رتبه بالاتر از ۱۰ تا ۲۰ و بعدش ۱٫۵)', array_map( 'hodima_seo_advisor_expected_ctr', [ 1.5, 10.0, 15.0, 40.0 ] ), [ 25.0, 3.5, 1.5, 1.5 ] );
+add_filter( 'hodima_seo_advisor_brand_terms', $ctr_brand = static fn(): array => [ 'brandx' ] );
+$row_q = static fn( int $clicks, int $impressions, float $position ): array => [ 'clicks' => $clicks, 'impressions' => $impressions, 'position' => $position ];
+hodima_seo_advisor_store(
+	[ '/ct/a/' => $row_q( 1, 100, 5.0 ) ],
+	[],
+	[
+		'/ct/a/' => [
+			'کلمه رتبه یک' => $row_q( 3000, 30000, 1.5 ),       // ۱۰٪ در سطل ≤۲ (عمومی ۲۵٪)
+			'brandx shop' => $row_q( 50000, 100000, 1.2 ),      // برندی: کنار می‌رود
+			'کلمه رتبه سه' => $row_q( 2000, 10000, 2.5 ),       // ۲۰٪ در سطل ≤۳ (نصف وزن)
+			'کلمه رتبه چهار' => $row_q( 100, 1000, 4.0 ),       // زیر ۲٬۰۰۰ نمایش ← عمومی
+			'کلمه رتبه شش' => $row_q( 2000, 40000, 6.0 ),       // ۵٪ در سطل ≤۷
+			'کلمه رتبه پانزده' => $row_q( 20, 4000, 15.0 ),     // ۰٫۵٪ در سطل ≤۲۰ (وزن ۰٫۱۶)
+		],
+	]
+);
+$learn = hodima_seo_advisor_ctr_learn();
+hodima_ad( 'جدول آموخته‌شده: ترکیب وزنی، برند حذف، رتبه بهتر هرگز کمتر از بدتر نمی‌شود', $learn['table'], [ 2 => 13.0, 3 => 13.0, 5 => 9.0, 7 => 5.1, 10 => 3.5, 20 => 1.34 ] );
+hodima_ad( 'جزئیات سطل‌ها: نمایش و کلیک بدون برند، و وزن', [ $learn['buckets'][2]['impressions'], $learn['buckets'][2]['clicks'], $learn['buckets'][2]['weight'], $learn['buckets'][5]['weight'], $learn['impressions'] ], [ 30000, 3000, 0.8, 0.0, 85000 ] );
+hodima_ad( 'نرخ معمول حالا از جدول سایت می‌آید (بعد از رتبه ۲۰ همان ۱٫۵ ثابت)', array_map( 'hodima_seo_advisor_expected_ctr', [ 1.5, 2.5, 4.0, 6.0, 9.0, 15.0, 40.0 ] ), [ 13.0, 13.0, 9.0, 5.1, 3.5, 1.34, 1.5 ] ); // بعد از رتبه ۲۰ همان ۱٫۵ ثابت قبلی
+hodima_ad( 'سهم داده سایت بین ۰ و ۱ و بالاتر از صفر', [ hodima_seo_advisor_ctr_learned_share() > 0.3, hodima_seo_advisor_ctr_learned_share() < 1.0 ], [ true, true ] );
+add_filter( 'hodima_seo_advisor_ctr_table', $ctr_flt = static fn(): array => [ 10 => 2.0 ] );
+hodima_ad( 'فیلتر جدول نرخ کلیک بر جدول آموخته‌شده مقدم است', hodima_seo_advisor_expected_ctr( 5.0 ), 2.0 );
+remove_filter( 'hodima_seo_advisor_ctr_table', $ctr_flt );
+$low = hodima_seo_advisor_suggestions( [ 'path' => '/ct/z/', 'clicks' => 10, 'impressions' => 5000, 'position' => 2.0, 'prev_clicks' => 0 ], [], null );
+hodima_ad( 'پیشنهاد نرخ کلیک پایین: با جدول آموخته‌شده (۱۳٪ در رتبه ۲) و یادداشت منبع', [ $low[0]['rule'] ?? '', $low[0]['potential'] ?? 0, str_contains( $low[0]['detail'] ?? '', 'از داده خود سایت' ) ], [ 'low_ctr', 640, true ] );
+hodima_ad( 'پیشنهاد نرخ کلیک: بدون جدول آموخته‌شده ۲۵٪ و بدون یادداشت', ( static function () use ( $row_q ): array { delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION ); $r = hodima_seo_advisor_suggestions( [ 'path' => '/ct/z/', 'clicks' => 10, 'impressions' => 5000, 'position' => 2.0, 'prev_clicks' => 0 ], [], null ); return [ $r[0]['potential'] ?? 0, str_contains( $r[0]['detail'] ?? '', 'از داده خود سایت' ) ]; } )(), [ 1240, false ] );
+// نوبت ctr در صف دریافت است و پیش از analyze می‌آید؛ پاک کردن داده‌ها جدول را هم برمی‌دارد
+hodima_ad( 'نوبت ctr اولین نوبت است', array_slice( HODIMA_SEO_ADVISOR_STAGES, 0, 2 ), [ 'ctr', 'analyze' ] );
+hodima_seo_advisor_ctr_learn();
+hodima_ad( 'پاک کردن داده‌ها جدول نرخ کلیک آموخته‌شده را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), get_option( HODIMA_SEO_ADVISOR_CTR_OPTION, 'none' ) ], [ true, 'none' ] );
+remove_filter( 'hodima_seo_advisor_brand_terms', $ctr_brand );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

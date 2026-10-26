@@ -803,6 +803,7 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_SITE_OPTION );
+		delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION );
 		wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
 	}
 
