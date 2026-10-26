@@ -497,7 +497,7 @@ function hodima_seo_advisor_page_row( array $row ): array {
 /**
  * فهرست آدرس‌ها با فیلتر و صفحه‌بندی.
  *
- * @param array{min_impressions?: int, kind?: string|list<string>, search?: string, has_advice?: bool, rule?: string, paths?: list<string>, orderby?: string, order?: string, limit?: int, offset?: int} $args
+ * @param array{min_impressions?: int, min_potential?: int, kind?: string|list<string>, search?: string, has_advice?: bool, rule?: string, paths?: list<string>, orderby?: string, order?: string, limit?: int, offset?: int} $args
  * @return array{rows: list<array<string, mixed>>, total: int}
  */
 function hodima_seo_advisor_pages( array $args = [] ): array {
@@ -515,6 +515,11 @@ function hodima_seo_advisor_pages( array $args = [] ): array {
 
 	if ( ! empty( $args['has_advice'] ) ) {
 		$where[] = 'advice_count > 0';
+	}
+
+	if ( ! empty( $args['min_potential'] ) ) {
+		$where[]  = 'potential >= %d';
+		$params[] = (int) $args['min_potential'];
 	}
 
 	if ( 1 === preg_match( '/^[a-z_]+$/', (string) ( $args['rule'] ?? '' ) ) ) {

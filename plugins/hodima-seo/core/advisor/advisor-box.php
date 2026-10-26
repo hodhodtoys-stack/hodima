@@ -233,6 +233,9 @@ function hodima_seo_advisor_render_box( string $url ): void {
 				: ''
 		);
 		hodima_seo_advisor_render_steps( (array) ( $item['steps'] ?? [] ), 0 === $position++ );
+		if ( function_exists( 'hodima_seo_advisor_render_task_controls' ) ) {
+			hodima_seo_advisor_render_task_controls( (string) $row['path'], $item );
+		}
 		echo '</section>';
 	}
 	echo '</div>';

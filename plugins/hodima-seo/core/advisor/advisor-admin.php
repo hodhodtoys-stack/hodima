@@ -18,6 +18,9 @@ defined( 'ABSPATH' ) || exit;
 const HODIMA_SEO_ADVISOR_PAGE     = 'hodima-advisor';
 const HODIMA_SEO_ADVISOR_PER_PAGE = 15;
 
+/** گزینه‌های فیلتر «حداقل کلیک بالقوه» (۰ = همه). */
+const HODIMA_SEO_ADVISOR_MIN_POTENTIAL_CHOICES = [ 0, 50, 100, 500, 1000 ];
+
 /** حداکثر ردیف خروجی CSV (در دسته‌های ۵۰۰ تایی خوانده می‌شود). */
 const HODIMA_SEO_ADVISOR_CSV_MAX = 5000;
 
@@ -95,7 +98,7 @@ function hodima_seo_advisor_kind_label( string $kind ): string {
  * فیلترهای فهرست از آدرس (نما، جستجو، نوع پیشنهاد) ← آرگومان‌های hodima_seo_advisor_pages().
  *
  * @param array<string, mixed> $query
- * @return array{view: string, q: string, rule: string, args: array<string, mixed>}
+ * @return array{view: string, q: string, rule: string, min: int, args: array<string, mixed>}
  */
 function hodima_seo_advisor_list_filters( array $query ): array {
 
@@ -103,7 +106,9 @@ function hodima_seo_advisor_list_filters( array $query ): array {
 	$view = in_array( $view, [ 'all', 'ignored', ...array_keys( HODIMA_SEO_ADVISOR_KIND_GROUPS ) ], true ) ? $view : 'all';
 	$q    = sanitize_text_field( (string) ( $query['q'] ?? '' ) );
 	$rule = sanitize_key( (string) ( $query['rule'] ?? '' ) );
-	$args = [ 'orderby' => 'potential', 'order' => 'DESC', 'search' => $q, 'rule' => $rule ];
+	$min  = absint( $query['min'] ?? 0 );
+	$min  = in_array( $min, HODIMA_SEO_ADVISOR_MIN_POTENTIAL_CHOICES, true ) ? $min : 0;
+	$args = [ 'orderby' => 'potential', 'order' => 'DESC', 'search' => $q, 'rule' => $rule, 'min_potential' => $min ];
 
 	if ( 'ignored' === $view ) {
 		$args['paths'] = hodima_seo_advisor_ignored();
@@ -114,7 +119,7 @@ function hodima_seo_advisor_list_filters( array $query ): array {
 		}
 	}
 
-	return [ 'view' => $view, 'q' => $q, 'rule' => $rule, 'args' => $args ];
+	return [ 'view' => $view, 'q' => $q, 'rule' => $rule, 'min' => $min, 'args' => $args ];
 }
 
 /* ── کنش‌ها ── */
@@ -384,7 +389,7 @@ function hodima_seo_advisor_handle_csv(): void {
 /* ── صفحه ── */
 
 /**
- * تب‌های بالای صفحه: فرصت‌ها | رقابت صفحه‌ها | کلمه‌ها | دستگاه و کشور | روند و فصل‌ها.
+ * تب‌های بالای صفحه: فرصت‌ها | رقابت صفحه‌ها | کلمه‌ها | دستگاه و کشور | روند و فصل‌ها | کارهای من.
  */
 function hodima_seo_advisor_render_tabs( string $active ): void {
 
@@ -394,6 +399,7 @@ function hodima_seo_advisor_render_tabs( string $active ): void {
 		'terms'         => [ 'کلمه‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
 		'breakdown'     => [ 'دستگاه و کشور', hodima_seo_advisor_page_url( [ 'tab' => 'breakdown' ] ) ],
 		'trend'         => [ 'روند و فصل‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'trend' ] ) ],
+		'tasks'         => [ 'کارهای من', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
 	];
 
 	echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های مشاور">';
@@ -430,7 +436,7 @@ function hodima_seo_advisor_render_admin(): void {
 	$n     = static fn( int|float $value ): string => number_format_i18n( $value );
 	$empty = ! $has_data;
 	$tab   = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
-	$tab   = $has_data && in_array( $tab, [ 'competition', 'terms', 'breakdown', 'trend' ], true ) ? $tab : 'opportunities';
+	$tab   = $has_data && in_array( $tab, [ 'competition', 'terms', 'breakdown', 'trend', 'tasks' ], true ) ? $tab : 'opportunities';
 
 	if ( $has_data ) {
 		hodima_seo_advisor_render_tabs( $tab );
@@ -441,6 +447,7 @@ function hodima_seo_advisor_render_admin(): void {
 			'terms'     => hodima_seo_advisor_render_terms( $status ),
 			'breakdown' => hodima_seo_advisor_render_breakdown( $status ),
 			'trend'     => hodima_seo_advisor_render_trend_tab(),
+			'tasks'     => hodima_seo_advisor_render_tasks(),
 			default     => hodima_seo_advisor_render_competition( $status ),
 		};
 		if ( 'competition' === $tab ) {
@@ -633,7 +640,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 		$views = [ 'all' => [ 'برگشت به فهرست', $total_advised ], 'ignored' => [ 'نادیده‌گرفته‌شده‌ها', $ignored ] ];
 	}
 
-	$keep = [ 'view' => 'all' === $view ? '' : $view, 'q' => $filters['q'], 'rule' => $filters['rule'] ];
+	$keep = [ 'view' => 'all' === $view ? '' : $view, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'] ];
 
 	hodima_seo_ui_card_open( 'فرصت‌های بهتر شدن', sprintf( 'صفحه‌هایی که با داده %s روز اخیر بیشترین کلیک اضافه را دارند، مرتب بر اساس «کلیک بالقوه» (تخمین).', number_format_i18n( $status['days'] ) ) );
 	?>
@@ -644,7 +651,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 		<?php endif; ?>
 		<nav class="hodima-advisor__views" aria-label="نوع صفحه">
 			<?php foreach ( $views as $key => [ $label, $count ] ) : ?>
-				<a class="hodima-advisor__view" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'view' => 'all' === $key ? '' : $key, 'q' => $filters['q'], 'rule' => $filters['rule'] ] ) ); ?>"<?php echo $key === $view ? ' aria-current="page"' : ''; ?>>
+				<a class="hodima-advisor__view" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'view' => 'all' === $key ? '' : $key, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'] ] ) ); ?>"<?php echo $key === $view ? ' aria-current="page"' : ''; ?>>
 					<?php echo esc_html( $label ); ?> <span class="hodima-advisor__count"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
 				</a>
 			<?php endforeach; ?>
@@ -654,6 +661,14 @@ function hodima_seo_advisor_render_list( array $status ): void {
 			<input type="search" id="hodima-advisor-q" name="q" class="hds-input" value="<?php echo esc_attr( $filters['q'] ); ?>" placeholder="جستجو در عنوان یا آدرس…">
 			<button type="submit" class="hodima-advisor__go" aria-label="اعمال جستجو و فیلتر"><span class="dashicons dashicons-search" aria-hidden="true"></span></button>
 		</div>
+		<label class="hodima-advisor__rule">
+			<span class="screen-reader-text">حداقل کلیک بالقوه</span>
+			<select name="min" class="hds-input">
+				<?php foreach ( HODIMA_SEO_ADVISOR_MIN_POTENTIAL_CHOICES as $choice ) : ?>
+					<option value="<?php echo esc_attr( (string) $choice ); ?>"<?php selected( $filters['min'], $choice ); ?>><?php echo esc_html( 0 === $choice ? 'هر کلیک بالقوه' : sprintf( 'بالقوه ≥ %s', number_format_i18n( $choice ) ) ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</label>
 		<label class="hodima-advisor__rule">
 			<span class="screen-reader-text">نوع پیشنهاد</span>
 			<select name="rule" class="hds-input">

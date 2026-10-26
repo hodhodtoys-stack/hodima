@@ -303,6 +303,17 @@
 	}
 }
 
+/* وضعیت دستی هر پیشنهاد */
+.hodima-advisor-box__task {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+	margin-block-start: 0.75rem;
+	padding-block-start: 0.625rem;
+	border-block-start: 1px dashed var(--hd-border);
+}
+
 @container (max-width: 18rem) {
 	.hodima-advisor-box__metrics {
 		grid-template-columns: minmax(0, 1fr);

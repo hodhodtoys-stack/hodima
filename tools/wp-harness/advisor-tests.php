@@ -793,6 +793,7 @@ require_once HODIMA_SEO_DIR . '/core/advisor/advisor-competition-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-insights-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-breakdown-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-trend-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php';
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 update_option( 'hodima_discover_sc_key', $key_json, false );
 wp_set_current_user( 1 );
@@ -1019,6 +1020,75 @@ $_GET = [];
 hodima_ad( 'پاک کردن داده‌های مشاور روند را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), hodima_seo_advisor_trend() ], [ true, [] ] );
 delete_option( 'hodima_discover_sc_key' );
 add_filter( 'hodima_seo_advisor_trend_enabled', '__return_false' );
+
+echo "=== کارهای من (وضعیت دستی) و فیلتر حداقل کلیک بالقوه\n";
+$saved_tasks = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false );
+delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+hodima_ad( 'کار تازه: ثبت، خواندن، کلید با کلمه هم‌ارز (ی/ک عربی) یکی', [ hodima_seo_advisor_task_set( '/k/a/', 'near_first', 'كليپس', 'کلمه نزدیک صفحه اول', 'doing' ), hodima_seo_advisor_task( '/k/a/', 'near_first', 'کلیپس' )['status'] ?? '', hodima_seo_advisor_task( '/k/a/', 'low_ctr', '' ) ], [ true, 'doing', null ] );
+$doing_at = hodima_seo_advisor_task( '/k/a/', 'near_first', 'کلیپس' )['at'];
+hodima_seo_advisor_task_set( '/k/a/', 'near_first', 'کلیپس', '', 'doing' );
+hodima_ad( 'ثبت دوباره همان وضعیت: تاریخ و عنوان قبلی می‌ماند', [ hodima_seo_advisor_task( '/k/a/', 'near_first', 'کلیپس' )['at'], hodima_seo_advisor_task( '/k/a/', 'near_first', 'کلیپس' )['title'] ], [ $doing_at, 'کلمه نزدیک صفحه اول' ] );
+hodima_ad( 'وضعیت نامعتبر، قاعده نامعتبر و آدرس خالی رد می‌شوند', [ hodima_seo_advisor_task_set( '/k/a/', 'low_ctr', '', 't', 'bad' ), hodima_seo_advisor_task_set( '/k/a/', 'BAD RULE', '', 't', 'done' ), hodima_seo_advisor_task_set( '', 'low_ctr', '', 't', 'done' ) ], [ false, false, false ] );
+hodima_seo_advisor_task_set( '/k/b/', 'low_ctr', '', 'عنوان و متا', 'done' );
+hodima_seo_advisor_task_set( '/k/c/', 'decline', '', 'افت', 'rejected' );
+hodima_ad( 'شمار وضعیت‌ها', hodima_seo_advisor_task_counts(), [ 'doing' => 1, 'done' => 1, 'rejected' => 1 ] );
+hodima_seo_advisor_task_set( '/k/c/', 'decline', '', '', '' );
+hodima_ad( 'وضعیت خالی = برداشتن از فهرست', [ hodima_seo_advisor_task( '/k/c/', 'decline', '' ), count( hodima_seo_advisor_tasks() ) ], [ null, 2 ] );
+
+// سقف ۵۰۰: «رد شد»ها اول می‌روند
+$many = [];
+foreach ( range( 1, HODIMA_SEO_ADVISOR_TASKS_MAX + 2 ) as $i ) {
+	$many[ 'k' . $i ] = [ 'path' => "/m/{$i}/", 'rule' => 'low_ctr', 'term' => '', 'title' => 't', 'status' => 1 === $i % 2 ? 'rejected' : 'doing', 'at' => 1000 + $i ];
+}
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $many, false );
+hodima_seo_advisor_task_set( '/k/z/', 'low_ctr', '', 'تازه', 'doing' );
+$capped = hodima_seo_advisor_tasks();
+hodima_ad( 'سقف ۵۰۰ کار؛ تازه می‌ماند و قدیمی‌ترین «رد شد» اول می‌رود', [ count( $capped ), isset( $capped[ hodima_seo_advisor_task_key( '/k/z/', 'low_ctr', '' ) ] ), isset( $capped['k1'] ), isset( $capped['k2'] ) ], [ HODIMA_SEO_ADVISOR_TASKS_MAX, true, false, true ] );
+delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+
+// اثر: کار «انجام شد» بیش از ۳ هفته پیش با تاریخچه
+$we = array_reverse( hodima_seo_advisor_history_week_ends() );
+foreach ( $we as $i => $w ) {
+	hodima_seo_advisor_history_store_week( $w, [ '/k/eff/' => [ 'clicks' => $i < 4 ? 20 : 60, 'impressions' => 1000, 'position' => $i < 4 ? 8.0 : 6.0 ] ] );
+}
+$done_day = ( new DateTimeImmutable( $we[3] ) )->modify( '+3 days' )->format( 'Y-m-d' ); // وسط هفته پنجم (اندیس ۴)
+$old_task = [ 'path' => '/k/eff/', 'rule' => 'low_ctr', 'term' => '', 'title' => 'عنوان', 'status' => 'done', 'at' => (int) strtotime( $done_day . ' 12:00:00 UTC' ) ];
+$eff = hodima_seo_advisor_task_effect( $old_task );
+hodima_ad( 'اثر: انجام‌شده وسط هفته ۵ ← قبل ۴ هفته (۲۰) ← بعد ۳ هفته (۶۰)', [ $eff['state'], $eff['effect']['before']['clicks'] ?? 0, $eff['effect']['after']['clicks'] ?? 0 ], [ 'ok', 20.0, 60.0 ] );
+hodima_ad( 'اثر: کار همین الان انجام‌شده ← «هنوز زود است»؛ آدرس بی‌تاریخچه ← «تاریخچه کافی نیست»', [ hodima_seo_advisor_task_effect( [ 'path' => '/k/eff/', 'status' => 'done', 'at' => time() ] )['state'], hodima_seo_advisor_task_effect( [ 'path' => '/k/none/', 'status' => 'done', 'at' => time() - 90 * DAY_IN_SECONDS ] )['state'] ], [ 'wait', 'none' ] );
+$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'history' ) ) );
+
+// نما: کنترل‌های کادر ویرایش و تب «کارهای من»
+hodima_seo_advisor_task_set( '/k/b/', 'low_ctr', '', 'عنوان و متا را بازنویسی کنید', 'done' );
+hodima_seo_advisor_task_set( '/k/a/', 'near_first', 'کلیپس', 'کلمه نزدیک صفحه اول', 'doing' );
+ob_start();
+hodima_seo_advisor_render_task_controls( '/k/b/', [ 'rule' => 'low_ctr', 'term' => '', 'title' => 'عنوان و متا را بازنویسی کنید' ] );
+$ctl = (string) ob_get_clean();
+hodima_ad( 'کنترل کادر: نشان «انجام شد»، دو دکمه دیگر و «برداشتن» با nonce', [ str_contains( $ctl, 'انجام شد ·' ), substr_count( $ctl, 'class="button button-small"' ), str_contains( $ctl, 'برداشتن' ), str_contains( $ctl, '_wpnonce=' ), str_contains( $ctl, 'status=doing' ), str_contains( $ctl, 'status=done' ) ], [ true, 2, true, true, true, false ] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+hodima_seo_advisor_store( [ '/k/b/' => [ 'clicks' => 5, 'impressions' => 3000, 'position' => 8.0 ] ], [], [] );
+update_option( 'hodima_discover_sc_key', $key_json, false );
+wp_set_current_user( 1 );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$tasks_html = (string) ob_get_clean();
+hodima_ad( 'تب کارهای من: ۴ کارت آمار، ۲ کار، فرم با nonce و دکمه‌های وضعیت، جمله اثر', [ substr_count( $tasks_html, 'class="hds-stat"' ), substr_count( $tasks_html, 'class="hodima-advisor__task"' ), str_contains( $tasks_html, 'name="action" value="hodima_advisor_task"' ), str_contains( $tasks_html, 'name="status" value="rejected"' ), str_contains( $tasks_html, 'تاریخچه هفتگی کافی' ) || str_contains( $tasks_html, 'هنوز زود است' ) ], [ 4, 2, true, true, true ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'doing' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+hodima_ad( 'فیلتر «در حال انجام»: فقط یک کار', substr_count( (string) ob_get_clean(), 'class="hodima-advisor__task"' ), 1 );
+
+// فیلتر حداقل کلیک بالقوه
+$_GET = [];
+hodima_ad( 'فیلتر حداقل کلیک بالقوه: فقط مقدار مجاز قبول می‌شود', [ hodima_seo_advisor_list_filters( [ 'min' => '100' ] )['min'], hodima_seo_advisor_list_filters( [ 'min' => '77' ] )['min'], hodima_seo_advisor_list_filters( [ 'min' => '100' ] )['args']['min_potential'] ], [ 100, 0, 100 ] );
+hodima_seo_advisor_store( [ '/p/hi/' => [ 'clicks' => 5, 'impressions' => 9000, 'position' => 7.0 ], '/p/lo/' => [ 'clicks' => 5, 'impressions' => 1200, 'position' => 7.0 ] ], [], [] );
+$wpdb->update( hodima_seo_advisor_table( 'pages' ), [ 'potential' => 600, 'advice_count' => 1 ], [ 'path' => '/p/hi/' ] );
+$wpdb->update( hodima_seo_advisor_table( 'pages' ), [ 'potential' => 60, 'advice_count' => 1 ], [ 'path' => '/p/lo/' ] );
+hodima_ad( 'صفحه‌ها با حداقل بالقوه ۱۰۰ و ۵۰۰ و ۱۰۰۰', [ array_column( hodima_seo_advisor_pages( [ 'has_advice' => true, 'min_potential' => 100 ] )['rows'], 'path' ), array_column( hodima_seo_advisor_pages( [ 'has_advice' => true, 'min_potential' => 500 ] )['rows'], 'path' ), hodima_seo_advisor_pages( [ 'has_advice' => true, 'min_potential' => 1000 ] )['total'], hodima_seo_advisor_pages( [ 'has_advice' => true ] )['total'] ], [ [ '/p/hi/' ], [ '/p/hi/' ], 0, 2 ] );
+delete_option( 'hodima_discover_sc_key' );
+false === $saved_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $saved_tasks, false );
+$_GET = [];
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

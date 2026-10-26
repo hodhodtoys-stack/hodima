@@ -690,6 +690,79 @@
 	text-align: center;
 }
 
+/* کارهای من */
+.hodima-advisor .hodima-advisor__tasks {
+	display: grid;
+	gap: 0.625rem;
+	margin: 0.875rem 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-advisor .hodima-advisor__task {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 0.5rem 1rem;
+	align-items: center;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+	background: var(--hd-surface);
+}
+
+.hodima-advisor .hodima-advisor__task-main {
+	display: grid;
+	gap: 0.25rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__task-page {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.625rem;
+	align-items: center;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__task-state {
+	display: grid;
+	justify-items: end;
+	gap: 0.25rem;
+}
+
+.hodima-advisor .hodima-advisor__task-state small {
+	color: var(--hd-muted);
+}
+
+.hodima-advisor .hodima-advisor__task-effect {
+	grid-column: 1 / -1;
+	margin: 0;
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.625rem;
+	background: var(--hd-soft);
+	font-size: 0.8125rem;
+	line-height: 1.8;
+}
+
+.hodima-advisor .hodima-advisor__task-actions {
+	display: flex;
+	grid-column: 1 / -1;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.hodima-advisor .hodima-advisor__link-btn {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--hd-primary);
+	font-size: 0.75rem;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
 /* کارت تنظیمات مشاور (اختیاری، جمع‌شده) */
 .hodima-advisor .hodima-advisor__settings {
 	padding-block: 0.25rem;
