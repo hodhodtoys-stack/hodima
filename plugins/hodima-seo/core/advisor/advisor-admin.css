@@ -564,6 +564,7 @@
 }
 
 .hodima-advisor .hodima-advisor__advice {
+	margin-block-end: 0.625rem;
 	padding: 0.75rem 0.875rem;
 	border-radius: 0.625rem;
 	background: var(--hd-soft);
@@ -573,6 +574,65 @@
 
 .hodima-advisor .hodima-advisor__advice strong {
 	color: var(--hd-primary);
+}
+
+/* تب «کلمه‌ها»: نوار سهم برندی و جدول */
+.hodima-advisor .hodima-advisor__split {
+	display: flex;
+	margin-block: 0.875rem 0.625rem;
+	block-size: 1rem;
+	border-radius: 0.5rem;
+	background: var(--hd-secondary);
+	overflow: hidden;
+}
+
+.hodima-advisor .hodima-advisor__split-brand {
+	display: block;
+	block-size: 100%;
+	background: var(--hd-primary);
+}
+
+.hodima-advisor .hodima-advisor__split-other {
+	flex: 1;
+}
+
+.hodima-advisor .hodima-advisor__split-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem 1.25rem;
+	margin: 0 0 0.75rem;
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__dot {
+	display: inline-block;
+	inline-size: 0.625rem;
+	block-size: 0.625rem;
+	margin-inline-end: 0.25rem;
+	border-radius: 50%;
+	background: var(--hd-secondary);
+}
+
+.hodima-advisor .hodima-advisor__dot--brand {
+	background: var(--hd-primary);
+}
+
+.hodima-advisor .hodima-advisor__terms th,
+.hodima-advisor .hodima-advisor__terms td {
+	padding-block: 0.625rem;
+	font-size: 0.8125rem;
+	text-align: start;
+}
+
+.hodima-advisor .hodima-advisor__rival--url {
+	grid-template-columns: minmax(0, 3fr) 6rem 6rem;
+}
+
+.hodima-advisor .hodima-advisor__rival-url {
+	max-inline-size: 100%;
+	overflow-wrap: anywhere;
+	font-size: 0.75rem;
+	direction: ltr;
 }
 
 /* کارت تنظیمات مشاور (اختیاری، جمع‌شده) */

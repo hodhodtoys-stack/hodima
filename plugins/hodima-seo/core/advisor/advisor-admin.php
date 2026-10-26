@@ -384,13 +384,14 @@ function hodima_seo_advisor_handle_csv(): void {
 /* ── صفحه ── */
 
 /**
- * تب‌های بالای صفحه: فرصت‌های بهتر شدن | رقابت صفحه‌ها.
+ * تب‌های بالای صفحه: فرصت‌های بهتر شدن | رقابت صفحه‌ها | کلمه‌ها.
  */
 function hodima_seo_advisor_render_tabs( string $active ): void {
 
 	$tabs = [
 		'opportunities' => [ 'فرصت‌های بهتر شدن', hodima_seo_advisor_page_url() ],
 		'competition'   => [ 'رقابت صفحه‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ],
+		'terms'         => [ 'کلمه‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
 	];
 
 	echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های مشاور">';
@@ -426,14 +427,18 @@ function hodima_seo_advisor_render_admin(): void {
 
 	$n     = static fn( int|float $value ): string => number_format_i18n( $value );
 	$empty = ! $has_data;
-	$tab   = $has_data && 'competition' === ( isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : '' ) ? 'competition' : 'opportunities'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
+	$tab   = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
+	$tab   = $has_data && in_array( $tab, [ 'competition', 'terms' ], true ) ? $tab : 'opportunities';
 
 	if ( $has_data ) {
 		hodima_seo_advisor_render_tabs( $tab );
 	}
 
-	if ( 'competition' === $tab ) {
-		hodima_seo_advisor_render_competition( $status );
+	if ( 'competition' === $tab || 'terms' === $tab ) {
+		'terms' === $tab ? hodima_seo_advisor_render_terms( $status ) : hodima_seo_advisor_render_competition( $status );
+		if ( 'competition' === $tab ) {
+			hodima_seo_advisor_render_variants();
+		}
 		hodima_seo_advisor_render_settings( $has_data );
 		hodima_seo_ui_close();
 		return;

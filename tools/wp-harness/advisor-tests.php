@@ -788,6 +788,7 @@ hodima_ad( 'صفحه‌بندی: limit/offset', [ count( hodima_seo_advisor_comp
 
 // تب رقابت در پیشخوان
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-competition-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-insights-view.php';
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 update_option( 'hodima_discover_sc_key', $key_json, false );
 wp_set_current_user( 1 );
@@ -808,10 +809,65 @@ $main_html = (string) ob_get_clean();
 hodima_ad( 'تب فرصت‌ها پیش‌فرض است و تب رقابت کنارش لینک دارد', [ str_contains( $main_html, 'name="rule"' ), str_contains( $main_html, 'tab=competition' ), str_contains( $main_html, 'hodima-advisor__group' ) ], [ true, true, false ] );
 delete_option( 'hodima_discover_sc_key' );
 $_GET = [];
+update_option( 'hodima_discover_sc_key', $key_json, false );
+update_option( HODIMA_SEO_ADVISOR_VARIANTS_OPTION, [ [ 'path' => '/a/', 'impressions' => 1250, 'clicks' => 11, 'urls' => [ [ 'url' => 'https://' . $host . '/a/', 'impressions' => 1000, 'clicks' => 10 ], [ 'url' => 'https://www.' . $host . '/a/', 'impressions' => 250, 'clicks' => 1 ] ], 'causes' => [ 'host' ], 'advice' => 'نمونه' ] ], false );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$with_variants = (string) ob_get_clean();
+hodima_ad( 'تب رقابت: کارت آدرس‌های تکراری با آدرس‌ها و علت', [ str_contains( $with_variants, 'آدرس‌های تکراری یک صفحه' ), str_contains( $with_variants, 'دامنه یا پروتکل' ), str_contains( $with_variants, 'بیشترین نمایش' ) ], [ true, true, true ] );
+delete_option( HODIMA_SEO_ADVISOR_VARIANTS_OPTION );
+ob_start();
+hodima_seo_advisor_render_admin();
+hodima_ad( 'بدون آدرس تکراری: یک خط «پیدا نشد»', str_contains( (string) ob_get_clean(), 'آدرس تکراری پیدا نشد' ), true );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'terms' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$terms_html = (string) ob_get_clean();
+hodima_ad( 'تب کلمه‌ها: سه تب، ۴ کارت آمار، نوار سهم و جدول غیربرندی', [ substr_count( $terms_html, 'hodima-advisor__tabs' ), substr_count( $terms_html, 'class="hds-stat"' ), str_contains( $terms_html, 'hodima-advisor__split' ), str_contains( $terms_html, 'hodima-advisor__terms' ), str_contains( $terms_html, 'کلیپس پلومریا' ) ], [ 1, 4, true, true, true ] );
+hodima_ad( 'تب ناشناس به فرصت‌ها برمی‌گردد', [ ( static function (): bool { $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'x' ]; ob_start(); hodima_seo_advisor_render_admin(); return str_contains( (string) ob_get_clean(), 'name="rule"' ); } )() ], [ true ] );
+hodima_ad( 'تفسیر سهم برندی: سه حالت', [ str_contains( hodima_seo_advisor_brand_reading( 0.8 ), 'غیربرندی' ), str_contains( hodima_seo_advisor_brand_reading( 0.4 ), 'تعادل' ), str_contains( hodima_seo_advisor_brand_reading( 0.1 ), 'نام سایت کم جستجو' ) ], [ true, true, true ] );
+delete_option( 'hodima_discover_sc_key' );
+$_GET = [];
 
 $cat_advice = hodima_seo_advisor_competition_advice( 'گیره', [ [ 'kind' => 'product', 'path' => '/p/' ], [ 'kind' => 'product_cat', 'path' => '/c/' ] ], 0.9 );
 hodima_ad( 'برنده محصول و رقیب دسته ← «دسته را اصلی کنید»', $cat_advice['type'], 'category' );
 hodima_seo_advisor_store( [], [], [] );
+
+echo "=== تحلیل‌های کل سایت: آدرس تکراری و برندی\n";
+$h  = 'https://' . $host;
+$vr = static fn( string $url, int $clicks, int $impressions ): array => [ 'keys' => [ $url ], 'clicks' => $clicks, 'impressions' => $impressions, 'position' => 5.0 ];
+$variants = hodima_seo_advisor_find_variants( [
+	$vr( $h . '/a/', 10, 1000 ),
+	$vr( 'https://www.' . $host . '/a/', 1, 200 ),
+	$vr( $h . '/a/?utm_source=x', 0, 50 ),
+	$vr( $h . '/b/', 5, 300 ),
+	$vr( $h . '/B', 1, 40 ),
+	$vr( $h . '/c/', 3, 90 ),
+	$vr( $h . '/c/#toc-2', 0, 10 ),
+	$vr( $h . '/d/', 3, 90 ),
+	$vr( 'https://other-site.test/a/', 99, 99999 ),
+] );
+$vp = array_column( $variants, null, 'path' );
+hodima_ad( 'آدرس‌های تکراری: فقط /a/ و /b/ (بخش # و دامنه دیگر حساب نمی‌شود)، پرنمایش‌ترین اول', array_column( $variants, 'path' ), [ '/a/', '/b/' ] );
+hodima_ad( 'علت /a/: دامنه (www) و پارامتر؛ /b/: حروف بزرگ و اسلش', [ $vp['/a/']['causes'], $vp['/b/']['causes'], count( $vp['/a/']['urls'] ), $vp['/a/']['impressions'] ], [ [ 'host', 'query' ], [ 'case', 'slash' ], 3, 1250 ] );
+hodima_ad( 'دستور مناسب علت (ریدایرکت ۳۰۱ و canonical)', [ str_contains( $vp['/a/']['advice'], '۳۰۱' ), str_contains( $vp['/a/']['advice'], 'canonical' ), str_contains( $vp['/b/']['advice'], 'اسلش' ) ], [ true, true, true ] );
+
+hodima_seo_advisor_store(
+	[ '/s/1/' => [ 'clicks' => 60, 'impressions' => 3000, 'position' => 5.0 ], '/s/2/' => [ 'clicks' => 40, 'impressions' => 2000, 'position' => 6.0 ] ],
+	[],
+	[
+		'/s/1/' => [ 'هدهدلی کلیپس' => [ 'clicks' => 50, 'impressions' => 1000, 'position' => 1.0 ], 'کلیپس پلومریا' => [ 'clicks' => 10, 'impressions' => 1500, 'position' => 6.0 ] ],
+		'/s/2/' => [ 'کلیپس پلومریا' => [ 'clicks' => 30, 'impressions' => 1000, 'position' => 7.0 ], 'گیره مو' => [ 'clicks' => 10, 'impressions' => 500, 'position' => 8.0 ] ],
+	]
+);
+add_filter( 'hodima_seo_advisor_brand_terms', $brand_filter2 = static fn(): array => [ 'هدهدلی' ] );
+$split = hodima_seo_advisor_brand_split();
+hodima_ad( 'سهم برندی: ۵۰ کلیک و ۱۰۰۰ نمایش از یک کلمه؛ غیربرندی ۲ کلمه', [ $split['brand']['clicks'], $split['brand']['impressions'], $split['brand']['terms'], $split['other']['clicks'], $split['other']['impressions'], $split['other']['terms'] ], [ 50, 1000, 1, 50, 3000, 2 ] );
+hodima_ad( 'برترین غیربرندی: «کلیپس پلومریا» با ۲ صفحه و رتبه وزنی ۶٫۴؛ پوشش ۸۰٪', [ $split['other_top'][0]['term'], $split['other_top'][0]['pages'], $split['other_top'][0]['position'], round( $split['coverage'], 2 ) ], [ 'کلیپس پلومریا', 2, 6.4, 0.8 ] );
+remove_filter( 'hodima_seo_advisor_brand_terms', $brand_filter2 );
+update_option( HODIMA_SEO_ADVISOR_VARIANTS_OPTION, $variants, false );
+hodima_ad( 'فهرست تکراری ذخیره و خوانده می‌شود؛ «پاک کردن داده‌ها» آن را پاک می‌کند', [ count( hodima_seo_advisor_variants() ), hodima_seo_advisor_clear_data(), hodima_seo_advisor_variants() ], [ 2, true, [] ] );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

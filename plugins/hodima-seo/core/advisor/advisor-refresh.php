@@ -184,6 +184,9 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 			'error'      => '',
 		] + $range, false );
 
+		// آدرس‌های تکراری یک صفحه (آدرس خام پیش از یکسان‌سازی)؛ برای فهرست تب «رقابت صفحه‌ها»
+		update_option( HODIMA_SEO_ADVISOR_VARIANTS_OPTION, hodima_seo_advisor_find_variants( $current['rows'] ), false );
+
 		// تاریخچه هفتگی؛ شکستش دریافت اصلی را رد نمی‌کند (هفته‌های ناموفق دفعه بعد دوباره امتحان می‌شوند)
 		hodima_seo_advisor_history_sync( $property );
 
