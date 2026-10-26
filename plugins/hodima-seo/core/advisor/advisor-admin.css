@@ -502,13 +502,38 @@
 }
 
 .hodima-advisor .hodima-advisor__rival-path {
+	display: inline-block;
 	max-inline-size: 100%;
-	overflow: hidden;
 	color: var(--hd-muted);
 	font-size: 0.6875rem;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	overflow-wrap: anywhere;
 	direction: ltr;
+}
+
+/* آدرس‌ها لینک قابل‌کلیک‌اند: زیر هر آدرس خط‌چین کم‌رنگ، با هاور و فوکوس خط ثابت و رنگ اصلی */
+.hodima-advisor .hodima-advisor__rival-path,
+.hodima-advisor .hodima-advisor__rival-url,
+.hodima-advisor .hodima-advisor__path-link {
+	text-decoration: underline dotted;
+	text-underline-offset: 0.2em;
+}
+
+.hodima-advisor .hodima-advisor__rival-path:hover,
+.hodima-advisor .hodima-advisor__rival-url:hover,
+.hodima-advisor .hodima-advisor__path-link:hover {
+	color: var(--hd-primary);
+	text-decoration: underline solid;
+}
+
+.hodima-advisor .hodima-advisor__rival-path:focus-visible,
+.hodima-advisor .hodima-advisor__rival-url:focus-visible,
+.hodima-advisor .hodima-advisor__path-link:focus-visible {
+	outline: 2px solid var(--hd-secondary);
+	outline-offset: 2px;
+}
+
+.hodima-advisor .hodima-advisor__path-link {
+	color: inherit;
 }
 
 .hodima-advisor .hodima-advisor__rival-share {
@@ -1024,7 +1049,7 @@
 	background: var(--hd-secondary);
 }
 
-.hodima-advisor .hodima-advisor__path {
+.hodima-advisor .hodima-advisor__folder {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.5rem;
@@ -1035,7 +1060,7 @@
 	font-size: 0.8125rem;
 }
 
-.hodima-advisor .hodima-advisor__path bdi {
+.hodima-advisor .hodima-advisor__folder bdi {
 	flex: 1 1 12rem;
 	min-inline-size: 0;
 	overflow-wrap: anywhere;

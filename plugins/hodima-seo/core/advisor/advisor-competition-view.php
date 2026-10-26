@@ -47,7 +47,7 @@ function hodima_seo_advisor_competition_filters( array $query ): array {
  */
 function hodima_seo_advisor_competition_page_title( array $page ): string {
 	$title = hodima_seo_advisor_row_title( [ 'kind' => $page['kind'], 'object_id' => $page['object_id'], 'title' => $page['title'] ] );
-	return '' !== $title ? $title : (string) $page['path'];
+	return '' !== $title ? $title : ( '/' === (string) $page['path'] ? 'صفحه اصلی' : rawurldecode( (string) $page['path'] ) );
 }
 
 /**
@@ -223,7 +223,7 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 							<?php elseif ( 0 === $i && 'settled' !== $advice['type'] ) : ?>
 								<span class="hds-pill">برنده پیشنهادی</span>
 							<?php endif; ?>
-							<bdi class="hodima-advisor__rival-path"><?php echo esc_html( (string) $page['path'] ); ?></bdi>
+							<?php echo hodima_seo_advisor_url_link( (string) $page['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?>
 						</div>
 						<div class="hodima-advisor__rival-share">
 							<span class="hodima-advisor__share-bar" aria-hidden="true"><span style="inline-size: <?php echo esc_attr( (string) (int) round( $page['share'] * 100 ) ); ?>%"></span></span>

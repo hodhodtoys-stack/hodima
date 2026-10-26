@@ -116,7 +116,7 @@ function hodima_seo_advisor_render_variants(): void {
 		?>
 		<details class="hodima-advisor__group hodima-advisor__group--variant">
 			<summary class="hodima-advisor__group-head">
-				<strong class="hodima-advisor__group-term"><bdi><?php echo esc_html( (string) $variant['path'] ); ?></bdi></strong>
+				<strong class="hodima-advisor__group-term"><bdi><?php echo esc_html( rawurldecode( hodima_seo_advisor_url( (string) $variant['path'] ) ) ); ?></bdi></strong>
 				<span class="hodima-advisor__group-meta">
 					<span><?php echo esc_html( sprintf( '%s نمایش', $n( $variant['impressions'] ) ) ); ?></span>
 					<span><?php echo esc_html( sprintf( '%s آدرس', $n( count( $variant['urls'] ) ) ) ); ?></span>
@@ -130,7 +130,7 @@ function hodima_seo_advisor_render_variants(): void {
 					<?php foreach ( (array) $variant['urls'] as $i => $url ) : ?>
 						<li class="hodima-advisor__rival hodima-advisor__rival--url<?php echo 0 === $i ? ' is-winner' : ''; ?>">
 							<div class="hodima-advisor__rival-name">
-								<bdi class="hodima-advisor__rival-url"><?php echo esc_html( (string) $url['url'] ); ?></bdi>
+								<?php echo hodima_seo_advisor_url_link( (string) $url['url'], 'hodima-advisor__rival-url' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?>
 								<?php if ( 0 === $i ) : ?>
 									<span class="hds-pill">بیشترین نمایش</span>
 								<?php endif; ?>

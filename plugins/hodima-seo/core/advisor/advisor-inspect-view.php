@@ -107,10 +107,10 @@ function hodima_seo_advisor_render_indexing(): void {
 					$google = hodima_seo_advisor_inspect_canonical_mismatch( $record ) ? hodima_seo_advisor_path_key( (string) $record['google_canonical'] ) : null;
 					?>
 					<tr>
-						<th scope="row"><?php echo esc_html( hodima_seo_advisor_breakdown_page_title( (string) $path ) ); ?> <bdi class="hodima-advisor__rival-path"><?php echo esc_html( (string) $path ); ?></bdi></th>
+						<th scope="row"><?php echo esc_html( hodima_seo_advisor_breakdown_page_title( (string) $path ) ); ?> <?php echo hodima_seo_advisor_url_link( (string) $path ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
 						<td><span class="<?php echo esc_attr( $info['class'] ); ?>"><?php echo esc_html( $info['label'] ); ?></span></td>
 						<td><?php echo false !== $crawl ? esc_html( hodima_seo_advisor_task_date( $crawl ) ) : '—'; ?></td>
-						<td><?php echo null !== $google ? '<bdi class="hodima-advisor__rival-url">' . esc_html( $google ) . '</bdi>' : '—'; // phpcs:ignore WordPress.Security.EscapeOutput -- مقدار بالا esc_html شده ?></td>
+						<td><?php echo null !== $google ? hodima_seo_advisor_url_link( $google, 'hodima-advisor__rival-url' ) : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>

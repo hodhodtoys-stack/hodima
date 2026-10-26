@@ -78,11 +78,11 @@ function hodima_seo_advisor_render_health( array $status ): void {
 					<?php foreach ( $dead as $row ) : ?>
 						<?php $info = hodima_seo_advisor_health_state( (string) $row['state'] ); ?>
 						<tr>
-							<th scope="row"><bdi class="hodima-advisor__rival-url"><?php echo esc_html( (string) $row['path'] ); ?></bdi></th>
+							<th scope="row"><?php echo hodima_seo_advisor_url_link( (string) $row['path'], 'hodima-advisor__rival-url' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
 							<td><?php echo esc_html( $n( $row['impressions'] ) ); ?></td>
 							<td><?php echo esc_html( $n( $row['clicks'] ) ); ?></td>
 							<td><span class="<?php echo esc_attr( $info['class'] ); ?>"><?php echo esc_html( $info['label'] ); ?></span></td>
-							<td><?php echo '' !== (string) $row['target'] ? '<bdi class="hodima-advisor__rival-url">' . esc_html( (string) $row['target'] ) . '</bdi>' : '—'; // phpcs:ignore WordPress.Security.EscapeOutput -- مقدار بالا esc_html شده ?></td>
+							<td><?php echo '' !== (string) $row['target'] ? hodima_seo_advisor_url_link( (string) $row['target'], 'hodima-advisor__rival-url' ) : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>
@@ -109,7 +109,7 @@ function hodima_seo_advisor_render_health( array $status ): void {
 					<?php foreach ( array_slice( $unseen, 0, 30 ) as $row ) : ?>
 						<?php $edit = get_edit_post_link( (int) $row['id'], 'raw' ); ?>
 						<tr>
-							<th scope="row"><?php echo esc_html( '' !== (string) $row['title'] ? (string) $row['title'] : (string) $row['path'] ); ?> <bdi class="hodima-advisor__rival-path"><?php echo esc_html( (string) $row['path'] ); ?></bdi></th>
+							<th scope="row"><?php echo esc_html( '' !== (string) $row['title'] ? (string) $row['title'] : (string) $row['path'] ); ?> <?php echo hodima_seo_advisor_url_link( (string) $row['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
 							<td><?php echo esc_html( hodima_seo_advisor_kind_label( (string) $row['type'] ) ); ?></td>
 							<td><?php echo esc_html( sprintf( '%s روز', $n( $row['days'] ) ) ); ?></td>
 							<td><a href="<?php echo esc_url( is_string( $edit ) && '' !== $edit ? $edit : home_url( (string) $row['path'] ) ); ?>"><?php echo is_string( $edit ) && '' !== $edit ? 'ویرایش' : 'دیدن در سایت'; ?></a></td>

@@ -132,7 +132,7 @@ function hodima_seo_advisor_render_crawl(): void {
 			</button>
 		</form>
 	</div>
-	<div class="hodima-advisor__path">
+	<div class="hodima-advisor__folder">
 		<bdi id="hodima-advisor-crawl-path" dir="ltr"><?php echo esc_html( $label ); ?></bdi>
 		<button type="button" class="hds-btn hds-btn--outline" data-hdsa-copy="hodima-advisor-crawl-path">کپی مسیر</button>
 	</div>
@@ -229,7 +229,7 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 			<tbody>
 				<?php foreach ( $slice as $row ) : ?>
 					<tr>
-						<th scope="row"><a href="<?php echo esc_url( home_url( (string) $row['path'] ) ); ?>" target="_blank" rel="noopener"><bdi class="hodima-advisor__rival-url" dir="ltr"><?php echo esc_html( rawurldecode( (string) $row['path'] ) ); ?></bdi></a></th>
+						<th scope="row"><?php echo hodima_seo_advisor_url_link( (string) $row['path'], 'hodima-advisor__rival-url' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
 						<td data-label="نمایش"><?php echo $row['impressions'] > 0 ? esc_html( $n( $row['impressions'] ) ) : '—'; ?></td>
 						<td data-label="رتبه"><?php echo $row['position'] > 0 ? esc_html( number_format_i18n( $row['position'], 1 ) ) : '—'; ?></td>
 						<td class="hodima-advisor__crawl-pills">

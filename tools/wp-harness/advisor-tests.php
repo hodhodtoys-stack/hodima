@@ -1644,6 +1644,14 @@ remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter2 );
 array_map( 'unlink', glob( "{$crawl_dir2}/{,.}*", GLOB_BRACE ) ?: [] );
 @rmdir( $crawl_dir2 );
 
+echo "=== آدرس کامل و قابل‌کلیک (رقابت، سلامت، ردیف فهرست)\n";
+$lk = hodima_seo_advisor_url_link( '/' . rawurlencode( 'گل-سر' ) . '/' );
+hodima_ad( 'لینک آدرس: کامل با دامنه، رمزگشایی‌شده، زبانه تازه با noopener', [ str_contains( $lk, 'href="' . esc_url( hodima_seo_advisor_url( '/' . rawurlencode( 'گل-سر' ) . '/' ) ) . '"' ), str_contains( $lk, '<bdi>' . esc_html( home_url( '/گل-سر/' ) ) . '</bdi>' ) || str_contains( $lk, 'گل-سر' ), str_contains( $lk, 'target="_blank"' ), str_contains( $lk, 'rel="noopener"' ), str_contains( $lk, 'dir="ltr"' ) ], [ true, true, true, true, true ] );
+hodima_ad( 'آدرس کامل (با http) دست‌نخورده لینک می‌شود', str_contains( hodima_seo_advisor_url_link( 'https://example.org/a/b/' ), 'href="https://example.org/a/b/"' ), true );
+$home = hodima_seo_advisor_url_link( '/' );
+hodima_ad( 'صفحه اصلی هم آدرس کامل دارد، نه فقط «/»', str_contains( $home, '>' . esc_html( rawurldecode( hodima_seo_advisor_url( '/' ) ) ) . '<' ), true );
+hodima_ad( 'عنوان صفحه اصلی بدون عنوان «صفحه اصلی» است نه «/»', [ hodima_seo_advisor_competition_page_title( [ 'kind' => '', 'object_id' => 0, 'title' => '', 'path' => '/' ] ), hodima_seo_advisor_competition_page_title( [ 'kind' => '', 'object_id' => 0, 'title' => '', 'path' => '/x/' ] ) ], [ 'صفحه اصلی', '/x/' ] );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );

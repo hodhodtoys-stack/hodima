@@ -155,7 +155,7 @@ function hodima_seo_advisor_render_breakdown( array $status ): void {
 				<tbody>
 					<?php foreach ( $gaps as $gap ) : ?>
 						<tr>
-							<th scope="row"><?php echo esc_html( hodima_seo_advisor_breakdown_page_title( (string) $gap['path'] ) ); ?> <bdi class="hodima-advisor__rival-path"><?php echo esc_html( (string) $gap['path'] ); ?></bdi></th>
+							<th scope="row"><?php echo esc_html( hodima_seo_advisor_breakdown_page_title( (string) $gap['path'] ) ); ?> <?php echo hodima_seo_advisor_url_link( (string) $gap['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
 							<td><?php echo esc_html( number_format_i18n( $gap['mobile']['position'], 1 ) ); ?></td>
 							<td><?php echo esc_html( number_format_i18n( $gap['desktop']['position'], 1 ) ); ?></td>
 							<td><?php echo esc_html( number_format_i18n( $gap['diff'], 1 ) ); ?></td>
@@ -199,7 +199,7 @@ function hodima_seo_advisor_render_breakdown( array $status ): void {
 		foreach ( array_slice( $img_pages, 0, 8 ) as $page ) {
 			?>
 			<li class="hodima-advisor__rival hodima-advisor__rival--url">
-				<div class="hodima-advisor__rival-name"><strong><?php echo esc_html( hodima_seo_advisor_breakdown_page_title( (string) $page['path'] ) ); ?></strong><bdi class="hodima-advisor__rival-path"><?php echo esc_html( (string) $page['path'] ); ?></bdi></div>
+				<div class="hodima-advisor__rival-name"><strong><?php echo esc_html( hodima_seo_advisor_breakdown_page_title( (string) $page['path'] ) ); ?></strong><?php echo hodima_seo_advisor_url_link( (string) $page['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></div>
 				<span class="hodima-advisor__rival-stat"><?php echo esc_html( sprintf( '%s کلیک', $n( $page['clicks'] ) ) ); ?></span>
 				<span class="hodima-advisor__rival-stat"><?php echo esc_html( sprintf( '%s نمایش', $n( $page['impressions'] ) ) ); ?></span>
 			</li>

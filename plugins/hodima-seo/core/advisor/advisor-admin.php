@@ -127,6 +127,24 @@ function hodima_seo_advisor_list_filters( array $query ): array {
 
 /* ── کنش‌ها ── */
 
+/**
+ * آدرس کامل صفحه (دامنه + مسیر خوانا) به‌صورت لینک قابل‌کلیک که در زبانه تازه باز می‌شود. HTML امن‌شده برمی‌گرداند.
+ * آدرس بلند بریده نمی‌شود؛ هرجا لازم باشد می‌شکند.
+ *
+ * @param string $path مسیر یکسان‌شده (/x/) یا آدرس کامل
+ */
+function hodima_seo_advisor_url_link( string $path, string $css_class = 'hodima-advisor__rival-path' ): string {
+
+	$url = str_contains( $path, '://' ) ? $path : hodima_seo_advisor_url( $path );
+
+	return sprintf(
+		'<a class="%1$s" href="%2$s" target="_blank" rel="noopener" dir="ltr"><bdi>%3$s</bdi></a>',
+		esc_attr( $css_class ),
+		esc_url( $url ),
+		esc_html( rawurldecode( $url ) )
+	);
+}
+
 function hodima_seo_advisor_back_url(): string {
 	$back = wp_get_referer();
 	return is_string( $back ) && '' !== $back ? $back : hodima_seo_advisor_page_url();
@@ -824,7 +842,7 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 				<?php if ( '' !== $title ) : ?>
 					<strong class="hodima-advisor__name"><?php echo esc_html( $title ); ?></strong>
 				<?php endif; ?>
-				<span class="hodima-advisor__path" dir="ltr"><?php echo esc_html( rawurldecode( (string) $row['path'] ) ); ?></span>
+				<span class="hodima-advisor__path" dir="ltr"><?php echo hodima_seo_advisor_url_link( (string) $row['path'], 'hodima-advisor__path-link' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></span>
 				<span class="hds-pill hds-pill--info"><?php echo esc_html( hodima_seo_advisor_kind_label( (string) $row['kind'] ) ); ?></span>
 			</span>
 			<span class="hodima-advisor__num" data-label="نمایش"><?php echo esc_html( number_format_i18n( $impressions ) ); ?></span>

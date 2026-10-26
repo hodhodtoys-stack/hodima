@@ -155,7 +155,7 @@ function hodima_seo_advisor_render_tasks(): void {
 				<strong><?php echo esc_html( '' !== $task['title'] ? $task['title'] : hodima_seo_advisor_rule_label( $task['rule'] ) ); ?></strong>
 				<span class="hodima-advisor__task-page">
 					<?php echo esc_html( hodima_seo_advisor_breakdown_page_title( $task['path'] ) ); ?>
-					<bdi class="hodima-advisor__rival-path"><?php echo esc_html( $task['path'] ); ?></bdi>
+					<?php echo hodima_seo_advisor_url_link( (string) $task['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?>
 					<a href="<?php echo esc_url( $link[0] ); ?>"><?php echo esc_html( $link[1] ); ?></a>
 				</span>
 			</div>
