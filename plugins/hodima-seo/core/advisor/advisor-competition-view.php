@@ -1,11 +1,11 @@
 <?php
 /**
- * ماژول «مشاور سئو» — تب «رقابت صفحه‌ها» در پیشخوان
+ * ماژول «دستار سئو» — تب «رقابت صفحه‌ها» در پیشخوان
  * Path: core/advisor/advisor-competition-view.php
  *
  * نوع صفحه «فهرست و جدول» با کالبد کیت SEO: ۴ کارت آمار ← کارت فهرست (نوار ابزار یک‌ردیفه:
  * نوع دستور، جستجو، CSV) ← ردیف جمع‌شونده برای هر کلمه که صفحه‌های رقیب، برنده، سهم نمایش و
- * دستور را نشان می‌دهد. طرح تأییدشده: Artifact «طرح رقابت صفحه‌ها (مشاور سئو)». فقط می‌خواند؛
+ * دستور را نشان می‌دهد. طرح تأییدشده: Artifact «طرح رقابت صفحه‌ها (دستار سئو)». فقط می‌خواند؛
  * چیزی را در سایت عوض نمی‌کند. بدون JS کار می‌کند (details بومی).
  */
 
@@ -105,6 +105,8 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 		[ 'label' => 'برنده روشن', 'value' => $empty ? '—' : esc_html( $n( $counts['strengthen'] ) ), 'empty' => $empty ],
 	] );
 
+	hodima_seo_advisor_render_toolbar( 'competition' );
+
 	hodima_seo_ui_card_open( 'رقابت صفحه‌ها', sprintf( 'کلمه‌هایی که چند صفحه همین سایت برایشان نمایش می‌گیرند (داده %s روز اخیر)؛ مرتب بر اساس «کلیک بالقوه» رفع رقابت (تخمین).', $n( $status['days'] ) ) );
 
 	if ( $empty ) {
@@ -156,20 +158,7 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 	?>
 	<div class="hodima-advisor__foot">
 		<span><?php echo esc_html( sprintf( 'نمایش %1$s از %2$s کلمه، مرتب‌شده بر اساس کلیک بالقوه رفع رقابت', $n( count( $result['rows'] ) ), $n( $result['total'] ) ) ); ?></span>
-		<?php
-		if ( $pages > 1 ) {
-			echo '<nav class="hodima-advisor__pager" aria-label="صفحه‌بندی">';
-			for ( $i = 1; $i <= $pages; $i++ ) {
-				printf(
-					'<a href="%1$s"%2$s>%3$s</a>',
-					esc_url( hodima_seo_advisor_page_url( $keep + [ 'paged' => $i > 1 ? $i : '' ] ) ),
-					$i === $paged ? ' aria-current="page"' : '',
-					esc_html( $n( $i ) )
-				);
-			}
-			echo '</nav>';
-		}
-		?>
+		<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( $keep + [ 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 	</div>
 	<?php
 	hodima_seo_ui_card_close();

@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           2.7.7
+ * Version:           2.7.8
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '2.7.7';
+const HODIMA_SEO_VERSION = '2.7.8';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -126,7 +126,7 @@ function hodima_seo_modules(): array {
 			'icon'        => 'dashicons-visibility',
 		],
 		'advisor' => [
-			'title'       => 'مشاور سئو',
+			'title'       => 'دستار سئو',
 			'description' => 'با داده Search Console همین سایت برای هر صفحه می‌گوید چه کاری بیشترین کلیک اضافه را می‌آورد: عنوان و توضیح متا، کلمه‌های نزدیک صفحه اول، کلمه‌ای که در تیترها نیست. فقط پیشنهاد می‌دهد و چیزی را خودکار عوض نمی‌کند؛ روزی یک بار داده را از سرچ کنسول می‌گیرد (کلید همان «گوگل دیسکاور ← آمار سرچ کنسول» است).',
 			'files'       => [ 'core/advisor/advisor-init.php' ],
 			'settings'    => 'admin.php?page=hodima-advisor',
@@ -178,7 +178,7 @@ add_action( 'plugins_loaded', static function (): void {
 	// قیمت محصول برای اسکیما، Open Graph و AEO (گزینه «قیمت تک / حداقل سفارش» تنظیمات قالب)
 	require_once __DIR__ . '/inc/product-price.php';
 
-	// اتصال مشترک به سرچ کنسول (کلید، property، توکن، کوئری): گوگل دیسکاور و مشاور سئو از همین‌جا می‌خوانند
+	// اتصال مشترک به سرچ کنسول (کلید، property، توکن، کوئری): گوگل دیسکاور و دستار سئو از همین‌جا می‌خوانند
 	require_once __DIR__ . '/inc/search-console.php';
 
 	// نام محصول در ترب با حداقل تعداد سفارش + تب «ترب» ویرایش محصول (به product-price.php نیاز دارد)
@@ -218,7 +218,7 @@ add_action( 'plugins_loaded', static function (): void {
 				}
 			}
 		}
-		// ماژول مشاور سئو خاموش: رویداد روزانه دریافت داده یتیم نماند
+		// ماژول دستار سئو خاموش: رویداد روزانه دریافت داده یتیم نماند
 		if ( is_admin() && ! \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) && ( wp_next_scheduled( 'hodima_advisor_refresh' ) || wp_next_scheduled( 'hodima_advisor_inspect' ) || wp_next_scheduled( 'hodima_advisor_stage' ) ) ) {
 			wp_clear_scheduled_hook( 'hodima_advisor_refresh' );
 			wp_clear_scheduled_hook( 'hodima_advisor_inspect' );
@@ -255,7 +255,7 @@ register_deactivation_hook( __FILE__, static function (): void {
 	// آمار روزانه گوگل دیسکاور (با فعال‌سازی دوباره در اولین بازدید پیشخوان زمان‌بندی می‌شود)
 	wp_clear_scheduled_hook( 'hodima_discover_sc_refresh' );
 	wp_clear_scheduled_hook( 'hodima_discover_digest' ); // خلاصه هفتگی ایمیلی (SEO 2.1.8)
-	wp_clear_scheduled_hook( 'hodima_advisor_refresh' ); // دریافت روزانه داده مشاور سئو
-	wp_clear_scheduled_hook( 'hodima_advisor_inspect' ); // بررسی ایندکس مشاور سئو
-	wp_clear_scheduled_hook( 'hodima_advisor_stage' ); // ادامه نوبت‌های دریافت داده مشاور سئو
+	wp_clear_scheduled_hook( 'hodima_advisor_refresh' ); // دریافت روزانه داده دستار سئو
+	wp_clear_scheduled_hook( 'hodima_advisor_inspect' ); // بررسی ایندکس دستار سئو
+	wp_clear_scheduled_hook( 'hodima_advisor_stage' ); // ادامه نوبت‌های دریافت داده دستار سئو
 } );

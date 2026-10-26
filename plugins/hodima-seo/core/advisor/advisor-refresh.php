@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «مشاور سئو» — دریافت روزانه داده از Search Console
+ * ماژول «دستار سئو» — دریافت روزانه داده از Search Console
  * Path: core/advisor/advisor-refresh.php
  *
  * سه درخواست برای یک property (جستجوی وب، نه دیسکاور):

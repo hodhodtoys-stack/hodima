@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «مشاور سئو» — نمای تب «کلمه‌ها» و کارت «آدرس‌های تکراری»
+ * ماژول «دستار سئو» — نمای تب «کلمه‌ها» و کارت «آدرس‌های تکراری»
  * Path: core/advisor/advisor-insights-view.php
  *
  * داده از advisor-insights.php. تب «کلمه‌ها»: ۴ کارت آمار ← کارت سهم برندی/غیربرندی (نوار دوتکه
@@ -46,6 +46,8 @@ function hodima_seo_advisor_render_terms( array $status ): void {
 		[ 'label' => 'کلمه غیربرندی', 'value' => $empty ? '—' : esc_html( $n( $split['other']['terms'] ) ), 'empty' => $empty ],
 		[ 'label' => 'پوشش داده', 'value' => $empty ? '—' : esc_html( $pct( $split['coverage'] ) ), 'sub' => $empty ? '' : 'نمایش کلمه‌های ثبت‌شده از کل', 'empty' => $empty ],
 	] );
+
+	hodima_seo_advisor_render_toolbar( 'terms' );
 
 	hodima_seo_ui_card_open( 'کلمه‌های برندی در برابر غیربرندی', sprintf( 'داده %s روز اخیر. «برندی» یعنی کلمه نام سایت را دارد (%s).', $n( $status['days'] ), implode( '، ', array_map( 'esc_html', $split['words'] ) ) ) );
 

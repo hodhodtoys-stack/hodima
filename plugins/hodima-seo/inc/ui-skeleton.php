@@ -28,6 +28,10 @@ function hodima_seo_ui_enqueue(): void {
 			wp_enqueue_script( 'hodima-seo-ui', $url, [], $ver, true );
 		}
 	}
+
+	// اجزای مخصوص SEO که کیت مشترک ندارد (صفحه‌بندی، پنجره): فایل خود افزونه، نه tools/ui-kit، تا بسته‌های دیگر عوض نشوند
+	$extras = HODIMA_SEO_DIR . '/inc/ui-extras.css';
+	wp_enqueue_style( 'hodima-seo-ui-extras', HODIMA_SEO_URL . '/inc/ui-extras.css', [ 'hodima-seo-ui' ], is_file( $extras ) ? (string) filemtime( $extras ) : HODIMA_SEO_VERSION );
 }
 
 /**
@@ -157,4 +161,47 @@ function hodima_seo_ui_tabs( string $id, string $label, array $tabs, string $act
 	}
 
 	echo '</div>';
+}
+
+/**
+ * صفحه‌بندی مدرن: «قبلی»، شماره‌ها (اول، آخر و همسایه‌های صفحه جاری، با «…»)، «بعدی». صفحه جاری پر شده
+ * (رنگ اصلی)؛ بدون JS کار می‌کند. جایگزین paginate_links / فهرست شماره‌های دستی.
+ *
+ * @param callable(int): string $url آدرس هر صفحه (صفحه ۱ هم می‌آید)
+ */
+function hodima_seo_ui_pager( int $current, int $total, callable $url, string $label = 'صفحه‌بندی' ): void {
+
+	if ( $total < 2 ) {
+		return;
+	}
+
+	$current = max( 1, min( $total, $current ) );
+	$shown   = array_values( array_unique( array_filter( [ 1, $total, $current - 1, $current, $current + 1 ], static fn( int $i ): bool => $i >= 1 && $i <= $total ) ) );
+	sort( $shown );
+	$n = static fn( int $i ): string => number_format_i18n( $i );
+
+	printf( '<nav class="hds-pager" aria-label="%s">', esc_attr( $label ) );
+
+	if ( $current > 1 ) {
+		printf( '<a class="hds-pager__nav" rel="prev" href="%s">قبلی</a>', esc_url( $url( $current - 1 ) ) );
+	}
+
+	$prev = 0;
+	foreach ( $shown as $i ) {
+		if ( $i - $prev > 1 ) {
+			echo '<span class="hds-pager__gap" aria-hidden="true">…</span>';
+		}
+		if ( $i === $current ) {
+			printf( '<span class="hds-pager__page is-current" aria-current="page"><span class="screen-reader-text">صفحه </span>%s</span>', esc_html( $n( $i ) ) );
+		} else {
+			printf( '<a class="hds-pager__page" href="%1$s"><span class="screen-reader-text">صفحه </span>%2$s</a>', esc_url( $url( $i ) ), esc_html( $n( $i ) ) );
+		}
+		$prev = $i;
+	}
+
+	if ( $current < $total ) {
+		printf( '<a class="hds-pager__nav" rel="next" href="%s">بعدی</a>', esc_url( $url( $current + 1 ) ) );
+	}
+
+	echo '</nav>';
 }

@@ -1,5 +1,5 @@
 /*
- * مشاور سئو — استایل صفحه پیشخوان (core/advisor/advisor-admin.php)
+ * دستار سئو — استایل صفحه پیشخوان (core/advisor/advisor-admin.php)
  * فقط روی همین صفحه و زیر .hodima-advisor؛ توکن‌ها و اجزای پایه از کیت SEO (ui/ui-kit.css).
  * بدون nesting و media query بازه‌ای (CSS افزونه مرحله ساخت ندارد).
  */
@@ -61,7 +61,7 @@
 }
 
 .hodima-advisor .hodima-advisor__seg-opt input:focus-visible + span {
-	outline: 2px solid var(--hd-accent-light);
+	outline: 2px solid var(--hd-secondary);
 	outline-offset: -2px;
 }
 
@@ -107,7 +107,7 @@
 }
 
 .hodima-advisor .hodima-advisor__view:focus-visible {
-	outline: 2px solid var(--hd-accent-light);
+	outline: 2px solid var(--hd-secondary);
 	outline-offset: 2px;
 }
 
@@ -147,7 +147,7 @@
 }
 
 .hodima-advisor .hodima-advisor__go:focus-visible {
-	outline: 2px solid var(--hd-accent-light);
+	outline: 2px solid var(--hd-secondary);
 	outline-offset: -2px;
 }
 
@@ -316,7 +316,7 @@
 }
 
 .hodima-advisor .hodima-advisor__ignore:focus-visible {
-	outline: 2px solid var(--hd-accent-light);
+	outline: 2px solid var(--hd-secondary);
 	outline-offset: 2px;
 }
 
@@ -329,30 +329,6 @@
 	margin-block-start: 0.875rem;
 	color: var(--hd-muted);
 	font-size: 0.8125rem;
-}
-
-.hodima-advisor .hodima-advisor__pager {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.375rem;
-}
-
-.hodima-advisor .hodima-advisor__foot .page-numbers {
-	display: inline-block;
-	min-inline-size: 2.5rem;
-	padding: 0.5rem 0.75rem;
-	border: 1px solid var(--hd-border-strong);
-	border-radius: 0.625rem;
-	background: var(--hd-surface);
-	color: var(--hd-primary);
-	text-align: center;
-	text-decoration: none;
-}
-
-.hodima-advisor .hodima-advisor__foot .page-numbers.current {
-	border-color: var(--hd-primary);
-	background: var(--hd-primary);
-	color: #fff;
 }
 
 /* موبایل: هر ردیف یک کارت (آدرس ← سه عدد ← پیشنهاد ← کلیک بالقوه ← دکمه) */
@@ -420,6 +396,18 @@
 		margin-inline-end: 0;
 	}
 
+	.hodima-advisor .hodima-advisor__bar-actions,
+	.hodima-advisor .hodima-advisor__keyrow-actions {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+		inline-size: 100%;
+		margin-inline-start: 0;
+	}
+
+	.hodima-advisor .hodima-advisor__keyrow .hds-btn {
+		inline-size: 100%;
+		min-block-size: 2.75rem;
+	}
 	}
 
 /* تب‌های بالای صفحه و تب «رقابت صفحه‌ها» */
@@ -461,7 +449,7 @@
 }
 
 .hodima-advisor .hodima-advisor__group-head:focus-visible {
-	outline: 2px solid var(--hd-accent-light);
+	outline: 2px solid var(--hd-secondary);
 	outline-offset: 2px;
 }
 
@@ -763,9 +751,76 @@
 	cursor: pointer;
 }
 
-/* کارت تنظیمات مشاور (اختیاری، جمع‌شده) */
-.hodima-advisor .hodima-advisor__settings {
-	padding-block: 0.25rem;
+/* دکمه‌های ردیف بالا (به‌روزرسانی داده + تنظیمات) */
+.hodima-advisor a.hds-btn,
+.hodima-advisor a.hds-btn:hover {
+	text-decoration: none;
+}
+
+.hodima-advisor .hodima-advisor__bar-actions {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 0.625rem;
+}
+
+/* پنل «تنظیمات» زیر ردیف بالا */
+.hodima-advisor .hodima-advisor__settings[hidden] {
+	display: none;
+}
+
+.hodima-advisor .hodima-advisor__settings > .hodima-advisor__setting-title {
+	margin-block: 1rem 0.5rem;
+}
+
+/* ردیف کلید: وضعیت، ایمیل، منبع | دکمه‌ها */
+.hodima-advisor .hodima-advisor__keyrow {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.625rem;
+	padding: 0.75rem 0.875rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+	background: var(--hd-surface);
+}
+
+.hodima-advisor .hodima-advisor__keyrow .hds-pill .dashicons {
+	inline-size: 1rem;
+	block-size: 1rem;
+	font-size: 1rem;
+}
+
+.hodima-advisor .hodima-advisor__keyrow-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-inline-start: auto;
+}
+
+.hodima-advisor .hodima-advisor__keyrow-remove {
+	display: contents;
+}
+
+.hodima-advisor .hodima-advisor__keyrow .hds-btn {
+	min-block-size: 2.5rem;
+	padding-inline: 1rem;
+}
+
+.hodima-advisor .hodima-advisor__keyrow .hds-btn .dashicons {
+	inline-size: 1rem;
+	block-size: 1rem;
+	font-size: 1rem;
+}
+
+.hodima-advisor .hodima-advisor__keyrow .hds-code,
+.hodima-advisor .hodima-advisor__setting-help .hds-code {
+	max-inline-size: 100%;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.hodima-advisor .hodima-advisor__keyrow + .hodima-advisor__setting-help {
+	margin-block: 0.625rem 1rem;
 }
 
 .hodima-advisor .hodima-advisor__settings-grid {
@@ -809,21 +864,6 @@
 
 .hodima-advisor .hodima-advisor__setting--wide {
 	grid-column: 1 / -1;
-}
-
-.hodima-advisor .hodima-advisor__key {
-	inline-size: 100%;
-	min-block-size: 5.5rem;
-	block-size: 5.5rem;
-	font-family: ui-monospace, monospace;
-	font-size: 0.75rem;
-	resize: vertical;
-}
-
-.hodima-advisor .hodima-advisor__setting-actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.625rem;
 }
 
 .hodima-advisor .hodima-advisor__setting .hds-pill {

@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «مشاور سئو» — تب «سلامت آدرس‌ها»
+ * ماژول «دستار سئو» — تب «سلامت آدرس‌ها»
  * Path: core/advisor/advisor-health-view.php
  *
  * داده از advisor-health.php. کالبد: ۴ کارت آمار ← کارت «آدرس‌هایی که در گوگل‌اند ولی در سایت مرده‌اند»
@@ -52,6 +52,8 @@ function hodima_seo_advisor_render_health( array $status ): void {
 		[ 'label' => 'آدرس مرده در گوگل', 'value' => $empty ? '—' : esc_html( $n( $bad_dead ) ), 'sub' => $empty ? '' : esc_html( sprintf( 'از %s آدرس نیازمند بررسی', $n( count( $dead ) ) ) ), 'empty' => $empty ],
 		[ 'label' => 'پوشش در گوگل', 'value' => $empty || $total <= 0 ? '—' : esc_html( $n( round( $seen / $total * 100 ) ) . '٪' ), 'sub' => $empty || $total <= 0 ? '' : esc_html( sprintf( '%1$s از %2$s صفحه نمایش گرفته', $n( $seen ), $n( $total ) ) ), 'empty' => $empty || $total <= 0 ],
 	] );
+
+	hodima_seo_advisor_render_toolbar( 'health' );
 
 	if ( $empty ) {
 		hodima_seo_ui_card_open( 'سلامت آدرس‌ها' );

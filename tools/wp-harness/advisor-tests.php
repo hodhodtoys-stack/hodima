@@ -1,6 +1,6 @@
 <?php
 /**
- * آزمون خودکار ماژول «مشاور سئو» (SEO، core/advisor): یکسان‌سازی آدرس، جمع‌بندی ردیف‌های
+ * آزمون خودکار ماژول «دستار سئو» (SEO، core/advisor): یکسان‌سازی آدرس، جمع‌بندی ردیف‌های
  * سرچ کنسول، ذخیره و خواندن، سه درخواست دریافت (با پاسخ ساختگی گوگل)، شکست بدون خراب
  * کردن داده قبلی، بازه‌ها، و قاعده‌های پیشنهاد (نرخ کلیک، کلمه نزدیک صفحه اول، کلمه غایب
  * در تیترها/متن، رقابت داخلی، افت).
@@ -21,7 +21,7 @@ if ( ! getenv( 'HARNESS' ) ) {
 	exit( 2 );
 }
 if ( ! function_exists( 'hodima_seo_advisor_refresh' ) ) {
-	echo "✘ ماژول مشاور سئو لود نشده است\n";
+	echo "✘ ماژول دستار سئو لود نشده است\n";
 	exit( 1 );
 }
 
@@ -626,11 +626,11 @@ update_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, [ 'min_impressions' => 250, '
 hodima_ad( 'حداقل نمایش از تنظیمات خوانده می‌شود', hodima_seo_advisor_config()['min_impressions'], 250 );
 hodima_ad( 'محدوده مجاز حداقل نمایش', HODIMA_SEO_ADVISOR_MIN_IMPRESSIONS_RANGE, [ 10, 100000 ] );
 ob_start();
-hodima_seo_advisor_render_settings( true );
+hodima_seo_advisor_render_settings( true, true );
 $settings_html = (string) ob_get_clean();
 hodima_ad( 'کارت تنظیمات: مقدار فعلی در فیلد و هر دو فرم با nonce', [ str_contains( $settings_html, 'value="250"' ), str_contains( $settings_html, 'name="action" value="hodima_advisor_settings"' ), str_contains( $settings_html, 'name="action" value="hodima_advisor_clear"' ), substr_count( $settings_html, 'name="_wpnonce"' ) ], [ true, true, true, 3 ] );
 ob_start();
-hodima_seo_advisor_render_settings( false );
+hodima_seo_advisor_render_settings( false, true );
 hodima_ad( 'بدون داده دکمه پاک کردن غیرفعال است', substr_count( (string) ob_get_clean(), 'disabled' ) >= 2, true );
 
 hodima_seo_advisor_store( [ '/clear-me/' => [ 'clicks' => 1, 'impressions' => 5000, 'position' => 6.0 ] ], [], [] );
@@ -739,14 +739,30 @@ hodima_ad( 'دریافت کامل در سایت کوچک: نوبت‌ها هما
 hodima_ad( 'توکن با ایمیل کلید مخصوص ساخته شد (نه کلید مشترک)', [ is_string( get_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor-only@test.iam.gserviceaccount.com' ), 0, 12 ) ) ), get_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor@test.iam.gserviceaccount.com' ), 0, 12 ) ) ], [ true, false ] );
 hodima_ad( 'فهرست property مشاور جدا نوشته شد و فهرست مشترک دیسکاور دست‌نخورده', [ hodima_seo_sc_sites( HODIMA_SEO_SC_ADVISOR ) !== [], hodima_seo_sc_sites() ], [ true, $shared_sites_before ] );
 
+// ردیف کلید مدرن (پیش از تعریف ثابت wp-config که منبع را برای همیشه ثابت می‌کند)
+$kcap = static function ( callable $fn ): string { ob_start(); $fn(); return (string) ob_get_clean(); };
+wp_set_current_user( 1 );
+$_GET = [];
+update_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, $own_key, false );
+$bar_own = $kcap( static fn() => hodima_seo_advisor_render_toolbar( '' ) );
+hodima_ad( 'ردیف کلید مدرن: کلید فعال، ایمیل، منبع، جایگزینی و حذف (کلید مخصوص)، پنجره با انتخاب فایل', [ str_contains( $bar_own, 'کلید فعال' ), str_contains( $bar_own, 'advisor-only@test.iam.gserviceaccount.com' ), str_contains( $bar_own, 'data-hdsa-key-open' ), str_contains( $bar_own, 'name="remove"' ), str_contains( $bar_own, 'data-hdsa-key-dialog' ), str_contains( $bar_own, 'data-hdsa-key-file' ) ], [ true, true, true, true, true, true ] );
+delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION );
+update_option( 'hodima_discover_sc_key', $key_json, false );
+$bar_shared = $kcap( static fn() => hodima_seo_advisor_render_toolbar( '' ) );
+hodima_ad( 'کلید مشترک: «جایگزینی» هست ولی «حذف کلید» نیست', [ str_contains( $bar_shared, 'data-hdsa-key-open' ), str_contains( $bar_shared, 'name="remove"' ) ], [ true, false ] );
+delete_option( 'hodima_discover_sc_key' );
+$bar_none = $kcap( static fn() => hodima_seo_advisor_render_toolbar( '' ) );
+hodima_ad( 'بدون کلید: «افزودن کلید» و پنل باز است', [ str_contains( $bar_none, 'افزودن کلید' ), 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\\shidden/', $bar_none ) ], [ true, false ] );
+delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION );
+
 define( 'HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON', $key_json );
 hodima_ad( 'ثابت wp-config از کلید پیشخوان جلوتر است', [ hodima_seo_sc_key_source( HODIMA_SEO_SC_ADVISOR ), hodima_seo_sc_email( HODIMA_SEO_SC_ADVISOR ) ], [ 'advisor_config', 'advisor@test.iam.gserviceaccount.com' ] );
 
 // صفحه: کارت کلید و منبع
 ob_start();
-hodima_seo_advisor_render_settings( true );
+hodima_seo_advisor_render_settings( true, true );
 $key_html = (string) ob_get_clean();
-hodima_ad( 'کارت: منبع «کلید ثابت wp-config» نشان داده می‌شود و فیلد چسباندن نیست', [ str_contains( $key_html, 'از کلید ثابت wp-config' ), str_contains( $key_html, 'name="key_json"' ) ], [ true, false ] );
+hodima_ad( 'کارت: منبع «کلید ثابت wp-config» نشان داده می‌شود و فیلد چسباندن نیست', [ str_contains( $key_html, 'ثابت wp-config' ), str_contains( $key_html, 'name="key_json"' ) ], [ true, false ] );
 
 hodima_ad( 'اعتبارسنجی: JSON خراب رد می‌شود', hodima_seo_sc_validate_key( '{"a":1}' )['ok'], false );
 hodima_ad( 'اعتبارسنجی: کلید درست قبول و ایمیل برمی‌گردد', [ hodima_seo_sc_validate_key( $own_key )['ok'], hodima_seo_sc_validate_key( $own_key )['email'] ], [ true, 'advisor-only@test.iam.gserviceaccount.com' ] );
@@ -1396,6 +1412,40 @@ hodima_seo_advisor_ctr_learn();
 hodima_ad( 'پاک کردن داده‌ها جدول نرخ کلیک آموخته‌شده را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), get_option( HODIMA_SEO_ADVISOR_CTR_OPTION, 'none' ) ], [ true, 'none' ] );
 remove_filter( 'hodima_seo_advisor_brand_terms', $ctr_brand );
 
+echo "=== ردیف بالا (به‌روزرسانی + تنظیمات) در همه تب‌ها و صفحه‌بندی مدرن (بخش ۲۸۳)\n";
+$cap = static function ( callable $fn ): string { ob_start(); $fn(); return (string) ob_get_clean(); };
+update_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, $own_key, false );
+$tb_data = [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $tb_data, false );
+hodima_seo_advisor_store( [ '/tb/a/' => [ 'clicks' => 5, 'impressions' => 5000, 'position' => 6.0 ] ], [], [] );
+wp_set_current_user( 1 );
+$_GET = [];
+$bar = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'competition' ) );
+hodima_ad( 'ردیف بالا در تب: دکمه به‌روزرسانی، تب برگشت و دکمه تنظیمات (لینک settings=1 برای بدون JS)', [ str_contains( $bar, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $bar, 'name="tab" value="competition"' ), str_contains( $bar, 'data-hdsa-settings-toggle' ), str_contains( $bar, 'tab=competition&#038;settings=1' ) || str_contains( $bar, 'tab=competition&settings=1' ) ], [ true, true, true, true ] );
+hodima_ad( 'پنل تنظیمات با کلید موجود بسته است (hidden)؛ عنوانش «تنظیمات»', [ str_contains( $bar, 'id="hodima-advisor-settings"' ), 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $bar ), str_contains( $bar, '>تنظیمات</h2>' ) ], [ true, true, true ] );
+$_GET = [ 'settings' => '1' ];
+$bar_open = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'trend' ) );
+hodima_ad( 'با settings=1 پنل باز می‌آید', [ 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $bar_open ), str_contains( $bar_open, 'aria-expanded="true"' ) ], [ false, true ] );
+$_GET = [];
+$bar_tasks = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'tasks', false ) );
+hodima_ad( 'تب «کارهای من»: بدون دکمه به‌روزرسانی و بازه، با تنظیمات', [ str_contains( $bar_tasks, 'hodima_advisor_refresh' ), str_contains( $bar_tasks, 'name="days"' ), str_contains( $bar_tasks, 'data-hdsa-settings-toggle' ) ], [ false, false, true ] );
+hodima_ad( 'ثابت wp-config: بدون «جایگزینی» و بدون پنجره کلید', [ str_contains( $bar, 'data-hdsa-key-open' ), str_contains( $bar, 'data-hdsa-key-dialog' ), str_contains( $bar, 'ثابت wp-config' ) ], [ false, false, true ] );
+foreach ( [ 'competition' => 'hodima_seo_advisor_render_competition', 'terms' => 'hodima_seo_advisor_render_terms', 'breakdown' => 'hodima_seo_advisor_render_breakdown', 'health' => 'hodima_seo_advisor_render_health' ] as $t => $fn ) {
+	$html_t = $cap( static fn() => $fn( hodima_seo_advisor_status() ) );
+	hodima_ad( "تب {$t}: دکمه به‌روزرسانی و تنظیمات همان‌جاست", [ str_contains( $html_t, 'value="hodima_advisor_refresh"' ), str_contains( $html_t, 'name="tab" value="' . $t . '"' ), str_contains( $html_t, 'data-hdsa-settings-toggle' ) ], [ true, true, true ] );
+}
+foreach ( [ 'trend' => 'hodima_seo_advisor_render_trend_tab', 'indexing' => 'hodima_seo_advisor_render_indexing' ] as $t => $fn ) {
+	$html_t = $cap( static fn() => $fn() );
+	hodima_ad( "تب {$t}: دکمه به‌روزرسانی و تنظیمات همان‌جاست", [ str_contains( $html_t, 'value="hodima_advisor_refresh"' ), str_contains( $html_t, 'name="tab" value="' . $t . '"' ) ], [ true, true ] );
+}
+hodima_ad( 'تب کارهای من: فقط تنظیمات', ( static function () use ( $cap ): array { $h = $cap( static fn() => hodima_seo_advisor_render_tasks() ); return [ str_contains( $h, 'value="hodima_advisor_refresh"' ), str_contains( $h, 'data-hdsa-settings-toggle' ) ]; } )(), [ false, true ] );
+
+$pg = static fn( int $cur, int $tot ): string => $cap( static fn() => hodima_seo_ui_pager( $cur, $tot, static fn( int $i ): string => '/p/?paged=' . $i ) );
+hodima_ad( 'صفحه‌بندی: یک صفحه = هیچ؛ صفحه اول بدون «قبلی»، با «بعدی»', [ $pg( 1, 1 ), str_contains( $pg( 1, 5 ), 'قبلی' ), str_contains( $pg( 1, 5 ), 'rel="next"' ), substr_count( $pg( 1, 5 ), 'hds-pager__page' ) ], [ '', false, true, 3 ] );
+hodima_ad( 'صفحه‌بندی: وسط ۱۰ صفحه: اول، آخر، همسایه‌ها و «…»', [ substr_count( $pg( 5, 10 ), '<a class="hds-pager__page"' ), substr_count( $pg( 5, 10 ), 'hds-pager__gap' ), str_contains( $pg( 5, 10 ), 'rel="prev"' ), str_contains( $pg( 5, 10 ), 'rel="next"' ) ], [ 4, 2, true, true ] );
+hodima_ad( 'صفحه‌بندی: صفحه جاری aria-current و بدون لینک؛ صفحه آخر بدون «بعدی»', [ str_contains( $pg( 3, 3 ), 'aria-current="page"' ), str_contains( $pg( 3, 3 ), 'rel="next"' ), str_contains( $pg( 3, 3 ), '?paged=3' ) ], [ true, false, false ] );
+$_GET = [];
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );
@@ -1406,5 +1456,5 @@ foreach ( $saved as $opt => $value ) {
 false === $saved_settings ? delete_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, $saved_settings, false );
 delete_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor@test.iam.gserviceaccount.com' ), 0, 12 ) );
 
-echo "\n" . ( $failed ? "✘ {$failed} آزمون رد شد ({$passed} قبول)" : "✔ همه {$passed} آزمون مشاور سئو قبول" ) . "\n";
+echo "\n" . ( $failed ? "✘ {$failed} آزمون رد شد ({$passed} قبول)" : "✔ همه {$passed} آزمون دستار سئو قبول" ) . "\n";
 exit( $failed ? 1 : 0 );

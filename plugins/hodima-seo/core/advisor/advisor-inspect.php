@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «مشاور سئو» — بررسی ایندکس (URL Inspection API)
+ * ماژول «دستار سئو» — بررسی ایندکس (URL Inspection API)
  * Path: core/advisor/advisor-inspect.php
  *
  * برای آدرس‌های مهم از گوگل می‌پرسد: ایندکس شده؟ اگر نه چرا؟ canonical انتخابی گوگل همان canonical شماست؟

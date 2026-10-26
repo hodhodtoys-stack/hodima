@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «مشاور سئو» — تب «ایندکس»
+ * ماژول «دستار سئو» — تب «ایندکس»
  * Path: core/advisor/advisor-inspect-view.php
  *
  * داده از advisor-inspect.php. کالبد: ۴ کارت آمار ← کارت «وضعیت ایندکس آدرس‌های مهم» (یک کنش اصلی:
@@ -66,6 +66,8 @@ function hodima_seo_advisor_render_indexing(): void {
 		[ 'label' => 'نیازمند بررسی', 'value' => $empty ? '—' : esc_html( $n( $problem ) ), 'empty' => $empty ],
 		[ 'label' => 'canonical متفاوت', 'value' => $empty ? '—' : esc_html( $n( $mismatch ) ), 'sub' => $empty ? '' : 'گوگل غیر از شما انتخاب کرده', 'empty' => $empty ],
 	] );
+
+	hodima_seo_advisor_render_toolbar( 'indexing' );
 
 	hodima_seo_ui_card_open( 'وضعیت ایندکس آدرس‌های مهم', 'از گوگل می‌پرسد هر آدرس ایندکس شده یا نه و اگر نه چرا. اول صفحه‌های بدون نمایش، بعد صفحه‌های دارای پیشنهاد و پرنمایش‌ترین‌ها؛ هر آدرس هر ۱۴ روز یک بار. خودکار روزی دو بار ۲۰ آدرس؛ سهمیه گوگل حدود ۲۰۰۰ بررسی در روز است.' );
 	?>

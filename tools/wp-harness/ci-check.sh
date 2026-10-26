@@ -11,7 +11,7 @@
 #   - آزمون‌های آمار ویدیوها (video-watch-tests.php) رد شوند؛
 #   - آزمون‌های Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس) رد شوند؛
 #   - آزمون‌های فرم تلفن (phone-tests.php) رد شوند؛
-#   - آزمون‌های مشاور سئو (advisor-tests.php) رد شوند.
+#   - آزمون‌های دستار سئو (advisor-tests.php) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
 #   ci-check.sh [ref]
@@ -101,7 +101,7 @@ else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/phone-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
-echo "=== آزمون مشاور سئو (advisor-tests.php: یکسان‌سازی آدرس، دریافت با پاسخ ساختگی گوگل، ذخیره/خواندن، شکست بدون خراب‌کردن داده)"
+echo "=== آزمون دستار سئو (advisor-tests.php: یکسان‌سازی آدرس، دریافت با پاسخ ساختگی گوگل، ذخیره/خواندن، شکست بدون خراب‌کردن داده)"
 if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-tests.php" > "$out/advisor-tests.txt" 2>&1; then
 	tail -1 "$out/advisor-tests.txt" | sed 's/^/  /'
 else

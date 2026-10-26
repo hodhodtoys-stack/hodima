@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «مشاور سئو» — تب «دستگاه و کشور»
+ * ماژول «دستار سئو» — تب «دستگاه و کشور»
  * Path: core/advisor/advisor-breakdown-view.php
  *
  * داده از advisor-breakdown.php. کالبد: ۴ کارت آمار ← کارت دستگاه (سه ردیف با نوار سهم کلیک و تفسیر)
@@ -113,6 +113,8 @@ function hodima_seo_advisor_render_breakdown( array $status ): void {
 		[ 'label' => 'کلیک جستجوی تصویر', 'value' => $empty || ! $image ? '—' : esc_html( $n( (int) ( $image['clicks'] ?? 0 ) ) ), 'empty' => $empty || ! $image ],
 		[ 'label' => 'رتبه موبایل ضعیف', 'value' => $empty || ! $devices ? '—' : esc_html( $n( count( $gaps ) ) ), 'sub' => $gaps ? 'صفحه' : '', 'empty' => $empty || ! $devices ],
 	] );
+
+	hodima_seo_advisor_render_toolbar( 'breakdown' );
 
 	if ( $empty ) {
 		hodima_seo_ui_card_open( 'دستگاه و کشور' );

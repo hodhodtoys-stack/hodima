@@ -1,13 +1,13 @@
 <?php
 /**
- * ماژول «مشاور سئو» — کادر داخل ویرایش صفحه
+ * ماژول «دستار سئو» — کادر داخل ویرایش صفحه
  * Path: core/advisor/advisor-box.php
  *
- * کادر «مشاور سئو» کنار سئوباکس در ویرایش نوشته/برگه/محصول (کادر عادی) و دسته (postbox بعد
+ * کادر «دستار سئو» کنار سئوباکس در ویرایش نوشته/برگه/محصول (کادر عادی) و دسته (postbox بعد
  * از جدول فرم، پس از «سئو»، «خوشه‌بندی» و «لینک‌های مرتبط»): پیشنهادهای همین آدرس با متن
  * تازه صفحه و آمار گوگل (hodima_seo_advisor_analyze، نه نسخه ذخیره‌شده فهرست) + عدد و کلمه‌های
  * برتر. فقط خواندن؛ هیچ فیلدی ندارد و ذخیره صفحه را عوض نمی‌کند. فقط برای صفحه منتشرشده و
- * مدیر. طرح تأییدشده: Artifact «طرح مشاور سئو» (HODIMA-AUDIT.md بخش ۲۵۶). کادر داخل فرم خود
+ * مدیر. طرح تأییدشده: Artifact «طرح دستار سئو» (HODIMA-AUDIT.md بخش ۲۵۶). کادر داخل فرم خود
  * وردپرس است، پس «بازگرداندن» لینک GET با nonce است، نه فرم تودرتو.
  */
 
@@ -48,7 +48,7 @@ function hodima_seo_advisor_register_box( string $post_type, mixed $post = null 
 		return; // پیش‌نویس هنوز در گوگل نیست
 	}
 
-	add_meta_box( 'hodima_advisor_box', 'مشاور سئو', 'hodima_seo_advisor_render_post_box', $post_type, 'normal', 'default' );
+	add_meta_box( 'hodima_advisor_box', 'دستار سئو', 'hodima_seo_advisor_render_post_box', $post_type, 'normal', 'default' );
 }
 
 function hodima_seo_advisor_box_assets( string $hook ): void {
@@ -75,7 +75,7 @@ function hodima_seo_advisor_render_term_box( mixed $term ): void {
 	$link = get_term_link( $term );
 	?>
 	<div class="postbox hodima-advisor-postbox">
-		<div class="postbox-header"><h2 class="hndle">مشاور سئو</h2></div>
+		<div class="postbox-header"><h2 class="hndle">دستار سئو</h2></div>
 		<div class="inside"><?php hodima_seo_advisor_render_box( is_string( $link ) ? $link : '' ); ?></div>
 	</div>
 	<?php
@@ -96,7 +96,7 @@ function hodima_seo_advisor_week_label( string $date ): string {
 
 /**
  * کارت «روند کلیک هفتگی» + جمله «قبل/بعد از آخرین ویرایش» (طرح تأییدشده Artifact «طرح روند هفتگی
- * مشاور سئو»). بدون عکس هفتگی یا بدون هیچ نمایش در این هفته‌ها چیزی نشان داده نمی‌شود.
+ * دستار سئو»). بدون عکس هفتگی یا بدون هیچ نمایش در این هفته‌ها چیزی نشان داده نمی‌شود.
  *
  * @param array<string, mixed> $row ردیف آدرس (hodima_seo_advisor_page_row)
  */
@@ -166,7 +166,7 @@ function hodima_seo_advisor_render_box( string $url ): void {
 
 	// نوار وضعیت
 	printf(
-		'<header class="hodima-advisor-box__head"><span class="hodima-advisor-box__icon dashicons dashicons-chart-line" aria-hidden="true"></span><div class="hodima-advisor-box__title"><strong>مشاور سئو</strong><small>%s</small></div>%s</header>',
+		'<header class="hodima-advisor-box__head"><span class="hodima-advisor-box__icon dashicons dashicons-chart-line" aria-hidden="true"></span><div class="hodima-advisor-box__title"><strong>دستار سئو</strong><small>%s</small></div>%s</header>',
 		esc_html( $status['fetched'] > 0 ? sprintf( 'داده %1$s روز اخیر · آخرین دریافت %2$s پیش', $n( $status['days'] ), human_time_diff( $status['fetched'] ) ) : 'هنوز داده‌ای گرفته نشده' ),
 		$ignored
 			? '<span class="hodima-advisor-box__pill">نادیده گرفته شده</span>'
@@ -174,7 +174,7 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	);
 
 	if ( null === $analysis ) {
-		echo '<p class="hodima-advisor-box__empty">' . esc_html( $status['fetched'] > 0 ? 'برای این آدرس هنوز داده‌ای در سرچ کنسول ثبت نشده است (تازه منتشر شده یا نمایشی نداشته). بعد از دریافت داده بعدی دوباره ببینید.' : 'داده سرچ کنسول هنوز گرفته نشده است؛ در «ابزارهای هدیما ← مشاور سئو» دکمه «به‌روزرسانی داده» را بزنید.' ) . '</p></div>';
+		echo '<p class="hodima-advisor-box__empty">' . esc_html( $status['fetched'] > 0 ? 'برای این آدرس هنوز داده‌ای در سرچ کنسول ثبت نشده است (تازه منتشر شده یا نمایشی نداشته). بعد از دریافت داده بعدی دوباره ببینید.' : 'داده سرچ کنسول هنوز گرفته نشده است؛ در «ابزارهای هدیما ← دستار سئو» دکمه «به‌روزرسانی داده» را بزنید.' ) . '</p></div>';
 		return;
 	}
 
@@ -212,7 +212,7 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	// ایرادها و گام‌های رفع
 	echo '<div class="hodima-advisor-box__main">';
 	if ( $ignored ) {
-		echo '<p class="hodima-advisor-box__empty">این آدرس در «مشاور سئو» نادیده گرفته شده و پیشنهادی نمی‌گیرد.</p>';
+		echo '<p class="hodima-advisor-box__empty">این آدرس در «دستار سئو» نادیده گرفته شده و پیشنهادی نمی‌گیرد.</p>';
 	} elseif ( ! $analysis['suggestions'] ) {
 		echo '<p class="hodima-advisor-box__empty">با آمار این بازه پیشنهادی برای این صفحه نیست؛ نرخ کلیک و کلمه‌های اصلی در حد معمول‌اند.</p>';
 	}
@@ -242,7 +242,7 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	echo '</div>';
 
 	echo '<footer class="hodima-advisor-box__foot">';
-	printf( '<a class="hodima-advisor-box__link" href="%s">دیدن در صفحه مشاور سئو</a>', esc_url( hodima_seo_advisor_page_url( [ 'q' => (string) $row['path'] ] ) ) );
+	printf( '<a class="hodima-advisor-box__link" href="%s">دیدن در صفحه دستار سئو</a>', esc_url( hodima_seo_advisor_page_url( [ 'q' => (string) $row['path'] ] ) ) );
 
 	if ( $ignored ) {
 		printf(

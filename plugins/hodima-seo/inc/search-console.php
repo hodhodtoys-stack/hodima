@@ -15,7 +15,7 @@
  * فقط به این فایل می‌سپارد.
  *
  * کلید: «کلید جدای دیسکاور» (گزینه hodima_discover_sc_key)، وگرنه «سرویس
- * اکانت» ماژول Google Indexing (روشن یا خاموش). مشاور سئو (پارامتر
+ * اکانت» ماژول Google Indexing (روشن یا خاموش). دستار سئو (پارامتر
  * $consumer = HODIMA_SEO_SC_ADVISOR) اول کلید مخصوص خودش را می‌خواند (ثابت
  * HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON در wp-config، وگرنه گزینه
  * hodima_advisor_sc_key) تا فقط‌خواندنی و جدا از دیسکاور و Indexing باشد؛
@@ -42,7 +42,7 @@ const HODIMA_SEO_SC_KEY_OPTION = 'hodima_discover_sc_key';
 /** گزینه propertyهایی که حساب سرویس در سرچ کنسول به آن‌ها دسترسی دارد (از آخرین اتصال). */
 const HODIMA_SEO_SC_SITES_OPTION = 'hodima_discover_sc_sites';
 
-/** مصرف‌کننده‌ای که کلید و فهرست property مخصوص خودش را دارد (مشاور سئو). خالی = اتصال مشترک دیسکاور. */
+/** مصرف‌کننده‌ای که کلید و فهرست property مخصوص خودش را دارد (دستار سئو). خالی = اتصال مشترک دیسکاور. */
 const HODIMA_SEO_SC_ADVISOR = 'advisor';
 
 /** «کلید مخصوص مشاور» (JSON حساب سرویس؛ autoload خاموش). ثابت wp-config با همین نام‌گذاری امن‌تر است و اولویت دارد. */
@@ -275,7 +275,7 @@ function hodima_seo_sc_token( bool $force = false, string $consumer = '' ): stri
 	$key = json_decode( hodima_seo_sc_key_json( $consumer ), true );
 
 	if ( ! is_array( $key ) || empty( $key['client_email'] ) || empty( $key['private_key'] ) || empty( $key['token_uri'] ) ) {
-		return new WP_Error( 'hodima_sc_no_key', 'کلید حساب سرویس گوگل تنظیم نشده است؛ در ' . ( HODIMA_SEO_SC_ADVISOR === $consumer ? '«مشاور سئو ← تنظیمات مشاور»' : '«گوگل دیسکاور ← آمار سرچ کنسول»' ) . ' فایل JSON حساب سرویس را وارد کنید.' );
+		return new WP_Error( 'hodima_sc_no_key', 'کلید حساب سرویس گوگل تنظیم نشده است؛ در ' . ( HODIMA_SEO_SC_ADVISOR === $consumer ? '«دستار سئو ← تنظیمات مشاور»' : '«گوگل دیسکاور ← آمار سرچ کنسول»' ) . ' فایل JSON حساب سرویس را وارد کنید.' );
 	}
 
 	// توکن هر حساب جدا: با عوض شدن کلید (ایمیل)، توکن حساب قبلی استفاده نمی‌شود
@@ -463,7 +463,7 @@ function hodima_seo_sc_failure_message( ?WP_Error $last, string $consumer = '' )
 	$hint   = $known
 		? ' propertyهایی که این حساب به آن‌ها دسترسی دارد: ' . implode( '، ', $known ) . '.'
 		: ' این حساب هنوز به هیچ property دسترسی ندارد.';
-	$where  = HODIMA_SEO_SC_ADVISOR === $consumer ? ' در «مشاور سئو ← تنظیمات مشاور»' : ' در «گوگل دیسکاور ← آمار سرچ کنسول»';
+	$where  = HODIMA_SEO_SC_ADVISOR === $consumer ? ' در «دستار سئو ← تنظیمات مشاور»' : ' در «گوگل دیسکاور ← آمار سرچ کنسول»';
 
 	return match ( true ) {
 		403 === $status => 'سرچ کنسول اجازه نداد: ایمیل حساب سرویس (' . hodima_seo_sc_email( $consumer ) . ') را در سرچ کنسول ← تنظیمات ← کاربران و مجوزها به property سایت اضافه کنید، یا property درست را' . $where . ' انتخاب کنید.' . $hint,

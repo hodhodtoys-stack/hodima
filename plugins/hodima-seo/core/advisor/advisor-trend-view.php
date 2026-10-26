@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «مشاور سئو» — تب «روند و فصل‌ها»
+ * ماژول «دستار سئو» — تب «روند و فصل‌ها»
  * Path: core/advisor/advisor-trend-view.php
  *
  * داده از advisor-trend.php. کالبد: ۴ کارت آمار ← نمودار کلیک ماهانه (۱۶ ماه، ماه ناقص کم‌رنگ، تفسیر و
@@ -71,6 +71,8 @@ function hodima_seo_advisor_render_trend_tab(): void {
 		[ 'label' => 'کلمه تازه', 'value' => $empty ? '—' : esc_html( $n( count( $new ) ) ), 'sub' => $empty ? '' : '۲۸ روز اخیر', 'empty' => $empty ],
 		[ 'label' => 'کلمه از دست رفته', 'value' => $empty ? '—' : esc_html( $n( count( $lost ) ) ), 'sub' => $empty ? '' : '۲۸ روز اخیر', 'empty' => $empty ],
 	] );
+
+	hodima_seo_advisor_render_toolbar( 'trend' );
 
 	if ( $empty ) {
 		hodima_seo_ui_card_open( 'روند و فصل‌ها' );
