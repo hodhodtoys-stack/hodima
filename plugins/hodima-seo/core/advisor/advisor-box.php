@@ -130,6 +130,7 @@ function hodima_seo_advisor_render_trend( array $row ): void {
 
 	$compare = hodima_seo_advisor_before_after( $weeks, $modified );
 	if ( null !== $compare ) {
+		$vs_text = hodima_seo_advisor_effect_vs_site_text( hodima_seo_advisor_effect_vs_site( $compare ) );
 		printf(
 			'<p class="hodima-advisor-box__compare"><strong>%1$s</strong> %2$s</p>',
 			esc_html( sprintf( 'بعد از آخرین ویرایش (%s):', hodima_seo_advisor_week_label( $compare['modified'] ) ) ),
@@ -143,7 +144,7 @@ function hodima_seo_advisor_render_trend( array $row ): void {
 					$n( $compare['after']['weeks'] ),
 					$n( $compare['before']['position'], 1 ),
 					$n( $compare['after']['position'], 1 )
-				)
+				) . ( '' !== $vs_text ? ' ' . $vs_text : '' )
 			)
 		);
 	}

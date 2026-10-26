@@ -80,9 +80,10 @@ function hodima_seo_advisor_task_effect_text( array $task ): string {
 	}
 
 	$effect = $result['effect'];
+	$vs     = hodima_seo_advisor_effect_vs_site_text( $result['site'] ?? null );
 
 	return sprintf(
-		'میانگین کلیک هفتگی از %1$s به %2$s %3$s (%4$s هفته قبل ← %5$s هفته بعد)؛ رتبه از %6$s به %7$s. تغییر می‌تواند از فصل یا کار دیگری هم باشد.',
+		'میانگین کلیک هفتگی از %1$s به %2$s %3$s (%4$s هفته قبل ← %5$s هفته بعد)؛ رتبه از %6$s به %7$s. ' . ( '' !== $vs ? $vs . ' باز هم ممکن است کار دیگری اثر گذاشته باشد.' : 'تغییر می‌تواند از فصل یا کار دیگری هم باشد.' ),
 		$n( $effect['before']['clicks'], 1 ),
 		$n( $effect['after']['clicks'], 1 ),
 		$effect['after']['clicks'] >= $effect['before']['clicks'] ? 'رسیده' : 'افتاده',
@@ -109,7 +110,8 @@ function hodima_seo_advisor_render_tasks(): void {
 	foreach ( $all as $task ) {
 		if ( 'done' === $task['status'] ) {
 			$effect = hodima_seo_advisor_task_effect( $task );
-			if ( 'ok' === $effect['state'] && $effect['effect']['after']['clicks'] > $effect['effect']['before']['clicks'] ) {
+			// اثر مثبت = بهتر از روند کل سایت؛ بدون داده سایت، فقط بیشتر شدن کلیک
+			if ( 'ok' === $effect['state'] && ( null !== ( $effect['site'] ?? null ) ? 'above' === $effect['site']['verdict'] : $effect['effect']['after']['clicks'] > $effect['effect']['before']['clicks'] ) ) {
 				++$positive;
 			}
 		}
@@ -119,7 +121,7 @@ function hodima_seo_advisor_render_tasks(): void {
 		[ 'label' => 'در حال انجام', 'value' => $empty ? '—' : esc_html( $n( $counts['doing'] ) ), 'empty' => $empty ],
 		[ 'label' => 'انجام شد', 'value' => $empty ? '—' : esc_html( $n( $counts['done'] ) ), 'empty' => $empty ],
 		[ 'label' => 'رد شد', 'value' => $empty ? '—' : esc_html( $n( $counts['rejected'] ) ), 'empty' => $empty ],
-		[ 'label' => 'با اثر مثبت', 'value' => $empty ? '—' : esc_html( $n( $positive ) ), 'sub' => $empty ? '' : 'کلیک هفتگی بیشتر شده', 'empty' => $empty ],
+		[ 'label' => 'با اثر مثبت', 'value' => $empty ? '—' : esc_html( $n( $positive ) ), 'sub' => $empty ? '' : 'کلیک هفتگی بهتر از روند سایت', 'empty' => $empty ],
 	] );
 
 	hodima_seo_ui_card_open( 'کارهای من', 'هر پیشنهاد را که اجرا کردید («انجام شد»)، در حال انجام است یا قبول ندارید («رد شد»)، از کادر «مشاور سئو» داخل ویرایش صفحه علامت بزنید. اثر کارهای «انجام شد» اینجا با کلیک هفتگی اندازه می‌شود. این فهرست فقط یادداشت شماست و چیزی را در سایت عوض نمی‌کند.' );

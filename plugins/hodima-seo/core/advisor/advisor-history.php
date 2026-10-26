@@ -218,7 +218,7 @@ function hodima_seo_advisor_object_modified( string $kind, int $id ): string {
  * اگر ویرایش خیلی قدیمی باشد (قبل از ۳ هفته آخر)، هفته‌های «قبل» ممکن است ذخیره نشده باشند.
  *
  * @param list<array{week: string, clicks: int, impressions: int, position: float}> $history
- * @return array{modified: string, before: array{weeks: int, clicks: float, impressions: float, position: float}, after: array{weeks: int, clicks: float, impressions: float, position: float}}|null
+ * @return array{modified: string, before: array{weeks: int, clicks: float, impressions: float, position: float}, after: array{weeks: int, clicks: float, impressions: float, position: float}, before_weeks: list<string>, after_weeks: list<string>}|null
  */
 function hodima_seo_advisor_before_after( array $history, string $modified ): ?array {
 
@@ -260,5 +260,101 @@ function hodima_seo_advisor_before_after( array $history, string $modified ): ?a
 		];
 	};
 
-	return [ 'modified' => $modified, 'before' => $avg( $before ), 'after' => $avg( $after ) ];
+	return [
+		'modified'     => $modified,
+		'before'       => $avg( $before ),
+		'after'        => $avg( $after ),
+		'before_weeks' => array_column( $before, 'week' ),
+		'after_weeks'  => array_column( $after, 'week' ),
+	];
+}
+
+/**
+ * کلیک هفتگی کل سایت برای هفته‌های داده‌شده (جمع همه آدرس‌های عکس هفتگی؛ هفته‌ای که عکسش نیست در نتیجه نمی‌آید).
+ *
+ * @param list<string> $weeks تاریخ پایان هفته‌ها (Y-m-d)
+ * @return array<string, int> هفته ← کلیک
+ */
+function hodima_seo_advisor_history_site_weekly( array $weeks ): array {
+
+	global $wpdb;
+
+	if ( ! $weeks ) {
+		return [];
+	}
+
+	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- تعداد %s با array_fill هم‌اندازه هفته‌هاست
+			'SELECT week_end, SUM(clicks) AS clicks FROM %i WHERE week_end IN (' . implode( ',', array_fill( 0, count( $weeks ), '%s' ) ) . ') GROUP BY week_end', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- فقط placeholder
+			hodima_seo_advisor_table( 'history' ),
+			...$weeks
+		),
+		ARRAY_A
+	);
+
+	$out = [];
+	foreach ( $rows as $row ) {
+		$out[ (string) $row['week_end'] ] = (int) $row['clicks'];
+	}
+
+	return $out;
+}
+
+/**
+ * اثر خالص: تغییر کلیک صفحه در بازه قبل/بعد در برابر تغییر کل سایت در همان هفته‌ها. فصل و افت یا رشد
+ * کل سایت هم در عدد صفحه هست، پس تفاوت این دو برآورد بهتری از اثر کار است (باز هم فقط مقایسه است، نه اثبات).
+ *
+ * @param array{before: array{clicks: float}, after: array{clicks: float}, before_weeks?: list<string>, after_weeks?: list<string>} $effect خروجی before_after
+ * @return array{page: float|null, site: float, net: float|null, verdict: string}|null null اگر هفته‌های سایت کافی نیست؛ verdict: above، same، below
+ */
+function hodima_seo_advisor_effect_vs_site( array $effect ): ?array {
+
+	$before_weeks = (array) ( $effect['before_weeks'] ?? [] );
+	$after_weeks  = (array) ( $effect['after_weeks'] ?? [] );
+	$site         = hodima_seo_advisor_history_site_weekly( array_values( array_map( 'strval', [ ...$before_weeks, ...$after_weeks ] ) ) );
+
+	$mean = static function ( array $weeks ) use ( $site ): ?float {
+		$values = array_values( array_intersect_key( $site, array_flip( $weeks ) ) );
+		return $values ? array_sum( $values ) / count( $values ) : null;
+	};
+
+	$site_before = $mean( $before_weeks );
+	$site_after  = $mean( $after_weeks );
+
+	if ( null === $site_before || null === $site_after || $site_before <= 0 ) {
+		return null;
+	}
+
+	$site_change = ( $site_after - $site_before ) / $site_before * 100;
+	$before      = (float) $effect['before']['clicks'];
+	$page_change = $before > 0 ? ( (float) $effect['after']['clicks'] - $before ) / $before * 100 : null;
+	$net         = null === $page_change ? null : $page_change - $site_change;
+
+	return [
+		'page'    => null === $page_change ? null : round( $page_change, 1 ),
+		'site'    => round( $site_change, 1 ),
+		'net'     => null === $net ? null : round( $net, 1 ),
+		'verdict' => null === $net ? 'same' : ( $net >= 10 ? 'above' : ( $net <= -10 ? 'below' : 'same' ) ),
+	];
+}
+
+/**
+ * جمله مقایسه با روند کل سایت برای نمایش (خالی اگر مقایسه ممکن نیست).
+ *
+ * @param array{page: float|null, site: float, net: float|null, verdict: string}|null $vs
+ */
+function hodima_seo_advisor_effect_vs_site_text( ?array $vs ): string {
+
+	if ( null === $vs ) {
+		return '';
+	}
+
+	$n     = static fn( float $value ): string => number_format_i18n( abs( $value ), 0 );
+	$trend = 0.0 === round( $vs['site'] ) ? 'کل سایت در همین هفته‌ها تقریبا ثابت بود' : sprintf( 'کل سایت در همین هفته‌ها %1$s٪ %2$s شد', $n( $vs['site'] ), $vs['site'] > 0 ? 'بیشتر' : 'کمتر' );
+
+	return match ( $vs['verdict'] ) {
+		'above' => $trend . '؛ پس این صفحه بهتر از روند کل سایت عمل کرده (حدود ' . $n( (float) $vs['net'] ) . ' امتیاز بالاتر).',
+		'below' => $trend . '؛ پس این صفحه ضعیف‌تر از روند کل سایت بوده (حدود ' . $n( (float) $vs['net'] ) . ' امتیاز پایین‌تر).',
+		default => $trend . '؛ پس تغییر این صفحه هم‌راستا با روند کل سایت است و اثر مشخصی از این کار دیده نمی‌شود.',
+	};
 }

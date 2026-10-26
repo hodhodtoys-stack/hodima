@@ -126,7 +126,7 @@ function hodima_seo_advisor_task_counts(): array {
  * اثر یک کار «انجام شد» روی کلیک هفتگی صفحه.
  *
  * @param array{path: string, status: string, at: int} $task
- * @return array{state: string, effect?: array<string, mixed>} state: wait (هنوز زود است)، none (تاریخچه کافی نیست)، ok
+ * @return array{state: string, effect?: array<string, mixed>, site?: array<string, mixed>|null} state: wait (هنوز زود است)، none (تاریخچه کافی نیست)، ok؛ site = مقایسه با روند کل سایت (hodima_seo_advisor_effect_vs_site)
  */
 function hodima_seo_advisor_task_effect( array $task ): array {
 
@@ -135,7 +135,7 @@ function hodima_seo_advisor_task_effect( array $task ): array {
 	$effect  = hodima_seo_advisor_before_after( $history, $day );
 
 	if ( null !== $effect ) {
-		return [ 'state' => 'ok', 'effect' => $effect ];
+		return [ 'state' => 'ok', 'effect' => $effect, 'site' => hodima_seo_advisor_effect_vs_site( $effect ) ];
 	}
 
 	// هنوز هفته کاملی بعد از آن روز نیست؟

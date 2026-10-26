@@ -30,6 +30,9 @@ const HODIMA_SEO_ADVISOR_STATUS_OPTION   = 'hodima_advisor_status';
 /** آدرس‌هایی که مدیر «نادیده گرفتن» زده (مثلا صفحه‌های برندی مثل /about-us/): پیشنهاد ندارند. */
 const HODIMA_SEO_ADVISOR_IGNORED_OPTION = 'hodima_advisor_ignored';
 
+/** جمع کل سایت (کلیک/نمایش بازه فعلی و قبلی)؛ برای جدا کردن افت یک صفحه از افت کل سایت. autoload خاموش. */
+const HODIMA_SEO_ADVISOR_SITE_OPTION = 'hodima_advisor_site';
+
 /** گروه‌های فهرست پیشخوان ← نوع شیء‌ها. */
 const HODIMA_SEO_ADVISOR_KIND_GROUPS = [
 	'product'  => [ 'product' ],
@@ -433,7 +436,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 	$pages_table   = hodima_seo_advisor_table( 'pages' );
 	$queries_table = hodima_seo_advisor_table( 'queries' );
 
-	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_rows, $query_rows, $pages_table, $queries_table ): array|WP_Error {
+	$result = hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_rows, $query_rows, $pages_table, $queries_table ): array|WP_Error {
 
 		$skipped = 0;
 		$fail    = static fn( string $what ): WP_Error => new WP_Error( 'hodima_advisor_store', sprintf( 'ذخیره %1$s در پایگاه داده ناموفق بود (%2$s)؛ داده قبلی دست‌نخورده ماند.', $what, $wpdb->last_error ) );
@@ -468,6 +471,55 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 
 		return [ 'pages' => count( $page_rows ), 'queries' => count( $query_rows ) - $skipped, 'skipped' => $skipped ];
 	} );
+
+	if ( ! is_wp_error( $result ) ) {
+		hodima_seo_advisor_site_refresh();
+	}
+
+	return $result;
+}
+
+/**
+ * جمع کل جدول آدرس‌ها را می‌خواند و برای قاعده «افت» نگه می‌دارد (یک بار بعد از هر ذخیره، نه برای هر آدرس).
+ *
+ * @return array{clicks: int, prev_clicks: int, impressions: int, prev_impressions: int}
+ */
+function hodima_seo_advisor_site_refresh(): array {
+
+	global $wpdb;
+
+	$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare( 'SELECT SUM(clicks) AS clicks, SUM(prev_clicks) AS prev_clicks, SUM(impressions) AS impressions, SUM(prev_impressions) AS prev_impressions FROM %i', hodima_seo_advisor_table( 'pages' ) ),
+		ARRAY_A
+	);
+	$row = is_array( $row ) ? $row : [];
+
+	$totals = [
+		'clicks'           => (int) ( $row['clicks'] ?? 0 ),
+		'prev_clicks'      => (int) ( $row['prev_clicks'] ?? 0 ),
+		'impressions'      => (int) ( $row['impressions'] ?? 0 ),
+		'prev_impressions' => (int) ( $row['prev_impressions'] ?? 0 ),
+	];
+
+	update_option( HODIMA_SEO_ADVISOR_SITE_OPTION, $totals, false );
+
+	return $totals;
+}
+
+/**
+ * نسبت کلیک و نمایش کل سایت به بازه قبل (null اگر بازه قبل برای قضاوت کم‌داده است).
+ *
+ * @return array{clicks_ratio: float|null, impressions_ratio: float|null}
+ */
+function hodima_seo_advisor_site_change(): array {
+
+	$totals = get_option( HODIMA_SEO_ADVISOR_SITE_OPTION, null );
+	$totals = is_array( $totals ) && isset( $totals['clicks'], $totals['prev_clicks'] ) ? $totals : hodima_seo_advisor_site_refresh();
+
+	return [
+		'clicks_ratio'      => (int) $totals['prev_clicks'] >= 100 ? (float) $totals['clicks'] / (int) $totals['prev_clicks'] : null,
+		'impressions_ratio' => (int) ( $totals['prev_impressions'] ?? 0 ) >= 1000 ? (float) $totals['impressions'] / (int) $totals['prev_impressions'] : null,
+	];
 }
 
 /**
@@ -750,6 +802,7 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 		delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+		delete_option( HODIMA_SEO_ADVISOR_SITE_OPTION );
 		wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
 	}
 

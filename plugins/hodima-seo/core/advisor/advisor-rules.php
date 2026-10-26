@@ -12,7 +12,8 @@
  *   missing_content   کلمه پرنمایش که در متن صفحه هم نیست
  *   weak_query        کلمه پرنمایشی که رتبه ۲۱ تا ۶۰ دارد (صفحه یا بخش اختصاصی لازم است)
  *   cannibal          چند آدرس برای یک کلمه نمایش می‌گیرند (رقابت داخلی؛ فقط اطلاع)
- *   decline           کلیک نسبت به بازه قبلی افت کرده
+ *   decline           کلیک نسبت به بازه قبلی افت کرده؛ علت (رتبه / نمایش / نرخ کلیک) را می‌گوید و اگر
+ *                     کل سایت هم افت کرده، فقط سهم مخصوص همین صفحه را «کلیک بالقوه» می‌شمارد
  *
  * «کلیک بالقوه» (potential) تخمین کلیکی است که در همین بازه اضافه می‌شد:
  *   نرخ کلیک: نمایش × (نرخ معمول رتبه − نرخ فعلی)؛ کلمه‌ها: همین حساب برای نمایش آن کلمه با
@@ -226,6 +227,58 @@ function hodima_seo_advisor_num( float $number, int $decimals = 0 ): string {
 
 /* ── قاعده‌ها ── */
 
+/** افت صفحه باید دست‌کم این‌قدر بدتر از انتظارِ همراه با کل سایت باشد (۰٫۸۵ = ۱۵٪ بیشتر از افت سایت). */
+const HODIMA_SEO_ADVISOR_DECLINE_BEYOND_SITE = 0.85;
+
+/**
+ * علت افت کلیک یک صفحه از تغییر رتبه، نمایش و نرخ کلیک (بازه فعلی و قبلی همان ردیف) و وضعیت کل سایت.
+ *
+ *   position     رتبه دست‌کم ۲ پله بدتر شده
+ *   impressions  نمایش ≥ ۲۵٪ کمتر ولی رتبه ثابت (تقاضا یا ایندکس)
+ *   ctr          نمایش و رتبه ثابت ولی نرخ کلیک ≥ ۲۵٪ کمتر (عنوان/متا یا نتیجه‌های رقیب)
+ *   mixed        هیچ‌کدام تنها نیست
+ *
+ * @param array<string, mixed> $row
+ * @param array{clicks_ratio: float|null, impressions_ratio: float|null}|null $site
+ * @return array{cause: string, text: string}
+ */
+function hodima_seo_advisor_decline_cause( array $row, ?array $site ): array {
+
+	$impressions      = (int) ( $row['impressions'] ?? 0 );
+	$prev_impressions = (int) ( $row['prev_impressions'] ?? 0 );
+	$position         = (float) ( $row['position'] ?? 0 );
+	$prev_position    = (float) ( $row['prev_position'] ?? 0 );
+	$delta            = $position > 0 && $prev_position > 0 ? $position - $prev_position : 0.0;
+	$impr_ratio       = $prev_impressions > 0 ? $impressions / $prev_impressions : null;
+	$ctr_now          = $impressions > 0 ? (int) $row['clicks'] / $impressions : 0.0;
+	$ctr_prev         = $prev_impressions > 0 ? (int) $row['prev_clicks'] / $prev_impressions : 0.0;
+	$ctr_ratio        = $ctr_prev > 0 ? $ctr_now / $ctr_prev : null;
+
+	if ( $delta >= 2.0 ) {
+		$cause = 'position';
+		$text  = sprintf( 'علت اصلی: رتبه از %1$s به %2$s بدتر شده است. محتوای صفحه‌های بالاتر از شما، لینک‌های داخلی به این صفحه و تغییرهای اخیر خود صفحه (متن، آدرس، عنوان) را بررسی کنید.', hodima_seo_advisor_num( $prev_position, 1 ), hodima_seo_advisor_num( $position, 1 ) );
+	} elseif ( null !== $impr_ratio && $impr_ratio <= 0.75 ) {
+		$cause = 'impressions';
+		$text  = sprintf( 'علت اصلی: نمایش %s٪ کمتر شده ولی رتبه تقریبا ثابت است؛ یعنی تقاضای جستجو (فصل) کم شده یا گوگل صفحه را برای کلمه‌های کمتری نشان می‌دهد. وضعیت ایندکس و canonical این صفحه را در تب «ایندکس» ببینید.', hodima_seo_advisor_num( ( 1 - $impr_ratio ) * 100 ) );
+	} elseif ( null !== $ctr_ratio && $ctr_ratio <= 0.75 ) {
+		$cause = 'ctr';
+		$text  = sprintf( 'علت اصلی: نمایش و رتبه تقریبا ثابت‌اند ولی نرخ کلیک از %1$s٪ به %2$s٪ رسیده؛ عنوان و توضیح متا ضعیف‌تر شده‌اند یا نتیجه‌های رقیب (ریچ‌اسنیپت، تبلیغ، پاسخ مستقیم) جذاب‌ترند. عنوان و متا را بازنویسی کنید.', hodima_seo_advisor_num( $ctr_prev * 100, 2 ), hodima_seo_advisor_num( $ctr_now * 100, 2 ) );
+	} else {
+		$cause = 'mixed';
+		$text  = 'رتبه، نمایش و نرخ کلیک هرکدام کمی تغییر کرده و علت واحدی دیده نمی‌شود؛ تغییر اخیر عنوان، آدرس، لینک‌های داخلی و رتبه کلمه‌های اصلی را بررسی کنید.';
+	}
+
+	$ratio = $site['clicks_ratio'] ?? null;
+
+	if ( null !== $ratio && $ratio <= 0.85 ) {
+		$text .= sprintf( ' توجه: کل سایت هم در همین بازه حدود %s٪ کلیک از دست داده؛ «کلیک بالقوه» فقط افت اضافه این صفحه است.', hodima_seo_advisor_num( ( 1 - $ratio ) * 100 ) );
+	} elseif ( null !== $ratio && $ratio >= 1.15 ) {
+		$text .= sprintf( ' توجه: در همین بازه کل سایت حدود %s٪ رشد کرده، پس این افت مخصوص همین صفحه است.', hodima_seo_advisor_num( ( $ratio - 1 ) * 100 ) );
+	}
+
+	return [ 'cause' => $cause, 'text' => $text ];
+}
+
 /**
  * پیشنهادهای یک آدرس (تابع خالص: بدون خواندن پایگاه داده).
  *
@@ -233,9 +286,10 @@ function hodima_seo_advisor_num( float $number, int $decimals = 0 ): string {
  * @param list<array{term: string, clicks: int, impressions: int, position: float}> $queries پرنمایش‌ترین اول
  * @param array{title_headings: string, content: string}|null $text null = متن صفحه معلوم نیست؛ قاعده‌های متن اجرا نمی‌شوند
  * @param array<string, list<array{path: string, impressions: int}>> $competitors کلمه ← آدرس‌های دیگری که برایش نمایش می‌گیرند
+ * @param array{clicks_ratio: float|null, impressions_ratio: float|null}|null $site تغییر کل سایت نسبت به بازه قبل (hodima_seo_advisor_site_change)؛ null = ناشناخته
  * @return list<array{rule: string, term: string, title: string, detail: string, potential: int}>
  */
-function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $text, array $competitors = [] ): array {
+function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $text, array $competitors = [], ?array $site = null ): array {
 
 	if ( 1 === preg_match( '#/page/\d+/?$#', $row['path'] ) ) {
 		return []; // صفحه‌بندی آرشیو: پیشنهاد جدا ندارد
@@ -350,19 +404,25 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 		}
 	}
 
-	// ۵. افت کلیک
-	if ( $row['prev_clicks'] >= $cfg['decline_min_clicks'] && $row['clicks'] < $row['prev_clicks'] * $cfg['decline_ratio'] ) {
-		$list[] = [
+	// ۵. افت کلیک نسبت به انتظار: اگر کل سایت هم افت کرده باشد، انتظار همراه آن پایین می‌آید و فقط افت اضافه
+	// این صفحه پیشنهاد می‌شود (افتی که کل سایت دارد علت مخصوص این صفحه ندارد)
+	$site_ratio = $site['clicks_ratio'] ?? null;
+	$expected   = $row['prev_clicks'] * ( null === $site_ratio ? 1.0 : max( 0.1, min( 1.0, $site_ratio ) ) );
+	if ( $row['prev_clicks'] >= $cfg['decline_min_clicks'] && $row['clicks'] < $row['prev_clicks'] * $cfg['decline_ratio'] && $row['clicks'] < $expected * HODIMA_SEO_ADVISOR_DECLINE_BEYOND_SITE ) {
+		$diagnosis = hodima_seo_advisor_decline_cause( $row, $site );
+		$list[]    = [
 			'rule'      => 'decline',
 			'term'      => '',
+			'cause'     => $diagnosis['cause'],
 			'title'     => 'کلیک این صفحه افت کرده',
 			'detail'    => sprintf(
-				'کلیک از %1$s به %2$s رسیده (%3$s٪ کمتر از بازه قبل). تغییر اخیر عنوان، آدرس، لینک‌های داخلی یا رتبه کلمه‌های اصلی را بررسی کنید.',
+				'کلیک از %1$s به %2$s رسیده (%3$s٪ کمتر از بازه قبل). %4$s',
 				hodima_seo_advisor_num( $row['prev_clicks'] ),
 				hodima_seo_advisor_num( $row['clicks'] ),
-				hodima_seo_advisor_num( ( 1 - $row['clicks'] / $row['prev_clicks'] ) * 100 )
+				hodima_seo_advisor_num( ( 1 - $row['clicks'] / $row['prev_clicks'] ) * 100 ),
+				$diagnosis['text']
 			),
-			'potential' => $row['prev_clicks'] - $row['clicks'],
+			'potential' => (int) max( 0, round( $expected - $row['clicks'] ) ),
 		];
 	}
 
@@ -425,7 +485,7 @@ function hodima_seo_advisor_analyze( string $path ): ?array {
 
 	$queries     = hodima_seo_advisor_queries( $row['path'], HODIMA_SEO_ADVISOR_QUERIES_PER_PAGE );
 	$suggestions = hodima_seo_advisor_enrich(
-		hodima_seo_advisor_suggestions( $row, $queries, hodima_seo_advisor_page_text( $row ), hodima_seo_advisor_competitors( $row['path'], $queries ) ),
+		hodima_seo_advisor_suggestions( $row, $queries, hodima_seo_advisor_page_text( $row ), hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change() ),
 		$row,
 		$queries
 	);

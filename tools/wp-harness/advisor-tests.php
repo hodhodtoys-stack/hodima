@@ -1304,6 +1304,58 @@ hodima_ad( 'استثنای یک نوبت: ثبت خطا، بقیه نوبت‌ه
 // دریافت کامل: همه نوبت‌ها همان درخواست تمام می‌شوند (سایت کوچک)
 hodima_ad( 'پاک کردن داده‌ها صف و رویداد نوبت‌ها را هم برمی‌دارد', [ update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, $st_state, false ), wp_schedule_single_event( time() + 60, HODIMA_SEO_ADVISOR_STAGE_CRON ), hodima_seo_advisor_clear_data(), get_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, 'none' ), wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ], [ true, true, true, 'none', false ] );
 
+echo "=== افت کلیک: علت و مقایسه با کل سایت؛ اثر خالص در برابر روند سایت (بخش ۲۸۱)\n";
+$drow = static fn( array $o = [] ): array => $o + [ 'path' => '/dc/', 'clicks' => 600, 'impressions' => 6000, 'position' => 6.0, 'prev_clicks' => 1000, 'prev_impressions' => 6000, 'prev_position' => 6.0 ];
+hodima_ad( 'علت افت: رتبه ۳ پله بدتر ← position', hodima_seo_advisor_decline_cause( $drow( [ 'position' => 9.0, 'impressions' => 3000 ] ), null )['cause'], 'position' );
+hodima_ad( 'علت افت: نمایش نصف و رتبه ثابت ← impressions', hodima_seo_advisor_decline_cause( $drow( [ 'impressions' => 3000, 'clicks' => 300 ] ), null )['cause'], 'impressions' );
+hodima_ad( 'علت افت: نمایش و رتبه ثابت، نرخ کلیک کم ← ctr', hodima_seo_advisor_decline_cause( $drow(), null )['cause'], 'ctr' );
+hodima_ad( 'علت افت: تغییر کوچک ← mixed', hodima_seo_advisor_decline_cause( $drow( [ 'impressions' => 5500, 'position' => 7.0, 'clicks' => 660, 'prev_clicks' => 700 ] ), null )['cause'], 'mixed' );
+hodima_ad( 'علت افت: رتبه بدتر بر نمایش کمتر مقدم است', hodima_seo_advisor_decline_cause( $drow( [ 'impressions' => 2000, 'position' => 12.0 ] ), null )['cause'], 'position' );
+hodima_ad( 'جمله علت: کل سایت هم افت کرده ← توجه؛ رشد کرده ← مخصوص همین صفحه؛ ثابت ← بدون توجه', [ str_contains( hodima_seo_advisor_decline_cause( $drow(), [ 'clicks_ratio' => 0.5, 'impressions_ratio' => null ] )['text'], 'کل سایت هم' ), str_contains( hodima_seo_advisor_decline_cause( $drow(), [ 'clicks_ratio' => 1.3, 'impressions_ratio' => null ] )['text'], 'مخصوص همین صفحه' ), str_contains( hodima_seo_advisor_decline_cause( $drow(), [ 'clicks_ratio' => 0.95, 'impressions_ratio' => null ] )['text'], 'توجه' ) ], [ true, true, false ] );
+$decl = static fn( array $row, ?array $site ): array => array_values( array_filter( hodima_seo_advisor_suggestions( $row, [], null, [], $site ), static fn( array $x ): bool => 'decline' === $x['rule'] ) );
+hodima_ad( 'افت بدون اطلاعات سایت مثل قبل: کلیک از دست‌رفته ۴۰۰', array_column( $decl( $drow(), null ), 'potential' ), [ 400 ] );
+hodima_ad( 'کل سایت ۴۰٪ افت کرده و صفحه ۴۰٪ ← همراه سایت است، پیشنهادی نیست', $decl( $drow(), [ 'clicks_ratio' => 0.6, 'impressions_ratio' => null ] ), [] );
+hodima_ad( 'کل سایت ۴۰٪ افت کرده و صفحه ۷۰٪ ← فقط افت اضافه (۵۰۰ − ۳۰۰ = ۲۰۰)', array_column( $decl( $drow( [ 'clicks' => 300 ] ), [ 'clicks_ratio' => 0.5, 'impressions_ratio' => null ] ), 'potential' ), [ 200 ] );
+hodima_ad( 'سایت رشد کرده ← انتظار بالا نمی‌رود: همان ۴۰۰', array_column( $decl( $drow(), [ 'clicks_ratio' => 1.4, 'impressions_ratio' => null ] ), 'potential' ), [ 400 ] );
+hodima_ad( 'پیشنهاد افت علت را در خود دارد', $decl( $drow(), null )[0]['cause'] ?? '', 'ctr' );
+
+// جمع کل سایت از جدول
+hodima_seo_advisor_store(
+	[ '/sc/a/' => [ 'clicks' => 600, 'impressions' => 6000, 'position' => 6.0 ], '/sc/b/' => [ 'clicks' => 400, 'impressions' => 4000, 'position' => 6.0 ], '/sc/c/' => [ 'clicks' => 100, 'impressions' => 2000, 'position' => 6.0 ] ],
+	[ '/sc/a/' => [ 'clicks' => 1000, 'impressions' => 6000, 'position' => 6.0 ], '/sc/b/' => [ 'clicks' => 800, 'impressions' => 4000, 'position' => 6.0 ], '/sc/c/' => [ 'clicks' => 700, 'impressions' => 2000, 'position' => 6.0 ] ],
+	[]
+);
+$sc = hodima_seo_advisor_site_change();
+hodima_ad( 'جمع کل سایت بعد از ذخیره: کلیک ۱۱۰۰ از ۲٬۵۰۰ ← ۰٫۴۴؛ نمایش ۱۲٬۰۰۰ از ۱۲٬۰۰۰ ← ۱', [ round( (float) $sc['clicks_ratio'], 2 ), $sc['impressions_ratio'] ], [ 0.44, 1.0 ] );
+$an = static fn( string $path ): array => array_column( hodima_seo_advisor_analyze( $path )['suggestions'] ?? [], 'rule' );
+hodima_ad( 'تحلیل واقعی: a و b همراه سایت‌اند (بدون افت)؛ c افت اضافه دارد', [ in_array( 'decline', $an( '/sc/a/' ), true ), in_array( 'decline', $an( '/sc/b/' ), true ), hodima_seo_advisor_analyze( '/sc/c/' )['potential'] ], [ false, false, 208 ] );
+hodima_ad( 'بازه قبل کم‌داده ← نسبت سایت null', ( static function (): array { hodima_seo_advisor_store( [ '/sc/x/' => [ 'clicks' => 5, 'impressions' => 100, 'position' => 6.0 ] ], [ '/sc/x/' => [ 'clicks' => 9, 'impressions' => 100, 'position' => 6.0 ] ], [] ); return hodima_seo_advisor_site_change(); } )(), [ 'clicks_ratio' => null, 'impressions_ratio' => null ] );
+delete_option( HODIMA_SEO_ADVISOR_SITE_OPTION );
+hodima_ad( 'گزینه جمع سایت نبود ← خودش از جدول ساخته می‌شود', array_key_exists( 'clicks_ratio', hodima_seo_advisor_site_change() ) && is_array( get_option( HODIMA_SEO_ADVISOR_SITE_OPTION ) ), true );
+
+// اثر خالص در برابر روند سایت
+$wk = [ '2025-01-05', '2025-01-12', '2025-01-19', '2025-01-26', '2025-02-02' ];
+$put = static function ( array $page, array $other ) use ( $wk ): void {
+	foreach ( $wk as $i => $end ) {
+		hodima_seo_advisor_history_store_week( $end, [ '/eff/' => [ 'clicks' => $page[ $i ], 'impressions' => 500, 'position' => 6.0 ], '/other/' => [ 'clicks' => $other[ $i ], 'impressions' => 5000, 'position' => 6.0 ] ] );
+	}
+};
+$mk = static fn( array $page ): array => array_map( static fn( string $end, int $c ): array => [ 'week' => $end, 'clicks' => $c, 'impressions' => 500, 'position' => 6.0 ], $wk, $page );
+$put( [ 10, 10, 15, 20, 20 ], [ 990, 990, 995, 990, 990 ] );
+$ba1 = hodima_seo_advisor_before_after( $mk( [ 10, 10, 15, 20, 20 ] ), '2025-01-14' );
+hodima_ad( 'قبل/بعد حالا هفته‌های دو طرف را هم برمی‌گرداند (هفته وسط ویرایش بیرون است)', [ $ba1['before_weeks'], $ba1['after_weeks'] ], [ [ '2025-01-05', '2025-01-12' ], [ '2025-01-26', '2025-02-02' ] ] );
+$vs1 = hodima_seo_advisor_effect_vs_site( $ba1 );
+hodima_ad( 'صفحه دو برابر شده و سایت تقریبا ثابت (۱٪) ← above (۹۹ امتیاز بالاتر)', [ $vs1['page'], $vs1['site'], $vs1['net'], $vs1['verdict'] ], [ 100.0, 1.0, 99.0, 'above' ] );
+$put( [ 10, 10, 15, 20, 20 ], [ 990, 990, 1500, 1980, 1980 ] );
+$vs2 = hodima_seo_advisor_effect_vs_site( $ba1 );
+hodima_ad( 'سایت هم دو برابر شده ← هم‌راستا با روند (same)', [ $vs2['site'], $vs2['net'], $vs2['verdict'] ], [ 100.0, 0.0, 'same' ] );
+$put( [ 10, 10, 10, 10, 10 ], [ 990, 990, 1000, 1490, 1490 ] );
+$vs3 = hodima_seo_advisor_effect_vs_site( hodima_seo_advisor_before_after( $mk( [ 10, 10, 10, 10, 10 ] ), '2025-01-14' ) );
+hodima_ad( 'صفحه ثابت و سایت ۵۰٪ بالا ← below', [ $vs3['page'], $vs3['site'], $vs3['verdict'] ], [ 0.0, 50.0, 'below' ] );
+hodima_ad( 'متن مقایسه سه حالت', [ str_contains( hodima_seo_advisor_effect_vs_site_text( $vs1 ), 'بهتر از روند کل سایت' ), str_contains( hodima_seo_advisor_effect_vs_site_text( $vs2 ), 'هم‌راستا' ), str_contains( hodima_seo_advisor_effect_vs_site_text( $vs3 ), 'ضعیف‌تر از روند کل سایت' ), hodima_seo_advisor_effect_vs_site_text( null ) ], [ true, true, true, '' ] );
+hodima_ad( 'هفته‌های عکس‌نشده سایت ← مقایسه ممکن نیست (null)', hodima_seo_advisor_effect_vs_site( [ 'before' => [ 'clicks' => 5.0 ], 'after' => [ 'clicks' => 9.0 ], 'before_weeks' => [ '2020-03-01' ], 'after_weeks' => [ '2020-03-08' ] ] ), null );
+$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE week_end < '2025-03-01'", hodima_seo_advisor_table( 'history' ) ) );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );
