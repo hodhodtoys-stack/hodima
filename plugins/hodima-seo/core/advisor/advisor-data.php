@@ -409,12 +409,18 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 		static fn( string $a, string $b ): int => ( $current[ $b ]['impressions'] ?? $previous[ $b ]['impressions'] ?? 0 ) <=> ( $current[ $a ]['impressions'] ?? $previous[ $a ]['impressions'] ?? 0 )
 	);
 
+	// پیشنهادهای قبلی تا تحلیل تازه (که ممکن است چند نوبت طول بکشد) سر جایشان می‌مانند؛ فهرست پیشخوان خالی نشود
+	$kept = [];
+	foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT path, potential, advice_count, advice FROM %i WHERE advice_count > 0', hodima_seo_advisor_table( 'pages' ) ), ARRAY_A ) as $old ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$kept[ (string) $old['path'] ] = $old;
+	}
+
 	$page_rows = [];
 	foreach ( $paths as $i => $path ) {
 		$now   = $current[ $path ] ?? $zero;
 		$prev  = $previous[ $path ] ?? $zero;
 		$class = $i < HODIMA_SEO_ADVISOR_CLASSIFY_LIMIT ? hodima_seo_advisor_classify( $path ) : [ 'kind' => '', 'id' => 0 ];
-		$page_rows[] = [ $path, $now['clicks'], $now['impressions'], $now['position'], $prev['clicks'], $prev['impressions'], $prev['position'], $class['kind'], $class['id'], hodima_seo_advisor_object_title( $class['kind'], $class['id'] ), 0, 0, '' ];
+		$page_rows[] = [ $path, $now['clicks'], $now['impressions'], $now['position'], $prev['clicks'], $prev['impressions'], $prev['position'], $class['kind'], $class['id'], hodima_seo_advisor_object_title( $class['kind'], $class['id'] ), (int) ( $kept[ $path ]['potential'] ?? 0 ), (int) ( $kept[ $path ]['advice_count'] ?? 0 ), (string) ( $kept[ $path ]['advice'] ?? '' ) ];
 	}
 
 	$query_rows = [];
@@ -742,6 +748,9 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 		delete_option( HODIMA_SEO_ADVISOR_TREND_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
+		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+		wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
 	}
 
 	hodima_seo_advisor_unlock();

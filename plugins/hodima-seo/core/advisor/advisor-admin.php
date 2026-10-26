@@ -161,7 +161,7 @@ function hodima_seo_advisor_handle_refresh(): void {
 				esc_html( number_format_i18n( $status['days'] ) ),
 				esc_html( number_format_i18n( $status['pages'] ) ),
 				esc_html( number_format_i18n( $status['advised'] ) )
-			),
+			) . ( hodima_seo_advisor_pipeline_pending() ? ' ' . esc_html( 'ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.' ) : '' ),
 			'success'
 		);
 	}

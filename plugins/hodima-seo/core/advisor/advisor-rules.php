@@ -488,47 +488,101 @@ function hodima_seo_advisor_set_ignored( string $path, bool $ignore ): void {
 	hodima_seo_advisor_save_advice( $path );
 }
 
+/** وضعیت تحلیل نیمه‌کاره (صف آدرس‌های باقی‌مانده)؛ autoload خاموش. */
+const HODIMA_SEO_ADVISOR_ANALYSIS_OPTION = 'hodima_advisor_analysis';
+
 /**
- * تحلیل همه آدرس‌های قابل‌بررسی و ذخیره نتیجه در جدول؛ بعد از هر دریافت داده.
- * قابل‌بررسی: نمایش ≥ حداقل، یا کلیک بازه قبل ≥ حداقل افت. تعداد آدرس دارای پیشنهاد را برمی‌گرداند.
+ * آدرس‌های قابل‌بررسی: نمایش ≥ حداقل، یا کلیک بازه قبل ≥ حداقل افت؛ پرنمایش‌ترین‌ها اول.
  *
- * اول نتیجه همه آدرس‌ها در حافظه ساخته می‌شود، بعد یک‌جا (در تراکنش) جایگزین پیشنهادهای قبلی؛
- * اگر وسط ساخت خطایی شود یا نوشتن نگیرد، پیشنهادهای قبلی می‌مانند و فهرست خالی نمی‌شود.
+ * @return list<string>
+ */
+function hodima_seo_advisor_analysis_candidates(): array {
+
+	global $wpdb;
+
+	$cfg = hodima_seo_advisor_config();
+
+	return array_map(
+		'strval',
+		(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( 'SELECT path FROM %i WHERE impressions >= %d OR prev_clicks >= %d ORDER BY impressions DESC LIMIT %d', hodima_seo_advisor_table( 'pages' ), $cfg['min_impressions'], $cfg['decline_min_clicks'], HODIMA_SEO_ADVISOR_ANALYZE_LIMIT )
+		)
+	);
+}
+
+/** شمار آدرس‌های دارای پیشنهاد در جدول. */
+function hodima_seo_advisor_advised_count(): int {
+	global $wpdb;
+	return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE advice_count > 0', hodima_seo_advisor_table( 'pages' ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+}
+
+/**
+ * یک نوبت تحلیل آدرس‌ها تا رسیدن به `$deadline` (زمان یونیکس با کسر)؛ صف باقی‌مانده در گزینه می‌ماند تا
+ * نوبت بعد ادامه دهد. هر آدرس بلافاصله در ردیف خودش نوشته می‌شود، پس نیمه‌کاره ماندن چیزی را خراب
+ * نمی‌کند (ردیف‌های تحلیل‌نشده پیشنهاد قبلی خود را نگه می‌دارند: hodima_seo_advisor_store).
+ * اولین نوبت، پیشنهاد آدرس‌هایی را که دیگر قابل‌بررسی نیستند پاک می‌کند.
+ *
+ * @return bool|WP_Error true = تمام شد، false = وقت تمام شد و صف باقی است
+ */
+function hodima_seo_advisor_analyze_batch( float $deadline ): bool|WP_Error {
+
+	global $wpdb;
+
+	$table = hodima_seo_advisor_table( 'pages' );
+	$fail  = static fn(): WP_Error => new WP_Error( 'hodima_advisor_store', 'ذخیره پیشنهادها ناموفق بود: ' . $wpdb->last_error );
+	$state = get_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, null );
+
+	if ( is_array( $state ) && is_array( $state['queue'] ?? null ) ) {
+		$queue = array_values( array_map( 'strval', $state['queue'] ) );
+	} else {
+		$queue = hodima_seo_advisor_analysis_candidates();
+		$stale = array_diff( array_map( 'strval', (array) $wpdb->get_col( $wpdb->prepare( 'SELECT path FROM %i WHERE advice_count > 0', $table ) ) ), $queue ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		foreach ( $stale as $path ) {
+			if ( false === $wpdb->update( $table, [ 'potential' => 0, 'advice_count' => 0, 'advice' => '' ], [ 'path' => $path ], [ '%d', '%d', '%s' ], [ '%s' ] ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				return $fail();
+			}
+		}
+	}
+
+	$done = 0;
+
+	while ( $queue && microtime( true ) < $deadline ) {
+		$path = (string) array_shift( $queue );
+		if ( false === $wpdb->update( $table, hodima_seo_advisor_advice_fields( $path ), [ 'path' => $path ], [ '%d', '%d', '%s' ], [ '%s' ] ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			return $fail();
+		}
+		++$done;
+		if ( 0 === $done % 20 ) {
+			update_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, [ 'queue' => $queue ], false ); // قطع ناگهانی: از همین‌جا ادامه می‌یابد
+		}
+	}
+
+	if ( $queue ) {
+		update_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, [ 'queue' => $queue ], false );
+		return false;
+	}
+
+	delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+
+	return true;
+}
+
+/**
+ * تحلیل همه آدرس‌های قابل‌بررسی یک‌جا و در یک تراکنش (تغییر «حداقل نمایش» و آزمون‌ها). دریافت داده از
+ * نوبت‌های زمان‌دار (analyze_batch) استفاده می‌کند. هر خطا همه را برمی‌گرداند. شمار آدرس دارای پیشنهاد را می‌دهد.
  *
  * @return int|WP_Error
  */
 function hodima_seo_advisor_analyze_all(): int|WP_Error {
 
-	global $wpdb;
+	delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION ); // آستانه عوض شده؛ صف قدیمی معتبر نیست
 
-	$cfg   = hodima_seo_advisor_config();
-	$table = hodima_seo_advisor_table( 'pages' );
+	$result = hodima_seo_advisor_transaction( static fn(): bool|WP_Error => hodima_seo_advisor_analyze_batch( INF ) );
 
-	$paths = (array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->prepare( 'SELECT path FROM %i WHERE impressions >= %d OR prev_clicks >= %d ORDER BY impressions DESC LIMIT %d', $table, $cfg['min_impressions'], $cfg['decline_min_clicks'], HODIMA_SEO_ADVISOR_ANALYZE_LIMIT )
-	);
-
-	$advice = [];
-
-	foreach ( $paths as $path ) {
-		$fields = hodima_seo_advisor_advice_fields( (string) $path );
-		if ( $fields['advice_count'] > 0 ) {
-			$advice[ (string) $path ] = $fields;
-		}
+	if ( is_wp_error( $result ) ) {
+		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+		return $result;
 	}
 
-	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $table, $advice ): int|WP_Error {
-
-		if ( false === $wpdb->query( $wpdb->prepare( 'UPDATE %i SET potential = 0, advice_count = 0, advice = %s', $table, '' ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			return new WP_Error( 'hodima_advisor_store', 'ذخیره پیشنهادها ناموفق بود؛ پیشنهادهای قبلی دست‌نخورده ماند.' );
-		}
-
-		foreach ( $advice as $path => $fields ) {
-			if ( false === $wpdb->update( $table, $fields, [ 'path' => $path ], [ '%d', '%d', '%s' ], [ '%s' ] ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				return new WP_Error( 'hodima_advisor_store', 'ذخیره پیشنهادها ناموفق بود؛ پیشنهادهای قبلی دست‌نخورده ماند.' );
-			}
-		}
-
-		return count( $advice );
-	} );
+	return hodima_seo_advisor_advised_count();
 }

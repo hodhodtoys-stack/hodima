@@ -734,6 +734,7 @@ $shared_sites_before = hodima_seo_sc_sites();
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [], false );
 $mode = 'ok';
 hodima_ad( 'دریافت با کلید مخصوص موفق است', hodima_seo_advisor_refresh(), true );
+hodima_ad( 'دریافت کامل در سایت کوچک: نوبت‌ها همان درخواست تمام می‌شوند و رویدادی نمی‌ماند', [ hodima_seo_advisor_pipeline_pending(), false !== wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ], [ false, false ] );
 hodima_ad( 'توکن با ایمیل کلید مخصوص ساخته شد (نه کلید مشترک)', [ is_string( get_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor-only@test.iam.gserviceaccount.com' ), 0, 12 ) ) ), get_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor@test.iam.gserviceaccount.com' ), 0, 12 ) ) ], [ true, false ] );
 hodima_ad( 'فهرست property مشاور جدا نوشته شد و فهرست مشترک دیسکاور دست‌نخورده', [ hodima_seo_sc_sites( HODIMA_SEO_SC_ADVISOR ) !== [], hodima_seo_sc_sites() ], [ true, $shared_sites_before ] );
 
@@ -1260,6 +1261,48 @@ $wpdb->query( $wpdb->prepare( "UPDATE %i SET term_key = ''", hodima_seo_advisor_
 update_option( HODIMA_SEO_ADVISOR_VERSION_OPTION, '1.3.0', false );
 hodima_seo_advisor_ensure_tables();
 hodima_ad( 'مهاجرت: ردیف‌های قدیمی term_key خالی نمی‌مانند و نسخه بالا می‌رود', [ (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE term_key = ''", hodima_seo_advisor_table( 'queries' ) ) ), get_option( HODIMA_SEO_ADVISOR_VERSION_OPTION ) ], [ 0, HODIMA_SEO_ADVISOR_DB_VERSION ] );
+
+echo "=== نوبت‌ها: تحلیل زمان‌دار و ادامه با کرون (بخش ۲۸۰)\n";
+$pz = [ 'clicks' => 0, 'impressions' => 0, 'position' => 0.0 ];
+$p_cur = [
+	'/st/a/' => [ 'clicks' => 496, 'impressions' => 36492, 'position' => 5.81 ],
+	'/st/b/' => [ 'clicks' => 5, 'impressions' => 500, 'position' => 6.0 ],
+	'/st/d/' => [ 'clicks' => 600, 'impressions' => 6000, 'position' => 6.0 ],
+];
+$p_prv = [ '/st/d/' => [ 'clicks' => 1000, 'impressions' => 6000, 'position' => 6.0 ] ];
+hodima_seo_advisor_store( $p_cur, $p_prv, [] );
+delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+hodima_ad( 'نوبت با وقت تمام‌شده: هیچ آدرسی تحلیل نمی‌شود و صف می‌ماند', [ hodima_seo_advisor_analyze_batch( 0.0 ), (array) ( get_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION )['queue'] ?? [] ), hodima_seo_advisor_advised_count() ], [ false, [ '/st/a/', '/st/d/' ], 0 ] );
+hodima_ad( 'نوبت بعد از همان صف ادامه می‌دهد و تمام می‌شود', [ hodima_seo_advisor_analyze_batch( INF ), get_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, 'none' ), hodima_seo_advisor_advised_count() ], [ true, 'none', 2 ] );
+// ذخیره دوباره داده: پیشنهاد قبلی تا تحلیل تازه می‌ماند (فهرست خالی نمی‌شود)
+hodima_seo_advisor_store( $p_cur, $p_prv, [] );
+hodima_ad( 'ذخیره تازه داده پیشنهاد قبلی را نگه می‌دارد', [ hodima_seo_advisor_advised_count(), hodima_seo_advisor_page( '/st/a/' )['advice'][0]['rule'] ?? '' ], [ 2, 'low_ctr' ] );
+// آدرسی که دیگر قابل‌بررسی نیست (نمایش کم شد) در نوبت اول پیشنهادش پاک می‌شود
+hodima_seo_advisor_store( [ '/st/a/' => $p_cur['/st/a/'], '/st/d/' => [ 'clicks' => 1, 'impressions' => 10, 'position' => 6.0 ] ], [], [] );
+hodima_ad( 'پیشنهاد آدرس غیرقابل‌بررسی پاک می‌شود، بقیه می‌ماند', [ hodima_seo_advisor_analyze_batch( INF ), hodima_seo_advisor_advised_count(), hodima_seo_advisor_page( '/st/d/' )['advice_count'] ], [ true, 1, 0 ] );
+hodima_ad( 'analyze_all همزمان هنوز همان نتیجه را می‌دهد و صف قدیمی را دور می‌ریزد', [ update_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, [ 'queue' => [ '/nowhere/' ] ], false ), hodima_seo_advisor_analyze_all(), get_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, 'none' ) ], [ true, 1, 'none' ] );
+
+// صف نوبت‌ها
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+$st_state = [ 'stages' => [ 'analyze', 'health', 'bogus' ], 'property' => 'sc-domain:' . $host, 'range' => hodima_seo_advisor_ranges( 90 ), 'days' => 90 ];
+update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, $st_state, false );
+hodima_seo_advisor_pipeline_run( 0.0 );
+hodima_ad( 'بودجه تمام‌شده: نوبت‌ها می‌مانند و رویداد ادامه زمان‌بندی می‌شود', [ hodima_seo_advisor_pipeline_pending(), false !== wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ], [ true, true ] );
+// قفل دست دیگری است ← رویداد ادامه نمی‌دهد و دوباره زمان‌بندی می‌کند
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+hodima_seo_advisor_lock();
+do_action( HODIMA_SEO_ADVISOR_STAGE_CRON );
+$late = wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON );
+hodima_seo_advisor_unlock();
+hodima_ad( 'رویداد با قفل مشغول: چیزی اجرا نمی‌شود و حدود ۵ دقیقه بعد دوباره امتحان می‌شود', [ count( (array) get_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION )['stages'] ), is_int( $late ) && $late >= time() + 290 ], [ 3, true ] );
+// نوبت خراب (استثنا) بقیه را متوقف نمی‌کند
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+add_filter( 'hodima_seo_advisor_health_enabled', $boom = static function (): bool { throw new RuntimeException( 'boom' ); } );
+do_action( HODIMA_SEO_ADVISOR_STAGE_CRON );
+remove_filter( 'hodima_seo_advisor_health_enabled', $boom );
+hodima_ad( 'استثنای یک نوبت: ثبت خطا، بقیه نوبت‌ها اجرا و صف خالی می‌شود', [ hodima_seo_advisor_pipeline_pending(), str_contains( hodima_seo_advisor_status()['error'], 'health' ), wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ), hodima_seo_advisor_status()['advised'] ], [ false, true, false, 1 ] );
+// دریافت کامل: همه نوبت‌ها همان درخواست تمام می‌شوند (سایت کوچک)
+hodima_ad( 'پاک کردن داده‌ها صف و رویداد نوبت‌ها را هم برمی‌دارد', [ update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, $st_state, false ), wp_schedule_single_event( time() + 60, HODIMA_SEO_ADVISOR_STAGE_CRON ), hodima_seo_advisor_clear_data(), get_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, 'none' ), wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ], [ true, true, true, 'none', false ] );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

@@ -13,6 +13,11 @@
  * روزی یک بار با WP-Cron و با دکمه «به‌روزرسانی» (صفحه پیشخوان، مرحله ۵)؛ هرگز در
  * بازدید سایت. بازه به وقت اقیانوس آرام است (سرچ کنسول روزها را همان‌طور می‌شمارد) و
  * ۲ روز پیش تمام می‌شود، چون داده روزهای اخیر ناقص است.
+ *
+ * مرحله‌بندی (SEO 2.7.5): درخواست اصلی فقط می‌گیرد و ذخیره می‌کند. کارهای سنگین بعدی «نوبت» (stage)اند:
+ * analyze (ساخت پیشنهادها، نوبت‌به‌نوبت)، breakdown، trend، health، history. هر درخواست تا
+ * HODIMA_SEO_ADVISOR_STAGE_BUDGET ثانیه نوبت‌ها را پیش می‌برد و اگر چیزی ماند، رویداد کرون
+ * hodima_advisor_stage ادامه می‌دهد؛ پس یک درخواست طولانی هاست را نمی‌کشد و شکست یک نوبت بقیه را نمی‌اندازد.
  */
 
 declare(strict_types=1);
@@ -39,6 +44,14 @@ function hodima_seo_advisor_ranges( int $days ): array {
 		'prev_end'   => $day( $days ),
 	];
 }
+
+/** گزینه صف نوبت‌های باقی‌مانده، رویداد ادامه، و بودجه زمانی هر درخواست (ثانیه). */
+const HODIMA_SEO_ADVISOR_PIPELINE_OPTION = 'hodima_advisor_pipeline';
+const HODIMA_SEO_ADVISOR_STAGE_CRON      = 'hodima_advisor_stage';
+const HODIMA_SEO_ADVISOR_STAGE_BUDGET    = 90;
+
+/** نوبت‌های بعد از ذخیره داده، به ترتیب. */
+const HODIMA_SEO_ADVISOR_STAGES = [ 'analyze', 'breakdown', 'trend', 'health', 'history' ];
 
 /** حداکثر صفحه‌های درخواست برای یک گزارش (هر صفحه ۲۵ هزار ردیف، سقف سرچ کنسول). */
 const HODIMA_SEO_ADVISOR_FETCH_PAGES = 4;
@@ -148,34 +161,21 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 			}
 		}
 
-		// ذخیره داده و ساخت پیشنهادها یک تراکنش‌اند: یا هر دو، یا هیچ‌کدام (داده قبلی می‌ماند)
-		$saved = hodima_seo_advisor_transaction( static function () use ( $current, $previous, $queries ): array|WP_Error {
+		// ذخیره داده (تراکنش خود store): یا همه، یا هیچ‌چیز (داده قبلی می‌ماند). ساخت پیشنهادها و کارهای سنگین
+		// بعدی نوبت‌اند (پایین) و پیشنهاد قبلی هر آدرس تا تحلیل تازه‌اش می‌ماند
+		$stored = hodima_seo_advisor_store(
+			hodima_seo_advisor_aggregate_pages( $current['rows'] ),
+			hodima_seo_advisor_aggregate_pages( $previous['rows'] ),
+			hodima_seo_advisor_aggregate_queries( $queries['rows'] )
+		);
 
-			$stored = hodima_seo_advisor_store(
-				hodima_seo_advisor_aggregate_pages( $current['rows'] ),
-				hodima_seo_advisor_aggregate_pages( $previous['rows'] ),
-				hodima_seo_advisor_aggregate_queries( $queries['rows'] )
-			);
-
-			if ( is_wp_error( $stored ) ) {
-				return $stored;
-			}
-
-			$advised = hodima_seo_advisor_analyze_all(); // پیشنهادها یک‌جا ساخته می‌شوند تا فهرست پیشخوان با SQL فیلتر و مرتب شود
-
-			return is_wp_error( $advised ) ? $advised : $stored + [ 'advised' => $advised ];
-		} );
-
-		if ( is_wp_error( $saved ) ) {
-			hodima_seo_advisor_store_error( $saved->get_error_message() );
-			return $saved;
+		if ( is_wp_error( $stored ) ) {
+			hodima_seo_advisor_store_error( $stored->get_error_message() );
+			return $stored;
 		}
 
-		$stored  = $saved;
-		$advised = $saved['advised'];
-
 		update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [
-			'advised'    => $advised,
+			'advised'    => hodima_seo_advisor_advised_count(),
 			'fetched'    => time(),
 			'property'   => $property,
 			'days'       => $days,
@@ -187,17 +187,11 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 		// آدرس‌های تکراری یک صفحه (آدرس خام پیش از یکسان‌سازی)؛ برای فهرست تب «رقابت صفحه‌ها»
 		update_option( HODIMA_SEO_ADVISOR_VARIANTS_OPTION, hodima_seo_advisor_find_variants( $current['rows'] ), false );
 
-		// دستگاه، کشور، تصویر/ویدیو، نوع نمایش؛ شکستش دریافت اصلی را رد نمی‌کند (hodima_seo_advisor_breakdown_sync)
-		hodima_seo_advisor_breakdown_sync( $property, $range, $days );
-
-		// روند ماهانه ۱۶ ماه و کلمه‌های تازه/از دست رفته؛ شکستش دریافت اصلی را رد نمی‌کند (hodima_seo_advisor_trend_sync)
-		hodima_seo_advisor_trend_sync( $property );
-
-		// صفحه‌های بدون نمایش و آدرس‌های مرده‌ای که هنوز در گوگل‌اند (hodima_seo_advisor_health_sync)
-		hodima_seo_advisor_health_sync();
-
-		// تاریخچه هفتگی؛ شکستش دریافت اصلی را رد نمی‌کند (هفته‌های ناموفق دفعه بعد دوباره امتحان می‌شوند)
-		hodima_seo_advisor_history_sync( $property );
+		// بقیه کارها نوبت‌به‌نوبت: ساخت پیشنهادها، بخش‌بندی، روند، سلامت و تاریخچه (هرکدام مستقل؛ شکستشان
+		// دریافت اصلی را رد نمی‌کند). تا بودجه زمانی همین‌جا؛ باقی‌مانده با رویداد کرون
+		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [ 'stages' => HODIMA_SEO_ADVISOR_STAGES, 'property' => $property, 'range' => $range, 'days' => $days ], false );
+		hodima_seo_advisor_pipeline_run();
 
 		return true;
 	}
@@ -207,6 +201,133 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 
 	return new WP_Error( 'hodima_advisor_failed', $message );
 }
+
+/* ── نوبت‌ها ── */
+
+/** نوبت‌های باقی‌مانده دارد؟ */
+function hodima_seo_advisor_pipeline_pending(): bool {
+	$state = get_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [] );
+	return is_array( $state ) && ! empty( $state['stages'] );
+}
+
+/** بعد از ساخت پیشنهادها، «پیشنهاد دارد» در وضعیت آخرین دریافت به‌روز می‌شود. */
+function hodima_seo_advisor_status_set_advised(): void {
+	$status = get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [] );
+	if ( is_array( $status ) ) {
+		$status['advised'] = hodima_seo_advisor_advised_count();
+		update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $status, false );
+	}
+}
+
+/**
+ * یک نوبت. true = تمام شد (یا خطا ثبت شد و رد شد)، false = وقت تمام شد و باید ادامه یابد.
+ *
+ * @param array<string, mixed> $state
+ */
+function hodima_seo_advisor_pipeline_stage( string $stage, array $state, float $deadline ): bool {
+
+	$property = (string) ( $state['property'] ?? '' );
+	$range    = (array) ( $state['range'] ?? [] );
+	$days     = (int) ( $state['days'] ?? 0 );
+
+	switch ( $stage ) {
+		case 'analyze':
+			$result = hodima_seo_advisor_analyze_batch( $deadline );
+			if ( is_wp_error( $result ) ) {
+				delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+				hodima_seo_advisor_store_error( $result->get_error_message() );
+				return true;
+			}
+			if ( true === $result ) {
+				hodima_seo_advisor_status_set_advised();
+			}
+			return $result;
+		case 'breakdown':
+			hodima_seo_advisor_breakdown_sync( $property, [ 'start' => (string) ( $range['start'] ?? '' ), 'end' => (string) ( $range['end'] ?? '' ) ], $days );
+			break;
+		case 'trend':
+			hodima_seo_advisor_trend_sync( $property );
+			break;
+		case 'health':
+			hodima_seo_advisor_health_sync();
+			break;
+		case 'history':
+			hodima_seo_advisor_history_sync( $property );
+			break;
+	}
+
+	return true;
+}
+
+/**
+ * نوبت‌های باقی‌مانده را تا بودجه زمانی پیش می‌برد؛ اگر چیزی ماند رویداد ادامه زمان‌بندی می‌شود.
+ * فراخواننده قفل دریافت داده را دارد.
+ *
+ * @param float|null $budget ثانیه؛ null = HODIMA_SEO_ADVISOR_STAGE_BUDGET
+ */
+function hodima_seo_advisor_pipeline_run( ?float $budget = null ): void {
+
+	$state = get_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [] );
+
+	if ( ! is_array( $state ) || empty( $state['stages'] ) ) {
+		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
+		return;
+	}
+
+	if ( function_exists( 'set_time_limit' ) ) {
+		set_time_limit( 180 );
+	}
+
+	$deadline = microtime( true ) + ( $budget ?? (float) HODIMA_SEO_ADVISOR_STAGE_BUDGET );
+	$stages   = array_values( array_map( 'strval', (array) $state['stages'] ) );
+
+	while ( $stages && microtime( true ) < $deadline ) {
+		try {
+			$finished = hodima_seo_advisor_pipeline_stage( $stages[0], $state, $deadline );
+		} catch ( Throwable $e ) {
+			hodima_seo_advisor_store_error( 'خطای داخلی در نوبت «' . $stages[0] . '»: ' . $e->getMessage() );
+			$finished = true; // نوبت خراب بقیه را متوقف نمی‌کند
+		}
+		if ( ! $finished ) {
+			break;
+		}
+		array_shift( $stages );
+		$state['stages'] = $stages;
+		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, $state, false );
+	}
+
+	if ( ! $stages ) {
+		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
+		return;
+	}
+
+	hodima_seo_advisor_pipeline_schedule( 20 );
+}
+
+/** رویداد ادامه (یکی در هر زمان). */
+function hodima_seo_advisor_pipeline_schedule( int $delay ): void {
+	if ( ! wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ) {
+		wp_schedule_single_event( time() + $delay, HODIMA_SEO_ADVISOR_STAGE_CRON );
+	}
+}
+
+add_action( HODIMA_SEO_ADVISOR_STAGE_CRON, static function (): void {
+
+	if ( ! hodima_seo_advisor_pipeline_pending() ) {
+		return;
+	}
+
+	if ( ! hodima_seo_advisor_lock() ) {
+		hodima_seo_advisor_pipeline_schedule( 300 ); // دریافت دیگری در کار است
+		return;
+	}
+
+	try {
+		hodima_seo_advisor_pipeline_run();
+	} finally {
+		hodima_seo_advisor_unlock();
+	}
+} );
 
 /* ── زمان‌بندی روزانه (فقط وقتی کلید هست) ── */
 add_action( HODIMA_SEO_ADVISOR_CRON, static function (): void {
