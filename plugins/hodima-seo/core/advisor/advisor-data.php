@@ -21,7 +21,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.4.0';
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.5.0';
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -133,6 +133,44 @@ function hodima_seo_advisor_install_tables(): void {
 		avg_position decimal(6,2) NOT NULL DEFAULT 0,
 		PRIMARY KEY (path, term),
 		KEY term_key_idx (term_key)
+		) {$charset};"
+	);
+
+	// سلامت خزش (advisor-crawl.php): خروجی Screaming Frog، مستقل از منبع
+	$crawl_pages = hodima_seo_advisor_table( 'crawl_pages' );
+	$crawl_links = hodima_seo_advisor_table( 'crawl_links' );
+
+	dbDelta(
+		"CREATE TABLE {$crawl_pages} (
+		path varchar(191) NOT NULL,
+		status smallint(5) unsigned NOT NULL DEFAULT 0,
+		indexable tinyint(1) NOT NULL DEFAULT 1,
+		reason varchar(64) NOT NULL DEFAULT '',
+		title varchar(191) NOT NULL DEFAULT '',
+		title_len smallint(5) unsigned NOT NULL DEFAULT 0,
+		meta_len smallint(5) unsigned NOT NULL DEFAULT 0,
+		h1 varchar(191) NOT NULL DEFAULT '',
+		resp_ms int(10) unsigned NOT NULL DEFAULT 0,
+		inlinks int(10) unsigned NOT NULL DEFAULT 0,
+		text_links int(11) NOT NULL DEFAULT -1,
+		depth smallint(5) unsigned NOT NULL DEFAULT 0,
+		score decimal(8,2) NOT NULL DEFAULT 0,
+		redirect_to varchar(191) NOT NULL DEFAULT '',
+		PRIMARY KEY (path)
+		) {$charset};"
+	);
+
+	dbDelta(
+		"CREATE TABLE {$crawl_links} (
+		id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+		source_path varchar(191) NOT NULL,
+		dest_path varchar(191) NOT NULL,
+		link_position varchar(16) NOT NULL DEFAULT '',
+		anchor varchar(120) NOT NULL DEFAULT '',
+		is_follow tinyint(1) NOT NULL DEFAULT 1,
+		PRIMARY KEY (id),
+		KEY dest_idx (dest_path),
+		KEY source_idx (source_path)
 		) {$charset};"
 	);
 
@@ -784,7 +822,7 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 	}
 
 	$result = hodima_seo_advisor_transaction( static function () use ( $wpdb ): bool|WP_Error {
-		foreach ( [ 'pages', 'queries' ] as $name ) {
+		foreach ( [ 'pages', 'queries', 'crawl_pages', 'crawl_links' ] as $name ) {
 			if ( false === $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( $name ) ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				return new WP_Error( 'hodima_advisor_clear', 'پاک کردن داده‌ها ناموفق بود؛ چیزی تغییر نکرد.' );
 			}
@@ -804,6 +842,7 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_SITE_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION );
+		delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION );
 		wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
 	}
 

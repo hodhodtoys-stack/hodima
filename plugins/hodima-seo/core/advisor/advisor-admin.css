@@ -965,3 +965,149 @@
 		transition: none;
 	}
 }
+
+/* سلامت خزش: فایل‌ها، مسیر پوشه و جدول ایرادها (طرح تأییدشده ۴ آبان ۱۴۰۵) */
+.hodima-advisor .hodima-advisor__crawl-files {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 1rem;
+	align-items: center;
+}
+
+.hodima-advisor .hodima-advisor__files {
+	display: grid;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-advisor .hodima-advisor__file {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	gap: 0.625rem;
+	align-items: center;
+	margin: 0;
+	padding-block: 0.5rem;
+	border-block-start: 1px solid var(--hd-border);
+}
+
+.hodima-advisor .hodima-advisor__file:first-child {
+	border-block-start: 0;
+}
+
+.hodima-advisor .hodima-advisor__file-body {
+	display: grid;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__file-body small {
+	color: var(--hd-muted);
+	overflow-wrap: anywhere;
+}
+
+.hodima-advisor .hodima-advisor__dot {
+	inline-size: 0.625rem;
+	block-size: 0.625rem;
+	border-radius: 50%;
+	background: var(--hd-ok);
+}
+
+.hodima-advisor .hodima-advisor__dot--bad {
+	background: var(--hd-error);
+}
+
+.hodima-advisor .hodima-advisor__dot--warn {
+	background: var(--hd-warn);
+}
+
+.hodima-advisor .hodima-advisor__dot--info {
+	background: var(--hd-secondary);
+}
+
+.hodima-advisor .hodima-advisor__path {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.625rem;
+	background: var(--hd-soft);
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__path bdi {
+	flex: 1 1 12rem;
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+}
+
+.hodima-advisor .hodima-advisor__crawl-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem;
+}
+
+.hodima-advisor .hodima-advisor__crawl-fix {
+	display: block;
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__file-body code {
+	justify-self: start;
+	max-inline-size: 100%;
+}
+
+@media (max-width: 782px) {
+	.hodima-advisor .hodima-advisor__crawl-files {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	/* موبایل: هر صفحه یک کارت (آدرس، نمایش و رتبه کنار هم، ایرادها، دستور) به‌جای جدول افقی */
+	.hodima-advisor .hodima-advisor__crawl-table thead {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+
+	.hodima-advisor .hodima-advisor__crawl-table,
+	.hodima-advisor .hodima-advisor__crawl-table tbody {
+		display: block;
+	}
+
+	.hodima-advisor .hodima-advisor__crawl-table tr {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 1rem;
+		align-items: baseline;
+		padding-block: 0.75rem;
+		border-block-end: 1px solid var(--hd-border);
+	}
+
+	.hodima-advisor .hodima-advisor__crawl-table th,
+	.hodima-advisor .hodima-advisor__crawl-table td {
+		display: block;
+		padding: 0;
+		border: 0;
+		background: none;
+	}
+
+	.hodima-advisor .hodima-advisor__crawl-table th[scope="row"] {
+		flex: 1 1 100%;
+		min-inline-size: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.hodima-advisor .hodima-advisor__crawl-table td[data-label]::before {
+		content: attr(data-label) " ";
+		color: var(--hd-muted);
+		font-size: 0.75rem;
+	}
+
+	.hodima-advisor .hodima-advisor__crawl-table .hodima-advisor__crawl-pills,
+	.hodima-advisor .hodima-advisor__crawl-table td:last-child {
+		flex: 1 1 100%;
+	}
+}

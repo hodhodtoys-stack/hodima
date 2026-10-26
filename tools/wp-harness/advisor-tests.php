@@ -815,6 +815,7 @@ require_once HODIMA_SEO_DIR . '/core/advisor/advisor-breakdown-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-trend-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-health-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-crawl-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-inspect-view.php';
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -1447,6 +1448,107 @@ hodima_ad( 'صفحه‌بندی: وسط ۱۰ صفحه: اول، آخر، همس�
 hodima_ad( 'صفحه‌بندی: صفحه جاری aria-current و بدون لینک؛ صفحه آخر بدون «بعدی»', [ str_contains( $pg( 3, 3 ), 'aria-current="page"' ), str_contains( $pg( 3, 3 ), 'rel="next"' ), str_contains( $pg( 3, 3 ), '?paged=3' ) ], [ true, false, false ] );
 $_GET = [];
 delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION ); // کلید آزمایشی این بخش نماند (اجرای بعدی آزمون را خراب می‌کرد)
+
+echo "=== سلامت خزش: خواندن فایل‌های Screaming Frog و ایرادها\n";
+$crawl_dir = sys_get_temp_dir() . '/hodima-crawl-test-' . getmypid();
+@mkdir( $crawl_dir );
+$crawl_filter = static fn(): string => $crawl_dir;
+add_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter );
+$csv = static function ( string $name, array $rows, bool $bom = true ) use ( $crawl_dir ): void {
+	$h = fopen( "{$crawl_dir}/{$name}", 'wb' );
+	if ( $bom ) {
+		fwrite( $h, "\xEF\xBB\xBF" );
+	}
+	foreach ( $rows as $r ) {
+		fputcsv( $h, $r, ',', '"', '' );
+	}
+	fclose( $h );
+	touch( "{$crawl_dir}/{$name}", time() - 3600 );
+};
+$cols = [ 'Address', 'Status Code', 'Indexability', 'Indexability Status', 'Title 1', 'Title 1 Length', 'Meta Description 1 Length', 'H1-1', 'Response Time', 'Unique Inlinks', 'Crawl Depth', 'Link Score', 'Redirect URL' ];
+$long = str_repeat( 'عنوان خوب ', 5 );
+$csv( 'internal_html.csv', [
+	$cols,
+	[ $u( '/' ), '200', 'Indexable', '', $long . 'z', (string) ( mb_strlen( $long ) + 1 ), '120', 'خانه', '0.4', '0', '0', '100', '' ],
+	[ $u( '/short-title/' ), '200', 'Indexable', '', 'کوتاه', '5', '0', 'الف', '0.3', '10', '1', '5', '' ],
+	[ $u( '/dup-a/' ), '200', 'Indexable', '', $long, (string) mb_strlen( $long ), '130', 'ب', '0.3', '8', '1', '5', '' ],
+	[ $u( '/dup-b/' ), '200', 'Indexable', '', $long, (string) mb_strlen( $long ), '130', 'پ', '2.5', '9', '1', '5', '' ],
+	[ $u( '/few-links/' ), '200', 'Indexable', '', $long . 'x', (string) ( mb_strlen( $long ) + 1 ), '130', 'ت', '0.3', '2', '2', '1', '' ],
+	[ $u( '/orphan/' ), '200', 'Indexable', '', $long . 'y', (string) ( mb_strlen( $long ) + 1 ), '130', 'ث', '0.3', '0', '3', '1', '' ],
+	[ $u( '/moved/' ), '301', 'Non-Indexable', 'Redirected', '', '0', '0', '', '0.2', '4', '2', '0', $u( '/dup-a/' ) ],
+	[ $u( '/moved-unused/' ), '301', 'Non-Indexable', 'Redirected', '', '0', '0', '', '0.2', '0', '2', '0', '' ],
+	[ $u( '/few-links/?utm_source=x' ), '200', 'Indexable', '', 'نسخه پارامتردار', '15', '0', '', '0.3', '1', '2', '0', '' ],
+	[ 'https://other.example/x/', '200', 'Indexable', '', 'بیرونی', '6', '0', '', '0.3', '1', '2', '0', '' ],
+] );
+$csv( 'all_inlinks.csv', [
+	[ 'Type', 'Source', 'Destination', 'Anchor', 'Follow', 'Link Position' ],
+	[ 'Hyperlink', $u( '/dup-a/' ), $u( '/few-links/' ), 'لینک اول', 'true', 'Content' ],
+	[ 'Hyperlink', $u( '/dup-a/' ), $u( '/few-links/' ), 'لینک اول', 'true', 'Content' ],
+	[ 'Hyperlink', $u( '/dup-b/' ), $u( '/few-links/' ), 'لینک دوم', 'true', 'Navigation' ],
+	[ 'Hyperlink', $u( '/few-links/' ), 'https://other.example/', 'بیرونی', 'true', 'Content' ],
+	[ 'Image', $u( '/dup-a/' ), $u( '/few-links/' ), '', 'true', 'Content' ],
+	[ 'Hyperlink', $u( '/dup-b/' ), $u( '/few-links/?x=1' ), 'پارامتردار', 'false', 'Content' ],
+] );
+hodima_seo_advisor_store( [ '/dup-b/' => [ 'clicks' => 3, 'impressions' => 9000, 'position' => 7.0 ], '/short-title/' => [ 'clicks' => 1, 'impressions' => 2000, 'position' => 9.0 ] ], [], [] );
+
+hodima_ad( 'پوشه با فیلتر تست می‌آید و نسبی نمایش داده می‌شود', [ hodima_seo_advisor_crawl_dir(), str_ends_with( hodima_seo_advisor_crawl_dir_label(), '/' ) ], [ $crawl_dir, true ] );
+hodima_ad( 'فایل‌های قدیمی‌تر از ۲ دقیقه آماده‌اند و نبودن فایل «missing»', [ hodima_seo_advisor_crawl_file_state( 'pages' )['state'], hodima_seo_advisor_crawl_file_state( 'links' )['state'] ], [ 'ready', 'ready' ] );
+touch( "{$crawl_dir}/all_inlinks.csv", time() );
+hodima_ad( 'فایل تازه‌تغییرکرده «uploading» است', hodima_seo_advisor_crawl_file_state( 'links' )['state'], 'uploading' );
+$busy_import = hodima_seo_advisor_crawl_import();
+hodima_ad( 'فایل در حال آپلود: خوانده نمی‌شود و چیزی ذخیره نمی‌شود', [ is_wp_error( $busy_import ) ? $busy_import->get_error_code() : 'ok', hodima_seo_advisor_crawl_status()['imported'] ], [ 'hodima_crawl_import', 0 ] );
+hodima_ad( 'قفل بعد از خطا آزاد است', get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, false ), false );
+touch( "{$crawl_dir}/all_inlinks.csv", time() - 3600 );
+
+$imp = hodima_seo_advisor_crawl_import();
+hodima_ad( 'خواندن موفق: ۸ صفحه (آدرس پارامتردار و دامنه دیگر نیامد) و ۳ لینک یکتا', is_wp_error( $imp ) ? $imp->get_error_message() : [ $imp['pages'], $imp['links'] ], [ 8, 3 ] );
+hodima_ad( 'پوشه از وب بسته است (.htaccess و index.php)', [ is_file( "{$crawl_dir}/.htaccess" ), is_file( "{$crawl_dir}/index.php" ), str_contains( (string) file_get_contents( "{$crawl_dir}/.htaccess" ), 'Deny from all' ) ], [ true, true, true ] );
+$cs = hodima_seo_advisor_crawl_status();
+hodima_ad( 'وضعیت: زمان، شمار و ردیف‌های هر فایل', [ $cs['imported'] > 0, $cs['pages'], $cs['links'], $cs['files']['pages']['rows'], $cs['files']['links']['rows'] ], [ true, 8, 3, 8, 3 ] );
+
+$cw = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $row ) {
+	$cw[ $row['path'] ] = $row;
+}
+$codes = static fn( string $path ): array => array_column( $cw[ $path ]['issues'] ?? [], 'code' );
+hodima_ad( 'صفحه اصلی بدون لینک ورودی «یتیم» نیست و ایرادی ندارد', isset( $cw['/'] ), false );
+hodima_ad( 'عنوان کوتاه و بدون متا', $codes( '/short-title/' ), [ 'title_short', 'no_meta' ] );
+hodima_ad( 'عنوان تکراری بین دو صفحه + کند', [ $codes( '/dup-a/' ), $codes( '/dup-b/' ) ], [ [ 'dup_title' ], [ 'dup_title', 'slow' ] ] );
+hodima_ad( 'لینک ورودی کم با شمار لینک متنی (۱ لینک یکتا از متن؛ تکرار و Navigation و تصویر نشمرده)', [ $codes( '/few-links/' ), $cw['/few-links/']['text_links'] ], [ [ 'low_inlinks' ], 1 ] );
+hodima_ad( 'صفحه بدون لینک ورودی یتیم است', $codes( '/orphan/' ), [ 'orphan' ] );
+hodima_ad( 'ریدایرکتِ دارای لینک ورودی می‌آید؛ ریدایرکتِ بی‌لینک و بی‌نمایش نه', [ $codes( '/moved/' ), isset( $cw['/moved-unused/'] ) ], [ [ 'redirect' ], false ] );
+$order = array_keys( $cw );
+hodima_ad( 'مرتب بر اساس نمایش گوگل (۹٬۰۰۰ سپس ۲٬۰۰۰ سپس بی‌نمایش)', array_slice( $order, 0, 2 ), [ '/dup-b/', '/short-title/' ] );
+$sm = hodima_seo_advisor_crawl_summary( hodima_seo_advisor_crawl_issues() );
+hodima_ad( 'آمار: خزش‌شده، دارای ایراد، پرنمایش، لینک کم', [ $sm['crawled'], $sm['with_issues'], $sm['big'], $sm['low_links'] ], [ 8, 6, 2, 2 ] );
+hodima_ad( 'گروه‌های فیلتر شمرده می‌شوند', [ $sm['groups']['meta'], $sm['groups']['title'], $sm['groups']['dup'], $sm['groups']['slow'], $sm['groups']['redirect'], $sm['groups']['orphan'] ], [ 1, 1, 2, 1, 1, 1 ] );
+
+// فایل اشتباه: داده قبلی می‌ماند
+$csv( 'internal_html.csv', [ [ 'Foo', 'Bar' ], [ 'a', 'b' ] ] );
+$bad = hodima_seo_advisor_crawl_import();
+hodima_ad( 'فایل با ستون اشتباه رد می‌شود و ستون‌های ناقص نام برده می‌شوند', [ is_wp_error( $bad ), is_wp_error( $bad ) && str_contains( $bad->get_error_message(), 'address' ) ], [ true, true ] );
+hodima_ad( 'داده قبلی سالم می‌ماند و خطا در وضعیت فایل ثبت می‌شود', [ hodima_seo_advisor_crawl_status()['pages'], hodima_seo_advisor_crawl_status()['files']['pages']['state'] ], [ 8, 'invalid' ] );
+unlink( "{$crawl_dir}/internal_html.csv" );
+$none = hodima_seo_advisor_crawl_import();
+hodima_ad( 'نبودن internal_html.csv خطا می‌دهد و داده می‌ماند', [ is_wp_error( $none ), hodima_seo_advisor_crawl_status()['pages'] ], [ true, 8 ] );
+
+// نمایش تب
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'crawl' ];
+$crawl_html = $cap( static fn() => hodima_seo_advisor_render_crawl() );
+hodima_ad( 'تب: چهار آمار، کارت فایل‌ها با فرم و nonce، جدول ایرادها', [ substr_count( $crawl_html, 'hds-stat__label' ), str_contains( $crawl_html, 'name="action" value="hodima_advisor_crawl"' ), str_contains( $crawl_html, 'name="_wpnonce"' ), str_contains( $crawl_html, 'hodima-advisor__crawl-table' ) ], [ 4, true, true, true ] );
+$_GET['cf'] = 'orphan';
+$orphan_html = $cap( static fn() => hodima_seo_advisor_render_crawl() );
+hodima_ad( 'فیلتر «بدون لینک ورودی» فقط همان صفحه را نشان می‌دهد', [ str_contains( $orphan_html, '/orphan/' ), str_contains( $orphan_html, '/dup-b/' ) ], [ true, false ] );
+$_GET = [];
+
+// پاک کردن داده جدول‌های خزش را هم پاک می‌کند
+hodima_seo_advisor_clear_data();
+hodima_ad( 'پاک کردن داده: جدول‌ها و وضعیت خزش خالی', [ hodima_seo_advisor_crawl_summary( [] )['crawled'], hodima_seo_advisor_crawl_status()['imported'] ], [ 0, 0 ] );
+$empty_crawl = $cap( static fn() => hodima_seo_advisor_render_crawl() );
+hodima_ad( 'بدون خزش: آمار خالی و راهنمای سه‌گامی با مسیر پوشه', [ substr_count( $empty_crawl, 'data-empty' ), str_contains( $empty_crawl, 'هنوز خروجی خزش خوانده نشده' ), str_contains( $empty_crawl, 'data-hdsa-copy' ) ], [ 4, true, true ] );
+remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter );
+array_map( 'unlink', glob( "{$crawl_dir}/{,.}*", GLOB_BRACE ) ?: [] );
+@rmdir( $crawl_dir );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

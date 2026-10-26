@@ -398,11 +398,11 @@ function hodima_seo_advisor_handle_csv(): void {
  * @return list<string>
  */
 function hodima_seo_advisor_tab_keys(): array {
-	return [ 'opportunities', 'competition', 'terms', 'breakdown', 'trend', 'health', 'indexing', 'tasks' ];
+	return [ 'opportunities', 'competition', 'terms', 'breakdown', 'trend', 'health', 'crawl', 'indexing', 'tasks' ];
 }
 
 /**
- * تب‌های بالای صفحه: فرصت‌ها | رقابت صفحه‌ها | کلمه‌ها | دستگاه و کشور | روند و فصل‌ها | سلامت آدرس‌ها | ایندکس | کارهای من.
+ * تب‌های بالای صفحه: فرصت‌ها | رقابت صفحه‌ها | کلمه‌ها | دستگاه و کشور | روند و فصل‌ها | سلامت آدرس‌ها | سلامت خزش | ایندکس | کارهای من.
  */
 function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true ): void {
 
@@ -413,6 +413,7 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 		'breakdown'     => [ 'دستگاه و کشور', hodima_seo_advisor_page_url( [ 'tab' => 'breakdown' ] ) ],
 		'trend'         => [ 'روند و فصل‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'trend' ] ) ],
 		'health'        => [ 'سلامت آدرس‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'health' ] ) ],
+		'crawl'         => [ 'سلامت خزش', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
 		'indexing'      => [ 'ایندکس', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
 		'tasks'         => [ 'کارهای من', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
 	];
@@ -468,6 +469,7 @@ function hodima_seo_advisor_render_admin(): void {
 			'breakdown' => hodima_seo_advisor_render_breakdown( $status ),
 			'trend'     => hodima_seo_advisor_render_trend_tab(),
 			'health'    => hodima_seo_advisor_render_health( $status ),
+			'crawl'     => hodima_seo_advisor_render_crawl(),
 			'indexing'  => hodima_seo_advisor_render_indexing(),
 			'tasks'     => hodima_seo_advisor_render_tasks(),
 			default     => hodima_seo_advisor_render_competition( $status ),

@@ -22,6 +22,23 @@
 		});
 	}
 
+	/* ── کپی مسیر پوشه خزش (data-hdsa-copy = شناسه عنصر حاوی متن) ── */
+	document.querySelectorAll('[data-hdsa-copy]').forEach((button) => {
+		button.addEventListener('click', async () => {
+			const source = document.getElementById(button.dataset.hdsaCopy || '');
+			if (!source) return;
+			const label = button.textContent;
+			try {
+				await navigator.clipboard.writeText(source.textContent.trim());
+				button.textContent = 'کپی شد';
+			} catch {
+				window.getSelection()?.selectAllChildren(source); // مرورگر کپی نداد: متن انتخاب می‌شود تا دستی کپی شود
+				button.textContent = 'انتخاب شد؛ Ctrl+C';
+			}
+			setTimeout(() => { button.textContent = label; }, 2000);
+		});
+	});
+
 	/* ── تأیید پیش از «حذف کلید» ── */
 	document.querySelectorAll('form[data-hdsa-confirm]').forEach((form) => {
 		form.addEventListener('submit', (event) => {
