@@ -190,6 +190,9 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 		// دستگاه، کشور، تصویر/ویدیو، نوع نمایش؛ شکستش دریافت اصلی را رد نمی‌کند (hodima_seo_advisor_breakdown_sync)
 		hodima_seo_advisor_breakdown_sync( $property, $range, $days );
 
+		// روند ماهانه ۱۶ ماه و کلمه‌های تازه/از دست رفته؛ شکستش دریافت اصلی را رد نمی‌کند (hodima_seo_advisor_trend_sync)
+		hodima_seo_advisor_trend_sync( $property );
+
 		// تاریخچه هفتگی؛ شکستش دریافت اصلی را رد نمی‌کند (هفته‌های ناموفق دفعه بعد دوباره امتحان می‌شوند)
 		hodima_seo_advisor_history_sync( $property );
 

@@ -159,6 +159,7 @@ add_filter(
 hodima_ad( 'تابع‌ها و ماژول لود شده‌اند', [ function_exists( 'hodima_seo_sc_request' ), class_exists( '\Hodima\Core\Modules' ) && \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) ], [ true, true ] );
 hodima_ad( 'رویداد روزانه به تابع دریافت وصل است', has_action( HODIMA_SEO_ADVISOR_CRON ) !== false, true );
 
+add_filter( 'hodima_seo_advisor_trend_enabled', '__return_false' );
 add_filter( 'hodima_seo_advisor_breakdown_enabled', '__return_false' ); // بخش‌بندی در آزمون‌های دریافت اصلی خاموش؛ پایین جدا آزمون می‌شود
 // تاریخچه هفتگی را از پیش پر می‌کنیم تا شمار درخواست‌های آزمون‌های دریافت فقط سه‌تای اصلی باشد (خودش پایین آزمون می‌شود)
 hodima_seo_advisor_ensure_tables();
@@ -791,6 +792,7 @@ hodima_ad( 'صفحه‌بندی: limit/offset', [ count( hodima_seo_advisor_comp
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-competition-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-insights-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-breakdown-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-trend-view.php';
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 update_option( 'hodima_discover_sc_key', $key_json, false );
 wp_set_current_user( 1 );
@@ -943,6 +945,80 @@ hodima_ad( 'برچسب‌ها: کشور و نوع نمایش ناشناس برم
 remove_filter( 'pre_http_request', $bd_filter, 20 );
 hodima_ad( 'پاک کردن داده‌های مشاور بخش‌بندی را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), hodima_seo_advisor_breakdown() ], [ true, [] ] );
 delete_option( 'hodima_discover_sc_key' );
+
+echo "=== روند ماهانه و کلمه‌های تازه/از دست رفته\n";
+remove_filter( 'hodima_seo_advisor_trend_enabled', '__return_false' );
+$day = static fn( string $date, int $clicks, int $impressions ): array => [ 'keys' => [ $date ], 'clicks' => $clicks, 'impressions' => $impressions, 'position' => 6.0 ];
+$date_rows = [];
+// ۲۸ روز مهر ۱۴۰۴ (۲۰۲۵-۰۹-۲۳ تا ۲۰۲۵-۱۰-۲۰ ≈ مهر)، یک ماه کامل مهر ۱۴۰۵ و یک ماه ناقص
+foreach ( range( 0, 29 ) as $i ) {
+	$date_rows[] = $day( ( new DateTimeImmutable( '2025-09-23' ) )->modify( "+{$i} days" )->format( 'Y-m-d' ), 10, 1000 ); // مهر ۱۴۰۴
+	$date_rows[] = $day( ( new DateTimeImmutable( '2026-09-23' ) )->modify( "+{$i} days" )->format( 'Y-m-d' ), 20, 1500 ); // مهر ۱۴۰۵
+}
+$date_rows[] = $day( '2026-11-01', 5, 100 ); // آبان ۱۴۰۵: فقط یک روز ← ناقص
+$months = hodima_seo_advisor_trend_months( $date_rows );
+$by_key = array_column( $months, null, 'key' );
+hodima_ad( 'ماه‌های شمسی: فقط ۳ ماه؛ مهر ۱۴۰۴ و مهر ۱۴۰۵ کامل، آبان ۱۴۰۵ ناقص، قدیمی‌ترین اول', [ array_column( $months, 'key' ), $by_key[ 140407 ]['partial'] ?? null, $by_key[ 140507 ]['partial'] ?? null, $by_key[ 140508 ]['partial'] ?? null ], [ [ 140407, 140507, 140508 ], false, false, true ] );
+$yoy = hodima_seo_advisor_trend_year_over_year( $months );
+hodima_ad( 'مقایسه با سال قبل: آخرین ماه کامل (مهر ۱۴۰۵) ← +۱۰۰٪', [ $yoy['clicks'] ?? 0, $yoy['prev_clicks'] ?? 0, $yoy['change'] ?? 0 ], [ 600, 300, 100.0 ] );
+hodima_ad( 'بدون ماه کامل سال قبل ← null', hodima_seo_advisor_trend_year_over_year( array_slice( $months, 2 ) ), null );
+
+$qrow = static fn( string $term, int $clicks, int $impressions, float $position = 8.0 ): array => [ 'keys' => [ $term ], 'clicks' => $clicks, 'impressions' => $impressions, 'position' => $position ];
+$change = hodima_seo_advisor_trend_terms(
+	[ $qrow( 'کلیپس جدید', 5, 400 ), $qrow( 'ثابت', 10, 900 ), $qrow( 'کم', 0, 50 ), $qrow( 'هدهدلی تازه', 9, 500 ), $qrow( 'برگشتی', 2, 300 ) ],
+	[ $qrow( 'ثابت', 11, 950 ), $qrow( 'کلیپس قدیمی', 8, 800 ), $qrow( 'کم‌نمایش قدیمی', 1, 100 ), $qrow( 'برگشتی', 1, 5 ), $qrow( 'هدهدلی قدیمی', 9, 600 ) ]
+);
+hodima_ad( 'کلمه تازه: «کلیپس جدید» (≥۱۰۰ نمایش و قبلا نبود) و «برگشتی» (قبلا کمتر از ۱۰)؛ ثابت و کم‌نمایش نه', array_column( $change['new'], 'term' ), [ 'کلیپس جدید', 'برگشتی' ] );
+hodima_ad( 'کلمه از دست رفته: فقط «کلیپس قدیمی» (≥۱۵۰ نمایش قبلا و حالا نیست)', array_column( $change['lost'], 'term' ), [ 'کلیپس قدیمی' ] );
+add_filter( 'hodima_seo_advisor_brand_terms', $brand_filter3 = static fn(): array => [ 'هدهدلی' ] );
+$change2 = hodima_seo_advisor_trend_terms( [ $qrow( 'هدهدلی تازه', 9, 500 ) ], [ $qrow( 'هدهدلی قدیمی', 9, 600 ) ] );
+remove_filter( 'hodima_seo_advisor_brand_terms', $brand_filter3 );
+hodima_ad( 'کلمه برندی در هیچ‌کدام نمی‌آید', [ $change2['new'], $change2['lost'] ], [ [], [] ] );
+
+update_option( 'hodima_discover_sc_key', $key_json, false );
+delete_option( HODIMA_SEO_ADVISOR_TREND_OPTION );
+$tr_calls = [];
+add_filter(
+	'pre_http_request',
+	$tr_filter = static function ( mixed $pre, array $args, string $url ) use ( &$tr_calls, $date_rows, $qrow ): mixed {
+		if ( ! str_contains( $url, '/searchAnalytics/query' ) ) {
+			return $pre;
+		}
+		$body = json_decode( (string) $args['body'], true );
+		$json = static fn( array $rows ): array => [ 'response' => [ 'code' => 200 ], 'body' => (string) wp_json_encode( [ 'rows' => $rows ] ) ];
+		if ( [ 'date' ] === $body['dimensions'] ) {
+			$tr_calls[] = [ 'date', $body['startDate'], $body['endDate'] ];
+			return $json( $date_rows );
+		}
+		if ( [ 'query' ] === $body['dimensions'] ) {
+			$tr_calls[] = [ 'query', $body['startDate'], $body['endDate'] ];
+			return $json( 1 === count( array_filter( $tr_calls, static fn( array $c ): bool => 'query' === $c[0] ) ) ? [ $qrow( 'تازه ۱', 1, 300 ) ] : [] ); // اولی = ۲۸ روز اخیر، دومی = قبلش
+		}
+		return $pre;
+	},
+	20,
+	3
+);
+$ts = hodima_seo_advisor_trend_sync( 'sc-domain:' . $host );
+$trend = hodima_seo_advisor_trend();
+hodima_ad( 'همگام‌سازی: ۳ درخواست (تاریخ ۱۶ ماه، کلمه ۲۸ روز اخیر، کلمه ۲۸ روز قبل) و دو بخش ذخیره', [ $ts, array_column( $tr_calls, 0 ), count( $trend['months'] ), array_column( $trend['new'], 'term' ), $trend['lost'] ], [ [ 'fetched' => 2, 'errors' => [] ], [ 'date', 'query', 'query' ], 3, [ 'تازه ۱' ], [] ] );
+$span = ( new DateTimeImmutable( $tr_calls[0][1] ) )->diff( new DateTimeImmutable( $tr_calls[0][2] ) );
+hodima_ad( 'بازه روند حدود ۱۶ ماه (۴۸۰ تا ۴۹۰ روز) و پنجره کلمه‌ها ۲۸ روز', [ $span->days >= 480 && $span->days <= 490, ( new DateTimeImmutable( $tr_calls[1][1] ) )->diff( new DateTimeImmutable( $tr_calls[1][2] ) )->days ], [ true, 27 ] );
+$tr_calls = [];
+hodima_ad( 'دوباره زود است ← null و بدون درخواست؛ با force می‌گیرد', [ hodima_seo_advisor_trend_sync( 'sc-domain:' . $host ), count( $tr_calls ), hodima_seo_advisor_trend_sync( 'sc-domain:' . $host, true )['fetched'] ?? 0 ], [ null, 0, 2 ] );
+remove_filter( 'pre_http_request', $tr_filter, 20 );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+hodima_seo_advisor_store( [ '/t/a/' => [ 'clicks' => 51, 'impressions' => 4100, 'position' => 9.0 ] ], [], [ '/t/a/' => [ 'تازه ۱' => [ 'clicks' => 1, 'impressions' => 300, 'position' => 8.0 ] ] ] );
+wp_set_current_user( 1 );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'trend' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$trend_html = (string) ob_get_clean();
+hodima_ad( 'تب روند: ۵ تب، ۴ کارت آمار، ۳ ستون ماه (یکی ناقص)، کلمه تازه با صفحه مرتبط', [ substr_count( $trend_html, 'tab=trend' ) >= 1, substr_count( $trend_html, 'class="hds-stat"' ), substr_count( $trend_html, 'hodima-advisor__months-bar' ), substr_count( $trend_html, 'class="is-partial"' ), str_contains( $trend_html, 'تازه ۱' ), str_contains( $trend_html, 'پرکلیک‌ترین ماه کامل' ) ], [ true, 4, 3, 1, true, true ] );
+$_GET = [];
+hodima_ad( 'پاک کردن داده‌های مشاور روند را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), hodima_seo_advisor_trend() ], [ true, [] ] );
+delete_option( 'hodima_discover_sc_key' );
+add_filter( 'hodima_seo_advisor_trend_enabled', '__return_false' );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

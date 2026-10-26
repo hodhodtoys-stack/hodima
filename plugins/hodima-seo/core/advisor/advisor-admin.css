@@ -640,6 +640,56 @@
 	grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.8fr) 5.5rem 5.5rem 5rem 7rem;
 }
 
+/* روند ماهانه */
+.hodima-advisor .hodima-advisor__months-wrap {
+	margin-block: 0.875rem 0.75rem;
+	overflow-x: auto;
+}
+
+.hodima-advisor .hodima-advisor__months {
+	display: flex;
+	align-items: stretch;
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0;
+	min-inline-size: 38rem;
+	list-style: none;
+}
+
+.hodima-advisor .hodima-advisor__months li {
+	display: grid;
+	flex: 1 1 0;
+	grid-template-rows: auto 8rem auto;
+	justify-items: center;
+	gap: 0.25rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__months-value {
+	color: var(--hd-muted);
+	font-size: 0.6875rem;
+}
+
+.hodima-advisor .hodima-advisor__months-bar {
+	align-self: end;
+	inline-size: 100%;
+	max-inline-size: 2.5rem;
+	block-size: max(var(--h), 2%);
+	border-radius: 0.375rem 0.375rem 0 0;
+	background: var(--hd-primary);
+}
+
+.hodima-advisor .hodima-advisor__months .is-partial .hodima-advisor__months-bar {
+	background: var(--hd-secondary);
+	opacity: 0.55;
+}
+
+.hodima-advisor .hodima-advisor__months-label {
+	color: var(--hd-muted);
+	font-size: 0.6875rem;
+	text-align: center;
+}
+
 /* کارت تنظیمات مشاور (اختیاری، جمع‌شده) */
 .hodima-advisor .hodima-advisor__settings {
 	padding-block: 0.25rem;

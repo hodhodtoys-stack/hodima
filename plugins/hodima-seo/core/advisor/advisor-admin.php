@@ -384,7 +384,7 @@ function hodima_seo_advisor_handle_csv(): void {
 /* ── صفحه ── */
 
 /**
- * تب‌های بالای صفحه: فرصت‌های بهتر شدن | رقابت صفحه‌ها | کلمه‌ها.
+ * تب‌های بالای صفحه: فرصت‌ها | رقابت صفحه‌ها | کلمه‌ها | دستگاه و کشور | روند و فصل‌ها.
  */
 function hodima_seo_advisor_render_tabs( string $active ): void {
 
@@ -393,6 +393,7 @@ function hodima_seo_advisor_render_tabs( string $active ): void {
 		'competition'   => [ 'رقابت صفحه‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ],
 		'terms'         => [ 'کلمه‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
 		'breakdown'     => [ 'دستگاه و کشور', hodima_seo_advisor_page_url( [ 'tab' => 'breakdown' ] ) ],
+		'trend'         => [ 'روند و فصل‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'trend' ] ) ],
 	];
 
 	echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های مشاور">';
@@ -429,7 +430,7 @@ function hodima_seo_advisor_render_admin(): void {
 	$n     = static fn( int|float $value ): string => number_format_i18n( $value );
 	$empty = ! $has_data;
 	$tab   = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
-	$tab   = $has_data && in_array( $tab, [ 'competition', 'terms', 'breakdown' ], true ) ? $tab : 'opportunities';
+	$tab   = $has_data && in_array( $tab, [ 'competition', 'terms', 'breakdown', 'trend' ], true ) ? $tab : 'opportunities';
 
 	if ( $has_data ) {
 		hodima_seo_advisor_render_tabs( $tab );
@@ -439,6 +440,7 @@ function hodima_seo_advisor_render_admin(): void {
 		match ( $tab ) {
 			'terms'     => hodima_seo_advisor_render_terms( $status ),
 			'breakdown' => hodima_seo_advisor_render_breakdown( $status ),
+			'trend'     => hodima_seo_advisor_render_trend_tab(),
 			default     => hodima_seo_advisor_render_competition( $status ),
 		};
 		if ( 'competition' === $tab ) {
