@@ -1523,6 +1523,16 @@ $sm = hodima_seo_advisor_crawl_summary( hodima_seo_advisor_crawl_issues() );
 hodima_ad( 'آمار: خزش‌شده، دارای ایراد، پرنمایش، لینک کم', [ $sm['crawled'], $sm['with_issues'], $sm['big'], $sm['low_links'] ], [ 8, 6, 2, 2 ] );
 hodima_ad( 'گروه‌های فیلتر شمرده می‌شوند', [ $sm['groups']['meta'], $sm['groups']['title'], $sm['groups']['dup'], $sm['groups']['slow'], $sm['groups']['redirect'], $sm['groups']['orphan'] ], [ 1, 1, 2, 1, 1, 1 ] );
 
+// فایل واقعی SF: BOM + عنوان ستون‌ها و همه مقدارها در گیومه (باگ ۲.۸.۱)
+copy( "{$crawl_dir}/internal_html.csv", "{$crawl_dir}/backup.tmp" );
+file_put_contents( "{$crawl_dir}/internal_html.csv", "\xEF\xBB\xBF" . '"Address","Status Code","Indexability","Title 1","Title 1 Length","Meta Description 1 Length","Unique Inlinks"' . "\r\n" . '"' . $u( '/quoted/' ) . '","200","Indexable","' . $long . '","' . mb_strlen( $long ) . '","130","5"' . "\r\n" );
+touch( "{$crawl_dir}/internal_html.csv", time() - 3600 );
+$quoted = hodima_seo_advisor_crawl_import();
+hodima_ad( 'فایل SF با BOM و گیومه خوانده می‌شود', is_wp_error( $quoted ) ? $quoted->get_error_message() : $quoted['pages'], 1 );
+rename( "{$crawl_dir}/backup.tmp", "{$crawl_dir}/internal_html.csv" );
+touch( "{$crawl_dir}/internal_html.csv", time() - 3600 );
+hodima_seo_advisor_crawl_import();
+
 // فایل اشتباه: داده قبلی می‌ماند
 $csv( 'internal_html.csv', [ [ 'Foo', 'Bar' ], [ 'a', 'b' ] ] );
 $bad = hodima_seo_advisor_crawl_import();

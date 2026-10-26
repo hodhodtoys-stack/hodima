@@ -124,6 +124,11 @@ function hodima_seo_advisor_crawl_open( string $file, array $required ): array|W
 		return new WP_Error( 'hodima_crawl_open', 'فایل خوانده نشد؛ دسترسی فایل را بررسی کنید.' );
 	}
 
+	// SF فایل را با BOM می‌نویسد و عنوان ستون‌ها را در گیومه می‌گذارد؛ BOM پیش از گیومه باشد خواندن CSV گیومه را جزو نام ستون می‌کند (باگ ۲.۸.۱: «ستون address نیست»)، پس BOM را پیش از خواندن رد می‌کنیم
+	if ( "\xEF\xBB\xBF" !== fread( $handle, 3 ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- فایل CSV محلی، خواندن سه بایت
+		rewind( $handle );
+	}
+
 	$head = fgetcsv( $handle, 0, ',', '"', '' );
 
 	if ( ! is_array( $head ) || [ null ] === $head ) {
