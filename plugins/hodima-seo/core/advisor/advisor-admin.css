@@ -635,6 +635,11 @@
 	direction: ltr;
 }
 
+/* ردیف سهم (دستگاه، کشور، نوع نمایش) */
+.hodima-advisor .hodima-advisor__rival--share {
+	grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.8fr) 5.5rem 5.5rem 5rem 7rem;
+}
+
 /* کارت تنظیمات مشاور (اختیاری، جمع‌شده) */
 .hodima-advisor .hodima-advisor__settings {
 	padding-block: 0.25rem;

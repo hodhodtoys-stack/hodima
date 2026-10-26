@@ -159,6 +159,7 @@ add_filter(
 hodima_ad( 'تابع‌ها و ماژول لود شده‌اند', [ function_exists( 'hodima_seo_sc_request' ), class_exists( '\Hodima\Core\Modules' ) && \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) ], [ true, true ] );
 hodima_ad( 'رویداد روزانه به تابع دریافت وصل است', has_action( HODIMA_SEO_ADVISOR_CRON ) !== false, true );
 
+add_filter( 'hodima_seo_advisor_breakdown_enabled', '__return_false' ); // بخش‌بندی در آزمون‌های دریافت اصلی خاموش؛ پایین جدا آزمون می‌شود
 // تاریخچه هفتگی را از پیش پر می‌کنیم تا شمار درخواست‌های آزمون‌های دریافت فقط سه‌تای اصلی باشد (خودش پایین آزمون می‌شود)
 hodima_seo_advisor_ensure_tables();
 $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'history' ) ) );
@@ -789,6 +790,7 @@ hodima_ad( 'صفحه‌بندی: limit/offset', [ count( hodima_seo_advisor_comp
 // تب رقابت در پیشخوان
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-competition-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-insights-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-breakdown-view.php';
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 update_option( 'hodima_discover_sc_key', $key_json, false );
 wp_set_current_user( 1 );
@@ -868,6 +870,79 @@ hodima_ad( 'برترین غیربرندی: «کلیپس پلومریا» با ۲
 remove_filter( 'hodima_seo_advisor_brand_terms', $brand_filter2 );
 update_option( HODIMA_SEO_ADVISOR_VARIANTS_OPTION, $variants, false );
 hodima_ad( 'فهرست تکراری ذخیره و خوانده می‌شود؛ «پاک کردن داده‌ها» آن را پاک می‌کند', [ count( hodima_seo_advisor_variants() ), hodima_seo_advisor_clear_data(), hodima_seo_advisor_variants() ], [ 2, true, [] ] );
+
+echo "=== بخش‌بندی: دستگاه، کشور، تصویر/ویدیو، نوع نمایش\n";
+remove_filter( 'hodima_seo_advisor_breakdown_enabled', '__return_false' );
+$dev = static fn( string $path, string $device, int $clicks, int $impressions, float $position ): array => [ 'keys' => [ 'https://' . $host . $path, $device ], 'clicks' => $clicks, 'impressions' => $impressions, 'position' => $position ];
+$device_rows = [
+	$dev( '/g/a/', 'MOBILE', 20, 3000, 11.0 ), $dev( '/g/a/', 'DESKTOP', 30, 1000, 6.0 ), $dev( '/g/a/', 'TABLET', 1, 100, 7.0 ),
+	$dev( '/g/b/', 'MOBILE', 10, 2000, 7.0 ), $dev( '/g/b/', 'DESKTOP', 12, 900, 6.0 ),
+	$dev( '/g/c/', 'MOBILE', 5, 300, 20.0 ), $dev( '/g/c/', 'DESKTOP', 5, 400, 5.0 ),
+	$dev( '/g/d/', 'MOBILE', 5, 900, 18.0 ),
+];
+$bd = hodima_seo_advisor_breakdown_devices( $device_rows );
+hodima_ad( 'سهم دستگاه‌ها: موبایل ۶۲۰۰ نمایش و ۴۰ کلیک (رتبه وزنی)', [ $bd['devices']['mobile']['impressions'], $bd['devices']['mobile']['clicks'], $bd['devices']['desktop']['impressions'], $bd['devices']['tablet']['impressions'] ], [ 6200, 40, 2300, 100 ] );
+hodima_ad( 'فاصله رتبه موبایل: فقط /g/a/ (۵ پله، نمایش کافی)؛ /g/b/ کم‌فاصله، /g/c/ کم‌نمایش، /g/d/ بدون دسکتاپ', [ array_column( $bd['gaps'], 'path' ), $bd['gaps'][0]['diff'] ?? 0 ], [ [ '/g/a/' ], 5.0 ] );
+
+$img = hodima_seo_advisor_breakdown_pages( [ $vr( $h . '/i/1/', 9, 400 ), $vr( $h . '/i/2/', 30, 900 ), $vr( 'https://other-site.test/x/', 99, 99 ) ] );
+hodima_ad( 'تصویر/ویدیو: جمع و برترین صفحه‌ها (دامنه دیگر کنار)', [ $img['clicks'], $img['impressions'], array_column( $img['pages'], 'path' ) ], [ 39, 1300, [ '/i/2/', '/i/1/' ] ] );
+
+// همگام‌سازی با پاسخ ساختگی
+update_option( 'hodima_discover_sc_key', $key_json, false );
+delete_option( HODIMA_SEO_ADVISOR_BREAKDOWN_OPTION );
+$bd_calls = [];
+add_filter(
+	'pre_http_request',
+	$bd_filter = static function ( mixed $pre, array $args, string $url ) use ( &$bd_calls, $device_rows ): mixed {
+		if ( ! str_contains( $url, '/searchAnalytics/query' ) ) {
+			return $pre;
+		}
+		$body = json_decode( (string) $args['body'], true );
+		$dims = $body['dimensions'];
+		$json = static fn( array $rows ): array => [ 'response' => [ 'code' => 200 ], 'body' => (string) wp_json_encode( [ 'rows' => $rows ] ) ];
+		if ( [ 'page', 'device' ] === $dims ) {
+			$bd_calls[] = 'device';
+			return $json( $device_rows );
+		}
+		if ( [ 'country' ] === $dims ) {
+			$bd_calls[] = 'country';
+			return $json( [ [ 'keys' => [ 'irn' ], 'clicks' => 900, 'impressions' => 90000, 'position' => 8.0 ], [ 'keys' => [ 'afg' ], 'clicks' => 60, 'impressions' => 4000, 'position' => 12.0 ], [ 'keys' => [ 'are' ], 'clicks' => 40, 'impressions' => 3000, 'position' => 9.0 ] ] );
+		}
+		if ( [ 'searchAppearance' ] === $dims ) {
+			$bd_calls[] = 'appearance';
+			return [ 'response' => [ 'code' => 'video' === ( $GLOBALS['bd_mode'] ?? '' ) ? 500 : 200 ], 'body' => (string) wp_json_encode( [ 'rows' => [ [ 'keys' => [ 'PRODUCT_SNIPPETS' ], 'clicks' => 120, 'impressions' => 9000, 'position' => 6.0 ] ] ] ) ];
+		}
+		if ( in_array( $body['type'] ?? '', [ 'image', 'video' ], true ) ) {
+			$bd_calls[] = $body['type'];
+			return $json( 'image' === $body['type'] ? [ [ 'keys' => [ 'https://' . $GLOBALS['host_for_bd'] . '/i/2/' ], 'clicks' => 30, 'impressions' => 900, 'position' => 4.0 ] ] : [] );
+		}
+		return $pre;
+	},
+	20,
+	3
+);
+$GLOBALS['host_for_bd'] = $host;
+$sync_range = hodima_seo_advisor_ranges( 90 );
+$bs = hodima_seo_advisor_breakdown_sync( 'sc-domain:' . $host, $sync_range, 90 );
+$stored_bd = hodima_seo_advisor_breakdown();
+hodima_ad( 'همگام‌سازی: ۵ درخواست جدا، ۵ بخش، بدون خطا', [ $bs, $bd_calls ], [ [ 'fetched' => 5, 'errors' => [] ], [ 'device', 'country', 'appearance', 'image', 'video' ] ] );
+hodima_ad( 'ذخیره‌شده: کشور مرتب بر کلیک، نوع نمایش، تصویر، ویدیو خالی', [ array_keys( $stored_bd['country'] ), array_keys( $stored_bd['appearance'] ), $stored_bd['image']['clicks'], $stored_bd['video']['clicks'], $stored_bd['days'] ], [ [ 'irn', 'afg', 'are' ], [ 'product_snippets' ], 30, 0, 90 ] );
+$bd_calls = [];
+hodima_ad( 'دوباره زود است (کمتر از ۱۲ ساعت) ← null و درخواستی نمی‌رود', [ hodima_seo_advisor_breakdown_sync( 'sc-domain:' . $host, $sync_range, 90 ), $bd_calls ], [ null, [] ] );
+hodima_ad( 'بازه عوض شود (۲۸ روز) ← دوباره می‌گیرد؛ با force هم', [ hodima_seo_advisor_breakdown_sync( 'sc-domain:' . $host, hodima_seo_advisor_ranges( 28 ), 28 )['fetched'] ?? 0, hodima_seo_advisor_breakdown_sync( 'sc-domain:' . $host, $sync_range, 28, true )['fetched'] ?? 0 ], [ 5, 5 ] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+hodima_seo_advisor_store( [ '/g/a/' => [ 'clicks' => 51, 'impressions' => 4100, 'position' => 9.0 ] ], [], [] );
+wp_set_current_user( 1 );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'breakdown' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$bd_html = (string) ob_get_clean();
+hodima_ad( 'تب دستگاه و کشور: ۴ تب، ۴ کارت آمار، سهم موبایل، فاصله رتبه، کشور، تصویر، نوع نمایش', [ str_contains( $bd_html, 'موبایل' ), substr_count( $bd_html, 'class="hds-stat"' ), str_contains( $bd_html, 'رتبه میانگین موبایل' ), str_contains( $bd_html, '/g/a/' ), str_contains( $bd_html, 'ایران' ), str_contains( $bd_html, 'افغانستان' ), str_contains( $bd_html, 'ریچ‌اسنیپت محصول' ), str_contains( $bd_html, 'tab=breakdown' ) ], [ true, 4, true, true, true, true, true, true ] );
+$_GET = [];
+hodima_ad( 'برچسب‌ها: کشور و نوع نمایش ناشناس برمی‌گردند', [ hodima_seo_advisor_country_label( 'IRN' ), hodima_seo_advisor_country_label( 'xyz' ), hodima_seo_advisor_appearance_label( 'NEW_THING' ) ], [ 'ایران', 'XYZ', 'NEW THING' ] );
+remove_filter( 'pre_http_request', $bd_filter, 20 );
+hodima_ad( 'پاک کردن داده‌های مشاور بخش‌بندی را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), hodima_seo_advisor_breakdown() ], [ true, [] ] );
+delete_option( 'hodima_discover_sc_key' );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
