@@ -422,6 +422,159 @@
 
 	}
 
+/* تب‌های بالای صفحه و تب «رقابت صفحه‌ها» */
+.hodima-advisor .hodima-advisor__tabs {
+	margin-block-end: 0.25rem;
+}
+
+.hodima-advisor .hodima-advisor__tabs .hodima-advisor__view {
+	min-block-size: 2.75rem;
+	padding-inline: 1.125rem;
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__groups {
+	display: grid;
+	gap: 0.625rem;
+	margin-block-start: 0.875rem;
+}
+
+.hodima-advisor .hodima-advisor__group {
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+	background: var(--hd-surface);
+}
+
+.hodima-advisor .hodima-advisor__group[open] {
+	border-color: var(--hd-border-strong);
+}
+
+.hodima-advisor .hodima-advisor__group-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 1rem;
+	min-block-size: 2.75rem;
+	padding: 0.625rem 1rem;
+	cursor: pointer;
+}
+
+.hodima-advisor .hodima-advisor__group-head:focus-visible {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: 2px;
+}
+
+.hodima-advisor .hodima-advisor__group-term {
+	flex: 1 1 12rem;
+	color: var(--hd-text);
+	font-size: 0.9375rem;
+}
+
+.hodima-advisor .hodima-advisor__group-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.875rem;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__group-potential {
+	color: var(--hd-ok);
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__group-body {
+	display: grid;
+	gap: 0.75rem;
+	padding: 0 1rem 1rem;
+}
+
+.hodima-advisor .hodima-advisor__rivals {
+	display: grid;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-advisor .hodima-advisor__rival {
+	display: grid;
+	grid-template-columns: minmax(0, 2.4fr) minmax(0, 1.4fr) 5rem 5rem 6.5rem;
+	align-items: center;
+	gap: 0.75rem;
+	padding-block: 0.625rem;
+	border-block-start: 1px solid var(--hd-border);
+}
+
+.hodima-advisor .hodima-advisor__rival-name {
+	display: grid;
+	gap: 0.25rem;
+	justify-items: start;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__rival-path {
+	max-inline-size: 100%;
+	overflow: hidden;
+	color: var(--hd-muted);
+	font-size: 0.6875rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	direction: ltr;
+}
+
+.hodima-advisor .hodima-advisor__rival-share {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.75rem;
+	white-space: nowrap;
+}
+
+.hodima-advisor .hodima-advisor__share-bar {
+	flex: 1 1 3.75rem;
+	block-size: 0.5rem;
+	border-radius: 0.25rem;
+	background: var(--hd-soft);
+	overflow: hidden;
+}
+
+.hodima-advisor .hodima-advisor__share-bar > span {
+	display: block;
+	block-size: 100%;
+	background: var(--hd-secondary);
+}
+
+.hodima-advisor .is-winner .hodima-advisor__share-bar > span {
+	background: var(--hd-ok);
+}
+
+.hodima-advisor .hodima-advisor__rival-stat {
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__rival-link {
+	font-size: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__more {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__advice {
+	padding: 0.75rem 0.875rem;
+	border-radius: 0.625rem;
+	background: var(--hd-soft);
+	font-size: 0.8125rem;
+	line-height: 1.9;
+}
+
+.hodima-advisor .hodima-advisor__advice strong {
+	color: var(--hd-primary);
+}
+
 /* کارت تنظیمات مشاور (اختیاری، جمع‌شده) */
 .hodima-advisor .hodima-advisor__settings {
 	padding-block: 0.25rem;
@@ -518,6 +671,24 @@
 
 .hodima-advisor .hodima-advisor__note strong {
 	color: var(--hd-text);
+}
+
+@media (max-width: 782px) {
+	.hodima-advisor .hodima-advisor__rival {
+		grid-template-columns: 1fr 1fr;
+		padding: 0.625rem 0.75rem;
+		border: 1px solid var(--hd-border);
+		border-radius: 0.625rem;
+	}
+
+	.hodima-advisor .hodima-advisor__rivals {
+		gap: 0.5rem;
+	}
+
+	.hodima-advisor .hodima-advisor__rival-name,
+	.hodima-advisor .hodima-advisor__rival-share {
+		grid-column: 1 / -1;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {

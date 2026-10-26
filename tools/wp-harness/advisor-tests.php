@@ -786,6 +786,29 @@ update_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION, [], false );
 hodima_ad( 'جستجو در کلمه و آدرس + فیلتر نوع دستور', [ array_column( hodima_seo_advisor_competition( [ 'search' => 'گیره' ] )['rows'], 'term' ), array_column( hodima_seo_advisor_competition( [ 'search' => '/c/b/' ] )['rows'], 'term' ), array_column( hodima_seo_advisor_competition( [ 'type' => 'strengthen' ] )['rows'], 'term' ) ], [ [ 'گیره مو' ], [ 'کلیپس پلومریا' ], [ 'کلیپس پلومریا' ] ] );
 hodima_ad( 'صفحه‌بندی: limit/offset', [ count( hodima_seo_advisor_competition( [ 'limit' => 1 ] )['rows'] ), hodima_seo_advisor_competition( [ 'limit' => 1, 'offset' => 1 ] )['rows'][0]['term'] ?? '' ], [ 1, array_column( $comp['rows'], 'term' )[1] ] );
 
+// تب رقابت در پیشخوان
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-competition-view.php';
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+update_option( 'hodima_discover_sc_key', $key_json, false );
+wp_set_current_user( 1 );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$tab_html = (string) ob_get_clean();
+hodima_ad( 'تب رقابت: دو تب، ۴ کارت آمار، دو گروه با دستور و برنده، جدول بدون <details> فرصت‌ها', [ substr_count( $tab_html, 'hodima-advisor__tabs' ), substr_count( $tab_html, 'class="hds-stat"' ), substr_count( $tab_html, 'class="hodima-advisor__group"' ), str_contains( $tab_html, 'برنده پیشنهادی' ), str_contains( $tab_html, 'کلیپس پلومریا' ), str_contains( $tab_html, 'name="tab" value="competition"' ), str_contains( $tab_html, 'action=hodima_advisor_competition_csv' ) && str_contains( $tab_html, '_wpnonce=' ), str_contains( $tab_html, 'hodima-advisor__table' ) ], [ 1, 4, 2, true, true, true, true, false ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition', 'ctype' => 'choose' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$tab_filtered = (string) ob_get_clean();
+hodima_ad( 'تب رقابت: فیلتر «هم‌وزن» فقط یک گروه (گیره مو) را نشان می‌دهد', [ substr_count( $tab_filtered, 'class="hodima-advisor__group"' ), str_contains( $tab_filtered, 'گیره مو' ), str_contains( $tab_filtered, 'کلیپس پلومریا' ) ], [ 1, true, false ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$main_html = (string) ob_get_clean();
+hodima_ad( 'تب فرصت‌ها پیش‌فرض است و تب رقابت کنارش لینک دارد', [ str_contains( $main_html, 'name="rule"' ), str_contains( $main_html, 'tab=competition' ), str_contains( $main_html, 'hodima-advisor__group' ) ], [ true, true, false ] );
+delete_option( 'hodima_discover_sc_key' );
+$_GET = [];
+
 $cat_advice = hodima_seo_advisor_competition_advice( 'گیره', [ [ 'kind' => 'product', 'path' => '/p/' ], [ 'kind' => 'product_cat', 'path' => '/c/' ] ], 0.9 );
 hodima_ad( 'برنده محصول و رقیب دسته ← «دسته را اصلی کنید»', $cat_advice['type'], 'category' );
 hodima_seo_advisor_store( [], [], [] );
