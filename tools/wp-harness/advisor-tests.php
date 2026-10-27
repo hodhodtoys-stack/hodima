@@ -458,6 +458,41 @@ ob_start();
 hodima_seo_advisor_render_box( '' );
 $box = (string) ob_get_clean();
 hodima_ad( 'آدرس نامعتبر خطا نمی‌دهد', str_contains( $box, 'hodima-advisor-box' ), true );
+echo "=== تحلیل دوباره هنگام ذخیره (advisor-resave.php)\n";
+$rules_of = static fn(): array => array_column( (array) ( hodima_seo_advisor_page( '/advisor-box-test/' )['advice'] ?? [] ), 'rule' );
+hodima_ad( 'پیش از دریافت داده (وضعیت خالی): ذخیره کاری نمی‌کند', hodima_seo_advisor_resave_object( 'page', $box_id ), 0 );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 1, 'advised' => 1, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+hodima_seo_advisor_save_advice( '/advisor-box-test/' );
+$box_old_content = (string) get_post_field( 'post_content', $box_id );
+if ( hodima_router_active() ) {
+	hodima_ad( 'پیش از ویرایش: ایراد «کلمه در متن نیست» در فهرست ذخیره است', in_array( 'missing_content', $rules_of(), true ), true );
+	wp_update_post( [ 'ID' => $box_id, 'post_content' => '<h2>پلومریا کلیپس</h2><p>' . $box_old_content . '</p>' ] );
+	hodima_ad( 'بعد از ذخیره صفحه: ایراد کلمه همان لحظه از فهرست رفت (بدون دریافت تازه)', [ in_array( 'missing_content', $rules_of(), true ), in_array( 'missing_headings', $rules_of(), true ) ], [ false, false ] );
+	hodima_ad( 'ایراد آماری (نرخ کلیک) با ذخیره نمی‌رود', in_array( 'low_ctr', $rules_of(), true ), true );
+	wp_update_post( [ 'ID' => $box_id, 'post_content' => $box_old_content ] );
+	hodima_ad( 'برداشتن کلمه از متن: ایراد دوباره برمی‌گردد', in_array( 'missing_content', $rules_of(), true ), true );
+	hodima_seo_advisor_set_ignored( '/advisor-box-test/', true );
+	wp_update_post( [ 'ID' => $box_id, 'post_content' => $box_old_content . ' ' ] );
+	hodima_ad( 'آدرس نادیده‌گرفته‌شده با ذخیره پیشنهاد نمی‌گیرد', $rules_of(), [] );
+	hodima_seo_advisor_set_ignored( '/advisor-box-test/', false );
+	hodima_ad( 'شیئی که ردیف ندارد: صفر ردیف، بدون خطا', hodima_seo_advisor_resave_object( 'page', $box_draft ), 0 );
+	$resave_cat = wp_insert_term( 'دسته آزمون مشاور', 'category', [ 'slug' => 'advisor-resave-cat' ] );
+	$resave_tid = is_array( $resave_cat ) ? (int) $resave_cat['term_id'] : 0;
+	$resave_path = (string) hodima_seo_advisor_path_key( (string) get_term_link( $resave_tid, 'category' ) );
+	hodima_seo_advisor_store(
+		[ $resave_path => [ 'clicks' => 10, 'impressions' => 5000, 'position' => 6.0 ] ],
+		[],
+		[ $resave_path => [ 'سنجاق نقره‌ای' => [ 'clicks' => 2, 'impressions' => 900, 'position' => 6.5 ] ] ]
+	);
+	hodima_seo_advisor_save_advice( $resave_path );
+	$cat_rules = static fn(): array => array_column( (array) ( hodima_seo_advisor_page( $resave_path )['advice'] ?? [] ), 'rule' );
+	hodima_ad( 'دسته پیش از ویرایش: کلمه در متن نیست', in_array( 'missing_content', $cat_rules(), true ), true );
+	wp_update_term( $resave_tid, 'category', [ 'description' => '<h2>سنجاق نقره‌ای</h2>' ] );
+	hodima_ad( 'بعد از ذخیره دسته (saved_term): ایراد کلمه رفت', [ in_array( 'missing_content', $cat_rules(), true ), in_array( 'missing_headings', $cat_rules(), true ) ], [ false, false ] );
+	wp_delete_term( $resave_tid, 'category' );
+} else {
+	hodima_ad( 'بدون روتر نوع شیء معلوم نیست: ذخیره ردیفی را پیدا نمی‌کند', hodima_seo_advisor_resave_object( 'page', $box_id ), 0 );
+}
 wp_delete_post( $box_id, true );
 wp_delete_post( $box_draft, true );
 wp_set_current_user( 0 );

@@ -36,6 +36,7 @@ require_once __DIR__ . '/advisor-inspect.php';
 require_once __DIR__ . '/advisor-rules.php';
 require_once __DIR__ . '/advisor-steps.php';
 require_once __DIR__ . '/advisor-refresh.php';
+require_once __DIR__ . '/advisor-resave.php';
 
 if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-steps-view.php';
