@@ -278,6 +278,36 @@
 	background: var(--hd-secondary);
 }
 
+/* نقطه | متن؛ نشان وضعیت کار زیر متن در همان ستون (نقطه هنگام شکستن متن تنها نماند) */
+.hodima-advisor .hodima-advisor__issues li:has(.hds-pill) {
+	display: grid;
+	grid-template-columns: 0.5rem minmax(0, 1fr);
+	column-gap: 0.5rem;
+	align-items: baseline;
+}
+
+.hodima-advisor .hodima-advisor__issues li:has(.hds-pill) > .hds-pill {
+	grid-column: 2;
+	justify-self: start;
+}
+
+/* وضعیت «کارهای من» کنار ایراد: انجام‌شده و ردشده کم‌رنگ تا کارهای باز به چشم بیایند */
+.hodima-advisor .hodima-advisor__issues li[data-task="done"] .hodima-advisor__issue-text,
+.hodima-advisor .hodima-advisor__issues li[data-task="rejected"] .hodima-advisor__issue-text {
+	color: var(--hd-muted);
+}
+
+.hodima-advisor .hodima-advisor__issues li[data-task="rejected"] .hodima-advisor__issue-text {
+	text-decoration: line-through;
+}
+
+.hodima-advisor .hodima-advisor__issues .hds-pill {
+	padding-inline: 0.5rem;
+	font-size: 0.6875rem;
+	line-height: 1.7;
+	white-space: normal;
+}
+
 .hodima-advisor .hodima-advisor__issues li[data-rule="low_ctr"]::before {
 	background: #8a4a06;
 }

@@ -609,7 +609,7 @@ function hodima_seo_advisor_page_row( array $row ): array {
 /**
  * فهرست آدرس‌ها با فیلتر و صفحه‌بندی.
  *
- * @param array{min_impressions?: int, min_potential?: int, kind?: string|list<string>, search?: string, has_advice?: bool, rule?: string, paths?: list<string>, orderby?: string, order?: string, limit?: int, offset?: int} $args
+ * @param array{min_impressions?: int, min_potential?: int, kind?: string|list<string>, search?: string, has_advice?: bool, rule?: string, paths?: list<string>, exclude?: list<string>, orderby?: string, order?: string, limit?: int, offset?: int} $args
  * @return array{rows: list<array<string, mixed>>, total: int}
  */
 function hodima_seo_advisor_pages( array $args = [] ): array {
@@ -647,6 +647,12 @@ function hodima_seo_advisor_pages( array $args = [] ): array {
 		} else {
 			$where[] = '1 = 0';
 		}
+	}
+
+	$exclude = array_values( array_filter( (array) ( $args['exclude'] ?? [] ), 'is_string' ) );
+	if ( $exclude ) {
+		$where[] = 'path NOT IN (' . implode( ',', array_fill( 0, count( $exclude ), '%s' ) ) . ')';
+		array_push( $params, ...$exclude );
 	}
 
 	$kinds = array_values( array_filter( (array) ( $args['kind'] ?? [] ), static fn( mixed $k ): bool => is_string( $k ) && '' !== $k ) );

@@ -490,6 +490,56 @@ if ( hodima_router_active() ) {
 	wp_update_term( $resave_tid, 'category', [ 'description' => '<h2>سنجاق نقره‌ای</h2>' ] );
 	hodima_ad( 'بعد از ذخیره دسته (saved_term): ایراد کلمه رفت', [ in_array( 'missing_content', $cat_rules(), true ), in_array( 'missing_headings', $cat_rules(), true ) ], [ false, false ] );
 	wp_delete_term( $resave_tid, 'category' );
+	echo "=== وضعیت «کارهای من» در فهرست فرصت‌ها (نشان، پنهان شدن صفحه تمام‌علامت‌خورده)\n";
+	$b6_tasks = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false );
+	delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+	hodima_seo_advisor_store(
+		[ '/advisor-box-test/' => [ 'clicks' => 496, 'impressions' => 36492, 'position' => 5.81 ] ],
+		[],
+		[ '/advisor-box-test/' => [ 'پلومریا کلیپس' => [ 'clicks' => 25, 'impressions' => 2318, 'position' => 4.71 ] ] ]
+	);
+	hodima_seo_advisor_save_advice( '/advisor-box-test/' );
+	$b6_advice = (array) hodima_seo_advisor_page( '/advisor-box-test/' )['advice'];
+	$b6_low    = array_values( array_filter( $b6_advice, static fn( array $i ): bool => 'low_ctr' === $i['rule'] ) )[0] ?? null;
+	$b6_text   = array_values( array_filter( $b6_advice, static fn( array $i ): bool => in_array( $i['rule'], HODIMA_SEO_ADVISOR_TEXT_RULES, true ) ) )[0] ?? null;
+	$b6_row    = static function (): string {
+		ob_start();
+		hodima_seo_advisor_render_row( hodima_seo_advisor_page( '/advisor-box-test/' ), 1, false );
+		return (string) ob_get_clean();
+	};
+	$b6_list = static function ( array $get ): string {
+		$old  = $_GET;
+		$_GET = $get;
+		ob_start();
+		hodima_seo_advisor_render_list( hodima_seo_advisor_status() );
+		$_GET = $old;
+		return (string) ob_get_clean();
+	};
+	$b6_mark = static fn( ?array $item, string $status ): bool => null !== $item && hodima_seo_advisor_task_set( '/advisor-box-test/', (string) $item['rule'], (string) $item['term'], (string) $item['title'], $status );
+	hodima_ad( 'داده نمونه: یک ایراد آماری و یک ایراد متنی', [ null !== $b6_low, null !== $b6_text, count( $b6_advice ) ], [ true, true, 2 ] );
+	hodima_ad( 'بدون کار: ردیف بدون نشان و هیچ آدرسی «تمام‌علامت‌خورده» نیست', [ str_contains( $b6_row(), 'data-task=' ), hodima_seo_advisor_handled_paths() ], [ false, [] ] );
+	$b6_mark( $b6_low, 'doing' );
+	hodima_ad( '«در حال انجام»: نشان زرد کنار همان ایراد، آدرس هنوز باز', [ str_contains( $b6_row(), 'data-task="doing"' ) && str_contains( $b6_row(), 'hds-pill--warn">در حال انجام' ), hodima_seo_advisor_handled_paths() ], [ true, [] ] );
+	$b6_mark( $b6_low, 'done' );
+	hodima_ad( 'ایراد آماری «انجام شد»: «منتظر داده گوگل» (سبز)', str_contains( $b6_row(), '<span class="hds-pill">انجام شد · منتظر داده گوگل' ), true );
+	hodima_ad( 'یک ایراد هنوز باز: آدرس پنهان نمی‌شود', hodima_seo_advisor_handled_paths(), [] );
+	$b6_mark( $b6_text, 'done' );
+	hodima_ad( 'ایراد متنی «انجام شد» ولی هنوز ساخته می‌شود: «هنوز در صفحه دیده نمی‌شود»', str_contains( $b6_row(), 'انجام شد؛ هنوز در صفحه دیده نمی‌شود' ), true );
+	hodima_ad( 'همه ایرادها علامت‌خورده: آدرس با نوعش در «تمام‌علامت‌خورده»', hodima_seo_advisor_handled_paths(), [ '/advisor-box-test/' => 'page' ] );
+	$b6_def = hodima_seo_advisor_list_filters( [] );
+	hodima_ad( 'فهرست پیش‌فرض: آدرس کنار می‌رود؛ tasks=all برمی‌گرداند', [ array_column( hodima_seo_advisor_pages( $b6_def['args'] )['rows'], 'path' ), array_column( hodima_seo_advisor_pages( hodima_seo_advisor_list_filters( [ 'tasks' => 'all' ] )['args'] )['rows'], 'path' ) ], [ [], [ '/advisor-box-test/' ] ] );
+	hodima_ad( 'نمای «نادیده‌گرفته‌شده‌ها» کنار گذاشتن ندارد', isset( hodima_seo_advisor_list_filters( [ 'view' => 'ignored' ] )['args']['exclude'] ), false );
+	$b6_html = $b6_list( [] );
+	hodima_ad( 'صفحه پیش‌فرض بدون کار باز: شمار «همه» صفر و حالت خالی «کار بازی نمانده» با لینک tasks=all', [ (bool) preg_match( '#همه <span class="hodima-advisor__count">(0|۰)</span>#u', $b6_html ), str_contains( $b6_html, 'کار بازی نمانده' ) && str_contains( $b6_html, 'tasks=all' ) ], [ true, true ] );
+	hodima_ad( 'نمای «محصول‌ها» (برگه تمام‌علامت‌خورده نوعش نیست): حالت خالی معمولی', str_contains( $b6_list( [ 'view' => 'product' ] ), 'کار بازی نمانده' ), false );
+	$b6_html = $b6_list( [ 'tasks' => 'all' ] );
+	hodima_ad( 'tasks=all: ردیف دیده می‌شود، لینک «پنهان کردن…» و فیلد پنهان فرم جستجو', [ str_contains( $b6_html, 'hodima-advisor__item' ), str_contains( $b6_html, 'پنهان کردن صفحه‌های تمام‌علامت‌خورده' ), str_contains( $b6_html, 'name="tasks" value="all"' ) ], [ true, true, true ] );
+	$b6_mark( $b6_text, 'rejected' );
+	hodima_ad( '«رد شد»: data-task=rejected و نشان آبی؛ آدرس همچنان تمام‌علامت‌خورده', [ str_contains( $b6_row(), 'data-task="rejected"' ) && str_contains( $b6_row(), 'hds-pill--info">رد شد' ), array_keys( hodima_seo_advisor_handled_paths() ) ], [ true, [ '/advisor-box-test/' ] ] );
+	$b6_mark( $b6_text, '' );
+	hodima_ad( 'ایراد بدون علامت (مثل پیشنهاد تازه): آدرس خودبه‌خود به فهرست برمی‌گردد', [ hodima_seo_advisor_handled_paths(), array_column( hodima_seo_advisor_pages( hodima_seo_advisor_list_filters( [] )['args'] )['rows'], 'path' ) ], [ [], [ '/advisor-box-test/' ] ] );
+	hodima_ad( 'pages( exclude ): آدرس مشخص کنار می‌رود', hodima_seo_advisor_pages( [ 'exclude' => [ '/advisor-box-test/' ] ] )['total'], 0 );
+	false === $b6_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $b6_tasks, false );
 } else {
 	hodima_ad( 'بدون روتر نوع شیء معلوم نیست: ذخیره ردیفی را پیدا نمی‌کند', hodima_seo_advisor_resave_object( 'page', $box_id ), 0 );
 }

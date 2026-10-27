@@ -101,7 +101,7 @@ function hodima_seo_advisor_kind_label( string $kind ): string {
  * فیلترهای فهرست از آدرس (نما، جستجو، نوع پیشنهاد) ← آرگومان‌های hodima_seo_advisor_pages().
  *
  * @param array<string, mixed> $query
- * @return array{view: string, q: string, rule: string, min: int, args: array<string, mixed>}
+ * @return array{view: string, q: string, rule: string, min: int, tasks: string, handled: array<string, string>, args: array<string, mixed>}
  */
 function hodima_seo_advisor_list_filters( array $query ): array {
 
@@ -111,18 +111,24 @@ function hodima_seo_advisor_list_filters( array $query ): array {
 	$rule = sanitize_key( (string) ( $query['rule'] ?? '' ) );
 	$min  = absint( $query['min'] ?? 0 );
 	$min  = in_array( $min, HODIMA_SEO_ADVISOR_MIN_POTENTIAL_CHOICES, true ) ? $min : 0;
-	$args = [ 'orderby' => 'potential', 'order' => 'DESC', 'search' => $q, 'rule' => $rule, 'min_potential' => $min ];
+	// tasks=all: آدرس‌هایی که همه ایرادهایشان «انجام شد/رد شد» خورده هم دیده شوند (پیش‌فرض: فقط کارهای باز)
+	$tasks = 'all' === ( $query['tasks'] ?? '' ) ? 'all' : '';
+	$args  = [ 'orderby' => 'potential', 'order' => 'DESC', 'search' => $q, 'rule' => $rule, 'min_potential' => $min ];
 
 	if ( 'ignored' === $view ) {
 		$args['paths'] = hodima_seo_advisor_ignored();
 	} else {
 		$args['has_advice'] = true;
+		$handled            = function_exists( 'hodima_seo_advisor_handled_paths' ) ? hodima_seo_advisor_handled_paths() : [];
+		if ( '' === $tasks ) {
+			$args['exclude'] = array_keys( $handled );
+		}
 		if ( isset( HODIMA_SEO_ADVISOR_KIND_GROUPS[ $view ] ) ) {
 			$args['kind'] = HODIMA_SEO_ADVISOR_KIND_GROUPS[ $view ];
 		}
 	}
 
-	return [ 'view' => $view, 'q' => $q, 'rule' => $rule, 'min' => $min, 'args' => $args ];
+	return [ 'view' => $view, 'q' => $q, 'rule' => $rule, 'min' => $min, 'tasks' => $tasks, 'handled' => $handled ?? [], 'args' => $args ];
 }
 
 /* ── کنش‌ها ── */
@@ -499,8 +505,11 @@ function hodima_seo_advisor_render_admin(): void {
 		return;
 	}
 
+	$handled_n = $empty || ! function_exists( 'hodima_seo_advisor_handled_paths' ) ? 0 : count( hodima_seo_advisor_handled_paths() );
+
 	hodima_seo_ui_stats( [
-		[ 'label' => 'صفحه با فرصت', 'value' => $empty ? '—' : esc_html( $n( $totals['advised'] ) ), 'empty' => $empty ],
+		// فقط صفحه‌هایی که کار باز دارند؛ تمام‌علامت‌خورده‌ها جدا گفته می‌شوند (همان فهرست پیش‌فرض)
+		[ 'label' => 'صفحه با فرصت', 'value' => $empty ? '—' : esc_html( $n( max( 0, $totals['advised'] - $handled_n ) ) ), 'sub' => $handled_n > 0 ? esc_html( sprintf( '+ %s صفحه با همه کارها علامت‌خورده', $n( $handled_n ) ) ) : '', 'empty' => $empty ],
 		[ 'label' => 'نمایش در گوگل', 'value' => $empty ? '—' : esc_html( $n( $totals['impressions'] ) ), 'sub' => $empty ? '' : esc_html( sprintf( '%s روز اخیر', $n( $status['days'] ) ) ), 'empty' => $empty ],
 		[ 'label' => 'کلیک', 'value' => $empty ? '—' : esc_html( $n( $totals['clicks'] ) ), 'empty' => $empty ],
 		[ 'label' => 'میانگین رتبه', 'value' => $empty ? '—' : esc_html( number_format_i18n( $totals['position'], 1 ) ), 'empty' => $empty ],
@@ -735,6 +744,19 @@ function hodima_seo_advisor_render_list( array $status ): void {
 	$ignored = count( hodima_seo_advisor_ignored() );
 	$max     = max( 1, hodima_seo_advisor_max_potential() );
 	$total_advised = hodima_seo_advisor_totals()['advised'];
+	$handled = $filters['handled'];
+
+	// شمار نماها با همان فهرستی بخواند که دیده می‌شود (آدرس‌های تمام‌علامت‌خورده پنهان‌اند)
+	if ( '' === $filters['tasks'] ) {
+		$total_advised -= count( $handled );
+		foreach ( $handled as $kind ) {
+			foreach ( HODIMA_SEO_ADVISOR_KIND_GROUPS as $group => $kinds ) {
+				if ( in_array( $kind, $kinds, true ) ) {
+					--$counts[ $group ];
+				}
+			}
+		}
+	}
 
 	$views = [
 		'all'      => [ 'همه', $total_advised ],
@@ -746,7 +768,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 		$views = [ 'all' => [ 'برگشت به فهرست', $total_advised ], 'ignored' => [ 'نادیده‌گرفته‌شده‌ها', $ignored ] ];
 	}
 
-	$keep = [ 'view' => 'all' === $view ? '' : $view, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'] ];
+	$keep = [ 'view' => 'all' === $view ? '' : $view, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'], 'tasks' => $filters['tasks'] ];
 
 	hodima_seo_ui_card_open( 'فرصت‌های بهتر شدن', sprintf( 'صفحه‌هایی که با داده %s روز اخیر بیشترین کلیک اضافه را دارند، مرتب بر اساس «کلیک بالقوه» (تخمین).', number_format_i18n( $status['days'] ) ) );
 	?>
@@ -755,9 +777,12 @@ function hodima_seo_advisor_render_list( array $status ): void {
 		<?php if ( 'all' !== $view ) : ?>
 			<input type="hidden" name="view" value="<?php echo esc_attr( $view ); ?>">
 		<?php endif; ?>
+		<?php if ( '' !== $filters['tasks'] ) : ?>
+			<input type="hidden" name="tasks" value="<?php echo esc_attr( $filters['tasks'] ); ?>">
+		<?php endif; ?>
 		<nav class="hodima-advisor__views" aria-label="نوع صفحه">
 			<?php foreach ( $views as $key => [ $label, $count ] ) : ?>
-				<a class="hodima-advisor__view" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'view' => 'all' === $key ? '' : $key, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'] ] ) ); ?>"<?php echo $key === $view ? ' aria-current="page"' : ''; ?>>
+				<a class="hodima-advisor__view" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'view' => 'all' === $key ? '' : $key, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'], 'tasks' => $filters['tasks'] ] ) ); ?>"<?php echo $key === $view ? ' aria-current="page"' : ''; ?>>
 					<?php echo esc_html( $label ); ?> <span class="hodima-advisor__count"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
 				</a>
 			<?php endforeach; ?>
@@ -789,6 +814,20 @@ function hodima_seo_advisor_render_list( array $status ): void {
 	<?php
 
 	if ( ! $result['rows'] ) {
+		// همه کارها علامت خورده: پانویس (و لینکش) دیده نمی‌شود، پس لینک نمایش همین‌جاست (فقط نوع همین نما)
+		$handled_here = isset( HODIMA_SEO_ADVISOR_KIND_GROUPS[ $view ] ) ? array_filter( $handled, static fn( string $kind ): bool => in_array( $kind, HODIMA_SEO_ADVISOR_KIND_GROUPS[ $view ], true ) ) : $handled;
+		if ( 'ignored' !== $view && '' === $filters['tasks'] && $handled_here ) {
+			hodima_seo_ui_empty(
+				'کار بازی نمانده',
+				sprintf(
+					'همه ایرادهای %1$s صفحه را «انجام شد» یا «رد شد» علامت زده‌اید. <a href="%2$s">نمایش این صفحه‌ها</a>',
+					esc_html( number_format_i18n( count( $handled_here ) ) ),
+					esc_url( hodima_seo_advisor_page_url( array_filter( [ 'tasks' => 'all' ] + $keep ) ) )
+				)
+			);
+			hodima_seo_ui_card_close();
+			return;
+		}
 		hodima_seo_ui_empty( 'اینجا چیزی نیست', 'ignored' === $view ? 'هیچ آدرسی نادیده گرفته نشده است.' : 'با این فیلتر آدرسی پیشنهاد ندارد. فیلتر را عوض کنید یا بعد از دریافت داده تازه دوباره ببینید.' );
 		hodima_seo_ui_card_close();
 		return;
@@ -811,6 +850,9 @@ function hodima_seo_advisor_render_list( array $status ): void {
 			<?php echo esc_html( sprintf( 'نمایش %1$s از %2$s آدرس، مرتب‌شده بر اساس کلیک بالقوه', number_format_i18n( count( $result['rows'] ) ), number_format_i18n( $result['total'] ) ) ); ?>
 			<?php if ( $ignored > 0 && 'ignored' !== $view ) : ?>
 				· <a href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'view' => 'ignored' ] ) ); ?>"><?php echo esc_html( sprintf( '%s آدرس نادیده گرفته شده', number_format_i18n( $ignored ) ) ); ?></a>
+			<?php endif; ?>
+			<?php if ( $handled && 'ignored' !== $view ) : ?>
+				· <a href="<?php echo esc_url( hodima_seo_advisor_page_url( array_filter( [ 'tasks' => '' === $filters['tasks'] ? 'all' : '' ] + $keep ) ) ); ?>"><?php echo esc_html( '' === $filters['tasks'] ? sprintf( 'نمایش %s صفحه که همه ایرادهایش علامت خورده', number_format_i18n( count( $handled ) ) ) : 'پنهان کردن صفحه‌های تمام‌علامت‌خورده' ); ?></a>
 			<?php endif; ?>
 		</span>
 		<?php
@@ -854,7 +896,14 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 			<?php if ( $advice ) : ?>
 				<ul class="hodima-advisor__issues">
 					<?php foreach ( $advice as $item ) : ?>
-						<li data-rule="<?php echo esc_attr( (string) $item['rule'] ); ?>"><?php echo esc_html( (string) $item['title'] ); ?></li>
+						<?php $task = function_exists( 'hodima_seo_advisor_task' ) ? hodima_seo_advisor_task( (string) $row['path'], (string) $item['rule'], (string) $item['term'] ) : null; ?>
+						<li data-rule="<?php echo esc_attr( (string) $item['rule'] ); ?>"<?php echo null !== $task ? ' data-task="' . esc_attr( $task['status'] ) . '"' : ''; ?>>
+							<span class="hodima-advisor__issue-text"><?php echo esc_html( (string) $item['title'] ); ?></span>
+							<?php if ( null !== $task ) : ?>
+								<?php [ $badge_class, $badge_text ] = hodima_seo_advisor_task_badge( $task, (string) $item['rule'] ); ?>
+								<span class="<?php echo esc_attr( $badge_class ); ?>"><?php echo esc_html( $badge_text ); ?></span>
+							<?php endif; ?>
+						</li>
 					<?php endforeach; ?>
 				</ul>
 			<?php else : ?>

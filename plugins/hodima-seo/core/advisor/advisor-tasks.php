@@ -21,6 +21,12 @@ const HODIMA_SEO_ADVISOR_TASKS_MAX    = 500;
 
 add_action( 'admin_post_hodima_advisor_task', 'hodima_seo_advisor_handle_task' );
 
+/** وضعیت‌هایی که یعنی مدیر تکلیف پیشنهاد را روشن کرده (دیگر «کار باز» نیست). */
+const HODIMA_SEO_ADVISOR_TASKS_CLOSED = [ 'done', 'rejected' ];
+
+/** پیشنهادهای متنی: با ذخیره صفحه همان لحظه دوباره سنجیده می‌شوند (advisor-resave.php)؛ بقیه به داده بعدی گوگل بسته‌اند. */
+const HODIMA_SEO_ADVISOR_TEXT_RULES = [ 'missing_headings', 'missing_content' ];
+
 /** @return array<string, string> وضعیت ← برچسب */
 function hodima_seo_advisor_task_statuses(): array {
 	return [ 'doing' => 'در حال انجام', 'done' => 'انجام شد', 'rejected' => 'رد شد' ];
@@ -104,6 +110,61 @@ function hodima_seo_advisor_task_set( string $path, string $rule, string $term, 
 	update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $tasks, false );
 
 	return true;
+}
+
+/**
+ * آدرس‌هایی که همه پیشنهادهای فعلی‌شان «انجام شد» یا «رد شد» خورده‌اند (مسیر ← نوع شیء). فهرست فرصت‌ها
+ * پیش‌فرض این‌ها را پنهان می‌کند تا فقط کارهای باز بماند؛ پیشنهاد تازه‌ای که بعدا برای همان آدرس ساخته شود
+ * علامت ندارد و آدرس خودبه‌خود به فهرست برمی‌گردد.
+ *
+ * @return array<string, string>
+ */
+function hodima_seo_advisor_handled_paths(): array {
+
+	$tasks = hodima_seo_advisor_tasks();
+	$paths = [];
+
+	foreach ( $tasks as $task ) {
+		if ( in_array( $task['status'], HODIMA_SEO_ADVISOR_TASKS_CLOSED, true ) ) {
+			$paths[ $task['path'] ] = true;
+		}
+	}
+
+	if ( ! $paths ) {
+		return [];
+	}
+
+	$out = [];
+
+	foreach ( hodima_seo_advisor_pages( [ 'paths' => array_keys( $paths ), 'has_advice' => true, 'limit' => HODIMA_SEO_ADVISOR_TASKS_MAX ] )['rows'] as $row ) {
+		$path = (string) $row['path'];
+		$open = array_filter(
+			(array) $row['advice'],
+			static fn( array $item ): bool => ! in_array( $tasks[ hodima_seo_advisor_task_key( $path, (string) $item['rule'], (string) $item['term'] ) ]['status'] ?? '', HODIMA_SEO_ADVISOR_TASKS_CLOSED, true )
+		);
+		if ( ! $open ) {
+			$out[ $path ] = (string) $row['kind'];
+		}
+	}
+
+	return $out;
+}
+
+/**
+ * نشان وضعیت کار کنار یک ایراد در فهرست فرصت‌ها. «انجام شد» ولی ایراد متنی هنوز ساخته می‌شود یعنی تغییر در
+ * صفحه دیده نشد (ایراد متنی با ذخیره صفحه همان لحظه می‌رود)؛ ایراد آماری تا داده تازه گوگل می‌ماند.
+ *
+ * @param array{status: string} $task
+ * @return array{0: string, 1: string} کلاس، متن
+ */
+function hodima_seo_advisor_task_badge( array $task, string $rule ): array {
+	return match ( $task['status'] ) {
+		'doing'    => [ 'hds-pill hds-pill--warn', 'در حال انجام' ],
+		'rejected' => [ 'hds-pill hds-pill--info', 'رد شد' ],
+		default    => in_array( $rule, HODIMA_SEO_ADVISOR_TEXT_RULES, true )
+			? [ 'hds-pill hds-pill--warn', 'انجام شد؛ هنوز در صفحه دیده نمی‌شود' ]
+			: [ 'hds-pill', 'انجام شد · منتظر داده گوگل' ],
+	};
 }
 
 /**
