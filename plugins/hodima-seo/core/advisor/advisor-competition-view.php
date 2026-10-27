@@ -216,6 +216,9 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 					<li class="hodima-advisor__rival<?php echo 0 === $i ? ' is-winner' : ''; ?>">
 						<div class="hodima-advisor__rival-name">
 							<strong><?php echo esc_html( hodima_seo_advisor_competition_page_title( $page ) ); ?></strong>
+							<?php if ( '' !== (string) $page['kind'] ) : ?>
+								<span class="hds-pill hds-pill--info"><?php echo esc_html( hodima_seo_advisor_kind_label( (string) $page['kind'] ) ); ?></span>
+							<?php endif; ?>
 							<?php if ( ! empty( $page['resolved'] ) ) : ?>
 								<span class="hds-pill hds-pill--warn"><?php echo esc_html( hodima_seo_advisor_resolved_label( (string) $page['resolved'] ) ); ?></span>
 							<?php elseif ( 0 === $i && 'settled' !== $advice['type'] ) : ?>
@@ -243,6 +246,19 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 				<strong><?php echo esc_html( $advice['title'] ); ?>:</strong>
 				<?php echo esc_html( $advice['detail'] ); ?>
 			</div>
+			<?php
+			// جهت لینک‌دهی فقط وقتی روشن است که برنده یا دسته هدف مشخص باشد (دستور «هم‌وزن» جهت ندارد)
+			if ( in_array( $advice['type'], [ 'strengthen', 'category' ], true ) ) {
+				$link_target = $group['pages'][0];
+				foreach ( 'category' === $advice['type'] ? $group['pages'] : [] as $candidate ) {
+					if ( in_array( (string) $candidate['kind'], [ 'product_cat', 'category' ], true ) ) {
+						$link_target = $candidate;
+						break;
+					}
+				}
+				hodima_seo_advisor_render_links_box( (string) $group['term'], hodima_seo_advisor_competition_page_title( $link_target ) );
+			}
+			?>
 		</div>
 	</details>
 	<?php

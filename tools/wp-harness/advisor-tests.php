@@ -920,6 +920,7 @@ hodima_ad( 'صفحه‌بندی: limit/offset', [ count( hodima_seo_advisor_comp
 
 // تب رقابت در پیشخوان
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-competition-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-links-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-insights-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-breakdown-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-trend-view.php';
@@ -2097,6 +2098,111 @@ remove_filter( 'pre_http_request', $vf_filter, 50 );
 delete_option( 'hodima_discover_sc_key' );
 false === $vf_saved ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $vf_saved, false );
 hodima_seo_advisor_clear_data();
+
+echo "=== لینک‌های داخلی یک گروه رقابت (advisor-links.php)\n";
+$lk_cat = wp_insert_term( 'گیره انبری فلزی', 'category', [ 'slug' => 'lk-cat' ] );
+$lk_cat_id = is_wp_error( $lk_cat ) ? 0 : (int) $lk_cat['term_id'];
+$lk_mk = static fn( string $slug, string $title, string $content ): int => (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => $title, 'post_name' => $slug, 'post_content' => $content ] );
+// آدرس عددی مثل /207/ در سایت واقعی هست (درون‌ریزی محصول)؛ ثبت عادی وردپرس/روتر نامک عددی را «-2» می‌کند، پس نامک مستقیم در پایگاه داده گذاشته می‌شود
+$lk_numeric = static function ( string $slug, string $title ): int {
+	global $wpdb;
+	$id = (int) wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => $title, 'post_name' => 'tmp-' . $slug, 'post_content' => '<p>متن</p>' ] );
+	$wpdb->update( $wpdb->posts, [ 'post_name' => $slug ], [ 'ID' => $id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	clean_post_cache( $id );
+	return $id;
+};
+$lk_rival = $lk_numeric( '207', 'گیره مو انبری فلزی' );
+$lk_decoy = $lk_numeric( '20700', 'صفحه نامربوط' );
+$lk_a = $lk_mk( 'lk-src-a', 'راهنمای خرید گیره', '<p><a href="' . home_url( '/207/' ) . '">گیره انبری فلزی</a> و <a href="/lk-cat/">گیره انبری فلزی</a> و <a href="/20700/">گیره انبری فلزی</a> و <a href="https://other.example/207/">گیره انبری فلزی</a> و <a href="mailto:a@b.c">گیره انبری فلزی</a></p>' );
+$lk_b = $lk_mk( 'lk-src-b', 'مقاله انواع گیره', '<p><a href="/207">گیره‌های انبری فلزی</a> و <a href="/category/lk-cat/">گیره انبری فلزی</a></p>' );
+$lk_c = $lk_mk( 'lk-src-c', 'مقاله قدیمی', '<p><a href="/gone-clip-old/">گیره انبری فلزی</a></p>' );
+$lk_d = $lk_mk( 'lk-src-d', 'متن بدون لینک', '<p>بهترین گیره انبری فلزی را ببینید</p>' );
+$lk_desc = wp_insert_term( 'دسته لینک', 'category', [ 'slug' => 'lk-desc-cat', 'description' => '<a href="/207/">گیره انبری فلزی</a>' ] );
+$lk_menu = (int) wp_create_nav_menu( 'lk-menu' );
+$lk_item1 = (int) wp_update_nav_menu_item( $lk_menu, 0, [ 'menu-item-title' => 'گیره انبری فلزی', 'menu-item-url' => home_url( '/207/' ), 'menu-item-type' => 'custom', 'menu-item-status' => 'publish' ] );
+$lk_item2 = (int) wp_update_nav_menu_item( $lk_menu, 0, [ 'menu-item-title' => 'گیره انبری فلزی', 'menu-item-type' => 'post_type', 'menu-item-object' => 'post', 'menu-item-object-id' => $lk_rival, 'menu-item-status' => 'publish' ] );
+hodima_seo_advisor_store(
+	[
+		'/lk-cat/' => [ 'clicks' => 80, 'impressions' => 4000, 'position' => 5.0 ],
+		'/207/'    => [ 'clicks' => 5, 'impressions' => 1000, 'position' => 7.6 ],
+		'/c/m/'    => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ],
+		'/c/n/'    => [ 'clicks' => 28, 'impressions' => 2000, 'position' => 7.5 ],
+		'/c/p/'    => [ 'clicks' => 20, 'impressions' => 1500, 'position' => 8.0 ],
+	],
+	[],
+	[
+		'/lk-cat/' => [ 'گیره انبری فلزی' => [ 'clicks' => 80, 'impressions' => 4000, 'position' => 5.0 ] ],
+		'/207/'    => [ 'گیره انبری فلزی' => [ 'clicks' => 5, 'impressions' => 1000, 'position' => 7.6 ] ],
+		'/c/m/'    => [ 'گیره هم‌وزن' => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ] ],
+		'/c/n/'    => [ 'گیره هم‌وزن' => [ 'clicks' => 28, 'impressions' => 2000, 'position' => 7.5 ] ],
+		'/c/p/'    => [ 'گیره هم‌وزن' => [ 'clicks' => 20, 'impressions' => 1500, 'position' => 8.0 ] ],
+	]
+);
+delete_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION );
+$lk_scan = hodima_seo_advisor_links_scan( 'گیره انبری فلزی', true );
+hodima_ad( 'بررسی لینک‌ها خطا نمی‌دهد و هدف دسته برنده و رقیب /207/ است', [ ! is_wp_error( $lk_scan ), $lk_scan['target']['path'] ?? '', array_column( (array) ( $lk_scan['rivals'] ?? [] ), 'path' ) ], [ true, '/lk-cat/', [ '/207/' ] ] );
+$lk_counts = (array) ( $lk_scan['counts'] ?? [] );
+hodima_ad( 'لینک اشتباه ۵ (نوشته، آدرس بدون اسلش، توضیح دسته، دو آیتم منو)، خراب ۱، درست ۲ (شامل پایه قدیمی)', [ $lk_counts['wrong'] ?? -1, $lk_counts['broken'] ?? -1, $lk_counts['good'] ?? -1 ], [ 5, 1, 2 ] );
+hodima_ad( 'جای بدون لینک: نوشته‌ای که فقط کلمه را دارد می‌آید', ( $lk_counts['missing'] ?? 0 ) >= 1, true );
+$lk_rows = (array) ( $lk_scan['rows'] ?? [] );
+$lk_order = array_column( $lk_rows, 'issue' );
+$lk_sorted = $lk_order;
+usort( $lk_sorted, static fn( string $a, string $b ): int => [ 'wrong' => 0, 'broken' => 1, 'missing' => 2 ][ $a ] <=> [ 'wrong' => 0, 'broken' => 1, 'missing' => 2 ][ $b ] );
+hodima_ad( 'ردیف‌ها به ترتیب اشتباه، خراب، بدون لینک', $lk_order, $lk_sorted );
+$lk_wrong_paths = array_unique( array_map( static fn( array $r ): string => (string) $r['now']['path'], array_filter( $lk_rows, static fn( array $r ): bool => 'wrong' === $r['issue'] ) ) );
+hodima_ad( 'مقایسه با شیء: /20700/ و دامنه دیگر قاطی نمی‌شود؛ /207 بدون اسلش به همان رقیب می‌رسد', [ in_array( '/20700/', array_column( array_column( $lk_rows, 'now' ), 'path' ), true ), array_values( $lk_wrong_paths ) ], [ false, [ '/207/' ] ] );
+$lk_titles = array_column( array_column( $lk_rows, 'source' ), 'title' );
+hodima_ad( 'منبع‌ها: عنوان نوشته، توضیح دسته و منو در ردیف‌ها هست', [ in_array( 'راهنمای خرید گیره', $lk_titles, true ), in_array( 'دسته لینک', $lk_titles, true ), (bool) array_filter( $lk_titles, static fn( string $t ): bool => str_starts_with( $t, 'lk-menu' ) ) ], [ true, true, true ] );
+$lk_choose = hodima_seo_advisor_links_scan( 'گیره هم‌وزن', true );
+hodima_ad( 'گروه هم‌وزن جهت ندارد (خطا با توضیح)', [ is_wp_error( $lk_choose ), is_wp_error( $lk_choose ) ? $lk_choose->get_error_code() : '' ], [ true, 'hodima_advisor_links_choose' ] );
+hodima_ad( 'کلمه بدون رقابت خطا می‌دهد', is_wp_error( hodima_seo_advisor_links_scan( 'کلمه ناموجود', true ) ), true );
+$lk_html = hodima_seo_advisor_render_links_result( $lk_scan );
+hodima_ad( 'نمای نتیجه: نشان‌ها، جدول ۵ ستونه، متن لینک، ریدایرکت‌نشده و دکمه ویرایش؛ ردیف‌های بیشتر از ۸ پشت «همه ردیف‌ها»', [ str_contains( $lk_html, 'hds-pill--error' ), str_contains( $lk_html, 'hodima-advisor__lk-table' ), str_contains( $lk_html, 'گیره انبری فلزی' ), str_contains( $lk_html, 'باید کجا برود' ), str_contains( $lk_html, 'hodima-advisor__act' ), substr_count( $lk_html, '<table' ) ], [ true, true, true, true, true, ( count( $lk_rows ) > HODIMA_SEO_ADVISOR_LINKS_VISIBLE ? 2 : 1 ) ] );
+$lk_box = $cap( static fn() => hodima_seo_advisor_render_links_box( 'گیره <b>', 'دسته' ) );
+hodima_ad( 'کادر: دکمه بررسی، کلمه escape‌شده در data-term', [ str_contains( $lk_box, 'data-hdsa-links-run' ), str_contains( $lk_box, 'data-term="گیره &lt;b&gt;"' ) ], [ true, true ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
+wp_set_current_user( 1 );
+$lk_tab = $cap( static fn() => hodima_seo_advisor_render_competition( hodima_seo_advisor_status() ) );
+hodima_ad( 'تب رقابت: بلوک لینک‌ها فقط برای «برنده روشن» (گروه هم‌وزن ندارد)؛ نشان نوع صفحه کنار رقیب', [ substr_count( $lk_tab, 'data-hdsa-links data-term' ), str_contains( $lk_tab, 'data-term="گیره انبری فلزی"' ), str_contains( $lk_tab, 'دسته نوشته' ) ], [ 1, true, true ] );
+$_GET = [];
+
+// admin-ajax: بدون nonce رد می‌شود، با nonce HTML نتیجه می‌آید
+class Hodima_Lk_Stop extends Exception {}
+add_filter( 'wp_doing_ajax', '__return_true' );
+add_filter( 'wp_die_ajax_handler', static fn() => static function (): void { throw new Hodima_Lk_Stop(); } );
+$lk_ajax = static function ( array $post ): array {
+	$_POST    = $post;
+	$_REQUEST = $post;
+	ob_start();
+	try {
+		hodima_seo_advisor_handle_links_ajax();
+	} catch ( Hodima_Lk_Stop ) {
+		// wp_send_json_* بعد از چاپ پاسخ می‌میرد؛ در آزمون استثنا می‌شود
+	}
+	return (array) json_decode( (string) ob_get_clean(), true );
+};
+$lk_bad = $lk_ajax( [ 'term' => 'گیره انبری فلزی', 'nonce' => 'x' ] );
+hodima_ad( 'admin-ajax: nonce غلط رد می‌شود', $lk_bad['success'] ?? null, false );
+$lk_good = $lk_ajax( [ 'term' => 'گیره انبری فلزی', 'nonce' => wp_create_nonce( 'hodima_advisor_links' ) ] );
+hodima_ad( 'admin-ajax: با nonce درست HTML جدول برمی‌گردد', [ $lk_good['success'] ?? null, str_contains( (string) ( $lk_good['data']['html'] ?? '' ), 'hodima-advisor__lk-table' ) ], [ true, true ] );
+wp_set_current_user( 0 );
+$lk_anon = $lk_ajax( [ 'term' => 'گیره انبری فلزی', 'nonce' => wp_create_nonce( 'hodima_advisor_links' ) ] );
+hodima_ad( 'admin-ajax: بدون دسترسی مدیر رد می‌شود', $lk_anon['success'] ?? null, false );
+wp_set_current_user( 1 );
+remove_all_filters( 'wp_doing_ajax' );
+remove_all_filters( 'wp_die_ajax_handler' );
+$_POST = [];
+$_REQUEST = [];
+foreach ( [ $lk_rival, $lk_decoy, $lk_a, $lk_b, $lk_c, $lk_d ] as $lk_id ) {
+	wp_delete_post( $lk_id, true );
+}
+foreach ( [ $lk_item1, $lk_item2 ] as $lk_id ) {
+	wp_delete_post( $lk_id, true );
+}
+wp_delete_nav_menu( $lk_menu );
+$lk_cat_id && wp_delete_term( $lk_cat_id, 'category' );
+! is_wp_error( $lk_desc ) && wp_delete_term( (int) $lk_desc['term_id'], 'category' );
+hodima_seo_advisor_store( [], [], [] );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

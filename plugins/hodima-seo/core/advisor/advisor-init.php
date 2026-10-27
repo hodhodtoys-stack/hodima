@@ -26,6 +26,7 @@ require_once dirname( __DIR__, 2 ) . '/inc/search-console.php';
 require_once __DIR__ . '/advisor-data.php';
 require_once __DIR__ . '/advisor-history.php';
 require_once __DIR__ . '/advisor-competition.php';
+require_once __DIR__ . '/advisor-links.php';
 require_once __DIR__ . '/advisor-insights.php';
 require_once __DIR__ . '/advisor-breakdown.php';
 require_once __DIR__ . '/advisor-trend.php';
@@ -45,6 +46,7 @@ if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-steps-view.php';
 	require_once __DIR__ . '/advisor-admin.php';
 	require_once __DIR__ . '/advisor-competition-view.php';
+	require_once __DIR__ . '/advisor-links-view.php';
 	require_once __DIR__ . '/advisor-insights-view.php';
 	require_once __DIR__ . '/advisor-breakdown-view.php';
 	require_once __DIR__ . '/advisor-trend-view.php';

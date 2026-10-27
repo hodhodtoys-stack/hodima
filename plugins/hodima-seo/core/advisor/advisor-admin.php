@@ -59,6 +59,8 @@ function hodima_seo_advisor_admin_assets(): void {
 
 	$script = HODIMA_SEO_DIR . '/core/advisor/advisor-admin.js';
 	wp_enqueue_script( 'hodima-seo-advisor', HODIMA_SEO_URL . '/core/advisor/advisor-admin.js', [ 'hodima-seo-ui' ], is_file( $script ) ? (string) filemtime( $script ) : HODIMA_SEO_VERSION, true );
+	// «بررسی لینک‌ها» زیر هر گروه رقابت (advisor-links.php)
+	wp_add_inline_script( 'hodima-seo-advisor', 'window.hodimaAdvisorLinks = ' . wp_json_encode( [ 'ajax' => admin_url( 'admin-ajax.php' ), 'nonce' => wp_create_nonce( 'hodima_advisor_links' ) ] ) . ';', 'before' );
 }
 
 /**

@@ -22,6 +22,43 @@
 		});
 	});
 
+	/* ── «بررسی لینک‌ها» زیر هر گروه رقابت: HTML نتیجه (escape‌شده در سرور) از admin-ajax می‌آید ── */
+	document.addEventListener('click', async (event) => {
+		const button = event.target instanceof Element ? event.target.closest('[data-hdsa-links-run]') : null;
+		const box = button?.closest('[data-hdsa-links]');
+		const config = window.hodimaAdvisorLinks;
+		if (!button || !box || !config) return;
+
+		const out = box.querySelector('[data-hdsa-links-out]');
+		const hint = box.querySelector('[data-hdsa-links-hint]');
+		const idle = button.textContent;
+		const body = new FormData();
+		body.set('action', 'hodima_advisor_links');
+		body.set('nonce', config.nonce);
+		body.set('term', box.dataset.term || '');
+		if (button.dataset.force) body.set('force', '1');
+
+		button.disabled = true;
+		button.textContent = 'در حال بررسی…';
+		out.setAttribute('aria-busy', 'true');
+		try {
+			const response = await fetch(config.ajax, { method: 'POST', body, credentials: 'same-origin' });
+			const data = await response.json();
+			if (!data.success) throw new Error(data.data?.message || 'بررسی انجام نشد.');
+			out.innerHTML = data.data.html; // خروجی سرور؛ همه مقدارها در PHP escape شده‌اند
+			if (hint) hint.hidden = true;
+			box.querySelector('[data-hdsa-links-run]:not([data-force])')?.setAttribute('hidden', '');
+		} catch (error) {
+			out.textContent = error instanceof Error && error.message ? error.message : 'بررسی انجام نشد؛ دوباره تلاش کنید.';
+		} finally {
+			out.removeAttribute('aria-busy');
+			if (button.isConnected) {
+				button.disabled = false;
+				button.textContent = idle;
+			}
+		}
+	});
+
 	/* ── تأیید پیش از «حذف کلید» ── */
 	document.querySelectorAll('form[data-hdsa-confirm]').forEach((form) => {
 		form.addEventListener('submit', (event) => {
