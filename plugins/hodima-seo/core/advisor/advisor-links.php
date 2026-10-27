@@ -4,12 +4,14 @@
  * Path: core/advisor/advisor-links.php
  *
  * کارت رقابت می‌گفت «رقیب ۱۷ لینک با متن کلمه دارد؛ منتقل کنید» ولی نمی‌گفت کدام نوشته. این فایل برای یک گروه
- * («کلمه + برنده + رقیب‌ها») متن نوشته‌ها، توضیح دسته‌ها، منوها و تنظیمات قالب را می‌گردد و هر لینکی را که
- * متنش کلمه را دارد در سه دسته می‌گذارد:
- *   wrong    به رقیب می‌رود (مستقیم یا با ریدایرکت) ← باید به برنده برود
- *   broken   مقصدش ۴۰۴ یا مرده است
- *   missing  کلمه در متن هست ولی به برنده لینک ندارد (hodima_seo_advisor_link_sources)
- * لینک درست به برنده فقط شمرده می‌شود (good).
+ * («کلمه + برنده + رقیب‌ها») همه لینک‌های داخلی را از دیتابیس و خزش می‌آورد (منبع‌ها: advisor-links-sources.php:
+ * متن نوشته/برگه/محصول، توضیح دسته، لینک‌های مرتبط دستی که فقط شناسه دارند، منو، تنظیمات قالب و جدول لینک‌های
+ * خزش) و برای هر لینک می‌گوید کجا ذخیره شده، متن و آدرسش چیست، الان به کجا می‌رود و باید به کجا برود.
+ *
+ * دسته‌ها: wrong (متنش کلمه را دارد و به رقیب می‌رود، مستقیم یا با ریدایرکت)، broken (۴۰۴)، good (فقط شمرده می‌شود)،
+ * و جدا «فرصت لینک» (کلمه در متن هست ولی به هدف لینک ندارد؛ با تکه‌ای از متن). «لینک‌های ورودی هر صفحه» به تفکیک
+ * منبع هم شمرده می‌شود (متن، لینک مرتبط، منو، قالب و ساختاری)؛ لینک ساختاری قالب را فقط خزش می‌بیند.
+ * رابطه دو صفحه (والد و فرزند دسته، محصول داخل دسته) هم خوانده می‌شود: رقیب والد برنده «رقیب واقعی» نیست.
  *
  * مقصد هر لینک با روتر آدرس تمیز به «نوع:شناسه» شیء تبدیل می‌شود (hodima_router_resolve_url: آدرس با پایه قدیمی،
  * /product/x/، حروف بزرگ، فارسی کدگذاری‌شده و نامک عددی مثل /207/ همه به همان شیء می‌رسند)، نه مقایسه رشته؛
@@ -153,198 +155,6 @@ function hodima_seo_advisor_links_dest_resolve( string $href ): array {
 }
 
 /**
- * پیش‌فیلتر SQL برای متن‌هایی که ممکن است کلمه داشته باشند: بلندترین واژه کلمه، با املای عربی ی/ک هم.
- *
- * @return list<string> الگوهای LIKE (۱ یا ۲ مورد)؛ خالی = کلمه واژه قابل‌جستجو ندارد
- */
-function hodima_seo_advisor_links_like( string $term ): array {
-
-	global $wpdb;
-
-	$tokens = array_filter( explode( ' ', hodima_seo_advisor_normalize( $term ) ), static fn( string $t ): bool => mb_strlen( $t ) >= 2 );
-
-	if ( ! $tokens ) {
-		return [];
-	}
-
-	usort( $tokens, static fn( string $a, string $b ): int => mb_strlen( $b ) <=> mb_strlen( $a ) );
-
-	return array_values( array_unique( [
-		'%' . $wpdb->esc_like( $tokens[0] ) . '%',
-		'%' . $wpdb->esc_like( strtr( $tokens[0], [ 'ی' => 'ي', 'ک' => 'ك' ] ) ) . '%',
-	] ) );
-}
-
-/**
- * لینک‌هایی که متنشان کلمه را دارد، از همه منبع‌ها.
- *
- * هر عنصر: source (label، title، field، edit، ref برای حذف تکرار)، anchor و یا href (لینک متنی) یا key (آیتم منو
- * که شیء را مستقیم نشان می‌دهد).
- *
- * @return array{entries: list<array<string, mixed>>, capped: bool}
- */
-function hodima_seo_advisor_links_collect( string $term ): array {
-
-	global $wpdb;
-
-	$entries = [];
-	$capped  = false;
-	$likes   = hodima_seo_advisor_links_like( $term );
-	$has     = static fn( string $anchor ): bool => hodima_seo_advisor_text_has( hodima_seo_advisor_normalize( $anchor ), $term );
-
-	if ( ! $likes ) {
-		return [ 'entries' => [], 'capped' => false ];
-	}
-
-	// ۱. نوشته‌ها، برگه‌ها، محصول‌ها (متن و خلاصه)
-	$types = function_exists( 'hodima_router_post_types' ) ? hodima_router_post_types() : array_values( array_filter( [ 'post', 'page', 'product' ], 'post_type_exists' ) );
-
-	if ( $types ) {
-		$last    = 0;
-		$scanned = 0;
-		$in      = implode( ',', array_fill( 0, count( $types ), '%s' ) );
-
-		while ( $scanned < HODIMA_SEO_ADVISOR_LINKS_MAX_POSTS ) {
-			$conditions = [];
-			$args       = [ $wpdb->posts, 'publish', ...$types, $last ];
-			foreach ( [ 'post_content', 'post_excerpt' ] as $column ) {
-				foreach ( $likes as $like ) {
-					$conditions[] = $column . ' LIKE %s';
-					$args[]       = $like;
-				}
-			}
-			$args[] = HODIMA_SEO_ADVISOR_LINKS_CHUNK;
-
-			$posts = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQL.NotPrepared -- placeholderها با array_fill و شمار الگوها هم‌اندازه‌اند؛ نام ستون از فهرست ثابت
-					'SELECT ID, post_type, post_title, post_content, post_excerpt FROM %i WHERE post_status = %s AND post_type IN (' . $in . ') AND ID > %d AND (' . implode( ' OR ', $conditions ) . ') ORDER BY ID ASC LIMIT %d', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- شرط‌ها و IN فقط placeholder و نام ستون ثابت‌اند
-					...$args
-				),
-				ARRAY_A
-			);
-
-			foreach ( $posts as $post ) {
-				$last = (int) $post['ID'];
-				++$scanned;
-				$edit  = (string) get_edit_post_link( (int) $post['ID'], 'raw' );
-				$title = trim( wp_strip_all_tags( (string) $post['post_title'] ) );
-				foreach ( [ 'post_content' => 'متن', 'post_excerpt' => 'product' === $post['post_type'] ? 'توضیح کوتاه' : 'خلاصه' ] as $column => $field ) {
-					foreach ( hodima_seo_advisor_links_anchors( (string) $post[ $column ] ) as $link ) {
-						if ( $has( $link['anchor'] ) ) {
-							$entries[] = [
-								'source' => [ 'label' => hodima_seo_advisor_links_label( (string) $post['post_type'] ), 'title' => '' !== $title ? $title : '#' . $post['ID'], 'field' => $field, 'edit' => $edit, 'ref' => 'post:' . $post['ID'] ],
-								'anchor' => $link['anchor'],
-								'href'   => $link['href'],
-							];
-						}
-					}
-				}
-			}
-
-			if ( count( $posts ) < HODIMA_SEO_ADVISOR_LINKS_CHUNK ) {
-				break;
-			}
-		}
-
-		$capped = $scanned >= HODIMA_SEO_ADVISOR_LINKS_MAX_POSTS;
-	}
-
-	// ۲. توضیح دسته‌ها
-	$taxonomies = function_exists( 'hodima_router_taxonomies' ) ? hodima_router_taxonomies() : array_values( array_filter( [ 'product_cat', 'category' ], 'taxonomy_exists' ) );
-
-	if ( $taxonomies ) {
-		$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderها با array_fill هم‌اندازه‌اند
-				'SELECT t.term_id, t.name, tt.taxonomy, tt.description FROM %i tt INNER JOIN %i t ON t.term_id = tt.term_id WHERE tt.taxonomy IN (' . implode( ',', array_fill( 0, count( $taxonomies ), '%s' ) ) . ') AND (tt.description LIKE %s OR tt.description LIKE %s) LIMIT 300',
-				$wpdb->term_taxonomy,
-				$wpdb->terms,
-				...$taxonomies,
-				...[ $likes[0], $likes[1] ?? $likes[0] ]
-			),
-			ARRAY_A
-		);
-
-		foreach ( $rows as $row ) {
-			$edit = (string) get_edit_term_link( (int) $row['term_id'], (string) $row['taxonomy'] );
-			foreach ( hodima_seo_advisor_links_anchors( (string) $row['description'] ) as $link ) {
-				if ( $has( $link['anchor'] ) ) {
-					$entries[] = [
-						'source' => [ 'label' => hodima_seo_advisor_links_label( (string) $row['taxonomy'] ), 'title' => (string) $row['name'], 'field' => 'توضیح دسته', 'edit' => $edit, 'ref' => 'term:' . $row['term_id'] ],
-						'anchor' => $link['anchor'],
-						'href'   => $link['href'],
-					];
-				}
-			}
-		}
-	}
-
-	// ۳. منوها (عنوان آیتم = متن لینک؛ آیتم صفحه/دسته مقصدش را مستقیم می‌دهد)
-	$items = array_map( 'intval', (array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->prepare( 'SELECT ID FROM %i WHERE post_type = %s AND post_status = %s LIMIT 800', $wpdb->posts, 'nav_menu_item', 'publish' )
-	) );
-
-	if ( $items ) {
-		update_meta_cache( 'post', $items );
-
-		foreach ( $items as $id ) {
-			$type   = (string) get_post_meta( $id, '_menu_item_type', true );
-			$object = (string) get_post_meta( $id, '_menu_item_object', true );
-			$ref    = (int) get_post_meta( $id, '_menu_item_object_id', true );
-			$title  = trim( (string) get_the_title( $id ) );
-
-			if ( '' === $title && $ref > 0 ) {
-				$title = 'taxonomy' === $type ? (string) ( get_term( $ref, $object )->name ?? '' ) : (string) get_the_title( $ref );
-			}
-
-			if ( '' === $title || ! $has( $title ) ) {
-				continue;
-			}
-
-			$menus = wp_get_object_terms( $id, 'nav_menu' );
-			$menu  = is_array( $menus ) && isset( $menus[0] ) && $menus[0] instanceof WP_Term ? $menus[0] : null;
-			$entry = [
-				'source' => [ 'label' => 'منو', 'title' => ( null !== $menu ? $menu->name . ' ← ' : '' ) . $title, 'field' => 'آیتم منو', 'edit' => null !== $menu ? admin_url( 'nav-menus.php?action=edit&menu=' . $menu->term_id ) : admin_url( 'nav-menus.php' ), 'ref' => 'menu:' . $id ],
-				'anchor' => $title,
-			];
-
-			if ( 'custom' === $type ) {
-				$entry['href'] = (string) get_post_meta( $id, '_menu_item_url', true );
-			} elseif ( $ref > 0 && '' !== $object ) {
-				$entry['key'] = hodima_seo_advisor_links_key( $object, $ref );
-				$link         = 'taxonomy' === $type ? get_term_link( $ref, $object ) : get_permalink( $ref );
-				$entry['path'] = is_string( $link ) ? (string) hodima_seo_advisor_path_key( $link ) : '';
-			} else {
-				continue;
-			}
-
-			$entries[] = $entry;
-		}
-	}
-
-	// ۴. تنظیمات قالب (فقط فیلدهای متنی که خودشان لینک دارند)
-	if ( function_exists( 'hodima_settings' ) && function_exists( 'hodima_settings_fields' ) ) {
-		$fields = (array) hodima_settings_fields();
-		$edit   = function_exists( 'hodima_settings_url' ) ? (string) hodima_settings_url() : '';
-		foreach ( (array) hodima_settings() as $key => $value ) {
-			if ( ! is_string( $value ) || ! in_array( (string) ( $fields[ $key ]['type'] ?? '' ), [ 'text', 'textarea' ], true ) ) {
-				continue;
-			}
-			foreach ( hodima_seo_advisor_links_anchors( $value ) as $link ) {
-				if ( $has( $link['anchor'] ) ) {
-					$entries[] = [
-						'source' => [ 'label' => 'تنظیمات قالب', 'title' => (string) ( $fields[ $key ]['label'] ?? $key ), 'field' => (string) $key, 'edit' => $edit, 'ref' => 'setting:' . $key ],
-						'anchor' => $link['anchor'],
-						'href'   => $link['href'],
-					];
-				}
-			}
-		}
-	}
-
-	return [ 'entries' => $entries, 'capped' => $capped ];
-}
-
-/**
  * صفحه‌های یک گروه رقابت، برنده (هدف لینک‌ها) اول. همان قاعده تب رقابت: برنده بیشترین کلیک؛ برای دستور «دسته
  * اصلی شود» هدف خود دسته است. گروهی که رقابت واقعی ندارد یا جهتش روشن نیست خطا می‌دهد.
  *
@@ -394,7 +204,7 @@ function hodima_seo_advisor_links_group( string $term ): array|WP_Error {
  * عنوان و آدرس ویرایش یک صفحه گروه برای نمایش.
  *
  * @param array<string, mixed> $page
- * @return array{path: string, title: string, kind: string, edit: string, keys: list<string>}
+ * @return array{path: string, title: string, kind: string, id: int, edit: string, keys: list<string>}
  */
 function hodima_seo_advisor_links_page_info( array $page ): array {
 
@@ -414,15 +224,50 @@ function hodima_seo_advisor_links_page_info( array $page ): array {
 		'path'  => (string) $page['path'],
 		'title' => '' !== $title ? $title : rawurldecode( (string) $page['path'] ),
 		'kind'  => $kind,
+		'id'    => $id,
 		'edit'  => $edit,
 		'keys'  => array_values( array_filter( [ $id > 0 && '' !== $kind ? hodima_seo_advisor_links_key( $kind, $id ) : '', 'path:' . $page['path'] ] ) ),
+	];
+}
+
+
+/** آخرین بخش مسیر یک آدرس یکسان‌شده (نامک)؛ برای پیش‌فیلتر ارزان. */
+function hodima_seo_advisor_links_slug( string $path ): string {
+	$parts = array_values( array_filter( explode( '/', trim( $path, '/' ) ), static fn( string $part ): bool => '' !== $part ) );
+	return $parts ? (string) end( $parts ) : '';
+}
+
+/**
+ * عنوان و آدرس ویرایش صفحه‌ای که خزش آدرسش را دیده (میزبان یک لینک). شیء ناشناخته: خود آدرس.
+ *
+ * @return array{label: string, title: string, edit: string, ref: string}
+ */
+function hodima_seo_advisor_links_host( string $path ): array {
+
+	$class = hodima_seo_advisor_classify( $path );
+	$kind  = (string) $class['kind'];
+	$id    = (int) $class['id'];
+	$title = hodima_seo_advisor_object_title( $kind, $id );
+	$edit  = '';
+
+	if ( $id > 0 && post_type_exists( $kind ) ) {
+		$edit = (string) get_edit_post_link( $id, 'raw' );
+	} elseif ( $id > 0 && taxonomy_exists( $kind ) ) {
+		$edit = (string) get_edit_term_link( $id, $kind );
+	}
+
+	return [
+		'label' => '' !== $kind ? hodima_seo_advisor_links_label( $kind ) : 'صفحه',
+		'title' => '' !== $title ? $title : rawurldecode( $path ),
+		'edit'  => $edit,
+		'ref'   => ( taxonomy_exists( $kind ) ? 'term:' : 'post:' ) . $id,
 	];
 }
 
 /**
  * بررسی لینک‌های یک گروه رقابت.
  *
- * @return array{term: string, target: array<string, mixed>, rivals: list<array<string, mixed>>, counts: array<string, int>, rows: list<array<string, mixed>>, total: int, capped: bool, router: bool}|WP_Error
+ * @return array<string, mixed>|WP_Error
  */
 function hodima_seo_advisor_links_scan( string $term, bool $force = false ): array|WP_Error {
 
@@ -437,32 +282,46 @@ function hodima_seo_advisor_links_scan( string $term, bool $force = false ): arr
 		return $group;
 	}
 
-	$cache_key = 'hodima_adv_lk_' . md5( implode( '|', [ $term, implode( ',', array_column( $group['pages'], 'path' ) ), wp_cache_get_last_changed( 'posts' ), wp_cache_get_last_changed( 'terms' ), (string) hodima_seo_advisor_status()['fetched'] ] ) );
+	$cache_key = 'hodima_adv_lk_' . md5( implode( '|', [ 'v2', $term, implode( ',', array_column( $group['pages'], 'path' ) ), wp_cache_get_last_changed( 'posts' ), wp_cache_get_last_changed( 'terms' ), (string) hodima_seo_advisor_status()['fetched'] ] ) );
 	$cached    = $force ? false : get_transient( $cache_key );
 
-	if ( is_array( $cached ) && isset( $cached['counts'], $cached['rows'] ) ) {
+	if ( is_array( $cached ) && isset( $cached['counts'], $cached['rows'], $cached['inventory'] ) ) {
 		return $cached;
 	}
 
 	$infos  = array_map( 'hodima_seo_advisor_links_page_info', $group['pages'] );
 	$target = $infos[0];
 	$rivals = array_slice( $infos, 1 );
-	$rival_keys = array_merge( ...array_column( $rivals, 'keys' ) );
 
-	$collected = hodima_seo_advisor_links_collect( $term );
-	$counts    = [ 'wrong' => 0, 'broken' => 0, 'missing' => 0, 'good' => 0 ];
-	$rows      = [];
-	$seen      = [];
-	$touched   = [];
-	$hrefs     = [];
-	$titles    = [];
-	foreach ( $rivals as $rival ) {
-		foreach ( $rival['keys'] as $key ) {
-			$titles[ $key ] = $rival['title'];
+	$index = [];
+	foreach ( $infos as $i => $info ) {
+		foreach ( $info['keys'] as $key ) {
+			$index[ $key ] = $i;
 		}
 	}
 
-	foreach ( $collected['entries'] as $entry ) {
+	$ctx = [
+		'term'  => $term,
+		'slugs' => array_values( array_unique( array_filter( array_map( static fn( array $i ): string => hodima_seo_advisor_links_slug( $i['path'] ), $infos ) ) ) ),
+		'keys'  => array_values( array_filter( array_keys( $index ), static fn( string $k ): bool => ! str_starts_with( $k, 'path:' ) ) ),
+		'ids'   => array_values( array_filter( array_map( static fn( array $i ): int => (int) $i['id'], $infos ) ) ),
+	];
+
+	$html      = hodima_seo_advisor_links_collect_html( $ctx );
+	$entries   = array_merge( $html['entries'], hodima_seo_advisor_links_collect_related( $ctx ) );
+	$crawl     = hodima_seo_advisor_links_collect_crawl( $infos, $term );
+	$counts    = [ 'wrong' => 0, 'broken' => 0, 'missing' => 0, 'good' => 0 ];
+	$inventory = array_fill( 0, count( $infos ), [ 'text' => 0, 'related' => 0, 'menu' => 0 ] );
+	$counted   = [];
+	$rows      = [];
+	$seen      = [];
+	$touched   = [];
+	$pairs     = [];
+	$globals   = [];
+	$hrefs     = [];
+
+	foreach ( $entries as $entry ) {
+
 		if ( isset( $entry['key'] ) ) {
 			$dest = [ 'key' => (string) $entry['key'], 'path' => (string) ( $entry['path'] ?? '' ), 'state' => 'ok' ];
 		} else {
@@ -479,72 +338,196 @@ function hodima_seo_advisor_links_scan( string $term, bool $force = false ): arr
 			continue;
 		}
 
-		$is_target = ( '' !== $dest['key'] && in_array( $dest['key'], $target['keys'], true ) ) || in_array( 'path:' . $dest['path'], $target['keys'], true );
-		$is_rival  = ( '' !== $dest['key'] && in_array( $dest['key'], $rival_keys, true ) ) || in_array( 'path:' . $dest['path'], $rival_keys, true );
+		$i      = $index[ $dest['key'] ] ?? $index[ 'path:' . $dest['path'] ] ?? null;
+		$source = (array) $entry['source'];
+		$bucket = in_array( $entry['bucket'], [ 'menu', 'settings' ], true ) ? 'menu' : (string) $entry['bucket'];
 
 		if ( 'broken' === $dest['state'] ) {
+			if ( ! $entry['hit'] ) {
+				continue;
+			}
 			$issue = 'broken';
-		} elseif ( $is_rival && ! $is_target ) {
-			$issue = 'wrong';
-		} elseif ( $is_target ) {
-			++$counts['good'];
-			continue;
+			$i     = null;
+		} elseif ( null === $i ) {
+			continue; // به صفحه‌ای بیرون از این گروه می‌رود
 		} else {
-			continue; // با متن کلمه به صفحه نامربوط می‌رود؛ به رقابت این گروه ربطی ندارد
+			$unit = $source['ref'] . '|' . $source['field'] . '|' . $bucket;
+			if ( ! isset( $counted[ $i ][ $unit ] ) ) {
+				$counted[ $i ][ $unit ] = true;
+				++$inventory[ $i ][ $bucket ];
+			}
+			if ( '' !== (string) ( $source['path'] ?? '' ) ) {
+				$pairs[ $source['path'] . '|' . $infos[ $i ]['path'] ] = true;
+			}
+			if ( 'menu' === $bucket ) {
+				$globals[ $infos[ $i ]['path'] . '|' . hodima_seo_advisor_normalize( (string) $entry['anchor'] ) ] = true;
+			}
+			if ( ! $entry['hit'] ) {
+				continue; // لینک بدون کلمه فقط در «لینک‌های ورودی» شمرده می‌شود
+			}
+			$issue = 0 === $i ? 'good' : 'wrong';
 		}
 
-		$dedupe = $entry['source']['ref'] . '|' . $entry['source']['field'] . '|' . hodima_seo_advisor_normalize( (string) $entry['anchor'] ) . '|' . $dest['path'];
+		if ( 'good' === $issue ) {
+			$unit = $source['ref'] . '|' . $source['field'] . '|good';
+			if ( ! isset( $seen[ $unit ] ) ) {
+				$seen[ $unit ] = true;
+				++$counts['good'];
+			}
+			continue;
+		}
+
+		$written = isset( $entry['href'] ) ? rawurldecode( (string) $entry['href'] ) : (string) ( $dest['path'] );
+		$dedupe  = $source['ref'] . '|' . $source['field'] . '|' . hodima_seo_advisor_normalize( (string) $entry['anchor'] ) . '|' . $dest['path'] . '|' . $dest['key'];
+
 		if ( isset( $seen[ $dedupe ] ) ) {
 			++$rows[ $seen[ $dedupe ] ]['times'];
 			++$counts[ $issue ];
 			continue;
 		}
 
+		$page            = null !== $i ? $infos[ $i ] : null;
 		$seen[ $dedupe ] = count( $rows );
-		$touched[ (string) $entry['source']['ref'] ] = true;
+		$touched[ (string) $source['ref'] ] = true;
 		++$counts[ $issue ];
 		$rows[] = [
-			'issue'  => $issue,
-			'source' => $entry['source'],
-			'anchor' => mb_substr( (string) $entry['anchor'], 0, 80 ),
-			'now'    => [ 'path' => $dest['path'], 'title' => $titles[ $dest['key'] ] ?? ( $titles[ 'path:' . $dest['path'] ] ?? '' ) ],
-			'times'  => 1,
+			'issue'      => $issue,
+			'source'     => $source,
+			'store'      => (string) $entry['store'],
+			'anchor'     => mb_substr( (string) $entry['anchor'], 0, 80 ),
+			'href'       => $written,
+			'now'        => [
+				'path'  => '' !== $dest['path'] ? $dest['path'] : (string) ( $page['path'] ?? '' ),
+				'title' => (string) ( $page['title'] ?? '' ),
+				'kind'  => null !== $page ? hodima_seo_advisor_links_label( (string) $page['kind'] ) : '',
+				'note'  => null !== $page && isset( $entry['href'] ) && strtolower( rawurldecode( (string) wp_parse_url( (string) $entry['href'], PHP_URL_PATH ) ) ) !== $page['path'] ? 'آدرس نوشته‌شده با آدرس اصلی فرق دارد (ریدایرکت می‌شود)' : '',
+			],
+			'times'      => 1,
+			'structural' => false,
 		];
 	}
 
-	// جای بدون لینک: کلمه در متن هست ولی به هدف لینک نیست (منبعی که لینک اشتباه دارد دوباره نیاید)
-	$source_row = [ 'path' => $target['path'], 'kind' => $target['kind'], 'object_id' => (int) $group['pages'][0]['object_id'] ];
-	$missing    = hodima_seo_advisor_link_sources_cached( $term, $source_row );
+	// لینک‌های خزش: متن‌هایی که پایگاه داده نمی‌بیند (شورت‌کد، قالب، صفحه‌ساز) و لینک‌های ساختاری قالب
+	$grouped = [];
+	foreach ( $crawl['rows'] as $r ) {
+		$i = array_search( $r['dest_path'], array_column( $infos, 'path' ), true );
+		if ( false === $i ) {
+			continue;
+		}
+		$content = 'content' === $r['position'];
+		$unit    = $r['source_path'] . '|' . $r['dest_path'];
+
+		if ( 0 === $i ) {
+			if ( $content && ! isset( $pairs[ $unit ] ) ) {
+				$pairs[ $unit ] = true;
+				++$counts['good'];
+			}
+			continue;
+		}
+
+		if ( $content ) {
+			if ( isset( $pairs[ $unit ] ) || count( $rows ) >= HODIMA_SEO_ADVISOR_LINKS_MAX_ROWS * 2 ) {
+				continue;
+			}
+			$pairs[ $unit ] = true;
+			$host           = hodima_seo_advisor_links_host( $r['source_path'] );
+			++$counts['wrong'];
+			$touched[ $host['ref'] ] = true;
+			$rows[] = [
+				'issue'      => 'wrong',
+				'source'     => $host + [ 'field' => 'متن (طبق خزش)', 'path' => $r['source_path'] ],
+				'store'      => hodima_seo_advisor_links_position_label( $r['position'] ),
+				'anchor'     => mb_substr( $r['anchor'], 0, 80 ),
+				'href'       => $r['dest_path'],
+				'now'        => [ 'path' => $infos[ $i ]['path'], 'title' => $infos[ $i ]['title'], 'kind' => hodima_seo_advisor_links_label( (string) $infos[ $i ]['kind'] ), 'note' => 'این لینک را خزش دیده؛ در متن ذخیره‌شده پیدا نشد (شورت‌کد یا قالب؟)' ],
+				'times'      => 1,
+				'structural' => false,
+			];
+			continue;
+		}
+
+		if ( 'navigation' === strtolower( $r['position'] ) && isset( $globals[ $r['dest_path'] . '|' . hodima_seo_advisor_normalize( $r['anchor'] ) ] ) ) {
+			continue; // همین لینک منو را پایگاه داده با جایش نشان داده است
+		}
+
+		$key                          = $r['position'] . '|' . $r['dest_path'] . '|' . hodima_seo_advisor_normalize( $r['anchor'] );
+		$grouped[ $key ]              ??= [ 'position' => $r['position'], 'dest' => $i, 'anchor' => $r['anchor'], 'sources' => [] ];
+		$grouped[ $key ]['sources'][] = $r['source_path'];
+	}
+
+	foreach ( $grouped as $g ) {
+		$sources = array_values( array_unique( $g['sources'] ) );
+		$counts['wrong'] += 1;
+		$rows[] = [
+			'issue'      => 'wrong',
+			'source'     => [ 'label' => 'قالب', 'title' => sprintf( 'در %s صفحه', number_format_i18n( count( $sources ) ) ), 'field' => hodima_seo_advisor_links_position_label( $g['position'] ), 'edit' => '', 'ref' => 'crawl:' . $g['position'], 'path' => '' ],
+			'store'      => 'قالب (ساختاری)',
+			'anchor'     => mb_substr( $g['anchor'], 0, 80 ),
+			'href'       => $infos[ $g['dest'] ]['path'],
+			'now'        => [ 'path' => $infos[ $g['dest'] ]['path'], 'title' => $infos[ $g['dest'] ]['title'], 'kind' => hodima_seo_advisor_links_label( (string) $infos[ $g['dest'] ]['kind'] ), 'note' => '' ],
+			'times'      => count( $sources ),
+			'structural' => true,
+		];
+	}
+
+	// فرصت لینک: کلمه در متن هست ولی به هدف لینک ندارد (منبعی که لینک اشتباه دارد دوباره نمی‌آید)
+	$opps    = [];
+	$missing = hodima_seo_advisor_link_sources( $term, [ 'path' => $target['path'], 'kind' => $target['kind'], 'object_id' => (int) $target['id'] ], HODIMA_SEO_ADVISOR_LINKS_MAX_OPPS );
 
 	foreach ( $missing['items'] as $item ) {
-		$ref = ( taxonomy_exists( $item['kind'] ) ? 'term:' : 'post:' ) . $item['id'];
+		$is_term = taxonomy_exists( $item['kind'] );
+		$ref     = ( $is_term ? 'term:' : 'post:' ) . $item['id'];
 		if ( isset( $touched[ $ref ] ) ) {
 			continue;
 		}
-		$edit = taxonomy_exists( $item['kind'] ) ? (string) get_edit_term_link( $item['id'], $item['kind'] ) : (string) get_edit_post_link( $item['id'], 'raw' );
-		++$counts['missing'];
-		$rows[] = [
-			'issue'  => 'missing',
-			'source' => [ 'label' => hodima_seo_advisor_links_label( $item['kind'] ), 'title' => $item['title'], 'field' => 'متن', 'edit' => $edit, 'ref' => $ref ],
-			'anchor' => '',
-			'now'    => [ 'path' => '', 'title' => '' ],
-			'times'  => 1,
+		$body = $is_term
+			? (string) ( get_term( $item['id'], $item['kind'] )->description ?? '' )
+			: (string) get_post_field( 'post_content', $item['id'] ) . ' ' . (string) get_post_field( 'post_excerpt', $item['id'] );
+		$opps[] = [
+			'source'  => [ 'label' => hodima_seo_advisor_links_label( $item['kind'] ), 'title' => $item['title'], 'edit' => $is_term ? (string) get_edit_term_link( $item['id'], $item['kind'] ) : (string) get_edit_post_link( $item['id'], 'raw' ) ],
+			'snippet' => hodima_seo_advisor_links_snippet( $body, $term ),
 		];
 	}
-	$counts['missing'] += (int) $missing['more'];
+	$counts['missing'] = count( $opps ) + (int) $missing['more'];
 
-	$order = [ 'wrong' => 0, 'broken' => 1, 'missing' => 2 ];
-	usort( $rows, static fn( array $a, array $b ): int => $order[ $a['issue'] ] <=> $order[ $b['issue'] ] );
+	$relations = [];
+	foreach ( $rivals as $rival ) {
+		$relation = hodima_seo_advisor_links_relation( $target, $rival, $term );
+		if ( null !== $relation ) {
+			$relations[] = $relation + [ 'title' => $rival['title'], 'path' => $rival['path'] ];
+		}
+	}
+
+	$inv = [];
+	foreach ( $infos as $i => $info ) {
+		$inv[] = [
+			'role'  => 0 === $i ? 'target' : 'rival',
+			'title' => $info['title'],
+			'path'  => $info['path'],
+			'text'  => $inventory[ $i ]['text'],
+			'related' => $inventory[ $i ]['related'],
+			'menu'  => $inventory[ $i ]['menu'],
+			'crawl' => $crawl['has'] ? ( $crawl['pages'][ $info['path'] ] ?? [ 'total' => 0, 'content' => 0, 'other' => 0 ] ) : null,
+		];
+	}
+
+	$order = static fn( array $r ): int => $r['structural'] ? 2 : ( 'wrong' === $r['issue'] ? 0 : 1 );
+	/** @var list<array<string, mixed>> $rows */
+	usort( $rows, static fn( array $a, array $b ): int => $order( $a ) <=> $order( $b ) );
 
 	$result = [
-		'term'   => $term,
-		'target' => $target,
-		'rivals' => $rivals,
-		'counts' => $counts,
-		'rows'   => array_slice( $rows, 0, HODIMA_SEO_ADVISOR_LINKS_MAX_ROWS ),
-		'total'  => count( $rows ),
-		'capped' => $collected['capped'],
-		'router' => function_exists( 'hodima_router_resolve_url' ) && function_exists( 'hodima_router_active' ) && hodima_router_active(),
+		'term'      => $term,
+		'target'    => $target,
+		'rivals'    => $rivals,
+		'relations' => $relations,
+		'inventory' => $inv,
+		'has_crawl' => $crawl['has'],
+		'counts'    => $counts,
+		'rows'      => array_slice( $rows, 0, HODIMA_SEO_ADVISOR_LINKS_MAX_ROWS ),
+		'total'     => count( $rows ),
+		'opps'      => $opps,
+		'capped'    => $html['capped'],
+		'router'    => function_exists( 'hodima_router_resolve_url' ) && function_exists( 'hodima_router_active' ) && hodima_router_active(),
 	];
 
 	set_transient( $cache_key, $result, HODIMA_SEO_ADVISOR_LINKS_TTL );

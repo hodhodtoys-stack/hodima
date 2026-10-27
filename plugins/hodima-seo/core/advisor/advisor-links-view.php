@@ -3,9 +3,10 @@
  * ماژول «دستار سئو» — نمایش «لینک‌های این کلمه» زیر هر گروه رقابت
  * Path: core/advisor/advisor-links-view.php
  *
- * نتیجه hodima_seo_advisor_links_scan() را (فقط خواندنی) به HTML escape‌شده تبدیل می‌کند: سه نشان خلاصه،
- * جدول «کجا / متن لینک / الان کجا می‌رود / باید کجا برود / ویرایش»؛ ۸ ردیف اول باز و بقیه پشت «همه ردیف‌ها».
- * در موبایل جدول با CSS به کارت‌های زیر هم تبدیل می‌شود (data-label). طرح تأییدشده: Artifact «طرح لینک‌های رقابت».
+ * نتیجه hodima_seo_advisor_links_scan() را (فقط خواندنی) به HTML escape‌شده تبدیل می‌کند: رابطه دو صفحه (والد/فرزند)،
+ * «لینک‌های ورودی هر صفحه» به تفکیک منبع، سه نشان خلاصه، جدول لینک‌ها (کجا / جای ذخیره / متن / آدرس نوشته‌شده / الان
+ * می‌رود به / باید برود به / ویرایش) و جدول جدای «فرصت لینک» با تکه‌ای از متن؛ ۸ ردیف اول باز و بقیه پشت «همه ردیف‌ها».
+ * در موبایل جدول‌ها با CSS به کارت تبدیل می‌شوند (data-label). طرح تأییدشده: Artifact «طرح لینک‌های رقابت» (نسخه ۲).
  */
 
 declare(strict_types=1);
@@ -35,8 +36,13 @@ function hodima_seo_advisor_render_links_box( string $term, string $target_title
 	<?php
 }
 
+/** آدرس به‌صورت code چپ‌به‌راست (escape‌شده). */
+function hodima_seo_advisor_links_code( string $path ): string {
+	return '<code class="hodima-advisor__lk-path" dir="ltr">' . esc_html( rawurldecode( $path ) ) . '</code>';
+}
+
 /**
- * یک ردیف نتیجه (tr).
+ * یک ردیف لینک واقعی (tr): کجا، جای ذخیره، متن، آدرس نوشته‌شده، الان می‌رود به، باید برود به، ویرایش.
  *
  * @param array<string, mixed> $row
  * @param array<string, mixed> $target
@@ -46,49 +52,125 @@ function hodima_seo_advisor_render_links_row( array $row, array $target ): strin
 	$n      = static fn( int|float $value ): string => number_format_i18n( $value );
 	$source = (array) $row['source'];
 	$now    = (array) $row['now'];
-	$code   = static fn( string $path ): string => '<code class="hodima-advisor__lk-path" dir="ltr">' . esc_html( rawurldecode( $path ) ) . '</code>';
+	$edit   = (string) ( $source['edit'] ?? '' );
 
 	$where = '<strong>' . esc_html( (string) $source['title'] ) . '</strong>'
-		. '<span class="hds-pill hds-pill--info">' . esc_html( (string) $source['label'] ) . '</span> '
-		. '<small>' . esc_html( (string) $source['field'] ) . '</small>'
-		. ( $row['times'] > 1 ? ' <small>' . esc_html( sprintf( '(%s بار)', $n( $row['times'] ) ) ) . '</small>' : '' );
+		. '<span class="hds-pill hds-pill--info">' . esc_html( (string) $source['label'] ) . '</span>'
+		. ( $row['times'] > 1 && ! $row['structural'] ? '<small>' . esc_html( sprintf( '(%s بار)', $n( $row['times'] ) ) ) . '</small>' : '' );
 
+	$store  = '<span class="hodima-advisor__lk-store' . ( '' !== $edit ? ' is-editable' : '' ) . '">' . esc_html( (string) $row['store'] ) . '</span>';
 	$anchor = '' !== $row['anchor'] ? '<span class="hodima-advisor__lk-anchor">' . esc_html( (string) $row['anchor'] ) . '</span>' : '—';
 
-	$current = match ( $row['issue'] ) {
-		'broken'  => '<span class="hds-pill hds-pill--error">خراب (۴۰۴)</span> ' . $code( (string) $now['path'] ),
-		'missing' => '<span class="hodima-advisor__lk-muted">کلمه در متن هست، ولی لینک ندارد</span>',
-		default   => $code( (string) $now['path'] ) . ( '' !== (string) $now['title'] ? '<small class="hodima-advisor__lk-muted">' . esc_html( (string) $now['title'] ) . '</small>' : '' ),
-	};
+	$current = 'broken' === $row['issue']
+		? '<span class="hds-pill hds-pill--error">خراب (۴۰۴)</span>'
+		: ( '' !== (string) $now['title'] ? '<strong>' . esc_html( (string) $now['title'] ) . '</strong>' : '' )
+			. ( '' !== (string) $now['kind'] ? '<small class="hodima-advisor__lk-muted">' . esc_html( (string) $now['kind'] ) . '</small>' : '' )
+			. ( '' !== (string) $now['note'] ? '<small class="hodima-advisor__lk-muted">' . esc_html( (string) $now['note'] ) . '</small>' : '' );
 
-	$edit = '' !== (string) $source['edit'] ? hodima_seo_advisor_action( (string) $source['edit'], 'ویرایش', 'edit' ) : '';
+	$should = $row['structural']
+		? '<span class="hodima-advisor__lk-muted">در متن قابل ویرایش نیست؛ از منو یا چیدمان قالب درست می‌شود.</span>'
+		: '<span class="hodima-advisor__lk-to"><span class="hodima-advisor__lk-arrow" aria-hidden="true">←</span>' . hodima_seo_advisor_links_code( (string) $target['path'] ) . '</span><small class="hodima-advisor__lk-muted">' . esc_html( (string) $target['title'] ) . '</small>';
 
 	return '<tr>'
 		. '<td data-label=""><div class="hodima-advisor__lk-src">' . $where . '</div></td>'
+		. '<td data-label="جای ذخیره">' . $store . '</td>'
 		. '<td data-label="متن لینک">' . $anchor . '</td>'
-		. '<td data-label="الان کجا می‌رود">' . $current . '</td>'
-		. '<td data-label="باید کجا برود"><span class="hodima-advisor__lk-to"><span class="hodima-advisor__lk-arrow" aria-hidden="true">←</span>' . $code( (string) $target['path'] ) . '</span><small class="hodima-advisor__lk-muted">' . esc_html( (string) $target['title'] ) . '</small></td>'
-		. '<td data-label="">' . $edit . '</td>'
+		. '<td data-label="آدرس نوشته‌شده">' . ( '' !== (string) $row['href'] ? hodima_seo_advisor_links_code( (string) $row['href'] ) : '—' ) . '</td>'
+		. '<td data-label="الان می‌رود به">' . $current . '</td>'
+		. '<td data-label="باید برود به">' . $should . '</td>'
+		. '<td data-label="">' . ( '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش', 'edit' ) : '' ) . '</td>'
 		. '</tr>';
 }
 
 /**
- * جدول ردیف‌ها.
+ * یک ردیف «فرصت لینک»: کجا، تکه‌ای از متن با کلمه، پیشنهاد، ویرایش.
  *
- * @param list<array<string, mixed>> $rows
- * @param array<string, mixed>       $target
+ * @param array<string, mixed> $opp
+ * @param array<string, mixed> $target
  */
-function hodima_seo_advisor_render_links_table( array $rows, array $target ): string {
+function hodima_seo_advisor_render_links_opp( array $opp, array $target ): string {
 
-	$html = '<div class="hodima-advisor__lk-wrap"><table class="hodima-advisor__lk-table"><thead><tr>'
-		. '<th scope="col">کجا</th><th scope="col">متن لینک</th><th scope="col">الان کجا می‌رود</th><th scope="col">باید کجا برود</th><th scope="col"><span class="screen-reader-text">ویرایش</span></th>'
-		. '</tr></thead><tbody>';
+	$source  = (array) $opp['source'];
+	$snippet = $opp['snippet'];
+	$text    = is_array( $snippet )
+		? '<span class="hodima-advisor__lk-snippet">' . esc_html( $snippet[0] ) . '<mark>' . esc_html( $snippet[1] ) . '</mark>' . esc_html( $snippet[2] ) . '</span>'
+		: '<span class="hodima-advisor__lk-muted">کلمه در متن هست (تکه متن پیدا نشد).</span>';
+	$edit    = (string) ( $source['edit'] ?? '' );
 
-	foreach ( $rows as $row ) {
-		$html .= hodima_seo_advisor_render_links_row( $row, $target );
+	return '<tr>'
+		. '<td data-label=""><div class="hodima-advisor__lk-src"><strong>' . esc_html( (string) $source['title'] ) . '</strong><span class="hds-pill hds-pill--info">' . esc_html( (string) $source['label'] ) . '</span></div></td>'
+		. '<td data-label="تکه‌ای از متن">' . $text . '</td>'
+		. '<td data-label="پیشنهاد"><span class="hodima-advisor__lk-to"><span class="hodima-advisor__lk-arrow" aria-hidden="true">←</span><span>همین عبارت را به ' . hodima_seo_advisor_links_code( (string) $target['path'] ) . ' لینک کنید</span></span><small class="hodima-advisor__lk-muted">' . esc_html( (string) $target['title'] ) . '</small></td>'
+		. '<td data-label="">' . ( '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش', 'edit' ) : '' ) . '</td>'
+		. '</tr>';
+}
+
+/**
+ * جدول با سرستون و ردیف‌های آماده.
+ *
+ * @param list<string> $heads
+ * @param list<string> $body ردیف‌های tr آماده
+ */
+function hodima_seo_advisor_render_links_table( array $heads, array $body, string $css_class = '' ): string {
+
+	$html = '<div class="hodima-advisor__lk-wrap"><table class="hodima-advisor__lk-table ' . esc_attr( $css_class ) . '"><thead><tr>';
+
+	foreach ( $heads as $head ) {
+		$html .= '' !== $head ? '<th scope="col">' . esc_html( $head ) . '</th>' : '<th scope="col"><span class="screen-reader-text">ویرایش</span></th>';
 	}
 
-	return $html . '</tbody></table></div>';
+	return $html . '</tr></thead><tbody>' . implode( '', $body ) . '</tbody></table></div>';
+}
+
+/**
+ * ردیف‌ها: ۸ ردیف اول باز و بقیه پشت «همه ردیف‌ها».
+ *
+ * @param list<string> $heads
+ * @param list<string> $body
+ */
+function hodima_seo_advisor_render_links_paged( array $heads, array $body, string $css_class = '' ): string {
+
+	$html = hodima_seo_advisor_render_links_table( $heads, array_slice( $body, 0, HODIMA_SEO_ADVISOR_LINKS_VISIBLE ), $css_class );
+	$rest = array_slice( $body, HODIMA_SEO_ADVISOR_LINKS_VISIBLE );
+
+	if ( $rest ) {
+		$html .= '<details class="hodima-advisor__lk-more"><summary>' . esc_html( sprintf( 'همه ردیف‌ها (%s ردیف دیگر)', number_format_i18n( count( $rest ) ) ) ) . '</summary>'
+			. hodima_seo_advisor_render_links_table( $heads, $rest, $css_class ) . '</details>';
+	}
+
+	return $html;
+}
+
+/**
+ * جدول «لینک‌های ورودی هر صفحه» به تفکیک منبع.
+ *
+ * @param array<string, mixed> $scan
+ */
+function hodima_seo_advisor_render_links_inventory( array $scan ): string {
+
+	$n    = static fn( int|float $value ): string => number_format_i18n( $value );
+	$cell = static fn( ?int $value ): string => null === $value ? '—' : esc_html( $n( $value ) );
+	$body = [];
+
+	foreach ( (array) $scan['inventory'] as $page ) {
+		$crawl  = $page['crawl'];
+		$body[] = '<tr>'
+			. '<td data-label="صفحه"><strong>' . esc_html( (string) $page['title'] ) . '</strong> <span class="hds-pill' . ( 'target' === $page['role'] ? '' : ' hds-pill--info' ) . '">' . ( 'target' === $page['role'] ? 'برنده' : 'رقیب' ) . '</span></td>'
+			. '<td data-label="متن" class="is-num">' . $cell( (int) $page['text'] ) . '</td>'
+			. '<td data-label="لینک مرتبط" class="is-num">' . $cell( (int) $page['related'] ) . '</td>'
+			. '<td data-label="منو" class="is-num">' . $cell( (int) $page['menu'] ) . '</td>'
+			. '<td data-label="قالب و ساختاری" class="is-num is-struct">' . $cell( null === $crawl ? null : (int) $crawl['other'] ) . '</td>'
+			. '<td data-label="جمع خزش" class="is-num">' . $cell( null === $crawl ? null : (int) $crawl['total'] ) . '</td>'
+			. '</tr>';
+	}
+
+	$note = $scan['has_crawl']
+		? '«قالب و ساختاری»: لینک‌هایی که قالب سایت می‌سازد (منوی بزرگ، فوتر، کارت زیردسته‌ها، مسیر breadcrumb) و در متن ذخیره نیستند. با ویرایش متن عوض نمی‌شوند.'
+		: 'برای دیدن لینک‌های ساختاری قالب (منوی بزرگ، فوتر، کارت‌ها) فایل خزش Screaming Frog را در تب «ایرادهای فنی» بگذارید؛ تا آن موقع فقط لینک‌های ذخیره‌شده در دیتابیس شمرده می‌شود.';
+
+	return '<div class="hodima-advisor__lk-inv"><h4 class="hodima-advisor__lk-h">لینک‌های ورودی هر صفحه</h4>'
+		. hodima_seo_advisor_render_links_table( [ 'صفحه', 'متن', 'لینک مرتبط', 'منو', 'قالب و ساختاری', 'جمع خزش' ], $body, 'is-inventory' )
+		. '<p class="hodima-advisor__links-hint">' . esc_html( $note ) . '</p></div>';
 }
 
 /**
@@ -101,12 +183,19 @@ function hodima_seo_advisor_render_links_result( array $scan ): string {
 	$n      = static fn( int|float $value ): string => number_format_i18n( $value );
 	$counts = (array) $scan['counts'];
 	$rows   = (array) $scan['rows'];
-	$html   = '<div class="hodima-advisor__lk-sums">';
+	$target = (array) $scan['target'];
+	$html   = '';
+
+	foreach ( (array) $scan['relations'] as $relation ) {
+		$html .= '<p class="hodima-advisor__lk-rel">' . esc_html( (string) $relation['text'] ) . '</p>';
+	}
+
+	$html .= hodima_seo_advisor_render_links_inventory( $scan );
+	$html .= '<div class="hodima-advisor__lk-sums">';
 
 	foreach ( [
 		[ 'wrong', 'hds-pill hds-pill--error', '%s لینک به رقیب' ],
 		[ 'broken', 'hds-pill hds-pill--warn', '%s لینک خراب' ],
-		[ 'missing', 'hds-pill hds-pill--info', '%s جای بدون لینک' ],
 		[ 'good', 'hds-pill', '%s لینک درست به برنده' ],
 	] as [ $key, $class, $format ] ) {
 		$html .= '<span class="' . esc_attr( $class ) . '">' . esc_html( sprintf( $format, $n( (int) $counts[ $key ] ) ) ) . '</span>';
@@ -119,25 +208,28 @@ function hodima_seo_advisor_render_links_result( array $scan ): string {
 	}
 
 	if ( $scan['capped'] ) {
-		$html .= '<p class="hodima-advisor__links-hint">' . esc_html( sprintf( 'فقط %s نوشته اول که کلمه در آن‌هاست بررسی شد؛ بقیه دیده نشد.', $n( HODIMA_SEO_ADVISOR_LINKS_MAX_POSTS ) ) ) . '</p>';
+		$html .= '<p class="hodima-advisor__links-hint">' . esc_html( sprintf( 'فقط %s نوشته اول که کلمه یا آدرس صفحه‌ها در آن‌هاست بررسی شد؛ بقیه دیده نشد.', $n( HODIMA_SEO_ADVISOR_LINKS_MAX_POSTS ) ) ) . '</p>';
 	}
 
-	if ( ! $rows ) {
-		return $html . '<p class="hodima-advisor__links-hint">' . esc_html( sprintf( 'لینکی با متن «%s» که به صفحه رقیب برود پیدا نشد. پس رقابت از لینک‌های متنی نیست؛ عنوان، تیتر و محتوای صفحه‌ها را ببینید.', (string) $scan['term'] ) ) . '</p>';
+	if ( $rows ) {
+		$body  = array_map( static fn( array $row ): string => hodima_seo_advisor_render_links_row( $row, $target ), $rows );
+		$html .= hodima_seo_advisor_render_links_paged( [ 'کجا', 'جای ذخیره', 'متن لینک', 'آدرس نوشته‌شده', 'الان می‌رود به', 'باید برود به', '' ], $body, 'is-links' );
+		if ( $scan['total'] > count( $rows ) ) {
+			$html .= '<p class="hodima-advisor__links-hint">' . esc_html( sprintf( 'نمایش %1$s از %2$s ردیف؛ مهم‌ترین‌ها اول است.', $n( count( $rows ) ), $n( (int) $scan['total'] ) ) ) . '</p>';
+		}
+	} else {
+		$html .= '<p class="hodima-advisor__links-hint">' . esc_html( sprintf( 'لینکی با متن «%s» که به صفحه رقیب برود پیدا نشد. پس رقابت از لینک متنی نیست؛ عنوان، تیتر و محتوای صفحه‌ها و جدول «لینک‌های ورودی» بالا را ببینید.', (string) $scan['term'] ) ) . '</p>';
 	}
 
-	$target = (array) $scan['target'];
-	$head   = array_slice( $rows, 0, HODIMA_SEO_ADVISOR_LINKS_VISIBLE );
-	$rest   = array_slice( $rows, HODIMA_SEO_ADVISOR_LINKS_VISIBLE );
-	$html  .= hodima_seo_advisor_render_links_table( $head, $target );
-
-	if ( $rest ) {
-		$html .= '<details class="hodima-advisor__lk-more"><summary>' . esc_html( sprintf( 'همه ردیف‌ها (%s ردیف دیگر)', $n( count( $rest ) ) ) ) . '</summary>'
-			. hodima_seo_advisor_render_links_table( $rest, $target ) . '</details>';
-	}
-
-	if ( $scan['total'] > count( $rows ) ) {
-		$html .= '<p class="hodima-advisor__links-hint">' . esc_html( sprintf( 'نمایش %1$s از %2$s ردیف؛ مهم‌ترین‌ها اول است.', $n( count( $rows ) ), $n( (int) $scan['total'] ) ) ) . '</p>';
+	$opps = (array) $scan['opps'];
+	if ( $opps ) {
+		$body  = array_map( static fn( array $opp ): string => hodima_seo_advisor_render_links_opp( $opp, $target ), $opps );
+		$html .= '<div class="hodima-advisor__lk-opps"><h4 class="hodima-advisor__lk-h">فرصت لینک: کلمه در متن هست ولی لینک ندارد <span class="hds-pill hds-pill--info">' . esc_html( $n( (int) $counts['missing'] ) ) . '</span></h4>'
+			. hodima_seo_advisor_render_links_paged( [ 'کجا', 'تکه‌ای از متن', 'پیشنهاد', '' ], $body, 'is-opps' );
+		if ( (int) $counts['missing'] > count( $opps ) ) {
+			$html .= '<p class="hodima-advisor__links-hint">' . esc_html( sprintf( 'نمایش %1$s از %2$s مورد؛ پرنمایش‌ترین صفحه‌ها اول است.', $n( count( $opps ) ), $n( (int) $counts['missing'] ) ) ) . '</p>';
+		}
+		$html .= '</div>';
 	}
 
 	return $html;

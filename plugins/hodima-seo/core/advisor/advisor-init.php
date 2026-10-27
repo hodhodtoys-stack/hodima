@@ -27,6 +27,7 @@ require_once __DIR__ . '/advisor-data.php';
 require_once __DIR__ . '/advisor-history.php';
 require_once __DIR__ . '/advisor-competition.php';
 require_once __DIR__ . '/advisor-links.php';
+require_once __DIR__ . '/advisor-links-sources.php';
 require_once __DIR__ . '/advisor-insights.php';
 require_once __DIR__ . '/advisor-breakdown.php';
 require_once __DIR__ . '/advisor-trend.php';

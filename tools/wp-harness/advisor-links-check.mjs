@@ -79,17 +79,26 @@ for ( const width of [ 1300, 390 ] ) {
 	const run = boxes.first().locator( '[data-hdsa-links-run]' ).first();
 	await run.click();
 	await pg.waitForSelector( '.hodima-advisor__lk-table', { timeout: 30000 } );
-	const sums = ( await boxes.first().locator( '.hodima-advisor__lk-sums .hds-pill' ).allTextContents() ).map( ( t ) => t.replace( /\s+/g, ' ' ).trim() );
-	log( 4 === sums.length && /5/.test( sums[ 0 ] ) && /1/.test( sums[ 1 ] ), 'نشان‌های خلاصه: ۵ لینک به رقیب و ۱ لینک خراب', sums.join( ' | ' ) );
-	log( await boxes.first().locator( '[data-hdsa-links-hint]' ).isHidden(), 'متن راهنمای پیش از بررسی پنهان می‌شود' );
+	const box = boxes.first();
+	const sums = ( await box.locator( '.hodima-advisor__lk-sums .hds-pill' ).allTextContents() ).map( ( t ) => t.replace( /\s+/g, ' ' ).trim() );
+	log( 3 === sums.length && /8/.test( sums[ 0 ] ) && /1/.test( sums[ 1 ] ) && /2/.test( sums[ 2 ] ), 'نشان‌های خلاصه: ۸ لینک به رقیب، ۱ خراب، ۲ درست', sums.join( ' | ' ) );
+	log( await box.locator( '[data-hdsa-links-hint]' ).isHidden(), 'متن راهنمای پیش از بررسی پنهان می‌شود' );
+	log( /در\s*[3۳]\s*صفحه/.test( await box.evaluate( ( el ) => el.textContent ) ), 'لینک ساختاری فوتر: یک ردیف «در ۳ صفحه» (آخرین ردیف، پشت «همه ردیف‌ها»)' );
 
-	const rows = boxes.first().locator( '.hodima-advisor__lk-table tbody tr' );
-	const n = await rows.count();
-	log( n >= 7, 'ردیف‌های جدول (اشتباه، خراب، بدون لینک)', `${ n } ردیف` );
-	const edits = await boxes.first().locator( '.hodima-advisor__lk-table a.hodima-advisor__act' ).evaluateAll( ( as ) => as.filter( ( a ) => /post\.php|term\.php|nav-menus\.php/.test( a.href ) ).length );
-	log( edits >= 6, 'هر ردیف دکمه ویرایش به صفحه ویرایش خودش دارد', `${ edits } دکمه` );
-	const text = await boxes.first().locator( '.hodima-advisor__lk-table' ).first().innerText();
+	const inv = await box.locator( '.is-inventory' ).innerText();
+	log( inv.includes( 'برنده' ) && inv.includes( 'رقیب' ) && /5/.test( inv ), 'جدول «لینک‌های ورودی هر صفحه» با جمع خزش ۵ برای رقیب' );
+	log( await box.locator( '.hodima-advisor__lk-rel' ).count() === 1, 'جمله رابطه (رقیب داخل دسته برنده است)' );
+
+	const links = box.locator( '.hodima-advisor__lk-table:not(.is-inventory):not(.is-opps) tbody tr' );
+	const n = await links.count();
+	log( n >= 9, 'ردیف‌های جدول لینک‌ها (۸ باز و بقیه پشت «همه ردیف‌ها»)', `${ n } ردیف` );
+	const edits = await box.locator( '.hodima-advisor__lk-table a.hodima-advisor__act' ).evaluateAll( ( as ) => as.filter( ( a ) => /post\.php|term\.php|nav-menus\.php/.test( a.href ) ).length );
+	log( edits >= 8, 'دکمه ویرایش به صفحه ویرایش هر ردیف می‌رود', `${ edits } دکمه` );
+	const text = await box.locator( '.hodima-advisor__lk-table:not(.is-inventory):not(.is-opps)' ).first().innerText();
 	log( text.includes( '/207/' ) && text.includes( '/lk-cat/' ) && ! text.includes( '/20700/' ), 'مقصد فعلی /207/ و مقصد درست /lk-cat/؛ /20700/ قاطی نمی‌شود' );
+	log( text.includes( 'لینک‌های مرتبط' ) && text.includes( 'منو' ) && text.includes( 'متن نوشته' ), 'ستون «جای ذخیره»: متن نوشته، لینک‌های مرتبط، منو' );
+	const opps = await box.locator( '.is-opps' ).innerText();
+	log( opps.includes( 'گیره انبری فلزی' ) && opps.includes( 'لینک کنید' ), 'فرصت لینک: تکه‌ای از متن و پیشنهاد' );
 
 	await boxes.first().locator( '[data-force]' ).click();
 	await pg.waitForFunction( () => ! document.querySelector( '[data-hdsa-links-out]' )?.hasAttribute( 'aria-busy' ) );

@@ -2100,64 +2100,56 @@ false === $vf_saved ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_
 hodima_seo_advisor_clear_data();
 
 echo "=== لینک‌های داخلی یک گروه رقابت (advisor-links.php)\n";
-$lk_cat = wp_insert_term( 'گیره انبری فلزی', 'category', [ 'slug' => 'lk-cat' ] );
-$lk_cat_id = is_wp_error( $lk_cat ) ? 0 : (int) $lk_cat['term_id'];
-$lk_mk = static fn( string $slug, string $title, string $content ): int => (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => $title, 'post_name' => $slug, 'post_content' => $content ] );
-// آدرس عددی مثل /207/ در سایت واقعی هست (درون‌ریزی محصول)؛ ثبت عادی وردپرس/روتر نامک عددی را «-2» می‌کند، پس نامک مستقیم در پایگاه داده گذاشته می‌شود
-$lk_numeric = static function ( string $slug, string $title ): int {
-	global $wpdb;
-	$id = (int) wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => $title, 'post_name' => 'tmp-' . $slug, 'post_content' => '<p>متن</p>' ] );
-	$wpdb->update( $wpdb->posts, [ 'post_name' => $slug ], [ 'ID' => $id ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	clean_post_cache( $id );
-	return $id;
-};
-$lk_rival = $lk_numeric( '207', 'گیره مو انبری فلزی' );
-$lk_decoy = $lk_numeric( '20700', 'صفحه نامربوط' );
-$lk_a = $lk_mk( 'lk-src-a', 'راهنمای خرید گیره', '<p><a href="' . home_url( '/207/' ) . '">گیره انبری فلزی</a> و <a href="/lk-cat/">گیره انبری فلزی</a> و <a href="/20700/">گیره انبری فلزی</a> و <a href="https://other.example/207/">گیره انبری فلزی</a> و <a href="mailto:a@b.c">گیره انبری فلزی</a></p>' );
-$lk_b = $lk_mk( 'lk-src-b', 'مقاله انواع گیره', '<p><a href="/207">گیره‌های انبری فلزی</a> و <a href="/category/lk-cat/">گیره انبری فلزی</a></p>' );
-$lk_c = $lk_mk( 'lk-src-c', 'مقاله قدیمی', '<p><a href="/gone-clip-old/">گیره انبری فلزی</a></p>' );
-$lk_d = $lk_mk( 'lk-src-d', 'متن بدون لینک', '<p>بهترین گیره انبری فلزی را ببینید</p>' );
-$lk_desc = wp_insert_term( 'دسته لینک', 'category', [ 'slug' => 'lk-desc-cat', 'description' => '<a href="/207/">گیره انبری فلزی</a>' ] );
-$lk_menu = (int) wp_create_nav_menu( 'lk-menu' );
-$lk_item1 = (int) wp_update_nav_menu_item( $lk_menu, 0, [ 'menu-item-title' => 'گیره انبری فلزی', 'menu-item-url' => home_url( '/207/' ), 'menu-item-type' => 'custom', 'menu-item-status' => 'publish' ] );
-$lk_item2 = (int) wp_update_nav_menu_item( $lk_menu, 0, [ 'menu-item-title' => 'گیره انبری فلزی', 'menu-item-type' => 'post_type', 'menu-item-object' => 'post', 'menu-item-object-id' => $lk_rival, 'menu-item-status' => 'publish' ] );
-hodima_seo_advisor_store(
-	[
-		'/lk-cat/' => [ 'clicks' => 80, 'impressions' => 4000, 'position' => 5.0 ],
-		'/207/'    => [ 'clicks' => 5, 'impressions' => 1000, 'position' => 7.6 ],
-		'/c/m/'    => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ],
-		'/c/n/'    => [ 'clicks' => 28, 'impressions' => 2000, 'position' => 7.5 ],
-		'/c/p/'    => [ 'clicks' => 20, 'impressions' => 1500, 'position' => 8.0 ],
-	],
-	[],
-	[
-		'/lk-cat/' => [ 'گیره انبری فلزی' => [ 'clicks' => 80, 'impressions' => 4000, 'position' => 5.0 ] ],
-		'/207/'    => [ 'گیره انبری فلزی' => [ 'clicks' => 5, 'impressions' => 1000, 'position' => 7.6 ] ],
-		'/c/m/'    => [ 'گیره هم‌وزن' => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ] ],
-		'/c/n/'    => [ 'گیره هم‌وزن' => [ 'clicks' => 28, 'impressions' => 2000, 'position' => 7.5 ] ],
-		'/c/p/'    => [ 'گیره هم‌وزن' => [ 'clicks' => 20, 'impressions' => 1500, 'position' => 8.0 ] ],
-	]
-);
-delete_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION );
+require_once __DIR__ . '/advisor-links-fixture.php';
+$lk_ids  = hodima_lk_fixture();
 $lk_scan = hodima_seo_advisor_links_scan( 'گیره انبری فلزی', true );
 hodima_ad( 'بررسی لینک‌ها خطا نمی‌دهد و هدف دسته برنده و رقیب /207/ است', [ ! is_wp_error( $lk_scan ), $lk_scan['target']['path'] ?? '', array_column( (array) ( $lk_scan['rivals'] ?? [] ), 'path' ) ], [ true, '/lk-cat/', [ '/207/' ] ] );
 $lk_counts = (array) ( $lk_scan['counts'] ?? [] );
-hodima_ad( 'لینک اشتباه ۵ (نوشته، آدرس بدون اسلش، توضیح دسته، دو آیتم منو)، خراب ۱، درست ۲ (شامل پایه قدیمی)', [ $lk_counts['wrong'] ?? -1, $lk_counts['broken'] ?? -1, $lk_counts['good'] ?? -1 ], [ 5, 1, 2 ] );
-hodima_ad( 'جای بدون لینک: نوشته‌ای که فقط کلمه را دارد می‌آید', ( $lk_counts['missing'] ?? 0 ) >= 1, true );
+hodima_ad( 'لینک به رقیب ۸ (۲ متن، توضیح دسته، ۲ منو، لینک مرتبط فقط‌شناسه‌ای، متن خزش بدون ردیف دیتابیس، ساختاری فوتر)، خراب ۱، درست ۲؛ لینک خزش تکراری متن نوشته دوبار نمی‌آید', [ $lk_counts['wrong'] ?? -1, $lk_counts['broken'] ?? -1, $lk_counts['good'] ?? -1 ], [ 8, 1, 2 ] );
 $lk_rows = (array) ( $lk_scan['rows'] ?? [] );
-$lk_order = array_column( $lk_rows, 'issue' );
+$lk_stores = array_column( $lk_rows, 'store' );
+sort( $lk_stores );
+hodima_ad( 'جای ذخیره هر ردیف: متن نوشته، توضیح دسته، لینک‌های مرتبط، منو، متن و ساختاری خزش', array_count_values( $lk_stores ), [ 'توضیح دسته' => 1, 'قالب (ساختاری)' => 1, 'لینک‌های مرتبط' => 1, 'متن (طبق خزش)' => 1, 'متن نوشته' => 3, 'منو' => 2 ] );
+$lk_order = array_map( static fn( array $r ): int => $r['structural'] ? 2 : ( 'wrong' === $r['issue'] ? 0 : 1 ), $lk_rows );
 $lk_sorted = $lk_order;
-usort( $lk_sorted, static fn( string $a, string $b ): int => [ 'wrong' => 0, 'broken' => 1, 'missing' => 2 ][ $a ] <=> [ 'wrong' => 0, 'broken' => 1, 'missing' => 2 ][ $b ] );
-hodima_ad( 'ردیف‌ها به ترتیب اشتباه، خراب، بدون لینک', $lk_order, $lk_sorted );
-$lk_wrong_paths = array_unique( array_map( static fn( array $r ): string => (string) $r['now']['path'], array_filter( $lk_rows, static fn( array $r ): bool => 'wrong' === $r['issue'] ) ) );
-hodima_ad( 'مقایسه با شیء: /20700/ و دامنه دیگر قاطی نمی‌شود؛ /207 بدون اسلش به همان رقیب می‌رسد', [ in_array( '/20700/', array_column( array_column( $lk_rows, 'now' ), 'path' ), true ), array_values( $lk_wrong_paths ) ], [ false, [ '/207/' ] ] );
+sort( $lk_sorted );
+hodima_ad( 'ردیف‌ها به ترتیب: لینک قابل‌ویرایش اشتباه، خراب، ساختاری', $lk_order, $lk_sorted );
+$lk_by = static fn( string $store ): array => array_values( array_filter( $lk_rows, static fn( array $r ): bool => $store === $r['store'] ) )[0] ?? [];
+hodima_ad( 'لینک مرتبط: متن لینک عنوان دلخواه، مقصد /207/، آدرس نوشته‌شده همان آدرس اصلی', [ $lk_by( 'لینک‌های مرتبط' )['anchor'] ?? '', $lk_by( 'لینک‌های مرتبط' )['now']['path'] ?? '', $lk_by( 'لینک‌های مرتبط' )['source']['title'] ?? '' ], [ 'گیره انبری فلزی', '/207/', 'محصول با لینک مرتبط' ] );
+$lk_struct = $lk_by( 'قالب (ساختاری)' );
+hodima_ad( 'لینک ساختاری فوتر: یک ردیف برای ۳ صفحه، بدون دکمه ویرایش', [ $lk_struct['times'] ?? 0, $lk_struct['structural'] ?? null, $lk_struct['source']['edit'] ?? 'x' ], [ 3, true, '' ] );
+hodima_ad( 'متن خزش بدون ردیف دیتابیس: میزبان /c-x/ با آدرس نوشته‌شده و یادداشت', [ $lk_by( 'متن (طبق خزش)' )['href'] ?? '', str_contains( (string) ( $lk_by( 'متن (طبق خزش)' )['now']['note'] ?? '' ), 'خزش دیده' ) ], [ '/207/', true ] );
+hodima_ad( '/207 بدون اسلش به رقیب می‌رسد؛ /20700/ و دامنه دیگر قاطی نمی‌شود', [ in_array( '/20700/', array_column( array_column( $lk_rows, 'now' ), 'path' ), true ), array_values( array_unique( array_map( static fn( array $r ): string => (string) $r['now']['path'], array_filter( $lk_rows, static fn( array $r ): bool => 'wrong' === $r['issue'] ) ) ) ) ], [ false, [ '/207/' ] ] );
+$lk_note = array_values( array_filter( $lk_rows, static fn( array $r ): bool => '/207' === $r['href'] ) )[0]['now']['note'] ?? '';
+hodima_ad( 'آدرس نوشته‌شده /207 با آدرس اصلی فرق دارد ← یادداشت «ریدایرکت می‌شود»', str_contains( $lk_note, 'ریدایرکت' ), true );
+hodima_ad( 'لینک‌های ورودی: رقیب ۳ متن (دو نوشته و توضیح دسته)، ۱ لینک مرتبط، ۱ منو (آیتم صفحه)؛ برنده ۲ متن', [ array_map( static fn( array $p ): array => [ $p['text'], $p['related'], $p['menu'] ], (array) ( $lk_scan['inventory'] ?? [] ) ) ], [ [ [ 2, 0, 0 ], [ 3, 1, 2 ] ] ] );
+hodima_ad( 'لینک‌های ورودی طبق خزش: رقیب ۵ صفحه (۲ متن، ۳ ساختاری)', [ $lk_scan['has_crawl'] ?? false, $lk_scan['inventory'][1]['crawl'] ?? null ], [ true, [ 'total' => 5, 'content' => 2, 'other' => 3 ] ] );
+hodima_ad( 'رابطه: رقیب داخل دسته برنده است (in_target)', array_column( (array) ( $lk_scan['relations'] ?? [] ), 'type' ), [ 'in_target' ] );
+hodima_ad( 'فرصت لینک: نوشته‌ای که فقط کلمه را دارد، با تکه‌ای از متن و پیشنهاد', [ ( $lk_counts['missing'] ?? 0 ) >= 1, (array) ( $lk_scan['opps'][0]['snippet'] ?? [] ) ], [ true, [ 'یک ', 'گیره انبری فلزی', ' مشکی را ببینید و بخرید' ] ] );
 $lk_titles = array_column( array_column( $lk_rows, 'source' ), 'title' );
 hodima_ad( 'منبع‌ها: عنوان نوشته، توضیح دسته و منو در ردیف‌ها هست', [ in_array( 'راهنمای خرید گیره', $lk_titles, true ), in_array( 'دسته لینک', $lk_titles, true ), (bool) array_filter( $lk_titles, static fn( string $t ): bool => str_starts_with( $t, 'lk-menu' ) ) ], [ true, true, true ] );
+
+// رابطه والد/فرزند/هم‌ردیف دسته‌ها
+$lk_p = wp_insert_term( 'گیره مو', 'category', [ 'slug' => 'lk-par' ] );
+$lk_c1 = wp_insert_term( 'گیره انبری', 'category', [ 'slug' => 'lk-ch1', 'parent' => (int) $lk_p['term_id'] ] );
+$lk_c2 = wp_insert_term( 'گیره ماری', 'category', [ 'slug' => 'lk-ch2', 'parent' => (int) $lk_p['term_id'] ] );
+$lk_info = static fn( array $t, string $title ): array => [ 'kind' => 'category', 'id' => (int) $t['term_id'], 'title' => $title ];
+$lk_rel = static fn( array $a, array $b ): string => hodima_seo_advisor_links_relation( $a, $b, 'گیره مو انبری' )['type'] ?? '-';
+hodima_ad( 'رابطه دسته‌ها: رقیب والد برنده، رقیب زیردسته برنده، دو زیردسته یک والد، بی‌ارتباط', [ $lk_rel( $lk_info( $lk_c1, 'گیره انبری' ), $lk_info( $lk_p, 'گیره مو' ) ), $lk_rel( $lk_info( $lk_p, 'گیره مو' ), $lk_info( $lk_c1, 'گیره انبری' ) ), $lk_rel( $lk_info( $lk_c1, 'گیره انبری' ), $lk_info( $lk_c2, 'گیره ماری' ) ), $lk_rel( $lk_info( $lk_p, 'گیره مو' ), [ 'kind' => 'category', 'id' => $lk_ids['cat'], 'title' => 'x' ] ) ], [ 'parent', 'child', 'sibling', '-' ] );
+foreach ( [ $lk_c1, $lk_c2, $lk_p ] as $lk_t ) {
+	wp_delete_term( (int) $lk_t['term_id'], 'category' );
+}
+
+// تکه متن
+hodima_ad( 'تکه متن: عبارت کامل با نیم‌فاصله و ی/ک عربی، و بلندترین واژه وقتی عبارت کامل نیست', [ hodima_seo_advisor_links_snippet( '<p>این گیره‌ انبری فلزی خوب است</p>', 'گیره انبری فلزی' )[1] ?? null, hodima_seo_advisor_links_snippet( '<p>بهترین كليپس انبري</p>', 'کلیپس انبری' )[1] ?? null, hodima_seo_advisor_links_snippet( '<p>فقط انبری</p>', 'گیره مو انبری' )[1] ?? null, hodima_seo_advisor_links_snippet( '<p>هیچ</p>', 'گیره' ) ], [ 'گیره‌ انبری فلزی', 'كليپس انبري', 'انبری', null ] );
+
 $lk_choose = hodima_seo_advisor_links_scan( 'گیره هم‌وزن', true );
 hodima_ad( 'گروه هم‌وزن جهت ندارد (خطا با توضیح)', [ is_wp_error( $lk_choose ), is_wp_error( $lk_choose ) ? $lk_choose->get_error_code() : '' ], [ true, 'hodima_advisor_links_choose' ] );
 hodima_ad( 'کلمه بدون رقابت خطا می‌دهد', is_wp_error( hodima_seo_advisor_links_scan( 'کلمه ناموجود', true ) ), true );
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-links-view.php';
 $lk_html = hodima_seo_advisor_render_links_result( $lk_scan );
-hodima_ad( 'نمای نتیجه: نشان‌ها، جدول ۵ ستونه، متن لینک، ریدایرکت‌نشده و دکمه ویرایش؛ ردیف‌های بیشتر از ۸ پشت «همه ردیف‌ها»', [ str_contains( $lk_html, 'hds-pill--error' ), str_contains( $lk_html, 'hodima-advisor__lk-table' ), str_contains( $lk_html, 'گیره انبری فلزی' ), str_contains( $lk_html, 'باید کجا برود' ), str_contains( $lk_html, 'hodima-advisor__act' ), substr_count( $lk_html, '<table' ) ], [ true, true, true, true, true, ( count( $lk_rows ) > HODIMA_SEO_ADVISOR_LINKS_VISIBLE ? 2 : 1 ) ] );
+hodima_ad( 'نمای نتیجه: رابطه، لینک‌های ورودی، جدول ۷ ستونه با جای ذخیره و آدرس نوشته‌شده، فرصت لینک با تکه متن، دکمه ویرایش', [ str_contains( $lk_html, 'hodima-advisor__lk-rel' ), str_contains( $lk_html, 'لینک‌های ورودی هر صفحه' ), str_contains( $lk_html, 'جای ذخیره' ), str_contains( $lk_html, 'آدرس نوشته‌شده' ), str_contains( $lk_html, 'فرصت لینک' ), str_contains( $lk_html, '<mark>گیره انبری فلزی</mark>' ), str_contains( $lk_html, 'hodima-advisor__act' ), str_contains( $lk_html, 'در این صفحه' ) || str_contains( $lk_html, 'در 3 صفحه' ) || str_contains( $lk_html, 'در ۳ صفحه' ) ], [ true, true, true, true, true, true, true, true ] );
+hodima_ad( 'نمای نتیجه: ۸ ردیف اول باز و بقیه (اگر بود) پشت «همه ردیف‌ها»؛ جدول لینک‌های ورودی + لینک‌ها + فرصت', substr_count( $lk_html, '<table' ) >= 3, true );
 $lk_box = $cap( static fn() => hodima_seo_advisor_render_links_box( 'گیره <b>', 'دسته' ) );
 hodima_ad( 'کادر: دکمه بررسی، کلمه escape‌شده در data-term', [ str_contains( $lk_box, 'data-hdsa-links-run' ), str_contains( $lk_box, 'data-term="گیره &lt;b&gt;"' ) ], [ true, true ] );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
@@ -2191,18 +2183,9 @@ hodima_ad( 'admin-ajax: بدون دسترسی مدیر رد می‌شود', $lk_
 wp_set_current_user( 1 );
 remove_all_filters( 'wp_doing_ajax' );
 remove_all_filters( 'wp_die_ajax_handler' );
-$_POST = [];
+$_POST    = [];
 $_REQUEST = [];
-foreach ( [ $lk_rival, $lk_decoy, $lk_a, $lk_b, $lk_c, $lk_d ] as $lk_id ) {
-	wp_delete_post( $lk_id, true );
-}
-foreach ( [ $lk_item1, $lk_item2 ] as $lk_id ) {
-	wp_delete_post( $lk_id, true );
-}
-wp_delete_nav_menu( $lk_menu );
-$lk_cat_id && wp_delete_term( $lk_cat_id, 'category' );
-! is_wp_error( $lk_desc ) && wp_delete_term( (int) $lk_desc['term_id'], 'category' );
-hodima_seo_advisor_store( [], [], [] );
+hodima_lk_fixture_clean( $lk_ids );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
