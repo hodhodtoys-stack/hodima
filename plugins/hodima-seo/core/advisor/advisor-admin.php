@@ -897,11 +897,11 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 				<ul class="hodima-advisor__issues">
 					<?php foreach ( $advice as $item ) : ?>
 						<?php $task = function_exists( 'hodima_seo_advisor_task' ) ? hodima_seo_advisor_task( (string) $row['path'], (string) $item['rule'], (string) $item['term'] ) : null; ?>
-						<li data-rule="<?php echo esc_attr( (string) $item['rule'] ); ?>"<?php echo null !== $task ? ' data-task="' . esc_attr( $task['status'] ) . '"' : ''; ?>>
+						<li data-rule="<?php echo esc_attr( (string) $item['rule'] ); ?>"<?php echo null !== $task ? ' data-task="' . esc_attr( hodima_seo_advisor_task_state( $task ) ) . '"' : ''; ?>>
 							<span class="hodima-advisor__issue-text"><?php echo esc_html( (string) $item['title'] ); ?></span>
 							<?php if ( null !== $task ) : ?>
-								<?php [ $badge_class, $badge_text ] = hodima_seo_advisor_task_badge( $task, (string) $item['rule'] ); ?>
-								<span class="<?php echo esc_attr( $badge_class ); ?>"><?php echo esc_html( $badge_text ); ?></span>
+								<?php $badge = hodima_seo_advisor_task_view( $task ); ?>
+								<span class="<?php echo esc_attr( $badge['class'] ); ?>"><?php echo esc_html( $badge['label'] ); ?></span>
 							<?php endif; ?>
 						</li>
 					<?php endforeach; ?>

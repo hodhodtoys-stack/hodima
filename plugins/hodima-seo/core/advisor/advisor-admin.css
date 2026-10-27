@@ -291,8 +291,8 @@
 	justify-self: start;
 }
 
-/* وضعیت «کارهای من» کنار ایراد: انجام‌شده و ردشده کم‌رنگ تا کارهای باز به چشم بیایند */
-.hodima-advisor .hodima-advisor__issues li[data-task="done"] .hodima-advisor__issue-text,
+/* وضعیت «کارهای من» کنار ایراد: منتظر گوگل و ردشده کم‌رنگ تا کارهای باز به چشم بیایند */
+.hodima-advisor .hodima-advisor__issues li[data-task="waiting"] .hodima-advisor__issue-text,
 .hodima-advisor .hodima-advisor__issues li[data-task="rejected"] .hodima-advisor__issue-text {
 	color: var(--hd-muted);
 }

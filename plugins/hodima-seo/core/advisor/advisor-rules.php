@@ -699,7 +699,24 @@ function hodima_seo_advisor_save_advice( string $path ): bool {
 		[ '%s' ]
 	);
 
+	hodima_seo_advisor_sync_fields( $path, $fields );
+
 	return $fields['advice_count'] > 0;
+}
+
+/**
+ * چرخه عمر «کارهای من» بعد از نوشتن پیشنهادهای یک آدرس (advisor-tasks.php؛ فقط اگر آدرس هنوز در جدول است).
+ *
+ * @param array{advice: string} $fields خروجی hodima_seo_advisor_advice_fields()
+ */
+function hodima_seo_advisor_sync_fields( string $path, array $fields ): void {
+
+	if ( ! function_exists( 'hodima_seo_advisor_tasks_sync' ) || null === hodima_seo_advisor_page( $path ) ) {
+		return;
+	}
+
+	$items = '' !== $fields['advice'] ? json_decode( $fields['advice'], true ) : [];
+	hodima_seo_advisor_tasks_sync( $path, is_array( $items ) ? array_values( array_filter( $items, 'is_array' ) ) : [] );
 }
 
 /**
@@ -776,10 +793,12 @@ function hodima_seo_advisor_analyze_batch( float $deadline ): bool|WP_Error {
 	$done = 0;
 
 	while ( $queue && microtime( true ) < $deadline ) {
-		$path = (string) array_shift( $queue );
-		if ( false === $wpdb->update( $table, hodima_seo_advisor_advice_fields( $path ), [ 'path' => $path ], [ '%d', '%d', '%s' ], [ '%s' ] ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$path   = (string) array_shift( $queue );
+		$fields = hodima_seo_advisor_advice_fields( $path );
+		if ( false === $wpdb->update( $table, $fields, [ 'path' => $path ], [ '%d', '%d', '%s' ], [ '%s' ] ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			return $fail();
 		}
+		hodima_seo_advisor_sync_fields( $path, $fields ); // آدرس‌های «کهنه» بالا عمدا نه: زیر آستانه رفتن برطرف شدن نیست
 		++$done;
 		if ( 0 === $done % 20 ) {
 			update_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, [ 'queue' => $queue ], false ); // قطع ناگهانی: از همین‌جا ادامه می‌یابد

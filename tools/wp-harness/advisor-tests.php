@@ -524,8 +524,9 @@ if ( hodima_router_active() ) {
 	hodima_ad( 'ایراد آماری «انجام شد»: «منتظر داده گوگل» (سبز)', str_contains( $b6_row(), '<span class="hds-pill">انجام شد · منتظر داده گوگل' ), true );
 	hodima_ad( 'یک ایراد هنوز باز: آدرس پنهان نمی‌شود', hodima_seo_advisor_handled_paths(), [] );
 	$b6_mark( $b6_text, 'done' );
-	hodima_ad( 'ایراد متنی «انجام شد» ولی هنوز ساخته می‌شود: «هنوز در صفحه دیده نمی‌شود»', str_contains( $b6_row(), 'انجام شد؛ هنوز در صفحه دیده نمی‌شود' ), true );
-	hodima_ad( 'همه ایرادها علامت‌خورده: آدرس با نوعش در «تمام‌علامت‌خورده»', hodima_seo_advisor_handled_paths(), [ '/advisor-box-test/' => 'page' ] );
+	hodima_ad( 'ایراد متنی «انجام شد» ولی هنوز ساخته می‌شود: «هنوز در صفحه دیده نمی‌شود» و کار باز می‌ماند (آدرس پنهان نمی‌شود)', [ str_contains( $b6_row(), 'انجام شد؛ هنوز در صفحه دیده نمی‌شود' ), hodima_seo_advisor_handled_paths() ], [ true, [] ] );
+	$b6_mark( $b6_text, 'rejected' );
+	hodima_ad( 'آماری «منتظر گوگل» + متنی «رد شد»: آدرس با نوعش در «تمام‌علامت‌خورده»', hodima_seo_advisor_handled_paths(), [ '/advisor-box-test/' => 'page' ] );
 	$b6_def = hodima_seo_advisor_list_filters( [] );
 	hodima_ad( 'فهرست پیش‌فرض: آدرس کنار می‌رود؛ tasks=all برمی‌گرداند', [ array_column( hodima_seo_advisor_pages( $b6_def['args'] )['rows'], 'path' ), array_column( hodima_seo_advisor_pages( hodima_seo_advisor_list_filters( [ 'tasks' => 'all' ] )['args'] )['rows'], 'path' ) ], [ [], [ '/advisor-box-test/' ] ] );
 	hodima_ad( 'نمای «نادیده‌گرفته‌شده‌ها» کنار گذاشتن ندارد', isset( hodima_seo_advisor_list_filters( [ 'view' => 'ignored' ] )['args']['exclude'] ), false );
@@ -539,6 +540,28 @@ if ( hodima_router_active() ) {
 	$b6_mark( $b6_text, '' );
 	hodima_ad( 'ایراد بدون علامت (مثل پیشنهاد تازه): آدرس خودبه‌خود به فهرست برمی‌گردد', [ hodima_seo_advisor_handled_paths(), array_column( hodima_seo_advisor_pages( hodima_seo_advisor_list_filters( [] )['args'] )['rows'], 'path' ) ], [ [], [ '/advisor-box-test/' ] ] );
 	hodima_ad( 'pages( exclude ): آدرس مشخص کنار می‌رود', hodima_seo_advisor_pages( [ 'exclude' => [ '/advisor-box-test/' ] ] )['total'], 0 );
+
+	echo "=== چرخه عمر کار: برطرف شد ← برگشت (advisor-tasks.php)\n";
+	$b6_task = static fn( ?array $item ): ?array => null === $item ? null : hodima_seo_advisor_task( '/advisor-box-test/', (string) $item['rule'], (string) $item['term'] );
+	$b6_mark( $b6_text, 'done' );
+	$b6_old = (string) get_post_field( 'post_content', $box_id );
+	wp_update_post( [ 'ID' => $box_id, 'post_content' => '<h2>پلومریا کلیپس</h2>' . $b6_old ] );
+	hodima_ad( 'کلمه به صفحه اضافه و ذخیره شد: کار متنی همان لحظه «برطرف شد»، کار آماری هنوز «منتظر گوگل»', [ hodima_seo_advisor_task_state( (array) $b6_task( $b6_text ) ), (array) $b6_task( $b6_text ) !== [] && $b6_task( $b6_text )['fixed'] > 0, hodima_seo_advisor_task_state( (array) $b6_task( $b6_low ) ) ], [ 'fixed', true, 'waiting' ] );
+	hodima_ad( '«برطرف شد» در گروه خودش و آدرس (آماری منتظر + متنی برطرف) پنهان', [ hodima_seo_advisor_task_counts()['fixed'], array_keys( hodima_seo_advisor_handled_paths() ) ], [ 1, [ '/advisor-box-test/' ] ] );
+	wp_update_post( [ 'ID' => $box_id, 'post_content' => $b6_old ] );
+	hodima_ad( 'کلمه دوباره برداشته شد: «برگشت؛ دوباره پیدا شد» (باز) و آدرس به فهرست برمی‌گردد', [ hodima_seo_advisor_task_state( (array) $b6_task( $b6_text ) ), str_contains( $b6_row(), 'برگشت؛ دوباره پیدا شد' ), hodima_seo_advisor_handled_paths() ], [ 'back', true, [] ] );
+	wp_update_post( [ 'ID' => $box_id, 'post_content' => '<h2>پلومریا کلیپس</h2>' . $b6_old ] );
+	hodima_ad( 'دوباره اصلاح شد: باز «برطرف شد»', hodima_seo_advisor_task_state( (array) $b6_task( $b6_text ) ), 'fixed' );
+	$b6_mark( $b6_text, 'doing' );
+	hodima_ad( 'وضعیت تازه مدیر «برطرف شد» را پاک می‌کند (تا تحلیل بعدی)', [ $b6_task( $b6_text )['fixed'], hodima_seo_advisor_task_state( (array) $b6_task( $b6_text ) ) ], [ 0, 'doing' ] );
+	hodima_seo_advisor_set_ignored( '/advisor-box-test/', true );
+	hodima_ad( 'آدرس نادیده‌گرفته‌شده: پیشنهاد ندارد ولی کار «برطرف شد» نمی‌گیرد', hodima_seo_advisor_task_state( (array) $b6_task( $b6_low ) ), 'waiting' );
+	hodima_seo_advisor_set_ignored( '/advisor-box-test/', false );
+	hodima_ad( 'تحلیل با داده تازه بی‌کلمه: همگام‌سازی مستقیم «برطرف شد» برای آماری', [ hodima_seo_advisor_tasks_sync( '/advisor-box-test/', [] ) >= 1, hodima_seo_advisor_task_state( (array) $b6_task( $b6_low ) ) ], [ true, 'fixed' ] );
+	$b6_mark( $b6_text, 'rejected' );
+	hodima_seo_advisor_tasks_sync( '/advisor-box-test/', [] );
+	hodima_ad( 'کار «رد شد» با همگام‌سازی «برطرف شد» نمی‌گیرد', [ hodima_seo_advisor_task_state( (array) $b6_task( $b6_text ) ), $b6_task( $b6_text )['fixed'] ], [ 'rejected', 0 ] );
+	wp_update_post( [ 'ID' => $box_id, 'post_content' => $b6_old ] );
 	false === $b6_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $b6_tasks, false );
 } else {
 	hodima_ad( 'بدون روتر نوع شیء معلوم نیست: ذخیره ردیفی را پیدا نمی‌کند', hodima_seo_advisor_resave_object( 'page', $box_id ), 0 );
@@ -1139,7 +1162,7 @@ hodima_ad( 'ثبت دوباره همان وضعیت: تاریخ و عنوان ق
 hodima_ad( 'وضعیت نامعتبر، قاعده نامعتبر و آدرس خالی رد می‌شوند', [ hodima_seo_advisor_task_set( '/k/a/', 'low_ctr', '', 't', 'bad' ), hodima_seo_advisor_task_set( '/k/a/', 'BAD RULE', '', 't', 'done' ), hodima_seo_advisor_task_set( '', 'low_ctr', '', 't', 'done' ) ], [ false, false, false ] );
 hodima_seo_advisor_task_set( '/k/b/', 'low_ctr', '', 'عنوان و متا', 'done' );
 hodima_seo_advisor_task_set( '/k/c/', 'decline', '', 'افت', 'rejected' );
-hodima_ad( 'شمار وضعیت‌ها', hodima_seo_advisor_task_counts(), [ 'doing' => 1, 'done' => 1, 'rejected' => 1 ] );
+hodima_ad( 'شمار گروه‌های چرخه عمر: در حال انجام ← نیاز به کار، انجام شد (آماری) ← منتظر گوگل', hodima_seo_advisor_task_counts(), [ 'open' => 1, 'waiting' => 1, 'fixed' => 0, 'rejected' => 1 ] );
 hodima_seo_advisor_task_set( '/k/c/', 'decline', '', '', '' );
 hodima_ad( 'وضعیت خالی = برداشتن از فهرست', [ hodima_seo_advisor_task( '/k/c/', 'decline', '' ), count( hodima_seo_advisor_tasks() ) ], [ null, 2 ] );
 
@@ -1182,10 +1205,11 @@ ob_start();
 hodima_seo_advisor_render_admin();
 $tasks_html = (string) ob_get_clean();
 hodima_ad( 'تب کارهای من: ۴ کارت آمار، ۲ کار، فرم با nonce و دکمه‌های وضعیت، جمله اثر', [ substr_count( $tasks_html, 'class="hds-stat"' ), substr_count( $tasks_html, 'class="hodima-advisor__task"' ), str_contains( $tasks_html, 'name="action" value="hodima_advisor_task"' ), str_contains( $tasks_html, 'name="status" value="rejected"' ), str_contains( $tasks_html, 'تاریخچه هفتگی کافی' ) || str_contains( $tasks_html, 'هنوز زود است' ) ], [ 4, 2, true, true, true ] );
-$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'doing' ];
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'open' ];
 ob_start();
 hodima_seo_advisor_render_admin();
-hodima_ad( 'فیلتر «در حال انجام»: فقط یک کار', substr_count( (string) ob_get_clean(), 'class="hodima-advisor__task"' ), 1 );
+hodima_ad( 'نمای «نیاز به کار»: فقط کار در حال انجام', substr_count( (string) ob_get_clean(), 'class="hodima-advisor__task"' ), 1 );
+hodima_ad( 'ترتیب تب: «نیاز به کار» پیش از «منتظر گوگل»', strpos( $tasks_html, 'کلمه نزدیک صفحه اول' ) < strpos( $tasks_html, 'عنوان و متا را بازنویسی کنید</strong>' ), true );
 
 // فیلتر حداقل کلیک بالقوه
 $_GET = [];

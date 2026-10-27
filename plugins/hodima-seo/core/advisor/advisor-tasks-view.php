@@ -40,11 +40,12 @@ function hodima_seo_advisor_render_task_controls( string $path, array $item ): v
 	echo '<div class="hodima-advisor-box__task">';
 
 	if ( null !== $task ) {
+		$view = hodima_seo_advisor_task_view( $task );
 		printf(
 			'<span class="hodima-advisor-box__pill%1$s">%2$s · %3$s</span>',
-			'done' === $task['status'] ? ' hodima-advisor-box__pill--ok' : ( 'rejected' === $task['status'] ? '' : ' hodima-advisor-box__pill--warn' ),
-			esc_html( hodima_seo_advisor_task_statuses()[ $task['status'] ] ),
-			esc_html( hodima_seo_advisor_task_date( $task['at'] ) )
+			match ( $view['state'] ) { 'waiting', 'fixed' => ' hodima-advisor-box__pill--ok', 'rejected' => '', default => ' hodima-advisor-box__pill--warn' },
+			esc_html( $view['label'] ),
+			esc_html( hodima_seo_advisor_task_date( $view['time'] ) )
 		);
 	}
 
@@ -103,7 +104,7 @@ function hodima_seo_advisor_render_tasks(): void {
 	$all    = hodima_seo_advisor_tasks();
 	$n      = static fn( int|float $value ): string => number_format_i18n( $value );
 	$filter = isset( $_GET['tstatus'] ) ? sanitize_key( (string) $_GET['tstatus'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش
-	$filter = isset( hodima_seo_advisor_task_statuses()[ $filter ] ) ? $filter : '';
+	$filter = isset( hodima_seo_advisor_task_groups()[ $filter ] ) ? $filter : '';
 	$empty  = ! $all;
 
 	$positive = 0;
@@ -117,14 +118,15 @@ function hodima_seo_advisor_render_tasks(): void {
 		}
 	}
 
+	// چرخه عمر (SEO 2.9.1): نیاز به کار ← منتظر داده گوگل ← برطرف شد (رد شده‌ها در نماها)
 	hodima_seo_ui_stats( [
-		[ 'label' => 'در حال انجام', 'value' => $empty ? '—' : esc_html( $n( $counts['doing'] ) ), 'empty' => $empty ],
-		[ 'label' => 'انجام شد', 'value' => $empty ? '—' : esc_html( $n( $counts['done'] ) ), 'empty' => $empty ],
-		[ 'label' => 'رد شد', 'value' => $empty ? '—' : esc_html( $n( $counts['rejected'] ) ), 'empty' => $empty ],
+		[ 'label' => 'نیاز به کار', 'value' => $empty ? '—' : esc_html( $n( $counts['open'] ) ), 'sub' => $empty ? '' : 'در حال انجام، هنوز دیده می‌شود یا برگشته', 'empty' => $empty ],
+		[ 'label' => 'منتظر داده گوگل', 'value' => $empty ? '—' : esc_html( $n( $counts['waiting'] ) ), 'empty' => $empty ],
+		[ 'label' => 'برطرف شد', 'value' => $empty ? '—' : esc_html( $n( $counts['fixed'] ) ), 'sub' => $empty ? '' : 'تحلیل دیگر این ایرادها را پیدا نمی‌کند', 'empty' => $empty ],
 		[ 'label' => 'با اثر مثبت', 'value' => $empty ? '—' : esc_html( $n( $positive ) ), 'sub' => $empty ? '' : 'کلیک هفتگی بهتر از روند سایت', 'empty' => $empty ],
 	] );
 
-	hodima_seo_ui_card_open( 'کارهای من', 'هر پیشنهاد را که اجرا کردید («انجام شد»)، در حال انجام است یا قبول ندارید («رد شد»)، از کادر «دستار سئو» داخل ویرایش صفحه علامت بزنید. اثر کارهای «انجام شد» اینجا با کلیک هفتگی اندازه می‌شود. این فهرست فقط یادداشت شماست و چیزی را در سایت عوض نمی‌کند.' );
+	hodima_seo_ui_card_open( 'کارهای من', 'هر پیشنهاد را که اجرا کردید («انجام شد»)، در حال انجام است یا قبول ندارید («رد شد»)، از کادر «دستار سئو» داخل ویرایش صفحه علامت بزنید. بعد از هر تحلیل، کاری که ایرادش دیگر پیدا نمی‌شود خودش «برطرف شد» می‌گیرد و اگر دوباره پیدا شود «برگشت». کارهای «نیاز به کار» اول می‌آیند. این فهرست چیزی را در سایت عوض نمی‌کند.' );
 
 	if ( $empty ) {
 		hodima_seo_ui_empty( 'هنوز کاری علامت نخورده', 'صفحه‌ای را از «فرصت‌های بهتر شدن» با «ویرایش و رفع ایرادها» باز کنید؛ زیر هر پیشنهاد دکمه‌های «در حال انجام»، «انجام شد» و «رد شد» هست.' );
@@ -134,21 +136,27 @@ function hodima_seo_advisor_render_tasks(): void {
 
 	echo '<nav class="hodima-advisor__views" aria-label="وضعیت کار">';
 	printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>همه <span class="hodima-advisor__count">%3$s</span></a>', esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ), '' === $filter ? ' aria-current="page"' : '', esc_html( $n( count( $all ) ) ) );
-	foreach ( hodima_seo_advisor_task_statuses() as $status => $label ) {
-		printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>%3$s <span class="hodima-advisor__count">%4$s</span></a>', esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'tasks', 'tstatus' => $status ] ) ), $status === $filter ? ' aria-current="page"' : '', esc_html( $label ), esc_html( $n( $counts[ $status ] ) ) );
+	foreach ( hodima_seo_advisor_task_groups() as $group => [ $label ] ) {
+		printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>%3$s <span class="hodima-advisor__count">%4$s</span></a>', esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'tasks', 'tstatus' => $group ] ) ), $group === $filter ? ' aria-current="page"' : '', esc_html( $label ), esc_html( $n( $counts[ $group ] ) ) );
 	}
 	echo '</nav>';
 
-	$rows = array_filter( $all, static fn( array $t ): bool => '' === $filter || $t['status'] === $filter );
-	uasort( $rows, static fn( array $a, array $b ): int => $b['at'] <=> $a['at'] );
+	// «نیاز به کار» اول، بعد منتظر گوگل، برطرف‌شده، ردشده؛ در هر گروه تازه‌ترین اول
+	$order = array_flip( array_keys( hodima_seo_advisor_task_groups() ) );
+	$rows  = array_filter( $all, static fn( array $t ): bool => '' === $filter || hodima_seo_advisor_task_group( $t ) === $filter );
+	uasort( $rows, static fn( array $a, array $b ): int => [ $order[ hodima_seo_advisor_task_group( $a ) ], hodima_seo_advisor_task_view( $b )['time'] ] <=> [ $order[ hodima_seo_advisor_task_group( $b ) ], hodima_seo_advisor_task_view( $a )['time'] ] );
 
 	echo '<ul class="hodima-advisor__tasks">';
 
 	foreach ( $rows as $task ) {
 		$page   = hodima_seo_advisor_page( $task['path'] );
 		$link   = null !== $page ? hodima_seo_advisor_competition_page_link( $page ) : [ home_url( $task['path'] ), 'دیدن در سایت' ];
-		$class  = [ 'done' => 'hds-pill', 'doing' => 'hds-pill hds-pill--warn', 'rejected' => 'hds-pill hds-pill--info' ][ $task['status'] ];
-		$status = hodima_seo_advisor_task_statuses()[ $task['status'] ];
+		$view   = hodima_seo_advisor_task_view( $task );
+		$hint   = match ( $view['state'] ) {
+			'unseen' => 'کلمه هنوز در عنوان، تیترها یا متن صفحه پیدا نمی‌شود؛ صفحه را بررسی و دوباره ذخیره کنید.',
+			'back'   => 'این ایراد بعد از برطرف شدن دوباره پیدا شد؛ صفحه را دوباره بررسی کنید.',
+			default  => '',
+		};
 		?>
 		<li class="hodima-advisor__task">
 			<div class="hodima-advisor__task-main">
@@ -160,10 +168,13 @@ function hodima_seo_advisor_render_tasks(): void {
 				</span>
 			</div>
 			<div class="hodima-advisor__task-state">
-				<span class="<?php echo esc_attr( $class ); ?>"><?php echo esc_html( $status ); ?></span>
-				<small><?php echo esc_html( hodima_seo_advisor_task_date( $task['at'] ) ); ?></small>
+				<span class="<?php echo esc_attr( $view['class'] ); ?>"><?php echo esc_html( $view['label'] ); ?></span>
+				<small><?php echo esc_html( hodima_seo_advisor_task_date( $view['time'] ) ); ?></small>
 			</div>
-			<?php if ( 'done' === $task['status'] ) : ?>
+			<?php if ( '' !== $hint ) : ?>
+				<p class="hodima-advisor__task-effect"><?php echo esc_html( $hint ); ?></p>
+			<?php endif; ?>
+			<?php if ( 'done' === $task['status'] && in_array( $view['state'], [ 'waiting', 'fixed' ], true ) ) : ?>
 				<p class="hodima-advisor__task-effect"><?php echo esc_html( hodima_seo_advisor_task_effect_text( $task ) ); ?></p>
 			<?php endif; ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__task-actions">
