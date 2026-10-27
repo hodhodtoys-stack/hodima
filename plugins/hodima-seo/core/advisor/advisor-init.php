@@ -32,6 +32,7 @@ require_once __DIR__ . '/advisor-trend.php';
 require_once __DIR__ . '/advisor-tasks.php';
 require_once __DIR__ . '/advisor-health.php';
 require_once __DIR__ . '/advisor-crawl.php';
+require_once __DIR__ . '/advisor-live.php';
 require_once __DIR__ . '/advisor-inspect.php';
 require_once __DIR__ . '/advisor-rules.php';
 require_once __DIR__ . '/advisor-steps.php';

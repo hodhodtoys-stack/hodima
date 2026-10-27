@@ -20,12 +20,14 @@ defined( 'ABSPATH' ) || exit;
 add_action( 'wp_after_insert_post', static function ( int $post_id, WP_Post $post ): void {
 	if ( ! wp_is_post_revision( $post ) && ! wp_is_post_autosave( $post ) ) {
 		hodima_seo_advisor_resave_object( $post->post_type, $post_id );
+		hodima_seo_advisor_live_schedule_object( $post->post_type, $post_id ); // عنوان/متا/H1 از خود صفحه (advisor-live.php)
 	}
 }, 99, 2 );
 
 // saved_term بعد از edited_{taxonomy} اجرا می‌شود که سئوباکس دسته در آن ذخیره می‌شود (edited_term پیش از آن است)
 add_action( 'saved_term', static function ( int $term_id, int $tt_id, string $taxonomy ): void {
 	hodima_seo_advisor_resave_object( $taxonomy, $term_id );
+	hodima_seo_advisor_live_schedule_object( $taxonomy, $term_id );
 }, 99, 3 );
 
 /**

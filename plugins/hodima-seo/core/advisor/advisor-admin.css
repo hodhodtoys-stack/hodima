@@ -1108,6 +1108,14 @@
 	gap: 0.25rem;
 }
 
+.hodima-advisor .hodima-advisor__live {
+	display: block;
+	margin-block-start: 0.25rem;
+	color: var(--hd-ok);
+	font-size: 0.75rem;
+	font-weight: 400;
+}
+
 .hodima-advisor .hodima-advisor__crawl-fix {
 	display: block;
 	color: var(--hd-muted);

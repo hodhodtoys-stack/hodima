@@ -1876,6 +1876,52 @@ hodima_ad( 'لینک داخلی کافی: دستور تمرکز را روی عن
 $notwell = hodima_seo_advisor_links_evidence( [ 'total' => 30, 'text' => 20, 'score' => 50.0, 'depth' => 1, 'anchors' => [ [ 'anchor' => 'کلیپس سنجاقی', 'count' => 2 ] ] ], 'کلیپس سنجاقی' );
 hodima_ad( 'لینک زیاد ولی با عبارت کم: همان جمله نمی‌آید', str_contains( $notwell, 'لینک داخلی این صفحه کم نیست' ), false );
 
+echo "=== بررسی فوری عنوان، متا و تیترها از خود سایت (advisor-live.php)\n";
+$lp = hodima_seo_advisor_live_parse( '<!doctype html><html><head><title> عنوان  تازه صفحه </title><meta name="Description" content="توضیح متای تازه"><meta name="robots" content="index, follow"></head><body><h1>تیتر <b>اصلی</b></h1><h2>یک</h2><h2></h2><h2>دو</h2><h2>سه</h2></body></html>' );
+hodima_ad( 'خواندن HTML: عنوان، طول متا، H1 با تگ درونی، دو H2 اول غیرخالی، ایندکس‌پذیر', [ $lp['title'], $lp['title_len'], $lp['meta_len'], $lp['h1'], $lp['h2'], $lp['noindex'] ], [ 'عنوان تازه صفحه', 15, 15, 'تیتر اصلی', 'یک | دو', false ] );
+$lp0 = hodima_seo_advisor_live_parse( '<html><head><meta name="robots" content="NOINDEX,follow"></head><body></body></html>' );
+hodima_ad( 'صفحه بی‌عنوان و noindex', [ $lp0['title'], $lp0['meta_len'], $lp0['h1'], $lp0['noindex'] ], [ '', 0, '', true ] );
+$live_code = 200;
+$live_hits = [];
+$live_html = '<html><head><title>' . $ok4 . '</title><meta name="description" content="' . str_repeat( 'م', 90 ) . '"></head><body><h1>تیتر تازه بدون کلیپس</h1><h2>بخش تازه</h2></body></html>';
+$live_filter = static function ( $pre, array $args, string $url ) use ( &$live_code, &$live_hits, &$live_html ) {
+	if ( ! str_contains( $url, HODIMA_SEO_ADVISOR_LIVE_PARAM . '=' ) ) {
+		return $pre;
+	}
+	$live_hits[] = [ $url, $args['redirection'] ?? null ];
+	return [ 'headers' => [], 'body' => $live_html, 'response' => [ 'code' => $live_code, 'message' => '' ], 'cookies' => [], 'filename' => null ];
+};
+add_filter( 'pre_http_request', $live_filter, 30, 3 );
+hodima_ad( 'پیش از بررسی: /noh1/ ایراد «بدون H1» دارد و زمان بررسی صفر', [ in_array( 'no_h1', $iss4['/noh1/'] ?? [], true ), hodima_seo_advisor_live_time( '/noh1/' ) ], [ true, 0 ] );
+hodima_ad( 'آدرس خارج از خزش بررسی نمی‌شود (درخواستی نمی‌رود)', [ hodima_seo_advisor_live_check( '/not-there/' ), count( $live_hits ) ], [ false, 0 ] );
+$live_code = 404;
+hodima_ad( 'صفحه ۴۰۴: داده خزش دست نمی‌خورد', [ hodima_seo_advisor_live_check( '/noh1/' ), hodima_seo_advisor_crawl_row( '/noh1/' )['h1'] ], [ false, '' ] );
+$live_code = 200;
+hodima_ad( 'صفحه ۲۰۰: ردیف خزش با H1 تازه نوشته می‌شود، با پارامتر دور زدن کش و بدون دنبال کردن ریدایرکت', [ hodima_seo_advisor_live_check( '/noh1/' ), hodima_seo_advisor_crawl_row( '/noh1/' )['h1'], str_contains( (string) end( $live_hits )[0], '/noh1/?' . HODIMA_SEO_ADVISOR_LIVE_PARAM . '=' ), end( $live_hits )[1] ], [ true, 'تیتر تازه بدون کلیپس', true, 0 ] );
+$iss_live = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $row ) {
+	$iss_live[ $row['path'] ] = array_column( $row['issues'], 'code' );
+}
+hodima_ad( 'ایراد «بدون H1» همان لحظه از «سلامت خزش» رفت و زمان بررسی ثبت شد', [ in_array( 'no_h1', $iss_live['/noh1/'] ?? [], true ), hodima_seo_advisor_live_time( '/noh1/' ) > 0 ], [ false, true ] );
+if ( $has_obj ) {
+	hodima_ad( 'H1 رندرشده کلمه را دارد ← پیش از بررسی «غایب» نیست', array_intersect( $rules4( hodima_seo_advisor_analyze( $r4_path ) ), [ 'missing_headings', 'missing_content' ] ), [] );
+	hodima_seo_advisor_live_check( $r4_path ); // H1 تازه کلمه را ندارد
+	hodima_ad( 'بعد از بررسی از سایت (H1 تازه بدون کلمه): پیشنهاد ذخیره‌شده فهرست هم «غایب» دارد', array_intersect( array_column( (array) hodima_seo_advisor_page( $r4_path )['advice'], 'rule' ), [ 'missing_headings', 'missing_content' ] ) !== [], true );
+	wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_LIVE_CRON, [ $r4_path ] );
+	wp_update_post( [ 'ID' => $r4_id, 'post_content' => '<p>متن ساده دیگر</p>' ] );
+	hodima_ad( 'ذخیره صفحه‌ای که در خزش هست بررسی از سایت را زمان‌بندی می‌کند', (bool) wp_next_scheduled( HODIMA_SEO_ADVISOR_LIVE_CRON, [ $r4_path ] ), true );
+	wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_LIVE_CRON, [ $r4_path ] );
+	$r4_draft = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'draft', 'post_title' => 'پیش‌نویس چهار', 'post_name' => 'advisor-r4-draft' ] );
+	hodima_ad( 'پیش‌نویس زمان‌بندی نمی‌شود', count( array_filter( (array) _get_cron_array(), static fn( $e ): bool => isset( $e[ HODIMA_SEO_ADVISOR_LIVE_CRON ] ) ) ), 0 );
+	wp_delete_post( $r4_draft, true );
+}
+$GLOBALS['wpdb']->insert( hodima_seo_advisor_table( 'crawl_pages' ), [ 'path' => '/گل-سر/', 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'x', 'title_len' => 1, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 100, 'inlinks' => 3, 'text_links' => -1, 'depth' => 1, 'score' => 1, 'redirect_to' => '' ] );
+hodima_seo_advisor_crawl_map( true );
+hodima_seo_advisor_live_check( '/گل-سر/' );
+hodima_ad( 'آدرس فارسی: مسیر در درخواست کدگذاری می‌شود و ردیف به‌روز می‌شود', [ str_contains( (string) end( $live_hits )[0], '/' . rawurlencode( 'گل-سر' ) . '/?' ), hodima_seo_advisor_crawl_row( '/گل-سر/' )['h1'] ], [ true, 'تیتر تازه بدون کلیپس' ] );
+remove_filter( 'pre_http_request', $live_filter, 30 );
+delete_option( HODIMA_SEO_ADVISOR_LIVE_OPTION );
+
 hodima_seo_advisor_clear_data();
 wp_delete_post( $r4_id, true );
 remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter4 );

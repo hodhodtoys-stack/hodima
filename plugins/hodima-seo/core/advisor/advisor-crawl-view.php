@@ -229,7 +229,13 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 			<tbody>
 				<?php foreach ( $slice as $row ) : ?>
 					<tr>
-						<th scope="row"><?php echo hodima_seo_advisor_url_link( (string) $row['path'], 'hodima-advisor__rival-url' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
+						<th scope="row">
+							<?php echo hodima_seo_advisor_url_link( (string) $row['path'], 'hodima-advisor__rival-url' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?>
+							<?php $live = hodima_seo_advisor_live_time( (string) $row['path'] ); ?>
+							<?php if ( $live > 0 ) : ?>
+								<small class="hodima-advisor__live"><?php echo esc_html( sprintf( 'عنوان، متا و تیترها %s پیش از خود سایت بررسی شد', human_time_diff( $live ) ) ); ?></small>
+							<?php endif; ?>
+						</th>
 						<td data-label="نمایش"><?php echo $row['impressions'] > 0 ? esc_html( $n( $row['impressions'] ) ) : '—'; ?></td>
 						<td data-label="رتبه"><?php echo $row['position'] > 0 ? esc_html( number_format_i18n( $row['position'], 1 ) ) : '—'; ?></td>
 						<td class="hodima-advisor__crawl-pills">
