@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «دستار سئو» — تب «دستگاه و کشور»
+ * ماژول «دستار سئو» — تب «موبایل و کشور»
  * Path: core/advisor/advisor-breakdown-view.php
  *
  * داده از advisor-breakdown.php. کالبد: ۴ کارت آمار ← کارت دستگاه (سه ردیف با نوار سهم کلیک و تفسیر)
@@ -83,7 +83,7 @@ function hodima_seo_advisor_render_share_row( string $label, array $stat, float 
 }
 
 /**
- * محتوای تب «دستگاه و کشور».
+ * محتوای تب «موبایل و کشور».
  *
  * @param array<string, mixed> $status خروجی hodima_seo_advisor_status()
  */
@@ -115,7 +115,7 @@ function hodima_seo_advisor_render_breakdown( array $status ): void {
 	] );
 
 	if ( $empty ) {
-		hodima_seo_ui_card_open( 'دستگاه و کشور' );
+		hodima_seo_ui_card_open( 'موبایل و کشور' );
 		hodima_seo_ui_empty( 'هنوز گرفته نشده', 'بعد از «به‌روزرسانی همه» (و تا چند دقیقه) سهم موبایل و دسکتاپ، کشورها، جستجوی تصویر و نوع نمایش در گوگل اینجا پر می‌شود.' );
 		hodima_seo_ui_card_close();
 		return;

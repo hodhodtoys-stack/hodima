@@ -185,11 +185,14 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	// پنل داده: سه عدد هم‌اندازه با همان ظاهر کادر «عنوان سئو و توضیح متا» (برچسب بالا، مقدار در کادر) + جدول کلمه‌ها
 	echo '<section class="hodima-advisor-box__data" aria-label="داده گوگل برای این صفحه"><h4>داده گوگل برای این صفحه</h4>';
 	printf(
-		'<div class="hodima-advisor-box__metrics"><div><span class="hodima-advisor-box__label">نمایش <small>(%1$s روز)</small></span><div class="hodima-advisor-box__value">%2$s</div></div><div><span class="hodima-advisor-box__label">نرخ کلیک</span><div class="hodima-advisor-box__value">%3$s٪</div></div><div><span class="hodima-advisor-box__label">رتبه</span><div class="hodima-advisor-box__value">%4$s</div></div></div>',
+		'<div class="hodima-advisor-box__metrics"><div><span class="hodima-advisor-box__label">نمایش <small>(%1$s روز)</small>%5$s</span><div class="hodima-advisor-box__value">%2$s</div></div><div><span class="hodima-advisor-box__label">نرخ کلیک%6$s</span><div class="hodima-advisor-box__value">%3$s٪</div></div><div><span class="hodima-advisor-box__label">رتبه%7$s</span><div class="hodima-advisor-box__value">%4$s</div></div></div>',
 		esc_html( $n( $status['days'] ) ),
 		esc_html( $n( $row['impressions'] ) ),
 		esc_html( $n( $ctr, 2 ) ),
-		esc_html( $n( (float) $row['position'], 1 ) )
+		esc_html( $n( (float) $row['position'], 1 ) ),
+		hodima_seo_advisor_help( 'impressions' ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_help
+		hodima_seo_advisor_help( 'ctr' ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- همان
+		hodima_seo_advisor_help( 'position' ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- همان
 	);
 
 	hodima_seo_advisor_render_trend( $row );
@@ -224,16 +227,22 @@ function hodima_seo_advisor_render_box( string $url ): void {
 		$jump = 'low_ctr' === $item['rule'] && $has_box
 			? '<a class="button" href="#seobox_title">' . esc_html( 'رفتن به عنوان سئو' ) . '</a><a class="button" href="#seobox_description">' . esc_html( 'رفتن به توضیح متا' ) . '</a>'
 			: '';
+		// سه بخش ثابت هر پیشنهاد (SEO 2.9.6): چرا مهم است ← دقیقا چه کنم ← از کجا بفهمم درست شد (advisor-help.php)
+		$guide = hodima_seo_advisor_rule_guide( (string) $item['rule'] );
 		echo '<section class="hodima-advisor-box__item">';
 		printf(
-			'<h4>%1$s</h4><p>%2$s</p>%3$s',
+			'<h4>%1$s</h4>%4$s<p><strong class="hodima-advisor-box__part">دقیقا چه کنم؟</strong> %2$s</p>%3$s',
 			esc_html( (string) $item['title'] ),
 			esc_html( (string) $item['detail'] ),
 			'' !== $jump || (int) $item['potential'] > 0
-				? '<div class="hodima-advisor-box__meta">' . wp_kses_post( $jump ) . ( (int) $item['potential'] > 0 ? '<small>' . esc_html( sprintf( 'کلیک بالقوه ≈ %s', $n( (int) $item['potential'] ) ) ) . '</small>' : '' ) . '</div>'
-				: ''
+				? '<div class="hodima-advisor-box__meta">' . wp_kses_post( $jump ) . ( (int) $item['potential'] > 0 ? '<small>' . esc_html( sprintf( 'کلیک بالقوه ≈ %s', $n( (int) $item['potential'] ) ) ) . hodima_seo_advisor_help( 'potential' ) . '</small>' : '' ) . '</div>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_help
+				: '',
+			'' !== $guide['why'] ? '<p><strong class="hodima-advisor-box__part">چرا مهم است؟</strong> ' . esc_html( $guide['why'] ) . '</p>' : ''
 		);
 		hodima_seo_advisor_render_steps( (array) ( $item['steps'] ?? [] ), 0 === $position++ );
+		if ( '' !== $guide['verify'] ) {
+			printf( '<p class="hodima-advisor-box__verify"><strong class="hodima-advisor-box__part">از کجا بفهمم درست شد؟</strong> %s</p>', esc_html( $guide['verify'] ) );
+		}
 		if ( function_exists( 'hodima_seo_advisor_render_task_controls' ) ) {
 			hodima_seo_advisor_render_task_controls( (string) $row['path'], $item );
 		}

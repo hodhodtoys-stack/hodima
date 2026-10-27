@@ -378,6 +378,82 @@
 	font-size: 1rem;
 }
 
+/* «؟» کنار اصطلاح و توضیح یک‌خطی آن (popover بومی مرورگر؛ advisor-help.php، SEO 2.9.6) */
+.hodima-advisor .hodima-advisor-help {
+	display: inline-grid;
+	place-items: center;
+	inline-size: 1.5rem;
+	block-size: 1.5rem;
+	margin-inline-start: 0.25rem;
+	padding: 0;
+	border: 1px solid var(--hd-border-strong, #b7c0dd);
+	border-radius: 50%;
+	background: var(--hd-surface, #fff);
+	color: var(--hd-primary, #25316a);
+	font: inherit;
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1;
+	vertical-align: middle;
+	cursor: help;
+}
+
+.hodima-advisor .hodima-advisor-help:hover {
+	border-color: var(--hd-secondary, #607bbd);
+}
+
+.hodima-advisor .hodima-advisor-help:focus-visible {
+	outline: 2px solid var(--hd-secondary, #607bbd);
+	outline-offset: 2px;
+}
+
+.hodima-advisor .hodima-advisor-help__pop {
+	max-inline-size: min(22rem, calc(100vw - 2rem));
+	padding: 0.875rem 1rem;
+	border: 1px solid var(--hd-border, #d9def0);
+	border-radius: 0.75rem;
+	background: var(--hd-surface, #fff);
+	box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.15);
+	color: var(--hd-text, #1c2340);
+	font-size: 0.8125rem;
+	line-height: 1.9;
+	direction: rtl;
+	text-align: start;
+}
+
+.hodima-advisor .hodima-advisor-help__pop::backdrop {
+	background: rgb(0 0 0 / 0.1);
+}
+
+/* «اصطلاح‌ها به زبان ساده» پایین هر تب */
+.hodima-advisor .hodima-advisor__glossary summary {
+	min-block-size: 2.5rem;
+	color: var(--hd-primary);
+	font-weight: 700;
+	line-height: 2.5rem;
+	cursor: pointer;
+}
+
+.hodima-advisor .hodima-advisor__glossary dl {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+	gap: 0.5rem 1.5rem;
+	margin: 0.5rem 0 0;
+}
+
+.hodima-advisor .hodima-advisor__glossary dt {
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__glossary dd {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	line-height: 1.8;
+}
+
 .hodima-advisor .hodima-advisor__foot {
 	display: flex;
 	flex-wrap: wrap;
@@ -473,9 +549,14 @@
 	margin-block-end: 0.25rem;
 }
 
+.hodima-advisor .hodima-advisor__tabs {
+	gap: 0.25rem;
+}
+
+/* ۱۱ تب (SEO 2.9.6) در ۱۳۰۰ با منوی وردپرس یک ردیف بماند: فاصله داخلی کمتر، همان ارتفاع لمسی */
 .hodima-advisor .hodima-advisor__tabs .hodima-advisor__view {
 	min-block-size: 2.75rem;
-	padding-inline: 0.875rem;
+	padding-inline: 0.5rem;
 	font-size: 0.8125rem;
 	font-weight: 700;
 }

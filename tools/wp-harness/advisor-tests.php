@@ -222,7 +222,8 @@ hodima_ad( 'بدون کلید ← خطای کلید، داده دست‌نخور
 echo "=== مرحله ۶: صفحه‌بندی دریافت، CSV بزرگ، آدرس با/بی‌اسلش، کش لینک‌دهنده\n";
 if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-steps-view.php';
-	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
 }
 update_option( 'hodima_discover_sc_key', $key_json, false );
 $calls = [];
@@ -343,7 +344,8 @@ echo "=== صفحه پیشخوان: خلاصه، فیلتر، نادیده گرف
 // صفحه پیشخوان فقط در پیشخوان لود می‌شود؛ آزمون خط فرمان خودش لودش می‌کند
 if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-steps-view.php';
-	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
 }
 $totals   = hodima_seo_advisor_totals();
 $weighted = ( 5.81 * 36492 + 6.0 * 500 + 6.0 * 6000 + 4.0 * 2000 + 4.0 * 2000 ) / 46992;
@@ -376,7 +378,7 @@ hodima_seo_advisor_render_admin();
 $html = (string) ob_get_clean();
 hodima_ad( 'صفحه: سربرگ، ۴ کارت آمار، ردیف‌ها، دکمه به‌روزرسانی و نادیده گرفتن', [ str_contains( $html, 'hds-hero__title' ), substr_count( $html, 'class="hds-stat"' ), substr_count( $html, 'hodima-advisor__item' ) >= 4, str_contains( $html, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $html, 'نادیده گرفتن' ) ], [ true, 4, true, true, true ] );
 hodima_ad( 'صفحه: بازه فعلی انتخاب‌شده و خروجی CSV با nonce', [ str_contains( $html, 'value="90" checked' ), str_contains( $html, 'action=hodima_advisor_csv' ) && str_contains( $html, '_wpnonce=' ) ], [ true, true ] );
-hodima_ad( 'فهرست فقط تیتر: بدون جزئیات و گام، با دکمه «ویرایش و رفع ایرادها» یا «دیدن در سایت»', [ str_contains( $html, 'hodima-advisor__issues' ), str_contains( strstr( $html, 'hodima-advisor__settings', true ) ?: $html, '<details' ), str_contains( $html, 'ببینید دقیقا چه کنید' ), str_contains( $html, 'ویرایش و رفع ایرادها' ) || str_contains( $html, 'دیدن در سایت' ) ], [ true, false, false, true ] );
+hodima_ad( 'فهرست فقط تیتر: بدون جزئیات و گام، با دکمه «ویرایش و رفع ایرادها» یا «دیدن در سایت»', [ str_contains( $html, 'hodima-advisor__issues' ), str_contains( strstr( $html, '<details class="hds-card hodima-advisor__glossary"', true ) ?: $html, '<details' ), str_contains( $html, 'ببینید دقیقا چه کنید' ), str_contains( $html, 'ویرایش و رفع ایرادها' ) || str_contains( $html, 'دیدن در سایت' ) ], [ true, false, false, true ] );
 hodima_ad( 'فهرست: همه ایرادها یک‌یک (رقابت با N صفحه برای کلمه)', [ str_contains( $html, 'رقابت با ' . hodima_seo_advisor_num( 1 ) . ' صفحه برای «پلومریا»' ), str_contains( $html, 'data-rule="low_ctr"' ), str_contains( $html, 'data-rule="decline"' ) ], [ true, true, true ] );
 delete_option( 'hodima_discover_sc_key' );
 ob_start();
@@ -1210,6 +1212,8 @@ ob_start();
 hodima_seo_advisor_render_admin();
 $done_html = (string) ob_get_clean();
 hodima_ad( 'کنش‌ها دکمه‌اند نه کلمه لینکی: «ویرایش/دیدن در سایت» و «برداشتن از کارها» با کلاس دکمه و آیکون', [ substr_count( $done_html, 'hds-btn hds-btn--outline hodima-advisor__act' ) >= 2, str_contains( $done_html, 'hodima-advisor__link-btn' ), str_contains( $done_html, 'dashicons-trash' ) ], [ true, false, true ] );
+hodima_ad( 'راهنما: فهرست «اصطلاح‌ها به زبان ساده» پایین تب با H1 و نرخ کلیک؛ «؟» با popover و نام قابل‌خواندن', [ str_contains( $done_html, 'hodima-advisor__glossary' ) && str_contains( $done_html, 'H1 (تیتر اصلی)' ) && str_contains( $done_html, '<dt>نرخ کلیک</dt>' ), 1 === preg_match( '#<button type="button" class="hodima-advisor-help" popovertarget="(hdsa-help-\d+)" aria-label="«رتبه» یعنی چه؟">؟</button><span id="\1" popover#u', hodima_seo_advisor_help( 'position' ) ), hodima_seo_advisor_help( 'nope' ) ], [ true, true, '' ] );
+hodima_ad( 'هر قاعده «چرا مهم است» و «از کجا بفهمم درست شد» دارد؛ متنی ← همان لحظه ذخیره، آماری ← ۱۴ روز و تب «انجام‌شده»', [ array_filter( array_map( static fn( string $r ): bool => '' === hodima_seo_advisor_rule_guide( $r )['why'] || '' === hodima_seo_advisor_rule_guide( $r )['verify'], [ 'low_ctr', 'near_first', 'missing_headings', 'missing_content', 'weak_query', 'cannibal', 'decline' ] ) ), str_contains( hodima_seo_advisor_rule_guide( 'missing_content' )['verify'], 'همان لحظه ذخیره' ), str_contains( hodima_seo_advisor_rule_guide( 'low_ctr' )['verify'], '«انجام‌شده»' ) ], [ [], true, true ] );
 hodima_ad( 'تب «انجام‌شده»: تب فعال، کار «انجام شد» با سه گام (انجام دادید، منتظر بررسی ایندکس، منتظر نتیجه با سنجش ۱۴ روزه)', [ str_contains( $done_html, 'tab=done" aria-current="page"' ), substr_count( $done_html, 'class="hodima-advisor__task"' ), substr_count( $done_html, 'class="hodima-advisor__step"' ), str_contains( $done_html, 'منتظر بررسی ایندکس' ), str_contains( $done_html, 'همان‌قدر روز پیش از آن مقایسه می‌شود' ), str_contains( $done_html, 'کلمه نزدیک صفحه اول' ) ], [ true, 1, 3, true, true, false ] );
 $kb_at   = hodima_seo_advisor_task( '/k/b/', 'low_ctr', '' )['at'];
 $ins_old = get_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, false );

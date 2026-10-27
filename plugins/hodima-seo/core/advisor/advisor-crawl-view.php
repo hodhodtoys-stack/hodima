@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «دستار سئو» — تب «سلامت خزش»
+ * ماژول «دستار سئو» — تب «ایرادهای فنی»
  * Path: core/advisor/advisor-crawl-view.php
  *
  * داده از advisor-crawl.php. کالبد کیت SEO: ۴ کارت آمار ← کارت «فایل‌های خزش» (یک کنش اصلی:
@@ -28,11 +28,11 @@ function hodima_seo_advisor_handle_crawl(): void {
 	$result = hodima_seo_advisor_crawl_import();
 
 	if ( is_wp_error( $result ) ) {
-		hodima_admin_flash( '<strong>سلامت خزش:</strong> ' . esc_html( $result->get_error_message() ) . ' داده قبلی همان‌طور ماند.', 'error' );
+		hodima_admin_flash( '<strong>ایرادهای فنی:</strong> ' . esc_html( $result->get_error_message() ) . ' داده قبلی همان‌طور ماند.', 'error' );
 	} else {
 		hodima_admin_flash(
 			sprintf(
-				'<strong>سلامت خزش:</strong> %1$s صفحه و %2$s لینک داخلی خوانده شد.',
+				'<strong>ایرادهای فنی:</strong> %1$s صفحه و %2$s لینک داخلی خوانده شد.',
 				esc_html( number_format_i18n( $result['pages'] ) ),
 				esc_html( number_format_i18n( $result['links'] ) )
 			),
@@ -89,7 +89,7 @@ function hodima_seo_advisor_crawl_file_row( array $file, array $saved, bool $sta
 }
 
 /**
- * محتوای تب «سلامت خزش».
+ * محتوای تب «ایرادهای فنی».
  */
 function hodima_seo_advisor_render_crawl(): void {
 
@@ -105,7 +105,7 @@ function hodima_seo_advisor_render_crawl(): void {
 		[ 'label' => 'صفحه دارای ایراد', 'value' => $has ? esc_html( $n( $sum['with_issues'] ) ) : '—', 'sub' => $has ? esc_html( sprintf( 'از %s صفحه', $n( $sum['crawled'] ) ) ) : '', 'empty' => ! $has ],
 		[ 'label' => 'ایراد در صفحه‌های پرنمایش', 'value' => $has ? esc_html( $n( $sum['big'] ) ) : '—', 'sub' => $has ? esc_html( sprintf( 'بیش از %s نمایش', $n( HODIMA_SEO_ADVISOR_CRAWL_BIG_IMPRESSIONS ) ) ) : '', 'empty' => ! $has ],
 		[ 'label' => 'لینک ورودی کم', 'value' => $has ? esc_html( $n( $sum['low_links'] ) ) : '—', 'sub' => $has ? esc_html( sprintf( '%s لینک یا کمتر', $n( HODIMA_SEO_ADVISOR_CRAWL_LOW_INLINKS ) ) ) : '', 'empty' => ! $has ],
-	], 'خلاصه سلامت خزش' );
+	], 'خلاصه ایرادهای فنی' );
 
 	$prepared = hodima_seo_advisor_crawl_prepare_dir();
 	$files    = [];

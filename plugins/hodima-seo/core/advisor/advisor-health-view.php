@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «دستار سئو» — تب «سلامت آدرس‌ها»
+ * ماژول «دستار سئو» — تب «آدرس‌های خراب»
  * Path: core/advisor/advisor-health-view.php
  *
  * داده از advisor-health.php. کالبد: ۴ کارت آمار ← کارت «آدرس‌هایی که در گوگل‌اند ولی در سایت مرده‌اند»
@@ -29,7 +29,7 @@ function hodima_seo_advisor_health_state( string $state ): array {
 }
 
 /**
- * محتوای تب «سلامت آدرس‌ها».
+ * محتوای تب «آدرس‌های خراب».
  *
  * @param array<string, mixed> $status خروجی hodima_seo_advisor_status()
  */
@@ -54,7 +54,7 @@ function hodima_seo_advisor_render_health( array $status ): void {
 	] );
 
 	if ( $empty ) {
-		hodima_seo_ui_card_open( 'سلامت آدرس‌ها' );
+		hodima_seo_ui_card_open( 'آدرس‌های خراب' );
 		hodima_seo_ui_empty( 'هنوز ساخته نشده', 'بعد از «به‌روزرسانی همه» این بخش پر می‌شود.' );
 		hodima_seo_ui_card_close();
 		return;

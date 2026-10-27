@@ -94,7 +94,7 @@ function hodima_seo_advisor_variant_cause_label( string $cause ): string {
 }
 
 /**
- * کارت «آدرس‌های تکراری یک صفحه» (پایین تب «رقابت صفحه‌ها»).
+ * کارت «آدرس‌های تکراری یک صفحه» (پایین تب «صفحه‌های هم‌کلمه»).
  */
 function hodima_seo_advisor_render_variants(): void {
 

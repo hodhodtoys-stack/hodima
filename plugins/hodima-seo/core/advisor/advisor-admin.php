@@ -478,15 +478,15 @@ function hodima_seo_advisor_tab_keys(): array {
 function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true ): void {
 
 	$tabs = [
-		'opportunities' => [ 'فرصت‌های بهتر شدن', hodima_seo_advisor_page_url() ],
-		'competition'   => [ 'رقابت صفحه‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ],
-		'terms'         => [ 'کلمه‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
-		'breakdown'     => [ 'دستگاه و کشور', hodima_seo_advisor_page_url( [ 'tab' => 'breakdown' ] ) ],
-		'trend'         => [ 'روند و فصل‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'trend' ] ) ],
-		'health'        => [ 'سلامت آدرس‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'health' ] ) ],
-		'crawl'         => [ 'سلامت خزش', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
-		'indexing'      => [ 'ایندکس', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
-		// «کارهای من» دو تب شد (SEO 2.9.4): کارهای باز و انجام‌شده‌ها با سه گام (انجام ← خزش گوگل ← نتیجه)
+		'opportunities' => [ 'پیشنهادها', hodima_seo_advisor_page_url() ],
+		'competition'   => [ 'صفحه‌های هم‌کلمه', hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ],
+		'terms'         => [ 'کلمه‌های جستجو', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
+		'breakdown'     => [ 'موبایل و کشور', hodima_seo_advisor_page_url( [ 'tab' => 'breakdown' ] ) ],
+		'trend'         => [ 'روند ماه‌به‌ماه', hodima_seo_advisor_page_url( [ 'tab' => 'trend' ] ) ],
+		'health'        => [ 'آدرس‌های خراب', hodima_seo_advisor_page_url( [ 'tab' => 'health' ] ) ],
+		'crawl'         => [ 'ایرادهای فنی', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
+		'indexing'      => [ 'وضعیت در گوگل', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
+		// کارهای «در دست انجام» و «انجام‌شده» دو تب شد (SEO 2.9.4): کارهای باز و انجام‌شده‌ها با سه گام (انجام ← خزش گوگل ← نتیجه)
 		'tasks'         => [ 'در دست انجام', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
 		'done'          => [ 'انجام‌شده', hodima_seo_advisor_page_url( [ 'tab' => 'done' ] ) ],
 		// تنظیمات تب خودش است (SEO 2.9.3)؛ قبلا پنلی بود که روی هر تب باز می‌شد
@@ -575,6 +575,7 @@ function hodima_seo_advisor_render_admin(): void {
 		if ( 'competition' === $tab ) {
 			hodima_seo_advisor_render_variants();
 		}
+		hodima_seo_advisor_render_glossary();
 		hodima_seo_ui_close();
 		return;
 	}
@@ -599,6 +600,7 @@ function hodima_seo_advisor_render_admin(): void {
 		hodima_seo_advisor_render_list( $status );
 	}
 
+	hodima_seo_advisor_render_glossary();
 	hodima_seo_ui_close();
 }
 
@@ -725,7 +727,7 @@ function hodima_seo_advisor_render_settings( bool $has_data ): void {
 				<input type="hidden" name="action" value="hodima_advisor_clear">
 				<?php wp_nonce_field( 'hodima_advisor_clear' ); ?>
 				<h3 class="hodima-advisor__setting-title">داده‌های دستار سئو را پاک کنم؟</h3>
-				<p class="hodima-advisor__setting-help">جدول‌های دریافت‌شده از Search Console و فهرست «نادیده گرفتن» پاک می‌شوند. کلید حساب سرویس، تاریخچه هفتگی، «کارهای من» و تنظیمات می‌مانند و با «به‌روزرسانی همه» دوباره گرفته می‌شود. بازگشت ندارد.</p>
+				<p class="hodima-advisor__setting-help">جدول‌های دریافت‌شده از Search Console و فهرست «نادیده گرفتن» پاک می‌شوند. کلید حساب سرویس، تاریخچه هفتگی، کارهای «در دست انجام» و «انجام‌شده» و تنظیمات می‌مانند و با «به‌روزرسانی همه» دوباره گرفته می‌شود. بازگشت ندارد.</p>
 				<label class="hodima-advisor__confirm">
 					<input type="checkbox" name="confirm" value="1"<?php disabled( ! $has_data ); ?>>
 					<span>مطمئنم؛ داده‌ها پاک شود</span>
@@ -823,7 +825,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 
 	$keep = [ 'view' => 'all' === $view ? '' : $view, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'], 'tasks' => $filters['tasks'] ];
 
-	hodima_seo_ui_card_open( 'فرصت‌های بهتر شدن', sprintf( 'صفحه‌هایی که با داده %s روز اخیر بیشترین کلیک اضافه را دارند، مرتب بر اساس «کلیک بالقوه» (تخمین).', number_format_i18n( $status['days'] ) ) );
+	hodima_seo_ui_card_open( 'پیشنهادها', sprintf( 'صفحه‌هایی که با داده %s روز اخیر بیشترین کلیک اضافه را دارند؛ بالاترین‌ها مهم‌ترند. روی «ویرایش و رفع ایرادها» بزنید: در کادر «دستار سئو» پایین صفحه ویرایش، برای هر ایراد نوشته چرا مهم است، دقیقا چه کنید و از کجا بفهمید درست شد. «کلیک بالقوه» تخمین کلیک اضافه بعد از رفع ایراد است.', number_format_i18n( $status['days'] ) ) );
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">

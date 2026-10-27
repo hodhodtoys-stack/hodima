@@ -361,7 +361,7 @@ function hodima_seo_advisor_handle_task(): void {
 	$redo   = ! empty( $_REQUEST['redo'] );
 
 	if ( hodima_seo_advisor_task_set( $path, $rule, $term, $title, $status, $redo ) ) {
-		hodima_admin_flash( '' === $status ? 'پیشنهاد از «کارهای من» برداشته شد.' : sprintf( 'وضعیت پیشنهاد: «%s» ثبت شد.', hodima_seo_advisor_task_statuses()[ $status ] ), 'success' );
+		hodima_admin_flash( '' === $status ? 'پیشنهاد از کارهای شما برداشته شد.' : sprintf( 'وضعیت پیشنهاد: «%s» ثبت شد.', hodima_seo_advisor_task_statuses()[ $status ] ), 'success' );
 	} else {
 		hodima_admin_flash( 'وضعیت ثبت نشد؛ درخواست نامعتبر بود.', 'error' );
 	}

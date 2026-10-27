@@ -170,6 +170,65 @@
 	align-content: start;
 }
 
+/* «؟» کنار اصطلاح و توضیح یک‌خطی آن (popover بومی مرورگر؛ advisor-help.php، SEO 2.9.6) */
+.hodima-advisor-box .hodima-advisor-help {
+	display: inline-grid;
+	place-items: center;
+	inline-size: 1.5rem;
+	block-size: 1.5rem;
+	margin-inline-start: 0.25rem;
+	padding: 0;
+	border: 1px solid var(--hd-border-strong, #b7c0dd);
+	border-radius: 50%;
+	background: var(--hd-surface, #fff);
+	color: var(--hd-primary, #25316a);
+	font: inherit;
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1;
+	vertical-align: middle;
+	cursor: help;
+}
+
+.hodima-advisor-box .hodima-advisor-help:hover {
+	border-color: var(--hd-secondary, #607bbd);
+}
+
+.hodima-advisor-box .hodima-advisor-help:focus-visible {
+	outline: 2px solid var(--hd-secondary, #607bbd);
+	outline-offset: 2px;
+}
+
+.hodima-advisor-box .hodima-advisor-help__pop {
+	max-inline-size: min(22rem, calc(100vw - 2rem));
+	padding: 0.875rem 1rem;
+	border: 1px solid var(--hd-border, #d9def0);
+	border-radius: 0.75rem;
+	background: var(--hd-surface, #fff);
+	box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.15);
+	color: var(--hd-text, #1c2340);
+	font-size: 0.8125rem;
+	line-height: 1.9;
+	direction: rtl;
+	text-align: start;
+}
+
+.hodima-advisor-box .hodima-advisor-help__pop::backdrop {
+	background: rgb(0 0 0 / 0.1);
+}
+
+/* سه بخش هر پیشنهاد: چرا مهم است / دقیقا چه کنم / از کجا بفهمم درست شد */
+.hodima-advisor-box .hodima-advisor-box__part {
+	color: var(--hd-primary);
+	font-weight: 700;
+}
+
+.hodima-advisor-box .hodima-advisor-box__verify {
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.5rem;
+	background: color-mix(in srgb, var(--hd-ok) 8%, #fff);
+}
+
 .hodima-advisor-box__item {
 	display: grid;
 	gap: 0.5rem;

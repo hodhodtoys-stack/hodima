@@ -1,6 +1,6 @@
 <?php
 /**
- * ماژول «دستار سئو» — تب «روند و فصل‌ها»
+ * ماژول «دستار سئو» — تب «روند ماه‌به‌ماه»
  * Path: core/advisor/advisor-trend-view.php
  *
  * داده از advisor-trend.php. کالبد: ۴ کارت آمار ← نمودار کلیک ماهانه (۱۶ ماه، ماه ناقص کم‌رنگ، تفسیر و
@@ -50,7 +50,7 @@ function hodima_seo_advisor_render_terms_table( array $terms, string $label, str
 }
 
 /**
- * محتوای تب «روند و فصل‌ها».
+ * محتوای تب «روند ماه‌به‌ماه».
  */
 function hodima_seo_advisor_render_trend_tab(): void {
 
@@ -73,7 +73,7 @@ function hodima_seo_advisor_render_trend_tab(): void {
 	] );
 
 	if ( $empty ) {
-		hodima_seo_ui_card_open( 'روند و فصل‌ها' );
+		hodima_seo_ui_card_open( 'روند ماه‌به‌ماه' );
 		hodima_seo_ui_empty( 'هنوز گرفته نشده', 'بعد از «به‌روزرسانی همه» (و تا چند دقیقه) روند ۱۶ ماهه و کلمه‌های تازه و از دست رفته اینجا پر می‌شود.' );
 		hodima_seo_ui_card_close();
 		return;

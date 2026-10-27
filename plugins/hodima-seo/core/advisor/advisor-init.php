@@ -41,6 +41,7 @@ require_once __DIR__ . '/advisor-refresh.php';
 require_once __DIR__ . '/advisor-resave.php';
 
 if ( is_admin() ) {
+	require_once __DIR__ . '/advisor-help.php';
 	require_once __DIR__ . '/advisor-steps-view.php';
 	require_once __DIR__ . '/advisor-admin.php';
 	require_once __DIR__ . '/advisor-competition-view.php';
