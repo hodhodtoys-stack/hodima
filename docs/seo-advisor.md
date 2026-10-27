@@ -1,4 +1,4 @@
-# ماژول «دستار سئو» (Hodima SEO ۲.۵.۰ تا ۲.۸.۵)
+# ماژول «دستار سئو» (Hodima SEO ۲.۵.۰ تا ۲.۸.۶)
 
 تحویل کار برای گفتگوهای بعدی (آخرین به‌روزرسانی: ۴ آبان ۱۴۰۵). جزئیات هر مرحله: `HODIMA-AUDIT.md` بخش‌های ۲۵۵ تا ۲۸۵ (آخرین کار: SEO ۲.۸.۰، بخش ۲۸۵). قانون‌های کلی پروژه: `CLAUDE.md`. **برنامه «استفاده کامل از Search Console» تمام شد** (فقط یک مورد را کاربر نخواست؛ پایین).
 
@@ -36,8 +36,8 @@
 | `advisor-inspect.php` + `-view.php` | URL Inspection؛ کرون `hodima_advisor_inspect` (دو بار در روز، ۲۰ آدرس، با ۴۲۹ می‌ایستد)؛ گزینه `hodima_advisor_inspect` |
 | `advisor-tasks.php` + `-view.php` | «کارهای من»؛ گزینه `hodima_advisor_tasks` (سقف ۵۰۰؛ «پاک کردن داده‌ها» آن را نگه می‌دارد) |
 | `advisor-admin.php/.css/.js`، `advisor-box.php/.css` | صفحه پیشخوان: ردیف بالای هر تب داده‌دار (`render_toolbar`: بازه + به‌روزرسانی داده)، دکمه «تنظیمات» یک بار آخر ردیف تب‌ها (`render_tabs`) و پنل «تنظیمات» یک بار زیر همان ردیف (کلید Service Account با پنجره، حداقل نمایش، پاک کردن داده‌ها) و کادر ویرایش؛ صفحه‌بندی `hodima_seo_ui_pager` و CSS پنجره/صفحه‌بندی در `inc/ui-extras.css` (مخصوص SEO) |
-| `advisor-crawl.php` + `-view.php` | تب «سلامت خزش» (SEO ۲.۸.۱): خواندن `internal_html.csv` و `all_inlinks.csv` از `uploads/hodima-advisor/`، جدول‌های `crawl_pages`/`crawl_links`، ایرادها با نمایش گوگل؛ گزینه `hodima_advisor_crawl`. برنامه ۴ انتشاری ترکیب Screaming Frog: ۱ (تب) و ۲ (رقابت‌های حل‌شده در `advisor-competition.php` با `resolved_paths`، و `low_ctr` با `crawl_meta_health`) انجام شد؛ ۳ (شواهد لینک داخلی: `crawl_links_info`/`links_evidence`/`competition_links_note`) انجام شد؛ ۴ عنوان/H1 رندرشده و وزن‌دهی Link Score (هنوز) |
-| `tools/wp-harness/advisor-tests.php` | ۳۶۷ آزمون (در `ci-check.sh`) |
+| `advisor-crawl.php` + `-view.php` | تب «سلامت خزش» (SEO ۲.۸.۱): خواندن `internal_html.csv` و `all_inlinks.csv` از `uploads/hodima-advisor/`، جدول‌های `crawl_pages`/`crawl_links`، ایرادها با نمایش گوگل؛ گزینه `hodima_advisor_crawl`. برنامه ۴ انتشاری ترکیب Screaming Frog: ۱ (تب) و ۲ (رقابت‌های حل‌شده در `advisor-competition.php` با `resolved_paths`، و `low_ctr` با `crawl_meta_health`) انجام شد؛ ۳ (شواهد لینک داخلی: `crawl_links_info`/`links_evidence`/`competition_links_note`) انجام شد؛ ۴ (عنوان/H1/H2 رندرشده با `crawl_rendered` و ایراد `no_h1`) انجام شد؛ وزن‌دهی «کلیک بالقوه» با Link Score عمدا ساخته نشد (همبستگی ≈۰٫۰۲) و خزنده داخلی هنوز نیست؛ «رقابت ظاهری صفحه اصلی در برابر دسته» هم هنوز مانده |
+| `tools/wp-harness/advisor-tests.php` | ۳۷۸ آزمون (در `ci-check.sh`) |
 فیلترهای خاموش‌کردن: `hodima_seo_advisor_{breakdown,trend,health,inspect}_enabled` (در آزمون‌های دریافت اصلی خاموش‌اند).
 
 ## کلید و تنظیمات
@@ -63,7 +63,7 @@
 - ساخته‌نشده: «رو به رشد» (خبر خوب است نه فرصت)، «صفحه یتیم» (شمردن لینک داخلی هزینه‌بر)، «خوشه‌بندی کلمه‌ها»، نمودار ریز در فهرست، هشدار/خلاصه هفتگی ایمیلی (کاربر نخواست).
 
 ## وضعیت آزمون و GitHub
-- محلی: `bash bin/lint.sh` قبول؛ `HARNESS=1 php tools/wp-harness/advisor-tests.php` ← ۳۶۷ قبول؛ `bin/release-check.py` قبول؛ نصب از ZIP در هر دو ترتیب سالم.
+- محلی: `bash bin/lint.sh` قبول؛ `HARNESS=1 php tools/wp-harness/advisor-tests.php` ← ۳۷۸ قبول؛ `bin/release-check.py` قبول؛ نصب از ZIP در هر دو ترتیب سالم.
 - **بررسی خودکار GitHub (Quality) قرمز است ولی ربطی به مشاور ندارد** (تا آخرین اجرا بررسی شد): job «Lint» سبز؛ job «Render» فقط به‌خاطر ۵ آزمون `phone-tests.php` («جدول و هر دو لید»، «نمای جدید»، «جستجو با ارقام فارسی»، «جزئیات»، «جداساز چپ‌به‌راست») رد می‌شود و در همان اجرا «همه ۳۰۹ آزمون مشاور قبول» است. علت پیدا نشده (احتمالا وابسته به تاریخ/ارقام)؛ کد فرم تلفن در `plugins/hodima-commerce/components/phone/`.
 - **ابزار تست:** `tools/wp-harness/zip-install-check.sh` افزونه‌های ابزار را با ZIP جایگزین می‌کند؛ بعدش `bash tools/wp-harness/link.sh .` لازم است وگرنه آزمون روی کد قدیمی اجرا می‌شود. فیلتر `pre_http_request` آزمون‌ها زنجیره‌ای است (پاسخ ساختگی تازه اولویت بزرگ‌تر بگیرد). مترجم SQLite ابزار `HAVING` با تجمیع را خراب می‌کند (از زیرپرسش استفاده شده).
 

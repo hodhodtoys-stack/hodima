@@ -28,6 +28,10 @@ const HODIMA_SEO_ADVISOR_CRAWL_SETTLE = 120;
 /** خزش قدیمی‌تر از این روز «قدیمی» نشان می‌گیرد. */
 const HODIMA_SEO_ADVISOR_CRAWL_STALE_DAYS = 30;
 
+/** صفحه با این تعداد لینک متنی (و این تعداد با عبارت کلمه) «لینک داخلی کافی» دارد؛ دستور تمرکز را روی عنوان و متن می‌گذارد. */
+const HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED      = 15;
+const HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED_TERM = 5;
+
 /** عنوان کوتاه‌تر / بلندتر از این (نویسه) ایراد است؛ گوگل حدود ۶۰ نویسه را نشان می‌دهد. */
 const HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN = 30;
 const HODIMA_SEO_ADVISOR_CRAWL_TITLE_MAX = 65;
@@ -213,6 +217,7 @@ function hodima_seo_advisor_crawl_parse_pages( string $file ): array|WP_Error {
 			'title_len'  => isset( $map['title 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'title 1 length' ) ) : mb_strlen( $title ),
 			'meta_len'   => isset( $map['meta description 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'meta description 1 length' ) ) : mb_strlen( $meta ),
 			'h1'         => mb_substr( $cell( $row, 'h1-1' ), 0, HODIMA_SEO_ADVISOR_KEY_LENGTH ),
+			'h2'         => mb_substr( trim( $cell( $row, 'h2-1' ) . ' | ' . $cell( $row, 'h2-2' ), ' |' ), 0, 255 ), // SF فقط دو H2 اول را می‌دهد
 			'resp_ms'    => (int) round( hodima_seo_advisor_crawl_num( $cell( $row, $time ) ) * 1000 ),
 			'inlinks'    => (int) hodima_seo_advisor_crawl_num( $cell( $row, isset( $map['unique inlinks'] ) ? 'unique inlinks' : 'inlinks' ) ),
 			'text_links' => -1, // بدون all_inlinks نامعلوم
@@ -296,7 +301,7 @@ function hodima_seo_advisor_crawl_parse_links( string $file ): array|WP_Error {
 /**
  * همه صفحه‌های خزش‌شده، آدرس ← وضعیت. یک بار در هر درخواست خوانده می‌شود (تحلیل صدها آدرس را صدا می‌زند).
  *
- * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float}>
+ * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}>
  */
 function hodima_seo_advisor_crawl_map( bool $reset = false ): array {
 
@@ -312,8 +317,8 @@ function hodima_seo_advisor_crawl_map( bool $reset = false ): array {
 	if ( null === $map ) {
 		hodima_seo_advisor_ensure_tables();
 		$map = [];
-		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT path, status, indexable, reason, title_len, meta_len, inlinks, text_links, depth, score FROM %i', hodima_seo_advisor_table( 'crawl_pages' ) ), ARRAY_A ) as $r ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$map[ (string) $r['path'] ] = [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'], 'inlinks' => (int) $r['inlinks'], 'text_links' => (int) $r['text_links'], 'depth' => (int) $r['depth'], 'score' => (float) $r['score'] ];
+		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT path, status, indexable, reason, title_len, meta_len, inlinks, text_links, depth, score, title, h1, h2 FROM %i', hodima_seo_advisor_table( 'crawl_pages' ) ), ARRAY_A ) as $r ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$map[ (string) $r['path'] ] = [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'], 'inlinks' => (int) $r['inlinks'], 'text_links' => (int) $r['text_links'], 'depth' => (int) $r['depth'], 'score' => (float) $r['score'], 'title' => (string) $r['title'], 'h1' => (string) $r['h1'], 'h2' => (string) $r['h2'] ];
 		}
 	}
 
@@ -323,7 +328,7 @@ function hodima_seo_advisor_crawl_map( bool $reset = false ): array {
 /**
  * وضعیت خزش یک صفحه، یا null اگر در خزش نیست.
  *
- * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float}|null
+ * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}|null
  */
 function hodima_seo_advisor_crawl_row( string $path ): ?array {
 	return hodima_seo_advisor_crawl_map()[ $path ] ?? null;
@@ -401,6 +406,24 @@ function hodima_seo_advisor_crawl_meta_health( string $path ): ?array {
 	}
 
 	return [ 'healthy' => [] === $problems, 'title_len' => $r['title_len'], 'meta_len' => $r['meta_len'], 'problems' => $problems ];
+}
+
+/* ── عنوان و تیترهای رندرشده (انتشار ۴) ── */
+
+/**
+ * عنوان، H1 و دو H2 اول صفحه طبق خزش (آنچه گوگل واقعا می‌بیند)، یکسان‌شده برای جستجوی کلمه؛ null = در خزش نیست.
+ *
+ * @return array{text: string, title: string, h1: string}|null
+ */
+function hodima_seo_advisor_crawl_rendered( string $path ): ?array {
+
+	$r = hodima_seo_advisor_crawl_row( $path );
+
+	if ( null === $r || 200 !== $r['status'] || '' === trim( $r['title'] . $r['h1'] . $r['h2'] ) ) {
+		return null;
+	}
+
+	return [ 'text' => hodima_seo_advisor_normalize( $r['title'] . ' ' . $r['h1'] . ' ' . $r['h2'] ), 'title' => $r['title'], 'h1' => $r['h1'] ];
 }
 
 /* ── شواهد لینک داخلی (انتشار ۳) ── */
@@ -482,6 +505,8 @@ function hodima_seo_advisor_links_evidence( ?array $links, string $term ): strin
 		$text .= sprintf( ' %1$s لینک با متن «%2$s» دارد.', $num( $term_links ), $term );
 		if ( $links['text'] <= 3 ) {
 			$text .= ' لینک متنی کم است؛ ۳ تا ۵ لینک از صفحه‌های مرتبط بدهید.';
+		} elseif ( $links['text'] >= HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED && $term_links >= HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED_TERM ) {
+			$text .= ' لینک داخلی این صفحه کم نیست؛ لینک بیشتر اولویت نیست و عنوان، تیتر و متن را تقویت کنید.';
 		}
 	}
 
@@ -548,7 +573,7 @@ function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_
 
 	$page_rows = [];
 	foreach ( $pages as $p ) {
-		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], $p['h1'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'] ];
+		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], $p['h1'], $p['h2'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'] ];
 	}
 
 	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_table, $link_table, $page_rows, $links ): array|WP_Error {
@@ -562,7 +587,7 @@ function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_
 		}
 
 		$insert = [
-			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, h1, resp_ms, inlinks, text_links, depth, score, redirect_to', '(%s,%d,%d,%s,%s,%d,%d,%s,%d,%d,%d,%d,%f,%s)', $page_rows, 200, 'صفحه‌ها' ],
+			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to', '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s)', $page_rows, 200, 'صفحه‌ها' ],
 			[ $link_table, 'source_path, dest_path, link_position, anchor, is_follow', '(%s,%s,%s,%s,%d)', $links, 400, 'لینک‌ها' ],
 		];
 
@@ -709,7 +734,7 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 /** گروه چیپ‌های فیلتر ← کدهای ایراد. */
 const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
 	'meta'     => [ 'no_meta' ],
-	'title'    => [ 'no_title', 'title_short', 'title_long' ],
+	'title'    => [ 'no_title', 'title_short', 'title_long', 'no_h1' ],
 	'dup'      => [ 'dup_title', 'dup_h1' ],
 	'slow'     => [ 'slow' ],
 	'redirect' => [ 'redirect', 'noindex', 'broken' ],
@@ -726,6 +751,7 @@ function hodima_seo_advisor_crawl_issue_info( string $code ): array {
 
 	return [
 		'no_meta'     => [ 'label' => 'بدون توضیح متا', 'level' => 'bad', 'fix' => 'توضیح متا (۱۲۰ تا ۱۶۰ نویسه) بنویسید.' ],
+		'no_h1'       => [ 'label' => 'بدون H1', 'level' => 'warn', 'fix' => 'هر صفحه یک تیتر اصلی (H1) لازم دارد.' ],
 		'no_title'    => [ 'label' => 'بدون عنوان', 'level' => 'bad', 'fix' => 'عنوان سئو بنویسید.' ],
 		'title_short' => [ 'label' => 'عنوان کوتاه', 'level' => 'bad', 'fix' => 'عنوان را به ۴۸ تا ۶۲ نویسه برسانید.' ],
 		'title_long'  => [ 'label' => 'عنوان بلند', 'level' => 'warn', 'fix' => 'عنوان را به ۴۸ تا ۶۲ نویسه برسانید تا در گوگل بریده نشود.' ],
@@ -795,6 +821,9 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 			if ( (int) $r['meta_len'] <= 0 ) {
 				$add( 'no_meta' );
+			}
+			if ( '' === (string) $r['h1'] ) {
+				$add( 'no_h1' );
 			}
 			if ( '' !== $title && ( $titles[ mb_strtolower( $title ) ] ?? 0 ) > 1 ) {
 				$add( 'dup_title', sprintf( 'در %s صفحه', number_format_i18n( $titles[ mb_strtolower( $title ) ] ) ) );

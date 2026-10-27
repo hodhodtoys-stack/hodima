@@ -21,7 +21,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.5.0';
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.6.0';
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -150,6 +150,7 @@ function hodima_seo_advisor_install_tables(): void {
 		title_len smallint(5) unsigned NOT NULL DEFAULT 0,
 		meta_len smallint(5) unsigned NOT NULL DEFAULT 0,
 		h1 varchar(191) NOT NULL DEFAULT '',
+		h2 varchar(255) NOT NULL DEFAULT '',
 		resp_ms int(10) unsigned NOT NULL DEFAULT 0,
 		inlinks int(10) unsigned NOT NULL DEFAULT 0,
 		text_links int(11) NOT NULL DEFAULT -1,

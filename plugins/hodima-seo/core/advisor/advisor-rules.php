@@ -413,7 +413,7 @@ function hodima_seo_advisor_decline_cause( array $row, ?array $site ): array {
  *
  * @param array{path: string, clicks: int, impressions: int, position: float, prev_clicks: int} $row
  * @param list<array{term: string, clicks: int, impressions: int, position: float}> $queries پرنمایش‌ترین اول
- * @param array{title_headings: string, content: string}|null $text null = متن صفحه معلوم نیست؛ قاعده‌های متن اجرا نمی‌شوند
+ * @param array{title_headings: string, content: string, rendered?: array{title: string, h1: string}}|null $text null = متن صفحه معلوم نیست؛ قاعده‌های متن اجرا نمی‌شوند
  * @param array<string, list<array{path: string, impressions: int}>> $competitors کلمه ← آدرس‌های دیگری که برایش نمایش می‌گیرند
  * @param array{clicks_ratio: float|null, impressions_ratio: float|null}|null $site تغییر کل سایت نسبت به بازه قبل (hodima_seo_advisor_site_change)؛ null = ناشناخته
  * @param array{healthy: bool, title_len: int, meta_len: int, problems: list<string>}|null $meta طول عنوان و متا طبق خزش SF (hodima_seo_advisor_crawl_meta_health)؛ null = ناشناخته
@@ -493,11 +493,12 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 
 		if ( null !== $text && $query['position'] <= $cfg['near_first_max'] && ! hodima_seo_advisor_text_has( $text['title_headings'], $query['term'] ) ) {
 			$in_content = hodima_seo_advisor_text_has( $text['content'], $query['term'] );
+			$rendered   = isset( $text['rendered'] ) ? sprintf( ' طبق خزش، عنوان فعلی «%1$s» و H1 «%2$s» است.', $text['rendered']['title'], $text['rendered']['h1'] ) : '';
 			$missing[]  = [
 				'rule'      => $in_content ? 'missing_headings' : 'missing_content',
 				'term'      => $query['term'],
 				'title'     => $in_content ? 'کلمه «' . $query['term'] . '» در عنوان و تیترها نیست' : 'کلمه «' . $query['term'] . '» در متن صفحه نیست',
-				'detail'    => $info . ( $in_content ? ' آن را در عنوان یا یک تیتر (H2) بیاورید.' : ' آن را در عنوان، یک تیتر و پاراگراف اول بیاورید، یا بخش پرسش‌های متداول برایش بنویسید.' ),
+				'detail'    => $info . ( $in_content ? ' آن را در عنوان یا یک تیتر (H2) بیاورید.' : ' آن را در عنوان، یک تیتر و پاراگراف اول بیاورید، یا بخش پرسش‌های متداول برایش بنویسید.' ) . $rendered,
 				'potential' => $gain,
 			];
 		}
@@ -642,8 +643,18 @@ function hodima_seo_advisor_analyze( string $path ): ?array {
 	}
 
 	$queries     = hodima_seo_advisor_queries( $row['path'], HODIMA_SEO_ADVISOR_QUERIES_PER_PAGE );
+	$text        = hodima_seo_advisor_page_text( $row );
+	$rendered    = hodima_seo_advisor_crawl_rendered( $row['path'] );
+
+	// عنوان و H1 و H2 رندرشده (خزش) به متن پایگاه داده اضافه می‌شود: کلمه‌ای که در تیتر واقعی صفحه هست «غایب» حساب نشود
+	if ( null !== $text && null !== $rendered ) {
+		$text['title_headings'] .= ' ' . $rendered['text'];
+		$text['content']        .= ' ' . $rendered['text'];
+		$text['rendered']        = [ 'title' => $rendered['title'], 'h1' => $rendered['h1'] ];
+	}
+
 	$suggestions = hodima_seo_advisor_enrich(
-		hodima_seo_advisor_suggestions( $row, $queries, hodima_seo_advisor_page_text( $row ), hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change(), hodima_seo_advisor_crawl_meta_health( $row['path'] ), hodima_seo_advisor_crawl_links_info( $row['path'] ) ),
+		hodima_seo_advisor_suggestions( $row, $queries, $text, hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change(), hodima_seo_advisor_crawl_meta_health( $row['path'] ), hodima_seo_advisor_crawl_links_info( $row['path'] ) ),
 		$row,
 		$queries
 	);

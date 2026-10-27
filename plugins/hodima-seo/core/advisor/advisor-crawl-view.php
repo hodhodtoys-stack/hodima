@@ -179,7 +179,7 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 	$views = [
 		''         => [ 'همه', $sum['with_issues'] ],
 		'meta'     => [ 'بدون متا', $sum['groups']['meta'] ?? 0 ],
-		'title'    => [ 'عنوان کوتاه یا بلند', $sum['groups']['title'] ?? 0 ],
+		'title'    => [ 'عنوان یا H1', $sum['groups']['title'] ?? 0 ],
 		'dup'      => [ 'تکراری', $sum['groups']['dup'] ?? 0 ],
 		'slow'     => [ 'کند', $sum['groups']['slow'] ?? 0 ],
 		'redirect' => [ 'ریدایرکت یا noindex', $sum['groups']['redirect'] ?? 0 ],

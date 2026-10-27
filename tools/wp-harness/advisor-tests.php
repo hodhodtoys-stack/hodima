@@ -1732,6 +1732,71 @@ remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter3 );
 array_map( 'unlink', glob( "{$crawl_dir3}/{,.}*", GLOB_BRACE ) ?: [] );
 @rmdir( $crawl_dir3 );
 
+echo "=== انتشار ۴: عنوان و تیترهای رندرشده، بدون H1، لینک کافی\n";
+$crawl_dir4 = sys_get_temp_dir() . '/hodima-crawl-test4-' . getmypid();
+@mkdir( $crawl_dir4 );
+$crawl_filter4 = static fn(): string => $crawl_dir4;
+add_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter4 );
+$csv4 = static function ( string $name, array $rows ) use ( $crawl_dir4 ): void {
+	$h = fopen( "{$crawl_dir4}/{$name}", 'wb' );
+	fwrite( $h, "\xEF\xBB\xBF" );
+	foreach ( $rows as $r ) {
+		fputcsv( $h, $r, ',', '"', '' );
+	}
+	fclose( $h );
+	touch( "{$crawl_dir4}/{$name}", time() - 3600 );
+};
+$r4_id = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'صفحه آزمون چهار', 'post_name' => 'advisor-r4', 'post_content' => '<p>متن ساده</p>' ] );
+$r4_path = '/advisor-r4/';
+hodima_seo_advisor_store( [ $r4_path => [ 'clicks' => 5, 'impressions' => 4000, 'position' => 8.5 ] ], [], [ $r4_path => [ 'کلیپس سنجاقی' => [ 'clicks' => 3, 'impressions' => 3000, 'position' => 8.5 ] ] ] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time(), 'pages' => 1, 'days' => 90, 'property' => 'sc-domain:x' ], false );
+$rules4 = static fn( ?array $a ): array => array_column( (array) ( $a['suggestions'] ?? [] ), 'rule' );
+$has_obj = ( hodima_seo_advisor_page( $r4_path )['object_id'] ?? 0 ) > 0;
+if ( $has_obj ) {
+	$before = $rules4( hodima_seo_advisor_analyze( $r4_path ) );
+	hodima_ad( 'بدون خزش: کلمه‌ای که در متن و تیتر نیست «غایب» گزارش می‌شود', array_intersect( $before, [ 'missing_headings', 'missing_content' ] ) !== [], true );
+}
+$hdr4 = [ 'Address', 'Status Code', 'Indexability', 'Indexability Status', 'Title 1', 'Title 1 Length', 'Meta Description 1 Length', 'H1-1', 'H2-1', 'H2-2', 'Response Time', 'Unique Inlinks', 'Crawl Depth', 'Link Score', 'Redirect URL' ];
+$ok4  = str_repeat( 'عنوان سالم ', 5 );
+$csv4( 'internal_html.csv', [
+	$hdr4,
+	[ $u( $r4_path ), '200', 'Indexable', '', $ok4, (string) mb_strlen( $ok4 ), '130', 'کلیپس سنجاقی ارزان', 'بخش اول', 'بخش دوم', '0.4', '5', '1', '1', '' ],
+	[ $u( '/noh1/' ), '200', 'Indexable', '', $ok4, (string) mb_strlen( $ok4 ), '130', '', '', '', '0.4', '5', '1', '1', '' ],
+] );
+@unlink( "{$crawl_dir4}/all_inlinks.csv" );
+$imp4 = hodima_seo_advisor_crawl_import();
+hodima_ad( 'خواندن صفحه‌ها با ستون‌های H2', is_wp_error( $imp4 ) ? $imp4->get_error_message() : $imp4['pages'], 2 );
+$rd = hodima_seo_advisor_crawl_rendered( $r4_path );
+hodima_ad( 'عنوان و تیترهای رندرشده: متن یکسان‌شده شامل H1 و هر دو H2', [ str_contains( (string) $rd['text'], 'کلیپس سنجاقی ارزان' ), str_contains( (string) $rd['text'], 'بخش دوم' ), $rd['h1'] ], [ true, true, 'کلیپس سنجاقی ارزان' ] );
+hodima_ad( 'صفحه خارج از خزش: رندرشده null', hodima_seo_advisor_crawl_rendered( '/not-there/' ), null );
+if ( $has_obj ) {
+	$after = $rules4( hodima_seo_advisor_analyze( $r4_path ) );
+	hodima_ad( 'H1 رندرشده کلمه را دارد ← دیگر «غایب» نیست', array_intersect( $after, [ 'missing_headings', 'missing_content' ] ), [] );
+}
+$text4 = [ 'title_headings' => hodima_seo_advisor_normalize( 'صفحه' ), 'content' => hodima_seo_advisor_normalize( 'متن' ), 'rendered' => [ 'title' => 'عنوان فعلی', 'h1' => 'تیتر فعلی' ] ];
+$sug4  = hodima_seo_advisor_suggestions( [ 'path' => '/q/', 'clicks' => 5, 'impressions' => 4000, 'position' => 8.5, 'prev_clicks' => 0 ], [ [ 'term' => 'کلیپس سنجاقی', 'clicks' => 3, 'impressions' => 3000, 'position' => 8.5 ] ], $text4 );
+$miss4 = array_values( array_filter( $sug4, static fn( array $x ): bool => str_starts_with( $x['rule'], 'missing_' ) ) )[0] ?? null;
+hodima_ad( 'پیشنهاد «غایب»: عنوان و H1 فعلی طبق خزش در متن می‌آید', str_contains( (string) ( $miss4['detail'] ?? '' ), 'طبق خزش، عنوان فعلی «عنوان فعلی» و H1 «تیتر فعلی» است' ), true );
+hodima_ad( 'بدون rendered همان جمله نیست', str_contains( (string) ( array_values( array_filter( hodima_seo_advisor_suggestions( [ 'path' => '/q/', 'clicks' => 5, 'impressions' => 4000, 'position' => 8.5, 'prev_clicks' => 0 ], [ [ 'term' => 'کلیپس سنجاقی', 'clicks' => 3, 'impressions' => 3000, 'position' => 8.5 ] ], [ 'title_headings' => 'x', 'content' => 'y' ] ), static fn( array $x ): bool => str_starts_with( $x['rule'], 'missing_' ) ) )[0]['detail'] ?? '' ), 'طبق خزش، عنوان' ), false );
+
+$iss4 = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $row ) {
+	$iss4[ $row['path'] ] = array_column( $row['issues'], 'code' );
+}
+hodima_ad( 'صفحه بدون H1 ایراد «بدون H1» می‌گیرد و صفحه با H1 نه', [ in_array( 'no_h1', $iss4['/noh1/'] ?? [], true ), in_array( 'no_h1', $iss4[ $r4_path ] ?? [], true ) ], [ true, false ] );
+hodima_ad( '«بدون H1» در چیپ عنوان شمرده می‌شود', hodima_seo_advisor_crawl_summary( hodima_seo_advisor_crawl_issues() )['groups']['title'] >= 1, true );
+
+$well = hodima_seo_advisor_links_evidence( [ 'total' => 30, 'text' => 20, 'score' => 50.0, 'depth' => 1, 'anchors' => [ [ 'anchor' => 'کلیپس سنجاقی', 'count' => 8 ] ] ], 'کلیپس سنجاقی' );
+hodima_ad( 'لینک داخلی کافی: دستور تمرکز را روی عنوان و متن می‌گذارد', [ str_contains( $well, 'لینک داخلی این صفحه کم نیست' ), str_contains( $well, 'لینک متنی کم است' ) ], [ true, false ] );
+$notwell = hodima_seo_advisor_links_evidence( [ 'total' => 30, 'text' => 20, 'score' => 50.0, 'depth' => 1, 'anchors' => [ [ 'anchor' => 'کلیپس سنجاقی', 'count' => 2 ] ] ], 'کلیپس سنجاقی' );
+hodima_ad( 'لینک زیاد ولی با عبارت کم: همان جمله نمی‌آید', str_contains( $notwell, 'لینک داخلی این صفحه کم نیست' ), false );
+
+hodima_seo_advisor_clear_data();
+wp_delete_post( $r4_id, true );
+remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter4 );
+array_map( 'unlink', glob( "{$crawl_dir4}/{,.}*", GLOB_BRACE ) ?: [] );
+@rmdir( $crawl_dir4 );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );
