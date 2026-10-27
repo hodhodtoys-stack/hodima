@@ -1195,7 +1195,7 @@ hodima_seo_advisor_task_set( '/k/a/', 'near_first', 'کلیپس', 'کلمه نز
 ob_start();
 hodima_seo_advisor_render_task_controls( '/k/b/', [ 'rule' => 'low_ctr', 'term' => '', 'title' => 'عنوان و متا را بازنویسی کنید' ] );
 $ctl = (string) ob_get_clean();
-hodima_ad( 'کنترل کادر: نشان «انجام شد»، دو دکمه دیگر و «برداشتن» با nonce', [ str_contains( $ctl, 'انجام شد ·' ), substr_count( $ctl, 'class="button button-small"' ), str_contains( $ctl, 'برداشتن' ), str_contains( $ctl, '_wpnonce=' ), str_contains( $ctl, 'status=doing' ), str_contains( $ctl, 'status=done' ) ], [ true, 2, true, true, true, false ] );
+hodima_ad( 'کنترل کادر: نشان «انجام شد»، دو دکمه دیگر و «برداشتن از کارها» هم دکمه (۳ دکمه) با nonce', [ str_contains( $ctl, 'انجام شد ·' ), substr_count( $ctl, 'class="button button-small"' ), str_contains( $ctl, 'برداشتن از کارها' ), str_contains( $ctl, '_wpnonce=' ), str_contains( $ctl, 'status=doing' ), str_contains( $ctl, 'status=done' ) ], [ true, 3, true, true, true, false ] );
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 hodima_seo_advisor_store( [ '/k/b/' => [ 'clicks' => 5, 'impressions' => 3000, 'position' => 8.0 ] ], [], [] );
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -1209,6 +1209,7 @@ $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'done' ];
 ob_start();
 hodima_seo_advisor_render_admin();
 $done_html = (string) ob_get_clean();
+hodima_ad( 'کنش‌ها دکمه‌اند نه کلمه لینکی: «ویرایش/دیدن در سایت» و «برداشتن از کارها» با کلاس دکمه و آیکون', [ substr_count( $done_html, 'hds-btn hds-btn--outline hodima-advisor__act' ) >= 2, str_contains( $done_html, 'hodima-advisor__link-btn' ), str_contains( $done_html, 'dashicons-trash' ) ], [ true, false, true ] );
 hodima_ad( 'تب «انجام‌شده»: تب فعال، کار «انجام شد» با سه گام (انجام دادید، منتظر بررسی ایندکس، منتظر نتیجه با سنجش ۱۴ روزه)', [ str_contains( $done_html, 'tab=done" aria-current="page"' ), substr_count( $done_html, 'class="hodima-advisor__task"' ), substr_count( $done_html, 'class="hodima-advisor__step"' ), str_contains( $done_html, 'منتظر بررسی ایندکس' ), str_contains( $done_html, 'همان‌قدر روز پیش از آن مقایسه می‌شود' ), str_contains( $done_html, 'کلمه نزدیک صفحه اول' ) ], [ true, 1, 3, true, true, false ] );
 $kb_at   = hodima_seo_advisor_task( '/k/b/', 'low_ctr', '' )['at'];
 $ins_old = get_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, false );

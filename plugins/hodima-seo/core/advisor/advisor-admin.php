@@ -151,6 +151,22 @@ function hodima_seo_advisor_url_link( string $path, string $css_class = 'hodima-
 	);
 }
 
+/**
+ * دکمه کنش کوچک صفحه (ویرایش صفحه، دیدن در سایت، نادیده گرفتن…): همیشه دکمه کادردار با آیکون، نه کلمه لینکی
+ * (SEO 2.9.5؛ خواست کاربر: «این‌ها دکمه داشته باشد»). HTML امن‌شده برمی‌گرداند.
+ *
+ * @param string $icon نام Dashicon بدون پیشوند (edit، external، hidden، undo…)
+ */
+function hodima_seo_advisor_action( string $url, string $label, string $icon = '', bool $external = false ): string {
+	return sprintf(
+		'<a class="hds-btn hds-btn--outline hodima-advisor__act" href="%1$s"%2$s>%3$s%4$s</a>',
+		esc_url( $url ),
+		$external ? ' target="_blank" rel="noopener"' : '',
+		'' !== $icon ? '<span class="dashicons dashicons-' . esc_attr( $icon ) . '" aria-hidden="true"></span>' : '',
+		esc_html( $label )
+	);
+}
+
 function hodima_seo_advisor_back_url(): string {
 	$back = wp_get_referer();
 	return is_string( $back ) && '' !== $back ? $back : hodima_seo_advisor_page_url();
@@ -857,9 +873,9 @@ function hodima_seo_advisor_render_list( array $status ): void {
 			hodima_seo_ui_empty(
 				'کار بازی نمانده',
 				sprintf(
-					'همه ایرادهای %1$s صفحه را «انجام شد» یا «رد شد» علامت زده‌اید. <a href="%2$s">نمایش این صفحه‌ها</a>',
+					'همه ایرادهای %1$s صفحه را «انجام شد» یا «رد شد» علامت زده‌اید. %2$s',
 					esc_html( number_format_i18n( count( $handled_here ) ) ),
-					esc_url( hodima_seo_advisor_page_url( array_filter( [ 'tasks' => 'all' ] + $keep ) ) )
+					hodima_seo_advisor_action( hodima_seo_advisor_page_url( array_filter( [ 'tasks' => 'all' ] + $keep ) ), 'نمایش این صفحه‌ها', 'visibility' )
 				)
 			);
 			hodima_seo_ui_card_close();
@@ -886,10 +902,10 @@ function hodima_seo_advisor_render_list( array $status ): void {
 		<span>
 			<?php echo esc_html( sprintf( 'نمایش %1$s از %2$s آدرس، مرتب‌شده بر اساس کلیک بالقوه', number_format_i18n( count( $result['rows'] ) ), number_format_i18n( $result['total'] ) ) ); ?>
 			<?php if ( $ignored > 0 && 'ignored' !== $view ) : ?>
-				· <a href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'view' => 'ignored' ] ) ); ?>"><?php echo esc_html( sprintf( '%s آدرس نادیده گرفته شده', number_format_i18n( $ignored ) ) ); ?></a>
+				<?php echo hodima_seo_advisor_action( hodima_seo_advisor_page_url( [ 'view' => 'ignored' ] ), sprintf( '%s آدرس نادیده گرفته شده', number_format_i18n( $ignored ) ), 'hidden' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
 			<?php endif; ?>
 			<?php if ( $handled && 'ignored' !== $view ) : ?>
-				· <a href="<?php echo esc_url( hodima_seo_advisor_page_url( array_filter( [ 'tasks' => '' === $filters['tasks'] ? 'all' : '' ] + $keep ) ) ); ?>"><?php echo esc_html( '' === $filters['tasks'] ? sprintf( 'نمایش %s صفحه که همه ایرادهایش علامت خورده', number_format_i18n( count( $handled ) ) ) : 'پنهان کردن صفحه‌های تمام‌علامت‌خورده' ); ?></a>
+				<?php echo hodima_seo_advisor_action( hodima_seo_advisor_page_url( array_filter( [ 'tasks' => '' === $filters['tasks'] ? 'all' : '' ] + $keep ) ), '' === $filters['tasks'] ? sprintf( 'نمایش %s صفحه که همه ایرادهایش علامت خورده', number_format_i18n( count( $handled ) ) ) : 'پنهان کردن صفحه‌های تمام‌علامت‌خورده', '' === $filters['tasks'] ? 'visibility' : 'hidden' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
 			<?php endif; ?>
 		</span>
 		<?php
@@ -958,7 +974,7 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 				<?php if ( ! $ignored_view && '' !== $edit ) : ?>
 					<a class="hds-btn" href="<?php echo esc_url( $edit ); ?>">ویرایش و رفع ایرادها</a>
 				<?php elseif ( ! $ignored_view ) : ?>
-					<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( hodima_seo_advisor_url( (string) $row['path'] ) ); ?>" target="_blank" rel="noopener">دیدن در سایت</a>
+					<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( hodima_seo_advisor_url( (string) $row['path'] ) ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> دیدن در سایت</a>
 				<?php endif; ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<input type="hidden" name="action" value="hodima_advisor_ignore">
@@ -967,7 +983,7 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 						<input type="hidden" name="restore" value="1">
 					<?php endif; ?>
 					<?php wp_nonce_field( 'hodima_advisor_ignore' ); ?>
-					<button type="submit" class="hodima-advisor__ignore"><?php echo $ignored_view ? 'بازگرداندن به فهرست' : 'نادیده گرفتن'; ?></button>
+					<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-<?php echo $ignored_view ? 'undo' : 'hidden'; ?>" aria-hidden="true"></span><?php echo $ignored_view ? 'بازگرداندن به فهرست' : 'نادیده گرفتن'; ?></button>
 				</form>
 			</span>
 		</div>

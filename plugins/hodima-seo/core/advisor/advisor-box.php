@@ -242,11 +242,11 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	echo '</div>';
 
 	echo '<footer class="hodima-advisor-box__foot">';
-	printf( '<a class="hodima-advisor-box__link" href="%s">دیدن در صفحه دستار سئو</a>', esc_url( hodima_seo_advisor_page_url( [ 'q' => (string) $row['path'] ] ) ) );
+	printf( '<a class="button" href="%s"><span class="dashicons dashicons-chart-line" aria-hidden="true"></span> دیدن در صفحه دستار سئو</a>', esc_url( hodima_seo_advisor_page_url( [ 'q' => (string) $row['path'] ] ) ) );
 
 	if ( $ignored ) {
 		printf(
-			'<a class="hodima-advisor-box__link" href="%s">بازگرداندن به پیشنهادها</a>',
+			'<a class="button" href="%s"><span class="dashicons dashicons-undo" aria-hidden="true"></span> بازگرداندن به پیشنهادها</a>',
 			esc_url( wp_nonce_url( add_query_arg( [ 'action' => 'hodima_advisor_ignore', 'path' => (string) $row['path'], 'restore' => 1 ], admin_url( 'admin-post.php' ) ), 'hodima_advisor_ignore' ) )
 		);
 	}

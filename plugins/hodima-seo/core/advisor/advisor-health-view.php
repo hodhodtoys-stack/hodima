@@ -110,7 +110,7 @@ function hodima_seo_advisor_render_health( array $status ): void {
 							<th scope="row"><?php echo esc_html( '' !== (string) $row['title'] ? (string) $row['title'] : (string) $row['path'] ); ?> <?php echo hodima_seo_advisor_url_link( (string) $row['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
 							<td><?php echo esc_html( hodima_seo_advisor_kind_label( (string) $row['type'] ) ); ?></td>
 							<td><?php echo esc_html( sprintf( '%s روز', $n( $row['days'] ) ) ); ?></td>
-							<td><a href="<?php echo esc_url( is_string( $edit ) && '' !== $edit ? $edit : home_url( (string) $row['path'] ) ); ?>"><?php echo is_string( $edit ) && '' !== $edit ? 'ویرایش' : 'دیدن در سایت'; ?></a></td>
+							<td><?php echo is_string( $edit ) && '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش صفحه', 'edit' ) : hodima_seo_advisor_action( home_url( (string) $row['path'] ), 'دیدن در سایت', 'external', true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>

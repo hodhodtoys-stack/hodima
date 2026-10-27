@@ -54,7 +54,7 @@ function hodima_seo_advisor_competition_page_title( array $page ): string {
  * آدرس ویرایش صفحه (در صورت شناخته‌شدن)، وگرنه آدرس دیدن در سایت.
  *
  * @param array<string, mixed> $page
- * @return array{0: string, 1: string} آدرس و برچسب
+ * @return array{0: string, 1: string, 2: string} آدرس، برچسب و Dashicon دکمه
  */
 function hodima_seo_advisor_competition_page_link( array $page ): array {
 
@@ -64,18 +64,18 @@ function hodima_seo_advisor_competition_page_link( array $page ): array {
 	if ( $id > 0 && post_type_exists( $kind ) && current_user_can( 'edit_post', $id ) ) {
 		$url = get_edit_post_link( $id, 'raw' );
 		if ( is_string( $url ) && '' !== $url ) {
-			return [ $url, 'ویرایش صفحه' ];
+			return [ $url, 'ویرایش صفحه', 'edit' ];
 		}
 	}
 
 	if ( $id > 0 && taxonomy_exists( $kind ) ) {
 		$url = get_edit_term_link( $id, $kind );
 		if ( is_string( $url ) && '' !== $url ) {
-			return [ $url, 'ویرایش دسته' ];
+			return [ $url, 'ویرایش دسته', 'edit' ];
 		}
 	}
 
-	return [ home_url( (string) $page['path'] ), 'دیدن در سایت' ];
+	return [ home_url( (string) $page['path'] ), 'دیدن در سایت', 'external' ];
 }
 
 /**
@@ -115,7 +115,7 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 	);
 
 	if ( $settled ) {
-		echo '<p class="hodima-advisor__advice"><a href="' . esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ) . '">برگشت به رقابت‌های واقعی</a></p>';
+		echo '<p class="hodima-advisor__advice">' . hodima_seo_advisor_action( hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ), 'برگشت به رقابت‌های واقعی', 'arrow-right-alt' ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action
 	} elseif ( $all['resolved']['groups'] > 0 ) {
 		printf(
 			'<p class="hodima-advisor__advice">%1$s گروه رقابت از این فهرست کنار رفت (حدود %2$s «کلیک بالقوه» ساختگی)، چون یکی از صفحه‌هایشان ریدایرکت، ۴۰۴، noindex یا صفحه اصلی است. <a href="%3$s">دیدن آن‌ها</a></p>',
@@ -212,7 +212,7 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 		<div class="hodima-advisor__group-body">
 			<ul class="hodima-advisor__rivals">
 				<?php foreach ( $group['pages'] as $i => $page ) : ?>
-					<?php [ $url, $link_label ] = hodima_seo_advisor_competition_page_link( $page ); ?>
+					<?php [ $url, $link_label, $link_icon ] = hodima_seo_advisor_competition_page_link( $page ); ?>
 					<li class="hodima-advisor__rival<?php echo 0 === $i ? ' is-winner' : ''; ?>">
 						<div class="hodima-advisor__rival-name">
 							<strong><?php echo esc_html( hodima_seo_advisor_competition_page_title( $page ) ); ?></strong>
@@ -232,7 +232,7 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 						</div>
 						<span class="hodima-advisor__rival-stat"><?php echo esc_html( sprintf( '%s کلیک', $n( $page['clicks'] ) ) ); ?></span>
 						<span class="hodima-advisor__rival-stat"><?php echo esc_html( sprintf( 'رتبه %s', number_format_i18n( $page['position'], 1 ) ) ); ?></span>
-						<a class="hodima-advisor__rival-link" href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( $link_label ); ?></a>
+						<?php echo hodima_seo_advisor_action( $url, $link_label, $link_icon, 'external' === $link_icon ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
 					</li>
 				<?php endforeach; ?>
 			</ul>

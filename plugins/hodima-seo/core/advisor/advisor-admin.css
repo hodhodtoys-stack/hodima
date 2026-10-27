@@ -171,7 +171,7 @@
 .hodima-advisor .hodima-advisor__head,
 .hodima-advisor .hodima-advisor__grid {
 	display: grid;
-	grid-template-columns: minmax(0, 2fr) 5rem 6rem 3rem minmax(0, 2.4fr) 7rem 9.5rem;
+	grid-template-columns: minmax(0, 2fr) 5rem 6rem 3rem minmax(0, 2.4fr) 7rem 11.5rem;
 	align-items: center;
 	gap: 0.875rem;
 	padding-inline: 1.25rem;
@@ -328,26 +328,21 @@
 	justify-content: center;
 	text-align: center;
 	text-decoration: none;
+	white-space: nowrap; /* ستون دکمه‌ها جا دارد (۱۱٫۵rem)؛ متن دکمه دو خط نشود */
+}
+
+.hodima-advisor .hodima-advisor__actions .hds-btn .dashicons {
+	inline-size: 1rem;
+	block-size: 1rem;
+	font-size: 1rem;
 }
 
 .hodima-advisor .hodima-advisor__actions form {
 	margin: 0;
 }
 
-.hodima-advisor .hodima-advisor__ignore {
-	padding: 0.25rem 0;
-	border: 0;
-	background: none;
-	color: var(--hd-muted);
-	font: inherit;
-	font-size: 0.75rem;
-	text-decoration: underline;
-	cursor: pointer;
-}
-
-.hodima-advisor .hodima-advisor__ignore:focus-visible {
-	outline: 2px solid var(--hd-secondary);
-	outline-offset: 2px;
+.hodima-advisor .hodima-advisor__actions form .hds-btn {
+	inline-size: 100%;
 }
 
 /* ردیف «به‌روزرسانی همه» (یک بار بالای تب‌ها) */
@@ -363,6 +358,21 @@
 }
 
 .hodima-advisor .hodima-advisor__view--settings .dashicons {
+	inline-size: 1rem;
+	block-size: 1rem;
+	font-size: 1rem;
+}
+
+/* دکمه کنش کوچک (ویرایش صفحه، دیدن در سایت، نادیده گرفتن، برداشتن…؛ SEO 2.9.5): به‌جای کلمه لینکی */
+.hodima-advisor .hodima-advisor__act {
+	gap: 0.25rem;
+	min-block-size: 2.5rem;
+	padding-inline: 0.75rem;
+	font-size: 0.8125rem;
+	white-space: nowrap;
+}
+
+.hodima-advisor .hodima-advisor__act .dashicons {
 	inline-size: 1rem;
 	block-size: 1rem;
 	font-size: 1rem;
@@ -618,10 +628,6 @@
 
 .hodima-advisor .hodima-advisor__rival-stat {
 	font-size: 0.8125rem;
-}
-
-.hodima-advisor .hodima-advisor__rival-link {
-	font-size: 0.75rem;
 }
 
 .hodima-advisor .hodima-advisor__more {
@@ -888,16 +894,6 @@
 	flex-wrap: wrap;
 	gap: 0.5rem;
 	align-items: center;
-}
-
-.hodima-advisor .hodima-advisor__link-btn {
-	padding: 0;
-	border: 0;
-	background: none;
-	color: var(--hd-primary);
-	font-size: 0.75rem;
-	text-decoration: underline;
-	cursor: pointer;
 }
 
 /* ردیف تب‌ها (تب «تنظیمات» آخر ردیف = سمت چپ در راست‌به‌چپ) */

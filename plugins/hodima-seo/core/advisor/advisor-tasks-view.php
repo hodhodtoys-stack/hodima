@@ -60,7 +60,7 @@ function hodima_seo_advisor_render_task_controls( string $path, array $item ): v
 	}
 
 	if ( null !== $task ) {
-		printf( '<a class="hodima-advisor-box__link" href="%1$s">برداشتن</a>', esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, '' ) ) );
+		printf( '<a class="button button-small" href="%1$s">برداشتن از کارها</a>', esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, '' ) ) );
 	}
 
 	echo '</div>';
@@ -159,7 +159,7 @@ function hodima_seo_advisor_render_task_form( array $task, string $state ): void
 				<button type="submit" name="status" value="<?php echo esc_attr( $key ); ?>" class="hds-btn hds-btn--outline"><?php echo esc_html( $label ); ?></button>
 			<?php endif; ?>
 		<?php endforeach; ?>
-		<button type="submit" name="status" value="" class="hodima-advisor__link-btn">برداشتن</button>
+		<button type="submit" name="status" value="" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-trash" aria-hidden="true"></span>برداشتن از کارها</button>
 	</form>
 	<?php
 }
@@ -226,7 +226,7 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 
 	foreach ( $rows as $task ) {
 		$page = hodima_seo_advisor_page( $task['path'] );
-		$link = null !== $page ? hodima_seo_advisor_competition_page_link( $page ) : [ home_url( $task['path'] ), 'دیدن در سایت' ];
+		$link = null !== $page ? hodima_seo_advisor_competition_page_link( $page ) : [ home_url( $task['path'] ), 'دیدن در سایت', 'external' ];
 		$view = hodima_seo_advisor_task_view( $task );
 		$hint = $done ? '' : match ( $view['state'] ) {
 			'unseen'    => 'کلمه هنوز در عنوان، تیترها یا متن صفحه پیدا نمی‌شود؛ صفحه را بررسی و دوباره ذخیره کنید.',
@@ -241,7 +241,7 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 				<span class="hodima-advisor__task-page">
 					<?php echo esc_html( hodima_seo_advisor_breakdown_page_title( $task['path'] ) ); ?>
 					<?php echo hodima_seo_advisor_url_link( (string) $task['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?>
-					<a href="<?php echo esc_url( $link[0] ); ?>"><?php echo esc_html( $link[1] ); ?></a>
+					<?php echo hodima_seo_advisor_action( $link[0], $link[1], $link[2], 'external' === $link[2] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
 				</span>
 			</div>
 			<div class="hodima-advisor__task-state">

@@ -95,7 +95,7 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true ): voi
 						$edit = hodima_seo_advisor_edit_link( (string) $source['kind'], (int) $source['id'] );
 						printf(
 							'<li>%1$s <small>%2$s · %3$s</small></li>',
-							'' !== $edit ? '<a href="' . esc_url( $edit ) . '">' . esc_html( (string) $source['title'] ) . '</a>' : esc_html( (string) $source['title'] ),
+							esc_html( (string) $source['title'] ) . ( '' !== $edit ? ' <a class="button button-small" href="' . esc_url( $edit ) . '" target="_blank" rel="noopener">ویرایش این صفحه</a>' : '' ),
 							esc_html( hodima_seo_advisor_kind_label( (string) $source['kind'] ) ),
 							esc_html( $source['impressions'] > 0 ? sprintf( '%s نمایش', $n( (int) $source['impressions'] ) ) : 'بدون آمار گوگل' )
 						);
@@ -119,7 +119,7 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true ): voi
 					printf(
 						'<tr%1$s><td>%2$s<small dir="ltr">%3$s</small></td><td>%4$s</td><td>%5$s</td><td>%6$s</td></tr>',
 						$is_me ? ' class="is-me"' : '',
-						$is_me ? 'همین صفحه · ' . esc_html( $name ) : ( '' !== $edit ? '<a href="' . esc_url( $edit ) . '">' . esc_html( $name ) . ' ↗</a>' : esc_html( $name ) ),
+						$is_me ? 'همین صفحه · ' . esc_html( $name ) : esc_html( $name ) . ( '' !== $edit ? ' <a class="button button-small" href="' . esc_url( $edit ) . '" target="_blank" rel="noopener">ویرایش</a>' : '' ),
 						esc_html( rawurldecode( (string) $page['path'] ) ),
 						esc_html( $n( (float) $page['position'], 1 ) ),
 						esc_html( $n( (int) $page['impressions'] ) ),

@@ -204,9 +204,13 @@
 	margin-block-start: 0.875rem;
 }
 
-.hodima-advisor-box__link {
-	display: inline-block;
-	min-block-size: 1.5rem;
+/* دکمه‌های وردپرس کادر با آیکون (SEO 2.9.5: به‌جای کلمه لینکی) */
+.hodima-advisor-box .button .dashicons {
+	inline-size: 1rem;
+	block-size: 1rem;
+	margin-block-start: 0.25rem;
+	font-size: 1rem;
+	vertical-align: text-top;
 }
 
 /* کادر بسیار باریک: سه عدد زیر هم (در موبایل ۳۹۰ هنوز سه‌ستونه است) */
