@@ -1204,7 +1204,7 @@ $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
 ob_start();
 hodima_seo_advisor_render_admin();
 $tasks_html = (string) ob_get_clean();
-hodima_ad( 'تب کارهای من: ۴ کارت آمار، ۲ کار، فرم با nonce و دکمه‌های وضعیت، جمله اثر', [ substr_count( $tasks_html, 'class="hds-stat"' ), substr_count( $tasks_html, 'class="hodima-advisor__task"' ), str_contains( $tasks_html, 'name="action" value="hodima_advisor_task"' ), str_contains( $tasks_html, 'name="status" value="rejected"' ), str_contains( $tasks_html, 'تاریخچه هفتگی کافی' ) || str_contains( $tasks_html, 'هنوز زود است' ) ], [ 4, 2, true, true, true ] );
+hodima_ad( 'تب کارهای من: ۴ کارت آمار، ۲ کار، فرم با nonce و دکمه‌های وضعیت، جمله «سنجش بعد از ۱۴ روز» برای کار آماری منتظر', [ substr_count( $tasks_html, 'class="hds-stat"' ), substr_count( $tasks_html, 'class="hodima-advisor__task"' ), str_contains( $tasks_html, 'name="action" value="hodima_advisor_task"' ), str_contains( $tasks_html, 'name="status" value="rejected"' ), str_contains( $tasks_html, 'همان‌قدر روز پیش از تغییر با آن مقایسه می‌شود' ) ], [ 4, 2, true, true, true ] );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'open' ];
 ob_start();
 hodima_seo_advisor_render_admin();
@@ -1972,6 +1972,110 @@ $hs = hodima_seo_advisor_competition( [ 'resolved' => true ] );
 $small = array_values( array_filter( $hs['rows'], static fn( array $g ): bool => 'گیره کوچک' === $g['term'] ) )[0] ?? null;
 hodima_ad( 'نمای حل‌شده‌ها: گروه با دلیل «home» و دستور «اقدامی لازم نیست»', null === $small ? null : [ array_column( $small['pages'], 'resolved', 'path' ), str_contains( $small['advice']['detail'], 'اقدامی لازم نیست' ) ], [ [ '/cat-x/' => '', '/' => 'home' ], true ] );
 hodima_ad( 'رقیب‌های یک دسته: صفحه اصلی نمی‌آید؛ برای خود صفحه اصلی رقیبی نیست', [ hodima_seo_advisor_competitors( '/cat-x/', [ [ 'term' => 'گیره کوچک', 'impressions' => 22000 ] ] ), hodima_seo_advisor_competitors( '/', [ [ 'term' => 'گیره کوچک', 'impressions' => 400 ] ] ) ], [ [], [] ] );
+hodima_seo_advisor_clear_data();
+
+echo "=== «منتظر داده گوگل»: سنجش با داده فقط بعد از تغییر (advisor-verify.php)\n";
+$vf_saved = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false );
+delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+$vf_task = static fn( string $rule, int $days_ago, array $extra = [] ): array => $extra + [ 'path' => '/vf/a/', 'rule' => $rule, 'term' => '', 'title' => 't', 'status' => 'done', 'at' => time() - $days_ago * DAY_IN_SECONDS, 'fixed' => 0, 'back' => 0, 'check' => [] ];
+$vd = hodima_seo_advisor_verify_dates( $vf_task( 'low_ctr', 35 ) );
+$vlen = static fn( array $w ): int => (int) ( new DateTimeImmutable( $w[0] ) )->diff( new DateTimeImmutable( $w[1] ) )->days + 1;
+hodima_ad( 'بازه‌ها: ۳۵ روز پیش ← بیش از ۲۸ روز داده، پنجره ۲۸، قبل و بعد هم‌اندازه و چسبیده به روز تغییر', [ $vd['after_days'] >= 27, $vd['window'], $vlen( $vd['before'] ), $vlen( $vd['after'] ), ( new DateTimeImmutable( $vd['before'][1] ) )->modify( '+2 days' )->format( 'Y-m-d' ) === $vd['after'][0] ], [ true, 28, 28, 28, true ] );
+hodima_ad( 'برچسب انتظار: کار همین امروز ← «۰ از ۱۴ روز»؛ متنی ← بدون شمار', [ (bool) preg_match( '/\((0|۰) از (14|۱۴) روز\)/u', hodima_seo_advisor_verify_wait_label( $vf_task( 'low_ctr', 0 ) ) ), hodima_seo_advisor_verify_wait_label( $vf_task( 'missing_content', 0 ) ) ], [ true, 'انجام شد · منتظر داده گوگل' ] );
+hodima_ad( 'سررسید: ۲۰ روز پیش بله؛ ۵ روز نه؛ متنی/در حال انجام نه؛ «اثر داشت» نه؛ موقت ۲۸روزه نه؛ موقت ۱۴روزه هفته بعد بله', [
+	hodima_seo_advisor_verify_due( $vf_task( 'low_ctr', 20 ) ),
+	hodima_seo_advisor_verify_due( $vf_task( 'low_ctr', 5 ) ),
+	hodima_seo_advisor_verify_due( $vf_task( 'missing_content', 20 ) ),
+	hodima_seo_advisor_verify_due( $vf_task( 'low_ctr', 20, [ 'status' => 'doing' ] ) ),
+	hodima_seo_advisor_verify_due( $vf_task( 'low_ctr', 40, [ 'check' => [ 'verdict' => 'effective', 'window' => 14, 'at' => 1 ] ] ) ),
+	hodima_seo_advisor_verify_due( $vf_task( 'low_ctr', 40, [ 'check' => [ 'verdict' => 'no_effect', 'window' => 28, 'at' => 1 ] ] ) ),
+	hodima_seo_advisor_verify_due( $vf_task( 'low_ctr', 20, [ 'check' => [ 'verdict' => 'no_effect', 'window' => 14, 'at' => time() ] ] ) ),
+	hodima_seo_advisor_verify_due( $vf_task( 'low_ctr', 20, [ 'check' => [ 'verdict' => 'no_effect', 'window' => 14, 'at' => time() - 8 * DAY_IN_SECONDS ] ] ) ),
+], [ true, false, false, false, false, false, false, true ] );
+$vm = static fn( int $c, int $i, float $p ): array => [ 'clicks' => $c, 'impressions' => $i, 'ctr' => $i > 0 ? round( $c / $i * 100, 2 ) : 0.0, 'position' => $p ];
+$vj = static fn( string $rule, array $b, array $a, array $bt = [], array $at = [], string $term = '' ): string => hodima_seo_advisor_verify_judge( [ 'rule' => $rule, 'term' => $term ], [ 'page' => $b, 'terms' => $bt ], [ 'page' => $a, 'terms' => $at ] )['verdict'];
+$tk = hodima_seo_advisor_term_key( 'کلیپس طلایی' );
+hodima_ad( 'حکم: نرخ کلیک ۰٫۵٪←۱٫۵٪ اثر داشت؛ ۰٫۵٪←۰٫۵۲٪ نداشت؛ نمایش کم = داده کم؛ رسیدن به نرخ معمول رتبه = اثر داشت', [
+	$vj( 'low_ctr', $vm( 50, 10000, 4.0 ), $vm( 150, 10000, 4.0 ) ),
+	$vj( 'low_ctr', $vm( 50, 10000, 4.0 ), $vm( 52, 10000, 4.0 ) ),
+	$vj( 'low_ctr', $vm( 5, 1000, 4.0 ), $vm( 9, 80, 4.0 ) ),
+	$vj( 'low_ctr', $vm( 30, 1000, 15.0 ), $vm( 16, 1000, 15.0 ) ),
+], [ 'effective', 'no_effect', 'low_data', 'effective' ] );
+hodima_ad( 'حکم کلمه: ۱۲←۹٫۵ اثر داشت؛ ۱۲←۱۱٫۵ نداشت؛ رسیدن به ۷ (نزدیک صفحه اول) داشت؛ بدون کلمه بعد از تغییر داده کم', [
+	$vj( 'near_first', $vm( 1, 900, 9 ), $vm( 1, 900, 9 ), [ $tk => $vm( 1, 300, 12.0 ) ], [ $tk => $vm( 2, 300, 9.5 ) ], 'کلیپس طلایی' ),
+	$vj( 'near_first', $vm( 1, 900, 9 ), $vm( 1, 900, 9 ), [ $tk => $vm( 1, 300, 12.0 ) ], [ $tk => $vm( 2, 300, 11.5 ) ], 'کلیپس طلایی' ),
+	$vj( 'near_first', $vm( 1, 900, 9 ), $vm( 1, 900, 9 ), [ $tk => $vm( 1, 300, 8.0 ) ], [ $tk => $vm( 2, 300, 7.0 ) ], 'کلیپس طلایی' ),
+	$vj( 'weak_query', $vm( 1, 900, 9 ), $vm( 1, 900, 9 ), [ $tk => $vm( 1, 300, 30.0 ) ], [], 'کلیپس طلایی' ),
+], [ 'effective', 'no_effect', 'effective', 'low_data' ] );
+hodima_ad( 'حکم افت: کلیک ۴۰←۶۰ اثر داشت؛ ۴۰←۴۲ نداشت', [ $vj( 'decline', $vm( 40, 5000, 6 ), $vm( 60, 5000, 6 ) ), $vj( 'decline', $vm( 40, 5000, 6 ), $vm( 42, 5000, 6 ) ) ], [ 'effective', 'no_effect' ] );
+
+// نوبت سنجش با پاسخ ساختگی سرچ کنسول
+hodima_seo_advisor_store( [ '/vf/a/' => [ 'clicks' => 20, 'impressions' => 10000, 'position' => 4.0 ] ], [], [] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 0, 'advised' => 1, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+hodima_seo_advisor_save_advice( '/vf/a/' );
+hodima_ad( 'آدرس نمونه پیشنهاد «نرخ کلیک کم» دارد', in_array( 'low_ctr', array_column( (array) hodima_seo_advisor_page( '/vf/a/' )['advice'], 'rule' ), true ), true );
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, [
+	hodima_seo_advisor_task_key( '/vf/a/', 'low_ctr', '' ) => $vf_task( 'low_ctr', 21 ),
+	hodima_seo_advisor_task_key( '/vf/a/', 'near_first', 'کلیپس طلایی' ) => $vf_task( 'near_first', 21, [ 'term' => 'کلیپس طلایی' ] ),
+], false );
+update_option( 'hodima_discover_sc_key', $key_json, false );
+delete_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor@test.iam.gserviceaccount.com' ), 0, 12 ) );
+$vf_calls = [];
+$vf_code  = 200;
+$vf_dates = hodima_seo_advisor_verify_dates( $vf_task( 'low_ctr', 21 ) );
+$vf_filter = static function ( $pre, array $args, string $url ) use ( &$vf_calls, &$vf_code, $vf_dates, $u ) {
+	if ( ! str_contains( $url, '/searchAnalytics/query' ) ) {
+		return $pre;
+	}
+	$body = json_decode( (string) $args['body'], true );
+	if ( empty( $body['dimensionFilterGroups'] ) ) {
+		return $pre;
+	}
+	$vf_calls[] = $body;
+	$after      = $body['startDate'] === $vf_dates['after'][0];
+	$rows       = 1 === count( $body['dimensions'] )
+		? [ [ 'keys' => [ $u( '/vf/a/' ) ], 'clicks' => $after ? 150 : 50, 'impressions' => 10000, 'position' => 4.0 ], [ 'keys' => [ $u( '/x/vf/a/' ) ], 'clicks' => 9999, 'impressions' => 10000, 'position' => 1.0 ] ]
+		: [ [ 'keys' => [ $u( '/vf/a/' ), 'كليپس طلايي' ], 'clicks' => 2, 'impressions' => 300, 'position' => $after ? 11.5 : 12.0 ] ];
+	return [ 'headers' => [], 'body' => (string) wp_json_encode( $vf_code === 200 ? [ 'rows' => $rows ] : [ 'error' => [ 'message' => 'quota' ] ] ), 'response' => [ 'code' => $vf_code, 'message' => '' ], 'cookies' => [], 'filename' => null ];
+};
+add_filter( 'pre_http_request', $vf_filter, 50, 3 );
+$vf_code = 429;
+hodima_ad( 'سهمیه (۴۲۹): هیچ کاری سنجیده نمی‌شود و داده دست نمی‌خورد', [ hodima_seo_advisor_verify_batch( 'sc-domain:' . $host, INF ), hodima_seo_advisor_task( '/vf/a/', 'low_ctr', '' )['check'] ], [ 0, [] ] );
+$vf_code  = 200;
+$vf_calls = [];
+add_filter( 'hodima_seo_advisor_verify_enabled', '__return_false' );
+hodima_ad( 'فیلتر خاموش: نوبت کاری نمی‌کند', [ hodima_seo_advisor_verify_batch( 'sc-domain:' . $host, INF ), count( $vf_calls ) ], [ 0, 0 ] );
+remove_filter( 'hodima_seo_advisor_verify_enabled', '__return_false' );
+hodima_ad( 'نوبت: هر دو کار یک گروه (یک آدرس و روز) با ۴ درخواست فیلترشده', [ hodima_seo_advisor_verify_batch( 'sc-domain:' . $host, INF ), count( $vf_calls ), $vf_calls[0]['dimensionFilterGroups'][0]['filters'][0]['operator'] ?? '', $vf_calls[0]['dimensionFilterGroups'][0]['filters'][0]['expression'] ?? '' ], [ 2, 4, 'contains', '/vf/a/' ] );
+$vf_low  = hodima_seo_advisor_task( '/vf/a/', 'low_ctr', '' );
+$vf_near = hodima_seo_advisor_task( '/vf/a/', 'near_first', 'کلیپس طلایی' );
+hodima_ad( 'نرخ کلیک ۰٫۵٪←۱٫۵٪ (آدرس مشابه /x/vf/a/ شمرده نشد): «اثر داشت» و «برطرف شد»', [ $vf_low['check']['verdict'] ?? '', $vf_low['check']['before'] ?? 0, $vf_low['check']['after'] ?? 0, hodima_seo_advisor_task_state( $vf_low ) ], [ 'effective', 0.5, 1.5, 'fixed' ] );
+hodima_ad( 'کلمه (املای عربی ي/ك هم‌ارز) ۱۲←۱۱٫۵: «اثر نداشت» و گروه «نیاز به کار»', [ $vf_near['check']['verdict'] ?? '', hodima_seo_advisor_task_state( $vf_near ), hodima_seo_advisor_task_group( $vf_near ), hodima_seo_advisor_task_view( $vf_near )['label'] ], [ 'no_effect', 'no_effect', 'open', 'اثر نداشت؛ قدم بعدی را ببینید' ] );
+hodima_ad( 'پیشنهاد «نرخ کلیک کم» تا وقتی بازه تحلیل روزهای پیش از تغییر را دارد ساخته نمی‌شود', in_array( 'low_ctr', array_column( (array) hodima_seo_advisor_page( '/vf/a/' )['advice'], 'rule' ), true ), false );
+hodima_ad( 'سنجش دوباره همان روز: سررسید نیست', hodima_seo_advisor_verify_batch( 'sc-domain:' . $host, INF ), 0 );
+$vf_status = get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'start' => ( new DateTimeImmutable( 'tomorrow' ) )->format( 'Y-m-d' ) ] + $vf_status, false );
+hodima_seo_advisor_save_advice( '/vf/a/' );
+hodima_ad( 'بازه تحلیل تازه کاملا بعد از تغییر و هنوز نرخ کلیک کم: پیشنهاد برمی‌گردد و کار «برگشت»', [ in_array( 'low_ctr', array_column( (array) hodima_seo_advisor_page( '/vf/a/' )['advice'], 'rule' ), true ), hodima_seo_advisor_task_state( (array) hodima_seo_advisor_task( '/vf/a/', 'low_ctr', '' ) ) ], [ true, 'back' ] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $vf_status, false );
+hodima_ad( 'جمله سنجش: اثر داشت با اعداد؛ اثر نداشت با قدم بعدی (لینک داخلی و بخش H2)', [ str_contains( hodima_seo_advisor_verify_text( $vf_low ), 'اثر داشت' ), str_contains( hodima_seo_advisor_verify_text( $vf_near ), 'قدم بعدی' ) && str_contains( hodima_seo_advisor_verify_text( $vf_near ), 'H2' ), hodima_seo_advisor_verify_text( $vf_task( 'low_ctr', 1 ) ) ], [ true, true, '' ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
+ob_start();
+hodima_seo_advisor_render_tasks();
+$vf_html = (string) ob_get_clean();
+$_GET = [];
+hodima_ad( 'تب کارها: «اثر نداشت» با قدم بعدی و دکمه «دوباره انجام دادم» (redo)؛ کارت «اثر داشت»', [ str_contains( $vf_html, 'اثر نداشت؛ قدم بعدی را ببینید' ), str_contains( $vf_html, 'دوباره انجام دادم' ) && str_contains( $vf_html, 'name="redo" value="1"' ), str_contains( $vf_html, 'اثر داشت' ) ], [ true, true, true ] );
+ob_start();
+hodima_seo_advisor_render_task_controls( '/vf/a/', [ 'rule' => 'near_first', 'term' => 'کلیپس طلایی', 'title' => 't' ] );
+$vf_ctl = (string) ob_get_clean();
+hodima_ad( 'کادر ویرایش: لینک «دوباره انجام دادم» با redo=1 و status=done', str_contains( $vf_ctl, 'دوباره انجام دادم' ) && str_contains( $vf_ctl, 'redo=1' ) && str_contains( $vf_ctl, 'status=done' ), true );
+hodima_seo_advisor_task_set( '/vf/a/', 'near_first', 'کلیپس طلایی', '', 'done', true );
+$vf_redo = hodima_seo_advisor_task( '/vf/a/', 'near_first', 'کلیپس طلایی' );
+hodima_ad( '«دوباره انجام دادم»: سنجش پاک، تاریخ امروز، عنوان قبلی، «منتظر داده گوگل»', [ $vf_redo['check'], time() - $vf_redo['at'] < 60, $vf_redo['title'], hodima_seo_advisor_task_state( $vf_redo ) ], [ [], true, 't', 'waiting' ] );
+hodima_ad( 'نوبت verify آخر دریافت روزانه است', HODIMA_SEO_ADVISOR_STAGES[ count( HODIMA_SEO_ADVISOR_STAGES ) - 1 ], 'verify' );
+remove_filter( 'pre_http_request', $vf_filter, 50 );
+delete_option( 'hodima_discover_sc_key' );
+false === $vf_saved ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $vf_saved, false );
 hodima_seo_advisor_clear_data();
 
 echo "=== پاکسازی\n";

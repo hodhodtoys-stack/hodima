@@ -18,9 +18,9 @@ function hodima_seo_advisor_task_date( int $time ): string {
 }
 
 /** آدرس تغییر وضعیت (GET با nonce؛ کادر ویرایش داخل فرم وردپرس است و فرم تودرتو نمی‌شود). */
-function hodima_seo_advisor_task_url( string $path, string $rule, string $term, string $title, string $status ): string {
+function hodima_seo_advisor_task_url( string $path, string $rule, string $term, string $title, string $status, bool $redo = false ): string {
 	return wp_nonce_url(
-		add_query_arg( [ 'action' => 'hodima_advisor_task', 'path' => $path, 'rule' => $rule, 'term' => $term, 'title' => $title, 'status' => $status ], admin_url( 'admin-post.php' ) ),
+		add_query_arg( [ 'action' => 'hodima_advisor_task', 'path' => $path, 'rule' => $rule, 'term' => $term, 'title' => $title, 'status' => $status ] + ( $redo ? [ 'redo' => 1 ] : [] ), admin_url( 'admin-post.php' ) ),
 		'hodima_advisor_task'
 	);
 }
@@ -53,6 +53,10 @@ function hodima_seo_advisor_render_task_controls( string $path, array $item ): v
 		if ( null === $task || $task['status'] !== $status ) {
 			printf( '<a class="button button-small" href="%1$s">%2$s</a>', esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, $status ) ), esc_html( $label ) );
 		}
+	}
+
+	if ( null !== $task && in_array( hodima_seo_advisor_task_state( $task ), [ 'no_effect', 'back' ], true ) ) {
+		printf( '<a class="button button-small" href="%1$s">دوباره انجام دادم</a>', esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, 'done', true ) ) );
 	}
 
 	if ( null !== $task ) {
@@ -107,23 +111,15 @@ function hodima_seo_advisor_render_tasks(): void {
 	$filter = isset( hodima_seo_advisor_task_groups()[ $filter ] ) ? $filter : '';
 	$empty  = ! $all;
 
-	$positive = 0;
-	foreach ( $all as $task ) {
-		if ( 'done' === $task['status'] ) {
-			$effect = hodima_seo_advisor_task_effect( $task );
-			// اثر مثبت = بهتر از روند کل سایت؛ بدون داده سایت، فقط بیشتر شدن کلیک
-			if ( 'ok' === $effect['state'] && ( null !== ( $effect['site'] ?? null ) ? 'above' === $effect['site']['verdict'] : $effect['effect']['after']['clicks'] > $effect['effect']['before']['clicks'] ) ) {
-				++$positive;
-			}
-		}
-	}
+	// اثر مثبت = حکم «اثر داشت» با داده بعد از تغییر (advisor-verify.php)
+	$positive = count( array_filter( $all, static fn( array $t ): bool => 'effective' === ( $t['check']['verdict'] ?? '' ) ) );
 
 	// چرخه عمر (SEO 2.9.1): نیاز به کار ← منتظر داده گوگل ← برطرف شد (رد شده‌ها در نماها)
 	hodima_seo_ui_stats( [
 		[ 'label' => 'نیاز به کار', 'value' => $empty ? '—' : esc_html( $n( $counts['open'] ) ), 'sub' => $empty ? '' : 'در حال انجام، هنوز دیده می‌شود یا برگشته', 'empty' => $empty ],
 		[ 'label' => 'منتظر داده گوگل', 'value' => $empty ? '—' : esc_html( $n( $counts['waiting'] ) ), 'empty' => $empty ],
 		[ 'label' => 'برطرف شد', 'value' => $empty ? '—' : esc_html( $n( $counts['fixed'] ) ), 'sub' => $empty ? '' : 'تحلیل دیگر این ایرادها را پیدا نمی‌کند', 'empty' => $empty ],
-		[ 'label' => 'با اثر مثبت', 'value' => $empty ? '—' : esc_html( $n( $positive ) ), 'sub' => $empty ? '' : 'کلیک هفتگی بهتر از روند سایت', 'empty' => $empty ],
+		[ 'label' => 'اثر داشت', 'value' => $empty ? '—' : esc_html( $n( $positive ) ), 'sub' => $empty ? '' : 'سنجیده با داده بعد از تغییر', 'empty' => $empty ],
 	] );
 
 	hodima_seo_ui_card_open( 'کارهای من', 'هر پیشنهاد را که اجرا کردید («انجام شد»)، در حال انجام است یا قبول ندارید («رد شد»)، از کادر «دستار سئو» داخل ویرایش صفحه علامت بزنید. بعد از هر تحلیل، کاری که ایرادش دیگر پیدا نمی‌شود خودش «برطرف شد» می‌گیرد و اگر دوباره پیدا شود «برگشت». کارهای «نیاز به کار» اول می‌آیند. این فهرست چیزی را در سایت عوض نمی‌کند.' );
@@ -154,9 +150,14 @@ function hodima_seo_advisor_render_tasks(): void {
 		$view   = hodima_seo_advisor_task_view( $task );
 		$hint   = match ( $view['state'] ) {
 			'unseen' => 'کلمه هنوز در عنوان، تیترها یا متن صفحه پیدا نمی‌شود؛ صفحه را بررسی و دوباره ذخیره کنید.',
-			'back'   => 'این ایراد بعد از برطرف شدن دوباره پیدا شد؛ صفحه را دوباره بررسی کنید.',
-			default  => '',
+			'back'      => 'این ایراد بعد از برطرف شدن دوباره پیدا شد؛ صفحه را دوباره بررسی کنید و بعد «دوباره انجام دادم» را بزنید.',
+			'no_effect' => hodima_seo_advisor_verify_text( $task ),
+			default     => '',
 		};
+		$verified = in_array( $view['state'], [ 'waiting', 'fixed' ], true ) ? hodima_seo_advisor_verify_text( $task ) : '';
+		if ( '' === $verified && 'waiting' === $view['state'] && in_array( $task['rule'], HODIMA_SEO_ADVISOR_VERIFY_RULES, true ) ) {
+			$verified = sprintf( 'وقتی %s روز داده گوگل بعد از این تغییر جمع شد، همان‌قدر روز پیش از تغییر با آن مقایسه می‌شود و نتیجه («اثر داشت» یا «اثر نداشت» با قدم بعدی) همین‌جا می‌آید.', number_format_i18n( HODIMA_SEO_ADVISOR_VERIFY_MIN_DAYS ) );
+		}
 		?>
 		<li class="hodima-advisor__task">
 			<div class="hodima-advisor__task-main">
@@ -175,7 +176,7 @@ function hodima_seo_advisor_render_tasks(): void {
 				<p class="hodima-advisor__task-effect"><?php echo esc_html( $hint ); ?></p>
 			<?php endif; ?>
 			<?php if ( 'done' === $task['status'] && in_array( $view['state'], [ 'waiting', 'fixed' ], true ) ) : ?>
-				<p class="hodima-advisor__task-effect"><?php echo esc_html( hodima_seo_advisor_task_effect_text( $task ) ); ?></p>
+				<p class="hodima-advisor__task-effect"><?php echo esc_html( '' !== $verified ? $verified : hodima_seo_advisor_task_effect_text( $task ) ); ?></p>
 			<?php endif; ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__task-actions">
 				<input type="hidden" name="action" value="hodima_advisor_task">
@@ -191,6 +192,18 @@ function hodima_seo_advisor_render_tasks(): void {
 				<?php endforeach; ?>
 				<button type="submit" name="status" value="" class="hodima-advisor__link-btn">برداشتن</button>
 			</form>
+			<?php if ( in_array( $view['state'], [ 'no_effect', 'back' ], true ) ) : ?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__task-actions">
+					<input type="hidden" name="action" value="hodima_advisor_task">
+					<?php wp_nonce_field( 'hodima_advisor_task' ); ?>
+					<input type="hidden" name="path" value="<?php echo esc_attr( $task['path'] ); ?>">
+					<input type="hidden" name="rule" value="<?php echo esc_attr( $task['rule'] ); ?>">
+					<input type="hidden" name="term" value="<?php echo esc_attr( $task['term'] ); ?>">
+					<input type="hidden" name="status" value="done">
+					<input type="hidden" name="redo" value="1">
+					<button type="submit" class="hds-btn">دوباره انجام دادم</button>
+				</form>
+			<?php endif; ?>
 		</li>
 		<?php
 	}

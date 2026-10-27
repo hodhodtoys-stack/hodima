@@ -51,7 +51,7 @@ const HODIMA_SEO_ADVISOR_STAGE_CRON      = 'hodima_advisor_stage';
 const HODIMA_SEO_ADVISOR_STAGE_BUDGET    = 90;
 
 /** نوبت‌های بعد از ذخیره داده، به ترتیب. */
-const HODIMA_SEO_ADVISOR_STAGES = [ 'ctr', 'analyze', 'breakdown', 'trend', 'health', 'history' ];
+const HODIMA_SEO_ADVISOR_STAGES = [ 'ctr', 'analyze', 'breakdown', 'trend', 'health', 'history', 'verify' ];
 
 /** حداکثر صفحه‌های درخواست برای یک گزارش (هر صفحه ۲۵ هزار ردیف، سقف سرچ کنسول). */
 const HODIMA_SEO_ADVISOR_FETCH_PAGES = 4;
@@ -256,6 +256,9 @@ function hodima_seo_advisor_pipeline_stage( string $stage, array $state, float $
 			break;
 		case 'history':
 			hodima_seo_advisor_history_sync( $property );
+			break;
+		case 'verify': // اثر کارهای «انجام شد» با داده فقط بعد از تغییر (advisor-verify.php)؛ باقی‌مانده فردا
+			hodima_seo_advisor_verify_batch( $property, $deadline );
 			break;
 	}
 

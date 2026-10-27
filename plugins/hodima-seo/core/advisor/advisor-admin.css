@@ -780,6 +780,20 @@
 	gap: 0.25rem;
 }
 
+/* گوشی: نشان وضعیت (برچسب‌های چرخه عمر بلندند) زیر عنوان، نه ستون کناری که عنوان را باریک می‌کرد */
+@media (max-width: 600px) {
+	.hodima-advisor .hodima-advisor__task {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.hodima-advisor .hodima-advisor__task-state {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 0.5rem;
+		align-items: center;
+	}
+}
+
 .hodima-advisor .hodima-advisor__task-state small {
 	color: var(--hd-muted);
 }

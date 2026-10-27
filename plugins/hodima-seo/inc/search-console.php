@@ -344,9 +344,10 @@ function hodima_seo_sc_is_key_error( WP_Error $error ): bool {
  * @param list<string> $dimensions page، query، date، device، country
  * @param string       $type       discover، web، …
  * @param int          $start_row  شروع صفحه‌بندی (هر درخواست حداکثر ۲۵ هزار ردیف)
+ * @param list<array{dimension: string, operator: string, expression: string}> $filters فیلتر ردیف‌ها (dimensionFilterGroups؛ همه با هم)
  * @return array{rows: list<array<string, mixed>>}|WP_Error
  */
-function hodima_seo_sc_query( string $property, string $token, string $start, string $end, array $dimensions = [ 'page' ], int $row_limit = 5000, string $type = 'web', int $start_row = 0 ): array|WP_Error {
+function hodima_seo_sc_query( string $property, string $token, string $start, string $end, array $dimensions = [ 'page' ], int $row_limit = 5000, string $type = 'web', int $start_row = 0, array $filters = [] ): array|WP_Error {
 
 	$res = wp_remote_post(
 		'https://searchconsole.googleapis.com/webmasters/v3/sites/' . rawurlencode( $property ) . '/searchAnalytics/query',
@@ -359,7 +360,7 @@ function hodima_seo_sc_query( string $property, string $token, string $start, st
 				'type'       => $type,
 				'dimensions' => $dimensions,
 				'rowLimit'   => max( 1, min( 25000, $row_limit ) ), // سقف خود سرچ کنسول ۲۵ هزار
-			] + ( $start_row > 0 ? [ 'startRow' => $start_row ] : [] ) ),
+			] + ( $start_row > 0 ? [ 'startRow' => $start_row ] : [] ) + ( $filters ? [ 'dimensionFilterGroups' => [ [ 'groupType' => 'and', 'filters' => $filters ] ] ] : [] ) ),
 		]
 	);
 
@@ -428,9 +429,10 @@ function hodima_seo_sc_inspect_url( string $property, string $url, string $consu
  * توکن تازه تکرار می‌کند.
  *
  * @param list<string> $dimensions
+ * @param list<array{dimension: string, operator: string, expression: string}> $filters
  * @return array{rows: list<array<string, mixed>>}|WP_Error
  */
-function hodima_seo_sc_request( string $property, string $start, string $end, array $dimensions, int $row_limit = 5000, string $type = 'web', int $start_row = 0, string $consumer = '' ): array|WP_Error {
+function hodima_seo_sc_request( string $property, string $start, string $end, array $dimensions, int $row_limit = 5000, string $type = 'web', int $start_row = 0, string $consumer = '', array $filters = [] ): array|WP_Error {
 
 	$token = hodima_seo_sc_token( false, $consumer );
 
@@ -438,14 +440,14 @@ function hodima_seo_sc_request( string $property, string $start, string $end, ar
 		return $token;
 	}
 
-	$result = hodima_seo_sc_query( $property, $token, $start, $end, $dimensions, $row_limit, $type, $start_row );
+	$result = hodima_seo_sc_query( $property, $token, $start, $end, $dimensions, $row_limit, $type, $start_row, $filters );
 
 	if ( is_wp_error( $result ) && 401 === (int) ( $result->get_error_data()['status'] ?? 0 ) ) {
 		$token = hodima_seo_sc_token( true, $consumer );
 		if ( is_wp_error( $token ) ) {
 			return $token;
 		}
-		$result = hodima_seo_sc_query( $property, $token, $start, $end, $dimensions, $row_limit, $type, $start_row );
+		$result = hodima_seo_sc_query( $property, $token, $start, $end, $dimensions, $row_limit, $type, $start_row, $filters );
 	}
 
 	return $result;

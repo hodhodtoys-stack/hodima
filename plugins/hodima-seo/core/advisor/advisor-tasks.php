@@ -28,8 +28,10 @@ add_action( 'admin_post_hodima_advisor_task', 'hodima_seo_advisor_handle_task' )
  *   unseen   انجام شد؛ ایراد متنی هنوز در صفحه   (باز: تغییر دیده نشد)
  *   fixed    برطرف شد: تحلیل دیگر ایراد را نمی‌سازد (بسته)
  *   back     برگشت: بعد از برطرف شدن دوباره پیدا شد (باز)
+ *   no_effect اثر نداشت: داده گوگل بعد از تغییر بهتر نشد (باز؛ SEO 2.9.2، advisor-verify.php)
  *   rejected رد شد                               (بسته)
- * «برطرف شد/برگشت» را فقط hodima_seo_advisor_tasks_sync() بعد از تحلیل واقعی یک آدرس می‌نویسد.
+ * «برطرف شد/برگشت» را فقط hodima_seo_advisor_tasks_sync() بعد از تحلیل واقعی یک آدرس می‌نویسد؛ «اثر داشت/نداشت»
+ * را hodima_seo_advisor_verify_task() از داده سرچ کنسولِ فقط بعد از تاریخ تغییر (فیلد check).
  */
 const HODIMA_SEO_ADVISOR_TASKS_CLOSED = [ 'waiting', 'fixed', 'rejected' ];
 
@@ -49,7 +51,7 @@ function hodima_seo_advisor_task_key( string $path, string $rule, string $term )
 /**
  * همه کارها (کلید ← کار).
  *
- * @return array<string, array{path: string, rule: string, term: string, title: string, status: string, at: int, fixed: int, back: int}>
+ * @return array<string, array{path: string, rule: string, term: string, title: string, status: string, at: int, fixed: int, back: int, check: array<string, mixed>}>
  */
 function hodima_seo_advisor_tasks(): array {
 
@@ -67,6 +69,7 @@ function hodima_seo_advisor_tasks(): array {
 				'at'     => (int) ( $task['at'] ?? 0 ),
 				'fixed'  => (int) ( $task['fixed'] ?? 0 ), // زمان «برطرف شد» (صفر = نه)
 				'back'   => (int) ( $task['back'] ?? 0 ),  // زمان «برگشت» (صفر = نه)
+				'check'  => is_array( $task['check'] ?? null ) ? $task['check'] : [], // سنجش بعد از تغییر (advisor-verify.php)
 			];
 		}
 	}
@@ -77,16 +80,17 @@ function hodima_seo_advisor_tasks(): array {
 /**
  * کار یک پیشنهاد، یا null.
  *
- * @return array{path: string, rule: string, term: string, title: string, status: string, at: int, fixed: int, back: int}|null
+ * @return array{path: string, rule: string, term: string, title: string, status: string, at: int, fixed: int, back: int, check: array<string, mixed>}|null
  */
 function hodima_seo_advisor_task( string $path, string $rule, string $term ): ?array {
 	return hodima_seo_advisor_tasks()[ hodima_seo_advisor_task_key( $path, $rule, $term ) ] ?? null;
 }
 
 /**
- * وضعیت یک پیشنهاد را می‌گذارد؛ وضعیت خالی = برداشتن از فهرست.
+ * وضعیت یک پیشنهاد را می‌گذارد؛ وضعیت خالی = برداشتن از فهرست. `$restart` («دوباره انجام دادم»): همان وضعیت
+ * ولی تاریخ تازه و سنجش از نو (کار «اثر نداشت» یا «برگشت» که مدیر دوباره روی آن کار کرده).
  */
-function hodima_seo_advisor_task_set( string $path, string $rule, string $term, string $title, string $status ): bool {
+function hodima_seo_advisor_task_set( string $path, string $rule, string $term, string $title, string $status, bool $restart = false ): bool {
 
 	if ( '' !== $status && ! isset( hodima_seo_advisor_task_statuses()[ $status ] ) ) {
 		return false;
@@ -102,17 +106,19 @@ function hodima_seo_advisor_task_set( string $path, string $rule, string $term, 
 	if ( '' === $status ) {
 		unset( $tasks[ $key ] );
 	} else {
-		$old           = $tasks[ $key ] ?? null;
+		$prev          = $tasks[ $key ] ?? null;
+		$old           = $restart ? null : $prev; // «دوباره انجام دادم»: مثل کار تازه، فقط عنوان قبلی می‌ماند
 		$tasks[ $key ] = [
 			'path'   => $path,
 			'rule'   => $rule,
 			'term'   => $term,
-			'title'  => mb_substr( $title, 0, 200 ) ?: ( $old['title'] ?? '' ),
+			'title'  => mb_substr( $title, 0, 200 ) ?: ( $prev['title'] ?? '' ),
 			'status' => $status,
 			'at'     => null !== $old && $old['status'] === $status ? $old['at'] : time(), // تاریخ همان وضعیت می‌ماند
 			// وضعیت تازه = تصمیم تازه مدیر؛ «برطرف شد/برگشت» قبلی را تحلیل بعدی دوباره می‌سنجد
 			'fixed'  => null !== $old && $old['status'] === $status ? $old['fixed'] : 0,
 			'back'   => null !== $old && $old['status'] === $status ? $old['back'] : 0,
+			'check'  => null !== $old && $old['status'] === $status ? $old['check'] : [],
 		];
 	}
 
@@ -129,12 +135,16 @@ function hodima_seo_advisor_task_set( string $path, string $rule, string $term, 
 /**
  * وضعیت چرخه عمر یک کار (بالای فایل).
  *
- * @param array{rule: string, status: string, fixed: int, back: int} $task
+ * @param array{rule: string, status: string, fixed: int, back: int, check?: array<string, mixed>} $task
  */
 function hodima_seo_advisor_task_state( array $task ): string {
 
 	if ( 'rejected' === $task['status'] ) {
 		return 'rejected';
+	}
+	// سنجش مستقیم بعد از تغییر بر جمع ۹۰ روزه مقدم است: پیشنهادی که از جمع افتاده ولی داده بعد از تغییر بهتر نشده «برطرف» نیست
+	if ( 'done' === $task['status'] && 'no_effect' === ( $task['check']['verdict'] ?? '' ) ) {
+		return 'no_effect';
 	}
 	if ( $task['fixed'] > 0 ) {
 		return 'fixed';
@@ -152,7 +162,7 @@ function hodima_seo_advisor_task_state( array $task ): string {
 /**
  * برچسب، کلاس نشان و زمان هر وضعیت چرخه عمر.
  *
- * @param array{rule: string, status: string, at: int, fixed: int, back: int} $task
+ * @param array{path: string, rule: string, status: string, at: int, fixed: int, back: int, check?: array<string, mixed>} $task
  * @return array{state: string, label: string, class: string, time: int}
  */
 function hodima_seo_advisor_task_view( array $task ): array {
@@ -161,7 +171,8 @@ function hodima_seo_advisor_task_view( array $task ): array {
 
 	[ $label, $class ] = match ( $state ) {
 		'doing'   => [ 'در حال انجام', 'hds-pill hds-pill--warn' ],
-		'waiting' => [ 'انجام شد · منتظر داده گوگل', 'hds-pill' ],
+		'waiting' => [ function_exists( 'hodima_seo_advisor_verify_wait_label' ) ? hodima_seo_advisor_verify_wait_label( $task ) : 'انجام شد · منتظر داده گوگل', 'hds-pill' ],
+		'no_effect' => [ 'اثر نداشت؛ قدم بعدی را ببینید', 'hds-pill hds-pill--warn' ],
 		'unseen'  => [ 'انجام شد؛ هنوز در صفحه دیده نمی‌شود', 'hds-pill hds-pill--warn' ],
 		'fixed'   => [ 'برطرف شد', 'hds-pill' ],
 		'back'    => [ 'برگشت؛ دوباره پیدا شد', 'hds-pill hds-pill--error' ],
@@ -265,7 +276,7 @@ function hodima_seo_advisor_handled_paths(): array {
  */
 function hodima_seo_advisor_task_groups(): array {
 	return [
-		'open'     => [ 'نیاز به کار', [ 'doing', 'unseen', 'back' ] ],
+		'open'     => [ 'نیاز به کار', [ 'doing', 'unseen', 'back', 'no_effect' ] ],
 		'waiting'  => [ 'منتظر داده گوگل', [ 'waiting' ] ],
 		'fixed'    => [ 'برطرف شد', [ 'fixed' ] ],
 		'rejected' => [ 'رد شد', [ 'rejected' ] ],
@@ -275,7 +286,7 @@ function hodima_seo_advisor_task_groups(): array {
 /**
  * گروه چرخه عمر یک کار (کلید hodima_seo_advisor_task_groups).
  *
- * @param array{rule: string, status: string, fixed: int, back: int} $task
+ * @param array{rule: string, status: string, fixed: int, back: int, check?: array<string, mixed>} $task
  */
 function hodima_seo_advisor_task_group( array $task ): string {
 
@@ -347,8 +358,9 @@ function hodima_seo_advisor_handle_task(): void {
 	$term   = sanitize_text_field( wp_unslash( (string) ( $_REQUEST['term'] ?? '' ) ) );
 	$title  = sanitize_text_field( wp_unslash( (string) ( $_REQUEST['title'] ?? '' ) ) );
 	$status = sanitize_key( (string) ( $_REQUEST['status'] ?? '' ) );
+	$redo   = ! empty( $_REQUEST['redo'] );
 
-	if ( hodima_seo_advisor_task_set( $path, $rule, $term, $title, $status ) ) {
+	if ( hodima_seo_advisor_task_set( $path, $rule, $term, $title, $status, $redo ) ) {
 		hodima_admin_flash( '' === $status ? 'پیشنهاد از «کارهای من» برداشته شد.' : sprintf( 'وضعیت پیشنهاد: «%s» ثبت شد.', hodima_seo_advisor_task_statuses()[ $status ] ), 'success' );
 	} else {
 		hodima_admin_flash( 'وضعیت ثبت نشد؛ درخواست نامعتبر بود.', 'error' );

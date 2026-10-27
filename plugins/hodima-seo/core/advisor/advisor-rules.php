@@ -659,6 +659,11 @@ function hodima_seo_advisor_analyze( string $path ): ?array {
 		$queries
 	);
 
+	// کاری که با داده بعد از تغییر «اثر داشت» تا وقتی جمع بازه روزهای پیش از تغییر را دارد پیشنهاد نمی‌شود (advisor-verify.php)
+	if ( function_exists( 'hodima_seo_advisor_verify_filter' ) ) {
+		$suggestions = hodima_seo_advisor_verify_filter( (string) $row['path'], $suggestions );
+	}
+
 	return [
 		'row'         => $row,
 		'suggestions' => $suggestions,
