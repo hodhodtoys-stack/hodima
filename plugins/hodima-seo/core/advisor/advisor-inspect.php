@@ -113,6 +113,27 @@ function hodima_seo_advisor_inspections(): array {
 	return is_array( $stored ) ? array_filter( $stored, 'is_array' ) : [];
 }
 
+/** فاصله بررسی دوباره آدرس کار «انجام شد» تا وقتی خزش بعد از تغییر دیده شود (روز). */
+const HODIMA_SEO_ADVISOR_INSPECT_TASK_RECHECK_DAYS = 2;
+
+/**
+ * گوگل صفحه را بعد از یک زمان (مثلا روز تغییر مدیر) دوباره خزیده؟ از آخرین بررسی ایندکس همان آدرس.
+ *
+ * @return array{state: string, crawled: int, checked: int} state: yes، no (آخرین خزش پیش از آن)، unknown (بررسی نشده یا بی‌تاریخ)
+ */
+function hodima_seo_advisor_inspect_after( string $path, int $since ): array {
+
+	$record  = hodima_seo_advisor_inspections()[ $path ] ?? null;
+	$crawled = null !== $record && '' !== (string) ( $record['last_crawl'] ?? '' ) ? (int) strtotime( (string) $record['last_crawl'] ) : 0;
+	$checked = null !== $record ? (int) ( $record['checked'] ?? 0 ) : 0;
+
+	return [
+		'state'   => $crawled <= 0 ? 'unknown' : ( $crawled >= $since ? 'yes' : 'no' ),
+		'crawled' => $crawled,
+		'checked' => $checked,
+	];
+}
+
 /**
  * آدرس‌های منتظر بررسی (به ترتیب اولویت).
  *
@@ -135,6 +156,14 @@ function hodima_seo_advisor_inspect_queue( int $limit = HODIMA_SEO_ADVISOR_INSPE
 		}
 		$queue[ $path ] = true;
 	};
+
+	// اول: آدرس کارهای «انجام شد» که هنوز معلوم نیست گوگل بعد از تغییر دوباره خوانده (تب «انجام‌شده»)؛ هر ۲ روز تا دیده شود
+	foreach ( function_exists( 'hodima_seo_advisor_tasks' ) ? hodima_seo_advisor_tasks() : [] as $task ) {
+		$seen = 'done' === $task['status'] ? hodima_seo_advisor_inspect_after( $task['path'], $task['at'] ) : null;
+		if ( null !== $seen && 'yes' !== $seen['state'] && $seen['checked'] < time() - HODIMA_SEO_ADVISOR_INSPECT_TASK_RECHECK_DAYS * DAY_IN_SECONDS && 1 !== preg_match( '#/page/\d+/?$#', $task['path'] ) ) {
+			$queue[ $task['path'] ] = true;
+		}
+	}
 
 	foreach ( (array) ( hodima_seo_advisor_health()['unseen'] ?? [] ) as $row ) {
 		$add( (string) ( $row['path'] ?? '' ) );

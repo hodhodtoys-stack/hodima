@@ -453,7 +453,7 @@ function hodima_seo_advisor_handle_csv(): void {
  * @return list<string>
  */
 function hodima_seo_advisor_tab_keys(): array {
-	return [ 'opportunities', 'competition', 'terms', 'breakdown', 'trend', 'health', 'crawl', 'indexing', 'tasks', 'settings' ];
+	return [ 'opportunities', 'competition', 'terms', 'breakdown', 'trend', 'health', 'crawl', 'indexing', 'tasks', 'done', 'settings' ];
 }
 
 /**
@@ -470,7 +470,9 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 		'health'        => [ 'سلامت آدرس‌ها', hodima_seo_advisor_page_url( [ 'tab' => 'health' ] ) ],
 		'crawl'         => [ 'سلامت خزش', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
 		'indexing'      => [ 'ایندکس', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
-		'tasks'         => [ 'کارهای من', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
+		// «کارهای من» دو تب شد (SEO 2.9.4): کارهای باز و انجام‌شده‌ها با سه گام (انجام ← خزش گوگل ← نتیجه)
+		'tasks'         => [ 'در دست انجام', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
+		'done'          => [ 'انجام‌شده', hodima_seo_advisor_page_url( [ 'tab' => 'done' ] ) ],
 		// تنظیمات تب خودش است (SEO 2.9.3)؛ قبلا پنلی بود که روی هر تب باز می‌شد
 		'settings'      => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
 	];
@@ -550,7 +552,8 @@ function hodima_seo_advisor_render_admin(): void {
 			'health'    => hodima_seo_advisor_render_health( $status ),
 			'crawl'     => hodima_seo_advisor_render_crawl(),
 			'indexing'  => hodima_seo_advisor_render_indexing(),
-			'tasks'     => hodima_seo_advisor_render_tasks(),
+			'tasks'     => hodima_seo_advisor_render_tasks( 'doing' ),
+			'done'      => hodima_seo_advisor_render_tasks( 'done' ),
 			default     => hodima_seo_advisor_render_competition( $status ),
 		};
 		if ( 'competition' === $tab ) {

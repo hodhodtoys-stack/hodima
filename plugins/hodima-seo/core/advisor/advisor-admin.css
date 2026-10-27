@@ -816,6 +816,62 @@
 	color: var(--hd-muted);
 }
 
+/* سه گام کار انجام‌شده: انجام دادید ← گوگل دوباره خواند ← نتیجه */
+.hodima-advisor .hodima-advisor__timeline {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	grid-column: 1 / -1;
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	counter-reset: hdsa-step;
+}
+
+.hodima-advisor .hodima-advisor__step {
+	display: grid;
+	align-content: start;
+	gap: 0.25rem;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.625rem;
+	background: var(--hd-soft);
+	counter-increment: hdsa-step;
+	font-size: 0.75rem;
+	line-height: 1.7;
+}
+
+.hodima-advisor .hodima-advisor__step strong {
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__step strong::before {
+	content: counter(hdsa-step, persian) ". ";
+}
+
+.hodima-advisor .hodima-advisor__step span {
+	color: var(--hd-muted);
+}
+
+/* وضعیت هر گام با رنگ عنوانش (نه نوار رنگی تزئینی) */
+.hodima-advisor .hodima-advisor__step[data-state="ok"] strong {
+	color: var(--hd-ok);
+}
+
+.hodima-advisor .hodima-advisor__step[data-state="wait"] strong {
+	color: var(--hd-warn);
+}
+
+.hodima-advisor .hodima-advisor__step[data-state="bad"] strong {
+	color: var(--hd-error);
+}
+
+@media (max-width: 782px) {
+	.hodima-advisor .hodima-advisor__timeline {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
 .hodima-advisor .hodima-advisor__task-effect {
 	grid-column: 1 / -1;
 	margin: 0;
