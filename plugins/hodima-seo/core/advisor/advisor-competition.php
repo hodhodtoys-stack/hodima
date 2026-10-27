@@ -187,7 +187,9 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 
 		$top_share = max( array_column( $pages, 'share' ) );
 		$advice    = $settled
-			? [ 'type' => 'settled', 'title' => 'رقابت حل‌شده', 'detail' => 'یکی از این صفحه‌ها در سایت ریدایرکت می‌شود، noindex است یا ۴۰۴ می‌دهد؛ پس دیگر با صفحه دیگر رقابت نمی‌کند و گوگل کم‌کم آن را کنار می‌گذارد. فقط لینک‌های داخلی را مستقیم به صفحه مقصد بدهید.' ]
+			? [ 'type' => 'settled', 'title' => 'رقابت حل‌شده', 'detail' => in_array( 'home', array_column( $pages, 'resolved' ), true )
+				? 'صفحه اصلی هدف کلمه مشخصی نیست و با صفحه دیگر رقابت واقعی ندارد؛ گوگل آن را فقط به‌خاطر لینک‌هایش گاهی برای این کلمه نشان می‌دهد. اقدامی لازم نیست.'
+				: 'یکی از این صفحه‌ها در سایت ریدایرکت می‌شود، noindex است یا ۴۰۴ می‌دهد؛ پس دیگر با صفحه دیگر رقابت نمی‌کند و گوگل کم‌کم آن را کنار می‌گذارد. فقط لینک‌های داخلی را مستقیم به صفحه مقصد بدهید.' ]
 			: hodima_seo_advisor_competition_advice( $term, $pages, $top_share );
 
 		if ( '' !== (string) ( $args['type'] ?? '' ) && $advice['type'] !== $args['type'] ) {

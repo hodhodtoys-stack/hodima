@@ -338,7 +338,10 @@ function hodima_seo_advisor_crawl_row( string $path ): ?array {
  * صفحه‌هایی که دیگر «رقیب» نیستند: طبق خزش ریدایرکت‌اند، خطا می‌دهند یا noindex/canonical به صفحه دیگرند، یا
  * (طبق بررسی روتر در «سلامت آدرس‌ها») در سایت ۴۰۴‌اند یا ریدایرکت می‌شوند.
  *
- * @return array<string, string> آدرس ← redirect | gone | noindex
+ * صفحه اصلی همیشه حل‌شده است (home): هدفش کلمه مشخصی نیست و گوگل فقط به‌خاطر لینک‌هایش گاهی آن را برای کلمه‌ها نشان می‌دهد؛
+ * با صفحه دیگری رقابت واقعی ندارد.
+ *
+ * @return array<string, string> آدرس ← redirect | gone | noindex | home
  */
 function hodima_seo_advisor_resolved_paths( bool $reset = false ): array {
 
@@ -353,9 +356,13 @@ function hodima_seo_advisor_resolved_paths( bool $reset = false ): array {
 		return $cache;
 	}
 
-	$cache = [];
+	$cache = [ ( hodima_seo_advisor_path_key( home_url( '/' ) ) ?? '/' ) => 'home' ];
 
 	foreach ( hodima_seo_advisor_crawl_map() as $path => $r ) {
+		if ( isset( $cache[ $path ] ) ) {
+			continue;
+		}
+
 		if ( $r['status'] >= 300 ) {
 			$cache[ $path ] = $r['status'] < 400 ? 'redirect' : 'gone';
 		} elseif ( 200 === $r['status'] && ! $r['indexable'] ) {
@@ -374,7 +381,7 @@ function hodima_seo_advisor_resolved_paths( bool $reset = false ): array {
 
 /** برچسب کوتاه دلیل حل‌شدن. */
 function hodima_seo_advisor_resolved_label( string $code ): string {
-	return [ 'redirect' => 'ریدایرکت می‌شود', 'gone' => 'در سایت ۴۰۴ است', 'noindex' => 'noindex یا canonical' ][ $code ] ?? '';
+	return [ 'redirect' => 'ریدایرکت می‌شود', 'gone' => 'در سایت ۴۰۴ است', 'noindex' => 'noindex یا canonical', 'home' => 'صفحه اصلی' ][ $code ] ?? '';
 }
 
 /**

@@ -112,7 +112,7 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 	hodima_seo_ui_card_open(
 		$settled ? 'رقابت‌های حل‌شده' : 'رقابت صفحه‌ها',
 		$settled
-			? 'کلمه‌هایی که ظاهرا چند صفحه برایشان نمایش می‌گیرند ولی یکی از صفحه‌ها در سایت ریدایرکت، ۴۰۴ یا noindex است؛ پس رقابت واقعی نیستند.'
+			? 'کلمه‌هایی که ظاهرا چند صفحه برایشان نمایش می‌گیرند ولی یکی از صفحه‌ها در سایت ریدایرکت، ۴۰۴، noindex یا صفحه اصلی است؛ پس رقابت واقعی نیستند.'
 			: sprintf( 'کلمه‌هایی که چند صفحه همین سایت برایشان نمایش می‌گیرند (داده %s روز اخیر)؛ مرتب بر اساس «کلیک بالقوه» رفع رقابت (تخمین).', $n( $status['days'] ) )
 	);
 
@@ -120,7 +120,7 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 		echo '<p class="hodima-advisor__advice"><a href="' . esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ) . '">برگشت به رقابت‌های واقعی</a></p>';
 	} elseif ( $all['resolved']['groups'] > 0 ) {
 		printf(
-			'<p class="hodima-advisor__advice">%1$s گروه رقابت از این فهرست کنار رفت (حدود %2$s «کلیک بالقوه» ساختگی)، چون یکی از صفحه‌هایشان ریدایرکت، ۴۰۴ یا noindex است. <a href="%3$s">دیدن آن‌ها</a></p>',
+			'<p class="hodima-advisor__advice">%1$s گروه رقابت از این فهرست کنار رفت (حدود %2$s «کلیک بالقوه» ساختگی)، چون یکی از صفحه‌هایشان ریدایرکت، ۴۰۴، noindex یا صفحه اصلی است. <a href="%3$s">دیدن آن‌ها</a></p>',
 			esc_html( $n( $all['resolved']['groups'] ) ),
 			esc_html( $n( $all['resolved']['potential'] ) ),
 			esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'competition', 'resolved' => 1 ] ) )

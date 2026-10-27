@@ -1639,7 +1639,7 @@ $_GET = [];
 
 hodima_seo_advisor_clear_data();
 delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION );
-hodima_ad( 'پاک کردن داده: نقشه خزش و حل‌شده‌ها خالی', [ hodima_seo_advisor_crawl_map(), hodima_seo_advisor_resolved_paths() ], [ [], [] ] );
+hodima_ad( 'پاک کردن داده: نقشه خزش و حل‌شده‌ها خالی', [ hodima_seo_advisor_crawl_map(), hodima_seo_advisor_resolved_paths() ], [ [], [ '/' => 'home' ] ] );
 remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter2 );
 array_map( 'unlink', glob( "{$crawl_dir2}/{,.}*", GLOB_BRACE ) ?: [] );
 @rmdir( $crawl_dir2 );
@@ -1796,6 +1796,28 @@ wp_delete_post( $r4_id, true );
 remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter4 );
 array_map( 'unlink', glob( "{$crawl_dir4}/{,.}*", GLOB_BRACE ) ?: [] );
 @rmdir( $crawl_dir4 );
+
+echo "=== صفحه اصلی رقیب حساب نمی‌شود\n";
+$h_term = static fn( int $imp, float $pos, int $clicks ): array => [ 'clicks' => $clicks, 'impressions' => $imp, 'position' => $pos ];
+hodima_seo_advisor_store(
+	[ '/' => [ 'clicks' => 13, 'impressions' => 500, 'position' => 7.8 ], '/cat-x/' => [ 'clicks' => 263, 'impressions' => 23000, 'position' => 6.5 ], '/h-one/' => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ], '/h-two/' => [ 'clicks' => 20, 'impressions' => 1800, 'position' => 9.0 ] ],
+	[],
+	[
+		'/' => [ 'گیره کوچک' => $h_term( 400, 7.8, 13 ), 'گیره بزرگ' => $h_term( 300, 8.0, 10 ) ], '/cat-x/' => [ 'گیره کوچک' => $h_term( 22000, 6.5, 260 ) ],
+		'/h-one/' => [ 'گیره بزرگ' => $h_term( 1800, 7.0, 28 ) ], '/h-two/' => [ 'گیره بزرگ' => $h_term( 1700, 9.0, 18 ) ],
+	]
+);
+hodima_ad( 'صفحه اصلی همیشه «حل‌شده» است با برچسب «صفحه اصلی»', [ hodima_seo_advisor_resolved_paths()['/'] ?? '', hodima_seo_advisor_resolved_label( 'home' ) ], [ 'home', 'صفحه اصلی' ] );
+$hc = hodima_seo_advisor_competition( [ 'limit' => 15 ] );
+$hc_terms = array_column( $hc['rows'], 'term' );
+hodima_ad( 'گروه فقط «صفحه اصلی + یک دسته» از فهرست اصلی کنار رفت', in_array( 'گیره کوچک', $hc_terms, true ), false );
+$big = array_values( array_filter( $hc['rows'], static fn( array $g ): bool => 'گیره بزرگ' === $g['term'] ) )[0] ?? null;
+hodima_ad( 'گروه سه‌صفحه‌ای: فقط صفحه اصلی کم می‌شود و دو صفحه می‌ماند', null === $big ? null : [ $big['count'], array_column( $big['pages'], 'path' ) ], [ 2, [ '/h-one/', '/h-two/' ] ] );
+$hs = hodima_seo_advisor_competition( [ 'resolved' => true ] );
+$small = array_values( array_filter( $hs['rows'], static fn( array $g ): bool => 'گیره کوچک' === $g['term'] ) )[0] ?? null;
+hodima_ad( 'نمای حل‌شده‌ها: گروه با دلیل «home» و دستور «اقدامی لازم نیست»', null === $small ? null : [ array_column( $small['pages'], 'resolved', 'path' ), str_contains( $small['advice']['detail'], 'اقدامی لازم نیست' ) ], [ [ '/cat-x/' => '', '/' => 'home' ], true ] );
+hodima_ad( 'رقیب‌های یک دسته: صفحه اصلی نمی‌آید؛ برای خود صفحه اصلی رقیبی نیست', [ hodima_seo_advisor_competitors( '/cat-x/', [ [ 'term' => 'گیره کوچک', 'impressions' => 22000 ] ] ), hodima_seo_advisor_competitors( '/', [ [ 'term' => 'گیره کوچک', 'impressions' => 400 ] ] ) ], [ [], [] ] );
+hodima_seo_advisor_clear_data();
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
