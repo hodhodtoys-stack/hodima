@@ -350,6 +350,24 @@
 	outline-offset: 2px;
 }
 
+/* ردیف «به‌روزرسانی همه» (یک بار بالای تب‌ها) */
+.hodima-advisor .hodima-advisor__bar-help {
+	margin: 0.5rem 0 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+/* تب «تنظیمات» ته ردیف تب‌ها، جدا از تب‌های گزارش */
+.hodima-advisor .hodima-advisor__view--settings {
+	margin-inline-start: auto;
+}
+
+.hodima-advisor .hodima-advisor__view--settings .dashicons {
+	inline-size: 1rem;
+	block-size: 1rem;
+	font-size: 1rem;
+}
+
 .hodima-advisor .hodima-advisor__foot {
 	display: flex;
 	flex-wrap: wrap;
@@ -826,7 +844,7 @@
 	cursor: pointer;
 }
 
-/* ردیف تب‌ها + «تنظیمات» (آخر ردیف = سمت چپ در راست‌به‌چپ) */
+/* ردیف تب‌ها (تب «تنظیمات» آخر ردیف = سمت چپ در راست‌به‌چپ) */
 .hodima-advisor .hodima-advisor__tabrow {
 	display: flex;
 	align-items: flex-start;
@@ -840,22 +858,7 @@
 	min-inline-size: 0;
 }
 
-.hodima-advisor .hodima-advisor__tabrow > .hds-btn {
-	flex: none;
-	min-block-size: 2.75rem;
-	padding-inline: 1.125rem;
-	margin-inline-start: auto;
-	border-radius: 0.75rem;
-	font-size: 0.8125rem;
-}
-
-.hodima-advisor .hodima-advisor__tabrow > .hds-btn .dashicons {
-	inline-size: 1rem;
-	block-size: 1rem;
-	font-size: 1rem;
-}
-
-/* ردیف زیر آمار: بازه + وضعیت + به‌روزرسانی */
+/* ردیف «به‌روزرسانی همه» بالای تب‌ها: بازه + وضعیت + دکمه */
 .hodima-advisor a.hds-btn,
 .hodima-advisor a.hds-btn:hover {
 	text-decoration: none;
@@ -1010,12 +1013,6 @@
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		gap: 0.5rem;
-	}
-
-	.hodima-advisor .hodima-advisor__tabrow > .hds-btn {
-		inline-size: 100%;
-		min-block-size: 2.75rem;
-		margin-inline-start: 0;
 	}
 
 	.hodima-advisor .hodima-advisor__rival {

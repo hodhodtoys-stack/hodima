@@ -382,7 +382,7 @@ delete_option( 'hodima_discover_sc_key' );
 ob_start();
 hodima_seo_advisor_render_admin();
 $html = (string) ob_get_clean();
-hodima_ad( 'بدون کلید: راهنمای اتصال، دکمه غیرفعال، بدون جدول', [ str_contains( $html, 'کلید حساب سرویس گوگل ثبت نشده است' ), str_contains( $html, 'hodima-advisor__refresh" disabled' ) || str_contains( $html, "hodima-advisor__refresh\"  disabled='disabled'" ) || str_contains( $html, 'disabled' ), str_contains( $html, 'hodima-advisor__item' ) ], [ true, true, false ] );
+hodima_ad( 'بدون کلید: صفحه خودش روی تب «تنظیمات» با «افزودن کلید» باز می‌شود؛ بدون ردیف به‌روزرسانی و جدول', [ str_contains( $html, 'افزودن کلید' ), str_contains( $html, 'tab=settings" aria-current="page"' ), str_contains( $html, 'value="hodima_advisor_refresh"' ), str_contains( $html, 'hodima-advisor__item' ) ], [ true, true, false, false ] );
 wp_set_current_user( 0 );
 
 echo "=== کادر داخل ویرایش صفحه\n";
@@ -1531,25 +1531,20 @@ hodima_seo_advisor_store( [ '/tb/a/' => [ 'clicks' => 5, 'impressions' => 5000, 
 wp_set_current_user( 1 );
 $_GET = [];
 $bar = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'competition' ) );
-hodima_ad( 'ردیف بالا در تب: دکمه به‌روزرسانی با تب برگشت؛ «تنظیمات» در آن تکرار نمی‌شود', [ str_contains( $bar, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $bar, 'name="tab" value="competition"' ), str_contains( $bar, 'data-hdsa-settings-toggle' ), str_contains( $bar, 'id="hodima-advisor-settings"' ) ], [ true, true, false, false ] );
-$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
-$page_html = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( 'صفحه کامل: «تنظیمات» فقط یک بار، آخر ردیف تب‌ها؛ پنل یک بار و بسته', [ substr_count( $page_html, 'data-hdsa-settings-toggle' ), 1 === preg_match( '#hodima-advisor__tabrow">.*</nav>\s*<a [^>]*data-hdsa-settings-toggle#s', $page_html ), substr_count( $page_html, 'id="hodima-advisor-settings"' ), 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $page_html ), str_contains( $page_html, 'tab=competition&#038;settings=1' ) || str_contains( $page_html, 'tab=competition&settings=1' ) ], [ 1, true, 1, true, true ] );
-$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'trend', 'settings' => '1' ];
-$page_open = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( 'با settings=1 پنل باز می‌آید و دکمه ردیف تب‌ها aria-expanded=true دارد', [ 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $page_open ), str_contains( $page_open, 'aria-expanded="true"' ) ], [ false, true ] );
-$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
-$page_tasks = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( 'تب کارهای من: ردیف دریافت نیست ولی دکمه تنظیمات هست', [ str_contains( $page_tasks, 'value="hodima_advisor_refresh"' ), substr_count( $page_tasks, 'data-hdsa-settings-toggle' ) ], [ false, 1 ] );
+hodima_ad( 'ردیف «به‌روزرسانی همه»: یک دکمه با تب برگشت و راهنمای «یک کلیک برای همه»', [ str_contains( $bar, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $bar, 'name="tab" value="competition"' ), str_contains( $bar, 'به‌روزرسانی همه' ), str_contains( $bar, 'یک کلیک برای همه بخش‌ها' ) ], [ true, true, true, true ] );
+foreach ( [ 'opportunities', 'competition', 'terms', 'breakdown', 'trend', 'health', 'crawl', 'indexing', 'tasks' ] as $t ) {
+	$_GET   = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => $t ];
+	$html_t = $cap( static fn() => hodima_seo_advisor_render_admin() );
+	$bar_at = strpos( $html_t, 'value="hodima_advisor_refresh"' );
+	hodima_ad( "تب {$t}: ردیف به‌روزرسانی دقیقا یک بار و بالای تب‌ها؛ پنل تنظیمات نیست", [ substr_count( $html_t, 'value="hodima_advisor_refresh"' ), false !== $bar_at && $bar_at < (int) strpos( $html_t, 'hodima-advisor__tabrow' ), str_contains( $html_t, 'id="hodima-advisor-settings"' ), str_contains( $html_t, 'name="tab" value="' . ( 'opportunities' === $t ? 'opportunities' : $t ) . '"' ) ], [ 1, true, false, true ] );
+}
+$_GET     = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'settings' ];
+$page_set = $cap( static fn() => hodima_seo_advisor_render_admin() );
+hodima_ad( 'تب «تنظیمات»: فقط باکس تنظیمات (باز)، تب فعال، بدون ردیف به‌روزرسانی و فهرست', [ substr_count( $page_set, 'id="hodima-advisor-settings"' ), 1 === preg_match( '/id="hodima-advisor-settings"[^>]*\shidden/', $page_set ), str_contains( $page_set, 'tab=settings" aria-current="page"' ), str_contains( $page_set, 'value="hodima_advisor_refresh"' ), str_contains( $page_set, 'hodima-advisor__item' ) ], [ 1, false, true, false, false ] );
+$_GET     = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'trend', 'settings' => '1' ];
+hodima_ad( 'پیوند قدیمی settings=1 ← تب «تنظیمات»', str_contains( $cap( static fn() => hodima_seo_advisor_render_admin() ), 'tab=settings" aria-current="page"' ), true );
+hodima_ad( 'دکمه بازشونده قدیمی «تنظیمات» دیگر نیست', str_contains( $page_set . $html_t, 'data-hdsa-settings-toggle' ), false );
 $_GET = [];
-foreach ( [ 'competition' => 'hodima_seo_advisor_render_competition', 'terms' => 'hodima_seo_advisor_render_terms', 'breakdown' => 'hodima_seo_advisor_render_breakdown', 'health' => 'hodima_seo_advisor_render_health' ] as $t => $fn ) {
-	$html_t = $cap( static fn() => $fn( hodima_seo_advisor_status() ) );
-	hodima_ad( "تب {$t}: دکمه به‌روزرسانی همان‌جاست و تنظیمات تکرار نمی‌شود", [ str_contains( $html_t, 'value="hodima_advisor_refresh"' ), str_contains( $html_t, 'name="tab" value="' . $t . '"' ), str_contains( $html_t, 'data-hdsa-settings-toggle' ) ], [ true, true, false ] );
-}
-foreach ( [ 'trend' => 'hodima_seo_advisor_render_trend_tab', 'indexing' => 'hodima_seo_advisor_render_indexing' ] as $t => $fn ) {
-	$html_t = $cap( static fn() => $fn() );
-	hodima_ad( "تب {$t}: دکمه به‌روزرسانی همان‌جاست", [ str_contains( $html_t, 'value="hodima_advisor_refresh"' ), str_contains( $html_t, 'name="tab" value="' . $t . '"' ) ], [ true, true ] );
-}
 
 $pg = static fn( int $cur, int $tot ): string => $cap( static fn() => hodima_seo_ui_pager( $cur, $tot, static fn( int $i ): string => '/p/?paged=' . $i ) );
 hodima_ad( 'صفحه‌بندی: یک صفحه = هیچ؛ صفحه اول بدون «قبلی»، با «بعدی»', [ $pg( 1, 1 ), str_contains( $pg( 1, 5 ), 'قبلی' ), str_contains( $pg( 1, 5 ), 'rel="next"' ), substr_count( $pg( 1, 5 ), 'hds-pager__page' ) ], [ '', false, true, 3 ] );
@@ -1612,6 +1607,13 @@ touch( "{$crawl_dir}/all_inlinks.csv", time() - 3600 );
 $imp = hodima_seo_advisor_crawl_import();
 hodima_ad( 'خواندن موفق: ۸ صفحه (آدرس پارامتردار و دامنه دیگر نیامد) و ۳ لینک یکتا', is_wp_error( $imp ) ? $imp->get_error_message() : [ $imp['pages'], $imp['links'] ], [ 8, 3 ] );
 hodima_ad( 'پوشه از وب بسته است (.htaccess و index.php)', [ is_file( "{$crawl_dir}/.htaccess" ), is_file( "{$crawl_dir}/index.php" ), str_contains( (string) file_get_contents( "{$crawl_dir}/.htaccess" ), 'Deny from all' ) ], [ true, true, true ] );
+add_filter( 'hodima_seo_advisor_inspect_enabled', '__return_false' );
+hodima_ad( '«به‌روزرسانی همه»: فایل خزش تازه‌تر از آخرین خواندن نیست ← دوباره خوانده نمی‌شود', hodima_seo_advisor_refresh_extras(), [] );
+$cs_old = get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION );
+update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time() - 7200 ] + (array) $cs_old, false );
+$ex = hodima_seo_advisor_refresh_extras();
+hodima_ad( '«به‌روزرسانی همه»: فایل خزش آماده و تازه‌تر ← همان لحظه خوانده می‌شود', [ count( $ex ), str_contains( (string) ( $ex[0] ?? '' ), 'فایل خزش تازه خوانده شد' ), hodima_seo_advisor_crawl_status()['imported'] > time() - 60 ], [ 1, true, true ] );
+remove_filter( 'hodima_seo_advisor_inspect_enabled', '__return_false' );
 $cs = hodima_seo_advisor_crawl_status();
 hodima_ad( 'وضعیت: زمان، شمار و ردیف‌های هر فایل', [ $cs['imported'] > 0, $cs['pages'], $cs['links'], $cs['files']['pages']['rows'], $cs['files']['links']['rows'] ], [ true, 8, 3, 8, 3 ] );
 

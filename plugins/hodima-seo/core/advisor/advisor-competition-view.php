@@ -107,8 +107,6 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 		[ 'label' => 'برنده روشن', 'value' => $empty ? '—' : esc_html( $n( $counts['strengthen'] ) ), 'empty' => $empty ],
 	] );
 
-	hodima_seo_advisor_render_toolbar( 'competition' );
-
 	hodima_seo_ui_card_open(
 		$settled ? 'رقابت‌های حل‌شده' : 'رقابت صفحه‌ها',
 		$settled

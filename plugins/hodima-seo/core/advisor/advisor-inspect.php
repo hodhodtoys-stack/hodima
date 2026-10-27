@@ -177,7 +177,7 @@ function hodima_seo_advisor_inspect_batch( int $limit = HODIMA_SEO_ADVISOR_INSPE
 	$property = '' !== $status['property'] ? $status['property'] : ( hodima_seo_sc_candidates( HODIMA_SEO_SC_ADVISOR )[0] ?? '' );
 
 	if ( '' === $property ) {
-		$summary['error'] = 'property سرچ کنسول معلوم نیست؛ اول «به‌روزرسانی داده» را بزنید.';
+		$summary['error'] = 'property سرچ کنسول معلوم نیست؛ اول «به‌روزرسانی همه» را بزنید.';
 		return $summary;
 	}
 

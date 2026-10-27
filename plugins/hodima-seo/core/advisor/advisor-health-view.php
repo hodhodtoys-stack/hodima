@@ -53,11 +53,9 @@ function hodima_seo_advisor_render_health( array $status ): void {
 		[ 'label' => 'پوشش در گوگل', 'value' => $empty || $total <= 0 ? '—' : esc_html( $n( round( $seen / $total * 100 ) ) . '٪' ), 'sub' => $empty || $total <= 0 ? '' : esc_html( sprintf( '%1$s از %2$s صفحه نمایش گرفته', $n( $seen ), $n( $total ) ) ), 'empty' => $empty || $total <= 0 ],
 	] );
 
-	hodima_seo_advisor_render_toolbar( 'health' );
-
 	if ( $empty ) {
 		hodima_seo_ui_card_open( 'سلامت آدرس‌ها' );
-		hodima_seo_ui_empty( 'هنوز ساخته نشده', 'بعد از «به‌روزرسانی داده» این بخش پر می‌شود.' );
+		hodima_seo_ui_empty( 'هنوز ساخته نشده', 'بعد از «به‌روزرسانی همه» این بخش پر می‌شود.' );
 		hodima_seo_ui_card_close();
 		return;
 	}

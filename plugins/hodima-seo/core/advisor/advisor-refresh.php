@@ -95,7 +95,7 @@ function hodima_seo_advisor_store_error( string $message ): void {
  *
  * @return true|WP_Error
  */
-function hodima_seo_advisor_refresh(): bool|WP_Error {
+function hodima_seo_advisor_refresh( bool $force = false ): bool|WP_Error {
 
 	// کلیک دستی و کرون هم‌زمان نشوند (دو دریافت داده روی هم، جدول را قاطی می‌کنند)
 	if ( ! hodima_seo_advisor_lock() ) {
@@ -103,7 +103,7 @@ function hodima_seo_advisor_refresh(): bool|WP_Error {
 	}
 
 	try {
-		return hodima_seo_advisor_run_refresh();
+		return hodima_seo_advisor_run_refresh( $force );
 	} finally {
 		hodima_seo_advisor_unlock();
 	}
@@ -114,7 +114,7 @@ function hodima_seo_advisor_refresh(): bool|WP_Error {
  *
  * @return true|WP_Error
  */
-function hodima_seo_advisor_run_refresh(): bool|WP_Error {
+function hodima_seo_advisor_run_refresh( bool $force = false ): bool|WP_Error {
 
 	if ( function_exists( 'set_time_limit' ) ) {
 		set_time_limit( 180 ); // کرون هم مثل دکمه دستی: سه درخواست بزرگ و تحلیل همه آدرس‌ها
@@ -190,7 +190,7 @@ function hodima_seo_advisor_run_refresh(): bool|WP_Error {
 		// بقیه کارها نوبت‌به‌نوبت: ساخت پیشنهادها، بخش‌بندی، روند، سلامت و تاریخچه (هرکدام مستقل؛ شکستشان
 		// دریافت اصلی را رد نمی‌کند). تا بودجه زمانی همین‌جا؛ باقی‌مانده با رویداد کرون
 		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
-		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [ 'stages' => HODIMA_SEO_ADVISOR_STAGES, 'property' => $property, 'range' => $range, 'days' => $days ], false );
+		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [ 'stages' => HODIMA_SEO_ADVISOR_STAGES, 'property' => $property, 'range' => $range, 'days' => $days, 'force' => $force ], false );
 		hodima_seo_advisor_pipeline_run();
 
 		return true;
@@ -246,10 +246,10 @@ function hodima_seo_advisor_pipeline_stage( string $stage, array $state, float $
 			}
 			return $result;
 		case 'breakdown':
-			hodima_seo_advisor_breakdown_sync( $property, [ 'start' => (string) ( $range['start'] ?? '' ), 'end' => (string) ( $range['end'] ?? '' ) ], $days );
+			hodima_seo_advisor_breakdown_sync( $property, [ 'start' => (string) ( $range['start'] ?? '' ), 'end' => (string) ( $range['end'] ?? '' ) ], $days, ! empty( $state['force'] ) );
 			break;
 		case 'trend':
-			hodima_seo_advisor_trend_sync( $property );
+			hodima_seo_advisor_trend_sync( $property, ! empty( $state['force'] ) ); // دکمه دستی: بدون فاصله ۱۲ ساعته
 			break;
 		case 'health':
 			hodima_seo_advisor_health_sync();

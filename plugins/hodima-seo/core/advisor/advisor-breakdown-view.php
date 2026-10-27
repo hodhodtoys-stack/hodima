@@ -114,11 +114,9 @@ function hodima_seo_advisor_render_breakdown( array $status ): void {
 		[ 'label' => 'رتبه موبایل ضعیف', 'value' => $empty || ! $devices ? '—' : esc_html( $n( count( $gaps ) ) ), 'sub' => $gaps ? 'صفحه' : '', 'empty' => $empty || ! $devices ],
 	] );
 
-	hodima_seo_advisor_render_toolbar( 'breakdown' );
-
 	if ( $empty ) {
 		hodima_seo_ui_card_open( 'دستگاه و کشور' );
-		hodima_seo_ui_empty( 'هنوز گرفته نشده', 'بعد از «به‌روزرسانی داده» (و تا چند دقیقه) سهم موبایل و دسکتاپ، کشورها، جستجوی تصویر و نوع نمایش در گوگل اینجا پر می‌شود.' );
+		hodima_seo_ui_empty( 'هنوز گرفته نشده', 'بعد از «به‌روزرسانی همه» (و تا چند دقیقه) سهم موبایل و دسکتاپ، کشورها، جستجوی تصویر و نوع نمایش در گوگل اینجا پر می‌شود.' );
 		hodima_seo_ui_card_close();
 		return;
 	}

@@ -72,11 +72,9 @@ function hodima_seo_advisor_render_trend_tab(): void {
 		[ 'label' => 'کلمه از دست رفته', 'value' => $empty ? '—' : esc_html( $n( count( $lost ) ) ), 'sub' => $empty ? '' : '۲۸ روز اخیر', 'empty' => $empty ],
 	] );
 
-	hodima_seo_advisor_render_toolbar( 'trend' );
-
 	if ( $empty ) {
 		hodima_seo_ui_card_open( 'روند و فصل‌ها' );
-		hodima_seo_ui_empty( 'هنوز گرفته نشده', 'بعد از «به‌روزرسانی داده» (و تا چند دقیقه) روند ۱۶ ماهه و کلمه‌های تازه و از دست رفته اینجا پر می‌شود.' );
+		hodima_seo_ui_empty( 'هنوز گرفته نشده', 'بعد از «به‌روزرسانی همه» (و تا چند دقیقه) روند ۱۶ ماهه و کلمه‌های تازه و از دست رفته اینجا پر می‌شود.' );
 		hodima_seo_ui_card_close();
 		return;
 	}

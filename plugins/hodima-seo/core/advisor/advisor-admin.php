@@ -5,7 +5,7 @@
  *
  * «ابزارهای هدیما ← دستار سئو» (admin.php?page=hodima-advisor). نوع صفحه «فهرست و جدول»
  * با کالبد ثابت کیت SEO (inc/ui-skeleton.php): سربرگ ← ۴ کارت آمار ← یک کنش اصلی
- * («به‌روزرسانی داده» با انتخاب بازه) ← کارت فرصت‌ها (نوار ابزار یک‌ردیفه: نماها، جستجو،
+ * («به‌روزرسانی همه» با انتخاب بازه) ← کارت فرصت‌ها (نوار ابزار یک‌ردیفه: نماها، جستجو،
  * نوع پیشنهاد، خروجی CSV؛ ردیف‌های جمع‌شونده). طرح تأییدشده: Artifact «طرح دستار سئو»
  * (HODIMA-AUDIT.md بخش ۲۵۶). چیزی در سایت عوض نمی‌شود؛ فقط «نادیده گرفتن» یک آدرس و بازه
  * ذخیره می‌شوند. بدون JS کار می‌کند.
@@ -176,11 +176,12 @@ function hodima_seo_advisor_handle_refresh(): void {
 		set_time_limit( 180 ); // سایت بزرگ: سه درخواست ۲۵ هزار ردیفی و تحلیل همه آدرس‌ها
 	}
 
-	$result = hodima_seo_advisor_refresh();
+	$result = hodima_seo_advisor_refresh( true ); // دستی: دستگاه/کشور و روند بدون فاصله ۱۲ ساعته
 
 	if ( is_wp_error( $result ) ) {
 		hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $result->get_error_message() ), 'error' );
 	} else {
+		$extra = hodima_seo_advisor_refresh_extras();
 		$status = hodima_seo_advisor_status();
 		hodima_admin_flash(
 			sprintf(
@@ -188,7 +189,8 @@ function hodima_seo_advisor_handle_refresh(): void {
 				esc_html( number_format_i18n( $status['days'] ) ),
 				esc_html( number_format_i18n( $status['pages'] ) ),
 				esc_html( number_format_i18n( $status['advised'] ) )
-			) . ( hodima_seo_advisor_pipeline_pending() ? ' ' . esc_html( 'ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.' ) : '' ),
+			) . ( hodima_seo_advisor_pipeline_pending() ? ' ' . esc_html( 'ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.' ) : '' )
+			. ( $extra ? ' ' . esc_html( implode( ' ', $extra ) ) : '' ),
 			'success'
 		);
 	}
@@ -196,6 +198,35 @@ function hodima_seo_advisor_handle_refresh(): void {
 	$tab = isset( $_POST['tab'] ) ? sanitize_key( (string) $_POST['tab'] ) : '';
 	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => in_array( $tab, hodima_seo_advisor_tab_keys(), true ) && 'opportunities' !== $tab ? $tab : '' ] ) );
 	exit;
+}
+
+/**
+ * بقیه بخش‌ها بعد از دریافت دستی (دکمه «به‌روزرسانی همه»): بررسی ایندکس یک دسته در پس‌زمینه و خواندن فایل‌های
+ * خزش اگر از آخرین خواندن تازه‌تر و آماده‌اند. جمله‌های کوتاه نتیجه برای پیام.
+ *
+ * @return list<string>
+ */
+function hodima_seo_advisor_refresh_extras(): array {
+
+	$out = [];
+
+	if ( function_exists( 'hodima_seo_advisor_inspect_pending' ) && (bool) apply_filters( 'hodima_seo_advisor_inspect_enabled', true ) && hodima_seo_advisor_inspect_pending() > 0 ) {
+		if ( ! wp_next_scheduled( HODIMA_SEO_ADVISOR_INSPECT_CRON ) || wp_next_scheduled( HODIMA_SEO_ADVISOR_INSPECT_CRON ) > time() + 60 ) {
+			wp_schedule_single_event( time() + 30, HODIMA_SEO_ADVISOR_INSPECT_CRON );
+		}
+		$out[] = 'بررسی ایندکس یک دسته از آدرس‌ها در پس‌زمینه شروع شد.';
+	}
+
+	if ( function_exists( 'hodima_seo_advisor_crawl_import' ) ) {
+		$file     = hodima_seo_advisor_crawl_file_state( 'pages' );
+		$imported = hodima_seo_advisor_crawl_status()['imported'];
+		if ( 'ready' === $file['state'] && $file['mtime'] > $imported ) {
+			$crawl = hodima_seo_advisor_crawl_import();
+			$out[] = is_wp_error( $crawl ) ? 'فایل خزش تازه خوانده نشد: ' . $crawl->get_error_message() : sprintf( 'فایل خزش تازه خوانده شد (%s صفحه).', number_format_i18n( $crawl['pages'] ) );
+		}
+	}
+
+	return $out;
 }
 
 /** کمترین و بیشترین «حداقل نمایش» قابل ذخیره. */
@@ -214,7 +245,7 @@ function hodima_seo_advisor_handle_settings(): void {
 
 	if ( $value < $low || $value > $high ) {
 		hodima_admin_flash( sprintf( 'حداقل نمایش باید بین %1$s و %2$s باشد؛ تنظیم قبلی ماند.', esc_html( number_format_i18n( $low ) ), esc_html( number_format_i18n( $high ) ) ), 'error' );
-		wp_safe_redirect( hodima_seo_advisor_page_url( [ 'settings' => 1 ] ) );
+		wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) );
 		exit;
 	}
 
@@ -229,14 +260,14 @@ function hodima_seo_advisor_handle_settings(): void {
 		$count = hodima_seo_advisor_analyze_all();
 		if ( is_wp_error( $count ) ) {
 			hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $count->get_error_message() ), 'error' );
-			wp_safe_redirect( hodima_seo_advisor_page_url( [ 'settings' => 1 ] ) );
+			wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) );
 			exit;
 		}
 		$message = sprintf( 'تنظیم ذخیره شد؛ پیشنهادها دوباره ساخته شد (%s آدرس پیشنهاد دارد).', esc_html( number_format_i18n( $count ) ) );
 	}
 
 	hodima_admin_flash( '<strong>دستار سئو:</strong> ' . $message, 'success' );
-	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'settings' => 1 ] ) );
+	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) );
 	exit;
 }
 
@@ -263,12 +294,12 @@ function hodima_seo_advisor_handle_key(): void {
 
 		if ( ! $check['ok'] ) {
 			hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $check['message'] ), 'error' );
-			wp_safe_redirect( hodima_seo_advisor_page_url( [ 'settings' => 1 ] ) );
+			wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) );
 			exit;
 		}
 
 		update_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, $json, false );
-		$message = [ sprintf( 'کلید مخصوص دستار سئو ذخیره شد (%s). این ایمیل را در Search Console با دسترسی «محدود» اضافه کنید، بعد «به‌روزرسانی داده» را بزنید.', esc_html( $check['email'] ) ), 'success' ];
+		$message = [ sprintf( 'کلید مخصوص دستار سئو ذخیره شد (%s). این ایمیل را در Search Console با دسترسی «محدود» اضافه کنید، بعد «به‌روزرسانی همه» را بزنید.', esc_html( $check['email'] ) ), 'success' ];
 	}
 
 	if ( $old_email !== hodima_seo_sc_email( HODIMA_SEO_SC_ADVISOR ) ) {
@@ -281,7 +312,7 @@ function hodima_seo_advisor_handle_key(): void {
 	}
 
 	hodima_admin_flash( '<strong>دستار سئو:</strong> ' . $message[0], $message[1] );
-	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'settings' => 1 ] ) );
+	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) );
 	exit;
 }
 
@@ -300,11 +331,11 @@ function hodima_seo_advisor_handle_clear(): void {
 		if ( is_wp_error( $result ) ) {
 			hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $result->get_error_message() ), 'error' );
 		} else {
-			hodima_admin_flash( '<strong>دستار سئو:</strong> داده‌های مشاور پاک شد. برای دریافت دوباره، «به‌روزرسانی داده» را بزنید.', 'success' );
+			hodima_admin_flash( '<strong>دستار سئو:</strong> داده‌های مشاور پاک شد. برای دریافت دوباره، «به‌روزرسانی همه» را بزنید.', 'success' );
 		}
 	}
 
-	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'settings' => 1 ] ) );
+	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) );
 	exit;
 }
 
@@ -422,7 +453,7 @@ function hodima_seo_advisor_handle_csv(): void {
  * @return list<string>
  */
 function hodima_seo_advisor_tab_keys(): array {
-	return [ 'opportunities', 'competition', 'terms', 'breakdown', 'trend', 'health', 'crawl', 'indexing', 'tasks' ];
+	return [ 'opportunities', 'competition', 'terms', 'breakdown', 'trend', 'health', 'crawl', 'indexing', 'tasks', 'settings' ];
 }
 
 /**
@@ -440,17 +471,30 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 		'crawl'         => [ 'سلامت خزش', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
 		'indexing'      => [ 'ایندکس', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
 		'tasks'         => [ 'کارهای من', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
+		// تنظیمات تب خودش است (SEO 2.9.3)؛ قبلا پنلی بود که روی هر تب باز می‌شد
+		'settings'      => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
 	];
 
+	// بدون داده فقط تب اول و «تنظیمات» معنا دارند (بقیه خالی‌اند)
+	if ( ! $with_tabs ) {
+		$tabs = array_intersect_key( $tabs, [ 'opportunities' => true, 'settings' => true ] );
+	}
+
 	echo '<div class="hodima-advisor__tabrow">';
-	if ( $with_tabs ) {
+	if ( $tabs ) {
 		echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
 		foreach ( $tabs as $key => [ $label, $url ] ) {
-			printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>%3$s</a>', esc_url( $url ), $key === $active ? ' aria-current="page"' : '', esc_html( $label ) );
+			printf(
+				'<a class="hodima-advisor__view%1$s" href="%2$s"%3$s>%4$s%5$s</a>',
+				'settings' === $key ? ' hodima-advisor__view--settings' : '',
+				esc_url( $url ),
+				$key === $active ? ' aria-current="page"' : '',
+				'settings' === $key ? '<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>' : '',
+				esc_html( $label )
+			);
 		}
 		echo '</nav>';
 	}
-	echo hodima_seo_advisor_settings_button( $active ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در همان تابع
 	echo '</div>';
 }
 
@@ -466,7 +510,9 @@ function hodima_seo_advisor_render_admin(): void {
 	$has_data = $status['fetched'] > 0 && $totals['pages'] > 0;
 
 	$tab = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
-	$tab = $has_data && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : 'opportunities';
+	$tab = ! empty( $_GET['settings'] ) ? 'settings' : $tab; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- پیوند قدیمی settings=1
+	$tab = ( $has_data || 'settings' === $tab ) && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : 'opportunities';
+	$tab = $has_key ? $tab : 'settings'; // بدون کلید اولین کار وارد کردن کلید است
 
 	hodima_seo_ui_open( [
 		'title'       => 'دستار سئو',
@@ -484,8 +530,17 @@ function hodima_seo_advisor_render_admin(): void {
 	$n     = static fn( int|float $value ): string => number_format_i18n( $value );
 	$empty = ! $has_data;
 
-	hodima_seo_advisor_render_tabs( $tab, $has_data ); // «تنظیمات» آخر ردیف تب‌هاست (یک بار برای کل صفحه)
-	hodima_seo_advisor_render_settings( $has_data, hodima_seo_advisor_settings_open() ); // پنلش یک بار، زیر همین ردیف
+	// یک ردیف «به‌روزرسانی همه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
+	if ( 'settings' !== $tab ) {
+		hodima_seo_advisor_render_toolbar( $tab );
+	}
+	hodima_seo_advisor_render_tabs( $tab, $has_data );
+
+	if ( 'settings' === $tab ) {
+		hodima_seo_advisor_render_settings( $has_data );
+		hodima_seo_ui_close();
+		return;
+	}
 
 	if ( 'opportunities' !== $tab ) {
 		match ( $tab ) {
@@ -515,13 +570,11 @@ function hodima_seo_advisor_render_admin(): void {
 		[ 'label' => 'میانگین رتبه', 'value' => $empty ? '—' : esc_html( number_format_i18n( $totals['position'], 1 ) ), 'empty' => $empty ],
 	] );
 
-	hodima_seo_advisor_render_toolbar();
-
 	if ( ! $has_key ) {
 		hodima_seo_advisor_render_no_key();
 	} elseif ( ! $has_data ) {
 		hodima_seo_ui_card_open( 'هنوز داده‌ای نیست' );
-		hodima_seo_ui_empty( 'اولین دریافت داده را بزنید', 'دکمه «به‌روزرسانی داده» را بزنید؛ از این به بعد خودکار هر روز گرفته می‌شود. داده سرچ کنسول ۲ تا ۳ روز تاخیر دارد.' );
+		hodima_seo_ui_empty( 'اولین دریافت داده را بزنید', 'دکمه «به‌روزرسانی همه» را بزنید؛ از این به بعد خودکار هر روز گرفته می‌شود. داده سرچ کنسول ۲ تا ۳ روز تاخیر دارد.' );
 		hodima_seo_ui_card_close();
 	} else {
 		hodima_seo_advisor_render_list( $status );
@@ -531,15 +584,8 @@ function hodima_seo_advisor_render_admin(): void {
 }
 
 /**
- * پنل «تنظیمات» باز باشد؟ بدون کلید همیشه (اولین کار وارد کردن کلید است)، وگرنه فقط با `settings=1`.
- */
-function hodima_seo_advisor_settings_open(): bool {
-	return '' === hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR ) || ! empty( $_GET['settings'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط باز بودن پنل
-}
-
-/**
- * ردیف بالای هر تب داده‌دار: انتخاب بازه + نشان وضعیت + «به‌روزرسانی داده». زیر آمار خود تب می‌آید تا مدیر برای
- * دریافت داده به تب «فرصت‌های بهتر شدن» برنگردد. «تنظیمات» اینجا نیست: یک بار در سربرگ صفحه است.
+ * ردیف «به‌روزرسانی همه»، یک بار بالای تب‌ها برای کل صفحه (جز تب تنظیمات): بازه + وضعیت اتصال + یک دکمه که داده
+ * اصلی، دستگاه و کشور، روند، بررسی ایندکس و فایل‌های خزش تازه را با هم به‌روز می‌کند (hodima_seo_advisor_handle_refresh).
  *
  * @param string $tab کلید تب (برای برگشت بعد از دریافت)؛ خالی = تب اول
  */
@@ -572,31 +618,19 @@ function hodima_seo_advisor_render_toolbar( string $tab = '' ): void {
 				<span class="hds-pill hds-pill--warn">به Search Console وصل نیست</span>
 			<?php endif; ?>
 			<button type="submit" class="hds-btn hodima-advisor__refresh"<?php disabled( ! $has_key ); ?>>
-				<span class="dashicons dashicons-update" aria-hidden="true"></span> به‌روزرسانی داده
+				<span class="dashicons dashicons-update" aria-hidden="true"></span> به‌روزرسانی همه
 			</button>
 		</form>
+		<p class="hodima-advisor__bar-help">یک کلیک برای همه بخش‌ها: آمار گوگل، موبایل و کشور، روند ماه‌ها، بررسی ایندکس چند آدرس و فایل‌های خزش تازه. هر روز هم خودکار انجام می‌شود.</p>
 	</section>
 	<?php
 }
 
 /**
- * دکمه «تنظیمات» آخر ردیف تب‌ها (یک بار برای کل صفحه). لینک `settings=1` است تا بدون JS هم پنل باز شود.
+ * محتوای تب «تنظیمات» (`tab=settings`): کلید حساب سرویس، حداقل نمایش، پاک کردن داده‌ها. بدون کلید صفحه
+ * خودکار روی همین تب باز می‌شود.
  */
-function hodima_seo_advisor_settings_button( string $tab ): string {
-
-	return sprintf(
-		'<a class="hds-btn hds-btn--outline" href="%1$s" role="button" aria-controls="hodima-advisor-settings" aria-expanded="%2$s" data-hdsa-settings-toggle><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span> %3$s</a>',
-		esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'opportunities' === $tab ? '' : $tab, 'settings' => 1 ] ) . '#hodima-advisor-settings' ),
-		hodima_seo_advisor_settings_open() ? 'true' : 'false',
-		esc_html( 'تنظیمات' )
-	);
-}
-
-/**
- * پنل «تنظیمات» (زیر ردیف بالا؛ بسته مگر خواسته شود یا کلید نباشد): کلید حساب سرویس، حداقل نمایش، پاک کردن
- * داده‌ها. بدون JS دکمه «تنظیمات» صفحه را با `settings=1` دوباره باز می‌کند و پنل باز می‌آید.
- */
-function hodima_seo_advisor_render_settings( bool $has_data, bool $open ): void {
+function hodima_seo_advisor_render_settings( bool $has_data ): void {
 
 	[ $low, $high ] = HODIMA_SEO_ADVISOR_MIN_IMPRESSIONS_RANGE;
 	$min            = hodima_seo_advisor_config()['min_impressions'];
@@ -612,7 +646,7 @@ function hodima_seo_advisor_render_settings( bool $has_data, bool $open ): void 
 		'indexing'       => 'حساب سرویس ایندکس گوگل',
 	][ $source ] ?? '';
 	?>
-	<section id="hodima-advisor-settings" class="hds-card hodima-advisor__settings" aria-labelledby="hodima-advisor-settings-title"<?php echo $open ? '' : ' hidden'; ?>>
+	<section id="hodima-advisor-settings" class="hds-card hodima-advisor__settings" aria-labelledby="hodima-advisor-settings-title">
 		<h2 class="hds-card__title" id="hodima-advisor-settings-title"><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>تنظیمات</h2>
 		<p class="hds-card__desc">اتصال به Search Console، آستانه پیشنهادها و پاک کردن داده‌ها.</p>
 
@@ -672,7 +706,7 @@ function hodima_seo_advisor_render_settings( bool $has_data, bool $open ): void 
 				<input type="hidden" name="action" value="hodima_advisor_clear">
 				<?php wp_nonce_field( 'hodima_advisor_clear' ); ?>
 				<h3 class="hodima-advisor__setting-title">داده‌های دستار سئو را پاک کنم؟</h3>
-				<p class="hodima-advisor__setting-help">جدول‌های دریافت‌شده از Search Console و فهرست «نادیده گرفتن» پاک می‌شوند. کلید حساب سرویس، تاریخچه هفتگی، «کارهای من» و تنظیمات می‌مانند و با «به‌روزرسانی داده» دوباره گرفته می‌شود. بازگشت ندارد.</p>
+				<p class="hodima-advisor__setting-help">جدول‌های دریافت‌شده از Search Console و فهرست «نادیده گرفتن» پاک می‌شوند. کلید حساب سرویس، تاریخچه هفتگی، «کارهای من» و تنظیمات می‌مانند و با «به‌روزرسانی همه» دوباره گرفته می‌شود. بازگشت ندارد.</p>
 				<label class="hodima-advisor__confirm">
 					<input type="checkbox" name="confirm" value="1"<?php disabled( ! $has_data ); ?>>
 					<span>مطمئنم؛ داده‌ها پاک شود</span>
@@ -722,7 +756,7 @@ function hodima_seo_advisor_render_no_key(): void {
 	hodima_seo_ui_empty(
 		'کلید حساب سرویس گوگل ثبت نشده است',
 		sprintf(
-			'فایل JSON حساب سرویس را در «تنظیمات» (دکمه بالای همین صفحه) وارد کنید، یا کلید «گوگل دیسکاور» را در <a href="%s">آمار سرچ کنسول</a> بگذارید که مشاور هم از آن استفاده می‌کند. ایمیل حساب را در Search Console (تنظیمات ← کاربران و مجوزها) با دسترسی «محدود» اضافه کنید.',
+			'فایل JSON حساب سرویس را در تب «تنظیمات» همین صفحه وارد کنید، یا کلید «گوگل دیسکاور» را در <a href="%s">آمار سرچ کنسول</a> بگذارید که مشاور هم از آن استفاده می‌کند. ایمیل حساب را در Search Console (تنظیمات ← کاربران و مجوزها) با دسترسی «محدود» اضافه کنید.',
 			esc_url( admin_url( 'admin.php?page=hodima-discover&tab=settings' ) )
 		)
 	);

@@ -1,26 +1,9 @@
 /*
  * دستار سئو — رفتار صفحه پیشخوان (core/advisor/advisor-admin.php). همه‌چیز بدون JS هم کار می‌کند:
- * دکمه «تنظیمات» لینک `settings=1` است، پنجره کلید بدون JS دیده نمی‌شود ولی کلید با wp-config هم ثابت می‌شود.
+ * تنظیمات تب خودش است (tab=settings)؛ پنجره کلید بدون JS دیده نمی‌شود ولی کلید با wp-config هم ثابت می‌شود.
  */
 (() => {
 	'use strict';
-
-	/* ── پنل «تنظیمات»: باز و بسته با دکمه، بدون بارگذاری دوباره ── */
-	const toggle = document.querySelector('[data-hdsa-settings-toggle]');
-	const panel = document.getElementById('hodima-advisor-settings');
-	if (toggle && panel) {
-		document.querySelectorAll('[data-hdsa-settings-toggle]').forEach((button) => {
-			button.addEventListener('click', (event) => {
-				event.preventDefault();
-				const willOpen = panel.hidden;
-				panel.hidden = !willOpen;
-				document.querySelectorAll('[data-hdsa-settings-toggle]').forEach((b) => b.setAttribute('aria-expanded', String(willOpen)));
-				if (willOpen) {
-					panel.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-				}
-			});
-		});
-	}
 
 	/* ── کپی مسیر پوشه خزش (data-hdsa-copy = شناسه عنصر حاوی متن) ── */
 	document.querySelectorAll('[data-hdsa-copy]').forEach((button) => {
