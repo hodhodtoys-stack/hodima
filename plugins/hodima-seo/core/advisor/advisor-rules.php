@@ -411,6 +411,66 @@ function hodima_seo_advisor_decline_cause( array $row, ?array $site ): array {
 }
 
 /**
+ * کمبود کلیک یک صفحه با سنجیدن هر کلمه با نرخ معمول رتبه خودش (تابع خالص). نرخ کلیک تابعی محدب از رتبه است، پس
+ * میانگین رتبه صفحه با میانگین نرخ‌ها یکی نیست و مقایسه کل صفحه با «نرخ معمولِ میانگین رتبه» مثبت کاذب می‌سازد.
+ * فقط کلمه‌های غیربرندی تا رتبه `$max_position` (پایین‌تر از آن نرخ معمولی معنا ندارد و کلمه برندی نرخی بالاتر دارد).
+ *
+ * @param list<array{term: string, clicks: int, impressions: int, position: float}> $queries
+ * @return array{gain: int, impressions: int, ctr: float, expected_ctr: float, worst: array{term: string, position: float, ctr: float, expected_ctr: float}|null}|null null = کلمه‌های ذخیره‌شده کمتر از نیمی از نمایش صفحه‌اند (فراخواننده به حساب کل صفحه برمی‌گردد)
+ */
+function hodima_seo_advisor_ctr_gap( array $queries, int $page_impressions, float $max_position ): ?array {
+
+	$known    = 0;
+	$covered  = 0;
+	$clicks   = 0;
+	$expected = 0.0;
+	$worst    = null;
+
+	foreach ( $queries as $query ) {
+		$known += $query['impressions'];
+
+		if ( $query['position'] <= 0 || $query['position'] > $max_position || hodima_seo_advisor_is_brand( $query['term'] ) ) {
+			continue;
+		}
+
+		$rate      = hodima_seo_advisor_expected_ctr( $query['position'] );
+		$expected += $query['impressions'] * $rate / 100;
+		$covered  += $query['impressions'];
+		$clicks   += $query['clicks'];
+		$miss      = $query['impressions'] * $rate / 100 - $query['clicks'];
+
+		if ( null === $worst || $miss > $worst['miss'] ) {
+			$worst = [
+				'miss'         => $miss,
+				'term'         => $query['term'],
+				'position'     => $query['position'],
+				'ctr'          => $query['impressions'] > 0 ? $query['clicks'] / $query['impressions'] * 100 : 0.0,
+				'expected_ctr' => $rate,
+			];
+		}
+	}
+
+	if ( $page_impressions <= 0 || $known < $page_impressions * 0.5 ) {
+		return null;
+	}
+
+	// نمایش صفحه بیشتر برندی یا بیرون از ۲۰ نتیجه اول است؛ نرخ کلیک آن‌ها مقایسه‌شدنی نیست
+	if ( $covered < $page_impressions * 0.25 || null === $worst ) {
+		return [ 'gain' => 0, 'impressions' => $covered, 'ctr' => 0.0, 'expected_ctr' => 0.0, 'worst' => null ];
+	}
+
+	unset( $worst['miss'] );
+
+	return [
+		'gain'         => (int) round( $expected - $clicks ),
+		'impressions'  => $covered,
+		'ctr'          => $clicks / $covered * 100,
+		'expected_ctr' => $expected / $covered * 100,
+		'worst'        => $worst,
+	];
+}
+
+/**
  * پیشنهادهای یک آدرس (تابع خالص: بدون خواندن پایگاه داده).
  *
  * @param array{path: string, clicks: int, impressions: int, position: float, prev_clicks: int} $row
@@ -433,33 +493,46 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 	$top  = $queries[0]['term'] ?? '';
 	$ctr  = static fn( int $clicks, int $impressions ): float => $impressions > 0 ? $clicks / $impressions * 100 : 0.0;
 
-	// ۱. نرخ کلیک کمتر از حد معمول رتبه
+	// ۱. نرخ کلیک کمتر از حد معمول رتبه. اگر کلمه‌های ذخیره‌شده کافی‌اند، هر کلمه با نرخ معمول رتبه خودش سنجیده می‌شود، نه
+	// کل صفحه با میانگین رتبه (صفحه‌ای با رتبه ۱ برای یک کلمه و ۴۰ برای ده‌ها کلمه میانگین ۱۰ دارد ولی نرخ کلیکش ذاتا از «معمولِ رتبه ۱۰» کمتر است)
 	$position = $row['position'];
-	if ( $row['impressions'] >= $cfg['min_impressions'] && $position > 0 && $position <= $cfg['near_first_max'] ) {
-		$now      = $ctr( $row['clicks'], $row['impressions'] );
-		$expected = hodima_seo_advisor_expected_ctr( $position );
-		$gain     = (int) round( $row['impressions'] * ( $expected - $now ) / 100 );
+	$gap      = $row['impressions'] >= $cfg['min_impressions'] && $position > 0 ? hodima_seo_advisor_ctr_gap( $queries, $row['impressions'], $cfg['near_first_max'] ) : null;
+	if ( $row['impressions'] >= $cfg['min_impressions'] && $position > 0 && ( null !== $gap || $position <= $cfg['near_first_max'] ) ) {
+		if ( null !== $gap ) {
+			[ $now, $expected, $gain ] = [ $gap['ctr'], $gap['expected_ctr'], $gap['gain'] ];
+		} else {
+			$now      = $ctr( $row['clicks'], $row['impressions'] );
+			$expected = hodima_seo_advisor_expected_ctr( $position );
+			$gain     = (int) round( $row['impressions'] * ( $expected - $now ) / 100 );
+		}
 		if ( $gain > 0 ) {
-			$detail = sprintf(
-				'این صفحه %1$s بار نمایش گرفته ولی فقط %2$s٪ کلیک شده؛ برای رتبه %3$s معمولا حدود %4$s٪ انتظار می‌رود%6$s.%5$s',
-				hodima_seo_advisor_num( $row['impressions'] ),
-				hodima_seo_advisor_num( $now, 2 ),
-				hodima_seo_advisor_num( $position, 1 ),
-				hodima_seo_advisor_num( $expected, 1 ),
-				'' !== $top ? ' مهم‌ترین کلمه این صفحه «' . $top . '» است؛ آن را ابتدای عنوان بیاورید.' : '',
-				hodima_seo_advisor_ctr_learned_share() >= 0.4 ? ' (این نرخ معمول از داده خود سایت تنظیم شده)' : ''
-			);
+			$lead = null !== $gap
+				? sprintf(
+					'کلمه‌های غیربرندی این صفحه که در ۲۰ نتیجه اول‌اند %1$s بار نمایش گرفته‌اند ولی فقط %2$s٪ کلیک شده؛ با توجه به رتبه هر کلمه معمولا حدود %3$s٪ انتظار می‌رود',
+					hodima_seo_advisor_num( $gap['impressions'] ),
+					hodima_seo_advisor_num( $now, 2 ),
+					hodima_seo_advisor_num( $expected, 1 )
+				)
+				: sprintf(
+					'این صفحه %1$s بار نمایش گرفته ولی فقط %2$s٪ کلیک شده؛ برای رتبه %3$s معمولا حدود %4$s٪ انتظار می‌رود',
+					hodima_seo_advisor_num( $row['impressions'] ),
+					hodima_seo_advisor_num( $now, 2 ),
+					hodima_seo_advisor_num( $position, 1 ),
+					hodima_seo_advisor_num( $expected, 1 )
+				);
+			$worst  = $gap['worst'] ?? null;
+			$focus  = null !== $worst
+				? sprintf( ' مهم‌ترین کلمه کم‌کلیک «%1$s» است (رتبه %2$s، نرخ کلیک %3$s٪ به‌جای حدود %4$s٪)؛ آن را ابتدای عنوان بیاورید.', $worst['term'], hodima_seo_advisor_num( $worst['position'], 1 ), hodima_seo_advisor_num( $worst['ctr'], 2 ), hodima_seo_advisor_num( $worst['expected_ctr'], 1 ) )
+				: ( '' !== $top ? ' مهم‌ترین کلمه این صفحه «' . $top . '» است؛ آن را ابتدای عنوان بیاورید.' : '' );
+			$detail = $lead . ( hodima_seo_advisor_ctr_learned_share() >= 0.4 ? ' (این نرخ معمول از داده خود سایت تنظیم شده)' : '' ) . '.' . $focus;
 			$title  = 'عنوان و توضیح متا را بازنویسی کنید';
 
 			if ( null !== $meta && $meta['healthy'] ) {
 				// طبق خزش طول عنوان و متا سالم است؛ بازنویسی طولی کمکی نمی‌کند و تخمین کلیک بالقوه کم‌اطمینان‌تر است
 				$title  = 'نرخ کلیک کم است؛ طول عنوان و متا سالم است';
 				$detail = sprintf(
-					'این صفحه %1$s بار نمایش گرفته ولی فقط %2$s٪ کلیک شده؛ برای رتبه %3$s معمولا حدود %4$s٪ انتظار می‌رود. طبق خزش، عنوان %5$s و توضیح متا %6$s نویسه است و از نظر طول ایرادی ندارد؛ پس مشکل احتمالا طول نیست. نتیجه این صفحه را در خود گوگل ببینید: عنوان جذاب و متفاوت از رقبا باشد، با قصد جستجو بخواند، و نتیجه‌های تصویر/ویدیو/دسته بالاتر از آن نباشند. فقط در صورت لزوم متن عنوان را بازنویسی کنید.',
-					hodima_seo_advisor_num( $row['impressions'] ),
-					hodima_seo_advisor_num( $now, 2 ),
-					hodima_seo_advisor_num( $position, 1 ),
-					hodima_seo_advisor_num( $expected, 1 ),
+					'%1$s. طبق خزش، عنوان %2$s و توضیح متا %3$s نویسه است و از نظر طول ایرادی ندارد؛ پس مشکل احتمالا طول نیست. نتیجه این صفحه را در خود گوگل ببینید: عنوان جذاب و متفاوت از رقبا باشد، با قصد جستجو بخواند، و نتیجه‌های تصویر/ویدیو/دسته بالاتر از آن نباشند. فقط در صورت لزوم متن عنوان را بازنویسی کنید.',
+					$lead,
 					hodima_seo_advisor_num( $meta['title_len'] ),
 					hodima_seo_advisor_num( $meta['meta_len'] )
 				);

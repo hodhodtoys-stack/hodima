@@ -2449,6 +2449,20 @@ delete_transient( 'hodima_advisor_crawl_exposed' );
 remove_filter( 'pre_http_request', $p3_http, 30 );
 $p3_had || unlink( $p3_file );
 
+// نرخ کلیک کلمه‌به‌کلمه (SEO 3.0.4): یک کلمه خوب نباید کمبود کلمه بد را بپوشاند
+$p3_table = static fn(): array => [ 2 => 25.0, 3 => 14.0, 5 => 9.0, 7 => 5.5, 10 => 3.5, 20 => 1.5 ];
+add_filter( 'hodima_seo_advisor_ctr_table', $p3_table );
+$p3_q   = static fn( string $term, int $clicks, int $impressions, float $position ): array => [ 'term' => $term, 'clicks' => $clicks, 'impressions' => $impressions, 'position' => $position ];
+$p3_row = [ 'path' => '/p3/gap/', 'clicks' => 300, 'impressions' => 6000, 'position' => 5.3, 'prev_clicks' => 300 ];
+$p3_two = [ $p3_q( 'کلمه خوب', 250, 1000, 2.0 ), $p3_q( 'کلمه بد', 50, 5000, 6.0 ) ];
+$p3_gap = hodima_seo_advisor_ctr_gap( $p3_two, 6000, 20.0 );
+hodima_ad( 'کمبود کلیک کلمه‌به‌کلمه: ۵۲۵ انتظار در برابر ۳۰۰ واقعی ← ۲۲۵؛ بدترین کلمه «کلمه بد»', [ $p3_gap['gain'] ?? null, $p3_gap['worst']['term'] ?? null ], [ 225, 'کلمه بد' ] );
+$p3_low = array_values( array_filter( hodima_seo_advisor_suggestions( $p3_row, $p3_two, null ), static fn( array $i ): bool => 'low_ctr' === $i['rule'] ) );
+hodima_ad( 'پیشنهاد نرخ کلیک با حساب کلمه‌ای: کلیک بالقوه ۲۲۵ و کلمه کم‌کلیک در متن (حساب قدیمی کل صفحه فقط ۳۰ می‌داد)', [ $p3_low[0]['potential'] ?? null, str_contains( (string) ( $p3_low[0]['detail'] ?? '' ), '«کلمه بد»' ) ], [ 225, true ] );
+hodima_ad( 'کلمه‌های ذخیره‌شده کمتر از نیمی از نمایش صفحه ← حساب قدیمی کل صفحه (null)', hodima_seo_advisor_ctr_gap( [ $p3_q( 'کم', 5, 1000, 5.0 ) ], 6000, 20.0 ), null );
+hodima_ad( 'نمایش صفحه بیشتر بیرون ۲۰ نتیجه اول است ← بدون کمبود (نرخ معمول رتبه ۴۰ معنا ندارد)', hodima_seo_advisor_ctr_gap( [ $p3_q( 'عقب', 1, 5000, 40.0 ), $p3_q( 'جلو', 0, 500, 3.0 ) ], 6000, 20.0 )['gain'] ?? null, 0 );
+remove_filter( 'hodima_seo_advisor_ctr_table', $p3_table );
+
 delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
 hodima_ad( 'سقف کارها ۱۰۰۰ (ایرادهای فنی هر کدام یک کار)', HODIMA_SEO_ADVISOR_TASKS_MAX, 1000 );
 
