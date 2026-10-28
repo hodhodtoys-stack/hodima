@@ -196,6 +196,9 @@ function hodima_seo_advisor_render_crawl(): void {
 	if ( ! $prepared ) {
 		echo '<p class="hodima-advisor__advice">پوشه ساخته نشد؛ دسترسی نوشتن پوشه uploads را بررسی کنید.</p>';
 	}
+	if ( true === hodima_seo_advisor_crawl_web_exposed() ) {
+		echo '<p class="hodima-advisor__advice"><strong>فایل‌های خزش از اینترنت قابل دانلودند:</strong> این سرور (احتمالا nginx) فایل <code>.htaccess</code> را اجرا نمی‌کند. از هاست بخواهید دسترسی به پوشه <bdi dir="ltr">uploads/hodima-advisor/</bdi> را ببندد (مثلا <bdi dir="ltr">location ~* /uploads/hodima-advisor/ { deny all; }</bdi>)، یا فایل‌ها را بعد از «خواندن» از پوشه پاک کنید.</p>';
+	}
 	if ( $stale ) {
 		echo '<p class="hodima-advisor__advice"><strong>خزش قدیمی است:</strong> بیش از ' . esc_html( $n( HODIMA_SEO_ADVISOR_CRAWL_STALE_DAYS ) ) . ' روز از آخرین خزش گذشته. یک خزش تازه بگیرید و فایل‌ها را جایگزین کنید.</p>';
 	}

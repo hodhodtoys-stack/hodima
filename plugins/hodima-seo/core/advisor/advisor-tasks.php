@@ -29,7 +29,7 @@ add_action( 'admin_post_hodima_advisor_task', 'hodima_seo_advisor_handle_task' )
  *   doing    در حال انجام                       (باز)
  *   waiting  انجام شد؛ ایراد آماری منتظر داده گوگل (بسته)
  *   unseen   انجام شد؛ ایراد متنی هنوز در صفحه   (باز: تغییر دیده نشد)
- *   fixed    برطرف شد: تحلیل دیگر ایراد را نمی‌سازد (بسته)
+ *   fixed    برطرف شد: تحلیل دیگر ایراد متنی را نمی‌سازد، یا سنجش داده بعد از تغییر «اثر داشت» گفت (بسته؛ ناپدید شدن پیشنهاد آماری به‌تنهایی کافی نیست — SEO 3.0.3)
  *   back     برگشت: بعد از برطرف شدن دوباره پیدا شد (باز)
  *   no_effect اثر نداشت: داده گوگل بعد از تغییر بهتر نشد (باز؛ SEO 2.9.2، advisor-verify.php)
  *   still    انجام شد؛ سنجش نوع خودش نشان داد هنوز مانده (باز؛ SEO 3.0.2، advisor-marks.php)
@@ -90,6 +90,35 @@ function hodima_seo_advisor_tasks(): array {
 	$cache = $out;
 
 	return $out;
+}
+
+/**
+ * تغییر فیلدهای چند کار را روی نسخه تازه گزینه می‌نشاند، نه روی نسخه‌ای که پیش از درخواست‌های کند (سرچ کنسول) خوانده شد.
+ * تا SEO 3.0.2 نوبت سنجش کل آرایه را بعد از چند ثانیه می‌نوشت و «انجام شد» که مدیر وسط آن می‌زد بی‌صدا پاک می‌شد.
+ * کاری که مدیر در این فاصله عوضش کرد (وضعیت یا زمان `at` فرق دارد) یا برداشت دست نمی‌خورد.
+ *
+ * @param array<string, array<string, mixed>> $patch  کلید کار ← فیلدهای تازه (fixed، back، check)
+ * @param array<string, array{at: int, status: string}> $expect وضعیت کار هنگام خواندن
+ * @return int شمار کارهای نوشته‌شده
+ */
+function hodima_seo_advisor_tasks_patch( array $patch, array $expect ): int {
+
+	wp_cache_delete( HODIMA_SEO_ADVISOR_TASKS_OPTION, 'options' ); // کش شیء این پردازش کهنه است
+	$fresh   = hodima_seo_advisor_tasks();
+	$written = 0;
+
+	foreach ( $patch as $key => $fields ) {
+		if ( isset( $fresh[ $key ], $expect[ $key ] ) && $fresh[ $key ]['at'] === $expect[ $key ]['at'] && $fresh[ $key ]['status'] === $expect[ $key ]['status'] ) {
+			$fresh[ $key ] = $fields + $fresh[ $key ];
+			++$written;
+		}
+	}
+
+	if ( $written > 0 ) {
+		update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $fresh, false );
+	}
+
+	return $written;
 }
 
 /**
@@ -230,7 +259,9 @@ function hodima_seo_advisor_tasks_sync( string $path, array $suggestions ): int 
 		if ( $task['path'] !== $path || 'rejected' === $task['status'] || 'opportunities' !== hodima_seo_advisor_task_source( $task['rule'] ) ) {
 			continue;
 		}
-		if ( ! isset( $present[ $key ] ) && 0 === $task['fixed'] ) {
+		// پیشنهاد آماری ممکن است فقط چون داده یا آستانه عوض شد از فهرست برود (بازه ۹۰ روزه جابه‌جا شد، کلمه زیر ۳۰۰ نمایش افتاد)؛
+		// آن را «برطرف شد» نشماریم. برطرف‌شدنش فقط با سنجش داده بعد از تغییر است (advisor-verify.php)
+		if ( ! isset( $present[ $key ] ) && 0 === $task['fixed'] && ! in_array( $task['rule'], HODIMA_SEO_ADVISOR_VERIFY_RULES, true ) ) {
 			$tasks[ $key ]['fixed'] = $now;
 			$tasks[ $key ]['back']  = 0;
 			++$changed;

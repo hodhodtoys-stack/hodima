@@ -243,17 +243,22 @@ function hodima_seo_advisor_verify_batch( string $property, float $deadline ): i
 			break; // سهمیه/کلید/شبکه: بقیه فردا
 		}
 
+		$patch  = [];
+		$expect = [];
+
 		foreach ( $keys as $key ) {
-			$judged                  = hodima_seo_advisor_verify_judge( $tasks[ $key ], $before, $after );
-			$tasks[ $key ]['check'] = $judged + [ 'window' => $dates['window'], 'at' => time() ];
+			$judged         = hodima_seo_advisor_verify_judge( $tasks[ $key ], $before, $after );
+			$patch[ $key ]  = [ 'check' => $judged + [ 'window' => $dates['window'], 'at' => time() ] ];
+			$expect[ $key ] = [ 'at' => $tasks[ $key ]['at'], 'status' => $tasks[ $key ]['status'] ];
 			if ( 'effective' === $judged['verdict'] && 0 === $tasks[ $key ]['fixed'] ) {
-				$tasks[ $key ]['fixed'] = time();
-				$tasks[ $key ]['back']  = 0;
+				$patch[ $key ]['fixed'] = time();
+				$patch[ $key ]['back']  = 0;
 			}
 			++$checked;
 		}
 
-		update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $tasks, false );
+		// درخواست‌های سرچ کنسول چند ثانیه طول کشیدند؛ حکم روی نسخه تازه کارها می‌نشیند (کار تغییرکرده توسط مدیر دست نمی‌خورد)
+		hodima_seo_advisor_tasks_patch( $patch, $expect );
 		$paths[ $first['path'] ] = true;
 	}
 

@@ -95,6 +95,48 @@ function hodima_seo_advisor_crawl_prepare_dir(): bool {
 }
 
 /**
+ * فایل‌های خزش از اینترنت قابل‌دانلودند؟ `.htaccess` فقط Apache/LiteSpeed را می‌بندد؛ روی nginx بی‌اثر است و
+ * (نام فایل‌ها ثابت و قابل‌حدس‌اند) فهرست آدرس‌ها و ایرادهای سایت بیرون می‌ماند. با یک درخواست HEAD به همان فایل سنجیده می‌شود.
+ *
+ * @return bool|null true = قابل‌دانلود، false = بسته، null = نمی‌شود فهمید (فایلی نیست یا درخواست نرسید)
+ */
+function hodima_seo_advisor_crawl_web_exposed(): ?bool {
+
+	$cached = get_transient( 'hodima_advisor_crawl_exposed' );
+
+	if ( in_array( $cached, [ 'yes', 'no' ], true ) ) {
+		return 'yes' === $cached;
+	}
+
+	$upload = wp_upload_dir( null, false );
+	$base   = rtrim( str_replace( '\\', '/', (string) $upload['basedir'] ), '/' );
+	$dir    = rtrim( str_replace( '\\', '/', hodima_seo_advisor_crawl_dir() ), '/' );
+
+	if ( ! str_starts_with( $dir, $base . '/' ) ) {
+		return false; // پوشه با فیلتر بیرون از uploads رفته؛ آدرس وب ندارد
+	}
+
+	foreach ( HODIMA_SEO_ADVISOR_CRAWL_FILES as $name ) {
+		if ( ! is_file( "{$dir}/{$name}" ) ) {
+			continue;
+		}
+
+		$response = wp_remote_head( rtrim( (string) $upload['baseurl'], '/' ) . substr( $dir, strlen( $base ) ) . '/' . rawurlencode( $name ), [ 'timeout' => 5, 'redirection' => 0 ] );
+
+		if ( is_wp_error( $response ) ) {
+			return null;
+		}
+
+		$exposed = 200 === (int) wp_remote_retrieve_response_code( $response );
+		set_transient( 'hodima_advisor_crawl_exposed', $exposed ? 'yes' : 'no', HOUR_IN_SECONDS );
+
+		return $exposed;
+	}
+
+	return null;
+}
+
+/**
  * وضعیت یک فایل روی دیسک: missing | uploading | ready.
  *
  * @return array{kind: string, name: string, state: string, mtime: int, size: int}

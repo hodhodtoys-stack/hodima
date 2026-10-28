@@ -561,7 +561,7 @@ if ( hodima_router_active() ) {
 	hodima_seo_advisor_set_ignored( '/advisor-box-test/', true );
 	hodima_ad( 'آدرس نادیده‌گرفته‌شده: پیشنهاد ندارد ولی کار «برطرف شد» نمی‌گیرد', hodima_seo_advisor_task_state( (array) $b6_task( $b6_low ) ), 'waiting' );
 	hodima_seo_advisor_set_ignored( '/advisor-box-test/', false );
-	hodima_ad( 'تحلیل با داده تازه بی‌کلمه: همگام‌سازی مستقیم «برطرف شد» برای آماری', [ hodima_seo_advisor_tasks_sync( '/advisor-box-test/', [] ) >= 1, hodima_seo_advisor_task_state( (array) $b6_task( $b6_low ) ) ], [ true, 'fixed' ] );
+	hodima_ad( 'تحلیل با داده تازه بی‌کلمه: پیشنهاد آماری با ناپدید شدن «برطرف شد» نمی‌گیرد (فقط سنجش داده بعد از تغییر)', [ hodima_seo_advisor_tasks_sync( '/advisor-box-test/', [] ) >= 1 && 0 < $b6_task( $b6_low )['fixed'], hodima_seo_advisor_task_state( (array) $b6_task( $b6_low ) ) ], [ false, 'waiting' ] );
 	$b6_mark( $b6_text, 'rejected' );
 	hodima_seo_advisor_tasks_sync( '/advisor-box-test/', [] );
 	hodima_ad( 'کار «رد شد» با همگام‌سازی «برطرف شد» نمی‌گیرد', [ hodima_seo_advisor_task_state( (array) $b6_task( $b6_text ) ), $b6_task( $b6_text )['fixed'] ], [ 'rejected', 0 ] );
@@ -2414,8 +2414,41 @@ wp_set_current_user( 1 );
 
 hodima_ad( 'منبع هر کار از قاعده‌اش؛ قاعده با رقم (crawl_no_h1) پذیرفته می‌شود', [ hodima_seo_advisor_task_source( 'crawl_no_h1' ), hodima_seo_advisor_task_source( 'competition' ), hodima_seo_advisor_task_source( 'health_unseen' ), hodima_seo_advisor_task_source( 'index_problem' ), hodima_seo_advisor_task_source( 'low_ctr' ), hodima_seo_advisor_task_set( '/p3/x/', 'crawl_no_h1', '', 'بدون H1', 'done' ) ], [ 'crawl', 'competition', 'health', 'indexing', 'opportunities', true ] );
 hodima_seo_advisor_task_set( '/p3/x/', 'low_ctr', '', 'نرخ کلیک', 'done' );
+hodima_seo_advisor_task_set( '/p3/x/', 'missing_headings', 'پلومریا', 'کلمه در تیترها نیست', 'done' );
 hodima_seo_advisor_tasks_sync( '/p3/x/', [] );
-hodima_ad( 'تحلیل آدرس فقط کار پیشنهادها را «برطرف» می‌کند؛ ایراد فنی همان آدرس دست نمی‌خورد (سنجش خودش را دارد)', [ hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'low_ctr', '' ) ), hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'crawl_no_h1', '' ) ) ], [ 'fixed', 'waiting' ] );
+hodima_ad( 'تحلیل آدرس فقط کار متنی پیشنهادها را «برطرف» می‌کند؛ آماری منتظر داده گوگل می‌ماند و ایراد فنی همان آدرس دست نمی‌خورد', [ hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'missing_headings', 'پلومریا' ) ), hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'low_ctr', '' ) ), hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'crawl_no_h1', '' ) ) ], [ 'fixed', 'waiting', 'waiting' ] );
+
+// نوشتن امن: حکم سنجش روی نسخه تازه کارها می‌نشیند و کار تغییرکرده توسط مدیر را پس نمی‌زند (SEO 3.0.3)
+$p3_key_a = hodima_seo_advisor_task_key( '/p3/x/', 'low_ctr', '' );
+$p3_seen  = [ $p3_key_a => [ 'at' => hodima_seo_advisor_tasks()[ $p3_key_a ]['at'], 'status' => 'done' ] ];
+hodima_seo_advisor_task_set( '/p3/y/', 'low_ctr', '', 'کار تازه', 'done' ); // مدیر وسط سنجش کار دیگری ثبت کرد
+$p3_written = hodima_seo_advisor_tasks_patch( [ $p3_key_a => [ 'check' => [ 'verdict' => 'no_effect', 'at' => time() ] ] ], $p3_seen );
+hodima_ad( 'حکم سنجش نوشته می‌شود و کار تازه‌ای که وسط سنجش ثبت شد نمی‌پرد', [ $p3_written, hodima_seo_advisor_tasks()[ $p3_key_a ]['check']['verdict'] ?? '', null !== hodima_seo_advisor_task( '/p3/y/', 'low_ctr', '' ) ], [ 1, 'no_effect', true ] );
+hodima_seo_advisor_task_set( '/p3/x/', 'low_ctr', '', 'نرخ کلیک', 'rejected' ); // مدیر وسط سنجش «رد شد» زد
+$p3_written = hodima_seo_advisor_tasks_patch( [ $p3_key_a => [ 'fixed' => time() ] ], $p3_seen );
+hodima_ad( 'کاری که مدیر وسط سنجش وضعیتش را عوض کرد حکم کهنه نمی‌گیرد', [ $p3_written, hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'low_ctr', '' ) ) ], [ 0, 'rejected' ] );
+
+// پوشه خزش: روی nginx فایل .htaccess اثری ندارد؛ با HEAD به خود فایل سنجیده می‌شود
+$p3_dir = hodima_seo_advisor_crawl_dir();
+hodima_seo_advisor_crawl_prepare_dir();
+$p3_file = $p3_dir . '/' . HODIMA_SEO_ADVISOR_CRAWL_FILES['pages'];
+$p3_had  = is_file( $p3_file );
+$p3_had || file_put_contents( $p3_file, "Address\n" );
+$p3_code = 200;
+$p3_http = static function ( $pre, array $args, string $url ) use ( &$p3_code ) {
+	return str_contains( $url, '/hodima-advisor/' ) ? [ 'headers' => [], 'body' => '', 'response' => [ 'code' => $p3_code, 'message' => '' ], 'cookies' => [], 'filename' => null ] : $pre;
+};
+add_filter( 'pre_http_request', $p3_http, 30, 3 );
+delete_transient( 'hodima_advisor_crawl_exposed' );
+$p3_open = hodima_seo_advisor_crawl_web_exposed();
+delete_transient( 'hodima_advisor_crawl_exposed' );
+$p3_code   = 403;
+$p3_closed = hodima_seo_advisor_crawl_web_exposed();
+hodima_ad( 'پوشه خزش: پاسخ ۲۰۰ به فایل = قابل‌دانلود، ۴۰۳ = بسته', [ $p3_open, $p3_closed ], [ true, false ] );
+delete_transient( 'hodima_advisor_crawl_exposed' );
+remove_filter( 'pre_http_request', $p3_http, 30 );
+$p3_had || unlink( $p3_file );
+
 delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
 hodima_ad( 'سقف کارها ۱۰۰۰ (ایرادهای فنی هر کدام یک کار)', HODIMA_SEO_ADVISOR_TASKS_MAX, 1000 );
 
