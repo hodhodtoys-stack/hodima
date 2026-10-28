@@ -2460,6 +2460,25 @@ foreach ( hodima_seo_advisor_crawl_issues() as $p3_r ) {
 }
 hodima_ad( 'صفحه‌بندی آرشیو H1 تکراری و لینک ورودی کم نمی‌گیرد؛ دو مقاله با H1 یکسان می‌گیرند', $p3_codes, [ '/pg/a/' => [ 'dup_h1' ], '/pg/b/' => [ 'dup_h1' ] ] );
 
+// ایراد «متن زیر عنوان ممنوع» (SEO 3.0.6؛ خزش واقعی: ۸ محصول max-snippet:0)
+hodima_ad( 'دستور robots: max-snippet:0 و nosnippet ممنوع؛ max-snippet:-1 و ۰۵ و ۱۶۰ نه', array_map( static fn( string $v ): bool => hodima_seo_advisor_robots_no_snippet( $v ), [ 'index, follow, max-snippet:0, max-image-preview:large', 'noindex, nosnippet', 'max-snippet: 0', 'index, max-snippet:-1', 'max-snippet:05', 'max-snippet:160', '' ] ), [ true, true, true, false, false, false, false ] );
+hodima_ad( 'دستور robots در هدر X-Robots-Tag هم دیده می‌شود', hodima_seo_advisor_robots_no_snippet( 'index', 'nosnippet' ), true );
+$p3_csv = tempnam( sys_get_temp_dir(), 'sf' );
+file_put_contents( $p3_csv, "\xEF\xBB\xBF\"Address\",\"Status Code\",\"Indexability\",\"Title 1\",\"Meta Robots 1\"\n\"" . home_url( '/ns/a/' ) . "\",\"200\",\"Indexable\",\"عنوان\",\"index, follow, max-snippet:0\"\n\"" . home_url( '/ns/b/' ) . "\",\"200\",\"Indexable\",\"عنوان\",\"index, follow, max-snippet:-1\"\n" );
+$p3_parsed = hodima_seo_advisor_crawl_parse_pages( $p3_csv );
+unlink( $p3_csv );
+hodima_ad( 'خواندن CSV: ستون Meta Robots 1 ← no_snippet فقط برای صفحه max-snippet:0', is_array( $p3_parsed ) ? [ $p3_parsed['/ns/a/']['no_snippet'] ?? null, $p3_parsed['/ns/b/']['no_snippet'] ?? null ] : $p3_parsed, [ 1, 0 ] );
+$p3_ns = $p3_pg( '/ns/a/', 'الف', 30 ) + [ 'no_snippet' => 1 ];
+hodima_seo_advisor_crawl_store( [ '/ns/a/' => $p3_ns, '/ns/b/' => $p3_pg( '/ns/b/', 'ب', 30 ) ], [] );
+$p3_codes = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $p3_r ) {
+	if ( str_starts_with( (string) $p3_r['path'], '/ns/' ) ) {
+		$p3_codes[ $p3_r['path'] ] = array_column( $p3_r['issues'], 'code' );
+	}
+}
+hodima_ad( 'ایراد no_snippet فقط برای صفحه دارای max-snippet:0؛ برچسب و دستور فارسی', [ $p3_codes, hodima_seo_advisor_crawl_issue_info( 'no_snippet' )['label'], in_array( 'no_snippet', HODIMA_SEO_ADVISOR_CRAWL_GROUPS['meta'], true ) ], [ [ '/ns/a/' => [ 'no_snippet' ] ], 'متن زیر عنوان ممنوع', true ] );
+hodima_ad( 'سنجش فوری: no_snippet با خواندن دوباره صفحه از سایت سنجیده می‌شود', in_array( 'no_snippet', HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, true ), true );
+
 // نرخ کلیک کلمه‌به‌کلمه (SEO 3.0.4): یک کلمه خوب نباید کمبود کلمه بد را بپوشاند
 $p3_table = static fn(): array => [ 2 => 25.0, 3 => 14.0, 5 => 9.0, 7 => 5.5, 10 => 3.5, 20 => 1.5 ];
 add_filter( 'hodima_seo_advisor_ctr_table', $p3_table );

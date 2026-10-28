@@ -210,6 +210,14 @@ function hodima_seo_advisor_crawl_num( string $value ): float {
 }
 
 /**
+ * دستور robots به گوگل می‌گوید زیر عنوان متنی نشان نده؟ (`max-snippet:0` یا `nosnippet`، در متاتگ یا هدر X-Robots-Tag.)
+ * با خزش واقعی هدهدلی ۸ محصول این را داشتند (تنظیم «پیشرفته» سئوباکس) و نرخ کلیکشان کم می‌شد.
+ */
+function hodima_seo_advisor_robots_no_snippet( string ...$values ): bool {
+	return 1 === preg_match( '/(?:^|[\s,;])(?:nosnippet|max-snippet\s*:\s*0)(?![\d])/i', implode( ',', $values ) );
+}
+
+/**
  * Internal:HTML ← صفحه‌ها (مسیر یکسان‌شده ← ردیف). آدرس با پارامتر فقط وقتی می‌آید که نسخه تمیزش نیست.
  *
  * @return array<string, array<string, mixed>>|WP_Error
@@ -266,6 +274,7 @@ function hodima_seo_advisor_crawl_parse_pages( string $file ): array|WP_Error {
 			'depth'      => (int) hodima_seo_advisor_crawl_num( $cell( $row, 'crawl depth' ) ),
 			'score'      => hodima_seo_advisor_crawl_num( $cell( $row, 'link score' ) ),
 			'redirect'   => (string) ( hodima_seo_advisor_path_key( $cell( $row, 'redirect url' ) ) ?? '' ),
+			'no_snippet' => hodima_seo_advisor_robots_no_snippet( $cell( $row, 'meta robots 1' ), $cell( $row, 'x-robots-tag 1' ) ) ? 1 : 0,
 			'has_query'  => $has_query,
 		];
 	} while ( true );
@@ -656,7 +665,7 @@ function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_
 
 	$page_rows = [];
 	foreach ( $pages as $p ) {
-		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], $p['h1'], $p['h2'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'] ];
+		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], $p['h1'], $p['h2'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'], (int) ( $p['no_snippet'] ?? 0 ) ];
 	}
 
 	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_table, $link_table, $page_rows, $links ): array|WP_Error {
@@ -670,7 +679,7 @@ function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_
 		}
 
 		$insert = [
-			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to', '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s)', $page_rows, 200, 'صفحه‌ها' ],
+			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet', '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d)', $page_rows, 200, 'صفحه‌ها' ],
 			[ $link_table, 'source_path, dest_path, link_position, anchor, is_follow', '(%s,%s,%s,%s,%d)', $links, 400, 'لینک‌ها' ],
 		];
 
@@ -818,7 +827,7 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 
 /** گروه چیپ‌های فیلتر ← کدهای ایراد. */
 const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
-	'meta'     => [ 'no_meta' ],
+	'meta'     => [ 'no_meta', 'no_snippet' ],
 	'title'    => [ 'no_title', 'title_short', 'title_long', 'no_h1' ],
 	'dup'      => [ 'dup_title', 'dup_h1' ],
 	'slow'     => [ 'slow' ],
@@ -836,6 +845,7 @@ function hodima_seo_advisor_crawl_issue_info( string $code ): array {
 
 	return [
 		'no_meta'     => [ 'label' => 'بدون توضیح متا', 'level' => 'bad', 'fix' => 'توضیح متا (۱۲۰ تا ۱۶۰ نویسه) بنویسید.' ],
+		'no_snippet'  => [ 'label' => 'متن زیر عنوان ممنوع', 'level' => 'bad', 'fix' => 'در کادر سئو همین صفحه، بخش «پیشرفته»، حداکثر طول متن (max-snippet) را روی پیش‌فرض بگذارید؛ مقدار ۰ به گوگل می‌گوید زیر عنوان متنی نشان ندهد و نرخ کلیک را کم می‌کند.' ],
 		'no_h1'       => [ 'label' => 'بدون H1', 'level' => 'warn', 'fix' => 'هر صفحه یک تیتر اصلی (H1) لازم دارد.' ],
 		'no_title'    => [ 'label' => 'بدون عنوان', 'level' => 'bad', 'fix' => 'عنوان سئو بنویسید.' ],
 		'title_short' => [ 'label' => 'عنوان کوتاه', 'level' => 'bad', 'fix' => 'عنوان را به ۴۸ تا ۶۲ نویسه برسانید.' ],
@@ -908,6 +918,9 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 			if ( (int) $r['meta_len'] <= 0 ) {
 				$add( 'no_meta' );
+			}
+			if ( 1 === (int) ( $r['no_snippet'] ?? 0 ) ) {
+				$add( 'no_snippet' );
 			}
 			if ( '' === (string) $r['h1'] ) {
 				$add( 'no_h1' );

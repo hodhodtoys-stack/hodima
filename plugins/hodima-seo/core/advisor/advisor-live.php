@@ -65,7 +65,7 @@ function hodima_seo_advisor_live_schedule_object( string $kind, int $id ): void 
 /**
  * عنوان، طول متا، H1 و دو H2 اول از HTML یک صفحه (همان ستون‌های خروجی Screaming Frog).
  *
- * @return array{title: string, title_len: int, meta_len: int, h1: string, h2: string, noindex: bool}
+ * @return array{title: string, title_len: int, meta_len: int, h1: string, h2: string, noindex: bool, no_snippet: bool}
  */
 function hodima_seo_advisor_live_parse( string $html ): array {
 
@@ -92,6 +92,7 @@ function hodima_seo_advisor_live_parse( string $html ): array {
 		'h1'        => $text( $doc->querySelector( 'h1' ) ),
 		'h2'        => implode( ' | ', $h2 ),
 		'noindex'   => null !== $robot && str_contains( strtolower( (string) $robot->getAttribute( 'content' ) ), 'noindex' ),
+		'no_snippet' => null !== $robot && hodima_seo_advisor_robots_no_snippet( (string) $robot->getAttribute( 'content' ) ),
 	];
 }
 
@@ -149,6 +150,7 @@ function hodima_seo_advisor_live_fetch( string $path, bool $record_status = fals
 	}
 
 	$live = hodima_seo_advisor_live_parse( (string) wp_remote_retrieve_body( $res ) );
+	$live['no_snippet'] = $live['no_snippet'] || hodima_seo_advisor_robots_no_snippet( implode( ',', (array) wp_remote_retrieve_header( $res, 'x-robots-tag' ) ) );
 
 	$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		hodima_seo_advisor_table( 'crawl_pages' ),
@@ -161,9 +163,10 @@ function hodima_seo_advisor_live_fetch( string $path, bool $record_status = fals
 			'status'    => 200,
 			'indexable' => $live['noindex'] ? 0 : 1,
 			'reason'    => $live['noindex'] ? 'noindex' : '',
+			'no_snippet' => $live['no_snippet'] ? 1 : 0,
 		],
 		[ 'path' => $path ],
-		[ '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s' ],
+		[ '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s', '%d' ],
 		[ '%s' ]
 	);
 

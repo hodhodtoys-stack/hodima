@@ -21,7 +21,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.6.0';
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.7.0';
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -157,6 +157,7 @@ function hodima_seo_advisor_install_tables(): void {
 		depth smallint(5) unsigned NOT NULL DEFAULT 0,
 		score decimal(8,2) NOT NULL DEFAULT 0,
 		redirect_to varchar(191) NOT NULL DEFAULT '',
+		no_snippet tinyint(1) NOT NULL DEFAULT 0,
 		PRIMARY KEY (path)
 		) {$charset};"
 	);

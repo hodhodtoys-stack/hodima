@@ -23,7 +23,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** ایرادهای خزش که با خواندن دوباره همان صفحه سنجیده می‌شوند؛ بقیه (کند، لینک ورودی، ریدایرکت) فقط با خزش بعدی. */
-const HODIMA_SEO_ADVISOR_MARK_LIVE_CODES = [ 'no_meta', 'no_h1', 'no_title', 'title_short', 'title_long', 'dup_title', 'dup_h1', 'noindex' ];
+const HODIMA_SEO_ADVISOR_MARK_LIVE_CODES = [ 'no_meta', 'no_snippet', 'no_h1', 'no_title', 'title_short', 'title_long', 'dup_title', 'dup_h1', 'noindex' ];
 
 /** روزهای انتظار پیش از حکم «هنوز مانده» (رقابت با داده ۹۰ روزه دیر عوض می‌شود؛ صفحه تازه ایندکس دیر نمایش می‌گیرد). */
 const HODIMA_SEO_ADVISOR_MARK_COMPETITION_DAYS = 14;
