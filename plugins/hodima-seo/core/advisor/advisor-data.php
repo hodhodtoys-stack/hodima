@@ -371,22 +371,64 @@ const HODIMA_SEO_ADVISOR_LOCK_TTL    = 600;
  */
 function hodima_seo_advisor_lock( string $option = HODIMA_SEO_ADVISOR_LOCK_OPTION ): bool {
 
-	$now = time();
+	global $wpdb;
 
-	if ( add_option( $option, $now, '', false ) ) {
+	$now   = time();
+	$token = wp_generate_uuid4();
+	$value = $now . '|' . $token; // زمان + توکن مالک؛ قفل‌های قدیمی فقط عدد زمان بودند (همان خوانده می‌شود)
+
+	if ( add_option( $option, $value, '', false ) ) {
+		hodima_seo_advisor_lock_tokens( $option, $token );
 		return true;
 	}
 
-	if ( $now - (int) get_option( $option, 0 ) > HODIMA_SEO_ADVISOR_LOCK_TTL ) {
-		update_option( $option, $now, false ); // اجرای قبلی وسط کار مرده
-		return true;
+	// قفل مانده از اجرای مرده: جایگزینی فقط اگر هنوز همان مقدار کهنه باشد (UPDATE شرطی)، نه «بخوان و بنویس» که دو اجرا را هم‌زمان برنده می‌کرد
+	$current = (string) $wpdb->get_var( $wpdb->prepare( 'SELECT option_value FROM %i WHERE option_name = %s', $wpdb->options, $option ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	if ( '' !== $current && $now - (int) $current > HODIMA_SEO_ADVISOR_LOCK_TTL ) { // عدد پیش از «|» زمان قفل است
+		$taken = $wpdb->update( $wpdb->options, [ 'option_value' => $value ], [ 'option_name' => $option, 'option_value' => $current ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		wp_cache_delete( $option, 'options' );
+		if ( 1 === $taken ) {
+			hodima_seo_advisor_lock_tokens( $option, $token );
+			return true;
+		}
 	}
 
 	return false;
 }
 
+/**
+ * قفل را فقط مالکش آزاد می‌کند: اجرایی که زیاد طول کشید و قفلش کهنه گرفته شد، نباید قفل اجرای تازه را باز کند.
+ * کسی که قفلی نگرفته چیزی را آزاد نمی‌کند.
+ */
 function hodima_seo_advisor_unlock( string $option = HODIMA_SEO_ADVISOR_LOCK_OPTION ): void {
-	delete_option( $option );
+
+	$token = hodima_seo_advisor_lock_tokens( $option );
+
+	if ( '' === $token ) {
+		return;
+	}
+
+	wp_cache_delete( $option, 'options' );
+
+	if ( str_ends_with( (string) get_option( $option, '' ), '|' . $token ) ) {
+		delete_option( $option );
+	}
+
+	hodima_seo_advisor_lock_tokens( $option, '' );
+}
+
+/** توکن مالکیت قفل‌های گرفته‌شده در این درخواست (نام قفل ← توکن). `$set` داده شود می‌نویسد ('' = فراموش کن). */
+function hodima_seo_advisor_lock_tokens( string $option, ?string $set = null ): string {
+
+	static $tokens = [];
+
+	if ( '' === $set ) {
+		unset( $tokens[ $option ] );
+	} elseif ( null !== $set ) {
+		$tokens[ $option ] = $set;
+	}
+
+	return (string) ( $tokens[ $option ] ?? '' );
 }
 
 /**

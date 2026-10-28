@@ -103,6 +103,8 @@ function hodima_seo_advisor_tasks_judge( string $source, callable $judge, ?array
 	$scope   = null === $paths ? null : array_flip( $paths );
 	$changed = 0;
 	$now     = time();
+	$patch   = [];
+	$expect  = [];
 
 	foreach ( $tasks as $key => $task ) {
 		if ( 'rejected' === $task['status'] || hodima_seo_advisor_task_source( $task['rule'] ) !== $source
@@ -113,23 +115,22 @@ function hodima_seo_advisor_tasks_judge( string $source, callable $judge, ?array
 		$verdict = $judge( $task );
 
 		if ( 'fixed' === $verdict && 0 === $task['fixed'] ) {
-			$tasks[ $key ]['fixed'] = $now;
-			$tasks[ $key ]['back']  = 0;
-			$tasks[ $key ]['check'] = [ 'verdict' => 'fixed', 'at' => $now ];
-			++$changed;
+			$patch[ $key ] = [ 'fixed' => $now, 'back' => 0, 'check' => [ 'verdict' => 'fixed', 'at' => $now ] ];
 		} elseif ( 'still' === $verdict && $task['fixed'] > 0 ) {
-			$tasks[ $key ]['fixed'] = 0;
-			$tasks[ $key ]['back']  = $now;
-			$tasks[ $key ]['check'] = [];
-			++$changed;
+			$patch[ $key ] = [ 'fixed' => 0, 'back' => $now, 'check' => [] ];
 		} elseif ( 'still' === $verdict && 'done' === $task['status'] && 0 === $task['back'] && 'still' !== ( $task['check']['verdict'] ?? '' ) ) {
-			$tasks[ $key ]['check'] = [ 'verdict' => 'still', 'at' => $now ];
-			++$changed;
+			$patch[ $key ] = [ 'check' => [ 'verdict' => 'still', 'at' => $now ] ];
+		} else {
+			continue;
 		}
+
+		$expect[ $key ] = [ 'at' => $task['at'], 'status' => $task['status'] ];
+		++$changed;
 	}
 
-	if ( $changed > 0 ) {
-		update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $tasks, false );
+	// فقط فیلدهای حکم روی نسخه تازه کارها می‌نشینند (کار تغییرکرده توسط مدیر در این فاصله دست نمی‌خورد)
+	if ( $patch ) {
+		hodima_seo_advisor_tasks_patch( $patch, $expect );
 	}
 
 	return $changed;

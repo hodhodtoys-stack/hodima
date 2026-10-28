@@ -745,6 +745,16 @@ update_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, time() - HODIMA_SEO_ADVISOR_LOCK_
 hodima_ad( 'قفل مانده از اجرای مرده بعد از مهلت آزاد می‌شود', hodima_seo_advisor_lock(), true );
 hodima_seo_advisor_unlock();
 
+// قفل مالک دارد (SEO 3.0.9): آزادسازی توسط غیرمالک بی‌اثر؛ جایگزینی قفل کهنه با UPDATE شرطی
+update_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, time() . '|foreign', false );
+hodima_seo_advisor_unlock();
+hodima_ad( 'کسی که قفلی نگرفته قفل دیگری را آزاد نمی‌کند', get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, false ), time() . '|foreign' );
+update_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, ( time() - HODIMA_SEO_ADVISOR_LOCK_TTL - 5 ) . '|dead', false );
+$lock_taken = hodima_seo_advisor_lock();
+hodima_ad( 'قفل کهنه قالب تازه (زمان|توکن) هم جایگزین می‌شود و مقدار تازه مال ماست', [ $lock_taken, str_contains( (string) get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, '' ), '|dead' ) ], [ true, false ] );
+hodima_seo_advisor_unlock();
+hodima_ad( 'مالک قفل را آزاد می‌کند', get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, false ), false );
+
 echo "=== تنظیمات و پاک کردن داده\n";
 $before_cfg = hodima_seo_advisor_config()['min_impressions'];
 $cfg_settings = get_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, [] );
@@ -766,7 +776,7 @@ update_option( 'hodima_discover_sc_key', 'KEEP-KEY', false );
 update_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, time(), false );
 $busy_clear = hodima_seo_advisor_clear_data();
 hodima_ad( 'پاک کردن وقتی دریافت داده در حال اجراست رد می‌شود و چیزی پاک نمی‌شود', [ is_wp_error( $busy_clear ) ? $busy_clear->get_error_code() : 'ok', hodima_seo_advisor_pages()['total'] ], [ 'hodima_advisor_busy', 1 ] );
-hodima_seo_advisor_unlock();
+delete_option( HODIMA_SEO_ADVISOR_LOCK_OPTION ); // قفل را دستی گذاشتیم، پس مالکش نیستیم
 hodima_ad( 'پاک کردن داده موفق', hodima_seo_advisor_clear_data(), true );
 hodima_ad( 'بعد از پاک کردن: جدول‌ها، وضعیت و نادیده‌ها خالی، قفل آزاد', [ hodima_seo_advisor_pages()['total'], hodima_seo_advisor_status()['fetched'], hodima_seo_advisor_ignored(), get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, false ) ], [ 0, 0, [], false ] );
 hodima_ad( 'کلید حساب سرویس و تنظیمات می‌مانند', [ get_option( 'hodima_discover_sc_key' ), hodima_seo_advisor_config()['min_impressions'], hodima_seo_advisor_days() ], [ 'KEEP-KEY', 250, 28 ] );
@@ -2648,6 +2658,22 @@ try {
 }
 $_POST = $_REQUEST = [];
 hodima_ad( '«دوباره انجام دادم» روی ایراد فنی: صفحه دوباره خوانده و برطرف شد', $p3_st( 'no_meta' ), 'fixed' );
+
+// لینک تغییر وضعیت: nonce مخصوص همان کار و وضعیت (SEO 3.0.9)
+parse_str( (string) wp_parse_url( html_entity_decode( hodima_seo_advisor_task_url( '/nn/x/', 'low_ctr', '', 'عنوان', 'done' ) ), PHP_URL_QUERY ), $nn_q );
+$nn_nonce  = (string) ( $nn_q['_wpnonce'] ?? '' );
+$nn_action = hodima_seo_advisor_task_nonce_action( '/nn/x/', 'low_ctr', '', 'done', false );
+hodima_ad( 'nonce لینک تغییر وضعیت فقط برای همان کار و وضعیت معتبر است (نه عمومی، نه وضعیت یا آدرس دیگر)', [ (bool) wp_verify_nonce( $nn_nonce, $nn_action ), (bool) wp_verify_nonce( $nn_nonce, 'hodima_advisor_task' ), (bool) wp_verify_nonce( $nn_nonce, hodima_seo_advisor_task_nonce_action( '/nn/x/', 'low_ctr', '', 'rejected', false ) ), (bool) wp_verify_nonce( $nn_nonce, hodima_seo_advisor_task_nonce_action( '/nn/y/', 'low_ctr', '', 'done', false ) ) ], [ true, false, false, false ] );
+$_REQUEST = [ '_wpnonce' => $nn_nonce, 'path' => '/nn/x/', 'rule' => 'low_ctr', 'term' => '', 'title' => 'عنوان', 'status' => 'done' ];
+$_POST    = [];
+try {
+	hodima_seo_advisor_handle_task();
+} catch ( Hodima_P3_Redirect ) {
+	// ریدایرکت
+}
+$_REQUEST = [];
+hodima_ad( 'لینک GET با nonce مخصوص کار را ثبت می‌کند', hodima_seo_advisor_task( '/nn/x/', 'low_ctr', '' )['status'] ?? '', 'done' );
+hodima_seo_advisor_task_set( '/nn/x/', 'low_ctr', '', '', '' );
 
 // رد شد و ورودی نامعتبر
 $p3_flash3 = $p3_mark( [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'rejected', 'items' => [ 'low_inlinks' ] ] );

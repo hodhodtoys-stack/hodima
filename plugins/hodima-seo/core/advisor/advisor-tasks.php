@@ -42,6 +42,14 @@ const HODIMA_SEO_ADVISOR_TASKS_CLOSED = [ 'waiting', 'fixed', 'rejected' ];
 /** پیشنهادهای متنی: با ذخیره صفحه همان لحظه دوباره سنجیده می‌شوند (advisor-resave.php)؛ بقیه به داده بعدی گوگل بسته‌اند. */
 const HODIMA_SEO_ADVISOR_TEXT_RULES = [ 'missing_headings', 'missing_content' ];
 
+/**
+ * نام nonce لینک تغییر وضعیت: وابسته به خود کار و وضعیت. لینک GET با nonce عمومی برای هر کار و وضعیتی قابل‌استفاده بود
+ * (لینکی که در تاریخچه مرورگر یا سربرگ Referer بماند هر کاری را برای آن کاربر ثبت می‌کرد).
+ */
+function hodima_seo_advisor_task_nonce_action( string $path, string $rule, string $term, string $status, bool $redo ): string {
+	return 'hodima_advisor_task:' . md5( implode( '|', [ sanitize_text_field( $path ), sanitize_key( $rule ), sanitize_text_field( $term ), sanitize_key( $status ), $redo ? '1' : '0' ] ) );
+}
+
 /** @return array<string, string> وضعیت ← برچسب */
 function hodima_seo_advisor_task_statuses(): array {
 	return [ 'doing' => 'در حال انجام', 'done' => 'انجام شد', 'rejected' => 'رد شد' ];
@@ -253,6 +261,8 @@ function hodima_seo_advisor_tasks_sync( string $path, array $suggestions ): int 
 
 	$changed = 0;
 	$now     = time();
+	$patch   = [];
+	$expect  = [];
 
 	foreach ( $tasks as $key => $task ) {
 		// فقط کار پیشنهادها؛ کار تب‌های دیگر (ایراد فنی همین آدرس و…) سنجش خودش را دارد و اینجا «برطرف» نمی‌شد
@@ -262,18 +272,19 @@ function hodima_seo_advisor_tasks_sync( string $path, array $suggestions ): int 
 		// پیشنهاد آماری ممکن است فقط چون داده یا آستانه عوض شد از فهرست برود (بازه ۹۰ روزه جابه‌جا شد، کلمه زیر ۳۰۰ نمایش افتاد)؛
 		// آن را «برطرف شد» نشماریم. برطرف‌شدنش فقط با سنجش داده بعد از تغییر است (advisor-verify.php)
 		if ( ! isset( $present[ $key ] ) && 0 === $task['fixed'] && ! in_array( $task['rule'], HODIMA_SEO_ADVISOR_VERIFY_RULES, true ) ) {
-			$tasks[ $key ]['fixed'] = $now;
-			$tasks[ $key ]['back']  = 0;
-			++$changed;
+			$patch[ $key ] = [ 'fixed' => $now, 'back' => 0 ];
 		} elseif ( isset( $present[ $key ] ) && $task['fixed'] > 0 ) {
-			$tasks[ $key ]['fixed'] = 0;
-			$tasks[ $key ]['back']  = $now;
-			++$changed;
+			$patch[ $key ] = [ 'fixed' => 0, 'back' => $now ];
+		} else {
+			continue;
 		}
+
+		$expect[ $key ] = [ 'at' => $task['at'], 'status' => $task['status'] ];
+		++$changed;
 	}
 
-	if ( $changed > 0 ) {
-		update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $tasks, false );
+	if ( $patch ) {
+		hodima_seo_advisor_tasks_patch( $patch, $expect ); // نسخه تازه گزینه، نه کپی ابتدای تحلیل
 	}
 
 	return $changed;
@@ -402,14 +413,15 @@ function hodima_seo_advisor_handle_task(): void {
 		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
 	}
 
-	check_admin_referer( 'hodima_advisor_task' );
-
 	$path   = sanitize_text_field( wp_unslash( (string) ( $_REQUEST['path'] ?? '' ) ) );
 	$rule   = sanitize_key( (string) ( $_REQUEST['rule'] ?? '' ) );
 	$term   = sanitize_text_field( wp_unslash( (string) ( $_REQUEST['term'] ?? '' ) ) );
 	$title  = sanitize_text_field( wp_unslash( (string) ( $_REQUEST['title'] ?? '' ) ) );
 	$status = sanitize_key( (string) ( $_REQUEST['status'] ?? '' ) );
 	$redo   = ! empty( $_REQUEST['redo'] );
+
+	// فرم POST تب «کارها» nonce عمومی دارد؛ لینک GET (کادر ویرایش) فقط برای همین کار و همین وضعیت معتبر است
+	check_admin_referer( empty( $_POST ) ? hodima_seo_advisor_task_nonce_action( $path, $rule, $term, $status, $redo ) : 'hodima_advisor_task' );
 
 	if ( hodima_seo_advisor_task_set( $path, $rule, $term, $title, $status, $redo ) ) {
 		$note = '';

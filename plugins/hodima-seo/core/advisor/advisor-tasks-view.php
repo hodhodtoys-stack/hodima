@@ -24,7 +24,7 @@ function hodima_seo_advisor_task_date( int $time ): string {
 function hodima_seo_advisor_task_url( string $path, string $rule, string $term, string $title, string $status, bool $redo = false ): string {
 	return wp_nonce_url(
 		add_query_arg( [ 'action' => 'hodima_advisor_task', 'path' => $path, 'rule' => $rule, 'term' => $term, 'title' => $title, 'status' => $status ] + ( $redo ? [ 'redo' => 1 ] : [] ), admin_url( 'admin-post.php' ) ),
-		'hodima_advisor_task'
+		hodima_seo_advisor_task_nonce_action( $path, $rule, $term, $status, $redo )
 	);
 }
 
