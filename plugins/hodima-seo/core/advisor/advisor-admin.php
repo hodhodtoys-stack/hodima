@@ -547,7 +547,17 @@ function hodima_seo_advisor_render_admin(): void {
 	] );
 
 	if ( '' !== $status['error'] ) {
-		hodima_admin_notice( '<strong>آخرین دریافت داده ناموفق بود:</strong> ' . esc_html( $status['error'] ), 'error' );
+		wp_admin_notice( '<strong>آخرین دریافت داده ناموفق بود:</strong> ' . esc_html( $status['error'] ), [ 'type' => 'error', 'additional_classes' => [ 'inline' ] ] ); // بدون وابستگی به Core
+	}
+
+	$caps  = hodima_seo_advisor_caps();
+	$notes = array_filter( [
+		$caps['fetch'] ? sprintf( 'داده سرچ کنسول از سقف %s ردیف گزارش بیشتر بود و بقیه نیامد؛ آدرس‌ها یا کلمه‌های کم‌نمایش در دستار نیستند.', number_format_i18n( HODIMA_SEO_ADVISOR_FETCH_PAGES * 25000 ) ) : '',
+		$caps['analyze'] ? sprintf( 'فقط %s آدرس پرنمایش‌تر برای پیشنهاد بررسی می‌شوند و بقیه پیشنهاد ندارند.', number_format_i18n( HODIMA_SEO_ADVISOR_ANALYZE_LIMIT ) ) : '',
+		$caps['classify'] > 0 ? sprintf( '%1$s آدرس کم‌نمایش (بعد از %2$s آدرس برتر) نوع و عنوان نگرفتند؛ پیشنهاد متنی و تحلیل دوباره هنگام ذخیره برایشان کار نمی‌کند.', number_format_i18n( $caps['classify'] ), number_format_i18n( HODIMA_SEO_ADVISOR_CLASSIFY_LIMIT ) ) : '',
+	] );
+	if ( $has_data && $notes ) {
+		wp_admin_notice( '<strong>بخشی از داده بریده شده است:</strong> ' . esc_html( implode( ' ', $notes ) ), [ 'type' => 'warning', 'additional_classes' => [ 'inline' ] ] ); // اعلان خود وردپرس: صفحه به Core وابسته نشود
 	}
 
 	hodima_seo_ui_body_open();

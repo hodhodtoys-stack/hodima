@@ -74,11 +74,12 @@ const HODIMA_SEO_ADVISOR_FETCH_PAGES = 4;
  * بخورد کل گزارش خطا می‌دهد (داده نصفه ذخیره نمی‌شود).
  *
  * @param list<string> $dimensions
- * @return array{rows: list<array<string, mixed>>}|WP_Error
+ * @return array{rows: list<array<string, mixed>>, capped: bool}|WP_Error
  */
 function hodima_seo_advisor_fetch( string $property, string $start, string $end, array $dimensions ): array|WP_Error {
 
-	$rows = [];
+	$rows   = [];
+	$capped = false;
 
 	for ( $page = 0; $page < HODIMA_SEO_ADVISOR_FETCH_PAGES; $page++ ) {
 		$part = hodima_seo_sc_request( $property, $start, $end, $dimensions, 25000, 'web', $page * 25000, HODIMA_SEO_SC_ADVISOR );
@@ -89,9 +90,10 @@ function hodima_seo_advisor_fetch( string $property, string $start, string $end,
 		if ( count( $part['rows'] ) < 25000 ) {
 			break;
 		}
+		$capped = HODIMA_SEO_ADVISOR_FETCH_PAGES - 1 === $page; // آخرین صفحه مجاز هم پر بود: ردیف‌های بعدی نیامدند
 	}
 
-	return [ 'rows' => $rows ];
+	return [ 'rows' => $rows, 'capped' => $capped ];
 }
 
 /** ثبت خطا بدون پاک کردن آخرین داده موفق. */
@@ -186,6 +188,9 @@ function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = n
 			hodima_seo_advisor_store_error( $stored->get_error_message() );
 			return $stored;
 		}
+
+		// داده ۲۵ هزار ردیف ×۴ صفحه بریده شد؟ (یا آدرس‌های بی‌نوع) ← پیشخوان بگوید، نه بی‌صدا
+		hodima_seo_advisor_caps( [ 'fetch' => $current['capped'] || $previous['capped'] || $queries['capped'], 'classify' => (int) ( $stored['unclassified'] ?? 0 ) ] );
 
 		update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [
 			'advised'    => hodima_seo_advisor_advised_count(),

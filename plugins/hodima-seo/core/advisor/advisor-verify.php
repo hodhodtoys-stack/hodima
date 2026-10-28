@@ -142,7 +142,7 @@ function hodima_seo_advisor_verify_fetch( string $property, string $path, string
 	};
 	$mine   = static fn( array $keys ): bool => hodima_seo_advisor_path_key( (string) ( $keys[0] ?? '' ) ) === $path;
 
-	$pages = hodima_seo_sc_request( $property, $start, $end, [ 'page' ], 100, 'web', 0, HODIMA_SEO_SC_ADVISOR, $filter );
+	$pages = hodima_seo_sc_request( $property, $start, $end, [ 'page' ], 1000, 'web', 0, HODIMA_SEO_SC_ADVISOR, $filter );
 	if ( is_wp_error( $pages ) ) {
 		return $pages;
 	}

@@ -382,6 +382,18 @@ hodima_ad( 'صفحه: سربرگ، ۴ کارت آمار، ردیف‌ها، دک
 hodima_ad( 'صفحه: بازه فعلی انتخاب‌شده و خروجی CSV با nonce', [ str_contains( $html, 'value="90" checked' ), str_contains( $html, 'action=hodima_advisor_csv' ) && str_contains( $html, '_wpnonce=' ) ], [ true, true ] );
 hodima_ad( 'فهرست فقط تیتر: بدون جزئیات و گام، با دکمه «ویرایش و رفع ایرادها» یا «دیدن در سایت»', [ str_contains( $html, 'hodima-advisor__issues' ), str_contains( strstr( $html, '<details class="hds-card hodima-advisor__glossary"', true ) ?: $html, '<details' ), str_contains( $html, 'ببینید دقیقا چه کنید' ), str_contains( $html, 'ویرایش و رفع ایرادها' ) || str_contains( $html, 'دیدن در سایت' ) ], [ true, false, false, true ] );
 hodima_ad( 'فهرست: همه ایرادها یک‌یک (رقابت با N صفحه برای کلمه)', [ str_contains( $html, 'رقابت با ' . hodima_seo_advisor_num( 1 ) . ' صفحه برای «پلومریا»' ), str_contains( $html, 'data-rule="low_ctr"' ), str_contains( $html, 'data-rule="decline"' ) ], [ true, true, true ] );
+// سقف‌های رسیده بی‌صدا نمی‌مانند (SEO 3.0.7)
+delete_option( HODIMA_SEO_ADVISOR_CAPS_OPTION );
+hodima_ad( 'سقف‌ها پیش‌فرض خالی', hodima_seo_advisor_caps(), [ 'fetch' => false, 'analyze' => false, 'classify' => 0 ] );
+ob_start();
+hodima_seo_advisor_render_admin();
+$caps_off = str_contains( (string) ob_get_clean(), 'بخشی از داده بریده شده است' );
+hodima_seo_advisor_caps( [ 'analyze' => true, 'classify' => 120 ] );
+ob_start();
+hodima_seo_advisor_render_admin();
+$caps_html = (string) ob_get_clean();
+hodima_ad( 'هشدار «بخشی از داده بریده شده» فقط با سقف رسیده؛ سقف تحلیل و دسته‌بندی در متن', [ $caps_off, str_contains( $caps_html, 'بخشی از داده بریده شده است' ), str_contains( $caps_html, 'آدرس پرنمایش‌تر برای پیشنهاد' ), str_contains( $caps_html, '120' ) || str_contains( $caps_html, '۱۲۰' ) ], [ false, true, true, true ] );
+hodima_seo_advisor_caps( [ 'fetch' => false, 'analyze' => false, 'classify' => 0 ] );
 delete_option( 'hodima_discover_sc_key' );
 ob_start();
 hodima_seo_advisor_render_admin();

@@ -516,6 +516,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 
 	if ( ! is_wp_error( $result ) ) {
 		hodima_seo_advisor_site_refresh();
+		$result['unclassified'] = max( 0, count( $paths ) - HODIMA_SEO_ADVISOR_CLASSIFY_LIMIT );
 	}
 
 	return $result;
@@ -728,6 +729,34 @@ function hodima_seo_advisor_queries( string $path, int $limit = 20 ): array {
 		],
 		$rows
 	);
+}
+
+/** گزینه «سقف‌های رسیده» (autoload خاموش): چیزی بی‌صدا بریده شده؟ (SEO 3.0.7) */
+const HODIMA_SEO_ADVISOR_CAPS_OPTION = 'hodima_advisor_caps';
+
+/**
+ * سقف‌هایی که در آخرین کار به آن‌ها رسیدیم: fetch (دریافت از سرچ کنسول به ۴×۲۵ هزار ردیف رسید و بقیه نیامد)،
+ * analyze (آدرس‌های قابل‌بررسی از سقف تحلیل بیشترند)، classify (شمار آدرس‌هایی که نوع و عنوان نگرفتند).
+ * `$set`: فقط این کلیدها نوشته می‌شوند.
+ *
+ * @param array<string, bool|int> $set
+ * @return array{fetch: bool, analyze: bool, classify: int}
+ */
+function hodima_seo_advisor_caps( array $set = [] ): array {
+
+	$stored = get_option( HODIMA_SEO_ADVISOR_CAPS_OPTION, [] );
+	$stored = is_array( $stored ) ? $stored : [];
+	$caps   = [
+		'fetch'    => ! empty( $set['fetch'] ?? $stored['fetch'] ?? false ),
+		'analyze'  => ! empty( $set['analyze'] ?? $stored['analyze'] ?? false ),
+		'classify' => max( 0, (int) ( $set['classify'] ?? $stored['classify'] ?? 0 ) ),
+	];
+
+	if ( $set && $caps !== $stored ) {
+		update_option( HODIMA_SEO_ADVISOR_CAPS_OPTION, $caps, false );
+	}
+
+	return $caps;
 }
 
 /**

@@ -833,7 +833,7 @@ function hodima_seo_advisor_analysis_candidates(): array {
 	return array_map(
 		'strval',
 		(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( 'SELECT path FROM %i WHERE impressions >= %d OR prev_clicks >= %d ORDER BY impressions DESC LIMIT %d', hodima_seo_advisor_table( 'pages' ), $cfg['min_impressions'], $cfg['decline_min_clicks'], HODIMA_SEO_ADVISOR_ANALYZE_LIMIT )
+			$wpdb->prepare( 'SELECT path FROM %i WHERE impressions >= %d OR prev_clicks >= %d ORDER BY impressions DESC LIMIT %d', hodima_seo_advisor_table( 'pages' ), $cfg['min_impressions'], $cfg['decline_min_clicks'], HODIMA_SEO_ADVISOR_ANALYZE_LIMIT + 1 )
 		)
 	);
 }
@@ -864,6 +864,8 @@ function hodima_seo_advisor_analyze_batch( float $deadline ): bool|WP_Error {
 		$queue = array_values( array_map( 'strval', $state['queue'] ) );
 	} else {
 		$queue = hodima_seo_advisor_analysis_candidates();
+		hodima_seo_advisor_caps( [ 'analyze' => count( $queue ) > HODIMA_SEO_ADVISOR_ANALYZE_LIMIT ] );
+		$queue = array_slice( $queue, 0, HODIMA_SEO_ADVISOR_ANALYZE_LIMIT ); // یکی بیشتر پرسیده شد تا بریده‌شدن معلوم شود
 		$stale = array_diff( array_map( 'strval', (array) $wpdb->get_col( $wpdb->prepare( 'SELECT path FROM %i WHERE advice_count > 0', $table ) ) ), $queue ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		foreach ( $stale as $path ) {
 			if ( false === $wpdb->update( $table, [ 'potential' => 0, 'advice_count' => 0, 'advice' => '' ], [ 'path' => $path ], [ '%d', '%d', '%s' ], [ '%s' ] ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
