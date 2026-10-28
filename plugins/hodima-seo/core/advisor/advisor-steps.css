@@ -134,3 +134,92 @@
 	color: var(--hd-ok, #1f7a4d);
 	font-weight: 600;
 }
+
+/*
+ * آدرس کامل + کپی (SEO 3.0.1؛ طرح تأییدشده کاربر ۶ آبان ۱۴۰۵، hodima_seo_advisor_url_copy و _text_html):
+ * آدرس چپ‌به‌راست و جدا از متن فارسی (unicode-bidi: isolate)، دکمه کپی ۴۰px فقط وقتی JS هست (advisor-copy.js کلاس
+ * hodima-advisor-js را روی html می‌گذارد؛ بدون آن آدرس را دستی انتخاب می‌کنید).
+ */
+.hodima-advisor-url {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	max-inline-size: 100%;
+	vertical-align: middle;
+}
+
+.hodima-advisor-url__link,
+.hodima-advisor-url__inline {
+	min-inline-size: 0;
+	color: var(--hd-primary, #25316a);
+	font-size: 0.75rem;
+	text-decoration: underline dotted var(--hd-secondary, #607bbd);
+	text-underline-offset: 3px;
+	direction: ltr;
+	unicode-bidi: isolate;
+	overflow-wrap: break-word; /* شکستن بعد از «/» (wbr)؛ وسط کلمه فقط اگر یک بخش از ستون بلندتر است */
+}
+
+.hodima-advisor-url__link:hover,
+.hodima-advisor-url__inline:hover {
+	text-decoration-style: solid;
+}
+
+.hodima-advisor-url__link:focus-visible,
+.hodima-advisor-url__inline:focus-visible,
+.hodima-advisor-url__copy:focus-visible {
+	outline: 2px solid var(--hd-secondary, #607bbd);
+	outline-offset: 2px;
+}
+
+.hodima-advisor-url__copy {
+	display: none;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	inline-size: 2.5rem;
+	block-size: 2.5rem;
+	padding: 0;
+	border: 1px solid var(--hd-border-strong, #c9d1ee);
+	border-radius: 0.75rem;
+	background: #ffffff;
+	color: var(--hd-primary, #25316a);
+	cursor: pointer;
+	transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.hodima-advisor-js .hodima-advisor-url__copy {
+	display: inline-flex;
+}
+
+.hodima-advisor-url__copy:hover {
+	border-color: var(--hd-primary, #25316a);
+}
+
+.hodima-advisor-url__copy.is-copied {
+	border-color: var(--hd-ok, #1f7a4d);
+	background: #eef7f2;
+	color: var(--hd-ok, #1f7a4d);
+}
+
+.hodima-advisor-url__copy .dashicons {
+	inline-size: 1.125rem;
+	block-size: 1.125rem;
+	font-size: 1.125rem;
+}
+
+.hodima-advisor-steps__main-pill {
+	display: inline-block;
+	padding: 0.0625rem 0.5rem;
+	border-radius: 99px;
+	background: #e8f4ee;
+	color: var(--hd-ok, #1f7a4d);
+	font-size: 0.6875rem;
+	font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-advisor-url__copy {
+		transition: none;
+	}
+}

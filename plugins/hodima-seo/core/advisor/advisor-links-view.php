@@ -36,9 +36,27 @@ function hodima_seo_advisor_render_links_box( string $term, string $target_title
 	<?php
 }
 
-/** آدرس به‌صورت code چپ‌به‌راست (escape‌شده). */
-function hodima_seo_advisor_links_code( string $path ): string {
-	return '<code class="hodima-advisor__lk-path" dir="ltr">' . esc_html( rawurldecode( $path ) ) . '</code>';
+/**
+ * آدرس نوشته‌شده یک لینک: آدرس کامل با کپی؛ اگر در متن نسبی نوشته شده (/207/)، همان شکل نوشته‌شده زیرش (escape‌شده).
+ *
+ * @param array<string, mixed> $row
+ */
+function hodima_seo_advisor_links_written( array $row ): string {
+
+	$href = (string) $row['href'];
+
+	if ( '' === $href ) {
+		return '—';
+	}
+
+	$html = hodima_seo_advisor_url_copy( $href );
+
+	// آدرس خزش همیشه مسیر است؛ فقط آدرسی که مدیر در متن/منو نسبی نوشته شکل خودش را هم نشان می‌دهد
+	if ( str_starts_with( $href, '/' ) && ! str_starts_with( $href, '//' ) && empty( $row['structural'] ) && 'متن (طبق خزش)' !== (string) ( $row['source']['field'] ?? '' ) ) {
+		$html .= '<small class="hodima-advisor__lk-muted">در متن «<bdi dir="ltr">' . esc_html( rawurldecode( $href ) ) . '</bdi>» نوشته شده (نسبی)</small>'; // bdi: اسلش‌های مسیر وسط جمله فارسی جابه‌جا نشوند
+	}
+
+	return $html;
 }
 
 /**
@@ -69,13 +87,13 @@ function hodima_seo_advisor_render_links_row( array $row, array $target ): strin
 
 	$should = $row['structural']
 		? '<span class="hodima-advisor__lk-muted">در متن قابل ویرایش نیست؛ از منو یا چیدمان قالب درست می‌شود.</span>'
-		: '<span class="hodima-advisor__lk-to"><span class="hodima-advisor__lk-arrow" aria-hidden="true">←</span>' . hodima_seo_advisor_links_code( (string) $target['path'] ) . '</span><small class="hodima-advisor__lk-muted">' . esc_html( (string) $target['title'] ) . '</small>';
+		: '<span class="hodima-advisor__lk-to"><span class="hodima-advisor__lk-arrow" aria-hidden="true">←</span>' . hodima_seo_advisor_url_copy( (string) $target['path'] ) . '</span><small class="hodima-advisor__lk-muted">' . esc_html( (string) $target['title'] ) . '</small>'; // آدرس کامل با کپی (تا SEO 3.0.0 فقط مسیر)
 
 	return '<tr>'
 		. '<td data-label=""><div class="hodima-advisor__lk-src">' . $where . '</div></td>'
 		. '<td data-label="جای ذخیره">' . $store . '</td>'
 		. '<td data-label="متن لینک">' . $anchor . '</td>'
-		. '<td data-label="آدرس نوشته‌شده">' . ( '' !== (string) $row['href'] ? hodima_seo_advisor_links_code( (string) $row['href'] ) : '—' ) . '</td>'
+		. '<td data-label="آدرس نوشته‌شده">' . hodima_seo_advisor_links_written( $row ) . '</td>'
 		. '<td data-label="الان می‌رود به">' . $current . '</td>'
 		. '<td data-label="باید برود به">' . $should . '</td>'
 		. '<td data-label="">' . ( '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش', 'edit' ) : '' ) . '</td>'
@@ -100,7 +118,7 @@ function hodima_seo_advisor_render_links_opp( array $opp, array $target ): strin
 	return '<tr>'
 		. '<td data-label=""><div class="hodima-advisor__lk-src"><strong>' . esc_html( (string) $source['title'] ) . '</strong><span class="hds-pill hds-pill--info">' . esc_html( (string) $source['label'] ) . '</span></div></td>'
 		. '<td data-label="تکه‌ای از متن">' . $text . '</td>'
-		. '<td data-label="پیشنهاد"><span class="hodima-advisor__lk-to"><span class="hodima-advisor__lk-arrow" aria-hidden="true">←</span><span>همین عبارت را به ' . hodima_seo_advisor_links_code( (string) $target['path'] ) . ' لینک کنید</span></span><small class="hodima-advisor__lk-muted">' . esc_html( (string) $target['title'] ) . '</small></td>'
+		. '<td data-label="پیشنهاد"><span class="hodima-advisor__lk-opp">همین عبارت را به این آدرس لینک کنید:</span>' . hodima_seo_advisor_url_copy( (string) $target['path'] ) . '<small class="hodima-advisor__lk-muted">' . esc_html( (string) $target['title'] ) . '</small></td>'
 		. '<td data-label="">' . ( '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش', 'edit' ) : '' ) . '</td>'
 		. '</tr>';
 }

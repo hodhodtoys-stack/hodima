@@ -12,6 +12,9 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+/** ردیف در هر صفحه «صفحه‌هایی که نمایش نگرفته‌اند» و «وضعیت در گوگل». */
+const HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE = 25;
+
 /**
  * برچسب و دستور هر وضعیت آدرس مرده.
  *
@@ -99,12 +102,15 @@ function hodima_seo_advisor_render_health( array $status ): void {
 	if ( ! $unseen ) {
 		hodima_seo_ui_empty( 'همه صفحه‌ها دیده شده‌اند', 'هر صفحه منتشرشده‌ای دست‌کم یک نمایش در گوگل گرفته است.' );
 	} else {
+		// صفحه‌بندی (SEO 3.0.1): تا ۱۰۰ صفحه ذخیره می‌شود ولی قبلا فقط ۳۰ تای اول دیده می‌شد
+		$pages = (int) ceil( count( $unseen ) / HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE );
+		$paged = min( $pages, max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط صفحه‌بندی نمایش
 		?>
 		<div class="hds-table-wrap" tabindex="0" role="region" aria-label="صفحه‌های بدون نمایش">
 			<table class="widefat striped hodima-advisor__terms">
 				<thead><tr><th scope="col">صفحه</th><th scope="col">نوع</th><th scope="col">سن</th><th scope="col"></th></tr></thead>
 				<tbody>
-					<?php foreach ( array_slice( $unseen, 0, 30 ) as $row ) : ?>
+					<?php foreach ( array_slice( $unseen, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE ) as $row ) : ?>
 						<?php $edit = get_edit_post_link( (int) $row['id'], 'raw' ); ?>
 						<tr>
 							<th scope="row"><?php echo esc_html( '' !== (string) $row['title'] ? (string) $row['title'] : (string) $row['path'] ); ?> <?php echo hodima_seo_advisor_url_link( (string) $row['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
@@ -116,6 +122,12 @@ function hodima_seo_advisor_render_health( array $status ): void {
 				</tbody>
 			</table>
 		</div>
+		<?php if ( $pages > 1 ) : ?>
+			<div class="hodima-advisor__foot">
+				<span><?php echo esc_html( sprintf( 'نمایش %1$s از %2$s صفحه، قدیمی‌ترین اول', $n( count( array_slice( $unseen, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE ) ) ), $n( count( $unseen ) ) ) ); ?></span>
+				<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'health', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
+			</div>
+		<?php endif; ?>
 		<div class="hodima-advisor__advice"><strong>چه کنید:</strong> برای هر صفحه بررسی کنید: noindex یا canonical به آدرس دیگر نباشد؛ در سایت‌مپ باشد؛ دست‌کم از ۲ تا ۳ صفحه مرتبط لینک داخلی بگیرد؛ و محتوایش کم یا تکراری نباشد. بعد در Search Console همان آدرس را در «بررسی آدرس» بگذارید و «درخواست ایندکس» بزنید. اگر صفحه ارزشی ندارد، ادغام یا حذفش با ریدایرکت بهتر است.</div>
 		<?php
 	}

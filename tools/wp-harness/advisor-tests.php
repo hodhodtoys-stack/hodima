@@ -665,6 +665,7 @@ if ( hodima_router_active() ) {
 	$steps_html = (string) ob_get_clean();
 	hodima_ad( 'نمایش: لینک ویرایش صفحه‌ها، عبارت لینک، عنوان فعلی و پیشنهادی، صفحه مرجع', [ str_contains( $steps_html, 'post=' . $ids[2] ), str_contains( $steps_html, 'عبارت «کلیپس پلومریا» را پیدا کنید' ), str_contains( $steps_html, 'عنوان پیشنهادی' ), str_contains( $steps_html, 'مرجع پیشنهادی' ) ], [ true, true, true, true ] );
 	hodima_ad( 'رقابت در گام‌ها: جدول، ردیف همین صفحه پررنگ، لینک ویرایش رقیب', [ str_contains( $steps_html, 'hodima-advisor-steps__table' ), str_contains( $steps_html, 'class="is-me"' ), str_contains( $steps_html, 'hodima-advisor-steps__main' ) ], [ true, true, true ] );
+	hodima_ad( 'گام‌ها با آدرس کامل و کپی (SEO 3.0.1): رقیب و صفحه مرجع با دکمه کپی، ردیف همین صفحه بدون کپی، منبع لینک و آدرس این صفحه', [ str_contains( $steps_html, 'data-hdsa-copy-url="' . hodima_seo_advisor_url( '/rival/' ) . '"' ), str_contains( $steps_html, 'hodima-advisor-steps__main-pill' ), str_contains( $steps_html, 'data-hdsa-copy-url="' . hodima_seo_advisor_url( '/steps-target/' ) . '"' ), str_contains( $steps_html, 'آدرس این صفحه (همان که لینک می‌گیرد)' ), (bool) preg_match( '#<li>[^\n]*hodima-advisor-url__link#u', $steps_html ) ], [ true, true, true, true, true ] );
 	wp_set_current_user( 0 );
 	$saved_advice = hodima_seo_advisor_save_advice( '/steps-target/' );
 	hodima_ad( 'پیشنهاد ذخیره می‌شود ولی گام‌ها نه (فقط کادر ویرایش می‌سازد؛ تحلیل همه آدرس‌ها سبک می‌ماند)', [ $saved_advice, array_filter( array_column( hodima_seo_advisor_page( '/steps-target/' )['advice'], 'steps' ) ) ], [ true, [] ] );
@@ -2320,8 +2321,8 @@ hodima_ad( 'تکه متن فرصت لینک: واژه لاتین با حروف �
 
 // ایرادهای فنی: ریدایرکت با آدرس کامل مقصد
 hodima_seo_advisor_crawl_store( [ '/m2/old/' => [ 'path' => '/m2/old/', 'status' => 301, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 10, 'inlinks' => 2, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '/m2/new/' ] ], [] );
-$m2_issue = array_values( array_filter( hodima_seo_advisor_crawl_issues(), static fn( array $r ): bool => '/m2/old/' === $r['path'] ) )[0]['issues'][0]['detail'] ?? '';
-hodima_ad( 'ایراد ریدایرکت: «به آدرس کامل مقصد می‌رود»', $m2_issue, 'به ' . hodima_seo_advisor_url( '/m2/new/' ) . ' می‌رود' );
+$m2_issue = array_values( array_filter( hodima_seo_advisor_crawl_issues(), static fn( array $r ): bool => '/m2/old/' === $r['path'] ) )[0]['issues'][0] ?? [];
+hodima_ad( 'ایراد ریدایرکت: مقصد جدا از جمله (برای آدرس کامل + کپی)', [ $m2_issue['detail'] ?? '', $m2_issue['url'] ?? '' ], [ 'به این آدرس می‌رود:', '/m2/new/' ] );
 
 // قفل بررسی ایندکس
 add_option( HODIMA_SEO_ADVISOR_INSPECT_LOCK, time(), '', false );
@@ -2334,6 +2335,67 @@ hodima_seo_advisor_clear_data();
 false === $m2_status ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $m2_status, false );
 false === $m2_health ? delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION ) : update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, $m2_health, false );
 hodima_seo_advisor_crawl_map( true );
+
+echo "=== مرحله ۲ ظاهری (SEO 3.0.1): آدرس کامل + کپی، ایرادهای فنی کامل، صفحه‌بندی\n";
+hodima_ad( 'آدرس کامل: مسیر ← دامنه + مسیر؛ کامل همان؛ //میزبان ← https؛ فارسی رمزگشایی', [ hodima_seo_advisor_url_full( '/x/' ), hodima_seo_advisor_url_full( 'https://e.test/a/' ), hodima_seo_advisor_url_full( '//e.test/a/' ), hodima_seo_advisor_url_full( '/' . rawurlencode( 'گل' ) . '/' ) ], [ hodima_seo_advisor_url( '/x/' ), 'https://e.test/a/', 'https://e.test/a/', hodima_seo_advisor_url( '/گل/' ) ] );
+$uc_raw = hodima_seo_advisor_url_copy( '/گل-سر/' );
+$uc     = str_replace( '<wbr>', '', $uc_raw );
+hodima_ad( 'جزء آدرس: جای شکستن خط فقط بعد از «/» مسیر، نه داخل https://', [ substr_count( $uc_raw, '<wbr>' ), str_contains( $uc_raw, 'https:/<wbr>' ) ], [ 2, false ] );
+hodima_ad( 'جزء آدرس: لینک چپ‌به‌راست جدا (bdi)، زبانه تازه، دکمه کپی با نام صفحه‌خوان و آدرس خوانا؛ بدون کپی فقط لینک', [ str_contains( $uc, 'dir="ltr"><bdi>' . hodima_seo_advisor_url( '/گل-سر/' ) . '</bdi>' ), str_contains( $uc, 'target="_blank"' ), str_contains( $uc, 'data-hdsa-copy-url="' . hodima_seo_advisor_url( '/گل-سر/' ) . '"' ), str_contains( $uc, 'aria-label="کپی آدرس ' ), str_contains( hodima_seo_advisor_url_copy( '/x/', false ), 'data-hdsa-copy-url' ), hodima_seo_advisor_url_copy( '' ) ], [ true, true, true, true, false, '' ] );
+$th = hodima_seo_advisor_text_html( 'علاوه بر این صفحه، https://e.test/a/ و <b> هم. آخر https://e.test/b/.' );
+hodima_ad( 'آدرس داخل متن: لینک جدا از جمله، نقطه آخر جمله بیرون از آدرس، بقیه متن escape', [ substr_count( $th, 'class="hodima-advisor-url__inline"' ), str_contains( $th, 'href="https://e.test/b/"' ) && str_contains( $th, '</a>.' ), str_contains( $th, '&lt;b&gt;' ), hodima_seo_advisor_text_html( 'بدون آدرس <i>' ) ], [ 2, true, true, 'بدون آدرس &lt;i&gt;' ] );
+
+// لینک‌های این کلمه: «باید برود به» و «آدرس نوشته‌شده» کامل
+$lk_target = [ 'path' => '/lk3/target/', 'title' => 'هدف' ];
+$lk_row    = [ 'issue' => 'wrong', 'source' => [ 'title' => 'منبع', 'label' => 'برگه', 'edit' => '', 'field' => 'متن نوشته' ], 'store' => 'متن نوشته', 'anchor' => 'کلمه', 'href' => '/207/', 'now' => [ 'path' => '/207/', 'title' => 'رقیب', 'kind' => 'نوشته', 'note' => '' ], 'times' => 1, 'structural' => false ];
+$lk_html   = hodima_seo_advisor_render_links_row( $lk_row, $lk_target );
+hodima_ad( 'ردیف لینک: آدرس نوشته‌شده کامل + «در متن نسبی نوشته شده» و «باید برود به» آدرس کامل با کپی', [ str_contains( $lk_html, 'data-hdsa-copy-url="' . hodima_seo_advisor_url( '/207/' ) . '"' ), str_contains( $lk_html, 'نوشته شده (نسبی)' ), str_contains( $lk_html, 'data-hdsa-copy-url="' . hodima_seo_advisor_url( '/lk3/target/' ) . '"' ) ], [ true, true, true ] );
+$lk_crawl = hodima_seo_advisor_render_links_row( [ 'source' => [ 'title' => 'x', 'label' => 'صفحه', 'edit' => '', 'field' => 'متن (طبق خزش)' ] ] + $lk_row, $lk_target );
+$lk_opp   = hodima_seo_advisor_render_links_opp( [ 'source' => [ 'title' => 'منبع', 'label' => 'برگه', 'edit' => '' ], 'snippet' => null ], $lk_target );
+hodima_ad( 'ردیف خزش: بدون «نسبی» (خزش همیشه مسیر است)؛ فرصت لینک: «همین عبارت را به این آدرس لینک کنید» + آدرس کامل', [ str_contains( $lk_crawl, 'نسبی' ), str_contains( $lk_opp, 'لینک کنید' ) && str_contains( $lk_opp, 'data-hdsa-copy-url="' . hodima_seo_advisor_url( '/lk3/target/' ) . '"' ) ], [ false, true ] );
+
+// ایرادهای فنی: همه ایرادها با دستور خودشان، ویرایش صفحه، مقصد ریدایرکت با کپی
+$m3_status = get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, false );
+hodima_seo_advisor_clear_data();
+$m3_post = (int) wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => 'صفحه پرایراد', 'post_name' => 'm3-many', 'post_content' => 'x' ] );
+$m3_path = (string) hodima_seo_advisor_path_key( (string) get_permalink( $m3_post ) );
+hodima_seo_advisor_crawl_store(
+	[
+		$m3_path    => [ 'path' => $m3_path, 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'کوتاه', 'title_len' => 5, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 2500, 'inlinks' => 1, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '' ],
+		'/m3/old/'  => [ 'path' => '/m3/old/', 'status' => 301, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 10, 'inlinks' => 2, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '/m3/new/' ],
+	],
+	[]
+);
+update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => 2, 'links' => 0, 'files' => [] ], false );
+hodima_seo_advisor_crawl_map( true );
+wp_set_current_user( 1 );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'crawl' ];
+$m3_html = $cap( static fn() => hodima_seo_advisor_render_crawl() );
+$_GET = [];
+hodima_ad( 'ایرادهای فنی: هر ۵ ایراد یک سطر با نشان و دستور خودش (نه فقط ۳)، نام صفحه، «ویرایش صفحه»، مقصد ریدایرکت با کپی', [ substr_count( $m3_html, 'class="hodima-advisor__crawl-fix"' ), str_contains( $m3_html, 'کش و سرعت سرور را بررسی کنید' ) && str_contains( $m3_html, 'لینک متنی بدهید' ), str_contains( $m3_html, 'صفحه پرایراد' ), str_contains( $m3_html, 'post=' . $m3_post ) && str_contains( $m3_html, 'ویرایش صفحه' ), str_contains( $m3_html, 'data-hdsa-copy-url="' . hodima_seo_advisor_url( '/m3/new/' ) . '"' ) ], [ 6, true, true, true, true ] );
+wp_delete_post( $m3_post, true );
+
+// صفحه‌بندی «صفحه‌هایی که نمایش نگرفته‌اند» و «وضعیت در گوگل»
+$m3_unseen = [];
+for ( $i = 0; $i < 60; $i++ ) {
+	$m3_unseen[] = [ 'id' => 0, 'path' => "/m3/u{$i}/", 'title' => "بدون نمایش {$i}", 'type' => 'post', 'days' => 400 - $i ];
+}
+update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, [ 'computed' => time(), 'router' => true, 'dead' => [], 'total' => 100, 'seen' => 40, 'fresh' => 0, 'unseen' => $m3_unseen ], false );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'health', 'paged' => '3' ];
+$m3_h = $cap( static fn() => hodima_seo_advisor_render_health( hodima_seo_advisor_status() ) );
+$m3_ins = [];
+for ( $i = 0; $i < 30; $i++ ) {
+	$m3_ins[ "/m3/i{$i}/" ] = [ 'verdict' => 'NEUTRAL', 'coverage' => 'Crawled - currently not indexed', 'robots' => '', 'indexing' => '', 'fetch' => '', 'last_crawl' => '', 'google_canonical' => '', 'user_canonical' => '', 'crawled_as' => '', 'checked' => time() - $i ];
+}
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $m3_ins, false );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'indexing', 'paged' => '2' ];
+$m3_i = $cap( static fn() => hodima_seo_advisor_render_indexing() );
+$_GET = [];
+hodima_ad( 'صفحه‌بندی: بدون نمایش ۶۰ ← صفحه سوم ۱۰ ردیف (نه فقط ۳۰ اول)؛ ایندکس ۳۰ ← صفحه دوم ۵ ردیف', [ str_contains( $m3_h, 'بدون نمایش 59' ) && ! str_contains( $m3_h, 'بدون نمایش 49<' ), str_contains( $m3_h, 'hds-pager' ), substr_count( $m3_i, 'm3/i' ) >= 5 && str_contains( $m3_i, 'hds-pager' ) ], [ true, true, true ] );
+hodima_seo_advisor_clear_data();
+delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION );
+false === $m3_status ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $m3_status, false );
+wp_set_current_user( 0 );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

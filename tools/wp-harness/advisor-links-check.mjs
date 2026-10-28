@@ -27,6 +27,7 @@ const log = ( ok, name, detail = '' ) => {
 
 async function newContext( width ) {
 	const ctx = await browser.newContext( { viewport: { width, height: 900 }, ignoreHTTPSErrors: true, locale: 'fa-IR' } );
+	await ctx.grantPermissions( [ 'clipboard-read', 'clipboard-write' ], { origin: site } ); // دکمه «کپی آدرس» (SEO 3.0.1)
 	await ctx.route( /^https:\/\/hodima\.test(?:[/?#]|$)/, async ( route ) => {
 		const req = route.request();
 		const headers = { ...req.headers(), host: 'hodima.test' };
@@ -103,6 +104,17 @@ for ( const width of [ 1300, 390 ] ) {
 	await boxes.first().locator( '[data-force]' ).click();
 	await pg.waitForFunction( () => ! document.querySelector( '[data-hdsa-links-out]' )?.hasAttribute( 'aria-busy' ) );
 	log( await boxes.first().locator( '.hodima-advisor__lk-table' ).count() >= 1, '«بررسی دوباره» نتیجه را دوباره می‌آورد' );
+
+	// آدرس کامل + کپی (SEO 3.0.1): «باید برود به» با دامنه؛ کلیک دکمه ← همان آدرس در کلیپ‌بورد و «کپی شد»
+	const linkText = await boxes.first().locator( '.hodima-advisor__lk-table:not(.is-inventory):not(.is-opps)' ).first().innerText();
+	log( linkText.includes( `${ site }/lk-cat/` ), '«باید برود به» آدرس کامل با دامنه است (نه فقط /lk-cat/)' );
+	const copy = boxes.first().locator( '.hodima-advisor__lk-to [data-hdsa-copy-url]' ).first();
+	const shown = await copy.isVisible();
+	await copy.click();
+	const copied = await pg.evaluate( () => navigator.clipboard.readText() ).catch( () => '' );
+	log( shown && copied === `${ site }/lk-cat/` && 'کپی شد' === await copy.getAttribute( 'aria-label' ), 'دکمه کپی: دیده می‌شود، آدرس کامل را کپی می‌کند و «کپی شد» می‌گوید', copied );
+	const hit = await copy.boundingBox();
+	log( null !== hit && hit.width >= 40 && hit.height >= 40, 'هدف لمسی دکمه کپی ≥ ۴۰px', hit ? `${ Math.round( hit.width ) }×${ Math.round( hit.height ) }` : '' );
 
 	const overflow = await pg.evaluate( () => document.documentElement.scrollWidth - document.documentElement.clientWidth );
 	log( overflow <= 0, 'بدون سرریز افقی صفحه', `${ overflow }px` );

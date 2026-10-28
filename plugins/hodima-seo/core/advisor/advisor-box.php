@@ -233,7 +233,7 @@ function hodima_seo_advisor_render_box( string $url ): void {
 		printf(
 			'<h4>%1$s</h4>%4$s<p><strong class="hodima-advisor-box__part">دقیقا چه کنم؟</strong> %2$s</p>%3$s',
 			esc_html( (string) $item['title'] ),
-			esc_html( (string) $item['detail'] ),
+			hodima_seo_advisor_text_html( (string) $item['detail'] ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html (آدرس داخل متن: لینک چپ‌به‌راست جدا از متن)
 			'' !== $jump || (int) $item['potential'] > 0
 				? '<div class="hodima-advisor-box__meta">' . wp_kses_post( $jump ) . ( (int) $item['potential'] > 0 ? '<small>' . esc_html( sprintf( 'کلیک بالقوه ≈ %s', $n( (int) $item['potential'] ) ) ) . hodima_seo_advisor_help( 'potential' ) . '</small>' : '' ) . '</div>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_help
 				: '',

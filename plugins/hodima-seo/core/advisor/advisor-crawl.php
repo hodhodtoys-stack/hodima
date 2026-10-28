@@ -810,7 +810,7 @@ function hodima_seo_advisor_crawl_issue_info( string $code ): array {
  * ایرادهای هر صفحه خزش‌شده، با نمایش گوگل (از داده Search Console)، پرنمایش‌ترین اول.
  * ایرادهای ریدایرکت/noindex/خطا فقط وقتی می‌آیند که صفحه نمایش یا لینک ورودی داشته باشد.
  *
- * @return list<array{path: string, impressions: int, position: float, inlinks: int, text_links: int, issues: list<array{code: string, detail: string}>}>
+ * @return list<array{path: string, impressions: int, position: float, inlinks: int, text_links: int, issues: list<array{code: string, detail: string, url: string}>}>
  */
 function hodima_seo_advisor_crawl_issues(): array {
 
@@ -843,8 +843,8 @@ function hodima_seo_advisor_crawl_issues(): array {
 		$impressions = (int) $r['impressions'];
 		$inlinks     = (int) $r['inlinks'];
 		$issues      = [];
-		$add         = static function ( string $code, string $detail = '' ) use ( &$issues ): void {
-			$issues[] = [ 'code' => $code, 'detail' => $detail ];
+		$add         = static function ( string $code, string $detail = '', string $url = '' ) use ( &$issues ): void {
+			$issues[] = [ 'code' => $code, 'detail' => $detail, 'url' => $url ]; // url: آدرس مرتبط (مقصد ریدایرکت) برای جزء آدرس کامل + کپی
 		};
 
 		if ( 200 === $status && 1 === (int) $r['indexable'] ) {
@@ -884,7 +884,7 @@ function hodima_seo_advisor_crawl_issues(): array {
 			}
 		} elseif ( $impressions > 0 || $inlinks > 0 ) {
 			if ( $status >= 300 && $status < 400 ) {
-				$add( 'redirect', '' !== (string) $r['redirect_to'] ? 'به ' . rawurldecode( hodima_seo_advisor_url( (string) $r['redirect_to'] ) ) . ' می‌رود' : '' ); // آدرس کامل، نه فقط مسیر
+				$add( 'redirect', '' !== (string) $r['redirect_to'] ? 'به این آدرس می‌رود:' : '', (string) $r['redirect_to'] ); // آدرس جدا با کپی (وسط جمله به‌هم می‌ریخت)
 			} elseif ( $status >= 400 ) {
 				$add( 'broken', sprintf( 'کد %s', number_format_i18n( $status ) ) );
 			} elseif ( 200 === $status && 0 === (int) $r['indexable'] ) {

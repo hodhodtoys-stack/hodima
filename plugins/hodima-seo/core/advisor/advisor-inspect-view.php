@@ -93,12 +93,16 @@ function hodima_seo_advisor_render_indexing(): void {
 		hodima_seo_ui_card_close();
 		return;
 	}
+
+	// صفحه‌بندی (SEO 3.0.1): تا ۶۰۰ آدرس بررسی می‌شود ولی قبلا فقط ۴۰ مشکل اول دیده می‌شد
+	$pages = (int) ceil( count( $problems ) / HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE );
+	$paged = min( $pages, max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط صفحه‌بندی نمایش
 	?>
 	<div class="hds-table-wrap" tabindex="0" role="region" aria-label="آدرس‌های نیازمند بررسی ایندکس">
 		<table class="widefat striped hodima-advisor__terms">
 			<thead><tr><th scope="col">آدرس</th><th scope="col">وضعیت</th><th scope="col">آخرین خزش</th><th scope="col">canonical گوگل</th></tr></thead>
 			<tbody>
-				<?php foreach ( array_slice( $problems, 0, 40, true ) as $path => $record ) : ?>
+				<?php foreach ( array_slice( $problems, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, true ) as $path => $record ) : ?>
 					<?php
 					$info   = hodima_seo_advisor_inspect_state_info( $states[ $path ] );
 					$crawl  = '' !== (string) $record['last_crawl'] ? strtotime( (string) $record['last_crawl'] ) : false;
@@ -114,6 +118,12 @@ function hodima_seo_advisor_render_indexing(): void {
 			</tbody>
 		</table>
 	</div>
+	<?php if ( $pages > 1 ) : ?>
+		<div class="hodima-advisor__foot">
+			<span><?php echo esc_html( sprintf( 'نمایش %1$s از %2$s آدرس نیازمند بررسی', $n( count( array_slice( $problems, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE ) ) ), $n( count( $problems ) ) ) ); ?></span>
+			<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'indexing', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
+		</div>
+	<?php endif; ?>
 	<?php
 	foreach ( array_unique( array_map( static fn( string $path ): string => $states[ $path ], array_keys( $problems ) ) ) as $state ) {
 		$advice = hodima_seo_advisor_inspect_state_info( $state );

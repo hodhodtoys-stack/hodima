@@ -163,7 +163,7 @@ function hodima_seo_advisor_step_headings( array $headings, string $term, array 
  * نمایش گوگل (جدول آدرس‌ها). نتیجه: حداکثر `$limit` مورد و تعداد بقیه.
  *
  * @param array<string, mixed> $row صفحه هدف
- * @return array{items: list<array{id: int, kind: string, title: string, impressions: int}>, more: int}
+ * @return array{items: list<array{id: int, kind: string, title: string, impressions: int, url: string}>, more: int}
  */
 function hodima_seo_advisor_link_sources( string $term, array $row, int $limit = HODIMA_SEO_ADVISOR_LINK_SOURCES ): array {
 
@@ -245,7 +245,7 @@ function hodima_seo_advisor_link_sources( string $term, array $row, int $limit =
 
 	$items = [];
 	foreach ( $found as $i => $f ) {
-		$items[] = [ 'id' => $f['id'], 'kind' => $f['kind'], 'title' => $f['title'], 'impressions' => $powers[ $paths[ $i ] ] ?? 0 ];
+		$items[] = [ 'id' => $f['id'], 'kind' => $f['kind'], 'title' => $f['title'], 'impressions' => $powers[ $paths[ $i ] ] ?? 0, 'url' => $f['url'] ]; // url: آدرس کامل در کادر
 	}
 
 	usort( $items, static fn( array $a, array $b ): int => [ $b['impressions'], $a['title'] ] <=> [ $a['impressions'], $b['title'] ] );
@@ -259,11 +259,11 @@ function hodima_seo_advisor_link_sources( string $term, array $row, int $limit =
  * است؛ با هر ویرایش یا دریافت تازه خودکار نو می‌شود.
  *
  * @param array<string, mixed> $row
- * @return array{items: list<array{id: int, kind: string, title: string, impressions: int}>, more: int}
+ * @return array{items: list<array{id: int, kind: string, title: string, impressions: int, url: string}>, more: int}
  */
 function hodima_seo_advisor_link_sources_cached( string $term, array $row ): array {
 
-	$key    = 'hodima_adv_ls_' . md5( implode( '|', [ $term, (string) $row['path'], wp_cache_get_last_changed( 'posts' ), wp_cache_get_last_changed( 'terms' ), (string) hodima_seo_advisor_status()['fetched'] ] ) );
+	$key    = 'hodima_adv_ls_' . md5( implode( '|', [ 'v2', $term, (string) $row['path'], wp_cache_get_last_changed( 'posts' ), wp_cache_get_last_changed( 'terms' ), (string) hodima_seo_advisor_status()['fetched'] ] ) );
 	$cached = get_transient( $key );
 
 	if ( is_array( $cached ) && isset( $cached['items'], $cached['more'] ) ) {
@@ -406,10 +406,10 @@ function hodima_seo_advisor_enrich( array $suggestions, array $row, array $queri
 				if ( null !== $fields ) {
 					$steps[] = hodima_seo_advisor_step_headings( $fields['headings'], $term, $queries );
 				}
-				$steps[] = [ 'type' => 'links' ] + hodima_seo_advisor_link_sources_cached( $term, $row ) + [ 'term' => $term ];
+				$steps[] = [ 'type' => 'links' ] + hodima_seo_advisor_link_sources_cached( $term, $row ) + [ 'term' => $term, 'target' => (string) $row['path'] ];
 				break;
 			case 'near_first':
-				$steps[] = [ 'type' => 'links' ] + hodima_seo_advisor_link_sources_cached( $term, $row ) + [ 'term' => $term ];
+				$steps[] = [ 'type' => 'links' ] + hodima_seo_advisor_link_sources_cached( $term, $row ) + [ 'term' => $term, 'target' => (string) $row['path'] ];
 				break;
 			case 'cannibal':
 				$steps[] = hodima_seo_advisor_step_canonical( $term, hodima_seo_advisor_term_rivals( $term ), (string) $row['path'] );

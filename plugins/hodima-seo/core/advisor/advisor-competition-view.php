@@ -247,7 +247,7 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 			<?php endif; ?>
 			<div class="hodima-advisor__advice">
 				<strong><?php echo esc_html( $advice['title'] ); ?>:</strong>
-				<?php echo esc_html( $advice['detail'] ); ?>
+				<?php echo hodima_seo_advisor_text_html( (string) $advice['detail'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html (آدرس رقیب داخل یادداشت لینک‌ها) ?>
 			</div>
 			<?php
 			// جهت لینک‌دهی فقط وقتی روشن است که برنده یا دسته هدف مشخص باشد (دستور «هم‌وزن» جهت ندارد)

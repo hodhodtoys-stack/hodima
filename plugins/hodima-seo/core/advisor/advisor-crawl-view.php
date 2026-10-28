@@ -44,6 +44,26 @@ function hodima_seo_advisor_handle_crawl(): void {
 	exit;
 }
 
+/**
+ * نام و آدرس ویرایش صفحه یک ردیف خزش: از ردیف داده گوگل (شناسایی‌شده هنگام دریافت)، وگرنه با روتر. خالی = ناشناخته.
+ *
+ * @return array{title: string, edit: string}
+ */
+function hodima_seo_advisor_crawl_row_target( string $path ): array {
+
+	$row   = hodima_seo_advisor_page( $path );
+	$class = null !== $row && (int) $row['object_id'] > 0 ? [ 'kind' => (string) $row['kind'], 'id' => (int) $row['object_id'] ] : hodima_seo_advisor_classify( $path );
+
+	if ( $class['id'] <= 0 || '' === $class['kind'] ) {
+		return [ 'title' => null !== $row ? (string) $row['title'] : '', 'edit' => '' ];
+	}
+
+	$title = hodima_seo_advisor_object_title( $class['kind'], $class['id'] );
+	$edit  = taxonomy_exists( $class['kind'] ) ? (string) get_edit_term_link( $class['id'], $class['kind'] ) : ( current_user_can( 'edit_post', $class['id'] ) ? (string) get_edit_post_link( $class['id'], 'raw' ) : '' );
+
+	return [ 'title' => $title, 'edit' => $edit ];
+}
+
 /** نشان وضعیت هر ایراد (رنگ کیت: ok سبز، bad قرمز، warn کهربایی، info آبی). */
 function hodima_seo_advisor_crawl_pill_class( string $level ): string {
 	return 'hds-pill' . ( [ 'bad' => ' hds-pill--error', 'warn' => ' hds-pill--warn', 'info' => ' hds-pill--info' ][ $level ] ?? '' );
@@ -225,12 +245,16 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 	?>
 	<div class="hds-table-wrap" tabindex="0" role="region" aria-label="ایرادهای صفحه‌ها">
 		<table class="widefat striped hodima-advisor__terms hodima-advisor__crawl-table">
-			<thead><tr><th scope="col">صفحه</th><th scope="col">نمایش</th><th scope="col">رتبه</th><th scope="col">ایراد</th><th scope="col">جزئیات و دستور</th></tr></thead>
+			<thead><tr><th scope="col">صفحه</th><th scope="col">نمایش</th><th scope="col">رتبه</th><th scope="col">ایراد و دستور</th><th scope="col"><span class="screen-reader-text">ویرایش</span></th></tr></thead>
 			<tbody>
 				<?php foreach ( $slice as $row ) : ?>
+					<?php $target = hodima_seo_advisor_crawl_row_target( (string) $row['path'] ); ?>
 					<tr>
 						<th scope="row">
-							<?php echo hodima_seo_advisor_url_link( (string) $row['path'], 'hodima-advisor__rival-url' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?>
+							<?php if ( '' !== $target['title'] ) : ?>
+								<strong class="hodima-advisor__crawl-name"><?php echo esc_html( $target['title'] ); ?></strong>
+							<?php endif; ?>
+							<?php echo hodima_seo_advisor_url_copy( (string) $row['path'], false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy ?>
 							<?php $live = hodima_seo_advisor_live_time( (string) $row['path'] ); ?>
 							<?php if ( $live > 0 ) : ?>
 								<small class="hodima-advisor__live"><?php echo esc_html( sprintf( 'عنوان، متا و تیترها %s پیش از خود سایت بررسی شد', human_time_diff( $live ) ) ); ?></small>
@@ -238,17 +262,26 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 						</th>
 						<td data-label="نمایش"><?php echo $row['impressions'] > 0 ? esc_html( $n( $row['impressions'] ) ) : '—'; ?></td>
 						<td data-label="رتبه"><?php echo $row['position'] > 0 ? esc_html( number_format_i18n( $row['position'], 1 ) ) : '—'; ?></td>
-						<td class="hodima-advisor__crawl-pills">
+						<td class="hodima-advisor__crawl-issues">
+							<?php // هر ایراد یک سطر: نشان + دستور خودش؛ همه ایرادها (تا SEO 3.0.0 فقط ۳ دستور اول، جدا از نشان‌ها) ?>
 							<?php foreach ( $row['issues'] as $issue ) : ?>
 								<?php $info = hodima_seo_advisor_crawl_issue_info( (string) $issue['code'] ); ?>
-								<span class="<?php echo esc_attr( hodima_seo_advisor_crawl_pill_class( $info['level'] ) ); ?>"><?php echo esc_html( $info['label'] ); ?></span>
+								<div class="hodima-advisor__crawl-fix">
+									<span class="<?php echo esc_attr( hodima_seo_advisor_crawl_pill_class( $info['level'] ) ); ?>"><?php echo esc_html( $info['label'] ); ?></span>
+									<span>
+										<?php echo esc_html( '' !== (string) $issue['detail'] ? $issue['detail'] . ( str_ends_with( (string) $issue['detail'], ':' ) ? '' : '.' ) : '' ); ?>
+										<?php if ( '' !== (string) ( $issue['url'] ?? '' ) ) : ?>
+											<?php echo hodima_seo_advisor_url_copy( (string) $issue['url'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy ?>
+										<?php endif; ?>
+										<?php echo esc_html( $info['fix'] ); ?>
+									</span>
+								</div>
 							<?php endforeach; ?>
 						</td>
-						<td>
-							<?php foreach ( array_slice( $row['issues'], 0, 3 ) as $issue ) : ?>
-								<?php $info = hodima_seo_advisor_crawl_issue_info( (string) $issue['code'] ); ?>
-								<span class="hodima-advisor__crawl-fix"><?php echo esc_html( trim( ( '' !== (string) $issue['detail'] ? $issue['detail'] . '. ' : '' ) . $info['fix'] ) ); ?></span>
-							<?php endforeach; ?>
+						<td class="hodima-advisor__crawl-edit">
+							<?php if ( '' !== $target['edit'] ) : ?>
+								<?php echo hodima_seo_advisor_action( $target['edit'], 'ویرایش صفحه', 'edit' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
+							<?php endif; ?>
 						</td>
 					</tr>
 				<?php endforeach; ?>
