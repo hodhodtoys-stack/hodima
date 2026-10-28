@@ -2040,6 +2040,20 @@ hodima_ad( 'حکم: نرخ کلیک ۰٫۵٪←۱٫۵٪ اثر داشت؛ ۰٫۵
 	$vj( 'low_ctr', $vm( 5, 1000, 4.0 ), $vm( 9, 80, 4.0 ) ),
 	$vj( 'low_ctr', $vm( 30, 1000, 15.0 ), $vm( 16, 1000, 15.0 ) ),
 ], [ 'effective', 'no_effect', 'low_data', 'effective' ] );
+// حکم نرخ کلیک کلمه‌ای (SEO 3.0.8): شاخص کلیک واقعی ÷ مورد انتظار، نه خود نرخ کلیک
+$vt_table = static fn(): array => [ 2 => 25.0, 3 => 14.0, 5 => 9.0, 7 => 5.5, 10 => 3.5, 20 => 1.5 ];
+add_filter( 'hodima_seo_advisor_ctr_table', $vt_table );
+$vt_good = hodima_seo_advisor_term_key( 'کلمه خوب' );
+$vt_bad  = hodima_seo_advisor_term_key( 'کلمه بد' );
+$vt_page = static fn( int $clicks, int $impressions ): array => [ 'clicks' => $clicks, 'impressions' => $impressions, 'ctr' => round( $clicks / $impressions * 100, 2 ), 'position' => 5.3 ];
+$vt_before = [ $vt_good => $vm( 250, 1000, 2.0 ), $vt_bad => $vm( 50, 5000, 6.0 ) ]; // مورد انتظار ۵۲۵، واقعی ۳۰۰ ← شاخص ۰٫۵۷
+hodima_ad( 'حکم نرخ کلیک کلمه‌ای: کلمه بد به مورد انتظار رسید ← اثر داشت؛ ۱۰٪ بهتر ← نداشت؛ ۳۰٪ بهتر ← داشت؛ جابه‌جایی سهم کلمه خوب ← نداشت (حساب کل صفحه اثر داشت می‌گفت)', [
+	$vj( 'low_ctr', $vt_page( 300, 6000 ), $vt_page( 550, 6000 ), $vt_before, [ $vt_good => $vm( 250, 1000, 2.0 ), $vt_bad => $vm( 300, 5000, 6.0 ) ] ),
+	$vj( 'low_ctr', $vt_page( 300, 6000 ), $vt_page( 330, 6000 ), $vt_before, [ $vt_good => $vm( 250, 1000, 2.0 ), $vt_bad => $vm( 80, 5000, 6.0 ) ] ),
+	$vj( 'low_ctr', $vt_page( 300, 6000 ), $vt_page( 390, 6000 ), $vt_before, [ $vt_good => $vm( 250, 1000, 2.0 ), $vt_bad => $vm( 140, 5000, 6.0 ) ] ),
+	$vj( 'low_ctr', $vt_page( 300, 6000 ), $vt_page( 550, 9000 ), $vt_before, [ $vt_good => $vm( 500, 2000, 2.0 ), $vt_bad => $vm( 50, 7000, 6.0 ) ] ),
+], [ 'effective', 'no_effect', 'effective', 'no_effect' ] );
+remove_filter( 'hodima_seo_advisor_ctr_table', $vt_table );
 hodima_ad( 'حکم کلمه: ۱۲←۹٫۵ اثر داشت؛ ۱۲←۱۱٫۵ نداشت؛ رسیدن به ۷ (نزدیک صفحه اول) داشت؛ بدون کلمه بعد از تغییر داده کم', [
 	$vj( 'near_first', $vm( 1, 900, 9 ), $vm( 1, 900, 9 ), [ $tk => $vm( 1, 300, 12.0 ) ], [ $tk => $vm( 2, 300, 9.5 ) ], 'کلیپس طلایی' ),
 	$vj( 'near_first', $vm( 1, 900, 9 ), $vm( 1, 900, 9 ), [ $tk => $vm( 1, 300, 12.0 ) ], [ $tk => $vm( 2, 300, 11.5 ) ], 'کلیپس طلایی' ),

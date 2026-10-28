@@ -162,6 +162,25 @@ function hodima_seo_advisor_verify_fetch( string $property, string $path, string
 }
 
 /**
+ * کمبود کلیک کلمه‌به‌کلمه (همان حساب قاعده `low_ctr`، hodima_seo_advisor_ctr_gap) از داده کلمه‌های یک بازه.
+ * null = کلمه‌ها برای حکم کافی نیستند (کمتر از نیمی از نمایش صفحه، یا بیشتر برندی/بیرون ۲۰ نتیجه اول) ← حساب کل صفحه.
+ *
+ * @param array{page: array<string, int|float>, terms: array<string, array<string, int|float>>} $data
+ * @return array{gain: int, impressions: int, ctr: float, expected_ctr: float}|null
+ */
+function hodima_seo_advisor_verify_ctr_gap( array $data ): ?array {
+
+	$queries = [];
+	foreach ( $data['terms'] as $term => $m ) {
+		$queries[] = [ 'term' => (string) $term, 'clicks' => (int) $m['clicks'], 'impressions' => (int) $m['impressions'], 'position' => (float) $m['position'] ];
+	}
+
+	$gap = hodima_seo_advisor_ctr_gap( $queries, (int) $data['page']['impressions'], hodima_seo_advisor_config()['near_first_max'] );
+
+	return null === $gap || null === $gap['worst'] ? null : $gap;
+}
+
+/**
  * حکم یک کار از داده قبل/بعد.
  *
  * @param array{rule: string, term: string} $task
@@ -176,6 +195,21 @@ function hodima_seo_advisor_verify_judge( array $task, array $before, array $aft
 
 	switch ( $task['rule'] ) {
 		case 'low_ctr':
+			// قاعده low_ctr کلمه‌به‌کلمه ساخته می‌شود؛ سنجش هم همان حساب را قبل و بعد می‌کند (نرخ کلیک غیربرندی ۲۰ نتیجه اول)
+			$gap_before = hodima_seo_advisor_verify_ctr_gap( $before );
+			$gap_after  = hodima_seo_advisor_verify_ctr_gap( $after );
+			if ( null !== $gap_before && null !== $gap_after ) {
+				if ( $gap_after['impressions'] < HODIMA_SEO_ADVISOR_VERIFY_MIN_IMPRESSIONS ) {
+					return [ 'verdict' => 'low_data', 'metric' => 'ctr', 'before' => round( $gap_before['ctr'], 2 ), 'after' => round( $gap_after['ctr'], 2 ) ];
+				}
+				// «شاخص» = کلیک واقعی ÷ کلیک مورد انتظار رتبه هر کلمه؛ برخلاف خود نرخ کلیک با جابه‌جایی سهم کلمه‌های رتبه ۱ و رتبه ۱۵ عوض نمی‌شود.
+				// ۱۵٪ بهتر از پیش از تغییر، یا رسیدن به نرخ معمول (شاخص ۱)
+				$index_before = $gap_before['expected_ctr'] > 0 ? $gap_before['ctr'] / $gap_before['expected_ctr'] : 0.0;
+				$index_after  = $gap_after['expected_ctr'] > 0 ? $gap_after['ctr'] / $gap_after['expected_ctr'] : 0.0;
+				$ok           = $gap_after['gain'] <= 0 || ( $index_after > $index_before && $index_after >= $index_before * 1.15 );
+				return [ 'verdict' => $ok ? 'effective' : 'no_effect', 'metric' => 'ctr', 'before' => round( $gap_before['ctr'], 2 ), 'after' => round( $gap_after['ctr'], 2 ) ];
+			}
+
 			if ( $a['impressions'] < HODIMA_SEO_ADVISOR_VERIFY_MIN_IMPRESSIONS ) {
 				return [ 'verdict' => 'low_data', 'metric' => 'ctr', 'before' => (float) $b['ctr'], 'after' => (float) $a['ctr'] ];
 			}
@@ -234,7 +268,7 @@ function hodima_seo_advisor_verify_batch( string $property, float $deadline ): i
 		$tasks = hodima_seo_advisor_tasks();
 		$first = $tasks[ $keys[0] ];
 		$dates = hodima_seo_advisor_verify_dates( $first );
-		$terms = (bool) array_filter( $keys, static fn( string $k ): bool => in_array( $tasks[ $k ]['rule'], [ 'near_first', 'weak_query' ], true ) );
+		$terms = (bool) array_filter( $keys, static fn( string $k ): bool => in_array( $tasks[ $k ]['rule'], [ 'near_first', 'weak_query', 'low_ctr' ], true ) );
 
 		$before = hodima_seo_advisor_verify_fetch( $property, $first['path'], $dates['before'][0], $dates['before'][1], $terms );
 		$after  = is_wp_error( $before ) ? $before : hodima_seo_advisor_verify_fetch( $property, $first['path'], $dates['after'][0], $dates['after'][1], $terms );
