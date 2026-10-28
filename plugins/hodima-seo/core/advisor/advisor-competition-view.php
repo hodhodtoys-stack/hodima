@@ -89,13 +89,16 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 	$paged   = max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$settled = ! empty( $_GET['resolved'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط نمای «حل‌شده‌ها»
 	$base    = $settled ? [ 'resolved' => true ] : [];
-	$all     = hodima_seo_advisor_competition( $base );
-	$result  = hodima_seo_advisor_competition( $base + [ 'search' => $filters['q'], 'type' => $settled ? '' : $filters['type'], 'limit' => HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE, 'offset' => ( $paged - 1 ) * HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE ] );
+	$built   = hodima_seo_advisor_competition_groups( $settled ); // یک بار برای شمارها و صفحه فعلی
+	$all     = hodima_seo_advisor_competition_select( $built, $base );
+	$result  = hodima_seo_advisor_competition_select( $built, $base + [ 'search' => $filters['q'], 'type' => $settled ? '' : $filters['type'], 'limit' => HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE, 'offset' => ( $paged - 1 ) * HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE ] );
 	$n       = static fn( int|float $value ): string => number_format_i18n( $value );
 
 	$counts = array_fill_keys( array_keys( hodima_seo_advisor_competition_types() ), 0 );
 	foreach ( $all['rows'] as $group ) {
-		++$counts[ $group['advice']['type'] ];
+		if ( isset( $counts[ $group['advice']['type'] ] ) ) { // نمای حل‌شده‌ها نوع «settled» دارد (قبلا هشدار کلید ناموجود PHP)
+			++$counts[ $group['advice']['type'] ];
+		}
 	}
 
 	$empty = 0 === $all['total'];

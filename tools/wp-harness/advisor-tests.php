@@ -647,7 +647,8 @@ if ( hodima_router_active() ) {
 	$c3     = hodima_seo_advisor_link_sources_cached( 'کلیپس پلومریا', $target );
 	hodima_ad( 'کش لینک‌دهنده: همان نتیجه بدون کش؛ با نوشته تازه خودکار نو می‌شود', [ $c1 === $f0, $c1 === $c2, in_array( 'منبع تازه کش', array_column( $c3['items'], 'title' ), true ) ], [ true, true, true ] );
 
-	$analysis = hodima_seo_advisor_analyze( '/steps-target/' );
+	$analysis = hodima_seo_advisor_analyze( '/steps-target/', true ); // گام‌ها فقط با درخواست صریح (کادر ویرایش)
+	hodima_ad( 'تحلیل بدون درخواست گام‌ها: هیچ پیشنهادی steps ندارد (جستجوی پرهزینه متن نوشته‌ها اجرا نمی‌شود)', array_filter( array_column( hodima_seo_advisor_analyze( '/steps-target/' )['suggestions'], 'steps' ) ), [] );
 	$by_rule  = [];
 	foreach ( $analysis['suggestions'] as $item ) {
 		$by_rule[ $item['rule'] ][] = $item;
@@ -666,7 +667,7 @@ if ( hodima_router_active() ) {
 	hodima_ad( 'رقابت در گام‌ها: جدول، ردیف همین صفحه پررنگ، لینک ویرایش رقیب', [ str_contains( $steps_html, 'hodima-advisor-steps__table' ), str_contains( $steps_html, 'class="is-me"' ), str_contains( $steps_html, 'hodima-advisor-steps__main' ) ], [ true, true, true ] );
 	wp_set_current_user( 0 );
 	$saved_advice = hodima_seo_advisor_save_advice( '/steps-target/' );
-	hodima_ad( 'گام‌ها همراه پیشنهاد در جدول ذخیره و برگردانده می‌شود', [ $saved_advice, hodima_seo_advisor_page( '/steps-target/' )['advice'][0]['steps'] !== [] ], [ true, true ] );
+	hodima_ad( 'پیشنهاد ذخیره می‌شود ولی گام‌ها نه (فقط کادر ویرایش می‌سازد؛ تحلیل همه آدرس‌ها سبک می‌ماند)', [ $saved_advice, array_filter( array_column( hodima_seo_advisor_page( '/steps-target/' )['advice'], 'steps' ) ) ], [ true, [] ] );
 }
 
 foreach ( [ ...$ids, $t_id ] as $pid ) {
@@ -846,6 +847,11 @@ update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [], false );
 $mode = 'ok';
 hodima_ad( 'دریافت با کلید مخصوص موفق است', hodima_seo_advisor_refresh(), true );
 hodima_ad( 'دریافت کامل در سایت کوچک: نوبت‌ها همان درخواست تمام می‌شوند و رویدادی نمی‌ماند', [ hodima_seo_advisor_pipeline_pending(), false !== wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ], [ false, false ] );
+$mb_ok = hodima_seo_advisor_refresh( true, 0.0 ); // مثل دکمه «به‌روزرسانی همه» وقتی بودجه همان‌جا تمام شود
+hodima_ad( 'دکمه دستی: داده ذخیره و نوبت‌ها در پس‌زمینه ادامه دارند (رویداد ادامه زمان‌بندی شد)', [ $mb_ok, hodima_seo_advisor_pipeline_pending(), false !== wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ), get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, false ) ], [ true, true, true, false ] );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+do_action( HODIMA_SEO_ADVISOR_STAGE_CRON );
+hodima_ad( 'کرون ادامه همه نوبت‌ها را تمام می‌کند', [ hodima_seo_advisor_pipeline_pending(), wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ], [ false, false ] );
 hodima_ad( 'توکن با ایمیل کلید مخصوص ساخته شد (نه کلید مشترک)', [ is_string( get_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor-only@test.iam.gserviceaccount.com' ), 0, 12 ) ) ), get_transient( 'hodima_discover_sc_token_' . substr( md5( 'advisor@test.iam.gserviceaccount.com' ), 0, 12 ) ) ], [ true, false ] );
 hodima_ad( 'فهرست property مشاور جدا نوشته شد و فهرست مشترک دیسکاور دست‌نخورده', [ hodima_seo_sc_sites( HODIMA_SEO_SC_ADVISOR ) !== [], hodima_seo_sc_sites() ], [ true, $shared_sites_before ] );
 
@@ -2186,6 +2192,98 @@ remove_all_filters( 'wp_die_ajax_handler' );
 $_POST    = [];
 $_REQUEST = [];
 hodima_lk_fixture_clean( $lk_ids );
+
+echo "=== سبک‌سازی (SEO 2.9.9): ساخت دوباره در پس‌زمینه، خزش تک‌ردیفی، رقابت یک‌باره، صفحه‌بندی کارها\n";
+$lt_tasks  = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false );
+$lt_status = get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, false );
+delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
+delete_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+hodima_seo_advisor_store( [ '/lt/a/' => [ 'clicks' => 10, 'impressions' => 8000, 'position' => 3.0 ], '/lt/b/' => [ 'clicks' => 2, 'impressions' => 500, 'position' => 4.0 ] ], [], [] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => 0 ], false );
+hodima_seo_advisor_request_reanalyze();
+hodima_ad( 'بدون داده دریافتی: درخواست ساخت دوباره ثبت نمی‌شود', [ hodima_seo_advisor_pipeline_pending(), wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ], [ false, false ] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time(), 'property' => 'sc-domain:' . $host, 'days' => 90 ], false );
+hodima_seo_advisor_request_reanalyze();
+hodima_ad( 'درخواست ساخت دوباره: «در پس‌زمینه» و رویداد ادامه همین حالا', [ hodima_seo_advisor_pipeline_pending(), false !== wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ], [ true, true ] );
+$lt_q = hodima_seo_advisor_pipeline_take_reanalyze( [ 'stages' => [ 'ctr', 'breakdown' ], 'property' => 'p', 'range' => [], 'days' => 90 ] );
+hodima_ad( 'دریافتی در میانه (پیش از analyze): analyze بعد از ctr می‌آید', $lt_q['stages'], [ 'ctr', 'analyze', 'breakdown' ] );
+update_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION, time(), false );
+update_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, [ 'queue' => [ '/old/' ] ], false );
+$lt_q = hodima_seo_advisor_pipeline_take_reanalyze( [ 'stages' => [ 'health', 'history' ], 'property' => 'p', 'range' => [], 'days' => 90 ] );
+hodima_ad( 'نوبت analyze دریافت گذشته (خزش تازه وسط کار): analyze اول صف، صف تحلیل قدیمی دور ریخته و درخواست برداشته شد', [ $lt_q['stages'], get_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, 'none' ), get_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION, 'none' ) ], [ [ 'analyze', 'health', 'history' ], 'none', 'none' ] );
+delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
+hodima_seo_advisor_request_reanalyze();
+hodima_seo_advisor_pipeline_run( INF );
+hodima_ad( 'اجرای نوبت‌ها: پیشنهادها ساخته شد، صف خالی و رویداد بی‌کار برداشته شد', [ hodima_seo_advisor_page( '/lt/a/' )['advice'][0]['rule'] ?? '', hodima_seo_advisor_pipeline_pending(), wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON ) ], [ 'low_ctr', false, false ] );
+hodima_ad( 'پیشنهاد ذخیره‌شده گام ندارد', array_key_exists( 'steps', hodima_seo_advisor_page( '/lt/a/' )['advice'][0] ?? [] ), false );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
+hodima_seo_advisor_request_reanalyze();
+$lt_bar = $cap( static fn() => hodima_seo_advisor_render_toolbar() );
+hodima_ad( 'نوار بالا: نشان «ساخت پیشنهادها در پس‌زمینه» وقتی کار مانده', str_contains( $lt_bar, 'ساخت پیشنهادها در پس‌زمینه ادامه دارد' ), true );
+hodima_seo_advisor_clear_data();
+hodima_ad( 'پاک کردن داده درخواست ساخت دوباره را هم برمی‌دارد', [ get_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION, 'none' ), hodima_seo_advisor_pipeline_pending() ], [ 'none', false ] );
+
+// خزش: کادر ویرایش فقط ردیف همان صفحه را می‌خواند؛ نتیجه با نقشه کامل یکی است
+hodima_seo_advisor_crawl_store(
+	[
+		'/lt/a/'  => [ 'path' => '/lt/a/', 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'عنوان الف', 'title_len' => 40, 'meta_len' => 120, 'h1' => 'الف', 'h2' => '', 'resp_ms' => 100, 'inlinks' => 4, 'text_links' => 2, 'depth' => 2, 'score' => 1.5, 'redirect' => '' ],
+		'/lt/r/'  => [ 'path' => '/lt/r/', 'status' => 301, 'indexable' => 0, 'reason' => 'Redirected', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 50, 'inlinks' => 1, 'text_links' => 0, 'depth' => 3, 'score' => 0.0, 'redirect' => '/lt/a/' ],
+		'/lt/n/'  => [ 'path' => '/lt/n/', 'status' => 200, 'indexable' => 0, 'reason' => 'noindex', 'title' => 'ن', 'title_len' => 1, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 50, 'inlinks' => 1, 'text_links' => 0, 'depth' => 3, 'score' => 0.0, 'redirect' => '' ],
+		'/lt/g/'  => [ 'path' => '/lt/g/', 'status' => 404, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 50, 'inlinks' => 1, 'text_links' => 0, 'depth' => 3, 'score' => 0.0, 'redirect' => '' ],
+	],
+	[]
+);
+hodima_seo_advisor_crawl_map( true );
+$lt_one = [ hodima_seo_advisor_crawl_row( '/lt/a/' ), hodima_seo_advisor_crawl_row( '/lt/none/' ) ];
+$lt_map = hodima_seo_advisor_crawl_map();
+hodima_ad( 'ردیف تک خزش همان ردیف نقشه کامل است؛ آدرس بیرون از خزش null', [ $lt_one[0] === ( $lt_map['/lt/a/'] ?? 'x' ), $lt_one[0]['title'] ?? '', $lt_one[1] ], [ true, 'عنوان الف', null ] );
+hodima_seo_advisor_crawl_map( true );
+$lt_res = hodima_seo_advisor_resolved_paths();
+hodima_ad( 'حل‌شده‌ها از پرسش ردیف‌های ناسالم: ریدایرکت، ۴۰۴، noindex؛ صفحه سالم نه', [ $lt_res['/lt/r/'] ?? '', $lt_res['/lt/g/'] ?? '', $lt_res['/lt/n/'] ?? '', isset( $lt_res['/lt/a/'] ) ], [ 'redirect', 'gone', 'noindex', false ] );
+hodima_seo_advisor_clear_data();
+
+// رقابت: ساخت یک‌باره گروه‌ها و برداشتن نما همان نتیجه تابع قدیمی
+hodima_seo_advisor_store(
+	[ '/lt/c1/' => [ 'clicks' => 50, 'impressions' => 3000, 'position' => 4.0 ], '/lt/c2/' => [ 'clicks' => 5, 'impressions' => 900, 'position' => 9.0 ], '/lt/c3/' => [ 'clicks' => 9, 'impressions' => 900, 'position' => 8.0 ] ],
+	[],
+	[
+		'/lt/c1/' => [ 'گیره مو مخمل' => [ 'clicks' => 40, 'impressions' => 2500, 'position' => 4.0 ], 'تل سر ساتن' => [ 'clicks' => 3, 'impressions' => 400, 'position' => 9.0 ] ],
+		'/lt/c2/' => [ 'گیره مو مخمل' => [ 'clicks' => 2, 'impressions' => 300, 'position' => 12.0 ] ],
+		'/lt/c3/' => [ 'تل سر ساتن' => [ 'clicks' => 4, 'impressions' => 420, 'position' => 8.0 ] ],
+	]
+);
+$lt_built = hodima_seo_advisor_competition_groups();
+$lt_page  = hodima_seo_advisor_competition_select( $lt_built, [ 'limit' => 1, 'offset' => 1 ] );
+$lt_old   = hodima_seo_advisor_competition( [ 'limit' => 1, 'offset' => 1 ] );
+hodima_ad( 'رقابت: گروه‌ها یک بار ساخته و هر نما از آن برداشته می‌شود (همان نتیجه، ۲ گروه، صفحه دوم یک گروه)', [ $lt_page === $lt_old, $lt_page['total'], count( $lt_page['rows'] ), count( $lt_built['groups'] ) ], [ true, 2, 1, 2 ] );
+hodima_ad( 'رقابت: فیلتر نوع دستور بعد از ساخت گروه‌ها', [ hodima_seo_advisor_competition_select( $lt_built, [ 'type' => 'strengthen' ] )['total'] + hodima_seo_advisor_competition_select( $lt_built, [ 'type' => 'choose' ] )['total'] + hodima_seo_advisor_competition_select( $lt_built, [ 'type' => 'category' ] )['total'] ], [ 2 ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition', 'resolved' => '1' ];
+$lt_warn = [];
+set_error_handler( static function ( int $no, string $msg ) use ( &$lt_warn ): bool { $lt_warn[] = $msg; return true; }, E_WARNING );
+$cap( static fn() => hodima_seo_advisor_render_competition( hodima_seo_advisor_status() ) );
+restore_error_handler();
+hodima_ad( 'نمای «رقابت‌های حل‌شده» بدون هشدار PHP (کلید settled)', $lt_warn, [] );
+
+// صفحه‌بندی کارها
+$lt_list = [];
+for ( $i = 0; $i < 30; $i++ ) {
+	$lt_list[ hodima_seo_advisor_task_key( "/lt/t{$i}/", 'low_ctr', '' ) ] = [ 'path' => "/lt/t{$i}/", 'rule' => 'low_ctr', 'term' => '', 'title' => "کار {$i}", 'status' => 'doing', 'at' => time() - $i * 60, 'fixed' => 0, 'back' => 0, 'check' => [] ];
+}
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $lt_list, false );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
+$lt_p1 = $cap( static fn() => hodima_seo_advisor_render_tasks() );
+$_GET['paged'] = '2';
+$lt_p2 = $cap( static fn() => hodima_seo_advisor_render_tasks() );
+$_GET = [];
+hodima_ad( 'تب «در دست انجام»: ۲۵ کار در صفحه اول با صفحه‌بندی، ۵ کار در صفحه دوم، تازه‌ترین اول', [ substr_count( $lt_p1, 'class="hodima-advisor__task"' ), str_contains( $lt_p1, 'hds-pager' ), substr_count( $lt_p2, 'class="hodima-advisor__task"' ), str_contains( $lt_p1, 'کار 0' ), str_contains( $lt_p2, 'کار 29' ) ], [ 25, true, 5, true, true ] );
+hodima_ad( 'شمار کارهای باز بالای تب همه ۳۰ کار است (نه فقط صفحه فعلی)', str_contains( $lt_p2, '>30<' ) || str_contains( $lt_p2, '>۳۰<' ), true );
+
+hodima_seo_advisor_clear_data();
+false === $lt_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $lt_tasks, false );
+false === $lt_status ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $lt_status, false );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

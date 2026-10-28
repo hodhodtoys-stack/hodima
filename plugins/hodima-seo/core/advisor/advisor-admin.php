@@ -191,24 +191,24 @@ function hodima_seo_advisor_handle_refresh(): void {
 	}
 
 	if ( function_exists( 'set_time_limit' ) ) {
-		set_time_limit( 180 ); // سایت بزرگ: سه درخواست ۲۵ هزار ردیفی و تحلیل همه آدرس‌ها
+		set_time_limit( 180 ); // سایت بزرگ: سه درخواست ۲۵ هزار ردیفی
 	}
 
-	$result = hodima_seo_advisor_refresh( true ); // دستی: دستگاه/کشور و روند بدون فاصله ۱۲ ساعته
+	// دستی: دستگاه/کشور و روند بدون فاصله ۱۲ ساعته؛ بعد از ذخیره داده فقط چند ثانیه نوبت‌ها، بقیه در پس‌زمینه (صفحه منتظر نماند)
+	$result = hodima_seo_advisor_refresh( true, (float) HODIMA_SEO_ADVISOR_MANUAL_BUDGET );
 
 	if ( is_wp_error( $result ) ) {
 		hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $result->get_error_message() ), 'error' );
 	} else {
-		$extra = hodima_seo_advisor_refresh_extras();
-		$status = hodima_seo_advisor_status();
+		$extra   = hodima_seo_advisor_refresh_extras();
+		$status  = hodima_seo_advisor_status();
+		$pending = hodima_seo_advisor_pipeline_pending();
 		hodima_admin_flash(
-			sprintf(
-				'<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد؛ %2$s آدرس بررسی و برای %3$s آدرس پیشنهاد ساخته شد.',
-				esc_html( number_format_i18n( $status['days'] ) ),
-				esc_html( number_format_i18n( $status['pages'] ) ),
-				esc_html( number_format_i18n( $status['advised'] ) )
-			) . ( hodima_seo_advisor_pipeline_pending() ? ' ' . esc_html( 'ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.' ) : '' )
-			. ( $extra ? ' ' . esc_html( implode( ' ', $extra ) ) : '' ),
+			// تا پیشنهادها در پس‌زمینه ساخته نشده‌اند، شمار «پیشنهاددار» هنوز عدد دریافت قبلی است و گفته نمی‌شود
+			( $pending
+				? sprintf( '<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد (%2$s آدرس). ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.', esc_html( number_format_i18n( $status['days'] ) ), esc_html( number_format_i18n( $status['pages'] ) ) )
+				: sprintf( '<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد؛ %2$s آدرس بررسی و برای %3$s آدرس پیشنهاد ساخته شد.', esc_html( number_format_i18n( $status['days'] ) ), esc_html( number_format_i18n( $status['pages'] ) ), esc_html( number_format_i18n( $status['advised'] ) ) )
+			) . ( $extra ? ' ' . esc_html( implode( ' ', $extra ) ) : '' ),
 			'success'
 		);
 	}
@@ -272,16 +272,21 @@ function hodima_seo_advisor_handle_settings(): void {
 	$settings['min_impressions'] = $value;
 	update_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, $settings, false );
 
-	// پیشنهادها از داده ذخیره‌شده ساخته می‌شوند؛ بدون درخواست تازه به گوگل همین حالا با آستانه جدید دوباره ساخته شوند
+	// پیشنهادها از داده ذخیره‌شده ساخته می‌شوند؛ بدون درخواست تازه به گوگل با آستانه جدید دوباره ساخته شوند: چند ثانیه همین‌جا
+	// و بقیه در پس‌زمینه (تا SEO 2.9.8 همه آدرس‌ها بدون سقف زمان در همین درخواست؛ سایت بزرگ به سقف زمان PHP می‌خورد)
 	$message = 'تنظیم ذخیره شد.';
 	if ( hodima_seo_advisor_totals()['pages'] > 0 ) {
-		$count = hodima_seo_advisor_analyze_all();
-		if ( is_wp_error( $count ) ) {
-			hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $count->get_error_message() ), 'error' );
-			wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) );
-			exit;
+		hodima_seo_advisor_request_reanalyze();
+		if ( hodima_seo_advisor_lock() ) {
+			try {
+				hodima_seo_advisor_pipeline_run( (float) HODIMA_SEO_ADVISOR_MANUAL_BUDGET );
+			} finally {
+				hodima_seo_advisor_unlock();
+			}
 		}
-		$message = sprintf( 'تنظیم ذخیره شد؛ پیشنهادها دوباره ساخته شد (%s آدرس پیشنهاد دارد).', esc_html( number_format_i18n( $count ) ) );
+		$message = hodima_seo_advisor_pipeline_pending()
+			? 'تنظیم ذخیره شد؛ پیشنهادها در پس‌زمینه با آستانه تازه دوباره ساخته می‌شوند. چند دقیقه بعد صفحه را تازه کنید.'
+			: sprintf( 'تنظیم ذخیره شد؛ پیشنهادها دوباره ساخته شد (%s آدرس پیشنهاد دارد).', esc_html( number_format_i18n( hodima_seo_advisor_advised_count() ) ) );
 	}
 
 	hodima_admin_flash( '<strong>دستار سئو:</strong> ' . $message, 'success' );
@@ -639,6 +644,9 @@ function hodima_seo_advisor_render_toolbar( string $tab = '' ): void {
 				<span class="hds-pill hds-pill--info">کلید ثبت شده؛ داده هنوز گرفته نشده</span>
 			<?php else : ?>
 				<span class="hds-pill hds-pill--warn">به Search Console وصل نیست</span>
+			<?php endif; ?>
+			<?php if ( hodima_seo_advisor_pipeline_pending() ) : ?>
+				<span class="hds-pill hds-pill--info" role="status">ساخت پیشنهادها در پس‌زمینه ادامه دارد</span>
 			<?php endif; ?>
 			<button type="submit" class="hds-btn hodima-advisor__refresh"<?php disabled( ! $has_key ); ?>>
 				<span class="dashicons dashicons-update" aria-hidden="true"></span> به‌روزرسانی همه

@@ -847,6 +847,7 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 		delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+		delete_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_SITE_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION );

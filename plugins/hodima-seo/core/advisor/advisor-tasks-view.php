@@ -12,6 +12,9 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+/** کار در هر صفحه تب‌های «در دست انجام» و «انجام‌شده». */
+const HODIMA_SEO_ADVISOR_TASKS_PER_PAGE = 25;
+
 /** تاریخ کوتاه شمسی (Core) یا میلادی. */
 function hodima_seo_advisor_task_date( int $time ): string {
 	return function_exists( 'hodima_jalali_format' ) ? hodima_jalali_format( 'j F Y', $time + (int) ( (float) get_option( 'gmt_offset', 0 ) * HOUR_IN_SECONDS ) ) : (string) wp_date( 'Y/m/d', $time );
@@ -222,11 +225,18 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 
 	uasort( $rows, static fn( array $a, array $b ): int => hodima_seo_advisor_task_view( $b )['time'] <=> hodima_seo_advisor_task_view( $a )['time'] );
 
+	// صفحه‌بندی (SEO 2.9.9): تا ۵۰۰ کار هر کدام با چند پرسش (صفحه، تاریخچه هفتگی، ایندکس) یک‌جا ساخته می‌شد
+	$total = count( $rows );
+	$pages = max( 1, (int) ceil( $total / HODIMA_SEO_ADVISOR_TASKS_PER_PAGE ) );
+	$paged = min( $pages, max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط صفحه‌بندی نمایش
+	$rows  = array_slice( $rows, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_TASKS_PER_PAGE, HODIMA_SEO_ADVISOR_TASKS_PER_PAGE, true );
+
 	echo '<ul class="hodima-advisor__tasks">';
 
 	foreach ( $rows as $task ) {
-		$page = hodima_seo_advisor_page( $task['path'] );
-		$link = null !== $page ? hodima_seo_advisor_competition_page_link( $page ) : [ home_url( $task['path'] ), 'دیدن در سایت', 'external' ];
+		$page  = hodima_seo_advisor_page( $task['path'] );
+		$link  = null !== $page ? hodima_seo_advisor_competition_page_link( $page ) : [ home_url( $task['path'] ), 'دیدن در سایت', 'external' ];
+		$title = null !== $page ? hodima_seo_advisor_row_title( $page ) : ''; // همان ردیف؛ پرسش دوم برای عنوان نه
 		$view = hodima_seo_advisor_task_view( $task );
 		$hint = $done ? '' : match ( $view['state'] ) {
 			'unseen'    => 'کلمه هنوز در عنوان، تیترها یا متن صفحه پیدا نمی‌شود؛ صفحه را بررسی و دوباره ذخیره کنید.',
@@ -239,7 +249,7 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 			<div class="hodima-advisor__task-main">
 				<strong><?php echo esc_html( '' !== $task['title'] ? $task['title'] : hodima_seo_advisor_rule_label( $task['rule'] ) ); ?></strong>
 				<span class="hodima-advisor__task-page">
-					<?php echo esc_html( hodima_seo_advisor_breakdown_page_title( $task['path'] ) ); ?>
+					<?php echo esc_html( '' !== $title ? $title : $task['path'] ); ?>
 					<?php echo hodima_seo_advisor_url_link( (string) $task['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?>
 					<?php echo hodima_seo_advisor_action( $link[0], $link[1], $link[2], 'external' === $link[2] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
 				</span>
@@ -268,5 +278,12 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 	}
 
 	echo '</ul>';
+
+	if ( $pages > 1 ) {
+		echo '<div class="hodima-advisor__foot"><span>' . esc_html( sprintf( 'نمایش %1$s از %2$s کار، تازه‌ترین اول', $n( count( $rows ) ), $n( $total ) ) ) . '</span>';
+		hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => $done ? 'done' : 'tasks', 'tstatus' => $filter, 'paged' => $i > 1 ? $i : '' ] ) );
+		echo '</div>';
+	}
+
 	hodima_seo_ui_card_close();
 }

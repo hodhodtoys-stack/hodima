@@ -79,6 +79,16 @@ function hodima_seo_advisor_competition_advice( string $term, array $pages, floa
  * @return array{rows: list<array<string, mixed>>, total: int, pages: int, potential: int, resolved: array{groups: int, potential: int}}
  */
 function hodima_seo_advisor_competition( array $args = [] ): array {
+	return hodima_seo_advisor_competition_select( hodima_seo_advisor_competition_groups( ! empty( $args['resolved'] ) ), $args );
+}
+
+/**
+ * همه گروه‌های رقابت (بدون جستجو، فیلتر نوع و صفحه‌بندی) و شمار حل‌شده‌ها. تب رقابت یک بار این را می‌سازد و هم
+ * شمارها و هم صفحه فعلی را از آن برمی‌دارد (تا SEO 2.9.8 هر بار باز شدن تب دو بار کل گروه‌ها ساخته می‌شد).
+ *
+ * @return array{groups: list<array<string, mixed>>, resolved: array{groups: int, potential: int}}
+ */
+function hodima_seo_advisor_competition_groups( bool $want_settled = false ): array {
 
 	global $wpdb;
 
@@ -100,7 +110,7 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 	$keys = array_values( array_filter( array_map( 'strval', $keys ), static fn( string $k ): bool => ! hodima_seo_advisor_is_brand( $k ) ) );
 
 	if ( ! $keys ) {
-		return [ 'rows' => [], 'total' => 0, 'pages' => 0, 'potential' => 0, 'resolved' => [ 'groups' => 0, 'potential' => 0 ] ];
+		return [ 'groups' => [], 'resolved' => [ 'groups' => 0, 'potential' => 0 ] ];
 	}
 
 	$pages_table = hodima_seo_advisor_table( 'pages' );
@@ -139,7 +149,6 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 	}
 
 	$resolved     = hodima_seo_advisor_resolved_paths();
-	$want_settled = ! empty( $args['resolved'] );
 	$settled_n    = 0;
 	$settled_gain = 0;
 	$groups       = [];
@@ -192,10 +201,6 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 				: 'یکی از این صفحه‌ها در سایت ریدایرکت می‌شود، noindex است یا ۴۰۴ می‌دهد؛ پس دیگر با صفحه دیگر رقابت نمی‌کند و گوگل کم‌کم آن را کنار می‌گذارد. فقط لینک‌های داخلی را مستقیم به صفحه مقصد بدهید.' ]
 			: hodima_seo_advisor_competition_advice( $term, $pages, $top_share );
 
-		if ( '' !== (string) ( $args['type'] ?? '' ) && $advice['type'] !== $args['type'] ) {
-			continue;
-		}
-
 		$groups[] = [
 			'term'        => $term,
 			'impressions' => $impressions,
@@ -206,6 +211,26 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 			'potential'   => $potential,
 			'advice'      => $advice,
 		];
+	}
+
+	return [ 'groups' => $groups, 'resolved' => [ 'groups' => $settled_n, 'potential' => $settled_gain ] ];
+}
+
+/**
+ * از گروه‌های ساخته‌شده (hodima_seo_advisor_competition_groups) فهرست یک نما: فیلتر نوع دستور و جستجو، مرتب‌سازی،
+ * شمارها و صفحه‌بندی؛ شواهد لینک داخلی فقط برای گروه‌های همین صفحه.
+ *
+ * @param array{groups: list<array<string, mixed>>, resolved: array{groups: int, potential: int}} $built
+ * @param array{limit?: int, offset?: int, search?: string, type?: string, resolved?: bool} $args
+ * @return array{rows: list<array<string, mixed>>, total: int, pages: int, potential: int, resolved: array{groups: int, potential: int}}
+ */
+function hodima_seo_advisor_competition_select( array $built, array $args = [] ): array {
+
+	$want_settled = ! empty( $args['resolved'] );
+	$groups       = $built['groups'];
+
+	if ( '' !== (string) ( $args['type'] ?? '' ) ) {
+		$groups = array_values( array_filter( $groups, static fn( array $g ): bool => $g['advice']['type'] === $args['type'] ) );
 	}
 
 	$search = trim( (string) ( $args['search'] ?? '' ) );
@@ -240,6 +265,7 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 
 	// شواهد لینک داخلی فقط برای گروه‌های نمایش‌داده‌شده (هزینه پرسش پایگاه داده)؛ بدون limit (CSV) نیست
 	if ( isset( $args['limit'] ) && ! $want_settled ) {
+		hodima_seo_advisor_crawl_map(); // ده‌ها صفحه: کل جدول خزش با یک پرسش، نه یک پرسش برای هر صفحه
 		foreach ( $rows as $i => $group ) {
 			foreach ( $group['pages'] as $j => $page ) {
 				$info = hodima_seo_advisor_crawl_links_info( $page['path'] );
@@ -254,6 +280,6 @@ function hodima_seo_advisor_competition( array $args = [] ): array {
 		'total'     => count( $groups ),
 		'pages'     => count( $page_set ),
 		'potential' => (int) array_sum( array_column( $groups, 'potential' ) ),
-		'resolved'  => [ 'groups' => $settled_n, 'potential' => $settled_gain ],
+		'resolved'  => $built['resolved'],
 	];
 }

@@ -298,28 +298,56 @@ function hodima_seo_advisor_crawl_parse_links( string $file ): array|WP_Error {
 
 /* ── نقشه خزش و صفحه‌های حل‌شده (برای رقابت و قاعده نرخ کلیک) ── */
 
+/** ستون‌های جدول خزش که نقشه و ردیف تک از آن می‌خوانند. */
+const HODIMA_SEO_ADVISOR_CRAWL_COLUMNS = 'path, status, indexable, reason, title_len, meta_len, inlinks, text_links, depth, score, title, h1, h2';
+
+/**
+ * ردیف خام جدول خزش ← آرایه با نوع‌های درست.
+ *
+ * @param array<string, mixed> $r
+ * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}
+ */
+function hodima_seo_advisor_crawl_map_row( array $r ): array {
+	return [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'], 'inlinks' => (int) $r['inlinks'], 'text_links' => (int) $r['text_links'], 'depth' => (int) $r['depth'], 'score' => (float) $r['score'], 'title' => (string) $r['title'], 'h1' => (string) $r['h1'], 'h2' => (string) $r['h2'] ];
+}
+
 /**
  * همه صفحه‌های خزش‌شده، آدرس ← وضعیت. یک بار در هر درخواست خوانده می‌شود (تحلیل صدها آدرس را صدا می‌زند).
  *
+ * `$only`: فقط همین آدرس (کادر ویرایش یک صفحه): اگر نقشه کامل هنوز خوانده نشده، فقط یک ردیف خوانده می‌شود
+ * (تا SEO 2.9.8 باز کردن کادر ویرایش هر صفحه کل جدول خزش را در حافظه می‌آورد).
+ *
  * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}>
  */
-function hodima_seo_advisor_crawl_map( bool $reset = false ): array {
+function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null ): array {
 
 	global $wpdb;
-	static $map = null;
+	static $map    = null;
+	static $single = [];
 
 	if ( $reset ) {
-		$map = null;
+		$map    = null;
+		$single = [];
 		hodima_seo_advisor_resolved_paths( true );
 		return [];
+	}
+
+	if ( null !== $only && null === $map ) {
+		if ( ! array_key_exists( $only, $single ) ) {
+			hodima_seo_advisor_ensure_tables();
+			$r               = $wpdb->get_row( $wpdb->prepare( 'SELECT ' . HODIMA_SEO_ADVISOR_CRAWL_COLUMNS . ' FROM %i WHERE path = %s', hodima_seo_advisor_table( 'crawl_pages' ), $only ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- نام ستون‌ها ثابت همین فایل است
+			$single[ $only ] = is_array( $r ) ? hodima_seo_advisor_crawl_map_row( $r ) : null;
+		}
+		return null !== $single[ $only ] ? [ $only => $single[ $only ] ] : [];
 	}
 
 	if ( null === $map ) {
 		hodima_seo_advisor_ensure_tables();
 		$map = [];
-		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT path, status, indexable, reason, title_len, meta_len, inlinks, text_links, depth, score, title, h1, h2 FROM %i', hodima_seo_advisor_table( 'crawl_pages' ) ), ARRAY_A ) as $r ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$map[ (string) $r['path'] ] = [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'], 'inlinks' => (int) $r['inlinks'], 'text_links' => (int) $r['text_links'], 'depth' => (int) $r['depth'], 'score' => (float) $r['score'], 'title' => (string) $r['title'], 'h1' => (string) $r['h1'], 'h2' => (string) $r['h2'] ];
+		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT ' . HODIMA_SEO_ADVISOR_CRAWL_COLUMNS . ' FROM %i', hodima_seo_advisor_table( 'crawl_pages' ) ), ARRAY_A ) as $r ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- نام ستون‌ها ثابت همین فایل است
+			$map[ (string) $r['path'] ] = hodima_seo_advisor_crawl_map_row( $r );
 		}
+		$single = [];
 	}
 
 	return $map;
@@ -331,7 +359,7 @@ function hodima_seo_advisor_crawl_map( bool $reset = false ): array {
  * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}|null
  */
 function hodima_seo_advisor_crawl_row( string $path ): ?array {
-	return hodima_seo_advisor_crawl_map()[ $path ] ?? null;
+	return hodima_seo_advisor_crawl_map( false, $path )[ $path ] ?? null;
 }
 
 /**
@@ -356,17 +384,22 @@ function hodima_seo_advisor_resolved_paths( bool $reset = false ): array {
 		return $cache;
 	}
 
+	global $wpdb;
+
 	$cache = [ ( hodima_seo_advisor_path_key( home_url( '/' ) ) ?? '/' ) => 'home' ];
 
-	foreach ( hodima_seo_advisor_crawl_map() as $path => $r ) {
-		if ( isset( $cache[ $path ] ) ) {
-			continue;
-		}
+	// فقط ردیف‌های ناسالم (کادر ویرایش یک صفحه هم این را می‌خواند؛ کل جدول خزش لازم نیست)
+	hodima_seo_advisor_ensure_tables();
+	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare( 'SELECT path, status FROM %i WHERE status >= 300 OR ( status = 200 AND indexable = 0 )', hodima_seo_advisor_table( 'crawl_pages' ) ),
+		ARRAY_A
+	);
 
-		if ( $r['status'] >= 300 ) {
-			$cache[ $path ] = $r['status'] < 400 ? 'redirect' : 'gone';
-		} elseif ( 200 === $r['status'] && ! $r['indexable'] ) {
-			$cache[ $path ] = 'noindex';
+	foreach ( $rows as $r ) {
+		$path   = (string) $r['path'];
+		$status = (int) $r['status'];
+		if ( ! isset( $cache[ $path ] ) ) {
+			$cache[ $path ] = $status >= 400 ? 'gone' : ( $status >= 300 ? 'redirect' : 'noindex' );
 		}
 	}
 
@@ -723,12 +756,11 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 	hodima_seo_advisor_crawl_map( true );
 	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $stored['pages'], 'links' => $stored['links'], 'files' => $files, 'source' => 'screamingfrog' ], false );
 
-	// پیشنهادهای ذخیره‌شده (نرخ کلیک و رقابت) با داده خزش دوباره ساخته می‌شوند؛ اگر نوبتی در کار است همان بعدا از خزش استفاده می‌کند
-	$status = hodima_seo_advisor_status();
-	if ( $status['fetched'] > 0 && ! hodima_seo_advisor_pipeline_pending() ) {
-		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
-		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [ 'stages' => [ 'analyze' ], 'property' => $status['property'], 'range' => [], 'days' => $status['days'] ], false );
-		hodima_seo_advisor_pipeline_run();
+	// پیشنهادهای ذخیره‌شده (نرخ کلیک و رقابت) با داده خزش دوباره ساخته می‌شوند: چند ثانیه همین‌جا، بقیه در پس‌زمینه.
+	// دریافت داده‌ای که در میانه است و نوبت analyze آن گذشته هم analyze تازه می‌گیرد (قبلا تا فردا اثر نمی‌کرد)
+	hodima_seo_advisor_request_reanalyze();
+	if ( hodima_seo_advisor_pipeline_pending() ) {
+		hodima_seo_advisor_pipeline_run( (float) HODIMA_SEO_ADVISOR_MANUAL_BUDGET );
 	}
 
 	hodima_seo_advisor_unlock();

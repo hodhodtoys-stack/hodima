@@ -50,6 +50,15 @@ const HODIMA_SEO_ADVISOR_PIPELINE_OPTION = 'hodima_advisor_pipeline';
 const HODIMA_SEO_ADVISOR_STAGE_CRON      = 'hodima_advisor_stage';
 const HODIMA_SEO_ADVISOR_STAGE_BUDGET    = 90;
 
+/**
+ * بودجه نوبت‌ها وقتی مدیر منتظر صفحه است (دکمه «به‌روزرسانی همه»، ذخیره تنظیم، خواندن فایل خزش)؛ باقی‌مانده در پس‌زمینه.
+ * تا SEO 2.9.8 همان ۹۰ ثانیه کرون (و برای «حداقل نمایش» بدون سقف) بود و صفحه چند دقیقه منتظر می‌ماند.
+ */
+const HODIMA_SEO_ADVISOR_MANUAL_BUDGET = 15;
+
+/** درخواست «پیشنهادها از نو ساخته شوند» (تنظیم یا خزش تازه)؛ اولین اجرای نوبت‌ها آن را به صف می‌برد. autoload خاموش. */
+const HODIMA_SEO_ADVISOR_REANALYZE_OPTION = 'hodima_advisor_reanalyze';
+
 /** نوبت‌های بعد از ذخیره داده، به ترتیب. */
 const HODIMA_SEO_ADVISOR_STAGES = [ 'ctr', 'analyze', 'breakdown', 'trend', 'health', 'history', 'verify' ];
 
@@ -93,9 +102,10 @@ function hodima_seo_advisor_store_error( string $message ): void {
 /**
  * دریافت و ذخیره داده سرچ کنسول.
  *
+ * @param float|null $budget ثانیه نوبت‌های بعد از ذخیره در همین درخواست؛ null = بودجه کرون (دکمه دستی: HODIMA_SEO_ADVISOR_MANUAL_BUDGET)
  * @return true|WP_Error
  */
-function hodima_seo_advisor_refresh( bool $force = false ): bool|WP_Error {
+function hodima_seo_advisor_refresh( bool $force = false, ?float $budget = null ): bool|WP_Error {
 
 	// کلیک دستی و کرون هم‌زمان نشوند (دو دریافت داده روی هم، جدول را قاطی می‌کنند)
 	if ( ! hodima_seo_advisor_lock() ) {
@@ -103,7 +113,7 @@ function hodima_seo_advisor_refresh( bool $force = false ): bool|WP_Error {
 	}
 
 	try {
-		return hodima_seo_advisor_run_refresh( $force );
+		return hodima_seo_advisor_run_refresh( $force, $budget );
 	} finally {
 		hodima_seo_advisor_unlock();
 	}
@@ -114,7 +124,7 @@ function hodima_seo_advisor_refresh( bool $force = false ): bool|WP_Error {
  *
  * @return true|WP_Error
  */
-function hodima_seo_advisor_run_refresh( bool $force = false ): bool|WP_Error {
+function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = null ): bool|WP_Error {
 
 	if ( function_exists( 'set_time_limit' ) ) {
 		set_time_limit( 180 ); // کرون هم مثل دکمه دستی: سه درخواست بزرگ و تحلیل همه آدرس‌ها
@@ -190,8 +200,9 @@ function hodima_seo_advisor_run_refresh( bool $force = false ): bool|WP_Error {
 		// بقیه کارها نوبت‌به‌نوبت: ساخت پیشنهادها، بخش‌بندی، روند، سلامت و تاریخچه (هرکدام مستقل؛ شکستشان
 		// دریافت اصلی را رد نمی‌کند). تا بودجه زمانی همین‌جا؛ باقی‌مانده با رویداد کرون
 		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+		delete_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION ); // صف تازه خودش analyze را دارد
 		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [ 'stages' => HODIMA_SEO_ADVISOR_STAGES, 'property' => $property, 'range' => $range, 'days' => $days, 'force' => $force ], false );
-		hodima_seo_advisor_pipeline_run();
+		hodima_seo_advisor_pipeline_run( $budget );
 
 		return true;
 	}
@@ -204,10 +215,55 @@ function hodima_seo_advisor_run_refresh( bool $force = false ): bool|WP_Error {
 
 /* ── نوبت‌ها ── */
 
-/** نوبت‌های باقی‌مانده دارد؟ */
+/** نوبت‌های باقی‌مانده دارد؟ (یا درخواست ساخت دوباره پیشنهادها که هنوز به صف نرفته) */
 function hodima_seo_advisor_pipeline_pending(): bool {
 	$state = get_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [] );
-	return is_array( $state ) && ! empty( $state['stages'] );
+	return ( is_array( $state ) && ! empty( $state['stages'] ) ) || false !== get_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION, false );
+}
+
+/**
+ * پیشنهادها از نو ساخته شوند (تغییر «حداقل نمایش»، فایل خزش تازه). خودش کاری نمی‌کند: درخواست ثبت و رویداد ادامه
+ * زمان‌بندی می‌شود؛ hodima_seo_advisor_pipeline_run (با قفل) آن را به صف نوبت‌ها می‌برد — حتی وقتی دریافت داده‌ای در
+ * میانه است و نوبت analyze آن گذشته (تا SEO 2.9.8 خزشِ خوانده‌شده در آن حالت تا فردا در پیشنهادها اثر نمی‌کرد).
+ */
+function hodima_seo_advisor_request_reanalyze(): void {
+
+	if ( hodima_seo_advisor_status()['fetched'] <= 0 ) {
+		return; // داده‌ای نیست که تحلیل شود
+	}
+
+	update_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION, time(), false );
+	hodima_seo_advisor_pipeline_schedule( 0 );
+}
+
+/**
+ * درخواست ساخت دوباره را (اگر هست) به صف نوبت‌ها می‌برد: صف تحلیل نیمه‌کاره دور ریخته می‌شود و analyze بعد از ctr
+ * (یا اول صف) می‌آید. فراخواننده قفل دریافت داده را دارد.
+ *
+ * @param array<string, mixed> $state
+ * @return array<string, mixed>
+ */
+function hodima_seo_advisor_pipeline_take_reanalyze( array $state ): array {
+
+	if ( false === get_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION, false ) ) {
+		return $state;
+	}
+
+	delete_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION );
+	delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION ); // آستانه یا خزش عوض شده؛ صف قدیمی معتبر نیست
+
+	$stages = array_values( array_map( 'strval', (array) ( $state['stages'] ?? [] ) ) );
+
+	if ( ! in_array( 'analyze', $stages, true ) ) {
+		$ctr = array_search( 'ctr', $stages, true );
+		array_splice( $stages, false === $ctr ? 0 : (int) $ctr + 1, 0, [ 'analyze' ] );
+	}
+
+	$status = hodima_seo_advisor_status();
+	$state  = [ 'stages' => $stages, 'property' => (string) ( $state['property'] ?? $status['property'] ), 'range' => (array) ( $state['range'] ?? [] ), 'days' => (int) ( $state['days'] ?? $status['days'] ) ] + $state;
+	update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, $state, false );
+
+	return $state;
 }
 
 /** بعد از ساخت پیشنهادها، «پیشنهاد دارد» در وضعیت آخرین دریافت به‌روز می‌شود. */
@@ -274,8 +330,9 @@ function hodima_seo_advisor_pipeline_stage( string $stage, array $state, float $
 function hodima_seo_advisor_pipeline_run( ?float $budget = null ): void {
 
 	$state = get_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [] );
+	$state = hodima_seo_advisor_pipeline_take_reanalyze( is_array( $state ) ? $state : [] );
 
-	if ( ! is_array( $state ) || empty( $state['stages'] ) ) {
+	if ( empty( $state['stages'] ) ) {
 		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
 		return;
 	}
@@ -304,6 +361,10 @@ function hodima_seo_advisor_pipeline_run( ?float $budget = null ): void {
 
 	if ( ! $stages ) {
 		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
+		// همه نوبت‌ها همین‌جا تمام شد: رویداد ادامه‌ای که درخواست ساخت دوباره گذاشته بود بی‌کار نماند (مگر درخواست تازه‌ای در این فاصله آمده)
+		if ( false === get_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION, false ) ) {
+			wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+		}
 		return;
 	}
 

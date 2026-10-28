@@ -27,9 +27,11 @@
  * و hodima_seo_advisor_config عوض می‌شوند. حدس‌اند نه ادعای گوگل: برند و کلمه‌های
  * «نام سایت» نرخ کلیک بسیار بالاتر دارند و این جدول را بالا می‌برند.
  *
- * نتیجه همه آدرس‌ها بعد از هر دریافت داده یک‌جا ساخته و در جدول می‌ماند
- * (hodima_seo_advisor_analyze_all) تا فهرست پیشخوان با SQL فیلتر و مرتب شود؛ کادر
- * ویرایش یک صفحه با hodima_seo_advisor_analyze() دوباره و زنده می‌سازد (متن تازه صفحه).
+ * نتیجه همه آدرس‌ها بعد از هر دریافت داده نوبت‌به‌نوبت ساخته و در جدول می‌ماند
+ * (hodima_seo_advisor_analyze_batch) تا فهرست پیشخوان با SQL فیلتر و مرتب شود؛ کادر
+ * ویرایش یک صفحه با hodima_seo_advisor_analyze( $path, true ) دوباره و زنده می‌سازد (متن تازه صفحه
+ * و «دقیقا چه کنید»). گام‌ها (advisor-steps.php) فقط در کادر ساخته می‌شوند، نه در تحلیل همه آدرس‌ها:
+ * تا SEO 2.9.8 برای هر آدرس چند جستجوی LIKE روی متن همه نوشته‌ها می‌زد و حدود ۹۸٪ زمان تحلیل بود.
  */
 
 declare(strict_types=1);
@@ -632,9 +634,10 @@ function hodima_seo_advisor_competitors( string $path, array $queries ): array {
 /**
  * تحلیل زنده یک آدرس از داده ذخیره‌شده و متن فعلی صفحه.
  *
+ * @param bool $with_steps گام‌های «دقیقا چه کنید» هم ساخته شوند (فقط کادر ویرایش؛ پرهزینه: جستجوی متن همه نوشته‌ها)
  * @return array{row: array<string, mixed>, suggestions: list<array<string, mixed>>, potential: int}|null
  */
-function hodima_seo_advisor_analyze( string $path ): ?array {
+function hodima_seo_advisor_analyze( string $path, bool $with_steps = false ): ?array {
 
 	$row = hodima_seo_advisor_page( $path );
 
@@ -653,11 +656,11 @@ function hodima_seo_advisor_analyze( string $path ): ?array {
 		$text['rendered']        = [ 'title' => $rendered['title'], 'h1' => $rendered['h1'] ];
 	}
 
-	$suggestions = hodima_seo_advisor_enrich(
-		hodima_seo_advisor_suggestions( $row, $queries, $text, hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change(), hodima_seo_advisor_crawl_meta_health( $row['path'] ), hodima_seo_advisor_crawl_links_info( $row['path'] ) ),
-		$row,
-		$queries
-	);
+	$suggestions = hodima_seo_advisor_suggestions( $row, $queries, $text, hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change(), hodima_seo_advisor_crawl_meta_health( $row['path'] ), hodima_seo_advisor_crawl_links_info( $row['path'] ) );
+
+	if ( $with_steps ) {
+		$suggestions = hodima_seo_advisor_enrich( $suggestions, $row, $queries );
+	}
 
 	// کاری که با داده بعد از تغییر «اثر داشت» تا وقتی جمع بازه روزهای پیش از تغییر را دارد پیشنهاد نمی‌شود (advisor-verify.php)
 	if ( function_exists( 'hodima_seo_advisor_verify_filter' ) ) {
@@ -797,6 +800,8 @@ function hodima_seo_advisor_analyze_batch( float $deadline ): bool|WP_Error {
 
 	$done = 0;
 
+	hodima_seo_advisor_crawl_map(); // صدها آدرس: کل جدول خزش یک بار، نه یک پرسش برای هر آدرس
+
 	while ( $queue && microtime( true ) < $deadline ) {
 		$path   = (string) array_shift( $queue );
 		$fields = hodima_seo_advisor_advice_fields( $path );
@@ -821,8 +826,9 @@ function hodima_seo_advisor_analyze_batch( float $deadline ): bool|WP_Error {
 }
 
 /**
- * تحلیل همه آدرس‌های قابل‌بررسی یک‌جا و در یک تراکنش (تغییر «حداقل نمایش» و آزمون‌ها). دریافت داده از
- * نوبت‌های زمان‌دار (analyze_batch) استفاده می‌کند. هر خطا همه را برمی‌گرداند. شمار آدرس دارای پیشنهاد را می‌دهد.
+ * تحلیل همه آدرس‌های قابل‌بررسی یک‌جا و در یک تراکنش (آزمون‌ها و ابزار). پیشخوان از آن استفاده نمی‌کند: تغییر «حداقل
+ * نمایش» و خزش تازه با hodima_seo_advisor_request_reanalyze() در نوبت‌های زمان‌دار می‌رود (SEO 2.9.9؛ قبلا بدون سقف زمان
+ * در همان درخواست ذخیره تنظیم اجرا می‌شد). هر خطا همه را برمی‌گرداند. شمار آدرس دارای پیشنهاد را می‌دهد.
  *
  * @return int|WP_Error
  */

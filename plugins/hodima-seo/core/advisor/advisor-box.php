@@ -156,7 +156,7 @@ function hodima_seo_advisor_render_trend( array $row ): void {
 function hodima_seo_advisor_render_box( string $url ): void {
 
 	$path     = hodima_seo_advisor_path_key( $url );
-	$analysis = null !== $path ? hodima_seo_advisor_analyze( $path ) : null;
+	$analysis = null !== $path ? hodima_seo_advisor_analyze( $path, true ) : null; // فقط اینجا گام‌های «دقیقا چه کنید» ساخته می‌شوند
 	$status   = hodima_seo_advisor_status();
 	$ignored  = null !== $path && in_array( $path, hodima_seo_advisor_ignored(), true );
 	$n        = static fn( int|float $value, int $decimals = 0 ): string => number_format_i18n( $value, $decimals );
