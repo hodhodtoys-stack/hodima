@@ -105,7 +105,7 @@ function hodima_seo_advisor_links_dest_resolve( string $href ): array {
 	if ( str_starts_with( $href, '//' ) ) {
 		$absolute = 'https:' . $href;
 	} elseif ( str_starts_with( $href, '/' ) ) {
-		$absolute = home_url( $href );
+		$absolute = hodima_seo_advisor_url( $href ); // «/x/» نسبت به ریشه دامنه است، نه home_url (زیرپوشه دو بار می‌آمد)
 	} elseif ( 1 === preg_match( '#^https?://#i', $href ) ) {
 		$absolute = $href;
 	} else {
@@ -162,22 +162,11 @@ function hodima_seo_advisor_links_dest_resolve( string $href ): array {
  */
 function hodima_seo_advisor_links_group( string $term ): array|WP_Error {
 
-	$ignored  = hodima_seo_advisor_ignored();
-	$resolved = hodima_seo_advisor_resolved_paths();
-	$pages    = array_values( array_filter(
-		hodima_seo_advisor_term_pages( $term, HODIMA_SEO_ADVISOR_COMPETITION_MAX_PAGES + 5 ),
-		static fn( array $p ): bool => ! in_array( $p['path'], $ignored, true ) && 1 !== preg_match( '#/page/\d+/?$#', $p['path'] ) && ! isset( $resolved[ $p['path'] ] )
-	) );
+	$pages = hodima_seo_advisor_term_rivals( $term, HODIMA_SEO_ADVISOR_COMPETITION_MAX_PAGES ); // همان صفحه‌ها و برنده تب رقابت
 
 	if ( count( $pages ) < 2 ) {
 		return new WP_Error( 'hodima_advisor_links_group', 'برای این کلمه رقابت واقعی بین چند صفحه پیدا نشد.' );
 	}
-
-	usort(
-		$pages,
-		static fn( array $a, array $b ): int => [ $b['clicks'], $a['position'], $b['impressions'] ] <=> [ $a['clicks'], $b['position'], $a['impressions'] ]
-	);
-	$pages = array_slice( $pages, 0, HODIMA_SEO_ADVISOR_COMPETITION_MAX_PAGES );
 
 	$total = array_sum( array_column( $pages, 'impressions' ) );
 	$share = $total > 0 ? max( array_column( $pages, 'impressions' ) ) / $total : 0.0;

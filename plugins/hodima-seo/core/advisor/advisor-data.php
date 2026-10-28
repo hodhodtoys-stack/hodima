@@ -365,25 +365,27 @@ const HODIMA_SEO_ADVISOR_LOCK_TTL    = 600;
 
 /**
  * قفل دریافت داده (کلیک دستی و کرون هم‌زمان نشوند). add_option اتمی است: دومی شکست می‌خورد.
+ *
+ * @param string $option نام قفل؛ بررسی ایندکس قفل جدای خودش را دارد (HODIMA_SEO_ADVISOR_INSPECT_LOCK) تا دریافت داده را معطل نکند
  */
-function hodima_seo_advisor_lock(): bool {
+function hodima_seo_advisor_lock( string $option = HODIMA_SEO_ADVISOR_LOCK_OPTION ): bool {
 
 	$now = time();
 
-	if ( add_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, $now, '', false ) ) {
+	if ( add_option( $option, $now, '', false ) ) {
 		return true;
 	}
 
-	if ( $now - (int) get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, 0 ) > HODIMA_SEO_ADVISOR_LOCK_TTL ) {
-		update_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, $now, false ); // اجرای قبلی وسط کار مرده
+	if ( $now - (int) get_option( $option, 0 ) > HODIMA_SEO_ADVISOR_LOCK_TTL ) {
+		update_option( $option, $now, false ); // اجرای قبلی وسط کار مرده
 		return true;
 	}
 
 	return false;
 }
 
-function hodima_seo_advisor_unlock(): void {
-	delete_option( HODIMA_SEO_ADVISOR_LOCK_OPTION );
+function hodima_seo_advisor_unlock( string $option = HODIMA_SEO_ADVISOR_LOCK_OPTION ): void {
+	delete_option( $option );
 }
 
 /**

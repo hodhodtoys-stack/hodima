@@ -159,10 +159,7 @@ function hodima_seo_advisor_competition_groups( bool $want_settled = false ): ar
 			continue;
 		}
 
-		usort(
-			$pages,
-			static fn( array $a, array $b ): int => [ $b['clicks'], $a['position'], $b['impressions'] ] <=> [ $a['clicks'], $b['position'], $a['impressions'] ]
-		);
+		usort( $pages, 'hodima_seo_advisor_winner_order' ); // همان قاعده کادر ویرایش و «لینک‌های این کلمه» (advisor-steps.php)
 
 		$live    = array_values( array_filter( $pages, static fn( array $p ): bool => ! isset( $resolved[ $p['path'] ] ) ) );
 		$settled = count( $live ) < 2;

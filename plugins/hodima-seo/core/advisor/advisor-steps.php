@@ -322,23 +322,55 @@ function hodima_seo_advisor_term_pages( string $term, int $limit = 5 ): array {
 }
 
 /**
- * گام «رقابت داخلی»: صفحه‌های رقیب برای کلمه و صفحه مرجع پیشنهادی (بهترین رتبه؛ مساوی ← بیشترین کلیک).
+ * صفحه‌هایی که برای یک کلمه واقعا رقیب‌اند، برنده اول: بدون نادیده‌گرفته‌ها، صفحه‌بندی آرشیو و صفحه‌های حل‌شده
+ * (ریدایرکت، ۴۰۴، noindex، صفحه اصلی؛ hodima_seo_advisor_resolved_paths). برنده همان قاعده تب «صفحه‌های هم‌کلمه»:
+ * بیشترین کلیک ← رتبه بهتر ← نمایش بیشتر. کادر ویرایش، تب رقابت و «لینک‌های این کلمه» همه از همین می‌خوانند
+ * (تا SEO 2.9.9 کادر ویرایش «صفحه مرجع» را با بهترین رتبه و بدون کنار گذاشتن صفحه‌های حل‌شده انتخاب می‌کرد و برای
+ * یک کلمه صفحه اصلی دیگری از تب رقابت پیشنهاد می‌داد، گاهی حتی صفحه‌ای که ریدایرکت می‌شد).
+ *
+ * @return list<array{path: string, title: string, kind: string, object_id: int, impressions: int, clicks: int, position: float}>
+ */
+function hodima_seo_advisor_term_rivals( string $term, int $limit = 5 ): array {
+
+	$ignored  = hodima_seo_advisor_ignored();
+	$resolved = hodima_seo_advisor_resolved_paths();
+	$pages    = array_values( array_filter(
+		hodima_seo_advisor_term_pages( $term, $limit + 5 ),
+		static fn( array $p ): bool => ! in_array( $p['path'], $ignored, true ) && 1 !== preg_match( '#/page/\d+/?$#', $p['path'] ) && ! isset( $resolved[ $p['path'] ] )
+	) );
+
+	usort( $pages, 'hodima_seo_advisor_winner_order' );
+
+	return array_slice( $pages, 0, $limit );
+}
+
+/**
+ * ترتیب برنده یک گروه رقابت (برای usort): بیشترین کلیک ← رتبه بهتر ← نمایش بیشتر.
+ *
+ * @param array{clicks: int, position: float, impressions: int} $a
+ * @param array{clicks: int, position: float, impressions: int} $b
+ */
+function hodima_seo_advisor_winner_order( array $a, array $b ): int {
+	return [ $b['clicks'], $a['position'], $b['impressions'] ] <=> [ $a['clicks'], $b['position'], $a['impressions'] ];
+}
+
+/**
+ * گام «رقابت داخلی»: صفحه‌های رقیب برای کلمه و صفحه مرجع پیشنهادی (همان برنده تب رقابت).
  *
  * @param list<array{path: string, title: string, kind: string, object_id: int, impressions: int, clicks: int, position: float}> $pages
  * @return array<string, mixed>
  */
 function hodima_seo_advisor_step_canonical( string $term, array $pages, string $current_path ): array {
 
-	$best = $pages;
-	usort( $best, static fn( array $a, array $b ): int => [ $a['position'], $b['clicks'] ] <=> [ $b['position'], $a['clicks'] ] );
+	usort( $pages, 'hodima_seo_advisor_winner_order' );
 
 	return [
 		'type'    => 'canonical',
 		'term'    => $term,
 		'pages'   => $pages,
 		'current' => $current_path,
-		'main'    => (string) ( $best[0]['path'] ?? '' ),
-		'is_main' => ( $best[0]['path'] ?? '' ) === $current_path,
+		'main'    => (string) ( $pages[0]['path'] ?? '' ),
+		'is_main' => ( $pages[0]['path'] ?? '' ) === $current_path,
 	];
 }
 
@@ -380,7 +412,7 @@ function hodima_seo_advisor_enrich( array $suggestions, array $row, array $queri
 				$steps[] = [ 'type' => 'links' ] + hodima_seo_advisor_link_sources_cached( $term, $row ) + [ 'term' => $term ];
 				break;
 			case 'cannibal':
-				$steps[] = hodima_seo_advisor_step_canonical( $term, hodima_seo_advisor_term_pages( $term ), (string) $row['path'] );
+				$steps[] = hodima_seo_advisor_step_canonical( $term, hodima_seo_advisor_term_rivals( $term ), (string) $row['path'] );
 				break;
 		}
 

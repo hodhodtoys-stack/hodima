@@ -15,7 +15,7 @@
  * ۲ روز پیش تمام می‌شود، چون داده روزهای اخیر ناقص است.
  *
  * مرحله‌بندی (SEO 2.7.5): درخواست اصلی فقط می‌گیرد و ذخیره می‌کند. کارهای سنگین بعدی «نوبت» (stage)اند:
- * ctr (جدول نرخ کلیک از داده سایت، پیش از analyze)، analyze (ساخت پیشنهادها، نوبت‌به‌نوبت)، breakdown، trend، health، history. هر درخواست تا
+ * ctr (جدول نرخ کلیک از داده سایت)، health (آدرس‌های مرده؛ پیش از analyze)، analyze (ساخت پیشنهادها، نوبت‌به‌نوبت)، breakdown، trend، history، verify. هر درخواست تا
  * HODIMA_SEO_ADVISOR_STAGE_BUDGET ثانیه نوبت‌ها را پیش می‌برد و اگر چیزی ماند، رویداد کرون
  * hodima_advisor_stage ادامه می‌دهد؛ پس یک درخواست طولانی هاست را نمی‌کشد و شکست یک نوبت بقیه را نمی‌اندازد.
  */
@@ -59,8 +59,11 @@ const HODIMA_SEO_ADVISOR_MANUAL_BUDGET = 15;
 /** درخواست «پیشنهادها از نو ساخته شوند» (تنظیم یا خزش تازه)؛ اولین اجرای نوبت‌ها آن را به صف می‌برد. autoload خاموش. */
 const HODIMA_SEO_ADVISOR_REANALYZE_OPTION = 'hodima_advisor_reanalyze';
 
-/** نوبت‌های بعد از ذخیره داده، به ترتیب. */
-const HODIMA_SEO_ADVISOR_STAGES = [ 'ctr', 'analyze', 'breakdown', 'trend', 'health', 'history', 'verify' ];
+/**
+ * نوبت‌های بعد از ذخیره داده، به ترتیب. health پیش از analyze: «صفحه‌های حل‌شده» رقابت (آدرس مرده/ریدایرکت) از آن
+ * خوانده می‌شود (تا SEO 2.9.9 بعد از analyze بود و پیشنهادها با فهرست آدرس‌های مرده دیروز ساخته می‌شد).
+ */
+const HODIMA_SEO_ADVISOR_STAGES = [ 'ctr', 'health', 'analyze', 'breakdown', 'trend', 'history', 'verify' ];
 
 /** حداکثر صفحه‌های درخواست برای یک گزارش (هر صفحه ۲۵ هزار ردیف، سقف سرچ کنسول). */
 const HODIMA_SEO_ADVISOR_FETCH_PAGES = 4;
@@ -309,6 +312,7 @@ function hodima_seo_advisor_pipeline_stage( string $stage, array $state, float $
 			break;
 		case 'health':
 			hodima_seo_advisor_health_sync();
+			hodima_seo_advisor_resolved_paths( true ); // analyze همین درخواست فهرست تازه آدرس‌های مرده را بخواند
 			break;
 		case 'history':
 			hodima_seo_advisor_history_sync( $property );

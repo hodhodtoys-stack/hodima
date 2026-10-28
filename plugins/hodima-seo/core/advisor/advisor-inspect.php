@@ -5,7 +5,7 @@
  *
  * برای آدرس‌های مهم از گوگل می‌پرسد: ایندکس شده؟ اگر نه چرا؟ canonical انتخابی گوگل همان canonical شماست؟
  * آخرین خزش کی بوده؟ همان کلید مخصوص مشاور (فقط‌خواندنی). سهمیه گوگل ≈ ۲٬۰۰۰ بررسی در روز برای هر property؛
- * ما در هر دسته فقط ۲۰ آدرس و روزی ۴ بار (کرون ۶ ساعته) می‌پرسیم و با «۴۲۹» (سهمیه) فورا می‌ایستیم.
+ * ما در هر دسته فقط ۲۰ آدرس و روزی ۲ بار (کرون twicedaily) می‌پرسیم و با «۴۲۹» (سهمیه) فورا می‌ایستیم.
  *
  * صف: اول صفحه‌های بدون نمایش (advisor-health)، بعد صفحه‌های دارای پیشنهاد (کلیک بالقوه بیشتر اول)، بعد
  * پرنمایش‌ترین‌ها؛ آدرسی که در ۱۴ روز اخیر بررسی شده دوباره نمی‌آید. نتیجه در گزینه hodima_advisor_inspect
@@ -22,6 +22,9 @@ const HODIMA_SEO_ADVISOR_INSPECT_CRON   = 'hodima_advisor_inspect';
 const HODIMA_SEO_ADVISOR_INSPECT_BATCH  = 20;
 const HODIMA_SEO_ADVISOR_INSPECT_KEEP   = 600;
 const HODIMA_SEO_ADVISOR_INSPECT_RECHECK_DAYS = 14;
+
+/** قفل بررسی ایندکس: کلیک دستی و کرون هم‌زمان هر کدام کل گزینه نتیجه را می‌خواندند و می‌نوشتند و نتیجه یکی گم می‌شد. */
+const HODIMA_SEO_ADVISOR_INSPECT_LOCK = 'hodima_advisor_inspect_lock';
 
 add_action( HODIMA_SEO_ADVISOR_INSPECT_CRON, static function (): void {
 	if ( '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR ) ) {
@@ -209,6 +212,26 @@ function hodima_seo_advisor_inspect_batch( int $limit = HODIMA_SEO_ADVISOR_INSPE
 		$summary['error'] = 'property سرچ کنسول معلوم نیست؛ اول «به‌روزرسانی همه» را بزنید.';
 		return $summary;
 	}
+
+	if ( ! hodima_seo_advisor_lock( HODIMA_SEO_ADVISOR_INSPECT_LOCK ) ) {
+		$summary['error'] = 'بررسی ایندکس هم‌اکنون در حال اجراست؛ چند دقیقه بعد دوباره امتحان کنید.';
+		return $summary;
+	}
+
+	try {
+		return hodima_seo_advisor_inspect_run( $property, $limit, $summary );
+	} finally {
+		hodima_seo_advisor_unlock( HODIMA_SEO_ADVISOR_INSPECT_LOCK );
+	}
+}
+
+/**
+ * بدنه یک دسته بررسی ایندکس (بعد از گرفتن قفل).
+ *
+ * @param array{checked: int, error: string, quota: bool} $summary
+ * @return array{checked: int, error: string, quota: bool}
+ */
+function hodima_seo_advisor_inspect_run( string $property, int $limit, array $summary ): array {
 
 	$stored = hodima_seo_advisor_inspections();
 

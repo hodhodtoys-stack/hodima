@@ -367,7 +367,7 @@ hodima_ad( 'فیلترهای فهرست: نما ← نوع، جستجو و قا�
 hodima_ad( 'نمای ناشناخته ← همه؛ نمای نادیده‌ها ← مسیرها', [ hodima_seo_advisor_list_filters( [ 'view' => 'zzz' ] )['view'], isset( hodima_seo_advisor_list_filters( [ 'view' => 'ignored' ] )['args']['has_advice'] ) ], [ 'all', false ] );
 
 $csv = hodima_seo_advisor_csv_rows( hodima_seo_advisor_list_filters( [] )['args'] );
-hodima_ad( 'CSV: سربرگ + ۴ آدرس، اولی بیشترین کلیک بالقوه؛ ستون اول عنوان، دوم آدرس', [ count( $csv ), $csv[0][0], $csv[0][1], $csv[1][1], $csv[1][7] ], [ 5, 'عنوان', 'آدرس', '/rules/a/', '1511' ] );
+hodima_ad( 'CSV: سربرگ + ۴ آدرس، اولی بیشترین کلیک بالقوه؛ ستون اول عنوان، دوم آدرس کامل (نه فقط مسیر)', [ count( $csv ), $csv[0][0], $csv[0][1], $csv[1][1], $csv[1][7] ], [ 5, 'عنوان', 'آدرس', hodima_seo_advisor_url( '/rules/a/' ), '1511' ] );
 hodima_ad( 'CSV: ورودی شبیه فرمول بی‌اثر می‌شود', [ hodima_seo_advisor_csv_cell( '=HYPERLINK("x")' ), hodima_seo_advisor_csv_cell( '+1' ), hodima_seo_advisor_csv_cell( '@x' ), hodima_seo_advisor_csv_cell( '/ok/' ) ], [ "'=HYPERLINK(\"x\")", "'+1", "'@x", '/ok/' ] );
 
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -655,7 +655,7 @@ if ( hodima_router_active() ) {
 	}
 	hodima_ad( 'تحلیل: نرخ کلیک ← گام عنوان؛ کلمه نزدیک صفحه اول ← گام لینک؛ کلمه غایب ← تیتر و لینک', [ $by_rule['low_ctr'][0]['steps'][0]['type'] ?? '', $by_rule['near_first'][0]['steps'][0]['type'] ?? '', array_column( $by_rule['missing_content'][0]['steps'] ?? [], 'type' ) ], [ 'title', 'links', [ 'headings', 'links' ] ] );
 	hodima_ad( 'کلمه‌ای که هم غایب است و هم نزدیک صفحه اول یک کارت می‌گیرد (لینک‌دهی تکراری نیست)', [ count( $by_rule['near_first'] ?? [] ), str_contains( $by_rule['missing_content'][0]['detail'] ?? '', 'نزدیک است' ), $by_rule['missing_content'][0]['term'] ?? '' ], [ 1, true, 'گیره قیچی' ] );
-	hodima_ad( 'تحلیل: رقابت داخلی ← صفحه مرجع (بهترین رتبه) /rival/', [ ( $by_rule['cannibal'][0]['steps'][0]['type'] ?? '' ), ( $by_rule['cannibal'][0]['steps'][0]['main'] ?? '' ), ( $by_rule['cannibal'][0]['steps'][0]['is_main'] ?? null ) ], [ 'canonical', '/rival/', false ] );
+	hodima_ad( 'تحلیل: رقابت داخلی ← صفحه مرجع (بیشترین کلیک، همان برنده تب رقابت) /rival/', [ ( $by_rule['cannibal'][0]['steps'][0]['type'] ?? '' ), ( $by_rule['cannibal'][0]['steps'][0]['main'] ?? '' ), ( $by_rule['cannibal'][0]['steps'][0]['is_main'] ?? null ) ], [ 'canonical', '/rival/', false ] );
 
 	wp_set_current_user( 1 ); // لینک ویرایش فقط برای کاربر مجاز ساخته می‌شود
 	ob_start();
@@ -1539,7 +1539,7 @@ $low = hodima_seo_advisor_suggestions( [ 'path' => '/ct/z/', 'clicks' => 10, 'im
 hodima_ad( 'پیشنهاد نرخ کلیک پایین: با جدول آموخته‌شده (۱۳٪ در رتبه ۲) و یادداشت منبع', [ $low[0]['rule'] ?? '', $low[0]['potential'] ?? 0, str_contains( $low[0]['detail'] ?? '', 'از داده خود سایت' ) ], [ 'low_ctr', 640, true ] );
 hodima_ad( 'پیشنهاد نرخ کلیک: بدون جدول آموخته‌شده ۲۵٪ و بدون یادداشت', ( static function () use ( $row_q ): array { delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION ); $r = hodima_seo_advisor_suggestions( [ 'path' => '/ct/z/', 'clicks' => 10, 'impressions' => 5000, 'position' => 2.0, 'prev_clicks' => 0 ], [], null ); return [ $r[0]['potential'] ?? 0, str_contains( $r[0]['detail'] ?? '', 'از داده خود سایت' ) ]; } )(), [ 1240, false ] );
 // نوبت ctr در صف دریافت است و پیش از analyze می‌آید؛ پاک کردن داده‌ها جدول را هم برمی‌دارد
-hodima_ad( 'نوبت ctr اولین نوبت است', array_slice( HODIMA_SEO_ADVISOR_STAGES, 0, 2 ), [ 'ctr', 'analyze' ] );
+hodima_ad( 'نوبت ctr اولین نوبت است و health (آدرس‌های مرده) پیش از analyze', array_slice( HODIMA_SEO_ADVISOR_STAGES, 0, 3 ), [ 'ctr', 'health', 'analyze' ] );
 hodima_seo_advisor_ctr_learn();
 hodima_ad( 'پاک کردن داده‌ها جدول نرخ کلیک آموخته‌شده را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), get_option( HODIMA_SEO_ADVISOR_CTR_OPTION, 'none' ) ], [ true, 'none' ] );
 remove_filter( 'hodima_seo_advisor_brand_terms', $ctr_brand );
@@ -2284,6 +2284,56 @@ hodima_seo_advisor_clear_data();
 false === $lt_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $lt_tasks, false );
 false === $lt_status ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $lt_status, false );
 wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+
+echo "=== مرحله ۲ (SEO 3.0.0): صفحه مرجع یکسان با تب رقابت، آدرس کامل، قفل ایندکس، ترتیب نوبت‌ها\n";
+$m2_status = get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, false );
+$m2_health = get_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, false );
+hodima_seo_advisor_clear_data();
+hodima_seo_advisor_store(
+	[
+		'/m2/clicks/' => [ 'clicks' => 90, 'impressions' => 3000, 'position' => 6.0 ],
+		'/m2/rank/'   => [ 'clicks' => 10, 'impressions' => 1500, 'position' => 2.0 ],
+		'/m2/moved/'  => [ 'clicks' => 200, 'impressions' => 4000, 'position' => 1.5 ],
+		'/m2/me/'     => [ 'clicks' => 5, 'impressions' => 2000, 'position' => 9.0 ],
+	],
+	[],
+	[
+		'/m2/clicks/' => [ 'گیره مخملی آبی' => [ 'clicks' => 80, 'impressions' => 1500, 'position' => 6.0 ] ],
+		'/m2/rank/'   => [ 'گیره مخملی آبی' => [ 'clicks' => 5, 'impressions' => 500, 'position' => 2.0 ] ],
+		'/m2/moved/'  => [ 'گیره مخملی آبی' => [ 'clicks' => 150, 'impressions' => 2500, 'position' => 1.5 ] ],
+		'/m2/me/'     => [ 'گیره مخملی آبی' => [ 'clicks' => 1, 'impressions' => 900, 'position' => 9.0 ] ],
+	]
+);
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time(), 'property' => 'sc-domain:' . $host, 'days' => 90 ], false );
+update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, [ 'computed' => time(), 'router' => true, 'dead' => [ [ 'path' => '/m2/moved/', 'impressions' => 4000, 'clicks' => 200, 'state' => 'redirect', 'target' => '', 'code' => 301 ] ], 'total' => 0, 'seen' => 0, 'fresh' => 0, 'unseen' => [] ], false );
+hodima_seo_advisor_crawl_map( true );
+$m2_rivals = array_column( hodima_seo_advisor_term_rivals( 'گیره مخملی آبی' ), 'path' );
+hodima_ad( 'رقیب‌های کلمه: صفحه ریدایرکت‌شده کنار می‌رود؛ برنده بیشترین کلیک (نه بهترین رتبه)', $m2_rivals, [ '/m2/clicks/', '/m2/rank/', '/m2/me/' ] );
+$m2_step = hodima_seo_advisor_step_canonical( 'گیره مخملی آبی', hodima_seo_advisor_term_rivals( 'گیره مخملی آبی' ), '/m2/me/' );
+$m2_comp = array_values( array_filter( hodima_seo_advisor_competition()['rows'], static fn( array $g ): bool => 'گیره مخملی آبی' === $g['term'] ) )[0] ?? [];
+hodima_ad( 'صفحه مرجع کادر ویرایش = برنده تب «صفحه‌های هم‌کلمه»', [ $m2_step['main'], $m2_comp['pages'][0]['path'] ?? '' ], [ '/m2/clicks/', '/m2/clicks/' ] );
+$m2_can = array_values( array_filter( hodima_seo_advisor_analyze( '/m2/me/' )['suggestions'] ?? [], static fn( array $i ): bool => 'cannibal' === $i['rule'] ) )[0] ?? [];
+hodima_ad( 'متن رقابت داخلی آدرس کامل رقیب را دارد (نه فقط مسیر)', str_contains( (string) ( $m2_can['detail'] ?? '' ), hodima_seo_advisor_url( '/m2/clicks/' ) ), true );
+hodima_ad( 'یادداشت لینک‌های رقیب با آدرس کامل', str_contains( hodima_seo_advisor_competition_links_note( 'ک', [ [ 'path' => '/w/', 'term_links' => 3 ], [ 'path' => '/r/', 'term_links' => 9 ] ] ), hodima_seo_advisor_url( '/r/' ) ), true );
+hodima_ad( '«دیدن در سایت» برای صفحه ناشناخته با آدرس کامل سایت', hodima_seo_advisor_competition_page_link( [ 'kind' => '', 'object_id' => 0, 'path' => '/m2/x/' ] )[0], hodima_seo_advisor_url( '/m2/x/' ) );
+hodima_ad( 'تکه متن فرصت لینک: واژه لاتین با حروف بزرگ هم پیدا می‌شود', hodima_seo_advisor_links_snippet( '<p>best Hair Clips here</p>', 'hair clips' )[1] ?? null, 'Hair Clips' );
+
+// ایرادهای فنی: ریدایرکت با آدرس کامل مقصد
+hodima_seo_advisor_crawl_store( [ '/m2/old/' => [ 'path' => '/m2/old/', 'status' => 301, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 10, 'inlinks' => 2, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '/m2/new/' ] ], [] );
+$m2_issue = array_values( array_filter( hodima_seo_advisor_crawl_issues(), static fn( array $r ): bool => '/m2/old/' === $r['path'] ) )[0]['issues'][0]['detail'] ?? '';
+hodima_ad( 'ایراد ریدایرکت: «به آدرس کامل مقصد می‌رود»', $m2_issue, 'به ' . hodima_seo_advisor_url( '/m2/new/' ) . ' می‌رود' );
+
+// قفل بررسی ایندکس
+add_option( HODIMA_SEO_ADVISOR_INSPECT_LOCK, time(), '', false );
+$m2_before = get_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, 'none' );
+$m2_ins    = hodima_seo_advisor_inspect_batch();
+hodima_ad( 'بررسی ایندکس هم‌زمان: دومی کاری نمی‌کند و نتیجه اولی را خراب نمی‌کند', [ str_contains( $m2_ins['error'], 'در حال اجراست' ), $m2_ins['checked'], get_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, 'none' ) === $m2_before, false !== get_option( HODIMA_SEO_ADVISOR_LOCK_OPTION, false ) ], [ true, 0, true, false ] );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_LOCK );
+
+hodima_seo_advisor_clear_data();
+false === $m2_status ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $m2_status, false );
+false === $m2_health ? delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION ) : update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, $m2_health, false );
+hodima_seo_advisor_crawl_map( true );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

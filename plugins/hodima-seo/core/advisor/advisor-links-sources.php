@@ -531,7 +531,7 @@ function hodima_seo_advisor_links_snippet( string $html, string $term, int $cont
 	usort( $longest, static fn( string $a, string $b ): int => mb_strlen( $b ) <=> mb_strlen( $a ) );
 
 	foreach ( [ $phrase, $letter( $longest[0] ) ] as $pattern ) {
-		if ( 1 === preg_match( '/' . $pattern . '/u', $text, $m, PREG_OFFSET_CAPTURE ) ) {
+		if ( 1 === preg_match( '/' . $pattern . '/ui', $text, $m, PREG_OFFSET_CAPTURE ) ) { // i: واژه یکسان‌شده کوچک است ولی متن ممکن است «Clips» داشته باشد
 			$start  = mb_strlen( substr( $text, 0, (int) $m[0][1] ) );
 			$length = mb_strlen( $m[0][0] );
 			$from   = max( 0, $start - $context );

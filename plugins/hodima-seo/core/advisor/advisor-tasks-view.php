@@ -235,7 +235,7 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 
 	foreach ( $rows as $task ) {
 		$page  = hodima_seo_advisor_page( $task['path'] );
-		$link  = null !== $page ? hodima_seo_advisor_competition_page_link( $page ) : [ home_url( $task['path'] ), 'دیدن در سایت', 'external' ];
+		$link  = null !== $page ? hodima_seo_advisor_competition_page_link( $page ) : [ hodima_seo_advisor_url( $task['path'] ), 'دیدن در سایت', 'external' ];
 		$title = null !== $page ? hodima_seo_advisor_row_title( $page ) : ''; // همان ردیف؛ پرسش دوم برای عنوان نه
 		$view = hodima_seo_advisor_task_view( $task );
 		$hint = $done ? '' : match ( $view['state'] ) {

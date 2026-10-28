@@ -422,7 +422,7 @@ function hodima_seo_advisor_csv_rows( array $args ): array {
 	foreach ( $pages as $row ) {
 		$rows[] = [
 			hodima_seo_advisor_csv_cell( hodima_seo_advisor_row_title( $row ) ),
-			hodima_seo_advisor_csv_cell( $row['path'] ),
+			hodima_seo_advisor_csv_cell( rawurldecode( hodima_seo_advisor_url( $row['path'] ) ) ), // آدرس کامل قابل‌کلیک در اکسل، نه فقط مسیر
 			hodima_seo_advisor_kind_label( $row['kind'] ),
 			(string) $row['impressions'],
 			(string) $row['clicks'],

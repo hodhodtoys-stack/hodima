@@ -550,7 +550,8 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				'rule'      => 'cannibal',
 				'term'      => $query['term'],
 				'title'     => sprintf( 'رقابت با %1$s صفحه برای «%2$s»', hodima_seo_advisor_num( count( $others ) ), $query['term'] ),
-				'detail'    => 'علاوه بر این صفحه، ' . implode( '، ', array_map( static fn( array $o ): string => $o['path'], array_slice( $others, 0, 3 ) ) ) . ' هم برای این کلمه نمایش می‌گیرد. یکی را صفحه اصلی کلمه کنید و بقیه را با لینک داخلی به آن وصل کنید.',
+				// آدرس کامل (نه فقط مسیر) تا مدیر همان را کپی کند و باز کند
+				'detail'    => 'علاوه بر این صفحه، ' . implode( '، ', array_map( static fn( array $o ): string => rawurldecode( hodima_seo_advisor_url( $o['path'] ) ), array_slice( $others, 0, 3 ) ) ) . ' هم برای این کلمه نمایش می‌گیرد. یکی را صفحه اصلی کلمه کنید و بقیه را با لینک داخلی به آن وصل کنید.',
 				'potential' => 0,
 			];
 			if ( count( $cannibal ) >= HODIMA_SEO_ADVISOR_MAX_CANNIBAL ) {

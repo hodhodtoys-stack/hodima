@@ -75,7 +75,7 @@ function hodima_seo_advisor_competition_page_link( array $page ): array {
 		}
 	}
 
-	return [ home_url( (string) $page['path'] ), 'دیدن در سایت', 'external' ];
+	return [ hodima_seo_advisor_url( (string) $page['path'] ), 'دیدن در سایت', 'external' ]; // مسیر ذخیره‌شده پیشوند زیرپوشه را دارد؛ home_url() آن را دو بار می‌گذاشت
 }
 
 /**
@@ -293,7 +293,8 @@ function hodima_seo_advisor_handle_competition_csv(): void {
 	fputcsv( $out, [ 'کلمه', 'نمایش کل', 'کلیک کل', 'بهترین رتبه', 'تعداد صفحه', 'دستور', 'کلیک بالقوه', 'برنده', 'صفحه‌ها (آدرس و سهم نمایش)' ], ',', '"', '' );
 
 	foreach ( $result['rows'] as $group ) {
-		$pages = array_map( static fn( array $p ): string => $p['path'] . ' (' . round( $p['share'] * 100 ) . '%)', $group['pages'] );
+		$full  = static fn( string $path ): string => rawurldecode( hodima_seo_advisor_url( $path ) ); // آدرس کامل، نه فقط مسیر
+		$pages = array_map( static fn( array $p ): string => $full( $p['path'] ) . ' (' . round( $p['share'] * 100 ) . '%)', $group['pages'] );
 		fputcsv(
 			$out,
 			[
@@ -304,7 +305,7 @@ function hodima_seo_advisor_handle_competition_csv(): void {
 				(string) $group['count'],
 				hodima_seo_advisor_csv_cell( (string) $group['advice']['title'] ),
 				(string) $group['potential'],
-				hodima_seo_advisor_csv_cell( (string) ( $group['pages'][0]['path'] ?? '' ) ),
+				hodima_seo_advisor_csv_cell( isset( $group['pages'][0]['path'] ) ? $full( (string) $group['pages'][0]['path'] ) : '' ),
 				hodima_seo_advisor_csv_cell( implode( ' | ', $pages ) ),
 			],
 			',',

@@ -579,14 +579,15 @@ function hodima_seo_advisor_competition_links_note( string $term, array $pages )
 		}
 	}
 
-	$n = static fn( int $v ): string => number_format_i18n( $v );
+	$n   = static fn( int $v ): string => number_format_i18n( $v );
+	$url = rawurldecode( hodima_seo_advisor_url( (string) $rival['path'] ) ); // آدرس کامل رقیب، نه فقط مسیر
 
 	if ( $rival['term_links'] > $winner['term_links'] ) {
-		return sprintf( ' لینک‌های داخلی: برنده فقط %1$s لینک با متن «%2$s» دارد ولی %3$s %4$s لینک؛ لینک‌ها را به برنده منتقل کنید.', $n( $winner['term_links'] ), $term, $rival['path'], $n( $rival['term_links'] ) );
+		return sprintf( ' لینک‌های داخلی: برنده فقط %1$s لینک با متن «%2$s» دارد ولی %3$s %4$s لینک؛ لینک‌ها را به برنده منتقل کنید.', $n( $winner['term_links'] ), $term, $url, $n( $rival['term_links'] ) );
 	}
 
 	if ( $winner['term_links'] - $rival['term_links'] <= 2 ) {
-		return sprintf( ' لینک‌های داخلی: برنده %1$s و %2$s %3$s لینک با متن «%4$s» دارند؛ تقریبا برابر است و گوگل بین آن‌ها مردد می‌ماند. لینک‌های رقیب را به برنده بدهید.', $n( $winner['term_links'] ), $rival['path'], $n( $rival['term_links'] ), $term );
+		return sprintf( ' لینک‌های داخلی: برنده %1$s و %2$s %3$s لینک با متن «%4$s» دارند؛ تقریبا برابر است و گوگل بین آن‌ها مردد می‌ماند. لینک‌های رقیب را به برنده بدهید.', $n( $winner['term_links'] ), $url, $n( $rival['term_links'] ), $term );
 	}
 
 	return sprintf( ' لینک‌های داخلی: برنده %1$s لینک با متن «%2$s» دارد در برابر %3$s لینک رقیب؛ همین لینک‌دهی را حفظ کنید.', $n( $winner['term_links'] ), $term, $n( $rival['term_links'] ) );
@@ -883,7 +884,7 @@ function hodima_seo_advisor_crawl_issues(): array {
 			}
 		} elseif ( $impressions > 0 || $inlinks > 0 ) {
 			if ( $status >= 300 && $status < 400 ) {
-				$add( 'redirect', '' !== (string) $r['redirect_to'] ? 'به ' . $r['redirect_to'] . ' می‌رود' : '' );
+				$add( 'redirect', '' !== (string) $r['redirect_to'] ? 'به ' . rawurldecode( hodima_seo_advisor_url( (string) $r['redirect_to'] ) ) . ' می‌رود' : '' ); // آدرس کامل، نه فقط مسیر
 			} elseif ( $status >= 400 ) {
 				$add( 'broken', sprintf( 'کد %s', number_format_i18n( $status ) ) );
 			} elseif ( 200 === $status && 0 === (int) $r['indexable'] ) {
