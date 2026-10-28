@@ -224,6 +224,7 @@ if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-steps-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php'; // دکمه‌های «انجام شد» ردیف‌ها (SEO 3.0.2)
 }
 update_option( 'hodima_discover_sc_key', $key_json, false );
 $calls = [];
@@ -346,6 +347,7 @@ if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-steps-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php'; // دکمه‌های «انجام شد» ردیف‌ها (SEO 3.0.2)
 }
 $totals   = hodima_seo_advisor_totals();
 $weighted = ( 5.81 * 36492 + 6.0 * 500 + 6.0 * 6000 + 4.0 * 2000 + 4.0 * 2000 ) / 46992;
@@ -2395,6 +2397,292 @@ hodima_ad( 'صفحه‌بندی: بدون نمایش ۶۰ ← صفحه سوم ۱
 hodima_seo_advisor_clear_data();
 delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION );
 false === $m3_status ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $m3_status, false );
+wp_set_current_user( 0 );
+
+/** وضعیت چرخه عمر یک کار یا رشته خالی (آزمون مرحله ۳). */
+function hodima_seo_advisor_state_or( ?array $task ): string {
+	return null === $task ? '' : hodima_seo_advisor_task_state( $task );
+}
+
+echo "=== مرحله ۳ (SEO 3.0.2): «انجام شد / رد شد» در همه تب‌ها و سنجش هر نوع کار\n";
+$p3_status = get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, false );
+$p3_tasks  = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false );
+hodima_seo_advisor_clear_data();
+delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+wp_set_current_user( 1 );
+
+hodima_ad( 'منبع هر کار از قاعده‌اش؛ قاعده با رقم (crawl_no_h1) پذیرفته می‌شود', [ hodima_seo_advisor_task_source( 'crawl_no_h1' ), hodima_seo_advisor_task_source( 'competition' ), hodima_seo_advisor_task_source( 'health_unseen' ), hodima_seo_advisor_task_source( 'index_problem' ), hodima_seo_advisor_task_source( 'low_ctr' ), hodima_seo_advisor_task_set( '/p3/x/', 'crawl_no_h1', '', 'بدون H1', 'done' ) ], [ 'crawl', 'competition', 'health', 'indexing', 'opportunities', true ] );
+hodima_seo_advisor_task_set( '/p3/x/', 'low_ctr', '', 'نرخ کلیک', 'done' );
+hodima_seo_advisor_tasks_sync( '/p3/x/', [] );
+hodima_ad( 'تحلیل آدرس فقط کار پیشنهادها را «برطرف» می‌کند؛ ایراد فنی همان آدرس دست نمی‌خورد (سنجش خودش را دارد)', [ hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'low_ctr', '' ) ), hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'crawl_no_h1', '' ) ) ], [ 'fixed', 'waiting' ] );
+delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+hodima_ad( 'سقف کارها ۱۰۰۰ (ایرادهای فنی هر کدام یک کار)', HODIMA_SEO_ADVISOR_TASKS_MAX, 1000 );
+
+// فرم ردیف: admin-post با ریدایرکت (در آزمون استثنا به‌جای exit)؛ پیام بالای صفحه فقط در پیشخوان لود می‌شود
+if ( ! function_exists( 'hodima_admin_flash' ) ) {
+	require_once HODIMA_SEO_DIR . '/inc/admin-ui-fallback.php';
+}
+class Hodima_P3_Redirect extends Exception {}
+$p3_redirect = static function ( string $location ): string { throw new Hodima_P3_Redirect( $location ); };
+add_filter( 'wp_redirect', $p3_redirect, 1 );
+$p3_mark = static function ( array $post ): string {
+	$_POST    = $post + [ '_wpnonce' => wp_create_nonce( 'hodima_advisor_mark' ), 'action' => 'hodima_advisor_mark' ];
+	$_REQUEST = $_POST;
+	delete_transient( 'hodima_admin_flash_' . get_current_user_id() );
+	try {
+		hodima_seo_advisor_handle_mark();
+	} catch ( Hodima_P3_Redirect ) {
+		// پایان عادی: ریدایرکت به صفحه قبل
+	}
+	$_POST    = [];
+	$_REQUEST = [];
+	$flash    = get_transient( 'hodima_admin_flash_' . get_current_user_id() );
+	return is_array( $flash ) ? implode( ' | ', array_column( $flash, 1 ) ) : '';
+};
+
+// ایرادهای فنی: یک صفحه پرایراد، یک صفحه ۴۰۴ با لینک ورودی، یک ریدایرکت فقط با نمایش گوگل
+$p3_post = (int) wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => 'صفحه مرحله سه', 'post_name' => 'p3-crawl', 'post_content' => 'x' ] );
+$p3_path = (string) hodima_seo_advisor_path_key( (string) get_permalink( $p3_post ) );
+$p3_row  = static fn( string $path, int $status, array $over = [] ): array => $over + [ 'path' => $path, 'status' => $status, 'indexable' => 200 === $status ? 1 : 0, 'reason' => '', 'title' => 'عنوان', 'title_len' => 5, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 2600, 'inlinks' => 1, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '' ];
+hodima_seo_advisor_store( [ '/p3/gone/' => [ 'clicks' => 0, 'impressions' => 400, 'position' => 9.0 ], '/p3/moved/' => [ 'clicks' => 0, 'impressions' => 400, 'position' => 9.0 ] ], [], [] );
+hodima_seo_advisor_crawl_store(
+	[
+		$p3_path      => $p3_row( $p3_path, 200 ),
+		'/p3/gone/'   => $p3_row( '/p3/gone/', 404, [ 'inlinks' => 2 ] ),
+		'/p3/moved/'  => $p3_row( '/p3/moved/', 301, [ 'inlinks' => 0, 'redirect' => '/p3/new/' ] ),
+	],
+	[]
+);
+update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time() - 60, 'pages' => 3, 'links' => 0, 'files' => [] ], false );
+hodima_seo_advisor_crawl_map( true );
+$p3_codes = static function ( string $path ): array {
+	foreach ( hodima_seo_advisor_crawl_issues() as $row ) {
+		if ( $row['path'] === $path ) {
+			return array_column( $row['issues'], 'code' );
+		}
+	}
+	return [];
+};
+hodima_ad( 'ریدایرکت فقط با لینک داخلی ایراد است (فقط با نمایش گوگل هیچ‌وقت برطرف نمی‌شد)؛ ۴۰۴ با لینک ورودی «خطا»', [ $p3_codes( '/p3/moved/' ), $p3_codes( '/p3/gone/' ) ], [ [], [ 'broken' ] ] );
+
+$p3_code = 200;
+$p3_html = '<html><head><title>' . str_repeat( 'ع', 52 ) . '</title><meta name="description" content="' . str_repeat( 'م', 130 ) . '"></head><body><h1>تیتر تازه</h1></body></html>';
+$p3_head = [];
+$p3_hits = 0;
+$p3_live = static function ( $pre, array $args, string $url ) use ( &$p3_code, &$p3_html, &$p3_head, &$p3_hits ) {
+	if ( ! str_contains( $url, HODIMA_SEO_ADVISOR_LIVE_PARAM . '=' ) ) {
+		return $pre;
+	}
+	++$p3_hits;
+	return 0 === $p3_code ? new WP_Error( 'http_request_failed', 'x' ) : [ 'headers' => $p3_head, 'body' => $p3_html, 'response' => [ 'code' => $p3_code, 'message' => '' ], 'cookies' => [], 'filename' => null ];
+};
+add_filter( 'pre_http_request', $p3_live, 30, 3 );
+
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'crawl' ];
+$p3_c0 = $cap( static fn() => hodima_seo_advisor_render_crawl() );
+preg_match_all( '#form="(hodima-advisor-mark-\d+)" checked#', $p3_c0, $p3_fid );
+hodima_ad( 'ایرادهای فنی: هر ایراد تیک‌خورده به فرم همان ردیف وصل، دو دکمه با نام صفحه‌خوان، ستون «کنش»، nonce بدون شناسه تکراری (فقط فرم خواندن فایل‌ها)', [ max( array_count_values( $p3_fid[1] ) ?: [ 0 ] ) >= 5 && str_contains( $p3_c0, '<form id="' . array_search( max( array_count_values( $p3_fid[1] ) ), array_count_values( $p3_fid[1] ), true ) . '" class="hodima-advisor__mark"' ), str_contains( $p3_c0, 'name="action" value="hodima_advisor_mark"' ), str_contains( $p3_c0, 'aria-label="انجام شد: صفحه مرحله سه"' ), str_contains( $p3_c0, 'value="rejected"' ), str_contains( $p3_c0, '<th scope="col">کنش</th>' ), substr_count( $p3_c0, 'id="_wpnonce"' ) ], [ true, true, true, true, true, 1 ] );
+hodima_ad( 'برچسب تیک فقط متن و نشان (پیوند و دکمه کپی داخل label نامعتبر است)', 1 === preg_match( '#<label class="hodima-advisor__mark-item"><input[^>]*>(?:(?!</label>).)*<(?:a|button)\b#su', $p3_c0 ), false );
+
+$p3_flash = $p3_mark( [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'done', 'items' => [ 'no_meta', 'no_h1', 'title_short', 'slow', 'nope' ] ] );
+$p3_st    = static fn( string $code ): string => ( $t = hodima_seo_advisor_task( $p3_path, 'crawl_' . $code, '' ) ) ? hodima_seo_advisor_task_state( $t ) : '';
+hodima_ad( '«انجام شد» روی ۴ ایراد (کد نامعتبر کنار): صفحه همان لحظه خوانده شد؛ متا، H1 و عنوان برطرف، «کند» منتظر خزش تازه', [ $p3_hits, $p3_st( 'no_meta' ), $p3_st( 'no_h1' ), $p3_st( 'title_short' ), $p3_st( 'slow' ), $p3_st( 'nope' ), hodima_seo_advisor_task( $p3_path, 'crawl_no_meta', '' )['title'] ?? '' ], [ 1, 'fixed', 'fixed', 'fixed', 'waiting', '', 'بدون توضیح متا' ] );
+hodima_ad( 'پیام نتیجه: شمار، برطرف‌ها، منتظر خزش تازه و پیوند «انجام‌شده»', [ str_contains( $p3_flash, '4 مورد «انجام شد» خورد' ), str_contains( $p3_flash, '3 برطرف شد' ), str_contains( $p3_flash, '1 منتظر نتیجه (کند بودن، لینک ورودی و ریدایرکت با خزش تازه' ), str_contains( $p3_flash, 'tab=done' ) ], [ true, true, true, true ] );
+hodima_ad( 'برچسب منتظر کار خزش و برچسب «هنوز مانده» هر نوع', [ hodima_seo_advisor_task_view( hodima_seo_advisor_task( $p3_path, 'crawl_slow', '' ) )['label'], hodima_seo_advisor_task_still_label( 'crawl_no_meta' ), hodima_seo_advisor_task_still_label( 'health_dead' ) ], [ 'انجام شد · منتظر خزش تازه', 'انجام شد؛ هنوز دیده می‌شود', 'هنوز خراب است' ] );
+
+$p3_c1 = $cap( static fn() => hodima_seo_advisor_render_crawl() );
+hodima_ad( 'برطرف‌شده‌ها دیگر در داده خزش نیستند؛ «کند» (منتظر) پنهان؛ ایراد باز (لینک ورودی کم) می‌ماند؛ پیوند «نمایش ۱ ایراد علامت‌خورده»', [ str_contains( $p3_c1, 'بدون توضیح متا' ), str_contains( $p3_c1, 'منتظر خزش تازه ·' ), str_contains( $p3_c1, 'لینک ورودی کم' ), str_contains( $p3_c1, 'نمایش 1 ایراد علامت‌خورده' ) ], [ false, false, true, true ] );
+$_GET['tasks'] = 'all';
+$p3_c2 = $cap( static fn() => hodima_seo_advisor_render_crawl() );
+hodima_ad( 'با «نمایش علامت‌خورده‌ها» «کند» دوباره دیده می‌شود با نشان وضعیت و بی‌تیک', [ str_contains( $p3_c2, 'منتظر خزش تازه ·' ), str_contains( $p3_c2, 'is-marked' ), substr_count( $p3_c2, 'value="slow"' ), str_contains( $p3_c2, 'پنهان کردن علامت‌خورده‌ها' ) ], [ true, true, 0, true ] );
+$_GET = [];
+
+// خزش تازه: کند هنوز هست ← هنوز مانده؛ بعد سریع ← برطرف؛ دوباره کند ← برگشت
+hodima_seo_advisor_tasks_sync_crawl();
+$p3_a = $p3_st( 'slow' );
+$GLOBALS['wpdb']->update( hodima_seo_advisor_table( 'crawl_pages' ), [ 'resp_ms' => 200 ], [ 'path' => $p3_path ] );
+hodima_seo_advisor_crawl_map( true );
+hodima_seo_advisor_tasks_sync_crawl();
+$p3_b = $p3_st( 'slow' );
+$GLOBALS['wpdb']->update( hodima_seo_advisor_table( 'crawl_pages' ), [ 'resp_ms' => 3000 ], [ 'path' => $p3_path ] );
+hodima_seo_advisor_crawl_map( true );
+hodima_seo_advisor_tasks_sync_crawl();
+hodima_ad( 'خزش تازه: «کند» هنوز هست ← هنوز مانده (باز)؛ برطرف؛ دوباره کند ← برگشت', [ $p3_a, $p3_b, $p3_st( 'slow' ), hodima_seo_advisor_task_group( hodima_seo_advisor_task( $p3_path, 'crawl_slow', '' ) ) ], [ 'still', 'fixed', 'back', 'open' ] );
+
+// متن هنوز در صفحه: «انجام شد» دوباره ← هنوز مانده؛ شبکه نرسید ← منتظر
+$GLOBALS['wpdb']->update( hodima_seo_advisor_table( 'crawl_pages' ), [ 'meta_len' => 0 ], [ 'path' => $p3_path ] );
+hodima_seo_advisor_crawl_map( true );
+$p3_html = '<html><head><title>' . str_repeat( 'ع', 52 ) . '</title></head><body><h1>تیتر تازه</h1></body></html>';
+$p3_flash2 = $p3_mark( [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'done', 'items' => [ 'no_meta' ] ] );
+hodima_ad( 'متا هنوز نیست: کار «هنوز دیده می‌شود» و به «در دست انجام» می‌رود؛ پیام همین را می‌گوید', [ $p3_st( 'no_meta' ), hodima_seo_advisor_task_group( hodima_seo_advisor_task( $p3_path, 'crawl_no_meta', '' ) ), str_contains( $p3_flash2, '1 هنوز دیده می‌شود' ) ], [ 'still', 'open', true ] );
+$p3_code = 0;
+$p3_mark( [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'done', 'items' => [ 'no_meta' ] ] );
+hodima_ad( 'صفحه از سایت خوانده نشد ← «منتظر خزش تازه» (نه برطرف و نه مانده)', $p3_st( 'no_meta' ), 'waiting' );
+
+// خطای ۴۰۴: «انجام شد» ← درخواست؛ حالا ۳۰۱ ← کد در ردیف خزش، «خطا» برطرف
+$p3_code = 301;
+$p3_head = [ 'location' => hodima_seo_advisor_url( '/p3/new/' ) ];
+$p3_mark( [ 'source' => 'crawl', 'path' => '/p3/gone/', 'status' => 'done', 'items' => [ 'broken' ] ] );
+hodima_ad( 'خطای ۴۰۴ ← حالا ریدایرکت: ردیف خزش ۳۰۱ با مقصد، کار برطرف؛ ایراد تازه «ریدایرکت» (لینک ورودی دارد)', [ hodima_seo_advisor_crawl_row( '/p3/gone/' )['status'], hodima_seo_advisor_state_or( hodima_seo_advisor_task( '/p3/gone/', 'crawl_broken', '' ) ), $p3_codes( '/p3/gone/' ) ], [ 301, 'fixed', [ 'redirect' ] ] );
+$p3_code = 404;
+$p3_head = [];
+$GLOBALS['wpdb']->update( hodima_seo_advisor_table( 'crawl_pages' ), [ 'status' => 404, 'redirect_to' => '' ], [ 'path' => '/p3/gone/' ] );
+hodima_seo_advisor_crawl_map( true );
+$p3_mark( [ 'source' => 'crawl', 'path' => '/p3/gone/', 'status' => 'done', 'items' => [ 'broken' ] ] );
+hodima_ad( 'هنوز ۴۰۴ ← «هنوز دیده می‌شود»', hodima_seo_advisor_state_or( hodima_seo_advisor_task( '/p3/gone/', 'crawl_broken', '' ) ), 'still' );
+$p3_code = 200;
+
+// «دوباره انجام دادم» (فرم تب «در دست انجام») هم همان لحظه می‌سنجد
+$p3_html = '<html><head><title>' . str_repeat( 'ع', 52 ) . '</title><meta name="description" content="' . str_repeat( 'م', 130 ) . '"></head><body><h1>تیتر تازه</h1></body></html>';
+hodima_seo_advisor_task_set( $p3_path, 'crawl_no_meta', '', '', 'done' );
+hodima_seo_advisor_tasks_judge( 'crawl', static fn(): string => 'still', [ $p3_path ], 'crawl_no_meta' );
+$_POST = $_REQUEST = [ '_wpnonce' => wp_create_nonce( 'hodima_advisor_task' ), 'path' => $p3_path, 'rule' => 'crawl_no_meta', 'term' => '', 'title' => '', 'status' => 'done', 'redo' => '1' ];
+try {
+	hodima_seo_advisor_handle_task();
+} catch ( Hodima_P3_Redirect ) {
+	// ریدایرکت
+}
+$_POST = $_REQUEST = [];
+hodima_ad( '«دوباره انجام دادم» روی ایراد فنی: صفحه دوباره خوانده و برطرف شد', $p3_st( 'no_meta' ), 'fixed' );
+
+// رد شد و ورودی نامعتبر
+$p3_flash3 = $p3_mark( [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'rejected', 'items' => [ 'low_inlinks' ] ] );
+$p3_bad    = [ $p3_mark( [ 'source' => 'nope', 'path' => $p3_path, 'status' => 'done', 'items' => [ 'no_h1' ] ] ), $p3_mark( [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'done', 'items' => [] ] ), $p3_mark( [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'doing', 'items' => [ 'no_h1' ] ] ) ];
+hodima_ad( '«رد شد» ثبت و پیامش؛ منبع نامعتبر، بی‌تیک و وضعیت غیرمجاز ← هیچ ثبت نمی‌شود', [ $p3_st( 'low_inlinks' ), str_contains( $p3_flash3, '«رد شد» خورد' ), count( array_filter( $p3_bad, static fn( string $f ): bool => str_contains( $f, 'چیزی ثبت نشد' ) ) ) ], [ 'rejected', true, 3 ] );
+wp_set_current_user( 0 );
+add_filter( 'wp_die_handler', static fn() => static function (): void { throw new Hodima_P3_Redirect( 'die' ); } );
+$p3_denied = '';
+try {
+	$_POST = $_REQUEST = [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'done', 'items' => [ 'no_h1' ] ];
+	hodima_seo_advisor_handle_mark();
+} catch ( Hodima_P3_Redirect $e ) {
+	$p3_denied = $e->getMessage();
+}
+remove_all_filters( 'wp_die_handler' );
+wp_set_current_user( 1 );
+$p3_nonce = '';
+try {
+	$_POST = $_REQUEST = [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'done', 'items' => [ 'no_h1' ], '_wpnonce' => 'bad' ];
+	add_filter( 'wp_die_handler', static fn() => static function (): void { throw new Hodima_P3_Redirect( 'die' ); } );
+	hodima_seo_advisor_handle_mark();
+} catch ( Hodima_P3_Redirect $e ) {
+	$p3_nonce = $e->getMessage();
+}
+remove_all_filters( 'wp_die_handler' );
+$_POST = $_REQUEST = [];
+hodima_ad( 'بدون دسترسی مدیر و nonce غلط رد می‌شوند', [ $p3_denied, $p3_nonce ], [ 'die', 'die' ] );
+remove_filter( 'pre_http_request', $p3_live, 30 );
+
+// آدرس‌های خراب: روتر همان لحظه
+$p3_dead_ok = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'زنده', 'post_name' => 'p3-alive' ] );
+$p3_alive   = (string) hodima_seo_advisor_path_key( (string) get_permalink( $p3_dead_ok ) );
+update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, [ 'computed' => time(), 'router' => true, 'dead' => [ [ 'path' => '/p3-really-missing/', 'impressions' => 900, 'clicks' => 2, 'state' => 'missing', 'target' => '', 'code' => 404 ], [ 'path' => $p3_alive, 'impressions' => 500, 'clicks' => 1, 'state' => 'missing', 'target' => '', 'code' => 404 ], [ 'path' => '/p3-redirected/', 'impressions' => 300, 'clicks' => 0, 'state' => 'redirect', 'target' => '/x/', 'code' => 301 ] ], 'total' => 3, 'seen' => 1, 'fresh' => 0, 'unseen' => [ [ 'id' => $p3_dead_ok, 'path' => '/p3/unseen/', 'title' => 'بدون نمایش', 'type' => 'page', 'days' => 90 ] ] ], false );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'health' ];
+$p3_h0 = $cap( static fn() => hodima_seo_advisor_render_health( hodima_seo_advisor_status() ) );
+hodima_ad( 'تب آدرس‌های خراب: دکمه فقط روی ۴۰۴/ریدایرکت خراب (۲) و صفحه بدون نمایش (۱)؛ ریدایرکت سالم «درست کار می‌کند»', [ substr_count( $p3_h0, 'value="hodima_advisor_mark"' ), str_contains( $p3_h0, 'درست کار می‌کند' ), str_contains( $p3_h0, 'value="unseen"' ) ], [ 3, true, true ] );
+$p3_mark( [ 'source' => 'health', 'path' => '/p3-really-missing/', 'status' => 'done', 'items' => [ 'dead' ] ] );
+$p3_mark( [ 'source' => 'health', 'path' => $p3_alive, 'status' => 'done', 'items' => [ 'dead' ] ] );
+$p3_dead_paths = array_column( (array) hodima_seo_advisor_health()['dead'], 'path' );
+hodima_ad( 'آدرس مرده: هنوز ۴۰۴ ← «هنوز خراب است»؛ حالا صفحه سالم ← برطرف و از فهرست ذخیره‌شده هم رفت', [ hodima_seo_advisor_state_or( hodima_seo_advisor_task( '/p3-really-missing/', 'health_dead', '' ) ), hodima_seo_advisor_state_or( hodima_seo_advisor_task( $p3_alive, 'health_dead', '' ) ), in_array( $p3_alive, $p3_dead_paths, true ), in_array( '/p3-really-missing/', $p3_dead_paths, true ) ], [ 'still', 'fixed', false, true ] );
+
+// صفحه بدون نمایش: اول صف بررسی؛ ایندکس‌شده بعد از «انجام شد» ← برطرف؛ ۳۰ روز بعد هنوز نه ← مانده
+$p3_mark( [ 'source' => 'health', 'path' => '/p3/unseen/', 'status' => 'done', 'items' => [ 'unseen' ] ] );
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/p3/unseen/' => [ 'verdict' => 'NEUTRAL', 'coverage' => 'Discovered - currently not indexed', 'robots' => '', 'indexing' => '', 'fetch' => '', 'last_crawl' => '', 'google_canonical' => '', 'user_canonical' => '', 'crawled_as' => '', 'checked' => time() - 3 * DAY_IN_SECONDS ] ], false );
+hodima_ad( 'صفحه بدون نمایش «انجام شد»: منتظر، اول صف بررسی ایندکس (بررسی قبلی پیش از انجام بود)', [ hodima_seo_advisor_state_or( hodima_seo_advisor_task( '/p3/unseen/', 'health_unseen', '' ) ), hodima_seo_advisor_inspect_queue( 1 )[0] ?? '' ], [ 'waiting', '/p3/unseen/' ] );
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/p3/unseen/' => [ 'verdict' => 'PASS', 'coverage' => 'Submitted and indexed', 'robots' => '', 'indexing' => '', 'fetch' => '', 'last_crawl' => gmdate( 'c' ), 'google_canonical' => '', 'user_canonical' => '', 'crawled_as' => '', 'checked' => time() + 5 ] ], false );
+hodima_seo_advisor_tasks_sync_inspected();
+hodima_ad( 'بررسی بعد از انجام: ایندکس‌شده ← برطرف', hodima_seo_advisor_state_or( hodima_seo_advisor_task( '/p3/unseen/', 'health_unseen', '' ) ), 'fixed' );
+hodima_ad( 'حکم بدون نمایش: ۳۱ روز بعد هنوز در فهرست ← مانده؛ ۵ روز ← منتظر؛ از فهرست رفته ← برطرف', [ hodima_seo_advisor_task_unseen_verdict( [ 'path' => '/u/', 'at' => time() - 31 * DAY_IN_SECONDS ], [ '/u/' => true ], [] ), hodima_seo_advisor_task_unseen_verdict( [ 'path' => '/u/', 'at' => time() - 5 * DAY_IN_SECONDS ], [ '/u/' => true ], [] ), hodima_seo_advisor_task_unseen_verdict( [ 'path' => '/u/', 'at' => time() ], [], [] ) ], [ 'still', 'wait', 'fixed' ] );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'health' ];
+$p3_h1 = $cap( static fn() => hodima_seo_advisor_render_health( hodima_seo_advisor_status() ) );
+hodima_ad( 'تب آدرس‌های خراب بعد از علامت: برطرف/منتظرها پنهان؛ «هنوز خراب است» با نشان و دکمه می‌ماند', [ str_contains( $p3_h1, 'p3-really-missing' ), str_contains( $p3_h1, 'هنوز خراب است' ), str_contains( $p3_h1, 'بدون نمایش</th>' ) || str_contains( $p3_h1, '>بدون نمایش <' ), str_contains( $p3_h1, 'علامت‌خورده' ) ], [ true, true, false, true ] );
+
+// وضعیت در گوگل: ایندکس‌نشده؛ گوگل بعد از انجام دوباره نخزیده ← منتظر؛ خزیده و هنوز نه ← مانده؛ ایندکس ← برطرف
+$p3_rec = static fn( string $coverage, string $verdict, int $checked, string $crawl ): array => [ 'verdict' => $verdict, 'coverage' => $coverage, 'robots' => '', 'indexing' => '', 'fetch' => '', 'last_crawl' => $crawl, 'google_canonical' => '', 'user_canonical' => '', 'crawled_as' => '', 'checked' => $checked ];
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/p3/idx/' => $p3_rec( 'Crawled - currently not indexed', 'NEUTRAL', time() - DAY_IN_SECONDS, gmdate( 'c', time() - 9 * DAY_IN_SECONDS ) ) ], false );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'indexing' ];
+$p3_i0 = $cap( static fn() => hodima_seo_advisor_render_indexing() );
+$p3_mark( [ 'source' => 'indexing', 'path' => '/p3/idx/', 'status' => 'done' ] );
+$p3_it = static fn(): string => hodima_seo_advisor_state_or( hodima_seo_advisor_task( '/p3/idx/', 'index_problem', '' ) );
+$p3_i_a = [ $p3_it(), hodima_seo_advisor_task( '/p3/idx/', 'index_problem', '' )['title'] ?? '', in_array( '/p3/idx/', hodima_seo_advisor_inspect_queue( 3 ), true ) ];
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/p3/idx/' => $p3_rec( 'Crawled - currently not indexed', 'NEUTRAL', time() + 5, gmdate( 'c', time() - 9 * DAY_IN_SECONDS ) ) ], false );
+hodima_seo_advisor_tasks_sync_inspected();
+$p3_i_b = $p3_it();
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/p3/idx/' => $p3_rec( 'Crawled - currently not indexed', 'NEUTRAL', time() + 5, gmdate( 'c', time() + 5 ) ) ], false );
+hodima_seo_advisor_tasks_sync_inspected();
+$p3_i_c = $p3_it();
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/p3/idx/' => $p3_rec( 'Submitted and indexed', 'PASS', time() + 10, gmdate( 'c', time() + 5 ) ) ], false );
+hodima_seo_advisor_tasks_sync_inspected();
+hodima_ad( 'ایندکس: دکمه در جدول؛ «انجام شد» ← منتظر با عنوان وضعیت و در صف؛ گوگل نخزیده ← منتظر؛ خزیده و نه ← مانده؛ ایندکس ← برطرف', [ str_contains( $p3_i0, 'value="hodima_advisor_mark"' ), $p3_i_a, $p3_i_b, $p3_i_c, $p3_it() ], [ true, [ 'waiting', 'ایندکس: خزیده شد ولی ایندکس نشد', true ], 'waiting', 'still', 'fixed' ] );
+
+// صفحه‌های هم‌کلمه: یک کار برای کلمه؛ ۱۴ روز؛ سهم ≥ ۷۰٪ ← برطرف
+hodima_seo_advisor_store(
+	[
+		'/p3/c1/' => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ],
+		'/p3/c2/' => [ 'clicks' => 25, 'impressions' => 2000, 'position' => 7.5 ],
+	],
+	[],
+	[
+		'/p3/c1/' => [ 'گیره سه' => [ 'clicks' => 30, 'impressions' => 2000, 'position' => 7.0 ] ],
+		'/p3/c2/' => [ 'گیره سه' => [ 'clicks' => 25, 'impressions' => 2000, 'position' => 7.5 ] ],
+	]
+);
+update_option( HODIMA_SEO_ADVISOR_IGNORED_OPTION, [], false );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition' ];
+$p3_k0 = $cap( static fn() => hodima_seo_advisor_render_competition( hodima_seo_advisor_status() ) );
+hodima_ad( 'هم‌کلمه: فرم کلمه بیرون از summary (کنش داخل summary نامعتبر است) با کلمه و مسیر برنده', [ str_contains( $p3_k0, 'name="term" value="گیره سه"' ), 1 === preg_match( '#<summary[^>]*>(?:(?!</summary>).)*hodima-advisor__mark#su', $p3_k0 ), str_contains( $p3_k0, 'aria-label="انجام شد: گیره سه"' ) ], [ true, false, true ] );
+hodima_seo_advisor_task_set( '/p3/old-winner/', 'competition', 'گيره سه', 'قدیمی', 'doing' );
+$p3_mark( [ 'source' => 'competition', 'path' => '/p3/c1/', 'term' => 'گیره سه', 'status' => 'done' ] );
+$p3_ct = static fn(): string => hodima_seo_advisor_state_or( hodima_seo_advisor_task( '/p3/c1/', 'competition', 'گیره سه' ) );
+hodima_ad( 'یک کار برای هر کلمه: کار قبلی همان کلمه (برنده دیگر، املای عربی) جایش را داد؛ برچسب «۰ از ۱۴ روز»', [ hodima_seo_advisor_task( '/p3/old-winner/', 'competition', 'گیره سه' ), $p3_ct(), str_contains( hodima_seo_advisor_task_view( hodima_seo_advisor_task( '/p3/c1/', 'competition', 'گیره سه' ) )['label'], '0 از 14 روز' ) ], [ null, 'waiting', true ] );
+$p3_k1 = $cap( static fn() => hodima_seo_advisor_render_competition( hodima_seo_advisor_status() ) );
+hodima_ad( 'کلمه علامت‌خورده از فهرست پنهان با پیوند نمایش', [ str_contains( $p3_k1, 'name="term" value="گیره سه"' ), str_contains( $p3_k1, 'کار بازی نمانده' ), str_contains( $p3_k1, 'نمایش 1 کلمه علامت‌خورده' ) ], [ false, true, true ] );
+hodima_seo_advisor_tasks_sync_competition();
+$p3_c_a = $p3_ct();
+$p3_ts  = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+$p3_ts[ hodima_seo_advisor_task_key( '/p3/c1/', 'competition', 'گیره سه' ) ]['at'] = time() - 15 * DAY_IN_SECONDS;
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $p3_ts, false );
+hodima_seo_advisor_tasks_sync_competition();
+$p3_c_b = $p3_ct();
+$GLOBALS['wpdb']->update( hodima_seo_advisor_table( 'queries' ), [ 'impressions' => 300 ], [ 'path' => '/p3/c2/' ] );
+hodima_seo_advisor_tasks_sync_competition();
+hodima_ad( 'هم‌کلمه: همان روز ← منتظر؛ ۱۵ روز بعد هنوز رقابت ← «هنوز رقابت دارد»؛ برنده ≥ ۷۰٪ ← برطرف', [ $p3_c_a, $p3_c_b, $p3_ct() ], [ 'waiting', 'still', 'fixed' ] );
+
+// پیشنهادها: تیک برای هر ایراد، عنوان از داده خود سایت؛ همه علامت‌خورده ← صفحه پنهان
+hodima_seo_advisor_store( [ '/p3/opp/' => [ 'clicks' => 2, 'impressions' => 5000, 'position' => 4.0 ] ], [], [] );
+$GLOBALS['wpdb']->update( hodima_seo_advisor_table( 'pages' ), [ 'advice' => wp_json_encode( [ [ 'rule' => 'low_ctr', 'term' => '', 'title' => 'عنوان و توضیح متا را بازنویسی کنید', 'gain' => 40 ], [ 'rule' => 'near_first', 'term' => 'گیره سه', 'title' => 'کلمه «گیره سه» نزدیک صفحه اول', 'gain' => 10 ] ] ), 'advice_count' => 2, 'potential' => 50 ], [ 'path' => '/p3/opp/' ] );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
+$p3_o0 = $cap( static fn() => hodima_seo_advisor_render_list( hodima_seo_advisor_status() ) );
+hodima_ad( 'پیشنهادها: دو تیک «قاعده|کلمه» در ردیف، فرم انجام شد/رد شد، «نادیده گرفتن کل صفحه» پیوند متنی', [ str_contains( $p3_o0, 'value="low_ctr|"' ), str_contains( $p3_o0, 'value="near_first|گیره سه"' ), str_contains( $p3_o0, 'value="opportunities"' ), str_contains( $p3_o0, 'hodima-advisor__text-btn">نادیده گرفتن کل صفحه' ) ], [ true, true, true, true ] );
+$p3_mark( [ 'source' => 'opportunities', 'path' => '/p3/opp/', 'status' => 'done', 'items' => [ 'low_ctr|', 'bogus|x' ] ] );
+hodima_ad( 'یک ایراد «انجام شد»: عنوان از پیشنهاد ذخیره‌شده؛ مورد ساختگی ثبت نمی‌شود؛ صفحه هنوز در فهرست (ایراد دوم باز)', [ hodima_seo_advisor_task( '/p3/opp/', 'low_ctr', '' )['title'] ?? '', count( hodima_seo_advisor_tasks() ) > 0 && null === hodima_seo_advisor_task( '/p3/opp/', 'bogus', 'x' ), isset( hodima_seo_advisor_handled_paths()['/p3/opp/'] ) ], [ 'عنوان و توضیح متا را بازنویسی کنید', true, false ] );
+$p3_mark( [ 'source' => 'opportunities', 'path' => '/p3/opp/', 'status' => 'rejected', 'items' => [ 'near_first|گیره سه' ] ] );
+hodima_ad( 'هر دو علامت خورد ← صفحه تمام‌علامت‌خورده (پنهان در فهرست)', isset( hodima_seo_advisor_handled_paths()['/p3/opp/'] ), true );
+
+// انجام‌شده: چیپ‌های «از کدام تب»، فیلتر و سه گام هر نوع
+update_option( 'hodima_discover_sc_key', $key_json, false );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 3, 'queries' => 2, 'advised' => 1, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'done' ];
+$p3_d0 = $cap( static fn() => hodima_seo_advisor_render_admin() );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'done', 'tsource' => 'crawl' ];
+$p3_d1 = $cap( static fn() => hodima_seo_advisor_render_admin() );
+hodima_ad( 'انجام‌شده: چیپ‌های «از کدام تب» با همه منبع‌ها؛ فیلتر ایرادهای فنی فقط کار خزش؛ گام «صفحه دوباره از سایت خوانده شد»', [ str_contains( $p3_d0, 'aria-label="از کدام تب"' ), str_contains( $p3_d0, 'tsource=competition' ) && str_contains( $p3_d0, 'tsource=health' ) && str_contains( $p3_d0, 'tsource=indexing' ), str_contains( $p3_d1, 'رقابت صفحه‌ها برای' ), str_contains( $p3_d1, 'بدون H1' ), str_contains( $p3_d1, 'صفحه دوباره از سایت خوانده شد' ) ], [ true, true, false, true, true ] );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
+$p3_d2 = $cap( static fn() => hodima_seo_advisor_render_admin() );
+hodima_ad( 'در دست انجام: «هنوز خراب است» با قدم بعدی و «دوباره انجام دادم»؛ نشان تب مبدأ', [ str_contains( $p3_d2, 'هنوز خراب است' ), str_contains( $p3_d2, 'قانون ۳۰۱ بگذارید' ), str_contains( $p3_d2, 'دوباره انجام دادم' ), str_contains( $p3_d2, '<span class="hds-pill hds-pill--info">آدرس‌های خراب</span>' ) ], [ true, true, true, true ] );
+delete_option( 'hodima_discover_sc_key' );
+$_GET = [];
+
+remove_filter( 'wp_redirect', $p3_redirect, 1 );
+wp_delete_post( $p3_post, true );
+wp_delete_post( $p3_dead_ok, true );
+hodima_seo_advisor_clear_data();
+delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+delete_option( HODIMA_SEO_ADVISOR_LIVE_OPTION );
+false === $p3_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $p3_tasks, false );
+false === $p3_status ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $p3_status, false );
 wp_set_current_user( 0 );
 
 echo "=== پاکسازی\n";

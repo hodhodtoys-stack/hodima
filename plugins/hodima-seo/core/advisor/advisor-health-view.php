@@ -5,7 +5,7 @@
  *
  * داده از advisor-health.php. کالبد: ۴ کارت آمار ← کارت «آدرس‌هایی که در گوگل‌اند ولی در سایت مرده‌اند»
  * (جدول با وضعیت و دستور) ← کارت «صفحه‌هایی که نمایش نگرفته‌اند». فقط می‌خواند و دستور می‌دهد؛ چیزی را
- * در سایت عوض نمی‌کند.
+ * در سایت عوض نمی‌کند. SEO 3.0.2: هر آدرس مرده و صفحه بدون نمایش «انجام شد / رد شد» دارد (advisor-marks.php).
  */
 
 declare(strict_types=1);
@@ -47,7 +47,26 @@ function hodima_seo_advisor_render_health( array $status ): void {
 	$seen   = (int) ( $data['seen'] ?? 0 );
 	$fresh  = (int) ( $data['fresh'] ?? 0 );
 
-	$bad_dead = count( array_filter( $dead, static fn( array $d ): bool => in_array( $d['state'], [ 'missing', 'rule_broken' ], true ) ) );
+	// موردهای علامت‌خورده (منتظر، برطرف، رد شد) پنهان، مگر با «نمایش علامت‌خورده‌ها»
+	$show        = hodima_seo_advisor_show_marked();
+	$hide_dead   = 0;
+	$hide_unseen = 0;
+	foreach ( $dead as $i => $row ) {
+		if ( in_array( $row['state'], HODIMA_SEO_ADVISOR_HEALTH_BAD, true ) && ! $show && null !== hodima_seo_advisor_task_closed( (string) $row['path'], 'health_dead' ) ) {
+			unset( $dead[ $i ] );
+			++$hide_dead;
+		}
+	}
+	foreach ( $unseen as $i => $row ) {
+		if ( ! $show && null !== hodima_seo_advisor_task_closed( (string) $row['path'], 'health_unseen' ) ) {
+			unset( $unseen[ $i ] );
+			++$hide_unseen;
+		}
+	}
+	$dead   = array_values( $dead );
+	$unseen = array_values( $unseen );
+
+	$bad_dead = count( array_filter( $dead, static fn( array $d ): bool => in_array( $d['state'], HODIMA_SEO_ADVISOR_HEALTH_BAD, true ) ) );
 
 	hodima_seo_ui_stats( [
 		[ 'label' => 'صفحه بدون نمایش', 'value' => $empty ? '—' : esc_html( $n( count( $unseen ) ) ), 'sub' => $empty ? '' : esc_html( sprintf( 'از %s صفحه منتشرشده', $n( $total ) ) ), 'empty' => $empty ],
@@ -68,38 +87,58 @@ function hodima_seo_advisor_render_health( array $status ): void {
 
 	if ( empty( $data['router'] ) ) {
 		hodima_seo_ui_empty( 'بررسی انجام نشد', 'ماژول «آدرس تمیز» سایت خاموش است و بدون آن وضعیت آدرس‌ها بررسی نمی‌شود. آن را در «ابزارهای هدیما ← ماژول‌های سئو» روشن کنید.' );
+	} elseif ( ! $dead && $hide_dead > 0 ) {
+		hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه آدرس‌های مرده را «انجام شد» یا «رد شد» علامت زده‌اید. %s', hodima_seo_advisor_marked_toggle( $hide_dead, [ 'tab' => 'health' ], 'آدرس' ) ) );
 	} elseif ( ! $dead ) {
 		hodima_seo_ui_empty( 'آدرس مرده‌ای پیدا نشد', 'همه آدرس‌های پرنمایش گوگل در سایت صفحه سالم دارند.' );
 	} else {
 		?>
 		<div class="hds-table-wrap" tabindex="0" role="region" aria-label="آدرس‌های مرده در گوگل">
 			<table class="widefat striped hodima-advisor__terms">
-				<thead><tr><th scope="col">آدرس</th><th scope="col">نمایش</th><th scope="col">کلیک</th><th scope="col">وضعیت</th><th scope="col">مقصد</th></tr></thead>
+				<thead><tr><th scope="col">آدرس</th><th scope="col">نمایش</th><th scope="col">کلیک</th><th scope="col">وضعیت</th><th scope="col">مقصد</th><th scope="col">کنش</th></tr></thead>
 				<tbody>
 					<?php foreach ( $dead as $row ) : ?>
-						<?php $info = hodima_seo_advisor_health_state( (string) $row['state'] ); ?>
+						<?php
+						$info = hodima_seo_advisor_health_state( (string) $row['state'] );
+						$task = hodima_seo_advisor_task( (string) $row['path'], 'health_dead', '' );
+						$bad  = in_array( $row['state'], HODIMA_SEO_ADVISOR_HEALTH_BAD, true );
+						?>
 						<tr>
-							<th scope="row"><?php echo hodima_seo_advisor_url_link( (string) $row['path'], 'hodima-advisor__rival-url' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
+							<th scope="row"><?php echo hodima_seo_advisor_url_link( (string) $row['path'], 'hodima-advisor__rival-url' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?> <?php echo $bad ? hodima_seo_advisor_task_badge( $task ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_task_badge ?></th>
 							<td><?php echo esc_html( $n( $row['impressions'] ) ); ?></td>
 							<td><?php echo esc_html( $n( $row['clicks'] ) ); ?></td>
 							<td><span class="<?php echo esc_attr( $info['class'] ); ?>"><?php echo esc_html( $info['label'] ); ?></span></td>
 							<td><?php echo '' !== (string) $row['target'] ? hodima_seo_advisor_url_link( (string) $row['target'], 'hodima-advisor__rival-url' ) : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></td>
+							<td>
+								<?php if ( $bad && ( null === $task || ! in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true ) ) ) : ?>
+									<?php hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), 'health', (string) $row['path'], rawurldecode( (string) $row['path'] ), [ 'items[]' => 'dead' ] ); ?>
+								<?php elseif ( ! $bad ) : ?>
+									<small class="hodima-advisor__muted">درست کار می‌کند</small>
+								<?php endif; ?>
+							</td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>
 			</table>
 		</div>
 		<?php
+		$toggle = hodima_seo_advisor_marked_toggle( $hide_dead, [ 'tab' => 'health' ], 'آدرس' );
+		if ( '' !== $toggle ) {
+			echo '<div class="hodima-advisor__foot"><span>' . $toggle . '</span></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action
+		}
 		foreach ( array_unique( array_column( $dead, 'state' ) ) as $state ) {
 			echo '<div class="hodima-advisor__advice">' . esc_html( hodima_seo_advisor_health_state( (string) $state )['advice'] ) . '</div>';
 		}
+		echo '<p class="hodima-advisor__advice">بعد از ریدایرکت یا درست کردن آدرس، «انجام شد» را بزنید: آدرس همان لحظه در خود سایت دوباره سنجیده می‌شود. «رد شد» یعنی عمدا حذف شده و جایگزین ندارد.</p>';
 	}
 	hodima_seo_ui_card_close();
 
 	// صفحه‌های بدون نمایش
 	hodima_seo_ui_card_open( 'صفحه‌هایی که نمایش نگرفته‌اند', sprintf( 'نوشته، برگه و محصول منتشرشده (غیر noindex، بدون رمز) که در %s روز اخیر هیچ نمایشی در گوگل نداشته‌اند و دست‌کم %s روز از انتشارشان گذشته؛ قدیمی‌ترین اول.', $n( $status['days'] ), $n( HODIMA_SEO_ADVISOR_HEALTH_FRESH_DAYS ) ) );
 
-	if ( ! $unseen ) {
+	if ( ! $unseen && $hide_unseen > 0 ) {
+		hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه صفحه‌های بدون نمایش را علامت زده‌اید؛ با بررسی ایندکس گوگل سنجیده می‌شوند. %s', hodima_seo_advisor_marked_toggle( $hide_unseen, [ 'tab' => 'health' ], 'صفحه' ) ) );
+	} elseif ( ! $unseen ) {
 		hodima_seo_ui_empty( 'همه صفحه‌ها دیده شده‌اند', 'هر صفحه منتشرشده‌ای دست‌کم یک نمایش در گوگل گرفته است.' );
 	} else {
 		// صفحه‌بندی (SEO 3.0.1): تا ۱۰۰ صفحه ذخیره می‌شود ولی قبلا فقط ۳۰ تای اول دیده می‌شد
@@ -108,27 +147,42 @@ function hodima_seo_advisor_render_health( array $status ): void {
 		?>
 		<div class="hds-table-wrap" tabindex="0" role="region" aria-label="صفحه‌های بدون نمایش">
 			<table class="widefat striped hodima-advisor__terms">
-				<thead><tr><th scope="col">صفحه</th><th scope="col">نوع</th><th scope="col">سن</th><th scope="col"></th></tr></thead>
+				<thead><tr><th scope="col">صفحه</th><th scope="col">نوع</th><th scope="col">سن</th><th scope="col">کنش</th></tr></thead>
 				<tbody>
 					<?php foreach ( array_slice( $unseen, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE ) as $row ) : ?>
-						<?php $edit = get_edit_post_link( (int) $row['id'], 'raw' ); ?>
+						<?php
+						$edit  = get_edit_post_link( (int) $row['id'], 'raw' );
+						$task  = hodima_seo_advisor_task( (string) $row['path'], 'health_unseen', '' );
+						$title = '' !== (string) $row['title'] ? (string) $row['title'] : rawurldecode( (string) $row['path'] );
+						?>
 						<tr>
-							<th scope="row"><?php echo esc_html( '' !== (string) $row['title'] ? (string) $row['title'] : (string) $row['path'] ); ?> <?php echo hodima_seo_advisor_url_link( (string) $row['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
+							<th scope="row"><?php echo esc_html( $title ); ?> <?php echo hodima_seo_advisor_url_link( (string) $row['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?> <?php echo hodima_seo_advisor_task_badge( $task ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_task_badge ?></th>
 							<td><?php echo esc_html( hodima_seo_advisor_kind_label( (string) $row['type'] ) ); ?></td>
 							<td><?php echo esc_html( sprintf( '%s روز', $n( $row['days'] ) ) ); ?></td>
-							<td><?php echo is_string( $edit ) && '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش صفحه', 'edit' ) : hodima_seo_advisor_action( hodima_seo_advisor_url( (string) $row['path'] ), 'دیدن در سایت', 'external', true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?></td>
+							<td>
+								<div class="hodima-advisor__row-acts">
+									<?php echo is_string( $edit ) && '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش صفحه', 'edit' ) : hodima_seo_advisor_action( hodima_seo_advisor_url( (string) $row['path'] ), 'دیدن در سایت', 'external', true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
+									<?php if ( null === $task || ! in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true ) ) : ?>
+										<?php hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), 'health', (string) $row['path'], $title, [ 'items[]' => 'unseen' ] ); ?>
+									<?php endif; ?>
+								</div>
+							</td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>
 			</table>
 		</div>
-		<?php if ( $pages > 1 ) : ?>
+		<?php $toggle = hodima_seo_advisor_marked_toggle( $hide_unseen, [ 'tab' => 'health' ], 'صفحه' ); ?>
+		<?php if ( $pages > 1 || '' !== $toggle ) : ?>
 			<div class="hodima-advisor__foot">
-				<span><?php echo esc_html( sprintf( 'نمایش %1$s از %2$s صفحه، قدیمی‌ترین اول', $n( count( array_slice( $unseen, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE ) ) ), $n( count( $unseen ) ) ) ); ?></span>
-				<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'health', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
+				<span>
+					<?php echo esc_html( sprintf( 'نمایش %1$s از %2$s صفحه، قدیمی‌ترین اول', $n( count( array_slice( $unseen, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE ) ) ), $n( count( $unseen ) ) ) ); ?>
+					<?php echo $toggle; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
+				</span>
+				<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'health', 'tasks' => $show ? 'all' : '', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 			</div>
 		<?php endif; ?>
-		<div class="hodima-advisor__advice"><strong>چه کنید:</strong> برای هر صفحه بررسی کنید: noindex یا canonical به آدرس دیگر نباشد؛ در سایت‌مپ باشد؛ دست‌کم از ۲ تا ۳ صفحه مرتبط لینک داخلی بگیرد؛ و محتوایش کم یا تکراری نباشد. بعد در Search Console همان آدرس را در «بررسی آدرس» بگذارید و «درخواست ایندکس» بزنید. اگر صفحه ارزشی ندارد، ادغام یا حذفش با ریدایرکت بهتر است.</div>
+		<div class="hodima-advisor__advice"><strong>چه کنید:</strong> برای هر صفحه بررسی کنید: noindex یا canonical به آدرس دیگر نباشد؛ در سایت‌مپ باشد؛ دست‌کم از ۲ تا ۳ صفحه مرتبط لینک داخلی بگیرد؛ و محتوایش کم یا تکراری نباشد. بعد در Search Console همان آدرس را در «بررسی آدرس» بگذارید و «درخواست ایندکس» بزنید و اینجا «انجام شد» را بزنید: آدرس اول صف بررسی ایندکس می‌رود؛ نمایش یا ایندکس ← برطرف شد، ۳۰ روز بعد هنوز نه ← برمی‌گردد. اگر صفحه ارزشی ندارد، ادغام یا حذفش با ریدایرکت بهتر است.</div>
 		<?php
 	}
 	hodima_seo_ui_card_close();

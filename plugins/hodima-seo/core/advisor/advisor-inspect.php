@@ -161,9 +161,12 @@ function hodima_seo_advisor_inspect_queue( int $limit = HODIMA_SEO_ADVISOR_INSPE
 	};
 
 	// اول: آدرس کارهای «انجام شد» که هنوز معلوم نیست گوگل بعد از تغییر دوباره خوانده (تب «انجام‌شده»)؛ هر ۲ روز تا دیده شود
+	// کار «صفحه بدون نمایش» و «مشکل ایندکس» (SEO 3.0.2) نتیجه‌اش همین بررسی است: اولین بررسی بعد از «انجام شد» بی‌درنگ
+	// ایراد فنی، رقابت و آدرس مرده سنجش خودشان را دارند و سهمیه گوگل را نمی‌گیرند
 	foreach ( function_exists( 'hodima_seo_advisor_tasks' ) ? hodima_seo_advisor_tasks() : [] as $task ) {
-		$seen = 'done' === $task['status'] ? hodima_seo_advisor_inspect_after( $task['path'], $task['at'] ) : null;
-		if ( null !== $seen && 'yes' !== $seen['state'] && $seen['checked'] < time() - HODIMA_SEO_ADVISOR_INSPECT_TASK_RECHECK_DAYS * DAY_IN_SECONDS && 1 !== preg_match( '#/page/\d+/?$#', $task['path'] ) ) {
+		$seen = 'done' === $task['status'] && ( 'opportunities' === hodima_seo_advisor_task_source( $task['rule'] ) || in_array( $task['rule'], [ 'health_unseen', 'index_problem' ], true ) ) ? hodima_seo_advisor_inspect_after( $task['path'], $task['at'] ) : null;
+		$asks = in_array( $task['rule'], [ 'health_unseen', 'index_problem' ], true ) && null !== $seen && $seen['checked'] < $task['at'];
+		if ( null !== $seen && 'yes' !== $seen['state'] && ( $asks || $seen['checked'] < time() - HODIMA_SEO_ADVISOR_INSPECT_TASK_RECHECK_DAYS * DAY_IN_SECONDS ) && 1 !== preg_match( '#/page/\d+/?$#', $task['path'] ) ) {
 			$queue[ $task['path'] ] = true;
 		}
 	}
@@ -258,6 +261,10 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 	}
 
 	update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $stored, false );
+
+	if ( $summary['checked'] > 0 ) {
+		hodima_seo_advisor_tasks_sync_inspected(); // کارهای «انجام شد» ایندکس و صفحه بدون نمایش با نتیجه تازه
+	}
 
 	return $summary;
 }

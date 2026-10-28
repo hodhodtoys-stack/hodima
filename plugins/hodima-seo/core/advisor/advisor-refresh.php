@@ -319,6 +319,7 @@ function hodima_seo_advisor_pipeline_stage( string $stage, array $state, float $
 			break;
 		case 'verify': // اثر کارهای «انجام شد» با داده فقط بعد از تغییر (advisor-verify.php)؛ باقی‌مانده فردا
 			hodima_seo_advisor_verify_batch( $property, $deadline );
+			hodima_seo_advisor_tasks_sync_competition(); // کارهای «انجام شد» صفحه‌های هم‌کلمه با داده تازه
 			break;
 	}
 

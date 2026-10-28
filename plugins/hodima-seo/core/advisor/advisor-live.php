@@ -101,11 +101,22 @@ function hodima_seo_advisor_live_parse( string $html ): array {
  * @return bool true = خوانده و نوشته شد
  */
 function hodima_seo_advisor_live_check( string $path ): bool {
+	return 200 === hodima_seo_advisor_live_fetch( $path );
+}
+
+/**
+ * بدنه بررسی یک آدرس. `$record_status`: پاسخ غیر ۲۰۰ (ریدایرکت یا خطا) هم در ردیف خزش نوشته شود؛ فقط بعد از
+ * «انجام شد» مدیر روی ایراد «خطای ۴۰۴/۵۰۰» (advisor-marks.php). بررسی خودکار بعد از ذخیره این کار را نمی‌کند:
+ * یک خطای گذرای هاست صفحه سالم را «خراب» نشان می‌داد (ریدایرکت و خطا را خزش بعدی می‌گوید).
+ *
+ * @return int کد پاسخ HTTP؛ صفر = آدرس در خزش نیست، درخواست نرسید یا نوشتن نشد
+ */
+function hodima_seo_advisor_live_fetch( string $path, bool $record_status = false ): int {
 
 	global $wpdb;
 
 	if ( null === hodima_seo_advisor_crawl_row( $path ) ) {
-		return false;
+		return 0;
 	}
 
 	$res = wp_remote_get(
@@ -114,9 +125,27 @@ function hodima_seo_advisor_live_check( string $path ): bool {
 		[ 'timeout' => 15, 'redirection' => 0, 'user-agent' => 'Hodima-Advisor/' . HODIMA_SEO_VERSION . ' (+' . home_url( '/' ) . ')' ]
 	);
 
-	// شبکه/هاست نگذاشت یا صفحه ۲۰۰ نیست: داده خزش دست نمی‌خورد (ریدایرکت و خطا را خزش بعدی می‌گوید)
-	if ( is_wp_error( $res ) || 200 !== (int) wp_remote_retrieve_response_code( $res ) ) {
-		return false;
+	if ( is_wp_error( $res ) ) {
+		return 0;
+	}
+
+	$code = (int) wp_remote_retrieve_response_code( $res );
+
+	// صفحه ۲۰۰ نیست: داده خزش دست نمی‌خورد، مگر بررسی دستی مدیر روی ایراد خطا (بالا)
+	if ( 200 !== $code ) {
+		if ( ! $record_status || $code < 300 ) {
+			return 0;
+		}
+		$location = (string) wp_remote_retrieve_header( $res, 'location' );
+		$updated  = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			hodima_seo_advisor_table( 'crawl_pages' ),
+			[ 'status' => $code, 'redirect_to' => $code < 400 && '' !== $location ? (string) ( hodima_seo_advisor_path_key( $location ) ?? '' ) : '' ],
+			[ 'path' => $path ],
+			[ '%d', '%s' ],
+			[ '%s' ]
+		);
+		hodima_seo_advisor_crawl_map( true );
+		return false === $updated ? 0 : $code;
 	}
 
 	$live = hodima_seo_advisor_live_parse( (string) wp_remote_retrieve_body( $res ) );
@@ -139,7 +168,7 @@ function hodima_seo_advisor_live_check( string $path ): bool {
 	);
 
 	if ( false === $updated ) {
-		return false;
+		return 0;
 	}
 
 	$times          = get_option( HODIMA_SEO_ADVISOR_LIVE_OPTION, [] );
@@ -154,7 +183,12 @@ function hodima_seo_advisor_live_check( string $path ): bool {
 		hodima_seo_advisor_save_advice( $path ); // سلامت متا و تیتر رندرشده در پیشنهادها
 	}
 
-	return true;
+	// کارهای «انجام شد» ایرادهای متنی همین صفحه با همین خواندن سنجیده می‌شوند (ذخیره صفحه هم همین را صدا می‌زند)
+	if ( function_exists( 'hodima_seo_advisor_tasks_sync_crawl' ) ) {
+		hodima_seo_advisor_tasks_sync_crawl( $path, [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, 'broken' ] );
+	}
+
+	return 200;
 }
 
 /**

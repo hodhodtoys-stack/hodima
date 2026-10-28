@@ -128,6 +128,40 @@ for ( const width of [ 1300, 390 ] ) {
 	await ctx.close();
 }
 
+// «انجام شد / رد شد» با فرم واقعی (SEO 3.0.2): تیک‌ها با ویژگی form به فرم ردیف وصل‌اند؛ یکی برداشته می‌شود
+for ( const width of [ 1300, 390 ] ) {
+	console.log( `=== انجام شد در تب ایرادهای فنی، عرض ${ width }` );
+	const ctx = await newContext( width );
+	const pg = await login( ctx );
+	await pg.goto( `${ site }/wp-admin/admin.php?page=hodima-advisor&tab=crawl`, { waitUntil: 'load' } );
+	const row = pg.locator( 'tr', { has: pg.locator( 'a[href$="/mk-page/"]' ) } );
+	const checks = row.locator( 'input[type="checkbox"][name="items[]"]' );
+	const want = 1300 === width ? 4 : 1; // در ۳۹۰ سه ایراد علامت‌خورده دور قبل پنهان‌اند
+	log( want === await checks.count() && want === ( await checks.evaluateAll( ( cs ) => cs.filter( ( c ) => c.checked && c.form?.classList.contains( 'hodima-advisor__mark' ) ).length ) ), `${ want } ایراد باز، همه از اول تیک‌خورده و وصل به فرم همان ردیف` );
+	if ( 1300 === width ) {
+		await row.locator( 'label', { hasText: 'کند' } ).click(); // کلیک روی برچسب (هدف بزرگ) تیک را برمی‌دارد
+		log( false === await row.locator( 'input[value="slow"]' ).isChecked(), 'کلیک روی متن ایراد تیک را برمی‌دارد' );
+		const done = row.locator( 'button.hodima-advisor__mark-done' );
+		const hit = await done.boundingBox();
+		log( null !== hit && hit.height >= 40, 'دکمه «انجام شد» هدف لمسی ≥ ۴۰px', hit ? `${ Math.round( hit.width ) }×${ Math.round( hit.height ) }` : '' );
+		await Promise.all( [ pg.waitForURL( /tab=crawl/, { timeout: 30000 } ), done.click() ] );
+		await pg.waitForLoadState( 'load' );
+		const notice = await pg.locator( '.notice' ).allInnerTexts();
+		log( notice.some( ( t ) => /3\s*مورد «انجام شد» خورد/.test( t ) ), 'پیام بالای صفحه: ۳ مورد «انجام شد» خورد (صفحه از سایت خوانده نشد؛ ابزار تست شبکه ندارد)', notice.join( ' | ' ).slice( 0, 160 ) );
+		const after = pg.locator( 'tr', { has: pg.locator( 'a[href$="/mk-page/"]' ) } );
+		log( 1 === await after.locator( 'input[name="items[]"]' ).count() && 1 === await after.locator( 'input[value="slow"]' ).count(), 'سه ایراد علامت‌خورده پنهان شدند؛ «کند» با تیک ماند' );
+		log( /نمایش\s*3\s*ایراد علامت‌خورده/.test( await pg.locator( '.hodima-advisor__foot' ).last().innerText() ), 'پیوند «نمایش ۳ ایراد علامت‌خورده» پای جدول' );
+		await pg.goto( `${ site }/wp-admin/admin.php?page=hodima-advisor&tab=done`, { waitUntil: 'load' } );
+		const doneText = await pg.locator( '.hodima-advisor__tasks' ).innerText();
+		log( doneText.includes( 'بدون توضیح متا' ) && doneText.includes( 'ایرادهای فنی' ), 'کار در تب «انجام‌شده» با نشان «ایرادهای فنی»' );
+	} else {
+		const overflow = await pg.evaluate( () => document.documentElement.scrollWidth - document.documentElement.clientWidth );
+		log( overflow <= 0, 'ایرادهای فنی ۳۹۰: بدون سرریز افقی', `${ overflow }px` );
+	}
+	await pg.screenshot( { path: path.join( shots, `marks-${ width }.png` ), fullPage: true } );
+	await ctx.close();
+}
+
 await browser.close();
 console.log( failures ? `\n✘ ${ failures } مورد رد شد` : '\n✔ همه موردها قبول' );
 process.exit( failures ? 1 : 0 );

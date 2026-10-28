@@ -6,6 +6,7 @@
  * داده از advisor-crawl.php. کالبد کیت SEO: ۴ کارت آمار ← کارت «فایل‌های خزش» (یک کنش اصلی:
  * خواندن فایل‌ها) ← کارت «ایرادهای صفحه‌ها» (چیپ‌های فیلتر + جستجو + جدول مرتب با نمایش گوگل).
  * فقط می‌خواند و دستور می‌دهد؛ چیزی را در سایت عوض نمی‌کند. (طرح تأییدشده کاربر ۴ آبان ۱۴۰۵)
+ * SEO 3.0.2: هر ایراد تیک و هر ردیف «انجام شد / رد شد» دارد (advisor-marks.php)؛ ایراد علامت‌خورده پنهان می‌شود.
  */
 
 declare(strict_types=1);
@@ -64,6 +65,39 @@ function hodima_seo_advisor_crawl_row_target( string $path ): array {
 	return [ 'title' => $title, 'edit' => $edit ];
 }
 
+/**
+ * ایرادهای علامت‌خورده (منتظر نتیجه، برطرف، رد شد) پنهان؛ صفحه‌ای که ایراد بازی ندارد کنار می‌رود. با «نمایش
+ * علامت‌خورده‌ها» همه می‌مانند. هر ایراد کار ثبت‌شده‌اش را همراه دارد (نشان وضعیت).
+ *
+ * @param list<array<string, mixed>> $issues
+ * @return array{0: list<array<string, mixed>>, 1: int} ردیف‌ها و شمار ایرادهای پنهان‌شده
+ */
+function hodima_seo_advisor_crawl_open_issues( array $issues, bool $show ): array {
+
+	$hidden = 0;
+	$out    = [];
+
+	foreach ( $issues as $row ) {
+		$open = [];
+		foreach ( $row['issues'] as $issue ) {
+			$rule          = 'crawl_' . $issue['code'];
+			$issue['task'] = hodima_seo_advisor_task( (string) $row['path'], $rule, '' );
+			$closed        = null !== $issue['task'] && in_array( hodima_seo_advisor_task_state( $issue['task'] ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true );
+			if ( $closed && ! $show ) {
+				++$hidden;
+				continue;
+			}
+			$issue['closed'] = $closed;
+			$open[]          = $issue;
+		}
+		if ( $open ) {
+			$out[] = [ 'issues' => $open ] + $row;
+		}
+	}
+
+	return [ $out, $hidden ];
+}
+
 /** نشان وضعیت هر ایراد (رنگ کیت: ok سبز، bad قرمز، warn کهربایی، info آبی). */
 function hodima_seo_advisor_crawl_pill_class( string $level ): string {
 	return 'hds-pill' . ( [ 'bad' => ' hds-pill--error', 'warn' => ' hds-pill--warn', 'info' => ' hds-pill--info' ][ $level ] ?? '' );
@@ -118,6 +152,8 @@ function hodima_seo_advisor_render_crawl(): void {
 	$n      = static fn( int|float $value ): string => number_format_i18n( $value );
 	$stale  = $has && time() - $status['imported'] > HODIMA_SEO_ADVISOR_CRAWL_STALE_DAYS * DAY_IN_SECONDS;
 	$issues = $has ? hodima_seo_advisor_crawl_issues() : [];
+	// آمار و چیپ‌ها با همان فهرستی که دیده می‌شود (ایرادهای علامت‌خورده بیرون)
+	[ $issues, $hidden ] = hodima_seo_advisor_crawl_open_issues( $issues, hodima_seo_advisor_show_marked() );
 	$sum    = $has ? hodima_seo_advisor_crawl_summary( $issues ) : [ 'crawled' => 0, 'with_issues' => 0, 'big' => 0, 'low_links' => 0, 'groups' => [] ];
 
 	hodima_seo_ui_stats( [
@@ -172,7 +208,7 @@ function hodima_seo_advisor_render_crawl(): void {
 		return;
 	}
 
-	hodima_seo_advisor_render_crawl_list( $issues, $sum );
+	hodima_seo_advisor_render_crawl_list( $issues, $sum, $hidden );
 }
 
 /**
@@ -180,8 +216,9 @@ function hodima_seo_advisor_render_crawl(): void {
  *
  * @param list<array<string, mixed>> $issues
  * @param array<string, mixed>       $sum
+ * @param int                        $hidden شمار ایرادهای علامت‌خورده پنهان
  */
-function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void {
+function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $hidden = 0 ): void {
 
 	$n      = static fn( int|float $value ): string => number_format_i18n( $value );
 	$groups = array_keys( HODIMA_SEO_ADVISOR_CRAWL_GROUPS );
@@ -207,15 +244,19 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 		'orphan'   => [ 'بدون لینک ورودی', $sum['groups']['orphan'] ?? 0 ],
 	];
 
-	$url = static fn( array $args ): string => hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] + $args );
+	$marked = hodima_seo_advisor_show_marked() ? 'all' : '';
+	$url    = static fn( array $args ): string => hodima_seo_advisor_page_url( [ 'tab' => 'crawl', 'tasks' => $marked ] + $args );
 
-	hodima_seo_ui_card_open( 'ایرادهای صفحه‌ها', 'مرتب بر اساس نمایش در گوگل؛ اول صفحه‌هایی که ایرادشان بیشتر دیده می‌شود. فقط پیشنهاد است؛ چیزی خودکار عوض نمی‌شود.' );
+	hodima_seo_ui_card_open( 'ایرادهای صفحه‌ها', 'مرتب بر اساس نمایش در گوگل؛ اول صفحه‌هایی که ایرادشان بیشتر دیده می‌شود. بعد از رفع، «انجام شد» را بزنید: عنوان، متا، تیترها و خطای ۴۰۴/۵۰۰ همان لحظه از روی سایت دوباره سنجیده می‌شوند؛ کند بودن، لینک ورودی و ریدایرکت با خزش بعدی. ایراد علامت‌خورده به «انجام‌شده» می‌رود.' );
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
 		<input type="hidden" name="tab" value="crawl">
 		<?php if ( '' !== $group ) : ?>
 			<input type="hidden" name="cf" value="<?php echo esc_attr( $group ); ?>">
+		<?php endif; ?>
+		<?php if ( '' !== $marked ) : ?>
+			<input type="hidden" name="tasks" value="all">
 		<?php endif; ?>
 		<nav class="hodima-advisor__views" aria-label="نوع ایراد">
 			<?php foreach ( $views as $key => [ $text, $count ] ) : ?>
@@ -234,7 +275,12 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 	<?php
 
 	if ( ! $rows ) {
-		hodima_seo_ui_empty( $issues ? 'اینجا چیزی نیست' : 'ایرادی پیدا نشد', $issues ? 'با این فیلتر صفحه‌ای ایراد ندارد. فیلتر را عوض کنید.' : 'همه صفحه‌های خزش‌شده از دید این بررسی‌ها سالم‌اند.' );
+		$toggle = hodima_seo_advisor_marked_toggle( $hidden, [ 'tab' => 'crawl', 'cf' => $group, 'q' => $q ], 'ایراد' );
+		if ( ! $issues && $hidden > 0 ) {
+			hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه ایرادهای باقی‌مانده را «انجام شد» یا «رد شد» علامت زده‌اید. %s', $toggle ) );
+		} else {
+			hodima_seo_ui_empty( $issues ? 'اینجا چیزی نیست' : 'ایرادی پیدا نشد', $issues ? 'با این فیلتر صفحه‌ای ایراد ندارد. فیلتر را عوض کنید.' : 'همه صفحه‌های خزش‌شده از دید این بررسی‌ها سالم‌اند.' );
+		}
 		hodima_seo_ui_card_close();
 		return;
 	}
@@ -245,10 +291,14 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 	?>
 	<div class="hds-table-wrap" tabindex="0" role="region" aria-label="ایرادهای صفحه‌ها">
 		<table class="widefat striped hodima-advisor__terms hodima-advisor__crawl-table">
-			<thead><tr><th scope="col">صفحه</th><th scope="col">نمایش</th><th scope="col">رتبه</th><th scope="col">ایراد و دستور</th><th scope="col"><span class="screen-reader-text">ویرایش</span></th></tr></thead>
+			<thead><tr><th scope="col">صفحه</th><th scope="col">نمایش</th><th scope="col">رتبه</th><th scope="col">ایراد و دستور</th><th scope="col">کنش</th></tr></thead>
 			<tbody>
 				<?php foreach ( $slice as $row ) : ?>
-					<?php $target = hodima_seo_advisor_crawl_row_target( (string) $row['path'] ); ?>
+					<?php
+					$target = hodima_seo_advisor_crawl_row_target( (string) $row['path'] );
+					$form   = hodima_seo_advisor_mark_id();
+					$open   = array_filter( $row['issues'], static fn( array $issue ): bool => ! $issue['closed'] );
+					?>
 					<tr>
 						<th scope="row">
 							<?php if ( '' !== $target['title'] ) : ?>
@@ -263,25 +313,40 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 						<td data-label="نمایش"><?php echo $row['impressions'] > 0 ? esc_html( $n( $row['impressions'] ) ) : '—'; ?></td>
 						<td data-label="رتبه"><?php echo $row['position'] > 0 ? esc_html( number_format_i18n( $row['position'], 1 ) ) : '—'; ?></td>
 						<td class="hodima-advisor__crawl-issues">
-							<?php // هر ایراد یک سطر: نشان + دستور خودش؛ همه ایرادها (تا SEO 3.0.0 فقط ۳ دستور اول، جدا از نشان‌ها) ?>
+							<?php // هر ایراد یک سطر: تیک + نشان + دستور خودش (آدرس مقصد بیرون از برچسب: پیوند و دکمه کپی داخل label نامعتبر است) ?>
 							<?php foreach ( $row['issues'] as $issue ) : ?>
-								<?php $info = hodima_seo_advisor_crawl_issue_info( (string) $issue['code'] ); ?>
-								<div class="hodima-advisor__crawl-fix">
-									<span class="<?php echo esc_attr( hodima_seo_advisor_crawl_pill_class( $info['level'] ) ); ?>"><?php echo esc_html( $info['label'] ); ?></span>
-									<span>
-										<?php echo esc_html( '' !== (string) $issue['detail'] ? $issue['detail'] . ( str_ends_with( (string) $issue['detail'], ':' ) ? '' : '.' ) : '' ); ?>
-										<?php if ( '' !== (string) ( $issue['url'] ?? '' ) ) : ?>
-											<?php echo hodima_seo_advisor_url_copy( (string) $issue['url'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy ?>
-										<?php endif; ?>
-										<?php echo esc_html( $info['fix'] ); ?>
-									</span>
+								<?php
+								$info  = hodima_seo_advisor_crawl_issue_info( (string) $issue['code'] );
+								$has_u = '' !== (string) ( $issue['url'] ?? '' );
+								$text  = sprintf(
+									'<span class="%1$s">%2$s</span> <span>%3$s</span>%4$s',
+									esc_attr( hodima_seo_advisor_crawl_pill_class( $info['level'] ) ),
+									esc_html( $info['label'] ),
+									esc_html( trim( ( '' !== (string) $issue['detail'] && ! $has_u ? $issue['detail'] . '. ' : '' ) . $info['fix'] . ( $has_u ? ' مقصد ریدایرکت:' : '' ) ) ),
+									null !== $issue['task'] ? ' ' . hodima_seo_advisor_task_badge( $issue['task'] ) : ''
+								);
+								?>
+								<div class="hodima-advisor__crawl-fix<?php echo $issue['closed'] ? ' is-marked' : ''; ?>">
+									<?php if ( $issue['closed'] ) : ?>
+										<span class="hodima-advisor__mark-text"><?php echo $text; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- اجزا بالا escape شدند ?></span>
+									<?php else : ?>
+										<?php echo hodima_seo_advisor_mark_check( $form, (string) $issue['code'], $text ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- اجزا بالا escape شدند ?>
+									<?php endif; ?>
+									<?php if ( $has_u ) : ?>
+										<?php echo hodima_seo_advisor_url_copy( (string) $issue['url'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy ?>
+									<?php endif; ?>
 								</div>
 							<?php endforeach; ?>
 						</td>
 						<td class="hodima-advisor__crawl-edit">
-							<?php if ( '' !== $target['edit'] ) : ?>
-								<?php echo hodima_seo_advisor_action( $target['edit'], 'ویرایش صفحه', 'edit' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
-							<?php endif; ?>
+							<div class="hodima-advisor__row-acts">
+								<?php if ( '' !== $target['edit'] ) : ?>
+									<?php echo hodima_seo_advisor_action( $target['edit'], 'ویرایش صفحه', 'edit' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
+								<?php endif; ?>
+								<?php if ( $open ) : ?>
+									<?php hodima_seo_advisor_mark_form( $form, 'crawl', (string) $row['path'], '' !== $target['title'] ? $target['title'] : rawurldecode( (string) $row['path'] ) ); ?>
+								<?php endif; ?>
+							</div>
 						</td>
 					</tr>
 				<?php endforeach; ?>
@@ -289,7 +354,10 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum ): void
 		</table>
 	</div>
 	<div class="hodima-advisor__foot">
-		<span><?php echo esc_html( sprintf( '%1$s صفحه با ایراد از %2$s صفحه خزش‌شده', $n( count( $rows ) ), $n( $sum['crawled'] ) ) ); ?></span>
+		<span>
+			<?php echo esc_html( sprintf( '%1$s صفحه با ایراد از %2$s صفحه خزش‌شده', $n( count( $rows ) ), $n( $sum['crawled'] ) ) ); ?>
+			<?php echo hodima_seo_advisor_marked_toggle( $hidden, [ 'tab' => 'crawl', 'cf' => $group, 'q' => $q ], 'ایراد' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
+		</span>
 		<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => $url( [ 'cf' => $group, 'q' => $q, 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 	</div>
 	<?php

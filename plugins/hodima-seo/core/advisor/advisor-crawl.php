@@ -757,6 +757,9 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 	hodima_seo_advisor_crawl_map( true );
 	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $stored['pages'], 'links' => $stored['links'], 'files' => $files, 'source' => 'screamingfrog' ], false );
 
+	// کارهای «انجام شد» ایرادهای فنی با خزش تازه سنجیده می‌شوند (کند، لینک ورودی و ریدایرکت فقط همین‌جا)
+	hodima_seo_advisor_tasks_sync_crawl();
+
 	// پیشنهادهای ذخیره‌شده (نرخ کلیک و رقابت) با داده خزش دوباره ساخته می‌شوند: چند ثانیه همین‌جا، بقیه در پس‌زمینه.
 	// دریافت داده‌ای که در میانه است و نوبت analyze آن گذشته هم analyze تازه می‌گیرد (قبلا تا فردا اثر نمی‌کرد)
 	hodima_seo_advisor_request_reanalyze();
@@ -883,7 +886,9 @@ function hodima_seo_advisor_crawl_issues(): array {
 				}
 			}
 		} elseif ( $impressions > 0 || $inlinks > 0 ) {
-			if ( $status >= 300 && $status < 400 ) {
+			// ریدایرکت فقط وقتی ایراد است که لینک داخلی به آن برود (دستورش اصلاح همان لینک‌هاست). تا SEO 3.0.1 با نمایش
+			// گوگل هم می‌آمد و هیچ‌وقت برطرف نمی‌شد: گوگل آدرس کهنه را تا مدت‌ها نشان می‌دهد (تب «آدرس‌های خراب» آن را می‌گوید)
+			if ( $status >= 300 && $status < 400 && $inlinks > 0 ) {
 				$add( 'redirect', '' !== (string) $r['redirect_to'] ? 'به این آدرس می‌رود:' : '', (string) $r['redirect_to'] ); // آدرس جدا با کپی (وسط جمله به‌هم می‌ریخت)
 			} elseif ( $status >= 400 ) {
 				$add( 'broken', sprintf( 'کد %s', number_format_i18n( $status ) ) );

@@ -942,6 +942,8 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 	$expected    = hodima_seo_advisor_expected_ctr( (float) $row['position'] );
 	$advice      = (array) $row['advice'];
 	$edit        = $row['object_id'] > 0 ? hodima_seo_advisor_edit_link( (string) $row['kind'], (int) $row['object_id'] ) : '';
+	$form        = hodima_seo_advisor_mark_id();
+	$open        = 0; // ایرادهای بی‌علامت یا هنوز باز: فقط با آن‌ها دکمه‌های «انجام شد / رد شد» معنا دارند
 	?>
 	<div class="hodima-advisor__item">
 		<div class="hodima-advisor__grid">
@@ -961,12 +963,17 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 			<?php if ( $advice ) : ?>
 				<ul class="hodima-advisor__issues">
 					<?php foreach ( $advice as $item ) : ?>
-						<?php $task = function_exists( 'hodima_seo_advisor_task' ) ? hodima_seo_advisor_task( (string) $row['path'], (string) $item['rule'], (string) $item['term'] ) : null; ?>
+						<?php
+						$task   = hodima_seo_advisor_task( (string) $row['path'], (string) $item['rule'], (string) $item['term'] );
+						$closed = null !== $task && in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true );
+						$text   = '<span class="hodima-advisor__issue-text">' . esc_html( (string) $item['title'] ) . '</span>' . ( null !== $task ? ' ' . hodima_seo_advisor_task_badge( $task ) : '' );
+						?>
 						<li data-rule="<?php echo esc_attr( (string) $item['rule'] ); ?>"<?php echo null !== $task ? ' data-task="' . esc_attr( hodima_seo_advisor_task_state( $task ) ) . '"' : ''; ?>>
-							<span class="hodima-advisor__issue-text"><?php echo esc_html( (string) $item['title'] ); ?></span>
-							<?php if ( null !== $task ) : ?>
-								<?php $badge = hodima_seo_advisor_task_view( $task ); ?>
-								<span class="<?php echo esc_attr( $badge['class'] ); ?>"><?php echo esc_html( $badge['label'] ); ?></span>
+							<?php if ( $closed || $ignored_view ) : ?>
+								<span class="hodima-advisor__mark-text"><?php echo $text; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- اجزا escape شدند ?></span>
+							<?php else : ?>
+								<?php ++$open; ?>
+								<?php echo hodima_seo_advisor_mark_check( $form, (string) $item['rule'] . '|' . (string) $item['term'], $text ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- اجزا escape شدند ?>
 							<?php endif; ?>
 						</li>
 					<?php endforeach; ?>
@@ -988,14 +995,22 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 				<?php elseif ( ! $ignored_view ) : ?>
 					<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( hodima_seo_advisor_url( (string) $row['path'] ) ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> دیدن در سایت</a>
 				<?php endif; ?>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<?php if ( $open > 0 ) : ?>
+					<?php hodima_seo_advisor_mark_form( $form, 'opportunities', (string) $row['path'], '' !== $title ? $title : rawurldecode( (string) $row['path'] ) ); ?>
+				<?php endif; ?>
+				<?php // «نادیده گرفتن» کل صفحه کنش فرعی است: پیوند متنی تا ردیف یک کنش اصلی داشته باشد (طرح SEO 3.0.2) ?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__ignore">
 					<input type="hidden" name="action" value="hodima_advisor_ignore">
 					<input type="hidden" name="path" value="<?php echo esc_attr( (string) $row['path'] ); ?>">
 					<?php if ( $ignored_view ) : ?>
 						<input type="hidden" name="restore" value="1">
 					<?php endif; ?>
 					<?php wp_nonce_field( 'hodima_advisor_ignore' ); ?>
-					<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-<?php echo $ignored_view ? 'undo' : 'hidden'; ?>" aria-hidden="true"></span><?php echo $ignored_view ? 'بازگرداندن به فهرست' : 'نادیده گرفتن'; ?></button>
+					<?php if ( $ignored_view ) : ?>
+						<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-undo" aria-hidden="true"></span>بازگرداندن به فهرست</button>
+					<?php else : ?>
+						<button type="submit" class="hodima-advisor__text-btn">نادیده گرفتن کل صفحه</button>
+					<?php endif; ?>
 				</form>
 			</span>
 		</div>

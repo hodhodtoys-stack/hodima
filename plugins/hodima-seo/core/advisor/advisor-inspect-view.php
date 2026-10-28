@@ -5,7 +5,8 @@
  *
  * داده از advisor-inspect.php. کالبد: ۴ کارت آمار ← کارت «وضعیت ایندکس آدرس‌های مهم» (یک کنش اصلی:
  * «بررسی ۲۰ آدرس بعدی»، جدول مشکل‌دارها با وضعیت و آخرین خزش، دستور هر وضعیت). فقط می‌خواند و دستور
- * می‌دهد؛ چیزی را در سایت یا Search Console عوض نمی‌کند.
+ * می‌دهد؛ چیزی را در سایت یا Search Console عوض نمی‌کند. SEO 3.0.2: هر آدرس مشکل‌دار «انجام شد / رد شد» دارد
+ * (advisor-marks.php)؛ «انجام شد» آدرس را اول صف بررسی بعدی می‌گذارد.
  */
 
 declare(strict_types=1);
@@ -83,10 +84,24 @@ function hodima_seo_advisor_render_indexing(): void {
 	}
 
 	$problems = array_filter( $records, static fn( array $r, string $path ): bool => 'indexed' !== $states[ $path ], ARRAY_FILTER_USE_BOTH );
+	$show     = hodima_seo_advisor_show_marked();
+	$hidden   = 0;
+	foreach ( array_keys( $problems ) as $path ) {
+		if ( ! $show && null !== hodima_seo_advisor_task_closed( (string) $path, 'index_problem' ) ) {
+			unset( $problems[ $path ] );
+			++$hidden;
+		}
+	}
 	uksort(
 		$problems,
 		static fn( string $a, string $b ): int => [ hodima_seo_advisor_inspect_state_info( $states[ $a ] )['weight'], -( (int) $problems[ $a ]['checked'] ) ] <=> [ hodima_seo_advisor_inspect_state_info( $states[ $b ] )['weight'], -( (int) $problems[ $b ]['checked'] ) ]
 	);
+
+	if ( ! $problems && $hidden > 0 ) {
+		hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه آدرس‌های مشکل‌دار را علامت زده‌اید؛ در بررسی بعدی گوگل سنجیده می‌شوند. %s', hodima_seo_advisor_marked_toggle( $hidden, [ 'tab' => 'indexing' ], 'آدرس' ) ) );
+		hodima_seo_ui_card_close();
+		return;
+	}
 
 	if ( ! $problems ) {
 		hodima_seo_ui_empty( 'همه آدرس‌های بررسی‌شده ایندکس‌اند', 'مشکلی در بررسی‌های تا الان پیدا نشد.' );
@@ -100,30 +115,42 @@ function hodima_seo_advisor_render_indexing(): void {
 	?>
 	<div class="hds-table-wrap" tabindex="0" role="region" aria-label="آدرس‌های نیازمند بررسی ایندکس">
 		<table class="widefat striped hodima-advisor__terms">
-			<thead><tr><th scope="col">آدرس</th><th scope="col">وضعیت</th><th scope="col">آخرین خزش</th><th scope="col">canonical گوگل</th></tr></thead>
+			<thead><tr><th scope="col">آدرس</th><th scope="col">وضعیت</th><th scope="col">آخرین خزش</th><th scope="col">canonical گوگل</th><th scope="col">کنش</th></tr></thead>
 			<tbody>
 				<?php foreach ( array_slice( $problems, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, true ) as $path => $record ) : ?>
 					<?php
 					$info   = hodima_seo_advisor_inspect_state_info( $states[ $path ] );
 					$crawl  = '' !== (string) $record['last_crawl'] ? strtotime( (string) $record['last_crawl'] ) : false;
 					$google = hodima_seo_advisor_inspect_canonical_mismatch( $record ) ? hodima_seo_advisor_path_key( (string) $record['google_canonical'] ) : null;
+					$task   = hodima_seo_advisor_task( (string) $path, 'index_problem', '' );
+					$title  = hodima_seo_advisor_breakdown_page_title( (string) $path );
 					?>
 					<tr>
-						<th scope="row"><?php echo esc_html( hodima_seo_advisor_breakdown_page_title( (string) $path ) ); ?> <?php echo hodima_seo_advisor_url_link( (string) $path ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></th>
+						<th scope="row"><?php echo esc_html( $title ); ?> <?php echo hodima_seo_advisor_url_link( (string) $path ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?> <?php echo hodima_seo_advisor_task_badge( $task ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_task_badge ?></th>
 						<td><span class="<?php echo esc_attr( $info['class'] ); ?>"><?php echo esc_html( $info['label'] ); ?></span></td>
 						<td><?php echo false !== $crawl ? esc_html( hodima_seo_advisor_task_date( $crawl ) ) : '—'; ?></td>
 						<td><?php echo null !== $google ? hodima_seo_advisor_url_link( $google, 'hodima-advisor__rival-url' ) : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></td>
+						<td>
+							<?php if ( null === $task || ! in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true ) ) : ?>
+								<?php hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), 'indexing', (string) $path, '' !== $title ? $title : rawurldecode( (string) $path ) ); ?>
+							<?php endif; ?>
+						</td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
 		</table>
 	</div>
-	<?php if ( $pages > 1 ) : ?>
+	<?php $toggle = hodima_seo_advisor_marked_toggle( $hidden, [ 'tab' => 'indexing' ], 'آدرس' ); ?>
+	<?php if ( $pages > 1 || '' !== $toggle ) : ?>
 		<div class="hodima-advisor__foot">
-			<span><?php echo esc_html( sprintf( 'نمایش %1$s از %2$s آدرس نیازمند بررسی', $n( count( array_slice( $problems, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE ) ) ), $n( count( $problems ) ) ) ); ?></span>
-			<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'indexing', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
+			<span>
+				<?php echo esc_html( sprintf( 'نمایش %1$s از %2$s آدرس نیازمند بررسی', $n( count( array_slice( $problems, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE ) ) ), $n( count( $problems ) ) ) ); ?>
+				<?php echo $toggle; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
+			</span>
+			<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'indexing', 'tasks' => $show ? 'all' : '', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 		</div>
 	<?php endif; ?>
+	<p class="hodima-advisor__advice">بعد از رفع، «انجام شد» را بزنید: آدرس اول صف بررسی بعدی گوگل می‌رود. ایندکس شد ← برطرف؛ گوگل دوباره خواند و هنوز نه ← با دلیلش به «در دست انجام» برمی‌گردد.</p>
 	<?php
 	foreach ( array_unique( array_map( static fn( string $path ): string => $states[ $path ], array_keys( $problems ) ) ) as $state ) {
 		$advice = hodima_seo_advisor_inspect_state_info( $state );

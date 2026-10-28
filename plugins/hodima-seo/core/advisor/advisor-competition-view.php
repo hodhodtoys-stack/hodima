@@ -7,6 +7,7 @@
  * نوع دستور، جستجو، CSV) ← ردیف جمع‌شونده برای هر کلمه که صفحه‌های رقیب، برنده، سهم نمایش و
  * دستور را نشان می‌دهد. طرح تأییدشده: Artifact «طرح رقابت صفحه‌ها (دستار سئو)». فقط می‌خواند؛
  * چیزی را در سایت عوض نمی‌کند. بدون JS کار می‌کند (details بومی).
+ * SEO 3.0.2: هر کلمه «انجام شد / رد شد» دارد (یک کار برای کل گروه، advisor-marks.php)؛ کلمه علامت‌خورده پنهان می‌شود.
  */
 
 declare(strict_types=1);
@@ -90,6 +91,10 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 	$settled = ! empty( $_GET['resolved'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط نمای «حل‌شده‌ها»
 	$base    = $settled ? [ 'resolved' => true ] : [];
 	$built   = hodima_seo_advisor_competition_groups( $settled ); // یک بار برای شمارها و صفحه فعلی
+	$hidden  = 0;
+	if ( ! $settled ) {
+		[ $built['groups'], $hidden ] = hodima_seo_advisor_competition_open_groups( $built['groups'], hodima_seo_advisor_show_marked() );
+	}
 	$all     = hodima_seo_advisor_competition_select( $built, $base );
 	$result  = hodima_seo_advisor_competition_select( $built, $base + [ 'search' => $filters['q'], 'type' => $settled ? '' : $filters['type'], 'limit' => HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE, 'offset' => ( $paged - 1 ) * HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE ] );
 	$n       = static fn( int|float $value ): string => number_format_i18n( $value );
@@ -128,13 +133,19 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 		);
 	}
 
+	if ( $empty && $hidden > 0 ) {
+		hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه کلمه‌های رقابتی را «انجام شد» یا «رد شد» علامت زده‌اید؛ با داده تازه گوگل سنجیده می‌شوند. %s', hodima_seo_advisor_marked_toggle( $hidden, [ 'tab' => 'competition' ], 'کلمه' ) ) );
+		hodima_seo_ui_card_close();
+		return;
+	}
+
 	if ( $empty ) {
 		hodima_seo_ui_empty( 'رقابتی پیدا نشد', 'در این بازه هیچ کلمه‌ای نیست که دو صفحه برایش دست‌کم ۱۰۰ نمایش داشته باشند. بعد از دریافت داده تازه دوباره ببینید.' );
 		hodima_seo_ui_card_close();
 		return;
 	}
 
-	$keep = [ 'tab' => 'competition', 'ctype' => $settled ? '' : $filters['type'], 'q' => $filters['q'], 'resolved' => $settled ? 1 : '' ];
+	$keep = [ 'tab' => 'competition', 'ctype' => $settled ? '' : $filters['type'], 'q' => $filters['q'], 'resolved' => $settled ? 1 : '', 'tasks' => hodima_seo_advisor_show_marked() ? 'all' : '' ];
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
@@ -144,6 +155,9 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 		<?php endif; ?>
 		<?php if ( $settled ) : ?>
 			<input type="hidden" name="resolved" value="1">
+		<?php endif; ?>
+		<?php if ( hodima_seo_advisor_show_marked() ) : ?>
+			<input type="hidden" name="tasks" value="all">
 		<?php endif; ?>
 		<?php if ( ! $settled ) : ?>
 		<nav class="hodima-advisor__views" aria-label="نوع دستور">
@@ -181,11 +195,39 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 	$pages = (int) ceil( $result['total'] / HODIMA_SEO_ADVISOR_COMPETITION_PER_PAGE );
 	?>
 	<div class="hodima-advisor__foot">
-		<span><?php echo esc_html( sprintf( 'نمایش %1$s از %2$s کلمه، مرتب‌شده بر اساس کلیک بالقوه رفع رقابت', $n( count( $result['rows'] ) ), $n( $result['total'] ) ) ); ?></span>
+		<span>
+			<?php echo esc_html( sprintf( 'نمایش %1$s از %2$s کلمه، مرتب‌شده بر اساس کلیک بالقوه رفع رقابت', $n( count( $result['rows'] ) ), $n( $result['total'] ) ) ); ?>
+			<?php echo $settled ? '' : hodima_seo_advisor_marked_toggle( $hidden, array_diff_key( $keep, [ 'tasks' => true ] ), 'کلمه' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
+		</span>
 		<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( $keep + [ 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 	</div>
 	<?php
 	hodima_seo_ui_card_close();
+}
+
+/**
+ * کلمه‌های علامت‌خورده (منتظر داده، برطرف، رد شد) پنهان، مگر با «نمایش علامت‌خورده‌ها». هر گروه کارش را همراه دارد.
+ *
+ * @param list<array<string, mixed>> $groups
+ * @return array{0: list<array<string, mixed>>, 1: int}
+ */
+function hodima_seo_advisor_competition_open_groups( array $groups, bool $show ): array {
+
+	$tasks  = hodima_seo_advisor_competition_tasks();
+	$hidden = 0;
+	$out    = [];
+
+	foreach ( $groups as $group ) {
+		$task   = $tasks[ hodima_seo_advisor_normalize( (string) $group['term'] ) ] ?? null;
+		$closed = null !== $task && in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true );
+		if ( $closed && ! $show ) {
+			++$hidden;
+			continue;
+		}
+		$out[] = [ 'task' => $task, 'closed' => $closed ] + $group;
+	}
+
+	return [ $out, $hidden ];
 }
 
 /**
@@ -199,7 +241,11 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 	$advice = $group['advice'];
 	$label  = hodima_seo_advisor_competition_types()[ $advice['type'] ] ?? ( 'settled' === $advice['type'] ? 'حل‌شده' : '' );
 	$class  = [ 'strengthen' => 'hds-pill', 'choose' => 'hds-pill hds-pill--warn', 'category' => 'hds-pill hds-pill--info', 'settled' => 'hds-pill hds-pill--info' ][ $advice['type'] ] ?? 'hds-pill';
+	$task   = $group['task'] ?? null;
+	$mark   = 'settled' !== $advice['type'] && empty( $group['closed'] ) && isset( $group['pages'][0]['path'] );
 	?>
+	<?php // دکمه‌ها بیرون از summary (عنصر کنش‌پذیر داخل summary تودرتو و نامعتبر است) ولی با CSS روی سربرگ گروه ?>
+	<div class="hodima-advisor__group-wrap<?php echo $mark ? ' has-mark' : ''; ?>">
 	<details class="hodima-advisor__group">
 		<summary class="hodima-advisor__group-head">
 			<strong class="hodima-advisor__group-term"><?php echo esc_html( (string) $group['term'] ); ?></strong>
@@ -211,6 +257,7 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 				<?php endif; ?>
 			</span>
 			<span class="<?php echo esc_attr( $class ); ?>"><?php echo esc_html( $label ); ?></span>
+			<?php echo hodima_seo_advisor_task_badge( $task ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_task_badge ?>
 		</summary>
 		<div class="hodima-advisor__group-body">
 			<ul class="hodima-advisor__rivals">
@@ -264,6 +311,10 @@ function hodima_seo_advisor_render_competition_group( array $group ): void {
 			?>
 		</div>
 	</details>
+	<?php if ( $mark ) : ?>
+		<?php hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), 'competition', (string) $group['pages'][0]['path'], (string) $group['term'], [ 'term' => (string) $group['term'] ] ); ?>
+	<?php endif; ?>
+	</div>
 	<?php
 }
 

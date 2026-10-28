@@ -40,6 +40,33 @@ function hodima_seo_advisor_health_router_ready(): bool {
 	return function_exists( 'hodima_router_inspect_url' );
 }
 
+/** وضعیت‌های آدرس مرده که کار دارند (بقیه ریدایرکت سالم یا حذف عمدی‌اند). */
+const HODIMA_SEO_ADVISOR_HEALTH_BAD = [ 'missing', 'rule_broken' ];
+
+/**
+ * وضعیت یک آدرس در خود سایت با روتر (بدون درخواست HTTP). state خالی = صفحه سالم؛ بقیه مثل فهرست پایین.
+ * جدا شد تا «انجام شد» روی یک آدرس مرده همان لحظه دوباره بسنجد (advisor-marks.php).
+ *
+ * @return array{state: string, target: string, code: int}
+ */
+function hodima_seo_advisor_health_dead_state( string $path ): array {
+
+	if ( ! hodima_seo_advisor_health_router_ready() ) {
+		return [ 'state' => '', 'target' => '', 'code' => 0 ];
+	}
+
+	$check = hodima_router_inspect_url( hodima_seo_advisor_url( $path ) );
+	$next  = $check['next'] ?? null;
+	$state = match ( (string) $check['status'] ) {
+		'missing'  => 'missing',
+		'rule'     => in_array( (int) $check['code'], [ 404, 410 ], true ) ? 'gone' : ( is_array( $next ) && 'missing' === ( $next['status'] ?? '' ) ? 'rule_broken' : 'rule' ),
+		'redirect' => 'redirect',
+		default    => '',
+	};
+
+	return [ 'state' => $state, 'target' => (string) ( $check['target'] ?? '' ), 'code' => (int) ( $check['code'] ?? 0 ) ];
+}
+
 /**
  * آدرس‌های پرنمایش گوگل که در خود سایت مرده‌اند یا ریدایرکت می‌شوند.
  *
@@ -71,27 +98,8 @@ function hodima_seo_advisor_health_dead_urls(): array {
 			continue;
 		}
 
-		$check = hodima_router_inspect_url( hodima_seo_advisor_url( $path ) );
-		$state = '';
-
-		switch ( (string) $check['status'] ) {
-			case 'missing':
-				$state = 'missing';
-				break;
-			case 'rule':
-				$next = $check['next'] ?? null;
-				if ( in_array( (int) $check['code'], [ 404, 410 ], true ) ) {
-					$state = 'gone';
-				} elseif ( is_array( $next ) && 'missing' === ( $next['status'] ?? '' ) ) {
-					$state = 'rule_broken';
-				} else {
-					$state = 'rule';
-				}
-				break;
-			case 'redirect':
-				$state = 'redirect';
-				break;
-		}
+		$check = hodima_seo_advisor_health_dead_state( $path );
+		$state = $check['state'];
 
 		if ( '' !== $state ) {
 			$out[] = [
@@ -99,8 +107,8 @@ function hodima_seo_advisor_health_dead_urls(): array {
 				'impressions' => (int) $row['impressions'],
 				'clicks'      => (int) $row['clicks'],
 				'state'       => $state,
-				'target'      => (string) $check['target'],
-				'code'        => (int) $check['code'],
+				'target'      => $check['target'],
+				'code'        => $check['code'],
 			];
 		}
 	}
@@ -211,4 +219,6 @@ function hodima_seo_advisor_health_sync(): void {
 		],
 		false
 	);
+
+	hodima_seo_advisor_tasks_sync_health(); // کارهای «انجام شد» آدرس مرده و صفحه بدون نمایش با همین فهرست تازه
 }
