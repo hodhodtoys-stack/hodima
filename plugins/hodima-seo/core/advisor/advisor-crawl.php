@@ -870,11 +870,13 @@ function hodima_seo_advisor_crawl_issues(): array {
 		ARRAY_A
 	);
 
-	// تکراری‌ها فقط بین صفحه‌های سالم و ایندکس‌پذیر شمرده می‌شوند
+	// تکراری‌ها فقط بین صفحه‌های سالم و ایندکس‌پذیر شمرده می‌شوند. صفحه‌بندی آرشیو (/page/2/) H1 و عنوان آرشیو را عمدا دارد
+	// و لینک ورودی‌اش فقط از خود صفحه‌بندی است؛ با خزش واقعی ۶ از ۶ «H1 تکراری» و ۳ «لینک ورودی کم» همین‌ها بودند (SEO 3.0.5)
+	$paged  = static fn( array $r ): bool => 1 === preg_match( '#/page/\d+/?$#', (string) $r['path'] );
 	$titles = [];
 	$h1s    = [];
 	foreach ( $rows as $r ) {
-		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] ) {
+		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] && ! $paged( $r ) ) {
 			$titles[ mb_strtolower( (string) $r['title'] ) ] = ( $titles[ mb_strtolower( (string) $r['title'] ) ] ?? 0 ) + 1;
 			$h1s[ mb_strtolower( (string) $r['h1'] ) ]       = ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) + 1;
 		}
@@ -910,16 +912,16 @@ function hodima_seo_advisor_crawl_issues(): array {
 			if ( '' === (string) $r['h1'] ) {
 				$add( 'no_h1' );
 			}
-			if ( '' !== $title && ( $titles[ mb_strtolower( $title ) ] ?? 0 ) > 1 ) {
+			if ( '' !== $title && ! $paged( $r ) && ( $titles[ mb_strtolower( $title ) ] ?? 0 ) > 1 ) {
 				$add( 'dup_title', sprintf( 'در %s صفحه', number_format_i18n( $titles[ mb_strtolower( $title ) ] ) ) );
 			}
-			if ( '' !== (string) $r['h1'] && ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) > 1 ) {
+			if ( '' !== (string) $r['h1'] && ! $paged( $r ) && ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) > 1 ) {
 				$add( 'dup_h1', sprintf( 'در %s صفحه', number_format_i18n( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ) ) );
 			}
 			if ( (int) $r['resp_ms'] >= HODIMA_SEO_ADVISOR_CRAWL_SLOW_MS ) {
 				$add( 'slow', sprintf( 'پاسخ سرور %s ثانیه', number_format_i18n( (int) $r['resp_ms'] / 1000, 1 ) ) );
 			}
-			if ( '/' !== (string) $r['path'] ) {
+			if ( '/' !== (string) $r['path'] && ! $paged( $r ) ) {
 				if ( 0 === $inlinks ) {
 					$add( 'orphan' );
 				} elseif ( $inlinks <= HODIMA_SEO_ADVISOR_CRAWL_LOW_INLINKS ) {

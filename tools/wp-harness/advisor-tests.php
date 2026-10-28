@@ -2449,6 +2449,17 @@ delete_transient( 'hodima_advisor_crawl_exposed' );
 remove_filter( 'pre_http_request', $p3_http, 30 );
 $p3_had || unlink( $p3_file );
 
+// صفحه‌بندی آرشیو (خزش واقعی هدهدلی): H1 مشترک و لینک ورودی کم ایراد نیست (SEO 3.0.5)
+$p3_pg = static fn( string $path, string $h1, int $inlinks ): array => [ 'path' => $path, 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'وبلاگ ' . $path, 'title_len' => 40, 'meta_len' => 120, 'h1' => $h1, 'h2' => '', 'resp_ms' => 100, 'inlinks' => $inlinks, 'text_links' => 1, 'depth' => 1, 'score' => 0.0, 'redirect' => '' ];
+hodima_seo_advisor_crawl_store( [ '/pg/' => $p3_pg( '/pg/', 'وبلاگ', 30 ), '/pg/page/2/' => $p3_pg( '/pg/page/2/', 'وبلاگ', 2 ), '/pg/a/' => $p3_pg( '/pg/a/', 'مقاله الف', 30 ), '/pg/b/' => $p3_pg( '/pg/b/', 'مقاله الف', 30 ) ], [] );
+$p3_codes = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $p3_r ) {
+	if ( str_starts_with( (string) $p3_r['path'], '/pg/' ) ) {
+		$p3_codes[ $p3_r['path'] ] = array_column( $p3_r['issues'], 'code' );
+	}
+}
+hodima_ad( 'صفحه‌بندی آرشیو H1 تکراری و لینک ورودی کم نمی‌گیرد؛ دو مقاله با H1 یکسان می‌گیرند', $p3_codes, [ '/pg/a/' => [ 'dup_h1' ], '/pg/b/' => [ 'dup_h1' ] ] );
+
 // نرخ کلیک کلمه‌به‌کلمه (SEO 3.0.4): یک کلمه خوب نباید کمبود کلمه بد را بپوشاند
 $p3_table = static fn(): array => [ 2 => 25.0, 3 => 14.0, 5 => 9.0, 7 => 5.5, 10 => 3.5, 20 => 1.5 ];
 add_filter( 'hodima_seo_advisor_ctr_table', $p3_table );
