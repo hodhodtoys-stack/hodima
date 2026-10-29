@@ -233,7 +233,7 @@ function hodima_seo_advisor_render_crawler_card(): void {
 		</ul>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="hodima_advisor_crawler_request">
-			<?php wp_nonce_field( 'hodima_advisor_crawler_request' ); ?>
+			<input type="hidden" name="_wpnonce" value="<?php echo esc_attr( wp_create_nonce( 'hodima_advisor_crawler_request' ) ); ?>"><?php // بدون id: چند فرم در یک صفحه، شناسه تکراری نسازد ?>
 			<button type="submit" class="hds-btn"<?php disabled( $busy ); ?>>
 				<span class="dashicons dashicons-update" aria-hidden="true"></span> خزش تازه در شب آینده
 			</button>
@@ -243,7 +243,7 @@ function hodima_seo_advisor_render_crawler_card(): void {
 		<summary>تنظیم زمان و فاصله</summary>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__crawler-form">
 			<input type="hidden" name="action" value="hodima_advisor_crawler_settings">
-			<?php wp_nonce_field( 'hodima_advisor_crawler_settings' ); ?>
+			<input type="hidden" name="_wpnonce" value="<?php echo esc_attr( wp_create_nonce( 'hodima_advisor_crawler_settings' ) ); ?>"><?php // بدون id: چند فرم در یک صفحه، شناسه تکراری نسازد ?>
 			<label class="hodima-advisor__confirm">
 				<input type="checkbox" name="enabled" value="1"<?php checked( $settings['enabled'] ); ?>>
 				<span>خزش خودکار روشن باشد</span>

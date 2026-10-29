@@ -1709,7 +1709,7 @@ $_GET = [];
 hodima_seo_advisor_clear_data();
 hodima_ad( 'پاک کردن داده: جدول‌ها و وضعیت خزش خالی', [ hodima_seo_advisor_crawl_summary( [] )['crawled'], hodima_seo_advisor_crawl_status()['imported'] ], [ 0, 0 ] );
 $empty_crawl = $cap( static fn() => hodima_seo_advisor_render_crawl() );
-hodima_ad( 'بدون خزش: آمار خالی و راهنمای سه‌گامی با مسیر پوشه', [ substr_count( $empty_crawl, 'data-empty' ), str_contains( $empty_crawl, 'هنوز خروجی خزش خوانده نشده' ), str_contains( $empty_crawl, 'data-hdsa-copy' ) ], [ 4, true, true ] );
+hodima_ad( 'بدون خزش: آمار خالی و راهنمای سه‌گامی با مسیر پوشه', [ substr_count( $empty_crawl, 'data-empty' ), str_contains( $empty_crawl, 'هنوز خزشی انجام نشده' ), str_contains( $empty_crawl, 'data-hdsa-copy' ) ], [ 4, true, true ] );
 remove_filter( 'hodima_seo_advisor_crawl_dir', $crawl_filter );
 array_map( 'unlink', glob( "{$crawl_dir}/{,.}*", GLOB_BRACE ) ?: [] );
 @rmdir( $crawl_dir );
