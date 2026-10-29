@@ -3,7 +3,7 @@
  * ماژول «دستار سئو» — «انجام شد / رد شد» در همه تب‌ها و سنجش هر نوع کار
  * Path: core/advisor/advisor-marks.php
  *
- * تا SEO 3.0.1 فقط پیشنهادهای کادر ویرایش «انجام شد» داشتند؛ مدیر ایراد فنی یا آدرس خراب را درست می‌کرد و ردیف تا
+ * تا SEO 3.0.1 فقط پیشنهادهای کادر ویرایش «انجام دادم» داشتند؛ مدیر ایراد فنی یا آدرس خراب را درست می‌کرد و ردیف تا
  * خزش یا دریافت بعدی همان‌جا می‌ماند. حالا هر ردیف تب‌ها (پیشنهادها، ایرادهای فنی، صفحه‌های هم‌کلمه، آدرس‌های خراب،
  * وضعیت در گوگل) فرم خودش را دارد و کارش با همان مدل advisor-tasks.php ثبت می‌شود؛ قاعده کار منبعش را می‌گوید:
  *   پیشنهادها        قاعده تحلیل (low_ctr، …)        همان سنجش قبلی (ذخیره صفحه، داده ۱۴ روزه گوگل)
@@ -89,8 +89,8 @@ function hodima_seo_advisor_task_still_label( string $rule ): string {
 
 /**
  * حکم سنجش برای کارهای یک منبع. `$judge` برای هر کار می‌گوید: fixed (ایراد رفته)، still (هنوز هست و وقت حکم است)
- * یا wait (هنوز نمی‌شود گفت). برطرف ← «برطرف شد»؛ برطرف‌شده‌ای که هنوز هست ← «برگشت»؛ «انجام شد» که هنوز هست ← still.
- * کار «رد شد» سنجیده نمی‌شود.
+ * یا wait (هنوز نمی‌شود گفت). برطرف ← «برطرف شد»؛ برطرف‌شده‌ای که هنوز هست ← «برگشت»؛ «انجام دادم» که هنوز هست ← still.
+ * کار «لازم نیست» سنجیده نمی‌شود.
  *
  * @param callable(array<string, mixed>): string $judge
  * @param list<string>|null                      $paths فقط این آدرس‌ها (null = همه)
@@ -181,7 +181,7 @@ function hodima_seo_advisor_tasks_sync_crawl( ?string $path = null, ?array $code
 }
 
 /**
- * کار «صفحه بدون نمایش»: از فهرست بدون نمایش رفته یا گوگل بعد از «انجام شد» ایندکس‌شده گفته ← برطرف؛ ۳۰ روز بعد هنوز
+ * کار «صفحه بدون نمایش»: از فهرست بدون نمایش رفته یا گوگل بعد از «انجام دادم» ایندکس‌شده گفته ← برطرف؛ ۳۰ روز بعد هنوز
  * بدون نمایش ← مانده.
  *
  * @param array{path: string, at: int}          $task
@@ -230,7 +230,7 @@ function hodima_seo_advisor_tasks_sync_health(): int {
 }
 
 /**
- * کارهای «مشکل ایندکس» (و «صفحه بدون نمایش») با بررسی‌های ایندکس. ایندکس‌شده بعد از «انجام شد» ← برطرف؛ گوگل
+ * کارهای «مشکل ایندکس» (و «صفحه بدون نمایش») با بررسی‌های ایندکس. ایندکس‌شده بعد از «انجام دادم» ← برطرف؛ گوگل
  * بعد از آن دوباره خزیده و هنوز ایندکس نکرده ← مانده؛ هنوز نخزیده ← منتظر (پیش از خزش، حکم «مانده» بی‌انصافی بود).
  */
 function hodima_seo_advisor_tasks_sync_inspected(): int {
@@ -359,7 +359,7 @@ function hodima_seo_advisor_mark_items( string $source, string $path, array $ite
 }
 
 /**
- * سنجش فوری بعد از «انجام شد»: هر منبع آنچه همین الان سنجیدنی است (بالای فایل). کارهای همان موردها را تازه برمی‌گرداند.
+ * سنجش فوری بعد از «انجام دادم»: هر منبع آنچه همین الان سنجیدنی است (بالای فایل). کارهای همان موردها را تازه برمی‌گرداند.
  *
  * @param list<array{rule: string, term: string}> $marks
  * @return list<array<string, mixed>>
@@ -503,9 +503,9 @@ function hodima_seo_advisor_handle_mark(): void {
 
 	if ( 'done' === $status ) {
 		$result = 'opportunities' === $source ? '' : hodima_seo_advisor_mark_result_text( hodima_seo_advisor_mark_check_now( $source, $path, $marks ) );
-		hodima_admin_flash( sprintf( '<strong>%1$s مورد «انجام شد» خورد.</strong> %2$s <a href="%3$s">دیدن در «انجام‌شده»</a>', esc_html( $n ), $result, esc_url( $done ) ), 'success' );
+		hodima_admin_flash( sprintf( '<strong>%1$s مورد «انجام دادم» ثبت شد.</strong> %2$s <a href="%3$s">دیدن در «انجام‌شده»</a>', esc_html( $n ), $result, esc_url( $done ) ), 'success' );
 	} else {
-		hodima_admin_flash( sprintf( '<strong>%1$s مورد «رد شد» خورد</strong> و از این فهرست کنار رفت. <a href="%2$s">دیدن در «انجام‌شده»</a>', esc_html( $n ), esc_url( add_query_arg( 'tstatus', 'rejected', $done ) ) ), 'success' );
+		hodima_admin_flash( sprintf( '<strong>%1$s مورد «لازم نیست» ثبت شد</strong> و از این فهرست کنار رفت. <a href="%2$s">دیدن در «انجام‌شده»</a>', esc_html( $n ), esc_url( add_query_arg( 'tstatus', 'rejected', $done ) ) ), 'success' );
 	}
 
 	wp_safe_redirect( $back );

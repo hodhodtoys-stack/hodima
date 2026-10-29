@@ -5,7 +5,7 @@
  *
  * «ابزارهای هدیما ← دستار سئو» (admin.php?page=hodima-advisor). نوع صفحه «فهرست و جدول»
  * با کالبد ثابت کیت SEO (inc/ui-skeleton.php): سربرگ ← ۴ کارت آمار ← یک کنش اصلی
- * («به‌روزرسانی همه» با انتخاب بازه) ← کارت فرصت‌ها (نوار ابزار یک‌ردیفه: نماها، جستجو،
+ * («گرفتن داده تازه» با انتخاب بازه) ← کارت فرصت‌ها (نوار ابزار یک‌ردیفه: نماها، جستجو،
  * نوع پیشنهاد، خروجی CSV؛ ردیف‌های جمع‌شونده). طرح تأییدشده: Artifact «طرح دستار سئو»
  * (HODIMA-AUDIT.md بخش ۲۵۶). چیزی در سایت عوض نمی‌شود؛ فقط «نادیده گرفتن» یک آدرس و بازه
  * ذخیره می‌شوند. بدون JS کار می‌کند.
@@ -219,7 +219,7 @@ function hodima_seo_advisor_handle_refresh(): void {
 }
 
 /**
- * بقیه بخش‌ها بعد از دریافت دستی (دکمه «به‌روزرسانی همه»): بررسی ایندکس یک دسته در پس‌زمینه و خواندن فایل‌های
+ * بقیه بخش‌ها بعد از دریافت دستی (دکمه «گرفتن داده تازه»): بررسی ایندکس یک دسته در پس‌زمینه و خواندن فایل‌های
  * خزش اگر از آخرین خواندن تازه‌تر و آماده‌اند. جمله‌های کوتاه نتیجه برای پیام.
  *
  * @return list<string>
@@ -322,7 +322,7 @@ function hodima_seo_advisor_handle_key(): void {
 		}
 
 		update_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, $json, false );
-		$message = [ sprintf( 'کلید مخصوص دستار سئو ذخیره شد (%s). این ایمیل را در Search Console با دسترسی «محدود» اضافه کنید، بعد «به‌روزرسانی همه» را بزنید.', esc_html( $check['email'] ) ), 'success' ];
+		$message = [ sprintf( 'کلید مخصوص دستار سئو ذخیره شد (%s). این ایمیل را در Search Console با دسترسی «محدود» اضافه کنید، بعد «گرفتن داده تازه» را بزنید.', esc_html( $check['email'] ) ), 'success' ];
 	}
 
 	if ( $old_email !== hodima_seo_sc_email( HODIMA_SEO_SC_ADVISOR ) ) {
@@ -354,7 +354,7 @@ function hodima_seo_advisor_handle_clear(): void {
 		if ( is_wp_error( $result ) ) {
 			hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $result->get_error_message() ), 'error' );
 		} else {
-			hodima_admin_flash( '<strong>دستار سئو:</strong> داده‌های مشاور پاک شد. برای دریافت دوباره، «به‌روزرسانی همه» را بزنید.', 'success' );
+			hodima_admin_flash( '<strong>دستار سئو:</strong> داده‌های مشاور پاک شد. برای دریافت دوباره، «گرفتن داده تازه» را بزنید.', 'success' );
 		}
 	}
 
@@ -565,7 +565,7 @@ function hodima_seo_advisor_render_admin(): void {
 	$n     = static fn( int|float $value ): string => number_format_i18n( $value );
 	$empty = ! $has_data;
 
-	// یک ردیف «به‌روزرسانی همه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
+	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
 	if ( 'settings' !== $tab ) {
 		hodima_seo_advisor_render_toolbar( $tab );
 	}
@@ -611,7 +611,7 @@ function hodima_seo_advisor_render_admin(): void {
 		hodima_seo_advisor_render_no_key();
 	} elseif ( ! $has_data ) {
 		hodima_seo_ui_card_open( 'هنوز داده‌ای نیست' );
-		hodima_seo_ui_empty( 'اولین دریافت داده را بزنید', 'دکمه «به‌روزرسانی همه» را بزنید؛ از این به بعد خودکار هر روز گرفته می‌شود. داده سرچ کنسول ۲ تا ۳ روز تاخیر دارد.' );
+		hodima_seo_ui_empty( 'اولین دریافت داده را بزنید', 'دکمه «گرفتن داده تازه» را بزنید؛ از این به بعد خودکار هر روز گرفته می‌شود. داده سرچ کنسول ۲ تا ۳ روز تاخیر دارد.' );
 		hodima_seo_ui_card_close();
 	} else {
 		hodima_seo_advisor_render_list( $status );
@@ -622,7 +622,7 @@ function hodima_seo_advisor_render_admin(): void {
 }
 
 /**
- * ردیف «به‌روزرسانی همه»، یک بار بالای تب‌ها برای کل صفحه (جز تب تنظیمات): بازه + وضعیت اتصال + یک دکمه که داده
+ * ردیف «گرفتن داده تازه»، یک بار بالای تب‌ها برای کل صفحه (جز تب تنظیمات): بازه + وضعیت اتصال + یک دکمه که داده
  * اصلی، دستگاه و کشور، روند، بررسی ایندکس و فایل‌های خزش تازه را با هم به‌روز می‌کند (hodima_seo_advisor_handle_refresh).
  *
  * @param string $tab کلید تب (برای برگشت بعد از دریافت)؛ خالی = تب اول
@@ -659,7 +659,7 @@ function hodima_seo_advisor_render_toolbar( string $tab = '' ): void {
 				<span class="hds-pill hds-pill--info" role="status">ساخت پیشنهادها در پس‌زمینه ادامه دارد</span>
 			<?php endif; ?>
 			<button type="submit" class="hds-btn hodima-advisor__refresh"<?php disabled( ! $has_key ); ?>>
-				<span class="dashicons dashicons-update" aria-hidden="true"></span> به‌روزرسانی همه
+				<span class="dashicons dashicons-update" aria-hidden="true"></span> گرفتن داده تازه
 			</button>
 		</form>
 		<p class="hodima-advisor__bar-help">یک کلیک برای همه بخش‌ها: آمار گوگل، موبایل و کشور، روند ماه‌ها، بررسی ایندکس چند آدرس و فایل‌های خزش تازه. هر روز هم خودکار انجام می‌شود.</p>
@@ -668,7 +668,7 @@ function hodima_seo_advisor_render_toolbar( string $tab = '' ): void {
 }
 
 /**
- * محتوای تب «تنظیمات» (`tab=settings`): کلید حساب سرویس، حداقل نمایش، پاک کردن داده‌ها. بدون کلید صفحه
+ * محتوای تب «تنظیمات» (`tab=settings`): کلید حساب سرویس، حداقل نمایش، پاک کردن داده‌های دستار. بدون کلید صفحه
  * خودکار روی همین تب باز می‌شود.
  */
 function hodima_seo_advisor_render_settings( bool $has_data ): void {
@@ -689,7 +689,7 @@ function hodima_seo_advisor_render_settings( bool $has_data ): void {
 	?>
 	<section id="hodima-advisor-settings" class="hds-card hodima-advisor__settings" aria-labelledby="hodima-advisor-settings-title">
 		<h2 class="hds-card__title" id="hodima-advisor-settings-title"><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>تنظیمات</h2>
-		<p class="hds-card__desc">اتصال به Search Console، آستانه پیشنهادها و پاک کردن داده‌ها.</p>
+		<p class="hds-card__desc">اتصال به Search Console، آستانه پیشنهادها و پاک کردن داده‌های دستار.</p>
 
 		<h3 class="hodima-advisor__setting-title">کلید Service Account</h3>
 		<div class="hodima-advisor__keyrow">
@@ -714,7 +714,7 @@ function hodima_seo_advisor_render_settings( bool $has_data ): void {
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__keyrow-remove" data-hdsa-confirm="کلید مخصوص دستار سئو حذف شود؟ بعد از آن از کلید مشترک (دیسکاور یا ایندکس گوگل) خوانده می‌شود، اگر باشد.">
 							<input type="hidden" name="action" value="hodima_advisor_key">
 							<?php wp_nonce_field( 'hodima_advisor_key' ); ?>
-							<button type="submit" name="remove" value="1" class="hds-btn hds-btn--outline hodima-advisor__danger"><span class="dashicons dashicons-trash" aria-hidden="true"></span> حذف کلید</button>
+							<button type="submit" name="remove" value="1" class="hds-btn hds-btn--outline hodima-advisor__danger"><span class="dashicons dashicons-trash" aria-hidden="true"></span> برداشتن کلید</button>
 						</form>
 					<?php endif; ?>
 				</span>
@@ -724,7 +724,7 @@ function hodima_seo_advisor_render_settings( bool $has_data ): void {
 			<?php if ( $fixed ) : ?>
 				کلید از ثابت <bdi class="hds-code">HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON</bdi> در wp-config.php خوانده می‌شود و از اینجا عوض نمی‌شود.
 			<?php elseif ( $own ) : ?>
-				این کلید فقط برای دستار سئو است. «حذف کلید» = برگشت به کلید مشترک (دیسکاور یا ایندکس گوگل).
+				این کلید فقط برای دستار سئو است. «برداشتن کلید» = برگشت به کلید مشترک (دیسکاور یا ایندکس گوگل).
 			<?php else : ?>
 				بهتر است برای دستار سئو یک حساب سرویس جدا بسازید و در Search Console فقط با دسترسی «محدود» (فقط خواندن) به سایت اضافه کنید؛ این‌طور با دیسکاور و ایندکس گوگل قاطی نمی‌شود. تا کلید مخصوص نگذاشته‌اید، همان کلید مشترک کار می‌کند.
 			<?php endif; ?>
@@ -747,12 +747,12 @@ function hodima_seo_advisor_render_settings( bool $has_data ): void {
 				<input type="hidden" name="action" value="hodima_advisor_clear">
 				<?php wp_nonce_field( 'hodima_advisor_clear' ); ?>
 				<h3 class="hodima-advisor__setting-title">داده‌های دستار سئو را پاک کنم؟</h3>
-				<p class="hodima-advisor__setting-help">جدول‌های دریافت‌شده از Search Console و فهرست «نادیده گرفتن» پاک می‌شوند. کلید حساب سرویس، تاریخچه هفتگی، کارهای «در دست انجام» و «انجام‌شده» و تنظیمات می‌مانند و با «به‌روزرسانی همه» دوباره گرفته می‌شود. بازگشت ندارد.</p>
+				<p class="hodima-advisor__setting-help">جدول‌های دریافت‌شده از Search Console و فهرست «نادیده گرفتن» پاک می‌شوند. کلید حساب سرویس، تاریخچه هفتگی، کارهای «در دست انجام» و «انجام‌شده» و تنظیمات می‌مانند و با «گرفتن داده تازه» دوباره گرفته می‌شود. بازگشت ندارد.</p>
 				<label class="hodima-advisor__confirm">
 					<input type="checkbox" name="confirm" value="1"<?php disabled( ! $has_data ); ?>>
 					<span>مطمئنم؛ داده‌ها پاک شود</span>
 				</label>
-				<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__danger"<?php disabled( ! $has_data ); ?>>پاک کردن داده‌ها</button>
+				<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__danger"<?php disabled( ! $has_data ); ?>>پاک کردن داده‌های دستار</button>
 			</form>
 		</div>
 		<div class="hodima-advisor__note">
@@ -895,7 +895,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 			hodima_seo_ui_empty(
 				'کار بازی نمانده',
 				sprintf(
-					'همه ایرادهای %1$s صفحه را «انجام شد» یا «رد شد» علامت زده‌اید. %2$s',
+					'همه ایرادهای %1$s صفحه را «انجام دادم» یا «لازم نیست» علامت زده‌اید. %2$s',
 					esc_html( number_format_i18n( count( $handled_here ) ) ),
 					hodima_seo_advisor_action( hodima_seo_advisor_page_url( array_filter( [ 'tasks' => 'all' ] + $keep ) ), 'نمایش این صفحه‌ها', 'visibility' )
 				)
@@ -1017,9 +1017,9 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 					<?php endif; ?>
 					<?php wp_nonce_field( 'hodima_advisor_ignore' ); ?>
 					<?php if ( $ignored_view ) : ?>
-						<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-undo" aria-hidden="true"></span>بازگرداندن به فهرست</button>
+						<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-undo" aria-hidden="true"></span>برگردان به فهرست</button>
 					<?php else : ?>
-						<button type="submit" class="hodima-advisor__text-btn">نادیده گرفتن کل صفحه</button>
+						<button type="submit" class="hodima-advisor__text-btn">این صفحه را نادیده بگیر</button>
 					<?php endif; ?>
 				</form>
 			</span>

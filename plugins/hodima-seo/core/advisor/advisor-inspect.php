@@ -10,7 +10,7 @@
  * صف: اول صفحه‌های بدون نمایش (advisor-health)، بعد صفحه‌های دارای پیشنهاد (کلیک بالقوه بیشتر اول)، بعد
  * پرنمایش‌ترین‌ها؛ آدرسی که در ۱۴ روز اخیر بررسی شده دوباره نمی‌آید. نتیجه در گزینه hodima_advisor_inspect
  * (autoload خاموش، حداکثر ۶۰۰ آدرس؛ قدیمی‌ترین‌ها می‌روند). فقط می‌خواند؛ چیزی را در سایت یا Search
- * Console عوض نمی‌کند. «پاک کردن داده‌ها» آن را پاک می‌کند. فیلتر hodima_seo_advisor_inspect_enabled خاموشش می‌کند.
+ * Console عوض نمی‌کند. «پاک کردن داده‌های دستار» آن را پاک می‌کند. فیلتر hodima_seo_advisor_inspect_enabled خاموشش می‌کند.
  */
 
 declare(strict_types=1);
@@ -116,7 +116,7 @@ function hodima_seo_advisor_inspections(): array {
 	return is_array( $stored ) ? array_filter( $stored, 'is_array' ) : [];
 }
 
-/** فاصله بررسی دوباره آدرس کار «انجام شد» تا وقتی خزش بعد از تغییر دیده شود (روز). */
+/** فاصله بررسی دوباره آدرس کار «انجام دادم» تا وقتی خزش بعد از تغییر دیده شود (روز). */
 const HODIMA_SEO_ADVISOR_INSPECT_TASK_RECHECK_DAYS = 2;
 
 /**
@@ -160,8 +160,8 @@ function hodima_seo_advisor_inspect_queue( int $limit = HODIMA_SEO_ADVISOR_INSPE
 		$queue[ $path ] = true;
 	};
 
-	// اول: آدرس کارهای «انجام شد» که هنوز معلوم نیست گوگل بعد از تغییر دوباره خوانده (تب «انجام‌شده»)؛ هر ۲ روز تا دیده شود
-	// کار «صفحه بدون نمایش» و «مشکل ایندکس» (SEO 3.0.2) نتیجه‌اش همین بررسی است: اولین بررسی بعد از «انجام شد» بی‌درنگ
+	// اول: آدرس کارهای «انجام دادم» که هنوز معلوم نیست گوگل بعد از تغییر دوباره خوانده (تب «انجام‌شده»)؛ هر ۲ روز تا دیده شود
+	// کار «صفحه بدون نمایش» و «مشکل ایندکس» (SEO 3.0.2) نتیجه‌اش همین بررسی است: اولین بررسی بعد از «انجام دادم» بی‌درنگ
 	// ایراد فنی، رقابت و آدرس مرده سنجش خودشان را دارند و سهمیه گوگل را نمی‌گیرند
 	foreach ( function_exists( 'hodima_seo_advisor_tasks' ) ? hodima_seo_advisor_tasks() : [] as $task ) {
 		$seen = 'done' === $task['status'] && ( 'opportunities' === hodima_seo_advisor_task_source( $task['rule'] ) || in_array( $task['rule'], [ 'health_unseen', 'index_problem' ], true ) ) ? hodima_seo_advisor_inspect_after( $task['path'], $task['at'] ) : null;
@@ -212,7 +212,7 @@ function hodima_seo_advisor_inspect_batch( int $limit = HODIMA_SEO_ADVISOR_INSPE
 	$property = '' !== $status['property'] ? $status['property'] : ( hodima_seo_sc_candidates( HODIMA_SEO_SC_ADVISOR )[0] ?? '' );
 
 	if ( '' === $property ) {
-		$summary['error'] = 'property سرچ کنسول معلوم نیست؛ اول «به‌روزرسانی همه» را بزنید.';
+		$summary['error'] = 'property سرچ کنسول معلوم نیست؛ اول «گرفتن داده تازه» را بزنید.';
 		return $summary;
 	}
 
@@ -263,7 +263,7 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 	update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $stored, false );
 
 	if ( $summary['checked'] > 0 ) {
-		hodima_seo_advisor_tasks_sync_inspected(); // کارهای «انجام شد» ایندکس و صفحه بدون نمایش با نتیجه تازه
+		hodima_seo_advisor_tasks_sync_inspected(); // کارهای «انجام دادم» ایندکس و صفحه بدون نمایش با نتیجه تازه
 	}
 
 	return $summary;

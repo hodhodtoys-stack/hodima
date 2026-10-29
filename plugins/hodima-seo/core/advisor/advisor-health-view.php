@@ -77,7 +77,7 @@ function hodima_seo_advisor_render_health( array $status ): void {
 
 	if ( $empty ) {
 		hodima_seo_ui_card_open( 'آدرس‌های خراب' );
-		hodima_seo_ui_empty( 'هنوز ساخته نشده', 'بعد از «به‌روزرسانی همه» این بخش پر می‌شود.' );
+		hodima_seo_ui_empty( 'هنوز ساخته نشده', 'بعد از «گرفتن داده تازه» این بخش پر می‌شود.' );
 		hodima_seo_ui_card_close();
 		return;
 	}
@@ -88,7 +88,7 @@ function hodima_seo_advisor_render_health( array $status ): void {
 	if ( empty( $data['router'] ) ) {
 		hodima_seo_ui_empty( 'بررسی انجام نشد', 'ماژول «آدرس تمیز» سایت خاموش است و بدون آن وضعیت آدرس‌ها بررسی نمی‌شود. آن را در «ابزارهای هدیما ← ماژول‌های سئو» روشن کنید.' );
 	} elseif ( ! $dead && $hide_dead > 0 ) {
-		hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه آدرس‌های مرده را «انجام شد» یا «رد شد» علامت زده‌اید. %s', hodima_seo_advisor_marked_toggle( $hide_dead, [ 'tab' => 'health' ], 'آدرس' ) ) );
+		hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه آدرس‌های مرده را «انجام دادم» یا «لازم نیست» علامت زده‌اید. %s', hodima_seo_advisor_marked_toggle( $hide_dead, [ 'tab' => 'health' ], 'آدرس' ) ) );
 	} elseif ( ! $dead ) {
 		hodima_seo_ui_empty( 'آدرس مرده‌ای پیدا نشد', 'همه آدرس‌های پرنمایش گوگل در سایت صفحه سالم دارند.' );
 	} else {
@@ -129,7 +129,7 @@ function hodima_seo_advisor_render_health( array $status ): void {
 		foreach ( array_unique( array_column( $dead, 'state' ) ) as $state ) {
 			echo '<div class="hodima-advisor__advice">' . esc_html( hodima_seo_advisor_health_state( (string) $state )['advice'] ) . '</div>';
 		}
-		echo '<p class="hodima-advisor__advice">بعد از ریدایرکت یا درست کردن آدرس، «انجام شد» را بزنید: آدرس همان لحظه در خود سایت دوباره سنجیده می‌شود. «رد شد» یعنی عمدا حذف شده و جایگزین ندارد.</p>';
+		echo '<p class="hodima-advisor__advice">بعد از ریدایرکت یا درست کردن آدرس، «انجام دادم» را بزنید: آدرس همان لحظه در خود سایت دوباره سنجیده می‌شود. «لازم نیست» یعنی عمدا حذف شده و جایگزین ندارد.</p>';
 	}
 	hodima_seo_ui_card_close();
 
@@ -182,7 +182,7 @@ function hodima_seo_advisor_render_health( array $status ): void {
 				<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'health', 'tasks' => $show ? 'all' : '', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 			</div>
 		<?php endif; ?>
-		<div class="hodima-advisor__advice"><strong>چه کنید:</strong> برای هر صفحه بررسی کنید: noindex یا canonical به آدرس دیگر نباشد؛ در سایت‌مپ باشد؛ دست‌کم از ۲ تا ۳ صفحه مرتبط لینک داخلی بگیرد؛ و محتوایش کم یا تکراری نباشد. بعد در Search Console همان آدرس را در «بررسی آدرس» بگذارید و «درخواست ایندکس» بزنید و اینجا «انجام شد» را بزنید: آدرس اول صف بررسی ایندکس می‌رود؛ نمایش یا ایندکس ← برطرف شد، ۳۰ روز بعد هنوز نه ← برمی‌گردد. اگر صفحه ارزشی ندارد، ادغام یا حذفش با ریدایرکت بهتر است.</div>
+		<div class="hodima-advisor__advice"><strong>چه کنید:</strong> برای هر صفحه بررسی کنید: noindex یا canonical به آدرس دیگر نباشد؛ در سایت‌مپ باشد؛ دست‌کم از ۲ تا ۳ صفحه مرتبط لینک داخلی بگیرد؛ و محتوایش کم یا تکراری نباشد. بعد در Search Console همان آدرس را در «بررسی آدرس» بگذارید و «درخواست ایندکس» بزنید و اینجا «انجام دادم» را بزنید: آدرس اول صف بررسی ایندکس می‌رود؛ نمایش یا ایندکس ← برطرف شد، ۳۰ روز بعد هنوز نه ← برمی‌گردد. اگر صفحه ارزشی ندارد، ادغام یا حذفش با ریدایرکت بهتر است.</div>
 		<?php
 	}
 	hodima_seo_ui_card_close();

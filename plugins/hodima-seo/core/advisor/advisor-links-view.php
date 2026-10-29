@@ -96,7 +96,7 @@ function hodima_seo_advisor_render_links_row( array $row, array $target ): strin
 		. '<td data-label="آدرس نوشته‌شده">' . hodima_seo_advisor_links_written( $row ) . '</td>'
 		. '<td data-label="الان می‌رود به">' . $current . '</td>'
 		. '<td data-label="باید برود به">' . $should . '</td>'
-		. '<td data-label="">' . ( '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش', 'edit' ) : '' ) . '</td>'
+		. '<td data-label="">' . ( '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش صفحه', 'edit' ) : '' ) . '</td>'
 		. '</tr>';
 }
 
@@ -119,7 +119,7 @@ function hodima_seo_advisor_render_links_opp( array $opp, array $target ): strin
 		. '<td data-label=""><div class="hodima-advisor__lk-src"><strong>' . esc_html( (string) $source['title'] ) . '</strong><span class="hds-pill hds-pill--info">' . esc_html( (string) $source['label'] ) . '</span></div></td>'
 		. '<td data-label="تکه‌ای از متن">' . $text . '</td>'
 		. '<td data-label="پیشنهاد"><span class="hodima-advisor__lk-opp">همین عبارت را به این آدرس لینک کنید:</span>' . hodima_seo_advisor_url_copy( (string) $target['path'] ) . '<small class="hodima-advisor__lk-muted">' . esc_html( (string) $target['title'] ) . '</small></td>'
-		. '<td data-label="">' . ( '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش', 'edit' ) : '' ) . '</td>'
+		. '<td data-label="">' . ( '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش صفحه', 'edit' ) : '' ) . '</td>'
 		. '</tr>';
 }
 
@@ -219,7 +219,7 @@ function hodima_seo_advisor_render_links_result( array $scan ): string {
 		$html .= '<span class="' . esc_attr( $class ) . '">' . esc_html( sprintf( $format, $n( (int) $counts[ $key ] ) ) ) . '</span>';
 	}
 
-	$html .= '<button type="button" class="hds-btn hds-btn--outline hodima-advisor__lk-again" data-hdsa-links-run data-force="1">بررسی دوباره</button></div>';
+	$html .= '<button type="button" class="hds-btn hds-btn--outline hodima-advisor__lk-again" data-hdsa-links-run data-force="1">بررسی لینک‌ها</button></div>';
 
 	if ( ! $scan['router'] ) {
 		$html .= '<p class="hodima-advisor__links-hint">ماژول «آدرس تمیز» خاموش است؛ فقط لینک‌هایی که آدرسشان دقیقا برابر است پیدا شدند (آدرس قدیمی با پایه یا ریدایرکت دیده نمی‌شود).</p>';

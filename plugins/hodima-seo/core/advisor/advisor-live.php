@@ -107,7 +107,7 @@ function hodima_seo_advisor_live_check( string $path ): bool {
 
 /**
  * بدنه بررسی یک آدرس. `$record_status`: پاسخ غیر ۲۰۰ (ریدایرکت یا خطا) هم در ردیف خزش نوشته شود؛ فقط بعد از
- * «انجام شد» مدیر روی ایراد «خطای ۴۰۴/۵۰۰» (advisor-marks.php). بررسی خودکار بعد از ذخیره این کار را نمی‌کند:
+ * «انجام دادم» مدیر روی ایراد «خطای ۴۰۴/۵۰۰» (advisor-marks.php). بررسی خودکار بعد از ذخیره این کار را نمی‌کند:
  * یک خطای گذرای هاست صفحه سالم را «خراب» نشان می‌داد (ریدایرکت و خطا را خزش بعدی می‌گوید).
  *
  * @return int کد پاسخ HTTP؛ صفر = آدرس در خزش نیست، درخواست نرسید یا نوشتن نشد
@@ -186,7 +186,7 @@ function hodima_seo_advisor_live_fetch( string $path, bool $record_status = fals
 		hodima_seo_advisor_save_advice( $path ); // سلامت متا و تیتر رندرشده در پیشنهادها
 	}
 
-	// کارهای «انجام شد» ایرادهای متنی همین صفحه با همین خواندن سنجیده می‌شوند (ذخیره صفحه هم همین را صدا می‌زند)
+	// کارهای «انجام دادم» ایرادهای متنی همین صفحه با همین خواندن سنجیده می‌شوند (ذخیره صفحه هم همین را صدا می‌زند)
 	if ( function_exists( 'hodima_seo_advisor_tasks_sync_crawl' ) ) {
 		hodima_seo_advisor_tasks_sync_crawl( $path, [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, 'broken' ] );
 	}

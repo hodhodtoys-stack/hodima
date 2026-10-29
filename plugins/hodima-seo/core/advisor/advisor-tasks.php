@@ -5,10 +5,10 @@
  *
  * مشاور چیزی را خودکار عوض نمی‌کند؛ مدیر هر پیشنهاد را خودش اجرا می‌کند. این فایل فقط
  * «یادداشت» او را نگه می‌دارد: برای هر پیشنهاد (آدرس + نوع + کلمه) یکی از وضعیت‌های «در حال انجام»،
- * «انجام شد» یا «رد شد». برای «انجام شد» با تاریخچه هفتگی (advisor-history.php) اثرش اندازه می‌شود:
+ * «انجام دادم» یا «لازم نیست». برای «انجام دادم» با تاریخچه هفتگی (advisor-history.php) اثرش اندازه می‌شود:
  * میانگین کلیک هفتگی تا ۳ هفته کامل قبل از آن روز با تا ۳ هفته کامل بعدش.
  *
- * داده: گزینه hodima_advisor_tasks (autoload خاموش، حداکثر ۱۰۰۰ مورد؛ از پرشدن، قدیمی‌ترین «رد شد»ها
+ * داده: گزینه hodima_advisor_tasks (autoload خاموش، حداکثر ۱۰۰۰ مورد؛ از پرشدن، قدیمی‌ترین «لازم نیست»ها
  * اول می‌روند). «پاک کردن داده‌های مشاور» آن را پاک نمی‌کند (یادداشت مدیر است، نه داده گوگل).
  *
  * SEO 3.0.2: کار فقط پیشنهاد کادر ویرایش نیست؛ هر تب (ایرادهای فنی، هم‌کلمه، آدرس‌های خراب، وضعیت در گوگل)
@@ -52,7 +52,7 @@ function hodima_seo_advisor_task_nonce_action( string $path, string $rule, strin
 
 /** @return array<string, string> وضعیت ← برچسب */
 function hodima_seo_advisor_task_statuses(): array {
-	return [ 'doing' => 'در حال انجام', 'done' => 'انجام شد', 'rejected' => 'رد شد' ];
+	return [ 'doing' => 'در حال انجام', 'done' => 'انجام دادم', 'rejected' => 'لازم نیست' ];
 }
 
 /** کلید یکتای یک پیشنهاد. */
@@ -102,7 +102,7 @@ function hodima_seo_advisor_tasks(): array {
 
 /**
  * تغییر فیلدهای چند کار را روی نسخه تازه گزینه می‌نشاند، نه روی نسخه‌ای که پیش از درخواست‌های کند (سرچ کنسول) خوانده شد.
- * تا SEO 3.0.2 نوبت سنجش کل آرایه را بعد از چند ثانیه می‌نوشت و «انجام شد» که مدیر وسط آن می‌زد بی‌صدا پاک می‌شد.
+ * تا SEO 3.0.2 نوبت سنجش کل آرایه را بعد از چند ثانیه می‌نوشت و «انجام دادم» که مدیر وسط آن می‌زد بی‌صدا پاک می‌شد.
  * کاری که مدیر در این فاصله عوضش کرد (وضعیت یا زمان `at` فرق دارد) یا برداشت دست نمی‌خورد.
  *
  * @param array<string, array<string, mixed>> $patch  کلید کار ← فیلدهای تازه (fixed، back، check)
@@ -175,7 +175,7 @@ function hodima_seo_advisor_task_set( string $path, string $rule, string $term, 
 	}
 
 	if ( count( $tasks ) > HODIMA_SEO_ADVISOR_TASKS_MAX ) {
-		uasort( $tasks, static fn( array $a, array $b ): int => [ 'rejected' === $a['status'], -$a['at'] ] <=> [ 'rejected' === $b['status'], -$b['at'] ] ); // اول غیر«رد شد»ها، تازه‌ترین‌ها
+		uasort( $tasks, static fn( array $a, array $b ): int => [ 'rejected' === $a['status'], -$a['at'] ] <=> [ 'rejected' === $b['status'], -$b['at'] ] ); // اول غیر«لازم نیست»ها، تازه‌ترین‌ها
 		$tasks = array_slice( $tasks, 0, HODIMA_SEO_ADVISOR_TASKS_MAX, true );
 	}
 
@@ -232,7 +232,7 @@ function hodima_seo_advisor_task_view( array $task ): array {
 		'unseen'  => [ 'انجام شد؛ هنوز در صفحه دیده نمی‌شود', 'hds-pill hds-pill--warn' ],
 		'fixed'   => [ 'برطرف شد', 'hds-pill' ],
 		'back'    => [ 'برگشت؛ دوباره پیدا شد', 'hds-pill hds-pill--error' ],
-		default   => [ 'رد شد', 'hds-pill hds-pill--info' ],
+		default   => [ 'لازم نیست', 'hds-pill hds-pill--info' ],
 	};
 
 	return [ 'state' => $state, 'label' => $label, 'class' => $class, 'time' => match ( $state ) { 'fixed' => $task['fixed'], 'back' => $task['back'], default => $task['at'] } ];
@@ -291,7 +291,7 @@ function hodima_seo_advisor_tasks_sync( string $path, array $suggestions ): int 
 }
 
 /**
- * آدرس‌هایی که همه پیشنهادهای فعلی‌شان «انجام شد» یا «رد شد» خورده‌اند (مسیر ← نوع شیء). فهرست فرصت‌ها
+ * آدرس‌هایی که همه پیشنهادهای فعلی‌شان «انجام دادم» یا «لازم نیست» خورده‌اند (مسیر ← نوع شیء). فهرست فرصت‌ها
  * پیش‌فرض این‌ها را پنهان می‌کند تا فقط کارهای باز بماند؛ پیشنهاد تازه‌ای که بعدا برای همان آدرس ساخته شود
  * علامت ندارد و آدرس خودبه‌خود به فهرست برمی‌گردد.
  *
@@ -341,7 +341,7 @@ function hodima_seo_advisor_task_groups(): array {
 		'open'     => [ 'نیاز به کار', [ 'doing', 'unseen', 'back', 'no_effect', 'still' ] ],
 		'waiting'  => [ 'منتظر نتیجه', [ 'waiting' ] ],
 		'fixed'    => [ 'برطرف شد', [ 'fixed' ] ],
-		'rejected' => [ 'رد شد', [ 'rejected' ] ],
+		'rejected' => [ 'لازم نیست', [ 'rejected' ] ],
 	];
 }
 
@@ -380,7 +380,7 @@ function hodima_seo_advisor_task_counts(): array {
 }
 
 /**
- * اثر یک کار «انجام شد» روی کلیک هفتگی صفحه.
+ * اثر یک کار «انجام دادم» روی کلیک هفتگی صفحه.
  *
  * @param array{path: string, status: string, at: int} $task
  * @return array{state: string, effect?: array<string, mixed>, site?: array<string, mixed>|null} state: wait (هنوز زود است)، none (تاریخچه کافی نیست)، ok؛ site = مقایسه با روند کل سایت (hodima_seo_advisor_effect_vs_site)
@@ -425,7 +425,7 @@ function hodima_seo_advisor_handle_task(): void {
 
 	if ( hodima_seo_advisor_task_set( $path, $rule, $term, $title, $status, $redo ) ) {
 		$note = '';
-		// کار تب‌های دیگر (ایراد فنی، آدرس خراب…) با «انجام شد»/«دوباره انجام دادم» همان لحظه سنجیده می‌شود
+		// کار تب‌های دیگر (ایراد فنی، آدرس خراب…) با «انجام دادم»/«دوباره انجام دادم» همان لحظه سنجیده می‌شود
 		if ( 'done' === $status && 'opportunities' !== hodima_seo_advisor_task_source( $rule ) ) {
 			$note = hodima_seo_advisor_mark_result_text( hodima_seo_advisor_mark_check_now( hodima_seo_advisor_task_source( $rule ), $path, [ [ 'rule' => $rule, 'term' => $term ] ] ) );
 		}

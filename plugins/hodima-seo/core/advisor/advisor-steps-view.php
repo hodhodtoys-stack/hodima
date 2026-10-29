@@ -178,7 +178,7 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true ): voi
 						$edit = hodima_seo_advisor_edit_link( (string) $source['kind'], (int) $source['id'] );
 						printf(
 							'<li>%1$s <small>%2$s · %3$s</small>%4$s</li>',
-							esc_html( (string) $source['title'] ) . ( '' !== $edit ? ' <a class="button button-small" href="' . esc_url( $edit ) . '" target="_blank" rel="noopener">ویرایش این صفحه</a>' : '' ),
+							esc_html( (string) $source['title'] ) . ( '' !== $edit ? ' <a class="button button-small" href="' . esc_url( $edit ) . '" target="_blank" rel="noopener">ویرایش صفحه</a>' : '' ),
 							esc_html( hodima_seo_advisor_kind_label( (string) $source['kind'] ) ),
 							esc_html( $source['impressions'] > 0 ? sprintf( '%s نمایش', $n( (int) $source['impressions'] ) ) : 'بدون آمار گوگل' ),
 							'' !== (string) ( $source['url'] ?? '' ) ? '<br>' . hodima_seo_advisor_url_copy( (string) $source['url'] ) : '' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy

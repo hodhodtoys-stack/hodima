@@ -51,7 +51,7 @@ const HODIMA_SEO_ADVISOR_STAGE_CRON      = 'hodima_advisor_stage';
 const HODIMA_SEO_ADVISOR_STAGE_BUDGET    = 90;
 
 /**
- * بودجه نوبت‌ها وقتی مدیر منتظر صفحه است (دکمه «به‌روزرسانی همه»، ذخیره تنظیم، خواندن فایل خزش)؛ باقی‌مانده در پس‌زمینه.
+ * بودجه نوبت‌ها وقتی مدیر منتظر صفحه است (دکمه «گرفتن داده تازه»، ذخیره تنظیم، خواندن فایل خزش)؛ باقی‌مانده در پس‌زمینه.
  * تا SEO 2.9.8 همان ۹۰ ثانیه کرون (و برای «حداقل نمایش» بدون سقف) بود و صفحه چند دقیقه منتظر می‌ماند.
  */
 const HODIMA_SEO_ADVISOR_MANUAL_BUDGET = 15;
@@ -322,9 +322,9 @@ function hodima_seo_advisor_pipeline_stage( string $stage, array $state, float $
 		case 'history':
 			hodima_seo_advisor_history_sync( $property );
 			break;
-		case 'verify': // اثر کارهای «انجام شد» با داده فقط بعد از تغییر (advisor-verify.php)؛ باقی‌مانده فردا
+		case 'verify': // اثر کارهای «انجام دادم» با داده فقط بعد از تغییر (advisor-verify.php)؛ باقی‌مانده فردا
 			hodima_seo_advisor_verify_batch( $property, $deadline );
-			hodima_seo_advisor_tasks_sync_competition(); // کارهای «انجام شد» صفحه‌های هم‌کلمه با داده تازه
+			hodima_seo_advisor_tasks_sync_competition(); // کارهای «انجام دادم» صفحه‌های هم‌کلمه با داده تازه
 			break;
 	}
 

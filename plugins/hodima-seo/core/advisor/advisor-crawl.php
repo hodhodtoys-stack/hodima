@@ -705,7 +705,7 @@ function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_
 	} );
 }
 
-/* ── خواندن فایل‌ها (دکمه «خواندن فایل‌ها») ── */
+/* ── خواندن فایل‌های خزش (دکمه «خواندن فایل‌های خزش») ── */
 
 /**
  * وضعیت ذخیره‌شده.
@@ -808,7 +808,7 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 	hodima_seo_advisor_crawl_map( true );
 	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $stored['pages'], 'links' => $stored['links'], 'files' => $files, 'source' => 'screamingfrog' ], false );
 
-	// کارهای «انجام شد» ایرادهای فنی با خزش تازه سنجیده می‌شوند (کند، لینک ورودی و ریدایرکت فقط همین‌جا)
+	// کارهای «انجام دادم» ایرادهای فنی با خزش تازه سنجیده می‌شوند (کند، لینک ورودی و ریدایرکت فقط همین‌جا)
 	hodima_seo_advisor_tasks_sync_crawl();
 
 	// پیشنهادهای ذخیره‌شده (نرخ کلیک و رقابت) با داده خزش دوباره ساخته می‌شوند: چند ثانیه همین‌جا، بقیه در پس‌زمینه.

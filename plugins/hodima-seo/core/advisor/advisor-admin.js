@@ -59,7 +59,7 @@
 		}
 	});
 
-	/* ── تأیید پیش از «حذف کلید» ── */
+	/* ── تأیید پیش از «برداشتن کلید» ── */
 	document.querySelectorAll('form[data-hdsa-confirm]').forEach((form) => {
 		form.addEventListener('submit', (event) => {
 			if (!window.confirm(form.dataset.hdsaConfirm || '')) event.preventDefault();

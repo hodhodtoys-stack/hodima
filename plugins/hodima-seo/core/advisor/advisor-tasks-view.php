@@ -55,7 +55,7 @@ function hodima_seo_advisor_mark_check( string $form, string $value, string $lab
 }
 
 /**
- * فرم دکمه‌های «انجام شد» و «رد شد» یک ردیف.
+ * فرم دکمه‌های «انجام دادم» و «لازم نیست» یک ردیف.
  *
  * @param array<string, string> $hidden فیلدهای پنهان دیگر (term، items[] برای ردیف تک‌کاره)
  * @param string                $context نام ردیف برای صفحه‌خوان («انجام شد: …»)
@@ -74,8 +74,8 @@ function hodima_seo_advisor_mark_form( string $id, string $source, string $path,
 		<?php foreach ( $hidden as $name => $value ) : ?>
 			<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>">
 		<?php endforeach; ?>
-		<button type="submit" name="status" value="done" class="hds-btn hds-btn--outline hodima-advisor__mark-done" aria-label="<?php echo esc_attr( 'انجام شد: ' . $context ); ?>"><span class="dashicons dashicons-yes" aria-hidden="true"></span>انجام شد</button>
-		<button type="submit" name="status" value="rejected" class="hds-btn hds-btn--outline hodima-advisor__mark-reject" aria-label="<?php echo esc_attr( 'رد شد: ' . $context ); ?>">رد شد</button>
+		<button type="submit" name="status" value="done" class="hds-btn hds-btn--outline hodima-advisor__mark-done" aria-label="<?php echo esc_attr( 'انجام دادم: ' . $context ); ?>"><span class="dashicons dashicons-yes" aria-hidden="true"></span>انجام دادم</button>
+		<button type="submit" name="status" value="rejected" class="hds-btn hds-btn--outline hodima-advisor__mark-reject" aria-label="<?php echo esc_attr( 'لازم نیست: ' . $context ); ?>">لازم نیست</button>
 	</form>
 	<?php
 }
@@ -153,14 +153,14 @@ function hodima_seo_advisor_render_task_controls( string $path, array $item ): v
 	}
 
 	if ( null !== $task ) {
-		printf( '<a class="button button-small" href="%1$s">برداشتن از کارها</a>', esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, '' ) ) );
+		printf( '<a class="button button-small" href="%1$s">برگردان به فهرست</a>', esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, '' ) ) );
 	}
 
 	echo '</div>';
 }
 
 /**
- * جمله اثر یک کار «انجام شد».
+ * جمله اثر یک کار «انجام دادم».
  *
  * @param array{path: string, status: string, at: int} $task
  */
@@ -211,7 +211,7 @@ function hodima_seo_advisor_task_timeline( array $task ): array {
 		$steps[] = match ( $crawl['state'] ) {
 			'yes'   => [ 'state' => 'ok', 'label' => 'گوگل صفحه را دوباره خواند', 'detail' => hodima_seo_advisor_task_date( $crawl['crawled'] ) ],
 			'no'    => [ 'state' => 'wait', 'label' => 'گوگل هنوز تغییر را ندیده', 'detail' => sprintf( 'آخرین بار %s خوانده؛ برای سرعت، در Search Console آدرس را در نوار بالا بزنید و «درخواست ایندکس» را بزنید.', hodima_seo_advisor_task_date( $crawl['crawled'] ) ) ],
-			default => [ 'state' => 'wait', 'label' => 'منتظر بررسی ایندکس', 'detail' => 'این آدرس اول صف بررسی ایندکس است؛ با «به‌روزرسانی همه» یا بررسی خودکار بعدی معلوم می‌شود.' ],
+			default => [ 'state' => 'wait', 'label' => 'منتظر بررسی ایندکس', 'detail' => 'این آدرس اول صف بررسی ایندکس است؛ با «گرفتن داده تازه» یا بررسی خودکار بعدی معلوم می‌شود.' ],
 		};
 	} elseif ( 'crawl' === $source ) {
 		$live    = in_array( substr( $task['rule'], 6 ), [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, 'broken' ], true );
@@ -265,7 +265,7 @@ function hodima_seo_advisor_task_still_text( string $rule ): string {
 		'health_dead'   => 'آدرس هنوز ۴۰۴ است یا ریدایرکتش به مقصد خراب می‌رود. در «ابزارهای هدیما ← ریدایرکت‌ها» قانون ۳۰۱ بگذارید و «دوباره انجام دادم» را بزنید.',
 		'health_unseen' => sprintf( '%s روز بعد هنوز نمایشی نگرفته. noindex، سایت‌مپ، لینک داخلی و کامل بودن محتوا را دوباره بررسی و در Search Console درخواست ایندکس کنید.', number_format_i18n( HODIMA_SEO_ADVISOR_MARK_UNSEEN_DAYS ) ),
 		'index_problem' => 'گوگل صفحه را بعد از تغییر شما دوباره خواند ولی هنوز ایندکس نکرده؛ دستور همان وضعیت را در «وضعیت در گوگل» ببینید و بعد «دوباره انجام دادم» را بزنید.',
-		default         => 'صفحه بعد از «انجام شد» دوباره سنجیده شد و این ایراد هنوز هست. شاید تغییر ذخیره نشده یا افزونه یا قالب دیگری همان بخش را می‌نویسد؛ درستش کنید و «دوباره انجام دادم» را بزنید.',
+		default         => 'صفحه بعد از «انجام دادم» دوباره سنجیده شد و این ایراد هنوز هست. شاید تغییر ذخیره نشده یا افزونه یا قالب دیگری همان بخش را می‌نویسد؛ درستش کنید و «دوباره انجام دادم» را بزنید.',
 	};
 }
 
@@ -317,7 +317,7 @@ function hodima_seo_advisor_render_task_form( array $task, string $state ): void
 				<button type="submit" name="status" value="<?php echo esc_attr( $key ); ?>" class="hds-btn hds-btn--outline"><?php echo esc_html( $label ); ?></button>
 			<?php endif; ?>
 		<?php endforeach; ?>
-		<button type="submit" name="status" value="" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-trash" aria-hidden="true"></span>برداشتن از کارها</button>
+		<button type="submit" name="status" value="" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-undo" aria-hidden="true"></span>برگردان به فهرست</button>
 	</form>
 	<?php
 }
@@ -350,7 +350,7 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 			[ 'label' => 'برطرف شد', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => 'fixed' === hodima_seo_advisor_task_state( $t ) ) ) ), 'empty' => $empty ],
 			[ 'label' => 'منتظر نتیجه', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => 'waiting' === hodima_seo_advisor_task_state( $t ) ) ) ), 'sub' => $empty ? '' : 'تا ۱۴ روز داده گوگل بعد از تغییر', 'empty' => $empty ],
 		] );
-		hodima_seo_ui_card_open( 'انجام‌شده', 'کارهایی که در هر تب «انجام شد» زده‌اید، هر کدام با سه گام: کی انجام دادید، سنجش همان نوع کار (خواندن دوباره صفحه، خزش تازه، بررسی ایندکس یا داده تازه گوگل) و نتیجه. کاری که هنوز مانده، اثر نداشت یا برگشت، خودش به «در دست انجام» برمی‌گردد.' );
+		hodima_seo_ui_card_open( 'انجام‌شده', 'کارهایی که در هر تب «انجام دادم» زده‌اید، هر کدام با سه گام: کی انجام دادید، سنجش همان نوع کار (خواندن دوباره صفحه، خزش تازه، بررسی ایندکس یا داده تازه گوگل) و نتیجه. کاری که هنوز مانده، اثر نداشت یا برگشت، خودش به «در دست انجام» برمی‌گردد.' );
 	} else {
 		hodima_seo_ui_stats( [
 			[ 'label' => 'کار باز', 'value' => $empty ? '—' : esc_html( $n( count( $rows ) ) ), 'empty' => $empty ],
@@ -358,14 +358,14 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 			[ 'label' => 'اثر نداشت', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => 'no_effect' === hodima_seo_advisor_task_state( $t ) ) ) ), 'sub' => $empty ? '' : 'قدم بعدی کنار هر کدام', 'empty' => $empty ],
 			[ 'label' => 'برگشته یا هنوز دیده می‌شود', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => in_array( hodima_seo_advisor_task_state( $t ), [ 'back', 'unseen' ], true ) ) ) ), 'empty' => $empty ],
 		] );
-		hodima_seo_ui_card_open( 'در دست انجام', 'کارهایی که هنوز کار دارند: آن‌هایی که «در حال انجام» زده‌اید، کاری که بعد از «انجام شد» سنجیده شد و هنوز مانده، کاری که بعد از برطرف شدن برگشته و کاری که اثر نداشته. کنار هر کدام نوشته دقیقا چه کنید؛ بعد از انجام «دوباره انجام دادم» یا «انجام شد» را بزنید تا دوباره سنجیده شود.' );
+		hodima_seo_ui_card_open( 'در دست انجام', 'کارهایی که هنوز کار دارند: آن‌هایی که «در حال انجام» زده‌اید، کاری که بعد از «انجام دادم» سنجیده شد و هنوز مانده، کاری که بعد از برطرف شدن برگشته و کاری که اثر نداشته. کنار هر کدام نوشته دقیقا چه کنید؛ بعد از انجام «دوباره انجام دادم» یا «انجام دادم» را بزنید تا دوباره سنجیده شود.' );
 	}
 
 	if ( $empty ) {
 		if ( $done ) {
-			hodima_seo_ui_empty( 'هنوز کاری انجام نشده', 'بعد از رفع هر مورد، در ردیف همان تب (پیشنهادها، ایرادهای فنی، صفحه‌های هم‌کلمه، آدرس‌های خراب، وضعیت در گوگل) یا در کادر «دستار سئو» صفحه ویرایش «انجام شد» را بزنید؛ اینجا می‌آید و نتیجه‌اش سنجیده می‌شود.' );
+			hodima_seo_ui_empty( 'هنوز کاری انجام نشده', 'بعد از رفع هر مورد، در ردیف همان تب (پیشنهادها، ایرادهای فنی، صفحه‌های هم‌کلمه، آدرس‌های خراب، وضعیت در گوگل) یا در کادر «دستار سئو» صفحه ویرایش «انجام دادم» را بزنید؛ اینجا می‌آید و نتیجه‌اش سنجیده می‌شود.' );
 		} else {
-			hodima_seo_ui_empty( 'کار بازی نیست', 'هر ردیف تب‌های پیشنهادها، ایرادهای فنی، صفحه‌های هم‌کلمه، آدرس‌های خراب و وضعیت در گوگل دکمه‌های «انجام شد» و «رد شد» دارد؛ زیر هر پیشنهاد کادر ویرایش هم «در حال انجام» هست.' );
+			hodima_seo_ui_empty( 'کار بازی نیست', 'هر ردیف تب‌های پیشنهادها، ایرادهای فنی، صفحه‌های هم‌کلمه، آدرس‌های خراب و وضعیت در گوگل دکمه‌های «انجام دادم» و «لازم نیست» دارد؛ زیر هر پیشنهاد کادر ویرایش هم «در حال انجام» هست.' );
 		}
 		hodima_seo_ui_card_close();
 		return;
@@ -422,7 +422,7 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 			'back'      => 'این ایراد بعد از برطرف شدن دوباره پیدا شد؛ صفحه را دوباره بررسی کنید و بعد «دوباره انجام دادم» را بزنید.',
 			'no_effect' => hodima_seo_advisor_verify_text( $task ),
 			'still'     => hodima_seo_advisor_task_still_text( $task['rule'] ),
-			default     => 'وقتی کار تمام شد «انجام شد» را بزنید.',
+			default     => 'وقتی کار تمام شد «انجام دادم» را بزنید.',
 		};
 		?>
 		<li class="hodima-advisor__task">

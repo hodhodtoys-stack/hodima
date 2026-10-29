@@ -74,7 +74,7 @@ function hodima_seo_advisor_render_trend_tab(): void {
 
 	if ( $empty ) {
 		hodima_seo_ui_card_open( 'روند ماه‌به‌ماه' );
-		hodima_seo_ui_empty( 'هنوز گرفته نشده', 'بعد از «به‌روزرسانی همه» (و تا چند دقیقه) روند ۱۶ ماهه و کلمه‌های تازه و از دست رفته اینجا پر می‌شود.' );
+		hodima_seo_ui_empty( 'هنوز گرفته نشده', 'بعد از «گرفتن داده تازه» (و تا چند دقیقه) روند ۱۶ ماهه و کلمه‌های تازه و از دست رفته اینجا پر می‌شود.' );
 		hodima_seo_ui_card_close();
 		return;
 	}

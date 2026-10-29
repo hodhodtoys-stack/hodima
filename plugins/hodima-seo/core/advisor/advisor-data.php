@@ -887,7 +887,7 @@ function hodima_seo_advisor_max_potential(): int {
 	return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT MAX(potential) FROM %i', hodima_seo_advisor_table( 'pages' ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 }
 
-/* ── پاک کردن داده‌ها (دکمه دستی پیشخوان) ── */
+/* ── پاک کردن داده‌های دستار (دکمه دستی پیشخوان) ── */
 
 /**
  * داده‌های دریافتی مشاور را پاک می‌کند: ردیف هر دو جدول، وضعیت آخرین دریافت و فهرست «نادیده گرفتن».
@@ -905,7 +905,7 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 	$result = hodima_seo_advisor_transaction( static function () use ( $wpdb ): bool|WP_Error {
 		foreach ( [ 'pages', 'queries', 'crawl_pages', 'crawl_links' ] as $name ) {
 			if ( false === $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( $name ) ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				return new WP_Error( 'hodima_advisor_clear', 'پاک کردن داده‌ها ناموفق بود؛ چیزی تغییر نکرد.' );
+				return new WP_Error( 'hodima_advisor_clear', 'پاک کردن داده‌های دستار ناموفق بود؛ چیزی تغییر نکرد.' );
 			}
 		}
 		return true;

@@ -70,7 +70,7 @@ function hodima_seo_advisor_help( string $key ): string {
  */
 function hodima_seo_advisor_rule_guide( string $rule ): array {
 
-	$data = sprintf( 'بعد از تغییر و ذخیره، «انجام شد» را بزنید. وقتی %s روز آمار گوگل بعد از تغییر جمع شد، در تب «انجام‌شده» نتیجه می‌آید: «اثر داشت» یا «اثر نداشت» با قدم بعدی.', number_format_i18n( HODIMA_SEO_ADVISOR_VERIFY_MIN_DAYS ) );
+	$data = sprintf( 'بعد از تغییر و ذخیره، «انجام دادم» را بزنید. وقتی %s روز آمار گوگل بعد از تغییر جمع شد، در تب «انجام‌شده» نتیجه می‌آید: «اثر داشت» یا «اثر نداشت» با قدم بعدی.', number_format_i18n( HODIMA_SEO_ADVISOR_VERIFY_MIN_DAYS ) );
 	$text = 'همان لحظه ذخیره صفحه بررسی می‌شود: اگر کلمه در جای گفته‌شده باشد، این پیشنهاد خودش از فهرست می‌رود و کار «برطرف شد» می‌گیرد.';
 
 	return match ( $rule ) {

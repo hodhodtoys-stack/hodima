@@ -6,7 +6,7 @@
  * داده از advisor-inspect.php. کالبد: ۴ کارت آمار ← کارت «وضعیت ایندکس آدرس‌های مهم» (یک کنش اصلی:
  * «بررسی ۲۰ آدرس بعدی»، جدول مشکل‌دارها با وضعیت و آخرین خزش، دستور هر وضعیت). فقط می‌خواند و دستور
  * می‌دهد؛ چیزی را در سایت یا Search Console عوض نمی‌کند. SEO 3.0.2: هر آدرس مشکل‌دار «انجام شد / رد شد» دارد
- * (advisor-marks.php)؛ «انجام شد» آدرس را اول صف بررسی بعدی می‌گذارد.
+ * (advisor-marks.php)؛ «انجام دادم» آدرس را اول صف بررسی بعدی می‌گذارد.
  */
 
 declare(strict_types=1);
@@ -78,7 +78,7 @@ function hodima_seo_advisor_render_indexing(): void {
 	<?php
 
 	if ( $empty ) {
-		hodima_seo_ui_empty( 'هنوز آدرسی بررسی نشده', 'دکمه بالا را بزنید یا تا بررسی خودکار بعدی صبر کنید. به داده «به‌روزرسانی همه» و property سرچ کنسول نیاز دارد.' );
+		hodima_seo_ui_empty( 'هنوز آدرسی بررسی نشده', 'دکمه بالا را بزنید یا تا بررسی خودکار بعدی صبر کنید. به داده «گرفتن داده تازه» و property سرچ کنسول نیاز دارد.' );
 		hodima_seo_ui_card_close();
 		return;
 	}
@@ -150,7 +150,7 @@ function hodima_seo_advisor_render_indexing(): void {
 			<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'indexing', 'tasks' => $show ? 'all' : '', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 		</div>
 	<?php endif; ?>
-	<p class="hodima-advisor__advice">بعد از رفع، «انجام شد» را بزنید: آدرس اول صف بررسی بعدی گوگل می‌رود. ایندکس شد ← برطرف؛ گوگل دوباره خواند و هنوز نه ← با دلیلش به «در دست انجام» برمی‌گردد.</p>
+	<p class="hodima-advisor__advice">بعد از رفع، «انجام دادم» را بزنید: آدرس اول صف بررسی بعدی گوگل می‌رود. ایندکس شد ← برطرف؛ گوگل دوباره خواند و هنوز نه ← با دلیلش به «در دست انجام» برمی‌گردد.</p>
 	<?php
 	foreach ( array_unique( array_map( static fn( string $path ): string => $states[ $path ], array_keys( $problems ) ) ) as $state ) {
 		$advice = hodima_seo_advisor_inspect_state_info( $state );

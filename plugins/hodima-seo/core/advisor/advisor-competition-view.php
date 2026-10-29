@@ -134,7 +134,7 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 	}
 
 	if ( $empty && $hidden > 0 ) {
-		hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه کلمه‌های رقابتی را «انجام شد» یا «رد شد» علامت زده‌اید؛ با داده تازه گوگل سنجیده می‌شوند. %s', hodima_seo_advisor_marked_toggle( $hidden, [ 'tab' => 'competition' ], 'کلمه' ) ) );
+		hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه کلمه‌های رقابتی را «انجام دادم» یا «لازم نیست» علامت زده‌اید؛ با داده تازه گوگل سنجیده می‌شوند. %s', hodima_seo_advisor_marked_toggle( $hidden, [ 'tab' => 'competition' ], 'کلمه' ) ) );
 		hodima_seo_ui_card_close();
 		return;
 	}

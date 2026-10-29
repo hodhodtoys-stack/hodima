@@ -4,7 +4,7 @@
  * Path: core/advisor/advisor-crawl-view.php
  *
  * داده از advisor-crawl.php. کالبد کیت SEO: ۴ کارت آمار ← کارت «فایل‌های خزش» (یک کنش اصلی:
- * خواندن فایل‌ها) ← کارت «ایرادهای صفحه‌ها» (چیپ‌های فیلتر + جستجو + جدول مرتب با نمایش گوگل).
+ * خواندن فایل‌های خزش) ← کارت «ایرادهای صفحه‌ها» (چیپ‌های فیلتر + جستجو + جدول مرتب با نمایش گوگل).
  * فقط می‌خواند و دستور می‌دهد؛ چیزی را در سایت عوض نمی‌کند. (طرح تأییدشده کاربر ۴ آبان ۱۴۰۵)
  * SEO 3.0.2: هر ایراد تیک و هر ردیف «انجام شد / رد شد» دارد (advisor-marks.php)؛ ایراد علامت‌خورده پنهان می‌شود.
  */
@@ -172,7 +172,7 @@ function hodima_seo_advisor_render_crawl(): void {
 	$label = hodima_seo_advisor_crawl_dir_label();
 	$ready = 'missing' !== $files['pages']['state'];
 
-	hodima_seo_ui_card_open( 'فایل‌های خزش', 'خروجی Screaming Frog را با همین دو نام در پوشه زیر بگذارید و «خواندن فایل‌ها» را بزنید. فایل‌ها از وب بسته‌اند و در به‌روزرسانی افزونه پاک نمی‌شوند.' );
+	hodima_seo_ui_card_open( 'فایل‌های خزش', 'خروجی Screaming Frog را با همین دو نام در پوشه زیر بگذارید و «خواندن فایل‌های خزش» را بزنید. فایل‌ها از وب بسته‌اند و در به‌روزرسانی افزونه پاک نمی‌شوند.' );
 	?>
 	<div class="hodima-advisor__crawl-files">
 		<ul class="hodima-advisor__files" aria-label="وضعیت فایل‌ها">
@@ -184,7 +184,7 @@ function hodima_seo_advisor_render_crawl(): void {
 			<input type="hidden" name="action" value="hodima_advisor_crawl">
 			<?php wp_nonce_field( 'hodima_advisor_crawl' ); ?>
 			<button type="submit" class="hds-btn"<?php disabled( ! $ready || ! $prepared ); ?>>
-				<span class="dashicons dashicons-update" aria-hidden="true"></span> <?php echo esc_html( $has ? 'خواندن دوباره فایل‌ها' : 'خواندن فایل‌ها' ); ?>
+				<span class="dashicons dashicons-update" aria-hidden="true"></span> خواندن فایل‌های خزش
 			</button>
 		</form>
 	</div>
@@ -206,7 +206,7 @@ function hodima_seo_advisor_render_crawl(): void {
 
 	if ( ! $has ) {
 		hodima_seo_ui_card_open( 'ایرادهای صفحه‌ها' );
-		hodima_seo_ui_empty( 'هنوز خروجی خزش خوانده نشده', '۱) در Screaming Frog سایت را خزش کنید. ۲) Internal ← HTML را با نام internal_html.csv و Bulk Export ← Links ← All Inlinks را با نام all_inlinks.csv خروجی بگیرید. ۳) هر دو را در پوشه بالا بگذارید و «خواندن فایل‌ها» را بزنید.' );
+		hodima_seo_ui_empty( 'هنوز خروجی خزش خوانده نشده', '۱) در Screaming Frog سایت را خزش کنید. ۲) Internal ← HTML را با نام internal_html.csv و Bulk Export ← Links ← All Inlinks را با نام all_inlinks.csv خروجی بگیرید. ۳) هر دو را در پوشه بالا بگذارید و «خواندن فایل‌های خزش» را بزنید.' );
 		hodima_seo_ui_card_close();
 		return;
 	}
@@ -250,7 +250,7 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $h
 	$marked = hodima_seo_advisor_show_marked() ? 'all' : '';
 	$url    = static fn( array $args ): string => hodima_seo_advisor_page_url( [ 'tab' => 'crawl', 'tasks' => $marked ] + $args );
 
-	hodima_seo_ui_card_open( 'ایرادهای صفحه‌ها', 'مرتب بر اساس نمایش در گوگل؛ اول صفحه‌هایی که ایرادشان بیشتر دیده می‌شود. بعد از رفع، «انجام شد» را بزنید: عنوان، متا، تیترها و خطای ۴۰۴/۵۰۰ همان لحظه از روی سایت دوباره سنجیده می‌شوند؛ کند بودن، لینک ورودی و ریدایرکت با خزش بعدی. ایراد علامت‌خورده به «انجام‌شده» می‌رود.' );
+	hodima_seo_ui_card_open( 'ایرادهای صفحه‌ها', 'مرتب بر اساس نمایش در گوگل؛ اول صفحه‌هایی که ایرادشان بیشتر دیده می‌شود. بعد از رفع، «انجام دادم» را بزنید: عنوان، متا، تیترها و خطای ۴۰۴/۵۰۰ همان لحظه از روی سایت دوباره سنجیده می‌شوند؛ کند بودن، لینک ورودی و ریدایرکت با خزش بعدی. ایراد علامت‌خورده به «انجام‌شده» می‌رود.' );
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
@@ -280,7 +280,7 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $h
 	if ( ! $rows ) {
 		$toggle = hodima_seo_advisor_marked_toggle( $hidden, [ 'tab' => 'crawl', 'cf' => $group, 'q' => $q ], 'ایراد' );
 		if ( ! $issues && $hidden > 0 ) {
-			hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه ایرادهای باقی‌مانده را «انجام شد» یا «رد شد» علامت زده‌اید. %s', $toggle ) );
+			hodima_seo_ui_empty( 'کار بازی نمانده', sprintf( 'همه ایرادهای باقی‌مانده را «انجام دادم» یا «لازم نیست» علامت زده‌اید. %s', $toggle ) );
 		} else {
 			hodima_seo_ui_empty( $issues ? 'اینجا چیزی نیست' : 'ایرادی پیدا نشد', $issues ? 'با این فیلتر صفحه‌ای ایراد ندارد. فیلتر را عوض کنید.' : 'همه صفحه‌های خزش‌شده از دید این بررسی‌ها سالم‌اند.' );
 		}

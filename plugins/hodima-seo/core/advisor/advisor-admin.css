@@ -171,7 +171,7 @@
 .hodima-advisor .hodima-advisor__head,
 .hodima-advisor .hodima-advisor__grid {
 	display: grid;
-	grid-template-columns: minmax(0, 2fr) 5rem 6rem 3rem minmax(0, 2.4fr) 7rem 12.5rem; /* ستون آخر: «انجام شد» و «رد شد» کنار هم (SEO 3.0.2) */
+	grid-template-columns: minmax(0, 2fr) 5rem 6rem 3rem minmax(0, 2.4fr) 7rem 12.5rem; /* ستون آخر: «انجام دادم» و «لازم نیست» کنار هم (SEO 3.0.2) */
 	align-items: center;
 	gap: 0.875rem;
 	padding-inline: 1.25rem;
@@ -345,7 +345,7 @@
 	inline-size: 100%;
 }
 
-/* ردیف «به‌روزرسانی همه» (یک بار بالای تب‌ها) */
+/* ردیف «گرفتن داده تازه» (یک بار بالای تب‌ها) */
 .hodima-advisor .hodima-advisor__bar-help {
 	margin: 0.5rem 0 0;
 	color: var(--hd-muted);
@@ -991,7 +991,7 @@
 	min-inline-size: 0;
 }
 
-/* ردیف «به‌روزرسانی همه» بالای تب‌ها: بازه + وضعیت + دکمه */
+/* ردیف «گرفتن داده تازه» بالای تب‌ها: بازه + وضعیت + دکمه */
 .hodima-advisor a.hds-btn,
 .hodima-advisor a.hds-btn:hover {
 	text-decoration: none;
@@ -1659,7 +1659,7 @@
 	white-space: normal;
 }
 
-/* دو دکمه کنار هم؛ «انجام شد» سبز (در پیشخوان بنفش نه)، «رد شد» کم‌رنگ‌تر */
+/* دو دکمه کنار هم؛ «انجام دادم» سبز (در پیشخوان بنفش نه)، «لازم نیست» کم‌رنگ‌تر */
 .hodima-advisor .hodima-advisor__mark {
 	display: flex;
 	flex-wrap: wrap;
@@ -1730,7 +1730,7 @@
 	margin-inline-start: -0.375rem;
 }
 
-/* «نادیده گرفتن کل صفحه»: کنش فرعی به‌شکل پیوند متنی (هدف لمسی همان ۴۰px) */
+/* «این صفحه را نادیده بگیر»: کنش فرعی به‌شکل پیوند متنی (هدف لمسی همان ۴۰px) */
 .hodima-advisor .hodima-advisor__text-btn {
 	inline-size: 100%;
 	min-block-size: 2.5rem;
