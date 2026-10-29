@@ -43,6 +43,7 @@ function hodima_seo_advisor_admin_menu(): void {
 		: add_menu_page( 'دستار سئو', 'دستار سئو', 'manage_options', HODIMA_SEO_ADVISOR_PAGE, 'hodima_seo_advisor_render_admin', 'dashicons-chart-line', 32 );
 
 	if ( is_string( $hook ) && '' !== $hook ) {
+		add_action( 'load-' . $hook, 'hodima_seo_advisor_legacy_tab_redirect' );
 		add_action( 'load-' . $hook, static function (): void {
 			add_action( 'admin_enqueue_scripts', 'hodima_seo_advisor_admin_assets', 20 );
 		} );
@@ -476,26 +477,55 @@ function hodima_seo_advisor_handle_csv(): void {
  * @return list<string>
  */
 function hodima_seo_advisor_tab_keys(): array {
-	return [ 'opportunities', 'competition', 'terms', 'breakdown', 'trend', 'health', 'crawl', 'indexing', 'tasks', 'done', 'settings' ];
+	return [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'settings' ];
 }
 
 /**
- * تب‌های بالای صفحه: فرصت‌ها | رقابت صفحه‌ها | کلمه‌ها | دستگاه و کشور | روند و فصل‌ها | سلامت آدرس‌ها | سلامت خزش | ایندکس | کارهای من.
+ * تب‌های برداشته‌شده (تا SEO 3.1.2) ← تب تازه و پارامتر پیش‌فرضش؛ پیوند و علامت‌گذاری مرورگر خراب نشود.
+ * «انجام‌شده» به «کارها» با فیلتر «منتظر نتیجه»؛ «موبایل و کشور» و «روند ماه‌به‌ماه» به «آمار جستجو».
+ */
+const HODIMA_SEO_ADVISOR_LEGACY_TABS = [
+	'done'      => [ 'tasks', [ 'tstatus' => 'waiting' ] ],
+	'breakdown' => [ 'terms', [] ],
+	'trend'     => [ 'terms', [] ],
+];
+
+/** ریدایرکت پیوند تب قدیمی (پیش از خروجی صفحه). */
+function hodima_seo_advisor_legacy_tab_redirect(): void {
+
+	$tab = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
+
+	if ( ! isset( HODIMA_SEO_ADVISOR_LEGACY_TABS[ $tab ] ) ) {
+		return;
+	}
+
+	[ $new, $extra ] = HODIMA_SEO_ADVISOR_LEGACY_TABS[ $tab ];
+
+	foreach ( [ 'tstatus', 'tsource', 'paged' ] as $key ) {
+		if ( isset( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$extra[ $key ] = sanitize_key( (string) $_GET[ $key ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+	}
+
+	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => $new ] + $extra ) );
+	exit;
+}
+
+/**
+ * تب‌های بالای صفحه: پیشنهادها | صفحه‌های هم‌کلمه | آمار جستجو | آدرس‌های خراب | ایرادهای فنی | وضعیت در گوگل | کارها | تنظیمات.
  */
 function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true ): void {
 
 	$tabs = [
 		'opportunities' => [ 'پیشنهادها', hodima_seo_advisor_page_url() ],
 		'competition'   => [ 'صفحه‌های هم‌کلمه', hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ],
-		'terms'         => [ 'کلمه‌های جستجو', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
-		'breakdown'     => [ 'موبایل و کشور', hodima_seo_advisor_page_url( [ 'tab' => 'breakdown' ] ) ],
-		'trend'         => [ 'روند ماه‌به‌ماه', hodima_seo_advisor_page_url( [ 'tab' => 'trend' ] ) ],
+		// «کلمه‌های جستجو» + «روند ماه‌به‌ماه» + رتبه بد موبایل یک تب شد؛ «موبایل و کشور» حذف (SEO 3.1.3)
+		'terms'         => [ 'آمار جستجو', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
 		'health'        => [ 'آدرس‌های خراب', hodima_seo_advisor_page_url( [ 'tab' => 'health' ] ) ],
 		'crawl'         => [ 'ایرادهای فنی', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
 		'indexing'      => [ 'وضعیت در گوگل', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
-		// کارهای «در دست انجام» و «انجام‌شده» دو تب شد (SEO 2.9.4): کارهای باز و انجام‌شده‌ها با سه گام (انجام ← خزش گوگل ← نتیجه)
-		'tasks'         => [ 'در دست انجام', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
-		'done'          => [ 'انجام‌شده', hodima_seo_advisor_page_url( [ 'tab' => 'done' ] ) ],
+		// «در دست انجام» و «انجام‌شده» (دو تب از SEO 2.9.4) از ۳.۱.۳ یک تب با فیلتر وضعیت‌اند
+		'tasks'         => [ 'کارها', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
 		// تنظیمات تب خودش است (SEO 2.9.3)؛ قبلا پنلی بود که روی هر تب باز می‌شد
 		'settings'      => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
 	];
@@ -536,6 +566,7 @@ function hodima_seo_advisor_render_admin(): void {
 
 	$tab = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
 	$tab = ! empty( $_GET['settings'] ) ? 'settings' : $tab; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- پیوند قدیمی settings=1
+	$tab = HODIMA_SEO_ADVISOR_LEGACY_TABS[ $tab ][0] ?? $tab; // پیوند قدیمی بدون ریدایرکت (فراخوانی مستقیم)؛ در پیشخوان ریدایرکت پیش‌تر انجام شده
 	$tab = ( $has_data || 'settings' === $tab ) && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : 'opportunities';
 	$tab = $has_key ? $tab : 'settings'; // بدون کلید اولین کار وارد کردن کلید است
 
@@ -580,13 +611,10 @@ function hodima_seo_advisor_render_admin(): void {
 	if ( 'opportunities' !== $tab ) {
 		match ( $tab ) {
 			'terms'     => hodima_seo_advisor_render_terms( $status ),
-			'breakdown' => hodima_seo_advisor_render_breakdown( $status ),
-			'trend'     => hodima_seo_advisor_render_trend_tab(),
 			'health'    => hodima_seo_advisor_render_health( $status ),
 			'crawl'     => hodima_seo_advisor_render_crawl(),
 			'indexing'  => hodima_seo_advisor_render_indexing(),
-			'tasks'     => hodima_seo_advisor_render_tasks( 'doing' ),
-			'done'      => hodima_seo_advisor_render_tasks( 'done' ),
+			'tasks'     => hodima_seo_advisor_render_tasks(),
 			default     => hodima_seo_advisor_render_competition( $status ),
 		};
 		if ( 'competition' === $tab ) {
@@ -662,7 +690,7 @@ function hodima_seo_advisor_render_toolbar( string $tab = '' ): void {
 				<span class="dashicons dashicons-update" aria-hidden="true"></span> گرفتن داده تازه
 			</button>
 		</form>
-		<p class="hodima-advisor__bar-help">یک کلیک برای همه بخش‌ها: آمار گوگل، موبایل و کشور، روند ماه‌ها، بررسی ایندکس چند آدرس و فایل‌های خزش تازه. هر روز هم خودکار انجام می‌شود.</p>
+		<p class="hodima-advisor__bar-help">یک کلیک برای همه بخش‌ها: آمار گوگل و کلمه‌ها، موبایل، روند ماه‌ها، بررسی ایندکس چند آدرس و فایل‌های خزش تازه. هر روز هم خودکار انجام می‌شود.</p>
 	</section>
 	<?php
 }
@@ -747,7 +775,7 @@ function hodima_seo_advisor_render_settings( bool $has_data ): void {
 				<input type="hidden" name="action" value="hodima_advisor_clear">
 				<?php wp_nonce_field( 'hodima_advisor_clear' ); ?>
 				<h3 class="hodima-advisor__setting-title">داده‌های دستار سئو را پاک کنم؟</h3>
-				<p class="hodima-advisor__setting-help">جدول‌های دریافت‌شده از Search Console و فهرست «نادیده گرفتن» پاک می‌شوند. کلید حساب سرویس، تاریخچه هفتگی، کارهای «در دست انجام» و «انجام‌شده» و تنظیمات می‌مانند و با «گرفتن داده تازه» دوباره گرفته می‌شود. بازگشت ندارد.</p>
+				<p class="hodima-advisor__setting-help">جدول‌های دریافت‌شده از Search Console و فهرست «نادیده گرفتن» پاک می‌شوند. کلید حساب سرویس، تاریخچه هفتگی، فهرست «کارها» و تنظیمات می‌مانند و با «گرفتن داده تازه» دوباره گرفته می‌شود. بازگشت ندارد.</p>
 				<label class="hodima-advisor__confirm">
 					<input type="checkbox" name="confirm" value="1"<?php disabled( ! $has_data ); ?>>
 					<span>مطمئنم؛ داده‌ها پاک شود</span>

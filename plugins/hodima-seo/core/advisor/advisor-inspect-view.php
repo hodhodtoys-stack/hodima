@@ -150,7 +150,7 @@ function hodima_seo_advisor_render_indexing(): void {
 			<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'indexing', 'tasks' => $show ? 'all' : '', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 		</div>
 	<?php endif; ?>
-	<p class="hodima-advisor__advice">بعد از رفع، «انجام دادم» را بزنید: آدرس اول صف بررسی بعدی گوگل می‌رود. ایندکس شد ← برطرف؛ گوگل دوباره خواند و هنوز نه ← با دلیلش به «در دست انجام» برمی‌گردد.</p>
+	<p class="hodima-advisor__advice">بعد از رفع، «انجام دادم» را بزنید: آدرس اول صف بررسی بعدی گوگل می‌رود. ایندکس شد ← برطرف؛ گوگل دوباره خواند و هنوز نه ← با دلیلش به «کارها» ← «نیاز به کار» برمی‌گردد.</p>
 	<?php
 	foreach ( array_unique( array_map( static fn( string $path ): string => $states[ $path ], array_keys( $problems ) ) ) as $state ) {
 		$advice = hodima_seo_advisor_inspect_state_info( $state );

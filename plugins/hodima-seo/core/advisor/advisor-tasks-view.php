@@ -253,7 +253,7 @@ function hodima_seo_advisor_task_timeline( array $task ): array {
  */
 function hodima_seo_advisor_task_fixed_text( array $task ): string {
 	return match ( hodima_seo_advisor_task_source( $task['rule'] ) ) {
-		'crawl'       => 'خواندن دوباره صفحه یا خزش تازه این ایراد را نشان نمی‌دهد. اگر خزش بعدی دوباره پیدایش کند، با نشان «برگشت» به «در دست انجام» می‌رود.',
+		'crawl'       => 'خواندن دوباره صفحه یا خزش تازه این ایراد را نشان نمی‌دهد. اگر خزش بعدی دوباره پیدایش کند، با نشان «برگشت» به «نیاز به کار» برمی‌گردد.',
 		'competition' => 'یک صفحه سهم اصلی نمایش این کلمه را گرفت (یا دیگر چند صفحه برایش نمایش نمی‌گیرند).',
 		'health'      => 'health_dead' === $task['rule'] ? 'آدرس دیگر خراب نیست (ریدایرکت یا صفحه سالم)؛ گوگل در چند هفته آدرس کهنه را جایگزین می‌کند.' : 'صفحه حالا در گوگل نمایش می‌گیرد یا گوگل آن را ایندکس‌شده می‌داند.',
 		'indexing'    => 'گوگل حالا این آدرس را ایندکس‌شده می‌داند.',
@@ -326,57 +326,53 @@ function hodima_seo_advisor_render_task_form( array $task, string $state ): void
 }
 
 /**
- * محتوای تب‌های «در دست انجام» (`tab=tasks`) و «انجام‌شده» (`tab=done`). SEO 2.9.4: قبلا یک تب «کارهای من».
- *
- * @param string $which doing | done
+ * محتوای تب «کارها» (SEO 3.1.3؛ تا ۳.۱.۲ دو تب «در دست انجام» و «انجام‌شده»): فیلتر وضعیت (نیاز به کار، منتظر نتیجه،
+ * برطرف شد، لازم نیست)، فیلتر «از کدام تب» و فهرست کارها. کار انجام‌شده سه گام (انجام ← سنجش ← نتیجه) دارد؛ کار باز قدم
+ * بعدی. پیش‌فرض: «نیاز به کار»، وگرنه اولین وضعیتی که کار دارد.
  */
-function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
+function hodima_seo_advisor_render_tasks(): void {
 
 	$all    = hodima_seo_advisor_tasks();
 	$n      = static fn( int|float $value ): string => number_format_i18n( $value );
-	$done   = 'done' === $which;
-	$groups = $done ? [ 'waiting', 'fixed', 'rejected' ] : [ 'open' ];
-	$rows   = array_filter( $all, static fn( array $t ): bool => in_array( hodima_seo_advisor_task_group( $t ), $groups, true ) );
+	$counts = hodima_seo_advisor_task_counts();
+	$groups = hodima_seo_advisor_task_groups();
 	$filter = isset( $_GET['tstatus'] ) ? sanitize_key( (string) $_GET['tstatus'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش
-	$filter = $done && in_array( $filter, $groups, true ) ? $filter : '';
 	$from   = isset( $_GET['tsource'] ) ? sanitize_key( (string) $_GET['tsource'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش
 	$from   = isset( hodima_seo_advisor_task_sources()[ $from ] ) ? $from : '';
-	$tab    = $done ? 'done' : 'tasks';
-	$empty  = ! $rows;
-	$count  = static fn( callable $test ): int => count( array_filter( $rows, $test ) );
+	$tab    = 'tasks';
 
-	if ( $done ) {
-		$recrawled = $count( static fn( array $t ): bool => function_exists( 'hodima_seo_advisor_inspect_after' ) && 'yes' === hodima_seo_advisor_inspect_after( $t['path'], $t['at'] )['state'] );
-		if ( ! $empty ) { // بی‌کار: چهار کارت «—» نشان نمی‌دهیم، فقط یک خط حالت خالی (SEO 3.1.2)
-			hodima_seo_ui_stats( [
-				[ 'label' => 'انجام‌شده', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'rejected' !== $t['status'] ) ) ) ],
-				[ 'label' => 'گوگل دوباره خوانده', 'value' => esc_html( $n( $recrawled ) ), 'sub' => 'صفحه بعد از تغییر شما خزیده شده' ],
-				[ 'label' => 'برطرف شد', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'fixed' === hodima_seo_advisor_task_state( $t ) ) ) ) ],
-				[ 'label' => 'منتظر نتیجه', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'waiting' === hodima_seo_advisor_task_state( $t ) ) ) ), 'sub' => 'تا ۱۴ روز داده گوگل بعد از تغییر' ],
-			] );
+	if ( ! isset( $groups[ $filter ] ) ) {
+		$filter = 'open';
+		foreach ( array_keys( $groups ) as $group ) {
+			if ( $counts[ $group ] > 0 ) {
+				$filter = $group;
+				break;
+			}
 		}
-		hodima_seo_ui_card_open( 'انجام‌شده', 'کارهایی که «انجام دادم» زده‌اید، هر کدام با سه گام: انجام، سنجش، نتیجه. کاری که مانده یا برگشته به «در دست انجام» برمی‌گردد.' );
-	} else {
-		if ( ! $empty ) {
-			hodima_seo_ui_stats( [
-				[ 'label' => 'کار باز', 'value' => esc_html( $n( count( $rows ) ) ) ],
-				[ 'label' => 'در حال انجام', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'doing' === hodima_seo_advisor_task_state( $t ) ) ) ) ],
-				[ 'label' => 'اثر نداشت', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'no_effect' === hodima_seo_advisor_task_state( $t ) ) ) ), 'sub' => 'قدم بعدی کنار هر کدام' ],
-				[ 'label' => 'برگشته یا هنوز دیده می‌شود', 'value' => esc_html( $n( $count( static fn( array $t ): bool => in_array( hodima_seo_advisor_task_state( $t ), [ 'back', 'unseen' ], true ) ) ) ) ],
-			] );
-		}
-		hodima_seo_ui_card_open( 'در دست انجام', 'کارهایی که هنوز کار دارند (در حال انجام، هنوز مانده، برگشته یا بی‌اثر). بعد از رفع «دوباره انجام دادم» را بزنید تا دوباره سنجیده شود.' );
 	}
 
-	if ( $empty ) {
-		if ( $done ) {
-			hodima_seo_ui_empty( 'هنوز کاری انجام نشده', 'بعد از رفع هر مورد، «انجام دادم» را در همان تب یا کادر «دستار سئو» صفحه ویرایش بزنید؛ اینجا می‌آید و نتیجه‌اش سنجیده می‌شود.' );
-		} else {
-			hodima_seo_ui_empty( 'کار بازی نیست', 'کاری که بعد از «انجام دادم» هنوز مانده، برگشته یا اثر نداشته، با قدم بعدی اینجا می‌آید.' );
-		}
+	hodima_seo_ui_card_open( 'کارها', 'هر چه «انجام دادم» زده‌اید، با سنجش و نتیجه‌اش. کاری که مانده، برگشته یا بی‌اثر است در «نیاز به کار» می‌آید.' );
+
+	if ( ! $all ) {
+		hodima_seo_ui_empty( 'هنوز کاری ثبت نشده', 'بعد از رفع هر مورد، «انجام دادم» را در همان تب یا کادر «دستار سئو» صفحه ویرایش بزنید؛ اینجا می‌آید و نتیجه‌اش سنجیده می‌شود.' );
 		hodima_seo_ui_card_close();
 		return;
 	}
+
+	echo '<nav class="hodima-advisor__views" aria-label="وضعیت کار"><span class="hodima-advisor__views-label" aria-hidden="true">وضعیت</span>';
+	foreach ( $groups as $group => [ $label ] ) {
+		printf(
+			'<a class="hodima-advisor__view" href="%1$s"%2$s>%3$s <span class="hodima-advisor__count">%4$s</span></a>',
+			esc_url( hodima_seo_advisor_page_url( [ 'tab' => $tab, 'tstatus' => $group, 'tsource' => $from ] ) ),
+			$group === $filter ? ' aria-current="page"' : '',
+			esc_html( $label ),
+			esc_html( $n( $counts[ $group ] ) )
+		);
+	}
+	echo '</nav>';
+
+	$rows  = array_filter( $all, static fn( array $t ): bool => hodima_seo_advisor_task_group( $t ) === $filter );
+	$count = static fn( callable $test ): int => count( array_filter( $rows, $test ) );
 
 	// از کدام تب (SEO 3.0.2): کارهای همه تب‌ها اینجا جمع می‌شوند
 	$sources = array_filter( hodima_seo_advisor_task_sources(), static fn( string $label, string $key ): bool => (bool) $count( static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $key ), ARRAY_FILTER_USE_BOTH );
@@ -389,18 +385,13 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 		echo '</nav>';
 	}
 	if ( '' !== $from ) {
-		$rows  = array_filter( $rows, static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $from );
-		$count = static fn( callable $test ): int => count( array_filter( $rows, $test ) );
+		$rows = array_filter( $rows, static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $from );
 	}
 
-	if ( $done ) {
-		echo '<nav class="hodima-advisor__views" aria-label="وضعیت کار انجام‌شده"><span class="hodima-advisor__views-label" aria-hidden="true">وضعیت</span>';
-		printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>همه <span class="hodima-advisor__count">%3$s</span></a>', esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'done', 'tsource' => $from ] ) ), '' === $filter ? ' aria-current="page"' : '', esc_html( $n( count( $rows ) ) ) );
-		foreach ( $groups as $group ) {
-			printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>%3$s <span class="hodima-advisor__count">%4$s</span></a>', esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'done', 'tstatus' => $group, 'tsource' => $from ] ) ), $group === $filter ? ' aria-current="page"' : '', esc_html( hodima_seo_advisor_task_groups()[ $group ][0] ), esc_html( $n( $count( static fn( array $t ): bool => hodima_seo_advisor_task_group( $t ) === $group ) ) ) );
-		}
-		echo '</nav>';
-		$rows = array_filter( $rows, static fn( array $t ): bool => '' === $filter || hodima_seo_advisor_task_group( $t ) === $filter );
+	if ( ! $rows ) {
+		hodima_seo_ui_empty( 'کاری در این وضعیت نیست', 'وضعیت یا تب دیگری را انتخاب کنید.' );
+		hodima_seo_ui_card_close();
+		return;
 	}
 
 	uasort( $rows, static fn( array $a, array $b ): int => hodima_seo_advisor_task_view( $b )['time'] <=> hodima_seo_advisor_task_view( $a )['time'] );
@@ -424,7 +415,7 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 			$link   = '' !== $target['edit'] ? [ $target['edit'], 'ویرایش صفحه', 'edit' ] : $link;
 		}
 		$view = hodima_seo_advisor_task_view( $task );
-		$hint = $done ? '' : match ( $view['state'] ) {
+		$hint = 'open' !== $filter ? '' : match ( $view['state'] ) {
 			'unseen'    => 'کلمه هنوز در عنوان، تیترها یا متن صفحه پیدا نمی‌شود؛ صفحه را بررسی و دوباره ذخیره کنید.',
 			'back'      => 'این ایراد بعد از برطرف شدن دوباره پیدا شد؛ صفحه را دوباره بررسی کنید و بعد «دوباره انجام دادم» را بزنید.',
 			'no_effect' => hodima_seo_advisor_verify_text( $task ),
@@ -448,7 +439,7 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 				<span class="<?php echo esc_attr( $view['class'] ); ?>"><?php echo esc_html( $view['label'] ); ?></span>
 				<small><?php echo esc_html( hodima_seo_advisor_task_date( $view['time'] ) ); ?></small>
 			</div>
-			<?php if ( $done && 'rejected' !== $task['status'] ) : ?>
+			<?php if ( 'done' === $task['status'] ) : ?>
 				<ol class="hodima-advisor__timeline">
 					<?php foreach ( hodima_seo_advisor_task_timeline( $task ) as $step ) : ?>
 						<li class="hodima-advisor__step" data-state="<?php echo esc_attr( $step['state'] ); ?>">
@@ -459,7 +450,8 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 						</li>
 					<?php endforeach; ?>
 				</ol>
-			<?php elseif ( '' !== $hint ) : ?>
+			<?php endif; ?>
+			<?php if ( '' !== $hint ) : ?>
 				<p class="hodima-advisor__task-effect"><?php echo esc_html( $hint ); ?></p>
 			<?php endif; ?>
 			<?php hodima_seo_advisor_render_task_form( $task, $view['state'] ); ?>

@@ -444,7 +444,7 @@ function hodima_seo_advisor_mark_result_text( array $tasks ): string {
 		$parts[] = sprintf( '%s برطرف شد', $n( $counts['fixed'] ) );
 	}
 	if ( $counts['still'] > 0 ) {
-		$parts[] = sprintf( '%s هنوز دیده می‌شود (به «در دست انجام» رفت)', $n( $counts['still'] ) );
+		$parts[] = sprintf( '%s هنوز دیده می‌شود (به «کارها» ← «نیاز به کار» رفت)', $n( $counts['still'] ) );
 	}
 	if ( $counts['waiting'] > 0 ) {
 		$parts[] = sprintf( '%1$s منتظر نتیجه (%2$s)', $n( $counts['waiting'] ), implode( '؛ ', array_unique( $wait ) ) );
@@ -474,7 +474,7 @@ function hodima_seo_advisor_handle_mark(): void {
 
 	$back = wp_get_referer();
 	$back = is_string( $back ) && '' !== $back ? $back : hodima_seo_advisor_page_url( [ 'tab' => $source ] );
-	$done = hodima_seo_advisor_page_url( [ 'tab' => 'done' ] );
+	$done = hodima_seo_advisor_page_url( [ 'tab' => 'tasks', 'tstatus' => 'waiting' ] );
 
 	$marks = isset( hodima_seo_advisor_task_sources()[ $source ] ) && in_array( $status, [ 'done', 'rejected' ], true ) && '' !== $path
 		? hodima_seo_advisor_mark_items( $source, $path, $items, $term )
@@ -503,9 +503,9 @@ function hodima_seo_advisor_handle_mark(): void {
 
 	if ( 'done' === $status ) {
 		$result = 'opportunities' === $source ? '' : hodima_seo_advisor_mark_result_text( hodima_seo_advisor_mark_check_now( $source, $path, $marks ) );
-		hodima_admin_flash( sprintf( '<strong>%1$s مورد «انجام دادم» ثبت شد.</strong> %2$s <a href="%3$s">دیدن در «انجام‌شده»</a>', esc_html( $n ), $result, esc_url( $done ) ), 'success' );
+		hodima_admin_flash( sprintf( '<strong>%1$s مورد «انجام دادم» ثبت شد.</strong> %2$s <a href="%3$s">دیدن در «کارها»</a>', esc_html( $n ), $result, esc_url( $done ) ), 'success' );
 	} else {
-		hodima_admin_flash( sprintf( '<strong>%1$s مورد «لازم نیست» ثبت شد</strong> و از این فهرست کنار رفت. <a href="%2$s">دیدن در «انجام‌شده»</a>', esc_html( $n ), esc_url( add_query_arg( 'tstatus', 'rejected', $done ) ) ), 'success' );
+		hodima_admin_flash( sprintf( '<strong>%1$s مورد «لازم نیست» ثبت شد</strong> و از این فهرست کنار رفت. <a href="%2$s">دیدن در «کارها»</a>', esc_html( $n ), esc_url( add_query_arg( 'tstatus', 'rejected', $done ) ) ), 'success' );
 	}
 
 	wp_safe_redirect( $back );

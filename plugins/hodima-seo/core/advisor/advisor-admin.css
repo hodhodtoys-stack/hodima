@@ -524,6 +524,12 @@
 		flex: none;
 	}
 
+	/* فیلتر «کارها» (3.1.3): چیپ‌ها در موبایل شکسته می‌شوند تا هیچ وضعیتی بریده نشود */
+	.hodima-advisor .hodima-advisor__views:has(.hodima-advisor__views-label) {
+		flex-wrap: wrap;
+		overflow-x: visible;
+	}
+
 	.hodima-advisor .hodima-advisor__form {
 		flex-direction: column;
 		align-items: stretch;
@@ -2017,4 +2023,48 @@
 	.hodima-advisor .hodima-advisor__more-first {
 		white-space: normal;
 	}
+}
+
+/* آمار جستجو (3.1.3): دو کارت هم‌وزن کنار هم، در عرض کم زیر هم */
+.hodima-advisor .hodima-advisor__cols {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	gap: 1rem;
+	align-items: stretch;
+	margin-block: 1rem;
+}
+
+.hodima-advisor .hodima-advisor__termlist {
+	display: grid;
+	gap: 0.25rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-advisor .hodima-advisor__termlist li {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding-block: 0.375rem;
+	border-block-end: 1px solid var(--hd-line, #dde3f0);
+}
+
+.hodima-advisor .hodima-advisor__termlist small {
+	color: var(--hd-muted, #5b6490);
+	white-space: nowrap;
+}
+
+.hodima-advisor .hodima-advisor__subhead {
+	margin: 0.75rem 0 0.25rem;
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__subhead--warn {
+	color: var(--hd-warn, #8a5a00);
+}
+
+.hodima-advisor .hodima-advisor__subhead--ok {
+	color: var(--hd-ok, #1f7a4d);
 }

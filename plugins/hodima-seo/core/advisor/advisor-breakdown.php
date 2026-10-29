@@ -1,16 +1,14 @@
 <?php
 /**
- * ماژول «دستار سئو» — بخش‌بندی داده: دستگاه، کشور، جستجوی تصویر/ویدیو، نوع نمایش
+ * ماژول «دستار سئو» — بخش‌بندی داده: دستگاه (صفحه × دستگاه)
  * Path: core/advisor/advisor-breakdown.php
  *
- * ابعاد تازه از همان Search Console API (همان کلید مخصوص مشاور، فقط‌خواندنی) با همان بازه دریافت اصلی:
- *   device         گزارش صفحه × دستگاه ← سهم هر دستگاه و صفحه‌هایی که رتبه موبایلشان خیلی بدتر است
- *   country        گزارش کشور (سطح سایت)
- *   appearance     نوع نمایش در گوگل (ریچ‌اسنیپت محصول، ویدیو، …؛ گوگل اجازه نمی‌دهد با بعد دیگر ترکیب شود)
- *   image / video  گزارش صفحه برای جستجوی تصویر و ویدیو (نوع جستجوی جدا)
+ * از همان Search Console API (همان کلید مخصوص مشاور، فقط‌خواندنی) با همان بازه دریافت اصلی:
+ *   device  گزارش صفحه × دستگاه ← سهم هر دستگاه و صفحه‌هایی که رتبه موبایلشان خیلی بدتر است (کارت پایین تب «آمار جستجو»)
+ * تا SEO 3.1.2 کشور، نوع نمایش و جستجوی تصویر/ویدیو هم دریافت می‌شد (تب «موبایل و کشور»)؛ از ۳.۱.۳ آن تب حذف شد و این
+ * چهار درخواست دیگر نمی‌رود. کلیدهای قدیمی (country، appearance، image، video) در گزینه می‌مانند ولی خوانده نمی‌شوند.
  * نتیجه فشرده در یک گزینه (hodima_advisor_breakdown، autoload خاموش) می‌ماند، نه جدول؛ حجمش کوچک است.
- * هر بخش جدا دریافت می‌شود: شکست یک بخش بخش‌های دیگر و آخرین داده همان بخش را خراب نمی‌کند.
- * حداکثر هر ۱۲ ساعت یک بار (داده این ابعاد کند عوض می‌شود). شکستش هرگز دریافت اصلی را رد نمی‌کند.
+ * حداکثر هر ۱۲ ساعت یک بار. شکستش هرگز دریافت اصلی را رد نمی‌کند.
  */
 
 declare(strict_types=1);
@@ -106,30 +104,6 @@ function hodima_seo_advisor_breakdown_devices( array $rows ): array {
 }
 
 /**
- * گزارش صفحه برای یک نوع جستجو (تصویر/ویدیو) ← جمع و برترین صفحه‌ها.
- *
- * @param list<array<string, mixed>> $rows
- * @return array{clicks: int, impressions: int, pages: list<array{path: string, clicks: int, impressions: int, position: float}>}
- */
-function hodima_seo_advisor_breakdown_pages( array $rows ): array {
-
-	$by_path = hodima_seo_advisor_aggregate_pages( $rows );
-	$pages   = [];
-
-	foreach ( $by_path as $path => $s ) {
-		$pages[] = [ 'path' => (string) $path ] + $s;
-	}
-
-	usort( $pages, static fn( array $a, array $b ): int => [ $b['clicks'], $b['impressions'] ] <=> [ $a['clicks'], $a['impressions'] ] );
-
-	return [
-		'clicks'      => array_sum( array_column( $pages, 'clicks' ) ),
-		'impressions' => array_sum( array_column( $pages, 'impressions' ) ),
-		'pages'       => array_slice( $pages, 0, 20 ),
-	];
-}
-
-/**
  * نتیجه ذخیره‌شده آخرین بخش‌بندی (خالی اگر هنوز گرفته نشده).
  *
  * @return array<string, mixed>
@@ -169,17 +143,13 @@ function hodima_seo_advisor_breakdown_sync( string $property, array $range, int 
 		return hodima_seo_sc_request( $property, $range['start'], $range['end'], $dimensions, 25000, $type, 0, HODIMA_SEO_SC_ADVISOR );
 	};
 
-	$label = [ 'device' => 'دستگاه', 'country' => 'کشور', 'appearance' => 'نوع نمایش', 'image' => 'جستجوی تصویر', 'video' => 'جستجوی ویدیو' ];
+	$label = [ 'device' => 'دستگاه' ];
 
 	$results = [
-		'device'     => $request( [ 'page', 'device' ] ),
-		'country'    => $request( [ 'country' ] ),
-		'appearance' => $request( [ 'searchAppearance' ] ),
-		'image'      => $request( [ 'page' ], 'image' ),
-		'video'      => $request( [ 'page' ], 'video' ),
+		'device' => $request( [ 'page', 'device' ] ),
 	];
 
-	foreach ( $results as $name => $result ) {
+	foreach ( $results as $name => $result ) { // فعلا فقط دستگاه؛ حلقه می‌ماند تا خطا و کلید خطا مثل قبل برسد
 		if ( is_wp_error( $result ) ) {
 			if ( hodima_seo_sc_is_key_error( $result ) ) {
 				return [ 'fetched' => 0, 'errors' => [ $result->get_error_message() ] ]; // با بخش دیگر هم درست نمی‌شود
@@ -190,23 +160,7 @@ function hodima_seo_advisor_breakdown_sync( string $property, array $range, int 
 
 		++$part;
 
-		switch ( $name ) {
-			case 'device':
-				$new['device'] = hodima_seo_advisor_breakdown_devices( $result['rows'] );
-				break;
-			case 'country':
-				$countries      = hodima_seo_advisor_breakdown_sum( $result['rows'] );
-				uasort( $countries, static fn( array $a, array $b ): int => [ $b['clicks'], $b['impressions'] ] <=> [ $a['clicks'], $a['impressions'] ] );
-				$new['country'] = array_slice( $countries, 0, 15, true );
-				break;
-			case 'appearance':
-				$appearance        = hodima_seo_advisor_breakdown_sum( $result['rows'] );
-				uasort( $appearance, static fn( array $a, array $b ): int => [ $b['clicks'], $b['impressions'] ] <=> [ $a['clicks'], $a['impressions'] ] );
-				$new['appearance'] = array_slice( $appearance, 0, 30, true );
-				break;
-			default:
-				$new[ $name ] = hodima_seo_advisor_breakdown_pages( $result['rows'] );
-		}
+		$new['device'] = hodima_seo_advisor_breakdown_devices( $result['rows'] );
 	}
 
 	if ( $part > 0 ) {
