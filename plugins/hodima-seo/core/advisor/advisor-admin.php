@@ -845,7 +845,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 
 	$keep = [ 'view' => 'all' === $view ? '' : $view, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'], 'tasks' => $filters['tasks'] ];
 
-	hodima_seo_ui_card_open( 'پیشنهادها', sprintf( 'صفحه‌هایی که با داده %s روز اخیر بیشترین کلیک اضافه را دارند؛ بالاترین‌ها مهم‌ترند. روی «بررسی و رفع» بزنید: در کادر «دستار سئو» پایین صفحه ویرایش، برای هر ایراد نوشته چرا مهم است، دقیقا چه کنید و از کجا بفهمید درست شد. «کلیک بالقوه» تخمین کلیک اضافه بعد از رفع ایراد است.', number_format_i18n( $status['days'] ) ) );
+	hodima_seo_ui_card_open( 'پیشنهادها', sprintf( 'صفحه‌هایی که با کمی کار کلیک بیشتری از گوگل می‌گیرند (داده %s روز اخیر). «بررسی و رفع» چرا و چطور رفع کردن هر مورد را در ویرایش صفحه نشان می‌دهد.', number_format_i18n( $status['days'] ) ) );
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">

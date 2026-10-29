@@ -2131,6 +2131,17 @@ ob_start();
 hodima_seo_advisor_render_tasks( 'done' );
 $vf_done = (string) ob_get_clean();
 hodima_ad( '«در دست انجام»: «اثر نداشت» با قدم بعدی و فرم جدای «دوباره انجام دادم» (status=done + redo)؛ گام سوم کار «اثر داشت» سبز؛ «انجام‌شده» کار باز را نشان نمی‌دهد', [ str_contains( $vf_html, 'اثر نداشت؛ قدم بعدی را ببینید' ), str_contains( $vf_html, 'دوباره انجام دادم' ) && str_contains( $vf_html, 'name="redo" value="1"' ) && str_contains( $vf_html, 'name="status" value="done"' ), hodima_seo_advisor_task_timeline( $vf_low )[2]['label'] . '/' . hodima_seo_advisor_task_timeline( $vf_low )[2]['state'], str_contains( $vf_done, 'اثر نداشت؛ قدم بعدی' ) ], [ true, true, 'اثر داشت/ok', false ] );
+// بی‌کار: چهار کارت آمار «—» نمی‌آید، فقط حالت خالی (SEO 3.1.2)
+$ec_tasks = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false );
+delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+ob_start();
+hodima_seo_advisor_render_tasks();
+$ec_open = (string) ob_get_clean();
+ob_start();
+hodima_seo_advisor_render_tasks( 'done' );
+$ec_done = (string) ob_get_clean();
+false === $ec_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $ec_tasks, false );
+hodima_ad( 'بدون کار: «در دست انجام» و «انجام‌شده» کارت آمار ندارند و حالت خالی دارند؛ با کار، «در دست انجام» چهار کارت', [ substr_count( $ec_open, 'class="hds-stat"' ), substr_count( $ec_done, 'class="hds-stat"' ), str_contains( $ec_open, 'کار بازی نیست' ), str_contains( $ec_done, 'هنوز کاری انجام نشده' ), substr_count( $vf_html, 'class="hds-stat"' ) ], [ 0, 0, true, true, 4 ] );
 ob_start();
 hodima_seo_advisor_render_task_controls( '/vf/a/', [ 'rule' => 'near_first', 'term' => 'کلیپس طلایی', 'title' => 't' ] );
 $vf_ctl = (string) ob_get_clean();

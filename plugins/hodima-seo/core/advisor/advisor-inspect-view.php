@@ -68,7 +68,7 @@ function hodima_seo_advisor_render_indexing(): void {
 		[ 'label' => 'canonical متفاوت', 'value' => $empty ? '—' : esc_html( $n( $mismatch ) ), 'sub' => $empty ? '' : 'گوگل غیر از شما انتخاب کرده', 'empty' => $empty ],
 	] );
 
-	hodima_seo_ui_card_open( 'وضعیت ایندکس آدرس‌های مهم', 'از گوگل می‌پرسد هر آدرس ایندکس شده (یعنی در فهرست گوگل هست و می‌تواند در نتیجه‌ها بیاید) یا نه، و اگر نه چرا. اول صفحه‌های بدون نمایش، بعد صفحه‌های دارای پیشنهاد و پرنمایش‌ترین‌ها؛ هر آدرس هر ۱۴ روز یک بار. خودکار روزی دو بار ۲۰ آدرس؛ سهمیه گوگل حدود ۲۰۰۰ بررسی در روز است.' );
+	hodima_seo_ui_card_open( 'وضعیت ایندکس آدرس‌های مهم', 'از گوگل می‌پرسد هر آدرس ایندکس شده یا نه و اگر نه چرا؛ اول صفحه‌های بدون نمایش. هر آدرس هر ۱۴ روز؛ خودکار روزی دو بار ۲۰ آدرس.' );
 	?>
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__form">
 		<input type="hidden" name="action" value="hodima_advisor_inspect_now">

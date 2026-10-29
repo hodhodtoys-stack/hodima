@@ -347,28 +347,32 @@ function hodima_seo_advisor_render_tasks( string $which = 'doing' ): void {
 
 	if ( $done ) {
 		$recrawled = $count( static fn( array $t ): bool => function_exists( 'hodima_seo_advisor_inspect_after' ) && 'yes' === hodima_seo_advisor_inspect_after( $t['path'], $t['at'] )['state'] );
-		hodima_seo_ui_stats( [
-			[ 'label' => 'انجام‌شده', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => 'rejected' !== $t['status'] ) ) ), 'empty' => $empty ],
-			[ 'label' => 'گوگل دوباره خوانده', 'value' => $empty ? '—' : esc_html( $n( $recrawled ) ), 'sub' => $empty ? '' : 'صفحه بعد از تغییر شما خزیده شده', 'empty' => $empty ],
-			[ 'label' => 'برطرف شد', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => 'fixed' === hodima_seo_advisor_task_state( $t ) ) ) ), 'empty' => $empty ],
-			[ 'label' => 'منتظر نتیجه', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => 'waiting' === hodima_seo_advisor_task_state( $t ) ) ) ), 'sub' => $empty ? '' : 'تا ۱۴ روز داده گوگل بعد از تغییر', 'empty' => $empty ],
-		] );
-		hodima_seo_ui_card_open( 'انجام‌شده', 'کارهایی که در هر تب «انجام دادم» زده‌اید، هر کدام با سه گام: کی انجام دادید، سنجش همان نوع کار (خواندن دوباره صفحه، خزش تازه، بررسی ایندکس یا داده تازه گوگل) و نتیجه. کاری که هنوز مانده، اثر نداشت یا برگشت، خودش به «در دست انجام» برمی‌گردد.' );
+		if ( ! $empty ) { // بی‌کار: چهار کارت «—» نشان نمی‌دهیم، فقط یک خط حالت خالی (SEO 3.1.2)
+			hodima_seo_ui_stats( [
+				[ 'label' => 'انجام‌شده', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'rejected' !== $t['status'] ) ) ) ],
+				[ 'label' => 'گوگل دوباره خوانده', 'value' => esc_html( $n( $recrawled ) ), 'sub' => 'صفحه بعد از تغییر شما خزیده شده' ],
+				[ 'label' => 'برطرف شد', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'fixed' === hodima_seo_advisor_task_state( $t ) ) ) ) ],
+				[ 'label' => 'منتظر نتیجه', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'waiting' === hodima_seo_advisor_task_state( $t ) ) ) ), 'sub' => 'تا ۱۴ روز داده گوگل بعد از تغییر' ],
+			] );
+		}
+		hodima_seo_ui_card_open( 'انجام‌شده', 'کارهایی که «انجام دادم» زده‌اید، هر کدام با سه گام: انجام، سنجش، نتیجه. کاری که مانده یا برگشته به «در دست انجام» برمی‌گردد.' );
 	} else {
-		hodima_seo_ui_stats( [
-			[ 'label' => 'کار باز', 'value' => $empty ? '—' : esc_html( $n( count( $rows ) ) ), 'empty' => $empty ],
-			[ 'label' => 'در حال انجام', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => 'doing' === hodima_seo_advisor_task_state( $t ) ) ) ), 'empty' => $empty ],
-			[ 'label' => 'اثر نداشت', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => 'no_effect' === hodima_seo_advisor_task_state( $t ) ) ) ), 'sub' => $empty ? '' : 'قدم بعدی کنار هر کدام', 'empty' => $empty ],
-			[ 'label' => 'برگشته یا هنوز دیده می‌شود', 'value' => $empty ? '—' : esc_html( $n( $count( static fn( array $t ): bool => in_array( hodima_seo_advisor_task_state( $t ), [ 'back', 'unseen' ], true ) ) ) ), 'empty' => $empty ],
-		] );
-		hodima_seo_ui_card_open( 'در دست انجام', 'کارهایی که هنوز کار دارند: آن‌هایی که «در حال انجام» زده‌اید، کاری که بعد از «انجام دادم» سنجیده شد و هنوز مانده، کاری که بعد از برطرف شدن برگشته و کاری که اثر نداشته. کنار هر کدام نوشته دقیقا چه کنید؛ بعد از انجام «دوباره انجام دادم» یا «انجام دادم» را بزنید تا دوباره سنجیده شود.' );
+		if ( ! $empty ) {
+			hodima_seo_ui_stats( [
+				[ 'label' => 'کار باز', 'value' => esc_html( $n( count( $rows ) ) ) ],
+				[ 'label' => 'در حال انجام', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'doing' === hodima_seo_advisor_task_state( $t ) ) ) ) ],
+				[ 'label' => 'اثر نداشت', 'value' => esc_html( $n( $count( static fn( array $t ): bool => 'no_effect' === hodima_seo_advisor_task_state( $t ) ) ) ), 'sub' => 'قدم بعدی کنار هر کدام' ],
+				[ 'label' => 'برگشته یا هنوز دیده می‌شود', 'value' => esc_html( $n( $count( static fn( array $t ): bool => in_array( hodima_seo_advisor_task_state( $t ), [ 'back', 'unseen' ], true ) ) ) ) ],
+			] );
+		}
+		hodima_seo_ui_card_open( 'در دست انجام', 'کارهایی که هنوز کار دارند (در حال انجام، هنوز مانده، برگشته یا بی‌اثر). بعد از رفع «دوباره انجام دادم» را بزنید تا دوباره سنجیده شود.' );
 	}
 
 	if ( $empty ) {
 		if ( $done ) {
-			hodima_seo_ui_empty( 'هنوز کاری انجام نشده', 'بعد از رفع هر مورد، در ردیف همان تب (پیشنهادها، ایرادهای فنی، صفحه‌های هم‌کلمه، آدرس‌های خراب، وضعیت در گوگل) یا در کادر «دستار سئو» صفحه ویرایش «انجام دادم» را بزنید؛ اینجا می‌آید و نتیجه‌اش سنجیده می‌شود.' );
+			hodima_seo_ui_empty( 'هنوز کاری انجام نشده', 'بعد از رفع هر مورد، «انجام دادم» را در همان تب یا کادر «دستار سئو» صفحه ویرایش بزنید؛ اینجا می‌آید و نتیجه‌اش سنجیده می‌شود.' );
 		} else {
-			hodima_seo_ui_empty( 'کار بازی نیست', 'هر ردیف تب‌های پیشنهادها، ایرادهای فنی، صفحه‌های هم‌کلمه، آدرس‌های خراب و وضعیت در گوگل دکمه‌های «انجام دادم» و «لازم نیست» دارد؛ زیر هر پیشنهاد کادر ویرایش هم «در حال انجام» هست.' );
+			hodima_seo_ui_empty( 'کار بازی نیست', 'کاری که بعد از «انجام دادم» هنوز مانده، برگشته یا اثر نداشته، با قدم بعدی اینجا می‌آید.' );
 		}
 		hodima_seo_ui_card_close();
 		return;

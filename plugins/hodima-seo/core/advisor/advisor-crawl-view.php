@@ -250,7 +250,7 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $h
 	$marked = hodima_seo_advisor_show_marked() ? 'all' : '';
 	$url    = static fn( array $args ): string => hodima_seo_advisor_page_url( [ 'tab' => 'crawl', 'tasks' => $marked ] + $args );
 
-	hodima_seo_ui_card_open( 'ایرادهای صفحه‌ها', 'مرتب بر اساس نمایش در گوگل؛ اول صفحه‌هایی که ایرادشان بیشتر دیده می‌شود. بعد از رفع، «انجام دادم» را بزنید: عنوان، متا، تیترها و خطای ۴۰۴/۵۰۰ همان لحظه از روی سایت دوباره سنجیده می‌شوند؛ کند بودن، لینک ورودی و ریدایرکت با خزش بعدی. ایراد علامت‌خورده به «انجام‌شده» می‌رود.' );
+	hodima_seo_ui_card_open( 'ایرادهای صفحه‌ها', 'مرتب بر اساس نمایش در گوگل. بعد از رفع «انجام دادم» را بزنید؛ عنوان، متا، تیتر و خطای ۴۰۴/۵۰۰ همان لحظه دوباره سنجیده می‌شوند و بقیه با خزش بعدی.' );
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
