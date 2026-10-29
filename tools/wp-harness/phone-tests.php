@@ -258,16 +258,16 @@ $render = static function ( callable $fn, mixed ...$args ): string {
 };
 $_GET = [];
 $html = $render( 'hodima_phone_render_list' );
-hodima_ph( 'جدول و هر دو لید', str_contains( $html, 'hd-leads__table' ) && str_contains( $html, '0912 111 0001' ) && str_contains( $html, '0912 111 0002' ), true );
+hodima_ph( 'جدول و هر دو لید', str_contains( $html, 'hd-leads__table' ) && str_contains( $html, '09121110001' ) && str_contains( $html, '09121110002' ), true );
 hodima_ph( 'لید جدید با نقطه و برچسب صفحه‌خوان', str_contains( $html, 'is-new' ) && str_contains( $html, '(جدید)' ), true );
 hodima_ph( 'کنترل‌ها دسترس‌پذیرند (برچسب کپی، چک‌باکس)', str_contains( $html, 'aria-label="کپی شماره 09121110001"' ) && str_contains( $html, 'aria-label="انتخاب 09121110001"' ), true );
 hodima_ph( 'بدون زباله‌دان وقتی خالی است', str_contains( $html, 'state=trash' ), false );
 $_GET = [ 'state' => 'new' ];
 $html = $render( 'hodima_phone_render_list' );
-hodima_ph( 'نمای جدید: فقط لید دیده‌نشده', str_contains( $html, '0912 111 0002' ) && ! str_contains( $html, '0912 111 0001' ), true );
+hodima_ph( 'نمای جدید: فقط لید دیده‌نشده', str_contains( $html, '09121110002' ) && ! str_contains( $html, '09121110001' ), true );
 $_GET = [ 's' => '۰۹۱۲۱۱۱۰۰۰۱' ];
 $html = $render( 'hodima_phone_render_list' );
-hodima_ph( 'جستجو با ارقام فارسی', str_contains( $html, '0912 111 0001' ) && ! str_contains( $html, '0912 111 0002' ), true );
+hodima_ph( 'جستجو با ارقام فارسی', str_contains( $html, '09121110001' ) && ! str_contains( $html, '09121110002' ), true );
 $_GET = [ 's' => '99999' ];
 $html = $render( 'hodima_phone_render_list' );
 hodima_ph( 'جستجوی بی‌نتیجه: حالت خالی', str_contains( $html, 'موردی پیدا نشد' ) && ! str_contains( $html, 'hd-leads__table' ), true );
@@ -297,8 +297,8 @@ hodima_ph( 'بدون لید: توضیح فرم فوتر', str_contains( $empty_h
 $d = $mk( '09126667788' );
 hodima_ph( 'لید تازه جدید است', hodima_lead_state( $d ), 'new' );
 $html = $render( 'hodima_phone_render_detail', $d );
-hodima_ph( 'جزئیات: شماره، تاریخچه، خلاصه', str_contains( $html, '0912 666 7788' ) && str_contains( $html, 'hd-leads__timeline' ) && str_contains( $html, 'تعداد درخواست‌ها' ), true );
-hodima_ph( 'جداساز چپ‌به‌راست دور شماره عنوان', str_contains( $html, "\u{2066}0912 666 7788\u{2069}" ), true );
+hodima_ph( 'جزئیات: شماره، تاریخچه، خلاصه', str_contains( $html, '09126667788' ) && str_contains( $html, 'hd-leads__timeline' ) && str_contains( $html, 'تعداد درخواست‌ها' ), true );
+hodima_ph( 'جداساز چپ‌به‌راست دور شماره عنوان', str_contains( $html, "\u{2066}09126667788\u{2069}" ), true );
 hodima_ph( 'باز کردن جزئیات = دیده شد', hodima_lead_state( $d ), 'seen' );
 wp_delete_post( $d, true );
 
