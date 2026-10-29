@@ -21,7 +21,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.7.0';
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.8.0';
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -158,6 +158,11 @@ function hodima_seo_advisor_install_tables(): void {
 		score decimal(8,2) NOT NULL DEFAULT 0,
 		redirect_to varchar(191) NOT NULL DEFAULT '',
 		no_snippet tinyint(1) NOT NULL DEFAULT 0,
+		words int(11) NOT NULL DEFAULT -1,
+		h1_count smallint(6) NOT NULL DEFAULT -1,
+		img_noalt smallint(6) NOT NULL DEFAULT -1,
+		http_links smallint(6) NOT NULL DEFAULT -1,
+		canonical varchar(191) NOT NULL DEFAULT '',
 		PRIMARY KEY (path)
 		) {$charset};"
 	);
@@ -926,6 +931,7 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 		delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ); // تنظیمات خزنده (ساعت و فاصله) می‌ماند
+		delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION );
 		hodima_seo_advisor_crawl_map( true );
 		wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
 	}

@@ -381,6 +381,9 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $h
 		'dup'      => [ 'تکراری', $sum['groups']['dup'] ?? 0 ],
 		'slow'     => [ 'کند', $sum['groups']['slow'] ?? 0 ],
 		'redirect' => [ 'ریدایرکت یا noindex', $sum['groups']['redirect'] ?? 0 ],
+		'linkfix'  => [ 'لینک اشتباه', $sum['groups']['linkfix'] ?? 0 ],
+		'content'  => [ 'تصویر و محتوا', $sum['groups']['content'] ?? 0 ],
+		'tech'     => [ 'ساختار و نقشه سایت', $sum['groups']['tech'] ?? 0 ],
 		'links'    => [ 'لینک ورودی کم', $sum['groups']['links'] ?? 0 ],
 		'orphan'   => [ 'بدون لینک ورودی', $sum['groups']['orphan'] ?? 0 ],
 	];
@@ -475,6 +478,20 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $h
 									<?php endif; ?>
 									<?php if ( $has_u ) : ?>
 										<?php echo hodima_seo_advisor_url_copy( (string) $issue['url'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy ?>
+									<?php endif; ?>
+									<?php if ( ! empty( $issue['items'] ) ) : ?>
+										<?php // مقصدهای لینک: آدرس کامل قابل کپی + توضیح (کد پاسخ، مقصد ریدایرکت، متن لینک) ?>
+										<ul class="hodima-advisor__crawl-items" aria-label="<?php echo esc_attr( 'مقصد لینک‌ها: ' . $info['label'] ); ?>">
+											<?php foreach ( array_slice( $issue['items'], 0, 5 ) as $item ) : ?>
+												<li>
+													<?php echo hodima_seo_advisor_url_copy( (string) $item['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy ?>
+													<small><?php echo esc_html( (string) $item['note'] ); ?></small>
+												</li>
+											<?php endforeach; ?>
+											<?php if ( count( $issue['items'] ) > 5 ) : ?>
+												<li><small><?php echo esc_html( sprintf( 'و %s مقصد دیگر', $n( count( $issue['items'] ) - 5 ) ) ); ?></small></li>
+											<?php endif; ?>
+										</ul>
 									<?php endif; ?>
 								</div>
 							<?php endforeach; ?>

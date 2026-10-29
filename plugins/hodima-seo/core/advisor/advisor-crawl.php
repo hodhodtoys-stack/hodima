@@ -49,6 +49,15 @@ const HODIMA_SEO_ADVISOR_CRAWL_META_MAX = 170;
 /** صفحه‌ای با این نمایش یا بیشتر «پرنمایش» است (آمار «ایراد در صفحه‌های پرنمایش»). */
 const HODIMA_SEO_ADVISOR_CRAWL_BIG_IMPRESSIONS = 1000;
 
+/** محتوای کم: متن اصلی کمتر از این تعداد کلمه (فقط نوشته، برگه و محصول شناخته‌شده). */
+const HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS = 120;
+
+/** صفحه‌ای که از صفحه اصلی دست‌کم این‌قدر کلیک فاصله دارد «عمیق» است. */
+const HODIMA_SEO_ADVISOR_CRAWL_DEEP = 5;
+
+/** حداکثر مقصد نمایش‌داده‌شده در هر ایراد لینک. */
+const HODIMA_SEO_ADVISOR_CRAWL_ITEMS = 10;
+
 /* ── پوشه ── */
 
 /** پوشه فایل‌های خزش (بیرون از افزونه تا با به‌روزرسانی افزونه پاک نشود). */
@@ -828,10 +837,13 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 /** گروه چیپ‌های فیلتر ← کدهای ایراد. */
 const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
 	'meta'     => [ 'no_meta', 'no_snippet' ],
-	'title'    => [ 'no_title', 'title_short', 'title_long', 'no_h1' ],
+	'title'    => [ 'no_title', 'title_short', 'title_long', 'no_h1', 'multi_h1' ],
 	'dup'      => [ 'dup_title', 'dup_h1' ],
 	'slow'     => [ 'slow' ],
 	'redirect' => [ 'redirect', 'noindex', 'broken' ],
+	'linkfix'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain' ],
+	'content'  => [ 'img_alt', 'thin' ],
+	'tech'     => [ 'canonical_bad', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
 	'links'    => [ 'low_inlinks' ],
 	'orphan'   => [ 'orphan' ],
 ];
@@ -857,8 +869,72 @@ function hodima_seo_advisor_crawl_issue_info( string $code ): array {
 		'noindex'     => [ 'label' => 'noindex یا canonical', 'level' => 'info', 'fix' => 'اگر این صفحه باید در گوگل باشد، noindex/canonical را بردارید.' ],
 		'broken'      => [ 'label' => 'خطای ۴۰۴/۵۰۰', 'level' => 'bad', 'fix' => 'لینک‌های داخلی به آن را درست کنید یا ریدایرکت بدهید.' ],
 		'low_inlinks' => [ 'label' => 'لینک ورودی کم', 'level' => 'warn', 'fix' => 'از صفحه‌های مرتبط (دسته، مقاله) لینک متنی بدهید.' ],
+		'link_broken'    => [ 'label' => 'لینک به صفحه خراب', 'level' => 'bad', 'fix' => 'این صفحه به آدرس‌هایی لینک می‌دهد که خطای ۴۰۴/۵۰۰ می‌دهند؛ هر لینک را به آدرس درست تغییر بدهید یا بردارید.' ],
+		'link_redirect'  => [ 'label' => 'لینک به ریدایرکت', 'level' => 'warn', 'fix' => 'این صفحه به آدرس‌هایی لینک می‌دهد که به جای دیگر می‌روند؛ لینک را مستقیم به آدرس مقصد بدهید.' ],
+		'link_noindex'   => [ 'label' => 'لینک به صفحه ایندکس‌نشدنی', 'level' => 'info', 'fix' => 'در متن این صفحه به صفحه‌ای لینک داده شده که noindex است یا به صفحه دیگری canonical دارد؛ اگر لازم نیست لینک را بردارید یا به آدرس اصلی بدهید.' ],
+		'redirect_chain' => [ 'label' => 'زنجیره ریدایرکت', 'level' => 'warn', 'fix' => 'این آدرس به آدرسی می‌رود که خودش دوباره ریدایرکت می‌شود؛ ریدایرکت را مستقیم به مقصد نهایی بدهید.' ],
+		'multi_h1'       => [ 'label' => 'چند H1', 'level' => 'warn', 'fix' => 'هر صفحه فقط یک تیتر اصلی (H1) داشته باشد؛ بقیه را H2 کنید.' ],
+		'img_alt'        => [ 'label' => 'تصویر بدون alt', 'level' => 'warn', 'fix' => 'برای تصویرهای متن صفحه توضیح کوتاه (alt) بنویسید؛ در کتابخانه رسانه یا همان‌جا که تصویر گذاشته‌اید.' ],
+		'thin'           => [ 'label' => 'متن کم', 'level' => 'info', 'fix' => 'متن اصلی این صفحه کم است؛ اگر قرار است در گوگل رتبه بگیرد توضیح کامل‌تر اضافه کنید.' ],
+		'canonical_bad'  => [ 'label' => 'canonical اشتباه', 'level' => 'bad', 'fix' => 'canonical این صفحه به آدرسی اشاره می‌کند که ۲۰۰ نیست یا noindex است؛ آن را به آدرس درست یا خود صفحه برگردانید.' ],
+		'no_canonical'   => [ 'label' => 'بدون canonical', 'level' => 'warn', 'fix' => 'صفحه آدرس canonical ندارد؛ در کادر سئو یا افزونه سئو آن را فعال کنید.' ],
+		'http_link'      => [ 'label' => 'لینک http', 'level' => 'warn', 'fix' => 'در سایت https لینک داخلی با http می‌دهد؛ لینک‌ها را https کنید تا ریدایرکت اضافه نشود.' ],
+		'sitemap_bad'    => [ 'label' => 'ایراد در نقشه سایت', 'level' => 'bad', 'fix' => 'این آدرس در نقشه سایت است ولی صفحه سالم و ایندکس‌پذیر نیست؛ از نقشه سایت بردارید یا صفحه را درست کنید.' ],
+		'not_in_sitemap' => [ 'label' => 'خارج از نقشه سایت', 'level' => 'info', 'fix' => 'صفحه سالم و ایندکس‌پذیر است ولی در نقشه سایت نیست؛ اگر باید در گوگل باشد به نقشه سایت اضافه کنید.' ],
+		'deep'           => [ 'label' => 'صفحه عمیق', 'level' => 'info', 'fix' => 'از صفحه اصلی چند کلیک فاصله دارد؛ از صفحه‌های نزدیک‌تر (دسته، مقاله) به آن لینک بدهید.' ],
 		'orphan'      => [ 'label' => 'بدون لینک ورودی', 'level' => 'bad', 'fix' => 'از دست‌کم دو صفحه مرتبط به آن لینک بدهید.' ],
 	][ $code ] ?? [ 'label' => $code, 'level' => 'info', 'fix' => '' ];
+}
+
+/**
+ * لینک‌های داخلی به صفحه خراب، ریدایرکت‌شده یا ایندکس‌نشدنی، گروه‌شده بر اساس صفحه مبدأ و نوع ایراد.
+ * لینک به صفحه noindex فقط از متن (نه منو و فوتر: سبد و حساب کاربری عمدا noindex‌اند).
+ *
+ * @return array<string, array<string, list<array{path: string, note: string}>>> مبدأ ← کد ایراد ← مقصدها
+ */
+function hodima_seo_advisor_crawl_bad_links(): array {
+
+	global $wpdb;
+
+	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare(
+			'SELECT l.source_path, l.dest_path, l.link_position, l.anchor, c.status, c.indexable, c.reason, c.redirect_to FROM %i l INNER JOIN %i c ON c.path = l.dest_path WHERE c.status >= 300 OR (c.status = 200 AND c.indexable = 0)',
+			hodima_seo_advisor_table( 'crawl_links' ),
+			hodima_seo_advisor_table( 'crawl_pages' )
+		),
+		ARRAY_A
+	);
+
+	$out = [];
+
+	foreach ( $rows as $r ) {
+		$status = (int) $r['status'];
+		$dest   = (string) $r['dest_path'];
+		$anchor = '' !== (string) $r['anchor'] ? sprintf( 'متن لینک «%s»', $r['anchor'] ) : 'بدون متن لینک';
+
+		if ( $status >= 400 ) {
+			$code = 'link_broken';
+			$note = sprintf( 'کد %s؛ %s', number_format_i18n( $status ), $anchor );
+		} elseif ( $status >= 300 ) {
+			$code = 'link_redirect';
+			$note = ( '' !== (string) $r['redirect_to'] ? sprintf( 'می‌رود به %s؛ ', rawurldecode( (string) $r['redirect_to'] ) ) : 'ریدایرکت می‌شود؛ ' ) . $anchor;
+		} elseif ( 'content' === (string) $r['link_position'] ) {
+			$code = 'link_noindex';
+			$note = ( 'Canonicalised' === (string) $r['reason'] ? 'canonical به صفحه دیگر؛ ' : 'noindex؛ ' ) . $anchor;
+		} else {
+			continue;
+		}
+
+		$out[ (string) $r['source_path'] ][ $code ][ $dest ] ??= [ 'path' => $dest, 'note' => $note ]; // هر مقصد یک بار
+	}
+
+	foreach ( $out as $source => $codes ) {
+		foreach ( $codes as $code => $items ) {
+			$out[ $source ][ $code ] = array_values( $items );
+		}
+	}
+
+	return $out;
 }
 
 /**
@@ -873,7 +949,8 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare(
-			'SELECT c.*, COALESCE(p.impressions, 0) AS impressions, COALESCE(p.avg_position, 0) AS avg_position FROM %i c LEFT JOIN %i p ON p.path = c.path',
+			'SELECT c.*, COALESCE(p.impressions, 0) AS impressions, COALESCE(p.avg_position, 0) AS avg_position, COALESCE(p.kind, %s) AS kind FROM %i c LEFT JOIN %i p ON p.path = c.path',
+			'',
 			hodima_seo_advisor_table( 'crawl_pages' ),
 			hodima_seo_advisor_table( 'pages' )
 		),
@@ -894,15 +971,38 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 	$out = [];
 
+	$by_path = [];
+	foreach ( $rows as $r ) {
+		$by_path[ (string) $r['path'] ] = $r;
+	}
+	$sitemap = hodima_seo_advisor_sitemap_paths();
+	$bad     = hodima_seo_advisor_crawl_bad_links();
+	$n       = static fn( int|float $value ): string => number_format_i18n( $value );
+
 	foreach ( $rows as $r ) {
 
 		$status      = (int) $r['status'];
 		$impressions = (int) $r['impressions'];
 		$inlinks     = (int) $r['inlinks'];
+		$path        = (string) $r['path'];
+		$known       = (int) $r['words'] >= 0; // ستون‌های خزنده داخلی؛ فایل Screaming Frog آن‌ها را ندارد (-1)
 		$issues      = [];
-		$add         = static function ( string $code, string $detail = '', string $url = '' ) use ( &$issues ): void {
-			$issues[] = [ 'code' => $code, 'detail' => $detail, 'url' => $url ]; // url: آدرس مرتبط (مقصد ریدایرکت) برای جزء آدرس کامل + کپی
+		$add         = static function ( string $code, string $detail = '', string $url = '', array $items = [] ) use ( &$issues ): void {
+			$issues[] = [ 'code' => $code, 'detail' => $detail, 'url' => $url, 'items' => $items ]; // url: آدرس مرتبط (مقصد ریدایرکت)؛ items: مقصدهای لینک (مسیر + توضیح) برای جزء آدرس کامل + کپی
 		};
+
+		// نقشه سایت: آدرسی که در نقشه است باید ۲۰۰ و ایندکس‌پذیر باشد (هر وضعیتی، حتی ریدایرکت و ۴۰۴)
+		if ( $sitemap && isset( $sitemap[ $path ] ) && ( 200 !== $status || 0 === (int) $r['indexable'] ) ) {
+			$add( 'sitemap_bad', 200 !== $status ? sprintf( 'کد %s', $n( $status ) ) : ( 'Canonicalised' === (string) $r['reason'] ? 'canonical به صفحه دیگر' : 'noindex' ) );
+		}
+
+		// canonical به آدرسی که سالم نیست
+		if ( $known && 200 === $status && '' !== (string) $r['canonical'] && '!ext' !== $r['canonical'] && (string) $r['canonical'] !== $path && isset( $by_path[ (string) $r['canonical'] ] ) ) {
+			$target = $by_path[ (string) $r['canonical'] ];
+			if ( 200 !== (int) $target['status'] || 'Noindex' === (string) $target['reason'] ) {
+				$add( 'canonical_bad', sprintf( 'به %s اشاره می‌کند (%s)', rawurldecode( (string) $r['canonical'] ), 200 !== (int) $target['status'] ? 'کد ' . $n( (int) $target['status'] ) : 'noindex' ) );
+			}
+		}
 
 		if ( 200 === $status && 1 === (int) $r['indexable'] ) {
 			$title = (string) $r['title'];
@@ -942,11 +1042,49 @@ function hodima_seo_advisor_crawl_issues(): array {
 					$add( 'low_inlinks', sprintf( '%s لینک ورودی', number_format_i18n( $inlinks ) ) . ( $text >= 0 ? sprintf( '؛ %s لینک از متن', number_format_i18n( $text ) ) : '' ) );
 				}
 			}
+
+			// لینک‌های این صفحه به آدرس خراب، ریدایرکت‌شده یا ایندکس‌نشدنی (هر مقصد: مسیر + توضیح)
+			foreach ( [ 'link_broken', 'link_redirect', 'link_noindex' ] as $code ) {
+				if ( ! empty( $bad[ $path ][ $code ] ) ) {
+					$add( $code, sprintf( '%s لینک', $n( count( $bad[ $path ][ $code ] ) ) ), '', array_slice( $bad[ $path ][ $code ], 0, HODIMA_SEO_ADVISOR_CRAWL_ITEMS ) );
+				}
+			}
+
+			if ( $known ) {
+				if ( (int) $r['h1_count'] > 1 ) {
+					$add( 'multi_h1', sprintf( '%s تیتر H1', $n( (int) $r['h1_count'] ) ) );
+				}
+				if ( (int) $r['img_noalt'] > 0 ) {
+					$add( 'img_alt', sprintf( '%s تصویر', $n( (int) $r['img_noalt'] ) ) );
+				}
+				if ( (int) $r['http_links'] > 0 ) {
+					$add( 'http_link', sprintf( '%s لینک', $n( (int) $r['http_links'] ) ) );
+				}
+				if ( '' === (string) $r['canonical'] ) {
+					$add( 'no_canonical' );
+				}
+				if ( '' !== (string) $r['kind'] && ! taxonomy_exists( (string) $r['kind'] ) && '/' !== $path && ! $paged( $r ) && (int) $r['words'] < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS ) {
+					$add( 'thin', sprintf( '%s کلمه', $n( (int) $r['words'] ) ) );
+				}
+				if ( $sitemap && ! isset( $sitemap[ $path ] ) && ! $paged( $r ) ) {
+					$add( 'not_in_sitemap' );
+				}
+			}
+
+			if ( (int) $r['depth'] >= HODIMA_SEO_ADVISOR_CRAWL_DEEP ) {
+				$add( 'deep', sprintf( '%s کلیک از صفحه اصلی', $n( (int) $r['depth'] ) ) );
+			}
 		} elseif ( $impressions > 0 || $inlinks > 0 ) {
 			// ریدایرکت فقط وقتی ایراد است که لینک داخلی به آن برود (دستورش اصلاح همان لینک‌هاست). تا SEO 3.0.1 با نمایش
 			// گوگل هم می‌آمد و هیچ‌وقت برطرف نمی‌شد: گوگل آدرس کهنه را تا مدت‌ها نشان می‌دهد (تب «آدرس‌های خراب» آن را می‌گوید)
-			if ( $status >= 300 && $status < 400 && $inlinks > 0 ) {
-				$add( 'redirect', '' !== (string) $r['redirect_to'] ? 'به این آدرس می‌رود:' : '', (string) $r['redirect_to'] ); // آدرس جدا با کپی (وسط جمله به‌هم می‌ریخت)
+			if ( $status >= 300 && $status < 400 ) {
+				if ( $inlinks > 0 ) {
+					$add( 'redirect', '' !== (string) $r['redirect_to'] ? 'به این آدرس می‌رود:' : '', (string) $r['redirect_to'] ); // آدرس جدا با کپی (وسط جمله به‌هم می‌ریخت)
+				}
+				$next = $by_path[ (string) $r['redirect_to'] ] ?? null;
+				if ( null !== $next && (int) $next['status'] >= 300 && (int) $next['status'] < 400 ) {
+					$add( 'redirect_chain', 'به آدرسی می‌رود که خودش ریدایرکت است:', (string) $r['redirect_to'] );
+				}
 			} elseif ( $status >= 400 ) {
 				$add( 'broken', sprintf( 'کد %s', number_format_i18n( $status ) ) );
 			} elseif ( 200 === $status && 0 === (int) $r['indexable'] ) {

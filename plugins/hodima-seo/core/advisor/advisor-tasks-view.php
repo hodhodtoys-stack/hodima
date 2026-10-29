@@ -217,7 +217,7 @@ function hodima_seo_advisor_task_timeline( array $task ): array {
 			default => [ 'state' => 'wait', 'label' => 'منتظر بررسی ایندکس', 'detail' => 'این آدرس اول صف بررسی ایندکس است؛ با «گرفتن داده تازه» یا بررسی خودکار بعدی معلوم می‌شود.' ],
 		};
 	} elseif ( 'crawl' === $source ) {
-		$live    = in_array( substr( $task['rule'], 6 ), [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, 'broken' ], true );
+		$live    = in_array( substr( $task['rule'], 6 ), [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, ...HODIMA_SEO_ADVISOR_MARK_RECRAWL_CODES, 'broken' ], true );
 		$steps[] = $judged > 0
 			? [ 'state' => 'ok', 'label' => $live ? 'صفحه دوباره از سایت خوانده شد' : 'خزش تازه خوانده شد', 'detail' => hodima_seo_advisor_task_date( $judged ) ]
 			: [ 'state' => 'wait', 'label' => 'منتظر خزش تازه', 'detail' => $live ? 'صفحه همان لحظه از سایت خوانده نشد (شبکه یا هاست)؛ با ذخیره دوباره صفحه یا خروجی خزش بعدی سنجیده می‌شود.' : 'کند بودن، لینک ورودی و ریدایرکت از یک صفحه سنجیده نمی‌شوند؛ با خواندن فایل‌های خزش بعدی نتیجه می‌گیرند.' ];

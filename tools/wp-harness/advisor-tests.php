@@ -2957,6 +2957,111 @@ false === $cw_settings ? delete_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS ) : 
 false === $cw_state ? delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, $cw_state, false );
 false === $cw_crawl ? delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, $cw_crawl, false );
 
+echo "=== ایرادهای تازه خزش (SEO 3.1.5)\n";
+$cx_site = untrailingslashit( home_url() );
+$cx_words = static fn( int $n ): string => implode( ' ', array_fill( 0, $n, 'کلمه' ) );
+$cx_crawl = get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, false );
+$cx_page  = static fn( string $title, string $body, string $head = '' ): string => '<html><head><title>' . $title . '</title><meta name="description" content="توضیح کافی برای این صفحه آزمایشی">' . $head . '</head><body><main>' . $body . '</main></body></html>';
+$cx_pages = [
+	'/'                => $cx_page( 'خانه آزمایشی با عنوان به اندازه کافی بلند', '<h1>یک</h1><h1>دو</h1><a href="/broken/">خراب</a> <a href="/old/">قدیمی</a> <a href="/chain1/">زنجیره</a> <a href="/noidx/">ناایندکس</a> <a href="http://hodima.test/b/">ب</a> <a href="/d1/">عمق</a> <a href="/canbad/">ک</a> <a href="/thin/">کم</a> <img src="/a.jpg"><img src="/b.jpg" alt="دارد"><img src="/c.jpg" alt="تزئینی" aria-hidden="true">' ),
+	'/b/'              => $cx_page( 'صفحه ب با متن کافی و عنوان بلند برای آزمون', '<h1>ب</h1><p>' . $cx_words( 200 ) . '</p><a href="/">خانه</a>', '<link rel="canonical" href="' . $cx_site . '/b/">' ),
+	'/noidx/'          => $cx_page( 'صفحه ناایندکس با عنوان به اندازه کافی بلند', '<h1>ن</h1>', '<meta name="robots" content="noindex"><link rel="canonical" href="' . $cx_site . '/noidx/">' ),
+	'/canbad/'         => $cx_page( 'صفحه با canonical اشتباه و عنوان بلند کافی', '<h1>ک</h1><p>' . $cx_words( 200 ) . '</p>', '<link rel="canonical" href="' . $cx_site . '/broken/">' ),
+	'/thin/'           => $cx_page( 'صفحه کم‌متن با عنوان به اندازه کافی بلند', '<h1>کم</h1><p>' . $cx_words( 30 ) . '</p>', '<link rel="canonical" href="' . $cx_site . '/thin/">' ),
+	'/orphan-sm/'      => $cx_page( 'صفحه فقط در نقشه سایت با عنوان بلند کافی', '<h1>ی</h1><p>' . $cx_words( 200 ) . '</p>', '<link rel="canonical" href="' . $cx_site . '/orphan-sm/">' ),
+];
+foreach ( range( 1, 6 ) as $i ) {
+	$cx_pages[ "/d{$i}/" ] = $cx_page( "عمق {$i} با عنوان به اندازه کافی بلند", "<h1>د{$i}</h1><p>" . $cx_words( 200 ) . '</p>' . ( $i < 6 ? '<a href="/d' . ( $i + 1 ) . '/">بعدی</a>' : '' ), '<link rel="canonical" href="' . $cx_site . "/d{$i}/\">" );
+}
+$cx_sitemap = '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"><url><loc>' . $cx_site . '/</loc></url><url><loc>' . $cx_site . '/b/</loc><image:image><image:loc>' . $cx_site . '/wp-content/uploads/x.jpg</image:loc></image:image></url><url><loc>' . $cx_site . '/in-sitemap-404/</loc></url><url><loc>' . $cx_site . '/orphan-sm/</loc></url><url><loc>https://elsewhere.test/x/</loc></url></urlset>';
+$cx_index   = '<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>' . $cx_site . '/part-sitemap.xml</loc></sitemap></sitemapindex>';
+add_filter(
+	'pre_http_request',
+	$cx_filter = static function ( mixed $pre, array $args, string $url ) use ( &$cx_pages, $cx_site, $cx_sitemap, $cx_index ): mixed {
+		if ( ! str_starts_with( $url, $cx_site ) ) {
+			return $pre;
+		}
+		$path = '/' . ltrim( (string) wp_parse_url( $url, PHP_URL_PATH ), '/' );
+		$xml  = static fn( string $body ): array => [ 'response' => [ 'code' => 200 ], 'headers' => [ 'content-type' => 'application/xml' ], 'body' => $body ];
+		if ( '/sitemap.xml' === $path ) {
+			return $xml( $cx_index );
+		}
+		if ( '/part-sitemap.xml' === $path ) {
+			return $xml( $cx_sitemap );
+		}
+		$redirects = [ '/old/' => '/b/', '/chain1/' => '/chain2/', '/chain2/' => '/b/' ];
+		if ( isset( $redirects[ $path ] ) ) {
+			return [ 'response' => [ 'code' => 301 ], 'headers' => [ 'location' => $cx_site . $redirects[ $path ] ], 'body' => '' ];
+		}
+		if ( isset( $cx_pages[ $path ] ) ) {
+			return [ 'response' => [ 'code' => 200 ], 'headers' => [ 'content-type' => 'text/html; charset=UTF-8' ], 'body' => $cx_pages[ $path ] ];
+		}
+		return [ 'response' => [ 'code' => 404 ], 'headers' => [ 'content-type' => 'text/html' ], 'body' => '<html><head><title>پیدا نشد</title></head><body><h1>404</h1></body></html>' ];
+	},
+	10,
+	3
+);
+add_filter( 'hodima_seo_advisor_crawler_delay', '__return_zero' );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+$cx_pt = hodima_seo_advisor_table( 'crawl_pages' );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $cx_pt ) );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'crawl_links' ) ) );
+$GLOBALS['wpdb']->replace( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/thin/', 'kind' => 'page' ] ); // نوع صفحه از داده گوگل: فقط نوشته/برگه/محصول «متن کم» می‌گیرد
+hodima_seo_advisor_crawler_start();
+$cx_s         = hodima_seo_advisor_crawler_state();
+$cx_s['seed'] = array_values( array_filter( $cx_s['seed'], static fn( string $item ): bool => str_starts_with( $item, 'm:' ) ) ); // نوشته‌های واقعی ابزار تست جدا
+hodima_seo_advisor_crawler_save( $cx_s );
+hodima_seo_advisor_crawler_tick( true );
+$cx_state = hodima_seo_advisor_crawler_state();
+hodima_ad( 'نقشه سایت (فهرست ← فایل ← آدرس‌ها): ۴ آدرس همین سایت؛ بیرونی و تصویر نه', [ array_keys( hodima_seo_advisor_sitemap_paths() ) ], [ [ '/', '/b/', '/in-sitemap-404/', '/orphan-sm/' ] ] );
+hodima_ad( 'دور تمام شد و صفحه فقط-در-نقشه (/orphan-sm/) هم خزیده شد', [ $cx_state['status'], (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT status FROM %i WHERE path = %s', $cx_pt, '/orphan-sm/' ) ) ], [ 'idle', 200 ] );
+$cx_row = (array) $GLOBALS['wpdb']->get_row( $GLOBALS['wpdb']->prepare( 'SELECT * FROM %i WHERE path = %s', $cx_pt, '/' ), ARRAY_A );
+hodima_ad( 'داده تازه صفحه اصلی: ۲ H1، یک تصویر بدون alt (تزئینی و دارای alt نه)، یک لینک http، canonical ندارد، متن کم', [ (int) $cx_row['h1_count'], (int) $cx_row['img_noalt'], (int) $cx_row['http_links'], $cx_row['canonical'], (int) $cx_row['words'] < 20 ], [ 2, 1, 1, '', true ] );
+hodima_ad( 'canonical ذخیره می‌شود (مسیر) و شمار کلمه صفحه بلند', [ $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT canonical FROM %i WHERE path = %s', $cx_pt, '/b/' ) ), (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT words FROM %i WHERE path = %s', $cx_pt, '/b/' ) ) >= 190 ], [ '/b/', true ] );
+$cx_codes = [];
+$cx_items = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $issue_row ) {
+	foreach ( $issue_row['issues'] as $issue ) {
+		$cx_codes[ $issue_row['path'] ][] = $issue['code'];
+		if ( ! empty( $issue['items'] ) ) {
+			$cx_items[ $issue_row['path'] . '|' . $issue['code'] ] = array_column( $issue['items'], 'path' );
+		}
+	}
+}
+$cx_has = static fn( string $path, string $code ): bool => in_array( $code, $cx_codes[ $path ] ?? [], true );
+hodima_ad( 'صفحه اصلی: لینک به خراب، به ریدایرکت، به ناایندکس، چند H1، تصویر بدون alt، لینک http، بدون canonical', array_map( static fn( string $c ): bool => $cx_has( '/', $c ), [ 'link_broken', 'link_redirect', 'link_noindex', 'multi_h1', 'img_alt', 'http_link', 'no_canonical' ] ), [ true, true, true, true, true, true, true ] );
+hodima_ad( 'مقصدهای لینک: خراب فقط /broken/، ریدایرکت‌ها /old/ و /chain1/ (هر کدام یک بار)', [ $cx_items['/|link_broken'] ?? [], $cx_items['/|link_redirect'] ?? [] ], [ [ '/broken/' ], [ '/old/', '/chain1/' ] ] );
+hodima_ad( 'زنجیره ریدایرکت: /chain1/ بله، /old/ نه', [ $cx_has( '/chain1/', 'redirect_chain' ), $cx_has( '/old/', 'redirect_chain' ) ], [ true, false ] );
+hodima_ad( 'canonical به صفحه ۴۰۴ ← canonical_bad؛ صفحه ب سالم نه', [ $cx_has( '/canbad/', 'canonical_bad' ), $cx_has( '/b/', 'canonical_bad' ) ], [ true, false ] );
+hodima_ad( 'نقشه سایت: آدرس ۴۰۴ داخل نقشه ← sitemap_bad؛ صفحه ایندکس‌پذیر بیرون نقشه ← not_in_sitemap؛ صفحه داخل نقشه نه', [ $cx_has( '/in-sitemap-404/', 'sitemap_bad' ), $cx_has( '/thin/', 'not_in_sitemap' ), $cx_has( '/b/', 'not_in_sitemap' ), $cx_has( '/noidx/', 'not_in_sitemap' ) ], [ true, true, false, false ] );
+hodima_ad( 'متن کم فقط برای نوع شناخته‌شده (/thin/ برگه)؛ خانه و صفحه بلند نه', [ $cx_has( '/thin/', 'thin' ), $cx_has( '/', 'thin' ), $cx_has( '/b/', 'thin' ) ], [ true, false, false ] );
+hodima_ad( 'صفحه عمیق: /d5/ و /d6/ (۵ و ۶ کلیک)؛ /d4/ نه', [ $cx_has( '/d5/', 'deep' ), $cx_has( '/d6/', 'deep' ), $cx_has( '/d4/', 'deep' ) ], [ true, true, false ] );
+$cx_chips = HODIMA_SEO_ADVISOR_CRAWL_GROUPS;
+hodima_ad( 'چیپ‌های تازه: لینک اشتباه، تصویر و محتوا، ساختار و نقشه سایت', [ in_array( 'link_broken', $cx_chips['linkfix'], true ), in_array( 'img_alt', $cx_chips['content'], true ), in_array( 'sitemap_bad', $cx_chips['tech'], true ), in_array( 'multi_h1', $cx_chips['title'], true ) ], [ true, true, true, true ] );
+
+// خزش دوباره یک صفحه بعد از رفع: آمار لینک ورودی و عمق می‌ماند، ایراد صفحه برطرف می‌شود
+$cx_inl_b = (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT inlinks FROM %i WHERE path = %s', $cx_pt, '/b/' ) );
+$cx_depth = (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT depth FROM %i WHERE path = %s', $cx_pt, '/d3/' ) );
+hodima_seo_advisor_task_set( '/', 'crawl_link_broken', '', 'لینک خراب', 'done' );
+$cx_pages['/'] = $cx_page( 'خانه آزمایشی با عنوان به اندازه کافی بلند', '<h1>یک</h1><a href="/b/">ب</a> <a href="/d1/">عمق</a>', '<link rel="canonical" href="' . $cx_site . '/">' );
+hodima_seo_advisor_mark_check_now( 'crawl', '/', [ [ 'rule' => 'crawl_link_broken', 'term' => '' ] ] );
+$cx_after = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $issue_row ) {
+	if ( '/' === $issue_row['path'] ) {
+		$cx_after = array_column( $issue_row['issues'], 'code' );
+	}
+}
+hodima_ad( 'بعد از رفع و «انجام دادم»: صفحه دوباره خوانده شد؛ ایرادهای لینک، H1، alt، http و canonical رفتند و کار «برطرف شد» است', [ array_intersect( [ 'link_broken', 'link_redirect', 'link_noindex', 'multi_h1', 'img_alt', 'http_link', 'no_canonical' ], $cx_after ), hodima_seo_advisor_task_state( (array) hodima_seo_advisor_task( '/', 'crawl_link_broken', '' ) ) ], [ [], 'fixed' ] );
+hodima_ad( 'خزش دوباره آمار دور را نگه می‌دارد: لینک ورودی /b/ و عمق /d3/ همان قبل', [ (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT inlinks FROM %i WHERE path = %s', $cx_pt, '/b/' ) ) === $cx_inl_b, (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT depth FROM %i WHERE path = %s', $cx_pt, '/d3/' ) ) === $cx_depth ], [ true, true ] );
+
+remove_filter( 'pre_http_request', $cx_filter, 10 );
+remove_filter( 'hodima_seo_advisor_crawler_delay', '__return_zero' );
+$GLOBALS['wpdb']->delete( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/thin/' ] );
+hodima_seo_advisor_clear_data();
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS );
+false === $cx_crawl ? delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, $cx_crawl, false );
+
 echo "=== ادغام تب‌ها (SEO 3.1.3)\n";
 hodima_ad( 'هشت تب؛ تب‌های حذف‌شده نیستند', [ hodima_seo_advisor_tab_keys(), array_intersect( [ 'done', 'breakdown', 'trend' ], hodima_seo_advisor_tab_keys() ) ], [ [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'settings' ], [] ] );
 hodima_ad( 'پیوند قدیمی: done ← کارها (منتظر نتیجه)، breakdown و trend ← آمار جستجو', [ HODIMA_SEO_ADVISOR_LEGACY_TABS['done'], HODIMA_SEO_ADVISOR_LEGACY_TABS['breakdown'][0], HODIMA_SEO_ADVISOR_LEGACY_TABS['trend'][0] ], [ [ 'tasks', [ 'tstatus' => 'waiting' ] ], 'terms', 'terms' ] );

@@ -50,6 +50,12 @@ const HODIMA_SEO_ADVISOR_CRAWLER_SLOW_MS = 3000;
 /** مدت مکث بعد از کندی سایت یا خطای پی‌درپی (ثانیه). */
 const HODIMA_SEO_ADVISOR_CRAWLER_PAUSE = 1800;
 
+/** آدرس‌های نقشه سایت دور آخر (مسیر یکسان‌شده)؛ autoload نه. */
+const HODIMA_SEO_ADVISOR_SITEMAP_OPTION = 'hodima_advisor_sitemap';
+
+/** سقف تعداد فایل نقشه سایت که در هر دور خوانده می‌شود. */
+const HODIMA_SEO_ADVISOR_CRAWLER_MAX_MAPS = 40;
+
 /** گزینه‌های فاصله دورها (روز). */
 const HODIMA_SEO_ADVISOR_CRAWLER_INTERVALS = [ 1, 3, 7, 14 ];
 
@@ -89,7 +95,7 @@ function hodima_seo_advisor_crawler_in_window( ?int $now = null ): bool {
 /**
  * وضعیت ذخیره‌شده خزش با پیش‌فرض‌ها.
  *
- * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int}
+ * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int}
  */
 function hodima_seo_advisor_crawler_state(): array {
 
@@ -103,6 +109,8 @@ function hodima_seo_advisor_crawler_state(): array {
 		'seed'        => array_values( array_map( 'strval', (array) ( $state['seed'] ?? [] ) ) ),
 		'queue'       => array_values( array_map( 'strval', (array) ( $state['queue'] ?? [] ) ) ),
 		'seen'        => array_map( 'intval', (array) ( $state['seen'] ?? [] ) ),
+		'sitemap'     => array_map( 'intval', (array) ( $state['sitemap'] ?? [] ) ),
+		'maps'        => (int) ( $state['maps'] ?? 0 ),
 		'done'        => (int) ( $state['done'] ?? 0 ),
 		'errors'      => (int) ( $state['errors'] ?? 0 ),
 		'recent'      => array_values( array_map( 'intval', (array) ( $state['recent'] ?? [] ) ) ),
@@ -276,7 +284,7 @@ function hodima_seo_advisor_crawler_link_position( DOMElement $link ): string {
 /**
  * HTML یک صفحه ← عنوان، متا، تیترها، robots، canonical و لینک‌های داخلی.
  *
- * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h2: string, links: list<array{0: string, 1: string, 2: string, 3: int}>}
+ * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
  */
 function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
@@ -324,8 +332,10 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		$canonical = trim( $can_node->getAttribute( 'href' ) );
 	}
 
-	$links = [];
-	$all   = $xpath->query( '//a[@href]' );
+	$links      = [];
+	$http_links = 0;
+	$https_site = str_starts_with( home_url(), 'https://' );
+	$all        = $xpath->query( '//a[@href]' );
 
 	foreach ( false === $all ? [] : $all as $a ) {
 		if ( ! $a instanceof DOMElement ) {
@@ -347,18 +357,58 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 			}
 		}
 
+		if ( $https_site && 1 === preg_match( '#^http://#i', trim( $a->getAttribute( 'href' ) ) ) ) {
+			++$http_links; // لینک داخلی با پروتکل ناامن در سایت https
+		}
+
 		$follow  = str_contains( strtolower( $a->getAttribute( 'rel' ) ), 'nofollow' ) ? 0 : 1;
 		$links[] = [ $target, hodima_seo_advisor_crawler_link_position( $a ), mb_substr( $anchor, 0, 120 ), $follow ];
 	}
 
+	// تصویر محتوای صفحه بدون متن جایگزین (تزئینی با aria-hidden/role=presentation، تصویر ریز و جاگیر base64 حساب نمی‌شود)
+	$img_noalt = 0;
+	$images    = $xpath->query( '//img' );
+	foreach ( false === $images ? [] : $images as $img ) {
+		if ( ! $img instanceof DOMElement || 'content' !== hodima_seo_advisor_crawler_link_position( $img ) ) {
+			continue;
+		}
+		$decor = 'true' === strtolower( $img->getAttribute( 'aria-hidden' ) ) || in_array( strtolower( $img->getAttribute( 'role' ) ), [ 'presentation', 'none' ], true );
+		$tiny  = ( $img->hasAttribute( 'width' ) && (int) $img->getAttribute( 'width' ) <= 2 ) || str_starts_with( trim( $img->getAttribute( 'src' ) ), 'data:image/gif' );
+		if ( ! $decor && ! $tiny && '' === $clean( $img->getAttribute( 'alt' ) ) ) {
+			++$img_noalt;
+		}
+	}
+
+	// شمار کلمه‌های متن اصلی: main، وگرنه article، وگرنه body؛ بدون منو، سربرگ، فوتر، کنار، اسکریپت و استایل
+	$root = '//body';
+	foreach ( [ '//main', '//article' ] as $candidate ) {
+		$found = $xpath->query( $candidate );
+		if ( false !== $found && $found->length > 0 ) {
+			$root = $candidate;
+			break;
+		}
+	}
+	$texts = $xpath->query( "{$root}//text()[not(ancestor::script or ancestor::style or ancestor::noscript or ancestor::nav or ancestor::header or ancestor::footer or ancestor::aside)]" );
+	$plain = '';
+	foreach ( false === $texts ? [] : $texts as $node ) {
+		$plain .= ' ' . $node->textContent;
+	}
+	$words = count( (array) preg_split( '/\s+/u', trim( $plain ), -1, PREG_SPLIT_NO_EMPTY ) );
+
+	$h1_all = $xpath->query( '//h1' );
+
 	return [
-		'title'     => $first( $xpath, '/html/head/title' ),
-		'meta'      => $metas( $xpath, 'description' )[0] ?? '',
-		'robots'    => implode( ', ', $metas( $xpath, 'robots' ) ),
-		'canonical' => $canonical,
-		'h1'        => $first( $xpath, '//h1' ),
-		'h2'        => implode( ' | ', $h2s ),
-		'links'     => $links,
+		'title'      => $first( $xpath, '/html/head/title' ),
+		'meta'       => $metas( $xpath, 'description' )[0] ?? '',
+		'robots'     => implode( ', ', $metas( $xpath, 'robots' ) ),
+		'canonical'  => $canonical,
+		'h1'         => $first( $xpath, '//h1' ),
+		'h1_count'   => false === $h1_all ? 0 : $h1_all->length,
+		'h2'         => implode( ' | ', $h2s ),
+		'words'      => $words,
+		'img_noalt'  => $img_noalt,
+		'http_links' => $http_links,
+		'links'      => $links,
 	];
 }
 
@@ -445,6 +495,11 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'score'      => 0,
 		'redirect'   => $redirect_to,
 		'no_snippet' => hodima_seo_advisor_robots_no_snippet( (string) ( $parsed['robots'] ?? '' ), $x_robots ) ? 1 : 0,
+		'words'      => (int) ( $parsed['words'] ?? -1 ),
+		'h1_count'   => (int) ( $parsed['h1_count'] ?? -1 ),
+		'img_noalt'  => (int) ( $parsed['img_noalt'] ?? -1 ),
+		'http_links' => (int) ( $parsed['http_links'] ?? -1 ),
+		'canonical'  => '' === $canonical ? '' : ( null === $can_path ? '!ext' : $can_path ),
 	];
 }
 
@@ -452,9 +507,10 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
  * یک آدرس صف را می‌خواند و ذخیره می‌کند؛ آدرس‌های داخلی تازه را به صف می‌افزاید.
  *
  * @param array<string, mixed> $state
+ * @param bool                 $keep_stats لینک ورودی، لینک متنی، عمق و امتیاز ردیف قبلی حفظ شود (خزش دوباره یک صفحه، نه دور کامل)
  * @return int|null زمان پاسخ (میلی‌ثانیه) یا null اگر اتصال شکست خورد
  */
-function hodima_seo_advisor_crawler_process( string $url, array &$state ): ?int {
+function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $keep_stats = false ): ?int {
 
 	global $wpdb;
 
@@ -509,10 +565,17 @@ function hodima_seo_advisor_crawler_process( string $url, array &$state ): ?int 
 	}
 
 	$row     = hodima_seo_advisor_crawler_page_row( $key, $status, $fetched['ms'], $parsed, $redirect, $fetched['x_robots'] );
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d)';
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
+
+	if ( $keep_stats ) {
+		$old = $wpdb->get_row( $wpdb->prepare( 'SELECT inlinks, text_links, depth, score FROM %i WHERE path = %s', $page_t, $key ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		if ( is_array( $old ) ) {
+			$row = array_merge( $row, [ 'inlinks' => (int) $old['inlinks'], 'text_links' => (int) $old['text_links'], 'depth' => (int) $old['depth'], 'score' => (float) $old['score'] ] ); // جای کلیدها در ردیف عوض نمی‌شود (درج بر اساس ترتیب است)
+		}
+	}
 
 	hodima_seo_advisor_transaction(
 		static function () use ( $wpdb, $page_t, $link_t, $key, $columns, $format, $row, $links ): bool {
@@ -562,14 +625,22 @@ function hodima_seo_advisor_crawler_start(): void {
 		}
 	}
 
+	// فایل‌های نقشه سایت اول خوانده می‌شوند: هم آدرس‌های نقشه برای سنجش، هم کمک به پیدا شدن صفحه‌های بی‌لینک
+	$maps = [];
+	foreach ( (array) apply_filters( 'hodima_seo_advisor_sitemap_roots', [ home_url( '/sitemap.xml' ) ] ) as $root ) {
+		$maps[] = 'm:' . (string) $root;
+	}
+
 	$old   = hodima_seo_advisor_crawler_state();
 	$state = [
 		'status'      => 'running',
 		'run'         => time(),
 		'started'     => time(),
-		'seed'        => $seed,
+		'seed'        => array_merge( $maps, $seed ),
 		'queue'       => [],
 		'seen'        => [],
+		'sitemap'     => [],
+		'maps'        => 0,
 		'done'        => 0,
 		'errors'      => 0,
 		'recent'      => [],
@@ -582,6 +653,98 @@ function hodima_seo_advisor_crawler_start(): void {
 
 	hodima_seo_advisor_crawler_enqueue( $state, home_url( '/' ) );
 	hodima_seo_advisor_crawler_save( $state );
+}
+
+/**
+ * یک فایل نقشه سایت را می‌خواند: فهرست نقشه‌ها (sitemapindex) فایل‌های زیرمجموعه را به seed می‌افزاید و فهرست آدرس
+ * (urlset) آدرس‌های نقشه را برای سنجش ثبت و به صف خزش می‌دهد. فقط آدرس همین سایت؛ XML بدون بارگیری موجودیت بیرونی.
+ *
+ * @param array<string, mixed> $state
+ * @return int|null زمان پاسخ (میلی‌ثانیه) یا null اگر اتصال شکست خورد
+ */
+function hodima_seo_advisor_crawler_sitemap( string $url, array &$state ): ?int {
+
+	if ( $state['maps'] >= HODIMA_SEO_ADVISOR_CRAWLER_MAX_MAPS || null === hodima_seo_advisor_path_key( $url ) ) {
+		return 0;
+	}
+
+	++$state['maps'];
+	$fetched = hodima_seo_advisor_crawler_fetch( $url );
+
+	if ( null === $fetched ) {
+		return null;
+	}
+
+	if ( 200 !== $fetched['status'] || '' === $fetched['body'] ) {
+		return $fetched['ms'];
+	}
+
+	$previous = libxml_use_internal_errors( true );
+	$dom      = new DOMDocument();
+	$loaded   = $dom->loadXML( $fetched['body'], LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR );
+	libxml_clear_errors();
+	libxml_use_internal_errors( $previous );
+
+	if ( ! $loaded || null === $dom->documentElement ) {
+		return $fetched['ms'];
+	}
+
+	$xpath = new DOMXPath( $dom );
+	$root  = strtolower( $dom->documentElement->localName );
+
+	if ( 'sitemapindex' === $root ) {
+		$children = [];
+		$nodes    = $xpath->query( "//*[local-name()='sitemap']/*[local-name()='loc']" );
+		foreach ( false === $nodes ? [] : $nodes as $node ) {
+			$children[] = 'm:' . trim( $node->textContent );
+		}
+		$state['seed'] = array_merge( $children, $state['seed'] ); // فایل‌های زیرمجموعه پیش از نوشته‌ها
+	} elseif ( 'urlset' === $root ) {
+		$nodes = $xpath->query( "//*[local-name()='url']/*[local-name()='loc']" );
+		foreach ( false === $nodes ? [] : $nodes as $node ) {
+			$loc = trim( $node->textContent );
+			$key = hodima_seo_advisor_path_key( $loc );
+
+			if ( null !== $key && ! hodima_seo_advisor_crawler_should_skip( $key ) && count( $state['sitemap'] ) < HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ) {
+				$state['sitemap'][ $key ] = 1;
+				hodima_seo_advisor_crawler_enqueue( $state, $loc );
+			}
+		}
+	}
+
+	return $fetched['ms'];
+}
+
+/**
+ * آدرس‌های نقشه سایت دور آخر خزنده (مسیر ← true)؛ خالی = نقشه‌ای خوانده نشده.
+ *
+ * @return array<string, true>
+ */
+function hodima_seo_advisor_sitemap_paths(): array {
+
+	$saved = get_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [] );
+
+	return array_fill_keys( array_map( 'strval', is_array( $saved ) ? (array) ( $saved['paths'] ?? [] ) : [] ), true );
+}
+
+/**
+ * یک صفحه را همین الان دوباره می‌خواند و ردیفش (با لینک‌هایش) را به‌روز می‌کند؛ آمار لینک ورودی و عمق همان می‌ماند تا
+ * دور بعد. برای سنجش فوری بعد از «انجام دادم» (advisor-marks.php). false = صفحه در خزش نیست یا خواندن نشد.
+ */
+function hodima_seo_advisor_crawler_recrawl( string $path ): bool {
+
+	$fetch = hodima_seo_advisor_crawler_normalize( home_url( implode( '/', array_map( 'rawurlencode', explode( '/', $path ) ) ) ) );
+
+	if ( null === $fetch || null === hodima_seo_advisor_crawl_row( $path ) ) {
+		return false;
+	}
+
+	$state = [ 'seen' => array_fill( 0, HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES, 1 ), 'queue' => [] ]; // پر = لینک تازه‌ای به صف نمی‌رود (دور واقعی نیست)
+
+	$ms = hodima_seo_advisor_crawler_process( $fetch, $state, true );
+	hodima_seo_advisor_crawl_map( true );
+
+	return null !== $ms;
 }
 
 /**
@@ -690,6 +853,12 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	hodima_seo_advisor_crawl_map( true );
 	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $pages, 'links' => $links, 'files' => [], 'source' => 'crawler' ], false );
 
+	if ( $state['sitemap'] ) {
+		update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => array_map( 'strval', array_keys( $state['sitemap'] ) ) ], false );
+	} else {
+		delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION ); // نقشه‌ای خوانده نشد: ایرادهای نقشه سایت ساخته نمی‌شوند
+	}
+
 	$state['status']   = 'idle';
 	$state['finished'] = time();
 	$state['pages']    = $pages;
@@ -697,6 +866,7 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	$state['seed']     = [];
 	$state['queue']    = [];
 	$state['seen']     = [];
+	$state['sitemap']  = [];
 	$state['recent']   = [];
 
 	hodima_seo_advisor_tasks_sync_crawl();
@@ -751,25 +921,32 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 
 	while ( microtime( true ) < $deadline ) {
 
-		if ( $state['seed'] ) {
-			foreach ( array_splice( $state['seed'], 0, 200 ) as $item ) {
+		if ( $state['seed'] && str_starts_with( $state['seed'][0], 'm:' ) ) {
+			$ms = hodima_seo_advisor_crawler_sitemap( substr( (string) array_shift( $state['seed'] ), 2 ), $state ); // فایل نقشه سایت یک درخواست است (با همان فاصله)
+		} elseif ( $state['seed'] ) {
+			$count = 0;
+			while ( $count < 200 && isset( $state['seed'][ $count ] ) && ! str_starts_with( $state['seed'][ $count ], 'm:' ) ) {
+				++$count;
+			}
+			foreach ( array_splice( $state['seed'], 0, $count ) as $item ) {
 				$url = hodima_seo_advisor_crawler_seed_url( $item );
 				if ( null !== $url ) {
 					hodima_seo_advisor_crawler_enqueue( $state, $url );
 				}
 			}
 			continue;
+		} else {
+			$url = array_shift( $state['queue'] );
+
+			if ( null === $url ) {
+				hodima_seo_advisor_crawler_finalize( $state );
+				$finished = true;
+				break;
+			}
+
+			$ms = hodima_seo_advisor_crawler_process( $url, $state );
 		}
 
-		$url = array_shift( $state['queue'] );
-
-		if ( null === $url ) {
-			hodima_seo_advisor_crawler_finalize( $state );
-			$finished = true;
-			break;
-		}
-
-		$ms = hodima_seo_advisor_crawler_process( $url, $state );
 		++$ran;
 		++$state['done'];
 
