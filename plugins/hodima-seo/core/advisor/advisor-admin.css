@@ -2360,3 +2360,26 @@
 		grid-column: 2;
 	}
 }
+
+/* خزش خودکار (3.1.7): تب‌ها و انتخاب «همه ساعت‌ها» */
+.hodima-advisor .hodima-advisor__crawler-mode {
+	display: grid;
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.hodima-advisor .hodima-advisor__crawler-mode legend {
+	padding: 0;
+	margin-block-end: 0.25rem;
+	font-size: 0.8125rem;
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__crawler-mode label {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-block-size: 2.5rem;
+}

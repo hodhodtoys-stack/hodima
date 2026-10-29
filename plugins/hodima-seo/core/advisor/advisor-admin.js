@@ -137,3 +137,35 @@
 		reader.readAsText(picked);
 	});
 })();
+
+/* ── خزش همین حالا: وقتی دوری در جریان است صفحه گام‌به‌گام آن را پیش می‌برد و وضعیت را تازه می‌کند ── */
+(() => {
+	const box = document.querySelector('[data-hdsa-crawl-live]');
+	if (!box) return;
+
+	const text = box.querySelector('[data-hdsa-crawl-text]');
+	const pill = box.querySelector('[data-hdsa-crawl-pill]');
+	let failures = 0;
+
+	const step = async () => {
+		const body = new URLSearchParams({ action: 'hodima_advisor_crawler_step', _ajax_nonce: box.dataset.hdsaCrawlLive || '' });
+		try {
+			const response = await fetch(box.dataset.hdsaAjax || '', { method: 'POST', credentials: 'same-origin', body });
+			const json = await response.json();
+			if (!json?.success) throw new Error('step');
+			failures = 0;
+			if (text) text.textContent = json.data.text;
+			if (pill) pill.textContent = json.data.label;
+			if (json.data.finished) {
+				location.reload(); // دور تمام شد: نمره و ایرادها تازه
+				return;
+			}
+			if (!json.data.running) return; // مکث یا بیرون از ساعت: صفحه بیهوده نمی‌کوبد
+			setTimeout(step, 1500);
+		} catch {
+			if (++failures < 3) setTimeout(step, 8000); // خطای گذرا: چند بار دوباره
+		}
+	};
+
+	step();
+})();

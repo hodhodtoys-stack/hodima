@@ -150,7 +150,7 @@ function hodima_seo_advisor_score_history(): array {
 	return $out;
 }
 
-/** نمره فعلی را به‌عنوان نتیجه دور خزش ثبت می‌کند (پایان دور خزنده و خواندن فایل Screaming Frog). */
+/** نمره فعلی را به‌عنوان نتیجه دور خزش ثبت می‌کند (پایان هر دور خزنده). */
 function hodima_seo_advisor_score_record(): void {
 
 	global $wpdb;

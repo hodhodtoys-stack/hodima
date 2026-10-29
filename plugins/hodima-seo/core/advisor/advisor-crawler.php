@@ -60,21 +60,23 @@ const HODIMA_SEO_ADVISOR_CRAWLER_MAX_MAPS = 40;
 const HODIMA_SEO_ADVISOR_CRAWLER_INTERVALS = [ 1, 3, 7, 14 ];
 
 /**
- * تنظیمات خزنده. ساعت شروع و پایان برابر = همه ساعت‌ها.
+ * تنظیمات خزنده. `always` = همه ساعت‌های شبانه‌روز (۲۴ ساعته)؛ ساعت شروع و پایان برابر هم همان است (سازگاری با ۳.۱.۴).
+ * ساعت پایان تا ۲۴ (نیمه‌شب) می‌شود؛ پایان کوچک‌تر از شروع یعنی بازه شب تا صبح.
  *
- * @return array{enabled: bool, start: int, end: int, interval: int}
+ * @return array{enabled: bool, always: bool, start: int, end: int, interval: int}
  */
 function hodima_seo_advisor_crawler_settings(): array {
 
 	$saved = get_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [] );
 	$saved = is_array( $saved ) ? $saved : [];
-	$hour  = static fn( mixed $value, int $fallback ): int => max( 0, min( 23, is_numeric( $value ) ? (int) $value : $fallback ) );
+	$hour  = static fn( mixed $value, int $fallback, int $max = 23 ): int => max( 0, min( $max, is_numeric( $value ) ? (int) $value : $fallback ) );
 	$days  = (int) ( $saved['interval'] ?? 7 );
 
 	return [
 		'enabled'  => (bool) ( $saved['enabled'] ?? true ),
+		'always'   => (bool) ( $saved['always'] ?? false ),
 		'start'    => $hour( $saved['start'] ?? null, 2 ),
-		'end'      => $hour( $saved['end'] ?? null, 8 ),
+		'end'      => $hour( $saved['end'] ?? null, 8, 24 ),
 		'interval' => in_array( $days, HODIMA_SEO_ADVISOR_CRAWLER_INTERVALS, true ) ? $days : 7,
 	];
 }
@@ -85,7 +87,7 @@ function hodima_seo_advisor_crawler_in_window( ?int $now = null ): bool {
 	$s    = hodima_seo_advisor_crawler_settings();
 	$hour = (int) wp_date( 'G', $now ?? time() );
 
-	if ( $s['start'] === $s['end'] ) {
+	if ( $s['always'] || $s['start'] === $s['end'] ) {
 		return true;
 	}
 
@@ -95,7 +97,7 @@ function hodima_seo_advisor_crawler_in_window( ?int $now = null ): bool {
 /**
  * وضعیت ذخیره‌شده خزش با پیش‌فرض‌ها.
  *
- * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int}
+ * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int}
  */
 function hodima_seo_advisor_crawler_state(): array {
 
@@ -111,6 +113,7 @@ function hodima_seo_advisor_crawler_state(): array {
 		'seen'        => array_map( 'intval', (array) ( $state['seen'] ?? [] ) ),
 		'sitemap'     => array_map( 'intval', (array) ( $state['sitemap'] ?? [] ) ),
 		'maps'        => (int) ( $state['maps'] ?? 0 ),
+		'manual'      => ! empty( $state['manual'] ),
 		'done'        => (int) ( $state['done'] ?? 0 ),
 		'errors'      => (int) ( $state['errors'] ?? 0 ),
 		'recent'      => array_values( array_map( 'intval', (array) ( $state['recent'] ?? [] ) ) ),
@@ -641,6 +644,7 @@ function hodima_seo_advisor_crawler_start(): void {
 		'seen'        => [],
 		'sitemap'     => [],
 		'maps'        => 0,
+		'manual'      => false,
 		'done'        => 0,
 		'errors'      => 0,
 		'recent'      => [],
@@ -860,6 +864,7 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	}
 
 	$state['status']   = 'idle';
+	$state['manual']   = false;
 	$state['finished'] = time();
 	$state['pages']    = $pages;
 	$state['links']    = $links;
@@ -885,12 +890,12 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 
 	$none     = [ 'ran' => 0, 'finished' => false ];
 	$settings = hodima_seo_advisor_crawler_settings();
+	$state    = hodima_seo_advisor_crawler_state();
+	$manual   = $state['manual'] && 'running' === $state['status']; // «خزش همین حالا»: بی‌توجه به ساعت و روشن بودن
 
-	if ( ! $force && ( ! $settings['enabled'] || ! hodima_seo_advisor_crawler_in_window() ) ) {
+	if ( ! $force && ! $manual && ( ! $settings['enabled'] || ! hodima_seo_advisor_crawler_in_window() ) ) {
 		return $none;
 	}
-
-	$state = hodima_seo_advisor_crawler_state();
 
 	if ( $state['pause_until'] > time() ) {
 		return $none;
@@ -984,6 +989,10 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 	hodima_seo_advisor_crawler_save( $state );
 	hodima_seo_advisor_unlock( HODIMA_SEO_ADVISOR_CRAWLER_LOCK );
 
+	if ( $state['manual'] && 'running' === $state['status'] && $state['pause_until'] <= time() ) {
+		wp_schedule_single_event( time() + 10, HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ $state['done'] ] ); // ادامه زنجیره بدون انتظار برای کرون ۵ دقیقه‌ای (آرگومان متفاوت: وردپرس رویداد هم‌نام نزدیک را تکراری می‌داند)
+	}
+
 	return [ 'ran' => $ran, 'finished' => $finished ];
 }
 
@@ -999,9 +1008,27 @@ function hodima_seo_advisor_crawler_request(): void {
 }
 
 /**
+ * «خزش همین حالا»: دور تازه (یا ادامه دور در جریان) بی‌توجه به ساعت خزش و روشن بودن؛ مکث کندی سایت برداشته می‌شود
+ * ولی همان سرعت آهسته می‌ماند. پیش‌رفتن با کرون (زنجیره ۱۰ ثانیه‌ای) و گام‌های JS صفحه پیشخوان.
+ */
+function hodima_seo_advisor_crawler_start_now(): void {
+
+	if ( 'running' !== hodima_seo_advisor_crawler_state()['status'] ) {
+		hodima_seo_advisor_crawler_start();
+	}
+
+	$state                = hodima_seo_advisor_crawler_state();
+	$state['manual']      = true;
+	$state['pause_until'] = 0;
+	hodima_seo_advisor_crawler_save( $state );
+
+	wp_schedule_single_event( time() + 5, HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ 0 ] );
+}
+
+/**
  * وضعیت برای نمایش: off، waiting (منتظر پنجره یا موعد)، running، paused.
  *
- * @return array{state: string, done: int, queued: int, seeding: int, finished: int, pause_until: int, requested: bool, pages: int}
+ * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, requested: bool, pages: int}
  */
 function hodima_seo_advisor_crawler_status(): array {
 
@@ -1009,16 +1036,19 @@ function hodima_seo_advisor_crawler_status(): array {
 	$state    = hodima_seo_advisor_crawler_state();
 	$label    = 'waiting';
 
-	if ( ! $settings['enabled'] ) {
+	if ( $state['pause_until'] > time() && 'running' === $state['status'] ) {
+		$label = 'paused';
+	} elseif ( 'running' === $state['status'] && ( $state['manual'] || $settings['enabled'] ) ) {
+		$label = 'running';
+	} elseif ( ! $settings['enabled'] ) {
 		$label = 'off';
 	} elseif ( $state['pause_until'] > time() ) {
 		$label = 'paused';
-	} elseif ( 'running' === $state['status'] ) {
-		$label = 'running';
 	}
 
 	return [
 		'state'       => $label,
+		'manual'      => $state['manual'],
 		'done'        => $state['done'],
 		'queued'      => count( $state['queue'] ),
 		'seeding'     => count( $state['seed'] ),
@@ -1041,19 +1071,23 @@ add_filter(
 
 add_action(
 	HODIMA_SEO_ADVISOR_CRAWLER_CRON,
-	static function (): void {
+	static function ( int $step = 0 ): void { // $step فقط برای یکتا کردن رویدادهای زنجیره «خزش همین حالا» است
+		unset( $step );
 		hodima_seo_advisor_crawler_tick();
-	}
+	},
+	10,
+	1
 );
 
 add_action(
 	'init',
 	static function (): void {
-		$scheduled = (bool) wp_next_scheduled( HODIMA_SEO_ADVISOR_CRAWLER_CRON );
-		if ( hodima_seo_advisor_crawler_settings()['enabled'] && ! $scheduled ) {
+		$scheduled = false !== wp_get_schedule( HODIMA_SEO_ADVISOR_CRAWLER_CRON ); // فقط رویداد تکرارشونده (بدون آرگومان)
+		$enabled   = hodima_seo_advisor_crawler_settings()['enabled'];
+		if ( $enabled && ! $scheduled ) {
 			wp_schedule_event( time() + 300, 'hodima_five_minutes', HODIMA_SEO_ADVISOR_CRAWLER_CRON );
-		} elseif ( ! hodima_seo_advisor_crawler_settings()['enabled'] && $scheduled ) {
-			wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_CRAWLER_CRON ); // خاموش شد: رویداد بی‌کار نماند
+		} elseif ( ! $enabled && $scheduled && ! hodima_seo_advisor_crawler_state()['manual'] ) {
+			wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_CRAWLER_CRON ); // خاموش شد: رویداد بی‌کار نماند (مگر «خزش همین حالا» در جریان است)
 		}
 	}
 );
