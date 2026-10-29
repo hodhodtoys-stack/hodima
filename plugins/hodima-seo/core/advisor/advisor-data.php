@@ -932,6 +932,7 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 		delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ); // تنظیمات خزنده (ساعت و فاصله) می‌ماند
 		delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION );
+		delete_option( HODIMA_SEO_ADVISOR_SCORE_OPTION );
 		hodima_seo_advisor_crawl_map( true );
 		wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
 	}

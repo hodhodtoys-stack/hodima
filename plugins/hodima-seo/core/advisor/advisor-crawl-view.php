@@ -288,6 +288,7 @@ function hodima_seo_advisor_render_crawl(): void {
 	$n      = static fn( int|float $value ): string => number_format_i18n( $value );
 	$stale  = $has && time() - $status['imported'] > HODIMA_SEO_ADVISOR_CRAWL_STALE_DAYS * DAY_IN_SECONDS;
 	$issues = $has ? hodima_seo_advisor_crawl_issues() : [];
+	$every  = $issues; // نمره از همه ایرادهاست، نه فقط آنچه علامت نخورده
 	// آمار و چیپ‌ها با همان فهرستی که دیده می‌شود (ایرادهای علامت‌خورده بیرون)
 	[ $issues, $hidden ] = hodima_seo_advisor_crawl_open_issues( $issues, hodima_seo_advisor_show_marked() );
 	$sum    = $has ? hodima_seo_advisor_crawl_summary( $issues ) : [ 'crawled' => 0, 'with_issues' => 0, 'big' => 0, 'low_links' => 0, 'groups' => [] ];
@@ -298,6 +299,10 @@ function hodima_seo_advisor_render_crawl(): void {
 		[ 'label' => 'ایراد در صفحه‌های پرنمایش', 'value' => $has ? esc_html( $n( $sum['big'] ) ) : '—', 'sub' => $has ? esc_html( sprintf( 'بیش از %s نمایش', $n( HODIMA_SEO_ADVISOR_CRAWL_BIG_IMPRESSIONS ) ) ) : '', 'empty' => ! $has ],
 		[ 'label' => 'لینک ورودی کم', 'value' => $has ? esc_html( $n( $sum['low_links'] ) ) : '—', 'sub' => $has ? esc_html( sprintf( '%s لینک یا کمتر', $n( HODIMA_SEO_ADVISOR_CRAWL_LOW_INLINKS ) ) ) : '', 'empty' => ! $has ],
 	], 'خلاصه ایرادهای فنی' );
+
+	if ( $has ) {
+		hodima_seo_advisor_render_score( $every, $sum['crawled'] );
+	}
 
 	hodima_seo_advisor_render_crawler_card();
 
@@ -362,15 +367,15 @@ function hodima_seo_advisor_render_crawl(): void {
 function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $hidden = 0 ): void {
 
 	$n      = static fn( int|float $value ): string => number_format_i18n( $value );
-	$groups = array_keys( HODIMA_SEO_ADVISOR_CRAWL_GROUPS );
 	$group  = isset( $_GET['cf'] ) ? sanitize_key( (string) $_GET['cf'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش
-	$group  = in_array( $group, $groups, true ) ? $group : '';
+	$codes  = hodima_seo_advisor_score_filter_codes( $group ); // گروه چیپ یا بخش نمره (cat-…)؛ ناشناس = همه
+	$group  = $codes ? $group : '';
 	$q      = isset( $_GET['q'] ) ? trim( sanitize_text_field( wp_unslash( (string) $_GET['q'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$paged  = max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 	$rows = array_values( array_filter(
 		$issues,
-		static fn( array $row ): bool => ( '' === $group || array_intersect( array_column( $row['issues'], 'code' ), HODIMA_SEO_ADVISOR_CRAWL_GROUPS[ $group ] ) )
+		static fn( array $row ): bool => ( '' === $group || array_intersect( array_column( $row['issues'], 'code' ), $codes ) )
 			&& ( '' === $q || str_contains( mb_strtolower( rawurldecode( (string) $row['path'] ) ), mb_strtolower( $q ) ) )
 	) );
 
@@ -383,10 +388,15 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $h
 		'redirect' => [ 'ریدایرکت یا noindex', $sum['groups']['redirect'] ?? 0 ],
 		'linkfix'  => [ 'لینک اشتباه', $sum['groups']['linkfix'] ?? 0 ],
 		'content'  => [ 'تصویر و محتوا', $sum['groups']['content'] ?? 0 ],
-		'tech'     => [ 'ساختار و نقشه سایت', $sum['groups']['tech'] ?? 0 ],
+		'tech'     => [ 'canonical و نقشه سایت', $sum['groups']['tech'] ?? 0 ],
 		'links'    => [ 'لینک ورودی کم', $sum['groups']['links'] ?? 0 ],
 		'orphan'   => [ 'بدون لینک ورودی', $sum['groups']['orphan'] ?? 0 ],
 	];
+
+	// فیلتر از کارت «سلامت سایت» (بخش نمره): یک چیپ تازه همراه شمار صفحه‌های دارای ایراد آن بخش
+	if ( str_starts_with( $group, 'cat-' ) ) {
+		$views[ $group ] = [ HODIMA_SEO_ADVISOR_SCORE_CATEGORIES[ $group ]['label'], count( array_filter( $issues, static fn( array $row ): bool => (bool) array_intersect( array_column( $row['issues'], 'code' ), $codes ) ) ) ];
+	}
 
 	$marked = hodima_seo_advisor_show_marked() ? 'all' : '';
 	$url    = static fn( array $args ): string => hodima_seo_advisor_page_url( [ 'tab' => 'crawl', 'tasks' => $marked ] + $args );

@@ -958,6 +958,7 @@ require_once HODIMA_SEO_DIR . '/core/advisor/advisor-trend-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-health-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-crawl-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-score-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-inspect-view.php';
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -3061,6 +3062,67 @@ $GLOBALS['wpdb']->delete( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/thi
 hodima_seo_advisor_clear_data();
 delete_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS );
 false === $cx_crawl ? delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, $cx_crawl, false );
+
+echo "=== سلامت سایت: نمره (SEO 3.1.6)\n";
+$sc_row = static fn( string $path, string ...$codes ): array => [ 'path' => $path, 'issues' => array_map( static fn( string $c ): array => [ 'code' => $c, 'detail' => '', 'url' => '', 'items' => [] ], $codes ) ];
+hodima_ad( 'بدون صفحه خزش‌شده: نمره null', hodima_seo_advisor_score( [], 0 ), null );
+$sc_clean = hodima_seo_advisor_score( [], 100 );
+hodima_ad( 'بدون ایراد: همه بخش‌ها و نمره کل ۱۰۰', [ $sc_clean['score'], array_unique( array_column( $sc_clean['categories'], 'score' ) ), $sc_clean['top'] ], [ 100, [ 100 ], [] ] );
+// ۱۰۰ صفحه، ۵ صفحه با یک ایراد قرمز (لینک خراب) ← بخش لینک‌ها ۱۰۰−۵×۲ = ۹۰؛ نمره کل ۱۰۰−۱۰×۰٫۳ = ۹۷
+$sc_a = hodima_seo_advisor_score( array_map( static fn( int $i ): array => $sc_row( "/p{$i}/", 'link_broken' ), range( 1, 5 ) ), 100 );
+hodima_ad( 'پنج درصد صفحه با ایراد قرمز: بخش لینک‌ها ۹۰، بقیه ۱۰۰، نمره کل ۹۷، اول فهرست همان ایراد', [ $sc_a['categories']['cat-links']['score'], $sc_a['categories']['cat-meta']['score'], $sc_a['score'], $sc_a['top'][0]['code'], $sc_a['top'][0]['pages'], $sc_a['categories']['cat-links']['pages'] ], [ 90, 100, 97, 'link_broken', 5, 5 ] );
+$sc_b = hodima_seo_advisor_score( [ $sc_row( '/x/', 'img_alt', 'multi_h1', 'deep' ), $sc_row( '/y/', 'img_alt' ) ], 10 );
+hodima_ad( 'ایرادهای هم‌سطح: کهربایی ضریب ۱ (۲ صفحه از ۱۰ = ۲۰)، آبی ۰٫۳؛ بخش محتوا ۱۰۰−۲۰−۱۰ = ۷۰ و ساختار ۹۷', [ $sc_b['categories']['cat-content']['score'], $sc_b['categories']['cat-structure']['score'], $sc_b['categories']['cat-content']['pages'] ], [ 70, 97, 2 ] );
+$sc_c = hodima_seo_advisor_score( array_map( static fn( int $i ): array => $sc_row( "/z{$i}/", 'link_broken', 'broken', 'no_meta' ), range( 1, 10 ) ), 10 );
+hodima_ad( 'همه صفحه‌ها ایراد دارند: نمره بخش از صفر پایین‌تر نمی‌رود و نمره کل بین ۰ و ۱۰۰', [ $sc_c['categories']['cat-links']['score'], $sc_c['score'] >= 0 && $sc_c['score'] <= 100, count( $sc_c['top'] ) ], [ 0, true, 3 ] );
+hodima_ad( 'برچسب نمره: ۹۵ عالی، ۸۰ خوب، ۶۰ نیاز به کار (کهربایی)، ۴۰ ضعیف (قرمز)', [ hodima_seo_advisor_score_grade( 95 ), hodima_seo_advisor_score_grade( 80 ), hodima_seo_advisor_score_grade( 60 ), hodima_seo_advisor_score_grade( 40 ) ], [ [ 'label' => 'عالی', 'level' => 'ok' ], [ 'label' => 'خوب', 'level' => 'ok' ], [ 'label' => 'نیاز به کار', 'level' => 'warn' ], [ 'label' => 'ضعیف', 'level' => 'bad' ] ] );
+hodima_ad( 'وزن بخش‌ها ۱۰۰ و هر کد ایراد فقط در یک بخش', [ array_sum( array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'weight' ) ), count( array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) ) ) === count( array_unique( array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) ) ) ) ], [ 100, true ] );
+$sc_all_codes = array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) );
+$sc_issue_codes = array_merge( ...array_values( HODIMA_SEO_ADVISOR_CRAWL_GROUPS ) );
+hodima_ad( 'هر کد ایراد خزش در یکی از بخش‌های نمره است (ایرادی بی‌نمره نمی‌ماند)', array_values( array_diff( $sc_issue_codes, $sc_all_codes ) ), [] );
+hodima_ad( 'فیلتر جدول: گروه چیپ و بخش نمره شناخته می‌شوند، ناشناس نه', [ hodima_seo_advisor_score_filter_codes( 'linkfix' ), in_array( 'slow', hodima_seo_advisor_score_filter_codes( 'cat-speed' ), true ), hodima_seo_advisor_score_filter_codes( 'nope' ) ], [ [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain' ], true, [] ] );
+
+$sc_old = get_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, false );
+$sc_crawl = get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, false );
+delete_option( HODIMA_SEO_ADVISOR_SCORE_OPTION );
+hodima_seo_advisor_ensure_tables();
+$sc_pt = hodima_seo_advisor_table( 'crawl_pages' );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $sc_pt ) );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'crawl_links' ) ) );
+foreach ( range( 1, 4 ) as $i ) {
+	$GLOBALS['wpdb']->insert( $sc_pt, [ 'path' => "/sc{$i}/", 'status' => 200, 'indexable' => 1, 'title' => "عنوان {$i} با طول کافی برای آزمون", 'title_len' => 40, 'meta_len' => 100, 'h1' => "تیتر {$i}", 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
+}
+$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 0 ], [ 'path' => '/sc1/' ] ); // یک صفحه بدون متا
+hodima_seo_advisor_score_record();
+$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 100 ], [ 'path' => '/sc1/' ] ); // رفع شد
+hodima_seo_advisor_score_record();
+$sc_hist = hodima_seo_advisor_score_history();
+hodima_ad( 'تاریخچه: دو دور ثبت شد؛ دور اول با ایراد متا کمتر از دور دوم (بدون ایراد ۱۰۰)', [ count( $sc_hist ), $sc_hist[0]['score'] < $sc_hist[1]['score'], $sc_hist[1]['score'] ], [ 2, true, 100 ] );
+update_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, array_fill( 0, 20, [ 'time' => time(), 'score' => 50 ] ), false );
+hodima_seo_advisor_score_record();
+hodima_ad( 'تاریخچه نهایتا ۱۲ دور', count( hodima_seo_advisor_score_history() ), 12 );
+
+// نمای کارت در تب ایرادهای فنی
+$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 0 ], [ 'path' => '/sc2/' ] );
+update_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, [ [ 'time' => time() - 7 * DAY_IN_SECONDS, 'score' => 80 ], [ 'time' => time() - DAY_IN_SECONDS, 'score' => 90 ] ], false );
+update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time() - 3600, 'pages' => 4, 'links' => 0, 'files' => [], 'source' => 'crawler' ], false );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
+hodima_seo_advisor_store( [ '/sc1/' => [ 'clicks' => 5, 'impressions' => 2000, 'position' => 6.0 ] ], [], [] );
+update_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, $key_json, false );
+wp_set_current_user( 1 );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'crawl' ];
+$sc_html = $cap( static fn() => hodima_seo_advisor_render_admin() );
+hodima_ad( 'کارت سلامت سایت: عنوان، نمره با برچسب، ۵ بخش با پیوند فیلتر، سه کار اول، «نمره چطور حساب می‌شود؟»', [ str_contains( $sc_html, '>سلامت سایت<' ), 1 === substr_count( $sc_html, 'hodima-advisor__sc-gauge ' ), substr_count( $sc_html, 'class="hodima-advisor__sc-cat"' ), str_contains( $sc_html, 'cf=cat-meta' ), str_contains( $sc_html, 'سه کار اول برای بالا بردن نمره' ), str_contains( $sc_html, 'نمره چطور حساب می‌شود؟' ) ], [ true, true, 5, true, true, true ] );
+hodima_ad( 'نمره نسبت به دور قبل: «بدتر» با اختلاف', str_contains( $sc_html, 'امتیاز بدتر از دور قبل' ) || str_contains( $sc_html, 'امتیاز بهتر از دور قبل' ) || str_contains( $sc_html, 'بدون تغییر نسبت به دور قبل' ), true );
+$_GET    = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'crawl', 'cf' => 'cat-meta' ];
+$sc_meta = $cap( static fn() => hodima_seo_advisor_render_admin() );
+hodima_ad( 'فیلتر بخش «عنوان و متا»: چیپ تازه فعال، ردیف /sc2/ با ایراد متا دیده می‌شود', [ str_contains( $sc_meta, 'عنوان و متا' ), str_contains( $sc_meta, '/sc2/' ), 1 === preg_match( '#hodima-advisor__view" href="[^"]*cf=cat-meta"[^>]*aria-current#u', $sc_meta ) ], [ true, true, true ] );
+$_GET = [];
+wp_set_current_user( 0 );
+hodima_ad( 'پاک کردن داده‌های دستار تاریخچه نمره را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), get_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, 'none' ) ], [ true, 'none' ] );
+false === $sc_old ? delete_option( HODIMA_SEO_ADVISOR_SCORE_OPTION ) : update_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, $sc_old, false );
+false === $sc_crawl ? delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, $sc_crawl, false );
+delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION );
 
 echo "=== ادغام تب‌ها (SEO 3.1.3)\n";
 hodima_ad( 'هشت تب؛ تب‌های حذف‌شده نیستند', [ hodima_seo_advisor_tab_keys(), array_intersect( [ 'done', 'breakdown', 'trend' ], hodima_seo_advisor_tab_keys() ) ], [ [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'settings' ], [] ] );

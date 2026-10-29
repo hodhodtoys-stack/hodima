@@ -870,6 +870,7 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	$state['recent']   = [];
 
 	hodima_seo_advisor_tasks_sync_crawl();
+	hodima_seo_advisor_score_record();
 	hodima_seo_advisor_request_reanalyze();
 	hodima_seo_advisor_pipeline_schedule( 60 );
 }
