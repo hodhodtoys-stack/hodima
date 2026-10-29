@@ -845,7 +845,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 
 	$keep = [ 'view' => 'all' === $view ? '' : $view, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'], 'tasks' => $filters['tasks'] ];
 
-	hodima_seo_ui_card_open( 'پیشنهادها', sprintf( 'صفحه‌هایی که با داده %s روز اخیر بیشترین کلیک اضافه را دارند؛ بالاترین‌ها مهم‌ترند. روی «ویرایش و رفع ایرادها» بزنید: در کادر «دستار سئو» پایین صفحه ویرایش، برای هر ایراد نوشته چرا مهم است، دقیقا چه کنید و از کجا بفهمید درست شد. «کلیک بالقوه» تخمین کلیک اضافه بعد از رفع ایراد است.', number_format_i18n( $status['days'] ) ) );
+	hodima_seo_ui_card_open( 'پیشنهادها', sprintf( 'صفحه‌هایی که با داده %s روز اخیر بیشترین کلیک اضافه را دارند؛ بالاترین‌ها مهم‌ترند. روی «بررسی و رفع» بزنید: در کادر «دستار سئو» پایین صفحه ویرایش، برای هر ایراد نوشته چرا مهم است، دقیقا چه کنید و از کجا بفهمید درست شد. «کلیک بالقوه» تخمین کلیک اضافه بعد از رفع ایراد است.', number_format_i18n( $status['days'] ) ) );
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
@@ -910,7 +910,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 	?>
 	<div class="hodima-advisor__table">
 		<div class="hodima-advisor__head" aria-hidden="true">
-			<span>صفحه</span><span>نمایش</span><span>نرخ کلیک</span><span>رتبه</span><span>ایرادها</span><span>کلیک بالقوه</span><span></span>
+			<span>صفحه</span><span>نمایش</span><span>نرخ کلیک</span><span>رتبه</span><span>کلیک بالقوه</span><span></span>
 		</div>
 		<?php foreach ( $result['rows'] as $row ) : ?>
 			<?php hodima_seo_advisor_render_row( $row, $max, 'ignored' === $view ); ?>
@@ -939,21 +939,44 @@ function hodima_seo_advisor_render_list( array $status ): void {
 }
 
 /**
- * یک ردیف فهرست: فقط گزارش تیتری (عنوان صفحه، عددها، همه ایرادها به‌صورت تیتر کوتاه). جزئیات و
- * گام‌های رفع در کادر «دستار سئو» صفحه ویرایش همان آدرس است؛ دکمه ردیف به آنجا می‌برد.
+ * یک ردیف فهرست (SEO 3.1.1، طرح تأییدشده کاربر ۸ آبان ۱۴۰۵): یک ردیف فشرده (صفحه، عددها، کلیک بالقوه، «بررسی و رفع» و منوی «⋯»)
+ * و زیرش یک خط خلاصه پیشنهادها که با «جزئیات» باز می‌شود (تیک هر مورد و دکمه‌های گروهی فقط آنجا). قبلا هر ایراد با تیکش در ستون
+ * باریک می‌شکست و ردیف ≈ ۴۳۰px بود. گام‌های رفع در کادر «دستار سئو» صفحه ویرایش همان آدرس است؛ «بررسی و رفع» به آنجا می‌برد.
+ * بدون JS هم کار می‌کند (details بومی)؛ دکمه‌های منو با ویژگی form به فرم‌های بی‌دکمه ردیف وصل‌اند.
  *
  * @param array<string, mixed> $row
  */
 function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view ): void {
 
+	static $ignore_nonce = null;
+	$ignore_nonce ??= wp_create_nonce( 'hodima_advisor_ignore' );
+
 	$impressions = (int) $row['impressions'];
 	$title       = hodima_seo_advisor_row_title( $row );
 	$ctr         = $impressions > 0 ? $row['clicks'] / $impressions * 100 : 0.0;
 	$expected    = hodima_seo_advisor_expected_ctr( (float) $row['position'] );
-	$advice      = (array) $row['advice'];
+	$advice      = array_values( (array) $row['advice'] );
 	$edit        = $row['object_id'] > 0 ? hodima_seo_advisor_edit_link( (string) $row['kind'], (int) $row['object_id'] ) : '';
+	$site        = hodima_seo_advisor_url( (string) $row['path'] );
 	$form        = hodima_seo_advisor_mark_id();
-	$open        = 0; // ایرادهای بی‌علامت یا هنوز باز: فقط با آن‌ها دکمه‌های «انجام شد / رد شد» معنا دارند
+	$ignore_form = $form . '-ignore';
+	$context     = '' !== $title ? $title : rawurldecode( (string) $row['path'] );
+	$open        = 0; // ایرادهای بی‌علامت یا هنوز باز: فقط با آن‌ها «انجام دادم / لازم نیست» معنا دارد
+
+	// فهرست ایرادها (در بخش جزئیات)؛ شمار بازها همین‌جا معلوم می‌شود تا دکمه‌های منو درست ساخته شوند
+	$items = '';
+	foreach ( $advice as $item ) {
+		$task   = hodima_seo_advisor_task( (string) $row['path'], (string) $item['rule'], (string) $item['term'] );
+		$closed = null !== $task && in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true );
+		$text   = '<span class="hodima-advisor__issue-text">' . esc_html( (string) $item['title'] ) . '</span>' . ( null !== $task ? ' ' . hodima_seo_advisor_task_badge( $task ) : '' );
+		if ( $closed || $ignored_view ) {
+			$inner = '<span class="hodima-advisor__mark-text">' . $text . '</span>';
+		} else {
+			++$open;
+			$inner = hodima_seo_advisor_mark_check( $form, (string) $item['rule'] . '|' . (string) $item['term'], $text );
+		}
+		$items .= '<li data-rule="' . esc_attr( (string) $item['rule'] ) . '"' . ( null !== $task ? ' data-task="' . esc_attr( hodima_seo_advisor_task_state( $task ) ) . '"' : '' ) . '>' . $inner . '</li>';
+	}
 	?>
 	<div class="hodima-advisor__item">
 		<div class="hodima-advisor__grid">
@@ -970,27 +993,6 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 				<small>انتظار ≈ <?php echo esc_html( number_format_i18n( $expected, 1 ) ); ?>٪</small>
 			</span>
 			<span class="hodima-advisor__num" data-label="رتبه"><?php echo esc_html( number_format_i18n( (float) $row['position'], 1 ) ); ?></span>
-			<?php if ( $advice ) : ?>
-				<ul class="hodima-advisor__issues">
-					<?php foreach ( $advice as $item ) : ?>
-						<?php
-						$task   = hodima_seo_advisor_task( (string) $row['path'], (string) $item['rule'], (string) $item['term'] );
-						$closed = null !== $task && in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true );
-						$text   = '<span class="hodima-advisor__issue-text">' . esc_html( (string) $item['title'] ) . '</span>' . ( null !== $task ? ' ' . hodima_seo_advisor_task_badge( $task ) : '' );
-						?>
-						<li data-rule="<?php echo esc_attr( (string) $item['rule'] ); ?>"<?php echo null !== $task ? ' data-task="' . esc_attr( hodima_seo_advisor_task_state( $task ) ) . '"' : ''; ?>>
-							<?php if ( $closed || $ignored_view ) : ?>
-								<span class="hodima-advisor__mark-text"><?php echo $text; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- اجزا escape شدند ?></span>
-							<?php else : ?>
-								<?php ++$open; ?>
-								<?php echo hodima_seo_advisor_mark_check( $form, (string) $item['rule'] . '|' . (string) $item['term'], $text ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- اجزا escape شدند ?>
-							<?php endif; ?>
-						</li>
-					<?php endforeach; ?>
-				</ul>
-			<?php else : ?>
-				<span class="hodima-advisor__issues"><small>نادیده گرفته شده</small></span>
-			<?php endif; ?>
 			<span class="hodima-advisor__potential">
 				<?php if ( $row['potential'] > 0 ) : ?>
 					<strong>≈ <?php echo esc_html( number_format_i18n( (int) $row['potential'] ) ); ?></strong>
@@ -1000,30 +1002,68 @@ function hodima_seo_advisor_render_row( array $row, int $max, bool $ignored_view
 				<?php endif; ?>
 			</span>
 			<span class="hodima-advisor__actions">
-				<?php if ( ! $ignored_view && '' !== $edit ) : ?>
-					<a class="hds-btn" href="<?php echo esc_url( $edit ); ?>">ویرایش و رفع ایرادها</a>
-				<?php elseif ( ! $ignored_view ) : ?>
-					<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( hodima_seo_advisor_url( (string) $row['path'] ) ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> دیدن در سایت</a>
-				<?php endif; ?>
-				<?php if ( $open > 0 ) : ?>
-					<?php hodima_seo_advisor_mark_form( $form, 'opportunities', (string) $row['path'], '' !== $title ? $title : rawurldecode( (string) $row['path'] ) ); ?>
-				<?php endif; ?>
-				<?php // «نادیده گرفتن» کل صفحه کنش فرعی است: پیوند متنی تا ردیف یک کنش اصلی داشته باشد (طرح SEO 3.0.2) ?>
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__ignore">
-					<input type="hidden" name="action" value="hodima_advisor_ignore">
-					<input type="hidden" name="path" value="<?php echo esc_attr( (string) $row['path'] ); ?>">
-					<?php if ( $ignored_view ) : ?>
-						<input type="hidden" name="restore" value="1">
-					<?php endif; ?>
-					<?php wp_nonce_field( 'hodima_advisor_ignore' ); ?>
-					<?php if ( $ignored_view ) : ?>
-						<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-undo" aria-hidden="true"></span>برگردان به فهرست</button>
+				<?php if ( $ignored_view ) : ?>
+					<button type="submit" form="<?php echo esc_attr( $ignore_form ); ?>" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-undo" aria-hidden="true"></span>برگردان به فهرست</button>
+				<?php else : ?>
+					<?php if ( '' !== $edit ) : ?>
+						<a class="hds-btn hodima-advisor__primary" href="<?php echo esc_url( $edit ); ?>">بررسی و رفع</a>
 					<?php else : ?>
-						<button type="submit" class="hodima-advisor__text-btn">این صفحه را نادیده بگیر</button>
+						<a class="hds-btn hds-btn--outline hodima-advisor__primary" href="<?php echo esc_url( $site ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> دیدن در سایت</a>
 					<?php endif; ?>
-				</form>
+					<details class="hodima-advisor__menu">
+						<summary class="hds-btn hds-btn--outline hodima-advisor__menu-btn" aria-label="<?php echo esc_attr( 'کارهای بیشتر برای ' . $context ); ?>"><span class="dashicons dashicons-ellipsis" aria-hidden="true"></span></summary>
+						<div class="hodima-advisor__menu-list">
+							<?php if ( '' !== $edit ) : ?>
+								<a class="hodima-advisor__menu-item" href="<?php echo esc_url( $site ); ?>" target="_blank" rel="noopener">دیدن در سایت</a>
+							<?php endif; ?>
+							<?php if ( $open > 0 ) : ?>
+								<button type="submit" form="<?php echo esc_attr( $form ); ?>" name="status" value="done" class="hodima-advisor__menu-item hodima-advisor__menu-item--ok">همه را انجام دادم</button>
+								<button type="submit" form="<?php echo esc_attr( $form ); ?>" name="status" value="rejected" class="hodima-advisor__menu-item">لازم نیست</button>
+							<?php endif; ?>
+							<button type="submit" form="<?php echo esc_attr( $ignore_form ); ?>" class="hodima-advisor__menu-item hodima-advisor__menu-item--muted">این صفحه را نادیده بگیر</button>
+						</div>
+					</details>
+				<?php endif; ?>
 			</span>
 		</div>
+
+		<?php if ( $advice ) : ?>
+			<details class="hodima-advisor__more">
+				<summary class="hodima-advisor__more-sum">
+					<span class="hds-pill hds-pill--warn"><?php echo esc_html( number_format_i18n( count( $advice ) ) ); ?> پیشنهاد</span>
+					<span class="hodima-advisor__more-first"><?php echo esc_html( (string) $advice[0]['title'] ); ?></span>
+					<span class="hodima-advisor__more-toggle"><span class="hodima-advisor__more-show">جزئیات</span><span class="hodima-advisor__more-hide">بستن</span></span>
+				</summary>
+				<div class="hodima-advisor__more-body">
+					<ul class="hodima-advisor__issues">
+						<?php echo $items; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- اجزا escape شدند ?>
+					</ul>
+					<?php if ( $open > 0 ) : ?>
+						<div class="hodima-advisor__more-acts">
+							<button type="submit" form="<?php echo esc_attr( $form ); ?>" name="status" value="done" class="hds-btn hds-btn--outline hodima-advisor__mark-done" aria-label="<?php echo esc_attr( 'انجام دادم: ' . $context ); ?>"><span class="dashicons dashicons-yes" aria-hidden="true"></span>تیک‌خورده‌ها را انجام دادم</button>
+							<button type="submit" form="<?php echo esc_attr( $form ); ?>" name="status" value="rejected" class="hds-btn hds-btn--outline hodima-advisor__mark-reject" aria-label="<?php echo esc_attr( 'لازم نیست: ' . $context ); ?>">لازم نیست</button>
+							<span class="hodima-advisor__muted">تیک هر موردی را که انجام نمی‌دهید بردارید.</span>
+						</div>
+					<?php endif; ?>
+				</div>
+			</details>
+		<?php else : ?>
+			<p class="hodima-advisor__more-none"><small>نادیده گرفته شده</small></p>
+		<?php endif; ?>
+
+		<?php
+		if ( $open > 0 && ! $ignored_view ) {
+			hodima_seo_advisor_mark_form( $form, 'opportunities', (string) $row['path'], $context, [], false );
+		}
+		?>
+		<form id="<?php echo esc_attr( $ignore_form ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__ignore" hidden>
+			<input type="hidden" name="action" value="hodima_advisor_ignore">
+			<input type="hidden" name="path" value="<?php echo esc_attr( (string) $row['path'] ); ?>">
+			<?php if ( $ignored_view ) : ?>
+				<input type="hidden" name="restore" value="1">
+			<?php endif; ?>
+			<input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $ignore_nonce ); ?>">
+		</form>
 	</div>
 	<?php
 }

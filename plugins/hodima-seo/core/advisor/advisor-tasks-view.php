@@ -59,13 +59,14 @@ function hodima_seo_advisor_mark_check( string $form, string $value, string $lab
  *
  * @param array<string, string> $hidden فیلدهای پنهان دیگر (term، items[] برای ردیف تک‌کاره)
  * @param string                $context نام ردیف برای صفحه‌خوان («انجام شد: …»)
+ * @param bool                  $buttons false: فرم بی‌دکمه و پنهان؛ دکمه‌ها جای دیگر (منوی «⋯» ردیف) با ویژگی form به آن وصل‌اند (SEO 3.1.1)
  */
-function hodima_seo_advisor_mark_form( string $id, string $source, string $path, string $context, array $hidden = [] ): void {
+function hodima_seo_advisor_mark_form( string $id, string $source, string $path, string $context, array $hidden = [], bool $buttons = true ): void {
 
 	static $nonce = null;
 	$nonce ??= wp_create_nonce( 'hodima_advisor_mark' ); // یک بار؛ wp_nonce_field در ده‌ها فرم شناسه تکراری _wpnonce می‌ساخت
 	?>
-	<form id="<?php echo esc_attr( $id ); ?>" class="hodima-advisor__mark" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+	<form id="<?php echo esc_attr( $id ); ?>" class="hodima-advisor__mark" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"<?php echo $buttons ? '' : ' hidden'; ?>>
 		<input type="hidden" name="action" value="hodima_advisor_mark">
 		<input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
 		<?php wp_referer_field(); ?>
@@ -74,8 +75,10 @@ function hodima_seo_advisor_mark_form( string $id, string $source, string $path,
 		<?php foreach ( $hidden as $name => $value ) : ?>
 			<input type="hidden" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( $value ); ?>">
 		<?php endforeach; ?>
+		<?php if ( $buttons ) : ?>
 		<button type="submit" name="status" value="done" class="hds-btn hds-btn--outline hodima-advisor__mark-done" aria-label="<?php echo esc_attr( 'انجام دادم: ' . $context ); ?>"><span class="dashicons dashicons-yes" aria-hidden="true"></span>انجام دادم</button>
 		<button type="submit" name="status" value="rejected" class="hds-btn hds-btn--outline hodima-advisor__mark-reject" aria-label="<?php echo esc_attr( 'لازم نیست: ' . $context ); ?>">لازم نیست</button>
+		<?php endif; ?>
 	</form>
 	<?php
 }

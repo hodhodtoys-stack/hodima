@@ -22,6 +22,21 @@
 		});
 	});
 
+	/* ── منوی «⋯» ردیف پیشنهادها (details): با کلیک بیرون یا Esc بسته می‌شود؛ بدون JS هم باز و بسته می‌شود ── */
+	document.addEventListener('click', (event) => {
+		const inside = event.target instanceof Element ? event.target.closest('.hodima-advisor__menu') : null;
+		document.querySelectorAll('.hodima-advisor__menu[open]').forEach((menu) => {
+			if (menu !== inside) menu.removeAttribute('open');
+		});
+	});
+	document.addEventListener('keydown', (event) => {
+		if (event.key !== 'Escape') return;
+		document.querySelectorAll('.hodima-advisor__menu[open]').forEach((menu) => {
+			menu.removeAttribute('open');
+			menu.querySelector('summary')?.focus();
+		});
+	});
+
 	/* ── «بررسی لینک‌ها» زیر هر گروه رقابت: HTML نتیجه (escape‌شده در سرور) از admin-ajax می‌آید ── */
 	document.addEventListener('click', async (event) => {
 		const button = event.target instanceof Element ? event.target.closest('[data-hdsa-links-run]') : null;
