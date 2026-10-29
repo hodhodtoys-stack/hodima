@@ -2068,3 +2068,36 @@
 .hodima-advisor .hodima-advisor__subhead--ok {
 	color: var(--hd-ok, #1f7a4d);
 }
+
+/* خزنده شبانه (3.1.4): جمع‌شونده تنظیم زمان */
+.hodima-advisor .hodima-advisor__crawler-more {
+	margin-block-start: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__crawler-more > summary {
+	min-block-size: 2.5rem;
+	display: flex;
+	align-items: center;
+	color: var(--hd-primary);
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.hodima-advisor .hodima-advisor__crawler-form {
+	display: grid;
+	gap: 0.875rem;
+	padding-block: 0.5rem;
+}
+
+.hodima-advisor .hodima-advisor__crawler-fields {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+	gap: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__crawler-field {
+	display: grid;
+	gap: 0.375rem;
+	font-size: 0.8125rem;
+	font-weight: 700;
+}

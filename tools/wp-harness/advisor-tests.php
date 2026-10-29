@@ -2819,6 +2819,144 @@ false === $p3_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_
 false === $p3_status ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $p3_status, false );
 wp_set_current_user( 0 );
 
+echo "=== خزنده شبانه (SEO 3.1.4)\n";
+$cw_site     = untrailingslashit( home_url() );
+$cw_settings = get_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, false );
+$cw_state    = get_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, false );
+$cw_crawl    = get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, false );
+$cw_at       = static fn( string $when ): int => ( new DateTimeImmutable( $when, wp_timezone() ) )->getTimestamp();
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
+hodima_ad( 'پنجره ۲ تا ۸: ۰۳:۰۰ داخل، ۱۲:۰۰ و ۰۸:۰۰ بیرون', [ hodima_seo_advisor_crawler_in_window( $cw_at( '2026-10-29 03:00' ) ), hodima_seo_advisor_crawler_in_window( $cw_at( '2026-10-29 12:00' ) ), hodima_seo_advisor_crawler_in_window( $cw_at( '2026-10-29 08:00' ) ) ], [ true, false, false ] );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'start' => 22, 'end' => 6, 'interval' => 7 ], false );
+hodima_ad( 'پنجره از شب تا صبح (۲۲ تا ۶): ۲۳:۳۰ و ۰۱:۰۰ داخل، ۱۴:۰۰ بیرون', [ hodima_seo_advisor_crawler_in_window( $cw_at( '2026-10-29 23:30' ) ), hodima_seo_advisor_crawler_in_window( $cw_at( '2026-10-29 01:00' ) ), hodima_seo_advisor_crawler_in_window( $cw_at( '2026-10-29 14:00' ) ) ], [ true, true, false ] );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'start' => 5, 'end' => 5, 'interval' => 99 ], false );
+hodima_ad( 'ساعت شروع و پایان برابر = همه ساعت‌ها؛ فاصله نامعتبر ← ۷ روز', [ hodima_seo_advisor_crawler_in_window( $cw_at( '2026-10-29 15:00' ) ), hodima_seo_advisor_crawler_settings()['interval'] ], [ true, 7 ] );
+hodima_ad( 'کرون هر ۵ دقیقه ثبت شده', wp_get_schedules()['hodima_five_minutes']['interval'] ?? 0, 300 );
+
+$cw_u = static fn( string $href, string $base = '' ): ?string => hodima_seo_advisor_crawler_resolve( $href, '' === $base ? $cw_site . '/dir/page/' : $base );
+hodima_ad( 'آدرس لینک: نسبی، ریشه‌ای، کامل، بدون پروتکل و پوشه بالاتر', [ $cw_u( '../x/' ), $cw_u( '/y/' ), $cw_u( 'z/' ), $cw_u( '//cdn.test/a/' ), $cw_u( 'https://other.test/p/?q=1#f' ) ], [ $cw_site . '/dir/x/', $cw_site . '/y/', $cw_site . '/dir/page/z/', 'https://cdn.test/a/', 'https://other.test/p/?q=1' ] );
+hodima_ad( 'لینک غیرصفحه: #، mailto، tel، javascript، خالی', [ $cw_u( '#top' ), $cw_u( 'mailto:a@b.test' ), $cw_u( 'tel:0912' ), $cw_u( 'javascript:void(0)' ), $cw_u( '' ) ], [ null, null, null, null, null ] );
+hodima_ad( 'نخزیدن: پارامتردار، فایل، wp-admin، خارجی؛ می‌خزد: صفحه معمولی با حروف مسیر', [ hodima_seo_advisor_crawler_normalize( $cw_site . '/a/?x=1' ), hodima_seo_advisor_crawler_normalize( $cw_site . '/a.pdf' ), hodima_seo_advisor_crawler_normalize( $cw_site . '/wp-admin/x/' ), hodima_seo_advisor_crawler_normalize( 'https://other.test/a/' ), hodima_seo_advisor_crawler_normalize( $cw_site . '/Hair-Clips/' ) ], [ null, null, null, null, $cw_site . '/Hair-Clips/' ] );
+
+$cw_html = '<!doctype html><html><head><title>  صفحه   نمونه </title><meta name="Description" content="توضیح نمونه"><meta name="robots" content="noindex, max-snippet:0"><link rel="canonical" href="' . $cw_site . '/other/"></head><body>'
+	. '<header><a href="/menu/">منو</a></header><nav class="main-menu"><a href="/nav/">ناو</a></nav>'
+	. '<main><h1>تیتر اصلی</h1><h2>یک</h2><h2>دو</h2><h2>سه</h2><p><a href="/in/">متن لینک</a> <a rel="nofollow" href="/nf/">بدون دنبال</a> <a href="/img/"><img src="x.jpg" alt="تصویر لینک"></a></p></main>'
+	. '<div class="sidebar-box"><a href="/side/">کنار</a></div><footer><a href="/foot/">فوتر</a></footer></body></html>';
+$cw_p     = hodima_seo_advisor_crawler_parse( $cw_html, $cw_site . '/p/' );
+$cw_pos   = array_column( array_map( static fn( array $l ): array => [ hodima_seo_advisor_path_key( $l[0] ), $l[1] . ( 0 === $l[3] ? ':nf' : '' ) ], $cw_p['links'] ), 1, 0 );
+hodima_ad( 'خواندن HTML: عنوان یکدست‌شده، متا، robots، canonical، H1 و دو H2 اول', [ $cw_p['title'], $cw_p['meta'], $cw_p['robots'], $cw_p['canonical'], $cw_p['h1'], $cw_p['h2'] ], [ 'صفحه نمونه', 'توضیح نمونه', 'noindex, max-snippet:0', $cw_site . '/other/', 'تیتر اصلی', 'یک | دو' ] );
+hodima_ad( 'جایگاه لینک‌ها: منو، ناو، متن، nofollow، تصویر، کنار، فوتر', $cw_pos, [ '/menu/' => 'navigation', '/nav/' => 'navigation', '/in/' => 'content', '/nf/' => 'content:nf', '/img/' => 'content', '/side/' => 'aside', '/foot/' => 'footer' ] );
+hodima_ad( 'متن لینک تصویری از alt', array_column( $cw_p['links'], 2, 0 )[ $cw_site . '/img/' ] ?? '', 'تصویر لینک' );
+$cw_row = hodima_seo_advisor_crawler_page_row( '/p/', 200, 120, $cw_p, '', '' );
+hodima_ad( 'ردیف صفحه noindex: غیرایندکس‌پذیر با علت، طول عنوان، max-snippet:0', [ $cw_row['indexable'], $cw_row['reason'], $cw_row['title_len'], $cw_row['no_snippet'] ], [ 0, 'Noindex', 10, 1 ] );
+$cw_row2 = hodima_seo_advisor_crawler_page_row( '/p/', 200, 120, [ 'canonical' => $cw_site . '/p/' ] + $cw_p + [], '', '' );
+
+// سایت ساختگی
+$cw_pages = [
+	'/'          => '<html><head><title>خانه با عنوان خیلی بلند برای آزمون خزنده</title><meta name="description" content="توضیح"></head><body><nav><a href="/a/">آ</a></nav><main><h1>خانه</h1><a href="/b/">ب</a> <a href="/old/">قدیمی</a> <a href="c/">ث</a> <a href="https://example.com/x/">بیرون</a> <a href="/a/?x=1">پارامتر</a> <a href="/file.pdf">فایل</a> <a href="mailto:a@b.test">ایمیل</a> <a href="#top">بالا</a></main><footer><a href="/about/">درباره</a></footer></body></html>',
+	'/a/'        => '<html><head><title>صفحه آ</title><meta name="robots" content="noindex"></head><body><main><h1>آ</h1><a href="/b/">ب</a> <a rel="nofollow" href="/c/">ث</a></main></body></html>',
+	'/b/'        => '<html><head><title>صفحه ب</title><link rel="canonical" href="' . $cw_site . '/a/"></head><body><main><h1>ب</h1><a href="/a/">آ</a></main></body></html>',
+	'/about/'    => '<html><head><title>درباره</title></head><body><main><h1>درباره</h1></main></body></html>',
+];
+$cw_requested = [];
+$cw_mode      = 'site';
+add_filter(
+	'pre_http_request',
+	$cw_filter = static function ( mixed $pre, array $args, string $url ) use ( &$cw_requested, &$cw_mode, $cw_site, $cw_pages ): mixed {
+		if ( ! str_starts_with( $url, $cw_site ) ) {
+			return $pre;
+		}
+		$cw_requested[] = $url;
+		if ( 'down' === $cw_mode ) {
+			return new WP_Error( 'http_request_failed', 'timeout' );
+		}
+		$path = '/' . ltrim( (string) wp_parse_url( $url, PHP_URL_PATH ), '/' );
+		if ( '/old/' === $path ) {
+			return [ 'response' => [ 'code' => 301 ], 'headers' => [ 'location' => $cw_site . '/b/' ], 'body' => '' ];
+		}
+		if ( isset( $cw_pages[ $path ] ) ) {
+			return [ 'response' => [ 'code' => 200 ], 'headers' => [ 'content-type' => 'text/html; charset=UTF-8' ], 'body' => $cw_pages[ $path ] ];
+		}
+		return [ 'response' => [ 'code' => 404 ], 'headers' => [ 'content-type' => 'text/html' ], 'body' => '<html><head><title>پیدا نشد</title></head><body><h1>۴۰۴</h1></body></html>' ];
+	},
+	10,
+	3
+);
+add_filter( 'hodima_seo_advisor_crawler_delay', '__return_zero' );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+hodima_seo_advisor_ensure_tables();
+$cw_t = hodima_seo_advisor_table( 'crawl_pages' );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $cw_t ) );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'crawl_links' ) ) );
+$GLOBALS['wpdb']->insert( $cw_t, [ 'path' => '/gone/', 'status' => 200 ] ); // صفحه دور قبل که حالا نیست
+
+hodima_seo_advisor_crawler_start();
+$cw_started = hodima_seo_advisor_crawler_state();
+hodima_ad( 'شروع دور: صف با صفحه اصلی، نوشته‌ها و دسته‌ها در فهرست seed', [ $cw_started['status'], array_map( static fn( string $u ): ?string => hodima_seo_advisor_path_key( $u ), $cw_started['queue'] ), (bool) $cw_started['seed'] ], [ 'running', [ '/' ], true ] );
+$cw_s         = $cw_started;
+$cw_s['seed'] = []; // آزمون فقط با سایت ساختگی؛ seed واقعی بعدا جدا
+hodima_seo_advisor_crawler_save( $cw_s );
+
+$cw_out = hodima_seo_advisor_crawler_tick( true );
+$cw_rows = [];
+foreach ( (array) $GLOBALS['wpdb']->get_results( $GLOBALS['wpdb']->prepare( 'SELECT * FROM %i', $cw_t ), ARRAY_A ) as $r ) {
+	$cw_rows[ $r['path'] ] = $r;
+}
+ksort( $cw_rows );
+hodima_ad( 'دور کامل در یک نوبت تمام شد؛ صفحه‌ها: خانه، آ، ب، قدیمی، ث، درباره (بدون پارامتر، فایل، بیرونی؛ صفحه دور قبل پاک)', [ $cw_out['finished'], array_keys( $cw_rows ) ], [ true, [ '/', '/a/', '/about/', '/b/', '/c/', '/old/' ] ] );
+hodima_ad( 'درخواست‌ها فقط برای آدرس‌های داخلی بدون پارامتر و فایل (هر آدرس یک‌بار)', [ count( $cw_requested ), count( array_unique( $cw_requested ) ) ], [ 6, 6 ] );
+hodima_ad( 'وضعیت‌ها: ۲۰۰، noindex، canonical دیگر، ریدایرکت ۳۰۱ به /b/، ۴۰۴', [ array_map( static fn( string $p ): array => [ (int) $cw_rows[ $p ]['status'], (int) $cw_rows[ $p ]['indexable'], $cw_rows[ $p ]['reason'], $cw_rows[ $p ]['redirect_to'] ], [ '/', '/a/', '/b/', '/old/', '/c/' ] ) ], [ [ [ 200, 1, '', '' ], [ 200, 0, 'Noindex', '' ], [ 200, 0, 'Canonicalised', '' ], [ 301, 0, 'Redirected', '/b/' ], [ 404, 0, '', '' ] ] ] );
+hodima_ad( 'عنوان و متا و H1 خانه ذخیره شد', [ $cw_rows['/']['title_len'] > 30, (int) $cw_rows['/']['meta_len'], $cw_rows['/']['h1'] ], [ true, 5, 'خانه' ] );
+hodima_ad( 'لینک ورودی یکتا: /b/ از خانه و آ (۲)، /c/ از خانه و آ (۲؛ یکی nofollow)، /a/ از خانه و ب', [ (int) $cw_rows['/b/']['inlinks'], (int) $cw_rows['/c/']['inlinks'], (int) $cw_rows['/a/']['inlinks'] ], [ 2, 2, 2 ] );
+hodima_ad( 'لینک متنی (محتوا و follow): /b/ دو، /c/ یکی (فقط از خانه؛ آ nofollow)، /a/ دو (از ب و از لینک پارامتری «/a/?x=1» خانه که به همان صفحه می‌رسد؛ لینک منوی خانه حساب نمی‌شود)', [ (int) $cw_rows['/b/']['text_links'], (int) $cw_rows['/c/']['text_links'], (int) $cw_rows['/a/']['text_links'] ], [ 2, 1, 2 ] );
+hodima_ad( 'عمق: خانه ۰؛ آ، ب، قدیمی، ث، درباره ۱', array_map( static fn( string $p ): int => (int) $cw_rows[ $p ]['depth'], [ '/', '/a/', '/b/', '/old/', '/c/', '/about/' ] ), [ 0, 1, 1, 1, 1, 1 ] );
+$cw_after = hodima_seo_advisor_crawler_state();
+hodima_ad( 'بعد از دور: بیکار، تمام‌شده ثبت، صف و seen خالی؛ وضعیت صفحه «ایرادهای فنی» از خزنده', [ $cw_after['status'], $cw_after['finished'] > 0, $cw_after['queue'], $cw_after['seen'], hodima_seo_advisor_crawl_status()['pages'], get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION )['source'] ?? '' ], [ 'idle', true, [], [], 6, 'crawler' ] );
+$cw_codes = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $issue_row ) {
+	foreach ( $issue_row['issues'] as $issue ) {
+		$cw_codes[ $issue_row['path'] ][] = $issue['code'];
+	}
+}
+hodima_ad( 'ایرادهای موجود روی داده خزنده کار می‌کنند: خانه بدون H1 نیست، /about/ بدون متا، /b/ ریدایرکت نه', [ in_array( 'no_meta', $cw_codes['/about/'] ?? [], true ), in_array( 'no_h1', $cw_codes['/'] ?? [], true ), isset( $cw_codes['/old/'] ) ], [ true, false, true ] );
+
+$cw_requested = [];
+$cw_again     = hodima_seo_advisor_crawler_tick();
+hodima_ad( 'بیرون از موعد (دور تازه تمام شده): نوبت بعدی هیچ درخواستی نمی‌زند', [ $cw_again['ran'], count( $cw_requested ) ], [ 0, 0 ] );
+hodima_seo_advisor_crawler_request();
+hodima_ad( 'درخواست دستی «خزش تازه» ثبت می‌شود', hodima_seo_advisor_crawler_status()['requested'], true );
+hodima_seo_advisor_crawler_start();
+hodima_ad( 'شروع دور بعد درخواست را برمی‌دارد', hodima_seo_advisor_crawler_state()['requested'], false );
+
+// سایت از دسترس خارج: پنج خطای پی‌درپی ← مکث نیم‌ساعته؛ مکث ← هیچ درخواستی
+$cw_s          = hodima_seo_advisor_crawler_state();
+$cw_s['seed']  = [];
+$cw_s['queue'] = array_map( static fn( int $i ): string => $cw_site . '/p' . $i . '/', range( 1, 8 ) ); // پنج خطا ← مکث، پیش از ته‌کشیدن صف
+hodima_seo_advisor_crawler_save( $cw_s );
+$cw_mode      = 'down';
+$cw_requested = [];
+hodima_seo_advisor_crawler_tick( true );
+$cw_paused = hodima_seo_advisor_crawler_state();
+hodima_ad( 'سایت پاسخ نمی‌دهد: خزنده به‌جای کوبیدن، مکث می‌کند (وضعیت «paused»)', [ $cw_paused['pause_until'] > time() + 1000, hodima_seo_advisor_crawler_status()['state'], 'running' === $cw_paused['status'] ], [ true, 'paused', true ] );
+$cw_requested = [];
+hodima_seo_advisor_crawler_tick( true );
+hodima_ad( 'در مکث نوبت‌ها درخواستی نمی‌زنند', count( $cw_requested ), 0 );
+
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => false, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
+$cw_s                = hodima_seo_advisor_crawler_state();
+$cw_s['pause_until'] = 0;
+hodima_seo_advisor_crawler_save( $cw_s );
+$cw_requested = [];
+hodima_ad( 'خاموش: نوبت چیزی نمی‌خزد و وضعیت «off»', [ hodima_seo_advisor_crawler_tick()['ran'], count( $cw_requested ), hodima_seo_advisor_crawler_status()['state'] ], [ 0, 0, 'off' ] );
+hodima_ad( 'پاک کردن داده‌های دستار وضعیت خزنده را پاک می‌کند ولی تنظیمات می‌ماند', [ hodima_seo_advisor_clear_data(), get_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, 'none' ), get_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS )['enabled'] ?? null ], [ true, 'none', false ] );
+
+remove_filter( 'pre_http_request', $cw_filter, 10 );
+remove_filter( 'hodima_seo_advisor_crawler_delay', '__return_zero' );
+false === $cw_settings ? delete_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS ) : update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, $cw_settings, false );
+false === $cw_state ? delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, $cw_state, false );
+false === $cw_crawl ? delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, $cw_crawl, false );
+
 echo "=== ادغام تب‌ها (SEO 3.1.3)\n";
 hodima_ad( 'هشت تب؛ تب‌های حذف‌شده نیستند', [ hodima_seo_advisor_tab_keys(), array_intersect( [ 'done', 'breakdown', 'trend' ], hodima_seo_advisor_tab_keys() ) ], [ [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'settings' ], [] ] );
 hodima_ad( 'پیوند قدیمی: done ← کارها (منتظر نتیجه)، breakdown و trend ← آمار جستجو', [ HODIMA_SEO_ADVISOR_LEGACY_TABS['done'], HODIMA_SEO_ADVISOR_LEGACY_TABS['breakdown'][0], HODIMA_SEO_ADVISOR_LEGACY_TABS['trend'][0] ], [ [ 'tasks', [ 'tstatus' => 'waiting' ] ], 'terms', 'terms' ] );

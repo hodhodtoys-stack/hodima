@@ -239,7 +239,9 @@ function hodima_seo_advisor_refresh_extras(): array {
 	if ( function_exists( 'hodima_seo_advisor_crawl_import' ) ) {
 		$file     = hodima_seo_advisor_crawl_file_state( 'pages' );
 		$imported = hodima_seo_advisor_crawl_status()['imported'];
-		if ( 'ready' === $file['state'] && $file['mtime'] > $imported ) {
+		// خزنده داخلی (3.1.4) منبع داده است: فایل قدیمی Screaming Frog خودکار روی آن نمی‌نشیند (دکمه دستی همچنان کار می‌کند)
+		$crawler_source = 'crawler' === (string) ( get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [] )['source'] ?? '' );
+		if ( ! $crawler_source && 'ready' === $file['state'] && $file['mtime'] > $imported ) {
 			$crawl = hodima_seo_advisor_crawl_import();
 			$out[] = is_wp_error( $crawl ) ? 'فایل خزش تازه خوانده نشد: ' . $crawl->get_error_message() : sprintf( 'فایل خزش تازه خوانده شد (%s صفحه).', number_format_i18n( $crawl['pages'] ) );
 		}
