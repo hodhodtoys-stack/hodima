@@ -136,7 +136,7 @@ function hodima_seo_advisor_install_tables(): void {
 		) {$charset};"
 	);
 
-	// سلامت خزش (advisor-crawl.php): خروجی Screaming Frog، مستقل از منبع
+	// سلامت خزش (advisor-crawl.php): داده خزنده داخلی
 	$crawl_pages = hodima_seo_advisor_table( 'crawl_pages' );
 	$crawl_links = hodima_seo_advisor_table( 'crawl_links' );
 

@@ -964,7 +964,7 @@ require_once HODIMA_SEO_DIR . '/core/advisor/advisor-trend-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-health-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-crawl-view.php';
-require_once __DIR__ . '/advisor-sf-fixture.php'; // ورود Screaming Frog از افزونه برداشته شد؛ آزمون‌ها با همین خواننده CSV داده خزش می‌سازند
+require_once __DIR__ . '/advisor-crawl-fixture.php'; // آزمون‌ها با همین خواننده CSV نمونه داده خزش می‌سازند (خزنده داخلی داده واقعی را می‌نویسد)
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-score-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-inspect-view.php';
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 7, 'queries' => 6, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
@@ -1610,7 +1610,7 @@ hodima_ad( 'صفحه‌بندی: صفحه جاری aria-current و بدون لی
 $_GET = [];
 delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION ); // کلید آزمایشی این بخش نماند (اجرای بعدی آزمون را خراب می‌کرد)
 
-echo "=== سلامت خزش: خواندن فایل‌های Screaming Frog و ایرادها\n";
+echo "=== سلامت خزش: خواندن فایل‌های CSV نمونه و ایرادها\n";
 $crawl_dir = sys_get_temp_dir() . '/hodima-crawl-test-' . getmypid();
 @mkdir( $crawl_dir );
 $crawl_filter = static fn(): string => $crawl_dir;
@@ -1679,12 +1679,12 @@ $sm = hodima_seo_advisor_crawl_summary( hodima_seo_advisor_crawl_issues() );
 hodima_ad( 'آمار: خزش‌شده، دارای ایراد، پرنمایش، لینک کم', [ $sm['crawled'], $sm['with_issues'], $sm['big'], $sm['low_links'] ], [ 8, 6, 2, 2 ] );
 hodima_ad( 'گروه‌های فیلتر شمرده می‌شوند', [ $sm['groups']['meta'], $sm['groups']['title'], $sm['groups']['dup'], $sm['groups']['slow'], $sm['groups']['redirect'], $sm['groups']['orphan'] ], [ 1, 1, 2, 1, 1, 1 ] );
 
-// فایل واقعی SF: BOM + عنوان ستون‌ها و همه مقدارها در گیومه (باگ ۲.۸.۱)
+// فایل نمونه با BOM + عنوان ستون‌ها و همه مقدارها در گیومه (باگ ۲.۸.۱)
 copy( "{$crawl_dir}/internal_html.csv", "{$crawl_dir}/backup.tmp" );
 file_put_contents( "{$crawl_dir}/internal_html.csv", "\xEF\xBB\xBF" . '"Address","Status Code","Indexability","Title 1","Title 1 Length","Meta Description 1 Length","Unique Inlinks"' . "\r\n" . '"' . $u( '/quoted/' ) . '","200","Indexable","' . $long . '","' . mb_strlen( $long ) . '","130","5"' . "\r\n" );
 touch( "{$crawl_dir}/internal_html.csv", time() - 3600 );
 $quoted = hodima_seo_advisor_crawl_import();
-hodima_ad( 'فایل SF با BOM و گیومه خوانده می‌شود', is_wp_error( $quoted ) ? $quoted->get_error_message() : $quoted['pages'], 1 );
+hodima_ad( 'فایل نمونه با BOM و گیومه خوانده می‌شود', is_wp_error( $quoted ) ? $quoted->get_error_message() : $quoted['pages'], 1 );
 rename( "{$crawl_dir}/backup.tmp", "{$crawl_dir}/internal_html.csv" );
 touch( "{$crawl_dir}/internal_html.csv", time() - 3600 );
 hodima_seo_advisor_crawl_import();
@@ -1732,7 +1732,7 @@ $csv2 = static function ( string $name, array $rows ) use ( $crawl_dir2 ): void 
 };
 $term_row = static fn( int $imp, float $pos, int $clicks = 5 ): array => [ 'clicks' => $clicks, 'impressions' => $imp, 'position' => $pos ];
 $ok_title = str_repeat( 'عنوان سالم ', 5 );
-// دو گروه: «کلیپس ماری» بین /a-live/ و /a-moved/ (ریدایرکت طبق SF)؛ «کلیپس گل» بین سه صفحه که یکی (/b-gone/) ۴۰۴ است
+// دو گروه: «کلیپس ماری» بین /a-live/ و /a-moved/ (ریدایرکت طبق خزش)؛ «کلیپس گل» بین سه صفحه که یکی (/b-gone/) ۴۰۴ است
 hodima_seo_advisor_store(
 	[
 		'/a-live/' => [ 'clicks' => 40, 'impressions' => 3000, 'position' => 6.0 ], '/a-moved/' => [ 'clicks' => 10, 'impressions' => 1500, 'position' => 8.0 ],
@@ -2517,7 +2517,7 @@ hodima_ad( 'صفحه‌بندی آرشیو H1 تکراری و لینک ورود�
 // ایراد «متن زیر عنوان ممنوع» (SEO 3.0.6؛ خزش واقعی: ۸ محصول max-snippet:0)
 hodima_ad( 'دستور robots: max-snippet:0 و nosnippet ممنوع؛ max-snippet:-1 و ۰۵ و ۱۶۰ نه', array_map( static fn( string $v ): bool => hodima_seo_advisor_robots_no_snippet( $v ), [ 'index, follow, max-snippet:0, max-image-preview:large', 'noindex, nosnippet', 'max-snippet: 0', 'index, max-snippet:-1', 'max-snippet:05', 'max-snippet:160', '' ] ), [ true, true, true, false, false, false, false ] );
 hodima_ad( 'دستور robots در هدر X-Robots-Tag هم دیده می‌شود', hodima_seo_advisor_robots_no_snippet( 'index', 'nosnippet' ), true );
-$p3_csv = tempnam( sys_get_temp_dir(), 'sf' );
+$p3_csv = tempnam( sys_get_temp_dir(), 'crawl' );
 file_put_contents( $p3_csv, "\xEF\xBB\xBF\"Address\",\"Status Code\",\"Indexability\",\"Title 1\",\"Meta Robots 1\"\n\"" . home_url( '/ns/a/' ) . "\",\"200\",\"Indexable\",\"عنوان\",\"index, follow, max-snippet:0\"\n\"" . home_url( '/ns/b/' ) . "\",\"200\",\"Indexable\",\"عنوان\",\"index, follow, max-snippet:-1\"\n" );
 $p3_parsed = hodima_seo_advisor_crawl_parse_pages( $p3_csv );
 unlink( $p3_csv );

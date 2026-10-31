@@ -478,7 +478,7 @@ function hodima_seo_advisor_ctr_gap( array $queries, int $page_impressions, floa
  * @param array{title_headings: string, content: string, rendered?: array{title: string, h1: string}}|null $text null = متن صفحه معلوم نیست؛ قاعده‌های متن اجرا نمی‌شوند
  * @param array<string, list<array{path: string, impressions: int}>> $competitors کلمه ← آدرس‌های دیگری که برایش نمایش می‌گیرند
  * @param array{clicks_ratio: float|null, impressions_ratio: float|null}|null $site تغییر کل سایت نسبت به بازه قبل (hodima_seo_advisor_site_change)؛ null = ناشناخته
- * @param array{healthy: bool, title_len: int, meta_len: int, problems: list<string>}|null $meta طول عنوان و متا طبق خزش SF (hodima_seo_advisor_crawl_meta_health)؛ null = ناشناخته
+ * @param array{healthy: bool, title_len: int, meta_len: int, problems: list<string>}|null $meta طول عنوان و متا طبق خزش (hodima_seo_advisor_crawl_meta_health)؛ null = ناشناخته
  * @param array{total: int, text: int, score: float, depth: int, anchors: list<array{anchor: string, count: int}>}|null $links لینک‌های ورودی طبق خزش (hodima_seo_advisor_crawl_links_info)؛ null = ناشناخته
  * @return list<array{rule: string, term: string, title: string, detail: string, potential: int}>
  */

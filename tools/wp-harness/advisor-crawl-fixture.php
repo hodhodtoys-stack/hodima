@@ -1,13 +1,13 @@
 <?php
 /**
- * فقط برای ابزار تست دستار: تولید داده خزش از فایل‌های CSV هم‌شکل خروجی Screaming Frog.
+ * فقط برای ابزار تست دستار: تولید داده خزش از فایل‌های CSV نمونه با ستون‌های ثابت.
  * ورود فایل از SEO 3.1.7 از افزونه برداشته شد (خزنده داخلی جایش را گرفت)؛ آزمون‌ها همچنان با CSV نمونه
  * داده خزش می‌سازند و این فایل همان خواندن قبلی را برایشان نگه می‌دارد. در ZIP افزونه نیست.
  */
 
 defined( 'ABSPATH' ) || exit;
 
-/** نام ثابت فایل‌ها (همان نام پیش‌فرض SF). */
+/** نام ثابت فایل‌ها (نام ثابت فایل‌های نمونه). */
 const HODIMA_SEO_ADVISOR_CRAWL_FILES = [ 'pages' => 'internal_html.csv', 'links' => 'all_inlinks.csv' ];
 
 /** فایلی که کمتر از این ثانیه پیش تغییر کرده هنوز آپلود می‌شود و خوانده نمی‌شود. */
@@ -134,7 +134,7 @@ function hodima_seo_advisor_crawl_open( string $file, array $required ): array|W
 		return new WP_Error( 'hodima_crawl_open', 'فایل خوانده نشد؛ دسترسی فایل را بررسی کنید.' );
 	}
 
-	// SF فایل را با BOM می‌نویسد و عنوان ستون‌ها را در گیومه می‌گذارد؛ BOM پیش از گیومه باشد خواندن CSV گیومه را جزو نام ستون می‌کند (باگ ۲.۸.۱: «ستون address نیست»)، پس BOM را پیش از خواندن رد می‌کنیم
+	// فایل نمونه ممکن است با BOM بیاید و عنوان ستون‌ها در گیومه باشد؛ BOM پیش از گیومه باشد خواندن CSV گیومه را جزو نام ستون می‌کند (باگ ۲.۸.۱: «ستون address نیست»)، پس BOM را پیش از خواندن رد می‌کنیم
 	if ( "\xEF\xBB\xBF" !== fread( $handle, 3 ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- فایل CSV محلی، خواندن سه بایت
 		rewind( $handle );
 	}
@@ -158,7 +158,7 @@ function hodima_seo_advisor_crawl_open( string $file, array $required ): array|W
 
 	if ( $missing ) {
 		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
-		return new WP_Error( 'hodima_crawl_columns', 'ستون‌های لازم در فایل نیست: ' . implode( '، ', $missing ) . '. خروجی درست را از SF بگیرید.' );
+		return new WP_Error( 'hodima_crawl_columns', 'ستون‌های لازم در فایل نیست: ' . implode( '، ', $missing ) . '.' );
 	}
 
 	return [ $handle, $map ];
@@ -219,7 +219,7 @@ function hodima_seo_advisor_crawl_parse_pages( string $file ): array|WP_Error {
 			'title_len'  => isset( $map['title 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'title 1 length' ) ) : mb_strlen( $title ),
 			'meta_len'   => isset( $map['meta description 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'meta description 1 length' ) ) : mb_strlen( $meta ),
 			'h1'         => mb_substr( $cell( $row, 'h1-1' ), 0, HODIMA_SEO_ADVISOR_KEY_LENGTH ),
-			'h2'         => mb_substr( trim( $cell( $row, 'h2-1' ) . ' | ' . $cell( $row, 'h2-2' ), ' |' ), 0, 255 ), // SF فقط دو H2 اول را می‌دهد
+			'h2'         => mb_substr( trim( $cell( $row, 'h2-1' ) . ' | ' . $cell( $row, 'h2-2' ), ' |' ), 0, 255 ), // فقط دو H2 اول در فایل نمونه است
 			'resp_ms'    => (int) round( hodima_seo_advisor_crawl_num( $cell( $row, $time ) ) * 1000 ),
 			'inlinks'    => (int) hodima_seo_advisor_crawl_num( $cell( $row, isset( $map['unique inlinks'] ) ? 'unique inlinks' : 'inlinks' ) ),
 			'text_links' => -1, // بدون all_inlinks نامعلوم
@@ -380,7 +380,7 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 	}
 
 	hodima_seo_advisor_crawl_map( true );
-	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $stored['pages'], 'links' => $stored['links'], 'files' => $files, 'source' => 'screamingfrog' ], false );
+	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $stored['pages'], 'links' => $stored['links'], 'files' => $files, 'source' => 'fixture' ], false );
 
 	// کارهای «انجام دادم» ایرادهای فنی با خزش تازه سنجیده می‌شوند (کند، لینک ورودی و ریدایرکت فقط همین‌جا)
 	hodima_seo_advisor_tasks_sync_crawl();

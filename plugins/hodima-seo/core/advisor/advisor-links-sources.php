@@ -393,7 +393,7 @@ function hodima_seo_advisor_links_collect_related( array $ctx ): array {
 }
 
 /**
- * لینک‌های خزش (Screaming Frog: جدول crawl_links) به این صفحه‌ها: شمار هر صفحه به تفکیک جایگاه، و ردیف لینک‌هایی که
+ * لینک‌های خزش (جدول crawl_links) به این صفحه‌ها: شمار هر صفحه به تفکیک جایگاه، و ردیف لینک‌هایی که
  * متنشان کلمه را دارد. خزش لینک‌های ساختاری قالب (منوی بزرگ، فوتر، کارت زیردسته‌ها) را هم می‌بیند که در پایگاه داده نیستند.
  *
  * @param list<array<string, mixed>> $infos صفحه‌های گروه (hodima_seo_advisor_links_page_info)

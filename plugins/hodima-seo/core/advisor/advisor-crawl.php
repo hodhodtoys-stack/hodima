@@ -1,15 +1,10 @@
 <?php
 /**
- * ماژول «دستار سئو» — سلامت خزش: نقشه خزش، ایرادها و آمار (داده از خزنده داخلی advisor-crawler.php؛ ورود فایل Screaming Frog از 3.1.7 برداشته شد)
+ * ماژول «دستار سئو» — سلامت خزش: نقشه خزش، ایرادها و آمار
  * Path: core/advisor/advisor-crawl.php
  *
- * ورودی: دو فایل CSV با نام ثابت در پوشه امن wp-content/uploads/hodima-advisor/ (مدیر خودش با FTP/هاست
- * می‌گذارد؛ آپلود از پیشخوان نیست):
- *   internal_html.csv (Internal ← HTML) و all_inlinks.csv (Bulk Export ← Links ← All Inlinks، اختیاری).
- * داده «نرمال‌شده و مستقل از منبع» ذخیره می‌شود (جدول‌های crawl_pages و crawl_links با ستون منبع در
- * وضعیت) تا بعدا خزنده داخلی همان جدول‌ها را پر کند و قاعده‌ها دوباره نوشته نشوند.
- * فایل در حال آپلود خوانده نمی‌شود، فایل اشتباه داده قبلی را خراب نمی‌کند، خواندن خط‌به‌خط است
- * (fgetcsv؛ حافظه با اندازه فایل بالا نمی‌رود). فقط می‌خواند و پیشنهاد می‌دهد؛ چیزی را عوض نمی‌کند.
+ * داده را خزنده داخلی (advisor-crawler.php) در جدول‌های crawl_pages و crawl_links می‌نویسد؛ این فایل همان جدول‌ها را
+ * می‌خواند و ایرادها، نقشه خزش و آمار را می‌سازد. فقط می‌خواند و پیشنهاد می‌دهد؛ چیزی را در سایت عوض نمی‌کند.
  */
 
 declare(strict_types=1);
@@ -590,7 +585,7 @@ function hodima_seo_advisor_crawl_issues(): array {
 		$impressions = (int) $r['impressions'];
 		$inlinks     = (int) $r['inlinks'];
 		$path        = (string) $r['path'];
-		$known       = (int) $r['words'] >= 0; // ستون‌های خزنده داخلی؛ فایل Screaming Frog آن‌ها را ندارد (-1)
+		$known       = (int) $r['words'] >= 0; // ستون‌های خزنده داخلی؛ ردیف قدیمی که پیش از خزنده داخلی ثبت شده آن‌ها را ندارد (-1)
 		$issues      = [];
 		$add         = static function ( string $code, string $detail = '', string $url = '', array $items = [] ) use ( &$issues ): void {
 			$issues[] = [ 'code' => $code, 'detail' => $detail, 'url' => $url, 'items' => $items ]; // url: آدرس مرتبط (مقصد ریدایرکت)؛ items: مقصدهای لینک (مسیر + توضیح) برای جزء آدرس کامل + کپی
