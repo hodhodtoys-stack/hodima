@@ -2860,6 +2860,28 @@ $cw_pos   = array_column( array_map( static fn( array $l ): array => [ hodima_se
 hodima_ad( 'خواندن HTML: عنوان یکدست‌شده، متا، robots، canonical، H1 و دو H2 اول', [ $cw_p['title'], $cw_p['meta'], $cw_p['robots'], $cw_p['canonical'], $cw_p['h1'], $cw_p['h2'] ], [ 'صفحه نمونه', 'توضیح نمونه', 'noindex, max-snippet:0', $cw_site . '/other/', 'تیتر اصلی', 'یک | دو' ] );
 hodima_ad( 'جایگاه لینک‌ها: منو، ناو، متن، nofollow، تصویر، کنار، فوتر', $cw_pos, [ '/menu/' => 'navigation', '/nav/' => 'navigation', '/in/' => 'content', '/nf/' => 'content:nf', '/img/' => 'content', '/side/' => 'aside', '/foot/' => 'footer' ] );
 hodima_ad( 'متن لینک تصویری از alt', array_column( $cw_p['links'], 2, 0 )[ $cw_site . '/img/' ] ?? '', 'تصویر لینک' );
+// تصویر بدون alt (SEO 3.3.3): alt خالی عمدی داخل لینک/دکمه/figure با متن ایراد نیست؛ نبود ویژگی alt، alt خالی تنها و لینکِ فقط-تصویر ایراد است
+$cw_alt = static function ( string $body ) use ( $cw_site ): int {
+	$parsed = hodima_seo_advisor_crawler_parse( '<html><head><title>t</title></head><body><main>' . $body . '</main></body></html>', $cw_site . '/alt/' );
+	return $parsed['img_noalt'];
+};
+hodima_ad(
+	'تصویر بدون alt: نبود alt و alt خالی تنها = ایراد؛ alt دارد، تزئینی، کارت با عنوان، لینک با aria-label، figure با کپشن = ایراد نیست؛ لینکِ فقط-تصویر = ایراد',
+	[
+		$cw_alt( '<img src="a.jpg">' ),
+		$cw_alt( '<img src="a.jpg" alt="">' ),
+		$cw_alt( '<img src="a.jpg" alt="توضیح">' ),
+		$cw_alt( '<img src="a.jpg" alt="" aria-hidden="true">' ),
+		$cw_alt( '<a href="/p/"><img src="a.jpg" alt=""><h3>عنوان کارت</h3></a>' ),
+		$cw_alt( '<a href="/p/" aria-label="محصول"><img src="a.jpg" alt=""></a>' ),
+		$cw_alt( '<a href="/p/"><img src="a.jpg" alt=""></a>' ),
+		$cw_alt( '<a href="/p/"><img src="a.jpg"><h3>عنوان</h3></a>' ),
+		$cw_alt( '<figure><img src="a.jpg" alt=""><figcaption>کپشن</figcaption></figure>' ),
+		$cw_alt( '<figure><img src="a.jpg" alt=""><figcaption></figcaption></figure>' ),
+		$cw_alt( '<button type="button"><img src="a.jpg" alt="">باز کن</button>' ),
+	],
+	[ 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0 ]
+);
 $cw_row = hodima_seo_advisor_crawler_page_row( '/p/', 200, 120, $cw_p, '', '' );
 hodima_ad( 'ردیف صفحه noindex: غیرایندکس‌پذیر با علت، طول عنوان، max-snippet:0', [ $cw_row['indexable'], $cw_row['reason'], $cw_row['title_len'], $cw_row['no_snippet'] ], [ 0, 'Noindex', 10, 1 ] );
 $cw_row2 = hodima_seo_advisor_crawler_page_row( '/p/', 200, 120, [ 'canonical' => $cw_site . '/p/' ] + $cw_p + [], '', '' );

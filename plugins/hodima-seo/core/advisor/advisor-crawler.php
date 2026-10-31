@@ -294,6 +294,37 @@ function hodima_seo_advisor_crawler_link_position( DOMElement $link ): string {
 }
 
 /**
+ * تصویری که alt خالی دارد ولی لینک/دکمه یا figure اطرافش متن دارد (کارت محصول/مقاله)؛ alt خالی آنجا درست است.
+ * نزدیک‌ترین لینک/دکمه تصمیم می‌گیرد: متن یا aria-label داشته باشد = برچسب‌دار؛ فقط خود تصویر = بی‌برچسب.
+ *
+ * @param callable(string): string $clean یکسان‌ساز فاصله‌ها
+ */
+function hodima_seo_advisor_crawler_img_labelled( DOMElement $img, callable $clean ): bool {
+
+	for ( $node = $img->parentNode; $node instanceof DOMElement; $node = $node->parentNode ) {
+		$tag = strtolower( $node->nodeName );
+
+		if ( in_array( $tag, [ 'body', 'html' ], true ) ) {
+			break;
+		}
+
+		if ( 'a' === $tag || 'button' === $tag ) {
+			return '' !== $clean( $node->getAttribute( 'aria-label' ) ) || '' !== $clean( $node->textContent );
+		}
+
+		if ( 'figure' === $tag ) {
+			foreach ( $node->getElementsByTagName( 'figcaption' ) as $caption ) {
+				if ( '' !== $clean( $caption->textContent ) ) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
  * HTML یک صفحه ← عنوان، متا، تیترها، robots، canonical و لینک‌های داخلی.
  *
  * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
@@ -377,7 +408,9 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		$links[] = [ $target, hodima_seo_advisor_crawler_link_position( $a ), mb_substr( $anchor, 0, 120 ), $follow ];
 	}
 
-	// تصویر محتوای صفحه بدون متن جایگزین (تزئینی با aria-hidden/role=presentation، تصویر ریز و جاگیر base64 حساب نمی‌شود)
+	// تصویر محتوای صفحه بدون متن جایگزین (تزئینی با aria-hidden/role=presentation، تصویر ریز و جاگیر base64 حساب نمی‌شود).
+	// alt خالی عمدی هم ایراد نیست وقتی تصویر داخل لینک/دکمه‌ای است که خودش متن یا aria-label دارد، یا داخل figure با figcaption:
+	// بندانگشتی کارت‌ها (قالب هدیما عمدا alt="" می‌گذارد چون عنوان کارت همان را می‌گوید) ایراد کاذب بود و ادمین نمی‌توانست رفعش کند (SEO 3.3.3)
 	$img_noalt = 0;
 	$images    = $xpath->query( '//img' );
 	foreach ( false === $images ? [] : $images as $img ) {
@@ -386,7 +419,7 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		}
 		$decor = 'true' === strtolower( $img->getAttribute( 'aria-hidden' ) ) || in_array( strtolower( $img->getAttribute( 'role' ) ), [ 'presentation', 'none' ], true );
 		$tiny  = ( $img->hasAttribute( 'width' ) && (int) $img->getAttribute( 'width' ) <= 2 ) || str_starts_with( trim( $img->getAttribute( 'src' ) ), 'data:image/gif' );
-		if ( ! $decor && ! $tiny && '' === $clean( $img->getAttribute( 'alt' ) ) ) {
+		if ( ! $decor && ! $tiny && '' === $clean( $img->getAttribute( 'alt' ) ) && ! ( $img->hasAttribute( 'alt' ) && hodima_seo_advisor_crawler_img_labelled( $img, $clean ) ) ) {
 			++$img_noalt;
 		}
 	}
