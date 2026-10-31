@@ -520,20 +520,26 @@ function hodima_seo_advisor_legacy_tab_redirect(): void {
 }
 
 /**
- * تب‌های بالای صفحه: پیشنهادها | صفحه‌های هم‌کلمه | آمار جستجو | آدرس‌های خراب | ایرادهای فنی | وضعیت در گوگل | کارها | تنظیمات.
+ * تب‌های بالای صفحه (SEO 3.3.1): یک ردیف چهارتایی «ایرادها و کارها | آمار جستجو | وضعیت در گوگل | تنظیمات».
+ * پنج بخش قدیمی (پیشنهادها، ایرادهای فنی، هم‌کلمه، آدرس‌های خراب، کارها) داخل تب اول با منوی «نمای فهرست» جابه‌جا
+ * می‌شوند؛ کلید `?tab=` همه‌شان همان‌طور می‌ماند (پیوند و علامت مرورگر خراب نشود).
  */
+const HODIMA_SEO_ADVISOR_WORK_VIEWS = [
+	'opportunities' => 'پیشنهادهای بهتر شدن',
+	'crawl'         => 'ایرادهای فنی صفحه‌ها',
+	'competition'   => 'صفحه‌های هم‌کلمه',
+	'health'        => 'آدرس‌های خراب',
+	'tasks'         => 'کارها (باز و انجام‌شده)',
+];
+
 function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true ): void {
 
+	$work = isset( HODIMA_SEO_ADVISOR_WORK_VIEWS[ $active ] );
+
 	$tabs = [
-		'opportunities' => [ 'پیشنهادها', hodima_seo_advisor_page_url() ],
-		'competition'   => [ 'صفحه‌های هم‌کلمه', hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ],
-		// «کلمه‌های جستجو» + «روند ماه‌به‌ماه» + رتبه بد موبایل یک تب شد؛ «موبایل و کشور» حذف (SEO 3.1.3)
+		'opportunities' => [ 'ایرادها و کارها', hodima_seo_advisor_page_url() ],
 		'terms'         => [ 'آمار جستجو', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
-		'health'        => [ 'آدرس‌های خراب', hodima_seo_advisor_page_url( [ 'tab' => 'health' ] ) ],
-		'crawl'         => [ 'ایرادهای فنی', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
 		'indexing'      => [ 'وضعیت در گوگل', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
-		// «در دست انجام» و «انجام‌شده» (دو تب از SEO 2.9.4) از ۳.۱.۳ یک تب با فیلتر وضعیت‌اند
-		'tasks'         => [ 'کارها', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
 		// تنظیمات تب خودش است (SEO 2.9.3)؛ قبلا پنلی بود که روی هر تب باز می‌شد
 		'settings'      => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
 	];
@@ -544,21 +550,43 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 	}
 
 	echo '<div class="hodima-advisor__tabrow">';
-	if ( $tabs ) {
-		echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
-		foreach ( $tabs as $key => [ $label, $url ] ) {
-			printf(
-				'<a class="hodima-advisor__view%1$s" href="%2$s"%3$s>%4$s%5$s</a>',
-				'settings' === $key ? ' hodima-advisor__view--settings' : '',
-				esc_url( $url ),
-				$key === $active ? ' aria-current="page"' : '',
-				'settings' === $key ? '<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>' : '',
-				esc_html( $label )
-			);
-		}
-		echo '</nav>';
+	echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
+	foreach ( $tabs as $key => [ $label, $url ] ) {
+		$current = $work ? 'opportunities' === $key : $key === $active;
+		printf(
+			'<a class="hodima-advisor__view%1$s" href="%2$s"%3$s>%4$s%5$s</a>',
+			'settings' === $key ? ' hodima-advisor__view--settings' : '',
+			esc_url( $url ),
+			$current ? ' aria-current="page"' : '',
+			'settings' === $key ? '<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>' : '',
+			esc_html( $label )
+		);
 	}
+	echo '</nav>';
 	echo '</div>';
+
+	if ( $work && $with_tabs ) {
+		hodima_seo_advisor_render_work_views( $active );
+	}
+}
+
+/**
+ * منوی «نمای فهرست» داخل تب «ایرادها و کارها»: بدون جاوااسکریپت با دکمه «نمایش» کار می‌کند و با جاوااسکریپت
+ * هنگام انتخاب خودش می‌رود. آدرس هر نما همان `?tab=` قدیمی است.
+ */
+function hodima_seo_advisor_render_work_views( string $active ): void {
+	?>
+	<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="hodima-advisor__workview">
+		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
+		<label for="hodima-advisor-workview">نمای فهرست</label>
+		<select id="hodima-advisor-workview" name="tab" onchange="this.form.submit()">
+			<?php foreach ( HODIMA_SEO_ADVISOR_WORK_VIEWS as $key => $label ) : ?>
+				<option value="<?php echo esc_attr( 'opportunities' === $key ? '' : $key ); ?>"<?php selected( $key, $active ); ?>><?php echo esc_html( $label ); ?></option>
+			<?php endforeach; ?>
+		</select>
+		<noscript><button type="submit" class="hds-btn">نمایش</button></noscript>
+	</form>
+	<?php
 }
 
 function hodima_seo_advisor_render_admin(): void {
