@@ -85,7 +85,9 @@ function hodima_seo_advisor_crawler_status_view(): array {
 		default   => $status['requested']
 			? [ 'info', 'درخواست شد', 'دور تازه در اولین نوبت ساعت خزش شروع می‌شود.' ]
 			: ( $status['finished'] > 0
-				? [ 'ok', 'آماده', sprintf( 'آخرین دور %1$s پیش تمام شد (%2$s صفحه)؛ دور بعد خودکار.', human_time_diff( $status['finished'] ), $n( $status['pages'] ) ) ]
+				? ( $status['capped']
+					? [ 'warn', 'سقف پر شد', sprintf( 'آخرین دور %1$s پیش تمام شد؛ سایت بیش از %2$s صفحه دارد و بقیه خزیده نشد. صفحه‌های قدیمی پاک نمی‌شوند تا داده از دست نرود.', human_time_diff( $status['finished'] ), $n( HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ) ) ]
+					: [ 'ok', 'آماده', sprintf( 'آخرین دور %1$s پیش تمام شد (%2$s صفحه)؛ دور بعد خودکار.', human_time_diff( $status['finished'] ), $n( $status['pages'] ) ) ] )
 				: [ 'info', 'منتظر اولین دور', $settings['enabled'] ? 'اولین دور در ساعت خزش شروع می‌شود؛ یا «خزش همین حالا» را بزنید.' : 'هنوز خزشی انجام نشده.' ] ),
 	};
 

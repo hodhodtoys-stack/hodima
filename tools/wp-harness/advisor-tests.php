@@ -3153,6 +3153,36 @@ hodima_ad( 'ریدایرکت پیوند قدیمی به هوک منو وصل ا�
 $_GET = [];
 wp_set_current_user( 0 );
 
+echo "=== سقف صفحه‌های خزنده (SEO 3.1.8)\n";
+$cp_t = hodima_seo_advisor_table( 'crawl_pages' );
+$cp_w = $GLOBALS['wpdb'];
+$cp_w->query( $cp_w->prepare( 'DELETE FROM %i', $cp_t ) );
+foreach ( [ '/', '/a/', '/b/', '/c/' ] as $cp_path ) {
+	$cp_w->insert( $cp_t, [ 'path' => $cp_path, 'status' => 200, 'indexable' => 1 ] );
+}
+$cp_full = [ 'seen' => array_fill( 0, HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES, 1 ), 'queue' => [] ];
+hodima_seo_advisor_crawler_enqueue( $cp_full, home_url( '/zzz/' ) );
+hodima_ad( 'سقف پر: صفحه تازه به صف نمی‌رود ولی نشان «سقف» خورد', [ $cp_full['queue'], ! empty( $cp_full['capped'] ) ], [ [], true ] );
+$cp_ok = [ 'seen' => [ '/' => 1 ], 'queue' => [] ];
+hodima_seo_advisor_crawler_enqueue( $cp_ok, home_url( '/b/' ) );
+hodima_ad( 'سقف پر نیست: صفحه به صف می‌رود و نشان سقف نمی‌خورد', [ count( $cp_ok['queue'] ), ! empty( $cp_ok['capped'] ) ], [ 1, false ] );
+
+$cp_cap = [ 'seen' => [ '/' => 1, '/a/' => 1 ], 'queue' => [], 'sitemap' => [], 'capped' => true ];
+hodima_seo_advisor_crawler_finalize( $cp_cap );
+hodima_seo_advisor_crawler_save( $cp_cap ); // نوبت خزنده بعد از finalize ذخیره می‌کند
+hodima_ad( 'دور سقف‌خورده: هیچ ردیفی پاک نمی‌شود', $cp_w->get_col( $cp_w->prepare( 'SELECT path FROM %i ORDER BY path', $cp_t ) ), [ '/', '/a/', '/b/', '/c/' ] );
+hodima_ad( 'نشان سقف بعد از پایان دور می‌ماند و وضعیت صفحه هشدار می‌دهد', [ hodima_seo_advisor_crawler_state()['capped'], hodima_seo_advisor_crawler_status()['capped'], hodima_seo_advisor_crawler_status_view()[0] ], [ true, true, 'warn' ] );
+
+$cp_norm = [ 'seen' => [ '/' => 1, '/a/' => 1 ], 'queue' => [], 'sitemap' => [] ];
+hodima_seo_advisor_crawler_finalize( $cp_norm );
+hodima_seo_advisor_crawler_save( $cp_norm );
+hodima_ad( 'دور عادی (بدون سقف): صفحه دیده‌نشده مثل قبل پاک می‌شود', $cp_w->get_col( $cp_w->prepare( 'SELECT path FROM %i ORDER BY path', $cp_t ) ), [ '/', '/a/' ] );
+hodima_ad( 'دور عادی نشان سقف را پاک می‌کند', [ hodima_seo_advisor_crawler_state()['capped'], hodima_seo_advisor_crawler_status_view()[0] ], [ false, 'ok' ] );
+hodima_seo_advisor_crawler_start();
+hodima_ad( 'شروع دور تازه نشان سقف را صفر می‌کند', hodima_seo_advisor_crawler_state()['capped'], false );
+$cp_w->query( $cp_w->prepare( 'DELETE FROM %i', $cp_t ) );
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );

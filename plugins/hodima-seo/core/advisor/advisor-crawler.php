@@ -97,7 +97,7 @@ function hodima_seo_advisor_crawler_in_window( ?int $now = null ): bool {
 /**
  * وضعیت ذخیره‌شده خزش با پیش‌فرض‌ها.
  *
- * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int}
+ * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int, capped: bool}
  */
 function hodima_seo_advisor_crawler_state(): array {
 
@@ -122,6 +122,7 @@ function hodima_seo_advisor_crawler_state(): array {
 		'requested'   => ! empty( $state['requested'] ),
 		'pages'       => (int) ( $state['pages'] ?? 0 ),
 		'links'       => (int) ( $state['links'] ?? 0 ),
+		'capped'      => ! empty( $state['capped'] ),
 	];
 }
 
@@ -239,7 +240,13 @@ function hodima_seo_advisor_crawler_enqueue( array &$state, string $url ): void 
 	$fetch = hodima_seo_advisor_crawler_normalize( $url );
 	$key   = null === $fetch ? null : hodima_seo_advisor_path_key( $fetch );
 
-	if ( null === $fetch || null === $key || isset( $state['seen'][ $key ] ) || count( $state['seen'] ) >= HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ) {
+	if ( null === $fetch || null === $key || isset( $state['seen'][ $key ] ) ) {
+		return;
+	}
+
+	// سقف پر است: این صفحه خزیده نمی‌شود. نشانش می‌کنیم تا پایان دور «ندیده‌شده» را «حذف‌شده» نگیرد (باگ قبلی: ردیف‌های بالای سقف هر دور پاک می‌شدند)
+	if ( count( $state['seen'] ) >= HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ) {
+		$state['capped'] = true;
 		return;
 	}
 
@@ -653,6 +660,7 @@ function hodima_seo_advisor_crawler_start(): void {
 		'requested'   => false,
 		'pages'       => $old['pages'],
 		'links'       => $old['links'],
+		'capped'      => false,
 	];
 
 	hodima_seo_advisor_crawler_enqueue( $state, home_url( '/' ) );
@@ -788,6 +796,11 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	$known = array_map( 'strval', (array) $wpdb->get_col( $wpdb->prepare( 'SELECT path FROM %i', $page_t ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	$stale = array_values( array_filter( $known, static fn( string $path ): bool => ! isset( $state['seen'][ $path ] ) ) );
 
+	// دور به سقف رسید: صفحه‌ای که دیده نشد شاید فقط بالای سقف مانده؛ هیچ ردیفی پاک نمی‌شود (ردیف صفحه واقعا حذف‌شده می‌ماند و هشدار نشان داده می‌شود)
+	if ( ! empty( $state['capped'] ) ) {
+		$stale = [];
+	}
+
 	foreach ( array_chunk( $stale, 200 ) as $chunk ) {
 		$marks = implode( ',', array_fill( 0, count( $chunk ), '%s' ) );
 		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE path IN ({$marks})", $page_t, ...$chunk ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
@@ -866,6 +879,7 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	$state['status']   = 'idle';
 	$state['manual']   = false;
 	$state['finished'] = time();
+	$state['capped']   = ! empty( $state['capped'] );
 	$state['pages']    = $pages;
 	$state['links']    = $links;
 	$state['seed']     = [];
@@ -1028,7 +1042,7 @@ function hodima_seo_advisor_crawler_start_now(): void {
 /**
  * وضعیت برای نمایش: off، waiting (منتظر پنجره یا موعد)، running، paused.
  *
- * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, requested: bool, pages: int}
+ * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, requested: bool, pages: int, capped: bool}
  */
 function hodima_seo_advisor_crawler_status(): array {
 
@@ -1056,6 +1070,7 @@ function hodima_seo_advisor_crawler_status(): array {
 		'pause_until' => $state['pause_until'],
 		'requested'   => $state['requested'],
 		'pages'       => $state['pages'],
+		'capped'      => $state['capped'],
 	];
 }
 
