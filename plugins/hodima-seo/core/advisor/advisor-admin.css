@@ -2861,3 +2861,82 @@
 		min-block-size: 2.5rem;
 	}
 }
+
+/* ── جدول‌های «آدرس‌های خراب» و «وضعیت در گوگل» (SEO 3.2.5): توضیح‌ها جمع‌شونده، کارت موبایل، دکمه‌های یک ردیف ── */
+.hodima-advisor .hodima-advisor__explain {
+	margin-block-start: 0.875rem;
+}
+
+.hodima-advisor .hodima-advisor__explain .hds-more__body {
+	padding: 0.25rem 1rem 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__explain .hodima-advisor__advice:last-child {
+	margin-block-end: 0;
+}
+
+.hodima-advisor .hodima-advisor__row-acts--inline {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.375rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__cards th[scope="row"] {
+	vertical-align: top;
+}
+
+@media (max-width: 782px) {
+	/* موبایل: هر ردیف یک کارت (آدرس بالا، عددها کنار هم، کنش پایین)؛ جدول افقی دکمه‌ها را می‌برید */
+	.hodima-advisor .hodima-advisor__cards thead {
+		position: absolute;
+		inline-size: 1px;
+		block-size: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+	}
+
+	.hodima-advisor .hodima-advisor__cards,
+	.hodima-advisor .hodima-advisor__cards tbody {
+		display: block;
+	}
+
+	.hodima-advisor .hds-table-wrap > .hodima-advisor__cards {
+		min-inline-size: 0;
+	}
+
+	.hodima-advisor .hodima-advisor__cards tr {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem 1rem;
+		align-items: baseline;
+		padding-block: 0.75rem;
+		border-block-end: 1px solid var(--hd-border);
+	}
+
+	.hodima-advisor .hodima-advisor__cards th,
+	.hodima-advisor .hodima-advisor__cards td {
+		display: block;
+		padding: 0;
+		border: 0;
+		background: none;
+	}
+
+	.hodima-advisor .hodima-advisor__cards th[scope="row"] {
+		flex: 1 1 100%;
+		min-inline-size: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.hodima-advisor .hodima-advisor__cards td[data-label]::before {
+		content: attr(data-label) " ";
+		color: var(--hd-muted);
+		font-size: 0.75rem;
+	}
+
+	.hodima-advisor .hodima-advisor__cards td:last-child {
+		flex: 1 1 100%;
+		min-inline-size: 0;
+	}
+}

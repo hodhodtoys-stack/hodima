@@ -3453,6 +3453,28 @@ hodima_ad( 'اصطلاح‌ها هنوز details با همان فهرست است
 null === $fs_keep[0] ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $fs_keep[0], false );
 null === $fs_keep[1] ? delete_option( HODIMA_SEO_ADVISOR_CAPS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CAPS_OPTION, $fs_keep[1], false );
 
+echo "=== جدول‌های آدرس‌های خراب و وضعیت در گوگل (SEO 3.2.5)\n";
+wp_set_current_user( 1 );
+$_GET = [];
+$ht_keep = [ get_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, null ), get_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, null ) ];
+update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, [
+	'computed' => time(), 'router' => true, 'total' => 10, 'seen' => 8, 'fresh' => 1,
+	'dead'     => [ [ 'path' => '/ht-dead/', 'impressions' => 500, 'clicks' => 5, 'state' => 'missing', 'target' => '', 'code' => 404 ] ],
+	'unseen'   => [
+		[ 'id' => 1, 'path' => '/ht-titled/', 'title' => 'عنوان جدا', 'type' => 'post', 'days' => 40 ],
+		[ 'id' => 2, 'path' => '/ht-bare/', 'title' => '', 'type' => 'post', 'days' => 50 ],
+	],
+], false );
+$ht_html = $cap( static fn() => hodima_seo_advisor_render_health( hodima_seo_advisor_status() ) );
+hodima_ad( 'آدرس‌های خراب: هر دو جدول کلاس کارت موبایل دارند و سلول‌ها برچسب (data-label)', [ substr_count( $ht_html, 'hodima-advisor__terms hodima-advisor__cards' ), str_contains( $ht_html, 'data-label="نمایش"' ), str_contains( $ht_html, 'data-label="مقصد"' ), str_contains( $ht_html, 'data-label="نوع"' ), str_contains( $ht_html, 'data-label="سن"' ) ], [ 2, true, true, true, true ] );
+hodima_ad( 'توضیح‌ها داخل دو جمع‌شونده بسته (نه کادرهای باز)؛ متن‌شان هنوز هست', [ substr_count( $ht_html, 'class="hds-more hodima-advisor__explain"' ), str_contains( $ht_html, 'open' ) && str_contains( $ht_html, '<details class="hds-more hodima-advisor__explain" open' ), str_contains( $ht_html, 'آدرس‌های «۴۰۴»' ) || str_contains( $ht_html, 'هنوز در گوگل نمایش می‌گیرند' ), str_contains( $ht_html, 'چه کنید:' ) ], [ 2, false, true, true ] );
+hodima_ad( 'دکمه‌های ردیف صفحه بدون نمایش یک ردیف (inline)؛ عنوان تکراری نمی‌آید وقتی عنوان همان مسیر است', [ str_contains( $ht_html, 'hodima-advisor__row-acts hodima-advisor__row-acts--inline' ), str_contains( $ht_html, 'عنوان جدا' ), 1 === substr_count( $ht_html, 'ht-bare/</bdi>' ) || 1 === substr_count( $ht_html, 'ht-bare/' ) ], [ true, true, true ] );
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/ht-index/' => [ 'verdict' => 'NEUTRAL', 'coverage' => 'Crawled - currently not indexed', 'robots' => '', 'indexing' => '', 'fetch' => 'SUCCESSFUL', 'last_crawl' => gmdate( 'c', time() - DAY_IN_SECONDS ), 'google_canonical' => 'https://hodima.test/ht-index/', 'user_canonical' => 'https://hodima.test/ht-index/', 'crawled_as' => 'MOBILE', 'checked' => time() ] ], false );
+$ix_html = $cap( static fn() => hodima_seo_advisor_render_indexing() );
+hodima_ad( 'وضعیت در گوگل: جدول کارت موبایل با برچسب، توضیح‌ها در جمع‌شونده بسته', [ str_contains( $ix_html, 'hodima-advisor__terms hodima-advisor__cards' ), str_contains( $ix_html, 'data-label="آخرین خزش"' ), str_contains( $ix_html, 'class="hds-more hodima-advisor__explain"' ), str_contains( $ix_html, 'hodima-advisor__explain" open' ), str_contains( $ix_html, 'بعد از رفع، «انجام دادم» را بزنید' ) ], [ true, true, true, false, true ] );
+null === $ht_keep[0] ? delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION ) : update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, $ht_keep[0], false );
+null === $ht_keep[1] ? delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION ) : update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $ht_keep[1], false );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );

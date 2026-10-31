@@ -94,7 +94,7 @@ function hodima_seo_advisor_render_health( array $status ): void {
 	} else {
 		?>
 		<div class="hds-table-wrap" tabindex="0" role="region" aria-label="آدرس‌های مرده در گوگل">
-			<table class="widefat striped hodima-advisor__terms">
+			<table class="widefat striped hodima-advisor__terms hodima-advisor__cards">
 				<thead><tr><th scope="col">آدرس</th><th scope="col">نمایش</th><th scope="col">کلیک</th><th scope="col">وضعیت</th><th scope="col">مقصد</th><th scope="col">کنش</th></tr></thead>
 				<tbody>
 					<?php foreach ( $dead as $row ) : ?>
@@ -105,10 +105,10 @@ function hodima_seo_advisor_render_health( array $status ): void {
 						?>
 						<tr>
 							<th scope="row"><?php echo hodima_seo_advisor_url_link( (string) $row['path'], 'hodima-advisor__rival-url' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?> <?php echo $bad ? hodima_seo_advisor_task_badge( $task ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_task_badge ?></th>
-							<td><?php echo esc_html( $n( $row['impressions'] ) ); ?></td>
-							<td><?php echo esc_html( $n( $row['clicks'] ) ); ?></td>
+							<td data-label="نمایش"><?php echo esc_html( $n( $row['impressions'] ) ); ?></td>
+							<td data-label="کلیک"><?php echo esc_html( $n( $row['clicks'] ) ); ?></td>
 							<td><span class="<?php echo esc_attr( $info['class'] ); ?>"><?php echo esc_html( $info['label'] ); ?></span></td>
-							<td><?php echo '' !== (string) $row['target'] ? hodima_seo_advisor_url_link( (string) $row['target'], 'hodima-advisor__rival-url' ) : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></td>
+							<td data-label="مقصد"><?php echo '' !== (string) $row['target'] ? hodima_seo_advisor_url_link( (string) $row['target'], 'hodima-advisor__rival-url' ) : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></td>
 							<td>
 								<?php if ( $bad && ( null === $task || ! in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true ) ) ) : ?>
 									<?php hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), 'health', (string) $row['path'], rawurldecode( (string) $row['path'] ), [ 'items[]' => 'dead' ] ); ?>
@@ -126,10 +126,13 @@ function hodima_seo_advisor_render_health( array $status ): void {
 		if ( '' !== $toggle ) {
 			echo '<div class="hodima-advisor__foot"><span>' . $toggle . '</span></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action
 		}
+		// توضیح هر وضعیت پشت یک جمع‌شونده (SEO 3.2.5؛ چهار کادر خاکستری زیر جدول جا می‌گرفت)
+		echo '<details class="hds-more hodima-advisor__explain"><summary class="hds-more__summary">توضیح هر وضعیت و چه کنید؟</summary><div class="hds-more__body">';
 		foreach ( array_unique( array_column( $dead, 'state' ) ) as $state ) {
 			echo '<div class="hodima-advisor__advice">' . esc_html( hodima_seo_advisor_health_state( (string) $state )['advice'] ) . '</div>';
 		}
 		echo '<p class="hodima-advisor__advice">بعد از ریدایرکت یا درست کردن آدرس، «انجام دادم» را بزنید: آدرس همان لحظه در خود سایت دوباره سنجیده می‌شود. «لازم نیست» یعنی عمدا حذف شده و جایگزین ندارد.</p>';
+		echo '</div></details>';
 	}
 	hodima_seo_ui_card_close();
 
@@ -146,7 +149,7 @@ function hodima_seo_advisor_render_health( array $status ): void {
 		$paged = min( $pages, max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط صفحه‌بندی نمایش
 		?>
 		<div class="hds-table-wrap" tabindex="0" role="region" aria-label="صفحه‌های بدون نمایش">
-			<table class="widefat striped hodima-advisor__terms">
+			<table class="widefat striped hodima-advisor__terms hodima-advisor__cards">
 				<thead><tr><th scope="col">صفحه</th><th scope="col">نوع</th><th scope="col">سن</th><th scope="col">کنش</th></tr></thead>
 				<tbody>
 					<?php foreach ( array_slice( $unseen, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE ) as $row ) : ?>
@@ -156,11 +159,11 @@ function hodima_seo_advisor_render_health( array $status ): void {
 						$title = '' !== (string) $row['title'] ? (string) $row['title'] : rawurldecode( (string) $row['path'] );
 						?>
 						<tr>
-							<th scope="row"><?php echo esc_html( $title ); ?> <?php echo hodima_seo_advisor_url_link( (string) $row['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?> <?php echo hodima_seo_advisor_task_badge( $task ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_task_badge ?></th>
-							<td><?php echo esc_html( hodima_seo_advisor_kind_label( (string) $row['type'] ) ); ?></td>
-							<td><?php echo esc_html( sprintf( '%s روز', $n( $row['days'] ) ) ); ?></td>
+							<th scope="row"><?php echo $title !== rawurldecode( (string) $row['path'] ) ? esc_html( $title ) . ' ' : ''; // عنوان فقط وقتی با خود مسیر فرق دارد (وگرنه آدرس دوبار دیده می‌شد) ?><?php echo hodima_seo_advisor_url_link( (string) $row['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?> <?php echo hodima_seo_advisor_task_badge( $task ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_task_badge ?></th>
+							<td data-label="نوع"><?php echo esc_html( hodima_seo_advisor_kind_label( (string) $row['type'] ) ); ?></td>
+							<td data-label="سن"><?php echo esc_html( sprintf( '%s روز', $n( $row['days'] ) ) ); ?></td>
 							<td>
-								<div class="hodima-advisor__row-acts">
+								<div class="hodima-advisor__row-acts hodima-advisor__row-acts--inline">
 									<?php echo is_string( $edit ) && '' !== $edit ? hodima_seo_advisor_action( $edit, 'ویرایش صفحه', 'edit' ) : hodima_seo_advisor_action( hodima_seo_advisor_url( (string) $row['path'] ), 'دیدن در سایت', 'external', true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
 									<?php if ( null === $task || ! in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true ) ) : ?>
 										<?php hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), 'health', (string) $row['path'], $title, [ 'items[]' => 'unseen' ] ); ?>
@@ -182,7 +185,9 @@ function hodima_seo_advisor_render_health( array $status ): void {
 				<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'health', 'tasks' => $show ? 'all' : '', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 			</div>
 		<?php endif; ?>
+		<details class="hds-more hodima-advisor__explain"><summary class="hds-more__summary">چه کنید؟</summary><div class="hds-more__body">
 		<div class="hodima-advisor__advice"><strong>چه کنید:</strong> برای هر صفحه بررسی کنید: noindex یا canonical به آدرس دیگر نباشد؛ در سایت‌مپ باشد؛ دست‌کم از ۲ تا ۳ صفحه مرتبط لینک داخلی بگیرد؛ و محتوایش کم یا تکراری نباشد. بعد در Search Console همان آدرس را در «بررسی آدرس» بگذارید و «درخواست ایندکس» بزنید و اینجا «انجام دادم» را بزنید: آدرس اول صف بررسی ایندکس می‌رود؛ نمایش یا ایندکس ← برطرف شد، ۳۰ روز بعد هنوز نه ← برمی‌گردد. اگر صفحه ارزشی ندارد، ادغام یا حذفش با ریدایرکت بهتر است.</div>
+		</div></details>
 		<?php
 	}
 	hodima_seo_ui_card_close();
