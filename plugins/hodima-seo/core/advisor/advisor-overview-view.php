@@ -52,7 +52,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $info['fix'] || null !== hodima_seo_advisor_task_closed( $path, 'crawl_' . $code ) ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'level' => $info['level'], 'source' => 'crawl', 'mark' => $code, 'term' => '' ] );
+			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'detail' => (string) $issue['detail'], 'level' => $info['level'], 'source' => 'crawl', 'mark' => $code, 'term' => '' ] );
 		}
 	}
 
@@ -250,6 +250,8 @@ function hodima_seo_advisor_render_overview(): void {
 			$row  = hodima_seo_advisor_page( $page['path'] );
 			$link = hodima_seo_advisor_overview_link( (string) ( $row['kind'] ?? '' ), (int) ( $row['object_id'] ?? 0 ), $page['path'] );
 			$name = '' !== $page['title'] ? $page['title'] : rawurldecode( $page['path'] );
+			// دستور ایراد خزنده با نام «ویرایش» همین نوع صفحه (محصول، دسته…)؛ فقط برای ردیف‌های همین صفحه ساخته می‌شود (SEO 3.3.5)
+			$where = hodima_seo_advisor_issue_where( $page['path'], (string) ( $row['kind'] ?? '' ) );
 			?>
 			<article class="hodima-advisor__ov-row">
 				<div class="hodima-advisor__ov-head">
@@ -265,7 +267,7 @@ function hodima_seo_advisor_render_overview(): void {
 						<li class="hodima-advisor__ov-item">
 							<div class="hodima-advisor__ov-what">
 								<span class="hds-pill <?php echo 'bad' === $item['level'] ? 'hds-pill--error' : 'hds-pill--warn'; ?>"><?php echo esc_html( $item['label'] ); ?></span>
-								<p><?php echo esc_html( $item['text'] ); ?></p>
+								<p><?php echo esc_html( 'crawl' === $item['src'] ? trim( (string) ( $item['detail'] ?? '' ) . ' ' . hodima_seo_advisor_issue_fix( (string) $item['mark'], $where ) ) : $item['text'] ); ?></p>
 							</div>
 							<?php
 							$hidden = [ 'term' => (string) $item['term'] ];

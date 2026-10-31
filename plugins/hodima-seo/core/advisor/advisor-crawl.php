@@ -14,6 +14,9 @@ defined( 'ABSPATH' ) || exit;
 /** وضعیت آخرین خواندن (گزینه؛ autoload خاموش). */
 const HODIMA_SEO_ADVISOR_CRAWL_OPTION = 'hodima_advisor_crawl';
 
+/** عمق ذخیره‌شده برای صفحه‌ای که از صفحه اصلی با هیچ مسیر لینکی نمی‌رسیم (SEO 3.3.5؛ ستون عمق بدون علامت است، پس -1 نشد). */
+const HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE = 65535;
+
 /** خزش قدیمی‌تر از این روز «قدیمی» نشان می‌گیرد. */
 const HODIMA_SEO_ADVISOR_CRAWL_STALE_DAYS = 30;
 
@@ -309,7 +312,7 @@ function hodima_seo_advisor_links_evidence( ?array $links, string $term ): strin
 		}
 	}
 
-	if ( $links['depth'] >= 4 ) {
+	if ( $links['depth'] >= 4 && $links['depth'] < HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ) {
 		$text .= sprintf( ' عمق خزش %s است؛ آن را از منو یا صفحه اصلی نزدیک‌تر کنید.', $num( $links['depth'] ) );
 	}
 
@@ -445,7 +448,7 @@ const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
 	'content'  => [ 'img_alt', 'thin' ],
 	'tech'     => [ 'canonical_bad', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
 	'links'    => [ 'low_inlinks' ],
-	'orphan'   => [ 'orphan' ],
+	'orphan'   => [ 'orphan', 'island' ],
 ];
 
 /**
@@ -455,35 +458,11 @@ const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
  */
 function hodima_seo_advisor_crawl_issue_info( string $code ): array {
 
-	return [
-		'no_meta'     => [ 'label' => 'بدون توضیح متا', 'level' => 'bad', 'fix' => 'توضیح متا (۱۲۰ تا ۱۶۰ نویسه) بنویسید.' ],
-		'no_snippet'  => [ 'label' => 'متن زیر عنوان ممنوع', 'level' => 'bad', 'fix' => 'در کادر سئو همین صفحه، بخش «پیشرفته»، حداکثر طول متن (max-snippet) را روی پیش‌فرض بگذارید؛ مقدار ۰ به گوگل می‌گوید زیر عنوان متنی نشان ندهد و نرخ کلیک را کم می‌کند.' ],
-		'no_h1'       => [ 'label' => 'بدون H1', 'level' => 'warn', 'fix' => 'هر صفحه یک تیتر اصلی (H1) لازم دارد.' ],
-		'no_title'    => [ 'label' => 'بدون عنوان', 'level' => 'bad', 'fix' => 'عنوان سئو بنویسید.' ],
-		'title_short' => [ 'label' => 'عنوان کوتاه', 'level' => 'bad', 'fix' => 'عنوان را به ۴۸ تا ۶۲ نویسه برسانید.' ],
-		'title_long'  => [ 'label' => 'عنوان بلند', 'level' => 'warn', 'fix' => 'عنوان را به ۴۸ تا ۶۲ نویسه برسانید تا در گوگل بریده نشود.' ],
-		'dup_title'   => [ 'label' => 'عنوان تکراری', 'level' => 'warn', 'fix' => 'برای هر صفحه عنوان یگانه بنویسید.' ],
-		'dup_h1'      => [ 'label' => 'H1 تکراری', 'level' => 'warn', 'fix' => 'تیتر اصلی هر صفحه یگانه باشد.' ],
-		'slow'        => [ 'label' => 'کند', 'level' => 'warn', 'fix' => 'کش و سرعت سرور را بررسی کنید.' ],
-		'redirect'    => [ 'label' => 'ریدایرکت', 'level' => 'info', 'fix' => 'لینک‌های داخلی را مستقیم به آدرس مقصد بدهید.' ],
-		'noindex'     => [ 'label' => 'noindex یا canonical', 'level' => 'info', 'fix' => 'اگر این صفحه باید در گوگل باشد، noindex/canonical را بردارید.' ],
-		'broken'      => [ 'label' => 'خطای ۴۰۴/۵۰۰', 'level' => 'bad', 'fix' => 'لینک‌های داخلی به آن را درست کنید یا ریدایرکت بدهید.' ],
-		'low_inlinks' => [ 'label' => 'لینک ورودی کم', 'level' => 'warn', 'fix' => 'از صفحه‌های مرتبط (دسته، مقاله) لینک متنی بدهید.' ],
-		'link_broken'    => [ 'label' => 'لینک به صفحه خراب', 'level' => 'bad', 'fix' => 'این صفحه به آدرس‌هایی لینک می‌دهد که خطای ۴۰۴/۵۰۰ می‌دهند؛ هر لینک را به آدرس درست تغییر بدهید یا بردارید.' ],
-		'link_redirect'  => [ 'label' => 'لینک به ریدایرکت', 'level' => 'warn', 'fix' => 'این صفحه به آدرس‌هایی لینک می‌دهد که به جای دیگر می‌روند؛ لینک را مستقیم به آدرس مقصد بدهید.' ],
-		'link_noindex'   => [ 'label' => 'لینک به صفحه ایندکس‌نشدنی', 'level' => 'info', 'fix' => 'در متن این صفحه به صفحه‌ای لینک داده شده که noindex است یا به صفحه دیگری canonical دارد؛ اگر لازم نیست لینک را بردارید یا به آدرس اصلی بدهید.' ],
-		'redirect_chain' => [ 'label' => 'زنجیره ریدایرکت', 'level' => 'warn', 'fix' => 'این آدرس به آدرسی می‌رود که خودش دوباره ریدایرکت می‌شود؛ ریدایرکت را مستقیم به مقصد نهایی بدهید.' ],
-		'multi_h1'       => [ 'label' => 'چند H1', 'level' => 'warn', 'fix' => 'هر صفحه فقط یک تیتر اصلی (H1) داشته باشد؛ بقیه را H2 کنید.' ],
-		'img_alt'        => [ 'label' => 'تصویر بدون alt', 'level' => 'warn', 'fix' => 'این تصویرهای داخل متن صفحه توضیح (alt) ندارند؛ برای هر کدام یک توضیح کوتاه بنویسید (کتابخانه رسانه یا همان‌جا که تصویر را گذاشته‌اید). بندانگشتی کارت‌هایی که عنوان لینکشان کنارشان است لازم ندارد.' ],
-		'thin'           => [ 'label' => 'متن کم', 'level' => 'info', 'fix' => 'متن اصلی این صفحه کم است؛ اگر قرار است در گوگل رتبه بگیرد توضیح کامل‌تر اضافه کنید.' ],
-		'canonical_bad'  => [ 'label' => 'canonical اشتباه', 'level' => 'bad', 'fix' => 'canonical این صفحه به آدرسی اشاره می‌کند که ۲۰۰ نیست یا noindex است؛ آن را به آدرس درست یا خود صفحه برگردانید.' ],
-		'no_canonical'   => [ 'label' => 'بدون canonical', 'level' => 'warn', 'fix' => 'صفحه آدرس canonical ندارد؛ در کادر سئو یا افزونه سئو آن را فعال کنید.' ],
-		'http_link'      => [ 'label' => 'لینک http', 'level' => 'warn', 'fix' => 'در سایت https لینک داخلی با http می‌دهد؛ لینک‌ها را https کنید تا ریدایرکت اضافه نشود.' ],
-		'sitemap_bad'    => [ 'label' => 'ایراد در نقشه سایت', 'level' => 'bad', 'fix' => 'این آدرس در نقشه سایت است ولی صفحه سالم و ایندکس‌پذیر نیست؛ از نقشه سایت بردارید یا صفحه را درست کنید.' ],
-		'not_in_sitemap' => [ 'label' => 'خارج از نقشه سایت', 'level' => 'info', 'fix' => 'صفحه سالم و ایندکس‌پذیر است ولی در نقشه سایت نیست؛ اگر باید در گوگل باشد به نقشه سایت اضافه کنید.' ],
-		'deep'           => [ 'label' => 'صفحه عمیق', 'level' => 'info', 'fix' => 'از صفحه اصلی چند کلیک فاصله دارد؛ از صفحه‌های نزدیک‌تر (دسته، مقاله) به آن لینک بدهید.' ],
-		'orphan'      => [ 'label' => 'بدون لینک ورودی', 'level' => 'bad', 'fix' => 'از دست‌کم دو صفحه مرتبط به آن لینک بدهید.' ],
-	][ $code ] ?? [ 'label' => $code, 'level' => 'info', 'fix' => '' ];
+	$record = hodima_seo_advisor_issue_catalog()[ $code ] ?? null;
+
+	return null === $record
+		? [ 'label' => $code, 'level' => 'info', 'fix' => '' ]
+		: [ 'label' => $record['label'], 'level' => $record['level'], 'fix' => hodima_seo_advisor_issue_fix( $code ) ];
 }
 
 /**
@@ -610,13 +589,13 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 			if ( '' === $title ) {
 				$add( 'no_title' );
-			} elseif ( $tlen < HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN ) {
+			} elseif ( $tlen < HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN && ! $paged( $r ) ) { // صفحه‌بندی آرشیو (/page/2/) عنوان کوتاه آرشیو را عمدا دارد (SEO 3.3.5)
 				$add( 'title_short', sprintf( '%s نویسه', number_format_i18n( $tlen ) ) );
 			} elseif ( $tlen > HODIMA_SEO_ADVISOR_CRAWL_TITLE_MAX ) {
 				$add( 'title_long', sprintf( '%s نویسه', number_format_i18n( $tlen ) ) );
 			}
 
-			if ( (int) $r['meta_len'] <= 0 ) {
+			if ( (int) $r['meta_len'] <= 0 && ! $paged( $r ) ) { // برای صفحه‌های /page/N/ توضیح متای جدا لازم نیست (SEO 3.3.5)
 				$add( 'no_meta' );
 			}
 			if ( 1 === (int) ( $r['no_snippet'] ?? 0 ) ) {
@@ -671,7 +650,12 @@ function hodima_seo_advisor_crawl_issues(): array {
 				}
 			}
 
-			if ( (int) $r['depth'] >= HODIMA_SEO_ADVISOR_CRAWL_DEEP ) {
+			if ( (int) $r['depth'] === HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ) {
+				// لینک ورودی دارد (وگرنه «بدون لینک ورودی» است) ولی از صفحه اصلی نمی‌رسیم: جزیره (SEO 3.3.5)
+				if ( $inlinks > 0 && '/' !== $path && ! $paged( $r ) ) {
+					$add( 'island', sprintf( '%s لینک ورودی، همه از صفحه‌های جدا از سایت', $n( $inlinks ) ) );
+				}
+			} elseif ( (int) $r['depth'] >= HODIMA_SEO_ADVISOR_CRAWL_DEEP ) {
 				$add( 'deep', sprintf( '%s کلیک از صفحه اصلی', $n( (int) $r['depth'] ) ) );
 			}
 		} elseif ( $impressions > 0 || $inlinks > 0 ) {

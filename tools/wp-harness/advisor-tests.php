@@ -3053,6 +3053,34 @@ add_filter(
 add_filter( 'hodima_seo_advisor_crawler_delay', '__return_zero' );
 update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
 delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+echo "=== فهرست واحد ایرادها و رفع مثبت‌های کاذب خزش (SEO 3.3.5)\n";
+$ic_codes = array_keys( hodima_seo_advisor_issue_catalog() );
+$ic_used  = array_unique( array_merge( ...array_values( HODIMA_SEO_ADVISOR_CRAWL_GROUPS ), ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) ) );
+hodima_ad( 'هر کد گروه چیپ‌ها و بخش نمره در فهرست واحد ایرادها هست و هر رکورد برچسب، سطح و سختی معتبر دارد', [
+	array_values( array_diff( $ic_used, $ic_codes ) ),
+	array_filter( hodima_seo_advisor_issue_catalog(), static fn( array $r ): bool => '' === $r['label'] || ! in_array( $r['level'], [ 'bad', 'warn', 'info' ], true ) || ! in_array( $r['effort'], [ 1, 2, 3 ], true ) || '' === $r['fix'] ),
+], [ [], [] ] );
+hodima_ad( 'سازگاری crawl_issue_info: برچسب، سطح، دستور بدون جانگهدار', [ hodima_seo_advisor_crawl_issue_info( 'no_meta' )['label'], hodima_seo_advisor_crawl_issue_info( 'no_meta' )['level'], str_contains( hodima_seo_advisor_crawl_issue_info( 'no_meta' )['fix'], '{where}' ), hodima_seo_advisor_crawl_issue_info( 'x_none' ) ], [ 'بدون توضیح متا', 'bad', false, [ 'label' => 'x_none', 'level' => 'info', 'fix' => '' ] ] );
+hodima_ad( 'دستور با نام «ویرایش» نوع صفحه؛ خالی = «ویرایش صفحه»؛ ایراد بی‌جانگهدار بدون تغییر', [ str_contains( hodima_seo_advisor_issue_fix( 'no_meta', 'ویرایش محصول' ), 'در «ویرایش محصول»' ), str_contains( hodima_seo_advisor_issue_fix( 'no_meta' ), 'در «ویرایش صفحه»' ), hodima_seo_advisor_issue_fix( 'orphan', 'ویرایش دسته' ), hodima_seo_advisor_issue_fix( 'x_none' ) ], [ true, true, 'از دست‌کم دو صفحه مرتبط به آن لینک بدهید.', '' ] );
+$ic_pt = get_post_type_object( 'post' );
+hodima_ad( 'نام «ویرایش» نوع صفحه: صفحه اصلی، نوشته و دسته از برچسب‌های وردپرس؛ ناشناخته خالی', [ hodima_seo_advisor_issue_where( '/' ), hodima_seo_advisor_issue_where( '/x/', 'post' ) === (string) $ic_pt->labels->edit_item, hodima_seo_advisor_issue_where( '/x/', 'category' ) === (string) get_taxonomy( 'category' )->labels->edit_item, hodima_seo_advisor_issue_where( '/x/', 'nothing-here' ) ], [ 'ویرایش صفحه اصلی', true, true, '' ] );
+hodima_ad( 'عنوان کوتاه: آستانه ۳۰ نویسه و دستور ۴۸ تا ۶۲ هم‌خوان‌اند (بدون ناهماهنگی)', [ str_contains( hodima_seo_advisor_issue_fix( 'title_short' ), '۳۰' ), str_contains( hodima_seo_advisor_issue_fix( 'title_short' ), '۴۸ تا ۶۲' ), HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN ], [ true, true, 30 ] );
+
+$ic_t = hodima_seo_advisor_table( 'crawl_pages' );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $ic_t ) );
+foreach ( [ [ '/', 0, 5, 100, 50 ], [ '/blog/page/2/', 1, 5, 0, 10 ], [ '/plain/', 1, 5, 0, 10 ], [ '/island/', HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE, 5, 100, 50 ], [ '/orphan/', HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE, 0, 100, 50 ], [ '/deep/', 6, 5, 100, 50 ], [ '/ok/', 1, 4, 100, 50 ] ] as [ $ic_p, $ic_d, $ic_in, $ic_meta, $ic_tl ] ) {
+	$GLOBALS['wpdb']->insert( $ic_t, [ 'path' => $ic_p, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $ic_p, 'title_len' => $ic_tl, 'meta_len' => $ic_meta, 'h1' => 'تیتر ' . $ic_p, 'resp_ms' => 100, 'inlinks' => $ic_in, 'text_links' => 1, 'depth' => $ic_d, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 0, 'http_links' => 0, 'canonical' => $ic_p ] );
+}
+hodima_seo_advisor_crawl_map( true );
+$ic_issues = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $ic_row ) {
+	$ic_issues[ $ic_row['path'] ] = array_column( $ic_row['issues'], 'code' );
+}
+hodima_ad( 'صفحه‌بندی (/page/N/) بدون «بدون متا» و «عنوان کوتاه»؛ صفحه معمولی هر دو را می‌گیرد', [ $ic_issues['/blog/page/2/'] ?? [], $ic_issues['/plain/'] ?? [] ], [ [], [ 'title_short', 'no_meta' ] ] );
+hodima_ad( 'عمق: صفحه نارسیده با لینک ورودی «جدا از صفحه اصلی» (نه «عمیق»)؛ نارسیده بی‌لینک فقط «بدون لینک ورودی»؛ عمق ۶ «عمیق»؛ سالم بی‌ایراد', [ $ic_issues['/island/'] ?? [], $ic_issues['/orphan/'] ?? [], $ic_issues['/deep/'] ?? [], $ic_issues['/ok/'] ?? [] ], [ [ 'island' ], [ 'orphan' ], [ 'deep' ], [] ] );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $ic_t ) );
+hodima_seo_advisor_crawl_map( true );
+
 $cx_pt = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $cx_pt ) );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'crawl_links' ) ) );

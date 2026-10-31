@@ -931,6 +931,12 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 		}
 	}
 
+	// صفحه‌ای که از صفحه اصلی با هیچ مسیر لینکی نمی‌رسیم عمق 0 می‌ماند و با صفحه اصلی یکی دیده می‌شد؛ نشانه جدا می‌گیرد
+	// (SEO 3.3.5). فقط وقتی صفحه اصلی خزیده شد و به جای دیگری لینک داد؛ وگرنه خزش ناقص همه را «جزیره» می‌کرد.
+	if ( count( $depth ) > 1 && 200 === (int) $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM %i WHERE path = %s', $page_t, '/' ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( $wpdb->prepare( 'UPDATE %i SET depth = %d WHERE depth = 0 AND path <> %s', $page_t, HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE, '/' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	}
+
 	$pages = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $page_t ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	$links = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $link_t ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
