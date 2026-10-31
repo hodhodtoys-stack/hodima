@@ -2792,3 +2792,72 @@
 .hodima-advisor input[type="radio"] {
 	accent-color: var(--hd-primary);
 }
+
+/* ── «سلامت سایت» فشرده (SEO 3.2.4): نمره کوچک‌تر، بخش‌ها دو ستونه، سه کار اول در یک ردیف (فقط دسکتاپ) ── */
+.hodima-advisor .hodima-advisor__sc-gauge {
+	inline-size: 7rem;
+}
+
+.hodima-advisor .hodima-advisor__sc-gauge-in {
+	inline-size: 5.25rem; /* حلقه ≈ ۰٫۸۷۵rem ضخامت */
+}
+
+.hodima-advisor .hodima-advisor__sc-gauge-in b {
+	font-size: 1.75rem;
+}
+
+.hodima-advisor .hodima-advisor__sc-todo {
+	gap: 0.375rem;
+	padding-block-start: 0.75rem;
+}
+
+@media (min-width: 783px) {
+	.hodima-advisor .hodima-advisor__sc {
+		grid-template-columns: 9rem minmax(0, 1fr);
+		gap: 1.25rem;
+	}
+
+	.hodima-advisor .hodima-advisor__sc-cats {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.125rem 1.25rem;
+	}
+
+	.hodima-advisor .hodima-advisor__sc-cat {
+		grid-template-columns: minmax(0, 8rem) minmax(0, 1fr) auto;
+		gap: 0.5rem;
+		min-block-size: 2.5rem;
+	}
+
+	.hodima-advisor .hodima-advisor__sc-todo ol {
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+	}
+
+	.hodima-advisor .hodima-advisor__sc-todo li {
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0 0.625rem;
+		align-items: start;
+		padding-block: 0.375rem;
+	}
+
+	.hodima-advisor .hodima-advisor__sc-todo li .hodima-advisor__dot {
+		margin-block-start: 0.5rem;
+	}
+
+	.hodima-advisor .hodima-advisor__sc-todo li a {
+		grid-column: 2;
+		min-block-size: 2.5rem;
+	}
+}
+
+/* موبایل: هر کار یک ردیف (نقطه، متن، «دیدن و رفع»)، نه کارت دو خطی */
+@media (max-width: 782px) {
+	.hodima-advisor .hodima-advisor__sc-todo li {
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		padding-block: 0.25rem;
+	}
+
+	.hodima-advisor .hodima-advisor__sc-todo li a {
+		grid-column: auto;
+		min-block-size: 2.5rem;
+	}
+}
