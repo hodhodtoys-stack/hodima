@@ -82,7 +82,7 @@ function hodima_seo_advisor_crawler_status_view(): array {
 	$view = match ( $status['state'] ) {
 		'off'     => [ 'warn', 'خاموش', 'خزش خودکار خاموش است؛ فقط «خزش همین حالا» کار می‌کند.' ],
 		'paused'  => [ 'warn', 'مکث موقت', sprintf( 'سایت کند پاسخ داد؛ خزنده تا %s ساکت است تا سایت سبک بماند.', wp_date( 'H:i', $status['pause_until'] ) ) ],
-		'running' => [ 'info', $status['manual'] ? 'خزش همین حالا' : 'در حال خزش', $progress . ( $status['manual'] || hodima_seo_advisor_crawler_in_window() ? '.' : '؛ ادامه در ساعت خزش بعدی.' ) ],
+		'running' => [ 'info', $status['manual'] ? 'خزش همین حالا' : ( 'quick' === $status['mode'] ? 'دور سریع' : 'در حال خزش' ), $progress . ( $status['manual'] || hodima_seo_advisor_crawler_in_window() ? '.' : '؛ ادامه در ساعت خزش بعدی.' ) ],
 		default   => $status['requested']
 			? [ 'info', 'درخواست شد', 'دور تازه در اولین نوبت ساعت خزش شروع می‌شود.' ]
 			: ( $status['finished'] > 0
@@ -205,7 +205,7 @@ function hodima_seo_advisor_render_crawler_card(): void {
 			<span class="hodima-advisor__dot hodima-advisor__dot--info" aria-hidden="true"></span>
 			<span class="hodima-advisor__file-body">
 				<strong>زمان‌بندی</strong>
-				<small><?php echo esc_html( sprintf( '%1$s به وقت سایت، هر %2$s روز یک دور%3$s', $window, $n( $settings['interval'] ), $settings['enabled'] ? '' : ' (خاموش)' ) ); ?></small>
+				<small><?php echo esc_html( sprintf( '%1$s به وقت سایت، هر %2$s روز دور کامل%3$s%4$s', $window, $n( $settings['interval'] ), $settings['interval'] > 1 && (bool) apply_filters( 'hodima_seo_advisor_crawler_quick', true ) ? ' و هر روز دور سریع (پرنمایش‌ها و صفحه‌های تازه‌ویرایش)' : '', $settings['enabled'] ? '' : ' (خاموش)' ) ); ?></small>
 			</span>
 		</li>
 	</ul>

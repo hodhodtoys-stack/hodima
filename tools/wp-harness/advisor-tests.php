@@ -3148,6 +3148,66 @@ wp_delete_post( $dr_post, true );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $ic_t ) );
 hodima_seo_advisor_crawl_map( true );
 
+echo "=== خزش: پایان دور در پایگاه داده و دور سریع (SEO 3.3.8)\n";
+$fz_pt = hodima_seo_advisor_table( 'crawl_pages' );
+$fz_lt = hodima_seo_advisor_table( 'crawl_links' );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_pt ) );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_lt ) );
+foreach ( [ '/', '/a/', '/b/', '/c/', '/d/', '/e/', '/f/' ] as $fz_p ) {
+	$GLOBALS['wpdb']->insert( $fz_pt, [ 'path' => $fz_p, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $fz_p, 'title_len' => 50, 'meta_len' => 100, 'h1' => 'تیتر ' . $fz_p, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 0, 'http_links' => 0, 'canonical' => $fz_p, 'inlinks' => 99, 'text_links' => 99, 'depth' => 99 ] );
+}
+// / ← a (متنی)، b (منو)؛ a ← c (متنی، nofollow)؛ b ← c (متنی)؛ c ← d؛ جزیره: e ← f
+foreach ( [ [ '/', '/a/', 'content', 1 ], [ '/', '/b/', 'navigation', 1 ], [ '/a/', '/c/', 'content', 0 ], [ '/b/', '/c/', 'content', 1 ], [ '/b/', '/c/', 'footer', 1 ], [ '/c/', '/d/', 'content', 1 ], [ '/e/', '/f/', 'content', 1 ] ] as [ $fz_s, $fz_d, $fz_pos, $fz_fol ] ) {
+	$GLOBALS['wpdb']->insert( $fz_lt, [ 'source_path' => $fz_s, 'dest_path' => $fz_d, 'link_position' => $fz_pos, 'anchor' => 'x', 'is_follow' => $fz_fol ] );
+}
+$fz_state = hodima_seo_advisor_crawler_state();
+$fz_state['seen'] = array_fill_keys( [ '/', '/a/', '/b/', '/c/', '/d/', '/e/', '/f/' ], 1 );
+hodima_seo_advisor_crawler_finalize( $fz_state );
+$fz_rows = [];
+foreach ( (array) $GLOBALS['wpdb']->get_results( $GLOBALS['wpdb']->prepare( 'SELECT path, inlinks, text_links, depth FROM %i ORDER BY path', $fz_pt ), ARRAY_A ) as $fz_r ) {
+	$fz_rows[ $fz_r['path'] ] = [ (int) $fz_r['inlinks'], (int) $fz_r['text_links'], (int) $fz_r['depth'] ];
+}
+hodima_ad(
+	'پایان دور با شمارش در پایگاه داده: لینک ورودی یکتا، لینک متنی follow، عمق؛ جزیره = نارسیده',
+	$fz_rows,
+	[ '/' => [ 0, 0, 0 ], '/a/' => [ 1, 1, 1 ], '/b/' => [ 1, 0, 1 ], '/c/' => [ 2, 1, 2 ], '/d/' => [ 1, 1, 3 ], '/e/' => [ 0, 0, HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ], '/f/' => [ 1, 1, HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ] ]
+);
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_pt ) );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_lt ) );
+hodima_seo_advisor_crawl_map( true );
+
+$fz_now = time();
+$fz_set = [ 'interval' => 7 ];
+$fz_st  = static fn( array $over ): array => $over + [ 'requested' => false, 'finished' => $fz_now - 3 * HOUR_IN_SECONDS, 'full_at' => $fz_now - 2 * DAY_IN_SECONDS ];
+hodima_ad(
+	'دور سررسید: کامل (درخواست، هرگز، فاصله دورها)، سریع (بیش از یک روز از آخرین دور)، هیچ',
+	[
+		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'requested' => true ] ), $fz_set ),
+		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'finished' => 0 ] ), $fz_set ),
+		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'full_at' => $fz_now - 8 * DAY_IN_SECONDS, 'finished' => $fz_now - 8 * DAY_IN_SECONDS ] ), $fz_set ),
+		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'finished' => $fz_now - 26 * HOUR_IN_SECONDS ] ), $fz_set ),
+		hodima_seo_advisor_crawler_due_mode( $fz_st( [] ), $fz_set ),
+		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'finished' => $fz_now - 26 * HOUR_IN_SECONDS ] ), [ 'interval' => 1 ] ),
+	],
+	[ 'full', 'full', 'full', 'quick', '', 'full' ]
+);
+add_filter( 'hodima_seo_advisor_crawler_quick', '__return_false' );
+hodima_ad( 'دور سریع با فیلتر خاموش نمی‌شود (فقط دور کامل می‌ماند)', hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'finished' => $fz_now - 26 * HOUR_IN_SECONDS ] ), $fz_set ), '' );
+remove_filter( 'hodima_seo_advisor_crawler_quick', '__return_false' );
+hodima_ad( 'حالت پیش‌فرض بدون full_at: همان زمان آخرین دور (پیش از ۳.۳.۸ همه کامل بودند)', [ ( static function (): array { update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'finished' => 1234567 ], false ); $st = hodima_seo_advisor_crawler_state(); delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ); return [ $st['full_at'], $st['mode'] ]; } )() ], [ [ 1234567, 'full' ] ] );
+
+$fz_old = wp_insert_post( [ 'post_title' => 'قدیمی', 'post_status' => 'publish', 'post_type' => 'post', 'post_content' => 'متن' ] );
+$fz_new = wp_insert_post( [ 'post_title' => 'تازه', 'post_status' => 'publish', 'post_type' => 'post', 'post_content' => 'متن' ] );
+$GLOBALS['wpdb']->update( $GLOBALS['wpdb']->posts, [ 'post_modified_gmt' => gmdate( 'Y-m-d H:i:s', $fz_now - 10 * DAY_IN_SECONDS ) ], [ 'ID' => $fz_old ] );
+$GLOBALS['wpdb']->replace( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/fz-hot/', 'kind' => 'post', 'impressions' => 900 ] );
+$GLOBALS['wpdb']->replace( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/fz-cold/', 'kind' => 'post', 'impressions' => 0 ] );
+$fz_seed = hodima_seo_advisor_crawler_quick_seed( $fz_now - DAY_IN_SECONDS );
+hodima_ad( 'seed دور سریع: پرنمایش‌ها (نه بدون نمایش)، نوشته تازه‌ویرایش‌شده (نه قدیمی)', [ in_array( 'u:/fz-hot/', $fz_seed, true ), in_array( 'u:/fz-cold/', $fz_seed, true ), in_array( 'p:' . $fz_new, $fz_seed, true ), in_array( 'p:' . $fz_old, $fz_seed, true ) ], [ true, false, true, false ] );
+$GLOBALS['wpdb']->delete( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/fz-hot/' ] );
+$GLOBALS['wpdb']->delete( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/fz-cold/' ] );
+wp_delete_post( $fz_old, true );
+wp_delete_post( $fz_new, true );
+
 $cx_pt = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $cx_pt ) );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'crawl_links' ) ) );
@@ -3198,6 +3258,48 @@ foreach ( hodima_seo_advisor_crawl_issues() as $issue_row ) {
 }
 hodima_ad( 'بعد از رفع و «انجام دادم»: صفحه دوباره خوانده شد؛ ایرادهای لینک، H1، alt، http و canonical رفتند و کار «برطرف شد» است', [ array_intersect( [ 'link_broken', 'link_redirect', 'link_noindex', 'multi_h1', 'img_alt', 'http_link', 'no_canonical' ], $cx_after ), hodima_seo_advisor_task_state( (array) hodima_seo_advisor_task( '/', 'crawl_link_broken', '' ) ) ], [ [], 'fixed' ] );
 hodima_ad( 'خزش دوباره آمار دور را نگه می‌دارد: لینک ورودی /b/ و عمق /d3/ همان قبل', [ (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT inlinks FROM %i WHERE path = %s', $cx_pt, '/b/' ) ) === $cx_inl_b, (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT depth FROM %i WHERE path = %s', $cx_pt, '/d3/' ) ) === $cx_depth ], [ true, true ] );
+
+// دور سریع (SEO 3.3.8): فقط صفحه اصلی و پرنمایش‌ها + آدرس تازه؛ صفحه‌های شناخته‌شده دیگر خزیده و پاک نمی‌شوند؛ نقشه سایت نمی‌خزد
+$cq_hits = [];
+add_filter(
+	'pre_http_request',
+	$cq_count = static function ( mixed $pre, array $args, string $url ) use ( &$cq_hits, $cx_site ): mixed {
+		if ( str_starts_with( $url, $cx_site ) ) {
+			$cq_hits[] = '/' . ltrim( (string) wp_parse_url( $url, PHP_URL_PATH ), '/' );
+		}
+		return $pre;
+	},
+	5,
+	3
+);
+$cq_sitemap_before = get_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION );
+$cq_pages_before   = (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT COUNT(*) FROM %i', $cx_pt ) );
+$cq_full_at        = time() - 3 * DAY_IN_SECONDS;
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( "UPDATE {$GLOBALS['wpdb']->posts} SET post_modified_gmt = %s", gmdate( 'Y-m-d H:i:s', time() - 10 * DAY_IN_SECONDS ) ) ); // نوشته‌های واقعی ابزار تست «ویرایش‌شده» حساب نشوند
+$cx_pages['/']        .= '<a href="/cq-new/">تازه</a>';
+$cx_pages['/cq-new/']  = $cx_page( 'صفحه تازه دور سریع با عنوان به اندازه کافی بلند', '<h1>تازه</h1><p>' . $cx_words( 200 ) . '</p>', '' );
+$GLOBALS['wpdb']->replace( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/b/', 'kind' => 'page', 'impressions' => 700 ] );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'finished' => time() - 26 * HOUR_IN_SECONDS, 'full_at' => $cq_full_at, 'pages' => $cq_pages_before ], false );
+for ( $cq_i = 0; $cq_i < 10 && 'running' === hodima_seo_advisor_crawler_state()['status'] || 0 === $cq_i; $cq_i++ ) {
+	hodima_seo_advisor_crawler_tick( true );
+}
+$cq_state = hodima_seo_advisor_crawler_state();
+sort( $cq_hits );
+hodima_ad( 'دور سریع: فقط صفحه اصلی، پرنمایش /b/ و آدرس تازه خزیده شد؛ نقشه سایت و صفحه‌های دیگر نه', array_values( array_unique( $cq_hits ) ), [ '/', '/b/', '/cq-new/' ] );
+hodima_ad(
+	'بعد از دور سریع: آدرس تازه ثبت شد، هیچ صفحه‌ای پاک نشد، نقشه سایت و زمان دور کامل همان قبل، دور تمام‌شده',
+	[
+		(int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT status FROM %i WHERE path = %s', $cx_pt, '/cq-new/' ) ),
+		(int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT COUNT(*) FROM %i', $cx_pt ) ) === $cq_pages_before + 1,
+		get_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION ) === $cq_sitemap_before,
+		$cq_state['full_at'],
+		$cq_state['status'],
+		$cq_state['finished'] >= time() - 60,
+	],
+	[ 200, true, true, $cq_full_at, 'idle', true ]
+);
+remove_filter( 'pre_http_request', $cq_count, 5 );
+$GLOBALS['wpdb']->delete( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/b/' ] );
 
 remove_filter( 'pre_http_request', $cx_filter, 10 );
 remove_filter( 'hodima_seo_advisor_crawler_delay', '__return_zero' );
