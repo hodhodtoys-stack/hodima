@@ -3433,6 +3433,26 @@ foreach ( $qd_keep as $qd_opt => $qd_val ) {
 }
 hodima_seo_advisor_crawl_map( true );
 
+echo "=== فشرده‌سازی پیشخوان (SEO 3.3.0)\n";
+$fs_keep = [ get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, null ), get_option( HODIMA_SEO_ADVISOR_CAPS_OPTION, null ) ];
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - HOUR_IN_SECONDS, 'end' => gmdate( 'Y-m-d', time() - 2 * DAY_IN_SECONDS ), 'days' => 90, 'error' => '' ] + (array) get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [] ), false );
+$fs_bar = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'opportunities' ) );
+hodima_ad( 'نوار کیفیت داده داخل همان کارت «گرفتن داده تازه» است (یک کارت، نه دو کارت)', [ substr_count( $fs_bar, '<section' ), str_contains( $fs_bar, 'hodima-advisor__quality--embedded' ), str_contains( $fs_bar, 'hds-card hodima-advisor__quality' ) ], [ 1, true, false ] );
+wp_set_current_user( 1 );
+$_GET = [];
+$fs_page = $cap( static fn() => hodima_seo_advisor_render_admin() );
+hodima_ad( 'صفحه: نوار کیفیت یک بار و از نوع جاسازی‌شده', [ substr_count( $fs_page, 'id="hodima-advisor-quality-title"' ), str_contains( $fs_page, 'hodima-advisor__quality--embedded' ) ], [ 1, true ] );
+ob_start();
+hodima_seo_advisor_render_crawler_card();
+$fs_card = (string) ob_get_clean();
+hodima_ad( 'خزش خودکار: «خزش همین حالا» فرم جدا بیرون از جمع‌شونده؛ تنظیمات داخل details بسته', [ 1 === preg_match( '#</details>#', $fs_card ), str_contains( $fs_card, 'class="hodima-advisor__crawler-now"' ), str_contains( $fs_card, '<details class="hds-more hodima-advisor__crawler-more">' ), strpos( $fs_card, 'hodima-advisor__crawler-now' ) < strpos( $fs_card, 'hodima-advisor__crawler-more' ) ], [ true, true, true, true ] );
+hodima_ad( 'فرم زمان‌بندی همان نام فیلدها را دارد (روشن‌بودن با کلید، حالت ساعت، از، تا، فاصله)', [ str_contains( $fs_card, 'class="hds-switch" name="enabled"' ), str_contains( $fs_card, 'name="always" value="0"' ), str_contains( $fs_card, 'name="always" value="1"' ), str_contains( $fs_card, 'name="start"' ), str_contains( $fs_card, 'name="end"' ), str_contains( $fs_card, 'name="interval"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_settings"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_now"' ) ], [ true, true, true, true, true, true, true, true ] );
+hodima_ad( 'کارت خزش دیگر تب ندارد', str_contains( $fs_card, 'hds-tabset' ), false );
+$fs_gl = $cap( static fn() => hodima_seo_advisor_render_glossary() );
+hodima_ad( 'اصطلاح‌ها هنوز details با همان فهرست است', [ str_contains( $fs_gl, '<details class="hds-card hodima-advisor__glossary">' ), str_contains( $fs_gl, '<dt>' ) ], [ true, true ] );
+null === $fs_keep[0] ? delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, $fs_keep[0], false );
+null === $fs_keep[1] ? delete_option( HODIMA_SEO_ADVISOR_CAPS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CAPS_OPTION, $fs_keep[1], false );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );

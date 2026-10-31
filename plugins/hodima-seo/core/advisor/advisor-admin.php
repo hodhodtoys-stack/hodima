@@ -582,7 +582,6 @@ function hodima_seo_advisor_render_admin(): void {
 	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
 	if ( 'settings' !== $tab ) {
 		hodima_seo_advisor_render_toolbar( $tab );
-		hodima_seo_advisor_render_quality( $tab ); // کیفیت داده (جای نوار «بخشی از داده بریده شده»)
 	}
 	hodima_seo_advisor_render_tabs( $tab, $has_data );
 
@@ -680,7 +679,8 @@ function hodima_seo_advisor_render_toolbar( string $tab = '' ): void {
 				<span class="dashicons dashicons-update" aria-hidden="true"></span> گرفتن داده تازه
 			</button>
 		</form>
-		<p class="hodima-advisor__bar-help">یک کلیک برای همه بخش‌ها: آمار گوگل و کلمه‌ها، موبایل، روند ماه‌ها، بررسی ایندکس چند آدرس و فایل‌های خزش تازه. هر روز هم خودکار انجام می‌شود.</p>
+		<p class="hodima-advisor__bar-help">یک کلیک برای همه بخش‌ها (آمار گوگل، ایندکس، خزش)؛ هر روز هم خودکار انجام می‌شود.</p>
+		<?php hodima_seo_advisor_render_quality( $tab, true ); // نوار «کیفیت داده» داخل همین کارت (SEO 3.3.0) ?>
 	</section>
 	<?php
 }

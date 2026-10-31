@@ -18,8 +18,10 @@ const HODIMA_SEO_ADVISOR_QUALITY_TABS = [ 'opportunities', 'crawl' ];
 
 /**
  * نوار «کیفیت داده».
+ *
+ * @param bool $embedded true = داخل کارت «گرفتن داده تازه» (div با خط جداکننده)؛ false = کارت جدا
  */
-function hodima_seo_advisor_render_quality( string $tab ): void {
+function hodima_seo_advisor_render_quality( string $tab, bool $embedded = false ): void {
 
 	if ( ! in_array( $tab, HODIMA_SEO_ADVISOR_QUALITY_TABS, true ) ) {
 		return;
@@ -38,7 +40,7 @@ function hodima_seo_advisor_render_quality( string $tab ): void {
 	];
 	$warn  = 'warn' === $quality['level'];
 	?>
-	<section class="hds-card hodima-advisor__quality" data-level="<?php echo esc_attr( $quality['level'] ); ?>" aria-labelledby="hodima-advisor-quality-title">
+	<<?php echo $embedded ? 'div' : 'section'; ?> class="<?php echo $embedded ? 'hodima-advisor__quality hodima-advisor__quality--embedded' : 'hds-card hodima-advisor__quality'; ?>" data-level="<?php echo esc_attr( $quality['level'] ); ?>" aria-labelledby="hodima-advisor-quality-title">
 		<div class="hodima-advisor__quality-head">
 			<h2 class="hodima-advisor__quality-title" id="hodima-advisor-quality-title">کیفیت داده</h2>
 			<span class="<?php echo $warn ? 'hds-pill hds-pill--warn' : 'hds-pill'; ?>">
@@ -63,6 +65,6 @@ function hodima_seo_advisor_render_quality( string $tab ): void {
 				<?php endforeach; ?>
 			</ul>
 		<?php endif; ?>
-	</section>
+	</<?php echo $embedded ? 'div' : 'section'; ?>>
 	<?php
 }
