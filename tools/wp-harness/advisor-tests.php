@@ -3221,9 +3221,10 @@ delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
 
 echo "=== سلامت کارهای خودکار (SEO 3.2.0)\n";
 $ch_keep = [];
-foreach ( [ HODIMA_SEO_ADVISOR_STATUS_OPTION, HODIMA_SEO_ADVISOR_CRAWLER_OPTION, HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, HODIMA_SEO_ADVISOR_PIPELINE_OPTION ] as $ch_opt ) {
+foreach ( [ HODIMA_SEO_ADVISOR_STATUS_OPTION, HODIMA_SEO_ADVISOR_CRAWLER_OPTION, HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, HODIMA_SEO_ADVISOR_PIPELINE_OPTION, HODIMA_SEO_ADVISOR_RUNS_OPTION ] as $ch_opt ) {
 	$ch_keep[ $ch_opt ] = get_option( $ch_opt, null );
 }
+delete_option( HODIMA_SEO_ADVISOR_RUNS_OPTION ); // اجرای ثبت‌شده آزمون‌های پیشین نباید سنجش «بر پایه رویداد» را بپوشاند
 $ch_now    = time();
 $ch_clear  = static function (): void {
 	foreach ( [ HODIMA_SEO_ADVISOR_CRON, HODIMA_SEO_ADVISOR_INSPECT_CRON, HODIMA_SEO_ADVISOR_STAGE_CRON, HODIMA_SEO_ADVISOR_CRAWLER_CRON ] as $hook ) {
@@ -3289,7 +3290,7 @@ foreach ( [ 3, 20, 70 ] as $ch_hours ) {
 hodima_ad( 'بررسی ایندکس: ۳ ساعت از موعد سالم، ۲۰ ساعت دیر شده، ۷۰ ساعت متوقف', $ch_levels, [ 'ok', 'warn', 'bad' ] );
 wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_INSPECT_CRON );
 wp_schedule_event( $ch_now + HOUR_IN_SECONDS, 'twicedaily', HODIMA_SEO_ADVISOR_INSPECT_CRON );
-hodima_ad( 'بررسی ایندکس طبق برنامه سالم است', [ $ch_job( 'inspect' )['level'], $ch_job( 'inspect' )['last'] ], [ 'ok', 'طبق برنامه' ] );
+hodima_ad( 'بررسی ایندکس طبق برنامه سالم است', [ $ch_job( 'inspect' )['level'], $ch_job( 'inspect' )['last'] ], [ 'ok', 'هنوز اجرایی ثبت نشده؛ طبق برنامه' ] );
 
 // ساخت پیشنهادها
 hodima_ad( 'نوبت پس‌زمینه‌ای که نیست: بی‌کار و سالم', [ $ch_job( 'pipeline' )['level'], $ch_job( 'pipeline' )['last'] ], [ 'ok', 'بی‌کار' ] );
@@ -3302,6 +3303,46 @@ foreach ( [ 10 * MINUTE_IN_SECONDS, 2 * HOUR_IN_SECONDS, 10 * HOUR_IN_SECONDS ] 
 }
 hodima_ad( 'نوبت ثبت‌شده که اجرا نشده: ۱۰ دقیقه سالم، ۲ ساعت دیر شده، ۱۰ ساعت متوقف', $ch_levels, [ 'ok', 'warn', 'bad' ] );
 wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+
+// زمان آخرین اجرای واقعی (۳.۲.۶): دکمه دستی هم در کارت دیده می‌شود
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_INSPECT_CRON );
+wp_schedule_event( $ch_now - 5 * DAY_IN_SECONDS, 'twicedaily', HODIMA_SEO_ADVISOR_INSPECT_CRON );
+hodima_ad( 'بدون اجرای ثبت‌شده: رویداد ۵ روز از موعد گذشته ← متوقف با متن «اجرایی ثبت نشده؛ رویداد …»', [ $ch_job( 'inspect' )['level'], str_contains( $ch_job( 'inspect' )['last'], 'اجرایی ثبت نشده' ) ], [ 'bad', true ] );
+update_option( HODIMA_SEO_ADVISOR_RUNS_OPTION, [ 'inspect' => $ch_now - 2 * HOUR_IN_SECONDS ], false );
+hodima_ad( 'اجرای دستی ثبت‌شده (۲ ساعت پیش) حتی با رویداد ۵ روز عقب: سالم و «آخرین اجرا … پیش»', [ $ch_job( 'inspect' )['level'], str_starts_with( $ch_job( 'inspect' )['last'], 'آخرین اجرا' ) ], [ 'ok', true ] );
+update_option( HODIMA_SEO_ADVISOR_RUNS_OPTION, [ 'inspect' => $ch_now - 40 * HOUR_IN_SECONDS ], false );
+hodima_ad( 'آخرین اجرا ۴۰ ساعت پیش: دیر شده؛ ۸۰ ساعت: متوقف', [ $ch_job( 'inspect' )['level'], ( static function () use ( $ch_now, $ch_job ): string { update_option( HODIMA_SEO_ADVISOR_RUNS_OPTION, [ 'inspect' => $ch_now - 80 * HOUR_IN_SECONDS ], false ); return $ch_job( 'inspect' )['level']; } )() ], [ 'warn', 'bad' ] );
+delete_option( HODIMA_SEO_ADVISOR_RUNS_OPTION );
+hodima_seo_advisor_run_mark( 'inspect' );
+hodima_seo_advisor_run_mark( 'pipeline' );
+hodima_ad( 'run_mark زمان را می‌نویسد و run_time می‌خواند (جدا برای هر کار)', [ hodima_seo_advisor_run_time( 'inspect' ) >= $ch_now, hodima_seo_advisor_run_time( 'pipeline' ) >= $ch_now, hodima_seo_advisor_run_time( 'nope' ) ], [ true, true, 0 ] );
+delete_option( HODIMA_SEO_ADVISOR_RUNS_OPTION );
+
+// اجرای واقعی نوبت‌ها و بررسی ایندکس خودشان زمان را ثبت می‌کنند
+update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [ 'stages' => [ 'ctr' ], 'property' => 'sc-domain:x', 'range' => [], 'days' => 90 ], false );
+hodima_seo_advisor_pipeline_run( 5.0 );
+hodima_ad( 'اجرای نوبت‌ها (pipeline_run) زمان آخرین اجرا را ثبت می‌کند', hodima_seo_advisor_run_time( 'pipeline' ) >= $ch_now, true );
+$ch_inspect_block = static fn( $pre ) => new WP_Error( 'http_request_failed', 'آزمون' );
+add_filter( 'pre_http_request', $ch_inspect_block, 5 );
+hodima_seo_advisor_inspect_run( 'sc-domain:x', 1, [ 'checked' => 0, 'error' => '', 'quota' => false ] );
+remove_filter( 'pre_http_request', $ch_inspect_block, 5 );
+hodima_ad( 'بررسی ایندکس (inspect_run) حتی با خطای شبکه همان آدرس زمان آخرین اجرا را ثبت می‌کند', hodima_seo_advisor_run_time( 'inspect' ) >= $ch_now, true );
+delete_option( HODIMA_SEO_ADVISOR_RUNS_OPTION );
+
+// دکمه «گرفتن داده تازه» وقتی رویداد عقب است «در پس‌زمینه شروع شد» نمی‌گوید و همان‌جا چند آدرس را بررسی می‌کند
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_INSPECT_CRON );
+wp_schedule_event( $ch_now - 5 * DAY_IN_SECONDS, 'twicedaily', HODIMA_SEO_ADVISOR_INSPECT_CRON );
+hodima_ad( 'کرون‌ایستاده تشخیص داده می‌شود (رویداد ۵ روز از موعد گذشته)', hodima_seo_advisor_cron_stalled( $ch_now ), true );
+add_filter( 'pre_http_request', $ch_inspect_block, 5 );
+$ch_extras = hodima_seo_advisor_refresh_extras();
+remove_filter( 'pre_http_request', $ch_inspect_block, 5 );
+if ( hodima_seo_advisor_inspect_pending() > 0 ) {
+	hodima_ad( 'refresh_extras با کرون ایستاده: پیام «کرون سایت اجرا نمی‌کند»، نه «در پس‌زمینه شروع شد»؛ و اجرا ثبت شد', [ str_contains( implode( ' ', $ch_extras ), 'کرون سایت اجرا نمی‌کند' ), str_contains( implode( ' ', $ch_extras ), 'در پس‌زمینه شروع شد' ), hodima_seo_advisor_run_time( 'inspect' ) >= $ch_now ], [ true, false, true ] );
+}
+delete_option( HODIMA_SEO_ADVISOR_RUNS_OPTION );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_INSPECT_CRON );
+wp_schedule_event( $ch_now + HOUR_IN_SECONDS, 'twicedaily', HODIMA_SEO_ADVISOR_INSPECT_CRON );
+hodima_ad( 'رویداد طبق برنامه: کرون ایستاده نیست', hodima_seo_advisor_cron_stalled( $ch_now ), false );
 
 // جمع‌بندی و نمایش
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => $ch_now - 100 * HOUR_IN_SECONDS ] + $ch_status, false );
@@ -3320,6 +3361,9 @@ hodima_seo_advisor_render_cron_card();
 $ch_card = (string) ob_get_clean();
 hodima_ad( 'کارت در حالت مشکل: شناسه پیوند، سطر وضعیت، چهار کار، راهنمای باز با دستور و دکمه کپی', [ str_contains( $ch_card, 'id="hodima-advisor-cron"' ), str_contains( $ch_card, '1 کار از 4 کار خودکار عقب است' ) || str_contains( $ch_card, '۱ کار از ۴ کار خودکار عقب است' ), substr_count( $ch_card, 'hodima-advisor__cron-job"' ) + substr_count( $ch_card, 'hodima-advisor__cron-job ' ), str_contains( $ch_card, 'wp-cron.php?doing_wp_cron' ), str_contains( $ch_card, 'data-hdsa-copy="hodima-advisor-cron-cmd"' ), str_contains( $ch_card, '<details class="hds-more hodima-advisor__cron-guide" open>' ) ], [ true, true, 4, true, true, true ] );
 hodima_ad( 'مشکل‌دار اول در فهرست و سالم‌ها یک‌خطی', [ strpos( $ch_card, 'دریافت داده گوگل' ) < strpos( $ch_card, 'بررسی ایندکس گوگل' ), substr_count( $ch_card, 'hodima-advisor__cron-job--compact' ) ], [ true, 3 ] );
+hodima_ad( 'کار دیرشده دکمه «اجرا همین حالا» دارد (فقط همان یکی)، به کنش دستی خودش با nonce و بازگشت به تنظیمات', [ substr_count( $ch_card, 'class="hodima-advisor__cron-run"' ), str_contains( $ch_card, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $ch_card, 'name="tab" value="settings"' ), str_contains( $ch_card, 'اجرا همین حالا' ) ], [ 1, true, true, true ] );
+hodima_ad( 'فرم‌های دکمه برای چهار کار به چهار کنش دستی موجود می‌روند', array_map( static fn( string $key ): bool => 1 === preg_match( '#name="action" value="(hodima_advisor_(refresh|inspect_now|crawler_now|pipeline_now))"#', hodima_seo_advisor_cron_run_form( $key ) ), [ 'refresh', 'inspect', 'crawler', 'pipeline' ] ), [ true, true, true, true ] );
+hodima_ad( 'کار ناشناخته فرم نمی‌سازد', hodima_seo_advisor_cron_run_form( 'nope' ), '' );
 
 // همه سالم: هیچ نواری و کارت یک‌خط با جزئیات جمع‌شده
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => $ch_now - 5 * HOUR_IN_SECONDS ] + $ch_status, false );

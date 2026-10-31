@@ -2490,6 +2490,19 @@
 	white-space: normal;
 }
 
+/* پایان هر سطر: نشان وضعیت + (برای کار دیرشده) دکمه «اجرا همین حالا» */
+.hodima-advisor .hodima-advisor__cron-end {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.5rem;
+}
+
+.hodima-advisor .hodima-advisor__cron-run {
+	margin: 0;
+}
+
 .hodima-advisor .hodima-advisor__cron-step {
 	display: grid;
 	gap: 0.375rem;
@@ -2530,9 +2543,10 @@
 		gap: 0.25rem 0.75rem;
 	}
 
-	.hodima-advisor .hodima-advisor__cron-job .hds-pill {
-		grid-column: 2;
-		grid-row: 1;
+	.hodima-advisor .hodima-advisor__cron-job .hodima-advisor__cron-end {
+		grid-column: 1 / -1;
+		grid-row: auto;
+		justify-content: space-between;
 	}
 
 	.hodima-advisor .hodima-advisor__cron-when,
@@ -2938,5 +2952,12 @@
 	.hodima-advisor .hodima-advisor__cards td:last-child {
 		flex: 1 1 100%;
 		min-inline-size: 0;
+	}
+}
+
+@container (max-width: 35rem) {
+	.hodima-advisor .hodima-advisor__cron-job--compact .hodima-advisor__cron-end {
+		grid-column: 2;
+		grid-row: 1;
 	}
 }

@@ -369,6 +369,8 @@ function hodima_seo_advisor_pipeline_run( ?float $budget = null ): void {
 		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, $state, false );
 	}
 
+	hodima_seo_advisor_run_mark( 'pipeline' ); // زمان آخرین اجرای واقعی نوبت‌ها (کرون یا دکمه)
+
 	if ( ! $stages ) {
 		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
 		// همه نوبت‌ها همین‌جا تمام شد: رویداد ادامه‌ای که درخواست ساخت دوباره گذاشته بود بی‌کار نماند (مگر درخواست تازه‌ای در این فاصله آمده)

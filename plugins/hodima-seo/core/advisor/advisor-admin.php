@@ -207,7 +207,14 @@ function hodima_seo_advisor_handle_refresh(): void {
 		hodima_admin_flash(
 			// تا پیشنهادها در پس‌زمینه ساخته نشده‌اند، شمار «پیشنهاددار» هنوز عدد دریافت قبلی است و گفته نمی‌شود
 			( $pending
-				? sprintf( '<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد (%2$s آدرس). ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.', esc_html( number_format_i18n( $status['days'] ) ), esc_html( number_format_i18n( $status['pages'] ) ) )
+				? sprintf(
+					'<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد (%2$s آدرس). %3$s',
+					esc_html( number_format_i18n( $status['days'] ) ),
+					esc_html( number_format_i18n( $status['pages'] ) ),
+					hodima_seo_advisor_cron_stalled()
+						? 'ساخت پیشنهادها و بقیه تحلیل‌ها هنوز کامل نشده و کرون سایت اجرا نمی‌کند؛ در تب «تنظیمات» کارت «کارهای خودکار» را باز کنید و «اجرا همین حالا» را بزنید.'
+						: 'ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.'
+				)
 				: sprintf( '<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد؛ %2$s آدرس بررسی و برای %3$s آدرس پیشنهاد ساخته شد.', esc_html( number_format_i18n( $status['days'] ) ), esc_html( number_format_i18n( $status['pages'] ) ), esc_html( number_format_i18n( $status['advised'] ) ) )
 			) . ( $extra ? ' ' . esc_html( implode( ' ', $extra ) ) : '' ),
 			'success'
@@ -230,10 +237,20 @@ function hodima_seo_advisor_refresh_extras(): array {
 	$out = [];
 
 	if ( function_exists( 'hodima_seo_advisor_inspect_pending' ) && (bool) apply_filters( 'hodima_seo_advisor_inspect_enabled', true ) && hodima_seo_advisor_inspect_pending() > 0 ) {
-		if ( ! wp_next_scheduled( HODIMA_SEO_ADVISOR_INSPECT_CRON ) || wp_next_scheduled( HODIMA_SEO_ADVISOR_INSPECT_CRON ) > time() + 60 ) {
-			wp_schedule_single_event( time() + 30, HODIMA_SEO_ADVISOR_INSPECT_CRON );
+		$next = (int) wp_next_scheduled( HODIMA_SEO_ADVISOR_INSPECT_CRON );
+
+		if ( $next > 0 && $next < time() - 5 * MINUTE_IN_SECONDS ) {
+			// رویداد بررسی ایندکس از موعدش گذشته = کرون سایت اجرا نمی‌کند؛ «شروع شد» نگوییم و چند آدرس را همین‌جا بررسی کنیم (۳.۲.۶)
+			$summary = hodima_seo_advisor_inspect_batch( 5 );
+			$out[]   = '' === $summary['error']
+				? sprintf( 'کرون سایت اجرا نمی‌کند؛ %s آدرس همین‌جا از نظر ایندکس بررسی شد (بقیه را در تب «تنظیمات» با «اجرا همین حالا» ادامه دهید).', number_format_i18n( $summary['checked'] ) )
+				: sprintf( 'کرون سایت اجرا نمی‌کند و بررسی ایندکس هم نشد: %s', $summary['error'] );
+		} else {
+			if ( ! $next || $next > time() + 60 ) {
+				wp_schedule_single_event( time() + 30, HODIMA_SEO_ADVISOR_INSPECT_CRON );
+			}
+			$out[] = 'بررسی ایندکس یک دسته از آدرس‌ها در پس‌زمینه شروع شد.';
 		}
-		$out[] = 'بررسی ایندکس یک دسته از آدرس‌ها در پس‌زمینه شروع شد.';
 	}
 
 	return $out;

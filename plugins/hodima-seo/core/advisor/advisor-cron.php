@@ -8,13 +8,59 @@
  * مدیر عدد کهنه را درست فرض می‌کند. این فایل فقط می‌سنجد (چیزی را در سایت یا هاست عوض نمی‌کند): هر کار خودکار
  * یکی از چهار حالت ok / warn («دیر شده») / bad («متوقف») / off («لازم نیست یا خاموش») می‌گیرد.
  *
- * داده فقط از گزینه‌هایی است که پیش از این هم نوشته می‌شدند (زمان آخرین دریافت، پایان دور خزش، زمان‌بندی رویدادها)
- * به‌اضافه `tick` (زمان آخرین نوبت) در وضعیت خزنده. نمایش: advisor-cron-view.php.
+ * داده: زمان آخرین دریافت، پایان دور خزش و `tick` خزنده؛ و از ۳.۲.۶ «زمان آخرین اجرای واقعی» بررسی ایندکس و
+ * ساخت پیشنهادها (`hodima_seo_advisor_run_mark`، چه کرون اجرا کند چه دکمه دستی). پیش از آن فقط «گذشتن رویداد
+ * کرون از موعدش» سنجیده می‌شد و اجرای دستی هیچ اثری در کارت نداشت (کارت بعد از دکمه هم «متوقف» می‌ماند).
+ * نمایش: advisor-cron-view.php.
  */
 
 declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
+
+/** گزینه زمان آخرین اجرای واقعی کارهای خودکار (کلید ← زمان)؛ autoload نه. */
+const HODIMA_SEO_ADVISOR_RUNS_OPTION = 'hodima_advisor_runs';
+
+/**
+ * ثبت «همین الان اجرا شد» برای یک کار خودکار (inspect، pipeline). از نوشتن بی‌مورد پرهیز می‌شود (حداکثر هر ۶۰ ثانیه).
+ */
+function hodima_seo_advisor_run_mark( string $key ): void {
+
+	$runs = get_option( HODIMA_SEO_ADVISOR_RUNS_OPTION, [] );
+	$runs = is_array( $runs ) ? $runs : [];
+
+	if ( time() - (int) ( $runs[ $key ] ?? 0 ) < 60 ) {
+		return;
+	}
+
+	$runs[ $key ] = time();
+	update_option( HODIMA_SEO_ADVISOR_RUNS_OPTION, $runs, false );
+}
+
+/** زمان آخرین اجرای ثبت‌شده یک کار؛ صفر = هنوز ثبت نشده. */
+function hodima_seo_advisor_run_time( string $key ): int {
+
+	$runs = get_option( HODIMA_SEO_ADVISOR_RUNS_OPTION, [] );
+
+	return is_array( $runs ) ? (int) ( $runs[ $key ] ?? 0 ) : 0;
+}
+
+/**
+ * کرون سایت اجرا نمی‌کند؟ یکی از رویدادهای دستار بیش از ۵ دقیقه از موعدش گذشته (برای پیام دکمه‌های دستی).
+ */
+function hodima_seo_advisor_cron_stalled( ?int $now = null ): bool {
+
+	$now = $now ?? time();
+
+	foreach ( [ HODIMA_SEO_ADVISOR_INSPECT_CRON, HODIMA_SEO_ADVISOR_STAGE_CRON, HODIMA_SEO_ADVISOR_CRON ] as $hook ) {
+		$next = (int) wp_next_scheduled( $hook );
+		if ( $next > 0 && $now - $next > 5 * MINUTE_IN_SECONDS ) {
+			return true;
+		}
+	}
+
+	return false;
+}
 
 /**
  * کارهای خودکار و حالتشان.
@@ -46,27 +92,31 @@ function hodima_seo_advisor_cron_health( ?int $now = null ): array {
 	// ۲) خزنده داخلی
 	$jobs[] = hodima_seo_advisor_cron_crawler_job( $now, $ago );
 
-	// ۳) بررسی ایندکس (رویداد دو بار در روز؛ رویداد تکرارشونده بعد از هر اجرا جلو می‌رود، پس «گذشته از موعد» یعنی کرون اجرایش نکرده)
+	// ۳) بررسی ایندکس: اول زمان آخرین اجرای واقعی (کرون یا دکمه)؛ اگر ثبت نشده بود، گذشتن رویداد دو بار در روز از موعدش
 	$next = (int) wp_next_scheduled( HODIMA_SEO_ADVISOR_INSPECT_CRON );
+	$last = hodima_seo_advisor_run_time( 'inspect' );
 	if ( ! $has_key ) {
 		$job = [ 'last' => 'کلید Search Console ثبت نشده', 'level' => 'off' ];
+	} elseif ( $last > 0 ) {
+		$job = [ 'last' => sprintf( 'آخرین اجرا %s', $ago( $now - $last ) ), 'level' => $level_of( $now - $last, DAY_IN_SECONDS, 3 * DAY_IN_SECONDS ) ];
 	} elseif ( $next <= 0 ) {
-		$job = [ 'last' => 'هنوز زمان‌بندی نشده', 'level' => 'ok' ];
+		$job = [ 'last' => 'هنوز اجرا و زمان‌بندی نشده', 'level' => 'ok' ];
 	} else {
 		$over = $now - $next;
-		$job  = [ 'last' => $over > 0 ? $late( $over ) : 'طبق برنامه', 'level' => $over <= 12 * HOUR_IN_SECONDS ? 'ok' : ( $over <= 60 * HOUR_IN_SECONDS ? 'warn' : 'bad' ) ];
+		$job  = [ 'last' => $over > 0 ? sprintf( 'اجرایی ثبت نشده؛ رویداد %s', $late( $over ) ) : 'هنوز اجرایی ثبت نشده؛ طبق برنامه', 'level' => $over <= 12 * HOUR_IN_SECONDS ? 'ok' : ( $over <= 60 * HOUR_IN_SECONDS ? 'warn' : 'bad' ) ];
 	}
 	$jobs[] = [ 'key' => 'inspect', 'label' => 'بررسی ایندکس گوگل', 'desc' => 'دو بار در روز', 'expect' => 'هر ۱۲ ساعت' ] + $job;
 
-	// ۴) ساخت پیشنهادها در پس‌زمینه
+	// ۴) ساخت پیشنهادها در پس‌زمینه: بی‌کار = سالم؛ نوبت منتظر = گذشتن رویداد ادامه از موعدش
 	$stage = (int) wp_next_scheduled( HODIMA_SEO_ADVISOR_STAGE_CRON );
+	$ran   = hodima_seo_advisor_run_time( 'pipeline' );
 	if ( ! hodima_seo_advisor_pipeline_pending() ) {
-		$job = [ 'last' => 'بی‌کار', 'level' => 'ok' ];
+		$job = [ 'last' => $ran > 0 ? sprintf( 'آخرین اجرا %s', $ago( $now - $ran ) ) : 'بی‌کار', 'level' => 'ok' ];
 	} elseif ( $stage <= 0 ) {
 		$job = [ 'last' => 'در انتظار زمان‌بندی', 'level' => 'ok' ];
 	} else {
 		$over = $now - $stage;
-		$job  = [ 'last' => $over > 0 ? $late( $over ) : 'در حال کار', 'level' => $over <= 30 * MINUTE_IN_SECONDS ? 'ok' : ( $over <= 6 * HOUR_IN_SECONDS ? 'warn' : 'bad' ) ];
+		$job  = [ 'last' => $over > 0 ? sprintf( 'نوبت منتظر؛ %s', $late( $over ) ) : 'در حال کار', 'level' => $over <= 30 * MINUTE_IN_SECONDS ? 'ok' : ( $over <= 6 * HOUR_IN_SECONDS ? 'warn' : 'bad' ) ];
 	}
 	$jobs[] = [ 'key' => 'pipeline', 'label' => 'ساخت پیشنهادها', 'desc' => 'پس‌زمینه، بعد از هر دریافت', 'expect' => 'بلافاصله بعد از دریافت' ] + $job;
 

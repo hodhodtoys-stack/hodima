@@ -31,7 +31,8 @@ function hodima_seo_advisor_handle_crawler_now(): void {
 	hodima_seo_advisor_crawler_start_now();
 	hodima_admin_flash( '<strong>خزش خودکار:</strong> خزش همین حالا شروع شد؛ صفحه را باز نگه دارید تا پیشرفت را ببینید (بسته هم باشد، با کرون ادامه می‌یابد).', 'success' );
 
-	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) );
+	$back = isset( $_POST['tab'] ) && 'settings' === sanitize_key( wp_unslash( (string) $_POST['tab'] ) ) ? 'settings' : 'crawl'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce بالا بررسی شد
+	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => $back ] ) );
 	exit;
 }
 

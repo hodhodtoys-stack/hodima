@@ -261,6 +261,7 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 	}
 
 	update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $stored, false );
+	hodima_seo_advisor_run_mark( 'inspect' ); // زمان آخرین اجرای واقعی (کرون یا دکمه)؛ کارت «کارهای خودکار» از همین می‌خواند
 
 	if ( $summary['checked'] > 0 ) {
 		hodima_seo_advisor_tasks_sync_inspected(); // کارهای «انجام دادم» ایندکس و صفحه بدون نمایش با نتیجه تازه
@@ -287,6 +288,7 @@ function hodima_seo_advisor_handle_inspect_now(): void {
 		hodima_admin_flash( '<strong>بررسی ایندکس:</strong> ' . esc_html( sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ) ), 'success' );
 	}
 
-	wp_safe_redirect( admin_url( 'admin.php?page=' . HODIMA_SEO_ADVISOR_PAGE . '&tab=indexing' ) );
+	$back = isset( $_POST['tab'] ) && 'settings' === sanitize_key( wp_unslash( (string) $_POST['tab'] ) ) ? 'settings' : 'indexing'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce بالا بررسی شد
+	wp_safe_redirect( admin_url( 'admin.php?page=' . HODIMA_SEO_ADVISOR_PAGE . '&tab=' . $back ) );
 	exit;
 }

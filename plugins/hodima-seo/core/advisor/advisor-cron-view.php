@@ -29,6 +29,65 @@ function hodima_seo_advisor_cron_pills(): array {
 	];
 }
 
+add_action( 'admin_post_hodima_advisor_pipeline_now', 'hodima_seo_advisor_handle_pipeline_now' );
+
+/**
+ * «اجرا همین حالا» برای ساخت پیشنهادها (نوبت‌های پس‌زمینه): چند ثانیه نوبت‌ها را همین‌جا پیش می‌برد، بی‌نیاز از کرون.
+ */
+function hodima_seo_advisor_handle_pipeline_now(): void {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
+	}
+
+	check_admin_referer( 'hodima_advisor_pipeline_now' );
+
+	if ( ! hodima_seo_advisor_pipeline_pending() ) {
+		hodima_admin_flash( '<strong>ساخت پیشنهادها:</strong> کاری برای ادامه نیست.', 'success' );
+	} elseif ( hodima_seo_advisor_lock() ) {
+		try {
+			hodima_seo_advisor_pipeline_run( (float) HODIMA_SEO_ADVISOR_MANUAL_BUDGET );
+		} finally {
+			hodima_seo_advisor_unlock();
+		}
+		hodima_admin_flash(
+			hodima_seo_advisor_pipeline_pending()
+				? '<strong>ساخت پیشنهادها:</strong> چند نوبت انجام شد و بقیه مانده؛ دوباره «اجرا همین حالا» را بزنید.'
+				: '<strong>ساخت پیشنهادها:</strong> همه نوبت‌ها تمام شد.',
+			'success'
+		);
+	} else {
+		hodima_admin_flash( '<strong>ساخت پیشنهادها:</strong> هم‌اکنون کار دیگری از دستار در حال اجراست؛ چند دقیقه بعد دوباره امتحان کنید.', 'error' );
+	}
+
+	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) . '#hodima-advisor-cron' );
+	exit;
+}
+
+/**
+ * فرم «اجرا همین حالا» یک کار دیرشده: به همان کنش دستی خودش (دکمه تب خودش) می‌رود و به کارت برمی‌گردد.
+ */
+function hodima_seo_advisor_cron_run_form( string $key ): string {
+
+	$map = [
+		'refresh'  => [ 'hodima_advisor_refresh', 'hodima_advisor_refresh' ],
+		'inspect'  => [ 'hodima_advisor_inspect_now', 'hodima_advisor_inspect_now' ],
+		'crawler'  => [ 'hodima_advisor_crawler_now', 'hodima_advisor_crawler_now' ],
+		'pipeline' => [ 'hodima_advisor_pipeline_now', 'hodima_advisor_pipeline_now' ],
+	];
+
+	if ( ! isset( $map[ $key ] ) ) {
+		return '';
+	}
+
+	return sprintf(
+		'<form method="post" action="%1$s" class="hodima-advisor__cron-run"><input type="hidden" name="action" value="%2$s"><input type="hidden" name="_wpnonce" value="%3$s"><input type="hidden" name="tab" value="settings"><button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-controls-play" aria-hidden="true"></span> اجرا همین حالا</button></form>',
+		esc_url( admin_url( 'admin-post.php' ) ),
+		esc_attr( $map[ $key ][0] ),
+		esc_attr( wp_create_nonce( $map[ $key ][1] ) )
+	);
+}
+
 /**
  * کارت «کارهای خودکار به موقع اجرا می‌شوند؟».
  */
@@ -59,7 +118,7 @@ function hodima_seo_advisor_render_cron_card(): void {
 				);
 				?>
 			</h3>
-			<p class="hds-statusbar__text" aria-live="polite"><?php echo esc_html( ( $bad ? 'داده‌های دستار ممکن است کهنه باشند. ' : '' ) . $mode ); ?></p>
+			<p class="hds-statusbar__text" aria-live="polite"><?php echo esc_html( ( $bad ? 'داده‌های دستار ممکن است کهنه باشند؛ هر کار دیرشده را می‌توانید همین‌جا دستی اجرا کنید. ' : '' ) . $mode ); ?></p>
 		</div>
 		<div class="hds-statusbar__aside">
 			<?php if ( $bad ) : ?>
@@ -76,7 +135,7 @@ function hodima_seo_advisor_render_cron_card(): void {
 		foreach ( $jobs as $job ) {
 			$compact = $bad && ( 'ok' === $job['level'] || 'off' === $job['level'] );
 			printf(
-				'<li class="hodima-advisor__cron-job%1$s" data-level="%2$s"><div class="hodima-advisor__cron-name"><b>%3$s</b><span>%4$s</span></div><div class="hodima-advisor__cron-when"><span>آخرین اجرا</span><b>%5$s</b></div><div class="hodima-advisor__cron-exp"><span>انتظار</span><b>%6$s</b></div><span class="%7$s">%8$s</span></li>',
+				'<li class="hodima-advisor__cron-job%1$s" data-level="%2$s"><div class="hodima-advisor__cron-name"><b>%3$s</b><span>%4$s</span></div><div class="hodima-advisor__cron-when"><span>وضعیت اجرا</span><b>%5$s</b></div><div class="hodima-advisor__cron-exp"><span>انتظار</span><b>%6$s</b></div><div class="hodima-advisor__cron-end"><span class="%7$s">%8$s</span>%9$s</div></li>',
 				$compact ? ' hodima-advisor__cron-job--compact' : '',
 				esc_attr( $job['level'] ),
 				esc_html( $job['label'] ),
@@ -84,7 +143,8 @@ function hodima_seo_advisor_render_cron_card(): void {
 				esc_html( $job['last'] ),
 				esc_html( $job['expect'] ),
 				esc_attr( $pills[ $job['level'] ][1] ),
-				esc_html( $pills[ $job['level'] ][0] )
+				esc_html( $pills[ $job['level'] ][0] ),
+				'warn' === $job['level'] || 'bad' === $job['level'] ? hodima_seo_advisor_cron_run_form( $job['key'] ) : '' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_cron_run_form
 			);
 		}
 		echo '</ul>';
