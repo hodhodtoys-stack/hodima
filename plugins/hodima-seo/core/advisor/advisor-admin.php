@@ -485,7 +485,7 @@ function hodima_seo_advisor_handle_csv(): void {
  * @return list<string>
  */
 function hodima_seo_advisor_tab_keys(): array {
-	return [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'settings' ];
+	return [ 'opportunities', 'overview', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'settings' ];
 }
 
 /**
@@ -525,6 +525,7 @@ function hodima_seo_advisor_legacy_tab_redirect(): void {
  * می‌شوند؛ کلید `?tab=` همه‌شان همان‌طور می‌ماند (پیوند و علامت مرورگر خراب نشود).
  */
 const HODIMA_SEO_ADVISOR_WORK_VIEWS = [
+	'overview'      => 'همه ایرادها (هر صفحه یک بار)',
 	'opportunities' => 'پیشنهادهای بهتر شدن',
 	'crawl'         => 'ایرادهای فنی صفحه‌ها',
 	'competition'   => 'صفحه‌های هم‌کلمه',
@@ -674,6 +675,7 @@ function hodima_seo_advisor_render_admin(): void {
 			'terms'     => hodima_seo_advisor_render_terms( $status ),
 			'health'    => hodima_seo_advisor_render_health( $status ),
 			'crawl'     => hodima_seo_advisor_render_crawl(),
+			'overview'  => hodima_seo_advisor_render_overview(),
 			'indexing'  => hodima_seo_advisor_render_indexing(),
 			'tasks'     => hodima_seo_advisor_render_tasks(),
 			default     => hodima_seo_advisor_render_competition( $status ),

@@ -962,6 +962,7 @@ require_once HODIMA_SEO_DIR . '/core/advisor/advisor-trend-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-health-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-crawl-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-overview-view.php';
 require_once __DIR__ . '/advisor-sf-fixture.php'; // ورود Screaming Frog از افزونه برداشته شد؛ آزمون‌ها با همین خواننده CSV داده خزش می‌سازند
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-score-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-inspect-view.php';
@@ -1002,6 +1003,11 @@ ob_start();
 hodima_seo_advisor_render_admin();
 $terms_html = (string) ob_get_clean();
 hodima_ad( 'تب «آمار جستجو»: ۴ کارت آمار، ستون‌های هم‌ردیف و جدول غیربرندی', [ substr_count( $terms_html, 'hodima-advisor__tabs' ), substr_count( $terms_html, 'class="hds-stat"' ), str_contains( $terms_html, 'hodima-advisor__cols' ), str_contains( $terms_html, 'hodima-advisor__terms' ), str_contains( $terms_html, 'کلیپس پلومریا' ) ], [ 1, 4, true, true, true ] );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'overview' ];
+ob_start();
+hodima_seo_advisor_render_admin();
+$overview_html = (string) ob_get_clean();
+hodima_ad( 'نمای «همه ایرادها» (SEO 3.2.9): یک ردیف تب، منوی منبع، هر صفحه یک ردیف با اولین کار و دکمه گام‌ها', [ substr_count( $overview_html, 'class="hodima-advisor__ov-row"' ) >= 1, str_contains( $overview_html, 'اولین کار:' ), str_contains( $overview_html, 'aria-label="منبع ایراد"' ), str_contains( $overview_html, 'value="overview" selected=\'selected\'' ), str_contains( $overview_html, 'ایرادها و کارها</a>' ) ], [ true, true, true, true, true ] );
 hodima_ad( 'تب ناشناس به فرصت‌ها برمی‌گردد', [ ( static function (): bool { $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'x' ]; ob_start(); hodima_seo_advisor_render_admin(); return str_contains( (string) ob_get_clean(), 'name="rule"' ); } )() ], [ true ] );
 hodima_ad( 'تفسیر سهم برندی: سه حالت', [ str_contains( hodima_seo_advisor_brand_reading( 0.8 ), 'غیربرندی' ), str_contains( hodima_seo_advisor_brand_reading( 0.4 ), 'تعادل' ), str_contains( hodima_seo_advisor_brand_reading( 0.1 ), 'نام سایت کم جستجو' ) ], [ true, true, true ] );
 delete_option( 'hodima_discover_sc_key' );
@@ -3184,7 +3190,7 @@ false === $sc_crawl ? delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION ) : update_
 delete_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION );
 
 echo "=== ادغام تب‌ها (SEO 3.1.3)\n";
-hodima_ad( 'هشت تب؛ تب‌های حذف‌شده نیستند', [ hodima_seo_advisor_tab_keys(), array_intersect( [ 'done', 'breakdown', 'trend' ], hodima_seo_advisor_tab_keys() ) ], [ [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'settings' ], [] ] );
+hodima_ad( 'کلید تب‌ها (هشت بخش قدیمی و «همه ایرادها»)؛ تب‌های حذف‌شده نیستند', [ hodima_seo_advisor_tab_keys(), array_intersect( [ 'done', 'breakdown', 'trend' ], hodima_seo_advisor_tab_keys() ) ], [ [ 'opportunities', 'overview', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'settings' ], [] ] );
 hodima_ad( 'پیوند قدیمی: done ← کارها (منتظر نتیجه)، breakdown و trend ← آمار جستجو', [ HODIMA_SEO_ADVISOR_LEGACY_TABS['done'], HODIMA_SEO_ADVISOR_LEGACY_TABS['breakdown'][0], HODIMA_SEO_ADVISOR_LEGACY_TABS['trend'][0] ], [ [ 'tasks', [ 'tstatus' => 'waiting' ] ], 'terms', 'terms' ] );
 hodima_ad( 'ریدایرکت پیوند قدیمی به هوک منو وصل است', function_exists( 'hodima_seo_advisor_legacy_tab_redirect' ), true );
 $_GET = [];
