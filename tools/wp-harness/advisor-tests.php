@@ -1586,7 +1586,7 @@ foreach ( [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexin
 	$_GET   = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => $t ];
 	$html_t = $cap( static fn() => hodima_seo_advisor_render_admin() );
 	$bar_at = strpos( $html_t, 'value="hodima_advisor_refresh"' );
-	hodima_ad( "تب {$t}: ردیف به‌روزرسانی دقیقا یک بار و بالای تب‌ها؛ پنل تنظیمات نیست", [ substr_count( $html_t, 'value="hodima_advisor_refresh"' ), false !== $bar_at && $bar_at < (int) strpos( $html_t, 'hodima-advisor__tabrow' ), str_contains( $html_t, 'id="hodima-advisor-settings"' ), str_contains( $html_t, 'name="tab" value="' . ( 'opportunities' === $t ? 'opportunities' : $t ) . '"' ) ], [ 1, true, false, true ] );
+	hodima_ad( "تب {$t}: ردیف به‌روزرسانی دقیقا یک بار و زیر ردیف تب‌ها؛ پنل تنظیمات نیست", [ substr_count( $html_t, 'value="hodima_advisor_refresh"' ), false !== $bar_at && $bar_at > (int) strpos( $html_t, 'hodima-advisor__tabrow' ), str_contains( $html_t, 'id="hodima-advisor-settings"' ), str_contains( $html_t, 'name="tab" value="' . ( 'opportunities' === $t ? 'opportunities' : $t ) . '"' ) ], [ 1, true, false, true ] );
 }
 $_GET     = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'settings' ];
 $page_set = $cap( static fn() => hodima_seo_advisor_render_admin() );
@@ -2807,7 +2807,7 @@ $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'fi
 $p3_d0 = $cap( static fn() => hodima_seo_advisor_render_admin() );
 $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'fixed', 'tsource' => 'crawl' ];
 $p3_d1 = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( '«کارها» ← «برطرف شد»: چیپ‌های «از کدام تب» با همه منبع‌ها؛ فیلتر ایرادهای فنی فقط کار خزش؛ گام «صفحه دوباره از سایت خوانده شد»', [ str_contains( $p3_d0, 'aria-label="از کدام تب"' ), str_contains( $p3_d0, 'tsource=competition' ) && str_contains( $p3_d0, 'tsource=health' ) && str_contains( $p3_d0, 'tsource=indexing' ), str_contains( $p3_d1, 'رقابت صفحه‌ها برای' ), str_contains( $p3_d1, 'بدون H1' ), str_contains( $p3_d1, 'صفحه دوباره از سایت خوانده شد' ) ], [ true, true, false, true, true ] );
+hodima_ad( '«کارها» ← «برطرف شد»: منوی «از کدام بخش» با همه منبع‌ها؛ فیلتر ایرادهای فنی فقط کار خزش؛ گام «صفحه دوباره از سایت خوانده شد»', [ str_contains( $p3_d0, 'aria-label="از کدام بخش"' ), str_contains( $p3_d0, 'tsource=competition' ) && str_contains( $p3_d0, 'tsource=health' ) && str_contains( $p3_d0, 'tsource=indexing' ), str_contains( $p3_d1, 'رقابت صفحه‌ها برای' ), str_contains( $p3_d1, 'بدون H1' ), str_contains( $p3_d1, 'صفحه دوباره از سایت خوانده شد' ) ], [ true, true, false, true, true ] );
 $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
 $p3_d2 = $cap( static fn() => hodima_seo_advisor_render_admin() );
 hodima_ad( 'در دست انجام: «هنوز خراب است» با قدم بعدی و «دوباره انجام دادم»؛ نشان تب مبدأ', [ str_contains( $p3_d2, 'هنوز خراب است' ), str_contains( $p3_d2, 'قانون ۳۰۱ بگذارید' ), str_contains( $p3_d2, 'دوباره انجام دادم' ), str_contains( $p3_d2, '<span class="hds-pill hds-pill--info">آدرس‌های خراب</span>' ) ], [ true, true, true, true ] );

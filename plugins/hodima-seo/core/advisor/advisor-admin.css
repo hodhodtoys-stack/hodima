@@ -2962,22 +2962,39 @@
 	}
 }
 
-/* منوی «نمای فهرست» زیر ردیف تب (SEO 3.3.1): جای ردیف تب دوم */
+/* منوی «نمای فهرست» در انتهای همان ردیف تب (SEO 3.2.8) */
 .hodima-advisor .hodima-advisor__workview {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: 0.5rem 0.75rem;
-	margin-block: 0.75rem;
+	margin: 0;
+	flex: 0 0 auto;
 }
 
-.hodima-advisor .hodima-advisor__workview label {
-	font-weight: 600;
-	font-size: 0.8125rem;
-}
-
-.hodima-advisor .hodima-advisor__workview select {
+.hodima-advisor .hodima-advisor__workview select,
+.hodima-advisor .hodima-advisor__filter select {
 	min-block-size: 2.5rem;
-	min-inline-size: min(100%, 16rem);
+	min-inline-size: 11rem;
+	max-inline-size: 100%;
 	border-radius: 0.75rem;
+}
+
+/* فیلترهای کشویی به‌جای چیپ (SEO 3.2.8) */
+.hodima-advisor .hodima-advisor__filter {
+	display: inline-flex;
+}
+
+.hodima-advisor .hodima-advisor__filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-block-end: 0.75rem;
+}
+
+@media (max-width: 782px) {
+	.hodima-advisor .hodima-advisor__tabrow {
+		flex-wrap: wrap;
+	}
+
+	.hodima-advisor .hodima-advisor__workview,
+	.hodima-advisor .hodima-advisor__workview select {
+		inline-size: 100%;
+	}
 }

@@ -359,17 +359,12 @@ function hodima_seo_advisor_render_tasks(): void {
 		return;
 	}
 
-	echo '<nav class="hodima-advisor__views" aria-label="وضعیت کار"><span class="hodima-advisor__views-label" aria-hidden="true">وضعیت</span>';
+	echo '<div class="hodima-advisor__filters">';
+	$status_items = [];
 	foreach ( $groups as $group => [ $label ] ) {
-		printf(
-			'<a class="hodima-advisor__view" href="%1$s"%2$s>%3$s <span class="hodima-advisor__count">%4$s</span></a>',
-			esc_url( hodima_seo_advisor_page_url( [ 'tab' => $tab, 'tstatus' => $group, 'tsource' => $from ] ) ),
-			$group === $filter ? ' aria-current="page"' : '',
-			esc_html( $label ),
-			esc_html( $n( $counts[ $group ] ) )
-		);
+		$status_items[ $group ] = [ $label, (int) $counts[ $group ], hodima_seo_advisor_page_url( [ 'tab' => $tab, 'tstatus' => $group, 'tsource' => $from ] ) ];
 	}
-	echo '</nav>';
+	hodima_seo_advisor_filter_select( 'وضعیت کار', $status_items, (string) $filter );
 
 	$rows  = array_filter( $all, static fn( array $t ): bool => hodima_seo_advisor_task_group( $t ) === $filter );
 	$count = static fn( callable $test ): int => count( array_filter( $rows, $test ) );
@@ -377,13 +372,13 @@ function hodima_seo_advisor_render_tasks(): void {
 	// از کدام تب (SEO 3.0.2): کارهای همه تب‌ها اینجا جمع می‌شوند
 	$sources = array_filter( hodima_seo_advisor_task_sources(), static fn( string $label, string $key ): bool => (bool) $count( static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $key ), ARRAY_FILTER_USE_BOTH );
 	if ( count( $sources ) > 1 ) {
-		echo '<nav class="hodima-advisor__views" aria-label="از کدام تب"><span class="hodima-advisor__views-label" aria-hidden="true">از تب</span>';
-		printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>همه <span class="hodima-advisor__count">%3$s</span></a>', esc_url( hodima_seo_advisor_page_url( [ 'tab' => $tab, 'tstatus' => $filter ] ) ), '' === $from ? ' aria-current="page"' : '', esc_html( $n( count( $rows ) ) ) );
+		$source_items = [ '' => [ 'از همه بخش‌ها', count( $rows ), hodima_seo_advisor_page_url( [ 'tab' => $tab, 'tstatus' => $filter ] ) ] ];
 		foreach ( $sources as $key => $label ) {
-			printf( '<a class="hodima-advisor__view" href="%1$s"%2$s>%3$s <span class="hodima-advisor__count">%4$s</span></a>', esc_url( hodima_seo_advisor_page_url( [ 'tab' => $tab, 'tstatus' => $filter, 'tsource' => $key ] ) ), $key === $from ? ' aria-current="page"' : '', esc_html( $label ), esc_html( $n( $count( static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $key ) ) ) );
+			$source_items[ $key ] = [ $label, $count( static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $key ), hodima_seo_advisor_page_url( [ 'tab' => $tab, 'tstatus' => $filter, 'tsource' => $key ] ) ];
 		}
-		echo '</nav>';
+		hodima_seo_advisor_filter_select( 'از کدام بخش', $source_items, $from );
 	}
+	echo '</div>';
 	if ( '' !== $from ) {
 		$rows = array_filter( $rows, static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $from );
 	}

@@ -563,11 +563,38 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 		);
 	}
 	echo '</nav>';
-	echo '</div>';
-
 	if ( $work && $with_tabs ) {
-		hodima_seo_advisor_render_work_views( $active );
+		hodima_seo_advisor_render_work_views( $active ); // همان ردیف تب (SEO 3.2.8)؛ ردیف جدا نیست
 	}
+	echo '</div>';
+}
+
+/**
+ * منوی کشویی فیلتر به‌جای ردیف چیپ (SEO 3.2.8): هر گزینه آدرس خودش را دارد و با انتخاب می‌رود؛ بدون جاوااسکریپت
+ * همان چیپ‌های قبلی (پیوند ساده) داخل noscript می‌آیند.
+ *
+ * @param string                                      $label   برچسب منو (مثلا «نوع ایراد»)
+ * @param array<string, array{0:string,1:int,2:string}> $items   کلید ← [متن، شمار، آدرس]
+ * @param string                                      $current کلید گزینه فعلی
+ */
+function hodima_seo_advisor_filter_select( string $label, array $items, string $current ): void {
+	?>
+	<label class="hodima-advisor__filter">
+		<span class="screen-reader-text"><?php echo esc_html( $label ); ?></span>
+		<select class="hds-input" aria-label="<?php echo esc_attr( $label ); ?>" onchange="window.location.href=this.value">
+			<?php foreach ( $items as $key => [ $text, $count, $url ] ) : ?>
+				<option value="<?php echo esc_url( $url ); ?>"<?php selected( (string) $key, $current ); ?>><?php echo esc_html( sprintf( '%1$s (%2$s)', $text, number_format_i18n( $count ) ) ); ?></option>
+			<?php endforeach; ?>
+		</select>
+	</label>
+	<noscript>
+		<nav class="hodima-advisor__views" aria-label="<?php echo esc_attr( $label ); ?>">
+			<?php foreach ( $items as $key => [ $text, $count, $url ] ) : ?>
+				<a class="hodima-advisor__view" href="<?php echo esc_url( $url ); ?>"<?php echo (string) $key === $current ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $text ); ?> <span class="hodima-advisor__count"><?php echo esc_html( number_format_i18n( $count ) ); ?></span></a>
+			<?php endforeach; ?>
+		</nav>
+	</noscript>
+	<?php
 }
 
 /**
@@ -578,8 +605,8 @@ function hodima_seo_advisor_render_work_views( string $active ): void {
 	?>
 	<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="hodima-advisor__workview">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
-		<label for="hodima-advisor-workview">نمای فهرست</label>
-		<select id="hodima-advisor-workview" name="tab" onchange="this.form.submit()">
+		<label class="screen-reader-text" for="hodima-advisor-workview">نمای فهرست</label>
+		<select id="hodima-advisor-workview" name="tab" class="hds-input" onchange="this.form.submit()">
 			<?php foreach ( HODIMA_SEO_ADVISOR_WORK_VIEWS as $key => $label ) : ?>
 				<option value="<?php echo esc_attr( 'opportunities' === $key ? '' : $key ); ?>"<?php selected( $key, $active ); ?>><?php echo esc_html( $label ); ?></option>
 			<?php endforeach; ?>
@@ -625,10 +652,10 @@ function hodima_seo_advisor_render_admin(): void {
 	$empty = ! $has_data;
 
 	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
+	hodima_seo_advisor_render_tabs( $tab, $has_data );
 	if ( 'settings' !== $tab ) {
 		hodima_seo_advisor_render_toolbar( $tab );
 	}
-	hodima_seo_advisor_render_tabs( $tab, $has_data );
 
 	if ( 'settings' === $tab ) {
 		if ( $has_key ) {
@@ -665,8 +692,8 @@ function hodima_seo_advisor_render_admin(): void {
 		// فقط صفحه‌هایی که کار باز دارند؛ تمام‌علامت‌خورده‌ها جدا گفته می‌شوند (همان فهرست پیش‌فرض)
 		[ 'label' => 'صفحه با فرصت', 'value' => $empty ? '—' : esc_html( $n( max( 0, $totals['advised'] - $handled_n ) ) ), 'sub' => $handled_n > 0 ? esc_html( sprintf( '+ %s صفحه با همه کارها علامت‌خورده', $n( $handled_n ) ) ) : '', 'empty' => $empty ],
 		[ 'label' => 'نمایش در گوگل', 'value' => $empty ? '—' : esc_html( $n( $totals['impressions'] ) ), 'sub' => $empty ? '' : esc_html( sprintf( '%s روز اخیر', $n( $status['days'] ) ) ), 'empty' => $empty ],
-		[ 'label' => 'کلیک', 'value' => $empty ? '—' : esc_html( $n( $totals['clicks'] ) ), 'empty' => $empty ],
-		[ 'label' => 'میانگین رتبه', 'value' => $empty ? '—' : esc_html( number_format_i18n( $totals['position'], 1 ) ), 'empty' => $empty ],
+		[ 'label' => 'کلیک', 'value' => $empty ? '—' : esc_html( $n( $totals['clicks'] ) ), 'sub' => $empty ? '' : esc_html( sprintf( '%s روز اخیر', $n( $status['days'] ) ) ), 'empty' => $empty ],
+		[ 'label' => 'میانگین رتبه', 'value' => $empty ? '—' : esc_html( number_format_i18n( $totals['position'], 1 ) ), 'sub' => $empty ? '' : 'عدد کمتر بهتر است', 'empty' => $empty ],
 	] );
 
 	if ( ! $has_key ) {
@@ -918,13 +945,13 @@ function hodima_seo_advisor_render_list( array $status ): void {
 		<?php if ( '' !== $filters['tasks'] ) : ?>
 			<input type="hidden" name="tasks" value="<?php echo esc_attr( $filters['tasks'] ); ?>">
 		<?php endif; ?>
-		<nav class="hodima-advisor__views" aria-label="نوع صفحه">
-			<?php foreach ( $views as $key => [ $label, $count ] ) : ?>
-				<a class="hodima-advisor__view" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'view' => 'all' === $key ? '' : $key, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'], 'tasks' => $filters['tasks'] ] ) ); ?>"<?php echo $key === $view ? ' aria-current="page"' : ''; ?>>
-					<?php echo esc_html( $label ); ?> <span class="hodima-advisor__count"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
-				</a>
-			<?php endforeach; ?>
-		</nav>
+		<?php
+		$view_items = [];
+		foreach ( $views as $key => [ $label, $count ] ) {
+			$view_items[ $key ] = [ $label, $count, hodima_seo_advisor_page_url( [ 'view' => 'all' === $key ? '' : $key, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'], 'tasks' => $filters['tasks'] ] ) ];
+		}
+		hodima_seo_advisor_filter_select( 'نوع صفحه', $view_items, $view );
+		?>
 		<div class="hodima-advisor__search">
 			<label class="screen-reader-text" for="hodima-advisor-q">جستجو در عنوان یا آدرس صفحه</label>
 			<input type="search" id="hodima-advisor-q" name="q" class="hds-input" value="<?php echo esc_attr( $filters['q'] ); ?>" placeholder="جستجو در عنوان یا آدرس…">

@@ -362,14 +362,16 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $h
 		<?php if ( '' !== $marked ) : ?>
 			<input type="hidden" name="tasks" value="all">
 		<?php endif; ?>
-		<nav class="hodima-advisor__views" aria-label="نوع ایراد">
-			<?php foreach ( $views as $key => [ $text, $count ] ) : ?>
-				<?php if ( '' !== $key && $count < 1 ) { continue; } ?>
-				<a class="hodima-advisor__view" href="<?php echo esc_url( $url( [ 'cf' => $key, 'q' => $q ] ) ); ?>"<?php echo $key === $group ? ' aria-current="page"' : ''; ?>>
-					<?php echo esc_html( $text ); ?> <span class="hodima-advisor__count"><?php echo esc_html( $n( $count ) ); ?></span>
-				</a>
-			<?php endforeach; ?>
-		</nav>
+		<?php
+		$view_items = [];
+		foreach ( $views as $key => [ $text, $count ] ) {
+			if ( '' !== $key && $count < 1 ) {
+				continue;
+			}
+			$view_items[ $key ] = [ $text, $count, $url( [ 'cf' => $key, 'q' => $q ] ) ];
+		}
+		hodima_seo_advisor_filter_select( 'نوع ایراد', $view_items, $group );
+		?>
 		<div class="hodima-advisor__search">
 			<label class="screen-reader-text" for="hodima-advisor-crawl-q">جستجو در آدرس صفحه</label>
 			<input type="search" id="hodima-advisor-crawl-q" name="q" class="hds-input" value="<?php echo esc_attr( $q ); ?>" placeholder="جستجوی آدرس…">
