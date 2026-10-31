@@ -109,7 +109,14 @@ function hodima_seo_advisor_render_image_list( array $images, int $total ): void
 	$images = array_values( array_filter( array_map( 'strval', $images ) ) );
 
 	if ( ! $images ) {
-		return; // خزش قدیمی‌تر از ۳.۳.۶: فهرست ندارد؛ بعد از خزش بعدی می‌آید
+		// خزش قدیمی‌تر از ۳.۳.۶: فهرست ندارد و تا خزش بعدی نمی‌آید؛ ساکت ماندن مدیر را سردرگم کرد (SEO 3.3.7)
+		printf(
+			'<div class="hodima-advisor__detail"><p class="hodima-advisor__draft-hint">%1$s <a href="%2$s">%3$s</a></p></div>',
+			esc_html( 'فهرست تصویرها با خزش بعدی ساخته می‌شود.' ),
+			esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ),
+			esc_html( 'برای دیدنش همین حالا «خزش همین حالا» را بزنید.' )
+		);
+		return;
 	}
 
 	$more = max( 0, $total - count( $images ) );

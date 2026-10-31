@@ -89,6 +89,16 @@ function hodima_seo_advisor_cron_run_form( string $key ): string {
 }
 
 /**
+ * ردیف این کار دکمه «اجرا همین حالا» دارد؟ کار دیرشده (زرد/قرمز) همیشه؛ خزنده داخلی در هر حالتی (SEO 3.3.7): بعد از ۳.۳.۰ کارت
+ * «خزش خودکار» از ناوبری رفت و مدیر راهی برای خزش فوری (مثلا برای دیدن فهرست تصویرها بعد از به‌روزرسانی) نداشت.
+ *
+ * @param array{level: string, key: string} $job
+ */
+function hodima_seo_advisor_cron_job_has_run_button( array $job ): bool {
+	return in_array( $job['level'], [ 'warn', 'bad' ], true ) || 'crawler' === $job['key'];
+}
+
+/**
  * کارت «کارهای خودکار به موقع اجرا می‌شوند؟».
  */
 function hodima_seo_advisor_render_cron_card(): void {
@@ -144,7 +154,7 @@ function hodima_seo_advisor_render_cron_card(): void {
 				esc_html( $job['expect'] ),
 				esc_attr( $pills[ $job['level'] ][1] ),
 				esc_html( $pills[ $job['level'] ][0] ),
-				'warn' === $job['level'] || 'bad' === $job['level'] ? hodima_seo_advisor_cron_run_form( $job['key'] ) : '' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_cron_run_form
+				hodima_seo_advisor_cron_job_has_run_button( $job ) ? hodima_seo_advisor_cron_run_form( $job['key'] ) : '' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_cron_run_form
 			);
 		}
 		echo '</ul>';
