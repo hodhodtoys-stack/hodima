@@ -2962,13 +2962,6 @@
 	}
 }
 
-/* منوی «نمای فهرست» در انتهای همان ردیف تب (SEO 3.2.8) */
-.hodima-advisor .hodima-advisor__workview {
-	margin: 0;
-	flex: 0 0 auto;
-}
-
-.hodima-advisor .hodima-advisor__workview select,
 .hodima-advisor .hodima-advisor__filter select {
 	min-block-size: 2.5rem;
 	min-inline-size: 11rem;
@@ -3039,4 +3032,61 @@
 
 .hodima-advisor .hodima-advisor__ov-fix {
 	font-size: 0.875rem;
+}
+
+/* صفحه «کارها» (SEO 3.3.0): هر صفحه یک ردیف، هر ایراد یک خط با دکمه‌های خودش */
+.hodima-advisor .hodima-advisor__strip {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem 0.75rem;
+	margin-block: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__strip-text,
+.hodima-advisor .hodima-advisor__back {
+	font-size: 0.8125rem;
+	color: var(--hds-muted, #5b6478);
+	margin: 0;
+}
+
+.hodima-advisor .hodima-advisor__back {
+	margin-block: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__ov-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 0.5rem;
+}
+
+.hodima-advisor .hodima-advisor__ov-item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem 1rem;
+	padding: 0.625rem 0.75rem;
+	border-radius: 0.75rem;
+	background: color-mix(in srgb, var(--hds-line, #dfe3ee) 28%, transparent);
+}
+
+.hodima-advisor .hodima-advisor__ov-what {
+	flex: 1 1 22rem;
+	min-inline-size: 0;
+	display: grid;
+	gap: 0.25rem;
+	justify-items: start;
+}
+
+.hodima-advisor .hodima-advisor__ov-what p {
+	margin: 0;
+	font-size: 0.875rem;
+}
+
+.hodima-advisor .hodima-advisor__ov-item .hodima-advisor__mark {
+	flex: 0 0 auto;
 }

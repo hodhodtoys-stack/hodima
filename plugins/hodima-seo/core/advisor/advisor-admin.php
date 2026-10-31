@@ -519,41 +519,20 @@ function hodima_seo_advisor_legacy_tab_redirect(): void {
 	exit;
 }
 
-/**
- * تب‌های بالای صفحه (SEO 3.3.1): یک ردیف چهارتایی «ایرادها و کارها | آمار جستجو | وضعیت در گوگل | تنظیمات».
- * پنج بخش قدیمی (پیشنهادها، ایرادهای فنی، هم‌کلمه، آدرس‌های خراب، کارها) داخل تب اول با منوی «نمای فهرست» جابه‌جا
- * می‌شوند؛ کلید `?tab=` همه‌شان همان‌طور می‌ماند (پیوند و علامت مرورگر خراب نشود).
- */
-const HODIMA_SEO_ADVISOR_WORK_VIEWS = [
-	'overview'      => 'همه ایرادها (هر صفحه یک بار)',
-	'opportunities' => 'پیشنهادهای بهتر شدن',
-	'crawl'         => 'ایرادهای فنی صفحه‌ها',
-	'competition'   => 'صفحه‌های هم‌کلمه',
-	'health'        => 'آدرس‌های خراب',
-	'tasks'         => 'کارها (باز و انجام‌شده)',
-];
-
+/** تب‌های بالای صفحه (SEO 3.3.0): فقط «کارها» و «تنظیمات». */
 function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true ): void {
 
-	$work = isset( HODIMA_SEO_ADVISOR_WORK_VIEWS[ $active ] );
-
+	// دو تب بیشتر نیست (SEO 3.3.0): «کارها» (همه ایرادها در یک فهرست) و «تنظیمات»؛ نماهای قدیمی با ?tab= هنوز باز می‌شوند
+	unset( $with_tabs );
 	$tabs = [
-		'opportunities' => [ 'ایرادها و کارها', hodima_seo_advisor_page_url() ],
-		'terms'         => [ 'آمار جستجو', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
-		'indexing'      => [ 'وضعیت در گوگل', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
-		// تنظیمات تب خودش است (SEO 2.9.3)؛ قبلا پنلی بود که روی هر تب باز می‌شد
-		'settings'      => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
+		'overview' => [ 'کارها', hodima_seo_advisor_page_url() ],
+		'settings' => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
 	];
-
-	// بدون داده فقط تب اول و «تنظیمات» معنا دارند (بقیه خالی‌اند)
-	if ( ! $with_tabs ) {
-		$tabs = array_intersect_key( $tabs, [ 'opportunities' => true, 'settings' => true ] );
-	}
 
 	echo '<div class="hodima-advisor__tabrow">';
 	echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
 	foreach ( $tabs as $key => [ $label, $url ] ) {
-		$current = $work ? 'opportunities' === $key : $key === $active;
+		$current = 'settings' === $key ? 'settings' === $active : 'settings' !== $active;
 		printf(
 			'<a class="hodima-advisor__view%1$s" href="%2$s"%3$s>%4$s%5$s</a>',
 			'settings' === $key ? ' hodima-advisor__view--settings' : '',
@@ -564,10 +543,11 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 		);
 	}
 	echo '</nav>';
-	if ( $work && $with_tabs ) {
-		hodima_seo_advisor_render_work_views( $active ); // همان ردیف تب (SEO 3.2.8)؛ ردیف جدا نیست
-	}
 	echo '</div>';
+
+	if ( ! in_array( $active, [ 'overview', 'settings' ], true ) ) {
+		printf( '<p class="hodima-advisor__back"><a href="%1$s">برگشت به فهرست کارها</a></p>', esc_url( hodima_seo_advisor_page_url() ) );
+	}
 }
 
 /**
@@ -598,25 +578,6 @@ function hodima_seo_advisor_filter_select( string $label, array $items, string $
 	<?php
 }
 
-/**
- * منوی «نمای فهرست» داخل تب «ایرادها و کارها»: بدون جاوااسکریپت با دکمه «نمایش» کار می‌کند و با جاوااسکریپت
- * هنگام انتخاب خودش می‌رود. آدرس هر نما همان `?tab=` قدیمی است.
- */
-function hodima_seo_advisor_render_work_views( string $active ): void {
-	?>
-	<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="hodima-advisor__workview">
-		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
-		<label class="screen-reader-text" for="hodima-advisor-workview">نمای فهرست</label>
-		<select id="hodima-advisor-workview" name="tab" class="hds-input" onchange="this.form.submit()">
-			<?php foreach ( HODIMA_SEO_ADVISOR_WORK_VIEWS as $key => $label ) : ?>
-				<option value="<?php echo esc_attr( 'opportunities' === $key ? '' : $key ); ?>"<?php selected( $key, $active ); ?>><?php echo esc_html( $label ); ?></option>
-			<?php endforeach; ?>
-		</select>
-		<noscript><button type="submit" class="hds-btn">نمایش</button></noscript>
-	</form>
-	<?php
-}
-
 function hodima_seo_advisor_render_admin(): void {
 
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -631,7 +592,8 @@ function hodima_seo_advisor_render_admin(): void {
 	$tab = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
 	$tab = ! empty( $_GET['settings'] ) ? 'settings' : $tab; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- پیوند قدیمی settings=1
 	$tab = HODIMA_SEO_ADVISOR_LEGACY_TABS[ $tab ][0] ?? $tab; // پیوند قدیمی بدون ریدایرکت (فراخوانی مستقیم)؛ در پیشخوان ریدایرکت پیش‌تر انجام شده
-	$tab = ( $has_data || 'settings' === $tab ) && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : 'opportunities';
+	$tab = '' === $tab ? 'overview' : $tab; // صفحه شروع: فهرست واحد «کارها» (SEO 3.3.0)
+	$tab = ( $has_data || 'settings' === $tab ) && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : ( $has_data ? 'overview' : 'opportunities' );
 	$tab = $has_key ? $tab : 'settings'; // بدون کلید اولین کار وارد کردن کلید است
 
 	hodima_seo_ui_open( [
@@ -654,12 +616,13 @@ function hodima_seo_advisor_render_admin(): void {
 
 	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
 	hodima_seo_advisor_render_tabs( $tab, $has_data );
-	if ( 'settings' !== $tab ) {
+	if ( 'overview' !== $tab && 'settings' !== $tab ) {
 		hodima_seo_advisor_render_toolbar( $tab );
 	}
 
 	if ( 'settings' === $tab ) {
 		if ( $has_key ) {
+			hodima_seo_advisor_render_toolbar( 'settings' ); // بازه داده، گرفتن داده تازه و کیفیت داده فقط اینجاست (SEO 3.3.0)
 			hodima_seo_advisor_render_cron_card(); // بدون کلید اول کار وارد کردن کلید است؛ کارت بعد از آن می‌آید
 		}
 		hodima_seo_advisor_render_settings( $has_data );
