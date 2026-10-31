@@ -97,7 +97,7 @@ function hodima_seo_advisor_crawler_in_window( ?int $now = null ): bool {
 /**
  * وضعیت ذخیره‌شده خزش با پیش‌فرض‌ها.
  *
- * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int, capped: bool}
+ * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int, capped: bool, tick: int}
  */
 function hodima_seo_advisor_crawler_state(): array {
 
@@ -123,6 +123,7 @@ function hodima_seo_advisor_crawler_state(): array {
 		'pages'       => (int) ( $state['pages'] ?? 0 ),
 		'links'       => (int) ( $state['links'] ?? 0 ),
 		'capped'      => ! empty( $state['capped'] ),
+		'tick'        => (int) ( $state['tick'] ?? 0 ),
 	];
 }
 
@@ -130,6 +131,7 @@ function hodima_seo_advisor_crawler_state(): array {
  * @param array<string, mixed> $state
  */
 function hodima_seo_advisor_crawler_save( array $state ): void {
+	$state['tick'] = time(); // زمان آخرین نوبت: سنجش سلامت کرون (advisor-cron.php)
 	update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, $state, false );
 }
 

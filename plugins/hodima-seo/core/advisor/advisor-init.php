@@ -44,6 +44,7 @@ require_once __DIR__ . '/advisor-rules.php';
 require_once __DIR__ . '/advisor-steps.php';
 require_once __DIR__ . '/advisor-refresh.php';
 require_once __DIR__ . '/advisor-resave.php';
+require_once __DIR__ . '/advisor-cron.php';
 
 if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-help.php';
@@ -59,5 +60,6 @@ if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-crawl-view.php';
 	require_once __DIR__ . '/advisor-score-view.php';
 	require_once __DIR__ . '/advisor-inspect-view.php';
+	require_once __DIR__ . '/advisor-cron-view.php';
 	require_once __DIR__ . '/advisor-box.php';
 }

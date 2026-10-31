@@ -582,6 +582,8 @@ function hodima_seo_advisor_render_admin(): void {
 		wp_admin_notice( '<strong>بخشی از داده بریده شده است:</strong> ' . esc_html( implode( ' ', $notes ) ), [ 'type' => 'warning', 'additional_classes' => [ 'inline' ] ] ); // اعلان خود وردپرس: صفحه به Core وابسته نشود
 	}
 
+	hodima_seo_advisor_cron_notice( $tab ); // فقط وقتی کرون عقب است (تب‌های پیشنهادها و ایرادهای فنی)
+
 	hodima_seo_ui_body_open();
 
 	$n     = static fn( int|float $value ): string => number_format_i18n( $value );
@@ -594,7 +596,13 @@ function hodima_seo_advisor_render_admin(): void {
 	hodima_seo_advisor_render_tabs( $tab, $has_data );
 
 	if ( 'settings' === $tab ) {
+		if ( $has_key ) {
+			hodima_seo_advisor_render_cron_card(); // بدون کلید اول کار وارد کردن کلید است؛ کارت بعد از آن می‌آید
+		}
 		hodima_seo_advisor_render_settings( $has_data );
+		if ( ! $has_key ) {
+			hodima_seo_advisor_render_cron_card();
+		}
 		hodima_seo_ui_close();
 		return;
 	}

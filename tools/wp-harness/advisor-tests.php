@@ -224,6 +224,7 @@ if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-steps-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-cron-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php'; // دکمه‌های «انجام دادم» ردیف‌ها (SEO 3.0.2)
 }
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -347,6 +348,7 @@ if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-steps-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-cron-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php'; // دکمه‌های «انجام دادم» ردیف‌ها (SEO 3.0.2)
 }
 $totals   = hodima_seo_advisor_totals();
@@ -3214,6 +3216,128 @@ hodima_seo_advisor_crawler_start();
 hodima_ad( 'شروع دور تازه نشان سقف را صفر می‌کند', hodima_seo_advisor_crawler_state()['capped'], false );
 $cp_w->query( $cp_w->prepare( 'DELETE FROM %i', $cp_t ) );
 delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+
+echo "=== سلامت کارهای خودکار (SEO 3.2.0)\n";
+$ch_keep = [];
+foreach ( [ HODIMA_SEO_ADVISOR_STATUS_OPTION, HODIMA_SEO_ADVISOR_CRAWLER_OPTION, HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, HODIMA_SEO_ADVISOR_PIPELINE_OPTION ] as $ch_opt ) {
+	$ch_keep[ $ch_opt ] = get_option( $ch_opt, null );
+}
+$ch_now    = time();
+$ch_clear  = static function (): void {
+	foreach ( [ HODIMA_SEO_ADVISOR_CRON, HODIMA_SEO_ADVISOR_INSPECT_CRON, HODIMA_SEO_ADVISOR_STAGE_CRON, HODIMA_SEO_ADVISOR_CRAWLER_CRON ] as $hook ) {
+		wp_clear_scheduled_hook( $hook );
+	}
+};
+$ch_job    = static function ( string $key ) use ( $ch_now ): array {
+	foreach ( hodima_seo_advisor_cron_health( $ch_now )['jobs'] as $job ) {
+		if ( $key === $job['key'] ) {
+			return $job;
+		}
+	}
+	return [];
+};
+$ch_clear();
+update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [], false );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'always' => false, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'finished' => $ch_now - 3 * DAY_IN_SECONDS ], false );
+
+// دریافت روزانه
+$ch_status = (array) get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [] );
+$ch_levels = [];
+foreach ( [ 10, 60, 100 ] as $ch_hours ) {
+	update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => $ch_now - $ch_hours * HOUR_IN_SECONDS ] + $ch_status, false );
+	$ch_levels[] = $ch_job( 'refresh' )['level'];
+}
+hodima_ad( 'دریافت روزانه: ۱۰ ساعت سالم، ۶۰ ساعت دیر شده، ۱۰۰ ساعت متوقف', $ch_levels, [ 'ok', 'warn', 'bad' ] );
+hodima_ad( 'متن «آخرین اجرا» فارسی و نسبی است', str_contains( $ch_job( 'refresh' )['last'], 'پیش' ), true );
+
+// خزنده: بیکار
+$ch_levels = [];
+foreach ( [ 3, 12, 20 ] as $ch_days ) {
+	update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'finished' => $ch_now - $ch_days * DAY_IN_SECONDS ], false );
+	$ch_levels[] = $ch_job( 'crawler' )['level'];
+}
+hodima_ad( 'خزنده بیکار با دور هفت‌روزه: ۳ روز سالم، ۱۲ روز دیر شده، ۲۰ روز متوقف', $ch_levels, [ 'ok', 'warn', 'bad' ] );
+
+// خزنده: دور باز (پنجره ۲ تا ۸ ← ۲۴ ساعت مجاز)
+$ch_levels = [];
+foreach ( [ 5, 30, 60 ] as $ch_hours ) {
+	update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'running', 'started' => $ch_now - 70 * HOUR_IN_SECONDS, 'tick' => $ch_now - $ch_hours * HOUR_IN_SECONDS ], false );
+	$ch_levels[] = $ch_job( 'crawler' )['level'];
+}
+hodima_ad( 'دور باز با پنجره شبانه: نوبت ۵ ساعت پیش سالم (شبانه عادی است)، ۳۰ ساعت دیر شده، ۶۰ ساعت متوقف', $ch_levels, [ 'ok', 'warn', 'bad' ] );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'always' => true, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'running', 'tick' => $ch_now - 3 * HOUR_IN_SECONDS ], false );
+hodima_ad( 'خزنده ۲۴ ساعته: نوبت ۳ ساعت پیش دیر شده است', $ch_job( 'crawler' )['level'], 'warn' );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => false, 'always' => false, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'finished' => $ch_now - 60 * DAY_IN_SECONDS ], false );
+hodima_ad( 'خزش خودکار خاموش: «غیرفعال» و در شمار مشکل‌ها نیست', [ $ch_job( 'crawler' )['level'], hodima_seo_advisor_cron_health( $ch_now )['level'] ], [ 'off', 'bad' ] ); // دریافت ۱۰۰ ساعته هنوز متوقف است
+$ch_crawler_off = array_filter( hodima_seo_advisor_cron_health( $ch_now )['jobs'], static fn( array $job ): bool => 'crawler' === $job['key'] && 'off' === $job['level'] );
+hodima_ad( 'کار خاموش مشکل شمرده نمی‌شود', count( $ch_crawler_off ), 1 );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'always' => false, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'finished' => $ch_now - DAY_IN_SECONDS ], false );
+
+// بررسی ایندکس: رویداد دو بار در روز که از موعد گذشته
+$ch_levels = [];
+foreach ( [ 3, 20, 70 ] as $ch_hours ) {
+	wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_INSPECT_CRON );
+	wp_schedule_event( $ch_now - $ch_hours * HOUR_IN_SECONDS, 'twicedaily', HODIMA_SEO_ADVISOR_INSPECT_CRON );
+	$ch_levels[] = $ch_job( 'inspect' )['level'];
+}
+hodima_ad( 'بررسی ایندکس: ۳ ساعت از موعد سالم، ۲۰ ساعت دیر شده، ۷۰ ساعت متوقف', $ch_levels, [ 'ok', 'warn', 'bad' ] );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_INSPECT_CRON );
+wp_schedule_event( $ch_now + HOUR_IN_SECONDS, 'twicedaily', HODIMA_SEO_ADVISOR_INSPECT_CRON );
+hodima_ad( 'بررسی ایندکس طبق برنامه سالم است', [ $ch_job( 'inspect' )['level'], $ch_job( 'inspect' )['last'] ], [ 'ok', 'طبق برنامه' ] );
+
+// ساخت پیشنهادها
+hodima_ad( 'نوبت پس‌زمینه‌ای که نیست: بی‌کار و سالم', [ $ch_job( 'pipeline' )['level'], $ch_job( 'pipeline' )['last'] ], [ 'ok', 'بی‌کار' ] );
+update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [ 'stages' => [ 'trend' ] ], false );
+$ch_levels = [];
+foreach ( [ 10 * MINUTE_IN_SECONDS, 2 * HOUR_IN_SECONDS, 10 * HOUR_IN_SECONDS ] as $ch_late ) {
+	wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+	wp_schedule_single_event( $ch_now - $ch_late, HODIMA_SEO_ADVISOR_STAGE_CRON );
+	$ch_levels[] = $ch_job( 'pipeline' )['level'];
+}
+hodima_ad( 'نوبت ثبت‌شده که اجرا نشده: ۱۰ دقیقه سالم، ۲ ساعت دیر شده، ۱۰ ساعت متوقف', $ch_levels, [ 'ok', 'warn', 'bad' ] );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_STAGE_CRON );
+
+// جمع‌بندی و نمایش
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => $ch_now - 100 * HOUR_IN_SECONDS ] + $ch_status, false );
+$ch_health = hodima_seo_advisor_cron_health( $ch_now );
+hodima_ad( 'جمع‌بندی: دریافت متوقف ← سطح کل متوقف و یک مشکل', [ $ch_health['level'], $ch_health['problems'] ], [ 'bad', 1 ] );
+$ch_notice = static function ( string $tab ): string {
+	ob_start();
+	hodima_seo_advisor_cron_notice( $tab );
+	return (string) ob_get_clean();
+};
+$ch_html = $ch_notice( 'opportunities' );
+hodima_ad( 'نوار هشدار روی «پیشنهادها» با نام کار، زمان و پیوند به کارت تنظیمات', [ str_contains( $ch_html, 'کارهای خودکار دستار عقب‌اند' ), str_contains( $ch_html, 'دریافت داده گوگل' ), str_contains( $ch_html, 'tab=settings#hodima-advisor-cron' ), str_contains( $ch_html, 'notice-error' ) ], [ true, true, true, true ] );
+hodima_ad( 'نوار هشدار روی «ایرادهای فنی» هم هست و روی تب‌های دیگر نیست', [ '' !== $ch_notice( 'crawl' ), $ch_notice( 'terms' ), $ch_notice( 'tasks' ), $ch_notice( 'settings' ) ], [ true, '', '', '' ] );
+ob_start();
+hodima_seo_advisor_render_cron_card();
+$ch_card = (string) ob_get_clean();
+hodima_ad( 'کارت در حالت مشکل: شناسه پیوند، سطر وضعیت، چهار کار، راهنمای باز با دستور و دکمه کپی', [ str_contains( $ch_card, 'id="hodima-advisor-cron"' ), str_contains( $ch_card, '1 کار از 4 کار خودکار عقب است' ) || str_contains( $ch_card, '۱ کار از ۴ کار خودکار عقب است' ), substr_count( $ch_card, 'hodima-advisor__cron-job"' ) + substr_count( $ch_card, 'hodima-advisor__cron-job ' ), str_contains( $ch_card, 'wp-cron.php?doing_wp_cron' ), str_contains( $ch_card, 'data-hdsa-copy="hodima-advisor-cron-cmd"' ), str_contains( $ch_card, '<details class="hds-more hodima-advisor__cron-guide" open>' ) ], [ true, true, 4, true, true, true ] );
+hodima_ad( 'مشکل‌دار اول در فهرست و سالم‌ها یک‌خطی', [ strpos( $ch_card, 'دریافت داده گوگل' ) < strpos( $ch_card, 'بررسی ایندکس گوگل' ), substr_count( $ch_card, 'hodima-advisor__cron-job--compact' ) ], [ true, 3 ] );
+
+// همه سالم: هیچ نواری و کارت یک‌خط با جزئیات جمع‌شده
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => $ch_now - 5 * HOUR_IN_SECONDS ] + $ch_status, false );
+hodima_ad( 'همه سالم: سطح ok و هیچ نواری نمی‌آید', [ hodima_seo_advisor_cron_health( $ch_now )['level'], $ch_notice( 'opportunities' ) ], [ 'ok', '' ] );
+ob_start();
+hodima_seo_advisor_render_cron_card();
+$ch_card = (string) ob_get_clean();
+hodima_ad( 'کارت سالم: یک خط وضعیت، جزئیات جمع‌شده (بدون open)، بدون راهنمای رفع', [ str_contains( $ch_card, 'خودکار به موقع اجرا شده‌اند' ), str_contains( $ch_card, '<details class="hds-more hodima-advisor__cron-more">' ), str_contains( $ch_card, 'چطور درستش کنم' ) ], [ true, true, false ] );
+
+// ذخیره وضعیت خزنده زمان آخرین نوبت را می‌نویسد
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle' ], false );
+$ch_state = hodima_seo_advisor_crawler_state();
+hodima_seo_advisor_crawler_save( $ch_state );
+hodima_ad( 'ذخیره وضعیت خزنده زمان آخرین نوبت (tick) را می‌نویسد', hodima_seo_advisor_crawler_state()['tick'] >= $ch_now, true );
+hodima_ad( 'دستور کرون واقعی با آدرس همین سایت', str_starts_with( hodima_seo_advisor_cron_command(), '*/5 * * * * wget -q -O - ' ) && str_contains( hodima_seo_advisor_cron_command(), 'wp-cron.php?doing_wp_cron' ), true );
+
+$ch_clear();
+foreach ( $ch_keep as $ch_opt => $ch_val ) {
+	null === $ch_val ? delete_option( $ch_opt ) : update_option( $ch_opt, $ch_val, false );
+}
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
