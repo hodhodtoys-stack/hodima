@@ -1704,18 +1704,27 @@
 	font-size: 1.125rem;
 }
 
+/* «انجام دادم» = کنش اصلی ردیف (سبز پر)؛ «لازم نیست» = کنش ثانویه بی‌کادر (SEO 3.2.3) */
 .hodima-advisor .hodima-advisor__mark-done {
 	border-color: var(--hd-ok);
-	color: var(--hd-ok);
+	background: var(--hd-ok);
+	color: #ffffff;
 }
 
 .hodima-advisor .hodima-advisor__mark-done:hover {
-	background: color-mix(in srgb, var(--hd-ok) 8%, #fff);
+	background: color-mix(in srgb, var(--hd-ok) 82%, #000);
 }
 
 .hodima-advisor .hodima-advisor__mark-reject {
-	border-color: var(--hd-border-strong);
+	border-color: transparent;
+	background: transparent;
 	color: var(--hd-muted);
+	font-weight: 600;
+}
+
+.hodima-advisor .hodima-advisor__mark-reject:hover {
+	background: var(--hd-soft);
+	color: var(--hd-text);
 }
 
 .hodima-advisor .hodima-advisor__row-acts {
@@ -2776,4 +2785,10 @@
 .hodima-advisor .hodima-advisor__files--row > li {
 	flex: 1 1 20rem;
 	border-block-end: 0;
+}
+
+/* تیک و رادیو به رنگ برند (به‌جای آبی پیش‌فرض مرورگر؛ SEO 3.2.3) */
+.hodima-advisor input[type="checkbox"],
+.hodima-advisor input[type="radio"] {
+	accent-color: var(--hd-primary);
 }
