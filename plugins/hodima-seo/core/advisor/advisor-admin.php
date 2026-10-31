@@ -519,27 +519,32 @@ function hodima_seo_advisor_legacy_tab_redirect(): void {
 	exit;
 }
 
-/** تب‌های بالای صفحه (SEO 3.3.0): فقط «کارها» و «تنظیمات». */
+/** تب‌های بالای صفحه: «کارها»، «کارهای انجام‌شده» (SEO 3.3.4) و «تنظیمات». */
 function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true ): void {
 
 	// دو تب بیشتر نیست (SEO 3.3.0): «کارها» (همه ایرادها در یک فهرست) و «تنظیمات»؛ نماهای قدیمی با ?tab= هنوز باز می‌شوند
 	unset( $with_tabs );
 	$tabs = [
 		'overview' => [ 'کارها', hodima_seo_advisor_page_url() ],
+		'tasks'    => [ 'کارهای انجام‌شده', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
 		'settings' => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
 	];
+	$icons = [ 'overview' => 'dashicons-list-view', 'tasks' => 'dashicons-yes-alt', 'settings' => 'dashicons-admin-generic' ];
+	$open  = function_exists( 'hodima_seo_advisor_task_counts' ) ? (int) ( hodima_seo_advisor_task_counts()['open'] ?? 0 ) : 0; // کار انجام‌شده‌ای که برگشته یا بی‌اثر است؛ صفر = شمار نشان داده نمی‌شود
 
 	// تب‌های زیرخط‌دار (نه دکمه پر) تا با چیپ‌های فیلتر اشتباه نشوند؛ در «کارها» خط «گرفتن داده تازه» همین ردیف است (SEO 3.3.1)
 	echo '<div class="hodima-advisor__tabrow">';
 	echo '<nav class="hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
 	foreach ( $tabs as $key => [ $label, $url ] ) {
-		$current = 'settings' === $key ? 'settings' === $active : 'settings' !== $active;
+		// تب «کارها» برای تب‌های قدیمی هم فعال می‌ماند (آدرس‌های ?tab= هنوز باز می‌شوند)
+		$current = 'overview' === $key ? ! in_array( $active, [ 'tasks', 'settings' ], true ) : $key === $active;
 		printf(
-			'<a class="hodima-advisor__tab" href="%1$s"%2$s><span class="dashicons %3$s" aria-hidden="true"></span>%4$s</a>',
+			'<a class="hodima-advisor__tab" href="%1$s"%2$s><span class="dashicons %3$s" aria-hidden="true"></span>%4$s%5$s</a>',
 			esc_url( $url ),
 			$current ? ' aria-current="page"' : '',
-			'settings' === $key ? 'dashicons-admin-generic' : 'dashicons-list-view',
-			esc_html( $label )
+			esc_attr( $icons[ $key ] ),
+			esc_html( $label ),
+			'tasks' === $key && $open > 0 ? sprintf( ' <span class="hodima-advisor__tab-n" title="کار انجام‌شده‌ای که برگشته یا بی‌اثر بوده">%s</span>', esc_html( number_format_i18n( $open ) ) ) : ''
 		);
 	}
 	echo '</nav>';
@@ -548,7 +553,7 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 	}
 	echo '</div>';
 
-	if ( ! in_array( $active, [ 'overview', 'settings' ], true ) ) {
+	if ( ! in_array( $active, [ 'overview', 'tasks', 'settings' ], true ) ) {
 		printf( '<p class="hodima-advisor__back"><a href="%1$s">برگشت به فهرست کارها</a></p>', esc_url( hodima_seo_advisor_page_url() ) );
 	}
 }
@@ -588,10 +593,16 @@ function hodima_seo_advisor_filter_select( string $label, array $items, string $
  * @param string                                      $label   برچسب خوانشگر صفحه (مثلا «نوع ایراد»)
  * @param array<string, array{0:string,1:int,2:string}> $items   کلید ← [متن، شمار، آدرس]
  * @param string                                      $current کلید گزینه فعلی
+ * @param array{small?: bool, caption?: string}       $opts    small = دکمه‌های کوچک‌تر (ردیف دوم)؛ caption = برچسب دیدنی اول ردیف
  */
-function hodima_seo_advisor_filter_chips( string $label, array $items, string $current ): void {
+function hodima_seo_advisor_filter_chips( string $label, array $items, string $current, array $opts = [] ): void {
+	$small   = ! empty( $opts['small'] );
+	$caption = (string) ( $opts['caption'] ?? '' );
 	?>
-	<nav class="hodima-advisor__chips" aria-label="<?php echo esc_attr( $label ); ?>">
+	<nav class="hodima-advisor__chips<?php echo $small ? ' hodima-advisor__chips--sm' : ''; ?>" aria-label="<?php echo esc_attr( $label ); ?>">
+		<?php if ( '' !== $caption ) : ?>
+			<span class="hodima-advisor__chips-caption" aria-hidden="true"><?php echo esc_html( $caption ); ?></span>
+		<?php endif; ?>
 		<?php foreach ( $items as $key => [ $text, $count, $url ] ) : ?>
 			<a class="hodima-advisor__chip" href="<?php echo esc_url( $url ); ?>"<?php echo (string) $key === $current ? ' aria-current="true"' : ''; ?>>
 				<span><?php echo esc_html( $text ); ?></span>
@@ -640,7 +651,7 @@ function hodima_seo_advisor_render_admin(): void {
 
 	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
 	hodima_seo_advisor_render_tabs( $tab, $has_data );
-	if ( 'overview' !== $tab && 'settings' !== $tab ) {
+	if ( ! in_array( $tab, [ 'overview', 'tasks', 'settings' ], true ) ) {
 		hodima_seo_advisor_render_toolbar( $tab );
 	}
 

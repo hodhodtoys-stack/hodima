@@ -985,7 +985,7 @@ ob_start();
 hodima_seo_advisor_render_admin();
 $main_html = (string) ob_get_clean();
 hodima_ad( 'تب فرصت‌ها پیش‌فرض است و تب رقابت کنارش لینک دارد', [ str_contains( $main_html, 'name="rule"' ), str_contains( $main_html, 'برگشت به فهرست کارها' ), str_contains( $main_html, 'hodima-advisor__group' ) ], [ true, true, false ] );
-hodima_ad( 'ردیف تب فقط دو تب دارد: «کارها» و «تنظیمات» (SEO 3.3.0)', [ preg_match( '~<nav class="hodima-advisor__tabs".*?</nav>~s', $main_html, $tabs_nav ) ? substr_count( $tabs_nav[0], '<a ' ) : 0, str_contains( $main_html, '>کارها</a>' ), str_contains( $main_html, '>تنظیمات</a>' ), str_contains( $main_html, 'id="hodima-advisor-workview"' ) ], [ 2, true, true, false ] );
+hodima_ad( 'ردیف تب سه تب دارد: «کارها»، «کارهای انجام‌شده» و «تنظیمات» (SEO 3.3.4)', [ preg_match( '~<nav class="hodima-advisor__tabs".*?</nav>~s', $main_html, $tabs_nav ) ? substr_count( $tabs_nav[0], '<a ' ) : 0, str_contains( $main_html, '>کارها</a>' ), str_contains( $main_html, '>تنظیمات</a>' ), str_contains( $main_html, 'id="hodima-advisor-workview"' ) ], [ 3, true, true, false ] );
 delete_option( 'hodima_discover_sc_key' );
 $_GET = [];
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -1249,6 +1249,20 @@ ob_start();
 hodima_seo_advisor_render_admin();
 $tasks_html = (string) ob_get_clean();
 hodima_ad( 'تب «کارها» (پیش‌فرض «نیاز به کار»): فقط کار باز، فرم با nonce؛ کار «انجام دادم» اینجا نیست', [ str_contains( $tasks_html, 'aria-label="وضعیت کار"' ), substr_count( $tasks_html, 'class="hodima-advisor__task"' ), str_contains( $tasks_html, 'name="action" value="hodima_advisor_task"' ), str_contains( $tasks_html, 'کلمه نزدیک صفحه اول' ), str_contains( $tasks_html, 'عنوان و متا را بازنویسی کنید</strong>' ) ], [ true, 1, true, true, false ] );
+hodima_ad(
+	'تب «کارهای انجام‌شده» (SEO 3.3.4): سه تب و این یکی فعال، بدون خط به‌روزرسانی و پیوند برگشت، فیلتر دکمه‌ای (نه منو)، عنوان کارت',
+	[
+		preg_match( '~<nav class="hodima-advisor__tabs".*?</nav>~s', $tasks_html, $tt_nav ) ? substr_count( $tt_nav[0], '<a ' ) : 0,
+		str_contains( $tasks_html, 'tab=tasks" aria-current="page"' ),
+		substr_count( $tasks_html, 'aria-current="page"' ),
+		substr_count( $tasks_html, 'value="hodima_advisor_refresh"' ),
+		str_contains( $tasks_html, 'برگشت به فهرست کارها' ),
+		str_contains( $tasks_html, '<select' ),
+		str_contains( $tasks_html, 'class="hodima-advisor__chip"' ),
+		str_contains( $tasks_html, '<h2 class="hds-card__title">کارهای انجام‌شده</h2>' ),
+	],
+	[ 3, true, 1, 0, false, false, true, true ]
+);
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'waiting' ];
 ob_start();
 hodima_seo_advisor_render_admin();
@@ -1256,7 +1270,7 @@ $done_html = (string) ob_get_clean();
 hodima_ad( 'کنش‌ها دکمه‌اند نه کلمه لینکی: «ویرایش/دیدن در سایت» و «برگردان به فهرست» با کلاس دکمه و آیکون', [ substr_count( $done_html, 'hds-btn hds-btn--outline hodima-advisor__act' ) >= 2, str_contains( $done_html, 'hodima-advisor__link-btn' ), str_contains( $done_html, 'dashicons-undo' ) ], [ true, false, true ] );
 hodima_ad( 'راهنما: فهرست «اصطلاح‌ها به زبان ساده» پایین تب با H1 و نرخ کلیک؛ «؟» با popover و نام قابل‌خواندن', [ str_contains( $done_html, 'hodima-advisor__glossary' ) && str_contains( $done_html, 'H1 (تیتر اصلی)' ) && str_contains( $done_html, '<dt>نرخ کلیک</dt>' ), 1 === preg_match( '#<button type="button" class="hodima-advisor-help" popovertarget="(hdsa-help-\d+)" aria-label="«رتبه» یعنی چه؟">؟</button><span id="\1" popover#u', hodima_seo_advisor_help( 'position' ) ), hodima_seo_advisor_help( 'nope' ) ], [ true, true, '' ] );
 hodima_ad( 'هر قاعده «چرا مهم است» و «از کجا بفهمم درست شد» دارد؛ متنی ← همان لحظه ذخیره، آماری ← ۱۴ روز و تب «کارها»', [ array_filter( array_map( static fn( string $r ): bool => '' === hodima_seo_advisor_rule_guide( $r )['why'] || '' === hodima_seo_advisor_rule_guide( $r )['verify'], [ 'low_ctr', 'near_first', 'missing_headings', 'missing_content', 'weak_query', 'cannibal', 'decline' ] ) ), str_contains( hodima_seo_advisor_rule_guide( 'missing_content' )['verify'], 'همان لحظه ذخیره' ), str_contains( hodima_seo_advisor_rule_guide( 'low_ctr' )['verify'], '«کارها»' ) ], [ [], true, true ] );
-hodima_ad( '«کارها» ← «منتظر نتیجه»: تب فعال، کار «انجام دادم» با سه گام (انجام دادید، منتظر بررسی ایندکس، منتظر نتیجه با سنجش ۱۴ روزه)', [ str_contains( $done_html, 'برگشت به فهرست کارها' ), substr_count( $done_html, 'class="hodima-advisor__task"' ), substr_count( $done_html, 'class="hodima-advisor__step"' ), str_contains( $done_html, 'منتظر بررسی ایندکس' ), str_contains( $done_html, 'همان‌قدر روز پیش از آن مقایسه می‌شود' ), str_contains( $done_html, 'کلمه نزدیک صفحه اول' ) ], [ true, 1, 3, true, true, false ] );
+hodima_ad( '«کارهای انجام‌شده» ← «منتظر نتیجه»: بدون پیوند برگشت (خودش تب است)، کار «انجام دادم» با سه گام (انجام دادید، منتظر بررسی ایندکس، منتظر نتیجه با سنجش ۱۴ روزه)', [ ! str_contains( $done_html, 'برگشت به فهرست کارها' ), substr_count( $done_html, 'class="hodima-advisor__task"' ), substr_count( $done_html, 'class="hodima-advisor__step"' ), str_contains( $done_html, 'منتظر بررسی ایندکس' ), str_contains( $done_html, 'همان‌قدر روز پیش از آن مقایسه می‌شود' ), str_contains( $done_html, 'کلمه نزدیک صفحه اول' ) ], [ true, 1, 3, true, true, false ] );
 $kb_at   = hodima_seo_advisor_task( '/k/b/', 'low_ctr', '' )['at'];
 $ins_old = get_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, false );
 update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/k/b/' => [ 'verdict' => 'PASS', 'coverage' => 'Submitted and indexed', 'last_crawl' => gmdate( 'c', $kb_at - 5 * DAY_IN_SECONDS ), 'checked' => time() - 3 * DAY_IN_SECONDS ] ], false );
@@ -1589,7 +1603,7 @@ wp_set_current_user( 1 );
 $_GET = [];
 $bar = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'competition' ) );
 hodima_ad( 'ردیف «گرفتن داده تازه»: یک دکمه با تب برگشت و راهنمای «یک کلیک برای همه»', [ str_contains( $bar, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $bar, 'name="tab" value="competition"' ), str_contains( $bar, 'گرفتن داده تازه' ), str_contains( $bar, 'یک کلیک برای همه بخش‌ها' ) ], [ true, true, true, true ] );
-foreach ( [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks' ] as $t ) {
+foreach ( [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing' ] as $t ) {
 	$_GET   = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => $t ];
 	$html_t = $cap( static fn() => hodima_seo_advisor_render_admin() );
 	$bar_at = strpos( $html_t, 'value="hodima_advisor_refresh"' );
