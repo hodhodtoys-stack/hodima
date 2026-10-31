@@ -5,9 +5,11 @@
  *
  * تا SEO 2.8.9 ایرادهای «ایرادهای فنی» (بدون متا، عنوان کوتاه/بلند، بدون H1، تکراری‌ها) فقط با خواندن دوباره
  * خروجی Screaming Frog عوض می‌شدند: مدیر متا را می‌نوشت و ایراد تا خزش بعدی می‌ماند. حالا بعد از ذخیره
- * نوشته/برگه/محصول یا دسته، همان صفحه از خود سایت خوانده می‌شود (مثل خزنده: HTML رندرشده) و عنوان، طول
- * متا، H1 و دو H2 اول در ردیف خزش همان آدرس نوشته می‌شوند؛ ایرادها و پیشنهادهای وابسته (نرخ کلیک با
- * سلامت متا، کلمه در تیتر) همان لحظه از همین جدول تازه ساخته می‌شوند — منطق دوم نه.
+ * نوشته/برگه/محصول یا دسته، همان صفحه از خود سایت خوانده می‌شود و با **همان خواندن و نوشتن خزنده شبانه**
+ * (advisor-crawler.php: fetch، parse، page_row، store_page) ردیف خزش و لینک‌های خروجی همان آدرس تازه می‌شود
+ * (از ۳.۱.۹؛ پیش‌تر پارسر و ۹ ستون جدا داشت و canonical، تعداد کلمه، H1، تصویر بدون alt و X-Robots-Tag تا
+ * خزش بعدی کهنه می‌ماندند)؛ ایرادها و پیشنهادهای وابسته (نرخ کلیک با سلامت متا، کلمه در تیتر) همان لحظه از
+ * همین جدول تازه ساخته می‌شوند — منطق دوم نه.
  *
  * چرا خواندن صفحه و نه حساب از کد: H1 در قالب‌های مختلف (محصول، دسته با عنوان دلخواه، برگه با H1 داخل
  * متن، برگه ووکامرس) جای متفاوتی دارد؛ فقط خود صفحه همان چیزی است که گوگل می‌بیند.
@@ -63,40 +65,6 @@ function hodima_seo_advisor_live_schedule_object( string $kind, int $id ): void 
 }
 
 /**
- * عنوان، طول متا، H1 و دو H2 اول از HTML یک صفحه (همان ستون‌های خروجی Screaming Frog).
- *
- * @return array{title: string, title_len: int, meta_len: int, h1: string, h2: string, noindex: bool, no_snippet: bool}
- */
-function hodima_seo_advisor_live_parse( string $html ): array {
-
-	$doc   = \Dom\HTMLDocument::createFromString( '' !== $html ? $html : '<!doctype html><title></title>', LIBXML_NOERROR );
-	$text  = static fn( ?\Dom\Element $el ): string => null === $el ? '' : trim( (string) preg_replace( '/\s+/u', ' ', (string) $el->textContent ) ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- ویژگی DOM
-	$title = $text( $doc->querySelector( 'head title' ) ?? $doc->querySelector( 'title' ) );
-	$meta  = $doc->querySelector( 'meta[name="description" i]' );
-	$robot = $doc->querySelector( 'meta[name="robots" i]' );
-	$h2    = [];
-
-	foreach ( $doc->querySelectorAll( 'h2' ) as $el ) {
-		if ( '' !== $text( $el ) ) {
-			$h2[] = $text( $el );
-		}
-		if ( count( $h2 ) >= 2 ) {
-			break;
-		}
-	}
-
-	return [
-		'title'     => $title,
-		'title_len' => mb_strlen( $title ),
-		'meta_len'  => null === $meta ? 0 : mb_strlen( trim( (string) $meta->getAttribute( 'content' ) ) ),
-		'h1'        => $text( $doc->querySelector( 'h1' ) ),
-		'h2'        => implode( ' | ', $h2 ),
-		'noindex'   => null !== $robot && str_contains( strtolower( (string) $robot->getAttribute( 'content' ) ), 'noindex' ),
-		'no_snippet' => null !== $robot && hodima_seo_advisor_robots_no_snippet( (string) $robot->getAttribute( 'content' ) ),
-	];
-}
-
-/**
  * یک آدرس را از سایت می‌خواند و ردیف خزشش را به‌روز می‌کند؛ بعد پیشنهادهای همان آدرس دوباره ساخته می‌شوند.
  *
  * @return bool true = خوانده و نوشته شد
@@ -120,27 +88,24 @@ function hodima_seo_advisor_live_fetch( string $path, bool $record_status = fals
 		return 0;
 	}
 
-	$res = wp_remote_get(
-		// مسیر ذخیره‌شده رمزگشایی‌شده است (آدرس فارسی)؛ برای درخواست HTTP هر بخش دوباره کد می‌شود
-		add_query_arg( HODIMA_SEO_ADVISOR_LIVE_PARAM, (string) time(), hodima_seo_advisor_url( implode( '/', array_map( 'rawurlencode', explode( '/', $path ) ) ) ) ),
-		[ 'timeout' => 15, 'redirection' => 0, 'user-agent' => 'Hodima-Advisor/' . HODIMA_SEO_VERSION . ' (+' . home_url( '/' ) . ')' ]
-	);
+	// مسیر ذخیره‌شده رمزگشایی‌شده است (آدرس فارسی)؛ برای درخواست HTTP هر بخش دوباره کد می‌شود
+	$url = hodima_seo_advisor_url( implode( '/', array_map( 'rawurlencode', explode( '/', $path ) ) ) );
+	$res = hodima_seo_advisor_crawler_fetch( add_query_arg( HODIMA_SEO_ADVISOR_LIVE_PARAM, (string) time(), $url ) ); // همان خواندن خزنده (بدون ریدایرکت، با پارامتر دور زدن کش)
 
-	if ( is_wp_error( $res ) ) {
+	if ( null === $res ) {
 		return 0;
 	}
 
-	$code = (int) wp_remote_retrieve_response_code( $res );
+	$code = $res['status'];
 
 	// صفحه ۲۰۰ نیست: داده خزش دست نمی‌خورد، مگر بررسی دستی مدیر روی ایراد خطا (بالا)
 	if ( 200 !== $code ) {
 		if ( ! $record_status || $code < 300 ) {
 			return 0;
 		}
-		$location = (string) wp_remote_retrieve_header( $res, 'location' );
-		$updated  = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			hodima_seo_advisor_table( 'crawl_pages' ),
-			[ 'status' => $code, 'redirect_to' => $code < 400 && '' !== $location ? (string) ( hodima_seo_advisor_path_key( $location ) ?? '' ) : '' ],
+			[ 'status' => $code, 'redirect_to' => $code < 400 && '' !== $res['location'] ? (string) ( hodima_seo_advisor_path_key( $res['location'] ) ?? '' ) : '' ],
 			[ 'path' => $path ],
 			[ '%d', '%s' ],
 			[ '%s' ]
@@ -149,28 +114,17 @@ function hodima_seo_advisor_live_fetch( string $path, bool $record_status = fals
 		return false === $updated ? 0 : $code;
 	}
 
-	$live = hodima_seo_advisor_live_parse( (string) wp_remote_retrieve_body( $res ) );
-	$live['no_snippet'] = $live['no_snippet'] || hodima_seo_advisor_robots_no_snippet( implode( ',', (array) wp_remote_retrieve_header( $res, 'x-robots-tag' ) ) );
+	if ( ! $res['html'] ) {
+		return 0; // خروجی غیر HTML صفحه نیست
+	}
 
-	$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		hodima_seo_advisor_table( 'crawl_pages' ),
-		[
-			'title'     => mb_substr( $live['title'], 0, HODIMA_SEO_ADVISOR_KEY_LENGTH ),
-			'title_len' => $live['title_len'],
-			'meta_len'  => $live['meta_len'],
-			'h1'        => mb_substr( $live['h1'], 0, HODIMA_SEO_ADVISOR_KEY_LENGTH ),
-			'h2'        => mb_substr( $live['h2'], 0, 255 ),
-			'status'    => 200,
-			'indexable' => $live['noindex'] ? 0 : 1,
-			'reason'    => $live['noindex'] ? 'noindex' : '',
-			'no_snippet' => $live['no_snippet'] ? 1 : 0,
-		],
-		[ 'path' => $path ],
-		[ '%s', '%d', '%d', '%s', '%s', '%d', '%d', '%s', '%d' ],
-		[ '%s' ]
-	);
+	// خواندن و نوشتن مثل دور خزنده شبانه (یک روش برای عنوان، متا، تیترها، robots/X-Robots-Tag، canonical، کلمه‌ها، تصویرها و لینک‌ها)؛
+	// آمار لینک ورودی و عمق همان می‌ماند تا دور بعد
+	$parsed = hodima_seo_advisor_crawler_parse( $res['body'], $url );
+	$ms     = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT resp_ms FROM %i WHERE path = %s', hodima_seo_advisor_table( 'crawl_pages' ), $path ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	$row    = hodima_seo_advisor_crawler_page_row( $path, 200, $ms, $parsed, '', $res['x_robots'] ); // زمان پاسخ همان خزش می‌ماند: این درخواست پارامتر دور زدن کش دارد و سرعتش معیار «کند» نیست
 
-	if ( false === $updated ) {
+	if ( ! hodima_seo_advisor_crawler_store_page( $path, $row, hodima_seo_advisor_crawler_page_links( $parsed, $path ), true ) ) {
 		return 0;
 	}
 

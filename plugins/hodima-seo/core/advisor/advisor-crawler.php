@@ -522,8 +522,6 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
  */
 function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $keep_stats = false ): ?int {
 
-	global $wpdb;
-
 	$key = hodima_seo_advisor_path_key( $url );
 
 	if ( null === $key ) {
@@ -554,27 +552,61 @@ function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $k
 		}
 	} elseif ( 200 === $status ) {
 		$parsed = hodima_seo_advisor_crawler_parse( $fetched['body'], $url );
-		$unique = [];
+		$links  = hodima_seo_advisor_crawler_page_links( $parsed, $key );
 
-		foreach ( $parsed['links'] as [ $target, $position, $anchor, $follow ] ) {
-			$dest = hodima_seo_advisor_path_key( $target );
-
-			if ( null === $dest || $dest === $key ) {
-				continue;
-			}
-
-			$link_key = "{$dest}|{$position}|{$anchor}";
-
-			if ( ! isset( $unique[ $link_key ] ) ) {
-				$unique[ $link_key ] = true;
-				$links[]             = [ $key, $dest, mb_substr( $position, 0, 16 ), $anchor, $follow ];
-			}
-
+		foreach ( $parsed['links'] as [ $target ] ) {
 			hodima_seo_advisor_crawler_enqueue( $state, $target );
 		}
 	}
 
-	$row     = hodima_seo_advisor_crawler_page_row( $key, $status, $fetched['ms'], $parsed, $redirect, $fetched['x_robots'] );
+	$row = hodima_seo_advisor_crawler_page_row( $key, $status, $fetched['ms'], $parsed, $redirect, $fetched['x_robots'] );
+	hodima_seo_advisor_crawler_store_page( $key, $row, $links, $keep_stats );
+
+	return $fetched['ms'];
+}
+
+/**
+ * لینک‌های یکتای خروجی یک صفحه خوانده‌شده (یکتا بر اساس مقصد، جایگاه و متن لینک؛ لینک به خود صفحه نه).
+ *
+ * @param array<string, mixed> $parsed خروجی hodima_seo_advisor_crawler_parse
+ * @return list<array{0: string, 1: string, 2: string, 3: string, 4: int}> [مبدأ، مقصد، جایگاه، متن، follow]
+ */
+function hodima_seo_advisor_crawler_page_links( array $parsed, string $key ): array {
+
+	$unique = [];
+	$links  = [];
+
+	foreach ( (array) ( $parsed['links'] ?? [] ) as [ $target, $position, $anchor, $follow ] ) {
+		$dest = hodima_seo_advisor_path_key( $target );
+
+		if ( null === $dest || $dest === $key ) {
+			continue;
+		}
+
+		$link_key = "{$dest}|{$position}|{$anchor}";
+
+		if ( ! isset( $unique[ $link_key ] ) ) {
+			$unique[ $link_key ] = true;
+			$links[]             = [ $key, $dest, mb_substr( $position, 0, 16 ), $anchor, $follow ];
+		}
+	}
+
+	return $links;
+}
+
+/**
+ * ردیف خزش یک صفحه و لینک‌های خروجی‌اش را (جایگزین قبلی‌ها) می‌نویسد. هم خزنده شبانه و هم بررسی فوری بعد از
+ * ذخیره (advisor-live.php) از همین استفاده می‌کنند تا ستون‌ها و روش خواندن یکی بماند.
+ *
+ * @param array<string, mixed> $row ردیف hodima_seo_advisor_crawler_page_row
+ * @param list<array{0: string, 1: string, 2: string, 3: string, 4: int}> $links
+ * @param bool $keep_stats لینک ورودی، لینک متنی، عمق و امتیاز ردیف قبلی حفظ شود (خزش دوباره یک صفحه، نه دور کامل)
+ * @return bool false = نوشتن شکست خورد (داده قبلی برگشت)
+ */
+function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $links, bool $keep_stats ): bool {
+
+	global $wpdb;
+
 	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical';
 	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
@@ -587,7 +619,7 @@ function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $k
 		}
 	}
 
-	hodima_seo_advisor_transaction(
+	$stored = hodima_seo_advisor_transaction(
 		static function () use ( $wpdb, $page_t, $link_t, $key, $columns, $format, $row, $links ): bool {
 			$wpdb->delete( $page_t, [ 'path' => $key ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->delete( $link_t, [ 'source_path' => $key ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -599,7 +631,7 @@ function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $k
 		}
 	);
 
-	return $fetched['ms'];
+	return true === $stored;
 }
 
 /* ── شروع، نوبت، پایان ── */

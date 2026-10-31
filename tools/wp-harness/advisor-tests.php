@@ -1936,19 +1936,21 @@ $notwell = hodima_seo_advisor_links_evidence( [ 'total' => 30, 'text' => 20, 'sc
 hodima_ad( 'لینک زیاد ولی با عبارت کم: همان جمله نمی‌آید', str_contains( $notwell, 'لینک داخلی این صفحه کم نیست' ), false );
 
 echo "=== بررسی فوری عنوان، متا و تیترها از خود سایت (advisor-live.php)\n";
-$lp = hodima_seo_advisor_live_parse( '<!doctype html><html><head><title> عنوان  تازه صفحه </title><meta name="Description" content="توضیح متای تازه"><meta name="robots" content="index, follow"></head><body><h1>تیتر <b>اصلی</b></h1><h2>یک</h2><h2></h2><h2>دو</h2><h2>سه</h2></body></html>' );
-hodima_ad( 'خواندن HTML: عنوان، طول متا، H1 با تگ درونی، دو H2 اول غیرخالی، ایندکس‌پذیر', [ $lp['title'], $lp['title_len'], $lp['meta_len'], $lp['h1'], $lp['h2'], $lp['noindex'] ], [ 'عنوان تازه صفحه', 15, 15, 'تیتر اصلی', 'یک | دو', false ] );
-$lp0 = hodima_seo_advisor_live_parse( '<html><head><meta name="robots" content="NOINDEX,follow"></head><body></body></html>' );
-hodima_ad( 'صفحه بی‌عنوان و noindex', [ $lp0['title'], $lp0['meta_len'], $lp0['h1'], $lp0['noindex'] ], [ '', 0, '', true ] );
+$lp = hodima_seo_advisor_crawler_parse( '<!doctype html><html><head><title> عنوان  تازه صفحه </title><meta name="Description" content="توضیح متای تازه"><meta name="robots" content="index, follow"></head><body><h1>تیتر <b>اصلی</b></h1><h2>یک</h2><h2></h2><h2>دو</h2><h2>سه</h2></body></html>', home_url( '/x/' ) );
+hodima_ad( 'خواندن HTML: عنوان، طول متا، H1 با تگ درونی، دو H2 اول غیرخالی، ایندکس‌پذیر', [ $lp['title'], mb_strlen( $lp['title'] ), mb_strlen( $lp['meta'] ), $lp['h1'], $lp['h2'], hodima_seo_advisor_crawler_page_row( '/x/', 200, 1, $lp, '', '' )['indexable'] ], [ 'عنوان تازه صفحه', 15, 15, 'تیتر اصلی', 'یک | دو', 1 ] );
+$lp0 = hodima_seo_advisor_crawler_parse( '<html><head><meta name="robots" content="NOINDEX,follow"></head><body></body></html>', home_url( '/x/' ) );
+$lp0_row = hodima_seo_advisor_crawler_page_row( '/x/', 200, 1, $lp0, '', '' );
+hodima_ad( 'صفحه بی‌عنوان و noindex', [ $lp0['title'], $lp0_row['meta_len'], $lp0['h1'], $lp0_row['indexable'], $lp0_row['reason'] ], [ '', 0, '', 0, 'Noindex' ] );
 $live_code = 200;
+$live_headers = [];
 $live_hits = [];
 $live_html = '<html><head><title>' . $ok4 . '</title><meta name="description" content="' . str_repeat( 'م', 90 ) . '"></head><body><h1>تیتر تازه بدون کلیپس</h1><h2>بخش تازه</h2></body></html>';
-$live_filter = static function ( $pre, array $args, string $url ) use ( &$live_code, &$live_hits, &$live_html ) {
+$live_filter = static function ( $pre, array $args, string $url ) use ( &$live_code, &$live_hits, &$live_html, &$live_headers ) {
 	if ( ! str_contains( $url, HODIMA_SEO_ADVISOR_LIVE_PARAM . '=' ) ) {
 		return $pre;
 	}
 	$live_hits[] = [ $url, $args['redirection'] ?? null ];
-	return [ 'headers' => [], 'body' => $live_html, 'response' => [ 'code' => $live_code, 'message' => '' ], 'cookies' => [], 'filename' => null ];
+	return [ 'headers' => $live_headers + [ 'content-type' => 'text/html; charset=UTF-8' ], 'body' => $live_html, 'response' => [ 'code' => $live_code, 'message' => '' ], 'cookies' => [], 'filename' => null ];
 };
 add_filter( 'pre_http_request', $live_filter, 30, 3 );
 hodima_ad( 'پیش از بررسی: /noh1/ ایراد «بدون H1» دارد و زمان بررسی صفر', [ in_array( 'no_h1', $iss4['/noh1/'] ?? [], true ), hodima_seo_advisor_live_time( '/noh1/' ) ], [ true, 0 ] );
@@ -1978,6 +1980,36 @@ $GLOBALS['wpdb']->insert( hodima_seo_advisor_table( 'crawl_pages' ), [ 'path' =>
 hodima_seo_advisor_crawl_map( true );
 hodima_seo_advisor_live_check( '/گل-سر/' );
 hodima_ad( 'آدرس فارسی: مسیر در درخواست کدگذاری می‌شود و ردیف به‌روز می‌شود', [ str_contains( (string) end( $live_hits )[0], '/' . rawurlencode( 'گل-سر' ) . '/?' ), hodima_seo_advisor_crawl_row( '/گل-سر/' )['h1'] ], [ true, 'تیتر تازه بدون کلیپس' ] );
+// بررسی فوری و خزنده شبانه یک خواندن دارند (SEO 3.1.9): همان HTML از دو مسیر ← همان ردیف
+$lv_path = '/noh1/';
+$lv_html = '<html><head><title>' . str_repeat( 'ت', 40 ) . '</title><meta name="description" content="' . str_repeat( 'م', 100 ) . '"><link rel="canonical" href="' . home_url( '/other/' ) . '"></head><body><main><h1>تیتر یک</h1><h1>تیتر دو</h1><p>یک دو سه چهار</p><a href="' . home_url( '/b/' ) . '">لینک ب</a><a href="' . home_url( '/b/' ) . '">لینک ب</a><img src="/a.jpg"></main></body></html>';
+$live_html = $lv_html;
+$GLOBALS['wpdb']->update( hodima_seo_advisor_table( 'crawl_pages' ), [ 'inlinks' => 7, 'text_links' => 5, 'depth' => 2, 'score' => 3.5 ], [ 'path' => $lv_path ] );
+$lv_ms0 = (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT resp_ms FROM %i WHERE path = %s', hodima_seo_advisor_table( 'crawl_pages' ), $lv_path ) );
+hodima_seo_advisor_live_check( $lv_path );
+$lv_live = hodima_seo_advisor_crawl_row( $lv_path );
+$lv_cols = (array) $GLOBALS['wpdb']->get_row( $GLOBALS['wpdb']->prepare( 'SELECT * FROM %i WHERE path = %s', hodima_seo_advisor_table( 'crawl_pages' ), $lv_path ), ARRAY_A );
+$lv_ref  = hodima_seo_advisor_crawler_page_row( $lv_path, 200, (int) $lv_cols['resp_ms'], hodima_seo_advisor_crawler_parse( $lv_html, hodima_seo_advisor_url( ltrim( $lv_path, '/' ) ) ), '', '' );
+$lv_diff = [];
+foreach ( $lv_ref as $col => $val ) {
+	if ( ! in_array( $col, [ 'inlinks', 'text_links', 'depth', 'score' ], true ) && (string) $lv_cols[ $col ] !== (string) $val ) {
+		$lv_diff[] = $col;
+	}
+}
+hodima_ad( 'بررسی فوری همان ردیفی را می‌نویسد که خزنده برای همان HTML می‌نویسد (همه ستون‌ها، جز آمار لینک)', $lv_diff, [] );
+hodima_ad( 'زمان پاسخ خزش با بررسی فوری عوض نمی‌شود (درخواست بررسی بی‌کش است، معیار «کند» نیست)', (int) $lv_cols['resp_ms'], $lv_ms0 );
+hodima_ad( 'ستون‌هایی که پیش‌تر کهنه می‌ماندند تازه شدند: canonical، دو H1، کلمه‌ها، تصویر بدون alt، دلیل canonical', [ $lv_cols['canonical'], (int) $lv_cols['h1_count'], (int) $lv_cols['words'] > 0, (int) $lv_cols['img_noalt'], $lv_cols['reason'], (int) $lv_cols['indexable'] ], [ '/other/', 2, true, 1, 'Canonicalised', 0 ] );
+hodima_ad( 'آمار لینک ورودی، لینک متنی، عمق و امتیاز می‌ماند (فقط دور کامل خزش آن را می‌سازد)', [ (int) $lv_cols['inlinks'], (int) $lv_cols['text_links'], (int) $lv_cols['depth'], (float) $lv_cols['score'] ], [ 7, 5, 2, 3.5 ] );
+hodima_ad( 'لینک‌های خروجی صفحه تازه شد (یکتا)', $GLOBALS['wpdb']->get_col( $GLOBALS['wpdb']->prepare( 'SELECT dest_path FROM %i WHERE source_path = %s', hodima_seo_advisor_table( 'crawl_links' ), $lv_path ) ), [ '/b/' ] );
+$live_html    = '<html><head><title>x</title></head><body><h1>تیتر</h1></body></html>';
+$live_headers = [ 'x-robots-tag' => 'noindex' ];
+hodima_seo_advisor_live_check( $lv_path );
+hodima_ad( 'noindex از سربرگ X-Robots-Tag هم دیده می‌شود (پیش‌تر فقط متای robots)', [ hodima_seo_advisor_crawl_row( $lv_path )['indexable'], hodima_seo_advisor_crawl_row( $lv_path )['reason'] ], [ false, 'Noindex' ] );
+$live_headers = [ 'content-type' => 'application/pdf' ];
+$live_h1_before = hodima_seo_advisor_crawl_row( $lv_path )['h1'];
+$live_html = '<html><body><h1>نباید نوشته شود</h1></body></html>';
+hodima_ad( 'پاسخ ۲۰۰ غیر HTML نوشته نمی‌شود', [ hodima_seo_advisor_live_check( $lv_path ), hodima_seo_advisor_crawl_row( $lv_path )['h1'] ], [ false, $live_h1_before ] );
+$live_headers = [];
 remove_filter( 'pre_http_request', $live_filter, 30 );
 delete_option( HODIMA_SEO_ADVISOR_LIVE_OPTION );
 
@@ -2562,7 +2594,7 @@ $p3_live = static function ( $pre, array $args, string $url ) use ( &$p3_code, &
 		return $pre;
 	}
 	++$p3_hits;
-	return 0 === $p3_code ? new WP_Error( 'http_request_failed', 'x' ) : [ 'headers' => $p3_head, 'body' => $p3_html, 'response' => [ 'code' => $p3_code, 'message' => '' ], 'cookies' => [], 'filename' => null ];
+	return 0 === $p3_code ? new WP_Error( 'http_request_failed', 'x' ) : [ 'headers' => [ 'content-type' => 'text/html' ] + $p3_head, 'body' => $p3_html, 'response' => [ 'code' => $p3_code, 'message' => '' ], 'cookies' => [], 'filename' => null ];
 };
 add_filter( 'pre_http_request', $p3_live, 30, 3 );
 
