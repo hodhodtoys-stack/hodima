@@ -985,7 +985,7 @@ ob_start();
 hodima_seo_advisor_render_admin();
 $main_html = (string) ob_get_clean();
 hodima_ad( 'تب فرصت‌ها پیش‌فرض است و تب رقابت کنارش لینک دارد', [ str_contains( $main_html, 'name="rule"' ), str_contains( $main_html, 'برگشت به فهرست کارها' ), str_contains( $main_html, 'hodima-advisor__group' ) ], [ true, true, false ] );
-hodima_ad( 'ردیف تب فقط دو تب دارد: «کارها» و «تنظیمات» (SEO 3.3.0)', [ preg_match( '~<nav class="hodima-advisor__views hodima-advisor__tabs".*?</nav>~s', $main_html, $tabs_nav ) ? substr_count( $tabs_nav[0], '<a ' ) : 0, str_contains( $main_html, '>کارها</a>' ), str_contains( $main_html, '>تنظیمات</a>' ), str_contains( $main_html, 'id="hodima-advisor-workview"' ) ], [ 2, true, true, false ] );
+hodima_ad( 'ردیف تب فقط دو تب دارد: «کارها» و «تنظیمات» (SEO 3.3.0)', [ preg_match( '~<nav class="hodima-advisor__tabs".*?</nav>~s', $main_html, $tabs_nav ) ? substr_count( $tabs_nav[0], '<a ' ) : 0, str_contains( $main_html, '>کارها</a>' ), str_contains( $main_html, '>تنظیمات</a>' ), str_contains( $main_html, 'id="hodima-advisor-workview"' ) ], [ 2, true, true, false ] );
 delete_option( 'hodima_discover_sc_key' );
 $_GET = [];
 update_option( 'hodima_discover_sc_key', $key_json, false );

@@ -168,7 +168,7 @@ function hodima_seo_advisor_overview_link( string $kind, int $id, string $path )
 	return [ hodima_seo_advisor_url_full( $path ), 'دیدن در سایت', 'external' ];
 }
 
-/** خط کوچک «گرفتن داده تازه» (به‌جای کارت بزرگ بالای صفحه). */
+/** خط کوچک «گرفتن داده تازه» (به‌جای کارت بزرگ بالای صفحه)؛ از SEO 3.3.1 داخل ردیف تب‌ها (hodima_seo_advisor_render_tabs). */
 function hodima_seo_advisor_render_refresh_strip(): void {
 
 	$has_key = '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR );
@@ -209,7 +209,6 @@ function hodima_seo_advisor_render_overview(): void {
 		}
 	}
 
-	hodima_seo_advisor_render_refresh_strip();
 	hodima_seo_ui_card_open( 'کارها', sprintf( '%s ایراد باز روی %s صفحه، به ترتیب نمایش در گوگل. هر ایراد را رفع کنید و «انجام دادم» را بزنید؛ اگر لازم نیست، «لازم نیست».', $n( array_sum( array_map( static fn( array $p ): int => count( $p['items'] ), $pages ) ) ), $n( count( $pages ) ) ) );
 
 	$items = [ '' => [ 'همه ایرادها', count( $pages ), hodima_seo_advisor_page_url( [ 'q' => $q ] ) ] ];
@@ -224,7 +223,7 @@ function hodima_seo_advisor_render_overview(): void {
 		<?php if ( '' !== $src ) : ?>
 			<input type="hidden" name="src" value="<?php echo esc_attr( $src ); ?>">
 		<?php endif; ?>
-		<?php hodima_seo_advisor_filter_select( 'نوع ایراد', $items, $src ); ?>
+		<?php hodima_seo_advisor_filter_chips( 'نوع ایراد', $items, $src ); ?>
 		<div class="hodima-advisor__search">
 			<label class="screen-reader-text" for="hodima-advisor-ov-q">جستجو در عنوان یا آدرس صفحه</label>
 			<input type="search" id="hodima-advisor-ov-q" name="q" class="hds-input" value="<?php echo esc_attr( $q ); ?>" placeholder="جستجو در عنوان یا آدرس…">

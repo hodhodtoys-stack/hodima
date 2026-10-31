@@ -529,20 +529,23 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 		'settings' => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
 	];
 
+	// تب‌های زیرخط‌دار (نه دکمه پر) تا با چیپ‌های فیلتر اشتباه نشوند؛ در «کارها» خط «گرفتن داده تازه» همین ردیف است (SEO 3.3.1)
 	echo '<div class="hodima-advisor__tabrow">';
-	echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
+	echo '<nav class="hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
 	foreach ( $tabs as $key => [ $label, $url ] ) {
 		$current = 'settings' === $key ? 'settings' === $active : 'settings' !== $active;
 		printf(
-			'<a class="hodima-advisor__view%1$s" href="%2$s"%3$s>%4$s%5$s</a>',
-			'settings' === $key ? ' hodima-advisor__view--settings' : '',
+			'<a class="hodima-advisor__tab" href="%1$s"%2$s><span class="dashicons %3$s" aria-hidden="true"></span>%4$s</a>',
 			esc_url( $url ),
 			$current ? ' aria-current="page"' : '',
-			'settings' === $key ? '<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>' : '',
+			'settings' === $key ? 'dashicons-admin-generic' : 'dashicons-list-view',
 			esc_html( $label )
 		);
 	}
 	echo '</nav>';
+	if ( 'overview' === $active ) {
+		hodima_seo_advisor_render_refresh_strip();
+	}
 	echo '</div>';
 
 	if ( ! in_array( $active, [ 'overview', 'settings' ], true ) ) {
@@ -575,6 +578,27 @@ function hodima_seo_advisor_filter_select( string $label, array $items, string $
 			<?php endforeach; ?>
 		</nav>
 	</noscript>
+	<?php
+}
+
+/**
+ * ردیف دکمه‌های فیلتر به‌جای منوی کشویی (SEO 3.3.1): هر نوع یک پیوند با شمار؛ بدون جاوااسکریپت هم کار می‌کند.
+ * فقط صفحه «کارها» از آن استفاده می‌کند؛ فیلترهای تب‌های قدیمی هنوز منو دارند (hodima_seo_advisor_filter_select).
+ *
+ * @param string                                      $label   برچسب خوانشگر صفحه (مثلا «نوع ایراد»)
+ * @param array<string, array{0:string,1:int,2:string}> $items   کلید ← [متن، شمار، آدرس]
+ * @param string                                      $current کلید گزینه فعلی
+ */
+function hodima_seo_advisor_filter_chips( string $label, array $items, string $current ): void {
+	?>
+	<nav class="hodima-advisor__chips" aria-label="<?php echo esc_attr( $label ); ?>">
+		<?php foreach ( $items as $key => [ $text, $count, $url ] ) : ?>
+			<a class="hodima-advisor__chip" href="<?php echo esc_url( $url ); ?>"<?php echo (string) $key === $current ? ' aria-current="true"' : ''; ?>>
+				<span><?php echo esc_html( $text ); ?></span>
+				<span class="hodima-advisor__chip-n"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
+			</a>
+		<?php endforeach; ?>
+	</nav>
 	<?php
 }
 
