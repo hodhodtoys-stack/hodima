@@ -44,6 +44,9 @@ const HODIMA_SEO_ADVISOR_CRAWLER_DELAY = 1.0;
 /** سقف آدرس‌های هر دور. */
 const HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES = 5000;
 
+/** بیشینه آدرس تصویر بدون alt که برای فهرست «کدام تصویرها؟» نگه داشته می‌شود (SEO 3.3.6). */
+const HODIMA_SEO_ADVISOR_CRAWLER_IMG_LIST = 8;
+
 /** پاسخ کندتر از این (میلی‌ثانیه، میانگین ۳ درخواست آخر) خزنده را موقتا نگه می‌دارد. */
 const HODIMA_SEO_ADVISOR_CRAWLER_SLOW_MS = 3000;
 
@@ -327,7 +330,7 @@ function hodima_seo_advisor_crawler_img_labelled( DOMElement $img, callable $cle
 /**
  * HTML یک صفحه ← عنوان، متا، تیترها، robots، canonical و لینک‌های داخلی.
  *
- * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
+ * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_list: list<string>, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
  */
 function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
@@ -410,17 +413,32 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
 	// تصویر محتوای صفحه بدون متن جایگزین (تزئینی با aria-hidden/role=presentation، تصویر ریز و جاگیر base64 حساب نمی‌شود).
 	// alt خالی عمدی هم ایراد نیست وقتی تصویر داخل لینک/دکمه‌ای است که خودش متن یا aria-label دارد، یا داخل figure با figcaption:
-	// بندانگشتی کارت‌ها (قالب هدیما عمدا alt="" می‌گذارد چون عنوان کارت همان را می‌گوید) ایراد کاذب بود و ادمین نمی‌توانست رفعش کند (SEO 3.3.3)
+	// بندانگشتی کارت‌ها (قالب هدیما عمدا alt="" می‌گذارد چون عنوان کارت همان را می‌گوید) ایراد کاذب بود و ادمین نمی‌توانست رفعش کند (SEO 3.3.3).
+	// SEO 3.3.6: آدرس واقعی تصویر (data-src افزونه‌های تنبل‌بارگذاری، نه جاگیر base64) هم حساب و تا ۸ آدرس برای فهرست «کدام تصویرها؟» نگه داشته می‌شود
 	$img_noalt = 0;
+	$img_list  = [];
 	$images    = $xpath->query( '//img' );
 	foreach ( false === $images ? [] : $images as $img ) {
 		if ( ! $img instanceof DOMElement || 'content' !== hodima_seo_advisor_crawler_link_position( $img ) ) {
 			continue;
 		}
-		$decor = 'true' === strtolower( $img->getAttribute( 'aria-hidden' ) ) || in_array( strtolower( $img->getAttribute( 'role' ) ), [ 'presentation', 'none' ], true );
-		$tiny  = ( $img->hasAttribute( 'width' ) && (int) $img->getAttribute( 'width' ) <= 2 ) || str_starts_with( trim( $img->getAttribute( 'src' ) ), 'data:image/gif' );
+		$source = '';
+		foreach ( [ 'data-src', 'data-lazy-src', 'data-original', 'src' ] as $attr ) {
+			$candidate = trim( $img->getAttribute( $attr ) );
+			if ( '' !== $candidate && ! str_starts_with( $candidate, 'data:' ) ) {
+				$source = $candidate;
+				break;
+			}
+		}
+		$source = '' !== $source ? $source : trim( $img->getAttribute( 'src' ) );
+		$decor  = 'true' === strtolower( $img->getAttribute( 'aria-hidden' ) ) || in_array( strtolower( $img->getAttribute( 'role' ) ), [ 'presentation', 'none' ], true );
+		$tiny   = ( $img->hasAttribute( 'width' ) && (int) $img->getAttribute( 'width' ) <= 2 ) || str_starts_with( $source, 'data:image/gif' );
 		if ( ! $decor && ! $tiny && '' === $clean( $img->getAttribute( 'alt' ) ) && ! ( $img->hasAttribute( 'alt' ) && hodima_seo_advisor_crawler_img_labelled( $img, $clean ) ) ) {
 			++$img_noalt;
+			$resolved = hodima_seo_advisor_crawler_resolve( $source, $url );
+			if ( null !== $resolved && count( $img_list ) < HODIMA_SEO_ADVISOR_CRAWLER_IMG_LIST && mb_strlen( $resolved ) <= 300 && ! in_array( $resolved, $img_list, true ) ) {
+				$img_list[] = $resolved;
+			}
 		}
 	}
 
@@ -452,6 +470,7 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		'h2'         => implode( ' | ', $h2s ),
 		'words'      => $words,
 		'img_noalt'  => $img_noalt,
+		'img_list'   => $img_list,
 		'http_links' => $http_links,
 		'links'      => $links,
 	];
@@ -545,6 +564,7 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'img_noalt'  => (int) ( $parsed['img_noalt'] ?? -1 ),
 		'http_links' => (int) ( $parsed['http_links'] ?? -1 ),
 		'canonical'  => '' === $canonical ? '' : ( null === $can_path ? '!ext' : $can_path ),
+		'img_list'   => implode( "\n", (array) ( $parsed['img_list'] ?? [] ) ), // یک آدرس در هر خط (SEO 3.3.6)
 	];
 }
 
@@ -642,8 +662,10 @@ function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $
 
 	global $wpdb;
 
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s)';
+	hodima_seo_advisor_ensure_tables(); // ستون تازه img_list (DB 1.9.0) پیش از اولین نوشتن بعد از به‌روزرسانی
+
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
 

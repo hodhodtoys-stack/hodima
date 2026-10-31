@@ -520,7 +520,7 @@ function hodima_seo_advisor_crawl_bad_links(): array {
  * ایرادهای هر صفحه خزش‌شده، با نمایش گوگل (از داده Search Console)، پرنمایش‌ترین اول.
  * ایرادهای ریدایرکت/noindex/خطا فقط وقتی می‌آیند که صفحه نمایش یا لینک ورودی داشته باشد.
  *
- * @return list<array{path: string, impressions: int, position: float, inlinks: int, text_links: int, issues: list<array{code: string, detail: string, url: string}>}>
+ * @return list<array{path: string, impressions: int, position: float, inlinks: int, text_links: int, issues: list<array{code: string, detail: string, url: string, items: list<array{path: string, note: string}>, images?: list<string>, total?: int}>}>
  */
 function hodima_seo_advisor_crawl_issues(): array {
 
@@ -566,8 +566,8 @@ function hodima_seo_advisor_crawl_issues(): array {
 		$path        = (string) $r['path'];
 		$known       = (int) $r['words'] >= 0; // ستون‌های خزنده داخلی؛ ردیف قدیمی که پیش از خزنده داخلی ثبت شده آن‌ها را ندارد (-1)
 		$issues      = [];
-		$add         = static function ( string $code, string $detail = '', string $url = '', array $items = [] ) use ( &$issues ): void {
-			$issues[] = [ 'code' => $code, 'detail' => $detail, 'url' => $url, 'items' => $items ]; // url: آدرس مرتبط (مقصد ریدایرکت)؛ items: مقصدهای لینک (مسیر + توضیح) برای جزء آدرس کامل + کپی
+		$add         = static function ( string $code, string $detail = '', string $url = '', array $items = [], array $extra = [] ) use ( &$issues ): void {
+			$issues[] = $extra + [ 'code' => $code, 'detail' => $detail, 'url' => $url, 'items' => $items ]; // url: آدرس مرتبط (مقصد ریدایرکت)؛ items: مقصدهای لینک (مسیر + توضیح) برای جزء آدرس کامل + کپی
 		};
 
 		// نقشه سایت: آدرسی که در نقشه است باید ۲۰۰ و ایندکس‌پذیر باشد (هر وضعیتی، حتی ریدایرکت و ۴۰۴)
@@ -634,7 +634,8 @@ function hodima_seo_advisor_crawl_issues(): array {
 					$add( 'multi_h1', sprintf( '%s تیتر H1', $n( (int) $r['h1_count'] ) ) );
 				}
 				if ( (int) $r['img_noalt'] > 0 ) {
-					$add( 'img_alt', sprintf( '%s تصویر', $n( (int) $r['img_noalt'] ) ) );
+					// images: آدرس تصویرها (تا ۸) برای فهرست «کدام تصویرها؟»؛ total: شمار همه تصویرهای بدون alt (SEO 3.3.6)
+					$add( 'img_alt', sprintf( '%s تصویر', $n( (int) $r['img_noalt'] ) ), '', [], [ 'images' => array_values( array_filter( explode( "\n", (string) ( $r['img_list'] ?? '' ) ) ) ), 'total' => (int) $r['img_noalt'] ] );
 				}
 				if ( (int) $r['http_links'] > 0 ) {
 					$add( 'http_link', sprintf( '%s لینک', $n( (int) $r['http_links'] ) ) );

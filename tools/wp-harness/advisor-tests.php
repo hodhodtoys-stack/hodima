@@ -224,6 +224,7 @@ if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-steps-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-detail-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-overview-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-cron-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-quality-view.php';
@@ -2896,6 +2897,23 @@ hodima_ad(
 	],
 	[ 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0 ]
 );
+// فهرست آدرس تصویرهای بدون alt (SEO 3.3.6): آدرس واقعی (data-src تنبل‌بارگذاری)، جاگیر ریز نه، کارت با عنوان نه، سقف ۸
+$cw_im = hodima_seo_advisor_crawler_parse(
+	'<html><head><title>t</title></head><body><main>'
+	. '<img src="/wp-content/uploads/a.jpg">'
+	. '<img src="data:image/gif;base64,R0lGOD" data-src="/wp-content/uploads/lazy.jpg" alt="">'
+	. '<img src="data:image/gif;base64,R0lGOD" alt="دارد">'
+	. '<img src="data:image/gif;base64,R0lGOD">'
+	. '<a href="/p/"><img src="/c.jpg" alt=""><h3>عنوان</h3></a>'
+	. '<img src="https://cdn.test/x.png" alt=""><img src="/wp-content/uploads/a.jpg">'
+	. '</main></body></html>',
+	$cw_site . '/im/'
+);
+hodima_ad( 'آدرس تصویرهای بدون alt: واقعی (data-src)، یکتا، جاگیر و کارت نه؛ شمار همه', [ $cw_im['img_noalt'], $cw_im['img_list'] ], [ 4, [ $cw_site . '/wp-content/uploads/a.jpg', $cw_site . '/wp-content/uploads/lazy.jpg', 'https://cdn.test/x.png' ] ] );
+$cw_many = hodima_seo_advisor_crawler_parse( '<html><head><title>t</title></head><body><main>' . implode( '', array_map( static fn( int $i ): string => '<img src="/u/' . $i . '.jpg">', range( 1, 12 ) ) ) . '</main></body></html>', $cw_site . '/im/' );
+hodima_ad( 'فهرست تصویر تا ۸ آدرس ولی شمار کامل ۱۲', [ $cw_many['img_noalt'], count( $cw_many['img_list'] ) ], [ 12, 8 ] );
+$cw_imrow = hodima_seo_advisor_crawler_page_row( '/im/', 200, 100, $cw_im, '', '' );
+hodima_ad( 'ردیف صفحه: آدرس تصویرها یکی در هر خط', $cw_imrow['img_list'], implode( "\n", $cw_im['img_list'] ) );
 $cw_row = hodima_seo_advisor_crawler_page_row( '/p/', 200, 120, $cw_p, '', '' );
 hodima_ad( 'ردیف صفحه noindex: غیرایندکس‌پذیر با علت، طول عنوان، max-snippet:0', [ $cw_row['indexable'], $cw_row['reason'], $cw_row['title_len'], $cw_row['no_snippet'] ], [ 0, 'Noindex', 10, 1 ] );
 $cw_row2 = hodima_seo_advisor_crawler_page_row( '/p/', 200, 120, [ 'canonical' => $cw_site . '/p/' ] + $cw_p + [], '', '' );
@@ -3078,6 +3096,53 @@ foreach ( hodima_seo_advisor_crawl_issues() as $ic_row ) {
 }
 hodima_ad( 'صفحه‌بندی (/page/N/) بدون «بدون متا» و «عنوان کوتاه»؛ صفحه معمولی هر دو را می‌گیرد', [ $ic_issues['/blog/page/2/'] ?? [], $ic_issues['/plain/'] ?? [] ], [ [], [ 'title_short', 'no_meta' ] ] );
 hodima_ad( 'عمق: صفحه نارسیده با لینک ورودی «جدا از صفحه اصلی» (نه «عمیق»)؛ نارسیده بی‌لینک فقط «بدون لینک ورودی»؛ عمق ۶ «عمیق»؛ سالم بی‌ایراد', [ $ic_issues['/island/'] ?? [], $ic_issues['/orphan/'] ?? [], $ic_issues['/deep/'] ?? [], $ic_issues['/ok/'] ?? [] ], [ [ 'island' ], [ 'orphan' ], [ 'deep' ], [] ] );
+// فهرست تصویر در ایرادها: آدرس‌ها و شمار کل
+$GLOBALS['wpdb']->update( $ic_t, [ 'img_noalt' => 10, 'img_list' => "https://x.test/a.jpg\nhttps://x.test/b.jpg" ], [ 'path' => '/ok/' ] );
+$ic_img = null;
+foreach ( hodima_seo_advisor_crawl_issues() as $ic_row ) {
+	foreach ( '/ok/' === $ic_row['path'] ? $ic_row['issues'] : [] as $ic_issue ) {
+		$ic_img = 'img_alt' === $ic_issue['code'] ? $ic_issue : $ic_img;
+	}
+}
+hodima_ad( 'ایراد img_alt آدرس تصویرها و شمار کل را می‌آورد', [ $ic_img['images'] ?? null, $ic_img['total'] ?? null ], [ [ 'https://x.test/a.jpg', 'https://x.test/b.jpg' ], 10 ] );
+
+echo "=== پیش‌نویس عنوان/متا و جزئیات ایراد در «کارها» (SEO 3.3.6)\n";
+hodima_ad( 'کوتاه‌کردن تمیز: سر جمله، وگرنه آخرین فاصله؛ کوتاه‌تر از سقف دست نمی‌خورد', [ hodima_seo_advisor_draft_cut( 'سلام دنیا. خوش آمدید به سایت ما', 20, 5 ), hodima_seo_advisor_draft_cut( 'یک دو سه چهار پنج شش', 12 ), hodima_seo_advisor_draft_cut( 'کوتاه', 50 ) ], [ 'سلام دنیا.', 'یک دو سه', 'کوتاه' ] );
+$dr_long = hodima_seo_advisor_draft_title( '/x/', 'title_long', 'یک عنوان نسبتا بلند برای آزمون کوتاه‌سازی از انتها | نام دسته مورد نظر | نام سایت آزمایشی بلند' );
+hodima_ad( 'پیش‌نویس عنوان بلند: از آخر جداکننده می‌افتد تا در ۶۲ نویسه جا شود', [ mb_strlen( $dr_long ) <= 62, str_starts_with( $dr_long, 'یک عنوان نسبتا بلند' ), str_contains( $dr_long, 'نام سایت آزمایشی' ), hodima_seo_advisor_draft_title( '/x/', 'title_long', '' ) ], [ true, true, false, '' ] );
+
+wp_set_current_user( 1 );
+$dr_cat  = wp_insert_term( 'کلیپس آزمون پیش‌نویس', 'category' );
+$dr_post = wp_insert_post( [ 'post_title' => 'کلیپس فرانسوی', 'post_status' => 'publish', 'post_type' => 'post', 'post_excerpt' => '', 'post_content' => '<p>کلیپس فرانسوی با کیفیت بالا برای مو پرپشت. مناسب انواع مدل‌های بستن مو و موجود در رنگ‌های مختلف.</p><p>ارسال به سراسر کشور.</p>' ] );
+wp_set_post_categories( $dr_post, [ (int) ( is_array( $dr_cat ) ? $dr_cat['term_id'] : 0 ) ] );
+$dr_path  = (string) hodima_seo_advisor_path_key( (string) get_permalink( $dr_post ) );
+$dr_title = hodima_seo_advisor_draft_title( $dr_path, 'title_short' );
+$dr_meta  = hodima_seo_advisor_draft_meta( $dr_path );
+hodima_ad( 'پیش‌نویس عنوان: نام + دسته + نام سایت تا ۶۲ نویسه', [ str_starts_with( $dr_title, 'کلیپس فرانسوی' ), str_contains( $dr_title, ' | ' ), mb_strlen( $dr_title ) <= 62 ], [ true, true, true ] );
+hodima_ad( 'پیش‌نویس متا: نام صفحه و متن، تا ۱۵۵ نویسه، تمام‌شده سر جمله یا کلمه', [ str_contains( $dr_meta, 'کلیپس فرانسوی' ), mb_strlen( $dr_meta ) <= 155, mb_strlen( $dr_meta ) >= 70 ], [ true, true, true ] );
+hodima_ad( 'صفحه ناشناخته: بی‌پیش‌نویس', [ hodima_seo_advisor_draft_title( '/no-such-page-xyz/', 'no_title' ), hodima_seo_advisor_draft_meta( '/no-such-page-xyz/' ) ], [ '', '' ] );
+
+$dr_att = wp_insert_attachment( [ 'post_title' => 'تصویر آزمون', 'post_mime_type' => 'image/jpeg', 'post_status' => 'inherit' ], 'hodima-test/dr-img-a.jpg' );
+$dr_up  = wp_upload_dir();
+$dr_url = $dr_up['baseurl'] . '/hodima-test/dr-img-a.jpg';
+$dr_out = static function ( array $item, string $path ): string {
+	ob_start();
+	hodima_seo_advisor_render_issue_detail( $item, $path );
+	return (string) ob_get_clean();
+};
+$dr_i3  = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_url, 'https://cdn.test/x.png' ], 'total' => 2 ], '/p/' );
+$dr_i5  = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_url, 'https://cdn.test/x.png', 'https://cdn.test/y.png', 'https://cdn.test/z.png' ], 'total' => 7 ], '/p/' );
+hodima_ad( 'فهرست تصویر: کتابخانه ← «ویرایش در رسانه»، بیرونی ← کپی آدرس؛ ≤۳ باز', [ str_contains( $dr_i3, 'ویرایش در رسانه' ), str_contains( $dr_i3, 'post=' . $dr_att ), str_contains( $dr_i3, 'dr-img-a.jpg' ), str_contains( $dr_i3, 'data-hdsa-copy="https://cdn.test/x.png"' ), str_contains( $dr_i3, 'بیرون از کتابخانه' ), str_contains( $dr_i3, '<details class="hodima-advisor__more" open>' ) ], [ true, true, true, true, true, true ] );
+hodima_ad( 'فهرست تصویر بیش از ۳: بسته و «و N تصویر دیگر»', [ str_contains( $dr_i5, '<details class="hodima-advisor__more">' ), str_contains( $dr_i5, 'و 3 تصویر دیگر' ), str_contains( $dr_i5, 'کدام تصویرها؟ (7)' ) ], [ true, true, true ] );
+hodima_ad( 'فهرست تصویر خالی (خزش قدیمی) و ایراد بی‌جزئیات: چیزی چاپ نمی‌شود', [ $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [], 'total' => 5 ], '/p/' ), $dr_out( [ 'src' => 'crawl', 'mark' => 'orphan' ], '/p/' ), $dr_out( [ 'src' => 'opp', 'mark' => 'img_alt', 'images' => [ $dr_url ] ], '/p/' ) ], [ '', '', '' ] );
+$dr_links = $dr_out( [ 'src' => 'crawl', 'mark' => 'link_broken', 'targets' => array_map( static fn( int $i ): array => [ 'path' => '/gone-' . $i . '/', 'note' => 'کد 404؛ متن لینک «x»' ], range( 1, 7 ) ) ], '/p/' );
+hodima_ad( 'فهرست لینک خراب: ۵ مورد با کپی، بسته، «و ۲ لینک دیگر»', [ substr_count( $dr_links, 'class="hodima-advisor__li"' ), str_contains( $dr_links, 'و 2 لینک دیگر' ), str_contains( $dr_links, '<details class="hodima-advisor__more">' ), str_contains( $dr_links, 'data-hdsa-copy-url="https://hodima.test/gone-1/"' ) ], [ 5, true, true, true ] );
+$dr_t = $dr_out( [ 'src' => 'crawl', 'mark' => 'title_short' ], $dr_path );
+$dr_m = $dr_out( [ 'src' => 'crawl', 'mark' => 'no_meta' ], $dr_path );
+hodima_ad( 'پیش‌نویس در کارها: عنوان با کپی و شمار نویسه؛ متا با کپی؛ ایراد بدون پیش‌نویس هیچ', [ str_contains( $dr_t, 'پیش‌نویس عنوان' ), str_contains( $dr_t, 'data-hdsa-copy="' . esc_attr( $dr_title ) . '"' ), str_contains( $dr_t, mb_strlen( $dr_title ) . ' نویسه' ), str_contains( $dr_m, 'پیش‌نویس توضیح متا' ), str_contains( $dr_m, 'data-hdsa-copy="' . esc_attr( $dr_meta ) . '"' ) ], [ true, true, true, true, true ] );
+wp_delete_attachment( $dr_att, true );
+wp_delete_post( $dr_post, true );
+
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $ic_t ) );
 hodima_seo_advisor_crawl_map( true );
 

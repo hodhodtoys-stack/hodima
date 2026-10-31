@@ -43,6 +43,7 @@ require_once __DIR__ . '/advisor-live.php';
 require_once __DIR__ . '/advisor-inspect.php';
 require_once __DIR__ . '/advisor-rules.php';
 require_once __DIR__ . '/advisor-steps.php';
+require_once __DIR__ . '/advisor-drafts.php';
 require_once __DIR__ . '/advisor-refresh.php';
 require_once __DIR__ . '/advisor-resave.php';
 require_once __DIR__ . '/advisor-cron.php';
@@ -60,6 +61,7 @@ if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-tasks-view.php';
 	require_once __DIR__ . '/advisor-health-view.php';
 	require_once __DIR__ . '/advisor-crawl-view.php';
+	require_once __DIR__ . '/advisor-detail-view.php';
 	require_once __DIR__ . '/advisor-overview-view.php';
 	require_once __DIR__ . '/advisor-score-view.php';
 	require_once __DIR__ . '/advisor-inspect-view.php';
