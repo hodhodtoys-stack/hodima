@@ -225,6 +225,7 @@ if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-cron-view.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-quality-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php'; // دکمه‌های «انجام دادم» ردیف‌ها (SEO 3.0.2)
 }
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -349,6 +350,7 @@ if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-cron-view.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-quality-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php'; // دکمه‌های «انجام دادم» ردیف‌ها (SEO 3.0.2)
 }
 $totals   = hodima_seo_advisor_totals();
@@ -389,12 +391,12 @@ delete_option( HODIMA_SEO_ADVISOR_CAPS_OPTION );
 hodima_ad( 'سقف‌ها پیش‌فرض خالی', hodima_seo_advisor_caps(), [ 'fetch' => false, 'analyze' => false, 'classify' => 0 ] );
 ob_start();
 hodima_seo_advisor_render_admin();
-$caps_off = str_contains( (string) ob_get_clean(), 'بخشی از داده بریده شده است' );
+$caps_off = str_contains( (string) ob_get_clean(), 'کامل نیست' );
 hodima_seo_advisor_caps( [ 'analyze' => true, 'classify' => 120 ] );
 ob_start();
 hodima_seo_advisor_render_admin();
 $caps_html = (string) ob_get_clean();
-hodima_ad( 'هشدار «بخشی از داده بریده شده» فقط با سقف رسیده؛ سقف تحلیل و دسته‌بندی در متن', [ $caps_off, str_contains( $caps_html, 'بخشی از داده بریده شده است' ), str_contains( $caps_html, 'آدرس پرنمایش‌تر برای پیشنهاد' ), str_contains( $caps_html, '120' ) || str_contains( $caps_html, '۱۲۰' ) ], [ false, true, true, true ] );
+hodima_ad( 'نوار «کیفیت داده»: بدون سقف «کامل نیست» نیست؛ با سقف تحلیل و دسته‌بندی در متن؛ نوار قدیمی نیست', [ $caps_off, str_contains( $caps_html, 'کامل نیست' ), str_contains( $caps_html, 'آدرس پرنمایش‌تر برای پیشنهاد' ), str_contains( $caps_html, '120' ) || str_contains( $caps_html, '۱۲۰' ), str_contains( $caps_html, 'بخشی از داده بریده شده است' ) ], [ false, true, true, true, false ] );
 hodima_seo_advisor_caps( [ 'fetch' => false, 'analyze' => false, 'classify' => 0 ] );
 delete_option( 'hodima_discover_sc_key' );
 ob_start();
@@ -3338,6 +3340,98 @@ $ch_clear();
 foreach ( $ch_keep as $ch_opt => $ch_val ) {
 	null === $ch_val ? delete_option( $ch_opt ) : update_option( $ch_opt, $ch_val, false );
 }
+
+echo "=== کیفیت داده (SEO 3.2.1)\n";
+$qd_keep = [];
+foreach ( [ HODIMA_SEO_ADVISOR_STATUS_OPTION, HODIMA_SEO_ADVISOR_CAPS_OPTION, HODIMA_SEO_ADVISOR_CRAWL_OPTION, HODIMA_SEO_ADVISOR_SITEMAP_OPTION, HODIMA_SEO_ADVISOR_CRAWLER_OPTION ] as $qd_opt ) {
+	$qd_keep[ $qd_opt ] = get_option( $qd_opt, null );
+}
+$qd_status = (array) get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [] );
+$qd_item   = static function ( string $key ): array {
+	foreach ( hodima_seo_advisor_quality()['items'] as $item ) {
+		if ( $key === $item['key'] ) {
+			return $item;
+		}
+	}
+	return [];
+};
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - HOUR_IN_SECONDS, 'end' => gmdate( 'Y-m-d', time() - 2 * DAY_IN_SECONDS ), 'days' => 90, 'error' => '' ] + $qd_status, false );
+delete_option( HODIMA_SEO_ADVISOR_CAPS_OPTION );
+hodima_ad( 'داده گوگل: دریافت سالم بدون سقف و خطا ← کامل با «تا … پیش، ۹۰ روز»', [ $qd_item( 'google' )['level'], str_contains( $qd_item( 'google' )['value'], 'پیش' ) ], [ 'ok', true ] );
+hodima_seo_advisor_caps( [ 'fetch' => true ] );
+hodima_ad( 'داده گوگل: سقف ردیف رسیده ← ناقص با راه‌حل «بازه کوتاه‌تر»', [ $qd_item( 'google' )['level'], str_contains( $qd_item( 'google' )['note'], 'بازه را کوتاه‌تر' ) ], [ 'warn', true ] );
+hodima_seo_advisor_caps( [ 'fetch' => false ] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'error' => 'خطای آزمون' ] + (array) get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [] ), false );
+hodima_ad( 'داده گوگل: آخرین دریافت ناموفق ← ناقص', [ $qd_item( 'google' )['level'], str_contains( $qd_item( 'google' )['note'], 'ناموفق' ) ], [ 'warn', true ] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => 0, 'error' => '' ] + (array) get_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [] ), false );
+hodima_ad( 'داده گوگل: هنوز دریافتی نشده ← نامعلوم (مشکل شمرده نمی‌شود)', [ $qd_item( 'google' )['level'], hodima_seo_advisor_quality()['issues'] ], [ 'unknown', 0 ] );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - HOUR_IN_SECONDS, 'end' => gmdate( 'Y-m-d', time() - 2 * DAY_IN_SECONDS ), 'days' => 90, 'error' => '' ] + $qd_status, false );
+
+// پوشش تحلیل (به یک ردیف آدرس نیاز دارد؛ جدول در این نقطه خالی است)
+$qd_pt = hodima_seo_advisor_table( 'pages' );
+$qd_keep_pages = (array) $GLOBALS['wpdb']->get_results( $GLOBALS['wpdb']->prepare( 'SELECT * FROM %i', $qd_pt ), ARRAY_A );
+$GLOBALS['wpdb']->insert( $qd_pt, [ 'path' => '/qd-page/', 'clicks' => 1, 'impressions' => 2000, 'advice' => '' ] );
+hodima_ad( 'پوشش تحلیل بدون سقف: کامل و «همه … آدرس»', [ $qd_item( 'analysis' )['level'], str_starts_with( $qd_item( 'analysis' )['value'], 'همه' ) ], [ 'ok', true ] );
+hodima_seo_advisor_caps( [ 'analyze' => true ] );
+hodima_ad( 'پوشش تحلیل: سقف تحلیل ← ناقص «N از M آدرس» با راه‌حل حداقل نمایش', [ $qd_item( 'analysis' )['level'], str_contains( $qd_item( 'analysis' )['value'], ' از ' ), str_contains( $qd_item( 'analysis' )['note'], 'حداقل نمایش' ) ], [ 'warn', true, true ] );
+hodima_seo_advisor_caps( [ 'analyze' => false, 'classify' => 300 ] );
+hodima_ad( 'پوشش تحلیل: آدرس‌های بی‌نوع ← ناقص با شمار', [ $qd_item( 'analysis' )['level'], str_contains( $qd_item( 'analysis' )['note'], '300' ) || str_contains( $qd_item( 'analysis' )['note'], '۳۰۰' ) ], [ 'warn', true ] );
+hodima_seo_advisor_caps( [ 'classify' => 0 ] );
+
+$GLOBALS['wpdb']->delete( $qd_pt, [ 'path' => '/qd-page/' ] );
+// پوشش خزش
+$qd_t = hodima_seo_advisor_table( 'crawl_pages' );
+$qd_w = $GLOBALS['wpdb'];
+$qd_w->query( $qd_w->prepare( 'DELETE FROM %i', $qd_t ) );
+foreach ( [ '/q1/', '/q2/', '/q3/' ] as $qd_path ) {
+	$qd_w->insert( $qd_t, [ 'path' => $qd_path, 'status' => 200, 'indexable' => 1 ] );
+}
+hodima_seo_advisor_crawl_map( true );
+delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION );
+delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle' ], false );
+hodima_ad( 'پوشش خزش: هنوز خزشی نشده ← نامعلوم', $qd_item( 'crawl' )['level'], 'unknown' );
+update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => 3, 'links' => 0, 'files' => [], 'source' => 'crawler' ], false );
+hodima_ad( 'پوشش خزش: نقشه سایت خوانده نشده ← نامعلوم (نه ناقص)', [ $qd_item( 'crawl' )['level'], str_contains( $qd_item( 'crawl' )['value'], 'نقشه سایت خوانده نشده' ) ], [ 'unknown', true ] );
+update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => [ '/q1/', '/q2/', '/q3/' ] ], false );
+hodima_ad( 'پوشش خزش: همه آدرس‌های نقشه سایت خزیده ← کامل «۳ از ۳»', [ $qd_item( 'crawl' )['level'], str_contains( $qd_item( 'crawl' )['value'], hodima_seo_advisor_num( 3 ) . ' از ' . hodima_seo_advisor_num( 3 ) ) ], [ 'ok', true ] );
+update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => [ '/q1/', '/n1/', '/n2/', '/n3/' ] ], false );
+hodima_ad( 'پوشش خزش: ۱ از ۴ آدرس نقشه سایت (زیر ۹۰٪) ← ناقص با «خزش همین حالا»', [ $qd_item( 'crawl' )['level'], str_contains( $qd_item( 'crawl' )['note'], 'خزش همین حالا' ) ], [ 'warn', true ] );
+update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => [ '/q1/', '/q2/', '/q3/' ] ], false );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'capped' => true ], false );
+hodima_ad( 'پوشش خزش: دور سقف‌خورده ← ناقص حتی با نقشه کامل', [ $qd_item( 'crawl' )['level'], str_contains( $qd_item( 'crawl' )['value'], 'سقف' ) ], [ 'warn', true ] );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle' ], false );
+
+// جمع‌بندی و نمایش
+$qd_q = hodima_seo_advisor_quality();
+hodima_ad( 'جمع‌بندی همه کامل: سطح ok و صفر مورد', [ $qd_q['level'], $qd_q['issues'] ], [ 'ok', 0 ] );
+$qd_render = static function ( string $tab ): string {
+	ob_start();
+	hodima_seo_advisor_render_quality( $tab );
+	return (string) ob_get_clean();
+};
+$qd_ok = $qd_render( 'opportunities' );
+hodima_ad( 'نوار کامل: عنوان «کیفیت داده»، نشان «کامل»، بدون فهرست توضیح', [ str_contains( $qd_ok, 'کیفیت داده' ), str_contains( $qd_ok, '>کامل<' ), str_contains( $qd_ok, 'hodima-advisor__quality-notes' ) ], [ true, true, false ] );
+hodima_ad( 'نوار: سه li (داده گوگل، پوشش تحلیل، پوشش خزش)', substr_count( $qd_ok, 'class="hodima-advisor__quality-item"' ), 3 );
+$GLOBALS['wpdb']->insert( $qd_pt, [ 'path' => '/qd-page/', 'clicks' => 1, 'impressions' => 2000, 'advice' => '' ] );
+hodima_seo_advisor_caps( [ 'analyze' => true ] );
+$qd_warn = $qd_render( 'crawl' );
+hodima_ad( 'نوار ناقص روی «ایرادهای فنی»: «کامل نیست (۱ مورد)» و فهرست توضیح با نام مورد', [ str_contains( $qd_warn, 'کامل نیست' ), str_contains( $qd_warn, 'hodima-advisor__quality-notes' ), str_contains( $qd_warn, '<b>پوشش تحلیل:</b>' ) ], [ true, true, true ] );
+hodima_seo_advisor_caps( [ 'analyze' => false ] );
+$GLOBALS['wpdb']->delete( $qd_pt, [ 'path' => '/qd-page/' ] );
+hodima_ad( 'نوار فقط روی دو تب: تنظیمات، آمار، کارها و … خالی‌اند', [ $qd_render( 'settings' ), $qd_render( 'terms' ), $qd_render( 'tasks' ), $qd_render( 'health' ) ], [ '', '', '', '' ] );
+delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION );
+delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => 0 ] + $qd_status, false );
+$qd_w->query( $qd_w->prepare( 'DELETE FROM %i', $qd_t ) );
+hodima_seo_advisor_crawl_map( true );
+$qd_empty_q = hodima_seo_advisor_quality();
+hodima_ad( 'همه نامعلوم (هنوز داده‌ای نیست): سطح unknown و هیچ نواری نمی‌آید', [ $qd_empty_q['level'] === 'unknown' || $qd_empty_q['level'] === 'ok', $qd_empty_q['issues'] ], [ true, 0 ] );
+
+foreach ( $qd_keep as $qd_opt => $qd_val ) {
+	null === $qd_val ? delete_option( $qd_opt ) : update_option( $qd_opt, $qd_val, false );
+}
+hodima_seo_advisor_crawl_map( true );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

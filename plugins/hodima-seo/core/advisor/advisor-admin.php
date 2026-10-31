@@ -572,16 +572,6 @@ function hodima_seo_advisor_render_admin(): void {
 		wp_admin_notice( '<strong>آخرین دریافت داده ناموفق بود:</strong> ' . esc_html( $status['error'] ), [ 'type' => 'error', 'additional_classes' => [ 'inline' ] ] ); // بدون وابستگی به Core
 	}
 
-	$caps  = hodima_seo_advisor_caps();
-	$notes = array_filter( [
-		$caps['fetch'] ? sprintf( 'داده سرچ کنسول از سقف %s ردیف گزارش بیشتر بود و بقیه نیامد؛ آدرس‌ها یا کلمه‌های کم‌نمایش در دستار نیستند.', number_format_i18n( HODIMA_SEO_ADVISOR_FETCH_PAGES * 25000 ) ) : '',
-		$caps['analyze'] ? sprintf( 'فقط %s آدرس پرنمایش‌تر برای پیشنهاد بررسی می‌شوند و بقیه پیشنهاد ندارند.', number_format_i18n( HODIMA_SEO_ADVISOR_ANALYZE_LIMIT ) ) : '',
-		$caps['classify'] > 0 ? sprintf( '%1$s آدرس کم‌نمایش (بعد از %2$s آدرس برتر) نوع و عنوان نگرفتند؛ پیشنهاد متنی و تحلیل دوباره هنگام ذخیره برایشان کار نمی‌کند.', number_format_i18n( $caps['classify'] ), number_format_i18n( HODIMA_SEO_ADVISOR_CLASSIFY_LIMIT ) ) : '',
-	] );
-	if ( $has_data && $notes ) {
-		wp_admin_notice( '<strong>بخشی از داده بریده شده است:</strong> ' . esc_html( implode( ' ', $notes ) ), [ 'type' => 'warning', 'additional_classes' => [ 'inline' ] ] ); // اعلان خود وردپرس: صفحه به Core وابسته نشود
-	}
-
 	hodima_seo_advisor_cron_notice( $tab ); // فقط وقتی کرون عقب است (تب‌های پیشنهادها و ایرادهای فنی)
 
 	hodima_seo_ui_body_open();
@@ -592,6 +582,7 @@ function hodima_seo_advisor_render_admin(): void {
 	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
 	if ( 'settings' !== $tab ) {
 		hodima_seo_advisor_render_toolbar( $tab );
+		hodima_seo_advisor_render_quality( $tab ); // کیفیت داده (جای نوار «بخشی از داده بریده شده»)
 	}
 	hodima_seo_advisor_render_tabs( $tab, $has_data );
 
