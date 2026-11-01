@@ -201,8 +201,6 @@ function hodima_seo_advisor_render_crawl(): void {
 		hodima_seo_advisor_render_score( $every, $sum['crawled'] );
 	}
 
-	printf( '<p class="hodima-advisor__back">%s</p>', wp_kses_post( sprintf( 'وضعیت خزش، زمان‌بندی و دکمه «خزش همین حالا» حالا در تب <a href="%s">«خزش و داده»</a> است.', esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'jobs' ] ) ) ) ) ); // کارت خزش از ۳.۳.۹ آنجاست؛ دو جا تکرار نشود
-
 	if ( ! $has ) {
 		hodima_seo_ui_card_open( 'ایرادهای صفحه‌ها' );
 		hodima_seo_ui_empty( 'هنوز خزشی انجام نشده', 'خزش خودکار (تب «خزش و داده») اولین دور را در ساعت خزش انجام می‌دهد و اینجا پر می‌شود؛ یا «خزش همین حالا» را بزنید.' );

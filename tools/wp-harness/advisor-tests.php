@@ -988,7 +988,7 @@ ob_start();
 hodima_seo_advisor_render_admin();
 $main_html = (string) ob_get_clean();
 hodima_ad( 'تب فرصت‌ها پیش‌فرض است و تب رقابت کنارش لینک دارد', [ str_contains( $main_html, 'name="rule"' ), str_contains( $main_html, 'برگشت به فهرست کارها' ), str_contains( $main_html, 'hodima-advisor__group' ) ], [ true, true, false ] );
-hodima_ad( 'ردیف تب چهار تب دارد: «کارها»، «کارهای انجام‌شده»، «خزش و داده» و «تنظیمات» (SEO 3.3.9)', [ preg_match( '~<nav class="hodima-advisor__tabs".*?</nav>~s', $main_html, $tabs_nav ) ? substr_count( $tabs_nav[0], '<a ' ) : 0, str_contains( $main_html, '>کارها</a>' ), str_contains( $main_html, '>تنظیمات</a>' ), str_contains( $main_html, 'id="hodima-advisor-workview"' ) ], [ 4, true, true, false ] );
+hodima_ad( 'ردیف تب پنج تب دارد: «کارها»، «کارهای انجام‌شده»، «سلامت سایت»، «خزش و داده» و «تنظیمات» (SEO 3.4.2)', [ preg_match( '~<nav class="hodima-advisor__tabs".*?</nav>~s', $main_html, $tabs_nav ) ? substr_count( $tabs_nav[0], '<a ' ) : 0, str_contains( $main_html, '>کارها</a>' ), str_contains( $main_html, '>تنظیمات</a>' ), str_contains( $main_html, 'id="hodima-advisor-workview"' ) ], [ 5, true, true, false ] );
 delete_option( 'hodima_discover_sc_key' );
 $_GET = [];
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -1264,7 +1264,7 @@ hodima_ad(
 		str_contains( $tasks_html, 'class="hodima-advisor__chip"' ),
 		str_contains( $tasks_html, '<h2 class="hds-card__title">کارهای انجام‌شده</h2>' ),
 	],
-	[ 4, true, 1, 0, false, false, true, true ]
+	[ 5, true, 1, 0, false, false, true, true ]
 );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'waiting' ];
 ob_start();
@@ -1606,7 +1606,7 @@ wp_set_current_user( 1 );
 $_GET = [];
 $bar = $cap( static fn() => hodima_seo_advisor_render_toolbar( 'competition' ) );
 hodima_ad( 'ردیف «گرفتن داده تازه»: یک دکمه با تب برگشت و راهنمای «یک کلیک برای همه»', [ str_contains( $bar, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $bar, 'name="tab" value="competition"' ), str_contains( $bar, 'گرفتن داده تازه' ), str_contains( $bar, 'یک کلیک برای همه بخش‌ها' ) ], [ true, true, true, true ] );
-foreach ( [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing' ] as $t ) {
+foreach ( [ 'opportunities', 'competition', 'terms', 'health', 'indexing' ] as $t ) { // «crawl» از 3.4.2 تب اصلی است و ردیف به‌روزرسانی ندارد
 	$_GET   = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => $t ];
 	$html_t = $cap( static fn() => hodima_seo_advisor_render_admin() );
 	$bar_at = strpos( $html_t, 'value="hodima_advisor_refresh"' );
@@ -1718,7 +1718,7 @@ hodima_ad( 'نبودن internal_html.csv خطا می‌دهد و داده می�
 // نمایش تب
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'crawl' ];
 $crawl_html = $cap( static fn() => hodima_seo_advisor_render_crawl() );
-hodima_ad( 'تب قدیمی ایرادهای فنی: چهار آمار، پیوند به «خزش و داده» به‌جای کارت خزش (SEO 3.3.9)، جدول ایرادها، بدون کارت فایل‌ها', [ substr_count( $crawl_html, 'hds-stat__label' ), str_contains( $crawl_html, 'tab=jobs' ), str_contains( $crawl_html, 'value="hodima_advisor_crawler_now"' ) || str_contains( $crawl_html, 'value="hodima_advisor_crawler_settings"' ), str_contains( $crawl_html, 'hodima-advisor__crawl-table' ), str_contains( $crawl_html, 'فایل‌های خزش' ) || str_contains( $crawl_html, 'internal_html.csv' ) ], [ 4, true, false, true, false ] );
+hodima_ad( 'تب «سلامت سایت» (قبلا ایرادهای فنی): چهار آمار، بدون پیوند «برگشت» و بدون کارت خزش (SEO 3.4.2)، جدول ایرادها، بدون کارت فایل‌ها', [ substr_count( $crawl_html, 'hds-stat__label' ), str_contains( $crawl_html, 'tab=jobs' ), str_contains( $crawl_html, 'value="hodima_advisor_crawler_now"' ) || str_contains( $crawl_html, 'value="hodima_advisor_crawler_settings"' ), str_contains( $crawl_html, 'hodima-advisor__crawl-table' ), str_contains( $crawl_html, 'فایل‌های خزش' ) || str_contains( $crawl_html, 'internal_html.csv' ) ], [ 4, false, false, true, false ] );
 $_GET['cf'] = 'orphan';
 $orphan_html = $cap( static fn() => hodima_seo_advisor_render_crawl() );
 hodima_ad( 'فیلتر «بدون لینک ورودی» فقط همان صفحه را نشان می‌دهد', [ str_contains( $orphan_html, '/orphan/' ), str_contains( $orphan_html, '/dup-b/' ) ], [ true, false ] );
@@ -3824,7 +3824,9 @@ hodima_ad( 'فرم زمان‌بندی همان نام فیلدها را دار�
 hodima_ad( 'کارت خزش دیگر تب ندارد', str_contains( $fs_card, 'hds-tabset' ), false );
 // تب «خزش و داده» (SEO 3.3.9)
 $jb_tabs = $cap( static fn() => hodima_seo_advisor_render_tabs( 'jobs' ) );
-hodima_ad( 'ردیف تب روی «خزش و داده»: چهار تب، فقط همین فعال، «گرفتن داده تازه» نیست', [ substr_count( $jb_tabs, '<a ' ), substr_count( $jb_tabs, 'aria-current="page"' ), str_contains( $jb_tabs, 'tab=jobs" aria-current="page"' ), str_contains( $jb_tabs, 'value="hodima_advisor_refresh"' ) ], [ 4, 1, true, false ] );
+hodima_ad( 'ردیف تب روی «خزش و داده»: پنج تب، فقط همین فعال، «گرفتن داده تازه» نیست', [ substr_count( $jb_tabs, '<a ' ), substr_count( $jb_tabs, 'aria-current="page"' ), str_contains( $jb_tabs, 'tab=jobs" aria-current="page"' ), str_contains( $jb_tabs, 'value="hodima_advisor_refresh"' ) ], [ 5, 1, true, false ] );
+$sh_pos = [ strpos( $jb_tabs, 'tab=tasks' ), strpos( $jb_tabs, 'tab=crawl' ), strpos( $jb_tabs, 'tab=jobs' ) ];
+hodima_ad( 'تب «سلامت سایت» (SEO 3.4.2): بعد از «کارهای انجام‌شده» و پیش از «خزش و داده»', [ false !== $sh_pos[1], $sh_pos[0] < $sh_pos[1], $sh_pos[1] < $sh_pos[2], str_contains( $jb_tabs, 'سلامت سایت' ) ], [ true, true, true, true ] );
 $jb_post = $_POST;
 $_POST   = [ 'tab' => 'jobs' ];
 $jb_a    = hodima_seo_advisor_back_tab( 'crawl' );

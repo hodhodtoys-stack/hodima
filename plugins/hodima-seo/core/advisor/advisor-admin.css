@@ -2911,6 +2911,22 @@
 	font-size: 1rem;
 }
 
+/* نمره سلامت سایت روی تب (SEO 3.4.2): رنگ با سطح نمره */
+.hodima-advisor .hodima-advisor__tab .hodima-advisor__tab-n--ok {
+	background: color-mix(in srgb, var(--hd-ok) 16%, #fff);
+	color: var(--hd-ok);
+}
+
+.hodima-advisor .hodima-advisor__tab .hodima-advisor__tab-n--warn {
+	background: color-mix(in srgb, var(--hd-warn) 20%, #fff);
+	color: var(--hd-warn);
+}
+
+.hodima-advisor .hodima-advisor__tab .hodima-advisor__tab-n--bad {
+	background: color-mix(in srgb, var(--hd-bad, #b3261e) 14%, #fff);
+	color: var(--hd-bad, #b3261e);
+}
+
 /* شمار «نیاز به کار» روی تب کارهای انجام‌شده (SEO 3.3.4) */
 .hodima-advisor .hodima-advisor__tab-n {
 	min-inline-size: 1.5rem;
@@ -3023,13 +3039,15 @@
 	}
 
 	.hodima-advisor .hodima-advisor__tabs {
+		overflow-x: auto;
+		scrollbar-width: none;
 		border-block-end: 1px solid var(--hd-border-strong);
 	}
 
 	.hodima-advisor .hodima-advisor__tab {
-		flex: 1;
+		flex: 1 0 auto;
 		justify-content: center;
-		padding-inline: 0.5rem;
+		padding-inline: 0.625rem;
 		font-size: 0.8125rem;
 		gap: 0.25rem;
 	}
@@ -3303,7 +3321,7 @@
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
 	gap: 0.875rem;
-	align-items: start;
+	align-items: stretch;
 }
 
 .hodima-advisor .hodima-advisor__job {

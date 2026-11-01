@@ -5,6 +5,15 @@
 (() => {
 	'use strict';
 
+	/* ── تب‌ها: پنج تب در موبایل کشیدنی است؛ تب فعال خودش وسط می‌آید (SEO 3.4.2) ── */
+	const activeTab = document.querySelector('.hodima-advisor__tabs [aria-current="page"]');
+	if (activeTab) {
+		const strip = activeTab.parentElement;
+		if (strip && strip.scrollWidth > strip.clientWidth) {
+			strip.scrollLeft += activeTab.getBoundingClientRect().left + activeTab.offsetWidth / 2 - (strip.getBoundingClientRect().left + strip.clientWidth / 2);
+		}
+	}
+
 	/* ── کپی مسیر پوشه خزش (data-hdsa-copy = شناسه عنصر حاوی متن) ── */
 	document.querySelectorAll('[data-hdsa-copy]').forEach((button) => {
 		button.addEventListener('click', async () => {
