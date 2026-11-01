@@ -90,6 +90,8 @@ function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null
 	if ( $reset ) {
 		$map    = null;
 		$single = [];
+		$memo   = &hodima_seo_advisor_crawl_issues_cache();
+		$memo   = null; // ایرادها از همین جدول ساخته می‌شوند (SEO 3.4.3)
 		hodima_seo_advisor_resolved_paths( true );
 		return [];
 	}
@@ -526,6 +528,14 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 	global $wpdb;
 
+	// یک بار در هر درخواست (SEO 3.4.3): «کارها»، «سلامت سایت»، امتیاز و سنجش کارها هر کدام کل جدول خزش را از نو می‌خواندند
+	// (پایان دور خزش دو بار پشت‌سرهم). با خزش یا دریافت تازه (hodima_seo_advisor_crawl_map(true)) کش دور ریخته می‌شود.
+	$memo = &hodima_seo_advisor_crawl_issues_cache();
+
+	if ( null !== $memo ) {
+		return $memo;
+	}
+
 	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare(
 			'SELECT c.*, COALESCE(p.impressions, 0) AS impressions, COALESCE(p.avg_position, 0) AS avg_position, COALESCE(p.kind, %s) AS kind FROM %i c LEFT JOIN %i p ON p.path = c.path',
@@ -691,7 +701,18 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 	usort( $out, static fn( array $a, array $b ): int => [ $b['impressions'], $a['path'] ] <=> [ $a['impressions'], $b['path'] ] );
 
+	$memo = $out;
+
 	return $out;
+}
+
+/** کش درخواست جاری ایرادهای خزش (مرجع تا reset بتواند دورش بریزد).
+ *
+ * @return list<array<string, mixed>>|null
+ */
+function &hodima_seo_advisor_crawl_issues_cache(): ?array {
+	static $cache = null;
+	return $cache;
 }
 
 /**

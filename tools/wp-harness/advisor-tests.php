@@ -3100,6 +3100,7 @@ hodima_ad( 'صفحه‌بندی (/page/N/) بدون «بدون متا» و «ع�
 hodima_ad( 'عمق: صفحه نارسیده با لینک ورودی «جدا از صفحه اصلی» (نه «عمیق»)؛ نارسیده بی‌لینک فقط «بدون لینک ورودی»؛ عمق ۶ «عمیق»؛ سالم بی‌ایراد', [ $ic_issues['/island/'] ?? [], $ic_issues['/orphan/'] ?? [], $ic_issues['/deep/'] ?? [], $ic_issues['/ok/'] ?? [] ], [ [ 'island' ], [ 'orphan' ], [ 'deep' ], [] ] );
 // فهرست تصویر در ایرادها: آدرس‌ها و شمار کل
 $GLOBALS['wpdb']->update( $ic_t, [ 'img_noalt' => 10, 'img_list' => "https://x.test/a.jpg\nhttps://x.test/b.jpg" ], [ 'path' => '/ok/' ] );
+hodima_seo_advisor_crawl_map( true ); // کش ایرادها (SEO 3.4.3)
 $ic_img = null;
 foreach ( hodima_seo_advisor_crawl_issues() as $ic_row ) {
 	foreach ( '/ok/' === $ic_row['path'] ? $ic_row['issues'] : [] as $ic_issue ) {
@@ -3483,8 +3484,10 @@ foreach ( range( 1, 4 ) as $i ) {
 	$GLOBALS['wpdb']->insert( $sc_pt, [ 'path' => "/sc{$i}/", 'status' => 200, 'indexable' => 1, 'title' => "عنوان {$i} با طول کافی برای آزمون", 'title_len' => 40, 'meta_len' => 100, 'h1' => "تیتر {$i}", 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
 }
 $GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 0 ], [ 'path' => '/sc1/' ] ); // یک صفحه بدون متا
+hodima_seo_advisor_crawl_map( true ); // خزنده واقعی بعد از هر نوشتن همین را می‌زند (کش ایرادها، SEO 3.4.3)
 hodima_seo_advisor_score_record();
 $GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 100 ], [ 'path' => '/sc1/' ] ); // رفع شد
+hodima_seo_advisor_crawl_map( true );
 hodima_seo_advisor_score_record();
 $sc_hist = hodima_seo_advisor_score_history();
 hodima_ad( 'تاریخچه: دو دور ثبت شد؛ دور اول با ایراد متا کمتر از دور دوم (بدون ایراد ۱۰۰)', [ count( $sc_hist ), $sc_hist[0]['score'] < $sc_hist[1]['score'], $sc_hist[1]['score'] ], [ 2, true, 100 ] );
@@ -3822,6 +3825,34 @@ $fs_card = $cap( static fn() => hodima_seo_advisor_render_job_crawler() );
 hodima_ad( 'کارت خزنده (SEO 3.3.9): «اجرا همین حالا» فرم جدا بیرون از جمع‌شونده؛ تنظیمات داخل details بسته با بازگشت به همین تب', [ 1 === preg_match( '#</details>#', $fs_card ), str_contains( $fs_card, 'class="hodima-advisor__cron-run"' ), str_contains( $fs_card, '<details class="hodima-advisor__job-set">' ), strpos( $fs_card, 'hodima-advisor__cron-run' ) < strpos( $fs_card, 'hodima-advisor__job-set' ), str_contains( $fs_card, 'name="tab" value="jobs"' ) ], [ true, true, true, true, true ] );
 hodima_ad( 'فرم زمان‌بندی همان نام فیلدها را دارد (روشن‌بودن با کلید، حالت ساعت، از، تا، فاصله)', [ str_contains( $fs_card, 'class="hds-switch" name="enabled"' ), str_contains( $fs_card, 'name="always" value="0"' ), str_contains( $fs_card, 'name="always" value="1"' ), str_contains( $fs_card, 'name="start"' ), str_contains( $fs_card, 'name="end"' ), str_contains( $fs_card, 'name="interval"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_settings"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_now"' ) ], [ true, true, true, true, true, true, true, true ] );
 hodima_ad( 'کارت خزش دیگر تب ندارد', str_contains( $fs_card, 'hds-tabset' ), false );
+// کش درخواست (SEO 3.4.3): کارها و ایرادهای خزش با نوشتن دوباره ساخته می‌شوند
+$pf_old = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, [] );
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, [], false );
+hodima_ad( 'کش کارها: بعد از خالی کردن گزینه خالی', hodima_seo_advisor_tasks(), [] );
+hodima_seo_advisor_task_set( '/pf-cache/', 'crawl_no_meta', '', 'x', 'done' );
+hodima_ad( 'کش کارها: بعد از ثبت کار تازه همان لحظه دیده می‌شود', array_column( hodima_seo_advisor_tasks(), 'path' ), [ '/pf-cache/' ] );
+hodima_seo_advisor_task_set( '/pf-cache/', 'crawl_no_meta', '', '', '' );
+hodima_ad( 'کش کارها: برداشتن کار هم همان لحظه', hodima_seo_advisor_tasks(), [] );
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $pf_old, false );
+$pf_t = hodima_seo_advisor_table( 'crawl_pages' );
+$GLOBALS['wpdb']->delete( $pf_t, [ 'path' => '/pf-memo/' ] );
+$GLOBALS['wpdb']->insert( $pf_t, [ 'path' => '/pf-memo/', 'status' => 200, 'indexable' => 1, 'title' => 'عنوان آزمون کش ایرادها با طول کافی', 'title_len' => 40, 'meta_len' => 100, 'h1' => 'تیتر آزمون کش', 'words' => 300, 'h1_count' => 1, 'canonical' => '/pf-memo/', 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
+hodima_seo_advisor_crawl_map( true );
+$pf_has = static function (): bool {
+	foreach ( hodima_seo_advisor_crawl_issues() as $r ) {
+		if ( '/pf-memo/' === $r['path'] && in_array( 'no_meta', array_column( $r['issues'], 'code' ), true ) ) {
+			return true;
+		}
+	}
+	return false;
+};
+hodima_ad( 'کش ایرادهای خزش: متا دارد ← ایراد no_meta نیست', $pf_has(), false );
+$GLOBALS['wpdb']->update( $pf_t, [ 'meta_len' => 0 ], [ 'path' => '/pf-memo/' ] );
+hodima_ad( 'کش ایرادهای خزش: بدون crawl_map(true) همان نتیجه قبلی (کش درخواست)', $pf_has(), false );
+hodima_seo_advisor_crawl_map( true );
+hodima_ad( 'کش ایرادهای خزش: بعد از crawl_map(true) دوباره ساخته می‌شود (no_meta می‌آید)', $pf_has(), true );
+$GLOBALS['wpdb']->delete( $pf_t, [ 'path' => '/pf-memo/' ] );
+hodima_seo_advisor_crawl_map( true );
 // تب «خزش و داده» (SEO 3.3.9)
 $jb_tabs = $cap( static fn() => hodima_seo_advisor_render_tabs( 'jobs' ) );
 hodima_ad( 'ردیف تب روی «خزش و داده»: پنج تب، فقط همین فعال، «گرفتن داده تازه» نیست', [ substr_count( $jb_tabs, '<a ' ), substr_count( $jb_tabs, 'aria-current="page"' ), str_contains( $jb_tabs, 'tab=jobs" aria-current="page"' ), str_contains( $jb_tabs, 'value="hodima_advisor_refresh"' ) ], [ 5, 1, true, false ] );

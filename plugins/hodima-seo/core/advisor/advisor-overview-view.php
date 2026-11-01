@@ -88,7 +88,9 @@ function hodima_seo_advisor_overview_build(): array {
 	}
 
 	// آدرس‌های خراب
-	foreach ( hodima_seo_advisor_health_dead_urls() as $row ) {
+	// نتیجه ذخیره‌شده دریافت روزانه (SEO 3.4.3): تا ۳.۴.۲ هر بازدید «کارها» ۲۰۰ آدرس را با روتر و ۳٬۰۰۰ نوشته را از نو می‌سنجید
+	$health = hodima_seo_advisor_health();
+	foreach ( (array) ( $health['dead'] ?? [] ) as $row ) {
 		$path = (string) $row['path'];
 		if ( ! in_array( $row['state'], [ 'missing', 'gone', 'rule_broken' ], true ) || null !== hodima_seo_advisor_task_closed( $path, 'health_dead' ) ) {
 			continue;
@@ -98,7 +100,7 @@ function hodima_seo_advisor_overview_build(): array {
 	}
 
 	// صفحه‌های بدون نمایش
-	foreach ( (array) ( hodima_seo_advisor_health_unseen()['unseen'] ?? [] ) as $row ) {
+	foreach ( (array) ( $health['unseen'] ?? [] ) as $row ) {
 		$path = (string) $row['path'];
 		if ( null !== hodima_seo_advisor_task_closed( $path, 'health_unseen' ) ) {
 			continue;

@@ -563,6 +563,7 @@ function hodima_seo_advisor_store( array $current, array $previous, array $queri
 	} );
 
 	if ( ! is_wp_error( $result ) ) {
+		hodima_seo_advisor_crawl_map( true ); // ایرادهای خزش با نمایش و نوع گوگل ساخته می‌شوند؛ کش کهنه است (SEO 3.4.3)
 		hodima_seo_advisor_site_refresh();
 		$result['unclassified'] = max( 0, count( $paths ) - HODIMA_SEO_ADVISOR_CLASSIFY_LIMIT );
 	}

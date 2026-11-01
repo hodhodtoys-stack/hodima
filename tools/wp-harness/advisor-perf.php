@@ -1,0 +1,125 @@
+<?php
+/**
+ * سنجش سرعت دستار سئو روی داده ساختگی بزرگ (SEO 3.4.3): ۳٬۰۰۰ صفحه خزش‌شده، ۴۰ هزار لینک، ۱٬۵۰۰ صفحه گوگل، ۳۰ هزار کلمه.
+ *   HARNESS=1 php tools/wp-harness/advisor-perf.php
+ * زمان و پرسش‌های پایگاه داده هر کار را می‌نویسد (SAVEQUERIES). فقط روی ابزار تست؛ داده دستار را پاک و دوباره می‌سازد.
+ */
+
+declare(strict_types=1);
+
+define( 'SAVEQUERIES', true );
+$_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'] = 'hodima.test';
+$_SERVER['REQUEST_URI'] = '/';
+$_SERVER['HTTPS']       = 'on';
+require rtrim( (string) ( getenv( 'HODIMA_WP' ) ?: '/tmp/hodima-harness/wp' ), '/' ) . '/wp-load.php';
+
+if ( ! getenv( 'HARNESS' ) ) {
+	fwrite( STDERR, "فقط روی ابزار تست: HARNESS=1\n" );
+	exit( 2 );
+}
+
+foreach ( [ 'steps-view', 'help', 'admin', 'tasks-view', 'overview-view', 'crawl-view', 'detail-view', 'score-view' ] as $file ) {
+	require_once HODIMA_SEO_DIR . "/core/advisor/advisor-{$file}.php";
+}
+hodima_seo_advisor_install_tables();
+wp_set_current_user( 1 );
+
+global $wpdb;
+foreach ( [ 'pages', 'queries', 'crawl_pages', 'crawl_links' ] as $name ) {
+	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( $name ) ) );
+}
+
+$pages_n = 3000;
+$rows    = [];
+$links   = [];
+for ( $i = 0; $i < $pages_n; $i++ ) {
+	$path   = "/p{$i}/";
+	$status = 0 === $i % 97 ? 404 : 200;
+	// هر سوم صفحه ایراد دارد: عنوان کوتاه، بدون متا، تصویر بدون alt
+	$rows[] = [ $path, $status, 200 === $status ? 1 : 0, '', 0 === $i % 3 ? 'کوتاه' : "عنوان نمونه شماره {$i} برای آزمون سرعت دستار", 0 === $i % 3 ? 5 : 45, 0 === $i % 2 ? 0 : 120, "h1 {$i}", 'h2', 300, 1 + $i % 5, 1 + $i % 3, $i % 7, 0, '', 0, 150, 1, 0 === $i % 5 ? 2 : 0, 0, $path, 0 === $i % 5 ? 'https://hodima.test/a.jpg' : '' ];
+	for ( $j = 0; $j < 13; $j++ ) {
+		$links[] = [ $path, '/p' . ( ( $i * 7 + $j * 13 ) % $pages_n ) . '/', 0 === $j % 4 ? 'content' : 'navigation', "متن {$j}", 1 ];
+	}
+}
+foreach ( array_chunk( $rows, 200 ) as $chunk ) {
+	hodima_seo_advisor_insert( hodima_seo_advisor_table( 'crawl_pages' ), 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list', '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s)', $chunk );
+}
+foreach ( array_chunk( $links, 400 ) as $chunk ) {
+	hodima_seo_advisor_insert( hodima_seo_advisor_table( 'crawl_links' ), 'source_path, dest_path, link_position, anchor, is_follow', '(%s,%s,%s,%s,%d)', $chunk );
+}
+$gsc = [];
+for ( $i = 0; $i < 1500; $i++ ) {
+	$gsc[ "/p{$i}/" ] = [ 'clicks' => $i % 40, 'impressions' => 3000 - $i, 'position' => 4.0 + $i % 20 ];
+}
+$queries = [];
+for ( $i = 0; $i < 1500; $i++ ) {
+	for ( $q = 0; $q < 20; $q++ ) {
+		$queries[ "/p{$i}/" ][ 'کلمه ' . ( ( $i + $q * 3 ) % 1200 ) ] = [ 'clicks' => $q, 'impressions' => 60 + $q, 'position' => 5.0 + $q ];
+	}
+}
+hodima_seo_advisor_store( $gsc, [], $queries );
+update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time(), 'property' => 'sc-domain:hodima.test', 'days' => 90, 'pages' => 1500, 'queries' => 30000 ], false );
+update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $pages_n, 'links' => count( $links ), 'files' => [], 'source' => 'crawler' ], false );
+hodima_seo_advisor_crawl_map( true );
+
+// ۸۰۰ کار ثبت‌شده مدیر (نیمی «انجام دادم»، نیمی «لازم نیست»): هر ایراد باید با این‌ها سنجیده شود
+$tasks = [];
+for ( $i = 0; $i < 800; $i++ ) {
+	$path = 'p' . ( $i * 3 ) . '/';
+	$rule = 0 === $i % 2 ? 'crawl_no_meta' : 'crawl_title_short';
+	$key  = hodima_seo_advisor_task_key( "/{$path}", $rule, '' );
+	$tasks[ $key ] = [ 'path' => "/{$path}", 'rule' => $rule, 'term' => '', 'title' => '', 'status' => 0 === $i % 4 ? 'done' : 'rejected', 'at' => time() - $i, 'fixed' => 0, 'back' => 0, 'check' => [] ];
+}
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $tasks, false );
+
+$measure = static function ( string $label, callable $fn ): void {
+	global $wpdb;
+	$q0 = count( (array) $wpdb->queries );
+	$t0 = microtime( true );
+	$m0 = memory_get_peak_usage( true );
+	$fn();
+	printf( "%-46s %7.0f ms  %5d پرسش  حافظه +%d MB\n", $label, ( microtime( true ) - $t0 ) * 1000, count( (array) $wpdb->queries ) - $q0, ( memory_get_peak_usage( true ) - $m0 ) / MB_IN_BYTES );
+};
+
+printf( "داده: %d صفحه خزش، %d لینک، %d صفحه گوگل\n", $pages_n, count( $links ), count( $gsc ) );
+$measure( 'crawl_issues() بار اول', static fn() => hodima_seo_advisor_crawl_issues() );
+$measure( 'crawl_issues() بار دوم (همان درخواست)', static fn() => hodima_seo_advisor_crawl_issues() );
+$measure( 'competition_groups()', static fn() => hodima_seo_advisor_competition_groups() );
+$measure( 'overview_build() (صفحه «کارها»)', static fn() => hodima_seo_advisor_overview_build() );
+$measure( 'overview_build() بار دوم', static fn() => hodima_seo_advisor_overview_build() );
+$measure( 'expected_ctr() × ۲۰٬۰۰۰', static function (): void {
+	for ( $i = 0; $i < 20000; $i++ ) {
+		hodima_seo_advisor_expected_ctr( 3.0 + $i % 15 );
+	}
+} );
+$measure( 'is_brand() × ۲۰٬۰۰۰', static function (): void {
+	for ( $i = 0; $i < 20000; $i++ ) {
+		hodima_seo_advisor_is_brand( 'کلمه ' . $i );
+	}
+} );
+
+if ( getenv( 'PERF_PARTS' ) ) {
+	$issues = hodima_seo_advisor_crawl_issues();
+	$count  = 0;
+	foreach ( $issues as $row ) {
+		$count += count( $row['issues'] );
+	}
+	printf( "ایرادها: %d صفحه، %d ایراد\n", count( $issues ), $count );
+	$measure( 'task_closed() به شمار ایرادها', static function () use ( $issues ): void {
+		foreach ( $issues as $row ) {
+			foreach ( $row['issues'] as $issue ) {
+				hodima_seo_advisor_task_closed( $row['path'], 'crawl_' . $issue['code'] );
+			}
+		}
+	} );
+	$measure( 'crawl_issue_info() به شمار ایرادها', static function () use ( $issues ): void {
+		foreach ( $issues as $row ) {
+			foreach ( $row['issues'] as $issue ) {
+				hodima_seo_advisor_crawl_issue_info( $issue['code'] );
+			}
+		}
+	} );
+	$measure( 'health_dead_urls()', static fn() => hodima_seo_advisor_health_dead_urls() );
+	$measure( 'health_unseen()', static fn() => hodima_seo_advisor_health_unseen() );
+	$measure( 'pages(has_advice, 500)', static fn() => hodima_seo_advisor_pages( [ 'has_advice' => true, 'limit' => 500 ] ) );
+}
