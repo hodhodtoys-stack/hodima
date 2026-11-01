@@ -653,7 +653,13 @@ function hodima_seo_advisor_crawl_issues(): array {
 				if ( '' === (string) $r['canonical'] ) {
 					$add( 'no_canonical' );
 				}
-				if ( '' !== (string) $r['kind'] && ! taxonomy_exists( (string) $r['kind'] ) && '/' !== $path && ! $paged( $r ) && (int) $r['words'] < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS ) {
+				// نوع صفحه از داده گوگل می‌آید و صفحه بدون نمایش (همان‌هایی که محتوای کمشان مهم‌تر است) نوع ندارد: فقط برای
+				// نامزدهای «محتوای کم» با روتر شناخته می‌شود (SEO 3.4.5؛ قبلا فقط صفحه‌های دیده‌شده در گوگل بررسی می‌شد)
+				$kind = (string) $r['kind'];
+				if ( '' === $kind && (int) $r['words'] < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS && '/' !== $path && ! $paged( $r ) ) {
+					$kind = hodima_seo_advisor_classify( $path )['kind'];
+				}
+				if ( '' !== $kind && ! taxonomy_exists( $kind ) && '/' !== $path && ! $paged( $r ) && (int) $r['words'] < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS ) {
 					$add( 'thin', sprintf( '%s کلمه', $n( (int) $r['words'] ) ) );
 				}
 				if ( $sitemap && ! isset( $sitemap[ $path ] ) && ! $paged( $r ) ) {

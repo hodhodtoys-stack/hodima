@@ -291,7 +291,27 @@ function hodima_seo_advisor_crawler_enqueue( array &$state, string $url, bool $f
 /* ── خواندن یک صفحه ── */
 
 /**
- * جایگاه لینک از نیای آن: footer، navigation (nav/header/منو/مسیر راهنما)، aside (کنار/ویجت) یا content.
+ * عنصر داخل یکی از این تگ‌هاست؟ (نیاکانش را تا ریشه می‌پیماید.)
+ *
+ * @param list<string> $tags نام تگ‌ها (حروف کوچک)
+ */
+function hodima_seo_advisor_crawler_inside( DOMNode $node, array $tags ): bool {
+
+	for ( $parent = $node->parentNode; $parent instanceof DOMElement; $parent = $parent->parentNode ) {
+		if ( in_array( strtolower( $parent->nodeName ), $tags, true ) ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * جایگاه لینک (یا تصویر/تیتر) از نیای آن: footer، navigation (nav/هدر سایت/منو/مسیر راهنما)، aside (کنار/ویجت) یا content.
+ *
+ * SEO 3.4.5 (دقت): (۱) «widget» و «sidebar» فقط وقتی کلاس یا شناسه *خودشان* باشند، نه پاره‌ای از نام بلندتر: قبلا هر
+ * `elementor-widget-*` (همه محتوای صفحه‌های المنتور) و `content-sidebar-wrap` (ژنسیس) «کناری» می‌شد و لینک و تصویرشان از
+ * ایراد تصویر بدون alt و لینک متنی بیرون می‌ماند؛ (۲) `<header>` داخل `<article>` یا `<main>` سربرگ خود نوشته است نه منو.
  */
 function hodima_seo_advisor_crawler_link_position( DOMElement $link ): string {
 
@@ -304,13 +324,22 @@ function hodima_seo_advisor_crawler_link_position( DOMElement $link ): string {
 			break;
 		}
 
-		$names = strtolower( $node->getAttribute( 'class' ) . ' ' . $node->getAttribute( 'id' ) );
+		$names  = strtolower( $node->getAttribute( 'class' ) . ' ' . $node->getAttribute( 'id' ) );
+		$tokens = preg_split( '/\s+/', trim( $names ), -1, PREG_SPLIT_NO_EMPTY ) ?: [];
+		$side   = false;
+
+		foreach ( $tokens as $token ) {
+			if ( in_array( $token, [ 'sidebar', 'widget', 'widgets', 'widget-area', 'secondary' ], true ) || str_starts_with( $token, 'sidebar-' ) || str_starts_with( $token, 'widget_' ) ) {
+				$side = true;
+				break;
+			}
+		}
 
 		if ( 'footer' === $tag || 1 === preg_match( '/(?:^|[\s_-])(?:footer|colophon)(?:$|[\s_-])/', $names ) ) {
 			$found['footer'] = true;
-		} elseif ( 'nav' === $tag || 'header' === $tag || 1 === preg_match( '/(?:^|[\s_-])(?:nav|navbar|menu|breadcrumbs?)(?:$|[\s_-])/', $names ) ) {
+		} elseif ( 'nav' === $tag || ( 'header' === $tag && ! hodima_seo_advisor_crawler_inside( $node, [ 'article', 'main' ] ) ) || 1 === preg_match( '/(?:^|[\s_-])(?:nav|navbar|menu|breadcrumbs?)(?:$|[\s_-])/', $names ) ) {
 			$found['navigation'] = true;
-		} elseif ( 'aside' === $tag || 1 === preg_match( '/(?:^|[\s_-])(?:sidebar|widget)(?:$|[\s_-])/', $names ) ) {
+		} elseif ( 'aside' === $tag || $side ) {
 			$found['aside'] = true;
 		}
 	}
@@ -448,7 +477,8 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 	$img_list  = [];
 	$images    = $xpath->query( '//img' );
 	foreach ( false === $images ? [] : $images as $img ) {
-		if ( ! $img instanceof DOMElement || 'content' !== hodima_seo_advisor_crawler_link_position( $img ) ) {
+		// <noscript> نسخه پشتیبان همان تصویر تنبل‌بارگذاری است؛ libxml آن را عنصر می‌بیند و یک تصویر دو بار شمرده می‌شد (SEO 3.4.5)
+		if ( ! $img instanceof DOMElement || hodima_seo_advisor_crawler_inside( $img, [ 'noscript' ] ) || 'content' !== hodima_seo_advisor_crawler_link_position( $img ) ) {
 			continue;
 		}
 		$source = '';
@@ -487,15 +517,29 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 	}
 	$words = count( (array) preg_split( '/\s+/u', trim( $plain ), -1, PREG_SPLIT_NO_EMPTY ) );
 
-	$h1_all = $xpath->query( '//h1' );
+	// H1 صفحه: تیترهای H1 محتوا؛ H1 لوگوی هدر سایت یا پاپ‌آپ با آن یکی حساب نمی‌شود. اگر محتوا H1 نداشت همه H1ها می‌آیند
+	// تا صفحه‌ای که فقط H1 لوگو دارد «بدون H1» نشود (SEO 3.4.5)
+	$h1_all     = [];
+	$h1_content = [];
+	$h1_query   = $xpath->query( '//h1' );
+	foreach ( false === $h1_query ? [] : $h1_query as $h1 ) {
+		if ( ! $h1 instanceof DOMElement || hodima_seo_advisor_crawler_inside( $h1, [ 'noscript' ] ) ) {
+			continue;
+		}
+		$h1_all[] = $h1;
+		if ( 'content' === hodima_seo_advisor_crawler_link_position( $h1 ) ) {
+			$h1_content[] = $h1;
+		}
+	}
+	$h1_pick = $h1_content ?: $h1_all;
 
 	return [
 		'title'      => $first( $xpath, '/html/head/title' ),
 		'meta'       => $metas( $xpath, 'description' )[0] ?? '',
 		'robots'     => implode( ', ', $metas( $xpath, 'robots' ) ),
 		'canonical'  => $canonical,
-		'h1'         => $first( $xpath, '//h1' ),
-		'h1_count'   => false === $h1_all ? 0 : $h1_all->length,
+		'h1'         => $h1_pick ? $clean( $h1_pick[0]->textContent ) : '',
+		'h1_count'   => count( $h1_pick ),
 		'h2'         => implode( ' | ', $h2s ),
 		'words'      => $words,
 		'img_noalt'  => $img_noalt,
@@ -544,6 +588,35 @@ function hodima_seo_advisor_crawler_fetch( string $url ): ?array {
 		'location' => $header( 'location' ),
 		'x_robots' => $header( 'x-robots-tag' ),
 	];
+}
+
+/**
+ * خواندن یک آدرس با دو اصلاح دقت (SEO 3.4.5): (۱) خطای اتصال یا مهلت یک بار دیگر تلاش می‌شود (خطای گذرای هاست صفحه را
+ * «نرسیده» نکند)؛ (۲) پاسخ ۲۰۰ کندتر از آستانه «کند» یک بار دوباره خوانده می‌شود و سریع‌تر ثبت می‌شود: اولین خواندن
+ * اغلب کش سرد است و ایراد «پاسخ کند» را برای صفحه‌ای که بعد از کش سریع است می‌ساخت.
+ *
+ * @return array{status: int, ms: int, body: string, html: bool, location: string, x_robots: string}|null
+ */
+function hodima_seo_advisor_crawler_fetch_checked( string $url ): ?array {
+
+	$fetched = hodima_seo_advisor_crawler_fetch( $url );
+
+	if ( null === $fetched ) {
+		$pause = (float) apply_filters( 'hodima_seo_advisor_crawler_retry_delay', 2.0 ); // فیلتر فقط برای آزمون
+		if ( $pause > 0 ) {
+			usleep( (int) round( $pause * 1000000 ) );
+		}
+		return hodima_seo_advisor_crawler_fetch( $url );
+	}
+
+	if ( 200 === $fetched['status'] && $fetched['ms'] >= HODIMA_SEO_ADVISOR_CRAWL_SLOW_MS ) {
+		$again = hodima_seo_advisor_crawler_fetch( $url );
+		if ( null !== $again && 200 === $again['status'] && $again['ms'] < $fetched['ms'] ) {
+			return $again;
+		}
+	}
+
+	return $fetched;
 }
 
 /**
@@ -612,7 +685,7 @@ function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $k
 		return 0;
 	}
 
-	$fetched = hodima_seo_advisor_crawler_fetch( $url );
+	$fetched = hodima_seo_advisor_crawler_fetch_checked( $url );
 
 	if ( null === $fetched ) {
 		return null;

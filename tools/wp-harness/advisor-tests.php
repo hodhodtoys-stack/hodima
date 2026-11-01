@@ -3825,6 +3825,53 @@ $fs_card = $cap( static fn() => hodima_seo_advisor_render_job_crawler() );
 hodima_ad( 'کارت خزنده (SEO 3.3.9): «اجرا همین حالا» فرم جدا بیرون از جمع‌شونده؛ تنظیمات داخل details بسته با بازگشت به همین تب', [ 1 === preg_match( '#</details>#', $fs_card ), str_contains( $fs_card, 'class="hodima-advisor__cron-run"' ), str_contains( $fs_card, '<details class="hodima-advisor__job-set">' ), strpos( $fs_card, 'hodima-advisor__cron-run' ) < strpos( $fs_card, 'hodima-advisor__job-set' ), str_contains( $fs_card, 'name="tab" value="jobs"' ) ], [ true, true, true, true, true ] );
 hodima_ad( 'فرم زمان‌بندی همان نام فیلدها را دارد (روشن‌بودن با کلید، حالت ساعت، از، تا، فاصله)', [ str_contains( $fs_card, 'class="hds-switch" name="enabled"' ), str_contains( $fs_card, 'name="always" value="0"' ), str_contains( $fs_card, 'name="always" value="1"' ), str_contains( $fs_card, 'name="start"' ), str_contains( $fs_card, 'name="end"' ), str_contains( $fs_card, 'name="interval"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_settings"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_now"' ) ], [ true, true, true, true, true, true, true, true ] );
 hodima_ad( 'کارت خزش دیگر تب ندارد', str_contains( $fs_card, 'hds-tabset' ), false );
+// دقت خزنده (SEO 3.4.5): تلاش دوباره بعد از خطا، خواندن دوباره پاسخ کند، «محتوای کم» برای صفحه بدون نمایش گوگل
+$fc_n      = 0;
+$fc_filter = static function ( mixed $pre, array $args, string $url ) use ( &$fc_n ): mixed {
+	if ( ! str_contains( $url, 'fc-accuracy-test' ) ) {
+		return $pre;
+	}
+	++$fc_n;
+	if ( 1 === $fc_n && str_contains( $url, 'timeout' ) ) {
+		return new WP_Error( 'http_request_failed', 'timeout' );
+	}
+	if ( 1 === $fc_n && str_contains( $url, 'slow' ) ) {
+		usleep( 2100000 ); // اولین خواندن کش سرد
+	}
+	return [ 'headers' => [ 'content-type' => 'text/html' ], 'body' => '<html></html>', 'response' => [ 'code' => 200, 'message' => 'OK' ], 'cookies' => [], 'filename' => null ];
+};
+add_filter( 'pre_http_request', $fc_filter, 5, 3 );
+add_filter( 'hodima_seo_advisor_crawler_retry_delay', '__return_zero' );
+$fc_res = hodima_seo_advisor_crawler_fetch_checked( home_url( '/fc-accuracy-test-timeout/' ) );
+hodima_ad( 'خطای اتصال: یک بار دوباره تلاش می‌شود و نتیجه می‌آید', [ null !== $fc_res, $fc_n ], [ true, 2 ] );
+$fc_n   = 0;
+$fc_res = hodima_seo_advisor_crawler_fetch_checked( home_url( '/fc-accuracy-test-slow/' ) );
+hodima_ad( 'پاسخ کندتر از آستانه: دوباره خوانده و سریع‌تر ثبت می‌شود', [ $fc_n, null !== $fc_res && $fc_res['ms'] < HODIMA_SEO_ADVISOR_CRAWL_SLOW_MS ], [ 2, true ] );
+$fc_n   = 0;
+$fc_res = hodima_seo_advisor_crawler_fetch_checked( home_url( '/fc-accuracy-test-fast/' ) );
+hodima_ad( 'پاسخ سریع: فقط یک درخواست', [ $fc_n, null !== $fc_res ], [ 1, true ] );
+remove_filter( 'pre_http_request', $fc_filter, 5 );
+remove_filter( 'hodima_seo_advisor_crawler_retry_delay', '__return_zero' );
+
+if ( function_exists( 'hodima_router_active' ) && hodima_router_active() ) {
+	$th_post = (int) wp_insert_post( [ 'post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'صفحه کم‌محتوا', 'post_name' => 'thin-no-gsc-test', 'post_content' => 'متن کوتاه' ] );
+	$th_path = (string) hodima_seo_advisor_path_key( (string) get_permalink( $th_post ) );
+	$th_t    = hodima_seo_advisor_table( 'crawl_pages' );
+	$GLOBALS['wpdb']->delete( $th_t, [ 'path' => $th_path ] );
+	$GLOBALS['wpdb']->insert( $th_t, [ 'path' => $th_path, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان آزمون محتوای کم با طول کافی', 'title_len' => 40, 'meta_len' => 100, 'h1' => 'تیتر', 'words' => 12, 'h1_count' => 1, 'canonical' => $th_path, 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
+	hodima_seo_advisor_crawl_map( true );
+	$th_codes = [];
+	foreach ( hodima_seo_advisor_crawl_issues() as $th_row ) {
+		if ( $th_path === $th_row['path'] ) {
+			$th_codes = array_column( $th_row['issues'], 'code' );
+		}
+	}
+	hodima_ad( 'محتوای کم: صفحه بدون نمایش گوگل (نوعش از روتر) هم گزارش می‌شود', in_array( 'thin', $th_codes, true ), true );
+	$GLOBALS['wpdb']->delete( $th_t, [ 'path' => $th_path ] );
+	wp_delete_post( $th_post, true );
+	hodima_seo_advisor_crawl_map( true );
+}
+
 // گام ایجکس خزنده (SEO 3.4.4): فقط «خزش همین حالا» یا کرون ایستاده نوبت می‌زند
 $cs_now  = time();
 $cs_keep = get_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS );
