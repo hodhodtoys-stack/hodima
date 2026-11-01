@@ -62,7 +62,7 @@ function hodima_seo_advisor_render_issue_detail( array $item, string $path ): vo
 	}
 
 	if ( 'img_alt' === $code ) {
-		hodima_seo_advisor_render_image_list( (array) ( $item['images'] ?? [] ), (int) ( $item['total'] ?? 0 ) );
+		hodima_seo_advisor_render_image_list( (array) ( $item['images'] ?? [] ), (int) ( $item['total'] ?? 0 ), $path );
 		return;
 	}
 
@@ -103,8 +103,9 @@ function hodima_seo_advisor_render_draft( string $label, string $draft, string $
  *
  * @param list<string> $images آدرس تصویرها (تا ۸)
  * @param int          $total  شمار همه تصویرهای بدون alt صفحه
+ * @param string       $path   مسیر صفحه خزش‌شده (برای پیوند «ویرایش صفحه»)
  */
-function hodima_seo_advisor_render_image_list( array $images, int $total ): void {
+function hodima_seo_advisor_render_image_list( array $images, int $total, string $path = '' ): void {
 
 	$images = array_values( array_filter( array_map( 'strval', $images ) ) );
 
@@ -120,6 +121,10 @@ function hodima_seo_advisor_render_image_list( array $images, int $total ): void
 	}
 
 	$more = max( 0, $total - count( $images ) );
+
+	// صفحه‌ای که تصویر در متنش درج شده؛ برای حالتی که alt کتابخانه پر است ولی HTML صفحه خالی (SEO 3.4.1)
+	$page_id   = '' !== $path ? url_to_postid( home_url( $path ) ) : 0;
+	$page_edit = $page_id > 0 && current_user_can( 'edit_post', $page_id ) ? (string) get_edit_post_link( $page_id, 'raw' ) : '';
 	?>
 	<div class="hodima-advisor__detail">
 		<details class="hodima-advisor__more"<?php echo count( $images ) <= 3 ? ' open' : ''; ?>>
@@ -131,13 +136,18 @@ function hodima_seo_advisor_render_image_list( array $images, int $total ): void
 					$edit  = $id > 0 && current_user_can( 'edit_post', $id ) ? (string) get_edit_post_link( $id, 'raw' ) : '';
 					$thumb = $id > 0 ? (string) wp_get_attachment_image_url( $id, 'thumbnail' ) : '';
 					$thumb = '' !== $thumb ? $thumb : $url;
+					// alt کتابخانه پر است ولی خزنده در HTML صفحه alt خالی دیده: alt هنگام درج در متن صفحه کپی می‌شود و بعدها پرکردنش در کتابخانه صفحه‌های قبلی را عوض نمی‌کند
+					$lib_alt = $id > 0 ? trim( (string) get_post_meta( $id, '_wp_attachment_image_alt', true ) ) : '';
 					?>
 					<div class="hodima-advisor__li">
 						<span class="hodima-advisor__thumb"><img src="<?php echo esc_url( $thumb ); ?>" alt="" width="44" height="44" loading="lazy"></span>
 						<div class="hodima-advisor__li-main">
 							<span class="hodima-advisor__li-name" dir="ltr"><bdi><?php echo esc_html( $id > 0 ? hodima_seo_advisor_detail_filename( $url ) : $url ); ?></bdi></span>
 							<span class="hodima-advisor__li-note">
-								<?php if ( $id > 0 ) : ?>
+								<?php if ( $id > 0 && '' !== $lib_alt ) : ?>
+									<span class="hodima-advisor__li-tag">alt کتابخانه پر است</span>
+									<?php echo esc_html( 'در کتابخانه «' . mb_substr( $lib_alt, 0, 60 ) . '» نوشته شده، ولی در HTML همین صفحه خالی است (تصویر پیش از نوشتن alt در متن صفحه درج شده). در ویرایشگر صفحه روی تصویر کلیک کنید، «متن جایگزین» را همان‌جا پر کنید و به‌روزرسانی بزنید؛ یا تصویر را دوباره از کتابخانه درج کنید. اگر تازه این کار را کرده‌اید، خزش بعدی خودش درست می‌شود.' ); ?>
+								<?php elseif ( $id > 0 ) : ?>
 									<?php echo esc_html( $edit ? 'در کتابخانه رسانه؛ «متن جایگزین» را همان‌جا بنویسید.' : 'در کتابخانه رسانه (اجازه ویرایش ندارید).' ); ?>
 								<?php else : ?>
 									<span class="hodima-advisor__li-tag">بیرون از کتابخانه</span>
@@ -146,7 +156,9 @@ function hodima_seo_advisor_render_image_list( array $images, int $total ): void
 							</span>
 						</div>
 						<div class="hodima-advisor__li-act">
-							<?php if ( '' !== $edit ) : ?>
+							<?php if ( '' !== $lib_alt && '' !== $page_edit ) : ?>
+								<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( $page_edit ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش صفحه</a>
+							<?php elseif ( '' !== $edit ) : ?>
 								<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( $edit ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش در رسانه</a>
 							<?php elseif ( 0 === $id ) : ?>
 								<?php echo hodima_seo_advisor_detail_copy( $url, 'کپی آدرس تصویر ' . hodima_seo_advisor_detail_filename( $url ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
