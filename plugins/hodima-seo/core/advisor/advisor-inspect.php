@@ -237,8 +237,12 @@ function hodima_seo_advisor_inspect_batch( int $limit = HODIMA_SEO_ADVISOR_INSPE
 function hodima_seo_advisor_inspect_run( string $property, int $limit, array $summary ): array {
 
 	$stored = hodima_seo_advisor_inspections();
+	$queue  = hodima_seo_advisor_inspect_queue( $limit );
+	$count  = count( $queue );
 
-	foreach ( hodima_seo_advisor_inspect_queue( $limit ) as $path ) {
+	foreach ( $queue as $index => $path ) {
+
+		hodima_seo_advisor_progress_set( 'inspect', $index + 1, max( 1, $count ), sprintf( '%1$s از %2$s آدرس پرسیده می‌شود', number_format_i18n( $index + 1 ), number_format_i18n( $count ) ), (int) round( $index / max( 1, $count ) * 100 ) ); // نوار پیشرفت (SEO 3.4.8)
 
 		$result = hodima_seo_sc_inspect_url( $property, hodima_seo_advisor_url( $path ), HODIMA_SEO_SC_ADVISOR );
 
@@ -273,10 +277,28 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 		hodima_seo_advisor_tasks_sync_inspected(); // کارهای «انجام دادم» ایندکس و صفحه بدون نمایش با نتیجه تازه
 	}
 
+	hodima_seo_advisor_progress_finish( 'inspect', '' !== $summary['error'] ? $summary['error'] : sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ), '' !== $summary['error'] && ! $summary['quota'] );
+
 	return $summary;
 }
 
 add_action( 'admin_post_hodima_advisor_inspect_now', 'hodima_seo_advisor_handle_inspect_now' );
+
+/**
+ * یک دسته بررسی ایندکس (کنش «اجرا همین حالا»)؛ فرم admin-post و ایجکس نوار پیشرفت هر دو از همین استفاده می‌کنند (SEO 3.4.8).
+ *
+ * @return array{0: string, 1: string} [نوع پیام (success|error)، HTML پیام]
+ */
+function hodima_seo_advisor_do_inspect(): array {
+
+	$summary = hodima_seo_advisor_inspect_batch();
+
+	if ( '' !== $summary['error'] ) {
+		return [ 'error', '<strong>بررسی ایندکس:</strong> ' . esc_html( $summary['error'] ) . ( $summary['checked'] > 0 ? ' ' . esc_html( sprintf( '(%s آدرس بررسی شد)', number_format_i18n( $summary['checked'] ) ) ) : '' ) ];
+	}
+
+	return [ 'success', '<strong>بررسی ایندکس:</strong> ' . esc_html( sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ) ) ];
+}
 
 function hodima_seo_advisor_handle_inspect_now(): void {
 
@@ -286,13 +308,8 @@ function hodima_seo_advisor_handle_inspect_now(): void {
 
 	check_admin_referer( 'hodima_advisor_inspect_now' );
 
-	$summary = hodima_seo_advisor_inspect_batch();
-
-	if ( '' !== $summary['error'] ) {
-		hodima_admin_flash( '<strong>بررسی ایندکس:</strong> ' . esc_html( $summary['error'] ) . ( $summary['checked'] > 0 ? ' ' . esc_html( sprintf( '(%s آدرس بررسی شد)', number_format_i18n( $summary['checked'] ) ) ) : '' ), 'error' );
-	} else {
-		hodima_admin_flash( '<strong>بررسی ایندکس:</strong> ' . esc_html( sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ) ), 'success' );
-	}
+	[ $type, $html ] = hodima_seo_advisor_do_inspect();
+	hodima_admin_flash( $html, $type );
 
 	$back = hodima_seo_advisor_back_tab( 'indexing' );
 	wp_safe_redirect( admin_url( 'admin.php?page=' . HODIMA_SEO_ADVISOR_PAGE . '&tab=' . $back ) );

@@ -228,6 +228,7 @@ require_once HODIMA_SEO_DIR . '/core/advisor/advisor-detail-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-overview-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-cron-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-jobs-view.php';
+	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-jobs-ajax.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-quality-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-tasks-view.php'; // دکمه‌های «انجام دادم» ردیف‌ها (SEO 3.0.2)
 }
@@ -3714,8 +3715,8 @@ ob_start();
 hodima_seo_advisor_render_jobs();
 $ch_card = (string) ob_get_clean();
 hodima_ad( 'تب «خزش و داده» در حالت مشکل: شناسه پیوند، نوار وضعیت، چهار کارت، راهنمای باز با دستور و دکمه کپی', [ str_contains( $ch_card, 'id="hodima-advisor-cron"' ), str_contains( $ch_card, '1 کار از 4 کار خودکار عقب است' ) || str_contains( $ch_card, '۱ کار از ۴ کار خودکار عقب است' ), substr_count( $ch_card, 'class="hodima-advisor__job"' ), str_contains( $ch_card, 'wp-cron.php?doing_wp_cron' ), str_contains( $ch_card, 'data-hdsa-copy="hodima-advisor-cron-cmd"' ), str_contains( $ch_card, '<details class="hds-more hodima-advisor__cron-guide" open>' ) ], [ true, true, 4, true, true, true ] );
-hodima_ad( 'کارت‌ها به ترتیب: دریافت داده، خزنده، بررسی ایندکس، ساخت پیشنهادها؛ هر کارت وضعیت و تنظیم خودش', [ strpos( $ch_card, 'دریافت داده گوگل' ) < strpos( $ch_card, 'خزنده داخلی' ), strpos( $ch_card, 'خزنده داخلی' ) < strpos( $ch_card, 'بررسی ایندکس گوگل' ), strpos( $ch_card, 'بررسی ایندکس گوگل' ) < strpos( $ch_card, 'ساخت پیشنهادها' ), substr_count( $ch_card, 'data-level="warn"' ) + substr_count( $ch_card, 'data-level="bad"' ) >= 1, substr_count( $ch_card, 'class="hodima-advisor__job-set"' ) ], [ true, true, true, true, 2 ] );
-hodima_ad( 'دکمه «اجرا همین حالا»: دریافت داده فرم خودش با بازه و بازگشت به «خزش و داده»؛ خزنده، ایندکس و پیشنهادها هر کدام فرم خودشان (سه تا)؛ زمان‌بندی خزش در کارت خزنده', [ str_contains( $ch_card, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $ch_card, 'name="days"' ), str_contains( $ch_card, 'name="tab" value="jobs"' ), str_contains( $ch_card, 'name="action" value="hodima_advisor_crawler_now"' ), substr_count( $ch_card, 'class="hodima-advisor__cron-run"' ), str_contains( $ch_card, 'name="action" value="hodima_advisor_crawler_settings"' ), str_contains( $ch_card, 'name="interval"' ) ], [ true, true, true, true, 3, true, true ] );
+hodima_ad( 'کارت‌ها به ترتیب: دریافت داده، خزنده، بررسی ایندکس، ساخت پیشنهادها؛ هر کارت وضعیت و تنظیم خودش', [ strpos( $ch_card, 'دریافت داده گوگل' ) < strpos( $ch_card, 'خزنده داخلی' ), strpos( $ch_card, 'خزنده داخلی' ) < strpos( $ch_card, 'بررسی ایندکس گوگل' ), strpos( $ch_card, 'بررسی ایندکس گوگل' ) < strpos( $ch_card, 'ساخت پیشنهادها' ), substr_count( $ch_card, 'data-level="warn"' ) + substr_count( $ch_card, 'data-level="bad"' ) >= 1, substr_count( $ch_card, 'class="hodima-advisor__job-set"' ) ], [ true, true, true, true, 4 ] ); // هر ردیف پنل تنظیم خودش را دارد (SEO 3.4.8)
+hodima_ad( 'دکمه «اجرا همین حالا»: هر چهار ردیف فرم خودش (دریافت داده با بازه، خزنده، ایندکس، پیشنهادها) و بازگشت به «خزش و داده»؛ زمان‌بندی خزش در ردیف خزنده', [ str_contains( $ch_card, 'name="action" value="hodima_advisor_refresh"' ), str_contains( $ch_card, 'name="days"' ), str_contains( $ch_card, 'name="tab" value="jobs"' ), str_contains( $ch_card, 'name="action" value="hodima_advisor_crawler_now"' ), substr_count( $ch_card, 'class="hodima-advisor__cron-run"' ), str_contains( $ch_card, 'name="action" value="hodima_advisor_crawler_settings"' ), str_contains( $ch_card, 'name="interval"' ) ], [ true, true, true, true, 4, true, true ] );
 hodima_ad( 'فرم‌های دکمه برای چهار کار به چهار کنش دستی موجود می‌روند', array_map( static fn( string $key ): bool => 1 === preg_match( '#name="action" value="(hodima_advisor_(refresh|inspect_now|crawler_now|pipeline_now))"#', hodima_seo_advisor_cron_run_form( $key ) ), [ 'refresh', 'inspect', 'crawler', 'pipeline' ] ), [ true, true, true, true ] );
 hodima_ad( 'کار ناشناخته فرم نمی‌سازد', hodima_seo_advisor_cron_run_form( 'nope' ), '' );
 
@@ -3840,8 +3841,17 @@ wp_set_current_user( 1 );
 $_GET = [];
 $fs_page = $cap( static fn() => hodima_seo_advisor_render_admin() );
 hodima_ad( 'صفحه: نوار کیفیت یک بار و از نوع جاسازی‌شده', [ substr_count( $fs_page, 'id="hodima-advisor-quality-title"' ), str_contains( $fs_page, 'hodima-advisor__quality--embedded' ) ], [ 1, true ] );
-$fs_card = $cap( static fn() => hodima_seo_advisor_render_job_crawler() );
-hodima_ad( 'کارت خزنده (SEO 3.3.9): «اجرا همین حالا» فرم جدا بیرون از جمع‌شونده؛ تنظیمات داخل details بسته با بازگشت به همین تب', [ 1 === preg_match( '#</details>#', $fs_card ), str_contains( $fs_card, 'class="hodima-advisor__cron-run"' ), str_contains( $fs_card, '<details class="hodima-advisor__job-set">' ), strpos( $fs_card, 'hodima-advisor__cron-run' ) < strpos( $fs_card, 'hodima-advisor__job-set' ), str_contains( $fs_card, 'name="tab" value="jobs"' ) ], [ true, true, true, true, true ] );
+// ردیف یک کار تب «خزش و داده» (SEO 3.4.8؛ تا ۳.۴.۷ تابع render_job_crawler بود)
+$job_card = static function ( string $key ) use ( $cap ): string {
+	foreach ( hodima_seo_advisor_cron_health()['jobs'] as $job ) {
+		if ( $key === $job['key'] ) {
+			return $cap( static fn() => hodima_seo_advisor_render_job_card( $job, hodima_seo_advisor_cron_pills() ) );
+		}
+	}
+	return '';
+};
+$fs_card = $job_card( 'crawler' );
+hodima_ad( 'ردیف خزنده (SEO 3.4.8): «اجرا همین حالا» فرم جدا در ردیف؛ تنظیمات در پنل مستقل (نه details) با بازگشت به همین تب', [ ! str_contains( $fs_card, '<details' ), str_contains( $fs_card, 'class="hodima-advisor__cron-run"' ), str_contains( $fs_card, 'data-hdsa-job-panel' ), strpos( $fs_card, 'hodima-advisor__cron-run' ) < strpos( $fs_card, 'hodima-advisor__job-set' ), str_contains( $fs_card, 'name="tab" value="jobs"' ) ], [ true, true, true, true, true ] );
 hodima_ad( 'فرم زمان‌بندی همان نام فیلدها را دارد (روشن‌بودن با کلید، حالت ساعت، از، تا، فاصله)', [ str_contains( $fs_card, 'class="hds-switch" name="enabled"' ), str_contains( $fs_card, 'name="always" value="0"' ), str_contains( $fs_card, 'name="always" value="1"' ), str_contains( $fs_card, 'name="start"' ), str_contains( $fs_card, 'name="end"' ), str_contains( $fs_card, 'name="interval"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_settings"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_now"' ) ], [ true, true, true, true, true, true, true, true ] );
 hodima_ad( 'کارت خزش دیگر تب ندارد', str_contains( $fs_card, 'hds-tabset' ), false );
 // پاکسازی (SEO 3.4.7)
@@ -3915,6 +3925,72 @@ if ( function_exists( 'hodima_router_active' ) && hodima_router_active() ) {
 	wp_delete_post( $th_post, true );
 	hodima_seo_advisor_crawl_map( true );
 }
+
+// نوار پیشرفت «اجرا همین حالا» (SEO 3.4.8)
+delete_option( HODIMA_SEO_ADVISOR_PROGRESS_OPTION );
+hodima_ad( 'پیشرفت خالی: در جریان نیست', hodima_seo_advisor_progress_get( 'inspect' )['running'], false );
+hodima_seo_advisor_progress_set( 'inspect', 3, 10, 'سه از ده' );
+$pg_a = hodima_seo_advisor_progress_get( 'inspect' );
+hodima_ad( 'گام ۳ از ۱۰ ← در جریان، ۲۰٪ (از گام حساب می‌شود)، برچسب می‌ماند', [ $pg_a['running'], $pg_a['percent'], $pg_a['label'] ], [ true, 20, 'سه از ده' ] );
+hodima_seo_advisor_progress_context( [ 'pipeline', 2, 4 ] );
+hodima_seo_advisor_progress_substep( 'نیمه گام', 0.5 );
+hodima_seo_advisor_progress_context( null );
+hodima_ad( 'زیرگام: گام ۲ از ۴ و نیمه آن ← ۳۸٪', hodima_seo_advisor_progress_get( 'pipeline' )['percent'], 38 );
+hodima_seo_advisor_progress_substep( 'بی‌صاحب', 0.9 );
+hodima_ad( 'زیرگام بدون کار فعال هیچ‌چیز نمی‌نویسد', hodima_seo_advisor_progress_get( 'pipeline' )['label'], 'نیمه گام' );
+hodima_seo_advisor_progress_finish( 'inspect', 'تمام شد' );
+$pg_b = hodima_seo_advisor_progress_get( 'inspect' );
+hodima_ad( 'پایان: در جریان نیست، ۱۰۰٪، متن نتیجه', [ $pg_b['running'], $pg_b['percent'], $pg_b['text'], $pg_b['error'] ], [ false, 100, 'تمام شد', false ] );
+hodima_seo_advisor_progress_finish( 'inspect', 'سهمیه', true );
+hodima_ad( 'پایان با خطا: ۰٪ و نشان خطا', [ hodima_seo_advisor_progress_get( 'inspect' )['percent'], hodima_seo_advisor_progress_get( 'inspect' )['error'] ], [ 0, true ] );
+$pg_all = get_option( HODIMA_SEO_ADVISOR_PROGRESS_OPTION );
+$pg_all['pipeline'] = [ 'running' => true, 'step' => 1, 'total' => 2, 'label' => 'کهنه', 'percent' => 50, 'at' => time() - 600, 'text' => '', 'error' => false ];
+update_option( HODIMA_SEO_ADVISOR_PROGRESS_OPTION, $pg_all, false );
+hodima_ad( 'اجرای قطع‌شده (۱۰ دقیقه بی‌خبر) «در جریان» حساب نمی‌شود', hodima_seo_advisor_progress_get( 'pipeline' )['running'], false );
+hodima_ad( 'نام فارسی نوبت‌ها', [ hodima_seo_advisor_progress_stage_label( 'analyze' ), hodima_seo_advisor_progress_stage_label( 'x' ) ], [ 'تحلیل آدرس‌ها', 'x' ] );
+
+// ایجکس وضعیت و اجرا
+wp_set_current_user( 1 );
+$pg_ajax = static function ( string $action, array $post ): array {
+	$_POST    = $post + [ '_ajax_nonce' => wp_create_nonce( 'hodima_advisor_job' ) ];
+	$_REQUEST = $_POST;
+	add_filter( 'wp_doing_ajax', '__return_true' );
+	add_filter( 'wp_die_ajax_handler', $h = static fn(): callable => static function (): void {
+		throw new RuntimeException( 'die' );
+	} );
+	ob_start();
+	try {
+		$action();
+	} catch ( RuntimeException ) {
+		// wp_send_json بعد از چاپ می‌میرد
+	}
+	$out = (string) ob_get_clean();
+	remove_filter( 'wp_die_ajax_handler', $h );
+	remove_filter( 'wp_doing_ajax', '__return_true' );
+	$_POST = $_REQUEST = [];
+	return (array) json_decode( $out, true );
+};
+hodima_seo_advisor_progress_set( 'inspect', 2, 5, 'دو از پنج' );
+$pg_st = $pg_ajax( 'hodima_seo_advisor_ajax_job_status', [ 'job' => 'inspect' ] );
+hodima_ad( 'ایجکس وضعیت: پیشرفت و ردیف وضعیت برمی‌گردد', [ $pg_st['success'] ?? null, $pg_st['data']['progress']['percent'] ?? null, isset( $pg_st['data']['facts']['pill'] ) ], [ true, 20, true ] );
+$pg_bad = $pg_ajax( 'hodima_seo_advisor_ajax_job_run', [ 'job' => 'evil' ] );
+hodima_ad( 'ایجکس اجرا: کار ناشناخته رد می‌شود', $pg_bad['success'] ?? null, false );
+delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
+delete_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION );
+$pg_run = $pg_ajax( 'hodima_seo_advisor_ajax_job_run', [ 'job' => 'pipeline' ] );
+hodima_ad( 'ایجکس اجرا: ساخت پیشنهادها وقتی کاری نیست ← موفق، پیام «کاری برای ادامه نیست»، پیشرفت تمام‌شده', [ $pg_run['success'] ?? null, str_contains( (string) ( $pg_run['data']['html'] ?? '' ), 'کاری برای ادامه نیست' ), $pg_run['data']['progress']['running'] ?? null, $pg_run['data']['progress']['percent'] ?? null ], [ true, true, false, 100 ] );
+$pg_nonce = $pg_ajax( 'hodima_seo_advisor_ajax_job_status', [ 'job' => 'inspect', '_ajax_nonce' => 'bad' ] );
+hodima_ad( 'ایجکس با nonce نادرست کار نمی‌کند', $pg_nonce['success'] ?? null, null );
+
+// نمای تب «خزش و داده»: ردیف تمام‌عرض، دکمه تنظیمات، نوار فقط وقتی در جریان است
+update_option( HODIMA_SEO_ADVISOR_PROGRESS_OPTION, [ 'pipeline' => [ 'running' => true, 'step' => 3, 'total' => 7, 'label' => 'تحلیل آدرس‌ها', 'percent' => 38, 'at' => time(), 'text' => '', 'error' => false ] ], false );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'jobs' ];
+$pg_html = $cap( static fn() => hodima_seo_advisor_render_jobs() );
+hodima_ad( 'تب خزش و داده: چهار ردیف، چهار دکمه تنظیمات، بدون شبکه دوستونه و بدون details', [ substr_count( $pg_html, 'class="hodima-advisor__job-row"' ), substr_count( $pg_html, 'data-hdsa-job-toggle' ), str_contains( $pg_html, 'jobs-grid' ), str_contains( $pg_html, '<details class="hodima-advisor__job-set"' ) ], [ 4, 4, false, false ] );
+hodima_ad( 'کار در جریان: ردیف قاب‌دار، ۳۸٪، پیمایش زنده؛ بقیه نوار پنهان', [ str_contains( $pg_html, 'data-job="pipeline"' ) && str_contains( $pg_html, 'data-running="1"' ), str_contains( $pg_html, 'aria-valuenow="38"' ), str_contains( $pg_html, 'data-hdsa-job-poll="1"' ), substr_count( $pg_html, 'data-hdsa-job-prog hidden' ) ], [ true, true, true, 3 ] );
+hodima_ad( 'فیلد بازه دریافت داده با ویژگی form به فرم اجرا وصل است (فرم یکی، پنل جدا)', [ str_contains( $pg_html, 'form="hodima-advisor-job-form-refresh"' ), substr_count( $pg_html, 'name="days"' ) ], [ true, 3 ] );
+$_GET = [];
+delete_option( HODIMA_SEO_ADVISOR_PROGRESS_OPTION );
 
 // گام ایجکس خزنده (SEO 3.4.4): فقط «خزش همین حالا» یا کرون ایستاده نوبت می‌زند
 $cs_now  = time();
@@ -3991,10 +4067,10 @@ hodima_ad( 'تب بازگشت بعد از کنش فرم: خزش و داده، ت
 hodima_ad( 'درصد پیشرفت خزش: بر پایه انجام‌شده به کل (انجام‌شده + صف + seed)؛ خالی صفر؛ هرگز ۱۰۰ نمی‌شود', [ hodima_seo_advisor_crawler_percent( [ 'done' => 25, 'queued' => 50, 'seeding' => 25 ] ), hodima_seo_advisor_crawler_percent( [ 'done' => 0, 'queued' => 0, 'seeding' => 0 ] ), hodima_seo_advisor_crawler_percent( [ 'done' => 500, 'queued' => 0, 'seeding' => 0 ] ) ], [ 25, 0, 99 ] );
 $jb_keep = get_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, null );
 update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'running', 'manual' => true, 'done' => 10, 'queue' => array_fill( 0, 30, 'https://hodima.test/q/' ) ], false );
-$jb_run = $cap( static fn() => hodima_seo_advisor_render_job_crawler() );
+$jb_run = $job_card( 'crawler' );
 hodima_ad( 'کارت خزنده در حال اجرا: نوار پیشرفت با درصد و گام‌های خودکار JS؛ بیکار: بدون نوار', [ str_contains( $jb_run, 'role="progressbar"' ), str_contains( $jb_run, 'aria-valuenow="25"' ), str_contains( $jb_run, 'data-hdsa-crawl-live=' ), str_contains( $jb_run, 'data-hdsa-crawl-bar' ) ], [ true, true, true, true ] );
 update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'finished' => time() - HOUR_IN_SECONDS ], false );
-hodima_ad( 'کارت خزنده بیکار: بدون نوار پیشرفت', str_contains( $cap( static fn() => hodima_seo_advisor_render_job_crawler() ), 'role="progressbar"' ), false );
+hodima_ad( 'ردیف خزنده بیکار: نوار پیشرفت پنهان (hidden) و بدون پیمایش زنده', [ str_contains( $job_card( 'crawler' ), 'data-hdsa-job-prog hidden' ), str_contains( $job_card( 'crawler' ), 'data-hdsa-crawl-live=' ) ], [ true, false ] );
 update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => true, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
 $jb_expect = '';
 foreach ( hodima_seo_advisor_cron_health()['jobs'] as $jb_job ) {

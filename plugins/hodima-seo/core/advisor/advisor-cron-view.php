@@ -43,7 +43,34 @@ add_action( 'admin_post_hodima_advisor_pipeline_now', 'hodima_seo_advisor_handle
 
 /**
  * «اجرا همین حالا» برای ساخت پیشنهادها (نوبت‌های پس‌زمینه): چند ثانیه نوبت‌ها را همین‌جا پیش می‌برد، بی‌نیاز از کرون.
+ *
+ * @return array{0: string, 1: string} [نوع پیام (success|error)، HTML پیام]
  */
+function hodima_seo_advisor_do_pipeline(): array {
+
+	if ( ! hodima_seo_advisor_pipeline_pending() ) {
+		hodima_seo_advisor_progress_finish( 'pipeline', 'کاری برای ادامه نیست.' );
+		return [ 'success', '<strong>ساخت پیشنهادها:</strong> کاری برای ادامه نیست.' ];
+	}
+
+	if ( ! hodima_seo_advisor_lock() ) {
+		return [ 'error', '<strong>ساخت پیشنهادها:</strong> هم‌اکنون کار دیگری از دستار در حال اجراست؛ چند دقیقه بعد دوباره امتحان کنید.' ];
+	}
+
+	try {
+		hodima_seo_advisor_pipeline_run( (float) HODIMA_SEO_ADVISOR_MANUAL_BUDGET );
+	} finally {
+		hodima_seo_advisor_unlock();
+	}
+
+	return [
+		'success',
+		hodima_seo_advisor_pipeline_pending()
+			? '<strong>ساخت پیشنهادها:</strong> چند نوبت انجام شد و بقیه مانده؛ دوباره «اجرا همین حالا» را بزنید.'
+			: '<strong>ساخت پیشنهادها:</strong> همه نوبت‌ها تمام شد.',
+	];
+}
+
 function hodima_seo_advisor_handle_pipeline_now(): void {
 
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -52,23 +79,8 @@ function hodima_seo_advisor_handle_pipeline_now(): void {
 
 	check_admin_referer( 'hodima_advisor_pipeline_now' );
 
-	if ( ! hodima_seo_advisor_pipeline_pending() ) {
-		hodima_admin_flash( '<strong>ساخت پیشنهادها:</strong> کاری برای ادامه نیست.', 'success' );
-	} elseif ( hodima_seo_advisor_lock() ) {
-		try {
-			hodima_seo_advisor_pipeline_run( (float) HODIMA_SEO_ADVISOR_MANUAL_BUDGET );
-		} finally {
-			hodima_seo_advisor_unlock();
-		}
-		hodima_admin_flash(
-			hodima_seo_advisor_pipeline_pending()
-				? '<strong>ساخت پیشنهادها:</strong> چند نوبت انجام شد و بقیه مانده؛ دوباره «اجرا همین حالا» را بزنید.'
-				: '<strong>ساخت پیشنهادها:</strong> همه نوبت‌ها تمام شد.',
-			'success'
-		);
-	} else {
-		hodima_admin_flash( '<strong>ساخت پیشنهادها:</strong> هم‌اکنون کار دیگری از دستار در حال اجراست؛ چند دقیقه بعد دوباره امتحان کنید.', 'error' );
-	}
+	[ $type, $html ] = hodima_seo_advisor_do_pipeline();
+	hodima_admin_flash( $html, $type );
 
 	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => hodima_seo_advisor_back_tab( 'jobs' ) ] ) . '#hodima-advisor-cron' );
 	exit;
@@ -91,10 +103,11 @@ function hodima_seo_advisor_cron_run_form( string $key ): string {
 	}
 
 	return sprintf(
-		'<form method="post" action="%1$s" class="hodima-advisor__cron-run"><input type="hidden" name="action" value="%2$s"><input type="hidden" name="_wpnonce" value="%3$s"><input type="hidden" name="tab" value="jobs"><button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-controls-play" aria-hidden="true"></span> اجرا همین حالا</button></form>',
+		'<form method="post" action="%1$s" class="hodima-advisor__cron-run" data-hdsa-job-form="%4$s"><input type="hidden" name="action" value="%2$s"><input type="hidden" name="_wpnonce" value="%3$s"><input type="hidden" name="tab" value="jobs"><button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-controls-play" aria-hidden="true"></span> اجرا همین حالا</button></form>',
 		esc_url( admin_url( 'admin-post.php' ) ),
 		esc_attr( $map[ $key ][0] ),
-		esc_attr( wp_create_nonce( $map[ $key ][1] ) )
+		esc_attr( wp_create_nonce( $map[ $key ][1] ) ),
+		esc_attr( $key )
 	);
 }
 

@@ -175,15 +175,16 @@ function hodima_seo_advisor_back_url(): string {
 	return is_string( $back ) && '' !== $back ? $back : hodima_seo_advisor_page_url();
 }
 
-function hodima_seo_advisor_handle_refresh(): void {
+/**
+ * دریافت داده گوگل (کنش «اجرا همین حالا»)؛ هم فرم admin-post و هم ایجکس نوار پیشرفت از همین استفاده می‌کنند (SEO 3.4.8).
+ *
+ * @return array{0: string, 1: string} [نوع پیام (success|error)، HTML پیام]
+ */
+function hodima_seo_advisor_do_refresh( int $days ): array {
 
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
-	}
+	$html = '';
+	$type = 'success';
 
-	check_admin_referer( 'hodima_advisor_refresh' );
-
-	$days = isset( $_POST['days'] ) ? (int) $_POST['days'] : 0;
 	if ( in_array( $days, HODIMA_SEO_ADVISOR_DAYS, true ) ) {
 		$settings         = get_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, [] );
 		$settings         = is_array( $settings ) ? $settings : [];
@@ -199,14 +200,14 @@ function hodima_seo_advisor_handle_refresh(): void {
 	$result = hodima_seo_advisor_refresh( true, (float) HODIMA_SEO_ADVISOR_MANUAL_BUDGET );
 
 	if ( is_wp_error( $result ) ) {
-		hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $result->get_error_message() ), 'error' );
+		$html = '<strong>دستار سئو:</strong> ' . esc_html( $result->get_error_message() );
+		$type = 'error';
 	} else {
 		$extra   = hodima_seo_advisor_refresh_extras();
 		$status  = hodima_seo_advisor_status();
 		$pending = hodima_seo_advisor_pipeline_pending();
-		hodima_admin_flash(
-			// تا پیشنهادها در پس‌زمینه ساخته نشده‌اند، شمار «پیشنهاددار» هنوز عدد دریافت قبلی است و گفته نمی‌شود
-			( $pending
+		// تا پیشنهادها در پس‌زمینه ساخته نشده‌اند، شمار «پیشنهاددار» هنوز عدد دریافت قبلی است و گفته نمی‌شود
+		$html = ( $pending
 				? sprintf(
 					'<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد (%2$s آدرس). %3$s',
 					esc_html( number_format_i18n( $status['days'] ) ),
@@ -216,10 +217,23 @@ function hodima_seo_advisor_handle_refresh(): void {
 						: 'ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.'
 				)
 				: sprintf( '<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد؛ %2$s آدرس بررسی و برای %3$s آدرس پیشنهاد ساخته شد.', esc_html( number_format_i18n( $status['days'] ) ), esc_html( number_format_i18n( $status['pages'] ) ), esc_html( number_format_i18n( $status['advised'] ) ) )
-			) . ( $extra ? ' ' . esc_html( implode( ' ', $extra ) ) : '' ),
-			'success'
-		);
+			) . ( $extra ? ' ' . esc_html( implode( ' ', $extra ) ) : '' );
+		$type = 'success';
 	}
+
+	return [ $type, $html ];
+}
+
+function hodima_seo_advisor_handle_refresh(): void {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
+	}
+
+	check_admin_referer( 'hodima_advisor_refresh' );
+
+	[ $type, $html ] = hodima_seo_advisor_do_refresh( isset( $_POST['days'] ) ? (int) $_POST['days'] : 0 );
+	hodima_admin_flash( $html, $type );
 
 	$tab = isset( $_POST['tab'] ) ? sanitize_key( (string) $_POST['tab'] ) : '';
 	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => in_array( $tab, hodima_seo_advisor_tab_keys(), true ) && 'opportunities' !== $tab ? $tab : '' ] ) );

@@ -126,10 +126,19 @@ function hodima_seo_advisor_refresh( bool $force = false, ?float $budget = null 
 	}
 
 	try {
-		return hodima_seo_advisor_run_refresh( $force, $budget );
+		$result = hodima_seo_advisor_run_refresh( $force, $budget );
 	} finally {
 		hodima_seo_advisor_unlock();
 	}
+
+	// نوار پیشرفت «دریافت داده گوگل» (SEO 3.4.8): پایان با نتیجه؛ نوبت‌های باقی‌مانده در ردیف «ساخت پیشنهادها» ادامه می‌یابند
+	if ( is_wp_error( $result ) ) {
+		hodima_seo_advisor_progress_finish( 'refresh', $result->get_error_message(), true );
+	} else {
+		hodima_seo_advisor_progress_finish( 'refresh', hodima_seo_advisor_pipeline_pending() ? 'داده گرفته شد؛ ساخت پیشنهادها در پس‌زمینه ادامه دارد.' : 'داده گرفته شد و پیشنهادها ساخته شدند.' );
+	}
+
+	return $result;
 }
 
 /**
@@ -159,8 +168,11 @@ function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = n
 	$days  = hodima_seo_advisor_days();
 	$range = hodima_seo_advisor_ranges( $days );
 	$last  = null;
+	$steps = 4 + count( HODIMA_SEO_ADVISOR_STAGES ); // خواندن صفحه‌ها، دوره قبل، کلمه‌ها، ذخیره + نوبت‌ها (نوار پیشرفت، SEO 3.4.8)
 
 	foreach ( hodima_seo_sc_candidates( HODIMA_SEO_SC_ADVISOR ) as $property ) {
+
+		hodima_seo_advisor_progress_set( 'refresh', 1, $steps, 'خواندن صفحه‌های گوگل' );
 
 		// مجموع‌ها دسته‌به‌دسته ساخته می‌شوند (SEO 3.4.6)؛ ردیف خام نمی‌ماند
 		$page_sums = hodima_seo_advisor_pages_sums();
@@ -187,9 +199,11 @@ function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = n
 
 		$prev_sums  = hodima_seo_advisor_pages_sums();
 		$query_sums = hodima_seo_advisor_queries_sums();
+		hodima_seo_advisor_progress_set( 'refresh', 2, $steps, 'خواندن دوره قبل برای مقایسه' );
 		$previous   = hodima_seo_advisor_fetch( $property, $range['prev_start'], $range['prev_end'], [ 'page' ], static function ( array $rows ) use ( &$prev_sums ): void {
 			hodima_seo_advisor_pages_sum( $prev_sums, $rows );
 		} );
+		hodima_seo_advisor_progress_set( 'refresh', 3, $steps, 'خواندن کلمه‌ها' );
 		$queries    = is_wp_error( $previous ) ? $previous : hodima_seo_advisor_fetch( $property, $range['start'], $range['end'], [ 'page', 'query' ], static function ( array $rows ) use ( &$query_sums ): void {
 			hodima_seo_advisor_queries_sum( $query_sums, $rows );
 		} );
@@ -204,6 +218,7 @@ function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = n
 
 		// ذخیره داده (تراکنش خود store): یا همه، یا هیچ‌چیز (داده قبلی می‌ماند). ساخت پیشنهادها و کارهای سنگین
 		// بعدی نوبت‌اند (پایین) و پیشنهاد قبلی هر آدرس تا تحلیل تازه‌اش می‌ماند
+		hodima_seo_advisor_progress_set( 'refresh', 4, $steps, 'ذخیره در پایگاه داده' );
 		$page_final  = hodima_seo_advisor_pages_finish( $page_sums );
 		$prev_final  = hodima_seo_advisor_pages_finish( $prev_sums );
 		$query_final = hodima_seo_advisor_queries_finish( $query_sums );
@@ -238,7 +253,7 @@ function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = n
 		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION ); // صف تازه خودش analyze را دارد
 		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [ 'stages' => HODIMA_SEO_ADVISOR_STAGES, 'property' => $property, 'range' => $range, 'days' => $days, 'force' => $force ], false );
-		hodima_seo_advisor_pipeline_run( $budget );
+		hodima_seo_advisor_pipeline_run( $budget, 'refresh', 4, $steps );
 
 		return true;
 	}
@@ -364,8 +379,11 @@ function hodima_seo_advisor_pipeline_stage( string $stage, array $state, float $
  * فراخواننده قفل دریافت داده را دارد.
  *
  * @param float|null $budget ثانیه؛ null = HODIMA_SEO_ADVISOR_STAGE_BUDGET
+ * @param string     $job    کلید نوار پیشرفت (refresh وقتی از دریافت داده می‌آید؛ وگرنه pipeline)
+ * @param int        $offset گام‌های پیش از نوبت‌ها (دریافت: ۴)
+ * @param int        $steps  شمار کل گام‌های نوار؛ ۰ = فقط نوبت‌های همین اجرا
  */
-function hodima_seo_advisor_pipeline_run( ?float $budget = null ): void {
+function hodima_seo_advisor_pipeline_run( ?float $budget = null, string $job = 'pipeline', int $offset = 0, int $steps = 0 ): void {
 
 	$state = get_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, [] );
 	$state = hodima_seo_advisor_pipeline_take_reanalyze( is_array( $state ) ? $state : [] );
@@ -381,8 +399,13 @@ function hodima_seo_advisor_pipeline_run( ?float $budget = null ): void {
 
 	$deadline = microtime( true ) + ( $budget ?? (float) HODIMA_SEO_ADVISOR_STAGE_BUDGET );
 	$stages   = array_values( array_map( 'strval', (array) $state['stages'] ) );
+	$initial  = count( $stages );
+	$steps    = $steps > 0 ? $steps : $initial;
 
 	while ( $stages && microtime( true ) < $deadline ) {
+		$step = $offset + $initial - count( $stages ) + 1;
+		hodima_seo_advisor_progress_set( $job, $step, $steps, hodima_seo_advisor_progress_stage_label( $stages[0] ) );
+		hodima_seo_advisor_progress_context( [ $job, $step, $steps ] );
 		try {
 			$finished = hodima_seo_advisor_pipeline_stage( $stages[0], $state, $deadline );
 		} catch ( Throwable $e ) {
@@ -397,9 +420,13 @@ function hodima_seo_advisor_pipeline_run( ?float $budget = null ): void {
 		update_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION, $state, false );
 	}
 
+	hodima_seo_advisor_progress_context( null );
 	hodima_seo_advisor_run_mark( 'pipeline' ); // زمان آخرین اجرای واقعی نوبت‌ها (کرون یا دکمه)
 
 	if ( ! $stages ) {
+		if ( 'pipeline' === $job ) {
+			hodima_seo_advisor_progress_finish( 'pipeline', 'همه نوبت‌ها تمام شد.' );
+		}
 		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
 		// همه نوبت‌ها همین‌جا تمام شد: رویداد ادامه‌ای که درخواست ساخت دوباره گذاشته بود بی‌کار نماند (مگر درخواست تازه‌ای در این فاصله آمده)
 		if ( false === get_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION, false ) ) {

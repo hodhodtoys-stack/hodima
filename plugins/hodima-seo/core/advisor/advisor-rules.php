@@ -859,9 +859,11 @@ function hodima_seo_advisor_analyze_batch( float $deadline ): bool|WP_Error {
 	$table = hodima_seo_advisor_table( 'pages' );
 	$fail  = static fn(): WP_Error => new WP_Error( 'hodima_advisor_store', 'ذخیره پیشنهادها ناموفق بود: ' . $wpdb->last_error );
 	$state = get_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, null );
+	$total = 0;
 
 	if ( is_array( $state ) && is_array( $state['queue'] ?? null ) ) {
 		$queue = array_values( array_map( 'strval', $state['queue'] ) );
+		$total = max( count( $queue ), (int) ( $state['total'] ?? 0 ) ); // کل صف اول کار (نوار پیشرفت، SEO 3.4.8)
 	} else {
 		$queue = hodima_seo_advisor_analysis_candidates();
 		hodima_seo_advisor_caps( [ 'analyze' => count( $queue ) > HODIMA_SEO_ADVISOR_ANALYZE_LIMIT ] );
@@ -874,7 +876,8 @@ function hodima_seo_advisor_analyze_batch( float $deadline ): bool|WP_Error {
 		}
 	}
 
-	$done = 0;
+	$total = max( $total, count( $queue ) );
+	$done  = 0;
 
 	hodima_seo_advisor_crawl_map(); // صدها آدرس: کل جدول خزش یک بار، نه یک پرسش برای هر آدرس
 
@@ -887,12 +890,13 @@ function hodima_seo_advisor_analyze_batch( float $deadline ): bool|WP_Error {
 		hodima_seo_advisor_sync_fields( $path, $fields ); // آدرس‌های «کهنه» بالا عمدا نه: زیر آستانه رفتن برطرف شدن نیست
 		++$done;
 		if ( 0 === $done % 20 ) {
-			update_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, [ 'queue' => $queue ], false ); // قطع ناگهانی: از همین‌جا ادامه می‌یابد
+			update_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, [ 'queue' => $queue, 'total' => $total ], false ); // قطع ناگهانی: از همین‌جا ادامه می‌یابد
+			hodima_seo_advisor_progress_substep( sprintf( 'تحلیل آدرس‌ها: %1$s از %2$s', number_format_i18n( $total - count( $queue ) ), number_format_i18n( $total ) ), $total > 0 ? ( $total - count( $queue ) ) / $total : 0.0 );
 		}
 	}
 
 	if ( $queue ) {
-		update_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, [ 'queue' => $queue ], false );
+		update_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION, [ 'queue' => $queue, 'total' => $total ], false );
 		return false;
 	}
 

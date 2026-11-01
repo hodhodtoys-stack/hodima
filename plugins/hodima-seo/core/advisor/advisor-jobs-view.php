@@ -69,7 +69,7 @@ function hodima_seo_advisor_render_jobs(): void {
 			</header>
 		</section>
 
-		<div class="hodima-advisor__jobs-grid">
+		<div class="hodima-advisor__jobs-list">
 			<?php
 			foreach ( $health['jobs'] as $job ) {
 				hodima_seo_advisor_render_job_card( $job, $pills );
@@ -89,109 +89,158 @@ function hodima_seo_advisor_render_jobs(): void {
 }
 
 /**
- * کارت یک کار خودکار.
+ * ردیف یک کار خودکار (SEO 3.4.8؛ طرح تأییدشده): آیکون، نام، وضعیت و زمان‌ها، نشان، «اجرا همین حالا» و «تنظیمات» در یک ردیف
+ * تمام‌عرض؛ نوار پیشرفت زیر همان ردیف وقتی کار در جریان است؛ تنظیم همان کار فقط زیر خودش باز می‌شود (کارهای دیگر تکان نمی‌خورند).
+ * بدون جاوااسکریپت: دکمه «اجرا» فرم admin-post است و پنل تنظیمات همیشه باز.
  *
  * @param array{key: string, label: string, desc: string, last: string, expect: string, level: string} $job
  * @param array<string, array{0: string, 1: string}>                                                   $pills
  */
 function hodima_seo_advisor_render_job_card( array $job, array $pills ): void {
 
-	$key   = $job['key'];
-	$pill  = $pills[ $job['level'] ] ?? $pills['ok'];
-	$title = 'hodima-advisor-job-' . $key;
+	$key      = $job['key'];
+	$pill     = $pills[ $job['level'] ] ?? $pills['ok'];
+	$title    = 'hodima-advisor-job-' . $key;
+	$panel    = 'hodima-advisor-job-set-' . $key;
+	$progress = hodima_seo_advisor_job_progress_view( $key );
 	?>
-	<article class="hodima-advisor__job" data-job="<?php echo esc_attr( $key ); ?>" data-level="<?php echo esc_attr( $job['level'] ); ?>" aria-labelledby="<?php echo esc_attr( $title ); ?>">
-		<header class="hodima-advisor__job-head">
+	<article class="hodima-advisor__job" data-job="<?php echo esc_attr( $key ); ?>" data-level="<?php echo esc_attr( $job['level'] ); ?>" data-hdsa-job-nonce="<?php echo esc_attr( wp_create_nonce( 'hodima_advisor_job' ) ); ?>" data-hdsa-ajax="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"<?php echo 'crawler' === $key ? ' data-hdsa-crawl-nonce="' . esc_attr( wp_create_nonce( 'hodima_advisor_crawler_step' ) ) . '"' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- امن‌شده بالا ?> aria-labelledby="<?php echo esc_attr( $title ); ?>"<?php echo $progress['running'] ? ' data-running="1"' : ''; ?>>
+		<div class="hodima-advisor__job-row">
 			<span class="hodima-advisor__job-icon dashicons <?php echo esc_attr( hodima_seo_advisor_job_icon( $key ) ); ?>" aria-hidden="true"></span>
 			<div class="hodima-advisor__job-title">
 				<h3 id="<?php echo esc_attr( $title ); ?>"><?php echo esc_html( $job['label'] ); ?></h3>
 				<p><?php echo esc_html( $job['desc'] ); ?></p>
 			</div>
-			<span class="<?php echo esc_attr( $pill[1] ); ?>"><?php echo esc_html( $pill[0] ); ?></span>
-		</header>
-		<dl class="hodima-advisor__job-facts">
-			<div><dt>وضعیت اجرا</dt><dd><?php echo esc_html( $job['last'] ); ?></dd></div>
-			<div><dt>اجرای بعدی</dt><dd><?php echo esc_html( $job['expect'] ); ?></dd></div>
-		</dl>
-		<?php
-		if ( 'refresh' === $key ) {
-			hodima_seo_advisor_render_job_refresh();
-		} elseif ( 'crawler' === $key ) {
-			hodima_seo_advisor_render_job_crawler();
-		} else {
-			echo '<div class="hodima-advisor__job-foot">' . hodima_seo_advisor_cron_run_form( $key ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_cron_run_form
-		}
-		?>
+			<dl class="hodima-advisor__job-facts">
+				<div><dt>وضعیت اجرا</dt><dd data-hdsa-fact="last"><?php echo esc_html( $job['last'] ); ?></dd></div>
+				<div><dt>اجرای بعدی</dt><dd data-hdsa-fact="expect"><?php echo esc_html( $job['expect'] ); ?></dd></div>
+			</dl>
+			<span class="<?php echo esc_attr( $pill[1] ); ?> hodima-advisor__job-pill" data-hdsa-pill><?php echo esc_html( $progress['running'] ? 'در حال اجرا' : $pill[0] ); ?></span>
+			<div class="hodima-advisor__job-actions">
+				<?php hodima_seo_advisor_render_job_run( $key ); ?>
+				<button type="button" class="hodima-advisor__job-toggle" data-hdsa-job-toggle aria-expanded="false" aria-controls="<?php echo esc_attr( $panel ); ?>">
+					تنظیمات <span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+				</button>
+			</div>
+		</div>
+		<?php hodima_seo_advisor_render_job_progress( $key, $progress ); ?>
+		<p class="hodima-advisor__job-done" role="status" data-hdsa-job-done hidden></p>
+		<div class="hodima-advisor__job-set" id="<?php echo esc_attr( $panel ); ?>" data-hdsa-job-panel>
+			<div class="hodima-advisor__job-set-body">
+				<?php hodima_seo_advisor_render_job_settings( $key ); ?>
+			</div>
+		</div>
 	</article>
 	<?php
 }
 
-/** دریافت داده گوگل: اجرا همین حالا + «تنظیم این کار» (بازه داده در همان فرم، پس با اجرا ذخیره و استفاده می‌شود). */
-function hodima_seo_advisor_render_job_refresh(): void {
+/**
+ * وضعیت پیشرفت برای نمایش هنگام بارگذاری صفحه: خزنده از شمارنده خودش، بقیه از advisor-progress.php.
+ *
+ * @return array{running: bool, percent: int, label: string}
+ */
+function hodima_seo_advisor_job_progress_view( string $key ): array {
 
-	$has_key = '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR );
-	$days    = hodima_seo_advisor_days();
-	$labels  = [ 28 => '۲۸ روز', 90 => '۳ ماه', 180 => '۶ ماه' ];
+	if ( 'crawler' === $key ) {
+		$status = hodima_seo_advisor_crawler_status();
+		[ , , $info ] = hodima_seo_advisor_crawler_status_view();
+
+		return [ 'running' => in_array( $status['state'], [ 'running', 'paused' ], true ), 'percent' => hodima_seo_advisor_crawler_percent( $status ), 'label' => $info ];
+	}
+
+	$progress = hodima_seo_advisor_progress_get( $key );
+
+	return [ 'running' => $progress['running'], 'percent' => $progress['percent'], 'label' => $progress['total'] > 1 ? sprintf( 'گام %1$s از %2$s: %3$s', number_format_i18n( $progress['step'] ), number_format_i18n( $progress['total'] ), $progress['label'] ) : $progress['label'] ];
+}
+
+/**
+ * نوار پیشرفت زیر ردیف؛ تا کار در جریان نیست پنهان است (JS با «اجرا» نشانش می‌دهد).
+ *
+ * @param array{running: bool, percent: int, label: string} $progress
+ */
+function hodima_seo_advisor_render_job_progress( string $key, array $progress ): void {
+
+	$live = '';
+
+	if ( $progress['running'] && 'crawler' === $key && [] !== array_filter( [ hodima_seo_advisor_crawler_status_view()[3] ] ) ) {
+		$live = ' data-hdsa-crawl-live="' . esc_attr( wp_create_nonce( 'hodima_advisor_crawler_step' ) ) . '" data-hdsa-ajax="' . esc_url( admin_url( 'admin-ajax.php' ) ) . '"';
+	} elseif ( $progress['running'] ) {
+		$live = ' data-hdsa-job-poll="1"';
+	}
 	?>
-	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__job-form">
-		<input type="hidden" name="action" value="hodima_advisor_refresh">
-		<input type="hidden" name="tab" value="jobs">
-		<?php wp_nonce_field( 'hodima_advisor_refresh' ); ?>
-		<div class="hodima-advisor__job-foot">
-			<button type="submit" class="hds-btn hds-btn--outline"<?php disabled( ! $has_key ); ?>>
-				<span class="dashicons dashicons-update" aria-hidden="true"></span> اجرا همین حالا
-			</button>
-			<?php if ( hodima_seo_advisor_pipeline_pending() ) : ?>
-				<span class="hds-pill hds-pill--info" role="status">ساخت پیشنهادها در پس‌زمینه ادامه دارد</span>
-			<?php endif; ?>
+	<div class="hodima-advisor__job-prog" data-hdsa-job-prog<?php echo $progress['running'] ? '' : ' hidden'; ?><?php echo $live; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ویژگی‌های امن‌شده بالا ?>>
+		<div class="hodima-advisor__job-prog-top">
+			<span class="hodima-advisor__job-prog-label" role="status" data-hdsa-crawl-text data-hdsa-job-text><?php echo esc_html( $progress['label'] ); ?></span>
+			<b class="hodima-advisor__job-prog-pc" data-hdsa-job-pc><?php echo esc_html( number_format_i18n( $progress['percent'] ) ); ?>٪</b>
 		</div>
-		<details class="hodima-advisor__job-set">
-			<summary>تنظیم این کار</summary>
-			<div class="hodima-advisor__job-set-body">
-				<fieldset class="hodima-advisor__seg">
-					<legend>داده چند روز اخیر گرفته شود؟</legend>
-					<?php foreach ( $labels as $value => $label ) : ?>
-						<label class="hodima-advisor__seg-opt">
-							<input type="radio" name="days" value="<?php echo esc_attr( (string) $value ); ?>"<?php checked( $days, $value ); ?>>
-							<span><?php echo esc_html( $label ); ?></span>
-						</label>
-					<?php endforeach; ?>
-				</fieldset>
-				<p class="hodima-advisor__setting-help">بازه بلندتر تحلیل دقیق‌تری می‌دهد ولی دریافتش کندتر است. بازه با دکمه «اجرا همین حالا» (یا دریافت بعدی) ذخیره می‌شود. «گرفتن داده تازه» بالای «کارها» همین کار را با یک کلیک انجام می‌دهد.</p>
-			</div>
-		</details>
-	</form>
+		<div class="hodima-advisor__job-bar" role="progressbar" aria-label="پیشرفت <?php echo esc_attr( hodima_seo_advisor_job_name( $key ) ); ?>" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?php echo esc_attr( (string) $progress['percent'] ); ?>" data-hdsa-crawl-bar>
+			<i style="inline-size: <?php echo esc_attr( (string) $progress['percent'] ); ?>%"></i>
+		</div>
+	</div>
 	<?php
 }
 
-/** خزنده داخلی: پیشرفت (وقتی در جریان است، با گام‌های خودکار JS)، اجرا همین حالا و زمان‌بندی. */
-function hodima_seo_advisor_render_job_crawler(): void {
+/** نام فارسی کار (برچسب خوانشگر نوار پیشرفت). */
+function hodima_seo_advisor_job_name( string $key ): string {
+	return [ 'refresh' => 'دریافت داده گوگل', 'crawler' => 'خزنده داخلی', 'inspect' => 'بررسی ایندکس گوگل', 'pipeline' => 'ساخت پیشنهادها' ][ $key ] ?? $key;
+}
 
-	$status = hodima_seo_advisor_crawler_status();
+/**
+ * دکمه «اجرا همین حالا»: فرم admin-post (بدون JS) که JS آن را به ایجکس نوار پیشرفت می‌برد (data-hdsa-job-form).
+ * دریافت داده: فیلد «بازه» در پنل تنظیمات با ویژگی form به همین فرم وصل است.
+ */
+function hodima_seo_advisor_render_job_run( string $key ): void {
 
-	[ , , $info, $live ] = hodima_seo_advisor_crawler_status_view();
-
-	if ( 'running' === $status['state'] || 'paused' === $status['state'] ) {
-		$percent = hodima_seo_advisor_crawler_percent( $status );
+	if ( 'refresh' === $key ) {
+		$form    = 'hodima-advisor-job-form-refresh';
+		$has_key = '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR );
 		?>
-		<div class="hodima-advisor__job-prog"<?php echo $live ? ' data-hdsa-crawl-live="' . esc_attr( wp_create_nonce( 'hodima_advisor_crawler_step' ) ) . '" data-hdsa-ajax="' . esc_url( admin_url( 'admin-ajax.php' ) ) . '"' : ''; ?>>
-			<p class="hodima-advisor__job-prog-label" role="status" data-hdsa-crawl-text><?php echo esc_html( $info ); ?></p>
-			<div class="hodima-advisor__bar" role="progressbar" aria-label="پیشرفت خزش" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?php echo esc_attr( (string) $percent ); ?>" data-hdsa-crawl-bar>
-				<i style="inline-size: <?php echo esc_attr( (string) $percent ); ?>%"></i>
-			</div>
-		</div>
+		<form id="<?php echo esc_attr( $form ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__cron-run" data-hdsa-job-form="refresh">
+			<input type="hidden" name="action" value="hodima_advisor_refresh">
+			<input type="hidden" name="tab" value="jobs">
+			<?php wp_nonce_field( 'hodima_advisor_refresh' ); ?>
+			<button type="submit" class="hds-btn hds-btn--outline"<?php disabled( ! $has_key ); ?>><span class="dashicons dashicons-controls-play" aria-hidden="true"></span> اجرا همین حالا</button>
+		</form>
 		<?php
+		return;
 	}
 
-	echo '<div class="hodima-advisor__job-foot">' . hodima_seo_advisor_cron_run_form( 'crawler' ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_cron_run_form
+	echo hodima_seo_advisor_cron_run_form( $key ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده با esc_*
+}
+
+/** محتوای پنل «تنظیمات» هر کار. */
+function hodima_seo_advisor_render_job_settings( string $key ): void {
+
+	if ( 'refresh' === $key ) {
+		$days   = hodima_seo_advisor_days();
+		$labels = [ 28 => '۲۸ روز', 90 => '۳ ماه', 180 => '۶ ماه' ];
+		?>
+		<fieldset class="hodima-advisor__seg">
+			<legend>داده چند روز اخیر گرفته شود؟</legend>
+			<?php foreach ( $labels as $value => $label ) : ?>
+				<label class="hodima-advisor__seg-opt">
+					<input type="radio" name="days" value="<?php echo esc_attr( (string) $value ); ?>" form="hodima-advisor-job-form-refresh"<?php checked( $days, $value ); ?>>
+					<span><?php echo esc_html( $label ); ?></span>
+				</label>
+			<?php endforeach; ?>
+		</fieldset>
+		<p class="hodima-advisor__setting-help">بازه بلندتر تحلیل دقیق‌تری می‌دهد ولی دریافتش کندتر است. بازه با دکمه «اجرا همین حالا» ذخیره و از همین به بعد استفاده می‌شود.</p>
+		<?php
+		return;
+	}
+
+	if ( 'crawler' === $key ) {
+		?>
+		<p class="hodima-advisor__setting-help">«اجرا همین حالا» همیشه یک دور کامل است (بی‌توجه به ساعت‌ها).</p>
+		<?php
+		hodima_seo_advisor_render_crawler_settings_form( 'jobs' );
+		return;
+	}
+
 	?>
-	<p class="hodima-advisor__setting-help">«اجرا همین حالا» همیشه یک دور کامل است (بی‌توجه به ساعت‌ها).</p>
-	<details class="hodima-advisor__job-set">
-		<summary>تنظیم این کار</summary>
-		<div class="hodima-advisor__job-set-body">
-			<?php hodima_seo_advisor_render_crawler_settings_form( 'jobs' ); ?>
-		</div>
-	</details>
+	<p class="hodima-advisor__setting-help">
+		<?php echo esc_html( 'inspect' === $key ? 'این کار تنظیم جدا ندارد؛ هر دسته ' . number_format_i18n( HODIMA_SEO_ADVISOR_INSPECT_BATCH ) . ' آدرس از صف بررسی می‌کند و سهمیهٔ روزانهٔ گوگل را رعایت می‌کند.' : 'این کار تنظیم جدا ندارد؛ بعد از هر دریافت و هر خزش به‌طور خودکار اجرا می‌شود.' ); ?>
+	</p>
 	<?php
 }
 
