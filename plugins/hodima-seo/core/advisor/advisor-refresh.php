@@ -73,10 +73,14 @@ const HODIMA_SEO_ADVISOR_FETCH_PAGES = 4;
  * آدرس‌های «نمایش زیاد، کلیک صفر» (همان فرصت‌ها) آخر فهرست می‌افتادند و بریده می‌شدند. هر صفحه شکست
  * بخورد کل گزارش خطا می‌دهد (داده نصفه ذخیره نمی‌شود).
  *
- * @param list<string> $dimensions
+ * `$each` (SEO 3.4.6): هر دسته ردیف به آن داده می‌شود و در فهرست برگشتی نمی‌ماند (rows خالی)؛ فراخواننده مجموع می‌سازد و
+ * ردیف خام همه گزارش‌ها هم‌زمان در حافظه نمی‌ماند.
+ *
+ * @param list<string>                                    $dimensions
+ * @param (callable(list<array<string, mixed>>): void)|null $each
  * @return array{rows: list<array<string, mixed>>, capped: bool}|WP_Error
  */
-function hodima_seo_advisor_fetch( string $property, string $start, string $end, array $dimensions ): array|WP_Error {
+function hodima_seo_advisor_fetch( string $property, string $start, string $end, array $dimensions, ?callable $each = null ): array|WP_Error {
 
 	$rows   = [];
 	$capped = false;
@@ -86,7 +90,11 @@ function hodima_seo_advisor_fetch( string $property, string $start, string $end,
 		if ( is_wp_error( $part ) ) {
 			return $part;
 		}
-		array_push( $rows, ...$part['rows'] );
+		if ( null !== $each ) {
+			$each( $part['rows'] );
+		} else {
+			array_push( $rows, ...$part['rows'] );
+		}
 		if ( count( $part['rows'] ) < 25000 ) {
 			break;
 		}
@@ -154,7 +162,19 @@ function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = n
 
 	foreach ( hodima_seo_sc_candidates( HODIMA_SEO_SC_ADVISOR ) as $property ) {
 
-		$current = hodima_seo_advisor_fetch( $property, $range['start'], $range['end'], [ 'page' ] );
+		// مجموع‌ها دسته‌به‌دسته ساخته می‌شوند (SEO 3.4.6)؛ ردیف خام نمی‌ماند
+		$page_sums = hodima_seo_advisor_pages_sums();
+		$variants  = hodima_seo_advisor_variants_sums();
+		$current   = hodima_seo_advisor_fetch(
+			$property,
+			$range['start'],
+			$range['end'],
+			[ 'page' ],
+			static function ( array $rows ) use ( &$page_sums, &$variants ): void {
+				hodima_seo_advisor_pages_sum( $page_sums, $rows );
+				hodima_seo_advisor_variants_sum( $variants, $rows );
+			}
+		);
 
 		if ( is_wp_error( $current ) ) {
 			if ( hodima_seo_sc_is_key_error( $current ) ) {
@@ -165,8 +185,14 @@ function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = n
 			continue;
 		}
 
-		$previous = hodima_seo_advisor_fetch( $property, $range['prev_start'], $range['prev_end'], [ 'page' ] );
-		$queries  = is_wp_error( $previous ) ? $previous : hodima_seo_advisor_fetch( $property, $range['start'], $range['end'], [ 'page', 'query' ] );
+		$prev_sums  = hodima_seo_advisor_pages_sums();
+		$query_sums = hodima_seo_advisor_queries_sums();
+		$previous   = hodima_seo_advisor_fetch( $property, $range['prev_start'], $range['prev_end'], [ 'page' ], static function ( array $rows ) use ( &$prev_sums ): void {
+			hodima_seo_advisor_pages_sum( $prev_sums, $rows );
+		} );
+		$queries    = is_wp_error( $previous ) ? $previous : hodima_seo_advisor_fetch( $property, $range['start'], $range['end'], [ 'page', 'query' ], static function ( array $rows ) use ( &$query_sums ): void {
+			hodima_seo_advisor_queries_sum( $query_sums, $rows );
+		} );
 
 		foreach ( [ $previous, $queries ] as $part ) {
 			if ( is_wp_error( $part ) ) {
@@ -178,11 +204,13 @@ function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = n
 
 		// ذخیره داده (تراکنش خود store): یا همه، یا هیچ‌چیز (داده قبلی می‌ماند). ساخت پیشنهادها و کارهای سنگین
 		// بعدی نوبت‌اند (پایین) و پیشنهاد قبلی هر آدرس تا تحلیل تازه‌اش می‌ماند
-		$stored = hodima_seo_advisor_store(
-			hodima_seo_advisor_aggregate_pages( $current['rows'] ),
-			hodima_seo_advisor_aggregate_pages( $previous['rows'] ),
-			hodima_seo_advisor_aggregate_queries( $queries['rows'] )
-		);
+		$page_final  = hodima_seo_advisor_pages_finish( $page_sums );
+		$prev_final  = hodima_seo_advisor_pages_finish( $prev_sums );
+		$query_final = hodima_seo_advisor_queries_finish( $query_sums );
+		unset( $page_sums, $prev_sums, $query_sums ); // مجموع‌های خام دیگر لازم نیست؛ حافظه پیش از نوشتن در پایگاه داده آزاد می‌شود (SEO 3.4.6)
+
+		$stored = hodima_seo_advisor_store( $page_final, $prev_final, $query_final );
+		unset( $page_final, $prev_final, $query_final );
 
 		if ( is_wp_error( $stored ) ) {
 			hodima_seo_advisor_store_error( $stored->get_error_message() );
@@ -203,7 +231,7 @@ function hodima_seo_advisor_run_refresh( bool $force = false, ?float $budget = n
 		] + $range, false );
 
 		// آدرس‌های تکراری یک صفحه (آدرس خام پیش از یکسان‌سازی)؛ برای فهرست تب «صفحه‌های هم‌کلمه»
-		update_option( HODIMA_SEO_ADVISOR_VARIANTS_OPTION, hodima_seo_advisor_find_variants( $current['rows'] ), false );
+		update_option( HODIMA_SEO_ADVISOR_VARIANTS_OPTION, hodima_seo_advisor_variants_finish( $variants ), false );
 
 		// بقیه کارها نوبت‌به‌نوبت: ساخت پیشنهادها، بخش‌بندی، روند، سلامت و تاریخچه (هرکدام مستقل؛ شکستشان
 		// دریافت اصلی را رد نمی‌کند). تا بودجه زمانی همین‌جا؛ باقی‌مانده با رویداد کرون

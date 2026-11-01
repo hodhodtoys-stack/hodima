@@ -253,6 +253,12 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 
 		$stored[ $path ] = hodima_seo_advisor_inspect_parse( $result );
 		++$summary['checked'];
+
+		// هر ۱۰ آدرس ذخیره می‌شود (SEO 3.4.6): تا ۳.۴.۵ فقط آخر کار نوشته می‌شد و قطع شدن وسط ۱۸۰ ثانیه (مهلت، سهمیه، هاست)
+		// همه نتیجه‌های پرسش‌شده از گوگل را دور می‌ریخت و سهمیه روزانه بیهوده خرج شده بود
+		if ( 0 === $summary['checked'] % 10 ) {
+			update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $stored, false );
+		}
 	}
 
 	if ( count( $stored ) > HODIMA_SEO_ADVISOR_INSPECT_KEEP ) {

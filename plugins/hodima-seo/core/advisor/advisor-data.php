@@ -250,28 +250,62 @@ function hodima_seo_advisor_path_key( string $url ): ?string {
  */
 function hodima_seo_advisor_aggregate_pages( array $rows ): array {
 
-	$sums = [];
+	$sums = hodima_seo_advisor_pages_sums();
+	hodima_seo_advisor_pages_sum( $sums, $rows );
+
+	return hodima_seo_advisor_pages_finish( $sums );
+}
+
+/**
+ * مجموع‌های خالی «صفحه» برای دریافت دسته‌به‌دسته (SEO 3.4.6). سه آرایه اسکالر موازی (کلیک، نمایش، رتبه×نمایش) با کلید مسیر:
+ * آرایه تو در توی PHP برای هر مسیر ≈ ۳۷۶ بایت می‌گیرد و ۳۰۰ هزار ردیف خام + مجموع‌ها اوج حافظه را به ≈ ۴۱۴ مگابایت می‌برد
+ * (هاست ۲۵۶ مگابایتی می‌مرد)؛ اسکالرهای موازی چند برابر کوچک‌ترند و ردیف خام بعد از هر دسته دور ریخته می‌شود.
+ *
+ * @return array{c: array<string, int>, i: array<string, int>, w: array<string, float>}
+ */
+function hodima_seo_advisor_pages_sums(): array {
+	return [ 'c' => [], 'i' => [], 'w' => [] ];
+}
+
+/**
+ * یک دسته ردیف «صفحه» را به مجموع‌ها می‌افزاید.
+ *
+ * @param array{c: array<string, int>, i: array<string, int>, w: array<string, float>} $sums مرجع
+ * @param list<array<string, mixed>>                                                    $rows
+ */
+function hodima_seo_advisor_pages_sum( array &$sums, array $rows ): void {
 
 	foreach ( $rows as $row ) {
 		$path = hodima_seo_advisor_path_key( (string) ( $row['keys'][0] ?? '' ) );
 		if ( null === $path ) {
 			continue;
 		}
-		$impressions = (int) round( (float) ( $row['impressions'] ?? 0 ) );
-		$sums[ $path ] ??= [ 'clicks' => 0, 'impressions' => 0, 'weighted' => 0.0 ];
-		$sums[ $path ]['clicks']      += (int) round( (float) ( $row['clicks'] ?? 0 ) );
-		$sums[ $path ]['impressions'] += $impressions;
-		$sums[ $path ]['weighted']    += (float) ( $row['position'] ?? 0 ) * $impressions;
+		$impressions         = (int) round( (float) ( $row['impressions'] ?? 0 ) );
+		$sums['c'][ $path ]  = ( $sums['c'][ $path ] ?? 0 ) + (int) round( (float) ( $row['clicks'] ?? 0 ) );
+		$sums['i'][ $path ]  = ( $sums['i'][ $path ] ?? 0 ) + $impressions;
+		$sums['w'][ $path ]  = ( $sums['w'][ $path ] ?? 0.0 ) + (float) ( $row['position'] ?? 0 ) * $impressions;
+	}
+}
+
+/**
+ * مجموع‌های صفحه ← مسیر ← کلیک/نمایش/رتبه (رتبه با وزن نمایش).
+ *
+ * @param array{c: array<string, int>, i: array<string, int>, w: array<string, float>} $sums
+ * @return array<string, array{clicks: int, impressions: int, position: float}>
+ */
+function hodima_seo_advisor_pages_finish( array $sums ): array {
+
+	$out = [];
+
+	foreach ( $sums['i'] as $path => $impressions ) {
+		$out[ $path ] = [
+			'clicks'      => $sums['c'][ $path ],
+			'impressions' => $impressions,
+			'position'    => $impressions > 0 ? round( $sums['w'][ $path ] / $impressions, 2 ) : 0.0,
+		];
 	}
 
-	return array_map(
-		static fn( array $s ): array => [
-			'clicks'      => $s['clicks'],
-			'impressions' => $s['impressions'],
-			'position'    => $s['impressions'] > 0 ? round( $s['weighted'] / $s['impressions'], 2 ) : 0.0,
-		],
-		$sums
-	);
+	return $out;
 }
 
 /**
@@ -283,7 +317,28 @@ function hodima_seo_advisor_aggregate_pages( array $rows ): array {
  */
 function hodima_seo_advisor_aggregate_queries( array $rows ): array {
 
-	$sums = [];
+	$sums = hodima_seo_advisor_queries_sums();
+	hodima_seo_advisor_queries_sum( $sums, $rows );
+
+	return hodima_seo_advisor_queries_finish( $sums );
+}
+
+/**
+ * مجموع‌های خالی «صفحه + کلمه» برای دریافت دسته‌به‌دسته (اسکالرهای موازی با کلید «مسیر\nکلید کلمه»؛ SEO 3.4.6).
+ *
+ * @return array{c: array<string, int>, i: array<string, int>, w: array<string, float>, t: array<string, string>, p: array<string, string>}
+ */
+function hodima_seo_advisor_queries_sums(): array {
+	return [ 'c' => [], 'i' => [], 'w' => [], 't' => [], 'p' => [] ];
+}
+
+/**
+ * یک دسته ردیف «صفحه + کلمه» را به مجموع‌ها می‌افزاید.
+ *
+ * @param array{c: array<string, int>, i: array<string, int>, w: array<string, float>, t: array<string, string>, p: array<string, string>} $sums مرجع
+ * @param list<array<string, mixed>>                                                                                                        $rows
+ */
+function hodima_seo_advisor_queries_sum( array &$sums, array $rows ): void {
 
 	foreach ( $rows as $row ) {
 		$path = hodima_seo_advisor_path_key( (string) ( $row['keys'][0] ?? '' ) );
@@ -293,24 +348,43 @@ function hodima_seo_advisor_aggregate_queries( array $rows ): array {
 		}
 		// کلمه‌هایی که فقط در اعراب، کشیده، حروف بزرگ یا ی/ک عربی فرق دارند یکی می‌شوند؛ ستون term
 		// با مقایسه بدون حساسیت به این تفاوت‌ها کلید اصلی است و دو کلمه «متفاوت» آن را می‌شکستند
-		$key         = hodima_seo_advisor_term_key( $term );
+		$id          = $path . "\n" . hodima_seo_advisor_term_key( $term );
 		$impressions = (int) round( (float) ( $row['impressions'] ?? 0 ) );
-		$sums[ $path ][ $key ] ??= [ 'term' => $term, 'clicks' => 0, 'impressions' => 0, 'weighted' => 0.0 ];
-		$sums[ $path ][ $key ]['clicks']      += (int) round( (float) ( $row['clicks'] ?? 0 ) );
-		$sums[ $path ][ $key ]['impressions'] += $impressions;
-		$sums[ $path ][ $key ]['weighted']    += (float) ( $row['position'] ?? 0 ) * $impressions;
+		if ( ! isset( $sums['i'][ $id ] ) ) {
+			$sums['t'][ $id ] = $term; // املای اولین دیده‌شده
+			$sums['p'][ $id ] = $path;
+		}
+		$sums['c'][ $id ] = ( $sums['c'][ $id ] ?? 0 ) + (int) round( (float) ( $row['clicks'] ?? 0 ) );
+		$sums['i'][ $id ] = ( $sums['i'][ $id ] ?? 0 ) + $impressions;
+		$sums['w'][ $id ] = ( $sums['w'][ $id ] ?? 0.0 ) + (float) ( $row['position'] ?? 0 ) * $impressions;
+	}
+}
+
+/**
+ * مجموع‌های کلمه ← مسیر ← کلمه ← داده؛ کلمه کم‌نمایش حذف و برای هر مسیر حداکثر ۵۰ کلمه پرنمایش می‌ماند.
+ *
+ * @param array{c: array<string, int>, i: array<string, int>, w: array<string, float>, t: array<string, string>, p: array<string, string>} $sums
+ * @return array<string, array<string, array{clicks: int, impressions: int, position: float}>>
+ */
+function hodima_seo_advisor_queries_finish( array $sums ): array {
+
+	$by_path = [];
+
+	foreach ( $sums['i'] as $id => $impressions ) {
+		if ( $impressions >= HODIMA_SEO_ADVISOR_MIN_QUERY_IMPRESSIONS ) { // کلمه کم‌نمایش همین‌جا کنار می‌رود (حافظه)
+			$by_path[ $sums['p'][ $id ] ][ $id ] = $impressions;
+		}
 	}
 
 	$out = [];
 
-	foreach ( $sums as $path => $terms ) {
-		$terms = array_filter( $terms, static fn( array $s ): bool => $s['impressions'] >= HODIMA_SEO_ADVISOR_MIN_QUERY_IMPRESSIONS );
-		uasort( $terms, static fn( array $a, array $b ): int => $b['impressions'] <=> $a['impressions'] );
-		foreach ( array_slice( $terms, 0, HODIMA_SEO_ADVISOR_QUERIES_PER_PAGE, true ) as $s ) {
-			$out[ $path ][ $s['term'] ] = [
-				'clicks'      => $s['clicks'],
-				'impressions' => $s['impressions'],
-				'position'    => round( $s['weighted'] / $s['impressions'], 2 ),
+	foreach ( $by_path as $path => $terms ) {
+		arsort( $terms ); // پرنمایش اول؛ هم‌نمایش‌ها به ترتیب درج می‌مانند (مرتب‌سازی پایدار PHP 8)
+		foreach ( array_slice( $terms, 0, HODIMA_SEO_ADVISOR_QUERIES_PER_PAGE, true ) as $id => $impressions ) {
+			$out[ $path ][ $sums['t'][ $id ] ] = [
+				'clicks'      => $sums['c'][ $id ],
+				'impressions' => $impressions,
+				'position'    => round( $sums['w'][ $id ] / $impressions, 2 ),
 			];
 		}
 	}

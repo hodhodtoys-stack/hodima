@@ -152,3 +152,100 @@ if ( getenv( 'PERF_CRAWLER' ) ) {
 		hodima_seo_advisor_crawler_finalize( $state );
 	} );
 }
+
+if ( getenv( 'PERF_ANALYZE' ) ) {
+	$measure( 'store() دوباره (۱٬۵۰۰ صفحه، ۳۰ هزار کلمه)', static fn() => hodima_seo_advisor_store( $gsc, [], $queries ) );
+	$measure( 'analyze_batch() همه آدرس‌ها', static function (): void {
+		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
+		hodima_seo_advisor_analyze_batch( microtime( true ) + 600 );
+	} );
+	$measure( 'save_advice() یک آدرس (ذخیره نوشته)', static fn() => hodima_seo_advisor_save_advice( '/p10/' ) );
+	$measure( 'resave_object() یک شیء', static fn() => hodima_seo_advisor_resave_object( 'page', 1 ) );
+}
+
+if ( getenv( 'PERF_STORE_PARTS' ) ) {
+	$paths = array_keys( $gsc );
+	$measure( 'classify() ×۱٬۵۰۰ (روتر)', static function () use ( $paths ): void {
+		foreach ( $paths as $p ) {
+			hodima_seo_advisor_classify( $p );
+		}
+	} );
+	$measure( 'object_title() ×۱٬۵۰۰', static function () use ( $paths ): void {
+		foreach ( $paths as $i => $p ) {
+			hodima_seo_advisor_object_title( 'page', 1 + $i % 5 );
+		}
+	} );
+	$rows = [];
+	foreach ( $queries as $path => $terms ) {
+		foreach ( $terms as $term => $s ) {
+			$rows[] = [ $path, $term, hodima_seo_advisor_term_key( (string) $term ), $s['clicks'], $s['impressions'], $s['position'] ];
+		}
+	}
+	$measure( 'term_key() ×۳۰٬۰۰۰', static function () use ( $rows ): void {
+		foreach ( $rows as $r ) {
+			hodima_seo_advisor_term_key( (string) $r[1] );
+		}
+	} );
+	$measure( 'INSERT ۳۰ هزار کلمه (بسته ۲۰۰)', static function () use ( $rows ): void {
+		global $wpdb;
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'queries' ) ) );
+		foreach ( array_chunk( $rows, 200 ) as $chunk ) {
+			hodima_seo_advisor_insert( hodima_seo_advisor_table( 'queries' ), 'path, term, term_key, clicks, impressions, avg_position', '(%s,%s,%s,%d,%d,%f)', $chunk );
+		}
+	} );
+}
+
+if ( getenv( 'PERF_MEMORY' ) ) {
+	// دریافت سقف: ۴×۲۵ هزار ردیف صفحه (بازه فعلی و قبلی) + ۱۰۰ هزار ردیف صفحه+کلمه، همه هم‌زمان در حافظه مثل hodima_seo_advisor_run_refresh
+	$mk = static function ( int $n, bool $with_query ): array {
+		$out = [];
+		for ( $i = 0; $i < $n; $i++ ) {
+			$out[] = [ 'keys' => $with_query ? [ home_url( '/page-' . ( $i % 40000 ) . '/' ), 'کلمه شماره ' . $i ] : [ home_url( '/page-' . $i . '/' ) ], 'clicks' => $i % 5, 'impressions' => 10 + $i % 90, 'ctr' => 0.1, 'position' => 8.5 ];
+		}
+		return $out;
+	};
+	$base = memory_get_usage( true );
+	$cur  = $mk( 100000, false );
+	$prev = $mk( 100000, false );
+	$qs   = $mk( 100000, true );
+	printf( "ردیف‌های خام ۳۰۰ هزار تایی: %d MB\n", ( memory_get_usage( true ) - $base ) / MB_IN_BYTES );
+	$measure( 'aggregate_pages ×۲ + aggregate_queries', static function () use ( $cur, $prev, $qs ): void {
+		hodima_seo_advisor_aggregate_pages( $cur );
+		hodima_seo_advisor_aggregate_pages( $prev );
+		hodima_seo_advisor_aggregate_queries( $qs );
+	} );
+	$measure( 'find_variants()', static fn() => hodima_seo_advisor_find_variants( $cur ) );
+	printf( "اوج حافظه فرایند: %d MB\n", memory_get_peak_usage( true ) / MB_IN_BYTES );
+}
+
+if ( getenv( 'PERF_MEMORY_STREAM' ) ) {
+	// همان داده سقف اما دسته‌به‌دسته مثل دریافت واقعی (SEO 3.4.6): هر دسته ۲۵ هزار ردیف، بعد از جمع دور ریخته می‌شود
+	$chunk = static function ( int $part, bool $with_query ): array {
+		$out = [];
+		for ( $i = $part * 25000; $i < ( $part + 1 ) * 25000; $i++ ) {
+			$out[] = [ 'keys' => $with_query ? [ home_url( '/page-' . ( $i % 40000 ) . '/' ), 'کلمه شماره ' . $i ] : [ home_url( '/page-' . $i . '/' ) ], 'clicks' => $i % 5, 'impressions' => 10 + $i % 90, 'ctr' => 0.1, 'position' => 8.5 ];
+		}
+		return $out;
+	};
+	$measure( 'دریافت دسته‌ای ۳۰۰ هزار ردیف (جمع تدریجی)', static function () use ( $chunk ): void {
+		$cur = hodima_seo_advisor_pages_sums();
+		$prev = hodima_seo_advisor_pages_sums();
+		$qs = hodima_seo_advisor_queries_sums();
+		$var = hodima_seo_advisor_variants_sums();
+		for ( $part = 0; $part < 4; $part++ ) {
+			$rows = $chunk( $part, false );
+			hodima_seo_advisor_pages_sum( $cur, $rows );
+			hodima_seo_advisor_variants_sum( $var, $rows );
+			$rows = $chunk( $part, false );
+			hodima_seo_advisor_pages_sum( $prev, $rows );
+			$rows = $chunk( $part, true );
+			hodima_seo_advisor_queries_sum( $qs, $rows );
+			unset( $rows );
+		}
+		hodima_seo_advisor_pages_finish( $cur );
+		hodima_seo_advisor_pages_finish( $prev );
+		hodima_seo_advisor_queries_finish( $qs );
+		hodima_seo_advisor_variants_finish( $var );
+	} );
+	printf( "اوج حافظه فرایند: %d MB\n", memory_get_peak_usage( true ) / MB_IN_BYTES );
+}

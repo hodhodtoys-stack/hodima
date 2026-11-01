@@ -1413,6 +1413,30 @@ delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
 $batch2 = hodima_seo_advisor_inspect_batch( 5 );
 hodima_ad( 'سهمیه (۴۲۹) ← فورا می‌ایستد، آنچه پرسیده شده ذخیره می‌شود', [ $batch2['checked'], $batch2['quota'], '' !== $batch2['error'], count( $in_calls ), count( hodima_seo_advisor_inspections() ) ], [ 1, true, true, 2, 1 ] );
 
+// ذخیره تدریجی (SEO 3.4.6): قطع شدن وسط دسته نتیجه ۱۰ آدرس پرسیده‌شده را از دست نمی‌دهد
+$ip_t = hodima_seo_advisor_table( 'pages' );
+foreach ( range( 1, 14 ) as $ip_i ) {
+	$GLOBALS['wpdb']->insert( $ip_t, [ 'path' => "/ip-{$ip_i}/", 'impressions' => 9000 - $ip_i, 'kind' => 'page', 'advice' => '' ] );
+}
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+$GLOBALS['inspect_quota_after'] = 99;
+$in_calls = [];
+add_filter( 'pre_http_request', $ip_die = static function ( mixed $pre, array $args, string $url ) use ( &$in_calls ): mixed {
+	if ( str_contains( $url, '/urlInspection/index:inspect' ) && count( $in_calls ) >= 11 ) { // ۱۱امین پرسش: قطع ناگهانی (مثل مهلت PHP)
+		throw new RuntimeException( 'cut' );
+	}
+	return $pre;
+}, 10, 3 );
+try {
+	hodima_seo_advisor_inspect_run( 'sc-domain:' . $host, 14, [ 'checked' => 0, 'error' => '', 'quota' => false ] );
+} catch ( RuntimeException ) {
+	// قطع‌شدن عمدی
+}
+remove_filter( 'pre_http_request', $ip_die, 10 );
+hodima_ad( 'قطع وسط دسته: ۱۰ نتیجه پرسش‌شده (یک دسته ۱۰تایی) ذخیره مانده، نه صفر', count( hodima_seo_advisor_inspections() ), 10 );
+$GLOBALS['wpdb']->query( "DELETE FROM {$ip_t} WHERE path LIKE '/ip-%'" );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+
 // نما
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'indexing' ];
 update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/q/b/' => $ins( 'Crawled - currently not indexed' ), '/q/a/' => $ins( 'Submitted and indexed', 'PASS' ), '/q/c/' => $ins( 'Duplicate, Google chose different canonical than user', 'NEUTRAL', '', 'https://' . $host . '/q/a/', 'https://' . $host . '/q/c/' ) ], false );
@@ -3882,6 +3906,24 @@ hodima_ad( 'گام ایجکس: خودکار با کرون ۱۱ دقیقه ساک
 update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'always' => false, 'start' => 2, 'end' => 3 ], false );
 hodima_ad( 'گام ایجکس: بیرون از پنجره خزش هرگز (غیر دستی)', hodima_seo_advisor_crawler_step_drives( [ 'manual' => false, 'tick' => 0, 'started' => 0 ], strtotime( '2026-01-01 12:00:00 UTC' ) ), false );
 false === $cs_keep ? delete_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS ) : update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, $cs_keep, false );
+// دریافت دسته‌به‌دسته (SEO 3.4.6): مجموع چند دسته = مجموع یک‌جای همان ردیف‌ها (حتی وقتی یک مسیر در دو دسته می‌آید)
+$ch_rows = [];
+foreach ( range( 0, 59 ) as $i ) {
+	$ch_rows[] = [ 'keys' => [ ( 0 === $i % 5 ? str_replace( '://', '://www.', home_url( '/ch-' . ( $i % 7 ) . '/' ) ) : home_url( '/ch-' . ( $i % 7 ) . '/' ) ), 'کلمه ' . ( $i % 4 ) ], 'clicks' => $i % 3, 'impressions' => 4 + $i, 'position' => 3.0 + $i % 9 ];
+}
+$ch_pages = hodima_seo_advisor_pages_sums();
+$ch_terms = hodima_seo_advisor_queries_sums();
+$ch_vars  = hodima_seo_advisor_variants_sums();
+foreach ( array_chunk( $ch_rows, 17 ) as $ch_part ) {
+	hodima_seo_advisor_pages_sum( $ch_pages, $ch_part );
+	hodima_seo_advisor_queries_sum( $ch_terms, $ch_part );
+	hodima_seo_advisor_variants_sum( $ch_vars, $ch_part );
+}
+hodima_ad( 'دسته‌به‌دسته: صفحه‌ها همان یک‌جاست', hodima_seo_advisor_pages_finish( $ch_pages ), hodima_seo_advisor_aggregate_pages( $ch_rows ) );
+hodima_ad( 'دسته‌به‌دسته: کلمه‌ها همان یک‌جاست', hodima_seo_advisor_queries_finish( $ch_terms ), hodima_seo_advisor_aggregate_queries( $ch_rows ) );
+hodima_ad( 'دسته‌به‌دسته: آدرس‌های تکراری همان یک‌جاست', hodima_seo_advisor_variants_finish( $ch_vars ), hodima_seo_advisor_find_variants( $ch_rows ) );
+hodima_ad( 'دسته‌به‌دسته: دست‌کم یک صفحه با دو آدرس خام پیدا می‌شود (آزمون بی‌معنا نباشد)', count( hodima_seo_advisor_find_variants( $ch_rows ) ) > 0, true );
+
 // کش درخواست (SEO 3.4.3): کارها و ایرادهای خزش با نوشتن دوباره ساخته می‌شوند
 $pf_old = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, [] );
 update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, [], false );
