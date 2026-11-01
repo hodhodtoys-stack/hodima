@@ -83,13 +83,11 @@ function hodima_seo_advisor_crawler_status_view(): array {
 		'off'     => [ 'warn', 'خاموش', 'خزش خودکار خاموش است؛ فقط «خزش همین حالا» کار می‌کند.' ],
 		'paused'  => [ 'warn', 'مکث موقت', sprintf( 'سایت کند پاسخ داد؛ خزنده تا %s ساکت است تا سایت سبک بماند.', wp_date( 'H:i', $status['pause_until'] ) ) ],
 		'running' => [ 'info', $status['manual'] ? 'خزش همین حالا' : ( 'quick' === $status['mode'] ? 'دور سریع' : 'در حال خزش' ), $progress . ( $status['manual'] || hodima_seo_advisor_crawler_in_window() ? '.' : '؛ ادامه در ساعت خزش بعدی.' ) ],
-		default   => $status['requested']
-			? [ 'info', 'درخواست شد', 'دور تازه در اولین نوبت ساعت خزش شروع می‌شود.' ]
-			: ( $status['finished'] > 0
-				? ( $status['capped']
-					? [ 'warn', 'سقف پر شد', sprintf( 'آخرین دور %1$s پیش تمام شد؛ سایت بیش از %2$s صفحه دارد و بقیه خزیده نشد. صفحه‌های قدیمی پاک نمی‌شوند تا داده از دست نرود.', human_time_diff( $status['finished'] ), $n( HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ) ) ]
-					: [ 'ok', 'آماده', sprintf( 'آخرین دور %1$s پیش تمام شد (%2$s صفحه)؛ دور بعد خودکار.', human_time_diff( $status['finished'] ), $n( $status['pages'] ) ) ] )
-				: [ 'info', 'منتظر اولین دور', $settings['enabled'] ? 'اولین دور در ساعت خزش شروع می‌شود؛ یا «خزش همین حالا» را بزنید.' : 'هنوز خزشی انجام نشده.' ] ),
+		default   => $status['finished'] > 0
+			? ( $status['capped']
+				? [ 'warn', 'سقف پر شد', sprintf( 'آخرین دور %1$s پیش تمام شد؛ سایت بیش از %2$s صفحه دارد و بقیه خزیده نشد. صفحه‌های قدیمی پاک نمی‌شوند تا داده از دست نرود.', human_time_diff( $status['finished'] ), $n( HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ) ) ]
+				: [ 'ok', 'آماده', sprintf( 'آخرین دور %1$s پیش تمام شد (%2$s صفحه)؛ دور بعد خودکار.', human_time_diff( $status['finished'] ), $n( $status['pages'] ) ) ] )
+			: [ 'info', 'منتظر اولین دور', $settings['enabled'] ? 'اولین دور در ساعت خزش شروع می‌شود؛ یا «خزش همین حالا» را بزنید.' : 'هنوز خزشی انجام نشده.' ],
 	};
 
 	return [ ...$view, $running && ( $status['manual'] || hodima_seo_advisor_crawler_in_window() ) ];

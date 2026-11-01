@@ -99,16 +99,6 @@ function hodima_seo_advisor_cron_run_form( string $key ): string {
 }
 
 /**
- * ردیف این کار دکمه «اجرا همین حالا» دارد؟ کار دیرشده (زرد/قرمز) همیشه؛ خزنده داخلی در هر حالتی (SEO 3.3.7): بعد از ۳.۳.۰ کارت
- * «خزش خودکار» از ناوبری رفت و مدیر راهی برای خزش فوری (مثلا برای دیدن فهرست تصویرها بعد از به‌روزرسانی) نداشت.
- *
- * @param array{level: string, key: string} $job
- */
-function hodima_seo_advisor_cron_job_has_run_button( array $job ): bool {
-	return in_array( $job['level'], [ 'warn', 'bad' ], true ) || 'crawler' === $job['key'];
-}
-
-/**
  * نوار هشدار زیر سربرگ، فقط روی تب‌های HODIMA_SEO_ADVISOR_CRON_NOTICE_TABS و فقط وقتی کاری دیر شده یا متوقف است.
  */
 function hodima_seo_advisor_cron_notice( string $tab ): void {

@@ -108,7 +108,7 @@ function hodima_seo_advisor_crawler_in_window( ?int $now = null ): bool {
 /**
  * وضعیت ذخیره‌شده خزش با پیش‌فرض‌ها.
  *
- * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int, capped: bool, tick: int, mode: string, full_at: int}
+ * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, pages: int, links: int, capped: bool, tick: int, mode: string, full_at: int}
  */
 function hodima_seo_advisor_crawler_state(): array {
 
@@ -130,7 +130,6 @@ function hodima_seo_advisor_crawler_state(): array {
 		'recent'      => array_values( array_map( 'intval', (array) ( $state['recent'] ?? [] ) ) ),
 		'pause_until' => (int) ( $state['pause_until'] ?? 0 ),
 		'finished'    => (int) ( $state['finished'] ?? 0 ),
-		'requested'   => ! empty( $state['requested'] ),
 		'pages'       => (int) ( $state['pages'] ?? 0 ),
 		'links'       => (int) ( $state['links'] ?? 0 ),
 		'capped'      => ! empty( $state['capped'] ),
@@ -242,7 +241,8 @@ function hodima_seo_advisor_crawler_normalize( string $url ): ?string {
 		return null;
 	}
 
-	return untrailingslashit( home_url() ) . ( '' === $path ? '/' : $path );
+	// مسیر آدرس مطلق از پیش پیشوند زیرپوشه را دارد؛ به دامنه چسبانده می‌شود نه به home_url() (SEO 3.4.7: در نصب زیرپوشه‌ای دوبار می‌آمد)
+	return untrailingslashit( hodima_seo_advisor_url( '/' ) ) . ( '' === $path ? '/' : $path );
 }
 
 /**
@@ -536,7 +536,7 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 	return [
 		'title'      => $first( $xpath, '/html/head/title' ),
 		'meta'       => $metas( $xpath, 'description' )[0] ?? '',
-		'robots'     => implode( ', ', $metas( $xpath, 'robots' ) ),
+		'robots'     => implode( ', ', [ ...$metas( $xpath, 'robots' ), ...$metas( $xpath, 'googlebot' ) ] ), // googlebot هم noindex/nosnippet را می‌رساند (SEO 3.4.7)
 		'canonical'  => $canonical,
 		'h1'         => $h1_pick ? $clean( $h1_pick[0]->textContent ) : '',
 		'h1_count'   => count( $h1_pick ),
@@ -819,7 +819,6 @@ function hodima_seo_advisor_crawler_new_state( array $old, string $mode, array $
 		'recent'      => [],
 		'pause_until' => 0,
 		'finished'    => $old['finished'],
-		'requested'   => false,
 		'pages'       => $old['pages'],
 		'links'       => $old['links'],
 		'capped'      => false,
@@ -875,7 +874,7 @@ function hodima_seo_advisor_crawler_due_mode( array $state, array $settings ): s
 
 	$now = time();
 
-	if ( $state['requested'] || 0 === $state['finished'] || $now - $state['full_at'] >= $settings['interval'] * DAY_IN_SECONDS - HOUR_IN_SECONDS ) {
+	if ( 0 === $state['finished'] || $now - $state['full_at'] >= $settings['interval'] * DAY_IN_SECONDS - HOUR_IN_SECONDS ) {
 		return 'full';
 	}
 
@@ -923,7 +922,9 @@ function hodima_seo_advisor_crawler_start( string $mode = 'full' ): void {
 
 	// فایل‌های نقشه سایت اول خوانده می‌شوند: هم آدرس‌های نقشه برای سنجش، هم کمک به پیدا شدن صفحه‌های بی‌لینک
 	$maps = [];
-	foreach ( (array) apply_filters( 'hodima_seo_advisor_sitemap_roots', [ home_url( '/sitemap.xml' ) ] ) as $root ) {
+	// همان منطق robots.txt: سایت‌مپ هدیما (sitemap.xml)؛ وگرنه اگر خاموش است و سایت‌مپ وردپرس روشن، wp-sitemap.xml (SEO 3.4.7)
+	$map_root = '1' !== (string) get_option( 'hodima_sitemap_status', '1' ) && function_exists( 'wp_sitemaps_get_server' ) && wp_sitemaps_get_server()->sitemaps_enabled() ? home_url( '/wp-sitemap.xml' ) : home_url( '/sitemap.xml' );
+	foreach ( (array) apply_filters( 'hodima_seo_advisor_sitemap_roots', [ $map_root ] ) as $root ) {
 		$maps[] = 'm:' . (string) $root;
 	}
 
@@ -1030,7 +1031,8 @@ function hodima_seo_advisor_crawler_recrawl( string $path ): bool {
 function hodima_seo_advisor_crawler_seed_url( string $item ): ?string {
 
 	if ( str_starts_with( $item, 'u:' ) ) { // مسیر ذخیره‌شده (دور سریع)
-		return strlen( $item ) > 2 ? hodima_seo_advisor_url( substr( $item, 2 ) ) : null;
+		// مسیر ذخیره‌شده رمزگشایی‌شده است (آدرس فارسی)؛ برای درخواست HTTP هر بخش دوباره کد می‌شود (SEO 3.4.7: مثل live_fetch)
+		return strlen( $item ) > 2 ? hodima_seo_advisor_url( implode( '/', array_map( 'rawurlencode', explode( '/', substr( $item, 2 ) ) ) ) ) : null;
 	}
 
 	$bits = explode( ':', $item );
@@ -1147,7 +1149,7 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	$links = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $link_t ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 	hodima_seo_advisor_crawl_map( true );
-	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $pages, 'links' => $links, 'files' => [], 'source' => 'crawler' ], false );
+	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $pages, 'links' => $links, 'source' => 'crawler' ], false );
 
 	if ( ! $quick ) { // دور سریع نقشه سایت را نخوانده: نقشه و ایرادهای نقشه دور کامل می‌ماند
 		if ( $state['sitemap'] ) {
@@ -1296,17 +1298,6 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 	return [ 'ran' => $ran, 'finished' => $finished ];
 }
 
-/** خزش تازه را در اولین پنجره شبانه درخواست می‌کند (اگر دوری در حال اجرا نیست). */
-function hodima_seo_advisor_crawler_request(): void {
-
-	$state = hodima_seo_advisor_crawler_state();
-
-	if ( 'running' !== $state['status'] ) {
-		$state['requested'] = true;
-		hodima_seo_advisor_crawler_save( $state );
-	}
-}
-
 /**
  * «خزش همین حالا»: دور تازه (یا ادامه دور در جریان) بی‌توجه به ساعت خزش و روشن بودن؛ مکث کندی سایت برداشته می‌شود
  * ولی همان سرعت آهسته می‌ماند. پیش‌رفتن با کرون (زنجیره ۱۰ ثانیه‌ای) و گام‌های JS صفحه پیشخوان.
@@ -1328,7 +1319,7 @@ function hodima_seo_advisor_crawler_start_now(): void {
 /**
  * وضعیت برای نمایش: off، waiting (منتظر پنجره یا موعد)، running، paused.
  *
- * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, requested: bool, pages: int, capped: bool, mode: string}
+ * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, pages: int, capped: bool, mode: string}
  */
 function hodima_seo_advisor_crawler_status(): array {
 
@@ -1354,7 +1345,6 @@ function hodima_seo_advisor_crawler_status(): array {
 		'seeding'     => count( $state['seed'] ),
 		'finished'    => $state['finished'],
 		'pause_until' => $state['pause_until'],
-		'requested'   => $state['requested'],
 		'pages'       => $state['pages'],
 		'capped'      => $state['capped'],
 		'mode'        => $state['mode'],

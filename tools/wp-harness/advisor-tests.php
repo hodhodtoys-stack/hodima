@@ -2589,7 +2589,7 @@ hodima_ad( 'نمایش صفحه بیشتر بیرون ۲۰ نتیجه اول ا�
 remove_filter( 'hodima_seo_advisor_ctr_table', $p3_table );
 
 delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
-hodima_ad( 'سقف کارها ۱۰۰۰ (ایرادهای فنی هر کدام یک کار)', HODIMA_SEO_ADVISOR_TASKS_MAX, 1000 );
+hodima_ad( 'سقف کارها ۳۰۰۰ (ایرادهای فنی هر کدام یک کار؛ SEO 3.4.7)', HODIMA_SEO_ADVISOR_TASKS_MAX, 3000 );
 
 // فرم ردیف: admin-post با ریدایرکت (در آزمون استثنا به‌جای exit)؛ پیام بالای صفحه فقط در پیشخوان لود می‌شود
 if ( ! function_exists( 'hodima_admin_flash' ) ) {
@@ -3017,10 +3017,7 @@ hodima_ad( 'ایرادهای موجود روی داده خزنده کار می�
 $cw_requested = [];
 $cw_again     = hodima_seo_advisor_crawler_tick();
 hodima_ad( 'بیرون از موعد (دور تازه تمام شده): نوبت بعدی هیچ درخواستی نمی‌زند', [ $cw_again['ran'], count( $cw_requested ) ], [ 0, 0 ] );
-hodima_seo_advisor_crawler_request();
-hodima_ad( 'درخواست دستی «خزش تازه» ثبت می‌شود', hodima_seo_advisor_crawler_status()['requested'], true );
 hodima_seo_advisor_crawler_start();
-hodima_ad( 'شروع دور بعد درخواست را برمی‌دارد', hodima_seo_advisor_crawler_state()['requested'], false );
 
 // سایت از دسترس خارج: پنج خطای پی‌درپی ← مکث نیم‌ساعته؛ مکث ← هیچ درخواستی
 $cw_s          = hodima_seo_advisor_crawler_state();
@@ -3169,7 +3166,6 @@ $dr_alt   = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_
 hodima_ad( 'alt کتابخانه پر: برچسب «alt کتابخانه پر است»، متن alt، «ویرایش صفحه» و نبودن «ویرایش در رسانه»', [ str_contains( $dr_alt, 'alt کتابخانه پر است' ), str_contains( $dr_alt, 'گیره مو عمده' ), str_contains( $dr_alt, 'post=' . $dr_pg ), str_contains( $dr_alt, 'ویرایش در رسانه' ) ], [ true, true, true, false ] );
 delete_post_meta( $dr_att, '_wp_attachment_image_alt' );
 hodima_ad( 'فهرست تصویر خالی (خزش قدیمی): جمله «با خزش بعدی» و پیوند «خزش همین حالا» (SEO 3.3.7)؛ ایراد بی‌جزئیات و ردیف غیرخزنده: هیچ', [ str_contains( $dr_empty, 'با خزش بعدی ساخته می‌شود' ), str_contains( $dr_empty, 'tab=crawl' ), $dr_out( [ 'src' => 'crawl', 'mark' => 'orphan' ], '/p/' ), $dr_out( [ 'src' => 'opp', 'mark' => 'img_alt', 'images' => [ $dr_url ] ], '/p/' ) ], [ true, true, '', '' ] );
-hodima_ad( 'دکمه «اجرا همین حالا»: کار دیرشده همیشه؛ خزنده داخلی در هر حالت؛ بقیه سالم نه', [ hodima_seo_advisor_cron_job_has_run_button( [ 'level' => 'ok', 'key' => 'crawler' ] ), hodima_seo_advisor_cron_job_has_run_button( [ 'level' => 'off', 'key' => 'crawler' ] ), hodima_seo_advisor_cron_job_has_run_button( [ 'level' => 'bad', 'key' => 'refresh' ] ), hodima_seo_advisor_cron_job_has_run_button( [ 'level' => 'ok', 'key' => 'refresh' ] ), hodima_seo_advisor_cron_job_has_run_button( [ 'level' => 'ok', 'key' => 'inspect' ] ) ], [ true, true, true, false, false ] );
 $dr_links = $dr_out( [ 'src' => 'crawl', 'mark' => 'link_broken', 'targets' => array_map( static fn( int $i ): array => [ 'path' => '/gone-' . $i . '/', 'note' => 'کد 404؛ متن لینک «x»' ], range( 1, 7 ) ) ], '/p/' );
 hodima_ad( 'فهرست لینک خراب: ۵ مورد با کپی، بسته، «و ۲ لینک دیگر»', [ substr_count( $dr_links, 'class="hodima-advisor__li"' ), str_contains( $dr_links, 'و 2 لینک دیگر' ), str_contains( $dr_links, '<details class="hodima-advisor__more">' ), str_contains( $dr_links, 'data-hdsa-copy-url="https://hodima.test/gone-1/"' ) ], [ 5, true, true, true ] );
 $dr_t = $dr_out( [ 'src' => 'crawl', 'mark' => 'title_short' ], $dr_path );
@@ -3211,18 +3207,17 @@ hodima_seo_advisor_crawl_map( true );
 
 $fz_now = time();
 $fz_set = [ 'interval' => 7 ];
-$fz_st  = static fn( array $over ): array => $over + [ 'requested' => false, 'finished' => $fz_now - 3 * HOUR_IN_SECONDS, 'full_at' => $fz_now - 2 * DAY_IN_SECONDS ];
+$fz_st  = static fn( array $over ): array => $over + [ 'finished' => $fz_now - 3 * HOUR_IN_SECONDS, 'full_at' => $fz_now - 2 * DAY_IN_SECONDS ];
 hodima_ad(
-	'دور سررسید: کامل (درخواست، هرگز، فاصله دورها)، سریع (بیش از یک روز از آخرین دور)، هیچ',
+	'دور سررسید: کامل (هرگز، فاصله دورها)، سریع (بیش از یک روز از آخرین دور)، هیچ',
 	[
-		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'requested' => true ] ), $fz_set ),
 		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'finished' => 0 ] ), $fz_set ),
 		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'full_at' => $fz_now - 8 * DAY_IN_SECONDS, 'finished' => $fz_now - 8 * DAY_IN_SECONDS ] ), $fz_set ),
 		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'finished' => $fz_now - 26 * HOUR_IN_SECONDS ] ), $fz_set ),
 		hodima_seo_advisor_crawler_due_mode( $fz_st( [] ), $fz_set ),
 		hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'finished' => $fz_now - 26 * HOUR_IN_SECONDS ] ), [ 'interval' => 1 ] ),
 	],
-	[ 'full', 'full', 'full', 'quick', '', 'full' ]
+	[ 'full', 'full', 'quick', '', 'full' ]
 );
 add_filter( 'hodima_seo_advisor_crawler_quick', '__return_false' );
 hodima_ad( 'دور سریع با فیلتر خاموش نمی‌شود (فقط دور کامل می‌ماند)', hodima_seo_advisor_crawler_due_mode( $fz_st( [ 'finished' => $fz_now - 26 * HOUR_IN_SECONDS ] ), $fz_set ), '' );
@@ -3849,6 +3844,31 @@ $fs_card = $cap( static fn() => hodima_seo_advisor_render_job_crawler() );
 hodima_ad( 'کارت خزنده (SEO 3.3.9): «اجرا همین حالا» فرم جدا بیرون از جمع‌شونده؛ تنظیمات داخل details بسته با بازگشت به همین تب', [ 1 === preg_match( '#</details>#', $fs_card ), str_contains( $fs_card, 'class="hodima-advisor__cron-run"' ), str_contains( $fs_card, '<details class="hodima-advisor__job-set">' ), strpos( $fs_card, 'hodima-advisor__cron-run' ) < strpos( $fs_card, 'hodima-advisor__job-set' ), str_contains( $fs_card, 'name="tab" value="jobs"' ) ], [ true, true, true, true, true ] );
 hodima_ad( 'فرم زمان‌بندی همان نام فیلدها را دارد (روشن‌بودن با کلید، حالت ساعت، از، تا، فاصله)', [ str_contains( $fs_card, 'class="hds-switch" name="enabled"' ), str_contains( $fs_card, 'name="always" value="0"' ), str_contains( $fs_card, 'name="always" value="1"' ), str_contains( $fs_card, 'name="start"' ), str_contains( $fs_card, 'name="end"' ), str_contains( $fs_card, 'name="interval"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_settings"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_now"' ) ], [ true, true, true, true, true, true, true, true ] );
 hodima_ad( 'کارت خزش دیگر تب ندارد', str_contains( $fs_card, 'hds-tabset' ), false );
+// پاکسازی (SEO 3.4.7)
+hodima_ad( 'seed دور سریع: مسیر فارسی کدگذاری می‌شود (مثل live_fetch)', hodima_seo_advisor_crawler_seed_url( 'u:/گل-سر/' ), hodima_seo_advisor_url( '/' . rawurlencode( 'گل-سر' ) . '/' ) );
+$pc_host = 'https://' . wp_parse_url( home_url(), PHP_URL_HOST ); // پیش از فیلتر: داخل فیلتر home_url() بازگشتی می‌شد
+add_filter( 'pre_option_home', $pc_home = static fn(): string => $pc_host . '/blog' );
+hodima_ad( 'نصب زیرپوشه‌ای: پیشوند /blog دوبار نمی‌آید', hodima_seo_advisor_crawler_normalize( $pc_host . '/blog/post/' ), $pc_host . '/blog/post/' );
+remove_filter( 'pre_option_home', $pc_home );
+$pc_p = hodima_seo_advisor_crawler_parse( '<html><head><title>t</title><meta name="googlebot" content="noindex, nosnippet"></head><body><main>x</main></body></html>', home_url( '/g/' ) );
+hodima_ad( 'متای googlebot هم noindex و nosnippet را می‌رساند', [ str_contains( $pc_p['robots'], 'noindex' ), hodima_seo_advisor_robots_no_snippet( $pc_p['robots'] ) ], [ true, true ] );
+$pc_t = hodima_seo_advisor_table( 'crawl_pages' );
+$pc_long = str_repeat( 'ا', HODIMA_SEO_ADVISOR_KEY_LENGTH ); // عنوان بریده‌شده در ستون
+foreach ( [ '/dt-a/' => 200, '/dt-b/' => 200, '/dt-c/' => 260 ] as $pc_path => $pc_len ) {
+	$GLOBALS['wpdb']->delete( $pc_t, [ 'path' => $pc_path ] );
+	$GLOBALS['wpdb']->insert( $pc_t, [ 'path' => $pc_path, 'status' => 200, 'indexable' => 1, 'title' => $pc_long, 'title_len' => $pc_len, 'meta_len' => 100, 'h1' => 'تیتر ' . $pc_path, 'words' => 300, 'h1_count' => 1, 'canonical' => $pc_path, 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
+}
+hodima_seo_advisor_crawl_map( true );
+$pc_dup = [];
+foreach ( hodima_seo_advisor_crawl_issues() as $pc_row ) {
+	if ( str_starts_with( $pc_row['path'], '/dt-' ) ) {
+		$pc_dup[ $pc_row['path'] ] = in_array( 'dup_title', array_column( $pc_row['issues'], 'code' ), true );
+	}
+}
+hodima_ad( 'عنوان تکراری: بریده‌شده با طول واقعی یکسان تکراری است؛ همان ابتدا با طول واقعی متفاوت نه', [ $pc_dup['/dt-a/'] ?? false, $pc_dup['/dt-b/'] ?? false, $pc_dup['/dt-c/'] ?? false ], [ true, true, false ] );
+$GLOBALS['wpdb']->query( "DELETE FROM {$pc_t} WHERE path LIKE '/dt-%'" );
+hodima_seo_advisor_crawl_map( true );
+
 // دقت خزنده (SEO 3.4.5): تلاش دوباره بعد از خطا، خواندن دوباره پاسخ کند، «محتوای کم» برای صفحه بدون نمایش گوگل
 $fc_n      = 0;
 $fc_filter = static function ( mixed $pre, array $args, string $url ) use ( &$fc_n ): mixed {

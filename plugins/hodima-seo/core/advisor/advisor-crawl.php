@@ -17,9 +17,6 @@ const HODIMA_SEO_ADVISOR_CRAWL_OPTION = 'hodima_advisor_crawl';
 /** عمق ذخیره‌شده برای صفحه‌ای که از صفحه اصلی با هیچ مسیر لینکی نمی‌رسیم (SEO 3.3.5؛ ستون عمق بدون علامت است، پس -1 نشد). */
 const HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE = 65535;
 
-/** خزش قدیمی‌تر از این روز «قدیمی» نشان می‌گیرد. */
-const HODIMA_SEO_ADVISOR_CRAWL_STALE_DAYS = 30;
-
 /** صفحه با این تعداد لینک متنی (و این تعداد با عبارت کلمه) «لینک داخلی کافی» دارد؛ دستور تمرکز را روی عنوان و متن می‌گذارد. */
 const HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED      = 15;
 const HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED_TERM = 5;
@@ -357,67 +354,6 @@ function hodima_seo_advisor_competition_links_note( string $term, array $pages )
 	return sprintf( ' لینک‌های داخلی: برنده %1$s لینک با متن «%2$s» دارد در برابر %3$s لینک رقیب؛ همین لینک‌دهی را حفظ کنید.', $n( $winner['term_links'] ), $term, $n( $rival['term_links'] ) );
 }
 
-/* ── ذخیره ── */
-
-/**
- * جایگزینی کامل جدول‌های خزش در یک تراکنش؛ خطا = داده قبلی دست‌نخورده.
- *
- * @param array<string, array<string, mixed>> $pages
- * @param list<list<scalar>>                  $links
- * @return array{pages: int, links: int}|WP_Error
- */
-function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_Error {
-
-	global $wpdb;
-
-	hodima_seo_advisor_ensure_tables();
-	hodima_seo_advisor_crawl_map( true );
-
-	$page_table = hodima_seo_advisor_table( 'crawl_pages' );
-	$link_table = hodima_seo_advisor_table( 'crawl_links' );
-
-	$page_rows = [];
-	foreach ( $pages as $p ) {
-		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], $p['h1'], $p['h2'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'], (int) ( $p['no_snippet'] ?? 0 ) ];
-	}
-
-	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_table, $link_table, $page_rows, $links ): array|WP_Error {
-
-		$fail = static fn( string $what ): WP_Error => new WP_Error( 'hodima_crawl_store', sprintf( 'ذخیره %1$s ناموفق بود (%2$s)؛ داده قبلی دست‌نخورده ماند.', $what, $wpdb->last_error ) );
-
-		foreach ( [ $page_table, $link_table ] as $table ) {
-			if ( false === $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $table ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				return $fail( 'داده' );
-			}
-		}
-
-		$insert = [
-			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet', '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d)', $page_rows, 200, 'صفحه‌ها' ],
-			[ $link_table, 'source_path, dest_path, link_position, anchor, is_follow', '(%s,%s,%s,%s,%d)', $links, 400, 'لینک‌ها' ],
-		];
-
-		foreach ( $insert as [ $table, $columns, $row_format, $rows, $size, $what ] ) {
-			$skipped = 0;
-			foreach ( array_chunk( $rows, $size ) as $chunk ) {
-				if ( false !== hodima_seo_advisor_insert( $table, $columns, $row_format, $chunk ) ) {
-					continue;
-				}
-				// دسته افتاد (معمولا ردیف تکراریِ از دید مقایسه پایگاه داده): تک‌تک؛ فقط ردیف مشکل‌دار رد می‌شود
-				foreach ( $chunk as $one ) {
-					if ( false === hodima_seo_advisor_insert( $table, $columns, $row_format, [ $one ] ) ) {
-						++$skipped;
-					}
-				}
-			}
-			if ( $skipped > max( 5, (int) ( count( $rows ) * 0.05 ) ) ) {
-				return $fail( $what );
-			}
-		}
-
-		return [ 'pages' => count( $page_rows ), 'links' => count( $links ) ];
-	} );
-}
-
 /* ── وضعیت ── */
 
 /**
@@ -551,9 +487,12 @@ function hodima_seo_advisor_crawl_issues(): array {
 	$paged  = static fn( array $r ): bool => 1 === preg_match( '#/page/\d+/?$#', (string) $r['path'] );
 	$titles = [];
 	$h1s    = [];
+	// عنوان در ۱۹۱ نویسه بریده ذخیره می‌شود: برای عنوان بریده‌شده طول واقعی هم در کلید می‌آید تا دو عنوان بلند با ابتدای یکسان «تکراری» نشوند (SEO 3.4.7)
+	$title_key = static fn( string $title, int $length ): string => mb_strtolower( $title ) . ( mb_strlen( $title ) >= HODIMA_SEO_ADVISOR_KEY_LENGTH ? '|' . $length : '' );
 	foreach ( $rows as $r ) {
 		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] && ! $paged( $r ) ) {
-			$titles[ mb_strtolower( (string) $r['title'] ) ] = ( $titles[ mb_strtolower( (string) $r['title'] ) ] ?? 0 ) + 1;
+			$tk            = $title_key( (string) $r['title'], (int) $r['title_len'] );
+			$titles[ $tk ] = ( $titles[ $tk ] ?? 0 ) + 1;
 			$h1s[ mb_strtolower( (string) $r['h1'] ) ]       = ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) + 1;
 		}
 	}
@@ -614,8 +553,8 @@ function hodima_seo_advisor_crawl_issues(): array {
 			if ( '' === (string) $r['h1'] ) {
 				$add( 'no_h1' );
 			}
-			if ( '' !== $title && ! $paged( $r ) && ( $titles[ mb_strtolower( $title ) ] ?? 0 ) > 1 ) {
-				$add( 'dup_title', sprintf( 'در %s صفحه', number_format_i18n( $titles[ mb_strtolower( $title ) ] ) ) );
+			if ( '' !== $title && ! $paged( $r ) && ( $titles[ $title_key( $title, $tlen ) ] ?? 0 ) > 1 ) {
+				$add( 'dup_title', sprintf( 'در %s صفحه', number_format_i18n( $titles[ $title_key( $title, $tlen ) ] ) ) );
 			}
 			if ( '' !== (string) $r['h1'] && ! $paged( $r ) && ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) > 1 ) {
 				$add( 'dup_h1', sprintf( 'در %s صفحه', number_format_i18n( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ) ) );

@@ -398,3 +398,63 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 	return $stored;
 }
 
+/* ── ذخیره (SEO 3.4.7: از خود افزونه به اینجا آمد؛ هیچ کد تولیدی صدایش نمی‌زد و فقط آزمون‌ها و واردکننده CSV بالا استفاده می‌کنند) ── */
+
+/**
+ * جایگزینی کامل جدول‌های خزش در یک تراکنش؛ خطا = داده قبلی دست‌نخورده.
+ *
+ * @param array<string, array<string, mixed>> $pages
+ * @param list<list<scalar>>                  $links
+ * @return array{pages: int, links: int}|WP_Error
+ */
+function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_Error {
+
+	global $wpdb;
+
+	hodima_seo_advisor_ensure_tables();
+	hodima_seo_advisor_crawl_map( true );
+
+	$page_table = hodima_seo_advisor_table( 'crawl_pages' );
+	$link_table = hodima_seo_advisor_table( 'crawl_links' );
+
+	$page_rows = [];
+	foreach ( $pages as $p ) {
+		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], $p['h1'], $p['h2'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'], (int) ( $p['no_snippet'] ?? 0 ) ];
+	}
+
+	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_table, $link_table, $page_rows, $links ): array|WP_Error {
+
+		$fail = static fn( string $what ): WP_Error => new WP_Error( 'hodima_crawl_store', sprintf( 'ذخیره %1$s ناموفق بود (%2$s)؛ داده قبلی دست‌نخورده ماند.', $what, $wpdb->last_error ) );
+
+		foreach ( [ $page_table, $link_table ] as $table ) {
+			if ( false === $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $table ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				return $fail( 'داده' );
+			}
+		}
+
+		$insert = [
+			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet', '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d)', $page_rows, 200, 'صفحه‌ها' ],
+			[ $link_table, 'source_path, dest_path, link_position, anchor, is_follow', '(%s,%s,%s,%s,%d)', $links, 400, 'لینک‌ها' ],
+		];
+
+		foreach ( $insert as [ $table, $columns, $row_format, $rows, $size, $what ] ) {
+			$skipped = 0;
+			foreach ( array_chunk( $rows, $size ) as $chunk ) {
+				if ( false !== hodima_seo_advisor_insert( $table, $columns, $row_format, $chunk ) ) {
+					continue;
+				}
+				// دسته افتاد (معمولا ردیف تکراریِ از دید مقایسه پایگاه داده): تک‌تک؛ فقط ردیف مشکل‌دار رد می‌شود
+				foreach ( $chunk as $one ) {
+					if ( false === hodima_seo_advisor_insert( $table, $columns, $row_format, [ $one ] ) ) {
+						++$skipped;
+					}
+				}
+			}
+			if ( $skipped > max( 5, (int) ( count( $rows ) * 0.05 ) ) ) {
+				return $fail( $what );
+			}
+		}
+
+		return [ 'pages' => count( $page_rows ), 'links' => count( $links ) ];
+	} );
+}

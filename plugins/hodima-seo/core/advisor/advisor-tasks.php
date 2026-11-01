@@ -20,7 +20,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 const HODIMA_SEO_ADVISOR_TASKS_OPTION = 'hodima_advisor_tasks';
-const HODIMA_SEO_ADVISOR_TASKS_MAX    = 1000; // تا SEO 3.0.1: ۵۰۰ (فقط پیشنهادها)؛ حالا ایرادهای فنی هر ایراد یک کار است
+const HODIMA_SEO_ADVISOR_TASKS_MAX    = 3000; // تا SEO 3.0.1: ۵۰۰؛ تا ۳.۴.۶: ۱٬۰۰۰ (ایراد فنی ۵٬۰۰۰ صفحه × چند ایراد از آن بیشتر می‌شد و قدیمی‌ترین «انجام دادم»ها بی‌صدا پاک می‌شدند)
 
 add_action( 'admin_post_hodima_advisor_task', 'hodima_seo_advisor_handle_task' );
 
