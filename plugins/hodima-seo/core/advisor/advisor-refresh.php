@@ -48,7 +48,7 @@ function hodima_seo_advisor_ranges( int $days ): array {
 /** گزینه صف نوبت‌های باقی‌مانده، رویداد ادامه، و بودجه زمانی هر درخواست (ثانیه). */
 const HODIMA_SEO_ADVISOR_PIPELINE_OPTION = 'hodima_advisor_pipeline';
 const HODIMA_SEO_ADVISOR_STAGE_CRON      = 'hodima_advisor_stage';
-const HODIMA_SEO_ADVISOR_STAGE_BUDGET    = 90;
+const HODIMA_SEO_ADVISOR_STAGE_BUDGET    = 40; // کمتر از قفل ۶۰ ثانیه‌ای WP-Cron؛ تا ۳.۴.۳ ۹۰ بود و کرون‌های دیگر سایت (ووکامرس، زمان‌بندی) را هم‌پوشان یا منتظر می‌کرد
 
 /**
  * بودجه نوبت‌ها وقتی مدیر منتظر صفحه است (دکمه «گرفتن داده تازه»، ذخیره تنظیم، خواندن فایل خزش)؛ باقی‌مانده در پس‌زمینه.

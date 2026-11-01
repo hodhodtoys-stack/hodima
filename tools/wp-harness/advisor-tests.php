@@ -3825,6 +3825,16 @@ $fs_card = $cap( static fn() => hodima_seo_advisor_render_job_crawler() );
 hodima_ad( 'کارت خزنده (SEO 3.3.9): «اجرا همین حالا» فرم جدا بیرون از جمع‌شونده؛ تنظیمات داخل details بسته با بازگشت به همین تب', [ 1 === preg_match( '#</details>#', $fs_card ), str_contains( $fs_card, 'class="hodima-advisor__cron-run"' ), str_contains( $fs_card, '<details class="hodima-advisor__job-set">' ), strpos( $fs_card, 'hodima-advisor__cron-run' ) < strpos( $fs_card, 'hodima-advisor__job-set' ), str_contains( $fs_card, 'name="tab" value="jobs"' ) ], [ true, true, true, true, true ] );
 hodima_ad( 'فرم زمان‌بندی همان نام فیلدها را دارد (روشن‌بودن با کلید، حالت ساعت، از، تا، فاصله)', [ str_contains( $fs_card, 'class="hds-switch" name="enabled"' ), str_contains( $fs_card, 'name="always" value="0"' ), str_contains( $fs_card, 'name="always" value="1"' ), str_contains( $fs_card, 'name="start"' ), str_contains( $fs_card, 'name="end"' ), str_contains( $fs_card, 'name="interval"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_settings"' ), str_contains( $fs_card, 'value="hodima_advisor_crawler_now"' ) ], [ true, true, true, true, true, true, true, true ] );
 hodima_ad( 'کارت خزش دیگر تب ندارد', str_contains( $fs_card, 'hds-tabset' ), false );
+// گام ایجکس خزنده (SEO 3.4.4): فقط «خزش همین حالا» یا کرون ایستاده نوبت می‌زند
+$cs_now  = time();
+$cs_keep = get_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'always' => true ], false );
+hodima_ad( 'گام ایجکس: دستی همیشه نوبت می‌زند', hodima_seo_advisor_crawler_step_drives( [ 'manual' => true, 'tick' => $cs_now, 'started' => $cs_now ], $cs_now ), true );
+hodima_ad( 'گام ایجکس: خودکار با نوبت تازه کرون نوبت نمی‌زند', hodima_seo_advisor_crawler_step_drives( [ 'manual' => false, 'tick' => $cs_now - 120, 'started' => $cs_now - 3600 ], $cs_now ), false );
+hodima_ad( 'گام ایجکس: خودکار با کرون ۱۱ دقیقه ساکت نوبت می‌زند', hodima_seo_advisor_crawler_step_drives( [ 'manual' => false, 'tick' => $cs_now - 660, 'started' => $cs_now - 3600 ], $cs_now ), true );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'always' => false, 'start' => 2, 'end' => 3 ], false );
+hodima_ad( 'گام ایجکس: بیرون از پنجره خزش هرگز (غیر دستی)', hodima_seo_advisor_crawler_step_drives( [ 'manual' => false, 'tick' => 0, 'started' => 0 ], strtotime( '2026-01-01 12:00:00 UTC' ) ), false );
+false === $cs_keep ? delete_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS ) : update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, $cs_keep, false );
 // کش درخواست (SEO 3.4.3): کارها و ایرادهای خزش با نوشتن دوباره ساخته می‌شوند
 $pf_old = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, [] );
 update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, [], false );

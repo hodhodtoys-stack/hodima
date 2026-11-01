@@ -29,7 +29,7 @@ foreach ( [ 'pages', 'queries', 'crawl_pages', 'crawl_links' ] as $name ) {
 	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( $name ) ) );
 }
 
-$pages_n = 3000;
+$pages_n = (int) ( getenv( 'PERF_PAGES' ) ?: 3000 );
 $rows    = [];
 $links   = [];
 for ( $i = 0; $i < $pages_n; $i++ ) {
@@ -37,7 +37,7 @@ for ( $i = 0; $i < $pages_n; $i++ ) {
 	$status = 0 === $i % 97 ? 404 : 200;
 	// هر سوم صفحه ایراد دارد: عنوان کوتاه، بدون متا، تصویر بدون alt
 	$rows[] = [ $path, $status, 200 === $status ? 1 : 0, '', 0 === $i % 3 ? 'کوتاه' : "عنوان نمونه شماره {$i} برای آزمون سرعت دستار", 0 === $i % 3 ? 5 : 45, 0 === $i % 2 ? 0 : 120, "h1 {$i}", 'h2', 300, 1 + $i % 5, 1 + $i % 3, $i % 7, 0, '', 0, 150, 1, 0 === $i % 5 ? 2 : 0, 0, $path, 0 === $i % 5 ? 'https://hodima.test/a.jpg' : '' ];
-	for ( $j = 0; $j < 13; $j++ ) {
+	for ( $j = 0; $j < (int) ( getenv( 'PERF_LINKS' ) ?: 13 ); $j++ ) {
 		$links[] = [ $path, '/p' . ( ( $i * 7 + $j * 13 ) % $pages_n ) . '/', 0 === $j % 4 ? 'content' : 'navigation', "متن {$j}", 1 ];
 	}
 }
@@ -122,4 +122,33 @@ if ( getenv( 'PERF_PARTS' ) ) {
 	$measure( 'health_dead_urls()', static fn() => hodima_seo_advisor_health_dead_urls() );
 	$measure( 'health_unseen()', static fn() => hodima_seo_advisor_health_unseen() );
 	$measure( 'pages(has_advice, 500)', static fn() => hodima_seo_advisor_pages( [ 'has_advice' => true, 'limit' => 500 ] ) );
+}
+
+if ( getenv( 'PERF_CRAWLER' ) ) {
+	// وضعیت خزنده در سقف: ۵٬۰۰۰ مسیر دیده‌شده + ۵٬۰۰۰ آدرس در صف + ۳٬۰۰۰ seed
+	$seen  = [];
+	$queue = [];
+	for ( $i = 0; $i < 5000; $i++ ) {
+		$seen[ "/p{$i}/" ] = 1;
+		$queue[]           = home_url( "/p{$i}/" );
+	}
+	$state = hodima_seo_advisor_crawler_state();
+	$state = array_merge( $state, [ 'status' => 'running', 'seen' => $seen, 'queue' => $queue, 'seed' => array_map( static fn( int $i ): string => "p:{$i}", range( 1, 3000 ) ) ] );
+	$measure( 'crawler_save() ×۱۰ (وضعیت سقف)', static function () use ( $state ): void {
+		for ( $i = 0; $i < 10; $i++ ) {
+			$state['done'] = $i;
+			hodima_seo_advisor_crawler_save( $state );
+		}
+	} );
+	$measure( 'crawler_state() ×۱۰۰', static function (): void {
+		for ( $i = 0; $i < 100; $i++ ) {
+			hodima_seo_advisor_crawler_state();
+		}
+	} );
+	printf( "اندازه گزینه وضعیت: %d KB\n", strlen( serialize( get_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ) ) ) / 1024 );
+	$state = hodima_seo_advisor_crawler_state();
+	$state = array_merge( $state, [ 'seen' => $seen, 'queue' => [], 'seed' => [], 'mode' => 'full', 'sitemap' => [] ] );
+	$measure( 'crawler_finalize() کامل', static function () use ( &$state ): void {
+		hodima_seo_advisor_crawler_finalize( $state );
+	} );
 }

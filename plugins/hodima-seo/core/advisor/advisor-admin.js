@@ -156,6 +156,7 @@
 	const pill = box.querySelector('[data-hdsa-crawl-pill]');
 	const bar = box.querySelector('[data-hdsa-crawl-bar]'); // نوار پیشرفت کارت خزنده (SEO 3.3.9)
 	let failures = 0;
+	let wasRunning = false;
 
 	const step = async () => {
 		const body = new URLSearchParams({ action: 'hodima_advisor_crawler_step', _ajax_nonce: box.dataset.hdsaCrawlLive || '' });
@@ -175,8 +176,12 @@
 				location.reload(); // دور تمام شد: نمره و ایرادها تازه
 				return;
 			}
-			if (!json.data.running) return; // مکث یا بیرون از ساعت: صفحه بیهوده نمی‌کوبد
-			setTimeout(step, 1500);
+			if (!json.data.running) {
+				if (wasRunning) location.reload(); // کرون دور را تمام کرد (یا مکث شد): وضعیت و نمره تازه (SEO 3.4.4)
+				return; // مکث یا بیرون از ساعت: صفحه بیهوده نمی‌کوبد
+			}
+			wasRunning = true;
+			setTimeout(step, Number(json.data.delay) || 1500); // کرون پیش می‌برد: پرسش وضعیت کم‌تکرار (SEO 3.4.4)
 		} catch {
 			if (++failures < 3) setTimeout(step, 8000); // خطای گذرا: چند بار دوباره
 		}

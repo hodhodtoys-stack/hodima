@@ -96,6 +96,18 @@ function hodima_seo_advisor_crawler_status_view(): array {
 }
 
 /**
+ * این گام ایجکس خودش نوبت خزش بزند؟ «خزش همین حالا» بله؛ دور خودکار فقط وقتی داخل پنجره است و کرون ۱۰ دقیقه نوبتی نزده (SEO 3.4.4).
+ *
+ * @param array<string, mixed> $state hodima_seo_advisor_crawler_state()
+ */
+function hodima_seo_advisor_crawler_step_drives( array $state, ?int $now = null ): bool {
+
+	$now = $now ?? time();
+
+	return (bool) $state['manual'] || ( hodima_seo_advisor_crawler_in_window( $now ) && $now - max( (int) $state['tick'], (int) $state['started'] ) > 10 * MINUTE_IN_SECONDS );
+}
+
+/**
  * یک گام خزش از پیشخوان (JS صفحه پشت‌سرهم صدا می‌زند تا خزش همین حالا حتی با کرون کند هم پیش برود). فقط وقتی دوری در جریان است.
  */
 function hodima_seo_advisor_ajax_crawler_step(): void {
@@ -109,13 +121,17 @@ function hodima_seo_advisor_ajax_crawler_step(): void {
 	$state    = hodima_seo_advisor_crawler_state();
 	$finished = false;
 
-	if ( 'running' === $state['status'] && ( $state['manual'] || hodima_seo_advisor_crawler_in_window() ) ) {
+	// SEO 3.4.4: دور خودکار را کرون پیش می‌برد؛ هر تب باز پیشخوان هم یک نوبت ۲۰ ثانیه‌ای می‌زد و یک PHP worker را پشت‌سرهم می‌گرفت.
+	// حالا نوبت فقط برای «خزش همین حالا» یا وقتی کرون ۱۰ دقیقه است نوبتی نزده می‌آید؛ وگرنه فقط وضعیت خوانده می‌شود.
+	$drive = hodima_seo_advisor_crawler_step_drives( $state );
+
+	if ( 'running' === $state['status'] && $drive ) {
 		$finished = hodima_seo_advisor_crawler_tick( true )['finished'];
 	}
 
 	[ $level, $label, $info, $running ] = hodima_seo_advisor_crawler_status_view();
 
-	wp_send_json_success( [ 'level' => $level, 'label' => $label, 'text' => $info, 'running' => $running, 'finished' => $finished, 'percent' => hodima_seo_advisor_crawler_percent( hodima_seo_advisor_crawler_status() ) ] );
+	wp_send_json_success( [ 'level' => $level, 'label' => $label, 'text' => $info, 'running' => $running, 'finished' => $finished, 'delay' => $drive ? 1500 : 8000, 'percent' => hodima_seo_advisor_crawler_percent( hodima_seo_advisor_crawler_status() ) ] );
 }
 
 /**
