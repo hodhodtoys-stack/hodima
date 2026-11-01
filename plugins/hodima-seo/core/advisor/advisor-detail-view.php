@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 function hodima_seo_advisor_detail_copy( string $text, string $label ): string {
 
 	return sprintf(
-		'<button type="button" class="hodima-advisor-url__copy" data-hdsa-copy="%1$s" data-hdsa-said="متن کپی شد" aria-label="%2$s"><span class="dashicons dashicons-admin-page" aria-hidden="true"></span></button>',
+		'<button type="button" class="hodima-advisor-url__copy" data-hdsa-copy-text="%1$s" data-hdsa-said="متن کپی شد" aria-label="%2$s"><span class="dashicons dashicons-admin-page" aria-hidden="true"></span></button>',
 		esc_attr( $text ),
 		esc_attr( $label )
 	);

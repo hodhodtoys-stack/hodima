@@ -22,11 +22,11 @@
 	};
 
 	document.addEventListener('click', async (event) => {
-		const button = event.target instanceof Element ? event.target.closest('[data-hdsa-copy-url],[data-hdsa-copy]') : null;
+		const button = event.target instanceof Element ? event.target.closest('[data-hdsa-copy-url],[data-hdsa-copy-text]') : null;
 		if (!button) return;
 
-		// data-hdsa-copy-url = آدرس؛ data-hdsa-copy = هر متن (پیش‌نویس عنوان/متا، آدرس تصویر؛ SEO 3.3.6)
-		const url = button.dataset.hdsaCopyUrl || button.dataset.hdsaCopy || '';
+		// data-hdsa-copy-url = آدرس؛ data-hdsa-copy-text = هر متن (پیش‌نویس عنوان/متا، آدرس تصویر؛ SEO 3.3.6). نام data-hdsa-copy جای دیگری است (advisor-admin.js: شناسه عنصر) و نباید اینجا هم بخورد
+		const url = button.dataset.hdsaCopyUrl || button.dataset.hdsaCopyText || '';
 		const said = button.dataset.hdsaSaid || 'آدرس کپی شد';
 		const label = button.getAttribute('aria-label') || '';
 		const icon = button.querySelector('.dashicons');

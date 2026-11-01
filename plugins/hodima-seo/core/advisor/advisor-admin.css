@@ -548,7 +548,8 @@
 		inline-size: 100%;
 		min-block-size: 2.75rem;
 	}
-	}
+	
+}
 
 .hodima-advisor .hodima-advisor__groups {
 	display: grid;
@@ -886,6 +887,7 @@
 		gap: 0.25rem 0.5rem;
 		align-items: center;
 	}
+
 }
 
 .hodima-advisor .hodima-advisor__task-state small {
@@ -946,6 +948,7 @@
 	.hodima-advisor .hodima-advisor__timeline {
 		grid-template-columns: minmax(0, 1fr);
 	}
+
 }
 
 .hodima-advisor .hodima-advisor__task-effect {
@@ -1132,12 +1135,14 @@
 	.hodima-advisor .hodima-advisor__rival-share {
 		grid-column: 1 / -1;
 	}
+
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.hodima-advisor * {
 		transition: none;
 	}
+
 }
 
 /* سلامت خزش: فایل‌ها، مسیر پوشه و جدول ایرادها (طرح تأییدشده ۴ آبان ۱۴۰۵) */
@@ -1146,37 +1151,6 @@
 	grid-template-columns: minmax(0, 1fr) auto;
 	gap: 1rem;
 	align-items: center;
-}
-
-.hodima-advisor .hodima-advisor__files {
-	display: grid;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.hodima-advisor .hodima-advisor__file {
-	display: grid;
-	grid-template-columns: auto minmax(0, 1fr) auto;
-	gap: 0.625rem;
-	align-items: center;
-	margin: 0;
-	padding-block: 0.5rem;
-	border-block-start: 1px solid var(--hd-border);
-}
-
-.hodima-advisor .hodima-advisor__file:first-child {
-	border-block-start: 0;
-}
-
-.hodima-advisor .hodima-advisor__file-body {
-	display: grid;
-	min-inline-size: 0;
-}
-
-.hodima-advisor .hodima-advisor__file-body small {
-	color: var(--hd-muted);
-	overflow-wrap: anywhere;
 }
 
 .hodima-advisor .hodima-advisor__dot {
@@ -1269,11 +1243,6 @@
 	margin-block-end: 0.375rem;
 }
 
-.hodima-advisor .hodima-advisor__file-body code {
-	justify-self: start;
-	max-inline-size: 100%;
-}
-
 @media (max-width: 782px) {
 	.hodima-advisor .hodima-advisor__crawl-files {
 		grid-template-columns: minmax(0, 1fr);
@@ -1332,6 +1301,7 @@
 		flex: 1 1 100%;
 		min-inline-size: 0;
 	}
+
 }
 
 /* لینک‌های این کلمه (زیر هر گروه رقابت؛ طرح تأییدشده ۴ آبان ۱۴۰۵، advisor-links.php) */
@@ -1417,6 +1387,7 @@
 	.hodima-advisor .hodima-advisor__lk-table.is-links td:nth-child(6) {
 		min-inline-size: 12rem;
 	}
+
 }
 
 .hodima-advisor .hodima-advisor__lk-table .is-num {
@@ -1590,6 +1561,7 @@
 		color: var(--hd-muted);
 		font-size: 0.6875rem;
 	}
+
 }
 
 /* ── «انجام شد / رد شد» ردیف تب‌ها (SEO 3.0.2؛ طرح تأییدشده ۶ آبان ۱۴۰۵) ── */
@@ -1797,12 +1769,14 @@
 	.hodima-advisor .hodima-advisor__mark-item {
 		min-block-size: 2.75rem;
 	}
+
 }
 
 @media (prefers-reduced-motion: no-preference) {
 	.hodima-advisor .hodima-advisor__mark-item {
 		transition: background-color 0.15s ease;
 	}
+
 }
 
 /* ── ردیف فشرده تب «پیشنهادها» (SEO 3.1.1؛ طرح تأییدشده کاربر ۸ آبان ۱۴۰۵) ── */
@@ -1984,6 +1958,7 @@
 	.hodima-advisor .hodima-advisor__more-first {
 		white-space: normal;
 	}
+
 }
 
 /* آمار جستجو (3.1.3): دو کارت هم‌وزن کنار هم، در عرض کم زیر هم */
@@ -2028,20 +2003,6 @@
 
 .hodima-advisor .hodima-advisor__subhead--ok {
 	color: var(--hd-ok, #1f7a4d);
-}
-
-/* خزنده شبانه (3.1.4): جمع‌شونده تنظیم زمان */
-.hodima-advisor .hodima-advisor__crawler-more {
-	margin-block-start: 0.75rem;
-}
-
-.hodima-advisor .hodima-advisor__crawler-more > summary {
-	min-block-size: 2.5rem;
-	display: flex;
-	align-items: center;
-	color: var(--hd-primary);
-	font-weight: 700;
-	cursor: pointer;
 }
 
 .hodima-advisor .hodima-advisor__crawler-form {
@@ -2320,6 +2281,7 @@
 	.hodima-advisor .hodima-advisor__sc-todo li a {
 		grid-column: 2;
 	}
+
 }
 
 /* خزش خودکار (3.1.7): تب‌ها و انتخاب «همه ساعت‌ها» */
@@ -2358,97 +2320,11 @@
 	background: var(--hd-error);
 }
 
-.hodima-advisor .hodima-advisor__cron-jobs {
-	container-type: inline-size;
-	margin: 0;
-	padding: 0;
-	border: 1px solid var(--hd-border);
-	border-radius: var(--hd-radius);
-	list-style: none;
-	overflow: hidden;
-}
-
-.hodima-advisor .hodima-advisor__cron-more .hodima-advisor__cron-jobs {
-	border: 0;
-	border-radius: 0;
-}
-
-.hodima-advisor .hodima-advisor__cron-job {
-	display: grid;
-	grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto;
-	align-items: center;
-	gap: 0.75rem;
-	min-block-size: 3.5rem;
-	margin: 0;
-	padding: 0.75rem 1rem;
-}
-
-.hodima-advisor .hodima-advisor__cron-job + .hodima-advisor__cron-job {
-	border-block-start: 1px solid var(--hd-border);
-}
-
-.hodima-advisor .hodima-advisor__cron-job[data-level="warn"],
-.hodima-advisor .hodima-advisor__cron-job[data-level="bad"] {
-	background: color-mix(in srgb, var(--hd-warn) 6%, #ffffff);
-}
-
-.hodima-advisor .hodima-advisor__cron-job--compact {
-	grid-template-columns: minmax(0, 1fr) auto;
-	min-block-size: 2.75rem;
-	padding-block: 0.5rem;
-}
-
 .hodima-advisor .hodima-advisor__cron-status,
 .hodima-advisor .hodima-advisor__cron-jobs,
 .hodima-advisor .hodima-advisor__cron-more,
 .hodima-advisor .hodima-advisor__cron-guide {
 	margin-block-start: 0.875rem;
-}
-
-.hodima-advisor .hodima-advisor__cron-job--compact .hodima-advisor__cron-when,
-.hodima-advisor .hodima-advisor__cron-job--compact .hodima-advisor__cron-exp,
-.hodima-advisor .hodima-advisor__cron-job--compact .hodima-advisor__cron-name span {
-	display: none;
-}
-
-.hodima-advisor .hodima-advisor__cron-name,
-.hodima-advisor .hodima-advisor__cron-when,
-.hodima-advisor .hodima-advisor__cron-exp {
-	display: grid;
-	gap: 0.125rem;
-	min-inline-size: 0;
-}
-
-.hodima-advisor .hodima-advisor__cron-name b {
-	color: var(--hd-text);
-	font-size: 0.875rem;
-}
-
-.hodima-advisor .hodima-advisor__cron-name span,
-.hodima-advisor .hodima-advisor__cron-when span,
-.hodima-advisor .hodima-advisor__cron-exp span {
-	color: var(--hd-muted);
-	font-size: 0.75rem;
-}
-
-.hodima-advisor .hodima-advisor__cron-when b,
-.hodima-advisor .hodima-advisor__cron-exp b {
-	color: var(--hd-text);
-	font-size: 0.8125rem;
-	overflow-wrap: anywhere;
-}
-
-.hodima-advisor .hodima-advisor__cron-job .hds-pill {
-	white-space: normal;
-}
-
-/* پایان هر سطر: نشان وضعیت + (برای کار دیرشده) دکمه «اجرا همین حالا» */
-.hodima-advisor .hodima-advisor__cron-end {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	justify-content: flex-end;
-	gap: 0.5rem;
 }
 
 .hodima-advisor .hodima-advisor__cron-run {
@@ -2487,27 +2363,6 @@
 .hodima-advisor .hodima-advisor__cron-code .hds-btn {
 	flex: none;
 	min-block-size: 2.75rem;
-}
-
-@container (max-width: 35rem) {
-	.hodima-advisor .hodima-advisor__cron-job {
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 0.25rem 0.75rem;
-	}
-
-	.hodima-advisor .hodima-advisor__cron-job .hodima-advisor__cron-end {
-		grid-column: 1 / -1;
-		grid-row: auto;
-		justify-content: space-between;
-	}
-
-	.hodima-advisor .hodima-advisor__cron-when,
-	.hodima-advisor .hodima-advisor__cron-exp {
-		display: flex;
-		grid-column: 1 / -1;
-		justify-content: space-between;
-		gap: 0.5rem;
-	}
 }
 
 /* ── کیفیت داده (SEO 3.2.1؛ advisor-quality-view.php) ── */
@@ -2603,6 +2458,7 @@
 		grid-column: 2;
 		grid-row: 1 / span 2;
 	}
+
 }
 
 /* کیفیت داده کامل = یک ردیف ساکت: عنوان و نشان‌ها کنار هم، بدون کارت */
@@ -2640,6 +2496,7 @@
 		grid-template-columns: minmax(0, 1fr) auto;
 		padding-block: 0.125rem;
 	}
+
 }
 
 /* ── فشرده‌سازی بالای صفحه و تب ایرادهای فنی (SEO 3.3.0) ── */
@@ -2711,46 +2568,12 @@
 	background: var(--hd-surface);
 }
 
-/* خزش خودکار: کنش اصلی بالا، تنظیمات جمع‌شده؛ دکمه‌ها به اندازه خودشان */
-.hodima-advisor .hodima-advisor__crawler-now {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 0.5rem 1rem;
-	margin-block-start: 0.875rem;
-}
-
-.hodima-advisor .hodima-advisor__crawler-now .hodima-advisor__setting-help {
-	flex: 1 1 18rem;
-	margin: 0;
-}
-
-.hodima-advisor .hodima-advisor__crawler-more {
-	margin-block-start: 0.875rem;
-}
-
-.hodima-advisor .hodima-advisor__crawler-more .hodima-advisor__crawler-form {
-	justify-items: start;
-}
-
 .hodima-advisor .hodima-advisor__crawler-switch {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.625rem;
 	min-block-size: 2.75rem;
 	font-weight: 700;
-}
-
-/* وضعیت و زمان‌بندی خزش کنار هم (دو ردیف جدا فضای خالی می‌گرفت) */
-.hodima-advisor .hodima-advisor__files--row {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0 1.5rem;
-}
-
-.hodima-advisor .hodima-advisor__files--row > li {
-	flex: 1 1 20rem;
-	border-block-end: 0;
 }
 
 /* تیک و رادیو به رنگ برند (به‌جای آبی پیش‌فرض مرورگر؛ SEO 3.2.3) */
@@ -2813,6 +2636,7 @@
 		grid-column: 2;
 		min-block-size: 2.5rem;
 	}
+
 }
 
 /* موبایل: هر کار یک ردیف (نقطه، متن، «دیدن و رفع»)، نه کارت دو خطی */
@@ -2826,6 +2650,7 @@
 		grid-column: auto;
 		min-block-size: 2.5rem;
 	}
+
 }
 
 /* ── جدول‌های «آدرس‌های خراب» و «وضعیت در گوگل» (SEO 3.2.5): توضیح‌ها جمع‌شونده، کارت موبایل، دکمه‌های یک ردیف ── */
@@ -2905,13 +2730,7 @@
 		flex: 1 1 100%;
 		min-inline-size: 0;
 	}
-}
 
-@container (max-width: 35rem) {
-	.hodima-advisor .hodima-advisor__cron-job--compact .hodima-advisor__cron-end {
-		grid-column: 2;
-		grid-row: 1;
-	}
 }
 
 .hodima-advisor .hodima-advisor__filter select {
@@ -2938,6 +2757,7 @@
 	.hodima-advisor .hodima-advisor__workview select {
 		inline-size: 100%;
 	}
+
 }
 
 /* نمای «همه ایرادها» (SEO 3.2.9): هر صفحه یک ردیف با برچسب ایرادها و اولین کار */
@@ -3241,6 +3061,7 @@
 	.hodima-advisor .hodima-advisor__toolbar:has(.hodima-advisor__chips) .hodima-advisor__search {
 		max-inline-size: none;
 	}
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3248,6 +3069,7 @@
 	.hodima-advisor .hodima-advisor__chip {
 		transition: none;
 	}
+
 }
 
 /* SEO 3.3.6: جزئیات دقیق زیر هر ایراد در «کارها» — پیش‌نویس عنوان/متا، «کدام تصویرها؟»، «کدام لینک‌ها؟» */
@@ -3449,10 +3271,223 @@
 	.hodima-advisor .hodima-advisor__li:not(:has(.hodima-advisor__thumb)) .hodima-advisor__li-act {
 		grid-column: 1;
 	}
+
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.hodima-advisor .hodima-advisor__more > summary::after {
+		transition: none;
+	}
+
+}
+
+/* SEO 3.3.9: تب «خزش و داده» — هر کار خودکار کارت خودش را دارد */
+.hodima-advisor .hodima-advisor__jobs {
+	display: grid;
+	gap: 0.875rem;
+}
+
+.hodima-advisor .hodima-advisor__jobs > .hds-card {
+	margin: 0;
+}
+
+/* نوار وضعیت خودش کادر دارد؛ کارت دورش دو کادر تو در تو می‌ساخت */
+.hodima-advisor .hodima-advisor__jobs > .hodima-advisor__jobs-status {
+	padding: 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+.hodima-advisor .hodima-advisor__jobs-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+	gap: 0.875rem;
+	align-items: start;
+}
+
+.hodima-advisor .hodima-advisor__job {
+	display: grid;
+	gap: 0.75rem;
+	min-inline-size: 0;
+	padding: 1rem 1.25rem;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+}
+
+.hodima-advisor .hodima-advisor__job[data-level="warn"],
+.hodima-advisor .hodima-advisor__job[data-level="bad"] {
+	border-color: color-mix(in srgb, var(--hd-warn) 45%, #fff);
+}
+
+.hodima-advisor .hodima-advisor__job-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.625rem;
+}
+
+.hodima-advisor .hodima-advisor__job-icon {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.5rem;
+	block-size: 2.5rem;
+	border-radius: 0.75rem;
+	background: color-mix(in srgb, var(--hd-third) 40%, #fff);
+	color: var(--hd-primary);
+	font-size: 1.25rem;
+}
+
+.hodima-advisor .hodima-advisor__job-icon::before {
+	inline-size: 1.25rem;
+	block-size: 1.25rem;
+	font-size: 1.25rem;
+}
+
+.hodima-advisor .hodima-advisor__job-title {
+	display: grid;
+	flex: 1;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__job-title h3 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__job-title p {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__job-facts {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.5rem 0.875rem;
+	margin: 0;
+}
+
+.hodima-advisor .hodima-advisor__job-facts > div {
+	display: grid;
+	gap: 0.0625rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__job-facts dt {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__job-facts dd {
+	margin: 0;
+	font-size: 0.875rem;
+	font-weight: 700;
+	overflow-wrap: anywhere;
+}
+
+.hodima-advisor .hodima-advisor__job-prog {
+	display: grid;
+	gap: 0.25rem;
+}
+
+.hodima-advisor .hodima-advisor__job-prog-label {
+	margin: 0;
+	color: var(--hd-primary);
+	font-size: 0.8125rem;
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__bar {
+	block-size: 0.5rem;
+	overflow: hidden;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--hd-third) 35%, #fff);
+}
+
+.hodima-advisor .hodima-advisor__bar > i {
+	display: block;
+	block-size: 100%;
+	border-radius: 999px;
+	background: var(--hd-primary);
+	transition: inline-size 0.4s;
+}
+
+.hodima-advisor .hodima-advisor__job-form {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__job-foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.hodima-advisor .hodima-advisor__job-set {
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__job-set > summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-block-size: 2.5rem;
+	padding-inline: 0.75rem;
+	color: var(--hd-primary);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	cursor: pointer;
+	list-style: none;
+}
+
+.hodima-advisor .hodima-advisor__job-set > summary::-webkit-details-marker {
+	display: none;
+}
+
+.hodima-advisor .hodima-advisor__job-set > summary::after {
+	content: "";
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	border-block-end: 2px solid var(--hd-muted);
+	border-inline-end: 2px solid var(--hd-muted);
+	transform: rotate(45deg);
+	transition: transform 0.2s;
+}
+
+.hodima-advisor .hodima-advisor__job-set[open] > summary::after {
+	transform: rotate(-135deg);
+}
+
+.hodima-advisor .hodima-advisor__job-set > summary:focus-visible {
+	outline: 2px solid var(--hd-secondary);
+	outline-offset: -2px;
+}
+
+.hodima-advisor .hodima-advisor__job-set-body {
+	display: grid;
+	gap: 0.625rem;
+	padding: 0.25rem 0.75rem 0.75rem;
+}
+
+@media (max-width: 40rem) {
+	.hodima-advisor .hodima-advisor__job {
+		padding: 0.875rem 1rem;
+	}
+
+	.hodima-advisor .hodima-advisor__job-facts {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-advisor .hodima-advisor__bar > i,
+	.hodima-advisor .hodima-advisor__job-set > summary::after {
 		transition: none;
 	}
 }

@@ -172,7 +172,7 @@ function hodima_seo_advisor_cron_crawler_job( int $now, callable $ago ): array {
 	$age   = $now - $state['finished'];
 	$limit = ( $settings['interval'] + 1 ) * DAY_IN_SECONDS;
 
-	return [ 'expect' => sprintf( 'هر %s روز یک دور', number_format_i18n( $settings['interval'] ) ), 'last' => sprintf( 'آخرین دور %s تمام شد', $ago( $age ) ), 'level' => $age <= $limit ? 'ok' : ( $age <= 2 * $limit ? 'warn' : 'bad' ) ] + $base;
+	return [ 'expect' => $settings['interval'] > 1 && (bool) apply_filters( 'hodima_seo_advisor_crawler_quick', true ) ? sprintf( 'دور سریع هر روز، کامل هر %s روز', number_format_i18n( $settings['interval'] ) ) : sprintf( 'هر %s روز یک دور', number_format_i18n( $settings['interval'] ) ), 'last' => sprintf( 'آخرین دور %s تمام شد', $ago( $age ) ), 'level' => $age <= $limit ? 'ok' : ( $age <= 2 * $limit ? 'warn' : 'bad' ) ] + $base;
 }
 
 /** دستور کرون واقعی سرور (هر ۵ دقیقه صدا زدن wp-cron.php همین سایت). */

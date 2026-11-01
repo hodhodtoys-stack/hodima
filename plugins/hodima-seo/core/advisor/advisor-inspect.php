@@ -288,7 +288,7 @@ function hodima_seo_advisor_handle_inspect_now(): void {
 		hodima_admin_flash( '<strong>بررسی ایندکس:</strong> ' . esc_html( sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ) ), 'success' );
 	}
 
-	$back = isset( $_POST['tab'] ) && 'settings' === sanitize_key( wp_unslash( (string) $_POST['tab'] ) ) ? 'settings' : 'indexing'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce بالا بررسی شد
+	$back = hodima_seo_advisor_back_tab( 'indexing' );
 	wp_safe_redirect( admin_url( 'admin.php?page=' . HODIMA_SEO_ADVISOR_PAGE . '&tab=' . $back ) );
 	exit;
 }

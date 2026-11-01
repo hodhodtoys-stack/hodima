@@ -14,7 +14,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** تب‌هایی که نوار کیفیت دارند. */
-const HODIMA_SEO_ADVISOR_QUALITY_TABS = [ 'opportunities', 'crawl' ];
+const HODIMA_SEO_ADVISOR_QUALITY_TABS = [ 'opportunities', 'crawl', 'jobs' ];
 
 /**
  * نوار «کیفیت داده».

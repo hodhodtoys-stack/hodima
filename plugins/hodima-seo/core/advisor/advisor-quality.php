@@ -35,7 +35,7 @@ function hodima_seo_advisor_quality(): array {
 	} else {
 		$until = '' !== $status['end'] && false !== strtotime( $status['end'] ) ? (int) strtotime( $status['end'] ) : $status['fetched'];
 		$notes = array_filter( [
-			'' !== $status['error'] ? 'آخرین دریافت ناموفق بود؛ عددها از دریافت قبلی‌اند. کلید و دسترسی را در تب «تنظیمات» ببینید.' : '',
+			'' !== $status['error'] ? 'آخرین دریافت ناموفق بود؛ عددها از دریافت قبلی‌اند. کلید و دسترسی را در تب «خزش و داده» ببینید.' : '',
 			$caps['fetch'] ? sprintf( 'داده سرچ کنسول از سقف %s ردیف گزارش بیشتر بود و بقیه نیامد؛ آدرس‌ها یا کلمه‌های کم‌نمایش در دستار نیستند. بازه را کوتاه‌تر (۲۸ روز) کنید.', $n( HODIMA_SEO_ADVISOR_FETCH_PAGES * 25000 ) ) : '',
 		] );
 		$items[] = [
@@ -83,7 +83,7 @@ function hodima_seo_advisor_quality(): array {
 			'label' => 'پوشش خزش',
 			'level' => $short ? 'warn' : 'ok',
 			'value' => sprintf( '%1$s از %2$s آدرس نقشه سایت', $n( $covered ), $n( count( $sitemap ) ) ),
-			'note'  => $short ? sprintf( 'فقط %1$s از %2$s آدرس نقشه سایت خزیده شده؛ ایرادهای فنی بقیه دیده نمی‌شود. «خزش همین حالا» را در تب «ایرادهای فنی» بزنید و اگر نشد، سلامت کارهای خودکار را در تب «تنظیمات» ببینید.', $n( $covered ), $n( count( $sitemap ) ) ) : '',
+			'note'  => $short ? sprintf( 'فقط %1$s از %2$s آدرس نقشه سایت خزیده شده؛ ایرادهای فنی بقیه دیده نمی‌شود. «خزش همین حالا» را در تب «خزش و داده» بزنید و اگر نشد، سلامت کارهای خودکار را همان‌جا ببینید.', $n( $covered ), $n( count( $sitemap ) ) ) : '',
 		];
 	}
 

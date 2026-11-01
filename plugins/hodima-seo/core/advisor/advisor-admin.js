@@ -145,6 +145,7 @@
 
 	const text = box.querySelector('[data-hdsa-crawl-text]');
 	const pill = box.querySelector('[data-hdsa-crawl-pill]');
+	const bar = box.querySelector('[data-hdsa-crawl-bar]'); // نوار پیشرفت کارت خزنده (SEO 3.3.9)
 	let failures = 0;
 
 	const step = async () => {
@@ -156,6 +157,11 @@
 			failures = 0;
 			if (text) text.textContent = json.data.text;
 			if (pill) pill.textContent = json.data.label;
+			if (bar && typeof json.data.percent === 'number') {
+				bar.setAttribute('aria-valuenow', String(json.data.percent));
+				const fill = bar.querySelector('i');
+				if (fill) fill.style.inlineSize = `${json.data.percent}%`;
+			}
 			if (json.data.finished) {
 				location.reload(); // دور تمام شد: نمره و ایرادها تازه
 				return;
