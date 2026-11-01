@@ -3210,6 +3210,89 @@ $GLOBALS['wpdb']->delete( hodima_seo_advisor_table( 'pages' ), [ 'path' => '/fz-
 wp_delete_post( $fz_old, true );
 wp_delete_post( $fz_new, true );
 
+echo "=== موتور اولویت (SEO 3.4.0)\n";
+hodima_ad( 'ارزش صفحه: لگاریتمی نسبت به بیشینه؛ بیشتر از نمایش یا فروش؛ صفر بدون هر دو', [ hodima_seo_advisor_page_value( 1000, 0, 1000, 0 ), hodima_seo_advisor_page_value( 0, 0, 1000, 0 ), hodima_seo_advisor_page_value( 0, 5000000, 1000, 5000000 ), round( hodima_seo_advisor_page_value( 10, 0, 10000, 0 ), 2 ), hodima_seo_advisor_page_value( 10, 0, 0, 0 ) ], [ 1.0, 0.0, 1.0, 0.26, 0.0 ] );
+$pr_item = static fn( string $src, string $level, string $mark = 'no_meta', int $potential = 0 ): array => [ 'src' => $src, 'level' => $level, 'mark' => $mark, 'potential' => $potential ];
+$pr_a = hodima_seo_advisor_item_score( $pr_item( 'crawl', 'bad', 'no_meta' ), 1.0 );
+$pr_b = hodima_seo_advisor_item_score( $pr_item( 'crawl', 'warn', 'no_meta' ), 1.0 );
+$pr_c = hodima_seo_advisor_item_score( $pr_item( 'crawl', 'bad', 'slow' ), 1.0 );
+$pr_d = hodima_seo_advisor_item_score( $pr_item( 'opp', 'warn', 'low_ctr|' ), 1.0 );
+$pr_e = hodima_seo_advisor_item_score( $pr_item( 'crawl', 'warn', 'no_meta' ), 0.0 );
+hodima_ad( 'امتیاز: قرمز > کهربایی؛ سختی کمتر بیشتر؛ ارزش کمتر کمتر؛ پیشنهاد گوگل (تخمین) کمتر از ایراد فنی هم‌سطح', [ $pr_a > $pr_b, $pr_a > $pr_c, $pr_b > $pr_e, hodima_seo_advisor_item_score( $pr_item( 'crawl', 'warn', 'no_meta' ), 1.0 ) > $pr_d, round( $pr_a, 2 ) ], [ true, true, true, true, 1.0 ] );
+hodima_ad( 'پیشنهاد گوگل با کلیک بالقوه زیاد حتی در صفحه کم‌نمایش ارزش می‌گیرد', hodima_seo_advisor_item_score( $pr_item( 'opp', 'warn', 'near_first|x', 900 ), 0.0 ) > hodima_seo_advisor_item_score( $pr_item( 'opp', 'warn', 'near_first|x', 0 ), 0.0 ), true );
+hodima_ad( 'نشان اولویت از امتیاز: بالا، متوسط، کم', [ hodima_seo_advisor_priority_band( 0.5 ), hodima_seo_advisor_priority_band( 0.2 ), hodima_seo_advisor_priority_band( 0.05 ) ], [ 'high', 'mid', 'low' ] );
+hodima_ad( 'سختی رفع: ایراد فنی از فهرست واحد، پیشنهاد از قاعده، ایندکس ۱، بقیه ۲', [ hodima_seo_advisor_item_effort( [ 'src' => 'crawl', 'mark' => 'slow' ] ), hodima_seo_advisor_item_effort( [ 'src' => 'crawl', 'mark' => 'no_meta' ] ), hodima_seo_advisor_item_effort( [ 'src' => 'opp', 'mark' => 'weak_query|x' ] ), hodima_seo_advisor_item_effort( [ 'src' => 'index', 'mark' => '' ] ), hodima_seo_advisor_item_effort( [ 'src' => 'dead', 'mark' => '' ] ) ], [ 3, 1, 3, 1, 2 ] );
+
+// فروش ۹۰ روز اخیر از جدول آمار ووکامرس (فقط خواندن)
+$pr_tbl = $GLOBALS['wpdb']->prefix . 'wc_order_product_lookup';
+$GLOBALS['wpdb']->query( "DROP TABLE IF EXISTS `{$pr_tbl}`" );
+delete_transient( HODIMA_SEO_ADVISOR_SALES_CACHE );
+hodima_ad( 'بدون جدول آمار ووکامرس: فروش خالی و کش می‌شود', [ hodima_seo_advisor_sales_map(), is_array( get_transient( HODIMA_SEO_ADVISOR_SALES_CACHE ) ) ], [ [], true ] );
+delete_transient( HODIMA_SEO_ADVISOR_SALES_CACHE );
+$GLOBALS['wpdb']->query( "CREATE TABLE `{$pr_tbl}` ( order_item_id bigint(20) NOT NULL, order_id bigint(20) NOT NULL, product_id bigint(20) NOT NULL, variation_id bigint(20) NOT NULL, date_created datetime NOT NULL, product_net_revenue double NOT NULL )" );
+$pr_p1 = wp_insert_post( [ 'post_title' => 'محصول پرفروش', 'post_status' => 'publish', 'post_type' => 'post' ] );
+$pr_p2 = wp_insert_post( [ 'post_title' => 'محصول کم‌فروش', 'post_status' => 'publish', 'post_type' => 'post' ] );
+$pr_new = gmdate( 'Y-m-d H:i:s', time() - 5 * DAY_IN_SECONDS );
+$pr_old = gmdate( 'Y-m-d H:i:s', time() - 200 * DAY_IN_SECONDS );
+foreach ( [ [ $pr_p1, 6000000, $pr_new ], [ $pr_p1, 4000000, $pr_new ], [ $pr_p2, 500000, $pr_new ], [ $pr_p2, 99000000, $pr_old ] ] as $pr_i => [ $pr_id, $pr_amount, $pr_date ] ) {
+	$GLOBALS['wpdb']->insert( $pr_tbl, [ 'order_item_id' => $pr_i + 1, 'order_id' => $pr_i + 1, 'product_id' => $pr_id, 'variation_id' => 0, 'date_created' => $pr_date, 'product_net_revenue' => $pr_amount ] );
+}
+$pr_sales = hodima_seo_advisor_sales_map();
+$pr_k1    = (string) hodima_seo_advisor_path_key( (string) get_permalink( $pr_p1 ) );
+$pr_k2    = (string) hodima_seo_advisor_path_key( (string) get_permalink( $pr_p2 ) );
+hodima_ad( 'فروش ۹۰ روز: جمع هر محصول، سفارش قدیمی‌تر از ۹۰ روز نه', [ $pr_sales[ $pr_k1 ] ?? null, $pr_sales[ $pr_k2 ] ?? null ], [ 10000000, 500000 ] );
+add_filter( 'hodima_seo_advisor_use_sales', '__return_false' );
+hodima_ad( 'فیلتر خاموش‌کردن فروش: نقشه خالی', hodima_seo_advisor_sales_map(), [] );
+remove_filter( 'hodima_seo_advisor_use_sales', '__return_false' );
+hodima_ad( 'برچسب مبلغ: میلیون یا عدد کامل', [ str_contains( hodima_seo_advisor_money_label( 14000000 ), 'میلیون' ), str_contains( hodima_seo_advisor_money_label( 500000 ), '۵۰۰' ) || str_contains( hodima_seo_advisor_money_label( 500000 ), '500' ) ], [ true, true ] );
+
+// ترتیب اولویت: صفحه با فروش بالاتر از هم‌نمایش بی‌فروش
+set_transient( HODIMA_SEO_ADVISOR_SALES_CACHE, [ '/pr-sale/' => 9000000 ], HOUR_IN_SECONDS );
+$pr_page = static fn( string $path, int $imp, array $items ): array => [ 'path' => $path, 'title' => '', 'impressions' => $imp, 'items' => $items ];
+$pr_mk   = static fn( string $mark, string $level = 'bad' ): array => [ 'src' => 'crawl', 'label' => $mark, 'text' => '', 'level' => $level, 'source' => 'crawl', 'mark' => $mark, 'term' => '' ];
+$pr_rank = hodima_seo_advisor_priority_rank( [
+	$pr_page( '/pr-nosale/', 10, [ $pr_mk( 'no_meta' ) ] ),
+	$pr_page( '/pr-big/', 100, [ $pr_mk( 'no_meta' ) ] ),
+	$pr_page( '/pr-sale/', 10, [ $pr_mk( 'dup_h1', 'warn' ), $pr_mk( 'no_meta' ) ] ),
+] );
+$pr_order = array_column( $pr_rank, 'path' );
+hodima_ad( 'ترتیب اولویت: فروش بالا جلو می‌افتد، بی‌فروش هم‌نمایش عقب؛ ایرادها درون صفحه به ترتیب امتیاز؛ فروش و امتیاز روی صفحه', [ array_search( '/pr-sale/', $pr_order, true ) < array_search( '/pr-nosale/', $pr_order, true ), $pr_rank[ array_search( '/pr-sale/', $pr_order, true ) ]['items'][0]['mark'], $pr_rank[ array_search( '/pr-sale/', $pr_order, true ) ]['sales'], isset( $pr_rank[0]['score'], $pr_rank[0]['items'][0]['band'] ) ], [ true, 'no_meta', 9000000, true ] );
+delete_transient( HODIMA_SEO_ADVISOR_SALES_CACHE );
+
+// ۵ کار مهم: کار کلی (۵ صفحه یا بیشتر) یک بار؛ اعضایش جدا نمی‌آیند
+$pr_pages = [];
+foreach ( range( 1, 6 ) as $pr_n ) {
+	$pr_pages[] = $pr_page( '/pr-bulk' . $pr_n . '/', 50, [ $pr_mk( 'no_meta' ) ] );
+}
+$pr_pages[] = $pr_page( '/pr-single/', 200, [ $pr_mk( 'broken' ), $pr_mk( 'title_long', 'warn' ) ] );
+$pr_top = hodima_seo_advisor_top_tasks( hodima_seo_advisor_priority_rank( $pr_pages ) );
+$pr_kinds = array_column( $pr_top, 'kind' );
+hodima_ad( 'کار مهم امروز: کار کلی «بدون متا» یک بار با ۶ صفحه؛ تک‌ایرادها جدا؛ اعضای کلی تکرار نمی‌شوند', [ count( array_keys( $pr_kinds, 'group', true ) ), array_values( array_filter( $pr_top, static fn( array $t ): bool => 'group' === $t['kind'] ) )[0]['pages'] ?? 0, array_values( array_filter( $pr_top, static fn( array $t ): bool => 'group' === $t['kind'] ) )[0]['code'] ?? '', count( array_filter( $pr_top, static fn( array $t ): bool => 'item' === $t['kind'] && 'no_meta' === $t['code'] ) ), count( array_filter( $pr_top, static fn( array $t ): bool => '/pr-single/' === $t['path'] ) ), count( $pr_top ) <= 5 ], [ 1, 6, 'no_meta', 0, 2, true ] );
+$pr_html = $cap( static fn() => hodima_seo_advisor_render_top_tasks( $pr_top, static fn( int|float $v ): string => (string) $v ) );
+hodima_ad( 'کادر «۵ کار مهم امروز»: عنوان، رتبه، کار کلی با پیوند فیلتر، «دیدن و رفع» با لنگر ردیف، «اولویت چطور حساب می‌شود؟»', [ str_contains( $pr_html, '۵ کار مهم امروز' ), str_contains( $pr_html, 'کار کلی' ), str_contains( $pr_html, 'code=no_meta' ) && str_contains( $pr_html, 'src=crawl' ), str_contains( $pr_html, '#' . hodima_seo_advisor_row_anchor( '/pr-single/' ) ), str_contains( $pr_html, 'اولویت چطور حساب می‌شود؟' ), str_contains( $pr_html, 'hodima-advisor__prio--' ) ], [ true, true, true, true, true, true ] );
+hodima_ad( 'بدون کار: کادر چاپ نمی‌شود', $cap( static fn() => hodima_seo_advisor_render_top_tasks( [], static fn( int|float $v ): string => (string) $v ) ), '' );
+// صفحه «کارها»: کادر کار مهم بدون فیلتر؛ با فیلتر کد ایراد فقط همان ایراد و یادداشت «برداشتن فیلتر»
+$pr_ct = hodima_seo_advisor_table( 'crawl_pages' );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $pr_ct ) );
+foreach ( range( 1, 6 ) as $pr_n ) {
+	$GLOBALS['wpdb']->insert( $pr_ct, [ 'path' => '/pr-r' . $pr_n . '/', 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $pr_n, 'title_len' => 50, 'meta_len' => 0, 'h1' => 'تیتر ' . $pr_n, 'inlinks' => 9, 'depth' => 1, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 0, 'http_links' => 0, 'canonical' => '/pr-r' . $pr_n . '/' ] );
+}
+hodima_seo_advisor_crawl_map( true );
+$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
+$pr_ov = $cap( static fn() => hodima_seo_advisor_render_overview() );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'code' => 'no_meta' ];
+$pr_ovf = $cap( static fn() => hodima_seo_advisor_render_overview() );
+$_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'code' => 'nope_x' ];
+$pr_ovx = $cap( static fn() => hodima_seo_advisor_render_overview() );
+$_GET  = [];
+hodima_ad( 'صفحه «کارها»: بدون فیلتر کادر «۵ کار مهم امروز» و ردیف با لنگر؛ با کد ایراد فقط همان ایراد، بدون کادر، با «برداشتن فیلتر»؛ کد ناشناخته نادیده', [ str_contains( $pr_ov, '۵ کار مهم امروز' ), str_contains( $pr_ov, 'id="' . hodima_seo_advisor_row_anchor( '/pr-r1/' ) . '"' ), str_contains( $pr_ov, 'به ترتیب اولویت' ), str_contains( $pr_ovf, '۵ کار مهم امروز' ), str_contains( $pr_ovf, 'فقط نمایش: «بدون توضیح متا»' ), str_contains( $pr_ovf, 'برداشتن فیلتر' ), str_contains( $pr_ovx, 'فقط نمایش' ) ], [ true, true, true, false, true, true, false ] );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $pr_ct ) );
+hodima_seo_advisor_crawl_map( true );
+wp_delete_post( $pr_p1, true );
+wp_delete_post( $pr_p2, true );
+$GLOBALS['wpdb']->query( "DROP TABLE IF EXISTS `{$pr_tbl}`" );
+delete_transient( HODIMA_SEO_ADVISOR_SALES_CACHE );
+
 $cx_pt = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $cx_pt ) );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'crawl_links' ) ) );
