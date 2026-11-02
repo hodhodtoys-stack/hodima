@@ -90,6 +90,17 @@
 		});
 	});
 
+	/* ── پنجره‌های تأیید عمومی (پاک‌سازی گروهی کارها؛ SEO 3.5.5): data-hdsa-open="شناسه" و data-hdsa-close ── */
+	document.querySelectorAll('[data-hdsa-open]').forEach((button) => {
+		const target = document.getElementById(button.dataset.hdsaOpen || '');
+		if (!target) return;
+		button.addEventListener('click', () => {
+			if (typeof target.showModal === 'function') target.showModal(); else target.setAttribute('open', '');
+		});
+		target.querySelectorAll('[data-hdsa-close]').forEach((close) => close.addEventListener('click', () => target.close?.()));
+		target.addEventListener('click', (event) => { if (event.target === target) target.close?.(); }); // کلیک بیرون کادر
+	});
+
 	/* ── پنجره افزودن/جایگزینی کلید حساب سرویس (همان رفتار ماژول دیسکاور) ── */
 	const dialog = document.querySelector('[data-hdsa-key-dialog]');
 	if (!dialog) return;

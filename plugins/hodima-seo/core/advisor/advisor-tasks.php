@@ -22,7 +22,19 @@ defined( 'ABSPATH' ) || exit;
 const HODIMA_SEO_ADVISOR_TASKS_OPTION = 'hodima_advisor_tasks';
 const HODIMA_SEO_ADVISOR_TASKS_MAX    = 3000; // تا SEO 3.0.1: ۵۰۰؛ تا ۳.۴.۶: ۱٬۰۰۰ (ایراد فنی ۵٬۰۰۰ صفحه × چند ایراد از آن بیشتر می‌شد و قدیمی‌ترین «انجام دادم»ها بی‌صدا پاک می‌شدند)
 
+/** شمارنده کارهای برطرف‌شده‌ای که مدیر پاک کرده (فقط عدد؛ آمار «تا امروز N کار برطرف شد» با پاک‌کردن دروغ نشود؛ SEO 3.5.5). */
+const HODIMA_SEO_ADVISOR_TASKS_CLEARED_OPTION = 'hodima_advisor_tasks_cleared';
+
+/** گزینه‌های «قدیمی‌تر از N روز» پاک‌سازی گروهی (۰ = همه). */
+const HODIMA_SEO_ADVISOR_TASKS_CLEAN_DAYS = [ 0, 30, 90, 180 ];
+
+/** یادآوری پر شدن: از این تعداد کار بسته (برطرف شد + لازم نیست) نوار ملایم، از این تعداد کل هشدار نزدیک سقف. چیزی خودکار پاک نمی‌شود. */
+const HODIMA_SEO_ADVISOR_TASKS_NOTE_CLOSED = 500;
+const HODIMA_SEO_ADVISOR_TASKS_NOTE_TOTAL  = 2600;
+
 add_action( 'admin_post_hodima_advisor_task', 'hodima_seo_advisor_handle_task' );
+add_action( 'admin_post_hodima_advisor_task_clean', 'hodima_seo_advisor_handle_task_clean' );
+add_action( 'admin_post_hodima_advisor_task_csv', 'hodima_seo_advisor_handle_task_csv' );
 
 /**
  * چرخه عمر هر کار (SEO 2.9.1): وضعیت دستی مدیر (doing/done/rejected) + آنچه تحلیل بعدی دید.
@@ -425,6 +437,151 @@ function hodima_seo_advisor_task_effect( array $task ): array {
 	return [ 'state' => 'none' ];
 }
 
+/** شمار کارهای برطرف‌شده‌ای که پاک شده‌اند (فقط شمارنده). */
+function hodima_seo_advisor_tasks_cleared(): int {
+	return max( 0, (int) get_option( HODIMA_SEO_ADVISOR_TASKS_CLEARED_OPTION, 0 ) );
+}
+
+function hodima_seo_advisor_tasks_cleared_add( int $count ): void {
+	if ( $count > 0 ) {
+		update_option( HODIMA_SEO_ADVISOR_TASKS_CLEARED_OPTION, hodima_seo_advisor_tasks_cleared() + $count, false );
+	}
+}
+
+/**
+ * کارهای گروه «برطرف شد» که از `$days` روز قدیمی‌ترند (۰ = همه). زمان = زمان «برطرف شد» خود کار.
+ *
+ * @return array<string, array<string, mixed>> کلید ← کار
+ */
+function hodima_seo_advisor_tasks_fixed_before( int $days ): array {
+
+	$limit = $days > 0 ? time() - $days * DAY_IN_SECONDS : PHP_INT_MAX;
+	$out   = [];
+
+	foreach ( hodima_seo_advisor_tasks() as $key => $task ) {
+		if ( 'fixed' === hodima_seo_advisor_task_group( $task ) && hodima_seo_advisor_task_view( $task )['time'] <= $limit ) {
+			$out[ $key ] = $task;
+		}
+	}
+
+	return $out;
+}
+
+/**
+ * چند کار را از نسخه تازه گزینه برمی‌دارد، نه نسخه‌ای که پیش از کار خوانده شد؛ کاری که وسط کار تغییر کرده (زمان یا وضعیت فرق دارد) می‌ماند.
+ *
+ * @param array<string, array{at: int, status: string}> $expect وضعیت کار هنگام انتخاب
+ * @return int شمار کارهای برداشته‌شده
+ */
+function hodima_seo_advisor_tasks_remove( array $expect ): int {
+
+	wp_cache_delete( HODIMA_SEO_ADVISOR_TASKS_OPTION, 'options' );
+	hodima_seo_advisor_tasks_cache_reset();
+	$fresh   = hodima_seo_advisor_tasks();
+	$removed = 0;
+
+	foreach ( $expect as $key => $want ) {
+		if ( isset( $fresh[ $key ] ) && $fresh[ $key ]['at'] === $want['at'] && $fresh[ $key ]['status'] === $want['status'] ) {
+			unset( $fresh[ $key ] );
+			++$removed;
+		}
+	}
+
+	if ( $removed > 0 ) {
+		update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $fresh, false );
+	}
+
+	return $removed;
+}
+
+/** `$days` از ورودی: فقط یکی از گزینه‌های مجاز. */
+function hodima_seo_advisor_tasks_clean_days( mixed $raw ): int {
+	$days = absint( is_scalar( $raw ) ? $raw : 0 );
+	return in_array( $days, HODIMA_SEO_ADVISOR_TASKS_CLEAN_DAYS, true ) ? $days : 0;
+}
+
+/** پاک‌سازی گروهی کارهای «برطرف شد» (POST، پنجره تأیید تب «کارها»). */
+function hodima_seo_advisor_handle_task_clean(): void {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
+	}
+
+	check_admin_referer( 'hodima_advisor_task_clean' );
+
+	$days   = hodima_seo_advisor_tasks_clean_days( $_POST['days'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce بالا بررسی شد؛ مقدار فقط از گزینه‌های مجاز
+	$expect = [];
+
+	foreach ( hodima_seo_advisor_tasks_fixed_before( $days ) as $key => $task ) {
+		$expect[ $key ] = [ 'at' => $task['at'], 'status' => $task['status'] ];
+	}
+
+	$removed = hodima_seo_advisor_tasks_remove( $expect );
+	hodima_seo_advisor_tasks_cleared_add( $removed );
+
+	hodima_admin_flash(
+		$removed > 0 ? sprintf( '%s کار برطرف‌شده پاک شد. اگر ایرادی دوباره پیدا شود خودش به فهرست «کارها» برمی‌گردد.', number_format_i18n( $removed ) ) : 'کاری برای پاک کردن پیدا نشد.',
+		$removed > 0 ? 'success' : 'warning'
+	);
+
+	wp_safe_redirect( admin_url( 'admin.php?page=' . HODIMA_SEO_ADVISOR_PAGE . '&tab=tasks&tstatus=fixed' ) );
+	exit;
+}
+
+/**
+ * متن CSV کارهای یک گروه (با BOM تا اکسل فارسی درست بخواند). `$days` فقط برای گروه «برطرف شد»: قدیمی‌تر از N روز (۰ = همه).
+ */
+function hodima_seo_advisor_tasks_csv( string $group, int $days ): string {
+
+	$limit = $days > 0 ? time() - $days * DAY_IN_SECONDS : PHP_INT_MAX;
+
+	// سلول که با = + - @ شروع شود در اکسل فرمول حساب می‌شود
+	$safe = static fn( string $cell ): string => 1 === preg_match( '/^[=+\-@\t\r]/', $cell ) ? "'" . $cell : $cell;
+	$day  = static fn( int $time ): string => $time > 0 ? (string) wp_date( 'Y-m-d', $time ) : '';
+
+	// خودمان cell را در " می‌گذاریم (fputcsv/fopen برای ساخت رشته لازم نیست)
+	$line = static fn( array $cells ): string => implode( ',', array_map( static fn( string $cell ): string => '"' . str_replace( '"', '""', $cell ) . '"', $cells ) ) . "\r\n";
+	$csv  = $line( [ 'آدرس', 'بخش', 'کار', 'وضعیت', 'تاریخ انجام', 'تاریخ برطرف شدن' ] );
+
+	foreach ( hodima_seo_advisor_tasks() as $task ) {
+		$view = hodima_seo_advisor_task_view( $task );
+		if ( hodima_seo_advisor_task_group( $task ) !== $group || ( 'fixed' === $group && $view['time'] > $limit ) ) {
+			continue;
+		}
+		$csv .= $line(
+			[
+				$safe( $task['path'] ),
+				hodima_seo_advisor_task_sources()[ hodima_seo_advisor_task_source( $task['rule'] ) ],
+				$safe( '' !== $task['title'] ? $task['title'] : hodima_seo_advisor_rule_label( $task['rule'] ) ),
+				$view['label'],
+				$day( $task['at'] ),
+				$day( $task['fixed'] ),
+			]
+		);
+	}
+
+	return "\xEF\xBB\xBF" . $csv;
+}
+
+/** دانلود CSV کارهای یک گروه (GET با nonce؛ فقط مدیر می‌زند، چیزی تغییر نمی‌کند). */
+function hodima_seo_advisor_handle_task_csv(): void {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
+	}
+
+	check_admin_referer( 'hodima_advisor_task_csv' );
+
+	$group = isset( $_GET['group'] ) ? sanitize_key( (string) $_GET['group'] ) : 'fixed';
+	$group = isset( hodima_seo_advisor_task_groups()[ $group ] ) ? $group : 'fixed';
+
+	nocache_headers();
+	header( 'Content-Type: text/csv; charset=UTF-8' );
+	header( 'Content-Disposition: attachment; filename="hodima-advisor-tasks-' . $group . '-' . gmdate( 'Ymd' ) . '.csv"' );
+	echo hodima_seo_advisor_tasks_csv( $group, hodima_seo_advisor_tasks_clean_days( $_GET['days'] ?? 0 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped,WordPress.Security.NonceVerification.Recommended -- فایل CSV، nonce بالا بررسی شد
+	exit;
+}
+
 /**
  * ثبت وضعیت از لینک/فرم (admin-post)؛ GET با nonce از کادر ویرایش، POST از تب «کارهای من».
  */
@@ -444,7 +601,17 @@ function hodima_seo_advisor_handle_task(): void {
 	// فرم POST تب «کارها» nonce عمومی دارد؛ لینک GET (کادر ویرایش) فقط برای همین کار و همین وضعیت معتبر است
 	check_admin_referer( empty( $_POST ) ? hodima_seo_advisor_task_nonce_action( $path, $rule, $term, $status, $redo ) : 'hodima_advisor_task' );
 
+	// دکمه «دوباره انجام دادم» تب «کارها»: یک فرم و چند دکمه (SEO 3.5.5)؛ هر دکمه فقط یک مقدار می‌فرستد
+	if ( 'done_redo' === $status ) {
+		[ $status, $redo ] = [ 'done', true ];
+	}
+
+	$prev = hodima_seo_advisor_tasks()[ hodima_seo_advisor_task_key( $path, $rule, $term ) ] ?? null;
+
 	if ( hodima_seo_advisor_task_set( $path, $rule, $term, $title, $status, $redo ) ) {
+		if ( '' === $status && null !== $prev && 'fixed' === hodima_seo_advisor_task_group( $prev ) ) {
+			hodima_seo_advisor_tasks_cleared_add( 1 ); // «تمام شد، پاک کن»: در آمار «برطرف شد» می‌ماند
+		}
 		$note = '';
 		// کار تب‌های دیگر (ایراد فنی، آدرس خراب…) با «انجام دادم»/«دوباره انجام دادم» همان لحظه سنجیده می‌شود
 		if ( 'done' === $status && 'opportunities' !== hodima_seo_advisor_task_source( $rule ) ) {

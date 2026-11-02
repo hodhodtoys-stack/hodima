@@ -1284,7 +1284,7 @@ $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'wai
 ob_start();
 hodima_seo_advisor_render_admin();
 $done_html = (string) ob_get_clean();
-hodima_ad( 'کنش‌ها دکمه‌اند نه کلمه لینکی: «ویرایش/دیدن در سایت» و «برگردان به فهرست» با کلاس دکمه و آیکون', [ substr_count( $done_html, 'hds-btn hds-btn--outline hodima-advisor__act' ) >= 2, str_contains( $done_html, 'hodima-advisor__link-btn' ), str_contains( $done_html, 'dashicons-undo' ) ], [ true, false, true ] );
+hodima_ad( 'کنش‌ها دکمه‌اند نه کلمه لینکی: «ویرایش/دیدن در سایت» با کلاس دکمه؛ دکمه وضعیت کار هم کلاس دکمه دارد (SEO 3.5.5: «برگردان به فهرست» بی‌آیکون)', [ substr_count( $done_html, 'hds-btn hds-btn--outline hodima-advisor__act' ) >= 1, str_contains( $done_html, 'hodima-advisor__link-btn' ), (bool) preg_match( '/<button[^>]*class="hds-btn[^"]*"[^>]*>(برگردان به فهرست|تمام شد، پاک کن|انجام دادم|دوباره انجام دادم|لازم نیست|پاک کردن)</u', $done_html ) ], [ true, false, true ] );
 hodima_ad( 'راهنما: فهرست «اصطلاح‌ها به زبان ساده» پایین تب با H1 و نرخ کلیک؛ «؟» با popover و نام قابل‌خواندن', [ str_contains( $done_html, 'hodima-advisor__glossary' ) && str_contains( $done_html, 'H1 (تیتر اصلی)' ) && str_contains( $done_html, '<dt>نرخ کلیک</dt>' ), 1 === preg_match( '#<button type="button" class="hodima-advisor-help" popovertarget="(hdsa-help-\d+)" aria-label="«رتبه» یعنی چه؟">؟</button><span id="\1" popover#u', hodima_seo_advisor_help( 'position' ) ), hodima_seo_advisor_help( 'nope' ) ], [ true, true, '' ] );
 hodima_ad( 'هر قاعده «چرا مهم است» و «از کجا بفهمم درست شد» دارد؛ متنی ← همان لحظه ذخیره، آماری ← ۱۴ روز و تب «کارها»', [ array_filter( array_map( static fn( string $r ): bool => '' === hodima_seo_advisor_rule_guide( $r )['why'] || '' === hodima_seo_advisor_rule_guide( $r )['verify'], [ 'low_ctr', 'near_first', 'missing_headings', 'missing_content', 'weak_query', 'cannibal', 'decline' ] ) ), str_contains( hodima_seo_advisor_rule_guide( 'missing_content' )['verify'], 'همان لحظه ذخیره' ), str_contains( hodima_seo_advisor_rule_guide( 'low_ctr' )['verify'], '«کارها»' ) ], [ [], true, true ] );
 hodima_ad( '«کارهای انجام‌شده» ← «منتظر نتیجه»: بدون پیوند برگشت (خودش تب است)، کار «انجام دادم» با سه گام (انجام دادید، منتظر بررسی ایندکس، منتظر نتیجه با سنجش ۱۴ روزه)', [ ! str_contains( $done_html, 'برگشت به فهرست کارها' ), substr_count( $done_html, 'class="hodima-advisor__task"' ), substr_count( $done_html, 'class="hodima-advisor__step"' ), str_contains( $done_html, 'منتظر بررسی ایندکس' ), str_contains( $done_html, 'همان‌قدر روز پیش از آن مقایسه می‌شود' ), str_contains( $done_html, 'کلمه نزدیک صفحه اول' ) ], [ true, 1, 3, true, true, false ] );
@@ -2216,7 +2216,7 @@ ob_start();
 hodima_seo_advisor_render_tasks();
 $vf_done = (string) ob_get_clean();
 $_GET = [];
-hodima_ad( '«کارها» ← «نیاز به کار»: «اثر نداشت» با قدم بعدی و فرم جدای «دوباره انجام دادم» (status=done + redo)؛ گام سوم کار «اثر داشت» سبز؛ فیلتر «برطرف شد» کار باز را نشان نمی‌دهد', [ str_contains( $vf_html, 'اثر نداشت؛ قدم بعدی را ببینید' ), str_contains( $vf_html, 'دوباره انجام دادم' ) && str_contains( $vf_html, 'name="redo" value="1"' ) && str_contains( $vf_html, 'name="status" value="done"' ), hodima_seo_advisor_task_timeline( $vf_low )[2]['label'] . '/' . hodima_seo_advisor_task_timeline( $vf_low )[2]['state'], str_contains( $vf_done, 'اثر نداشت؛ قدم بعدی' ) ], [ true, true, 'اثر داشت/ok', false ] );
+hodima_ad( '«کارها» ← «نیاز به کار»: «اثر نداشت» با قدم بعدی و دکمه «دوباره انجام دادم» (status=done_redo در همان فرم؛ SEO 3.5.5)؛ گام سوم کار «اثر داشت» سبز؛ فیلتر «برطرف شد» کار باز را نشان نمی‌دهد', [ str_contains( $vf_html, 'اثر نداشت؛ قدم بعدی را ببینید' ), str_contains( $vf_html, 'دوباره انجام دادم' ) && str_contains( $vf_html, 'name="status" value="done_redo"' ) && ! str_contains( $vf_html, 'name="redo"' ), hodima_seo_advisor_task_timeline( $vf_low )[2]['label'] . '/' . hodima_seo_advisor_task_timeline( $vf_low )[2]['state'], str_contains( $vf_done, 'اثر نداشت؛ قدم بعدی' ) ], [ true, true, 'اثر داشت/ok', false ] );
 // بی‌کار: چهار کارت آمار «—» نمی‌آید، فقط حالت خالی (SEO 3.1.2)
 $ec_tasks = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false );
 delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
@@ -2869,7 +2869,7 @@ $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'fi
 $p3_d0 = $cap( static fn() => hodima_seo_advisor_render_admin() );
 $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'fixed', 'tsource' => 'crawl' ];
 $p3_d1 = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( '«کارها» ← «برطرف شد»: منوی «از کدام بخش» با همه منبع‌ها؛ فیلتر ایرادهای فنی فقط کار خزش؛ گام «صفحه دوباره از سایت خوانده شد»', [ str_contains( $p3_d0, 'aria-label="از کدام بخش"' ), str_contains( $p3_d0, 'tsource=competition' ) && str_contains( $p3_d0, 'tsource=health' ) && str_contains( $p3_d0, 'tsource=indexing' ), str_contains( $p3_d1, 'رقابت صفحه‌ها برای' ), str_contains( $p3_d1, 'بدون H1' ), str_contains( $p3_d1, 'صفحه دوباره از سایت خوانده شد' ) ], [ true, true, false, true, true ] );
+hodima_ad( '«کارها» ← «برطرف شد»: ردیف چیپ «از کدام بخش» و «همه» حذف (SEO 3.5.5: منو فقط وقتی دو بخش هر کدام ≥۳ کار دارند)؛ فیلتر ایرادهای فنی فقط کار خزش؛ گام «صفحه دوباره از سایت خوانده شد»', [ str_contains( $p3_d0, 'aria-label="از کدام بخش"' ), str_contains( $p3_d0, 'tsource=competition' ), str_contains( $p3_d1, 'رقابت صفحه‌ها برای' ), str_contains( $p3_d1, 'بدون H1' ), str_contains( $p3_d1, 'صفحه دوباره از سایت خوانده شد' ) ], [ false, false, false, true, true ] );
 $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
 $p3_d2 = $cap( static fn() => hodima_seo_advisor_render_admin() );
 hodima_ad( 'در دست انجام: «هنوز خراب است» با قدم بعدی و «دوباره انجام دادم»؛ نشان تب مبدأ', [ str_contains( $p3_d2, 'هنوز خراب است' ), str_contains( $p3_d2, 'قانون ۳۰۱ بگذارید' ), str_contains( $p3_d2, 'دوباره انجام دادم' ), str_contains( $p3_d2, '<span class="hds-pill hds-pill--info">آدرس‌های خراب</span>' ) ], [ true, true, true, true ] );
@@ -4627,6 +4627,82 @@ $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i WHERE path L
 hodima_seo_advisor_crawl_map( true );
 $px_draft_meta = hodima_seo_advisor_draft_cut_px( str_repeat( 'گیره مو فانتزی با کیفیت عالی و قیمت مناسب. ', 12 ), 'description', hodima_seo_advisor_draft_px_max( 'description' ), 90 );
 hodima_ad( 'پیش‌نویس متا: در ۹۵٪ سقف پیکسلی می‌ماند و خالی نیست', [ hodima_seo_text_px( $px_draft_meta, 'description' ) <= hodima_seo_advisor_draft_px_max( 'description' ), mb_strlen( $px_draft_meta ) > 90 ], [ true, true ] );
+
+echo "=== تب «کارهای انجام‌شده»: پاک کردن، پاک‌سازی گروهی، خط زمانی فشرده (SEO 3.5.5)\n";
+$tk_saved = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false );
+$tk_cleared_saved = get_option( HODIMA_SEO_ADVISOR_TASKS_CLEARED_OPTION, false );
+delete_option( HODIMA_SEO_ADVISOR_TASKS_CLEARED_OPTION );
+$tk_now = time();
+$tk_task = static fn( string $path, string $rule, string $status, int $fixed_days_ago, string $title ): array => [ 'path' => $path, 'rule' => $rule, 'term' => '', 'title' => $title, 'status' => $status, 'at' => $tk_now - ( $fixed_days_ago + 1 ) * DAY_IN_SECONDS, 'fixed' => $fixed_days_ago >= 0 ? $tk_now - $fixed_days_ago * DAY_IN_SECONDS : 0, 'back' => 0, 'check' => [] ];
+$tk_rows = [];
+foreach ( [ 200, 100, 10 ] as $tk_i => $tk_ago ) {
+	$tk_rows[ hodima_seo_advisor_task_key( "/tk-c{$tk_i}/", 'crawl_no_meta', '' ) ] = $tk_task( "/tk-c{$tk_i}/", 'crawl_no_meta', 'done', $tk_ago, 'بدون توضیح متا' );
+	$tk_rows[ hodima_seo_advisor_task_key( "/tk-h{$tk_i}/", 'health_dead', '' ) ] = $tk_task( "/tk-h{$tk_i}/", 'health_dead', 'done', $tk_ago, 'آدرس خراب' );
+}
+$tk_back_key  = hodima_seo_advisor_task_key( '/tk-back/', 'crawl_no_h1', '' );
+$tk_doing_key = hodima_seo_advisor_task_key( '/tk-doing/', 'crawl_no_h1', '' );
+$tk_rows[ $tk_back_key ]  = [ 'back' => $tk_now - 100 ] + $tk_task( '/tk-back/', 'crawl_no_h1', 'done', -1, 'تیتر برگشته' );
+$tk_rows[ $tk_doing_key ] = $tk_task( '/tk-doing/', 'crawl_no_h1', 'doing', -1, 'تیتر در حال انجام' );
+$tk_rows[ $tk_doing_key ]['at'] = $tk_now - 10;
+$tk_rows[ hodima_seo_advisor_task_key( '/tk-rej/', 'crawl_no_h1', '' ) ] = $tk_task( '/tk-rej/', 'crawl_no_h1', 'rejected', -1, 'تیتر رد شده' );
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $tk_rows, false );
+hodima_seo_advisor_tasks_cache_reset();
+wp_set_current_user( 1 );
+$tk_render = static function ( array $get ) use ( $cap ): string {
+	$_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ] + $get;
+	$html = $cap( static fn() => hodima_seo_advisor_render_tasks() );
+	$_GET = [];
+	return $html;
+};
+$tk_fixed = $tk_render( [ 'tstatus' => 'fixed' ] );
+hodima_ad( 'برطرف شد: فقط «تمام شد، پاک کن» (۶ ردیف)، بی «در حال انجام» و «لازم نیست» و «برگردان به فهرست»', [ substr_count( $tk_fixed, '>تمام شد، پاک کن</button>' ), str_contains( $tk_fixed, '>در حال انجام</button>' ), str_contains( $tk_fixed, '>لازم نیست</button>' ), str_contains( $tk_fixed, '>برگردان به فهرست</button>' ) ], [ 6, false, false, false ] );
+hodima_ad( 'برطرف شد: خط زمانی فشرده به‌جای سه کارت؛ nonce بی شناسه (یک فرم و چند دکمه، بدون id="_wpnonce" تکراری)', [ substr_count( $tk_fixed, 'hodima-advisor__tl-line' ), str_contains( $tk_fixed, 'hodima-advisor__step' ), substr_count( $tk_fixed, 'id="_wpnonce"' ) < 2, substr_count( $tk_fixed, '<form method="post"' ) >= 6 ], [ 6, false, true, true ] );
+hodima_ad( 'برطرف شد: دکمه پاک‌سازی گروهی با شمار، پنجره تأیید، منوی «قدیمی‌تر از»، CSV؛ بی شمارنده تا چیزی پاک نشده', [ str_contains( $tk_fixed, 'پاک کردن همه برطرف‌شده‌ها (6)' ), str_contains( $tk_fixed, 'id="hodima-advisor-clean"' ), str_contains( $tk_fixed, 'قدیمی‌تر از 90 روز (4)' ), str_contains( $tk_fixed, 'action=hodima_advisor_task_csv' ), str_contains( $tk_fixed, 'تا امروز' ) ], [ true, true, true, true, false ] );
+hodima_ad( 'منوی «بخش» فقط با دو بخش ≥۳ کار (۳ خزش + ۳ آدرس خراب)؛ «همه» و ردیف چیپ بخش نیست', [ str_contains( $tk_fixed, 'id="hodima-advisor-tsource"' ), str_contains( $tk_fixed, 'aria-label="از کدام بخش"' ) ], [ true, false ] );
+$tk_filtered = $tk_render( [ 'tstatus' => 'fixed', 'tsource' => 'health' ] );
+hodima_ad( 'فیلتر بخش: فقط آدرس‌های خراب', [ substr_count( $tk_filtered, '>تمام شد، پاک کن</button>' ), str_contains( $tk_filtered, 'بدون توضیح متا' ) ], [ 3, false ] );
+$tk_open = $tk_render( [ 'tstatus' => 'open' ] );
+hodima_ad( 'نیاز به کار: «برگشته» بالاتر از «در حال انجام» با اینکه کار دوم تازه‌تر است', [ mb_strpos( $tk_open, 'تیتر برگشته' ) < mb_strpos( $tk_open, 'تیتر در حال انجام' ), str_contains( $tk_open, '>دوباره انجام دادم</button>' ), str_contains( $tk_open, '>انجام دادم</button>' ) ], [ true, true, true ] );
+$tk_rej = $tk_render( [ 'tstatus' => 'rejected' ] );
+hodima_ad( 'لازم نیست: فقط «برگردان به فهرست» (همان پاک‌کردن رکورد)؛ بی دکمه پاک‌سازی گروهی', [ str_contains( $tk_rej, '>برگردان به فهرست</button>' ), str_contains( $tk_rej, '>پاک کردن</button>' ), str_contains( $tk_rej, 'hodima-advisor-clean' ) ], [ true, false, false ] );
+
+hodima_ad( 'گزینه‌های «قدیمی‌تر از» فقط از فهرست مجاز', [ hodima_seo_advisor_tasks_clean_days( '90' ), hodima_seo_advisor_tasks_clean_days( '7' ), hodima_seo_advisor_tasks_clean_days( [ 1 ] ), hodima_seo_advisor_tasks_clean_days( '0' ) ], [ 90, 0, 0, 0 ] );
+hodima_ad( 'کارهای برطرف‌شده قدیمی‌تر از ۹۰ روز: ۴ کار (۲۰۰ و ۱۰۰ روز، دو بخش)؛ «همه» ۶؛ برگشته و در حال انجام و رد شده نه', [ count( hodima_seo_advisor_tasks_fixed_before( 90 ) ), count( hodima_seo_advisor_tasks_fixed_before( 0 ) ), isset( hodima_seo_advisor_tasks_fixed_before( 0 )[ $tk_back_key ] ) ], [ 4, 6, false ] );
+
+$tk_expect = [];
+foreach ( hodima_seo_advisor_tasks_fixed_before( 90 ) as $tk_key => $tk_t ) {
+	$tk_expect[ $tk_key ] = [ 'at' => $tk_t['at'], 'status' => $tk_t['status'] ];
+}
+// کاری که بین انتخاب و پاک‌کردن عوض شد (مدیر «لازم نیست» زد) نباید پاک شود
+$tk_victim = array_key_first( $tk_expect );
+$tk_mut    = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );
+$tk_mut[ $tk_victim ]['status'] = 'rejected';
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $tk_mut, false );
+$tk_removed = hodima_seo_advisor_tasks_remove( $tk_expect );
+hodima_seo_advisor_tasks_cleared_add( $tk_removed );
+hodima_ad( 'پاک‌سازی از نسخه تازه گزینه: کار عوض‌شده می‌ماند (۳ از ۴ پاک)، شمارنده ۳، باقی: ۶ − ۳ + همان کار + ۳ کار دیگر', [ $tk_removed, hodima_seo_advisor_tasks_cleared(), count( hodima_seo_advisor_tasks() ), isset( hodima_seo_advisor_tasks()[ $tk_victim ] ) ], [ 3, 3, 6, true ] );
+$tk_after = $tk_render( [ 'tstatus' => 'fixed' ] );
+hodima_ad( 'بعد از پاک‌سازی: شمارنده «تا امروز N کار برطرف شد» = پاک‌شده + مانده (۳ + ۲)', [ str_contains( $tk_after, 'تا امروز 5 کار برطرف شد' ), str_contains( $tk_after, 'پاک کردن همه برطرف‌شده‌ها (2)' ) ], [ true, true ] );
+
+$tk_csv = hodima_seo_advisor_tasks_csv( 'fixed', 0 );
+$tk_lines = array_filter( explode( "\n", trim( $tk_csv ) ) );
+hodima_ad( 'CSV: BOM، سطر عنوان، یک سطر برای هر کار برطرف‌شده، ستون‌ها', [ str_starts_with( $tk_csv, "\xEF\xBB\xBF" ), count( $tk_lines ), str_contains( $tk_lines[0], 'تاریخ برطرف شدن' ), str_contains( $tk_csv, '/tk-c2/' ), str_contains( $tk_csv, '/tk-back/' ) ], [ true, 3, true, true, false ] );
+$tk_inj = [ hodima_seo_advisor_task_key( '/=cmd/', 'crawl_no_meta', '' ) => $tk_task( '/=cmd/', 'crawl_no_meta', 'done', 1, '=HYPERLINK("x")' ) ];
+update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $tk_inj, false );
+hodima_seo_advisor_tasks_cache_reset();
+hodima_ad( 'CSV: سلول با = شروع شود با آپستروف خنثی می‌شود (فرمول اکسل)', [ str_contains( hodima_seo_advisor_tasks_csv( 'fixed', 0 ), "'=HYPERLINK" ), str_contains( hodima_seo_advisor_tasks_csv( 'fixed', 0 ), ',=HYPERLINK' ) ], [ true, false ] );
+
+// یادآوری پر شدن: ≥۵۰۰ کار بسته ← نوار ملایم، ≥۲۶۰۰ کل ← هشدار؛ زیر آن هیچ
+$tk_note = static function ( int $total, array $counts ): string {
+	ob_start();
+	hodima_seo_advisor_render_tasks_note( $total, $counts + [ 'open' => 0, 'waiting' => 0, 'fixed' => 0, 'rejected' => 0 ], 'open' );
+	return (string) ob_get_clean();
+};
+hodima_ad( 'یادآوری پر شدن: خالی زیر ۵۰۰ بسته، ملایم از ۵۰۰، هشدار سقف از ۲۶۰۰ (پاک‌کردن خودکار نیست)', [ $tk_note( 100, [ 'fixed' => 100 ] ), str_contains( $tk_note( 600, [ 'fixed' => 600 ] ), '600 کار بسته' ), str_contains( $tk_note( 2700, [ 'fixed' => 100 ] ), 'بی‌صدا پاک می‌شوند' ) ], [ '', true, true ] );
+false === $tk_saved ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $tk_saved, false );
+false === $tk_cleared_saved ? delete_option( HODIMA_SEO_ADVISOR_TASKS_CLEARED_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_CLEARED_OPTION, $tk_cleared_saved, false );
+hodima_seo_advisor_tasks_cache_reset();
+wp_set_current_user( 0 );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

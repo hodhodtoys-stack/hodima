@@ -969,6 +969,129 @@
 	align-items: center;
 }
 
+/* خط زمانی فشرده کار برطرف‌شده (SEO 3.5.5): ✓ انجام دادید ← ✓ … ← ✓ برطرف شد؛ جایگزین سه کارت */
+.hodima-advisor .hodima-advisor__tl-wrap {
+	display: grid;
+	grid-column: 1;
+	gap: 0.25rem;
+	min-inline-size: 0;
+}
+
+/* ردیف برطرف‌شده: خط زمانی و دکمه «تمام شد، پاک کن» یک ردیف (SEO 3.5.5)، گوشی زیر هم */
+.hodima-advisor .hodima-advisor__task-actions--end {
+	grid-column: 2;
+	justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+	.hodima-advisor .hodima-advisor__tl-line {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.hodima-advisor .hodima-advisor__tl-arrow {
+		display: none;
+	}
+
+	.hodima-advisor .hodima-advisor__tl-wrap,
+	.hodima-advisor .hodima-advisor__task-actions--end {
+		grid-column: 1 / -1;
+		justify-content: flex-start;
+	}
+}
+
+.hodima-advisor .hodima-advisor__tl-line {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25rem 0.625rem;
+	align-items: center;
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__tl-step {
+	display: inline-flex;
+	gap: 0.25rem;
+	align-items: center;
+	font-weight: 600;
+}
+
+.hodima-advisor .hodima-advisor__tl-step[data-state="ok"] {
+	color: var(--hd-ok);
+}
+
+.hodima-advisor .hodima-advisor__tl-step[data-state="wait"] {
+	color: var(--hd-warn);
+}
+
+.hodima-advisor .hodima-advisor__tl-step[data-state="bad"] {
+	color: var(--hd-error);
+}
+
+.hodima-advisor .hodima-advisor__tl-step small,
+.hodima-advisor .hodima-advisor__tl-arrow {
+	color: var(--hd-muted);
+	font-weight: 400;
+}
+
+.hodima-advisor .hodima-advisor__tl-more {
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__tl-more summary {
+	color: var(--hd-primary);
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.hodima-advisor .hodima-advisor__tl-more summary:focus-visible {
+	outline: 2px solid var(--hd-primary);
+	outline-offset: 2px;
+}
+
+.hodima-advisor .hodima-advisor__tl-more p {
+	margin: 0.25rem 0 0;
+	line-height: 1.8;
+}
+
+/* نوار پاک‌سازی گروهی و منوی «بخش» تب کارها */
+.hodima-advisor .hodima-advisor__cleanbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.625rem 1rem;
+	align-items: center;
+	justify-content: space-between;
+	margin-block: 0.75rem 0;
+}
+
+.hodima-advisor .hodima-advisor__cleanbar-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.hodima-advisor .hodima-advisor__cleanbar-sum {
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__srcsel .hds-input {
+	max-inline-size: 14rem;
+}
+
+.hodima-advisor .hodima-advisor__srcsel {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+	margin-block-start: 0.5rem;
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__task-note {
+	margin-block: 0.75rem 0;
+}
+
 /* ردیف «گرفتن داده تازه» بالای تب‌ها: بازه + وضعیت + دکمه */
 .hodima-advisor a.hds-btn,
 .hodima-advisor a.hds-btn:hover {

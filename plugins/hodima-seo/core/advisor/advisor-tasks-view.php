@@ -15,6 +15,9 @@ defined( 'ABSPATH' ) || exit;
 /** کار در هر صفحه تب‌های «در دست انجام» و «انجام‌شده». */
 const HODIMA_SEO_ADVISOR_TASKS_PER_PAGE = 25;
 
+/** منوی «بخش» فقط وقتی دست‌کم دو بخش هر کدام این‌قدر کار دارند (SEO 3.5.5). */
+const HODIMA_SEO_ADVISOR_TASKS_SOURCE_MIN = 3;
+
 /** تاریخ کوتاه شمسی (Core) یا میلادی. */
 function hodima_seo_advisor_task_date( int $time ): string {
 	return function_exists( 'hodima_jalali_format' ) ? hodima_jalali_format( 'j F Y', $time + (int) ( (float) get_option( 'gmt_offset', 0 ) * HOUR_IN_SECONDS ) ) : (string) wp_date( 'Y/m/d', $time );
@@ -291,37 +294,162 @@ function hodima_seo_advisor_task_wait_text( array $task ): string {
 }
 
 /**
- * فرم دکمه‌های وضعیت یک کار (تب‌های «در دست انجام» و «انجام‌شده»).
+ * دکمه‌های وضعیت یک کار؛ هر وضعیت فقط دکمه‌های معنی‌دار خودش (SEO 3.5.5). قبلا همه وضعیت‌ها «در حال انجام»، «لازم نیست» و
+ * «برگردان به فهرست» داشتند و برای کار برطرف‌شده بی‌معنی بود. یک فرم و چند دکمه (`id="_wpnonce"` دیگر در هر ردیف دو بار تکرار نمی‌شود).
+ * وضعیت خالی = برداشتن رکورد کار؛ برای «لازم نیست» یعنی برگشت ایراد به فهرست، برای بقیه پاک کردن.
  *
  * @param array{path: string, rule: string, term: string, title: string, status: string} $task
  */
 function hodima_seo_advisor_render_task_form( array $task, string $state ): void {
-	$hidden = static function () use ( $task ): void {
-		wp_nonce_field( 'hodima_advisor_task' );
-		foreach ( [ 'path', 'rule', 'term', 'title' ] as $field ) {
-			printf( '<input type="hidden" name="%1$s" value="%2$s">', esc_attr( $field ), esc_attr( $task[ $field ] ) );
-		}
+
+	static $nonce = null;
+	$nonce ??= wp_create_nonce( 'hodima_advisor_task' );
+
+	// [مقدار status، برچسب، نوع دکمه]: main = اصلی، done = سبز، quiet = کم‌رنگ، outline
+	$buttons = match ( $state ) {
+		'fixed'                       => [ [ '', 'تمام شد، پاک کن', 'done' ] ],
+		'rejected'                    => [ [ '', 'برگردان به فهرست', 'outline' ] ],
+		'no_effect', 'back', 'still'  => [ [ 'done_redo', 'دوباره انجام دادم', 'main' ], [ 'rejected', 'لازم نیست', 'quiet' ] ],
+		'doing'                       => [ [ 'done', 'انجام دادم', 'main' ], [ 'rejected', 'لازم نیست', 'quiet' ], [ '', 'پاک کردن', 'quiet' ] ],
+		default                       => [ [ 'rejected', 'لازم نیست', 'quiet' ], [ '', 'پاک کردن', 'quiet' ] ],
 	};
+	$name = '' !== $task['title'] ? $task['title'] : hodima_seo_advisor_rule_label( $task['rule'] );
 	?>
-	<?php if ( in_array( $state, [ 'no_effect', 'back', 'still' ], true ) ) : ?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__task-actions">
-			<input type="hidden" name="action" value="hodima_advisor_task">
-			<?php $hidden(); ?>
-			<input type="hidden" name="status" value="done">
-			<input type="hidden" name="redo" value="1">
-			<button type="submit" class="hds-btn">دوباره انجام دادم</button>
-		</form>
-	<?php endif; ?>
-	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__task-actions">
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__task-actions<?php echo 'fixed' === $state ? ' hodima-advisor__task-actions--end' : ''; ?>">
 		<input type="hidden" name="action" value="hodima_advisor_task">
-		<?php $hidden(); ?>
-		<?php foreach ( hodima_seo_advisor_task_statuses() as $key => $label ) : ?>
-			<?php if ( $key !== $task['status'] ) : ?>
-				<button type="submit" name="status" value="<?php echo esc_attr( $key ); ?>" class="hds-btn hds-btn--outline"><?php echo esc_html( $label ); ?></button>
-			<?php endif; ?>
+		<input type="hidden" name="_wpnonce" value="<?php echo esc_attr( $nonce ); ?>">
+		<?php wp_referer_field(); ?>
+		<?php foreach ( [ 'path', 'rule', 'term', 'title' ] as $field ) : ?>
+			<input type="hidden" name="<?php echo esc_attr( $field ); ?>" value="<?php echo esc_attr( $task[ $field ] ); ?>">
 		<?php endforeach; ?>
-		<button type="submit" name="status" value="" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-undo" aria-hidden="true"></span>برگردان به فهرست</button>
+		<?php foreach ( $buttons as [ $value, $label, $kind ] ) : ?>
+			<button type="submit" name="status" value="<?php echo esc_attr( $value ); ?>" class="<?php echo esc_attr( match ( $kind ) {
+				'done'    => 'hds-btn hodima-advisor__mark-done',
+				'quiet'   => 'hds-btn hds-btn--outline hodima-advisor__mark-reject',
+				'outline' => 'hds-btn hds-btn--outline',
+				default   => 'hds-btn',
+			} ); ?>" aria-label="<?php echo esc_attr( $label . ': ' . $name ); ?>"><?php echo esc_html( $label ); ?></button>
+		<?php endforeach; ?>
 	</form>
+	<?php
+}
+
+/**
+ * خط زمانی فشرده کار برطرف‌شده: ✓ انجام دادید ← ✓ … ← ✓ برطرف شد. تاریخ‌های کوتاه کنار گام، متن‌های بلند (توضیح) زیر «جزئیات».
+ *
+ * @param list<array{state: string, label: string, detail: string}> $steps خروجی hodima_seo_advisor_task_timeline()
+ */
+function hodima_seo_advisor_render_task_line( array $steps ): void {
+
+	$long = [];
+	?>
+	<div class="hodima-advisor__tl-wrap">
+	<div class="hodima-advisor__tl-line" role="group" aria-label="مراحل این کار">
+		<?php foreach ( $steps as $i => $step ) : ?>
+			<?php
+			$inline = '' !== $step['detail'] && mb_strlen( $step['detail'] ) <= 24;
+			if ( '' !== $step['detail'] && ! $inline ) {
+				$long[] = $step['detail'];
+			}
+			?>
+			<?php if ( $i > 0 ) : ?><span class="hodima-advisor__tl-arrow" aria-hidden="true">←</span><?php endif; ?>
+			<span class="hodima-advisor__tl-step" data-state="<?php echo esc_attr( $step['state'] ); ?>">
+				<span aria-hidden="true"><?php echo 'ok' === $step['state'] ? '✓' : ( 'bad' === $step['state'] ? '✕' : '…' ); ?></span>
+				<?php echo esc_html( $step['label'] ); ?>
+				<?php if ( $inline ) : ?><small><?php echo esc_html( $step['detail'] ); ?></small><?php endif; ?>
+			</span>
+		<?php endforeach; ?>
+	</div>
+	<?php if ( $long ) : ?>
+		<details class="hodima-advisor__tl-more">
+			<summary>جزئیات</summary>
+			<?php foreach ( $long as $text ) : ?>
+				<p><?php echo esc_html( $text ); ?></p>
+			<?php endforeach; ?>
+		</details>
+	<?php endif; ?>
+	</div>
+	<?php
+}
+
+/**
+ * یادآوری پر شدن گزینه کارها (فقط توضیح؛ چیزی خودکار پاک نمی‌شود): از ۵۰۰ کار بسته نوار ملایم، از ۲۶۰۰ کار کل هشدار.
+ *
+ * @param array<string, int> $counts شمار هر گروه
+ */
+function hodima_seo_advisor_render_tasks_note( int $total, array $counts, string $filter ): void {
+
+	$closed = (int) $counts['fixed'] + (int) $counts['rejected'];
+	$n      = static fn( int $value ): string => number_format_i18n( $value );
+
+	if ( $total >= HODIMA_SEO_ADVISOR_TASKS_NOTE_TOTAL ) {
+		$text = sprintf( 'فضای کارها رو به پایان است: %1$s کار از سقف %2$s. از سقف که بگذرد، قدیمی‌ترین «لازم نیست»ها و بعد قدیمی‌ترین کارها بی‌صدا پاک می‌شوند.', $n( $total ), $n( HODIMA_SEO_ADVISOR_TASKS_MAX ) );
+	} elseif ( $closed >= HODIMA_SEO_ADVISOR_TASKS_NOTE_CLOSED ) {
+		$text = sprintf( '%s کار بسته (برطرف شد یا لازم نیست) دارید.', $n( $closed ) );
+	} else {
+		return;
+	}
+
+	echo '<p class="hodima-advisor__task-effect hodima-advisor__task-note">' . esc_html( $text . ' ' );
+	if ( 'fixed' !== $filter && $counts['fixed'] > 0 ) {
+		echo hodima_seo_advisor_action( hodima_seo_advisor_page_url( [ 'tab' => 'tasks', 'tstatus' => 'fixed' ] ), 'کارهای برطرف‌شده را پاک کنید', 'edit' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action
+	}
+	echo '</p>';
+}
+
+/**
+ * نوار پاک‌سازی گروهی گروه «برطرف شد»: دکمه پنجره تأیید، دانلود CSV و شمارنده کل. چیزی خودکار پاک نمی‌شود.
+ */
+function hodima_seo_advisor_render_tasks_bulk( int $fixed ): void {
+
+	if ( $fixed < 1 ) {
+		return;
+	}
+
+	$n       = static fn( int $value ): string => number_format_i18n( $value );
+	$cleared = hodima_seo_advisor_tasks_cleared();
+	$csv     = static fn( int $days ): string => wp_nonce_url( add_query_arg( [ 'action' => 'hodima_advisor_task_csv', 'group' => 'fixed', 'days' => $days ], admin_url( 'admin-post.php' ) ), 'hodima_advisor_task_csv' );
+	$options = [];
+
+	foreach ( HODIMA_SEO_ADVISOR_TASKS_CLEAN_DAYS as $days ) {
+		$count = count( hodima_seo_advisor_tasks_fixed_before( $days ) );
+		if ( 0 === $days || $count > 0 ) {
+			$options[ $days ] = $count;
+		}
+	}
+
+	$default = isset( $options[90] ) ? 90 : 0;
+	?>
+	<div class="hodima-advisor__cleanbar">
+		<div class="hodima-advisor__cleanbar-actions">
+			<button type="button" class="hds-btn hds-btn--outline hodima-advisor__danger" data-hdsa-open="hodima-advisor-clean"><?php echo esc_html( sprintf( 'پاک کردن همه برطرف‌شده‌ها (%s)', $n( $fixed ) ) ); ?></button>
+			<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( $csv( 0 ) ); ?>">دانلود CSV</a>
+		</div>
+		<?php if ( $cleared > 0 ) : ?>
+			<span class="hodima-advisor__cleanbar-sum"><?php echo esc_html( sprintf( 'تا امروز %s کار برطرف شد', $n( $cleared + $fixed ) ) ); ?></span>
+		<?php endif; ?>
+	</div>
+	<dialog class="hds-dialog" id="hodima-advisor-clean" aria-labelledby="hodima-advisor-clean-title">
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="hodima_advisor_task_clean">
+			<input type="hidden" name="_wpnonce" value="<?php echo esc_attr( wp_create_nonce( 'hodima_advisor_task_clean' ) ); ?>">
+			<h2 class="hds-card__title" id="hodima-advisor-clean-title">کارهای برطرف‌شده پاک شوند؟</h2>
+			<p class="hodima-advisor__setting-help">فقط گروه «برطرف شد» پاک می‌شود. «نیاز به کار» و «منتظر نتیجه» و «لازم نیست» دست نمی‌خورند. اگر ایرادی دوباره پیدا شود، خودش به فهرست «کارها» برمی‌گردد. شمارنده کل کارهای برطرف‌شده می‌ماند. بازگشت ندارد؛ اگر سابقه می‌خواهید اول CSV بگیرید.</p>
+			<p>
+				<label for="hodima-advisor-clean-days">پاک شود:</label>
+				<select id="hodima-advisor-clean-days" name="days" class="hds-input">
+					<?php foreach ( $options as $days => $count ) : ?>
+						<option value="<?php echo esc_attr( (string) $days ); ?>"<?php selected( $default, $days ); ?>><?php echo esc_html( 0 === $days ? sprintf( 'همه (%s)', $n( $count ) ) : sprintf( 'قدیمی‌تر از %1$s روز (%2$s)', $n( $days ), $n( $count ) ) ); ?></option>
+					<?php endforeach; ?>
+				</select>
+			</p>
+			<div class="hds-dialog__actions">
+				<button type="submit" class="hds-btn hodima-advisor__danger">پاک کردن</button>
+				<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( $csv( 0 ) ); ?>">دانلود CSV</a>
+				<button type="button" class="hds-btn hds-btn--outline" data-hdsa-close>انصراف</button>
+			</div>
+		</form>
+	</dialog>
 	<?php
 }
 
@@ -359,6 +487,8 @@ function hodima_seo_advisor_render_tasks(): void {
 		return;
 	}
 
+	hodima_seo_advisor_render_tasks_note( count( $all ), $counts, $filter );
+
 	echo '<div class="hodima-advisor__filterbox">';
 	$status_items = [];
 	foreach ( $groups as $group => [ $label ] ) {
@@ -369,16 +499,36 @@ function hodima_seo_advisor_render_tasks(): void {
 	$rows  = array_filter( $all, static fn( array $t ): bool => hodima_seo_advisor_task_group( $t ) === $filter );
 	$count = static fn( callable $test ): int => count( array_filter( $rows, $test ) );
 
-	// از کدام تب (SEO 3.0.2): کارهای همه تب‌ها اینجا جمع می‌شوند
-	$sources = array_filter( hodima_seo_advisor_task_sources(), static fn( string $label, string $key ): bool => (bool) $count( static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $key ), ARRAY_FILTER_USE_BOTH );
-	if ( count( $sources ) > 1 ) {
-		$source_items = [ '' => [ 'همه', count( $rows ), hodima_seo_advisor_page_url( [ 'tab' => $tab, 'tstatus' => $filter ] ) ] ];
-		foreach ( $sources as $key => $label ) {
-			$source_items[ $key ] = [ $label, $count( static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $key ), hodima_seo_advisor_page_url( [ 'tab' => $tab, 'tstatus' => $filter, 'tsource' => $key ] ) ];
+	// از کدام بخش (SEO 3.0.2؛ از 3.5.5 فقط وقتی دست‌کم دو بخش هر کدام چند کار دارند، و منوی کوچک به‌جای ردیف چیپ بی‌«همه»)
+	$sources = [];
+	foreach ( hodima_seo_advisor_task_sources() as $key => $label ) {
+		$n_source = $count( static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $key );
+		if ( $n_source > 0 ) {
+			$sources[ $key ] = [ $label, $n_source ];
 		}
-		hodima_seo_advisor_filter_chips( 'از کدام بخش', $source_items, $from, [ 'small' => true, 'caption' => 'از کدام بخش:' ] );
+	}
+	if ( count( array_filter( $sources, static fn( array $s ): bool => $s[1] >= HODIMA_SEO_ADVISOR_TASKS_SOURCE_MIN ) ) > 1 ) {
+		?>
+		<form method="get" class="hodima-advisor__srcsel">
+			<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
+			<input type="hidden" name="tab" value="<?php echo esc_attr( $tab ); ?>">
+			<input type="hidden" name="tstatus" value="<?php echo esc_attr( $filter ); ?>">
+			<label for="hodima-advisor-tsource">بخش</label>
+			<select id="hodima-advisor-tsource" name="tsource" class="hds-input">
+				<option value="">همه بخش‌ها</option>
+				<?php foreach ( $sources as $key => [ $label, $n_source ] ) : ?>
+					<option value="<?php echo esc_attr( $key ); ?>"<?php selected( $from, $key ); ?>><?php echo esc_html( sprintf( '%1$s (%2$s)', $label, $n( $n_source ) ) ); ?></option>
+				<?php endforeach; ?>
+			</select>
+			<button type="submit" class="hds-btn hds-btn--outline">نمایش</button>
+		</form>
+		<?php
 	}
 	echo '</div>';
+
+	if ( 'fixed' === $filter ) {
+		hodima_seo_advisor_render_tasks_bulk( $counts['fixed'] );
+	}
 	if ( '' !== $from ) {
 		$rows = array_filter( $rows, static fn( array $t ): bool => hodima_seo_advisor_task_source( $t['rule'] ) === $from );
 	}
@@ -389,7 +539,13 @@ function hodima_seo_advisor_render_tasks(): void {
 		return;
 	}
 
-	uasort( $rows, static fn( array $a, array $b ): int => hodima_seo_advisor_task_view( $b )['time'] <=> hodima_seo_advisor_task_view( $a )['time'] );
+	// «نیاز به کار»: برگشته و بی‌اثر و هنوز مانده اول (مدیر باید زودتر ببیند)، بعد تازه‌ترین؛ بقیه فقط تازه‌ترین اول (SEO 3.5.5)
+	$weight = static fn( array $t ): int => 'open' !== $filter ? 0 : match ( hodima_seo_advisor_task_state( $t ) ) {
+		'back', 'no_effect', 'still' => 0,
+		'unseen'                     => 1,
+		default                      => 2,
+	};
+	uasort( $rows, static fn( array $a, array $b ): int => [ $weight( $a ), -hodima_seo_advisor_task_view( $a )['time'] ] <=> [ $weight( $b ), -hodima_seo_advisor_task_view( $b )['time'] ] );
 
 	// صفحه‌بندی (SEO 2.9.9): تا ۵۰۰ کار هر کدام با چند پرسش (صفحه، تاریخچه هفتگی، ایندکس) یک‌جا ساخته می‌شد
 	$total = count( $rows );
@@ -434,7 +590,9 @@ function hodima_seo_advisor_render_tasks(): void {
 				<span class="<?php echo esc_attr( $view['class'] ); ?>"><?php echo esc_html( $view['label'] ); ?></span>
 				<small><?php echo esc_html( hodima_seo_advisor_task_date( $view['time'] ) ); ?></small>
 			</div>
-			<?php if ( 'done' === $task['status'] ) : ?>
+			<?php if ( 'done' === $task['status'] && 'fixed' === $view['state'] ) : ?>
+				<?php hodima_seo_advisor_render_task_line( hodima_seo_advisor_task_timeline( $task ) ); ?>
+			<?php elseif ( 'done' === $task['status'] ) : ?>
 				<ol class="hodima-advisor__timeline">
 					<?php foreach ( hodima_seo_advisor_task_timeline( $task ) as $step ) : ?>
 						<li class="hodima-advisor__step" data-state="<?php echo esc_attr( $step['state'] ); ?>">
