@@ -212,7 +212,17 @@
 			delete article.dataset.running;
 			if (p.prog) p.prog.hidden = true;
 		}
-		if (p.run) p.run.disabled = on;
+		if (p.run) {
+			p.run.disabled = on;
+			const text = p.run.querySelector('[data-hdsa-run-label]'); // «در حال اجرا…» تا پایان کار؛ بعد برچسب اولش (SEO 3.4.9)
+			if (text && on) {
+				text.dataset.was = text.dataset.was || text.textContent;
+				text.textContent = 'در حال اجرا…';
+			} else if (text && text.dataset.was) {
+				text.textContent = text.dataset.was;
+				delete text.dataset.was;
+			}
+		}
 	};
 
 	const finish = (article, text, isError, facts) => {
@@ -377,3 +387,8 @@
 	document.querySelectorAll('[data-hdsa-crawl-live]').forEach(drive);
 	document.addEventListener('hdsa:crawl-live', (event) => drive(event.detail));
 })();
+
+/* ── نوار «خزش تمام شد» (SEO 3.4.9): دکمه «بستن» همان بار پنهانش می‌کند؛ ۱۵ دقیقه بعد خودش دیگر نمی‌آید ── */
+document.querySelectorAll('[data-hdsa-crawlbar-close]').forEach((button) => {
+	button.addEventListener('click', () => button.closest('.hodima-advisor__crawlbar')?.setAttribute('hidden', ''));
+});

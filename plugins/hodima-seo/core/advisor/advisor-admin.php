@@ -669,6 +669,7 @@ function hodima_seo_advisor_render_admin(): void {
 
 	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
 	hodima_seo_advisor_render_tabs( $tab, $has_data );
+	hodima_seo_advisor_render_crawlbar( $tab ); // خزش در جریان یا تازه تمام‌شده: «کارها» و «سلامت سایت» (SEO 3.4.9)
 	if ( ! in_array( $tab, [ 'overview', 'tasks', 'crawl', 'jobs', 'settings' ], true ) ) {
 		hodima_seo_advisor_render_toolbar( $tab );
 	}

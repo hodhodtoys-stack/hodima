@@ -77,7 +77,8 @@ function hodima_seo_advisor_crawler_status_view(): array {
 	$n        = static fn( int|float $value ): string => number_format_i18n( $value );
 	$running  = 'running' === $status['state'];
 	$queued   = $n( $status['queued'] + $status['seeding'] );
-	$progress = sprintf( '%1$s صفحه خوانده شد، %2$s در صف', $n( $status['done'] ), $queued );
+	$eta      = hodima_seo_advisor_crawler_eta( $status );
+	$progress = sprintf( '%1$s صفحه خوانده شد، %2$s در صف', $n( $status['done'] ), $queued ) . ( '' !== $eta ? '؛ ' . $eta : '' ); // SEO 3.4.9: زمان تقریبی مانده
 
 	$view = match ( $status['state'] ) {
 		'off'     => [ 'warn', 'خاموش', 'خزش خودکار خاموش است؛ فقط «خزش همین حالا» کار می‌کند.' ],

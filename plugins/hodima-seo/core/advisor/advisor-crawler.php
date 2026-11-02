@@ -1317,6 +1317,59 @@ function hodima_seo_advisor_crawler_start_now(): void {
 }
 
 /**
+ * خزش هدفمند (SEO 3.4.9): فقط همین صفحه‌ها دوباره خوانده می‌شوند (دکمه «بازخوانی این N صفحه» کار کلی)، نه کل سایت.
+ * همان دور «سریع» است: چیزی پاک نمی‌شود و نقشه سایت خوانده نمی‌شود؛ فقط ردیف و لینک این صفحه‌ها تازه می‌شود و در پایان
+ * لینک ورودی، نمره و پیشنهادها دوباره ساخته می‌شوند. بی‌توجه به ساعت خزش (مثل «خزش همین حالا»).
+ *
+ * @param list<string> $paths مسیر یکسان‌شده صفحه‌ها
+ * @return bool false = دوری در جریان است یا مسیری نیست (چیزی شروع نشد)
+ */
+function hodima_seo_advisor_crawler_start_paths( array $paths ): bool {
+
+	$paths = array_values( array_unique( array_filter( array_map( 'strval', $paths ), static fn( string $path ): bool => str_starts_with( $path, '/' ) ) ) );
+
+	if ( ! $paths || 'running' === hodima_seo_advisor_crawler_state()['status'] ) {
+		return false;
+	}
+
+	hodima_seo_advisor_ensure_tables();
+
+	$state                = hodima_seo_advisor_crawler_new_state( hodima_seo_advisor_crawler_state(), 'quick', array_map( static fn( string $path ): string => 'u:' . $path, $paths ) );
+	$state['manual']      = true;
+	$state['pause_until'] = 0;
+	hodima_seo_advisor_crawler_save( $state );
+
+	wp_schedule_single_event( time() + 5, HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ 0 ] );
+
+	return true;
+}
+
+/** میانگین زمان هر صفحه در خزش (ثانیه): فاصله ۱ ثانیه + زمان پاسخ؛ فقط برای «حدود N دقیقه مانده». */
+const HODIMA_SEO_ADVISOR_CRAWLER_ETA_SECONDS = 1.5;
+
+/**
+ * زمان تقریبی خزش N صفحه برای نمایش: «حدود N دقیقه» یا «کمتر از یک دقیقه».
+ */
+function hodima_seo_advisor_crawler_duration( int $pages ): string {
+
+	$seconds = max( 0, $pages ) * HODIMA_SEO_ADVISOR_CRAWLER_ETA_SECONDS;
+
+	return $seconds < 60 ? 'کمتر از یک دقیقه' : sprintf( 'حدود %s دقیقه', number_format_i18n( (int) ceil( $seconds / 60 ) ) );
+}
+
+/**
+ * برآورد زمان مانده خزش در جریان («حدود N دقیقه مانده»)؛ خالی = چیزی در صف نیست.
+ *
+ * @param array{queued: int, seeding: int} $status hodima_seo_advisor_crawler_status()
+ */
+function hodima_seo_advisor_crawler_eta( array $status ): string {
+
+	$left = (int) $status['queued'] + (int) $status['seeding'];
+
+	return $left > 0 ? hodima_seo_advisor_crawler_duration( $left ) . ' مانده' : '';
+}
+
+/**
  * وضعیت برای نمایش: off، waiting (منتظر پنجره یا موعد)، running، paused.
  *
  * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, pages: int, capped: bool, mode: string}

@@ -30,13 +30,14 @@ function hodima_seo_advisor_cron_pills(): array {
 }
 
 /**
- * تب بازگشت بعد از یک کنش فرم (فیلد پنهان tab): «خزش و داده» یا «تنظیمات»، وگرنه `$fallback`. nonce را خود کنش‌ها بررسی کرده‌اند.
+ * تب بازگشت بعد از یک کنش فرم (فیلد پنهان tab): «خزش و داده»، «تنظیمات»، «کارها» یا «سلامت سایت»، وگرنه `$fallback`. nonce را خود
+ * کنش‌ها بررسی کرده‌اند. (SEO 3.4.9: «کارها» و «سلامت سایت» هم می‌توانند خزش را شروع کنند و ادمین همان‌جا می‌ماند.)
  */
 function hodima_seo_advisor_back_tab( string $fallback ): string {
 
 	$tab = isset( $_POST['tab'] ) ? sanitize_key( wp_unslash( (string) $_POST['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce در کنش بررسی شده
 
-	return in_array( $tab, [ 'jobs', 'settings' ], true ) ? $tab : $fallback;
+	return in_array( $tab, [ 'jobs', 'settings', 'overview', 'crawl' ], true ) ? $tab : $fallback;
 }
 
 add_action( 'admin_post_hodima_advisor_pipeline_now', 'hodima_seo_advisor_handle_pipeline_now' );
@@ -89,7 +90,7 @@ function hodima_seo_advisor_handle_pipeline_now(): void {
 /**
  * فرم «اجرا همین حالا» یک کار دیرشده: به همان کنش دستی خودش (دکمه تب خودش) می‌رود و به کارت برمی‌گردد.
  */
-function hodima_seo_advisor_cron_run_form( string $key ): string {
+function hodima_seo_advisor_cron_run_form( string $key, bool $running = false ): string {
 
 	$map = [
 		'refresh'  => [ 'hodima_advisor_refresh', 'hodima_advisor_refresh' ],
@@ -103,11 +104,14 @@ function hodima_seo_advisor_cron_run_form( string $key ): string {
 	}
 
 	return sprintf(
-		'<form method="post" action="%1$s" class="hodima-advisor__cron-run" data-hdsa-job-form="%4$s"><input type="hidden" name="action" value="%2$s"><input type="hidden" name="_wpnonce" value="%3$s"><input type="hidden" name="tab" value="jobs"><button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"><span class="dashicons dashicons-controls-play" aria-hidden="true"></span> اجرا همین حالا</button></form>',
+		'<form method="post" action="%1$s" class="hodima-advisor__cron-run" data-hdsa-job-form="%4$s"><input type="hidden" name="action" value="%2$s"><input type="hidden" name="_wpnonce" value="%3$s"><input type="hidden" name="tab" value="jobs"><button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"%5$s><span class="dashicons dashicons-controls-play" aria-hidden="true"></span> <span data-hdsa-run-label%6$s>%7$s</span></button></form>',
 		esc_url( admin_url( 'admin-post.php' ) ),
 		esc_attr( $map[ $key ][0] ),
 		esc_attr( wp_create_nonce( $map[ $key ][1] ) ),
-		esc_attr( $key )
+		esc_attr( $key ),
+		$running ? ' disabled' : '',
+		$running ? ' data-was="اجرا همین حالا"' : '',
+		$running ? 'در حال اجرا…' : 'اجرا همین حالا'
 	);
 }
 

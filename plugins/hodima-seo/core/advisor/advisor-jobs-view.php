@@ -117,7 +117,7 @@ function hodima_seo_advisor_render_job_card( array $job, array $pills ): void {
 			</dl>
 			<span class="<?php echo esc_attr( $pill[1] ); ?> hodima-advisor__job-pill" data-hdsa-pill><?php echo esc_html( $progress['running'] ? 'در حال اجرا' : $pill[0] ); ?></span>
 			<div class="hodima-advisor__job-actions">
-				<?php hodima_seo_advisor_render_job_run( $key ); ?>
+				<?php hodima_seo_advisor_render_job_run( $key, $progress['running'] ); ?>
 				<button type="button" class="hodima-advisor__job-toggle" data-hdsa-job-toggle aria-expanded="false" aria-controls="<?php echo esc_attr( $panel ); ?>">
 					تنظیمات <span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
 				</button>
@@ -189,7 +189,7 @@ function hodima_seo_advisor_job_name( string $key ): string {
  * دکمه «اجرا همین حالا»: فرم admin-post (بدون JS) که JS آن را به ایجکس نوار پیشرفت می‌برد (data-hdsa-job-form).
  * دریافت داده: فیلد «بازه» در پنل تنظیمات با ویژگی form به همین فرم وصل است.
  */
-function hodima_seo_advisor_render_job_run( string $key ): void {
+function hodima_seo_advisor_render_job_run( string $key, bool $running = false ): void {
 
 	if ( 'refresh' === $key ) {
 		$form    = 'hodima-advisor-job-form-refresh';
@@ -199,13 +199,13 @@ function hodima_seo_advisor_render_job_run( string $key ): void {
 			<input type="hidden" name="action" value="hodima_advisor_refresh">
 			<input type="hidden" name="tab" value="jobs">
 			<?php wp_nonce_field( 'hodima_advisor_refresh' ); ?>
-			<button type="submit" class="hds-btn hds-btn--outline"<?php disabled( ! $has_key ); ?>><span class="dashicons dashicons-controls-play" aria-hidden="true"></span> اجرا همین حالا</button>
+			<button type="submit" class="hds-btn hds-btn--outline hodima-advisor__act"<?php disabled( ! $has_key || $running ); ?>><span class="dashicons dashicons-controls-play" aria-hidden="true"></span> <span data-hdsa-run-label<?php echo $running ? ' data-was="اجرا همین حالا"' : ''; ?>><?php echo $running ? 'در حال اجرا…' : 'اجرا همین حالا'; ?></span></button>
 		</form>
 		<?php
 		return;
 	}
 
-	echo hodima_seo_advisor_cron_run_form( $key ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده با esc_*
+	echo hodima_seo_advisor_cron_run_form( $key, $running ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده با esc_*
 }
 
 /** محتوای پنل «تنظیمات» هر کار. */

@@ -63,6 +63,7 @@ if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-tasks-view.php';
 	require_once __DIR__ . '/advisor-health-view.php';
 	require_once __DIR__ . '/advisor-crawl-view.php';
+	require_once __DIR__ . '/advisor-recrawl.php';
 	require_once __DIR__ . '/advisor-detail-view.php';
 	require_once __DIR__ . '/advisor-overview-view.php';
 	require_once __DIR__ . '/advisor-score-view.php';

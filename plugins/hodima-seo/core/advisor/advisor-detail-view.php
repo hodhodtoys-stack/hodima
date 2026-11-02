@@ -110,12 +110,12 @@ function hodima_seo_advisor_render_image_list( array $images, int $total, string
 	$images = array_values( array_filter( array_map( 'strval', $images ) ) );
 
 	if ( ! $images ) {
-		// خزش قدیمی‌تر از ۳.۳.۶: فهرست ندارد و تا خزش بعدی نمی‌آید؛ ساکت ماندن مدیر را سردرگم کرد (SEO 3.3.7)
+		// فهرست ندارد: خزش قدیمی‌تر از ۳.۳.۶ یا آدرسی در HTML نبود. تا ۳.۴.۸ پیوندی به تب «سلامت سایت» می‌داد که دکمه خزش ندارد
+		// (بن‌بست)؛ حالا دکمه همان‌جا فقط همین صفحه را از سایت دوباره می‌خواند (SEO 3.4.9)
 		printf(
-			'<div class="hodima-advisor__detail"><p class="hodima-advisor__draft-hint">%1$s <a href="%2$s">%3$s</a></p></div>',
-			esc_html( 'فهرست تصویرها با خزش بعدی ساخته می‌شود.' ),
-			esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ),
-			esc_html( 'برای دیدنش همین حالا «خزش همین حالا» را بزنید.' )
+			'<div class="hodima-advisor__detail"><div class="hodima-advisor__recrawl-box"><p class="hodima-advisor__draft-hint">%1$s</p>%2$s</div></div>',
+			esc_html( 'فهرست تصویرها برای این صفحه هنوز ساخته نشده.' ),
+			hodima_seo_advisor_recrawl_form( [ 'scope' => 'page', 'path' => $path, 'code' => 'img_alt' ], 'بازخوانی همین صفحه', 'فقط همین یک صفحه؛ چند ثانیه' ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در recrawl_form
 		);
 		return;
 	}

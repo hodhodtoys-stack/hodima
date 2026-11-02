@@ -33,7 +33,8 @@ function hodima_seo_advisor_render_score( array $issues, int $crawled ): void {
 	$level   = static fn( int $score ): string => hodima_seo_advisor_score_grade( $score )['level'];
 	$url     = static fn( string $filter ): string => hodima_seo_advisor_page_url( [ 'tab' => 'crawl', 'cf' => $filter ] );
 
-	hodima_seo_ui_card_open( 'سلامت سایت', 'نمره از روی همه صفحه‌های خزش‌شده حساب می‌شود. هر بخش را بزنید تا ایرادهایش در فهرست پایین فیلتر شود.' );
+	hodima_seo_ui_card_open( 'سلامت سایت', 'نمره از روی همه صفحه‌های خزش‌شده حساب می‌شود. هر بخش را بزنید تا ایرادهایش در فهرست پایین فیلتر شود.', '', 'data-hdsa-score-card' );
+	echo '<div class="hodima-advisor__card-act">' . hodima_seo_advisor_crawl_now_form( 'crawl' ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده؛ دکمه خزش همان‌جا که ادمین نمره را می‌بیند (SEO 3.4.9)
 	?>
 	<div class="hodima-advisor__sc">
 		<div class="hodima-advisor__sc-gauge-wrap">

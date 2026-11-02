@@ -225,6 +225,7 @@ if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-help.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-detail-view.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-recrawl.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-overview-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-cron-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-jobs-view.php';
@@ -1743,7 +1744,7 @@ hodima_ad( 'نبودن internal_html.csv خطا می‌دهد و داده می�
 // نمایش تب
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'crawl' ];
 $crawl_html = $cap( static fn() => hodima_seo_advisor_render_crawl() );
-hodima_ad( 'تب «سلامت سایت» (قبلا ایرادهای فنی): چهار آمار، بدون پیوند «برگشت» و بدون کارت خزش (SEO 3.4.2)، جدول ایرادها، بدون کارت فایل‌ها', [ substr_count( $crawl_html, 'hds-stat__label' ), str_contains( $crawl_html, 'tab=jobs' ), str_contains( $crawl_html, 'value="hodima_advisor_crawler_now"' ) || str_contains( $crawl_html, 'value="hodima_advisor_crawler_settings"' ), str_contains( $crawl_html, 'hodima-advisor__crawl-table' ), str_contains( $crawl_html, 'فایل‌های خزش' ) || str_contains( $crawl_html, 'internal_html.csv' ) ], [ 4, false, false, true, false ] );
+hodima_ad( 'تب «سلامت سایت» (قبلا ایرادهای فنی): چهار آمار، بدون پیوند «برگشت» و بدون کارت خزش (SEO 3.4.2)، فقط دکمه «خزش همین حالا» سربرگ که به همین تب برمی‌گردد (SEO 3.4.9)، جدول ایرادها، بدون کارت فایل‌ها', [ substr_count( $crawl_html, 'hds-stat__label' ), str_contains( $crawl_html, 'tab=jobs' ), str_contains( $crawl_html, 'value="hodima_advisor_crawler_now"' ), str_contains( $crawl_html, 'value="hodima_advisor_crawler_settings"' ), str_contains( $crawl_html, 'name="tab" value="crawl"' ), str_contains( $crawl_html, 'hodima-advisor__crawl-table' ), str_contains( $crawl_html, 'فایل‌های خزش' ) || str_contains( $crawl_html, 'internal_html.csv' ) ], [ 4, false, true, false, true, true, false ] );
 $_GET['cf'] = 'orphan';
 $orphan_html = $cap( static fn() => hodima_seo_advisor_render_crawl() );
 hodima_ad( 'فیلتر «بدون لینک ورودی» فقط همان صفحه را نشان می‌دهد', [ str_contains( $orphan_html, '/orphan/' ), str_contains( $orphan_html, '/dup-b/' ) ], [ true, false ] );
@@ -3166,7 +3167,7 @@ $dr_pg    = wp_insert_post( [ 'post_title' => 'صفحه سفارش آزمون', 
 $dr_alt   = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_url ], 'total' => 1 ], (string) hodima_seo_advisor_path_key( (string) get_permalink( $dr_pg ) ) );
 hodima_ad( 'alt کتابخانه پر: برچسب «alt کتابخانه پر است»، متن alt، «ویرایش صفحه» و نبودن «ویرایش در رسانه»', [ str_contains( $dr_alt, 'alt کتابخانه پر است' ), str_contains( $dr_alt, 'گیره مو عمده' ), str_contains( $dr_alt, 'post=' . $dr_pg ), str_contains( $dr_alt, 'ویرایش در رسانه' ) ], [ true, true, true, false ] );
 delete_post_meta( $dr_att, '_wp_attachment_image_alt' );
-hodima_ad( 'فهرست تصویر خالی (خزش قدیمی): جمله «با خزش بعدی» و پیوند «خزش همین حالا» (SEO 3.3.7)؛ ایراد بی‌جزئیات و ردیف غیرخزنده: هیچ', [ str_contains( $dr_empty, 'با خزش بعدی ساخته می‌شود' ), str_contains( $dr_empty, 'tab=crawl' ), $dr_out( [ 'src' => 'crawl', 'mark' => 'orphan' ], '/p/' ), $dr_out( [ 'src' => 'opp', 'mark' => 'img_alt', 'images' => [ $dr_url ] ], '/p/' ) ], [ true, true, '', '' ] );
+hodima_ad( 'فهرست تصویر خالی (خزش قدیمی): به‌جای پیوند بن‌بست به تب «سلامت سایت» دکمه «بازخوانی همین صفحه» با مسیر همان صفحه (SEO 3.4.9)؛ ایراد بی‌جزئیات و ردیف غیرخزنده: هیچ', [ str_contains( $dr_empty, 'value="hodima_advisor_recrawl"' ) && str_contains( $dr_empty, 'name="path" value="/p/"' ) && str_contains( $dr_empty, 'بازخوانی همین صفحه' ), ! str_contains( $dr_empty, 'tab=crawl' ) && ! str_contains( $dr_empty, '<a ' ), $dr_out( [ 'src' => 'crawl', 'mark' => 'orphan' ], '/p/' ), $dr_out( [ 'src' => 'opp', 'mark' => 'img_alt', 'images' => [ $dr_url ] ], '/p/' ) ], [ true, true, '', '' ] );
 $dr_links = $dr_out( [ 'src' => 'crawl', 'mark' => 'link_broken', 'targets' => array_map( static fn( int $i ): array => [ 'path' => '/gone-' . $i . '/', 'note' => 'کد 404؛ متن لینک «x»' ], range( 1, 7 ) ) ], '/p/' );
 hodima_ad( 'فهرست لینک خراب: ۵ مورد با کپی، بسته، «و ۲ لینک دیگر»', [ substr_count( $dr_links, 'class="hodima-advisor__li"' ), str_contains( $dr_links, 'و 2 لینک دیگر' ), str_contains( $dr_links, '<details class="hodima-advisor__more">' ), str_contains( $dr_links, 'data-hdsa-copy-url="https://hodima.test/gone-1/"' ) ], [ 5, true, true, true ] );
 $dr_t = $dr_out( [ 'src' => 'crawl', 'mark' => 'title_short' ], $dr_path );
@@ -4105,6 +4106,160 @@ $ix_html = $cap( static fn() => hodima_seo_advisor_render_indexing() );
 hodima_ad( 'وضعیت در گوگل: جدول کارت موبایل با برچسب، توضیح‌ها در جمع‌شونده بسته', [ str_contains( $ix_html, 'hodima-advisor__terms hodima-advisor__cards' ), str_contains( $ix_html, 'data-label="آخرین خزش"' ), str_contains( $ix_html, 'class="hds-more hodima-advisor__explain"' ), str_contains( $ix_html, 'hodima-advisor__explain" open' ), str_contains( $ix_html, 'بعد از رفع، «انجام دادم» را بزنید' ) ], [ true, true, true, false, true ] );
 null === $ht_keep[0] ? delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION ) : update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, $ht_keep[0], false );
 null === $ht_keep[1] ? delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION ) : update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $ht_keep[1], false );
+
+echo "=== بازخوانی از خود صفحه، خزش هدفمند و نوار وضعیت خزش (SEO 3.4.9)\n";
+global $wpdb;
+$rc_keep  = [ get_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, false ), get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false ), get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, false ) ];
+$rc_n     = static fn( int $v ): string => number_format_i18n( $v );
+hodima_ad(
+	'زمان تقریبی: ۱۰ صفحه کمتر از یک دقیقه؛ ۲۲۰ صفحه (۱٫۵ ثانیه هر کدام) ≈ ۶ دقیقه؛ «مانده» فقط وقتی صفی هست',
+	[ hodima_seo_advisor_crawler_duration( 10 ), hodima_seo_advisor_crawler_duration( 220 ), hodima_seo_advisor_crawler_eta( [ 'queued' => 0, 'seeding' => 0 ] ), hodima_seo_advisor_crawler_eta( [ 'queued' => 100, 'seeding' => 20 ] ) ],
+	[ 'کمتر از یک دقیقه', 'حدود ' . $rc_n( 6 ) . ' دقیقه', '', 'حدود ' . $rc_n( 3 ) . ' دقیقه مانده' ]
+);
+
+// خزش هدفمند: فقط مسیرهای معتبر، حالت سریع (چیزی پاک نمی‌شود)، دستی؛ وقتی دوری در جریان است شروع نمی‌شود
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+hodima_ad( 'خزش هدفمند: بدون مسیر معتبر شروع نمی‌شود', hodima_seo_advisor_crawler_start_paths( [ 'x', '', 'p/' ] ), false );
+hodima_ad( 'خزش هدفمند: مسیرهای معتبر و یکتا شروع می‌شود', hodima_seo_advisor_crawler_start_paths( [ '/rc-a/', 'x', '/rc-b/', '/rc-a/' ] ), true );
+$rc_state = hodima_seo_advisor_crawler_state();
+hodima_ad(
+	'خزش هدفمند: در جریان، دستی، حالت سریع؛ seed فقط همان دو صفحه',
+	[ $rc_state['status'], $rc_state['manual'], $rc_state['mode'], $rc_state['seed'] ],
+	[ 'running', true, 'quick', [ 'u:/rc-a/', 'u:/rc-b/' ] ]
+);
+hodima_ad( 'خزش هدفمند: وقتی دوری در جریان است دوباره شروع نمی‌شود', hodima_seo_advisor_crawler_start_paths( [ '/rc-c/' ] ), false );
+
+// نوار وضعیت خزش
+$rc_bar_run = $cap( static fn() => hodima_seo_advisor_render_crawlbar( 'overview' ) );
+hodima_ad(
+	'نوار خزش: در جریان ← پیشرفت زنده (همان JS «خزش و داده»)، نوار پیشرفت، پیوند جزئیات؛ در تب‌های دیگر نمی‌آید',
+	[ str_contains( $rc_bar_run, 'data-hdsa-crawl-live=' ), str_contains( $rc_bar_run, 'data-hdsa-crawl-bar' ), str_contains( $rc_bar_run, 'خزنده در حال خواندن سایت است' ), str_contains( $rc_bar_run, 'tab=jobs' ), $cap( static fn() => hodima_seo_advisor_render_crawlbar( 'jobs' ) ), $cap( static fn() => hodima_seo_advisor_render_crawlbar( 'tasks' ) ), str_contains( $cap( static fn() => hodima_seo_advisor_render_crawlbar( 'crawl' ) ), 'data-hdsa-crawl-live=' ) ],
+	[ true, true, true, true, '', '', true ]
+);
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'finished' => time() - 60, 'pages' => 42 ], false );
+$rc_bar_done = $cap( static fn() => hodima_seo_advisor_render_crawlbar( 'crawl' ) );
+hodima_ad( 'نوار خزش: تازه تمام‌شده ← «خزش تمام شد» با دکمه بستن و بی‌پیشرفت زنده', [ str_contains( $rc_bar_done, 'خزش تمام شد' ), str_contains( $rc_bar_done, 'data-hdsa-crawlbar-close' ), str_contains( $rc_bar_done, 'data-hdsa-crawl-live=' ) ], [ true, true, false ] );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, [ 'status' => 'idle', 'finished' => time() - HODIMA_SEO_ADVISOR_CRAWLBAR_DONE_WINDOW - 60, 'pages' => 42 ], false );
+hodima_ad( 'نوار خزش: بیش از ۱۵ دقیقه از پایان گذشته یا هیچ خزشی نبوده ← هیچ', [ $cap( static fn() => hodima_seo_advisor_render_crawlbar( 'overview' ) ), ( static function (): string { delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ); return ''; } )() ], [ '', '' ] );
+hodima_ad( 'نوار خزش: بدون خزش اصلا ← هیچ', $cap( static fn() => hodima_seo_advisor_render_crawlbar( 'overview' ) ), '' );
+
+// فرم‌ها
+$rc_form = hodima_seo_advisor_recrawl_form( [ 'scope' => 'code', 'code' => 'img_alt' ], 'بازخوانی این ۲ صفحه', 'کمتر از یک دقیقه', true, true );
+hodima_ad(
+	'فرم بازخوانی: کنش و nonce و فیلدها، دکمه خاموش، یادداشت؛ بدون شناسه (nonce تکراری نشود)',
+	[ str_contains( $rc_form, 'name="action" value="hodima_advisor_recrawl"' ), str_contains( $rc_form, 'name="_wpnonce" value="' . wp_create_nonce( 'hodima_advisor_recrawl' ) . '"' ), str_contains( $rc_form, 'name="scope" value="code"' ), str_contains( $rc_form, ' disabled' ), str_contains( $rc_form, 'کمتر از یک دقیقه' ), str_contains( $rc_form, ' id=' ) ],
+	[ true, true, true, true, true, false ]
+);
+$rc_now = hodima_seo_advisor_crawl_now_form( 'crawl' );
+hodima_ad( 'فرم «خزش همین حالا» سربرگ: همان کنش تب «خزش و داده»، تب بازگشت همین تب، فعال وقتی دوری نیست', [ str_contains( $rc_now, 'value="hodima_advisor_crawler_now"' ), str_contains( $rc_now, 'name="tab" value="crawl"' ), str_contains( $rc_now, ' disabled' ), str_contains( $rc_now, 'data-hdsa-job-form' ) ], [ true, true, false, false ] );
+hodima_seo_advisor_crawler_start_paths( [ '/rc-a/' ] );
+hodima_ad( 'فرم «خزش همین حالا»: وقتی خزش در جریان است خاموش با برچسب «خزش در جریان است»', [ str_contains( hodima_seo_advisor_crawl_now_form( 'overview' ), ' disabled' ), str_contains( hodima_seo_advisor_crawl_now_form( 'overview' ), 'خزش در جریان است' ) ], [ true, true ] );
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ 0 ] );
+
+// دکمه «اجرا همین حالا» ردیف خزنده: وقتی کار در جریان است خاموش با «در حال اجرا…» و برچسب اول برای بازگردانی JS
+$rc_idle = hodima_seo_advisor_cron_run_form( 'crawler' );
+$rc_busy = hodima_seo_advisor_cron_run_form( 'crawler', true );
+hodima_ad( 'دکمه اجرا: آزاد ← فعال با «اجرا همین حالا»؛ در جریان ← خاموش «در حال اجرا…» با data-was', [ str_contains( $rc_idle, ' disabled' ), str_contains( $rc_idle, '>اجرا همین حالا</span>' ), str_contains( $rc_busy, ' disabled' ), str_contains( $rc_busy, '>در حال اجرا…</span>' ), str_contains( $rc_busy, 'data-was="اجرا همین حالا"' ) ], [ false, true, true, true, true ] );
+
+// صفحه‌های دارای ایراد برای «بازخوانی این N صفحه»: ایراد علامت‌خورده شمرده نمی‌شود
+$rc_table = hodima_seo_advisor_table( 'crawl_pages' );
+foreach ( [ '/rc-1/', '/rc-2/', '/rc-3/' ] as $rc_path ) {
+	$wpdb->replace( $rc_table, [ 'path' => $rc_path, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان آزمون ' . $rc_path, 'title_len' => 45, 'meta_len' => 120, 'h1' => 'تیتر ' . $rc_path, 'resp_ms' => 100, 'inlinks' => 5, 'text_links' => 3, 'depth' => 2, 'words' => 300, 'h1_count' => 1, 'img_noalt' => '/rc-3/' === $rc_path ? 0 : 1, 'http_links' => 0, 'canonical' => $rc_path, 'img_list' => '' ] );
+}
+hodima_seo_advisor_crawl_map( true );
+hodima_ad( 'صفحه‌های دارای ایراد «تصویر بدون alt»: فقط دو صفحه (سومی ندارد)', array_values( array_intersect( hodima_seo_advisor_recrawl_paths( 'img_alt' ), [ '/rc-1/', '/rc-2/', '/rc-3/' ] ) ), [ '/rc-1/', '/rc-2/' ] );
+hodima_seo_advisor_task_set( '/rc-2/', 'crawl_img_alt', '', 'تصویر بدون alt', 'done' );
+hodima_seo_advisor_crawl_map( true );
+hodima_ad( 'ایراد علامت‌خورده (انجام دادم) از «بازخوانی این N صفحه» بیرون است', array_values( array_intersect( hodima_seo_advisor_recrawl_paths( 'img_alt' ), [ '/rc-1/', '/rc-2/', '/rc-3/' ] ) ), [ '/rc-1/' ] );
+hodima_seo_advisor_task_set( '/rc-2/', 'crawl_img_alt', '', '', '' );
+
+// کنش admin-post (در آزمون ریدایرکت استثنا می‌دهد؛ پاسخ سایت ساختگی)
+if ( ! function_exists( 'hodima_admin_flash' ) ) {
+	require_once HODIMA_SEO_DIR . '/inc/admin-ui-fallback.php';
+}
+class Hodima_RC_Redirect extends Exception {}
+$rc_redirect = static function ( string $location ): string { throw new Hodima_RC_Redirect( $location ); };
+add_filter( 'wp_redirect', $rc_redirect, 0 ); // قبل از فیلتر mu-plugin ابزار تست (اولویت ۱) که آدرس را false می‌کند
+$rc_body = '<html><head><title>' . str_repeat( 'ع', 50 ) . '</title></head><body><main><h1>تیتر</h1><img src="/wp-content/uploads/rc-one.jpg"></main></body></html>';
+$rc_http = static function ( $pre, array $args, string $url ) use ( &$rc_body ) {
+	if ( ! str_contains( $url, '/rc-1/' ) ) {
+		return $pre;
+	}
+	return [ 'headers' => [ 'content-type' => 'text/html' ], 'body' => $rc_body, 'response' => [ 'code' => 200, 'message' => '' ], 'cookies' => [], 'filename' => null ];
+};
+add_filter( 'pre_http_request', $rc_http, 30, 3 );
+$rc_act = static function ( array $post ): array {
+	$_POST    = $post + [ '_wpnonce' => wp_create_nonce( 'hodima_advisor_recrawl' ), 'action' => 'hodima_advisor_recrawl' ];
+	$_REQUEST = $_POST;
+	delete_transient( 'hodima_admin_flash_' . get_current_user_id() );
+	$to = '';
+	try {
+		hodima_seo_advisor_handle_recrawl();
+	} catch ( Hodima_RC_Redirect $e ) {
+		$to = $e->getMessage();
+	}
+	$_POST    = [];
+	$_REQUEST = [];
+	$flash    = get_transient( 'hodima_admin_flash_' . get_current_user_id() );
+	return [ is_array( $flash ) ? implode( ' | ', array_column( $flash, 1 ) ) : '', $to, is_array( $flash ) ? implode( ',', array_column( $flash, 0 ) ) : '' ];
+};
+
+[ $rc_f1, $rc_to1 ] = $rc_act( [ 'scope' => 'page', 'path' => '/rc-1/', 'code' => 'img_alt' ] );
+hodima_ad(
+	'بازخوانی یک صفحه: همان صفحه از سایت خوانده شد؛ آدرس تصویر در فهرست ردیف ذخیره شد؛ پیام تعداد را می‌گوید؛ ریدایرکت به همان ردیف',
+	[ str_contains( $rc_f1, 'صفحه دوباره از سایت خوانده شد' ), str_contains( $rc_f1, '1 تصویر بدون alt پیدا شد' ) && str_contains( $rc_f1, 'فهرستشان زیر همین کارت است' ), (string) $wpdb->get_var( $wpdb->prepare( 'SELECT img_list FROM %i WHERE path = %s', $rc_table, '/rc-1/' ) ), str_contains( $rc_to1, '#' . hodima_seo_advisor_row_anchor( '/rc-1/' ) ) ],
+	[ true, true, 'https://' . wp_parse_url( home_url(), PHP_URL_HOST ) . '/wp-content/uploads/rc-one.jpg', true ]
+);
+
+$rc_body = '<html><head><title>' . str_repeat( 'ع', 50 ) . '</title></head><body><main><h1>تیتر</h1><img src="/wp-content/uploads/rc-one.jpg" alt="کفش"></main></body></html>';
+[ $rc_f2 ] = $rc_act( [ 'scope' => 'page', 'path' => '/rc-1/', 'code' => 'img_alt' ] );
+hodima_ad( 'بازخوانی بعد از نوشتن alt: «دیگر تصویر بدون alt ندارد»', [ str_contains( $rc_f2, 'دیگر تصویر بدون alt ندارد' ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT img_noalt FROM %i WHERE path = %s', $rc_table, '/rc-1/' ) ) ], [ true, 0 ] );
+
+$rc_body = '<html><head><title>' . str_repeat( 'ع', 50 ) . '</title></head><body><main><h1>تیتر</h1><img src="" alt=""></main></body></html>';
+[ $rc_f3 ] = $rc_act( [ 'scope' => 'page', 'path' => '/rc-1/', 'code' => 'img_alt' ] );
+hodima_ad( 'تصویر بی‌آدرس (ساخته‌شده با JS): پیام شفاف به‌جای «با خزش بعدی» تا ابد', [ str_contains( $rc_f3, '1 تصویر بدون alt پیدا شد' ), str_contains( $rc_f3, 'آدرسی برایشان در HTML صفحه نبود' ) ], [ true, true ] );
+
+[ $rc_f4 ] = $rc_act( [ 'scope' => 'page', 'path' => '/rc-not-crawled/', 'code' => 'img_alt' ] );
+[ $rc_f5 ] = $rc_act( [ 'scope' => 'page', 'path' => 'relative', 'code' => 'img_alt' ] );
+hodima_ad( 'بازخوانی صفحه‌ای که در خزش نیست یا مسیر نامعتبر: خطای روشن با راه «خزش همین حالا»، چیزی ذخیره نمی‌شود', [ str_contains( $rc_f4, 'خوانده نشد' ) && str_contains( $rc_f4, 'خزش همین حالا' ), str_contains( $rc_f5, 'خوانده نشد' ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE path = %s', $rc_table, '/rc-not-crawled/' ) ) ], [ true, true, 0 ] );
+
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+[ $rc_f6, $rc_to6 ] = $rc_act( [ 'scope' => 'code', 'code' => 'img_alt' ] );
+$rc_state6 = hodima_seo_advisor_crawler_state();
+hodima_ad(
+	'بازخوانی کار کلی: «N صفحه در صف خزش رفت» با زمان تقریبی؛ حالت سریع، دستی، seed همان صفحه‌های ایراد؛ برمی‌گردد به همان صفحه',
+	[ str_contains( $rc_f6, 'صفحه در صف خزش رفت' ), str_contains( $rc_f6, 'پیشرفت بالای همین صفحه' ), $rc_state6['status'], $rc_state6['mode'], $rc_state6['manual'], in_array( 'u:/rc-1/', $rc_state6['seed'], true ), ! in_array( 'u:/rc-3/', $rc_state6['seed'], true ), '' !== $rc_to6 && ! str_contains( $rc_to6, '#' ) ],
+	[ true, true, 'running', 'quick', true, true, true, true ]
+);
+[ $rc_f7 ] = $rc_act( [ 'scope' => 'code', 'code' => 'img_alt' ] );
+hodima_ad( 'بازخوانی کار کلی وقتی خزش دیگری در جریان است: خطای روشن و بی‌تغییر', [ str_contains( $rc_f7, 'خزش دیگری در جریان است' ), hodima_seo_advisor_crawler_state()['mode'] ], [ true, 'quick' ] );
+[ $rc_f8 ] = $rc_act( [ 'scope' => 'code', 'code' => 'nope_code' ] );
+hodima_ad( 'کد ایراد ناشناخته: هیچ خزشی شروع نمی‌شود', str_contains( $rc_f8, 'صفحه‌ای برای بازخوانی پیدا نشد' ), true );
+$_POST = [ 'scope' => 'page', 'path' => '/rc-1/', '_wpnonce' => 'bad' ];
+$_REQUEST = $_POST;
+$rc_die = static fn(): callable => static function (): void { throw new RuntimeException( 'wp_die' ); };
+add_filter( 'wp_die_handler', $rc_die, 99 );
+$rc_bad = false;
+try {
+	hodima_seo_advisor_handle_recrawl();
+} catch ( RuntimeException $e ) {
+	$rc_bad = 'wp_die' === $e->getMessage(); // nonce نامعتبر wp_die می‌کند
+}
+remove_filter( 'wp_die_handler', $rc_die, 99 );
+$_POST = [];
+$_REQUEST = [];
+hodima_ad( 'nonce نامعتبر: بازخوانی انجام نمی‌شود', $rc_bad, true );
+
+remove_filter( 'wp_redirect', $rc_redirect, 0 );
+remove_filter( 'pre_http_request', $rc_http, 30 );
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ 0 ] );
+$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE path LIKE %s", $rc_table, '/rc-%' ) );
+false === $rc_keep[0] ? delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, $rc_keep[0], false );
+false === $rc_keep[1] ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $rc_keep[1], false );
+false === $rc_keep[2] ? delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, $rc_keep[2], false );
+hodima_seo_advisor_crawl_map( true );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

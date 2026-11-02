@@ -2109,17 +2109,17 @@
 	font-size: 0.8125rem;
 	font-weight: 700;
 	background: color-mix(in srgb, var(--hd-ok) 14%, transparent);
-	color: var(--hd-ok);
+	color: color-mix(in srgb, var(--hd-ok) 80%, #000); /* کنتراست ≥ ۴٫۵ (axe: نمره «خوب»؛ SEO 3.4.9) */
 }
 
 .hodima-advisor .hodima-advisor__sc-grade--warn {
 	background: color-mix(in srgb, var(--hd-warn) 16%, transparent);
-	color: var(--hd-warn);
+	color: color-mix(in srgb, var(--hd-warn) 75%, #000); /* کنتراست ≥ ۴٫۵ (axe: نمره «نیاز به کار»؛ SEO 3.4.9) */
 }
 
 .hodima-advisor .hodima-advisor__sc-grade--bad {
 	background: color-mix(in srgb, var(--hd-error) 14%, transparent);
-	color: var(--hd-error);
+	color: color-mix(in srgb, var(--hd-error) 78%, #000); /* کنتراست ≥ ۴٫۵ (axe: نمره «ضعیف»؛ SEO 3.4.9) */
 }
 
 .hodima-advisor .hodima-advisor__sc-cats {
@@ -3348,9 +3348,12 @@
 
 .hodima-advisor .hodima-advisor__job-row {
 	display: grid;
-	grid-template-columns: auto minmax(0, 1.2fr) minmax(0, 1.8fr) auto auto;
+	/* ستون‌های ثابت (طرح تأییدشده ۱۳ آبان ۱۴۰۵): هر کارت شبکه جدا داشت و عرض نشان («سالم»/«دیر شده»/«متوقف») و دکمه‌ها
+	   با محتوای همان ردیف عوض می‌شد؛ دکمه‌ها هر ردیف جای دیگری می‌افتادند. حالا نشان ۶٫۲۵rem و کنش‌ها ۱۶٫۶۲۵rem برای همه یکی است. */
+	grid-template-columns: 2.5rem minmax(10rem, 13rem) minmax(0, 1fr) 6.25rem 16.625rem;
 	align-items: center;
 	gap: 0.875rem;
+	min-block-size: 4.75rem;
 	padding: 0.75rem 1rem;
 }
 
@@ -3390,9 +3393,9 @@
 }
 
 .hodima-advisor .hodima-advisor__job-facts {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 0.25rem 1.5rem;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.25rem 1.25rem;
 	margin: 0;
 }
 
@@ -3415,11 +3418,17 @@
 }
 
 .hodima-advisor .hodima-advisor__job-pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	justify-self: center;
+	inline-size: 6.25rem;
 	white-space: nowrap;
 }
 
 .hodima-advisor .hodima-advisor__job-actions {
-	display: flex;
+	display: grid;
+	grid-template-columns: 9.75rem 6.5rem;
 	align-items: center;
 	gap: 0.375rem;
 }
@@ -3428,8 +3437,25 @@
 	margin: 0;
 }
 
+/* دکمه «اجرا همین حالا» همه ردیف‌ها یک اندازه (دکمه کارت اول مارکاپ و کلاس دیگری داشت) */
+.hodima-advisor .hodima-advisor__job-actions .hodima-advisor__cron-run .hds-btn {
+	inline-size: 100%;
+	min-block-size: 2.5rem;
+	justify-content: center;
+	white-space: nowrap;
+}
+
+.hodima-advisor .hodima-advisor__job-actions .hodima-advisor__cron-run .hds-btn:disabled {
+	border-color: color-mix(in srgb, var(--hd-primary) 22%, #fff);
+	background: color-mix(in srgb, var(--hd-third) 14%, #fff);
+	color: var(--hd-muted);
+	cursor: default;
+}
+
 .hodima-advisor .hodima-advisor__job-toggle {
 	display: none; /* بدون جاوااسکریپت پنل تنظیمات همیشه باز است */
+	justify-content: center;
+	inline-size: 100%;
 	align-items: center;
 	gap: 0.25rem;
 	min-block-size: 2.5rem;
@@ -3549,32 +3575,43 @@
 
 @media (max-width: 64rem) {
 	.hodima-advisor .hodima-advisor__job-row {
-		grid-template-columns: auto minmax(0, 1fr) auto;
+		grid-template-columns: 2.5rem minmax(0, 1fr) 6.25rem;
 	}
 
 	.hodima-advisor .hodima-advisor__job-facts {
 		grid-column: 1 / -1;
+		grid-template-columns: minmax(0, 1fr);
 		order: 5;
+	}
+
+	/* موبایل/تبلت: هر واقعیت یک خط (برچسب کنار مقدار) */
+	.hodima-advisor .hodima-advisor__job-facts > div {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
+	.hodima-advisor .hodima-advisor__job-facts dt {
+		flex: none;
+		white-space: nowrap;
+	}
+
+	.hodima-advisor .hodima-advisor__job-facts dd {
+		text-align: end;
 	}
 
 	.hodima-advisor .hodima-advisor__job-actions {
 		grid-column: 1 / -1;
+		grid-template-columns: minmax(0, 1fr) 7rem;
 		order: 6;
 	}
 
-	.hodima-advisor .hodima-advisor__job-actions .hodima-advisor__cron-run {
-		flex: 1;
-	}
-
 	.hodima-advisor .hodima-advisor__job-actions .hodima-advisor__cron-run .hds-btn {
-		inline-size: 100%;
-		justify-content: center;
-		white-space: nowrap;
+		min-block-size: 2.75rem;
 	}
 
-	.hodima-advisor .hodima-advisor__job-actions .hodima-advisor__job-toggle {
-		flex: 0 0 auto;
-		justify-content: center;
+	.hodima-advisor .hodima-advisor__job-toggle {
+		min-block-size: 2.75rem;
 	}
 }
 
@@ -3746,4 +3783,175 @@
 		inline-size: 100%;
 		justify-content: center;
 	}
+}
+
+/* SEO 3.4.9: دکمه «بازخوانی» (یک صفحه یا N صفحه)، دکمه خزش در «سلامت سایت» و نوار وضعیت خزش (طرح تأییدشده ۱۳ آبان ۱۴۰۵) */
+.hodima-advisor .hodima-advisor__recrawl {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.375rem 0.625rem;
+	margin: 0;
+}
+
+.hodima-advisor .hodima-advisor__recrawl .hds-btn {
+	min-block-size: 2.5rem;
+	justify-content: center;
+	white-space: nowrap;
+}
+
+.hodima-advisor .hodima-advisor__recrawl .hds-btn:disabled {
+	border-color: color-mix(in srgb, var(--hd-primary) 22%, #fff);
+	background: color-mix(in srgb, var(--hd-third) 14%, #fff);
+	color: var(--hd-muted);
+	cursor: default;
+}
+
+.hodima-advisor .hodima-advisor__recrawl-note {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__recrawl-box {
+	display: grid;
+	gap: 0.5rem;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.625rem;
+	background: var(--hd-surface);
+}
+
+/* «کار کلی»: دو دکمه زیر هم، هم‌عرض؛ توضیح کوتاه زیر دکمه بازخوانی */
+.hodima-advisor .hodima-advisor__top-act {
+	display: grid;
+	justify-items: stretch;
+	gap: 0.375rem;
+}
+
+.hodima-advisor .hodima-advisor__top-act .hds-btn {
+	min-block-size: 2.5rem;
+	justify-content: center;
+	white-space: nowrap;
+}
+
+.hodima-advisor .hodima-advisor__top-act .hodima-advisor__recrawl {
+	display: grid;
+	justify-items: stretch;
+}
+
+.hodima-advisor .hodima-advisor__top-act .hodima-advisor__recrawl-note {
+	text-align: center;
+}
+
+/* دکمه خزش در سربرگ «سلامت سایت»: کنار عنوان کارت، در موبایل زیر توضیح */
+.hodima-advisor [data-hdsa-score-card] {
+	position: relative;
+}
+
+.hodima-advisor .hodima-advisor__card-act {
+	position: absolute;
+	inset-block-start: 1rem;
+	inset-inline-end: 1.25rem;
+}
+
+.hodima-advisor .hodima-advisor__card-act .hds-btn {
+	inline-size: 9.75rem;
+	min-block-size: 2.5rem;
+	justify-content: center;
+	white-space: nowrap;
+}
+
+/* نوار وضعیت خزش زیر تب‌ها */
+.hodima-advisor .hodima-advisor__crawlbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 1rem;
+	margin-block-end: 0.875rem;
+	padding: 0.625rem 1rem;
+	border: 1px solid var(--hd-secondary);
+	border-radius: 0.75rem;
+	background: var(--hd-surface);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--hd-secondary) 14%, transparent);
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__crawlbar[data-level="warn"] {
+	border-color: color-mix(in srgb, var(--hd-warn) 55%, #fff);
+	box-shadow: none;
+}
+
+.hodima-advisor .hodima-advisor__crawlbar[data-level="ok"] {
+	border-color: color-mix(in srgb, var(--hd-ok) 45%, #fff);
+	background: color-mix(in srgb, var(--hd-ok) 6%, #fff);
+	box-shadow: none;
+}
+
+.hodima-advisor .hodima-advisor__crawlbar-icon {
+	flex: none;
+	color: var(--hd-primary);
+}
+
+.hodima-advisor .hodima-advisor__crawlbar[data-level="ok"] .hodima-advisor__crawlbar-icon {
+	color: var(--hd-ok);
+}
+
+.hodima-advisor .hodima-advisor__crawlbar-main {
+	display: grid;
+	flex: 1 1 18rem;
+	gap: 0.375rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__crawlbar-top {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__crawlbar-top b:last-child {
+	color: var(--hd-primary);
+}
+
+.hodima-advisor .hodima-advisor__crawlbar-text {
+	flex: 1 1 12rem;
+}
+
+.hodima-advisor .hodima-advisor__crawlbar-note {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	line-height: 1.7;
+	max-inline-size: 16rem;
+}
+
+.hodima-advisor .hodima-advisor__crawlbar-link {
+	color: var(--hd-primary);
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.hodima-advisor .hodima-advisor__crawlbar-close {
+	min-block-size: 2.25rem;
+	margin-inline-start: auto;
+}
+
+@media (max-width: 40rem) {
+	.hodima-advisor .hodima-advisor__card-act {
+		position: static;
+		margin-block-end: 0.75rem;
+	}
+
+	.hodima-advisor .hodima-advisor__card-act .hds-btn {
+		inline-size: 100%;
+		min-block-size: 2.75rem;
+	}
+
+	.hodima-advisor .hodima-advisor__recrawl .hds-btn {
+		min-block-size: 2.75rem;
+	}
+}
+
+.hodima-advisor .hodima-advisor__crawlbar[hidden] {
+	display: none;
 }

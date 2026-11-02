@@ -247,6 +247,16 @@ function hodima_seo_advisor_render_top_tasks( array $tasks, callable $n ): void 
 					<div class="hodima-advisor__top-act">
 						<?php if ( $group ) : ?>
 							<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'src' => 'crawl', 'code' => (string) $task['code'] ] ) ); ?>"><?php echo esc_html( sprintf( 'نمایش %s صفحه', $n( (int) $task['pages'] ) ) ); ?></a>
+							<?php
+							// SEO 3.4.9: خزش هدفمند فقط همین صفحه‌ها (نه کل سایت)؛ دوری در جریان است ← دکمه خاموش
+							echo hodima_seo_advisor_recrawl_form( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در recrawl_form
+								[ 'scope' => 'code', 'code' => (string) $task['code'] ],
+								sprintf( 'بازخوانی این %s صفحه', $n( (int) $task['pages'] ) ),
+								sprintf( '%s؛ پیشرفت بالای صفحه', hodima_seo_advisor_crawler_duration( (int) $task['pages'] ) ),
+								'running' === hodima_seo_advisor_crawler_state()['status'],
+								true
+							);
+							?>
 						<?php else : ?>
 							<a class="hds-btn hds-btn--outline" href="#<?php echo esc_attr( hodima_seo_advisor_row_anchor( (string) $task['path'] ) ); ?>">دیدن و رفع</a>
 						<?php endif; ?>
