@@ -108,7 +108,7 @@ function hodima_seo_advisor_crawler_in_window( ?int $now = null ): bool {
 /**
  * وضعیت ذخیره‌شده خزش با پیش‌فرض‌ها.
  *
- * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, pages: int, links: int, capped: bool, tick: int, mode: string, full_at: int}
+ * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, pages: int, links: int, capped: bool, tick: int, mode: string, full_at: int, sitemap_problems: list<array{u: string, s: int, t: string, k: string}>}
  */
 function hodima_seo_advisor_crawler_state(): array {
 
@@ -136,6 +136,7 @@ function hodima_seo_advisor_crawler_state(): array {
 		'tick'        => (int) ( $state['tick'] ?? 0 ),
 		'mode'        => 'quick' === ( $state['mode'] ?? '' ) ? 'quick' : 'full',
 		'full_at'     => (int) ( $state['full_at'] ?? $state['finished'] ?? 0 ), // پیش از ۳.۳.۸ همه دورها کامل بودند
+		'sitemap_problems' => hodima_seo_advisor_sitemap_problems_clean( $state['sitemap_problems'] ?? [] ), // ریدایرکت یا خطای فایل‌های نقشه سایت این دور (SEO 3.5.2)
 	];
 }
 
@@ -950,6 +951,7 @@ function hodima_seo_advisor_crawler_new_state( array $old, string $mode, array $
 		'capped'      => false,
 		'mode'        => $mode,
 		'full_at'     => $old['full_at'],
+		'sitemap_problems' => [],
 	];
 
 	hodima_seo_advisor_crawler_enqueue( $state, home_url( '/' ), true );
@@ -1079,7 +1081,42 @@ function hodima_seo_advisor_crawler_sitemap( string $url, array &$state ): ?int 
 		return null;
 	}
 
+	// SEO 3.5.2: فایل نقشه که ریدایرکت می‌دهد (مثلا ۳۰۱ به آدرس با «/» آخر؛ وردپرس برای نقشه ما هم این کار را می‌کرد) تا ۲ پله
+	// دنبال می‌شود. تا ۳.۵.1 پاسخ ۳۰۱ «نقشه نیست» حساب می‌شد و ایرادهای نقشه سایت هرگز ساخته نمی‌شد. ریدایرکت و خطا ثبت می‌شود
+	// تا دستار «نقشه سایت ریدایرکت می‌دهد» را به ادمین بگوید.
+	$origin = (string) hodima_seo_advisor_path_key( $url );
+	$hops   = 0;
+	$target = '';
+	$first  = 0;
+
+	while ( $fetched['status'] >= 300 && $fetched['status'] < 400 && $hops < 2 ) {
+		$next = hodima_seo_advisor_crawler_resolve( $fetched['location'], $url );
+
+		if ( null === $next || null === hodima_seo_advisor_path_key( $next ) ) {
+			break; // ریدایرکت به بیرون از سایت یا نامعتبر: دنبال نمی‌شود
+		}
+
+		$first = 0 === $hops ? $fetched['status'] : $first;
+		$again = hodima_seo_advisor_crawler_fetch( $next );
+
+		if ( null === $again ) {
+			return null;
+		}
+
+		++$hops;
+		$url     = $next;
+		$target  = (string) hodima_seo_advisor_path_key( $next );
+		$fetched = $again;
+	}
+
+	if ( $hops > 0 ) {
+		hodima_seo_advisor_crawler_sitemap_problem( $state, [ 'u' => $origin, 's' => $first, 't' => $target, 'k' => 'redirect' ] );
+	}
+
 	if ( 200 !== $fetched['status'] || '' === $fetched['body'] ) {
+		if ( 200 !== $fetched['status'] ) {
+			hodima_seo_advisor_crawler_sitemap_problem( $state, [ 'u' => '' !== $target ? $target : $origin, 's' => $fetched['status'], 't' => '', 'k' => 'error' ] );
+		}
 		return $fetched['ms'];
 	}
 
@@ -1117,6 +1154,63 @@ function hodima_seo_advisor_crawler_sitemap( string $url, array &$state ): ?int 
 	}
 
 	return $fetched['ms'];
+}
+
+/**
+ * مشکل‌های فایل‌های نقشه سایت را تمیز و تا ۲۰ مورد نگه می‌دارد.
+ *
+ * @param mixed $raw
+ * @return list<array{u: string, s: int, t: string, k: string}>
+ */
+function hodima_seo_advisor_sitemap_problems_clean( mixed $raw ): array {
+
+	$out = [];
+
+	foreach ( is_array( $raw ) ? $raw : [] as $item ) {
+		if ( is_array( $item ) && isset( $item['u'], $item['k'] ) && in_array( $item['k'], [ 'redirect', 'error' ], true ) ) {
+			$out[] = [ 'u' => mb_substr( (string) $item['u'], 0, 191 ), 's' => (int) ( $item['s'] ?? 0 ), 't' => mb_substr( (string) ( $item['t'] ?? '' ), 0, 191 ), 'k' => (string) $item['k'] ];
+		}
+	}
+
+	return array_slice( $out, 0, 20 );
+}
+
+/**
+ * یک مشکل فایل نقشه را به حالت خزش می‌افزاید (هر آدرس و نوع یک بار).
+ *
+ * @param array<string, mixed>                            $state
+ * @param array{u: string, s: int, t: string, k: string}  $problem
+ */
+function hodima_seo_advisor_crawler_sitemap_problem( array &$state, array $problem ): void {
+
+	$list = hodima_seo_advisor_sitemap_problems_clean( $state['sitemap_problems'] ?? [] );
+
+	foreach ( $list as $known ) {
+		if ( $known['u'] === $problem['u'] && $known['k'] === $problem['k'] ) {
+			return;
+		}
+	}
+
+	$list[]                     = $problem;
+	$state['sitemap_problems']  = hodima_seo_advisor_sitemap_problems_clean( $list );
+}
+
+/**
+ * خلاصه نقشه سایت دور کامل آخر: زمان خواندن، شمار آدرس و فایل، و مشکل‌های فایل‌ها (ریدایرکت/خطا).
+ *
+ * @return array{fetched: int, urls: int, files: int, problems: list<array{u: string, s: int, t: string, k: string}>}
+ */
+function hodima_seo_advisor_sitemap_info(): array {
+
+	$saved = get_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [] );
+	$saved = is_array( $saved ) ? $saved : [];
+
+	return [
+		'fetched'  => (int) ( $saved['fetched'] ?? 0 ),
+		'urls'     => count( (array) ( $saved['paths'] ?? [] ) ),
+		'files'    => (int) ( $saved['maps'] ?? 0 ),
+		'problems' => hodima_seo_advisor_sitemap_problems_clean( $saved['problems'] ?? [] ),
+	];
 }
 
 /**
@@ -1278,8 +1372,10 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $pages, 'links' => $links, 'source' => 'crawler' ], false );
 
 	if ( ! $quick ) { // دور سریع نقشه سایت را نخوانده: نقشه و ایرادهای نقشه دور کامل می‌ماند
-		if ( $state['sitemap'] ) {
-			update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => array_map( 'strval', array_keys( $state['sitemap'] ) ) ], false );
+		$problems = hodima_seo_advisor_sitemap_problems_clean( $state['sitemap_problems'] ?? [] );
+
+		if ( $state['sitemap'] || $problems ) {
+			update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => array_map( 'strval', array_keys( $state['sitemap'] ) ), 'maps' => (int) ( $state['maps'] ?? 0 ), 'problems' => $problems ], false ); // مشکل‌ها حتی وقتی هیچ آدرسی خوانده نشد می‌ماند تا علتش دیده شود (SEO 3.5.2)
 		} else {
 			delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION ); // نقشه‌ای خوانده نشد: ایرادهای نقشه سایت ساخته نمی‌شوند
 		}

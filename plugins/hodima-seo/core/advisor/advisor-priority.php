@@ -151,9 +151,11 @@ function hodima_seo_advisor_item_score( array $item, float $value ): float {
 	$confidence = HODIMA_SEO_ADVISOR_CONFIDENCE[ (string) ( $item['src'] ?? '' ) ] ?? 0.7;
 	$potential  = (int) ( $item['potential'] ?? 0 );
 
-	// پیشنهاد گوگل کلیک بالقوه دارد: صفحه کم‌نمایش ولی با کلیک بالقوه زیاد هم ارزش می‌گیرد
+	// پیشنهاد گوگل کلیک بالقوه دارد: ارزش از *اندازه سود* می‌آید (۷۰٪) و فقط ۳۰٪ از پرنمایش‌بودن صفحه. تا ۳.۵.۱ ارزش = بیشتر از
+	// این دو بود؛ صفحه پرنمایش با «+۱ کلیک (تخمین)» هم «اولویت بالا» می‌شد و هر ۵ «کار مهم امروز» بالا بود (SEO 3.5.2)
 	if ( $potential > 0 ) {
-		$value = max( $value, min( 1.0, log10( 1 + $potential ) / log10( 1 + 1000 ) ) );
+		$gain  = min( 1.0, log10( 1 + $potential ) / log10( 1 + 300 ) );
+		$value = 0.3 * $value + 0.7 * $gain;
 	}
 
 	$score = ( $level / 3 ) * ( 0.15 + 0.85 * $value ) * $confidence / max( 1, hodima_seo_advisor_item_effort( $item ) );

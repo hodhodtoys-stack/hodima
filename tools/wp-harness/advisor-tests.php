@@ -3868,7 +3868,7 @@ $qd_render = static function ( string $tab ): string {
 };
 $qd_ok = $qd_render( 'opportunities' );
 hodima_ad( 'نوار کامل: عنوان «کیفیت داده»، نشان «کامل»، بدون فهرست توضیح', [ str_contains( $qd_ok, 'کیفیت داده' ), str_contains( $qd_ok, '>کامل<' ), str_contains( $qd_ok, 'hodima-advisor__quality-notes' ) ], [ true, true, false ] );
-hodima_ad( 'نوار: سه li (داده گوگل، پوشش تحلیل، پوشش خزش)', substr_count( $qd_ok, 'class="hodima-advisor__quality-item"' ), 3 );
+hodima_ad( 'نوار: چهار li (داده گوگل، پوشش تحلیل، پوشش خزش، نقشه سایت؛ ردیف نقشه از SEO 3.5.2 وقتی نقشه خوانده شده)', substr_count( $qd_ok, 'class="hodima-advisor__quality-item"' ), 4 );
 $GLOBALS['wpdb']->insert( $qd_pt, [ 'path' => '/qd-page/', 'clicks' => 1, 'impressions' => 2000, 'advice' => '' ] );
 hodima_seo_advisor_caps( [ 'analyze' => true ] );
 $qd_warn = $qd_render( 'crawl' );
@@ -4455,6 +4455,111 @@ false === $rc_keep[0] ? delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ) : upd
 false === $rc_keep[1] ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $rc_keep[1], false );
 false === $rc_keep[2] ? delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, $rc_keep[2], false );
 hodima_seo_advisor_crawl_map( true );
+
+echo "=== بخش ۳: نقشه سایت بدون ریدایرکت، خزنده نقشه، اولویت کالیبره (SEO 3.5.2)\n";
+// نقشه سایت ما برای redirect_canonical وردپرس «دست‌نخورده» است
+$GLOBALS['wp_query']->set( 'hodima_sitemap', 'index' );
+$sm_on = apply_filters( 'redirect_canonical', 'https://hodima.test/sitemap.xml/', 'https://hodima.test/sitemap.xml' );
+$GLOBALS['wp_query']->set( 'hodima_sitemap', '' );
+$sm_off = apply_filters( 'redirect_canonical', 'https://hodima.test/other/', 'https://hodima.test/other' );
+hodima_ad( 'redirect_canonical: روی نقشه ما (hodima_sitemap) خاموش، روی صفحه‌های دیگر دست‌نخورده', [ $sm_on, $sm_off ], [ false, 'https://hodima.test/other/' ] );
+
+// خزنده: ریدایرکت فایل نقشه تا ۲ پله دنبال می‌شود و ثبت می‌شود
+$sm_xml = static fn( array $urls ): string => '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . implode( '', array_map( static fn( string $u ): string => "<url><loc>{$u}</loc></url>", $urls ) ) . '</urlset>';
+$sm_calls = [];
+$sm_map   = [];
+$sm_http  = static function ( $pre, array $args, string $url ) use ( &$sm_map, &$sm_calls ) {
+	if ( ! str_contains( $url, 'hodima.test' ) && ! str_contains( $url, 'evil.test' ) ) {
+		return $pre;
+	}
+	$sm_calls[] = $url;
+	$hit        = $sm_map[ $url ] ?? null;
+	if ( null === $hit ) {
+		return $pre;
+	}
+	return [ 'headers' => [ 'content-type' => 'text/xml' ] + ( isset( $hit['loc'] ) ? [ 'location' => $hit['loc'] ] : [] ), 'body' => $hit['body'] ?? '', 'response' => [ 'code' => $hit['code'], 'message' => '' ], 'cookies' => [], 'filename' => null ];
+};
+add_filter( 'pre_http_request', $sm_http, 40, 3 );
+$sm_new = static fn(): array => hodima_seo_advisor_crawler_new_state( hodima_seo_advisor_crawler_state(), 'full', [] );
+$sm_home = rtrim( home_url( '/' ), '/' );
+
+$sm_map = [ $sm_home . '/sitemap.xml' => [ 'code' => 301, 'loc' => $sm_home . '/sitemap.xml/' ], $sm_home . '/sitemap.xml/' => [ 'code' => 200, 'body' => $sm_xml( [ $sm_home . '/a/', $sm_home . '/b/' ] ) ] ];
+$sm_s1 = $sm_new();
+hodima_seo_advisor_crawler_sitemap( $sm_home . '/sitemap.xml', $sm_s1 );
+hodima_ad(
+	'فایل نقشه با ۳۰۱: دنبال می‌شود، دو آدرس خوانده می‌شود و ریدایرکت (کد ۳۰۱) با مبدأ و مقصد ثبت می‌شود',
+	[ array_keys( $sm_s1['sitemap'] ), count( $sm_s1['sitemap_problems'] ), $sm_s1['sitemap_problems'][0]['k'] ?? '', $sm_s1['sitemap_problems'][0]['s'] ?? 0, str_starts_with( $sm_s1['sitemap_problems'][0]['u'] ?? '', '/sitemap.xml' ), str_starts_with( $sm_s1['sitemap_problems'][0]['t'] ?? '', '/sitemap.xml' ) ],
+	[ [ '/a/', '/b/' ], 1, 'redirect', 301, true, true ]
+);
+$sm_map = [ $sm_home . '/sitemap.xml' => [ 'code' => 200, 'body' => $sm_xml( [ $sm_home . '/a/' ] ) ] ];
+$sm_s2 = $sm_new();
+hodima_seo_advisor_crawler_sitemap( $sm_home . '/sitemap.xml', $sm_s2 );
+hodima_ad( 'فایل نقشه ۲۰۰ مستقیم: هیچ مشکلی ثبت نمی‌شود', [ array_keys( $sm_s2['sitemap'] ), $sm_s2['sitemap_problems'] ], [ [ '/a/' ], [] ] );
+$sm_map = [ $sm_home . '/sitemap.xml' => [ 'code' => 301, 'loc' => $sm_home . '/gone/' ], $sm_home . '/gone/' => [ 'code' => 404 ] ];
+$sm_s3 = $sm_new();
+hodima_seo_advisor_crawler_sitemap( $sm_home . '/sitemap.xml', $sm_s3 );
+hodima_ad( 'ریدایرکت به ۴۰۴: هم ریدایرکت و هم خطای ۴۰۴ ثبت می‌شود', [ array_column( $sm_s3['sitemap_problems'], 'k' ), array_column( $sm_s3['sitemap_problems'], 's' ) ], [ [ 'redirect', 'error' ], [ 301, 404 ] ] );
+$sm_calls = [];
+$sm_map   = [ $sm_home . '/sitemap.xml' => [ 'code' => 301, 'loc' => 'https://evil.test/sitemap.xml' ] ];
+$sm_s4    = $sm_new();
+hodima_seo_advisor_crawler_sitemap( $sm_home . '/sitemap.xml', $sm_s4 );
+hodima_ad( 'ریدایرکت به بیرون از سایت دنبال نمی‌شود (درخواستی به آن نمی‌رود)؛ خطا ثبت می‌شود', [ array_filter( $sm_calls, static fn( string $u ): bool => str_contains( $u, 'evil.test' ) ), array_column( $sm_s4['sitemap_problems'], 'k' ) ], [ [], [ 'error' ] ] );
+$sm_map = [ $sm_home . '/sitemap.xml' => [ 'code' => 301, 'loc' => $sm_home . '/l1/' ], $sm_home . '/l1/' => [ 'code' => 301, 'loc' => $sm_home . '/l2/' ], $sm_home . '/l2/' => [ 'code' => 301, 'loc' => $sm_home . '/l3/' ], $sm_home . '/l3/' => [ 'code' => 200, 'body' => $sm_xml( [ $sm_home . '/a/' ] ) ] ];
+$sm_s5 = $sm_new();
+hodima_seo_advisor_crawler_sitemap( $sm_home . '/sitemap.xml', $sm_s5 );
+hodima_ad( 'زنجیره بیش از ۲ ریدایرکت: دنبال نمی‌شود (نقشه خوانده نشد)', $sm_s5['sitemap'], [] );
+remove_filter( 'pre_http_request', $sm_http, 40 );
+
+// پایان دور: مشکل نقشه حتی بدون آدرس ذخیره می‌شود؛ بدون مشکل و بدون آدرس گزینه پاک می‌شود
+$sm_fin = [ 'seen' => [ '/' => 1 ], 'queue' => [], 'sitemap' => [], 'sitemap_problems' => [ [ 'u' => '/sitemap.xml', 's' => 301, 't' => '/sitemap.xml/', 'k' => 'redirect' ] ], 'maps' => 1 ];
+hodima_seo_advisor_crawler_finalize( $sm_fin );
+$sm_info = hodima_seo_advisor_sitemap_info();
+hodima_ad( 'پایان دور: مشکل نقشه بدون هیچ آدرسی هم ذخیره می‌شود؛ شمار آدرس ۰ و فایل ۱', [ $sm_info['urls'], $sm_info['files'], count( $sm_info['problems'] ), $sm_info['fetched'] > 0 ], [ 0, 1, 1, true ] );
+$sm_fin2 = [ 'seen' => [ '/' => 1 ], 'queue' => [], 'sitemap' => [] ];
+hodima_seo_advisor_crawler_finalize( $sm_fin2 );
+hodima_ad( 'پایان دور بدون نقشه و بدون مشکل: گزینه نقشه پاک می‌شود', get_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, 'none' ), 'none' );
+
+// کیفیت داده: ردیف «نقشه سایت»
+$sm_q = static function (): array {
+	foreach ( hodima_seo_advisor_quality()['items'] as $it ) {
+		if ( 'sitemap' === $it['key'] ) {
+			return $it;
+		}
+	}
+	return [];
+};
+update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => [ '/a/', '/b/', '/c/' ], 'maps' => 6, 'problems' => [ [ 'u' => '/post-sitemap-1.xml', 's' => 301, 't' => '/post-sitemap-1.xml/', 'k' => 'redirect' ] ] ], false );
+$sm_q1 = $sm_q();
+hodima_ad( 'کیفیت: نقشه با ریدایرکت ← «ناقص» با مثال «مبدأ ← مقصد» و جمله «باید مستقیم ۲۰۰ بدهد»', [ $sm_q1['level'] ?? '', str_contains( $sm_q1['note'] ?? '', '/post-sitemap-1.xml' ) && str_contains( $sm_q1['note'] ?? '', '/post-sitemap-1.xml/' ), str_contains( $sm_q1['note'] ?? '', 'مستقیم ۲۰۰' ), str_contains( $sm_q1['value'] ?? '', '3' ) ], [ 'warn', true, true, true ] );
+update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => [ '/a/', '/b/', '/c/' ], 'maps' => 6, 'problems' => [] ], false );
+hodima_ad( 'کیفیت: نقشه سالم ← «کامل» با «N آدرس در M فایل»', [ $sm_q()['level'] ?? '', str_contains( $sm_q()['value'] ?? '', '3' ) && str_contains( $sm_q()['value'] ?? '', '6' ) ], [ 'ok', true ] );
+update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => [], 'maps' => 1, 'problems' => [ [ 'u' => '/sitemap.xml', 's' => 404, 't' => '', 'k' => 'error' ] ] ], false );
+hodima_ad( 'کیفیت: فایل نقشه خطا داد ← «ناقص»، «خوانده نشد» و کد ۴۰۴', [ $sm_q()['level'] ?? '', $sm_q()['value'] ?? '', str_contains( $sm_q()['note'] ?? '', '404' ) ], [ 'warn', 'خوانده نشد', true ] );
+delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION );
+hodima_ad( 'کیفیت: بدون نقشه و بدون مشکل ← ردیف «نقشه سایت» نمی‌آید', $sm_q(), [] );
+
+// نمره: صفحه‌های علامت‌خورده هنوز در نمره‌اند ولی شمارشان جدا می‌آید (با «کار کلی» که فقط بازها را می‌شمارد یکی شود)
+$sc3_issues = array_map( static fn( int $i ): array => [ 'path' => "/sc3-{$i}/", 'impressions' => 0, 'issues' => [ [ 'code' => 'no_meta', 'detail' => '', 'url' => '', 'items' => [] ] ] ], range( 1, 10 ) );
+hodima_seo_advisor_task_set( '/sc3-1/', 'crawl_no_meta', '', 'بدون توضیح متا', 'done' );
+hodima_seo_advisor_task_set( '/sc3-2/', 'crawl_no_meta', '', 'بدون توضیح متا', 'done' );
+$sc3 = hodima_seo_advisor_score( $sc3_issues, 40 );
+hodima_ad( 'نمره: «۱۰ صفحه بدون متا» با ۲ علامت‌خورده؛ هر ۱۰ در نمره می‌ماند', [ $sc3['top'][0]['pages'], $sc3['top'][0]['closed'] ], [ 10, 2 ] );
+hodima_seo_advisor_task_set( '/sc3-1/', 'crawl_no_meta', '', '', '' );
+hodima_seo_advisor_task_set( '/sc3-2/', 'crawl_no_meta', '', '', '' );
+
+// اولویت: «+۱ کلیک (تخمین)» روی صفحه پرنمایش دیگر «بالا» نیست؛ سود زیاد هست
+$pr3 = static fn( int $potential, string $mark = 'low_ctr|x' ): array => [ 'src' => 'opp', 'level' => 'warn', 'mark' => $mark, 'potential' => $potential ];
+$pr3_band = static fn( int $potential, float $value ): string => hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( $pr3( $potential ), $value ) );
+hodima_ad(
+	'اولویت کالیبره: صفحه خیلی پرنمایش با +۱ و +۲ کلیک «متوسط»؛ +۴۱ و +۸۶ کلیک «بالا»؛ بدون پیشنهاد کلیک بدون تغییر',
+	[ $pr3_band( 1, 0.9 ), $pr3_band( 2, 0.9 ), $pr3_band( 41, 0.9 ), $pr3_band( 86, 0.9 ) ],
+	[ 'mid', 'mid', 'high', 'high' ]
+);
+hodima_ad(
+	'صفحه کم‌نمایش با سود بزرگ از صفحه پرنمایش با سود ناچیز مهم‌تر است',
+	hodima_seo_advisor_item_score( $pr3( 86 ), 0.2 ) > hodima_seo_advisor_item_score( $pr3( 1 ), 0.9 ),
+	true
+);
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

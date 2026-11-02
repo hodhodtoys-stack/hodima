@@ -78,7 +78,7 @@ function hodima_seo_advisor_score_grade( int $score ): array {
  *
  * @param list<array<string, mixed>> $issues  خروجی hodima_seo_advisor_crawl_issues() (بدون فیلتر علامت‌ها: نمره وضعیت واقعی سایت است)
  * @param int                        $crawled شمار صفحه‌های خزش‌شده
- * @return array{score: int, categories: array<string, array{label: string, score: int, pages: int}>, top: list<array{code: string, pages: int, penalty: float}>}|null null = خزشی نیست
+ * @return array{score: int, categories: array<string, array{label: string, score: int, pages: int}>, top: list<array{code: string, pages: int, closed: int, penalty: float}>}|null null = خزشی نیست
  */
 function hodima_seo_advisor_score( array $issues, int $crawled ): ?array {
 
@@ -112,7 +112,8 @@ function hodima_seo_advisor_score( array $issues, int $crawled ): ?array {
 			$level               = hodima_seo_advisor_crawl_issue_info( $code )['level'];
 			$penalty             = ( HODIMA_SEO_ADVISOR_SCORE_WEIGHTS[ $level ] ?? 0.3 ) * $count / $crawled * 100;
 			$cut                += $penalty;
-			$penalties[ $code ]  = [ 'code' => $code, 'pages' => $count, 'penalty' => $penalty ];
+			$closed              = count( array_filter( array_keys( $pages[ $code ] ), static fn( string $path ): bool => null !== hodima_seo_advisor_task_closed( $path, 'crawl_' . $code ) ) ); // علامت‌خورده‌ها هنوز در نمره‌اند (وضعیت واقعی سایت)؛ شمارشان جدا گفته می‌شود تا با «کار کلی» (فقط بازها) یکی شود (SEO 3.5.2)
+			$penalties[ $code ]  = [ 'code' => $code, 'pages' => $count, 'closed' => $closed, 'penalty' => $penalty ];
 			$affected           += $pages[ $code ];
 		}
 

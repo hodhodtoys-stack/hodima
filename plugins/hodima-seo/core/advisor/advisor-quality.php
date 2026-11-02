@@ -87,6 +87,26 @@ function hodima_seo_advisor_quality(): array {
 		];
 	}
 
+	// ۴) نقشه سایت (SEO 3.5.2): آدرس و فایل‌های نقشه باید مستقیم ۲۰۰ بدهند؛ ریدایرکت یا خطا همین‌جا گفته می‌شود (تا ۳.۵.۱ فقط
+	// «نقشه سایت خوانده نشده» بود و علتش معلوم نبود)
+	$map = hodima_seo_advisor_sitemap_info();
+
+	if ( $map['problems'] || $map['urls'] > 0 ) {
+		$redirects = array_values( array_filter( $map['problems'], static fn( array $p ): bool => 'redirect' === $p['k'] ) );
+		$errors    = array_values( array_filter( $map['problems'], static fn( array $p ): bool => 'error' === $p['k'] ) );
+		$notes     = array_filter( [
+			$redirects ? sprintf( '%1$s فایل نقشه سایت با ریدایرکت (کد %2$s) باز می‌شود، مثلا %3$s ← %4$s. نقشه باید مستقیم ۲۰۰ بدهد؛ در «ابزارهای هدیما ← نقشه سایت» آدرس نقشه را بررسی کنید.', $n( count( $redirects ) ), $n( $redirects[0]['s'] ), rawurldecode( $redirects[0]['u'] ), rawurldecode( $redirects[0]['t'] ) ) : '',
+			$errors ? sprintf( '%1$s فایل نقشه سایت خوانده نشد (کد %2$s)، مثلا %3$s؛ آدرس‌های آن در بررسی نقشه سایت نیستند.', $n( count( $errors ) ), $n( $errors[0]['s'] ), rawurldecode( $errors[0]['u'] ) ) : '',
+		] );
+		$items[]   = [
+			'key'   => 'sitemap',
+			'label' => 'نقشه سایت',
+			'level' => $notes ? 'warn' : 'ok',
+			'value' => $map['urls'] > 0 ? sprintf( '%1$s آدرس در %2$s فایل', $n( $map['urls'] ), $n( max( 1, $map['files'] ) ) ) : 'خوانده نشد',
+			'note'  => implode( ' ', $notes ),
+		];
+	}
+
 	$levels = array_column( $items, 'level' );
 	$issues = count( array_filter( $levels, static fn( string $level ): bool => 'warn' === $level ) );
 

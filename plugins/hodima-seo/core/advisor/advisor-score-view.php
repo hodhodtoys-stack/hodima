@@ -83,7 +83,7 @@ function hodima_seo_advisor_render_score( array $issues, int $crawled ): void {
 					?>
 					<li>
 						<span class="hodima-advisor__dot hodima-advisor__dot--<?php echo esc_attr( 'bad' === $info['level'] ? 'bad' : 'warn' ); ?>" aria-hidden="true"></span>
-						<span><?php echo esc_html( sprintf( '%1$s صفحه: %2$s', $n( $item['pages'] ), $info['label'] ) ); ?></span>
+						<span><?php echo esc_html( sprintf( '%1$s صفحه%3$s: %2$s', $n( $item['pages'] ), $info['label'], $item['closed'] > 0 ? sprintf( ' (%s علامت‌خورده)', $n( $item['closed'] ) ) : '' ) ); ?></span>
 						<a href="<?php echo esc_url( $url( $filter ) ); ?>">دیدن و رفع ←</a>
 					</li>
 				<?php endforeach; ?>

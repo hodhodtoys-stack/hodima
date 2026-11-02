@@ -542,6 +542,18 @@ function hodima_sitemap_deep_radar( $object_id, $type = 'post' ) {
 // ==========================================
 // رندر خروجی نقشه‌های ساختاریافته (Sitemap Core)
 // ==========================================
+/**
+ * SEO 3.5.2: نقشه سایت ریدایرکت نشود. ساختار پیوند سایت با «/» تمام می‌شود و redirect_canonical وردپرس برای هر آدرسی که «/»
+ * آخر ندارد ۳۰۱ می‌داد (`/sitemap.xml` ← `/sitemap.xml/`)؛ وردپرس این را فقط برای نقشه خودش (wp-sitemap.xml) کنار می‌گذارد، نه
+ * نقشه ما. نتیجه: همه فایل‌های نقشه ۳۰۱ بودند و خزنده دستار «نقشه خوانده نشد» می‌گفت. حالا آدرس با «/» و بی‌«/» هر دو مستقیم ۲۰۰ است.
+ */
+add_filter(
+    'redirect_canonical',
+    static function ( $redirect_url ) {
+        return '' !== (string) get_query_var( 'hodima_sitemap' ) ? false : $redirect_url;
+    }
+);
+
 add_action( 'template_redirect', 'hodima_sitemap_render' );
 function hodima_sitemap_render() {
     $sitemap_type = get_query_var( 'hodima_sitemap' );
