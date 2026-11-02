@@ -32,11 +32,34 @@
 		if (!ok) throw new Error('copy failed');
 	};
 
+	// کپی دستی (انتخاب با ماوس + Ctrl+C): فقط خود شماره در کلیپ‌بورد بنشیند؛ بدون متن ستون کناری،
+	// کلمه‌های پنهان صفحه‌خوان و نویسه‌های جداکننده جهت (U+2066..2069 عنوان صفحه جزئیات)
+	const ISOLATES = /[⁦-⁩]/g;
+	document.addEventListener('copy', (e) => {
+		const sel = window.getSelection();
+		if (!sel || sel.isCollapsed || !e.clipboardData) return;
+
+		const text = sel.toString();
+		let clean = text.replace(ISOLATES, '');
+
+		// انتخاب با سلول شماره تلاقی دارد (از هر طرف شروع شود، حتی از ستون کناری)
+		const range = sel.getRangeAt(0);
+		const touchesPhone = [...root.querySelectorAll('.hd-leads__phone')].some((cell) => range.intersectsNode(cell));
+		if (touchesPhone) {
+			const found = clean.match(/0\d{10}/g);
+			if (found?.length === 1) clean = found[0];
+		}
+		if (clean === text) return;
+
+		e.clipboardData.setData('text/plain', clean.trim());
+		e.preventDefault();
+	});
+
 	root.addEventListener('click', async (e) => {
 		const button = e.target instanceof Element ? e.target.closest('[data-hd-copy]') : null;
 		if (!button) return;
 
-		const text = button.getAttribute('data-hd-copy') || '';
+		const text = (button.getAttribute('data-hd-copy') || '').trim();
 		const label = button.querySelector('.hd-leads__btn-text');
 		const before = label?.textContent || '';
 		try {

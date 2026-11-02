@@ -41,7 +41,7 @@ function hodima_ph( string $name, mixed $actual, mixed $expected ): void {
 /** نشانه‌های موقت ضد اسپم (محدودیت نرخ، تکراری) را پاک می‌کند تا آزمون‌ها مستقل بمانند. */
 function hodima_ph_reset(): void {
 	global $wpdb;
-	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '%transient%hodima_phone_%'" );
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '%transient%hodima_phone_%' OR option_name LIKE 'hodima_phone_lk_%'" );
 	wp_cache_flush();
 }
 
@@ -129,7 +129,7 @@ echo "=== تکراری، نرخ و ثبت دوباره\n";
 hodima_ph( 'همان شماره در یک دقیقه: ok بدون ثبت دوباره', hodima_ph_post( [ 'phone' => $phone ] ), 'ok' );
 hodima_ph( 'شمارنده تغییر نکرد', hodima_phone_lead_data( $ids[0] )['count'], 1 );
 
-delete_transient( 'hodima_phone_dup_' . wp_hash( $phone ) ); // پنجره تکراری گذشت؛ نرخ هنوز
+hodima_phone_release( 'dup_' . wp_hash( $phone ) ); // پنجره تکراری گذشت؛ نرخ هنوز
 hodima_ph( 'ارسال بعدی در ۱۵ ثانیه: wait', hodima_ph_post( [ 'phone' => $phone ] ), 'wait' );
 
 hodima_ph_reset();
@@ -144,7 +144,7 @@ add_filter( 'hodima_phone_hourly_limit', static fn(): int => 2 );
 hodima_ph_reset();
 $r = [];
 foreach ( [ '09120000001', '09120000002', '09120000003' ] as $n ) {
-	delete_transient( 'hodima_phone_rl_' . wp_hash( '203.0.113.9' ) );
+	hodima_phone_release( 'rl_' . wp_hash( '203.0.113.9' ) );
 	$r[] = hodima_ph_post( [ 'phone' => $n ] );
 }
 hodima_ph( 'دو ثبت اول ok، سوم wait', $r, [ 'ok', 'ok', 'wait' ] );
@@ -158,7 +158,7 @@ hodima_ph( 'شکست ذخیره: err', hodima_ph_post( [ 'phone' => '09350000001
 remove_filter( 'wp_insert_post_empty_content', '__return_true' );
 hodima_ph( 'لیدی ساخته نشد', hodima_phone_lead_ids( '09350000001' ), [] );
 hodima_ph( 'بعد از شکست همان شماره بلافاصله دوباره قابل ثبت است', (function (): string {
-	delete_transient( 'hodima_phone_rl_' . wp_hash( '203.0.113.9' ) );
+	hodima_phone_release( 'rl_' . wp_hash( '203.0.113.9' ) );
 	return hodima_ph_post( [ 'phone' => '09350000001' ] );
 })(), 'ok' );
 
@@ -189,12 +189,30 @@ hodima_ph( 'آخرین ثبت در تاریخچه', $d['history'][9]['title'] ??
 echo "=== بدون جاوااسکریپت (admin-post)\n";
 hodima_ph_reset();
 $_SERVER['REQUEST_METHOD'] = 'POST';
+/** توکن با سن مشخص (ثانیه) برای حالت بدون جاوااسکریپت. */
+$tok = static function ( int $age ): string {
+	$time = (string) ( time() - $age );
+	return $time . '.' . hash_hmac( 'sha256', 'hodima_phone|' . $time, wp_salt( 'nonce' ) );
+};
 $_POST = [ 'phone' => '09360000009', 'form_uid' => 'hodima-phone-1' ];
-hodima_ph( 'بدون توکن هم ثبت می‌شود (توکن فقط ajax)', hodima_phone_process( false ), 'ok' );
+hodima_ph( 'بدون توکن دیگر پذیرفته نمی‌شود (ربات مستقیم به admin-post.php می‌فرستاد): token', hodima_phone_process( false ), 'token' );
+hodima_ph( 'بدون توکن لیدی ساخته نشد', hodima_phone_lead_ids( '09360000009' ), [] );
+$_POST = [ 'phone' => '09360000009', 'security_token' => 'abc.def' ];
+hodima_ph( 'توکن جعلی: token', hodima_phone_process( false ), 'token' );
+$_POST = [ 'phone' => '09360000009', 'security_token' => $tok( 0 ) ];
+hodima_ph( 'توکن خیلی تازه (ارسال سریع ربات): wait', hodima_phone_process( false ), 'wait' );
 hodima_ph_reset();
-$_POST = [ 'phone' => '09360000010', 'website' => 'x' ];
+$_POST = [ 'phone' => '09360000009', 'security_token' => $tok( 3 * DAY_IN_SECONDS ) ];
+hodima_ph( 'توکن ۳ روزه (صفحه کش‌شده) در مسیر بدون JS: ok', hodima_phone_process( false ), 'ok' );
+hodima_ph_reset();
+$_POST = [ 'phone' => '09360000011', 'security_token' => $tok( 8 * DAY_IN_SECONDS ) ];
+hodima_ph( 'توکن ۸ روزه: token', hodima_phone_process( false ), 'token' );
+$_POST = [ 'phone' => '09360000011', 'security_token' => $tok( 13 * HOUR_IN_SECONDS ) ];
+hodima_ph( 'همان توکن ۱۳ ساعته در مسیر ajax: token (عمر ajax ۱۲ ساعت)', hodima_phone_process( true ), 'token' );
+hodima_ph_reset();
+$_POST = [ 'phone' => '09360000010', 'website' => 'x', 'security_token' => $tok( 5 ) ];
 hodima_ph( 'honeypot: spam', hodima_phone_process( false ), 'spam' );
-hodima_ph( 'ورودی آرایه phone[]: bad نه خطای PHP', ( function (): string { $_POST = [ 'phone' => [ '1' ] ]; hodima_ph_reset(); return hodima_phone_process( false ); } )(), 'bad' );
+hodima_ph( 'ورودی آرایه phone[]: bad نه خطای PHP', ( function () use ( $tok ): string { $_POST = [ 'phone' => [ '1' ], 'security_token' => $tok( 5 ) ]; hodima_ph_reset(); return hodima_phone_process( false ); } )(), 'bad' );
 
 echo "=== پیام بدون جاوااسکریپت در فرم\n";
 $_GET = [ 'hodima_phone' => 'bad', 'form_id' => 'hodima-phone-1' ];
@@ -388,6 +406,89 @@ hodima_ph( 'nonce غلط: پیام خطا، نه فایل', str_contains( $out, 
 $cleanup();
 hodima_ph_reset();
 wp_set_current_user( 0 );
+
+echo "=== ضد ربات: قفل اتمیک، هم‌زمانی واقعی، IPv6، سقف روزانه و کل سایت، توکن در فرم\n";
+hodima_ph_reset();
+hodima_ph( 'take: اولی true', hodima_phone_take( 't_a', 60 ), true );
+hodima_ph( 'take: دومی (هنوز نگذشته) false', hodima_phone_take( 't_a', 60 ), false );
+hodima_phone_release( 't_a' );
+hodima_ph( 'بعد از release دوباره true', hodima_phone_take( 't_a', 60 ), true );
+$wpdb_ = $GLOBALS['wpdb'];
+$wpdb_->update( $wpdb_->options, [ 'option_value' => (string) ( time() - 5 ) ], [ 'option_name' => 'hodima_phone_lk_t_a' ] );
+hodima_ph( 'ردیف منقضی دوباره قابل گرفتن است', hodima_phone_take( 't_a', 60 ), true );
+hodima_ph( 'و بعدش دوباره بسته است', hodima_phone_take( 't_a', 60 ), false );
+hodima_ph( 'قفل autoload ندارد (روی هر صفحه بار نمی‌شود)', (string) $wpdb_->get_var( "SELECT autoload FROM {$wpdb_->options} WHERE option_name = 'hodima_phone_lk_t_a'" ), 'no' );
+
+// هم‌زمانی واقعی: ۸ پردازه PHP همزمان همان قفل را می‌خواهند؛ باید دقیقا یکی ببرد
+hodima_ph_reset();
+$eval  = __DIR__ . '/wp-eval.php';
+$procs = [];
+for ( $i = 0; $i < 8; $i++ ) {
+	$pipes = [];
+	$proc  = proc_open(
+		[ PHP_BINARY, $eval, 'echo hodima_phone_take( "race_same", 60 ) ? "1" : "0";' ],
+		[ 1 => [ 'pipe', 'w' ], 2 => [ 'pipe', 'w' ] ],
+		$pipes,
+		null,
+		[ 'HODIMA_WP' => (string) ( getenv( 'HODIMA_WP' ) ?: '/tmp/hodima-harness/wp' ), 'PATH' => (string) getenv( 'PATH' ) ]
+	);
+	$procs[] = [ $proc, $pipes ];
+}
+$wins = 0;
+foreach ( $procs as [ $proc, $pipes ] ) {
+	$out = trim( (string) stream_get_contents( $pipes[1] ) );
+	fclose( $pipes[1] );
+	fclose( $pipes[2] );
+	proc_close( $proc );
+	$wins += '1' === substr( $out, -1 ) ? 1 : 0;
+}
+hodima_ph( '۸ پردازه هم‌زمان: دقیقا یکی قفل را می‌برد', $wins, 1 );
+hodima_ph_reset();
+
+hodima_ph( 'IPv6: دو آدرس یک /64 یک سطل', hodima_phone_ip_bucket( '2001:db8:1:2::1' ) === hodima_phone_ip_bucket( '2001:db8:1:2:ffff:ffff:ffff:ffff' ), true );
+hodima_ph( 'IPv6: /64 دیگر سطل دیگر', hodima_phone_ip_bucket( '2001:db8:1:2::1' ) === hodima_phone_ip_bucket( '2001:db8:1:3::1' ), false );
+hodima_ph( 'IPv4 دست‌نخورده', hodima_phone_ip_bucket( '203.0.113.9' ), '203.0.113.9' );
+
+// سقف روزانه (سقف ساعتی پیش‌فرض ۱۰ است)
+hodima_ph_reset();
+add_filter( 'hodima_phone_daily_limit', static fn(): int => 2 );
+$r = [];
+foreach ( [ '09130000001', '09130000002', '09130000003' ] as $n ) {
+	hodima_phone_release( 'rl_' . wp_hash( '203.0.113.9' ) );
+	$r[] = hodima_ph_post( [ 'phone' => $n ] );
+}
+remove_all_filters( 'hodima_phone_daily_limit' );
+hodima_ph( 'سقف روزانه: ok، ok، wait', $r, [ 'ok', 'ok', 'wait' ] );
+
+// سقف کل سایت (ربات با IPهای زیاد)
+hodima_ph_reset();
+add_filter( 'hodima_phone_global_hourly_limit', static fn(): int => 2 );
+$r = [];
+foreach ( [ '09140000001', '09140000002', '09140000003' ] as $n ) {
+	hodima_phone_release( 'rl_' . wp_hash( '203.0.113.9' ) );
+	$r[] = hodima_ph_post( [ 'phone' => $n ] );
+}
+remove_all_filters( 'hodima_phone_global_hourly_limit' );
+hodima_ph( 'سقف کل سایت: ok، ok، wait', $r, [ 'ok', 'ok', 'wait' ] );
+hodima_ph_reset();
+hodima_ph( 'سقف ساعتی پیش‌فرض ۱۰ و روزانه ۳۰ و کل ۶۰', [ apply_filters( 'hodima_phone_hourly_limit', 10 ), apply_filters( 'hodima_phone_daily_limit', 30 ), apply_filters( 'hodima_phone_global_hourly_limit', 60 ) ], [ 10, 30, 60 ] );
+
+// همان شماره با قالب‌های مختلف = یک ردیف و شمارنده بالا می‌رود
+$cleanup();
+hodima_ph_reset();
+foreach ( [ '09151112233', '+98 915 111 2233', '۰۹۱۵-۱۱۱-۲۲۳۳', '9151112233' ] as $variant ) {
+	hodima_ph_reset();
+	hodima_ph_post( [ 'phone' => $variant, 'page_title' => 'صفحه ' . $variant ] );
+}
+$ids = hodima_phone_lead_ids( '09151112233' );
+hodima_ph( 'چهار قالب یک شماره: یک ردیف', count( $ids ), 1 );
+hodima_ph( 'و شمارنده ۴', hodima_phone_lead_data( $ids[0] ?? 0 )['count'], 4 );
+
+// فرم توکن امضاشده را برای مسیر بدون JS در HTML دارد
+$_GET = [];
+$html = hodima_phone_render_form();
+preg_match( '/name="security_token" value="([^"]+)"/', $html, $m );
+hodima_ph( 'فرم فیلد پنهان security_token دارد', isset( $m[1] ) && 'bad' !== hodima_phone_check_token( $m[1], 7 * DAY_IN_SECONDS ), true );
 
 echo "\n" . ( $failed ? "✘ {$failed} آزمون رد شد ({$passed} قبول)" : "✔ همه {$passed} آزمون فرم تلفن قبول" ) . "\n";
 exit( $failed ? 1 : 0 );

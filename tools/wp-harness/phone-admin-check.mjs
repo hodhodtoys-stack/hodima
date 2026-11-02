@@ -164,7 +164,10 @@ for ( let i = 0; i < 2; i++ ) {
 	bulkPhones.push( ( await page.locator( 'tbody tr' ).nth( i ).locator( '.hd-leads__num' ).textContent() ).replace( /\s/g, '' ) );
 }
 await page.selectOption( '#hd-leads-bulk', 'trash' );
-await act( page, () => page.locator( '[data-hd-bulk-apply]' ).click() );
+await page.locator( '[data-hd-bulk-apply]' ).click();
+// از Commerce 1.3.6 «زباله‌دان» هم پنجره تأیید دارد (آزمون قبلا به‌روز نشده بود)
+log( await page.locator( '#hd-leads-dialog' ).evaluate( ( d ) => d.open ), 'پیش از انتقال گروهی به زباله‌دان تأیید پرسیده شد' );
+await act( page, () => page.locator( '#hd-leads-dialog button[value="ok"]' ).click() );
 log( bulkPhones.every( ( p ) => statusOf( idByPhone( p ) ) === 'trash' ), 'هر دو لید به زباله‌دان رفتند' );
 log( ( await page.locator( '.hd-leads__seg-item', { hasText: 'زباله‌دان' } ).count() ) === 1, 'زبانه «زباله‌دان» پیدا شد' );
 
@@ -192,6 +195,26 @@ await page.locator( 'tbody tr' ).first().locator( '[data-hd-copy]' ).click();
 await page.waitForTimeout( 300 );
 log( ( await page.evaluate( () => navigator.clipboard.readText() ) ) === firstPhone, 'شماره (لاتین، بدون فاصله) در کلیپ‌بورد', firstPhone );
 log( /کپی شد/.test( await page.locator( '#hd-leads-live' ).textContent() ), 'اعلام صفحه‌خوان «کپی شد»' );
+// باگ: انتخاب دستی شماره + Ctrl+C در ردیف «جدید» کلمه پنهان «(جدید)» را هم کپی می‌کرد؛ فقط خود شماره باید بنشیند
+const copyRow = page.locator( 'tbody tr.is-new' ).first();
+const copyPhone = ( await copyRow.locator( '.hd-leads__num' ).textContent() ).replace( /\s/g, '' );
+const copyBySelect = async ( selector, scope = 'cell' ) => {
+	await page.evaluate( ( [ sel, mode ] ) => {
+		const row = document.querySelector( 'tbody tr.is-new' );
+		const range = document.createRange();
+		if ( mode === 'cell' ) range.selectNodeContents( row.querySelector( sel ) );
+		else { range.setStartBefore( row.querySelector( 'th.hd-leads__phone' ) ); range.setEndAfter( row.querySelector( 'td.hd-leads__page' ) ); } // از شماره تا ستون صفحه
+		const s = getSelection(); s.removeAllRanges(); s.addRange( range );
+		navigator.clipboard.writeText( 'EMPTY' );
+	}, [ selector, scope ] );
+	await page.keyboard.press( 'Control+c' );
+	await page.waitForTimeout( 250 );
+	return page.evaluate( () => navigator.clipboard.readText() );
+};
+log( ( await copyBySelect( 'th.hd-leads__phone' ) ) === copyPhone, 'کپی دستی سلول شماره (ردیف جدید): فقط شماره، بدون «(جدید)»', copyPhone );
+log( ( await copyBySelect( '', 'span' ) ) === copyPhone, 'انتخاب از شماره تا ستون صفحه: فقط شماره (بدون عنوان صفحه)', copyPhone );
+log( ( await copyRow.locator( 'th.hd-leads__phone a' ).getAttribute( 'aria-label' ) ) === `${ copyPhone } (جدید)`, '«جدید» برای صفحه‌خوان در aria-label است' );
+log( ( await copyRow.locator( '.screen-reader-text' ).count() ) === 0, 'متن پنهان صفحه‌خوان داخل ردیف نیست (با انتخاب ماوس کپی می‌شد)' );
 
 /* ---------- ۷) جزئیات ---------- */
 console.log( '۷) جزئیات' );

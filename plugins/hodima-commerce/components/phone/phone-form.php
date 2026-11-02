@@ -149,9 +149,11 @@ function hodima_phone_ajax_token(): void {
 }
 
 /**
- * @return 'ok'|'fast'|'bad' fast = زودتر از حداقل زمان؛ bad = نامعتبر یا منقضی (بیش از ۱۲ ساعت).
+ * @param int $max_age بیشترین عمر توکن (ثانیه). ajax: ۱۲ ساعت؛ فرم بدون جاوااسکریپت: توکن داخل HTML صفحه است و
+ *                     صفحه کش می‌شود، پس عمرش بلندتر است (هفت روز).
+ * @return 'ok'|'fast'|'bad' fast = زودتر از حداقل زمان؛ bad = نامعتبر یا منقضی.
  */
-function hodima_phone_check_token( string $token ): string {
+function hodima_phone_check_token( string $token, int $max_age = 12 * HOUR_IN_SECONDS ): string {
     [ $time, $mac ] = array_pad( explode( '.', $token, 2 ), 2, '' );
     if ( '' === $mac || ! ctype_digit( $time ) ) {
         return 'bad';
@@ -163,14 +165,78 @@ function hodima_phone_check_token( string $token ): string {
     }
 
     $age = time() - (int) $time;
-    if ( $age > 12 * HOUR_IN_SECONDS || $age < 0 ) {
+    if ( $age > $max_age || $age < 0 ) {
         return 'bad';
     }
 
     return $age < hodima_phone_min_seconds() ? 'fast' : 'ok';
 }
 
-/** کلید نشانه موقت بازدیدکننده: از IP (فقط پشت Cloudflare واقعی هدرهای IP معتبرند) با هش نمک‌دار. */
+/**
+ * قفل اتمیک «اگر نبود بگذار» با یک INSERT IGNORE روی کلید یکتای wp_options (autoload خاموش).
+ *
+ * چرا: get_transient + set_transient اتمیک نیست؛ چند درخواست هم‌زمان (ربات، یا دوبار زدن دکمه) همه «خالی»
+ * می‌دیدند و هر کدام رد می‌شد ← محدودیت نرخ دور زده می‌شد و برای یک شماره چند ردیف ساخته می‌شد.
+ * فقط یک درخواست برنده می‌شود. ردیف منقضی با جایگزینی مشروط (فقط اگر هنوز همان مقدار قدیمی باشد) پس گرفته می‌شود.
+ *
+ * @return bool true = قفل مال این درخواست شد؛ false = قبلا کسی گرفته و هنوز نگذشته.
+ */
+function hodima_phone_take( string $key, int $ttl ): bool {
+    global $wpdb;
+
+    $name  = 'hodima_phone_lk_' . $key;
+    $until = (string) ( time() + max( 1, $ttl ) );
+
+    // ردیف‌های منقضی را گاهی پاک می‌کند (۲٪ درخواست‌ها) تا جدول انباشته نشود
+    if ( 0 === wp_rand( 0, 49 ) ) {
+        $wpdb->query( $wpdb->prepare(
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND CAST(option_value AS UNSIGNED) < %d",
+            $wpdb->esc_like( 'hodima_phone_lk_' ) . '%',
+            time()
+        ) );
+    }
+
+    $inserted = $wpdb->query( $wpdb->prepare(
+        "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+        $name,
+        $until
+    ) );
+    if ( 1 === (int) $inserted ) {
+        return true;
+    }
+
+    $old = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+    if ( null === $old || (int) $old > time() ) {
+        return false;
+    }
+
+    return 1 === (int) $wpdb->query( $wpdb->prepare(
+        "UPDATE {$wpdb->options} SET option_value = %s WHERE option_name = %s AND option_value = %s",
+        $until,
+        $name,
+        $old
+    ) );
+}
+
+/** قفل hodima_phone_take را زود آزاد می‌کند (ثبت ناموفق یا ردشده؛ نباید کاربر را بی‌دلیل معطل کند). */
+function hodima_phone_release( string $key ): void {
+    global $wpdb;
+    $wpdb->delete( $wpdb->options, [ 'option_name' => 'hodima_phone_lk_' . $key ] );
+}
+
+/**
+ * IPv6: هر مشترک یک بلوک /64 دارد و می‌تواند آدرس را داخلش عوض کند؛ پس فقط ۶۴ بیت اول حساب می‌شود
+ * (وگرنه ربات با هر درخواست «بازدیدکننده تازه» می‌شد). IPv4 دست‌نخورده.
+ */
+function hodima_phone_ip_bucket( string $ip ): string {
+    if ( false === filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
+        return $ip;
+    }
+    $bin = inet_pton( $ip );
+    return false === $bin ? $ip : 'v6:' . bin2hex( substr( $bin, 0, 8 ) );
+}
+
+/** کلید بازدیدکننده: از IP (فقط پشت Cloudflare واقعی هدرهای IP معتبرند) با هش نمک‌دار. */
 function hodima_phone_visitor_key( string $prefix ): string {
     $ip = function_exists( 'hodima_get_client_ip' )
         ? hodima_get_client_ip()
@@ -181,28 +247,19 @@ function hodima_phone_visitor_key( string $prefix ): string {
         $ip    = 'ua:' . $agent;
     }
 
-    return $prefix . wp_hash( $ip );
+    return $prefix . wp_hash( hodima_phone_ip_bucket( $ip ) );
 }
 
 /**
- * یک ارسال معتبر در هر ۱۵ ثانیه و حداکثر ۲۰ ارسال در ساعت برای هر بازدیدکننده.
- *
- * ترنزینت جداگانه هر بازدیدکننده (نه option مشترک): بدون خواندن-تغییر-نوشتن روی wp_options.
- * فقط بعد از معتبر بودن شماره صدا زده می‌شود تا غلط تایپی کسی را ۱۵ ثانیه قفل نکند.
+ * یک شمارنده پنجره‌ای؛ true = از سقف گذشته. $cap صفر = بی‌سقف.
+ * نخواندن-نوشتن اتمیک نیست و عمدا ساده است: برای هر بازدیدکننده دروازه ۱۵ ثانیه‌ای اتمیک جلوتر
+ * می‌ایستد (هم‌زمانی در آن ممکن نیست) و سقف کل سایت فقط «نرم» است.
  */
-function hodima_phone_rate_limited(): bool {
-    $gate = hodima_phone_visitor_key( 'hodima_phone_rl_' );
-    if ( false !== get_transient( $gate ) ) {
-        return true;
-    }
-    set_transient( $gate, 1, max( 1, (int) apply_filters( 'hodima_phone_rate_window', 15 ) ) );
-
-    $cap = max( 0, (int) apply_filters( 'hodima_phone_hourly_limit', 20 ) );
-    if ( 0 === $cap ) {
+function hodima_phone_over_cap( string $key, int $period, int $cap ): bool {
+    if ( $cap < 1 ) {
         return false;
     }
 
-    $key   = hodima_phone_visitor_key( 'hodima_phone_hr_' );
     $hits  = get_transient( $key );
     $count = is_array( $hits ) ? (int) ( $hits['n'] ?? 0 ) : 0;
     $start = is_array( $hits ) ? (int) ( $hits['at'] ?? 0 ) : 0;
@@ -212,18 +269,30 @@ function hodima_phone_rate_limited(): bool {
         return true;
     }
 
-    set_transient( $key, [ 'n' => $count + 1, 'at' => $start ], max( 1, HOUR_IN_SECONDS - ( time() - $start ) ) );
+    set_transient( $key, [ 'n' => $count + 1, 'at' => $start ], max( 1, $period - ( time() - $start ) ) );
     return false;
 }
 
-/** دوبار زدن دکمه / ارسال دوباره همان شماره در یک دقیقه یک درخواست حساب می‌شود. false = تکراری. */
-function hodima_phone_claim( string $phone ): bool {
-    $key = 'hodima_phone_dup_' . wp_hash( $phone );
-    if ( false !== get_transient( $key ) ) {
-        return false;
+/**
+ * یک ارسال معتبر در هر ۱۵ ثانیه، حداکثر ۱۰ در ساعت و ۳۰ در روز برای هر بازدیدکننده،
+ * و حداکثر ۶۰ ارسال در ساعت برای کل سایت (ربات با IPهای زیاد). همه با فیلتر؛ صفر = خاموش.
+ *
+ * فقط بعد از معتبر بودن شماره صدا زده می‌شود تا غلط تایپی کسی را ۱۵ ثانیه قفل نکند.
+ */
+function hodima_phone_rate_limited(): bool {
+    $window = max( 1, (int) apply_filters( 'hodima_phone_rate_window', 15 ) );
+    if ( ! hodima_phone_take( hodima_phone_visitor_key( 'rl_' ), $window ) ) {
+        return true;
     }
-    set_transient( $key, 1, max( 1, (int) apply_filters( 'hodima_phone_duplicate_window', 60 ) ) );
-    return true;
+
+    return hodima_phone_over_cap( hodima_phone_visitor_key( 'hodima_phone_hr_' ), HOUR_IN_SECONDS, (int) apply_filters( 'hodima_phone_hourly_limit', 10 ) )
+        || hodima_phone_over_cap( hodima_phone_visitor_key( 'hodima_phone_dy_' ), DAY_IN_SECONDS, (int) apply_filters( 'hodima_phone_daily_limit', 30 ) )
+        || hodima_phone_over_cap( 'hodima_phone_global_hr', HOUR_IN_SECONDS, (int) apply_filters( 'hodima_phone_global_hourly_limit', 60 ) );
+}
+
+/** دوبار زدن دکمه / ارسال دوباره همان شماره در یک دقیقه یک درخواست حساب می‌شود (اتمیک). false = تکراری. */
+function hodima_phone_claim( string $phone ): bool {
+    return hodima_phone_take( 'dup_' . wp_hash( $phone ), max( 1, (int) apply_filters( 'hodima_phone_duplicate_window', 60 ) ) );
 }
 
 /* =====================================================================
@@ -386,6 +455,7 @@ function hodima_phone_render_form(): string {
         <form class="hodima-phone-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" novalidate>
             <input type="hidden" name="action" value="submit_hodima_phone">
             <input type="hidden" name="form_uid" value="<?php echo esc_attr( $uid ); ?>">
+            <input type="hidden" name="security_token" value="<?php echo esc_attr( hodima_phone_issue_token() ); ?>">
 
             <label class="hodima-phone-sr" for="<?php echo esc_attr( $uid ); ?>-input">شماره تماس</label>
             <input
@@ -449,12 +519,15 @@ function hodima_phone_process( bool $is_ajax ): string {
         return 'err';
     }
 
-    // فرم عمومی است و nonce برای بازدیدکننده ناشناس ارزشی ندارد؛ به‌جایش توکن امضاشده با حداقل زمان
-    if ( $is_ajax ) {
-        $check = hodima_phone_check_token( hodima_phone_post_string( 'security_token' ) );
-        if ( 'ok' !== $check ) {
-            return 'fast' === $check ? 'wait' : 'token';
-        }
+    // فرم عمومی است و nonce برای بازدیدکننده ناشناس ارزشی ندارد؛ به‌جایش توکن امضاشده با حداقل زمان.
+    // مسیر بدون جاوااسکریپت قبلا اصلا توکن نمی‌خواست و ربات مستقیم به admin-post.php می‌فرستاد؛ حالا توکنِ
+    // داخل HTML فرم را می‌خواهد (صفحه کش می‌شود، پس عمرش هفت روز است).
+    $check = hodima_phone_check_token(
+        hodima_phone_post_string( 'security_token' ),
+        $is_ajax ? 12 * HOUR_IN_SECONDS : 7 * DAY_IN_SECONDS
+    );
+    if ( 'ok' !== $check ) {
+        return 'fast' === $check ? 'wait' : 'token';
     }
 
     // phpcs:ignore WordPress.Security.NonceVerification.Missing -- تله ربات (honeypot)؛ ارزش آرایه هم اسپم است
@@ -471,7 +544,7 @@ function hodima_phone_process( bool $is_ajax ): string {
         return 'ok'; // همین شماره لحظاتی پیش ثبت شد
     }
     if ( hodima_phone_rate_limited() ) {
-        delete_transient( 'hodima_phone_dup_' . wp_hash( $phone ) );
+        hodima_phone_release( 'dup_' . wp_hash( $phone ) );
         return 'wait';
     }
 
@@ -486,7 +559,7 @@ function hodima_phone_process( bool $is_ajax ): string {
     // ذخیره ناموفق نباید «موفق» گزارش شود؛ شماره از دست می‌رفت
     $lead_id = hodima_phone_save_lead( $phone, $page_url, $page_title );
     if ( $lead_id < 1 ) {
-        delete_transient( 'hodima_phone_dup_' . wp_hash( $phone ) );
+        hodima_phone_release( 'dup_' . wp_hash( $phone ) );
         return 'err';
     }
 

@@ -523,10 +523,10 @@ function hodima_phone_render_row( WP_Post $post, bool $trash ): void {
     <tr class="<?php echo $is_new ? 'is-new' : 'is-seen'; ?>">
         <td class="hd-leads__cb"><input type="checkbox" name="ids[]" value="<?php echo esc_attr( (string) $id ); ?>" data-hd-row aria-label="<?php echo esc_attr( 'انتخاب ' . $phone ); ?>"></td>
         <th scope="row" class="hd-leads__phone">
-            <a href="<?php echo esc_url( $detail ); ?>">
+            <?php // «جدید» برای صفحه‌خوان در aria-label است، نه متن پنهان: متن پنهان با انتخاب ماوس و Ctrl+C همراه شماره کپی می‌شد ?>
+            <a href="<?php echo esc_url( $detail ); ?>"<?php echo $is_new ? ' aria-label="' . esc_attr( $pretty . ' (جدید)' ) . '"' : ''; ?>>
                 <span class="hd-leads__dot" aria-hidden="true"></span>
                 <bdi class="hd-leads__num" dir="ltr"><?php echo esc_html( $pretty ); ?></bdi>
-                <?php if ( $is_new ) : ?><span class="screen-reader-text"> (جدید)</span><?php endif; ?>
             </a>
         </th>
         <td class="hd-leads__page">
@@ -540,7 +540,7 @@ function hodima_phone_render_row( WP_Post $post, bool $trash ): void {
         <td class="hd-leads__time"><strong><?php echo esc_html( $when ); ?></strong><span><?php echo esc_html( $date ); ?></span></td>
         <td class="hd-leads__acts">
             <?php
-            echo hodima_phone_icon_button( 'clipboard', 'کپی شماره ' . $phone, 'type="button" data-hd-copy="' . esc_attr( $phone ) . '"', '', 'کپی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape در سازنده
+            echo hodima_phone_icon_button( 'clipboard', 'کپی شماره ' . $phone, 'type="button" data-hd-copy="' . esc_attr( hodima_phone_pretty( $phone ) ) . '"', '', 'کپی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape در سازنده
             if ( $trash ) {
                 echo hodima_phone_icon_button( 'undo', 'بازگردانی ' . $phone, 'type="submit" name="op" value="restore:' . $id . '"', '', 'بازگردانی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                 echo hodima_phone_icon_button( 'trash', 'حذف همیشگی ' . $phone, 'type="submit" name="op" value="delete:' . $id . '" data-hd-confirm="delete"', 'is-danger', 'حذف' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -626,7 +626,7 @@ function hodima_phone_render_detail( int $lead_id ): void {
         <span class="hd-pill<?php echo $trashed ? ' hd-pill--error' : ''; ?>"><?php echo $trashed ? 'در زباله‌دان' : 'دیده‌شده'; ?></span>
         <span class="hd-leads__bar-spacer"></span>
         <?php
-        echo hodima_phone_icon_button( 'clipboard', 'کپی شماره ' . $phone, 'type="button" data-hd-copy="' . esc_attr( $phone ) . '"', '', 'کپی شماره' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape در سازنده
+        echo hodima_phone_icon_button( 'clipboard', 'کپی شماره ' . $phone, 'type="button" data-hd-copy="' . esc_attr( hodima_phone_pretty( $phone ) ) . '"', '', 'کپی شماره' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escape در سازنده
         if ( $trashed ) {
             echo hodima_phone_icon_button( 'undo', 'بازگردانی', 'type="submit" name="op" value="restore:' . $lead_id . '"', '', 'بازگردانی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
             echo hodima_phone_icon_button( 'trash', 'حذف همیشگی', 'type="submit" name="op" value="delete:' . $lead_id . '" data-hd-confirm="delete"', 'is-danger', 'حذف همیشگی' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
