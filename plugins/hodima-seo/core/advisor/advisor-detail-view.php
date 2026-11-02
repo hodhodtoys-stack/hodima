@@ -66,6 +66,11 @@ function hodima_seo_advisor_render_issue_detail( array $item, string $path ): vo
 		return;
 	}
 
+	if ( 'img_empty' === $code ) {
+		hodima_seo_advisor_render_image_review( (array) ( $item['images'] ?? [] ), (int) ( $item['total'] ?? 0 ), $path, (array) ( $item['marked'] ?? [] ) );
+		return;
+	}
+
 	if ( in_array( $code, [ 'link_broken', 'link_redirect', 'link_noindex' ], true ) ) {
 		hodima_seo_advisor_render_link_list( (array) ( $item['targets'] ?? [] ) );
 	}
@@ -97,21 +102,120 @@ function hodima_seo_advisor_render_draft( string $label, string $draft, string $
 	<?php
 }
 
+/** دکمه فرم «تزئینی است» / «alt می‌خواهد» / «برگرداندن» (admin-post؛ بدون شناسه تا nonce تکراری نشود). */
+function hodima_seo_advisor_img_mark_form( string $url, string $mark, string $label, bool $primary = false ): string {
+
+	return sprintf(
+		'<form method="post" action="%1$s" class="hodima-advisor__img-mark"><input type="hidden" name="action" value="hodima_advisor_img_mark"><input type="hidden" name="_wpnonce" value="%2$s"><input type="hidden" name="url" value="%3$s"><input type="hidden" name="mark" value="%4$s"><button type="submit" class="%5$s">%6$s</button></form>',
+		esc_url( admin_url( 'admin-post.php' ) ),
+		esc_attr( wp_create_nonce( 'hodima_advisor_img_mark' ) ),
+		esc_attr( $url ),
+		esc_attr( $mark ),
+		$primary ? 'hds-btn hds-btn--outline hodima-advisor__act hodima-advisor__img-ok' : 'hds-btn hds-btn--outline hodima-advisor__act',
+		esc_html( $label )
+	);
+}
+
 /**
- * فهرست «کدام تصویرها؟»: تصویر کتابخانه رسانه ← «ویرایش در رسانه» (صفحه همان پیوست با فیلد «متن جایگزین»)؛
- * بیرون از کتابخانه (اسلایدر، صفحه‌ساز) ← آدرس با دکمه کپی. تا ۳ مورد باز، بیشتر بسته.
+ * برچسب فارسی وضعیت alt در HTML.
  *
- * @param list<string> $images آدرس تصویرها (تا ۸)
- * @param int          $total  شمار همه تصویرهای بدون alt صفحه
- * @param string       $path   مسیر صفحه خزش‌شده (برای پیوند «ویرایش صفحه»)
+ * @param array{u?: string, s: string, c?: string, need?: bool} $entry
+ */
+function hodima_seo_advisor_img_state_label( array $entry ): string {
+
+	return ! empty( $entry['need'] ) ? 'alt می‌خواهد (علامت شما)' : match ( $entry['s'] ) {
+		'linked' => 'لینک بی‌نام (alt خالی)',
+		'empty'  => 'alt خالی',
+		default  => 'در HTML: نبود ویژگی alt',
+	};
+}
+
+/** «چه کنم؟» هر حالت علت رفع (ردیف تصویر و کارت تصویر مشترک). */
+function hodima_seo_advisor_img_help_text( string $kind ): string {
+
+	return match ( $kind ) {
+		'library'   => 'در کتابخانه رسانه برای همین تصویر «متن جایگزین» بنویسید. چون قالب alt را از کتابخانه می‌خواند، در همه صفحه‌هایی که از این تصویر استفاده می‌کنند اثر می‌کند.',
+		'page'      => 'alt هنگام درج تصویر در متن صفحه کپی شده و پرکردن بعدی کتابخانه آن را عوض نمی‌کند. در ویرایشگر همین صفحه روی تصویر کلیک کنید، «متن جایگزین» را پر کنید و به‌روزرسانی بزنید؛ یا تصویر را دوباره از کتابخانه درج کنید.',
+		'component' => 'alt کتابخانه پر است ولی این تصویر خالی چاپ می‌شود و در متن صفحه هم نیست؛ پس قالب یا افزونه‌ای که این بخش را می‌سازد alt را نمی‌خواند. از اینجا قابل رفع نیست؛ آدرس را کپی کنید و برای توسعه‌دهنده بفرستید.',
+		'external'  => 'این تصویر از کتابخانه رسانه نیست (اسلایدر، صفحه‌ساز یا CDN). آدرس را کپی کنید و همان‌جا که تصویر را گذاشته‌اید alt بنویسید.',
+		default     => 'در HTML صفحه آدرسی برای این تصویر نبود؛ احتمالا با جاوااسکریپت ساخته می‌شود. از اینجا قابل رفع نیست.',
+	};
+}
+
+/**
+ * یک ردیف تصویر بدون alt: نام، وضعیت و علت، «کجا؟»، «چه کنم؟»، متن پیشنهادی (فقط پیشنهاد) و دکمه رفع. چیزی ذخیره نمی‌شود.
+ *
+ * @param array{u: string, s: string, c: string, need?: bool} $entry
+ */
+function hodima_seo_advisor_render_image_row( array $entry, string $path ): void {
+
+	$info   = hodima_seo_advisor_img_fix_info( $entry, $path );
+	$group  = hodima_seo_advisor_image_groups()[ $entry['u'] ] ?? null;
+	$shared = null !== $group && count( $group['pages'] ) >= HODIMA_SEO_ADVISOR_BULK_MIN;
+	$chips  = [
+		'library'   => [ 'در کتابخانه رسانه است', 'hds-pill hds-pill--info' ],
+		'page'      => [ 'alt کتابخانه پر است', 'hds-pill' ],
+		'component' => [ 'از قالب یا افزونه', 'hds-pill hds-pill--warn' ],
+		'external'  => [ 'بیرون از کتابخانه', 'hds-pill hds-pill--warn' ],
+		'none'      => [ 'آدرسی در HTML نیست', 'hds-pill hds-pill--warn' ],
+	][ $info['case'] ];
+	$help   = hodima_seo_advisor_img_help_text( $info['case'] );
+	?>
+	<div class="hodima-advisor__li hodima-advisor__img-row">
+		<span class="hodima-advisor__thumb"><?php if ( '' !== $info['thumb'] ) : ?><img src="<?php echo esc_url( $info['thumb'] ); ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?></span>
+		<div class="hodima-advisor__li-main">
+			<span class="hodima-advisor__li-name" dir="ltr"><bdi><?php echo esc_html( '' !== $info['name'] ? $info['name'] : 'بدون آدرس' ); ?></bdi></span>
+			<span class="hodima-advisor__img-chips">
+				<span class="hds-pill hds-pill--error"><?php echo esc_html( hodima_seo_advisor_img_state_label( $entry ) ); ?></span>
+				<span class="<?php echo esc_attr( $chips[1] ); ?>"><?php echo esc_html( $chips[0] ); ?></span>
+				<?php if ( $shared ) : ?>
+					<span class="hds-pill hds-pill--info"><?php echo esc_html( sprintf( 'مشترک در %s صفحه', number_format_i18n( count( $group['pages'] ) ) ) ); ?></span>
+				<?php endif; ?>
+			</span>
+			<?php if ( '' !== $info['where'] ) : ?>
+				<p class="hodima-advisor__img-help"><b>کجا؟</b> <span dir="auto"><?php echo esc_html( $info['where'] ); ?></span></p>
+			<?php endif; ?>
+			<?php if ( '' !== $info['lib_alt'] ) : ?>
+				<p class="hodima-advisor__img-help"><b>alt کتابخانه:</b> <?php echo esc_html( '«' . mb_substr( $info['lib_alt'], 0, 80 ) . '»' ); ?></p>
+			<?php endif; ?>
+			<p class="hodima-advisor__img-help"><b>چه کنم؟</b> <?php echo esc_html( $help ); ?></p>
+			<?php if ( '' !== $info['suggest'] && in_array( $info['case'], [ 'library', 'page', 'external' ], true ) ) : ?>
+				<div class="hodima-advisor__img-sug">
+					<span>پیشنهاد متن (بخوانید و اصلاح کنید):</span>
+					<b><?php echo esc_html( '«' . $info['suggest'] . '»' ); ?></b>
+					<?php echo hodima_seo_advisor_detail_copy( $info['suggest'], 'کپی متن پیشنهادی alt' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_detail_copy ?>
+				</div>
+			<?php endif; ?>
+		</div>
+		<div class="hodima-advisor__li-act">
+			<?php if ( 'library' === $info['case'] && '' !== $info['edit'] ) : ?>
+				<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( $info['edit'] ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش در رسانه</a>
+			<?php elseif ( 'page' === $info['case'] && '' !== $info['page_edit'] ) : ?>
+				<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( $info['page_edit'] ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش صفحه</a>
+			<?php elseif ( in_array( $info['case'], [ 'component', 'external' ], true ) ) : ?>
+				<?php echo hodima_seo_advisor_detail_copy( $info['url'], 'کپی آدرس تصویر ' . $info['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+			<?php endif; ?>
+			<?php if ( ! empty( $entry['need'] ) ) : ?>
+				<?php echo hodima_seo_advisor_img_mark_form( $entry['u'], 'reset', 'برگرداندن به «بررسی کنید»' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+			<?php endif; ?>
+		</div>
+	</div>
+	<?php
+}
+
+/**
+ * فهرست «کدام تصویرها؟» (ایراد تصویر بدون alt): هر تصویر با وضعیت، علت، جای رفع و متن پیشنهادی. تا ۳ مورد باز، بیشتر بسته.
+ * فهرست خالی (خزش قدیمی‌تر از ۳.۴.۹): دکمه بازخوانی همین صفحه به‌جای پیوند به تب دیگر (SEO 3.4.9).
+ *
+ * @param list<array{u: string, s: string, c: string, need?: bool}> $images
+ * @param int                                                       $total  شمار همه تصویرهای ایراددار صفحه
+ * @param string                                                    $path   مسیر صفحه خزش‌شده
  */
 function hodima_seo_advisor_render_image_list( array $images, int $total, string $path = '' ): void {
 
-	$images = array_values( array_filter( array_map( 'strval', $images ) ) );
-
 	if ( ! $images ) {
-		// فهرست ندارد: خزش قدیمی‌تر از ۳.۳.۶ یا آدرسی در HTML نبود. تا ۳.۴.۸ پیوندی به تب «سلامت سایت» می‌داد که دکمه خزش ندارد
-		// (بن‌بست)؛ حالا دکمه همان‌جا فقط همین صفحه را از سایت دوباره می‌خواند (SEO 3.4.9)
+		// فهرست ندارد: خزش قدیمی‌تر از این قابلیت. تا ۳.۴.۸ پیوندی به تب «سلامت سایت» می‌داد که دکمه خزش ندارد (بن‌بست)؛ حالا
+		// دکمه همان‌جا فقط همین صفحه را از سایت دوباره می‌خواند (SEO 3.4.9)
 		printf(
 			'<div class="hodima-advisor__detail"><div class="hodima-advisor__recrawl-box"><p class="hodima-advisor__draft-hint">%1$s</p>%2$s</div></div>',
 			esc_html( 'فهرست تصویرها برای این صفحه هنوز ساخته نشده.' ),
@@ -121,59 +225,151 @@ function hodima_seo_advisor_render_image_list( array $images, int $total, string
 	}
 
 	$more = max( 0, $total - count( $images ) );
-
-	// صفحه‌ای که تصویر در متنش درج شده؛ برای حالتی که alt کتابخانه پر است ولی HTML صفحه خالی (SEO 3.4.1)
-	$page_id   = '' !== $path ? url_to_postid( home_url( $path ) ) : 0;
-	$page_edit = $page_id > 0 && current_user_can( 'edit_post', $page_id ) ? (string) get_edit_post_link( $page_id, 'raw' ) : '';
 	?>
 	<div class="hodima-advisor__detail">
 		<details class="hodima-advisor__more"<?php echo count( $images ) <= 3 ? ' open' : ''; ?>>
 			<summary><?php echo esc_html( sprintf( 'کدام تصویرها؟ (%s)', number_format_i18n( max( $total, count( $images ) ) ) ) ); ?></summary>
 			<div class="hodima-advisor__more-body">
+				<p class="hodima-advisor__img-note">فقط تصویرهای دیده‌شونده؛ تصویر پنجره‌های بسته (مثل نوتیفیکیشن) و بخش‌های پنهان حساب نمی‌شود.</p>
 				<?php
-				foreach ( $images as $url ) {
-					$id    = attachment_url_to_postid( $url );
-					$edit  = $id > 0 && current_user_can( 'edit_post', $id ) ? (string) get_edit_post_link( $id, 'raw' ) : '';
-					$thumb = $id > 0 ? (string) wp_get_attachment_image_url( $id, 'thumbnail' ) : '';
-					$thumb = '' !== $thumb ? $thumb : $url;
-					// alt کتابخانه پر است ولی خزنده در HTML صفحه alt خالی دیده: alt هنگام درج در متن صفحه کپی می‌شود و بعدها پرکردنش در کتابخانه صفحه‌های قبلی را عوض نمی‌کند
-					$lib_alt = $id > 0 ? trim( (string) get_post_meta( $id, '_wp_attachment_image_alt', true ) ) : '';
-					?>
-					<div class="hodima-advisor__li">
-						<span class="hodima-advisor__thumb"><img src="<?php echo esc_url( $thumb ); ?>" alt="" width="44" height="44" loading="lazy"></span>
-						<div class="hodima-advisor__li-main">
-							<span class="hodima-advisor__li-name" dir="ltr"><bdi><?php echo esc_html( $id > 0 ? hodima_seo_advisor_detail_filename( $url ) : $url ); ?></bdi></span>
-							<span class="hodima-advisor__li-note">
-								<?php if ( $id > 0 && '' !== $lib_alt ) : ?>
-									<span class="hodima-advisor__li-tag">alt کتابخانه پر است</span>
-									<?php echo esc_html( 'در کتابخانه «' . mb_substr( $lib_alt, 0, 60 ) . '» نوشته شده، ولی در HTML همین صفحه خالی است (تصویر پیش از نوشتن alt در متن صفحه درج شده). در ویرایشگر صفحه روی تصویر کلیک کنید، «متن جایگزین» را همان‌جا پر کنید و به‌روزرسانی بزنید؛ یا تصویر را دوباره از کتابخانه درج کنید. اگر تازه این کار را کرده‌اید، خزش بعدی خودش درست می‌شود.' ); ?>
-								<?php elseif ( $id > 0 ) : ?>
-									<?php echo esc_html( $edit ? 'در کتابخانه رسانه؛ «متن جایگزین» را همان‌جا بنویسید.' : 'در کتابخانه رسانه (اجازه ویرایش ندارید).' ); ?>
-								<?php else : ?>
-									<span class="hodima-advisor__li-tag">بیرون از کتابخانه</span>
-									<?php echo esc_html( 'آدرس را کپی کنید و جایی که گذاشته‌اید (اسلایدر، صفحه‌ساز، قالب) alt بنویسید.' ); ?>
-								<?php endif; ?>
-							</span>
-						</div>
-						<div class="hodima-advisor__li-act">
-							<?php if ( '' !== $lib_alt && '' !== $page_edit ) : ?>
-								<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( $page_edit ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش صفحه</a>
-							<?php elseif ( '' !== $edit ) : ?>
-								<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( $edit ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش در رسانه</a>
-							<?php elseif ( 0 === $id ) : ?>
-								<?php echo hodima_seo_advisor_detail_copy( $url, 'کپی آدرس تصویر ' . hodima_seo_advisor_detail_filename( $url ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
-							<?php endif; ?>
-						</div>
-					</div>
-					<?php
+				foreach ( $images as $entry ) {
+					hodima_seo_advisor_render_image_row( $entry, $path );
 				}
 				if ( $more > 0 ) {
-					printf( '<p class="hodima-advisor__more-note">%s</p>', esc_html( sprintf( 'و %s تصویر دیگر (بعد از رفع این‌ها دوباره خزش می‌شود).', number_format_i18n( $more ) ) ) );
+					printf( '<p class="hodima-advisor__more-note">%s</p>', esc_html( sprintf( 'و %s تصویر دیگر (بعد از رفع این‌ها با بازخوانی صفحه دیده می‌شوند).', number_format_i18n( $more ) ) ) );
 				}
 				?>
 			</div>
 		</details>
 	</div>
+	<?php
+}
+
+/**
+ * ایراد «alt خالی (بررسی کنید)»: تصویر با `alt=""` تنها. برای تزئین درست است؛ ادمین برای هر تصویر دستی «تزئینی است» (برای همه صفحه‌ها
+ * ثبت می‌شود) یا «alt می‌خواهد» (به فهرست ایرادها می‌رود) را می‌زند. فقط ادمین، خودکار نه.
+ *
+ * @param list<array{u: string, s: string, c: string}> $images
+ * @param list<array{u: string, s: string, c: string}> $marked تصویرهای همین صفحه که ادمین «تزئینی» زده
+ */
+function hodima_seo_advisor_render_image_review( array $images, int $total, string $path, array $marked = [] ): void {
+
+	if ( ! $images && ! $marked ) {
+		return;
+	}
+	?>
+	<div class="hodima-advisor__detail">
+		<?php if ( $images ) : ?>
+			<details class="hodima-advisor__more"<?php echo count( $images ) <= 3 ? ' open' : ''; ?>>
+				<summary><?php echo esc_html( sprintf( 'کدام تصویرها؟ (%s)', number_format_i18n( max( $total, count( $images ) ) ) ) ); ?></summary>
+				<div class="hodima-advisor__more-body">
+					<p class="hodima-advisor__img-note">alt خالی برای لوگو، آیکون و تزئین درست است و نمره را کم نمی‌کند. اگر تصویر مطلب مهمی نشان می‌دهد (محصول، نمودار) باید alt بنویسید. «تزئینی است» برای همه صفحه‌هایی که این تصویر را دارند ثبت می‌شود.</p>
+					<?php foreach ( $images as $entry ) : ?>
+						<?php $thumb = '' !== $entry['u'] ? (string) wp_get_attachment_image_url( attachment_url_to_postid( $entry['u'] ), 'thumbnail' ) : ''; ?>
+						<div class="hodima-advisor__li hodima-advisor__img-row">
+							<span class="hodima-advisor__thumb"><?php if ( '' !== $entry['u'] ) : ?><img src="<?php echo esc_url( '' !== $thumb ? $thumb : $entry['u'] ); ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?></span>
+							<div class="hodima-advisor__li-main">
+								<span class="hodima-advisor__li-name" dir="ltr"><bdi><?php echo esc_html( '' !== $entry['u'] ? rawurldecode( basename( (string) wp_parse_url( $entry['u'], PHP_URL_PATH ) ) ) : 'بدون آدرس' ); ?></bdi></span>
+								<?php $where = hodima_seo_advisor_img_context_label( $entry['c'] ) ?: $entry['c']; ?>
+								<?php if ( '' !== $where ) : ?>
+									<p class="hodima-advisor__img-help"><b>جایگاه:</b> <span dir="auto"><?php echo esc_html( $where ); ?></span></p>
+								<?php endif; ?>
+							</div>
+							<div class="hodima-advisor__li-act hodima-advisor__img-acts">
+								<?php if ( '' !== $entry['u'] ) : ?>
+									<?php echo hodima_seo_advisor_img_mark_form( $entry['u'], 'ok', 'تزئینی است', true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+									<?php echo hodima_seo_advisor_img_mark_form( $entry['u'], 'need', 'alt می‌خواهد' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+								<?php else : ?>
+									<span class="hodima-advisor__img-note">آدرسی در HTML نبود؛ قابل علامت‌گذاری نیست.</span>
+								<?php endif; ?>
+							</div>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</details>
+		<?php endif; ?>
+		<?php if ( $marked ) : ?>
+			<details class="hodima-advisor__more">
+				<summary><?php echo esc_html( sprintf( 'تصویرهای «تزئینی» علامت‌خورده در این صفحه (%s)', number_format_i18n( count( $marked ) ) ) ); ?></summary>
+				<div class="hodima-advisor__more-body">
+					<?php foreach ( $marked as $entry ) : ?>
+						<div class="hodima-advisor__li">
+							<div class="hodima-advisor__li-main"><span class="hodima-advisor__li-name" dir="ltr"><bdi><?php echo esc_html( rawurldecode( basename( (string) wp_parse_url( $entry['u'], PHP_URL_PATH ) ) ) ); ?></bdi></span></div>
+							<div class="hodima-advisor__li-act"><?php echo hodima_seo_advisor_img_mark_form( $entry['u'], 'reset', 'برگرداندن' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?></div>
+						</div>
+					<?php endforeach; ?>
+				</div>
+			</details>
+		<?php endif; ?>
+	</div>
+	<?php
+}
+
+/**
+ * کارت «تصویرهای مشترک بدون alt» بالای فهرست «کارها»: تصویری که در ۵ صفحه یا بیشتر ایراد دارد یک بار نشان داده می‌شود (با شمار صفحه،
+ * نمایش گوگل، علت، جای رفع، متن پیشنهادی)، نه N کار جدا (SEO 3.4.9). فقط نمایش؛ alt را ادمین خودش می‌نویسد.
+ *
+ * @param callable(int|float): string $n قالب‌دهنده عدد
+ */
+function hodima_seo_advisor_render_shared_images( callable $n ): void {
+
+	$groups = array_slice( array_filter( hodima_seo_advisor_image_groups(), static fn( array $g ): bool => count( $g['pages'] ) >= HODIMA_SEO_ADVISOR_BULK_MIN ), 0, 3 );
+
+	if ( ! $groups ) {
+		return;
+	}
+	?>
+	<section class="hds-card hodima-advisor__shared" id="hodima-advisor-shared-images" aria-labelledby="hodima-advisor-shared-title">
+		<div>
+			<h2 class="hds-card__title" id="hodima-advisor-shared-title">تصویرهای مشترک بدون alt</h2>
+			<p class="hds-card__desc">هر تصویر یک بار شمرده می‌شود، حتی اگر در صدها صفحه باشد. یک بار درست کنید و بعد «بازخوانی» را بزنید تا دستار از خود سایت ببیند.</p>
+		</div>
+		<?php foreach ( $groups as $group ) : ?>
+			<?php
+			$entry  = [ 'u' => $group['url'], 's' => $group['state'], 'c' => $group['context'] ];
+			$info   = hodima_seo_advisor_img_fix_info( $entry, (string) $group['pages'][0] );
+			$key    = hodima_seo_advisor_img_key( $group['url'] );
+			$count  = count( $group['pages'] );
+			$cases  = [ 'library' => 'در کتابخانه رسانه است', 'page' => 'alt کتابخانه پر است', 'component' => 'از قالب یا افزونه', 'external' => 'بیرون از کتابخانه', 'none' => 'آدرسی در HTML نیست' ];
+			$suggest = 'page' === $info['case'] ? '' : $info['suggest']; // «page»: alt در متن هر صفحه کپی شده؛ از اینجا یک‌جا درست نمی‌شود
+			?>
+			<div class="hodima-advisor__shared-item">
+				<span class="hodima-advisor__shared-thumb"><?php if ( '' !== $info['thumb'] ) : ?><img src="<?php echo esc_url( $info['thumb'] ); ?>" alt="" width="96" height="96" loading="lazy"><?php endif; ?></span>
+				<div class="hodima-advisor__shared-main">
+					<div class="hodima-advisor__img-chips">
+						<b dir="ltr"><bdi><?php echo esc_html( $info['name'] ); ?></bdi></b>
+						<span class="hds-pill hds-pill--error"><?php echo esc_html( hodima_seo_advisor_img_state_label( $entry ) ); ?></span>
+						<span class="hds-pill hds-pill--info"><?php echo esc_html( $cases[ $info['case'] ] ); ?></span>
+					</div>
+					<p class="hodima-advisor__img-help"><b>کجاست؟</b> <?php echo esc_html( sprintf( 'در %1$s صفحه (%2$s نمایش در گوگل)', $n( $count ), $n( (int) $group['impressions'] ) ) ); ?><?php echo '' !== $info['where'] ? ' · ' : ''; ?><span dir="auto"><?php echo esc_html( $info['where'] ); ?></span></p>
+					<p class="hodima-advisor__img-help"><b>چه کنم؟</b> <?php echo esc_html( hodima_seo_advisor_img_help_text( $info['case'] ) ); ?></p>
+					<?php if ( '' !== $suggest && 'component' !== $info['case'] ) : ?>
+						<div class="hodima-advisor__img-sug">
+							<span>پیشنهاد متن (بخوانید و اصلاح کنید):</span>
+							<b><?php echo esc_html( '«' . $suggest . '»' ); ?></b>
+							<?php echo hodima_seo_advisor_detail_copy( $suggest, 'کپی متن پیشنهادی alt' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+						</div>
+					<?php endif; ?>
+				</div>
+				<div class="hodima-advisor__shared-act">
+					<?php if ( 'library' === $info['case'] && '' !== $info['edit'] ) : ?>
+						<a class="hds-btn hodima-advisor__act" href="<?php echo esc_url( $info['edit'] ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش در رسانه</a>
+					<?php elseif ( in_array( $info['case'], [ 'component', 'external' ], true ) ) : ?>
+						<?php echo hodima_seo_advisor_detail_copy( $info['url'], 'کپی آدرس تصویر ' . $info['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+					<?php endif; ?>
+					<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'img' => $key ] ) ); ?>"><?php echo esc_html( sprintf( 'نمایش %s صفحه', $n( $count ) ) ); ?></a>
+					<?php
+					echo hodima_seo_advisor_recrawl_form( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده
+						[ 'scope' => 'img', 'img' => $key ],
+						sprintf( 'بازخوانی %s صفحه', $n( $count ) ),
+						sprintf( '%s؛ پیشرفت بالای صفحه', hodima_seo_advisor_crawler_duration( $count ) ),
+						'running' === hodima_seo_advisor_crawler_state()['status']
+					);
+					?>
+				</div>
+			</div>
+		<?php endforeach; ?>
+	</section>
 	<?php
 }
 

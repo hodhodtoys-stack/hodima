@@ -156,7 +156,10 @@ function hodima_seo_advisor_item_score( array $item, float $value ): float {
 		$value = max( $value, min( 1.0, log10( 1 + $potential ) / log10( 1 + 1000 ) ) );
 	}
 
-	return ( $level / 3 ) * ( 0.15 + 0.85 * $value ) * $confidence / max( 1, hodima_seo_advisor_item_effort( $item ) );
+	$score = ( $level / 3 ) * ( 0.15 + 0.85 * $value ) * $confidence / max( 1, hodima_seo_advisor_item_effort( $item ) );
+
+	// «alt خالی (بررسی کنید)» ایراد قطعی نیست (لوگو و تزئین درست است)؛ هرگز «اولویت بالا» نمی‌شود (SEO 3.4.9)
+	return 'crawl' === ( $item['src'] ?? '' ) && 'img_empty' === ( $item['mark'] ?? '' ) ? min( $score, HODIMA_SEO_ADVISOR_BAND_MID / 2 ) : $score;
 }
 
 /** نشان اولویت از امتیاز: high | mid | low. */
@@ -216,7 +219,7 @@ function hodima_seo_advisor_top_tasks( array $pages, int $limit = HODIMA_SEO_ADV
 	$by_code = [];
 	foreach ( $pages as $page ) {
 		foreach ( $page['items'] as $item ) {
-			if ( 'crawl' === $item['src'] ) {
+			if ( 'crawl' === $item['src'] && 'img_empty' !== $item['mark'] ) { // «بررسی کنید» کار مهم امروز نیست (SEO 3.4.9)
 				$by_code[ (string) $item['mark'] ][] = [ $page, $item ];
 			}
 		}
@@ -250,8 +253,8 @@ function hodima_seo_advisor_top_tasks( array $pages, int $limit = HODIMA_SEO_ADV
 
 	foreach ( $pages as $page ) {
 		foreach ( $page['items'] as $item ) {
-			if ( 'crawl' === $item['src'] && isset( $bulk[ (string) $item['mark'] ] ) ) {
-				continue; // عضو کار کلی است
+			if ( 'crawl' === $item['src'] && ( isset( $bulk[ (string) $item['mark'] ] ) || 'img_empty' === $item['mark'] ) ) {
+				continue; // عضو کار کلی است («بررسی کنید» هم در این فهرست نمی‌آید)
 			}
 			$tasks[] = [
 				'kind'        => 'item',

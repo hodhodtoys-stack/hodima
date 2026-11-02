@@ -21,7 +21,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.9.0';
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.10.0'; // 1.10.0 (SEO 3.4.9): ستون img_empty؛ img_list از این‌جا JSON است
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -164,6 +164,7 @@ function hodima_seo_advisor_install_tables(): void {
 		http_links smallint(6) NOT NULL DEFAULT -1,
 		canonical varchar(191) NOT NULL DEFAULT '',
 		img_list text NULL,
+		img_empty smallint(6) NOT NULL DEFAULT -1,
 		PRIMARY KEY (path)
 		) {$charset};"
 	);

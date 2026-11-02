@@ -226,6 +226,7 @@ if ( ! function_exists( 'hodima_seo_advisor_render_admin' ) ) {
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-admin.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-detail-view.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-recrawl.php';
+require_once HODIMA_SEO_DIR . '/core/advisor/advisor-images.php';
 require_once HODIMA_SEO_DIR . '/core/advisor/advisor-overview-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-cron-view.php';
 	require_once HODIMA_SEO_DIR . '/core/advisor/advisor-jobs-view.php';
@@ -2909,7 +2910,7 @@ $cw_alt = static function ( string $body ) use ( $cw_site ): int {
 	return $parsed['img_noalt'];
 };
 hodima_ad(
-	'تصویر بدون alt: نبود alt و alt خالی تنها = ایراد؛ alt دارد، تزئینی، کارت با عنوان، لینک با aria-label، figure با کپشن = ایراد نیست؛ لینکِ فقط-تصویر = ایراد',
+	'تصویر بدون alt (SEO 3.4.9): نبود ویژگی alt و لینکِ فقط-تصویر با alt خالی = ایراد؛ alt خالی تنها (حتی figure بی‌کپشن) = «بررسی کنید» نه ایراد؛ alt دارد، تزئینی، کارت با عنوان، لینک با aria-label، figure با کپشن = هیچ',
 	[
 		$cw_alt( '<img src="a.jpg">' ),
 		$cw_alt( '<img src="a.jpg" alt="">' ),
@@ -2923,7 +2924,7 @@ hodima_ad(
 		$cw_alt( '<figure><img src="a.jpg" alt=""><figcaption></figcaption></figure>' ),
 		$cw_alt( '<button type="button"><img src="a.jpg" alt="">باز کن</button>' ),
 	],
-	[ 1, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0 ]
+	[ 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0 ]
 );
 // فهرست آدرس تصویرهای بدون alt (SEO 3.3.6): آدرس واقعی (data-src تنبل‌بارگذاری)، جاگیر ریز نه، کارت با عنوان نه، سقف ۸
 $cw_im = hodima_seo_advisor_crawler_parse(
@@ -2937,11 +2938,41 @@ $cw_im = hodima_seo_advisor_crawler_parse(
 	. '</main></body></html>',
 	$cw_site . '/im/'
 );
-hodima_ad( 'آدرس تصویرهای بدون alt: واقعی (data-src)، یکتا، جاگیر و کارت نه؛ شمار همه', [ $cw_im['img_noalt'], $cw_im['img_list'] ], [ 4, [ $cw_site . '/wp-content/uploads/a.jpg', $cw_site . '/wp-content/uploads/lazy.jpg', 'https://cdn.test/x.png' ] ] );
-$cw_many = hodima_seo_advisor_crawler_parse( '<html><head><title>t</title></head><body><main>' . implode( '', array_map( static fn( int $i ): string => '<img src="/u/' . $i . '.jpg">', range( 1, 12 ) ) ) . '</main></body></html>', $cw_site . '/im/' );
-hodima_ad( 'فهرست تصویر تا ۸ آدرس ولی شمار کامل ۱۲', [ $cw_many['img_noalt'], count( $cw_many['img_list'] ) ], [ 12, 8 ] );
+$cw_e = static fn( string $u, string $st = 'missing', string $c = '' ): array => [ 'u' => $u, 's' => $st, 'c' => $c ];
+hodima_ad(
+	'فهرست تصویرها: نبود alt (ایراد) اول، alt خالی (بررسی کنید) بعد؛ آدرس واقعی (data-src)، یکتا، جاگیر و کارت نه',
+	[ $cw_im['img_noalt'], $cw_im['img_empty'], $cw_im['img_list'] ],
+	[ 1, 2, [ $cw_e( $cw_site . '/wp-content/uploads/a.jpg' ), $cw_e( $cw_site . '/wp-content/uploads/lazy.jpg', 'empty' ), $cw_e( 'https://cdn.test/x.png', 'empty' ) ] ]
+);
+$cw_many = hodima_seo_advisor_crawler_parse( '<html><head><title>t</title></head><body><main>' . implode( '', array_map( static fn( int $i ): string => '<img src="/u/' . $i . '.jpg">', range( 1, 25 ) ) ) . '</main></body></html>', $cw_site . '/im/' );
+hodima_ad( 'فهرست تصویر تا ۲۰ آدرس ولی شمار کامل ۲۵', [ $cw_many['img_noalt'], count( $cw_many['img_list'] ) ], [ 25, 20 ] );
 $cw_imrow = hodima_seo_advisor_crawler_page_row( '/im/', 200, 100, $cw_im, '', '' );
-hodima_ad( 'ردیف صفحه: آدرس تصویرها یکی در هر خط', $cw_imrow['img_list'], implode( "\n", $cw_im['img_list'] ) );
+hodima_ad( 'ردیف صفحه: تصویرها JSON و شمار «بررسی کنید» جدا ذخیره می‌شود', [ $cw_imrow['img_list'], $cw_imrow['img_empty'], hodima_seo_advisor_img_list_decode( $cw_imrow['img_list'] ) ], [ hodima_seo_advisor_img_list_encode( $cw_im['img_list'] ), 2, $cw_im['img_list'] ] );
+
+// کلاس‌های مثبت کاذب (SEO 3.4.9): هر کدام یک آزمون تا برنگردد
+$cw_scan = static function ( string $body ) use ( $cw_site ): array {
+	$parsed = hodima_seo_advisor_crawler_parse( '<html><head><title>t</title></head><body><main>' . $body . '</main></body></html>', $cw_site . '/alt/' );
+	return [ $parsed['img_noalt'], $parsed['img_empty'] ];
+};
+hodima_ad(
+	'تصویر نامرئی ایراد نیست: <template>، <dialog> بسته (پاپ‌آپ)، hidden، display:none، aria-hidden؛ <dialog open> دیده می‌شود',
+	[ $cw_scan( '<template><img src="/q.jpg"></template>' ), $cw_scan( '<dialog id="hd-notification-5"><img src="/q.jpg"></dialog>' ), $cw_scan( '<div hidden><img src="/q.jpg"></div>' ), $cw_scan( '<div style="display:none"><img src="/q.jpg"></div>' ), $cw_scan( '<div aria-hidden="true"><img src="/q.jpg"></div>' ), $cw_scan( '<dialog open><img src="/q.jpg"></dialog>' ) ],
+	[ [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 0, 0 ], [ 1, 0 ] ]
+);
+hodima_ad(
+	'alt خالی عمدی با نبود alt یکی نیست؛ فقط فاصله یا نویسه نامرئی = خالی؛ alt=0 درست است',
+	[ $cw_scan( '<img src="/a.jpg" alt="">' ), $cw_scan( '<img src="/a.jpg" alt="  ">' ), $cw_scan( '<img src="/a.jpg" alt="&nbsp;">' ), $cw_scan( "<img src=\"/a.jpg\" alt=\"\u{200C}\">" ), $cw_scan( '<img src="/a.jpg">' ), $cw_scan( '<img src="/a.jpg" alt="0">' ) ],
+	[ [ 0, 1 ], [ 0, 1 ], [ 0, 1 ], [ 0, 1 ], [ 1, 0 ], [ 0, 0 ] ]
+);
+hodima_ad(
+	'یک فایل که جای دیگر همان صفحه alt دارد ایراد نمی‌گیرد (دسکتاپ/موبایل)؛ فایل دیگر می‌گیرد',
+	[ $cw_scan( '<img src="/a.jpg" alt="کفش"><img src="/a.jpg" alt="">' ), $cw_scan( '<img src="/a.jpg" alt="کفش"><img src="/b.jpg">' ) ],
+	[ [ 0, 0 ], [ 1, 0 ] ]
+);
+$cw_ctx = hodima_seo_advisor_crawler_parse( '<html><head><title>t</title></head><body><main><div class="sp-gallery big"><figure><img src="/g.jpg"></figure></div><section id="promo"><img src="/p.jpg"></section></main></body></html>', $cw_site . '/ctx/' );
+hodima_ad( 'جایگاه در HTML: نزدیک‌ترین نیای معنادار با کلاس یا شناسه (figure رد می‌شود)', array_column( $cw_ctx['img_list'], 'c' ), [ 'div.sp-gallery.big', 'section#promo' ] );
+$cw_src = hodima_seo_advisor_crawler_parse( '<html><head><title>t</title></head><body><main><img srcset="/s-300.jpg 300w, /s-600.jpg 600w"><img src=""><img src="data:image/svg+xml;base64,AAA"></main></body></html>', $cw_site . '/src/' );
+hodima_ad( 'آدرس تصویر: فقط srcset ← اولین آدرس؛ src خالی یا data: ← آدرس خالی (ولی شمرده می‌شود، فهرست با «آدرسی در HTML نیست»)', [ $cw_src['img_noalt'], array_column( $cw_src['img_list'], 'u' ) ], [ 3, [ $cw_site . '/s-300.jpg', '', '' ] ] );
 $cw_row = hodima_seo_advisor_crawler_page_row( '/p/', 200, 120, $cw_p, '', '' );
 hodima_ad( 'ردیف صفحه noindex: غیرایندکس‌پذیر با علت، طول عنوان، max-snippet:0', [ $cw_row['indexable'], $cw_row['reason'], $cw_row['title_len'], $cw_row['no_snippet'] ], [ 0, 'Noindex', 10, 1 ] );
 $cw_row2 = hodima_seo_advisor_crawler_page_row( '/p/', 200, 120, [ 'canonical' => $cw_site . '/p/' ] + $cw_p + [], '', '' );
@@ -3130,7 +3161,29 @@ foreach ( hodima_seo_advisor_crawl_issues() as $ic_row ) {
 		$ic_img = 'img_alt' === $ic_issue['code'] ? $ic_issue : $ic_img;
 	}
 }
-hodima_ad( 'ایراد img_alt آدرس تصویرها و شمار کل را می‌آورد', [ $ic_img['images'] ?? null, $ic_img['total'] ?? null ], [ [ 'https://x.test/a.jpg', 'https://x.test/b.jpg' ], 10 ] );
+hodima_ad( 'ایراد img_alt: ردیف قدیمی (یک آدرس در هر خط) خوانده می‌شود و شمار کل می‌ماند', [ $ic_img['images'] ?? null, $ic_img['total'] ?? null ], [ [ [ 'u' => 'https://x.test/a.jpg', 's' => 'missing', 'c' => '' ], [ 'u' => 'https://x.test/b.jpg', 's' => 'missing', 'c' => '' ] ], 10 ] );
+// «alt خالی (بررسی کنید)»: ایراد جدا، «تزئینی است» از ایراد برمی‌دارد و فقط ادمین دستی می‌زند
+$GLOBALS['wpdb']->update( $ic_t, [ 'img_noalt' => 0, 'img_empty' => 2, 'img_list' => '[{"u":"https://x.test/l1.png","s":"empty","c":"div.logos"},{"u":"https://x.test/l2.png","s":"empty","c":"div.logos"}]' ], [ 'path' => '/ok/' ] );
+hodima_seo_advisor_crawl_map( true );
+$ic_codes = static function () use ( $ic_t ): array {
+	foreach ( hodima_seo_advisor_crawl_issues() as $row ) {
+		if ( '/ok/' === $row['path'] ) {
+			return array_column( $row['issues'], 'total', 'code' );
+		}
+	}
+	return [];
+};
+hodima_ad( 'alt خالی تنها: فقط «بررسی کنید» (img_empty)، نه img_alt؛ در گروه نمره نیست', [ $ic_codes()['img_empty'] ?? null, isset( $ic_codes()['img_alt'] ), in_array( 'img_empty', array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) ), true ) ], [ 2, false, false ] );
+delete_option( HODIMA_SEO_ADVISOR_IMG_MARKS_OPTION );
+hodima_ad( 'علامت: «تزئینی است» یکی را برمی‌دارد و شمار می‌شود ۱؛ «alt می‌خواهد» آن یکی را به ایراد img_alt می‌برد', [ hodima_seo_advisor_img_mark_set( 'https://x.test/l1.png', 'ok' ), $ic_codes()['img_empty'] ?? null ], [ true, 1 ] );
+hodima_seo_advisor_img_mark_set( 'https://x.test/l2.png', 'need' );
+hodima_ad( 'علامت «alt می‌خواهد»: بررسی‌کنیدی نمی‌ماند، ایراد img_alt با ۱ تصویر', [ isset( $ic_codes()['img_empty'] ), $ic_codes()['img_alt'] ?? null ], [ false, 1 ] );
+hodima_seo_advisor_img_mark_set( 'https://x.test/l1.png', 'reset' );
+hodima_seo_advisor_img_mark_set( 'https://x.test/l2.png', 'reset' );
+hodima_ad( 'علامت برداشته شد: هر دو دوباره «بررسی کنید»؛ آدرس نامعتبر و علامت ناشناخته رد می‌شود', [ $ic_codes()['img_empty'] ?? null, hodima_seo_advisor_img_mark_set( '', 'ok' ), hodima_seo_advisor_img_mark_set( 'https://x.test/a.png', 'zzz' ) ], [ 2, false, false ] );
+delete_option( HODIMA_SEO_ADVISOR_IMG_MARKS_OPTION );
+$GLOBALS['wpdb']->update( $ic_t, [ 'img_noalt' => 10, 'img_empty' => -1, 'img_list' => "https://x.test/a.jpg\nhttps://x.test/b.jpg" ], [ 'path' => '/ok/' ] );
+hodima_seo_advisor_crawl_map( true );
 
 echo "=== پیش‌نویس عنوان/متا و جزئیات ایراد در «کارها» (SEO 3.3.6)\n";
 hodima_ad( 'کوتاه‌کردن تمیز: سر جمله، وگرنه آخرین فاصله؛ کوتاه‌تر از سقف دست نمی‌خورد', [ hodima_seo_advisor_draft_cut( 'سلام دنیا. خوش آمدید به سایت ما', 20, 5 ), hodima_seo_advisor_draft_cut( 'یک دو سه چهار پنج شش', 12 ), hodima_seo_advisor_draft_cut( 'کوتاه', 50 ) ], [ 'سلام دنیا.', 'یک دو سه', 'کوتاه' ] );
@@ -3156,16 +3209,19 @@ $dr_out = static function ( array $item, string $path ): string {
 	hodima_seo_advisor_render_issue_detail( $item, $path );
 	return (string) ob_get_clean();
 };
-$dr_i3  = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_url, 'https://cdn.test/x.png' ], 'total' => 2 ], '/p/' );
-$dr_i5  = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_url, 'https://cdn.test/x.png', 'https://cdn.test/y.png', 'https://cdn.test/z.png' ], 'total' => 7 ], '/p/' );
-hodima_ad( 'فهرست تصویر: کتابخانه ← «ویرایش در رسانه»، بیرونی ← کپی آدرس؛ ≤۳ باز', [ str_contains( $dr_i3, 'ویرایش در رسانه' ), str_contains( $dr_i3, 'post=' . $dr_att ), str_contains( $dr_i3, 'dr-img-a.jpg' ), str_contains( $dr_i3, 'data-hdsa-copy-text="https://cdn.test/x.png"' ), str_contains( $dr_i3, 'بیرون از کتابخانه' ), str_contains( $dr_i3, '<details class="hodima-advisor__more" open>' ) ], [ true, true, true, true, true, true ] );
+$dr_e   = static fn( string $u, string $st = 'missing', string $c = '' ): array => [ 'u' => $u, 's' => $st, 'c' => $c ];
+$dr_i3  = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_e( $dr_url ), $dr_e( 'https://cdn.test/x.png', 'missing', 'dialog#hd-notification-5' ) ], 'total' => 2 ], '/p/' );
+$dr_i5  = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_e( $dr_url ), $dr_e( 'https://cdn.test/x.png' ), $dr_e( 'https://cdn.test/y.png' ), $dr_e( 'https://cdn.test/z.png' ) ], 'total' => 7 ], '/p/' );
+hodima_ad( 'فهرست تصویر: کتابخانه ← «ویرایش در رسانه»، بیرونی ← کپی آدرس؛ ≤۳ باز', [ str_contains( $dr_i3, 'ویرایش در رسانه' ), str_contains( $dr_i3, 'post=' . $dr_att ), str_contains( $dr_i3, 'dr-img-a.jpg' ), str_contains( $dr_i3, 'data-hdsa-copy-text="https://cdn.test/x.png"' ), str_contains( $dr_i3, 'بیرون از کتابخانه' ), str_contains( $dr_i3, '<details class="hodima-advisor__more" open>' ), str_contains( $dr_i3, 'پنجره نوتیفیکیشن (Hodima Media)' ) && str_contains( $dr_i3, 'dialog#hd-notification-5' ), str_contains( $dr_i3, 'کجا؟' ) && str_contains( $dr_i3, 'چه کنم؟' ), str_contains( $dr_i3, 'پیشنهاد متن' ) ], [ true, true, true, true, true, true, true, true, true ] );
 hodima_ad( 'فهرست تصویر بیش از ۳: بسته و «و N تصویر دیگر»', [ str_contains( $dr_i5, '<details class="hodima-advisor__more">' ), str_contains( $dr_i5, 'و 3 تصویر دیگر' ), str_contains( $dr_i5, 'کدام تصویرها؟ (7)' ) ], [ true, true, true ] );
 $dr_empty = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [], 'total' => 5 ], '/p/' );
 // alt کتابخانه پر ولی HTML صفحه خالی: پیام جدا و پیوند «ویرایش صفحه»، نه «alt را در کتابخانه بنویسید» (SEO 3.4.1)
 update_post_meta( $dr_att, '_wp_attachment_image_alt', 'گیره مو عمده' );
-$dr_pg    = wp_insert_post( [ 'post_title' => 'صفحه سفارش آزمون', 'post_status' => 'publish', 'post_type' => 'page', 'post_name' => 'alt-lib-test' ] );
-$dr_alt   = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_url ], 'total' => 1 ], (string) hodima_seo_advisor_path_key( (string) get_permalink( $dr_pg ) ) );
-hodima_ad( 'alt کتابخانه پر: برچسب «alt کتابخانه پر است»، متن alt، «ویرایش صفحه» و نبودن «ویرایش در رسانه»', [ str_contains( $dr_alt, 'alt کتابخانه پر است' ), str_contains( $dr_alt, 'گیره مو عمده' ), str_contains( $dr_alt, 'post=' . $dr_pg ), str_contains( $dr_alt, 'ویرایش در رسانه' ) ], [ true, true, true, false ] );
+$dr_pg    = wp_insert_post( [ 'post_title' => 'صفحه سفارش آزمون', 'post_status' => 'publish', 'post_type' => 'page', 'post_name' => 'alt-lib-test', 'post_content' => '<img src="' . $dr_url . '">' ] );
+$dr_alt   = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_e( $dr_url ) ], 'total' => 1 ], (string) hodima_seo_advisor_path_key( (string) get_permalink( $dr_pg ) ) );
+$dr_comp  = $dr_out( [ 'src' => 'crawl', 'mark' => 'img_alt', 'images' => [ $dr_e( $dr_url ) ], 'total' => 1 ], '/p/' );
+hodima_ad( 'alt کتابخانه پر ولی در متن صفحه نیست: «از قالب یا افزونه» با کپی آدرس؛ نه «ویرایش صفحه»', [ str_contains( $dr_comp, 'از قالب یا افزونه' ), str_contains( $dr_comp, 'data-hdsa-copy-text="' . $dr_url . '"' ), str_contains( $dr_comp, 'ویرایش صفحه' ) ], [ true, true, false ] );
+hodima_ad( 'alt کتابخانه پر و کپی‌شده در متن صفحه: برچسب «alt کتابخانه پر است»، متن alt، «ویرایش صفحه» و نبودن «ویرایش در رسانه»', [ str_contains( $dr_alt, 'alt کتابخانه پر است' ), str_contains( $dr_alt, 'گیره مو عمده' ), str_contains( $dr_alt, 'post=' . $dr_pg ), str_contains( $dr_alt, 'ویرایش در رسانه' ) ], [ true, true, true, false ] );
 delete_post_meta( $dr_att, '_wp_attachment_image_alt' );
 hodima_ad( 'فهرست تصویر خالی (خزش قدیمی): به‌جای پیوند بن‌بست به تب «سلامت سایت» دکمه «بازخوانی همین صفحه» با مسیر همان صفحه (SEO 3.4.9)؛ ایراد بی‌جزئیات و ردیف غیرخزنده: هیچ', [ str_contains( $dr_empty, 'value="hodima_advisor_recrawl"' ) && str_contains( $dr_empty, 'name="path" value="/p/"' ) && str_contains( $dr_empty, 'بازخوانی همین صفحه' ), ! str_contains( $dr_empty, 'tab=crawl' ) && ! str_contains( $dr_empty, '<a ' ), $dr_out( [ 'src' => 'crawl', 'mark' => 'orphan' ], '/p/' ), $dr_out( [ 'src' => 'opp', 'mark' => 'img_alt', 'images' => [ $dr_url ] ], '/p/' ) ], [ true, true, '', '' ] );
 $dr_links = $dr_out( [ 'src' => 'crawl', 'mark' => 'link_broken', 'targets' => array_map( static fn( int $i ): array => [ 'path' => '/gone-' . $i . '/', 'note' => 'کد 404؛ متن لینک «x»' ], range( 1, 7 ) ) ], '/p/' );
@@ -4208,7 +4264,7 @@ $rc_act = static function ( array $post ): array {
 [ $rc_f1, $rc_to1 ] = $rc_act( [ 'scope' => 'page', 'path' => '/rc-1/', 'code' => 'img_alt' ] );
 hodima_ad(
 	'بازخوانی یک صفحه: همان صفحه از سایت خوانده شد؛ آدرس تصویر در فهرست ردیف ذخیره شد؛ پیام تعداد را می‌گوید؛ ریدایرکت به همان ردیف',
-	[ str_contains( $rc_f1, 'صفحه دوباره از سایت خوانده شد' ), str_contains( $rc_f1, '1 تصویر بدون alt پیدا شد' ) && str_contains( $rc_f1, 'فهرستشان زیر همین کارت است' ), (string) $wpdb->get_var( $wpdb->prepare( 'SELECT img_list FROM %i WHERE path = %s', $rc_table, '/rc-1/' ) ), str_contains( $rc_to1, '#' . hodima_seo_advisor_row_anchor( '/rc-1/' ) ) ],
+	[ str_contains( $rc_f1, 'صفحه دوباره از سایت خوانده شد' ), str_contains( $rc_f1, '1 تصویر بدون alt پیدا شد' ) && str_contains( $rc_f1, 'فهرستشان زیر همین کارت است' ), (string) ( hodima_seo_advisor_img_list_decode( (string) $wpdb->get_var( $wpdb->prepare( 'SELECT img_list FROM %i WHERE path = %s', $rc_table, '/rc-1/' ) ) )[0]['u'] ?? '' ), str_contains( $rc_to1, '#' . hodima_seo_advisor_row_anchor( '/rc-1/' ) ) ],
 	[ true, true, 'https://' . wp_parse_url( home_url(), PHP_URL_HOST ) . '/wp-content/uploads/rc-one.jpg', true ]
 );
 
@@ -4216,7 +4272,7 @@ $rc_body = '<html><head><title>' . str_repeat( 'ع', 50 ) . '</title></head><bod
 [ $rc_f2 ] = $rc_act( [ 'scope' => 'page', 'path' => '/rc-1/', 'code' => 'img_alt' ] );
 hodima_ad( 'بازخوانی بعد از نوشتن alt: «دیگر تصویر بدون alt ندارد»', [ str_contains( $rc_f2, 'دیگر تصویر بدون alt ندارد' ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT img_noalt FROM %i WHERE path = %s', $rc_table, '/rc-1/' ) ) ], [ true, 0 ] );
 
-$rc_body = '<html><head><title>' . str_repeat( 'ع', 50 ) . '</title></head><body><main><h1>تیتر</h1><img src="" alt=""></main></body></html>';
+$rc_body = '<html><head><title>' . str_repeat( 'ع', 50 ) . '</title></head><body><main><h1>تیتر</h1><img src=""></main></body></html>';
 [ $rc_f3 ] = $rc_act( [ 'scope' => 'page', 'path' => '/rc-1/', 'code' => 'img_alt' ] );
 hodima_ad( 'تصویر بی‌آدرس (ساخته‌شده با JS): پیام شفاف به‌جای «با خزش بعدی» تا ابد', [ str_contains( $rc_f3, '1 تصویر بدون alt پیدا شد' ), str_contains( $rc_f3, 'آدرسی برایشان در HTML صفحه نبود' ) ], [ true, true ] );
 
@@ -4229,7 +4285,7 @@ delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
 $rc_state6 = hodima_seo_advisor_crawler_state();
 hodima_ad(
 	'بازخوانی کار کلی: «N صفحه در صف خزش رفت» با زمان تقریبی؛ حالت سریع، دستی، seed همان صفحه‌های ایراد؛ برمی‌گردد به همان صفحه',
-	[ str_contains( $rc_f6, 'صفحه در صف خزش رفت' ), str_contains( $rc_f6, 'پیشرفت بالای همین صفحه' ), $rc_state6['status'], $rc_state6['mode'], $rc_state6['manual'], in_array( 'u:/rc-1/', $rc_state6['seed'], true ), ! in_array( 'u:/rc-3/', $rc_state6['seed'], true ), '' !== $rc_to6 && ! str_contains( $rc_to6, '#' ) ],
+	[ str_contains( $rc_f6, 'صفحه در صف خزش رفت' ), str_contains( $rc_f6, 'پیشرفت بالای همین صفحه' ), $rc_state6['status'], $rc_state6['mode'], $rc_state6['manual'], in_array( 'u:/rc-2/', $rc_state6['seed'], true ) && in_array( 'u:/rc-1/', $rc_state6['seed'], true ), ! in_array( 'u:/rc-3/', $rc_state6['seed'], true ), '' !== $rc_to6 && ! str_contains( $rc_to6, '#' ) ],
 	[ true, true, 'running', 'quick', true, true, true, true ]
 );
 [ $rc_f7 ] = $rc_act( [ 'scope' => 'code', 'code' => 'img_alt' ] );
@@ -4250,6 +4306,115 @@ remove_filter( 'wp_die_handler', $rc_die, 99 );
 $_POST = [];
 $_REQUEST = [];
 hodima_ad( 'nonce نامعتبر: بازخوانی انجام نمی‌شود', $rc_bad, true );
+
+
+// ── تصویرهای بدون alt: متن پیشنهادی، علت رفع، گروه مشترک، کارت و علامت‌ها (SEO 3.4.9)
+hodima_ad(
+	'متن پیشنهادی از نام فایل: اندازه و پسوند و خط تیره پاک می‌شود؛ IMG_1234 و عدد تنها پیشنهاد نمی‌دهد',
+	[ hodima_seo_advisor_alt_from_name( 'Black-Hair-Clip-300x300.jpg' ), hodima_seo_advisor_alt_from_name( 'گیره-مو-عمده.webp' ), hodima_seo_advisor_alt_from_name( 'IMG_1234.jpg' ), hodima_seo_advisor_alt_from_name( '1234.png' ), hodima_seo_advisor_alt_from_name( 'photo-20240101123456.jpg' ) ],
+	[ 'Black Hair Clip', 'گیره مو عمده', '', '', '' ]
+);
+$rc_up   = wp_upload_dir();
+$rc_aurl = $rc_up['baseurl'] . '/hodima-test/rc-img-one.jpg';
+$rc_att  = (int) wp_insert_attachment( [ 'post_title' => 'گیره فلزی طلایی', 'post_mime_type' => 'image/jpeg', 'post_status' => 'inherit' ], 'hodima-test/rc-img-one.jpg' );
+$rc_post = (int) wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => 'عنوان نوشته آزمون تصویر', 'post_name' => 'rc-alt-post', 'post_content' => 'x' ] );
+$rc_path = (string) hodima_seo_advisor_path_key( (string) get_permalink( $rc_post ) );
+hodima_ad( 'پیشنهاد متن: عنوان پیوست؛ اگر تصویر شاخص همان نوشته است عنوان نوشته؛ بدون پیوست از نام فایل', [ hodima_seo_advisor_alt_suggestion( $rc_aurl, $rc_att, '/rc-nowhere/' ) ], [ 'گیره فلزی طلایی' ] );
+set_post_thumbnail( $rc_post, $rc_att );
+hodima_ad( 'پیشنهاد متن: تصویر شاخص ← عنوان نوشته', hodima_seo_advisor_alt_suggestion( $rc_aurl, $rc_att, $rc_path ), 'عنوان نوشته آزمون تصویر' );
+hodima_ad( 'پیشنهاد متن: بیرون از کتابخانه از نام فایل', hodima_seo_advisor_alt_suggestion( 'https://cdn.test/red-shoe.png', 0, '' ), 'red shoe' );
+
+$rc_info = static fn( string $url, string $path = '/rc-nowhere/' ): array => hodima_seo_advisor_img_fix_info( [ 'u' => $url, 's' => 'missing', 'c' => '' ], $path );
+update_post_meta( $rc_att, '_wp_attachment_image_alt', '' );
+$rc_i_lib = $rc_info( $rc_aurl );
+update_post_meta( $rc_att, '_wp_attachment_image_alt', 'توضیح کتابخانه' );
+$rc_i_comp = $rc_info( $rc_aurl );
+wp_update_post( [ 'ID' => $rc_post, 'post_content' => '<img src="' . $rc_aurl . '">' ] );
+$rc_i_page = $rc_info( $rc_aurl, $rc_path );
+hodima_ad(
+	'علت رفع: کتابخانه (alt خالی) / متن صفحه (alt پر و کپی‌شده) / قالب یا افزونه (alt پر، در متن نیست) / بیرونی / بی‌آدرس',
+	[ $rc_i_lib['case'], $rc_i_page['case'], $rc_i_comp['case'], $rc_info( 'https://cdn.test/x.png' )['case'], $rc_info( '' )['case'], $rc_i_lib['id'] === $rc_att, str_contains( $rc_i_lib['edit'], 'post=' . $rc_att ), '' !== $rc_i_page['page_edit'] ],
+	[ 'library', 'page', 'component', 'external', 'none', true, true, true ]
+);
+
+// تصویر مشترک: ۶ صفحه یک فایل ← یک گروه؛ بسته‌شدن کار یک صفحه آن را ۵ می‌کند؛ ۴ صفحه «مشترک» نیست
+$rc_share = 'https://hodima.test/wp-content/uploads/rc-shared.jpg';
+foreach ( range( 1, 6 ) as $rc_k ) {
+	$wpdb->replace( $rc_table, [ 'path' => "/rc-g{$rc_k}/", 'status' => 200, 'indexable' => 1, 'title' => 'عنوان گروه ' . $rc_k, 'title_len' => 45, 'meta_len' => 120, 'h1' => 'تیتر ' . $rc_k, 'resp_ms' => 100, 'inlinks' => 5, 'text_links' => 3, 'depth' => 2, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 1, 'img_empty' => 0, 'http_links' => 0, 'canonical' => "/rc-g{$rc_k}/", 'img_list' => hodima_seo_advisor_img_list_encode( [ [ 'u' => $rc_share, 's' => 'missing', 'c' => 'div.hero' ] ] ) ] );
+	$wpdb->replace( hodima_seo_advisor_table( 'pages' ), [ 'path' => "/rc-g{$rc_k}/", 'impressions' => 100 * $rc_k, 'kind' => 'post', 'advice' => '[]' ] );
+}
+hodima_seo_advisor_crawl_map( true );
+$rc_groups = hodima_seo_advisor_image_groups();
+hodima_ad( 'تصویر مشترک: یک گروه با ۶ صفحه، جمع نمایش و جایگاه', [ count( $rc_groups[ $rc_share ]['pages'] ?? [] ), $rc_groups[ $rc_share ]['impressions'] ?? 0, $rc_groups[ $rc_share ]['context'] ?? '' ], [ 6, 2100, 'div.hero' ] );
+$rc_card = $cap( static fn() => hodima_seo_advisor_render_shared_images( $rc_n ) );
+hodima_ad(
+	'کارت تصویرهای مشترک: نام فایل، «در 6 صفحه»، نمایش، کجا/چه کنم، فرم بازخوانی scope=img، پیوند فیلتر ?img=',
+	[ str_contains( $rc_card, 'rc-shared.jpg' ), str_contains( $rc_card, 'در 6 صفحه' ), str_contains( $rc_card, '2,100' ) || str_contains( $rc_card, '2٬100' ) || str_contains( $rc_card, '2100' ), str_contains( $rc_card, 'کجاست؟' ) && str_contains( $rc_card, 'چه کنم؟' ), str_contains( $rc_card, 'name="scope" value="img"' ), str_contains( $rc_card, 'img=' . hodima_seo_advisor_img_key( $rc_share ) ), str_contains( $rc_card, 'id="hodima-advisor-shared-images"' ) ],
+	[ true, true, true, true, true, true, true ]
+);
+hodima_seo_advisor_task_set( '/rc-g1/', 'crawl_img_alt', '', 'تصویر بدون alt', 'done' );
+hodima_seo_advisor_crawl_map( true );
+hodima_ad( 'کار «انجام دادم» یک صفحه از گروه بیرون می‌رود', count( hodima_seo_advisor_image_groups()[ $rc_share ]['pages'] ?? [] ), 5 );
+hodima_seo_advisor_task_set( '/rc-g2/', 'crawl_img_alt', '', 'تصویر بدون alt', 'done' );
+hodima_seo_advisor_task_set( '/rc-g3/', 'crawl_img_alt', '', 'تصویر بدون alt', 'done' );
+hodima_seo_advisor_crawl_map( true );
+hodima_ad( 'کمتر از ۵ صفحه: گروه هست ولی «مشترک» نیست ← کارت هیچ نمی‌آید', [ count( hodima_seo_advisor_image_groups()[ $rc_share ]['pages'] ?? [] ), $cap( static fn() => hodima_seo_advisor_render_shared_images( $rc_n ) ) ], [ 3, '' ] );
+foreach ( [ '/rc-g1/', '/rc-g2/', '/rc-g3/' ] as $rc_p ) {
+	hodima_seo_advisor_task_set( $rc_p, 'crawl_img_alt', '', '', '' );
+}
+hodima_seo_advisor_crawl_map( true );
+
+// «۵ کار مهم امروز»: تصویر مشترک ← عنوان با اسم تصویر و دکمه «دیدن این تصویر»
+$rc_top = $cap( static fn() => hodima_seo_advisor_render_top_tasks( [ [ 'kind' => 'group', 'title' => 'تصویر بدون alt', 'code' => 'img_alt', 'pages' => 6, 'score' => 0.5, 'band' => 'high', 'impressions' => 100, 'sales' => 0, 'potential' => 0, 'effort' => 2, 'path' => '', 'name' => '' ] ], $rc_n ) );
+hodima_ad( 'کار کلی alt: عنوان با شمار صفحه‌های همان ایراد، توضیح «یک تصویر مشترک در 6 صفحه»، «دیدن این تصویر»؛ بازخوانی scope=code', [ str_contains( $rc_top, 'تصویر بدون alt در 6 صفحه' ) && str_contains( $rc_top, 'یک تصویر مشترک در 6 صفحه است' ), str_contains( $rc_top, '#hodima-advisor-shared-images' ), str_contains( $rc_top, 'name="scope" value="code"' ) ], [ true, true, true ] );
+
+// «بررسی کنید» (alt خالی) هیچ‌وقت «اولویت بالا» و «کار مهم امروز» نمی‌شود، حتی در صفحه پرنمایش
+$rc_it = [ 'level' => 'info', 'src' => 'crawl', 'mark' => 'img_empty', 'effort' => 1 ];
+hodima_ad( 'امتیاز «alt خالی»: نشان «کم»؛ ایراد info دیگر با همان ارزش «کم» نیست', [ hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( $rc_it, 1.0 ) ), 'low' !== hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( [ 'mark' => 'redirect' ] + $rc_it, 1.0 ) ) ], [ 'low', true ] );
+hodima_ad( '«کار مهم امروز»: ایراد img_empty نمی‌آید', hodima_seo_advisor_top_tasks( [ [ 'path' => '/a/', 'title' => 'a', 'impressions' => 9000, 'sales' => 0, 'items' => [ [ 'src' => 'crawl', 'mark' => 'img_empty', 'label' => 'x', 'score' => 0.9, 'band' => 'high', 'effort' => 1 ] ] ] ] ), [] );
+
+// بازخوانی صفحه‌های یک تصویر مشترک (scope=img)
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+[ $rc_fi ] = $rc_act( [ 'scope' => 'img', 'img' => hodima_seo_advisor_img_key( $rc_share ) ] );
+$rc_si = hodima_seo_advisor_crawler_state();
+hodima_ad( 'بازخوانی صفحه‌های یک تصویر: ۶ صفحه در صف (حالت سریع، دستی)', [ str_contains( $rc_fi, 'صفحه در صف خزش رفت' ), $rc_si['mode'], $rc_si['manual'], count( array_filter( $rc_si['seed'], static fn( string $i ): bool => str_starts_with( $i, 'u:/rc-g' ) ) ) ], [ true, 'quick', true, 6 ] );
+delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ 0 ] );
+[ $rc_fn ] = $rc_act( [ 'scope' => 'img', 'img' => 'zzzzzzzzzzzz' ] );
+hodima_ad( 'کلید تصویر ناشناخته: هیچ خزشی شروع نمی‌شود', str_contains( $rc_fn, 'صفحه‌ای برای بازخوانی پیدا نشد' ), true );
+
+// کارت «بررسی کنید» و کنش علامت‌ها
+$rc_rev = $cap( static fn() => hodima_seo_advisor_render_image_review( [ [ 'u' => 'https://cdn.test/logo.png', 's' => 'empty', 'c' => 'div.logos' ] ], 1, '/rc-1/', [ [ 'u' => 'https://cdn.test/icon.png', 's' => 'empty', 'c' => '' ] ] ) );
+hodima_ad(
+	'بخش «بررسی کنید»: «تزئینی است» و «alt می‌خواهد» برای هر تصویر (فرم با nonce)؛ علامت‌خورده‌ها با «برگرداندن»؛ جایگاه',
+	[ substr_count( $rc_rev, 'name="mark" value="ok"' ), substr_count( $rc_rev, 'name="mark" value="need"' ), substr_count( $rc_rev, 'name="mark" value="reset"' ), str_contains( $rc_rev, 'div.logos' ), str_contains( $rc_rev, 'تصویرهای «تزئینی» علامت‌خورده' ), str_contains( $rc_rev, ' id=' ) ],
+	[ 1, 1, 1, true, true, false ]
+);
+$rc_mark = static function ( array $post ): array {
+	$_POST    = $post + [ '_wpnonce' => wp_create_nonce( 'hodima_advisor_img_mark' ), 'action' => 'hodima_advisor_img_mark' ];
+	$_REQUEST = $_POST;
+	delete_transient( 'hodima_admin_flash_' . get_current_user_id() );
+	try {
+		hodima_seo_advisor_handle_img_mark();
+	} catch ( Hodima_RC_Redirect ) {
+		// پایان عادی: ریدایرکت
+	}
+	$_POST    = [];
+	$_REQUEST = [];
+	$flash    = get_transient( 'hodima_admin_flash_' . get_current_user_id() );
+	return [ is_array( $flash ) ? implode( ' | ', array_column( $flash, 1 ) ) : '', hodima_seo_advisor_img_marks() ];
+};
+delete_option( HODIMA_SEO_ADVISOR_IMG_MARKS_OPTION );
+[ $rc_m1, $rc_marks1 ] = $rc_mark( [ 'url' => 'https://cdn.test/logo.png', 'mark' => 'ok' ] );
+hodima_ad( 'کنش «تزئینی است»: ذخیره با کلید آدرس و پیام روشن', [ $rc_marks1[ hodima_seo_advisor_img_key( 'https://cdn.test/logo.png' ) ] ?? '', str_contains( $rc_m1, 'تزئینی' ) ], [ 'ok', true ] );
+[ $rc_m2, $rc_marks2 ] = $rc_mark( [ 'url' => 'https://cdn.test/logo.png', 'mark' => 'reset' ] );
+hodima_ad( 'کنش «برگرداندن»: علامت برداشته شد', [ $rc_marks2, str_contains( $rc_m2, 'علامت برداشته شد' ) ], [ [], true ] );
+[ $rc_m3 ] = $rc_mark( [ 'url' => '', 'mark' => 'ok' ] );
+hodima_ad( 'کنش علامت با آدرس خالی: خطا', str_contains( $rc_m3, 'ثبت نشد' ), true );
+delete_option( HODIMA_SEO_ADVISOR_IMG_MARKS_OPTION );
+wp_delete_attachment( $rc_att, true );
+wp_delete_post( $rc_post, true );
+$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE path LIKE %s', hodima_seo_advisor_table( 'pages' ), '/rc-g%' ) );
 
 remove_filter( 'wp_redirect', $rc_redirect, 0 );
 remove_filter( 'pre_http_request', $rc_http, 30 );

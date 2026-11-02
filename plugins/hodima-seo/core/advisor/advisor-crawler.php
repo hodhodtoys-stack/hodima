@@ -45,7 +45,7 @@ const HODIMA_SEO_ADVISOR_CRAWLER_DELAY = 1.0;
 const HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES = 5000;
 
 /** بیشینه آدرس تصویر بدون alt که برای فهرست «کدام تصویرها؟» نگه داشته می‌شود (SEO 3.3.6). */
-const HODIMA_SEO_ADVISOR_CRAWLER_IMG_LIST = 8;
+const HODIMA_SEO_ADVISOR_CRAWLER_IMG_LIST = 20; // تا ۳.۴.۹: ۸؛ حالا هر صفحه تا ۲۰ تصویر ایراد و ۲۰ تصویر «بررسی کنید»
 
 /**
  * دور سریع (SEO 3.3.8): هر روز فقط صفحه اصلی، پرنمایش‌ترین صفحه‌ها (۱۵٪ صفحه‌ها، بین ۵۰ و ۳۰۰) و نوشته‌های تازه یا ویرایش‌شده را
@@ -386,9 +386,162 @@ function hodima_seo_advisor_crawler_img_labelled( DOMElement $img, callable $cle
 }
 
 /**
+ * تصویر دیده نمی‌شود؟ (SEO 3.4.9) داخل `<template>`، `<dialog>` بسته (پاپ‌آپ نوتیفیکیشن، نمای سریع)، عنصر `hidden`،
+ * `aria-hidden="true"` یا `display:none`/`visibility:hidden` درون‌خطی. قبلا چنین تصویری هم «بدون alt» حساب می‌شد و
+ * پاپ‌آپی که روی همه صفحه‌ها چاپ می‌شود یک ایراد مشترک می‌ساخت. پنهان‌سازی با کلاس CSS بیرونی را بدون اجرای CSS نمی‌شود دید.
+ */
+function hodima_seo_advisor_crawler_img_hidden( DOMElement $img ): bool {
+
+	for ( $node = $img->parentNode; $node instanceof DOMElement; $node = $node->parentNode ) {
+		$tag = strtolower( $node->nodeName );
+
+		if ( 'template' === $tag || ( 'dialog' === $tag && ! $node->hasAttribute( 'open' ) ) ) {
+			return true;
+		}
+
+		if ( ( $node->hasAttribute( 'hidden' ) && 'until-found' !== strtolower( $node->getAttribute( 'hidden' ) ) ) || 'true' === strtolower( $node->getAttribute( 'aria-hidden' ) ) ) {
+			return true;
+		}
+
+		if ( 1 === preg_match( '/(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)/i', $node->getAttribute( 'style' ) ) ) {
+			return true;
+		}
+	}
+
+	return $img->hasAttribute( 'hidden' ) || 1 === preg_match( '/(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden)/i', $img->getAttribute( 'style' ) );
+}
+
+/**
+ * جایگاه تصویر در HTML برای «مدرک» کارت: نزدیک‌ترین نیای معنادار با شناسه یا کلاس (مثلا `dialog#hd-notification-5`،
+ * `div.sp-gallery`). فقط حدس ساختاری از روی HTML است، نه شناسایی افزونه.
+ */
+function hodima_seo_advisor_crawler_img_context( DOMElement $img ): string {
+
+	$skip  = [ 'a', 'p', 'span', 'picture', 'figure', 'li', 'button', 'b', 'i', 'em', 'strong', 'label' ];
+	$depth = 0;
+
+	for ( $node = $img->parentNode; $node instanceof DOMElement && $depth < 10; $node = $node->parentNode, ++$depth ) {
+		$tag = strtolower( $node->nodeName );
+
+		if ( in_array( $tag, [ 'body', 'html' ], true ) ) {
+			break;
+		}
+
+		if ( in_array( $tag, $skip, true ) ) {
+			continue;
+		}
+
+		$id      = trim( $node->getAttribute( 'id' ) );
+		$classes = array_slice( (array) preg_split( '/\s+/', trim( $node->getAttribute( 'class' ) ), -1, PREG_SPLIT_NO_EMPTY ), 0, 2 );
+		$label   = '' !== $id ? $tag . '#' . $id : ( $classes ? $tag . '.' . implode( '.', $classes ) : '' );
+
+		if ( '' !== $label ) {
+			return mb_substr( (string) preg_replace( '/[^\p{L}\p{N}_#.\-]/u', '', $label ), 0, 60 );
+		}
+	}
+
+	return '';
+}
+
+/**
+ * آدرس واقعی تصویر (کامل): data-src افزونه‌های تنبل‌بارگذاری، src، یا اولین آدرس srcset؛ رشته خالی = آدرسی در HTML نیست
+ * (جاگیر `data:`، src خالی یا ساخته‌شده با جاوااسکریپت) یا بلندتر از ۳۰۰ نویسه.
+ */
+function hodima_seo_advisor_crawler_img_url( DOMElement $img, string $base ): string {
+
+	$source = '';
+
+	foreach ( [ 'data-src', 'data-lazy-src', 'data-original', 'src' ] as $attr ) {
+		$candidate = trim( $img->getAttribute( $attr ) );
+		if ( '' !== $candidate && ! str_starts_with( $candidate, 'data:' ) ) {
+			$source = $candidate;
+			break;
+		}
+	}
+
+	if ( '' === $source ) {
+		foreach ( [ 'data-srcset', 'srcset' ] as $attr ) {
+			$first = trim( (string) ( preg_split( '/\s*,\s*/', trim( $img->getAttribute( $attr ) ) )[0] ?? '' ) );
+			$first = trim( (string) ( preg_split( '/\s+/', $first )[0] ?? '' ) );
+			if ( '' !== $first && ! str_starts_with( $first, 'data:' ) ) {
+				$source = $first;
+				break;
+			}
+		}
+	}
+
+	$resolved = '' === $source ? null : hodima_seo_advisor_crawler_resolve( $source, $base );
+
+	return null !== $resolved && mb_strlen( $resolved ) <= 300 ? $resolved : '';
+}
+
+/**
+ * تصویرهای دیده‌شونده محتوای صفحه و وضعیت alt هر کدام (SEO 3.4.9؛ قبلا alt خالی و نبود alt یکی بود و تصویر نامرئی هم می‌آمد):
+ *   missing = ویژگی alt اصلا نیست؛ linked = `alt=""` داخل لینک/دکمه‌ای که خودش نام ندارد (لینک بی‌نام)؛ هر دو «ایراد».
+ *   empty   = `alt=""` تنها (لوگو، آیکون، تزئین؟) ← «بررسی کنید»، ایراد نیست و در نمره نمی‌آید.
+ * alt پر یعنی تصویر درست است؛ فایلی که در همین صفحه جای دیگری alt دارد هم ایراد نمی‌گیرد. تزئینی صریح (`aria-hidden`،
+ * `role=presentation`)، ریز/ردیاب، `alt=""` داخل لینک یا figure با متن، تصویر نامرئی و `<noscript>` کنار می‌روند.
+ *
+ * @param callable(string): string $clean یکسان‌ساز فاصله‌ها
+ * @return array{noalt: int, empty: int, list: list<array{u: string, s: string, c: string}>}
+ */
+function hodima_seo_advisor_crawler_scan_images( DOMXPath $xpath, callable $clean, string $url ): array {
+
+	$entries  = [];
+	$alt_seen = [];
+	$images   = $xpath->query( '//img' );
+
+	foreach ( false === $images ? [] : $images as $img ) {
+		// <noscript> نسخه پشتیبان همان تصویر تنبل‌بارگذاری است؛ libxml آن را عنصر می‌بیند و یک تصویر دو بار شمرده می‌شد (SEO 3.4.5)
+		if ( ! $img instanceof DOMElement || hodima_seo_advisor_crawler_inside( $img, [ 'noscript' ] ) || 'content' !== hodima_seo_advisor_crawler_link_position( $img ) || hodima_seo_advisor_crawler_img_hidden( $img ) ) {
+			continue;
+		}
+
+		$source = hodima_seo_advisor_crawler_img_url( $img, $url );
+		$decor  = 'true' === strtolower( $img->getAttribute( 'aria-hidden' ) ) || in_array( strtolower( $img->getAttribute( 'role' ) ), [ 'presentation', 'none' ], true );
+		$tiny   = ( $img->hasAttribute( 'width' ) && (int) $img->getAttribute( 'width' ) <= 2 ) || ( '' === $source && str_starts_with( trim( $img->getAttribute( 'src' ) ), 'data:image/gif' ) ); // جاگیر gif فقط وقتی «ریز» است که آدرس واقعی (data-src) ندارد
+
+		if ( $decor || $tiny ) {
+			continue;
+		}
+
+		$raw   = $img->getAttribute( 'alt' );
+		$blank = 1 === preg_match( '/^[\s\x{00A0}\x{200B}-\x{200F}\x{2060}\x{FEFF}]*$/u', $raw ); // فقط فاصله یا نویسه نامرئی هم «خالی» است
+
+		if ( $img->hasAttribute( 'alt' ) && ! $blank ) {
+			if ( '' !== $source ) {
+				$alt_seen[ $source ] = true;
+			}
+			continue;
+		}
+
+		if ( ! $img->hasAttribute( 'alt' ) ) {
+			$state = 'missing';
+		} elseif ( hodima_seo_advisor_crawler_img_labelled( $img, $clean ) ) {
+			continue; // alt خالی عمدی کارت: متن یا aria-label لینک/دکمه یا کپشن figure نامش را می‌گوید (SEO 3.3.3)
+		} else {
+			$state = hodima_seo_advisor_crawler_inside( $img, [ 'a', 'button' ] ) ? 'linked' : 'empty';
+		}
+
+		$context                                       = hodima_seo_advisor_crawler_img_context( $img );
+		$entries[ $state . '|' . $source . '|' . $context . ( '' === $source ? '|' . count( $entries ) : '' ) ] ??= [ 'u' => $source, 's' => $state, 'c' => $context ]; // تصویر بی‌آدرس‌ها از هم جدا می‌مانند
+	}
+
+	$entries = array_values( array_filter( $entries, static fn( array $e ): bool => '' === $e['u'] || ! isset( $alt_seen[ $e['u'] ] ) ) );
+	$issues  = array_values( array_filter( $entries, static fn( array $e ): bool => 'empty' !== $e['s'] ) );
+	$review  = array_values( array_filter( $entries, static fn( array $e ): bool => 'empty' === $e['s'] ) );
+
+	return [
+		'noalt' => count( $issues ),
+		'empty' => count( $review ),
+		'list'  => [ ...array_slice( $issues, 0, HODIMA_SEO_ADVISOR_CRAWLER_IMG_LIST ), ...array_slice( $review, 0, HODIMA_SEO_ADVISOR_CRAWLER_IMG_LIST ) ],
+	];
+}
+
+/**
  * HTML یک صفحه ← عنوان، متا، تیترها، robots، canonical و لینک‌های داخلی.
  *
- * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_list: list<string>, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
+ * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_empty: int, img_list: list<array{u: string, s: string, c: string}>, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
  */
 function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
@@ -469,37 +622,8 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		$links[] = [ $target, hodima_seo_advisor_crawler_link_position( $a ), mb_substr( $anchor, 0, 120 ), $follow ];
 	}
 
-	// تصویر محتوای صفحه بدون متن جایگزین (تزئینی با aria-hidden/role=presentation، تصویر ریز و جاگیر base64 حساب نمی‌شود).
-	// alt خالی عمدی هم ایراد نیست وقتی تصویر داخل لینک/دکمه‌ای است که خودش متن یا aria-label دارد، یا داخل figure با figcaption:
-	// بندانگشتی کارت‌ها (قالب هدیما عمدا alt="" می‌گذارد چون عنوان کارت همان را می‌گوید) ایراد کاذب بود و ادمین نمی‌توانست رفعش کند (SEO 3.3.3).
-	// SEO 3.3.6: آدرس واقعی تصویر (data-src افزونه‌های تنبل‌بارگذاری، نه جاگیر base64) هم حساب و تا ۸ آدرس برای فهرست «کدام تصویرها؟» نگه داشته می‌شود
-	$img_noalt = 0;
-	$img_list  = [];
-	$images    = $xpath->query( '//img' );
-	foreach ( false === $images ? [] : $images as $img ) {
-		// <noscript> نسخه پشتیبان همان تصویر تنبل‌بارگذاری است؛ libxml آن را عنصر می‌بیند و یک تصویر دو بار شمرده می‌شد (SEO 3.4.5)
-		if ( ! $img instanceof DOMElement || hodima_seo_advisor_crawler_inside( $img, [ 'noscript' ] ) || 'content' !== hodima_seo_advisor_crawler_link_position( $img ) ) {
-			continue;
-		}
-		$source = '';
-		foreach ( [ 'data-src', 'data-lazy-src', 'data-original', 'src' ] as $attr ) {
-			$candidate = trim( $img->getAttribute( $attr ) );
-			if ( '' !== $candidate && ! str_starts_with( $candidate, 'data:' ) ) {
-				$source = $candidate;
-				break;
-			}
-		}
-		$source = '' !== $source ? $source : trim( $img->getAttribute( 'src' ) );
-		$decor  = 'true' === strtolower( $img->getAttribute( 'aria-hidden' ) ) || in_array( strtolower( $img->getAttribute( 'role' ) ), [ 'presentation', 'none' ], true );
-		$tiny   = ( $img->hasAttribute( 'width' ) && (int) $img->getAttribute( 'width' ) <= 2 ) || str_starts_with( $source, 'data:image/gif' );
-		if ( ! $decor && ! $tiny && '' === $clean( $img->getAttribute( 'alt' ) ) && ! ( $img->hasAttribute( 'alt' ) && hodima_seo_advisor_crawler_img_labelled( $img, $clean ) ) ) {
-			++$img_noalt;
-			$resolved = hodima_seo_advisor_crawler_resolve( $source, $url );
-			if ( null !== $resolved && count( $img_list ) < HODIMA_SEO_ADVISOR_CRAWLER_IMG_LIST && mb_strlen( $resolved ) <= 300 && ! in_array( $resolved, $img_list, true ) ) {
-				$img_list[] = $resolved;
-			}
-		}
-	}
+	// تصویرهای دیده‌شونده و وضعیت alt هر کدام (SEO 3.4.9: hodima_seo_advisor_crawler_scan_images)
+	$scan = hodima_seo_advisor_crawler_scan_images( $xpath, $clean, $url );
 
 	// شمار کلمه‌های متن اصلی: main، وگرنه article، وگرنه body؛ بدون منو، سربرگ، فوتر، کنار، اسکریپت و استایل
 	$root = '//body';
@@ -542,8 +666,9 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		'h1_count'   => count( $h1_pick ),
 		'h2'         => implode( ' | ', $h2s ),
 		'words'      => $words,
-		'img_noalt'  => $img_noalt,
-		'img_list'   => $img_list,
+		'img_noalt'  => $scan['noalt'],
+		'img_empty'  => $scan['empty'],
+		'img_list'   => $scan['list'],
 		'http_links' => $http_links,
 		'links'      => $links,
 	];
@@ -666,7 +791,8 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'img_noalt'  => (int) ( $parsed['img_noalt'] ?? -1 ),
 		'http_links' => (int) ( $parsed['http_links'] ?? -1 ),
 		'canonical'  => '' === $canonical ? '' : ( null === $can_path ? '!ext' : $can_path ),
-		'img_list'   => implode( "\n", (array) ( $parsed['img_list'] ?? [] ) ), // یک آدرس در هر خط (SEO 3.3.6)
+		'img_list'   => hodima_seo_advisor_img_list_encode( (array) ( $parsed['img_list'] ?? [] ) ), // JSON تصویرها: آدرس، وضعیت alt، جایگاه (SEO 3.4.9؛ پیش‌تر یک آدرس در هر خط)
+		'img_empty'  => (int) ( $parsed['img_empty'] ?? -1 ),
 	];
 }
 
@@ -766,8 +892,8 @@ function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $
 
 	hodima_seo_advisor_ensure_tables(); // ستون تازه img_list (DB 1.9.0) پیش از اولین نوشتن بعد از به‌روزرسانی
 
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s)';
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
 

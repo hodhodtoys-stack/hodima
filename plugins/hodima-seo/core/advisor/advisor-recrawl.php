@@ -65,12 +65,13 @@ function hodima_seo_advisor_recrawl_result( string $path, string $code ): string
 	if ( 'img_alt' === $code ) {
 		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT img_noalt, img_list FROM %i WHERE path = %s', hodima_seo_advisor_table( 'crawl_pages' ), $path ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$left = is_array( $row ) ? (int) $row['img_noalt'] : 0;
+		$urls = array_filter( hodima_seo_advisor_img_list_decode( is_array( $row ) ? (string) $row['img_list'] : '' ), static fn( array $e ): bool => 'empty' !== $e['s'] && '' !== $e['u'] );
 
 		if ( $left <= 0 ) {
 			return $text . 'دیگر تصویر بدون alt ندارد.';
 		}
 
-		return $text . sprintf( '%s تصویر بدون alt پیدا شد', number_format_i18n( $left ) ) . ( '' === trim( (string) ( $row['img_list'] ?? '' ) ) ? '، ولی آدرسی برایشان در HTML صفحه نبود (احتمالا با جاوااسکریپت یا داخل پنجره‌ای مثل نوتیفیکیشن ساخته می‌شوند).' : '؛ فهرستشان زیر همین کارت است.' );
+		return $text . sprintf( '%s تصویر بدون alt پیدا شد', number_format_i18n( $left ) ) . ( $urls ? '؛ فهرستشان زیر همین کارت است.' : '، ولی آدرسی برایشان در HTML صفحه نبود (احتمالا با جاوااسکریپت ساخته می‌شوند).' );
 	}
 
 	return $text . ( $still ? 'این ایراد هنوز هست.' : 'این ایراد دیگر دیده نمی‌شود.' );
@@ -88,15 +89,26 @@ function hodima_seo_advisor_handle_recrawl(): void {
 
 	check_admin_referer( 'hodima_advisor_recrawl' );
 
-	$scope = isset( $_POST['scope'] ) && 'code' === sanitize_key( wp_unslash( (string) $_POST['scope'] ) ) ? 'code' : 'page'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce بالا بررسی شد
+	$scope = isset( $_POST['scope'] ) ? sanitize_key( wp_unslash( (string) $_POST['scope'] ) ) : 'page'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce بالا بررسی شد
+	$scope = in_array( $scope, [ 'code', 'img' ], true ) ? $scope : 'page';
+	$img   = isset( $_POST['img'] ) ? sanitize_key( wp_unslash( (string) $_POST['img'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce بالا بررسی شد
 	$code  = isset( $_POST['code'] ) ? sanitize_key( wp_unslash( (string) $_POST['code'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce بالا بررسی شد
 	$code  = isset( hodima_seo_advisor_issue_catalog()[ $code ] ) ? $code : '';
 	$path  = isset( $_POST['path'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['path'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce بالا بررسی شد
 	$back  = wp_get_referer();
 	$back  = is_string( $back ) && '' !== $back ? $back : hodima_seo_advisor_page_url( [ 'tab' => 'overview' ] );
 
-	if ( 'code' === $scope ) {
-		$paths = '' === $code ? [] : hodima_seo_advisor_recrawl_paths( $code );
+	if ( 'code' === $scope || 'img' === $scope ) {
+		$paths = [];
+		if ( 'img' === $scope ) { // صفحه‌های یک تصویر مشترک (کارت «تصویرهای مشترک»؛ SEO 3.4.9)
+			foreach ( hodima_seo_advisor_image_groups() as $group ) {
+				if ( hodima_seo_advisor_img_key( $group['url'] ) === $img ) {
+					$paths = $group['pages'];
+				}
+			}
+		} elseif ( '' !== $code ) {
+			$paths = hodima_seo_advisor_recrawl_paths( $code );
+		}
 
 		if ( ! $paths ) {
 			hodima_admin_flash( '<strong>بازخوانی:</strong> صفحه‌ای برای بازخوانی پیدا نشد.', 'error' );

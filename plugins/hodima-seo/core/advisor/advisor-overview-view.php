@@ -52,7 +52,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $info['fix'] || null !== hodima_seo_advisor_task_closed( $path, 'crawl_' . $code ) ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'detail' => (string) $issue['detail'], 'images' => (array) ( $issue['images'] ?? [] ), 'total' => (int) ( $issue['total'] ?? 0 ), 'targets' => (array) ( $issue['items'] ?? [] ), 'level' => $info['level'], 'source' => 'crawl', 'mark' => $code, 'term' => '' ] );
+			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'detail' => (string) $issue['detail'], 'images' => (array) ( $issue['images'] ?? [] ), 'total' => (int) ( $issue['total'] ?? 0 ), 'marked' => (array) ( $issue['marked'] ?? [] ), 'targets' => (array) ( $issue['items'] ?? [] ), 'level' => $info['level'], 'source' => 'crawl', 'mark' => $code, 'term' => '' ] );
 		}
 	}
 
@@ -219,7 +219,12 @@ function hodima_seo_advisor_render_top_tasks( array $tasks, callable $n ): void 
 		</div>
 		<ol class="hodima-advisor__top-list">
 			<?php foreach ( $tasks as $i => $task ) : ?>
-				<?php $group = 'group' === $task['kind']; ?>
+				<?php
+				$group  = 'group' === $task['kind'];
+				// «تصویر بدون alt» که بیشترش یک تصویر مشترک است: عنوان همین را می‌گوید و دکمه به کارت آن تصویر می‌رود (SEO 3.4.9)
+				$shared = $group && 'img_alt' === $task['code'] ? array_values( hodima_seo_advisor_image_groups() )[0] ?? null : null;
+				$shared = null !== $shared && count( $shared['pages'] ) >= HODIMA_SEO_ADVISOR_BULK_MIN && count( $shared['pages'] ) >= 0.8 * (int) $task['pages'] ? $shared : null;
+				?>
 				<li class="hodima-advisor__top-item">
 					<span class="hodima-advisor__top-rank" aria-hidden="true"><?php echo esc_html( $n( $i + 1 ) ); ?></span>
 					<div class="hodima-advisor__top-main">
@@ -230,7 +235,7 @@ function hodima_seo_advisor_render_top_tasks( array $tasks, callable $n ): void 
 							<?php endif; ?>
 							<?php echo hodima_seo_advisor_priority_chip( (string) $task['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
 						</div>
-						<div class="hodima-advisor__top-page"><?php echo esc_html( $group ? 'یک الگوی تکراری؛ همه با یک نوع کار درست می‌شوند' : (string) $task['name'] ); ?></div>
+						<div class="hodima-advisor__top-page"><?php echo esc_html( null !== $shared ? sprintf( 'یک تصویر مشترک در %s صفحه است؛ یک بار درست کنید، در همه آن‌ها اثر می‌کند.', $n( count( $shared['pages'] ) ) ) : ( $group ? 'یک الگوی تکراری؛ همه با یک نوع کار درست می‌شوند' : (string) $task['name'] ) ); ?></div>
 						<ul class="hodima-advisor__top-why">
 							<?php if ( $task['impressions'] > 0 ) : ?>
 								<li><b><?php echo esc_html( $n( (int) $task['impressions'] ) ); ?></b> <?php echo esc_html( $group ? 'نمایش (جمع)' : 'نمایش' ); ?></li>
@@ -246,6 +251,9 @@ function hodima_seo_advisor_render_top_tasks( array $tasks, callable $n ): void 
 					</div>
 					<div class="hodima-advisor__top-act">
 						<?php if ( $group ) : ?>
+							<?php if ( null !== $shared ) : ?>
+								<a class="hds-btn hds-btn--outline" href="#hodima-advisor-shared-images">دیدن این تصویر</a>
+							<?php endif; ?>
 							<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'src' => 'crawl', 'code' => (string) $task['code'] ] ) ); ?>"><?php echo esc_html( sprintf( 'نمایش %s صفحه', $n( (int) $task['pages'] ) ) ); ?></a>
 							<?php
 							// SEO 3.4.9: خزش هدفمند فقط همین صفحه‌ها (نه کل سایت)؛ دوری در جریان است ← دکمه خاموش
@@ -287,10 +295,21 @@ function hodima_seo_advisor_render_overview(): void {
 	$code   = isset( hodima_seo_advisor_issue_catalog()[ $code ] ) ? $code : '';
 	$q      = isset( $_GET['q'] ) ? trim( sanitize_text_field( wp_unslash( (string) $_GET['q'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$paged  = max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$img    = isset( $_GET['img'] ) ? sanitize_key( (string) $_GET['img'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش: صفحه‌های یک تصویر مشترک (SEO 3.4.9)
+	$only   = null;
+	foreach ( '' === $img ? [] : hodima_seo_advisor_image_groups() as $group ) {
+		if ( hodima_seo_advisor_img_key( $group['url'] ) === $img ) {
+			$only = array_fill_keys( $group['pages'], true );
+			$code = 'img_alt';
+		}
+	}
 
 	$rows = [];
 	foreach ( $pages as $page ) {
 		if ( '' !== $q && ! str_contains( mb_strtolower( rawurldecode( $page['path'] ) . ' ' . $page['title'] ), mb_strtolower( $q ) ) ) {
+			continue;
+		}
+		if ( null !== $only && ! isset( $only[ $page['path'] ] ) ) {
 			continue;
 		}
 		if ( '' !== $src ) {
@@ -306,6 +325,7 @@ function hodima_seo_advisor_render_overview(): void {
 
 	if ( '' === $src && '' === $q && '' === $code && 1 === $paged ) {
 		hodima_seo_advisor_render_top_tasks( hodima_seo_advisor_top_tasks( $pages ), $n ); // «۵ کار مهم امروز» (SEO 3.4.0)
+		hodima_seo_advisor_render_shared_images( $n ); // تصویر مشترک بین چند صفحه = یک کار (SEO 3.4.9)
 	}
 
 	hodima_seo_ui_card_open( 'کارها', sprintf( '%s ایراد باز روی %s صفحه، به ترتیب اولویت (بیشترین اثر با کمترین زحمت). هر ایراد را رفع کنید و «انجام دادم» را بزنید؛ اگر لازم نیست، «لازم نیست».', $n( array_sum( array_map( static fn( array $p ): int => count( $p['items'] ), $pages ) ) ), $n( count( $pages ) ) ) );

@@ -89,6 +89,8 @@ function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null
 		$single = [];
 		$memo   = &hodima_seo_advisor_crawl_issues_cache();
 		$memo   = null; // ایرادها از همین جدول ساخته می‌شوند (SEO 3.4.3)
+		$groups = &hodima_seo_advisor_image_groups_cache();
+		$groups = null; // تصویرهای مشترک هم (SEO 3.4.9)
 		hodima_seo_advisor_resolved_paths( true );
 		return [];
 	}
@@ -582,9 +584,19 @@ function hodima_seo_advisor_crawl_issues(): array {
 				if ( (int) $r['h1_count'] > 1 ) {
 					$add( 'multi_h1', sprintf( '%s تیتر H1', $n( (int) $r['h1_count'] ) ) );
 				}
-				if ( (int) $r['img_noalt'] > 0 ) {
-					// images: آدرس تصویرها (تا ۸) برای فهرست «کدام تصویرها؟»؛ total: شمار همه تصویرهای بدون alt (SEO 3.3.6)
-					$add( 'img_alt', sprintf( '%s تصویر', $n( (int) $r['img_noalt'] ) ), '', [], [ 'images' => array_values( array_filter( explode( "\n", (string) ( $r['img_list'] ?? '' ) ) ) ), 'total' => (int) $r['img_noalt'] ] );
+				// تصویرها (SEO 3.4.9): ایراد = نبود alt، لینک بی‌نام یا «alt می‌خواهد»؛ alt خالی تنها = «بررسی کنید» (ایراد نیست). علامت‌های
+				// ادمین («تزئینی است») همین‌جا اعمال می‌شود. images: ردیف‌های تصویر (آدرس، وضعیت، جایگاه) برای فهرست «کدام تصویرها؟»؛ total: شمار کل
+				if ( (int) $r['img_noalt'] > 0 || (int) $r['img_empty'] > 0 ) {
+					$split    = hodima_seo_advisor_img_split( hodima_seo_advisor_img_list_decode( (string) ( $r['img_list'] ?? '' ) ) );
+					$need     = count( array_filter( $split['issues'], static fn( array $e ): bool => ! empty( $e['need'] ) ) );
+					$issue_n  = max( 0, (int) $r['img_noalt'] ) + $need;
+					$review_n = max( 0, (int) $r['img_empty'] - count( $split['ok'] ) - $need );
+					if ( $issue_n > 0 ) {
+						$add( 'img_alt', sprintf( '%s تصویر', $n( $issue_n ) ), '', [], [ 'images' => $split['issues'], 'total' => $issue_n, 'marked' => $split['ok'] ] );
+					}
+					if ( $review_n > 0 ) {
+						$add( 'img_empty', sprintf( '%s تصویر', $n( $review_n ) ), '', [], [ 'images' => $split['review'], 'total' => $review_n, 'marked' => $split['ok'] ] );
+					}
 				}
 				if ( (int) $r['http_links'] > 0 ) {
 					$add( 'http_link', sprintf( '%s لینک', $n( (int) $r['http_links'] ) ) );

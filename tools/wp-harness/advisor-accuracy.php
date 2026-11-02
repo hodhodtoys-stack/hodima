@@ -42,9 +42,13 @@ $cases = [
 	[ 'H1 لوگوی هدر سایت با H1 صفحه یکی حساب نمی‌شود', '<header class="site-header"><h1><a href="/">لوگو</a></h1></header><main><h1>عنوان صفحه</h1></main>', static fn( array $p ): array => [ 'شمار H1' => [ $p['h1_count'], 1 ], 'متن H1' => [ $p['h1'], 'عنوان صفحه' ] ] ],
 	[ 'صفحه‌ای که فقط H1 لوگو دارد «بدون H1» نمی‌شود', '<header class="site-header"><h1>لوگو</h1></header><main><p>x</p></main>', static fn( array $p ): array => [ 'شمار H1' => [ $p['h1_count'], 1 ] ] ],
 	[ 'دو H1 در محتوا دو تاست', '<main><h1>اول</h1><h1>دوم</h1></main>', static fn( array $p ): array => [ 'شمار H1' => [ $p['h1_count'], 2 ] ] ],
-	[ 'lazy-load با noscript: یک تصویر یک بار شمرده می‌شود', '<main><img data-src="/l.jpg" src="data:image/gif;base64,R0lGOD" alt=""><noscript><img src="/l.jpg" alt=""></noscript></main>', static fn( array $p ): array => [ 'تصویر بدون alt' => [ $p['img_noalt'], 1 ] ] ],
+	[ 'lazy-load با noscript: یک تصویر یک بار شمرده می‌شود', '<main><img data-src="/l.jpg" src="data:image/gif;base64,R0lGOD"><noscript><img src="/l.jpg"></noscript></main>', static fn( array $p ): array => [ 'تصویر بدون alt' => [ $p['img_noalt'], 1 ] ] ],
 	[ 'تصویر با alt درست ایراد نیست (کادر کارت با لینک دارای متن: alt خالی عمدی)', '<main><img src="/a.jpg" alt="گل سر"><a href="/p/">محصول <img src="/t.jpg" alt=""></a></main>', static fn( array $p ): array => [ 'تصویر بدون alt' => [ $p['img_noalt'], 0 ] ] ],
 	[ 'تصویر تزئینی با aria-hidden ایراد نیست', '<main><img src="/d.jpg" alt="" aria-hidden="true"></main>', static fn( array $p ): array => [ 'تصویر بدون alt' => [ $p['img_noalt'], 0 ] ] ],
+	[ 'پاپ‌آپ نوتیفیکیشن (dialog بسته در wp_footer) و template ایراد alt نیستند (SEO 3.4.9)', '<main><p>متن</p></main><dialog id="hd-notification-5"><img data-src="/n.jpg"></dialog><template><img src="/t.jpg"></template>', static fn( array $p ): array => [ 'تصویر بدون alt' => [ $p['img_noalt'], 0 ], 'بررسی کنید' => [ $p['img_empty'], 0 ] ] ],
+	[ 'لوگو با alt خالی عمدی «بررسی کنید» است نه ایراد (SEO 3.4.9)', '<main><img src="/logo.svg" alt=""></main>', static fn( array $p ): array => [ 'تصویر بدون alt' => [ $p['img_noalt'], 0 ], 'بررسی کنید' => [ $p['img_empty'], 1 ] ] ],
+	[ 'یک فایل با alt در یک جا و alt خالی جای دیگر ایراد نیست (SEO 3.4.9)', '<main><img src="/a.jpg" alt="کفش"><img src="/a.jpg" alt=""></main>', static fn( array $p ): array => [ 'تصویر بدون alt' => [ $p['img_noalt'], 0 ], 'بررسی کنید' => [ $p['img_empty'], 0 ] ] ],
+	[ 'نبود ویژگی alt حتی داخل کارت با عنوان ایراد است', '<main><a href="/p/"><img src="/a.jpg"><h3>محصول</h3></a></main>', static fn( array $p ): array => [ 'تصویر بدون alt' => [ $p['img_noalt'], 1 ] ] ],
 ];
 
 $total  = 0;

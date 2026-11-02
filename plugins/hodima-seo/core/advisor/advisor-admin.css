@@ -3955,3 +3955,164 @@
 .hodima-advisor .hodima-advisor__crawlbar[hidden] {
 	display: none;
 }
+
+/* SEO 3.4.9: تصویر بدون alt — ردیف علت‌دار، پیشنهاد متن، «بررسی کنید» و کارت تصویر مشترک (طرح تأییدشده ۱۳ آبان ۱۴۰۵) */
+.hodima-advisor .hodima-advisor__img-row {
+	align-items: flex-start;
+}
+
+.hodima-advisor .hodima-advisor__img-row .hodima-advisor__thumb {
+	inline-size: 3.5rem;
+	block-size: 3.5rem;
+}
+
+.hodima-advisor .hodima-advisor__img-chips {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.375rem;
+}
+
+.hodima-advisor .hodima-advisor__img-help {
+	margin: 0.25rem 0 0;
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	line-height: 1.85;
+}
+
+.hodima-advisor .hodima-advisor__img-note {
+	margin: 0 0 0.5rem;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	line-height: 1.7;
+}
+
+.hodima-advisor .hodima-advisor__img-sug {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	margin-block-start: 0.5rem;
+	padding: 0.375rem 0.625rem;
+	border-radius: 0.5rem;
+	background: color-mix(in srgb, var(--hd-third) 22%, #fff);
+	font-size: 0.8125rem;
+}
+
+.hodima-advisor .hodima-advisor__img-sug span {
+	color: var(--hd-muted);
+}
+
+.hodima-advisor .hodima-advisor__img-acts {
+	flex-wrap: wrap;
+}
+
+.hodima-advisor .hodima-advisor__img-mark {
+	margin: 0;
+}
+
+.hodima-advisor .hodima-advisor__img-mark .hds-btn {
+	min-block-size: 2.5rem;
+	white-space: nowrap;
+}
+
+/* «تزئینی است» سبز سازمانی (نه بنفش) */
+.hodima-advisor .hodima-advisor__img-mark .hodima-advisor__img-ok {
+	border-color: var(--hd-ok);
+	color: color-mix(in srgb, var(--hd-ok) 80%, #000);
+}
+
+.hodima-advisor .hodima-advisor__shared {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__shared-item {
+	display: grid;
+	grid-template-columns: 6rem minmax(0, 1fr) auto;
+	align-items: start;
+	gap: 1rem;
+	padding: 0.875rem;
+	border-radius: 0.75rem;
+	background: color-mix(in srgb, var(--hd-third) 14%, #fff);
+}
+
+.hodima-advisor .hodima-advisor__shared-thumb {
+	display: block;
+	inline-size: 6rem;
+	block-size: 6rem;
+	overflow: hidden;
+	border-radius: 0.75rem;
+	background: color-mix(in srgb, var(--hd-third) 40%, #fff);
+}
+
+.hodima-advisor .hodima-advisor__shared-thumb img {
+	display: block;
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+
+.hodima-advisor .hodima-advisor__shared-main {
+	display: grid;
+	gap: 0.125rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__shared-act {
+	display: grid;
+	justify-items: stretch;
+	gap: 0.5rem;
+	min-inline-size: 11rem;
+}
+
+.hodima-advisor .hodima-advisor__shared-act .hds-btn {
+	min-block-size: 2.5rem;
+	justify-content: center;
+	white-space: nowrap;
+}
+
+.hodima-advisor .hodima-advisor__shared-act .hodima-advisor__recrawl {
+	display: grid;
+	justify-items: stretch;
+}
+
+@media (max-width: 48rem) {
+	.hodima-advisor .hodima-advisor__shared-item {
+		grid-template-columns: 4rem minmax(0, 1fr);
+	}
+
+	.hodima-advisor .hodima-advisor__shared-thumb {
+		inline-size: 4rem;
+		block-size: 4rem;
+	}
+
+	.hodima-advisor .hodima-advisor__shared-act {
+		grid-column: 1 / -1;
+	}
+
+	.hodima-advisor .hodima-advisor__img-row {
+		grid-template-columns: 3rem minmax(0, 1fr);
+	}
+
+	.hodima-advisor .hodima-advisor__img-row .hodima-advisor__thumb {
+		inline-size: 3rem;
+		block-size: 3rem;
+	}
+
+	.hodima-advisor .hodima-advisor__img-row .hodima-advisor__li-act {
+		grid-column: 1 / -1;
+		justify-self: stretch;
+	}
+
+	.hodima-advisor .hodima-advisor__img-row .hodima-advisor__li-act .hds-btn,
+	.hodima-advisor .hodima-advisor__img-mark {
+		inline-size: 100%;
+		justify-content: center;
+		min-block-size: 2.75rem;
+	}
+
+	.hodima-advisor .hodima-advisor__img-acts .hodima-advisor__img-mark {
+		flex: 1 1 8rem;
+	}
+}
