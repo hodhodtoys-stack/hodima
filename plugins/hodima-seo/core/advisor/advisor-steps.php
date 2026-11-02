@@ -30,8 +30,8 @@ const HODIMA_SEO_ADVISOR_LINK_SOURCES = 5;
 /** حداکثر ایده تیتر. */
 const HODIMA_SEO_ADVISOR_HEADING_IDEAS = 3;
 
-/** طول عنوان سئوی پیشنهادی (نویسه). */
-const HODIMA_SEO_ADVISOR_TITLE_MAX = 60;
+/** عنوان سئوی پیشنهادی تا این سهم از سقف پیکسلی سئوباکس (قبلا ۶۰ نویسه؛ SEO 3.5.4). */
+const HODIMA_SEO_ADVISOR_TITLE_PX_SHARE = 0.9;
 
 /**
  * نام، عنوان سئو و توضیح متای یک آدرس.
@@ -106,16 +106,17 @@ function hodima_seo_advisor_step_title( array $fields, string $term ): array {
 	} elseif ( $has ) {
 		$tip = 'کلمه اصلی در عنوان هست ولی ابتدایش نیست؛ آن را به ابتدای عنوان ببرید.';
 	} else {
-		$suggest = mb_substr( $term . ' | ' . $fields['name'], 0, HODIMA_SEO_ADVISOR_TITLE_MAX );
+		$suggest = hodima_seo_advisor_draft_cut_px( $term . ' | ' . $fields['name'], 'title', (int) floor( hodima_seo_px_limit( 'title' )['max'] * HODIMA_SEO_ADVISOR_TITLE_PX_SHARE ) );
 		$tip     = 'کلمه اصلی در عنوان نیست؛ عنوان پیشنهادی پیش‌نویس است و خودتان آن را کامل کنید.';
 	}
 
 	$description = (string) $fields['description'];
-	$desc_len    = mb_strlen( $description );
+	$desc_px     = hodima_seo_text_px( $description, 'description' );
+	$desc_limit  = hodima_seo_px_limit( 'description' );
 	$desc_tip    = match ( true ) {
-		! $fields['custom_description'] => 'توضیح متا ندارید و گوگل از ابتدای متن صفحه می‌سازد؛ یک توضیح ۱۲۰ تا ۱۶۰ نویسه‌ای بنویسید که کلمه اصلی را داشته باشد.',
-		$desc_len < 70                  => 'توضیح متا کوتاه است؛ تا حدود ۱۲۰ تا ۱۶۰ نویسه کامل کنید.',
-		$desc_len > 170                 => 'توضیح متا بلند است و بریده می‌شود؛ به حدود ۱۶۰ نویسه برسانید.',
+		! $fields['custom_description'] => 'توضیح متا ندارید و گوگل از ابتدای متن صفحه می‌سازد؛ توضیحی بنویسید که نوار شمارنده «توضیحات متا» در سئوباکس سبز شود (حدود ' . number_format_i18n( $desc_limit['min'] ) . ' تا ' . number_format_i18n( $desc_limit['max'] ) . ' پیکسل) و کلمه اصلی را داشته باشد.',
+		$desc_px < $desc_limit['min']   => 'توضیح متا کوتاه است؛ آن را کامل کنید تا از ' . number_format_i18n( $desc_limit['min'] ) . ' پیکسل بیشتر شود.',
+		$desc_px > $desc_limit['max']   => 'توضیح متا بلند است و بریده می‌شود؛ آن را کوتاه کنید تا از ' . number_format_i18n( $desc_limit['max'] ) . ' پیکسل بیشتر نشود.',
 		'' !== $term && ! hodima_seo_advisor_text_has( hodima_seo_advisor_normalize( $description ), $term ) => 'کلمه اصلی در توضیح متا نیست؛ آن را در جمله اول بیاورید.',
 		default                         => '',
 	};
@@ -124,11 +125,11 @@ function hodima_seo_advisor_step_title( array $fields, string $term ): array {
 		'type'        => 'title',
 		'term'        => $term,
 		'current'     => $current,
-		'current_len' => mb_strlen( $current ),
+		'current_px'  => hodima_seo_text_px( $current, 'title' ),
 		'custom'      => '' !== $fields['title'],
 		'suggested'   => $suggest,
 		'tip'         => $tip,
-		'meta'        => [ 'text' => $description, 'len' => $desc_len, 'custom' => $fields['custom_description'], 'tip' => $desc_tip ],
+		'meta'        => [ 'text' => $description, 'px' => $desc_px, 'custom' => $fields['custom_description'], 'tip' => $desc_tip ],
 	];
 }
 

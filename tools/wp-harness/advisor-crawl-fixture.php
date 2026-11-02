@@ -218,6 +218,8 @@ function hodima_seo_advisor_crawl_parse_pages( string $file ): array|WP_Error {
 			'title'      => mb_substr( $title, 0, HODIMA_SEO_ADVISOR_KEY_LENGTH ),
 			'title_len'  => isset( $map['title 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'title 1 length' ) ) : mb_strlen( $title ),
 			'meta_len'   => isset( $map['meta description 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'meta description 1 length' ) ) : mb_strlen( $meta ),
+			'title_px'   => (int) round( ( isset( $map['title 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'title 1 length' ) ) : mb_strlen( $title ) ) * 10 ), // فایل نمونه پیکسل ندارد: تقریب نویسه × ۱۰ (عنوان ۲۰px؛ SEO 3.5.4)
+			'meta_px'    => (int) round( ( isset( $map['meta description 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'meta description 1 length' ) ) : mb_strlen( $meta ) ) * 6.6 ),
 			'h1'         => mb_substr( $cell( $row, 'h1-1' ), 0, HODIMA_SEO_ADVISOR_KEY_LENGTH ),
 			'h2'         => mb_substr( trim( $cell( $row, 'h2-1' ) . ' | ' . $cell( $row, 'h2-2' ), ' |' ), 0, 255 ), // فقط دو H2 اول در فایل نمونه است
 			'resp_ms'    => (int) round( hodima_seo_advisor_crawl_num( $cell( $row, $time ) ) * 1000 ),
@@ -419,7 +421,7 @@ function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_
 
 	$page_rows = [];
 	foreach ( $pages as $p ) {
-		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], $p['h1'], $p['h2'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'], (int) ( $p['no_snippet'] ?? 0 ) ];
+		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], (int) ( $p['title_px'] ?? 0 ), (int) ( $p['meta_px'] ?? 0 ), $p['h1'], $p['h2'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'], (int) ( $p['no_snippet'] ?? 0 ) ];
 	}
 
 	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_table, $link_table, $page_rows, $links ): array|WP_Error {
@@ -433,7 +435,7 @@ function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_
 		}
 
 		$insert = [
-			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet', '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d)', $page_rows, 200, 'صفحه‌ها' ],
+			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet', '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d)', $page_rows, 200, 'صفحه‌ها' ],
 			[ $link_table, 'source_path, dest_path, link_position, anchor, is_follow', '(%s,%s,%s,%s,%d)', $links, 400, 'لینک‌ها' ],
 		];
 

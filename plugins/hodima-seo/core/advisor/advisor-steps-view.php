@@ -129,8 +129,8 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true ): voi
 			case 'title':
 				$meta = (array) $step['meta'];
 				printf(
-					'<h5>عنوان سئو <small>(%1$s نویسه%2$s)</small></h5><p class="hodima-advisor-steps__value">%3$s</p>',
-					esc_html( $n( (int) $step['current_len'] ) ),
+					'<h5>عنوان سئو <small>(%1$s پیکسل%2$s)</small></h5><p class="hodima-advisor-steps__value">%3$s</p>',
+					esc_html( $n( (int) $step['current_px'] ) ),
 					$step['custom'] ? '' : '، از نام صفحه',
 					esc_html( (string) $step['current'] )
 				);
@@ -141,8 +141,8 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true ): voi
 					printf( '<h5>عنوان پیشنهادی <small>(پیش‌نویس)</small></h5><p class="hodima-advisor-steps__value hodima-advisor-steps__value--new">%s</p>', esc_html( (string) $step['suggested'] ) );
 				}
 				printf(
-					'<h5>توضیح متا <small>(%1$s نویسه، %2$s)</small></h5><p class="hodima-advisor-steps__value">%3$s</p>',
-					esc_html( $n( (int) $meta['len'] ) ),
+					'<h5>توضیح متا <small>(%1$s پیکسل، %2$s)</small></h5><p class="hodima-advisor-steps__value">%3$s</p>',
+					esc_html( $n( (int) $meta['px'] ) ),
 					$meta['custom'] ? 'دستی' : 'خودکار از متن صفحه',
 					esc_html( (string) $meta['text'] )
 				);

@@ -7,33 +7,52 @@
  *     میلادی، شعار و جداکننده. قبلا سال میلادی مرورگر (2026) به جای
  *     سال شمسی روی سایت (۱۴۰۵) نشان داده می‌شد و %currentmonth% و %gyear% ناپدید می‌شدند.
  *   - شمارنده به *پیکسل* («۴۵۳ از ۵۸۰ پیکسل»): گوگل عنوان را با عرض نمایش
- *     (حدود ۵۸۰ پیکسل) کوتاه می‌کند، نه با تعداد نویسه.
+ *     (حدود ۵۸۰ پیکسل) کوتاه می‌کند، نه با تعداد نویسه. فونت مرجع وزیرمتن و سقف‌ها
+ *     مشترک با دستار سئو (SEO 3.5.4، seobox-metrics.php).
  *   - تب «ایندکس / نوایندکس» با انتخاب، زنده سبز یا قرمز می‌شود.
  *   - دکمه‌های متغیر، متغیر را در آخرین فیلد فعال (عنوان/توضیحات) درج می‌کنند.
  * ========================================================================= */
 (() => {
     'use strict';
 
+    /* خط‌کش مشترک با «دستار سئو» (seobox-metrics.php): سقف‌ها و آدرس فونت از سرور می‌آیند، نه عدد جدا در اینجا.
+     * فونت مرجع وزیرمتن ۴۰۰ است تا روی هر دستگاه یک عدد بدهد (تا SEO 3.5.3: Arial/Tahoma هر دستگاه). */
+    const PX    = window.hodimaSeoPx || {};
+    const FAMILY = PX.family || 'HodimaSeoRef';
     const LIMITS = {
-        title:       { px: 580, min: 0.5, font: '20px Arial, Tahoma, sans-serif' },
-        description: { px: 920, min: 0.4, font: '14px Arial, Tahoma, sans-serif' }
+        title:       { px: PX.title?.max ?? 580, min: PX.title?.min_ratio ?? 0.5, size: PX.title?.font_px ?? 20 },
+        description: { px: PX.description?.max ?? 920, min: PX.description?.min_ratio ?? 0.4, size: PX.description?.font_px ?? 14 }
     };
+
+    /* وضعیت فونت: loading = هنوز نیامده، ready = دقیق، failed = تخمین با فونت سیستم */
+    let fontState = PX.url && window.FontFace ? 'loading' : 'failed';
+    const fontOf = (field) => `400 ${LIMITS[field].size}px ${fontState === 'ready' ? `'${FAMILY}'` : 'Arial, Tahoma, sans-serif'}`;
+    const listeners = new Set();
+
+    if (fontState === 'loading') {
+        try {
+            const face = new FontFace(FAMILY, `url(${PX.url})`, { weight: '400' });
+            face.load().then(() => { document.fonts.add(face); fontState = 'ready'; })
+                .catch(() => { fontState = 'failed'; })
+                .finally(() => listeners.forEach((fn) => fn()));
+        } catch { fontState = 'failed'; }
+    }
 
     const ctx = document.createElement('canvas').getContext?.('2d') ?? null;
 
-    const textWidth = (text, font) => {
-        if (!ctx) return text.length * (font.startsWith('20px') ? 10 : 7);
-        ctx.font = font;
+    const textWidth = (text, field) => {
+        if (!ctx) return text.length * (field === 'title' ? 10 : 7);
+        ctx.font = fontOf(field);
         return ctx.measureText(text).width;
     };
 
     /** کوتاه کردن به عرض پیکسلی، مثل نمایش گوگل */
-    const truncate = (text, font, maxPx) => {
-        if (textWidth(text, font) <= maxPx) return text;
+    const truncate = (text, field, maxPx) => {
+        if (textWidth(text, field) <= maxPx) return text;
         let lo = 0, hi = text.length;
         while (lo < hi) {
             const mid = Math.ceil((lo + hi) / 2);
-            if (textWidth(text.slice(0, mid) + ' …', font) <= maxPx) lo = mid; else hi = mid - 1;
+            if (textWidth(text.slice(0, mid) + ' …', field) <= maxPx) lo = mid; else hi = mid - 1;
         }
         return text.slice(0, lo).trim() + ' …';
     };
@@ -114,16 +133,19 @@
             const limit   = LIMITS[field];
             const counter = root.querySelector(`[data-seobox-counter="${field}"]`);
             const bar     = root.querySelector(`[data-seobox-meter="${field}"]`);
-            const px      = Math.round(textWidth(value, limit.font));
-            const ratio   = px / limit.px;
+            const loading = fontState === 'loading';
+            const px      = Math.round(textWidth(value, field));
+            const ratio   = loading ? 0 : px / limit.px;
 
             if (counter) {
-                counter.textContent = `${px} از ${limit.px} پیکسل`;
+                // فونت مرجع هنوز نیامده: عدد غلط نشان نده؛ نیامد (آفلاین): عدد «حدود» با برچسب تقریبی
+                counter.textContent = loading ? 'در حال اندازه‌گیری…'
+                    : (fontState === 'failed' ? `حدود ${px} از ${limit.px} پیکسل (تقریبی)` : `${px} از ${limit.px} پیکسل`);
                 counter.classList.toggle('is-over', ratio > 1);
             }
             if (bar) {
                 bar.style.inlineSize = Math.min(100, Math.round(ratio * 100)) + '%';
-                bar.className = ratio > 1 ? 'is-over' : (ratio < limit.min ? 'is-short' : 'is-good');
+                bar.className = loading ? '' : (ratio > 1 ? 'is-over' : (ratio < limit.min ? 'is-short' : 'is-good'));
             }
         };
 
@@ -139,9 +161,9 @@
 
             const t = out('title');
             const d = out('description');
-            if (t) t.textContent = truncate(title || vars['%sitename%'] || '', LIMITS.title.font, LIMITS.title.px);
+            if (t) t.textContent = truncate(title || vars['%sitename%'] || '', 'title', LIMITS.title.px);
             if (d) {
-                d.textContent = shown ? truncate(shown, LIMITS.description.font, LIMITS.description.px) : 'گوگل توضیح را خودش از متن صفحه انتخاب می‌کند.';
+                d.textContent = shown ? truncate(shown, 'description', LIMITS.description.px) : 'گوگل توضیح را خودش از متن صفحه انتخاب می‌کند.';
                 d.classList.toggle('is-placeholder', !shown);
             }
         };
@@ -196,6 +218,7 @@
             });
         });
 
+        listeners.add(render); // پس از بارگذاری فونت دوباره می‌سنجد
         render();
     }
 

@@ -16,6 +16,7 @@ defined( 'SEOBOX_URL' ) || define( 'SEOBOX_URL', HODIMA_SEO_URL . '/core/seobox/
 defined( 'SEOBOX_VERSION' ) || define( 'SEOBOX_VERSION', '5.0.0' );
 
 require_once SEOBOX_DIR . 'core-variables.php';
+require_once SEOBOX_DIR . 'seobox-metrics.php'; // خط‌کش پیکسلی مشترک با دستار سئو (SEO 3.5.4)
 // robots-txt.php ماژول جداگانه «robots.txt» در افزونه SEO است
 
 if ( is_admin() ) {
@@ -55,6 +56,20 @@ if ( is_admin() ) {
 		if ( $is_post_editor || $is_term_editor ) {
 			// بدون وابستگی: wp-data فقط اگر ویرایشگر بلوکی خودش لود کرده باشد استفاده می‌شود
 			wp_enqueue_script( 'seobox-admin-script', SEOBOX_URL . 'admin-script.js', [], $version, [ 'in_footer' => true, 'strategy' => 'defer' ] );
+
+			// خط‌کش پیکسلی مشترک (seobox-metrics.php): سقف‌ها و فونت مرجع از سرور؛ عدد جدا در جاوااسکریپت نیست
+			wp_add_inline_script(
+				'seobox-admin-script',
+				'window.hodimaSeoPx = ' . wp_json_encode(
+					[
+						'family' => HODIMA_SEO_PX_FONT_FAMILY,
+						'url'    => SEOBOX_URL . 'assets/vazirmatn-ref.woff2?ver=' . $version,
+						'title'  => HODIMA_SEO_PX_LIMITS['title'],
+						'description' => HODIMA_SEO_PX_LIMITS['description'],
+					]
+				) . ';',
+				'before'
+			);
 		}
 	} );
 

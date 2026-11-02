@@ -23,6 +23,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 require_once dirname( __DIR__, 2 ) . '/inc/search-console.php';
+require_once dirname( __DIR__ ) . '/seobox/seobox-metrics.php'; // خط‌کش پیکسلی مشترک عنوان/متا با سئوباکس (SEO 3.5.4)
 require_once __DIR__ . '/advisor-data.php';
 require_once __DIR__ . '/advisor-progress.php';
 require_once __DIR__ . '/advisor-history.php';

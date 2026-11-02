@@ -12,9 +12,39 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-/** طول هدف عنوان و توضیح متا (همان عددهای دستور ایراد). */
-const HODIMA_SEO_ADVISOR_DRAFT_TITLE_MAX = 62;
-const HODIMA_SEO_ADVISOR_DRAFT_META_MAX  = 155;
+/** پیش‌نویس تا این سهم از سقف پیکسلی سئوباکس می‌ماند (جا برای ویرایش و خطای چند‌درصدی جدول عرض؛ SEO 3.5.4، قبلا ۶۲ و ۱۵۵ نویسه). */
+const HODIMA_SEO_ADVISOR_DRAFT_PX_SHARE = 0.95;
+
+/** سقف پیکسلی پیش‌نویس عنوان (`title`) یا توضیح متا (`description`). */
+function hodima_seo_advisor_draft_px_max( string $field ): int {
+	return (int) floor( hodima_seo_px_limit( $field )['max'] * HODIMA_SEO_ADVISOR_DRAFT_PX_SHARE );
+}
+
+/**
+ * بلندترین پیشوند متن که در سقف پیکسلی جا شود، با کوتاه‌کردن تمیز (جمله یا فاصله، نه وسط کلمه).
+ * جستجوی دودویی روی شمار نویسه؛ عرض از همان خط‌کش سئوباکس.
+ */
+function hodima_seo_advisor_draft_cut_px( string $text, string $field, int $max_px, int $floor = 0 ): string {
+
+	$text = trim( $text );
+
+	if ( hodima_seo_text_px( $text, $field ) <= $max_px ) {
+		return $text;
+	}
+
+	[ $lo, $hi ] = [ 0, mb_strlen( $text ) ];
+
+	while ( $lo < $hi ) {
+		$mid = intdiv( $lo + $hi + 1, 2 );
+		if ( hodima_seo_text_px( mb_substr( $text, 0, $mid ), $field ) <= $max_px ) {
+			$lo = $mid;
+		} else {
+			$hi = $mid - 1;
+		}
+	}
+
+	return hodima_seo_advisor_draft_cut( $text, $lo, $floor );
+}
 
 /** HTML یا متن ← متن ساده یک‌خطی (بدون شورت‌کد، تگ و موجودیت). */
 function hodima_seo_advisor_draft_clean( string $html ): string {
@@ -112,11 +142,11 @@ function hodima_seo_advisor_draft_context( string $path ): array {
 
 /**
  * پیش‌نویس عنوان سئو. «عنوان بلند» = کوتاه‌شده عنوان فعلی از آخر (جداکننده | – — -)؛ بقیه = نام صفحه + دسته/والد + نام سایت،
- * تا جایی که در ۶۲ نویسه جا شود. رشته خالی = داده کافی نیست.
+ * تا جایی که در ۹۵٪ سقف پیکسلی سئوباکس جا شود. رشته خالی = داده کافی نیست.
  */
 function hodima_seo_advisor_draft_title( string $path, string $code, string $current = '' ): string {
 
-	$max = HODIMA_SEO_ADVISOR_DRAFT_TITLE_MAX;
+	$max = hodima_seo_advisor_draft_px_max( 'title' );
 
 	if ( 'title_long' === $code ) {
 		$current = hodima_seo_advisor_draft_clean( $current );
@@ -126,12 +156,12 @@ function hodima_seo_advisor_draft_title( string $path, string $code, string $cur
 		if ( preg_match_all( '/\s+[|–—-]\s+/u', $current, $found, PREG_OFFSET_CAPTURE ) ) {
 			foreach ( array_reverse( $found[0] ) as [ , $offset ] ) {
 				$candidate = substr( $current, 0, (int) $offset );
-				if ( mb_strlen( $candidate ) <= $max && mb_strlen( $candidate ) >= 20 ) {
+				if ( hodima_seo_text_px( $candidate, 'title' ) <= $max && mb_strlen( $candidate ) >= 20 ) {
 					return $candidate;
 				}
 			}
 		}
-		return hodima_seo_advisor_draft_cut( $current, $max );
+		return hodima_seo_advisor_draft_cut_px( $current, 'title', $max );
 	}
 
 	$ctx  = hodima_seo_advisor_draft_context( $path );
@@ -141,10 +171,10 @@ function hodima_seo_advisor_draft_title( string $path, string $code, string $cur
 		return '';
 	}
 
-	$title = mb_strlen( $name ) > $max ? hodima_seo_advisor_draft_cut( $name, $max - 2 ) : $name;
+	$title = hodima_seo_text_px( $name, 'title' ) > $max ? hodima_seo_advisor_draft_cut_px( $name, 'title', $max - 20 ) : $name;
 
 	foreach ( [ $ctx['group'], $ctx['site'] ] as $extra ) {
-		if ( '' !== $extra && false === mb_stripos( $title, $extra ) && mb_strlen( $title . ' | ' . $extra ) <= $max ) {
+		if ( '' !== $extra && false === mb_stripos( $title, $extra ) && hodima_seo_text_px( $title . ' | ' . $extra, 'title' ) <= $max ) {
 			$title .= ' | ' . $extra;
 		}
 	}
@@ -153,7 +183,7 @@ function hodima_seo_advisor_draft_title( string $path, string $code, string $cur
 }
 
 /**
- * پیش‌نویس توضیح متا (تا ۱۵۵ نویسه): خلاصه یا ابتدای متن صفحه با نام صفحه در آغاز؛ بدون متن، نام + دسته + نام سایت.
+ * پیش‌نویس توضیح متا (تا ۹۵٪ سقف پیکسلی): خلاصه یا ابتدای متن صفحه با نام صفحه در آغاز؛ بدون متن، نام + دسته + نام سایت.
  */
 function hodima_seo_advisor_draft_meta( string $path ): string {
 
@@ -170,9 +200,9 @@ function hodima_seo_advisor_draft_meta( string $path ): string {
 		$body = $name . ( '' !== $ctx['group'] ? '؛ ' . $ctx['group'] : '' ) . '.';
 	}
 
-	if ( mb_strlen( $body ) < 110 && '' !== $ctx['site'] && false === mb_stripos( $body, $ctx['site'] ) ) {
+	if ( hodima_seo_text_px( $body, 'description' ) < 700 && '' !== $ctx['site'] && false === mb_stripos( $body, $ctx['site'] ) ) {
 		$body .= ( 1 === preg_match( '/[.؟!؛?]$/u', $body ) ? '' : '.' ) . ' خرید از ' . $ctx['site'] . '.';
 	}
 
-	return hodima_seo_advisor_draft_cut( $body, HODIMA_SEO_ADVISOR_DRAFT_META_MAX, 90 );
+	return hodima_seo_advisor_draft_cut_px( $body, 'description', hodima_seo_advisor_draft_px_max( 'description' ), 90 );
 }

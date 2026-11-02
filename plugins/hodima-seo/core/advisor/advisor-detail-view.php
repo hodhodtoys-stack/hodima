@@ -3,7 +3,7 @@
  * ماژول «دستار سئو» — جزئیات دقیق زیر هر ایراد در صفحه «کارها» (SEO 3.3.6)
  * Path: core/advisor/advisor-detail-view.php
  *
- * به‌جای فقط یک جمله کلی: پیش‌نویس عنوان و توضیح متا (با شمار نویسه و دکمه کپی)، فهرست دقیق تصویرهای بدون alt
+ * به‌جای فقط یک جمله کلی: پیش‌نویس عنوان و توضیح متا (با عرض پیکسلی و دکمه کپی)، فهرست دقیق تصویرهای بدون alt
  * (با دکمه «ویرایش در رسانه»)، و فهرست لینک‌های خراب. فقط می‌خواند و نشان می‌دهد؛ چیزی ذخیره نمی‌شود.
  */
 
@@ -57,7 +57,7 @@ function hodima_seo_advisor_render_issue_detail( array $item, string $path ): vo
 	}
 
 	if ( 'no_meta' === $code ) {
-		hodima_seo_advisor_render_draft( 'پیش‌نویس توضیح متا', hodima_seo_advisor_draft_meta( $path ), 'ساخته‌شده از نام و متن همین صفحه؛ بخوانید و اصلاح کنید.', '' );
+		hodima_seo_advisor_render_draft( 'پیش‌نویس توضیح متا', hodima_seo_advisor_draft_meta( $path ), 'ساخته‌شده از نام و متن همین صفحه؛ بخوانید و اصلاح کنید.', '', 'description' );
 		return;
 	}
 
@@ -76,8 +76,8 @@ function hodima_seo_advisor_render_issue_detail( array $item, string $path ): vo
 	}
 }
 
-/** کادر پیش‌نویس (متن، شمار نویسه، کپی، راهنما). */
-function hodima_seo_advisor_render_draft( string $label, string $draft, string $hint, string $current ): void {
+/** کادر پیش‌نویس (متن، عرض پیکسلی نسبت به سقف سئوباکس، کپی، راهنما). `$field`: title یا description. */
+function hodima_seo_advisor_render_draft( string $label, string $draft, string $hint, string $current, string $field = 'title' ): void {
 
 	if ( '' === $draft ) {
 		return;
@@ -90,7 +90,7 @@ function hodima_seo_advisor_render_draft( string $label, string $draft, string $
 			<?php endif; ?>
 			<div class="hodima-advisor__draft-label">
 				<span><?php echo esc_html( $label ); ?></span>
-				<span><?php echo esc_html( sprintf( '%s نویسه', number_format_i18n( mb_strlen( $draft ) ) ) ); ?></span>
+				<span><?php echo esc_html( sprintf( '%1$s از %2$s پیکسل', number_format_i18n( hodima_seo_text_px( $draft, $field ) ), number_format_i18n( hodima_seo_px_limit( $field )['max'] ) ) ); ?></span>
 			</div>
 			<div class="hodima-advisor__draft-row">
 				<p class="hodima-advisor__draft-text"><?php echo esc_html( $draft ); ?></p>

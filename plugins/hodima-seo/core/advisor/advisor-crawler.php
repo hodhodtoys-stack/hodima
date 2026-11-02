@@ -778,6 +778,8 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'title'      => mb_substr( $title, 0, HODIMA_SEO_ADVISOR_KEY_LENGTH ),
 		'title_len'  => mb_strlen( $title ),
 		'meta_len'   => mb_strlen( $meta ),
+		'title_px'   => hodima_seo_text_px( $title, 'title' ), // عرض پیکسلی با فونت مرجع (۰ = ردیف قدیمی، هنوز اندازه‌گیری نشده)
+		'meta_px'    => hodima_seo_text_px( $meta, 'description' ),
 		'h1'         => mb_substr( (string) ( $parsed['h1'] ?? '' ), 0, HODIMA_SEO_ADVISOR_KEY_LENGTH ),
 		'h2'         => mb_substr( (string) ( $parsed['h2'] ?? '' ), 0, 255 ),
 		'resp_ms'    => $ms,
@@ -893,8 +895,8 @@ function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $
 
 	hodima_seo_advisor_ensure_tables(); // ستون تازه img_list (DB 1.9.0) پیش از اولین نوشتن بعد از به‌روزرسانی
 
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d)';
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
 

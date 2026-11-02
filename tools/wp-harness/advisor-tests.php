@@ -28,6 +28,17 @@ if ( ! function_exists( 'hodima_seo_advisor_refresh' ) ) {
 $failed = 0;
 $passed = 0;
 
+/**
+ * آزمون‌های قدیمی طول را با نویسه می‌دادند؛ از SEO 3.5.4 خزنده پیکسل می‌سنجد (title_px/meta_px، ۰ = اندازه‌گیری‌نشده).
+ * این دو تابع نویسه آزمون را به پیکسل تقریبی همان اندازه برمی‌گردانند (عنوان ۲۰px ≈ ۱۰ پیکسل به ازای هر نویسه، متا ۱۴px ≈ ۶٫۶).
+ */
+function hodima_ad_tpx( int $len ): int {
+	return $len * 10;
+}
+function hodima_ad_mpx( int $len ): int {
+	return (int) round( $len * 6.6 );
+}
+
 function hodima_ad( string $name, mixed $actual, mixed $expected ): void {
 	global $failed, $passed;
 	if ( $actual === $expected ) {
@@ -2032,7 +2043,7 @@ if ( $has_obj ) {
 	hodima_ad( 'پیش‌نویس زمان‌بندی نمی‌شود', count( array_filter( (array) _get_cron_array(), static fn( $e ): bool => isset( $e[ HODIMA_SEO_ADVISOR_LIVE_CRON ] ) ) ), 0 );
 	wp_delete_post( $r4_draft, true );
 }
-$GLOBALS['wpdb']->insert( hodima_seo_advisor_table( 'crawl_pages' ), [ 'path' => '/گل-سر/', 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'x', 'title_len' => 1, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 100, 'inlinks' => 3, 'text_links' => -1, 'depth' => 1, 'score' => 1, 'redirect_to' => '' ] );
+$GLOBALS['wpdb']->insert( hodima_seo_advisor_table( 'crawl_pages' ), [ 'path' => '/گل-سر/', 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'x', 'title_len' => 1, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 1 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => '', 'h2' => '', 'resp_ms' => 100, 'inlinks' => 3, 'text_links' => -1, 'depth' => 1, 'score' => 1, 'redirect_to' => '' ] );
 hodima_seo_advisor_crawl_map( true );
 hodima_seo_advisor_live_check( '/گل-سر/' );
 hodima_ad( 'آدرس فارسی: مسیر در درخواست کدگذاری می‌شود و ردیف به‌روز می‌شود', [ str_contains( (string) end( $live_hits )[0], '/' . rawurlencode( 'گل-سر' ) . '/?' ), hodima_seo_advisor_crawl_row( '/گل-سر/' )['h1'] ], [ true, 'تیتر تازه بدون کلیپس' ] );
@@ -2350,10 +2361,10 @@ hodima_ad( 'پاک کردن داده درخواست ساخت دوباره را �
 // خزش: کادر ویرایش فقط ردیف همان صفحه را می‌خواند؛ نتیجه با نقشه کامل یکی است
 hodima_seo_advisor_crawl_store(
 	[
-		'/lt/a/'  => [ 'path' => '/lt/a/', 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'عنوان الف', 'title_len' => 40, 'meta_len' => 120, 'h1' => 'الف', 'h2' => '', 'resp_ms' => 100, 'inlinks' => 4, 'text_links' => 2, 'depth' => 2, 'score' => 1.5, 'redirect' => '' ],
-		'/lt/r/'  => [ 'path' => '/lt/r/', 'status' => 301, 'indexable' => 0, 'reason' => 'Redirected', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 50, 'inlinks' => 1, 'text_links' => 0, 'depth' => 3, 'score' => 0.0, 'redirect' => '/lt/a/' ],
-		'/lt/n/'  => [ 'path' => '/lt/n/', 'status' => 200, 'indexable' => 0, 'reason' => 'noindex', 'title' => 'ن', 'title_len' => 1, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 50, 'inlinks' => 1, 'text_links' => 0, 'depth' => 3, 'score' => 0.0, 'redirect' => '' ],
-		'/lt/g/'  => [ 'path' => '/lt/g/', 'status' => 404, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 50, 'inlinks' => 1, 'text_links' => 0, 'depth' => 3, 'score' => 0.0, 'redirect' => '' ],
+		'/lt/a/'  => [ 'path' => '/lt/a/', 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'عنوان الف', 'title_len' => 40, 'meta_len' => 120, 'title_px' => hodima_ad_tpx( 40 ), 'meta_px' => hodima_ad_mpx( 120 ), 'h1' => 'الف', 'h2' => '', 'resp_ms' => 100, 'inlinks' => 4, 'text_links' => 2, 'depth' => 2, 'score' => 1.5, 'redirect' => '' ],
+		'/lt/r/'  => [ 'path' => '/lt/r/', 'status' => 301, 'indexable' => 0, 'reason' => 'Redirected', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 0 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => '', 'h2' => '', 'resp_ms' => 50, 'inlinks' => 1, 'text_links' => 0, 'depth' => 3, 'score' => 0.0, 'redirect' => '/lt/a/' ],
+		'/lt/n/'  => [ 'path' => '/lt/n/', 'status' => 200, 'indexable' => 0, 'reason' => 'noindex', 'title' => 'ن', 'title_len' => 1, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 1 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => '', 'h2' => '', 'resp_ms' => 50, 'inlinks' => 1, 'text_links' => 0, 'depth' => 3, 'score' => 0.0, 'redirect' => '' ],
+		'/lt/g/'  => [ 'path' => '/lt/g/', 'status' => 404, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 0 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => '', 'h2' => '', 'resp_ms' => 50, 'inlinks' => 1, 'text_links' => 0, 'depth' => 3, 'score' => 0.0, 'redirect' => '' ],
 	],
 	[]
 );
@@ -2441,7 +2452,7 @@ hodima_ad( '«دیدن در سایت» برای صفحه ناشناخته با �
 hodima_ad( 'تکه متن فرصت لینک: واژه لاتین با حروف بزرگ هم پیدا می‌شود', hodima_seo_advisor_links_snippet( '<p>best Hair Clips here</p>', 'hair clips' )[1] ?? null, 'Hair Clips' );
 
 // ایرادهای فنی: ریدایرکت با آدرس کامل مقصد
-hodima_seo_advisor_crawl_store( [ '/m2/old/' => [ 'path' => '/m2/old/', 'status' => 301, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 10, 'inlinks' => 2, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '/m2/new/' ] ], [] );
+hodima_seo_advisor_crawl_store( [ '/m2/old/' => [ 'path' => '/m2/old/', 'status' => 301, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 0 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => '', 'h2' => '', 'resp_ms' => 10, 'inlinks' => 2, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '/m2/new/' ] ], [] );
 $m2_issue = array_values( array_filter( hodima_seo_advisor_crawl_issues(), static fn( array $r ): bool => '/m2/old/' === $r['path'] ) )[0]['issues'][0] ?? [];
 hodima_ad( 'ایراد ریدایرکت: مقصد جدا از جمله (برای آدرس کامل + کپی)', [ $m2_issue['detail'] ?? '', $m2_issue['url'] ?? '' ], [ 'به این آدرس می‌رود:', '/m2/new/' ] );
 
@@ -2482,8 +2493,8 @@ $m3_post = (int) wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publ
 $m3_path = (string) hodima_seo_advisor_path_key( (string) get_permalink( $m3_post ) );
 hodima_seo_advisor_crawl_store(
 	[
-		$m3_path    => [ 'path' => $m3_path, 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'کوتاه', 'title_len' => 5, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 2500, 'inlinks' => 1, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '' ],
-		'/m3/old/'  => [ 'path' => '/m3/old/', 'status' => 301, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 10, 'inlinks' => 2, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '/m3/new/' ],
+		$m3_path    => [ 'path' => $m3_path, 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'کوتاه', 'title_len' => 5, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 5 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => '', 'h2' => '', 'resp_ms' => 2500, 'inlinks' => 1, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '' ],
+		'/m3/old/'  => [ 'path' => '/m3/old/', 'status' => 301, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 0 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => '', 'h2' => '', 'resp_ms' => 10, 'inlinks' => 2, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '/m3/new/' ],
 	],
 	[]
 );
@@ -2548,7 +2559,7 @@ $p3_written = hodima_seo_advisor_tasks_patch( [ $p3_key_a => [ 'fixed' => time()
 hodima_ad( 'کاری که مدیر وسط سنجش وضعیتش را عوض کرد حکم کهنه نمی‌گیرد', [ $p3_written, hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'low_ctr', '' ) ) ], [ 0, 'rejected' ] );
 
 // صفحه‌بندی آرشیو (خزش واقعی هدهدلی): H1 مشترک و لینک ورودی کم ایراد نیست (SEO 3.0.5)
-$p3_pg = static fn( string $path, string $h1, int $inlinks ): array => [ 'path' => $path, 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'وبلاگ ' . $path, 'title_len' => 40, 'meta_len' => 120, 'h1' => $h1, 'h2' => '', 'resp_ms' => 100, 'inlinks' => $inlinks, 'text_links' => 1, 'depth' => 1, 'score' => 0.0, 'redirect' => '' ];
+$p3_pg = static fn( string $path, string $h1, int $inlinks ): array => [ 'path' => $path, 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'وبلاگ ' . $path, 'title_len' => 40, 'meta_len' => 120, 'title_px' => hodima_ad_tpx( 40 ), 'meta_px' => hodima_ad_mpx( 120 ), 'h1' => $h1, 'h2' => '', 'resp_ms' => 100, 'inlinks' => $inlinks, 'text_links' => 1, 'depth' => 1, 'score' => 0.0, 'redirect' => '' ];
 hodima_seo_advisor_crawl_store( [ '/pg/' => $p3_pg( '/pg/', 'وبلاگ', 30 ), '/pg/page/2/' => $p3_pg( '/pg/page/2/', 'وبلاگ', 2 ), '/pg/a/' => $p3_pg( '/pg/a/', 'مقاله الف', 30 ), '/pg/b/' => $p3_pg( '/pg/b/', 'مقاله الف', 30 ) ], [] );
 $p3_codes = [];
 foreach ( hodima_seo_advisor_crawl_issues() as $p3_r ) {
@@ -2619,7 +2630,7 @@ $p3_mark = static function ( array $post ): string {
 // ایرادهای فنی: یک صفحه پرایراد، یک صفحه ۴۰۴ با لینک ورودی، یک ریدایرکت فقط با نمایش گوگل
 $p3_post = (int) wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => 'صفحه مرحله سه', 'post_name' => 'p3-crawl', 'post_content' => 'x' ] );
 $p3_path = (string) hodima_seo_advisor_path_key( (string) get_permalink( $p3_post ) );
-$p3_row  = static fn( string $path, int $status, array $over = [] ): array => $over + [ 'path' => $path, 'status' => $status, 'indexable' => 200 === $status ? 1 : 0, 'reason' => '', 'title' => 'عنوان', 'title_len' => 5, 'meta_len' => 0, 'h1' => '', 'h2' => '', 'resp_ms' => 2600, 'inlinks' => 1, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '' ];
+$p3_row  = static fn( string $path, int $status, array $over = [] ): array => $over + [ 'path' => $path, 'status' => $status, 'indexable' => 200 === $status ? 1 : 0, 'reason' => '', 'title' => 'عنوان', 'title_len' => 5, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 5 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => '', 'h2' => '', 'resp_ms' => 2600, 'inlinks' => 1, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '' ];
 hodima_seo_advisor_store( [ '/p3/gone/' => [ 'clicks' => 0, 'impressions' => 400, 'position' => 9.0 ], '/p3/moved/' => [ 'clicks' => 0, 'impressions' => 400, 'position' => 9.0 ] ], [], [] );
 hodima_seo_advisor_crawl_store(
 	[
@@ -2686,7 +2697,7 @@ hodima_seo_advisor_tasks_sync_crawl();
 hodima_ad( 'خزش تازه: «کند» هنوز هست ← هنوز مانده (باز)؛ برطرف؛ دوباره کند ← برگشت', [ $p3_a, $p3_b, $p3_st( 'slow' ), hodima_seo_advisor_task_group( hodima_seo_advisor_task( $p3_path, 'crawl_slow', '' ) ) ], [ 'still', 'fixed', 'back', 'open' ] );
 
 // متن هنوز در صفحه: «انجام دادم» دوباره ← هنوز مانده؛ شبکه نرسید ← منتظر
-$GLOBALS['wpdb']->update( hodima_seo_advisor_table( 'crawl_pages' ), [ 'meta_len' => 0 ], [ 'path' => $p3_path ] );
+$GLOBALS['wpdb']->update( hodima_seo_advisor_table( 'crawl_pages' ), [ 'meta_len' => 0, 'meta_px' => 0 ], [ 'path' => $p3_path ] );
 hodima_seo_advisor_crawl_map( true );
 $p3_html = '<html><head><title>' . str_repeat( 'ع', 52 ) . '</title></head><body><h1>تیتر تازه</h1></body></html>';
 $p3_flash2 = $p3_mark( [ 'source' => 'crawl', 'path' => $p3_path, 'status' => 'done', 'items' => [ 'no_meta' ] ] );
@@ -3138,12 +3149,12 @@ hodima_ad( 'سازگاری crawl_issue_info: برچسب، سطح، دستور ب
 hodima_ad( 'دستور با نام «ویرایش» نوع صفحه؛ خالی = «ویرایش صفحه»؛ ایراد بی‌جانگهدار بدون تغییر', [ str_contains( hodima_seo_advisor_issue_fix( 'no_meta', 'ویرایش محصول' ), 'در «ویرایش محصول»' ), str_contains( hodima_seo_advisor_issue_fix( 'no_meta' ), 'در «ویرایش صفحه»' ), hodima_seo_advisor_issue_fix( 'orphan', 'ویرایش دسته' ), hodima_seo_advisor_issue_fix( 'x_none' ) ], [ true, true, 'از دست‌کم دو صفحه مرتبط به آن لینک بدهید.', '' ] );
 $ic_pt = get_post_type_object( 'post' );
 hodima_ad( 'نام «ویرایش» نوع صفحه: صفحه اصلی، نوشته و دسته از برچسب‌های وردپرس؛ ناشناخته خالی', [ hodima_seo_advisor_issue_where( '/' ), hodima_seo_advisor_issue_where( '/x/', 'post' ) === (string) $ic_pt->labels->edit_item, hodima_seo_advisor_issue_where( '/x/', 'category' ) === (string) get_taxonomy( 'category' )->labels->edit_item, hodima_seo_advisor_issue_where( '/x/', 'nothing-here' ) ], [ 'ویرایش صفحه اصلی', true, true, '' ] );
-hodima_ad( 'عنوان کوتاه: آستانه ۳۰ نویسه و دستور ۴۸ تا ۶۲ هم‌خوان‌اند (بدون ناهماهنگی)', [ str_contains( hodima_seo_advisor_issue_fix( 'title_short' ), '۳۰' ), str_contains( hodima_seo_advisor_issue_fix( 'title_short' ), '۴۸ تا ۶۲' ), HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN ], [ true, true, 30 ] );
+hodima_ad( 'عنوان کوتاه/بلند: آستانه پیکسلی سئوباکس (کف ۲۹۰، سقف ۵۸۰) و دستور هم‌خوان‌اند، بدون «نویسه»', [ hodima_seo_px_limit( 'title' ), str_contains( hodima_seo_advisor_issue_fix( 'title_short' ), '290' ), str_contains( hodima_seo_advisor_issue_fix( 'title_long' ), '580' ), str_contains( hodima_seo_advisor_issue_fix( 'title_short' ) . hodima_seo_advisor_issue_fix( 'title_long' ), 'نویسه' ) ], [ [ 'max' => 580, 'min' => 290, 'font_px' => 20 ], true, true, false ] );
 
 $ic_t = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $ic_t ) );
 foreach ( [ [ '/', 0, 5, 100, 50 ], [ '/blog/page/2/', 1, 5, 0, 10 ], [ '/plain/', 1, 5, 0, 10 ], [ '/island/', HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE, 5, 100, 50 ], [ '/orphan/', HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE, 0, 100, 50 ], [ '/deep/', 6, 5, 100, 50 ], [ '/ok/', 1, 4, 100, 50 ] ] as [ $ic_p, $ic_d, $ic_in, $ic_meta, $ic_tl ] ) {
-	$GLOBALS['wpdb']->insert( $ic_t, [ 'path' => $ic_p, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $ic_p, 'title_len' => $ic_tl, 'meta_len' => $ic_meta, 'h1' => 'تیتر ' . $ic_p, 'resp_ms' => 100, 'inlinks' => $ic_in, 'text_links' => 1, 'depth' => $ic_d, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 0, 'http_links' => 0, 'canonical' => $ic_p ] );
+	$GLOBALS['wpdb']->insert( $ic_t, [ 'path' => $ic_p, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $ic_p, 'title_len' => $ic_tl, 'meta_len' => $ic_meta, 'title_px' => hodima_ad_tpx( $ic_tl ), 'meta_px' => hodima_ad_mpx( $ic_meta ), 'h1' => 'تیتر ' . $ic_p, 'resp_ms' => 100, 'inlinks' => $ic_in, 'text_links' => 1, 'depth' => $ic_d, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 0, 'http_links' => 0, 'canonical' => $ic_p ] );
 }
 hodima_seo_advisor_crawl_map( true );
 $ic_issues = [];
@@ -3203,7 +3214,7 @@ wp_set_current_user( 0 );
 echo "=== پیش‌نویس عنوان/متا و جزئیات ایراد در «کارها» (SEO 3.3.6)\n";
 hodima_ad( 'کوتاه‌کردن تمیز: سر جمله، وگرنه آخرین فاصله؛ کوتاه‌تر از سقف دست نمی‌خورد', [ hodima_seo_advisor_draft_cut( 'سلام دنیا. خوش آمدید به سایت ما', 20, 5 ), hodima_seo_advisor_draft_cut( 'یک دو سه چهار پنج شش', 12 ), hodima_seo_advisor_draft_cut( 'کوتاه', 50 ) ], [ 'سلام دنیا.', 'یک دو سه', 'کوتاه' ] );
 $dr_long = hodima_seo_advisor_draft_title( '/x/', 'title_long', 'یک عنوان نسبتا بلند برای آزمون کوتاه‌سازی از انتها | نام دسته مورد نظر | نام سایت آزمایشی بلند' );
-hodima_ad( 'پیش‌نویس عنوان بلند: از آخر جداکننده می‌افتد تا در ۶۲ نویسه جا شود', [ mb_strlen( $dr_long ) <= 62, str_starts_with( $dr_long, 'یک عنوان نسبتا بلند' ), str_contains( $dr_long, 'نام سایت آزمایشی' ), hodima_seo_advisor_draft_title( '/x/', 'title_long', '' ) ], [ true, true, false, '' ] );
+hodima_ad( 'پیش‌نویس عنوان بلند: از آخر جداکننده می‌افتد تا در ۹۵٪ سقف پیکسلی جا شود', [ hodima_seo_text_px( $dr_long, 'title' ) <= hodima_seo_advisor_draft_px_max( 'title' ), str_starts_with( $dr_long, 'یک عنوان نسبتا بلند' ), str_contains( $dr_long, 'نام سایت آزمایشی' ), hodima_seo_advisor_draft_title( '/x/', 'title_long', '' ) ], [ true, true, false, '' ] );
 
 wp_set_current_user( 1 );
 $dr_cat  = wp_insert_term( 'کلیپس آزمون پیش‌نویس', 'category' );
@@ -3243,7 +3254,7 @@ $dr_links = $dr_out( [ 'src' => 'crawl', 'mark' => 'link_broken', 'targets' => a
 hodima_ad( 'فهرست لینک خراب: ۵ مورد با کپی، بسته، «و ۲ لینک دیگر»', [ substr_count( $dr_links, 'class="hodima-advisor__li"' ), str_contains( $dr_links, 'و 2 لینک دیگر' ), str_contains( $dr_links, '<details class="hodima-advisor__more">' ), str_contains( $dr_links, 'data-hdsa-copy-url="https://hodima.test/gone-1/"' ) ], [ 5, true, true, true ] );
 $dr_t = $dr_out( [ 'src' => 'crawl', 'mark' => 'title_short' ], $dr_path );
 $dr_m = $dr_out( [ 'src' => 'crawl', 'mark' => 'no_meta' ], $dr_path );
-hodima_ad( 'پیش‌نویس در کارها: عنوان با کپی و شمار نویسه؛ متا با کپی؛ ایراد بدون پیش‌نویس هیچ', [ str_contains( $dr_t, 'پیش‌نویس عنوان' ), str_contains( $dr_t, 'data-hdsa-copy-text="' . esc_attr( $dr_title ) . '"' ), str_contains( $dr_t, mb_strlen( $dr_title ) . ' نویسه' ), str_contains( $dr_m, 'پیش‌نویس توضیح متا' ), str_contains( $dr_m, 'data-hdsa-copy-text="' . esc_attr( $dr_meta ) . '"' ) ], [ true, true, true, true, true ] );
+hodima_ad( 'پیش‌نویس در کارها: عنوان با کپی و عرض پیکسلی؛ متا با کپی؛ ایراد بدون پیش‌نویس هیچ', [ str_contains( $dr_t, 'پیش‌نویس عنوان' ), str_contains( $dr_t, 'data-hdsa-copy-text="' . esc_attr( $dr_title ) . '"' ), str_contains( $dr_t, hodima_seo_text_px( $dr_title, 'title' ) . ' از 580 پیکسل' ), str_contains( $dr_m, 'پیش‌نویس توضیح متا' ), str_contains( $dr_m, 'data-hdsa-copy-text="' . esc_attr( $dr_meta ) . '"' ) ], [ true, true, true, true, true ] );
 wp_delete_attachment( $dr_att, true );
 wp_delete_post( $dr_post, true );
 
@@ -3256,7 +3267,7 @@ $fz_lt = hodima_seo_advisor_table( 'crawl_links' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_pt ) );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_lt ) );
 foreach ( [ '/', '/a/', '/b/', '/c/', '/d/', '/e/', '/f/' ] as $fz_p ) {
-	$GLOBALS['wpdb']->insert( $fz_pt, [ 'path' => $fz_p, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $fz_p, 'title_len' => 50, 'meta_len' => 100, 'h1' => 'تیتر ' . $fz_p, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 0, 'http_links' => 0, 'canonical' => $fz_p, 'inlinks' => 99, 'text_links' => 99, 'depth' => 99 ] );
+	$GLOBALS['wpdb']->insert( $fz_pt, [ 'path' => $fz_p, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $fz_p, 'title_len' => 50, 'meta_len' => 100, 'title_px' => hodima_ad_tpx( 50 ), 'meta_px' => hodima_ad_mpx( 100 ), 'h1' => 'تیتر ' . $fz_p, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 0, 'http_links' => 0, 'canonical' => $fz_p, 'inlinks' => 99, 'text_links' => 99, 'depth' => 99 ] );
 }
 // / ← a (متنی)، b (منو)؛ a ← c (متنی، nofollow)؛ b ← c (متنی)؛ c ← d؛ جزیره: e ← f
 foreach ( [ [ '/', '/a/', 'content', 1 ], [ '/', '/b/', 'navigation', 1 ], [ '/a/', '/c/', 'content', 0 ], [ '/b/', '/c/', 'content', 1 ], [ '/b/', '/c/', 'footer', 1 ], [ '/c/', '/d/', 'content', 1 ], [ '/e/', '/f/', 'content', 1 ] ] as [ $fz_s, $fz_d, $fz_pos, $fz_fol ] ) {
@@ -3374,7 +3385,7 @@ hodima_ad( 'بدون کار: کادر چاپ نمی‌شود', $cap( static fn()
 $pr_ct = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $pr_ct ) );
 foreach ( range( 1, 6 ) as $pr_n ) {
-	$GLOBALS['wpdb']->insert( $pr_ct, [ 'path' => '/pr-r' . $pr_n . '/', 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $pr_n, 'title_len' => 50, 'meta_len' => 0, 'h1' => 'تیتر ' . $pr_n, 'inlinks' => 9, 'depth' => 1, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 0, 'http_links' => 0, 'canonical' => '/pr-r' . $pr_n . '/' ] );
+	$GLOBALS['wpdb']->insert( $pr_ct, [ 'path' => '/pr-r' . $pr_n . '/', 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $pr_n, 'title_len' => 50, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 50 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => 'تیتر ' . $pr_n, 'inlinks' => 9, 'depth' => 1, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 0, 'http_links' => 0, 'canonical' => '/pr-r' . $pr_n . '/' ] );
 }
 hodima_seo_advisor_crawl_map( true );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
@@ -3573,12 +3584,12 @@ $sc_pt = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $sc_pt ) );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'crawl_links' ) ) );
 foreach ( range( 1, 4 ) as $i ) {
-	$GLOBALS['wpdb']->insert( $sc_pt, [ 'path' => "/sc{$i}/", 'status' => 200, 'indexable' => 1, 'title' => "عنوان {$i} با طول کافی برای آزمون", 'title_len' => 40, 'meta_len' => 100, 'h1' => "تیتر {$i}", 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
+	$GLOBALS['wpdb']->insert( $sc_pt, [ 'path' => "/sc{$i}/", 'status' => 200, 'indexable' => 1, 'title' => "عنوان {$i} با طول کافی برای آزمون", 'title_len' => 40, 'meta_len' => 100, 'title_px' => hodima_ad_tpx( 40 ), 'meta_px' => hodima_ad_mpx( 100 ), 'h1' => "تیتر {$i}", 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
 }
-$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 0 ], [ 'path' => '/sc1/' ] ); // یک صفحه بدون متا
+$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 0, 'meta_px' => 0 ], [ 'path' => '/sc1/' ] ); // یک صفحه بدون متا
 hodima_seo_advisor_crawl_map( true ); // خزنده واقعی بعد از هر نوشتن همین را می‌زند (کش ایرادها، SEO 3.4.3)
 hodima_seo_advisor_score_record();
-$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 100 ], [ 'path' => '/sc1/' ] ); // رفع شد
+$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 100, 'meta_px' => hodima_ad_mpx( 100 ) ], [ 'path' => '/sc1/' ] ); // رفع شد
 hodima_seo_advisor_crawl_map( true );
 hodima_seo_advisor_score_record();
 $sc_hist = hodima_seo_advisor_score_history();
@@ -3588,7 +3599,7 @@ hodima_seo_advisor_score_record();
 hodima_ad( 'تاریخچه نهایتا ۱۲ دور', count( hodima_seo_advisor_score_history() ), 12 );
 
 // نمای کارت در تب ایرادهای فنی
-$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 0 ], [ 'path' => '/sc2/' ] );
+$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 0, 'meta_px' => 0 ], [ 'path' => '/sc2/' ] );
 update_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, [ [ 'time' => time() - 7 * DAY_IN_SECONDS, 'score' => 80 ], [ 'time' => time() - DAY_IN_SECONDS, 'score' => 90 ] ], false );
 update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time() - 3600, 'pages' => 4, 'links' => 0, 'files' => [], 'source' => 'crawler' ], false );
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
@@ -3938,7 +3949,7 @@ $pc_t = hodima_seo_advisor_table( 'crawl_pages' );
 $pc_long = str_repeat( 'ا', HODIMA_SEO_ADVISOR_KEY_LENGTH ); // عنوان بریده‌شده در ستون
 foreach ( [ '/dt-a/' => 200, '/dt-b/' => 200, '/dt-c/' => 260 ] as $pc_path => $pc_len ) {
 	$GLOBALS['wpdb']->delete( $pc_t, [ 'path' => $pc_path ] );
-	$GLOBALS['wpdb']->insert( $pc_t, [ 'path' => $pc_path, 'status' => 200, 'indexable' => 1, 'title' => $pc_long, 'title_len' => $pc_len, 'meta_len' => 100, 'h1' => 'تیتر ' . $pc_path, 'words' => 300, 'h1_count' => 1, 'canonical' => $pc_path, 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
+	$GLOBALS['wpdb']->insert( $pc_t, [ 'path' => $pc_path, 'status' => 200, 'indexable' => 1, 'title' => $pc_long, 'title_len' => $pc_len, 'meta_len' => 100, 'title_px' => hodima_ad_tpx( $pc_len ), 'meta_px' => hodima_ad_mpx( 100 ), 'h1' => 'تیتر ' . $pc_path, 'words' => 300, 'h1_count' => 1, 'canonical' => $pc_path, 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
 }
 hodima_seo_advisor_crawl_map( true );
 $pc_dup = [];
@@ -3984,7 +3995,7 @@ if ( function_exists( 'hodima_router_active' ) && hodima_router_active() ) {
 	$th_path = (string) hodima_seo_advisor_path_key( (string) get_permalink( $th_post ) );
 	$th_t    = hodima_seo_advisor_table( 'crawl_pages' );
 	$GLOBALS['wpdb']->delete( $th_t, [ 'path' => $th_path ] );
-	$GLOBALS['wpdb']->insert( $th_t, [ 'path' => $th_path, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان آزمون محتوای کم با طول کافی', 'title_len' => 40, 'meta_len' => 100, 'h1' => 'تیتر', 'words' => 12, 'h1_count' => 1, 'canonical' => $th_path, 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
+	$GLOBALS['wpdb']->insert( $th_t, [ 'path' => $th_path, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان آزمون محتوای کم با طول کافی', 'title_len' => 40, 'meta_len' => 100, 'title_px' => hodima_ad_tpx( 40 ), 'meta_px' => hodima_ad_mpx( 100 ), 'h1' => 'تیتر', 'words' => 12, 'h1_count' => 1, 'canonical' => $th_path, 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
 	hodima_seo_advisor_crawl_map( true );
 	$th_codes = [];
 	foreach ( hodima_seo_advisor_crawl_issues() as $th_row ) {
@@ -4103,7 +4114,7 @@ hodima_ad( 'کش کارها: برداشتن کار هم همان لحظه', hodi
 update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $pf_old, false );
 $pf_t = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->delete( $pf_t, [ 'path' => '/pf-memo/' ] );
-$GLOBALS['wpdb']->insert( $pf_t, [ 'path' => '/pf-memo/', 'status' => 200, 'indexable' => 1, 'title' => 'عنوان آزمون کش ایرادها با طول کافی', 'title_len' => 40, 'meta_len' => 100, 'h1' => 'تیتر آزمون کش', 'words' => 300, 'h1_count' => 1, 'canonical' => '/pf-memo/', 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
+$GLOBALS['wpdb']->insert( $pf_t, [ 'path' => '/pf-memo/', 'status' => 200, 'indexable' => 1, 'title' => 'عنوان آزمون کش ایرادها با طول کافی', 'title_len' => 40, 'meta_len' => 100, 'title_px' => hodima_ad_tpx( 40 ), 'meta_px' => hodima_ad_mpx( 100 ), 'h1' => 'تیتر آزمون کش', 'words' => 300, 'h1_count' => 1, 'canonical' => '/pf-memo/', 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
 hodima_seo_advisor_crawl_map( true );
 $pf_has = static function (): bool {
 	foreach ( hodima_seo_advisor_crawl_issues() as $r ) {
@@ -4114,7 +4125,7 @@ $pf_has = static function (): bool {
 	return false;
 };
 hodima_ad( 'کش ایرادهای خزش: متا دارد ← ایراد no_meta نیست', $pf_has(), false );
-$GLOBALS['wpdb']->update( $pf_t, [ 'meta_len' => 0 ], [ 'path' => '/pf-memo/' ] );
+$GLOBALS['wpdb']->update( $pf_t, [ 'meta_len' => 0, 'meta_px' => 0 ], [ 'path' => '/pf-memo/' ] );
 hodima_ad( 'کش ایرادهای خزش: بدون crawl_map(true) همان نتیجه قبلی (کش درخواست)', $pf_has(), false );
 hodima_seo_advisor_crawl_map( true );
 hodima_ad( 'کش ایرادهای خزش: بعد از crawl_map(true) دوباره ساخته می‌شود (no_meta می‌آید)', $pf_has(), true );
@@ -4236,7 +4247,7 @@ hodima_ad( 'دکمه اجرا: آزاد ← فعال با «اجرا همین ح
 // صفحه‌های دارای ایراد برای «بازخوانی این N صفحه»: ایراد علامت‌خورده شمرده نمی‌شود
 $rc_table = hodima_seo_advisor_table( 'crawl_pages' );
 foreach ( [ '/rc-1/', '/rc-2/', '/rc-3/' ] as $rc_path ) {
-	$wpdb->replace( $rc_table, [ 'path' => $rc_path, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان آزمون ' . $rc_path, 'title_len' => 45, 'meta_len' => 120, 'h1' => 'تیتر ' . $rc_path, 'resp_ms' => 100, 'inlinks' => 5, 'text_links' => 3, 'depth' => 2, 'words' => 300, 'h1_count' => 1, 'img_noalt' => '/rc-3/' === $rc_path ? 0 : 1, 'http_links' => 0, 'canonical' => $rc_path, 'img_list' => '' ] );
+	$wpdb->replace( $rc_table, [ 'path' => $rc_path, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان آزمون ' . $rc_path, 'title_len' => 45, 'meta_len' => 120, 'title_px' => hodima_ad_tpx( 45 ), 'meta_px' => hodima_ad_mpx( 120 ), 'h1' => 'تیتر ' . $rc_path, 'resp_ms' => 100, 'inlinks' => 5, 'text_links' => 3, 'depth' => 2, 'words' => 300, 'h1_count' => 1, 'img_noalt' => '/rc-3/' === $rc_path ? 0 : 1, 'http_links' => 0, 'canonical' => $rc_path, 'img_list' => '' ] );
 }
 hodima_seo_advisor_crawl_map( true );
 hodima_ad( 'صفحه‌های دارای ایراد «تصویر بدون alt»: فقط دو صفحه (سومی ندارد)', array_values( array_intersect( hodima_seo_advisor_recrawl_paths( 'img_alt' ), [ '/rc-1/', '/rc-2/', '/rc-3/' ] ) ), [ '/rc-1/', '/rc-2/' ] );
@@ -4385,7 +4396,7 @@ wp_update_post( [ 'ID' => $rc_post, 'post_content' => 'x' ] );
 // تصویر مشترک: ۶ صفحه یک فایل ← یک گروه؛ بسته‌شدن کار یک صفحه آن را ۵ می‌کند؛ ۴ صفحه «مشترک» نیست
 $rc_share = 'https://hodima.test/wp-content/uploads/rc-shared.jpg';
 foreach ( range( 1, 6 ) as $rc_k ) {
-	$wpdb->replace( $rc_table, [ 'path' => "/rc-g{$rc_k}/", 'status' => 200, 'indexable' => 1, 'title' => 'عنوان گروه ' . $rc_k, 'title_len' => 45, 'meta_len' => 120, 'h1' => 'تیتر ' . $rc_k, 'resp_ms' => 100, 'inlinks' => 5, 'text_links' => 3, 'depth' => 2, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 1, 'img_empty' => 0, 'http_links' => 0, 'canonical' => "/rc-g{$rc_k}/", 'img_list' => hodima_seo_advisor_img_list_encode( [ [ 'u' => $rc_share, 's' => 'missing', 'c' => 'div.hero' ] ] ) ] );
+	$wpdb->replace( $rc_table, [ 'path' => "/rc-g{$rc_k}/", 'status' => 200, 'indexable' => 1, 'title' => 'عنوان گروه ' . $rc_k, 'title_len' => 45, 'meta_len' => 120, 'title_px' => hodima_ad_tpx( 45 ), 'meta_px' => hodima_ad_mpx( 120 ), 'h1' => 'تیتر ' . $rc_k, 'resp_ms' => 100, 'inlinks' => 5, 'text_links' => 3, 'depth' => 2, 'words' => 300, 'h1_count' => 1, 'img_noalt' => 1, 'img_empty' => 0, 'http_links' => 0, 'canonical' => "/rc-g{$rc_k}/", 'img_list' => hodima_seo_advisor_img_list_encode( [ [ 'u' => $rc_share, 's' => 'missing', 'c' => 'div.hero' ] ] ) ] );
 	$wpdb->replace( hodima_seo_advisor_table( 'pages' ), [ 'path' => "/rc-g{$rc_k}/", 'impressions' => 100 * $rc_k, 'kind' => 'post', 'advice' => '[]' ] );
 }
 hodima_seo_advisor_crawl_map( true );
@@ -4575,6 +4586,47 @@ hodima_ad(
 	hodima_seo_advisor_item_score( $pr3( 86 ), 0.2 ) > hodima_seo_advisor_item_score( $pr3( 1 ), 0.9 ),
 	true
 );
+
+echo "=== خط‌کش پیکسلی مشترک سئوباکس و دستار (SEO 3.5.4)\n";
+// مقدار مرجع: canvas در Chromium با همان فونت (وزیرمتن ۴۰۰؛ ۲۰px عنوان، ۱۴px متا)، tools/fonts/make-seo-metrics.py
+$px_ref = [
+	[ 'گیره انبری فلزی | هدیما', 182.6, 127.8 ],
+	[ 'خرید عمده اکسسوری مو؛ قیمت و مشخصات کلیپ و گیره', 449.0, 314.3 ],
+	[ 'خرید عمده گیره مو فانتزی با بهترین قیمت از هدهدلی', 418.6, 293.0 ],
+	[ "تل مو پارچه\u{200C}ای مدل پاپیونی؛ خرید اینترنتی", 319.9, 223.9 ],
+	[ 'Hair accessories wholesale | Hodhodli', 340.2, 238.1 ],
+];
+$px_worst = 0.0;
+foreach ( $px_ref as [ $px_text, $px_t, $px_m ] ) {
+	$px_worst = max( $px_worst, abs( hodima_seo_text_px( $px_text, 'title' ) - $px_t ) / $px_t, abs( hodima_seo_text_px( $px_text, 'description' ) - $px_m ) / $px_m );
+}
+hodima_ad( 'برآوردگر پیکسل PHP در برابر canvas واقعی (فونت وزیرمتن): خطا کمتر از ۵٪ روی ۵ متن فارسی/لاتین', $px_worst < 0.05, true );
+hodima_ad( 'متن خالی و فاصله‌های اضافه: صفر / هم‌ارز', [ hodima_seo_text_px( '' ), hodima_seo_text_px( "  \n " ), hodima_seo_text_px( 'کش  مو' ) === hodima_seo_text_px( 'کش مو' ) ], [ 0, 0, true ] );
+hodima_ad( 'نیم‌فاصله اتصال را قطع می‌کند و عرض ندارد (می‌رو ≠ میرو)', hodima_seo_text_px( "می\u{200C}رو" ) !== hodima_seo_text_px( 'میرو' ), true );
+hodima_ad( 'سقف‌ها یک جا: عنوان ۵۸۰/۲۹۰ در ۲۰px، متا ۹۲۰/۳۶۸ در ۱۴px', [ hodima_seo_px_limit( 'title' ), hodima_seo_px_limit( 'description' ), hodima_seo_px_limit( 'meta' ) ], [ [ 'max' => 580, 'min' => 290, 'font_px' => 20 ], [ 'max' => 920, 'min' => 368, 'font_px' => 14 ], [ 'max' => 920, 'min' => 368, 'font_px' => 14 ] ] );
+hodima_ad( 'فایل فونت مرجع کنار سئوباکس هست و جاوااسکریپت سقف را از سرور می‌گیرد (نه عدد ثابت)', [ is_file( HODIMA_SEO_DIR . '/core/seobox/assets/vazirmatn-ref.woff2' ), str_contains( (string) file_get_contents( HODIMA_SEO_DIR . '/core/seobox/admin-script.js' ), 'window.hodimaSeoPx' ), str_contains( (string) file_get_contents( HODIMA_SEO_DIR . '/core/seobox/admin-script.js' ), 'Arial, Tahoma' ) ], [ true, true, true ] ); // Arial فقط برای حالت شکست بارگذاری فونت
+hodima_ad( 'ردیف خزنده: title_px و meta_px با همان خط‌کش ذخیره می‌شود', [ (int) $cw_rows['/']['title_px'], (int) $cw_rows['/']['meta_px'] ], [ hodima_seo_text_px( 'خانه با عنوان خیلی بلند برای آزمون خزنده', 'title' ), hodima_seo_text_px( 'توضیح', 'description' ) ] );
+
+$px_t = hodima_seo_advisor_table( 'crawl_pages' );
+$px_row = static fn( string $path, int $tpx, int $mpx ): array => [ 'path' => $path, 'status' => 200, 'indexable' => 1, 'title' => 'عنوان ' . $path, 'title_len' => 45, 'meta_len' => 120, 'title_px' => $tpx, 'meta_px' => $mpx, 'h1' => 'تیتر', 'words' => 300, 'h1_count' => 1, 'inlinks' => 5, 'text_links' => 5, 'depth' => 1 ];
+foreach ( [ [ '/px-old/', 0, 0 ], [ '/px-short/', 150, 500 ], [ '/px-long/', 640, 1000 ], [ '/px-ok/', 450, 700 ] ] as [ $px_p, $px_a, $px_b ] ) {
+	$GLOBALS['wpdb']->insert( $px_t, $px_row( $px_p, $px_a, $px_b ) );
+}
+hodima_seo_advisor_crawl_map( true );
+$px_codes = static function ( string $path ): array {
+	foreach ( hodima_seo_advisor_crawl_issues() as $row ) {
+		if ( $row['path'] === $path ) {
+			return array_values( array_intersect( array_column( $row['issues'], 'code' ), [ 'title_short', 'title_long' ] ) );
+		}
+	}
+	return [];
+};
+hodima_ad( 'ایراد عنوان با پیکسل: کوتاه، بلند، سالم؛ ردیف بی‌پیکسل (خزش قدیمی) ایرادی نمی‌سازد', [ $px_codes( '/px-short/' ), $px_codes( '/px-long/' ), $px_codes( '/px-ok/' ), $px_codes( '/px-old/' ) ], [ [ 'title_short' ], [ 'title_long' ], [], [] ] );
+hodima_ad( 'سلامت عنوان/متا: ردیف بی‌پیکسل = ناشناخته (null)؛ سالم و ناسالم با پیکسل', [ hodima_seo_advisor_crawl_meta_health( '/px-old/' ), hodima_seo_advisor_crawl_meta_health( '/px-ok/' )['healthy'] ?? null, hodima_seo_advisor_crawl_meta_health( '/px-long/' )['problems'] ?? null, hodima_seo_advisor_crawl_meta_health( '/px-short/' )['problems'] ?? null ], [ null, true, [ 'عنوان بلند است', 'توضیح متا بلند است' ], [ 'عنوان کوتاه است' ] ] );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i WHERE path LIKE %s', $px_t, '/px-%' ) );
+hodima_seo_advisor_crawl_map( true );
+$px_draft_meta = hodima_seo_advisor_draft_cut_px( str_repeat( 'گیره مو فانتزی با کیفیت عالی و قیمت مناسب. ', 12 ), 'description', hodima_seo_advisor_draft_px_max( 'description' ), 90 );
+hodima_ad( 'پیش‌نویس متا: در ۹۵٪ سقف پیکسلی می‌ماند و خالی نیست', [ hodima_seo_text_px( $px_draft_meta, 'description' ) <= hodima_seo_advisor_draft_px_max( 'description' ), mb_strlen( $px_draft_meta ) > 90 ], [ true, true ] );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

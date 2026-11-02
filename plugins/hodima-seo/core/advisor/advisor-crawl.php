@@ -21,19 +21,16 @@ const HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE = 65535;
 const HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED      = 15;
 const HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED_TERM = 5;
 
-/** عنوان کوتاه‌تر / بلندتر از این (نویسه) ایراد است؛ گوگل حدود ۶۰ نویسه را نشان می‌دهد. */
-const HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN = 30;
-const HODIMA_SEO_ADVISOR_CRAWL_TITLE_MAX = 65;
+/*
+ * طول عنوان و توضیح متا با «پیکسل» سنجیده می‌شود، همان خط‌کش سئوباکس (seobox-metrics.php؛ SEO 3.5.4).
+ * تا ۳.۵.۳ نویسه بود (عنوان ۳۰ تا ۶۵، متا ۷۰ تا ۱۷۰) و ادمین در سئوباکس عدد پیکسلی دیگری می‌دید.
+ */
 
 /** پاسخ سرور کندتر از این (میلی‌ثانیه) «کند» است. */
 const HODIMA_SEO_ADVISOR_CRAWL_SLOW_MS = 2000;
 
 /** صفحه با این تعداد لینک ورودی یکتا یا کمتر «لینک ورودی کم» دارد. */
 const HODIMA_SEO_ADVISOR_CRAWL_LOW_INLINKS = 2;
-
-/** طول توضیح متا که سالم حساب می‌شود (نویسه). */
-const HODIMA_SEO_ADVISOR_CRAWL_META_MIN = 70;
-const HODIMA_SEO_ADVISOR_CRAWL_META_MAX = 170;
 
 /** صفحه‌ای با این نمایش یا بیشتر «پرنمایش» است (آمار «ایراد در صفحه‌های پرنمایش»). */
 const HODIMA_SEO_ADVISOR_CRAWL_BIG_IMPRESSIONS = 1000;
@@ -58,16 +55,16 @@ function hodima_seo_advisor_robots_no_snippet( string ...$values ): bool {
 /* ── نقشه خزش و صفحه‌های حل‌شده (برای رقابت و قاعده نرخ کلیک) ── */
 
 /** ستون‌های جدول خزش که نقشه و ردیف تک از آن می‌خوانند. */
-const HODIMA_SEO_ADVISOR_CRAWL_COLUMNS = 'path, status, indexable, reason, title_len, meta_len, inlinks, text_links, depth, score, title, h1, h2';
+const HODIMA_SEO_ADVISOR_CRAWL_COLUMNS = 'path, status, indexable, reason, title_len, meta_len, title_px, meta_px, inlinks, text_links, depth, score, title, h1, h2';
 
 /**
  * ردیف خام جدول خزش ← آرایه با نوع‌های درست.
  *
  * @param array<string, mixed> $r
- * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}
+ * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, title_px: int, meta_px: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}
  */
 function hodima_seo_advisor_crawl_map_row( array $r ): array {
-	return [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'], 'inlinks' => (int) $r['inlinks'], 'text_links' => (int) $r['text_links'], 'depth' => (int) $r['depth'], 'score' => (float) $r['score'], 'title' => (string) $r['title'], 'h1' => (string) $r['h1'], 'h2' => (string) $r['h2'] ];
+	return [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'], 'title_px' => (int) $r['title_px'], 'meta_px' => (int) $r['meta_px'], 'inlinks' => (int) $r['inlinks'], 'text_links' => (int) $r['text_links'], 'depth' => (int) $r['depth'], 'score' => (float) $r['score'], 'title' => (string) $r['title'], 'h1' => (string) $r['h1'], 'h2' => (string) $r['h2'] ];
 }
 
 /**
@@ -76,7 +73,7 @@ function hodima_seo_advisor_crawl_map_row( array $r ): array {
  * `$only`: فقط همین آدرس (کادر ویرایش یک صفحه): اگر نقشه کامل هنوز خوانده نشده، فقط یک ردیف خوانده می‌شود
  * (تا SEO 2.9.8 باز کردن کادر ویرایش هر صفحه کل جدول خزش را در حافظه می‌آورد).
  *
- * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}>
+ * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, title_px: int, meta_px: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}>
  */
 function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null ): array {
 
@@ -119,7 +116,7 @@ function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null
 /**
  * وضعیت خزش یک صفحه، یا null اگر در خزش نیست.
  *
- * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}|null
+ * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, title_px: int, meta_px: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}|null
  */
 function hodima_seo_advisor_crawl_row( string $path ): ?array {
 	return hodima_seo_advisor_crawl_map( false, $path )[ $path ] ?? null;
@@ -181,9 +178,24 @@ function hodima_seo_advisor_resolved_label( string $code ): string {
 }
 
 /**
- * طول عنوان و متا یک صفحه طبق خزش: ok (هر دو سالم)، یا فهرست ایرادها، یا null (در خزش نیست/صفحه سالم نیست).
+ * وضعیت عرض پیکسلی عنوان یا توضیح متا: short، long، ok، یا null = هنوز اندازه‌گیری نشده (ردیف خزش قدیمی؛ تا خزش بعدی ایراد ساخته نمی‌شود).
+ * طول ۰ (بدون عنوان/متا) را فراخوان جدا مدیریت می‌کند.
+ */
+function hodima_seo_advisor_crawl_px_state( int $length, int $px, string $field ): ?string {
+
+	if ( $length > 0 && $px <= 0 ) {
+		return null;
+	}
+
+	$limit = hodima_seo_px_limit( $field );
+
+	return $px < $limit['min'] ? 'short' : ( $px > $limit['max'] ? 'long' : 'ok' );
+}
+
+/**
+ * طول عنوان و متا یک صفحه طبق خزش (پیکسل): ok (هر دو سالم)، یا فهرست ایرادها، یا null (در خزش نیست/صفحه سالم نیست/هنوز پیکسلش اندازه‌گیری نشده).
  *
- * @return array{healthy: bool, title_len: int, meta_len: int, problems: list<string>}|null
+ * @return array{healthy: bool, title_px: int, meta_px: int, problems: list<string>}|null
  */
 function hodima_seo_advisor_crawl_meta_health( string $path ): ?array {
 
@@ -193,22 +205,29 @@ function hodima_seo_advisor_crawl_meta_health( string $path ): ?array {
 		return null;
 	}
 
+	$title = hodima_seo_advisor_crawl_px_state( $r['title_len'], $r['title_px'], 'title' );
+	$meta  = hodima_seo_advisor_crawl_px_state( $r['meta_len'], $r['meta_px'], 'description' );
+
+	if ( null === $title || null === $meta ) {
+		return null; // ردیف قدیمی: بدون خط‌کش پیکسلی نمی‌شود سالم/ناسالم گفت
+	}
+
 	$problems = [];
 
-	if ( $r['title_len'] < HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN ) {
+	if ( 'short' === $title ) {
 		$problems[] = 'عنوان کوتاه است';
-	} elseif ( $r['title_len'] > HODIMA_SEO_ADVISOR_CRAWL_TITLE_MAX ) {
+	} elseif ( 'long' === $title ) {
 		$problems[] = 'عنوان بلند است';
 	}
 	if ( $r['meta_len'] <= 0 ) {
 		$problems[] = 'توضیح متا ندارد';
-	} elseif ( $r['meta_len'] < HODIMA_SEO_ADVISOR_CRAWL_META_MIN ) {
+	} elseif ( 'short' === $meta ) {
 		$problems[] = 'توضیح متا کوتاه است';
-	} elseif ( $r['meta_len'] > HODIMA_SEO_ADVISOR_CRAWL_META_MAX ) {
+	} elseif ( 'long' === $meta ) {
 		$problems[] = 'توضیح متا بلند است';
 	}
 
-	return [ 'healthy' => [] === $problems, 'title_len' => $r['title_len'], 'meta_len' => $r['meta_len'], 'problems' => $problems ];
+	return [ 'healthy' => [] === $problems, 'title_px' => $r['title_px'], 'meta_px' => $r['meta_px'], 'problems' => $problems ];
 }
 
 /* ── عنوان و تیترهای رندرشده (انتشار ۴) ── */
@@ -540,10 +559,15 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 			if ( '' === $title ) {
 				$add( 'no_title' );
-			} elseif ( $tlen < HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN && ! $paged( $r ) ) { // صفحه‌بندی آرشیو (/page/2/) عنوان کوتاه آرشیو را عمدا دارد (SEO 3.3.5)
-				$add( 'title_short', sprintf( '%s نویسه', number_format_i18n( $tlen ) ) );
-			} elseif ( $tlen > HODIMA_SEO_ADVISOR_CRAWL_TITLE_MAX ) {
-				$add( 'title_long', sprintf( '%s نویسه', number_format_i18n( $tlen ) ) );
+			} else {
+				// عرض پیکسلی همان خط‌کش سئوباکس؛ ردیف قدیمی بی‌پیکسل (title_px = 0) تا خزش بعدی ایراد طولی نمی‌سازد (SEO 3.5.4)
+				$state = hodima_seo_advisor_crawl_px_state( $tlen, (int) $r['title_px'], 'title' );
+				$limit = hodima_seo_px_limit( 'title' );
+				if ( 'short' === $state && ! $paged( $r ) ) { // صفحه‌بندی آرشیو (/page/2/) عنوان کوتاه آرشیو را عمدا دارد (SEO 3.3.5)
+					$add( 'title_short', sprintf( '%1$s از %2$s پیکسل؛ حداقل %3$s', number_format_i18n( (int) $r['title_px'] ), number_format_i18n( $limit['max'] ), number_format_i18n( $limit['min'] ) ) );
+				} elseif ( 'long' === $state ) {
+					$add( 'title_long', sprintf( '%1$s از %2$s پیکسل؛ %3$s پیکسل بیشتر', number_format_i18n( (int) $r['title_px'] ), number_format_i18n( $limit['max'] ), number_format_i18n( (int) $r['title_px'] - $limit['max'] ) ) );
+				}
 			}
 
 			if ( (int) $r['meta_len'] <= 0 && ! $paged( $r ) ) { // برای صفحه‌های /page/N/ توضیح متای جدا لازم نیست (SEO 3.3.5)
