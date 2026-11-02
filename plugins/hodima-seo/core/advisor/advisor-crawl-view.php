@@ -360,6 +360,10 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $h
 									<?php if ( $has_u ) : ?>
 										<?php echo hodima_seo_advisor_url_copy( (string) $issue['url'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy ?>
 									<?php endif; ?>
+									<?php // همان جزئیات تب «کارها» (فهرست تصویر، پیش‌نویس عنوان/متا) با رندر مشترک؛ فهرست لینک‌ها پایین‌تر خودش را دارد (SEO 3.5.3) ?>
+									<?php if ( ! $issue['closed'] ) : ?>
+										<?php hodima_seo_advisor_render_issue_detail( [ 'src' => 'crawl', 'mark' => (string) $issue['code'], 'images' => (array) ( $issue['images'] ?? [] ), 'total' => (int) ( $issue['total'] ?? 0 ), 'marked' => (array) ( $issue['marked'] ?? [] ), 'targets' => [] ], (string) $row['path'] ); ?>
+									<?php endif; ?>
 									<?php if ( ! empty( $issue['items'] ) ) : ?>
 										<?php // مقصدهای لینک: آدرس کامل قابل کپی + توضیح (کد پاسخ، مقصد ریدایرکت، متن لینک) ?>
 										<ul class="hodima-advisor__crawl-items" aria-label="<?php echo esc_attr( 'مقصد لینک‌ها: ' . $info['label'] ); ?>">

@@ -3185,6 +3185,21 @@ delete_option( HODIMA_SEO_ADVISOR_IMG_MARKS_OPTION );
 $GLOBALS['wpdb']->update( $ic_t, [ 'img_noalt' => 10, 'img_empty' => -1, 'img_list' => "https://x.test/a.jpg\nhttps://x.test/b.jpg" ], [ 'path' => '/ok/' ] );
 hodima_seo_advisor_crawl_map( true );
 
+// جزئیات داخل جدول «سلامت سایت» (SEO 3.5.3): همان رندر مشترک «کارها»
+$GLOBALS['wpdb']->update( $ic_t, [ 'img_noalt' => 1, 'img_empty' => 0, 'img_list' => '[{"u":"https://x.test/wp-content/uploads/banner-a.webp","s":"missing","c":"div.category-content"}]' ], [ 'path' => '/ok/' ] );
+hodima_seo_advisor_crawl_map( true );
+$ic_crawl_opt = get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, false );
+update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => 5, 'links' => 0, 'files' => [], 'source' => 'crawler' ], false );
+wp_set_current_user( 1 );
+$_GET    = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'crawl' ];
+$ic_view = $cap( static fn() => hodima_seo_advisor_render_crawl() );
+hodima_ad( 'جدول سلامت سایت: ایراد alt زیرش فهرست «کدام تصویرها؟» با نام فایل و جایگاه دارد (همان رندر «کارها»)', [ str_contains( $ic_view, 'banner-a.webp' ), str_contains( $ic_view, 'div.category-content' ), str_contains( $ic_view, 'کدام تصویرها؟' ) ], [ true, true, true ] );
+$GLOBALS['wpdb']->update( $ic_t, [ 'img_noalt' => 10, 'img_empty' => -1, 'img_list' => "https://x.test/a.jpg\nhttps://x.test/b.jpg" ], [ 'path' => '/ok/' ] );
+hodima_seo_advisor_crawl_map( true );
+false === $ic_crawl_opt ? delete_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, $ic_crawl_opt, false );
+$_GET = [];
+wp_set_current_user( 0 );
+
 echo "=== پیش‌نویس عنوان/متا و جزئیات ایراد در «کارها» (SEO 3.3.6)\n";
 hodima_ad( 'کوتاه‌کردن تمیز: سر جمله، وگرنه آخرین فاصله؛ کوتاه‌تر از سقف دست نمی‌خورد', [ hodima_seo_advisor_draft_cut( 'سلام دنیا. خوش آمدید به سایت ما', 20, 5 ), hodima_seo_advisor_draft_cut( 'یک دو سه چهار پنج شش', 12 ), hodima_seo_advisor_draft_cut( 'کوتاه', 50 ) ], [ 'سلام دنیا.', 'یک دو سه', 'کوتاه' ] );
 $dr_long = hodima_seo_advisor_draft_title( '/x/', 'title_long', 'یک عنوان نسبتا بلند برای آزمون کوتاه‌سازی از انتها | نام دسته مورد نظر | نام سایت آزمایشی بلند' );
