@@ -160,16 +160,13 @@ function hodima_seo_advisor_render_competition( array $status ): void {
 			<input type="hidden" name="tasks" value="all">
 		<?php endif; ?>
 		<?php if ( ! $settled ) : ?>
-		<nav class="hodima-advisor__views" aria-label="نوع دستور">
-			<a class="hodima-advisor__view" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'competition', 'q' => $filters['q'] ] ) ); ?>"<?php echo '' === $filters['type'] ? ' aria-current="page"' : ''; ?>>
-				همه <span class="hodima-advisor__count"><?php echo esc_html( $n( $all['total'] ) ); ?></span>
-			</a>
-			<?php foreach ( hodima_seo_advisor_competition_types() as $type => $label ) : ?>
-				<a class="hodima-advisor__view" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'tab' => 'competition', 'ctype' => $type, 'q' => $filters['q'] ] ) ); ?>"<?php echo $type === $filters['type'] ? ' aria-current="page"' : ''; ?>>
-					<?php echo esc_html( $label ); ?> <span class="hodima-advisor__count"><?php echo esc_html( $n( $counts[ $type ] ) ); ?></span>
-				</a>
-			<?php endforeach; ?>
-		</nav>
+		<?php
+		$type_items = [ '' => [ 'همه', (int) $all['total'], hodima_seo_advisor_page_url( [ 'tab' => 'competition', 'q' => $filters['q'] ] ) ] ];
+		foreach ( hodima_seo_advisor_competition_types() as $type => $label ) {
+			$type_items[ $type ] = [ $label, (int) $counts[ $type ], hodima_seo_advisor_page_url( [ 'tab' => 'competition', 'ctype' => $type, 'q' => $filters['q'] ] ) ];
+		}
+		hodima_seo_advisor_filter_select( 'نوع دستور', $type_items, (string) $filters['type'] );
+		?>
 		<?php endif; ?>
 		<div class="hodima-advisor__search">
 			<label class="screen-reader-text" for="hodima-advisor-cq">جستجو در کلمه یا آدرس صفحه</label>

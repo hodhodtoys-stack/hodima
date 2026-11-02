@@ -114,7 +114,7 @@ function hodima_seo_advisor_render_indexing(): void {
 	$paged = min( $pages, max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط صفحه‌بندی نمایش
 	?>
 	<div class="hds-table-wrap" tabindex="0" role="region" aria-label="آدرس‌های نیازمند بررسی ایندکس">
-		<table class="widefat striped hodima-advisor__terms">
+		<table class="widefat striped hodima-advisor__terms hodima-advisor__cards">
 			<thead><tr><th scope="col">آدرس</th><th scope="col">وضعیت</th><th scope="col">آخرین خزش</th><th scope="col">canonical گوگل</th><th scope="col">کنش</th></tr></thead>
 			<tbody>
 				<?php foreach ( array_slice( $problems, ( $paged - 1 ) * HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, HODIMA_SEO_ADVISOR_HEALTH_PER_PAGE, true ) as $path => $record ) : ?>
@@ -126,10 +126,10 @@ function hodima_seo_advisor_render_indexing(): void {
 					$title  = hodima_seo_advisor_breakdown_page_title( (string) $path );
 					?>
 					<tr>
-						<th scope="row"><?php echo esc_html( $title ); ?> <?php echo hodima_seo_advisor_url_link( (string) $path ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?> <?php echo hodima_seo_advisor_task_badge( $task ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_task_badge ?></th>
+						<th scope="row"><?php echo $title !== rawurldecode( (string) $path ) ? esc_html( $title ) . ' ' : ''; // عنوان فقط وقتی با خود مسیر فرق دارد ?><?php echo hodima_seo_advisor_url_link( (string) $path ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?> <?php echo hodima_seo_advisor_task_badge( $task ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_task_badge ?></th>
 						<td><span class="<?php echo esc_attr( $info['class'] ); ?>"><?php echo esc_html( $info['label'] ); ?></span></td>
-						<td><?php echo false !== $crawl ? esc_html( hodima_seo_advisor_task_date( $crawl ) ) : '—'; ?></td>
-						<td><?php echo null !== $google ? hodima_seo_advisor_url_link( $google, 'hodima-advisor__rival-url' ) : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></td>
+						<td data-label="آخرین خزش"><?php echo false !== $crawl ? esc_html( hodima_seo_advisor_task_date( $crawl ) ) : '—'; ?></td>
+						<td data-label="canonical گوگل"><?php echo null !== $google ? hodima_seo_advisor_url_link( $google, 'hodima-advisor__rival-url' ) : '—'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?></td>
 						<td>
 							<?php if ( null === $task || ! in_array( hodima_seo_advisor_task_state( $task ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true ) ) : ?>
 								<?php hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), 'indexing', (string) $path, '' !== $title ? $title : rawurldecode( (string) $path ) ); ?>
@@ -150,14 +150,21 @@ function hodima_seo_advisor_render_indexing(): void {
 			<?php hodima_seo_ui_pager( $paged, $pages, static fn( int $i ): string => hodima_seo_advisor_page_url( [ 'tab' => 'indexing', 'tasks' => $show ? 'all' : '', 'paged' => $i > 1 ? $i : '' ] ) ); ?>
 		</div>
 	<?php endif; ?>
-	<p class="hodima-advisor__advice">بعد از رفع، «انجام دادم» را بزنید: آدرس اول صف بررسی بعدی گوگل می‌رود. ایندکس شد ← برطرف؛ گوگل دوباره خواند و هنوز نه ← با دلیلش به «کارها» ← «نیاز به کار» برمی‌گردد.</p>
+	<details class="hds-more hodima-advisor__explain">
+		<summary class="hds-more__summary">توضیح هر وضعیت و چه کنید؟</summary>
+		<div class="hds-more__body">
+			<p class="hodima-advisor__advice">بعد از رفع، «انجام دادم» را بزنید: آدرس اول صف بررسی بعدی گوگل می‌رود. ایندکس شد ← برطرف؛ گوگل دوباره خواند و هنوز نه ← با دلیلش به «کارها» ← «نیاز به کار» برمی‌گردد.</p>
+			<?php
+			foreach ( array_unique( array_map( static fn( string $path ): string => $states[ $path ], array_keys( $problems ) ) ) as $state ) {
+				$advice = hodima_seo_advisor_inspect_state_info( $state );
+				if ( '' !== $advice['advice'] ) {
+					echo '<div class="hodima-advisor__advice"><strong>' . esc_html( $advice['label'] ) . ':</strong> ' . esc_html( $advice['advice'] ) . '</div>';
+				}
+			}
+			?>
+		</div>
+	</details>
 	<?php
-	foreach ( array_unique( array_map( static fn( string $path ): string => $states[ $path ], array_keys( $problems ) ) ) as $state ) {
-		$advice = hodima_seo_advisor_inspect_state_info( $state );
-		if ( '' !== $advice['advice'] ) {
-			echo '<div class="hodima-advisor__advice"><strong>' . esc_html( $advice['label'] ) . ':</strong> ' . esc_html( $advice['advice'] ) . '</div>';
-		}
-	}
 
 	hodima_seo_ui_card_close();
 }

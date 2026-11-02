@@ -1,15 +1,10 @@
 <?php
 /**
- * ماژول «دستار سئو» — سلامت خزش: نقشه خزش، ایرادها و آمار (داده از خزنده داخلی advisor-crawler.php؛ ورود فایل Screaming Frog از 3.1.7 برداشته شد)
+ * ماژول «دستار سئو» — سلامت خزش: نقشه خزش، ایرادها و آمار
  * Path: core/advisor/advisor-crawl.php
  *
- * ورودی: دو فایل CSV با نام ثابت در پوشه امن wp-content/uploads/hodima-advisor/ (مدیر خودش با FTP/هاست
- * می‌گذارد؛ آپلود از پیشخوان نیست):
- *   internal_html.csv (Internal ← HTML) و all_inlinks.csv (Bulk Export ← Links ← All Inlinks، اختیاری).
- * داده «نرمال‌شده و مستقل از منبع» ذخیره می‌شود (جدول‌های crawl_pages و crawl_links با ستون منبع در
- * وضعیت) تا بعدا خزنده داخلی همان جدول‌ها را پر کند و قاعده‌ها دوباره نوشته نشوند.
- * فایل در حال آپلود خوانده نمی‌شود، فایل اشتباه داده قبلی را خراب نمی‌کند، خواندن خط‌به‌خط است
- * (fgetcsv؛ حافظه با اندازه فایل بالا نمی‌رود). فقط می‌خواند و پیشنهاد می‌دهد؛ چیزی را عوض نمی‌کند.
+ * داده را خزنده داخلی (advisor-crawler.php) در جدول‌های crawl_pages و crawl_links می‌نویسد؛ این فایل همان جدول‌ها را
+ * می‌خواند و ایرادها، نقشه خزش و آمار را می‌سازد. فقط می‌خواند و پیشنهاد می‌دهد؛ چیزی را در سایت عوض نمی‌کند.
  */
 
 declare(strict_types=1);
@@ -19,8 +14,8 @@ defined( 'ABSPATH' ) || exit;
 /** وضعیت آخرین خواندن (گزینه؛ autoload خاموش). */
 const HODIMA_SEO_ADVISOR_CRAWL_OPTION = 'hodima_advisor_crawl';
 
-/** خزش قدیمی‌تر از این روز «قدیمی» نشان می‌گیرد. */
-const HODIMA_SEO_ADVISOR_CRAWL_STALE_DAYS = 30;
+/** عمق ذخیره‌شده برای صفحه‌ای که از صفحه اصلی با هیچ مسیر لینکی نمی‌رسیم (SEO 3.3.5؛ ستون عمق بدون علامت است، پس -1 نشد). */
+const HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE = 65535;
 
 /** صفحه با این تعداد لینک متنی (و این تعداد با عبارت کلمه) «لینک داخلی کافی» دارد؛ دستور تمرکز را روی عنوان و متن می‌گذارد. */
 const HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED      = 15;
@@ -92,6 +87,8 @@ function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null
 	if ( $reset ) {
 		$map    = null;
 		$single = [];
+		$memo   = &hodima_seo_advisor_crawl_issues_cache();
+		$memo   = null; // ایرادها از همین جدول ساخته می‌شوند (SEO 3.4.3)
 		hodima_seo_advisor_resolved_paths( true );
 		return [];
 	}
@@ -314,7 +311,7 @@ function hodima_seo_advisor_links_evidence( ?array $links, string $term ): strin
 		}
 	}
 
-	if ( $links['depth'] >= 4 ) {
+	if ( $links['depth'] >= 4 && $links['depth'] < HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ) {
 		$text .= sprintf( ' عمق خزش %s است؛ آن را از منو یا صفحه اصلی نزدیک‌تر کنید.', $num( $links['depth'] ) );
 	}
 
@@ -357,67 +354,6 @@ function hodima_seo_advisor_competition_links_note( string $term, array $pages )
 	return sprintf( ' لینک‌های داخلی: برنده %1$s لینک با متن «%2$s» دارد در برابر %3$s لینک رقیب؛ همین لینک‌دهی را حفظ کنید.', $n( $winner['term_links'] ), $term, $n( $rival['term_links'] ) );
 }
 
-/* ── ذخیره ── */
-
-/**
- * جایگزینی کامل جدول‌های خزش در یک تراکنش؛ خطا = داده قبلی دست‌نخورده.
- *
- * @param array<string, array<string, mixed>> $pages
- * @param list<list<scalar>>                  $links
- * @return array{pages: int, links: int}|WP_Error
- */
-function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_Error {
-
-	global $wpdb;
-
-	hodima_seo_advisor_ensure_tables();
-	hodima_seo_advisor_crawl_map( true );
-
-	$page_table = hodima_seo_advisor_table( 'crawl_pages' );
-	$link_table = hodima_seo_advisor_table( 'crawl_links' );
-
-	$page_rows = [];
-	foreach ( $pages as $p ) {
-		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], $p['h1'], $p['h2'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'], (int) ( $p['no_snippet'] ?? 0 ) ];
-	}
-
-	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_table, $link_table, $page_rows, $links ): array|WP_Error {
-
-		$fail = static fn( string $what ): WP_Error => new WP_Error( 'hodima_crawl_store', sprintf( 'ذخیره %1$s ناموفق بود (%2$s)؛ داده قبلی دست‌نخورده ماند.', $what, $wpdb->last_error ) );
-
-		foreach ( [ $page_table, $link_table ] as $table ) {
-			if ( false === $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $table ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-				return $fail( 'داده' );
-			}
-		}
-
-		$insert = [
-			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet', '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d)', $page_rows, 200, 'صفحه‌ها' ],
-			[ $link_table, 'source_path, dest_path, link_position, anchor, is_follow', '(%s,%s,%s,%s,%d)', $links, 400, 'لینک‌ها' ],
-		];
-
-		foreach ( $insert as [ $table, $columns, $row_format, $rows, $size, $what ] ) {
-			$skipped = 0;
-			foreach ( array_chunk( $rows, $size ) as $chunk ) {
-				if ( false !== hodima_seo_advisor_insert( $table, $columns, $row_format, $chunk ) ) {
-					continue;
-				}
-				// دسته افتاد (معمولا ردیف تکراریِ از دید مقایسه پایگاه داده): تک‌تک؛ فقط ردیف مشکل‌دار رد می‌شود
-				foreach ( $chunk as $one ) {
-					if ( false === hodima_seo_advisor_insert( $table, $columns, $row_format, [ $one ] ) ) {
-						++$skipped;
-					}
-				}
-			}
-			if ( $skipped > max( 5, (int) ( count( $rows ) * 0.05 ) ) ) {
-				return $fail( $what );
-			}
-		}
-
-		return [ 'pages' => count( $page_rows ), 'links' => count( $links ) ];
-	} );
-}
-
 /* ── وضعیت ── */
 
 /**
@@ -450,7 +386,7 @@ const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
 	'content'  => [ 'img_alt', 'thin' ],
 	'tech'     => [ 'canonical_bad', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
 	'links'    => [ 'low_inlinks' ],
-	'orphan'   => [ 'orphan' ],
+	'orphan'   => [ 'orphan', 'island' ],
 ];
 
 /**
@@ -460,35 +396,11 @@ const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
  */
 function hodima_seo_advisor_crawl_issue_info( string $code ): array {
 
-	return [
-		'no_meta'     => [ 'label' => 'بدون توضیح متا', 'level' => 'bad', 'fix' => 'توضیح متا (۱۲۰ تا ۱۶۰ نویسه) بنویسید.' ],
-		'no_snippet'  => [ 'label' => 'متن زیر عنوان ممنوع', 'level' => 'bad', 'fix' => 'در کادر سئو همین صفحه، بخش «پیشرفته»، حداکثر طول متن (max-snippet) را روی پیش‌فرض بگذارید؛ مقدار ۰ به گوگل می‌گوید زیر عنوان متنی نشان ندهد و نرخ کلیک را کم می‌کند.' ],
-		'no_h1'       => [ 'label' => 'بدون H1', 'level' => 'warn', 'fix' => 'هر صفحه یک تیتر اصلی (H1) لازم دارد.' ],
-		'no_title'    => [ 'label' => 'بدون عنوان', 'level' => 'bad', 'fix' => 'عنوان سئو بنویسید.' ],
-		'title_short' => [ 'label' => 'عنوان کوتاه', 'level' => 'bad', 'fix' => 'عنوان را به ۴۸ تا ۶۲ نویسه برسانید.' ],
-		'title_long'  => [ 'label' => 'عنوان بلند', 'level' => 'warn', 'fix' => 'عنوان را به ۴۸ تا ۶۲ نویسه برسانید تا در گوگل بریده نشود.' ],
-		'dup_title'   => [ 'label' => 'عنوان تکراری', 'level' => 'warn', 'fix' => 'برای هر صفحه عنوان یگانه بنویسید.' ],
-		'dup_h1'      => [ 'label' => 'H1 تکراری', 'level' => 'warn', 'fix' => 'تیتر اصلی هر صفحه یگانه باشد.' ],
-		'slow'        => [ 'label' => 'کند', 'level' => 'warn', 'fix' => 'کش و سرعت سرور را بررسی کنید.' ],
-		'redirect'    => [ 'label' => 'ریدایرکت', 'level' => 'info', 'fix' => 'لینک‌های داخلی را مستقیم به آدرس مقصد بدهید.' ],
-		'noindex'     => [ 'label' => 'noindex یا canonical', 'level' => 'info', 'fix' => 'اگر این صفحه باید در گوگل باشد، noindex/canonical را بردارید.' ],
-		'broken'      => [ 'label' => 'خطای ۴۰۴/۵۰۰', 'level' => 'bad', 'fix' => 'لینک‌های داخلی به آن را درست کنید یا ریدایرکت بدهید.' ],
-		'low_inlinks' => [ 'label' => 'لینک ورودی کم', 'level' => 'warn', 'fix' => 'از صفحه‌های مرتبط (دسته، مقاله) لینک متنی بدهید.' ],
-		'link_broken'    => [ 'label' => 'لینک به صفحه خراب', 'level' => 'bad', 'fix' => 'این صفحه به آدرس‌هایی لینک می‌دهد که خطای ۴۰۴/۵۰۰ می‌دهند؛ هر لینک را به آدرس درست تغییر بدهید یا بردارید.' ],
-		'link_redirect'  => [ 'label' => 'لینک به ریدایرکت', 'level' => 'warn', 'fix' => 'این صفحه به آدرس‌هایی لینک می‌دهد که به جای دیگر می‌روند؛ لینک را مستقیم به آدرس مقصد بدهید.' ],
-		'link_noindex'   => [ 'label' => 'لینک به صفحه ایندکس‌نشدنی', 'level' => 'info', 'fix' => 'در متن این صفحه به صفحه‌ای لینک داده شده که noindex است یا به صفحه دیگری canonical دارد؛ اگر لازم نیست لینک را بردارید یا به آدرس اصلی بدهید.' ],
-		'redirect_chain' => [ 'label' => 'زنجیره ریدایرکت', 'level' => 'warn', 'fix' => 'این آدرس به آدرسی می‌رود که خودش دوباره ریدایرکت می‌شود؛ ریدایرکت را مستقیم به مقصد نهایی بدهید.' ],
-		'multi_h1'       => [ 'label' => 'چند H1', 'level' => 'warn', 'fix' => 'هر صفحه فقط یک تیتر اصلی (H1) داشته باشد؛ بقیه را H2 کنید.' ],
-		'img_alt'        => [ 'label' => 'تصویر بدون alt', 'level' => 'warn', 'fix' => 'برای تصویرهای متن صفحه توضیح کوتاه (alt) بنویسید؛ در کتابخانه رسانه یا همان‌جا که تصویر گذاشته‌اید.' ],
-		'thin'           => [ 'label' => 'متن کم', 'level' => 'info', 'fix' => 'متن اصلی این صفحه کم است؛ اگر قرار است در گوگل رتبه بگیرد توضیح کامل‌تر اضافه کنید.' ],
-		'canonical_bad'  => [ 'label' => 'canonical اشتباه', 'level' => 'bad', 'fix' => 'canonical این صفحه به آدرسی اشاره می‌کند که ۲۰۰ نیست یا noindex است؛ آن را به آدرس درست یا خود صفحه برگردانید.' ],
-		'no_canonical'   => [ 'label' => 'بدون canonical', 'level' => 'warn', 'fix' => 'صفحه آدرس canonical ندارد؛ در کادر سئو یا افزونه سئو آن را فعال کنید.' ],
-		'http_link'      => [ 'label' => 'لینک http', 'level' => 'warn', 'fix' => 'در سایت https لینک داخلی با http می‌دهد؛ لینک‌ها را https کنید تا ریدایرکت اضافه نشود.' ],
-		'sitemap_bad'    => [ 'label' => 'ایراد در نقشه سایت', 'level' => 'bad', 'fix' => 'این آدرس در نقشه سایت است ولی صفحه سالم و ایندکس‌پذیر نیست؛ از نقشه سایت بردارید یا صفحه را درست کنید.' ],
-		'not_in_sitemap' => [ 'label' => 'خارج از نقشه سایت', 'level' => 'info', 'fix' => 'صفحه سالم و ایندکس‌پذیر است ولی در نقشه سایت نیست؛ اگر باید در گوگل باشد به نقشه سایت اضافه کنید.' ],
-		'deep'           => [ 'label' => 'صفحه عمیق', 'level' => 'info', 'fix' => 'از صفحه اصلی چند کلیک فاصله دارد؛ از صفحه‌های نزدیک‌تر (دسته، مقاله) به آن لینک بدهید.' ],
-		'orphan'      => [ 'label' => 'بدون لینک ورودی', 'level' => 'bad', 'fix' => 'از دست‌کم دو صفحه مرتبط به آن لینک بدهید.' ],
-	][ $code ] ?? [ 'label' => $code, 'level' => 'info', 'fix' => '' ];
+	$record = hodima_seo_advisor_issue_catalog()[ $code ] ?? null;
+
+	return null === $record
+		? [ 'label' => $code, 'level' => 'info', 'fix' => '' ]
+		: [ 'label' => $record['label'], 'level' => $record['level'], 'fix' => hodima_seo_advisor_issue_fix( $code ) ];
 }
 
 /**
@@ -546,11 +458,19 @@ function hodima_seo_advisor_crawl_bad_links(): array {
  * ایرادهای هر صفحه خزش‌شده، با نمایش گوگل (از داده Search Console)، پرنمایش‌ترین اول.
  * ایرادهای ریدایرکت/noindex/خطا فقط وقتی می‌آیند که صفحه نمایش یا لینک ورودی داشته باشد.
  *
- * @return list<array{path: string, impressions: int, position: float, inlinks: int, text_links: int, issues: list<array{code: string, detail: string, url: string}>}>
+ * @return list<array{path: string, impressions: int, position: float, inlinks: int, text_links: int, issues: list<array{code: string, detail: string, url: string, items: list<array{path: string, note: string}>, images?: list<string>, total?: int}>}>
  */
 function hodima_seo_advisor_crawl_issues(): array {
 
 	global $wpdb;
+
+	// یک بار در هر درخواست (SEO 3.4.3): «کارها»، «سلامت سایت»، امتیاز و سنجش کارها هر کدام کل جدول خزش را از نو می‌خواندند
+	// (پایان دور خزش دو بار پشت‌سرهم). با خزش یا دریافت تازه (hodima_seo_advisor_crawl_map(true)) کش دور ریخته می‌شود.
+	$memo = &hodima_seo_advisor_crawl_issues_cache();
+
+	if ( null !== $memo ) {
+		return $memo;
+	}
 
 	$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare(
@@ -567,9 +487,12 @@ function hodima_seo_advisor_crawl_issues(): array {
 	$paged  = static fn( array $r ): bool => 1 === preg_match( '#/page/\d+/?$#', (string) $r['path'] );
 	$titles = [];
 	$h1s    = [];
+	// عنوان در ۱۹۱ نویسه بریده ذخیره می‌شود: برای عنوان بریده‌شده طول واقعی هم در کلید می‌آید تا دو عنوان بلند با ابتدای یکسان «تکراری» نشوند (SEO 3.4.7)
+	$title_key = static fn( string $title, int $length ): string => mb_strtolower( $title ) . ( mb_strlen( $title ) >= HODIMA_SEO_ADVISOR_KEY_LENGTH ? '|' . $length : '' );
 	foreach ( $rows as $r ) {
 		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] && ! $paged( $r ) ) {
-			$titles[ mb_strtolower( (string) $r['title'] ) ] = ( $titles[ mb_strtolower( (string) $r['title'] ) ] ?? 0 ) + 1;
+			$tk            = $title_key( (string) $r['title'], (int) $r['title_len'] );
+			$titles[ $tk ] = ( $titles[ $tk ] ?? 0 ) + 1;
 			$h1s[ mb_strtolower( (string) $r['h1'] ) ]       = ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) + 1;
 		}
 	}
@@ -590,10 +513,10 @@ function hodima_seo_advisor_crawl_issues(): array {
 		$impressions = (int) $r['impressions'];
 		$inlinks     = (int) $r['inlinks'];
 		$path        = (string) $r['path'];
-		$known       = (int) $r['words'] >= 0; // ستون‌های خزنده داخلی؛ فایل Screaming Frog آن‌ها را ندارد (-1)
+		$known       = (int) $r['words'] >= 0; // ستون‌های خزنده داخلی؛ ردیف قدیمی که پیش از خزنده داخلی ثبت شده آن‌ها را ندارد (-1)
 		$issues      = [];
-		$add         = static function ( string $code, string $detail = '', string $url = '', array $items = [] ) use ( &$issues ): void {
-			$issues[] = [ 'code' => $code, 'detail' => $detail, 'url' => $url, 'items' => $items ]; // url: آدرس مرتبط (مقصد ریدایرکت)؛ items: مقصدهای لینک (مسیر + توضیح) برای جزء آدرس کامل + کپی
+		$add         = static function ( string $code, string $detail = '', string $url = '', array $items = [], array $extra = [] ) use ( &$issues ): void {
+			$issues[] = $extra + [ 'code' => $code, 'detail' => $detail, 'url' => $url, 'items' => $items ]; // url: آدرس مرتبط (مقصد ریدایرکت)؛ items: مقصدهای لینک (مسیر + توضیح) برای جزء آدرس کامل + کپی
 		};
 
 		// نقشه سایت: آدرسی که در نقشه است باید ۲۰۰ و ایندکس‌پذیر باشد (هر وضعیتی، حتی ریدایرکت و ۴۰۴)
@@ -615,13 +538,13 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 			if ( '' === $title ) {
 				$add( 'no_title' );
-			} elseif ( $tlen < HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN ) {
+			} elseif ( $tlen < HODIMA_SEO_ADVISOR_CRAWL_TITLE_MIN && ! $paged( $r ) ) { // صفحه‌بندی آرشیو (/page/2/) عنوان کوتاه آرشیو را عمدا دارد (SEO 3.3.5)
 				$add( 'title_short', sprintf( '%s نویسه', number_format_i18n( $tlen ) ) );
 			} elseif ( $tlen > HODIMA_SEO_ADVISOR_CRAWL_TITLE_MAX ) {
 				$add( 'title_long', sprintf( '%s نویسه', number_format_i18n( $tlen ) ) );
 			}
 
-			if ( (int) $r['meta_len'] <= 0 ) {
+			if ( (int) $r['meta_len'] <= 0 && ! $paged( $r ) ) { // برای صفحه‌های /page/N/ توضیح متای جدا لازم نیست (SEO 3.3.5)
 				$add( 'no_meta' );
 			}
 			if ( 1 === (int) ( $r['no_snippet'] ?? 0 ) ) {
@@ -630,8 +553,8 @@ function hodima_seo_advisor_crawl_issues(): array {
 			if ( '' === (string) $r['h1'] ) {
 				$add( 'no_h1' );
 			}
-			if ( '' !== $title && ! $paged( $r ) && ( $titles[ mb_strtolower( $title ) ] ?? 0 ) > 1 ) {
-				$add( 'dup_title', sprintf( 'در %s صفحه', number_format_i18n( $titles[ mb_strtolower( $title ) ] ) ) );
+			if ( '' !== $title && ! $paged( $r ) && ( $titles[ $title_key( $title, $tlen ) ] ?? 0 ) > 1 ) {
+				$add( 'dup_title', sprintf( 'در %s صفحه', number_format_i18n( $titles[ $title_key( $title, $tlen ) ] ) ) );
 			}
 			if ( '' !== (string) $r['h1'] && ! $paged( $r ) && ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) > 1 ) {
 				$add( 'dup_h1', sprintf( 'در %s صفحه', number_format_i18n( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ) ) );
@@ -660,7 +583,8 @@ function hodima_seo_advisor_crawl_issues(): array {
 					$add( 'multi_h1', sprintf( '%s تیتر H1', $n( (int) $r['h1_count'] ) ) );
 				}
 				if ( (int) $r['img_noalt'] > 0 ) {
-					$add( 'img_alt', sprintf( '%s تصویر', $n( (int) $r['img_noalt'] ) ) );
+					// images: آدرس تصویرها (تا ۸) برای فهرست «کدام تصویرها؟»؛ total: شمار همه تصویرهای بدون alt (SEO 3.3.6)
+					$add( 'img_alt', sprintf( '%s تصویر', $n( (int) $r['img_noalt'] ) ), '', [], [ 'images' => array_values( array_filter( explode( "\n", (string) ( $r['img_list'] ?? '' ) ) ) ), 'total' => (int) $r['img_noalt'] ] );
 				}
 				if ( (int) $r['http_links'] > 0 ) {
 					$add( 'http_link', sprintf( '%s لینک', $n( (int) $r['http_links'] ) ) );
@@ -668,7 +592,13 @@ function hodima_seo_advisor_crawl_issues(): array {
 				if ( '' === (string) $r['canonical'] ) {
 					$add( 'no_canonical' );
 				}
-				if ( '' !== (string) $r['kind'] && ! taxonomy_exists( (string) $r['kind'] ) && '/' !== $path && ! $paged( $r ) && (int) $r['words'] < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS ) {
+				// نوع صفحه از داده گوگل می‌آید و صفحه بدون نمایش (همان‌هایی که محتوای کمشان مهم‌تر است) نوع ندارد: فقط برای
+				// نامزدهای «محتوای کم» با روتر شناخته می‌شود (SEO 3.4.5؛ قبلا فقط صفحه‌های دیده‌شده در گوگل بررسی می‌شد)
+				$kind = (string) $r['kind'];
+				if ( '' === $kind && (int) $r['words'] < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS && '/' !== $path && ! $paged( $r ) ) {
+					$kind = hodima_seo_advisor_classify( $path )['kind'];
+				}
+				if ( '' !== $kind && ! taxonomy_exists( $kind ) && '/' !== $path && ! $paged( $r ) && (int) $r['words'] < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS ) {
 					$add( 'thin', sprintf( '%s کلمه', $n( (int) $r['words'] ) ) );
 				}
 				if ( $sitemap && ! isset( $sitemap[ $path ] ) && ! $paged( $r ) ) {
@@ -676,7 +606,12 @@ function hodima_seo_advisor_crawl_issues(): array {
 				}
 			}
 
-			if ( (int) $r['depth'] >= HODIMA_SEO_ADVISOR_CRAWL_DEEP ) {
+			if ( (int) $r['depth'] === HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ) {
+				// لینک ورودی دارد (وگرنه «بدون لینک ورودی» است) ولی از صفحه اصلی نمی‌رسیم: جزیره (SEO 3.3.5)
+				if ( $inlinks > 0 && '/' !== $path && ! $paged( $r ) ) {
+					$add( 'island', sprintf( '%s لینک ورودی، همه از صفحه‌های جدا از سایت', $n( $inlinks ) ) );
+				}
+			} elseif ( (int) $r['depth'] >= HODIMA_SEO_ADVISOR_CRAWL_DEEP ) {
 				$add( 'deep', sprintf( '%s کلیک از صفحه اصلی', $n( (int) $r['depth'] ) ) );
 			}
 		} elseif ( $impressions > 0 || $inlinks > 0 ) {
@@ -711,7 +646,18 @@ function hodima_seo_advisor_crawl_issues(): array {
 
 	usort( $out, static fn( array $a, array $b ): int => [ $b['impressions'], $a['path'] ] <=> [ $a['impressions'], $b['path'] ] );
 
+	$memo = $out;
+
 	return $out;
+}
+
+/** کش درخواست جاری ایرادهای خزش (مرجع تا reset بتواند دورش بریزد).
+ *
+ * @return list<array<string, mixed>>|null
+ */
+function &hodima_seo_advisor_crawl_issues_cache(): ?array {
+	static $cache = null;
+	return $cache;
 }
 
 /**

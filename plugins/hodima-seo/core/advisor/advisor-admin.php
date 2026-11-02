@@ -175,15 +175,16 @@ function hodima_seo_advisor_back_url(): string {
 	return is_string( $back ) && '' !== $back ? $back : hodima_seo_advisor_page_url();
 }
 
-function hodima_seo_advisor_handle_refresh(): void {
+/**
+ * دریافت داده گوگل (کنش «اجرا همین حالا»)؛ هم فرم admin-post و هم ایجکس نوار پیشرفت از همین استفاده می‌کنند (SEO 3.4.8).
+ *
+ * @return array{0: string, 1: string} [نوع پیام (success|error)، HTML پیام]
+ */
+function hodima_seo_advisor_do_refresh( int $days ): array {
 
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
-	}
+	$html = '';
+	$type = 'success';
 
-	check_admin_referer( 'hodima_advisor_refresh' );
-
-	$days = isset( $_POST['days'] ) ? (int) $_POST['days'] : 0;
 	if ( in_array( $days, HODIMA_SEO_ADVISOR_DAYS, true ) ) {
 		$settings         = get_option( HODIMA_SEO_ADVISOR_SETTINGS_OPTION, [] );
 		$settings         = is_array( $settings ) ? $settings : [];
@@ -199,20 +200,40 @@ function hodima_seo_advisor_handle_refresh(): void {
 	$result = hodima_seo_advisor_refresh( true, (float) HODIMA_SEO_ADVISOR_MANUAL_BUDGET );
 
 	if ( is_wp_error( $result ) ) {
-		hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $result->get_error_message() ), 'error' );
+		$html = '<strong>دستار سئو:</strong> ' . esc_html( $result->get_error_message() );
+		$type = 'error';
 	} else {
 		$extra   = hodima_seo_advisor_refresh_extras();
 		$status  = hodima_seo_advisor_status();
 		$pending = hodima_seo_advisor_pipeline_pending();
-		hodima_admin_flash(
-			// تا پیشنهادها در پس‌زمینه ساخته نشده‌اند، شمار «پیشنهاددار» هنوز عدد دریافت قبلی است و گفته نمی‌شود
-			( $pending
-				? sprintf( '<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد (%2$s آدرس). ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.', esc_html( number_format_i18n( $status['days'] ) ), esc_html( number_format_i18n( $status['pages'] ) ) )
+		// تا پیشنهادها در پس‌زمینه ساخته نشده‌اند، شمار «پیشنهاددار» هنوز عدد دریافت قبلی است و گفته نمی‌شود
+		$html = ( $pending
+				? sprintf(
+					'<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد (%2$s آدرس). %3$s',
+					esc_html( number_format_i18n( $status['days'] ) ),
+					esc_html( number_format_i18n( $status['pages'] ) ),
+					hodima_seo_advisor_cron_stalled()
+						? 'ساخت پیشنهادها و بقیه تحلیل‌ها هنوز کامل نشده و کرون سایت اجرا نمی‌کند؛ در تب «خزش و داده» کارت «ساخت پیشنهادها» را پیدا کنید و «اجرا همین حالا» را بزنید.'
+						: 'ساخت پیشنهادها و بقیه تحلیل‌ها در پس‌زمینه ادامه دارد؛ چند دقیقه بعد صفحه را تازه کنید.'
+				)
 				: sprintf( '<strong>دستار سئو:</strong> داده %1$s روز اخیر گرفته شد؛ %2$s آدرس بررسی و برای %3$s آدرس پیشنهاد ساخته شد.', esc_html( number_format_i18n( $status['days'] ) ), esc_html( number_format_i18n( $status['pages'] ) ), esc_html( number_format_i18n( $status['advised'] ) ) )
-			) . ( $extra ? ' ' . esc_html( implode( ' ', $extra ) ) : '' ),
-			'success'
-		);
+			) . ( $extra ? ' ' . esc_html( implode( ' ', $extra ) ) : '' );
+		$type = 'success';
 	}
+
+	return [ $type, $html ];
+}
+
+function hodima_seo_advisor_handle_refresh(): void {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'اجازه این کار را ندارید.', 'دسترسی ندارید', [ 'response' => 403 ] );
+	}
+
+	check_admin_referer( 'hodima_advisor_refresh' );
+
+	[ $type, $html ] = hodima_seo_advisor_do_refresh( isset( $_POST['days'] ) ? (int) $_POST['days'] : 0 );
+	hodima_admin_flash( $html, $type );
 
 	$tab = isset( $_POST['tab'] ) ? sanitize_key( (string) $_POST['tab'] ) : '';
 	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => in_array( $tab, hodima_seo_advisor_tab_keys(), true ) && 'opportunities' !== $tab ? $tab : '' ] ) );
@@ -230,10 +251,20 @@ function hodima_seo_advisor_refresh_extras(): array {
 	$out = [];
 
 	if ( function_exists( 'hodima_seo_advisor_inspect_pending' ) && (bool) apply_filters( 'hodima_seo_advisor_inspect_enabled', true ) && hodima_seo_advisor_inspect_pending() > 0 ) {
-		if ( ! wp_next_scheduled( HODIMA_SEO_ADVISOR_INSPECT_CRON ) || wp_next_scheduled( HODIMA_SEO_ADVISOR_INSPECT_CRON ) > time() + 60 ) {
-			wp_schedule_single_event( time() + 30, HODIMA_SEO_ADVISOR_INSPECT_CRON );
+		$next = (int) wp_next_scheduled( HODIMA_SEO_ADVISOR_INSPECT_CRON );
+
+		if ( $next > 0 && $next < time() - 5 * MINUTE_IN_SECONDS ) {
+			// رویداد بررسی ایندکس از موعدش گذشته = کرون سایت اجرا نمی‌کند؛ «شروع شد» نگوییم و چند آدرس را همین‌جا بررسی کنیم (۳.۲.۶)
+			$summary = hodima_seo_advisor_inspect_batch( 5 );
+			$out[]   = '' === $summary['error']
+				? sprintf( 'کرون سایت اجرا نمی‌کند؛ %s آدرس همین‌جا از نظر ایندکس بررسی شد (بقیه را در تب «خزش و داده» با «اجرا همین حالا» ادامه دهید).', number_format_i18n( $summary['checked'] ) )
+				: sprintf( 'کرون سایت اجرا نمی‌کند و بررسی ایندکس هم نشد: %s', $summary['error'] );
+		} else {
+			if ( ! $next || $next > time() + 60 ) {
+				wp_schedule_single_event( time() + 30, HODIMA_SEO_ADVISOR_INSPECT_CRON );
+			}
+			$out[] = 'بررسی ایندکس یک دسته از آدرس‌ها در پس‌زمینه شروع شد.';
 		}
-		$out[] = 'بررسی ایندکس یک دسته از آدرس‌ها در پس‌زمینه شروع شد.';
 	}
 
 	return $out;
@@ -468,7 +499,7 @@ function hodima_seo_advisor_handle_csv(): void {
  * @return list<string>
  */
 function hodima_seo_advisor_tab_keys(): array {
-	return [ 'opportunities', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'settings' ];
+	return [ 'opportunities', 'overview', 'competition', 'terms', 'health', 'crawl', 'indexing', 'tasks', 'jobs', 'settings' ];
 }
 
 /**
@@ -502,46 +533,102 @@ function hodima_seo_advisor_legacy_tab_redirect(): void {
 	exit;
 }
 
-/**
- * تب‌های بالای صفحه: پیشنهادها | صفحه‌های هم‌کلمه | آمار جستجو | آدرس‌های خراب | ایرادهای فنی | وضعیت در گوگل | کارها | تنظیمات.
- */
+/** تب‌های بالای صفحه: «کارها»، «کارهای انجام‌شده» (SEO 3.3.4)، «خزش و داده» (3.3.9) و «تنظیمات». */
 function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true ): void {
 
+	// دو تب بیشتر نیست (SEO 3.3.0): «کارها» (همه ایرادها در یک فهرست) و «تنظیمات»؛ نماهای قدیمی با ?tab= هنوز باز می‌شوند
+	unset( $with_tabs );
 	$tabs = [
-		'opportunities' => [ 'پیشنهادها', hodima_seo_advisor_page_url() ],
-		'competition'   => [ 'صفحه‌های هم‌کلمه', hodima_seo_advisor_page_url( [ 'tab' => 'competition' ] ) ],
-		// «کلمه‌های جستجو» + «روند ماه‌به‌ماه» + رتبه بد موبایل یک تب شد؛ «موبایل و کشور» حذف (SEO 3.1.3)
-		'terms'         => [ 'آمار جستجو', hodima_seo_advisor_page_url( [ 'tab' => 'terms' ] ) ],
-		'health'        => [ 'آدرس‌های خراب', hodima_seo_advisor_page_url( [ 'tab' => 'health' ] ) ],
-		'crawl'         => [ 'ایرادهای فنی', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
-		'indexing'      => [ 'وضعیت در گوگل', hodima_seo_advisor_page_url( [ 'tab' => 'indexing' ] ) ],
-		// «در دست انجام» و «انجام‌شده» (دو تب از SEO 2.9.4) از ۳.۱.۳ یک تب با فیلتر وضعیت‌اند
-		'tasks'         => [ 'کارها', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
-		// تنظیمات تب خودش است (SEO 2.9.3)؛ قبلا پنلی بود که روی هر تب باز می‌شد
-		'settings'      => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
+		'overview' => [ 'کارها', hodima_seo_advisor_page_url() ],
+		'tasks'    => [ 'کارهای انجام‌شده', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
+		'crawl'    => [ 'سلامت سایت', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
+		'jobs'     => [ 'خزش و داده', hodima_seo_advisor_page_url( [ 'tab' => 'jobs' ] ) ],
+		'settings' => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
 	];
+	$icons = [ 'overview' => 'dashicons-list-view', 'tasks' => 'dashicons-yes-alt', 'crawl' => 'dashicons-heart', 'jobs' => 'dashicons-cloud', 'settings' => 'dashicons-admin-generic' ];
+	$score = function_exists( 'hodima_seo_advisor_score_history' ) ? hodima_seo_advisor_score_history() : [];
+	$score = $score ? (int) end( $score )['score'] : -1; // آخرین نمره ثبت‌شده دور خزش (ارزان؛ بدون حساب دوباره)
+	$open  = function_exists( 'hodima_seo_advisor_task_counts' ) ? (int) ( hodima_seo_advisor_task_counts()['open'] ?? 0 ) : 0; // کار انجام‌شده‌ای که برگشته یا بی‌اثر است؛ صفر = شمار نشان داده نمی‌شود
 
-	// بدون داده فقط تب اول و «تنظیمات» معنا دارند (بقیه خالی‌اند)
-	if ( ! $with_tabs ) {
-		$tabs = array_intersect_key( $tabs, [ 'opportunities' => true, 'settings' => true ] );
-	}
-
+	// تب‌های زیرخط‌دار (نه دکمه پر) تا با چیپ‌های فیلتر اشتباه نشوند؛ در «کارها» خط «گرفتن داده تازه» همین ردیف است (SEO 3.3.1)
 	echo '<div class="hodima-advisor__tabrow">';
-	if ( $tabs ) {
-		echo '<nav class="hodima-advisor__views hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
-		foreach ( $tabs as $key => [ $label, $url ] ) {
-			printf(
-				'<a class="hodima-advisor__view%1$s" href="%2$s"%3$s>%4$s%5$s</a>',
-				'settings' === $key ? ' hodima-advisor__view--settings' : '',
-				esc_url( $url ),
-				$key === $active ? ' aria-current="page"' : '',
-				'settings' === $key ? '<span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>' : '',
-				esc_html( $label )
-			);
-		}
-		echo '</nav>';
+	echo '<nav class="hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
+	foreach ( $tabs as $key => [ $label, $url ] ) {
+		// تب «کارها» برای تب‌های قدیمی هم فعال می‌ماند (آدرس‌های ?tab= هنوز باز می‌شوند)
+		$current = 'overview' === $key ? ! in_array( $active, [ 'tasks', 'crawl', 'jobs', 'settings' ], true ) : $key === $active;
+		printf(
+			'<a class="hodima-advisor__tab" href="%1$s"%2$s><span class="dashicons %3$s" aria-hidden="true"></span>%4$s%5$s</a>',
+			esc_url( $url ),
+			$current ? ' aria-current="page"' : '',
+			esc_attr( $icons[ $key ] ),
+			esc_html( $label ),
+			'tasks' === $key && $open > 0 ? sprintf( ' <span class="hodima-advisor__tab-n" title="کار انجام‌شده‌ای که برگشته یا بی‌اثر بوده">%s</span>', esc_html( number_format_i18n( $open ) ) ) : ( 'crawl' === $key && $score >= 0 ? sprintf( ' <span class="hodima-advisor__tab-n hodima-advisor__tab-n--%1$s" title="نمره سلامت سایت از ۱۰۰">%2$s</span>', esc_attr( hodima_seo_advisor_score_grade( $score )['level'] ), esc_html( number_format_i18n( $score ) ) ) : '' )
+		);
+	}
+	echo '</nav>';
+	if ( 'overview' === $active ) {
+		hodima_seo_advisor_render_refresh_strip();
 	}
 	echo '</div>';
+
+	if ( ! in_array( $active, [ 'overview', 'tasks', 'crawl', 'jobs', 'settings' ], true ) ) {
+		printf( '<p class="hodima-advisor__back"><a href="%1$s">برگشت به فهرست کارها</a></p>', esc_url( hodima_seo_advisor_page_url() ) );
+	}
+}
+
+/**
+ * منوی کشویی فیلتر به‌جای ردیف چیپ (SEO 3.2.8): هر گزینه آدرس خودش را دارد و با انتخاب می‌رود؛ بدون جاوااسکریپت
+ * همان چیپ‌های قبلی (پیوند ساده) داخل noscript می‌آیند.
+ *
+ * @param string                                      $label   برچسب منو (مثلا «نوع ایراد»)
+ * @param array<string, array{0:string,1:int,2:string}> $items   کلید ← [متن، شمار، آدرس]
+ * @param string                                      $current کلید گزینه فعلی
+ */
+function hodima_seo_advisor_filter_select( string $label, array $items, string $current ): void {
+	?>
+	<label class="hodima-advisor__filter">
+		<span class="screen-reader-text"><?php echo esc_html( $label ); ?></span>
+		<select class="hds-input" aria-label="<?php echo esc_attr( $label ); ?>" onchange="window.location.href=this.value">
+			<?php foreach ( $items as $key => [ $text, $count, $url ] ) : ?>
+				<option value="<?php echo esc_url( $url ); ?>"<?php selected( (string) $key, $current ); ?>><?php echo esc_html( sprintf( '%1$s (%2$s)', $text, number_format_i18n( $count ) ) ); ?></option>
+			<?php endforeach; ?>
+		</select>
+	</label>
+	<noscript>
+		<nav class="hodima-advisor__views" aria-label="<?php echo esc_attr( $label ); ?>">
+			<?php foreach ( $items as $key => [ $text, $count, $url ] ) : ?>
+				<a class="hodima-advisor__view" href="<?php echo esc_url( $url ); ?>"<?php echo (string) $key === $current ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $text ); ?> <span class="hodima-advisor__count"><?php echo esc_html( number_format_i18n( $count ) ); ?></span></a>
+			<?php endforeach; ?>
+		</nav>
+	</noscript>
+	<?php
+}
+
+/**
+ * ردیف دکمه‌های فیلتر به‌جای منوی کشویی (SEO 3.3.1): هر نوع یک پیوند با شمار؛ بدون جاوااسکریپت هم کار می‌کند.
+ * فقط صفحه «کارها» از آن استفاده می‌کند؛ فیلترهای تب‌های قدیمی هنوز منو دارند (hodima_seo_advisor_filter_select).
+ *
+ * @param string                                      $label   برچسب خوانشگر صفحه (مثلا «نوع ایراد»)
+ * @param array<string, array{0:string,1:int,2:string}> $items   کلید ← [متن، شمار، آدرس]
+ * @param string                                      $current کلید گزینه فعلی
+ * @param array{small?: bool, caption?: string}       $opts    small = دکمه‌های کوچک‌تر (ردیف دوم)؛ caption = برچسب دیدنی اول ردیف
+ */
+function hodima_seo_advisor_filter_chips( string $label, array $items, string $current, array $opts = [] ): void {
+	$small   = ! empty( $opts['small'] );
+	$caption = (string) ( $opts['caption'] ?? '' );
+	?>
+	<nav class="hodima-advisor__chips<?php echo $small ? ' hodima-advisor__chips--sm' : ''; ?>" aria-label="<?php echo esc_attr( $label ); ?>">
+		<?php if ( '' !== $caption ) : ?>
+			<span class="hodima-advisor__chips-caption" aria-hidden="true"><?php echo esc_html( $caption ); ?></span>
+		<?php endif; ?>
+		<?php foreach ( $items as $key => [ $text, $count, $url ] ) : ?>
+			<a class="hodima-advisor__chip" href="<?php echo esc_url( $url ); ?>"<?php echo (string) $key === $current ? ' aria-current="true"' : ''; ?>>
+				<span><?php echo esc_html( $text ); ?></span>
+				<span class="hodima-advisor__chip-n"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
+			</a>
+		<?php endforeach; ?>
+	</nav>
+	<?php
 }
 
 function hodima_seo_advisor_render_admin(): void {
@@ -558,7 +645,8 @@ function hodima_seo_advisor_render_admin(): void {
 	$tab = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
 	$tab = ! empty( $_GET['settings'] ) ? 'settings' : $tab; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- پیوند قدیمی settings=1
 	$tab = HODIMA_SEO_ADVISOR_LEGACY_TABS[ $tab ][0] ?? $tab; // پیوند قدیمی بدون ریدایرکت (فراخوانی مستقیم)؛ در پیشخوان ریدایرکت پیش‌تر انجام شده
-	$tab = ( $has_data || 'settings' === $tab ) && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : 'opportunities';
+	$tab = '' === $tab ? 'overview' : $tab; // صفحه شروع: فهرست واحد «کارها» (SEO 3.3.0)
+	$tab = ( $has_data || in_array( $tab, [ 'settings', 'jobs', 'crawl' ], true ) ) && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : ( $has_data ? 'overview' : 'opportunities' );
 	$tab = $has_key ? $tab : 'settings'; // بدون کلید اولین کار وارد کردن کلید است
 
 	hodima_seo_ui_open( [
@@ -572,15 +660,7 @@ function hodima_seo_advisor_render_admin(): void {
 		wp_admin_notice( '<strong>آخرین دریافت داده ناموفق بود:</strong> ' . esc_html( $status['error'] ), [ 'type' => 'error', 'additional_classes' => [ 'inline' ] ] ); // بدون وابستگی به Core
 	}
 
-	$caps  = hodima_seo_advisor_caps();
-	$notes = array_filter( [
-		$caps['fetch'] ? sprintf( 'داده سرچ کنسول از سقف %s ردیف گزارش بیشتر بود و بقیه نیامد؛ آدرس‌ها یا کلمه‌های کم‌نمایش در دستار نیستند.', number_format_i18n( HODIMA_SEO_ADVISOR_FETCH_PAGES * 25000 ) ) : '',
-		$caps['analyze'] ? sprintf( 'فقط %s آدرس پرنمایش‌تر برای پیشنهاد بررسی می‌شوند و بقیه پیشنهاد ندارند.', number_format_i18n( HODIMA_SEO_ADVISOR_ANALYZE_LIMIT ) ) : '',
-		$caps['classify'] > 0 ? sprintf( '%1$s آدرس کم‌نمایش (بعد از %2$s آدرس برتر) نوع و عنوان نگرفتند؛ پیشنهاد متنی و تحلیل دوباره هنگام ذخیره برایشان کار نمی‌کند.', number_format_i18n( $caps['classify'] ), number_format_i18n( HODIMA_SEO_ADVISOR_CLASSIFY_LIMIT ) ) : '',
-	] );
-	if ( $has_data && $notes ) {
-		wp_admin_notice( '<strong>بخشی از داده بریده شده است:</strong> ' . esc_html( implode( ' ', $notes ) ), [ 'type' => 'warning', 'additional_classes' => [ 'inline' ] ] ); // اعلان خود وردپرس: صفحه به Core وابسته نشود
-	}
+	hodima_seo_advisor_cron_notice( $tab ); // فقط وقتی کرون عقب است (تب‌های پیشنهادها و ایرادهای فنی)
 
 	hodima_seo_ui_body_open();
 
@@ -588,13 +668,19 @@ function hodima_seo_advisor_render_admin(): void {
 	$empty = ! $has_data;
 
 	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
-	if ( 'settings' !== $tab ) {
+	hodima_seo_advisor_render_tabs( $tab, $has_data );
+	if ( ! in_array( $tab, [ 'overview', 'tasks', 'crawl', 'jobs', 'settings' ], true ) ) {
 		hodima_seo_advisor_render_toolbar( $tab );
 	}
-	hodima_seo_advisor_render_tabs( $tab, $has_data );
+
+	if ( 'jobs' === $tab ) {
+		hodima_seo_advisor_render_jobs(); // کارت هر کار خودکار: داده گوگل، خزنده، ایندکس، پیشنهادها (SEO 3.3.9)
+		hodima_seo_ui_close();
+		return;
+	}
 
 	if ( 'settings' === $tab ) {
-		hodima_seo_advisor_render_settings( $has_data );
+		hodima_seo_advisor_render_settings( $has_data ); // کلید، آستانه پیشنهادها، پاک‌کردن داده؛ زمان‌بندی کارها در تب «خزش و داده»
 		hodima_seo_ui_close();
 		return;
 	}
@@ -604,6 +690,7 @@ function hodima_seo_advisor_render_admin(): void {
 			'terms'     => hodima_seo_advisor_render_terms( $status ),
 			'health'    => hodima_seo_advisor_render_health( $status ),
 			'crawl'     => hodima_seo_advisor_render_crawl(),
+			'overview'  => hodima_seo_advisor_render_overview(),
 			'indexing'  => hodima_seo_advisor_render_indexing(),
 			'tasks'     => hodima_seo_advisor_render_tasks(),
 			default     => hodima_seo_advisor_render_competition( $status ),
@@ -622,8 +709,8 @@ function hodima_seo_advisor_render_admin(): void {
 		// فقط صفحه‌هایی که کار باز دارند؛ تمام‌علامت‌خورده‌ها جدا گفته می‌شوند (همان فهرست پیش‌فرض)
 		[ 'label' => 'صفحه با فرصت', 'value' => $empty ? '—' : esc_html( $n( max( 0, $totals['advised'] - $handled_n ) ) ), 'sub' => $handled_n > 0 ? esc_html( sprintf( '+ %s صفحه با همه کارها علامت‌خورده', $n( $handled_n ) ) ) : '', 'empty' => $empty ],
 		[ 'label' => 'نمایش در گوگل', 'value' => $empty ? '—' : esc_html( $n( $totals['impressions'] ) ), 'sub' => $empty ? '' : esc_html( sprintf( '%s روز اخیر', $n( $status['days'] ) ) ), 'empty' => $empty ],
-		[ 'label' => 'کلیک', 'value' => $empty ? '—' : esc_html( $n( $totals['clicks'] ) ), 'empty' => $empty ],
-		[ 'label' => 'میانگین رتبه', 'value' => $empty ? '—' : esc_html( number_format_i18n( $totals['position'], 1 ) ), 'empty' => $empty ],
+		[ 'label' => 'کلیک', 'value' => $empty ? '—' : esc_html( $n( $totals['clicks'] ) ), 'sub' => $empty ? '' : esc_html( sprintf( '%s روز اخیر', $n( $status['days'] ) ) ), 'empty' => $empty ],
+		[ 'label' => 'میانگین رتبه', 'value' => $empty ? '—' : esc_html( number_format_i18n( $totals['position'], 1 ) ), 'sub' => $empty ? '' : 'عدد کمتر بهتر است', 'empty' => $empty ],
 	] );
 
 	if ( ! $has_key ) {
@@ -681,7 +768,8 @@ function hodima_seo_advisor_render_toolbar( string $tab = '' ): void {
 				<span class="dashicons dashicons-update" aria-hidden="true"></span> گرفتن داده تازه
 			</button>
 		</form>
-		<p class="hodima-advisor__bar-help">یک کلیک برای همه بخش‌ها: آمار گوگل و کلمه‌ها، موبایل، روند ماه‌ها، بررسی ایندکس چند آدرس و فایل‌های خزش تازه. هر روز هم خودکار انجام می‌شود.</p>
+		<p class="hodima-advisor__bar-help">یک کلیک برای همه بخش‌ها (آمار گوگل، ایندکس، خزش)؛ هر روز هم خودکار انجام می‌شود.</p>
+		<?php hodima_seo_advisor_render_quality( $tab, true ); // نوار «کیفیت داده» داخل همین کارت (SEO 3.3.0) ?>
 	</section>
 	<?php
 }
@@ -874,13 +962,13 @@ function hodima_seo_advisor_render_list( array $status ): void {
 		<?php if ( '' !== $filters['tasks'] ) : ?>
 			<input type="hidden" name="tasks" value="<?php echo esc_attr( $filters['tasks'] ); ?>">
 		<?php endif; ?>
-		<nav class="hodima-advisor__views" aria-label="نوع صفحه">
-			<?php foreach ( $views as $key => [ $label, $count ] ) : ?>
-				<a class="hodima-advisor__view" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'view' => 'all' === $key ? '' : $key, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'], 'tasks' => $filters['tasks'] ] ) ); ?>"<?php echo $key === $view ? ' aria-current="page"' : ''; ?>>
-					<?php echo esc_html( $label ); ?> <span class="hodima-advisor__count"><?php echo esc_html( number_format_i18n( $count ) ); ?></span>
-				</a>
-			<?php endforeach; ?>
-		</nav>
+		<?php
+		$view_items = [];
+		foreach ( $views as $key => [ $label, $count ] ) {
+			$view_items[ $key ] = [ $label, $count, hodima_seo_advisor_page_url( [ 'view' => 'all' === $key ? '' : $key, 'q' => $filters['q'], 'rule' => $filters['rule'], 'min' => $filters['min'], 'tasks' => $filters['tasks'] ] ) ];
+		}
+		hodima_seo_advisor_filter_select( 'نوع صفحه', $view_items, $view );
+		?>
 		<div class="hodima-advisor__search">
 			<label class="screen-reader-text" for="hodima-advisor-q">جستجو در عنوان یا آدرس صفحه</label>
 			<input type="search" id="hodima-advisor-q" name="q" class="hds-input" value="<?php echo esc_attr( $filters['q'] ); ?>" placeholder="جستجو در عنوان یا آدرس…">

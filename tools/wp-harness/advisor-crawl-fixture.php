@@ -1,13 +1,13 @@
 <?php
 /**
- * فقط برای ابزار تست دستار: تولید داده خزش از فایل‌های CSV هم‌شکل خروجی Screaming Frog.
+ * فقط برای ابزار تست دستار: تولید داده خزش از فایل‌های CSV نمونه با ستون‌های ثابت.
  * ورود فایل از SEO 3.1.7 از افزونه برداشته شد (خزنده داخلی جایش را گرفت)؛ آزمون‌ها همچنان با CSV نمونه
  * داده خزش می‌سازند و این فایل همان خواندن قبلی را برایشان نگه می‌دارد. در ZIP افزونه نیست.
  */
 
 defined( 'ABSPATH' ) || exit;
 
-/** نام ثابت فایل‌ها (همان نام پیش‌فرض SF). */
+/** نام ثابت فایل‌ها (نام ثابت فایل‌های نمونه). */
 const HODIMA_SEO_ADVISOR_CRAWL_FILES = [ 'pages' => 'internal_html.csv', 'links' => 'all_inlinks.csv' ];
 
 /** فایلی که کمتر از این ثانیه پیش تغییر کرده هنوز آپلود می‌شود و خوانده نمی‌شود. */
@@ -134,7 +134,7 @@ function hodima_seo_advisor_crawl_open( string $file, array $required ): array|W
 		return new WP_Error( 'hodima_crawl_open', 'فایل خوانده نشد؛ دسترسی فایل را بررسی کنید.' );
 	}
 
-	// SF فایل را با BOM می‌نویسد و عنوان ستون‌ها را در گیومه می‌گذارد؛ BOM پیش از گیومه باشد خواندن CSV گیومه را جزو نام ستون می‌کند (باگ ۲.۸.۱: «ستون address نیست»)، پس BOM را پیش از خواندن رد می‌کنیم
+	// فایل نمونه ممکن است با BOM بیاید و عنوان ستون‌ها در گیومه باشد؛ BOM پیش از گیومه باشد خواندن CSV گیومه را جزو نام ستون می‌کند (باگ ۲.۸.۱: «ستون address نیست»)، پس BOM را پیش از خواندن رد می‌کنیم
 	if ( "\xEF\xBB\xBF" !== fread( $handle, 3 ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- فایل CSV محلی، خواندن سه بایت
 		rewind( $handle );
 	}
@@ -158,7 +158,7 @@ function hodima_seo_advisor_crawl_open( string $file, array $required ): array|W
 
 	if ( $missing ) {
 		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
-		return new WP_Error( 'hodima_crawl_columns', 'ستون‌های لازم در فایل نیست: ' . implode( '، ', $missing ) . '. خروجی درست را از SF بگیرید.' );
+		return new WP_Error( 'hodima_crawl_columns', 'ستون‌های لازم در فایل نیست: ' . implode( '، ', $missing ) . '.' );
 	}
 
 	return [ $handle, $map ];
@@ -219,7 +219,7 @@ function hodima_seo_advisor_crawl_parse_pages( string $file ): array|WP_Error {
 			'title_len'  => isset( $map['title 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'title 1 length' ) ) : mb_strlen( $title ),
 			'meta_len'   => isset( $map['meta description 1 length'] ) ? (int) hodima_seo_advisor_crawl_num( $cell( $row, 'meta description 1 length' ) ) : mb_strlen( $meta ),
 			'h1'         => mb_substr( $cell( $row, 'h1-1' ), 0, HODIMA_SEO_ADVISOR_KEY_LENGTH ),
-			'h2'         => mb_substr( trim( $cell( $row, 'h2-1' ) . ' | ' . $cell( $row, 'h2-2' ), ' |' ), 0, 255 ), // SF فقط دو H2 اول را می‌دهد
+			'h2'         => mb_substr( trim( $cell( $row, 'h2-1' ) . ' | ' . $cell( $row, 'h2-2' ), ' |' ), 0, 255 ), // فقط دو H2 اول در فایل نمونه است
 			'resp_ms'    => (int) round( hodima_seo_advisor_crawl_num( $cell( $row, $time ) ) * 1000 ),
 			'inlinks'    => (int) hodima_seo_advisor_crawl_num( $cell( $row, isset( $map['unique inlinks'] ) ? 'unique inlinks' : 'inlinks' ) ),
 			'text_links' => -1, // بدون all_inlinks نامعلوم
@@ -380,7 +380,7 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 	}
 
 	hodima_seo_advisor_crawl_map( true );
-	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $stored['pages'], 'links' => $stored['links'], 'files' => $files, 'source' => 'screamingfrog' ], false );
+	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $stored['pages'], 'links' => $stored['links'], 'files' => $files, 'source' => 'fixture' ], false );
 
 	// کارهای «انجام دادم» ایرادهای فنی با خزش تازه سنجیده می‌شوند (کند، لینک ورودی و ریدایرکت فقط همین‌جا)
 	hodima_seo_advisor_tasks_sync_crawl();
@@ -398,3 +398,63 @@ function hodima_seo_advisor_crawl_import(): array|WP_Error {
 	return $stored;
 }
 
+/* ── ذخیره (SEO 3.4.7: از خود افزونه به اینجا آمد؛ هیچ کد تولیدی صدایش نمی‌زد و فقط آزمون‌ها و واردکننده CSV بالا استفاده می‌کنند) ── */
+
+/**
+ * جایگزینی کامل جدول‌های خزش در یک تراکنش؛ خطا = داده قبلی دست‌نخورده.
+ *
+ * @param array<string, array<string, mixed>> $pages
+ * @param list<list<scalar>>                  $links
+ * @return array{pages: int, links: int}|WP_Error
+ */
+function hodima_seo_advisor_crawl_store( array $pages, array $links ): array|WP_Error {
+
+	global $wpdb;
+
+	hodima_seo_advisor_ensure_tables();
+	hodima_seo_advisor_crawl_map( true );
+
+	$page_table = hodima_seo_advisor_table( 'crawl_pages' );
+	$link_table = hodima_seo_advisor_table( 'crawl_links' );
+
+	$page_rows = [];
+	foreach ( $pages as $p ) {
+		$page_rows[] = [ $p['path'], $p['status'], $p['indexable'], $p['reason'], $p['title'], $p['title_len'], $p['meta_len'], $p['h1'], $p['h2'], $p['resp_ms'], $p['inlinks'], $p['text_links'], $p['depth'], $p['score'], $p['redirect'], (int) ( $p['no_snippet'] ?? 0 ) ];
+	}
+
+	return hodima_seo_advisor_transaction( static function () use ( $wpdb, $page_table, $link_table, $page_rows, $links ): array|WP_Error {
+
+		$fail = static fn( string $what ): WP_Error => new WP_Error( 'hodima_crawl_store', sprintf( 'ذخیره %1$s ناموفق بود (%2$s)؛ داده قبلی دست‌نخورده ماند.', $what, $wpdb->last_error ) );
+
+		foreach ( [ $page_table, $link_table ] as $table ) {
+			if ( false === $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $table ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				return $fail( 'داده' );
+			}
+		}
+
+		$insert = [
+			[ $page_table, 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet', '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d)', $page_rows, 200, 'صفحه‌ها' ],
+			[ $link_table, 'source_path, dest_path, link_position, anchor, is_follow', '(%s,%s,%s,%s,%d)', $links, 400, 'لینک‌ها' ],
+		];
+
+		foreach ( $insert as [ $table, $columns, $row_format, $rows, $size, $what ] ) {
+			$skipped = 0;
+			foreach ( array_chunk( $rows, $size ) as $chunk ) {
+				if ( false !== hodima_seo_advisor_insert( $table, $columns, $row_format, $chunk ) ) {
+					continue;
+				}
+				// دسته افتاد (معمولا ردیف تکراریِ از دید مقایسه پایگاه داده): تک‌تک؛ فقط ردیف مشکل‌دار رد می‌شود
+				foreach ( $chunk as $one ) {
+					if ( false === hodima_seo_advisor_insert( $table, $columns, $row_format, [ $one ] ) ) {
+						++$skipped;
+					}
+				}
+			}
+			if ( $skipped > max( 5, (int) ( count( $rows ) * 0.05 ) ) ) {
+				return $fail( $what );
+			}
+		}
+
+		return [ 'pages' => count( $page_rows ), 'links' => count( $links ) ];
+	} );
+}

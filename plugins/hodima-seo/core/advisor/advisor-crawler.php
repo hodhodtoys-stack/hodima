@@ -3,7 +3,7 @@
  * ماژول «دستار سئو» — خزنده شبانه (SEO 3.1.4)
  * Path: core/advisor/advisor-crawler.php
  *
- * خود دستار صفحه‌های سایت را می‌خواند (جای فایل Screaming Frog): با کرون هر ۵ دقیقه یک دسته کوچک، فقط در پنجره
+ * خود دستار صفحه‌های سایت را می‌خواند با کرون هر ۵ دقیقه یک دسته کوچک، فقط در پنجره
  * شبانه (پیش‌فرض ۲ تا ۸ صبح به وقت سایت). نتیجه در همان جدول‌های خزش (crawl_pages، crawl_links) می‌رود؛ پس همه
  * ایرادها (advisor-crawl.php) بدون تغییر کار می‌کنند. خزنده فقط می‌خواند؛ چیزی را در سایت عوض نمی‌کند.
  *
@@ -13,7 +13,7 @@
  * خطای وسط کار داده قبلی را خراب نمی‌کند.
  *
  * محدودیت: جاوااسکریپت اجرا نمی‌شود (لینک یا متنی که فقط با JS ساخته شود دیده نمی‌شود)؛ «جایگاه لینک»
- * (محتوا/منو/فوتر/کنار) از تگ‌ها و نام کلاس‌ها حدس زده می‌شود و ممکن است با Screaming Frog کمی فرق کند.
+ * (محتوا/منو/فوتر/کنار) از تگ‌ها و نام کلاس‌ها حدس زده می‌شود.
  */
 
 declare(strict_types=1);
@@ -43,6 +43,17 @@ const HODIMA_SEO_ADVISOR_CRAWLER_DELAY = 1.0;
 
 /** سقف آدرس‌های هر دور. */
 const HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES = 5000;
+
+/** بیشینه آدرس تصویر بدون alt که برای فهرست «کدام تصویرها؟» نگه داشته می‌شود (SEO 3.3.6). */
+const HODIMA_SEO_ADVISOR_CRAWLER_IMG_LIST = 8;
+
+/**
+ * دور سریع (SEO 3.3.8): هر روز فقط صفحه اصلی، پرنمایش‌ترین صفحه‌ها (۱۵٪ صفحه‌ها، بین ۵۰ و ۳۰۰) و نوشته‌های تازه یا ویرایش‌شده را
+ * می‌خزد؛ صفحه‌های دیگر داده دور کامل را نگه می‌دارند. دور کامل (حذف صفحه‌های رفته، نقشه سایت) هر «فاصله دورها» روز می‌ماند.
+ */
+const HODIMA_SEO_ADVISOR_CRAWLER_QUICK_TOP_MIN   = 50;
+const HODIMA_SEO_ADVISOR_CRAWLER_QUICK_TOP_MAX   = 300;
+const HODIMA_SEO_ADVISOR_CRAWLER_QUICK_TOP_SHARE = 0.15;
 
 /** پاسخ کندتر از این (میلی‌ثانیه، میانگین ۳ درخواست آخر) خزنده را موقتا نگه می‌دارد. */
 const HODIMA_SEO_ADVISOR_CRAWLER_SLOW_MS = 3000;
@@ -97,7 +108,7 @@ function hodima_seo_advisor_crawler_in_window( ?int $now = null ): bool {
 /**
  * وضعیت ذخیره‌شده خزش با پیش‌فرض‌ها.
  *
- * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, requested: bool, pages: int, links: int}
+ * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, pages: int, links: int, capped: bool, tick: int, mode: string, full_at: int}
  */
 function hodima_seo_advisor_crawler_state(): array {
 
@@ -119,9 +130,12 @@ function hodima_seo_advisor_crawler_state(): array {
 		'recent'      => array_values( array_map( 'intval', (array) ( $state['recent'] ?? [] ) ) ),
 		'pause_until' => (int) ( $state['pause_until'] ?? 0 ),
 		'finished'    => (int) ( $state['finished'] ?? 0 ),
-		'requested'   => ! empty( $state['requested'] ),
 		'pages'       => (int) ( $state['pages'] ?? 0 ),
 		'links'       => (int) ( $state['links'] ?? 0 ),
+		'capped'      => ! empty( $state['capped'] ),
+		'tick'        => (int) ( $state['tick'] ?? 0 ),
+		'mode'        => 'quick' === ( $state['mode'] ?? '' ) ? 'quick' : 'full',
+		'full_at'     => (int) ( $state['full_at'] ?? $state['finished'] ?? 0 ), // پیش از ۳.۳.۸ همه دورها کامل بودند
 	];
 }
 
@@ -129,6 +143,7 @@ function hodima_seo_advisor_crawler_state(): array {
  * @param array<string, mixed> $state
  */
 function hodima_seo_advisor_crawler_save( array $state ): void {
+	$state['tick'] = time(); // زمان آخرین نوبت: سنجش سلامت کرون (advisor-cron.php)
 	update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, $state, false );
 }
 
@@ -226,7 +241,22 @@ function hodima_seo_advisor_crawler_normalize( string $url ): ?string {
 		return null;
 	}
 
-	return untrailingslashit( home_url() ) . ( '' === $path ? '/' : $path );
+	// مسیر آدرس مطلق از پیش پیشوند زیرپوشه را دارد؛ به دامنه چسبانده می‌شود نه به home_url() (SEO 3.4.7: در نصب زیرپوشه‌ای دوبار می‌آمد)
+	return untrailingslashit( hodima_seo_advisor_url( '/' ) ) . ( '' === $path ? '/' : $path );
+}
+
+/**
+ * آدرس‌های خزیده‌شده در دورهای قبل (برای دور سریع). فقط در همین درخواست نگه داشته می‌شود.
+ *
+ * @return array<string, int>
+ */
+function hodima_seo_advisor_crawler_known(): array {
+
+	global $wpdb;
+
+	static $known = null;
+
+	return $known ??= array_fill_keys( array_map( 'strval', (array) $wpdb->get_col( $wpdb->prepare( 'SELECT path FROM %i', hodima_seo_advisor_table( 'crawl_pages' ) ) ) ), 1 ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 }
 
 /**
@@ -234,12 +264,23 @@ function hodima_seo_advisor_crawler_normalize( string $url ): ?string {
  *
  * @param array<string, mixed> $state
  */
-function hodima_seo_advisor_crawler_enqueue( array &$state, string $url ): void {
+function hodima_seo_advisor_crawler_enqueue( array &$state, string $url, bool $force = false ): void {
 
 	$fetch = hodima_seo_advisor_crawler_normalize( $url );
 	$key   = null === $fetch ? null : hodima_seo_advisor_path_key( $fetch );
 
-	if ( null === $fetch || null === $key || isset( $state['seen'][ $key ] ) || count( $state['seen'] ) >= HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ) {
+	if ( null === $fetch || null === $key || isset( $state['seen'][ $key ] ) ) {
+		return;
+	}
+
+	// دور سریع: لینک پیداشده فقط اگر آدرس تازه است خزیده می‌شود؛ صفحه شناخته‌شده را خود seed (پرنمایش/ویرایش‌شده) تعیین می‌کند ($force)
+	if ( ! $force && 'quick' === ( $state['mode'] ?? '' ) && isset( hodima_seo_advisor_crawler_known()[ $key ] ) ) {
+		return;
+	}
+
+	// سقف پر است: این صفحه خزیده نمی‌شود. نشانش می‌کنیم تا پایان دور «ندیده‌شده» را «حذف‌شده» نگیرد (باگ قبلی: ردیف‌های بالای سقف هر دور پاک می‌شدند)
+	if ( count( $state['seen'] ) >= HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ) {
+		$state['capped'] = true;
 		return;
 	}
 
@@ -250,7 +291,27 @@ function hodima_seo_advisor_crawler_enqueue( array &$state, string $url ): void 
 /* ── خواندن یک صفحه ── */
 
 /**
- * جایگاه لینک از نیای آن: footer، navigation (nav/header/منو/مسیر راهنما)، aside (کنار/ویجت) یا content.
+ * عنصر داخل یکی از این تگ‌هاست؟ (نیاکانش را تا ریشه می‌پیماید.)
+ *
+ * @param list<string> $tags نام تگ‌ها (حروف کوچک)
+ */
+function hodima_seo_advisor_crawler_inside( DOMNode $node, array $tags ): bool {
+
+	for ( $parent = $node->parentNode; $parent instanceof DOMElement; $parent = $parent->parentNode ) {
+		if ( in_array( strtolower( $parent->nodeName ), $tags, true ) ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * جایگاه لینک (یا تصویر/تیتر) از نیای آن: footer، navigation (nav/هدر سایت/منو/مسیر راهنما)، aside (کنار/ویجت) یا content.
+ *
+ * SEO 3.4.5 (دقت): (۱) «widget» و «sidebar» فقط وقتی کلاس یا شناسه *خودشان* باشند، نه پاره‌ای از نام بلندتر: قبلا هر
+ * `elementor-widget-*` (همه محتوای صفحه‌های المنتور) و `content-sidebar-wrap` (ژنسیس) «کناری» می‌شد و لینک و تصویرشان از
+ * ایراد تصویر بدون alt و لینک متنی بیرون می‌ماند؛ (۲) `<header>` داخل `<article>` یا `<main>` سربرگ خود نوشته است نه منو.
  */
 function hodima_seo_advisor_crawler_link_position( DOMElement $link ): string {
 
@@ -263,13 +324,22 @@ function hodima_seo_advisor_crawler_link_position( DOMElement $link ): string {
 			break;
 		}
 
-		$names = strtolower( $node->getAttribute( 'class' ) . ' ' . $node->getAttribute( 'id' ) );
+		$names  = strtolower( $node->getAttribute( 'class' ) . ' ' . $node->getAttribute( 'id' ) );
+		$tokens = preg_split( '/\s+/', trim( $names ), -1, PREG_SPLIT_NO_EMPTY ) ?: [];
+		$side   = false;
+
+		foreach ( $tokens as $token ) {
+			if ( in_array( $token, [ 'sidebar', 'widget', 'widgets', 'widget-area', 'secondary' ], true ) || str_starts_with( $token, 'sidebar-' ) || str_starts_with( $token, 'widget_' ) ) {
+				$side = true;
+				break;
+			}
+		}
 
 		if ( 'footer' === $tag || 1 === preg_match( '/(?:^|[\s_-])(?:footer|colophon)(?:$|[\s_-])/', $names ) ) {
 			$found['footer'] = true;
-		} elseif ( 'nav' === $tag || 'header' === $tag || 1 === preg_match( '/(?:^|[\s_-])(?:nav|navbar|menu|breadcrumbs?)(?:$|[\s_-])/', $names ) ) {
+		} elseif ( 'nav' === $tag || ( 'header' === $tag && ! hodima_seo_advisor_crawler_inside( $node, [ 'article', 'main' ] ) ) || 1 === preg_match( '/(?:^|[\s_-])(?:nav|navbar|menu|breadcrumbs?)(?:$|[\s_-])/', $names ) ) {
 			$found['navigation'] = true;
-		} elseif ( 'aside' === $tag || 1 === preg_match( '/(?:^|[\s_-])(?:sidebar|widget)(?:$|[\s_-])/', $names ) ) {
+		} elseif ( 'aside' === $tag || $side ) {
 			$found['aside'] = true;
 		}
 	}
@@ -285,9 +355,40 @@ function hodima_seo_advisor_crawler_link_position( DOMElement $link ): string {
 }
 
 /**
+ * تصویری که alt خالی دارد ولی لینک/دکمه یا figure اطرافش متن دارد (کارت محصول/مقاله)؛ alt خالی آنجا درست است.
+ * نزدیک‌ترین لینک/دکمه تصمیم می‌گیرد: متن یا aria-label داشته باشد = برچسب‌دار؛ فقط خود تصویر = بی‌برچسب.
+ *
+ * @param callable(string): string $clean یکسان‌ساز فاصله‌ها
+ */
+function hodima_seo_advisor_crawler_img_labelled( DOMElement $img, callable $clean ): bool {
+
+	for ( $node = $img->parentNode; $node instanceof DOMElement; $node = $node->parentNode ) {
+		$tag = strtolower( $node->nodeName );
+
+		if ( in_array( $tag, [ 'body', 'html' ], true ) ) {
+			break;
+		}
+
+		if ( 'a' === $tag || 'button' === $tag ) {
+			return '' !== $clean( $node->getAttribute( 'aria-label' ) ) || '' !== $clean( $node->textContent );
+		}
+
+		if ( 'figure' === $tag ) {
+			foreach ( $node->getElementsByTagName( 'figcaption' ) as $caption ) {
+				if ( '' !== $clean( $caption->textContent ) ) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
  * HTML یک صفحه ← عنوان، متا، تیترها، robots، canonical و لینک‌های داخلی.
  *
- * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
+ * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_list: list<string>, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
  */
 function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
@@ -368,17 +469,35 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		$links[] = [ $target, hodima_seo_advisor_crawler_link_position( $a ), mb_substr( $anchor, 0, 120 ), $follow ];
 	}
 
-	// تصویر محتوای صفحه بدون متن جایگزین (تزئینی با aria-hidden/role=presentation، تصویر ریز و جاگیر base64 حساب نمی‌شود)
+	// تصویر محتوای صفحه بدون متن جایگزین (تزئینی با aria-hidden/role=presentation، تصویر ریز و جاگیر base64 حساب نمی‌شود).
+	// alt خالی عمدی هم ایراد نیست وقتی تصویر داخل لینک/دکمه‌ای است که خودش متن یا aria-label دارد، یا داخل figure با figcaption:
+	// بندانگشتی کارت‌ها (قالب هدیما عمدا alt="" می‌گذارد چون عنوان کارت همان را می‌گوید) ایراد کاذب بود و ادمین نمی‌توانست رفعش کند (SEO 3.3.3).
+	// SEO 3.3.6: آدرس واقعی تصویر (data-src افزونه‌های تنبل‌بارگذاری، نه جاگیر base64) هم حساب و تا ۸ آدرس برای فهرست «کدام تصویرها؟» نگه داشته می‌شود
 	$img_noalt = 0;
+	$img_list  = [];
 	$images    = $xpath->query( '//img' );
 	foreach ( false === $images ? [] : $images as $img ) {
-		if ( ! $img instanceof DOMElement || 'content' !== hodima_seo_advisor_crawler_link_position( $img ) ) {
+		// <noscript> نسخه پشتیبان همان تصویر تنبل‌بارگذاری است؛ libxml آن را عنصر می‌بیند و یک تصویر دو بار شمرده می‌شد (SEO 3.4.5)
+		if ( ! $img instanceof DOMElement || hodima_seo_advisor_crawler_inside( $img, [ 'noscript' ] ) || 'content' !== hodima_seo_advisor_crawler_link_position( $img ) ) {
 			continue;
 		}
-		$decor = 'true' === strtolower( $img->getAttribute( 'aria-hidden' ) ) || in_array( strtolower( $img->getAttribute( 'role' ) ), [ 'presentation', 'none' ], true );
-		$tiny  = ( $img->hasAttribute( 'width' ) && (int) $img->getAttribute( 'width' ) <= 2 ) || str_starts_with( trim( $img->getAttribute( 'src' ) ), 'data:image/gif' );
-		if ( ! $decor && ! $tiny && '' === $clean( $img->getAttribute( 'alt' ) ) ) {
+		$source = '';
+		foreach ( [ 'data-src', 'data-lazy-src', 'data-original', 'src' ] as $attr ) {
+			$candidate = trim( $img->getAttribute( $attr ) );
+			if ( '' !== $candidate && ! str_starts_with( $candidate, 'data:' ) ) {
+				$source = $candidate;
+				break;
+			}
+		}
+		$source = '' !== $source ? $source : trim( $img->getAttribute( 'src' ) );
+		$decor  = 'true' === strtolower( $img->getAttribute( 'aria-hidden' ) ) || in_array( strtolower( $img->getAttribute( 'role' ) ), [ 'presentation', 'none' ], true );
+		$tiny   = ( $img->hasAttribute( 'width' ) && (int) $img->getAttribute( 'width' ) <= 2 ) || str_starts_with( $source, 'data:image/gif' );
+		if ( ! $decor && ! $tiny && '' === $clean( $img->getAttribute( 'alt' ) ) && ! ( $img->hasAttribute( 'alt' ) && hodima_seo_advisor_crawler_img_labelled( $img, $clean ) ) ) {
 			++$img_noalt;
+			$resolved = hodima_seo_advisor_crawler_resolve( $source, $url );
+			if ( null !== $resolved && count( $img_list ) < HODIMA_SEO_ADVISOR_CRAWLER_IMG_LIST && mb_strlen( $resolved ) <= 300 && ! in_array( $resolved, $img_list, true ) ) {
+				$img_list[] = $resolved;
+			}
 		}
 	}
 
@@ -398,18 +517,33 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 	}
 	$words = count( (array) preg_split( '/\s+/u', trim( $plain ), -1, PREG_SPLIT_NO_EMPTY ) );
 
-	$h1_all = $xpath->query( '//h1' );
+	// H1 صفحه: تیترهای H1 محتوا؛ H1 لوگوی هدر سایت یا پاپ‌آپ با آن یکی حساب نمی‌شود. اگر محتوا H1 نداشت همه H1ها می‌آیند
+	// تا صفحه‌ای که فقط H1 لوگو دارد «بدون H1» نشود (SEO 3.4.5)
+	$h1_all     = [];
+	$h1_content = [];
+	$h1_query   = $xpath->query( '//h1' );
+	foreach ( false === $h1_query ? [] : $h1_query as $h1 ) {
+		if ( ! $h1 instanceof DOMElement || hodima_seo_advisor_crawler_inside( $h1, [ 'noscript' ] ) ) {
+			continue;
+		}
+		$h1_all[] = $h1;
+		if ( 'content' === hodima_seo_advisor_crawler_link_position( $h1 ) ) {
+			$h1_content[] = $h1;
+		}
+	}
+	$h1_pick = $h1_content ?: $h1_all;
 
 	return [
 		'title'      => $first( $xpath, '/html/head/title' ),
 		'meta'       => $metas( $xpath, 'description' )[0] ?? '',
-		'robots'     => implode( ', ', $metas( $xpath, 'robots' ) ),
+		'robots'     => implode( ', ', [ ...$metas( $xpath, 'robots' ), ...$metas( $xpath, 'googlebot' ) ] ), // googlebot هم noindex/nosnippet را می‌رساند (SEO 3.4.7)
 		'canonical'  => $canonical,
-		'h1'         => $first( $xpath, '//h1' ),
-		'h1_count'   => false === $h1_all ? 0 : $h1_all->length,
+		'h1'         => $h1_pick ? $clean( $h1_pick[0]->textContent ) : '',
+		'h1_count'   => count( $h1_pick ),
 		'h2'         => implode( ' | ', $h2s ),
 		'words'      => $words,
 		'img_noalt'  => $img_noalt,
+		'img_list'   => $img_list,
 		'http_links' => $http_links,
 		'links'      => $links,
 	];
@@ -454,6 +588,35 @@ function hodima_seo_advisor_crawler_fetch( string $url ): ?array {
 		'location' => $header( 'location' ),
 		'x_robots' => $header( 'x-robots-tag' ),
 	];
+}
+
+/**
+ * خواندن یک آدرس با دو اصلاح دقت (SEO 3.4.5): (۱) خطای اتصال یا مهلت یک بار دیگر تلاش می‌شود (خطای گذرای هاست صفحه را
+ * «نرسیده» نکند)؛ (۲) پاسخ ۲۰۰ کندتر از آستانه «کند» یک بار دوباره خوانده می‌شود و سریع‌تر ثبت می‌شود: اولین خواندن
+ * اغلب کش سرد است و ایراد «پاسخ کند» را برای صفحه‌ای که بعد از کش سریع است می‌ساخت.
+ *
+ * @return array{status: int, ms: int, body: string, html: bool, location: string, x_robots: string}|null
+ */
+function hodima_seo_advisor_crawler_fetch_checked( string $url ): ?array {
+
+	$fetched = hodima_seo_advisor_crawler_fetch( $url );
+
+	if ( null === $fetched ) {
+		$pause = (float) apply_filters( 'hodima_seo_advisor_crawler_retry_delay', 2.0 ); // فیلتر فقط برای آزمون
+		if ( $pause > 0 ) {
+			usleep( (int) round( $pause * 1000000 ) );
+		}
+		return hodima_seo_advisor_crawler_fetch( $url );
+	}
+
+	if ( 200 === $fetched['status'] && $fetched['ms'] >= HODIMA_SEO_ADVISOR_CRAWL_SLOW_MS ) {
+		$again = hodima_seo_advisor_crawler_fetch( $url );
+		if ( null !== $again && 200 === $again['status'] && $again['ms'] < $fetched['ms'] ) {
+			return $again;
+		}
+	}
+
+	return $fetched;
 }
 
 /**
@@ -503,6 +666,7 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'img_noalt'  => (int) ( $parsed['img_noalt'] ?? -1 ),
 		'http_links' => (int) ( $parsed['http_links'] ?? -1 ),
 		'canonical'  => '' === $canonical ? '' : ( null === $can_path ? '!ext' : $can_path ),
+		'img_list'   => implode( "\n", (array) ( $parsed['img_list'] ?? [] ) ), // یک آدرس در هر خط (SEO 3.3.6)
 	];
 }
 
@@ -515,15 +679,13 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
  */
 function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $keep_stats = false ): ?int {
 
-	global $wpdb;
-
 	$key = hodima_seo_advisor_path_key( $url );
 
 	if ( null === $key ) {
 		return 0;
 	}
 
-	$fetched = hodima_seo_advisor_crawler_fetch( $url );
+	$fetched = hodima_seo_advisor_crawler_fetch_checked( $url );
 
 	if ( null === $fetched ) {
 		return null;
@@ -547,29 +709,65 @@ function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $k
 		}
 	} elseif ( 200 === $status ) {
 		$parsed = hodima_seo_advisor_crawler_parse( $fetched['body'], $url );
-		$unique = [];
+		$links  = hodima_seo_advisor_crawler_page_links( $parsed, $key );
 
-		foreach ( $parsed['links'] as [ $target, $position, $anchor, $follow ] ) {
-			$dest = hodima_seo_advisor_path_key( $target );
-
-			if ( null === $dest || $dest === $key ) {
-				continue;
-			}
-
-			$link_key = "{$dest}|{$position}|{$anchor}";
-
-			if ( ! isset( $unique[ $link_key ] ) ) {
-				$unique[ $link_key ] = true;
-				$links[]             = [ $key, $dest, mb_substr( $position, 0, 16 ), $anchor, $follow ];
-			}
-
+		foreach ( $parsed['links'] as [ $target ] ) {
 			hodima_seo_advisor_crawler_enqueue( $state, $target );
 		}
 	}
 
-	$row     = hodima_seo_advisor_crawler_page_row( $key, $status, $fetched['ms'], $parsed, $redirect, $fetched['x_robots'] );
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s)';
+	$row = hodima_seo_advisor_crawler_page_row( $key, $status, $fetched['ms'], $parsed, $redirect, $fetched['x_robots'] );
+	hodima_seo_advisor_crawler_store_page( $key, $row, $links, $keep_stats );
+
+	return $fetched['ms'];
+}
+
+/**
+ * لینک‌های یکتای خروجی یک صفحه خوانده‌شده (یکتا بر اساس مقصد، جایگاه و متن لینک؛ لینک به خود صفحه نه).
+ *
+ * @param array<string, mixed> $parsed خروجی hodima_seo_advisor_crawler_parse
+ * @return list<array{0: string, 1: string, 2: string, 3: string, 4: int}> [مبدأ، مقصد، جایگاه، متن، follow]
+ */
+function hodima_seo_advisor_crawler_page_links( array $parsed, string $key ): array {
+
+	$unique = [];
+	$links  = [];
+
+	foreach ( (array) ( $parsed['links'] ?? [] ) as [ $target, $position, $anchor, $follow ] ) {
+		$dest = hodima_seo_advisor_path_key( $target );
+
+		if ( null === $dest || $dest === $key ) {
+			continue;
+		}
+
+		$link_key = "{$dest}|{$position}|{$anchor}";
+
+		if ( ! isset( $unique[ $link_key ] ) ) {
+			$unique[ $link_key ] = true;
+			$links[]             = [ $key, $dest, mb_substr( $position, 0, 16 ), $anchor, $follow ];
+		}
+	}
+
+	return $links;
+}
+
+/**
+ * ردیف خزش یک صفحه و لینک‌های خروجی‌اش را (جایگزین قبلی‌ها) می‌نویسد. هم خزنده شبانه و هم بررسی فوری بعد از
+ * ذخیره (advisor-live.php) از همین استفاده می‌کنند تا ستون‌ها و روش خواندن یکی بماند.
+ *
+ * @param array<string, mixed> $row ردیف hodima_seo_advisor_crawler_page_row
+ * @param list<array{0: string, 1: string, 2: string, 3: string, 4: int}> $links
+ * @param bool $keep_stats لینک ورودی، لینک متنی، عمق و امتیاز ردیف قبلی حفظ شود (خزش دوباره یک صفحه، نه دور کامل)
+ * @return bool false = نوشتن شکست خورد (داده قبلی برگشت)
+ */
+function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $links, bool $keep_stats ): bool {
+
+	global $wpdb;
+
+	hodima_seo_advisor_ensure_tables(); // ستون تازه img_list (DB 1.9.0) پیش از اولین نوشتن بعد از به‌روزرسانی
+
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
 
@@ -580,7 +778,7 @@ function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $k
 		}
 	}
 
-	hodima_seo_advisor_transaction(
+	$stored = hodima_seo_advisor_transaction(
 		static function () use ( $wpdb, $page_t, $link_t, $key, $columns, $format, $row, $links ): bool {
 			$wpdb->delete( $page_t, [ 'path' => $key ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->delete( $link_t, [ 'source_path' => $key ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -592,19 +790,113 @@ function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $k
 		}
 	);
 
-	return $fetched['ms'];
+	return true === $stored;
 }
 
 /* ── شروع، نوبت، پایان ── */
 
 /**
+ * حالت تازه یک دور (صف با صفحه اصلی، seed داده‌شده).
+ *
+ * @param array<string, mixed> $old  حالت پیشین
+ * @param list<string>         $seed
+ * @return array<string, mixed>
+ */
+function hodima_seo_advisor_crawler_new_state( array $old, string $mode, array $seed ): array {
+
+	$state = [
+		'status'      => 'running',
+		'run'         => time(),
+		'started'     => time(),
+		'seed'        => $seed,
+		'queue'       => [],
+		'seen'        => [],
+		'sitemap'     => [],
+		'maps'        => 0,
+		'manual'      => false,
+		'done'        => 0,
+		'errors'      => 0,
+		'recent'      => [],
+		'pause_until' => 0,
+		'finished'    => $old['finished'],
+		'pages'       => $old['pages'],
+		'links'       => $old['links'],
+		'capped'      => false,
+		'mode'        => $mode,
+		'full_at'     => $old['full_at'],
+	];
+
+	hodima_seo_advisor_crawler_enqueue( $state, home_url( '/' ), true );
+
+	return $state;
+}
+
+/**
+ * seed دور سریع: پرنمایش‌ترین صفحه‌ها (از داده گوگل) و نوشته‌های تازه یا ویرایش‌شده از دور پیشین؛ صفحه اصلی خودش در new_state می‌آید.
+ *
+ * @return list<string>
+ */
+function hodima_seo_advisor_crawler_quick_seed( int $since ): array {
+
+	global $wpdb;
+
+	$seed  = [];
+	$known = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', hodima_seo_advisor_table( 'crawl_pages' ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	$limit = max( HODIMA_SEO_ADVISOR_CRAWLER_QUICK_TOP_MIN, min( HODIMA_SEO_ADVISOR_CRAWLER_QUICK_TOP_MAX, (int) ceil( $known * HODIMA_SEO_ADVISOR_CRAWLER_QUICK_TOP_SHARE ) ) );
+
+	foreach ( (array) $wpdb->get_col( $wpdb->prepare( 'SELECT path FROM %i WHERE impressions > 0 ORDER BY impressions DESC LIMIT %d', hodima_seo_advisor_table( 'pages' ), $limit ) ) as $path ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$seed[] = 'u:' . (string) $path;
+	}
+
+	$types = array_values( array_diff( array_keys( get_post_types( [ 'public' => true ] ) ), [ 'attachment' ] ) );
+	if ( $types ) {
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_status = 'publish' AND post_modified_gmt >= %s AND post_type IN (" . implode( ',', array_fill( 0, count( $types ), '%s' ) ) . ') ORDER BY ID LIMIT %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
+				...array_merge( [ gmdate( 'Y-m-d H:i:s', max( 0, $since - HOUR_IN_SECONDS ) ) ], $types, [ HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ] )
+			)
+		);
+		foreach ( $ids as $id ) {
+			$seed[] = 'p:' . (int) $id;
+		}
+	}
+
+	return $seed;
+}
+
+/**
+ * دور سررسید: `full` (دور کامل)، `quick` (دور سریع روزانه) یا رشته خالی (هنوز وقتش نیست).
+ *
+ * @param array<string, mixed> $state
+ * @param array<string, mixed> $settings
+ */
+function hodima_seo_advisor_crawler_due_mode( array $state, array $settings ): string {
+
+	$now = time();
+
+	if ( 0 === $state['finished'] || $now - $state['full_at'] >= $settings['interval'] * DAY_IN_SECONDS - HOUR_IN_SECONDS ) {
+		return 'full';
+	}
+
+	return (bool) apply_filters( 'hodima_seo_advisor_crawler_quick', true ) && $now - $state['finished'] >= DAY_IN_SECONDS - HOUR_IN_SECONDS ? 'quick' : '';
+}
+
+/**
  * خزش تازه را شروع می‌کند: صف با صفحه اصلی، و همه نوشته‌ها و دسته‌های عمومی منتشرشده برای پیدا شدن صفحه‌های بی‌لینک.
  */
-function hodima_seo_advisor_crawler_start(): void {
+function hodima_seo_advisor_crawler_start( string $mode = 'full' ): void {
 
 	global $wpdb;
 
 	hodima_seo_advisor_ensure_tables();
+
+	$mode = 'quick' === $mode ? 'quick' : 'full';
+	$old  = hodima_seo_advisor_crawler_state();
+
+	if ( 'quick' === $mode ) {
+		hodima_seo_advisor_crawler_save( hodima_seo_advisor_crawler_new_state( $old, 'quick', hodima_seo_advisor_crawler_quick_seed( $old['finished'] ) ) );
+		return;
+	}
 
 	$types = array_values( array_diff( array_keys( get_post_types( [ 'public' => true ] ) ), [ 'attachment' ] ) );
 	$seed  = [];
@@ -630,32 +922,14 @@ function hodima_seo_advisor_crawler_start(): void {
 
 	// فایل‌های نقشه سایت اول خوانده می‌شوند: هم آدرس‌های نقشه برای سنجش، هم کمک به پیدا شدن صفحه‌های بی‌لینک
 	$maps = [];
-	foreach ( (array) apply_filters( 'hodima_seo_advisor_sitemap_roots', [ home_url( '/sitemap.xml' ) ] ) as $root ) {
+	// همان منطق robots.txt: سایت‌مپ هدیما (sitemap.xml)؛ وگرنه اگر خاموش است و سایت‌مپ وردپرس روشن، wp-sitemap.xml (SEO 3.4.7)
+	$map_root = '1' !== (string) get_option( 'hodima_sitemap_status', '1' ) && function_exists( 'wp_sitemaps_get_server' ) && wp_sitemaps_get_server()->sitemaps_enabled() ? home_url( '/wp-sitemap.xml' ) : home_url( '/sitemap.xml' );
+	foreach ( (array) apply_filters( 'hodima_seo_advisor_sitemap_roots', [ $map_root ] ) as $root ) {
 		$maps[] = 'm:' . (string) $root;
 	}
 
-	$old   = hodima_seo_advisor_crawler_state();
-	$state = [
-		'status'      => 'running',
-		'run'         => time(),
-		'started'     => time(),
-		'seed'        => array_merge( $maps, $seed ),
-		'queue'       => [],
-		'seen'        => [],
-		'sitemap'     => [],
-		'maps'        => 0,
-		'manual'      => false,
-		'done'        => 0,
-		'errors'      => 0,
-		'recent'      => [],
-		'pause_until' => 0,
-		'finished'    => $old['finished'],
-		'requested'   => false,
-		'pages'       => $old['pages'],
-		'links'       => $old['links'],
-	];
+	$state = hodima_seo_advisor_crawler_new_state( $old, 'full', array_merge( $maps, $seed ) );
 
-	hodima_seo_advisor_crawler_enqueue( $state, home_url( '/' ) );
 	hodima_seo_advisor_crawler_save( $state );
 }
 
@@ -752,9 +1026,14 @@ function hodima_seo_advisor_crawler_recrawl( string $path ): bool {
 }
 
 /**
- * یک نمونه از seed (p:ID یا t:ID:taxonomy) ← آدرس یا null.
+ * یک نمونه از seed (p:ID، t:ID:taxonomy یا u:مسیر) ← آدرس یا null.
  */
 function hodima_seo_advisor_crawler_seed_url( string $item ): ?string {
+
+	if ( str_starts_with( $item, 'u:' ) ) { // مسیر ذخیره‌شده (دور سریع)
+		// مسیر ذخیره‌شده رمزگشایی‌شده است (آدرس فارسی)؛ برای درخواست HTTP هر بخش دوباره کد می‌شود (SEO 3.4.7: مثل live_fetch)
+		return strlen( $item ) > 2 ? hodima_seo_advisor_url( implode( '/', array_map( 'rawurlencode', explode( '/', substr( $item, 2 ) ) ) ) ) : null;
+	}
 
 	$bits = explode( ':', $item );
 
@@ -788,50 +1067,59 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	$known = array_map( 'strval', (array) $wpdb->get_col( $wpdb->prepare( 'SELECT path FROM %i', $page_t ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	$stale = array_values( array_filter( $known, static fn( string $path ): bool => ! isset( $state['seen'][ $path ] ) ) );
 
+	// دور سریع فقط بخشی از صفحه‌ها را دیده؛ «ندیده‌شده» یعنی «در این دور نخزیدیم» نه «حذف شده»: چیزی پاک نمی‌شود (SEO 3.3.8)
+	$quick = 'quick' === ( $state['mode'] ?? '' );
+
+	// دور به سقف رسید: صفحه‌ای که دیده نشد شاید فقط بالای سقف مانده؛ هیچ ردیفی پاک نمی‌شود (ردیف صفحه واقعا حذف‌شده می‌ماند و هشدار نشان داده می‌شود)
+	if ( $quick || ! empty( $state['capped'] ) ) {
+		$stale = [];
+	}
+
 	foreach ( array_chunk( $stale, 200 ) as $chunk ) {
 		$marks = implode( ',', array_fill( 0, count( $chunk ), '%s' ) );
 		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE path IN ({$marks})", $page_t, ...$chunk ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
 		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE source_path IN ({$marks})", $link_t, ...$chunk ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
 	}
 
-	// لینک ورودی یکتا و لینک متنی (محتوا و follow) هر صفحه و عمق (کمترین کلیک از صفحه اصلی)؛ در PHP حساب می‌شود
-	// تا به نحو SQL پایگاه‌های مختلف (UPDATE با زیرپرسش هم‌بسته) وابسته نباشیم
-	$edges   = [];
-	$inbound = [];
-	$text    = [];
-	foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT DISTINCT source_path, dest_path, link_position, is_follow FROM %i', $link_t ), ARRAY_N ) as $edge ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		[ $from, $to, $position, $follow ] = [ (string) $edge[0], (string) $edge[1], (string) $edge[2], (int) $edge[3] ];
-		$edges[ $from ][]                  = $to;
-		$inbound[ $to ][ $from ]           = true;
-		if ( 'content' === $position && 1 === $follow ) {
-			$text[ $to ][ $from ] = true;
-		}
-	}
-
+	// لینک ورودی یکتا، لینک متنی (محتوا و follow) و عمق (کمترین کلیک از صفحه اصلی). SEO 3.3.8: شمارش و پیمایش در خود پایگاه داده
+	// (یک ردیف برای هر صفحه) نه با بار کردن همه لینک‌ها در حافظه PHP؛ با ۳٬۰۰۰ صفحه و ۱۲۰٬۰۰۰ لینک پیک حافظه ≈ ۹۱ مگابایت بود و
+	// روی سایت بزرگ‌تر یا هاست ۱۲۸ مگابایتی دور را نیمه‌کاره می‌کشت.
 	$wpdb->query( $wpdb->prepare( 'UPDATE %i SET inlinks = 0, text_links = 0, depth = 0', $page_t ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 	$by_count = [];
-	foreach ( $inbound as $to => $sources ) {
-		$by_count[ count( $sources ) . '|' . count( $text[ $to ] ?? [] ) ][] = (string) $to;
+	foreach ( (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare(
+			"SELECT dest_path, COUNT(DISTINCT source_path), COUNT(DISTINCT CASE WHEN link_position = 'content' AND is_follow = 1 THEN source_path END) FROM %i GROUP BY dest_path",
+			$link_t
+		),
+		ARRAY_N
+	) as $count ) {
+		$by_count[ (int) $count[1] . '|' . (int) $count[2] ][] = (string) $count[0];
 	}
 
 	foreach ( $by_count as $pair => $paths ) {
-		[ $inlinks, $text_links ] = array_map( 'intval', explode( '|', $pair ) );
+		[ $inlinks, $text_links ] = array_map( 'intval', explode( '|', (string) $pair ) );
 		foreach ( array_chunk( $paths, 200 ) as $chunk ) {
 			$marks = implode( ',', array_fill( 0, count( $chunk ), '%s' ) );
 			$wpdb->query( $wpdb->prepare( "UPDATE %i SET inlinks = %d, text_links = %d WHERE path IN ({$marks})", $page_t, $inlinks, $text_links, ...$chunk ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
 		}
 	}
+	unset( $by_count );
 
+	// عمق: پیمایش سطح‌به‌سطح؛ هر سطح یک یا چند پرسش با فهرست مبدأها (حافظه فقط به اندازه شمار صفحه‌ها)
 	$depth    = [ '/' => 0 ];
 	$frontier = [ '/' ];
+	$level    = 0;
 
 	while ( $frontier ) {
+		++$level;
 		$next = [];
-		foreach ( $frontier as $from ) {
-			foreach ( $edges[ $from ] ?? [] as $to ) {
+		foreach ( array_chunk( $frontier, 300 ) as $chunk ) {
+			$marks = implode( ',', array_fill( 0, count( $chunk ), '%s' ) );
+			foreach ( (array) $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT dest_path FROM %i WHERE source_path IN ({$marks})", $link_t, ...$chunk ) ) as $to ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
+				$to = (string) $to;
 				if ( ! isset( $depth[ $to ] ) ) {
-					$depth[ $to ] = $depth[ $from ] + 1;
+					$depth[ $to ] = $level;
 					$next[]       = $to;
 				}
 			}
@@ -851,21 +1139,32 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 		}
 	}
 
+	// صفحه‌ای که از صفحه اصلی با هیچ مسیر لینکی نمی‌رسیم عمق 0 می‌ماند و با صفحه اصلی یکی دیده می‌شد؛ نشانه جدا می‌گیرد
+	// (SEO 3.3.5). فقط وقتی صفحه اصلی خزیده شد و به جای دیگری لینک داد؛ وگرنه خزش ناقص همه را «جزیره» می‌کرد.
+	if ( count( $depth ) > 1 && 200 === (int) $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM %i WHERE path = %s', $page_t, '/' ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( $wpdb->prepare( 'UPDATE %i SET depth = %d WHERE depth = 0 AND path <> %s', $page_t, HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE, '/' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	}
+
 	$pages = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $page_t ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 	$links = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $link_t ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 	hodima_seo_advisor_crawl_map( true );
-	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $pages, 'links' => $links, 'files' => [], 'source' => 'crawler' ], false );
+	update_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [ 'imported' => time(), 'pages' => $pages, 'links' => $links, 'source' => 'crawler' ], false );
 
-	if ( $state['sitemap'] ) {
-		update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => array_map( 'strval', array_keys( $state['sitemap'] ) ) ], false );
-	} else {
-		delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION ); // نقشه‌ای خوانده نشد: ایرادهای نقشه سایت ساخته نمی‌شوند
+	if ( ! $quick ) { // دور سریع نقشه سایت را نخوانده: نقشه و ایرادهای نقشه دور کامل می‌ماند
+		if ( $state['sitemap'] ) {
+			update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'fetched' => time(), 'paths' => array_map( 'strval', array_keys( $state['sitemap'] ) ) ], false );
+		} else {
+			delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION ); // نقشه‌ای خوانده نشد: ایرادهای نقشه سایت ساخته نمی‌شوند
+		}
 	}
 
 	$state['status']   = 'idle';
 	$state['manual']   = false;
 	$state['finished'] = time();
+	$state['full_at']  = $quick ? (int) $state['full_at'] : time();
+	$state['mode']     = 'full';
+	$state['capped']   = ! empty( $state['capped'] );
 	$state['pages']    = $pages;
 	$state['links']    = $links;
 	$state['seed']     = [];
@@ -901,11 +1200,14 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 		return $none;
 	}
 
+	$mode = 'full';
+
 	if ( 'idle' === $state['status'] ) {
-		$due = $state['requested'] || 0 === $state['finished'] || time() - $state['finished'] >= $settings['interval'] * DAY_IN_SECONDS - HOUR_IN_SECONDS;
-		if ( ! $due && ! $force ) {
+		$due = hodima_seo_advisor_crawler_due_mode( $state, $settings ); // دور کامل یا سریع روزانه (SEO 3.3.8)
+		if ( '' === $due && ! $force ) {
 			return $none;
 		}
+		$mode = '' === $due ? 'full' : $due;
 	}
 
 	if ( ! hodima_seo_advisor_lock( HODIMA_SEO_ADVISOR_CRAWLER_LOCK ) ) {
@@ -913,7 +1215,7 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 	}
 
 	if ( 'idle' === $state['status'] ) {
-		hodima_seo_advisor_crawler_start();
+		hodima_seo_advisor_crawler_start( $mode );
 		$state = hodima_seo_advisor_crawler_state();
 	}
 
@@ -937,7 +1239,7 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 			foreach ( array_splice( $state['seed'], 0, $count ) as $item ) {
 				$url = hodima_seo_advisor_crawler_seed_url( $item );
 				if ( null !== $url ) {
-					hodima_seo_advisor_crawler_enqueue( $state, $url );
+					hodima_seo_advisor_crawler_enqueue( $state, $url, true );
 				}
 			}
 			continue;
@@ -996,17 +1298,6 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 	return [ 'ran' => $ran, 'finished' => $finished ];
 }
 
-/** خزش تازه را در اولین پنجره شبانه درخواست می‌کند (اگر دوری در حال اجرا نیست). */
-function hodima_seo_advisor_crawler_request(): void {
-
-	$state = hodima_seo_advisor_crawler_state();
-
-	if ( 'running' !== $state['status'] ) {
-		$state['requested'] = true;
-		hodima_seo_advisor_crawler_save( $state );
-	}
-}
-
 /**
  * «خزش همین حالا»: دور تازه (یا ادامه دور در جریان) بی‌توجه به ساعت خزش و روشن بودن؛ مکث کندی سایت برداشته می‌شود
  * ولی همان سرعت آهسته می‌ماند. پیش‌رفتن با کرون (زنجیره ۱۰ ثانیه‌ای) و گام‌های JS صفحه پیشخوان.
@@ -1028,7 +1319,7 @@ function hodima_seo_advisor_crawler_start_now(): void {
 /**
  * وضعیت برای نمایش: off، waiting (منتظر پنجره یا موعد)، running، paused.
  *
- * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, requested: bool, pages: int}
+ * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, pages: int, capped: bool, mode: string}
  */
 function hodima_seo_advisor_crawler_status(): array {
 
@@ -1054,8 +1345,9 @@ function hodima_seo_advisor_crawler_status(): array {
 		'seeding'     => count( $state['seed'] ),
 		'finished'    => $state['finished'],
 		'pause_until' => $state['pause_until'],
-		'requested'   => $state['requested'],
 		'pages'       => $state['pages'],
+		'capped'      => $state['capped'],
+		'mode'        => $state['mode'],
 	];
 }
 

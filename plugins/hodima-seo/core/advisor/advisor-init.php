@@ -24,6 +24,7 @@ defined( 'ABSPATH' ) || exit;
 
 require_once dirname( __DIR__, 2 ) . '/inc/search-console.php';
 require_once __DIR__ . '/advisor-data.php';
+require_once __DIR__ . '/advisor-progress.php';
 require_once __DIR__ . '/advisor-history.php';
 require_once __DIR__ . '/advisor-competition.php';
 require_once __DIR__ . '/advisor-links.php';
@@ -35,6 +36,7 @@ require_once __DIR__ . '/advisor-tasks.php';
 require_once __DIR__ . '/advisor-marks.php';
 require_once __DIR__ . '/advisor-verify.php';
 require_once __DIR__ . '/advisor-health.php';
+require_once __DIR__ . '/advisor-issues.php';
 require_once __DIR__ . '/advisor-crawl.php';
 require_once __DIR__ . '/advisor-crawler.php';
 require_once __DIR__ . '/advisor-score.php';
@@ -42,8 +44,12 @@ require_once __DIR__ . '/advisor-live.php';
 require_once __DIR__ . '/advisor-inspect.php';
 require_once __DIR__ . '/advisor-rules.php';
 require_once __DIR__ . '/advisor-steps.php';
+require_once __DIR__ . '/advisor-drafts.php';
+require_once __DIR__ . '/advisor-priority.php';
 require_once __DIR__ . '/advisor-refresh.php';
 require_once __DIR__ . '/advisor-resave.php';
+require_once __DIR__ . '/advisor-cron.php';
+require_once __DIR__ . '/advisor-quality.php';
 
 if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-help.php';
@@ -57,7 +63,13 @@ if ( is_admin() ) {
 	require_once __DIR__ . '/advisor-tasks-view.php';
 	require_once __DIR__ . '/advisor-health-view.php';
 	require_once __DIR__ . '/advisor-crawl-view.php';
+	require_once __DIR__ . '/advisor-detail-view.php';
+	require_once __DIR__ . '/advisor-overview-view.php';
 	require_once __DIR__ . '/advisor-score-view.php';
 	require_once __DIR__ . '/advisor-inspect-view.php';
+	require_once __DIR__ . '/advisor-cron-view.php';
+	require_once __DIR__ . '/advisor-jobs-view.php';
+	require_once __DIR__ . '/advisor-jobs-ajax.php';
+	require_once __DIR__ . '/advisor-quality-view.php';
 	require_once __DIR__ . '/advisor-box.php';
 }

@@ -93,7 +93,29 @@ function hodima_seo_advisor_variant_advice( array $causes ): string {
  */
 function hodima_seo_advisor_find_variants( array $rows ): array {
 
-	$by_path = [];
+	$sums = hodima_seo_advisor_variants_sums();
+	hodima_seo_advisor_variants_sum( $sums, $rows );
+
+	return hodima_seo_advisor_variants_finish( $sums );
+}
+
+/**
+ * مجموع‌های خالی آدرس‌های خام هر مسیر برای دریافت دسته‌به‌دسته (SEO 3.4.6): `p[مسیر]` = آدرس خام (رشته) تا وقتی مسیر فقط یک
+ * آدرس دارد، و آرایه آدرس‌ها وقتی دومی پیدا شد (بیشتر صفحه‌ها یکی دارند)؛ `i`/`c` نمایش و کلیک هر آدرس خام.
+ *
+ * @return array{p: array<string, string|list<string>>, i: array<string, int>, c: array<string, int>}
+ */
+function hodima_seo_advisor_variants_sums(): array {
+	return [ 'p' => [], 'i' => [], 'c' => [] ];
+}
+
+/**
+ * یک دسته ردیف «صفحه» را به مجموع آدرس‌های خام هر مسیر می‌افزاید.
+ *
+ * @param array{p: array<string, string|list<string>>, i: array<string, int>, c: array<string, int>} $sums مرجع
+ * @param list<array<string, mixed>>                                                                  $rows
+ */
+function hodima_seo_advisor_variants_sum( array &$sums, array $rows ): void {
 
 	foreach ( $rows as $row ) {
 		$raw  = (string) ( $row['keys'][0] ?? '' );
@@ -102,8 +124,38 @@ function hodima_seo_advisor_find_variants( array $rows ): array {
 			continue;
 		}
 		$url = (string) strtok( $raw, '#' ); // بخش #… یک آدرس دیگر نیست
-		$by_path[ $path ][ $url ]['impressions'] = ( $by_path[ $path ][ $url ]['impressions'] ?? 0 ) + (int) round( (float) ( $row['impressions'] ?? 0 ) );
-		$by_path[ $path ][ $url ]['clicks']      = ( $by_path[ $path ][ $url ]['clicks'] ?? 0 ) + (int) round( (float) ( $row['clicks'] ?? 0 ) );
+
+		if ( ! isset( $sums['p'][ $path ] ) ) {
+			$sums['p'][ $path ] = $url;
+		} elseif ( is_string( $sums['p'][ $path ] ) ) {
+			if ( $sums['p'][ $path ] !== $url ) {
+				$sums['p'][ $path ] = [ $sums['p'][ $path ], $url ];
+			}
+		} elseif ( ! in_array( $url, $sums['p'][ $path ], true ) ) {
+			$sums['p'][ $path ][] = $url;
+		}
+
+		$sums['i'][ $url ] = ( $sums['i'][ $url ] ?? 0 ) + (int) round( (float) ( $row['impressions'] ?? 0 ) );
+		$sums['c'][ $url ] = ( $sums['c'][ $url ] ?? 0 ) + (int) round( (float) ( $row['clicks'] ?? 0 ) );
+	}
+}
+
+/**
+ * مجموع‌ها ← صفحه‌هایی که با بیش از یک آدرس خام آمده‌اند.
+ *
+ * @param array{p: array<string, string|list<string>>, i: array<string, int>, c: array<string, int>} $sums
+ * @return list<array{path: string, impressions: int, clicks: int, urls: list<array{url: string, impressions: int, clicks: int}>, causes: list<string>, advice: string}>
+ */
+function hodima_seo_advisor_variants_finish( array $sums ): array {
+
+	$by_path = [];
+
+	foreach ( $sums['p'] as $path => $urls ) {
+		if ( is_array( $urls ) ) { // فقط مسیرهای چندآدرسی؛ بقیه ایرادی ندارند
+			foreach ( $urls as $url ) {
+				$by_path[ $path ][ $url ] = [ 'impressions' => $sums['i'][ $url ], 'clicks' => $sums['c'][ $url ] ];
+			}
+		}
 	}
 
 	$out = [];

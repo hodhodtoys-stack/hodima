@@ -147,7 +147,7 @@ for ( const width of [ 1300, 390 ] ) {
 		await Promise.all( [ pg.waitForURL( /tab=crawl/, { timeout: 30000 } ), done.click() ] );
 		await pg.waitForLoadState( 'load' );
 		const notice = await pg.locator( '.notice' ).allInnerTexts();
-		log( notice.some( ( t ) => /3\s*مورد «انجام شد» خورد/.test( t ) ), 'پیام بالای صفحه: ۳ مورد «انجام شد» خورد (صفحه از سایت خوانده نشد؛ ابزار تست شبکه ندارد)', notice.join( ' | ' ).slice( 0, 160 ) );
+		log( notice.some( ( t ) => /3\s*مورد «انجام دادم» ثبت شد/.test( t ) ), 'پیام بالای صفحه: ۳ مورد «انجام دادم» ثبت شد (صفحه از سایت خوانده نشد؛ ابزار تست شبکه ندارد)', notice.join( ' | ' ).slice( 0, 160 ) );
 		const after = pg.locator( 'tr', { has: pg.locator( 'a[href$="/mk-page/"]' ) } );
 		log( 1 === await after.locator( 'input[name="items[]"]' ).count() && 1 === await after.locator( 'input[value="slow"]' ).count(), 'سه ایراد علامت‌خورده پنهان شدند؛ «کند» با تیک ماند' );
 		log( /نمایش\s*3\s*ایراد علامت‌خورده/.test( await pg.locator( '.hodima-advisor__foot' ).last().innerText() ), 'پیوند «نمایش ۳ ایراد علامت‌خورده» پای جدول' );

@@ -20,7 +20,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 const HODIMA_SEO_ADVISOR_TASKS_OPTION = 'hodima_advisor_tasks';
-const HODIMA_SEO_ADVISOR_TASKS_MAX    = 1000; // تا SEO 3.0.1: ۵۰۰ (فقط پیشنهادها)؛ حالا ایرادهای فنی هر ایراد یک کار است
+const HODIMA_SEO_ADVISOR_TASKS_MAX    = 3000; // تا SEO 3.0.1: ۵۰۰؛ تا ۳.۴.۶: ۱٬۰۰۰ (ایراد فنی ۵٬۰۰۰ صفحه × چند ایراد از آن بیشتر می‌شد و قدیمی‌ترین «انجام دادم»ها بی‌صدا پاک می‌شدند)
 
 add_action( 'admin_post_hodima_advisor_task', 'hodima_seo_advisor_handle_task' );
 
@@ -57,7 +57,7 @@ function hodima_seo_advisor_task_statuses(): array {
 
 /** کلید یکتای یک پیشنهاد. */
 function hodima_seo_advisor_task_key( string $path, string $rule, string $term ): string {
-	return substr( md5( $path . '|' . $rule . '|' . hodima_seo_advisor_normalize( $term ) ), 0, 16 );
+	return substr( md5( $path . '|' . $rule . '|' . ( '' === $term ? '' : hodima_seo_advisor_normalize( $term ) ) ), 0, 16 ); // بدون کلمه (ایراد فنی): نرمال‌سازی لازم نیست
 }
 
 /**
@@ -67,16 +67,17 @@ function hodima_seo_advisor_task_key( string $path, string $rule, string $term )
  */
 function hodima_seo_advisor_tasks(): array {
 
-	// نتیجه تا وقتی گزینه همان است دوباره ساخته نمی‌شود: فهرست‌ها برای هر ردیف کار را می‌پرسند (۱۰۰۰ کار × ده‌ها ردیف)
-	static $raw = null, $cache = [];
+	// نتیجه تا وقتی گزینه عوض نشده دوباره ساخته نمی‌شود (SEO 3.4.3): فهرست‌ها برای هر ایراد کار را می‌پرسند (۶٬۵۰۰ ایراد × ۸۰۰ کار).
+	// تا ۳.۴.۲ هر بار کل گزینه با نسخه قبلی «===» مقایسه می‌شد (≈ ۰٫۶ میلی‌ثانیه) و «کارها» با ۸۰۰ کار ۴٫۷ ثانیه طول می‌کشید؛
+	// حالا فقط با نوشتن گزینه (هوک‌های پایین) کش دور ریخته می‌شود.
+	$cache = &hodima_seo_advisor_tasks_cache();
 
-	$stored = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, [] );
-
-	if ( $stored === $raw ) {
+	if ( null !== $cache ) {
 		return $cache;
 	}
 
-	$out = [];
+	$stored = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, [] );
+	$out    = [];
 
 	foreach ( is_array( $stored ) ? $stored : [] as $key => $task ) {
 		if ( is_string( $key ) && is_array( $task ) && isset( hodima_seo_advisor_task_statuses()[ (string) ( $task['status'] ?? '' ) ] ) ) {
@@ -94,11 +95,30 @@ function hodima_seo_advisor_tasks(): array {
 		}
 	}
 
-	$raw   = $stored;
 	$cache = $out;
 
 	return $out;
 }
+
+/** کش درخواست جاری کارها (مرجع، تا هوک‌ها بتوانند دورش بریزند).
+ *
+ * @return array<string, array<string, mixed>>|null
+ */
+function &hodima_seo_advisor_tasks_cache(): ?array {
+	static $cache = null;
+	return $cache;
+}
+
+/** گزینه کارها نوشته/پاک شد ← کش کهنه است. */
+function hodima_seo_advisor_tasks_cache_reset(): void {
+	$cache = &hodima_seo_advisor_tasks_cache();
+	$cache = null;
+}
+
+foreach ( [ 'add_option_', 'update_option_', 'delete_option_' ] as $hodima_prefix ) {
+	add_action( $hodima_prefix . HODIMA_SEO_ADVISOR_TASKS_OPTION, 'hodima_seo_advisor_tasks_cache_reset' );
+}
+unset( $hodima_prefix );
 
 /**
  * تغییر فیلدهای چند کار را روی نسخه تازه گزینه می‌نشاند، نه روی نسخه‌ای که پیش از درخواست‌های کند (سرچ کنسول) خوانده شد.
@@ -112,6 +132,7 @@ function hodima_seo_advisor_tasks(): array {
 function hodima_seo_advisor_tasks_patch( array $patch, array $expect ): int {
 
 	wp_cache_delete( HODIMA_SEO_ADVISOR_TASKS_OPTION, 'options' ); // کش شیء این پردازش کهنه است
+	hodima_seo_advisor_tasks_cache_reset();
 	$fresh   = hodima_seo_advisor_tasks();
 	$written = 0;
 

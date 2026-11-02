@@ -237,8 +237,12 @@ function hodima_seo_advisor_inspect_batch( int $limit = HODIMA_SEO_ADVISOR_INSPE
 function hodima_seo_advisor_inspect_run( string $property, int $limit, array $summary ): array {
 
 	$stored = hodima_seo_advisor_inspections();
+	$queue  = hodima_seo_advisor_inspect_queue( $limit );
+	$count  = count( $queue );
 
-	foreach ( hodima_seo_advisor_inspect_queue( $limit ) as $path ) {
+	foreach ( $queue as $index => $path ) {
+
+		hodima_seo_advisor_progress_set( 'inspect', $index + 1, max( 1, $count ), sprintf( '%1$s از %2$s آدرس پرسیده می‌شود', number_format_i18n( $index + 1 ), number_format_i18n( $count ) ), (int) round( $index / max( 1, $count ) * 100 ) ); // نوار پیشرفت (SEO 3.4.8)
 
 		$result = hodima_seo_sc_inspect_url( $property, hodima_seo_advisor_url( $path ), HODIMA_SEO_SC_ADVISOR );
 
@@ -253,6 +257,12 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 
 		$stored[ $path ] = hodima_seo_advisor_inspect_parse( $result );
 		++$summary['checked'];
+
+		// هر ۱۰ آدرس ذخیره می‌شود (SEO 3.4.6): تا ۳.۴.۵ فقط آخر کار نوشته می‌شد و قطع شدن وسط ۱۸۰ ثانیه (مهلت، سهمیه، هاست)
+		// همه نتیجه‌های پرسش‌شده از گوگل را دور می‌ریخت و سهمیه روزانه بیهوده خرج شده بود
+		if ( 0 === $summary['checked'] % 10 ) {
+			update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $stored, false );
+		}
 	}
 
 	if ( count( $stored ) > HODIMA_SEO_ADVISOR_INSPECT_KEEP ) {
@@ -261,15 +271,34 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 	}
 
 	update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $stored, false );
+	hodima_seo_advisor_run_mark( 'inspect' ); // زمان آخرین اجرای واقعی (کرون یا دکمه)؛ کارت «کارهای خودکار» از همین می‌خواند
 
 	if ( $summary['checked'] > 0 ) {
 		hodima_seo_advisor_tasks_sync_inspected(); // کارهای «انجام دادم» ایندکس و صفحه بدون نمایش با نتیجه تازه
 	}
 
+	hodima_seo_advisor_progress_finish( 'inspect', '' !== $summary['error'] ? $summary['error'] : sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ), '' !== $summary['error'] && ! $summary['quota'] );
+
 	return $summary;
 }
 
 add_action( 'admin_post_hodima_advisor_inspect_now', 'hodima_seo_advisor_handle_inspect_now' );
+
+/**
+ * یک دسته بررسی ایندکس (کنش «اجرا همین حالا»)؛ فرم admin-post و ایجکس نوار پیشرفت هر دو از همین استفاده می‌کنند (SEO 3.4.8).
+ *
+ * @return array{0: string, 1: string} [نوع پیام (success|error)، HTML پیام]
+ */
+function hodima_seo_advisor_do_inspect(): array {
+
+	$summary = hodima_seo_advisor_inspect_batch();
+
+	if ( '' !== $summary['error'] ) {
+		return [ 'error', '<strong>بررسی ایندکس:</strong> ' . esc_html( $summary['error'] ) . ( $summary['checked'] > 0 ? ' ' . esc_html( sprintf( '(%s آدرس بررسی شد)', number_format_i18n( $summary['checked'] ) ) ) : '' ) ];
+	}
+
+	return [ 'success', '<strong>بررسی ایندکس:</strong> ' . esc_html( sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ) ) ];
+}
 
 function hodima_seo_advisor_handle_inspect_now(): void {
 
@@ -279,14 +308,10 @@ function hodima_seo_advisor_handle_inspect_now(): void {
 
 	check_admin_referer( 'hodima_advisor_inspect_now' );
 
-	$summary = hodima_seo_advisor_inspect_batch();
+	[ $type, $html ] = hodima_seo_advisor_do_inspect();
+	hodima_admin_flash( $html, $type );
 
-	if ( '' !== $summary['error'] ) {
-		hodima_admin_flash( '<strong>بررسی ایندکس:</strong> ' . esc_html( $summary['error'] ) . ( $summary['checked'] > 0 ? ' ' . esc_html( sprintf( '(%s آدرس بررسی شد)', number_format_i18n( $summary['checked'] ) ) ) : '' ), 'error' );
-	} else {
-		hodima_admin_flash( '<strong>بررسی ایندکس:</strong> ' . esc_html( sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ) ), 'success' );
-	}
-
-	wp_safe_redirect( admin_url( 'admin.php?page=' . HODIMA_SEO_ADVISOR_PAGE . '&tab=indexing' ) );
+	$back = hodima_seo_advisor_back_tab( 'indexing' );
+	wp_safe_redirect( admin_url( 'admin.php?page=' . HODIMA_SEO_ADVISOR_PAGE . '&tab=' . $back ) );
 	exit;
 }

@@ -31,7 +31,8 @@ function hodima_seo_advisor_handle_crawler_now(): void {
 	hodima_seo_advisor_crawler_start_now();
 	hodima_admin_flash( '<strong>خزش خودکار:</strong> خزش همین حالا شروع شد؛ صفحه را باز نگه دارید تا پیشرفت را ببینید (بسته هم باشد، با کرون ادامه می‌یابد).', 'success' );
 
-	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) );
+	$back = hodima_seo_advisor_back_tab( 'crawl' );
+	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => $back ] ) );
 	exit;
 }
 
@@ -60,7 +61,7 @@ function hodima_seo_advisor_handle_crawler_settings(): void {
 	);
 	hodima_admin_flash( '<strong>خزش خودکار:</strong> تنظیم ذخیره شد.', 'success' );
 
-	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) );
+	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => hodima_seo_advisor_back_tab( 'crawl' ) ] ) );
 	exit;
 }
 
@@ -81,15 +82,27 @@ function hodima_seo_advisor_crawler_status_view(): array {
 	$view = match ( $status['state'] ) {
 		'off'     => [ 'warn', 'خاموش', 'خزش خودکار خاموش است؛ فقط «خزش همین حالا» کار می‌کند.' ],
 		'paused'  => [ 'warn', 'مکث موقت', sprintf( 'سایت کند پاسخ داد؛ خزنده تا %s ساکت است تا سایت سبک بماند.', wp_date( 'H:i', $status['pause_until'] ) ) ],
-		'running' => [ 'info', $status['manual'] ? 'خزش همین حالا' : 'در حال خزش', $progress . ( $status['manual'] || hodima_seo_advisor_crawler_in_window() ? '.' : '؛ ادامه در ساعت خزش بعدی.' ) ],
-		default   => $status['requested']
-			? [ 'info', 'درخواست شد', 'دور تازه در اولین نوبت ساعت خزش شروع می‌شود.' ]
-			: ( $status['finished'] > 0
-				? [ 'ok', 'آماده', sprintf( 'آخرین دور %1$s پیش تمام شد (%2$s صفحه)؛ دور بعد خودکار.', human_time_diff( $status['finished'] ), $n( $status['pages'] ) ) ]
-				: [ 'info', 'منتظر اولین دور', $settings['enabled'] ? 'اولین دور در ساعت خزش شروع می‌شود؛ یا «خزش همین حالا» را بزنید.' : 'هنوز خزشی انجام نشده.' ] ),
+		'running' => [ 'info', $status['manual'] ? 'خزش همین حالا' : ( 'quick' === $status['mode'] ? 'دور سریع' : 'در حال خزش' ), $progress . ( $status['manual'] || hodima_seo_advisor_crawler_in_window() ? '.' : '؛ ادامه در ساعت خزش بعدی.' ) ],
+		default   => $status['finished'] > 0
+			? ( $status['capped']
+				? [ 'warn', 'سقف پر شد', sprintf( 'آخرین دور %1$s پیش تمام شد؛ سایت بیش از %2$s صفحه دارد و بقیه خزیده نشد. صفحه‌های قدیمی پاک نمی‌شوند تا داده از دست نرود.', human_time_diff( $status['finished'] ), $n( HODIMA_SEO_ADVISOR_CRAWLER_MAX_PAGES ) ) ]
+				: [ 'ok', 'آماده', sprintf( 'آخرین دور %1$s پیش تمام شد (%2$s صفحه)؛ دور بعد خودکار.', human_time_diff( $status['finished'] ), $n( $status['pages'] ) ) ] )
+			: [ 'info', 'منتظر اولین دور', $settings['enabled'] ? 'اولین دور در ساعت خزش شروع می‌شود؛ یا «خزش همین حالا» را بزنید.' : 'هنوز خزشی انجام نشده.' ],
 	};
 
 	return [ ...$view, $running && ( $status['manual'] || hodima_seo_advisor_crawler_in_window() ) ];
+}
+
+/**
+ * این گام ایجکس خودش نوبت خزش بزند؟ «خزش همین حالا» بله؛ دور خودکار فقط وقتی داخل پنجره است و کرون ۱۰ دقیقه نوبتی نزده (SEO 3.4.4).
+ *
+ * @param array<string, mixed> $state hodima_seo_advisor_crawler_state()
+ */
+function hodima_seo_advisor_crawler_step_drives( array $state, ?int $now = null ): bool {
+
+	$now = $now ?? time();
+
+	return (bool) $state['manual'] || ( hodima_seo_advisor_crawler_in_window( $now ) && $now - max( (int) $state['tick'], (int) $state['started'] ) > 10 * MINUTE_IN_SECONDS );
 }
 
 /**
@@ -106,13 +119,17 @@ function hodima_seo_advisor_ajax_crawler_step(): void {
 	$state    = hodima_seo_advisor_crawler_state();
 	$finished = false;
 
-	if ( 'running' === $state['status'] && ( $state['manual'] || hodima_seo_advisor_crawler_in_window() ) ) {
+	// SEO 3.4.4: دور خودکار را کرون پیش می‌برد؛ هر تب باز پیشخوان هم یک نوبت ۲۰ ثانیه‌ای می‌زد و یک PHP worker را پشت‌سرهم می‌گرفت.
+	// حالا نوبت فقط برای «خزش همین حالا» یا وقتی کرون ۱۰ دقیقه است نوبتی نزده می‌آید؛ وگرنه فقط وضعیت خوانده می‌شود.
+	$drive = hodima_seo_advisor_crawler_step_drives( $state );
+
+	if ( 'running' === $state['status'] && $drive ) {
 		$finished = hodima_seo_advisor_crawler_tick( true )['finished'];
 	}
 
 	[ $level, $label, $info, $running ] = hodima_seo_advisor_crawler_status_view();
 
-	wp_send_json_success( [ 'level' => $level, 'label' => $label, 'text' => $info, 'running' => $running, 'finished' => $finished ] );
+	wp_send_json_success( [ 'level' => $level, 'label' => $label, 'text' => $info, 'running' => $running, 'finished' => $finished, 'delay' => $drive ? 1500 : 8000, 'percent' => hodima_seo_advisor_crawler_percent( hodima_seo_advisor_crawler_status() ) ] );
 }
 
 /**
@@ -174,116 +191,6 @@ function hodima_seo_advisor_crawl_pill_class( string $level ): string {
 }
 
 /**
- * کارت «خزش خودکار»: وضعیت و دو تب: «زمان‌بندی» (روشن/خاموش، همه ساعت‌ها یا بازه، فاصله دورها) و «همین حالا»
- * (خزش در لحظه برای وقتی مدیر لازم دارد).
- */
-function hodima_seo_advisor_render_crawler_card(): void {
-
-	$settings = hodima_seo_advisor_crawler_settings();
-	$status   = hodima_seo_advisor_crawler_status();
-	$n        = static fn( int|float $value ): string => number_format_i18n( $value );
-	$hour     = static fn( int $h ): string => $n( $h ) . ':۰۰';
-	$window   = $settings['always'] || $settings['start'] === $settings['end'] ? 'همه ساعت‌های شبانه‌روز' : sprintf( 'هر روز %1$s تا %2$s', $hour( $settings['start'] ), $hour( $settings['end'] ) );
-
-	[ $level, $label, $info, $live ] = hodima_seo_advisor_crawler_status_view();
-
-	hodima_seo_ui_card_open( 'خزش خودکار', 'دستار خودش صفحه‌های سایت را می‌خواند؛ آهسته، یک درخواست در هر لحظه، تا سایت کند نشود.' );
-	?>
-	<ul class="hodima-advisor__files" aria-label="وضعیت خزش خودکار"<?php echo $live ? ' data-hdsa-crawl-live="' . esc_attr( wp_create_nonce( 'hodima_advisor_crawler_step' ) ) . '" data-hdsa-ajax="' . esc_url( admin_url( 'admin-ajax.php' ) ) . '"' : ''; ?>>
-		<li class="hodima-advisor__file">
-			<span class="hodima-advisor__dot hodima-advisor__dot--<?php echo esc_attr( $level ); ?>" aria-hidden="true" data-hdsa-crawl-dot></span>
-			<span class="hodima-advisor__file-body">
-				<strong>وضعیت</strong>
-				<small role="status" data-hdsa-crawl-text><?php echo esc_html( $info ); ?></small>
-			</span>
-			<span class="<?php echo esc_attr( hodima_seo_advisor_crawl_pill_class( $level ) ); ?>" data-hdsa-crawl-pill><?php echo esc_html( $label ); ?></span>
-		</li>
-		<li class="hodima-advisor__file">
-			<span class="hodima-advisor__dot hodima-advisor__dot--info" aria-hidden="true"></span>
-			<span class="hodima-advisor__file-body">
-				<strong>زمان‌بندی</strong>
-				<small><?php echo esc_html( sprintf( '%1$s به وقت سایت، هر %2$s روز یک دور%3$s', $window, $n( $settings['interval'] ), $settings['enabled'] ? '' : ' (خاموش)' ) ); ?></small>
-			</span>
-		</li>
-	</ul>
-	<?php
-	hodima_seo_ui_tabs(
-		'hodima-crawler',
-		'تنظیم خزش خودکار',
-		[
-			'plan' => [
-				'label' => 'زمان‌بندی',
-				'html'  => static function () use ( $settings, $n, $hour ): void {
-					?>
-					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__crawler-form">
-						<input type="hidden" name="action" value="hodima_advisor_crawler_settings">
-						<input type="hidden" name="_wpnonce" value="<?php echo esc_attr( wp_create_nonce( 'hodima_advisor_crawler_settings' ) ); ?>">
-						<label class="hodima-advisor__confirm">
-							<input type="checkbox" name="enabled" value="1"<?php checked( $settings['enabled'] ); ?>>
-							<span>خزش خودکار روشن باشد</span>
-						</label>
-						<fieldset class="hodima-advisor__crawler-mode">
-							<legend>چه ساعت‌هایی بخزد؟</legend>
-							<label><input type="radio" name="always" value="0"<?php checked( ! $settings['always'] && $settings['start'] !== $settings['end'] ); ?>> <span>فقط در ساعت‌های انتخاب‌شده (پیشنهاد: شب)</span></label>
-							<label><input type="radio" name="always" value="1"<?php checked( $settings['always'] || $settings['start'] === $settings['end'] ); ?>> <span>همه ساعت‌ها (۲۴ ساعته)</span></label>
-						</fieldset>
-						<div class="hodima-advisor__crawler-fields">
-							<label class="hodima-advisor__crawler-field" for="hodima-crawler-start">
-								<span>از ساعت</span>
-								<select id="hodima-crawler-start" name="start" class="hds-input">
-									<?php for ( $h = 0; $h < 24; $h++ ) : ?>
-										<option value="<?php echo esc_attr( (string) $h ); ?>"<?php selected( $settings['start'], $h ); ?>><?php echo esc_html( $hour( $h ) ); ?></option>
-									<?php endfor; ?>
-								</select>
-							</label>
-							<label class="hodima-advisor__crawler-field" for="hodima-crawler-end">
-								<span>تا ساعت</span>
-								<select id="hodima-crawler-end" name="end" class="hds-input">
-									<?php for ( $h = 1; $h <= 24; $h++ ) : ?>
-										<option value="<?php echo esc_attr( (string) $h ); ?>"<?php selected( $settings['end'], $h ); ?>><?php echo esc_html( $hour( $h ) ); ?></option>
-									<?php endfor; ?>
-								</select>
-							</label>
-							<label class="hodima-advisor__crawler-field" for="hodima-crawler-interval">
-								<span>هر چند روز یک دور</span>
-								<select id="hodima-crawler-interval" name="interval" class="hds-input">
-									<?php foreach ( HODIMA_SEO_ADVISOR_CRAWLER_INTERVALS as $days ) : ?>
-										<option value="<?php echo esc_attr( (string) $days ); ?>"<?php selected( $settings['interval'], $days ); ?>><?php echo esc_html( $n( $days ) . ' روز' ); ?></option>
-									<?php endforeach; ?>
-								</select>
-							</label>
-						</div>
-						<p class="hodima-advisor__setting-help">
-							«تا ساعت ۲۴:۰۰» یعنی تا نیمه‌شب. اگر ساعت پایان از شروع کوچک‌تر باشد بازه از شب به صبح می‌رود (مثلا ۲۲ تا ۶). خزنده اگر سایت کند شد خودش نیم ساعت می‌ایستد. کرون وردپرس فقط وقتی کسی به سایت سر بزند اجرا می‌شود؛ اگر بازدید کم است در هاست یک کرون واقعی هر ۵ دقیقه بگذارید: <bdi class="hds-code" dir="ltr"><?php echo esc_html( '*/5 * * * * curl -s ' . home_url( '/wp-cron.php?doing_wp_cron' ) . ' >/dev/null' ); ?></bdi>
-						</p>
-						<button type="submit" class="hds-btn">ذخیره</button>
-					</form>
-					<?php
-				},
-			],
-			'now'  => [
-				'label' => 'خزش همین حالا',
-				'html'  => static function () use ( $status ): void {
-					?>
-					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__crawler-form">
-						<input type="hidden" name="action" value="hodima_advisor_crawler_now">
-						<input type="hidden" name="_wpnonce" value="<?php echo esc_attr( wp_create_nonce( 'hodima_advisor_crawler_now' ) ); ?>">
-						<p class="hodima-advisor__setting-help">
-							یک دور کامل خزش را همین الان و بی‌توجه به ساعت‌های بالا شروع می‌کند (مثلا بعد از رفع چند ایراد). همان سرعت آهسته و امن است و اگر سایت کند شد می‌ایستد؛ برای سایت حدود ۳۰۰ صفحه چند دقیقه طول می‌کشد. صفحه را باز نگه دارید تا پیشرفت را ببینید.
-						</p>
-						<button type="submit" class="hds-btn"<?php disabled( 'running' === $status['state'] ); ?>>
-							<span class="dashicons dashicons-update" aria-hidden="true"></span> خزش همین حالا
-						</button>
-					</form>
-					<?php
-				},
-			],
-		]
-	);
-	hodima_seo_ui_card_close();
-}
-
-/**
  * محتوای تب «ایرادهای فنی».
  */
 function hodima_seo_advisor_render_crawl(): void {
@@ -308,11 +215,9 @@ function hodima_seo_advisor_render_crawl(): void {
 		hodima_seo_advisor_render_score( $every, $sum['crawled'] );
 	}
 
-	hodima_seo_advisor_render_crawler_card();
-
 	if ( ! $has ) {
 		hodima_seo_ui_card_open( 'ایرادهای صفحه‌ها' );
-		hodima_seo_ui_empty( 'هنوز خزشی انجام نشده', 'خزش خودکار (کارت بالا) اولین دور را در ساعت خزش انجام می‌دهد و اینجا پر می‌شود؛ یا «خزش همین حالا» را بزنید.' );
+		hodima_seo_ui_empty( 'هنوز خزشی انجام نشده', 'خزش خودکار (تب «خزش و داده») اولین دور را در ساعت خزش انجام می‌دهد و اینجا پر می‌شود؛ یا «خزش همین حالا» را بزنید.' );
 		hodima_seo_ui_card_close();
 		return;
 	}
@@ -375,14 +280,16 @@ function hodima_seo_advisor_render_crawl_list( array $issues, array $sum, int $h
 		<?php if ( '' !== $marked ) : ?>
 			<input type="hidden" name="tasks" value="all">
 		<?php endif; ?>
-		<nav class="hodima-advisor__views" aria-label="نوع ایراد">
-			<?php foreach ( $views as $key => [ $text, $count ] ) : ?>
-				<?php if ( '' !== $key && $count < 1 ) { continue; } ?>
-				<a class="hodima-advisor__view" href="<?php echo esc_url( $url( [ 'cf' => $key, 'q' => $q ] ) ); ?>"<?php echo $key === $group ? ' aria-current="page"' : ''; ?>>
-					<?php echo esc_html( $text ); ?> <span class="hodima-advisor__count"><?php echo esc_html( $n( $count ) ); ?></span>
-				</a>
-			<?php endforeach; ?>
-		</nav>
+		<?php
+		$view_items = [];
+		foreach ( $views as $key => [ $text, $count ] ) {
+			if ( '' !== $key && $count < 1 ) {
+				continue;
+			}
+			$view_items[ $key ] = [ $text, $count, $url( [ 'cf' => $key, 'q' => $q ] ) ];
+		}
+		hodima_seo_advisor_filter_select( 'نوع ایراد', $view_items, $group );
+		?>
 		<div class="hodima-advisor__search">
 			<label class="screen-reader-text" for="hodima-advisor-crawl-q">جستجو در آدرس صفحه</label>
 			<input type="search" id="hodima-advisor-crawl-q" name="q" class="hds-input" value="<?php echo esc_attr( $q ); ?>" placeholder="جستجوی آدرس…">
