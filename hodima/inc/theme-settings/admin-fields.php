@@ -332,7 +332,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 					<?php endif; ?>
 				<?php endif; ?>
 				<select id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>"<?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
-					<?php foreach ( (array) ( $field['options'] ?? [] ) as $option => $label ) : ?>
+					<?php foreach ( hodima_settings_field_options( $field ) as $option => $label ) : ?>
 						<option value="<?php echo esc_attr( (string) $option ); ?>" <?php selected( (string) $value, (string) $option ); ?>><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>

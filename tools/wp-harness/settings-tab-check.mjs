@@ -53,7 +53,9 @@ const open = async ( browser, htmlFile, src, width ) => {
 			return route.abort();
 		}
 		if ( u.pathname === '/wp-admin/admin.php' ) {
-			return route.fulfill( { contentType: 'text/html; charset=utf-8', body: fs.readFileSync( htmlFile ) } );
+			// HODIMA_RTL=1: پیشخوان واقعی فارسی dir=rtl دارد (چینش شبکه از راست)؛ زبان ابزار تست en-US است و چپ‌به‌راست چیده می‌شود
+			const html = fs.readFileSync( htmlFile, 'utf8' );
+			return route.fulfill( { contentType: 'text/html; charset=utf-8', body: process.env.HODIMA_RTL ? html.replace( /<html(?![^>]*\bdir=)/, '<html dir="rtl"' ) : html } );
 		}
 		if ( u.pathname === '/wp-admin/load-scripts.php' ) {
 			return route.fulfill( { contentType: 'application/javascript', body: '' } ); // jQuery/wp.media در وردپرس ابزار تست نیست؛ admin.js بدون آن‌ها هم راه می‌افتد

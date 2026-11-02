@@ -57,6 +57,8 @@ tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های �
 
 # یک تب «تنظیمات قالب هدیما» با CSS/JS واقعی راست‌به‌چپ: عکس ۱۳۰۰ و ۳۹۰ (قبل/بعد با --ref)، axe، آزمون رفتار آیکون ؟ (هاور، کلیک، Esc، کاشی کلید)
 tools/wp-harness/settings-tab-check.sh product --ref HEAD   # خروجی: /tmp/hodima-harness/settings-product/
+# HODIMA_RTL=1 جلوی همان دستور: صفحه با <html dir=rtl> مثل پیشخوان فارسی (بدونش زبان ابزار en-US است و قاب‌های نیمه‌عرض از چپ چیده می‌شوند)؛ برای قاب‌های side-by-side حتما با آن عکس بگیر
+# منوی هدر (تب «هدر»؛ فهرست انتخابی، پاک‌سازی، برگشت به مکان منو): HARNESS=1 php tools/wp-harness/header-menu-tests.php
 ```
 بار اول `setup.sh` خودکار اجرا می‌شود. مسیر کار: `$HODIMA_HARNESS` (پیش‌فرض `/tmp/hodima-harness`).
 

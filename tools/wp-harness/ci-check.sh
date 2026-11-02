@@ -66,6 +66,13 @@ else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/notification-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
+echo "=== آزمون منوی هدر (header-menu-tests.php: گزینه‌ها، پاک‌سازی، هدر با فهرست انتخابی/حذف‌شده)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/header-menu-tests.php" > "$out/header-menu-tests.txt" 2>&1; then
+	tail -1 "$out/header-menu-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/header-menu-tests.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
+
 echo "=== آزمون استوری (stories-tests.php: ذخیره پنل، آمار، nonce کهنه، زمان‌بندی، نوار)"
 if HARNESS=1 HODIMA_WP="$base/wp" php "$here/stories-tests.php" > "$out/stories-tests.txt" 2>&1; then
 	tail -1 "$out/stories-tests.txt" | sed 's/^/  /'

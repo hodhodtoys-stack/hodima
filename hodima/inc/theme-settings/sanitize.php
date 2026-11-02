@@ -42,6 +42,28 @@ function hodima_settings_sanitize( $input ): array {
 }
 
 /**
+ * گزینه‌های یک فیلد select.
+ *
+ * گزینه‌ای که از وردپرس می‌آید (مثل فهرست منوها) با `options_cb` (نام تابع) تعریف می‌شود تا
+ * در هر درخواست سایت پرسیده نشود و فقط هنگام نمایش/ذخیره تنظیمات (پیشخوان) خوانده شود.
+ *
+ * @param array<string, mixed> $field
+ * @return array<int|string, string>
+ */
+function hodima_settings_field_options( array $field ): array {
+
+	$callback = $field['options_cb'] ?? null;
+
+	if ( is_string( $callback ) && is_callable( $callback ) ) {
+		$options = $callback();
+	} else {
+		$options = $field['options'] ?? [];
+	}
+
+	return is_array( $options ) ? array_map( 'strval', $options ) : [];
+}
+
+/**
  * نوع یک فیلد تنظیمات.
  *
  * @param array<string, mixed> $field

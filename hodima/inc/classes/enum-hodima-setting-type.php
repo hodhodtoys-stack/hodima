@@ -75,7 +75,7 @@ enum Hodima_Setting_Type: string {
 			self::Textarea => sanitize_textarea_field( is_string( $raw ) ? $raw : '' ),
 			// عدد در بازه min/max (اعشاری اگر step اعشاری دارد)؛ ورودی خالی/نامعتبر = پیش‌فرض
 			self::Number   => hodima_settings_sanitize_number( $field, $raw ),
-			self::Select   => isset( $field['options'][ (string) ( is_scalar( $raw ) ? $raw : '' ) ] ) ? (string) $raw : (string) $field['default'],
+			self::Select   => isset( hodima_settings_field_options( $field )[ (string) ( is_scalar( $raw ) ? $raw : '' ) ] ) ? (string) $raw : (string) $field['default'],
 			// #abc → #aabbcc (input type=color فقط شش رقمی می‌پذیرد)
 			self::Color    => hodima_settings_sanitize_color( $raw, (string) $field['default'] ),
 			self::Text     => sanitize_text_field( is_string( $raw ) ? $raw : '' ),

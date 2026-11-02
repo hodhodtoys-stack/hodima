@@ -16,6 +16,36 @@ function hodima_header_assets(): void {
 add_action( 'wp_enqueue_scripts', 'hodima_header_assets', 20 );
 
 /**
+ * گزینه‌های فیلد «فهرست نمایش‌داده‌شده در هدر» (تب «هدر»): همه فهرست‌های وردپرس.
+ *
+ * کلید `0` = همان مکان «منوی اصلی (هدر)» (رفتار قبلی؛ سایت‌های موجود بدون مهاجرت همان می‌مانند).
+ *
+ * @return array<int|string, string> کلید = شناسه فهرست (PHP کلید عددی را int می‌کند)
+ */
+function hodima_header_menu_options(): array {
+
+    $options = [ '0' => 'منوی اصلی (پیش‌فرض)' ];
+
+    foreach ( wp_get_nav_menus() as $menu ) {
+        $options[ (string) $menu->term_id ] = $menu->name;
+    }
+
+    return $options;
+}
+
+/**
+ * شناسه فهرستی که مدیر برای هدر انتخاب کرده؛ ۰ = مکان منوی اصلی.
+ *
+ * فهرست حذف‌شده هم ۰ می‌شود (wp_nav_menu هم اگر `menu` پیدا نشود به مکان برمی‌گردد، این فقط صریح‌تر است).
+ */
+function hodima_header_menu_id(): int {
+
+    $id = function_exists( 'hodima_setting' ) ? absint( hodima_setting( 'header_menu' ) ) : 0;
+
+    return ( $id > 0 && wp_get_nav_menu_object( $id ) ) ? $id : 0;
+}
+
+/**
  * دکمه باز/بسته‌کردن زیرمنو کنار هر آیتم «منوی اصلی» که زیرمنو دارد (موبایل؛ دسکتاپ با CSS پنهان است).
  *
  * قبلا کلیک روی خود لینک والد زیرمنو را باز می‌کرد و همیشه از رفتن به صفحه‌اش جلوگیری می‌شد:

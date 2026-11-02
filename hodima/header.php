@@ -72,8 +72,11 @@ $hodima_logo_cls = ( function_exists( 'hodima_setting' ) && hodima_setting( 'log
                     <!-- منوی اصلی (یکپارچه برای دسکتاپ و موبایل) -->
                     <nav class="main-nav" id="mainNavWrapper" aria-label="منوی اصلی سایت">
                         <?php
-                        // مکان «منوی اصلی (هدر)» در «نمایش ← فهرست‌ها»؛ قبلا منو با نامش صدا زده می‌شد
+                        // فهرست انتخابی تب «هدر» در تنظیمات قالب (menu)؛ بدون انتخاب یا با فهرست حذف‌شده
+                        // مکان «منوی اصلی (هدر)» در «نمایش ← فهرست‌ها» (theme_location). theme_location
+                        // همیشه می‌ماند چون دکمه زیرمنو (inc/header.php) با آن شناخته می‌شود.
                         wp_nav_menu( [
+                            'menu'           => hodima_header_menu_id(),
                             'theme_location' => HODIMA_MENU_PRIMARY,
                             'menu_class'     => 'main-menu',
                             'container'      => '', // بدون ظرف (رشته خالی = false در wp_nav_menu)

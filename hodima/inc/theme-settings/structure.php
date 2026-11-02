@@ -114,7 +114,8 @@ function hodima_settings_panels(): array {
 		'look_shape'         => [ 'section' => 'layout', 'title' => 'گوشه‌ها و دکمه‌ها', 'icon' => 'dashicons-art', 'half' => true ],
 		'look_width'         => [ 'section' => 'layout', 'title' => 'عرض صفحه', 'icon' => 'dashicons-editor-expand', 'half' => true ],
 
-		'header_main'        => [ 'section' => 'header', 'title' => 'پشتیبانی و جستجو', 'icon' => 'dashicons-format-chat', 'help' => 'دکمه پشتیبانی فقط وقتی دیده می‌شود که در تب «اطلاعات تماس» دست‌کم یک راه ارتباطی وارد شده باشد.' ],
+		'header_menu'        => [ 'section' => 'header', 'title' => 'منوی هدر', 'icon' => 'dashicons-menu', 'half' => true ],
+		'header_main'        => [ 'section' => 'header', 'title' => 'پشتیبانی و جستجو', 'icon' => 'dashicons-format-chat', 'half' => true, 'help' => 'دکمه پشتیبانی فقط وقتی دیده می‌شود که در تب «اطلاعات تماس» دست‌کم یک راه ارتباطی وارد شده باشد.' ],
 
 		'footer_about'       => [ 'section' => 'footer', 'title' => 'ستون‌های «درباره ما» و «راهنمای خرید»', 'icon' => 'dashicons-info' ],
 		'footer_trust'       => [ 'section' => 'footer', 'title' => 'ستون «نماد اعتماد»', 'icon' => 'dashicons-shield', 'layout' => 'cards', 'help' => 'تا سه نماد (مثلا اینماد، ساماندهی، اتحادیه). نمادهای دارای تصویر به همین ترتیب کنار هم نمایش داده می‌شوند؛ نماد بدون تصویر نادیده گرفته می‌شود.' ],

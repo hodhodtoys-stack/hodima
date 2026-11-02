@@ -60,6 +60,8 @@ function hodima_settings_fields(): array {
 		'mobile_nav_support' => [ 'panel' => 'extras_mobile_nav', 'type' => 'toggle', 'label' => 'پشتیبانی', 'default' => true, 'help' => 'پنجره پشتیبانی هدر (اگر در «اطلاعات تماس» راهی وارد شده باشد).' ],
 
 		// ── هدر ─────────────────────────────────────────────────────
+		// فهرست منوی هدر: گزینه‌ها فقط در پیشخوان و هنگام ذخیره از وردپرس خوانده می‌شوند (options_cb)، نه در هر درخواست سایت
+		'header_menu'          => [ 'panel' => 'header_menu', 'type' => 'select', 'label' => 'فهرست نمایش‌داده‌شده در هدر', 'default' => '0', 'options' => [ '0' => 'منوی اصلی (پیش‌فرض)' ], 'options_cb' => 'hodima_header_menu_options', 'help' => 'یکی از فهرست‌هایی که در «نمایش ← فهرست‌ها» ساخته‌اید. «منوی اصلی» همان فهرستی است که به مکان «منوی اصلی (هدر)» وصل کرده‌اید. اگر فهرست انتخابی حذف شود، هدر خودکار به همان برمی‌گردد.' ],
 		'header_support_text'  => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'متن دکمه پشتیبانی', 'default' => 'پشتیبانی' ],
 		'header_popup_title'   => [ 'panel' => 'header_main', 'type' => 'text', 'label' => 'عنوان پنجره پشتیبانی', 'default' => 'ارتباط با ما' ],
 		'header_search'        => [ 'panel' => 'header_main', 'type' => 'toggle', 'label' => 'جستجو در هدر', 'default' => true, 'help' => 'کادر جستجوی محصولات و مقاله‌ها.' ],
