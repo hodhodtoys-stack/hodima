@@ -4337,6 +4337,36 @@ hodima_ad(
 	[ 'library', 'page', 'component', 'external', 'none', true, true, true ]
 );
 
+// تصویر داخل توضیح دسته/خلاصه محصول/برگه اصلی (SEO 3.5.1): «ویرایش همان صفحه»، نه «قالب یا افزونه» (باگ ۳.۵.۰: فقط post_content دیده می‌شد)
+$rc_term = wp_insert_term( 'دسته آزمون تصویر', 'category', [ 'description' => '<p><img src="' . $rc_aurl . '" alt=""></p>' ] );
+$rc_tid  = is_array( $rc_term ) ? (int) $rc_term['term_id'] : 0;
+$rc_tpath = (string) hodima_seo_advisor_path_key( (string) get_term_link( $rc_tid, 'category' ) );
+update_post_meta( $rc_att, '_wp_attachment_image_alt', 'پخش عمده انواع گیره مو' );
+$rc_i_term = $rc_info( $rc_aurl, $rc_tpath );
+hodima_ad(
+	'تصویر داخل توضیح دسته (alt کتابخانه پر): حالت «page»، ویرایشگر «توضیح»، «ویرایش دسته» با پیوند ویرایش دسته، متن پیشنهادی = alt کتابخانه',
+	[ $rc_i_term['case'], $rc_i_term['field'], $rc_i_term['edit_label'], str_contains( $rc_i_term['page_edit'], 'term_id=' . $rc_tid ) || str_contains( $rc_i_term['page_edit'], 'tag_ID=' . $rc_tid ), $rc_i_term['suggest'] ],
+	[ 'page', 'توضیح', 'ویرایش دسته', true, 'پخش عمده انواع گیره مو' ]
+);
+$rc_help_term = hodima_seo_advisor_img_help_text( 'page', $rc_i_term );
+hodima_ad( 'متن «چه کنم؟» دسته: «ویرایش دسته» ← ویرایشگر «توضیح» ← «متن جایگزین»؛ بدون «قابل رفع نیست»', [ str_contains( $rc_help_term, '«ویرایش دسته»' ), str_contains( $rc_help_term, 'ویرایشگر «توضیح»' ), str_contains( $rc_help_term, '«متن جایگزین»' ), str_contains( $rc_help_term, 'قابل رفع نیست' ) ], [ true, true, true, false ] );
+update_post_meta( $rc_att, '_wp_attachment_image_alt', '' );
+hodima_ad( 'alt کتابخانه هم خالی ولی تصویر در توضیح دسته است ← باز «page» (کتابخانه آن را درست نمی‌کند)', hodima_seo_advisor_img_fix_info( [ 'u' => $rc_aurl, 's' => 'missing', 'c' => 'div.category-content' ], $rc_tpath )['case'], 'page' );
+wp_delete_term( $rc_tid, 'category' );
+$rc_ex = (int) wp_insert_post( [ 'post_type' => 'post', 'post_status' => 'publish', 'post_title' => 'نوشته خلاصه آزمون', 'post_name' => 'rc-excerpt-post', 'post_content' => 'بدون تصویر', 'post_excerpt' => '<img src="' . $rc_aurl . '">' ] );
+$rc_i_ex = $rc_info( $rc_aurl, (string) hodima_seo_advisor_path_key( (string) get_permalink( $rc_ex ) ) );
+hodima_ad( 'تصویر داخل خلاصه نوشته: «page»، ویرایشگر «خلاصه»، «ویرایش نوشته»', [ $rc_i_ex['case'], $rc_i_ex['field'], $rc_i_ex['edit_label'] ], [ 'page', 'خلاصه', 'ویرایش نوشته' ] );
+wp_delete_post( $rc_ex, true );
+hodima_ad( 'تصویر بیرونی (CDN) که در متن صفحه درج شده ← «page» نه «external»', ( static function () use ( $rc_post, $rc_path, $rc_info ): string {
+	wp_update_post( [ 'ID' => $rc_post, 'post_content' => '<img src="https://cdn.test/in-body-shoe.png">' ] );
+	return $rc_info( 'https://cdn.test/in-body-shoe.png', $rc_path )['case'];
+} )(), 'page' );
+hodima_ad( 'تصویر نه در متن، نه در دسته/خلاصه: «component» با متن نرم (صفحه‌ساز/ویجت) و بدون «قابل رفع نیست»', [ $rc_info( $rc_aurl, '/rc-nowhere/' )['case'], str_contains( hodima_seo_advisor_img_help_text( 'component' ), 'صفحه‌ساز' ), str_contains( hodima_seo_advisor_img_help_text( 'component' ), 'قابل رفع نیست' ) ], [ 'library', true, false ] );
+update_post_meta( $rc_att, '_wp_attachment_image_alt', 'توضیح کتابخانه' );
+hodima_ad( 'alt کتابخانه پر و نه در متن: «component» و متن پیشنهادی = alt کتابخانه', [ $rc_info( $rc_aurl, '/rc-nowhere/' )['case'], $rc_info( $rc_aurl, '/rc-nowhere/' )['suggest'] ], [ 'component', 'توضیح کتابخانه' ] );
+update_post_meta( $rc_att, '_wp_attachment_image_alt', '' );
+wp_update_post( [ 'ID' => $rc_post, 'post_content' => 'x' ] );
+
 // تصویر مشترک: ۶ صفحه یک فایل ← یک گروه؛ بسته‌شدن کار یک صفحه آن را ۵ می‌کند؛ ۴ صفحه «مشترک» نیست
 $rc_share = 'https://hodima.test/wp-content/uploads/rc-shared.jpg';
 foreach ( range( 1, 6 ) as $rc_k ) {

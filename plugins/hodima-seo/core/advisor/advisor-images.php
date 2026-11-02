@@ -279,16 +279,88 @@ function hodima_seo_advisor_img_context_label( string $context ): string {
 	return '';
 }
 
+/** نام فارسی دکمه «ویرایش» هر نوع صفحه (مستقل از زبان پیشخوان تا متن راهنما همیشه فارسی و یکدست باشد). */
+function hodima_seo_advisor_img_edit_label( string $kind ): string {
+
+	return match ( $kind ) {
+		'product'                     => 'ویرایش محصول',
+		'post'                        => 'ویرایش نوشته',
+		'product_cat', 'category'     => 'ویرایش دسته',
+		'product_tag', 'post_tag'     => 'ویرایش برچسب',
+		default                       => taxonomy_exists( $kind ) ? 'ویرایش ' . ( get_taxonomy( $kind )->labels->singular_name ?? 'دسته' ) : 'ویرایش صفحه',
+	};
+}
+
+/**
+ * جای‌هایی که متن یک صفحه در آن ذخیره می‌شود و تصویر می‌تواند داخلش درج شده باشد (SEO 3.5.1): متن و خلاصه نوشته/برگه/محصول،
+ * توضیح دسته/برچسب/برند، و برگه صفحه اصلی. تا ۳.۵.۰ فقط متن نوشته/برگه دیده می‌شد؛ تصویر داخل «توضیح دسته» (که در post_content
+ * نیست) به‌اشتباه «از قالب یا افزونه، قابل رفع نیست» می‌شد.
+ *
+ * @return array{fields: list<array{label: string, text: string}>, edit: string, edit_label: string}
+ */
+function hodima_seo_advisor_img_source_fields( string $path ): array {
+
+	$out = [ 'fields' => [], 'edit' => '', 'edit_label' => '' ];
+
+	if ( '' === $path ) {
+		return $out;
+	}
+
+	$class = hodima_seo_advisor_classify( $path );
+
+	if ( 'home' === $class['kind'] && 'page' === get_option( 'show_on_front' ) && (int) get_option( 'page_on_front' ) > 0 ) {
+		$class = [ 'kind' => 'page', 'id' => (int) get_option( 'page_on_front' ) ];
+	}
+
+	if ( $class['id'] <= 0 ) {
+		$post_id = url_to_postid( home_url( $path ) );
+		$class   = $post_id > 0 ? [ 'kind' => (string) get_post_type( $post_id ), 'id' => $post_id ] : $class;
+	}
+
+	if ( $class['id'] <= 0 ) {
+		return $out;
+	}
+
+	if ( taxonomy_exists( $class['kind'] ) ) {
+		$term = get_term( $class['id'], $class['kind'] );
+
+		if ( $term instanceof WP_Term ) {
+			$out['fields'][]   = [ 'label' => 'توضیح', 'text' => (string) $term->description ];
+			$out['edit']       = current_user_can( 'edit_term', $term->term_id ) ? (string) get_edit_term_link( $term->term_id, $class['kind'] ) : '';
+			$out['edit_label'] = hodima_seo_advisor_img_edit_label( $class['kind'] );
+		}
+
+		return $out;
+	}
+
+	$post = post_type_exists( $class['kind'] ) ? get_post( $class['id'] ) : null;
+
+	if ( $post instanceof WP_Post ) {
+		$product         = 'product' === $post->post_type;
+		$out['fields'][] = [ 'label' => $product ? 'توضیحات محصول' : 'متن', 'text' => $post->post_content ];
+
+		if ( '' !== trim( $post->post_excerpt ) ) {
+			$out['fields'][] = [ 'label' => $product ? 'توضیح کوتاه محصول' : 'خلاصه', 'text' => $post->post_excerpt ];
+		}
+
+		$out['edit']       = current_user_can( 'edit_post', $post->ID ) ? (string) get_edit_post_link( $post->ID, 'raw' ) : '';
+		$out['edit_label'] = hodima_seo_advisor_img_edit_label( $post->post_type );
+	}
+
+	return $out;
+}
+
 /**
  * علت و جای رفع یک تصویر بدون alt:
  *   none      آدرسی در HTML نیست (با جاوااسکریپت ساخته می‌شود) ← کاری از اینجا نمی‌شود؛
- *   library   پیوست کتابخانه است و alt کتابخانه خالی ← همان‌جا بنویسید (در همه صفحه‌ها اثر می‌کند)؛
- *   page      alt کتابخانه پر است ولی در متن همین صفحه کپی‌شده خالی ← ویرایش همین صفحه؛
- *   component alt کتابخانه پر است ولی صفحه خالی چاپ می‌کند و در متن صفحه نیست ← قالب یا افزونه alt را نمی‌خواند؛
- *   external  بیرون از کتابخانه (اسلایدر، صفحه‌ساز، CDN) ← آدرس را کپی کنید.
+ *   page      تصویر داخل متن همین صفحه درج شده (متن/خلاصه نوشته یا محصول، توضیح دسته، برگه اصلی) ← alt هنگام درج همان‌جا کپی شده
+ *             (خالی)، و پرکردن کتابخانه آن را عوض نمی‌کند ← ویرایش همان صفحه/دسته، حتی اگر کتابخانه هم خالی باشد؛
+ *   external  بیرون از کتابخانه (اسلایدر، صفحه‌ساز، CDN) و در متن صفحه نیست ← آدرس را کپی کنید؛
+ *   library   پیوست کتابخانه است، alt کتابخانه خالی و در متن صفحه نیست (قالب از کتابخانه می‌خواند) ← همان‌جا بنویسید؛
+ *   component alt کتابخانه پر است ولی صفحه خالی چاپ می‌کند و در متن صفحه نیست ← صفحه‌ساز/ویجت/قالب/افزونه.
  *
  * @param array{u: string, s: string, c: string} $entry
- * @return array{case: string, url: string, name: string, id: int, lib_alt: string, edit: string, page_edit: string, thumb: string, suggest: string, where: string}
+ * @return array{case: string, url: string, name: string, id: int, lib_alt: string, edit: string, page_edit: string, edit_label: string, field: string, thumb: string, suggest: string, where: string}
  */
 function hodima_seo_advisor_img_fix_info( array $entry, string $path ): array {
 
@@ -296,33 +368,41 @@ function hodima_seo_advisor_img_fix_info( array $entry, string $path ): array {
 	$id      = '' === $url ? 0 : attachment_url_to_postid( $url );
 	$lib_alt = $id > 0 ? trim( (string) get_post_meta( $id, '_wp_attachment_image_alt', true ) ) : '';
 	$edit    = $id > 0 && current_user_can( 'edit_post', $id ) ? (string) get_edit_post_link( $id, 'raw' ) : '';
-	$page_id = '' !== $path ? url_to_postid( home_url( $path ) ) : 0;
-	$content = $page_id > 0 ? (string) get_post_field( 'post_content', $page_id ) : '';
+	$source  = hodima_seo_advisor_img_source_fields( $path );
 	$stem    = (string) preg_replace( [ '/\.[a-z0-9]{2,5}$/i', '/-(?:scaled|\d+x\d+)$/i' ], '', rawurldecode( basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ) ) );
-	$baked   = '' !== $stem && '' !== $content && str_contains( $content, $stem );
+	$field   = '';
+
+	foreach ( '' === $stem ? [] : $source['fields'] as $candidate ) {
+		if ( '' !== $candidate['text'] && ( str_contains( $candidate['text'], $stem ) || str_contains( $candidate['text'], rawurlencode( $stem ) ) ) ) {
+			$field = $candidate['label'];
+			break;
+		}
+	}
 
 	$case = match ( true ) {
-		'' === $url                          => 'none',
-		0 === $id                            => 'external',
-		'' === $lib_alt                      => 'library',
-		$baked                               => 'page',
-		default                              => 'component',
+		'' === $url     => 'none',
+		'' !== $field   => 'page',
+		0 === $id       => 'external',
+		'' === $lib_alt => 'library',
+		default         => 'component',
 	};
 
 	$thumb = $id > 0 ? (string) wp_get_attachment_image_url( $id, 'thumbnail' ) : '';
 	$label = hodima_seo_advisor_img_context_label( $entry['c'] );
 
 	return [
-		'case'      => $case,
-		'url'       => $url,
-		'name'      => '' === $url ? '' : ( $id > 0 ? rawurldecode( basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ) ) : $url ),
-		'id'        => $id,
-		'lib_alt'   => $lib_alt,
-		'edit'      => $edit,
-		'page_edit' => $page_id > 0 && current_user_can( 'edit_post', $page_id ) ? (string) get_edit_post_link( $page_id, 'raw' ) : '',
-		'thumb'     => '' !== $thumb ? $thumb : $url,
-		'suggest'   => hodima_seo_advisor_alt_suggestion( $url, $id, $path ),
-		'where'     => '' !== $label ? ( '' !== $entry['c'] ? $label . ' (' . $entry['c'] . ')' : $label ) : $entry['c'],
+		'case'       => $case,
+		'url'        => $url,
+		'name'       => '' === $url ? '' : ( $id > 0 ? rawurldecode( basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ) ) : $url ),
+		'id'         => $id,
+		'lib_alt'    => $lib_alt,
+		'edit'       => $edit,
+		'page_edit'  => $source['edit'],
+		'edit_label' => '' !== $source['edit_label'] ? $source['edit_label'] : 'ویرایش صفحه',
+		'field'      => $field,
+		'thumb'      => '' !== $thumb ? $thumb : $url,
+		'suggest'    => '' !== $lib_alt ? mb_substr( $lib_alt, 0, 125 ) : hodima_seo_advisor_alt_suggestion( $url, $id, $path ), // alt کتابخانه اگر پر است همان پیشنهاد می‌شود
+		'where'      => '' !== $label ? ( '' !== $entry['c'] ? $label . ' (' . $entry['c'] . ')' : $label ) : $entry['c'],
 	];
 }
 

@@ -130,13 +130,22 @@ function hodima_seo_advisor_img_state_label( array $entry ): string {
 	};
 }
 
-/** «چه کنم؟» هر حالت علت رفع (ردیف تصویر و کارت تصویر مشترک). */
-function hodima_seo_advisor_img_help_text( string $kind ): string {
+/**
+ * «چه کنم؟» هر حالت علت رفع (ردیف تصویر و کارت تصویر مشترک). حالت «page» با نام «ویرایش» و ویرایشگر همان جا (مثلا «ویرایش دسته» ←
+ * ویرایشگر «توضیح») نوشته می‌شود (SEO 3.5.1).
+ *
+ * @param array<string, mixed> $info hodima_seo_advisor_img_fix_info
+ */
+function hodima_seo_advisor_img_help_text( string $kind, array $info = [] ): string {
 
 	return match ( $kind ) {
 		'library'   => 'در کتابخانه رسانه برای همین تصویر «متن جایگزین» بنویسید. چون قالب alt را از کتابخانه می‌خواند، در همه صفحه‌هایی که از این تصویر استفاده می‌کنند اثر می‌کند.',
-		'page'      => 'alt هنگام درج تصویر در متن صفحه کپی شده و پرکردن بعدی کتابخانه آن را عوض نمی‌کند. در ویرایشگر همین صفحه روی تصویر کلیک کنید، «متن جایگزین» را پر کنید و به‌روزرسانی بزنید؛ یا تصویر را دوباره از کتابخانه درج کنید.',
-		'component' => 'alt کتابخانه پر است ولی این تصویر خالی چاپ می‌شود و در متن صفحه هم نیست؛ پس قالب یا افزونه‌ای که این بخش را می‌سازد alt را نمی‌خواند. از اینجا قابل رفع نیست؛ آدرس را کپی کنید و برای توسعه‌دهنده بفرستید.',
+		'page'      => sprintf(
+			'«%1$s» ← در ویرایشگر «%2$s» روی تصویر کلیک کنید ← «متن جایگزین» را پر کنید ← «به‌روزرسانی» را بزنید. (alt هنگام درج تصویر همان‌جا کپی شده؛ پرکردن کتابخانه آن را عوض نمی‌کند.)',
+			(string) ( $info['edit_label'] ?? 'ویرایش صفحه' ),
+			(string) ( $info['field'] ?? 'متن' )
+		),
+		'component' => 'این تصویر در متن صفحه، توضیح دسته و خلاصه پیدا نشد؛ پس جای دیگری ساخته می‌شود (صفحه‌ساز، ویجت، تنظیمات قالب یا افزونه) و alt را از کتابخانه نمی‌خواند. اگر خودتان آنجا تصویر را گذاشته‌اید همان‌جا alt بنویسید؛ وگرنه آدرس را کپی کنید و برای توسعه‌دهنده بفرستید.',
 		'external'  => 'این تصویر از کتابخانه رسانه نیست (اسلایدر، صفحه‌ساز یا CDN). آدرس را کپی کنید و همان‌جا که تصویر را گذاشته‌اید alt بنویسید.',
 		default     => 'در HTML صفحه آدرسی برای این تصویر نبود؛ احتمالا با جاوااسکریپت ساخته می‌شود. از اینجا قابل رفع نیست.',
 	};
@@ -159,7 +168,7 @@ function hodima_seo_advisor_render_image_row( array $entry, string $path ): void
 		'external'  => [ 'بیرون از کتابخانه', 'hds-pill hds-pill--warn' ],
 		'none'      => [ 'آدرسی در HTML نیست', 'hds-pill hds-pill--warn' ],
 	][ $info['case'] ];
-	$help   = hodima_seo_advisor_img_help_text( $info['case'] );
+	$help   = hodima_seo_advisor_img_help_text( $info['case'], $info );
 	?>
 	<div class="hodima-advisor__li hodima-advisor__img-row">
 		<span class="hodima-advisor__thumb"><?php if ( '' !== $info['thumb'] ) : ?><img src="<?php echo esc_url( $info['thumb'] ); ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?></span>
@@ -179,7 +188,7 @@ function hodima_seo_advisor_render_image_row( array $entry, string $path ): void
 				<p class="hodima-advisor__img-help"><b>alt کتابخانه:</b> <?php echo esc_html( '«' . mb_substr( $info['lib_alt'], 0, 80 ) . '»' ); ?></p>
 			<?php endif; ?>
 			<p class="hodima-advisor__img-help"><b>چه کنم؟</b> <?php echo esc_html( $help ); ?></p>
-			<?php if ( '' !== $info['suggest'] && in_array( $info['case'], [ 'library', 'page', 'external' ], true ) ) : ?>
+			<?php if ( '' !== $info['suggest'] && 'none' !== $info['case'] ) : ?>
 				<div class="hodima-advisor__img-sug">
 					<span>پیشنهاد متن (بخوانید و اصلاح کنید):</span>
 					<b><?php echo esc_html( '«' . $info['suggest'] . '»' ); ?></b>
@@ -191,7 +200,7 @@ function hodima_seo_advisor_render_image_row( array $entry, string $path ): void
 			<?php if ( 'library' === $info['case'] && '' !== $info['edit'] ) : ?>
 				<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( $info['edit'] ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش در رسانه</a>
 			<?php elseif ( 'page' === $info['case'] && '' !== $info['page_edit'] ) : ?>
-				<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( $info['page_edit'] ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش صفحه</a>
+				<a class="hds-btn hds-btn--outline hodima-advisor__act" href="<?php echo esc_url( $info['page_edit'] ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> <?php echo esc_html( $info['edit_label'] ); ?></a>
 			<?php elseif ( in_array( $info['case'], [ 'component', 'external' ], true ) ) : ?>
 				<?php echo hodima_seo_advisor_detail_copy( $info['url'], 'کپی آدرس تصویر ' . $info['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
 			<?php endif; ?>
@@ -331,7 +340,7 @@ function hodima_seo_advisor_render_shared_images( callable $n ): void {
 			$key    = hodima_seo_advisor_img_key( $group['url'] );
 			$count  = count( $group['pages'] );
 			$cases  = [ 'library' => 'در کتابخانه رسانه است', 'page' => 'alt کتابخانه پر است', 'component' => 'از قالب یا افزونه', 'external' => 'بیرون از کتابخانه', 'none' => 'آدرسی در HTML نیست' ];
-			$suggest = 'page' === $info['case'] ? '' : $info['suggest']; // «page»: alt در متن هر صفحه کپی شده؛ از اینجا یک‌جا درست نمی‌شود
+			$suggest = 'none' === $info['case'] ? '' : $info['suggest'];
 			?>
 			<div class="hodima-advisor__shared-item">
 				<span class="hodima-advisor__shared-thumb"><?php if ( '' !== $info['thumb'] ) : ?><img src="<?php echo esc_url( $info['thumb'] ); ?>" alt="" width="96" height="96" loading="lazy"><?php endif; ?></span>
@@ -342,8 +351,8 @@ function hodima_seo_advisor_render_shared_images( callable $n ): void {
 						<span class="hds-pill hds-pill--info"><?php echo esc_html( $cases[ $info['case'] ] ); ?></span>
 					</div>
 					<p class="hodima-advisor__img-help"><b>کجاست؟</b> <?php echo esc_html( sprintf( 'در %1$s صفحه (%2$s نمایش در گوگل)', $n( $count ), $n( (int) $group['impressions'] ) ) ); ?><?php echo '' !== $info['where'] ? ' · ' : ''; ?><span dir="auto"><?php echo esc_html( $info['where'] ); ?></span></p>
-					<p class="hodima-advisor__img-help"><b>چه کنم؟</b> <?php echo esc_html( hodima_seo_advisor_img_help_text( $info['case'] ) ); ?></p>
-					<?php if ( '' !== $suggest && 'component' !== $info['case'] ) : ?>
+					<p class="hodima-advisor__img-help"><b>چه کنم؟</b> <?php echo esc_html( hodima_seo_advisor_img_help_text( $info['case'], $info ) ); ?></p>
+					<?php if ( '' !== $suggest ) : ?>
 						<div class="hodima-advisor__img-sug">
 							<span>پیشنهاد متن (بخوانید و اصلاح کنید):</span>
 							<b><?php echo esc_html( '«' . $suggest . '»' ); ?></b>
@@ -354,6 +363,8 @@ function hodima_seo_advisor_render_shared_images( callable $n ): void {
 				<div class="hodima-advisor__shared-act">
 					<?php if ( 'library' === $info['case'] && '' !== $info['edit'] ) : ?>
 						<a class="hds-btn hodima-advisor__act" href="<?php echo esc_url( $info['edit'] ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> ویرایش در رسانه</a>
+					<?php elseif ( 'page' === $info['case'] && '' !== $info['page_edit'] ) : ?>
+						<a class="hds-btn hodima-advisor__act" href="<?php echo esc_url( $info['page_edit'] ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span> <?php echo esc_html( $info['edit_label'] ); ?></a>
 					<?php elseif ( in_array( $info['case'], [ 'component', 'external' ], true ) ) : ?>
 						<?php echo hodima_seo_advisor_detail_copy( $info['url'], 'کپی آدرس تصویر ' . $info['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
 					<?php endif; ?>
