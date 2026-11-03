@@ -363,20 +363,20 @@ function hodima_seo_advisor_render_overview(): void {
 		}
 	}
 
-	// منوی «نوع ایراد فنی» (جایگزین فیلتر جدول تب قدیمی «سلامت سایت»): گروه چیپ‌ها با شمار صفحه‌های دارای ایراد
-	// «همه نوع‌ها» = صفحه‌های دارای ایراد فنی، نه همه صفحه‌های «کارها» (پیشنهادهای گوگل را هم شامل نمی‌شد؛ سایت واقعی ۱۷۴ نشان می‌داد به‌جای ۶۶)
-	$crawl_pages = count( array_filter( $pages, static fn( array $p ): bool => (bool) array_filter( $p['items'], static fn( array $i ): bool => 'crawl' === $i['src'] ) ) );
-	$types       = [ '' => [ 'همه نوع‌ها', $crawl_pages, hodima_seo_advisor_page_url( [ 'src' => $src, 'q' => $q ] ) ] ];
+	// ردیف دوم چیپ‌ها «نوع ایراد فنی» (SEO 3.6.0؛ جایگزین فیلتر جدول تب قدیمی «سلامت سایت»؛ تا ۳.۵.۹ منوی کشویی بود). گروه چیپ‌ها
+	// با شمار صفحه‌های دارای ایراد؛ زدن چیپ فعال فیلتر را برمی‌دارد. فقط وقتی «ایراد فنی» انتخاب است یا یک نوع فعال است.
+	$url_type = static fn( string $key ): string => hodima_seo_advisor_page_url( [ 'src' => $src, 'cf' => $key === $cf ? '' : $key, 'q' => $q ] );
+	$types    = [];
 	foreach ( HODIMA_SEO_ADVISOR_OVERVIEW_CRAWL_TYPES as $key => $label ) {
 		$members = HODIMA_SEO_ADVISOR_CRAWL_GROUPS[ $key ];
 		$n_type  = count( array_filter( $pages, static fn( array $p ): bool => (bool) array_filter( $p['items'], static fn( array $i ): bool => 'crawl' === $i['src'] && in_array( $i['mark'], $members, true ) ) ) );
 		if ( $n_type > 0 || $key === $cf ) {
-			$types[ $key ] = [ $label, $n_type, hodima_seo_advisor_page_url( [ 'cf' => $key, 'q' => $q ] ) ];
+			$types[ $key ] = [ $label, $n_type, $url_type( $key ) ];
 		}
 	}
 	if ( str_starts_with( $cf, 'cat-' ) ) { // بخش نمره (از نوار سلامت)
-		$n_cat = count( array_filter( $pages, static fn( array $p ): bool => (bool) array_filter( $p['items'], static fn( array $i ): bool => 'crawl' === $i['src'] && in_array( $i['mark'], $cf_codes, true ) ) ) );
-		$types[ $cf ] = [ HODIMA_SEO_ADVISOR_SCORE_CATEGORIES[ $cf ]['label'], $n_cat, hodima_seo_advisor_page_url( [ 'cf' => $cf, 'q' => $q ] ) ];
+		$n_cat        = count( array_filter( $pages, static fn( array $p ): bool => (bool) array_filter( $p['items'], static fn( array $i ): bool => 'crawl' === $i['src'] && in_array( $i['mark'], $cf_codes, true ) ) ) );
+		$types[ $cf ] = [ HODIMA_SEO_ADVISOR_SCORE_CATEGORIES[ $cf ]['label'], $n_cat, $url_type( $cf ) ];
 	}
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
@@ -391,8 +391,10 @@ function hodima_seo_advisor_render_overview(): void {
 			<input type="hidden" name="cf" value="<?php echo esc_attr( $cf ); ?>">
 		<?php endif; ?>
 		<?php hodima_seo_advisor_filter_chips( 'نوع ایراد', $items, $src ); ?>
-		<?php if ( count( $types ) > 1 ) : ?>
-			<?php hodima_seo_advisor_filter_select( 'نوع ایراد فنی', $types, $cf ); ?>
+		<?php if ( $types && ( 'crawl' === $src || '' !== $cf ) ) : ?>
+			<div class="hodima-advisor__chips-sub">
+				<?php hodima_seo_advisor_filter_chips( 'نوع ایراد فنی', $types, $cf, [ 'small' => true ] ); // بدون برچسب دیداری؛ فقط aria-label برای صفحه‌خوان ?>
+			</div>
 		<?php endif; ?>
 		<div class="hodima-advisor__search">
 			<label class="screen-reader-text" for="hodima-advisor-ov-q">جستجو در عنوان یا آدرس صفحه</label>

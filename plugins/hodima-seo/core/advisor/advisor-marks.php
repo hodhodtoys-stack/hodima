@@ -480,7 +480,7 @@ function hodima_seo_advisor_handle_mark(): void {
 	// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 	$back = wp_get_referer();
-	$back = is_string( $back ) && '' !== $back ? $back : hodima_seo_advisor_page_url( [ 'tab' => $source ] );
+	$back = is_string( $back ) && '' !== $back ? $back : hodima_seo_advisor_page_url( [ 'tab' => 'crawl' === $source ? 'overview' : $source ] ); // تب «سلامت سایت» حذف شد (SEO 3.5.8)
 	$done = hodima_seo_advisor_page_url( [ 'tab' => 'tasks', 'tstatus' => 'waiting' ] );
 
 	$marks = isset( hodima_seo_advisor_task_sources()[ $source ] ) && in_array( $status, [ 'done', 'rejected' ], true ) && '' !== $path

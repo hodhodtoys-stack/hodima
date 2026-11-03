@@ -2810,6 +2810,15 @@
 	font-size: 0.75rem;
 }
 
+.hodima-advisor .hodima-advisor__chips-sub {
+	flex: 1 0 100%;
+	padding-inline-start: 1.125rem;
+}
+
+.hodima-advisor .hodima-advisor__chips-sub .hodima-advisor__chip:not([aria-current]) {
+	background: transparent;
+}
+
 .hodima-advisor .hodima-advisor__chips-caption {
 	align-self: center;
 	margin-inline-end: 0.25rem;
