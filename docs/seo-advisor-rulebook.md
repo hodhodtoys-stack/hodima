@@ -4,7 +4,9 @@
 
 > **وضعیت:** کاربر قانون «همه چیز طبق استاندارد جهانی (گوگل)» را تأیید کرده (۱۲ آبان ۱۴۰۵). اعمال‌شده: `title_short`، `title_long`، `no_meta` (۳.۶.۲)؛ `dup_h1`، `near_dup`، `multi_h1`، `low_inlinks`، `island`، `orphan` (۳.۶.۳). نمره (۳.۶.۴): اطلاع بدون ضریب، سقف کسر هر ایراد ۲۵. ایرادهای تازه (۳.۶.۵): `canonical_in_body`، `dup_meta` (هر دو زرد؛ مرجع گوگل). ۳.۶.۷: `site_hidden` قرمز؛ `link_redirect`/`no_canonical` اطلاع؛ `link_broken`/`canonical_bad`/`sitemap_bad`/`no_title`/`no_snippet` زرد. ۳.۶.۶: `broken` ۴xx زرد، `server_error` ۵xx قرمز، `redirect_loop` قرمز (استدلال از «۱۰ پرش»)، `redirect_chain` info/warn از ۵ پرش، `noindex`/`canonicalised` info. مانده: `no_canonical`، `redirect*`، `noindex`، `thin`، `link_*`، `broken` (شکستن ۴xx/۵xx)، `canonical_in_body` (انتشار ۴ و ۵).
 
-## قانون سطح (پیشنهاد؛ نیاز به تأیید کاربر)
+> **مرجع اجرایی:** فیلد `ref` در `advisor-issues.php` + آزمون «قانون ثابت» (`advisor-checks-tests.php`) همین قانون را در CI اجرا می‌کند؛ این سند توضیح و نقل‌قول‌هاست.
+
+## قانون سطح (تأییدشده توسط کاربر)
 1. **قرمز (bad):** فقط وقتی گوگل خودش می‌گوید صفحه را از ایندکس می‌اندازد یا خزش را مختل می‌کند.
 2. **زرد (warn):** گوگل صریحاً «توصیه» می‌کند **یا** دست‌کم ۳ پروژه مرجع (SEOnaut، SiteOne، FreeCrawl، SEOCORE، Yoast، Rank Math) آن را ایراد می‌دانند.
 3. **اطلاع (info):** بقیه. در نمره و اولویت نمی‌آید.

@@ -1,0 +1,47 @@
+---
+name: hodima-advisor
+description: «دستار سئو» (advisor) افزونه Hodima SEO — قانون ثابت «هیچ ایرادی بدون رکورد، مرجع رسمی گوگل و آزمون»، سطح ایرادها (قرمز/کهربایی/اطلاع)، افزودن یا تغییر یک ایراد فنی، جریان داده خزنده تا نمره، ابزار تست (عکس مرجع، آزمون قاعده‌ها، دقت خزنده)، روش «واقعیت اول»، شکاف‌ها و کارهای باقی‌مانده. پیش از خواندن یا تغییر هر فایل زیر plugins/hodima-seo/core/advisor/ یا هر کار روی ایرادهای فنی، نمره سلامت، «کارها» و پیش‌نویس عنوان/متا به کار ببر.
+---
+
+# دستار سئو — قانون‌ها و روش کار
+
+مسیر: `plugins/hodima-seo/core/advisor/` (~۵۰ فایل). جزئیات تاریخچه و تحویل: `docs/seo-advisor.md` (اول بخش «برنامه دستار قابل اعتماد»)؛ درس‌های ۸ پروژه متن‌باز: `docs/seo-advisor-lessons.md`؛ **قانون‌نامه هر ایراد با نقل‌قول رسمی گوگل: `docs/seo-advisor-rulebook.md`**. تاریخچه: `HODIMA-AUDIT.md` بخش‌های ۳۶۹ تا ۳۷۷ (SEO ۳.۶.۱ تا ۳.۶.۸).
+
+## قانون‌های ثابت (کاربر: «همه چیز طبق استاندارد جهانی»)
+1. **هیچ ایرادی بدون رکورد (کاتالوگ)، مرجع و آزمون وارد نشود.** این قانون با آزمون خودکار اجرا می‌شود (`advisor-checks-tests.php`، بخش «قانون ثابت دستار»)؛ بی‌مرجع‌بودن = رد شدن بررسی خودکار گیت‌هاب.
+2. **سطح (`level` در `advisor-issues.php`):** **قرمز (`bad`)** فقط با جمله صریح گوگل که ایندکس/خزش را می‌شکند (امروز: `server_error`، `redirect_loop`، `site_hidden`)؛ **کهربایی (`warn`)** = توصیه صریح گوگل یا ≥۳ پروژه مرجع؛ **اطلاع (`info`)** = بقیه (در نمره ضریب صفر و در اولویت زیر «متوسط»). اگر گوگل صریحا «مشکل نیست» بگوید (طول عنوان/متا، نبود متا، تعداد لینک، چند H1، حداقل کلمه) حداکثر اطلاع. `ref` هر رکورد: `google:<صفحه>` و/یا `refs:<پروژه‌ها>` یا `own` (فقط info).
+3. **ثابت‌ها (invariant):** پیش‌نویس باید از تشخیص همان ایراد رد شود؛ هر آیتم فهرست شرط ایرادش را دارد. تغییر عمدی خروجی = عکس مرجع را عمدا `--save` کن و در گزارش بگو؛ آزمون قدیمی که رفتار غلط را قفل کرده عمدا و با توضیح عوض می‌شود.
+4. **فقط پیشنهاد، هیچ‌چیز خودکار نه** (تصمیم کاربر): دستار نمی‌نویسد و نمی‌سازد؛ هوش مصنوعی و PageSpeed/CrUX را کاربر نخواسته.
+5. **قرمز بودن «حلقه ریدایرکت»** استنباط از «گوگل تا ۱۰ پرش را دنبال می‌کند» است، نه نقل مستقیم؛ کاربر می‌تواند کهربایی بخواهد.
+
+## افزودن یا تغییر یک ایراد فنی (فهرست کامل)
+1. **تابع** `hodima_seo_advisor_check_<نام>( array $r, array $ctx ): array` در `advisor-checks.php` (**خالص**: بدون دیتابیس/درخواست؛ فقط ردیف و زمینه) + ردیف در `hodima_seo_advisor_checks()` (`when`: `always`/`live`/`known`/`dead`؛ ترتیب = ترتیب ایرادها در صفحه؛ `codes` همه کدهای ممکن). داده وابسته به کل خزش (تکراری‌ها، مشابه، نقشه سایت، لینک‌های خراب، سایت پنهان) در `hodima_seo_advisor_checks_context()`.
+2. **رکورد** در `advisor-issues.php`: `label`، `level`، `effort`، `fix` (با `{where}`)، **`ref`**. سطح همان ایراد برای یک صفحه را می‌شود با کلید `level` در خود ایراد عوض کرد (`hodima_seo_advisor_issue( …, [ 'level' => 'info' ] )`؛ `overview_build` و نمره می‌خوانند).
+3. **گروه چیپ** در `HODIMA_SEO_ADVISOR_CRAWL_GROUPS` (`advisor-crawl.php`) و **بخش نمره** در `HODIMA_SEO_ADVISOR_SCORE_CATEGORIES` (`advisor-score.php`)؛ اگر با «انجام دادم» قابل سنجش است: لیست‌های `advisor-marks.php` (`MARK_LIVE_CODES`، `MARK_RECRAWL_CODES`).
+4. اگر داده تازه از HTML لازم است: `crawler_parse` ← `crawler_page_row` ← `crawler_store_page` (ستون + قالب `%s`) ← **ستون جدول در `advisor-data.php` + بالا بردن `HODIMA_SEO_ADVISOR_DB_VERSION`** (dbDelta؛ مهاجرت را واقعا آزمون کن: ستون را حذف، `ensure_tables`، دوباره بخوان).
+5. **آزمون:** مورد «دارد/ندارد» در `$cases` فایل `tools/wp-harness/advisor-checks-tests.php`؛ داده در `advisor-issues-golden.php` (`--save` عمدی)؛ باگ پارسر ← `advisor-accuracy.php`؛ UI ← `advisor-tests.php`. بعد قانون‌نامه (`docs/seo-advisor-rulebook.md`) را به‌روز کن.
+دروازه: `bash bin/lint.sh`؛ آزمون‌ها زیر.
+
+## جریان داده
+خزنده شبانه (`advisor-crawler.php`، بدون جاوااسکریپت) ← جدول `crawl_pages`/`crawl_links` ← `crawl_issues()` (`advisor-crawl.php`: ردیف‌ها + `checks_context` + `checks_run`) ← `overview_build` (`advisor-overview-view.php`: «کارها»، سطح، اولویت `advisor-priority.php`) و `hodima_seo_advisor_score()` (`advisor-score.php`: ضریب قرمز ۲/کهربایی ۱/اطلاع ۰، سقف کسر هر ایراد ۲۵). پیش‌نویس عنوان/متا: `advisor-drafts.php`. صفحه‌های سیستمی (حساب/سبد/پرداخت، عمدا noindex): `hodima_seo_advisor_is_system_path()`.
+
+## ابزار تست (از ریشه مخزن؛ `export HARNESS=1 HODIMA_WP=/tmp/hodima-harness/wp`)
+```bash
+php tools/wp-harness/advisor-tests.php                      # ~۸۹۶ آزمون (رندر، ذخیره، دریافت، نمره، «کارها»)
+php tools/wp-harness/advisor-checks-tests.php               # ~۱۹۰ آزمون: «دارد/ندارد» هر ایراد، ساختار کاتالوگ، قانون ثابت مرجع، ثابت پیش‌نویس
+php tools/wp-harness/advisor-issues-golden.php --check tools/wp-harness/golden/advisor-issues.json   # عکس مرجع (--save = عمدی)
+php tools/wp-harness/advisor-accuracy.php                   # دقت پارسر روی HTML نمونه
+tools/wp-harness/zip-install-check.sh                       # بعد از bin/build.sh؛ بعدش link.sh و (در صورت لزوم) rm .ht.sqlite + HARNESS_WC=1 php fixtures.php
+```
+همه در `ci-check.sh` (GitHub Actions). `HODIMA_GOLDEN_KEEP=1` داده ساختگی را برای عکس نگه می‌دارد؛ رندر پیشخوان: `admin-render.php` با ثابت `HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON` (`php -d auto_prepend_file`) — داده گوگل ندارد، «کارها» خالی است.
+**دام‌ها:** `tools/eol.py` فایل‌های تازه (حتی JSON عکس مرجع) را CRLF می‌کند؛ مقایسه به پایان خط وابسته نیست، ولی بعد از eol و پیش از commit یک بار `--check` را اجرا کن. ویرایش با پایتون: پایان خط فایل را حفظ کن (بسیاری CRLF‌اند). `advisor-tests.php` فایل‌های view را دستی `require` می‌کند. اگر `bin/lint.sh` گفت `missingType.iterableValue` برای تابع تازه: `@param array<string, mixed>`.
+
+## روش کار (واقعیت اول)
+داده واقعی اول (کاربر «خزش همین حالا» + عکس) ← بازتولید روی ابزار تست با HTML نمونه ← ریشه نه نشانه ← یک آزمون برای هر مثبت کاذب ← **هر ایراد مدرک بدهد** (چه/کجا/چرا/دقیقا چه کنم) ← صادق در گزارش (سایت واقعی دیده نشد) ← انتشار یک پله (`/release`) ← کاربر عکس می‌فرستد ← باگ بعدی. تغییر **ظاهر** پیشخوان (کادر/چیدمان): اسکیل `hodima-admin-ui` (طرح قبل/بعد و تأیید)؛ تغییر فقط متن/منطق/سطح طرح نمی‌خواهد.
+
+## کارهای باقی‌مانده (با خواست کاربر)
+- **نمره ۱۰۰ با ۶۳ ایراد اطلاع در فهرست گمراه‌کننده است** (اطلاع در نمره نیست): یک خط «N پیشنهاد اطلاع» کنار نمره پیشنهاد می‌شود (UI ← طرح و تأیید).
+- `img_empty` در هیچ گروه چیپ نیست؛ «عنوان مشابه» جفت محصول و ویدیوی همان محصول را مشابه می‌گیرد (مثبت کاذب طبیعی)؛ جعبه «کدام صفحه‌ها شبیه‌اند؟» فضای خالی زیاد دارد.
+- ساخته‌نشده عمدا (مرجع گوگل ندارند): چند `<title>`/`<meta>`، `lang`، `viewport`، `id` تکراری؛ hreflang (سایت تک‌زبانه)؛ محصول بدون عکس/قیمت؛ مقایسه عنوان سئوباکس با خروجی؛ بررسی robots.txt؛ لینک بیرونی خراب (با سقف نرخ)؛ تصویر خراب/سنگین؛ «لینک ورودی فقط از صفحه‌های ایندکس‌نشدنی».
+- شرط ۴۲۹ (WAF) جدا نشده؛ `slow`، `deep`، `http_link` مرجع رسمی گوگل خوانده نشده. توضیح «اولویت چطور حساب می‌شود؟» با حذف کادر «۵ کار مهم امروز» رفت (کاربر خواست).
+- فاز C/D برنامه قدیمی (نیت جستجو، سنجش اثر ۲۸ روزه) و دقت خزنده روی سایت واقعی تا عکس کاربر سنجیده نمی‌شود.

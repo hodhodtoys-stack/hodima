@@ -303,6 +303,51 @@ if ( $vid ) {
 }
 hodima_ck( 'classify(آدرس ناشناخته) ← خالی', [ '', 0 ] === array_values( hodima_seo_advisor_classify( '/no-such-page-xyz/' ) ) );
 
+echo "=== قانون ثابت دستار: هر ایراد رکورد، مرجع و سطح هم‌خوان دارد (docs/seo-advisor.md)\n";
+// صفحه‌های رسمی Google Search Central که مرجع می‌توانند باشند (نشانی کامل در docs/seo-advisor-rulebook.md)
+$google_pages = [ 'title-link', 'snippet', 'seo-starter-guide', 'consolidate-duplicate-urls', 'robots-meta-tag', 'http-network-errors', 'build-sitemap', 'links-crawlable', 'spam-policies' ];
+$ref_bad      = [];
+foreach ( hodima_seo_advisor_issue_catalog() as $code => $record ) {
+	$ref   = (string) ( $record['ref'] ?? '' );
+	$google = [];
+	$refs   = [];
+	foreach ( '' === $ref ? [] : explode( '|', $ref ) as $part ) {
+		if ( str_starts_with( $part, 'google:' ) ) {
+			$google = array_filter( explode( ',', substr( $part, 7 ) ) );
+		} elseif ( str_starts_with( $part, 'refs:' ) ) {
+			$refs = array_filter( explode( ',', substr( $part, 5 ) ) );
+		} elseif ( 'own' !== $part ) {
+			$ref_bad[] = "{$code}: بخش ناشناخته «{$part}»";
+		}
+	}
+	if ( '' === $ref ) {
+		$ref_bad[] = "{$code}: بدون مرجع";
+	}
+	if ( array_diff( $google, $google_pages ) ) {
+		$ref_bad[] = "{$code}: صفحه گوگل ناشناخته " . implode( ',', array_diff( $google, $google_pages ) );
+	}
+	$level = (string) $record['level'];
+	if ( 'bad' === $level && ! $google ) {
+		$ref_bad[] = "{$code}: ایراد قرمز بدون جمله رسمی گوگل";
+	}
+	if ( 'warn' === $level && ! $google && count( $refs ) < 3 ) {
+		$ref_bad[] = "{$code}: ایراد کهربایی بدون مرجع گوگل و با کمتر از ۳ پروژه مرجع";
+	}
+	if ( 'own' === $ref && 'info' !== $level ) {
+		$ref_bad[] = "{$code}: بدون مرجع فقط می‌تواند اطلاع باشد";
+	}
+}
+hodima_ck( 'هر ایراد مرجع دارد: قرمز = جمله رسمی گوگل؛ کهربایی = گوگل یا ≥۳ پروژه؛ «own» فقط اطلاع؛ صفحه گوگل از فهرست شناخته‌شده', [] === $ref_bad, implode( ' | ', $ref_bad ) );
+$cat_bad = [];
+foreach ( hodima_seo_advisor_issue_catalog() as $code => $record ) {
+	foreach ( [ 'label', 'level', 'effort', 'fix', 'ref' ] as $key ) {
+		if ( ! isset( $record[ $key ] ) || '' === (string) $record[ $key ] ) {
+			$cat_bad[] = "{$code}.{$key}";
+		}
+	}
+}
+hodima_ck( 'هر رکورد کاتالوگ برچسب، سطح، سختی، دستور و مرجع دارد', [] === $cat_bad, implode( '، ', $cat_bad ) );
+
 echo "=== ساختار: هر کد کاتالوگ یک صاحب دارد\n";
 $catalog = array_keys( hodima_seo_advisor_issue_catalog() );
 $owners  = [];

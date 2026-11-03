@@ -68,6 +68,7 @@ $base = static fn( string $path ): array => [
 
 $cases = [
 	'/g-ok/'        => [],
+	'/'             => [], // صفحه اصلی سالم؛ در نقشه سایت هم هست (برای گذر «سایت پنهان»)
 	'/g-no-title/'  => [ 'title' => '', 'title_len' => 0, 'title_px' => 0 ],
 	'/g-short/'     => [ 'title_px' => 100, 'title_len' => 10 ],
 	'/g-long/'      => [ 'title_px' => 700, 'title_len' => 90 ],
@@ -129,11 +130,19 @@ foreach ( [ [ '/g-linker/', '/g-gone/', 'content', 'لینک خراب' ], [ '/g-
 }
 
 // نقشه سایت: صفحه خراب و noindex داخلش (sitemap_bad)، بقیه نیستند (not_in_sitemap)
-update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'paths' => [ '/g-gone/', '/g-noindex/', '/g-ok/' ], 'time' => time() ], false );
+update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'paths' => [ '/', '/g-gone/', '/g-noindex/', '/g-ok/' ], 'time' => time() ], false );
 
 hodima_seo_advisor_crawl_map( true );
 
 $issues = hodima_seo_advisor_crawl_issues();
+
+// گذر دوم: «سایت پنهان» (blog_public = 0؛ SEO 3.6.7) فقط برای سه صفحه: صفحه اصلی ← site_hidden؛ noindex و canonicalised جداگانه فقط canonicalised می‌ماند
+$blog_public = get_option( 'blog_public', '1' );
+update_option( 'blog_public', '0' );
+hodima_seo_advisor_crawl_map( true );
+$hidden_rows = array_values( array_filter( hodima_seo_advisor_crawl_issues(), static fn( array $row ): bool => in_array( (string) $row['path'], [ '/', '/g-noindex/', '/g-canon-other/' ], true ) ) );
+update_option( 'blog_public', $blog_public );
+hodima_seo_advisor_crawl_map( true );
 
 // خروجی پایدار: زمان‌ها و شناسه‌های وابسته به اجرا حذف می‌شوند
 $stable = array_map(
@@ -144,11 +153,12 @@ $stable = array_map(
 	$issues
 );
 usort( $stable, static fn( array $a, array $b ): int => strcmp( (string) $a['path'], (string) $b['path'] ) );
-$json = (string) wp_json_encode( $stable, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT );
+usort( $hidden_rows, static fn( array $a, array $b ): int => strcmp( (string) $a['path'], (string) $b['path'] ) );
+$json = (string) wp_json_encode( [ 'pages' => $stable, 'hidden_site' => $hidden_rows ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT );
 
 $catalog   = array_keys( hodima_seo_advisor_issue_catalog() );
 $triggered = [];
-foreach ( $stable as $row ) {
+foreach ( [ ...$stable, ...$hidden_rows ] as $row ) {
 	foreach ( $row['issues'] as $i ) {
 		$triggered[ (string) $i['code'] ] = ( $triggered[ (string) $i['code'] ] ?? 0 ) + 1;
 	}
