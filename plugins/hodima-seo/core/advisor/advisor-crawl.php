@@ -400,12 +400,12 @@ function hodima_seo_advisor_crawl_status(): array {
 const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
 	'meta'     => [ 'no_meta', 'no_snippet' ],
 	'title'    => [ 'no_title', 'title_short', 'title_long', 'no_h1', 'multi_h1' ],
-	'dup'      => [ 'dup_title', 'dup_h1', 'near_dup' ],
+	'dup'      => [ 'dup_title', 'dup_h1', 'dup_meta', 'near_dup' ],
 	'slow'     => [ 'slow' ],
 	'redirect' => [ 'redirect', 'noindex', 'broken' ],
 	'linkfix'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain' ],
 	'content'  => [ 'img_alt', 'thin' ],
-	'tech'     => [ 'canonical_bad', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
+	'tech'     => [ 'canonical_bad', 'canonical_in_body', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
 	'links'    => [ 'low_inlinks' ],
 	'orphan'   => [ 'orphan', 'island' ],
 ];

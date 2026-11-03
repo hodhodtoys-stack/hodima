@@ -21,7 +21,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.11.0'; // 1.11.0 (SEO 3.5.4): ستون‌های title_px و meta_px (خط‌کش پیکسلی مشترک با سئوباکس)؛ 1.10.0 (SEO 3.4.9): ستون img_empty؛ img_list از این‌جا JSON است
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.12.0'; // 1.12.0 (SEO 3.6.5): ستون meta_hash (توضیح متای تکراری)؛ 1.11.0 (SEO 3.5.4): ستون‌های title_px و meta_px (خط‌کش پیکسلی مشترک با سئوباکس)؛ 1.10.0 (SEO 3.4.9): ستون img_empty؛ img_list از این‌جا JSON است
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -167,6 +167,7 @@ function hodima_seo_advisor_install_tables(): void {
 		canonical varchar(191) NOT NULL DEFAULT '',
 		img_list text NULL,
 		img_empty smallint(6) NOT NULL DEFAULT -1,
+		meta_hash varchar(16) NOT NULL DEFAULT '',
 		PRIMARY KEY (path)
 		) {$charset};"
 	);

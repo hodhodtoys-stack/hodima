@@ -21,6 +21,27 @@
         ]
     },
     {
+        "path": "/g-canbody/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "canonical_in_body",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
         "path": "/g-canon-other/",
         "impressions": 0,
         "position": 0,
@@ -291,6 +312,48 @@
             {
                 "code": "low_inlinks",
                 "detail": "1 لینک ورودی؛ 1 لینک از متن",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-meta-a/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "dup_meta",
+                "detail": "در 2 صفحه",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-meta-b/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "dup_meta",
+                "detail": "در 2 صفحه",
                 "url": "",
                 "items": []
             },

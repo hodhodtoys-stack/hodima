@@ -157,7 +157,10 @@ function hodima_seo_advisor_crawler_resolve( string $href, string $base ): ?stri
 
 	$href = trim( $href );
 
-	if ( '' === $href || str_starts_with( $href, '#' ) || 1 === preg_match( '#^(?:mailto|tel|javascript|data|sms|whatsapp|callto):#i', $href ) ) {
+	// هر پروتکل غیر http(s) لینک صفحه نیست: mailto، tel، javascript و لینک باز کردن اپ‌ها (snapp://، tapsi://، tg://، viber://، intent://…).
+	// تا ۳.۶.۴ فقط چند پروتکل شناخته‌شده کنار می‌رفت و «snapp://open» به آدرس ساختگی «/contact-us/snapp:/open/» تبدیل و ۴۰۴ گزارش می‌شد.
+	// مرورگر هم هر «نام:» ابتدای مقدار را پروتکل می‌داند (RFC 3986)، پس مسیر نسبی با دو نقطه در بخش اول وجود ندارد.
+	if ( '' === $href || str_starts_with( $href, '#' ) || ( 1 === preg_match( '#^[a-z][a-z0-9+.\-]*:#i', $href ) && 1 !== preg_match( '#^https?:#i', $href ) ) ) {
 		return null;
 	}
 
@@ -542,7 +545,7 @@ function hodima_seo_advisor_crawler_scan_images( DOMXPath $xpath, callable $clea
 /**
  * HTML یک صفحه ← عنوان، متا، تیترها، robots، canonical و لینک‌های داخلی.
  *
- * @return array{title: string, meta: string, robots: string, canonical: string, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_empty: int, img_list: list<array{u: string, s: string, c: string}>, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
+ * @return array{title: string, meta: string, robots: string, canonical: string, canonical_body: bool, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_empty: int, img_list: list<array{u: string, s: string, c: string}>, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
  */
 function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
@@ -583,11 +586,18 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		}
 	}
 
-	$canonical = '';
-	$can_list  = $xpath->query( "//link[{$lower( '@rel' )}='canonical']" );
-	$can_node  = false === $can_list ? null : $can_list->item( 0 );
+	// canonical فقط داخل <head> پذیرفته می‌شود («The rel="canonical" link element is only accepted if it appears in the <head> section»،
+	// Google Search Central)؛ تگی که یک افزونه یا قالب بعد از شروع body چاپ کرده نادیده گرفته می‌شود. تا ۳.۶.۴ از هر جای سند خوانده می‌شد.
+	// پارسر libxml مثل مرورگر عمل می‌کند: head با اولین عنصر غیر head (مثل div) بسته می‌شود.
+	$canonical      = '';
+	$canonical_body = false;
+	$can_list       = $xpath->query( "//head//link[{$lower( '@rel' )}='canonical']" );
+	$can_node       = false === $can_list ? null : $can_list->item( 0 );
 	if ( $can_node instanceof DOMElement ) {
 		$canonical = trim( $can_node->getAttribute( 'href' ) );
+	} else {
+		$can_any        = $xpath->query( "//link[{$lower( '@rel' )}='canonical']" );
+		$canonical_body = false !== $can_any && $can_any->length > 0;
 	}
 
 	$links      = [];
@@ -663,6 +673,7 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		'meta'       => $metas( $xpath, 'description' )[0] ?? '',
 		'robots'     => implode( ', ', [ ...$metas( $xpath, 'robots' ), ...$metas( $xpath, 'googlebot' ) ] ), // googlebot هم noindex/nosnippet را می‌رساند (SEO 3.4.7)
 		'canonical'  => $canonical,
+		'canonical_body' => $canonical_body,
 		'h1'         => $h1_pick ? $clean( $h1_pick[0]->textContent ) : '',
 		'h1_count'   => count( $h1_pick ),
 		'h2'         => implode( ' | ', $h2s ),
@@ -793,9 +804,10 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'h1_count'   => (int) ( $parsed['h1_count'] ?? -1 ),
 		'img_noalt'  => (int) ( $parsed['img_noalt'] ?? -1 ),
 		'http_links' => (int) ( $parsed['http_links'] ?? -1 ),
-		'canonical'  => '' === $canonical ? '' : ( null === $can_path ? '!ext' : $can_path ),
+		'canonical'  => '' === $canonical ? ( ! empty( $parsed['canonical_body'] ) ? '!body' : '' ) : ( null === $can_path ? '!ext' : $can_path ), // !body = فقط در body (گوگل نادیده می‌گیرد)، !ext = دامنه دیگر
 		'img_list'   => hodima_seo_advisor_img_list_encode( (array) ( $parsed['img_list'] ?? [] ) ), // JSON تصویرها: آدرس، وضعیت alt، جایگاه (SEO 3.4.9؛ پیش‌تر یک آدرس در هر خط)
 		'img_empty'  => (int) ( $parsed['img_empty'] ?? -1 ),
+		'meta_hash'  => '' === trim( $meta ) ? '' : substr( md5( hodima_seo_advisor_normalize( $meta ) ), 0, 12 ), // برای «توضیح متای تکراری» (SEO 3.6.5)؛ خالی = بدون متا یا ردیف قدیمی
 	];
 }
 
@@ -895,8 +907,8 @@ function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $
 
 	hodima_seo_advisor_ensure_tables(); // ستون تازه img_list (DB 1.9.0) پیش از اولین نوشتن بعد از به‌روزرسانی
 
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d)';
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty, meta_hash';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d,%s)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
 

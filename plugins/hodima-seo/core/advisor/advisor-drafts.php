@@ -164,8 +164,12 @@ function hodima_seo_advisor_draft_title( string $path, string $code, string $cur
 		return hodima_seo_advisor_draft_cut_px( $current, 'title', $max );
 	}
 
-	$ctx  = hodima_seo_advisor_draft_context( $path );
-	$name = '' !== $ctx['name'] ? $ctx['name'] : hodima_seo_advisor_draft_clean( $current );
+	$ctx = hodima_seo_advisor_draft_context( $path );
+	$own = hodima_seo_advisor_draft_clean( $current );
+
+	// «عنوان کوتاه»: عنوان فعلی را خود ادمین در سئوباکس نوشته و معمولا از نام صفحه بهتر است («خرید عمده گیره شمعی گل ۱۲ تایی» در برابر
+	// نام «محصول ۹»)؛ پیش‌نویس همان را نگه می‌دارد و فقط دسته و نام سایت را اضافه می‌کند (SEO 3.6.5). بدون عنوان فعلی از نام صفحه ساخته می‌شود.
+	$name = 'title_short' === $code && '' !== $own ? $own : ( '' !== $ctx['name'] ? $ctx['name'] : $own );
 
 	if ( '' === $name ) {
 		return '';

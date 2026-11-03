@@ -130,6 +130,15 @@ $cases = [
 	[ 'لینک سالم ← هیچ', 'link_targets', [ 'path' => '/a/' ], [], [] ],
 	[ 'لینک http در سایت https ← http_link', 'http_link', [ 'http_links' => 3 ], [], [ 'http_link' ] ],
 	[ 'بدون لینک http ← هیچ', 'http_link', [], [], [] ],
+	[ 'canonical فقط در body (نشانه !body) ← canonical_in_body (Google: فقط در head پذیرفته می‌شود)', 'canonical_in_body', [ 'canonical' => '!body' ], [], [ 'canonical_in_body' ] ],
+	[ 'canonical در head ← canonical_in_body نمی‌دهد', 'canonical_in_body', [], [], [] ],
+	[ 'بدون canonical ← canonical_in_body نمی‌دهد', 'canonical_in_body', [ 'canonical' => '' ], [], [] ],
+	[ 'canonical فقط در body ← no_canonical نمی‌دهد (ایراد اختصاصی خودش را دارد)', 'no_canonical', [ 'canonical' => '!body' ], [], [] ],
+	[ 'canonical فقط در body ← canonical_bad نمی‌دهد', 'canonical_bad', [ 'canonical' => '!body' ], [], [] ],
+	[ 'توضیح متای یکسان در ۲ صفحه ← dup_meta', 'dup_meta', [ 'meta_hash' => 'abc123abc123' ], [ 'metas' => [ 'abc123abc123' => 2 ] ], [ 'dup_meta' ] ],
+	[ 'توضیح متای یگانه ← هیچ', 'dup_meta', [ 'meta_hash' => 'abc123abc123' ], [ 'metas' => [ 'abc123abc123' => 1 ] ], [] ],
+	[ 'ردیف قدیمی بی‌hash (متا نامعلوم) ← dup_meta نمی‌دهد', 'dup_meta', [ 'meta_hash' => '' ], [ 'metas' => [ '' => 5 ] ], [] ],
+	[ 'توضیح متای تکراری در /page/2/ ← هیچ', 'dup_meta', [ 'path' => '/b/page/2/', 'meta_hash' => 'abc123abc123' ], [ 'metas' => [ 'abc123abc123' => 3 ] ], [] ],
 	[ 'canonical خالی ← no_canonical', 'no_canonical', [ 'canonical' => '' ], [], [ 'no_canonical' ] ],
 	[ 'canonical دارد ← هیچ', 'no_canonical', [], [], [] ],
 	[ 'canonical به صفحه ۴۰۴ ← canonical_bad', 'canonical_bad', [ 'canonical' => '/gone/' ], [ 'by_path' => [ '/gone/' => [ 'status' => 404, 'reason' => '' ] ] ], [ 'canonical_bad' ] ],
@@ -191,6 +200,30 @@ hodima_ck( 'نمره: ثابت‌ها (ضریب اطلاع صفر، سقف هر 
 hodima_ck( 'کلید تکراری: ي/ی، ك/ک، رقم فارسی/عربی/لاتین، نیم‌فاصله و حروف بزرگ یکی می‌شوند و عنوان‌های متفاوت یکی نمی‌شوند', hodima_seo_advisor_dup_key( 'كيف ۱۲ Pack' ) === hodima_seo_advisor_dup_key( 'کیف 12 pack' ) && hodima_seo_advisor_dup_key( 'کیف ۱۲' ) !== hodima_seo_advisor_dup_key( 'کیف ۱۳' ) );
 $lv2 = static fn( string $code ): string => hodima_seo_advisor_crawl_issue_info( $code )['level'];
 hodima_ck( 'سطح کاتالوگ (قانون‌نامه): H1 تکراری، چند H1، عنوان مشابه، لینک ورودی کم، جزیره = info؛ بدون لینک ورودی = warn؛ عنوان تکراری warn', [ 'info', 'info', 'info', 'info', 'info', 'warn', 'warn' ] === array_map( $lv2, [ 'dup_h1', 'multi_h1', 'near_dup', 'low_inlinks', 'island', 'orphan', 'dup_title' ] ) );
+echo "=== لینک‌های غیر صفحه: پروتکل غیر http (اپ‌ها) صفحه نیست (۱۲ آبان ۱۴۰۵: snapp:// و tapsi:// «۴۰۴» گزارش می‌شد)\n";
+$res_base = 'https://hodima.test/contact-us/';
+foreach ( [ 'snapp://open', 'tapsi://open', 'tg://resolve?domain=x', 'viber://chat', 'intent://scan#Intent;end', 'mailto:a@b.c', 'tel:+98', 'javascript:void(0)', 'whatsapp://send', '#top', '' ] as $href ) {
+	hodima_ck( "resolve({$href}) ← null (لینک صفحه نیست)", null === hodima_seo_advisor_crawler_resolve( $href, $res_base ) );
+}
+hodima_ck( 'resolve: آدرس http(s) و مسیر نسبی و مطلق همچنان درست‌اند', [ 'https://hodima.test/a/', 'https://hodima.test/x/', 'https://hodima.test/contact-us/foo/bar', 'http://other.test/p/' ] === [ hodima_seo_advisor_crawler_resolve( 'https://hodima.test/a/', $res_base ), hodima_seo_advisor_crawler_resolve( '/x/', $res_base ), hodima_seo_advisor_crawler_resolve( 'foo/bar', $res_base ), hodima_seo_advisor_crawler_resolve( 'http://other.test/p/', $res_base ) ] );
+
+echo "=== خزنده: canonical فقط در head پذیرفته می‌شود و hash توضیح متا\n";
+$doc = static fn( string $head, string $body = '<p>x</p>' ): array => hodima_seo_advisor_crawler_parse( '<!doctype html><html><head><title>t</title>' . $head . '</head><body>' . $body . '</body></html>', 'https://hodima.test/p/' );
+$p_head = $doc( '<link rel="canonical" href="https://hodima.test/a/">' );
+$p_body = $doc( '', '<div><link rel="canonical" href="https://hodima.test/a/"></div>' );
+$p_both = $doc( '<link rel="canonical" href="https://hodima.test/a/">', '<link rel="canonical" href="https://hodima.test/b/">' );
+$p_none = $doc( '' );
+hodima_ck( 'canonical در head: خوانده می‌شود و canonical_body نیست', 'https://hodima.test/a/' === $p_head['canonical'] && false === $p_head['canonical_body'] );
+hodima_ck( 'canonical فقط در body: canonical خالی و canonical_body درست', '' === $p_body['canonical'] && true === $p_body['canonical_body'] );
+hodima_ck( 'canonical هم در head هم در body: head معتبر است', 'https://hodima.test/a/' === $p_both['canonical'] && false === $p_both['canonical_body'] );
+hodima_ck( 'بدون canonical: هیچ‌کدام', '' === $p_none['canonical'] && false === $p_none['canonical_body'] );
+$row_of = static fn( array $parsed ): array => hodima_seo_advisor_crawler_page_row( '/p/', 200, 100, $parsed, '', '' );
+hodima_ck( 'ردیف صفحه: canonical فقط در body ← «!body»؛ در head ← مسیر؛ هیچ ← خالی', [ '!body', '/a/', '' ] === [ $row_of( $p_body )['canonical'], $row_of( $p_head )['canonical'], $row_of( $p_none )['canonical'] ] );
+$m1 = $row_of( $doc( '<meta name="description" content="توضیح یکسان کيف ۱۲">' ) )['meta_hash'];
+$m2 = $row_of( $doc( '<meta name="description" content="توضیح  یکسان کیف 12">' ) )['meta_hash'];
+$m3 = $row_of( $doc( '<meta name="description" content="توضیح دیگر">' ) )['meta_hash'];
+hodima_ck( 'meta_hash: املای عربی/فارسی و فاصله یکی می‌شود؛ متن دیگر فرق می‌کند؛ بدون متا خالی', $m1 === $m2 && $m1 !== $m3 && '' !== $m1 && '' === $row_of( $p_none )['meta_hash'] );
+
 echo "=== ثابت‌ها (invariant): پیش‌نویس باید از تشخیص همان ایراد رد شود\n";
 $limit = hodima_seo_px_limit( 'title' );
 $posts = array_merge(
@@ -213,6 +246,18 @@ foreach ( $posts as $post_obj ) {
 	++$checked;
 }
 hodima_ck( "پیش‌نویس «عنوان کوتاه» در {$checked} صفحه واقعی ابزار تست: یا خالی است یا بین کف و سقف (باگ /contact-us/)", [] === $bad_short, implode( '، ', $bad_short ) );
+$kept = 0;
+$lost = [];
+foreach ( $posts as $post_obj ) {
+	$path = hodima_seo_advisor_path_key( (string) get_permalink( $post_obj ) );
+	$own  = 'خرید عمده گیره شمعی گل ۱۲ تایی';
+	$d2   = hodima_seo_advisor_draft_title( $path, 'title_short', $own );
+	if ( '' !== $d2 && ! str_starts_with( $d2, $own ) ) {
+		$lost[] = $path . ' ← ' . $d2;
+	}
+	$kept += '' !== $d2 ? 1 : 0;
+}
+hodima_ck( 'پیش‌نویس «عنوان کوتاه» با عنوان فعلی: اگر نشان داده شود با همان عنوان خود ادمین شروع می‌شود، نه نام صفحه (محصول /348/ ۱۲ آبان ۱۴۰۵)', [] === $lost, implode( '، ', $lost ) );
 hodima_ck( "پیش‌نویس «عنوان بلند» در {$checked} صفحه: از سقف بیشتر نیست", [] === $bad_long, implode( '، ', $bad_long ) );
 
 echo "=== روتر: نوع‌هایی که روتر آدرس تمیز نمی‌شناسد (ویدیو) با url_to_postid شناخته می‌شوند\n";

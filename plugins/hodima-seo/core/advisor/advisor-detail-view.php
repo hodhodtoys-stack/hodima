@@ -50,7 +50,7 @@ function hodima_seo_advisor_render_issue_detail( array $item, string $path ): vo
 		hodima_seo_advisor_render_draft(
 			'پیش‌نویس عنوان',
 			$draft,
-			'title_long' === $code ? 'کوتاه‌شده عنوان فعلی؛ بخوانید و اصلاح کنید.' : 'ساخته‌شده از نام صفحه، دسته و نام سایت؛ بخوانید و اصلاح کنید.',
+			'title_long' === $code ? 'کوتاه‌شده عنوان فعلی؛ بخوانید و اصلاح کنید.' : ( 'title_short' === $code ? 'عنوان فعلی خودتان + دسته و نام سایت؛ بخوانید و اصلاح کنید.' : 'ساخته‌شده از نام صفحه، دسته و نام سایت؛ بخوانید و اصلاح کنید.' ),
 			'no_title' === $code ? '' : $current
 		);
 		return;

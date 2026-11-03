@@ -60,14 +60,19 @@ function hodima_seo_advisor_dup_key( string $text ): string {
  * تکراری‌ها فقط بین صفحه‌های سالم و ایندکس‌پذیر شمرده می‌شوند و صفحه‌بندی کنار می‌ماند.
  *
  * @param list<array<string, mixed>> $rows ردیف‌های جدول خزش (با ستون‌های impressions، avg_position، kind)
- * @return array{titles: array<string, int>, h1s: array<string, int>, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>}
+ * @return array{titles: array<string, int>, h1s: array<string, int>, metas: array<string, int>, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>}
  */
 function hodima_seo_advisor_checks_context( array $rows ): array {
 
 	$titles = [];
 	$h1s    = [];
+	$metas  = [];
 	foreach ( $rows as $r ) {
 		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] && ! hodima_seo_advisor_crawl_is_paged( $r ) ) {
+			$mh = (string) ( $r['meta_hash'] ?? '' );
+			if ( '' !== $mh ) {
+				$metas[ $mh ] = ( $metas[ $mh ] ?? 0 ) + 1;
+			}
 			$tk            = hodima_seo_advisor_title_key( (string) $r['title'], (int) $r['title_len'] );
 			$titles[ $tk ] = ( $titles[ $tk ] ?? 0 ) + 1;
 			$h1k           = hodima_seo_advisor_dup_key( (string) $r['h1'] );
@@ -102,6 +107,7 @@ function hodima_seo_advisor_checks_context( array $rows ): array {
 	return [
 		'titles'  => $titles,
 		'h1s'     => $h1s,
+		'metas'   => $metas,
 		'similar' => $similar,
 		'by_path' => $by_path,
 		'sitemap' => hodima_seo_advisor_sitemap_paths(),
@@ -140,7 +146,7 @@ function hodima_seo_advisor_check_canonical_bad( array $r, array $ctx ): array {
 
 	$canonical = (string) $r['canonical'];
 
-	if ( (int) $r['words'] < 0 || 200 !== (int) $r['status'] || '' === $canonical || '!ext' === $canonical || $canonical === (string) $r['path'] || ! isset( $ctx['by_path'][ $canonical ] ) ) {
+	if ( (int) $r['words'] < 0 || 200 !== (int) $r['status'] || '' === $canonical || '!ext' === $canonical || '!body' === $canonical || $canonical === (string) $r['path'] || ! isset( $ctx['by_path'][ $canonical ] ) ) {
 		return [];
 	}
 
@@ -408,6 +414,39 @@ function hodima_seo_advisor_check_no_canonical( array $r, array $ctx ): array {
 }
 
 /**
+ * canonical فقط در تگ <body> (یا بعد از اولین عنصر غیر head): گوگل «فقط در بخش head می‌پذیرد» و آن را نادیده می‌گیرد (Search Central،
+ * «Consolidate duplicate URLs»؛ SEO 3.6.5). خزنده این حالت را در ستون canonical با نشانه `!body` ذخیره می‌کند.
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_canonical_in_body( array $r, array $ctx ): array {
+	return '!body' === (string) $r['canonical'] ? [ hodima_seo_advisor_issue( 'canonical_in_body' ) ] : [];
+}
+
+/**
+ * توضیح متای تکراری: همان توضیح (یکسان‌شده) در صفحه سالم دیگر هم هست. مرجع: گوگل «توضیح متای خوب برای یک صفحه یگانه است»
+ * (SEO starter guide)؛ SEOnaut، SiteOne و FreeCrawl هم دارند. فقط صفحه ۲۰۰ ایندکس‌پذیر غیرصفحه‌بندی؛ ردیف قدیمی بی‌hash نمی‌شمارد.
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_dup_meta( array $r, array $ctx ): array {
+
+	$hash = (string) ( $r['meta_hash'] ?? '' );
+
+	if ( '' === $hash || hodima_seo_advisor_crawl_is_paged( $r ) ) {
+		return [];
+	}
+
+	$count = $ctx['metas'][ $hash ] ?? 0;
+
+	return $count > 1 ? [ hodima_seo_advisor_issue( 'dup_meta', sprintf( 'در %s صفحه', number_format_i18n( $count ) ) ) ] : [];
+}
+
+/**
  * متن کم. نوع صفحه از داده گوگل می‌آید و صفحه بدون نمایش (همان‌هایی که محتوای کمشان مهم‌تر است) نوع ندارد: فقط برای
  * نامزدهای «محتوای کم» با روتر شناخته می‌شود (SEO 3.4.5). دسته‌ها و صفحه اصلی و صفحه‌بندی کنار می‌مانند.
  *
@@ -565,6 +604,7 @@ function hodima_seo_advisor_checks(): array {
 		'no_h1'          => [ 'when' => 'live', 'codes' => [ 'no_h1' ], 'fn' => 'hodima_seo_advisor_check_no_h1' ],
 		'dup_title'      => [ 'when' => 'live', 'codes' => [ 'dup_title' ], 'fn' => 'hodima_seo_advisor_check_dup_title' ],
 		'dup_h1'         => [ 'when' => 'live', 'codes' => [ 'dup_h1' ], 'fn' => 'hodima_seo_advisor_check_dup_h1' ],
+		'dup_meta'       => [ 'when' => 'live', 'codes' => [ 'dup_meta' ], 'fn' => 'hodima_seo_advisor_check_dup_meta' ],
 		'near_dup'       => [ 'when' => 'live', 'codes' => [ 'near_dup' ], 'fn' => 'hodima_seo_advisor_check_near_dup' ],
 		'slow'           => [ 'when' => 'live', 'codes' => [ 'slow' ], 'fn' => 'hodima_seo_advisor_check_slow' ],
 		'inlinks'        => [ 'when' => 'live', 'codes' => [ 'orphan', 'low_inlinks' ], 'fn' => 'hodima_seo_advisor_check_inlinks' ],
@@ -573,6 +613,7 @@ function hodima_seo_advisor_checks(): array {
 		'images'         => [ 'when' => 'known', 'codes' => [ 'img_alt', 'img_empty' ], 'fn' => 'hodima_seo_advisor_check_images' ],
 		'http_link'      => [ 'when' => 'known', 'codes' => [ 'http_link' ], 'fn' => 'hodima_seo_advisor_check_http_link' ],
 		'no_canonical'   => [ 'when' => 'known', 'codes' => [ 'no_canonical' ], 'fn' => 'hodima_seo_advisor_check_no_canonical' ],
+		'canonical_in_body' => [ 'when' => 'known', 'codes' => [ 'canonical_in_body' ], 'fn' => 'hodima_seo_advisor_check_canonical_in_body' ],
 		'thin'           => [ 'when' => 'known', 'codes' => [ 'thin' ], 'fn' => 'hodima_seo_advisor_check_thin' ],
 		'not_in_sitemap' => [ 'when' => 'known', 'codes' => [ 'not_in_sitemap' ], 'fn' => 'hodima_seo_advisor_check_not_in_sitemap' ],
 		'depth'          => [ 'when' => 'live', 'codes' => [ 'island', 'deep' ], 'fn' => 'hodima_seo_advisor_check_depth' ],

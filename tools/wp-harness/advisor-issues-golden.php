@@ -63,6 +63,7 @@ $base = static fn( string $path ): array => [
 	'canonical'  => $path,
 	'img_list'   => '',
 	'img_empty'  => 0,
+	'meta_hash'  => '',
 ];
 
 $cases = [
@@ -98,6 +99,9 @@ $cases = [
 	'/g-paged/page/2/' => [ 'title_px' => 100, 'meta_len' => 0, 'inlinks' => 1 ],
 	'/g-old/'       => [ 'words' => -1, 'h1_count' => -1, 'img_noalt' => -1, 'http_links' => -1, 'img_empty' => -1, 'canonical' => '', 'text_links' => -1 ],
 	'/g-linker/'    => [],
+	'/g-meta-a/'    => [ 'meta_hash' => 'abc123abc123' ], // توضیح متای یکسان در ۲ صفحه ← dup_meta (SEO 3.6.5)
+	'/g-meta-b/'    => [ 'meta_hash' => 'abc123abc123' ],
+	'/g-canbody/'   => [ 'canonical' => '!body' ], // canonical فقط در body ← canonical_in_body
 ];
 
 foreach ( $cases as $path => $over ) {
