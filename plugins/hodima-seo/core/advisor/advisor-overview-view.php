@@ -52,7 +52,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $info['fix'] || null !== hodima_seo_advisor_task_closed( $path, 'crawl_' . $code ) ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'detail' => (string) $issue['detail'], 'images' => (array) ( $issue['images'] ?? [] ), 'total' => (int) ( $issue['total'] ?? 0 ), 'marked' => (array) ( $issue['marked'] ?? [] ), 'targets' => (array) ( $issue['items'] ?? [] ), 'level' => (string) ( $issue['level'] ?? $info['level'] ), 'source' => 'crawl', 'mark' => $code, 'term' => '' ] );
+			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'detail' => (string) $issue['detail'], 'images' => (array) ( $issue['images'] ?? [] ), 'total' => (int) ( $issue['total'] ?? 0 ), 'marked' => (array) ( $issue['marked'] ?? [] ), 'targets' => (array) ( $issue['items'] ?? [] ), 'url' => (string) ( $issue['url'] ?? '' ), 'level' => (string) ( $issue['level'] ?? $info['level'] ), 'source' => 'crawl', 'mark' => $code, 'term' => '' ] );
 		}
 	}
 

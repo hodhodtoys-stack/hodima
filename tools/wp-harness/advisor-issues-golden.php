@@ -92,13 +92,23 @@ $cases = [
 	'/g-redir/'     => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-redir2/' ],
 	'/g-redir2/'    => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-ok/' ],
 	'/g-noindex/'   => [ 'indexable' => 0, 'reason' => 'Noindex', 'inlinks' => 2 ],
-	'/my-account/lost-password/' => [ 'indexable' => 0, 'reason' => 'Noindex', 'inlinks' => 2 ], // صفحه سیستمی عمدا noindex ← ایراد نیست (SEO 3.6.2)
+	'/my-account/lost-password/' => [ 'canonical' => '/my-account/', 'inlinks' => 2 ], // صفحه سیستمی عمدا noindex ← ایراد نیست (SEO 3.6.2)
 	'/g-canon-other/' => [ 'indexable' => 0, 'reason' => 'Canonicalised', 'canonical' => '/g-ok/', 'inlinks' => 2 ],
 	'/g-thin/'      => [ 'words' => 50 ],
 	'/g-img/'       => [ 'img_noalt' => 2, 'img_empty' => 1 ],
 	'/g-paged/page/2/' => [ 'title_px' => 100, 'meta_len' => 0, 'inlinks' => 1 ],
 	'/g-old/'       => [ 'words' => -1, 'h1_count' => -1, 'img_noalt' => -1, 'http_links' => -1, 'img_empty' => -1, 'canonical' => '', 'text_links' => -1 ],
 	'/g-linker/'    => [],
+	'/g-500/'       => [ 'status' => 503, 'inlinks' => 2 ], // خطای سرور ← server_error (قرمز؛ گوگل: ۵xx دائمی از ایندکس برمی‌افتد)
+	'/g-loop-a/'    => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-loop-b/' ], // حلقه ← redirect_loop
+	'/g-loop-b/'    => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-loop-a/' ],
+	'/g-c1/'        => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-c2/' ], // زنجیره ۵ پرشی: c1 کهربایی، c2 تا c4 اطلاع
+	'/g-c2/'        => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-c3/' ],
+	'/g-c3/'        => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-c4/' ],
+	'/g-c4/'        => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-c5/' ],
+	'/g-c5/'        => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-ok/' ],
+	'/cart/'        => [ 'indexable' => 0, 'reason' => 'Noindex', 'inlinks' => 2 ], // صفحه سیستمی noindex ← ایراد نیست (SEO 3.6.2)
+	'/my-account/'  => [ 'indexable' => 0, 'reason' => 'Noindex', 'inlinks' => 2 ], // صفحه سیستمی noindex؛ فراموشی رمز با canonical به آن ← canonical_bad نمی‌دهد (SEO 3.6.6)
 	'/g-meta-a/'    => [ 'meta_hash' => 'abc123abc123' ], // توضیح متای یکسان در ۲ صفحه ← dup_meta (SEO 3.6.5)
 	'/g-meta-b/'    => [ 'meta_hash' => 'abc123abc123' ],
 	'/g-canbody/'   => [ 'canonical' => '!body' ], // canonical فقط در body ← canonical_in_body

@@ -166,7 +166,18 @@ $cases = [
 	// ── وضعیت (ریدایرکت، خطا، noindex)
 	[ 'ریدایرکت با لینک داخلی ← redirect', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 2 ], [], [ 'redirect' ] ],
 	[ 'ریدایرکت بی‌لینک داخلی ← هیچ (فقط نمایش گوگل ایراد نیست)', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 0 ], [], [] ],
-	[ 'ریدایرکت به ریدایرکت ← redirect_chain', 'status', [ 'status' => 301, 'redirect_to' => '/b/', 'inlinks' => 0 ], [ 'by_path' => [ '/b/' => [ 'status' => 301 ] ] ], [ 'redirect_chain' ] ],
+	[ 'ریدایرکت به ریدایرکت (۲ پرش) ← redirect_chain', 'status', [ 'status' => 301, 'redirect_to' => '/b/', 'inlinks' => 0 ], [ 'by_path' => [ '/ck-page/' => [ 'status' => 301, 'redirect_to' => '/b/' ], '/b/' => [ 'status' => 301, 'redirect_to' => '/c/' ], '/c/' => [ 'status' => 200, 'redirect_to' => '' ] ] ], [ 'redirect_chain' ] ],
+	[ 'ریدایرکت مستقیم به صفحه ۲۰۰ (۱ پرش) ← هیچ (فقط با لینک داخلی «redirect»)', 'status', [ 'status' => 301, 'redirect_to' => '/c/', 'inlinks' => 0 ], [ 'by_path' => [ '/ck-page/' => [ 'status' => 301, 'redirect_to' => '/c/' ], '/c/' => [ 'status' => 200, 'redirect_to' => '' ] ] ], [] ],
+	[ 'حلقه ریدایرکت (a ← b ← a) ← redirect_loop (نه redirect_chain)', 'status', [ 'status' => 301, 'redirect_to' => '/b/', 'inlinks' => 0 ], [ 'by_path' => [ '/ck-page/' => [ 'status' => 301, 'redirect_to' => '/b/' ], '/b/' => [ 'status' => 301, 'redirect_to' => '/ck-page/' ] ] ], [ 'redirect_loop' ] ],
+	[ 'ریدایرکت به خودش ← redirect_loop', 'status', [ 'status' => 301, 'redirect_to' => '/ck-page/', 'inlinks' => 0 ], [ 'by_path' => [ '/ck-page/' => [ 'status' => 301, 'redirect_to' => '/ck-page/' ] ] ], [ 'redirect_loop' ] ],
+	[ 'صفحه ۵۰۳ ← server_error (نه broken)', 'status', [ 'status' => 503 ], [], [ 'server_error' ] ],
+	[ 'صفحه ۴۰۴ ← broken (نه server_error)', 'status', [ 'status' => 404 ], [], [ 'broken' ] ],
+	[ 'صفحه ۴۱۰ ← broken', 'status', [ 'status' => 410 ], [], [ 'broken' ] ],
+	[ 'canonical به صفحه دیگر (reason = Canonicalised) ← canonicalised (نه noindex)', 'status', [ 'indexable' => 0, 'reason' => 'Canonicalised', 'canonical' => '/ok/' ], [], [ 'canonicalised' ] ],
+	[ 'noindex معمولی (reason = Noindex) ← noindex (نه canonicalised)', 'status', [ 'indexable' => 0, 'reason' => 'Noindex' ], [], [ 'noindex' ] ],
+	[ 'canonical فقط در صفحه سیستمی ← هیچ (زیرمسیر حساب)', 'status', [ 'path' => '/my-account/lost-password/', 'indexable' => 0, 'reason' => 'Canonicalised', 'canonical' => '/my-account/' ], [], [] ],
+	[ 'فراموشی رمز با canonical به /my-account/ (noindex) ← canonical_bad نمی‌دهد (۱۲ آبان ۱۴۰۵، سایت واقعی)', 'canonical_bad', [ 'path' => '/my-account/lost-password/', 'canonical' => '/my-account/' ], [ 'by_path' => [ '/my-account/' => [ 'status' => 200, 'reason' => 'Noindex' ] ] ], [] ],
+	[ 'canonical به صفحه noindex غیرسیستمی ← همچنان canonical_bad', 'canonical_bad', [ 'path' => '/p1/', 'canonical' => '/n2/' ], [ 'by_path' => [ '/n2/' => [ 'status' => 200, 'reason' => 'Noindex' ] ] ], [ 'canonical_bad' ] ],
 	[ 'صفحه ۴۰۴ ← broken', 'status', [ 'status' => 404 ], [], [ 'broken' ] ],
 	[ 'noindex ← noindex', 'status', [ 'indexable' => 0, 'reason' => 'Noindex' ], [], [ 'noindex' ] ],
 	[ 'noindex در صفحه سیستمی حساب کاربری ← هیچ (۱۲ آبان ۱۴۰۵: /my-account/lost-password/ ایراد کاذب بود)', 'status', [ 'path' => '/my-account/lost-password/', 'indexable' => 0, 'reason' => 'Noindex' ], [], [] ],
@@ -200,6 +211,17 @@ hodima_ck( 'نمره: ثابت‌ها (ضریب اطلاع صفر، سقف هر 
 hodima_ck( 'کلید تکراری: ي/ی، ك/ک، رقم فارسی/عربی/لاتین، نیم‌فاصله و حروف بزرگ یکی می‌شوند و عنوان‌های متفاوت یکی نمی‌شوند', hodima_seo_advisor_dup_key( 'كيف ۱۲ Pack' ) === hodima_seo_advisor_dup_key( 'کیف 12 pack' ) && hodima_seo_advisor_dup_key( 'کیف ۱۲' ) !== hodima_seo_advisor_dup_key( 'کیف ۱۳' ) );
 $lv2 = static fn( string $code ): string => hodima_seo_advisor_crawl_issue_info( $code )['level'];
 hodima_ck( 'سطح کاتالوگ (قانون‌نامه): H1 تکراری، چند H1، عنوان مشابه، لینک ورودی کم، جزیره = info؛ بدون لینک ورودی = warn؛ عنوان تکراری warn', [ 'info', 'info', 'info', 'info', 'info', 'warn', 'warn' ] === array_map( $lv2, [ 'dup_h1', 'multi_h1', 'near_dup', 'low_inlinks', 'island', 'orphan', 'dup_title' ] ) );
+hodima_ck( 'سطح زنجیره: ۴ پرش info (بدون کلید level)، ۵ پرش warn', [ [], [ 'warn' ] ] === array_map( static function ( int $n ): array {
+	$by = [];
+	for ( $i = 1; $i <= $n; ++$i ) {
+		$by[ "/h{$i}/" ] = [ 'status' => 301, 'redirect_to' => '/h' . ( $i + 1 ) . '/' ];
+	}
+	$by[ '/h' . ( $n + 1 ) . '/' ] = [ 'status' => 200, 'redirect_to' => '' ];
+	$out = hodima_seo_advisor_check_status( hodima_ck_row( [ 'path' => '/h1/', 'status' => 301, 'redirect_to' => '/h2/', 'inlinks' => 0 ] ), hodima_ck_ctx( [ 'by_path' => $by ] ) );
+	return array_values( array_filter( array_map( static fn( array $i ): string => (string) ( $i['level'] ?? '' ), $out ) ) );
+}, [ 4, 5 ] ) );
+hodima_ck( 'ردیابی ریدایرکت: مقصد ناشناخته (صفحه خزیده نشده) زنجیره و حلقه نمی‌سازد', 1 === hodima_seo_advisor_redirect_trace( '/a/', [ '/a/' => [ 'status' => 301, 'redirect_to' => '/unknown/' ] ] )['hops'] && false === hodima_seo_advisor_redirect_trace( '/a/', [ '/a/' => [ 'status' => 301, 'redirect_to' => '/unknown/' ] ] )['loop'] );
+
 echo "=== لینک‌های غیر صفحه: پروتکل غیر http (اپ‌ها) صفحه نیست (۱۲ آبان ۱۴۰۵: snapp:// و tapsi:// «۴۰۴» گزارش می‌شد)\n";
 $res_base = 'https://hodima.test/contact-us/';
 foreach ( [ 'snapp://open', 'tapsi://open', 'tg://resolve?domain=x', 'viber://chat', 'intent://scan#Intent;end', 'mailto:a@b.c', 'tel:+98', 'javascript:void(0)', 'whatsapp://send', '#top', '' ] as $href ) {

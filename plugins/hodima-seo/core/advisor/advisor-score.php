@@ -35,7 +35,7 @@ const HODIMA_SEO_ADVISOR_SCORE_CATEGORIES = [
 	'cat-links'     => [
 		'label'  => 'لینک‌ها و آدرس‌ها',
 		'weight' => 30,
-		'codes'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain', 'broken', 'redirect', 'canonical_bad', 'sitemap_bad', 'http_link' ],
+		'codes'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain', 'redirect_loop', 'broken', 'server_error', 'redirect', 'canonical_bad', 'sitemap_bad', 'http_link' ],
 	],
 	'cat-meta'      => [
 		'label'  => 'عنوان و متا',
@@ -50,7 +50,7 @@ const HODIMA_SEO_ADVISOR_SCORE_CATEGORIES = [
 	'cat-structure' => [
 		'label'  => 'ساختار و نقشه سایت',
 		'weight' => 15,
-		'codes'  => [ 'orphan', 'island', 'low_inlinks', 'deep', 'no_canonical', 'canonical_in_body', 'not_in_sitemap', 'noindex' ],
+		'codes'  => [ 'orphan', 'island', 'low_inlinks', 'deep', 'no_canonical', 'canonical_in_body', 'not_in_sitemap', 'noindex', 'canonicalised' ],
 	],
 	'cat-speed'     => [
 		'label'  => 'سرعت',

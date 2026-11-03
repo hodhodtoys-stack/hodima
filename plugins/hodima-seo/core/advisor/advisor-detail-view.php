@@ -75,6 +75,11 @@ function hodima_seo_advisor_render_issue_detail( array $item, string $path ): vo
 		hodima_seo_advisor_render_link_list( (array) ( $item['targets'] ?? [] ) );
 	}
 
+	// مقصد ریدایرکت (تا ۳.۶.۵ فقط «به این آدرس می‌رود:» بدون آدرس چاپ می‌شد): آدرس با دکمه کپی
+	if ( in_array( $code, [ 'redirect', 'redirect_chain', 'redirect_loop' ], true ) && '' !== (string) ( $item['url'] ?? '' ) ) {
+		hodima_seo_advisor_render_link_list( [ [ 'path' => (string) $item['url'], 'note' => '' ] ], [ 'redirect' => 'مقصد ریدایرکت', 'redirect_chain' => 'مقصد نهایی', 'redirect_loop' => 'ریدایرکت بعدی' ][ $code ], 'مقصد' );
+	}
+
 	if ( 'near_dup' === $code ) {
 		hodima_seo_advisor_render_link_list( (array) ( $item['targets'] ?? [] ), 'کدام صفحه‌ها شبیه‌اند؟', 'صفحه' );
 	}

@@ -2460,7 +2460,7 @@ hodima_ad( 'تکه متن فرصت لینک: واژه لاتین با حروف �
 // ایرادهای فنی: ریدایرکت با آدرس کامل مقصد
 hodima_seo_advisor_crawl_store( [ '/m2/old/' => [ 'path' => '/m2/old/', 'status' => 301, 'indexable' => 0, 'reason' => '', 'title' => '', 'title_len' => 0, 'meta_len' => 0, 'title_px' => hodima_ad_tpx( 0 ), 'meta_px' => hodima_ad_mpx( 0 ), 'h1' => '', 'h2' => '', 'resp_ms' => 10, 'inlinks' => 2, 'text_links' => 0, 'depth' => 2, 'score' => 0.0, 'redirect' => '/m2/new/' ] ], [] );
 $m2_issue = array_values( array_filter( hodima_seo_advisor_crawl_issues(), static fn( array $r ): bool => '/m2/old/' === $r['path'] ) )[0]['issues'][0] ?? [];
-hodima_ad( 'ایراد ریدایرکت: مقصد جدا از جمله (برای آدرس کامل + کپی)', [ $m2_issue['detail'] ?? '', $m2_issue['url'] ?? '' ], [ 'به این آدرس می‌رود:', '/m2/new/' ] );
+hodima_ad( 'ایراد ریدایرکت: مقصد جدا از جمله (برای آدرس کامل + کپی)', [ $m2_issue['detail'] ?? '', $m2_issue['url'] ?? '' ], [ 'به آدرس زیر می‌رود.', '/m2/new/' ] ); // SEO 3.6.6: دیگر «به این آدرس می‌رود:» نیست (دو نقطه معلق می‌ماند؛ آدرس در فهرست «مقصد ریدایرکت» زیر ایراد می‌آید)
 
 // قفل بررسی ایندکس
 add_option( HODIMA_SEO_ADVISOR_INSPECT_LOCK, time(), '', false );
@@ -3571,7 +3571,7 @@ hodima_ad( 'وزن بخش‌ها ۱۰۰ و هر کد ایراد فقط در یک
 $sc_all_codes = array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) );
 $sc_issue_codes = array_merge( ...array_values( HODIMA_SEO_ADVISOR_CRAWL_GROUPS ) );
 hodima_ad( 'هر کد ایراد خزش در یکی از بخش‌های نمره است (ایرادی بی‌نمره نمی‌ماند)', array_values( array_diff( $sc_issue_codes, $sc_all_codes ) ), [] );
-hodima_ad( 'فیلتر جدول: گروه چیپ و بخش نمره شناخته می‌شوند، ناشناس نه', [ hodima_seo_advisor_score_filter_codes( 'linkfix' ), in_array( 'slow', hodima_seo_advisor_score_filter_codes( 'cat-speed' ), true ), hodima_seo_advisor_score_filter_codes( 'nope' ) ], [ [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain' ], true, [] ] );
+hodima_ad( 'فیلتر جدول: گروه چیپ و بخش نمره شناخته می‌شوند، ناشناس نه', [ hodima_seo_advisor_score_filter_codes( 'linkfix' ), in_array( 'slow', hodima_seo_advisor_score_filter_codes( 'cat-speed' ), true ), hodima_seo_advisor_score_filter_codes( 'nope' ) ], [ [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain', 'redirect_loop' ], true, [] ] );
 
 $sc_old = get_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, false );
 $sc_crawl = get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, false );

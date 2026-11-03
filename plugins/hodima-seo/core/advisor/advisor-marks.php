@@ -23,7 +23,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** ایرادهای خزش که با خواندن دوباره همان صفحه سنجیده می‌شوند؛ بقیه (کند، لینک ورودی، ریدایرکت) فقط با خزش بعدی. */
-const HODIMA_SEO_ADVISOR_MARK_LIVE_CODES = [ 'no_meta', 'no_snippet', 'no_h1', 'no_title', 'title_short', 'title_long', 'dup_title', 'dup_h1', 'noindex' ];
+const HODIMA_SEO_ADVISOR_MARK_LIVE_CODES = [ 'no_meta', 'no_snippet', 'no_h1', 'no_title', 'title_short', 'title_long', 'dup_title', 'dup_h1', 'noindex', 'canonicalised' ];
 
 /** ایرادهای صفحه‌محور که با خزش دوباره همان یک صفحه (خزنده داخلی) همان لحظه سنجیده می‌شوند. */
 const HODIMA_SEO_ADVISOR_MARK_RECRAWL_CODES = [ 'link_broken', 'link_redirect', 'link_noindex', 'multi_h1', 'img_alt', 'img_empty', 'http_link', 'thin', 'no_canonical', 'canonical_in_body', 'canonical_bad', 'dup_meta', 'near_dup' ];
@@ -373,7 +373,7 @@ function hodima_seo_advisor_mark_check_now( string $source, string $path, array 
 		case 'crawl':
 			$codes  = array_map( static fn( array $m ): string => substr( $m['rule'], 6 ), $marks );
 			$live   = array_intersect( $codes, HODIMA_SEO_ADVISOR_MARK_LIVE_CODES );
-			$broken = in_array( 'broken', $codes, true );
+			$broken = in_array( 'broken', $codes, true ) || in_array( 'server_error', $codes, true );
 			$recrawl = array_values( array_intersect( $codes, HODIMA_SEO_ADVISOR_MARK_RECRAWL_CODES ) );
 			if ( $recrawl && 'crawler' === (string) ( get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, [] )['source'] ?? '' ) && hodima_seo_advisor_crawler_recrawl( $path ) ) {
 				hodima_seo_advisor_tasks_sync_crawl( $path, $recrawl ); // لینک و تصویر و تیتر همین صفحه همین لحظه از سایت خوانده شد
@@ -382,7 +382,7 @@ function hodima_seo_advisor_mark_check_now( string $source, string $path, array 
 				// ۲۰۰: متنی‌ها و خطا هر دو سنجیدنی‌اند (live_fetch خودش می‌سنجد)؛ ریدایرکت/خطا: فقط خطای ۴۰۴/۵۰۰ (صفحه متن ندارد)
 				$code = hodima_seo_advisor_live_fetch( $path, $broken );
 				if ( $code > 200 ) {
-					hodima_seo_advisor_tasks_sync_crawl( $path, [ 'broken' ] );
+					hodima_seo_advisor_tasks_sync_crawl( $path, [ 'broken', 'server_error' ] );
 				}
 			}
 			break;
@@ -440,7 +440,7 @@ function hodima_seo_advisor_mark_result_text( array $tasks ): string {
 				'health_unseen', 'index_problem' => 'آدرس اول صف بررسی ایندکس گوگل رفت',
 				'health_dead'                    => 'با دریافت بعدی سنجیده می‌شود',
 				default                          => str_starts_with( $task['rule'], 'crawl_' )
-					? ( in_array( substr( $task['rule'], 6 ), [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, ...HODIMA_SEO_ADVISOR_MARK_RECRAWL_CODES, 'broken' ], true ) ? 'صفحه همین حالا از سایت خوانده نشد؛ با خزش تازه سنجیده می‌شود' : 'کند بودن، لینک ورودی و ریدایرکت با خزش تازه سنجیده می‌شوند' )
+					? ( in_array( substr( $task['rule'], 6 ), [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, ...HODIMA_SEO_ADVISOR_MARK_RECRAWL_CODES, 'broken', 'server_error' ], true ) ? 'صفحه همین حالا از سایت خوانده نشد؛ با خزش تازه سنجیده می‌شود' : 'کند بودن، لینک ورودی و ریدایرکت با خزش تازه سنجیده می‌شوند' )
 					: 'با ذخیره صفحه یا داده بعدی گوگل سنجیده می‌شود',
 			};
 		}

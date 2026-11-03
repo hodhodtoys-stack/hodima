@@ -142,7 +142,7 @@ function hodima_seo_advisor_live_fetch( string $path, bool $record_status = fals
 
 	// کارهای «انجام دادم» ایرادهای متنی همین صفحه با همین خواندن سنجیده می‌شوند (ذخیره صفحه هم همین را صدا می‌زند)
 	if ( function_exists( 'hodima_seo_advisor_tasks_sync_crawl' ) ) {
-		hodima_seo_advisor_tasks_sync_crawl( $path, [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, 'broken' ] );
+		hodima_seo_advisor_tasks_sync_crawl( $path, [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, 'broken', 'server_error' ] );
 	}
 
 	return 200;

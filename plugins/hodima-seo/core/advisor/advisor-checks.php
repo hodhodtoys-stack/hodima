@@ -156,6 +156,11 @@ function hodima_seo_advisor_check_canonical_bad( array $r, array $ctx ): array {
 		return [];
 	}
 
+	// صفحه‌های سیستمی (حساب، سبد، پرداخت) عمدا noindex‌اند و صفحه‌های زیرشان (فراموشی رمز) canonical به صفحه اصلی حساب دارند (SEO 3.6.6)
+	if ( hodima_seo_advisor_is_system_path( (string) $r['path'] ) || hodima_seo_advisor_is_system_path( $canonical ) ) {
+		return [];
+	}
+
 	return [ hodima_seo_advisor_issue( 'canonical_bad', sprintf( 'به %s اشاره می‌کند (%s)', rawurldecode( $canonical ), 200 !== (int) $target['status'] ? 'کد ' . number_format_i18n( (int) $target['status'] ) : 'noindex' ) ) ];
 }
 
@@ -553,9 +558,49 @@ function hodima_seo_advisor_is_system_path( string $path ): bool {
 	return false;
 }
 
+/** از این تعداد پرش ریدایرکت به بعد «زنجیره ریدایرکت» کهربایی است (گوگل تا ۱۰ پرش را دنبال می‌کند؛ کمتر از این اطلاع است). */
+const HODIMA_SEO_ADVISOR_REDIRECT_WARN_HOPS = 5;
+
 /**
- * صفحه‌ای که ایندکس‌پذیر نیست (ریدایرکت، خطا، noindex) و نمایش گوگل یا لینک داخلی دارد. ریدایرکت فقط وقتی ایراد است که
- * لینک داخلی به آن برود (دستورش اصلاح همان لینک‌هاست؛ تا SEO 3.0.1 با نمایش گوگل هم می‌آمد و هیچ‌وقت برطرف نمی‌شد).
+ * مسیر ریدایرکت یک آدرس را تا مقصد نهایی دنبال می‌کند (فقط با ردیف‌های خزش‌شده؛ بدون درخواست تازه).
+ * hops = شمار پاسخ‌های ۳xx پشت‌سرهم از همین آدرس؛ loop = به آدرسی که قبلا دیدیم برگشت؛ final = آخرین مقصد شناخته‌شده.
+ *
+ * @param array<string, array<string, mixed>> $by_path ردیف‌های خزش به کلید مسیر
+ * @return array{hops: int, final: string, loop: bool}
+ */
+function hodima_seo_advisor_redirect_trace( string $path, array $by_path ): array {
+
+	$seen  = [ $path => true ];
+	$hops  = 0;
+	$cur   = $path;
+	$final = '';
+
+	while ( isset( $by_path[ $cur ] ) && (int) $by_path[ $cur ]['status'] >= 300 && (int) $by_path[ $cur ]['status'] < 400 && $hops < 20 ) {
+		++$hops;
+		$next = (string) $by_path[ $cur ]['redirect_to'];
+
+		if ( '' === $next ) {
+			break;
+		}
+
+		$final = $next;
+
+		if ( isset( $seen[ $next ] ) ) {
+			return [ 'hops' => $hops, 'final' => $next, 'loop' => true ];
+		}
+
+		$seen[ $next ] = true;
+		$cur           = $next;
+	}
+
+	return [ 'hops' => $hops, 'final' => $final, 'loop' => false ];
+}
+
+/**
+ * صفحه‌ای که ایندکس‌پذیر نیست (ریدایرکت، خطا، noindex، canonical به صفحه دیگر) و نمایش گوگل یا لینک داخلی دارد. ریدایرکت فقط
+ * وقتی ایراد است که لینک داخلی به آن برود (دستورش اصلاح همان لینک‌هاست؛ تا SEO 3.0.1 با نمایش گوگل هم می‌آمد و هیچ‌وقت برطرف
+ * نمی‌شد). SEO 3.6.6: ۴xx و ۵xx جدا (گوگل ۴۰۴ را مشکل نمی‌داند ولی ۵xx دائمی را از ایندکس برمی‌دارد)؛ زنجیره با شمار پرش تا مقصد
+ * نهایی و حلقه؛ noindex و canonical به صفحه دیگر دو ایراد جدا؛ صفحه‌های سیستمی (حساب، سبد، پرداخت) عمدا noindex‌اند.
  *
  * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
  * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
@@ -568,16 +613,33 @@ function hodima_seo_advisor_check_status( array $r, array $ctx ): array {
 
 	if ( $status >= 300 && $status < 400 ) {
 		if ( (int) $r['inlinks'] > 0 ) {
-			$out[] = hodima_seo_advisor_issue( 'redirect', '' !== (string) $r['redirect_to'] ? 'به این آدرس می‌رود:' : '', (string) $r['redirect_to'] ); // آدرس جدا با کپی (وسط جمله به‌هم می‌ریخت)
+			$out[] = hodima_seo_advisor_issue( 'redirect', '' !== (string) $r['redirect_to'] ? 'به آدرس زیر می‌رود.' : '', (string) $r['redirect_to'] ); // آدرس جدا با کپی (وسط جمله به‌هم می‌ریخت)
 		}
-		$next = $ctx['by_path'][ (string) $r['redirect_to'] ] ?? null;
-		if ( null !== $next && (int) $next['status'] >= 300 && (int) $next['status'] < 400 ) {
-			$out[] = hodima_seo_advisor_issue( 'redirect_chain', 'به آدرسی می‌رود که خودش ریدایرکت است:', (string) $r['redirect_to'] );
+
+		$trace = hodima_seo_advisor_redirect_trace( (string) $r['path'], $ctx['by_path'] );
+
+		if ( $trace['loop'] ) {
+			$out[] = hodima_seo_advisor_issue( 'redirect_loop', 'ریدایرکت‌ها به هم برمی‌گردند (حلقه)؛ آدرس بعدی زیر است.', (string) $r['redirect_to'] );
+		} elseif ( $trace['hops'] >= 2 ) {
+			$out[] = hodima_seo_advisor_issue(
+				'redirect_chain',
+				sprintf( '%s پرش تا مقصد نهایی (آدرس زیر).', number_format_i18n( $trace['hops'] ) ),
+				$trace['final'],
+				[],
+				$trace['hops'] >= HODIMA_SEO_ADVISOR_REDIRECT_WARN_HOPS ? [ 'level' => 'warn' ] : []
+			);
 		}
+	} elseif ( $status >= 500 ) {
+		$out[] = hodima_seo_advisor_issue( 'server_error', sprintf( 'کد %s', number_format_i18n( $status ) ) );
 	} elseif ( $status >= 400 ) {
 		$out[] = hodima_seo_advisor_issue( 'broken', sprintf( 'کد %s', number_format_i18n( $status ) ) );
 	} elseif ( 200 === $status && 0 === (int) $r['indexable'] && ! hodima_seo_advisor_is_system_path( (string) $r['path'] ) ) {
-		$out[] = hodima_seo_advisor_issue( 'noindex', (string) $r['reason'] );
+		if ( 'Canonicalised' === (string) $r['reason'] ) {
+			$canonical = (string) $r['canonical'];
+			$out[]     = hodima_seo_advisor_issue( 'canonicalised', '' !== $canonical && ! str_starts_with( $canonical, '!' ) ? sprintf( 'به %s اشاره می‌کند.', rawurldecode( $canonical ) ) : '' );
+		} else {
+			$out[] = hodima_seo_advisor_issue( 'noindex' );
+		}
 	}
 
 	return $out;
@@ -617,7 +679,7 @@ function hodima_seo_advisor_checks(): array {
 		'thin'           => [ 'when' => 'known', 'codes' => [ 'thin' ], 'fn' => 'hodima_seo_advisor_check_thin' ],
 		'not_in_sitemap' => [ 'when' => 'known', 'codes' => [ 'not_in_sitemap' ], 'fn' => 'hodima_seo_advisor_check_not_in_sitemap' ],
 		'depth'          => [ 'when' => 'live', 'codes' => [ 'island', 'deep' ], 'fn' => 'hodima_seo_advisor_check_depth' ],
-		'status'         => [ 'when' => 'dead', 'codes' => [ 'redirect', 'redirect_chain', 'broken', 'noindex' ], 'fn' => 'hodima_seo_advisor_check_status' ],
+		'status'         => [ 'when' => 'dead', 'codes' => [ 'redirect', 'redirect_chain', 'redirect_loop', 'broken', 'server_error', 'noindex', 'canonicalised' ], 'fn' => 'hodima_seo_advisor_check_status' ],
 	];
 }
 
