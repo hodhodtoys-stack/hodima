@@ -11,7 +11,8 @@
 #   - آزمون‌های آمار ویدیوها (video-watch-tests.php) رد شوند؛
 #   - آزمون‌های Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس) رد شوند؛
 #   - آزمون‌های فرم تلفن (phone-tests.php) رد شوند؛
-#   - آزمون‌های دستار سئو (advisor-tests.php) یا دقت خواندن صفحه خزنده (advisor-accuracy.php) رد شوند.
+#   - آزمون‌های دستار سئو (advisor-tests.php)، دقت خواندن صفحه خزنده (advisor-accuracy.php)، قاعده‌های ایراد (advisor-checks-tests.php)
+#     یا عکس مرجع ایرادها (advisor-issues-golden.php) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
 #   ci-check.sh [ref]
@@ -120,6 +121,20 @@ if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-accuracy.php" > "$out/advis
 	tail -1 "$out/advisor-accuracy.txt" | sed 's/^/  /'
 else
 	grep -E "✘|واقعی|Fatal|Error" "$out/advisor-accuracy.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
+
+echo "=== قاعده‌های ایراد فنی دستار (advisor-checks-tests.php: «دارد/ندارد» برای هر ایراد + ساختار کاتالوگ)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-checks-tests.php" > "$out/advisor-checks-tests.txt" 2>&1; then
+	tail -1 "$out/advisor-checks-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/advisor-checks-tests.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
+
+echo "=== عکس مرجع ایرادهای دستار (advisor-issues-golden.php --check: خروجی با golden/advisor-issues.json یکی باشد)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-issues-golden.php" --check "$here/golden/advisor-issues.json" > "$out/advisor-issues-golden.txt" 2>&1; then
+	head -1 "$out/advisor-issues-golden.txt" | sed 's/^/  /'
+else
+	head -40 "$out/advisor-issues-golden.txt" | sed 's/^/  /'; fail=1
 fi
 
 if [ -n "$ref" ] && git -C "$repo" rev-parse -q --verify "$ref^{commit}" >/dev/null; then

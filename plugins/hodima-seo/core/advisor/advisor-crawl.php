@@ -503,204 +503,21 @@ function hodima_seo_advisor_crawl_issues(): array {
 		ARRAY_A
 	);
 
-	// تکراری‌ها فقط بین صفحه‌های سالم و ایندکس‌پذیر شمرده می‌شوند. صفحه‌بندی آرشیو (/page/2/) H1 و عنوان آرشیو را عمدا دارد
-	// و لینک ورودی‌اش فقط از خود صفحه‌بندی است؛ با خزش واقعی ۶ از ۶ «H1 تکراری» و ۳ «لینک ورودی کم» همین‌ها بودند (SEO 3.0.5)
-	$paged  = static fn( array $r ): bool => 1 === preg_match( '#/page/\d+/?$#', (string) $r['path'] );
-	$titles = [];
-	$h1s    = [];
-	// عنوان در ۱۹۱ نویسه بریده ذخیره می‌شود: برای عنوان بریده‌شده طول واقعی هم در کلید می‌آید تا دو عنوان بلند با ابتدای یکسان «تکراری» نشوند (SEO 3.4.7)
-	$title_key = static fn( string $title, int $length ): string => mb_strtolower( $title ) . ( mb_strlen( $title ) >= HODIMA_SEO_ADVISOR_KEY_LENGTH ? '|' . $length : '' );
-	foreach ( $rows as $r ) {
-		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] && ! $paged( $r ) ) {
-			$tk            = $title_key( (string) $r['title'], (int) $r['title_len'] );
-			$titles[ $tk ] = ( $titles[ $tk ] ?? 0 ) + 1;
-			$h1s[ mb_strtolower( (string) $r['h1'] ) ]       = ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) + 1;
-		}
-	}
-
-	// عنوان یا H1 «مشابه» (نه یکسان) صفحه دیگر: کانیبال بالقوه پیش از اینکه گوگل برای هر دو نمایش بدهد (SEO 3.5.7، advisor-similar.php)
-	$site_words = hodima_seo_advisor_similar_tokens( (string) get_bloginfo( 'name' ) );
-	$sim_title  = [];
-	$sim_h1     = [];
-	foreach ( $rows as $r ) {
-		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] && ! $paged( $r ) && '/' !== (string) $r['path'] ) {
-			$sim_title[ (string) $r['path'] ] = (string) $r['title'];
-			$sim_h1[ (string) $r['path'] ]    = (string) $r['h1'];
-		}
-	}
-	$similar = [];
-	foreach ( [ 'عنوان' => hodima_seo_advisor_similar_pairs( $sim_title, $site_words ), 'H1' => hodima_seo_advisor_similar_pairs( $sim_h1, $site_words ) ] as $what => $found ) {
-		foreach ( $found as $path => $partners ) {
-			foreach ( $partners as $partner ) {
-				$similar[ $path ][ $partner ][] = $what;
-			}
-		}
-	}
-
+	// قاعده‌های ایراد هر کدام یک تابع‌اند و ترتیب و شرط اجرایشان یک‌جا ثبت است (advisor-checks.php؛ SEO 3.6.1). تکراری‌ها فقط
+	// بین صفحه‌های سالم و ایندکس‌پذیر شمرده می‌شوند و صفحه‌بندی آرشیو (/page/2/) کنار می‌ماند (SEO 3.0.5)
+	$ctx = hodima_seo_advisor_checks_context( $rows );
 	$out = [];
 
-	$by_path = [];
-	foreach ( $rows as $r ) {
-		$by_path[ (string) $r['path'] ] = $r;
-	}
-	$sitemap = hodima_seo_advisor_sitemap_paths();
-	$bad     = hodima_seo_advisor_crawl_bad_links();
-	$n       = static fn( int|float $value ): string => number_format_i18n( $value );
-
 	foreach ( $rows as $r ) {
 
-		$status      = (int) $r['status'];
-		$impressions = (int) $r['impressions'];
-		$inlinks     = (int) $r['inlinks'];
-		$path        = (string) $r['path'];
-		$known       = (int) $r['words'] >= 0; // ستون‌های خزنده داخلی؛ ردیف قدیمی که پیش از خزنده داخلی ثبت شده آن‌ها را ندارد (-1)
-		$issues      = [];
-		$add         = static function ( string $code, string $detail = '', string $url = '', array $items = [], array $extra = [] ) use ( &$issues ): void {
-			$issues[] = $extra + [ 'code' => $code, 'detail' => $detail, 'url' => $url, 'items' => $items ]; // url: آدرس مرتبط (مقصد ریدایرکت)؛ items: مقصدهای لینک (مسیر + توضیح) برای جزء آدرس کامل + کپی
-		};
-
-		// نقشه سایت: آدرسی که در نقشه است باید ۲۰۰ و ایندکس‌پذیر باشد (هر وضعیتی، حتی ریدایرکت و ۴۰۴)
-		if ( $sitemap && isset( $sitemap[ $path ] ) && ( 200 !== $status || 0 === (int) $r['indexable'] ) ) {
-			$add( 'sitemap_bad', 200 !== $status ? sprintf( 'کد %s', $n( $status ) ) : ( 'Canonicalised' === (string) $r['reason'] ? 'canonical به صفحه دیگر' : 'noindex' ) );
-		}
-
-		// canonical به آدرسی که سالم نیست
-		if ( $known && 200 === $status && '' !== (string) $r['canonical'] && '!ext' !== $r['canonical'] && (string) $r['canonical'] !== $path && isset( $by_path[ (string) $r['canonical'] ] ) ) {
-			$target = $by_path[ (string) $r['canonical'] ];
-			if ( 200 !== (int) $target['status'] || 'Noindex' === (string) $target['reason'] ) {
-				$add( 'canonical_bad', sprintf( 'به %s اشاره می‌کند (%s)', rawurldecode( (string) $r['canonical'] ), 200 !== (int) $target['status'] ? 'کد ' . $n( (int) $target['status'] ) : 'noindex' ) );
-			}
-		}
-
-		if ( 200 === $status && 1 === (int) $r['indexable'] ) {
-			$title = (string) $r['title'];
-			$tlen  = (int) $r['title_len'];
-
-			if ( '' === $title ) {
-				$add( 'no_title' );
-			} else {
-				// عرض پیکسلی همان خط‌کش سئوباکس؛ ردیف قدیمی بی‌پیکسل (title_px = 0) تا خزش بعدی ایراد طولی نمی‌سازد (SEO 3.5.4)
-				$state = hodima_seo_advisor_crawl_px_state( $tlen, (int) $r['title_px'], 'title' );
-				$limit = hodima_seo_px_limit( 'title' );
-				if ( 'short' === $state && ! $paged( $r ) ) { // صفحه‌بندی آرشیو (/page/2/) عنوان کوتاه آرشیو را عمدا دارد (SEO 3.3.5)
-					$add( 'title_short', sprintf( '%1$s از %2$s پیکسل؛ حداقل %3$s', number_format_i18n( (int) $r['title_px'] ), number_format_i18n( $limit['max'] ), number_format_i18n( $limit['min'] ) ) );
-				} elseif ( 'long' === $state ) {
-					$add( 'title_long', sprintf( '%1$s از %2$s پیکسل؛ %3$s پیکسل بیشتر', number_format_i18n( (int) $r['title_px'] ), number_format_i18n( $limit['max'] ), number_format_i18n( (int) $r['title_px'] - $limit['max'] ) ) );
-				}
-			}
-
-			if ( (int) $r['meta_len'] <= 0 && ! $paged( $r ) ) { // برای صفحه‌های /page/N/ توضیح متای جدا لازم نیست (SEO 3.3.5)
-				$add( 'no_meta' );
-			}
-			if ( 1 === (int) ( $r['no_snippet'] ?? 0 ) ) {
-				$add( 'no_snippet' );
-			}
-			if ( '' === (string) $r['h1'] ) {
-				$add( 'no_h1' );
-			}
-			if ( '' !== $title && ! $paged( $r ) && ( $titles[ $title_key( $title, $tlen ) ] ?? 0 ) > 1 ) {
-				$add( 'dup_title', sprintf( 'در %s صفحه', number_format_i18n( $titles[ $title_key( $title, $tlen ) ] ) ) );
-			}
-			if ( '' !== (string) $r['h1'] && ! $paged( $r ) && ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) > 1 ) {
-				$add( 'dup_h1', sprintf( 'در %s صفحه', number_format_i18n( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ) ) );
-			}
-			if ( ! empty( $similar[ $path ] ) && ! $paged( $r ) ) {
-				$items = [];
-				foreach ( array_slice( $similar[ $path ], 0, HODIMA_SEO_ADVISOR_SIMILAR_MAX_PARTNERS, true ) as $partner => $whats ) {
-					$other   = $by_path[ $partner ] ?? [ 'title' => '', 'h1' => '' ];
-					$items[] = [ 'path' => (string) $partner, 'note' => sprintf( '%1$s شبیه: «%2$s»', implode( ' و ', $whats ), mb_substr( in_array( 'H1', $whats, true ) && ! in_array( 'عنوان', $whats, true ) ? (string) $other['h1'] : (string) $other['title'], 0, 70 ) ) ];
-				}
-				$add( 'near_dup', sprintf( 'شبیه %s صفحه دیگر', $n( count( $similar[ $path ] ) ) ), '', $items );
-			}
-			if ( (int) $r['resp_ms'] >= HODIMA_SEO_ADVISOR_CRAWL_SLOW_MS ) {
-				$add( 'slow', sprintf( 'پاسخ سرور %s ثانیه', number_format_i18n( (int) $r['resp_ms'] / 1000, 1 ) ) );
-			}
-			if ( '/' !== (string) $r['path'] && ! $paged( $r ) ) {
-				if ( 0 === $inlinks ) {
-					$add( 'orphan' );
-				} elseif ( $inlinks <= HODIMA_SEO_ADVISOR_CRAWL_LOW_INLINKS ) {
-					$text = (int) $r['text_links'];
-					$add( 'low_inlinks', sprintf( '%s لینک ورودی', number_format_i18n( $inlinks ) ) . ( $text >= 0 ? sprintf( '؛ %s لینک از متن', number_format_i18n( $text ) ) : '' ) );
-				}
-			}
-
-			// لینک‌های این صفحه به آدرس خراب، ریدایرکت‌شده یا ایندکس‌نشدنی (هر مقصد: مسیر + توضیح)
-			foreach ( [ 'link_broken', 'link_redirect', 'link_noindex' ] as $code ) {
-				if ( ! empty( $bad[ $path ][ $code ] ) ) {
-					$add( $code, sprintf( '%s لینک', $n( count( $bad[ $path ][ $code ] ) ) ), '', array_slice( $bad[ $path ][ $code ], 0, HODIMA_SEO_ADVISOR_CRAWL_ITEMS ) );
-				}
-			}
-
-			if ( $known ) {
-				if ( (int) $r['h1_count'] > 1 ) {
-					$add( 'multi_h1', sprintf( '%s تیتر H1', $n( (int) $r['h1_count'] ) ) );
-				}
-				// تصویرها (SEO 3.4.9): ایراد = نبود alt، لینک بی‌نام یا «alt می‌خواهد»؛ alt خالی تنها = «بررسی کنید» (ایراد نیست). علامت‌های
-				// ادمین («تزئینی است») همین‌جا اعمال می‌شود. images: ردیف‌های تصویر (آدرس، وضعیت، جایگاه) برای فهرست «کدام تصویرها؟»؛ total: شمار کل
-				if ( (int) $r['img_noalt'] > 0 || (int) $r['img_empty'] > 0 ) {
-					$split    = hodima_seo_advisor_img_split( hodima_seo_advisor_img_list_decode( (string) ( $r['img_list'] ?? '' ) ) );
-					$need     = count( array_filter( $split['issues'], static fn( array $e ): bool => ! empty( $e['need'] ) ) );
-					$issue_n  = max( 0, (int) $r['img_noalt'] ) + $need;
-					$review_n = max( 0, (int) $r['img_empty'] - count( $split['ok'] ) - $need );
-					if ( $issue_n > 0 ) {
-						$add( 'img_alt', sprintf( '%s تصویر', $n( $issue_n ) ), '', [], [ 'images' => $split['issues'], 'total' => $issue_n, 'marked' => $split['ok'] ] );
-					}
-					if ( $review_n > 0 ) {
-						$add( 'img_empty', sprintf( '%s تصویر', $n( $review_n ) ), '', [], [ 'images' => $split['review'], 'total' => $review_n, 'marked' => $split['ok'] ] );
-					}
-				}
-				if ( (int) $r['http_links'] > 0 ) {
-					$add( 'http_link', sprintf( '%s لینک', $n( (int) $r['http_links'] ) ) );
-				}
-				if ( '' === (string) $r['canonical'] ) {
-					$add( 'no_canonical' );
-				}
-				// نوع صفحه از داده گوگل می‌آید و صفحه بدون نمایش (همان‌هایی که محتوای کمشان مهم‌تر است) نوع ندارد: فقط برای
-				// نامزدهای «محتوای کم» با روتر شناخته می‌شود (SEO 3.4.5؛ قبلا فقط صفحه‌های دیده‌شده در گوگل بررسی می‌شد)
-				$kind = (string) $r['kind'];
-				if ( '' === $kind && (int) $r['words'] < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS && '/' !== $path && ! $paged( $r ) ) {
-					$kind = hodima_seo_advisor_classify( $path )['kind'];
-				}
-				if ( '' !== $kind && ! taxonomy_exists( $kind ) && '/' !== $path && ! $paged( $r ) && (int) $r['words'] < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS ) {
-					$add( 'thin', sprintf( '%s کلمه', $n( (int) $r['words'] ) ) );
-				}
-				if ( $sitemap && ! isset( $sitemap[ $path ] ) && ! $paged( $r ) ) {
-					$add( 'not_in_sitemap' );
-				}
-			}
-
-			if ( (int) $r['depth'] === HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ) {
-				// لینک ورودی دارد (وگرنه «بدون لینک ورودی» است) ولی از صفحه اصلی نمی‌رسیم: جزیره (SEO 3.3.5)
-				if ( $inlinks > 0 && '/' !== $path && ! $paged( $r ) ) {
-					$add( 'island', sprintf( '%s لینک ورودی، همه از صفحه‌های جدا از سایت', $n( $inlinks ) ) );
-				}
-			} elseif ( (int) $r['depth'] >= HODIMA_SEO_ADVISOR_CRAWL_DEEP ) {
-				$add( 'deep', sprintf( '%s کلیک از صفحه اصلی', $n( (int) $r['depth'] ) ) );
-			}
-		} elseif ( $impressions > 0 || $inlinks > 0 ) {
-			// ریدایرکت فقط وقتی ایراد است که لینک داخلی به آن برود (دستورش اصلاح همان لینک‌هاست). تا SEO 3.0.1 با نمایش
-			// گوگل هم می‌آمد و هیچ‌وقت برطرف نمی‌شد: گوگل آدرس کهنه را تا مدت‌ها نشان می‌دهد (تب «آدرس‌های خراب» آن را می‌گوید)
-			if ( $status >= 300 && $status < 400 ) {
-				if ( $inlinks > 0 ) {
-					$add( 'redirect', '' !== (string) $r['redirect_to'] ? 'به این آدرس می‌رود:' : '', (string) $r['redirect_to'] ); // آدرس جدا با کپی (وسط جمله به‌هم می‌ریخت)
-				}
-				$next = $by_path[ (string) $r['redirect_to'] ] ?? null;
-				if ( null !== $next && (int) $next['status'] >= 300 && (int) $next['status'] < 400 ) {
-					$add( 'redirect_chain', 'به آدرسی می‌رود که خودش ریدایرکت است:', (string) $r['redirect_to'] );
-				}
-			} elseif ( $status >= 400 ) {
-				$add( 'broken', sprintf( 'کد %s', number_format_i18n( $status ) ) );
-			} elseif ( 200 === $status && 0 === (int) $r['indexable'] ) {
-				$add( 'noindex', (string) $r['reason'] );
-			}
-		}
+		$issues = hodima_seo_advisor_checks_run( $r, $ctx );
 
 		if ( $issues ) {
 			$out[] = [
 				'path'        => (string) $r['path'],
-				'impressions' => $impressions,
+				'impressions' => (int) $r['impressions'],
 				'position'    => (float) $r['avg_position'],
-				'inlinks'     => $inlinks,
+				'inlinks'     => (int) $r['inlinks'],
 				'text_links'  => (int) $r['text_links'],
 				'issues'      => $issues,
 			];

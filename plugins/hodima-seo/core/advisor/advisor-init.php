@@ -39,6 +39,7 @@ require_once __DIR__ . '/advisor-verify.php';
 require_once __DIR__ . '/advisor-health.php';
 require_once __DIR__ . '/advisor-issues.php';
 require_once __DIR__ . '/advisor-similar.php';
+require_once __DIR__ . '/advisor-checks.php'; // قاعده‌های ایراد فنی: هر ایراد یک تابع + ثبت مرکزی (SEO 3.6.1)
 require_once __DIR__ . '/advisor-crawl.php';
 require_once __DIR__ . '/advisor-images.php';
 require_once __DIR__ . '/advisor-crawler.php';

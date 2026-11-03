@@ -1,0 +1,624 @@
+[
+    {
+        "path": "/g-canbad/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "canonical_bad",
+                "detail": "به /g-gone/ اشاره می‌کند (کد 404)",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-canon-other/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 2,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "noindex",
+                "detail": "Canonicalised",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-deep/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "deep",
+                "detail": "6 کلیک از صفحه اصلی",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-dup-a/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "dup_title",
+                "detail": "در 2 صفحه",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "dup_h1",
+                "detail": "در 2 صفحه",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-dup-b/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "dup_title",
+                "detail": "در 2 صفحه",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "dup_h1",
+                "detail": "در 2 صفحه",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-gone/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 2,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "sitemap_bad",
+                "detail": "کد 404",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "broken",
+                "detail": "کد 404",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-http/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "http_link",
+                "detail": "3 لینک",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-img/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "images": [],
+                "total": 2,
+                "marked": [],
+                "code": "img_alt",
+                "detail": "2 تصویر",
+                "url": "",
+                "items": []
+            },
+            {
+                "images": [],
+                "total": 1,
+                "marked": [],
+                "code": "img_empty",
+                "detail": "1 تصویر",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-island/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 2,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "low_inlinks",
+                "detail": "2 لینک ورودی؛ 5 لینک از متن",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "island",
+                "detail": "2 لینک ورودی، همه از صفحه‌های جدا از سایت",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-linker/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "link_broken",
+                "detail": "1 لینک",
+                "url": "",
+                "items": [
+                    {
+                        "path": "/g-gone/",
+                        "note": "کد 404؛ متن لینک «لینک خراب»"
+                    }
+                ]
+            },
+            {
+                "code": "link_redirect",
+                "detail": "1 لینک",
+                "url": "",
+                "items": [
+                    {
+                        "path": "/g-redir/",
+                        "note": "می‌رود به /g-redir2/؛ متن لینک «لینک ریدایرکت»"
+                    }
+                ]
+            },
+            {
+                "code": "link_noindex",
+                "detail": "1 لینک",
+                "url": "",
+                "items": [
+                    {
+                        "path": "/g-noindex/",
+                        "note": "noindex؛ متن لینک «لینک noindex»"
+                    }
+                ]
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-long/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "title_long",
+                "detail": "700 از 580 پیکسل؛ 120 پیکسل بیشتر",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-low/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 1,
+        "text_links": 1,
+        "issues": [
+            {
+                "code": "low_inlinks",
+                "detail": "1 لینک ورودی؛ 1 لینک از متن",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-multi-h1/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "multi_h1",
+                "detail": "3 تیتر H1",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-no-h1/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "no_h1",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-no-meta/",
+        "impressions": 50,
+        "position": 8,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "no_meta",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-no-title/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "no_title",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-nocanon/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "no_canonical",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-noindex/",
+        "impressions": 10,
+        "position": 8,
+        "inlinks": 2,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "sitemap_bad",
+                "detail": "noindex",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "noindex",
+                "detail": "Noindex",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-nosnip/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "no_snippet",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-orphan/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 0,
+        "text_links": 0,
+        "issues": [
+            {
+                "code": "orphan",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-redir/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 2,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "redirect",
+                "detail": "به این آدرس می‌رود:",
+                "url": "/g-redir2/",
+                "items": []
+            },
+            {
+                "code": "redirect_chain",
+                "detail": "به آدرسی می‌رود که خودش ریدایرکت است:",
+                "url": "/g-redir2/",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-redir2/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 2,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "redirect",
+                "detail": "به این آدرس می‌رود:",
+                "url": "/g-ok/",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-short/",
+        "impressions": 900,
+        "position": 8,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "title_short",
+                "detail": "100 از 580 پیکسل؛ حداقل 290",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-sim-a/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "near_dup",
+                "detail": "شبیه 1 صفحه دیگر",
+                "url": "",
+                "items": [
+                    {
+                        "path": "/g-sim-b/",
+                        "note": "عنوان و H1 شبیه: «گیره مو مرواریدی کوچیک مجلسی زنانه»"
+                    }
+                ]
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-sim-b/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "near_dup",
+                "detail": "شبیه 1 صفحه دیگر",
+                "url": "",
+                "items": [
+                    {
+                        "path": "/g-sim-a/",
+                        "note": "عنوان و H1 شبیه: «گیره مو مرواریدی کوچک مجلسی زنانه»"
+                    }
+                ]
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-slow/",
+        "impressions": 0,
+        "position": 0,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "slow",
+                "detail": "پاسخ سرور 3.0 ثانیه",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-thin/",
+        "impressions": 120,
+        "position": 8,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "thin",
+                "detail": "50 کلمه",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    }
+]
