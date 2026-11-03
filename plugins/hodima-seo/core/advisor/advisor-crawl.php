@@ -400,7 +400,7 @@ function hodima_seo_advisor_crawl_status(): array {
 const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
 	'meta'     => [ 'no_meta', 'no_snippet' ],
 	'title'    => [ 'no_title', 'title_short', 'title_long', 'no_h1', 'multi_h1' ],
-	'dup'      => [ 'dup_title', 'dup_h1' ],
+	'dup'      => [ 'dup_title', 'dup_h1', 'near_dup' ],
 	'slow'     => [ 'slow' ],
 	'redirect' => [ 'redirect', 'noindex', 'broken' ],
 	'linkfix'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain' ],
@@ -518,6 +518,25 @@ function hodima_seo_advisor_crawl_issues(): array {
 		}
 	}
 
+	// عنوان یا H1 «مشابه» (نه یکسان) صفحه دیگر: کانیبال بالقوه پیش از اینکه گوگل برای هر دو نمایش بدهد (SEO 3.5.7، advisor-similar.php)
+	$site_words = hodima_seo_advisor_similar_tokens( (string) get_bloginfo( 'name' ) );
+	$sim_title  = [];
+	$sim_h1     = [];
+	foreach ( $rows as $r ) {
+		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] && ! $paged( $r ) && '/' !== (string) $r['path'] ) {
+			$sim_title[ (string) $r['path'] ] = (string) $r['title'];
+			$sim_h1[ (string) $r['path'] ]    = (string) $r['h1'];
+		}
+	}
+	$similar = [];
+	foreach ( [ 'عنوان' => hodima_seo_advisor_similar_pairs( $sim_title, $site_words ), 'H1' => hodima_seo_advisor_similar_pairs( $sim_h1, $site_words ) ] as $what => $found ) {
+		foreach ( $found as $path => $partners ) {
+			foreach ( $partners as $partner ) {
+				$similar[ $path ][ $partner ][] = $what;
+			}
+		}
+	}
+
 	$out = [];
 
 	$by_path = [];
@@ -584,6 +603,14 @@ function hodima_seo_advisor_crawl_issues(): array {
 			}
 			if ( '' !== (string) $r['h1'] && ! $paged( $r ) && ( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ?? 0 ) > 1 ) {
 				$add( 'dup_h1', sprintf( 'در %s صفحه', number_format_i18n( $h1s[ mb_strtolower( (string) $r['h1'] ) ] ) ) );
+			}
+			if ( ! empty( $similar[ $path ] ) && ! $paged( $r ) ) {
+				$items = [];
+				foreach ( array_slice( $similar[ $path ], 0, HODIMA_SEO_ADVISOR_SIMILAR_MAX_PARTNERS, true ) as $partner => $whats ) {
+					$other   = $by_path[ $partner ] ?? [ 'title' => '', 'h1' => '' ];
+					$items[] = [ 'path' => (string) $partner, 'note' => sprintf( '%1$s شبیه: «%2$s»', implode( ' و ', $whats ), mb_substr( in_array( 'H1', $whats, true ) && ! in_array( 'عنوان', $whats, true ) ? (string) $other['h1'] : (string) $other['title'], 0, 70 ) ) ];
+				}
+				$add( 'near_dup', sprintf( 'شبیه %s صفحه دیگر', $n( count( $similar[ $path ] ) ) ), '', $items );
 			}
 			if ( (int) $r['resp_ms'] >= HODIMA_SEO_ADVISOR_CRAWL_SLOW_MS ) {
 				$add( 'slow', sprintf( 'پاسخ سرور %s ثانیه', number_format_i18n( (int) $r['resp_ms'] / 1000, 1 ) ) );

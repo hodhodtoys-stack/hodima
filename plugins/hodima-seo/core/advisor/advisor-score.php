@@ -31,7 +31,7 @@ const HODIMA_SEO_ADVISOR_SCORE_CATEGORIES = [
 	'cat-meta'      => [
 		'label'  => 'عنوان و متا',
 		'weight' => 20,
-		'codes'  => [ 'no_title', 'title_short', 'title_long', 'no_meta', 'no_snippet', 'dup_title' ],
+		'codes'  => [ 'no_title', 'title_short', 'title_long', 'no_meta', 'no_snippet', 'dup_title', 'near_dup' ],
 	],
 	'cat-content'   => [
 		'label'  => 'تیتر و محتوا',

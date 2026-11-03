@@ -1689,8 +1689,8 @@ $csv( 'internal_html.csv', [
 	[ $u( '/short-title/' ), '200', 'Indexable', '', 'کوتاه', '5', '0', 'الف', '0.3', '10', '1', '5', '' ],
 	[ $u( '/dup-a/' ), '200', 'Indexable', '', $long, (string) mb_strlen( $long ), '130', 'ب', '0.3', '8', '1', '5', '' ],
 	[ $u( '/dup-b/' ), '200', 'Indexable', '', $long, (string) mb_strlen( $long ), '130', 'پ', '2.5', '9', '1', '5', '' ],
-	[ $u( '/few-links/' ), '200', 'Indexable', '', $long . 'x', (string) ( mb_strlen( $long ) + 1 ), '130', 'ت', '0.3', '2', '2', '1', '' ],
-	[ $u( '/orphan/' ), '200', 'Indexable', '', $long . 'y', (string) ( mb_strlen( $long ) + 1 ), '130', 'ث', '0.3', '0', '3', '1', '' ],
+	[ $u( '/few-links/' ), '200', 'Indexable', '', $long . ' ایکس', (string) ( mb_strlen( $long ) + 5 ), '130', 'ت', '0.3', '2', '2', '1', '' ],
+	[ $u( '/orphan/' ), '200', 'Indexable', '', $long . ' وای', (string) ( mb_strlen( $long ) + 4 ), '130', 'ث', '0.3', '0', '3', '1', '' ],
 	[ $u( '/moved/' ), '301', 'Non-Indexable', 'Redirected', '', '0', '0', '', '0.2', '4', '2', '0', $u( '/dup-a/' ) ],
 	[ $u( '/moved-unused/' ), '301', 'Non-Indexable', 'Redirected', '', '0', '0', '', '0.2', '0', '2', '0', '' ],
 	[ $u( '/few-links/?utm_source=x' ), '200', 'Indexable', '', 'نسخه پارامتردار', '15', '0', '', '0.3', '1', '2', '0', '' ],
@@ -2559,7 +2559,7 @@ $p3_written = hodima_seo_advisor_tasks_patch( [ $p3_key_a => [ 'fixed' => time()
 hodima_ad( 'کاری که مدیر وسط سنجش وضعیتش را عوض کرد حکم کهنه نمی‌گیرد', [ $p3_written, hodima_seo_advisor_task_state( hodima_seo_advisor_task( '/p3/x/', 'low_ctr', '' ) ) ], [ 0, 'rejected' ] );
 
 // صفحه‌بندی آرشیو (خزش واقعی هدهدلی): H1 مشترک و لینک ورودی کم ایراد نیست (SEO 3.0.5)
-$p3_pg = static fn( string $path, string $h1, int $inlinks ): array => [ 'path' => $path, 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'وبلاگ ' . $path, 'title_len' => 40, 'meta_len' => 120, 'title_px' => hodima_ad_tpx( 40 ), 'meta_px' => hodima_ad_mpx( 120 ), 'h1' => $h1, 'h2' => '', 'resp_ms' => 100, 'inlinks' => $inlinks, 'text_links' => 1, 'depth' => 1, 'score' => 0.0, 'redirect' => '' ];
+$p3_pg = static fn( string $path, string $h1, int $inlinks ): array => [ 'path' => $path, 'status' => 200, 'indexable' => 1, 'reason' => '', 'title' => 'وبلاگ ' . substr( md5( $path ), 0, 6 ), 'title_len' => 40, 'meta_len' => 120, 'title_px' => hodima_ad_tpx( 40 ), 'meta_px' => hodima_ad_mpx( 120 ), 'h1' => $h1, 'h2' => '', 'resp_ms' => 100, 'inlinks' => $inlinks, 'text_links' => 1, 'depth' => 1, 'score' => 0.0, 'redirect' => '' ];
 hodima_seo_advisor_crawl_store( [ '/pg/' => $p3_pg( '/pg/', 'وبلاگ', 30 ), '/pg/page/2/' => $p3_pg( '/pg/page/2/', 'وبلاگ', 2 ), '/pg/a/' => $p3_pg( '/pg/a/', 'مقاله الف', 30 ), '/pg/b/' => $p3_pg( '/pg/b/', 'مقاله الف', 30 ) ], [] );
 $p3_codes = [];
 foreach ( hodima_seo_advisor_crawl_issues() as $p3_r ) {
@@ -4703,6 +4703,59 @@ false === $tk_saved ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_
 false === $tk_cleared_saved ? delete_option( HODIMA_SEO_ADVISOR_TASKS_CLEARED_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_CLEARED_OPTION, $tk_cleared_saved, false );
 hodima_seo_advisor_tasks_cache_reset();
 wp_set_current_user( 0 );
+
+echo "=== عنوان/H1 مشابه: کانیبال بالقوه از خزنده (SEO 3.5.7)\n";
+$sm_yes = [ [ 'کلیپ مو', 'کلیپس مو' ], [ 'خرید عمده کلیپ مو | هدهدلی', 'عمده کلیپ مو - هدهدلی' ], [ 'گیره مو فانتزی', 'گیره فانتزی مو' ], [ 'کش مو بچگانه', 'کش مو بچه‌گانه' ], [ 'تل مو پارچه‌ای', 'تل موی پارچه ای' ], [ 'شانه و برس مو', 'برس و شانه مو' ], [ 'قیمت گیره مو ۱۲ عددی', 'گیره‌ی مو ۱۲ عددی' ], [ 'كش مو ساتن', 'کش مو ساتن' ], [ 'آینه مو', 'اینه مو' ] ];
+$sm_no  = [ [ 'کلیپ مو فلزی', 'کلیپ مو پلاستیکی' ], [ 'گیره مو ۱۲ عددی', 'گیره مو ۲۴ عددی' ], [ 'کلیپ مو', 'کلیپ مو فانتزی بزرگ' ], [ 'تل مو پارچه‌ای', 'تل مو چرمی' ], [ 'خرید عمده مو', 'عمده مو' ], [ 'گیره مو', 'کش مو' ], [ 'کش مو ساتن', 'کش مو ساده' ], [ 'برس مو بچگانه', 'برس مو زنانه' ], [ 'سنجاق سر مرواریدی', 'سنجاق مو مرواریدی' ] ];
+$sm_site = hodima_seo_advisor_similar_tokens( 'هدهدلی' );
+$sm_is   = static fn( array $pair ): bool => hodima_seo_advisor_similar_match( hodima_seo_advisor_similar_tokens( $pair[0], $sm_site ), hodima_seo_advisor_similar_tokens( $pair[1], $sm_site ) );
+hodima_ad( 'عنوان مشابه: املا، ترتیب، نیم‌فاصله، «ی/ای»، ي/ك عربی، نام سایت و کلمه تجاری نادیده؛ هر ۹ جفت مشابه', array_map( $sm_is, $sm_yes ), array_fill( 0, count( $sm_yes ), true ) );
+hodima_ad( 'عنوان غیرمشابه: جنس/نوع/عدد متفاوت، کلمه اضافه، کلمه دیگر؛ هیچ مثبت کاذبی', array_map( $sm_is, $sm_no ), array_fill( 0, count( $sm_no ), false ) );
+hodima_ad( 'کلمه‌های مشابه: یک حرف فرق فقط برای کلمه ≥۴ حرف بدون رقم', [ hodima_seo_advisor_similar_token_match( 'کلیپ', 'کلیپس' ), hodima_seo_advisor_similar_token_match( 'مو', 'مه' ), hodima_seo_advisor_similar_token_match( 'مدل12', 'مدل13' ), hodima_seo_advisor_similar_token_match( 'قرمز', 'سبز' ) ], [ true, false, false, false ] );
+hodima_ad( 'کمتر از ۲ کلمه معنی‌دار مشابه حساب نمی‌شود (فقط نام سایت یا کلمه تجاری)', [ hodima_seo_advisor_similar_match( [ 'کلیپ' ], [ 'کلیپ' ] ), hodima_seo_advisor_similar_match( [], [] ) ], [ false, false ] );
+$sm_pairs = hodima_seo_advisor_similar_pairs( [ '/a/' => 'کلیپ مو فرانسوی | هدهدلی', '/b/' => 'کلیپ فرانسوی مو | هدهدلی', '/c/' => 'کلیپ مو فلزی | هدهدلی', '/d/' => 'کلیپ مو فرانسوی | هدهدلی' ], $sm_site );
+hodima_ad( 'جفت‌های مشابه: ترتیب فرق دارد = مشابه؛ عنوان دقیقا یکسان را dup_title می‌گیرد، نه اینجا؛ «فلزی» جدا', [ $sm_pairs['/a/'] ?? null, $sm_pairs['/b/'] ?? null, isset( $sm_pairs['/c/'] ) ], [ [ '/b/' ], [ '/a/', '/d/' ], false ] );
+$sm_big = [];
+for ( $i = 0; $i < 120; $i++ ) {
+	$sm_big[ "/g{$i}/" ] = 'کلیپ مو مدل' . $i . ' ' . ( $i % 2 ? 'فلزی' : 'پلاستیکی' );
+}
+$sm_t0 = microtime( true );
+hodima_seo_advisor_similar_pairs( $sm_big );
+hodima_ad( 'سرعت: ۱۲۰ عنوان هم‌خانواده زیر ۲۰۰ میلی‌ثانیه (دسته‌بندی، نه هر جفت)', ( microtime( true ) - $sm_t0 ) < 0.2, true );
+
+$sm_t = hodima_seo_advisor_table( 'crawl_pages' );
+$sm_row = static fn( string $path, string $title, string $h1, int $status = 200, int $indexable = 1 ): array => [ 'path' => $path, 'status' => $status, 'indexable' => $indexable, 'title' => $title, 'title_len' => 30, 'meta_len' => 120, 'title_px' => 400, 'meta_px' => 700, 'h1' => $h1, 'words' => 300, 'h1_count' => 1, 'inlinks' => 5, 'text_links' => 5, 'depth' => 1, 'canonical' => $path ];
+foreach ( [
+	$sm_row( '/sm-a/', 'کلیپ مو', 'کلیپ مو' ),
+	$sm_row( '/sm-b/', 'کلیپس مو', 'کلیپس مو' ),
+	$sm_row( '/sm-c/', 'کلیپ مو فلزی', 'کلیپ فلزی' ),
+	$sm_row( '/sm-d/page/2/', 'کلیپ مو', 'کلیپ مو' ),
+	$sm_row( '/sm-e/', 'کلیپ مو', 'کلیپ مو', 200, 0 ),
+	$sm_row( '/sm-f/', 'عنوان یکسان دقیق', 'تیتر ف' ),
+	$sm_row( '/sm-g/', 'عنوان یکسان دقیق', 'تیتر گ' ),
+] as $sm_r ) {
+	$GLOBALS['wpdb']->insert( $sm_t, $sm_r );
+}
+hodima_seo_advisor_crawl_map( true );
+$sm_issues = static function ( string $path ): array {
+	foreach ( hodima_seo_advisor_crawl_issues() as $row ) {
+		if ( $row['path'] === $path ) {
+			return $row['issues'];
+		}
+	}
+	return [];
+};
+$sm_a = array_values( array_filter( $sm_issues( '/sm-a/' ), static fn( array $i ): bool => 'near_dup' === $i['code'] ) )[0] ?? null;
+hodima_ad( 'ایراد «عنوان مشابه»: صفحه ا با ب شبیه است (املا) و فقط با ب؛ نه با ج (فلزی)، نه با صفحه‌بندی/نوایندکس', [ $sm_a['detail'] ?? '', array_column( (array) ( $sm_a['items'] ?? [] ), 'path' ), count( (array) ( $sm_a['items'] ?? [] ) ) ], [ 'شبیه 1 صفحه دیگر', [ '/sm-b/' ], 1 ] );
+hodima_ad( 'ایراد «عنوان مشابه»: یادداشت هر صفحه شبیه نوع شباهت (عنوان و H1) و متن آن را دارد', str_contains( (string) ( $sm_a['items'][0]['note'] ?? '' ), 'عنوان و H1 شبیه' ), true );
+hodima_ad( 'صفحه ج (فلزی): بدون ایراد مشابه با ا یا ب', array_column( $sm_issues( '/sm-c/' ), 'code' ) === array_values( array_diff( array_column( $sm_issues( '/sm-c/' ), 'code' ), [ 'near_dup' ] ) ), true );
+hodima_ad( 'عنوان دقیقا یکسان فقط dup_title می‌گیرد، نه near_dup (جلوگیری از ایراد دوبار)', [ in_array( 'dup_title', array_column( $sm_issues( '/sm-f/' ), 'code' ), true ), in_array( 'near_dup', array_column( $sm_issues( '/sm-f/' ), 'code' ), true ) ], [ true, false ] );
+$sm_info = hodima_seo_advisor_crawl_issue_info( 'near_dup' );
+hodima_ad( 'کاتالوگ ایراد: برچسب، سطح، دستور با «۳۰۱» و «ریدایرکت‌ها»، در گروه «تکراری»؛ علامت «انجام دادم» با خزش دوباره سنجیده می‌شود', [ $sm_info['label'], str_contains( $sm_info['fix'], '۳۰۱' ), in_array( 'near_dup', HODIMA_SEO_ADVISOR_CRAWL_GROUPS['dup'], true ), in_array( 'near_dup', HODIMA_SEO_ADVISOR_MARK_RECRAWL_CODES, true ) ], [ 'عنوان مشابه صفحه دیگر', true, true, true ] );
+$sm_detail = $cap( static fn() => hodima_seo_advisor_render_issue_detail( [ 'src' => 'crawl', 'mark' => 'near_dup', 'targets' => (array) ( $sm_a['items'] ?? [] ) ], '/sm-a/' ) );
+hodima_ad( 'جزئیات ایراد: «کدام صفحه‌ها شبیه‌اند؟ (1)» با آدرس صفحه شبیه و دکمه کپی', [ str_contains( $sm_detail, 'کدام صفحه‌ها شبیه‌اند؟ (1)' ), str_contains( $sm_detail, '/sm-b/' ) ], [ true, true ] );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i WHERE path LIKE %s', $sm_t, '/sm-%' ) );
+hodima_seo_advisor_crawl_map( true );
 
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );

@@ -74,6 +74,10 @@ function hodima_seo_advisor_render_issue_detail( array $item, string $path ): vo
 	if ( in_array( $code, [ 'link_broken', 'link_redirect', 'link_noindex' ], true ) ) {
 		hodima_seo_advisor_render_link_list( (array) ( $item['targets'] ?? [] ) );
 	}
+
+	if ( 'near_dup' === $code ) {
+		hodima_seo_advisor_render_link_list( (array) ( $item['targets'] ?? [] ), 'کدام صفحه‌ها شبیه‌اند؟', 'صفحه' );
+	}
 }
 
 /** کادر پیش‌نویس (متن، عرض پیکسلی نسبت به سقف سئوباکس، کپی، راهنما). `$field`: title یا description. */
@@ -389,7 +393,7 @@ function hodima_seo_advisor_render_shared_images( callable $n ): void {
  *
  * @param list<array{path: string, note: string}> $targets
  */
-function hodima_seo_advisor_render_link_list( array $targets ): void {
+function hodima_seo_advisor_render_link_list( array $targets, string $label = 'کدام لینک‌ها؟', string $unit = 'لینک' ): void {
 
 	if ( ! $targets ) {
 		return;
@@ -399,7 +403,7 @@ function hodima_seo_advisor_render_link_list( array $targets ): void {
 	?>
 	<div class="hodima-advisor__detail">
 		<details class="hodima-advisor__more"<?php echo count( $targets ) <= 3 ? ' open' : ''; ?>>
-			<summary><?php echo esc_html( sprintf( 'کدام لینک‌ها؟ (%s)', number_format_i18n( count( $targets ) ) ) ); ?></summary>
+			<summary><?php echo esc_html( sprintf( '%1$s (%2$s)', $label, number_format_i18n( count( $targets ) ) ) ); ?></summary>
 			<div class="hodima-advisor__more-body">
 				<?php foreach ( $shown as $target ) : ?>
 					<div class="hodima-advisor__li">
@@ -412,7 +416,7 @@ function hodima_seo_advisor_render_link_list( array $targets ): void {
 					</div>
 				<?php endforeach; ?>
 				<?php if ( count( $targets ) > count( $shown ) ) : ?>
-					<p class="hodima-advisor__more-note"><?php echo esc_html( sprintf( 'و %s لینک دیگر', number_format_i18n( count( $targets ) - count( $shown ) ) ) ); ?></p>
+					<p class="hodima-advisor__more-note"><?php echo esc_html( sprintf( 'و %1$s %2$s دیگر', number_format_i18n( count( $targets ) - count( $shown ) ), $unit ) ); ?></p>
 				<?php endif; ?>
 			</div>
 		</details>
