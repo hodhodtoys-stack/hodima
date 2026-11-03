@@ -415,6 +415,16 @@ function hodima_seo_advisor_classify( string $path ): array {
 		}
 	}
 
+	// روتر آدرس تمیز نوع‌های ثبت‌شده با rewrite خود وردپرس (مثل /video/…) را نمی‌شناسد؛ بدون این بازگشت دستار شناسه و نوع آن‌ها را
+	// نداشت و دکمه «ویرایش صفحه» نمی‌آمد (SEO 3.6.2)
+	$post_id = (int) url_to_postid( hodima_seo_advisor_url( $path ) );
+	if ( $post_id > 0 ) {
+		$type = (string) get_post_type( $post_id );
+		if ( '' !== $type ) {
+			return [ 'kind' => $type, 'id' => $post_id ];
+		}
+	}
+
 	return [ 'kind' => '', 'id' => 0 ];
 }
 

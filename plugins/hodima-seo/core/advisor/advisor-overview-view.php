@@ -52,7 +52,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $info['fix'] || null !== hodima_seo_advisor_task_closed( $path, 'crawl_' . $code ) ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'detail' => (string) $issue['detail'], 'images' => (array) ( $issue['images'] ?? [] ), 'total' => (int) ( $issue['total'] ?? 0 ), 'marked' => (array) ( $issue['marked'] ?? [] ), 'targets' => (array) ( $issue['items'] ?? [] ), 'level' => $info['level'], 'source' => 'crawl', 'mark' => $code, 'term' => '' ] );
+			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'detail' => (string) $issue['detail'], 'images' => (array) ( $issue['images'] ?? [] ), 'total' => (int) ( $issue['total'] ?? 0 ), 'marked' => (array) ( $issue['marked'] ?? [] ), 'targets' => (array) ( $issue['items'] ?? [] ), 'level' => (string) ( $issue['level'] ?? $info['level'] ), 'source' => 'crawl', 'mark' => $code, 'term' => '' ] );
 		}
 	}
 
@@ -198,91 +198,6 @@ function hodima_seo_advisor_priority_chip( string $band ): string {
 	return '' === $label ? '' : sprintf( '<span class="hodima-advisor__prio hodima-advisor__prio--%1$s">%2$s</span>', esc_attr( $band ), esc_html( $label ) );
 }
 
-/**
- * کادر «۵ کار مهم امروز»: بیشترین اثر با کمترین زحمت، هر کدام با دلیل کوتاه؛ «کار کلی» (ایراد تکراری روی چند صفحه) یک بار با
- * پیوند «نمایش N صفحه». فقط نمایش؛ چیزی ذخیره نمی‌شود.
- *
- * @param list<array<string, mixed>> $tasks خروجی top_tasks
- */
-function hodima_seo_advisor_render_top_tasks( array $tasks, callable $n ): void {
-
-	if ( ! $tasks ) {
-		return;
-	}
-
-	$effort = [ 1 => 'چند دقیقه', 2 => 'ویرایش محتوا یا لینک', 3 => 'کار بزرگ‌تر' ];
-	?>
-	<section class="hds-card hodima-advisor__top" aria-labelledby="hodima-advisor-top-title">
-		<div>
-			<h2 class="hds-card__title" id="hodima-advisor-top-title">۵ کار مهم امروز</h2>
-			<p class="hds-card__desc">از بالا شروع کنید: بیشترین اثر با کمترین زحمت، بر پایه نمایش گوگل، فروش ۹۰ روز اخیر و سختی کار.</p>
-		</div>
-		<ol class="hodima-advisor__top-list">
-			<?php foreach ( $tasks as $i => $task ) : ?>
-				<?php
-				$group  = 'group' === $task['kind'];
-				// «تصویر بدون alt» که بیشترش یک تصویر مشترک است: عنوان همین را می‌گوید و دکمه به کارت آن تصویر می‌رود (SEO 3.4.9)
-				$shared = $group && 'img_alt' === $task['code'] ? array_values( hodima_seo_advisor_image_groups() )[0] ?? null : null;
-				$shared = null !== $shared && count( $shared['pages'] ) >= HODIMA_SEO_ADVISOR_BULK_MIN && count( $shared['pages'] ) >= 0.8 * (int) $task['pages'] ? $shared : null;
-				?>
-				<li class="hodima-advisor__top-item">
-					<span class="hodima-advisor__top-rank" aria-hidden="true"><?php echo esc_html( $n( $i + 1 ) ); ?></span>
-					<div class="hodima-advisor__top-main">
-						<div class="hodima-advisor__top-title">
-							<strong><?php echo esc_html( $group ? sprintf( '%1$s در %2$s صفحه', $task['title'], $n( (int) $task['pages'] ) ) : $task['title'] ); ?></strong>
-							<?php if ( $group ) : ?>
-								<span class="hodima-advisor__bulk">کار کلی</span>
-							<?php endif; ?>
-							<?php echo hodima_seo_advisor_priority_chip( (string) $task['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
-						</div>
-						<div class="hodima-advisor__top-page"><?php echo esc_html( null !== $shared ? sprintf( 'یک تصویر مشترک در %s صفحه است؛ یک بار درست کنید، در همه آن‌ها اثر می‌کند.', $n( count( $shared['pages'] ) ) ) : ( $group ? 'یک الگوی تکراری؛ همه با یک نوع کار درست می‌شوند' : (string) $task['name'] ) ); ?></div>
-						<ul class="hodima-advisor__top-why">
-							<?php if ( $task['impressions'] > 0 ) : ?>
-								<li><b><?php echo esc_html( $n( (int) $task['impressions'] ) ); ?></b> <?php echo esc_html( $group ? 'نمایش (جمع)' : 'نمایش' ); ?></li>
-							<?php endif; ?>
-							<?php if ( $task['sales'] > 0 ) : ?>
-								<li>فروش ۹۰ روز: <b><?php echo esc_html( hodima_seo_advisor_money_label( (int) $task['sales'] ) ); ?></b></li>
-							<?php endif; ?>
-							<?php if ( $task['potential'] > 0 ) : ?>
-								<li>پیشنهاد گوگل: حدود <b>+<?php echo esc_html( $n( (int) $task['potential'] ) ); ?></b> کلیک (تخمین)</li>
-							<?php endif; ?>
-							<li>رفع: <?php echo esc_html( $effort[ (int) $task['effort'] ] ?? $effort[2] ); ?></li>
-						</ul>
-					</div>
-					<div class="hodima-advisor__top-act">
-						<?php if ( $group ) : ?>
-							<?php if ( null !== $shared ) : ?>
-								<a class="hds-btn hds-btn--outline" href="#hodima-advisor-shared-images">دیدن این تصویر</a>
-							<?php endif; ?>
-							<a class="hds-btn hds-btn--outline" href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'src' => 'crawl', 'code' => (string) $task['code'] ] ) ); ?>"><?php echo esc_html( sprintf( 'نمایش %s صفحه', $n( (int) $task['pages'] ) ) ); ?></a>
-							<?php
-							// SEO 3.4.9: خزش هدفمند فقط همین صفحه‌ها (نه کل سایت)؛ دوری در جریان است ← دکمه خاموش
-							echo hodima_seo_advisor_recrawl_form( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در recrawl_form
-								[ 'scope' => 'code', 'code' => (string) $task['code'] ],
-								sprintf( 'بازخوانی این %s صفحه', $n( (int) $task['pages'] ) ),
-								sprintf( '%s؛ پیشرفت بالای صفحه', hodima_seo_advisor_crawler_duration( (int) $task['pages'] ) ),
-								'running' === hodima_seo_advisor_crawler_state()['status'],
-								true
-							);
-							?>
-						<?php else : ?>
-							<a class="hds-btn hds-btn--outline" href="#<?php echo esc_attr( hodima_seo_advisor_row_anchor( (string) $task['path'] ) ); ?>">دیدن و رفع</a>
-						<?php endif; ?>
-					</div>
-				</li>
-			<?php endforeach; ?>
-		</ol>
-		<details class="hodima-advisor__explain">
-			<summary>اولویت چطور حساب می‌شود؟</summary>
-			<div class="hodima-advisor__explain-body">
-				<p><b>اهمیت ایراد</b> (قرمز ۳، کهربایی ۲، آبی ۱) × <b>ارزش صفحه</b> (بیشتر از نمایش گوگل یا فروش ۹۰ روز اخیر ووکامرس؛ فقط خواندن) × <b>اطمینان</b> (ایراد فنی ۱۰۰٪؛ پیشنهادهای گوگل چون تخمین‌اند کمتر) ÷ <b>سختی رفع</b> (چند دقیقه ۱، ویرایش محتوا ۲، کار بزرگ ۳).</p>
-				<p>اگر یک ایراد روی ۵ صفحه یا بیشتر تکرار شود، «کار کلی» حساب می‌شود و یک بار در این فهرست می‌آید.</p>
-			</div>
-		</details>
-	</section>
-	<?php
-}
-
 /** گروه‌های «نوع ایراد فنی» منوی «کارها» ← برچسب (کلیدها همان HODIMA_SEO_ADVISOR_CRAWL_GROUPS؛ SEO 3.5.8). */
 const HODIMA_SEO_ADVISOR_OVERVIEW_CRAWL_TYPES = [
 	'meta'     => 'متا و خلاصه',
@@ -350,7 +265,6 @@ function hodima_seo_advisor_render_overview(): void {
 	}
 
 	if ( '' === $src && '' === $q && '' === $code && '' === $cf && 1 === $paged ) {
-		hodima_seo_advisor_render_top_tasks( hodima_seo_advisor_top_tasks( $pages ), $n ); // «۵ کار مهم امروز» (SEO 3.4.0)
 		hodima_seo_advisor_render_shared_images( $n ); // تصویر مشترک بین چند صفحه = یک کار (SEO 3.4.9)
 	}
 

@@ -456,7 +456,7 @@ function hodima_seo_advisor_crawl_bad_links(): array {
 		} elseif ( $status >= 300 ) {
 			$code = 'link_redirect';
 			$note = ( '' !== (string) $r['redirect_to'] ? sprintf( 'می‌رود به %s؛ ', rawurldecode( (string) $r['redirect_to'] ) ) : 'ریدایرکت می‌شود؛ ' ) . $anchor;
-		} elseif ( 'content' === (string) $r['link_position'] ) {
+		} elseif ( 'content' === (string) $r['link_position'] && ! hodima_seo_advisor_is_system_path( $dest ) ) { // لینک به حساب/سبد/پرداخت (عمدا noindex) ایراد نیست (SEO 3.6.2)
 			$code = 'link_noindex';
 			$note = ( 'Canonicalised' === (string) $r['reason'] ? 'canonical به صفحه دیگر؛ ' : 'noindex؛ ' ) . $anchor;
 		} else {

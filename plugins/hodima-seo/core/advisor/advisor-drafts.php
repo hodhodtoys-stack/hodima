@@ -179,6 +179,12 @@ function hodima_seo_advisor_draft_title( string $path, string $code, string $cur
 		}
 	}
 
+	// ثابت: پیش‌نویس باید از تشخیص همان ایراد رد شود. «عنوان کوتاه» کف پیکسلی دارد؛ پیش‌نویس زیر کف دوباره همان ایراد را می‌ساخت
+	// (`/contact-us/` ۲۶۸px و `/about-us/` ۲۴۹px، SEO 3.6.2)؛ پس پیش‌نویسی که کف را رد نکند اصلا نشان داده نمی‌شود
+	if ( 'title_short' === $code && hodima_seo_text_px( $title, 'title' ) < hodima_seo_px_limit( 'title' )['min'] ) {
+		return '';
+	}
+
 	return $title;
 }
 

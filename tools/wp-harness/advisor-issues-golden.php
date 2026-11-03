@@ -71,6 +71,7 @@ $cases = [
 	'/g-short/'     => [ 'title_px' => 100, 'title_len' => 10 ],
 	'/g-long/'      => [ 'title_px' => 700, 'title_len' => 90 ],
 	'/g-no-meta/'   => [ 'meta_len' => 0, 'meta_px' => 0 ],
+	'/g-pop-nometa/' => [ 'meta_len' => 0, 'meta_px' => 0 ], // پربازدید ← no_meta با سطح کاتالوگ (زرد)، نه اطلاع (SEO 3.6.2)
 	'/g-nosnip/'    => [ 'no_snippet' => 1 ],
 	'/g-no-h1/'     => [ 'h1' => '', 'h1_count' => 0 ],
 	'/g-multi-h1/'  => [ 'h1_count' => 3 ],
@@ -90,6 +91,7 @@ $cases = [
 	'/g-redir/'     => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-redir2/' ],
 	'/g-redir2/'    => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-ok/' ],
 	'/g-noindex/'   => [ 'indexable' => 0, 'reason' => 'Noindex', 'inlinks' => 2 ],
+	'/my-account/lost-password/' => [ 'indexable' => 0, 'reason' => 'Noindex', 'inlinks' => 2 ], // صفحه سیستمی عمدا noindex ← ایراد نیست (SEO 3.6.2)
 	'/g-canon-other/' => [ 'indexable' => 0, 'reason' => 'Canonicalised', 'canonical' => '/g-ok/', 'inlinks' => 2 ],
 	'/g-thin/'      => [ 'words' => 50 ],
 	'/g-img/'       => [ 'img_noalt' => 2, 'img_empty' => 1 ],
@@ -103,12 +105,12 @@ foreach ( $cases as $path => $over ) {
 }
 
 // نوع صفحه و نمایش گوگل (برای «متن کم»، نشان اولویت و ردیف‌های ریدایرکت/noindex/خطا که نمایش یا لینک می‌خواهند)
-foreach ( [ '/g-thin/' => [ 'page', 120 ], '/g-short/' => [ 'page', 900 ], '/g-no-meta/' => [ 'product', 50 ], '/g-noindex/' => [ 'page', 10 ] ] as $path => [ $kind, $imp ] ) {
+foreach ( [ '/g-thin/' => [ 'page', 120 ], '/g-short/' => [ 'page', 900 ], '/g-no-meta/' => [ 'product', 50 ], '/g-noindex/' => [ 'page', 10 ], '/g-pop-nometa/' => [ 'page', 1500 ] ] as $path => [ $kind, $imp ] ) {
 	$wpdb->insert( $gsc_t, [ 'path' => $path, 'kind' => $kind, 'impressions' => $imp, 'avg_position' => 8, 'advice' => '' ] );
 }
 
 // لینک‌های داخلی به صفحه خراب، ریدایرکت‌شده و noindex (ایرادهای link_*)
-foreach ( [ [ '/g-linker/', '/g-gone/', 'content', 'لینک خراب' ], [ '/g-linker/', '/g-redir/', 'content', 'لینک ریدایرکت' ], [ '/g-linker/', '/g-noindex/', 'content', 'لینک noindex' ] ] as [ $src, $dst, $pos, $anchor ] ) {
+foreach ( [ [ '/g-linker/', '/g-gone/', 'content', 'لینک خراب' ], [ '/g-linker/', '/g-redir/', 'content', 'لینک ریدایرکت' ], [ '/g-linker/', '/g-noindex/', 'content', 'لینک noindex' ], [ '/g-linker/', '/my-account/lost-password/', 'content', 'لینک حساب کاربری' ] ] as [ $src, $dst, $pos, $anchor ] ) {
 	$wpdb->insert( $links_t, [ 'source_path' => $src, 'dest_path' => $dst, 'link_position' => $pos, 'anchor' => $anchor, 'is_follow' => 1 ] );
 }
 
@@ -138,10 +140,12 @@ foreach ( $stable as $row ) {
 	}
 }
 
-$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $pages_t ) );
-$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $links_t ) );
-$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $gsc_t ) );
-delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION );
+if ( ! getenv( 'HODIMA_GOLDEN_KEEP' ) ) { // HODIMA_GOLDEN_KEEP=1: داده را نگه دار (برای عکس گرفتن از پیشخوان با همین داده)
+	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $pages_t ) );
+	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $links_t ) );
+	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $gsc_t ) );
+	delete_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION );
+}
 
 $exit = 0;
 
@@ -152,14 +156,14 @@ if ( '--save' === $mode && '' !== $file ) {
 	file_put_contents( $file, $json . "\n" );
 	echo "✔ عکس مرجع ذخیره شد: {$file} (" . count( $stable ) . " صفحه، " . array_sum( $triggered ) . " ایراد)\n";
 } elseif ( '--check' === $mode && '' !== $file ) {
-	$expected = (string) file_get_contents( $file );
+	$expected = str_replace( "\r\n", "\n", (string) file_get_contents( $file ) ); // tools/eol.py فایل JSON را CRLF می‌کند؛ مقایسه به پایان خط وابسته نباشد
 	if ( trim( $expected ) === trim( $json ) ) {
 		echo "✔ خروجی ایرادها با عکس مرجع یکی است (" . count( $stable ) . " صفحه، " . array_sum( $triggered ) . " ایراد)\n";
 	} else {
 		$tmp = tempnam( sys_get_temp_dir(), 'adv-golden' );
 		file_put_contents( (string) $tmp, $json . "\n" );
 		echo "✘ خروجی ایرادها با عکس مرجع فرق دارد:\n";
-		passthru( 'diff -u ' . escapeshellarg( $file ) . ' ' . escapeshellarg( (string) $tmp ) . ' | head -60' );
+		passthru( 'diff -u --strip-trailing-cr ' . escapeshellarg( $file ) . ' ' . escapeshellarg( (string) $tmp ) . ' | head -90' );
 		$exit = 1;
 	}
 }

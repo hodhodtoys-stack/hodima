@@ -92,6 +92,8 @@ $cases = [
 	[ 'ردیف قدیمی بی‌پیکسل (title_px = 0) ← هیچ', 'title', [ 'title_px' => 0 ], [], [] ],
 	// ── متا و robots
 	[ 'متای خالی ← no_meta', 'no_meta', [ 'meta_len' => 0 ], [], [ 'no_meta' ] ],
+	[ 'متای خالی در صفحه پربازدید (۱۵۰۰ نمایش) ← no_meta', 'no_meta', [ 'meta_len' => 0, 'impressions' => 1500 ], [], [ 'no_meta' ] ],
+	[ 'متای خالی در صفحه اصلی ← no_meta', 'no_meta', [ 'path' => '/', 'meta_len' => 0 ], [], [ 'no_meta' ] ],
 	[ 'متا دارد ← هیچ', 'no_meta', [], [], [] ],
 	[ 'متای خالی در /page/2/ ← هیچ', 'no_meta', [ 'path' => '/blog/page/2/', 'meta_len' => 0 ], [], [] ],
 	[ 'nosnippet ← no_snippet', 'no_snippet', [ 'no_snippet' => 1 ], [], [ 'no_snippet' ] ],
@@ -146,6 +148,7 @@ $cases = [
 	[ 'متن ۴۰۰ کلمه ← هیچ', 'thin', [], [], [] ],
 	[ 'متن کم در دسته ← هیچ', 'thin', [ 'words' => 50, 'kind' => 'category' ], [], [] ],
 	[ 'متن کم در صفحه اصلی ← هیچ', 'thin', [ 'path' => '/', 'words' => 50 ], [], [] ],
+	[ 'متن کم در صفحه ویدیو ← هیچ (ذاتا متن کم دارد)', 'thin', [ 'words' => 50, 'kind' => 'video' ], [], [] ],
 	[ 'دو تصویر بدون alt ← img_alt', 'images', [ 'img_noalt' => 2 ], [], [ 'img_alt' ] ],
 	[ 'یک alt خالی ← img_empty (فقط «بررسی کنید»)', 'images', [ 'img_empty' => 1 ], [], [ 'img_empty' ] ],
 	[ 'تصویر سالم ← هیچ', 'images', [], [], [] ],
@@ -155,6 +158,10 @@ $cases = [
 	[ 'ریدایرکت به ریدایرکت ← redirect_chain', 'status', [ 'status' => 301, 'redirect_to' => '/b/', 'inlinks' => 0 ], [ 'by_path' => [ '/b/' => [ 'status' => 301 ] ] ], [ 'redirect_chain' ] ],
 	[ 'صفحه ۴۰۴ ← broken', 'status', [ 'status' => 404 ], [], [ 'broken' ] ],
 	[ 'noindex ← noindex', 'status', [ 'indexable' => 0, 'reason' => 'Noindex' ], [], [ 'noindex' ] ],
+	[ 'noindex در صفحه سیستمی حساب کاربری ← هیچ (۱۲ آبان ۱۴۰۵: /my-account/lost-password/ ایراد کاذب بود)', 'status', [ 'path' => '/my-account/lost-password/', 'indexable' => 0, 'reason' => 'Noindex' ], [], [] ],
+	[ 'noindex در /my-account/ ← هیچ', 'status', [ 'path' => '/my-account/', 'indexable' => 0, 'reason' => 'Noindex' ], [], [] ],
+	[ 'noindex در /cart/ ← هیچ', 'status', [ 'path' => '/cart/', 'indexable' => 0, 'reason' => 'Noindex' ], [], [] ],
+	[ 'noindex در صفحه عادی ← noindex', 'status', [ 'path' => '/my-accounting-guide/', 'indexable' => 0, 'reason' => 'Noindex' ], [], [ 'noindex' ] ],
 ];
 
 echo "=== «دارد» و «ندارد» برای هر ایراد\n";
@@ -162,6 +169,50 @@ foreach ( $cases as [ $name, $topic, $row, $ctx, $expect ] ) {
 	$codes = hodima_ck_codes( $S . $topic, hodima_ck_row( $row ), hodima_ck_ctx( $ctx ) );
 	hodima_ck( $name, $codes === $expect, 'انتظار: ' . wp_json_encode( $expect ) . ' واقعی: ' . wp_json_encode( $codes ) );
 }
+
+echo "=== سطح هر ایراد برای همان صفحه (SEO 3.6.2) و سطح کاتالوگ طبق Google Search Central\n";
+$lvl = static fn( array $over ): array => array_map( static fn( array $i ): string => (string) ( $i['level'] ?? '-' ), hodima_seo_advisor_check_no_meta( hodima_ck_row( $over ), hodima_ck_ctx() ) );
+hodima_ck( 'بدون متا: صفحه کم‌بازدید سطح info می‌گیرد', [ 'info' ] === $lvl( [ 'meta_len' => 0, 'impressions' => 50 ] ) );
+hodima_ck( 'بدون متا: صفحه پربازدید و صفحه اصلی سطح کاتالوگ را می‌گیرند (کلید level ندارند)', [ '-' ] === $lvl( [ 'meta_len' => 0, 'impressions' => 1500 ] ) && [ '-' ] === $lvl( [ 'path' => '/', 'meta_len' => 0 ] ) );
+$lv = static fn( string $code ): string => hodima_seo_advisor_crawl_issue_info( $code )['level'];
+hodima_ck( 'سطح کاتالوگ: عنوان کوتاه و بلند info (گوگل حداقل/حداکثر نمی‌گذارد)، بدون متا warn (فقط صفحه‌های مهم)', [ 'info', 'info', 'warn' ] === [ $lv( 'title_short' ), $lv( 'title_long' ), $lv( 'no_meta' ) ] );
+$sc_info = hodima_seo_advisor_score( [ [ 'path' => '/a/', 'issues' => [ [ 'code' => 'no_meta', 'level' => 'info' ] ] ] ], 10 );
+$sc_warn = hodima_seo_advisor_score( [ [ 'path' => '/a/', 'issues' => [ [ 'code' => 'no_meta' ] ] ] ], 10 );
+hodima_ck( 'نمره: ایراد با level=info برای همان صفحه کمتر کسر می‌کند (۹۷ در برابر ۹۰ در بخش «عنوان و متا»)', 97 === ( $sc_info['categories']['cat-meta']['score'] ?? -1 ) && 90 === ( $sc_warn['categories']['cat-meta']['score'] ?? -1 ), wp_json_encode( [ $sc_info['categories']['cat-meta'] ?? null, $sc_warn['categories']['cat-meta'] ?? null ] ) );
+
+echo "=== ثابت‌ها (invariant): پیش‌نویس باید از تشخیص همان ایراد رد شود\n";
+$limit = hodima_seo_px_limit( 'title' );
+$posts = array_merge(
+	get_posts( [ 'post_type' => [ 'post', 'page' ], 'post_status' => 'publish', 'numberposts' => 8 ] ),
+	post_type_exists( 'product' ) ? get_posts( [ 'post_type' => 'product', 'post_status' => 'publish', 'numberposts' => 4 ] ) : []
+);
+$bad_short = [];
+$bad_long  = [];
+$checked   = 0;
+foreach ( $posts as $post_obj ) {
+	$path = hodima_seo_advisor_path_key( (string) get_permalink( $post_obj ) );
+	$d    = hodima_seo_advisor_draft_title( $path, 'title_short', '' );
+	if ( '' !== $d && ( hodima_seo_text_px( $d, 'title' ) < $limit['min'] || hodima_seo_text_px( $d, 'title' ) > $limit['max'] ) ) {
+		$bad_short[] = $path . ' ← ' . hodima_seo_text_px( $d, 'title' ) . 'px';
+	}
+	$dl = hodima_seo_advisor_draft_title( $path, 'title_long', str_repeat( 'گیره مو مرواریدی ', 12 ) );
+	if ( '' !== $dl && hodima_seo_text_px( $dl, 'title' ) > $limit['max'] ) {
+		$bad_long[] = $path . ' ← ' . hodima_seo_text_px( $dl, 'title' ) . 'px';
+	}
+	++$checked;
+}
+hodima_ck( "پیش‌نویس «عنوان کوتاه» در {$checked} صفحه واقعی ابزار تست: یا خالی است یا بین کف و سقف (باگ /contact-us/)", [] === $bad_short, implode( '، ', $bad_short ) );
+hodima_ck( "پیش‌نویس «عنوان بلند» در {$checked} صفحه: از سقف بیشتر نیست", [] === $bad_long, implode( '، ', $bad_long ) );
+
+echo "=== روتر: نوع‌هایی که روتر آدرس تمیز نمی‌شناسد (ویدیو) با url_to_postid شناخته می‌شوند\n";
+$vid = get_posts( [ 'post_type' => 'video', 'post_status' => 'publish', 'numberposts' => 1 ] );
+if ( $vid ) {
+	$vpath = hodima_seo_advisor_path_key( (string) get_permalink( $vid[0] ) );
+	hodima_ck( 'classify(/video/…) ← نوع video و شناسه همان نوشته (دکمه «ویرایش صفحه» در «کارها»)', [ 'video', $vid[0]->ID ] === array_values( hodima_seo_advisor_classify( $vpath ) ), $vpath . ' ' . wp_json_encode( hodima_seo_advisor_classify( $vpath ) ) );
+} else {
+	echo "  ℹ نوشته ویدیو در ابزار تست نیست؛ آزمون classify ویدیو رد شد\n";
+}
+hodima_ck( 'classify(آدرس ناشناخته) ← خالی', [ '', 0 ] === array_values( hodima_seo_advisor_classify( '/no-such-page-xyz/' ) ) );
 
 echo "=== ساختار: هر کد کاتالوگ یک صاحب دارد\n";
 $catalog = array_keys( hodima_seo_advisor_issue_catalog() );

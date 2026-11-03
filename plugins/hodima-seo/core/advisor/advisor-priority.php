@@ -21,9 +21,8 @@ const HODIMA_SEO_ADVISOR_SALES_CACHE = 'hodima_advisor_sales';
 const HODIMA_SEO_ADVISOR_SALES_DAYS  = 90;
 const HODIMA_SEO_ADVISOR_SALES_LIMIT = 300;
 
-/** ایراد یکسان روی این شمار صفحه یا بیشتر = «کار کلی»؛ تعداد کارهای «مهم امروز». */
-const HODIMA_SEO_ADVISOR_BULK_MIN  = 5;
-const HODIMA_SEO_ADVISOR_TOP_LIMIT = 5;
+/** ایراد یکسان روی این شمار صفحه یا بیشتر = «کار کلی» (کارت «تصویر مشترک»). */
+const HODIMA_SEO_ADVISOR_BULK_MIN = 5;
 
 /** مرز نشان اولویت: امتیاز ≥ بالا ← «بالا»، ≥ متوسط ← «متوسط»، وگرنه «کم». */
 const HODIMA_SEO_ADVISOR_BAND_HIGH = 0.30;
@@ -207,75 +206,4 @@ function hodima_seo_advisor_priority_rank( array $pages ): array {
 	usort( $pages, static fn( array $a, array $b ): int => [ $b['score'], $b['impressions'], $a['path'] ] <=> [ $a['score'], $a['impressions'], $b['path'] ] );
 
 	return $pages;
-}
-
-/**
- * «۵ کار مهم امروز»: هر ایراد فنی که روی ۵ صفحه یا بیشتر تکرار شده یک «کار کلی» است (یک بار، با شمار صفحه‌ها)، بقیه تک‌ایرادها؛
- * هر دو بر پایه امتیاز مرتب می‌شوند.
- *
- * @param list<array<string, mixed>> $pages خروجی priority_rank
- * @return list<array<string, mixed>> هر کار: kind (item|group)، title، code، path، name، score، band، impressions، sales، potential، effort، pages
- */
-function hodima_seo_advisor_top_tasks( array $pages, int $limit = HODIMA_SEO_ADVISOR_TOP_LIMIT ): array {
-
-	$by_code = [];
-	foreach ( $pages as $page ) {
-		foreach ( $page['items'] as $item ) {
-			if ( 'crawl' === $item['src'] && 'img_empty' !== $item['mark'] ) { // «بررسی کنید» کار مهم امروز نیست (SEO 3.4.9)
-				$by_code[ (string) $item['mark'] ][] = [ $page, $item ];
-			}
-		}
-	}
-
-	$bulk  = [];
-	$tasks = [];
-
-	foreach ( $by_code as $code => $members ) {
-		if ( count( $members ) < HODIMA_SEO_ADVISOR_BULK_MIN ) {
-			continue;
-		}
-		$bulk[ $code ] = true;
-		$scores        = array_map( static fn( array $m ): float => (float) $m[1]['score'], $members );
-		$score         = min( 1.0, array_sum( $scores ) / count( $scores ) * ( 1 + log10( count( $members ) ) ) );
-		$tasks[]       = [
-			'kind'        => 'group',
-			'title'       => (string) $members[0][1]['label'],
-			'code'        => (string) $code,
-			'path'        => '',
-			'name'        => '',
-			'score'       => $score,
-			'band'        => hodima_seo_advisor_priority_band( $score ),
-			'impressions' => (int) array_sum( array_map( static fn( array $m ): int => (int) $m[0]['impressions'], $members ) ),
-			'sales'       => (int) array_sum( array_map( static fn( array $m ): int => (int) $m[0]['sales'], $members ) ),
-			'potential'   => 0,
-			'effort'      => (int) $members[0][1]['effort'],
-			'pages'       => count( $members ),
-		];
-	}
-
-	foreach ( $pages as $page ) {
-		foreach ( $page['items'] as $item ) {
-			if ( 'crawl' === $item['src'] && ( isset( $bulk[ (string) $item['mark'] ] ) || 'img_empty' === $item['mark'] ) ) {
-				continue; // عضو کار کلی است («بررسی کنید» هم در این فهرست نمی‌آید)
-			}
-			$tasks[] = [
-				'kind'        => 'item',
-				'title'       => (string) $item['label'],
-				'code'        => 'crawl' === $item['src'] ? (string) $item['mark'] : '',
-				'path'        => (string) $page['path'],
-				'name'        => '' !== $page['title'] ? (string) $page['title'] : rawurldecode( (string) $page['path'] ),
-				'score'       => (float) $item['score'],
-				'band'        => (string) $item['band'],
-				'impressions' => (int) $page['impressions'],
-				'sales'       => (int) $page['sales'],
-				'potential'   => (int) ( $item['potential'] ?? 0 ),
-				'effort'      => (int) $item['effort'],
-				'pages'       => 1,
-			];
-		}
-	}
-
-	usort( $tasks, static fn( array $a, array $b ): int => $b['score'] <=> $a['score'] );
-
-	return array_slice( $tasks, 0, $limit );
 }

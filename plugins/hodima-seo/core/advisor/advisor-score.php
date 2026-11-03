@@ -86,10 +86,10 @@ function hodima_seo_advisor_score( array $issues, int $crawled ): ?array {
 		return null;
 	}
 
-	$pages = []; // کد ← صفحه‌های دارای ایراد
+	$pages = []; // کد ← [صفحه ← سطح ایراد در همان صفحه] (سطح هر ایراد می‌تواند سطح کاتالوگ را برای یک صفحه عوض کند؛ SEO 3.6.2)
 	foreach ( $issues as $row ) {
-		foreach ( array_unique( array_column( (array) $row['issues'], 'code' ) ) as $code ) {
-			$pages[ (string) $code ][ (string) $row['path'] ] = true;
+		foreach ( (array) $row['issues'] as $issue ) {
+			$pages[ (string) $issue['code'] ][ (string) $row['path'] ] ??= (string) ( $issue['level'] ?? hodima_seo_advisor_crawl_issue_info( (string) $issue['code'] )['level'] );
 		}
 	}
 
@@ -109,8 +109,7 @@ function hodima_seo_advisor_score( array $issues, int $crawled ): ?array {
 				continue;
 			}
 
-			$level               = hodima_seo_advisor_crawl_issue_info( $code )['level'];
-			$penalty             = ( HODIMA_SEO_ADVISOR_SCORE_WEIGHTS[ $level ] ?? 0.3 ) * $count / $crawled * 100;
+			$penalty             = array_sum( array_map( static fn( string $level ): float => HODIMA_SEO_ADVISOR_SCORE_WEIGHTS[ $level ] ?? 0.3, $pages[ $code ] ) ) / $crawled * 100;
 			$cut                += $penalty;
 			$closed              = count( array_filter( array_keys( $pages[ $code ] ), static fn( string $path ): bool => null !== hodima_seo_advisor_task_closed( $path, 'crawl_' . $code ) ) ); // علامت‌خورده‌ها هنوز در نمره‌اند (وضعیت واقعی سایت)؛ شمارشان جدا گفته می‌شود تا با «کار کلی» (فقط بازها) یکی شود (SEO 3.5.2)
 			$penalties[ $code ]  = [ 'code' => $code, 'pages' => $count, 'closed' => $closed, 'penalty' => $penalty ];

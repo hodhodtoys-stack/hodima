@@ -352,6 +352,7 @@
         "text_links": 5,
         "issues": [
             {
+                "level": "info",
                 "code": "no_meta",
                 "detail": "",
                 "url": "",
@@ -458,6 +459,27 @@
         "issues": [
             {
                 "code": "orphan",
+                "detail": "",
+                "url": "",
+                "items": []
+            },
+            {
+                "code": "not_in_sitemap",
+                "detail": "",
+                "url": "",
+                "items": []
+            }
+        ]
+    },
+    {
+        "path": "/g-pop-nometa/",
+        "impressions": 1500,
+        "position": 8,
+        "inlinks": 9,
+        "text_links": 5,
+        "issues": [
+            {
+                "code": "no_meta",
                 "detail": "",
                 "url": "",
                 "items": []

@@ -3146,11 +3146,12 @@ hodima_ad( 'هر کد گروه چیپ‌ها و بخش نمره در فهرست 
 	array_values( array_diff( $ic_used, $ic_codes ) ),
 	array_filter( hodima_seo_advisor_issue_catalog(), static fn( array $r ): bool => '' === $r['label'] || ! in_array( $r['level'], [ 'bad', 'warn', 'info' ], true ) || ! in_array( $r['effort'], [ 1, 2, 3 ], true ) || '' === $r['fix'] ),
 ], [ [], [] ] );
-hodima_ad( 'سازگاری crawl_issue_info: برچسب، سطح، دستور بدون جانگهدار', [ hodima_seo_advisor_crawl_issue_info( 'no_meta' )['label'], hodima_seo_advisor_crawl_issue_info( 'no_meta' )['level'], str_contains( hodima_seo_advisor_crawl_issue_info( 'no_meta' )['fix'], '{where}' ), hodima_seo_advisor_crawl_issue_info( 'x_none' ) ], [ 'بدون توضیح متا', 'bad', false, [ 'label' => 'x_none', 'level' => 'info', 'fix' => '' ] ] );
+hodima_ad( 'سازگاری crawl_issue_info: برچسب، سطح، دستور بدون جانگهدار', [ hodima_seo_advisor_crawl_issue_info( 'no_meta' )['label'], hodima_seo_advisor_crawl_issue_info( 'no_meta' )['level'], str_contains( hodima_seo_advisor_crawl_issue_info( 'no_meta' )['fix'], '{where}' ), hodima_seo_advisor_crawl_issue_info( 'x_none' ) ], [ 'بدون توضیح متا', 'warn', false, [ 'label' => 'x_none', 'level' => 'info', 'fix' => '' ] ] ); // SEO 3.6.2: no_meta از bad به warn (و برای صفحه کم‌بازدید info)
 hodima_ad( 'دستور با نام «ویرایش» نوع صفحه؛ خالی = «ویرایش صفحه»؛ ایراد بی‌جانگهدار بدون تغییر', [ str_contains( hodima_seo_advisor_issue_fix( 'no_meta', 'ویرایش محصول' ), 'در «ویرایش محصول»' ), str_contains( hodima_seo_advisor_issue_fix( 'no_meta' ), 'در «ویرایش صفحه»' ), hodima_seo_advisor_issue_fix( 'orphan', 'ویرایش دسته' ), hodima_seo_advisor_issue_fix( 'x_none' ) ], [ true, true, 'از دست‌کم دو صفحه مرتبط به آن لینک بدهید.', '' ] );
 $ic_pt = get_post_type_object( 'post' );
 hodima_ad( 'نام «ویرایش» نوع صفحه: صفحه اصلی، نوشته و دسته از برچسب‌های وردپرس؛ ناشناخته خالی', [ hodima_seo_advisor_issue_where( '/' ), hodima_seo_advisor_issue_where( '/x/', 'post' ) === (string) $ic_pt->labels->edit_item, hodima_seo_advisor_issue_where( '/x/', 'category' ) === (string) get_taxonomy( 'category' )->labels->edit_item, hodima_seo_advisor_issue_where( '/x/', 'nothing-here' ) ], [ 'ویرایش صفحه اصلی', true, true, '' ] );
-hodima_ad( 'عنوان کوتاه/بلند: آستانه پیکسلی سئوباکس (کف ۲۹۰، سقف ۵۸۰) و دستور هم‌خوان‌اند، بدون «نویسه»', [ hodima_seo_px_limit( 'title' ), str_contains( hodima_seo_advisor_issue_fix( 'title_short' ), '290' ), str_contains( hodima_seo_advisor_issue_fix( 'title_long' ), '580' ), str_contains( hodima_seo_advisor_issue_fix( 'title_short' ) . hodima_seo_advisor_issue_fix( 'title_long' ), 'نویسه' ) ], [ [ 'max' => 580, 'min' => 290, 'font_px' => 20 ], true, true, false ] );
+// SEO 3.6.2: طبق Google Search Central عنوان حداقل/حداکثر ندارد؛ «کوتاه» و «بلند» سطح اطلاع‌اند، دستور کوتاه عدد کف نمی‌گوید و دستور بلند حدود سقف (بریده‌شدن) را
+hodima_ad( 'عنوان کوتاه/بلند: آستانه پیکسلی (کف ۲۹۰، سقف ۵۸۰)؛ هر دو سطح اطلاع؛ دستور کوتاه بدون عدد کف، دستور بلند با سقف؛ بدون «نویسه»', [ hodima_seo_px_limit( 'title' ), hodima_seo_advisor_crawl_issue_info( 'title_short' )['level'], hodima_seo_advisor_crawl_issue_info( 'title_long' )['level'], str_contains( hodima_seo_advisor_issue_fix( 'title_short' ), '290' ), str_contains( hodima_seo_advisor_issue_fix( 'title_long' ), '580' ), str_contains( hodima_seo_advisor_issue_fix( 'title_short' ) . hodima_seo_advisor_issue_fix( 'title_long' ), 'نویسه' ) ], [ [ 'max' => 580, 'min' => 290, 'font_px' => 20 ], 'info', 'info', false, true, false ] );
 
 $ic_t = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $ic_t ) );
@@ -3222,7 +3223,7 @@ $dr_cat  = wp_insert_term( 'کلیپس آزمون پیش‌نویس', 'category'
 $dr_post = wp_insert_post( [ 'post_title' => 'کلیپس فرانسوی', 'post_status' => 'publish', 'post_type' => 'post', 'post_excerpt' => '', 'post_content' => '<p>کلیپس فرانسوی با کیفیت بالا برای مو پرپشت. مناسب انواع مدل‌های بستن مو و موجود در رنگ‌های مختلف.</p><p>ارسال به سراسر کشور.</p>' ] );
 wp_set_post_categories( $dr_post, [ (int) ( is_array( $dr_cat ) ? $dr_cat['term_id'] : 0 ) ] );
 $dr_path  = (string) hodima_seo_advisor_path_key( (string) get_permalink( $dr_post ) );
-$dr_title = hodima_seo_advisor_draft_title( $dr_path, 'title_short' );
+$dr_title = hodima_seo_advisor_draft_title( $dr_path, 'no_title' ); // title_short پیش‌نویس زیر کف را نشان نمی‌دهد (SEO 3.6.2)
 $dr_meta  = hodima_seo_advisor_draft_meta( $dr_path );
 hodima_ad( 'پیش‌نویس عنوان: نام + دسته + نام سایت تا ۶۲ نویسه', [ str_starts_with( $dr_title, 'کلیپس فرانسوی' ), str_contains( $dr_title, ' | ' ), mb_strlen( $dr_title ) <= 62 ], [ true, true, true ] );
 hodima_ad( 'پیش‌نویس متا: نام صفحه و متن، تا ۱۵۵ نویسه، تمام‌شده سر جمله یا کلمه', [ str_contains( $dr_meta, 'کلیپس فرانسوی' ), mb_strlen( $dr_meta ) <= 155, mb_strlen( $dr_meta ) >= 70 ], [ true, true, true ] );
@@ -3253,7 +3254,7 @@ delete_post_meta( $dr_att, '_wp_attachment_image_alt' );
 hodima_ad( 'فهرست تصویر خالی (خزش قدیمی): به‌جای پیوند بن‌بست به تب «سلامت سایت» دکمه «بازخوانی همین صفحه» با مسیر همان صفحه (SEO 3.4.9)؛ ایراد بی‌جزئیات و ردیف غیرخزنده: هیچ', [ str_contains( $dr_empty, 'value="hodima_advisor_recrawl"' ) && str_contains( $dr_empty, 'name="path" value="/p/"' ) && str_contains( $dr_empty, 'بازخوانی همین صفحه' ), ! str_contains( $dr_empty, 'tab=crawl' ) && ! str_contains( $dr_empty, '<a ' ), $dr_out( [ 'src' => 'crawl', 'mark' => 'orphan' ], '/p/' ), $dr_out( [ 'src' => 'opp', 'mark' => 'img_alt', 'images' => [ $dr_url ] ], '/p/' ) ], [ true, true, '', '' ] );
 $dr_links = $dr_out( [ 'src' => 'crawl', 'mark' => 'link_broken', 'targets' => array_map( static fn( int $i ): array => [ 'path' => '/gone-' . $i . '/', 'note' => 'کد 404؛ متن لینک «x»' ], range( 1, 7 ) ) ], '/p/' );
 hodima_ad( 'فهرست لینک خراب: ۵ مورد با کپی، بسته، «و ۲ لینک دیگر»', [ substr_count( $dr_links, 'class="hodima-advisor__li"' ), str_contains( $dr_links, 'و 2 لینک دیگر' ), str_contains( $dr_links, '<details class="hodima-advisor__more">' ), str_contains( $dr_links, 'data-hdsa-copy-url="https://hodima.test/gone-1/"' ) ], [ 5, true, true, true ] );
-$dr_t = $dr_out( [ 'src' => 'crawl', 'mark' => 'title_short' ], $dr_path );
+$dr_t = $dr_out( [ 'src' => 'crawl', 'mark' => 'no_title' ], $dr_path );
 $dr_m = $dr_out( [ 'src' => 'crawl', 'mark' => 'no_meta' ], $dr_path );
 hodima_ad( 'پیش‌نویس در کارها: عنوان با کپی و عرض پیکسلی؛ متا با کپی؛ ایراد بدون پیش‌نویس هیچ', [ str_contains( $dr_t, 'پیش‌نویس عنوان' ), str_contains( $dr_t, 'data-hdsa-copy-text="' . esc_attr( $dr_title ) . '"' ), str_contains( $dr_t, hodima_seo_text_px( $dr_title, 'title' ) . ' از 580 پیکسل' ), str_contains( $dr_m, 'پیش‌نویس توضیح متا' ), str_contains( $dr_m, 'data-hdsa-copy-text="' . esc_attr( $dr_meta ) . '"' ) ], [ true, true, true, true, true ] );
 wp_delete_attachment( $dr_att, true );
@@ -3376,12 +3377,6 @@ foreach ( range( 1, 6 ) as $pr_n ) {
 	$pr_pages[] = $pr_page( '/pr-bulk' . $pr_n . '/', 50, [ $pr_mk( 'no_meta' ) ] );
 }
 $pr_pages[] = $pr_page( '/pr-single/', 200, [ $pr_mk( 'broken' ), $pr_mk( 'title_long', 'warn' ) ] );
-$pr_top = hodima_seo_advisor_top_tasks( hodima_seo_advisor_priority_rank( $pr_pages ) );
-$pr_kinds = array_column( $pr_top, 'kind' );
-hodima_ad( 'کار مهم امروز: کار کلی «بدون متا» یک بار با ۶ صفحه؛ تک‌ایرادها جدا؛ اعضای کلی تکرار نمی‌شوند', [ count( array_keys( $pr_kinds, 'group', true ) ), array_values( array_filter( $pr_top, static fn( array $t ): bool => 'group' === $t['kind'] ) )[0]['pages'] ?? 0, array_values( array_filter( $pr_top, static fn( array $t ): bool => 'group' === $t['kind'] ) )[0]['code'] ?? '', count( array_filter( $pr_top, static fn( array $t ): bool => 'item' === $t['kind'] && 'no_meta' === $t['code'] ) ), count( array_filter( $pr_top, static fn( array $t ): bool => '/pr-single/' === $t['path'] ) ), count( $pr_top ) <= 5 ], [ 1, 6, 'no_meta', 0, 2, true ] );
-$pr_html = $cap( static fn() => hodima_seo_advisor_render_top_tasks( $pr_top, static fn( int|float $v ): string => (string) $v ) );
-hodima_ad( 'کادر «۵ کار مهم امروز»: عنوان، رتبه، کار کلی با پیوند فیلتر، «دیدن و رفع» با لنگر ردیف، «اولویت چطور حساب می‌شود؟»', [ str_contains( $pr_html, '۵ کار مهم امروز' ), str_contains( $pr_html, 'کار کلی' ), str_contains( $pr_html, 'code=no_meta' ) && str_contains( $pr_html, 'src=crawl' ), str_contains( $pr_html, '#' . hodima_seo_advisor_row_anchor( '/pr-single/' ) ), str_contains( $pr_html, 'اولویت چطور حساب می‌شود؟' ), str_contains( $pr_html, 'hodima-advisor__prio--' ) ], [ true, true, true, true, true, true ] );
-hodima_ad( 'بدون کار: کادر چاپ نمی‌شود', $cap( static fn() => hodima_seo_advisor_render_top_tasks( [], static fn( int|float $v ): string => (string) $v ) ), '' );
 // صفحه «کارها»: کادر کار مهم بدون فیلتر؛ با فیلتر کد ایراد فقط همان ایراد و یادداشت «برداشتن فیلتر»
 $pr_ct = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $pr_ct ) );
@@ -3396,7 +3391,7 @@ $pr_ovf = $cap( static fn() => hodima_seo_advisor_render_overview() );
 $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'code' => 'nope_x' ];
 $pr_ovx = $cap( static fn() => hodima_seo_advisor_render_overview() );
 $_GET  = [];
-hodima_ad( 'صفحه «کارها»: بدون فیلتر کادر «۵ کار مهم امروز» و ردیف با لنگر؛ با کد ایراد فقط همان ایراد، بدون کادر، با «برداشتن فیلتر»؛ کد ناشناخته نادیده', [ str_contains( $pr_ov, '۵ کار مهم امروز' ), str_contains( $pr_ov, 'id="' . hodima_seo_advisor_row_anchor( '/pr-r1/' ) . '"' ), str_contains( $pr_ov, 'به ترتیب اولویت' ), str_contains( $pr_ovf, '۵ کار مهم امروز' ), str_contains( $pr_ovf, 'فقط نمایش: «بدون توضیح متا»' ), str_contains( $pr_ovf, 'برداشتن فیلتر' ), str_contains( $pr_ovx, 'فقط نمایش' ) ], [ true, true, true, false, true, true, false ] );
+hodima_ad( 'صفحه «کارها»: کادر «۵ کار مهم امروز» دیگر نیست (SEO 3.6.2، خواست کاربر)؛ ردیف با لنگر؛ با کد ایراد فقط همان ایراد، با «برداشتن فیلتر»؛ کد ناشناخته نادیده', [ str_contains( $pr_ov, '۵ کار مهم امروز' ), str_contains( $pr_ov, 'id="' . hodima_seo_advisor_row_anchor( '/pr-r1/' ) . '"' ), str_contains( $pr_ov, 'به ترتیب اولویت' ), str_contains( $pr_ovf, '۵ کار مهم امروز' ), str_contains( $pr_ovf, 'فقط نمایش: «بدون توضیح متا»' ), str_contains( $pr_ovf, 'برداشتن فیلتر' ), str_contains( $pr_ovx, 'فقط نمایش' ) ], [ false, true, true, false, true, true, false ] );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $pr_ct ) );
 hodima_seo_advisor_crawl_map( true );
 wp_delete_post( $pr_p1, true );
@@ -4421,14 +4416,10 @@ foreach ( [ '/rc-g1/', '/rc-g2/', '/rc-g3/' ] as $rc_p ) {
 }
 hodima_seo_advisor_crawl_map( true );
 
-// «۵ کار مهم امروز»: تصویر مشترک ← عنوان با اسم تصویر و دکمه «دیدن این تصویر»
-$rc_top = $cap( static fn() => hodima_seo_advisor_render_top_tasks( [ [ 'kind' => 'group', 'title' => 'تصویر بدون alt', 'code' => 'img_alt', 'pages' => 6, 'score' => 0.5, 'band' => 'high', 'impressions' => 100, 'sales' => 0, 'potential' => 0, 'effort' => 2, 'path' => '', 'name' => '' ] ], $rc_n ) );
-hodima_ad( 'کار کلی alt: عنوان با شمار صفحه‌های همان ایراد، توضیح «یک تصویر مشترک در 6 صفحه»، «دیدن این تصویر»؛ بازخوانی scope=code', [ str_contains( $rc_top, 'تصویر بدون alt در 6 صفحه' ) && str_contains( $rc_top, 'یک تصویر مشترک در 6 صفحه است' ), str_contains( $rc_top, '#hodima-advisor-shared-images' ), str_contains( $rc_top, 'name="scope" value="code"' ) ], [ true, true, true ] );
 
 // «بررسی کنید» (alt خالی) هیچ‌وقت «اولویت بالا» و «کار مهم امروز» نمی‌شود، حتی در صفحه پرنمایش
 $rc_it = [ 'level' => 'info', 'src' => 'crawl', 'mark' => 'img_empty', 'effort' => 1 ];
 hodima_ad( 'امتیاز «alt خالی»: نشان «کم»؛ ایراد info دیگر با همان ارزش «کم» نیست', [ hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( $rc_it, 1.0 ) ), 'low' !== hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( [ 'mark' => 'redirect' ] + $rc_it, 1.0 ) ) ], [ 'low', true ] );
-hodima_ad( '«کار مهم امروز»: ایراد img_empty نمی‌آید', hodima_seo_advisor_top_tasks( [ [ 'path' => '/a/', 'title' => 'a', 'impressions' => 9000, 'sales' => 0, 'items' => [ [ 'src' => 'crawl', 'mark' => 'img_empty', 'label' => 'x', 'score' => 0.9, 'band' => 'high', 'effort' => 1 ] ] ] ] ), [] );
 
 // بازخوانی صفحه‌های یک تصویر مشترک (scope=img)
 delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );

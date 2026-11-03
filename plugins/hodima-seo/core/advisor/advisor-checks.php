@@ -173,14 +173,23 @@ function hodima_seo_advisor_check_title( array $r, array $ctx ): array {
 }
 
 /**
- * توضیح متای خالی؛ برای صفحه‌های /page/N/ توضیح جدا لازم نیست (SEO 3.3.5).
+ * توضیح متای خالی؛ برای صفحه‌های /page/N/ توضیح جدا لازم نیست (SEO 3.3.5). گوگل نبود متا را مشکل نمی‌داند (خلاصه را از متن صفحه
+ * می‌سازد) و فقط توصیه می‌کند «دست‌کم برای URLهای مهم، مثل صفحه اصلی و پربازدیدها» نوشته شود (Search Central، «snippet»)؛ پس برای
+ * بقیه صفحه‌ها سطح همین ایراد «اطلاع» است (SEO 3.6.2؛ کلید level هر ایراد سطح کاتالوگ را برای همان صفحه عوض می‌کند).
  *
  * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
  * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
  * @return list<array<string, mixed>>
  */
 function hodima_seo_advisor_check_no_meta( array $r, array $ctx ): array {
-	return (int) $r['meta_len'] <= 0 && ! hodima_seo_advisor_crawl_is_paged( $r ) ? [ hodima_seo_advisor_issue( 'no_meta' ) ] : [];
+
+	if ( (int) $r['meta_len'] > 0 || hodima_seo_advisor_crawl_is_paged( $r ) ) {
+		return [];
+	}
+
+	$popular = '/' === (string) $r['path'] || (int) ( $r['impressions'] ?? 0 ) >= HODIMA_SEO_ADVISOR_CRAWL_BIG_IMPRESSIONS;
+
+	return [ hodima_seo_advisor_issue( 'no_meta', '', '', [], $popular ? [] : [ 'level' => 'info' ] ) ];
 }
 
 /**
@@ -412,7 +421,8 @@ function hodima_seo_advisor_check_thin( array $r, array $ctx ): array {
 		$kind = hodima_seo_advisor_classify( $path )['kind'];
 	}
 
-	return '' !== $kind && ! taxonomy_exists( $kind ) ? [ hodima_seo_advisor_issue( 'thin', sprintf( '%s کلمه', number_format_i18n( $words ) ) ) ] : [];
+	// صفحه ویدیو (روتر نمی‌شناخت، SEO 3.6.2 با url_to_postid شناخته می‌شود) ذاتا متن کم دارد؛ «متن کم» برای آن معنی ندارد
+	return '' !== $kind && 'video' !== $kind && ! taxonomy_exists( $kind ) ? [ hodima_seo_advisor_issue( 'thin', sprintf( '%s کلمه', number_format_i18n( $words ) ) ) ] : [];
 }
 
 /**
@@ -448,6 +458,55 @@ function hodima_seo_advisor_check_depth( array $r, array $ctx ): array {
 }
 
 /**
+ * آدرس‌های سیستمی که عمدا noindex‌اند (حساب کاربری، سبد، پرداخت، ورود): «noindex» برایشان ایراد نیست و دستورش («اگر باید در گوگل
+ * باشد…») گمراه‌کننده است (`/my-account/lost-password/` در سایت واقعی؛ SEO 3.6.2). صفحه‌های ووکامرس از شناسه صفحه‌شان خوانده
+ * می‌شوند (نه نامک ثابت)؛ فیلتر `hodima_seo_advisor_system_paths` می‌گذارد آدرس دیگری اضافه شود.
+ *
+ * @return list<string> مسیرهای یکسان‌شده (path_key) با اسلش پایانی
+ */
+function hodima_seo_advisor_system_paths(): array {
+
+	static $paths = null;
+
+	if ( null !== $paths ) {
+		return $paths;
+	}
+
+	$shop = [];
+
+	if ( function_exists( 'wc_get_page_id' ) ) {
+		foreach ( [ 'myaccount', 'cart', 'checkout' ] as $page ) {
+			$id   = (int) wc_get_page_id( $page );
+			$link = $id > 0 ? get_permalink( $id ) : false;
+			if ( is_string( $link ) && '' !== $link ) {
+				$shop[] = hodima_seo_advisor_path_key( $link );
+			}
+		}
+	}
+
+	if ( ! $shop ) {
+		$shop = [ '/my-account/', '/cart/', '/checkout/' ]; // ووکامرس شناخته نشد: نامک‌های رایج
+	}
+
+	$all   = array_map( 'strval', (array) apply_filters( 'hodima_seo_advisor_system_paths', [ '/wp-login.php', ...$shop ] ) );
+	$paths = array_values( array_unique( array_filter( $all, static fn( string $p ): bool => '' !== $p && '/' !== $p ) ) );
+
+	return $paths;
+}
+
+/** آیا مسیر خود یکی از آدرس‌های سیستمی یا زیرمسیر آن است (مثل /my-account/lost-password/)؟ */
+function hodima_seo_advisor_is_system_path( string $path ): bool {
+
+	foreach ( hodima_seo_advisor_system_paths() as $system ) {
+		if ( $path === $system || str_starts_with( $path, rtrim( $system, '/' ) . '/' ) ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
  * صفحه‌ای که ایندکس‌پذیر نیست (ریدایرکت، خطا، noindex) و نمایش گوگل یا لینک داخلی دارد. ریدایرکت فقط وقتی ایراد است که
  * لینک داخلی به آن برود (دستورش اصلاح همان لینک‌هاست؛ تا SEO 3.0.1 با نمایش گوگل هم می‌آمد و هیچ‌وقت برطرف نمی‌شد).
  *
@@ -470,7 +529,7 @@ function hodima_seo_advisor_check_status( array $r, array $ctx ): array {
 		}
 	} elseif ( $status >= 400 ) {
 		$out[] = hodima_seo_advisor_issue( 'broken', sprintf( 'کد %s', number_format_i18n( $status ) ) );
-	} elseif ( 200 === $status && 0 === (int) $r['indexable'] ) {
+	} elseif ( 200 === $status && 0 === (int) $r['indexable'] && ! hodima_seo_advisor_is_system_path( (string) $r['path'] ) ) {
 		$out[] = hodima_seo_advisor_issue( 'noindex', (string) $r['reason'] );
 	}
 
