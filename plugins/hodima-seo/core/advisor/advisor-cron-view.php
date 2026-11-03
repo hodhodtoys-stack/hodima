@@ -13,7 +13,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** تب‌هایی که نوار هشدار دارند (عددشان مستقیم به تصمیم مدیر می‌رسد). */
-const HODIMA_SEO_ADVISOR_CRON_NOTICE_TABS = [ 'opportunities', 'crawl' ];
+const HODIMA_SEO_ADVISOR_CRON_NOTICE_TABS = [ 'opportunities', 'overview' ];
 
 /**
  * برچسب و کلاس نشان هر حالت.
@@ -37,7 +37,7 @@ function hodima_seo_advisor_back_tab( string $fallback ): string {
 
 	$tab = isset( $_POST['tab'] ) ? sanitize_key( wp_unslash( (string) $_POST['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce در کنش بررسی شده
 
-	return in_array( $tab, [ 'jobs', 'settings', 'overview', 'crawl' ], true ) ? $tab : $fallback;
+	return in_array( $tab, [ 'jobs', 'settings', 'overview', 'crawl' ], true ) ? ( 'crawl' === $tab ? 'overview' : $tab ) : $fallback; // «crawl»: فرم‌های قدیمی؛ تب حذف شد (SEO 3.5.8)
 }
 
 add_action( 'admin_post_hodima_advisor_pipeline_now', 'hodima_seo_advisor_handle_pipeline_now' );

@@ -507,6 +507,7 @@ function hodima_seo_advisor_tab_keys(): array {
  * «انجام‌شده» به «کارها» با فیلتر «منتظر نتیجه»؛ «موبایل و کشور» و «روند ماه‌به‌ماه» به «آمار جستجو».
  */
 const HODIMA_SEO_ADVISOR_LEGACY_TABS = [
+	'crawl'     => [ 'overview', [] ], // «سلامت سایت» (SEO 3.5.8): نوار سلامت و جدول ایرادها رفتند بالای «کارها»؛ cf و q همراه می‌آیند
 	'done'      => [ 'tasks', [ 'tstatus' => 'waiting' ] ],
 	'breakdown' => [ 'terms', [] ],
 	'trend'     => [ 'terms', [] ],
@@ -523,10 +524,13 @@ function hodima_seo_advisor_legacy_tab_redirect(): void {
 
 	[ $new, $extra ] = HODIMA_SEO_ADVISOR_LEGACY_TABS[ $tab ];
 
-	foreach ( [ 'tstatus', 'tsource', 'paged' ] as $key ) {
+	foreach ( [ 'tstatus', 'tsource', 'paged', 'cf' ] as $key ) {
 		if ( isset( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$extra[ $key ] = sanitize_key( (string) $_GET[ $key ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
+	}
+	if ( isset( $_GET['q'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- جستجوی آدرس تب قدیمی
+		$extra['q'] = sanitize_text_field( wp_unslash( (string) $_GET['q'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	}
 
 	wp_safe_redirect( hodima_seo_advisor_page_url( [ 'tab' => $new ] + $extra ) );
@@ -541,13 +545,10 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 	$tabs = [
 		'overview' => [ 'کارها', hodima_seo_advisor_page_url() ],
 		'tasks'    => [ 'کارهای انجام‌شده', hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ) ],
-		'crawl'    => [ 'سلامت سایت', hodima_seo_advisor_page_url( [ 'tab' => 'crawl' ] ) ],
 		'jobs'     => [ 'خزش و داده', hodima_seo_advisor_page_url( [ 'tab' => 'jobs' ] ) ],
 		'settings' => [ 'تنظیمات', hodima_seo_advisor_page_url( [ 'tab' => 'settings' ] ) ],
 	];
-	$icons = [ 'overview' => 'dashicons-list-view', 'tasks' => 'dashicons-yes-alt', 'crawl' => 'dashicons-heart', 'jobs' => 'dashicons-cloud', 'settings' => 'dashicons-admin-generic' ];
-	$score = function_exists( 'hodima_seo_advisor_score_history' ) ? hodima_seo_advisor_score_history() : [];
-	$score = $score ? (int) end( $score )['score'] : -1; // آخرین نمره ثبت‌شده دور خزش (ارزان؛ بدون حساب دوباره)
+	$icons = [ 'overview' => 'dashicons-list-view', 'tasks' => 'dashicons-yes-alt', 'jobs' => 'dashicons-cloud', 'settings' => 'dashicons-admin-generic' ];
 	$open  = function_exists( 'hodima_seo_advisor_task_counts' ) ? (int) ( hodima_seo_advisor_task_counts()['open'] ?? 0 ) : 0; // کار انجام‌شده‌ای که برگشته یا بی‌اثر است؛ صفر = شمار نشان داده نمی‌شود
 
 	// تب‌های زیرخط‌دار (نه دکمه پر) تا با چیپ‌های فیلتر اشتباه نشوند؛ در «کارها» خط «گرفتن داده تازه» همین ردیف است (SEO 3.3.1)
@@ -555,14 +556,14 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 	echo '<nav class="hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
 	foreach ( $tabs as $key => [ $label, $url ] ) {
 		// تب «کارها» برای تب‌های قدیمی هم فعال می‌ماند (آدرس‌های ?tab= هنوز باز می‌شوند)
-		$current = 'overview' === $key ? ! in_array( $active, [ 'tasks', 'crawl', 'jobs', 'settings' ], true ) : $key === $active;
+		$current = 'overview' === $key ? ! in_array( $active, [ 'tasks', 'jobs', 'settings' ], true ) : $key === $active;
 		printf(
 			'<a class="hodima-advisor__tab" href="%1$s"%2$s><span class="dashicons %3$s" aria-hidden="true"></span>%4$s%5$s</a>',
 			esc_url( $url ),
 			$current ? ' aria-current="page"' : '',
 			esc_attr( $icons[ $key ] ),
 			esc_html( $label ),
-			'tasks' === $key && $open > 0 ? sprintf( ' <span class="hodima-advisor__tab-n" title="کار انجام‌شده‌ای که برگشته یا بی‌اثر بوده">%s</span>', esc_html( number_format_i18n( $open ) ) ) : ( 'crawl' === $key && $score >= 0 ? sprintf( ' <span class="hodima-advisor__tab-n hodima-advisor__tab-n--%1$s" title="نمره سلامت سایت از ۱۰۰">%2$s</span>', esc_attr( hodima_seo_advisor_score_grade( $score )['level'] ), esc_html( number_format_i18n( $score ) ) ) : '' )
+			'tasks' === $key && $open > 0 ? sprintf( ' <span class="hodima-advisor__tab-n" title="کار انجام‌شده‌ای که برگشته یا بی‌اثر بوده">%s</span>', esc_html( number_format_i18n( $open ) ) ) : ''
 		);
 	}
 	echo '</nav>';
@@ -571,7 +572,7 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 	}
 	echo '</div>';
 
-	if ( ! in_array( $active, [ 'overview', 'tasks', 'crawl', 'jobs', 'settings' ], true ) ) {
+	if ( ! in_array( $active, [ 'overview', 'tasks', 'jobs', 'settings' ], true ) ) {
 		printf( '<p class="hodima-advisor__back"><a href="%1$s">برگشت به فهرست کارها</a></p>', esc_url( hodima_seo_advisor_page_url() ) );
 	}
 }
@@ -643,10 +644,11 @@ function hodima_seo_advisor_render_admin(): void {
 	$has_data = $status['fetched'] > 0 && $totals['pages'] > 0;
 
 	$tab = isset( $_GET['tab'] ) ? sanitize_key( (string) $_GET['tab'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط تب نمایش
+	$legacy_crawl = 'crawl' === $tab; // پیوند قدیمی تب «سلامت سایت»: خزش بی‌داده گوگل هم «کارها» را باز می‌کند (SEO 3.5.8)
 	$tab = ! empty( $_GET['settings'] ) ? 'settings' : $tab; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- پیوند قدیمی settings=1
 	$tab = HODIMA_SEO_ADVISOR_LEGACY_TABS[ $tab ][0] ?? $tab; // پیوند قدیمی بدون ریدایرکت (فراخوانی مستقیم)؛ در پیشخوان ریدایرکت پیش‌تر انجام شده
 	$tab = '' === $tab ? 'overview' : $tab; // صفحه شروع: فهرست واحد «کارها» (SEO 3.3.0)
-	$tab = ( $has_data || in_array( $tab, [ 'settings', 'jobs', 'crawl' ], true ) ) && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : ( $has_data ? 'overview' : 'opportunities' );
+	$tab = ( $has_data || in_array( $tab, [ 'settings', 'jobs' ], true ) || ( $legacy_crawl && hodima_seo_advisor_crawl_status()['pages'] > 0 ) ) && in_array( $tab, hodima_seo_advisor_tab_keys(), true ) ? $tab : ( $has_data ? 'overview' : 'opportunities' );
 	$tab = $has_key ? $tab : 'settings'; // بدون کلید اولین کار وارد کردن کلید است
 
 	hodima_seo_ui_open( [
@@ -670,7 +672,7 @@ function hodima_seo_advisor_render_admin(): void {
 	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
 	hodima_seo_advisor_render_tabs( $tab, $has_data );
 	hodima_seo_advisor_render_crawlbar( $tab ); // خزش در جریان یا تازه تمام‌شده: «کارها» و «سلامت سایت» (SEO 3.4.9)
-	if ( ! in_array( $tab, [ 'overview', 'tasks', 'crawl', 'jobs', 'settings' ], true ) ) {
+	if ( ! in_array( $tab, [ 'overview', 'tasks', 'jobs', 'settings' ], true ) ) {
 		hodima_seo_advisor_render_toolbar( $tab );
 	}
 
@@ -690,7 +692,6 @@ function hodima_seo_advisor_render_admin(): void {
 		match ( $tab ) {
 			'terms'     => hodima_seo_advisor_render_terms( $status ),
 			'health'    => hodima_seo_advisor_render_health( $status ),
-			'crawl'     => hodima_seo_advisor_render_crawl(),
 			'overview'  => hodima_seo_advisor_render_overview(),
 			'indexing'  => hodima_seo_advisor_render_indexing(),
 			'tasks'     => hodima_seo_advisor_render_tasks(),

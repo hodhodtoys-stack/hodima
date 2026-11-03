@@ -283,6 +283,20 @@ function hodima_seo_advisor_render_top_tasks( array $tasks, callable $n ): void 
 	<?php
 }
 
+/** گروه‌های «نوع ایراد فنی» منوی «کارها» ← برچسب (کلیدها همان HODIMA_SEO_ADVISOR_CRAWL_GROUPS؛ SEO 3.5.8). */
+const HODIMA_SEO_ADVISOR_OVERVIEW_CRAWL_TYPES = [
+	'meta'     => 'متا و خلاصه',
+	'title'    => 'عنوان یا H1',
+	'dup'      => 'تکراری و مشابه',
+	'slow'     => 'کند',
+	'redirect' => 'ریدایرکت یا noindex',
+	'linkfix'  => 'لینک اشتباه',
+	'content'  => 'تصویر و محتوا',
+	'tech'     => 'canonical و نقشه سایت',
+	'links'    => 'لینک ورودی کم',
+	'orphan'   => 'بدون لینک ورودی',
+];
+
 /** صفحه «کارها». */
 function hodima_seo_advisor_render_overview(): void {
 
@@ -295,6 +309,9 @@ function hodima_seo_advisor_render_overview(): void {
 	$code   = isset( hodima_seo_advisor_issue_catalog()[ $code ] ) ? $code : '';
 	$q      = isset( $_GET['q'] ) ? trim( sanitize_text_field( wp_unslash( (string) $_GET['q'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$paged  = max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$cf     = isset( $_GET['cf'] ) ? sanitize_key( (string) $_GET['cf'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش: بخش نمره یا گروه نوع ایراد فنی (SEO 3.5.8؛ پیوند قدیمی تب «سلامت سایت»)
+	$cf_codes = hodima_seo_advisor_score_filter_codes( $cf );
+	$cf     = $cf_codes ? $cf : '';
 	$img    = isset( $_GET['img'] ) ? sanitize_key( (string) $_GET['img'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش: صفحه‌های یک تصویر مشترک (SEO 3.4.9)
 	$only   = null;
 	foreach ( '' === $img ? [] : hodima_seo_advisor_image_groups() as $group ) {
@@ -318,12 +335,21 @@ function hodima_seo_advisor_render_overview(): void {
 		if ( '' !== $code ) {
 			$page['items'] = array_values( array_filter( $page['items'], static fn( array $item ): bool => 'crawl' === $item['src'] && $code === $item['mark'] ) );
 		}
+		if ( '' !== $cf ) {
+			$page['items'] = array_values( array_filter( $page['items'], static fn( array $item ): bool => 'crawl' === $item['src'] && in_array( $item['mark'], $cf_codes, true ) ) );
+		}
 		if ( $page['items'] ) {
 			$rows[] = $page;
 		}
 	}
 
-	if ( '' === $src && '' === $q && '' === $code && 1 === $paged ) {
+	// نوار «سلامت سایت» (SEO 3.5.8؛ قبلا تب جدا): نمره از همه ایرادهای خزش، نه فقط آنچه علامت نخورده
+	$crawl = hodima_seo_advisor_crawl_status();
+	if ( $crawl['imported'] > 0 && $crawl['pages'] > 0 ) {
+		hodima_seo_advisor_render_score( hodima_seo_advisor_crawl_issues(), $crawl['pages'], $cf );
+	}
+
+	if ( '' === $src && '' === $q && '' === $code && '' === $cf && 1 === $paged ) {
 		hodima_seo_advisor_render_top_tasks( hodima_seo_advisor_top_tasks( $pages ), $n ); // «۵ کار مهم امروز» (SEO 3.4.0)
 		hodima_seo_advisor_render_shared_images( $n ); // تصویر مشترک بین چند صفحه = یک کار (SEO 3.4.9)
 	}
@@ -336,6 +362,20 @@ function hodima_seo_advisor_render_overview(): void {
 			$items[ $key ] = [ $label, $counts[ $key ], hodima_seo_advisor_page_url( [ 'src' => $key, 'q' => $q ] ) ];
 		}
 	}
+
+	// منوی «نوع ایراد فنی» (جایگزین فیلتر جدول تب قدیمی «سلامت سایت»): گروه چیپ‌ها با شمار صفحه‌های دارای ایراد
+	$types = [ '' => [ 'همه نوع‌ها', count( $pages ), hodima_seo_advisor_page_url( [ 'src' => $src, 'q' => $q ] ) ] ];
+	foreach ( HODIMA_SEO_ADVISOR_OVERVIEW_CRAWL_TYPES as $key => $label ) {
+		$members = HODIMA_SEO_ADVISOR_CRAWL_GROUPS[ $key ];
+		$n_type  = count( array_filter( $pages, static fn( array $p ): bool => (bool) array_filter( $p['items'], static fn( array $i ): bool => 'crawl' === $i['src'] && in_array( $i['mark'], $members, true ) ) ) );
+		if ( $n_type > 0 || $key === $cf ) {
+			$types[ $key ] = [ $label, $n_type, hodima_seo_advisor_page_url( [ 'cf' => $key, 'q' => $q ] ) ];
+		}
+	}
+	if ( str_starts_with( $cf, 'cat-' ) ) { // بخش نمره (از نوار سلامت)
+		$n_cat = count( array_filter( $pages, static fn( array $p ): bool => (bool) array_filter( $p['items'], static fn( array $i ): bool => 'crawl' === $i['src'] && in_array( $i['mark'], $cf_codes, true ) ) ) );
+		$types[ $cf ] = [ HODIMA_SEO_ADVISOR_SCORE_CATEGORIES[ $cf ]['label'], $n_cat, hodima_seo_advisor_page_url( [ 'cf' => $cf, 'q' => $q ] ) ];
+	}
 	?>
 	<form method="get" class="hodima-advisor__toolbar">
 		<input type="hidden" name="page" value="<?php echo esc_attr( HODIMA_SEO_ADVISOR_PAGE ); ?>">
@@ -345,7 +385,13 @@ function hodima_seo_advisor_render_overview(): void {
 		<?php if ( '' !== $code ) : ?>
 			<input type="hidden" name="code" value="<?php echo esc_attr( $code ); ?>">
 		<?php endif; ?>
+		<?php if ( '' !== $cf ) : ?>
+			<input type="hidden" name="cf" value="<?php echo esc_attr( $cf ); ?>">
+		<?php endif; ?>
 		<?php hodima_seo_advisor_filter_chips( 'نوع ایراد', $items, $src ); ?>
+		<?php if ( count( $types ) > 1 ) : ?>
+			<?php hodima_seo_advisor_filter_select( 'نوع ایراد فنی', $types, $cf ); ?>
+		<?php endif; ?>
 		<div class="hodima-advisor__search">
 			<label class="screen-reader-text" for="hodima-advisor-ov-q">جستجو در عنوان یا آدرس صفحه</label>
 			<input type="search" id="hodima-advisor-ov-q" name="q" class="hds-input" value="<?php echo esc_attr( $q ); ?>" placeholder="جستجو در عنوان یا آدرس…">
@@ -358,6 +404,15 @@ function hodima_seo_advisor_render_overview(): void {
 		printf(
 			'<p class="hodima-advisor__back">%1$s <a href="%2$s">%3$s</a></p>',
 			esc_html( sprintf( 'فقط نمایش: «%s»', hodima_seo_advisor_issue_catalog()[ $code ]['label'] ) ),
+			esc_url( hodima_seo_advisor_page_url( array_filter( [ 'src' => $src, 'q' => $q ] ) ) ),
+			esc_html( 'برداشتن فیلتر' )
+		);
+	}
+
+	if ( '' !== $cf ) {
+		printf(
+			'<p class="hodima-advisor__back">%1$s <a href="%2$s">%3$s</a></p>',
+			esc_html( sprintf( 'فیلتر فعال: «%s»', $types[ $cf ][0] ?? $cf ) ),
 			esc_url( hodima_seo_advisor_page_url( array_filter( [ 'src' => $src, 'q' => $q ] ) ) ),
 			esc_html( 'برداشتن فیلتر' )
 		);
@@ -381,6 +436,12 @@ function hodima_seo_advisor_render_overview(): void {
 			$row  = hodima_seo_advisor_page( $page['path'] );
 			$link = hodima_seo_advisor_overview_link( (string) ( $row['kind'] ?? '' ), (int) ( $row['object_id'] ?? 0 ), $page['path'] );
 			$name = '' !== $page['title'] ? $page['title'] : rawurldecode( $page['path'] );
+			// صفحه‌ای که فقط خزنده دیده (بدون ردیف داده گوگل) هم «ویرایش صفحه» و نام واقعی بگیرد (جدول قدیمی «سلامت سایت» همین را داشت؛ SEO 3.5.8)
+			if ( null === $row ) {
+				$target = hodima_seo_advisor_crawl_row_target( $page['path'] );
+				$link   = '' !== $target['edit'] ? [ $target['edit'], 'ویرایش صفحه', 'edit' ] : $link;
+				$name   = '' !== $target['title'] ? $target['title'] : $name;
+			}
 			// دستور ایراد خزنده با نام «ویرایش» همین نوع صفحه (محصول، دسته…)؛ فقط برای ردیف‌های همین صفحه ساخته می‌شود (SEO 3.3.5)
 			$where = hodima_seo_advisor_issue_where( $page['path'], (string) ( $row['kind'] ?? '' ) );
 			?>
@@ -415,12 +476,12 @@ function hodima_seo_advisor_render_overview(): void {
 		<?php endforeach; ?>
 	</div>
 	<?php
-	hodima_seo_advisor_render_overview_foot( $total, $n, $paged, $last, $src, $q );
+	hodima_seo_advisor_render_overview_foot( $total, $n, $paged, $last, $src, $q, $cf );
 	hodima_seo_ui_card_close();
 }
 
 /** پای فهرست: شمار، پیوند «کارهای انجام‌شده» و صفحه‌بندی. */
-function hodima_seo_advisor_render_overview_foot( int $total, callable $n, int $paged = 1, int $last = 1, string $src = '', string $q = '' ): void {
+function hodima_seo_advisor_render_overview_foot( int $total, callable $n, int $paged = 1, int $last = 1, string $src = '', string $q = '', string $cf = '' ): void {
 	?>
 	<div class="hodima-advisor__foot">
 		<span>
@@ -428,7 +489,7 @@ function hodima_seo_advisor_render_overview_foot( int $total, callable $n, int $
 			<?php echo hodima_seo_advisor_action( hodima_seo_advisor_page_url( [ 'tab' => 'tasks' ] ), 'کارهای انجام‌شده و نتیجه‌شان', 'yes-alt' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
 		</span>
 		<?php if ( $last > 1 ) : ?>
-			<?php hodima_seo_ui_pager( $paged, $last, static fn( int $i ): string => hodima_seo_advisor_page_url( array_filter( [ 'src' => $src, 'q' => $q, 'paged' => $i > 1 ? $i : '' ] ) ) ); ?>
+			<?php hodima_seo_ui_pager( $paged, $last, static fn( int $i ): string => hodima_seo_advisor_page_url( array_filter( [ 'src' => $src, 'cf' => $cf, 'q' => $q, 'paged' => $i > 1 ? $i : '' ] ) ) ); ?>
 		<?php endif; ?>
 	</div>
 	<?php
