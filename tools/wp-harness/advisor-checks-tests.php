@@ -130,6 +130,12 @@ $cases = [
 	[ 'لینک سالم ← هیچ', 'link_targets', [ 'path' => '/a/' ], [], [] ],
 	[ 'لینک http در سایت https ← http_link', 'http_link', [ 'http_links' => 3 ], [], [ 'http_link' ] ],
 	[ 'بدون لینک http ← هیچ', 'http_link', [], [], [] ],
+	[ 'سایت پنهان (blog_public=0) + صفحه اصلی ← site_hidden', 'site_hidden', [ 'path' => '/' ], [ 'hidden' => true ], [ 'site_hidden' ] ],
+	[ 'سایت پنهان + صفحه دیگر ← هیچ (فقط روی صفحه اصلی می‌آید)', 'site_hidden', [ 'path' => '/a/' ], [ 'hidden' => true ], [] ],
+	[ 'سایت دیده‌شدنی + صفحه اصلی ← هیچ', 'site_hidden', [ 'path' => '/' ], [ 'hidden' => false ], [] ],
+	[ 'سایت پنهان ← noindex جداجدای صفحه‌ها نمی‌آید (همه از همان یک تنظیم‌اند)', 'status', [ 'path' => '/a/', 'indexable' => 0, 'reason' => 'Noindex' ], [ 'hidden' => true ], [] ],
+	[ 'سایت دیده‌شدنی ← noindex صفحه همچنان noindex', 'status', [ 'path' => '/a/', 'indexable' => 0, 'reason' => 'Noindex' ], [ 'hidden' => false ], [ 'noindex' ] ],
+	[ 'سایت پنهان ← canonical به صفحه دیگر همچنان canonicalised', 'status', [ 'path' => '/a/', 'indexable' => 0, 'reason' => 'Canonicalised', 'canonical' => '/b/' ], [ 'hidden' => true ], [ 'canonicalised' ] ],
 	[ 'canonical فقط در body (نشانه !body) ← canonical_in_body (Google: فقط در head پذیرفته می‌شود)', 'canonical_in_body', [ 'canonical' => '!body' ], [], [ 'canonical_in_body' ] ],
 	[ 'canonical در head ← canonical_in_body نمی‌دهد', 'canonical_in_body', [], [], [] ],
 	[ 'بدون canonical ← canonical_in_body نمی‌دهد', 'canonical_in_body', [ 'canonical' => '' ], [], [] ],
@@ -221,6 +227,11 @@ hodima_ck( 'سطح زنجیره: ۴ پرش info (بدون کلید level)، ۵ �
 	return array_values( array_filter( array_map( static fn( array $i ): string => (string) ( $i['level'] ?? '' ), $out ) ) );
 }, [ 4, 5 ] ) );
 hodima_ck( 'ردیابی ریدایرکت: مقصد ناشناخته (صفحه خزیده نشده) زنجیره و حلقه نمی‌سازد', 1 === hodima_seo_advisor_redirect_trace( '/a/', [ '/a/' => [ 'status' => 301, 'redirect_to' => '/unknown/' ] ] )['hops'] && false === hodima_seo_advisor_redirect_trace( '/a/', [ '/a/' => [ 'status' => 301, 'redirect_to' => '/unknown/' ] ] )['loop'] );
+
+$reds = array_keys( array_filter( hodima_seo_advisor_issue_catalog(), static fn( array $rec ): bool => 'bad' === $rec['level'] ) );
+sort( $reds );
+hodima_ck( 'سطح کاتالوگ طبق قانون‌نامه (۳.۶.۷): فقط redirect_loop، server_error و site_hidden قرمزند', [ 'redirect_loop', 'server_error', 'site_hidden' ] === $reds, wp_json_encode( $reds ) );
+hodima_ck( 'سطح کاتالوگ: لینک به ریدایرکت و بدون canonical اطلاع؛ لینک خراب، canonical اشتباه، نقشه سایت خراب، بدون عنوان و متن زیر عنوان ممنوع کهربایی', [ 'info', 'info', 'warn', 'warn', 'warn', 'warn', 'warn' ] === array_map( static fn( string $c ): string => hodima_seo_advisor_crawl_issue_info( $c )['level'], [ 'link_redirect', 'no_canonical', 'link_broken', 'canonical_bad', 'sitemap_bad', 'no_title', 'no_snippet' ] ) );
 
 echo "=== لینک‌های غیر صفحه: پروتکل غیر http (اپ‌ها) صفحه نیست (۱۲ آبان ۱۴۰۵: snapp:// و tapsi:// «۴۰۴» گزارش می‌شد)\n";
 $res_base = 'https://hodima.test/contact-us/';

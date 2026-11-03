@@ -60,7 +60,7 @@ function hodima_seo_advisor_dup_key( string $text ): string {
  * تکراری‌ها فقط بین صفحه‌های سالم و ایندکس‌پذیر شمرده می‌شوند و صفحه‌بندی کنار می‌ماند.
  *
  * @param list<array<string, mixed>> $rows ردیف‌های جدول خزش (با ستون‌های impressions، avg_position، kind)
- * @return array{titles: array<string, int>, h1s: array<string, int>, metas: array<string, int>, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>}
+ * @return array{titles: array<string, int>, h1s: array<string, int>, metas: array<string, int>, hidden: bool, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>}
  */
 function hodima_seo_advisor_checks_context( array $rows ): array {
 
@@ -112,6 +112,7 @@ function hodima_seo_advisor_checks_context( array $rows ): array {
 		'by_path' => $by_path,
 		'sitemap' => hodima_seo_advisor_sitemap_paths(),
 		'bad'     => hodima_seo_advisor_crawl_bad_links(),
+		'hidden'  => '0' === (string) get_option( 'blog_public', '1' ), // «تنظیمات ← خواندن ← از موتورهای جستجو بخواه ایندکس نکند» (SEO 3.6.7)
 	];
 }
 
@@ -452,6 +453,20 @@ function hodima_seo_advisor_check_dup_meta( array $r, array $ctx ): array {
 }
 
 /**
+ * سایت از گوگل پنهان است: گزینه وردپرس «از موتورهای جستجو بخواه این سایت را ایندکس نکند» (`blog_public` = 0) روشن است و وردپرس روی
+ * همه صفحه‌ها noindex می‌گذارد. گوگل: noindex یعنی «Do not show this page, media, or resource in search results» (Search Central،
+ * «robots meta tag»)؛ Rank Math هم همین را آزمون «Blog Public» می‌داند. ایراد روی ردیف صفحه اصلی می‌آید و noindex جداجدای بقیه
+ * صفحه‌ها را (که همه از همین یک تنظیم‌اند) خاموش می‌کند (SEO 3.6.7).
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_site_hidden( array $r, array $ctx ): array {
+	return '/' === (string) $r['path'] && ! empty( $ctx['hidden'] ) ? [ hodima_seo_advisor_issue( 'site_hidden' ) ] : [];
+}
+
+/**
  * متن کم. نوع صفحه از داده گوگل می‌آید و صفحه بدون نمایش (همان‌هایی که محتوای کمشان مهم‌تر است) نوع ندارد: فقط برای
  * نامزدهای «محتوای کم» با روتر شناخته می‌شود (SEO 3.4.5). دسته‌ها و صفحه اصلی و صفحه‌بندی کنار می‌مانند.
  *
@@ -633,7 +648,7 @@ function hodima_seo_advisor_check_status( array $r, array $ctx ): array {
 		$out[] = hodima_seo_advisor_issue( 'server_error', sprintf( 'کد %s', number_format_i18n( $status ) ) );
 	} elseif ( $status >= 400 ) {
 		$out[] = hodima_seo_advisor_issue( 'broken', sprintf( 'کد %s', number_format_i18n( $status ) ) );
-	} elseif ( 200 === $status && 0 === (int) $r['indexable'] && ! hodima_seo_advisor_is_system_path( (string) $r['path'] ) ) {
+	} elseif ( 200 === $status && 0 === (int) $r['indexable'] && ! hodima_seo_advisor_is_system_path( (string) $r['path'] ) && ! ( 'Noindex' === (string) $r['reason'] && ! empty( $ctx['hidden'] ) ) ) { // سایت پنهان: noindex همه صفحه‌ها از همان یک تنظیم است (ایراد site_hidden)
 		if ( 'Canonicalised' === (string) $r['reason'] ) {
 			$canonical = (string) $r['canonical'];
 			$out[]     = hodima_seo_advisor_issue( 'canonicalised', '' !== $canonical && ! str_starts_with( $canonical, '!' ) ? sprintf( 'به %s اشاره می‌کند.', rawurldecode( $canonical ) ) : '' );
@@ -658,6 +673,7 @@ function hodima_seo_advisor_checks(): array {
 	static $checks = null;
 
 	return $checks ??= [
+		'site_hidden'    => [ 'when' => 'always', 'codes' => [ 'site_hidden' ], 'fn' => 'hodima_seo_advisor_check_site_hidden' ],
 		'sitemap_bad'    => [ 'when' => 'always', 'codes' => [ 'sitemap_bad' ], 'fn' => 'hodima_seo_advisor_check_sitemap_bad' ],
 		'canonical_bad'  => [ 'when' => 'always', 'codes' => [ 'canonical_bad' ], 'fn' => 'hodima_seo_advisor_check_canonical_bad' ],
 		'title'          => [ 'when' => 'live', 'codes' => [ 'no_title', 'title_short', 'title_long' ], 'fn' => 'hodima_seo_advisor_check_title' ],

@@ -3560,8 +3560,8 @@ hodima_ad( 'بدون صفحه خزش‌شده: نمره null', hodima_seo_adviso
 $sc_clean = hodima_seo_advisor_score( [], 100 );
 hodima_ad( 'بدون ایراد: همه بخش‌ها و نمره کل ۱۰۰', [ $sc_clean['score'], array_unique( array_column( $sc_clean['categories'], 'score' ) ), $sc_clean['top'] ], [ 100, [ 100 ], [] ] );
 // ۱۰۰ صفحه، ۵ صفحه با یک ایراد قرمز (لینک خراب) ← بخش لینک‌ها ۱۰۰−۵×۲ = ۹۰؛ نمره کل ۱۰۰−۱۰×۰٫۳ = ۹۷
-$sc_a = hodima_seo_advisor_score( array_map( static fn( int $i ): array => $sc_row( "/p{$i}/", 'link_broken' ), range( 1, 5 ) ), 100 );
-hodima_ad( 'پنج درصد صفحه با ایراد قرمز: بخش لینک‌ها ۹۰، بقیه ۱۰۰، نمره کل ۹۷، اول فهرست همان ایراد', [ $sc_a['categories']['cat-links']['score'], $sc_a['categories']['cat-meta']['score'], $sc_a['score'], $sc_a['top'][0]['code'], $sc_a['top'][0]['pages'], $sc_a['categories']['cat-links']['pages'] ], [ 90, 100, 97, 'link_broken', 5, 5 ] );
+$sc_a = hodima_seo_advisor_score( array_map( static fn( int $i ): array => $sc_row( "/p{$i}/", 'server_error' ), range( 1, 5 ) ), 100 ); // SEO 3.6.7: link_broken کهربایی شد؛ ایراد قرمز = server_error (۵xx)
+hodima_ad( 'پنج درصد صفحه با ایراد قرمز: بخش لینک‌ها ۹۰، بقیه ۱۰۰، نمره کل ۹۷، اول فهرست همان ایراد', [ $sc_a['categories']['cat-links']['score'], $sc_a['categories']['cat-meta']['score'], $sc_a['score'], $sc_a['top'][0]['code'], $sc_a['top'][0]['pages'], $sc_a['categories']['cat-links']['pages'] ], [ 90, 100, 97, 'server_error', 5, 5 ] );
 $sc_b = hodima_seo_advisor_score( [ $sc_row( '/x/', 'img_alt', 'no_h1', 'deep' ), $sc_row( '/y/', 'img_alt' ) ], 10 ); // SEO 3.6.3: multi_h1 اطلاع شد؛ برای «کهربایی هم‌سطح» همان بخش از no_h1 استفاده می‌شود
 hodima_ad( 'ایرادهای هم‌سطح: کهربایی ضریب ۱ (۲ صفحه از ۱۰ = ۲۰)؛ آبی «اطلاع» ضریب صفر (SEO 3.6.4)؛ بخش محتوا ۱۰۰−۲۰−۱۰ = ۷۰ و ساختار ۱۰۰', [ $sc_b['categories']['cat-content']['score'], $sc_b['categories']['cat-structure']['score'], $sc_b['categories']['cat-content']['pages'] ], [ 70, 100, 2 ] );
 $sc_c = hodima_seo_advisor_score( array_map( static fn( int $i ): array => $sc_row( "/z{$i}/", 'link_broken', 'broken', 'no_meta' ), range( 1, 10 ) ), 10 );

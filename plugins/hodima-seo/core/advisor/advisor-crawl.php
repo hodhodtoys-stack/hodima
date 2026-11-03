@@ -405,7 +405,7 @@ const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
 	'redirect' => [ 'redirect', 'noindex', 'canonicalised', 'broken', 'server_error' ],
 	'linkfix'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain', 'redirect_loop' ],
 	'content'  => [ 'img_alt', 'thin' ],
-	'tech'     => [ 'canonical_bad', 'canonical_in_body', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
+	'tech'     => [ 'site_hidden', 'canonical_bad', 'canonical_in_body', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
 	'links'    => [ 'low_inlinks' ],
 	'orphan'   => [ 'orphan', 'island' ],
 ];
