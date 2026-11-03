@@ -44,7 +44,15 @@ function hodima_seo_advisor_crawl_is_paged( array $r ): bool {
  * دو عنوان بلند با ابتدای یکسان «تکراری» نشوند (SEO 3.4.7).
  */
 function hodima_seo_advisor_title_key( string $title, int $length ): string {
-	return mb_strtolower( $title ) . ( mb_strlen( $title ) >= HODIMA_SEO_ADVISOR_KEY_LENGTH ? '|' . $length : '' );
+	return hodima_seo_advisor_dup_key( $title ) . ( mb_strlen( $title ) >= HODIMA_SEO_ADVISOR_KEY_LENGTH ? '|' . $length : '' );
+}
+
+/**
+ * کلید مقایسه برای «تکراری»: ی/ک عربی، نیم‌فاصله، اعراب، ارقام فارسی/عربی/لاتین و حروف بزرگ یکسان می‌شوند (SEO 3.6.3). تا ۳.۶.۲
+ * فقط حروف کوچک می‌شد و دو عنوان که فقط در «ي» عربی یا «۱» فارسی/«1» لاتین فرق داشتند تکراری شمرده نمی‌شدند.
+ */
+function hodima_seo_advisor_dup_key( string $text ): string {
+	return hodima_seo_advisor_normalize( $text );
 }
 
 /**
@@ -62,7 +70,7 @@ function hodima_seo_advisor_checks_context( array $rows ): array {
 		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] && ! hodima_seo_advisor_crawl_is_paged( $r ) ) {
 			$tk            = hodima_seo_advisor_title_key( (string) $r['title'], (int) $r['title_len'] );
 			$titles[ $tk ] = ( $titles[ $tk ] ?? 0 ) + 1;
-			$h1k           = mb_strtolower( (string) $r['h1'] );
+			$h1k           = hodima_seo_advisor_dup_key( (string) $r['h1'] );
 			$h1s[ $h1k ]   = ( $h1s[ $h1k ] ?? 0 ) + 1;
 		}
 	}
@@ -249,7 +257,7 @@ function hodima_seo_advisor_check_dup_h1( array $r, array $ctx ): array {
 		return [];
 	}
 
-	$count = $ctx['h1s'][ mb_strtolower( $h1 ) ] ?? 0;
+	$count = $ctx['h1s'][ hodima_seo_advisor_dup_key( $h1 ) ] ?? 0;
 
 	return $count > 1 ? [ hodima_seo_advisor_issue( 'dup_h1', sprintf( 'در %s صفحه', number_format_i18n( $count ) ) ) ] : [];
 }

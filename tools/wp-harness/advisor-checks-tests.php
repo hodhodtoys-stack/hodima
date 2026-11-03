@@ -105,6 +105,8 @@ $cases = [
 	[ 'یک H1 ← هیچ', 'multi_h1', [], [], [] ],
 	// ── تکراری و مشابه
 	[ 'عنوان در ۲ صفحه ← dup_title', 'dup_title', [ 'title' => 'عنوان تکراری', 'title_len' => 12 ], [ 'titles' => [ 'عنوان تکراری' => 2 ] ], [ 'dup_title' ] ],
+	[ 'عنوان تکراری با «ي» عربی و رقم فارسی ← dup_title (کلید یکسان‌سازی‌شده، SEO 3.6.3)', 'dup_title', [ 'title' => 'کيف ۱۲ جيب', 'title_len' => 11 ], [ 'titles' => [ hodima_seo_advisor_dup_key( 'کیف 12 جیب' ) => 2 ] ], [ 'dup_title' ] ],
+	[ 'H1 تکراری با ک/ک عربی و نیم‌فاصله ← dup_h1', 'dup_h1', [ 'h1' => 'كلیپس‌مو' ], [ 'h1s' => [ hodima_seo_advisor_dup_key( 'کلیپس مو' ) => 2 ] ], [ 'dup_h1' ] ],
 	[ 'عنوان در ۱ صفحه ← هیچ', 'dup_title', [ 'title' => 'عنوان تکراری', 'title_len' => 12 ], [ 'titles' => [ 'عنوان تکراری' => 1 ] ], [] ],
 	[ 'عنوان تکراری در /page/2/ ← هیچ', 'dup_title', [ 'path' => '/b/page/2/', 'title' => 'عنوان تکراری', 'title_len' => 12 ], [ 'titles' => [ 'عنوان تکراری' => 2 ] ], [] ],
 	[ 'H1 در ۲ صفحه ← dup_h1', 'dup_h1', [ 'h1' => 'تیتر' ], [ 'h1s' => [ 'تیتر' => 2 ] ], [ 'dup_h1' ] ],
@@ -180,6 +182,9 @@ $sc_info = hodima_seo_advisor_score( [ [ 'path' => '/a/', 'issues' => [ [ 'code'
 $sc_warn = hodima_seo_advisor_score( [ [ 'path' => '/a/', 'issues' => [ [ 'code' => 'no_meta' ] ] ] ], 10 );
 hodima_ck( 'نمره: ایراد با level=info برای همان صفحه کمتر کسر می‌کند (۹۷ در برابر ۹۰ در بخش «عنوان و متا»)', 97 === ( $sc_info['categories']['cat-meta']['score'] ?? -1 ) && 90 === ( $sc_warn['categories']['cat-meta']['score'] ?? -1 ), wp_json_encode( [ $sc_info['categories']['cat-meta'] ?? null, $sc_warn['categories']['cat-meta'] ?? null ] ) );
 
+hodima_ck( 'کلید تکراری: ي/ی، ك/ک، رقم فارسی/عربی/لاتین، نیم‌فاصله و حروف بزرگ یکی می‌شوند و عنوان‌های متفاوت یکی نمی‌شوند', hodima_seo_advisor_dup_key( 'كيف ۱۲ Pack' ) === hodima_seo_advisor_dup_key( 'کیف 12 pack' ) && hodima_seo_advisor_dup_key( 'کیف ۱۲' ) !== hodima_seo_advisor_dup_key( 'کیف ۱۳' ) );
+$lv2 = static fn( string $code ): string => hodima_seo_advisor_crawl_issue_info( $code )['level'];
+hodima_ck( 'سطح کاتالوگ (قانون‌نامه): H1 تکراری، چند H1، عنوان مشابه، لینک ورودی کم، جزیره = info؛ بدون لینک ورودی = warn؛ عنوان تکراری warn', [ 'info', 'info', 'info', 'info', 'info', 'warn', 'warn' ] === array_map( $lv2, [ 'dup_h1', 'multi_h1', 'near_dup', 'low_inlinks', 'island', 'orphan', 'dup_title' ] ) );
 echo "=== ثابت‌ها (invariant): پیش‌نویس باید از تشخیص همان ایراد رد شود\n";
 $limit = hodima_seo_px_limit( 'title' );
 $posts = array_merge(
