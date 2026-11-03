@@ -180,7 +180,13 @@ $lv = static fn( string $code ): string => hodima_seo_advisor_crawl_issue_info( 
 hodima_ck( 'سطح کاتالوگ: عنوان کوتاه و بلند info (گوگل حداقل/حداکثر نمی‌گذارد)، بدون متا warn (فقط صفحه‌های مهم)', [ 'info', 'info', 'warn' ] === [ $lv( 'title_short' ), $lv( 'title_long' ), $lv( 'no_meta' ) ] );
 $sc_info = hodima_seo_advisor_score( [ [ 'path' => '/a/', 'issues' => [ [ 'code' => 'no_meta', 'level' => 'info' ] ] ] ], 10 );
 $sc_warn = hodima_seo_advisor_score( [ [ 'path' => '/a/', 'issues' => [ [ 'code' => 'no_meta' ] ] ] ], 10 );
-hodima_ck( 'نمره: ایراد با level=info برای همان صفحه کمتر کسر می‌کند (۹۷ در برابر ۹۰ در بخش «عنوان و متا»)', 97 === ( $sc_info['categories']['cat-meta']['score'] ?? -1 ) && 90 === ( $sc_warn['categories']['cat-meta']['score'] ?? -1 ), wp_json_encode( [ $sc_info['categories']['cat-meta'] ?? null, $sc_warn['categories']['cat-meta'] ?? null ] ) );
+hodima_ck( 'نمره: ایراد با level=info برای همان صفحه در نمره نمی‌آید (بخش «عنوان و متا» ۱۰۰ و بی‌صفحه در برابر ۹۰ برای کهربایی؛ SEO 3.6.4)', 100 === ( $sc_info['categories']['cat-meta']['score'] ?? -1 ) && 0 === ( $sc_info['categories']['cat-meta']['pages'] ?? -1 ) && 90 === ( $sc_warn['categories']['cat-meta']['score'] ?? -1 ), wp_json_encode( [ $sc_info['categories']['cat-meta'] ?? null, $sc_warn['categories']['cat-meta'] ?? null ] ) );
+$sc_row2 = static fn( int $i, array $codes ): array => [ 'path' => "/q{$i}/", 'issues' => array_map( static fn( string $c ): array => [ 'code' => $c ], $codes ) ];
+$sc_wide = hodima_seo_advisor_score( array_map( static fn( int $i ): array => $sc_row2( $i, [ 'no_h1' ] ), range( 1, 100 ) ), 100 );
+hodima_ck( 'نمره: یک ایراد فراگیر (بدون H1 روی ۱۰۰ از ۱۰۰ صفحه) حداکثر ۲۵ امتیاز بخش را کم می‌کند، نه همه را (قبلا بخش ۰ و نمره کل ۸۰)', 75 === ( $sc_wide['categories']['cat-content']['score'] ?? -1 ) && 95 === $sc_wide['score'], wp_json_encode( $sc_wide ) );
+$sc_info_all = hodima_seo_advisor_score( array_map( static fn( int $i ): array => $sc_row2( $i, [ 'low_inlinks', 'multi_h1', 'title_short', 'deep', 'island' ] ), range( 1, 100 ) ), 100 );
+hodima_ck( 'نمره: اطلاع‌های فراگیر نمره را کم نمی‌کنند (کل ۱۰۰؛ قبلا ۸۴)', 100 === $sc_info_all['score'] && [] === $sc_info_all['top'], wp_json_encode( $sc_info_all ) );
+hodima_ck( 'نمره: ثابت‌ها (ضریب اطلاع صفر، سقف هر ایراد ۲۵)', 0.0 === HODIMA_SEO_ADVISOR_SCORE_WEIGHTS['info'] && 25.0 === HODIMA_SEO_ADVISOR_SCORE_CODE_CAP );
 
 hodima_ck( 'کلید تکراری: ي/ی، ك/ک، رقم فارسی/عربی/لاتین، نیم‌فاصله و حروف بزرگ یکی می‌شوند و عنوان‌های متفاوت یکی نمی‌شوند', hodima_seo_advisor_dup_key( 'كيف ۱۲ Pack' ) === hodima_seo_advisor_dup_key( 'کیف 12 pack' ) && hodima_seo_advisor_dup_key( 'کیف ۱۲' ) !== hodima_seo_advisor_dup_key( 'کیف ۱۳' ) );
 $lv2 = static fn( string $code ): string => hodima_seo_advisor_crawl_issue_info( $code )['level'];

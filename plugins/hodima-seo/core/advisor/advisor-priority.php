@@ -159,8 +159,9 @@ function hodima_seo_advisor_item_score( array $item, float $value ): float {
 
 	$score = ( $level / 3 ) * ( 0.15 + 0.85 * $value ) * $confidence / max( 1, hodima_seo_advisor_item_effort( $item ) );
 
-	// «alt خالی (بررسی کنید)» ایراد قطعی نیست (لوگو و تزئین درست است)؛ هرگز «اولویت بالا» نمی‌شود (SEO 3.4.9)
-	return 'crawl' === ( $item['src'] ?? '' ) && 'img_empty' === ( $item['mark'] ?? '' ) ? min( $score, HODIMA_SEO_ADVISOR_BAND_MID / 2 ) : $score;
+	// ایراد «اطلاع» (مثل alt خالی که لوگو و تزئین درست است، یا طول عنوان که گوگل حدی برایش نمی‌گذارد) هرگز «اولویت بالا/متوسط» نمی‌شود،
+	// حتی در صفحه پرنمایش و پرفروش (SEO 3.4.9 برای img_empty؛ از SEO 3.6.4 برای همه ایرادهای اطلاع)
+	return 'info' === ( $item['level'] ?? '' ) ? min( $score, HODIMA_SEO_ADVISOR_BAND_MID / 2 ) : $score;
 }
 
 /** نشان اولویت از امتیاز: high | mid | low. */

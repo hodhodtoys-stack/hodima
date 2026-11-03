@@ -3392,6 +3392,7 @@ $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'code' => 'nope_x' ];
 $pr_ovx = $cap( static fn() => hodima_seo_advisor_render_overview() );
 $_GET  = [];
 hodima_ad( 'صفحه «کارها»: کادر «۵ کار مهم امروز» دیگر نیست (SEO 3.6.2، خواست کاربر)؛ ردیف با لنگر؛ با کد ایراد فقط همان ایراد، با «برداشتن فیلتر»؛ کد ناشناخته نادیده', [ str_contains( $pr_ov, '۵ کار مهم امروز' ), str_contains( $pr_ov, 'id="' . hodima_seo_advisor_row_anchor( '/pr-r1/' ) . '"' ), str_contains( $pr_ov, 'به ترتیب اولویت' ), str_contains( $pr_ovf, '۵ کار مهم امروز' ), str_contains( $pr_ovf, 'فقط نمایش: «بدون توضیح متا»' ), str_contains( $pr_ovf, 'برداشتن فیلتر' ), str_contains( $pr_ovx, 'فقط نمایش' ) ], [ false, true, true, false, true, true, false ] );
+hodima_ad( 'نشان ایراد «اطلاع» آبی است نه کهربایی (بدون متا کم‌بازدید، SEO 3.6.4)', [ str_contains( $pr_ov, 'hds-pill hds-pill--info">بدون توضیح متا' ), str_contains( $pr_ov, 'hds-pill hds-pill--warn">بدون توضیح متا' ) ], [ true, false ] );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $pr_ct ) );
 hodima_seo_advisor_crawl_map( true );
 wp_delete_post( $pr_p1, true );
@@ -3562,9 +3563,9 @@ hodima_ad( 'بدون ایراد: همه بخش‌ها و نمره کل ۱۰۰', 
 $sc_a = hodima_seo_advisor_score( array_map( static fn( int $i ): array => $sc_row( "/p{$i}/", 'link_broken' ), range( 1, 5 ) ), 100 );
 hodima_ad( 'پنج درصد صفحه با ایراد قرمز: بخش لینک‌ها ۹۰، بقیه ۱۰۰، نمره کل ۹۷، اول فهرست همان ایراد', [ $sc_a['categories']['cat-links']['score'], $sc_a['categories']['cat-meta']['score'], $sc_a['score'], $sc_a['top'][0]['code'], $sc_a['top'][0]['pages'], $sc_a['categories']['cat-links']['pages'] ], [ 90, 100, 97, 'link_broken', 5, 5 ] );
 $sc_b = hodima_seo_advisor_score( [ $sc_row( '/x/', 'img_alt', 'no_h1', 'deep' ), $sc_row( '/y/', 'img_alt' ) ], 10 ); // SEO 3.6.3: multi_h1 اطلاع شد؛ برای «کهربایی هم‌سطح» همان بخش از no_h1 استفاده می‌شود
-hodima_ad( 'ایرادهای هم‌سطح: کهربایی ضریب ۱ (۲ صفحه از ۱۰ = ۲۰)، آبی ۰٫۳؛ بخش محتوا ۱۰۰−۲۰−۱۰ = ۷۰ و ساختار ۹۷', [ $sc_b['categories']['cat-content']['score'], $sc_b['categories']['cat-structure']['score'], $sc_b['categories']['cat-content']['pages'] ], [ 70, 97, 2 ] );
+hodima_ad( 'ایرادهای هم‌سطح: کهربایی ضریب ۱ (۲ صفحه از ۱۰ = ۲۰)؛ آبی «اطلاع» ضریب صفر (SEO 3.6.4)؛ بخش محتوا ۱۰۰−۲۰−۱۰ = ۷۰ و ساختار ۱۰۰', [ $sc_b['categories']['cat-content']['score'], $sc_b['categories']['cat-structure']['score'], $sc_b['categories']['cat-content']['pages'] ], [ 70, 100, 2 ] );
 $sc_c = hodima_seo_advisor_score( array_map( static fn( int $i ): array => $sc_row( "/z{$i}/", 'link_broken', 'broken', 'no_meta' ), range( 1, 10 ) ), 10 );
-hodima_ad( 'همه صفحه‌ها ایراد دارند: نمره بخش از صفر پایین‌تر نمی‌رود و نمره کل بین ۰ و ۱۰۰', [ $sc_c['categories']['cat-links']['score'], $sc_c['score'] >= 0 && $sc_c['score'] <= 100, count( $sc_c['top'] ) ], [ 0, true, 3 ] );
+hodima_ad( 'همه صفحه‌ها ایراد دارند: کسر هر ایراد حداکثر ۲۵ (SEO 3.6.4)؛ دو ایراد فراگیر در بخش لینک‌ها = ۵۰؛ نمره کل بین ۰ و ۱۰۰', [ $sc_c['categories']['cat-links']['score'], $sc_c['score'] >= 0 && $sc_c['score'] <= 100, count( $sc_c['top'] ) ], [ 50, true, 3 ] );
 hodima_ad( 'برچسب نمره: ۹۵ عالی، ۸۰ خوب، ۶۰ نیاز به کار (کهربایی)، ۴۰ ضعیف (قرمز)', [ hodima_seo_advisor_score_grade( 95 ), hodima_seo_advisor_score_grade( 80 ), hodima_seo_advisor_score_grade( 60 ), hodima_seo_advisor_score_grade( 40 ) ], [ [ 'label' => 'عالی', 'level' => 'ok' ], [ 'label' => 'خوب', 'level' => 'ok' ], [ 'label' => 'نیاز به کار', 'level' => 'warn' ], [ 'label' => 'ضعیف', 'level' => 'bad' ] ] );
 hodima_ad( 'وزن بخش‌ها ۱۰۰ و هر کد ایراد فقط در یک بخش', [ array_sum( array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'weight' ) ), count( array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) ) ) === count( array_unique( array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) ) ) ) ], [ 100, true ] );
 $sc_all_codes = array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) );
@@ -3582,14 +3583,14 @@ $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', hodima_seo
 foreach ( range( 1, 4 ) as $i ) {
 	$GLOBALS['wpdb']->insert( $sc_pt, [ 'path' => "/sc{$i}/", 'status' => 200, 'indexable' => 1, 'title' => "عنوان {$i} با طول کافی برای آزمون", 'title_len' => 40, 'meta_len' => 100, 'title_px' => hodima_ad_tpx( 40 ), 'meta_px' => hodima_ad_mpx( 100 ), 'h1' => "تیتر {$i}", 'inlinks' => 5, 'text_links' => 3, 'depth' => 1 ] );
 }
-$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 0, 'meta_px' => 0 ], [ 'path' => '/sc1/' ] ); // یک صفحه بدون متا
+$GLOBALS['wpdb']->update( $sc_pt, [ 'title' => '', 'title_len' => 0, 'title_px' => 0 ], [ 'path' => '/sc1/' ] ); // یک صفحه بدون عنوان (قرمز؛ «بدون متا» کم‌بازدید از SEO 3.6.2 اطلاع است و در نمره نمی‌آید)
 hodima_seo_advisor_crawl_map( true ); // خزنده واقعی بعد از هر نوشتن همین را می‌زند (کش ایرادها، SEO 3.4.3)
 hodima_seo_advisor_score_record();
-$GLOBALS['wpdb']->update( $sc_pt, [ 'meta_len' => 100, 'meta_px' => hodima_ad_mpx( 100 ) ], [ 'path' => '/sc1/' ] ); // رفع شد
+$GLOBALS['wpdb']->update( $sc_pt, [ 'title' => 'عنوان 1 با طول کافی برای آزمون', 'title_len' => 40, 'title_px' => hodima_ad_tpx( 40 ) ], [ 'path' => '/sc1/' ] ); // رفع شد
 hodima_seo_advisor_crawl_map( true );
 hodima_seo_advisor_score_record();
 $sc_hist = hodima_seo_advisor_score_history();
-hodima_ad( 'تاریخچه: دو دور ثبت شد؛ دور اول با ایراد متا کمتر از دور دوم (بدون ایراد ۱۰۰)', [ count( $sc_hist ), $sc_hist[0]['score'] < $sc_hist[1]['score'], $sc_hist[1]['score'] ], [ 2, true, 100 ] );
+hodima_ad( 'تاریخچه: دو دور ثبت شد؛ دور اول با ایراد «بدون عنوان» کمتر از دور دوم (بدون ایراد ۱۰۰)', [ count( $sc_hist ), $sc_hist[0]['score'] < $sc_hist[1]['score'], $sc_hist[1]['score'] ], [ 2, true, 100 ] );
 update_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, array_fill( 0, 20, [ 'time' => time(), 'score' => 50 ] ), false );
 hodima_seo_advisor_score_record();
 hodima_ad( 'تاریخچه نهایتا ۱۲ دور', count( hodima_seo_advisor_score_history() ), 12 );
@@ -4419,7 +4420,8 @@ hodima_seo_advisor_crawl_map( true );
 
 // «بررسی کنید» (alt خالی) هیچ‌وقت «اولویت بالا» و «کار مهم امروز» نمی‌شود، حتی در صفحه پرنمایش
 $rc_it = [ 'level' => 'info', 'src' => 'crawl', 'mark' => 'img_empty', 'effort' => 1 ];
-hodima_ad( 'امتیاز «alt خالی»: نشان «کم»؛ ایراد info دیگر با همان ارزش «کم» نیست', [ hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( $rc_it, 1.0 ) ), 'low' !== hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( [ 'mark' => 'redirect' ] + $rc_it, 1.0 ) ) ], [ 'low', true ] );
+// SEO 3.6.4: هر ایراد «اطلاع» (نه فقط alt خالی) هرگز اولویت بالا/متوسط نمی‌شود؛ ایراد کهربایی با همان ارزش «کم» نیست
+hodima_ad( 'امتیاز ایراد اطلاع (alt خالی و ریدایرکت): نشان «کم» حتی با ارزش ۱٫۰؛ ایراد کهربایی با همان ارزش «کم» نیست', [ hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( $rc_it, 1.0 ) ), hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( [ 'mark' => 'redirect' ] + $rc_it, 1.0 ) ), 'low' !== hodima_seo_advisor_priority_band( hodima_seo_advisor_item_score( [ 'mark' => 'redirect', 'level' => 'warn' ] + $rc_it, 1.0 ) ) ], [ 'low', 'low', true ] );
 
 // بازخوانی صفحه‌های یک تصویر مشترک (scope=img)
 delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION );

@@ -16,8 +16,17 @@ defined( 'ABSPATH' ) || exit;
 /** تاریخچه نمره دورهای خزش (آخرین ۱۲؛ autoload نه). */
 const HODIMA_SEO_ADVISOR_SCORE_OPTION = 'hodima_advisor_score';
 
-/** ضریب کسر نمره هر سطح ایراد. */
-const HODIMA_SEO_ADVISOR_SCORE_WEIGHTS = [ 'bad' => 2.0, 'warn' => 1.0, 'info' => 0.3 ];
+/**
+ * ضریب کسر نمره هر سطح ایراد. «اطلاع» ضریب ندارد (SEO 3.6.4): طبق قانون‌نامه (`docs/seo-advisor-rulebook.md`) آنچه گوگل صریحا
+ * مشکل نمی‌داند در نمره نمی‌آید؛ تا ۳.۶.۳ ضریب ۰٫۳ داشت و اطلاع‌های فراگیر نمره را تا ۱۶ امتیاز پایین می‌آوردند.
+ */
+const HODIMA_SEO_ADVISOR_SCORE_WEIGHTS = [ 'bad' => 2.0, 'warn' => 1.0, 'info' => 0.0 ];
+
+/**
+ * سقف کسر هر ایراد (از ۱۰۰ امتیاز بخش؛ SEO 3.6.4). یک ایراد فراگیر (مثلا H1 نبودن روی همه صفحه‌ها به‌خاطر یک باگ قالب) کل یک
+ * بخش را صفر نکند. الگو: SiteOne `MAX_PER_TYPE_DEDUCTION` = ۲٫۵ از ۱۰ (MIT).
+ */
+const HODIMA_SEO_ADVISOR_SCORE_CODE_CAP = 25.0;
 
 /**
  * بخش‌های نمره: کلید فیلتر جدول ایرادها (cf)، برچسب، وزن در نمره کل و کدهای ایرادش.
@@ -109,7 +118,13 @@ function hodima_seo_advisor_score( array $issues, int $crawled ): ?array {
 				continue;
 			}
 
-			$penalty             = array_sum( array_map( static fn( string $level ): float => HODIMA_SEO_ADVISOR_SCORE_WEIGHTS[ $level ] ?? 0.3, $pages[ $code ] ) ) / $crawled * 100;
+			$weight = array_sum( array_map( static fn( string $level ): float => HODIMA_SEO_ADVISOR_SCORE_WEIGHTS[ $level ] ?? 0.0, $pages[ $code ] ) );
+
+			if ( $weight <= 0.0 ) {
+				continue; // فقط «اطلاع»: در نمره و شمار صفحه‌های بخش نمی‌آید
+			}
+
+			$penalty             = min( HODIMA_SEO_ADVISOR_SCORE_CODE_CAP, $weight / $crawled * 100 );
 			$cut                += $penalty;
 			$closed              = count( array_filter( array_keys( $pages[ $code ] ), static fn( string $path ): bool => null !== hodima_seo_advisor_task_closed( $path, 'crawl_' . $code ) ) ); // علامت‌خورده‌ها هنوز در نمره‌اند (وضعیت واقعی سایت)؛ شمارشان جدا گفته می‌شود تا با «کار کلی» (فقط بازها) یکی شود (SEO 3.5.2)
 			$penalties[ $code ]  = [ 'code' => $code, 'pages' => $count, 'closed' => $closed, 'penalty' => $penalty ];

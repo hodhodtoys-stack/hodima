@@ -376,7 +376,7 @@ function hodima_seo_advisor_render_overview(): void {
 					<?php foreach ( $page['items'] as $item ) : ?>
 						<li class="hodima-advisor__ov-item">
 							<div class="hodima-advisor__ov-what">
-								<span class="hodima-advisor__ov-labels"><span class="hds-pill <?php echo 'bad' === $item['level'] ? 'hds-pill--error' : 'hds-pill--warn'; ?>"><?php echo esc_html( $item['label'] ); ?></span><?php echo hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?></span>
+								<span class="hodima-advisor__ov-labels"><span class="hds-pill <?php echo esc_attr( [ 'bad' => 'hds-pill--error', 'info' => 'hds-pill--info' ][ (string) $item['level'] ] ?? 'hds-pill--warn' ); ?>"><?php echo esc_html( $item['label'] ); ?></span><?php echo hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?></span>
 								<p><?php echo esc_html( 'crawl' === $item['src'] ? trim( (string) ( $item['detail'] ?? '' ) . ' ' . hodima_seo_advisor_issue_fix( (string) $item['mark'], $where ) ) : $item['text'] ); ?></p>
 							<?php hodima_seo_advisor_render_issue_detail( $item, $page['path'] ); // پیش‌نویس، فهرست تصویر و لینک (SEO 3.3.6) ?>
 							</div>
