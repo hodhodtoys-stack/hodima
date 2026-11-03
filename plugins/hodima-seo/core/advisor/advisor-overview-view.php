@@ -364,7 +364,9 @@ function hodima_seo_advisor_render_overview(): void {
 	}
 
 	// منوی «نوع ایراد فنی» (جایگزین فیلتر جدول تب قدیمی «سلامت سایت»): گروه چیپ‌ها با شمار صفحه‌های دارای ایراد
-	$types = [ '' => [ 'همه نوع‌ها', count( $pages ), hodima_seo_advisor_page_url( [ 'src' => $src, 'q' => $q ] ) ] ];
+	// «همه نوع‌ها» = صفحه‌های دارای ایراد فنی، نه همه صفحه‌های «کارها» (پیشنهادهای گوگل را هم شامل نمی‌شد؛ سایت واقعی ۱۷۴ نشان می‌داد به‌جای ۶۶)
+	$crawl_pages = count( array_filter( $pages, static fn( array $p ): bool => (bool) array_filter( $p['items'], static fn( array $i ): bool => 'crawl' === $i['src'] ) ) );
+	$types       = [ '' => [ 'همه نوع‌ها', $crawl_pages, hodima_seo_advisor_page_url( [ 'src' => $src, 'q' => $q ] ) ] ];
 	foreach ( HODIMA_SEO_ADVISOR_OVERVIEW_CRAWL_TYPES as $key => $label ) {
 		$members = HODIMA_SEO_ADVISOR_CRAWL_GROUPS[ $key ];
 		$n_type  = count( array_filter( $pages, static fn( array $p ): bool => (bool) array_filter( $p['items'], static fn( array $i ): bool => 'crawl' === $i['src'] && in_array( $i['mark'], $members, true ) ) ) );

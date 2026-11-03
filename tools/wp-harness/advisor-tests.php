@@ -1757,6 +1757,9 @@ hodima_ad( 'نبودن internal_html.csv خطا می‌دهد و داده می�
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
 $crawl_html = $cap( static fn() => hodima_seo_advisor_render_overview() );
 hodima_ad( '«کارها» با نوار سلامت: نمره با حلقه، پنج بخش با پیوند فیلتر، دکمه «خزش همین حالا» که به همین تب برمی‌گردد، بدون جدول ایرادها و کارت‌های آمار و «سه کار اول»، بدون کارت تنظیم خزنده', [ 1 === substr_count( $crawl_html, 'hodima-advisor__sc-gauge ' ), 5 === substr_count( $crawl_html, 'class="hodima-advisor__sc-cat"' ), str_contains( $crawl_html, 'value="hodima_advisor_crawler_now"' ), str_contains( $crawl_html, 'name="tab" value="overview"' ), str_contains( $crawl_html, 'hodima-advisor__crawl-table' ), str_contains( $crawl_html, 'hds-stat__label' ), str_contains( $crawl_html, 'سه کار اول' ), str_contains( $crawl_html, 'value="hodima_advisor_crawler_settings"' ) ], [ true, true, true, true, false, false, false, false ] );
+preg_match( '#<option[^>]*>همه نوع‌ها \((\d+)\)</option>#u', $crawl_html, $crawl_all );
+$crawl_pg = hodima_seo_advisor_crawl_summary( hodima_seo_advisor_crawl_issues() )['with_issues'];
+hodima_ad( '«نوع ایراد فنی»: «همه نوع‌ها» = صفحه‌های دارای ایراد فنی (نه همه صفحه‌های «کارها»)', (int) ( $crawl_all[1] ?? -1 ), $crawl_pg );
 hodima_ad( '«کارها»: منوی «نوع ایراد فنی» با گروه‌های دارای ایراد (جایگزین فیلتر جدول قدیمی)؛ پیوند هر بخش نمره به همین صفحه با cf، نه tab=crawl', [ str_contains( $crawl_html, 'aria-label="نوع ایراد فنی"' ), str_contains( $crawl_html, 'cf=orphan' ), str_contains( $crawl_html, 'cf=cat-meta' ), str_contains( $crawl_html, 'tab=crawl' ) ], [ true, true, true, false ] );
 $_GET['cf'] = 'orphan';
 $orphan_html = $cap( static fn() => hodima_seo_advisor_render_overview() );
