@@ -4751,6 +4751,60 @@ hodima_ad( 'جزئیات ایراد: «کدام صفحه‌ها شبیه‌ان�
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i WHERE path LIKE %s', $sm_t, '/sm-%' ) );
 hodima_seo_advisor_crawl_map( true );
 
+echo "=== راهنمای پنج‌بخشی پیشنهادهای گوگل، ایندکس و هم‌کلمه (SEO 3.7.0)\n";
+// خواست کاربر (عکس «نرخ کلیک کم»): «چه دیدیم» آمار و دستور و «طبق خزش» را قاطی داشت و «دقیقا چه کنم» نداشت
+$g7_q    = [ [ 'term' => 'کلیپس پلومریا', 'clicks' => 116, 'impressions' => 15480, 'position' => 5.08 ], [ 'term' => 'گل سر', 'clicks' => 2, 'impressions' => 900, 'position' => 12.0 ], [ 'term' => 'کش مو', 'clicks' => 0, 'impressions' => 800, 'position' => 35.0 ] ];
+$g7_text = [ 'title_headings' => 'هیچ', 'content' => 'متن درباره گل سر' ];
+$g7_all  = [
+	...hodima_seo_advisor_suggestions( $base, $g7_q, $g7_text, [ hodima_seo_advisor_term_key( 'کلیپس پلومریا' ) => [ [ 'path' => '/rival/', 'impressions' => 500 ] ] ] ),
+	...hodima_seo_advisor_suggestions( $base, $g7_q, null, [], null, [ 'healthy' => true, 'title_px' => 400, 'meta_px' => 800, 'problems' => [] ] ),
+	...hodima_seo_advisor_suggestions( $base, $g7_q, null, [], null, [ 'healthy' => false, 'title_px' => 100, 'meta_px' => 0, 'problems' => [ 'توضیح متا ندارد' ] ] ),
+	...hodima_seo_advisor_suggestions( [ 'path' => '/d/', 'clicks' => 40, 'impressions' => 9000, 'position' => 9.0, 'prev_clicks' => 200, 'prev_impressions' => 9000, 'prev_position' => 4.0 ], [], null ),
+];
+$g7_bad   = [];
+$g7_rules = [];
+foreach ( $g7_all as $g7_s ) {
+	$g7_rules[ $g7_s['rule'] ] = true;
+	$g7_seen = (string) ( $g7_s['seen'] ?? '' );
+	if ( '' === $g7_seen || empty( $g7_s['todo'] ) || ! array_is_list( $g7_s['todo'] ) ) {
+		$g7_bad[] = $g7_s['rule'] . ': بدون seen/todo';
+	}
+	// «چه دیدیم» دستور ندارد (فعل امری «بیاورید/بدهید/کنید» مال گام‌هاست)
+	if ( 1 === preg_match( '/بیاورید|لینک بدهید|بازنویسی کنید|بسازید/u', $g7_seen ) ) {
+		$g7_bad[] = $g7_s['rule'] . ': دستور در «چه دیدیم» — ' . $g7_seen;
+	}
+}
+hodima_ad( 'هر پیشنهاد گوگل «چه دیدیم» بی‌دستور و گام‌های جدا دارد (همه ۷ نوع؛ نرخ کلیک هر دو حالت؛ افت با علت)', [ $g7_bad, array_keys( array_diff_key( array_flip( [ 'low_ctr', 'near_first', 'missing_content', 'weak_query', 'cannibal', 'decline' ] ), $g7_rules ) ) ], [ [], [] ] );
+$g7_low = array_values( array_filter( $g7_all, static fn( array $x ): bool => 'low_ctr' === $x['rule'] ) );
+hodima_ad( 'نرخ کلیک کم: گام اول نام کلمه و «عنوان سئو» با جای «ویرایش»؛ «طبق خزش» در «چه دیدیم»؛ detail همان متن کامل قبلی', [ str_contains( $g7_low[0]['todo'][0], '«{where}»' ) && str_contains( $g7_low[0]['todo'][0], '«عنوان سئو»' ), str_contains( $g7_low[2]['seen'] ?? '', 'طبق خزش: توضیح متا ندارد' ), str_contains( $g7_low[0]['detail'], 'آن را ابتدای عنوان بیاورید' ) ], [ true, true, true ] );
+$g7_dc = hodima_seo_advisor_decline_cause( [ 'clicks' => 40, 'impressions' => 9000, 'position' => 9.0, 'prev_clicks' => 200, 'prev_impressions' => 9000, 'prev_position' => 4.0 ], null );
+hodima_ad( 'افت کلیک: علت در «چه دیدیم» و گام‌های همان علت؛ متن کامل قدیمی بدون تغییر', [ $g7_dc['cause'], str_starts_with( $g7_dc['seen'], 'علت اصلی: رتبه' ), count( $g7_dc['todo'] ) >= 2, str_contains( $g7_dc['text'], 'را بررسی کنید.' ) ], [ 'position', true, true, true ] );
+$g7_ev = hodima_seo_advisor_links_evidence_parts( [ 'total' => 9, 'text' => 2, 'score' => 0.0, 'depth' => 5, 'anchors' => [] ], 'گل سر' );
+hodima_ad( 'شواهد لینک جدا: «چه دیدیم» شمار لینک و عمق؛ گام‌ها لینک با همان متن و نزدیک کردن', [ count( $g7_ev['seen'] ), count( $g7_ev['steps'] ), $g7_ev['well'], str_contains( implode( '', $g7_ev['steps'] ), '«گل سر»' ) ], [ 3, 2, false, true ] );
+
+// ایندکس: هر وضعیت مشکل‌دار راهنمای کامل دارد و «افزونه/تنظیمات همان صفحه» مبهم ندارد
+$g7_ix = [];
+foreach ( [ 'crawled_not_indexed', 'discovered_not_indexed', 'noindex', 'robots', 'soft404', 'not_found', 'server_error', 'duplicate', 'redirect', 'unknown_to_google', 'other' ] as $g7_state ) {
+	$g7_i = hodima_seo_advisor_inspect_state_info( $g7_state );
+	if ( '' === (string) ( $g7_i['seen'] ?? '' ) || empty( $g7_i['steps'] ) || '' === (string) ( $g7_i['why'] ?? '' ) || '' === $g7_i['advice'] || str_contains( implode( ' ', $g7_i['steps'] ), 'تنظیمات همان صفحه' ) ) {
+		$g7_ix[] = $g7_state;
+	}
+}
+hodima_ad( 'ایندکس: هر ۱۱ وضعیت «چه دیدیم»، گام و «چرا» دارد؛ برچسب و دستور کوتاه جدول تب «ایندکس» همان قبلی', [ $g7_ix, hodima_seo_advisor_inspect_state_info( 'noindex' )['label'], hodima_seo_advisor_inspect_state_info( 'indexed' )['advice'] ], [ [], 'noindex', '' ] );
+
+// هم‌کلمه: تا ۳.۶.۹ «کارها» $group['detail'] (ناموجود) را می‌خواند و همیشه جمله پیش‌فرض می‌آمد
+$g7_grp = [ 'term' => 'کلیپس', 'pages' => [ [ 'path' => '/cat/', 'share' => 0.7 ], [ 'path' => '/p1/', 'share' => 0.3 ] ], 'advice' => [ 'type' => 'strengthen', 'detail' => 'x' ] ];
+$g7_win = hodima_seo_advisor_competition_guide( $g7_grp, '/cat/' );
+$g7_los = hodima_seo_advisor_competition_guide( $g7_grp, '/p1/' );
+hodima_ad( 'هم‌کلمه: برنده و بازنده گام متفاوت؛ سهم و آدرس کامل رقیب در «چه دیدیم»؛ «چرا» از راهنمای رقابت', [ str_contains( $g7_win['seen'], '۷۰٪' ) || str_contains( $g7_win['seen'], '70٪' ), str_contains( $g7_win['seen'], hodima_seo_advisor_url( '/p1/' ) ), $g7_win['steps'][0], str_contains( $g7_los['steps'][0], hodima_seo_advisor_url( '/cat/' ) ), '' !== $g7_win['why'] ], [ true, true, 'این صفحه برنده است؛ آن را عوض نکنید.', true, true ] );
+
+// دکمه ویرایش دسته و ارقام فارسی
+wp_set_current_user( 1 );
+$g7_cat = (int) wp_insert_term( 'دسته آزمون راهنما', 'category' )['term_id'];
+hodima_ad( 'دکمه ویرایش برای دسته هم ساخته می‌شود (قبلا «دیدن در سایت»)', [ str_contains( hodima_seo_advisor_overview_link( 'category', $g7_cat, '/x/' )[0], 'term.php' ), hodima_seo_advisor_overview_link( 'category', $g7_cat, '/x/' )[2] ], [ true, 'edit' ] );
+wp_delete_term( $g7_cat, 'category' );
+hodima_ad( 'ارقام فارسی در راهنما؛ آدرس، H1 و http دست نمی‌خورند؛ هزارگان «٬» و اعشار «٫»', hodima_seo_advisor_fa_digits( '7,821 بار و 3,25٪؛ کد 503 به /g-404/ و 3 تیتر H1 و http://a.b/1 (رتبه 5.7).' ), '۷٬۸۲۱ بار و ۳٫۲۵٪؛ کد ۵۰۳ به /g-404/ و ۳ تیتر H1 و http://a.b/1 (رتبه ۵٫۷).' );
+
 echo "=== پاکسازی\n";
 hodima_seo_advisor_store( [], [], [] );
 hodima_ad( 'جدول‌ها خالی شد', hodima_seo_advisor_pages()['total'], 0 );

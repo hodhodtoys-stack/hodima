@@ -371,7 +371,7 @@ const HODIMA_SEO_ADVISOR_DECLINE_BEYOND_SITE = 0.85;
  *
  * @param array<string, mixed> $row
  * @param array{clicks_ratio: float|null, impressions_ratio: float|null}|null $site
- * @return array{cause: string, text: string}
+ * @return array{cause: string, text: string, seen: string, todo: list<string>} text = متن کامل قدیمی (کادر ویرایش)؛ seen/steps = راهنمای پنج‌بخشی «کارها» (SEO 3.7.0)
  */
 function hodima_seo_advisor_decline_cause( array $row, ?array $site ): array {
 
@@ -387,15 +387,23 @@ function hodima_seo_advisor_decline_cause( array $row, ?array $site ): array {
 
 	if ( $delta >= 2.0 ) {
 		$cause = 'position';
+		$seen  = sprintf( 'علت اصلی: رتبه از %1$s به %2$s بدتر شده است.', hodima_seo_advisor_num( $prev_position, 1 ), hodima_seo_advisor_num( $position, 1 ) );
+		$steps = [ 'کلمه اصلی صفحه را در گوگل جستجو کنید و ببینید صفحه‌های بالاتر از شما چه دارند که شما ندارید (متن، عکس، جدول اندازه).', 'اگر اخیرا متن، آدرس یا عنوان این صفحه را عوض کرده‌اید، همان تغییر را بررسی کنید.', 'از ۲ تا ۳ صفحه مرتبط به این صفحه لینک بدهید.' ];
 		$text  = sprintf( 'علت اصلی: رتبه از %1$s به %2$s بدتر شده است. محتوای صفحه‌های بالاتر از شما، لینک‌های داخلی به این صفحه و تغییرهای اخیر خود صفحه (متن، آدرس، عنوان) را بررسی کنید.', hodima_seo_advisor_num( $prev_position, 1 ), hodima_seo_advisor_num( $position, 1 ) );
 	} elseif ( null !== $impr_ratio && $impr_ratio <= 0.75 ) {
 		$cause = 'impressions';
+		$seen  = sprintf( 'علت اصلی: نمایش %s٪ کمتر شده ولی رتبه تقریبا ثابت است؛ یعنی جستجوی این کلمه‌ها کم شده (فصل) یا گوگل صفحه را برای کلمه‌های کمتری نشان می‌دهد.', hodima_seo_advisor_num( ( 1 - $impr_ratio ) * 100 ) );
+		$steps = [ 'اگر محصول فصلی است، افت طبیعی است؛ «لازم نیست» را بزنید.', 'وگرنه در همین تب، فیلتر «ایندکس» را ببینید که این صفحه ایندکس است و نسخه اصلی (canonical) آن صفحه دیگری نیست.' ];
 		$text  = sprintf( 'علت اصلی: نمایش %s٪ کمتر شده ولی رتبه تقریبا ثابت است؛ یعنی تقاضای جستجو (فصل) کم شده یا گوگل صفحه را برای کلمه‌های کمتری نشان می‌دهد. وضعیت ایندکس و canonical این صفحه را در تب «ایندکس» ببینید.', hodima_seo_advisor_num( ( 1 - $impr_ratio ) * 100 ) );
 	} elseif ( null !== $ctr_ratio && $ctr_ratio <= 0.75 ) {
 		$cause = 'ctr';
+		$seen  = sprintf( 'علت اصلی: نمایش و رتبه تقریبا ثابت‌اند ولی نرخ کلیک از %1$s٪ به %2$s٪ رسیده.', hodima_seo_advisor_num( $ctr_prev * 100, 2 ), hodima_seo_advisor_num( $ctr_now * 100, 2 ) );
+		$steps = [ 'نتیجه این صفحه را در گوگل ببینید؛ اگر رقبا عنوان جذاب‌تر، ستاره یا قیمت دارند، علت همین است.', '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو» و «توضیحات متا» را بازنویسی کنید و ذخیره کنید.' ];
 		$text  = sprintf( 'علت اصلی: نمایش و رتبه تقریبا ثابت‌اند ولی نرخ کلیک از %1$s٪ به %2$s٪ رسیده؛ عنوان و توضیح متا ضعیف‌تر شده‌اند یا نتیجه‌های رقیب (ریچ‌اسنیپت، تبلیغ، پاسخ مستقیم) جذاب‌ترند. عنوان و متا را بازنویسی کنید.', hodima_seo_advisor_num( $ctr_prev * 100, 2 ), hodima_seo_advisor_num( $ctr_now * 100, 2 ) );
 	} else {
 		$cause = 'mixed';
+		$seen  = 'رتبه، نمایش و نرخ کلیک هرکدام کمی تغییر کرده و علت واحدی دیده نمی‌شود.';
+		$steps = [ 'اگر اخیرا عنوان، آدرس یا متن این صفحه را عوض کرده‌اید، همان تغییر را بررسی کنید.', 'رتبه کلمه‌های اصلی این صفحه را در تب «پیشنهادهای گوگل» و لینک‌های داخلی به آن را بررسی کنید.' ];
 		$text  = 'رتبه، نمایش و نرخ کلیک هرکدام کمی تغییر کرده و علت واحدی دیده نمی‌شود؛ تغییر اخیر عنوان، آدرس، لینک‌های داخلی و رتبه کلمه‌های اصلی را بررسی کنید.';
 	}
 
@@ -403,11 +411,13 @@ function hodima_seo_advisor_decline_cause( array $row, ?array $site ): array {
 
 	if ( null !== $ratio && $ratio <= 0.85 ) {
 		$text .= sprintf( ' توجه: کل سایت هم در همین بازه حدود %s٪ کلیک از دست داده؛ «کلیک بالقوه» فقط افت اضافه این صفحه است.', hodima_seo_advisor_num( ( 1 - $ratio ) * 100 ) );
+		$seen .= sprintf( ' کل سایت هم در همین بازه حدود %s٪ کلیک از دست داده؛ «کلیک بالقوه» فقط افت اضافه این صفحه است.', hodima_seo_advisor_num( ( 1 - $ratio ) * 100 ) );
 	} elseif ( null !== $ratio && $ratio >= 1.15 ) {
 		$text .= sprintf( ' توجه: در همین بازه کل سایت حدود %s٪ رشد کرده، پس این افت مخصوص همین صفحه است.', hodima_seo_advisor_num( ( $ratio - 1 ) * 100 ) );
+		$seen .= sprintf( ' در همین بازه کل سایت حدود %s٪ رشد کرده، پس این افت مخصوص همین صفحه است.', hodima_seo_advisor_num( ( $ratio - 1 ) * 100 ) );
 	}
 
-	return [ 'cause' => $cause, 'text' => $text ];
+	return [ 'cause' => $cause, 'text' => $text, 'seen' => $seen, 'todo' => $steps ];
 }
 
 /**
@@ -480,7 +490,7 @@ function hodima_seo_advisor_ctr_gap( array $queries, int $page_impressions, floa
  * @param array{clicks_ratio: float|null, impressions_ratio: float|null}|null $site تغییر کل سایت نسبت به بازه قبل (hodima_seo_advisor_site_change)؛ null = ناشناخته
  * @param array{healthy: bool, title_px: int, meta_px: int, problems: list<string>}|null $meta طول عنوان و متا طبق خزش (hodima_seo_advisor_crawl_meta_health)؛ null = ناشناخته
  * @param array{total: int, text: int, score: float, depth: int, anchors: list<array{anchor: string, count: int}>}|null $links لینک‌های ورودی طبق خزش (hodima_seo_advisor_crawl_links_info)؛ null = ناشناخته
- * @return list<array{rule: string, term: string, title: string, detail: string, potential: int}>
+ * @return list<array{rule: string, term: string, title: string, detail: string, seen?: string, todo?: list<string>, potential: int}> detail = متن کامل (کادر ویرایش)؛ seen/todo (کلید steps مال گام‌های کادر ویرایش است) = راهنمای پنج‌بخشی «کارها»؛ `{where}` در گام‌ها هنگام نمایش جایگزین می‌شود (SEO 3.7.0)
  */
 function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $text, array $competitors = [], ?array $site = null, ?array $meta = null, ?array $links = null ): array {
 
@@ -526,6 +536,15 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				: ( '' !== $top ? ' مهم‌ترین کلمه این صفحه «' . $top . '» است؛ آن را ابتدای عنوان بیاورید.' : '' );
 			$detail = $lead . ( hodima_seo_advisor_ctr_learned_share() >= 0.4 ? ' (این نرخ معمول از داده خود سایت تنظیم شده)' : '' ) . '.' . $focus;
 			$title  = 'عنوان و توضیح متا را بازنویسی کنید';
+			// راهنمای پنج‌بخشی «کارها» (SEO 3.7.0): «چه دیدیم» فقط واقعیت، دستورها گام جدا؛ detail همان قبلی می‌ماند (کادر ویرایش)
+			$focus_term = null !== $worst ? $worst['term'] : $top;
+			$seen       = $lead . ( hodima_seo_advisor_ctr_learned_share() >= 0.4 ? ' (این نرخ معمول از داده خود سایت تنظیم شده)' : '' ) . '.'
+				. ( null !== $worst ? sprintf( ' مهم‌ترین کلمه کم‌کلیک «%1$s» است (رتبه %2$s، نرخ کلیک %3$s٪ به‌جای حدود %4$s٪).', $worst['term'], hodima_seo_advisor_num( $worst['position'], 1 ), hodima_seo_advisor_num( $worst['ctr'], 2 ), hodima_seo_advisor_num( $worst['expected_ctr'], 1 ) ) : ( '' !== $top ? ' مهم‌ترین کلمه این صفحه «' . $top . '» است.' : '' ) );
+			$steps      = [
+				'«{where}» را بزنید؛ در کادر «سئو (SeoBox)» ← «عنوان سئو»' . ( '' !== $focus_term ? ' کلمه «' . $focus_term . '» را ابتدای عنوان بیاورید' : ' عنوان را جذاب‌تر و دقیق‌تر بنویسید' ) . '.',
+				'در «توضیحات متا» یک دلیل روشن برای کلیک بنویسید (مثلا قیمت عمده، ارسال، تنوع رنگ) تا نوار شمارنده سبز شود.',
+				'ذخیره کنید.',
+			];
 
 			if ( null !== $meta && $meta['healthy'] ) {
 				// طبق خزش طول عنوان و متا سالم است؛ بازنویسی طولی کمکی نمی‌کند و تخمین کلیک بالقوه کم‌اطمینان‌تر است
@@ -537,8 +556,16 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 					hodima_seo_advisor_num( $meta['meta_px'] )
 				);
 				$gain   = max( 1, (int) round( $gain * HODIMA_SEO_ADVISOR_LOW_CTR_HEALTHY_FACTOR ) );
+				$seen   = sprintf( '%1$s. طبق خزش، عنوان %2$s پیکسل و توضیح متا %3$s پیکسل است و طولشان ایرادی ندارد؛ پس مشکل احتمالا طول نیست.', $lead, hodima_seo_advisor_num( $meta['title_px'] ), hodima_seo_advisor_num( $meta['meta_px'] ) );
+				$steps  = [
+					'کلمه اصلی این صفحه' . ( '' !== $focus_term ? ' («' . $focus_term . '»)' : '' ) . ' را در گوگل جستجو کنید و نتیجه خودتان را با رقبا مقایسه کنید.',
+					'اگر عنوان شما شبیه رقباست: «{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو» را با مزیت خودتان (عمده، تنوع، ارسال) متفاوت کنید و ذخیره کنید.',
+					'اگر بالای نتیجه شما تصویر، ویدیو یا نتیجه‌های ویژه گوگل است، از عنوان کاری برنمی‌آید؛ «لازم نیست» را بزنید.',
+				];
 			} elseif ( null !== $meta ) {
 				$detail .= ' طبق خزش: ' . implode( '؛ ', $meta['problems'] ) . '.';
+				$seen   .= ' طبق خزش: ' . implode( '؛ ', $meta['problems'] ) . '.';
+				$steps[1] = 'در «توضیحات متا» یک دلیل روشن برای کلیک بنویسید (مثلا قیمت عمده، ارسال، تنوع رنگ) و طول عنوان و متا را درست کنید تا هر دو نوار شمارنده سبز شوند.';
 			}
 
 			$list[] = [
@@ -546,6 +573,8 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				'term'      => '',
 				'title'     => $title,
 				'detail'    => $detail,
+				'seen'      => $seen,
+				'todo'      => $steps,
 				'potential' => $gain,
 			];
 		}
@@ -574,6 +603,10 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				'term'      => $query['term'],
 				'title'     => $in_content ? 'کلمه «' . $query['term'] . '» در عنوان و تیترها نیست' : 'کلمه «' . $query['term'] . '» در متن صفحه نیست',
 				'detail'    => $info . ( $in_content ? ' آن را در عنوان یا یک تیتر (H2) بیاورید.' : ' آن را در عنوان، یک تیتر و پاراگراف اول بیاورید، یا بخش پرسش‌های متداول برایش بنویسید.' ) . $rendered,
+				'seen'      => $info . ( $in_content ? ' کلمه «' . $query['term'] . '» در متن صفحه هست ولی در عنوان و تیترها نیست.' : ' کلمه «' . $query['term'] . '» حتی در متن صفحه نیست.' ) . $rendered,
+				'todo'      => $in_content
+					? [ '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: کلمه «' . $query['term'] . '» را در عنوان بیاورید.', 'یا در ویرایشگر یک تیتر (تیتر ۲) با همین کلمه بسازید.', 'ذخیره کنید.' ]
+					: [ '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: کلمه «' . $query['term'] . '» را در عنوان بیاورید.', 'در متن صفحه یک تیتر ۲ و پاراگراف اول با همین کلمه بنویسید (یا یک بخش پرسش‌های متداول درباره آن).', 'ذخیره کنید.' ],
 				'potential' => $gain,
 			];
 		}
@@ -585,16 +618,21 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				'term'      => $query['term'],
 				'title'     => 'برای «' . $query['term'] . '» صفحه یا بخش اختصاصی بنویسید',
 				'detail'    => $info . ' این صفحه جواب اصلی این کلمه نیست. یک مقاله یا صفحه (یا دست‌کم یک بخش با تیتر) مخصوص همین کلمه بسازید و از این صفحه و صفحه‌های مرتبط به آن لینک بدهید.',
+				'seen'      => $info . ' گوگل این صفحه را برای «' . $query['term'] . '» فقط بعد از صفحه دوم نتیجه‌ها نشان می‌دهد؛ یعنی این صفحه جواب اصلی این کلمه نیست.',
+				'todo'      => [ 'اگر این کلمه برایتان مهم نیست، «لازم نیست» را بزنید.', 'وگرنه یک مقاله یا صفحه (یا دست‌کم یک بخش با تیتر ۲) مخصوص «' . $query['term'] . '» بسازید.', 'از همین صفحه و صفحه‌های مرتبط با متن لینک «' . $query['term'] . '» به آن لینک بدهید.' ],
 				'potential' => $gain,
 			];
 		}
 
 		if ( $query['position'] >= $cfg['near_first_min'] && $query['position'] <= $cfg['near_first_max'] ) {
-			$near[] = [
+			$evidence = hodima_seo_advisor_links_evidence_parts( $links, $query['term'] );
+			$near[]   = [
 				'rule'      => 'near_first',
 				'term'      => $query['term'],
 				'title'     => 'کلمه «' . $query['term'] . '» نزدیک صفحه اول است',
 				'detail'    => $info . ' آن را در عنوان، یک تیتر و اولین پاراگراف تقویت کنید و از ۲ تا ۳ صفحه مرتبط به این صفحه لینک بدهید.' . hodima_seo_advisor_links_evidence( $links, $query['term'] ),
+				'seen'      => trim( $info . ' این کلمه صفحه شما را تا نزدیک صفحه اول گوگل آورده.' . implode( '', $evidence['seen'] ) ),
+				'todo'      => [ '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: کلمه «' . $query['term'] . '» را در عنوان بیاورید (اگر نیست).', 'در متن صفحه یک تیتر ۲ و پاراگراف اول با همین کلمه بنویسید و ذخیره کنید.', ...( $evidence['steps'] ?: ( $evidence['well'] ? [] : [ 'از ۲ تا ۳ صفحه مرتبط (دسته، مقاله) با متن لینک «' . $query['term'] . '» به این صفحه لینک بدهید.' ] ) ) ],
 				'potential' => $gain,
 			];
 		}
@@ -606,6 +644,8 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 	foreach ( $missing as $i => $item ) {
 		if ( in_array( $item['term'], $near_terms, true ) ) {
 			$missing[ $i ]['detail'] .= ' رتبه این کلمه به صفحه اول نزدیک است؛ لینک داخلی از صفحه‌های مرتبط هم کمک می‌کند.';
+			$missing[ $i ]['seen']   .= ' رتبه این کلمه به صفحه اول نزدیک است.';
+			array_splice( $missing[ $i ]['todo'], -1, 0, [ 'از ۲ تا ۳ صفحه مرتبط با متن لینک «' . $item['term'] . '» به این صفحه لینک بدهید.' ] );
 		}
 	}
 
@@ -625,6 +665,8 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				'title'     => sprintf( 'رقابت با %1$s صفحه برای «%2$s»', hodima_seo_advisor_num( count( $others ) ), $query['term'] ),
 				// آدرس کامل (نه فقط مسیر) تا مدیر همان را کپی کند و باز کند
 				'detail'    => 'علاوه بر این صفحه، ' . implode( '، ', array_map( static fn( array $o ): string => rawurldecode( hodima_seo_advisor_url( $o['path'] ) ), array_slice( $others, 0, 3 ) ) ) . ' هم برای این کلمه نمایش می‌گیرد. یکی را صفحه اصلی کلمه کنید و بقیه را با لینک داخلی به آن وصل کنید.',
+				'seen'      => 'علاوه بر این صفحه، ' . implode( '، ', array_map( static fn( array $o ): string => rawurldecode( hodima_seo_advisor_url( $o['path'] ) ), array_slice( $others, 0, 3 ) ) ) . ' هم برای «' . $query['term'] . '» در گوگل نمایش می‌گیرد.',
+				'todo'      => [ 'از این صفحه‌ها یکی را صفحه اصلی «' . $query['term'] . '» کنید (معمولا همان که نمایش بیشتری دارد).', 'در صفحه‌های دیگر یک لینک با متن «' . $query['term'] . '» به صفحه اصلی بدهید.', 'کلمه را از «عنوان سئو»ی صفحه‌های دیگر بردارید یا با کلمه دقیق‌تری عوض کنید.' ],
 				'potential' => 0,
 			];
 			if ( count( $cannibal ) >= HODIMA_SEO_ADVISOR_MAX_CANNIBAL ) {
@@ -651,6 +693,8 @@ function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $tex
 				hodima_seo_advisor_num( ( 1 - $row['clicks'] / $row['prev_clicks'] ) * 100 ),
 				$diagnosis['text']
 			),
+			'seen'      => sprintf( 'کلیک از %1$s به %2$s رسیده (%3$s٪ کمتر از بازه قبل). %4$s', hodima_seo_advisor_num( $row['prev_clicks'] ), hodima_seo_advisor_num( $row['clicks'] ), hodima_seo_advisor_num( ( 1 - $row['clicks'] / $row['prev_clicks'] ) * 100 ), $diagnosis['seen'] ),
+			'todo'      => $diagnosis['todo'],
 			'potential' => (int) max( 0, round( $expected - $row['clicks'] ) ),
 		];
 	}

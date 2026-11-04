@@ -67,7 +67,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $rule || null !== hodima_seo_advisor_task_closed( $path, $rule, $term ) ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'opp', 'label' => hodima_seo_advisor_rule_label( $rule ), 'text' => (string) ( $advice['detail'] ?? '' ), 'level' => 'warn', 'source' => 'opportunities', 'mark' => $rule . '|' . $term, 'term' => '', 'potential' => (int) ( $advice['potential'] ?? 0 ), 'guide' => hodima_seo_advisor_overview_guide( (string) ( $advice['detail'] ?? '' ), 'rec', [], $rule ) ] );
+			$add( $path, [ 'src' => 'opp', 'label' => hodima_seo_advisor_rule_label( $rule ), 'text' => (string) ( $advice['detail'] ?? '' ), 'level' => 'warn', 'source' => 'opportunities', 'mark' => $rule . '|' . $term, 'term' => '', 'potential' => (int) ( $advice['potential'] ?? 0 ), 'guide' => hodima_seo_advisor_overview_guide( (string) ( $advice['seen'] ?? $advice['detail'] ?? '' ), 'rec', array_values( array_map( 'strval', (array) ( $advice['todo'] ?? [] ) ) ), $rule ) ] ); // seen/todo از SEO 3.7.0؛ پیشنهاد ذخیره‌شده قدیمی‌تر تا دریافت داده بعدی همان متن کامل را نشان می‌دهد
 		}
 	}
 
@@ -83,7 +83,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $path ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'comp', 'label' => sprintf( 'رقابت برای «%s»', $term ), 'text' => (string) ( $group['detail'] ?? 'چند صفحه برای یک کلمه رقابت می‌کنند. صفحه برنده را روشن کنید و بقیه را با لینک داخلی به آن وصل کنید.' ), 'level' => 'warn', 'source' => 'competition', 'mark' => '', 'term' => $term, 'guide' => hodima_seo_advisor_overview_guide( (string) ( $group['detail'] ?? 'چند صفحه سایت برای یک کلمه با هم رقابت می‌کنند.' ), 'rec', [ 'از صفحه‌های فهرست، یکی را صفحه اصلی این کلمه کنید (معمولا همان که نمایش بیشتری دارد).', 'در بقیه صفحه‌ها یک لینک با همین کلمه به صفحه اصلی بدهید.', 'کلمه را از عنوان سئوی صفحه‌های دیگر بردارید یا با کلمه دقیق‌تری عوض کنید.' ], 'cannibal' ) ] );
+			$add( $path, [ 'src' => 'comp', 'label' => sprintf( 'رقابت برای «%s»', $term ), 'text' => (string) ( $group['advice']['detail'] ?? 'چند صفحه برای یک کلمه رقابت می‌کنند. صفحه برنده را روشن کنید و بقیه را با لینک داخلی به آن وصل کنید.' ), /* باگ تا SEO 3.6.9: $group['detail'] وجود نداشت و همیشه جمله پیش‌فرض می‌آمد */ 'level' => 'warn', 'source' => 'competition', 'mark' => '', 'term' => $term, 'guide' => hodima_seo_advisor_competition_guide( $group, $path ) ] );
 		}
 	}
 
@@ -132,7 +132,7 @@ function hodima_seo_advisor_overview_build(): array {
 			continue;
 		}
 		$info = hodima_seo_advisor_inspect_state_info( $state );
-		$add( (string) $path, [ 'src' => 'index', 'label' => 'ایندکس: ' . $info['label'], 'text' => $info['advice'], 'level' => 'warn', 'source' => 'indexing', 'mark' => '', 'term' => '', 'guide' => hodima_seo_advisor_overview_guide( (string) $info['advice'], 'rec', [], '', 'بعد از تغییر «انجام دادم» را بزنید؛ با بررسی ایندکس بعدی گوگل (روزانه) نتیجه همین‌جا می‌آید.' ) ] );
+		$add( (string) $path, [ 'src' => 'index', 'label' => 'ایندکس: ' . $info['label'], 'text' => $info['advice'], 'level' => 'warn', 'source' => 'indexing', 'mark' => '', 'term' => '', 'guide' => hodima_seo_advisor_overview_guide( (string) ( $info['seen'] ?? $info['advice'] ), 'info' === ( $info['need'] ?? '' ) ? 'opt' : 'rec', (array) ( $info['steps'] ?? [] ), '', 'بعد از تغییر «انجام دادم» را بزنید؛ با بررسی ایندکس بعدی گوگل (روزانه) نتیجه همین‌جا می‌آید.', (string) ( $info['why'] ?? '' ) ) ] );
 	}
 
 	$out = [];
@@ -180,6 +180,79 @@ function hodima_seo_advisor_need_chip( string $need ): string {
 }
 
 /**
+ * راهنمای یک گروه رقابت (هم‌کلمه) برای یک صفحه آن (SEO 3.7.0): رقیب‌ها با نمایش، و گام‌ها بر پایه نوع دستور گروه
+ * (دسته / برنده روشن / انتخاب) و شواهد لینک.
+ *
+ * @param array<string, mixed> $group گروه hodima_seo_advisor_competition_groups
+ * @return array{seen: string, need: string, steps: list<string>, verify: string, why: string}
+ */
+function hodima_seo_advisor_competition_guide( array $group, string $path ): array {
+
+	$term   = (string) $group['term'];
+	$pages  = (array) ( $group['pages'] ?? [] );
+	$winner = (array) ( $pages[0] ?? [] );
+	$url    = static fn( array $p ): string => rawurldecode( hodima_seo_advisor_url( (string) ( $p['path'] ?? '' ) ) );
+	$share  = static fn( array $p ): string => number_format_i18n( (float) ( $p['share'] ?? 0 ) * 100 ) . '٪';
+	$others = array_values( array_filter( $pages, static fn( array $p ): bool => (string) ( $p['path'] ?? '' ) !== $path ) );
+	$is_win = (string) ( $winner['path'] ?? '' ) === $path;
+	$type   = (string) ( $group['advice']['type'] ?? 'choose' );
+
+	$seen = sprintf(
+		'%1$s صفحه سایت برای «%2$s» در گوگل نمایش می‌گیرند. %3$s',
+		number_format_i18n( count( $pages ) ),
+		$term,
+		$is_win
+			? sprintf( 'این صفحه بیشترین سهم را دارد (%1$s)؛ رقیب‌ها: %2$s.', $share( $winner ), implode( '، ', array_map( static fn( array $p ): string => $url( $p ) . ' (' . $share( $p ) . ')', array_slice( $others, 0, 3 ) ) ) )
+			: sprintf( 'سهم این صفحه کمتر است؛ بیشترین سهم با %1$s (%2$s) است.', $url( $winner ), $share( $winner ) )
+	);
+
+	$steps = match ( $type ) {
+		'category'   => [
+			'برای کلمه عمومی «' . $term . '» صفحه دسته از محصول مناسب‌تر است؛ دسته را صفحه اصلی کلمه کنید.',
+			'در محصول‌های رقیب یک لینک با متن «' . $term . '» به صفحه دسته بدهید.',
+			'کلمه «' . $term . '» را از «عنوان سئو»ی محصول‌ها بردارید یا دقیق‌ترش کنید (مثلا با رنگ یا جنس).',
+		],
+		'strengthen' => $is_win
+			? [ 'این صفحه برنده است؛ آن را عوض نکنید.', 'در صفحه‌های رقیب یک لینک با متن «' . $term . '» به این صفحه بدهید.' ]
+			: [ 'در همین صفحه یک لینک با متن «' . $term . '» به ' . $url( $winner ) . ' بدهید.', 'کلمه «' . $term . '» را از «عنوان سئو» و تیترهای ۲ همین صفحه بردارید، یا موضوع صفحه را جدا کنید.' ],
+		default      => [
+			'صفحه‌ها را باز کنید و مقایسه کنید.',
+			'اگر محتوایشان یکی است: یکی را نگه دارید و بقیه را در «ابزارهای هدیما ← ریدایرکت‌ها» با ۳۰۱ به آن بفرستید.',
+			'اگر جدا هستند: موضوع هر صفحه را در «عنوان سئو» روشن کنید و فقط صفحه اصلی را با «' . $term . '» تقویت کنید.',
+		],
+	};
+
+	return hodima_seo_advisor_overview_guide(
+		$seen,
+		'rec',
+		$steps,
+		'cannibal',
+		sprintf( 'بعد از تغییر «انجام دادم» را بزنید؛ حدود %s روز بعد با آمار گوگل سنجیده می‌شود که یک صفحه سهم اصلی را گرفت یا نه.', number_format_i18n( HODIMA_SEO_ADVISOR_MARK_COMPETITION_DAYS ) )
+	);
+}
+
+/**
+ * ارقام فارسی در متن راهنما (SEO 3.7.0): عددهای محاسبه‌شده با number_format_i18n رقم لاتین می‌آمدند («7,821»، «3,25٪») کنار
+ * عددهای ثابت فارسی متن («۲۰ نتیجه اول»). فقط واژه‌هایی که حرف لاتین، «/»، «:» یا «=» ندارند عوض می‌شوند تا آدرس، «H1» و «http://»
+ * دست نخورند. جداکننده بین رقم‌ها: سه رقم بعدش = هزارگان «٬»، وگرنه اعشار «٫» (عدد اعشاری دستار حداکثر دو رقم دارد).
+ */
+function hodima_seo_advisor_fa_digits( string $text ): string {
+
+	return (string) preg_replace_callback(
+		'/[^\s«»()،؛]+/u',
+		static function ( array $m ): string {
+			$word = $m[0];
+			if ( 1 !== preg_match( '/\d/', $word ) || 1 === preg_match( '#[A-Za-z/:=]#', $word ) ) {
+				return $word;
+			}
+			$word = (string) preg_replace_callback( '/(?<=\d)[,.٬٫](?=(\d+))/u', static fn( array $s ): string => 3 === strlen( $s[1] ) ? '٬' : '٫', $word );
+			return strtr( $word, [ '0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴', '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹' ] );
+		},
+		$text
+	);
+}
+
+/**
  * بدنه راهنما: «چه دیدیم» ← (جزئیات: فهرست تصویر/لینک/پیش‌نویس) ← «دقیقا چه کنم» ← «از کجا بفهمم» ← «چرا مهم است؟» بسته.
  * قبلا یک پاراگراف بود: جزئیات + دستور بی‌نقطه پشت هم (خواست کاربر: «راهنمایی گنگ است»).
  *
@@ -187,6 +260,8 @@ function hodima_seo_advisor_need_chip( string $need ): string {
  * @param callable|null $between چاپ جزئیات بین «چه دیدیم» و گام‌ها
  */
 function hodima_seo_advisor_render_guide( array $guide, ?callable $between = null ): void {
+
+	$guide = [ 'seen' => hodima_seo_advisor_fa_digits( $guide['seen'] ), 'steps' => array_map( 'hodima_seo_advisor_fa_digits', $guide['steps'] ), 'verify' => hodima_seo_advisor_fa_digits( $guide['verify'] ), 'why' => hodima_seo_advisor_fa_digits( $guide['why'] ) ] + $guide;
 
 	if ( '' !== $guide['seen'] ) {
 		printf( '<p class="hodima-advisor__seen"><strong>%1$s</strong> %2$s</p>', esc_html( 'چه دیدیم:' ), esc_html( $guide['seen'] ) );
@@ -238,6 +313,14 @@ function hodima_seo_advisor_overview_link( string $kind, int $id, string $path )
 
 	if ( $id > 0 && post_type_exists( $kind ) && current_user_can( 'edit_post', $id ) ) {
 		$url = get_edit_post_link( $id, 'raw' );
+		if ( is_string( $url ) && '' !== $url ) {
+			return [ $url, 'ویرایش صفحه', 'edit' ];
+		}
+	}
+
+	// دسته و برچسب (SEO 3.7.0): تا ۳.۶.۹ فقط نوشته/محصول دکمه ویرایش داشت و صفحه دسته «دیدن در سایت» می‌گرفت، با اینکه گام‌ها می‌گفتند «ویرایش دسته را بزنید»
+	if ( $id > 0 && taxonomy_exists( $kind ) && current_user_can( 'edit_term', $id ) ) {
+		$url = get_edit_term_link( $id, $kind );
 		if ( is_string( $url ) && '' !== $url ) {
 			return [ $url, 'ویرایش صفحه', 'edit' ];
 		}
@@ -440,6 +523,10 @@ function hodima_seo_advisor_render_overview(): void {
 			}
 			// دستور ایراد خزنده با نام «ویرایش» همین نوع صفحه (محصول، دسته…)؛ فقط برای ردیف‌های همین صفحه ساخته می‌شود (SEO 3.3.5)
 			$where = hodima_seo_advisor_issue_where( $page['path'], (string) ( $row['kind'] ?? '' ) );
+			// نام دکمه همان نامی که گام‌ها می‌گویند («ویرایش محصول»، «ویرایش دسته»)؛ قبلا همیشه «ویرایش صفحه» (SEO 3.7.0)
+			if ( 'edit' === $link[2] && '' !== $where ) {
+				$link[1] = $where;
+			}
 			?>
 			<article class="hodima-advisor__ov-row" id="<?php echo esc_attr( hodima_seo_advisor_row_anchor( $page['path'] ) ); ?>">
 				<div class="hodima-advisor__ov-head">
@@ -460,6 +547,7 @@ function hodima_seo_advisor_render_overview(): void {
 									? hodima_seo_advisor_issue_guide( (string) $item['mark'], (string) ( $item['detail'] ?? '' ), $where, (string) $item['level'] )
 									: ( $item['guide'] ?? null );
 								$guide ??= hodima_seo_advisor_overview_guide( (string) $item['text'], 'rec' );
+								$guide['steps'] = array_map( static fn( string $step ): string => str_replace( '{where}', '' !== $where ? $where : 'ویرایش صفحه', $step ), $guide['steps'] );
 								?>
 								<span class="hodima-advisor__ov-labels"><span class="hds-pill <?php echo esc_attr( [ 'bad' => 'hds-pill--error', 'info' => 'hds-pill--info' ][ (string) $item['level'] ] ?? 'hds-pill--warn' ); ?>"><?php echo esc_html( $item['label'] ); ?></span><?php echo hodima_seo_advisor_need_chip( $guide['need'] ) . hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?></span>
 								<?php hodima_seo_advisor_render_guide( $guide, static fn() => hodima_seo_advisor_render_issue_detail( $item, $page['path'] ) ); // پیش‌نویس، فهرست تصویر و لینک (SEO 3.3.6) بین «چه دیدیم» و گام‌ها ?>

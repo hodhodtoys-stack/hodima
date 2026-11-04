@@ -340,6 +340,46 @@ function hodima_seo_advisor_links_evidence( ?array $links, string $term ): strin
 }
 
 /**
+ * همان شواهد لینک hodima_seo_advisor_links_evidence، جدا به «چه دیدیم» و «گام» برای راهنمای پنج‌بخشی «کارها» (SEO 3.7.0).
+ * متن کامل قدیمی (کادر ویرایش) عوض نشد.
+ *
+ * @param array{total: int, text: int, score: float, depth: int, anchors: list<array{anchor: string, count: int}>}|null $links
+ * @return array{seen: list<string>, steps: list<string>, well: bool} well = لینک داخلی کافی است (گام لینک‌دهی لازم نیست)
+ */
+function hodima_seo_advisor_links_evidence_parts( ?array $links, string $term ): array {
+
+	if ( null === $links ) {
+		return [ 'seen' => [], 'steps' => [], 'well' => false ];
+	}
+
+	$well       = false;
+	$num        = static fn( int|float $v, int $d = 0 ): string => number_format_i18n( $v, $d );
+	$term_links = hodima_seo_advisor_crawl_term_links( $links['anchors'], $term );
+	$seen       = [ sprintf( ' طبق خزش این صفحه %1$s لینک ورودی یکتا دارد (%2$s از متن).', $num( $links['total'] ), $num( $links['text'] ) ) ];
+	$steps      = [];
+
+	if ( 0 === $term_links ) {
+		$seen[]  = sprintf( ' هیچ لینک متنی با عبارت «%s» به آن نیست.', $term );
+		$steps[] = sprintf( 'لینک‌های موجود به این صفحه را با متن «%1$s» بنویسید و از ۲ تا ۳ صفحه مرتبط لینک تازه با همین متن بدهید.', $term );
+	} else {
+		$seen[] = sprintf( ' %1$s لینک با متن «%2$s» دارد.', $num( $term_links ), $term );
+		if ( $links['text'] <= 3 ) {
+			$steps[] = sprintf( 'لینک متنی کم است؛ از ۳ تا ۵ صفحه مرتبط با متن «%s» به این صفحه لینک بدهید.', $term );
+		} elseif ( $links['text'] >= HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED && $term_links >= HODIMA_SEO_ADVISOR_CRAWL_WELL_LINKED_TERM ) {
+			$seen[] = ' لینک داخلی این صفحه کم نیست؛ لینک بیشتر اولویت نیست.';
+			$well   = true;
+		}
+	}
+
+	if ( $links['depth'] >= 4 && $links['depth'] < HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ) {
+		$seen[]  = sprintf( ' از صفحه اصلی %s کلیک فاصله دارد.', $num( $links['depth'] ) );
+		$steps[] = 'از منو یا صفحه اصلی به این صفحه (یا دسته‌اش) لینک بدهید تا نزدیک‌تر شود.';
+	}
+
+	return [ 'seen' => $seen, 'steps' => $steps, 'well' => $well ];
+}
+
+/**
  * جمله مقایسه لینک متنی با کلمه بین صفحه‌های یک گروه رقابت (برنده اول). خالی = شواهد کافی نیست.
  *
  * @param list<array<string, mixed>> $pages صفحه‌ها با کلید term_links (int|null)، برنده اول
