@@ -214,21 +214,75 @@ function hodima_seo_advisor_competition_guide( array $group, string $path ): arr
 			: sprintf( 'سهم این صفحه کمتر است؛ بیشترین سهم با %1$s (%2$s) است.', $url( $winner ), $share( $winner ) )
 	);
 
-	$steps = match ( $type ) {
-		'category'   => [
-			'برای کلمه عمومی «' . $term . '» صفحه دسته از محصول مناسب‌تر است؛ دسته را صفحه اصلی کلمه کنید.',
-			'در محصول‌های رقیب یک لینک با متن «' . $term . '» به صفحه دسته بدهید.',
-			'کلمه «' . $term . '» را از «عنوان سئو»ی محصول‌ها بردارید یا دقیق‌ترش کنید (مثلا با رنگ یا جنس).',
-		],
-		'strengthen' => $is_win
-			? [ 'این صفحه برنده است؛ آن را عوض نکنید.', 'در صفحه‌های رقیب یک لینک با متن «' . $term . '» به این صفحه بدهید.' ]
-			: [ 'در همین صفحه یک لینک با متن «' . $term . '» به ' . $url( $winner ) . ' بدهید.', 'کلمه «' . $term . '» را از «عنوان سئو» و تیترهای ۲ همین صفحه بردارید، یا موضوع صفحه را جدا کنید.' ],
-		default      => [
-			'صفحه‌ها را باز کنید و مقایسه کنید.',
-			'اگر محتوایشان یکی است: یکی را نگه دارید و بقیه را در «ابزارهای هدیما ← ریدایرکت‌ها» با ۳۰۱ به آن بفرستید.',
-			'اگر جدا هستند: موضوع هر صفحه را در «عنوان سئو» روشن کنید و فقط صفحه اصلی را با «' . $term . '» تقویت کنید.',
-		],
+	// «دقیقا چه کنم» با داده واقعی آخرین خزش (SEO 3.8.0، خواست کاربر): عنوان سئوی فعلی، تیترهای ۲ دارای کلمه و لینک بین صفحه‌ها خوانده
+	// می‌شوند؛ گامی که انجام شده (کلمه در عنوان نیست، لینک با همین متن هست) نمی‌آید. صفحه‌ای که خزیده نشده گام کلی همان قبلی را می‌گیرد.
+	$name     = static fn( array $p ): string => '' !== (string) ( $p['title'] ?? '' ) ? (string) $p['title'] : rawurldecode( (string) ( $p['path'] ?? '' ) );
+	$crawl    = static fn( string $p ): ?array => hodima_seo_advisor_crawl_row( $p );
+	$h2_with  = static function ( string $p ) use ( $crawl, $term ): array {
+		$row = $crawl( $p );
+		return null === $row ? [] : array_values( array_filter( array_map( 'trim', explode( ' | ', $row['h2'] ) ), static fn( string $h ): bool => '' !== $h && hodima_seo_advisor_text_has( $h, $term ) ) );
 	};
+	$has_term = static fn( array $anchors ): bool => (bool) array_filter( $anchors, static fn( string $a ): bool => hodima_seo_advisor_text_has( $a, $term ) );
+	$focus    = '';
+	foreach ( hodima_seo_advisor_queries( $path, 8 ) as $q ) {
+		if ( hodima_seo_advisor_normalize( (string) $q['term'] ) !== hodima_seo_advisor_normalize( $term ) && ! hodima_seo_advisor_is_brand( (string) $q['term'] ) ) {
+			$focus = (string) $q['term'];
+			break;
+		}
+	}
+	$w_path = (string) ( $winner['path'] ?? '' );
+
+	if ( 'choose' === $type ) {
+		$steps = [
+			'این صفحه‌ها را باز کنید و مقایسه کنید: ' . implode( '، ', array_map( static fn( array $p ): string => '«' . $name( $p ) . '» ' . $url( $p ), array_slice( $pages, 0, 4 ) ) ) . '.',
+			'اگر محتوایشان یکی است: یکی را نگه دارید (پیشنهاد: «' . $name( $winner ) . '» با بیشترین کلیک) و بقیه را در «ابزارهای هدیما ← ریدایرکت‌ها» با ۳۰۱ به آن بفرستید.',
+			'اگر جدا هستند: موضوع هر صفحه را در «عنوان سئو»ی خودش روشن کنید و فقط صفحه اصلی را با «' . $term . '» تقویت کنید.',
+		];
+	} elseif ( ! $is_win ) {
+		$steps = [];
+		$row   = $crawl( $path );
+		if ( null === $row ) {
+			$steps[] = 'اگر «' . $term . '» در «عنوان سئو»ی همین صفحه هست: «{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»، آن را بردارید' . ( '' !== $focus ? ' و روی «' . $focus . '» تمرکز کنید' : '' ) . '.';
+		} elseif ( hodima_seo_advisor_text_has( $row['title'], $term ) ) {
+			$steps[] = '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: عنوان فعلی «' . $row['title'] . '» کلمه «' . $term . '» را دارد؛ آن را بردارید' . ( '' !== $focus ? ' و روی کلمه اصلی همین صفحه («' . $focus . '») تمرکز کنید' : '' ) . '.';
+		}
+		$h2s = $h2_with( $path );
+		if ( $h2s ) {
+			$steps[] = 'در متن همین صفحه این تیترها «' . $term . '» را دارند: «' . implode( '»، «', array_slice( $h2s, 0, 3 ) ) . '»؛ کلمه را از آن‌ها بردارید یا تیتر را دقیق‌تر کنید.';
+		}
+		$anchors = null === $row ? null : hodima_seo_advisor_crawl_anchors_between( $path, $w_path );
+		if ( null === $anchors || ! $anchors ) {
+			$steps[] = 'در متن همین صفحه یک جمله با «' . $term . '» بنویسید و همان را به صفحه اصلی لینک بدهید: ' . $url( $winner );
+		} elseif ( ! $has_term( $anchors ) ) {
+			$steps[] = 'از همین صفحه به صفحه اصلی لینک دارید ولی متن لینک «' . $anchors[0] . '» است؛ متن لینک را «' . $term . '» کنید یا یک لینک دیگر با همین متن به ' . $url( $winner ) . ' بدهید.';
+		}
+		$steps = $steps
+			? [ ...$steps, 'ذخیره کنید و «انجام دادم» را بزنید.' ]
+			: [ 'طبق آخرین خزش کار این صفحه انجام شده: «' . $term . '» در عنوان و تیترهای ۲ آن نیست و با همین متن به صفحه اصلی لینک دارد. «انجام دادم» را بزنید تا با آمار گوگل سنجیده شود.' ];
+	} else {
+		$steps = [ 'این صفحه صفحه اصلی «' . $term . '» است؛ متن و آدرسش را عوض نکنید.' ];
+		$row   = $crawl( $path );
+		if ( null !== $row && '' !== $row['title'] && ! hodima_seo_advisor_text_has( $row['title'], $term ) ) {
+			$steps[] = '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: عنوان فعلی «' . $row['title'] . '» کلمه «' . $term . '» را ندارد؛ آن را به ابتدای عنوان بیاورید.';
+		}
+		foreach ( array_slice( $others, 0, 3 ) as $o ) {
+			$anchors = null === $crawl( (string) $o['path'] ) ? null : hodima_seo_advisor_crawl_anchors_between( (string) $o['path'], $path );
+			if ( null === $anchors || ! $has_term( $anchors ) ) {
+				$steps[] = 'در صفحه «' . $name( $o ) . '» (' . $url( $o ) . ') یک جمله با «' . $term . '» بنویسید و آن را به همین صفحه لینک بدهید' . ( $anchors ? ' (لینک فعلی‌اش متن «' . $anchors[0] . '» دارد)' : '' ) . '.';
+				$h2o = $h2_with( (string) $o['path'] );
+				if ( $h2o ) {
+					$steps[] = 'در همان صفحه «' . $name( $o ) . '» تیتر «' . $h2o[0] . '» این کلمه را دارد؛ آن را دقیق‌تر کنید تا با همین صفحه رقابت نکند.';
+				}
+			}
+		}
+		if ( 1 === count( $steps ) ) {
+			$steps[] = 'طبق آخرین خزش همه صفحه‌های رقیب با «' . $term . '» به این صفحه لینک داده‌اند؛ کاری نمانده. «انجام دادم» را بزنید تا با آمار گوگل سنجیده شود.';
+		}
+	}
+
+	if ( 'category' === $type ) { // کلمه عمومی: صفحه دسته از محصول مناسب‌تر است (همان دستور قبلی، اول فهرست)
+		array_unshift( $steps, 'برای کلمه عمومی «' . $term . '» صفحه دسته از محصول مناسب‌تر است؛ اگر یکی از این صفحه‌ها دسته است، همان را صفحه اصلی کلمه کنید.' );
+	}
 
 	// «گزارش» باکس‌دار (SEO 3.7.9): کارت هر صفحه رقیب (برنده سبز «صفحه اصلی این کلمه»، «همین صفحه» پررنگ) + یک خط نتیجه
 	$cards = [];
@@ -243,6 +297,9 @@ function hodima_seo_advisor_competition_guide( array $group, string $path ): arr
 			'impressions' => (int) ( $p['impressions'] ?? 0 ),
 			'clicks'      => (int) ( $p['clicks'] ?? 0 ),
 			'position'    => (float) ( $p['position'] ?? 0 ),
+			'edit'        => function_exists( 'hodima_seo_advisor_edit_link' ) && (int) ( $p['object_id'] ?? 0 ) > 0 ? hodima_seo_advisor_edit_link( (string) ( $p['kind'] ?? '' ), (int) $p['object_id'] ) : '',
+			// وضعیت لینک این صفحه به صفحه اصلی با متن همین کلمه، طبق آخرین خزش (SEO 3.8.0)؛ null = خزیده نشده
+			'linked'      => 0 === $i ? null : ( null === $crawl( $p_path ) ? null : $has_term( hodima_seo_advisor_crawl_anchors_between( $p_path, $w_path ) ?? [] ) ),
 		];
 	}
 	if ( ! $is_win ) { // همین صفحه کنار برنده دیده شود، حتی اگر رتبه سوم یا بعدتر است
@@ -327,6 +384,29 @@ function hodima_seo_advisor_render_guide( array $guide, ?callable $between = nul
 }
 
 /**
+ * پای کارت صفحه رقیب در «گزارش» (SEO 3.8.0): وضعیت لینک به صفحه اصلی با همین کلمه (طبق آخرین خزش) و دکمه «ویرایش».
+ *
+ * @param array<string, mixed> $card
+ */
+function hodima_seo_advisor_report_card_foot( array $card ): string {
+
+	$linked = $card['linked'] ?? null;
+	$parts  = [];
+
+	if ( true === $linked ) {
+		$parts[] = '<span class="hodima-advisor__rchip hodima-advisor__rchip--ok"><span aria-hidden="true">✓</span> به صفحه اصلی با همین کلمه لینک دارد</span>';
+	} elseif ( false === $linked ) {
+		$parts[] = '<span class="hodima-advisor__rchip"><span aria-hidden="true">✕</span> به صفحه اصلی با همین کلمه لینک ندارد</span>';
+	}
+
+	if ( '' !== (string) ( $card['edit'] ?? '' ) ) {
+		$parts[] = sprintf( '<a class="hodima-advisor__rpage-edit" href="%1$s"><span class="dashicons dashicons-edit" aria-hidden="true"></span>ویرایش<span class="screen-reader-text"> %2$s</span></a>', esc_url( (string) $card['edit'] ), esc_html( (string) ( $card['title'] ?? '' ) ) );
+	}
+
+	return $parts ? '<span class="hodima-advisor__rpage-foot">' . implode( '', $parts ) . '</span>' : '';
+}
+
+/**
  * «گزارش» باکس‌دار یک پیشنهاد (SEO 3.7.9؛ طرح تأییدشده کاربر «طرح گزارش دستار سئو»): باکس هر واقعیت (برچسب، عدد درشت، توضیح؛
  * نارنجی = جای مشکل، با نوار پیشرفت یا نشان ✓/✕)، کارت صفحه‌های رقیب، یک نوار علت/نتیجه و یک خط پانویس. داده از report خود پیشنهاد.
  *
@@ -385,14 +465,15 @@ function hodima_seo_advisor_render_report( array $report ): void {
 			}
 			$stat = static fn( int|float $value, int $decimals = 0 ): string => $value < 0 ? '—' : $fa( number_format_i18n( $value, $decimals ) );
 			printf(
-				'<div class="hodima-advisor__rpage%1$s"><span class="hodima-advisor__rpage-badge">%2$s</span><strong class="hodima-advisor__rpage-title">%3$s</strong>%4$s<span class="hodima-advisor__rpage-stats"><span><b>%5$s</b> نمایش</span><span><b>%6$s</b> کلیک</span><span><b>%7$s</b> رتبه</span></span></div>',
+				'<div class="hodima-advisor__rpage%1$s"><span class="hodima-advisor__rpage-badge">%2$s</span><strong class="hodima-advisor__rpage-title">%3$s</strong>%4$s<span class="hodima-advisor__rpage-stats"><span><b>%5$s</b> نمایش</span><span><b>%6$s</b> کلیک</span><span><b>%7$s</b> رتبه</span></span>%8$s</div>',
 				! empty( $p['win'] ) ? ' hodima-advisor__rpage--win' : ( ! empty( $p['me'] ) || 'همین صفحه' === ( $p['badge'] ?? '' ) ? ' hodima-advisor__rpage--me' : '' ),
 				esc_html( (string) ( $p['badge'] ?? '' ) ),
 				esc_html( '' !== $title ? $title : rawurldecode( $path ) ),
 				'' !== $path ? hodima_seo_advisor_url_copy( $path ) : '', // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy
 				esc_html( $stat( (int) ( $p['impressions'] ?? -1 ) ) ),
 				esc_html( $stat( (int) ( $p['clicks'] ?? -1 ) ) ),
-				esc_html( $stat( (float) ( $p['position'] ?? -1 ), 1 ) )
+				esc_html( $stat( (float) ( $p['position'] ?? -1 ), 1 ) ),
+				hodima_seo_advisor_report_card_foot( $p ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در همان تابع
 			);
 		}
 		echo '</div>';

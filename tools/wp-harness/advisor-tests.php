@@ -2511,6 +2511,43 @@ hodima_ad(
 	[ $mg_guide['report']['pages'][0]['path'] ?? '', $mg_guide['report']['pages'][0]['win'] ?? null, $mg_guide['report']['pages'][1]['badge'] ?? '', str_contains( (string) ( $mg_guide['report']['note']['text'] ?? '' ), 'صفحه اصلی نیست' ) ],
 	[ '/lt/c1/', true, 'همین صفحه', true ]
 );
+// «دقیقا چه کنم» رقابت با داده خزش (SEO 3.8.0): عنوان فعلی و تیتر دارای کلمه نام برده می‌شوند؛ لینک انجام‌شده گام نمی‌گیرد
+$ck_pages = hodima_seo_advisor_table( 'crawl_pages' );
+$ck_links = hodima_seo_advisor_table( 'crawl_links' );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i WHERE path IN (%s, %s)', $ck_pages, '/lt/c1/', '/lt/c2/' ) );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i WHERE source_path IN (%s, %s)', $ck_links, '/lt/c1/', '/lt/c2/' ) );
+$GLOBALS['wpdb']->insert( $ck_pages, [ 'path' => '/lt/c1/', 'status' => 200, 'indexable' => 1, 'title' => 'گیره مو مخمل عمده', 'h2' => 'راهنمای خرید' ] );
+$GLOBALS['wpdb']->insert( $ck_pages, [ 'path' => '/lt/c2/', 'status' => 200, 'indexable' => 1, 'title' => 'خرید گیره مو مخمل ارزان', 'h2' => 'مدل‌های گیره مو مخمل | ارسال' ] );
+hodima_seo_advisor_crawl_map( true );
+$ck_guide = static function ( string $path ): array {
+	foreach ( hodima_seo_advisor_overview_build() as $p ) {
+		foreach ( $path === $p['path'] ? $p['items'] : [] as $i ) {
+			if ( 'comp' === $i['src'] ) {
+				return $i['guide'];
+			}
+		}
+	}
+	return [];
+};
+$ck_lose = implode( ' / ', (array) ( $ck_guide( '/lt/c2/' )['steps'] ?? [] ) );
+hodima_ad(
+	'رقابت، صفحه بازنده با خزش: عنوان فعلی و تیتر ۲ دارای کلمه نام برده می‌شوند و گام لینک با آدرس صفحه اصلی می‌آید',
+	[ str_contains( $ck_lose, 'عنوان فعلی «خرید گیره مو مخمل ارزان»' ), str_contains( $ck_lose, '«مدل‌های گیره مو مخمل»' ), str_contains( $ck_lose, '/lt/c1/' ) && str_contains( $ck_lose, 'لینک بدهید' ) ],
+	[ true, true, true ]
+);
+$GLOBALS['wpdb']->insert( $ck_links, [ 'source_path' => '/lt/c2/', 'dest_path' => '/lt/c1/', 'link_position' => 'content', 'anchor' => 'گیره مو مخمل', 'is_follow' => 1 ] );
+hodima_seo_advisor_crawl_map( true );
+$ck_g2   = $ck_guide( '/lt/c2/' );
+$ck_lose = implode( ' / ', (array) ( $ck_g2['steps'] ?? [] ) );
+$ck_win  = implode( ' / ', (array) ( $ck_guide( '/lt/c1/' )['steps'] ?? [] ) );
+hodima_ad(
+	'رقابت با لینک انجام‌شده: بازنده گام لینک ندارد و کارتش «لینک دارد»؛ برنده «کاری نمانده» (رقیب با همین کلمه لینک داده)؛ عنوان برنده کلمه را دارد پس گام عنوان نیست',
+	[ str_contains( $ck_lose, 'لینک بدهید' ), $ck_g2['report']['pages'][1]['linked'] ?? null, str_contains( $ck_win, 'کاری نمانده' ), str_contains( $ck_win, 'به ابتدای عنوان بیاورید' ) ],
+	[ false, true, true, false ]
+);
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i WHERE path IN (%s, %s)', $ck_pages, '/lt/c1/', '/lt/c2/' ) );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i WHERE source_path IN (%s, %s)', $ck_links, '/lt/c1/', '/lt/c2/' ) );
+hodima_seo_advisor_crawl_map( true );
 $mg_steps = hodima_seo_advisor_steps_for( '/lt/c2/', 'cannibal', 'گیره مو مخمل' );
 hodima_ad( 'جزئیات کار رقابت یکی‌شده: جدول رقبا از آمار همان کلمه، صفحه مرجع /lt/c1/ (بیشترین کلیک)', [ $mg_steps[0]['type'] ?? '', $mg_steps[0]['main'] ?? '', $mg_steps[0]['is_main'] ?? null ], [ 'canonical', '/lt/c1/', false ] );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition', 'resolved' => '1' ];
@@ -4967,7 +5004,7 @@ hodima_ad( 'ایندکس: هر ۱۱ وضعیت «چه دیدیم»، گام و �
 $g7_grp = [ 'term' => 'کلیپس', 'pages' => [ [ 'path' => '/cat/', 'share' => 0.7 ], [ 'path' => '/p1/', 'share' => 0.3 ] ], 'advice' => [ 'type' => 'strengthen', 'detail' => 'x' ] ];
 $g7_win = hodima_seo_advisor_competition_guide( $g7_grp, '/cat/' );
 $g7_los = hodima_seo_advisor_competition_guide( $g7_grp, '/p1/' );
-hodima_ad( 'هم‌کلمه: برنده و بازنده گام متفاوت؛ سهم و آدرس کامل رقیب در «چه دیدیم»؛ «چرا» از راهنمای رقابت', [ str_contains( $g7_win['seen'], '۷۰٪' ) || str_contains( $g7_win['seen'], '70٪' ), str_contains( $g7_win['seen'], hodima_seo_advisor_url( '/p1/' ) ), $g7_win['steps'][0], str_contains( $g7_los['steps'][0], hodima_seo_advisor_url( '/cat/' ) ), '' !== $g7_win['why'] ], [ true, true, 'این صفحه برنده است؛ آن را عوض نکنید.', true, true ] );
+hodima_ad( 'هم‌کلمه: برنده و بازنده گام متفاوت؛ سهم و آدرس کامل رقیب در «چه دیدیم»؛ «چرا» از راهنمای رقابت', [ str_contains( $g7_win['seen'], '۷۰٪' ) || str_contains( $g7_win['seen'], '70٪' ), str_contains( $g7_win['seen'], hodima_seo_advisor_url( '/p1/' ) ), str_contains( $g7_win['steps'][0], 'صفحه اصلی «کلیپس»' ) && str_contains( $g7_win['steps'][0], 'عوض نکنید' ), str_contains( implode( ' ', $g7_los['steps'] ), hodima_seo_advisor_url( '/cat/' ) ), '' !== $g7_win['why'] ], [ true, true, true, true, true ] ); // SEO 3.8.0: متن گام اول برنده عمدا دقیق‌تر شد؛ آدرس صفحه اصلی در گام لینک بازنده
 
 // دکمه ویرایش دسته و ارقام فارسی
 wp_set_current_user( 1 );

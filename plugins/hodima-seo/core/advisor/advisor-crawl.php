@@ -89,6 +89,7 @@ function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null
 		$groups = &hodima_seo_advisor_image_groups_cache();
 		$groups = null; // تصویرهای مشترک هم (SEO 3.4.9)
 		hodima_seo_advisor_resolved_paths( true );
+		hodima_seo_advisor_crawl_anchors_between( '', '', true ); // لینک‌های بین صفحه‌ها هم از همین خزش (SEO 3.8.0)
 		return [];
 	}
 
@@ -120,6 +121,36 @@ function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null
  */
 function hodima_seo_advisor_crawl_row( string $path ): ?array {
 	return hodima_seo_advisor_crawl_map( false, $path )[ $path ] ?? null;
+}
+
+/**
+ * متن لینک‌های صفحه $source به صفحه $dest طبق آخرین خزش (SEO 3.8.0؛ گام‌های «رقابت داخلی»: لینک به صفحه اصلی هست؟ با همین کلمه؟).
+ * فهرست خالی = لینک ندارد؛ null = صفحه مبدأ خزیده نشده (معلوم نیست). لینک‌های هر مبدأ یک بار در هر درخواست خوانده می‌شود.
+ *
+ * @return list<string>|null
+ */
+function hodima_seo_advisor_crawl_anchors_between( string $source, string $dest, bool $reset = false ): ?array {
+
+	global $wpdb;
+	static $cache = [];
+
+	if ( $reset ) {
+		$cache = [];
+		return null;
+	}
+
+	if ( '' === $source || '' === $dest || null === hodima_seo_advisor_crawl_row( $source ) ) {
+		return null;
+	}
+
+	if ( ! isset( $cache[ $source ] ) ) {
+		$cache[ $source ] = [];
+		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT dest_path, anchor FROM %i WHERE source_path = %s', hodima_seo_advisor_table( 'crawl_links' ), $source ), ARRAY_A ) as $link ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$cache[ $source ][ (string) $link['dest_path'] ][] = trim( (string) $link['anchor'] );
+		}
+	}
+
+	return array_values( array_unique( $cache[ $source ][ $dest ] ?? [] ) );
 }
 
 /**
