@@ -424,13 +424,6 @@
 	color: var(--hs-primary);
 }
 
-.hodima-panel__help {
-	margin: 0.25rem 0 0;
-	color: var(--hs-muted);
-	font-size: 0.8125rem;
-	line-height: 1.6;
-}
-
 /* برچسب وضعیت در سرتیتر قاب (مثلا «در حال استفاده») */
 .hodima-panel__status {
 	flex-shrink: 0;
@@ -2566,10 +2559,6 @@ input.hodima-color__swatch {
 	visibility: visible;
 	opacity: 1;
 	pointer-events: auto;
-}
-
-.hodima-panel__help .hodima-tip {
-	vertical-align: middle;
 }
 
 /* تب با قانون «توضیح فقط داخل ؟» (tips): آیکون کنار عنوان قاب، سرتیتر تک‌خطی و هم‌ارتفاع */

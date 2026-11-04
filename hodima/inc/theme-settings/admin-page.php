@@ -203,7 +203,6 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 	$collapse = ! empty( $panel['collapsible'] ); // قاب جمع‌شونده (<details>، پیش‌فرض بسته)؛ مثلا پیش‌نمایش تایپوگرافی
 	$classes  = 'hodima-panel hodima-panel--' . $layout . ' hodima-panel-' . $key . ( ! empty( $panel['half'] ) ? ' hodima-panel--half' : '' ) . ( $collapse ? ' hodima-panel--collapsible' : '' ) . ( ! empty( $panel['headings'] ) ? ' hodima-panel--headings' : '' );
 	$title    = 'hodima-panel-' . $key . '-title';
-	$tips     = hodima_settings_section_tips( (string) $panel['section'] ); // تب با قانون «توضیح فقط داخل ؟»
 	?>
 	<?php if ( $collapse ) : ?>
 		<?php
@@ -212,16 +211,16 @@ function hodima_settings_render_panel( string $key, array $panel, array $fields,
 		?>
 		<details class="<?php echo esc_attr( $classes ); ?>" data-hodima-collapsible="<?php echo esc_attr( $key ); ?>"<?php echo $force_open ? ' open data-hodima-keep-open' : ''; ?><?php echo ! empty( $panel['open_on'] ) ? ' data-hodima-open-on="' . esc_attr( implode( ' ', (array) $panel['open_on'] ) ) . '"' : ''; ?>>
 			<summary class="hodima-panel__summary">
-				<?php // دکمه ؟ داخل <summary> تودرتو است (axe nested-interactive) و بیرونش هم با بسته بودن <details> پنهان می‌شد: در تب tips توضیح قاب جمع‌شونده اولین سطر بدنه است (فقط وقتی باز شد دیده می‌شود) ?>
-				<?php hodima_settings_panel_head( $title, $panel['title'], $tips ? '' : ( $panel['help'] ?? '' ), $panel['icon'] ?? '', '<span class="hodima-panel__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>', $tips ); ?>
+				<?php // دکمه ؟ داخل <summary> تودرتو است (axe nested-interactive) و بیرونش هم با بسته بودن <details> پنهان می‌شد: توضیح قاب جمع‌شونده اولین سطر بدنه است (فقط وقتی باز شد دیده می‌شود) ?>
+				<?php hodima_settings_panel_head( $title, $panel['title'], '', $panel['icon'] ?? '', '<span class="hodima-panel__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>' ); ?>
 			</summary>
 	<?php else : ?>
 	<section class="<?php echo esc_attr( $classes ); ?>" aria-labelledby="<?php echo esc_attr( $title ); ?>">
-		<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '', '', $tips ); ?>
+		<?php hodima_settings_panel_head( $title, $panel['title'], $panel['help'] ?? '', $panel['icon'] ?? '' ); ?>
 	<?php endif; ?>
 
 		<div class="hodima-panel__body">
-			<?php if ( $collapse && $tips && '' !== ( $panel['help'] ?? '' ) ) : ?>
+			<?php if ( $collapse && '' !== ( $panel['help'] ?? '' ) ) : ?>
 				<p class="hodima-panel__note"><?php echo esc_html( (string) $panel['help'] ); ?></p>
 			<?php endif; ?>
 			<?php if ( 'swatches' === $layout ) : ?>

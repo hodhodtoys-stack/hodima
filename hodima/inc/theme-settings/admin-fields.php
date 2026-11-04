@@ -14,36 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * آیا این تب قانون «توضیح هر باکس فقط داخل آیکون ؟» را گرفته؟ ('tips' => true در hodima_settings_sections()).
- * تب‌ها یکی‌یکی مهاجرت می‌شوند؛ تب قدیمی (بی tips) همان رفتار پیشین را دارد (جمله اول دیدنی، توضیح کاشی دیدنی).
- */
-function hodima_settings_section_tips( string $section ): bool {
-
-	return ! empty( hodima_settings_sections()[ $section ]['tips'] );
-}
-
-/** همان پرسش برای یک قاب (کلید قاب در hodima_settings_panels()). */
-function hodima_settings_panel_tips( string $panel_key ): bool {
-
-	return hodima_settings_section_tips( (string) ( hodima_settings_panels()[ $panel_key ]['section'] ?? '' ) );
-}
-
-/**
- * راهنمای بلند ← یک جمله دیدنی + بقیه در آیکون ؟ (فقط تب‌های بی tips): جمله اول (تا اولین نقطه/؟/! با فاصله بعدش)
- * همیشه دیده می‌شود؛ بقیه به حباب می‌رود. متن کوتاه (تا ۹۰ حرف) یا بدون جمله دوم دست نمی‌خورد.
- *
- * @return array{0: string, 1: string} [ دیدنی، حباب ]
- */
-function hodima_settings_split_help( string $help ): array {
-
-	if ( mb_strlen( $help ) <= 90 || ! preg_match( '/^(.{20,}?[.؟!])\s+(.+)$/us', $help, $match ) ) {
-		return [ $help, '' ];
-	}
-
-	return [ $match[1], $match[2] ];
-}
-
-/**
  * آیکون ؟ با حباب راهنما (admin.js: هاور، فوکوس، کلیک/لمس، Esc). متن راهنما در HTML می‌ماند
  * و کنترل با aria-describedby به آن وصل است؛ پس صفحه‌خوان هم می‌خواند.
  */
@@ -71,30 +41,20 @@ function hodima_settings_field_head( string $label_html, string $help, string $h
 }
 
 /**
- * سرتیتر قاب (مشترک با قاب «بخش‌های صفحه اصلی» در home-layout-admin.php).
- *
- * @param bool $tip_only تب با قانون tips: همه توضیح داخل آیکون ؟ کنار عنوان (بدون جمله دیدنی)؛ بدون توضیح = فقط عنوان
+ * سرتیتر قاب (مشترک با قاب‌های home-layout-admin.php و social-admin.php). قانون «توضیح فقط داخل ؟»:
+ * همه توضیح قاب داخل آیکون ؟ کنار عنوان؛ بدون توضیح = فقط عنوان. (رفتار قدیمی «جمله اول دیدنی» برای
+ * تب‌های مهاجرت‌نشده تا 4.0.9 بود؛ همه تب‌ها مهاجرت شدند و حذف شد.)
  */
-function hodima_settings_panel_head( string $id, string $title, string $help = '', string $icon = '', string $extra = '', bool $tip_only = false ): void {
+function hodima_settings_panel_head( string $id, string $title, string $help = '', string $icon = '', string $extra = '' ): void {
 	?>
 	<header class="hodima-panel__head">
 		<?php if ( '' !== $icon ) : ?>
 			<span class="hodima-panel__icon dashicons <?php echo esc_attr( $icon ); ?>" aria-hidden="true"></span>
 		<?php endif; ?>
-		<?php if ( $tip_only ) : ?>
-			<div class="hodima-panel__heading hodima-panel__heading--tip">
-				<h3 class="hodima-panel__title" id="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $title ); ?></h3>
-				<?php echo '' !== $help ? hodima_settings_tip_html( $help, $id . '-help', $title ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput -- hodima_settings_tip_html خروجی را escape کرده ?>
-			</div>
-		<?php else : ?>
-		<div class="hodima-panel__heading">
+		<div class="hodima-panel__heading hodima-panel__heading--tip">
 			<h3 class="hodima-panel__title" id="<?php echo esc_attr( $id ); ?>"><?php echo esc_html( $title ); ?></h3>
-			<?php if ( '' !== $help ) : ?>
-				<?php [ $help_first, $help_rest ] = hodima_settings_split_help( $help ); ?>
-				<p class="hodima-panel__help"><?php echo esc_html( $help_first ); ?><?php echo '' !== $help_rest ? ' ' . hodima_settings_tip_html( $help_rest, $id . '-help', $title ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput -- hodima_settings_tip_html خروجی را escape کرده ?></p>
-			<?php endif; ?>
+			<?php echo '' !== $help ? hodima_settings_tip_html( $help, $id . '-help', $title ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput -- hodima_settings_tip_html خروجی را escape کرده ?>
 		</div>
-		<?php endif; ?>
 		<?php echo $extra; // phpcs:ignore WordPress.Security.EscapeOutput -- نشانه‌گذاری ثابت فراخواننده ?>
 	</header>
 	<?php
@@ -150,19 +110,17 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 	$help_id   = $id . '-help';
 	$described = '' !== $help ? ' aria-describedby="' . esc_attr( $help_id ) . '"' : '';
 	$type      = hodima_setting_type( $field );
-	$tips_tab  = hodima_settings_panel_tips( (string) ( $field['panel'] ?? '' ) ); // تب با قانون «همه توضیح‌ها داخل ؟»
-	// راهنمای کادر ← آیکون ؟ کنار برچسب (3.1.1). در تب‌های قدیمی می‌ماند: کلید (توضیح جزو کاشی است)، فیلد زیرگروه (ردیف جدول) و فیلد با help_visible (هشدار/شرط مهم).
-	// در تب با tips: help_visible نادیده است و توضیح کاشی کلید هم داخل ؟ می‌رود (فقط فیلد زیرگروه همان ردیف جدول می‌ماند)
-	// فیلد زیرگروه در قاب «cards» (کارت‌های نماد اعتماد فوتر) برچسب دیدنی دارد؛ در تب tips توضیحش هم داخل ؟ می‌رود (ردیف‌های جدول برچسب دیدنی ندارند و بدون ؟ می‌مانند)
-	$in_cards  = $tips_tab && isset( $field['group'] ) && 'cards' === ( hodima_settings_panels()[ $field['panel'] ?? '' ]['layout'] ?? '' );
-	$tip       = '' !== $help && ( ! isset( $field['group'] ) || $in_cards ) && ( empty( $field['help_visible'] ) || $tips_tab ) && Hodima_Setting_Type::Toggle !== $type;
+	// قانون «توضیح فقط داخل ؟»: راهنمای کادر ← آیکون ؟ کنار برچسب و توضیح کاشی کلید هم داخل ؟. فقط فیلد زیرگروه
+	// (ردیف جدول، بدون برچسب دیدنی) توضیحش را دیدنی نگه می‌دارد؛ زیرگروه قاب «cards» (کارت‌های نماد اعتماد فوتر) برچسب دارد و ؟ می‌گیرد.
+	$in_cards  = isset( $field['group'] ) && 'cards' === ( hodima_settings_panels()[ $field['panel'] ?? '' ]['layout'] ?? '' );
+	$tip       = '' !== $help && ( ! isset( $field['group'] ) || $in_cards ) && Hodima_Setting_Type::Toggle !== $type;
 	$wide      = ( $field['wide'] ?? $type->is_wide() ) && ! isset( $field['group'] ) ? ' hodima-field--wide' : '';
 	?>
 	<div class="hodima-field hodima-field--<?php echo esc_attr( $field['type'] . $wide ); ?>">
-		<?php if ( Hodima_Setting_Type::Toggle === $type && $tips_tab && '' !== $help && ! isset( $field['group'] ) ) : ?>
+		<?php if ( Hodima_Setting_Type::Toggle === $type && '' !== $help && ! isset( $field['group'] ) ) : ?>
 			<?php
 			/*
-			 * کاشی کلید با آیکون ؟ (تب با tips): دکمه ؟ داخل <label> نمی‌آید (دکمه محتوای برچسب‌پذیر است و
+			 * کاشی کلید با آیکون ؟: دکمه ؟ داخل <label> نمی‌آید (دکمه محتوای برچسب‌پذیر است و
 			 * نام قابل‌دسترس کلید «برچسب ؟» می‌شد)؛ برچسب فقط متن کلید است و با ::after کل کاشی را می‌پوشاند
 			 * (کل کادر قابل کلیک می‌ماند)، آیکون ؟ بالاتر از آن می‌نشیند. توضیح با aria-describedby به کلید وصل است.
 			 */
@@ -178,7 +136,7 @@ function hodima_settings_render_field( string $key, array $field, mixed $value )
 			<?php $help = ''; // توضیح بالاتر (در ؟) چاپ شد ?>
 
 		<?php elseif ( Hodima_Setting_Type::Toggle === $type ) : ?>
-			<?php /* کاشی کلید: کل کادر قابل کلیک؛ توضیح داخل همان کادر */ ?>
+			<?php /* کاشی کلید بی‌توضیح یا ردیف جدول (زیرگروه): کل کادر قابل کلیک؛ توضیح ردیف جدول داخل همان کادر */ ?>
 			<label class="hodima-toggle" for="<?php echo esc_attr( $id ); ?>">
 				<input type="checkbox" role="switch" id="<?php echo esc_attr( $id ); ?>" name="<?php echo esc_attr( $name ); ?>" value="1" <?php checked( (bool) $value ); ?><?php echo $described; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above ?>>
 				<span class="hodima-toggle__text">
