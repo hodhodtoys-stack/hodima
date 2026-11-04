@@ -117,7 +117,7 @@ function hodima_settings_panels(): array {
 		'header_menu'        => [ 'section' => 'header', 'title' => 'منوی هدر', 'icon' => 'dashicons-menu', 'half' => true ],
 		'header_main'        => [ 'section' => 'header', 'title' => 'پشتیبانی و جستجو', 'icon' => 'dashicons-format-chat', 'half' => true, 'help' => 'دکمه پشتیبانی فقط وقتی دیده می‌شود که در تب «اطلاعات تماس» دست‌کم یک راه ارتباطی وارد شده باشد.' ],
 
-		'footer_about'       => [ 'section' => 'footer', 'title' => 'ستون‌های «درباره ما» و «راهنمای خرید»', 'icon' => 'dashicons-info' ],
+		'footer_about'       => [ 'section' => 'footer', 'title' => 'ستون‌های درباره ما و راهنما', 'icon' => 'dashicons-info' ],
 		'footer_trust'       => [ 'section' => 'footer', 'title' => 'ستون «نماد اعتماد»', 'icon' => 'dashicons-shield', 'layout' => 'cards', 'help' => 'تا سه نماد (مثلا اینماد، ساماندهی، اتحادیه). نمادهای دارای تصویر به همین ترتیب کنار هم نمایش داده می‌شوند؛ نماد بدون تصویر نادیده گرفته می‌شود.' ],
 		'footer_consult'     => [ 'section' => 'footer', 'title' => 'فرم مشاوره و کپی‌رایت', 'icon' => 'dashicons-edit' ],
 
@@ -129,10 +129,10 @@ function hodima_settings_panels(): array {
 
 		'product_texts'      => [ 'section' => 'product', 'title' => 'متن‌ها', 'icon' => 'dashicons-editor-textcolor' ],
 		'product_sections'   => [ 'section' => 'product', 'title' => 'بخش‌های صفحه محصول', 'icon' => 'dashicons-visibility', 'layout' => 'toggles', 'help' => 'بخش خاموش برای همه محصولات پنهان می‌شود؛ بخش روشن فقط وقتی محتوا دارد دیده می‌شود (کادر «رسانه» هر محصول و نظرات ووکامرس).' ],
-		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت در اسکیما (گوگل) و رنگ ستاره‌ها', 'icon' => 'dashicons-tag', 'help' => 'عددی که گوگل (اسکیما)، پیش‌نمایش لینک در شبکه‌های اجتماعی (متاتگ قیمت) و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود. بعد از تغییر، کش لایت‌اسپید را پاک کنید. قیمت و نام محصولات در ترب: «ابزارهای هدیما ← ترب». رنگ ستاره‌ها: یک رنگ برای همه ستاره‌های امتیاز سایت.' ],
+		'product_price_feed' => [ 'section' => 'product', 'title' => 'قیمت گوگل و رنگ ستاره‌ها', 'icon' => 'dashicons-tag', 'help' => 'عددی که گوگل (اسکیما)، پیش‌نمایش لینک در شبکه‌های اجتماعی (متاتگ قیمت) و فایل‌های هوش مصنوعی (llms) به‌عنوان قیمت محصول می‌بینند. قیمت در صفحه محصول، سبد و پرداخت عوض نمی‌شود. بعد از تغییر، کش لایت‌اسپید را پاک کنید. قیمت و نام محصولات در ترب: «ابزارهای هدیما ← ترب». رنگ ستاره‌ها: یک رنگ برای همه ستاره‌های امتیاز سایت.' ],
 		'product_reviews'    => [ 'section' => 'product_more', 'title' => 'نظرات کاربران', 'icon' => 'dashicons-format-chat', 'help' => 'عنوان بالای نظرات و فرم ثبت نظر. اندازه از «موبایل» (صفحه ۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند، مثل تیترهای تب «تایپوگرافی».' ],
 		'product_reviews_display' => [ 'section' => 'product_more', 'title' => 'نمایش نظرات', 'icon' => 'dashicons-star-filled', 'layout' => 'toggles', 'help' => 'بخش‌های کمکی کنار فهرست نظرات محصول. اطلاعات از خود ووکامرس است و چیزی ذخیره نمی‌کنند.' ],
-		'product_upsells'    => [ 'section' => 'product_more', 'title' => 'محصولات پیشنهادی (Upsell)', 'icon' => 'dashicons-cart', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید. اندازه عنوان از «موبایل» (۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند.' ],
+		'product_upsells'    => [ 'section' => 'product_more', 'title' => 'محصولات پیشنهادی', 'icon' => 'dashicons-cart', 'help' => 'محصولاتی که در ویرایش محصول، بخش «محصولات مرتبط ← افزایش فروش» انتخاب می‌کنید. اندازه عنوان از «موبایل» (۳۹۰ پیکسل) تا «دسکتاپ» (۱۲۰۰ پیکسل و بیشتر) نرم تغییر می‌کند.' ],
 
 		'blog_page'          => [ 'section' => 'blog', 'title' => 'صفحه وبلاگ', 'icon' => 'dashicons-welcome-write-blog' ],
 		'blog_page_parts'    => [ 'section' => 'blog', 'title' => 'بخش‌های صفحه وبلاگ', 'icon' => 'dashicons-visibility', 'layout' => 'toggles' ],
