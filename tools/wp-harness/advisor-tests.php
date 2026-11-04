@@ -2498,6 +2498,19 @@ hodima_ad(
 	[ count( $mg_rows ) >= 2, max( array_map( static fn( array $c ): int => $c ? max( $c ) : 0, $mg_per ) ), array_unique( array_merge( ...array_map( static fn( array $items ): array => array_map( static fn( array $i ): string => $i['src'] . '|' . $i['label'], $items ), array_values( $mg_rows ) ) ) ) ],
 	[ true, 1, [ 'comp|' . hodima_seo_advisor_rule_label( 'cannibal' ) ] ]
 );
+$mg_guide = [];
+foreach ( hodima_seo_advisor_overview_build() as $mg_page ) {
+	foreach ( '/lt/c2/' === $mg_page['path'] ? $mg_page['items'] : [] as $mg_i ) {
+		if ( 'comp' === $mg_i['src'] ) {
+			$mg_guide = $mg_i['guide'];
+		}
+	}
+}
+hodima_ad(
+	'گزارش رقابت: کارت اول صفحه اصلی (برنده /lt/c1/، سبز)، بعد «همین صفحه»؛ نتیجه «صفحه اصلی نیست»',
+	[ $mg_guide['report']['pages'][0]['path'] ?? '', $mg_guide['report']['pages'][0]['win'] ?? null, $mg_guide['report']['pages'][1]['badge'] ?? '', str_contains( (string) ( $mg_guide['report']['note']['text'] ?? '' ), 'صفحه اصلی نیست' ) ],
+	[ '/lt/c1/', true, 'همین صفحه', true ]
+);
 $mg_steps = hodima_seo_advisor_steps_for( '/lt/c2/', 'cannibal', 'گیره مو مخمل' );
 hodima_ad( 'جزئیات کار رقابت یکی‌شده: جدول رقبا از آمار همان کلمه، صفحه مرجع /lt/c1/ (بیشترین کلیک)', [ $mg_steps[0]['type'] ?? '', $mg_steps[0]['main'] ?? '', $mg_steps[0]['is_main'] ?? null ], [ 'canonical', '/lt/c1/', false ] );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition', 'resolved' => '1' ];
@@ -4910,6 +4923,29 @@ foreach ( $g7_all as $g7_s ) {
 	}
 }
 hodima_ad( 'هر پیشنهاد گوگل «چه دیدیم» بی‌دستور و گام‌های جدا دارد (همه ۷ نوع؛ نرخ کلیک هر دو حالت؛ افت با علت)', [ $g7_bad, array_keys( array_diff_key( array_flip( [ 'low_ctr', 'near_first', 'missing_content', 'weak_query', 'cannibal', 'decline' ] ), $g7_rules ) ) ], [ [], [] ] );
+// «گزارش» باکس‌دار (SEO 3.7.9، طرح تأییدشده): هر پیشنهاد گوگل report دارد (باکس یا کارت صفحه)، هر باکس برچسب، و نرخ کلیک نوار ۰ تا ۱؛ بی دستور
+$rp_bad = [];
+foreach ( $g7_all as $g7_s ) {
+	$rp = (array) ( $g7_s['report'] ?? [] );
+	if ( ! $rp || ( empty( $rp['boxes'] ) && empty( $rp['pages'] ) ) ) {
+		$rp_bad[] = $g7_s['rule'] . ': بدون گزارش';
+		continue;
+	}
+	foreach ( (array) ( $rp['boxes'] ?? [] ) as $rp_b ) {
+		if ( '' === (string) ( $rp_b['label'] ?? '' ) || ( '' === (string) ( $rp_b['value'] ?? '' ) && empty( $rp_b['chips'] ) ) || ( isset( $rp_b['bar'] ) && ( $rp_b['bar'] < 0 || $rp_b['bar'] > 1 ) ) ) {
+			$rp_bad[] = $g7_s['rule'] . ': باکس ناقص ' . wp_json_encode( $rp_b, JSON_UNESCAPED_UNICODE );
+		}
+	}
+	if ( 1 === preg_match( '/بیاورید|لینک بدهید|بازنویسی کنید|بسازید/u', (string) wp_json_encode( $rp, JSON_UNESCAPED_UNICODE ) ) ) {
+		$rp_bad[] = $g7_s['rule'] . ': دستور در گزارش';
+	}
+}
+hodima_ad( 'گزارش باکس‌دار: هر ۷ نوع پیشنهاد گوگل باکس یا کارت دارد، باکس‌ها کامل و بی‌دستور (SEO 3.7.9)', $rp_bad, [] );
+$rp_ctr = array_values( array_filter( $g7_all, static fn( array $x ): bool => 'low_ctr' === $x['rule'] ) )[0]['report'] ?? [];
+ob_start();
+hodima_seo_advisor_render_report( (array) $rp_ctr );
+$rp_html = (string) ob_get_clean();
+hodima_ad( 'گزارش نرخ کلیک: عنوان «گزارش»، باکس نارنجی نرخ کلیک با نوار، ارقام فارسی؛ متن «چه دیدیم» نیست', [ str_contains( $rp_html, '>گزارش' ), str_contains( $rp_html, 'hodima-advisor__rbox--warn' ) && str_contains( $rp_html, 'hodima-advisor__rbox-bar' ), 1 === preg_match( '/[۰-۹]/u', $rp_html ), str_contains( $rp_html, 'چه دیدیم' ) ], [ true, true, true, false ] );
 $g7_low = array_values( array_filter( $g7_all, static fn( array $x ): bool => 'low_ctr' === $x['rule'] ) );
 hodima_ad( 'نرخ کلیک کم: گام اول نام کلمه و «عنوان سئو» با جای «ویرایش»؛ «طبق خزش» در «چه دیدیم»؛ detail همان متن کامل قبلی', [ str_contains( $g7_low[0]['todo'][0], '«{where}»' ) && str_contains( $g7_low[0]['todo'][0], '«عنوان سئو»' ), str_contains( $g7_low[2]['seen'] ?? '', 'طبق خزش: توضیح متا ندارد' ), str_contains( $g7_low[0]['detail'], 'آن را ابتدای عنوان بیاورید' ) ], [ true, true, true ] );
 $g7_dc = hodima_seo_advisor_decline_cause( [ 'clicks' => 40, 'impressions' => 9000, 'position' => 9.0, 'prev_clicks' => 200, 'prev_impressions' => 9000, 'prev_position' => 4.0 ], null );

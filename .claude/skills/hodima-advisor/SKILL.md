@@ -22,6 +22,8 @@ description: «دستار سئو» (advisor) افزونه Hodima SEO — قان�
 5. **آزمون:** مورد «دارد/ندارد» در `$cases` فایل `tools/wp-harness/advisor-checks-tests.php`؛ داده در `advisor-issues-golden.php` (`--save` عمدی)؛ باگ پارسر ← `advisor-accuracy.php`؛ UI ← `advisor-tests.php`. بعد قانون‌نامه (`docs/seo-advisor-rulebook.md`) را به‌روز کن.
 دروازه: `bash bin/lint.sh`؛ آزمون‌ها زیر.
 
+**«گزارش» باکس‌دار (۳.۷.۹، طرح تأییدشده کاربر):** «چه دیدیم» در پیشخوان «گزارش» است. هر پیشنهاد گوگل کنار `seen` کلید `report` دارد (`boxes`: label/value/sub/tone=warn/bar ۰..۱/chips [[bool, متن]]؛ `pages`: کارت رقیب badge/win/me/path/…؛ `note`: tone/title/text؛ `intro`؛ `foot`) که در JSON پیشنهاد ذخیره و با `hodima_seo_advisor_render_report()` کشیده می‌شود؛ کار رقابت یکی‌شده report را از گروه هم‌کلمه می‌سازد. قاعده تازه پیشنهاد گوگل باید report هم بسازد (آزمون «گزارش باکس‌دار»). report هم دستور ندارد.
+
 **راهنمای «کارها» برای منبع‌های غیرخزنده (۳.۷.۰):** پیشنهاد گوگل `seen` + `todo` (نه `steps`: آن کلید گام‌های ساخت‌یافته کادر ویرایش است و در جدول ذخیره نمی‌شود) کنار `detail` (متن کامل کادر ویرایش؛ دست نزن)؛ ایندکس `hodima_seo_advisor_inspect_state_guide()`؛ هم‌کلمه `hodima_seo_advisor_competition_guide()`؛ رندر مشترک `hodima_seo_advisor_render_guide()` با ارقام فارسی (`hodima_seo_advisor_fa_digits`). «چه دیدیم» فعل امری ندارد (آزمون).
 
 ## جریان داده

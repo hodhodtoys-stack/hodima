@@ -67,7 +67,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $rule || null !== hodima_seo_advisor_task_closed( $path, $rule, $term ) ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'opp', 'label' => hodima_seo_advisor_rule_label( $rule ), 'text' => (string) ( $advice['detail'] ?? '' ), 'level' => 'warn', 'source' => 'opportunities', 'mark' => $rule . '|' . $term, 'term' => '', 'rule' => $rule, 'rule_term' => $term, 'potential' => (int) ( $advice['potential'] ?? 0 ), 'guide' => hodima_seo_advisor_overview_guide( (string) ( $advice['seen'] ?? $advice['detail'] ?? '' ), 'rec', array_values( array_map( 'strval', (array) ( $advice['todo'] ?? [] ) ) ), $rule ) ] ); // seen/todo از SEO 3.7.0؛ پیشنهاد ذخیره‌شده قدیمی‌تر تا دریافت داده بعدی همان متن کامل را نشان می‌دهد
+			$add( $path, [ 'src' => 'opp', 'label' => hodima_seo_advisor_rule_label( $rule ), 'text' => (string) ( $advice['detail'] ?? '' ), 'level' => 'warn', 'source' => 'opportunities', 'mark' => $rule . '|' . $term, 'term' => '', 'rule' => $rule, 'rule_term' => $term, 'potential' => (int) ( $advice['potential'] ?? 0 ), 'guide' => [ 'report' => is_array( $advice['report'] ?? null ) ? $advice['report'] : [] ] + hodima_seo_advisor_overview_guide( (string) ( $advice['seen'] ?? $advice['detail'] ?? '' ), 'rec', array_values( array_map( 'strval', (array) ( $advice['todo'] ?? [] ) ) ), $rule ) ] ); // seen/todo از SEO 3.7.0؛ report (باکس‌ها) از 3.7.9؛ پیشنهاد ذخیره‌شده قدیمی‌تر تا دریافت داده بعدی همان متن را نشان می‌دهد
 		}
 	}
 
@@ -230,7 +230,33 @@ function hodima_seo_advisor_competition_guide( array $group, string $path ): arr
 		],
 	};
 
-	return hodima_seo_advisor_overview_guide(
+	// «گزارش» باکس‌دار (SEO 3.7.9): کارت هر صفحه رقیب (برنده سبز «صفحه اصلی این کلمه»، «همین صفحه» پررنگ) + یک خط نتیجه
+	$cards = [];
+	foreach ( array_slice( $pages, 0, 4 ) as $i => $p ) {
+		$p_path  = (string) ( $p['path'] ?? '' );
+		$cards[] = [
+			'badge'       => 0 === $i ? ( $p_path === $path ? 'صفحه اصلی این کلمه · همین صفحه' : 'صفحه اصلی این کلمه' ) : ( $p_path === $path ? 'همین صفحه' : 'صفحه رقیب' ),
+			'me'          => $p_path === $path,
+			'win'         => 0 === $i,
+			'path'        => $p_path,
+			'title'       => (string) ( $p['title'] ?? '' ),
+			'impressions' => (int) ( $p['impressions'] ?? 0 ),
+			'clicks'      => (int) ( $p['clicks'] ?? 0 ),
+			'position'    => (float) ( $p['position'] ?? 0 ),
+		];
+	}
+	if ( ! $is_win ) { // همین صفحه کنار برنده دیده شود، حتی اگر رتبه سوم یا بعدتر است
+		$cards = [ $cards[0], ...array_values( array_filter( $cards, static fn( array $c ): bool => $c['me'] ) ), ...array_values( array_filter( array_slice( $cards, 1 ), static fn( array $c ): bool => ! $c['me'] ) ) ];
+		$cards = array_slice( $cards, 0, 4 );
+	}
+
+	return [
+		'report' => [
+			'intro' => sprintf( '%1$s صفحه سایت شما برای «%2$s» در گوگل نشان داده می‌شوند و کلیک بینشان تقسیم شده', number_format_i18n( count( $pages ) ), $term ),
+			'pages' => $cards,
+			'note'  => [ 'tone' => 'info', 'title' => 'نتیجه', 'text' => $is_win ? sprintf( 'این صفحه برای «%s» صفحه اصلی است (بیشترین کلیک)؛ گام‌های زیر برای همین حالت است.', $term ) : sprintf( 'این صفحه برای «%s» صفحه اصلی نیست؛ گام‌های زیر برای همین حالت است.', $term ) ],
+		],
+	] + hodima_seo_advisor_overview_guide(
 		$seen,
 		'rec',
 		$steps,
@@ -264,16 +290,19 @@ function hodima_seo_advisor_fa_digits( string $text ): string {
  * بدنه راهنما: «چه دیدیم» ← (جزئیات: فهرست تصویر/لینک/پیش‌نویس) ← «دقیقا چه کنم» ← «از کجا بفهمم» ← «چرا مهم است؟» بسته.
  * قبلا یک پاراگراف بود: جزئیات + دستور بی‌نقطه پشت هم (خواست کاربر: «راهنمایی گنگ است»).
  *
- * @param array{seen: string, need: string, steps: list<string>, verify: string, why: string} $guide
- * @param callable|null $between چاپ جزئیات بین «چه دیدیم» و گام‌ها
+ * @param array{seen: string, need: string, steps: list<string>, verify: string, why: string, report?: array<string, mixed>} $guide report = باکس‌های «گزارش» (SEO 3.7.9)
+ * @param callable|null $between چاپ جزئیات بین «گزارش» و گام‌ها
  */
 function hodima_seo_advisor_render_guide( array $guide, ?callable $between = null ): void {
 
 	$guide = [ 'seen' => hodima_seo_advisor_fa_digits( $guide['seen'] ), 'steps' => array_map( 'hodima_seo_advisor_fa_digits', $guide['steps'] ), 'verify' => hodima_seo_advisor_fa_digits( $guide['verify'] ), 'why' => hodima_seo_advisor_fa_digits( $guide['why'] ) ] + $guide;
 
-	if ( '' !== $guide['seen'] ) {
+	// «چه دیدیم» ← «گزارش» (SEO 3.7.9، خواست کاربر)؛ پیشنهادی که باکس دارد (report) گزارش باکس‌دار می‌گیرد، بقیه همان یک خط
+	if ( ! empty( $guide['report'] ) && is_array( $guide['report'] ) ) {
+		hodima_seo_advisor_render_report( $guide['report'] );
+	} elseif ( '' !== $guide['seen'] ) {
 		// آدرس وسط جمله فارسی لینک چپ‌به‌راست جدا (bdi) می‌شود؛ با esc_html اسلش آخر آدرس به اولش می‌پرید (عکس کاربر، SEO 3.7.1)
-		printf( '<p class="hodima-advisor__seen"><strong>%1$s</strong> %2$s</p>', esc_html( 'چه دیدیم:' ), hodima_seo_advisor_text_html( $guide['seen'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html
+		printf( '<p class="hodima-advisor__seen"><strong>%1$s</strong> %2$s</p>', esc_html( 'گزارش:' ), hodima_seo_advisor_text_html( $guide['seen'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html
 	}
 
 	if ( null !== $between ) {
@@ -295,6 +324,96 @@ function hodima_seo_advisor_render_guide( array $guide, ?callable $between = nul
 	if ( '' !== $guide['why'] ) {
 		printf( '<details class="hodima-advisor__why"><summary>%1$s</summary><p>%2$s</p></details>', esc_html( 'چرا مهم است؟' ), esc_html( $guide['why'] ) );
 	}
+}
+
+/**
+ * «گزارش» باکس‌دار یک پیشنهاد (SEO 3.7.9؛ طرح تأییدشده کاربر «طرح گزارش دستار سئو»): باکس هر واقعیت (برچسب، عدد درشت، توضیح؛
+ * نارنجی = جای مشکل، با نوار پیشرفت یا نشان ✓/✕)، کارت صفحه‌های رقیب، یک نوار علت/نتیجه و یک خط پانویس. داده از report خود پیشنهاد.
+ *
+ * @param array<string, mixed> $report
+ */
+function hodima_seo_advisor_render_report( array $report ): void {
+
+	$fa    = static fn( string $text ): string => hodima_seo_advisor_fa_digits( $text );
+	$boxes = array_values( array_filter( (array) ( $report['boxes'] ?? [] ), 'is_array' ) );
+	$pages = array_values( array_filter( (array) ( $report['pages'] ?? [] ), 'is_array' ) );
+	$note  = is_array( $report['note'] ?? null ) ? $report['note'] : null;
+
+	echo '<div class="hodima-advisor__report">';
+	printf(
+		'<p class="hodima-advisor__report-head"><span class="dashicons dashicons-chart-bar" aria-hidden="true"></span>%1$s%2$s</p>',
+		esc_html( 'گزارش' ),
+		'' !== (string) ( $report['intro'] ?? '' ) ? ' <span class="hodima-advisor__report-intro">' . esc_html( $fa( (string) $report['intro'] ) ) . '</span>' : ''
+	);
+
+	if ( $boxes ) {
+		echo '<div class="hodima-advisor__report-boxes">';
+		foreach ( $boxes as $b ) {
+			$warn = 'warn' === ( $b['tone'] ?? '' );
+			printf( '<div class="hodima-advisor__rbox%s">', $warn ? ' hodima-advisor__rbox--warn' : '' );
+			printf( '<span class="hodima-advisor__rbox-label">%s</span>', esc_html( $fa( (string) ( $b['label'] ?? '' ) ) ) );
+			if ( '' !== (string) ( $b['value'] ?? '' ) ) {
+				printf( '<strong class="hodima-advisor__rbox-value">%s</strong>', esc_html( $fa( (string) $b['value'] ) ) );
+			}
+			if ( isset( $b['bar'] ) ) {
+				$pct = (int) round( max( 0.0, min( 1.0, (float) $b['bar'] ) ) * 100 );
+				printf( '<span class="hodima-advisor__rbox-bar" role="img" aria-label="%1$s"><span style="inline-size: %2$s%%"></span></span>', esc_attr( $fa( sprintf( '%s٪ از مقدار مورد انتظار', number_format_i18n( $pct ) ) ) ), esc_attr( (string) $pct ) );
+			}
+			if ( ! empty( $b['chips'] ) && is_array( $b['chips'] ) ) {
+				echo '<span class="hodima-advisor__rbox-chips">';
+				foreach ( $b['chips'] as $chip ) {
+					$ok = ! empty( $chip[0] );
+					printf( '<span class="hodima-advisor__rchip%1$s"><span aria-hidden="true">%2$s</span> %3$s<span class="screen-reader-text">%4$s</span></span>', $ok ? ' hodima-advisor__rchip--ok' : '', $ok ? '✓' : '✕', esc_html( (string) ( $chip[1] ?? '' ) ), $ok ? ': هست' : ': نیست' );
+				}
+				echo '</span>';
+			}
+			if ( '' !== (string) ( $b['sub'] ?? '' ) ) {
+				printf( '<span class="hodima-advisor__rbox-sub">%s</span>', esc_html( $fa( (string) $b['sub'] ) ) );
+			}
+			echo '</div>';
+		}
+		echo '</div>';
+	}
+
+	if ( $pages ) {
+		echo '<div class="hodima-advisor__report-pages">';
+		foreach ( $pages as $p ) {
+			$path  = (string) ( $p['path'] ?? '' );
+			$title = (string) ( $p['title'] ?? '' );
+			if ( '' === $title && '' !== $path ) {
+				$title = (string) ( hodima_seo_advisor_page( $path )['title'] ?? '' );
+			}
+			$stat = static fn( int|float $value, int $decimals = 0 ): string => $value < 0 ? '—' : $fa( number_format_i18n( $value, $decimals ) );
+			printf(
+				'<div class="hodima-advisor__rpage%1$s"><span class="hodima-advisor__rpage-badge">%2$s</span><strong class="hodima-advisor__rpage-title">%3$s</strong>%4$s<span class="hodima-advisor__rpage-stats"><span><b>%5$s</b> نمایش</span><span><b>%6$s</b> کلیک</span><span><b>%7$s</b> رتبه</span></span></div>',
+				! empty( $p['win'] ) ? ' hodima-advisor__rpage--win' : ( ! empty( $p['me'] ) || 'همین صفحه' === ( $p['badge'] ?? '' ) ? ' hodima-advisor__rpage--me' : '' ),
+				esc_html( (string) ( $p['badge'] ?? '' ) ),
+				esc_html( '' !== $title ? $title : rawurldecode( $path ) ),
+				'' !== $path ? hodima_seo_advisor_url_copy( $path ) : '', // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_url_copy
+				esc_html( $stat( (int) ( $p['impressions'] ?? -1 ) ) ),
+				esc_html( $stat( (int) ( $p['clicks'] ?? -1 ) ) ),
+				esc_html( $stat( (float) ( $p['position'] ?? -1 ), 1 ) )
+			);
+		}
+		echo '</div>';
+	}
+
+	if ( null !== $note && '' !== (string) ( $note['text'] ?? '' ) ) {
+		$warn = 'warn' === ( $note['tone'] ?? '' );
+		printf(
+			'<p class="hodima-advisor__report-note%1$s"><span class="hodima-advisor__report-icon" aria-hidden="true">%2$s</span><span><strong>%3$s:</strong> %4$s</span></p>',
+			$warn ? ' hodima-advisor__report-note--warn' : '',
+			$warn ? '!' : 'i',
+			esc_html( (string) ( $note['title'] ?? '' ) ),
+			hodima_seo_advisor_text_html( $fa( (string) $note['text'] ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html
+		);
+	}
+
+	if ( '' !== (string) ( $report['foot'] ?? '' ) ) {
+		printf( '<p class="hodima-advisor__report-foot">%s</p>', esc_html( $fa( (string) $report['foot'] ) ) );
+	}
+
+	echo '</div>';
 }
 
 /**
