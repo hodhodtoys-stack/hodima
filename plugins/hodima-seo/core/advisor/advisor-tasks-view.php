@@ -125,49 +125,6 @@ function hodima_seo_advisor_task_badge( ?array $task ): string {
 }
 
 /**
- * دکمه‌های وضعیت زیر هر پیشنهاد در کادر ویرایش.
- *
- * @param array<string, mixed> $item پیشنهاد (rule، term، title)
- */
-function hodima_seo_advisor_render_task_controls( string $path, array $item ): void {
-
-	$rule  = (string) $item['rule'];
-	$term  = (string) $item['term'];
-	$title = (string) $item['title'];
-	$task  = hodima_seo_advisor_task( $path, $rule, $term );
-
-	echo '<div class="hodima-advisor-box__task">';
-
-	if ( null !== $task ) {
-		$view = hodima_seo_advisor_task_view( $task );
-		printf(
-			'<span class="hodima-advisor-box__pill%1$s">%2$s · %3$s</span>',
-			match ( $view['state'] ) { 'waiting', 'fixed' => ' hodima-advisor-box__pill--ok', 'rejected' => '', default => ' hodima-advisor-box__pill--warn' },
-			esc_html( $view['label'] ),
-			esc_html( hodima_seo_advisor_task_date( $view['time'] ) )
-		);
-	}
-
-	// فقط «انجام دادم» (سبز) و «لازم نیست» (نارنجی)؛ دکمه «در حال انجام» برداشته شد (SEO 3.7.3، خواست کاربر: «همین دو دکمه کافی است»).
-	// وضعیت «در حال انجام» کارهای قدیمی معتبر می‌ماند (داده پاک نمی‌شود)
-	foreach ( [ 'done' => 'hodima-advisor-box__btn--done', 'rejected' => 'hodima-advisor-box__btn--reject' ] as $status => $class ) {
-		if ( null === $task || $task['status'] !== $status ) {
-			printf( '<a class="button button-small %1$s" href="%2$s">%3$s</a>', esc_attr( $class ), esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, $status ) ), esc_html( hodima_seo_advisor_task_statuses()[ $status ] ) );
-		}
-	}
-
-	if ( null !== $task && in_array( hodima_seo_advisor_task_state( $task ), [ 'no_effect', 'back' ], true ) ) {
-		printf( '<a class="button button-small" href="%1$s">دوباره انجام دادم</a>', esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, 'done', true ) ) );
-	}
-
-	if ( null !== $task ) {
-		printf( '<a class="button button-small" href="%1$s">برگردان به فهرست</a>', esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, '' ) ) );
-	}
-
-	echo '</div>';
-}
-
-/**
  * جمله اثر یک کار «انجام دادم».
  *
  * @param array{path: string, status: string, at: int} $task

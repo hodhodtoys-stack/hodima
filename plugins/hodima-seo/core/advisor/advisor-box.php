@@ -57,8 +57,7 @@ function hodima_seo_advisor_box_assets( string $hook ): void {
 		return;
 	}
 
-	$file = HODIMA_SEO_DIR . '/core/advisor/advisor-box.css';
-	hodima_seo_advisor_enqueue_steps_css();
+	$file = HODIMA_SEO_DIR . '/core/advisor/advisor-box.css'; // گام‌ها و دکمه کپی دیگر در کادر نیست (SEO 3.7.6)؛ فقط استایل خود کادر
 	wp_enqueue_style( 'hodima-seo-advisor-box', HODIMA_SEO_URL . '/core/advisor/advisor-box.css', [], is_file( $file ) ? (string) filemtime( $file ) : HODIMA_SEO_VERSION );
 }
 
@@ -152,15 +151,52 @@ function hodima_seo_advisor_render_trend( array $row ): void {
 	echo '<p class="hodima-advisor-box__trend-note">' . esc_html( 'هفته‌ها دوشنبه تا یکشنبه‌اند. تغییر کلیک می‌تواند از فصل یا ویرایش دیگری هم باشد؛ این فقط مقایسه است.' ) . '</p></div>';
 }
 
-/** محتوای کادر برای یک آدرس. */
+/**
+ * کارهای باز همین آدرس، از همان فهرست «کارها» (SEO 3.7.6؛ طرح تأییدشده «یک منبع»): کادر و دستار دیگر عدد و متن متفاوت نشان
+ * نمی‌دهند. قبلا کادر با تحلیل زنده خودش فقط پیشنهادهای گوگل را می‌ساخت (بدون ایراد فنی، ایندکس و هم‌کلمه) و برای «از کجا
+ * لینک بدهید» متن همه صفحه‌ها را با هر بار باز کردن ویرایش می‌گشت؛ آن جزئیات حالا در «کارها» با باز کردن ساخته می‌شود.
+ *
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_box_tasks( string $path ): array {
+
+	if ( ! function_exists( 'hodima_seo_advisor_overview_build' ) ) {
+		return [];
+	}
+
+	foreach ( hodima_seo_advisor_overview_build() as $page ) {
+		if ( $path === (string) $page['path'] ) {
+			return (array) $page['items'];
+		}
+	}
+
+	return [];
+}
+
+/**
+ * توضیح کوتاه کنار نام یک کار در کادر (کلمه پیشنهاد گوگل یا «ایراد فنی»).
+ *
+ * @param array<string, mixed> $item یک مورد hodima_seo_advisor_overview_build()
+ */
+function hodima_seo_advisor_box_task_note( array $item ): string {
+
+	return match ( (string) ( $item['src'] ?? '' ) ) {
+		'opp'   => '' !== (string) ( $item['rule_term'] ?? '' ) ? '«' . (string) $item['rule_term'] . '»' : '',
+		'crawl' => 'ایراد فنی' . ( '' !== (string) ( $item['detail'] ?? '' ) ? ' · ' . mb_strimwidth( (string) $item['detail'], 0, 60, '…' ) : '' ),
+		default => '',
+	};
+}
+
+/** محتوای کادر برای یک آدرس: وضعیت، داده گوگل همین صفحه، فهرست کوتاه کارها و یک دکمه به «کارها». */
 function hodima_seo_advisor_render_box( string $url ): void {
 
-	$path     = hodima_seo_advisor_path_key( $url );
-	$analysis = null !== $path ? hodima_seo_advisor_analyze( $path, true ) : null; // فقط اینجا گام‌های «دقیقا چه کنید» ساخته می‌شوند
-	$status   = hodima_seo_advisor_status();
-	$ignored  = null !== $path && in_array( $path, hodima_seo_advisor_ignored(), true );
-	$n        = static fn( int|float $value, int $decimals = 0 ): string => number_format_i18n( $value, $decimals );
-	$count    = null !== $analysis && ! $ignored ? count( $analysis['suggestions'] ) : 0;
+	$path    = hodima_seo_advisor_path_key( $url );
+	$row     = null !== $path ? hodima_seo_advisor_page( $path ) : null;
+	$status  = hodima_seo_advisor_status();
+	$ignored = null !== $path && in_array( $path, hodima_seo_advisor_ignored(), true );
+	$tasks   = null !== $path && ! $ignored ? hodima_seo_advisor_box_tasks( $path ) : [];
+	$n       = static fn( int|float $value, int $decimals = 0 ): string => number_format_i18n( $value, $decimals );
+	$count   = count( $tasks );
 
 	echo '<div class="hodima-advisor-box">';
 
@@ -168,133 +204,88 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	printf(
 		'<header class="hodima-advisor-box__head"><span class="hodima-advisor-box__icon dashicons dashicons-chart-line" aria-hidden="true"></span><div class="hodima-advisor-box__title"><strong>دستار سئو</strong><small>%s</small></div>%s</header>',
 		esc_html( $status['fetched'] > 0 ? sprintf( 'داده %1$s روز اخیر · آخرین دریافت %2$s پیش', $n( $status['days'] ), human_time_diff( $status['fetched'] ) ) : 'هنوز داده‌ای گرفته نشده' ),
-		$ignored
+		null === $path ? '' : ( $ignored
 			? '<span class="hodima-advisor-box__pill">نادیده گرفته شده</span>'
-			: ( null === $analysis ? '' : ( $count > 0 ? '<span class="hodima-advisor-box__pill hodima-advisor-box__pill--warn">' . esc_html( $n( $count ) ) . ' پیشنهاد</span>' : '<span class="hodima-advisor-box__pill hodima-advisor-box__pill--ok">پیشنهادی نیست</span>' ) )
+			: ( $count > 0 ? '<span class="hodima-advisor-box__pill hodima-advisor-box__pill--warn">' . esc_html( sprintf( '%s کار', $n( $count ) ) ) . '</span>' : '<span class="hodima-advisor-box__pill hodima-advisor-box__pill--ok">کاری نیست</span>' ) )
 	);
 
-	if ( null === $analysis ) {
-		echo '<p class="hodima-advisor-box__empty">' . esc_html( $status['fetched'] > 0 ? 'برای این آدرس هنوز داده‌ای در سرچ کنسول ثبت نشده است (تازه منتشر شده یا نمایشی نداشته). بعد از دریافت داده بعدی دوباره ببینید.' : 'داده سرچ کنسول هنوز گرفته نشده است؛ در «ابزارهای هدیما ← دستار سئو ← خزش و داده» ردیف «دریافت داده گوگل ← اجرا همین حالا» را بزنید.' ) . '</p></div>';
+	if ( null === $path ) {
+		echo '</div>';
 		return;
 	}
 
-	$row     = $analysis['row'];
-	$queries = hodima_seo_advisor_queries( (string) $row['path'], 5 );
-	$ctr     = $row['impressions'] > 0 ? $row['clicks'] / $row['impressions'] * 100 : 0.0;
+	if ( null === $row ) {
+		echo '<p class="hodima-advisor-box__empty">' . esc_html( $status['fetched'] > 0 ? 'برای این آدرس هنوز داده‌ای در سرچ کنسول ثبت نشده است (تازه منتشر شده یا نمایشی نداشته). بعد از دریافت داده بعدی دوباره ببینید.' : 'داده سرچ کنسول هنوز گرفته نشده است؛ در «ابزارهای هدیما ← دستار سئو ← خزش و داده» ردیف «دریافت داده گوگل ← اجرا همین حالا» را بزنید.' ) . '</p>';
+	} else {
+		$queries = hodima_seo_advisor_queries( (string) $row['path'], 5 );
+		$ctr     = $row['impressions'] > 0 ? $row['clicks'] / $row['impressions'] * 100 : 0.0;
 
-	// پنل داده: سه عدد هم‌اندازه با همان ظاهر کادر «عنوان سئو و توضیح متا» (برچسب بالا، مقدار در کادر) + جدول کلمه‌ها
-	echo '<section class="hodima-advisor-box__data" aria-label="داده گوگل برای این صفحه"><h4>داده گوگل برای این صفحه</h4>';
-	printf(
-		'<div class="hodima-advisor-box__metrics"><div><span class="hodima-advisor-box__label">نمایش <small>(%1$s روز)</small>%5$s</span><div class="hodima-advisor-box__value">%2$s</div></div><div><span class="hodima-advisor-box__label">نرخ کلیک%6$s</span><div class="hodima-advisor-box__value">%3$s٪</div></div><div><span class="hodima-advisor-box__label">رتبه%7$s</span><div class="hodima-advisor-box__value">%4$s</div></div></div>',
-		esc_html( $n( $status['days'] ) ),
-		esc_html( $n( $row['impressions'] ) ),
-		esc_html( $n( $ctr, 2 ) ),
-		esc_html( $n( (float) $row['position'], 1 ) ),
-		hodima_seo_advisor_help( 'impressions' ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_help
-		hodima_seo_advisor_help( 'ctr' ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- همان
-		hodima_seo_advisor_help( 'position' ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- همان
-	);
-
-	hodima_seo_advisor_render_trend( $row );
-
-	if ( $queries ) {
-		echo '<div><span class="hodima-advisor-box__label">کلمه‌های برتر</span><table class="hodima-advisor-box__table"><thead><tr><th>کلمه</th><th>نمایش</th><th>نرخ کلیک</th><th>رتبه</th></tr></thead><tbody>';
-		foreach ( $queries as $query ) {
-			printf(
-				'<tr><td>%1$s</td><td>%2$s</td><td>%3$s٪</td><td>%4$s</td></tr>',
-				esc_html( $query['term'] ),
-				esc_html( $n( $query['impressions'] ) ),
-				esc_html( $n( $query['impressions'] > 0 ? $query['clicks'] / $query['impressions'] * 100 : 0, 2 ) ),
-				esc_html( $n( $query['position'], 1 ) )
-			);
-		}
-		echo '</tbody></table></div>';
-	}
-	echo '</section>';
-
-	// ایرادها و گام‌های رفع
-	echo '<div class="hodima-advisor-box__main">';
-	if ( $ignored ) {
-		echo '<p class="hodima-advisor-box__empty">این آدرس در «دستار سئو» نادیده گرفته شده و پیشنهادی نمی‌گیرد.</p>';
-	} elseif ( ! $analysis['suggestions'] ) {
-		echo '<p class="hodima-advisor-box__empty">با آمار این بازه پیشنهادی برای این صفحه نیست؛ نرخ کلیک و کلمه‌های اصلی در حد معمول‌اند.</p>';
-	}
-
-	$position = 0;
-	$has_box  = function_exists( 'seobox_post_types' );
-	// تحلیل زنده خودش نادیده‌گرفتن را نمی‌داند؛ آدرس نادیده‌گرفته‌شده پیشنهادی نشان نمی‌دهد
-	foreach ( $ignored ? [] : $analysis['suggestions'] as $item ) {
-		$jump = 'low_ctr' === $item['rule'] && $has_box
-			? '<a class="button" href="#seobox_title">' . esc_html( 'رفتن به عنوان سئو' ) . '</a><a class="button" href="#seobox_description">' . esc_html( 'رفتن به توضیح متا' ) . '</a>'
-			: '';
-		// راهنمای پنج‌بخشی، همان «کارها» (SEO 3.7.2؛ طرح تأییدشده کاربر): عنوان = برچسب «کارها» + «لازم است؟» + کلیک بالقوه ←
-		// چه دیدیم ← دقیقا چه کنم (گام‌های شماره‌دار؛ «ویرایش …» ← «همین صفحه» چون مدیر همین الان در صفحه ویرایش است) ← دکمه‌های رفتن ←
-		// جزئیات زنده (عنوان فعلی، پیش‌نویس، صفحه‌های لینک‌دهنده) ← از کجا بفهمم ← چرا مهم است (بسته). قبلا «دقیقا چه کنم؟» یک پاراگراف قاطی بود.
-		$guide = hodima_seo_advisor_rule_guide( (string) $item['rule'] );
-		$todo  = hodima_seo_advisor_box_todo( (array) ( $item['todo'] ?? [] ) );
-		echo '<section class="hodima-advisor-box__item">';
+		// پنل داده: سه عدد هم‌اندازه با همان ظاهر کادر «عنوان سئو و توضیح متا» (برچسب بالا، مقدار در کادر) + جدول کلمه‌ها
+		echo '<section class="hodima-advisor-box__data" aria-label="داده گوگل برای این صفحه"><h4>داده گوگل برای این صفحه</h4>';
 		printf(
-			'<h4>%1$s %2$s%3$s</h4>',
-			esc_html( hodima_seo_advisor_rule_label( (string) $item['rule'] ) ),
-			'<span class="hodima-advisor-box__need">بهتر است رفع شود</span>',
-			(int) $item['potential'] > 0 ? '<span class="hodima-advisor-box__pot">' . esc_html( hodima_seo_advisor_fa_digits( sprintf( 'کلیک بالقوه ≈ %s', $n( (int) $item['potential'] ) ) ) ) . hodima_seo_advisor_help( 'potential' ) . '</span>' : '' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_help
+			'<div class="hodima-advisor-box__metrics"><div><span class="hodima-advisor-box__label">نمایش <small>(%1$s روز)</small>%5$s</span><div class="hodima-advisor-box__value">%2$s</div></div><div><span class="hodima-advisor-box__label">نرخ کلیک%6$s</span><div class="hodima-advisor-box__value">%3$s٪</div></div><div><span class="hodima-advisor-box__label">رتبه%7$s</span><div class="hodima-advisor-box__value">%4$s</div></div></div>',
+			esc_html( $n( $status['days'] ) ),
+			esc_html( $n( $row['impressions'] ) ),
+			esc_html( $n( $ctr, 2 ) ),
+			esc_html( $n( (float) $row['position'], 1 ) ),
+			hodima_seo_advisor_help( 'impressions' ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_help
+			hodima_seo_advisor_help( 'ctr' ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- همان
+			hodima_seo_advisor_help( 'position' ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- همان
 		);
-		printf(
-			'<p><strong class="hodima-advisor-box__part">%1$s</strong> %2$s</p>',
-			esc_html( $todo ? 'چه دیدیم:' : 'دقیقا چه کنم؟' ), // پیشنهاد بی‌todo (نباید پیش بیاید؛ تحلیل زنده همیشه می‌سازد) همان متن کامل قبلی
-			hodima_seo_advisor_text_html( hodima_seo_advisor_fa_digits( (string) ( $todo ? ( $item['seen'] ?? $item['detail'] ) : $item['detail'] ) ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html (آدرس داخل متن: لینک چپ‌به‌راست جدا از متن)
-		);
-		if ( $todo ) {
-			echo '<p class="hodima-advisor-box__label">دقیقا چه کنم</p><ol class="hodima-advisor-box__todo">';
-			foreach ( $todo as $line ) {
-				printf( '<li>%s</li>', hodima_seo_advisor_text_html( hodima_seo_advisor_fa_digits( $line ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html
+
+		hodima_seo_advisor_render_trend( $row );
+
+		if ( $queries ) {
+			echo '<div><span class="hodima-advisor-box__label">کلمه‌های برتر</span><table class="hodima-advisor-box__table"><thead><tr><th>کلمه</th><th>نمایش</th><th>نرخ کلیک</th><th>رتبه</th></tr></thead><tbody>';
+			foreach ( $queries as $query ) {
+				printf(
+					'<tr><td>%1$s</td><td>%2$s</td><td>%3$s٪</td><td>%4$s</td></tr>',
+					esc_html( $query['term'] ),
+					esc_html( $n( $query['impressions'] ) ),
+					esc_html( $n( $query['impressions'] > 0 ? $query['clicks'] / $query['impressions'] * 100 : 0, 2 ) ),
+					esc_html( $n( $query['position'], 1 ) )
+				);
 			}
-			echo '</ol>';
-		}
-		if ( '' !== $jump ) {
-			echo '<div class="hodima-advisor-box__meta">' . wp_kses_post( $jump ) . '</div>';
-		}
-		hodima_seo_advisor_render_steps( (array) ( $item['steps'] ?? [] ), 0 === $position++, 'جزئیات و پیش‌نویس' );
-		if ( '' !== $guide['verify'] ) {
-			printf( '<p class="hodima-advisor-box__verify"><span class="dashicons dashicons-yes" aria-hidden="true"></span><span><strong class="hodima-advisor-box__part">%1$s</strong> %2$s</span></p>', esc_html( 'از کجا بفهمم درست شد:' ), esc_html( hodima_seo_advisor_fa_digits( $guide['verify'] ) ) );
-		}
-		if ( '' !== $guide['why'] ) {
-			printf( '<details class="hodima-advisor-box__why"><summary>%1$s</summary><p>%2$s</p></details>', esc_html( 'چرا مهم است؟' ), esc_html( $guide['why'] ) );
-		}
-		if ( function_exists( 'hodima_seo_advisor_render_task_controls' ) ) {
-			hodima_seo_advisor_render_task_controls( (string) $row['path'], $item );
+			echo '</tbody></table></div>';
 		}
 		echo '</section>';
 	}
-	echo '</div>';
+
+	// کارهای این صفحه: یک خط برای هر کار، همان فهرست «کارها»؛ راهنما و جزئیات فقط آنجا (SEO 3.7.6)
+	echo '<section class="hodima-advisor-box__tasks" aria-label="کارهای این صفحه">';
+	if ( $ignored ) {
+		echo '<p class="hodima-advisor-box__empty">این آدرس در «دستار سئو» نادیده گرفته شده و پیشنهادی نمی‌گیرد.</p>';
+	} elseif ( ! $tasks ) {
+		echo '<p class="hodima-advisor-box__empty">برای این صفحه کار بازی در «کارها» نیست.</p>';
+	} else {
+		$srcs = array_count_values( array_map( static fn( array $item ): string => 'crawl' === ( $item['src'] ?? '' ) ? 'crawl' : ( 'opp' === ( $item['src'] ?? '' ) ? 'opp' : 'other' ), $tasks ) );
+		$mix  = array_filter( [ isset( $srcs['crawl'] ) ? sprintf( '%s فنی', $n( $srcs['crawl'] ) ) : '', isset( $srcs['opp'] ) ? sprintf( '%s گوگل', $n( $srcs['opp'] ) ) : '', isset( $srcs['other'] ) ? sprintf( '%s دیگر', $n( $srcs['other'] ) ) : '' ] );
+		printf( '<h4>کارهای این صفحه <small>(%s)</small></h4><ul class="hodima-advisor-box__list">', esc_html( 'همان فهرست «کارها»: ' . implode( '، ', $mix ) ) );
+		foreach ( $tasks as $item ) {
+			$level = (string) ( $item['level'] ?? 'warn' );
+			$band  = (string) ( $item['band'] ?? '' );
+			$note  = hodima_seo_advisor_box_task_note( $item );
+			printf(
+				'<li><span class="hodima-advisor-box__dot hodima-advisor-box__dot--%1$s" aria-hidden="true"></span><strong>%2$s</strong>%3$s%4$s</li>',
+				esc_attr( in_array( $level, [ 'bad', 'warn', 'info' ], true ) ? $level : 'warn' ),
+				esc_html( (string) $item['label'] ),
+				'' !== $note ? ' <span class="hodima-advisor-box__note">' . esc_html( $note ) . '</span>' : '',
+				isset( [ 'high' => 1, 'mid' => 1, 'low' => 1 ][ $band ] ) ? '<span class="hodima-advisor-box__prio hodima-advisor-box__prio--' . esc_attr( $band ) . '">' . esc_html( [ 'high' => 'اولویت بالا', 'mid' => 'اولویت متوسط', 'low' => 'اولویت کم' ][ $band ] ) . '</span>' : ''
+			);
+		}
+		echo '</ul><p class="hodima-advisor-box__hint">نتیجه آخرین بررسی است. بعد از ویرایش و ذخیره، در «کارها» «انجام دادم» را بزنید تا همان لحظه دوباره سنجیده شود.</p>';
+	}
+	echo '</section>';
 
 	echo '<footer class="hodima-advisor-box__foot">';
-	printf( '<a class="button" href="%s"><span class="dashicons dashicons-chart-line" aria-hidden="true"></span> دیدن در صفحه دستار سئو</a>', esc_url( hodima_seo_advisor_page_url( [ 'q' => (string) $row['path'] ] ) ) );
+	printf( '<a class="button hodima-advisor-box__go" href="%s"><span class="dashicons dashicons-chart-line" aria-hidden="true"></span> دیدن راهنما و رفع در دستار سئو</a>', esc_url( hodima_seo_advisor_page_url( [ 'q' => $path ] ) ) );
 
 	if ( $ignored ) {
 		printf(
 			'<a class="button" href="%s"><span class="dashicons dashicons-undo" aria-hidden="true"></span> بازگرداندن به پیشنهادها</a>',
-			esc_url( wp_nonce_url( add_query_arg( [ 'action' => 'hodima_advisor_ignore', 'path' => (string) $row['path'], 'restore' => 1 ], admin_url( 'admin-post.php' ) ), 'hodima_advisor_ignore' ) )
+			esc_url( wp_nonce_url( add_query_arg( [ 'action' => 'hodima_advisor_ignore', 'path' => $path, 'restore' => 1 ], admin_url( 'admin-post.php' ) ), 'hodima_advisor_ignore' ) )
 		);
 	}
 
 	echo '</footer></div>';
-}
-
-/**
- * گام‌های «کارها» برای کادر ویرایش همان صفحه (SEO 3.7.2): «ویرایش محصول را بزنید» آنجا بی‌معنی است، مدیر همین الان در صفحه ویرایش است.
- *
- * @param list<mixed> $todo
- * @return list<string>
- */
-function hodima_seo_advisor_box_todo( array $todo ): array {
-
-	return array_values( array_map(
-		static fn( mixed $line ): string => str_replace(
-			[ '«{where}» را بزنید؛ در ', '«{where}» ← ', '{where}' ],
-			[ 'در همین صفحه، ', 'در همین صفحه، ', 'همین صفحه' ],
-			(string) $line
-		),
-		array_filter( $todo, 'is_string' )
-	) );
 }

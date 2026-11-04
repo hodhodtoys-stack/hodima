@@ -470,16 +470,26 @@ wp_set_current_user( 1 );
 ob_start();
 hodima_seo_advisor_render_box( (string) get_permalink( $box_id ) );
 $box = (string) ob_get_clean();
-hodima_ad( 'کادر: وضعیت، پیشنهاد نرخ کلیک، کلمه برتر، عددها', [ str_contains( $box, 'hodima-advisor-box__pill--warn' ), str_contains( $box, '>' . hodima_seo_advisor_rule_label( 'low_ctr' ) . ' <' ) && str_contains( $box, 'class="hodima-advisor-box__todo"' ) && str_contains( $box, 'در همین صفحه، کادر «سئو (SeoBox)»' ) && ! str_contains( $box, '{where}' ) /* SEO 3.7.2: عنوان = برچسب «کارها» (تأیید کاربر)، گام‌های شماره‌دار با «همین صفحه» */, str_contains( $box, 'پلومریا کلیپس' ), str_contains( $box, '36,492' ) || str_contains( $box, '۳۶٬۴۹۲' ) ], [ true, true, true, true ] );
-hodima_ad( 'کادر: متن تازه صفحه سنجیده می‌شود (کلمه «پلومریا» در عنوان، تیترها و متن صفحه نیست)', str_contains( $box, 'در متن صفحه نیست' ), true );
+// SEO 3.7.6 (طرح تأییدشده «یک منبع»؛ آزمون‌های قدیمی «پیشنهاد زنده با گام‌ها» عمدا عوض شد): کادر فقط خلاصه است — همان کارهای
+// «کارها» برای این آدرس، یک خط برای هر کار، بدون گام/جزئیات/دکمه انجام دادم؛ داده گوگل همان قبلی
+$bx_items = hodima_seo_advisor_box_tasks( '/advisor-box-test/' );
+$bx_ov    = [];
+foreach ( hodima_seo_advisor_overview_build() as $bx_page ) {
+	if ( '/advisor-box-test/' === $bx_page['path'] ) {
+		$bx_ov = array_column( $bx_page['items'], 'label' );
+	}
+}
+hodima_ad( 'کادر: همان کارهای «کارها» برای همین آدرس (یک منبع)', [ array_column( $bx_items, 'label' ) === $bx_ov, count( $bx_items ) > 0, substr_count( $box, '<li><span class="hodima-advisor-box__dot' ) === count( $bx_items ) ], [ true, true, true ] );
+hodima_ad( 'کادر: نشان «N کار»، برچسب «نرخ کلیک کم» در فهرست، کلمه برتر و عددهای گوگل', [ str_contains( $box, 'hodima-advisor-box__pill--warn' ) && str_contains( $box, sprintf( '%s کار', number_format_i18n( count( $bx_items ) ) ) ), str_contains( $box, '<strong>' . hodima_seo_advisor_rule_label( 'low_ctr' ) . '</strong>' ), str_contains( $box, 'پلومریا کلیپس' ), str_contains( $box, '36,492' ) || str_contains( $box, '۳۶٬۴۹۲' ) ], [ true, true, true, true ] );
+hodima_ad( 'کادر: بدون گام‌ها، جزئیات، دکمه «انجام دادم/لازم نیست» و «{where}»؛ یک دکمه اصلی به «کارها»', [ str_contains( $box, 'hodima-advisor-box__todo' ), str_contains( $box, 'hodima-advisor-steps' ), str_contains( $box, 'status=done' ), str_contains( $box, '{where}' ), substr_count( $box, 'hodima-advisor-box__go' ) ], [ false, false, false, false, 1 ] );
 hodima_ad( 'کادر: لینک به صفحه مشاور با جستجوی همین آدرس، بدون لینک بازگرداندن', [ str_contains( $box, 'page=hodima-advisor' ) && str_contains( $box, 'q=/advisor-box-test/' ), str_contains( $box, 'restore=1' ) ], [ true, false ] );
 
 hodima_seo_advisor_set_ignored( '/advisor-box-test/', true );
 ob_start();
 hodima_seo_advisor_render_box( (string) get_permalink( $box_id ) );
 $box = (string) ob_get_clean();
-hodima_ad( 'کادر: پنل داده با سه خانه هم‌اندازه و جدول کلمه‌ها (بدون ستون کناری)', [ substr_count( $box, 'hodima-advisor-box__value' ), str_contains( $box, 'hodima-advisor-box__table' ), str_contains( $box, 'hodima-advisor-box__aside' ), str_contains( $box, 'href="#seobox_description"' ) === str_contains( $box, 'href="#seobox_title"' ) ], [ 3, true, false, true ] );
-hodima_ad( 'نادیده‌گرفته‌شده: پیشنهادی نیست و لینک بازگرداندن با nonce هست', [ str_contains( $box, 'نادیده گرفته شده' ), str_contains( $box, 'hodima-advisor-box__item' ), str_contains( $box, 'restore=1' ) && str_contains( $box, '_wpnonce=' ) && str_contains( $box, 'action=hodima_advisor_ignore' ) ], [ true, false, true ] );
+hodima_ad( 'کادر: پنل داده با سه خانه هم‌اندازه و جدول کلمه‌ها (بدون ستون کناری)', [ substr_count( $box, 'hodima-advisor-box__value' ), str_contains( $box, 'hodima-advisor-box__table' ), str_contains( $box, 'hodima-advisor-box__aside' ) ], [ 3, true, false ] );
+hodima_ad( 'نادیده‌گرفته‌شده: پیشنهادی نیست و لینک بازگرداندن با nonce هست', [ str_contains( $box, 'نادیده گرفته شده' ), str_contains( $box, 'hodima-advisor-box__dot' ), str_contains( $box, 'restore=1' ) && str_contains( $box, '_wpnonce=' ) && str_contains( $box, 'action=hodima_advisor_ignore' ) ], [ true, false, true ] );
 hodima_seo_advisor_set_ignored( '/advisor-box-test/', false );
 
 ob_start();
@@ -1319,10 +1329,7 @@ $wpdb->query( $wpdb->prepare( 'DELETE FROM %i', hodima_seo_advisor_table( 'histo
 // نما: کنترل‌های کادر ویرایش و تب «کارهای من»
 hodima_seo_advisor_task_set( '/k/b/', 'low_ctr', '', 'عنوان و متا را بازنویسی کنید', 'done' );
 hodima_seo_advisor_task_set( '/k/a/', 'near_first', 'کلیپس', 'کلمه نزدیک صفحه اول', 'doing' );
-ob_start();
-hodima_seo_advisor_render_task_controls( '/k/b/', [ 'rule' => 'low_ctr', 'term' => '', 'title' => 'عنوان و متا را بازنویسی کنید' ] );
-$ctl = (string) ob_get_clean();
-hodima_ad( 'کنترل کادر: نشان «انجام دادم»، «لازم نیست» نارنجی و «برگردان به فهرست» (۲ دکمه) با nonce؛ «در حال انجام» برداشته شد (SEO 3.7.3، خواست کاربر)', [ str_contains( $ctl, 'انجام شد ·' ), substr_count( $ctl, 'class="button button-small' ), str_contains( $ctl, 'برگردان به فهرست' ), str_contains( $ctl, '_wpnonce=' ), str_contains( $ctl, 'status=doing' ), str_contains( $ctl, 'status=done' ), str_contains( $ctl, 'hodima-advisor-box__btn--reject' ) ], [ true, 2, true, true, false, false, true ] );
+// کنترل‌های «انجام دادم/لازم نیست» کادر ویرایش با SEO 3.7.6 برداشته شد (فقط در «کارها»)؛ آزمونش هم
 update_option( HODIMA_SEO_ADVISOR_STATUS_OPTION, [ 'fetched' => time() - 3600, 'property' => 'sc-domain:' . $host, 'days' => 90, 'pages' => 1, 'queries' => 0, 'advised' => 0, 'error' => '' ] + hodima_seo_advisor_ranges( 90 ), false );
 hodima_seo_advisor_store( [ '/k/b/' => [ 'clicks' => 5, 'impressions' => 3000, 'position' => 8.0 ] ], [], [] );
 update_option( 'hodima_discover_sc_key', $key_json, false );
@@ -2298,10 +2305,7 @@ hodima_seo_advisor_render_tasks();
 $ec_open = (string) ob_get_clean();
 false === $ec_tasks ? delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION ) : update_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, $ec_tasks, false );
 hodima_ad( 'بدون کار: «کارها» کارت آمار و فیلتر ندارد و فقط حالت خالی؛ با کار، نوار وضعیت', [ substr_count( $ec_open, 'class="hds-stat"' ), str_contains( $ec_open, 'هنوز کاری ثبت نشده' ), str_contains( $ec_open, 'aria-label="وضعیت کار"' ), str_contains( $vf_html, 'aria-label="وضعیت کار"' ) ], [ 0, true, false, true ] );
-ob_start();
-hodima_seo_advisor_render_task_controls( '/vf/a/', [ 'rule' => 'near_first', 'term' => 'کلیپس طلایی', 'title' => 't' ] );
-$vf_ctl = (string) ob_get_clean();
-hodima_ad( 'کادر ویرایش: لینک «دوباره انجام دادم» با redo=1 و status=done', str_contains( $vf_ctl, 'دوباره انجام دادم' ) && str_contains( $vf_ctl, 'redo=1' ) && str_contains( $vf_ctl, 'status=done' ), true );
+hodima_ad( 'کادر ویرایش دکمه کار ندارد (SEO 3.7.6؛ «دوباره انجام دادم» در «کارهای انجام‌شده»)', function_exists( 'hodima_seo_advisor_render_task_controls' ), false );
 hodima_seo_advisor_task_set( '/vf/a/', 'near_first', 'کلیپس طلایی', '', 'done', true );
 $vf_redo = hodima_seo_advisor_task( '/vf/a/', 'near_first', 'کلیپس طلایی' );
 hodima_ad( '«دوباره انجام دادم»: سنجش پاک، تاریخ امروز، عنوان قبلی، «منتظر داده گوگل»', [ $vf_redo['check'], time() - $vf_redo['at'] < 60, $vf_redo['title'], hodima_seo_advisor_task_state( $vf_redo ) ], [ [], true, 't', 'waiting' ] );

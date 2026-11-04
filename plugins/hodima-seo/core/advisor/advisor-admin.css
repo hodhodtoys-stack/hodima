@@ -3965,17 +3965,13 @@
 }
 
 .hodima-advisor .hodima-advisor__lazy > summary::before {
-	content: "";
-	inline-size: 0.5rem;
-	block-size: 0.5rem;
-	border-block-end: 2px solid currentcolor;
-	border-inline-end: 2px solid currentcolor;
-	transform: translateY(-0.125rem) rotate(45deg);
+	content: "\f347"; /* dashicons-arrow-down-alt2؛ تا 3.7.5 با حاشیه منطقی ساخته می‌شد و در سایت راست‌به‌چپ وقتی باز بود به پهلو می‌رفت (عکس کاربر) */
+	font: 1rem / 1 dashicons;
 	transition: transform 0.2s;
 }
 
 .hodima-advisor .hodima-advisor__lazy[open] > summary::before {
-	transform: translateY(0.125rem) rotate(-135deg);
+	transform: rotate(180deg);
 }
 
 .hodima-advisor .hodima-advisor__lazy > summary:focus-visible {
