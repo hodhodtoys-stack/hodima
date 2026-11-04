@@ -216,8 +216,8 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true ): voi
 				echo '</tbody></table>';
 				// برنده همان تب «صفحه‌های هم‌کلمه» (بیشترین کلیک)؛ آدرس کامل با دکمه کپی
 				echo '<p class="hodima-advisor-steps__tip hodima-advisor-steps__main">' . ( $step['is_main']
-					? esc_html( 'صفحه مرجع پیشنهادی: همین صفحه (بیشترین کلیک برای این کلمه، همان برنده تب «صفحه‌های هم‌کلمه»). صفحه‌های دیگر را با همین عبارت به آن لینک بدهید.' )
-					: esc_html( 'صفحه مرجع پیشنهادی (بیشترین کلیک، همان برنده تب «صفحه‌های هم‌کلمه»): ' ) . hodima_seo_advisor_url_copy( (string) $step['main'] ) . ' ' . esc_html( sprintf( 'در این صفحه عبارت «%s» را موضوع اصلی نکنید و از صفحه‌های دیگر با همین عبارت به مرجع لینک بدهید.', (string) $step['term'] ) ) ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- همه تکه‌ها escape شده‌اند
+					? esc_html( 'صفحه مرجع پیشنهادی: همین صفحه (بیشترین کلیک برای این کلمه، همان برنده فیلتر «هم‌کلمه» در «کارها»). صفحه‌های دیگر را با همین عبارت به آن لینک بدهید.' )
+					: esc_html( 'صفحه مرجع پیشنهادی (بیشترین کلیک، همان برنده فیلتر «هم‌کلمه» در «کارها»): ' ) . hodima_seo_advisor_url_copy( (string) $step['main'] ) . ' ' . esc_html( sprintf( 'در این صفحه عبارت «%s» را موضوع اصلی نکنید و از صفحه‌های دیگر با همین عبارت به مرجع لینک بدهید.', (string) $step['term'] ) ) ) . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- همه تکه‌ها escape شده‌اند
 				break;
 		}
 

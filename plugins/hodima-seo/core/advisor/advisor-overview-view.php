@@ -264,7 +264,8 @@ function hodima_seo_advisor_render_guide( array $guide, ?callable $between = nul
 	$guide = [ 'seen' => hodima_seo_advisor_fa_digits( $guide['seen'] ), 'steps' => array_map( 'hodima_seo_advisor_fa_digits', $guide['steps'] ), 'verify' => hodima_seo_advisor_fa_digits( $guide['verify'] ), 'why' => hodima_seo_advisor_fa_digits( $guide['why'] ) ] + $guide;
 
 	if ( '' !== $guide['seen'] ) {
-		printf( '<p class="hodima-advisor__seen"><strong>%1$s</strong> %2$s</p>', esc_html( 'چه دیدیم:' ), esc_html( $guide['seen'] ) );
+		// آدرس وسط جمله فارسی لینک چپ‌به‌راست جدا (bdi) می‌شود؛ با esc_html اسلش آخر آدرس به اولش می‌پرید (عکس کاربر، SEO 3.7.1)
+		printf( '<p class="hodima-advisor__seen"><strong>%1$s</strong> %2$s</p>', esc_html( 'چه دیدیم:' ), hodima_seo_advisor_text_html( $guide['seen'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html
 	}
 
 	if ( null !== $between ) {
@@ -274,7 +275,7 @@ function hodima_seo_advisor_render_guide( array $guide, ?callable $between = nul
 	if ( $guide['steps'] ) {
 		echo '<p class="hodima-advisor__guide-label">دقیقا چه کنم</p><ol class="hodima-advisor__steps-list">';
 		foreach ( $guide['steps'] as $step ) {
-			printf( '<li>%s</li>', esc_html( $step ) );
+			printf( '<li>%s</li>', hodima_seo_advisor_text_html( $step ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html
 		}
 		echo '</ol>';
 	}
