@@ -382,3 +382,75 @@
 		grid-template-columns: minmax(0, 1fr);
 	}
 }
+
+/* SEO 3.7.2: راهنمای پنج‌بخشی (همان «کارها»): نشان «لازم است؟» و کلیک بالقوه کنار عنوان، گام‌های شماره‌دار، «از کجا بفهمم» سبز، «چرا مهم است؟» بسته */
+.hodima-advisor-box__item h4 {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.375rem;
+}
+
+.hodima-advisor-box .hodima-advisor-box__need,
+.hodima-advisor-box .hodima-advisor-box__pot {
+	padding: 0.0625rem 0.5625rem;
+	border: 1px solid var(--hd-warn);
+	border-radius: 999px;
+	color: var(--hd-text);
+	font-size: 0.6875rem;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.hodima-advisor-box .hodima-advisor-box__pot {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	border-color: var(--hd-border);
+	color: var(--hd-muted);
+	font-weight: 500;
+}
+
+.hodima-advisor-box .hodima-advisor-box__item .hodima-advisor-box__label {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hodima-advisor-box .hodima-advisor-box__todo {
+	display: grid;
+	gap: 0.125rem;
+	margin: 0;
+	padding-inline-start: 1.25rem;
+	line-height: 1.9;
+}
+
+.hodima-advisor-box .hodima-advisor-box__verify {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.375rem;
+}
+
+.hodima-advisor-box .hodima-advisor-box__verify .dashicons {
+	flex: 0 0 auto;
+	color: var(--hd-ok);
+}
+
+.hodima-advisor-box .hodima-advisor-box__why summary {
+	display: inline-flex;
+	align-items: center;
+	min-block-size: 1.5rem;
+	color: var(--hd-primary);
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.hodima-advisor-box .hodima-advisor-box__why summary:focus-visible {
+	outline: 2px solid var(--hd-secondary);
+	outline-offset: 2px;
+}
+
+.hodima-advisor-box .hodima-advisor-box__why p {
+	margin-block-start: 0.25rem;
+	color: var(--hd-muted);
+}

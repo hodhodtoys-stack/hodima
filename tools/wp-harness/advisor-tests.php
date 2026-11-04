@@ -470,7 +470,7 @@ wp_set_current_user( 1 );
 ob_start();
 hodima_seo_advisor_render_box( (string) get_permalink( $box_id ) );
 $box = (string) ob_get_clean();
-hodima_ad( 'کادر: وضعیت، پیشنهاد نرخ کلیک، کلمه برتر، عددها', [ str_contains( $box, 'hodima-advisor-box__pill--warn' ), str_contains( $box, 'عنوان و توضیح متا را بازنویسی کنید' ), str_contains( $box, 'پلومریا کلیپس' ), str_contains( $box, '36,492' ) || str_contains( $box, '۳۶٬۴۹۲' ) ], [ true, true, true, true ] );
+hodima_ad( 'کادر: وضعیت، پیشنهاد نرخ کلیک، کلمه برتر، عددها', [ str_contains( $box, 'hodima-advisor-box__pill--warn' ), str_contains( $box, '>' . hodima_seo_advisor_rule_label( 'low_ctr' ) . ' <' ) && str_contains( $box, 'class="hodima-advisor-box__todo"' ) && str_contains( $box, 'در همین صفحه، کادر «سئو (SeoBox)»' ) && ! str_contains( $box, '{where}' ) /* SEO 3.7.2: عنوان = برچسب «کارها» (تأیید کاربر)، گام‌های شماره‌دار با «همین صفحه» */, str_contains( $box, 'پلومریا کلیپس' ), str_contains( $box, '36,492' ) || str_contains( $box, '۳۶٬۴۹۲' ) ], [ true, true, true, true ] );
 hodima_ad( 'کادر: متن تازه صفحه سنجیده می‌شود (کلمه «پلومریا» در عنوان، تیترها و متن صفحه نیست)', str_contains( $box, 'در متن صفحه نیست' ), true );
 hodima_ad( 'کادر: لینک به صفحه مشاور با جستجوی همین آدرس، بدون لینک بازگرداندن', [ str_contains( $box, 'page=hodima-advisor' ) && str_contains( $box, 'q=/advisor-box-test/' ), str_contains( $box, 'restore=1' ) ], [ true, false ] );
 

@@ -227,21 +227,39 @@ function hodima_seo_advisor_render_box( string $url ): void {
 		$jump = 'low_ctr' === $item['rule'] && $has_box
 			? '<a class="button" href="#seobox_title">' . esc_html( 'رفتن به عنوان سئو' ) . '</a><a class="button" href="#seobox_description">' . esc_html( 'رفتن به توضیح متا' ) . '</a>'
 			: '';
-		// سه بخش ثابت هر پیشنهاد (SEO 2.9.6): چرا مهم است ← دقیقا چه کنم ← از کجا بفهمم درست شد (advisor-help.php)
+		// راهنمای پنج‌بخشی، همان «کارها» (SEO 3.7.2؛ طرح تأییدشده کاربر): عنوان = برچسب «کارها» + «لازم است؟» + کلیک بالقوه ←
+		// چه دیدیم ← دقیقا چه کنم (گام‌های شماره‌دار؛ «ویرایش …» ← «همین صفحه» چون مدیر همین الان در صفحه ویرایش است) ← دکمه‌های رفتن ←
+		// جزئیات زنده (عنوان فعلی، پیش‌نویس، صفحه‌های لینک‌دهنده) ← از کجا بفهمم ← چرا مهم است (بسته). قبلا «دقیقا چه کنم؟» یک پاراگراف قاطی بود.
 		$guide = hodima_seo_advisor_rule_guide( (string) $item['rule'] );
+		$todo  = hodima_seo_advisor_box_todo( (array) ( $item['todo'] ?? [] ) );
 		echo '<section class="hodima-advisor-box__item">';
 		printf(
-			'<h4>%1$s</h4>%4$s<p><strong class="hodima-advisor-box__part">دقیقا چه کنم؟</strong> %2$s</p>%3$s',
-			esc_html( (string) $item['title'] ),
-			hodima_seo_advisor_text_html( (string) $item['detail'] ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html (آدرس داخل متن: لینک چپ‌به‌راست جدا از متن)
-			'' !== $jump || (int) $item['potential'] > 0
-				? '<div class="hodima-advisor-box__meta">' . wp_kses_post( $jump ) . ( (int) $item['potential'] > 0 ? '<small>' . esc_html( sprintf( 'کلیک بالقوه ≈ %s', $n( (int) $item['potential'] ) ) ) . hodima_seo_advisor_help( 'potential' ) . '</small>' : '' ) . '</div>' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_help
-				: '',
-			'' !== $guide['why'] ? '<p><strong class="hodima-advisor-box__part">چرا مهم است؟</strong> ' . esc_html( $guide['why'] ) . '</p>' : ''
+			'<h4>%1$s %2$s%3$s</h4>',
+			esc_html( hodima_seo_advisor_rule_label( (string) $item['rule'] ) ),
+			'<span class="hodima-advisor-box__need">بهتر است رفع شود</span>',
+			(int) $item['potential'] > 0 ? '<span class="hodima-advisor-box__pot">' . esc_html( hodima_seo_advisor_fa_digits( sprintf( 'کلیک بالقوه ≈ %s', $n( (int) $item['potential'] ) ) ) ) . hodima_seo_advisor_help( 'potential' ) . '</span>' : '' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_help
 		);
-		hodima_seo_advisor_render_steps( (array) ( $item['steps'] ?? [] ), 0 === $position++ );
+		printf(
+			'<p><strong class="hodima-advisor-box__part">%1$s</strong> %2$s</p>',
+			esc_html( $todo ? 'چه دیدیم:' : 'دقیقا چه کنم؟' ), // پیشنهاد بی‌todo (نباید پیش بیاید؛ تحلیل زنده همیشه می‌سازد) همان متن کامل قبلی
+			hodima_seo_advisor_text_html( hodima_seo_advisor_fa_digits( (string) ( $todo ? ( $item['seen'] ?? $item['detail'] ) : $item['detail'] ) ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html (آدرس داخل متن: لینک چپ‌به‌راست جدا از متن)
+		);
+		if ( $todo ) {
+			echo '<p class="hodima-advisor-box__label">دقیقا چه کنم</p><ol class="hodima-advisor-box__todo">';
+			foreach ( $todo as $line ) {
+				printf( '<li>%s</li>', hodima_seo_advisor_text_html( hodima_seo_advisor_fa_digits( $line ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html
+			}
+			echo '</ol>';
+		}
+		if ( '' !== $jump ) {
+			echo '<div class="hodima-advisor-box__meta">' . wp_kses_post( $jump ) . '</div>';
+		}
+		hodima_seo_advisor_render_steps( (array) ( $item['steps'] ?? [] ), 0 === $position++, 'جزئیات و پیش‌نویس' );
 		if ( '' !== $guide['verify'] ) {
-			printf( '<p class="hodima-advisor-box__verify"><strong class="hodima-advisor-box__part">از کجا بفهمم درست شد؟</strong> %s</p>', esc_html( $guide['verify'] ) );
+			printf( '<p class="hodima-advisor-box__verify"><span class="dashicons dashicons-yes" aria-hidden="true"></span><span><strong class="hodima-advisor-box__part">%1$s</strong> %2$s</span></p>', esc_html( 'از کجا بفهمم درست شد:' ), esc_html( hodima_seo_advisor_fa_digits( $guide['verify'] ) ) );
+		}
+		if ( '' !== $guide['why'] ) {
+			printf( '<details class="hodima-advisor-box__why"><summary>%1$s</summary><p>%2$s</p></details>', esc_html( 'چرا مهم است؟' ), esc_html( $guide['why'] ) );
 		}
 		if ( function_exists( 'hodima_seo_advisor_render_task_controls' ) ) {
 			hodima_seo_advisor_render_task_controls( (string) $row['path'], $item );
@@ -261,4 +279,22 @@ function hodima_seo_advisor_render_box( string $url ): void {
 	}
 
 	echo '</footer></div>';
+}
+
+/**
+ * گام‌های «کارها» برای کادر ویرایش همان صفحه (SEO 3.7.2): «ویرایش محصول را بزنید» آنجا بی‌معنی است، مدیر همین الان در صفحه ویرایش است.
+ *
+ * @param list<mixed> $todo
+ * @return list<string>
+ */
+function hodima_seo_advisor_box_todo( array $todo ): array {
+
+	return array_values( array_map(
+		static fn( mixed $line ): string => str_replace(
+			[ '«{where}» را بزنید؛ در ', '«{where}» ← ', '{where}' ],
+			[ 'در همین صفحه، ', 'در همین صفحه، ', 'همین صفحه' ],
+			(string) $line
+		),
+		array_filter( $todo, 'is_string' )
+	) );
 }

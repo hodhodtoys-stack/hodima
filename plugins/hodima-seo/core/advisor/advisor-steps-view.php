@@ -110,7 +110,7 @@ function hodima_seo_advisor_edit_link( string $kind, int $id ): string {
  *
  * @param list<array<string, mixed>> $steps
  */
-function hodima_seo_advisor_render_steps( array $steps, bool $open = true ): void {
+function hodima_seo_advisor_render_steps( array $steps, bool $open = true, string $summary = 'ببینید دقیقا چه کنید' ): void {
 
 	if ( ! $steps ) {
 		return;
@@ -119,7 +119,7 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true ): voi
 	$n = static fn( int|float $value, int $decimals = 0 ): string => number_format_i18n( $value, $decimals );
 
 	// کادر ویرایش کوتاه بماند: گام‌های پیشنهاد اول باز، بقیه با یک کلیک؛ داخل ردیف فهرست همه باز
-	printf( '<details class="hodima-advisor-steps__more"%s><summary>ببینید دقیقا چه کنید</summary>', $open ? ' open' : '' );
+	printf( '<details class="hodima-advisor-steps__more"%1$s><summary>%2$s</summary>', $open ? ' open' : '', esc_html( $summary ) ); // کادر ویرایش (SEO 3.7.2): «جزئیات و پیش‌نویس»، چون گام‌ها حالا بالاتر شماره‌دارند
 
 	foreach ( $steps as $step ) {
 		echo '<div class="hodima-advisor-steps">';
