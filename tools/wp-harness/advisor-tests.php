@@ -2482,6 +2482,24 @@ $lt_page  = hodima_seo_advisor_competition_select( $lt_built, [ 'limit' => 1, 'o
 $lt_old   = hodima_seo_advisor_competition( [ 'limit' => 1, 'offset' => 1 ] );
 hodima_ad( 'رقابت: گروه‌ها یک بار ساخته و هر نما از آن برداشته می‌شود (همان نتیجه، ۲ گروه، صفحه دوم یک گروه)', [ $lt_page === $lt_old, $lt_page['total'], count( $lt_page['rows'] ), count( $lt_built['groups'] ) ], [ true, 2, 1, 2 ] );
 hodima_ad( 'رقابت: فیلتر نوع دستور بعد از ساخت گروه‌ها', [ hodima_seo_advisor_competition_select( $lt_built, [ 'type' => 'strengthen' ] )['total'] + hodima_seo_advisor_competition_select( $lt_built, [ 'type' => 'choose' ] )['total'] + hodima_seo_advisor_competition_select( $lt_built, [ 'type' => 'category' ] )['total'] ], [ 2 ] );
+// یک کار برای یک مشکل (SEO 3.7.8، خواست کاربر): «رقابت داخلی» پیشنهاد گوگل و کار هم‌کلمه برای همان صفحه و همان کلمه یکی می‌شوند
+if ( function_exists( 'hodima_seo_advisor_analyze_all' ) ) {
+	hodima_seo_advisor_analyze_all();
+}
+$mg_rows = [];
+foreach ( hodima_seo_advisor_overview_build() as $mg_page ) {
+	if ( str_starts_with( $mg_page['path'], '/lt/c' ) ) {
+		$mg_rows[ $mg_page['path'] ] = array_values( array_filter( $mg_page['items'], static fn( array $i ): bool => 'cannibal' === ( $i['rule'] ?? '' ) || 'comp' === $i['src'] ) );
+	}
+}
+$mg_per = array_map( static fn( array $items ): array => array_count_values( array_map( static fn( array $i ): string => hodima_seo_advisor_normalize( (string) ( $i['rule_term'] ?? $i['term'] ?? '' ) ), $items ) ), $mg_rows );
+hodima_ad(
+	'رقابت یکی‌شده: هر صفحه برای هر کلمه فقط یک کار رقابت (هم‌کلمه، با برچسب «رقابت داخلی» و نشان کلمه)',
+	[ count( $mg_rows ) >= 2, max( array_map( static fn( array $c ): int => $c ? max( $c ) : 0, $mg_per ) ), array_unique( array_merge( ...array_map( static fn( array $items ): array => array_map( static fn( array $i ): string => $i['src'] . '|' . $i['label'], $items ), array_values( $mg_rows ) ) ) ) ],
+	[ true, 1, [ 'comp|' . hodima_seo_advisor_rule_label( 'cannibal' ) ] ]
+);
+$mg_steps = hodima_seo_advisor_steps_for( '/lt/c2/', 'cannibal', 'گیره مو مخمل' );
+hodima_ad( 'جزئیات کار رقابت یکی‌شده: جدول رقبا از آمار همان کلمه، صفحه مرجع /lt/c1/ (بیشترین کلیک)', [ $mg_steps[0]['type'] ?? '', $mg_steps[0]['main'] ?? '', $mg_steps[0]['is_main'] ?? null ], [ 'canonical', '/lt/c1/', false ] );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'competition', 'resolved' => '1' ];
 $lt_warn = [];
 set_error_handler( static function ( int $no, string $msg ) use ( &$lt_warn ): bool { $lt_warn[] = $msg; return true; }, E_WARNING );

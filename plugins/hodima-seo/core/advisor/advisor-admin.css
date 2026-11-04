@@ -3856,31 +3856,6 @@
 
 /* SEO 3.6.9: راهنمای پنج‌بخشی هر ایراد در «کارها» (چه دیدیم ← لازم است؟ ← دقیقا چه کنم ← از کجا بفهمم ← چرا مهم است؟)
    قبلا یک پاراگراف: جزئیات و دستور بی‌نقطه پشت هم (خواست کاربر: «راهنمایی گنگ است») */
-.hodima-advisor .hodima-advisor__need {
-	padding: 0.0625rem 0.5625rem;
-	border: 1px solid currentcolor;
-	border-radius: 999px;
-	font-size: 0.6875rem;
-	font-weight: 700;
-	white-space: nowrap;
-}
-
-.hodima-advisor .hodima-advisor__need--must {
-	border-color: var(--hd-error);
-	background: var(--hd-error);
-	color: #fff;
-}
-
-.hodima-advisor .hodima-advisor__need--rec {
-	color: var(--hd-text);
-	border-color: var(--hd-warn);
-}
-
-.hodima-advisor .hodima-advisor__need--opt {
-	color: var(--hd-muted);
-	border-color: var(--hd-border-strong);
-}
-
 .hodima-advisor .hodima-advisor__ov-what .hodima-advisor__seen {
 	font-size: 0.875rem;
 }
@@ -4039,7 +4014,6 @@
 
 .hodima-advisor .hodima-advisor__ov-labels > .hds-pill,
 .hodima-advisor .hodima-advisor__ov-labels > .hodima-advisor__ov-term,
-.hodima-advisor .hodima-advisor__ov-labels > .hodima-advisor__need,
 .hodima-advisor .hodima-advisor__ov-labels > .hodima-advisor__prio,
 .hodima-advisor .hodima-advisor__ov-labels .hodima-advisor__mark .hds-btn {
 	display: inline-flex;

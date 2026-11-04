@@ -39,6 +39,12 @@ function hodima_seo_advisor_steps_key( string $path, string $rule, string $term 
  */
 function hodima_seo_advisor_steps_for( string $path, string $rule, string $term ): ?array {
 
+	// رقابت: جدول رقبا مستقیم از آمار گوگل همان کلمه (SEO 3.7.8)؛ کار یکی‌شده هم‌کلمه به پیشنهاد زنده همان صفحه وابسته نیست
+	if ( 'cannibal' === $rule ) {
+		$rivals = hodima_seo_advisor_term_rivals( $term );
+		return count( $rivals ) >= 2 ? [ hodima_seo_advisor_step_canonical( $term, $rivals, $path ) ] : null;
+	}
+
 	$analysis = hodima_seo_advisor_analyze( $path, true );
 
 	foreach ( null === $analysis ? [] : $analysis['suggestions'] as $item ) {

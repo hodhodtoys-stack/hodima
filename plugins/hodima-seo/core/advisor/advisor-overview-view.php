@@ -78,12 +78,28 @@ function hodima_seo_advisor_overview_build(): array {
 		if ( null !== $done && in_array( hodima_seo_advisor_task_state( $done ), HODIMA_SEO_ADVISOR_TASKS_CLOSED, true ) ) {
 			continue;
 		}
+		$norm = hodima_seo_advisor_normalize( $term );
 		foreach ( (array) ( $group['pages'] ?? [] ) as $page ) {
 			$path = (string) ( $page['path'] ?? '' );
 			if ( '' === $path ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'comp', 'label' => sprintf( 'رقابت برای «%s»', $term ), 'text' => (string) ( $group['advice']['detail'] ?? 'چند صفحه برای یک کلمه رقابت می‌کنند. صفحه برنده را روشن کنید و بقیه را با لینک داخلی به آن وصل کنید.' ), /* باگ تا SEO 3.6.9: $group['detail'] وجود نداشت و همیشه جمله پیش‌فرض می‌آمد */ 'level' => 'warn', 'source' => 'competition', 'mark' => '', 'term' => $term, 'guide' => hodima_seo_advisor_competition_guide( $group, $path ) ] );
+			// یک کار برای یک مشکل (SEO 3.7.8، خواست کاربر): «رقابت داخلی» پیشنهاد گوگل و «رقابت برای «…»» هم‌کلمه برای همان صفحه و همان
+			// کلمه یک کار می‌شوند. کار هم‌کلمه می‌ماند (گام‌های برنده/بازنده دارد و سنجشش گروهی است)؛ اگر نسخه پیشنهاد گوگل را قبلا علامت زده‌اید، دوباره نمی‌آید
+			$dup = false;
+			foreach ( (array) ( $pages[ $path ]['items'] ?? [] ) as $i => $existing ) {
+				if ( 'opp' === $existing['src'] && 'cannibal' === ( $existing['rule'] ?? '' ) && hodima_seo_advisor_normalize( (string) ( $existing['rule_term'] ?? '' ) ) === $norm ) {
+					unset( $pages[ $path ]['items'][ $i ] );
+					$dup = true;
+				}
+			}
+			if ( $dup ) {
+				$pages[ $path ]['items'] = array_values( $pages[ $path ]['items'] );
+			}
+			if ( null !== hodima_seo_advisor_task_closed( $path, 'cannibal', $term ) ) {
+				continue;
+			}
+			$add( $path, [ 'src' => 'comp', 'label' => hodima_seo_advisor_rule_label( 'cannibal' ), 'rule' => 'cannibal', 'rule_term' => $term, 'text' => (string) ( $group['advice']['detail'] ?? 'چند صفحه برای یک کلمه رقابت می‌کنند. صفحه برنده را روشن کنید و بقیه را با لینک داخلی به آن وصل کنید.' ), /* باگ تا SEO 3.6.9: $group['detail'] وجود نداشت و همیشه جمله پیش‌فرض می‌آمد */ 'level' => 'warn', 'source' => 'competition', 'mark' => '', 'term' => $term, 'guide' => hodima_seo_advisor_competition_guide( $group, $path ) ] );
 		}
 	}
 
@@ -169,14 +185,6 @@ function hodima_seo_advisor_overview_guide( string $seen, string $need, array $s
 		'verify' => '' !== $verify ? $verify : $rule_guide['verify'],
 		'why'    => '' !== $why ? $why : $rule_guide['why'],
 	];
-}
-
-/**
- * نشان «لازم است؟» کنار برچسب ایراد.
- */
-function hodima_seo_advisor_need_chip( string $need ): string {
-	$need = isset( HODIMA_SEO_ADVISOR_NEED_LABELS[ $need ] ) ? $need : 'opt';
-	return sprintf( '<span class="hodima-advisor__need hodima-advisor__need--%1$s">%2$s</span>', esc_attr( $need ), esc_html( HODIMA_SEO_ADVISOR_NEED_LABELS[ $need ] ) );
 }
 
 /**
@@ -542,18 +550,19 @@ function hodima_seo_advisor_render_overview(): void {
 								}
 								?>
 								<div class="hodima-advisor__ov-labels">
-									<span class="hds-pill <?php echo esc_attr( [ 'bad' => 'hds-pill--error', 'info' => 'hds-pill--info' ][ (string) $item['level'] ] ?? 'hds-pill--warn' ); ?>"><?php echo esc_html( $item['label'] ); ?></span>
+									<?php // ترتیب (SEO 3.7.8، خواست کاربر): کلمه ← نام کار ← اولویت ← دو دکمه؛ نشان «بهتر است رفع شود» برداشته شد چون رنگ نام کار همان سطح را می‌گوید ?>
 									<?php if ( '' !== (string) ( $item['rule_term'] ?? '' ) ) : ?>
-										<span class="hodima-advisor__ov-term"><span class="screen-reader-text">کلمه جستجو: </span>«<?php echo esc_html( (string) $item['rule_term'] ); ?>»</span>
+										<span class="hodima-advisor__ov-term">کلمه: «<?php echo esc_html( (string) $item['rule_term'] ); ?>»</span>
 									<?php endif; ?>
-									<?php echo hodima_seo_advisor_need_chip( $guide['need'] ) . hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+									<span class="hds-pill <?php echo esc_attr( [ 'bad' => 'hds-pill--error', 'info' => 'hds-pill--info' ][ (string) $item['level'] ] ?? 'hds-pill--warn' ); ?>"><?php echo esc_html( $item['label'] ); ?></span>
+									<?php echo hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
 									<?php hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), (string) $item['source'], $page['path'], $name . ': ' . $item['label'], $hidden ); ?>
 								</div>
 								<?php
 								// پیش‌نویس، فهرست تصویر و لینک (SEO 3.3.6) بین «چه دیدیم» و گام‌ها؛ پیشنهاد گوگل: «جزئیات و پیش‌نویس» که با باز کردن ساخته می‌شود (SEO 3.7.5؛ قبلا فقط در کادر ویرایش صفحه)
 								hodima_seo_advisor_render_guide(
 									$guide,
-									'opp' === $item['src']
+									in_array( $item['src'], [ 'opp', 'comp' ], true )
 										? static fn() => hodima_seo_advisor_render_steps_lazy( $page['path'], (string) ( $item['rule'] ?? '' ), (string) ( $item['rule_term'] ?? '' ) )
 										: static fn() => hodima_seo_advisor_render_issue_detail( $item, $page['path'] )
 								);

@@ -181,7 +181,7 @@ function hodima_seo_advisor_box_tasks( string $path ): array {
 function hodima_seo_advisor_box_task_note( array $item ): string {
 
 	return match ( (string) ( $item['src'] ?? '' ) ) {
-		'opp'   => '' !== (string) ( $item['rule_term'] ?? '' ) ? '«' . (string) $item['rule_term'] . '»' : '',
+		'opp', 'comp' => '' !== (string) ( $item['rule_term'] ?? '' ) ? '«' . (string) $item['rule_term'] . '»' : '',
 		'crawl' => 'ایراد فنی' . ( '' !== (string) ( $item['detail'] ?? '' ) ? ' · ' . mb_strimwidth( (string) $item['detail'], 0, 60, '…' ) : '' ),
 		default => '',
 	};
