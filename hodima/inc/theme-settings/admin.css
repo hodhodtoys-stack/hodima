@@ -415,6 +415,11 @@
 	flex: 1 1 14rem;
 	min-inline-size: 0;
 	align-self: center;
+
+	/* گوشی: پایه ۱۴rem کنار آیکون جا نمی‌شد و سرتیتر قاب دو ردیفه می‌شد (۳۲۰px؛ قانون «سرتیتر تک‌خطی و هم‌ارتفاع») */
+	@media (width <= 599px) {
+		flex-basis: 0;
+	}
 }
 
 .hodima-panel__title {
@@ -424,7 +429,23 @@
 	color: var(--hs-primary);
 }
 
-/* برچسب وضعیت در سرتیتر قاب (مثلا «در حال استفاده») */
+/*
+ * برچسب وضعیت در سرتیتر قاب (مثلا «در حال استفاده»؛ فقط قاب «بخش‌های صفحه اصلی»). در گوشی کنار عنوان و ؟
+ * جا نمی‌شد (۳۹۰px: ۱۲px کم؛ «روشن است ولی اعمال نمی‌شود» بیشتر) و ردیف دوم سرتیتر می‌شد؛ پس روی خط زیر
+ * سرتیتر می‌نشیند و سرتیتر هم‌ارتفاع بقیه قاب‌ها می‌ماند (تصمیم کاربر، گزینه B2).
+ */
+.hodima-panel--builder {
+	@media (width <= 599px) {
+		& > .hodima-panel__head {
+			position: relative;
+		}
+
+		& > .hodima-panel__body {
+			padding-block-start: 1.75rem;
+		}
+	}
+}
+
 .hodima-panel__status {
 	flex-shrink: 0;
 	align-self: center;
@@ -443,6 +464,16 @@
 	&.is-blocked {
 		background: color-mix(in srgb, var(--hs-warning) 12%, #ffffff);
 		color: var(--hs-warning);
+	}
+
+	.hodima-panel--builder > .hodima-panel__head > & {
+		@media (width <= 599px) {
+			position: absolute;
+			z-index: 1;
+			inset-block-end: -0.75rem;
+			inset-inline-end: 1rem;
+			border: 1px solid var(--hs-border);
+		}
 	}
 }
 
