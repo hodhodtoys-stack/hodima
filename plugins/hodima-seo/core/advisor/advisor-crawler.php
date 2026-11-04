@@ -545,7 +545,7 @@ function hodima_seo_advisor_crawler_scan_images( DOMXPath $xpath, callable $clea
 /**
  * HTML یک صفحه ← عنوان، متا، تیترها، robots، canonical و لینک‌های داخلی.
  *
- * @return array{title: string, meta: string, robots: string, canonical: string, canonical_body: bool, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_empty: int, img_list: list<array{u: string, s: string, c: string}>, http_links: int, links: list<array{0: string, 1: string, 2: string, 3: int}>}
+ * @return array{title: string, meta: string, robots: string, canonical: string, canonical_body: bool, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_empty: int, img_list: list<array{u: string, s: string, c: string}>, http_links: int, http_list: list<array{0: string, 1: string}>, links: list<array{0: string, 1: string, 2: string, 3: int}>}
  */
 function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
@@ -602,6 +602,7 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
 	$links      = [];
 	$http_links = 0;
+	$http_list  = []; // تا ۵ لینک http نخست [آدرس نوشته‌شده، متن لینک] برای فهرست «کدام لینک‌ها؟» (SEO 3.7.3؛ قبلا فقط شمار)
 	$https_site = str_starts_with( home_url(), 'https://' );
 	$all        = $xpath->query( '//a[@href]' );
 
@@ -627,6 +628,9 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
 		if ( $https_site && 1 === preg_match( '#^http://#i', trim( $a->getAttribute( 'href' ) ) ) ) {
 			++$http_links; // لینک داخلی با پروتکل ناامن در سایت https
+			if ( count( $http_list ) < 5 ) {
+				$http_list[] = [ mb_substr( trim( $a->getAttribute( 'href' ) ), 0, 300 ), mb_substr( $anchor, 0, 80 ) ];
+			}
 		}
 
 		$follow  = str_contains( strtolower( $a->getAttribute( 'rel' ) ), 'nofollow' ) ? 0 : 1;
@@ -682,6 +686,7 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		'img_empty'  => $scan['empty'],
 		'img_list'   => $scan['list'],
 		'http_links' => $http_links,
+		'http_list'  => $http_list,
 		'links'      => $links,
 	];
 }
@@ -808,6 +813,7 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'img_list'   => hodima_seo_advisor_img_list_encode( (array) ( $parsed['img_list'] ?? [] ) ), // JSON تصویرها: آدرس، وضعیت alt، جایگاه (SEO 3.4.9؛ پیش‌تر یک آدرس در هر خط)
 		'img_empty'  => (int) ( $parsed['img_empty'] ?? -1 ),
 		'meta_hash'  => '' === trim( $meta ) ? '' : substr( md5( hodima_seo_advisor_normalize( $meta ) ), 0, 12 ), // برای «توضیح متای تکراری» (SEO 3.6.5)؛ خالی = بدون متا یا ردیف قدیمی
+		'http_list'  => empty( $parsed['http_list'] ) ? '' : (string) wp_json_encode( array_values( (array) $parsed['http_list'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ), // SEO 3.7.3
 	];
 }
 
@@ -907,8 +913,8 @@ function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $
 
 	hodima_seo_advisor_ensure_tables(); // ستون تازه img_list (DB 1.9.0) پیش از اولین نوشتن بعد از به‌روزرسانی
 
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty, meta_hash';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d,%s)';
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty, meta_hash, http_list';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d,%s,%s)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
 

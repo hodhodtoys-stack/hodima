@@ -454,3 +454,25 @@
 	margin-block-start: 0.25rem;
 	color: var(--hd-muted);
 }
+
+/* SEO 3.7.3: فقط دو دکمه («در حال انجام» برداشته شد): «انجام دادم» سبز پر، «لازم نیست» نارنجی پر — همان «کارها» */
+.hodima-advisor-box .button.hodima-advisor-box__btn--done,
+.hodima-advisor-box .button.hodima-advisor-box__btn--reject {
+	border-color: var(--hd-ok);
+	background: var(--hd-ok);
+	color: #ffffff;
+	font-weight: 700;
+}
+
+.hodima-advisor-box .button.hodima-advisor-box__btn--reject {
+	border-color: #c2410c;
+	background: #c2410c;
+}
+
+.hodima-advisor-box .button.hodima-advisor-box__btn--done:hover,
+.hodima-advisor-box .button.hodima-advisor-box__btn--done:focus,
+.hodima-advisor-box .button.hodima-advisor-box__btn--reject:hover,
+.hodima-advisor-box .button.hodima-advisor-box__btn--reject:focus {
+	filter: brightness(0.88);
+	color: #ffffff;
+}

@@ -64,6 +64,7 @@ $base = static fn( string $path ): array => [
 	'img_list'   => '',
 	'img_empty'  => 0,
 	'meta_hash'  => '',
+	'http_list'  => '',
 ];
 
 $cases = [
@@ -86,7 +87,7 @@ $cases = [
 	'/g-low/'       => [ 'inlinks' => 1, 'text_links' => 1 ],
 	'/g-deep/'      => [ 'depth' => 6 ],
 	'/g-island/'    => [ 'depth' => 65535, 'inlinks' => 2 ],
-	'/g-http/'      => [ 'http_links' => 3 ],
+	'/g-http/'      => [ 'http_links' => 3, 'http_list' => '[["http://hodima.test/g-ok/","صفحه سالم"],["http://hodima.test/g-a/",""]]' ], // SEO 3.7.3: فهرست «کدام لینک‌ها؟»
 	'/g-nocanon/'   => [ 'canonical' => '' ],
 	'/g-canbad/'    => [ 'canonical' => '/g-gone/' ],
 	'/g-gone/'      => [ 'status' => 404, 'inlinks' => 2 ],

@@ -351,6 +351,30 @@ hodima_ck( 'هر رکورد کاتالوگ برچسب، سطح، سختی، دس
 // SEO 3.6.9: راهنمای پنج‌بخشی هر ایراد (خواست کاربر: «راهنمایی گنگ است»). با جزئیات واقعی عکس مرجع (golden) ساخته می‌شود:
 // «چه دیدیم» جمله کامل با جزئیات (نه عدد چسبیده به دستور)، گام‌ها با نام «ویرایش» همان صفحه، «از کجا بفهمم» و «چرا»؛
 // و هیچ دستوری «افزونه دیگر» را مقصر نمی‌داند (سایت افزونه خارجی ندارد؛ همه کد خودمان است).
+echo "=== فهرست‌های زیر ایراد (SEO 3.7.3): صفحه‌های تکراری، لینک‌های http، پیشنهاد لینک به صفحه بی‌لینک\n";
+$fl_ctx  = hodima_seo_advisor_checks_context( [
+	hodima_ck_row( [ 'path' => '/fa/', 'title' => 'گل سر یکسان', 'h1' => 'تیتر الف', 'meta_hash' => 'h1h1h1h1h1h1' ] ),
+	hodima_ck_row( [ 'path' => '/fb/', 'title' => 'گل سر یکسان', 'h1' => 'تیتر ب', 'meta_hash' => 'h1h1h1h1h1h1' ] ),
+	hodima_ck_row( [ 'path' => '/fc/', 'title' => 'گل سر یکسان', 'h1' => 'تیتر ج', 'status' => 404 ] ), // صفحه خراب جزو تکراری‌ها نیست
+	hodima_ck_row( [ 'path' => '/clips/', 'title' => 'کلیپس فلزی مو', 'h1' => 'کلیپس فلزی', 'inlinks' => 40 ] ),
+	hodima_ck_row( [ 'path' => '/clips-b/', 'title' => 'کلیپس مو بزرگ', 'h1' => 'کلیپس بزرگ', 'inlinks' => 3 ] ),
+	hodima_ck_row( [ 'path' => '/lonely/', 'title' => 'کلیپس فلزی طلایی', 'h1' => 'کلیپس فلزی طلایی', 'inlinks' => 0, 'text_links' => 0 ] ),
+] );
+$fl_items = static function ( string $topic, string $path, array $over = [] ) use ( $S, $fl_ctx ): array {
+	$out = [];
+	foreach ( ( $S . $topic )( hodima_ck_row( [ 'path' => $path ] + $over ), $fl_ctx ) as $issue ) {
+		$out[ $issue['code'] ] = array_column( (array) $issue['items'], 'path' );
+	}
+	return $out;
+};
+hodima_ck( 'عنوان تکراری: «کدام صفحه‌ها» فقط صفحه‌های دیگر سالم (نه خودش، نه ۴۰۴)', [ 'dup_title' => [ '/fb/' ] ] === $fl_items( 'dup_title', '/fa/', [ 'title' => 'گل سر یکسان' ] ) );
+hodima_ck( 'توضیح متای تکراری: صفحه دیگر همان متا', [ 'dup_meta' => [ '/fa/' ] ] === $fl_items( 'dup_meta', '/fb/', [ 'title' => 'گل سر یکسان', 'h1' => 'تیتر ب', 'meta_hash' => 'h1h1h1h1h1h1' ] ) );
+hodima_ck( 'بی‌لینک: پیشنهاد صفحه‌های هم‌کلمه، بیشترین کلمه مشترک و بعد پرلینک‌تر اول؛ نه خودش', [ 'orphan' => [ '/clips/', '/clips-b/' ] ] === $fl_items( 'inlinks', '/lonely/', [ 'title' => 'کلیپس فلزی طلایی', 'h1' => 'کلیپس فلزی طلایی', 'inlinks' => 0, 'text_links' => 0 ] ) );
+$fl_http = ( $S . 'http_link' )( hodima_ck_row( [ 'path' => '/h/', 'http_links' => 2, 'http_list' => '[["http://x.test/a/","متن"],["http://x.test/b/",""]]' ] ), hodima_ck_ctx() );
+hodima_ck( 'لینک http: فهرست آدرس نوشته‌شده با متن لینک؛ ردیف قدیمی بی‌فهرست هم ایراد را می‌دهد', [ [ 'http://x.test/a/', 'http://x.test/b/' ], 'متن لینک «متن»', [ 'http_link' ] ] === [ array_column( $fl_http[0]['items'], 'path' ), $fl_http[0]['items'][0]['note'], hodima_ck_codes( $S . 'http_link', hodima_ck_row( [ 'path' => '/h/', 'http_links' => 2 ] ), hodima_ck_ctx() ) ] );
+$fl_parsed = hodima_seo_advisor_crawler_parse( '<html><head><title>t</title></head><body><a href="http://' . wp_parse_url( home_url(), PHP_URL_HOST ) . '/p/">پیوند ناامن</a><a href="/q/">امن</a></body></html>', home_url( '/x/' ) );
+hodima_ck( 'خزنده: لینک http در http_list با متن لینک ذخیره می‌شود (فقط در سایت https)', str_starts_with( home_url(), 'https://' ) ? ( 1 === $fl_parsed['http_links'] && 'پیوند ناامن' === ( $fl_parsed['http_list'][0][1] ?? '' ) ) : ( 0 === $fl_parsed['http_links'] ) );
+
 echo "=== راهنمای هر ایراد (چه دیدیم، لازم است؟، گام‌ها، از کجا بفهمم، چرا)\n";
 $golden_file = __DIR__ . '/golden/advisor-issues.json';
 $golden      = is_file( $golden_file ) ? json_decode( (string) file_get_contents( $golden_file ), true ) : [];

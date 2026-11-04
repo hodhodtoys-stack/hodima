@@ -1609,7 +1609,7 @@
 	font-size: 1.125rem;
 }
 
-/* «انجام دادم» = کنش اصلی ردیف (سبز پر)؛ «لازم نیست» = کنش ثانویه بی‌کادر (SEO 3.2.3) */
+/* «انجام دادم» = سبز پر؛ «لازم نیست» = نارنجی پر (SEO 3.7.3، خواست کاربر؛ تا ۳.۷.۲ بی‌کادر و کم‌رنگ) */
 .hodima-advisor .hodima-advisor__mark-done {
 	border-color: var(--hd-ok);
 	background: var(--hd-ok);
@@ -1621,15 +1621,16 @@
 }
 
 .hodima-advisor .hodima-advisor__mark-reject {
-	border-color: transparent;
-	background: transparent;
-	color: var(--hd-muted);
-	font-weight: 600;
+	--hdsa-reject: #c2410c; /* نارنجی؛ متن سفید روی آن کنتراست ۵٫۲ */
+	border-color: var(--hdsa-reject);
+	background: var(--hdsa-reject);
+	color: #ffffff;
+	font-weight: 700;
 }
 
 .hodima-advisor .hodima-advisor__mark-reject:hover {
-	background: var(--hd-soft);
-	color: var(--hd-text);
+	background: color-mix(in srgb, var(--hdsa-reject) 82%, #000);
+	color: #ffffff;
 }
 
 .hodima-advisor .hodima-advisor__row-acts {

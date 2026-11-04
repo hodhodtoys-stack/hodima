@@ -148,9 +148,11 @@ function hodima_seo_advisor_render_task_controls( string $path, array $item ): v
 		);
 	}
 
-	foreach ( hodima_seo_advisor_task_statuses() as $status => $label ) {
+	// فقط «انجام دادم» (سبز) و «لازم نیست» (نارنجی)؛ دکمه «در حال انجام» برداشته شد (SEO 3.7.3، خواست کاربر: «همین دو دکمه کافی است»).
+	// وضعیت «در حال انجام» کارهای قدیمی معتبر می‌ماند (داده پاک نمی‌شود)
+	foreach ( [ 'done' => 'hodima-advisor-box__btn--done', 'rejected' => 'hodima-advisor-box__btn--reject' ] as $status => $class ) {
 		if ( null === $task || $task['status'] !== $status ) {
-			printf( '<a class="button button-small" href="%1$s">%2$s</a>', esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, $status ) ), esc_html( $label ) );
+			printf( '<a class="button button-small %1$s" href="%2$s">%3$s</a>', esc_attr( $class ), esc_url( hodima_seo_advisor_task_url( $path, $rule, $term, $title, $status ) ), esc_html( hodima_seo_advisor_task_statuses()[ $status ] ) );
 		}
 	}
 
@@ -309,9 +311,9 @@ function hodima_seo_advisor_render_task_form( array $task, string $state ): void
 	$buttons = match ( $state ) {
 		'fixed'                       => [ [ '', 'تمام شد، پاک کن', 'done' ] ],
 		'rejected'                    => [ [ '', 'برگردان به فهرست', 'outline' ] ],
-		'no_effect', 'back', 'still'  => [ [ 'done_redo', 'دوباره انجام دادم', 'main' ], [ 'rejected', 'لازم نیست', 'quiet' ] ],
-		'doing'                       => [ [ 'done', 'انجام دادم', 'main' ], [ 'rejected', 'لازم نیست', 'quiet' ], [ '', 'پاک کردن', 'quiet' ] ],
-		default                       => [ [ 'rejected', 'لازم نیست', 'quiet' ], [ '', 'پاک کردن', 'quiet' ] ],
+		'no_effect', 'back', 'still'  => [ [ 'done_redo', 'دوباره انجام دادم', 'main' ], [ 'rejected', 'لازم نیست', 'reject' ] ],
+		'doing'                       => [ [ 'done', 'انجام دادم', 'main' ], [ 'rejected', 'لازم نیست', 'reject' ], [ '', 'پاک کردن', 'quiet' ] ],
+		default                       => [ [ 'rejected', 'لازم نیست', 'reject' ], [ '', 'پاک کردن', 'quiet' ] ],
 	};
 	$name = '' !== $task['title'] ? $task['title'] : hodima_seo_advisor_rule_label( $task['rule'] );
 	?>
@@ -325,6 +327,7 @@ function hodima_seo_advisor_render_task_form( array $task, string $state ): void
 		<?php foreach ( $buttons as [ $value, $label, $kind ] ) : ?>
 			<button type="submit" name="status" value="<?php echo esc_attr( $value ); ?>" class="<?php echo esc_attr( match ( $kind ) {
 				'done'    => 'hds-btn hodima-advisor__mark-done',
+				'reject'  => 'hds-btn hds-btn--outline hodima-advisor__mark-reject', // «لازم نیست» نارنجی پر (SEO 3.7.3، خواست کاربر)
 				'quiet'   => 'hds-btn hds-btn--outline hodima-advisor__mark-reject',
 				'outline' => 'hds-btn hds-btn--outline',
 				default   => 'hds-btn',

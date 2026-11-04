@@ -83,6 +83,18 @@ function hodima_seo_advisor_render_issue_detail( array $item, string $path ): vo
 	if ( 'near_dup' === $code ) {
 		hodima_seo_advisor_render_link_list( (array) ( $item['targets'] ?? [] ), 'کدام صفحه‌ها شبیه‌اند؟', 'صفحه' );
 	}
+
+	// فهرست‌های SEO 3.7.3: صفحه‌های دیگر همان عنوان/H1/متا، لینک‌های http، صفحه‌های پیشنهادی برای لینک به صفحه بی‌لینک
+	$lists = [
+		'dup_title' => [ 'کدام صفحه‌ها همین عنوان را دارند؟', 'صفحه' ],
+		'dup_h1'    => [ 'کدام صفحه‌ها همین تیتر را دارند؟', 'صفحه' ],
+		'dup_meta'  => [ 'کدام صفحه‌ها همین توضیح متا را دارند؟', 'صفحه' ],
+		'http_link' => [ 'کدام لینک‌ها؟', 'لینک' ],
+		'orphan'    => [ 'از این صفحه‌ها لینک بدهید (پیشنهاد)', 'صفحه' ],
+	];
+	if ( isset( $lists[ $code ] ) ) {
+		hodima_seo_advisor_render_link_list( (array) ( $item['targets'] ?? [] ), $lists[ $code ][0], $lists[ $code ][1] );
+	}
 }
 
 /** کادر پیش‌نویس (متن، عرض پیکسلی نسبت به سقف سئوباکس، کپی، راهنما). `$field`: title یا description. */

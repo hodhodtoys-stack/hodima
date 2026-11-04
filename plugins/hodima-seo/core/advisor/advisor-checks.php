@@ -60,23 +60,30 @@ function hodima_seo_advisor_dup_key( string $text ): string {
  * تکراری‌ها فقط بین صفحه‌های سالم و ایندکس‌پذیر شمرده می‌شوند و صفحه‌بندی کنار می‌ماند.
  *
  * @param list<array<string, mixed>> $rows ردیف‌های جدول خزش (با ستون‌های impressions، avg_position، kind)
- * @return array{titles: array<string, int>, h1s: array<string, int>, metas: array<string, int>, hidden: bool, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>}
+ * @return array{titles: array<string, int>, h1s: array<string, int>, metas: array<string, int>, dups: array{title: array<string, list<string>>, h1: array<string, list<string>>, meta: array<string, list<string>>}, words: array<string, list<string>>, hidden: bool, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>}
  */
 function hodima_seo_advisor_checks_context( array $rows ): array {
 
 	$titles = [];
 	$h1s    = [];
 	$metas  = [];
+	$dups   = [ 'title' => [], 'h1' => [], 'meta' => [] ]; // کلید ← آدرس‌ها، برای «کدام صفحه‌ها؟» زیر ایراد تکراری (SEO 3.7.3)
+	$words  = []; // آدرس ← کلمه‌های معنی‌دار عنوان، برای «از کدام صفحه لینک بدهم؟» زیر «بدون لینک ورودی»
+	$site_w = hodima_seo_advisor_similar_tokens( (string) get_bloginfo( 'name' ) );
 	foreach ( $rows as $r ) {
 		if ( 200 === (int) $r['status'] && 1 === (int) $r['indexable'] && ! hodima_seo_advisor_crawl_is_paged( $r ) ) {
 			$mh = (string) ( $r['meta_hash'] ?? '' );
 			if ( '' !== $mh ) {
-				$metas[ $mh ] = ( $metas[ $mh ] ?? 0 ) + 1;
+				$metas[ $mh ]          = ( $metas[ $mh ] ?? 0 ) + 1;
+				$dups['meta'][ $mh ][] = (string) $r['path'];
 			}
-			$tk            = hodima_seo_advisor_title_key( (string) $r['title'], (int) $r['title_len'] );
-			$titles[ $tk ] = ( $titles[ $tk ] ?? 0 ) + 1;
-			$h1k           = hodima_seo_advisor_dup_key( (string) $r['h1'] );
-			$h1s[ $h1k ]   = ( $h1s[ $h1k ] ?? 0 ) + 1;
+			$tk                           = hodima_seo_advisor_title_key( (string) $r['title'], (int) $r['title_len'] );
+			$titles[ $tk ]                = ( $titles[ $tk ] ?? 0 ) + 1;
+			$h1k                          = hodima_seo_advisor_dup_key( (string) $r['h1'] );
+			$h1s[ $h1k ]                  = ( $h1s[ $h1k ] ?? 0 ) + 1;
+			$dups['title'][ $tk ][]       = (string) $r['path'];
+			$dups['h1'][ $h1k ][]         = (string) $r['path'];
+			$words[ (string) $r['path'] ] = hodima_seo_advisor_similar_tokens( (string) $r['title'] . ' ' . (string) $r['h1'], $site_w );
 		}
 	}
 
@@ -108,6 +115,8 @@ function hodima_seo_advisor_checks_context( array $rows ): array {
 		'titles'  => $titles,
 		'h1s'     => $h1s,
 		'metas'   => $metas,
+		'dups'    => $dups,
+		'words'   => $words,
 		'similar' => $similar,
 		'by_path' => $by_path,
 		'sitemap' => hodima_seo_advisor_sitemap_paths(),
@@ -249,9 +258,10 @@ function hodima_seo_advisor_check_dup_title( array $r, array $ctx ): array {
 		return [];
 	}
 
-	$count = $ctx['titles'][ hodima_seo_advisor_title_key( $title, (int) $r['title_len'] ) ] ?? 0;
+	$key   = hodima_seo_advisor_title_key( $title, (int) $r['title_len'] );
+	$count = $ctx['titles'][ $key ] ?? 0;
 
-	return $count > 1 ? [ hodima_seo_advisor_issue( 'dup_title', sprintf( 'در %s صفحه', number_format_i18n( $count ) ) ) ] : [];
+	return $count > 1 ? [ hodima_seo_advisor_issue( 'dup_title', sprintf( 'در %s صفحه', number_format_i18n( $count ) ), '', hodima_seo_advisor_dup_others( $ctx, 'title', $key, $r ) ) ] : [];
 }
 
 /**
@@ -269,9 +279,10 @@ function hodima_seo_advisor_check_dup_h1( array $r, array $ctx ): array {
 		return [];
 	}
 
-	$count = $ctx['h1s'][ hodima_seo_advisor_dup_key( $h1 ) ] ?? 0;
+	$key   = hodima_seo_advisor_dup_key( $h1 );
+	$count = $ctx['h1s'][ $key ] ?? 0;
 
-	return $count > 1 ? [ hodima_seo_advisor_issue( 'dup_h1', sprintf( 'در %s صفحه', number_format_i18n( $count ) ) ) ] : [];
+	return $count > 1 ? [ hodima_seo_advisor_issue( 'dup_h1', sprintf( 'در %s صفحه', number_format_i18n( $count ) ), '', hodima_seo_advisor_dup_others( $ctx, 'h1', $key, $r ) ) ] : [];
 }
 
 /**
@@ -325,7 +336,7 @@ function hodima_seo_advisor_check_inlinks( array $r, array $ctx ): array {
 	$inlinks = (int) $r['inlinks'];
 
 	if ( 0 === $inlinks ) {
-		return [ hodima_seo_advisor_issue( 'orphan' ) ];
+		return [ hodima_seo_advisor_issue( 'orphan', '', '', hodima_seo_advisor_link_sources_suggest( $r, $ctx ) ) ];
 	}
 
 	if ( $inlinks <= HODIMA_SEO_ADVISOR_CRAWL_LOW_INLINKS ) {
@@ -405,7 +416,20 @@ function hodima_seo_advisor_check_images( array $r, array $ctx ): array {
  * @return list<array<string, mixed>>
  */
 function hodima_seo_advisor_check_http_link( array $r, array $ctx ): array {
-	return (int) $r['http_links'] > 0 ? [ hodima_seo_advisor_issue( 'http_link', sprintf( '%s لینک', number_format_i18n( (int) $r['http_links'] ) ) ) ] : [];
+	if ( (int) $r['http_links'] <= 0 ) {
+		return [];
+	}
+
+	// کدام لینک‌ها (SEO 3.7.3، ستون http_list؛ ردیف خزش قدیمی‌تر تا خزش بعدی فهرست ندارد): آدرس نوشته‌شده + متن لینک
+	$list  = json_decode( (string) ( $r['http_list'] ?? '' ), true );
+	$items = [];
+	foreach ( is_array( $list ) ? $list : [] as $link ) {
+		if ( is_array( $link ) && '' !== (string) ( $link[0] ?? '' ) ) {
+			$items[] = [ 'path' => (string) $link[0], 'note' => '' !== (string) ( $link[1] ?? '' ) ? sprintf( 'متن لینک «%s»', (string) $link[1] ) : '' ];
+		}
+	}
+
+	return [ hodima_seo_advisor_issue( 'http_link', sprintf( '%s لینک', number_format_i18n( (int) $r['http_links'] ) ), '', $items ) ];
 }
 
 /**
@@ -449,7 +473,7 @@ function hodima_seo_advisor_check_dup_meta( array $r, array $ctx ): array {
 
 	$count = $ctx['metas'][ $hash ] ?? 0;
 
-	return $count > 1 ? [ hodima_seo_advisor_issue( 'dup_meta', sprintf( 'در %s صفحه', number_format_i18n( $count ) ) ) ] : [];
+	return $count > 1 ? [ hodima_seo_advisor_issue( 'dup_meta', sprintf( 'در %s صفحه', number_format_i18n( $count ) ), '', hodima_seo_advisor_dup_others( $ctx, 'meta', $hash, $r ) ) ] : [];
 }
 
 /**
@@ -730,4 +754,63 @@ function hodima_seo_advisor_checks_run( array $r, array $ctx ): array {
 	}
 
 	return $out;
+}
+
+/**
+ * صفحه‌های دیگرِ همان عنوان/H1/توضیح متای تکراری (بی‌خود صفحه؛ تا HODIMA_SEO_ADVISOR_CRAWL_ITEMS) برای «کدام صفحه‌ها؟» (SEO 3.7.3).
+ * قبلا ایراد فقط «در ۲ صفحه» می‌گفت و مدیر نمی‌دانست کدام‌ها.
+ *
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @param array<string, mixed> $r   ردیف همین صفحه
+ * @return list<array{path: string, note: string}>
+ */
+function hodima_seo_advisor_dup_others( array $ctx, string $kind, string $key, array $r ): array {
+
+	$out = [];
+	foreach ( (array) ( $ctx['dups'][ $kind ][ $key ] ?? [] ) as $path ) {
+		if ( $path !== (string) $r['path'] ) {
+			$other = (array) ( $ctx['by_path'][ $path ] ?? [] );
+			$out[] = [ 'path' => (string) $path, 'note' => 'meta' === $kind ? '' : mb_substr( (string) ( 'h1' === $kind ? ( $other['title'] ?? '' ) : ( $other['h1'] ?? '' ) ), 0, 70 ) ];
+		}
+	}
+
+	return array_slice( $out, 0, HODIMA_SEO_ADVISOR_CRAWL_ITEMS );
+}
+
+/**
+ * پیشنهاد «از این صفحه‌ها لینک بدهید» برای صفحه بی‌لینک ورودی (SEO 3.7.3): صفحه‌های سالم و ایندکس‌پذیر که در عنوان/H1 بیشترین کلمه
+ * معنی‌دار مشترک را با این صفحه دارند (همان کلمه‌سازی «عنوان مشابه»، بدون نام سایت)؛ هم‌امتیازها با لینک ورودی بیشتر (صفحه قوی‌تر) اول.
+ * فقط پیشنهاد؛ مدیر خودش می‌سنجد کدام مرتبط است.
+ *
+ * @param array<string, mixed> $r   ردیف همین صفحه
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array{path: string, note: string}>
+ */
+function hodima_seo_advisor_link_sources_suggest( array $r, array $ctx ): array {
+
+	$path  = (string) $r['path'];
+	$mine  = $ctx['words'][ $path ] ?? hodima_seo_advisor_similar_tokens( (string) $r['title'] . ' ' . (string) $r['h1'] );
+	$found = [];
+
+	if ( ! $mine ) {
+		return [];
+	}
+
+	foreach ( (array) ( $ctx['words'] ?? [] ) as $other => $tokens ) {
+		$other = (string) $other;
+		if ( $other === $path ) {
+			continue;
+		}
+		$shared = array_values( array_intersect( $mine, (array) $tokens ) );
+		if ( $shared ) {
+			$found[] = [ $other, count( $shared ), (int) ( $ctx['by_path'][ $other ]['inlinks'] ?? 0 ), $shared ];
+		}
+	}
+
+	usort( $found, static fn( array $a, array $b ): int => [ $b[1], $b[2], $a[0] ] <=> [ $a[1], $a[2], $b[0] ] );
+
+	return array_map(
+		static fn( array $f ): array => [ 'path' => $f[0], 'note' => sprintf( 'کلمه مشترک: %s', implode( '، ', array_slice( array_unique( $f[3] ), 0, 3 ) ) ) ],
+		array_slice( $found, 0, 3 )
+	);
 }

@@ -204,13 +204,23 @@
                     "code": "dup_title",
                     "detail": "در 2 صفحه",
                     "url": "",
-                    "items": []
+                    "items": [
+                        {
+                            "path": "/g-dup-b/",
+                            "note": "تیتر تکراری آزمون"
+                        }
+                    ]
                 },
                 {
                     "code": "dup_h1",
                     "detail": "در 2 صفحه",
                     "url": "",
-                    "items": []
+                    "items": [
+                        {
+                            "path": "/g-dup-b/",
+                            "note": "عنوان تکراری آزمون"
+                        }
+                    ]
                 },
                 {
                     "code": "not_in_sitemap",
@@ -231,13 +241,23 @@
                     "code": "dup_title",
                     "detail": "در 2 صفحه",
                     "url": "",
-                    "items": []
+                    "items": [
+                        {
+                            "path": "/g-dup-a/",
+                            "note": "تیتر تکراری آزمون"
+                        }
+                    ]
                 },
                 {
                     "code": "dup_h1",
                     "detail": "در 2 صفحه",
                     "url": "",
-                    "items": []
+                    "items": [
+                        {
+                            "path": "/g-dup-a/",
+                            "note": "عنوان تکراری آزمون"
+                        }
+                    ]
                 },
                 {
                     "code": "not_in_sitemap",
@@ -279,7 +299,16 @@
                     "code": "http_link",
                     "detail": "3 لینک",
                     "url": "",
-                    "items": []
+                    "items": [
+                        {
+                            "path": "http://hodima.test/g-ok/",
+                            "note": "متن لینک «صفحه سالم»"
+                        },
+                        {
+                            "path": "http://hodima.test/g-a/",
+                            "note": ""
+                        }
+                    ]
                 },
                 {
                     "code": "not_in_sitemap",
@@ -492,7 +521,12 @@
                     "code": "dup_meta",
                     "detail": "در 2 صفحه",
                     "url": "",
-                    "items": []
+                    "items": [
+                        {
+                            "path": "/g-meta-b/",
+                            "note": ""
+                        }
+                    ]
                 },
                 {
                     "code": "not_in_sitemap",
@@ -513,7 +547,12 @@
                     "code": "dup_meta",
                     "detail": "در 2 صفحه",
                     "url": "",
-                    "items": []
+                    "items": [
+                        {
+                            "path": "/g-meta-a/",
+                            "note": ""
+                        }
+                    ]
                 },
                 {
                     "code": "not_in_sitemap",
@@ -682,7 +721,20 @@
                     "code": "orphan",
                     "detail": "",
                     "url": "",
-                    "items": []
+                    "items": [
+                        {
+                            "path": "/",
+                            "note": "کلمه مشترک: عنوان، یگانه، تیتر"
+                        },
+                        {
+                            "path": "/g-canbad/",
+                            "note": "کلمه مشترک: عنوان، یگانه، تیتر"
+                        },
+                        {
+                            "path": "/g-canbody/",
+                            "note": "کلمه مشترک: عنوان، یگانه، تیتر"
+                        }
+                    ]
                 },
                 {
                     "code": "not_in_sitemap",
