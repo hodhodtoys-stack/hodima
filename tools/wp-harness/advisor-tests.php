@@ -1025,7 +1025,7 @@ $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
 ob_start();
 hodima_seo_advisor_render_admin();
 $overview_html = (string) ob_get_clean();
-hodima_ad( 'صفحه «کارها»: هر صفحه یک ردیف، هر ایراد یک خط با «انجام دادم / لازم نیست»، خط گرفتن داده تازه، بدون کارت آمار و کارت دریافت داده', [ substr_count( $overview_html, 'class="hodima-advisor__ov-row"' ) >= 1, substr_count( $overview_html, 'class="hodima-advisor__ov-item"' ) >= 1, str_contains( $overview_html, 'value="done" class="hds-btn hds-btn--outline hodima-advisor__mark-done"' ), str_contains( $overview_html, 'hodima-advisor__strip' ), substr_count( $overview_html, 'value="hodima_advisor_refresh"' ), str_contains( $overview_html, 'class="hds-stat"' ), str_contains( $overview_html, 'aria-label="نوع ایراد"' ), str_contains( $overview_html, 'tab=tasks' ) ], [ true, true, true, true, 1, false, true, true ] );
+hodima_ad( 'صفحه «کارها»: هر صفحه یک ردیف، هر ایراد یک خط با «انجام دادم / لازم نیست»؛ بدون دکمه گرفتن داده تازه (SEO 3.7.4: فقط در «خزش و داده»)، کارت آمار و کارت دریافت داده', [ substr_count( $overview_html, 'class="hodima-advisor__ov-row"' ) >= 1, substr_count( $overview_html, 'class="hodima-advisor__ov-item"' ) >= 1, str_contains( $overview_html, 'value="done" class="hds-btn hds-btn--outline hodima-advisor__mark-done"' ), str_contains( $overview_html, 'hodima-advisor__strip' ), substr_count( $overview_html, 'value="hodima_advisor_refresh"' ), str_contains( $overview_html, 'class="hds-stat"' ), str_contains( $overview_html, 'aria-label="نوع ایراد"' ), str_contains( $overview_html, 'tab=tasks' ) ], [ true, true, true, false, 0, false, true, true ] );
 hodima_ad( 'تب ناشناس به فهرست «کارها» برمی‌گردد', [ ( static function (): bool { $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'x' ]; ob_start(); hodima_seo_advisor_render_admin(); return str_contains( (string) ob_get_clean(), 'hodima-advisor__ov' ); } )() ], [ true ] );
 hodima_ad( 'تفسیر سهم برندی: سه حالت', [ str_contains( hodima_seo_advisor_brand_reading( 0.8 ), 'غیربرندی' ), str_contains( hodima_seo_advisor_brand_reading( 0.4 ), 'تعادل' ), str_contains( hodima_seo_advisor_brand_reading( 0.1 ), 'نام سایت کم جستجو' ) ], [ true, true, true ] );
 delete_option( 'hodima_discover_sc_key' );
@@ -3059,6 +3059,39 @@ foreach ( hodima_seo_advisor_crawl_issues() as $issue_row ) {
 	}
 }
 hodima_ad( 'ایرادهای موجود روی داده خزنده کار می‌کنند: خانه بدون H1 نیست، /about/ بدون متا، /b/ ریدایرکت نه', [ in_array( 'no_meta', $cw_codes['/about/'] ?? [], true ), in_array( 'no_h1', $cw_codes['/'] ?? [], true ), isset( $cw_codes['/old/'] ) ], [ true, false, true ] );
+
+// وسط دور کامل دوم (SEO 3.7.4): صفحه خوانده‌شده لینک ورودی و عمق دور قبل را نگه می‌دارد تا finalize از نو بشمارد.
+// باگ قبلی: هر صفحه با «لینک ورودی ۰» نوشته می‌شد و وسط خزش صدها ایراد ساختگی «بدون لینک ورودی» و افت نمره دیده می‌شد.
+$cw_mid = [];
+add_filter(
+	'pre_http_request',
+	$cw_snap = static function ( mixed $pre ) use ( &$cw_mid, $cw_t ): mixed {
+		$cw_mid = []; // آخرین عکس پیش از درخواست آخر دور (بعد از خوانده شدن /a/ و /b/)
+		foreach ( (array) $GLOBALS['wpdb']->get_results( $GLOBALS['wpdb']->prepare( 'SELECT path, inlinks, depth FROM %i WHERE path IN (%s, %s)', $cw_t, '/a/', '/b/' ), ARRAY_A ) as $r ) {
+			$cw_mid[ $r['path'] ] = [ (int) $r['inlinks'], (int) $r['depth'] ];
+		}
+		$memo = &hodima_seo_advisor_crawl_issues_cache();
+		$memo = null;
+		foreach ( hodima_seo_advisor_crawl_issues() as $issue_row ) {
+			if ( in_array( 'orphan', array_column( $issue_row['issues'], 'code' ), true ) ) {
+				$cw_mid['orphan'][] = $issue_row['path'];
+			}
+		}
+		return $pre;
+	},
+	5
+);
+$cw_s         = hodima_seo_advisor_crawler_state();
+$cw_s['status'] = 'idle';
+hodima_seo_advisor_crawler_save( $cw_s );
+hodima_seo_advisor_crawler_start();
+$cw_s         = hodima_seo_advisor_crawler_state();
+$cw_s['seed'] = [];
+hodima_seo_advisor_crawler_save( $cw_s );
+$cw_out2 = hodima_seo_advisor_crawler_tick( true );
+remove_filter( 'pre_http_request', $cw_snap, 5 );
+hodima_ad( 'وسط دور کامل: /a/ و /b/ (خوانده‌شده، پیش از پایان) لینک ورودی و عمق دور قبل را دارند و ایراد ساختگی «بدون لینک ورودی» ساخته نمی‌شود', [ $cw_out2['finished'], $cw_mid['/a/'] ?? null, $cw_mid['/b/'] ?? null, $cw_mid['orphan'] ?? [] ], [ true, [ 2, 1 ], [ 2, 1 ], [] ] );
+hodima_ad( 'بعد از دور دوم همان شمارش دور اول (finalize از نو می‌شمارد)', array_map( static fn( string $p ): int => (int) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare( 'SELECT inlinks FROM %i WHERE path = %s', $cw_t, $p ) ), [ '/b/', '/a/' ] ), [ 2, 2 ] );
 
 $cw_requested = [];
 $cw_again     = hodima_seo_advisor_crawler_tick();

@@ -377,7 +377,7 @@ function hodima_seo_advisor_handle_clear(): void {
 		if ( is_wp_error( $result ) ) {
 			hodima_admin_flash( '<strong>دستار سئو:</strong> ' . esc_html( $result->get_error_message() ), 'error' );
 		} else {
-			hodima_admin_flash( '<strong>دستار سئو:</strong> داده‌های مشاور پاک شد. برای دریافت دوباره، «گرفتن داده تازه» را بزنید.', 'success' );
+			hodima_admin_flash( '<strong>دستار سئو:</strong> داده‌های مشاور پاک شد. برای دریافت دوباره، «خزش و داده ← دریافت داده گوگل ← اجرا همین حالا» را بزنید.', 'success' );
 		}
 	}
 
@@ -551,7 +551,7 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 	$icons = [ 'overview' => 'dashicons-list-view', 'tasks' => 'dashicons-yes-alt', 'jobs' => 'dashicons-cloud', 'settings' => 'dashicons-admin-generic' ];
 	$open  = function_exists( 'hodima_seo_advisor_task_counts' ) ? (int) ( hodima_seo_advisor_task_counts()['open'] ?? 0 ) : 0; // کار انجام‌شده‌ای که برگشته یا بی‌اثر است؛ صفر = شمار نشان داده نمی‌شود
 
-	// تب‌های زیرخط‌دار (نه دکمه پر) تا با چیپ‌های فیلتر اشتباه نشوند؛ در «کارها» خط «گرفتن داده تازه» همین ردیف است (SEO 3.3.1)
+	// تب‌های زیرخط‌دار (نه دکمه پر) تا با چیپ‌های فیلتر اشتباه نشوند (SEO 3.3.1)
 	echo '<div class="hodima-advisor__tabrow">';
 	echo '<nav class="hodima-advisor__tabs" aria-label="بخش‌های دستار سئو">';
 	foreach ( $tabs as $key => [ $label, $url ] ) {
@@ -567,9 +567,8 @@ function hodima_seo_advisor_render_tabs( string $active, bool $with_tabs = true 
 		);
 	}
 	echo '</nav>';
-	if ( 'overview' === $active ) {
-		hodima_seo_advisor_render_refresh_strip();
-	}
+	// دکمه «گرفتن داده تازه» کنار تب‌ها برداشته شد (SEO 3.7.4، خواست کاربر): همان کار ردیف «دریافت داده گوگل ← اجرا همین حالا»
+	// تب «خزش و داده» بود و دو دکمه برای یک کار مدیر را به اشتباه می‌انداخت؛ همه کارهای دستی در همان تب.
 	echo '</div>';
 
 	if ( ! in_array( $active, [ 'overview', 'tasks', 'jobs', 'settings' ], true ) ) {

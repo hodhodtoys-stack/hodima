@@ -219,7 +219,7 @@ function hodima_seo_advisor_task_timeline( array $task ): array {
 		$steps[] = match ( $crawl['state'] ) {
 			'yes'   => [ 'state' => 'ok', 'label' => 'گوگل صفحه را دوباره خواند', 'detail' => hodima_seo_advisor_task_date( $crawl['crawled'] ) ],
 			'no'    => [ 'state' => 'wait', 'label' => 'گوگل هنوز تغییر را ندیده', 'detail' => sprintf( 'آخرین بار %s خوانده؛ برای سرعت، در Search Console آدرس را در نوار بالا بزنید و «درخواست ایندکس» را بزنید.', hodima_seo_advisor_task_date( $crawl['crawled'] ) ) ],
-			default => [ 'state' => 'wait', 'label' => 'منتظر بررسی ایندکس', 'detail' => 'این آدرس اول صف بررسی ایندکس است؛ با «گرفتن داده تازه» یا بررسی خودکار بعدی معلوم می‌شود.' ],
+			default => [ 'state' => 'wait', 'label' => 'منتظر بررسی ایندکس', 'detail' => 'این آدرس اول صف بررسی ایندکس است؛ با «خزش و داده ← بررسی ایندکس گوگل ← اجرا همین حالا» یا بررسی خودکار بعدی معلوم می‌شود.' ],
 		};
 	} elseif ( 'crawl' === $source ) {
 		$live    = in_array( substr( $task['rule'], 6 ), [ ...HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, ...HODIMA_SEO_ADVISOR_MARK_RECRAWL_CODES, 'broken', 'server_error' ], true );

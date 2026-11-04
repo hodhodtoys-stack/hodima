@@ -2676,16 +2676,6 @@
 }
 
 /* صفحه «کارها» (SEO 3.3.0): هر صفحه یک ردیف، هر ایراد یک خط با دکمه‌های خودش */
-.hodima-advisor .hodima-advisor__strip {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	justify-content: space-between;
-	gap: 0.5rem 0.75rem;
-	margin-block: 0.75rem;
-}
-
-.hodima-advisor .hodima-advisor__strip-text,
 .hodima-advisor .hodima-advisor__back {
 	font-size: 0.8125rem;
 	color: var(--hds-muted, #5b6478);
@@ -2732,7 +2722,7 @@
 	flex: 0 0 auto;
 }
 
-/* SEO 3.3.1: تب‌های زیرخط‌دار + خط «گرفتن داده تازه» در همان ردیف؛ فیلتر نوع ایراد = ردیف دکمه‌های گرد با شمار */
+/* SEO 3.3.1: تب‌های زیرخط‌دار (دکمه داده تازه از 3.7.4 فقط در تب «خزش و داده»)؛ فیلتر نوع ایراد = ردیف دکمه‌های گرد با شمار */
 .hodima-advisor .hodima-advisor__tabrow {
 	display: flex;
 	flex-wrap: wrap;
@@ -2828,12 +2818,6 @@
 	font-weight: 700;
 }
 
-/* خط داده تازه داخل ردیف تب‌ها: بدون حاشیه جداگانه */
-.hodima-advisor .hodima-advisor__tabrow > .hodima-advisor__strip {
-	margin-block: 0;
-	padding-block-end: 0.375rem;
-}
-
 .hodima-advisor .hodima-advisor__chips {
 	display: flex;
 	flex-wrap: wrap;
@@ -2925,11 +2909,6 @@
 
 	.hodima-advisor .hodima-advisor__chips-caption {
 		grid-column: 1 / -1;
-	}
-
-	.hodima-advisor .hodima-advisor__tabrow > .hodima-advisor__strip {
-		justify-content: space-between;
-		padding-block: 0.5rem;
 	}
 
 	.hodima-advisor .hodima-advisor__chips {

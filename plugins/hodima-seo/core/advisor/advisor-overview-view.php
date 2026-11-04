@@ -330,23 +330,6 @@ function hodima_seo_advisor_overview_link( string $kind, int $id, string $path )
 	return [ hodima_seo_advisor_url_full( $path ), 'دیدن در سایت', 'external' ];
 }
 
-/** خط کوچک «گرفتن داده تازه» (به‌جای کارت بزرگ بالای صفحه)؛ از SEO 3.3.1 داخل ردیف تب‌ها (hodima_seo_advisor_render_tabs). */
-function hodima_seo_advisor_render_refresh_strip(): void {
-
-	$has_key = '' !== hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR );
-	$status  = hodima_seo_advisor_status();
-	?>
-	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__strip">
-		<input type="hidden" name="action" value="hodima_advisor_refresh">
-		<input type="hidden" name="tab" value="overview">
-		<input type="hidden" name="days" value="<?php echo esc_attr( (string) hodima_seo_advisor_days() ); ?>">
-		<?php wp_nonce_field( 'hodima_advisor_refresh' ); ?>
-		<span class="hodima-advisor__strip-text"><?php echo esc_html( $status['fetched'] > 0 ? sprintf( 'آخرین دریافت داده %s پیش', human_time_diff( $status['fetched'] ) ) : 'داده‌ای گرفته نشده' ); ?></span>
-		<button type="submit" class="hds-btn hds-btn--outline"<?php disabled( ! $has_key ); ?>><span class="dashicons dashicons-update" aria-hidden="true"></span> گرفتن داده تازه</button>
-	</form>
-	<?php
-}
-
 /** شناسه ردیف صفحه (پیوند «دیدن و رفع» کادر «۵ کار مهم»). */
 function hodima_seo_advisor_row_anchor( string $path ): string {
 	return 'hodima-ov-' . substr( md5( $path ), 0, 10 );
@@ -499,7 +482,7 @@ function hodima_seo_advisor_render_overview(): void {
 	}
 
 	if ( ! $rows ) {
-		hodima_seo_ui_empty( $pages ? 'اینجا چیزی نیست' : 'کار بازی نمانده', $pages ? 'با این فیلتر ایرادی نیست. فیلتر را عوض کنید.' : 'همه ایرادها رفع یا علامت زده شده‌اند. بعد از خزش شبانه یا «گرفتن داده تازه» دوباره ببینید.' );
+		hodima_seo_ui_empty( $pages ? 'اینجا چیزی نیست' : 'کار بازی نمانده', $pages ? 'با این فیلتر ایرادی نیست. فیلتر را عوض کنید.' : 'همه ایرادها رفع یا علامت زده شده‌اند. بعد از خزش شبانه یا «خزش و داده ← دریافت داده گوگل ← اجرا همین حالا» دوباره ببینید.' );
 		hodima_seo_advisor_render_overview_foot( 0, $n );
 		hodima_seo_ui_card_close();
 		return;

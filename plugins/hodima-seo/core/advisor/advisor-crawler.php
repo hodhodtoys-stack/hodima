@@ -821,7 +821,7 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
  * یک آدرس صف را می‌خواند و ذخیره می‌کند؛ آدرس‌های داخلی تازه را به صف می‌افزاید.
  *
  * @param array<string, mixed> $state
- * @param bool                 $keep_stats لینک ورودی، لینک متنی، عمق و امتیاز ردیف قبلی حفظ شود (خزش دوباره یک صفحه، نه دور کامل)
+ * @param bool                 $keep_stats لینک ورودی، لینک متنی، عمق و امتیاز ردیف قبلی حفظ شود تا پایان دور (finalize) از نو بشمارد
  * @return int|null زمان پاسخ (میلی‌ثانیه) یا null اگر اتصال شکست خورد
  */
 function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $keep_stats = false ): ?int {
@@ -904,7 +904,7 @@ function hodima_seo_advisor_crawler_page_links( array $parsed, string $key ): ar
  *
  * @param array<string, mixed> $row ردیف hodima_seo_advisor_crawler_page_row
  * @param list<array{0: string, 1: string, 2: string, 3: string, 4: int}> $links
- * @param bool $keep_stats لینک ورودی، لینک متنی، عمق و امتیاز ردیف قبلی حفظ شود (خزش دوباره یک صفحه، نه دور کامل)
+ * @param bool $keep_stats لینک ورودی، لینک متنی، عمق و امتیاز ردیف قبلی حفظ شود تا پایان دور (finalize) از نو بشمارد
  * @return bool false = نوشتن شکست خورد (داده قبلی برگشت)
  */
 function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $links, bool $keep_stats ): bool {
@@ -1494,7 +1494,9 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 				break;
 			}
 
-			$ms = hodima_seo_advisor_crawler_process( $url, $state );
+			// لینک ورودی و عمق دور قبل می‌ماند تا finalize همه را از نو بشمارد (SEO 3.7.4). باگ قبلی: هر صفحه خوانده‌شده با
+			// «لینک ورودی ۰» نوشته می‌شد و وسط خزش صدها ایراد ساختگی «بدون لینک ورودی» و افت نمره نشان داده می‌شد.
+			$ms = hodima_seo_advisor_crawler_process( $url, $state, true );
 		}
 
 		++$ran;

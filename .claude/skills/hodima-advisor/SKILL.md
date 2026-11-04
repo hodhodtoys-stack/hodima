@@ -25,7 +25,7 @@ description: «دستار سئو» (advisor) افزونه Hodima SEO — قان�
 **راهنمای «کارها» برای منبع‌های غیرخزنده (۳.۷.۰):** پیشنهاد گوگل `seen` + `todo` (نه `steps`: آن کلید گام‌های ساخت‌یافته کادر ویرایش است و در جدول ذخیره نمی‌شود) کنار `detail` (متن کامل کادر ویرایش؛ دست نزن)؛ ایندکس `hodima_seo_advisor_inspect_state_guide()`؛ هم‌کلمه `hodima_seo_advisor_competition_guide()`؛ رندر مشترک `hodima_seo_advisor_render_guide()` با ارقام فارسی (`hodima_seo_advisor_fa_digits`). «چه دیدیم» فعل امری ندارد (آزمون).
 
 ## جریان داده
-خزنده شبانه (`advisor-crawler.php`، بدون جاوااسکریپت) ← جدول `crawl_pages`/`crawl_links` ← `crawl_issues()` (`advisor-crawl.php`: ردیف‌ها + `checks_context` + `checks_run`) ← `overview_build` (`advisor-overview-view.php`: «کارها»، سطح، اولویت `advisor-priority.php`) و `hodima_seo_advisor_score()` (`advisor-score.php`: ضریب قرمز ۲/کهربایی ۱/اطلاع ۰، سقف کسر هر ایراد ۲۵). پیش‌نویس عنوان/متا: `advisor-drafts.php`. صفحه‌های سیستمی (حساب/سبد/پرداخت، عمدا noindex): `hodima_seo_advisor_is_system_path()`.
+خزنده شبانه (`advisor-crawler.php`، بدون جاوااسکریپت؛ وسط دور، لینک ورودی/عمق دور قبل می‌ماند و فقط `crawler_finalize` از نو می‌شمارد — ۳.۷.۴؛ «دریافت داده گوگل» دستی فقط در تب «خزش و داده») ← جدول `crawl_pages`/`crawl_links` ← `crawl_issues()` (`advisor-crawl.php`: ردیف‌ها + `checks_context` + `checks_run`) ← `overview_build` (`advisor-overview-view.php`: «کارها»، سطح، اولویت `advisor-priority.php`) و `hodima_seo_advisor_score()` (`advisor-score.php`: ضریب قرمز ۲/کهربایی ۱/اطلاع ۰، سقف کسر هر ایراد ۲۵). پیش‌نویس عنوان/متا: `advisor-drafts.php`. صفحه‌های سیستمی (حساب/سبد/پرداخت، عمدا noindex): `hodima_seo_advisor_is_system_path()`.
 
 ## ابزار تست (از ریشه مخزن؛ `export HARNESS=1 HODIMA_WP=/tmp/hodima-harness/wp`)
 ```bash
