@@ -482,6 +482,19 @@ foreach ( hodima_seo_advisor_overview_build() as $bx_page ) {
 hodima_ad( 'کادر: همان کارهای «کارها» برای همین آدرس (یک منبع)', [ array_column( $bx_items, 'label' ) === $bx_ov, count( $bx_items ) > 0, substr_count( $box, '<li><span class="hodima-advisor-box__dot' ) === count( $bx_items ) ], [ true, true, true ] );
 hodima_ad( 'کادر: نشان «N کار»، برچسب «نرخ کلیک کم» در فهرست، کلمه برتر و عددهای گوگل', [ str_contains( $box, 'hodima-advisor-box__pill--warn' ) && str_contains( $box, sprintf( '%s کار', number_format_i18n( count( $bx_items ) ) ) ), str_contains( $box, '<strong>' . hodima_seo_advisor_rule_label( 'low_ctr' ) . '</strong>' ), str_contains( $box, 'پلومریا کلیپس' ), str_contains( $box, '36,492' ) || str_contains( $box, '۳۶٬۴۹۲' ) ], [ true, true, true, true ] );
 hodima_ad( 'کادر: بدون گام‌ها، جزئیات، دکمه «انجام دادم/لازم نیست» و «{where}»؛ یک دکمه اصلی به «کارها»', [ str_contains( $box, 'hodima-advisor-box__todo' ), str_contains( $box, 'hodima-advisor-steps' ), str_contains( $box, 'status=done' ), str_contains( $box, '{where}' ), substr_count( $box, 'hodima-advisor-box__go' ) ], [ false, false, false, false, 1 ] );
+// «کارها» (SEO 3.7.7، خواست کاربر): دو دکمه در همان ردیف برچسب‌ها؛ کلمه پیشنهاد گوگل نشان جدا دارد (با نام صفحه یکی گرفته نشود)
+$ly_get = $_GET;
+$_GET   = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'q' => 'advisor-box-test' ];
+ob_start();
+hodima_seo_advisor_render_overview();
+$ly_html = (string) ob_get_clean();
+$_GET    = $ly_get;
+preg_match_all( '~<div class="hodima-advisor__ov-labels">(.*?)</form>~s', $ly_html, $ly_rows );
+hodima_ad(
+	'کارها: هر ردیف برچسب، فرم «انجام دادم/لازم نیست» را در خود دارد (یک ردیف)؛ کلمه پیشنهاد گوگل نشان «ov-term» دارد',
+	[ count( $ly_rows[0] ) > 0, count( $ly_rows[0] ) === substr_count( $ly_html, 'class="hodima-advisor__ov-item"' ), (bool) array_filter( $ly_rows[1], static fn( string $r ): bool => str_contains( $r, 'hodima-advisor__mark-done' ) && str_contains( $r, 'hodima-advisor__mark-reject' ) ), str_contains( $ly_html, 'hodima-advisor__ov-term' ) ],
+	[ true, true, true, true ]
+);
 hodima_ad( 'کادر: لینک به صفحه مشاور با جستجوی همین آدرس، بدون لینک بازگرداندن', [ str_contains( $box, 'page=hodima-advisor' ) && str_contains( $box, 'q=/advisor-box-test/' ), str_contains( $box, 'restore=1' ) ], [ true, false ] );
 
 hodima_seo_advisor_set_ignored( '/advisor-box-test/', true );

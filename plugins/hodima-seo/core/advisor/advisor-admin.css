@@ -4010,3 +4010,83 @@
 		transition: none;
 	}
 }
+
+/* SEO 3.7.7 (خواست کاربر): کارهای یک صفحه یک فهرست قاب‌دار با خط جداکننده زیر سربرگ همان صفحه (تا ۳.۷.۶ هر کار کارت خاکستری
+   جدا بود و کار دوم شبیه ردیف صفحه دیگری دیده می‌شد)؛ نام ایراد، کلمه، لازم است؟، اولویت و دو دکمه در یک ردیف و یک اندازه */
+.hodima-advisor .hodima-advisor__ov-list {
+	gap: 0;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+	overflow: clip;
+}
+
+.hodima-advisor .hodima-advisor__ov-item {
+	display: block;
+	padding: 0.75rem 1rem;
+	border-radius: 0;
+	background: var(--hd-surface, #fff);
+}
+
+.hodima-advisor .hodima-advisor__ov-item + .hodima-advisor__ov-item {
+	border-block-start: 1px solid var(--hd-border);
+}
+
+.hodima-advisor .hodima-advisor__ov-labels {
+	justify-self: stretch; /* ستون justify-items: start دارد؛ بی این، جای خالی برای بردن دکمه‌ها به ته ردیف نبود */
+	gap: 0.5rem;
+	margin-block-end: 0.25rem;
+}
+
+.hodima-advisor .hodima-advisor__ov-labels > .hds-pill,
+.hodima-advisor .hodima-advisor__ov-labels > .hodima-advisor__ov-term,
+.hodima-advisor .hodima-advisor__ov-labels > .hodima-advisor__need,
+.hodima-advisor .hodima-advisor__ov-labels > .hodima-advisor__prio,
+.hodima-advisor .hodima-advisor__ov-labels .hodima-advisor__mark .hds-btn {
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	min-block-size: 2.5rem;
+	padding: 0 0.875rem;
+	font-size: 0.8125rem;
+	line-height: 1.2;
+}
+
+.hodima-advisor .hodima-advisor__ov-labels > .hds-pill {
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__ov-term {
+	border: 1px solid var(--hd-border-strong);
+	border-radius: 999px;
+	background: var(--hd-soft, #f6f8fd);
+	color: var(--hd-primary);
+	font-weight: 600;
+}
+
+/* دکمه‌ها ته همان ردیف */
+.hodima-advisor .hodima-advisor__ov-labels .hodima-advisor__mark {
+	flex-wrap: nowrap;
+	margin-inline-start: auto;
+}
+
+.hodima-advisor .hodima-advisor__ov-labels .hodima-advisor__mark .hds-btn {
+	flex: 0 0 auto;
+	border-radius: 0.625rem;
+}
+
+@media (max-width: 40rem) {
+	.hodima-advisor .hodima-advisor__ov-item {
+		padding: 0.75rem;
+	}
+
+	/* موبایل: برچسب‌ها می‌شکنند و دو دکمه ردیف کامل خودشان را می‌گیرند (هدف لمسی ≥ ۴۰px) */
+	.hodima-advisor .hodima-advisor__ov-labels .hodima-advisor__mark {
+		flex: 1 1 100%;
+		margin-inline-start: 0;
+	}
+
+	.hodima-advisor .hodima-advisor__ov-labels .hodima-advisor__mark .hds-btn {
+		flex: 1 1 0;
+		justify-content: center;
+	}
+}

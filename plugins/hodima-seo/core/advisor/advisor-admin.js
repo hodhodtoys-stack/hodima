@@ -411,7 +411,24 @@ document.querySelectorAll('[data-hdsa-crawlbar-close]').forEach((button) => {
 	const config = window.hodimaAdvisorLinks;
 	if (!config || !config.steps) return;
 
+	// کلیک دوم ناخواسته (دوبار کلیک، یا کلیک دوباره وقتی «در حال ساختن» است و جزئیات روی سایت بزرگ چند ثانیه طول می‌کشد) کادر تازه‌باز را
+	// می‌بست و باید دوباره زده می‌شد (گزارش کاربر، SEO 3.7.7). تا ۰٫۸ ثانیه بعد از باز شدن و در حین ساختن، کلیک روی سربرگ کادر را نمی‌بندد.
+	document.addEventListener('click', (event) => {
+		const summary = event.target instanceof Element ? event.target.closest('summary') : null;
+		const box = summary?.parentElement;
+		if (!(box instanceof HTMLDetailsElement) || !box.matches('[data-hdsa-steps]')) return;
+		if (!box.open) { // همین کلیک بازش می‌کند؛ زمان همین‌جا ثبت می‌شود چون رویداد toggle کمی دیرتر می‌رسد و کلیک دوم دوبار‌کلیک پیش از آن است
+			box.dataset.openedAt = String(performance.now());
+			return;
+		}
+		const busy = box.querySelector('[data-hdsa-steps-out]')?.hasAttribute('aria-busy');
+		if (busy || performance.now() - Number(box.dataset.openedAt || 0) < 800) event.preventDefault();
+	}, true);
+
 	document.addEventListener('toggle', async (event) => {
+		if (event.target instanceof HTMLDetailsElement && event.target.matches('[data-hdsa-steps]') && event.target.open && !event.target.dataset.openedAt) {
+			event.target.dataset.openedAt = String(performance.now()); // باز شدن با صفحه‌کلید یا پیوند
+		}
 		const box = event.target;
 		if (!(box instanceof HTMLDetailsElement) || !box.matches('[data-hdsa-steps]') || !box.open || box.dataset.loaded) return;
 

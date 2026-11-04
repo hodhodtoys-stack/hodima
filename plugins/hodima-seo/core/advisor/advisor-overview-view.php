@@ -533,7 +533,22 @@ function hodima_seo_advisor_render_overview(): void {
 								$guide ??= hodima_seo_advisor_overview_guide( (string) $item['text'], 'rec' );
 								$guide['steps'] = array_map( static fn( string $step ): string => str_replace( '{where}', '' !== $where ? $where : 'ویرایش صفحه', $step ), $guide['steps'] );
 								?>
-								<span class="hodima-advisor__ov-labels"><span class="hds-pill <?php echo esc_attr( [ 'bad' => 'hds-pill--error', 'info' => 'hds-pill--info' ][ (string) $item['level'] ] ?? 'hds-pill--warn' ); ?>"><?php echo esc_html( $item['label'] ); ?></span><?php echo hodima_seo_advisor_need_chip( $guide['need'] ) . hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?></span>
+								<?php
+								// ردیف برچسب‌ها و دکمه‌ها (SEO 3.7.7، خواست کاربر): نام ایراد، کلمه، لازم است؟، اولویت و «انجام دادم / لازم نیست» در یک ردیف و یک
+								// اندازه؛ تا ۳.۷.۶ دکمه‌ها ستون جدا با فضای خالی بلند کنار راهنما بودند. کلمه پیشنهاد گوگل نشان جدا دارد تا با نام صفحه یکی گرفته نشود
+								$hidden = [ 'term' => (string) $item['term'] ];
+								if ( '' !== (string) $item['mark'] ) {
+									$hidden['items[]'] = (string) $item['mark'];
+								}
+								?>
+								<div class="hodima-advisor__ov-labels">
+									<span class="hds-pill <?php echo esc_attr( [ 'bad' => 'hds-pill--error', 'info' => 'hds-pill--info' ][ (string) $item['level'] ] ?? 'hds-pill--warn' ); ?>"><?php echo esc_html( $item['label'] ); ?></span>
+									<?php if ( '' !== (string) ( $item['rule_term'] ?? '' ) ) : ?>
+										<span class="hodima-advisor__ov-term"><span class="screen-reader-text">کلمه جستجو: </span>«<?php echo esc_html( (string) $item['rule_term'] ); ?>»</span>
+									<?php endif; ?>
+									<?php echo hodima_seo_advisor_need_chip( $guide['need'] ) . hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+									<?php hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), (string) $item['source'], $page['path'], $name . ': ' . $item['label'], $hidden ); ?>
+								</div>
 								<?php
 								// پیش‌نویس، فهرست تصویر و لینک (SEO 3.3.6) بین «چه دیدیم» و گام‌ها؛ پیشنهاد گوگل: «جزئیات و پیش‌نویس» که با باز کردن ساخته می‌شود (SEO 3.7.5؛ قبلا فقط در کادر ویرایش صفحه)
 								hodima_seo_advisor_render_guide(
@@ -544,13 +559,6 @@ function hodima_seo_advisor_render_overview(): void {
 								);
 								?>
 							</div>
-							<?php
-							$hidden = [ 'term' => (string) $item['term'] ];
-							if ( '' !== (string) $item['mark'] ) {
-								$hidden['items[]'] = (string) $item['mark'];
-							}
-							hodima_seo_advisor_mark_form( hodima_seo_advisor_mark_id(), (string) $item['source'], $page['path'], $name . ': ' . $item['label'], $hidden );
-							?>
 						</li>
 					<?php endforeach; ?>
 				</ul>
