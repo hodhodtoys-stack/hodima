@@ -348,6 +348,56 @@ foreach ( hodima_seo_advisor_issue_catalog() as $code => $record ) {
 }
 hodima_ck( 'هر رکورد کاتالوگ برچسب، سطح، سختی، دستور و مرجع دارد', [] === $cat_bad, implode( '، ', $cat_bad ) );
 
+// SEO 3.6.9: راهنمای پنج‌بخشی هر ایراد (خواست کاربر: «راهنمایی گنگ است»). با جزئیات واقعی عکس مرجع (golden) ساخته می‌شود:
+// «چه دیدیم» جمله کامل با جزئیات (نه عدد چسبیده به دستور)، گام‌ها با نام «ویرایش» همان صفحه، «از کجا بفهمم» و «چرا»؛
+// و هیچ دستوری «افزونه دیگر» را مقصر نمی‌داند (سایت افزونه خارجی ندارد؛ همه کد خودمان است).
+echo "=== راهنمای هر ایراد (چه دیدیم، لازم است؟، گام‌ها، از کجا بفهمم، چرا)\n";
+$golden_file = __DIR__ . '/golden/advisor-issues.json';
+$golden      = is_file( $golden_file ) ? json_decode( (string) file_get_contents( $golden_file ), true ) : [];
+$samples     = [];
+foreach ( (array) ( $golden['pages'] ?? [] ) as $gp ) {
+	foreach ( (array) ( $gp['issues'] ?? [] ) as $gi ) {
+		$samples[ (string) $gi['code'] ][] = [ (string) ( $gi['detail'] ?? '' ), (string) ( $gi['level'] ?? '' ) ];
+	}
+}
+$guide_bad = [];
+foreach ( hodima_seo_advisor_issue_catalog() as $code => $record ) {
+	foreach ( [ 'seen', 'why' ] as $key ) {
+		if ( '' === trim( (string) ( $record[ $key ] ?? '' ) ) ) {
+			$guide_bad[] = "{$code}: بدون {$key}";
+		}
+	}
+	if ( empty( $record['steps'] ) || ! array_is_list( $record['steps'] ) ) {
+		$guide_bad[] = "{$code}: بدون گام";
+	}
+	foreach ( $samples[ $code ] ?? [ [ '', '' ] ] as [ $detail, $level ] ) {
+		$g    = hodima_seo_advisor_issue_guide( $code, $detail, 'ویرایش محصول', $level );
+		$text = $g['seen'] . ' ' . implode( ' ', $g['steps'] ) . ' ' . $g['verify'] . ' ' . $g['why'];
+		if ( str_contains( $text, '{d}' ) || str_contains( $text, '{where}' ) || str_contains( $text, '()' ) || str_contains( $text, '  ' ) ) {
+			$guide_bad[] = "{$code}: جانگهدار/پرانتز خالی/فاصله دوتایی در «{$g['seen']}»";
+		}
+		$core = trim( $detail, " .\t" );
+		if ( '' !== $core && str_contains( $record['seen'], '{d}' ) && ! str_contains( $g['seen'], $core ) ) {
+			$guide_bad[] = "{$code}: جزئیات «{$core}» در «چه دیدیم» نیامد";
+		}
+		if ( 1 === preg_match( '/افزونه دیگر|یک افزونه/u', $text ) ) {
+			$guide_bad[] = "{$code}: «افزونه دیگر» در دستور";
+		}
+		if ( '' === $g['verify'] || ! isset( HODIMA_SEO_ADVISOR_NEED_LABELS[ $g['need'] ] ) ) {
+			$guide_bad[] = "{$code}: بدون «از کجا بفهمم» یا «لازم است؟»";
+		}
+	}
+	foreach ( $record['steps'] as $step ) {
+		if ( str_contains( $step, '{where}' ) && ! str_contains( implode( ' ', hodima_seo_advisor_issue_guide( $code, '', 'ویرایش دسته' )['steps'] ), 'ویرایش دسته' ) ) {
+			$guide_bad[] = "{$code}: نام «ویرایش» صفحه جایگزین نشد";
+		}
+	}
+}
+hodima_ck( 'هر ایراد راهنمای کامل دارد و با جزئیات واقعی جمله سالم می‌سازد (بدون عدد چسبیده، جانگهدار، «افزونه دیگر»)', [] === $guide_bad, implode( ' | ', $guide_bad ) );
+hodima_ck( '«لازم است؟» از سطح همین صفحه: قرمز باید، کهربایی بهتر است، اطلاع اختیاری (no_meta کم‌بازدید = اختیاری)', [ 'must', 'rec', 'opt', null ] === ( $ckv = [ hodima_seo_advisor_issue_guide( 'server_error' )['need'], hodima_seo_advisor_issue_guide( 'no_meta' )['need'], hodima_seo_advisor_issue_guide( 'no_meta', '', '', 'info' )['need'], hodima_seo_advisor_issue_guide( 'x_none' ) ] ), var_export( $ckv, true ) );
+hodima_ck( '«از کجا بفهمم» از نوع سنجش «انجام دادم»: لحظه‌ای / خواندن دوباره صفحه / خزش بعدی', [ true, true, true, true ] === ( $ckv = [ str_contains( hodima_seo_advisor_issue_verify_text( 'no_title' ), 'همان لحظه صفحه را از سایت' ), str_contains( hodima_seo_advisor_issue_verify_text( 'img_alt' ), 'دوباره می‌خواند' ), str_contains( hodima_seo_advisor_issue_verify_text( 'orphan' ), 'خزش شبانه' ), str_contains( hodima_seo_advisor_issue_verify_text( 'server_error' ), 'همان لحظه' ) ] ), var_export( $ckv, true ) );
+hodima_ck( 'دستورهای غلط قبلی رفع شد: no_snippet تب «ایندکس / نوایندکس» و «حداکثر طول متن نتیجه»؛ no_canonical فیلد «آدرس قانونی»', [ true, false, true ] === ( $ckv = [ str_contains( hodima_seo_advisor_issue_fix( 'no_snippet' ), 'تب «ایندکس / نوایندکس»' ) && str_contains( hodima_seo_advisor_issue_fix( 'no_snippet' ), '«حداکثر طول متن نتیجه»' ), str_contains( hodima_seo_advisor_issue_fix( 'no_snippet' ), 'پیشرفته' ), str_contains( hodima_seo_advisor_issue_fix( 'no_canonical' ), '«آدرس قانونی»' ) ] ), var_export( $ckv, true ) );
+
 echo "=== ساختار: هر کد کاتالوگ یک صاحب دارد\n";
 $catalog = array_keys( hodima_seo_advisor_issue_catalog() );
 $owners  = [];

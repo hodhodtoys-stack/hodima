@@ -2510,7 +2510,7 @@ wp_set_current_user( 1 );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
 $m3_html = $cap( static fn() => hodima_seo_advisor_render_overview() );
 $_GET = [];
-hodima_ad( '«کارها»: هر ۵ ایراد صفحه + ریدایرکت یک خط با نشان و دستور خودش (نه فقط ۳)، «ویرایش صفحه»', [ substr_count( $m3_html, 'class="hodima-advisor__ov-item"' ), str_contains( $m3_html, 'کش و سرعت سرور را بررسی کنید' ) && str_contains( $m3_html, 'لینک متنی بدهید' ), str_contains( $m3_html, 'post=' . $m3_post ) ], [ 6, true, true ] );
+hodima_ad( '«کارها»: هر ۵ ایراد صفحه + ریدایرکت یک خط با نشان و دستور خودش (نه فقط ۳)، «ویرایش صفحه»', [ substr_count( $m3_html, 'class="hodima-advisor__ov-item"' ), str_contains( $m3_html, 'درباره «کش صفحه» سرور' ) && str_contains( $m3_html, 'یک لینک با نام این صفحه بدهید' ) && str_contains( $m3_html, 'class="hodima-advisor__steps-list"' ) && str_contains( $m3_html, 'class="hodima-advisor__verify"' ) /* SEO 3.6.9: راهنمای پنج‌بخشی (گام‌ها + «از کجا بفهمم») */, str_contains( $m3_html, 'post=' . $m3_post ) ], [ 6, true, true ] );
 wp_delete_post( $m3_post, true );
 
 // صفحه‌بندی «صفحه‌هایی که نمایش نگرفته‌اند» و «وضعیت در گوگل»
@@ -2591,7 +2591,7 @@ foreach ( hodima_seo_advisor_crawl_issues() as $p3_r ) {
 		$p3_codes[ $p3_r['path'] ] = array_column( $p3_r['issues'], 'code' );
 	}
 }
-hodima_ad( 'ایراد no_snippet فقط برای صفحه دارای max-snippet:0؛ برچسب و دستور فارسی', [ $p3_codes, hodima_seo_advisor_crawl_issue_info( 'no_snippet' )['label'], in_array( 'no_snippet', HODIMA_SEO_ADVISOR_CRAWL_GROUPS['meta'], true ) ], [ [ '/ns/a/' => [ 'no_snippet' ] ], 'متن زیر عنوان ممنوع', true ] );
+hodima_ad( 'ایراد no_snippet فقط برای صفحه دارای max-snippet:0؛ برچسب و دستور فارسی', [ $p3_codes, hodima_seo_advisor_crawl_issue_info( 'no_snippet' )['label'], in_array( 'no_snippet', HODIMA_SEO_ADVISOR_CRAWL_GROUPS['meta'], true ) ], [ [ '/ns/a/' => [ 'no_snippet' ] ], 'گوگل اجازه نشان دادن خلاصه ندارد', true ] ); // SEO 3.6.9: برچسب ساده‌تر
 hodima_ad( 'سنجش فوری: no_snippet با خواندن دوباره صفحه از سایت سنجیده می‌شود', in_array( 'no_snippet', HODIMA_SEO_ADVISOR_MARK_LIVE_CODES, true ), true );
 
 // نرخ کلیک کلمه‌به‌کلمه (SEO 3.0.4): یک کلمه خوب نباید کمبود کلمه بد را بپوشاند
@@ -2870,7 +2870,7 @@ $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'fi
 $p3_d0 = $cap( static fn() => hodima_seo_advisor_render_admin() );
 $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks', 'tstatus' => 'fixed', 'tsource' => 'crawl' ];
 $p3_d1 = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( '«کارها» ← «برطرف شد»: ردیف چیپ «از کدام بخش» و «همه» حذف (SEO 3.5.5: منو فقط وقتی دو بخش هر کدام ≥۳ کار دارند)؛ فیلتر ایرادهای فنی فقط کار خزش؛ گام «صفحه دوباره از سایت خوانده شد»', [ str_contains( $p3_d0, 'aria-label="از کدام بخش"' ), str_contains( $p3_d0, 'tsource=competition' ), str_contains( $p3_d1, 'رقابت صفحه‌ها برای' ), str_contains( $p3_d1, 'بدون H1' ), str_contains( $p3_d1, 'صفحه دوباره از سایت خوانده شد' ) ], [ false, false, false, true, true ] );
+hodima_ad( '«کارها» ← «برطرف شد»: ردیف چیپ «از کدام بخش» و «همه» حذف (SEO 3.5.5: منو فقط وقتی دو بخش هر کدام ≥۳ کار دارند)؛ فیلتر ایرادهای فنی فقط کار خزش؛ گام «صفحه دوباره از سایت خوانده شد»', [ str_contains( $p3_d0, 'aria-label="از کدام بخش"' ), str_contains( $p3_d0, 'tsource=competition' ), str_contains( $p3_d1, 'رقابت صفحه‌ها برای' ), str_contains( $p3_d1, 'بدون تیتر اصلی (H1)' ), str_contains( $p3_d1, 'صفحه دوباره از سایت خوانده شد' ) ], [ false, false, false, true, true ] );
 $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
 $p3_d2 = $cap( static fn() => hodima_seo_advisor_render_admin() );
 hodima_ad( 'در دست انجام: «هنوز خراب است» با قدم بعدی و «دوباره انجام دادم»؛ نشان تب مبدأ', [ str_contains( $p3_d2, 'هنوز خراب است' ), str_contains( $p3_d2, 'قانون ۳۰۱ بگذارید' ), str_contains( $p3_d2, 'دوباره انجام دادم' ), str_contains( $p3_d2, '<span class="hds-pill hds-pill--info">آدرس‌های خراب</span>' ) ], [ true, true, true, true ] );
@@ -3147,11 +3147,11 @@ hodima_ad( 'هر کد گروه چیپ‌ها و بخش نمره در فهرست 
 	array_filter( hodima_seo_advisor_issue_catalog(), static fn( array $r ): bool => '' === $r['label'] || ! in_array( $r['level'], [ 'bad', 'warn', 'info' ], true ) || ! in_array( $r['effort'], [ 1, 2, 3 ], true ) || '' === $r['fix'] ),
 ], [ [], [] ] );
 hodima_ad( 'سازگاری crawl_issue_info: برچسب، سطح، دستور بدون جانگهدار', [ hodima_seo_advisor_crawl_issue_info( 'no_meta' )['label'], hodima_seo_advisor_crawl_issue_info( 'no_meta' )['level'], str_contains( hodima_seo_advisor_crawl_issue_info( 'no_meta' )['fix'], '{where}' ), hodima_seo_advisor_crawl_issue_info( 'x_none' ) ], [ 'بدون توضیح متا', 'warn', false, [ 'label' => 'x_none', 'level' => 'info', 'fix' => '' ] ] ); // SEO 3.6.2: no_meta از bad به warn (و برای صفحه کم‌بازدید info)
-hodima_ad( 'دستور با نام «ویرایش» نوع صفحه؛ خالی = «ویرایش صفحه»؛ ایراد بی‌جانگهدار بدون تغییر', [ str_contains( hodima_seo_advisor_issue_fix( 'no_meta', 'ویرایش محصول' ), 'در «ویرایش محصول»' ), str_contains( hodima_seo_advisor_issue_fix( 'no_meta' ), 'در «ویرایش صفحه»' ), hodima_seo_advisor_issue_fix( 'orphan', 'ویرایش دسته' ), hodima_seo_advisor_issue_fix( 'x_none' ) ], [ true, true, 'گوگل می‌گوید هر صفحه‌ای که برایتان مهم است باید دست‌کم از یک صفحه دیگر سایت لینک داشته باشد؛ از یک یا دو صفحه مرتبط (دسته، مقاله) به آن لینک متنی بدهید.', '' ] ); // SEO 3.6.3: متن orphan طبق گوگل («دست‌کم یک صفحه»، نه «دو صفحه»)
+hodima_ad( 'دستور با نام «ویرایش» نوع صفحه؛ خالی = «ویرایش صفحه»؛ ایراد بی‌جانگهدار بدون تغییر', [ str_contains( hodima_seo_advisor_issue_fix( 'no_meta', 'ویرایش محصول' ), '«ویرایش محصول» را بزنید' ), str_contains( hodima_seo_advisor_issue_fix( 'no_meta' ), '«ویرایش صفحه» را بزنید' ), hodima_seo_advisor_issue_fix( 'orphan', 'ویرایش دسته' ), hodima_seo_advisor_issue_fix( 'x_none' ) ], [ true, true, 'یک یا دو صفحه مرتبط پیدا کنید (دسته همین محصول، مقاله هم‌موضوع). در متن آن صفحه یک لینک با نام این صفحه بدهید و ذخیره کنید.', '' ] ); // SEO 3.6.3: متن orphan طبق گوگل («دست‌کم یک صفحه»)؛ SEO 3.6.9: دستور گام‌به‌گام
 $ic_pt = get_post_type_object( 'post' );
 hodima_ad( 'نام «ویرایش» نوع صفحه: صفحه اصلی، نوشته و دسته از برچسب‌های وردپرس؛ ناشناخته خالی', [ hodima_seo_advisor_issue_where( '/' ), hodima_seo_advisor_issue_where( '/x/', 'post' ) === (string) $ic_pt->labels->edit_item, hodima_seo_advisor_issue_where( '/x/', 'category' ) === (string) get_taxonomy( 'category' )->labels->edit_item, hodima_seo_advisor_issue_where( '/x/', 'nothing-here' ) ], [ 'ویرایش صفحه اصلی', true, true, '' ] );
 // SEO 3.6.2: طبق Google Search Central عنوان حداقل/حداکثر ندارد؛ «کوتاه» و «بلند» سطح اطلاع‌اند، دستور کوتاه عدد کف نمی‌گوید و دستور بلند حدود سقف (بریده‌شدن) را
-hodima_ad( 'عنوان کوتاه/بلند: آستانه پیکسلی (کف ۲۹۰، سقف ۵۸۰)؛ هر دو سطح اطلاع؛ دستور کوتاه بدون عدد کف، دستور بلند با سقف؛ بدون «نویسه»', [ hodima_seo_px_limit( 'title' ), hodima_seo_advisor_crawl_issue_info( 'title_short' )['level'], hodima_seo_advisor_crawl_issue_info( 'title_long' )['level'], str_contains( hodima_seo_advisor_issue_fix( 'title_short' ), '290' ), str_contains( hodima_seo_advisor_issue_fix( 'title_long' ), '580' ), str_contains( hodima_seo_advisor_issue_fix( 'title_short' ) . hodima_seo_advisor_issue_fix( 'title_long' ), 'نویسه' ) ], [ [ 'max' => 580, 'min' => 290, 'font_px' => 20 ], 'info', 'info', false, true, false ] );
+hodima_ad( 'عنوان کوتاه/بلند: آستانه پیکسلی (کف ۲۹۰، سقف ۵۸۰)؛ هر دو سطح اطلاع؛ دستور کوتاه بدون عدد کف، دستور بلند با سقف؛ بدون «نویسه»', [ hodima_seo_px_limit( 'title' ), hodima_seo_advisor_crawl_issue_info( 'title_short' )['level'], hodima_seo_advisor_crawl_issue_info( 'title_long' )['level'], str_contains( hodima_seo_advisor_issue_fix( 'title_short' ), '290' ), str_contains( hodima_seo_advisor_issue_catalog()['title_long']['seen'], '580' ) /* SEO 3.6.9: سقف در «چه دیدیم» */, str_contains( hodima_seo_advisor_issue_fix( 'title_short' ) . hodima_seo_advisor_issue_fix( 'title_long' ), 'نویسه' ) ], [ [ 'max' => 580, 'min' => 290, 'font_px' => 20 ], 'info', 'info', false, true, false ] );
 
 $ic_t = hodima_seo_advisor_table( 'crawl_pages' );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $ic_t ) );

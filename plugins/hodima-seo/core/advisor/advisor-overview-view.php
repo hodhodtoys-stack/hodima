@@ -52,7 +52,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $info['fix'] || null !== hodima_seo_advisor_task_closed( $path, 'crawl_' . $code ) ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'detail' => (string) $issue['detail'], 'images' => (array) ( $issue['images'] ?? [] ), 'total' => (int) ( $issue['total'] ?? 0 ), 'marked' => (array) ( $issue['marked'] ?? [] ), 'targets' => (array) ( $issue['items'] ?? [] ), 'url' => (string) ( $issue['url'] ?? '' ), 'level' => (string) ( $issue['level'] ?? $info['level'] ), 'source' => 'crawl', 'mark' => $code, 'term' => '' ] );
+			$add( $path, [ 'src' => 'crawl', 'label' => $info['label'], 'text' => '' !== (string) $issue['detail'] ? $issue['detail'] . ' ' . $info['fix'] : $info['fix'], 'detail' => (string) $issue['detail'], 'images' => (array) ( $issue['images'] ?? [] ), 'total' => (int) ( $issue['total'] ?? 0 ), 'marked' => (array) ( $issue['marked'] ?? [] ), 'targets' => (array) ( $issue['items'] ?? [] ), 'url' => (string) ( $issue['url'] ?? '' ), 'level' => (string) ( $issue['level'] ?? $info['level'] ), 'source' => 'crawl', 'mark' => $code, 'term' => '' ] ); // راهنما (guide) هنگام نمایش با نام «ویرایش» همان صفحه ساخته می‌شود
 		}
 	}
 
@@ -67,7 +67,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $rule || null !== hodima_seo_advisor_task_closed( $path, $rule, $term ) ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'opp', 'label' => hodima_seo_advisor_rule_label( $rule ), 'text' => (string) ( $advice['detail'] ?? '' ), 'level' => 'warn', 'source' => 'opportunities', 'mark' => $rule . '|' . $term, 'term' => '', 'potential' => (int) ( $advice['potential'] ?? 0 ) ] );
+			$add( $path, [ 'src' => 'opp', 'label' => hodima_seo_advisor_rule_label( $rule ), 'text' => (string) ( $advice['detail'] ?? '' ), 'level' => 'warn', 'source' => 'opportunities', 'mark' => $rule . '|' . $term, 'term' => '', 'potential' => (int) ( $advice['potential'] ?? 0 ), 'guide' => hodima_seo_advisor_overview_guide( (string) ( $advice['detail'] ?? '' ), 'rec', [], $rule ) ] );
 		}
 	}
 
@@ -83,7 +83,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $path ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'comp', 'label' => sprintf( 'رقابت برای «%s»', $term ), 'text' => (string) ( $group['detail'] ?? 'چند صفحه برای یک کلمه رقابت می‌کنند. صفحه برنده را روشن کنید و بقیه را با لینک داخلی به آن وصل کنید.' ), 'level' => 'warn', 'source' => 'competition', 'mark' => '', 'term' => $term ] );
+			$add( $path, [ 'src' => 'comp', 'label' => sprintf( 'رقابت برای «%s»', $term ), 'text' => (string) ( $group['detail'] ?? 'چند صفحه برای یک کلمه رقابت می‌کنند. صفحه برنده را روشن کنید و بقیه را با لینک داخلی به آن وصل کنید.' ), 'level' => 'warn', 'source' => 'competition', 'mark' => '', 'term' => $term, 'guide' => hodima_seo_advisor_overview_guide( (string) ( $group['detail'] ?? 'چند صفحه سایت برای یک کلمه با هم رقابت می‌کنند.' ), 'rec', [ 'از صفحه‌های فهرست، یکی را صفحه اصلی این کلمه کنید (معمولا همان که نمایش بیشتری دارد).', 'در بقیه صفحه‌ها یک لینک با همین کلمه به صفحه اصلی بدهید.', 'کلمه را از عنوان سئوی صفحه‌های دیگر بردارید یا با کلمه دقیق‌تری عوض کنید.' ], 'cannibal' ) ] );
 		}
 	}
 
@@ -96,7 +96,16 @@ function hodima_seo_advisor_overview_build(): array {
 			continue;
 		}
 		$imp( $path, (int) $row['impressions'] );
-		$add( $path, [ 'src' => 'dead', 'label' => 'آدرس خراب در گوگل', 'text' => 'rule_broken' === $row['state'] ? 'این آدرس هنوز در گوگل است ولی مقصد ریدایرکتش خراب است؛ مقصد را اصلاح کنید.' : 'این آدرس هنوز در گوگل است ولی در سایت پیدا نمی‌شود؛ در «ریدایرکت‌ها» یک ۳۰۱ به نزدیک‌ترین صفحه درست بگذارید.', 'level' => 'bad', 'source' => 'health', 'mark' => 'dead', 'term' => '' ] );
+		$add( $path, [ 'src' => 'dead', 'label' => 'آدرس خراب در گوگل', 'text' => 'rule_broken' === $row['state'] ? 'این آدرس هنوز در گوگل است ولی مقصد ریدایرکتش خراب است؛ مقصد را اصلاح کنید.' : 'این آدرس هنوز در گوگل است ولی در سایت پیدا نمی‌شود؛ در «ریدایرکت‌ها» یک ۳۰۱ به نزدیک‌ترین صفحه درست بگذارید.', 'level' => 'bad', 'source' => 'health', 'mark' => 'dead', 'term' => '', 'guide' => hodima_seo_advisor_overview_guide(
+			'rule_broken' === $row['state'] ? 'این آدرس هنوز در گوگل است ولی مقصد ریدایرکتش خراب است.' : 'این آدرس هنوز در گوگل است ولی در سایت پیدا نمی‌شود.',
+			'must',
+			'rule_broken' === $row['state']
+				? [ 'به «ابزارهای هدیما ← ریدایرکت‌ها» بروید و این آدرس را جستجو کنید.', 'مقصد قانون آن را یک صفحه سالم بگذارید و ذخیره کنید.' ]
+				: [ 'به «ابزارهای هدیما ← ریدایرکت‌ها» بروید.', 'یک ریدایرکت ۳۰۱ از این آدرس به نزدیک‌ترین صفحه سالم (مثلا دسته همان محصول) بسازید.' ],
+			'',
+			'بعد از ذخیره، «انجام دادم» را بزنید؛ دستار همان لحظه آدرس را می‌سنجد.',
+			'کسی که از گوگل روی این آدرس کلیک کند به بن‌بست می‌خورد؛ ریدایرکت بازدیدکننده و اعتبار آدرس را به صفحه درست می‌برد.'
+		) ] );
 	}
 
 	// صفحه‌های بدون نمایش
@@ -106,7 +115,14 @@ function hodima_seo_advisor_overview_build(): array {
 			continue;
 		}
 		$pages[ $path ]['title'] ??= (string) $row['title'];
-		$add( $path, [ 'src' => 'unseen', 'label' => 'بدون نمایش در گوگل', 'text' => sprintf( 'این صفحه %s روز است در گوگل نمایش نگرفته. از صفحه‌های مرتبط به آن لینک بدهید و عنوان و متنش را به یک جستجوی مشخص نزدیک کنید.', number_format_i18n( (int) $row['days'] ) ), 'level' => 'warn', 'source' => 'health', 'mark' => 'unseen', 'term' => '' ] );
+		$add( $path, [ 'src' => 'unseen', 'label' => 'بدون نمایش در گوگل', 'text' => sprintf( 'این صفحه %s روز است در گوگل نمایش نگرفته. از صفحه‌های مرتبط به آن لینک بدهید و عنوان و متنش را به یک جستجوی مشخص نزدیک کنید.', number_format_i18n( (int) $row['days'] ) ), 'level' => 'warn', 'source' => 'health', 'mark' => 'unseen', 'term' => '', 'guide' => hodima_seo_advisor_overview_guide(
+			sprintf( 'این صفحه %s روز است در گوگل حتی یک بار نمایش نگرفته.', number_format_i18n( (int) $row['days'] ) ),
+			'opt',
+			[ 'اگر این صفحه برایتان مهم نیست، کاری لازم نیست؛ «لازم نیست» را بزنید.', 'از ۲ تا ۳ صفحه مرتبط (دسته، مقاله) به آن لینک بدهید.', '«ویرایش» ← کادر «سئو (SeoBox)» ← «عنوان سئو» را به یک جستجوی مشخص نزدیک کنید (همان کلمه‌ای که مردم واقعا می‌نویسند).' ],
+			'',
+			'با آمار بعدی گوگل: وقتی صفحه نمایش گرفت، خودش از فهرست می‌رود.',
+			'گوگل این صفحه را برای هیچ جستجویی مناسب ندیده؛ لینک و عنوان روشن کمکش می‌کند.'
+		) ] );
 	}
 
 	// وضعیت ایندکس
@@ -116,7 +132,7 @@ function hodima_seo_advisor_overview_build(): array {
 			continue;
 		}
 		$info = hodima_seo_advisor_inspect_state_info( $state );
-		$add( (string) $path, [ 'src' => 'index', 'label' => 'ایندکس: ' . $info['label'], 'text' => $info['advice'], 'level' => 'warn', 'source' => 'indexing', 'mark' => '', 'term' => '' ] );
+		$add( (string) $path, [ 'src' => 'index', 'label' => 'ایندکس: ' . $info['label'], 'text' => $info['advice'], 'level' => 'warn', 'source' => 'indexing', 'mark' => '', 'term' => '', 'guide' => hodima_seo_advisor_overview_guide( (string) $info['advice'], 'rec', [], '', 'بعد از تغییر «انجام دادم» را بزنید؛ با بررسی ایندکس بعدی گوگل (روزانه) نتیجه همین‌جا می‌آید.' ) ] );
 	}
 
 	$out = [];
@@ -133,6 +149,68 @@ function hodima_seo_advisor_overview_build(): array {
 	}
 
 	return hodima_seo_advisor_priority_rank( $out ); // به ترتیب اولویت: بیشترین اثر با کمترین زحمت اول (SEO 3.4.0؛ قبلا فقط نمایش گوگل)
+}
+
+/**
+ * راهنمای پنج‌بخشی یک مورد غیرخزنده (SEO 3.6.9): چه دیدیم، لازم است؟، گام‌ها، از کجا بفهمم، چرا مهم است.
+ * `$rule` = قاعده پیشنهاد گوگل؛ «چرا» و «از کجا بفهمم» آن از hodima_seo_advisor_rule_guide (همان متن کادر ویرایش) می‌آید.
+ *
+ * @param list<string> $steps
+ * @return array{seen: string, need: string, steps: list<string>, verify: string, why: string}
+ */
+function hodima_seo_advisor_overview_guide( string $seen, string $need, array $steps = [], string $rule = '', string $verify = '', string $why = '' ): array {
+
+	$rule_guide = '' !== $rule && function_exists( 'hodima_seo_advisor_rule_guide' ) ? hodima_seo_advisor_rule_guide( $rule ) : [ 'why' => '', 'verify' => '' ];
+
+	return [
+		'seen'   => trim( $seen ),
+		'need'   => $need,
+		'steps'  => $steps,
+		'verify' => '' !== $verify ? $verify : $rule_guide['verify'],
+		'why'    => '' !== $why ? $why : $rule_guide['why'],
+	];
+}
+
+/**
+ * نشان «لازم است؟» کنار برچسب ایراد.
+ */
+function hodima_seo_advisor_need_chip( string $need ): string {
+	$need = isset( HODIMA_SEO_ADVISOR_NEED_LABELS[ $need ] ) ? $need : 'opt';
+	return sprintf( '<span class="hodima-advisor__need hodima-advisor__need--%1$s">%2$s</span>', esc_attr( $need ), esc_html( HODIMA_SEO_ADVISOR_NEED_LABELS[ $need ] ) );
+}
+
+/**
+ * بدنه راهنما: «چه دیدیم» ← (جزئیات: فهرست تصویر/لینک/پیش‌نویس) ← «دقیقا چه کنم» ← «از کجا بفهمم» ← «چرا مهم است؟» بسته.
+ * قبلا یک پاراگراف بود: جزئیات + دستور بی‌نقطه پشت هم (خواست کاربر: «راهنمایی گنگ است»).
+ *
+ * @param array{seen: string, need: string, steps: list<string>, verify: string, why: string} $guide
+ * @param callable|null $between چاپ جزئیات بین «چه دیدیم» و گام‌ها
+ */
+function hodima_seo_advisor_render_guide( array $guide, ?callable $between = null ): void {
+
+	if ( '' !== $guide['seen'] ) {
+		printf( '<p class="hodima-advisor__seen"><strong>%1$s</strong> %2$s</p>', esc_html( 'چه دیدیم:' ), esc_html( $guide['seen'] ) );
+	}
+
+	if ( null !== $between ) {
+		$between();
+	}
+
+	if ( $guide['steps'] ) {
+		echo '<p class="hodima-advisor__guide-label">دقیقا چه کنم</p><ol class="hodima-advisor__steps-list">';
+		foreach ( $guide['steps'] as $step ) {
+			printf( '<li>%s</li>', esc_html( $step ) );
+		}
+		echo '</ol>';
+	}
+
+	if ( '' !== $guide['verify'] ) {
+		printf( '<p class="hodima-advisor__verify"><span class="dashicons dashicons-yes" aria-hidden="true"></span><span><strong>%1$s</strong> %2$s</span></p>', esc_html( 'از کجا بفهمم درست شد:' ), esc_html( $guide['verify'] ) );
+	}
+
+	if ( '' !== $guide['why'] ) {
+		printf( '<details class="hodima-advisor__why"><summary>%1$s</summary><p>%2$s</p></details>', esc_html( 'چرا مهم است؟' ), esc_html( $guide['why'] ) );
+	}
 }
 
 /**
@@ -376,9 +454,15 @@ function hodima_seo_advisor_render_overview(): void {
 					<?php foreach ( $page['items'] as $item ) : ?>
 						<li class="hodima-advisor__ov-item">
 							<div class="hodima-advisor__ov-what">
-								<span class="hodima-advisor__ov-labels"><span class="hds-pill <?php echo esc_attr( [ 'bad' => 'hds-pill--error', 'info' => 'hds-pill--info' ][ (string) $item['level'] ] ?? 'hds-pill--warn' ); ?>"><?php echo esc_html( $item['label'] ); ?></span><?php echo hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?></span>
-								<p><?php echo esc_html( 'crawl' === $item['src'] ? trim( (string) ( $item['detail'] ?? '' ) . ' ' . hodima_seo_advisor_issue_fix( (string) $item['mark'], $where ) ) : $item['text'] ); ?></p>
-							<?php hodima_seo_advisor_render_issue_detail( $item, $page['path'] ); // پیش‌نویس، فهرست تصویر و لینک (SEO 3.3.6) ?>
+								<?php
+								// راهنمای پنج‌بخشی (SEO 3.6.9): ایراد خزنده از کاتالوگ با نام «ویرایش» همین صفحه؛ بقیه از overview_build
+								$guide = 'crawl' === $item['src']
+									? hodima_seo_advisor_issue_guide( (string) $item['mark'], (string) ( $item['detail'] ?? '' ), $where, (string) $item['level'] )
+									: ( $item['guide'] ?? null );
+								$guide ??= hodima_seo_advisor_overview_guide( (string) $item['text'], 'rec' );
+								?>
+								<span class="hodima-advisor__ov-labels"><span class="hds-pill <?php echo esc_attr( [ 'bad' => 'hds-pill--error', 'info' => 'hds-pill--info' ][ (string) $item['level'] ] ?? 'hds-pill--warn' ); ?>"><?php echo esc_html( $item['label'] ); ?></span><?php echo hodima_seo_advisor_need_chip( $guide['need'] ) . hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?></span>
+								<?php hodima_seo_advisor_render_guide( $guide, static fn() => hodima_seo_advisor_render_issue_detail( $item, $page['path'] ) ); // پیش‌نویس، فهرست تصویر و لینک (SEO 3.3.6) بین «چه دیدیم» و گام‌ها ?>
 							</div>
 							<?php
 							$hidden = [ 'term' => (string) $item['term'] ];
