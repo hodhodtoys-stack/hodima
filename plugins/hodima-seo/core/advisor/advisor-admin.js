@@ -403,3 +403,40 @@
 document.querySelectorAll('[data-hdsa-crawlbar-close]').forEach((button) => {
 	button.addEventListener('click', () => button.closest('.hodima-advisor__crawlbar')?.setAttribute('hidden', ''));
 });
+
+/* ── «جزئیات و پیش‌نویس» زیر هر پیشنهاد گوگل در «کارها» (SEO 3.7.5): با اولین باز شدن از admin-ajax ساخته می‌شود ── */
+(() => {
+	'use strict';
+
+	const config = window.hodimaAdvisorLinks;
+	if (!config || !config.steps) return;
+
+	document.addEventListener('toggle', async (event) => {
+		const box = event.target;
+		if (!(box instanceof HTMLDetailsElement) || !box.matches('[data-hdsa-steps]') || !box.open || box.dataset.loaded) return;
+
+		const out = box.querySelector('[data-hdsa-steps-out]');
+		if (!out) return;
+		box.dataset.loaded = '1';
+		out.setAttribute('aria-busy', 'true');
+		out.innerHTML = '<p class="hodima-advisor-steps__tip">در حال ساختن جزئیات…</p>';
+
+		const body = new FormData();
+		body.set('action', 'hodima_advisor_steps');
+		body.set('nonce', config.steps);
+		body.set('path', box.dataset.path || '');
+		body.set('rule', box.dataset.rule || '');
+		body.set('term', box.dataset.term || '');
+		try {
+			const response = await fetch(config.ajax, { method: 'POST', body, credentials: 'same-origin' });
+			const data = await response.json();
+			if (!data.success) throw new Error(data.data?.message || '');
+			out.innerHTML = data.data.html; // خروجی سرور؛ همه مقدارها در PHP escape شده‌اند
+		} catch (error) {
+			delete box.dataset.loaded; // بستن و باز کردن دوباره، دوباره تلاش می‌کند
+			out.textContent = error instanceof Error && error.message ? error.message : 'جزئیات ساخته نشد؛ کادر را ببندید و دوباره باز کنید.';
+		} finally {
+			out.removeAttribute('aria-busy');
+		}
+	}, true); // رویداد toggle بالا نمی‌رود؛ در مرحله capture گرفته می‌شود
+})();

@@ -2709,6 +2709,7 @@
 	flex: 1 1 22rem;
 	min-inline-size: 0;
 	display: grid;
+	grid-template-columns: minmax(0, 1fr); /* محتوای پهن (جدول رقبای «جزئیات»، SEO 3.7.5) ستون را از صفحه ۳۹۰ بیرون نزند */
 	gap: 0.25rem;
 	justify-items: start;
 }
@@ -3936,4 +3937,80 @@
 .hodima-advisor .hodima-advisor__why p {
 	margin: 0.25rem 0 0;
 	color: var(--hd-muted);
+}
+
+/* SEO 3.7.5: «جزئیات و پیش‌نویس» زیر هر پیشنهاد گوگل در «کارها» (طرح تأییدشده «یک منبع»)؛ محتوا با باز شدن از admin-ajax */
+.hodima-advisor .hodima-advisor__lazy {
+	justify-self: stretch; /* ستون «چه دیدیم» justify-items: start دارد؛ کادر بسته هم تمام‌عرض (طرح) */
+	margin-block: 0.25rem 0.625rem;
+	border: 1px solid var(--hd-border, #dfe4f3);
+	border-radius: 0.625rem;
+	background: var(--hd-soft, #f6f8fd);
+}
+
+.hodima-advisor .hodima-advisor__lazy > summary {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.5rem;
+	min-block-size: 2.5rem;
+	padding-inline: 0.75rem;
+	color: var(--hd-primary, #25316a);
+	cursor: pointer;
+	list-style: none;
+}
+
+.hodima-advisor .hodima-advisor__lazy > summary::-webkit-details-marker {
+	display: none;
+}
+
+.hodima-advisor .hodima-advisor__lazy > summary::before {
+	content: "";
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	border-block-end: 2px solid currentcolor;
+	border-inline-end: 2px solid currentcolor;
+	transform: translateY(-0.125rem) rotate(45deg);
+	transition: transform 0.2s;
+}
+
+.hodima-advisor .hodima-advisor__lazy[open] > summary::before {
+	transform: translateY(0.125rem) rotate(-135deg);
+}
+
+.hodima-advisor .hodima-advisor__lazy > summary:focus-visible {
+	outline: 2px solid var(--hd-secondary, #607bbd);
+	outline-offset: 2px;
+	border-radius: 0.625rem;
+}
+
+.hodima-advisor .hodima-advisor__lazy-title {
+	font-weight: 700;
+}
+
+.hodima-advisor .hodima-advisor__lazy-hint {
+	color: var(--hd-muted, #5d6785);
+	font-size: 0.75rem;
+}
+
+.hodima-advisor .hodima-advisor__lazy-body {
+	padding: 0 0.75rem 0.75rem;
+}
+
+/* هر گام داخل همین کادر است؛ کادر دوم دور گام‌ها نه */
+.hodima-advisor .hodima-advisor__lazy-body .hodima-advisor-steps {
+	margin-block-start: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+}
+
+.hodima-advisor .hodima-advisor__lazy-body .hodima-advisor-steps + .hodima-advisor-steps {
+	margin-block-start: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-advisor .hodima-advisor__lazy > summary::before {
+		transition: none;
+	}
 }

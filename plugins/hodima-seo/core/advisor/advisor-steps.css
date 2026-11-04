@@ -6,6 +6,7 @@
 
 .hodima-advisor-steps {
 	display: grid;
+	grid-template-columns: minmax(0, 1fr);
 	gap: 0.375rem;
 	margin-block-start: 0.5rem;
 	padding: 0.75rem 0.875rem;
@@ -89,6 +90,10 @@
 .hodima-advisor-steps__more > summary:focus-visible {
 	outline: 2px solid var(--hd-secondary, #607bbd);
 	outline-offset: 2px;
+}
+
+.hodima-advisor-steps__scroll {
+	overflow-x: auto;
 }
 
 .hodima-advisor-steps__table {

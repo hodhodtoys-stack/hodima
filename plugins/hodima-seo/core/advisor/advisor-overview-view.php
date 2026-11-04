@@ -67,7 +67,7 @@ function hodima_seo_advisor_overview_build(): array {
 			if ( '' === $rule || null !== hodima_seo_advisor_task_closed( $path, $rule, $term ) ) {
 				continue;
 			}
-			$add( $path, [ 'src' => 'opp', 'label' => hodima_seo_advisor_rule_label( $rule ), 'text' => (string) ( $advice['detail'] ?? '' ), 'level' => 'warn', 'source' => 'opportunities', 'mark' => $rule . '|' . $term, 'term' => '', 'potential' => (int) ( $advice['potential'] ?? 0 ), 'guide' => hodima_seo_advisor_overview_guide( (string) ( $advice['seen'] ?? $advice['detail'] ?? '' ), 'rec', array_values( array_map( 'strval', (array) ( $advice['todo'] ?? [] ) ) ), $rule ) ] ); // seen/todo از SEO 3.7.0؛ پیشنهاد ذخیره‌شده قدیمی‌تر تا دریافت داده بعدی همان متن کامل را نشان می‌دهد
+			$add( $path, [ 'src' => 'opp', 'label' => hodima_seo_advisor_rule_label( $rule ), 'text' => (string) ( $advice['detail'] ?? '' ), 'level' => 'warn', 'source' => 'opportunities', 'mark' => $rule . '|' . $term, 'term' => '', 'rule' => $rule, 'rule_term' => $term, 'potential' => (int) ( $advice['potential'] ?? 0 ), 'guide' => hodima_seo_advisor_overview_guide( (string) ( $advice['seen'] ?? $advice['detail'] ?? '' ), 'rec', array_values( array_map( 'strval', (array) ( $advice['todo'] ?? [] ) ) ), $rule ) ] ); // seen/todo از SEO 3.7.0؛ پیشنهاد ذخیره‌شده قدیمی‌تر تا دریافت داده بعدی همان متن کامل را نشان می‌دهد
 		}
 	}
 
@@ -534,7 +534,15 @@ function hodima_seo_advisor_render_overview(): void {
 								$guide['steps'] = array_map( static fn( string $step ): string => str_replace( '{where}', '' !== $where ? $where : 'ویرایش صفحه', $step ), $guide['steps'] );
 								?>
 								<span class="hodima-advisor__ov-labels"><span class="hds-pill <?php echo esc_attr( [ 'bad' => 'hds-pill--error', 'info' => 'hds-pill--info' ][ (string) $item['level'] ] ?? 'hds-pill--warn' ); ?>"><?php echo esc_html( $item['label'] ); ?></span><?php echo hodima_seo_advisor_need_chip( $guide['need'] ) . hodima_seo_advisor_priority_chip( (string) $item['band'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?></span>
-								<?php hodima_seo_advisor_render_guide( $guide, static fn() => hodima_seo_advisor_render_issue_detail( $item, $page['path'] ) ); // پیش‌نویس، فهرست تصویر و لینک (SEO 3.3.6) بین «چه دیدیم» و گام‌ها ?>
+								<?php
+								// پیش‌نویس، فهرست تصویر و لینک (SEO 3.3.6) بین «چه دیدیم» و گام‌ها؛ پیشنهاد گوگل: «جزئیات و پیش‌نویس» که با باز کردن ساخته می‌شود (SEO 3.7.5؛ قبلا فقط در کادر ویرایش صفحه)
+								hodima_seo_advisor_render_guide(
+									$guide,
+									'opp' === $item['src']
+										? static fn() => hodima_seo_advisor_render_steps_lazy( $page['path'], (string) ( $item['rule'] ?? '' ), (string) ( $item['rule_term'] ?? '' ) )
+										: static fn() => hodima_seo_advisor_render_issue_detail( $item, $page['path'] )
+								);
+								?>
 							</div>
 							<?php
 							$hidden = [ 'term' => (string) $item['term'] ];

@@ -487,6 +487,72 @@ hodima_seo_advisor_render_box( (string) get_permalink( $box_draft ) );
 $box = (string) ob_get_clean();
 hodima_ad( 'آدرسی که داده ندارد: پیام روشن، بدون پیشنهاد', [ str_contains( $box, 'هنوز داده‌ای در سرچ کنسول ثبت نشده' ), str_contains( $box, 'hodima-advisor-box__item' ) ], [ true, false ] );
 
+// «جزئیات و پیش‌نویس» در «کارها» (SEO 3.7.5): همان گام‌های کادر ویرایش، با باز کردن (admin-ajax) یا بدون JS با ?steps=کلید
+$st_sugs = hodima_seo_advisor_analyze( '/advisor-box-test/', true )['suggestions'] ?? [];
+$st_one  = null;
+foreach ( $st_sugs as $st_s ) {
+	if ( isset( HODIMA_SEO_ADVISOR_STEPS_HINTS[ (string) $st_s['rule'] ] ) && ! empty( $st_s['steps'] ) ) {
+		$st_one = $st_s;
+		break;
+	}
+}
+hodima_ad( 'داده آزمون: کادر ویرایش برای این صفحه دست‌کم یک پیشنهاد با جزئیات دارد', null !== $st_one, true );
+if ( null !== $st_one ) {
+	$st_rule = (string) $st_one['rule'];
+	$st_term = (string) ( $st_one['term'] ?? '' );
+	$st_key  = hodima_seo_advisor_steps_key( '/advisor-box-test/', $st_rule, $st_term );
+	ob_start();
+	hodima_seo_advisor_render_steps_lazy( '/advisor-box-test/', $st_rule, $st_term );
+	$st_closed = (string) ob_get_clean();
+	$_GET['steps'] = $st_key;
+	ob_start();
+	hodima_seo_advisor_render_steps_lazy( '/advisor-box-test/', $st_rule, $st_term );
+	$st_open = (string) ob_get_clean();
+	unset( $_GET['steps'] );
+	ob_start();
+	hodima_seo_advisor_render_steps_body( (array) $st_one['steps'] );
+	$st_body = (string) ob_get_clean();
+	hodima_ad(
+		'کارها: کادر «جزئیات و پیش‌نویس» بسته و بدون محتوای سنگین (فقط پیوند بدون JS)؛ با ?steps=کلید باز و همان محتوای کادر ویرایش',
+		[ str_contains( $st_closed, 'data-hdsa-steps' ), str_contains( $st_closed, ' open' ), str_contains( $st_closed, 'steps=' . $st_key ), str_contains( $st_closed, 'hodima-advisor-steps"' ), str_contains( $st_open, ' open data-loaded="1"' ), str_contains( $st_open, $st_body ) ],
+		[ true, false, true, false, true, true ]
+	);
+	ob_start();
+	hodima_seo_advisor_render_steps_lazy( '/advisor-box-test/', 'decline', '' );
+	hodima_ad( 'قاعده بدون جزئیات (افت کلیک) کادر خالی نمی‌گیرد', (string) ob_get_clean(), '' );
+	ob_start();
+	hodima_seo_advisor_render_steps_result( '/advisor-box-test/', $st_rule, 'کلمه‌ای که پیشنهاد نشده' );
+	hodima_ad( 'پیشنهادی که با متن فعلی صفحه برقرار نیست: یک خط روشن، نه کادر خالی', str_contains( (string) ob_get_clean(), 'دیگر برقرار نیست' ), true );
+
+	// admin-ajax: مدیر با nonce درست محتوا می‌گیرد؛ بی‌nonce یا غیرمدیر ۴۰۳
+	$st_ajax = static function ( array $post ): array {
+		$_POST = $post;
+		$_REQUEST = $post;
+		add_filter( 'wp_doing_ajax', '__return_true' );
+		$die = static fn(): callable => static function (): void { throw new RuntimeException( 'die' ); };
+		add_filter( 'wp_die_ajax_handler', $die );
+		ob_start();
+		try {
+			hodima_seo_advisor_handle_steps_ajax();
+		} catch ( RuntimeException $e ) {
+			unset( $e );
+		}
+		$out = (string) ob_get_clean();
+		remove_filter( 'wp_die_ajax_handler', $die );
+		remove_filter( 'wp_doing_ajax', '__return_true' );
+		$_POST = $_REQUEST = [];
+		return (array) json_decode( $out, true );
+	};
+	$st_post = [ 'action' => 'hodima_advisor_steps', 'path' => '/advisor-box-test/', 'rule' => $st_rule, 'term' => $st_term ];
+	wp_set_current_user( 1 );
+	$st_ok  = $st_ajax( $st_post + [ 'nonce' => wp_create_nonce( 'hodima_advisor_steps' ) ] );
+	$st_bad = $st_ajax( $st_post + [ 'nonce' => 'x' ] );
+	wp_set_current_user( 0 );
+	$st_anon = $st_ajax( $st_post + [ 'nonce' => wp_create_nonce( 'hodima_advisor_steps' ) ] );
+	wp_set_current_user( 1 );
+	hodima_ad( 'admin-ajax جزئیات: مدیر با nonce همان محتوا؛ nonce غلط و غیرمدیر رد', [ ! empty( $st_ok['success'] ) && (string) ( $st_ok['data']['html'] ?? '' ) === $st_body, $st_bad['success'] ?? null, $st_anon['success'] ?? null ], [ true, false, false ] );
+}
+
 delete_option( HODIMA_SEO_ADVISOR_STATUS_OPTION );
 ob_start();
 hodima_seo_advisor_render_box( (string) get_permalink( $box_id ) );

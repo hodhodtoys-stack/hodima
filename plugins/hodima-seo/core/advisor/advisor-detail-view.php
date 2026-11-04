@@ -11,6 +11,112 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+add_action( 'wp_ajax_hodima_advisor_steps', 'hodima_seo_advisor_handle_steps_ajax' );
+
+/**
+ * «جزئیات و پیش‌نویس» هر پیشنهاد گوگل در «کارها» (SEO 3.7.5؛ طرح تأییدشده کاربر «یک منبع»): عنوان فعلی و پیشنهادی، تیترها،
+ * صفحه‌هایی که از آن‌ها لینک بدهید، صفحه‌های رقیب. قبلا فقط کادر ویرایش صفحه این‌ها را داشت. ساختنش گران است (جستجوی متن
+ * همه صفحه‌ها برای لینک)، پس فقط وقتی مدیر بازش می‌کند و فقط برای همان یک صفحه ساخته می‌شود؛ بدون JS پیوند «نمایش جزئیات»
+ * همان صفحه «کارها» را با همین یک مورد باز و ساخته‌شده نشان می‌دهد (?steps=کلید).
+ */
+const HODIMA_SEO_ADVISOR_STEPS_HINTS = [
+	'low_ctr'          => 'عنوان فعلی، عنوان پیشنهادی، توضیح متا',
+	'missing_headings' => 'تیترهای فعلی، تیتر پیشنهادی، صفحه‌هایی که از آن‌ها لینک بدهید',
+	'missing_content'  => 'تیترهای فعلی، تیتر پیشنهادی، صفحه‌هایی که از آن‌ها لینک بدهید',
+	'near_first'       => 'صفحه‌هایی که از آن‌ها لینک بدهید',
+	'cannibal'         => 'صفحه‌های رقیب با رتبه و نمایش',
+];
+
+/** کلید کوتاه یک پیشنهاد (آدرس + قاعده + کلمه) برای پیوند بدون JS. */
+function hodima_seo_advisor_steps_key( string $path, string $rule, string $term ): string {
+	return substr( md5( $path . '|' . $rule . '|' . $term ), 0, 12 );
+}
+
+/**
+ * گام‌های ساخت‌یافته همان پیشنهاد با تحلیل زنده همین صفحه؛ null = پیشنهاد با متن فعلی صفحه دیگر برقرار نیست.
+ *
+ * @return list<array<string, mixed>>|null
+ */
+function hodima_seo_advisor_steps_for( string $path, string $rule, string $term ): ?array {
+
+	$analysis = hodima_seo_advisor_analyze( $path, true );
+
+	foreach ( null === $analysis ? [] : $analysis['suggestions'] as $item ) {
+		if ( $rule === (string) $item['rule'] && $term === (string) ( $item['term'] ?? '' ) ) {
+			return (array) ( $item['steps'] ?? [] );
+		}
+	}
+
+	return null;
+}
+
+/** محتوای جزئیات یک پیشنهاد (یا یک خط توضیح وقتی چیزی برای نشان دادن نیست). */
+function hodima_seo_advisor_render_steps_result( string $path, string $rule, string $term ): void {
+
+	$steps = hodima_seo_advisor_steps_for( $path, $rule, $term );
+
+	if ( null === $steps ) {
+		echo '<p class="hodima-advisor-steps__tip">' . esc_html( 'با متن فعلی صفحه این پیشنهاد دیگر برقرار نیست (احتمالا رفعش کرده‌اید)؛ «انجام دادم» را بزنید تا از فهرست برود.' ) . '</p>';
+		return;
+	}
+
+	if ( ! $steps ) {
+		echo '<p class="hodima-advisor-steps__tip">' . esc_html( 'برای این پیشنهاد جزئیات بیشتری نیست؛ همان گام‌های زیر را انجام دهید.' ) . '</p>';
+		return;
+	}
+
+	hodima_seo_advisor_render_steps_body( $steps );
+}
+
+/** کادر بازشونده «جزئیات و پیش‌نویس» زیر یک پیشنهاد گوگل در «کارها»؛ فقط برای قاعده‌هایی که جزئیات دارند. */
+function hodima_seo_advisor_render_steps_lazy( string $path, string $rule, string $term ): void {
+
+	if ( ! isset( HODIMA_SEO_ADVISOR_STEPS_HINTS[ $rule ] ) ) {
+		return;
+	}
+
+	$key  = hodima_seo_advisor_steps_key( $path, $rule, $term );
+	$here = isset( $_GET['steps'] ) && $key === sanitize_key( (string) $_GET['steps'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط نمایش (پیوند بدون JS)
+	$url  = add_query_arg( 'steps', $key, (string) wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) ) . '#' . hodima_seo_advisor_row_anchor( $path ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- خروجی با esc_url
+
+	printf(
+		'<details class="hodima-advisor__lazy" data-hdsa-steps data-path="%1$s" data-rule="%2$s" data-term="%3$s"%4$s><summary><span class="hodima-advisor__lazy-title">جزئیات و پیش‌نویس</span> <span class="hodima-advisor__lazy-hint">%5$s</span></summary><div class="hodima-advisor__lazy-body" data-hdsa-steps-out aria-live="polite">',
+		esc_attr( $path ),
+		esc_attr( $rule ),
+		esc_attr( $term ),
+		$here ? ' open data-loaded="1"' : '',
+		esc_html( HODIMA_SEO_ADVISOR_STEPS_HINTS[ $rule ] )
+	);
+
+	if ( $here ) {
+		hodima_seo_advisor_render_steps_result( $path, $rule, $term );
+	} else {
+		printf( '<p class="hodima-advisor-steps__tip"><a href="%s">نمایش جزئیات</a></p>', esc_url( $url ) ); // با JS همین خط جای خودش را به محتوای ساخته‌شده می‌دهد
+	}
+
+	echo '</div></details>';
+}
+
+/** admin-ajax: محتوای «جزئیات و پیش‌نویس» یک پیشنهاد (HTML escape‌شده در سرور). */
+function hodima_seo_advisor_handle_steps_ajax(): void {
+
+	if ( ! current_user_can( 'manage_options' ) || ! check_ajax_referer( 'hodima_advisor_steps', 'nonce', false ) ) {
+		wp_send_json_error( [ 'message' => 'دسترسی ندارید؛ صفحه را دوباره باز کنید.' ], 403 );
+	}
+
+	$path = isset( $_POST['path'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['path'] ) ) : '';
+	$rule = isset( $_POST['rule'] ) ? sanitize_key( (string) $_POST['rule'] ) : '';
+	$term = isset( $_POST['term'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['term'] ) ) : '';
+
+	if ( '' === $path || ! isset( HODIMA_SEO_ADVISOR_STEPS_HINTS[ $rule ] ) ) {
+		wp_send_json_error( [ 'message' => 'درخواست نامعتبر است.' ], 400 );
+	}
+
+	ob_start();
+	hodima_seo_advisor_render_steps_result( $path, $rule, $term );
+	wp_send_json_success( [ 'html' => (string) ob_get_clean() ] );
+}
+
 /** دکمه کپی متن (اسکریپت advisor-copy.js؛ بدون JS پنهان است و متن را دستی انتخاب می‌کنید). */
 function hodima_seo_advisor_detail_copy( string $text, string $label ): string {
 

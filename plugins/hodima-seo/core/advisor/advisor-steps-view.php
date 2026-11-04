@@ -116,10 +116,20 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true, strin
 		return;
 	}
 
-	$n = static fn( int|float $value, int $decimals = 0 ): string => number_format_i18n( $value, $decimals );
-
 	// کادر ویرایش کوتاه بماند: گام‌های پیشنهاد اول باز، بقیه با یک کلیک؛ داخل ردیف فهرست همه باز
 	printf( '<details class="hodima-advisor-steps__more"%1$s><summary>%2$s</summary>', $open ? ' open' : '', esc_html( $summary ) ); // کادر ویرایش (SEO 3.7.2): «جزئیات و پیش‌نویس»، چون گام‌ها حالا بالاتر شماره‌دارند
+	hodima_seo_advisor_render_steps_body( $steps );
+	echo '</details>';
+}
+
+/**
+ * محتوای «جزئیات و پیش‌نویس» بدون کادر بازشونده؛ «کارها» آن را هنگام باز کردن با admin-ajax می‌گیرد (SEO 3.7.5).
+ *
+ * @param list<array<string, mixed>> $steps
+ */
+function hodima_seo_advisor_render_steps_body( array $steps ): void {
+
+	$n = static fn( int|float $value, int $decimals = 0 ): string => number_format_i18n( $value, $decimals );
 
 	foreach ( $steps as $step ) {
 		echo '<div class="hodima-advisor-steps">';
@@ -138,7 +148,11 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true, strin
 					echo '<p class="hodima-advisor-steps__tip">' . esc_html( (string) $step['tip'] ) . '</p>';
 				}
 				if ( '' !== (string) $step['suggested'] ) {
-					printf( '<h5>عنوان پیشنهادی <small>(پیش‌نویس)</small></h5><p class="hodima-advisor-steps__value hodima-advisor-steps__value--new">%s</p>', esc_html( (string) $step['suggested'] ) );
+					printf(
+						'<h5>عنوان پیشنهادی <small>(پیش‌نویس)</small></h5><p class="hodima-advisor-steps__value hodima-advisor-steps__value--new">%1$s%2$s</p>',
+						esc_html( (string) $step['suggested'] ),
+						function_exists( 'hodima_seo_advisor_detail_copy' ) ? ' ' . hodima_seo_advisor_detail_copy( (string) $step['suggested'], 'کپی عنوان پیشنهادی' ) : '' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_detail_copy (SEO 3.7.5: دکمه کپی مثل پیش‌نویس‌های ایراد فنی)
+					);
 				}
 				printf(
 					'<h5>توضیح متا <small>(%1$s پیکسل، %2$s)</small></h5><p class="hodima-advisor-steps__value">%3$s</p>',
@@ -198,7 +212,7 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true, strin
 
 			case 'canonical':
 				printf( '<h5>صفحه‌هایی که برای «%s» نمایش می‌گیرند</h5>', esc_html( (string) $step['term'] ) );
-				echo '<table class="hodima-advisor-steps__table"><thead><tr><th>صفحه</th><th>رتبه</th><th>نمایش</th><th>کلیک</th></tr></thead><tbody>';
+				echo '<div class="hodima-advisor-steps__scroll"><table class="hodima-advisor-steps__table"><thead><tr><th>صفحه</th><th>رتبه</th><th>نمایش</th><th>کلیک</th></tr></thead><tbody>';
 				foreach ( (array) $step['pages'] as $page ) {
 					$is_me = (string) $page['path'] === (string) ( $step['current'] ?? '' );
 					$edit  = $is_me ? '' : hodima_seo_advisor_edit_link( (string) $page['kind'], (int) $page['object_id'] );
@@ -213,7 +227,7 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true, strin
 						esc_html( $n( (int) $page['clicks'] ) )
 					);
 				}
-				echo '</tbody></table>';
+				echo '</tbody></table></div>'; // جعبه اسکرول: در موبایل فقط جدول اسکرول می‌خورد و متن زیرش بریده نمی‌شود (SEO 3.7.5)
 				// برنده همان تب «صفحه‌های هم‌کلمه» (بیشترین کلیک)؛ آدرس کامل با دکمه کپی
 				echo '<p class="hodima-advisor-steps__tip hodima-advisor-steps__main">' . ( $step['is_main']
 					? esc_html( 'صفحه مرجع پیشنهادی: همین صفحه (بیشترین کلیک برای این کلمه، همان برنده فیلتر «هم‌کلمه» در «کارها»). صفحه‌های دیگر را با همین عبارت به آن لینک بدهید.' )
@@ -223,6 +237,4 @@ function hodima_seo_advisor_render_steps( array $steps, bool $open = true, strin
 
 		echo '</div>';
 	}
-
-	echo '</details>';
 }
