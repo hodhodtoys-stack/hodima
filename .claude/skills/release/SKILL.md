@@ -74,7 +74,7 @@ python3 bin/release-check.py plan
 
 ## ۶. ساخت (فقط اگر بسته‌ای تغییر کرده)
 کاربر خودش build نمی‌کند؛ ZIP و JSON در `release/` همیشه کار Claude است.
-ZIP از *کپی* ساخته می‌شود: CSS قالب پایین‌آورده/minify (`bin/build-css.mjs`) و JS همه بسته‌ها minify (`bin/build-js.mjs`). تغییر `bin/build*` خروجی همه ZIPها را عوض می‌کند، پس همه ۵ بسته یک پله نسخه می‌گیرند (`release-check.py plan` همین را نشان می‌دهد).
+ZIP از *کپی* ساخته می‌شود: CSS قالب پایین‌آورده/minify (`bin/build-css.mjs`) و JS همه بسته‌ها minify (`bin/build-js.mjs`). تغییر `bin/build*` خروجی همه ZIPها را عوض می‌کند، پس همه بسته‌ها یک پله نسخه می‌گیرند (`release-check.py plan` همین را نشان می‌دهد)؛ مگر تغییر فقط فهرست بسته‌ها باشد (افزودن بسته تازه): `HODIMA_BUILD_LIST_ONLY=1` جلوی `release-check.py` و بعد از build، فقط بسته‌ای که ZIP انتشارش عوض شده نسخه می‌خواهد.
 ```bash
 bash bin/build.sh        # dist/*.zip + release/ (ZIP فقط اگر محتوا فرق کند؛ JSON زمانش را فقط با تغییر واقعی عوض می‌کند)
 python3 tools/eol.py     # پایان خطوط فایل‌های تغییرکرده

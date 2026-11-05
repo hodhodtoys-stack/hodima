@@ -1,0 +1,150 @@
+/* =========================================================================
+ * صفحه‌های پیشخوان Hodima Panel (سفارش‌ها و تیکت‌ها)
+ * -------------------------------------------------------------------------
+ * فقط روی همان دو صفحه لود می‌شود و همه قانون‌ها زیر .hodima-panel-admin‌اند.
+ * استایل‌های داخل HTML پنل قدیمی به اینجا آمدند؛ ظاهر تقریبا همان قبلی است.
+ * بازطراحی کامل با کیت پیشخوان (قانون ۸ پروژه): مرحله ۶.
+ * ========================================================================= */
+
+.hodima-panel-admin {
+	--hp-ok: #00a32a;
+	--hp-info: #2271b1;
+	--hp-danger: #d63638;
+	--hp-muted: #646970;
+	--hp-line: #c3c4c7;
+	--hp-soft: #f0f6fc;
+	--hp-note: #fffbe5;
+	--hp-note-line: #ffb900;
+}
+
+.hodima-panel-admin .row-unread { background-color: #f6f7f7; font-weight: 600; }
+
+.hodima-panel-admin .hp-badge {
+	display: inline-block;
+	margin-inline-start: 5px;
+	padding: 2px 6px;
+	border-radius: 10px;
+	color: #fff;
+	font-size: 10px;
+	vertical-align: middle;
+}
+
+.hodima-panel-admin .hp-money { color: var(--hp-ok); font-size: 15px; }
+.hodima-panel-admin .hp-muted { color: var(--hp-muted); }
+.hodima-panel-admin .hp-warn { color: var(--hp-danger); text-align: center; }
+.hodima-panel-admin .hp-wide { inline-size: 100%; }
+.hodima-panel-admin .hp-files { display: flex; flex-wrap: wrap; gap: 5px; margin-block-start: 5px; }
+
+.hodima-panel-admin .hp-note {
+	margin-block-start: 8px;
+	padding: 6px 8px;
+	border-inline-start: 3px solid var(--hp-note-line);
+	background: var(--hp-note);
+	font-size: 12px;
+}
+
+.hodima-panel-admin .hp-items { margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.hodima-panel-admin .hp-items li { margin-block-end: 4px; }
+.hodima-panel-admin .hp-status { display: flex; gap: 4px; align-items: center; }
+.hodima-panel-admin .hp-status select { min-inline-size: 120px; font-size: 12px; }
+
+.hodima-panel-admin .hp-type { padding: 3px 8px; border-radius: 3px; background: var(--hp-soft); font-size: 12px; }
+.hodima-panel-admin .hp-type--prebuy { background: #e6f0ff; color: #0052cc; }
+
+/* جزئیات سفارش */
+.hodima-panel-admin .custom-order-grid { display: flex; flex-wrap: wrap; gap: 20px; margin-block-start: 15px; }
+.hodima-panel-admin .order-col-30 { inline-size: 32%; }
+.hodima-panel-admin .order-col-70 { inline-size: calc(68% - 20px); }
+.hodima-panel-admin .h-100 { display: flex; flex-direction: column; block-size: 100%; }
+.hodima-panel-admin .h-100 > .inside { flex-grow: 1; }
+
+.hodima-panel-admin #chat-admin-metabox { border-block-start: 4px solid var(--hp-info); }
+.hodima-panel-admin .hp-chat { display: flex; flex-direction: column; }
+
+.hodima-panel-admin .hp-chat-history {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	block-size: 350px;
+	margin-block-end: 15px;
+	padding: 15px;
+	overflow-y: auto;
+	border: 1px solid var(--hp-line);
+	background: #f0f0f1;
+}
+
+.hodima-panel-admin .hp-msg { max-inline-size: 80%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; align-self: flex-end; }
+.hodima-panel-admin .hp-msg--admin { align-self: flex-start; border-color: #90caf9; background: #e3f2fd; }
+.hodima-panel-admin .hp-msg--system { align-self: center; border-color: #ffeeba; background: #fff3cd; color: #856404; font-size: 13px; text-align: center; }
+.hodima-panel-admin .hp-msg-date { margin-block-start: 5px; color: #555; font-size: 0.8em; text-align: end; }
+.hodima-panel-admin .hp-empty { margin-block-start: 100px; color: var(--hp-muted); text-align: center; }
+.hodima-panel-admin .hp-chat-form { margin-block-start: auto; }
+.hodima-panel-admin .hp-chat-form textarea { inline-size: 100%; margin-block-end: 10px; }
+
+.hodima-panel-admin .agent-select-wrapper {
+	margin-block-end: 10px;
+	padding: 10px;
+	border: 1px solid #c8e6c9;
+	border-radius: 5px;
+	background: #e8f5e9;
+	color: #2e7d32;
+	font-weight: 600;
+}
+
+.hodima-panel-admin .hp-total-row { background: var(--hp-soft); font-weight: 600; }
+.hodima-panel-admin .hp-total-row td:first-child { text-align: end; }
+
+.hodima-panel-admin .hp-invoices { margin-block-end: 15px; }
+
+.hodima-panel-admin .hp-invoice {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-block-end: 10px;
+	padding: 8px;
+	border: 1px solid #c8e1ff;
+	border-radius: 4px;
+	background: var(--hp-soft);
+	color: var(--hp-ok);
+	font-weight: 600;
+}
+
+/* تیکت‌ها */
+.hodima-panel-admin .hp-tickets { margin-block-start: 20px; }
+.hodima-panel-admin .hp-priority--high { color: var(--hp-danger); font-weight: 600; }
+.hodima-panel-admin .hp-priority--low { color: var(--hp-ok); }
+.hodima-panel-admin .hp-ticket-status--open { color: #b26200; font-weight: 600; }
+.hodima-panel-admin .hp-ticket-status--answered { color: var(--hp-ok); }
+.hodima-panel-admin .hp-ticket-status--closed { color: var(--hp-muted); }
+
+.hodima-panel-admin .hp-ticket-head { display: flex; justify-content: space-between; align-items: center; margin-block-end: 15px; }
+
+.hodima-panel-admin .hp-ticket-meta,
+.hodima-panel-admin .hp-ticket-messages,
+.hodima-panel-admin .hp-ticket-reply {
+	margin-block-end: 20px;
+	padding: 15px;
+	border: 1px solid var(--hp-line);
+	border-radius: 4px;
+	background: #fff;
+}
+
+.hodima-panel-admin .hp-ticket-meta { display: flex; flex-wrap: wrap; gap: 20px; }
+.hodima-panel-admin .hp-ticket-reply { display: flex; gap: 20px; }
+.hodima-panel-admin .hp-ticket-reply__form { flex-grow: 1; }
+.hodima-panel-admin .hp-ticket-reply__form textarea { inline-size: 100%; margin-block-end: 10px; }
+.hodima-panel-admin .hp-ticket-reply__side { inline-size: 200px; padding-inline-start: 20px; border-inline-start: 1px solid #eee; }
+
+.hodima-panel-admin .message-bubble { max-inline-size: 80%; margin-block-end: 15px; padding: 15px; border: 1px solid #e2e4e7; border-radius: 8px; }
+.hodima-panel-admin .message-bubble p { margin-block-start: 0; }
+.hodima-panel-admin .user-reply { margin-inline-end: auto; border-inline-start: 4px solid #7e8993; background-color: #f0f0f1; }
+.hodima-panel-admin .admin-reply { margin-inline-start: auto; border-inline-end: 4px solid var(--hp-info); background-color: #f0f8ff; }
+.hodima-panel-admin .system-reply { max-inline-size: 90%; margin-inline: auto; background-color: #fff8e5; text-align: center; }
+
+@media (width <= 1024px) {
+	.hodima-panel-admin .order-col-30,
+	.hodima-panel-admin .order-col-70 { inline-size: 100%; }
+
+	.hodima-panel-admin .hp-ticket-reply { flex-direction: column; }
+	.hodima-panel-admin .hp-ticket-reply__side { inline-size: auto; padding: 0; border: 0; }
+}

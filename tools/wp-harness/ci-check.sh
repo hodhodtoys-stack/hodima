@@ -11,6 +11,7 @@
 #   - آزمون‌های آمار ویدیوها (video-watch-tests.php) رد شوند؛
 #   - آزمون‌های Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس) رد شوند؛
 #   - آزمون‌های فرم تلفن (phone-tests.php) رد شوند؛
+#   - آزمون‌های پنل کاربری (panel-tests.php) رد شوند؛
 #   - آزمون‌های دستار سئو (advisor-tests.php)، دقت خواندن صفحه خزنده (advisor-accuracy.php)، قاعده‌های ایراد (advisor-checks-tests.php)
 #     یا عکس مرجع ایرادها (advisor-issues-golden.php) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
@@ -135,6 +136,14 @@ if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-issues-golden.php" --check 
 	head -1 "$out/advisor-issues-golden.txt" | sed 's/^/  /'
 else
 	head -40 "$out/advisor-issues-golden.txt" | sed 's/^/  /'; fail=1
+fi
+
+# آخرِ آزمون‌ها: این آزمون Hodima Panel را خودش فعال می‌کند (در داده آزمایشی بقیه فعال نیست)
+echo "=== آزمون پنل کاربری (panel-tests.php: جدول‌ها، برگه، اقلام، گفتگو، فایل، رندر بخش‌ها و پیشخوان، مالکیت، nonce)"
+if HARNESS=1 HARNESS_WC=1 HODIMA_WP="$base/wp" php "$here/panel-tests.php" > "$out/panel-tests.txt" 2>&1; then
+	tail -1 "$out/panel-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/panel-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
 if [ -n "$ref" ] && git -C "$repo" rev-parse -q --verify "$ref^{commit}" >/dev/null; then

@@ -27,6 +27,7 @@ PLUGINS = {
     'hodima-seo': 'plugins/hodima-seo/hodima-seo.php',
     'hodima-commerce': 'plugins/hodima-commerce/hodima-commerce.php',
     'hodima-media': 'plugins/hodima-media/hodima-media.php',
+    'hodima-panel': 'plugins/hodima-panel/hodima-panel.php',
 }
 THEME = ('hodima', 'hodima/style.css')
 

@@ -22,6 +22,7 @@ PACKAGES = {
     'seo': 'plugins/hodima-seo',
     'commerce': 'plugins/hodima-commerce',
     'media': 'plugins/hodima-media',
+    'panel': 'plugins/hodima-panel',
 }
 # هوک‌ها و گزینه‌های خود وردپرس/ووکامرس که «ارتباط بین بسته‌ها» نیستند
 WP_HOOKS = {'the_content', 'woocommerce_short_description'}

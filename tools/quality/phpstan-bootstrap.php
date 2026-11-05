@@ -27,3 +27,8 @@ define( 'HODIMA_COMMERCE_DIR', '/tmp/wordpress/wp-content/plugins/hodima-commerc
 define( 'HODIMA_SEO_VERSION', '0.0.0' );
 define( 'HODIMA_SEO_URL', 'https://example.test/wp-content/plugins/hodima-seo' );
 define( 'HODIMA_SEO_DIR', '/tmp/wordpress/wp-content/plugins/hodima-seo' );
+
+// Hodima Panel: hodima-panel.php
+define( 'HODIMA_PANEL_FILE', '/tmp/wordpress/wp-content/plugins/hodima-panel/hodima-panel.php' );
+define( 'HODIMA_PANEL_DIR', '/tmp/wordpress/wp-content/plugins/hodima-panel' );
+define( 'HODIMA_PANEL_URL', 'https://example.test/wp-content/plugins/hodima-panel' );

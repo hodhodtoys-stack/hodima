@@ -36,14 +36,14 @@ echo "✔ CSS ساخته‌شده با سورس هم‌ارز است"
 # JavaScript: سورس خوانا می‌ماند و فقط کپی بسته کوچک می‌شود (bin/build-js.mjs، esbuild).
 # افزونه‌ها هم از کپی ساخته می‌شوند تا سورس مخزن دست نخورد.
 mkdir -p "$stage/plugins"
-for plugin in hodima-core hodima-seo hodima-commerce hodima-media; do
+for plugin in hodima-core hodima-seo hodima-commerce hodima-media hodima-panel; do
 	cp -r "$root/plugins/$plugin" "$stage/plugins/$plugin"
 done
 ( cd "$root" && node bin/build-js.mjs "$stage/hodima" "$stage/plugins" )
 # کیت UI مشترک پیشخوان (tools/ui-kit): بعد از minify تا کپی‌ها بایت‌به‌بایت با منبع (با پیشوند بسته) یکی بمانند
 python3 "$root/tools/ui-kit/kit.py" install "$stage"
 package "$stage" hodima
-for plugin in hodima-core hodima-seo hodima-commerce hodima-media; do
+for plugin in hodima-core hodima-seo hodima-commerce hodima-media hodima-panel; do
 	package "$stage/plugins" "$plugin"
 done
 rm -rf "$stage"

@@ -28,8 +28,11 @@ parameters:
 		- plugins/hodima-media/components/notification
 		- plugins/hodima-media/components/video-watch
 		- plugins/hodima-commerce/components/phone
+		# Hodima Panel؛ legacy/ منتقل‌شده از پنل قدیمی (همان phpcs.xml.dist)
+		- plugins/hodima-panel
 	excludePaths:
 		analyse:
+			- plugins/hodima-panel/legacy/*
 			- hodima/user-panel/*
 			- plugins/hodima-seo/schema/admin/*
 			- plugins/hodima-seo/schema/sitemap-core.php

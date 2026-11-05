@@ -30,6 +30,7 @@ PACKAGES = {
     'hodima-seo': ('plugins/hodima-seo', 'plugins/hodima-seo/hodima-seo.php', 'HODIMA_SEO_VERSION', 'Hodima SEO'),
     'hodima-commerce': ('plugins/hodima-commerce', 'plugins/hodima-commerce/hodima-commerce.php', 'HODIMA_COMMERCE_VERSION', 'Hodima Commerce'),
     'hodima-media': ('plugins/hodima-media', 'plugins/hodima-media/hodima-media.php', 'HODIMA_MEDIA_VERSION', 'Hodima Media'),
+    'hodima-panel': ('plugins/hodima-panel', 'plugins/hodima-panel/hodima-panel.php', 'HODIMA_PANEL_VERSION', 'Hodima Panel'),
 }
 FA_DIGITS = str.maketrans('0123456789', '۰۱۲۳۴۵۶۷۸۹')
 
@@ -117,6 +118,10 @@ def changed_files(base):
 
 # ابزار ساخت: خروجی ZIP همه بسته‌ها را عوض می‌کند (مثلا minify جاوااسکریپت)، پس همه نسخه می‌گیرند
 BUILD_TOOLS = {'bin/build.sh', 'bin/build-css.mjs', 'bin/build-js.mjs'}
+# تغییرهایی در bin/build.sh که خروجی هیچ ZIP موجودی را عوض نمی‌کنند (مثل افزودن بسته تازه به فهرست):
+# فقط بسته‌ای «تغییرکرده» حساب می‌شود که ZIP انتشارش واقعا عوض شده باشد (build.sh ZIP
+# بدون تغییر محتوا را جایگزین نمی‌کند). پیش از ساخت، plan هشدار می‌دهد که بعد از build دوباره ببینی.
+BUILD_LIST_ONLY = os.environ.get('HODIMA_BUILD_LIST_ONLY') == '1'
 
 # کیت UI مشترک (tools/ui-kit): منبع و ابزار کپی؛ در ZIP هر بسته‌ای که پیشوند دارد می‌آید
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'ui-kit'))
@@ -127,7 +132,8 @@ def changed_packages(files):
     out = {}
     tools = sorted(files & BUILD_TOOLS)
     for slug, (folder, *_rest) in PACKAGES.items():
-        hits = sorted(f for f in files if f.startswith(folder + '/')) + tools
+        own = tools if not BUILD_LIST_ONLY or f'release/{slug}.zip' in files else []
+        hits = sorted(f for f in files if f.startswith(folder + '/')) + own
         if folder in kit.targets():
             hits += sorted(f for f in files if f.startswith('tools/ui-kit/') and os.path.basename(f) in kit.FILES)  # kit.py خودش در ZIP نیست
         if folder in kit.CORE_TARGETS:
@@ -171,6 +177,9 @@ def cmd_plan(base):
         return
     for slug, hits in pkgs.items():
         old, now, _c = versions(slug, base)
+        if old is None:
+            print(f'- {slug}: {len(hits)} فایل؛ بسته تازه، اولین نسخه {now}')
+            continue
         nxt = next_version(old) or ask_hint(old)
         state = f'الان {now}' + (' (بالا رفته)' if old and now and vtuple(now) > vtuple(old) else '')
         print(f'- {slug}: {len(hits)} فایل؛ نسخه منتشرشده {old} ← پیشنهاد {nxt}؛ {state}')
@@ -215,6 +224,14 @@ def check_versions(base, pkgs):
             continue
         if const_name and const != now:
             fail(f'{slug}: سربرگ Version {now} ≠ ثابت {const_name} {const} ({head_file})')
+        if old is None and slug in pkgs:
+            # بسته تازه (هنوز در گیت‌هاب نیست): اولین نسخه فقط باید در قاعده باشد
+            if fits_rule(now):
+                ok(f'{slug}: بسته تازه، اولین نسخه {now}')
+            else:
+                fail(f'{slug}: اولین نسخه {now} در قاعده نیست (رقم دوم و سوم ۰ تا ۹)')
+            bumped[slug] = (None, now)
+            continue
         is_bumped = bool(old) and vtuple(now) > vtuple(old)
         if old and vtuple(now) < vtuple(old):
             fail(f'{slug}: نسخه پایین آمده ({old} ← {now})')

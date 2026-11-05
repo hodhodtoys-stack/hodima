@@ -17,7 +17,7 @@ require_once ABSPATH . 'wp-admin/includes/admin.php';
 require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-$plugins = [ 'hodima-core', 'hodima-seo', 'hodima-commerce', 'hodima-media' ];
+$plugins = [ 'hodima-core', 'hodima-seo', 'hodima-commerce', 'hodima-media', 'hodima-panel' ];
 
 switch ( $step ) {
 	case 'install':

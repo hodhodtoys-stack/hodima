@@ -2,9 +2,9 @@
 # Point the harness site at a source tree (repo root containing hodima/ and plugins/).
 set -euo pipefail
 src="$(cd "$1" && pwd)"; wp="${HODIMA_HARNESS:-/tmp/hodima-harness}/wp"
-rm -f "$wp/wp-content/themes/hodima" "$wp"/wp-content/plugins/hodima-{core,seo,commerce,media}
+rm -f "$wp/wp-content/themes/hodima" "$wp"/wp-content/plugins/hodima-{core,seo,commerce,media,panel}
 ln -s "$src/hodima" "$wp/wp-content/themes/hodima"
-for p in core seo commerce media; do ln -s "$src/plugins/hodima-$p" "$wp/wp-content/plugins/hodima-$p"; done
+for p in core seo commerce media panel; do [ -d "$src/plugins/hodima-$p" ] || continue; ln -s "$src/plugins/hodima-$p" "$wp/wp-content/plugins/hodima-$p"; done
 # کیت UI مشترک (کپی با پیشوند هر بسته؛ در .gitignore)
 python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")/../ui-kit" && pwd)/kit.py" install "$src"
 # mu-plugins (ابزار تست) هر بار از همین پوشه tools کپی می‌شوند تا تغییر stub بدون setup دوباره اثر کند

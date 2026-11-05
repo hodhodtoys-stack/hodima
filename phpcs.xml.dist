@@ -40,6 +40,9 @@
 	<file>plugins/hodima-media/components/video-watch</file>
 	<!-- فرم لید تلفنی Hodima Commerce (بخش ۲۲۸) -->
 	<file>plugins/hodima-commerce/components/phone</file>
+	<!-- Hodima Panel (بدون baseline): legacy/ کد منتقل‌شده از پنل قدیمی است و مرحله‌به‌مرحله بازنویسی و به اینجا اضافه می‌شود -->
+	<file>plugins/hodima-panel</file>
+	<exclude-pattern>plugins/hodima-panel/legacy/*</exclude-pattern>
 	<!-- داخل پوشه schema ولی اسکیما نیستند (سایت‌مپ، فید پادکست، صفحه‌های پیشخوان) -->
 	<exclude-pattern>plugins/hodima-seo/schema/admin/*</exclude-pattern>
 	<exclude-pattern>plugins/hodima-seo/schema/sitemap-core\.php</exclude-pattern>
@@ -125,6 +128,7 @@
 		<properties>
 			<property name="text_domain" type="array">
 				<element value="hodima"/>
+				<element value="hodima-panel"/>
 			</property>
 		</properties>
 	</rule>
