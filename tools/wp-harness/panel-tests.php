@@ -600,25 +600,25 @@ $wpdb->update( table( 'tickets' ), [ 'user_unread' => 1 ], [ 'id' => $ticket->id
 [ $html, $err ] = hodima_pt_render( '/user-panel/' );
 hodima_pt( 'مهمان: فرم ورود', str_contains( $html, 'hodima_auth_nonce' ) && str_contains( $html, '</html>' ), true );
 hodima_pt( 'مهمان: noindex', (bool) preg_match( "/<meta name='robots' content='[^']*noindex/", $html ), true );
-hodima_pt( 'مهمان: فقط CSS ورود', str_contains( $html, 'css/login.css' ) && ! str_contains( $html, 'css/panel.css' ), true );
+hodima_pt( 'مهمان: CSS و JS یکپارچه پنل، بی اسکریپت گفتگو', [ str_contains( $html, 'css/panel.css' ), str_contains( $html, 'js/panel.js' ), str_contains( $html, 'js/chat.js' ), str_contains( $html, 'css/login.css' ) ], [ true, true, false, false ] );
 hodima_pt( 'مهمان: بدون خطا', $err, '' );
-hodima_pt( 'مهمان: ثبت‌نام فقط با کد، فیلد ضد ربات تازه، پیامک فعال', [ str_contains( $html, 'do_register' ), str_contains( $html, 'up_website_url' ), str_contains( $html, Auth::TRAP ), str_contains( $html, 'ثبت‌نام با کد پیامکی' ), str_contains( $html, 'auth-notice' ) ], [ false, false, true, true, false ] );
+hodima_pt( 'مهمان: ثبت‌نام فقط با کد، فیلد ضد ربات تازه، پیامک فعال', [ str_contains( $html, 'do_register' ), str_contains( $html, 'up_website_url' ), str_contains( $html, Auth::TRAP ), str_contains( $html, 'name="send_otp"' ), str_contains( $html, 'data-hpn-tabs' ), str_contains( $html, 'name="login_with_password"' ) ], [ false, false, true, true, true, true ] );
 delete_option( Sms::OPTION );
 [ $html ] = hodima_pt_render( '/user-panel/' );
-hodima_pt( 'مهمان، پیامک تنظیم‌نشده: پیام روشن به‌جای فرم کد', [ str_contains( $html, 'auth-notice' ), str_contains( $html, 'name="send_otp"' ) ], [ true, false ] );
+hodima_pt( 'مهمان، پیامک تنظیم‌نشده: فقط فرم رمز، بی تب', [ str_contains( $html, 'با شماره موبایل و رمز عبور' ), str_contains( $html, 'name="send_otp"' ), str_contains( $html, 'data-hpn-tabs' ), str_contains( $html, 'name="login_with_password"' ) ], [ true, false, false, true ] );
 $sections = [
-	'dashboard'  => 'stats-grid',
-	'orders'     => 'user-orders-table',
+	'dashboard'  => 'hpn-stats',
+	'orders'     => 'hpn-order',
 	'prebuy'     => 'گیره آزمون پنل',
 	'preinvoice' => 'فعلا محصولی',
-	'support'    => 'ts-app',
-	'profile'    => 'profileForm',
+	'support'    => 'hpn-thread',
+	'profile'    => 'data-hpn-profile',
 ];
 foreach ( $sections as $section => $needle ) {
 	[ $html, $err ] = hodima_pt_render( '/user-panel/?section=' . $section . ( 'support' === $section ? '&thread_id=' . $ticket->id : '' ), $user_a );
 	hodima_pt( "مشتری: بخش {$section} کامل و بدون خطا", [ str_contains( $html, $needle ), str_contains( $html, '</html>' ), $err ], [ true, true, '' ] );
 	if ( 'prebuy' === $section ) {
-		hodima_pt( 'فرم سفارش بی خطای ذخیره‌شده: کادر خطای خالی نیست', str_contains( $html, 'up-form-errors' ), false );
+		hodima_pt( 'فرم سفارش بی خطای ذخیره‌شده: کادر خطای خالی نیست', str_contains( $html, 'hpn-notice--error' ), false );
 	}
 }
 [ $html, $err ] = hodima_pt_render( '/user-panel/?section=prebuy&edit_order=' . $order_a, $user_a );
@@ -634,6 +634,10 @@ $wpdb->update( table( 'orders' ), [ 'status' => 'completed' ], [ 'id' => $order_
 [ $html ] = hodima_pt_render( '/user-panel/?section=orders', $user_a );
 $wpdb->update( table( 'orders' ), [ 'status' => 'receipt_uploaded' ], [ 'id' => $order_a ] );
 hodima_pt( 'سفارش‌ها (تکمیل‌شده): فیش‌ها هنوز دیده می‌شوند، با نشانی امن، و اسکریپت گفتگو', [ str_contains( $html, 'hodima_panel_file=' . $fid ), str_contains( $html, 'hodima-panel-private' ), str_contains( $html, 'js/chat.js' ) ], [ true, false, true ] );
+[ $html, $err ] = hodima_pt_render( '/user-panel/?section=orders', $user_a );
+hodima_pt( 'سفارش‌ها: مراحل، پنجره گفتگو، فیلتر، نوار پایین موبایل', [ str_contains( $html, 'hpn-steps' ), str_contains( $html, '<dialog' ), str_contains( $html, 'filter=wait' ), str_contains( $html, 'hpn-bottom' ), $err ], [ true, true, true, true, '' ] );
+[ $html ] = hodima_pt_render( '/user-panel/?section=orders&filter=done', $user_a );
+hodima_pt( 'سفارش‌ها: فیلتر «تکمیل‌شده» سفارش در حال بررسی را نشان نمی‌دهد', str_contains( $html, 'id="hpn-order-' . $order_a . '"' ), false );
 
 echo "== پیشخوان\n";
 require_once ABSPATH . 'wp-admin/includes/admin.php';

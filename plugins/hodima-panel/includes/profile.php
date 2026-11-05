@@ -88,7 +88,7 @@ final class Profile {
 	 * مقدار فیلدهای فرم پروفایل.
 	 *
 	 * @param \WP_User $user کاربر.
-	 * @return array{name: string, email: string, address: string, postcode: string, mobile: string}
+	 * @return array{name: string, email: string, address: string, postcode: string, mobile: string, state: string, city: string}
 	 */
 	public static function fields( \WP_User $user ): array {
 		$first = (string) get_user_meta( $user->ID, 'billing_first_name', true );
@@ -107,7 +107,36 @@ final class Profile {
 			'address'  => (string) get_user_meta( $user->ID, 'billing_address_1', true ),
 			'postcode' => (string) get_user_meta( $user->ID, 'billing_postcode', true ),
 			'mobile'   => self::mobile( $user ),
+			'state'    => (string) get_user_meta( $user->ID, 'billing_state', true ),
+			'city'     => (string) get_user_meta( $user->ID, 'billing_city', true ),
 		];
+	}
+
+	/**
+	 * استان‌های ایران از ووکامرس (ماژول بومی‌سازی Commerce نام فارسی و کدها را می‌دهد).
+	 *
+	 * @return array<string, string> کد => نام (خالی = فیلد متنی).
+	 */
+	public static function states(): array {
+		if ( ! function_exists( 'WC' ) || ! ( WC()->countries instanceof \WC_Countries ) ) {
+			return [];
+		}
+		$states = WC()->countries->get_states( 'IR' );
+		return is_array( $states ) ? array_map( 'strval', $states ) : [];
+	}
+
+	/**
+	 * شهرهای هر استان (فقط اگر Commerce فهرستش را دارد).
+	 *
+	 * @return array<string, list<string>> کد استان => شهرها.
+	 */
+	public static function cities(): array {
+		$class = '\\Hodima\\Core\\Time_Jalali\\Modules\\Iran_Cities';
+		if ( ! is_callable( [ $class, 'data' ] ) ) {
+			return [];
+		}
+		$data = $class::data();
+		return is_array( $data['cities'] ?? null ) ? $data['cities'] : [];
 	}
 
 	/**
@@ -155,6 +184,12 @@ final class Profile {
 		$email    = sanitize_email( $in['email'] ?? '' );
 		$address  = sanitize_textarea_field( $in['address'] ?? '' );
 		$postcode = self::digits( sanitize_text_field( $in['postcode'] ?? '' ) );
+		$state    = sanitize_text_field( $in['state'] ?? '' );
+		$city     = sanitize_text_field( $in['city'] ?? '' );
+		$states   = self::states();
+		if ( $states && '' !== $state && ! isset( $states[ $state ] ) ) {
+			$state = '';
+		}
 
 		if ( ! self::is_real_name( $name ) ) {
 			return 'لطفا نام و نام خانوادگی واقعی خود را وارد کنید.';
@@ -205,6 +240,8 @@ final class Profile {
 			'billing_email'      => $email,
 			'billing_address_1'  => $address,
 			'billing_postcode'   => $postcode,
+			'billing_state'      => $state,
+			'billing_city'       => $city,
 		];
 		if ( '' === (string) get_user_meta( $user->ID, 'billing_country', true ) ) {
 			$meta['billing_country'] = 'IR';
@@ -284,6 +321,8 @@ final class Profile {
 				'email'    => (string) wp_unslash( $_POST['user_email'] ?? '' ), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 				'address'  => (string) wp_unslash( $_POST['address'] ?? '' ), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 				'postcode' => (string) wp_unslash( $_POST['postcode'] ?? '' ), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+				'state'    => (string) wp_unslash( $_POST['state'] ?? '' ), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+				'city'     => (string) wp_unslash( $_POST['city'] ?? '' ), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			]
 		);
 		if ( '' !== $error ) {

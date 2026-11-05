@@ -46,12 +46,12 @@ function chat_order_or_fail(): int {
  */
 function chat_message_html( object $msg ): string {
 	[ $class, $name ] = match ( $msg->sender_type ) {
-		'user'   => [ 'user-msg', 'شما' ],
-		'system' => [ 'admin-msg system-msg', 'سیستم' ],
-		default  => [ 'admin-msg', 'پشتیبانی' ],
+		'user'   => [ 'me', 'شما' ],
+		'system' => [ 'system', 'سیستم' ],
+		default  => [ 'them', 'پشتیبانی' ],
 	};
-	return '<div class="chat-msg ' . esc_attr( $class ) . '"><div class="msg-text"><strong>' . esc_html( $name ) . ': </strong>'
-		. nl2br( esc_html( (string) $msg->message ) ) . '</div><div class="msg-date">' . esc_html( show_date( (string) $msg->created_at ) ) . '</div></div>';
+	return '<div class="hpn-msg hpn-msg--' . esc_attr( $class ) . '"><p>' . nl2br( esc_html( (string) $msg->message ) ) . '</p><span class="hpn-msg__meta">'
+		. esc_html( $name . ' · ' . show_date( (string) $msg->created_at, 'j F، H:i' ) ) . '</span></div>';
 }
 
 add_action( 'wp_ajax_hodima_panel_chat_send', static function (): void {
@@ -70,7 +70,7 @@ add_action( 'wp_ajax_hodima_panel_chat_history', static function (): void {
 	$chat_id  = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM %i WHERE order_id = %d', table( 'chats' ), $order_id ) );
 	$rows     = $chat_id ? (array) $wpdb->get_results( $wpdb->prepare( 'SELECT sender_type, message, created_at FROM %i WHERE chat_id = %d ORDER BY id ASC', table( 'chat_messages' ), $chat_id ) ) : [];
 
-	$html = $rows ? implode( '', array_map( __NAMESPACE__ . '\chat_message_html', $rows ) ) : '<p class="no-messages">هنوز پیامی وجود ندارد. اولین پیام خود را ارسال کنید.</p>';
+	$html = $rows ? implode( '', array_map( __NAMESPACE__ . '\chat_message_html', $rows ) ) : '<p class="no-messages hpn-muted">هنوز پیامی نیست. سؤالتان درباره این سفارش را بنویسید.</p>';
 
 	// باز کردن گفتگو = خواندن پیام‌های پشتیبانی
 	if ( $chat_id ) {

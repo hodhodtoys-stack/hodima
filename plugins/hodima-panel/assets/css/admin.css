@@ -141,7 +141,7 @@
 .hodima-panel-admin .admin-reply { margin-inline-start: auto; border-inline-end: 4px solid var(--hp-info); background-color: #f0f8ff; }
 .hodima-panel-admin .system-reply { max-inline-size: 90%; margin-inline: auto; background-color: #fff8e5; text-align: center; }
 
-@media (width <= 1024px) {
+@media (max-width: 1024px) {
 	.hodima-panel-admin .order-col-30,
 	.hodima-panel-admin .order-col-70 { inline-size: 100%; }
 

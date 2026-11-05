@@ -12,7 +12,7 @@ defined( 'ABSPATH' ) || exit;
 get_header();
 ?>
 <main id="primary" class="hodima-panel">
-	<?php \Hodima\Panel\Legacy\render_panel(); ?>
+	<?php \Hodima\Panel\Front::render(); ?>
 </main>
 <?php
 get_footer();

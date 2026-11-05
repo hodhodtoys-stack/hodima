@@ -135,18 +135,12 @@ final class Page {
 
 		$url = HODIMA_PANEL_URL . '/assets/';
 
-		if ( ! is_user_logged_in() ) {
-			wp_enqueue_style( 'hodima-panel-login', $url . 'css/login.css', [], asset_version( 'assets/css/login.css' ) );
-			return;
-		}
-
+		// یک CSS و یک JS برای همه نماها (ورود هم)؛ گفتگوی سفارش فقط در «سفارش‌ها».
 		wp_enqueue_style( 'hodima-panel', $url . 'css/panel.css', [], asset_version( 'assets/css/panel.css' ) );
+		wp_enqueue_script( 'hodima-panel-js', $url . 'js/panel.js', [], asset_version( 'assets/js/panel.js' ), [ 'strategy' => 'defer' ] );
+		wp_localize_script( 'hodima-panel-js', 'hodimaPanel', [ 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ] );
 
-		$section = self::section();
-		if ( in_array( $section, [ 'prebuy', 'preinvoice' ], true ) ) {
-			wp_enqueue_script( 'hodima-panel-order-form', $url . 'js/order-form.js', [], asset_version( 'assets/js/order-form.js' ), [ 'strategy' => 'defer' ] );
-		}
-		if ( 'orders' === $section ) {
+		if ( is_user_logged_in() && 'orders' === self::section() ) {
 			wp_enqueue_script( 'hodima-panel-chat', $url . 'js/chat.js', [], asset_version( 'assets/js/chat.js' ), [ 'strategy' => 'defer' ] );
 			wp_localize_script(
 				'hodima-panel-chat',

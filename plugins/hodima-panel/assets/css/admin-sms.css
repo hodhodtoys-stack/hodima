@@ -12,11 +12,11 @@
 
 /* موبایل: گزارش ارسال‌ها کارت (طرح تأییدشده) */
 /* کیت ردیف کنش را تا ۷۸۲px ستونی می‌کند؛ پایه ۱۵rem در ستون ارتفاع می‌شد و فهرست سرویس غول‌پیکر بود */
-@media (width <= 782px) {
+@media (max-width: 782px) {
 	.hodima-panel-sms .hodima-panel-sms__service { flex: none; }
 }
 
-@media (width <= 600px) {
+@media (max-width: 600px) {
 	.hodima-panel-sms .hodima-panel-sms__log > table { min-inline-size: 0; }
 	.hodima-panel-sms .hodima-panel-sms__log thead { display: none; }
 	.hodima-panel-sms .hodima-panel-sms__log tr { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem 0.75rem; padding: 0.625rem 0.75rem; border-block-end: 1px solid var(--hd-border); }

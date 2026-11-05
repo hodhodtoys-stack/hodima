@@ -1,25 +1,26 @@
 /**
- * گفتگوی سفارش در صفحه «سفارش‌ها» پنل کاربری (JavaScript خالص).
+ * گفتگوی سفارش در صفحه «سفارش‌ها» (JavaScript خالص؛ پنجره <dialog>، مرحله ۵).
  *
- * پنل قدیمی دو اسکریپت داشت (یکی با jQuery داخل صفحه) و شناسه گفتگو را از
- * فرم می‌فرستاد؛ حالا فقط شناسه سفارش فرستاده می‌شود و سرور مالکیت را بررسی می‌کند.
- * بازطراحی ظاهر و پنجره <dialog>: مرحله ۵.
+ * فقط شناسه سفارش فرستاده می‌شود و سرور مالکیت را بررسی می‌کند (legacy/chat.php).
+ * پنجره استاندارد مرورگر: فوکوس داخل پنجره می‌ماند، Esc می‌بندد و فوکوس به دکمه برمی‌گردد.
+ * آدرس ?chat=شناسه (از «پیام‌ها و پشتیبانی») همان گفتگو را باز می‌کند.
  */
 ( function () {
 	'use strict';
 
 	const data = window.hodimaPanelChat;
-	const modal = document.getElementById( 'global-chat-modal' );
-	if ( ! data || ! modal ) {
+	const dialog = document.getElementById( 'hpn-chat' );
+	if ( ! data || ! dialog || 'function' !== typeof dialog.showModal ) {
 		return;
 	}
-	const history = document.getElementById( 'global-chat-history' );
-	const form = document.getElementById( 'global-chat-form' );
-	const title = document.getElementById( 'global-chat-title' );
+	const history = document.getElementById( 'hpn-chat-history' );
+	const form = document.getElementById( 'hpn-chat-form' );
+	const title = document.getElementById( 'hpn-chat-title' );
+	const error = document.getElementById( 'hpn-chat-error' );
 	let orderId = 0;
 	let opener = null;
 
-	const post = async ( action, fields = {} ) => {
+	const post = async ( action, fields ) => {
 		const body = new FormData();
 		body.append( 'action', action );
 		body.append( 'nonce', data.nonce );
@@ -31,66 +32,56 @@
 		return response.json();
 	};
 
-	const showError = ( text ) => {
+	const note = ( text ) => {
 		const p = document.createElement( 'p' );
-		p.className = 'chat-error';
+		p.className = 'hpn-muted';
 		p.textContent = text;
 		history.replaceChildren( p );
 	};
 
-	const clearRowBadge = ( id ) => {
-		const row = document.querySelector( `.open-chat-modal[data-order-id="${ id }"]` )?.closest( 'tr' );
-		row?.classList.remove( 'row-unread' );
-		row?.querySelectorAll( '.unread-badge' ).forEach( ( el ) => el.remove() );
+	// خطای ارسال داخل پنجره (role=alert)، نه پنجره alert مرورگر که گفتگو را می‌پوشاند.
+	const fail = ( text ) => {
+		error.textContent = text;
+		error.hidden = '' === text;
 	};
 
 	const open = async ( button ) => {
-		orderId = Number( button.dataset.orderId ) || 0;
+		orderId = Number( button.dataset.hpnChat ) || 0;
 		opener = button;
-		title.textContent = `گفتگوی سفارش #${ orderId }`;
-		history.textContent = 'در حال بارگذاری پیام‌ها…';
+		title.textContent = button.dataset.hpnChatTitle || 'گفتگوی سفارش';
+		note( 'در حال بارگذاری پیام‌ها…' );
+		fail( '' );
 		form.hidden = true;
-		modal.hidden = false;
-		modal.classList.add( 'active' );
-		document.body.style.overflow = 'hidden';
+		dialog.showModal();
 		try {
 			const res = await post( 'hodima_panel_chat_history', { order_id: orderId } );
 			if ( ! res.success ) {
-				showError( res.data?.message || 'خطا در بارگذاری پیام‌ها' );
+				note( ( res.data && res.data.message ) || 'خطا در بارگذاری پیام‌ها' );
 				return;
 			}
 			history.innerHTML = res.data.html; // HTML از سرور با esc_html ساخته شده
 			history.scrollTop = history.scrollHeight;
 			form.hidden = false;
-			form.querySelector( 'textarea' )?.focus();
-			clearRowBadge( orderId );
+			form.querySelector( 'textarea' ).focus();
+			button.querySelector( '.hpn-badge' )?.remove();
 		} catch {
-			showError( 'ارتباط با سرور برقرار نشد.' );
+			note( 'ارتباط با سرور برقرار نشد.' );
 		}
-	};
-
-	const close = () => {
-		modal.classList.remove( 'active' );
-		modal.hidden = true;
-		document.body.style.overflow = '';
-		history.textContent = '';
-		opener?.focus();
 	};
 
 	document.addEventListener( 'click', ( event ) => {
-		const button = event.target.closest( '.open-chat-modal' );
+		const button = event.target.closest( '[data-hpn-chat]' );
 		if ( button ) {
 			event.preventDefault();
 			open( button );
-		} else if ( event.target.closest( '.close-chat-modal' ) || event.target === modal ) {
-			close();
+		} else if ( event.target.closest( '[data-hpn-close]' ) || event.target === dialog ) {
+			dialog.close();
 		}
 	} );
 
-	document.addEventListener( 'keydown', ( event ) => {
-		if ( 'Escape' === event.key && ! modal.hidden ) {
-			close();
-		}
+	dialog.addEventListener( 'close', () => {
+		history.textContent = '';
+		opener?.focus();
 	} );
 
 	form.addEventListener( 'submit', async ( event ) => {
@@ -101,6 +92,7 @@
 			return;
 		}
 		button.disabled = true;
+		fail( '' );
 		try {
 			const res = await post( 'hodima_panel_chat_send', { order_id: orderId, message: textarea.value } );
 			if ( res.success ) {
@@ -109,13 +101,21 @@
 				history.insertAdjacentHTML( 'beforeend', res.data.html );
 				history.scrollTop = history.scrollHeight;
 			} else {
-				window.showToastMessage?.( res.data?.message || 'خطایی رخ داد.', 'up-alert-error' );
+				fail( ( res.data && res.data.message ) || 'خطایی رخ داد.' );
 			}
 		} catch {
-			window.showToastMessage?.( 'خطا در ارسال پیام.', 'up-alert-error' );
+			fail( 'خطا در ارسال پیام؛ دوباره بفرستید.' );
 		} finally {
 			button.disabled = false;
 			textarea.focus();
 		}
 	} );
+
+	const wanted = new URL( window.location.href ).searchParams.get( 'chat' );
+	if ( wanted ) {
+		const button = document.querySelector( `[data-hpn-chat="${ CSS.escape( wanted ) }"]` );
+		if ( button ) {
+			open( button );
+		}
+	}
 }() );
