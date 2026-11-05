@@ -252,6 +252,11 @@ function render_order_details( int $order_id ): void {
 	echo '<div class="order-col-30"><div class="postbox h-100"><h2 class="hndle"><span>اطلاعات کلی سفارش</span></h2><div class="inside"><table class="form-table">';
 	echo '<tr><th scope="row">نام کاربر:</th><td>' . esc_html( $user_name ) . '</td></tr>';
 	echo '<tr><th scope="row">تلفن تماس:</th><td>' . esc_html( '' !== $phone ? $phone : 'ثبت نشده' ) . '</td></tr>';
+	if ( $user ) {
+		$profile = \Hodima\Panel\Profile::fields( $user );
+		echo '<tr><th scope="row">آدرس:</th><td>' . esc_html( '' !== $profile['address'] ? $profile['address'] : 'ثبت نشده' ) . '</td></tr>';
+		echo '<tr><th scope="row">کد پستی:</th><td>' . esc_html( '' !== $profile['postcode'] ? $profile['postcode'] : 'ثبت نشده' ) . '</td></tr>';
+	}
 	echo '<tr><th scope="row">وضعیت سفارش:</th><td><strong>' . esc_html( status_label( (string) $order->status ) ) . '</strong></td></tr>';
 	echo '<tr><th scope="row">مبلغ کل برآورد شده:</th><td><strong class="hp-money">' . esc_html( (float) $order->total_price > 0 ? number_format_i18n( (float) $order->total_price ) . ' تومان' : 'محاسبه نشده' ) . '</strong></td></tr>';
 	echo '<tr><th scope="row">تاریخ ثبت:</th><td>' . esc_html( show_date( (string) $order->created_at ) ) . '</td></tr>';

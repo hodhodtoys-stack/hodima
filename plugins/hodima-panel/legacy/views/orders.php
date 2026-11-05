@@ -2,7 +2,7 @@
 /**
  * نمای فهرست سفارش‌های مشتری با فاکتور، فیش و گفتگو (منتقل‌شده از پنل قدیمی).
  *
- * باقی‌مانده: نمایش فیش‌ها در همه وضعیت‌ها (مرحله ۳)، بازطراحی و <dialog> (مرحله ۵).
+ * باقی‌مانده: بازطراحی و <dialog> (مرحله ۵).
  *
  * @package Hodima\Panel
  */
@@ -115,7 +115,8 @@ if ( $order_ids ) {
 											</div>
 										<?php endif; ?>
 
-										<?php if ( 'receipt_uploaded' === $status && $receipts ) : ?>
+										<?php // فیش‌ها در همه وضعیت‌ها دیده شوند (پنل قدیمی بعد از تأیید پنهانشان می‌کرد) ?>
+										<?php if ( $receipts ) : ?>
 											<div class="docs-grid">
 												<?php foreach ( $receipts as $i => $file ) : ?>
 													<a href="<?php echo esc_url( $file->url ); ?>" target="_blank" rel="noopener" class="btn-doc receipt-view">فیش <?php echo esc_html( number_format_i18n( $i + 1 ) ); ?></a>

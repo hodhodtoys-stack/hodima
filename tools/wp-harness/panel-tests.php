@@ -38,6 +38,7 @@ if ( ! defined( 'HODIMA_PANEL_VERSION' ) ) {
 use Hodima\Panel\Files;
 use Hodima\Panel\Install;
 use Hodima\Panel\Page;
+use Hodima\Panel\Profile;
 use function Hodima\Panel\table;
 
 $failed = 0;
@@ -124,7 +125,10 @@ foreach ( [ 'hp_a' => '09120000001', 'hp_b' => '09120000002' ] as $login => $mob
 	}
 	$id = wp_create_user( $login, wp_generate_password(), $login . '@hodima.test' );
 	update_user_meta( $id, 'mobile', $mobile );
-	update_user_meta( $id, 'up_profile_completed', '1' );
+	// پروفایل کامل = داده صورت‌حساب ووکامرس (مرحله ۳)
+	foreach ( [ 'billing_first_name' => 'مشتری', 'billing_last_name' => $login, 'billing_email' => $login . '@hodima.test', 'billing_address_1' => 'تهران، خیابان آزمون، پلاک ۱', 'billing_postcode' => '1234567890' ] as $mk => $mv ) {
+		update_user_meta( $id, $mk, $mv );
+	}
 	$hp_users[] = (int) $id;
 }
 [ $user_a, $user_b ] = $hp_users;
@@ -288,13 +292,55 @@ hodima_pt( 'باز کردن گفتگو پیام‌ها را برای مشتری 
 remove_filter( 'wp_doing_ajax', '__return_true' );
 $_POST = $_REQUEST = [];
 
-echo "== قفل پروفایل پیش از چاپ صفحه\n";
-delete_user_meta( $user_b, 'up_profile_completed' );
-wp_set_current_user( $user_b );
+echo "== پروفایل: کامل بودن از فیلدهای ووکامرس، قفل، ذخیره\n";
+$fresh = (int) wp_create_user( '09121112233', wp_generate_password(), '09121112233@hodima.test' );
+update_user_meta( $fresh, 'mobile', '09121112233' );
+$fresh_user = get_userdata( $fresh );
+hodima_pt( 'کاربر تازه ثبت‌نامی: ناقص، ایمیل ساختگی و نام=موبایل خالی نشان داده می‌شوند', [ Profile::is_complete( $fresh_user ), Profile::fields( $fresh_user )['email'], Profile::fields( $fresh_user )['name'], Profile::fields( $fresh_user )['mobile'] ], [ false, '', '', '09121112233' ] );
+wp_set_current_user( $fresh );
 $stop = hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'orders' ) );
-hodima_pt( 'بدون پروفایل کامل ← ریدایرکت به پروفایل', str_contains( $stop, 'redirect:' ) && str_contains( $stop, 'section=profile' ), true );
-hodima_pt( 'بخش پروفایل باز است', hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'profile' ) ), '' );
-update_user_meta( $user_b, 'up_profile_completed', '1' );
+hodima_pt( 'پروفایل ناقص ← ریدایرکت به پروفایل', str_contains( $stop, 'redirect:' ) && str_contains( $stop, 'section=profile' ), true );
+hodima_pt( 'بخش پروفایل و پشتیبانی باز است', [ hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'profile' ) ), hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'support' ) ) ], [ '', '' ] );
+wp_set_current_user( 1 );
+hodima_pt( 'مدیر هیچ‌وقت قفل نمی‌شود', hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'orders' ) ), '' );
+hodima_pt( 'مشتری قدیمی ووکامرس با صورت‌حساب کامل قفل نمی‌شود', Profile::is_complete( get_userdata( $user_a ) ), true );
+$fu = get_userdata( $fresh );
+hodima_pt( 'ذخیره: نام موبایلی رد', Profile::save( $fu, [ 'name' => '۰۹۱۲۱۱۱۲۲۳۳', 'email' => 'a@b.ir', 'address' => 'تهران خیابان یک پلاک ۲', 'postcode' => '1234567890' ] ) !== '', true );
+hodima_pt( 'ذخیره: ایمیل ساختگی رد', Profile::save( $fu, [ 'name' => 'علی رضایی', 'email' => '09121112233@hodima.test', 'address' => 'تهران خیابان یک پلاک ۲', 'postcode' => '1234567890' ] ) !== '', true );
+hodima_pt( 'ذخیره: ایمیل کاربر دیگر رد', Profile::save( $fu, [ 'name' => 'علی رضایی', 'email' => 'hp_a@hodima.test', 'address' => 'تهران خیابان یک پلاک ۲', 'postcode' => '1234567890' ] ), 'این ایمیل قبلاً توسط کاربر دیگری ثبت شده است.' );
+hodima_pt( 'ذخیره: کد پستی کوتاه رد', Profile::save( $fu, [ 'name' => 'علی رضایی', 'email' => 'ali@hodima.test', 'address' => 'تهران خیابان یک پلاک ۲', 'postcode' => '12345' ] ) !== '', true );
+$hp_mails = 0;
+$hp_mail  = static function () use ( &$hp_mails ): bool {
+	++$hp_mails;
+	return false;
+};
+add_filter( 'pre_wp_mail', $hp_mail );
+hodima_pt( 'ذخیره معتبر (کد پستی با رقم فارسی و خط تیره)', Profile::save( $fu, [ 'name' => 'علی رضایی مقدم', 'email' => 'ali@hodima.test', 'address' => "تهران، خیابان 'یک'، پلاک ۲", 'postcode' => '۱۲۳۴۵-۶۷۸۹۰' ] ), '' );
+remove_filter( 'pre_wp_mail', $hp_mail );
+hodima_pt( 'اعلان تغییر ایمیل به ایمیل ساختگی فرستاده نشد', $hp_mails, 0 );
+clean_user_cache( $fresh );
+$fu = get_userdata( $fresh );
+hodima_pt( 'در فیلدهای صورت‌حساب ووکامرس ذخیره شد', [ get_user_meta( $fresh, 'billing_first_name', true ), get_user_meta( $fresh, 'billing_last_name', true ), get_user_meta( $fresh, 'billing_postcode', true ), get_user_meta( $fresh, 'billing_address_1', true ), get_user_meta( $fresh, 'billing_country', true ), get_user_meta( $fresh, 'billing_phone', true ), get_user_meta( $fresh, 'billing_email', true ) ], [ 'علی', 'رضایی مقدم', '1234567890', "تهران، خیابان 'یک'، پلاک ۲", 'IR', '09121112233', 'ali@hodima.test' ] );
+hodima_pt( 'نام و ایمیل حساب هم به‌روز شد و پروفایل کامل است', [ $fu->display_name, $fu->user_email, $fu->first_name, Profile::is_complete( $fu ) ], [ 'علی رضایی مقدم', 'ali@hodima.test', 'علی', true ] );
+hodima_pt( 'متای قدیمی پنل نوشته نمی‌شود', [ get_user_meta( $fresh, 'user_address', true ), get_user_meta( $fresh, 'up_profile_completed', true ) ], [ '', '' ] );
+wp_set_current_user( $fresh );
+hodima_pt( 'بعد از ذخیره قفل برداشته شد', hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'orders' ) ), '' );
+// AJAX: رمز کوتاه پیش از هر ذخیره‌ای رد شود
+add_filter( 'wp_doing_ajax', '__return_true' );
+$_POST = $_REQUEST = [ 'nonce' => wp_create_nonce( 'up_update_profile_action' ), 'display_name' => 'نام تازه کامل', 'user_email' => 'ali@hodima.test', 'address' => 'تهران خیابان یک پلاک ۲', 'postcode' => '1234567890', 'new_password' => 'abc', 'confirm_password' => 'abc' ];
+hodima_pt_run( static fn() => do_action( 'wp_ajax_hodima_panel_profile' ) );
+clean_user_cache( $fresh );
+hodima_pt( 'رمز کوتاه رد و چیزی ذخیره نشد', [ str_contains( $GLOBALS['hodima_pt_last_output'], '"success":false' ), get_userdata( $fresh )->display_name ], [ true, 'علی رضایی مقدم' ] );
+$_POST['new_password'] = $_POST['confirm_password'] = '';
+$_POST['display_name'] = 'نام تازه کامل';
+$_REQUEST              = $_POST;
+hodima_pt_run( static fn() => do_action( 'wp_ajax_hodima_panel_profile' ) );
+clean_user_cache( $fresh );
+hodima_pt( 'ذخیره AJAX', [ str_contains( $GLOBALS['hodima_pt_last_output'], '"success":true' ), get_userdata( $fresh )->display_name ], [ true, 'نام تازه کامل' ] );
+remove_filter( 'wp_doing_ajax', '__return_true' );
+$_POST = $_REQUEST = [];
+require_once ABSPATH . 'wp-admin/includes/user.php';
+wp_delete_user( $fresh );
 
 echo "== تیکت پشتیبانی\n";
 wp_set_current_user( $user_a );
@@ -337,8 +383,10 @@ hodima_pt( 'نشانی امن: مشتری دیگر فایل را نمی‌گیر
 [ $html, $err ] = hodima_pt_render( '/?hodima_panel_file=' . $fid );
 hodima_pt( 'نشانی امن: مهمان ← ریدایرکت به پنل', [ str_starts_with( $html, "\x89PNG" ), str_contains( $err, 'REDIRECT -> ' . Page::url() ) ], [ false, true ] );
 hodima_pt( 'باز کردن تیکت پیش از منو خوانده شد', (int) $wpdb->get_var( $wpdb->prepare( 'SELECT user_unread FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) ), 0 );
+$wpdb->update( table( 'orders' ), [ 'status' => 'completed' ], [ 'id' => $order_a ] );
 [ $html ] = hodima_pt_render( '/user-panel/?section=orders', $user_a );
-hodima_pt( 'سفارش‌ها: فیش با نشانی امن و اسکریپت گفتگو', [ str_contains( $html, 'hodima_panel_file=' . $fid ), str_contains( $html, 'hodima-panel-private' ), str_contains( $html, 'js/chat.js' ) ], [ true, false, true ] );
+$wpdb->update( table( 'orders' ), [ 'status' => 'receipt_uploaded' ], [ 'id' => $order_a ] );
+hodima_pt( 'سفارش‌ها (تکمیل‌شده): فیش‌ها هنوز دیده می‌شوند، با نشانی امن، و اسکریپت گفتگو', [ str_contains( $html, 'hodima_panel_file=' . $fid ), str_contains( $html, 'hodima-panel-private' ), str_contains( $html, 'js/chat.js' ) ], [ true, false, true ] );
 
 echo "== پیشخوان\n";
 require_once ABSPATH . 'wp-admin/includes/admin.php';

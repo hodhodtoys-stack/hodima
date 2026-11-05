@@ -16,25 +16,15 @@ if (!$current_user->ID) {
     return;
 }
 
-$user_phone    = str_replace('user_', '', $current_user->user_login);
-$register_date = \Hodima\Panel\show_date($current_user->user_registered, 'j F Y');
-$user_address  = get_user_meta($current_user->ID, 'user_address', true);
-$user_postcode = get_user_meta($current_user->ID, 'user_postcode', true);
-
-// مدیریت نام نمایشی
-$display_name_value = $current_user->display_name;
-// تشخیص اینکه نام پیش‌فرض وردپرس است یا شماره موبایل کاربر
-$is_default_name = (strpos($display_name_value, 'user_') === 0 || preg_match('/^09[0-9]{9}$/', $display_name_value));
-if ($is_default_name) {
-    $display_name_value = '';
-}
-
-// مدیریت ایمیل (تشخیص ایمیل فیک)
-$domain = wp_parse_url(home_url(), PHP_URL_HOST);
-$fake_email = $user_phone . '@' . $domain;
-$user_email = $current_user->user_email;
-// اگر ایمیل فعلی همان ایمیل فیک است، فیلد را خالی نشان بده تا کاربر مجبور به پر کردن شود
-$display_email_value = ($user_email === $fake_email) ? '' : $user_email;
+// مقدارها از فیلدهای صورت‌حساب ووکامرس (Profile::fields؛ مرحله ۳)
+$fields              = \Hodima\Panel\Profile::fields($current_user);
+$user_phone          = $fields['mobile'];
+$register_date       = \Hodima\Panel\show_date($current_user->user_registered, 'j F Y');
+$user_address        = $fields['address'];
+$user_postcode       = $fields['postcode'];
+$display_name_value  = $fields['name'];
+$is_default_name     = '' === $display_name_value;
+$display_email_value = $fields['email'];
 ?>
 
 
@@ -94,7 +84,7 @@ $display_email_value = ($user_email === $fake_email) ? '' : $user_email;
                 <input type="text" id="postcode"
                     class="form-control"
                     value="<?php echo esc_attr($user_postcode); ?>"
-                    maxlength="10">
+                    maxlength="12" inputmode="numeric">
             </div>
 
             <hr>
@@ -129,7 +119,11 @@ document.getElementById("profileForm").addEventListener("submit", function(e) {
     const name = document.getElementById("display_name").value.trim();
     const email = document.getElementById("user_email").value.trim();
     const address = document.getElementById("address").value.trim();
-    const postcode = document.getElementById("postcode").value.trim();
+    // رقم فارسی/عربی ← لاتین و بدون فاصله/خط تیره (همان Profile::digits در سرور)
+    const postcode = document.getElementById("postcode").value.trim()
+        .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+        .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+        .replace(/[\s-]/g, "");
     const pass = document.getElementById("new_password").value;
     const pass2 = document.getElementById("confirm_password").value;
     const nonce = document.getElementById("up_profile_nonce").value;
@@ -155,8 +149,8 @@ document.getElementById("profileForm").addEventListener("submit", function(e) {
         if(window.showToastMessage) window.showToastMessage("کد پستی باید ۱۰ رقم باشد", "up-alert-error"); 
         return; 
     }
-    if (pass !== "" && pass !== pass2) {
-        if(window.showToastMessage) window.showToastMessage("تکرار رمز عبور درست نیست", "up-alert-error");
+    if (pass !== "" && (pass !== pass2 || pass.length < 8)) {
+        if(window.showToastMessage) window.showToastMessage("رمز تازه باید دست‌کم ۸ حرف باشد و با تکرارش یکی باشد", "up-alert-error");
         return;
     }
 

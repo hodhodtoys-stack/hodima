@@ -3,7 +3,7 @@
  * مسیریاب پنل: کدام بخش نمایش داده شود، منو و پیام‌ها (منتقل‌شده از پنل قدیمی).
  *
  * تغییر این مرحله:
- * - قفل «تکمیل پروفایل» پیش از چاپ صفحه ریدایرکت می‌کند (قبلا بعد از سربرگ).
+ * - قفل «تکمیل پروفایل» به Profile::enforce_lock رفت (پیش از چاپ صفحه؛ مرحله ۳).
  * - بخش «order_chat» حذف شد: فایلش در پنل قدیمی وجود نداشت و فقط پیام خطا
  *   نشان می‌داد؛ گفتگوی هر سفارش در پنجره همان صفحه سفارش‌هاست.
  * - پردازش دوم و تکراری فرم پروفایل (غیر AJAX) حذف شد.
@@ -19,17 +19,6 @@ use Hodima\Panel\Page;
 use function Hodima\Panel\table;
 
 defined( 'ABSPATH' ) || exit;
-
-add_action( 'hodima_panel_request', static function ( string $section ): void {
-	if ( ! is_user_logged_in() ) {
-		return;
-	}
-	// مرحله ۳: قفل پروفایل برای مشتری‌های قدیمی و مدیر بازبینی می‌شود (گزارش، مورد ۲۲)
-	if ( 'profile' !== $section && '1' !== get_user_meta( get_current_user_id(), 'up_profile_completed', true ) ) {
-		wp_safe_redirect( Page::url( [ 'section' => 'profile', 'msg' => 'profile_locked' ] ) );
-		exit;
-	}
-} );
 
 /** محتوای کامل پنل (فراخوانی از templates/panel.php). */
 function render_panel(): void {
