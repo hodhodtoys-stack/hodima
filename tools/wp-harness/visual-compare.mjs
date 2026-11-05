@@ -211,7 +211,7 @@ function styleDiff( ref, work ) {
 const pages = fs.readdirSync( outWork ).filter( ( f ) => f.endsWith( '.html' ) && fs.existsSync( path.join( outRef, f ) ) )
 	.map( ( f ) => f.slice( 0, -5 ) ).filter( ( p ) => ! only.length || only.includes( p ) ).sort();
 
-const browser = await chromium.launch();
+const browser = await chromium.launch( { executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' } ).catch( () => chromium.launch() );
 let bad = 0;
 for ( const p of pages ) {
 	for ( const vp of VIEWPORTS ) {

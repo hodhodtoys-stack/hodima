@@ -215,7 +215,7 @@ function collect( stateOn ) {
 // ── ۳. اجرا روی همه صفحه‌ها و عرض‌ها ──
 const MIME = { '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const GREY = Buffer.from( 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN4+P/ffwAJpAPqf4/yxwAAAABJRU5ErkJggg==', 'base64' );
-const browser = await chromium.launch();
+const browser = await chromium.launch( { executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' } ).catch( () => chromium.launch() );
 const allCases = [];
 const matched = new Set();
 for ( const [ outDir, wpRoot ] of pairs ) {
