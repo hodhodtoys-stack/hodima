@@ -19,6 +19,7 @@ PACKAGES = {
     'plugins/hodima-seo': 'hds',
     'plugins/hodima-commerce': 'hdc',
     'plugins/hodima-media': 'hdm',
+    'plugins/hodima-panel': 'hdp',
 }
 _TOKEN = re.compile(r'\b' + SOURCE_PREFIX + r'(?=[-:A-Z])')
 

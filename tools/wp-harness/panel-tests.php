@@ -42,6 +42,7 @@ use Hodima\Panel\Profile;
 use Hodima\Panel\Sms;
 use Hodima\Panel\Otp;
 use Hodima\Panel\Auth;
+use Hodima\Panel\Admin_Sms;
 use function Hodima\Panel\table;
 
 $failed = 0;
@@ -409,6 +410,61 @@ $log = Sms::log_entries();
 hodima_pt( 'گزارش: شماره نیمه‌پنهان، بی کد و بی کلید', [ $log[0]['to'] ?? '', str_contains( (string) wp_json_encode( $log ), '33333' ), str_contains( (string) wp_json_encode( $log ), 'secret-pass' ), count( $log ) ], [ '0912***4567', false, false, 6 ] );
 update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => 'melipayamak', 'providers' => [ 'melipayamak' => [ 'username' => 'u', 'password' => '', 'body_id' => '1' ] ] ] );
 hodima_pt( 'سرویس ناقص آماده نیست؛ پشتیبان تکراری نادیده', [ Sms::ready(), Sms::settings()['fallback'] ], [ false, '' ] );
+update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => '', 'providers' => [ 'melipayamak' => [ 'username' => 'hodhod', 'password' => 'secret-pass', 'body_id' => '123456' ] ] ] );
+
+echo "== پیشخوان: تنظیمات پیامک (ذخیره، رمز چاپ‌نشده، رفت‌وبرگشت، دسترسی، پیامک آزمایشی)\n";
+require_once HODIMA_PANEL_DIR . '/includes/admin-sms.php';
+update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => 'kavenegar', 'providers' => [ 'melipayamak' => [ 'username' => 'hodhod', 'password' => 'secret-pass', 'body_id' => '123456' ], 'kavenegar' => [ 'api_key' => 'KAVE-KEY', 'template' => 'verify' ] ] ] );
+wp_set_current_user( 1 );
+ob_start();
+Admin_Sms::render();
+$page = (string) ob_get_clean();
+hodima_pt( 'صفحه: رمز و کلید ذخیره‌شده در HTML چاپ نمی‌شود', [ str_contains( $page, 'secret-pass' ), str_contains( $page, 'KAVE-KEY' ), str_contains( $page, 'value="hodhod"' ), str_contains( $page, '(ذخیره‌شده)' ) ], [ false, false, true, true ] );
+hodima_pt( 'صفحه: کالبد (سربرگ، ۴ آمار، آزمایشی، سرویس‌ها، گزارش) و تب سرویس اصلی باز', [ substr_count( $page, 'class="hdp-stat"' ), str_contains( $page, 'hodima_panel_sms_test' ), str_contains( $page, 'hodima_panel_sms_save' ), str_contains( $page, 'hdp-more' ), (bool) preg_match( '/id="hp-sms-tab-melipayamak"[^>]*aria-selected="true"/', $page ) ], [ 4, true, true, true, true ] );
+// رفت‌وبرگشت: فرم رندرشده را مثل مرورگر بفرست؛ چیزی نباید عوض شود
+$before = get_option( Sms::OPTION );
+$doc    = new DOMDocument();
+@$doc->loadHTML( '<?xml encoding="utf-8"?>' . $page ); // phpcs:ignore
+$post   = [];
+foreach ( ( new DOMXPath( $doc ) )->query( '//form[.//input[@name="action" and @value="hodima_panel_sms_save"]]//input[@name]' ) as $input ) {
+	$name = $input->getAttribute( 'name' );
+	$type = $input->getAttribute( 'type' );
+	if ( in_array( $type, [ 'radio', 'checkbox' ], true ) && ! $input->hasAttribute( 'checked' ) ) {
+		continue;
+	}
+	parse_str( $name . '=' . rawurlencode( $input->getAttribute( 'value' ) ), $one );
+	$post = array_replace_recursive( $post, $one );
+}
+Admin_Sms::save( $post );
+$after = get_option( Sms::OPTION );
+hodima_pt( 'رفت‌وبرگشت فرم: تنظیم‌ها و رمزها بی‌تغییر', [ $after['primary'], $after['fallback'], $after['providers']['melipayamak'], $after['providers']['kavenegar'] ], [ $before['primary'], $before['fallback'], $before['providers']['melipayamak'], [ 'api_key' => 'KAVE-KEY', 'template' => 'verify' ] ] );
+Admin_Sms::save( [ 'primary' => 'kavenegar', 'fallback' => 'kavenegar', 'providers' => [ 'melipayamak' => [ 'password' => '', 'password_clear' => '1' ], 'kavenegar' => [ 'api_key' => ' NEW-KEY ' ] ] ] );
+$after = get_option( Sms::OPTION );
+hodima_pt( 'ذخیره: پشتیبان همان اصلی ← خاموش؛ «پاک شود» رمز را پاک کرد؛ کلید تازه تمیز', [ $after['primary'], $after['fallback'], $after['providers']['melipayamak']['password'], $after['providers']['kavenegar']['api_key'] ], [ 'kavenegar', '', '', 'NEW-KEY' ] );
+Admin_Sms::save( [ 'primary' => 'evil', 'fallback' => 'x' ] );
+hodima_pt( 'سرویس ناشناخته پذیرفته نمی‌شود', [ get_option( Sms::OPTION )['primary'], get_option( Sms::OPTION )['fallback'] ], [ '', '' ] );
+wp_set_current_user( $user_b );
+$_POST = $_REQUEST = [ '_wpnonce' => wp_create_nonce( 'hodima_panel_sms_save' ), 'primary' => 'smsir' ];
+hodima_pt( 'مشتری نمی‌تواند ذخیره کند', str_starts_with( hodima_pt_run( [ Admin_Sms::class, 'handle_save' ] ), 'die:' ), true );
+wp_set_current_user( 1 );
+$_POST = $_REQUEST = [ 'primary' => 'smsir' ];
+hodima_pt( 'ذخیره بی nonce رد', str_starts_with( hodima_pt_run( [ Admin_Sms::class, 'handle_save' ] ), 'die:' ), true );
+update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => '', 'providers' => [ 'melipayamak' => [ 'username' => 'hodhod', 'password' => 'secret-pass', 'body_id' => '123456' ] ] ] );
+$hp_http  = [];
+$hp_reply = $ok_reply;
+$_POST    = $_REQUEST = [ '_wpnonce' => wp_create_nonce( 'hodima_panel_sms_test' ), 'test_mobile' => '۰۹۱۲۳۳۳۴۴۵۵', 'test_service' => '' ];
+$stop     = hodima_pt_run( [ Admin_Sms::class, 'handle_test' ] );
+$tr       = get_transient( 'hodima_panel_sms_test_1' );
+hodima_pt( 'پیامک آزمایشی: با سرویس اصلی، نتیجه برای نمایش، شماره نیمه‌پنهان', [ str_contains( $stop, 'hp_msg=tested' ), count( $hp_http ), $tr['ok'] ?? null, $tr['to'] ?? '' ], [ true, 1, true, '0912***4455' ] );
+$_GET = [ 'hp_msg' => 'tested' ];
+ob_start();
+Admin_Sms::render();
+$page = (string) ob_get_clean();
+hodima_pt( 'نتیجه آزمایشی یک بار نشان داده می‌شود', [ str_contains( $page, 'ارسال شد با ملی‌پیامک به 0912***4455' ), false === get_transient( 'hodima_panel_sms_test_1' ) ], [ true, true ] );
+$_GET  = [];
+$_POST = $_REQUEST = [ '_wpnonce' => wp_create_nonce( 'hodima_panel_sms_test' ), 'test_mobile' => '123' ];
+hodima_pt( 'پیامک آزمایشی با شماره نامعتبر', str_contains( hodima_pt_run( [ Admin_Sms::class, 'handle_test' ] ), 'hp_msg=test_mobile' ), true );
+$_POST = $_REQUEST = [];
 update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => '', 'providers' => [ 'melipayamak' => [ 'username' => 'hodhod', 'password' => 'secret-pass', 'body_id' => '123456' ] ] ] );
 
 echo "== کد یک‌بار مصرف (اعتبار، تلاش، هدف، محدودیت ارسال)\n";

@@ -1,0 +1,26 @@
+/* پنل مشتریان ← تنظیمات پیامک (فقط همین صفحه؛ اجزای عمومی از کیت ui/ui-kit.css). */
+.hodima-panel-sms .hodima-panel-sms__service { flex: 0 1 15rem; }
+.hodima-panel-sms .hodima-panel-sms__result { margin: 0.75rem 0 0; color: var(--hd-ok); font-size: 0.8125rem; font-weight: 600; line-height: 1.8; }
+.hodima-panel-sms .hodima-panel-sms__result[data-ok="0"] { color: var(--hd-error); }
+.hodima-panel-sms .hodima-panel-sms__ok { color: var(--hd-ok); font-weight: 600; }
+.hodima-panel-sms .hodima-panel-sms__bad { color: var(--hd-error); font-weight: 600; }
+.hodima-panel-sms .hodima-panel-sms__choice { margin: 0; padding: 0; border: 0; }
+.hodima-panel-sms .hdp-tabset { margin-block-start: 1rem; }
+.hodima-panel-sms .hdp-field__help label { white-space: nowrap; }
+.hodima-panel-sms .hdp-field > .hdp-input { box-sizing: border-box; inline-size: 100%; }
+.hodima-panel-sms .hdp-tab .hdp-tab__count.hodima-panel-sms__missing { background: #fdf1e2; color: #6e3f00; }
+
+/* موبایل: گزارش ارسال‌ها کارت (طرح تأییدشده) */
+/* کیت ردیف کنش را تا ۷۸۲px ستونی می‌کند؛ پایه ۱۵rem در ستون ارتفاع می‌شد و فهرست سرویس غول‌پیکر بود */
+@media (width <= 782px) {
+	.hodima-panel-sms .hodima-panel-sms__service { flex: none; }
+}
+
+@media (width <= 600px) {
+	.hodima-panel-sms .hodima-panel-sms__log > table { min-inline-size: 0; }
+	.hodima-panel-sms .hodima-panel-sms__log thead { display: none; }
+	.hodima-panel-sms .hodima-panel-sms__log tr { display: grid; grid-template-columns: 1fr auto; gap: 0.25rem 0.75rem; padding: 0.625rem 0.75rem; border-block-end: 1px solid var(--hd-border); }
+	.hodima-panel-sms .hodima-panel-sms__log td { padding: 0; border: 0; }
+	.hodima-panel-sms .hodima-panel-sms__log td[data-label="زمان"],
+	.hodima-panel-sms .hodima-panel-sms__log td[data-label="شماره"] { color: var(--hd-muted); font-size: 0.75rem; }
+}
