@@ -1,0 +1,241 @@
+<?php
+/**
+ * پیامک: سه سرویس قابل تعویض (ملی‌پیامک، کاوه‌نگار، sms.ir) با پشتیبان خودکار.
+ *
+ * @package Hodima\Panel
+ */
+
+declare(strict_types=1);
+
+namespace Hodima\Panel;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * ارسال کد تأیید با الگوی (پترن) تأییدشده هر سرویس.
+ *
+ * پنل قدیمی تابع ارسال نداشت (فقط return true) و کاربر پیام «کد ارسال شد» را
+ * می‌دید بی آنکه پیامکی برسد. حالا:
+ * - یک سرویس «اصلی» و یک «پشتیبان» اختیاری (اگر اصلی خطا داد، همان کد با پشتیبان)؛
+ * - کلید و رمز هر سرویس در گزینه hodima_panel_sms (نه در کد)؛ یا ثابت‌های
+ *   wp-config (HODIMA_PANEL_SMS_{سرویس}_{فیلد}) که بر گزینه مقدم‌اند؛
+ * - گزارش ۳۰ ارسال آخر با شماره نیمه‌پنهان (نه کد، نه کلید) برای عیب‌یابی.
+ * سرویس تازه = یک ردیف در providers() و یک شاخه در call()؛ بقیه کد دست نمی‌خورد.
+ */
+final class Sms {
+
+	public const OPTION = 'hodima_panel_sms';
+
+	public const LOG_OPTION = 'hodima_panel_sms_log';
+
+	private const LOG_SIZE = 30;
+
+	private const TIMEOUT = 12;
+
+	/**
+	 * سرویس‌ها: نامک => [نام، فیلدهای تنظیم (کلید => برچسب)].
+	 *
+	 * @return array<string, array{label: string, fields: array<string, string>}>
+	 */
+	public static function providers(): array {
+		return [
+			'melipayamak' => [
+				'label'  => 'ملی‌پیامک',
+				'fields' => [
+					'username' => 'نام کاربری وب‌سرویس',
+					'password' => 'رمز وب‌سرویس (کلید API)',
+					'body_id'  => 'کد الگو (bodyId)',
+				],
+			],
+			'kavenegar'   => [
+				'label'  => 'کاوه‌نگار',
+				'fields' => [
+					'api_key'  => 'کلید API',
+					'template' => 'نام الگو (template)',
+				],
+			],
+			'smsir'       => [
+				'label'  => 'sms.ir',
+				'fields' => [
+					'api_key'     => 'کلید API',
+					'template_id' => 'شناسه الگو (templateId)',
+					'param'       => 'نام متغیر کد در الگو',
+				],
+			],
+		];
+	}
+
+	/**
+	 * تنظیم‌ها با ثابت‌های wp-config روی آن.
+	 *
+	 * @return array{primary: string, fallback: string, providers: array<string, array<string, string>>}
+	 */
+	public static function settings(): array {
+		$saved = get_option( self::OPTION, [] );
+		$saved = is_array( $saved ) ? $saved : [];
+		$out   = [
+			'primary'   => (string) ( $saved['primary'] ?? '' ),
+			'fallback'  => (string) ( $saved['fallback'] ?? '' ),
+			'providers' => [],
+		];
+		foreach ( self::providers() as $id => $spec ) {
+			foreach ( array_keys( $spec['fields'] ) as $field ) {
+				$constant = 'HODIMA_PANEL_SMS_' . strtoupper( $id . '_' . $field );
+				$value    = defined( $constant ) ? (string) constant( $constant ) : (string) ( $saved['providers'][ $id ][ $field ] ?? '' );
+				if ( 'param' === $field && '' === $value ) {
+					$value = 'CODE';
+				}
+				$out['providers'][ $id ][ $field ] = trim( $value );
+			}
+		}
+		if ( ! isset( self::providers()[ $out['primary'] ] ) ) {
+			$out['primary'] = '';
+		}
+		if ( ! isset( self::providers()[ $out['fallback'] ] ) || $out['fallback'] === $out['primary'] ) {
+			$out['fallback'] = '';
+		}
+		return $out;
+	}
+
+	/**
+	 * یک سرویس همه فیلدهای لازمش را دارد؟
+	 *
+	 * @param string $id نامک سرویس.
+	 */
+	public static function is_configured( string $id ): bool {
+		$config = self::settings()['providers'][ $id ] ?? [];
+		return [] !== $config && ! in_array( '', $config, true );
+	}
+
+	/** پیامک قابل ارسال است؟ (سرویس اصلی انتخاب و کامل) */
+	public static function ready(): bool {
+		$primary = self::settings()['primary'];
+		return '' !== $primary && self::is_configured( $primary );
+	}
+
+	/**
+	 * فرستادن کد تأیید: اصلی، و اگر خطا داد پشتیبان.
+	 *
+	 * @param string $mobile شماره ۰۹…
+	 * @param string $code   کد.
+	 * @return array{ok: bool, provider: string, error: string}
+	 */
+	public static function send_code( string $mobile, string $code ): array {
+		$settings = self::settings();
+		$result   = [ 'ok' => false, 'provider' => '', 'error' => 'هیچ سرویس پیامکی تنظیم نشده است.' ];
+		foreach ( array_filter( [ $settings['primary'], $settings['fallback'] ] ) as $id ) {
+			if ( ! self::is_configured( $id ) ) {
+				continue;
+			}
+			$result = self::send_with( $id, $mobile, $code );
+			if ( $result['ok'] ) {
+				break;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * ارسال با یک سرویس مشخص (پشتیبان را امتحان نمی‌کند؛ برای «پیامک آزمایشی»).
+	 *
+	 * @param string $id     نامک سرویس.
+	 * @param string $mobile شماره.
+	 * @param string $code   کد.
+	 * @return array{ok: bool, provider: string, error: string}
+	 */
+	public static function send_with( string $id, string $mobile, string $code ): array {
+		$config = self::settings()['providers'][ $id ] ?? [];
+		$error  = self::call( $id, $config, $mobile, $code );
+		$result = [ 'ok' => '' === $error, 'provider' => $id, 'error' => $error ];
+		self::log( $result, $mobile );
+		return $result;
+	}
+
+	/**
+	 * درخواست به سرویس و تفسیر پاسخ.
+	 *
+	 * @param string                $id     نامک.
+	 * @param array<string, string> $c      تنظیم سرویس.
+	 * @param string                $mobile شماره ۰۹…
+	 * @param string                $code   کد.
+	 * @return string خطا ('' = موفق).
+	 */
+	private static function call( string $id, array $c, string $mobile, string $code ): string {
+		$response = match ( $id ) {
+			// وب‌سرویس REST ملی‌پیامک، ارسال با خط خدماتی و الگو
+			'melipayamak' => wp_remote_post(
+				'https://rest.payamak-panel.com/api/SendSMS/BaseServiceNumber',
+				[
+					'timeout' => self::TIMEOUT,
+					'body'    => [ 'username' => $c['username'], 'password' => $c['password'], 'text' => $code, 'to' => $mobile, 'bodyId' => $c['body_id'] ],
+				]
+			),
+			'kavenegar'   => wp_remote_post(
+				'https://api.kavenegar.com/v1/' . rawurlencode( $c['api_key'] ) . '/verify/lookup.json',
+				[
+					'timeout' => self::TIMEOUT,
+					'body'    => [ 'receptor' => $mobile, 'token' => $code, 'template' => $c['template'] ],
+				]
+			),
+			'smsir'       => wp_remote_post(
+				'https://api.sms.ir/v1/send/verify',
+				[
+					'timeout' => self::TIMEOUT,
+					'headers' => [ 'X-API-KEY' => $c['api_key'], 'Content-Type' => 'application/json', 'Accept' => 'application/json' ],
+					'body'    => (string) wp_json_encode( [ 'mobile' => $mobile, 'templateId' => (int) $c['template_id'], 'parameters' => [ [ 'name' => $c['param'], 'value' => $code ] ] ] ),
+				]
+			),
+			default       => new \WP_Error( 'unknown', 'سرویس ناشناخته' ),
+		};
+
+		if ( is_wp_error( $response ) ) {
+			return 'ارتباط با سرویس برقرار نشد: ' . $response->get_error_message();
+		}
+		$http = (int) wp_remote_retrieve_response_code( $response );
+		$body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+		$body = is_array( $body ) ? $body : [];
+
+		return match ( $id ) {
+			// RetStatus=1 و Value شناسه ارسال (عدد بلند)؛ Value کوتاه = کد خطای ملی‌پیامک
+			'melipayamak' => ( 1 === (int) ( $body['RetStatus'] ?? 0 ) && strlen( (string) ( $body['Value'] ?? '' ) ) > 5 )
+				? '' : 'ملی‌پیامک: ' . (string) ( $body['StrRetStatus'] ?? $body['Value'] ?? ( 'HTTP ' . $http ) ),
+			'kavenegar'   => 200 === (int) ( $body['return']['status'] ?? 0 )
+				? '' : 'کاوه‌نگار: ' . (string) ( $body['return']['message'] ?? ( 'HTTP ' . $http ) ),
+			'smsir'       => 1 === (int) ( $body['status'] ?? 0 )
+				? '' : 'sms.ir: ' . (string) ( $body['message'] ?? ( 'HTTP ' . $http ) ),
+			default       => 'سرویس ناشناخته',
+		};
+	}
+
+	/**
+	 * شماره نیمه‌پنهان برای گزارش (۰۹۱۲***۶۷۸۹).
+	 *
+	 * @param string $mobile شماره.
+	 */
+	public static function mask( string $mobile ): string {
+		return strlen( $mobile ) === 11 ? substr( $mobile, 0, 4 ) . '***' . substr( $mobile, -4 ) : '***';
+	}
+
+	/**
+	 * افزودن به گزارش ارسال‌ها (بدون کد و کلید).
+	 *
+	 * @param array{ok: bool, provider: string, error: string} $result نتیجه.
+	 * @param string                                          $mobile شماره.
+	 */
+	private static function log( array $result, string $mobile ): void {
+		$log = get_option( self::LOG_OPTION, [] );
+		$log = is_array( $log ) ? $log : [];
+		array_unshift( $log, [ 'time' => time(), 'provider' => $result['provider'], 'to' => self::mask( $mobile ), 'ok' => $result['ok'], 'error' => mb_substr( $result['error'], 0, 200 ) ] );
+		update_option( self::LOG_OPTION, array_slice( $log, 0, self::LOG_SIZE ), false );
+	}
+
+	/**
+	 * گزارش ارسال‌ها (تازه‌ترین اول).
+	 *
+	 * @return list<array{time: int, provider: string, to: string, ok: bool, error: string}>
+	 */
+	public static function log_entries(): array {
+		$log = get_option( self::LOG_OPTION, [] );
+		return is_array( $log ) ? array_values( $log ) : [];
+	}
+}

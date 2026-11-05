@@ -32,3 +32,7 @@ define( 'HODIMA_SEO_DIR', '/tmp/wordpress/wp-content/plugins/hodima-seo' );
 define( 'HODIMA_PANEL_FILE', '/tmp/wordpress/wp-content/plugins/hodima-panel/hodima-panel.php' );
 define( 'HODIMA_PANEL_DIR', '/tmp/wordpress/wp-content/plugins/hodima-panel' );
 define( 'HODIMA_PANEL_URL', 'https://example.test/wp-content/plugins/hodima-panel' );
+
+// ثابت‌های کوکی وردپرس (wp-includes/default-constants.php؛ Hodima Panel)
+defined( 'COOKIEPATH' ) || define( 'COOKIEPATH', '/' );
+defined( 'COOKIE_DOMAIN' ) || define( 'COOKIE_DOMAIN', '' );

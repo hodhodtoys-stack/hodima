@@ -30,6 +30,7 @@ final class Profile {
 	public static function boot(): void {
 		add_action( 'hodima_panel_request', [ self::class, 'enforce_lock' ], 1 );
 		add_action( 'wp_ajax_hodima_panel_profile', [ self::class, 'ajax_save' ] );
+		add_action( 'wp_ajax_hodima_panel_profile_code', [ self::class, 'ajax_code' ] );
 	}
 
 	/**
@@ -218,6 +219,23 @@ final class Profile {
 		return '';
 	}
 
+	/** ارسال کد پیامکی برای تأیید تغییر رمز/ایمیل (به موبایل حساب). */
+	public static function ajax_code(): void {
+		if ( ! is_user_logged_in() || ! check_ajax_referer( 'up_update_profile_action', 'nonce', false ) ) {
+			wp_send_json_error( [ 'message' => 'نشست شما منقضی شده است؛ صفحه را دوباره باز کنید.' ] );
+		}
+		$user   = wp_get_current_user();
+		$mobile = self::mobile( $user );
+		if ( '' === $mobile ) {
+			wp_send_json_error( [ 'message' => 'شماره موبایلی برای این حساب ثبت نیست؛ رمز فعلی را وارد کنید.' ] );
+		}
+		$result = Otp::issue( 'user-' . $user->ID, $mobile, 'profile', Auth::ip() );
+		if ( ! $result['ok'] ) {
+			wp_send_json_error( [ 'message' => $result['error'], 'wait' => $result['wait'] ] );
+		}
+		wp_send_json_success( [ 'message' => 'کد به ' . Sms::mask( $mobile ) . ' پیامک شد.', 'wait' => $result['wait'] ] );
+	}
+
 	/** ذخیره پروفایل با AJAX. */
 	public static function ajax_save(): void {
 		if ( ! is_user_logged_in() ) {
@@ -226,14 +244,37 @@ final class Profile {
 		if ( ! check_ajax_referer( 'up_update_profile_action', 'nonce', false ) ) {
 			wp_send_json_error( [ 'message' => 'نشست شما منقضی شده است؛ صفحه را دوباره باز کنید.' ] );
 		}
-		$user = wp_get_current_user();
+		// نسخه تازه از پایگاه داده (نه شیء کاربر جاری که ممکن است ایمیل قدیمی را نگه دارد)
+		$user = get_userdata( get_current_user_id() );
+		if ( ! $user instanceof \WP_User ) {
+			wp_send_json_error( [ 'message' => 'دسترسی غیرمجاز' ] );
+		}
 
-		// رمز پیش از هر ذخیره‌ای بررسی شود (پنل قدیمی اطلاعات را ذخیره و بعد خطای رمز می‌داد).
-		// باقی‌مانده برای مرحله ۴: تغییر رمز و ایمیل با رمز فعلی یا کد پیامکی.
+		// رمز پیش از هر ذخیره‌ای بررسی شود (پنل قدیمی اطلاعات را ذخیره و بعد خطای رمز می‌داد)
 		$new_pass = (string) wp_unslash( $_POST['new_password'] ?? '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- رمز پاک‌سازی نمی‌شود.
 		$confirm  = (string) wp_unslash( $_POST['confirm_password'] ?? '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		if ( '' !== $new_pass && ( $new_pass !== $confirm || strlen( $new_pass ) < 8 ) ) {
 			wp_send_json_error( [ 'message' => 'رمز تازه باید دست‌کم ۸ حرف باشد و با تکرارش یکی باشد.' ] );
+		}
+
+		// تغییر رمز یا ایمیل واقعی فقط با رمز فعلی یا کد پیامکی (گزارش، مورد ۹: با نشست ربوده‌شده
+		// حساب برای همیشه تصاحب می‌شد). اولین ایمیل واقعی به‌جای ایمیل ساختگی ثبت‌نام آزاد است.
+		$email     = sanitize_email( wp_unslash( (string) ( $_POST['user_email'] ?? '' ) ) );
+		$sensitive = '' !== $new_pass || ( strtolower( $email ) !== strtolower( (string) $user->user_email ) && ! self::is_placeholder_email( (string) $user->user_email ) );
+		if ( $sensitive ) {
+			$current = (string) wp_unslash( $_POST['current_password'] ?? '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$code    = sanitize_text_field( wp_unslash( (string) ( $_POST['verify_code'] ?? '' ) ) );
+			$ok      = '' !== $current && wp_check_password( $current, $user->user_pass, $user->ID );
+			if ( ! $ok && '' !== $code ) {
+				$check = Otp::check( 'user-' . $user->ID, $code, 'profile' );
+				if ( ! $check['ok'] ) {
+					wp_send_json_error( [ 'message' => $check['error'] ] );
+				}
+				$ok = true;
+			}
+			if ( ! $ok ) {
+				wp_send_json_error( [ 'message' => 'برای تغییر رمز یا ایمیل، رمز فعلی را وارد کنید یا کد پیامکی بگیرید.', 'need_verify' => true ] );
+			}
 		}
 
 		$error = self::save(
@@ -250,6 +291,9 @@ final class Profile {
 		}
 		if ( '' !== $new_pass ) {
 			wp_set_password( $new_pass, $user->ID );
+			// wp_set_password همه نشست‌ها را می‌بندد؛ پنل قدیمی کاربر را بی‌خبر بیرون می‌انداخت
+			wp_set_current_user( $user->ID );
+			wp_set_auth_cookie( $user->ID, true, is_ssl() );
 		}
 		wp_send_json_success( [ 'message' => 'اطلاعات با موفقیت ذخیره شد. پنل اکنون برای شما فعال است.' ] );
 	}

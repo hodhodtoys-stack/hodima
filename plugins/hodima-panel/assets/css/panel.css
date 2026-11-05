@@ -1322,3 +1322,10 @@
 .hodima-panel .no-data { padding: 20px; background: #fff; border-radius: 10px; text-align: center; }
 .hodima-panel .up-form-errors { margin-bottom: 15px; padding: 12px 16px; border-inline-start: 4px solid #d63638; border-radius: 8px; background: #fdecec; color: #8a1f1f; }
 .hodima-panel .up-form-errors ul { margin: 0; padding-inline-start: 18px; }
+.hodima-panel .verify-box { margin: 10px 0 20px; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px; }
+.hodima-panel .verify-box legend { padding: 0 6px; font-weight: bold; }
+.hodima-panel .verify-code-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.hodima-panel .verify-code-row label { flex-basis: 100%; }
+.hodima-panel .verify-code-row input { flex: 1 1 8rem; }
+.hodima-panel .btn-secondary-outline { min-height: 40px; padding: 0 16px; border: 1px solid #25316a; border-radius: 8px; background: #fff; color: #25316a; cursor: pointer; }
+.hodima-panel .btn-secondary-outline:disabled { opacity: .6; cursor: default; }

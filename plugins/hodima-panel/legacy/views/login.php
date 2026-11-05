@@ -9,14 +9,9 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-$auth = \Hodima\Panel\Legacy\Auth::instance();
-$remaining_cooldown = 0;
-if ($auth->view === 'otp_verify' && !empty($auth->input_mobile)) {
-    $cooldown_end = get_transient('otp_cool_' . md5($auth->input_mobile));
-    if ($cooldown_end) {
-        $remaining_cooldown = max(0, $cooldown_end - time());
-    }
-}
+$auth = \Hodima\Panel\Auth::instance();
+$remaining_cooldown = $auth->wait;
+$sms_ready          = \Hodima\Panel\Sms::ready();
 ?>
 
 <!-- ========================================== -->
@@ -51,10 +46,10 @@ if ($auth->view === 'otp_verify' && !empty($auth->input_mobile)) {
                     </div>
                     <form method="post" class="up-auth-form">
                         <?php wp_nonce_field('hodima_auth_action', 'hodima_auth_nonce'); ?>
-                        <input type="text" name="up_website_url" class="up-honeypot" tabindex="-1">
+                        <input type="text" name="<?php echo esc_attr( \Hodima\Panel\Auth::TRAP ); ?>" class="up-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" value="">
                         
                         <div class="input-group">
-                            <input type="text" name="mobile" class="auth-field numeric-only" placeholder="شماره موبایل (مثلا 0912...)" value="<?php echo esc_attr($auth->input_mobile); ?>" required pattern="^09[0-9]{9}$" autocomplete="username">
+                            <input type="text" name="mobile" class="auth-field numeric-only" placeholder="شماره موبایل (مثلا 0912...)" value="<?php echo esc_attr($auth->mobile); ?>" required pattern="^09[0-9]{9}$" autocomplete="username">
                             <span class="input-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 18a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2"></path><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span>
                         </div>
                         
@@ -76,62 +71,32 @@ if ($auth->view === 'otp_verify' && !empty($auth->input_mobile)) {
                     
                     <div class="auth-links">
                         <a href="javascript:void(0)" class="step-trigger" data-step="otp_request">ورود سریع با <strong>پیامک (بدون رمز)</strong></a>
-                        <a href="javascript:void(0)" class="step-trigger" data-step="register">حساب ندارید؟ <strong>ثبت‌نام کنید</strong></a>
-                    </div>
-                </div>
-
-                <!-- فرم ثبت‌نام -->
-                <div id="form-register" class="auth-form-step <?php echo ($auth->view === 'register') ? 'active' : ''; ?>">
-                    <h2 class="mobile-step-title">ساخت حساب جدید</h2>
-                    <div class="auth-header">
-                        <h2>ساخت حساب جدید</h2>
-                        <p>فقط چند ثانیه تا عضویت فاصله داری.</p>
-                    </div>
-                    <form method="post" class="up-auth-form">
-                        <?php wp_nonce_field('hodima_auth_action', 'hodima_auth_nonce'); ?>
-                        <input type="text" name="up_website_url" class="up-honeypot" tabindex="-1">
-                        
-                        <div class="input-group">
-                            <input type="text" name="reg_mobile" class="auth-field numeric-only" placeholder="شماره موبایل" value="<?php echo esc_attr($auth->input_mobile); ?>" required pattern="^09[0-9]{9}$" autocomplete="off">
-                            <span class="input-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 18a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2"></path><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M12 18h.01"></path></svg></span>
-                        </div>
-                        
-                        <div class="input-group">
-                            <input type="password" name="reg_password" id="reg_pass" class="auth-field" placeholder="رمز عبور (حداقل ۸ حرف)" required minlength="8" autocomplete="new-password">
-                             <span class="input-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
-                            <span class="toggle-password" data-target="reg_pass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>
-                        </div>
-                        
-                        <div class="input-group">
-                            <input type="password" name="reg_password_conf" class="auth-field" placeholder="تکرار رمز عبور" required minlength="8" autocomplete="new-password">
-                            <span class="input-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 5-5a5 5 0 0 1 5 5v4"></path></svg></span>
-                        </div>
-                        
-                        <button type="submit" name="do_register" class="btn-auth">تکمیل ثبت‌نام</button>
-                    </form>
-                    <div class="auth-links" style="margin-top: 20px;">
-                        <a href="javascript:void(0)" class="step-trigger" data-step="login">قبلاً عضو شده‌اید؟ <strong>وارد شوید</strong></a>
+                        <a href="javascript:void(0)" class="step-trigger" data-step="otp_request">حساب ندارید؟ <strong>ثبت‌نام با کد پیامکی</strong></a>
                     </div>
                 </div>
 
                 <!-- فرم درخواست OTP -->
                 <div id="form-otp_request" class="auth-form-step <?php echo ($auth->view === 'otp_request') ? 'active' : ''; ?>">
-                    <h2 class="mobile-step-title">ورود با پیامک</h2>
+                    <h2 class="mobile-step-title">ورود یا ثبت‌نام با پیامک</h2>
                     <div class="auth-header">
-                        <h2>ورود با پیامک</h2>
-                        <p>شماره موبایلت رو وارد کن تا کد تایید برات پیامک بشه.</p>
+                        <h2>ورود یا ثبت‌نام با پیامک</h2>
+                        <p>شماره موبایلت رو وارد کن تا کد تایید برات پیامک بشه. اگر حساب نداری، با تأیید همین کد ساخته می‌شه.</p>
                     </div>
+                    <?php if ( ! $sms_ready ) : ?>
+                    <p class="auth-notice" role="status">ورود و ثبت‌نام با پیامک فعلا فعال نیست. اگر حساب دارید با رمز عبور وارد شوید؛ برای ساخت حساب با پشتیبانی تماس بگیرید.</p>
+                    <?php else : ?>
                     <form method="post" class="up-auth-form">
                         <?php wp_nonce_field('hodima_auth_action', 'hodima_auth_nonce'); ?>
-                        <input type="text" name="up_website_url" class="up-honeypot" tabindex="-1">
+                        <input type="text" name="<?php echo esc_attr( \Hodima\Panel\Auth::TRAP ); ?>" class="up-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" value="">
                         
                         <div class="input-group">
-                            <input type="text" name="otp_mobile" class="auth-field numeric-only" placeholder="شماره موبایل (09...)" value="<?php echo esc_attr($auth->input_mobile); ?>" required pattern="^09[0-9]{9}$" autocomplete="off">
+                            <input type="text" name="otp_mobile" class="auth-field numeric-only" placeholder="شماره موبایل (09...)" value="<?php echo esc_attr($auth->mobile); ?>" required pattern="^09[0-9]{9}$" autocomplete="off">
                             <span class="input-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 18a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2"></path><rect x="5" y="2" width="14" height="20" rx="2"></rect></svg></span>
                         </div>
                         
                         <button type="submit" name="send_otp" class="btn-auth">ارسال کد تایید</button>
                     </form>
+                    <?php endif; ?>
                     <div class="auth-links">
                         <a href="javascript:void(0)" class="step-trigger" data-step="login">بازگشت به <strong>ورود با رمز عبور</strong></a>
                     </div>
@@ -142,32 +107,33 @@ if ($auth->view === 'otp_verify' && !empty($auth->input_mobile)) {
                     <h2 class="mobile-step-title">کد را وارد کنید</h2>
                     <div class="auth-header">
                         <h2>تایید شماره</h2>
-                        <p>کد ۵ رقمی ارسال شده به <b style="color:var(--up-primary); direction:ltr; display:inline-block;"><?php echo esc_html($auth->input_mobile); ?></b> را وارد کنید.</p>
+                        <p>کد ۵ رقمی ارسال شده به <b style="color:var(--up-primary); direction:ltr; display:inline-block;"><?php echo esc_html($auth->mobile); ?></b> را وارد کنید.</p>
                     </div>
                     <form method="post" id="otp-verify-form" class="up-auth-form">
                         <?php wp_nonce_field('hodima_auth_action', 'hodima_auth_nonce'); ?>
-                        <input type="text" name="up_website_url" class="up-honeypot" tabindex="-1">
+                        <input type="text" name="<?php echo esc_attr( \Hodima\Panel\Auth::TRAP ); ?>" class="up-honeypot" tabindex="-1" autocomplete="off" aria-hidden="true" value="">
                         
                         <!-- فیلد مخفی برای ارسال به PHP -->
                         <input type="hidden" name="otp_code" id="real_otp_code" required>
                         
                         <!-- 5 باکس برای وارد کردن کد -->
                         <div class="otp-inputs-container" id="otp-inputs-wrapper">
-                            <input type="text" class="otp-box numeric-only" maxlength="1" autocomplete="off" autofocus>
-                            <input type="text" class="otp-box numeric-only" maxlength="1" autocomplete="off">
-                            <input type="text" class="otp-box numeric-only" maxlength="1" autocomplete="off">
-                            <input type="text" class="otp-box numeric-only" maxlength="1" autocomplete="off">
-                            <input type="text" class="otp-box numeric-only" maxlength="1" autocomplete="off">
+                            <input type="text" class="otp-box numeric-only" maxlength="1" inputmode="numeric" autocomplete="one-time-code" aria-label="رقم ۱ کد" autofocus>
+                            <input type="text" class="otp-box numeric-only" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="رقم بعدی کد">
+                            <input type="text" class="otp-box numeric-only" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="رقم بعدی کد">
+                            <input type="text" class="otp-box numeric-only" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="رقم بعدی کد">
+                            <input type="text" class="otp-box numeric-only" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="رقم بعدی کد">
                         </div>
 
                         <button type="submit" name="verify_otp" class="btn-auth" id="btn-verify-otp">تایید و ورود</button>
                     </form>
                     
-                    <div class="timer-text" id="otp-timer-container">
+                    <div class="timer-text" id="otp-timer-container"<?php echo $remaining_cooldown > 0 ? '' : ' hidden'; ?>>
                         ارسال مجدد کد تا <span id="otp-timer">00:00</span> دیگر
                     </div>
                     
-                    <form method="post" id="resend-form" style="display:none; margin-top: 20px;">
+                    <?php // دکمه ارسال دوباره وقتی صفحه بعد از پایان شمارش باز شود هم دیده شود (پنل قدیمی پنهانش می‌گذاشت) ?>
+                    <form method="post" id="resend-form" class="resend-form"<?php echo $remaining_cooldown > 0 ? ' hidden' : ''; ?>>
                         <?php wp_nonce_field('hodima_auth_action', 'hodima_auth_nonce'); ?>
                         <button type="submit" name="resend_otp" class="resend-btn">ارسال مجدد کد به پیامک</button>
                     </form>
@@ -193,8 +159,8 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => { toast.classList.remove('show-popup'); setTimeout(() => toast.remove(), 400); }, 4000); 
     };
     
-    <?php if (!empty($auth->error)): ?> showToast(<?php echo json_encode($auth->error); ?>, 'up-alert-error'); <?php endif; ?>
-    <?php if (!empty($auth->success)): ?> showToast(<?php echo json_encode($auth->success); ?>, 'up-alert-success'); <?php endif; ?>
+    <?php if (!empty($auth->error)): ?> showToast(<?php echo wp_json_encode($auth->error); ?>, 'up-alert-error'); <?php endif; ?>
+    <?php if (!empty($auth->success)): ?> showToast(<?php echo wp_json_encode($auth->success); ?>, 'up-alert-success'); <?php endif; ?>
     
     // Tab Switching
     document.querySelectorAll('.step-trigger').forEach(trigger => { 
@@ -305,8 +271,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const updateTimer = () => { 
             if (timeLeft <= 0) { 
                 clearInterval(countdown); 
-                timerContainer.style.display = 'none'; 
-                resendForm.style.display = 'block'; 
+                timerContainer.hidden = true;
+                resendForm.hidden = false;
             } else { 
                 let m = Math.floor(timeLeft / 60); let s = timeLeft % 60; 
                 timerDisplay.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; 

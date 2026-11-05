@@ -39,6 +39,9 @@ use Hodima\Panel\Files;
 use Hodima\Panel\Install;
 use Hodima\Panel\Page;
 use Hodima\Panel\Profile;
+use Hodima\Panel\Sms;
+use Hodima\Panel\Otp;
+use Hodima\Panel\Auth;
 use function Hodima\Panel\table;
 
 $failed = 0;
@@ -66,6 +69,8 @@ $hodima_pt_die = static fn(): callable => static function ( $message ): never {
 	throw new Hodima_Pt_Stop( 'die:' . ( is_string( $message ) ? $message : wp_json_encode( $message ) ) );
 };
 add_filter( 'wp_die_handler', $hodima_pt_die );
+// کوکی ورود در CLI بعد از چاپ خروجی آزمون فقط هشدار «headers already sent» می‌دهد
+add_filter( 'send_auth_cookies', '__return_false' );
 add_filter( 'wp_die_ajax_handler', $hodima_pt_die );
 add_filter( 'wp_die_json_handler', $hodima_pt_die );
 
@@ -355,6 +360,185 @@ hodima_pt( 'متن بدون \\ اضافه', $wpdb->get_var( $wpdb->prepare( 'SEL
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_POST                     = $_REQUEST = [];
 
+echo "== پیامک: سه سرویس، پشتیبان، گزارش (پاسخ سرویس‌ها شبیه‌سازی‌شده)\n";
+$hp_http  = [];
+$hp_reply = [];
+add_filter( 'pre_http_request', static function ( $pre, array $args, string $url ) use ( &$hp_http, &$hp_reply ) {
+	foreach ( [ 'payamak-panel.com' => 'melipayamak', 'kavenegar.com' => 'kavenegar', 'sms.ir' => 'smsir' ] as $host => $id ) {
+		if ( str_contains( $url, $host ) ) {
+			$hp_http[] = [ 'id' => $id, 'url' => $url, 'args' => $args ];
+			$r         = $hp_reply[ $id ] ?? [ 500, '{}' ];
+			return $r instanceof WP_Error ? $r : [ 'headers' => [], 'body' => $r[1], 'response' => [ 'code' => $r[0], 'message' => '' ], 'cookies' => [], 'filename' => null ];
+		}
+	}
+	return $pre;
+}, 10, 3 );
+$hp_last_code = static function () use ( &$hp_http ): string {
+	$req  = end( $hp_http );
+	$body = $req['args']['body'] ?? [];
+	if ( is_string( $body ) ) {
+		$body = json_decode( $body, true );
+		return (string) ( $body['parameters'][0]['value'] ?? '' );
+	}
+	return (string) ( $body['text'] ?? $body['token'] ?? '' );
+};
+$ok_reply = [ 'melipayamak' => [ 200, '{"Value":"5012345678901234567","RetStatus":1,"StrRetStatus":"Ok"}' ], 'kavenegar' => [ 200, '{"return":{"status":200,"message":"تایید شد"},"entries":[]}' ], 'smsir' => [ 200, '{"status":1,"message":"موفق","data":{"messageId":1}}' ] ];
+delete_option( Sms::OPTION );
+delete_option( Sms::LOG_OPTION );
+hodima_pt( 'بدون تنظیم: پیامک آماده نیست و کدی ساخته نمی‌شود', [ Sms::ready(), Otp::issue( 'k0', '09120000009', 'login', '198.51.100.1' )['ok'], count( $hp_http ) ], [ false, false, 0 ] );
+update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => 'kavenegar', 'providers' => [ 'melipayamak' => [ 'username' => 'hodhod', 'password' => 'secret-pass', 'body_id' => '123456' ], 'kavenegar' => [ 'api_key' => 'KAVE-KEY', 'template' => 'verify' ], 'smsir' => [ 'api_key' => 'SMSIR-KEY', 'template_id' => '777' ] ] ] );
+hodima_pt( 'با تنظیم ملی‌پیامک آماده است', Sms::ready(), true );
+$hp_reply = $ok_reply;
+$r        = Sms::send_code( '09121234567', '48213' );
+$req      = $hp_http[0] ?? [];
+hodima_pt( 'ملی‌پیامک: آدرس REST و فیلدهای الگو', [ $r['ok'], $r['provider'], $req['url'] ?? '', $req['args']['body'] ?? [] ], [ true, 'melipayamak', 'https://rest.payamak-panel.com/api/SendSMS/BaseServiceNumber', [ 'username' => 'hodhod', 'password' => 'secret-pass', 'text' => '48213', 'to' => '09121234567', 'bodyId' => '123456' ] ] );
+$hp_http  = [];
+$hp_reply = [ 'melipayamak' => [ 200, '{"Value":"11","RetStatus":11,"StrRetStatus":"InvalidBodyId"}' ] ] + $ok_reply;
+$r        = Sms::send_code( '09121234567', '11111' );
+hodima_pt( 'ملی‌پیامک خطا داد ← همان کد با کاوه‌نگار (پشتیبان)', [ $r['ok'], $r['provider'], count( $hp_http ), $hp_http[1]['url'] ?? '', $hp_http[1]['args']['body'] ?? [] ], [ true, 'kavenegar', 2, 'https://api.kavenegar.com/v1/KAVE-KEY/verify/lookup.json', [ 'receptor' => '09121234567', 'token' => '11111', 'template' => 'verify' ] ] );
+$hp_http  = [];
+$hp_reply = [ 'melipayamak' => new WP_Error( 'http', 'timeout' ), 'kavenegar' => [ 418, '{"return":{"status":418,"message":"اعتبار کافی نیست"}}' ] ];
+$r        = Sms::send_code( '09121234567', '22222' );
+hodima_pt( 'هر دو خطا ← ناموفق با پیام سرویس آخر', [ $r['ok'], $r['error'] ], [ false, 'کاوه‌نگار: اعتبار کافی نیست' ] );
+$hp_http  = [];
+$hp_reply = $ok_reply;
+$r        = Sms::send_with( 'smsir', '09121234567', '33333' );
+$req      = $hp_http[0] ?? [];
+hodima_pt( 'sms.ir: سربرگ کلید و بدنه JSON الگو', [ $r['ok'], $req['args']['headers']['X-API-KEY'] ?? '', json_decode( (string) ( $req['args']['body'] ?? '' ), true ) ], [ true, 'SMSIR-KEY', [ 'mobile' => '09121234567', 'templateId' => 777, 'parameters' => [ [ 'name' => 'CODE', 'value' => '33333' ] ] ] ] );
+$log = Sms::log_entries();
+hodima_pt( 'گزارش: شماره نیمه‌پنهان، بی کد و بی کلید', [ $log[0]['to'] ?? '', str_contains( (string) wp_json_encode( $log ), '33333' ), str_contains( (string) wp_json_encode( $log ), 'secret-pass' ), count( $log ) ], [ '0912***4567', false, false, 6 ] );
+update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => 'melipayamak', 'providers' => [ 'melipayamak' => [ 'username' => 'u', 'password' => '', 'body_id' => '1' ] ] ] );
+hodima_pt( 'سرویس ناقص آماده نیست؛ پشتیبان تکراری نادیده', [ Sms::ready(), Sms::settings()['fallback'] ], [ false, '' ] );
+update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => '', 'providers' => [ 'melipayamak' => [ 'username' => 'hodhod', 'password' => 'secret-pass', 'body_id' => '123456' ] ] ] );
+
+echo "== کد یک‌بار مصرف (اعتبار، تلاش، هدف، محدودیت ارسال)\n";
+$hp_otp_reset = static function (): void {
+	global $wpdb;
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '%transient%hodima_panel_%'" );
+	wp_cache_flush();
+};
+$hp_otp_reset();
+$hp_http = [];
+$r       = Otp::issue( 'key-1', '09125550001', 'login', '198.51.100.2' );
+$code    = $hp_last_code();
+hodima_pt( 'کد ۵ رقمی فرستاده شد', [ $r['ok'], (bool) preg_match( '/^\d{5}$/', $code ), $r['wait'] ], [ true, true, Otp::COOLDOWN ] );
+hodima_pt( 'ارسال دوباره پیش از ۲ دقیقه رد', Otp::issue( 'key-1', '09125550001', 'login', '198.51.100.2' )['wait'] > 0, true );
+hodima_pt( 'کد با هدف دیگر پذیرفته نمی‌شود', Otp::check( 'key-1', $code, 'profile' )['ok'], false );
+hodima_pt( 'کد اشتباه', Otp::check( 'key-1', '00000' === $code ? '11111' : '00000', 'login' )['error'], 'کد اشتباه است.' );
+hodima_pt( 'کد درست (با رقم فارسی) پذیرفته', Otp::check( 'key-1', strtr( $code, [ '0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴', '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹' ] ), 'login' )['ok'], true );
+hodima_pt( 'کد مصرف‌شده دوباره پذیرفته نمی‌شود', Otp::check( 'key-1', $code, 'login' )['ok'], false );
+Otp::issue( 'key-2', '09125550002', 'login', '198.51.100.2' );
+$code2 = $hp_last_code();
+$wrong = '00000' === $code2 ? '11111' : '00000';
+foreach ( range( 1, Otp::MAX_ATTEMPTS ) as $_ ) {
+	Otp::check( 'key-2', $wrong, 'login' );
+}
+hodima_pt( 'بعد از ۳ تلاش اشتباه، کد درست هم پذیرفته نمی‌شود', Otp::check( 'key-2', $code2, 'login' )['ok'], false );
+$hp_otp_reset();
+for ( $i = 0; $i < Otp::PER_MOBILE_HOUR; $i++ ) {
+	Otp::issue( 'key-m' . $i, '09125550003', 'login', '198.51.100.' . ( 10 + $i ) );
+	delete_transient( 'hodima_panel_otpcool_' . substr( wp_hash( '09125550003' ), 0, 24 ) );
+}
+hodima_pt( 'سقف ۵ کد در ساعت برای یک شماره (حتی از IPهای مختلف)', Otp::issue( 'key-mx', '09125550003', 'login', '198.51.100.99' )['ok'], false );
+$hp_otp_reset();
+
+echo "== ورود و ثبت‌نام\n";
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$hp_auth = static function ( array $post ): array {
+	$_POST = $_REQUEST = $post + [ 'hodima_auth_nonce' => wp_create_nonce( Auth::NONCE ) ];
+	$auth  = new Auth();
+	$stop  = hodima_pt_run( static fn() => $auth->handle() );
+	return [ $auth, $stop ];
+};
+wp_set_current_user( 0 );
+unset( $_COOKIE[ Auth::COOKIE ] );
+[ $a ] = $hp_auth( [ 'send_otp' => '1', 'otp_mobile' => '۰۹۱۲ ۷۷۷ ۰۰۰۱' ] );
+$code  = $hp_last_code();
+hodima_pt( 'شماره تازه (رقم فارسی و فاصله) ← کد و نمای تأیید', [ $a->view, $a->mobile, '' !== ( $_COOKIE[ Auth::COOKIE ] ?? '' ) ], [ 'otp_verify', '09127770001', true ] );
+hodima_pt( 'پیش از تأیید هیچ حسابی ساخته نشده', null === Auth::find_user( '09127770001' ), true );
+[ $a, $stop ] = $hp_auth( [ 'verify_otp' => '1', 'otp_code' => $code ] );
+$new = Auth::find_user( '09127770001' );
+hodima_pt( 'کد درست ← حساب تازه، ورود و رفتن به پروفایل', [ $new instanceof WP_User, str_contains( $stop, 'redirect:' ) && str_contains( $stop, 'msg=welcome' ), get_current_user_id() === ( $new->ID ?? -1 ) ], [ true, true, true ] );
+hodima_pt( 'حساب تازه: موبایل در متا و صورت‌حساب، ایمیل ساختگی', [ get_user_meta( (int) $new->ID, 'mobile', true ), get_user_meta( (int) $new->ID, 'billing_phone', true ), Profile::is_placeholder_email( (string) $new->user_email ) ], [ '09127770001', '09127770001', true ] );
+wp_set_current_user( 0 );
+$hp_otp_reset();
+unset( $_COOKIE[ Auth::COOKIE ] );
+$hp_auth( [ 'send_otp' => '1', 'otp_mobile' => '09127770001' ] );
+[ $a, $stop ] = $hp_auth( [ 'verify_otp' => '1', 'otp_code' => $hp_last_code() ] );
+hodima_pt( 'شماره موجود با کد ← ورود همان حساب (بی حساب دوم)', [ str_contains( $stop, 'redirect:' ) && ! str_contains( $stop, 'welcome' ), count( get_users( [ 'login' => '09127770001' ] ) ) ], [ true, 1 ] );
+wp_set_current_user( 0 );
+[ $a ] = $hp_auth( [ 'send_otp' => '1', 'otp_mobile' => '09127770002', Auth::TRAP => 'http://spam' ] );
+hodima_pt( 'فیلد ضد ربات پر ← رد بی ارسال', [ $a->error, $a->view ], [ 'درخواست پذیرفته نشد.', 'login' ] );
+[ $a ] = $hp_auth( [ 'send_otp' => '1', 'otp_mobile' => '0912' ] );
+hodima_pt( 'شماره نامعتبر', $a->view . '|' . (string) str_contains( $a->error, 'نامعتبر' ), 'otp_request|1' );
+$_POST                = $_REQUEST = [ 'send_otp' => '1', 'otp_mobile' => '09127770003', 'hodima_auth_nonce' => 'bad' ];
+$a                    = new Auth();
+hodima_pt_run( static fn() => $a->handle() );
+hodima_pt( 'nonce کهنه ← پیام، بی ارسال', str_contains( $a->error, 'منقضی' ), true );
+// ورود با رمز: سقف IP+شماره و سقف جدای هر شماره
+wp_set_password( 'Right-Pass-123', (int) $new->ID );
+$hp_otp_reset();
+for ( $i = 0; $i < 5; $i++ ) {
+	$hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127770001', 'password' => 'wrong' ] );
+}
+[ $a ] = $hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127770001', 'password' => 'Right-Pass-123' ] );
+hodima_pt( '۵ رمز اشتباه از یک IP ← حتی رمز درست موقتا رد', str_contains( $a->error, 'تلاش بیش از حد' ), true );
+delete_transient( 'hodima_panel_login_' . substr( wp_hash( Auth::ip() . '|09127770001' ), 0, 24 ) );
+for ( $i = 0; $i < 5; $i++ ) {
+	$hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127770001', 'password' => 'wrong' ] );
+	delete_transient( 'hodima_panel_login_' . substr( wp_hash( Auth::ip() . '|09127770001' ), 0, 24 ) );
+}
+[ $a ] = $hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127770001', 'password' => 'Right-Pass-123' ] );
+hodima_pt( '۱۰ تلاش برای یک شماره (IP عوض‌شده) ← قفل شماره', str_contains( $a->error, 'تلاش بیش از حد' ), true );
+$hp_otp_reset();
+[ $a, $stop ] = $hp_auth( [ 'login_with_password' => '1', 'mobile' => '+98 912 777 0001', 'password' => 'Right-Pass-123' ] );
+hodima_pt( 'رمز درست با شماره ‎+98‎ ← ورود', str_contains( $stop, 'redirect:' ), true );
+$_SERVER['REQUEST_METHOD'] = 'GET';
+$_POST                     = $_REQUEST = [];
+
+echo "== پروفایل: تغییر رمز و ایمیل فقط با رمز فعلی یا کد پیامکی\n";
+$hp_otp_reset();
+wp_set_current_user( (int) $new->ID );
+update_user_meta( (int) $new->ID, 'billing_address_1', 'تهران خیابان آزمون پلاک ۹' );
+update_user_meta( (int) $new->ID, 'billing_postcode', '1234567890' );
+add_filter( 'pre_wp_mail', '__return_false' );
+wp_update_user( [ 'ID' => (int) $new->ID, 'user_email' => 'real@hodima.test', 'display_name' => 'سارا محمدی' ] );
+add_filter( 'wp_doing_ajax', '__return_true' );
+$hp_profile = static function ( array $extra ) use ( $new ): string {
+	$_POST = $_REQUEST = $extra + [ 'nonce' => wp_create_nonce( 'up_update_profile_action' ), 'display_name' => 'سارا محمدی', 'user_email' => 'real@hodima.test', 'address' => 'تهران خیابان آزمون پلاک ۹', 'postcode' => '1234567890' ];
+	hodima_pt_run( static fn() => do_action( 'wp_ajax_hodima_panel_profile' ) );
+	clean_user_cache( (int) $new->ID );
+	return $GLOBALS['hodima_pt_last_output'];
+};
+$out = $hp_profile( [ 'user_email' => 'thief@hodima.test' ] );
+hodima_pt( 'تغییر ایمیل واقعی بی تأیید رد', [ str_contains( $out, '"need_verify":true' ), get_userdata( (int) $new->ID )->user_email ], [ true, 'real@hodima.test' ] );
+$out = $hp_profile( [ 'new_password' => 'NewPass-456', 'confirm_password' => 'NewPass-456', 'current_password' => 'wrong' ] );
+hodima_pt( 'تغییر رمز با رمز فعلی اشتباه رد', [ str_contains( $out, '"success":false' ), wp_check_password( 'Right-Pass-123', get_userdata( (int) $new->ID )->user_pass ) ], [ true, true ] );
+$cookies = 0;
+$hp_cookie = static function () use ( &$cookies ): void {
+	++$cookies;
+};
+add_action( 'set_auth_cookie', $hp_cookie );
+$out = $hp_profile( [ 'new_password' => 'NewPass-456', 'confirm_password' => 'NewPass-456', 'current_password' => 'Right-Pass-123' ] );
+hodima_pt( 'تغییر رمز با رمز فعلی درست + ورود دوباره (بیرون نمی‌اندازد)', [ str_contains( $out, '"success":true' ), wp_check_password( 'NewPass-456', get_userdata( (int) $new->ID )->user_pass ), $cookies ], [ true, true, 1 ] );
+$_POST = $_REQUEST = [ 'nonce' => wp_create_nonce( 'up_update_profile_action' ) ];
+hodima_pt_run( static fn() => do_action( 'wp_ajax_hodima_panel_profile_code' ) );
+hodima_pt( 'کد پیامکی تأیید به موبایل حساب', [ str_contains( $GLOBALS['hodima_pt_last_output'], '"success":true' ), ( end( $hp_http )['args']['body']['to'] ?? '' ) ], [ true, '09127770001' ] );
+$pcode = $hp_last_code();
+$out   = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'verify_code' => '00000' === $pcode ? '11111' : '00000' ] );
+hodima_pt( 'کد اشتباه ← ایمیل عوض نشد', [ str_contains( $out, '"success":false' ), get_userdata( (int) $new->ID )->user_email ], [ true, 'real@hodima.test' ] );
+$out = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'verify_code' => $pcode ] );
+hodima_pt( 'کد درست ← ایمیل عوض شد', [ str_contains( $out, '"success":true' ), get_userdata( (int) $new->ID )->user_email ], [ true, 'sara@hodima.test' ] );
+$out = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'display_name' => 'سارا محمدی‌پور' ] );
+hodima_pt( 'تغییر بی‌خطر (نام) بی تأیید', str_contains( $out, '"success":true' ), true );
+remove_action( 'set_auth_cookie', $hp_cookie );
+remove_filter( 'wp_doing_ajax', '__return_true' );
+remove_filter( 'pre_wp_mail', '__return_false' );
+$_POST = $_REQUEST = [];
+require_once ABSPATH . 'wp-admin/includes/user.php';
+wp_delete_user( (int) $new->ID );
+wp_set_current_user( 0 );
+
 echo "== رندر واقعی پنل (بدون هشدار PHP)\n";
 $wpdb->update( table( 'tickets' ), [ 'user_unread' => 1 ], [ 'id' => $ticket->id ] );
 [ $html, $err ] = hodima_pt_render( '/user-panel/' );
@@ -362,6 +546,10 @@ hodima_pt( 'مهمان: فرم ورود', str_contains( $html, 'hodima_auth_nonc
 hodima_pt( 'مهمان: noindex', (bool) preg_match( "/<meta name='robots' content='[^']*noindex/", $html ), true );
 hodima_pt( 'مهمان: فقط CSS ورود', str_contains( $html, 'css/login.css' ) && ! str_contains( $html, 'css/panel.css' ), true );
 hodima_pt( 'مهمان: بدون خطا', $err, '' );
+hodima_pt( 'مهمان: ثبت‌نام فقط با کد، فیلد ضد ربات تازه، پیامک فعال', [ str_contains( $html, 'do_register' ), str_contains( $html, 'up_website_url' ), str_contains( $html, Auth::TRAP ), str_contains( $html, 'ثبت‌نام با کد پیامکی' ), str_contains( $html, 'auth-notice' ) ], [ false, false, true, true, false ] );
+delete_option( Sms::OPTION );
+[ $html ] = hodima_pt_render( '/user-panel/' );
+hodima_pt( 'مهمان، پیامک تنظیم‌نشده: پیام روشن به‌جای فرم کد', [ str_contains( $html, 'auth-notice' ), str_contains( $html, 'name="send_otp"' ) ], [ true, false ] );
 $sections = [
 	'dashboard'  => 'stats-grid',
 	'orders'     => 'user-orders-table',

@@ -104,6 +104,21 @@ $display_email_value = $fields['email'];
                 <input type="password" id="confirm_password" class="form-control" placeholder="********" autocomplete="new-password">
             </div>
 
+            <?php // تأیید هویت برای تغییر رمز یا ایمیل (مرحله ۴): رمز فعلی، یا کد پیامکی برای کسی که با پیامک ثبت‌نام کرده و رمز ندارد ?>
+            <fieldset class="verify-box" id="verifyBox">
+                <legend>تأیید تغییر رمز یا ایمیل</legend>
+                <p class="profile-hint">فقط وقتی رمز یا ایمیل را عوض می‌کنید لازم است: رمز فعلی، یا کدی که به موبایلتان پیامک می‌شود.</p>
+                <div class="form-group">
+                    <label for="current_password">رمز فعلی</label>
+                    <input type="password" id="current_password" class="form-control" autocomplete="current-password">
+                </div>
+                <div class="form-group verify-code-row">
+                    <label for="verify_code">یا کد پیامکی</label>
+                    <input type="text" id="verify_code" class="form-control" inputmode="numeric" autocomplete="one-time-code" maxlength="5">
+                    <button type="button" id="sendVerifyCode" class="btn-secondary-outline">ارسال کد</button>
+                </div>
+            </fieldset>
+
             <button type="submit" id="profileSubmit" class="submit-btn">
                 ذخیره اطلاعات
             </button>
@@ -162,6 +177,8 @@ document.getElementById("profileForm").addEventListener("submit", function(e) {
     data.append("postcode", postcode);
     data.append("new_password", pass);
     data.append("confirm_password", pass2);
+    data.append("current_password", document.getElementById("current_password").value);
+    data.append("verify_code", document.getElementById("verify_code").value.trim());
     data.append("nonce", nonce);
 
     // تغییر متن دکمه هنگام ارسال
@@ -190,6 +207,7 @@ document.getElementById("profileForm").addEventListener("submit", function(e) {
             
         } else {
             if(window.showToastMessage) window.showToastMessage(res.data.message, "up-alert-error");
+            if (res.data && res.data.need_verify) document.getElementById("current_password").focus();
         }
     })
     .catch(err => {
@@ -197,5 +215,23 @@ document.getElementById("profileForm").addEventListener("submit", function(e) {
         submitBtn.disabled = false;
         if(window.showToastMessage) window.showToastMessage("خطایی در ارتباط با سرور رخ داد.", "up-alert-error");
     });
+});
+
+// ارسال کد پیامکی برای تأیید تغییر رمز/ایمیل
+document.getElementById("sendVerifyCode").addEventListener("click", function () {
+    const btn = this;
+    const body = new FormData();
+    body.append("action", "hodima_panel_profile_code");
+    body.append("nonce", document.getElementById("up_profile_nonce").value);
+    btn.disabled = true;
+    fetch(<?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>, { method: "POST", credentials: "same-origin", body })
+        .then(r => r.json())
+        .then(res => {
+            if (window.showToastMessage) window.showToastMessage(res.data.message, res.success ? "up-alert-success" : "up-alert-error");
+            const wait = (res.data && res.data.wait) || 0;
+            if (wait > 0) { setTimeout(() => { btn.disabled = false; }, wait * 1000); } else { btn.disabled = false; }
+            if (res.success) document.getElementById("verify_code").focus();
+        })
+        .catch(() => { btn.disabled = false; });
 });
 </script>
