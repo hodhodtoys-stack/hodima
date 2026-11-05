@@ -60,7 +60,7 @@ add_action( 'wp_ajax_hodima_panel_chat_send', static function (): void {
 	if ( '' === trim( $message ) ) {
 		wp_send_json_error( [ 'message' => 'متن پیام خالی است.' ] );
 	}
-	add_chat_message( $order_id, get_current_user_id(), 'user', $message );
+	\Hodima\Panel\Orders::add_chat_message( $order_id, get_current_user_id(), 'user', $message );
 	wp_send_json_success( [ 'html' => chat_message_html( (object) [ 'sender_type' => 'user', 'message' => $message, 'created_at' => \Hodima\Panel\now() ] ) ] );
 } );
 

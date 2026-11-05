@@ -133,12 +133,37 @@ update_post_meta( $product, '_price', '1250' );
 update_post_meta( $product, '_up_unit_capacity', '12' );
 update_post_meta( $product, '_up_sale_unit', 'کیلو' );
 update_post_meta( $product, '_prebuy_enabled', 'yes' );
+update_post_meta( $product, '_up_min_qty', '0.5' );
+$carton = (int) wp_insert_post( [ 'post_type' => 'product', 'post_status' => 'publish', 'post_title' => 'کش کارتنی آزمون' ] );
+update_post_meta( $carton, '_price', '100' );
+update_post_meta( $carton, '_up_sale_unit', 'کارتن' );
+update_post_meta( $carton, '_up_min_qty', '2' );
+update_post_meta( $carton, '_prebuy_enabled', 'yes' );
+$draft = (int) wp_insert_post( [ 'post_type' => 'product', 'post_status' => 'draft', 'post_title' => 'پیش‌نویس' ] );
+update_post_meta( $draft, '_prebuy_enabled', 'yes' );
+
+echo "== اعتبارسنجی اقلام در سرور (حداقل، مضرب، محصول مجاز)\n";
+$v = \Hodima\Panel\Orders::validate_items( 'prebuy', [ $product, $carton ], [ $product => '2.5', $carton => '3' ] );
+hodima_pt( 'کیلو مضرب ۰٫۵ و کارتن بالای حداقل (مضرب لازم نیست) پذیرفته', [ count( $v['items'] ), $v['errors'] ], [ 2, [] ] );
+$v = \Hodima\Panel\Orders::validate_items( 'prebuy', [ $product ], [ $product => '2.3' ] );
+hodima_pt( 'کیلو غیرمضرب رد', [ count( $v['items'] ), count( $v['errors'] ) ], [ 0, 1 ] );
+$v = \Hodima\Panel\Orders::validate_items( 'prebuy', [ $carton ], [ $carton => '1' ] );
+hodima_pt( 'کمتر از حداقل رد', [ count( $v['items'] ), str_contains( $v['errors'][0] ?? '', 'حداقل سفارش 2' ) ], [ 0, true ] );
+$v = \Hodima\Panel\Orders::validate_items( 'prebuy', [ $carton ], [ $carton => 'abc' ] );
+hodima_pt( 'تعداد غیرعددی رد', count( $v['errors'] ), 1 );
+$v = \Hodima\Panel\Orders::validate_items( 'prebuy', [ $carton ], [ $carton => '999999999' ] );
+hodima_pt( 'تعداد ناممکن رد', count( $v['errors'] ), 1 );
+$v = \Hodima\Panel\Orders::validate_items( 'preinvoice', [ $product ], [ $product => '1' ] );
+hodima_pt( 'محصولی که برای پیش‌فاکتور فعال نیست رد', count( $v['errors'] ), 1 );
+$v = \Hodima\Panel\Orders::validate_items( 'prebuy', [ $draft, 999999 ], [ $draft => '5', 999999 => '5' ] );
+hodima_pt( 'پیش‌نویس و ناموجود رد', [ count( $v['items'] ), count( $v['errors'] ) ], [ 0, 2 ] );
 
 echo "== ثبت سفارش و اقلام (قیمت و ظرفیت لحظه ثبت، تعداد اعشاری)\n";
 $now = \Hodima\Panel\now();
 $wpdb->insert( table( 'orders' ), [ 'user_id' => $user_a, 'type' => 'prebuy', 'status' => 'pending', 'created_at' => $now, 'updated_at' => $now ] );
 $order_a = (int) $wpdb->insert_id;
-$total   = \Hodima\Panel\Legacy\save_order_items( $order_a, [ (string) $product, (string) $product, '999999' ], [ $product => '2.5' ] );
+$v       = \Hodima\Panel\Orders::validate_items( 'prebuy', [ (string) $product, (string) $product, '999999' ], [ $product => '2.5' ] );
+$total   = \Hodima\Panel\Orders::save_items( $order_a, $v['items'] );
 hodima_pt( 'جمع = ۲٫۵ × ۱۲ × ۱۲۵۰', $total, 37500.0 );
 $item = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE order_id = %d', table( 'order_items' ), $order_a ) );
 hodima_pt( 'محصول تکراری و ناموجود ذخیره نشد', (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE order_id = %d', table( 'order_items' ), $order_a ) ), 1 );
@@ -152,39 +177,98 @@ $wpdb->update( table( 'orders' ), [ 'total_price' => $total ], [ 'id' => $order_
 echo "== فرم پیش‌خرید (admin-post)\n";
 wp_set_current_user( $user_b );
 $_POST = $_REQUEST = [ 'action' => 'save_prebuy', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'products' => [ (string) $product ], 'qty' => [ $product => '3' ] ];
-$stop  = hodima_pt_run( '\Hodima\Panel\Legacy\handle_order_form' );
+$stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] );
 $order_b = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT 1', table( 'orders' ), $user_b ) );
 hodima_pt( 'سفارش ثبت و به فهرست سفارش‌ها رفت', [ str_contains( $stop, 'section=orders' ), $order_b > 0 ], [ true, true ] );
 hodima_pt( 'مبلغ کل سفارش ذخیره شد', (float) $wpdb->get_var( $wpdb->prepare( 'SELECT total_price FROM %i WHERE id = %d', table( 'orders' ), $order_b ) ), 45000.0 );
 $_POST = $_REQUEST = [ 'action' => 'save_prebuy', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'order_id' => (string) $order_a, 'products' => [ (string) $product ] ];
-hodima_pt( 'ویرایش سفارش مشتری دیگر رد شد', str_starts_with( hodima_pt_run( '\Hodima\Panel\Legacy\handle_order_form' ), 'die:' ), true );
-\Hodima\Panel\Legacy\delete_order( $order_b );
+hodima_pt( 'ویرایش سفارش مشتری دیگر رد شد', str_starts_with( hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] ), 'die:' ), true );
+$_POST = $_REQUEST = [ 'action' => 'save_prebuy', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'products' => [ (string) $product ], 'qty' => [ $product => '0.2' ] ];
+$stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] );
+hodima_pt( 'تعداد نامعتبر ← برگشت به فرم با فهرست خطا، بی سفارش تازه', [ str_contains( $stop, 'msg=invalid_items' ), count( (array) get_transient( 'hodima_panel_errors_' . $user_b ) ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE user_id = %d', table( 'orders' ), $user_b ) ) ], [ true, 1, 1 ] );
+// ویرایش: نوع فرم دیگر نوع سفارش را عوض نمی‌کند؛ بعد از بررسی مدیر قفل است
+$_POST = $_REQUEST = [ 'action' => 'save_preinvoice', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'order_id' => (string) $order_b, 'products' => [ (string) $product ], 'qty' => [ $product => '1' ] ];
+hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] );
+hodima_pt( 'ویرایش با فرم پیش‌فاکتور نوع پیش‌خرید را نگه داشت', $wpdb->get_var( $wpdb->prepare( 'SELECT type FROM %i WHERE id = %d', table( 'orders' ), $order_b ) ), 'prebuy' );
+$wpdb->update( table( 'orders' ), [ 'status' => 'awaiting_payment' ], [ 'id' => $order_b ] );
+$_POST = $_REQUEST = [ 'action' => 'save_prebuy', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'order_id' => (string) $order_b, 'products' => [ (string) $product ], 'qty' => [ $product => '50' ] ];
+$stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] );
+hodima_pt( 'ویرایش سفارش در انتظار پرداخت قفل است', [ str_contains( $stop, 'msg=locked' ), (float) $wpdb->get_var( $wpdb->prepare( 'SELECT quantity FROM %i WHERE order_id = %d', table( 'order_items' ), $order_b ) ) ], [ true, 1.0 ] );
+$_POST = $_REQUEST = [];
+$_GET  = [ 'action' => 'delete_order', 'order_id' => (string) $order_b, '_wpnonce' => wp_create_nonce( 'delete_order_' . $order_b ) ];
+$_REQUEST = $_GET;
+$stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_request' ] );
+hodima_pt( 'حذف سفارش در انتظار پرداخت رد (مدرک مالی می‌ماند)', [ str_contains( $stop, 'msg=locked' ), null !== \Hodima\Panel\Orders::get( $order_b ) ], [ true, true ] );
+$_POST = $_REQUEST = [ 'upload_receipt' => '1', 'order_id' => (string) $order_b, '_wpnonce_receipt' => wp_create_nonce( 'upload_receipt_' . $order_b ) ];
+$_GET  = [];
+$wpdb->update( table( 'orders' ), [ 'status' => 'cancelled' ], [ 'id' => $order_b ] );
+$stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_request' ] );
+hodima_pt( 'فیش برای سفارش لغوشده رد و وضعیت لغو ماند', [ str_contains( $stop, 'msg=receipt_not_allowed' ), $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM %i WHERE id = %d', table( 'orders' ), $order_b ) ) ], [ true, 'cancelled' ] );
+$wpdb->update( table( 'orders' ), [ 'status' => 'pending' ], [ 'id' => $order_b ] );
+hodima_pt( 'فیش برای سفارش در انتظار بررسی رد', str_contains( hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_request' ] ), 'msg=receipt_not_allowed' ), true );
+$_POST = $_REQUEST = [];
+$_GET  = [ 'action' => 'delete_order', 'order_id' => (string) $order_b, '_wpnonce' => wp_create_nonce( 'delete_order_' . $order_b ) ];
+$_REQUEST = $_GET;
+$stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_request' ] );
+hodima_pt( 'حذف سفارش در انتظار بررسی', [ str_contains( $stop, 'msg=deleted' ), null === \Hodima\Panel\Orders::get( $order_b ) ], [ true, true ] );
+$_GET = $_REQUEST = [];
 $_POST = $_REQUEST = [];
 
 echo "== گفتگوی سفارش (شمارنده خوانده‌نشده)\n";
 wp_set_current_user( $user_a );
-\Hodima\Panel\Legacy\add_chat_message( $order_a, $user_a, 'user', 'سلام' );
-\Hodima\Panel\Legacy\add_chat_message( $order_a, $user_a, 'system', 'فیش آپلود شد' );
+\Hodima\Panel\Orders::add_chat_message( $order_a, $user_a, 'user', 'سلام' );
+\Hodima\Panel\Orders::add_chat_message( $order_a, $user_a, 'system', 'فیش آپلود شد' );
 $chat = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE order_id = %d', table( 'chats' ), $order_a ) );
 hodima_pt( 'پیام مشتری و سیستمی برای مدیر نخوانده (پیام فیش واقعا ثبت شد)', [ (int) $chat->admin_unread, (int) $chat->user_unread ], [ 2, 0 ] );
 wp_set_current_user( 1 );
-\Hodima\Panel\Legacy\add_chat_message( $order_a, $user_a, 'admin', 'پاسخ' );
-\Hodima\Panel\Legacy\add_chat_message( $order_a, $user_a, 'system', 'پیش‌فاکتور صادر شد', 'user' );
+\Hodima\Panel\Orders::add_chat_message( $order_a, $user_a, 'admin', 'پاسخ' );
+\Hodima\Panel\Orders::add_chat_message( $order_a, $user_a, 'system', 'پیش‌فاکتور صادر شد', 'user' );
 $chat = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE order_id = %d', table( 'chats' ), $order_a ) );
 hodima_pt( 'پیام مدیر و سیستمی‌برای‌مشتری برای مشتری نخوانده', (int) $chat->user_unread, 2 );
 hodima_pt( 'آخرین پیام', [ $chat->last_message_preview, $chat->last_message_sender ], [ 'پیش‌فاکتور صادر شد', 'system' ] );
 hodima_pt( 'چهار پیام ذخیره شد', (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE chat_id = %d', table( 'chat_messages' ), $chat->id ) ), 4 );
 
-echo "== فایل‌های سفارش\n";
-$up   = wp_upload_dir();
-$path = $up['path'] . '/hp-test-receipt.png';
-file_put_contents( $path, 'x' );
-$fid = Files::add( $order_a, Files::RECEIPT, [ 'file' => $path, 'url' => $up['url'] . '/hp-test-receipt.png', 'type' => 'image/png' ], 'receipt.png' );
-hodima_pt( 'فیش ثبت شد', $fid > 0, true );
-hodima_pt( 'شمارش فیش', Files::count( $order_a, Files::RECEIPT ), 1 );
-$rows = Files::for_order( $order_a );
-hodima_pt( 'آدرس فایل از مسیر نسبی', $rows[0]->url ?? '', $up['url'] . '/hp-test-receipt.png' );
-hodima_pt( 'فایل بیرون uploads پذیرفته نمی‌شود', Files::add( $order_a, Files::RECEIPT, [ 'file' => '/etc/passwd' ], 'x' ), 0 );
+echo "== فایل‌های سفارش (پوشه خصوصی، نوع واقعی، اندازه، دسترسی)\n";
+$tmpdir = get_temp_dir();
+$png    = $tmpdir . 'hp-test.png';
+file_put_contents( $png, base64_decode( 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==' ) );
+$pdf = $tmpdir . 'hp-test.pdf';
+file_put_contents( $pdf, "%PDF-1.4\n%test\n" );
+$fake = $tmpdir . 'hp-fake.png';
+file_put_contents( $fake, '<?php echo 1;' );
+$fid = Files::store( $order_a, Files::RECEIPT, $png, 'فیش من.png', false );
+hodima_pt( 'فیش PNG واقعی ذخیره شد', is_int( $fid ) && $fid > 0, true );
+$row = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', table( 'order_files' ), $fid ) );
+$path = Files::path( (string) $row->file );
+hodima_pt( 'در پوشه خصوصی، با نام تصادفی', [ str_starts_with( (string) $path, Files::dir() . '/' ), str_contains( (string) $row->file, 'فیش' ), is_file( (string) $path ), $row->mime ], [ true, false, true, 'image/png' ] );
+hodima_pt( 'پوشه خصوصی بسته است (.htaccess و index.php)', [ str_contains( (string) file_get_contents( Files::dir() . '/.htaccess' ), 'Require all denied' ), is_file( Files::dir() . '/index.php' ) ], [ true, true ] );
+hodima_pt( 'پوشه خصوصی بیرون از مسیر uploads عمومی سال/ماه', str_contains( Files::dir(), 'hodima-panel-private' ), true );
+hodima_pt( 'PDF واقعی پذیرفته', is_int( Files::store( $order_a, Files::INVOICE, $pdf, 'f.pdf', false ) ), true );
+hodima_pt( 'PHP با پسوند png رد', Files::store( $order_a, Files::RECEIPT, $fake, 'x.png', false ), 'file_type' );
+hodima_pt( 'PDF ساختگی رد', Files::store( $order_a, Files::RECEIPT, $fake, 'x.pdf', false ), 'file_type' );
+hodima_pt( 'پسوند php/svg رد', [ Files::store( $order_a, Files::RECEIPT, $png, 'x.php', false ), Files::store( $order_a, Files::RECEIPT, $png, 'x.svg', false ) ], [ 'file_type', 'file_type' ] );
+$big = $tmpdir . 'hp-big.png';
+file_put_contents( $big, str_repeat( 'a', Files::MAX_BYTES + 1 ) );
+hodima_pt( 'بیشتر از ۵ مگابایت رد', Files::store( $order_a, Files::RECEIPT, $big, 'big.png', false ), 'file_size' );
+hodima_pt( 'آپلود بدون فایل', Files::upload( $order_a, Files::RECEIPT, [] ), 'file_missing' );
+hodima_pt( 'فایلی که آپلود HTTP نیست رد', Files::upload( $order_a, Files::RECEIPT, [ 'tmp_name' => $png, 'name' => 'a.png', 'error' => UPLOAD_ERR_OK ] ), 'file_save' );
+for ( $i = Files::count( $order_a, Files::RECEIPT ); $i < Files::MAX_PER_KIND; $i++ ) {
+	Files::store( $order_a, Files::RECEIPT, $png, 'r.png', false );
+}
+hodima_pt( 'سقف ۹ فیش', Files::store( $order_a, Files::RECEIPT, $png, 'r.png', false ), 'file_limit' );
+hodima_pt( 'شمارش فیش', Files::count( $order_a, Files::RECEIPT ), 9 );
+$rows = Files::for_order( $order_a, Files::RECEIPT );
+hodima_pt( 'آدرس فایل = نشانی امن (نه آدرس مستقیم)', $rows[0]->url ?? '', home_url( '/?hodima_panel_file=' . $fid ) );
+hodima_pt( 'صاحب سفارش و مدیر می‌بینند', [ Files::resolve( $fid, $user_a )['mime'] ?? '', Files::resolve( $fid, 1 )['mime'] ?? '' ], [ 'image/png', 'image/png' ] );
+hodima_pt( 'مشتری دیگر و مهمان نمی‌بینند', [ Files::resolve( $fid, $user_b ), Files::resolve( $fid, 0 ) ], [ null, null ] );
+hodima_pt( 'مسیر با ../ پذیرفته نمی‌شود', [ Files::path( '../wp-config.php' ), Files::path( '/etc/passwd' ) ], [ null, null ] );
+$wpdb->update( table( 'orders' ), [ 'status' => 'receipt_uploaded' ], [ 'id' => $order_a ] );
+hodima_pt( 'با ۹ فیش، فیش تازه مجاز نیست', \Hodima\Panel\Orders::can_upload_receipt( \Hodima\Panel\Orders::get( $order_a ) ), false );
+foreach ( [ 'pending' => [ true, false ], 'awaiting_payment' => [ false, true ], 'completed' => [ false, false ], 'cancelled' => [ false, false ] ] as $st => $want ) {
+	$o = (object) [ 'id' => 0, 'status' => $st ];
+	hodima_pt( "قانون وضعیت {$st}: ویرایش/فیش", [ \Hodima\Panel\Orders::can_edit( $o ), \Hodima\Panel\Orders::can_upload_receipt( $o ) ], $want );
+}
+$path = (string) $path;
 
 echo "== مالکیت گفتگو (مشتری دیگر نمی‌تواند در گفتگوی سفارش من بنویسد)\n";
 add_filter( 'wp_doing_ajax', '__return_true' );
@@ -244,9 +328,17 @@ foreach ( $sections as $section => $needle ) {
 	[ $html, $err ] = hodima_pt_render( '/user-panel/?section=' . $section . ( 'support' === $section ? '&thread_id=' . $ticket->id : '' ), $user_a );
 	hodima_pt( "مشتری: بخش {$section} کامل و بدون خطا", [ str_contains( $html, $needle ), str_contains( $html, '</html>' ), $err ], [ true, true, '' ] );
 }
+[ $html, $err ] = hodima_pt_render( '/user-panel/?section=prebuy&edit_order=' . $order_a, $user_a );
+hodima_pt( 'فرم ویرایش سفارش در حال بررسی: پیام قفل، بی فرم', [ str_contains( $html, 'قابل ویرایش نیست' ), str_contains( $html, 'name="products[]"' ), $err ], [ true, false, '' ] );
+[ $html ] = hodima_pt_render( '/?hodima_panel_file=' . $fid, $user_a );
+hodima_pt( 'نشانی امن: صاحب سفارش خود فایل را می‌گیرد', str_starts_with( $html, "\x89PNG" ), true );
+[ $html ] = hodima_pt_render( '/?hodima_panel_file=' . $fid, $user_b );
+hodima_pt( 'نشانی امن: مشتری دیگر فایل را نمی‌گیرد', [ str_starts_with( $html, "\x89PNG" ), str_contains( $html, 'اجازه دیدنش را ندارید' ) ], [ false, true ] );
+[ $html, $err ] = hodima_pt_render( '/?hodima_panel_file=' . $fid );
+hodima_pt( 'نشانی امن: مهمان ← ریدایرکت به پنل', [ str_starts_with( $html, "\x89PNG" ), str_contains( $err, 'REDIRECT -> ' . Page::url() ) ], [ false, true ] );
 hodima_pt( 'باز کردن تیکت پیش از منو خوانده شد', (int) $wpdb->get_var( $wpdb->prepare( 'SELECT user_unread FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) ), 0 );
 [ $html ] = hodima_pt_render( '/user-panel/?section=orders', $user_a );
-hodima_pt( 'سفارش‌ها: فیش و اسکریپت گفتگو', str_contains( $html, 'hp-test-receipt.png' ) === false && str_contains( $html, 'js/chat.js' ), true );
+hodima_pt( 'سفارش‌ها: فیش با نشانی امن و اسکریپت گفتگو', [ str_contains( $html, 'hodima_panel_file=' . $fid ), str_contains( $html, 'hodima-panel-private' ), str_contains( $html, 'js/chat.js' ) ], [ true, false, true ] );
 
 echo "== پیشخوان\n";
 require_once ABSPATH . 'wp-admin/includes/admin.php';
@@ -264,7 +356,7 @@ $_GET = [ 'page' => 'hodima-panel-orders', 'action' => 'view', 'order_id' => (st
 $wpdb->update( table( 'chats' ), [ 'admin_unread' => 3 ], [ 'order_id' => $order_a ] );
 $stop = hodima_pt_run( '\Hodima\Panel\Legacy\Admin\render_orders_page' );
 $out  = $GLOBALS['hodima_pt_last_output'];
-hodima_pt( 'جزئیات سفارش: جمع اقلام همان مبلغ مشتری', [ $stop, str_contains( $out, number_format_i18n( 37500 ) . ' تومان' ), str_contains( $out, 'hp-test-receipt.png' ) ], [ '', true, true ] );
+hodima_pt( 'جزئیات سفارش: جمع اقلام همان مبلغ مشتری', [ $stop, str_contains( $out, number_format_i18n( 37500 ) . ' تومان' ), str_contains( $out, 'hodima_panel_file=' . $fid ) ], [ '', true, true ] );
 hodima_pt( 'باز کردن سفارش فقط همان گفتگو را خوانده می‌کند', (int) $wpdb->get_var( $wpdb->prepare( 'SELECT admin_unread FROM %i WHERE order_id = %d', table( 'chats' ), $order_a ) ), 0 );
 $_GET = [ 'page' => 'hodima-panel-support' ];
 $stop = hodima_pt_run( '\Hodima\Panel\Legacy\Admin\render_support_page' );
@@ -301,7 +393,12 @@ require_once ABSPATH . 'wp-admin/includes/user.php';
 foreach ( $hp_users as $id ) {
 	wp_delete_user( $id );
 }
-wp_delete_post( $product, true );
+foreach ( [ $product, $carton, $draft ] as $pid ) {
+	wp_delete_post( $pid, true );
+}
+foreach ( [ $png, $pdf, $fake, $big ] as $tmpfile ) {
+	wp_delete_file( $tmpfile );
+}
 $wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE user_id IN (%d, %d)', table( 'tickets' ), $user_a, $user_b ) );
 
 echo "\n" . ( $failed ? "✘ {$failed} آزمون رد شد ({$passed} قبول)" : "✔ همه {$passed} آزمون قبول" ) . "\n";

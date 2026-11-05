@@ -23,7 +23,7 @@ $user_id  = get_current_user_id();
 $paged    = max( 1, absint( $_GET['paged'] ?? 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $per_page = 15;
 
-$all_orders   = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT id, type, status, total_price, created_at FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT %d OFFSET %d', table( 'orders' ), $user_id, $per_page, ( $paged - 1 ) * $per_page ) );
+$all_orders   = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT id, user_id, type, status, total_price, created_at FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT %d OFFSET %d', table( 'orders' ), $user_id, $per_page, ( $paged - 1 ) * $per_page ) );
 $total_orders = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(id) FROM %i WHERE user_id = %d', table( 'orders' ), $user_id ) );
 $total_pages  = (int) ceil( $total_orders / $per_page );
 
@@ -123,24 +123,24 @@ if ( $order_ids ) {
 											</div>
 										<?php endif; ?>
 
-										<?php if ( 'awaiting_payment' === $status || ( 'receipt_uploaded' === $status && count( $receipts ) < Files::MAX_PER_KIND ) ) : ?>
+										<?php if ( \Hodima\Panel\Orders::can_upload_receipt( $order ) ) : ?>
 											<form method="post" enctype="multipart/form-data" class="upload-form-box" action="<?php echo esc_url( Page::url( [ 'section' => 'orders' ] ) ); ?>">
 												<input type="hidden" name="order_id" value="<?php echo esc_attr( (string) $oid ); ?>">
 												<?php wp_nonce_field( 'upload_receipt_' . $oid, '_wpnonce_receipt' ); ?>
-												<label for="receipt-<?php echo esc_attr( (string) $oid ); ?>"><?php echo 'awaiting_payment' === $status ? 'آپلود فیش واریزی:' : 'آپلود فیش جدید:'; ?></label>
-												<input type="file" id="receipt-<?php echo esc_attr( (string) $oid ); ?>" name="receipt_file" accept=".png,.jpg,.jpeg,.pdf" required>
+												<label for="receipt-<?php echo esc_attr( (string) $oid ); ?>"><?php echo 'awaiting_payment' === $status ? 'آپلود فیش واریزی:' : 'آپلود فیش جدید:'; ?> <small>(JPG، PNG، WEBP یا PDF تا ۵ مگابایت)</small></label>
+												<input type="file" id="receipt-<?php echo esc_attr( (string) $oid ); ?>" name="receipt_file" accept=".png,.jpg,.jpeg,.webp,.pdf" required>
 												<button type="submit" name="upload_receipt" value="1" class="btn-submit-upload">ارسال فیش</button>
 											</form>
 										<?php endif; ?>
 
 										<div class="action-row">
-											<?php if ( 'pending' === $status ) : ?>
+											<?php if ( \Hodima\Panel\Orders::can_edit( $order ) ) : ?>
 												<a href="<?php echo esc_url( Page::url( [ 'section' => (string) $order->type, 'edit_order' => $oid ] ) ); ?>" class="btn-action btn-edit">ویرایش</a>
 											<?php endif; ?>
 
 											<button type="button" class="btn-action btn-chat open-chat-modal" data-order-id="<?php echo esc_attr( (string) $oid ); ?>">پشتیبانی سفارش</button>
 
-											<?php if ( 'pending' === $status ) : ?>
+											<?php if ( \Hodima\Panel\Orders::can_edit( $order ) ) : ?>
 												<a href="<?php echo esc_url( wp_nonce_url( Page::url( [ 'section' => 'orders', 'action' => 'delete_order', 'order_id' => $oid ] ), 'delete_order_' . $oid ) ); ?>" onclick="return confirm('آیا از حذف این سفارش مطمئن هستید؟');" class="btn-action btn-delete">حذف</a>
 											<?php endif; ?>
 										</div>

@@ -27,9 +27,15 @@ $cls = 'preinvoice' === $form_type
 $label = 'preinvoice' === $form_type ? 'پیش‌فاکتور' : 'پیش‌خرید';
 
 $item_quantities = [];
+$locked          = false;
 if ( $order_id > 0 ) {
-	$owned = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM %i WHERE id = %d AND user_id = %d', table( 'orders' ), $order_id, $user_id ) );
-	if ( $owned ) {
+	$owned = \Hodima\Panel\Orders::owned( $order_id, $user_id );
+	if ( $owned && ! \Hodima\Panel\Orders::can_edit( $owned ) ) {
+		$locked = true;
+	} elseif ( $owned && $owned->type !== $form_type ) {
+		// ویرایش فقط در فرم همان نوع سفارش
+		$order_id = 0;
+	} elseif ( $owned ) {
 		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT product_id, quantity FROM %i WHERE order_id = %d', table( 'order_items' ), $order_id ) ) as $item ) {
 			$item_quantities[ (int) $item->product_id ] = (float) $item->quantity;
 		}
@@ -38,7 +44,11 @@ if ( $order_id > 0 ) {
 	}
 }
 
-$products = \Hodima\Panel\wc_active() ? new WP_Query(
+// خطاهای سرور از آخرین ارسال (Orders::handle_form)
+$errors = (array) get_transient( 'hodima_panel_errors_' . $user_id );
+delete_transient( 'hodima_panel_errors_' . $user_id );
+
+$products = ! $locked && \Hodima\Panel\wc_active() ? new WP_Query(
 	[
 		'post_type'      => 'product',
 		'post_status'    => 'publish',
@@ -57,7 +67,19 @@ $products = \Hodima\Panel\wc_active() ? new WP_Query(
 		<a href="<?php echo esc_url( Page::url() ); ?>" class="btn-back">بازگشت ←</a>
 	</div>
 
-	<?php if ( $products && $products->have_posts() ) : ?>
+	<?php if ( $errors ) : ?>
+		<div class="up-form-errors" role="alert">
+			<ul>
+				<?php foreach ( $errors as $error ) : ?>
+					<li><?php echo esc_html( (string) $error ); ?></li>
+				<?php endforeach; ?>
+			</ul>
+		</div>
+	<?php endif; ?>
+
+	<?php if ( $locked ) : ?>
+		<p class="no-data">این سفارش در حال بررسی است و دیگر قابل ویرایش نیست. برای تغییر، در «سفارش‌ها» از دکمه «پشتیبانی سفارش» پیام بدهید.</p>
+	<?php elseif ( $products && $products->have_posts() ) : ?>
 		<form method="POST" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="<?php echo esc_attr( $cls['form'] ); ?>" novalidate>
 			<?php wp_nonce_field( 'user_panel_action' ); ?>
 			<input type="hidden" name="action" value="<?php echo esc_attr( 'save_' . $form_type ); ?>">
@@ -74,11 +96,13 @@ $products = \Hodima\Panel\wc_active() ? new WP_Query(
 					}
 					$is_checked      = isset( $item_quantities[ $p_id ] );
 					$base_price      = (float) $product->get_price();
-					$unit_capacity   = max( 1, (int) get_post_meta( $p_id, '_up_unit_capacity', true ) );
-					$min_qty         = (float) get_post_meta( $p_id, '_up_min_qty', true ) ?: 1;
-					$sale_unit       = (string) get_post_meta( $p_id, '_up_sale_unit', true ) ?: 'بسته';
+					// همان قانونی که سرور می‌سنجد (Orders::validate_items)
+					$rules           = \Hodima\Panel\Orders::product_rules( $p_id );
+					$unit_capacity   = $rules['capacity'];
+					$min_qty         = $rules['min'];
+					$sale_unit       = $rules['unit'];
 					$current_qty     = $item_quantities[ $p_id ] ?? $min_qty;
-					$validation_type = in_array( $sale_unit, [ 'کارتن', 'جین', 'بسته' ], true ) ? 'minimum' : 'multiple';
+					$validation_type = $rules['multiple'] ? 'multiple' : 'minimum';
 					$step_val        = 'minimum' === $validation_type ? 1 : $min_qty;
 					?>
 					<div class="<?php echo esc_attr( $cls['card'] . ( $is_checked ? ' is-selected' : '' ) ); ?>">
@@ -99,7 +123,7 @@ $products = \Hodima\Panel\wc_active() ? new WP_Query(
 								<?php else : ?>
 									<div>هر کیسه شامل وزن درج شده</div>
 								<?php endif; ?>
-								<div class="p-min">حداقل سفارش: <?php echo esc_html( $min_qty . ' ' . $sale_unit ); ?></div>
+								<div class="p-min">حداقل سفارش: <?php echo esc_html( \Hodima\Panel\Orders::format_qty( $min_qty ) . ' ' . $sale_unit ); ?></div>
 							</div>
 
 							<div class="qty-field-wrapper">

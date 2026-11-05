@@ -1320,3 +1320,5 @@
 .hodima-panel .profile-hint { font-size: 13px; color: #666; margin-bottom: 15px; }
 .hodima-panel .submit-btn { width: 100%; }
 .hodima-panel .no-data { padding: 20px; background: #fff; border-radius: 10px; text-align: center; }
+.hodima-panel .up-form-errors { margin-bottom: 15px; padding: 12px 16px; border-inline-start: 4px solid #d63638; border-radius: 8px; background: #fdecec; color: #8a1f1f; }
+.hodima-panel .up-form-errors ul { margin: 0; padding-inline-start: 18px; }

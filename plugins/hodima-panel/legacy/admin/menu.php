@@ -135,7 +135,7 @@ function handle_order_forms(): void {
 		check_admin_referer( 'send_chat_action', 'chat_nonce' );
 		$text = sanitize_textarea_field( wp_unslash( $_POST['chat_message_text'] ?? '' ) );
 		if ( '' !== trim( $text ) ) {
-			\Hodima\Panel\Legacy\add_chat_message( $order_id, $owner, 'admin', $text . "\n\nپاسخگو: " . agent_name() );
+			\Hodima\Panel\Orders::add_chat_message( $order_id, $owner, 'admin', $text . "\n\nپاسخگو: " . agent_name() );
 		}
 		back( $view + [ 'hp_msg' => 'chat' ] );
 	}
@@ -143,21 +143,13 @@ function handle_order_forms(): void {
 	// آپلود پیش‌فاکتور
 	if ( isset( $_POST['upload_admin_invoice'] ) ) {
 		check_admin_referer( 'upload_admin_invoice_nonce', 'invoice_nonce' );
-		if ( Files::count( $order_id, Files::INVOICE ) >= Files::MAX_PER_KIND ) {
-			back( $view + [ 'hp_msg' => 'max_invoices' ] );
-		}
-		if ( empty( $_FILES['admin_invoice_file']['name'] ) ) {
-			back( $view + [ 'hp_msg' => 'no_file' ] );
-		}
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		$mimes  = [ 'jpg|jpeg|jpe' => 'image/jpeg', 'png' => 'image/png', 'pdf' => 'application/pdf' ];
-		$name   = sanitize_file_name( wp_unslash( (string) $_FILES['admin_invoice_file']['name'] ) );
-		$upload = wp_handle_upload( $_FILES['admin_invoice_file'], [ 'test_form' => false, 'mimes' => $mimes ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_handle_upload خودش بررسی می‌کند.
-		if ( isset( $upload['error'] ) || ! Files::add( $order_id, Files::INVOICE, $upload, $name ) ) {
-			back( $view + [ 'hp_msg' => 'upload_error' ] );
+		$file   = isset( $_FILES['admin_invoice_file'] ) && is_array( $_FILES['admin_invoice_file'] ) ? $_FILES['admin_invoice_file'] : []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Files::upload نوع و اندازه و محتوا را می‌سنجد.
+		$result = Files::upload( $order_id, Files::INVOICE, $file );
+		if ( is_string( $result ) ) {
+			back( $view + [ 'hp_msg' => $result ] );
 		}
 		$wpdb->update( $orders, [ 'status' => 'awaiting_payment', 'updated_at' => now() ], [ 'id' => $order_id ], [ '%s', '%s' ], [ '%d' ] );
-		\Hodima\Panel\Legacy\add_chat_message(
+		\Hodima\Panel\Orders::add_chat_message(
 			$order_id,
 			$owner,
 			'system',
@@ -174,13 +166,13 @@ function notice(): void {
 		'status'       => [ 'وضعیت سفارش به‌روزرسانی شد.', 'success' ],
 		'chat'         => [ 'پیام شما با موفقیت ارسال شد.', 'success' ],
 		'invoice'      => [ 'پیش‌فاکتور با موفقیت آپلود شد و پیام خودکار ارسال گردید.', 'success' ],
-		'max_invoices' => [ 'شما حداکثر می‌توانید ۹ پیش‌فاکتور آپلود کنید.', 'warning' ],
-		'no_file'      => [ 'لطفاً یک فایل انتخاب کنید.', 'warning' ],
-		'upload_error' => [ 'خطا در آپلود فایل (فقط PDF، JPG و PNG).', 'error' ],
 		'deleted'      => [ 'سفارش‌های انتخاب‌شده حذف شدند.', 'success' ],
 		'reply'        => [ 'پاسخ ارسال شد.', 'success' ],
 		'closed'       => [ 'تیکت بسته شد.', 'success' ],
 	];
+	foreach ( Files::errors() as $code => $text ) {
+		$messages[ $code ] = [ $text, 'error' ];
+	}
 	$key = sanitize_key( wp_unslash( $_GET['hp_msg'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	if ( isset( $messages[ $key ] ) ) {
 		printf( '<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>', esc_attr( $messages[ $key ][1] ), esc_html( $messages[ $key ][0] ) );
@@ -336,8 +328,8 @@ function render_order_details( int $order_id ): void {
 	if ( count( $invoices ) < Files::MAX_PER_KIND ) {
 		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( $self_url ) . '">';
 		wp_nonce_field( 'upload_admin_invoice_nonce', 'invoice_nonce' );
-		echo '<p><label for="admin_invoice_file" class="screen-reader-text">فایل پیش‌فاکتور</label><input type="file" id="admin_invoice_file" name="admin_invoice_file" accept=".pdf,.jpg,.jpeg,.png" required></p>';
-		echo '<p><button type="submit" name="upload_admin_invoice" value="1" class="button button-primary hp-wide">آپلود پیش‌فاکتور جدید</button></p><p class="description">فرمت‌های مجاز: PDF, JPG, PNG (حداکثر ۹ فایل)</p></form>';
+		echo '<p><label for="admin_invoice_file" class="screen-reader-text">فایل پیش‌فاکتور</label><input type="file" id="admin_invoice_file" name="admin_invoice_file" accept=".pdf,.jpg,.jpeg,.png,.webp" required></p>';
+		echo '<p><button type="submit" name="upload_admin_invoice" value="1" class="button button-primary hp-wide">آپلود پیش‌فاکتور جدید</button></p><p class="description">فرمت‌های مجاز: PDF، JPG، PNG، WEBP تا ۵ مگابایت (حداکثر ۹ فایل)</p></form>';
 	} else {
 		echo '<p class="hp-warn">شما به سقف مجاز (۹ پیش‌فاکتور) رسیده‌اید.</p>';
 	}

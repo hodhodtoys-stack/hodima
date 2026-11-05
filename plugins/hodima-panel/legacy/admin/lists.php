@@ -152,7 +152,7 @@ final class Orders_List extends \WP_List_Table {
 		check_admin_referer( 'bulk-' . $this->_args['plural'] );
 		foreach ( array_map( 'absint', (array) wp_unslash( $_REQUEST['order_ids'] ) ) as $order_id ) {
 			if ( $order_id ) {
-				\Hodima\Panel\Legacy\delete_order( $order_id );
+				\Hodima\Panel\Orders::delete( $order_id );
 			}
 		}
 		echo '<div class="notice notice-success is-dismissible"><p>سفارش‌های انتخاب‌شده و اطلاعات مرتبط با آن‌ها حذف شدند.</p></div>';

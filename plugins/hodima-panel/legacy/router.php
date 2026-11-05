@@ -61,12 +61,18 @@ function render_messages(): void {
 		'order_updated'    => [ 'سفارش با موفقیت ویرایش شد.', 'up-alert-success' ],
 		'ticket_sent'      => [ 'پیام شما با موفقیت ارسال شد.', 'up-alert-success' ],
 		'receipt_uploaded' => [ 'فیش با موفقیت آپلود شد.', 'up-alert-success' ],
-		'max_receipts'     => [ 'خطا: شما حداکثر تعداد مجاز فیش (۹ عدد) را آپلود کرده‌اید.', 'up-alert-error' ],
 		'deleted'          => [ 'مورد با موفقیت حذف شد.', 'up-alert-success' ],
-		'upload_error'     => [ 'خطا در آپلود فایل رخ داده است.', 'up-alert-error' ],
 		'empty'            => [ 'خطا: شما هیچ محصولی را برای ثبت انتخاب نکرده‌اید.', 'up-alert-error' ],
 		'ticket_error'     => [ 'خطایی در ثبت پیام رخ داد. لطفا دوباره تلاش کنید.', 'up-alert-error' ],
+		'locked'           => [ 'این سفارش در حال بررسی است و دیگر قابل ویرایش یا حذف نیست؛ برای تغییر در گفتگوی همان سفارش پیام بدهید.', 'up-alert-error' ],
+		'invalid_items'    => [ 'بعضی اقلام با حداقل سفارش یا تعداد مجاز نمی‌خواند؛ موارد مشخص‌شده را درست کنید.', 'up-alert-error' ],
+		'receipt_not_allowed' => [ 'برای این سفارش در وضعیت فعلی نمی‌توان فیش فرستاد.', 'up-alert-error' ],
+		'error_owner'      => [ 'سفارش پیدا نشد.', 'up-alert-error' ],
+		'db_error'         => [ 'خطا در ذخیره سفارش؛ لطفا دوباره تلاش کنید.', 'up-alert-error' ],
 	];
+	foreach ( \Hodima\Panel\Files::errors() as $code => $message ) {
+		$messages[ $code ] = [ $message, 'up-alert-error' ];
+	}
 	$key = isset( $_GET['msg'] ) ? sanitize_key( wp_unslash( $_GET['msg'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	[ $text, $class ] = $messages[ $key ] ?? [ '', '' ];
 	?>

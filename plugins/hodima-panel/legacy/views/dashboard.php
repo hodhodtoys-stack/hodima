@@ -97,7 +97,7 @@ $display_name = '' !== $current_user->display_name ? $current_user->display_name
 					<p>تاریخ ثبت: <span><?php echo esc_html( show_date( (string) $last_order->created_at, 'Y/m/d' ) ); ?></span></p>
 				</div>
 
-				<?php if ( 'pending' === $last_order->status ) : ?>
+				<?php if ( \Hodima\Panel\Orders::can_edit( $last_order ) ) : ?>
 					<div class="order-actions">
 						<a href="<?php echo esc_url( Page::url( [ 'section' => (string) $last_order->type, 'edit_order' => (int) $last_order->id ] ) ); ?>" class="btn-edit">ویرایش</a>
 						<a href="<?php echo esc_url( wp_nonce_url( Page::url( [ 'section' => 'orders', 'action' => 'delete_order', 'order_id' => (int) $last_order->id ] ), 'delete_order_' . (int) $last_order->id ) ); ?>" onclick="return confirm('آیا از حذف این سفارش مطمئن هستید؟');" class="btn-delete">حذف سفارش</a>
