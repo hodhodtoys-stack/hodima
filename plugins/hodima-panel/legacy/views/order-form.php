@@ -45,7 +45,9 @@ if ( $order_id > 0 ) {
 }
 
 // خطاهای سرور از آخرین ارسال (Orders::handle_form)
-$errors = (array) get_transient( 'hodima_panel_errors_' . $user_id );
+// (array) false = [false] بود و کادر خطای خالی همیشه دیده می‌شد (Panel 0.1.1 تا 0.1.4)
+$errors = get_transient( 'hodima_panel_errors_' . $user_id );
+$errors = is_array( $errors ) ? array_filter( $errors, 'is_string' ) : [];
 delete_transient( 'hodima_panel_errors_' . $user_id );
 
 $products = ! $locked && \Hodima\Panel\wc_active() ? new WP_Query(

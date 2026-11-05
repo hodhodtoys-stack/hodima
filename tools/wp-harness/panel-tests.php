@@ -617,6 +617,9 @@ $sections = [
 foreach ( $sections as $section => $needle ) {
 	[ $html, $err ] = hodima_pt_render( '/user-panel/?section=' . $section . ( 'support' === $section ? '&thread_id=' . $ticket->id : '' ), $user_a );
 	hodima_pt( "مشتری: بخش {$section} کامل و بدون خطا", [ str_contains( $html, $needle ), str_contains( $html, '</html>' ), $err ], [ true, true, '' ] );
+	if ( 'prebuy' === $section ) {
+		hodima_pt( 'فرم سفارش بی خطای ذخیره‌شده: کادر خطای خالی نیست', str_contains( $html, 'up-form-errors' ), false );
+	}
 }
 [ $html, $err ] = hodima_pt_render( '/user-panel/?section=prebuy&edit_order=' . $order_a, $user_a );
 hodima_pt( 'فرم ویرایش سفارش در حال بررسی: پیام قفل، بی فرم', [ str_contains( $html, 'قابل ویرایش نیست' ), str_contains( $html, 'name="products[]"' ), $err ], [ true, false, '' ] );
