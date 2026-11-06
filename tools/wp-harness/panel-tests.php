@@ -687,6 +687,44 @@ hodima_pt( 'پیام‌های گفتگو هم حذف شد', (int) $wpdb->get_var
 hodima_pt( 'خود فایل فیش حذف شد', file_exists( $path ), false );
 $_GET = $_POST = $_REQUEST = [];
 
+echo "== حریم خصوصی و به‌روزرسانی خودکار\n";
+use Hodima\Panel\Privacy;
+hodima_pt( 'به‌روزرسانی خودکار Core پنل را می‌شناسد', function_exists( '\Hodima\Core\Updates\packages' ) ? ( \Hodima\Core\Updates\packages()['hodima-panel'] ?? '' ) : 'no-core', HODIMA_PANEL_FILE );
+hodima_pt( 'خروجی و حذف داده در ابزار وردپرس ثبت شد', [ isset( apply_filters( 'wp_privacy_personal_data_exporters', [] )['hodima-panel'] ), isset( apply_filters( 'wp_privacy_personal_data_erasers', [] )['hodima-panel'] ) ], [ true, true ] );
+$hp_priv = static function ( int $uid ) use ( $wpdb, $png ): array {
+	$t = \Hodima\Panel\now();
+	$wpdb->insert( table( 'orders' ), [ 'user_id' => $uid, 'type' => 'prebuy', 'status' => 'completed', 'total_price' => 5000, 'created_at' => $t, 'updated_at' => $t ] );
+	$oid = (int) $wpdb->insert_id;
+	\Hodima\Panel\Orders::add_chat_message( $oid, $uid, 'user', 'پیام خصوصی آزمون' );
+	$path = (string) Files::path( (string) $wpdb->get_var( $wpdb->prepare( 'SELECT file FROM %i WHERE id = %d', table( 'order_files' ), (int) Files::store( $oid, Files::RECEIPT, $png, 'r.png', false ) ) ) );
+	$wpdb->insert( table( 'tickets' ), [ 'user_id' => $uid, 'reference_code' => 'TK-P', 'department' => 'sales', 'subject' => 'تیکت خصوصی', 'status' => 'open', 'created_at' => $t, 'updated_at' => $t ] );
+	$tid = (int) $wpdb->insert_id;
+	$wpdb->insert( table( 'ticket_messages' ), [ 'ticket_id' => $tid, 'sender_id' => $uid, 'sender_type' => 'user', 'message' => 'متن تیکت خصوصی', 'created_at' => $t ] );
+	return [ $oid, $tid, $path ];
+};
+$hp_count = static fn( string $t, int $uid ): int => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE user_id = %d', table( $t ), $uid ) );
+$priv_user = (int) wp_create_user( 'hp_priv', wp_generate_password(), 'hp_priv@hodima.test' );
+[ $p_order, $p_ticket, $p_path ] = $hp_priv( $priv_user );
+$export = Privacy::export( 'hp_priv@hodima.test', 1 );
+$flat   = wp_json_encode( $export['data'], JSON_UNESCAPED_UNICODE );
+hodima_pt( 'خروجی: سفارش، گفتگو، فیش و تیکت', [ str_contains( $flat, 'hodima-panel-order-' . $p_order ), str_contains( $flat, 'پیام خصوصی آزمون' ), str_contains( $flat, 'hodima_panel_file=' ), str_contains( $flat, 'متن تیکت خصوصی' ), $export['done'] ], [ true, true, true, true, true ] );
+hodima_pt( 'خروجی ایمیل ناشناس خالی', Privacy::export( 'nobody@hodima.test', 1 ), [ 'data' => [], 'done' => true ] );
+update_option( 'woocommerce_erasure_request_removes_order_data', 'no' );
+$erase = Privacy::erase( 'hp_priv@hodima.test', 1 );
+hodima_pt( 'حذف (تنظیم ووکامرس خاموش): تیکت حذف، سفارش مدرک مالی ماند', [ $hp_count( 'tickets', $priv_user ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE ticket_id = %d', table( 'ticket_messages' ), $p_ticket ) ), $hp_count( 'orders', $priv_user ), $erase['items_removed'], $erase['items_retained'] ], [ 0, 0, 1, true, true ] );
+update_option( 'woocommerce_erasure_request_removes_order_data', 'yes' );
+$erase = Privacy::erase( 'hp_priv@hodima.test', 1 );
+hodima_pt( 'حذف (تنظیم روشن): سفارش، گفتگو و فایل فیش هم حذف', [ $hp_count( 'orders', $priv_user ), $hp_count( 'chats', $priv_user ), file_exists( $p_path ), $erase['items_removed'] ], [ 0, 0, false, true ] );
+delete_option( 'woocommerce_erasure_request_removes_order_data' );
+require_once ABSPATH . 'wp-admin/includes/user.php';
+[ , , $p_path ] = $hp_priv( $priv_user );
+wp_delete_user( $priv_user, $user_b );
+hodima_pt( 'حذف حساب با سپردن محتوا: سفارش و تیکت به کاربر دیگر رسید', [ $hp_count( 'orders', $priv_user ), $hp_count( 'orders', $user_b ) > 0, $hp_count( 'tickets', $user_b ) > 0, file_exists( $p_path ) ], [ 0, true, true, true ] );
+$priv_user = (int) wp_create_user( 'hp_priv2', wp_generate_password(), 'hp_priv2@hodima.test' );
+[ , , $p_path ] = $hp_priv( $priv_user );
+wp_delete_user( $priv_user );
+hodima_pt( 'حذف حساب: سفارش، گفتگو، تیکت و فایل فیش بی‌صاحب نماند', [ $hp_count( 'orders', $priv_user ), $hp_count( 'chats', $priv_user ), $hp_count( 'tickets', $priv_user ), file_exists( $p_path ) ], [ 0, 0, 0, false ] );
+
 // پاک‌سازی
 require_once ABSPATH . 'wp-admin/includes/user.php';
 foreach ( $hp_users as $id ) {

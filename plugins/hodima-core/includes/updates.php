@@ -50,6 +50,7 @@ function packages(): array {
 		'hodima-seo'      => 'HODIMA_SEO_FILE',
 		'hodima-commerce' => 'HODIMA_COMMERCE_FILE',
 		'hodima-media'    => 'HODIMA_MEDIA_FILE',
+		'hodima-panel'    => 'HODIMA_PANEL_FILE',
 	] as $slug => $constant ) {
 		if ( defined( $constant ) ) {
 			$packages[ $slug ] = (string) constant( $constant );
