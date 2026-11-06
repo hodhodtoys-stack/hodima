@@ -1,0 +1,214 @@
+/*
+ * کادر «پیش‌خرید و پیش‌فاکتور» در ویرایش محصول (طرح تأییدشده کاربر، مرحله ۶).
+ * اجزا و توکن‌ها از کیت ui/ui-kit.css؛ اندازه‌ها با عرض خود کادر (container)، نه صفحه.
+ */
+.hpp {
+	container-type: inline-size;
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+}
+
+.hpp .hpp__status {
+	margin: 0 0 0.75rem;
+}
+
+.hpp .hpp__off {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.hpp .hpp__grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 1rem;
+}
+
+.hpp .hpp__main {
+	display: grid;
+	gap: 0.75rem;
+	min-inline-size: 0;
+}
+
+.hpp .hpp__opt {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	min-block-size: 3rem;
+	padding: 0.75rem 0.875rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+	cursor: pointer;
+}
+
+.hpp .hdp-switch::before,
+.hpp .hdp-switch:checked::before {
+	content: none; /* تیک چک‌باکس خود وردپرس روی کلید نیفتد */
+}
+
+.hpp .hpp__opt-text {
+	display: grid;
+	flex: 1;
+	gap: 0.125rem;
+}
+
+.hpp .hpp__opt-text strong {
+	font-size: 0.875rem;
+}
+
+.hpp .hpp__opt-text span {
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hpp .hpp__fields {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 0.75rem;
+}
+
+.hpp .hdp-field {
+	display: grid;
+	gap: 0.375rem;
+	margin: 0;
+}
+
+.hpp .hdp-field__label {
+	font-weight: 700;
+}
+
+.hpp .hdp-input {
+	box-sizing: border-box;
+	inline-size: 100%;
+	min-block-size: 2.5rem;
+}
+
+.hpp select.hdp-input {
+	padding-inline-end: 2.25rem;
+	background: var(--hd-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%235d6785' stroke-width='2'/%3E%3C/svg%3E") no-repeat left 0.75rem center / 1rem;
+	appearance: none;
+}
+
+.hpp .hpp__unit {
+	display: flex;
+	align-items: stretch;
+}
+
+.hpp .hpp__unit .hdp-input {
+	flex: 1;
+	border-start-end-radius: 0;
+	border-end-end-radius: 0;
+}
+
+.hpp .hpp__unit > span {
+	display: flex;
+	align-items: center;
+	padding-inline: 0.75rem;
+	border: 1px solid var(--hd-border-strong);
+	border-inline-start: 0;
+	border-start-end-radius: 0.625rem;
+	border-end-end-radius: 0.625rem;
+	background: var(--hd-soft);
+	color: var(--hd-muted);
+	white-space: nowrap;
+}
+
+.hpp .hdp-field__help {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hpp .hpp__preview {
+	display: grid;
+	gap: 0.625rem;
+	align-content: start;
+	padding: 0.875rem;
+	border: 1px dashed var(--hd-third);
+	border-radius: 0.75rem;
+	background: var(--hd-soft);
+}
+
+.hpp .hpp__preview-title {
+	font-size: 0.75rem;
+}
+
+.hpp .hpp__card {
+	display: flex;
+	gap: 0.625rem;
+	padding: 0.625rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+	background: var(--hd-surface);
+}
+
+.hpp .hpp__img {
+	flex: none;
+	inline-size: 3.5rem;
+	block-size: 3.5rem;
+	overflow: hidden;
+	border-radius: 0.625rem;
+	background: color-mix(in srgb, var(--hd-third) 30%, #fff);
+}
+
+.hpp .hpp__img img {
+	inline-size: 100%;
+	block-size: 100%;
+	object-fit: cover;
+}
+
+.hpp .hpp__card-text {
+	display: grid;
+	gap: 0.125rem;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hpp .hpp__card-text strong {
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+}
+
+.hpp .hpp__check {
+	display: grid;
+	gap: 0.25rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hpp .hpp__check li {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.hpp .hpp__check li::before {
+	content: "✓";
+	color: var(--hd-ok);
+	font-weight: 800;
+}
+
+.hpp .hpp__check li[data-state="warn"]::before {
+	content: "!";
+	color: var(--hd-warn);
+}
+
+/* کادر پهن (دسکتاپ): سه فیلد کنار هم و پیش‌نمایش در ستون کناری */
+@container (min-width: 36rem) {
+	.hpp .hpp__fields {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@container (min-width: 46rem) {
+	.hpp .hpp__grid {
+		grid-template-columns: minmax(0, 1fr) 15rem;
+	}
+}
+
+/* باریک: پیش‌نمایش اول (اسکیل hodima-admin-ui، نوع «ورود محتوا») */
+@container (max-width: 45.99rem) {
+	.hpp .hpp__preview {
+		order: -1;
+	}
+}

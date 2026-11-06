@@ -1,150 +1,813 @@
-/* =========================================================================
- * صفحه‌های پیشخوان Hodima Panel (سفارش‌ها و تیکت‌ها)
- * -------------------------------------------------------------------------
- * فقط روی همان دو صفحه لود می‌شود و همه قانون‌ها زیر .hodima-panel-admin‌اند.
- * استایل‌های داخل HTML پنل قدیمی به اینجا آمدند؛ ظاهر تقریبا همان قبلی است.
- * بازطراحی کامل با کیت پیشخوان (قانون ۸ پروژه): مرحله ۶.
- * ========================================================================= */
+/*
+ * پنل مشتریان ← سفارش‌ها و تیکت‌ها (فقط همین صفحه‌ها؛ اجزای عمومی و توکن‌ها از کیت ui/ui-kit.css).
+ * طرح تأییدشده کاربر، مرحله ۶. پیشوند hpa-؛ بی nesting، بی media query بازه‌ای، بی بنفش (سبز --hd-ok).
+ */
 
-.hodima-panel-admin {
-	--hp-ok: #00a32a;
-	--hp-info: #2271b1;
-	--hp-danger: #d63638;
-	--hp-muted: #646970;
-	--hp-line: #c3c4c7;
-	--hp-soft: #f0f6fc;
-	--hp-note: #fffbe5;
-	--hp-note-line: #ffb900;
+/* ستون شبکه بدنه تا عرض صفحه کش بیاید نه تا عرض نوار نماها (وگرنه در ۳۹۰ صفحه افقی اسکرول می‌خورد) */
+.hodima-panel-admin .hdp-page__body {
+	grid-template-columns: minmax(0, 1fr);
 }
 
-.hodima-panel-admin .row-unread { background-color: #f6f7f7; font-weight: 600; }
+/* آمار یک‌ردیفه: برچسب و عدد کنار هم (قاعده ثابت ۲ «چگالی») */
+.hodima-panel-admin .hpa-stats .hdp-stat {
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	min-block-size: 3.5rem;
+	padding-block: 0.5rem;
+}
 
-.hodima-panel-admin .hp-badge {
-	display: inline-block;
-	margin-inline-start: 5px;
-	padding: 2px 6px;
-	border-radius: 10px;
+.hodima-panel-admin .hpa-stats .hdp-stat__value {
+	font-size: 1.375rem;
+}
+
+.hodima-panel-admin .hpa-stats .hdp-stat.is-hot {
+	border-color: var(--hd-ok);
+}
+
+.hodima-panel-admin .hpa-stats .hdp-stat.is-hot .hdp-stat__value {
+	color: var(--hd-ok);
+}
+
+.hodima-panel-admin .hpa-stats--3 {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* نوار ابزار یک‌ردیفه: کار گروهی ← نماها ← جستجو */
+.hodima-panel-admin .hpa-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.hodima-panel-admin .hpa-bulk {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.hodima-panel-admin .hpa-bulk .hdp-input {
+	flex: none;
+	inline-size: 8.5rem;
+	min-block-size: 2.5rem;
+}
+
+.hodima-panel-admin .hpa-bulk .hdp-btn,
+.hodima-panel-admin .hpa-act .hdp-btn,
+.hodima-panel-admin .hpa-compose .hdp-btn {
+	min-block-size: 2.5rem;
+	padding-inline: 1rem;
+	white-space: nowrap;
+}
+
+.hodima-panel-admin .hpa-views {
+	display: flex;
+	gap: 0.5rem;
+	min-inline-size: 0;
+	overflow-x: auto;
+}
+
+.hodima-panel-admin .hpa-view {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	gap: 0.375rem;
+	min-block-size: 2.5rem;
+	padding-inline: 0.875rem;
+	border: 1px solid var(--hd-border-strong);
+	border-radius: 0.625rem;
+	background: var(--hd-surface);
+	color: var(--hd-text);
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.hodima-panel-admin .hpa-view:hover {
+	border-color: var(--hd-primary);
+	color: var(--hd-primary);
+}
+
+.hodima-panel-admin .hpa-view.is-active {
+	border-color: var(--hd-primary);
+	background: var(--hd-primary);
 	color: #fff;
-	font-size: 10px;
+}
+
+.hodima-panel-admin select.hdp-input {
+	padding-inline-end: 2.25rem;
+	background: var(--hd-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%235d6785' stroke-width='2'/%3E%3C/svg%3E") no-repeat left 0.75rem center / 1rem;
+	appearance: none;
+}
+
+.hodima-panel-admin .hpa-search {
+	display: flex;
+	flex: 1 1 14rem;
+	margin: 0;
+}
+
+.hodima-panel-admin .hpa-search .hdp-input {
+	inline-size: 100%;
+	min-block-size: 2.5rem;
+}
+
+.hodima-panel-admin .hpa-filter {
+	margin: 0.75rem 0 0;
+	color: var(--hd-text);
+}
+
+.hodima-panel-admin .hpa-link {
+	color: var(--hd-primary);
+	font-weight: 600;
+}
+
+.hodima-panel-admin .hpa-sub {
+	display: block;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	font-weight: 400;
+}
+
+.hodima-panel-admin .hpa-none {
+	margin: 0.5rem 0 0;
+	color: var(--hd-muted);
+}
+
+/* جدول سفارش‌ها */
+.hodima-panel-admin .hpa-table {
+	inline-size: 100%;
+	border-collapse: collapse;
+	color: var(--hd-text);
+}
+
+.hodima-panel-admin .hpa-table th {
+	padding: 0.625rem;
+	border-block-end: 1px solid var(--hd-border);
+	background: var(--hd-soft);
+	color: var(--hd-muted);
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-align: start;
+}
+
+.hodima-panel-admin .hpa-table td {
+	padding: 0.75rem 0.625rem;
+	border-block-end: 1px solid var(--hd-border);
 	vertical-align: middle;
 }
 
-.hodima-panel-admin .hp-money { color: var(--hp-ok); font-size: 15px; }
-.hodima-panel-admin .hp-muted { color: var(--hp-muted); }
-.hodima-panel-admin .hp-warn { color: var(--hp-danger); text-align: center; }
-.hodima-panel-admin .hp-wide { inline-size: 100%; }
-.hodima-panel-admin .hp-files { display: flex; flex-wrap: wrap; gap: 5px; margin-block-start: 5px; }
-
-.hodima-panel-admin .hp-note {
-	margin-block-start: 8px;
-	padding: 6px 8px;
-	border-inline-start: 3px solid var(--hp-note-line);
-	background: var(--hp-note);
-	font-size: 12px;
+.hodima-panel-admin .hpa-table tr.is-todo td {
+	background: color-mix(in srgb, var(--hd-ok) 5%, #fff);
 }
 
-.hodima-panel-admin .hp-items { margin: 0; padding: 0; list-style: none; font-size: 13px; }
-.hodima-panel-admin .hp-items li { margin-block-end: 4px; }
-.hodima-panel-admin .hp-status { display: flex; gap: 4px; align-items: center; }
-.hodima-panel-admin .hp-status select { min-inline-size: 120px; font-size: 12px; }
+.hodima-panel-admin .hpa-cb {
+	inline-size: 2.25rem;
+}
 
-.hodima-panel-admin .hp-type { padding: 3px 8px; border-radius: 3px; background: var(--hp-soft); font-size: 12px; }
-.hodima-panel-admin .hp-type--prebuy { background: #e6f0ff; color: #0052cc; }
+.hodima-panel-admin .hpa-cb input {
+	inline-size: 1.25rem;
+	block-size: 1.25rem;
+	margin: 0;
+}
 
-/* جزئیات سفارش */
-.hodima-panel-admin .custom-order-grid { display: flex; flex-wrap: wrap; gap: 20px; margin-block-start: 15px; }
-.hodima-panel-admin .order-col-30 { inline-size: 32%; }
-.hodima-panel-admin .order-col-70 { inline-size: calc(68% - 20px); }
-.hodima-panel-admin .h-100 { display: flex; flex-direction: column; block-size: 100%; }
-.hodima-panel-admin .h-100 > .inside { flex-grow: 1; }
+.hodima-panel-admin .hpa-strong {
+	color: var(--hd-text);
+	font-weight: 700;
+	text-decoration: none;
+}
 
-.hodima-panel-admin #chat-admin-metabox { border-block-start: 4px solid var(--hp-info); }
-.hodima-panel-admin .hp-chat { display: flex; flex-direction: column; }
+.hodima-panel-admin .hpa-strong:hover {
+	color: var(--hd-primary);
+	text-decoration: underline;
+}
 
-.hodima-panel-admin .hp-chat-history {
+.hodima-panel-admin .hpa-items {
+	max-inline-size: 18rem;
+}
+
+.hodima-panel-admin .hpa-money {
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.hodima-panel-admin .hpa-dot {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	color: var(--hd-ok);
+	font-size: 0.75rem;
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.hodima-panel-admin .hpa-dot::before {
+	content: "";
+	inline-size: 0.5rem;
+	block-size: 0.5rem;
+	border-radius: 50%;
+	background: var(--hd-ok);
+}
+
+.hodima-panel-admin .hpa-act {
+	text-align: end;
+}
+
+.hodima-panel-admin .hpa-pages {
+	margin-block-start: 0.875rem;
+}
+
+.hodima-panel-admin .hpa-pages .page-numbers {
+	display: inline-grid;
+	place-items: center;
+	min-inline-size: 2.5rem;
+	min-block-size: 2.5rem;
+	margin-inline-end: 0.25rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.5rem;
+	text-decoration: none;
+}
+
+.hodima-panel-admin .hpa-pages .current {
+	border-color: var(--hd-primary);
+	background: var(--hd-primary);
+	color: #fff;
+}
+
+.hodima-panel-admin .hpa-pill--muted {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.hodima-panel-admin .hdp-hero__title .hdp-pill {
+	vertical-align: middle;
+}
+
+/* صفحه یک سفارش */
+.hodima-panel-admin .hpa-back {
+	flex: none;
+	margin-inline-start: auto;
+	padding: 0.5rem 0.875rem;
+	border: 1px solid color-mix(in srgb, #fff 55%, transparent);
+	border-radius: 0.625rem;
+	color: #fff;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.hodima-panel-admin .hpa-back:hover {
+	background: color-mix(in srgb, #fff 14%, transparent);
+	color: #fff;
+}
+
+.hodima-panel-admin .hpa-steps {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-panel-admin .hpa-step {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	block-size: 350px;
-	margin-block-end: 15px;
-	padding: 15px;
-	overflow-y: auto;
-	border: 1px solid var(--hp-line);
-	background: #f0f0f1;
+	gap: 0.375rem;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
 }
 
-.hodima-panel-admin .hp-msg { max-inline-size: 80%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; align-self: flex-end; }
-.hodima-panel-admin .hp-msg--admin { align-self: flex-start; border-color: #90caf9; background: #e3f2fd; }
-.hodima-panel-admin .hp-msg--system { align-self: center; border-color: #ffeeba; background: #fff3cd; color: #856404; font-size: 13px; text-align: center; }
-.hodima-panel-admin .hp-msg-date { margin-block-start: 5px; color: #555; font-size: 0.8em; text-align: end; }
-.hodima-panel-admin .hp-empty { margin-block-start: 100px; color: var(--hp-muted); text-align: center; }
-.hodima-panel-admin .hp-chat-form { margin-block-start: auto; }
-.hodima-panel-admin .hp-chat-form textarea { inline-size: 100%; margin-block-end: 10px; }
+.hodima-panel-admin .hpa-step::before {
+	content: "";
+	block-size: 0.375rem;
+	border-radius: 0.25rem;
+	background: var(--hd-border);
+}
 
-.hodima-panel-admin .agent-select-wrapper {
-	margin-block-end: 10px;
-	padding: 10px;
-	border: 1px solid #c8e6c9;
-	border-radius: 5px;
-	background: #e8f5e9;
-	color: #2e7d32;
+.hodima-panel-admin .hpa-step.is-done {
+	color: var(--hd-ok);
+}
+
+.hodima-panel-admin .hpa-step.is-done::before {
+	background: var(--hd-ok);
+}
+
+.hodima-panel-admin .hpa-step.is-now {
+	color: var(--hd-primary);
+	font-weight: 700;
+}
+
+.hodima-panel-admin .hpa-step.is-now::before {
+	background: var(--hd-primary);
+}
+
+.hodima-panel-admin .hpa-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 21rem;
+	gap: 1rem;
+	align-items: start;
+}
+
+.hodima-panel-admin .hpa-col {
+	display: grid;
+	gap: 1rem;
+	min-inline-size: 0;
+}
+
+.hodima-panel-admin .hpa-next {
+	border-color: var(--hd-ok);
+	background: color-mix(in srgb, var(--hd-ok) 5%, #fff);
+}
+
+.hodima-panel-admin .hpa-next__actions {
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.hodima-panel-admin .hpa-btn-ok {
+	border-color: var(--hd-ok);
+	background: var(--hd-ok);
+}
+
+.hodima-panel-admin .hpa-btn-ok:hover {
+	background: color-mix(in srgb, var(--hd-ok) 85%, #000);
+}
+
+.hodima-panel-admin .hpa-upload {
+	display: grid;
+	gap: 0.5rem;
+	justify-items: start;
+	margin-block-start: 0.75rem;
+}
+
+.hodima-panel-admin .hpa-upload input[type="file"] {
+	max-inline-size: 100%;
+	min-block-size: 2.5rem;
+}
+
+.hodima-panel-admin .hpa-files {
+	display: grid;
+	gap: 0.5rem;
+	margin: 0.75rem 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-panel-admin .hpa-file {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	margin: 0;
+	padding: 0.5rem 0.625rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.625rem;
+	background: var(--hd-surface);
+	color: var(--hd-text);
+}
+
+.hodima-panel-admin .hpa-file--single {
+	margin-block-start: 0.75rem;
+}
+
+.hodima-panel-admin .hpa-file .hpa-link {
+	display: inline-flex;
+	align-items: center;
+	min-block-size: 2.5rem;
+	margin-inline-start: auto;
+}
+
+.hodima-panel-admin .hpa-file__type {
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 2.25rem;
+	block-size: 2.25rem;
+	border-radius: 0.5rem;
+	background: var(--hd-soft);
+	color: var(--hd-primary);
+	font-size: 0.6875rem;
+	font-weight: 800;
+}
+
+.hodima-panel-admin .hpa-kv {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 0.375rem 0.875rem;
+	margin: 0.75rem 0;
+}
+
+.hodima-panel-admin .hpa-kv dt {
+	color: var(--hd-muted);
+}
+
+.hodima-panel-admin .hpa-kv dd {
+	margin: 0;
+	color: var(--hd-text);
 	font-weight: 600;
 }
 
-.hodima-panel-admin .hp-total-row { background: var(--hp-soft); font-weight: 600; }
-.hodima-panel-admin .hp-total-row td:first-child { text-align: end; }
+.hodima-panel-admin .hpa-more {
+	margin-block-start: 0.75rem;
+}
 
-.hodima-panel-admin .hp-invoices { margin-block-end: 15px; }
+/* جمع‌شونده داخل کارت از عنوان کارت سبک‌تر (قاعده ۷ hodima-admin-ui) */
+.hodima-panel-admin .hpa-more .hdp-more__summary {
+	min-block-size: 2.75rem;
+	padding-inline: 1rem;
+	font-size: 0.875rem;
+}
 
-.hodima-panel-admin .hp-invoice {
+.hodima-panel-admin .hpa-more .hdp-more__body {
+	padding: 0 1rem 1rem;
+}
+
+.hodima-panel-admin .hpa-card-more {
+	margin: 0;
+}
+
+.hodima-panel-admin .hpa-status {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-block-start: 0.5rem;
+}
+
+.hodima-panel-admin .hpa-status .hdp-input {
+	flex: 1 1 10rem;
+	min-block-size: 2.5rem;
+}
+
+.hodima-panel-admin .hpa-status .hdp-btn {
+	min-block-size: 2.5rem;
+}
+
+.hodima-panel-admin .hpa-items-table tfoot th {
+	background: none;
+	color: var(--hd-muted);
+	font-weight: 600;
+}
+
+.hodima-panel-admin .hpa-items-wrap > table {
+	min-inline-size: 0;
+}
+
+.hodima-panel-admin .hpa-note {
+	margin: 0.75rem 0 0;
+	padding-inline-start: 0.75rem;
+	border-inline-start: 3px solid var(--hd-third);
+	color: var(--hd-text);
+}
+
+/* گفتگو و رشته پیام (سفارش و تیکت) */
+.hodima-panel-admin .hpa-thread {
+	display: flex;
+	flex-direction: column;
+	gap: 0.625rem;
+	max-block-size: 22rem;
+	margin-block-start: 0.75rem;
+	padding: 0.875rem;
+	overflow-y: auto;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.75rem;
+	background: var(--hd-soft);
+}
+
+.hodima-panel-admin .hpa-msg {
+	max-inline-size: 80%;
+	padding: 0.625rem 0.875rem;
+	border-radius: 0.875rem;
+	background: var(--hd-surface);
+	color: var(--hd-text);
+}
+
+.hodima-panel-admin .hpa-msg p {
+	margin: 0;
+	line-height: 1.8;
+}
+
+.hodima-panel-admin .hpa-msg__meta {
+	display: block;
+	margin-block-start: 0.25rem;
+	color: var(--hd-muted);
+	font-size: 0.6875rem;
+}
+
+/* راست‌به‌چپ: مشتری سمت راست (start)، پشتیبانی سمت چپ (end) */
+.hodima-panel-admin .hpa-msg--user {
+	align-self: flex-start;
+}
+
+.hodima-panel-admin .hpa-msg--admin {
+	align-self: flex-end;
+	background: var(--hd-primary);
+	color: #fff;
+}
+
+.hodima-panel-admin .hpa-msg--admin .hpa-msg__meta {
+	color: color-mix(in srgb, #fff 80%, var(--hd-primary));
+}
+
+.hodima-panel-admin .hpa-msg--system {
+	align-self: center;
+	max-inline-size: 92%;
+	background: color-mix(in srgb, var(--hd-warn) 9%, #fff);
+	color: color-mix(in srgb, var(--hd-warn) 85%, #000);
+	font-size: 0.75rem;
+}
+
+.hodima-panel-admin .hpa-compose {
+	display: flex;
+	align-items: flex-end;
+	gap: 0.5rem;
+	margin-block-start: 0.75rem;
+}
+
+.hodima-panel-admin .hpa-compose .hdp-input {
+	min-block-size: 3rem;
+	padding-block: 0.625rem;
+}
+
+.hodima-panel-admin .hpa-compose + .hdp-field__help {
+	margin: 0.375rem 0 0;
+}
+
+/* تیکت‌ها: فهرست و پاسخ کنار هم */
+.hodima-panel-admin .hpa-inbox {
+	display: grid;
+	grid-template-columns: 21rem minmax(0, 1fr);
+	gap: 1rem;
+	align-items: start;
+}
+
+.hodima-panel-admin .hpa-inbox__list {
+	display: grid;
+	gap: 0.75rem;
+	padding: 0.875rem;
+}
+
+.hodima-panel-admin .hpa-inbox__list .hpa-views {
+	flex-wrap: wrap;
+}
+
+.hodima-panel-admin .hpa-inbox__back {
+	display: none;
+}
+
+.hodima-panel-admin .hpa-threads {
+	display: grid;
+	gap: 0.25rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-panel-admin .hpa-thread-item {
+	display: grid;
+	gap: 0.125rem;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid transparent;
+	border-radius: 0.625rem;
+	color: var(--hd-text);
+	text-decoration: none;
+}
+
+.hodima-panel-admin .hpa-thread-item:hover {
+	background: var(--hd-soft);
+	color: var(--hd-text);
+}
+
+.hodima-panel-admin .hpa-thread-item.is-active {
+	border-color: var(--hd-third);
+	background: var(--hd-soft);
+}
+
+.hodima-panel-admin .hpa-thread-item__top {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-block-end: 10px;
-	padding: 8px;
-	border: 1px solid #c8e1ff;
-	border-radius: 4px;
-	background: var(--hp-soft);
-	color: var(--hp-ok);
-	font-weight: 600;
+	gap: 0.5rem;
 }
 
-/* تیکت‌ها */
-.hodima-panel-admin .hp-tickets { margin-block-start: 20px; }
-.hodima-panel-admin .hp-priority--high { color: var(--hp-danger); font-weight: 600; }
-.hodima-panel-admin .hp-priority--low { color: var(--hp-ok); }
-.hodima-panel-admin .hp-ticket-status--open { color: #b26200; font-weight: 600; }
-.hodima-panel-admin .hp-ticket-status--answered { color: var(--hp-ok); }
-.hodima-panel-admin .hp-ticket-status--closed { color: var(--hp-muted); }
-
-.hodima-panel-admin .hp-ticket-head { display: flex; justify-content: space-between; align-items: center; margin-block-end: 15px; }
-
-.hodima-panel-admin .hp-ticket-meta,
-.hodima-panel-admin .hp-ticket-messages,
-.hodima-panel-admin .hp-ticket-reply {
-	margin-block-end: 20px;
-	padding: 15px;
-	border: 1px solid var(--hp-line);
-	border-radius: 4px;
-	background: #fff;
+.hodima-panel-admin .hpa-ticket-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 0.75rem;
 }
 
-.hodima-panel-admin .hp-ticket-meta { display: flex; flex-wrap: wrap; gap: 20px; }
-.hodima-panel-admin .hp-ticket-reply { display: flex; gap: 20px; }
-.hodima-panel-admin .hp-ticket-reply__form { flex-grow: 1; }
-.hodima-panel-admin .hp-ticket-reply__form textarea { inline-size: 100%; margin-block-end: 10px; }
-.hodima-panel-admin .hp-ticket-reply__side { inline-size: 200px; padding-inline-start: 20px; border-inline-start: 1px solid #eee; }
+.hodima-panel-admin .hpa-ticket-head .hpa-sub {
+	margin: 0;
+}
 
-.hodima-panel-admin .message-bubble { max-inline-size: 80%; margin-block-end: 15px; padding: 15px; border: 1px solid #e2e4e7; border-radius: 8px; }
-.hodima-panel-admin .message-bubble p { margin-block-start: 0; }
-.hodima-panel-admin .user-reply { margin-inline-end: auto; border-inline-start: 4px solid #7e8993; background-color: #f0f0f1; }
-.hodima-panel-admin .admin-reply { margin-inline-start: auto; border-inline-end: 4px solid var(--hp-info); background-color: #f0f8ff; }
-.hodima-panel-admin .system-reply { max-inline-size: 90%; margin-inline: auto; background-color: #fff8e5; text-align: center; }
+.hodima-panel-admin .hpa-thread .hpa-msg--user {
+	background: var(--hd-surface);
+}
 
-@media (max-width: 1024px) {
-	.hodima-panel-admin .order-col-30,
-	.hodima-panel-admin .order-col-70 { inline-size: 100%; }
+.hodima-panel-admin .hpa-reply {
+	display: grid;
+	gap: 0.625rem;
+	margin-block-start: 0.75rem;
+}
 
-	.hodima-panel-admin .hp-ticket-reply { flex-direction: column; }
-	.hodima-panel-admin .hp-ticket-reply__side { inline-size: auto; padding: 0; border: 0; }
+.hodima-panel-admin .hpa-reply .hdp-input {
+	min-block-size: 6rem;
+}
+
+.hodima-panel-admin .hpa-reply__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.hodima-panel-admin .hpa-reply__actions .hpa-sub {
+	margin-inline-start: auto;
+}
+
+@media (max-width: 1100px) {
+	.hodima-panel-admin .hpa-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+@media (max-width: 960px) {
+	.hodima-panel-admin .hpa-inbox {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	/* تیکت بازشده اول؛ فهرست بعد از آن با پیوند «همه تیکت‌ها» */
+	.hodima-panel-admin .hpa-inbox.has-open .hpa-inbox__main {
+		order: -1;
+	}
+
+	.hodima-panel-admin .hpa-inbox.has-open .hpa-inbox__back {
+		display: inline-flex;
+		align-items: center;
+		min-block-size: 2.5rem;
+	}
+}
+
+@media (max-width: 782px) {
+	.hodima-panel-admin .hpa-stats--3 {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.hodima-panel-admin .hpa-stats .hdp-stat {
+		flex-direction: column;
+		justify-content: center;
+		align-items: flex-start;
+		min-block-size: 3.75rem;
+		padding: 0.5rem 0.75rem;
+	}
+
+	.hodima-panel-admin .hpa-stats .hdp-stat__value {
+		font-size: 1.25rem;
+	}
+
+	.hodima-panel-admin .hdp-hero {
+		flex-wrap: wrap;
+	}
+
+	.hodima-panel-admin .hpa-back {
+		margin-inline-start: 0;
+	}
+
+	/* نوار ابزار موبایل: نماها ← جستجو ← کار گروهی */
+	/* nowrap: در ستونِ چندخطی، عرض هر خط = پهن‌ترین فرزند (نوار نماها) و صفحه افقی اسکرول می‌خورد */
+	.hodima-panel-admin .hpa-toolbar {
+		flex-flow: column nowrap;
+		align-items: stretch;
+	}
+
+	.hodima-panel-admin .hpa-bulk {
+		order: 3;
+	}
+
+	.hodima-panel-admin .hpa-bulk .hdp-input {
+		flex: 1 1 auto;
+		inline-size: auto;
+	}
+
+	.hodima-panel-admin .hpa-search {
+		flex: none;
+	}
+
+	.hodima-panel-admin .hpa-items-wrap thead {
+		display: none;
+	}
+
+	.hodima-panel-admin .hpa-items-wrap tbody tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.125rem 0.5rem;
+		padding-block: 0.625rem;
+		border-block-end: 1px solid var(--hd-border);
+	}
+
+	.hodima-panel-admin .hpa-items-wrap td {
+		padding: 0;
+		border: 0;
+	}
+
+	.hodima-panel-admin .hpa-items-wrap td[data-label="قیمت هر عدد"] {
+		display: none;
+	}
+
+	.hodima-panel-admin .hpa-msg {
+		max-inline-size: 92%;
+	}
+
+	.hodima-panel-admin .hpa-compose {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.hodima-panel-admin .hpa-next__actions .hdp-btn,
+	.hodima-panel-admin .hpa-upload .hdp-btn,
+	.hodima-panel-admin .hpa-reply__actions .hdp-btn {
+		inline-size: 100%;
+	}
+
+	.hodima-panel-admin .hpa-reply__actions .hpa-sub {
+		margin-inline-start: 0;
+	}
+
+	/* جدول سفارش‌ها ← کارت */
+	.hodima-panel-admin .hpa-table-wrap > table {
+		min-inline-size: 0;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap thead {
+		display: none;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap tbody tr {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		gap: 0.25rem 0.625rem;
+		margin-block-end: 0.625rem;
+		padding: 0.75rem;
+		border: 1px solid var(--hd-border);
+		border-radius: 0.75rem;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap tbody tr.is-todo {
+		border-color: var(--hd-ok);
+		background: color-mix(in srgb, var(--hd-ok) 5%, #fff);
+	}
+
+	.hodima-panel-admin .hpa-table-wrap td {
+		padding: 0;
+		border: 0;
+		background: none;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap tr.is-todo td {
+		background: none;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap td.hpa-cb {
+		grid-row: span 2;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap td[data-label="اقلام"],
+	.hodima-panel-admin .hpa-table-wrap td[data-label="گفتگو"],
+	.hodima-panel-admin .hpa-table-wrap td[data-label="مشتری"] {
+		grid-column: 2 / -1;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap td[data-label="اقلام"] {
+		max-inline-size: none;
+		color: var(--hd-muted);
+		font-size: 0.75rem;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap td[data-label="گفتگو"]:has(.hpa-none) {
+		display: none;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap td.hpa-act {
+		grid-column: 1 / -1;
+	}
+
+	.hodima-panel-admin .hpa-table-wrap td.hpa-act .hdp-btn {
+		inline-size: 100%;
+	}
+
+}
+
+.hodima-panel-admin .hpa-view:focus-visible,
+.hodima-panel-admin .hpa-link:focus-visible,
+.hodima-panel-admin .hpa-back:focus-visible,
+.hodima-panel-admin .hpa-thread-item:focus-visible,
+.hodima-panel-admin .hpa-strong:focus-visible,
+.hodima-panel-admin .hpa-thread:focus-visible {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: 2px;
+	box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hodima-panel-admin * {
+		transition: none;
+	}
 }

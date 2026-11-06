@@ -162,7 +162,7 @@ function preview( string $text, int $max = 80 ): string {
 	return mb_strlen( $text ) > $max ? mb_substr( $text, 0, $max ) . '…' : $text;
 }
 
-/** باطل کردن کش عدد کنار منوی پیشخوان (هر نوشتنی روی سفارش، چت یا تیکت). */
+/** پاک کردن کش قدیمی عدد منو (از مرحله ۶ عدد کنار منو نیست؛ نسخه‌های 0.1.x تا 0.1.7 ذخیره‌اش می‌کردند). */
 function clear_admin_badge(): void {
 	delete_transient( 'hodima_panel_badge_count' );
 }

@@ -118,10 +118,12 @@ final class Profile {
 	 * @return array<string, string> کد => نام (خالی = فیلد متنی).
 	 */
 	public static function states(): array {
-		if ( ! function_exists( 'WC' ) || ! ( WC()->countries instanceof \WC_Countries ) ) {
+		// ووکامرس ناقص (پیش از init یا ابزار تست) countries ندارد؛ خواندن مستقیمش هشدار می‌داد
+		$countries = function_exists( 'WC' ) ? ( get_object_vars( WC() )['countries'] ?? null ) : null;
+		if ( ! $countries instanceof \WC_Countries ) {
 			return [];
 		}
-		$states = WC()->countries->get_states( 'IR' );
+		$states = $countries->get_states( 'IR' );
 		return is_array( $states ) ? array_map( 'strval', $states ) : [];
 	}
 

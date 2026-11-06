@@ -639,45 +639,140 @@ hodima_pt( 'سفارش‌ها: مراحل، پنجره گفتگو، فیلتر،
 [ $html ] = hodima_pt_render( '/user-panel/?section=orders&filter=done', $user_a );
 hodima_pt( 'سفارش‌ها: فیلتر «تکمیل‌شده» سفارش در حال بررسی را نشان نمی‌دهد', str_contains( $html, 'id="hpn-order-' . $order_a . '"' ), false );
 
-echo "== پیشخوان\n";
+echo "== پیشخوان (طرح مرحله ۶: سفارش‌ها، یک سفارش، تیکت‌ها، کادر محصول)\n";
 require_once ABSPATH . 'wp-admin/includes/admin.php';
-require_once HODIMA_PANEL_DIR . '/legacy/admin/menu.php';
-require_once HODIMA_PANEL_DIR . '/legacy/admin/support.php';
+require_once HODIMA_PANEL_DIR . '/includes/admin-orders.php';
+require_once HODIMA_PANEL_DIR . '/includes/admin-tickets.php';
+require_once HODIMA_PANEL_DIR . '/includes/admin-product.php';
+use Hodima\Panel\Admin_Orders;
+use Hodima\Panel\Admin_Tickets;
+use Hodima\Panel\Admin_Product;
 wp_set_current_user( 1 );
 set_current_screen( 'toplevel_page_hodima-panel-orders' );
-$_GET = [ 'page' => 'hodima-panel-orders' ];
-$stop = hodima_pt_run( '\Hodima\Panel\Legacy\Admin\render_orders_page' );
-hodima_pt( 'فهرست مشتری‌ها', [ $stop, str_contains( $GLOBALS['hodima_pt_last_output'], 'hp_a' ) ], [ '', true ] );
-$_GET = [ 'page' => 'hodima-panel-orders', 'user_id' => (string) $user_a ];
-$stop = hodima_pt_run( '\Hodima\Panel\Legacy\Admin\render_orders_page' );
-hodima_pt( 'سفارش‌های یک مشتری', [ $stop, str_contains( $GLOBALS['hodima_pt_last_output'], '#' . $order_a ) ], [ '', true ] );
-$_GET = [ 'page' => 'hodima-panel-orders', 'action' => 'view', 'order_id' => (string) $order_a ];
+$GLOBALS['menu'] = $GLOBALS['submenu'] = [];
+set_transient( 'hodima_panel_badge_count', 7, MINUTE_IN_SECONDS );
+Admin_Orders::menu();
+Admin_Tickets::menu();
+$hp_menu = array_values( array_filter( $GLOBALS['menu'], static fn( $m ): bool => ( $m[2] ?? '' ) === Admin_Orders::SLUG ) );
+hodima_pt( 'منو بدون عدد کنار نام (قاعده ثابت ۴) و زیرمنوی تیکت', [ $hp_menu[0][0] ?? '', array_column( $GLOBALS['submenu'][ Admin_Orders::SLUG ] ?? [], 2 ) ], [ 'پنل مشتریان', [ Admin_Orders::SLUG, Admin_Tickets::SLUG ] ] );
+$hp_admin = static function ( array $get, callable $fn ): string {
+	$_GET  = $get;
+	$_REQUEST = $get;
+	$stop  = hodima_pt_run( $fn );
+	return $stop . $GLOBALS['hodima_pt_last_output'];
+};
+$hp_post = static function ( array $get, array $post, callable $fn ): string {
+	$_SERVER['REQUEST_METHOD'] = 'POST';
+	$_GET                      = $get;
+	$_POST                     = $post;
+	$_REQUEST                  = $get + $post;
+	$stop                      = hodima_pt_run( $fn );
+	$_SERVER['REQUEST_METHOD'] = 'GET';
+	$_GET                      = $_POST = $_REQUEST = [];
+	return $stop;
+};
+$render_orders = [ Admin_Orders::class, 'render' ];
+$out = $hp_admin( [ 'page' => Admin_Orders::SLUG ], $render_orders );
+hodima_pt( 'فهرست همه سفارش‌ها: آمار، نوار ابزار، ردیف کار شما', [ str_contains( $out, 'فیش برای بررسی' ), str_contains( $out, 'hpa-orders-form' ), (bool) preg_match( '/<tr class="is-todo">.*?value="' . $order_a . '"/s', $out ), str_contains( $out, 'hp_a' ) ], [ true, true, true, true ] );
+$out = $hp_admin( [ 'page' => Admin_Orders::SLUG, 'view' => 'done' ], $render_orders );
+hodima_pt( 'فیلتر «تکمیل» سفارش در حال بررسی فیش را ندارد', str_contains( $out, 'value="' . $order_a . '"' ), false );
+$out = $hp_admin( [ 'page' => Admin_Orders::SLUG, 's' => '#' . $order_a ], $render_orders );
+hodima_pt( 'جستجو با شماره سفارش', str_contains( $out, 'value="' . $order_a . '"' ), true );
+$out = $hp_admin( [ 'page' => Admin_Orders::SLUG, 's' => '0912000000' ], $render_orders );
+hodima_pt( 'جستجو با موبایل مشتری', str_contains( $out, 'value="' . $order_a . '"' ), true );
+$out = $hp_admin( [ 'page' => Admin_Orders::SLUG, 'user_id' => (string) $user_b ], $render_orders );
+hodima_pt( 'فیلتر یک مشتری دیگر سفارش این مشتری را ندارد', [ str_contains( $out, 'value="' . $order_a . '"' ), str_contains( $out, 'همه مشتری‌ها' ) ], [ false, true ] );
+
 $wpdb->update( table( 'chats' ), [ 'admin_unread' => 3 ], [ 'order_id' => $order_a ] );
-$stop = hodima_pt_run( '\Hodima\Panel\Legacy\Admin\render_orders_page' );
-$out  = $GLOBALS['hodima_pt_last_output'];
-hodima_pt( 'جزئیات سفارش: جمع اقلام همان مبلغ مشتری', [ $stop, str_contains( $out, number_format_i18n( 37500 ) . ' تومان' ), str_contains( $out, 'hodima_panel_file=' . $fid ) ], [ '', true, true ] );
+$out = $hp_admin( [ 'page' => Admin_Orders::SLUG, 'action' => 'view', 'order_id' => (string) $order_a ], $render_orders );
+hodima_pt( 'یک سفارش: جمع اقلام همان مبلغ مشتری، فیش با نشانی امن، کار بعدی', [ str_contains( $out, number_format_i18n( 37500 ) . ' تومان' ), str_contains( $out, 'hodima_panel_file=' . $fid ), str_contains( $out, 'کار بعدی: فیش را بررسی کنید' ), str_contains( $out, 'hodima-panel-private' ) ], [ true, true, true, false ] );
 hodima_pt( 'باز کردن سفارش فقط همان گفتگو را خوانده می‌کند', (int) $wpdb->get_var( $wpdb->prepare( 'SELECT admin_unread FROM %i WHERE order_id = %d', table( 'chats' ), $order_a ) ), 0 );
-$_GET = [ 'page' => 'hodima-panel-support' ];
-$stop = hodima_pt_run( '\Hodima\Panel\Legacy\Admin\render_support_page' );
-hodima_pt( 'فهرست تیکت‌ها', [ $stop, str_contains( $GLOBALS['hodima_pt_last_output'], 'TKT-' ) ], [ '', true ] );
-$_GET = [ 'page' => 'hodima-panel-support', 'action' => 'view_thread', 'thread_id' => (string) $ticket->id ];
-$stop = hodima_pt_run( '\Hodima\Panel\Legacy\Admin\render_support_page' );
-hodima_pt( 'یک تیکت', [ $stop, str_contains( $GLOBALS['hodima_pt_last_output'], 'متن &quot;نقل&quot;' ) ], [ '', true ] );
+$view_get = [ 'page' => Admin_Orders::SLUG, 'action' => 'view', 'order_id' => (string) $order_a ];
+$handle   = [ Admin_Orders::class, 'handle' ];
+$stop     = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'complete' ], $handle );
+hodima_pt( 'تکمیل بی nonce رد شد', [ str_starts_with( $stop, 'die:' ), \Hodima\Panel\Orders::get( $order_a )->status ], [ true, 'receipt_uploaded' ] );
+$msgs = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE chat_id = %d', table( 'chat_messages' ), $chat->id ) );
+$stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'complete', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
+hodima_pt( 'تکمیل سفارش: وضعیت، پیام خودکار به مشتری، ریدایرکت', [ \Hodima\Panel\Orders::get( $order_a )->status, (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE chat_id = %d', table( 'chat_messages' ), $chat->id ) ) - $msgs, str_contains( $stop, 'hp_msg=completed' ) ], [ 'completed', 1, true ] );
+$stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'status', 'order_status' => 'hacked', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
+hodima_pt( 'وضعیت دستی ناشناخته نادیده', \Hodima\Panel\Orders::get( $order_a )->status, 'completed' );
+$stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'status', 'order_status' => 'receipt_uploaded', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
+hodima_pt( 'وضعیت دستی بی پیام خودکار', [ \Hodima\Panel\Orders::get( $order_a )->status, (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE chat_id = %d', table( 'chat_messages' ), $chat->id ) ) - $msgs ], [ 'receipt_uploaded', 1 ] );
+$stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'chat', 'message' => 'پاسخ \\"مدیر\\"', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
+hodima_pt( 'پیام مدیر با امضا و بی \\ اضافه؛ برای مشتری نخوانده', [ str_starts_with( (string) $wpdb->get_var( $wpdb->prepare( "SELECT message FROM %i WHERE chat_id = %d AND sender_type = 'admin' ORDER BY id DESC LIMIT 1", table( 'chat_messages' ), $chat->id ) ), "پاسخ \"مدیر\"\n\nپاسخگو:" ), str_contains( $stop, 'hp_msg=chat' ) ], [ true, true ] );
+
+$render_tickets = [ Admin_Tickets::class, 'render' ];
+$wpdb->update( table( 'tickets' ), [ 'status' => 'open', 'admin_unread' => 2 ], [ 'id' => $ticket->id ] );
+$out = $hp_admin( [ 'page' => Admin_Tickets::SLUG ], $render_tickets );
+hodima_pt( 'تیکت‌ها: پیش‌فرض «نیاز به پاسخ» با همین تیکت', [ str_contains( $out, 'aria-current="page">نیاز به پاسخ' ), str_contains( $out, 'thread_id=' . $ticket->id ) ], [ true, true ] );
+$out = $hp_admin( [ 'page' => Admin_Tickets::SLUG, 'thread_id' => (string) $ticket->id ], $render_tickets );
+hodima_pt( 'یک تیکت کنار فهرست: پیام، موبایل مشتری، خوانده شد', [ str_contains( $out, 'متن &quot;نقل&quot;' ), str_contains( $out, '09120000001' ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT admin_unread FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) ) ], [ true, true, 0 ] );
+$t_get = [ 'page' => Admin_Tickets::SLUG, 'thread_id' => (string) $ticket->id ];
+$stop  = $hp_post( $t_get, [ 'thread_id' => (string) $ticket->id, 'hp_action' => 'reply', 'message' => 'پاسخ' ], [ Admin_Tickets::class, 'handle' ] );
+hodima_pt( 'پاسخ تیکت بی nonce رد شد', str_starts_with( $stop, 'die:' ), true );
+$before = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT user_unread FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) );
+$stop   = $hp_post( $t_get, [ 'thread_id' => (string) $ticket->id, 'hp_action' => 'reply', 'message' => 'پاسخ پشتیبانی', '_wpnonce' => wp_create_nonce( 'hodima_panel_ticket_' . $ticket->id ) ], [ Admin_Tickets::class, 'handle' ] );
+$t_row  = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) );
+hodima_pt( 'پاسخ تیکت: «پاسخ داده شد»، برای مشتری نخوانده', [ $t_row->status, (int) $t_row->user_unread - $before, str_contains( $stop, 'hp_msg=reply' ) ], [ 'answered', 1, true ] );
+$stop  = $hp_post( $t_get, [ 'thread_id' => (string) $ticket->id, 'hp_action' => 'close', 'message' => '', '_wpnonce' => wp_create_nonce( 'hodima_panel_ticket_' . $ticket->id ) ], [ Admin_Tickets::class, 'handle' ] );
+hodima_pt( 'بستن تیکت', $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) ), 'closed' );
+$out = $hp_admin( $t_get, $render_tickets );
+hodima_pt( 'تیکت بسته فرم پاسخ ندارد', str_contains( $out, 'name="message"' ), false );
+
+// کادر محصول: رفت‌وبرگشت فرم رندرشده بی تغییر متا؛ ذخیره بی کادر چیزی را خاموش نمی‌کند
+$box = static function ( int $pid ): string {
+	ob_start();
+	Admin_Product::render( get_post( $pid ) );
+	return (string) ob_get_clean();
+};
+$form_of = static function ( string $html ): array {
+	$doc = new DOMDocument();
+	@$doc->loadHTML( '<?xml encoding="utf-8"?><div>' . $html . '</div>' ); // phpcs:ignore
+	$out = [];
+	foreach ( $doc->getElementsByTagName( 'input' ) as $in ) {
+		$type = $in->getAttribute( 'type' );
+		if ( 'checkbox' === $type && ! $in->hasAttribute( 'checked' ) ) {
+			continue;
+		}
+		$out[ $in->getAttribute( 'name' ) ] = $in->getAttribute( 'value' );
+	}
+	foreach ( $doc->getElementsByTagName( 'select' ) as $sel ) {
+		$val = '';
+		foreach ( $sel->getElementsByTagName( 'option' ) as $opt ) {
+			if ( $opt->hasAttribute( 'selected' ) ) {
+				$val = $opt->getAttribute( 'value' );
+			}
+		}
+		$out[ $sel->getAttribute( 'name' ) ] = $val;
+	}
+	return $out;
+};
+$meta_of = static fn( int $pid ): array => array_map( static fn( string $k ): string => (string) get_post_meta( $pid, $k, true ), [ '_prebuy_enabled' => '_prebuy_enabled', '_preinvoice_enabled' => '_preinvoice_enabled', '_up_sale_unit' => '_up_sale_unit', '_up_unit_capacity' => '_up_unit_capacity', '_up_min_qty' => '_up_min_qty' ] );
+$html = $box( $product );
+hodima_pt( 'کادر محصول: کلید روشن، پیش‌نمایش همان جمله پنل مشتری', [ (bool) preg_match( '/name="_prebuy_enabled"[^>]*checked/', $html ), str_contains( $html, 'هر کیلو ' . number_format_i18n( 12 ) . ' عدد · حداقل ' ), str_contains( $html, 'در پنل: پیش‌خرید' ) ], [ true, true, true ] );
+update_post_meta( $product, '_preinvoice_enabled', 'no' ); // خالی و no هر دو یعنی خاموش؛ ذخیره همیشه no می‌نویسد (مثل قبل)
+$before = $meta_of( $product );
+$_POST  = wp_slash( $form_of( $html ) );
+Admin_Product::save( $product );
+hodima_pt( 'کادر محصول: رفت‌وبرگشت فرم بی تغییر متا', $meta_of( $product ), $before );
+$_POST = [ '_up_sale_unit' => 'جین' ];
+Admin_Product::save( $product );
+hodima_pt( 'ذخیره بی کادر (ویرایش سریع) چیزی را عوض نمی‌کند', $meta_of( $product ), $before );
+$_POST = [ 'hodima_panel_product_box' => '1', '_up_sale_unit' => 'کیلو', '_up_unit_capacity' => '۱۲', '_up_min_qty' => '۰٫۵' ];
+Admin_Product::save( $product );
+hodima_pt( 'تیک‌ها خاموش، رقم فارسی', [ get_post_meta( $product, '_prebuy_enabled', true ), get_post_meta( $product, '_up_unit_capacity', true ) ], [ 'no', '12' ] );
+foreach ( $before as $k => $v ) {
+	update_post_meta( $product, $k, $v );
+}
+$_POST = [];
 
 echo "== حذف گروهی فقط با nonce\n";
-require_once HODIMA_PANEL_DIR . '/legacy/admin/lists.php';
-$_GET     = [ 'page' => 'hodima-panel-orders', 'user_id' => (string) $user_a ];
-$_REQUEST = $_POST = [ 'action' => 'delete', 'order_ids' => [ (string) $order_a ] ];
-$stop     = hodima_pt_run( static function () use ( $user_a ): void {
-	( new \Hodima\Panel\Legacy\Admin\Orders_List( $user_a ) )->prepare_items();
-} );
+$list_get = [ 'page' => Admin_Orders::SLUG ];
+$stop     = $hp_post( $list_get, [ 'hp_bulk' => 'delete', 'order_ids' => [ (string) $order_a ] ], $handle );
 hodima_pt( 'بدون nonce رد شد', str_starts_with( $stop, 'die:' ), true );
 hodima_pt( 'سفارش ماند', (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE id = %d', table( 'orders' ), $order_a ) ), 1 );
-$_REQUEST['_wpnonce'] = wp_create_nonce( 'bulk-hodima_panel_orders' );
-$stop                 = hodima_pt_run( static function () use ( $user_a ): void {
-	( new \Hodima\Panel\Legacy\Admin\Orders_List( $user_a ) )->prepare_items();
-} );
-hodima_pt( 'با nonce حذف شد', $stop, '' );
+$stop = $hp_post( $list_get, [ 'hp_bulk' => 'delete', 'order_ids' => [ (string) $order_a ], '_wpnonce' => wp_create_nonce( 'hodima_panel_orders_bulk' ) ], $handle );
+hodima_pt( 'با nonce حذف شد', str_contains( $stop, 'hp_msg=deleted' ), true );
 $left = [];
 foreach ( [ 'orders' => 'id', 'order_items' => 'order_id', 'order_files' => 'order_id', 'chats' => 'order_id' ] as $t => $col ) {
 	$left[ $t ] = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE %i = %d', table( $t ), $col, $order_a ) );
