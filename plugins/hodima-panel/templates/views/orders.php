@@ -46,6 +46,15 @@ if ( $hodima_where ) {
 	$hodima_rows = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT %d OFFSET %d', table( 'orders' ), $hodima_user_id, $hodima_per, ( $hodima_paged - 1 ) * $hodima_per ) );
 }
 $hodima_total = $hodima_count_of( $hodima_where );
+// ?chat=شناسه (لینک «پیام‌ها و پشتیبانی»): سفارش قدیمی‌تر از این صفحه هم بالای فهرست بیاید؛
+// وگرنه دکمه گفتگویش در صفحه نبود و پنجره باز نمی‌شد (فقط ۱۵ سفارش آخر دیده می‌شد).
+$hodima_chat_id = absint( $_GET['chat'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط انتخاب نما.
+if ( $hodima_chat_id && ! in_array( $hodima_chat_id, array_map( static fn( object $o ): int => (int) $o->id, $hodima_rows ), true ) ) {
+	$hodima_wanted = Orders::owned( $hodima_chat_id, $hodima_user_id );
+	if ( $hodima_wanted ) {
+		array_unshift( $hodima_rows, $hodima_wanted );
+	}
+}
 $hodima_ids   = array_map( static fn( object $o ): int => (int) $o->id, $hodima_rows );
 $hodima_files = Files::for_orders( $hodima_ids );
 $hodima_items = [];

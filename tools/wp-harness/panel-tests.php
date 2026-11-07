@@ -348,16 +348,40 @@ $_POST = $_REQUEST = [];
 require_once ABSPATH . 'wp-admin/includes/user.php';
 wp_delete_user( $fresh );
 
-echo "== تیکت پشتیبانی\n";
+echo "== پیام تازه: مشاوره قبل از خرید (تیکت) یا پیگیری سفارش (گفتگوی همان سفارش)\n";
 wp_set_current_user( $user_a );
 $_SERVER['REQUEST_METHOD'] = 'POST';
-$_POST                     = $_REQUEST = [ 'support_action' => 'create_ticket', '_wpnonce_create_ticket' => wp_create_nonce( 'create_ticket_nonce' ), 'subject' => 'سؤال', 'message' => 'متن \\"نقل\\"', 'priority' => 'urgent!', 'department' => 'finance' ];
-$stop                      = hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'support' ) );
-$ticket                    = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT 1', table( 'tickets' ), $user_a ) );
-hodima_pt( 'تیکت ثبت و ریدایرکت شد', str_contains( $stop, 'redirect:' ) && null !== $ticket, true );
-hodima_pt( 'اولویت نامجاز ← متوسط؛ دپارتمان مجاز ماند', [ $ticket->priority ?? '', $ticket->department ?? '' ], [ 'normal', 'finance' ] );
+$hp_ticket_post            = static function ( array $fields ) use ( &$hp_ticket_post ): string {
+	$_POST = $_REQUEST = [ 'support_action' => 'create_ticket', '_wpnonce_create_ticket' => wp_create_nonce( 'create_ticket_nonce' ) ] + $fields;
+	return hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'support' ) );
+};
+$hp_ticket_count = static fn(): int => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE user_id = %d', table( 'tickets' ), $user_a ) );
+$hp_chat_count   = static fn( int $order ): int => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i m INNER JOIN %i c ON c.id = m.chat_id WHERE c.order_id = %d', table( 'chat_messages' ), table( 'chats' ), $order ) );
+// فیلدهای فرم قدیمی (واحد و فوریت) دیگر اثری ندارند
+$stop   = $hp_ticket_post( [ 'topic' => 'consult', 'subject' => 'سؤال', 'message' => 'متن \\"نقل\\"', 'priority' => 'high', 'department' => 'finance' ] );
+$ticket = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT 1', table( 'tickets' ), $user_a ) );
+hodima_pt( 'مشاوره: تیکت ثبت و به همان رشته رفت', [ str_contains( $stop, 'redirect:' ), str_contains( $stop, 'thread_id=' . (int) ( $ticket->id ?? 0 ) ), str_contains( $stop, 'msg=ticket_sent' ) ], [ true, true, true ] );
+hodima_pt( 'مشاوره: نوع «مشاوره قبل از خرید»، فوریت عادی، واحد فرستاده‌شده نادیده', [ $ticket->department ?? '', $ticket->priority ?? '', \Hodima\Panel\ticket_departments()[ $ticket->department ?? '' ] ?? '' ], [ 'consult', 'normal', 'مشاوره قبل از خرید' ] );
 hodima_pt( 'کد پیگیری', $ticket->reference_code ?? '', sprintf( 'TKT-%06d', (int) ( $ticket->id ?? 0 ) ) );
 hodima_pt( 'متن بدون \\ اضافه', $wpdb->get_var( $wpdb->prepare( 'SELECT message FROM %i WHERE ticket_id = %d', table( 'ticket_messages' ), $ticket->id ) ), 'متن "نقل"' );
+$stop = $hp_ticket_post( [ 'topic' => 'consult', 'subject' => '', 'message' => 'حداقل سفارش چقدر است؟' ] );
+hodima_pt( 'مشاوره بی موضوع: موضوع پیش‌فرض', (string) $wpdb->get_var( $wpdb->prepare( 'SELECT subject FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT 1', table( 'tickets' ), $user_a ) ), 'مشاوره قبل از خرید' );
+$before = $hp_ticket_count();
+$stop   = $hp_ticket_post( [ 'topic' => 'consult', 'subject' => 'خالی', 'message' => '   ' ] );
+hodima_pt( 'پیام خالی: بی تیکت، برگشت به فرم با پیام', [ $hp_ticket_count(), str_contains( $stop, 'msg=message_empty' ), str_contains( $stop, 'new=1' ) ], [ $before, true, true ] );
+// پیگیری سفارش: پیام به گفتگوی همان سفارش، نه تیکت تازه
+$chats_before = $hp_chat_count( $order_a );
+$stop         = $hp_ticket_post( [ 'topic' => 'order', 'order_id' => (string) $order_a, 'order_message' => 'ارسال کی است؟', 'message' => 'متن بخش مشاوره' ] );
+hodima_pt( 'پیگیری سفارش: پیام در گفتگوی سفارش، بی تیکت تازه', [ $hp_chat_count( $order_a ) - $chats_before, $hp_ticket_count(), str_contains( $stop, 'msg=order_message_sent' ) ], [ 1, $before, true ] );
+hodima_pt( 'پیگیری سفارش: پیش‌نمایش و نخوانده مدیر', (array) $wpdb->get_row( $wpdb->prepare( 'SELECT last_message_preview, last_message_sender FROM %i WHERE order_id = %d', table( 'chats' ), $order_a ), ARRAY_A ), [ 'last_message_preview' => 'ارسال کی است؟', 'last_message_sender' => 'user' ] );
+$chats_b = $hp_chat_count( $order_b );
+$stop    = $hp_ticket_post( [ 'topic' => 'order', 'order_id' => (string) $order_b, 'order_message' => 'نفوذ' ] );
+hodima_pt( 'پیگیری سفارش مشتری دیگر رد شد', [ $hp_chat_count( $order_b ), str_contains( $stop, 'msg=error_owner' ) ], [ $chats_b, true ] );
+$stop = $hp_ticket_post( [ 'topic' => 'order', 'order_id' => (string) $order_a, 'order_message' => '' ] );
+hodima_pt( 'پیگیری سفارش با پیام خالی رد شد', str_contains( $stop, 'msg=message_empty' ), true );
+// بدون JS هر دو بخش دیده می‌شوند: دکمه فشرده‌شده بر گزینه انتخاب‌شده مقدم است
+$stop = $hp_ticket_post( [ 'topic' => 'consult', 'topic_submit' => 'order', 'order_id' => (string) $order_a, 'order_message' => 'با دکمه سفارش' ] );
+hodima_pt( 'دکمه «ارسال در گفتگوی سفارش» نوع را تعیین می‌کند', [ str_contains( $stop, 'msg=order_message_sent' ), $hp_ticket_count() ], [ true, $before ] );
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_POST                     = $_REQUEST = [];
 
@@ -621,6 +645,16 @@ foreach ( $sections as $section => $needle ) {
 		hodima_pt( 'فرم سفارش بی خطای ذخیره‌شده: کادر خطای خالی نیست', str_contains( $html, 'hpn-notice--error' ), false );
 	}
 }
+[ $html, $err ] = hodima_pt_render( '/user-panel/?section=support&new=1', $user_a );
+hodima_pt( 'پیام تازه: دو گزینه، بی «واحد» و «فوریت»، سفارش خود مشتری در فهرست', [ str_contains( $html, 'value="consult"' ), str_contains( $html, 'value="order"' ), str_contains( $html, 'name="department"' ), str_contains( $html, 'name="priority"' ), str_contains( $html, '<option value="' . $order_a . '"' ), str_contains( $html, '<option value="' . $order_b . '"' ), str_contains( $html, 'hpn-inbox--new' ), $err ], [ true, true, false, false, true, false, true, '' ] );
+// کاربر بی سفارش؛ شناسه فقط اگر واقعا ساخته شد (WP_Error به عدد = ۱ = حذف مدیر)
+$hp_noorder = wp_insert_user( [ 'user_login' => 'hp-no-order', 'user_pass' => wp_generate_password(), 'user_email' => 'no-order@hodima.test', 'role' => 'subscriber' ] );
+$hp_noorder = is_int( $hp_noorder ) ? $hp_noorder : 0;
+[ $html ] = $hp_noorder ? hodima_pt_render( '/user-panel/?section=support&new=1', $hp_noorder ) : [ '' ];
+if ( $hp_noorder > 1 ) {
+	wp_delete_user( $hp_noorder );
+}
+hodima_pt( 'پیام تازه بی سفارش: «پیگیری سفارش» غیرفعال با توضیح، بی فهرست سفارش', [ (bool) preg_match( '/value="order"\s+disabled/', $html ), str_contains( $html, 'هنوز سفارشی ندارید' ), str_contains( $html, 'name="order_id"' ) ], [ true, true, false ] );
 [ $html, $err ] = hodima_pt_render( '/user-panel/?section=prebuy&edit_order=' . $order_a, $user_a );
 hodima_pt( 'فرم ویرایش سفارش در حال بررسی: پیام قفل، بی فرم', [ str_contains( $html, 'قابل ویرایش نیست' ), str_contains( $html, 'name="products[]"' ), $err ], [ true, false, '' ] );
 [ $html ] = hodima_pt_render( '/?hodima_panel_file=' . $fid, $user_a );
@@ -638,6 +672,10 @@ hodima_pt( 'سفارش‌ها (تکمیل‌شده): فیش‌ها هنوز دی
 hodima_pt( 'سفارش‌ها: مراحل، پنجره گفتگو، فیلتر، نوار پایین موبایل', [ str_contains( $html, 'hpn-steps' ), str_contains( $html, '<dialog' ), str_contains( $html, 'filter=wait' ), str_contains( $html, 'hpn-bottom' ), $err ], [ true, true, true, true, '' ] );
 [ $html ] = hodima_pt_render( '/user-panel/?section=orders&filter=done', $user_a );
 hodima_pt( 'سفارش‌ها: فیلتر «تکمیل‌شده» سفارش در حال بررسی را نشان نمی‌دهد', str_contains( $html, 'id="hpn-order-' . $order_a . '"' ), false );
+[ $html ] = hodima_pt_render( '/user-panel/?section=orders&filter=done&chat=' . $order_a, $user_a );
+hodima_pt( 'سفارش‌ها: ?chat= سفارشِ بیرون از صفحه را هم می‌آورد (لینک پیام‌ها کار کند)', str_contains( $html, 'data-hpn-chat="' . $order_a . '"' ), true );
+[ $html ] = hodima_pt_render( '/user-panel/?section=orders&filter=done&chat=' . $order_b, $user_a );
+hodima_pt( 'سفارش‌ها: ?chat= سفارش مشتری دیگر را نمی‌آورد', str_contains( $html, 'hpn-order-' . $order_b ), false );
 
 echo "== پیشخوان (طرح مرحله ۶: سفارش‌ها، یک سفارش، تیکت‌ها، کادر محصول)\n";
 require_once ABSPATH . 'wp-admin/includes/admin.php';

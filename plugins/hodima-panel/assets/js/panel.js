@@ -3,7 +3,7 @@
  *
  * همه فرم‌ها بدون این فایل هم کار می‌کنند (سرور همه‌چیز را می‌سنجد)؛ اینجا فقط:
  * تب‌های ورود، شمارش معکوس کد، نمایش رمز، شمارنده و جمع زنده فرم سفارش،
- * جستجوی محصول، ذخیره پروفایل با AJAX، فهرست شهرها، تأیید حذف.
+ * جستجوی محصول، دو بخش «پیام تازه»، ذخیره پروفایل با AJAX، فهرست شهرها، تأیید حذف.
  */
 ( function () {
 	'use strict';
@@ -220,6 +220,29 @@
 				none.hidden = shown > 0;
 			} );
 		}
+		update();
+	} );
+
+	/* ---------- پیام تازه: مشاوره یا پیگیری سفارش ---------- */
+	// بدون JS هر دو بخش دیده می‌شوند و دکمه فشرده‌شده نوع را تعیین می‌کند؛ اینجا فقط بخش
+	// گزینه انتخاب‌شده می‌ماند. بخش پنهان disabled می‌شود تا required آن جلوی ارسال را نگیرد.
+	document.querySelectorAll( '[data-hpn-topic-form]' ).forEach( ( form ) => {
+		const radios = [ ...form.querySelectorAll( 'input[name="topic"]' ) ];
+		const panels = [ ...form.querySelectorAll( '[data-hpn-topic-panel]' ) ];
+		const update = () => {
+			const current = ( radios.find( ( r ) => r.checked ) || radios[ 0 ] ).value;
+			radios.forEach( ( r ) => r.closest( '.hpn-topic' ).classList.toggle( 'is-checked', r.checked ) );
+			panels.forEach( ( panel ) => {
+				const on = panel.dataset.hpnTopicPanel === current;
+				panel.hidden = ! on;
+				panel.disabled = ! on;
+				panel.querySelector( 'legend' ).classList.add( 'screen-reader-text' );
+				panel.querySelectorAll( 'textarea' ).forEach( ( t ) => {
+					t.required = on;
+				} );
+			} );
+		};
+		radios.forEach( ( r ) => r.addEventListener( 'change', update ) );
 		update();
 	} );
 

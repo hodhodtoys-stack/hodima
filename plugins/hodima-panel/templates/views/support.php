@@ -1,7 +1,8 @@
 <?php
 /**
  * پیام‌ها و پشتیبانی: تیکت‌ها و گفتگوی سفارش‌ها در یک فهرست، رشته پیام، پاسخ (طرح تأییدشده، مرحله ۵).
- * پردازش فرم‌ها: legacy/support.php (نام فیلدها همان قبلی).
+ * «پیام تازه» فقط دو راه: مشاوره قبل از خرید (تیکت) یا پیگیری سفارش (گفتگوی همان سفارش؛ طرح تأییدشده 0.2.0).
+ * پردازش فرم‌ها: legacy/support.php.
  *
  * @package Hodima\Panel
  */
@@ -15,8 +16,9 @@ use Hodima\Panel\View;
 use function Hodima\Panel\show_date;
 use function Hodima\Panel\table;
 use function Hodima\Panel\ticket_departments;
-use function Hodima\Panel\ticket_priorities;
 use function Hodima\Panel\ticket_statuses;
+use function Hodima\Panel\type_label;
+use function Hodima\Panel\status_label;
 
 global $wpdb;
 $hodima_user_id = get_current_user_id();
@@ -37,14 +39,16 @@ if ( $hodima_open ) {
 if ( ! $hodima_ticket && ! $hodima_tickets ) {
 	$hodima_new = true;
 }
+// سفارش‌های خود مشتری برای «پیگیری سفارش» (تازه‌ترین بالا)
+$hodima_orders = $hodima_new && ! $hodima_ticket ? (array) $wpdb->get_results( $wpdb->prepare( 'SELECT id, type, status FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT 100', table( 'orders' ), $hodima_user_id ) ) : [];
 $hodima_status_class = static fn( string $s ): string => 'closed' === $s ? 'cancel' : ( 'answered' === $s ? 'done' : 'review' );
 ?>
 <header class="hpn-head">
 	<h1 class="hpn-title">پیام‌ها و پشتیبانی</h1>
-	<p class="hpn-lead">سؤال عمومی را اینجا بپرسید؛ گفتگوی هر سفارش هم در همین فهرست است.</p>
+	<p class="hpn-lead">پیش از خرید سؤال دارید یا درباره سفارشتان پیام می‌دهید؟ همه گفتگوها در همین فهرست است.</p>
 </header>
 
-<div class="hpn-inbox">
+<div class="hpn-inbox<?php echo $hodima_new && ! $hodima_ticket ? ' hpn-inbox--new' : ''; ?>">
 	<section class="hpn-card hpn-inbox__list" aria-label="فهرست گفتگوها">
 		<a class="hpn-btn hpn-btn--block" href="<?php echo esc_url( Page::url( [ 'section' => 'support', 'new' => 1 ] ) ); ?>">پیام تازه به پشتیبانی</a>
 		<?php if ( ! $hodima_tickets && ! $hodima_chats ) : ?>
@@ -103,36 +107,55 @@ $hodima_status_class = static fn( string $s ): string => 'closed' === $s ? 'canc
 			<?php endif; ?>
 		<?php elseif ( $hodima_new ) : ?>
 			<h2 class="hpn-card__title" id="hpn-thread-title">پیام تازه به پشتیبانی</h2>
-			<form class="hpn-new-ticket" method="post" action="<?php echo esc_url( Page::url( [ 'section' => 'support' ] ) ); ?>">
+			<form class="hpn-new-ticket" method="post" action="<?php echo esc_url( Page::url( [ 'section' => 'support' ] ) ); ?>" data-hpn-topic-form>
 				<input type="hidden" name="support_action" value="create_ticket">
 				<?php wp_nonce_field( 'create_ticket_nonce', '_wpnonce_create_ticket', false ); ?>
-				<div class="hpn-field">
-					<label class="hpn-label" for="hpn-subject">موضوع</label>
-					<input class="hpn-input" id="hpn-subject" name="subject" required maxlength="200">
-				</div>
-				<div class="hpn-grid2">
+				<fieldset class="hpn-topics">
+					<legend>درباره چه چیزی پیام می‌دهید؟</legend>
+					<div class="hpn-topics__list">
+						<label class="hpn-topic">
+							<input type="radio" name="topic" value="consult" checked>
+							<span class="hpn-topic__text"><strong>مشاوره قبل از خرید</strong><span class="hpn-muted">سؤال درباره محصول، موجودی، قیمت یا حداقل سفارش</span></span>
+						</label>
+						<label class="hpn-topic<?php echo $hodima_orders ? '' : ' is-disabled'; ?>">
+							<input type="radio" name="topic" value="order"<?php disabled( ! $hodima_orders ); ?>>
+							<span class="hpn-topic__text"><strong>پیگیری سفارش</strong><span class="hpn-muted"><?php echo esc_html( $hodima_orders ? 'پیام شما در گفتگوی همان سفارش ثبت می‌شود' : 'هنوز سفارشی ندارید' ); ?></span></span>
+						</label>
+					</div>
+				</fieldset>
+
+				<fieldset class="hpn-topic-panel" data-hpn-topic-panel="consult">
+					<legend>مشاوره قبل از خرید</legend>
 					<div class="hpn-field">
-						<label class="hpn-label" for="hpn-dept">با کدام واحد؟</label>
-						<select class="hpn-input" id="hpn-dept" name="department">
-							<?php foreach ( ticket_departments() as $hodima_key => $hodima_label ) : ?>
-								<option value="<?php echo esc_attr( $hodima_key ); ?>"><?php echo esc_html( $hodima_label ); ?></option>
-							<?php endforeach; ?>
-						</select>
+						<label class="hpn-label" for="hpn-subject">موضوع <span class="hpn-muted">(اختیاری)</span></label>
+						<input class="hpn-input" id="hpn-subject" name="subject" maxlength="200" placeholder="مثلا: موجودی کش موی مخملی">
 					</div>
 					<div class="hpn-field">
-						<label class="hpn-label" for="hpn-priority">فوریت</label>
-						<select class="hpn-input" id="hpn-priority" name="priority">
-							<?php foreach ( ticket_priorities() as $hodima_key => $hodima_label ) : ?>
-								<option value="<?php echo esc_attr( $hodima_key ); ?>"><?php echo esc_html( $hodima_label ); ?></option>
-							<?php endforeach; ?>
-						</select>
+						<label class="hpn-label" for="hpn-message">پیام</label>
+						<textarea class="hpn-input" id="hpn-message" name="message" rows="5"></textarea>
 					</div>
-				</div>
-				<div class="hpn-field">
-					<label class="hpn-label" for="hpn-message">پیام</label>
-					<textarea class="hpn-input" id="hpn-message" name="message" rows="5" required></textarea>
-				</div>
-				<button class="hpn-btn hpn-btn--lg" type="submit">ارسال پیام</button>
+					<button class="hpn-btn hpn-btn--lg" type="submit" name="topic_submit" value="consult">ارسال پیام</button>
+				</fieldset>
+
+				<?php if ( $hodima_orders ) : ?>
+					<fieldset class="hpn-topic-panel" data-hpn-topic-panel="order">
+						<legend>پیگیری سفارش</legend>
+						<div class="hpn-field">
+							<label class="hpn-label" for="hpn-order">کدام سفارش؟</label>
+							<select class="hpn-input" id="hpn-order" name="order_id" aria-describedby="hpn-order-help">
+								<?php foreach ( $hodima_orders as $hodima_o ) : ?>
+									<option value="<?php echo esc_attr( (string) $hodima_o->id ); ?>"><?php echo esc_html( 'سفارش #' . number_format_i18n( (int) $hodima_o->id ) . ' · ' . type_label( (string) $hodima_o->type ) . ' · ' . status_label( (string) $hodima_o->status ) ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<p class="hpn-help" id="hpn-order-help">پاسخ پشتیبانی هم در همین فهرست و هم روی کارت همان سفارش در «سفارش‌ها» دیده می‌شود.</p>
+						</div>
+						<div class="hpn-field">
+							<label class="hpn-label" for="hpn-order-message">پیام</label>
+							<textarea class="hpn-input" id="hpn-order-message" name="order_message" rows="5"></textarea>
+						</div>
+						<button class="hpn-btn hpn-btn--lg" type="submit" name="topic_submit" value="order">ارسال در گفتگوی سفارش</button>
+					</fieldset>
+				<?php endif; ?>
 			</form>
 		<?php else : ?>
 			<h2 class="screen-reader-text" id="hpn-thread-title">گفتگو</h2>

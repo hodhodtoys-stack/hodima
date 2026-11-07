@@ -1227,6 +1227,88 @@ textarea.hpn-input {
 	padding-block-end: 20px;
 }
 
+/* «پیام تازه»: دو کارت انتخاب (مشاوره / سفارش) و بخش فرم هر کدام؛ بدون JS هر دو بخش دیده می‌شوند */
+.hpn-topics,
+.hpn-topic-panel {
+	min-inline-size: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.hpn-topics {
+	margin-block-end: 18px;
+}
+
+.hpn-topics > legend,
+.hpn-topic-panel > legend {
+	margin-block-end: 10px;
+	padding: 0;
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.hpn-topics__list {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.hpn-topic {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 14px;
+	border: 2px solid var(--hpn-line);
+	border-radius: 14px;
+	background: #fff;
+	cursor: pointer;
+	transition: border-color 0.2s, background-color 0.2s;
+}
+
+.hpn-topic input {
+	flex: none;
+	inline-size: 18px;
+	block-size: 18px;
+	margin: 3px 0 0;
+	accent-color: var(--hpn-primary);
+}
+
+.hpn-topic__text {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.hpn-topic__text .hpn-muted {
+	font-size: 13px;
+}
+
+.hpn-topic:hover {
+	border-color: var(--hpn-line-strong);
+}
+
+.hpn-topic.is-checked {
+	border-color: var(--hpn-primary);
+	background: var(--hpn-soft);
+}
+
+.hpn-topic.is-disabled {
+	cursor: not-allowed;
+}
+
+.hpn-topic-panel + .hpn-topic-panel {
+	margin-block-start: 20px;
+	padding-block-start: 20px;
+	border-block-start: 1px solid var(--hpn-line);
+}
+
+.hpn-topic-panel[hidden] + .hpn-topic-panel {
+	margin-block-start: 0;
+	padding-block-start: 0;
+	border-block-start: 0;
+}
+
 .hpn-inbox__head {
 	display: flex;
 	flex-wrap: wrap;
@@ -1655,6 +1737,20 @@ textarea.hpn-input {
 
 	.hpn-inbox__list {
 		inline-size: auto;
+	}
+
+	/* ستونی: ارتفاع از محتوا (flex: 1 1 0 با overflow: hidden کادر را بریده و دکمه ارسال را پنهان می‌کرد) */
+	.hpn-inbox__main {
+		flex: none;
+	}
+
+	/* «پیام تازه» زده شد: فرم بالای فهرست (وگرنه زیر فهرست و نوار پایین گم می‌شد) */
+	.hpn-inbox--new .hpn-inbox__main {
+		order: -1;
+	}
+
+	.hpn-topics__list {
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.hpn-msg {

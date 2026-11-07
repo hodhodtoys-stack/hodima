@@ -243,7 +243,7 @@ final class Admin_Tickets {
 		<header class="hpa-ticket-head">
 			<div>
 				<h2 class="hdp-card__title" id="hpa-ticket-title"><?php echo esc_html( (string) $t->subject ?: 'بدون موضوع' ); ?></h2>
-				<p class="hpa-sub"><?php echo esc_html( (string) $t->reference_code . ' · ' . $name ); ?><?php if ( '' !== $mobile ) : ?> (<bdi dir="ltr"><?php echo esc_html( $mobile ); ?></bdi>)<?php endif; ?><?php echo esc_html( ' · ' . ( ticket_departments()[ $t->department ] ?? '' ) . ' · فوریت ' . ( ticket_priorities()[ $t->priority ] ?? '' ) ); ?></p>
+				<p class="hpa-sub"><?php echo esc_html( (string) $t->reference_code . ' · ' . $name ); ?><?php if ( '' !== $mobile ) : ?> (<bdi dir="ltr"><?php echo esc_html( $mobile ); ?></bdi>)<?php endif; ?><?php echo esc_html( ' · ' . ( ticket_departments()[ $t->department ] ?? '' ) ); ?></p>
 			</div>
 			<?php echo self::pill( (string) $t->status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- امن. ?>
 		</header>
