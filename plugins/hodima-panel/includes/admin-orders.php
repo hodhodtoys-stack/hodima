@@ -41,6 +41,28 @@ final class Admin_Orders {
 	public static function boot(): void {
 		add_action( 'admin_menu', [ self::class, 'menu' ] );
 		add_action( 'admin_enqueue_scripts', [ self::class, 'assets' ] );
+		add_action( 'admin_notices', [ self::class, 'kit_notice' ] );
+	}
+
+	/** آیا کیت UI (پوشه ui/) نصب شده؟ فقط در ZIP انتشار است، نه در سورس گیت‌هاب. */
+	public static function kit_ready(): bool {
+		return is_file( HODIMA_PANEL_DIR . '/ui/ui-kit.css' );
+	}
+
+	/**
+	 * هشدار نصب ناقص.
+	 *
+	 * پوشه ui/ (کیت ظاهر پیشخوان) در گیت نیست و bin/build.sh هنگام ساخت ZIP آن را می‌سازد.
+	 * نصب از کپی پوشه سورس (مثلا «Download ZIP» گیت‌هاب) صفحه‌ها را بی‌استایل می‌کرد و هیچ
+	 * پیامی نمی‌داد (گزارش کاربر، نصب لوکال 0.1.8).
+	 */
+	public static function kit_notice(): void {
+		if ( self::kit_ready() || ! current_user_can( 'activate_plugins' ) ) {
+			return;
+		}
+		echo '<div class="notice notice-error"><p>';
+		echo esc_html( 'Hodima Panel ناقص نصب شده: پوشه ui (ظاهر صفحه‌های پیشخوان) نیست، پس صفحه‌های «پنل مشتریان» بی‌طراحی دیده می‌شوند. افزونه را حذف کنید و فایل hodima-panel.zip پوشه release مخزن را از «افزونه‌ها ← افزودن ← بارگذاری» نصب کنید (نه پوشه سورس گیت‌هاب).' );
+		echo '</p></div>';
 	}
 
 	/** منوی «پنل مشتریان» بدون نشان عدد (شمار کار فقط داخل صفحه). */

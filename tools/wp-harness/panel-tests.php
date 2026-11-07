@@ -653,6 +653,9 @@ $GLOBALS['menu'] = $GLOBALS['submenu'] = [];
 set_transient( 'hodima_panel_badge_count', 7, MINUTE_IN_SECONDS );
 Admin_Orders::menu();
 Admin_Tickets::menu();
+ob_start();
+Admin_Orders::kit_notice();
+hodima_pt( 'کیت نصب است: هشدار «ناقص نصب شده» نمی‌آید', [ Admin_Orders::kit_ready(), (string) ob_get_clean() ], [ true, '' ] );
 $hp_menu = array_values( array_filter( $GLOBALS['menu'], static fn( $m ): bool => ( $m[2] ?? '' ) === Admin_Orders::SLUG ) );
 hodima_pt( 'منو بدون عدد کنار نام (قاعده ثابت ۴) و زیرمنوی تیکت', [ $hp_menu[0][0] ?? '', array_column( $GLOBALS['submenu'][ Admin_Orders::SLUG ] ?? [], 2 ) ], [ 'پنل مشتریان', [ Admin_Orders::SLUG, Admin_Tickets::SLUG ] ] );
 $hp_admin = static function ( array $get, callable $fn ): string {
