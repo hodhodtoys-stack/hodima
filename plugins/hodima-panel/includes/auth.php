@@ -165,7 +165,13 @@ final class Auth {
 
 	// phpcs:disable WordPress.Security.NonceVerification.Missing -- nonce در handle() بررسی شده است.
 
-	/** ورود با رمز با سقف تلاش برای IP+شماره و جدا برای هر شماره. */
+	/**
+	 * ورود با رمز با سقف تلاش برای IP+شماره و جدا برای هر شماره.
+	 *
+	 * رمز با wp_authenticate() سنجیده می‌شود (نه wp_check_password مستقیم): فیلتر authenticate
+	 * و رویداد wp_login_failed اجرا می‌شوند تا افزونه‌های امنیتی (محدودیت ورود، مسدودسازی،
+	 * دومرحله‌ای) این فرم را هم ببینند — تا 0.2.0 کاملا دور زده می‌شدند.
+	 */
 	private function password_login(): void {
 		$this->view   = 'login';
 		$this->mobile = self::normalize_mobile( wp_unslash( (string) ( $_POST['mobile'] ?? '' ) ) );
@@ -180,14 +186,30 @@ final class Auth {
 			$this->error = 'تلاش بیش از حد؛ ۱۵ دقیقه دیگر دوباره امتحان کنید یا با کد پیامکی وارد شوید.';
 			return;
 		}
-		$user = self::find_user( $this->mobile );
-		if ( $user && wp_check_password( $password, $user->data->user_pass, $user->ID ) ) {
+		$found  = self::find_user( $this->mobile );
+		$result = wp_authenticate( $found ? $found->user_login : $this->mobile, $password );
+		if ( $result instanceof \WP_User ) {
 			delete_transient( $ip_key );
-			$this->login( $user, false, isset( $_POST['remember_me'] ) );
+			if ( Profile::is_staff( $result ) ) {
+				$this->staff_error();
+				return;
+			}
+			$this->login( $result, false, isset( $_POST['remember_me'] ) );
 		}
 		set_transient( $ip_key, (int) get_transient( $ip_key ) + 1, 15 * MINUTE_IN_SECONDS );
 		set_transient( $mobile_key, (int) get_transient( $mobile_key ) + 1, 15 * MINUTE_IN_SECONDS );
 		$this->error = 'شماره موبایل یا رمز عبور اشتباه است.';
+	}
+
+	/**
+	 * حساب مدیر/کارمند از پنل مشتری وارد نمی‌شود (خواست کاربر).
+	 *
+	 * ورود با کد پیامکی یا رمزِ این فرم، دومرحله‌ای و قانون‌های ورود wp-login را ندارد؛ با یک
+	 * کد پیامکی (یا سیم‌کارت ربوده‌شده) حساب مدیر باز می‌شد. فقط بعد از اثبات مالکیت (رمز
+	 * درست یا کد درست) گفته می‌شود، تا مدیر بودن یک شماره به هر کسی لو نرود.
+	 */
+	private function staff_error(): void {
+		$this->error = 'این حساب مدیریتی است و از این صفحه وارد نمی‌شود؛ از صفحه ورود وردپرس (' . wp_login_url() . ') وارد شوید.';
 	}
 
 	// phpcs:enable
@@ -242,6 +264,11 @@ final class Auth {
 		}
 		$this->set_token( '' );
 		$user = self::find_user( $result['mobile'] );
+		if ( $user && Profile::is_staff( $user ) ) {
+			$this->view = 'login';
+			$this->staff_error();
+			return;
+		}
 		if ( ! $user ) {
 			$user = $this->create_user( $result['mobile'] );
 			if ( ! $user ) {

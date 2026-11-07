@@ -1,6 +1,6 @@
 <?php
 /**
- * پروفایل و آدرس (طرح تأییدشده، مرحله ۵). ذخیره: Profile::ajax_save (AJAX) — نام فیلدهای ارسالی همان قبلی.
+ * پروفایل و آدرس (طرح تأییدشده، مرحله ۵). ذخیره: Profile::ajax_save (AJAX) و بی JS Profile::handle_form (POST معمولی) — نام فیلدها همان قبلی.
  *
  * @package Hodima\Panel
  */
@@ -9,9 +9,12 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+use Hodima\Panel\Page;
 use Hodima\Panel\Profile;
 
 $hodima_user   = wp_get_current_user();
+$hodima_staff  = Profile::is_staff( $hodima_user );
+$hodima_error  = Profile::take_error( (int) $hodima_user->ID ); // خطای ذخیره بی JS
 $hodima_f      = Profile::fields( $hodima_user );
 $hodima_states = Profile::states();
 $hodima_cities = $hodima_states ? Profile::cities() : [];
@@ -21,7 +24,7 @@ $hodima_cities = $hodima_states ? Profile::cities() : [];
 	<p class="hpn-lead">همین اطلاعات در پیش‌فاکتور و صفحه پرداخت فروشگاه استفاده می‌شود.</p>
 </header>
 
-<form class="hpn-profile" id="hpn-profile" data-hpn-profile novalidate>
+<form class="hpn-profile" id="hpn-profile" method="post" action="<?php echo esc_url( Page::url( [ 'section' => 'profile' ] ) ); ?>" data-hpn-profile novalidate>
 	<?php wp_nonce_field( 'up_update_profile_action', 'up_profile_nonce', false ); ?>
 
 	<section class="hpn-card" aria-labelledby="hpn-p-contact">
@@ -94,25 +97,27 @@ $hodima_cities = $hodima_states ? Profile::cities() : [];
 		</div>
 		<fieldset class="hpn-verify">
 			<legend class="hpn-label">تأیید تغییر رمز یا ایمیل</legend>
-			<p class="hpn-help">فقط وقتی رمز یا ایمیل را عوض می‌کنید: رمز فعلی، یا کدی که به موبایلتان پیامک می‌شود.</p>
+			<p class="hpn-help"><?php echo esc_html( $hodima_staff ? 'فقط وقتی رمز یا ایمیل را عوض می‌کنید: رمز فعلی (حساب مدیریتی کد پیامکی نمی‌پذیرد).' : 'فقط وقتی رمز یا ایمیل را عوض می‌کنید: رمز فعلی، یا کدی که به موبایلتان پیامک می‌شود.' ); ?></p>
 			<div class="hpn-grid3">
 				<div class="hpn-field">
 					<label class="hpn-label" for="current_password">رمز فعلی</label>
 					<input class="hpn-input" id="current_password" name="current_password" type="password" autocomplete="current-password">
 				</div>
-				<div class="hpn-field">
-					<label class="hpn-label" for="verify_code">یا کد پیامکی</label>
-					<div class="hpn-inline">
-						<input class="hpn-input" id="verify_code" name="verify_code" inputmode="numeric" autocomplete="one-time-code" maxlength="5" dir="ltr">
-						<button type="button" class="hpn-btn hpn-btn--ghost" data-hpn-send-code>ارسال کد</button>
+				<?php if ( ! $hodima_staff ) : ?>
+					<div class="hpn-field">
+						<label class="hpn-label" for="verify_code">یا کد پیامکی</label>
+						<div class="hpn-inline">
+							<input class="hpn-input" id="verify_code" name="verify_code" inputmode="numeric" autocomplete="one-time-code" maxlength="5" dir="ltr">
+							<button type="button" class="hpn-btn hpn-btn--ghost" data-hpn-send-code>ارسال کد</button>
+						</div>
 					</div>
-				</div>
+				<?php endif; ?>
 			</div>
 		</fieldset>
 	</details>
 
 	<div class="hpn-actions">
 		<button class="hpn-btn hpn-btn--lg" type="submit">ذخیره تغییرات</button>
-		<p class="hpn-status" role="status" data-hpn-status></p>
+		<p class="hpn-status" role="status" data-hpn-status<?php echo '' !== $hodima_error ? ' data-ok="0"' : ''; ?>><?php echo esc_html( $hodima_error ); ?></p>
 	</div>
 </form>

@@ -346,7 +346,9 @@ hodima_pt( 'ذخیره AJAX', [ str_contains( $GLOBALS['hodima_pt_last_output'],
 remove_filter( 'wp_doing_ajax', '__return_true' );
 $_POST = $_REQUEST = [];
 require_once ABSPATH . 'wp-admin/includes/user.php';
-wp_delete_user( $fresh );
+if ( $fresh > 1 ) { // wp_create_user شکست‌خورده (WP_Error) به عدد ۱ = حذف مدیر ابزار تست می‌شد
+	wp_delete_user( $fresh );
+}
 
 echo "== پیام تازه: مشاوره قبل از خرید (تیکت) یا پیگیری سفارش (گفتگوی همان سفارش)\n";
 wp_set_current_user( $user_a );
@@ -573,6 +575,36 @@ hodima_pt( '۱۰ تلاش برای یک شماره (IP عوض‌شده) ← قف
 $hp_otp_reset();
 [ $a, $stop ] = $hp_auth( [ 'login_with_password' => '1', 'mobile' => '+98 912 777 0001', 'password' => 'Right-Pass-123' ] );
 hodima_pt( 'رمز درست با شماره ‎+98‎ ← ورود', str_contains( $stop, 'redirect:' ), true );
+// رمز از مسیر استاندارد وردپرس (افزونه‌های امنیتی ببینند)
+$hp_failed = [];
+$hp_fail   = static function ( string $login ) use ( &$hp_failed ): void {
+	$hp_failed[] = $login;
+};
+add_action( 'wp_login_failed', $hp_fail );
+$hp_otp_reset();
+wp_set_current_user( 0 );
+$hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127770001', 'password' => 'wrong' ] );
+$hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127779999', 'password' => 'wrong' ] );
+hodima_pt( 'رمز اشتباه ← رویداد wp_login_failed (حساب موجود و ناموجود)', $hp_failed, [ '09127770001', '09127779999' ] );
+remove_action( 'wp_login_failed', $hp_fail );
+$hp_block = static fn() => new WP_Error( 'blocked', 'blocked' );
+add_filter( 'authenticate', $hp_block, 99 );
+[ $a, $stop ] = $hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127770001', 'password' => 'Right-Pass-123' ] );
+remove_filter( 'authenticate', $hp_block, 99 );
+hodima_pt( 'افزونه امنیتی (فیلتر authenticate) ورود پنل را هم می‌بندد', [ str_contains( (string) $stop, 'redirect:' ), get_current_user_id() ], [ false, 0 ] );
+// کارکنان فقط از wp-login
+$hp_staff = wp_insert_user( [ 'user_login' => 'hp-staff', 'user_pass' => 'Staff-Pass-123', 'user_email' => 'hp-staff@hodima.test', 'role' => null !== get_role( 'shop_manager' ) ? 'shop_manager' : 'administrator' ] );
+$hp_staff = is_int( $hp_staff ) ? $hp_staff : 0;
+update_user_meta( $hp_staff, 'mobile', '09127778888' );
+$hp_otp_reset();
+[ $a, $stop ] = $hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127778888', 'password' => 'Staff-Pass-123' ] );
+hodima_pt( 'کارمند با رمز درست: وارد نمی‌شود، راهنمای wp-login', [ $hp_staff > 1, str_contains( (string) $stop, 'redirect:' ), get_current_user_id(), str_contains( $a->error, 'مدیریتی' ) ], [ true, false, 0, true ] );
+[ $a ] = $hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127778888', 'password' => 'wrong' ] );
+hodima_pt( 'کارمند با رمز اشتباه: همان خطای عادی (مدیر بودن لو نمی‌رود)', str_contains( $a->error, 'مدیریتی' ), false );
+unset( $_COOKIE[ Auth::COOKIE ] );
+$hp_auth( [ 'send_otp' => '1', 'otp_mobile' => '09127778888' ] );
+[ $a, $stop ] = $hp_auth( [ 'verify_otp' => '1', 'otp_code' => $hp_last_code() ] );
+hodima_pt( 'کارمند با کد پیامکی درست: وارد نمی‌شود', [ str_contains( (string) $stop, 'redirect:' ), get_current_user_id(), str_contains( $a->error, 'مدیریتی' ) ], [ false, 0, true ] );
 $_SERVER['REQUEST_METHOD'] = 'GET';
 $_POST                     = $_REQUEST = [];
 
@@ -613,6 +645,39 @@ $out = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'display_name' => 'س�
 hodima_pt( 'تغییر بی‌خطر (نام) بی تأیید', str_contains( $out, '"success":true' ), true );
 remove_action( 'set_auth_cookie', $hp_cookie );
 remove_filter( 'wp_doing_ajax', '__return_true' );
+// فرم بی جاوااسکریپت: POST معمولی به صفحه پنل، همان قانون‌ها، ریدایرکت با پیام
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$hp_form = static function ( array $extra ) use ( $new ): string {
+	$_POST = $_REQUEST = $extra + [ 'up_profile_nonce' => wp_create_nonce( 'up_update_profile_action' ), 'display_name' => 'سارا محمدی‌پور', 'user_email' => 'sara@hodima.test', 'address' => 'تهران خیابان آزمون پلاک ۹', 'postcode' => '1234567890' ];
+	$stop  = hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'profile' ) );
+	clean_user_cache( (int) $new->ID );
+	return $stop;
+};
+$stop = $hp_form( [ 'display_name' => 'سارا بی‌جاوا' ] );
+hodima_pt( 'فرم بی JS: ذخیره و ریدایرکت با پیام', [ str_contains( $stop, 'msg=profile_saved' ), get_userdata( (int) $new->ID )->display_name ], [ true, 'سارا بی‌جاوا' ] );
+$stop = $hp_form( [ 'new_password' => 'Other-Pass-789', 'confirm_password' => 'Other-Pass-789' ] );
+hodima_pt( 'فرم بی JS: تغییر رمز بی تأیید رد، خطا برای نمایش', [ str_contains( $stop, 'msg=profile_error' ), wp_check_password( 'NewPass-456', get_userdata( (int) $new->ID )->user_pass ), str_contains( Profile::take_error( (int) $new->ID ), 'رمز فعلی' ), Profile::take_error( (int) $new->ID ) ], [ true, true, true, '' ] );
+$_POST = $_REQUEST = [ 'up_profile_nonce' => 'bad', 'display_name' => 'نفوذ' ];
+hodima_pt( 'فرم بی JS: nonce نادرست رد', str_starts_with( hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'profile' ) ), 'die:' ), true );
+[ $html ] = hodima_pt_render( '/user-panel/?section=profile', (int) $new->ID );
+hodima_pt( 'فرم پروفایل POST است (رمز هرگز در آدرس)', (bool) preg_match( '/<form[^>]+id="hpn-profile"[^>]+method="post"/', $html ), true );
+// کارکنان: تغییر رمز/ایمیل فقط با رمز فعلی، نه کد پیامکی
+if ( $hp_staff > 1 ) {
+	wp_set_current_user( $hp_staff );
+	$hp_otp_reset();
+	add_filter( 'wp_doing_ajax', '__return_true' );
+	$_POST = $_REQUEST = [ 'nonce' => wp_create_nonce( 'up_update_profile_action' ) ];
+	hodima_pt_run( static fn() => do_action( 'wp_ajax_hodima_panel_profile_code' ) );
+	remove_filter( 'wp_doing_ajax', '__return_true' );
+	hodima_pt( 'کارمند: کد پیامکی پروفایل فرستاده نمی‌شود', str_contains( $GLOBALS['hodima_pt_last_output'], '"success":false' ), true );
+	Otp::issue( 'user-' . $hp_staff, '09127778888', 'profile', '198.51.100.7' );
+	$r = Profile::process( get_userdata( $hp_staff ), [ 'name' => 'مدیر فروشگاه', 'email' => 'hp-staff@hodima.test', 'user_email' => 'hp-staff@hodima.test', 'address' => 'تهران خیابان آزمون پلاک ۹', 'postcode' => '1234567890', 'new_password' => 'Hijack-Pass-1', 'confirm_password' => 'Hijack-Pass-1', 'verify_code' => $hp_last_code() ] );
+	hodima_pt( 'کارمند: کد پیامکی درست هم رمز را عوض نمی‌کند', [ $r['ok'], $r['need_verify'], wp_check_password( 'Staff-Pass-123', get_userdata( $hp_staff )->user_pass ) ], [ false, true, true ] );
+	[ $html ] = hodima_pt_render( '/user-panel/?section=profile', $hp_staff );
+	hodima_pt( 'کارمند: فرم پروفایل بی فیلد کد پیامکی', str_contains( $html, 'name="verify_code"' ), false );
+	wp_delete_user( $hp_staff );
+}
+$_SERVER['REQUEST_METHOD'] = 'GET';
 remove_filter( 'pre_wp_mail', '__return_false' );
 $_POST = $_REQUEST = [];
 require_once ABSPATH . 'wp-admin/includes/user.php';
@@ -856,10 +921,19 @@ require_once ABSPATH . 'wp-admin/includes/user.php';
 [ , , $p_path ] = $hp_priv( $priv_user );
 wp_delete_user( $priv_user, $user_b );
 hodima_pt( 'حذف حساب با سپردن محتوا: سفارش و تیکت به کاربر دیگر رسید', [ $hp_count( 'orders', $priv_user ), $hp_count( 'orders', $user_b ) > 0, $hp_count( 'tickets', $user_b ) > 0, file_exists( $p_path ) ], [ 0, true, true, true ] );
-$priv_user = (int) wp_create_user( 'hp_priv2', wp_generate_password(), 'hp_priv2@hodima.test' );
-[ , , $p_path ] = $hp_priv( $priv_user );
-wp_delete_user( $priv_user );
-hodima_pt( 'حذف حساب: سفارش، گفتگو، تیکت و فایل فیش بی‌صاحب نماند', [ $hp_count( 'orders', $priv_user ), $hp_count( 'chats', $priv_user ), $hp_count( 'tickets', $priv_user ), file_exists( $p_path ) ], [ 0, 0, 0, false ] );
+$priv_user = wp_create_user( 'hp_priv2', wp_generate_password(), 'hp_priv2@hodima.test' );
+$priv_user = is_int( $priv_user ) ? $priv_user : 0;
+update_user_meta( $priv_user, 'billing_first_name', 'نرگس' );
+update_user_meta( $priv_user, 'billing_last_name', 'کاظمی' );
+update_user_meta( $priv_user, 'mobile', '09126660001' );
+[ $p_order2, , $p_path ] = $hp_priv( $priv_user );
+if ( $priv_user > 1 ) {
+	wp_delete_user( $priv_user );
+}
+$p_note = (string) $wpdb->get_var( $wpdb->prepare( "SELECT m.message FROM %i m INNER JOIN %i c ON c.id = m.chat_id WHERE c.order_id = %d AND m.sender_type = 'system' ORDER BY m.id DESC LIMIT 1", table( 'chat_messages' ), table( 'chats' ), $p_order2 ) );
+hodima_pt( 'حذف حساب (بی سپردن): سفارش، گفتگو و فایل فیش می‌ماند؛ تیکت حذف', [ $priv_user > 1, $hp_count( 'orders', $priv_user ), $hp_count( 'chats', $priv_user ), $hp_count( 'tickets', $priv_user ), file_exists( $p_path ) ], [ true, 1, 1, 0, true ] );
+hodima_pt( 'حذف حساب: نام و موبایل مشتری در گفتگوی سفارش ثبت شد', [ str_contains( $p_note, 'نرگس کاظمی' ), str_contains( $p_note, '09126660001' ), str_contains( $p_note, 'hp_priv2@hodima.test' ) ], [ true, true, true ] );
+\Hodima\Panel\Orders::delete( $p_order2 );
 
 // پاک‌سازی
 require_once ABSPATH . 'wp-admin/includes/user.php';

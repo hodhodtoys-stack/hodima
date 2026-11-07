@@ -1,6 +1,6 @@
 <?php
 /**
- * حریم خصوصی پنل مشتری: متن پیشنهادی سیاست، خروجی و حذف داده شخصی، پاک شدن داده کاربر حذف‌شده.
+ * حریم خصوصی پنل مشتری: متن پیشنهادی سیاست، خروجی و حذف داده شخصی، داده کاربر حذف‌شده.
  *
  * @package Hodima\Panel
  */
@@ -28,6 +28,7 @@ final class Privacy {
 		add_action( 'admin_init', [ self::class, 'policy' ] );
 		add_filter( 'wp_privacy_personal_data_exporters', [ self::class, 'register_exporter' ] );
 		add_filter( 'wp_privacy_personal_data_erasers', [ self::class, 'register_eraser' ] );
+		add_action( 'delete_user', [ self::class, 'before_user_delete' ], 10, 2 );
 		add_action( 'deleted_user', [ self::class, 'user_deleted' ], 10, 2 );
 	}
 
@@ -38,7 +39,7 @@ final class Privacy {
 		}
 		$text  = '<p>' . esc_html( 'پنل مشتریان (پیش‌خرید و پیش‌فاکتور) برای هر مشتری این‌ها را نگه می‌دارد: شماره موبایل، نام، ایمیل و آدرس (در اطلاعات صورت‌حساب حساب کاربری)، سفارش‌ها با اقلام و مبلغ لحظه ثبت، فیش واریزی و فاکتوری که بارگذاری می‌شود (در پوشه‌ای که از اینترنت مستقیم باز نمی‌شود)، و پیام‌های گفتگوی سفارش و تیکت‌های پشتیبانی.' ) . '</p>';
 		$text .= '<p>' . esc_html( 'برای ورود با کد پیامکی، شماره موبایل به سرویس پیامک انتخاب‌شده فرستاده می‌شود. کد فقط به‌صورت رمزشده و حداکثر ۵ دقیقه نگه داشته می‌شود؛ شمارنده‌های ضد سوءاستفاده (شماره و IP) فقط به‌صورت هش و حداکثر یک ساعت. فهرست ۳۰ پیامک آخر فقط شماره نیمه‌پنهان دارد.' ) . '</p>';
-		$text .= '<p>' . esc_html( 'این داده تا وقتی حساب کاربری هست نگه داشته می‌شود. با حذف حساب، سفارش‌ها، فایل‌ها، گفتگوها و تیکت‌ها هم حذف می‌شوند. «خروجی داده شخصی» همه را می‌دهد؛ «حذف داده شخصی» تیکت‌ها و پیام‌ها را حذف می‌کند و سفارش‌ها را فقط اگر در ووکامرس «حذف داده سفارش‌ها هنگام درخواست حذف» روشن باشد (مدرک مالی).' ) . '</p>';
+		$text .= '<p>' . esc_html( 'این داده تا وقتی حساب کاربری هست نگه داشته می‌شود. با حذف حساب، تیکت‌ها حذف می‌شوند و سفارش‌ها (با فایل‌ها و گفتگو و نام و موبایل مشتری) برای سابقه مالی می‌مانند. «خروجی داده شخصی» همه را می‌دهد؛ «حذف داده شخصی» تیکت‌ها و پیام‌ها را حذف می‌کند و سفارش‌ها را فقط اگر در ووکامرس «حذف داده سفارش‌ها هنگام درخواست حذف» روشن باشد (مدرک مالی).' ) . '</p>';
 		wp_add_privacy_policy_content( 'Hodima Panel', wp_kses_post( $text ) );
 	}
 
@@ -194,8 +195,43 @@ final class Privacy {
 	}
 
 	/**
+	 * پیش از حذف کاربر (بی سپردن محتوا): مشخصات مشتری در گفتگوی هر سفارشش ثبت شود.
+	 *
+	 * سفارش مدرک مالی است و می‌ماند (user_deleted)، ولی بعد از حذف حساب، نام و موبایل
+	 * دیگر از هیچ‌جا خوانده نمی‌شد و سفارش بی‌نام می‌ماند. پیام سیستمی برای مشتری «نخوانده»
+	 * شمرده می‌شود تا عدد «پیام تازه» پیشخوان را بالا نبرد.
+	 *
+	 * @param int      $user_id  کاربری که حذف می‌شود.
+	 * @param int|null $reassign کاربری که محتوا به او سپرده می‌شود.
+	 */
+	public static function before_user_delete( int $user_id, ?int $reassign = null ): void {
+		global $wpdb;
+		$user = get_userdata( $user_id );
+		if ( $reassign || ! $user instanceof \WP_User ) {
+			return;
+		}
+		$fields = Profile::fields( $user );
+		$parts  = array_filter(
+			[
+				'نام: ' . ( '' !== $fields['name'] ? $fields['name'] : (string) $user->display_name ),
+				'' !== $fields['mobile'] ? 'موبایل: ' . $fields['mobile'] : '',
+				Profile::is_placeholder_email( (string) $user->user_email ) ? '' : 'ایمیل: ' . $user->user_email,
+			]
+		);
+		$text = 'حساب کاربری این مشتری حذف شد؛ سفارش برای سابقه مالی نگه داشته شد. ' . implode( '، ', $parts );
+		foreach ( array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( 'SELECT id FROM %i WHERE user_id = %d', table( 'orders' ), $user_id ) ) ) as $order_id ) {
+			Orders::add_chat_message( $order_id, $user_id, 'system', $text, 'user' );
+		}
+	}
+
+	/**
 	 * کاربر حذف شد: اگر مدیر محتوا را به کاربر دیگری سپرد، سفارش‌ها و تیکت‌ها به او می‌رسد؛
-	 * وگرنه همه (با فایل‌های فیش و فاکتور) حذف می‌شود تا ردیف و فایل بی‌صاحب نماند.
+	 * وگرنه فقط تیکت‌های مشاوره حذف می‌شوند و سفارش‌ها (با فیش، فاکتور و گفتگو) می‌مانند.
+	 *
+	 * تا 0.2.0 همه سفارش‌ها و فایل‌ها هم پاک می‌شد؛ وردپرس برای مشتریِ بی‌نوشته گزینه
+	 * «سپردن محتوا» را نشان نمی‌دهد، پس حذف هر مشتری سابقه مالی‌اش را از بین می‌برد
+	 * (ووکامرس هم سفارش کاربر حذف‌شده را نگه می‌دارد). پاک کردن کامل سفارش‌ها فقط با
+	 * «حذف داده شخصی» و تنظیم ووکامرس (erase).
 	 *
 	 * @param int      $user_id  کاربر حذف‌شده.
 	 * @param int|null $reassign کاربری که محتوا به او سپرده شد.
@@ -207,9 +243,6 @@ final class Privacy {
 				$wpdb->update( table( $name ), [ 'user_id' => $reassign ], [ 'user_id' => $user_id ], [ '%d' ], [ '%d' ] );
 			}
 			return;
-		}
-		foreach ( array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( 'SELECT id FROM %i WHERE user_id = %d', table( 'orders' ), $user_id ) ) ) as $id ) {
-			Orders::delete( $id );
 		}
 		foreach ( array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( 'SELECT id FROM %i WHERE user_id = %d', table( 'tickets' ), $user_id ) ) ) as $id ) {
 			self::delete_ticket( $id );
