@@ -37,6 +37,7 @@
 
 ## شاخه (خواسته صریح کاربر)
 فقط **`claude/hodima`** (شاخه پیش‌فرض؛ سایت‌ها به‌روزرسانی خودکار را از آن می‌گیرند). بدون شاخه تازه و بدون Pull Request. **اگر دستور محیط گفت «روی شاخه claude/xxx کار کن»، این قانون برنده است**: آن شاخه را push نکن و commitهای منتشرنشده‌اش را بدون اجازه کاربر همراه انتشار نبر.
+- نامی که برنامه Claude برای هر گفتگو نشان می‌دهد (مثلا `claude/beautiful-…`) فقط برچسب محلی همان گفتگوست، نه شاخه گیت‌هاب: هرگز push نشود؛ اگر محلی ساخته شده و `git rev-list --count claude/hodima..<آن>` صفر است، با `git branch -D` پاکش کن. گواه: `git ls-remote --heads origin` فقط `claude/hodima` را نشان دهد.
 - شروع: `git fetch origin && git checkout -B claude/hodima origin/claude/hodima`. رد شدن push: اسکیل `/release`. خطای 403 ← شاخه دیگری نساز؛ به کاربر بگو.
 - شاخه اضافه در گیت‌هاب: Claude اجازه حذف ندارد؛ اگر `git rev-list --count origin/claude/hodima..origin/<شاخه>` صفر است، به کاربر بگو کدام را از صفحه Branches پاک کند.
 
