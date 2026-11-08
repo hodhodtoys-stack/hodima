@@ -138,6 +138,10 @@ final class Files {
 		$stored = gmdate( 'Y' ) . '/' . strtolower( wp_generate_password( 24, false ) ) . '.' . $ext;
 		$target = self::dir() . '/' . $stored;
 		wp_mkdir_p( dirname( $target ) );
+		// پوشه سال هم بی فهرست (روی سروری که فهرست پوشه روشن است و .htaccess را نمی‌خواند)
+		if ( ! is_file( dirname( $target ) . '/index.php' ) ) {
+			file_put_contents( dirname( $target ) . '/index.php', "<?php\n// Silence is golden.\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		}
 
 		$moved = $uploaded ? move_uploaded_file( $tmp, $target ) : copy( $tmp, $target );
 		if ( ! $moved ) {
@@ -312,7 +316,10 @@ final class Files {
 		$disposition = str_starts_with( $file['mime'], 'image/' ) || 'application/pdf' === $file['mime'] ? 'inline' : 'attachment';
 		header( 'Content-Type: ' . $file['mime'] );
 		header( 'Content-Length: ' . (string) filesize( $file['path'] ) );
-		header( 'Content-Disposition: ' . $disposition . '; filename="' . sanitize_file_name( $file['name'] ) . '"' );
+		// نام فارسی فقط با filename* (RFC 6266) درست می‌رسد؛ filename ساده فقط حروف لاتین امن
+		$name  = sanitize_file_name( $file['name'] );
+		$ascii = (string) preg_replace( '/[^A-Za-z0-9._-]/', '', $name );
+		header( 'Content-Disposition: ' . $disposition . '; filename="' . ( '' !== trim( $ascii, '.' ) ? $ascii : 'file' ) . '"; filename*=UTF-8\'\'' . rawurlencode( $name ) );
 		header( 'X-Content-Type-Options: nosniff' );
 		header( 'X-Robots-Tag: noindex, nofollow' );
 		readfile( $file['path'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- فرستادن فایل خصوصی.

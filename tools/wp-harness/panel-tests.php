@@ -306,6 +306,16 @@ hodima_pt( 'کاربر تازه ثبت‌نامی: ناقص، ایمیل ساخ�
 wp_set_current_user( $fresh );
 $stop = hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'orders' ) );
 hodima_pt( 'پروفایل ناقص ← ریدایرکت به پروفایل', str_contains( $stop, 'redirect:' ) && str_contains( $stop, 'section=profile' ), true );
+$_POST = $_REQUEST = [ 'action' => 'save_prebuy', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'products' => [ (string) $product ], 'qty' => [ $product => '3' ] ];
+$stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] );
+$_POST = $_REQUEST = [];
+hodima_pt( 'پروفایل ناقص: فرم سفارش مستقیم (admin-post) هم قفل، بی سفارش', [ str_contains( $stop, 'msg=profile_locked' ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE user_id = %d', table( 'orders' ), $fresh ) ) ], [ true, 0 ] );
+$hp_editor = wp_insert_user( [ 'user_login' => 'hp-editor', 'user_pass' => wp_generate_password(), 'user_email' => 'hp-editor@hodima.test', 'role' => 'editor' ] );
+hodima_pt( 'کارکنان: ویرایشگر هم کارمند است، مشتری نه', [ is_int( $hp_editor ) && Profile::is_staff( get_userdata( $hp_editor ) ), Profile::is_staff( get_userdata( $user_a ) ) ], [ true, false ] );
+if ( is_int( $hp_editor ) && $hp_editor > 1 ) {
+	require_once ABSPATH . 'wp-admin/includes/user.php';
+	wp_delete_user( $hp_editor );
+}
 hodima_pt( 'بخش پروفایل و پشتیبانی باز است', [ hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'profile' ) ), hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'support' ) ) ], [ '', '' ] );
 wp_set_current_user( 1 );
 hodima_pt( 'مدیر هیچ‌وقت قفل نمی‌شود', hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'orders' ) ), '' );
@@ -523,6 +533,38 @@ for ( $i = 0; $i < Otp::PER_MOBILE_HOUR; $i++ ) {
 }
 hodima_pt( 'سقف ۵ کد در ساعت برای یک شماره (حتی از IPهای مختلف)', Otp::issue( 'key-mx', '09125550003', 'login', '198.51.100.99' )['ok'], false );
 $hp_otp_reset();
+// سقف کل سایت: IP و شماره عوض‌شونده هم بی‌نهایت پیامک نمی‌گیرند
+$hp_site = static fn(): int => 2;
+add_filter( 'hodima_panel_otp_site_hourly', $hp_site );
+$r1 = Otp::issue( 'key-s1', '09125550011', 'login', '198.51.100.31' )['ok'];
+$r2 = Otp::issue( 'key-s2', '09125550012', 'login', '198.51.100.32' )['ok'];
+$hp_http = [];
+$r3      = Otp::issue( 'key-s3', '09125550013', 'login', '198.51.100.33' );
+remove_filter( 'hodima_panel_otp_site_hourly', $hp_site );
+hodima_pt( 'سقف ساعتی کل سایت: ارسال سوم رد و هیچ پیامکی نرفت', [ $r1, $r2, $r3['ok'], str_contains( $r3['error'], 'موقتا محدود' ), count( $hp_http ) ], [ true, true, false, true, 0 ] );
+hodima_pt( 'پیش‌فرض سقف کل سایت', Otp::site_limit(), Otp::SITE_HOUR );
+$hp_otp_reset();
+// قفل بررسی کد: درخواست هم‌زمان (قفل گرفته‌شده) حدس را مصرف نمی‌کند و قفل کهنه آزاد می‌شود
+Otp::issue( 'key-l', '09125550021', 'login', '198.51.100.41' );
+$code_l = $hp_last_code();
+$hp_store = 'hodima_panel_otp_' . substr( hash( 'sha256', 'key-l|' . wp_salt( 'nonce' ) ), 0, 40 );
+$hp_lock  = '_' . $hp_store . '_lock';
+$wpdb->insert( $wpdb->options, [ 'option_name' => $hp_lock, 'option_value' => (string) time(), 'autoload' => 'off' ] );
+$busy = Otp::check( 'key-l', $code_l, 'login' );
+hodima_pt( 'قفل گرفته‌شده: «در حال بررسی»، کد هنوز معتبر و تلاشی مصرف نشد', [ $busy['ok'], str_contains( $busy['error'], 'در حال بررسی' ), (int) ( get_transient( $hp_store )['attempts'] ?? -1 ) ], [ false, true, 0 ] );
+$wpdb->update( $wpdb->options, [ 'option_value' => (string) ( time() - 100 ) ], [ 'option_name' => $hp_lock ] );
+$ok_l = Otp::check( 'key-l', $code_l, 'login' )['ok'];
+hodima_pt( 'قفل کهنه آزاد شد، کد درست پذیرفته و ردیف قفل پاک شد', [ $ok_l, (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE option_name LIKE %s', $wpdb->options, '%otp%_lock' ) ) ], [ true, 0 ] );
+Otp::issue( 'key-t', '09125550022', 'login', '198.51.100.42' );
+$code_t   = $hp_last_code();
+$hp_store = 'hodima_panel_otp_' . substr( hash( 'sha256', 'key-t|' . wp_salt( 'nonce' ) ), 0, 40 );
+$data_t   = get_transient( $hp_store );
+$data_t['expires'] = time() + 10;
+set_transient( $hp_store, $data_t, 10 );
+Otp::check( 'key-t', '00000' === $code_t ? '11111' : '00000', 'login' );
+$hp_timeout = (int) get_option( '_transient_timeout_' . $hp_store );
+hodima_pt( 'حدس اشتباه عمر کد را تمدید نمی‌کند', $hp_timeout > 0 && $hp_timeout <= time() + 10, true );
+$hp_otp_reset();
 
 echo "== ورود و ثبت‌نام\n";
 $_SERVER['REQUEST_METHOD'] = 'POST';
@@ -592,6 +634,25 @@ add_filter( 'authenticate', $hp_block, 99 );
 [ $a, $stop ] = $hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127770001', 'password' => 'Right-Pass-123' ] );
 remove_filter( 'authenticate', $hp_block, 99 );
 hodima_pt( 'افزونه امنیتی (فیلتر authenticate) ورود پنل را هم می‌بندد', [ str_contains( (string) $stop, 'redirect:' ), get_current_user_id() ], [ false, 0 ] );
+// سقف یک IP روی همه شماره‌ها (امتحان رمز روی شماره‌های زیاد)
+$hp_otp_reset();
+for ( $i = 0; $i < 20; $i++ ) {
+	$hp_auth( [ 'login_with_password' => '1', 'mobile' => '0912888' . str_pad( (string) $i, 4, '0', STR_PAD_LEFT ), 'password' => 'wrong' ] );
+}
+[ $a, $stop ] = $hp_auth( [ 'login_with_password' => '1', 'mobile' => '09127770001', 'password' => 'Right-Pass-123' ] );
+hodima_pt( '۲۰ رمز اشتباه از یک IP روی شماره‌های مختلف ← رمز درست شماره دیگر هم موقتا رد', [ str_contains( $a->error, 'تلاش بیش از حد' ), str_contains( (string) $stop, 'redirect:' ) ], [ true, false ] );
+$hp_otp_reset();
+// ورود با کد فقط به حساب با شماره تأییدشده (نام کاربری ۰۹… را هر کسی می‌سازد)
+$hp_squat = wp_insert_user( [ 'user_login' => '09127776666', 'user_pass' => 'Squat-Pass-1', 'user_email' => 'squat@hodima.test', 'role' => 'customer' ] );
+unset( $_COOKIE[ Auth::COOKIE ] );
+$hp_auth( [ 'send_otp' => '1', 'otp_mobile' => '09127776666' ] );
+[ $a, $stop ] = $hp_auth( [ 'verify_otp' => '1', 'otp_code' => $hp_last_code() ] );
+hodima_pt( 'کد درست برای شماره‌ای که فقط نام کاربری حساب دیگری است: ورود نه، حساب تازه نه', [ is_int( $hp_squat ), str_contains( (string) $stop, 'redirect:' ), get_current_user_id(), str_contains( $a->error, 'تأیید نشده' ), Auth::find_verified( '09127776666' ) ], [ true, false, 0, true, null ] );
+if ( is_int( $hp_squat ) && $hp_squat > 1 ) {
+	require_once ABSPATH . 'wp-admin/includes/user.php';
+	wp_delete_user( $hp_squat );
+}
+$hp_otp_reset();
 // کارکنان فقط از wp-login
 $hp_staff = wp_insert_user( [ 'user_login' => 'hp-staff', 'user_pass' => 'Staff-Pass-123', 'user_email' => 'hp-staff@hodima.test', 'role' => null !== get_role( 'shop_manager' ) ? 'shop_manager' : 'administrator' ] );
 $hp_staff = is_int( $hp_staff ) ? $hp_staff : 0;
@@ -643,6 +704,26 @@ $out = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'verify_code' => $pcod
 hodima_pt( 'کد درست ← ایمیل عوض شد', [ str_contains( $out, '"success":true' ), get_userdata( (int) $new->ID )->user_email ], [ true, 'sara@hodima.test' ] );
 $out = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'display_name' => 'سارا محمدی‌پور' ] );
 hodima_pt( 'تغییر بی‌خطر (نام) بی تأیید', str_contains( $out, '"success":true' ), true );
+// سقف حدس رمز فعلی
+delete_transient( 'hodima_panel_pwcheck_' . (int) $new->ID );
+for ( $i = 0; $i < Profile::CURRENT_PASSWORD_TRIES; $i++ ) {
+	$hp_profile( [ 'new_password' => 'Guess-Pass-1', 'confirm_password' => 'Guess-Pass-1', 'current_password' => 'wrong-' . $i ] );
+}
+$out = $hp_profile( [ 'new_password' => 'Guess-Pass-1', 'confirm_password' => 'Guess-Pass-1', 'current_password' => 'NewPass-456' ] );
+hodima_pt( '۵ رمز فعلی اشتباه ← حتی رمز درست موقتا رد', [ str_contains( (string) ( json_decode( $out, true )['data']['message'] ?? '' ), 'چند بار' ), wp_check_password( 'NewPass-456', get_userdata( (int) $new->ID )->user_pass ) ], [ true, true ] );
+delete_transient( 'hodima_panel_pwcheck_' . (int) $new->ID );
+// کد پیامکی فقط به شماره تأییدشده (نه billing_phone که در «حساب من» ووکامرس بی تأیید عوض می‌شود)
+$hp_otp_reset();
+delete_user_meta( (int) $new->ID, 'mobile' );
+update_user_meta( (int) $new->ID, 'billing_phone', '09127775555' );
+$hp_http = [];
+$_POST   = $_REQUEST = [ 'nonce' => wp_create_nonce( 'up_update_profile_action' ) ];
+hodima_pt_run( static fn() => do_action( 'wp_ajax_hodima_panel_profile_code' ) );
+hodima_pt( 'بی شماره تأییدشده: کد پروفایل به billing_phone نمی‌رود', [ str_contains( $GLOBALS['hodima_pt_last_output'], '"success":false' ), count( $hp_http ), Profile::verified_mobile( get_userdata( (int) $new->ID ) ) ], [ true, 0, '' ] );
+[ $html ] = hodima_pt_render( '/user-panel/?section=profile', (int) $new->ID );
+hodima_pt( 'بی شماره تأییدشده: فرم پروفایل بی فیلد کد پیامکی', [ str_contains( $html, 'name="verify_code"' ), str_contains( $html, 'name="current_password"' ) ], [ false, true ] );
+update_user_meta( (int) $new->ID, 'mobile', '09127770001' );
+update_user_meta( (int) $new->ID, 'billing_phone', '09127770001' );
 remove_action( 'set_auth_cookie', $hp_cookie );
 remove_filter( 'wp_doing_ajax', '__return_true' );
 // فرم بی جاوااسکریپت: POST معمولی به صفحه پنل، همان قانون‌ها، ریدایرکت با پیام

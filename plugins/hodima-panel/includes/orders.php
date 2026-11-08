@@ -195,6 +195,9 @@ final class Orders {
 			wp_die( 'لطفاً ابتدا وارد حساب کاربری خود شوید.' );
 		}
 		check_admin_referer( 'user_panel_action' );
+		// قفل پروفایل ناقص اینجا هم: فرم به admin-post.php می‌رود و enforce_lock فقط برگه پنل را
+		// می‌بست؛ تا 0.2.1 با یک POST مستقیم سفارش بی نام و آدرس ثبت می‌شد.
+		Profile::enforce_lock( 'orders' );
 
 		global $wpdb;
 		$user_id    = get_current_user_id();

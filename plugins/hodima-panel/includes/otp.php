@@ -35,6 +35,20 @@ final class Otp {
 	public const PER_IP_HOUR = 10;
 
 	/**
+	 * بیشترین ارسال کل سایت در ساعت (فیلتر hodima_panel_otp_site_hourly).
+	 *
+	 * سقف شماره و IP به‌تنهایی جلوی کسی را که IP عوض می‌کند و به هزاران شماره کد
+	 * می‌فرستد نمی‌گرفت (هزینه پیامک از حساب سایت). مشتریان عمده‌فروشی در ساعت خیلی
+	 * کمتر از این کد می‌خواهند؛ با رسیدن به سقف، ورود با رمز هنوز باز است.
+	 */
+	public const SITE_HOUR = 60;
+
+	private const SITE_KEY = 'hodima_panel_otpsite';
+
+	/** قفل بررسی کد کهنه (پردازشی که وسط کار از کار افتاده) بعد از این چند ثانیه آزاد می‌شود. */
+	private const LOCK_STALE = 30;
+
+	/**
 	 * کلید ترنزینت یک جلسه کد.
 	 *
 	 * @param string $key کلید جلسه.
@@ -85,19 +99,23 @@ final class Otp {
 		if ( (int) get_transient( $mobile_key ) >= self::PER_MOBILE_HOUR || (int) get_transient( $ip_key ) >= self::PER_IP_HOUR ) {
 			return [ 'ok' => false, 'error' => 'درخواست کد بیش از حد مجاز بود؛ یک ساعت دیگر تلاش کنید.', 'wait' => 0 ];
 		}
+		if ( self::site_count() >= self::site_limit() ) {
+			return [ 'ok' => false, 'error' => 'ارسال پیامک موقتا محدود شده است؛ با رمز عبور وارد شوید یا کمی بعد دوباره تلاش کنید.', 'wait' => 0 ];
+		}
 
 		$code = str_pad( (string) random_int( 0, ( 10 ** self::LENGTH ) - 1 ), self::LENGTH, '0', STR_PAD_LEFT );
 		$sent = Sms::send_code( $mobile, $code );
 		// شمارنده‌ها حتی برای ارسال ناموفق: درخواست پشت‌سرهم با خطای سرویس هم محدود شود
 		set_transient( $mobile_key, (int) get_transient( $mobile_key ) + 1, HOUR_IN_SECONDS );
 		set_transient( $ip_key, (int) get_transient( $ip_key ) + 1, HOUR_IN_SECONDS );
+		self::bump_site();
 		if ( ! $sent['ok'] ) {
 			return [ 'ok' => false, 'error' => 'ارسال پیامک ناموفق بود؛ چند دقیقه دیگر دوباره تلاش کنید.', 'wait' => 0 ];
 		}
 
 		set_transient(
 			self::store_key( $key ),
-			[ 'mobile' => $mobile, 'purpose' => $purpose, 'hash' => wp_hash_password( $code ), 'attempts' => 0 ],
+			[ 'mobile' => $mobile, 'purpose' => $purpose, 'hash' => wp_hash_password( $code ), 'attempts' => 0, 'expires' => time() + self::TTL ],
 			self::TTL
 		);
 		set_transient( self::counter_key( 'otpcool', $mobile ), time() + self::COOLDOWN, self::COOLDOWN );
@@ -124,7 +142,28 @@ final class Otp {
 	 */
 	public static function check( string $key, string $code, string $purpose ): array {
 		$store = self::store_key( $key );
-		$data  = get_transient( $store );
+		// شمارنده تلاش‌ها خواندن-نوشتن است: بی قفل، صدها حدس هم‌زمان همه «تلاش صفرم» را
+		// می‌دیدند و سقف ۳ تلاش عملا بی‌اثر بود (بازبینی امنیتی 0.2.2).
+		if ( ! self::lock( $store ) ) {
+			return [ 'ok' => false, 'error' => 'کد در حال بررسی است؛ چند ثانیه دیگر دوباره بزنید.', 'mobile' => '' ];
+		}
+		try {
+			return self::check_locked( $store, $code, $purpose );
+		} finally {
+			self::unlock( $store );
+		}
+	}
+
+	/**
+	 * بررسی کد (داخل قفل).
+	 *
+	 * @param string $store   کلید ترنزینت.
+	 * @param string $code    کد واردشده.
+	 * @param string $purpose هدف مورد انتظار.
+	 * @return array{ok: bool, error: string, mobile: string}
+	 */
+	private static function check_locked( string $store, string $code, string $purpose ): array {
+		$data = get_transient( $store );
 		if ( ! is_array( $data ) || $data['purpose'] !== $purpose ) {
 			return [ 'ok' => false, 'error' => 'کد منقضی شده است؛ کد تازه بگیرید.', 'mobile' => '' ];
 		}
@@ -134,7 +173,8 @@ final class Otp {
 			return [ 'ok' => false, 'error' => 'تلاش بیش از حد؛ کد تازه بگیرید.', 'mobile' => $mobile ];
 		}
 		++$data['attempts'];
-		set_transient( $store, $data, self::TTL );
+		// عمر کد با هر تلاش تمدید نشود (تا 0.2.1 هر حدس اشتباه کد را ۵ دقیقه دیگر زنده نگه می‌داشت)
+		set_transient( $store, $data, max( 1, (int) ( $data['expires'] ?? time() + self::TTL ) - time() ) );
 
 		$code = Profile::digits( $code );
 		if ( ! preg_match( '/^\d{' . self::LENGTH . '}$/', $code ) || ! wp_check_password( $code, (string) $data['hash'] ) ) {
@@ -143,5 +183,68 @@ final class Otp {
 		delete_transient( $store );
 		delete_transient( self::counter_key( 'otpcool', $mobile ) );
 		return [ 'ok' => true, 'error' => '', 'mobile' => $mobile ];
+	}
+
+	/** سقف ارسال کل سایت در ساعت. */
+	public static function site_limit(): int {
+		return max( 1, (int) apply_filters( 'hodima_panel_otp_site_hourly', self::SITE_HOUR ) );
+	}
+
+	/** شمار ارسال‌های کل سایت در ساعت جاری. */
+	public static function site_count(): int {
+		$data = get_transient( self::SITE_KEY );
+		return is_array( $data ) ? (int) ( $data['n'] ?? 0 ) : 0;
+	}
+
+	/** یک ارسال به شمارنده ساعتی کل سایت (عمر از اولین ارسال همان ساعت، نه از آخرین). */
+	private static function bump_site(): void {
+		$data = get_transient( self::SITE_KEY );
+		$data = is_array( $data ) ? $data : [ 'n' => 0, 'until' => time() + HOUR_IN_SECONDS ];
+		$data['n'] = (int) ( $data['n'] ?? 0 ) + 1;
+		set_transient( self::SITE_KEY, $data, max( 1, (int) ( $data['until'] ?? 0 ) - time() ) );
+	}
+
+	/**
+	 * قفل یک جلسه کد با درج یکتای ردیف در wp_options.
+	 *
+	 * ترنزینت (و کش شیء) درج اتمی ندارد؛ INSERT IGNORE روی کلید یکتای option_name
+	 * فقط برای یک درخواست موفق می‌شود. ردیف مستقیم نوشته و پاک می‌شود و هرگز از
+	 * get_option خوانده نمی‌شود (بی‌اثر روی کش گزینه‌ها).
+	 *
+	 * @param string $store کلید ترنزینت جلسه.
+	 */
+	private static function lock( string $store ): bool {
+		global $wpdb;
+		$name = '_' . $store . '_lock';
+		if ( self::insert_lock( $name ) ) {
+			return true;
+		}
+		// قفل ماندگار از پردازشی که وسط کار از کار افتاد
+		$held = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT option_value FROM %i WHERE option_name = %s', $wpdb->options, $name ) );
+		if ( $held > 0 && time() - $held > self::LOCK_STALE ) {
+			$wpdb->delete( $wpdb->options, [ 'option_name' => $name ], [ '%s' ] );
+			return self::insert_lock( $name );
+		}
+		return false;
+	}
+
+	/**
+	 * درج ردیف قفل؛ true فقط برای درخواستی که واقعا درج کرد.
+	 *
+	 * @param string $name نام ردیف.
+	 */
+	private static function insert_lock( string $name ): bool {
+		global $wpdb;
+		return 1 === (int) $wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO %i (option_name, option_value, autoload) VALUES (%s, %s, 'off')", $wpdb->options, $name, (string) time() ) );
+	}
+
+	/**
+	 * آزاد کردن قفل.
+	 *
+	 * @param string $store کلید ترنزینت جلسه.
+	 */
+	private static function unlock( string $store ): void {
+		global $wpdb;
+		$wpdb->delete( $wpdb->options, [ 'option_name' => '_' . $store . '_lock' ], [ '%s' ] );
 	}
 }

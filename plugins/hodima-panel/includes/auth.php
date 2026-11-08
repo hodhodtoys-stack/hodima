@@ -34,6 +34,14 @@ final class Auth {
 
 	private const LOGIN_PER_MOBILE = 10;
 
+	/**
+	 * سقف تلاش رمز از یک IP روی همه شماره‌ها (۱۵ دقیقه).
+	 *
+	 * سقف LOGIN_PER_IP برای «IP و شماره» با هم است؛ تا 0.2.1 از یک IP می‌شد روی
+	 * شماره‌های زیاد بی‌سقف رمز امتحان کرد (رمزهای لورفته سایت‌های دیگر).
+	 */
+	private const LOGIN_PER_IP_TOTAL = 20;
+
 	/** نما: login|otp_request|otp_verify. */
 	public string $view = 'login';
 
@@ -95,6 +103,26 @@ final class Auth {
 		if ( $user instanceof \WP_User ) {
 			return $user;
 		}
+		$found = get_users(
+			[
+				'meta_key'   => 'mobile', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => $mobile, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'number'     => 1,
+			]
+		);
+		return ( $found && $found[0] instanceof \WP_User ) ? $found[0] : null;
+	}
+
+	/**
+	 * کاربرِ شماره تأییدشده (فقط متای mobile که پنل بعد از کد پیامکی می‌نویسد).
+	 *
+	 * ورود با کد فقط به این حساب: نام کاربری ۰۹… را هر کسی از ثبت‌نام ووکامرس/وردپرس
+	 * می‌توانست بی تأیید شماره بسازد و تا 0.2.1 صاحب واقعی شماره بعد از کد درست وارد
+	 * همان حساب می‌شد (سفارش و فیشش را صاحب حساب می‌دید).
+	 *
+	 * @param string $mobile ۰۹…
+	 */
+	public static function find_verified( string $mobile ): ?\WP_User {
 		$found = get_users(
 			[
 				'meta_key'   => 'mobile', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
@@ -182,7 +210,9 @@ final class Auth {
 		}
 		$ip_key     = 'hodima_panel_login_' . substr( wp_hash( self::ip() . '|' . $this->mobile ), 0, 24 );
 		$mobile_key = 'hodima_panel_loginm_' . substr( wp_hash( $this->mobile ), 0, 24 );
-		if ( (int) get_transient( $ip_key ) >= self::LOGIN_PER_IP || (int) get_transient( $mobile_key ) >= self::LOGIN_PER_MOBILE ) {
+		$total_key  = 'hodima_panel_loginip_' . substr( wp_hash( self::ip() ), 0, 24 );
+		if ( (int) get_transient( $ip_key ) >= self::LOGIN_PER_IP || (int) get_transient( $mobile_key ) >= self::LOGIN_PER_MOBILE
+			|| (int) get_transient( $total_key ) >= self::LOGIN_PER_IP_TOTAL ) {
 			$this->error = 'تلاش بیش از حد؛ ۱۵ دقیقه دیگر دوباره امتحان کنید یا با کد پیامکی وارد شوید.';
 			return;
 		}
@@ -198,6 +228,7 @@ final class Auth {
 		}
 		set_transient( $ip_key, (int) get_transient( $ip_key ) + 1, 15 * MINUTE_IN_SECONDS );
 		set_transient( $mobile_key, (int) get_transient( $mobile_key ) + 1, 15 * MINUTE_IN_SECONDS );
+		set_transient( $total_key, (int) get_transient( $total_key ) + 1, 15 * MINUTE_IN_SECONDS );
 		$this->error = 'شماره موبایل یا رمز عبور اشتباه است.';
 	}
 
@@ -263,7 +294,12 @@ final class Auth {
 			return;
 		}
 		$this->set_token( '' );
-		$user = self::find_user( $result['mobile'] );
+		$user = self::find_verified( $result['mobile'] );
+		if ( ! $user && get_user_by( 'login', $result['mobile'] ) instanceof \WP_User ) {
+			$this->view  = 'login';
+			$this->error = 'برای این شماره حسابی هست که شماره‌اش با کد تأیید نشده است؛ با رمز عبور وارد شوید یا با پشتیبانی تماس بگیرید.';
+			return;
+		}
 		if ( $user && Profile::is_staff( $user ) ) {
 			$this->view = 'login';
 			$this->staff_error();

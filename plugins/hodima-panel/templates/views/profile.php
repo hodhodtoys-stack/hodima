@@ -14,6 +14,8 @@ use Hodima\Panel\Profile;
 
 $hodima_user   = wp_get_current_user();
 $hodima_staff  = Profile::is_staff( $hodima_user );
+// کد پیامکی فقط به شماره تأییدشده (کارکنان هرگز)
+$hodima_sms    = ! $hodima_staff && '' !== Profile::verified_mobile( $hodima_user );
 $hodima_error  = Profile::take_error( (int) $hodima_user->ID ); // خطای ذخیره بی JS
 $hodima_f      = Profile::fields( $hodima_user );
 $hodima_states = Profile::states();
@@ -97,13 +99,13 @@ $hodima_cities = $hodima_states ? Profile::cities() : [];
 		</div>
 		<fieldset class="hpn-verify">
 			<legend class="hpn-label">تأیید تغییر رمز یا ایمیل</legend>
-			<p class="hpn-help"><?php echo esc_html( $hodima_staff ? 'فقط وقتی رمز یا ایمیل را عوض می‌کنید: رمز فعلی (حساب مدیریتی کد پیامکی نمی‌پذیرد).' : 'فقط وقتی رمز یا ایمیل را عوض می‌کنید: رمز فعلی، یا کدی که به موبایلتان پیامک می‌شود.' ); ?></p>
+			<p class="hpn-help"><?php echo esc_html( $hodima_sms ? 'فقط وقتی رمز یا ایمیل را عوض می‌کنید: رمز فعلی، یا کدی که به موبایلتان پیامک می‌شود.' : ( $hodima_staff ? 'فقط وقتی رمز یا ایمیل را عوض می‌کنید: رمز فعلی (حساب مدیریتی کد پیامکی نمی‌پذیرد).' : 'فقط وقتی رمز یا ایمیل را عوض می‌کنید: رمز فعلی (رمز را فراموش کرده‌اید؟ از «فراموشی رمز» صفحه ورود).' ) ); ?></p>
 			<div class="hpn-grid3">
 				<div class="hpn-field">
 					<label class="hpn-label" for="current_password">رمز فعلی</label>
 					<input class="hpn-input" id="current_password" name="current_password" type="password" autocomplete="current-password">
 				</div>
-				<?php if ( ! $hodima_staff ) : ?>
+				<?php if ( $hodima_sms ) : ?>
 					<div class="hpn-field">
 						<label class="hpn-label" for="verify_code">یا کد پیامکی</label>
 						<div class="hpn-inline">

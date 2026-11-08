@@ -26,6 +26,9 @@ final class Profile {
 	/** بخش‌هایی که با پروفایل ناقص هم باز است (پشتیبانی: مشتری گیرکرده بتواند بپرسد). */
 	public const OPEN_SECTIONS = [ 'profile', 'support' ];
 
+	/** بیشترین رمز فعلی اشتباه در ۱۵ دقیقه (تأیید تغییر رمز/ایمیل). */
+	public const CURRENT_PASSWORD_TRIES = 5;
+
 	/** ثبت هوک‌ها. */
 	public static function boot(): void {
 		add_action( 'hodima_panel_request', [ self::class, 'enforce_lock' ], 1 );
@@ -63,6 +66,21 @@ final class Profile {
 			}
 		}
 		return '';
+	}
+
+	/**
+	 * شماره تأییدشده با کد پیامکی (فقط متای mobile که پنل بعد از کد می‌نویسد)، یا ''.
+	 *
+	 * کد پیامکی تأیید پروفایل فقط به این شماره می‌رود. تا 0.2.1 به mobile() می‌رفت که برای
+	 * مشتری قدیمی ووکامرس billing_phone است — آن را در «حساب من» ووکامرس بی هیچ تأییدی
+	 * می‌شود عوض کرد؛ پس کسی با نشست ربوده شماره خودش را می‌گذاشت، کد می‌گرفت و رمز/ایمیل
+	 * را عوض می‌کرد.
+	 *
+	 * @param \WP_User $user کاربر.
+	 */
+	public static function verified_mobile( \WP_User $user ): string {
+		$mobile = self::digits( (string) get_user_meta( $user->ID, 'mobile', true ) );
+		return preg_match( '/^09\d{9}$/', $mobile ) ? $mobile : '';
 	}
 
 	/**
@@ -153,12 +171,16 @@ final class Profile {
 	}
 
 	/**
-	 * کارکنان سایت قفل نمی‌شوند (مدیر و مدیر فروشگاه).
+	 * کارکنان سایت: قفل نمی‌شوند و فقط از wp-login وارد می‌شوند.
+	 *
+	 * هر کسی که نوشته ویرایش می‌کند (ویرایشگر، نویسنده، همکار، مدیر فروشگاه) کارمند است؛
+	 * تا 0.2.1 فقط مدیر و مدیر فروشگاه بودند و بقیه با یک کد پیامکی دومرحله‌ای wp-login را دور
+	 * می‌زدند. مشتری و مشترک edit_posts ندارند.
 	 *
 	 * @param \WP_User $user کاربر.
 	 */
 	public static function is_staff( \WP_User $user ): bool {
-		return user_can( $user, 'manage_options' ) || user_can( $user, 'manage_woocommerce' ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- دسترسی ووکامرس.
+		return user_can( $user, 'manage_options' ) || user_can( $user, 'manage_woocommerce' ) || user_can( $user, 'edit_posts' ); // phpcs:ignore WordPress.WP.Capabilities.Unknown -- دسترسی ووکامرس.
 	}
 
 	/**
@@ -268,9 +290,9 @@ final class Profile {
 		if ( self::is_staff( $user ) ) {
 			wp_send_json_error( [ 'message' => 'برای حساب مدیریتی کد پیامکی پذیرفته نمی‌شود؛ رمز فعلی را وارد کنید.' ] );
 		}
-		$mobile = self::mobile( $user );
+		$mobile = self::verified_mobile( $user );
 		if ( '' === $mobile ) {
-			wp_send_json_error( [ 'message' => 'شماره موبایلی برای این حساب ثبت نیست؛ رمز فعلی را وارد کنید.' ] );
+			wp_send_json_error( [ 'message' => 'شماره تأییدشده‌ای برای این حساب ثبت نیست؛ رمز فعلی را وارد کنید.' ] );
 		}
 		$result = Otp::issue( 'user-' . $user->ID, $mobile, 'profile', Auth::ip() );
 		if ( ! $result['ok'] ) {
@@ -303,8 +325,19 @@ final class Profile {
 		if ( $sensitive ) {
 			$current = $in['current_password'] ?? '';
 			$code    = sanitize_text_field( $in['verify_code'] ?? '' );
-			$ok      = '' !== $current && wp_check_password( $current, $user->user_pass, $user->ID );
-			if ( ! $ok && '' !== $code && ! self::is_staff( $user ) ) {
+			$ok      = false;
+			if ( '' !== $current ) {
+				// سقف حدس رمز فعلی: تا 0.2.1 با نشست ربوده بی‌نهایت رمز فعلی امتحان می‌شد
+				$tries = 'hodima_panel_pwcheck_' . $user->ID;
+				if ( (int) get_transient( $tries ) >= self::CURRENT_PASSWORD_TRIES ) {
+					return $fail( 'رمز فعلی چند بار اشتباه وارد شد؛ ۱۵ دقیقه دیگر دوباره امتحان کنید.' );
+				}
+				$ok = wp_check_password( $current, $user->user_pass, $user->ID );
+				if ( ! $ok ) {
+					set_transient( $tries, (int) get_transient( $tries ) + 1, 15 * MINUTE_IN_SECONDS );
+				}
+			}
+			if ( ! $ok && '' !== $code && ! self::is_staff( $user ) && '' !== self::verified_mobile( $user ) ) {
 				$check = Otp::check( 'user-' . $user->ID, $code, 'profile' );
 				if ( ! $check['ok'] ) {
 					return $fail( $check['error'] );
