@@ -82,7 +82,7 @@ final class Orders {
 	 * @return array{capacity: int, min: float, unit: string, multiple: bool}
 	 */
 	public static function product_rules( int $product_id ): array {
-		$unit = (string) get_post_meta( $product_id, '_up_sale_unit', true );
+		$unit = self::normalize_unit( (string) get_post_meta( $product_id, '_up_sale_unit', true ) );
 		$unit = '' !== $unit ? $unit : 'بسته';
 		$min  = (float) get_post_meta( $product_id, '_up_min_qty', true );
 		return [
@@ -91,6 +91,36 @@ final class Orders {
 			'unit'     => $unit,
 			'multiple' => ! in_array( $unit, self::MINIMUM_UNITS, true ),
 		];
+	}
+
+	/**
+	 * واحد فروش یکدست (متن آزاد کادر محصول).
+	 *
+	 * «کارتن » با فاصله، «ك»/«ي» عربی یا نیم‌فاصله و نشانه جهت چسبیده، دیگر با MINIMUM_UNITS
+	 * نمی‌خواند و قانون «مضرب حداقل» بی‌دلیل روی آن اجرا می‌شد (تا 0.2.2).
+	 *
+	 * @param string $unit واحد.
+	 */
+	public static function normalize_unit( string $unit ): string {
+		$unit = strtr( $unit, [ 'ك' => 'ک', 'ي' => 'ی', 'ى' => 'ی' ] );
+		$unit = (string) preg_replace( '/[\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}]/u', '', $unit );
+		return trim( (string) preg_replace( '/\s+/u', ' ', $unit ) );
+	}
+
+	/**
+	 * قیمت قابل سفارش یک محصول، یا null (پنل از آن سفارش نمی‌گیرد).
+	 *
+	 * محصول متغیر (چند مدل) قیمت واحد ندارد — get_price کمترین مدل را می‌داد؛ محصول بی‌قیمت
+	 * سفارش با مبلغ ۰ می‌ساخت. فرم، اعتبارسنجی و ذخیره همه از همین می‌خوانند.
+	 *
+	 * @param \WC_Product|null|false $product محصول ووکامرس.
+	 */
+	public static function price_of( mixed $product ): ?float {
+		if ( ! $product instanceof \WC_Product || $product->is_type( 'variable' ) ) {
+			return null;
+		}
+		$price = (float) $product->get_price();
+		return $price > 0 ? $price : null;
 	}
 
 	/**
@@ -104,6 +134,10 @@ final class Orders {
 	public static function validate_items( string $type, array $products, array $quantities ): array {
 		$items  = [];
 		$errors = [];
+		if ( ! wc_active() ) {
+			// بی ووکامرس save_items همه اقلام را کنار می‌گذاشت و سفارش با مبلغ ۰ ثبت می‌شد
+			return [ 'items' => [], 'errors' => [ 'فروشگاه موقتا در دسترس نیست؛ کمی بعد دوباره تلاش کنید.' ] ];
+		}
 		foreach ( array_unique( array_map( 'intval', $products ) ) as $product_id ) {
 			$post = $product_id > 0 ? get_post( $product_id ) : null;
 			if ( ! $post instanceof \WP_Post || 'product' !== $post->post_type || 'publish' !== $post->post_status
@@ -115,8 +149,17 @@ final class Orders {
 			$raw   = $quantities[ $product_id ] ?? $quantities[ (string) $product_id ] ?? null;
 			$qty   = is_scalar( $raw ) && is_numeric( $raw ) ? round( (float) $raw, 3 ) : 0.0;
 			$name  = get_the_title( $post );
-			if ( $qty < $rules['min'] - 1e-9 || $qty > self::MAX_QTY ) {
+			if ( null === self::price_of( wc_get_product( $product_id ) ) ) {
+				$errors[] = $name . ': قیمت این محصول در پنل مشخص نیست؛ برای سفارشش با پشتیبانی گفتگو کنید.';
+				continue;
+			}
+			if ( $qty < $rules['min'] - 1e-9 ) {
 				$errors[] = $name . ': حداقل سفارش ' . self::format_qty( $rules['min'] ) . ' ' . $rules['unit'] . ' است.';
+				continue;
+			}
+			if ( $qty > self::MAX_QTY ) {
+				// تا 0.2.2 همین حالت پیام «حداقل سفارش» می‌داد
+				$errors[] = $name . ': بیشترین تعداد ' . number_format_i18n( self::MAX_QTY ) . ' ' . $rules['unit'] . ' است.';
 				continue;
 			}
 			if ( $rules['multiple'] && ! self::is_multiple( $qty, $rules['min'] ) ) {
@@ -156,23 +199,24 @@ final class Orders {
 	 *
 	 * @param int                                              $order_id شناسه سفارش.
 	 * @param list<array{product_id: int, qty: float}> $items    اقلام معتبر (validate_items).
-	 * @return float جمع کل.
+	 * @return float|null جمع کل؛ null اگر قلمی ذخیره نشد (فراخوان برمی‌گرداند).
 	 */
-	public static function save_items( int $order_id, array $items ): float {
+	public static function save_items( int $order_id, array $items ): ?float {
 		global $wpdb;
-		$wpdb->delete( table( 'order_items' ), [ 'order_id' => $order_id ], [ '%d' ] );
+		if ( false === $wpdb->delete( table( 'order_items' ), [ 'order_id' => $order_id ], [ '%d' ] ) ) {
+			return null;
+		}
 
 		$total = 0.0;
 		foreach ( $items as $item ) {
-			$product = wc_active() ? wc_get_product( $item['product_id'] ) : null;
-			if ( ! $product ) {
-				continue;
+			$price = self::price_of( wc_active() ? wc_get_product( $item['product_id'] ) : null );
+			if ( null === $price ) {
+				return null; // validate_items رد کرده بود؛ اینجا یعنی محصول وسط کار عوض شد
 			}
 			$rules  = self::product_rules( $item['product_id'] );
-			$price  = (float) $product->get_price();
 			$line   = round( $item['qty'] * $rules['capacity'] * $price, 2 );
 			$total += $line;
-			$wpdb->insert(
+			$ok     = $wpdb->insert(
 				table( 'order_items' ),
 				[
 					'order_id'      => $order_id,
@@ -185,6 +229,9 @@ final class Orders {
 				],
 				[ '%d', '%d', '%f', '%f', '%d', '%s', '%f' ]
 			);
+			if ( ! $ok ) {
+				return null;
+			}
 		}
 		return $total;
 	}
@@ -225,22 +272,64 @@ final class Orders {
 		$checked = self::validate_items( $type, $products, $quantities );
 		if ( $checked['errors'] || ! $checked['items'] ) {
 			set_transient( 'hodima_panel_errors_' . $user_id, $checked['errors'], 5 * MINUTE_IN_SECONDS );
+			self::keep_draft( $user_id, $type, $order_id, $products, $quantities );
 			self::back( $type, 'invalid_items', $order_id );
 		}
 
+		// همه یا هیچ: تا 0.2.2 خطای وسط کار سفارش بی اقلام یا اقلام بی جمع درست می‌گذاشت
 		$now = now();
+		$wpdb->query( 'START TRANSACTION' );
 		if ( ! $order ) {
 			$wpdb->insert( table( 'orders' ), [ 'user_id' => $user_id, 'type' => $type, 'status' => 'pending', 'created_at' => $now, 'updated_at' => $now ], [ '%d', '%s', '%s', '%s', '%s' ] );
 			$order_id = (int) $wpdb->insert_id;
-			if ( $order_id <= 0 ) {
-				self::back( $type, 'db_error' );
-			}
 		}
-
-		$total = self::save_items( $order_id, $checked['items'] );
-		$wpdb->update( table( 'orders' ), [ 'total_price' => $total, 'updated_at' => $now ], [ 'id' => $order_id ], [ '%f', '%s' ], [ '%d' ] );
+		$total = $order_id > 0 ? self::save_items( $order_id, $checked['items'] ) : null;
+		if ( null === $total || false === $wpdb->update( table( 'orders' ), [ 'total_price' => $total, 'updated_at' => $now ], [ 'id' => $order_id ], [ '%f', '%s' ], [ '%d' ] ) ) {
+			$wpdb->query( 'ROLLBACK' );
+			self::keep_draft( $user_id, $type, $order ? $order_id : 0, $products, $quantities );
+			self::back( $type, 'db_error', $order ? $order_id : 0 );
+		}
+		$wpdb->query( 'COMMIT' );
 		clear_admin_badge();
 		self::back( 'orders', $order ? 'order_updated' : 'order_saved' );
+	}
+
+	/**
+	 * ورودی فرم ردشده برای پر کردن دوباره (تا 0.2.2 با هر خطا همه تعدادها از دست می‌رفت).
+	 *
+	 * @param int          $user_id    کاربر.
+	 * @param string       $type       نوع سفارش.
+	 * @param int          $order_id   سفارش در حال ویرایش (۰ = تازه).
+	 * @param array<mixed> $products   شناسه‌های انتخاب‌شده.
+	 * @param array<mixed> $quantities تعدادها.
+	 */
+	private static function keep_draft( int $user_id, string $type, int $order_id, array $products, array $quantities ): void {
+		$qty = [];
+		foreach ( array_unique( array_map( 'intval', $products ) ) as $pid ) {
+			$raw = $quantities[ $pid ] ?? $quantities[ (string) $pid ] ?? null;
+			if ( $pid > 0 ) {
+				$qty[ $pid ] = is_scalar( $raw ) && is_numeric( $raw ) ? (float) $raw : 0.0;
+			}
+		}
+		set_transient( 'hodima_panel_draft_' . $user_id, [ 'type' => $type, 'order_id' => $order_id, 'qty' => $qty ], 5 * MINUTE_IN_SECONDS );
+	}
+
+	/**
+	 * پیش‌نویس فرم ردشده برای همین فرم (یک بار؛ بعد پاک می‌شود).
+	 *
+	 * @param int    $user_id  کاربر.
+	 * @param string $type     نوع فرم.
+	 * @param int    $order_id سفارش در حال ویرایش.
+	 * @return array<int, float>|null شناسه => تعداد، یا null.
+	 */
+	public static function take_draft( int $user_id, string $type, int $order_id ): ?array {
+		$key   = 'hodima_panel_draft_' . $user_id;
+		$draft = get_transient( $key );
+		delete_transient( $key );
+		if ( ! is_array( $draft ) || ( $draft['type'] ?? '' ) !== $type || (int) ( $draft['order_id'] ?? -1 ) !== $order_id || ! is_array( $draft['qty'] ?? null ) ) {
+			return null;
+		}
+		return array_map( 'floatval', $draft['qty'] );
 	}
 
 	/**

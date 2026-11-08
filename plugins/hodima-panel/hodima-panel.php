@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Panel
  * Plugin URI:        https://hodima.com
  * Description:       پنل کاربری عمده‌فروشی هدیما: ورود و ثبت‌نام با موبایل، پیش‌خرید و پیش‌فاکتور، فهرست سفارش‌ها با فاکتور و فیش، گفتگوی هر سفارش و تیکت پشتیبانی؛ همراه صفحه‌های مدیریت در پیشخوان.
- * Version:           0.2.2
+ * Version:           0.2.3
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Author:            آرین فتحی
@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_PANEL_VERSION = '0.2.2';
+const HODIMA_PANEL_VERSION = '0.2.3';
 define( 'HODIMA_PANEL_FILE', __FILE__ );
 define( 'HODIMA_PANEL_DIR', __DIR__ );
 define( 'HODIMA_PANEL_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );

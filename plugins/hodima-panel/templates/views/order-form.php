@@ -40,6 +40,11 @@ if ( $hodima_order_id > 0 ) {
 $hodima_errors = get_transient( 'hodima_panel_errors_' . $hodima_user_id );
 $hodima_errors = is_array( $hodima_errors ) ? array_filter( $hodima_errors, 'is_string' ) : [];
 delete_transient( 'hodima_panel_errors_' . $hodima_user_id );
+// ورودی همان ارسال ردشده جای مقدار ذخیره‌شده (مشتری دوباره همه را نزند)
+$hodima_draft = $hodima_locked ? null : Orders::take_draft( $hodima_user_id, $hodima_type, $hodima_order_id );
+if ( null !== $hodima_draft ) {
+	$hodima_qty = $hodima_draft;
+}
 
 $hodima_products = ! $hodima_locked && \Hodima\Panel\wc_active() ? get_posts(
 	[
@@ -51,6 +56,23 @@ $hodima_products = ! $hodima_locked && \Hodima\Panel\wc_active() ? get_posts(
 		'meta_query'     => [ [ 'key' => '_' . $hodima_type . '_enabled', 'value' => 'yes' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 	]
 ) : [];
+// فقط محصولی که پنل از آن سفارش می‌گیرد (قیمت دار، تک‌مدل)؛ همان قاعده Orders::validate_items
+$hodima_prices = [];
+foreach ( $hodima_products as $hodima_i => $hodima_post ) {
+	$hodima_price = Orders::price_of( wc_get_product( (int) $hodima_post->ID ) );
+	if ( null === $hodima_price ) {
+		unset( $hodima_products[ $hodima_i ] );
+		continue;
+	}
+	$hodima_prices[ (int) $hodima_post->ID ] = $hodima_price;
+}
+// اقلام سفارش در حال ویرایش که دیگر سفارش‌پذیر نیستند: تا 0.2.2 بی‌صدا از فرم و با ذخیره از سفارش حذف می‌شدند
+$hodima_gone = [];
+foreach ( array_keys( $hodima_qty ) as $hodima_pid ) {
+	if ( ! isset( $hodima_prices[ $hodima_pid ] ) ) {
+		$hodima_gone[] = get_the_title( $hodima_pid );
+	}
+}
 ?>
 <header class="hpn-head hpn-head--row">
 	<div>
@@ -76,6 +98,13 @@ $hodima_products = ! $hodima_locked && \Hodima\Panel\wc_active() ? get_posts(
 	</div>
 <?php endif; ?>
 
+<?php if ( $hodima_gone && ! $hodima_locked ) : ?>
+	<div class="hpn-notice hpn-notice--error" role="alert">
+		<?php echo View::icon( 'alert', 20 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG ثابت. ?>
+		<span><?php echo esc_html( 'این اقلام دیگر برای ' . $hodima_label . ' فعال نیستند و با ذخیره از سفارش حذف می‌شوند: ' . implode( '، ', $hodima_gone ) . '. اگر لازمشان دارید پیش از ذخیره با پشتیبانی گفتگو کنید.' ); ?></span>
+	</div>
+<?php endif; ?>
+
 <?php if ( $hodima_locked ) : ?>
 	<p class="hpn-card hpn-empty">این سفارش در حال بررسی است و دیگر قابل ویرایش نیست. برای تغییر، در «سفارش‌ها» از دکمه «گفتگو با پشتیبانی» پیام بدهید.</p>
 <?php elseif ( ! $hodima_products ) : ?>
@@ -92,12 +121,8 @@ $hodima_products = ! $hodima_locked && \Hodima\Panel\wc_active() ? get_posts(
 			<?php foreach ( $hodima_products as $hodima_post ) : ?>
 				<?php
 				$hodima_pid      = (int) $hodima_post->ID;
-				$hodima_product  = wc_get_product( $hodima_pid );
-				if ( ! $hodima_product ) {
-					continue;
-				}
 				$hodima_rules    = Orders::product_rules( $hodima_pid );
-				$hodima_price    = (float) $hodima_product->get_price();
+				$hodima_price    = $hodima_prices[ $hodima_pid ];
 				$hodima_selected = isset( $hodima_qty[ $hodima_pid ] );
 				$hodima_value    = $hodima_qty[ $hodima_pid ] ?? $hodima_rules['min'];
 				$hodima_step     = $hodima_rules['multiple'] ? $hodima_rules['min'] : 1;

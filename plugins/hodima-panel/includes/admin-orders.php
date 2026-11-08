@@ -42,6 +42,38 @@ final class Admin_Orders {
 		add_action( 'admin_menu', [ self::class, 'menu' ] );
 		add_action( 'admin_enqueue_scripts', [ self::class, 'assets' ] );
 		add_action( 'admin_notices', [ self::class, 'kit_notice' ] );
+		add_action( 'admin_notices', [ self::class, 'page_notice' ] );
+		add_action( 'admin_post_hodima_panel_page', [ self::class, 'handle_page' ] );
+	}
+
+	/**
+	 * هشدار نبودن برگه پنل (حذف، زباله‌دان یا پیش‌نویس).
+	 *
+	 * برگه فقط هنگام فعال‌سازی ساخته می‌شود؛ تا 0.2.2 اگر بعدا از دست می‌رفت، آدرس پنل ۴۰۴ می‌داد
+	 * و هیچ پیامی به مدیر نمی‌رسید.
+	 */
+	public static function page_notice(): void {
+		if ( Page::id() > 0 || ! current_user_can( self::CAP ) ) {
+			return;
+		}
+		echo '<div class="notice notice-error"><p>';
+		echo esc_html( 'برگه «پنل کاربری» (Hodima Panel) پیدا نشد یا منتشر نیست؛ مشتریان پنل را نمی‌بینند.' );
+		echo '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><p>';
+		echo '<input type="hidden" name="action" value="hodima_panel_page">';
+		wp_nonce_field( 'hodima_panel_page' );
+		echo '<button type="submit" class="button button-primary">ساخت یا انتشار دوباره برگه</button>';
+		echo '</p></form></div>';
+	}
+
+	/** ساخت یا انتشار دوباره برگه پنل (admin-post). */
+	public static function handle_page(): void {
+		if ( ! current_user_can( self::CAP ) ) {
+			wp_die( 'اجازه ندارید.', '', [ 'response' => 403 ] );
+		}
+		check_admin_referer( 'hodima_panel_page' );
+		Page::ensure();
+		wp_safe_redirect( wp_get_referer() ?: admin_url() );
+		exit;
 	}
 
 	/** آیا کیت UI (پوشه ui/) نصب شده؟ فقط در ZIP انتشار است، نه در سورس گیت‌هاب. */
@@ -172,10 +204,22 @@ final class Admin_Orders {
 			if ( 'pending' === $order->status ) {
 				$set( 'awaiting_payment' );
 			}
-			Orders::add_chat_message( $order_id, $owner, 'system', 'پیش‌فاکتور سفارش شما صادر شد. فایل را از کارت همین سفارش ببینید و پس از پرداخت، فیش واریزی را بفرستید.', 'user' );
+			// سفارش تکمیل/لغوشده دیگر فیش نمی‌پذیرد؛ تا 0.2.2 همان پیام «فیش بفرستید» را می‌گرفت
+			$closed = in_array( (string) $order->status, [ 'completed', 'cancelled' ], true );
+			Orders::add_chat_message(
+				$order_id,
+				$owner,
+				'system',
+				$closed ? 'فایل تازه‌ای به سفارش شما اضافه شد؛ آن را از کارت همین سفارش ببینید.' : 'پیش‌فاکتور سفارش شما صادر شد. فایل را از کارت همین سفارش ببینید و پس از پرداخت، فیش واریزی را بفرستید.',
+				'user'
+			);
 			self::back( $view + [ 'hp_msg' => 'invoice' ] );
 		}
 		if ( 'complete' === $action ) {
+			// دکمه دوباره (دو کلیک، رفرش) پیام «سفارش تکمیل شد» تکراری می‌فرستاد
+			if ( 'completed' === $order->status ) {
+				self::back( $view + [ 'hp_msg' => 'already_completed' ] );
+			}
 			$set( 'completed' );
 			Orders::add_chat_message( $order_id, $owner, 'system', 'پرداخت شما تأیید شد و سفارش تکمیل شد. از خرید شما سپاسگزاریم.', 'user' );
 			self::back( $view + [ 'hp_msg' => 'completed' ] );
@@ -196,6 +240,7 @@ final class Admin_Orders {
 			'chat'      => [ 'پیام برای مشتری فرستاده شد.', 'success' ],
 			'invoice'   => [ 'پیش‌فاکتور فرستاده شد و مشتری پیام خودکار گرفت.', 'success' ],
 			'completed' => [ 'سفارش تکمیل شد و مشتری پیام خودکار گرفت.', 'success' ],
+			'already_completed' => [ 'این سفارش از قبل تکمیل شده بود؛ پیام تازه‌ای فرستاده نشد.', 'warning' ],
 			'deleted'   => [ 'سفارش‌های انتخاب‌شده حذف شدند.', 'success' ],
 		];
 		foreach ( Files::errors() as $code => $text ) {

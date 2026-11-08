@@ -98,7 +98,11 @@ add_action( 'hodima_panel_request', static function ( string $section ): void {
 			support_back( [ 'new' => 1, 'msg' => 'ticket_error' ] );
 		}
 		$wpdb->update( table( 'tickets' ), [ 'reference_code' => sprintf( 'TKT-%06d', $ticket_id ) ], [ 'id' => $ticket_id ] );
-		$wpdb->insert( table( 'ticket_messages' ), [ 'ticket_id' => $ticket_id, 'sender_id' => $user_id, 'sender_type' => 'user', 'message' => $message, 'created_at' => $now ] );
+		if ( ! $wpdb->insert( table( 'ticket_messages' ), [ 'ticket_id' => $ticket_id, 'sender_id' => $user_id, 'sender_type' => 'user', 'message' => $message, 'created_at' => $now ] ) ) {
+			// تیکت بی پیام نماند (تا 0.2.2 می‌ماند و مدیر رشته خالی می‌دید)
+			$wpdb->delete( table( 'tickets' ), [ 'id' => $ticket_id ], [ '%d' ] );
+			support_back( [ 'new' => 1, 'msg' => 'ticket_error' ] );
+		}
 		clear_admin_badge();
 		support_back( [ 'thread_id' => $ticket_id, 'msg' => 'ticket_sent' ] );
 	}
@@ -107,10 +111,19 @@ add_action( 'hodima_panel_request', static function ( string $section ): void {
 		check_admin_referer( 'reply_ticket_nonce', '_wpnonce_reply_ticket' );
 		$ticket_id = absint( $_POST['thread_id'] ?? 0 );
 		$status    = $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM %i WHERE id = %d AND user_id = %d', table( 'tickets' ), $ticket_id, $user_id ) );
-		if ( null === $status || 'closed' === $status || '' === trim( $message ) ) {
-			return;
+		// هر رد با ریدایرکت و پیام (تا 0.2.2 بی‌صدا برمی‌گشت: نه پیامی، و رفرش فرم را دوباره می‌فرستاد)
+		if ( null === $status ) {
+			support_back( [ 'msg' => 'error_owner' ] );
 		}
-		$wpdb->insert( table( 'ticket_messages' ), [ 'ticket_id' => $ticket_id, 'sender_id' => $user_id, 'sender_type' => 'user', 'message' => $message, 'created_at' => $now ] );
+		if ( 'closed' === $status ) {
+			support_back( [ 'thread_id' => $ticket_id, 'msg' => 'ticket_closed' ] );
+		}
+		if ( '' === trim( $message ) ) {
+			support_back( [ 'thread_id' => $ticket_id, 'msg' => 'message_empty' ] );
+		}
+		if ( ! $wpdb->insert( table( 'ticket_messages' ), [ 'ticket_id' => $ticket_id, 'sender_id' => $user_id, 'sender_type' => 'user', 'message' => $message, 'created_at' => $now ] ) ) {
+			support_back( [ 'thread_id' => $ticket_id, 'msg' => 'ticket_error' ] );
+		}
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE %i SET status = 'open', admin_unread = admin_unread + 1, user_unread = 0, last_message_sender = 'user', last_message_preview = %s, last_message_at = %s, updated_at = %s WHERE id = %d",

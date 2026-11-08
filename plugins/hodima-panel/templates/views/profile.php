@@ -17,7 +17,7 @@ $hodima_staff  = Profile::is_staff( $hodima_user );
 // کد پیامکی فقط به شماره تأییدشده (کارکنان هرگز)
 $hodima_sms    = ! $hodima_staff && '' !== Profile::verified_mobile( $hodima_user );
 $hodima_error  = Profile::take_error( (int) $hodima_user->ID ); // خطای ذخیره بی JS
-$hodima_f      = Profile::fields( $hodima_user );
+$hodima_f      = Profile::form_fields( $hodima_user );
 $hodima_states = Profile::states();
 $hodima_cities = $hodima_states ? Profile::cities() : [];
 ?>

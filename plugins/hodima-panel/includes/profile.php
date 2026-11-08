@@ -198,24 +198,20 @@ final class Profile {
 	}
 
 	/**
-	 * اعتبارسنجی و ذخیره.
+	 * اعتبارسنجی فیلدها بی ذخیره.
+	 *
+	 * جدا از save() تا process() پیش از مصرف کد پیامکی بسنجد؛ تا 0.2.2 کد درست با خطای
+	 * یک فیلد (کد پستی کوتاه) مصرف می‌شد و مشتری باید کد تازه می‌گرفت.
 	 *
 	 * @param \WP_User             $user کاربر.
 	 * @param array<string, string> $in   name، email، address، postcode (wp_unslash شده).
-	 * @return string پیام خطا، یا '' برای موفقیت.
+	 * @return string پیام خطا، یا ''.
 	 */
-	public static function save( \WP_User $user, array $in ): string {
+	public static function validate( \WP_User $user, array $in ): string {
 		$name     = sanitize_text_field( $in['name'] ?? '' );
 		$email    = sanitize_email( $in['email'] ?? '' );
 		$address  = sanitize_textarea_field( $in['address'] ?? '' );
 		$postcode = self::digits( sanitize_text_field( $in['postcode'] ?? '' ) );
-		$state    = sanitize_text_field( $in['state'] ?? '' );
-		$city     = sanitize_text_field( $in['city'] ?? '' );
-		$states   = self::states();
-		if ( $states && '' !== $state && ! isset( $states[ $state ] ) ) {
-			$state = '';
-		}
-
 		if ( ! self::is_real_name( $name ) ) {
 			return 'لطفا نام و نام خانوادگی واقعی خود را وارد کنید.';
 		}
@@ -231,6 +227,31 @@ final class Profile {
 		}
 		if ( ! preg_match( '/^\d{10}$/', $postcode ) ) {
 			return 'کد پستی باید ۱۰ رقم باشد.';
+		}
+		return '';
+	}
+
+	/**
+	 * اعتبارسنجی و ذخیره.
+	 *
+	 * @param \WP_User             $user کاربر.
+	 * @param array<string, string> $in   name، email، address، postcode (wp_unslash شده).
+	 * @return string پیام خطا، یا '' برای موفقیت.
+	 */
+	public static function save( \WP_User $user, array $in ): string {
+		$error = self::validate( $user, $in );
+		if ( '' !== $error ) {
+			return $error;
+		}
+		$name     = sanitize_text_field( $in['name'] ?? '' );
+		$email    = sanitize_email( $in['email'] ?? '' );
+		$address  = sanitize_textarea_field( $in['address'] ?? '' );
+		$postcode = self::digits( sanitize_text_field( $in['postcode'] ?? '' ) );
+		$state    = sanitize_text_field( $in['state'] ?? '' );
+		$city     = sanitize_text_field( $in['city'] ?? '' );
+		$states   = self::states();
+		if ( $states && '' !== $state && ! isset( $states[ $state ] ) ) {
+			$state = '';
 		}
 
 		$parts = preg_split( '/\s+/u', trim( $name ), 2 ) ?: [ $name ];
@@ -315,6 +336,10 @@ final class Profile {
 		$new_pass = $in['new_password'] ?? '';
 		if ( '' !== $new_pass && ( $new_pass !== ( $in['confirm_password'] ?? '' ) || strlen( $new_pass ) < 8 ) ) {
 			return $fail( 'رمز تازه باید دست‌کم ۸ حرف باشد و با تکرارش یکی باشد.' );
+		}
+		$invalid = self::validate( $user, $in );
+		if ( '' !== $invalid ) {
+			return $fail( $invalid );
 		}
 
 		// تغییر رمز یا ایمیل واقعی فقط با رمز فعلی یا کد پیامکی (گزارش، مورد ۹: با نشست ربوده‌شده
@@ -412,12 +437,36 @@ final class Profile {
 		if ( ! $user instanceof \WP_User ) {
 			return;
 		}
-		$result = self::process( $user, self::posted() );
+		$posted = self::posted();
+		$result = self::process( $user, $posted );
 		if ( ! $result['ok'] ) {
 			set_transient( 'hodima_panel_profile_error_' . $user->ID, $result['message'], 5 * MINUTE_IN_SECONDS );
+			// نوشته‌های مشتری برای فرم بعدی (رمزها هرگز ذخیره نمی‌شوند)؛ تا 0.2.2 با هر خطا پاک می‌شد
+			set_transient( 'hodima_panel_profile_input_' . $user->ID, array_intersect_key( $posted, array_flip( [ 'name', 'email', 'address', 'postcode', 'state', 'city' ] ) ), 5 * MINUTE_IN_SECONDS );
 		}
 		wp_safe_redirect( Page::url( [ 'section' => 'profile', 'msg' => $result['ok'] ? 'profile_saved' : 'profile_error' ] ) );
 		exit;
+	}
+
+	/**
+	 * فیلدهای فرم با نوشته‌های ارسال ردشده (یک بار؛ فرم بی JS).
+	 *
+	 * @param \WP_User $user کاربر.
+	 * @return array{name: string, email: string, address: string, postcode: string, mobile: string, state: string, city: string}
+	 */
+	public static function form_fields( \WP_User $user ): array {
+		$fields = self::fields( $user );
+		$key    = 'hodima_panel_profile_input_' . $user->ID;
+		$input  = get_transient( $key );
+		delete_transient( $key );
+		if ( is_array( $input ) ) {
+			foreach ( [ 'name', 'email', 'address', 'postcode', 'state', 'city' ] as $field ) {
+				if ( isset( $input[ $field ] ) && is_string( $input[ $field ] ) ) {
+					$fields[ $field ] = $input[ $field ];
+				}
+			}
+		}
+		return $fields;
 	}
 
 	/**

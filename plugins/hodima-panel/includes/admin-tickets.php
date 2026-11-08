@@ -88,7 +88,22 @@ final class Admin_Tickets {
 			self::back( $view + [ 'hp_msg' => 'reply' ] );
 		}
 		if ( 'close' === $action ) {
-			$wpdb->update( table( 'tickets' ), [ 'status' => 'closed', 'admin_unread' => 0, 'updated_at' => $now ], [ 'id' => $ticket_id ] );
+			if ( 'closed' === $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM %i WHERE id = %d', table( 'tickets' ), $ticket_id ) ) ) {
+				self::back( $view + [ 'hp_msg' => 'closed' ] );
+			}
+			// مشتری بستن را ببیند (تا 0.2.2 بی پیام و بی نشان «تازه» بسته می‌شد)
+			$note = 'این گفتگو توسط پشتیبانی بسته شد. برای سؤال تازه «پیام تازه به پشتیبانی» را بزنید.';
+			$wpdb->insert( table( 'ticket_messages' ), [ 'ticket_id' => $ticket_id, 'sender_id' => 0, 'sender_type' => 'system', 'message' => $note, 'created_at' => $now ] );
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE %i SET status = 'closed', admin_unread = 0, user_unread = user_unread + 1, last_message_sender = 'system', last_message_preview = %s, last_message_at = %s, updated_at = %s WHERE id = %d",
+					table( 'tickets' ),
+					preview( $note ),
+					$now,
+					$now,
+					$ticket_id
+				)
+			);
 			clear_admin_badge();
 			self::back( $view + [ 'hp_msg' => 'closed' ] );
 		}

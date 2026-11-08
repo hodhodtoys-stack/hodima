@@ -304,7 +304,8 @@ final class Files {
 		}
 		$file_id = absint( $_GET[ self::QUERY_VAR ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( ! is_user_logged_in() ) {
-			wp_safe_redirect( Page::url() );
+			// بعد از ورود همان فایل باز شود (تا 0.2.2 کاربر به داشبورد می‌رفت و لینک گم می‌شد)
+			wp_safe_redirect( Page::url( [ 'redirect_to' => rawurlencode( self::url( $file_id ) ) ] ) );
 			exit;
 		}
 		$file = self::resolve( $file_id, get_current_user_id() );

@@ -163,7 +163,7 @@ final class Admin_Product {
 		}
 		update_post_meta( $post_id, '_prebuy_enabled', isset( $_POST['_prebuy_enabled'] ) ? 'yes' : 'no' );
 		update_post_meta( $post_id, '_preinvoice_enabled', isset( $_POST['_preinvoice_enabled'] ) ? 'yes' : 'no' );
-		$unit = sanitize_text_field( wp_unslash( (string) ( $_POST['_up_sale_unit'] ?? '' ) ) );
+		$unit = Orders::normalize_unit( sanitize_text_field( wp_unslash( (string) ( $_POST['_up_sale_unit'] ?? '' ) ) ) );
 		update_post_meta( $post_id, '_up_sale_unit', $unit );
 		$capacity = Profile::digits( sanitize_text_field( wp_unslash( (string) ( $_POST['_up_unit_capacity'] ?? '' ) ) ) );
 		update_post_meta( $post_id, '_up_unit_capacity', '' === $capacity ? '' : (string) max( 1, (int) $capacity ) );

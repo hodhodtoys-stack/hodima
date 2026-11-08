@@ -167,6 +167,20 @@ $v = \Hodima\Panel\Orders::validate_items( 'preinvoice', [ $product ], [ $produc
 hodima_pt( 'محصولی که برای پیش‌فاکتور فعال نیست رد', count( $v['errors'] ), 1 );
 $v = \Hodima\Panel\Orders::validate_items( 'prebuy', [ $draft, 999999 ], [ $draft => '5', 999999 => '5' ] );
 hodima_pt( 'پیش‌نویس و ناموجود رد', [ count( $v['items'] ), count( $v['errors'] ) ], [ 0, 2 ] );
+$variable = (int) wp_insert_post( [ 'post_type' => 'product', 'post_status' => 'publish', 'post_title' => 'محصول چندمدلی آزمون' ] );
+update_post_meta( $variable, '_hx_type', 'variable' );
+update_post_meta( $variable, '_price', '100' );
+update_post_meta( $variable, '_prebuy_enabled', 'yes' );
+$noprice = (int) wp_insert_post( [ 'post_type' => 'product', 'post_status' => 'publish', 'post_title' => 'محصول بی‌قیمت آزمون' ] );
+update_post_meta( $noprice, '_prebuy_enabled', 'yes' );
+update_post_meta( $noprice, '_up_sale_unit', "\u{200F} كارتن  " );
+update_post_meta( $noprice, '_up_min_qty', '2' );
+$v = \Hodima\Panel\Orders::validate_items( 'prebuy', [ $variable, $noprice ], [ $variable => '1', $noprice => '2' ] );
+hodima_pt( 'محصول چندمدلی و بی‌قیمت رد (سفارش با مبلغ ۰ ساخته نمی‌شود)', [ count( $v['items'] ), count( $v['errors'] ), str_contains( $v['errors'][0] ?? '', 'قیمت' ) ], [ 0, 2, true ] );
+$v = \Hodima\Panel\Orders::validate_items( 'prebuy', [ $carton ], [ $carton => '999999999' ] );
+hodima_pt( 'بیشتر از سقف: پیام «بیشترین تعداد»، نه «حداقل»', [ str_contains( $v['errors'][0] ?? '', 'بیشترین تعداد' ), str_contains( $v['errors'][0] ?? '', 'حداقل' ) ], [ true, false ] );
+$rules = \Hodima\Panel\Orders::product_rules( $noprice );
+hodima_pt( 'واحد فروش یکدست («ك» عربی، فاصله، نشانه جهت) ← «کارتن» بی قانون مضرب', [ $rules['unit'], $rules['multiple'] ], [ 'کارتن', false ] );
 
 echo "== ثبت سفارش و اقلام (قیمت و ظرفیت لحظه ثبت، تعداد اعشاری)\n";
 $now = \Hodima\Panel\now();
@@ -196,10 +210,30 @@ hodima_pt( 'ویرایش سفارش مشتری دیگر رد شد', str_starts_w
 $_POST = $_REQUEST = [ 'action' => 'save_prebuy', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'products' => [ (string) $product ], 'qty' => [ $product => '0.2' ] ];
 $stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] );
 hodima_pt( 'تعداد نامعتبر ← برگشت به فرم با فهرست خطا، بی سفارش تازه', [ str_contains( $stop, 'msg=invalid_items' ), count( (array) get_transient( 'hodima_panel_errors_' . $user_b ) ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE user_id = %d', table( 'orders' ), $user_b ) ) ], [ true, 1, 1 ] );
+$hp_draft = get_transient( 'hodima_panel_draft_' . $user_b );
+hodima_pt( 'ورودی فرم ردشده برای پر کردن دوباره نگه داشته شد', [ $hp_draft['type'] ?? '', $hp_draft['order_id'] ?? -1, $hp_draft['qty'][ $product ] ?? null ], [ 'prebuy', 0, 0.2 ] );
+[ $html ] = hodima_pt_render( '/user-panel/?section=prebuy', $user_b );
+wp_cache_flush(); // رندر در پردازش جدا ترنزینت را پاک کرد؛ کش همین پردازش کهنه است
+hodima_pt( 'فرم بعد از خطا: همان تعداد و انتخاب، خطا، یک‌بار؛ محصول چندمدلی/بی‌قیمت در فرم نیست', [ (bool) preg_match( '/name="qty\[' . $product . '\]"\s+value="0.2"/', $html ), (bool) preg_match( '/value="' . $product . '" checked/', $html ), str_contains( $html, 'hpn-notice--error' ), false === get_transient( 'hodima_panel_draft_' . $user_b ), str_contains( $html, 'محصول چندمدلی آزمون' ), str_contains( $html, 'محصول بی‌قیمت آزمون' ) ], [ true, true, true, true, false, false ] );
+// همه یا هیچ: خطای ذخیره اقلام سفارش تازه‌ای باقی نمی‌گذارد
+$hp_break = static fn( string $q ): string => str_starts_with( ltrim( $q ), 'INSERT' ) && str_contains( $q, 'hodima_panel_order_items' ) ? 'SELECT * FROM hp_no_such_table' : $q;
+add_filter( 'query', $hp_break );
+$hp_orders_b = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE user_id = %d', table( 'orders' ), $user_b ) );
+$_POST = $_REQUEST = [ 'action' => 'save_prebuy', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'products' => [ (string) $product ], 'qty' => [ $product => '1' ] ];
+$wpdb->suppress_errors( true );
+$stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] );
+$wpdb->suppress_errors( false );
+remove_filter( 'query', $hp_break );
+hodima_pt( 'خطای ذخیره اقلام: سفارش نیمه‌کاره نمی‌ماند، پیام خطا', [ str_contains( $stop, 'msg=db_error' ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE user_id = %d', table( 'orders' ), $user_b ) ) - $hp_orders_b ], [ true, 0 ] );
+delete_transient( 'hodima_panel_draft_' . $user_b );
 // ویرایش: نوع فرم دیگر نوع سفارش را عوض نمی‌کند؛ بعد از بررسی مدیر قفل است
 $_POST = $_REQUEST = [ 'action' => 'save_preinvoice', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'order_id' => (string) $order_b, 'products' => [ (string) $product ], 'qty' => [ $product => '1' ] ];
 hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] );
 hodima_pt( 'ویرایش با فرم پیش‌فاکتور نوع پیش‌خرید را نگه داشت', $wpdb->get_var( $wpdb->prepare( 'SELECT type FROM %i WHERE id = %d', table( 'orders' ), $order_b ) ), 'prebuy' );
+update_post_meta( $product, '_prebuy_enabled', 'no' );
+[ $html ] = hodima_pt_render( '/user-panel/?section=prebuy&edit_order=' . $order_b, $user_b );
+update_post_meta( $product, '_prebuy_enabled', 'yes' );
+hodima_pt( 'ویرایش سفارش با قلمی که دیگر فعال نیست: هشدار با نام قلم', [ str_contains( $html, 'دیگر برای پیش‌خرید فعال نیستند' ), str_contains( $html, 'گیره آزمون پنل' ) ], [ true, true ] );
 $wpdb->update( table( 'orders' ), [ 'status' => 'awaiting_payment' ], [ 'id' => $order_b ] );
 $_POST = $_REQUEST = [ 'action' => 'save_prebuy', '_wpnonce' => wp_create_nonce( 'user_panel_action' ), 'order_id' => (string) $order_b, 'products' => [ (string) $product ], 'qty' => [ $product => '50' ] ];
 $stop  = hodima_pt_run( [ \Hodima\Panel\Orders::class, 'handle_form' ] );
@@ -375,6 +409,17 @@ $ticket = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE user_id = %d O
 hodima_pt( 'مشاوره: تیکت ثبت و به همان رشته رفت', [ str_contains( $stop, 'redirect:' ), str_contains( $stop, 'thread_id=' . (int) ( $ticket->id ?? 0 ) ), str_contains( $stop, 'msg=ticket_sent' ) ], [ true, true, true ] );
 hodima_pt( 'مشاوره: نوع «مشاوره قبل از خرید»، فوریت عادی، واحد فرستاده‌شده نادیده', [ $ticket->department ?? '', $ticket->priority ?? '', \Hodima\Panel\ticket_departments()[ $ticket->department ?? '' ] ?? '' ], [ 'consult', 'normal', 'مشاوره قبل از خرید' ] );
 hodima_pt( 'کد پیگیری', $ticket->reference_code ?? '', sprintf( 'TKT-%06d', (int) ( $ticket->id ?? 0 ) ) );
+// پاسخ مشتری به تیکت: هر رد با پیام (نه بازگشت بی‌صدا)
+$hp_reply = static function ( array $fields ): string {
+	$_POST = $_REQUEST = [ 'support_action' => 'reply_to_ticket', '_wpnonce_reply_ticket' => wp_create_nonce( 'reply_ticket_nonce' ) ] + $fields;
+	return hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'support' ) );
+};
+$r_empty = $hp_reply( [ 'thread_id' => (string) $ticket->id, 'message' => '  ' ] );
+$r_other = $hp_reply( [ 'thread_id' => '999999', 'message' => 'سلام' ] );
+$wpdb->update( table( 'tickets' ), [ 'status' => 'closed' ], [ 'id' => $ticket->id ] );
+$r_closed = $hp_reply( [ 'thread_id' => (string) $ticket->id, 'message' => 'سلام' ] );
+$wpdb->update( table( 'tickets' ), [ 'status' => 'open' ], [ 'id' => $ticket->id ] );
+hodima_pt( 'پاسخ تیکت ردشده: ریدایرکت با پیام (خالی، تیکت دیگران، بسته)', [ str_contains( $r_empty, 'msg=message_empty' ), str_contains( $r_other, 'msg=error_owner' ), str_contains( $r_closed, 'msg=ticket_closed' ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE ticket_id = %d', table( 'ticket_messages' ), $ticket->id ) ) ], [ true, true, true, 1 ] );
 hodima_pt( 'متن بدون \\ اضافه', $wpdb->get_var( $wpdb->prepare( 'SELECT message FROM %i WHERE ticket_id = %d', table( 'ticket_messages' ), $ticket->id ) ), 'متن "نقل"' );
 $stop = $hp_ticket_post( [ 'topic' => 'consult', 'subject' => '', 'message' => 'حداقل سفارش چقدر است؟' ] );
 hodima_pt( 'مشاوره بی موضوع: موضوع پیش‌فرض', (string) $wpdb->get_var( $wpdb->prepare( 'SELECT subject FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT 1', table( 'tickets' ), $user_a ) ), 'مشاوره قبل از خرید' );
@@ -704,6 +749,14 @@ $out = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'verify_code' => $pcod
 hodima_pt( 'کد درست ← ایمیل عوض شد', [ str_contains( $out, '"success":true' ), get_userdata( (int) $new->ID )->user_email ], [ true, 'sara@hodima.test' ] );
 $out = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'display_name' => 'سارا محمدی‌پور' ] );
 hodima_pt( 'تغییر بی‌خطر (نام) بی تأیید', str_contains( $out, '"success":true' ), true );
+// کد پیامکی با خطای یک فیلد مصرف نمی‌شود
+$hp_otp_reset();
+Otp::issue( 'user-' . (int) $new->ID, '09127770001', 'profile', '198.51.100.8' );
+$pcode2 = $hp_last_code();
+$out    = $hp_profile( [ 'user_email' => 'sara2@hodima.test', 'postcode' => '123', 'verify_code' => $pcode2 ] );
+$out2   = $hp_profile( [ 'user_email' => 'sara2@hodima.test', 'verify_code' => $pcode2 ] );
+hodima_pt( 'کد درست + کد پستی غلط: خطای فیلد، کد هنوز معتبر برای ارسال درست', [ str_contains( $out, '"success":false' ), str_contains( $out2, '"success":true' ), get_userdata( (int) $new->ID )->user_email ], [ true, true, 'sara2@hodima.test' ] );
+$hp_profile( [ 'user_email' => 'sara@hodima.test', 'current_password' => 'NewPass-456' ] );
 // سقف حدس رمز فعلی
 delete_transient( 'hodima_panel_pwcheck_' . (int) $new->ID );
 for ( $i = 0; $i < Profile::CURRENT_PASSWORD_TRIES; $i++ ) {
@@ -740,6 +793,11 @@ $stop = $hp_form( [ 'new_password' => 'Other-Pass-789', 'confirm_password' => 'O
 hodima_pt( 'فرم بی JS: تغییر رمز بی تأیید رد، خطا برای نمایش', [ str_contains( $stop, 'msg=profile_error' ), wp_check_password( 'NewPass-456', get_userdata( (int) $new->ID )->user_pass ), str_contains( Profile::take_error( (int) $new->ID ), 'رمز فعلی' ), Profile::take_error( (int) $new->ID ) ], [ true, true, true, '' ] );
 $_POST = $_REQUEST = [ 'up_profile_nonce' => 'bad', 'display_name' => 'نفوذ' ];
 hodima_pt( 'فرم بی JS: nonce نادرست رد', str_starts_with( hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'profile' ) ), 'die:' ), true );
+$_POST = $_REQUEST = [];
+$stop = $hp_form( [ 'address' => 'تهران کوچه نگه‌داشته پلاک ۷', 'postcode' => '12' ] );
+[ $html ] = hodima_pt_render( '/user-panel/?section=profile', (int) $new->ID );
+[ $html2 ] = hodima_pt_render( '/user-panel/?section=profile', (int) $new->ID );
+hodima_pt( 'فرم بی JS با خطا: نوشته‌های مشتری در فرم می‌ماند (یک بار)، رمز نه', [ str_contains( $stop, 'msg=profile_error' ), str_contains( $html, 'تهران کوچه نگه‌داشته پلاک ۷' ), str_contains( $html, 'value="12"' ), str_contains( $html2, 'تهران کوچه نگه‌داشته پلاک ۷' ) ], [ true, true, true, false ] );
 [ $html ] = hodima_pt_render( '/user-panel/?section=profile', (int) $new->ID );
 hodima_pt( 'فرم پروفایل POST است (رمز هرگز در آدرس)', (bool) preg_match( '/<form[^>]+id="hpn-profile"[^>]+method="post"/', $html ), true );
 // کارکنان: تغییر رمز/ایمیل فقط با رمز فعلی، نه کد پیامکی
@@ -809,6 +867,7 @@ hodima_pt( 'نشانی امن: صاحب سفارش خود فایل را می‌�
 hodima_pt( 'نشانی امن: مشتری دیگر فایل را نمی‌گیرد', [ str_starts_with( $html, "\x89PNG" ), str_contains( $html, 'اجازه دیدنش را ندارید' ) ], [ false, true ] );
 [ $html, $err ] = hodima_pt_render( '/?hodima_panel_file=' . $fid );
 hodima_pt( 'نشانی امن: مهمان ← ریدایرکت به پنل', [ str_starts_with( $html, "\x89PNG" ), str_contains( $err, 'REDIRECT -> ' . Page::url() ) ], [ false, true ] );
+hodima_pt( 'نشانی امن: مهمان ← بعد از ورود همان فایل (redirect_to)', str_contains( $err, 'redirect_to=' . rawurlencode( Files::url( $fid ) ) ), true );
 hodima_pt( 'باز کردن تیکت پیش از منو خوانده شد', (int) $wpdb->get_var( $wpdb->prepare( 'SELECT user_unread FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) ), 0 );
 $wpdb->update( table( 'orders' ), [ 'status' => 'completed' ], [ 'id' => $order_a ] );
 [ $html ] = hodima_pt_render( '/user-panel/?section=orders', $user_a );
@@ -881,6 +940,8 @@ hodima_pt( 'تکمیل بی nonce رد شد', [ str_starts_with( $stop, 'die:' )
 $msgs = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE chat_id = %d', table( 'chat_messages' ), $chat->id ) );
 $stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'complete', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
 hodima_pt( 'تکمیل سفارش: وضعیت، پیام خودکار به مشتری، ریدایرکت', [ \Hodima\Panel\Orders::get( $order_a )->status, (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE chat_id = %d', table( 'chat_messages' ), $chat->id ) ) - $msgs, str_contains( $stop, 'hp_msg=completed' ) ], [ 'completed', 1, true ] );
+$stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'complete', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
+hodima_pt( 'تکمیل دوباره: پیام تکراری به مشتری نمی‌رود', [ str_contains( $stop, 'hp_msg=already_completed' ), (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE chat_id = %d', table( 'chat_messages' ), $chat->id ) ) - $msgs ], [ true, 1 ] );
 $stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'status', 'order_status' => 'hacked', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
 hodima_pt( 'وضعیت دستی ناشناخته نادیده', \Hodima\Panel\Orders::get( $order_a )->status, 'completed' );
 $stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'status', 'order_status' => 'receipt_uploaded', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
@@ -903,6 +964,22 @@ $t_row  = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', tabl
 hodima_pt( 'پاسخ تیکت: «پاسخ داده شد»، برای مشتری نخوانده', [ $t_row->status, (int) $t_row->user_unread - $before, str_contains( $stop, 'hp_msg=reply' ) ], [ 'answered', 1, true ] );
 $stop  = $hp_post( $t_get, [ 'thread_id' => (string) $ticket->id, 'hp_action' => 'close', 'message' => '', '_wpnonce' => wp_create_nonce( 'hodima_panel_ticket_' . $ticket->id ) ], [ Admin_Tickets::class, 'handle' ] );
 hodima_pt( 'بستن تیکت', $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) ), 'closed' );
+$t_row = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) );
+$hp_close_msgs = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE ticket_id = %d AND sender_type = 'system'", table( 'ticket_messages' ), $ticket->id ) );
+hodima_pt( 'بستن تیکت: پیام سیستمی و نشان «تازه» برای مشتری', [ $hp_close_msgs, (int) $t_row->user_unread > 0, $t_row->last_message_sender ], [ 1, true, 'system' ] );
+$hp_post( $t_get, [ 'thread_id' => (string) $ticket->id, 'hp_action' => 'close', '_wpnonce' => wp_create_nonce( 'hodima_panel_ticket_' . $ticket->id ) ], [ Admin_Tickets::class, 'handle' ] );
+hodima_pt( 'بستن دوباره: پیام تکراری نه', (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE ticket_id = %d AND sender_type = 'system'", table( 'ticket_messages' ), $ticket->id ) ), 1 );
+// برگه پنل از دست رفته: هشدار در پیشخوان و ساخت/انتشار دوباره همان برگه
+$hp_page = Page::id();
+wp_update_post( [ 'ID' => $hp_page, 'post_status' => 'draft' ] );
+ob_start();
+Admin_Orders::page_notice();
+$hp_note = (string) ob_get_clean();
+$hp_ensured = \Hodima\Panel\Page::ensure();
+hodima_pt( 'برگه پیش‌نویس‌شده: هشدار با دکمه، ensure همان برگه را منتشر می‌کند', [ str_contains( $hp_note, 'hodima_panel_page' ), $hp_ensured, (string) $wpdb->get_var( $wpdb->prepare( 'SELECT post_status FROM %i WHERE ID = %d', $wpdb->posts, $hp_page ) ) ], [ true, $hp_page, 'publish' ] );
+ob_start();
+Admin_Orders::page_notice();
+hodima_pt( 'برگه سالم: بی هشدار', (string) ob_get_clean(), '' );
 $out = $hp_admin( $t_get, $render_tickets );
 hodima_pt( 'تیکت بسته فرم پاسخ ندارد', str_contains( $out, 'name="message"' ), false );
 

@@ -44,9 +44,14 @@ final class Page {
 			return $id;
 		}
 
-		$existing = get_page_by_path( self::SLUG );
+		// برگه ثبت‌شده‌ای که پیش‌نویس/خصوصی شده، یا برگه موجود با نامک user-panel: همان منتشر شود
+		$saved    = get_post( (int) get_option( self::OPTION, 0 ) );
+		$existing = $saved instanceof \WP_Post && 'page' === $saved->post_type && 'trash' !== $saved->post_status ? $saved : get_page_by_path( self::SLUG );
 		if ( $existing instanceof \WP_Post && 'trash' !== $existing->post_status ) {
 			$id = (int) $existing->ID;
+			if ( 'publish' !== $existing->post_status ) {
+				wp_update_post( [ 'ID' => $id, 'post_status' => 'publish' ] );
+			}
 		} else {
 			$id = (int) wp_insert_post(
 				[
