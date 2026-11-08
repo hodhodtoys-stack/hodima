@@ -22,7 +22,7 @@ use function Hodima\Panel\status_label;
 
 $hodima_user_id = get_current_user_id();
 // phpcs:disable WordPress.Security.NonceVerification.Recommended -- فقط انتخاب نما.
-$hodima_inbox = Support::inbox( $hodima_user_id, absint( $_GET['thread_id'] ?? 0 ), isset( $_GET['new'] ) );
+$hodima_inbox = Support::inbox( $hodima_user_id, absint( $_GET['thread_id'] ?? 0 ), isset( $_GET['new'] ), absint( $_GET['paged'] ?? 1 ) );
 // phpcs:enable
 $hodima_tickets = $hodima_inbox['tickets'];
 $hodima_chats   = $hodima_inbox['chats'];
@@ -30,6 +30,7 @@ $hodima_ticket  = $hodima_inbox['ticket'];
 $hodima_msgs    = $hodima_inbox['messages'];
 $hodima_new     = $hodima_inbox['new'];
 $hodima_orders  = $hodima_inbox['orders'];
+$hodima_paged   = $hodima_inbox['paged'];
 $hodima_status_class = static fn( string $s ): string => 'closed' === $s ? 'cancel' : ( 'answered' === $s ? 'done' : 'review' );
 ?>
 <header class="hpn-head">
@@ -47,7 +48,7 @@ $hodima_status_class = static fn( string $s ): string => 'closed' === $s ? 'canc
 			<?php foreach ( $hodima_tickets as $hodima_t ) : ?>
 				<?php $hodima_active = $hodima_ticket && (int) $hodima_ticket->id === (int) $hodima_t->id; ?>
 				<li>
-					<a class="hpn-threads__item<?php echo $hodima_active ? ' is-active' : ''; ?>" href="<?php echo esc_url( Page::url( [ 'section' => 'support', 'thread_id' => (int) $hodima_t->id ] ) ); ?>"<?php echo $hodima_active ? ' aria-current="true"' : ''; ?>>
+					<a class="hpn-threads__item<?php echo $hodima_active ? ' is-active' : ''; ?>" href="<?php echo esc_url( Page::url( array_filter( [ 'section' => 'support', 'paged' => $hodima_paged > 1 ? $hodima_paged : 0, 'thread_id' => (int) $hodima_t->id ] ) ) ); ?>"<?php echo $hodima_active ? ' aria-current="true"' : ''; ?>>
 						<span class="hpn-threads__top"><strong><?php echo esc_html( (string) $hodima_t->subject ); ?></strong><?php echo View::badge( (int) $hodima_t->user_unread, 'پاسخ تازه' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- خروجی امن. ?></span>
 						<span class="hpn-threads__preview"><?php echo esc_html( ( 'admin' === $hodima_t->last_message_sender ? 'پشتیبانی: ' : '' ) . (string) $hodima_t->last_message_preview ); ?></span>
 						<span class="hpn-muted hpn-threads__meta"><?php echo esc_html( ( ticket_departments()[ $hodima_t->department ] ?? '' ) . ' · ' . ( ticket_statuses()[ $hodima_t->status ] ?? '' ) . ' · ' . show_date( (string) ( $hodima_t->last_message_at ?: $hodima_t->created_at ), 'j F' ) ); ?></span>
@@ -64,6 +65,24 @@ $hodima_status_class = static fn( string $s ): string => 'closed' === $s ? 'canc
 				</li>
 			<?php endforeach; ?>
 		</ul>
+		<?php
+		if ( $hodima_inbox['pages'] > 1 ) {
+			echo '<nav class="hpn-pager" aria-label="صفحه‌های گفتگوها">';
+			echo wp_kses_post(
+				(string) paginate_links(
+					[
+						'base'      => add_query_arg( 'paged', '%#%', Page::url( [ 'section' => 'support' ] ) ),
+						'format'    => '',
+						'current'   => $hodima_paged,
+						'total'     => $hodima_inbox['pages'],
+						'prev_text' => 'قبلی',
+						'next_text' => 'بعدی',
+					]
+				)
+			);
+			echo '</nav>';
+		}
+		?>
 	</section>
 
 	<section class="hpn-card hpn-inbox__main" aria-labelledby="hpn-thread-title">

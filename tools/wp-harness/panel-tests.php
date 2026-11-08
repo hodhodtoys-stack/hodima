@@ -1073,6 +1073,41 @@ hodima_pt( 'برگه سالم: بی هشدار', (string) ob_get_clean(), '' );
 $out = $hp_admin( $t_get, $render_tickets );
 hodima_pt( 'تیکت بسته فرم پاسخ ندارد', str_contains( $out, 'name="message"' ), false );
 
+// صفحه‌بندی تیکت‌ها (طرح تأییدشده): پیشخوان ۱۵ در صفحه، پنل مشتری ۱۰؛ گفتگوی سفارش فقط صفحه اول
+$hp_pg = wp_insert_user( [ 'user_login' => 'hp_pgt', 'user_pass' => wp_generate_password(), 'user_email' => 'hp_pgt@hodima.test', 'role' => 'customer' ] );
+if ( is_int( $hp_pg ) && $hp_pg > 1 ) {
+	foreach ( [ 'billing_first_name' => 'صفحه', 'billing_last_name' => 'بندی', 'billing_email' => 'hp_pgt@hodima.test', 'billing_address_1' => 'تهران، خیابان آزمون، پلاک ۵', 'billing_postcode' => '1234567890' ] as $mk => $mv ) {
+		update_user_meta( $hp_pg, $mk, $mv );
+	}
+	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', table( 'tickets' ) ) ); // فقط تیکت‌های همین آزمون شمرده شوند
+	for ( $i = 0; $i < 23; $i++ ) {
+		$t = gmdate( 'Y-m-d H:i:s', time() - $i * HOUR_IN_SECONDS );
+		$wpdb->insert( table( 'tickets' ), [ 'user_id' => $hp_pg, 'reference_code' => 'TKT-PG' . $i, 'department' => 'consult', 'subject' => 'صفحه‌بندی ' . $i, 'status' => 'open', 'last_message_preview' => 'متن', 'last_message_sender' => 'user', 'last_message_at' => $t, 'created_at' => $t, 'updated_at' => $t ] );
+	}
+	$wpdb->insert( table( 'orders' ), [ 'user_id' => $hp_pg, 'type' => 'prebuy', 'status' => 'pending', 'created_at' => \Hodima\Panel\now(), 'updated_at' => \Hodima\Panel\now() ] );
+	$hp_pg_order = (int) $wpdb->insert_id;
+	\Hodima\Panel\Orders::add_chat_message( $hp_pg_order, $hp_pg, 'user', 'سؤال سفارش' );
+	$out1 = $hp_admin( [ 'page' => Admin_Tickets::SLUG, 'view' => 'all' ], $render_tickets );
+	$out2 = $hp_admin( [ 'page' => Admin_Tickets::SLUG, 'view' => 'all', 'paged' => '2' ], $render_tickets );
+	$out9 = $hp_admin( [ 'page' => Admin_Tickets::SLUG, 'view' => 'all', 'paged' => '9' ], $render_tickets );
+	hodima_pt(
+		'پیشخوان: ۱۵ تیکت در صفحه، شمار «از N»، دکمه صفحه بعد، لینک تیکت صفحه را نگه می‌دارد، صفحه بیرون از بازه = آخرین',
+		[ preg_match_all( '/class="hpa-thread-item[" ]/', $out1 ), str_contains( $out1, number_format_i18n( 1 ) . ' تا ' . number_format_i18n( 15 ) . ' از ' . number_format_i18n( 23 ) . ' تیکت' ), str_contains( $out1, 'paged=2' ), preg_match_all( '/class="hpa-thread-item[" ]/', $out2 ), (bool) preg_match( '/thread_id=\d+/', $out2 ) && str_contains( $out2, 'paged=2&amp;thread_id=' ) || str_contains( $out2, 'paged=2&#038;thread_id=' ), preg_match_all( '/class="hpa-thread-item[" ]/', $out9 ) ],
+		[ Admin_Tickets::PER_PAGE, true, true, 8, true, 8 ]
+	);
+	[ $html1 ] = hodima_pt_render( '/user-panel/?section=support', $hp_pg );
+	[ $html3 ] = hodima_pt_render( '/user-panel/?section=support&paged=3', $hp_pg );
+	hodima_pt(
+		'پنل مشتری: ۱۰ تیکت در صفحه با «بعدی»، گفتگوی سفارش فقط صفحه اول',
+		[ substr_count( $html1, 'صفحه‌بندی ' ), str_contains( $html1, 'گفتگوی سفارش #' ), str_contains( $html1, 'class="hpn-pager"' ), substr_count( $html3, 'صفحه‌بندی ' ), str_contains( $html3, 'گفتگوی سفارش #' ) ],
+		[ \Hodima\Panel\Support::LIST_TICKETS, true, true, 3, false ]
+	);
+	\Hodima\Panel\Orders::delete( $hp_pg_order );
+	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE user_id = %d', table( 'tickets' ), $hp_pg ) );
+	require_once ABSPATH . 'wp-admin/includes/user.php';
+	wp_delete_user( $hp_pg );
+}
+
 // کادر محصول: رفت‌وبرگشت فرم رندرشده بی تغییر متا؛ ذخیره بی کادر چیزی را خاموش نمی‌کند
 $box = static function ( int $pid ): string {
 	ob_start();

@@ -216,6 +216,11 @@
 	margin-block-start: 0.875rem;
 }
 
+/* «۱ تا ۱۵ از ۸۰ تیکت» بالای دکمه‌های صفحه (فهرست تیکت‌ها) */
+.hodima-panel-admin .hpa-list-count {
+	margin-block: 0.75rem 0;
+}
+
 .hodima-panel-admin .hpa-pages .page-numbers {
 	display: inline-grid;
 	place-items: center;

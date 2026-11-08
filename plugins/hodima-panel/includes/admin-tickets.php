@@ -22,7 +22,12 @@ final class Admin_Tickets {
 
 	public const SLUG = 'hodima-panel-support';
 
-	private const PER_PAGE = 30;
+	/**
+	 * تیکت در هر صفحه فهرست (طرح تأییدشده کاربر، 0.2.7).
+	 *
+	 * تا 0.2.6 فقط ۳۰ تیکت آخر بی صفحه‌بندی (قدیمی‌ترها فقط با جستجو) و فهرست ≈۲۶۰۰px بلند بود.
+	 */
+	public const PER_PAGE = 15;
 
 	/** نماها: کلید => [برچسب، وضعیت‌ها]. «نیاز به پاسخ» = آخرین پیام از مشتری (open). */
 	public const VIEWS = [
@@ -144,6 +149,7 @@ final class Admin_Tickets {
 		$search    = trim( sanitize_text_field( wp_unslash( (string) ( $_GET['s'] ?? '' ) ) ) );
 		$ticket_id = absint( $_GET['thread_id'] ?? 0 );
 		$msg       = sanitize_key( wp_unslash( (string) ( $_GET['hp_msg'] ?? '' ) ) );
+		$paged     = max( 1, absint( $_GET['paged'] ?? 1 ) );
 		// phpcs:enable
 		if ( ! isset( self::VIEWS[ $view ] ) ) {
 			$view = ( $counts['open'] ?? 0 ) > 0 ? 'open' : 'all';
@@ -160,8 +166,12 @@ final class Admin_Tickets {
 			$where .= ' AND (t.subject LIKE %s OR t.reference_code LIKE %s OR u.display_name LIKE %s)';
 			array_push( $args, $like, $like, $like );
 		}
-		$sql  = "SELECT t.*, u.display_name FROM %i t LEFT JOIN %i u ON u.ID = t.user_id WHERE $where ORDER BY t.last_message_at DESC, t.id DESC LIMIT %d";
-		$rows = (array) $wpdb->get_results( $wpdb->prepare( $sql, ...[ table( 'tickets' ), $wpdb->users, ...$args, self::PER_PAGE ] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where فقط placeholder.
+		$count = "SELECT COUNT(*) FROM %i t LEFT JOIN %i u ON u.ID = t.user_id WHERE $where";
+		$total = (int) $wpdb->get_var( $wpdb->prepare( $count, ...[ table( 'tickets' ), $wpdb->users, ...$args ] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where فقط placeholder.
+		$pages = max( 1, (int) ceil( $total / self::PER_PAGE ) );
+		$paged = min( $paged, $pages );
+		$sql   = "SELECT t.*, u.display_name FROM %i t LEFT JOIN %i u ON u.ID = t.user_id WHERE $where ORDER BY t.last_message_at DESC, t.id DESC LIMIT %d OFFSET %d";
+		$rows  = (array) $wpdb->get_results( $wpdb->prepare( $sql, ...[ table( 'tickets' ), $wpdb->users, ...$args, self::PER_PAGE, ( $paged - 1 ) * self::PER_PAGE ] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where فقط placeholder.
 		$open = $ticket_id ? $wpdb->get_row( $wpdb->prepare( 'SELECT t.*, u.display_name FROM %i t LEFT JOIN %i u ON u.ID = t.user_id WHERE t.id = %d', table( 'tickets' ), $wpdb->users, $ticket_id ) ) : null;
 		if ( $open && (int) $open->admin_unread > 0 ) {
 			$wpdb->update( table( 'tickets' ), [ 'admin_unread' => 0 ], [ 'id' => $ticket_id ] );
@@ -216,19 +226,38 @@ final class Admin_Tickets {
 								<?php foreach ( $rows as $t ) : ?>
 									<?php $active = $open && (int) $open->id === (int) $t->id; ?>
 									<li>
-										<a class="hpa-thread-item<?php echo $active ? ' is-active' : ''; ?>" href="<?php echo esc_url( self::url( $base + [ 'view' => $view, 'thread_id' => (int) $t->id ] ) ); ?>"<?php echo $active ? ' aria-current="true"' : ''; ?>>
+										<a class="hpa-thread-item<?php echo $active ? ' is-active' : ''; ?>" href="<?php echo esc_url( self::url( $base + [ 'view' => $view, 'paged' => $paged, 'thread_id' => (int) $t->id ] ) ); ?>"<?php echo $active ? ' aria-current="true"' : ''; ?>>
 											<span class="hpa-thread-item__top"><strong><?php echo esc_html( (string) $t->subject ?: 'بدون موضوع' ); ?></strong><?php echo self::pill( (string) $t->status ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- امن. ?></span>
 											<span class="hpa-sub"><?php echo esc_html( ( (string) ( $t->display_name ?? '' ) ?: 'کاربر حذف‌شده' ) . ' · ' . ( ticket_departments()[ $t->department ] ?? '' ) . ' · ' . show_date( (string) ( $t->last_message_at ?: $t->created_at ), 'j F' ) ); ?></span>
 										</a>
 									</li>
 								<?php endforeach; ?>
 							</ul>
+							<?php if ( $pages > 1 ) : ?>
+								<p class="hpa-sub hpa-list-count"><?php echo esc_html( number_format_i18n( ( $paged - 1 ) * self::PER_PAGE + 1 ) . ' تا ' . number_format_i18n( min( $total, $paged * self::PER_PAGE ) ) . ' از ' . number_format_i18n( $total ) . ' تیکت' ); ?></p>
+								<nav class="hpa-pages" aria-label="صفحه‌های تیکت‌ها">
+									<?php
+									echo wp_kses_post(
+										(string) paginate_links(
+											[
+												'base'      => add_query_arg( 'paged', '%#%', self::url( $base + [ 'view' => $view ] ) ),
+												'format'    => '',
+												'current'   => $paged,
+												'total'     => $pages,
+												'prev_text' => 'قبلی',
+												'next_text' => 'بعدی',
+											]
+										)
+									);
+									?>
+								</nav>
+							<?php endif; ?>
 						<?php endif; ?>
 					</section>
 
 					<section class="hdp-card hpa-inbox__main" aria-labelledby="hpa-ticket-title">
 						<?php if ( $open ) : ?>
-							<?php self::render_thread( $open, $base + [ 'view' => $view ] ); ?>
+							<?php self::render_thread( $open, $base + [ 'view' => $view, 'paged' => $paged ] ); ?>
 						<?php else : ?>
 							<h2 class="screen-reader-text" id="hpa-ticket-title">تیکت</h2>
 							<p class="hpa-none">یک تیکت را از فهرست انتخاب کنید.</p>

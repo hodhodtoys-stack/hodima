@@ -21,8 +21,11 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Support {
 
-	/** بیشترین تیکت و گفتگوی فهرست پنل مشتری. */
-	public const LIST_TICKETS = 50;
+	/**
+	 * تیکت در هر صفحه فهرست پنل مشتری (طرح تأییدشده کاربر، 0.2.7؛ تا 0.2.6 پنجاه تیکت بی
+	 * صفحه‌بندی، در موبایل ≈۶۰۰۰px). گفتگوهای سفارش فقط در صفحه اول (روی کارت سفارش هم هستند).
+	 */
+	public const LIST_TICKETS = 10;
 
 	public const LIST_CHATS = 20;
 
@@ -176,12 +179,16 @@ final class Support {
 	 * @param int  $user_id مشتری.
 	 * @param int  $open    تیکت باز (۰ = هیچ).
 	 * @param bool $compose فرم «پیام تازه» خواسته شده.
-	 * @return array{tickets: list<object>, chats: list<object>, ticket: object|null, messages: list<object>, new: bool, orders: list<object>}
+	 * @param int  $paged   صفحه فهرست تیکت‌ها.
+	 * @return array{tickets: list<object>, chats: list<object>, ticket: object|null, messages: list<object>, new: bool, orders: list<object>, paged: int, pages: int}
 	 */
-	public static function inbox( int $user_id, int $open, bool $compose ): array {
+	public static function inbox( int $user_id, int $open, bool $compose, int $paged = 1 ): array {
 		global $wpdb;
-		$tickets  = array_values( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i WHERE user_id = %d ORDER BY last_message_at DESC, id DESC LIMIT %d', table( 'tickets' ), $user_id, self::LIST_TICKETS ) ) );
-		$chats    = array_values( (array) $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE user_id = %d AND last_message_preview <> '' ORDER BY last_message_at DESC LIMIT %d", table( 'chats' ), $user_id, self::LIST_CHATS ) ) );
+		$total    = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE user_id = %d', table( 'tickets' ), $user_id ) );
+		$pages    = max( 1, (int) ceil( $total / self::LIST_TICKETS ) );
+		$paged    = min( max( 1, $paged ), $pages );
+		$tickets  = array_values( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i WHERE user_id = %d ORDER BY last_message_at DESC, id DESC LIMIT %d OFFSET %d', table( 'tickets' ), $user_id, self::LIST_TICKETS, ( $paged - 1 ) * self::LIST_TICKETS ) ) );
+		$chats    = 1 === $paged ? array_values( (array) $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE user_id = %d AND last_message_preview <> '' ORDER BY last_message_at DESC LIMIT %d", table( 'chats' ), $user_id, self::LIST_CHATS ) ) ) : [];
 		$ticket   = null;
 		$messages = [];
 		if ( $open ) {
@@ -194,6 +201,6 @@ final class Support {
 		$new = $compose || ( ! $ticket && ! $tickets );
 		// سفارش‌های خود مشتری برای «پیگیری سفارش» (تازه‌ترین بالا)
 		$orders = $new && ! $ticket ? Order_Query::for_topic( $user_id ) : [];
-		return [ 'tickets' => $tickets, 'chats' => $chats, 'ticket' => $ticket, 'messages' => $messages, 'new' => $new, 'orders' => $orders ];
+		return [ 'tickets' => $tickets, 'chats' => $chats, 'ticket' => $ticket, 'messages' => $messages, 'new' => $new, 'orders' => $orders, 'paged' => $paged, 'pages' => $pages ];
 	}
 }
