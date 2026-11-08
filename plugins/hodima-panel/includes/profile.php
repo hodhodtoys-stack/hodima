@@ -26,13 +26,24 @@ final class Profile {
 	/** بخش‌هایی که با پروفایل ناقص هم باز است (پشتیبانی: مشتری گیرکرده بتواند بپرسد). */
 	public const OPEN_SECTIONS = [ 'profile', 'support' ];
 
+	/** ایمیل تازه در انتظار تأیید: [email، hash توکن، expires]. */
+	public const PENDING_META = '_hodima_panel_pending_email';
+
+	/** اعتبار لینک تأیید ایمیل. */
+	public const EMAIL_TTL = DAY_IN_SECONDS;
+
+	/** بیشترین ایمیل تأیید برای هر حساب در ساعت (ضد اسپم با صندوق دیگران). */
+	public const EMAIL_SENDS_PER_HOUR = 3;
+
 	/** بیشترین رمز فعلی اشتباه در ۱۵ دقیقه (تأیید تغییر رمز/ایمیل). */
 	public const CURRENT_PASSWORD_TRIES = 5;
 
 	/** ثبت هوک‌ها. */
 	public static function boot(): void {
+		add_action( 'hodima_panel_request', [ self::class, 'confirm_email' ], 0 );
 		add_action( 'hodima_panel_request', [ self::class, 'enforce_lock' ], 1 );
 		add_action( 'hodima_panel_request', [ self::class, 'handle_form' ], 5 );
+		add_action( 'hodima_panel_request', [ self::class, 'handle_resend' ], 5 );
 		add_action( 'wp_ajax_hodima_panel_profile', [ self::class, 'ajax_save' ] );
 		add_action( 'wp_ajax_hodima_panel_profile_code', [ self::class, 'ajax_code' ] );
 	}
@@ -258,23 +269,17 @@ final class Profile {
 		$first = (string) $parts[0];
 		$last  = (string) ( $parts[1] ?? '' );
 
-		// ایمیل ساختگی ثبت‌نام (۰۹…@دامنه) صندوقی ندارد؛ اعلان «ایمیل شما عوض شد» به آن برگشت می‌خورد
-		$quiet = self::is_placeholder_email( (string) $user->user_email );
-		if ( $quiet ) {
-			add_filter( 'send_email_change_email', '__return_false' );
-		}
+		// ایمیل حساب (ورود و بازیابی رمز) اینجا عوض نمی‌شود: فقط بعد از لینک تأیید (request_email_change
+		// و confirm_email). تا 0.2.5 هر ایمیلی بی تأیید ایمیل حساب می‌شد؛ نشست ربوده ← ایمیل مهاجم ←
+		// «فراموشی رمز» = تصاحب دائمی. ایمیل صورت‌حساب (فاکتور) همین حالا ذخیره می‌شود.
 		$result = wp_update_user(
 			[
 				'ID'           => $user->ID,
 				'display_name' => $name,
 				'first_name'   => $first,
 				'last_name'    => $last,
-				'user_email'   => $email,
 			]
 		);
-		if ( $quiet ) {
-			remove_filter( 'send_email_change_email', '__return_false' );
-		}
 		if ( is_wp_error( $result ) ) {
 			return $result->get_error_message();
 		}
@@ -327,7 +332,7 @@ final class Profile {
 	 *
 	 * @param \WP_User              $user کاربر (تازه از پایگاه داده؛ نه شیء کاربر جاری که ممکن است ایمیل قدیمی داشته باشد).
 	 * @param array<string, string> $in   فیلدهای فرم (wp_unslash شده).
-	 * @return array{ok: bool, message: string, need_verify: bool}
+	 * @return array{ok: bool, message: string, need_verify: bool, email?: string}
 	 */
 	public static function process( \WP_User $user, array $in ): array {
 		$fail = static fn( string $message, bool $verify = false ): array => [ 'ok' => false, 'message' => $message, 'need_verify' => $verify ];
@@ -346,7 +351,9 @@ final class Profile {
 		// حساب برای همیشه تصاحب می‌شد). اولین ایمیل واقعی به‌جای ایمیل ساختگی ثبت‌نام آزاد است.
 		// کارکنان فقط با رمز فعلی: کد پیامکی برای حساب مدیر جای دومرحله‌ای wp-login را نمی‌گیرد.
 		$email     = sanitize_email( $in['user_email'] ?? '' );
-		$sensitive = '' !== $new_pass || ( strtolower( $email ) !== strtolower( (string) $user->user_email ) && ! self::is_placeholder_email( (string) $user->user_email ) );
+		$changing  = strtolower( $email ) !== strtolower( (string) $user->user_email );
+		// همان ایمیلِ در انتظار تأیید دوباره تأیید رمز نمی‌خواهد (وگرنه هر ذخیره بعدی تا تأیید ایمیل رمز می‌خواست)
+		$sensitive = '' !== $new_pass || ( $changing && ! self::is_placeholder_email( (string) $user->user_email ) && strtolower( $email ) !== strtolower( self::pending_email( $user ) ) );
 		if ( $sensitive ) {
 			$current = $in['current_password'] ?? '';
 			$code    = sanitize_text_field( $in['verify_code'] ?? '' );
@@ -384,7 +391,121 @@ final class Profile {
 			wp_set_current_user( $user->ID );
 			wp_set_auth_cookie( $user->ID, true, is_ssl() );
 		}
-		return [ 'ok' => true, 'message' => 'اطلاعات با موفقیت ذخیره شد. پنل اکنون برای شما فعال است.', 'need_verify' => false ];
+		$status = $changing ? self::request_email_change( $user, $email, false ) : self::clear_pending( $user );
+		return [ 'ok' => true, 'message' => self::email_messages()[ $status ], 'need_verify' => false, 'email' => $status ];
+	}
+
+	/**
+	 * پیام نتیجه ذخیره با وضعیت ایمیل (AJAX و ?msg= فرم بی JS).
+	 *
+	 * @return array<string, string> وضعیت => متن.
+	 */
+	public static function email_messages(): array {
+		return [
+			'same'    => 'اطلاعات با موفقیت ذخیره شد. پنل اکنون برای شما فعال است.',
+			'sent'    => 'اطلاعات ذخیره شد. لینک تأیید به ایمیل تازه فرستاده شد؛ تا روی آن نزنید، ورود و بازیابی رمز با ایمیل قبلی است.',
+			'pending' => 'اطلاعات ذخیره شد. ایمیل تازه هنوز در انتظار تأیید است؛ لینک را در صندوق همان ایمیل بزنید.',
+			'limited' => 'اطلاعات ذخیره شد، ولی لینک تأیید ایمیل چند بار فرستاده شده است؛ یک ساعت دیگر دوباره بفرستید.',
+			'failed'  => 'اطلاعات ذخیره شد، ولی فرستادن ایمیل تأیید ناموفق بود؛ کمی بعد «ارسال دوباره لینک» را بزنید.',
+		];
+	}
+
+	/**
+	 * ایمیل در انتظار تأیید (اعتبارنگذشته)، یا ''.
+	 *
+	 * @param \WP_User $user کاربر.
+	 */
+	public static function pending_email( \WP_User $user ): string {
+		$data = get_user_meta( $user->ID, self::PENDING_META, true );
+		if ( ! is_array( $data ) || (int) ( $data['expires'] ?? 0 ) < time() ) {
+			return '';
+		}
+		return (string) ( $data['email'] ?? '' );
+	}
+
+	/**
+	 * پاک کردن تغییر ایمیلِ در انتظار (کاربر همان ایمیل حساب را نوشت).
+	 *
+	 * @param \WP_User $user کاربر.
+	 * @return string همیشه 'same'.
+	 */
+	private static function clear_pending( \WP_User $user ): string {
+		delete_user_meta( $user->ID, self::PENDING_META );
+		return 'same';
+	}
+
+	/**
+	 * درخواست تغییر ایمیل حساب: لینک تأیید به ایمیل تازه.
+	 *
+	 * @param \WP_User $user   کاربر.
+	 * @param string   $email  ایمیل تازه (اعتبارسنجی‌شده در validate).
+	 * @param bool     $resend ارسال دوباره همان لینک خواسته شده.
+	 * @return string sent|pending|limited|failed
+	 */
+	public static function request_email_change( \WP_User $user, string $email, bool $resend ): string {
+		if ( strtolower( $email ) === strtolower( self::pending_email( $user ) ) && ! $resend ) {
+			return 'pending'; // هر ذخیره پروفایل ایمیل تازه نفرستد
+		}
+		$count_key = 'hodima_panel_mail_' . $user->ID;
+		if ( (int) get_transient( $count_key ) >= self::EMAIL_SENDS_PER_HOUR ) {
+			return 'limited';
+		}
+		$token = strtolower( wp_generate_password( 32, false ) );
+		update_user_meta( $user->ID, self::PENDING_META, [ 'email' => $email, 'hash' => wp_hash( $token ), 'expires' => time() + self::EMAIL_TTL ] );
+		set_transient( $count_key, (int) get_transient( $count_key ) + 1, HOUR_IN_SECONDS );
+
+		$site = wp_specialchars_decode( (string) get_bloginfo( 'name' ), ENT_QUOTES );
+		$link = Page::url( [ 'hpn_uid' => $user->ID, 'hpn_email' => $token ] );
+		$body = "سلام،\n\nبرای اینکه این ایمیل ایمیل حساب شما در {$site} شود، روی لینک زیر بزنید:\n{$link}\n\n"
+			. "این لینک ۲۴ ساعت معتبر است. تا روی آن نزنید، ورود و بازیابی رمز با ایمیل قبلی است.\n"
+			. 'اگر شما این درخواست را نداده‌اید، این ایمیل را نادیده بگیرید.';
+		return wp_mail( $email, 'تأیید ایمیل حساب در ' . $site, $body ) ? 'sent' : 'failed';
+	}
+
+	/**
+	 * لینک تأیید ایمیل (?hpn_uid=…&hpn_email=توکن؛ پیش از چاپ صفحه).
+	 *
+	 * توکن ۳۲ حرفی تصادفی که فقط به صندوق ایمیل تازه رفته، مالکیت آن صندوق را ثابت می‌کند؛ پس
+	 * ورود لازم نیست (لینک در گوشی/مرورگر دیگر هم کار کند). فقط هش توکن ذخیره می‌شود.
+	 */
+	public static function confirm_email(): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- توکن یک‌بار مصرف خودش اجازه است.
+		if ( ! isset( $_GET['hpn_email'], $_GET['hpn_uid'] ) ) {
+			return;
+		}
+		$user  = get_userdata( absint( $_GET['hpn_uid'] ) );
+		$token = sanitize_key( wp_unslash( (string) $_GET['hpn_email'] ) );
+		// phpcs:enable
+		$data  = $user instanceof \WP_User ? get_user_meta( $user->ID, self::PENDING_META, true ) : null;
+		$valid = $user instanceof \WP_User && is_array( $data ) && '' !== $token
+			&& (int) ( $data['expires'] ?? 0 ) >= time()
+			&& hash_equals( (string) ( $data['hash'] ?? '' ), wp_hash( $token ) );
+		$args  = [ 'section' => 'profile', 'msg' => 'email_link_invalid' ];
+		if ( $valid ) {
+			$email = (string) $data['email'];
+			$owner = email_exists( $email );
+			if ( $owner && (int) $owner !== $user->ID ) {
+				$args['msg'] = 'email_taken';
+			} else {
+				// ایمیل ساختگی ثبت‌نام (۰۹…@دامنه) صندوقی ندارد؛ اعلان «ایمیل شما عوض شد» به آن برگشت می‌خورد.
+				// ایمیل واقعی قبلی اعلان را می‌گیرد (صاحب حساب از تغییر باخبر شود).
+				$quiet = self::is_placeholder_email( (string) $user->user_email );
+				if ( $quiet ) {
+					add_filter( 'send_email_change_email', '__return_false' );
+				}
+				$result = wp_update_user( [ 'ID' => $user->ID, 'user_email' => $email ] );
+				if ( $quiet ) {
+					remove_filter( 'send_email_change_email', '__return_false' );
+				}
+				if ( ! is_wp_error( $result ) ) {
+					delete_user_meta( $user->ID, self::PENDING_META );
+					update_user_meta( $user->ID, 'billing_email', $email );
+					$args['msg'] = 'email_confirmed';
+				}
+			}
+		}
+		wp_safe_redirect( Page::url( $args ) );
+		exit;
 	}
 
 	/**
@@ -417,7 +538,8 @@ final class Profile {
 		if ( ! $result['ok'] ) {
 			wp_send_json_error( array_filter( [ 'message' => $result['message'], 'need_verify' => $result['need_verify'] ] ) );
 		}
-		wp_send_json_success( [ 'message' => $result['message'] ] );
+		// پیام ایمیل تأیید باید خوانده شود؛ صفحه فقط با ذخیره ساده دوباره بار می‌شود
+		wp_send_json_success( [ 'message' => $result['message'], 'keep' => 'same' !== ( $result['email'] ?? 'same' ) ] );
 	}
 
 	/**
@@ -444,7 +566,25 @@ final class Profile {
 			// نوشته‌های مشتری برای فرم بعدی (رمزها هرگز ذخیره نمی‌شوند)؛ تا 0.2.2 با هر خطا پاک می‌شد
 			set_transient( 'hodima_panel_profile_input_' . $user->ID, array_intersect_key( $posted, array_flip( [ 'name', 'email', 'address', 'postcode', 'state', 'city' ] ) ), 5 * MINUTE_IN_SECONDS );
 		}
-		wp_safe_redirect( Page::url( [ 'section' => 'profile', 'msg' => $result['ok'] ? 'profile_saved' : 'profile_error' ] ) );
+		$msg = $result['ok'] ? ( 'same' === ( $result['email'] ?? 'same' ) ? 'profile_saved' : 'profile_email_' . $result['email'] ) : 'profile_error';
+		wp_safe_redirect( Page::url( [ 'section' => 'profile', 'msg' => $msg ] ) );
+		exit;
+	}
+
+	/**
+	 * «ارسال دوباره لینک» تأیید ایمیل (فرم جدا، POST معمولی؛ پیش از چاپ صفحه).
+	 *
+	 * @param string $section بخش درخواستی.
+	 */
+	public static function handle_resend( string $section ): void {
+		if ( 'profile' !== $section || 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) || ! isset( $_POST['hpn_resend_email'] ) || ! is_user_logged_in() ) {
+			return;
+		}
+		check_admin_referer( 'hodima_panel_resend_email', '_wpnonce_resend' );
+		$user    = get_userdata( get_current_user_id() );
+		$pending = $user instanceof \WP_User ? self::pending_email( $user ) : '';
+		$status  = '' !== $pending ? self::request_email_change( $user, $pending, true ) : '';
+		wp_safe_redirect( Page::url( [ 'section' => 'profile', 'msg' => '' !== $status ? 'profile_email_' . $status : 'email_link_invalid' ] ) );
 		exit;
 	}
 

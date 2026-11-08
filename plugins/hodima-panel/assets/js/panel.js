@@ -271,7 +271,7 @@
 			try {
 				const res = await post( 'hodima_panel_profile', new FormData( profile ) );
 				say( res.data && res.data.message ? res.data.message : 'خطایی رخ داد.', !! res.success );
-				if ( res.success ) {
+				if ( res.success && ! res.data.keep ) {
 					setTimeout( () => window.location.reload(), 1200 );
 				} else if ( res.data && res.data.need_verify ) {
 					profile.querySelector( '.hpn-more' ).open = true;

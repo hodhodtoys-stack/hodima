@@ -39,6 +39,7 @@ final class Privacy {
 		}
 		$text  = '<p>' . esc_html( 'پنل مشتریان (پیش‌خرید و پیش‌فاکتور) برای هر مشتری این‌ها را نگه می‌دارد: شماره موبایل، نام، ایمیل و آدرس (در اطلاعات صورت‌حساب حساب کاربری)، سفارش‌ها با اقلام و مبلغ لحظه ثبت، فیش واریزی و فاکتوری که بارگذاری می‌شود (در پوشه‌ای که از اینترنت مستقیم باز نمی‌شود)، و پیام‌های گفتگوی سفارش و تیکت‌های پشتیبانی.' ) . '</p>';
 		$text .= '<p>' . esc_html( 'برای ورود با کد پیامکی، شماره موبایل به سرویس پیامک انتخاب‌شده فرستاده می‌شود. کد فقط به‌صورت رمزشده و حداکثر ۵ دقیقه نگه داشته می‌شود؛ شمارنده‌های ضد سوءاستفاده (شماره و IP) فقط به‌صورت هش و حداکثر یک ساعت. فهرست ۳۰ پیامک آخر فقط شماره نیمه‌پنهان دارد.' ) . '</p>';
+		$text .= '<p>' . esc_html( 'وقتی مشتری ایمیل تازه‌ای وارد می‌کند، لینک تأیید به همان ایمیل فرستاده می‌شود و ایمیل تازه تا ۲۴ ساعت (تا زدن لینک) جدا نگه داشته می‌شود؛ ایمیل حساب فقط بعد از تأیید عوض می‌شود.' ) . '</p>';
 		$text .= '<p>' . esc_html( 'این داده تا وقتی حساب کاربری هست نگه داشته می‌شود. با حذف حساب، تیکت‌ها حذف می‌شوند و سفارش‌ها (با فایل‌ها و گفتگو و نام و موبایل مشتری) برای سابقه مالی می‌مانند. «خروجی داده شخصی» همه را می‌دهد؛ «حذف داده شخصی» تیکت‌ها و پیام‌ها را حذف می‌کند و سفارش‌ها را فقط اگر در ووکامرس «حذف داده سفارش‌ها هنگام درخواست حذف» روشن باشد (مدرک مالی).' ) . '</p>';
 		wp_add_privacy_policy_content( 'Hodima Panel', wp_kses_post( $text ) );
 	}
@@ -139,6 +140,17 @@ final class Privacy {
 			];
 		}
 
+		// ایمیل تازه‌ای که هنوز با لینک تأیید نشده (فقط صفحه اول)
+		$pending = 1 === $page ? get_user_meta( $user_id, Profile::PENDING_META, true ) : null;
+		if ( is_array( $pending ) && '' !== (string) ( $pending['email'] ?? '' ) ) {
+			$data[] = [
+				'group_id'    => 'hodima-panel-account',
+				'group_label' => 'حساب پنل مشتریان',
+				'item_id'     => 'hodima-panel-pending-email',
+				'data'        => [ [ 'name' => 'ایمیل در انتظار تأیید', 'value' => (string) $pending['email'] ] ],
+			];
+		}
+
 		return [
 			'data' => $data,
 			'done' => count( $orders ) < self::PER_PAGE && count( $tickets ) < self::PER_PAGE,
@@ -165,6 +177,7 @@ final class Privacy {
 		foreach ( $tickets as $id ) {
 			self::delete_ticket( $id );
 		}
+		$pending = delete_user_meta( $user_id, Profile::PENDING_META ); // ایمیل در انتظار تأیید
 
 		$orders = [];
 		if ( self::erase_orders() ) {
@@ -177,7 +190,7 @@ final class Privacy {
 			$result['messages'][]     = 'سفارش‌های پنل مشتریان (مدرک مالی) نگه داشته شد؛ برای حذف، در ووکامرس ← تنظیمات ← حساب‌ها و حریم خصوصی «حذف داده سفارش‌ها» را روشن کنید.';
 		}
 
-		$result['items_removed'] = (bool) ( $tickets || $orders );
+		$result['items_removed'] = (bool) ( $tickets || $orders || $pending );
 		$result['done']          = count( $tickets ) < self::PER_PAGE && count( $orders ) < self::PER_PAGE;
 		return $result;
 	}

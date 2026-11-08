@@ -371,7 +371,7 @@ hodima_pt( 'اعلان تغییر ایمیل به ایمیل ساختگی فرس
 clean_user_cache( $fresh );
 $fu = get_userdata( $fresh );
 hodima_pt( 'در فیلدهای صورت‌حساب ووکامرس ذخیره شد', [ get_user_meta( $fresh, 'billing_first_name', true ), get_user_meta( $fresh, 'billing_last_name', true ), get_user_meta( $fresh, 'billing_postcode', true ), get_user_meta( $fresh, 'billing_address_1', true ), get_user_meta( $fresh, 'billing_country', true ), get_user_meta( $fresh, 'billing_phone', true ), get_user_meta( $fresh, 'billing_email', true ) ], [ 'علی', 'رضایی مقدم', '1234567890', "تهران، خیابان 'یک'، پلاک ۲", 'IR', '09121112233', 'ali@hodima.test' ] );
-hodima_pt( 'نام و ایمیل حساب هم به‌روز شد و پروفایل کامل است', [ $fu->display_name, $fu->user_email, $fu->first_name, Profile::is_complete( $fu ) ], [ 'علی رضایی مقدم', 'ali@hodima.test', 'علی', true ] );
+hodima_pt( 'نام به‌روز شد و پروفایل کامل است؛ ایمیل حساب بی لینک تأیید همان قبلی (فقط ایمیل صورت‌حساب تازه)', [ $fu->display_name, $fu->user_email, $fu->first_name, Profile::is_complete( $fu ) ], [ 'علی رضایی مقدم', '09121112233@hodima.test', 'علی', true ] );
 hodima_pt( 'متای قدیمی پنل نوشته نمی‌شود', [ get_user_meta( $fresh, 'user_address', true ), get_user_meta( $fresh, 'up_profile_completed', true ) ], [ '', '' ] );
 wp_set_current_user( $fresh );
 hodima_pt( 'بعد از ذخیره قفل برداشته شد', hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'orders' ) ), '' );
@@ -720,7 +720,23 @@ $hp_otp_reset();
 wp_set_current_user( (int) $new->ID );
 update_user_meta( (int) $new->ID, 'billing_address_1', 'تهران خیابان آزمون پلاک ۹' );
 update_user_meta( (int) $new->ID, 'billing_postcode', '1234567890' );
-add_filter( 'pre_wp_mail', '__return_false' );
+// ایمیل‌ها ضبط می‌شوند و فرستاده نمی‌شوند (لینک تأیید ایمیل را آزمون از متن ایمیل برمی‌دارد)
+$hp_sent     = [];
+$hp_mail_cap = static function ( mixed $r, array $atts ) use ( &$hp_sent ): bool {
+	$hp_sent[] = $atts;
+	return true;
+};
+add_filter( 'pre_wp_mail', $hp_mail_cap, 10, 2 );
+$hp_link_of = static function ( array $mail ): array {
+	preg_match( '/hpn_uid=(\d+)&hpn_email=([a-z0-9]+)/', (string) ( $mail['message'] ?? '' ), $m );
+	return [ 'hpn_uid' => $m[1] ?? '', 'hpn_email' => $m[2] ?? '' ];
+};
+$hp_confirm = static function ( array $get ): string {
+	$_GET = $_REQUEST = $get;
+	$stop = hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'profile' ) );
+	$_GET = $_REQUEST = [];
+	return $stop;
+};
 wp_update_user( [ 'ID' => (int) $new->ID, 'user_email' => 'real@hodima.test', 'display_name' => 'سارا محمدی' ] );
 add_filter( 'wp_doing_ajax', '__return_true' );
 $hp_profile = static function ( array $extra ) use ( $new ): string {
@@ -747,7 +763,18 @@ $pcode = $hp_last_code();
 $out   = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'verify_code' => '00000' === $pcode ? '11111' : '00000' ] );
 hodima_pt( 'کد اشتباه ← ایمیل عوض نشد', [ str_contains( $out, '"success":false' ), get_userdata( (int) $new->ID )->user_email ], [ true, 'real@hodima.test' ] );
 $out = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'verify_code' => $pcode ] );
-hodima_pt( 'کد درست ← ایمیل عوض شد', [ str_contains( $out, '"success":true' ), get_userdata( (int) $new->ID )->user_email ], [ true, 'sara@hodima.test' ] );
+$hp_mail = end( $hp_sent ) ?: [];
+hodima_pt( 'کد درست ← ایمیل حساب هنوز همان؛ لینک تأیید به ایمیل تازه، در انتظار', [ str_contains( $out, '"success":true' ), get_userdata( (int) $new->ID )->user_email, Profile::pending_email( get_userdata( (int) $new->ID ) ), $hp_mail['to'] ?? '', '' !== $hp_link_of( $hp_mail )['hpn_email'], str_contains( $out, '"keep":true' ) ], [ true, 'real@hodima.test', 'sara@hodima.test', 'sara@hodima.test', true, true ] );
+$hp_link = $hp_link_of( $hp_mail );
+$stop    = $hp_confirm( [ 'hpn_uid' => $hp_link['hpn_uid'], 'hpn_email' => 'wrongtoken' . $hp_link['hpn_email'] ] );
+hodima_pt( 'لینک با توکن اشتباه: نامعتبر، ایمیل همان', [ str_contains( $stop, 'msg=email_link_invalid' ), get_userdata( (int) $new->ID )->user_email ], [ true, 'real@hodima.test' ] );
+$hp_mails_before = count( $hp_sent );
+wp_set_current_user( 0 );
+$stop = $hp_confirm( $hp_link );
+wp_set_current_user( (int) $new->ID );
+clean_user_cache( (int) $new->ID );
+hodima_pt( 'لینک درست (حتی بی ورود): ایمیل حساب عوض شد، انتظار پاک، اعلان به ایمیل قبلی', [ str_contains( $stop, 'msg=email_confirmed' ), get_userdata( (int) $new->ID )->user_email, Profile::pending_email( get_userdata( (int) $new->ID ) ), get_user_meta( (int) $new->ID, 'billing_email', true ), $hp_sent[ $hp_mails_before ]['to'] ?? '' ], [ true, 'sara@hodima.test', '', 'sara@hodima.test', 'real@hodima.test' ] );
+hodima_pt( 'لینک مصرف‌شده دوباره کار نمی‌کند', str_contains( $hp_confirm( $hp_link ), 'msg=email_link_invalid' ), true );
 $out = $hp_profile( [ 'user_email' => 'sara@hodima.test', 'display_name' => 'سارا محمدی‌پور' ] );
 hodima_pt( 'تغییر بی‌خطر (نام) بی تأیید', str_contains( $out, '"success":true' ), true );
 // کد پیامکی با خطای یک فیلد مصرف نمی‌شود
@@ -756,8 +783,50 @@ Otp::issue( 'user-' . (int) $new->ID, '09127770001', 'profile', '198.51.100.8' )
 $pcode2 = $hp_last_code();
 $out    = $hp_profile( [ 'user_email' => 'sara2@hodima.test', 'postcode' => '123', 'verify_code' => $pcode2 ] );
 $out2   = $hp_profile( [ 'user_email' => 'sara2@hodima.test', 'verify_code' => $pcode2 ] );
-hodima_pt( 'کد درست + کد پستی غلط: خطای فیلد، کد هنوز معتبر برای ارسال درست', [ str_contains( $out, '"success":false' ), str_contains( $out2, '"success":true' ), get_userdata( (int) $new->ID )->user_email ], [ true, true, 'sara2@hodima.test' ] );
+hodima_pt( 'کد درست + کد پستی غلط: خطای فیلد، کد هنوز معتبر برای ارسال درست', [ str_contains( $out, '"success":false' ), str_contains( $out2, '"success":true' ), Profile::pending_email( get_userdata( (int) $new->ID ) ) ], [ true, true, 'sara2@hodima.test' ] );
+// ذخیره دوباره با همان ایمیل در انتظار: بی تأیید رمز و بی ایمیل تازه؛ «ارسال دوباره» ایمیل می‌فرستد؛ سقف ساعتی
+delete_transient( 'hodima_panel_mail_' . (int) $new->ID );
+$hp_n = count( $hp_sent );
+$out  = $hp_profile( [ 'user_email' => 'sara2@hodima.test', 'display_name' => 'سارا محمدی‌پور' ] );
+// «ارسال دوباره لینک»: فرم جدا (POST معمولی)
+$hp_resend = static function ( string $nonce = '' ): string {
+	$_SERVER['REQUEST_METHOD'] = 'POST';
+	$_POST                     = $_REQUEST = [ 'hpn_resend_email' => '1', '_wpnonce_resend' => '' !== $nonce ? $nonce : wp_create_nonce( 'hodima_panel_resend_email' ) ];
+	$stop                      = hodima_pt_run( static fn() => do_action( 'hodima_panel_request', 'profile' ) );
+	$_SERVER['REQUEST_METHOD'] = 'GET';
+	$_POST                     = $_REQUEST = [];
+	return $stop;
+};
+$out2 = $hp_resend();
+hodima_pt( 'همان ایمیل در انتظار: ذخیره بی رمز و بی ایمیل؛ «ارسال دوباره» یک ایمیل', [ str_contains( $out, '"success":true' ), str_contains( $out2, 'msg=profile_email_sent' ), count( $hp_sent ) - $hp_n, ( end( $hp_sent ) ?: [] )['to'] ?? '' ], [ true, true, 1, 'sara2@hodima.test' ] );
+$hp_resend();
+$hp_resend();
+$out = $hp_resend();
+hodima_pt( 'سقف ۳ ایمیل تأیید در ساعت', [ count( $hp_sent ) - $hp_n, str_contains( $out, 'msg=profile_email_limited' ) ], [ Profile::EMAIL_SENDS_PER_HOUR, true ] );
+hodima_pt( '«ارسال دوباره» بی nonce درست رد', str_starts_with( $hp_resend( 'bad' ), 'die:' ), true );
+[ $html ] = hodima_pt_render( '/user-panel/?section=profile', (int) $new->ID );
+hodima_pt( 'فرم پروفایل: در انتظار تأیید با دکمه‌ای که مال فرم جداست (Enter = ذخیره، نه ارسال دوباره)', [ str_contains( $html, 'sara2@hodima.test</bdi>' ), (bool) preg_match( '/<button[^>]+form="hpn-resend-email"/', $html ), str_contains( $html, 'id="hpn-resend-email"' ) ], [ true, true, true ] );
+// تا تأیید، ایمیل در «خروجی داده» هست و «حذف داده» پاکش می‌کند
+$hp_export = \Hodima\Panel\Privacy::export( 'sara@hodima.test' );
+hodima_pt( 'خروجی داده: ایمیل در انتظار تأیید', str_contains( (string) wp_json_encode( $hp_export['data'], JSON_UNESCAPED_UNICODE ), 'sara2@hodima.test' ), true );
+// ایمیل در فاصله برای حساب دیگری ثبت شد ← لینک ایمیل را نمی‌دزدد
+delete_transient( 'hodima_panel_mail_' . (int) $new->ID );
+$hp_profile( [ 'user_email' => 'taken@hodima.test', 'current_password' => 'NewPass-456' ] );
+$hp_link  = $hp_link_of( end( $hp_sent ) ?: [] );
+$hp_other = wp_insert_user( [ 'user_login' => 'hp_taken', 'user_pass' => wp_generate_password(), 'user_email' => 'taken@hodima.test' ] );
+$stop     = $hp_confirm( $hp_link );
+hodima_pt( 'ایمیل در فاصله مال حساب دیگر شد: تأیید رد، ایمیل همان', [ str_contains( $stop, 'msg=email_taken' ), get_userdata( (int) $new->ID )->user_email ], [ true, 'sara@hodima.test' ] );
+if ( is_int( $hp_other ) && $hp_other > 1 ) {
+	require_once ABSPATH . 'wp-admin/includes/user.php';
+	wp_delete_user( $hp_other );
+}
 $hp_profile( [ 'user_email' => 'sara@hodima.test', 'current_password' => 'NewPass-456' ] );
+hodima_pt( 'برگشت به ایمیل حساب: انتظار پاک می‌شود', Profile::pending_email( get_userdata( (int) $new->ID ) ), '' );
+delete_transient( 'hodima_panel_mail_' . (int) $new->ID );
+Profile::request_email_change( get_userdata( (int) $new->ID ), 'erase-me@hodima.test', true );
+$hp_had   = Profile::pending_email( get_userdata( (int) $new->ID ) );
+$hp_erase = \Hodima\Panel\Privacy::erase( 'sara@hodima.test' );
+hodima_pt( 'حذف داده: ایمیل در انتظار تأیید هم پاک می‌شود', [ $hp_had, get_user_meta( (int) $new->ID, Profile::PENDING_META, true ), $hp_erase['items_removed'] ], [ 'erase-me@hodima.test', '', true ] );
 // سقف حدس رمز فعلی
 delete_transient( 'hodima_panel_pwcheck_' . (int) $new->ID );
 for ( $i = 0; $i < Profile::CURRENT_PASSWORD_TRIES; $i++ ) {
@@ -818,7 +887,7 @@ if ( $hp_staff > 1 ) {
 	wp_delete_user( $hp_staff );
 }
 $_SERVER['REQUEST_METHOD'] = 'GET';
-remove_filter( 'pre_wp_mail', '__return_false' );
+remove_filter( 'pre_wp_mail', $hp_mail_cap, 10 );
 $_POST = $_REQUEST = [];
 require_once ABSPATH . 'wp-admin/includes/user.php';
 wp_delete_user( (int) $new->ID );

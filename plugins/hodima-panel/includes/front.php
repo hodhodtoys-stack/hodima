@@ -34,6 +34,7 @@ final class Front {
 	public static function render(): void {
 		if ( ! is_user_logged_in() ) {
 			echo '<div class="hpn hpn--guest">';
+			self::message(); // نتیجه لینک تأیید ایمیل وقتی وارد نیست
 			self::view( 'login' );
 			echo '</div>';
 			return;
@@ -179,6 +180,9 @@ final class Front {
 			'message_empty'       => [ 'متن پیام را بنویسید.', 'error' ],
 			'ticket_closed'       => [ 'این گفتگو بسته شده است؛ برای سؤال تازه «پیام تازه به پشتیبانی» را بزنید.', 'error' ],
 			'profile_saved'       => [ 'اطلاعات با موفقیت ذخیره شد.', 'ok' ],
+			'email_confirmed'     => [ 'ایمیل حساب تأیید و عوض شد.', 'ok' ],
+			'email_link_invalid'  => [ 'لینک تأیید ایمیل نامعتبر یا منقضی است؛ در پروفایل «ارسال دوباره لینک» را بزنید.', 'error' ],
+			'email_taken'         => [ 'این ایمیل در این فاصله برای حساب دیگری ثبت شد؛ ایمیل دیگری وارد کنید.', 'error' ],
 			'profile_error'       => [ 'اطلاعات ذخیره نشد؛ پیام پایین فرم را ببینید.', 'error' ],
 			'order_message_sent'  => [ 'پیام در گفتگوی سفارش ثبت شد؛ پاسخ پشتیبانی را در همین فهرست و روی کارت همان سفارش می‌بینید.', 'ok' ],
 			'locked'              => [ 'این سفارش در حال بررسی است و دیگر ویرایش یا حذف نمی‌شود؛ در گفتگوی همان سفارش پیام بدهید.', 'error' ],
@@ -189,6 +193,11 @@ final class Front {
 		];
 		foreach ( Files::errors() as $code => $text ) {
 			$out[ $code ] = [ $text, 'error' ];
+		}
+		foreach ( Profile::email_messages() as $status => $text ) {
+			if ( 'same' !== $status ) {
+				$out[ 'profile_email_' . $status ] = [ $text, in_array( $status, [ 'sent', 'pending' ], true ) ? 'ok' : 'error' ];
+			}
 		}
 		return $out;
 	}

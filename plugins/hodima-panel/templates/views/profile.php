@@ -17,7 +17,8 @@ $hodima_staff  = Profile::is_staff( $hodima_user );
 // کد پیامکی فقط به شماره تأییدشده (کارکنان هرگز)
 $hodima_sms    = ! $hodima_staff && '' !== Profile::verified_mobile( $hodima_user );
 $hodima_error  = Profile::take_error( (int) $hodima_user->ID ); // خطای ذخیره بی JS
-$hodima_f      = Profile::form_fields( $hodima_user );
+$hodima_f       = Profile::form_fields( $hodima_user );
+$hodima_pending = Profile::pending_email( $hodima_user ); // ایمیل تازه تا تأیید فقط ایمیل صورت‌حساب است
 $hodima_states = Profile::states();
 $hodima_cities = $hodima_states ? Profile::cities() : [];
 ?>
@@ -43,7 +44,14 @@ $hodima_cities = $hodima_states ? Profile::cities() : [];
 			</div>
 			<div class="hpn-field">
 				<label class="hpn-label" for="user_email">ایمیل (برای فاکتور) <span class="hpn-req" aria-hidden="true">*</span></label>
-				<input class="hpn-input" id="user_email" name="user_email" type="email" value="<?php echo esc_attr( $hodima_f['email'] ); ?>" dir="ltr" autocomplete="email" required>
+				<input class="hpn-input" id="user_email" name="user_email" type="email" value="<?php echo esc_attr( $hodima_f['email'] ); ?>" dir="ltr" autocomplete="email" required<?php echo '' !== $hodima_pending ? ' aria-describedby="hpn-email-pending"' : ''; ?>>
+				<?php if ( '' !== $hodima_pending ) : ?>
+					<p class="hpn-help" id="hpn-email-pending">
+						<?php echo esc_html( 'در انتظار تأیید: لینک فرستاده‌شده به ' ); ?><bdi dir="ltr"><?php echo esc_html( $hodima_pending ); ?></bdi><?php echo esc_html( ' را بزنید؛ تا آن موقع ورود و بازیابی رمز با ایمیل قبلی است.' ); ?>
+						<?php // دکمه مال فرم جدای پایین است (form=): داخل همین فرم، Enter در هر فیلد به‌جای «ذخیره» لینک را دوباره می‌فرستاد ?>
+						<button type="submit" class="hpn-link" form="hpn-resend-email">ارسال دوباره لینک</button>
+					</p>
+				<?php endif; ?>
 			</div>
 		</div>
 	</section>
@@ -123,3 +131,9 @@ $hodima_cities = $hodima_states ? Profile::cities() : [];
 		<p class="hpn-status" role="status" data-hpn-status<?php echo '' !== $hodima_error ? ' data-ok="0"' : ''; ?>><?php echo esc_html( $hodima_error ); ?></p>
 	</div>
 </form>
+<?php if ( '' !== $hodima_pending ) : ?>
+	<form id="hpn-resend-email" method="post" action="<?php echo esc_url( Page::url( [ 'section' => 'profile' ] ) ); ?>" hidden>
+		<?php wp_nonce_field( 'hodima_panel_resend_email', '_wpnonce_resend', false ); ?>
+		<input type="hidden" name="hpn_resend_email" value="1">
+	</form>
+<?php endif; ?>
