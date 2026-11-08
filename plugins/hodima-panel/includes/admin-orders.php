@@ -191,6 +191,7 @@ final class Admin_Orders {
 			$text = sanitize_textarea_field( wp_unslash( (string) ( $_POST['message'] ?? '' ) ) );
 			if ( '' !== trim( $text ) ) {
 				Orders::add_chat_message( $order_id, $owner, 'admin', $text . "\n\nپاسخگو: " . self::agent_name() );
+				Notify::support_reply( $owner, 'order', $order_id, (string) $order_id );
 			}
 			self::back( $view + [ 'hp_msg' => 'chat' ] );
 		}

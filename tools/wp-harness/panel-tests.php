@@ -519,7 +519,7 @@ foreach ( ( new DOMXPath( $doc ) )->query( '//form[.//input[@name="action" and @
 }
 Admin_Sms::save( $post );
 $after = get_option( Sms::OPTION );
-hodima_pt( 'رفت‌وبرگشت فرم: تنظیم‌ها و رمزها بی‌تغییر', [ $after['primary'], $after['fallback'], $after['providers']['melipayamak'], $after['providers']['kavenegar'] ], [ $before['primary'], $before['fallback'], $before['providers']['melipayamak'], [ 'api_key' => 'KAVE-KEY', 'template' => 'verify' ] ] );
+hodima_pt( 'رفت‌وبرگشت فرم: تنظیم‌ها و رمزها بی‌تغییر', [ $after['primary'], $after['fallback'], $after['providers']['melipayamak'], $after['providers']['kavenegar'] ], [ $before['primary'], $before['fallback'], $before['providers']['melipayamak'] + [ 'notify' => '' ], [ 'api_key' => 'KAVE-KEY', 'template' => 'verify', 'notify' => '' ] ] );
 Admin_Sms::save( [ 'primary' => 'kavenegar', 'fallback' => 'kavenegar', 'providers' => [ 'melipayamak' => [ 'password' => '', 'password_clear' => '1' ], 'kavenegar' => [ 'api_key' => ' NEW-KEY ' ] ] ] );
 $after = get_option( Sms::OPTION );
 hodima_pt( 'ذخیره: پشتیبان همان اصلی ← خاموش؛ «پاک شود» رمز را پاک کرد؛ کلید تازه تمیز', [ $after['primary'], $after['fallback'], $after['providers']['melipayamak']['password'], $after['providers']['kavenegar']['api_key'] ], [ 'kavenegar', '', '', 'NEW-KEY' ] );
@@ -1038,6 +1038,44 @@ $stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => '
 hodima_pt( 'وضعیت دستی بی پیام خودکار', [ \Hodima\Panel\Orders::get( $order_a )->status, (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE chat_id = %d', table( 'chat_messages' ), $chat->id ) ) - $msgs ], [ 'receipt_uploaded', 1 ] );
 $stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'chat', 'message' => 'پاسخ \\"مدیر\\"', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
 hodima_pt( 'پیام مدیر با امضا و بی \\ اضافه؛ برای مشتری نخوانده', [ str_starts_with( (string) $wpdb->get_var( $wpdb->prepare( "SELECT message FROM %i WHERE chat_id = %d AND sender_type = 'admin' ORDER BY id DESC LIMIT 1", table( 'chat_messages' ), $chat->id ) ), "پاسخ \"مدیر\"\n\nپاسخگو:" ), str_contains( $stop, 'hp_msg=chat' ) ], [ true, true ] );
+// خبر پاسخ پشتیبانی (پیامک با الگوی notify و ایمیل؛ یک خبر در ۳۰ دقیقه برای هر گفتگو)
+$hp_notice_mails = [];
+$hp_notice_cap   = static function ( mixed $r, array $atts ) use ( &$hp_notice_mails ): bool {
+	$hp_notice_mails[] = $atts;
+	return true;
+};
+add_filter( 'pre_wp_mail', $hp_notice_cap, 10, 2 );
+update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => '', 'providers' => [ 'melipayamak' => [ 'username' => 'hodhod', 'password' => 'secret-pass', 'body_id' => '123456', 'notify' => '777001' ] ] ] );
+$hp_reply = $ok_reply;
+$hp_http  = [];
+delete_transient( 'hodima_panel_notify_order_' . $order_a );
+$stop = $hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'chat', 'message' => 'متن خصوصی پاسخ', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
+$hp_nm = end( $hp_notice_mails ) ?: [];
+hodima_pt(
+	'پاسخ مدیر در گفتگوی سفارش: پیامک با الگوی خبر (شماره سفارش) و ایمیل با لینک گفتگو، بی متن پیام',
+	[ count( $hp_http ), $hp_http[0]['args']['body']['bodyId'] ?? '', $hp_http[0]['args']['body']['text'] ?? '', $hp_nm['to'] ?? '', str_contains( (string) ( $hp_nm['message'] ?? '' ), 'chat=' . $order_a ), str_contains( (string) ( $hp_nm['message'] ?? '' ), 'متن خصوصی' ) ],
+	[ 1, '777001', (string) $order_a, 'hp_a@hodima.test', true, false ]
+);
+$hp_n_http = count( $hp_http );
+$hp_n_mail = count( $hp_notice_mails );
+$hp_post( $view_get, [ 'order_id' => (string) $order_a, 'hp_action' => 'chat', 'message' => 'پیام دوم', '_wpnonce' => wp_create_nonce( 'hodima_panel_order_' . $order_a ) ], $handle );
+hodima_pt( 'پیام دوم مدیر در ۳۰ دقیقه: خبر تکراری نه', [ count( $hp_http ) - $hp_n_http, count( $hp_notice_mails ) - $hp_n_mail ], [ 0, 0 ] );
+update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => '', 'providers' => [ 'melipayamak' => [ 'username' => 'hodhod', 'password' => 'secret-pass', 'body_id' => '123456' ] ] ] );
+$hp_http = [];
+$r       = Sms::send_notice( '09121234567', '42' );
+hodima_pt( 'بی الگوی خبر: پیامکی نمی‌رود ولی سرویس برای کد ورود کامل است', [ $r['ok'], $r['provider'], count( $hp_http ), Sms::is_configured( 'melipayamak' ), Sms::ready() ], [ false, '', 0, true, true ] );
+// مشتری ثبت‌نامی پیامکی (ایمیل ساختگی): پیامک بله، ایمیل نه
+update_option( Sms::OPTION, [ 'primary' => 'melipayamak', 'fallback' => '', 'providers' => [ 'melipayamak' => [ 'username' => 'hodhod', 'password' => 'secret-pass', 'body_id' => '123456', 'notify' => '777001' ] ] ] );
+$hp_sms_user = Auth::create_user( '09127775566' );
+if ( $hp_sms_user ) {
+	$hp_n_mail = count( $hp_notice_mails );
+	$hp_http   = [];
+	$r         = \Hodima\Panel\Notify::support_reply( $hp_sms_user->ID, 'ticket', 999001, 'TKT-999001' );
+	hodima_pt( 'ایمیل ساختگی: فقط پیامک (کد پیگیری در الگو)، بی ایمیل', [ $r, $hp_http[0]['args']['body']['to'] ?? '', $hp_http[0]['args']['body']['text'] ?? '', count( $hp_notice_mails ) - $hp_n_mail ], [ [ 'sms' => 'sent', 'email' => 'skipped' ], '09127775566', 'TKT-999001', 0 ] );
+	delete_transient( 'hodima_panel_notify_ticket_999001' );
+	require_once ABSPATH . 'wp-admin/includes/user.php';
+	wp_delete_user( $hp_sms_user->ID );
+}
 
 $render_tickets = [ Admin_Tickets::class, 'render' ];
 $wpdb->update( table( 'tickets' ), [ 'status' => 'open', 'admin_unread' => 2 ], [ 'id' => $ticket->id ] );
@@ -1052,6 +1090,11 @@ $before = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT user_unread FROM %i WHER
 $stop   = $hp_post( $t_get, [ 'thread_id' => (string) $ticket->id, 'hp_action' => 'reply', 'message' => 'پاسخ پشتیبانی', '_wpnonce' => wp_create_nonce( 'hodima_panel_ticket_' . $ticket->id ) ], [ Admin_Tickets::class, 'handle' ] );
 $t_row  = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) );
 hodima_pt( 'پاسخ تیکت: «پاسخ داده شد»، برای مشتری نخوانده', [ $t_row->status, (int) $t_row->user_unread - $before, str_contains( $stop, 'hp_msg=reply' ) ], [ 'answered', 1, true ] );
+$hp_tk = end( $hp_notice_mails ) ?: [];
+hodima_pt( 'پاسخ تیکت: خبر پیامکی با کد پیگیری و ایمیل با لینک تیکت', [ ( end( $hp_http ) ?: [] )['args']['body']['text'] ?? '', str_contains( (string) ( $hp_tk['message'] ?? '' ), 'thread_id=' . $ticket->id ) ], [ (string) $ticket->reference_code, true ] );
+remove_filter( 'pre_wp_mail', $hp_notice_cap, 10 );
+delete_transient( 'hodima_panel_notify_order_' . $order_a );
+delete_transient( 'hodima_panel_notify_ticket_' . $ticket->id );
 $stop  = $hp_post( $t_get, [ 'thread_id' => (string) $ticket->id, 'hp_action' => 'close', 'message' => '', '_wpnonce' => wp_create_nonce( 'hodima_panel_ticket_' . $ticket->id ) ], [ Admin_Tickets::class, 'handle' ] );
 hodima_pt( 'بستن تیکت', $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) ), 'closed' );
 $t_row = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', table( 'tickets' ), $ticket->id ) );

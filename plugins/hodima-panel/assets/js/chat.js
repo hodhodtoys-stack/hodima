@@ -1,7 +1,7 @@
 /**
  * گفتگوی سفارش در صفحه «سفارش‌ها» (JavaScript خالص؛ پنجره <dialog>، مرحله ۵).
  *
- * فقط شناسه سفارش فرستاده می‌شود و سرور مالکیت را بررسی می‌کند (legacy/chat.php).
+ * فقط شناسه سفارش فرستاده می‌شود و سرور مالکیت را بررسی می‌کند (includes/chat.php).
  * پنجره استاندارد مرورگر: فوکوس داخل پنجره می‌ماند، Esc می‌بندد و فوکوس به دکمه برمی‌گردد.
  * آدرس ?chat=شناسه (از «پیام‌ها و پشتیبانی») همان گفتگو را باز می‌کند.
  */
@@ -19,6 +19,30 @@
 	const error = document.getElementById( 'hpn-chat-error' );
 	let orderId = 0;
 	let opener = null;
+	let poll = 0;
+	let lastHtml = ''; // آخرین HTML سرور (innerHTML مرورگر بازنویسی‌شده است و با آن مقایسه‌پذیر نیست)
+
+	// پیام تازه پشتیبانی بی رفرش: هر ۳۰ ثانیه فقط وقتی پنجره باز و صفحه جلوی چشم است (خواست کاربر، 0.2.8)
+	const POLL_MS = 30000;
+	const refresh = async () => {
+		if ( ! dialog.open || ! orderId || 'visible' !== document.visibilityState ) {
+			return;
+		}
+		try {
+			const res = await post( 'hodima_panel_chat_history', { order_id: orderId } );
+			if ( ! res.success || res.data.html === lastHtml ) {
+				return;
+			}
+			const atEnd = history.scrollHeight - history.scrollTop - history.clientHeight < 40;
+			lastHtml = res.data.html;
+			history.innerHTML = lastHtml; // HTML از سرور با esc_html ساخته شده
+			if ( atEnd ) {
+				history.scrollTop = history.scrollHeight;
+			}
+		} catch {
+			// خطای شبکه موقت؛ نوبت بعد دوباره
+		}
+	};
 
 	const post = async ( action, fields ) => {
 		const body = new FormData();
@@ -59,11 +83,14 @@
 				note( ( res.data && res.data.message ) || 'خطا در بارگذاری پیام‌ها' );
 				return;
 			}
-			history.innerHTML = res.data.html; // HTML از سرور با esc_html ساخته شده
+			lastHtml = res.data.html;
+			history.innerHTML = lastHtml; // HTML از سرور با esc_html ساخته شده
 			history.scrollTop = history.scrollHeight;
 			form.hidden = false;
 			form.querySelector( 'textarea' ).focus();
 			button.querySelector( '.hpn-badge' )?.remove();
+			window.clearInterval( poll );
+			poll = window.setInterval( refresh, POLL_MS );
 		} catch {
 			note( 'ارتباط با سرور برقرار نشد.' );
 		}
@@ -80,6 +107,7 @@
 	} );
 
 	dialog.addEventListener( 'close', () => {
+		window.clearInterval( poll );
 		history.textContent = '';
 		opener?.focus();
 	} );

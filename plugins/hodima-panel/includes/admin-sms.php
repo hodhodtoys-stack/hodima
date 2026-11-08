@@ -156,7 +156,7 @@ final class Admin_Sms {
 	 * @param string $id سرویس.
 	 */
 	private static function missing( string $id ): int {
-		return count( array_filter( Sms::settings()['providers'][ $id ] ?? [], static fn( string $v ): bool => '' === $v ) );
+		return count( array_filter( array_diff_key( Sms::settings()['providers'][ $id ] ?? [], array_flip( Sms::OPTIONAL ) ), static fn( string $v ): bool => '' === $v ) );
 	}
 
 	/** صفحه. */
@@ -296,6 +296,8 @@ final class Admin_Sms {
 													placeholder="<?php echo esc_attr( $locked ? 'از wp-config' : ( $secret && '' !== $value ? '•••••••• (ذخیره‌شده)' : '' ) ); ?>">
 												<?php if ( $secret && '' !== $value && ! $locked ) : ?>
 													<p class="hdp-field__help">ذخیره‌شده؛ برای عوض کردن، تازه بنویسید. <label><input type="checkbox" name="<?php echo esc_attr( 'providers[' . $id . '][' . $field . '_clear]' ); ?>" value="1"> پاک شود</label></p>
+												<?php elseif ( 'notify' === $field ) : ?>
+													<p class="hdp-field__help">پیامک «پاسخ تازه پشتیبانی» به مشتری؛ خالی = فقط ایمیل. متن نمونه: «پشتیبانی هدهدلی به پیام شما (<?php echo esc_html( 'kavenegar' === $id ? '%token' : ( 'smsir' === $id ? '#CODE#' : '{0}' ) ); ?>) پاسخ داد.»</p>
 												<?php elseif ( 'body_id' === $field || 'template' === $field || 'template_id' === $field ) : ?>
 													<p class="hdp-field__help">متن نمونه الگو: «کد ورود هدهدلی: <?php echo esc_html( 'kavenegar' === $id ? '%token' : ( 'smsir' === $id ? '#CODE#' : '{0}' ) ); ?>»</p>
 												<?php endif; ?>

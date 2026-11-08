@@ -90,6 +90,10 @@ final class Admin_Tickets {
 				)
 			);
 			clear_admin_badge();
+			$owner = $wpdb->get_row( $wpdb->prepare( 'SELECT user_id, reference_code FROM %i WHERE id = %d', table( 'tickets' ), $ticket_id ) );
+			if ( is_object( $owner ) ) {
+				Notify::support_reply( (int) $owner->user_id, 'ticket', $ticket_id, (string) $owner->reference_code );
+			}
 			self::back( $view + [ 'hp_msg' => 'reply' ] );
 		}
 		if ( 'close' === $action ) {

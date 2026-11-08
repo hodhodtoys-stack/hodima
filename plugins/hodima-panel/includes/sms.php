@@ -57,6 +57,7 @@ final class Sms {
 					'username' => 'نام کاربری وب‌سرویس',
 					'password' => 'رمز وب‌سرویس (کلید API)',
 					'body_id'  => 'کد الگو (bodyId)',
+					'notify'   => 'کد الگوی خبر پاسخ پشتیبانی (اختیاری)',
 				],
 			],
 			'kavenegar'   => [
@@ -64,6 +65,7 @@ final class Sms {
 				'fields' => [
 					'api_key'  => 'کلید API',
 					'template' => 'نام الگو (template)',
+					'notify'   => 'نام الگوی خبر پاسخ پشتیبانی (اختیاری)',
 				],
 			],
 			'smsir'       => [
@@ -72,10 +74,26 @@ final class Sms {
 					'api_key'     => 'کلید API',
 					'template_id' => 'شناسه الگو (templateId)',
 					'param'       => 'نام متغیر کد در الگو',
+					'notify'      => 'شناسه الگوی خبر پاسخ پشتیبانی (اختیاری)',
 				],
 			],
 		];
 	}
+
+	/**
+	 * فیلدهای اختیاری (در «کامل بودن» سرویس شمرده نمی‌شوند).
+	 *
+	 * notify = الگوی دوم برای خبر «پاسخ تازه پشتیبانی» (از 0.2.8، خواست کاربر)؛ خالی = آن سرویس
+	 * خبر پیامکی نمی‌فرستد (ایمیل می‌رود).
+	 */
+	public const OPTIONAL = [ 'notify' ];
+
+	/** فیلد الگوی هر سرویس که notify جایش می‌نشیند (همان متغیر یک‌تایی الگو). */
+	private const TEMPLATE_FIELD = [
+		'melipayamak' => 'body_id',
+		'kavenegar'   => 'template',
+		'smsir'       => 'template_id',
+	];
 
 	/**
 	 * تنظیم‌ها با ثابت‌های wp-config روی آن.
@@ -115,7 +133,7 @@ final class Sms {
 	 * @param string $id نامک سرویس.
 	 */
 	public static function is_configured( string $id ): bool {
-		$config = self::settings()['providers'][ $id ] ?? [];
+		$config = array_diff_key( self::settings()['providers'][ $id ] ?? [], array_flip( self::OPTIONAL ) );
 		return [] !== $config && ! in_array( '', $config, true );
 	}
 
@@ -145,6 +163,37 @@ final class Sms {
 				break; // سرویس اصلی همه مهلت را گرفت؛ مشتری بیشتر منتظر نماند
 			}
 			$result = self::send_with( $id, $mobile, $code, min( self::TIMEOUT, $left ) );
+			if ( $result['ok'] ) {
+				break;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * خبر «پاسخ تازه پشتیبانی» با الگوی notify: اصلی، و اگر خطا داد پشتیبان (فقط سرویسی که الگو دارد).
+	 *
+	 * @param string $mobile شماره ۰۹…
+	 * @param string $token  تنها متغیر الگو (شماره سفارش یا کد پیگیری تیکت؛ بی فاصله).
+	 * @return array{ok: bool, provider: string, error: string}
+	 */
+	public static function send_notice( string $mobile, string $token ): array {
+		$settings = self::settings();
+		$result   = [ 'ok' => false, 'provider' => '', 'error' => 'الگوی خبر پاسخ پشتیبانی تنظیم نشده است.' ];
+		$start    = microtime( true );
+		foreach ( array_filter( [ $settings['primary'], $settings['fallback'] ] ) as $id ) {
+			$config = $settings['providers'][ $id ] ?? [];
+			if ( ! self::is_configured( $id ) || '' === ( $config['notify'] ?? '' ) ) {
+				continue;
+			}
+			$left = (int) floor( self::BUDGET - ( microtime( true ) - $start ) );
+			if ( $left < self::MIN_TIMEOUT ) {
+				break;
+			}
+			$config[ self::TEMPLATE_FIELD[ $id ] ] = $config['notify'];
+			$error  = self::call( $id, $config, $mobile, $token, min( self::TIMEOUT, $left ) );
+			$result = [ 'ok' => '' === $error, 'provider' => $id, 'error' => $error ];
+			self::log( $result, $mobile );
 			if ( $result['ok'] ) {
 				break;
 			}
