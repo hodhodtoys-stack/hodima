@@ -461,18 +461,11 @@ final class Admin_Orders {
 	 * @return array<int, string>
 	 */
 	public static function item_summaries( array $ids ): array {
-		global $wpdb;
-		if ( ! $ids ) {
-			return [];
-		}
-		$in    = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
-		$sql   = "SELECT order_id, product_id, quantity, sale_unit FROM %i WHERE order_id IN ($in) ORDER BY id";
 		$lines = [];
-		$items = (array) $wpdb->get_results( $wpdb->prepare( $sql, ...[ table( 'order_items' ), ...$ids ] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $in فقط %d است.
-		// نام همه محصولات با یک کوئری (تا 0.2.3 یک کوئری برای هر محصول هر ردیف)
-		_prime_post_caches( array_map( static fn( object $i ): int => (int) $i->product_id, $items ), false, false );
-		foreach ( $items as $item ) {
-			$lines[ (int) $item->order_id ][] = get_the_title( (int) $item->product_id ) . ' ' . View::qty( (float) $item->quantity ) . ' ' . $item->sale_unit;
+		foreach ( Order_Query::items( $ids ) as $order_id => $items ) {
+			foreach ( $items as $item ) {
+				$lines[ $order_id ][] = get_the_title( (int) $item->product_id ) . ' ' . View::qty( (float) $item->quantity ) . ' ' . $item->sale_unit;
+			}
 		}
 		$out = [];
 		foreach ( $lines as $id => $list ) {

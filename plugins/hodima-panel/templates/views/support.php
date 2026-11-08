@@ -2,7 +2,7 @@
 /**
  * پیام‌ها و پشتیبانی: تیکت‌ها و گفتگوی سفارش‌ها در یک فهرست، رشته پیام، پاسخ (طرح تأییدشده، مرحله ۵).
  * «پیام تازه» فقط دو راه: مشاوره قبل از خرید (تیکت) یا پیگیری سفارش (گفتگوی همان سفارش؛ طرح تأییدشده 0.2.0).
- * پردازش فرم‌ها: legacy/support.php.
+ * پردازش فرم‌ها و داده: Support (includes/support.php).
  *
  * @package Hodima\Panel
  */
@@ -12,35 +12,24 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 use Hodima\Panel\Page;
+use Hodima\Panel\Support;
 use Hodima\Panel\View;
 use function Hodima\Panel\show_date;
-use function Hodima\Panel\table;
 use function Hodima\Panel\ticket_departments;
 use function Hodima\Panel\ticket_statuses;
 use function Hodima\Panel\type_label;
 use function Hodima\Panel\status_label;
 
-global $wpdb;
 $hodima_user_id = get_current_user_id();
 // phpcs:disable WordPress.Security.NonceVerification.Recommended -- فقط انتخاب نما.
-$hodima_open = absint( $_GET['thread_id'] ?? 0 );
-$hodima_new  = isset( $_GET['new'] );
+$hodima_inbox = Support::inbox( $hodima_user_id, absint( $_GET['thread_id'] ?? 0 ), isset( $_GET['new'] ) );
 // phpcs:enable
-$hodima_tickets = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i WHERE user_id = %d ORDER BY last_message_at DESC, id DESC LIMIT 50', table( 'tickets' ), $hodima_user_id ) );
-$hodima_chats   = (array) $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE user_id = %d AND last_message_preview <> '' ORDER BY last_message_at DESC LIMIT 20", table( 'chats' ), $hodima_user_id ) );
-$hodima_ticket  = null;
-$hodima_msgs    = [];
-if ( $hodima_open ) {
-	$hodima_ticket = $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM %i WHERE id = %d AND user_id = %d', table( 'tickets' ), $hodima_open, $hodima_user_id ) );
-	if ( $hodima_ticket ) {
-		$hodima_msgs = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i WHERE ticket_id = %d ORDER BY id ASC', table( 'ticket_messages' ), $hodima_open ) );
-	}
-}
-if ( ! $hodima_ticket && ! $hodima_tickets ) {
-	$hodima_new = true;
-}
-// سفارش‌های خود مشتری برای «پیگیری سفارش» (تازه‌ترین بالا)
-$hodima_orders = $hodima_new && ! $hodima_ticket ? (array) $wpdb->get_results( $wpdb->prepare( 'SELECT id, type, status FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT 100', table( 'orders' ), $hodima_user_id ) ) : [];
+$hodima_tickets = $hodima_inbox['tickets'];
+$hodima_chats   = $hodima_inbox['chats'];
+$hodima_ticket  = $hodima_inbox['ticket'];
+$hodima_msgs    = $hodima_inbox['messages'];
+$hodima_new     = $hodima_inbox['new'];
+$hodima_orders  = $hodima_inbox['orders'];
 $hodima_status_class = static fn( string $s ): string => 'closed' === $s ? 'cancel' : ( 'answered' === $s ? 'done' : 'review' );
 ?>
 <header class="hpn-head">

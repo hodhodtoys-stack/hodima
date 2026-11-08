@@ -152,7 +152,7 @@ final class Page {
 				'hodimaPanelChat',
 				[
 					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-					'nonce'   => wp_create_nonce( 'hodima_panel_chat' ),
+					'nonce'   => wp_create_nonce( Chat::NONCE ),
 				]
 			);
 		}

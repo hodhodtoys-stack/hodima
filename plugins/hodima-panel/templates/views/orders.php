@@ -10,45 +10,30 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 use Hodima\Panel\Files;
+use Hodima\Panel\Order_Query;
 use Hodima\Panel\Orders;
 use Hodima\Panel\Page;
 use Hodima\Panel\View;
 use function Hodima\Panel\show_date;
-use function Hodima\Panel\table;
 use function Hodima\Panel\type_label;
 
-global $wpdb;
 $hodima_user_id = get_current_user_id();
 // phpcs:disable WordPress.Security.NonceVerification.Recommended -- فقط انتخاب نما.
-$hodima_filter = sanitize_key( wp_unslash( (string) ( $_GET['filter'] ?? '' ) ) );
-$hodima_paged  = max( 1, absint( $_GET['paged'] ?? 1 ) );
+$hodima_filter  = sanitize_key( wp_unslash( (string) ( $_GET['filter'] ?? '' ) ) );
+$hodima_paged   = max( 1, absint( $_GET['paged'] ?? 1 ) );
+$hodima_chat_id = absint( $_GET['chat'] ?? 0 );
 // phpcs:enable
-$hodima_filters = [
-	''       => [ 'همه', [] ],
-	'wait'   => [ 'منتظر شما', [ 'awaiting_payment' ] ],
-	'review' => [ 'در بررسی', [ 'pending', 'receipt_uploaded' ] ],
-	'done'   => [ 'تکمیل یا لغو', [ 'completed', 'cancelled' ] ],
-];
-$hodima_filter = isset( $hodima_filters[ $hodima_filter ] ) ? $hodima_filter : '';
-$hodima_counts = [];
-foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT status, COUNT(*) AS n FROM %i WHERE user_id = %d GROUP BY status', table( 'orders' ), $hodima_user_id ) ) as $hodima_c ) {
-	$hodima_counts[ (string) $hodima_c->status ] = (int) $hodima_c->n;
-}
+$hodima_filters  = Order_Query::filters();
+$hodima_filter   = isset( $hodima_filters[ $hodima_filter ] ) ? $hodima_filter : '';
+$hodima_counts   = Order_Query::status_counts( $hodima_user_id );
 $hodima_count_of = static fn( array $statuses ): int => $statuses ? array_sum( array_intersect_key( $hodima_counts, array_flip( $statuses ) ) ) : array_sum( $hodima_counts );
 
 $hodima_per   = 15;
 $hodima_where = $hodima_filters[ $hodima_filter ][1];
-if ( $hodima_where ) {
-	$hodima_in   = implode( ',', array_fill( 0, count( $hodima_where ), '%s' ) );
-	$hodima_sql  = "SELECT * FROM %i WHERE user_id = %d AND status IN ($hodima_in) ORDER BY id DESC LIMIT %d OFFSET %d";
-	$hodima_rows = (array) $wpdb->get_results( $wpdb->prepare( $hodima_sql, ...[ table( 'orders' ), $hodima_user_id, ...$hodima_where, $hodima_per, ( $hodima_paged - 1 ) * $hodima_per ] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $hodima_in فقط %s است.
-} else {
-	$hodima_rows = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT %d OFFSET %d', table( 'orders' ), $hodima_user_id, $hodima_per, ( $hodima_paged - 1 ) * $hodima_per ) );
-}
+$hodima_rows  = Order_Query::page( $hodima_user_id, $hodima_where, $hodima_per, $hodima_paged );
 $hodima_total = $hodima_count_of( $hodima_where );
 // ?chat=شناسه (لینک «پیام‌ها و پشتیبانی»): سفارش قدیمی‌تر از این صفحه هم بالای فهرست بیاید؛
 // وگرنه دکمه گفتگویش در صفحه نبود و پنجره باز نمی‌شد (فقط ۱۵ سفارش آخر دیده می‌شد).
-$hodima_chat_id = absint( $_GET['chat'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط انتخاب نما.
 if ( $hodima_chat_id && ! in_array( $hodima_chat_id, array_map( static fn( object $o ): int => (int) $o->id, $hodima_rows ), true ) ) {
 	$hodima_wanted = Orders::owned( $hodima_chat_id, $hodima_user_id );
 	if ( $hodima_wanted ) {
@@ -57,21 +42,8 @@ if ( $hodima_chat_id && ! in_array( $hodima_chat_id, array_map( static fn( objec
 }
 $hodima_ids   = array_map( static fn( object $o ): int => (int) $o->id, $hodima_rows );
 $hodima_files = Files::for_orders( $hodima_ids );
-$hodima_items = [];
-$hodima_chat  = [];
-if ( $hodima_ids ) {
-	$hodima_in = implode( ',', array_fill( 0, count( $hodima_ids ), '%d' ) );
-	// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- فقط %d.
-	$hodima_sql = "SELECT order_id, product_id, quantity, sale_unit, unit_capacity FROM %i WHERE order_id IN ($hodima_in) ORDER BY id";
-	foreach ( (array) $wpdb->get_results( $wpdb->prepare( $hodima_sql, ...[ table( 'order_items' ), ...$hodima_ids ] ) ) as $hodima_item ) {
-		$hodima_items[ (int) $hodima_item->order_id ][] = $hodima_item;
-	}
-	$hodima_sql = "SELECT order_id, user_unread FROM %i WHERE user_id = %d AND order_id IN ($hodima_in)";
-	foreach ( (array) $wpdb->get_results( $wpdb->prepare( $hodima_sql, ...[ table( 'chats' ), $hodima_user_id, ...$hodima_ids ] ) ) as $hodima_c ) {
-		$hodima_chat[ (int) $hodima_c->order_id ] = (int) $hodima_c->user_unread;
-	}
-	// phpcs:enable
-}
+$hodima_items = Order_Query::items( $hodima_ids );
+$hodima_chat  = Order_Query::chat_unread( $hodima_user_id, $hodima_ids );
 $hodima_item_text = static function ( object $item ): string {
 	$text = get_the_title( (int) $item->product_id ) . ' — ' . View::qty( (float) $item->quantity ) . ' ' . $item->sale_unit;
 	return (int) $item->unit_capacity > 1 ? $text . ' (هر ' . $item->sale_unit . ' ' . number_format_i18n( (int) $item->unit_capacity ) . ' عدد)' : $text;

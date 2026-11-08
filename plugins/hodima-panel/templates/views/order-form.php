@@ -12,12 +12,11 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+use Hodima\Panel\Order_Query;
 use Hodima\Panel\Orders;
 use Hodima\Panel\Page;
 use Hodima\Panel\View;
-use function Hodima\Panel\table;
 
-global $wpdb;
 $hodima_user_id  = get_current_user_id();
 $hodima_type     = 'preinvoice' === Page::section() ? 'preinvoice' : 'prebuy';
 $hodima_label    = 'preinvoice' === $hodima_type ? 'پیش‌فاکتور' : 'پیش‌خرید';
@@ -29,9 +28,7 @@ if ( $hodima_order_id > 0 ) {
 	if ( $hodima_owned && ! Orders::can_edit( $hodima_owned ) ) {
 		$hodima_locked = true;
 	} elseif ( $hodima_owned && $hodima_owned->type === $hodima_type ) {
-		foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT product_id, quantity FROM %i WHERE order_id = %d', table( 'order_items' ), $hodima_order_id ) ) as $hodima_item ) {
-			$hodima_qty[ (int) $hodima_item->product_id ] = (float) $hodima_item->quantity;
-		}
+		$hodima_qty = Order_Query::quantities( $hodima_order_id );
 	} else {
 		$hodima_order_id = 0;
 	}
@@ -45,44 +42,10 @@ $hodima_draft = $hodima_locked ? null : Orders::take_draft( $hodima_user_id, $ho
 if ( null !== $hodima_draft ) {
 	$hodima_qty = $hodima_draft;
 }
-
-$hodima_products = [];
-if ( ! $hodima_locked && \Hodima\Panel\wc_active() ) {
-	$hodima_query    = new WP_Query(
-		[
-			'post_type'              => 'product',
-			'post_status'            => 'publish',
-			'posts_per_page'         => Orders::FORM_MAX_PRODUCTS,
-			'orderby'                => 'title',
-			'order'                  => 'ASC',
-			'no_found_rows'          => true,
-			'ignore_sticky_posts'    => true,
-			'update_post_term_cache' => false, // فرم دسته/برچسب نمی‌خواند
-			'meta_query'             => [ [ 'key' => '_' . $hodima_type . '_enabled', 'value' => 'yes' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-		]
-	);
-	$hodima_products = $hodima_query->posts;
-	// اقلام سفارش در حال ویرایش که بیرون از سقف فرم افتاده‌اند هم در فرم باشند (وگرنه با ذخیره حذف می‌شدند)
-	$hodima_missing = array_diff( array_keys( $hodima_qty ), array_map( static fn( WP_Post $p ): int => (int) $p->ID, $hodima_products ) );
-	foreach ( $hodima_missing as $hodima_pid ) {
-		$hodima_post = get_post( (int) $hodima_pid );
-		if ( $hodima_post instanceof WP_Post && 'product' === $hodima_post->post_type && 'publish' === $hodima_post->post_status && 'yes' === get_post_meta( $hodima_post->ID, '_' . $hodima_type . '_enabled', true ) ) {
-			$hodima_products[] = $hodima_post;
-		}
-	}
-	// عکس همه کارت‌ها با یک کوئری (تا 0.2.3 یک کوئری پیوست برای هر محصول)
-	update_post_thumbnail_cache( $hodima_query );
-}
-// فقط محصولی که پنل از آن سفارش می‌گیرد (قیمت دار، تک‌مدل)؛ همان قاعده Orders::validate_items
-$hodima_prices = [];
-foreach ( $hodima_products as $hodima_i => $hodima_post ) {
-	$hodima_price = Orders::price_of( wc_get_product( (int) $hodima_post->ID ) );
-	if ( null === $hodima_price ) {
-		unset( $hodima_products[ $hodima_i ] );
-		continue;
-	}
-	$hodima_prices[ (int) $hodima_post->ID ] = $hodima_price;
-}
+// فقط محصول سفارش‌پذیر (قیمت‌دار، تک‌مدل)، با عکس آماده؛ اقلام سفارش در حال ویرایش حتما
+$hodima_form     = $hodima_locked ? [ 'posts' => [], 'prices' => [] ] : Order_Query::form_products( $hodima_type, array_keys( $hodima_qty ) );
+$hodima_products = $hodima_form['posts'];
+$hodima_prices   = $hodima_form['prices'];
 // اقلام سفارش در حال ویرایش که دیگر سفارش‌پذیر نیستند: تا 0.2.2 بی‌صدا از فرم و با ذخیره از سفارش حذف می‌شدند
 $hodima_gone = [];
 foreach ( array_keys( $hodima_qty ) as $hodima_pid ) {

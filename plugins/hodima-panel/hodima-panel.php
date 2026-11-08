@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Panel
  * Plugin URI:        https://hodima.com
  * Description:       پنل کاربری عمده‌فروشی هدیما: ورود و ثبت‌نام با موبایل، پیش‌خرید و پیش‌فاکتور، فهرست سفارش‌ها با فاکتور و فیش، گفتگوی هر سفارش و تیکت پشتیبانی؛ همراه صفحه‌های مدیریت در پیشخوان.
- * Version:           0.2.4
+ * Version:           0.2.5
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Author:            آرین فتحی
@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_PANEL_VERSION = '0.2.4';
+const HODIMA_PANEL_VERSION = '0.2.5';
 define( 'HODIMA_PANEL_FILE', __FILE__ );
 define( 'HODIMA_PANEL_DIR', __DIR__ );
 define( 'HODIMA_PANEL_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -27,6 +27,7 @@ require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/install.php';
 require_once __DIR__ . '/includes/files.php';
 require_once __DIR__ . '/includes/orders.php';
+require_once __DIR__ . '/includes/order-query.php';
 require_once __DIR__ . '/includes/profile.php';
 require_once __DIR__ . '/includes/sms.php';
 require_once __DIR__ . '/includes/otp.php';
@@ -35,6 +36,8 @@ require_once __DIR__ . '/includes/page.php';
 require_once __DIR__ . '/includes/view.php';
 require_once __DIR__ . '/includes/front.php';
 require_once __DIR__ . '/includes/privacy.php';
+require_once __DIR__ . '/includes/chat.php';
+require_once __DIR__ . '/includes/support.php';
 
 // جدول‌ها و برگه پنل هنگام فعال‌سازی ساخته می‌شوند (پنل قدیمی قالب فقط با
 // اولین ورود مدیر به پیشخوان جدول می‌ساخت؛ تا آن موقع بخش‌های سایت خطای پایگاه داده می‌دادند).
@@ -65,12 +68,8 @@ add_action( 'after_setup_theme', static function (): void {
 	\Hodima\Panel\Profile::boot();
 	\Hodima\Panel\Auth::boot();
 	\Hodima\Panel\Privacy::boot();
-
-	// بخش‌هایی که هنوز از پنل قدیمی منتقل شده‌اند و در مرحله‌های بعد بازنویسی می‌شوند
-	// (فهرست باگ‌های هر کدام: HODIMA-AUDIT.md بخش «پنل کاربری»).
-	foreach ( [ 'chat', 'support' ] as $file ) {
-		require_once HODIMA_PANEL_DIR . '/legacy/' . $file . '.php';
-	}
+	\Hodima\Panel\Chat::boot();
+	\Hodima\Panel\Support::boot();
 
 	if ( is_admin() ) {
 		require_once HODIMA_PANEL_DIR . '/includes/admin-orders.php';

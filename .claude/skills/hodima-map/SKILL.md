@@ -18,7 +18,7 @@ description: نقشه کدبیس هدیما — ترتیب لود قالب و ۴
 | **SEO** `plugins/hodima-seo/` | `hodima-seo.php` | `plugins_loaded`: بدون Core فالبک‌ها (`inc/schema-fallback.php`، `inc/admin-ui-fallback.php`)؛ همیشه `inc/product-price.php`، `inc/torob.php` (نام و تب ترب؛ بعد از product-price؛ پیشخوان: `inc/torob-admin.php` = «ابزارهای هدیما ← ترب»)، `inc/page-intro.php`؛ بعد ماژول‌های روشن از `hodima_seo_modules()` |
 | **Commerce** `plugins/hodima-commerce/` | `hodima-commerce.php` | `plugins_loaded`: ماژول‌های `hodima_commerce_modules()`؛ `requires_wc` فقط با ووکامرس |
 | **Media** `plugins/hodima-media/` | `hodima-media.php` | `plugins_loaded`: فالبک‌ها، همیشه `inc/video-object.php`، بعد ماژول‌های `hodima_media_modules()` |
-| **Panel** `plugins/hodima-panel/` | `hodima-panel.php` | فوری: `includes/*` (توابع و کلاس‌ها، هوک فعال‌سازی)؛ `after_setup_theme` ۲۰: اگر پوشه قدیمی `hodima/user-panel` هست (`HODIMA_USER_PANEL_ENABLED`) فقط اعلان، وگرنه `Install::maybe_upgrade()`، `Page::boot()` و `legacy/*` (پیشخوان: `legacy/admin/*`). مستقل از Core و ووکامرس (پیش‌خرید/پیش‌فاکتور بدون ووکامرس پیام «محصولی نیست»). اسکیل `hodima-panel`. |
+| **Panel** `plugins/hodima-panel/` | `hodima-panel.php` | فوری: `includes/*` (توابع و کلاس‌ها، هوک فعال‌سازی)؛ `after_setup_theme` ۲۰: اگر پوشه قدیمی `hodima/user-panel` هست (`HODIMA_USER_PANEL_ENABLED`) فقط اعلان، وگرنه `Install::maybe_upgrade()`، `Page::boot()` و بوت کلاس‌های `includes/*` (پیشخوان: `includes/admin-*.php`). مستقل از Core و ووکامرس (پیش‌خرید/پیش‌فاکتور بدون ووکامرس پیام «محصولی نیست»). اسکیل `hodima-panel`. |
 | **قالب** `hodima/` | `functions.php` → `hodima_load_theme_files()` | ترتیب ثابت: `inc/classes/*` ← `home/logic.php` ← `inc/helpers.php` ← `media-sections` ← `theme-settings` ← `typography` ← `appearance` ← `extras` ← `home-layout` ← `blog` ← `breadcrumb` ← `setup` ← `enqueue` ← `header` ← `footer` ← `inc/performance/*` (الفبا، `00-litespeed.php` اول) ← اگر ووکامرس: `inc/woocommerce/*`. ترتیب = ترتیب ثبت هوک‌ها و CSSها؛ عوضش نکن. |
 
 نتیجه مهم: **توابع قالب هنگام لود افزونه‌ها هنوز تعریف نشده‌اند** — افزونه فقط داخل هوک (بعد از `after_setup_theme`) و با `function_exists` تابع قالب را صدا بزند. توابع Core برای قالب همیشه آماده‌اند (ولی قالب بدون Core هم باید کار کند).
@@ -83,7 +83,7 @@ description: نقشه کدبیس هدیما — ترتیب لود قالب و ۴
 
 **Commerce ← بقیه:** فقط Core؛ Commerce از SEO و Media چیزی نمی‌خواند.
 
-**Panel ← بقیه (همه اختیاری با گارد):** Core `hodima_get_client_ip()` (`legacy/auth.php`)؛ به فیلتر SEO `hodima_robots_private_paths` مسیر برگه پنل را اضافه می‌کند (`includes/page.php`)؛ تاریخ‌ها با `wp_date` (ماژول جلالی Commerce شمسی‌اش می‌کند). از قالب فقط ثابت `HODIMA_USER_PANEL_ENABLED` (پوشه قدیمی هست ← افزونه کاری نمی‌کند). هیچ بسته‌ای از Panel نمی‌خواند.
+**Panel ← بقیه (همه اختیاری با گارد):** Core `hodima_get_client_ip()` (`includes/auth.php`)؛ به فیلتر SEO `hodima_robots_private_paths` مسیر برگه پنل را اضافه می‌کند (`includes/page.php`)؛ تاریخ‌ها با `wp_date` (ماژول جلالی Commerce شمسی‌اش می‌کند). از قالب فقط ثابت `HODIMA_USER_PANEL_ENABLED` (پوشه قدیمی هست ← افزونه کاری نمی‌کند). هیچ بسته‌ای از Panel نمی‌خواند.
 
 ## ۶. داده و گزینه‌های مشترک (عوض نکن — قانون ۵)
 - `hodima_theme_settings`: تنظیمات قالب؛ خواننده‌ها بالا.

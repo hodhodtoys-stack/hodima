@@ -9,38 +9,30 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+use Hodima\Panel\Order_Query;
 use Hodima\Panel\Page;
 use Hodima\Panel\Profile;
 use Hodima\Panel\View;
-use function Hodima\Panel\table;
 use function Hodima\Panel\type_label;
 
-global $wpdb;
 $hodima_user_id = get_current_user_id();
 $hodima_fields  = Profile::fields( wp_get_current_user() );
 $hodima_name    = '' !== $hodima_fields['name'] ? strtok( $hodima_fields['name'], ' ' ) : '';
-// شمارش با GROUP BY و فقط ۳ ردیف اخیر + یک سفارش منتظر؛ تا 0.2.3 همه سفارش‌های مشتری
-// (عمده‌فروش با صدها سفارش) برای سه عدد و سه ردیف خوانده می‌شد.
+// شمارش با GROUP BY، فقط ۳ سفارش اخیر و یک منتظر پرداخت (داده از Order_Query)
 $hodima_groups = [ 'review' => 0, 'wait' => 0, 'done' => 0 ];
-foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT status, COUNT(*) AS n FROM %i WHERE user_id = %d GROUP BY status', table( 'orders' ), $hodima_user_id ) ) as $hodima_c ) {
-	$hodima_g = View::group( (string) $hodima_c->status );
+foreach ( Order_Query::status_counts( $hodima_user_id ) as $hodima_status => $hodima_n ) {
+	$hodima_g = View::group( $hodima_status );
 	if ( isset( $hodima_groups[ $hodima_g ] ) ) {
-		$hodima_groups[ $hodima_g ] += (int) $hodima_c->n;
+		$hodima_groups[ $hodima_g ] += $hodima_n;
 	}
 }
-$hodima_recent = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT id, type, status, total_price, created_at FROM %i WHERE user_id = %d ORDER BY id DESC LIMIT 3', table( 'orders' ), $hodima_user_id ) );
+$hodima_recent = Order_Query::recent( $hodima_user_id, 3 );
 $hodima_rows   = $hodima_recent;
-// قدیمی‌ترین سفارشِ منتظر پرداخت مشتری (گروه wait = awaiting_payment در View::group)
-$hodima_next   = $hodima_groups['wait'] > 0 ? $wpdb->get_row( $wpdb->prepare( "SELECT id, total_price FROM %i WHERE user_id = %d AND status = 'awaiting_payment' ORDER BY id ASC LIMIT 1", table( 'orders' ), $hodima_user_id ) ) : null;
+$hodima_next   = $hodima_groups['wait'] > 0 ? Order_Query::oldest_awaiting( $hodima_user_id ) : null;
 $hodima_titles = [];
-if ( $hodima_recent ) {
-	$hodima_ids = array_map( static fn( object $o ): int => (int) $o->id, $hodima_recent );
-	$hodima_in  = implode( ',', array_fill( 0, count( $hodima_ids ), '%d' ) );
-	$hodima_sql = "SELECT order_id, product_id FROM %i WHERE order_id IN ($hodima_in) ORDER BY id";
-	$hodima_items = (array) $wpdb->get_results( $wpdb->prepare( $hodima_sql, ...[ table( 'order_items' ), ...$hodima_ids ] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $hodima_in فقط %d است.
-	_prime_post_caches( array_map( static fn( object $i ): int => (int) $i->product_id, $hodima_items ), false, false ); // یک کوئری برای همه نام‌ها
-	foreach ( $hodima_items as $hodima_item ) {
-		$hodima_titles[ (int) $hodima_item->order_id ][] = get_the_title( (int) $hodima_item->product_id );
+foreach ( Order_Query::items( array_map( static fn( object $o ): int => (int) $o->id, $hodima_recent ) ) as $hodima_oid => $hodima_list ) {
+	foreach ( $hodima_list as $hodima_item ) {
+		$hodima_titles[ $hodima_oid ][] = get_the_title( (int) $hodima_item->product_id );
 	}
 }
 ?>
