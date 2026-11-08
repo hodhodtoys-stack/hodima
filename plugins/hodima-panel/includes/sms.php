@@ -30,7 +30,19 @@ final class Sms {
 
 	private const LOG_SIZE = 30;
 
-	private const TIMEOUT = 12;
+	/**
+	 * مهلت هر درخواست (ثانیه).
+	 *
+	 * تا 0.2.3 هر سرویس ۱۲ ثانیه، یعنی با پشتیبان تا ۲۴ ثانیه انتظار مشتری و یک پردازش PHP
+	 * درگیر. پاسخ عادی سرویس‌ها زیر ۲ ثانیه است.
+	 */
+	public const TIMEOUT = 8;
+
+	/** بیشترین انتظار کل یک ارسال (اصلی + پشتیبان). */
+	public const BUDGET = 14;
+
+	/** پشتیبان با کمتر از این مهلت باقی‌مانده امتحان نمی‌شود. */
+	private const MIN_TIMEOUT = 3;
 
 	/**
 	 * سرویس‌ها: نامک => [نام، فیلدهای تنظیم (کلید => برچسب)].
@@ -123,11 +135,16 @@ final class Sms {
 	public static function send_code( string $mobile, string $code ): array {
 		$settings = self::settings();
 		$result   = [ 'ok' => false, 'provider' => '', 'error' => 'هیچ سرویس پیامکی تنظیم نشده است.' ];
+		$start    = microtime( true );
 		foreach ( array_filter( [ $settings['primary'], $settings['fallback'] ] ) as $id ) {
 			if ( ! self::is_configured( $id ) ) {
 				continue;
 			}
-			$result = self::send_with( $id, $mobile, $code );
+			$left = (int) floor( self::BUDGET - ( microtime( true ) - $start ) );
+			if ( $left < self::MIN_TIMEOUT ) {
+				break; // سرویس اصلی همه مهلت را گرفت؛ مشتری بیشتر منتظر نماند
+			}
+			$result = self::send_with( $id, $mobile, $code, min( self::TIMEOUT, $left ) );
 			if ( $result['ok'] ) {
 				break;
 			}
@@ -140,12 +157,13 @@ final class Sms {
 	 *
 	 * @param string $id     نامک سرویس.
 	 * @param string $mobile شماره.
-	 * @param string $code   کد.
+	 * @param string $code    کد.
+	 * @param int    $timeout مهلت درخواست (ثانیه).
 	 * @return array{ok: bool, provider: string, error: string}
 	 */
-	public static function send_with( string $id, string $mobile, string $code ): array {
+	public static function send_with( string $id, string $mobile, string $code, int $timeout = self::TIMEOUT ): array {
 		$config = self::settings()['providers'][ $id ] ?? [];
-		$error  = self::call( $id, $config, $mobile, $code );
+		$error  = self::call( $id, $config, $mobile, $code, $timeout );
 		$result = [ 'ok' => '' === $error, 'provider' => $id, 'error' => $error ];
 		self::log( $result, $mobile );
 		return $result;
@@ -157,30 +175,31 @@ final class Sms {
 	 * @param string                $id     نامک.
 	 * @param array<string, string> $c      تنظیم سرویس.
 	 * @param string                $mobile شماره ۰۹…
-	 * @param string                $code   کد.
+	 * @param string                $code    کد.
+	 * @param int                   $timeout مهلت (ثانیه).
 	 * @return string خطا ('' = موفق).
 	 */
-	private static function call( string $id, array $c, string $mobile, string $code ): string {
+	private static function call( string $id, array $c, string $mobile, string $code, int $timeout ): string {
 		$response = match ( $id ) {
 			// وب‌سرویس REST ملی‌پیامک، ارسال با خط خدماتی و الگو
 			'melipayamak' => wp_remote_post(
 				'https://rest.payamak-panel.com/api/SendSMS/BaseServiceNumber',
 				[
-					'timeout' => self::TIMEOUT,
+					'timeout' => $timeout,
 					'body'    => [ 'username' => $c['username'], 'password' => $c['password'], 'text' => $code, 'to' => $mobile, 'bodyId' => $c['body_id'] ],
 				]
 			),
 			'kavenegar'   => wp_remote_post(
 				'https://api.kavenegar.com/v1/' . rawurlencode( $c['api_key'] ) . '/verify/lookup.json',
 				[
-					'timeout' => self::TIMEOUT,
+					'timeout' => $timeout,
 					'body'    => [ 'receptor' => $mobile, 'token' => $code, 'template' => $c['template'] ],
 				]
 			),
 			'smsir'       => wp_remote_post(
 				'https://api.sms.ir/v1/send/verify',
 				[
-					'timeout' => self::TIMEOUT,
+					'timeout' => $timeout,
 					'headers' => [ 'X-API-KEY' => $c['api_key'], 'Content-Type' => 'application/json', 'Accept' => 'application/json' ],
 					'body'    => (string) wp_json_encode( [ 'mobile' => $mobile, 'templateId' => (int) $c['template_id'], 'parameters' => [ [ 'name' => $c['param'], 'value' => $code ] ] ] ),
 				]

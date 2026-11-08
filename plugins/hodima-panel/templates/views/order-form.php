@@ -46,16 +46,33 @@ if ( null !== $hodima_draft ) {
 	$hodima_qty = $hodima_draft;
 }
 
-$hodima_products = ! $hodima_locked && \Hodima\Panel\wc_active() ? get_posts(
-	[
-		'post_type'      => 'product',
-		'post_status'    => 'publish',
-		'posts_per_page' => -1,
-		'orderby'        => 'title',
-		'order'          => 'ASC',
-		'meta_query'     => [ [ 'key' => '_' . $hodima_type . '_enabled', 'value' => 'yes' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-	]
-) : [];
+$hodima_products = [];
+if ( ! $hodima_locked && \Hodima\Panel\wc_active() ) {
+	$hodima_query    = new WP_Query(
+		[
+			'post_type'              => 'product',
+			'post_status'            => 'publish',
+			'posts_per_page'         => Orders::FORM_MAX_PRODUCTS,
+			'orderby'                => 'title',
+			'order'                  => 'ASC',
+			'no_found_rows'          => true,
+			'ignore_sticky_posts'    => true,
+			'update_post_term_cache' => false, // فرم دسته/برچسب نمی‌خواند
+			'meta_query'             => [ [ 'key' => '_' . $hodima_type . '_enabled', 'value' => 'yes' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+		]
+	);
+	$hodima_products = $hodima_query->posts;
+	// اقلام سفارش در حال ویرایش که بیرون از سقف فرم افتاده‌اند هم در فرم باشند (وگرنه با ذخیره حذف می‌شدند)
+	$hodima_missing = array_diff( array_keys( $hodima_qty ), array_map( static fn( WP_Post $p ): int => (int) $p->ID, $hodima_products ) );
+	foreach ( $hodima_missing as $hodima_pid ) {
+		$hodima_post = get_post( (int) $hodima_pid );
+		if ( $hodima_post instanceof WP_Post && 'product' === $hodima_post->post_type && 'publish' === $hodima_post->post_status && 'yes' === get_post_meta( $hodima_post->ID, '_' . $hodima_type . '_enabled', true ) ) {
+			$hodima_products[] = $hodima_post;
+		}
+	}
+	// عکس همه کارت‌ها با یک کوئری (تا 0.2.3 یک کوئری پیوست برای هر محصول)
+	update_post_thumbnail_cache( $hodima_query );
+}
 // فقط محصولی که پنل از آن سفارش می‌گیرد (قیمت دار، تک‌مدل)؛ همان قاعده Orders::validate_items
 $hodima_prices = [];
 foreach ( $hodima_products as $hodima_i => $hodima_post ) {

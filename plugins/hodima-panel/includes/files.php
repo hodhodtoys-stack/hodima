@@ -52,10 +52,16 @@ final class Files {
 
 	/** پوشه خصوصی (بدون اسلش پایانی)، ساخته‌شده و بسته. */
 	public static function dir(): string {
+		static $ready = [];
 		$dir = defined( 'HODIMA_PANEL_PRIVATE_DIR' ) && '' !== (string) HODIMA_PANEL_PRIVATE_DIR
 			? (string) HODIMA_PANEL_PRIVATE_DIR
 			: (string) wp_upload_dir( null, false )['basedir'] . '/hodima-panel-private';
 		$dir = untrailingslashit( wp_normalize_path( $dir ) );
+		// بررسی/ساخت پوشه و فایل‌های محافظ یک بار در هر درخواست (تا 0.2.3 سه بررسی دیسک برای هر
+		// فایل هر فهرست؛ path() و resolve() همین را صدا می‌زنند)
+		if ( isset( $ready[ $dir ] ) ) {
+			return $dir;
+		}
 
 		if ( ! is_dir( $dir ) ) {
 			wp_mkdir_p( $dir );
@@ -67,6 +73,7 @@ final class Files {
 		if ( ! is_file( $dir . '/index.php' ) ) {
 			file_put_contents( $dir . '/index.php', "<?php\n// Silence is golden.\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 		}
+		$ready[ $dir ] = true;
 		return $dir;
 	}
 

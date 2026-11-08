@@ -302,7 +302,8 @@ final class Admin_Orders {
 			$num   = (int) ltrim( Profile::digits( $search ), '#' );
 			$like  = '%' . $wpdb->esc_like( $search ) . '%';
 			$plike = '%' . $wpdb->esc_like( Profile::digits( $search ) ) . '%';
-			$users = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT u.ID FROM %i u LEFT JOIN %i m ON m.user_id = u.ID AND m.meta_key IN ('mobile', 'billing_phone') WHERE u.display_name LIKE %s OR m.meta_value LIKE %s LIMIT 200", $wpdb->users, $wpdb->usermeta, $like, $plike ) ) );
+			// فقط کاربرانی که سفارش پنل دارند (تا 0.2.3 کل usermeta سایت با LIKE '%…%' گشته می‌شد)
+			$users = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT o.user_id FROM ( SELECT DISTINCT user_id FROM %i ) o INNER JOIN %i u ON u.ID = o.user_id LEFT JOIN %i m ON m.user_id = o.user_id AND m.meta_key IN ('mobile', 'billing_phone') WHERE u.display_name LIKE %s OR m.meta_value LIKE %s LIMIT 200", table( 'orders' ), $wpdb->users, $wpdb->usermeta, $like, $plike ) ) );
 			$parts = [];
 			if ( $num > 0 && preg_match( '/^#?\d+$/', Profile::digits( $search ) ) ) {
 				$parts[] = 'o.id = %d';
@@ -467,7 +468,10 @@ final class Admin_Orders {
 		$in    = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
 		$sql   = "SELECT order_id, product_id, quantity, sale_unit FROM %i WHERE order_id IN ($in) ORDER BY id";
 		$lines = [];
-		foreach ( (array) $wpdb->get_results( $wpdb->prepare( $sql, ...[ table( 'order_items' ), ...$ids ] ) ) as $item ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $in فقط %d است.
+		$items = (array) $wpdb->get_results( $wpdb->prepare( $sql, ...[ table( 'order_items' ), ...$ids ] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $in فقط %d است.
+		// نام همه محصولات با یک کوئری (تا 0.2.3 یک کوئری برای هر محصول هر ردیف)
+		_prime_post_caches( array_map( static fn( object $i ): int => (int) $i->product_id, $items ), false, false );
+		foreach ( $items as $item ) {
 			$lines[ (int) $item->order_id ][] = get_the_title( (int) $item->product_id ) . ' ' . View::qty( (float) $item->quantity ) . ' ' . $item->sale_unit;
 		}
 		$out = [];

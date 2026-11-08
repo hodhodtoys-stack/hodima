@@ -478,6 +478,7 @@ $hp_http  = [];
 $hp_reply = [ 'melipayamak' => [ 200, '{"Value":"11","RetStatus":11,"StrRetStatus":"InvalidBodyId"}' ] ] + $ok_reply;
 $r        = Sms::send_code( '09121234567', '11111' );
 hodima_pt( 'ملی‌پیامک خطا داد ← همان کد با کاوه‌نگار (پشتیبان)', [ $r['ok'], $r['provider'], count( $hp_http ), $hp_http[1]['url'] ?? '', $hp_http[1]['args']['body'] ?? [] ], [ true, 'kavenegar', 2, 'https://api.kavenegar.com/v1/KAVE-KEY/verify/lookup.json', [ 'receptor' => '09121234567', 'token' => '11111', 'template' => 'verify' ] ] );
+hodima_pt( 'مهلت هر سرویس ۸ ثانیه (نه ۱۲)، پشتیبان در بودجه کل', [ $hp_http[0]['args']['timeout'] ?? 0, ( $hp_http[1]['args']['timeout'] ?? 99 ) <= Sms::TIMEOUT, Sms::BUDGET < 2 * 12 ], [ Sms::TIMEOUT, true, true ] );
 $hp_http  = [];
 $hp_reply = [ 'melipayamak' => new WP_Error( 'http', 'timeout' ), 'kavenegar' => [ 418, '{"return":{"status":418,"message":"اعتبار کافی نیست"}}' ] ];
 $r        = Sms::send_code( '09121234567', '22222' );
@@ -861,6 +862,26 @@ if ( $hp_noorder > 1 ) {
 hodima_pt( 'پیام تازه بی سفارش: «پیگیری سفارش» غیرفعال با توضیح، بی فهرست سفارش', [ (bool) preg_match( '/value="order"\s+disabled/', $html ), str_contains( $html, 'هنوز سفارشی ندارید' ), str_contains( $html, 'name="order_id"' ) ], [ true, true, false ] );
 [ $html, $err ] = hodima_pt_render( '/user-panel/?section=prebuy&edit_order=' . $order_a, $user_a );
 hodima_pt( 'فرم ویرایش سفارش در حال بررسی: پیام قفل، بی فرم', [ str_contains( $html, 'قابل ویرایش نیست' ), str_contains( $html, 'name="products[]"' ), $err ], [ true, false, '' ] );
+// داشبورد: شمارش با GROUP BY و قدیمی‌ترین سفارش منتظر پرداخت، بی خواندن همه سفارش‌ها
+$hp_dash = wp_insert_user( [ 'user_login' => 'hp_dash', 'user_pass' => wp_generate_password(), 'user_email' => 'hp_dash@hodima.test', 'role' => 'customer' ] );
+if ( is_int( $hp_dash ) && $hp_dash > 1 ) {
+	foreach ( [ 'billing_first_name' => 'داشبورد', 'billing_last_name' => 'آزمون', 'billing_email' => 'hp_dash@hodima.test', 'billing_address_1' => 'تهران، خیابان آزمون، پلاک ۳', 'billing_postcode' => '1234567890' ] as $mk => $mv ) {
+		update_user_meta( $hp_dash, $mk, $mv );
+	}
+	$hp_ids = [];
+	foreach ( [ 'completed', 'awaiting_payment', 'awaiting_payment', 'pending', 'cancelled' ] as $st ) {
+		$wpdb->insert( table( 'orders' ), [ 'user_id' => $hp_dash, 'type' => 'prebuy', 'status' => $st, 'total_price' => 1000, 'created_at' => \Hodima\Panel\now(), 'updated_at' => \Hodima\Panel\now() ] );
+		$hp_ids[] = (int) $wpdb->insert_id;
+	}
+	[ $html ] = hodima_pt_render( '/user-panel/?section=dashboard', $hp_dash );
+	$hp_stat  = static fn( string $label ): string => preg_match( '#<span>' . preg_quote( $label, '#' ) . '</span><strong>([^<]*)</strong>#u', $html, $m ) ? $m[1] : '?';
+	hodima_pt( 'داشبورد: شمار هر گروه، قدیمی‌ترین منتظر پرداخت، ۳ سفارش اخیر', [ $hp_stat( 'در حال بررسی' ), $hp_stat( 'منتظر پرداخت شما' ), $hp_stat( 'تکمیل‌شده' ), str_contains( $html, 'پیش‌فاکتور سفارش #' . number_format_i18n( $hp_ids[1] ) . ' آماده است' ), substr_count( $html, 'class="hpn-recent__row"' ) ], [ number_format_i18n( 1 ), number_format_i18n( 2 ), number_format_i18n( 1 ), true, 3 ] );
+	foreach ( $hp_ids as $hp_id ) {
+		\Hodima\Panel\Orders::delete( $hp_id );
+	}
+	require_once ABSPATH . 'wp-admin/includes/user.php';
+	wp_delete_user( $hp_dash );
+}
 [ $html ] = hodima_pt_render( '/?hodima_panel_file=' . $fid, $user_a );
 hodima_pt( 'نشانی امن: صاحب سفارش خود فایل را می‌گیرد', str_starts_with( $html, "\x89PNG" ), true );
 [ $html ] = hodima_pt_render( '/?hodima_panel_file=' . $fid, $user_b );
