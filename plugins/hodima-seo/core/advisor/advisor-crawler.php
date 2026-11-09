@@ -108,7 +108,7 @@ function hodima_seo_advisor_crawler_in_window( ?int $now = null ): bool {
 /**
  * وضعیت ذخیره‌شده خزش با پیش‌فرض‌ها.
  *
- * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, finished: int, pages: int, links: int, capped: bool, tick: int, mode: string, full_at: int, sitemap_problems: list<array{u: string, s: int, t: string, k: string}>}
+ * @return array{status: string, run: int, started: int, seed: list<string>, queue: list<string>, seen: array<string, int>, sitemap: array<string, int>, maps: int, manual: bool, done: int, errors: int, recent: list<int>, pause_until: int, throttled: int, finished: int, pages: int, links: int, capped: bool, tick: int, mode: string, full_at: int, sitemap_problems: list<array{u: string, s: int, t: string, k: string}>}
  */
 function hodima_seo_advisor_crawler_state(): array {
 
@@ -129,6 +129,7 @@ function hodima_seo_advisor_crawler_state(): array {
 		'errors'      => (int) ( $state['errors'] ?? 0 ),
 		'recent'      => array_values( array_map( 'intval', (array) ( $state['recent'] ?? [] ) ) ),
 		'pause_until' => (int) ( $state['pause_until'] ?? 0 ),
+		'throttled'   => (int) ( $state['throttled'] ?? 0 ), // آخرین «درخواست زیاد است» سرور (SEO 3.8.7)؛ پیام مکث در پیشخوان
 		'finished'    => (int) ( $state['finished'] ?? 0 ),
 		'pages'       => (int) ( $state['pages'] ?? 0 ),
 		'links'       => (int) ( $state['links'] ?? 0 ),
@@ -877,7 +878,31 @@ function hodima_seo_advisor_crawler_fetch( string $url ): ?array {
 		'html'     => $is_html,
 		'location' => $header( 'location' ),
 		'x_robots' => $header( 'x-robots-tag' ),
+		'retry'    => $header( 'retry-after' ), // ۴۲۹/۵۰۳ موقت (SEO 3.8.7)
 	];
+}
+
+/** سقف مکث خزنده بعد از «درخواست زیاد است» (ثانیه): Retry-After بزرگ‌تر از این بریده می‌شود. */
+const HODIMA_SEO_ADVISOR_CRAWLER_THROTTLE_MAX = 6 * HOUR_IN_SECONDS;
+
+/**
+ * پاسخ «فعلا نه» سرور/دیوار امنیتی (SEO 3.8.7): ۴۲۹ همیشه، ۵۰۳ فقط با Retry-After (نگهداری یا محدودیت موقت). چند ثانیه مکث (حداقل
+ * مکث کندی، حداکثر ۶ ساعت)؛ ۰ = محدودیت نیست. باگ تا ۳.۸.۶: ۴۲۹ مثل صفحه ذخیره و «صفحه خراب» گزارش می‌شد و داده سالم قبلی همان
+ * صفحه پاک می‌شد؛ ۵۰۳ موقت هم «خطای سرور» قرمز می‌ساخت.
+ *
+ * @param array{status: int, retry?: string} $fetched
+ */
+function hodima_seo_advisor_crawler_throttle_seconds( array $fetched ): int {
+
+	$retry = trim( (string) ( $fetched['retry'] ?? '' ) );
+
+	if ( 429 !== $fetched['status'] && ! ( 503 === $fetched['status'] && '' !== $retry ) ) {
+		return 0;
+	}
+
+	$wait = ctype_digit( $retry ) ? (int) $retry : ( '' !== $retry && false !== strtotime( $retry ) ? (int) strtotime( $retry ) - time() : 0 ); // ثانیه یا تاریخ HTTP
+
+	return min( HODIMA_SEO_ADVISOR_CRAWLER_THROTTLE_MAX, max( HODIMA_SEO_ADVISOR_CRAWLER_PAUSE, $wait ) );
 }
 
 /**
@@ -994,6 +1019,14 @@ function hodima_seo_advisor_crawler_process( string $url, array &$state, bool $k
 	}
 
 	$status = $fetched['status'];
+
+	// «درخواست زیاد است»: صفحه ذخیره نمی‌شود (ردیف قبلی سالم می‌ماند)، آدرس به سر صف برمی‌گردد و خزنده مکث می‌کند
+	$throttle = hodima_seo_advisor_crawler_throttle_seconds( $fetched );
+	if ( $throttle > 0 ) {
+		array_unshift( $state['queue'], $url );
+		$state['throttle'] = $throttle;
+		return $fetched['ms'];
+	}
 
 	if ( 200 === $status && ! $fetched['html'] ) {
 		return $fetched['ms']; // فایل یا خروجی غیر HTML صفحه نیست
@@ -1417,7 +1450,7 @@ function hodima_seo_advisor_crawler_recrawl( string $path ): bool {
 	$ms = hodima_seo_advisor_crawler_process( $fetch, $state, true );
 	hodima_seo_advisor_crawl_map( true );
 
-	return null !== $ms;
+	return null !== $ms && empty( $state['throttle'] ); // ۴۲۹: خوانده نشد (ردیف قبلی دست‌نخورده)
 }
 
 /**
@@ -1652,6 +1685,14 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 			// لینک ورودی و عمق دور قبل می‌ماند تا finalize همه را از نو بشمارد (SEO 3.7.4). باگ قبلی: هر صفحه خوانده‌شده با
 			// «لینک ورودی ۰» نوشته می‌شد و وسط خزش صدها ایراد ساختگی «بدون لینک ورودی» و افت نمره نشان داده می‌شد.
 			$ms = hodima_seo_advisor_crawler_process( $url, $state, true );
+
+			if ( ! empty( $state['throttle'] ) ) { // ۴۲۹/۵۰۳ موقت: همین آدرس بعد از مکث دوباره (SEO 3.8.7)
+				$state['pause_until'] = time() + (int) $state['throttle'];
+				$state['throttled']   = time();
+				unset( $state['throttle'] );
+				$state['recent'] = [];
+				break;
+			}
 		}
 
 		++$ran;
@@ -1669,6 +1710,7 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 
 		if ( $state['errors'] >= 5 || ( 3 === count( $state['recent'] ) && array_sum( $state['recent'] ) / 3 > HODIMA_SEO_ADVISOR_CRAWLER_SLOW_MS ) ) {
 			$state['pause_until'] = time() + HODIMA_SEO_ADVISOR_CRAWLER_PAUSE;
+			$state['throttled']   = 0; // این مکث از کندی است، نه ۴۲۹
 			$state['recent']      = [];
 			$state['errors']      = 0;
 			break;
@@ -1771,7 +1813,7 @@ function hodima_seo_advisor_crawler_eta( array $status ): string {
 /**
  * وضعیت برای نمایش: off، waiting (منتظر پنجره یا موعد)، running، paused.
  *
- * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, pages: int, capped: bool, mode: string}
+ * @return array{state: string, manual: bool, done: int, queued: int, seeding: int, finished: int, pause_until: int, throttled: bool, pages: int, capped: bool, mode: string}
  */
 function hodima_seo_advisor_crawler_status(): array {
 
@@ -1797,6 +1839,7 @@ function hodima_seo_advisor_crawler_status(): array {
 		'seeding'     => count( $state['seed'] ),
 		'finished'    => $state['finished'],
 		'pause_until' => $state['pause_until'],
+		'throttled'   => $state['throttled'] > 0 && $state['pause_until'] > time(), // مکث فعلی از «درخواست زیاد است» است (مکث کندی throttled را صفر می‌کند)
 		'pages'       => $state['pages'],
 		'capped'      => $state['capped'],
 		'mode'        => $state['mode'],

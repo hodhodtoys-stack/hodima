@@ -79,7 +79,7 @@ function hodima_seo_advisor_crawler_status_view(): array {
 
 	$view = match ( $status['state'] ) {
 		'off'     => [ 'warn', 'خاموش', 'خزش خودکار خاموش است؛ فقط «خزش همین حالا» کار می‌کند.' ],
-		'paused'  => [ 'warn', 'مکث موقت', sprintf( 'سایت کند پاسخ داد؛ خزنده تا %s ساکت است تا سایت سبک بماند.', wp_date( 'H:i', $status['pause_until'] ) ) ],
+		'paused'  => [ 'warn', 'مکث موقت', ! empty( $status['throttled'] ) ? sprintf( 'سرور (یا دیوار امنیتی) گفت «درخواست زیاد است» (۴۲۹)؛ خزنده تا %s صبر می‌کند و همان صفحه را دوباره می‌خواند. اگر هر شب تکرار شد، آدرس سایت را به Claude بدهید تا خزنده در دیوار امنیتی مجاز شود.', wp_date( 'H:i', $status['pause_until'] ) ) : sprintf( 'سایت کند پاسخ داد؛ خزنده تا %s ساکت است تا سایت سبک بماند.', wp_date( 'H:i', $status['pause_until'] ) ) ],
 		'running' => [ 'info', $status['manual'] ? 'خزش همین حالا' : ( 'quick' === $status['mode'] ? 'دور سریع' : 'در حال خزش' ), $progress . ( $status['manual'] || hodima_seo_advisor_crawler_in_window() ? '.' : '؛ ادامه در ساعت خزش بعدی.' ) ],
 		default   => $status['finished'] > 0
 			? ( $status['capped']
