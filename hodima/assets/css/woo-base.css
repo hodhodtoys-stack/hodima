@@ -1,0 +1,741 @@
+/* =========================================================================
+ * پایه سبک ووکامرس برای صفحه‌های محصول، فروشگاه، دسته، برچسب و جستجوی محصول
+ * -------------------------------------------------------------------------
+ * چرا (قالب 4.1.3، HODIMA-AUDIT.md بخش ۴۱۴): در این صفحه‌ها سه فایل CSS ووکامرس
+ * (layout، smallscreen، general؛ ≈۱۴KB فشرده gzip، این فایل ≈۳KB) لود می‌شد
+ * که بیشترش مال سبد، پرداخت، حساب، ابزارک‌ها و قالب‌های Twenty* بود و بقیه را
+ * قالب با طراحی خودش می‌پوشاند (PageSpeed: «Reduce unused CSS»). حالا آن سه فایل
+ * فقط در سبد/پرداخت/حساب لود می‌شوند (inc/performance/woo-optimizer.php) و اینجا
+ * فقط قانون‌هایی از ووکامرس هست که در این صفحه‌ها به عنصری می‌خورند یا حالت
+ * پویای آن‌هاست (پیام‌ها، بارگذاری، فرم متغیر، ستاره‌ها) — با همان انتخابگر و
+ * وزن ووکامرس تا آبشار CSS قالب مثل قبل بماند (سنجش: استایل محاسبه‌شده همه
+ * عنصرها قبل/بعد در ووکامرس واقعی، ۳۹۰/۸۲۰/۱۳۰۰، راست‌به‌چپ).
+ * رنگ‌های ووکامرس (بنفش، زیتونی، خاکستری) با توکن‌های برند عوض شدند.
+ * @font-face فونت آیکن ووکامرس (star، WooCommerce) آدرس افزونه را لازم دارد و
+ * از PHP کنار همین فایل چاپ می‌شود.
+ * ========================================================================= */
+
+/* stylelint-disable no-descending-specificity -- ترتیب قانون‌ها همان ترتیب CSS ووکامرس است تا آبشار همان قبلی بماند؛ برای این قاعده جابه‌جا نشد */
+
+@keyframes spin {
+	100% {
+		transform: rotate(-360deg);
+	}
+}
+
+.clear {
+	clear: both;
+}
+
+.woocommerce,
+.woocommerce-page {
+	& img {
+		height: auto;
+		max-width: 100%;
+	}
+
+	/* صفحه‌بندی ووکامرس (ظاهر نهایی در pagination.css) */
+	& .woocommerce-pagination ul.page-numbers {
+		&::before,
+		&::after {
+			content: " ";
+			display: table;
+		}
+
+		&::after {
+			clear: both;
+		}
+
+		& li {
+			display: inline-block;
+		}
+	}
+}
+
+.woocommerce {
+	/* --- فهرست محصولات (کارت‌ها در product-card.css شبکه می‌شوند) --- */
+	& .products ul,
+	& ul.products {
+		margin: 0 0 1em;
+		padding: 0;
+		list-style: none;
+		clear: both;
+
+		&::before,
+		&::after {
+			content: " ";
+			display: table;
+		}
+
+		&::after {
+			clear: both;
+		}
+	}
+
+	& .products ul li,
+	& ul.products li {
+		list-style: none;
+	}
+
+	& ul.products li.product {
+		position: relative;
+		padding: 0;
+
+		& .onsale {
+			inset-block-start: 0;
+			inset-inline: auto 0;
+			margin-block: -0.5em 0;
+			margin-inline: 0 -0.5em;
+		}
+
+		& .woocommerce-loop-category__title,
+		& .woocommerce-loop-product__title,
+		& h3 {
+			padding: 0.5em 0;
+			margin: 0;
+			font-size: 1em;
+		}
+
+		& a {
+			text-decoration: none;
+		}
+
+		& a.woocommerce-loop-product__link {
+			display: block;
+		}
+
+		& a img {
+			width: 100%;
+			height: auto;
+			display: block;
+			margin: 0 0 1em;
+			box-shadow: none;
+		}
+
+		& strong {
+			display: block;
+		}
+
+		& .star-rating {
+			font-size: 0.857em;
+		}
+
+		& .price {
+			display: block;
+			font-weight: 400;
+			margin-bottom: 0.5em;
+			font-size: 0.857em;
+
+			& del {
+				color: inherit;
+				opacity: 0.5;
+				display: inline-block;
+			}
+
+			& ins {
+				background: none;
+				font-weight: 700;
+				display: inline-block;
+			}
+		}
+	}
+
+	& span.onsale {
+		position: absolute;
+		inset-block-start: -0.5em;
+		inset-inline-start: -0.5em;
+		z-index: 9;
+		min-height: 3.236em;
+		min-width: 3.236em;
+		margin: 0;
+		padding: 0.202em;
+		border-radius: 100%;
+		background-color: var(--hodima-primary, #25316a);
+		color: #ffffff;
+		font-size: 0.857em;
+		font-weight: 700;
+		line-height: 3.236;
+		text-align: center;
+	}
+
+	& a.added_to_cart {
+		padding-top: 0.5em;
+		display: inline-block;
+	}
+
+	& .cart .button,
+	& .cart input.button {
+		float: none;
+	}
+
+	& .woocommerce-breadcrumb {
+		margin: 0 0 1em;
+		padding: 0;
+
+		&::before,
+		&::after {
+			content: " ";
+			display: table;
+		}
+
+		&::after {
+			clear: both;
+		}
+	}
+
+	& .quantity .qty {
+		width: 3.631em;
+		text-align: center;
+	}
+
+	/* --- صفحه محصول --- */
+	& div.product {
+		margin-bottom: 0;
+		position: relative;
+
+		& .product_title {
+			clear: none;
+			margin-top: 0;
+			padding: 0;
+		}
+
+		& p.stock {
+			font-size: 0.92em;
+		}
+
+		& .woocommerce-product-rating {
+			margin-bottom: 1.618em;
+		}
+
+		& form.cart {
+			margin-bottom: 2em;
+
+			&::before,
+			&::after {
+				content: " ";
+				display: table;
+			}
+
+			&::after {
+				clear: both;
+			}
+
+			& div.quantity {
+				/* stylelint-disable-next-line csstools/use-logical -- float منطقی (inline-start/end) در Chrome 109 و Safari 15 نیست؛ سایت راست‌به‌چپ است و مقدار همان نسخه RTL ووکامرس است (فرم محصول متغیر بی‌آن به‌هم می‌ریزد) */
+				float: right;
+				margin-block: 0;
+				margin-inline: 0 4px;
+			}
+
+			& table {
+				border-width: 0 0 1px;
+
+				& td {
+					padding-inline-start: 0;
+				}
+
+				& div.quantity {
+					float: none;
+					margin: 0;
+				}
+
+				& small.stock {
+					display: block;
+					float: none;
+				}
+			}
+
+			& .variations {
+				margin-bottom: 1em;
+				border: 0;
+				width: 100%;
+
+				& td,
+				& th {
+					border: 0;
+					line-height: 2em;
+					vertical-align: top;
+				}
+
+				& label {
+					font-weight: 700;
+					text-align: start;
+				}
+
+				& select {
+					max-width: 100%;
+					min-width: 75%;
+					display: inline-block;
+					margin-inline-end: 1em;
+					appearance: none;
+					padding-inline-end: 3em;
+					background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItY2hldnJvbi1kb3duIj48cG9seWxpbmUgcG9pbnRzPSI2IDkgMTIgMTUgMTggOSI+PC9wb2x5bGluZT48L3N2Zz4=") 12px center / 16px 16px no-repeat;
+				}
+			}
+
+			& .woocommerce-variation-description p {
+				margin-bottom: 1em;
+			}
+
+			& .reset_variations {
+				visibility: hidden;
+				font-size: 0.83em;
+			}
+
+			& .wc-no-matching-variations {
+				display: none;
+			}
+
+			& .button {
+				vertical-align: middle;
+				/* stylelint-disable-next-line csstools/use-logical -- مثل div.quantity بالا */
+				float: right;
+			}
+		}
+	}
+
+	/* --- نظرها --- */
+	& #reviews {
+		& #respond {
+			margin: 0;
+			border: 0;
+			padding: 0;
+		}
+
+		& #comment {
+			height: 75px;
+		}
+
+		& #comments {
+			& h2 {
+				clear: none;
+			}
+
+			& ol.commentlist {
+				margin: 0;
+				padding: 0;
+				width: 100%;
+				background: none;
+				list-style: none;
+
+				&::before,
+				&::after {
+					content: " ";
+					display: table;
+				}
+
+				&::after {
+					clear: both;
+				}
+
+				& li {
+					padding: 0;
+					margin: 0 0 20px;
+					position: relative;
+					border: 0;
+
+					& img.avatar {
+						position: absolute;
+						inset-block-start: 0;
+						inset-inline-start: 0;
+						padding: 3px;
+						width: 32px;
+						height: auto;
+						margin: 0;
+						background: var(--hodima-bg-gray, #eef2f8);
+						border: 1px solid var(--hodima-border-light, #d9e1f0);
+						box-shadow: none;
+					}
+
+					& .comment-text {
+						margin-block: 0;
+						margin-inline: 50px 0;
+						border: 1px solid var(--hodima-border-light, #d9e1f0);
+						border-radius: var(--hodima-radius-xs);
+						padding: 1em 1em 0;
+
+						&::before,
+						&::after {
+							content: " ";
+							display: table;
+						}
+
+						&::after {
+							clear: both;
+						}
+
+						& p {
+							margin: 0 0 1em;
+						}
+
+						& p.meta {
+							font-size: 0.83em;
+						}
+					}
+				}
+
+				& ul.children .star-rating {
+					display: none;
+				}
+			}
+
+			& .commentlist > li::before {
+				content: "";
+			}
+		}
+	}
+
+	& #review_form #respond {
+		position: static;
+		margin: 0;
+		width: auto;
+		padding: 0;
+		background: transparent none;
+		border: 0;
+
+		&::before,
+		&::after {
+			content: " ";
+			display: table;
+		}
+
+		&::after {
+			clear: both;
+		}
+
+		& p {
+			margin: 0 0 10px;
+		}
+
+		& textarea {
+			box-sizing: border-box;
+			width: 100%;
+		}
+	}
+
+	/* --- ستاره‌های امتیاز (فونت star؛ product-card.css خانواده فونت را قفل می‌کند) --- */
+	& .star-rating {
+		/* stylelint-disable-next-line csstools/use-logical -- ستاره‌های هر نظر کنار نام (مقدار RTL ووکامرس؛ float منطقی در مرورگرهای هدف نیست) */
+		float: left;
+		overflow: hidden;
+		position: relative;
+		height: 1em;
+		line-height: 1;
+		font-size: 1em;
+		width: 5.4em;
+		/* stylelint-disable-next-line font-family-no-missing-generic-family-keyword -- فونت آیکن ووکامرس؛ فونت جایگزین حرف «s» را به‌جای ستاره نشان می‌داد */
+		font-family: WooCommerce;
+
+		&::before {
+			content: "sssss";
+			color: var(--hodima-third, #b6c2f3);
+			position: absolute;
+			inset-block-start: 0;
+			inset-inline-start: 0;
+		}
+
+		& span {
+			overflow: hidden;
+			position: absolute;
+			inset-block-start: 0;
+			inset-inline-start: 0;
+			padding-top: 1.5em;
+
+			&::before {
+				content: "SSSSS";
+				position: absolute;
+				inset-block-start: 0;
+				inset-inline-start: 0;
+			}
+		}
+	}
+
+	& .woocommerce-product-rating {
+		line-height: 2;
+		display: block;
+
+		&::before,
+		&::after {
+			content: " ";
+			display: table;
+		}
+
+		&::after {
+			clear: both;
+		}
+
+		& .star-rating {
+			margin-block: 0.5em 0;
+			margin-inline: 0 4px;
+			/* stylelint-disable-next-line csstools/use-logical -- مقدار RTL ووکامرس */
+			float: right;
+		}
+	}
+
+	& .products .star-rating {
+		display: block;
+		margin: 0 0 0.5em;
+		float: none;
+	}
+
+	& p.stars a {
+		position: relative;
+		height: 1em;
+		width: 1em;
+		text-indent: -999em;
+		display: inline-block;
+		text-decoration: none;
+
+		&::before {
+			display: block;
+			position: absolute;
+			inset-block-start: 0;
+			inset-inline-end: 0;
+			width: 1em;
+			height: 1em;
+			line-height: 1;
+			/* stylelint-disable-next-line font-family-no-missing-generic-family-keyword -- فونت آیکن ووکامرس؛ فونت جایگزین حرف «s» را به‌جای ستاره نشان می‌داد */
+		font-family: WooCommerce;
+			content: "\e021";
+			text-indent: 0;
+		}
+	}
+
+	& p.stars a:hover ~ a::before {
+		content: "\e021";
+	}
+
+	& p.stars:hover a::before {
+		content: "\e020";
+	}
+
+	& p.stars.selected a.active::before {
+		content: "\e020";
+	}
+
+	& p.stars.selected a.active ~ a::before {
+		content: "\e021";
+	}
+
+	& p.stars.selected a:not(.active)::before {
+		content: "\e020";
+	}
+
+	/* --- بارگذاری (فرم متغیر: blockUI ووکامرس) --- */
+	& .blockUI.blockOverlay {
+		position: relative;
+	}
+
+	& .blockUI.blockOverlay::before,
+	& .loader::before {
+		position: absolute;
+		inset-block-start: 50%;
+		inset-inline-start: 50%;
+		display: block;
+		height: 1em;
+		width: 1em;
+		margin-block-start: -0.5em;
+		margin-inline-start: -0.5em;
+		content: "";
+		animation: spin 1s ease-in-out infinite;
+		background: var(--hodima-woo-loader) center / cover;
+		font-size: 2em;
+		line-height: 1;
+		text-align: center;
+	}
+
+	/* --- صفحه‌بندی ووکامرس (ظاهر نهایی در pagination.css) --- */
+	& nav.woocommerce-pagination {
+		text-align: center;
+
+		& ul {
+			display: inline-block;
+			white-space: nowrap;
+			margin: 1px;
+			padding: 0;
+			clear: both;
+			border: 1px solid var(--hodima-border-light, #d9e1f0);
+			border-inline-end: 0;
+
+			& li {
+				display: inline;
+				margin: 0;
+				padding: 0;
+				overflow: hidden;
+				border-inline-end: 1px solid var(--hodima-border-light, #d9e1f0);
+
+				/* span داخلی عدد (hodima-num) هم این را می‌گیرد؛ اندازه فعلی دکمه‌های صفحه‌بندی همین است */
+				& a,
+				& span {
+					display: block;
+					min-width: 1em;
+					margin: 0;
+					padding: 0.5em;
+					font-size: 1em;
+					font-weight: 400;
+					line-height: 1;
+					text-decoration: none;
+				}
+
+				& a:focus,
+				& a:hover,
+				& span.current {
+					background: var(--hodima-bg-gray, #eef2f8);
+					color: var(--hodima-primary, #25316a);
+				}
+			}
+		}
+	}
+
+	/* --- فرم «موجود شد خبرم کن» ووکامرس (محصول ناموجود) --- */
+	& .wc_bis_form {
+		margin: 2em 0;
+		padding: 0;
+
+		&.hidden {
+			display: none;
+		}
+	}
+
+	& .wc_bis_form__form-row {
+		display: flex;
+		flex-flow: row wrap;
+		align-items: center;
+		justify-content: flex-start;
+		gap: 0.7em;
+		margin: 0.7em 0;
+	}
+
+	& .wc_bis_form__input {
+		box-sizing: border-box;
+		width: auto;
+		white-space: nowrap;
+	}
+
+	& .wc_bis_form__button {
+		box-sizing: border-box;
+		white-space: nowrap;
+	}
+
+	& .wc_bis_form__checkbox {
+		display: block;
+		font-size: var(--wp--preset--font-size--small, 0.7em);
+	}
+
+	& :where(.wc_bis_form__input, .wc_bis_form__button) {
+		padding: 0.9rem 1.1rem;
+		line-height: 1;
+	}
+}
+
+.woocommerce:where(body:not(.woocommerce-uses-block-theme)) #reviews #comments ol.commentlist li .meta {
+	color: var(--hodima-text-muted, #5d6785);
+	font-size: 0.75em;
+}
+
+/* --- دکمه‌ها: شکل از قالب؛ از ووکامرس فقط جای‌گذاری نسبی (پایه علامت بارگذاری) و حالت غیرفعال
+ * (دکمه افزودن محصول متغیر پیش از انتخاب گزینه؛ کلاس disabled را JS ووکامرس می‌گذارد) --- */
+.woocommerce:where(body:not(.woocommerce-block-theme-has-button-styles)) {
+	& #respond input#submit,
+	& a.button,
+	& button.button,
+	& input.button {
+		position: relative;
+		inset-inline-end: auto;
+	}
+
+	& button.button.disabled,
+	& button.button:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+}
+
+/* --- پیام‌ها («به سبد اضافه شد»، خطای «گزینه را انتخاب کنید») --- */
+.woocommerce-error,
+.woocommerce-info,
+.woocommerce-message {
+	position: relative;
+	width: auto;
+	margin: 0 0 2em;
+	padding-block: 1em;
+	padding-inline: 3.5em 2em;
+	list-style: none;
+	background-color: var(--hodima-surface-soft, #f7f9fd);
+	color: var(--hodima-text-dark, #111111);
+	border-block-start: 3px solid var(--hodima-secondary, #607bbd);
+	overflow-wrap: break-word;
+
+	&::before,
+	&::after {
+		content: " ";
+		display: table;
+	}
+
+	&::after {
+		clear: both;
+	}
+
+	&::before {
+		position: absolute;
+		inset-block-start: 1em;
+		inset-inline-start: 1.5em;
+		display: inline-block;
+		/* stylelint-disable-next-line font-family-no-missing-generic-family-keyword -- فونت آیکن ووکامرس؛ فونت جایگزین حرف «s» را به‌جای ستاره نشان می‌داد */
+		font-family: WooCommerce;
+		content: "\e028";
+		color: var(--hodima-secondary-text, #5169a8);
+	}
+
+	& .button {
+		/* stylelint-disable-next-line csstools/use-logical -- دکمه «مشاهده سبد» در سمت چپ پیام؛ float منطقی در مرورگرهای هدف نیست (مقدار RTL ووکامرس) */
+		float: left;
+	}
+
+	& li {
+		list-style: none;
+		padding-inline-start: 0;
+		margin-inline-start: 0;
+	}
+}
+
+.woocommerce-message {
+	border-block-start-color: var(--hodima-state-success, #2f7a55);
+
+	&::before {
+		content: "\e015";
+		color: var(--hodima-state-success, #2f7a55);
+	}
+}
+
+.woocommerce-error {
+	border-block-start-color: var(--hodima-state-danger, #a32a2a);
+
+	&::before {
+		content: "\e016";
+		color: var(--hodima-state-danger, #a32a2a);
+	}
+}
+
+/* --- پیام سراسری فروشگاه (ووکامرس ← سفارشی‌سازی ← «اعلان فروشگاه»؛ JS ووکامرس نمایشش می‌دهد) --- */
+.woocommerce-store-notice,
+p.demo_store {
+	position: absolute;
+	inset-block-start: 0;
+	inset-inline: 0;
+	z-index: 99998;
+	display: none;
+	width: 100%;
+	margin: 0;
+	padding: 1em 0;
+	font-size: 1em;
+	text-align: center;
+	background-color: var(--hodima-primary, #25316a);
+	color: #ffffff;
+	box-shadow: 0 1px 1em rgb(0 0 0 / 0.2);
+
+	& a {
+		color: #ffffff;
+		text-decoration: underline;
+	}
+}

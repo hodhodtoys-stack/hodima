@@ -21,9 +21,52 @@ add_action( 'wp_enqueue_scripts', static function (): void {
             wp_dequeue_script( 'woocommerce' );
             wp_dequeue_script( 'jquery-blockui' );
             wp_dequeue_script( 'wc-cart-fragments' ); 
+        } elseif ( hodima_woo_lean_css() && wp_style_is( 'hodima-woo-base', 'enqueued' ) ) {
+            // فقط وقتی جایگزین (پایین، اولویت ۹) واقعا در صف است؛ وگرنه صفحه بی‌استایل می‌ماند
+            wp_dequeue_style( 'woocommerce-layout' );
+            wp_dequeue_style( 'woocommerce-smallscreen' );
+            wp_dequeue_style( 'woocommerce-general' );
         }
     }
 }, 99 );
+
+/**
+ * صفحه‌های محصول، فروشگاه، دسته، برچسب و جستجوی محصول: به‌جای سه فایل CSS ووکامرس
+ * (layout، smallscreen، general) فقط assets/css/woo-base.css قالب (قالب 4.1.3).
+ *
+ * چرا: آن سه فایل بیشتر برای سبد، پرداخت، حساب، ابزارک‌ها و قالب‌های Twenty* بود و
+ * بقیه را قالب با طراحی خودش می‌پوشاند؛ PageSpeed صفحه محصول و دسته ≈۲۲KB «CSS بی‌مصرف»
+ * نشان می‌داد. سبد، پرداخت و حساب کاربری CSS کامل ووکامرس را مثل قبل می‌گیرند.
+ * فیلتر hodima_woo_lean_css = false: برگشت فوری به CSS کامل ووکامرس (مثلا اگر افزونه‌ای
+ * در این صفحه‌ها به آن نیاز داشت).
+ */
+function hodima_woo_lean_css(): bool {
+    return function_exists( 'is_woocommerce' ) && (bool) apply_filters( 'hodima_woo_lean_css', is_woocommerce() );
+}
+
+/*
+ * اولویت ۹ (پیش از ووکامرس و افزونه‌ها در ۱۰): woo-base.css همان جای فایل‌های ووکامرس در
+ * صف چاپ می‌نشیند (پیش از CSS افزونه‌ها و قالب) تا آبشار CSS مثل قبل بماند.
+ * فونت آیکن ووکامرس (ستاره‌ها، آیکن پیام‌ها) و علامت بارگذاری آدرس افزونه را لازم دارند،
+ * پس از PHP کنار همان فایل چاپ می‌شوند.
+ */
+add_action( 'wp_enqueue_scripts', static function (): void {
+    // آدرس پوشه ووکامرس از ثابت خودش (WC()->plugin_url() در ووکامرس ساختگی ابزار تست نیست و Fatal می‌داد)
+    if ( ! hodima_woo_lean_css() || ! defined( 'WC_PLUGIN_FILE' ) ) {
+        return;
+    }
+    if ( ! hodima_enqueue_asset( 'hodima-woo-base', 'assets/css/woo-base.css' ) ) {
+        return;
+    }
+    $assets = untrailingslashit( plugins_url( '', (string) WC_PLUGIN_FILE ) ) . '/assets';
+    $font   = esc_url_raw( $assets . '/fonts/WooCommerce.woff2' );
+    $css    = '';
+    foreach ( [ 'star', 'WooCommerce' ] as $family ) {
+        $css .= '@font-face{font-family:' . $family . ';src:url("' . $font . '") format("woff2");font-weight:400;font-style:normal;font-display:swap}';
+    }
+    $css .= ':root{--hodima-woo-loader:url("' . esc_url_raw( $assets . '/images/icons/loader.svg' ) . '")}';
+    wp_add_inline_style( 'hodima-woo-base', $css );
+}, 9 );
 
 // ۲. حذف استایل‌های حجیم بلاک‌های گوتنبرگی ووکامرس
 add_action( 'wp_enqueue_scripts', static function (): void {
