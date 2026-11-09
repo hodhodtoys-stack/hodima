@@ -191,14 +191,18 @@ function hodima_seo_advisor_inspect_pending(): int {
 	return count( hodima_seo_advisor_inspect_queue( 600 ) );
 }
 
+/** چند خطای پی‌درپی گوگل (بدون هیچ پاسخ درست) یعنی مشکل از property یا دسترسی است، نه از یک آدرس: دسته می‌ایستد. */
+const HODIMA_SEO_ADVISOR_INSPECT_FAIL_STREAK = 3;
+
 /**
  * یک دسته از صف را از گوگل می‌پرسد و ذخیره می‌کند. با سهمیه (۴۲۹) یا خطای کلید فورا می‌ایستد.
  *
- * @return array{checked: int, error: string, quota: bool}
+ * @return array{checked: int, error: string, quota: bool, failed: int, queued: int, fail: string} failed = آدرس‌هایی که گوگل برایشان
+ *         خطا داد؛ queued = اندازه صف این دسته (۰ = همه آدرس‌ها تازه بررسی شده‌اند)؛ fail = متن آخرین خطای گوگل
  */
 function hodima_seo_advisor_inspect_batch( int $limit = HODIMA_SEO_ADVISOR_INSPECT_BATCH ): array {
 
-	$summary = [ 'checked' => 0, 'error' => '', 'quota' => false ];
+	$summary = [ 'checked' => 0, 'error' => '', 'quota' => false, 'failed' => 0, 'queued' => -1, 'fail' => '' ];
 
 	if ( ! (bool) apply_filters( 'hodima_seo_advisor_inspect_enabled', true ) ) {
 		return $summary;
@@ -229,16 +233,64 @@ function hodima_seo_advisor_inspect_batch( int $limit = HODIMA_SEO_ADVISOR_INSPE
 }
 
 /**
+ * خطای گوگل برای یک آدرس ← جمله کوتاه فارسی با کد و پیام خود گوگل.
+ */
+function hodima_seo_advisor_inspect_fail_text( WP_Error $error ): string {
+
+	$status  = (int) ( $error->get_error_data()['status'] ?? 0 );
+	$message = trim( $error->get_error_message() );
+	$text    = ( $status > 0 ? sprintf( 'کد %s', number_format_i18n( $status ) ) : 'اتصال برقرار نشد' ) . ( '' !== $message ? '؛ پیام گوگل: «' . mb_substr( $message, 0, 200 ) . '»' : '' );
+
+	// ۴۰۳ گوگل در این API تقریبا همیشه یعنی آدرس جزو property نیست (www/بی‌www، http/https) یا حساب سرویس در Search Console کاربر آن property نیست
+	if ( 403 === $status ) {
+		$text .= '. یعنی معمولا آدرس سایت جزو property انتخاب‌شده نیست (با www یا بدون www، http یا https) یا حساب سرویس در Search Console به این property دسترسی ندارد';
+	}
+
+	return $text;
+}
+
+/**
+ * پیام نتیجه یک دسته (نوار پیشرفت، پیام پیشخوان و کارت «کارهای خودکار» همه همین را نشان می‌دهند).
+ *
+ * باگ تا SEO ۳.۸.۰: اگر گوگل برای همه آدرس‌ها خطا می‌داد (مثلا ۴۰۳ «آدرس جزو property نیست») یا صف خالی بود، خطاها بی‌صدا
+ * رد می‌شدند و پیام موفق «۰ آدرس بررسی شد» می‌آمد؛ مدیر نمی‌فهمید چرا هیچ آدرسی بررسی نمی‌شود.
+ *
+ * @param array{checked: int, error: string, quota: bool, failed: int, queued: int, fail: string} $summary
+ */
+function hodima_seo_advisor_inspect_message( array $summary ): string {
+
+	if ( '' !== $summary['error'] ) {
+		return $summary['error'];
+	}
+
+	if ( 0 === $summary['queued'] ) {
+		return sprintf( 'آدرسی برای پرسیدن نبود: همه آدرس‌ها در %s روز اخیر بررسی شده‌اند.', number_format_i18n( HODIMA_SEO_ADVISOR_INSPECT_RECHECK_DAYS ) );
+	}
+
+	$text = sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) );
+
+	if ( $summary['failed'] > 0 ) {
+		$text .= ' ' . sprintf( 'گوگل برای %1$s آدرس خطا داد (%2$s).', number_format_i18n( $summary['failed'] ), $summary['fail'] );
+	}
+
+	return $text;
+}
+
+/**
  * بدنه یک دسته بررسی ایندکس (بعد از گرفتن قفل).
  *
- * @param array{checked: int, error: string, quota: bool} $summary
- * @return array{checked: int, error: string, quota: bool}
+ * @param array{checked: int, error: string, quota: bool, failed: int, queued: int, fail: string} $summary
+ * @return array{checked: int, error: string, quota: bool, failed: int, queued: int, fail: string}
  */
 function hodima_seo_advisor_inspect_run( string $property, int $limit, array $summary ): array {
 
-	$stored = hodima_seo_advisor_inspections();
-	$queue  = hodima_seo_advisor_inspect_queue( $limit );
+	$summary += [ 'failed' => 0, 'queued' => -1, 'fail' => '' ];
+	$stored   = hodima_seo_advisor_inspections();
+	$queue    = hodima_seo_advisor_inspect_queue( $limit );
 	$count  = count( $queue );
+	$streak = 0;
+
+	$summary['queued'] = $count;
 
 	foreach ( $queue as $index => $path ) {
 
@@ -252,9 +304,18 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 				$summary['error'] = $summary['quota'] ? 'سهمیه روزانه بررسی ایندکس گوگل تمام شد؛ فردا ادامه می‌یابد.' : $result->get_error_message();
 				break;
 			}
-			continue; // خطای همین آدرس؛ بقیه ادامه دارند
+			// خطای همین آدرس؛ بقیه ادامه دارند. ولی چند خطای پی‌درپی بی‌هیچ پاسخ درست = مشکل property یا دسترسی (نه آدرس)؛
+			// ادامه دادن فقط وقت و سهمیه می‌برد و پیام باید خطای گوگل را نشان دهد (تا ۳.۸.۰ بی‌صدا «۰ آدرس بررسی شد»)
+			++$summary['failed'];
+			++$streak;
+			$summary['fail'] = hodima_seo_advisor_inspect_fail_text( $result );
+			if ( 0 === $summary['checked'] && $streak >= HODIMA_SEO_ADVISOR_INSPECT_FAIL_STREAK ) {
+				break;
+			}
+			continue;
 		}
 
+		$streak          = 0;
 		$stored[ $path ] = hodima_seo_advisor_inspect_parse( $result );
 		++$summary['checked'];
 
@@ -277,7 +338,11 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 		hodima_seo_advisor_tasks_sync_inspected(); // کارهای «انجام دادم» ایندکس و صفحه بدون نمایش با نتیجه تازه
 	}
 
-	hodima_seo_advisor_progress_finish( 'inspect', '' !== $summary['error'] ? $summary['error'] : sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ), '' !== $summary['error'] && ! $summary['quota'] );
+	if ( '' === $summary['error'] && 0 === $summary['checked'] && $summary['failed'] > 0 ) {
+		$summary['error'] = sprintf( 'هیچ آدرسی بررسی نشد؛ گوگل برای %1$s آدرس خطا داد (%2$s).', number_format_i18n( $summary['failed'] ), $summary['fail'] );
+	}
+
+	hodima_seo_advisor_progress_finish( 'inspect', hodima_seo_advisor_inspect_message( $summary ), '' !== $summary['error'] && ! $summary['quota'] );
 
 	return $summary;
 }
@@ -297,7 +362,8 @@ function hodima_seo_advisor_do_inspect(): array {
 		return [ 'error', '<strong>بررسی ایندکس:</strong> ' . esc_html( $summary['error'] ) . ( $summary['checked'] > 0 ? ' ' . esc_html( sprintf( '(%s آدرس بررسی شد)', number_format_i18n( $summary['checked'] ) ) ) : '' ) ];
 	}
 
-	return [ 'success', '<strong>بررسی ایندکس:</strong> ' . esc_html( sprintf( '%s آدرس بررسی شد.', number_format_i18n( $summary['checked'] ) ) ) ];
+	// بخشی از آدرس‌ها خطا داد: پیام هشدار (نه موفق سبز)، با خطای گوگل
+	return [ $summary['failed'] > 0 ? 'warning' : 'success', '<strong>بررسی ایندکس:</strong> ' . esc_html( hodima_seo_advisor_inspect_message( $summary ) ) ];
 }
 
 function hodima_seo_advisor_handle_inspect_now(): void {

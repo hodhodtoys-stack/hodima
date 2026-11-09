@@ -71,7 +71,7 @@ function hodima_ck_row( array $over = [] ): array {
 
 /** زمینه ساختگی (بدون دیتابیس). */
 function hodima_ck_ctx( array $over = [] ): array {
-	return $over + [ 'titles' => [], 'h1s' => [], 'similar' => [], 'by_path' => [], 'sitemap' => [], 'bad' => [] ];
+	return $over + [ 'titles' => [], 'h1s' => [], 'similar' => [], 'by_path' => [], 'sitemap' => [], 'bad' => [], 'kinds' => [], 'taxonomies' => [ 'category' => true, 'post_tag' => true, 'product_cat' => true, 'product_tag' => true ] ];
 }
 
 /** کدهای ایراد خروجی یک تابع تکی. */
@@ -166,6 +166,9 @@ $cases = [
 	[ 'متن کم در دسته ← هیچ', 'thin', [ 'words' => 50, 'kind' => 'category' ], [], [] ],
 	[ 'متن کم در صفحه اصلی ← هیچ', 'thin', [ 'path' => '/', 'words' => 50 ], [], [] ],
 	[ 'متن کم در صفحه ویدیو ← هیچ (ذاتا متن کم دارد)', 'thin', [ 'words' => 50, 'kind' => 'video' ], [], [] ],
+	[ 'متن کم، نوع از زمینه (صفحه بی‌نمایش) ← thin', 'thin', [ 'words' => 50, 'kind' => '' ], [ 'kinds' => [ '/ck-page/' => 'product' ] ], [ 'thin' ] ],
+	[ 'متن کم، نوع زمینه دسته محصول ← هیچ', 'thin', [ 'words' => 50, 'kind' => '' ], [ 'kinds' => [ '/ck-page/' => 'product_cat' ] ], [] ],
+	[ 'متن کم، نوع ناشناخته ← هیچ (تابع خالص؛ دیتابیس نمی‌پرسد)', 'thin', [ 'words' => 50, 'kind' => '' ], [], [] ],
 	[ 'دو تصویر بدون alt ← img_alt', 'images', [ 'img_noalt' => 2 ], [], [ 'img_alt' ] ],
 	[ 'یک alt خالی ← img_empty (فقط «بررسی کنید»)', 'images', [ 'img_empty' => 1 ], [], [ 'img_empty' ] ],
 	[ 'تصویر سالم ← هیچ', 'images', [], [], [] ],
@@ -457,11 +460,9 @@ hodima_ck( 'بخش‌های نمره فقط کد کاتالوگ دارند', [] 
 
 $grouped = array_unique( array_merge( ...array_values( HODIMA_SEO_ADVISOR_CRAWL_GROUPS ) ) );
 $scored  = array_unique( array_merge( ...array_map( static fn( array $c ): array => $c['codes'], array_values( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES ) ) ) );
-// شکاف شناخته‌شده: کد بی‌گروه در فیلتر چیپ‌های «کارها» دیده نمی‌شود (img_empty از SEO 3.4.9؛ فقط در «همه ایرادها» هست). رفتار
-// 3.6.1 عوض نشد؛ در انتشار بعدی به گروه «تصویر و محتوا» می‌رود و این خط به hodima_ck( … ) رد‌شدنی تبدیل می‌شود.
+// کد بی‌گروه در فیلتر چیپ‌های «کارها» دیده نمی‌شود. شکاف img_empty (از SEO 3.4.9) در SEO 3.8.1 بسته شد: حالا هیچ کدی بی‌گروه نیست.
 $ungrouped = array_values( array_diff( $catalog, $grouped ) );
-echo '  ℹ کدهای بی‌گروه چیپ (شکاف شناخته‌شده): ' . ( $ungrouped ? implode( '، ', $ungrouped ) : 'هیچ' ) . "\n";
-hodima_ck( 'شکاف بی‌گروه فقط همان شناخته‌شده است (کد تازه بی‌گروه نشود)', [] === array_diff( $ungrouped, [ 'img_empty' ] ), implode( '، ', $ungrouped ) );
+hodima_ck( 'هر کد کاتالوگ گروه چیپ دارد (img_empty در «تصویر و محتوا»)', [] === $ungrouped && in_array( 'img_empty', HODIMA_SEO_ADVISOR_CRAWL_GROUPS['content'], true ), implode( '، ', $ungrouped ) );
 
 // شکاف شناخته‌شده: کدهایی که در هیچ بخش نمره نیستند (img_empty «بررسی کنید» عمدا بی‌نمره است)؛ کد تازه بی‌نمره رد می‌شود
 $unscored = array_values( array_diff( $catalog, $scored ) );

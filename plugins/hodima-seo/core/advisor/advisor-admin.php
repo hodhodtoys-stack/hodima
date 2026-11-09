@@ -257,7 +257,7 @@ function hodima_seo_advisor_refresh_extras(): array {
 			// رویداد بررسی ایندکس از موعدش گذشته = کرون سایت اجرا نمی‌کند؛ «شروع شد» نگوییم و چند آدرس را همین‌جا بررسی کنیم (۳.۲.۶)
 			$summary = hodima_seo_advisor_inspect_batch( 5 );
 			$out[]   = '' === $summary['error']
-				? sprintf( 'کرون سایت اجرا نمی‌کند؛ %s آدرس همین‌جا از نظر ایندکس بررسی شد (بقیه را در تب «خزش و داده» با «اجرا همین حالا» ادامه دهید).', number_format_i18n( $summary['checked'] ) )
+				? sprintf( 'کرون سایت اجرا نمی‌کند؛ بررسی ایندکس همین‌جا: %s (بقیه را در تب «خزش و داده» با «اجرا همین حالا» ادامه دهید.)', hodima_seo_advisor_inspect_message( $summary ) )
 				: sprintf( 'کرون سایت اجرا نمی‌کند و بررسی ایندکس هم نشد: %s', $summary['error'] );
 		} else {
 			if ( ! $next || $next > time() + 60 ) {

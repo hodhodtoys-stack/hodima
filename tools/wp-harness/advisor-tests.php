@@ -1506,13 +1506,48 @@ add_filter(
 );
 $batch = hodima_seo_advisor_inspect_batch( 3 );
 $stored_in = hodima_seo_advisor_inspections();
-hodima_ad( 'دسته: ۳ آدرس پرسیده، property درست، رکوردها ذخیره، وضعیت‌ها درست', [ $batch, count( $in_calls ), $in_calls[0]['siteUrl'], array_keys( $stored_in ), hodima_seo_advisor_inspect_state( $stored_in['/q/b/'] ) ], [ [ 'checked' => 3, 'error' => '', 'quota' => false ], 3, 'sc-domain:' . $host, [ '/q/unseen/', '/q/b/', '/q/a/' ], 'crawled_not_indexed' ] );
+hodima_ad( 'دسته: ۳ آدرس پرسیده، property درست، رکوردها ذخیره، وضعیت‌ها درست', [ array_intersect_key( $batch, [ 'checked' => 0, 'error' => 0, 'quota' => 0 ] ), count( $in_calls ), $in_calls[0]['siteUrl'], array_keys( $stored_in ), hodima_seo_advisor_inspect_state( $stored_in['/q/b/'] ) ], [ [ 'checked' => 3, 'error' => '', 'quota' => false ], 3, 'sc-domain:' . $host, [ '/q/unseen/', '/q/b/', '/q/a/' ], 'crawled_not_indexed' ] );
 hodima_ad( 'inspectionUrl آدرس کامل سایت است', str_starts_with( $in_calls[0]['inspectionUrl'], 'https://' . $host ), true );
 $in_calls = [];
 $GLOBALS['inspect_quota_after'] = 1;
 delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
 $batch2 = hodima_seo_advisor_inspect_batch( 5 );
 hodima_ad( 'سهمیه (۴۲۹) ← فورا می‌ایستد، آنچه پرسیده شده ذخیره می‌شود', [ $batch2['checked'], $batch2['quota'], '' !== $batch2['error'], count( $in_calls ), count( hodima_seo_advisor_inspections() ) ], [ 1, true, true, 2, 1 ] );
+
+// «۰ آدرس بررسی شد» (SEO 3.8.1): تا ۳.۸.۰ خطای گوگل برای هر آدرس (مثلا ۴۰۳ «آدرس جزو property نیست») بی‌صدا رد می‌شد و پیام
+// موفق «۰ آدرس بررسی شد» می‌آمد؛ صف خالی هم همان پیام را می‌داد. حالا خطا با کد و پیام گوگل، و صف خالی با پیام جدا.
+$GLOBALS['inspect_fail'] = 'all';
+add_filter( 'pre_http_request', $in_fail = static function ( mixed $pre, array $args, string $url ): mixed { // شمار درخواست‌ها را $in_filter (اولویت ۲۰) نگه می‌دارد
+	if ( ! str_contains( $url, '/urlInspection/index:inspect' ) ) {
+		return $pre;
+	}
+	$body = json_decode( (string) $args['body'], true );
+	if ( 'all' === $GLOBALS['inspect_fail'] || str_contains( (string) $body['inspectionUrl'], '/q/c/' ) ) {
+		return [ 'response' => [ 'code' => 403 ], 'body' => (string) wp_json_encode( [ 'error' => [ 'message' => 'You do not own this site, or the inspected URL is not part of this property.' ] ] ) ];
+	}
+	return $pre;
+}, 30, 3 ); // بعد از پاسخ ساختگی سالم (اولویت ۲۰) تا جایش را بگیرد
+$in_calls = [];
+$GLOBALS['inspect_quota_after'] = 99;
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+$f_all = hodima_seo_advisor_inspect_batch( 10 );
+$f_job = get_option( HODIMA_SEO_ADVISOR_PROGRESS_OPTION, [] )['inspect'] ?? [];
+hodima_ad( 'همه آدرس‌ها ۴۰۳: بعد از ۳ خطای پی‌درپی می‌ایستد؛ خطا (نه «۰ آدرس بررسی شد») با کد، پیام گوگل و راهنمای property', [ $f_all['checked'], $f_all['failed'], count( $in_calls ), str_contains( $f_all['error'], 'هیچ آدرسی بررسی نشد' ), str_contains( $f_all['error'], '۴۰۳' ) || str_contains( $f_all['error'], '403' ), str_contains( $f_all['error'], 'not part of this property' ), str_contains( $f_all['error'], 'property انتخاب‌شده' ), str_contains( (string) ( $f_job['text'] ?? '' ), 'هیچ آدرسی بررسی نشد' ), ! empty( $f_job['error'] ) ], [ 0, 3, 3, true, true, true, true, true, true ] );
+[ $f_type, $f_html ] = hodima_seo_advisor_do_inspect();
+hodima_ad( 'دکمه «اجرا همین حالا» با همه ۴۰۳: پیام خطا، نه موفق', [ $f_type, str_contains( $f_html, '۰ آدرس بررسی شد' ) || str_contains( $f_html, '0 آدرس بررسی شد' ) ], [ 'error', false ] );
+$GLOBALS['inspect_fail'] = 'one';
+$in_calls = [];
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+$f_part = hodima_seo_advisor_inspect_batch( 10 );
+hodima_ad( 'یک آدرس ۴۰۳ و بقیه سالم: بقیه بررسی و ذخیره می‌شوند، خطا نیست ولی پیام شمار خطا را می‌گوید', [ $f_part['checked'], $f_part['failed'], $f_part['error'], str_contains( hodima_seo_advisor_inspect_message( $f_part ), 'گوگل برای ۱ آدرس خطا داد' ) || str_contains( hodima_seo_advisor_inspect_message( $f_part ), 'گوگل برای 1 آدرس خطا داد' ) ], [ 3, 1, '', true ] );
+[ $f_type ] = hodima_seo_advisor_do_inspect(); // صف حالا خالی است (همه تازه بررسی شده‌اند یا /q/c/ دوباره ۴۰۳)
+remove_filter( 'pre_http_request', $in_fail, 30 );
+$f_empty = hodima_seo_advisor_inspect_batch( 10 );
+$f_empty_q = hodima_seo_advisor_inspect_queue( 10 );
+hodima_ad( 'صف خالی (همه در ۱۴ روز اخیر بررسی شده): پیام «آدرسی برای پرسیدن نبود»، نه «۰ آدرس بررسی شد»', [ $f_empty_q, $f_empty['queued'] > 0 || str_contains( hodima_seo_advisor_inspect_message( $f_empty ), 'آدرسی برای پرسیدن نبود' ) ], [ [], true ] );
+hodima_ad( 'پیام صف خالی', str_starts_with( hodima_seo_advisor_inspect_message( [ 'checked' => 0, 'error' => '', 'quota' => false, 'failed' => 0, 'queued' => 0, 'fail' => '' ] ), 'آدرسی برای پرسیدن نبود: همه آدرس‌ها در ' ), true );
+unset( $GLOBALS['inspect_fail'] );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
 
 // ذخیره تدریجی (SEO 3.4.6): قطع شدن وسط دسته نتیجه ۱۰ آدرس پرسیده‌شده را از دست نمی‌دهد
 $ip_t = hodima_seo_advisor_table( 'pages' );
@@ -3755,7 +3790,7 @@ hodima_ad( 'برچسب نمره: ۹۵ عالی، ۸۰ خوب، ۶۰ نیاز ب�
 hodima_ad( 'وزن بخش‌ها ۱۰۰ و هر کد ایراد فقط در یک بخش', [ array_sum( array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'weight' ) ), count( array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) ) ) === count( array_unique( array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) ) ) ) ], [ 100, true ] );
 $sc_all_codes = array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) );
 $sc_issue_codes = array_merge( ...array_values( HODIMA_SEO_ADVISOR_CRAWL_GROUPS ) );
-hodima_ad( 'هر کد ایراد خزش در یکی از بخش‌های نمره است (ایرادی بی‌نمره نمی‌ماند)', array_values( array_diff( $sc_issue_codes, $sc_all_codes ) ), [] );
+hodima_ad( 'هر کد ایراد خزش در یکی از بخش‌های نمره است (ایرادی بی‌نمره نمی‌ماند؛ جز img_empty «بررسی کنید» که عمدا بی‌نمره است و از SEO 3.8.1 در گروه چیپ «تصویر و محتوا» هم هست)', array_values( array_diff( $sc_issue_codes, $sc_all_codes, [ 'img_empty' ] ) ), [] );
 hodima_ad( 'فیلتر جدول: گروه چیپ و بخش نمره شناخته می‌شوند، ناشناس نه', [ hodima_seo_advisor_score_filter_codes( 'linkfix' ), in_array( 'slow', hodima_seo_advisor_score_filter_codes( 'cat-speed' ), true ), hodima_seo_advisor_score_filter_codes( 'nope' ) ], [ [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain', 'redirect_loop' ], true, [] ] );
 
 $sc_old = get_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, false );

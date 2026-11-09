@@ -60,7 +60,7 @@ function hodima_seo_advisor_dup_key( string $text ): string {
  * تکراری‌ها فقط بین صفحه‌های سالم و ایندکس‌پذیر شمرده می‌شوند و صفحه‌بندی کنار می‌ماند.
  *
  * @param list<array<string, mixed>> $rows ردیف‌های جدول خزش (با ستون‌های impressions، avg_position، kind)
- * @return array{titles: array<string, int>, h1s: array<string, int>, metas: array<string, int>, dups: array{title: array<string, list<string>>, h1: array<string, list<string>>, meta: array<string, list<string>>}, words: array<string, list<string>>, hidden: bool, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>}
+ * @return array{titles: array<string, int>, h1s: array<string, int>, metas: array<string, int>, dups: array{title: array<string, list<string>>, h1: array<string, list<string>>, meta: array<string, list<string>>}, words: array<string, list<string>>, hidden: bool, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>, kinds: array<string, string>, taxonomies: array<string, true>}
  */
 function hodima_seo_advisor_checks_context( array $rows ): array {
 
@@ -107,8 +107,13 @@ function hodima_seo_advisor_checks_context( array $rows ): array {
 	}
 
 	$by_path = [];
+	$kinds   = []; // نوع صفحه‌های کم‌متنی که جدول نمایش‌ها نوعشان را ندارد (برای «متن کم»)
 	foreach ( $rows as $r ) {
 		$by_path[ (string) $r['path'] ] = $r;
+		$count                          = (int) ( $r['words'] ?? -1 ); // نه $words: همان نام بالاتر کلمه‌های عنوان است
+		if ( '' === (string) ( $r['kind'] ?? '' ) && $count >= 0 && $count < HODIMA_SEO_ADVISOR_CRAWL_THIN_WORDS && '/' !== (string) $r['path'] && ! hodima_seo_advisor_crawl_is_paged( $r ) ) {
+			$kinds[ (string) $r['path'] ] = hodima_seo_advisor_classify( (string) $r['path'] )['kind'];
+		}
 	}
 
 	return [
@@ -122,6 +127,9 @@ function hodima_seo_advisor_checks_context( array $rows ): array {
 		'sitemap' => hodima_seo_advisor_sitemap_paths(),
 		'bad'     => hodima_seo_advisor_crawl_bad_links(),
 		'hidden'  => '0' === (string) get_option( 'blog_public', '1' ), // «تنظیمات ← خواندن ← از موتورهای جستجو بخواه ایندکس نکند» (SEO 3.6.7)
+		// تابع‌های ایراد خالص‌اند (بدون دیتابیس/وردپرس)؛ تا SEO ۳.۸.۰ check_thin خودش classify و taxonomy_exists را صدا می‌زد
+		'kinds'      => $kinds,
+		'taxonomies' => array_fill_keys( get_taxonomies(), true ),
 	];
 }
 
@@ -509,11 +517,12 @@ function hodima_seo_advisor_check_thin( array $r, array $ctx ): array {
 
 	$kind = (string) $r['kind'];
 	if ( '' === $kind ) {
-		$kind = hodima_seo_advisor_classify( $path )['kind'];
+		$kind = (string) ( $ctx['kinds'][ $path ] ?? '' ); // از زمینه (checks_context)، نه دیتابیس
 	}
 
-	// صفحه ویدیو (روتر نمی‌شناخت، SEO 3.6.2 با url_to_postid شناخته می‌شود) ذاتا متن کم دارد؛ «متن کم» برای آن معنی ندارد
-	return '' !== $kind && 'video' !== $kind && ! taxonomy_exists( $kind ) ? [ hodima_seo_advisor_issue( 'thin', sprintf( '%s کلمه', number_format_i18n( $words ) ) ) ] : [];
+	// صفحه ویدیو (روتر نمی‌شناخت، SEO 3.6.2 با url_to_postid شناخته می‌شود) ذاتا متن کم دارد؛ «متن کم» برای آن معنی ندارد.
+	// آرشیو طبقه‌بندی (دسته، برچسب) هم «متن کم» نمی‌گیرد
+	return '' !== $kind && 'video' !== $kind && ! isset( $ctx['taxonomies'][ $kind ] ) ? [ hodima_seo_advisor_issue( 'thin', sprintf( '%s کلمه', number_format_i18n( $words ) ) ) ] : [];
 }
 
 /**
