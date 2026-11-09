@@ -96,6 +96,7 @@ $cases = [
 	'/g-js/'        => [ 'js_links' => 1, 'js_list' => '[["/g-ok/","مشاهده"]]' ], // SEO 3.8.4: لینک جاوااسکریپتی
 	'/g-nocanon/'   => [ 'canonical' => '' ],
 	'/g-canbad/'    => [ 'canonical' => '/g-gone/' ],
+	'/g-canredir/'  => [ 'canonical' => '/g-redir/' ], // SEO 3.8.5: canonical به ریدایرکت ← آدرس پیشنهادی مقصد نهایی /g-ok/
 	'/g-gone/'      => [ 'status' => 404, 'inlinks' => 2 ],
 	'/g-redir/'     => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-redir2/' ],
 	'/g-redir2/'    => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-ok/' ],
@@ -136,8 +137,8 @@ foreach ( [ [ '/g-linker/', '/g-gone/', 'content', 'لینک خراب' ], [ '/g-
 	$wpdb->insert( $links_t, [ 'source_path' => $src, 'dest_path' => $dst, 'link_position' => $pos, 'anchor' => $anchor, 'is_follow' => 1 ] );
 }
 
-// نقشه سایت: صفحه خراب و noindex داخلش (sitemap_bad)، بقیه نیستند (not_in_sitemap)
-update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'paths' => [ '/', '/g-gone/', '/g-noindex/', '/g-ok/' ], 'time' => time() ], false );
+// نقشه سایت: صفحه خراب، noindex، ریدایرکت و canonical به دیگری داخلش (sitemap_bad)، بقیه نیستند (not_in_sitemap)
+update_option( HODIMA_SEO_ADVISOR_SITEMAP_OPTION, [ 'paths' => [ '/', '/g-gone/', '/g-noindex/', '/g-ok/', '/g-redir/', '/g-canon-other/' ], 'time' => time() ], false ); // ریدایرکت و canonical در نقشه ← آدرس درست (SEO 3.8.5)
 
 hodima_seo_advisor_crawl_map( true );
 

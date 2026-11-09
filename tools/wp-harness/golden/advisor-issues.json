@@ -165,8 +165,35 @@
             "text_links": 5,
             "issues": [
                 {
+                    "code": "sitemap_bad",
+                    "detail": "canonical به صفحه دیگر (زیر)",
+                    "url": "/g-ok/",
+                    "items": []
+                },
+                {
                     "code": "canonicalised",
                     "detail": "به /g-ok/ اشاره می‌کند.",
+                    "url": "",
+                    "items": []
+                }
+            ]
+        },
+        {
+            "path": "/g-canredir/",
+            "impressions": 0,
+            "position": 0,
+            "inlinks": 9,
+            "text_links": 5,
+            "issues": [
+                {
+                    "code": "canonical_bad",
+                    "detail": "به /g-redir/ اشاره می‌کند که خودش ریدایرکت می‌شود (کد 301)؛ آدرس درست احتمالا مقصد آن است (زیر)",
+                    "url": "/g-ok/",
+                    "items": []
+                },
+                {
+                    "code": "not_in_sitemap",
+                    "detail": "",
                     "url": "",
                     "items": []
                 }
@@ -829,6 +856,12 @@
             "text_links": 5,
             "issues": [
                 {
+                    "code": "sitemap_bad",
+                    "detail": "کد 301؛ ریدایرکت به آدرس زیر",
+                    "url": "/g-ok/",
+                    "items": []
+                },
+                {
                     "code": "redirect",
                     "detail": "به آدرس زیر می‌رود.",
                     "url": "/g-redir2/",
@@ -1022,6 +1055,12 @@
             "inlinks": 2,
             "text_links": 5,
             "issues": [
+                {
+                    "code": "sitemap_bad",
+                    "detail": "canonical به صفحه دیگر (زیر)",
+                    "url": "/g-ok/",
+                    "items": []
+                },
                 {
                     "code": "canonicalised",
                     "detail": "به /g-ok/ اشاره می‌کند.",

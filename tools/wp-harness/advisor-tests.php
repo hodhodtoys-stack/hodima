@@ -4294,6 +4294,10 @@ $pg_text   = (string) preg_replace( [ '#<code\b.*?</code>#su', '#<[^>]*>#u', '#&
 $pg_latin  = preg_match_all( '#(?<![A-Za-z/=_-])[0-9]+(?![A-Za-z/_-])#u', $pg_text, $pg_m ) ? array_slice( $pg_m[0], 0, 8 ) : [];
 hodima_ad( 'تب خزش و داده: متن بی‌رقم لاتین (جز دستور کرون)؛ ویژگی‌ها (aria-valuenow، عرض نوار) لاتین می‌مانند؛ ساعت‌های فرم خزش فارسی', [ $pg_latin, str_contains( $pg_html, 'aria-valuenow="38"' ), str_contains( $pg_html, 'inline-size: 38%' ), str_contains( $pg_html, '>۲۳:۰۰<' ) ], [ [], true, true, true ] );
 hodima_ad( 'fa_digits_html: متن فارسی، ویژگی/موجودیت/کد دست‌نخورده', hodima_seo_advisor_fa_digits_html( '<p data-n="12" style="inline-size: 3%">گام 2 از 3: 10 دقیقه &#8211; 1,250 <code>*/5 * * * * wget</code> http://a.test/2/</p>' ), '<p data-n="12" style="inline-size: 3%">گام ۲ از ۳: ۱۰ دقیقه &#8211; ۱٬۲۵۰ <code>*/5 * * * * wget</code> http://a.test/2/</p>' );
+$ov_html  = $cap( static fn() => hodima_seo_advisor_echo_fa( static function (): void {
+	echo '<p>249 ایراد باز روی 202 صفحه</p><span class="n">11,854 نمایش</span><a data-n="12" href="/x/2/">https://a.test/p/2/</a><button data-hdsa-copy-text="پک 12 عددی">کپی</button>';
+} ) );
+hodima_ad( 'echo_fa («کارها»، SEO 3.8.5): متن فارسی؛ آدرس، ویژگی و متن کپی دست‌نخورده', $ov_html, '<p>۲۴۹ ایراد باز روی ۲۰۲ صفحه</p><span class="n">۱۱٬۸۵۴ نمایش</span><a data-n="12" href="/x/2/">https://a.test/p/2/</a><button data-hdsa-copy-text="پک 12 عددی">کپی</button>' );
 hodima_seo_advisor_progress_set( 'inspect', 2, 3, '2 از 3 آدرس پرسیده می‌شود' );
 hodima_ad( 'پیشرفت (ایجکس وضعیت): برچسب با ارقام فارسی', hodima_seo_advisor_progress_get( 'inspect' )['label'], '۲ از ۳ آدرس پرسیده می‌شود' );
 $_GET = [];

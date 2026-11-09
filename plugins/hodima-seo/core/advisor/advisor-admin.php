@@ -73,6 +73,17 @@ function hodima_seo_advisor_page_url( array $args = [] ): string {
 	return add_query_arg( array_filter( [ 'page' => HODIMA_SEO_ADVISOR_PAGE ] + $args, static fn( mixed $v ): bool => '' !== $v && null !== $v ), admin_url( 'admin.php' ) );
 }
 
+/**
+ * خروجی یک نمای پیشخوان با ارقام فارسی در متن (نه ویژگی‌ها، دکمه کپی یا <code>؛ hodima_seo_advisor_fa_digits_html).
+ *
+ * @param callable(): void $render
+ */
+function hodima_seo_advisor_echo_fa( callable $render ): void {
+	ob_start();
+	$render();
+	echo hodima_seo_advisor_fa_digits_html( (string) ob_get_clean() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در خود نما؛ فقط رقم‌های متن عوض می‌شوند
+}
+
 /** نام فارسی قاعده (از فهرست مرکزی پیشنهادها، advisor-suggest.php). */
 function hodima_seo_advisor_rule_label( string $rule ): string {
 	return HODIMA_SEO_ADVISOR_SUGGEST_RULES[ $rule ]['label'] ?? $rule;
@@ -660,10 +671,10 @@ function hodima_seo_advisor_render_admin(): void {
 	$empty = ! $has_data;
 
 	// یک ردیف «گرفتن داده تازه» بالای تب‌ها برای کل صفحه (SEO 2.9.3؛ قبلا در هر تب تکرار می‌شد)
-	hodima_seo_advisor_render_tabs( $tab, $has_data );
+	hodima_seo_advisor_echo_fa( static fn() => hodima_seo_advisor_render_tabs( $tab, $has_data ) ); // سربرگ همه تب‌ها (شمار تب، «کیفیت داده») با ارقام فارسی (SEO 3.8.5)
 	hodima_seo_advisor_render_crawlbar( $tab ); // خزش در جریان یا تازه تمام‌شده: «کارها» و «سلامت سایت» (SEO 3.4.9)
 	if ( ! in_array( $tab, [ 'overview', 'tasks', 'jobs', 'settings' ], true ) ) {
-		hodima_seo_advisor_render_toolbar( $tab );
+		hodima_seo_advisor_echo_fa( static fn() => hodima_seo_advisor_render_toolbar( $tab ) ); // نوار «گرفتن داده تازه» و «کیفیت داده» با ارقام فارسی (SEO 3.8.5)
 	}
 
 	if ( 'jobs' === $tab ) {
@@ -682,7 +693,7 @@ function hodima_seo_advisor_render_admin(): void {
 		match ( $tab ) {
 			'terms'     => hodima_seo_advisor_render_terms( $status ),
 			'health'    => hodima_seo_advisor_render_health( $status ),
-			'overview'  => hodima_seo_advisor_render_overview(),
+			'overview'  => hodima_seo_advisor_echo_fa( 'hodima_seo_advisor_render_overview' ), // ارقام فارسی «کارها» (SEO 3.8.5؛ عکس کاربر: «249 ایراد باز روی 202 صفحه»)
 			'indexing'  => hodima_seo_advisor_render_indexing(),
 			'tasks'     => hodima_seo_advisor_render_tasks(),
 			default     => hodima_seo_advisor_render_competition( $status ),

@@ -171,7 +171,23 @@ function hodima_seo_advisor_check_sitemap_bad( array $r, array $ctx ): array {
 		return [];
 	}
 
-	return [ hodima_seo_advisor_issue( 'sitemap_bad', 200 !== $status ? sprintf( 'کد %s', number_format_i18n( $status ) ) : ( 'Canonicalised' === (string) $r['reason'] ? 'canonical به صفحه دیگر' : 'noindex' ) ) ];
+	// کدام آدرس باید جایش در نقشه بیاید (SEO 3.8.5): مقصد نهایی ریدایرکت یا صفحه canonical؛ تا ۳.۸.۴ فقط «کد ۳۰۱» یا «canonical به صفحه دیگر»
+	$url = '';
+	if ( $status >= 300 && $status < 400 ) {
+		$trace  = hodima_seo_advisor_redirect_trace( (string) $r['path'], $ctx['by_path'] );
+		$url    = $trace['loop'] ? '' : ( '' !== $trace['final'] ? $trace['final'] : (string) $r['redirect_to'] );
+		$detail = sprintf( 'کد %s', number_format_i18n( $status ) ) . ( '' !== $url ? '؛ ریدایرکت به آدرس زیر' : '' );
+	} elseif ( 200 !== $status ) {
+		$detail = sprintf( 'کد %s', number_format_i18n( $status ) );
+	} elseif ( 'Canonicalised' === (string) $r['reason'] ) {
+		$canonical = (string) $r['canonical'];
+		$url       = '' !== $canonical && ! str_starts_with( $canonical, '!' ) ? $canonical : '';
+		$detail    = 'canonical به صفحه دیگر' . ( '' !== $url ? ' (زیر)' : '' );
+	} else {
+		$detail = 'noindex';
+	}
+
+	return [ hodima_seo_advisor_issue( 'sitemap_bad', $detail, $url ) ];
 }
 
 /**
@@ -200,7 +216,16 @@ function hodima_seo_advisor_check_canonical_bad( array $r, array $ctx ): array {
 		return [];
 	}
 
-	return [ hodima_seo_advisor_issue( 'canonical_bad', sprintf( 'به %s اشاره می‌کند (%s)', rawurldecode( $canonical ), 200 !== (int) $target['status'] ? 'کد ' . number_format_i18n( (int) $target['status'] ) : 'noindex' ) ) ];
+	// canonical به آدرسی که ریدایرکت می‌شود (SEO 3.8.5): مقصد نهایی سالم همان آدرس درست است و با دکمه کپی می‌آید
+	$status = (int) $target['status'];
+	if ( $status >= 300 && $status < 400 ) {
+		$trace = hodima_seo_advisor_redirect_trace( $canonical, $ctx['by_path'] );
+		$final = $trace['loop'] ? '' : $trace['final'];
+		$ok    = '' !== $final && 200 === (int) ( $ctx['by_path'][ $final ]['status'] ?? 0 ) && 'Noindex' !== (string) ( $ctx['by_path'][ $final ]['reason'] ?? '' );
+		return [ hodima_seo_advisor_issue( 'canonical_bad', sprintf( 'به %1$s اشاره می‌کند که خودش ریدایرکت می‌شود (کد %2$s)%3$s', rawurldecode( $canonical ), number_format_i18n( $status ), $ok ? '؛ آدرس درست احتمالا مقصد آن است (زیر)' : '' ), $ok ? $final : '' ) ];
+	}
+
+	return [ hodima_seo_advisor_issue( 'canonical_bad', sprintf( 'به %s اشاره می‌کند (%s)', rawurldecode( $canonical ), 200 !== $status ? 'کد ' . number_format_i18n( $status ) : 'noindex' ) ) ];
 }
 
 /**

@@ -294,6 +294,20 @@ hodima_ck( 'وارونه لینک به ریدایرکت: مقصد ← مبدأه
 $rd_issue = hodima_seo_advisor_check_status( hodima_ck_row( [ 'path' => '/old/', 'status' => 301, 'redirect_to' => '/new/', 'inlinks' => 2 ] ), hodima_ck_ctx( [ 'redirect_from' => $rd_from ] ) );
 hodima_ck( 'ایراد redirect فهرست صفحه‌های لینک‌دهنده را دارد', [ '/src-a/', '/src-b/' ] === array_column( $rd_issue[0]['items'] ?? [], 'path' ) );
 
+echo "=== canonical و نقشه سایت: آدرس درست با مقصد ریدایرکت یا canonical (SEO 3.8.5)\n";
+$cs_by = [ '/old/' => [ 'status' => 301, 'redirect_to' => '/mid/', 'reason' => 'Redirected' ], '/mid/' => [ 'status' => 301, 'redirect_to' => '/new/', 'reason' => 'Redirected' ], '/new/' => [ 'status' => 200, 'redirect_to' => '', 'reason' => '' ], '/loop-a/' => [ 'status' => 301, 'redirect_to' => '/loop-b/', 'reason' => '' ], '/loop-b/' => [ 'status' => 301, 'redirect_to' => '/loop-a/', 'reason' => '' ] ];
+$cs_one = static fn( string $fn, array $row, array $ctx ): array => ( $S . $fn )( hodima_ck_row( $row ), hodima_ck_ctx( $ctx ) )[0] ?? [];
+$cs_a   = $cs_one( 'canonical_bad', [ 'canonical' => '/old/' ], [ 'by_path' => $cs_by ] );
+hodima_ck( 'canonical به ریدایرکت (۲ پرش) ← canonical_bad با مقصد نهایی سالم /new/ برای کپی', [ 'canonical_bad', '/new/', true ] === [ $cs_a['code'] ?? '', $cs_a['url'] ?? '', str_contains( (string) ( $cs_a['detail'] ?? '' ), 'خودش ریدایرکت می‌شود' ) ], wp_json_encode( $cs_a, JSON_UNESCAPED_UNICODE ) );
+$cs_l = $cs_one( 'canonical_bad', [ 'canonical' => '/loop-a/' ], [ 'by_path' => $cs_by ] );
+hodima_ck( 'canonical به حلقه ریدایرکت ← canonical_bad بی آدرس پیشنهادی', [ 'canonical_bad', '' ] === [ $cs_l['code'] ?? '', $cs_l['url'] ?? 'x' ] );
+$cs_s = $cs_one( 'sitemap_bad', [ 'path' => '/old/', 'status' => 301, 'redirect_to' => '/mid/', 'indexable' => 0 ], [ 'sitemap' => [ '/old/' => true ], 'by_path' => $cs_by ] );
+hodima_ck( 'نقشه سایت: آدرس ریدایرکت‌شده ← sitemap_bad با مقصد نهایی /new/', [ 'sitemap_bad', '/new/' ] === [ $cs_s['code'] ?? '', $cs_s['url'] ?? '' ], wp_json_encode( $cs_s, JSON_UNESCAPED_UNICODE ) );
+$cs_c = $cs_one( 'sitemap_bad', [ 'indexable' => 0, 'reason' => 'Canonicalised', 'canonical' => '/main/' ], [ 'sitemap' => [ '/ck-page/' => true ] ] );
+hodima_ck( 'نقشه سایت: canonical به صفحه دیگر ← sitemap_bad با همان صفحه /main/', [ 'sitemap_bad', '/main/' ] === [ $cs_c['code'] ?? '', $cs_c['url'] ?? '' ] );
+$cs_n = $cs_one( 'sitemap_bad', [ 'indexable' => 0, 'reason' => 'Noindex' ], [ 'sitemap' => [ '/ck-page/' => true ] ] );
+hodima_ck( 'نقشه سایت: noindex ← بی آدرس پیشنهادی', [ 'noindex', '' ] === [ $cs_n['detail'] ?? '', $cs_n['url'] ?? 'x' ] );
+
 echo "=== مهاجرت جدول (DB 1.14.0): ستون‌های تازه بعد از حذف دوباره ساخته می‌شوند\n";
 global $wpdb;
 $mg_t = hodima_seo_advisor_table( 'crawl_pages' );
