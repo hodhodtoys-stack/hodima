@@ -62,6 +62,8 @@ function hodima_ck_row( array $over = [] ): array {
 			'canonical'   => $path,
 			'img_list'    => '',
 			'img_empty'   => 0,
+			'notext_links' => 0,
+			'js_links'     => 0,
 			'impressions' => 0,
 			'kind'        => 'page',
 		],
@@ -172,6 +174,13 @@ $cases = [
 	[ 'دو تصویر بدون alt ← img_alt', 'images', [ 'img_noalt' => 2 ], [], [ 'img_alt' ] ],
 	[ 'یک alt خالی ← img_empty (فقط «بررسی کنید»)', 'images', [ 'img_empty' => 1 ], [], [ 'img_empty' ] ],
 	[ 'تصویر سالم ← هیچ', 'images', [], [], [] ],
+	// ── لینک بی‌متن و لینک جاوااسکریپتی (SEO 3.8.4؛ گوگل: «Make your links crawlable»)
+	[ 'دو لینک بی‌متن در متن ← link_no_text', 'link_no_text', [ 'notext_links' => 2, 'notext_list' => '[["/a/",""],["/b/",""]]' ], [], [ 'link_no_text' ] ],
+	[ 'بدون لینک بی‌متن ← هیچ', 'link_no_text', [], [], [] ],
+	[ 'ردیف خزش قدیمی (-1) ← link_no_text نمی‌دهد', 'link_no_text', [ 'notext_links' => -1 ], [], [] ],
+	[ 'یک لینک onclick ← link_js', 'link_js', [ 'js_links' => 1, 'js_list' => '[["/x/","مشاهده"]]' ], [], [ 'link_js' ] ],
+	[ 'بدون لینک جاوااسکریپتی ← هیچ', 'link_js', [], [], [] ],
+	[ 'ردیف خزش قدیمی (-1) ← link_js نمی‌دهد', 'link_js', [ 'js_links' => -1 ], [], [] ],
 	// ── وضعیت (ریدایرکت، خطا، noindex)
 	[ 'ریدایرکت با لینک داخلی ← redirect', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 2 ], [], [ 'redirect' ] ],
 	[ 'ریدایرکت بی‌لینک داخلی ← هیچ (فقط نمایش گوگل ایراد نیست)', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 0 ], [], [] ],
@@ -259,6 +268,46 @@ $m1 = $row_of( $doc( '<meta name="description" content="توضیح یکسان ک
 $m2 = $row_of( $doc( '<meta name="description" content="توضیح  یکسان کیف 12">' ) )['meta_hash'];
 $m3 = $row_of( $doc( '<meta name="description" content="توضیح دیگر">' ) )['meta_hash'];
 hodima_ck( 'meta_hash: املای عربی/فارسی و فاصله یکی می‌شود؛ متن دیگر فرق می‌کند؛ بدون متا خالی', $m1 === $m2 && $m1 !== $m3 && '' !== $m1 && '' === $row_of( $p_none )['meta_hash'] );
+
+echo "=== خزنده: لینک بی‌متن و لینک جاوااسکریپتی (SEO 3.8.4)\n";
+$lk = $doc( '', '<main>'
+	. '<a href="/empty-img/"><img src="/i.jpg" alt=""></a>'                          // بی‌متن ← ایراد
+	. '<a href="/card/"><img src="/c.jpg" alt=""></a><a href="/card/">نام محصول</a>' // همان مقصد با متن ← نه
+	. '<a href="/alt-img/"><img src="/a.jpg" alt="کش مو"></a>'                       // alt تصویر متن لینک است ← نه
+	. '<a href="https://other.test/x/"></a>'                                          // بیرونی ← نه
+	. '<span onclick="location.href=\'/js-a/\'">برو</span>'                         // ← js
+	. '<a href="javascript:window.location=\'/js-b/\'">ب</a>'                        // ← js
+	. '<a data-href="/js-c/">ج</a>'                                                   // ← js
+	. '<a href="/real/" onclick="location.href=\'/real/\'">واقعی</a>'                // href واقعی ← نه
+	. '<button onclick="ga(\'send\',\'/event/\')">آمار</button>'                   // آمار، نه جابه‌جایی ← نه
+	. '<a href="javascript:void(0)">باز کن</a>'                                       // بی‌آدرس ← نه
+	. '<a href="/in/"><span onclick="location.href=\'/in/\'">x</span></a>'           // داخل لینک واقعی ← نه
+	. '</main><nav><a href="/icon/"><i class="ico"></i></a></nav>' );               // آیکون منو ← نه (فقط متن صفحه)
+hodima_ck( 'لینک بی‌متن: فقط /empty-img/ (نه کارت با لینک متن‌دار، نه alt، نه بیرونی، نه منو)', [ 1, '/empty-img/' ] === [ $lk['notext_links'], $lk['notext_list'][0][0] ?? '' ], wp_json_encode( $lk['notext_list'] ) );
+hodima_ck( 'لینک جاوااسکریپتی: onclick location، javascript: با آدرس، data-href (نه href واقعی، آمار، void(0)، داخل لینک)', [ 3, [ '/js-a/', '/js-b/', '/js-c/' ] ] === [ $lk['js_links'], array_column( $lk['js_list'], 0 ) ], wp_json_encode( $lk['js_list'], JSON_UNESCAPED_UNICODE ) );
+$lk_row = $row_of( $lk );
+hodima_ck( 'ردیف صفحه: شمار و فهرست JSON هر دو؛ صفحه بی‌لینک ← ۰ (نه -1)', [ 1, 3, true, 0, 0 ] === [ $lk_row['notext_links'], $lk_row['js_links'], str_contains( $lk_row['js_list'], '/js-a/' ), $row_of( $p_none )['notext_links'], $row_of( $p_none )['js_links'] ] );
+
+echo "=== ریدایرکت: کدام صفحه‌ها هنوز به آدرس ریدایرکت‌شده لینک داده‌اند (SEO 3.8.4)\n";
+$rd_from = hodima_seo_advisor_redirect_sources( [ '/src-a/' => [ 'link_redirect' => [ [ 'path' => '/old/', 'note' => 'می‌رود به /new/؛ متن لینک «کش مو»' ] ] ], '/src-b/' => [ 'link_redirect' => [ [ 'path' => '/old/', 'note' => 'ریدایرکت می‌شود؛ بدون متن لینک' ] ], 'link_broken' => [ [ 'path' => '/x/', 'note' => '' ] ] ] ] );
+hodima_ck( 'وارونه لینک به ریدایرکت: مقصد ← مبدأها با متن لینک؛ لینک خراب جدا', [ '/old/' => [ [ 'path' => '/src-a/', 'note' => 'متن لینک «کش مو»' ], [ 'path' => '/src-b/', 'note' => 'بدون متن لینک' ] ] ] === $rd_from, wp_json_encode( $rd_from, JSON_UNESCAPED_UNICODE ) );
+$rd_issue = hodima_seo_advisor_check_status( hodima_ck_row( [ 'path' => '/old/', 'status' => 301, 'redirect_to' => '/new/', 'inlinks' => 2 ] ), hodima_ck_ctx( [ 'redirect_from' => $rd_from ] ) );
+hodima_ck( 'ایراد redirect فهرست صفحه‌های لینک‌دهنده را دارد', [ '/src-a/', '/src-b/' ] === array_column( $rd_issue[0]['items'] ?? [], 'path' ) );
+
+echo "=== مهاجرت جدول (DB 1.14.0): ستون‌های تازه بعد از حذف دوباره ساخته می‌شوند\n";
+global $wpdb;
+$mg_t = hodima_seo_advisor_table( 'crawl_pages' );
+foreach ( [ 'notext_links', 'notext_list', 'js_links', 'js_list' ] as $mg_c ) {
+	$wpdb->query( "ALTER TABLE {$mg_t} DROP COLUMN {$mg_c}" ); // phpcs:ignore WordPress.DB
+}
+$mg_before = array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list' ], (array) $wpdb->get_col( "SELECT * FROM {$mg_t} LIMIT 0" ) ?: array_column( (array) $wpdb->get_results( "PRAGMA table_info({$mg_t})", ARRAY_A ), 'name' ) );
+update_option( HODIMA_SEO_ADVISOR_VERSION_OPTION, '1.13.0', false );
+hodima_seo_advisor_ensure_tables();
+$mg_cols = array_column( (array) $wpdb->get_results( "PRAGMA table_info({$mg_t})", ARRAY_A ), 'name' );
+if ( ! $mg_cols ) {
+	$mg_cols = array_column( (array) $wpdb->get_results( "SHOW COLUMNS FROM {$mg_t}", ARRAY_A ), 'Field' );
+}
+hodima_ck( 'ensure_tables بعد از حذف ستون‌ها: هر چهار ستون دوباره هست و نسخه ۱.۱۴.۰', [ [], [ 'notext_links', 'notext_list', 'js_links', 'js_list' ], HODIMA_SEO_ADVISOR_DB_VERSION ] === [ array_values( $mg_before ), array_values( array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list' ], $mg_cols ) ), get_option( HODIMA_SEO_ADVISOR_VERSION_OPTION ) ], wp_json_encode( [ $mg_before, $mg_cols ] ) );
 
 echo "=== ثابت‌ها (invariant): پیش‌نویس باید از تشخیص همان ایراد رد شود\n";
 $limit = hodima_seo_px_limit( 'title' );
@@ -577,7 +626,7 @@ $sg_has   = static fn( array $todo, string $needle ): bool => (bool) array_filte
 $sg_ctr_r = $sg_row( [ 'clicks' => 20, 'impressions' => 9000, 'position' => 9.0 ] );
 $sg_ctr_q = [ $sg_q( 'کش مو فنری', 4000, 4.0, 5 ) ];
 hodima_ck( 'نرخ کلیک: عنوان با کلمه شروع می‌شود ← گام «عنوان سئو» نمی‌آید', ! $sg_has( $sg_todo( 'low_ctr', [ 'row' => $sg_ctr_r, 'queries' => $sg_ctr_q, 'page' => $sg_page( [ 'title' => 'کش مو فنری رنگی' ] ) ] ), 'عنوان سئو' ) );
-hodima_ck( 'نرخ کلیک: کلمه وسط عنوان ← عنوان فعلی نام برده و «به ابتدای عنوان ببرید»', $sg_has( $sg_todo( 'low_ctr', [ 'row' => $sg_ctr_r, 'queries' => $sg_ctr_q, 'page' => $sg_page( [ 'title' => 'خرید کش مو فنری' ] ) ] ), 'عنوان فعلی «خرید کش مو فنری» کلمه «کش مو فنری» را دارد ولی در ابتدا نیست' ) );
+hodima_ck( 'نرخ کلیک: کلمه وسط عنوان ← عنوان فعلی نام برده و «به ابتدای عنوان ببرید»', $sg_has( $sg_todo( 'low_ctr', [ 'row' => $sg_ctr_r, 'queries' => $sg_ctr_q, 'page' => $sg_page( [ 'title' => 'خرید کش مو فنری' ] ) ] ), 'عنوانی که گوگل الان می‌بیند «خرید کش مو فنری» کلمه «کش مو فنری» را دارد ولی در ابتدا نیست' ) );
 hodima_ck( 'نرخ کلیک: متای خالی طبق خزش ← «توضیحات متا» این صفحه خالی است', $sg_has( $sg_todo( 'low_ctr', [ 'row' => $sg_ctr_r, 'queries' => $sg_ctr_q, 'page' => $sg_page( [ 'meta_len' => 0 ] ) ] ), 'این صفحه خالی است' ) );
 $sg_near = static fn( array $page, array $links = null ): array => $sg_todo( 'near_first', [ 'queries' => [ $sg_q( 'کش مو فنری', 900, 11.0 ) ], 'page' => $page, 'links' => $links ] );
 hodima_ck( 'نزدیک صفحه اول: کلمه در عنوان ← گام عنوان نمی‌آید', ! $sg_has( $sg_near( $sg_page() ), 'عنوان سئو' ) );

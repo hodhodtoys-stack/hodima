@@ -65,6 +65,10 @@ $base = static fn( string $path ): array => [
 	'img_empty'  => 0,
 	'meta_hash'  => '',
 	'http_list'  => '',
+	'notext_links' => 0,
+	'notext_list'  => '',
+	'js_links'     => 0,
+	'js_list'      => '',
 ];
 
 $cases = [
@@ -88,6 +92,8 @@ $cases = [
 	'/g-deep/'      => [ 'depth' => 6 ],
 	'/g-island/'    => [ 'depth' => 65535, 'inlinks' => 2 ],
 	'/g-http/'      => [ 'http_links' => 3, 'http_list' => '[["http://hodima.test/g-ok/","صفحه سالم"],["http://hodima.test/g-a/",""]]' ], // SEO 3.7.3: فهرست «کدام لینک‌ها؟»
+	'/g-notext/'    => [ 'notext_links' => 2, 'notext_list' => '[["/g-ok/",""],["/g-a/",""]]' ], // SEO 3.8.4: لینک بی‌متن
+	'/g-js/'        => [ 'js_links' => 1, 'js_list' => '[["/g-ok/","مشاهده"]]' ], // SEO 3.8.4: لینک جاوااسکریپتی
 	'/g-nocanon/'   => [ 'canonical' => '' ],
 	'/g-canbad/'    => [ 'canonical' => '/g-gone/' ],
 	'/g-gone/'      => [ 'status' => 404, 'inlinks' => 2 ],
@@ -99,7 +105,7 @@ $cases = [
 	'/g-thin/'      => [ 'words' => 50 ],
 	'/g-img/'       => [ 'img_noalt' => 2, 'img_empty' => 1 ],
 	'/g-paged/page/2/' => [ 'title_px' => 100, 'meta_len' => 0, 'inlinks' => 1 ],
-	'/g-old/'       => [ 'words' => -1, 'h1_count' => -1, 'img_noalt' => -1, 'http_links' => -1, 'img_empty' => -1, 'canonical' => '', 'text_links' => -1 ],
+	'/g-old/'       => [ 'words' => -1, 'h1_count' => -1, 'img_noalt' => -1, 'http_links' => -1, 'notext_links' => -1, 'js_links' => -1, 'img_empty' => -1, 'canonical' => '', 'text_links' => -1 ],
 	'/g-linker/'    => [],
 	'/g-500/'       => [ 'status' => 503, 'inlinks' => 2 ], // خطای سرور ← server_error (قرمز؛ گوگل: ۵xx دائمی از ایندکس برمی‌افتد)
 	'/g-loop-a/'    => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-loop-b/' ], // حلقه ← redirect_loop

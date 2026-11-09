@@ -31,6 +31,25 @@ function hodima_seo_advisor_issue( string $code, string $detail = '', string $ur
 }
 
 /**
+ * وارونه لینک‌های به ریدایرکت: آدرس ریدایرکت‌شده ← صفحه‌هایی که هنوز به آن لینک داده‌اند (با متن لینک).
+ *
+ * @param array<string, array<string, list<array{path: string, note: string}>>> $bad خروجی hodima_seo_advisor_crawl_bad_links()
+ * @return array<string, list<array{path: string, note: string}>>
+ */
+function hodima_seo_advisor_redirect_sources( array $bad ): array {
+
+	$out = [];
+	foreach ( $bad as $source => $codes ) {
+		foreach ( $codes['link_redirect'] ?? [] as $target ) {
+			$note                                 = (string) preg_replace( '/^.*؛ /u', '', (string) $target['note'] ); // فقط «متن لینک «…»»
+			$out[ (string) $target['path'] ][] = [ 'path' => (string) $source, 'note' => $note ];
+		}
+	}
+
+	return $out;
+}
+
+/**
  * صفحه‌بندی آرشیو (/page/2/)؛ عنوان، H1 و لینک ورودی آن عمدا مثل آرشیو است (SEO 3.0.5).
  *
  * @param array<string, mixed> $r ردیف جدول خزش
@@ -60,7 +79,7 @@ function hodima_seo_advisor_dup_key( string $text ): string {
  * تکراری‌ها فقط بین صفحه‌های سالم و ایندکس‌پذیر شمرده می‌شوند و صفحه‌بندی کنار می‌ماند.
  *
  * @param list<array<string, mixed>> $rows ردیف‌های جدول خزش (با ستون‌های impressions، avg_position، kind)
- * @return array{titles: array<string, int>, h1s: array<string, int>, metas: array<string, int>, dups: array{title: array<string, list<string>>, h1: array<string, list<string>>, meta: array<string, list<string>>}, words: array<string, list<string>>, hidden: bool, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>, kinds: array<string, string>, taxonomies: array<string, true>}
+ * @return array{titles: array<string, int>, h1s: array<string, int>, metas: array<string, int>, dups: array{title: array<string, list<string>>, h1: array<string, list<string>>, meta: array<string, list<string>>}, words: array<string, list<string>>, hidden: bool, similar: array<string, array<string, list<string>>>, by_path: array<string, array<string, mixed>>, sitemap: array<string, true>, bad: array<string, array<string, list<array{path: string, note: string}>>>, kinds: array<string, string>, taxonomies: array<string, true>, redirect_from: array<string, list<array{path: string, note: string}>>}
  */
 function hodima_seo_advisor_checks_context( array $rows ): array {
 
@@ -106,6 +125,7 @@ function hodima_seo_advisor_checks_context( array $rows ): array {
 		}
 	}
 
+	$bad     = hodima_seo_advisor_crawl_bad_links();
 	$by_path = [];
 	$kinds   = []; // نوع صفحه‌های کم‌متنی که جدول نمایش‌ها نوعشان را ندارد (برای «متن کم»)
 	foreach ( $rows as $r ) {
@@ -125,10 +145,11 @@ function hodima_seo_advisor_checks_context( array $rows ): array {
 		'similar' => $similar,
 		'by_path' => $by_path,
 		'sitemap' => hodima_seo_advisor_sitemap_paths(),
-		'bad'     => hodima_seo_advisor_crawl_bad_links(),
+		'bad'     => $bad,
 		'hidden'  => '0' === (string) get_option( 'blog_public', '1' ), // «تنظیمات ← خواندن ← از موتورهای جستجو بخواه ایندکس نکند» (SEO 3.6.7)
 		// تابع‌های ایراد خالص‌اند (بدون دیتابیس/وردپرس)؛ تا SEO ۳.۸.۰ check_thin خودش classify و taxonomy_exists را صدا می‌زد
 		'kinds'      => $kinds,
+		'redirect_from' => hodima_seo_advisor_redirect_sources( $bad ),
 		'taxonomies' => array_fill_keys( get_taxonomies(), true ),
 	];
 }
@@ -441,6 +462,47 @@ function hodima_seo_advisor_check_http_link( array $r, array $ctx ): array {
 }
 
 /**
+ * فهرست JSON ذخیره‌شده خزنده [آدرس نوشته‌شده، متن] ← آیتم‌های «کدام لینک‌ها؟».
+ *
+ * @return list<array{path: string, note: string}>
+ */
+function hodima_seo_advisor_check_list_items( string $json ): array {
+
+	$list  = json_decode( $json, true );
+	$items = [];
+	foreach ( is_array( $list ) ? $list : [] as $link ) {
+		if ( is_array( $link ) && '' !== (string) ( $link[0] ?? '' ) ) {
+			$items[] = [ 'path' => (string) $link[0], 'note' => '' !== (string) ( $link[1] ?? '' ) ? sprintf( 'متن «%s»', (string) $link[1] ) : '' ];
+		}
+	}
+
+	return $items;
+}
+
+/**
+ * لینک بی‌متن در متن صفحه (SEO 3.8.4): نه نوشته، نه alt تصویر؛ مقصدی که لینک متن‌دار دیگری در همین صفحه دارد حساب نمی‌شود (خزنده).
+ * ردیف خزش قدیمی (-1) تا خزش بعدی سنجیده نمی‌شود.
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_link_no_text( array $r, array $ctx ): array {
+	return (int) ( $r['notext_links'] ?? -1 ) > 0 ? [ hodima_seo_advisor_issue( 'link_no_text', sprintf( '%s لینک', number_format_i18n( (int) $r['notext_links'] ) ), '', hodima_seo_advisor_check_list_items( (string) ( $r['notext_list'] ?? '' ) ) ) ] : [];
+}
+
+/**
+ * لینک جاوااسکریپتی به صفحه سایت (SEO 3.8.4): onclick/‏javascript:/‏data-href بدون <a href>؛ گوگل دنبالش نمی‌کند.
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_link_js( array $r, array $ctx ): array {
+	return (int) ( $r['js_links'] ?? -1 ) > 0 ? [ hodima_seo_advisor_issue( 'link_js', sprintf( '%s لینک', number_format_i18n( (int) $r['js_links'] ) ), '', hodima_seo_advisor_check_list_items( (string) ( $r['js_list'] ?? '' ) ) ) ] : [];
+}
+
+/**
  * بدون canonical.
  *
  * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
@@ -661,7 +723,8 @@ function hodima_seo_advisor_check_status( array $r, array $ctx ): array {
 
 	if ( $status >= 300 && $status < 400 ) {
 		if ( (int) $r['inlinks'] > 0 ) {
-			$out[] = hodima_seo_advisor_issue( 'redirect', '' !== (string) $r['redirect_to'] ? 'به آدرس زیر می‌رود.' : '', (string) $r['redirect_to'] ); // آدرس جدا با کپی (وسط جمله به‌هم می‌ریخت)
+			// کدام صفحه‌ها هنوز به این آدرس قدیمی لینک داده‌اند (SEO 3.8.4؛ قبلا فقط «لینک ورودی دارد» بی‌نام مبدأ)
+			$out[] = hodima_seo_advisor_issue( 'redirect', '' !== (string) $r['redirect_to'] ? 'به آدرس زیر می‌رود.' : '', (string) $r['redirect_to'], array_slice( $ctx['redirect_from'][ (string) $r['path'] ] ?? [], 0, HODIMA_SEO_ADVISOR_CRAWL_ITEMS ) ); // آدرس جدا با کپی (وسط جمله به‌هم می‌ریخت)
 		}
 
 		$trace = hodima_seo_advisor_redirect_trace( (string) $r['path'], $ctx['by_path'] );
@@ -723,6 +786,8 @@ function hodima_seo_advisor_checks(): array {
 		'multi_h1'       => [ 'when' => 'known', 'codes' => [ 'multi_h1' ], 'fn' => 'hodima_seo_advisor_check_multi_h1' ],
 		'images'         => [ 'when' => 'known', 'codes' => [ 'img_alt', 'img_empty' ], 'fn' => 'hodima_seo_advisor_check_images' ],
 		'http_link'      => [ 'when' => 'known', 'codes' => [ 'http_link' ], 'fn' => 'hodima_seo_advisor_check_http_link' ],
+		'link_no_text'   => [ 'when' => 'known', 'codes' => [ 'link_no_text' ], 'fn' => 'hodima_seo_advisor_check_link_no_text' ],
+		'link_js'        => [ 'when' => 'known', 'codes' => [ 'link_js' ], 'fn' => 'hodima_seo_advisor_check_link_js' ],
 		'no_canonical'   => [ 'when' => 'known', 'codes' => [ 'no_canonical' ], 'fn' => 'hodima_seo_advisor_check_no_canonical' ],
 		'canonical_in_body' => [ 'when' => 'known', 'codes' => [ 'canonical_in_body' ], 'fn' => 'hodima_seo_advisor_check_canonical_in_body' ],
 		'thin'           => [ 'when' => 'known', 'codes' => [ 'thin' ], 'fn' => 'hodima_seo_advisor_check_thin' ],

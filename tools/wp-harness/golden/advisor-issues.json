@@ -379,6 +379,32 @@
             ]
         },
         {
+            "path": "/g-js/",
+            "impressions": 0,
+            "position": 0,
+            "inlinks": 9,
+            "text_links": 5,
+            "issues": [
+                {
+                    "code": "link_js",
+                    "detail": "1 لینک",
+                    "url": "",
+                    "items": [
+                        {
+                            "path": "/g-ok/",
+                            "note": "متن «مشاهده»"
+                        }
+                    ]
+                },
+                {
+                    "code": "not_in_sitemap",
+                    "detail": "",
+                    "url": "",
+                    "items": []
+                }
+            ]
+        },
+        {
             "path": "/g-linker/",
             "impressions": 0,
             "position": 0,
@@ -711,6 +737,36 @@
             ]
         },
         {
+            "path": "/g-notext/",
+            "impressions": 0,
+            "position": 0,
+            "inlinks": 9,
+            "text_links": 5,
+            "issues": [
+                {
+                    "code": "link_no_text",
+                    "detail": "2 لینک",
+                    "url": "",
+                    "items": [
+                        {
+                            "path": "/g-ok/",
+                            "note": ""
+                        },
+                        {
+                            "path": "/g-a/",
+                            "note": ""
+                        }
+                    ]
+                },
+                {
+                    "code": "not_in_sitemap",
+                    "detail": "",
+                    "url": "",
+                    "items": []
+                }
+            ]
+        },
+        {
             "path": "/g-orphan/",
             "impressions": 0,
             "position": 0,
@@ -776,7 +832,12 @@
                     "code": "redirect",
                     "detail": "به آدرس زیر می‌رود.",
                     "url": "/g-redir2/",
-                    "items": []
+                    "items": [
+                        {
+                            "path": "/g-linker/",
+                            "note": "متن لینک «لینک ریدایرکت»"
+                        }
+                    ]
                 },
                 {
                     "code": "redirect_chain",

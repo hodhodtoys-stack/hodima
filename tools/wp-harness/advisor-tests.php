@@ -3791,7 +3791,7 @@ hodima_ad( 'وزن بخش‌ها ۱۰۰ و هر کد ایراد فقط در یک
 $sc_all_codes = array_merge( ...array_column( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, 'codes' ) );
 $sc_issue_codes = array_merge( ...array_values( HODIMA_SEO_ADVISOR_CRAWL_GROUPS ) );
 hodima_ad( 'هر کد ایراد خزش در یکی از بخش‌های نمره است (ایرادی بی‌نمره نمی‌ماند؛ جز img_empty «بررسی کنید» که عمدا بی‌نمره است و از SEO 3.8.1 در گروه چیپ «تصویر و محتوا» هم هست)', array_values( array_diff( $sc_issue_codes, $sc_all_codes, [ 'img_empty' ] ) ), [] );
-hodima_ad( 'فیلتر جدول: گروه چیپ و بخش نمره شناخته می‌شوند، ناشناس نه', [ hodima_seo_advisor_score_filter_codes( 'linkfix' ), in_array( 'slow', hodima_seo_advisor_score_filter_codes( 'cat-speed' ), true ), hodima_seo_advisor_score_filter_codes( 'nope' ) ], [ [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain', 'redirect_loop' ], true, [] ] );
+hodima_ad( 'فیلتر جدول: گروه چیپ و بخش نمره شناخته می‌شوند، ناشناس نه', [ hodima_seo_advisor_score_filter_codes( 'linkfix' ), in_array( 'slow', hodima_seo_advisor_score_filter_codes( 'cat-speed' ), true ), hodima_seo_advisor_score_filter_codes( 'nope' ) ], [ [ 'link_broken', 'link_redirect', 'link_noindex', 'link_no_text', 'link_js', 'redirect_chain', 'redirect_loop' ], true, [] ] );
 
 $sc_old = get_option( HODIMA_SEO_ADVISOR_SCORE_OPTION, false );
 $sc_crawl = get_option( HODIMA_SEO_ADVISOR_CRAWL_OPTION, false );

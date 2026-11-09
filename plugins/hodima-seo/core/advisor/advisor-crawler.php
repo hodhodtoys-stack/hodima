@@ -310,6 +310,18 @@ function hodima_seo_advisor_crawler_inside( DOMNode $node, array $tags ): bool {
 	return false;
 }
 
+/** نزدیک‌ترین نیای <a> با href واقعی (دکمه/آیکون داخل لینک معمولی، لینک جاوااسکریپتی جدا نیست)؛ null = ندارد. */
+function hodima_seo_advisor_crawler_closest_href( DOMElement $el ): ?DOMElement {
+
+	for ( $parent = $el->parentNode; $parent instanceof DOMElement; $parent = $parent->parentNode ) {
+		if ( 'a' === strtolower( $parent->nodeName ) && '' !== trim( $parent->getAttribute( 'href' ) ) && ! str_starts_with( strtolower( trim( $parent->getAttribute( 'href' ) ) ), 'javascript:' ) ) {
+			return $parent;
+		}
+	}
+
+	return null;
+}
+
 /**
  * جایگاه لینک (یا تصویر/تیتر) از نیای آن: footer، navigation (nav/هدر سایت/منو/مسیر راهنما)، aside (کنار/ویجت) یا content.
  *
@@ -545,7 +557,7 @@ function hodima_seo_advisor_crawler_scan_images( DOMXPath $xpath, callable $clea
 /**
  * HTML یک صفحه ← عنوان، متا، تیترها، robots، canonical و لینک‌های داخلی.
  *
- * @return array{title: string, meta: string, robots: string, canonical: string, canonical_body: bool, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_empty: int, img_list: list<array{u: string, s: string, c: string}>, http_links: int, http_list: list<array{0: string, 1: string}>, links: list<array{0: string, 1: string, 2: string, 3: int}>}
+ * @return array{title: string, meta: string, robots: string, canonical: string, canonical_body: bool, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_empty: int, img_list: list<array{u: string, s: string, c: string}>, http_links: int, http_list: list<array{0: string, 1: string}>, notext_links: int, notext_list: list<array{0: string, 1: string}>, js_links: int, js_list: list<array{0: string, 1: string}>, links: list<array{0: string, 1: string, 2: string, 3: int}>}
  */
 function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
@@ -605,6 +617,8 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 	$http_list  = []; // تا ۵ لینک http نخست [آدرس نوشته‌شده، متن لینک] برای فهرست «کدام لینک‌ها؟» (SEO 3.7.3؛ قبلا فقط شمار)
 	$https_site = str_starts_with( home_url(), 'https://' );
 	$all        = $xpath->query( '//a[@href]' );
+	$texted     = []; // مقصدهایی که دست‌کم یک لینک متن‌دار در همین صفحه دارند
+	$empty      = []; // مقصد ← آدرس نوشته‌شده، برای لینک‌های بی‌متن متن صفحه (SEO 3.8.4)
 
 	foreach ( false === $all ? [] : $all as $a ) {
 		if ( ! $a instanceof DOMElement ) {
@@ -633,8 +647,51 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 			}
 		}
 
-		$follow  = str_contains( strtolower( $a->getAttribute( 'rel' ) ), 'nofollow' ) ? 0 : 1;
-		$links[] = [ $target, hodima_seo_advisor_crawler_link_position( $a ), mb_substr( $anchor, 0, 120 ), $follow ];
+		$follow   = str_contains( strtolower( $a->getAttribute( 'rel' ) ), 'nofollow' ) ? 0 : 1;
+		$position = hodima_seo_advisor_crawler_link_position( $a );
+		$links[]  = [ $target, $position, mb_substr( $anchor, 0, 120 ), $follow ];
+
+		if ( '' !== $anchor ) {
+			$texted[ $dest ] = true;
+		} elseif ( 'content' === $position ) {
+			$empty[ $dest ] ??= mb_substr( trim( $a->getAttribute( 'href' ) ), 0, 300 );
+		}
+	}
+
+	// لینک بی‌متن (SEO 3.8.4؛ گوگل: «Write good link text»): فقط در متن صفحه (آیکون منو/فوتر روی همه صفحه‌ها تکرار می‌شود) و فقط اگر
+	// همان مقصد در همین صفحه لینک متن‌دار دیگری ندارد (کارت محصول: تصویر با alt خالی کنار نام محصول با همان لینک ایراد نیست)
+	$notext = array_diff_key( $empty, $texted );
+
+	// لینک جاوااسکریپتی (SEO 3.8.4؛ گوگل: فقط <a> با href دنبال می‌شود): onclick با آدرس، <a> بی href با data-href/data-url،
+	// href="javascript:…" با آدرس. فقط آدرس داخلی سایت؛ <a> با href واقعی (onclick کنار آن) و عنصر داخل چنین لینکی ایراد نیست.
+	$js_list = [];
+	$js_seen = [];
+	$js_all  = $xpath->query( "//*[@onclick] | //a[not(@href)][@data-href or @data-url] | //a[starts-with(normalize-space({$lower( '@href' )}),'javascript:')]" );
+	foreach ( false === $js_all ? [] : $js_all as $el ) {
+		if ( ! $el instanceof DOMElement ) {
+			continue;
+		}
+		$href = trim( $el->getAttribute( 'href' ) );
+		if ( ( 'a' === strtolower( $el->nodeName ) && null !== hodima_seo_advisor_crawler_resolve( $href, $url ) ) || null !== hodima_seo_advisor_crawler_closest_href( $el ) ) {
+			continue;
+		}
+		$code = $el->getAttribute( 'onclick' ) . ' ' . $el->getAttribute( 'data-href' ) . ' ' . $el->getAttribute( 'data-url' ) . ' ' . $href;
+		// onclick فقط وقتی کاربر را جابه‌جا می‌کند (location، window.open، href)، نه آمار و رویداد («ga('send','/event')»)
+		if ( '' === $el->getAttribute( 'data-href' ) . $el->getAttribute( 'data-url' ) && ! str_starts_with( strtolower( $href ), 'javascript:' ) && 1 !== preg_match( '#location|window\.open|\.href\s*=#i', $el->getAttribute( 'onclick' ) ) ) {
+			continue;
+		}
+		if ( 1 !== preg_match( '#(https?://[^\s\'"()<>]+|(?<=[\'"])/[^\s\'"()<>]*)#u', $code . ' "' . trim( $el->getAttribute( 'data-href' ) . $el->getAttribute( 'data-url' ) ) . '"', $m ) ) {
+			continue;
+		}
+		$target = hodima_seo_advisor_crawler_resolve( $m[1], $url );
+		$dest   = null === $target ? null : hodima_seo_advisor_path_key( $target );
+		if ( null === $dest || isset( $js_seen[ $dest ] ) ) {
+			continue;
+		}
+		$js_seen[ $dest ] = true;
+		if ( count( $js_list ) < 5 ) {
+			$js_list[] = [ mb_substr( $m[1], 0, 300 ), mb_substr( $clean( $el->textContent ), 0, 80 ) ];
+		}
 	}
 
 	// تصویرهای دیده‌شونده و وضعیت alt هر کدام (SEO 3.4.9: hodima_seo_advisor_crawler_scan_images)
@@ -687,6 +744,10 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		'img_list'   => $scan['list'],
 		'http_links' => $http_links,
 		'http_list'  => $http_list,
+		'notext_links' => count( $notext ),
+		'notext_list'  => array_slice( array_map( static fn( string $href ): array => [ $href, '' ], array_values( $notext ) ), 0, 5 ),
+		'js_links'     => count( $js_seen ),
+		'js_list'      => $js_list,
 		'links'      => $links,
 	];
 }
@@ -814,6 +875,10 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'img_empty'  => (int) ( $parsed['img_empty'] ?? -1 ),
 		'meta_hash'  => '' === trim( $meta ) ? '' : substr( md5( hodima_seo_advisor_normalize( $meta ) ), 0, 12 ), // برای «توضیح متای تکراری» (SEO 3.6.5)؛ خالی = بدون متا یا ردیف قدیمی
 		'http_list'  => empty( $parsed['http_list'] ) ? '' : (string) wp_json_encode( array_values( (array) $parsed['http_list'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ), // SEO 3.7.3
+		'notext_links' => (int) ( $parsed['notext_links'] ?? -1 ), // SEO 3.8.4: -1 = ردیف قدیمی (تا خزش بعدی سنجیده نشده)
+		'notext_list'  => empty( $parsed['notext_list'] ) ? '' : (string) wp_json_encode( array_values( (array) $parsed['notext_list'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ),
+		'js_links'     => (int) ( $parsed['js_links'] ?? -1 ),
+		'js_list'      => empty( $parsed['js_list'] ) ? '' : (string) wp_json_encode( array_values( (array) $parsed['js_list'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ),
 	];
 }
 
@@ -913,8 +978,8 @@ function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $
 
 	hodima_seo_advisor_ensure_tables(); // ستون تازه img_list (DB 1.9.0) پیش از اولین نوشتن بعد از به‌روزرسانی
 
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty, meta_hash, http_list';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d,%s,%s)';
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty, meta_hash, http_list, notext_links, notext_list, js_links, js_list';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d,%s,%s,%d,%s,%d,%s)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
 

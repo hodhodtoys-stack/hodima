@@ -35,7 +35,7 @@ const HODIMA_SEO_ADVISOR_SCORE_CATEGORIES = [
 	'cat-links'     => [
 		'label'  => 'لینک‌ها و آدرس‌ها',
 		'weight' => 30,
-		'codes'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'redirect_chain', 'redirect_loop', 'broken', 'server_error', 'redirect', 'canonical_bad', 'sitemap_bad', 'http_link' ],
+		'codes'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'link_no_text', 'link_js', 'redirect_chain', 'redirect_loop', 'broken', 'server_error', 'redirect', 'canonical_bad', 'sitemap_bad', 'http_link' ],
 	],
 	'cat-meta'      => [
 		'label'  => 'عنوان و متا',

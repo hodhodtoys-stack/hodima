@@ -53,6 +53,8 @@
 | redirect_chain | warn | اطلاع (زرد از ≥۵ پرش) | گوگل: ۱۰ پرش |
 | noindex | info | اطلاع | تعریف گوگل؛ ایراد فقط اگر در سایت‌مپ/نمایش باشد |
 | link_redirect / link_noindex | warn/info | اطلاع | تابع بالا |
+| link_no_text (۳.۸.۴) | — | زرد | گوگل («Make your links crawlable»): «Write good link text»؛ متن لینک (یا alt تصویر لینک) موضوع مقصد را می‌گوید. فقط متن صفحه و فقط مقصدی که لینک متن‌دار دیگری در همان صفحه ندارد |
+| link_js (۳.۸.۴) | — | زرد | گوگل: فقط `<a>` با `href` دنبال می‌شود؛ onclick/‏`javascript:`/‏data-href با آدرس داخلی. onclick بدون جابه‌جایی (آمار) و عنصر داخل `<a href>` ایراد نیست |
 | img_empty | info | اطلاع | — |
 | thin | info | اطلاع | گوگل: بدون حداقل کلمه |
 | no_canonical | warn | اطلاع | گوگل: اختیاری |
