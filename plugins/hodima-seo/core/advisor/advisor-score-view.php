@@ -18,8 +18,9 @@ defined( 'ABSPATH' ) || exit;
  * @param list<array<string, mixed>> $issues  ایرادهای خزش (بدون فیلتر علامت‌ها)
  * @param int                        $crawled شمار صفحه‌های خزش‌شده
  * @param string                     $current بخش فعال فیلتر فهرست (cf)، خالی = بدون فیلتر
+ * @param array{items: int, pages: int} $info  پیشنهادهای «اطلاع» باز (hodima_seo_advisor_info_counts)؛ ۰ = خط نمی‌آید
  */
-function hodima_seo_advisor_render_score( array $issues, int $crawled, string $current = '' ): void {
+function hodima_seo_advisor_render_score( array $issues, int $crawled, string $current = '', array $info = [ 'items' => 0, 'pages' => 0 ] ): void {
 
 	$result = hodima_seo_advisor_score( $issues, $crawled );
 
@@ -63,6 +64,23 @@ function hodima_seo_advisor_render_score( array $issues, int $crawled, string $c
 				</span>
 			<?php endif; ?>
 		</div>
+		<?php
+		// خط «اطلاع» (SEO 3.8.8، طرح تأییدشده کاربر): نمره ۱۰۰ کنار ده‌ها مورد در فهرست گمراه‌کننده بود، چون اطلاع در نمره ضریب صفر دارد
+		if ( $info['items'] > 0 ) :
+			?>
+			<div class="hodima-advisor__sc-info">
+				<span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
+				<p>
+					<?php
+					echo esc_html(
+						( 100 === $result['score'] ? 'نمره ۱۰۰ یعنی هیچ ایراد قرمز یا کهربایی نیست. ' : '' )
+						. sprintf( '%1$s پیشنهاد «اطلاع» روی %2$s صفحه در نمره حساب نمی‌شود؛ گوگل آن‌ها را مشکل نمی‌داند و رفعشان اختیاری است.', $n( $info['items'] ), $n( $info['pages'] ) )
+					);
+					?>
+				</p>
+				<a href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'lvl' => 'info' ] ) ); ?>">دیدن در فهرست ←</a>
+			</div>
+		<?php endif; ?>
 		<ul class="hodima-advisor__sc-cats" aria-label="نمره بخش‌ها">
 			<?php foreach ( $result['categories'] as $key => $category ) : ?>
 				<li>

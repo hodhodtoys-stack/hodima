@@ -2507,13 +2507,55 @@
 	font-size: 1.75rem;
 }
 
+/* خط «اطلاع» زیر نمره (SEO 3.8.8، طرح تأییدشده کاربر): موبایل بین نمره و بخش‌ها (ترتیب HTML)، دسکتاپ تمام‌عرض زیر هر دو */
+.hodima-advisor .hodima-advisor__sc-info {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.625rem;
+	padding: 0.625rem 0.875rem;
+	border-radius: 0.75rem;
+	background: var(--hd-surface-2, #f6f8fd);
+	color: var(--hd-primary);
+	font-size: 0.8125rem;
+
+	& .dashicons {
+		color: var(--hd-secondary);
+	}
+
+	& p {
+		flex: 1 1 18rem;
+		margin: 0;
+		font-size: inherit;
+	}
+
+	& a {
+		display: inline-flex;
+		align-items: center;
+		min-block-size: 2.5rem;
+		color: var(--hd-primary);
+		font-weight: 700;
+		white-space: nowrap;
+	}
+}
+
 @media (min-width: 783px) {
 	.hodima-advisor .hodima-advisor__sc {
 		grid-template-columns: 9rem minmax(0, 1fr);
+		grid-template-areas: "gauge cats" "info info";
 		gap: 1.25rem;
 	}
 
+	.hodima-advisor .hodima-advisor__sc-gauge-wrap {
+		grid-area: gauge;
+	}
+
+	.hodima-advisor .hodima-advisor__sc-info {
+		grid-area: info;
+	}
+
 	.hodima-advisor .hodima-advisor__sc-cats {
+		grid-area: cats;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.125rem 1.25rem;
 	}

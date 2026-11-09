@@ -544,6 +544,35 @@ const HODIMA_SEO_ADVISOR_OVERVIEW_CRAWL_TYPES = [
 	'orphan'   => 'بدون لینک ورودی',
 ];
 
+/**
+ * ایراد فنی سطح «اطلاع» (در نمره ضریب صفر دارد). سطح خود ایراد برای همان صفحه (`level` در ایراد) بر سطح کاتالوگ مقدم است.
+ *
+ * @param array<string, mixed> $item آیتم فهرست «کارها» (hodima_seo_advisor_overview_build)
+ */
+function hodima_seo_advisor_is_info_item( array $item ): bool {
+	return 'crawl' === ( $item['src'] ?? '' ) && 'info' === ( $item['level'] ?? '' );
+}
+
+/**
+ * شمار پیشنهادهای «اطلاع» باز و صفحه‌هایشان برای خط زیر نمره (SEO 3.8.8، طرح تأییدشده کاربر). از همان فهرست «کارها» (بدون
+ * موردهای علامت‌خورده) شمرده می‌شود تا با فیلتر «دیدن در فهرست» یکی باشد.
+ *
+ * @param list<array{path: string, items: list<array<string, mixed>>}> $pages
+ * @return array{items: int, pages: int}
+ */
+function hodima_seo_advisor_info_counts( array $pages ): array {
+
+	$items = 0;
+	$with  = 0;
+	foreach ( $pages as $page ) {
+		$n      = count( array_filter( $page['items'], 'hodima_seo_advisor_is_info_item' ) );
+		$items += $n;
+		$with  += $n > 0 ? 1 : 0;
+	}
+
+	return [ 'items' => $items, 'pages' => $with ];
+}
+
 /** صفحه «کارها». */
 function hodima_seo_advisor_render_overview(): void {
 
@@ -559,6 +588,7 @@ function hodima_seo_advisor_render_overview(): void {
 	$cf     = isset( $_GET['cf'] ) ? sanitize_key( (string) $_GET['cf'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش: بخش نمره یا گروه نوع ایراد فنی (SEO 3.5.8؛ پیوند قدیمی تب «سلامت سایت»)
 	$cf_codes = hodima_seo_advisor_score_filter_codes( $cf );
 	$cf     = $cf_codes ? $cf : '';
+	$lvl    = isset( $_GET['lvl'] ) && 'info' === sanitize_key( (string) $_GET['lvl'] ) ? 'info' : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش: پیشنهادهای «اطلاع» بیرون از نمره (SEO 3.8.8)
 	$img    = isset( $_GET['img'] ) ? sanitize_key( (string) $_GET['img'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- فقط فیلتر نمایش: صفحه‌های یک تصویر مشترک (SEO 3.4.9)
 	$only   = null;
 	foreach ( '' === $img ? [] : hodima_seo_advisor_image_groups() as $group ) {
@@ -585,6 +615,9 @@ function hodima_seo_advisor_render_overview(): void {
 		if ( '' !== $cf ) {
 			$page['items'] = array_values( array_filter( $page['items'], static fn( array $item ): bool => 'crawl' === $item['src'] && in_array( $item['mark'], $cf_codes, true ) ) );
 		}
+		if ( '' !== $lvl ) {
+			$page['items'] = array_values( array_filter( $page['items'], 'hodima_seo_advisor_is_info_item' ) );
+		}
 		if ( $page['items'] ) {
 			$rows[] = $page;
 		}
@@ -593,10 +626,10 @@ function hodima_seo_advisor_render_overview(): void {
 	// نوار «سلامت سایت» (SEO 3.5.8؛ قبلا تب جدا): نمره از همه ایرادهای خزش، نه فقط آنچه علامت نخورده
 	$crawl = hodima_seo_advisor_crawl_status();
 	if ( $crawl['imported'] > 0 && $crawl['pages'] > 0 ) {
-		hodima_seo_advisor_render_score( hodima_seo_advisor_crawl_issues(), $crawl['pages'], $cf );
+		hodima_seo_advisor_render_score( hodima_seo_advisor_crawl_issues(), $crawl['pages'], $cf, hodima_seo_advisor_info_counts( $pages ) );
 	}
 
-	if ( '' === $src && '' === $q && '' === $code && '' === $cf && 1 === $paged ) {
+	if ( '' === $src && '' === $q && '' === $code && '' === $cf && '' === $lvl && 1 === $paged ) {
 		hodima_seo_advisor_render_shared_images( $n ); // تصویر مشترک بین چند صفحه = یک کار (SEO 3.4.9)
 	}
 
@@ -654,6 +687,15 @@ function hodima_seo_advisor_render_overview(): void {
 		printf(
 			'<p class="hodima-advisor__back">%1$s <a href="%2$s">%3$s</a></p>',
 			esc_html( sprintf( 'فقط نمایش: «%s»', hodima_seo_advisor_issue_catalog()[ $code ]['label'] ) ),
+			esc_url( hodima_seo_advisor_page_url( array_filter( [ 'src' => $src, 'q' => $q ] ) ) ),
+			esc_html( 'برداشتن فیلتر' )
+		);
+	}
+
+	if ( '' !== $lvl ) {
+		printf(
+			'<p class="hodima-advisor__back">%1$s <a href="%2$s">%3$s</a></p>',
+			esc_html( 'فقط نمایش: پیشنهادهای «اطلاع» (در نمره حساب نمی‌شوند)' ),
 			esc_url( hodima_seo_advisor_page_url( array_filter( [ 'src' => $src, 'q' => $q ] ) ) ),
 			esc_html( 'برداشتن فیلتر' )
 		);

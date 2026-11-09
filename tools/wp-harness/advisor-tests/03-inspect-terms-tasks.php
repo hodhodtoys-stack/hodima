@@ -439,6 +439,26 @@ $_GET['cf'] = 'orphan';
 $orphan_html = $cap( static fn() => hodima_seo_advisor_render_overview() );
 hodima_ad( 'فیلتر «بدون لینک ورودی» (cf) فقط همان صفحه را نشان می‌دهد؛ پیوند «برداشتن فیلتر» و «فیلتر فعال» هست', [ str_contains( $orphan_html, '/orphan/' ), str_contains( $orphan_html, 'id="' . hodima_seo_advisor_row_anchor( '/dup-b/' ) . '"' ) /* SEO 3.7.3: آدرس /dup-b/ ممکن است در «از این صفحه‌ها لینک بدهید» بیاید؛ فقط ردیفش نباید باشد */, str_contains( $orphan_html, 'فیلتر فعال' ) ], [ true, false, true ] );
 hodima_ad( 'نوع فعال: چیپ aria-current دارد و پیوندش فیلتر را برمی‌دارد (بدون cf=orphan)؛ ردیف نوع‌ها هنوز دیده می‌شود', [ 1 === preg_match( '#<a class="hodima-advisor__chip" href="([^"]*)" aria-current="true">\s*<span>بدون لینک ورودی</span>#u', $orphan_html, $orphan_chip ), ! str_contains( (string) ( $orphan_chip[1] ?? 'cf=orphan' ), 'cf=orphan' ), str_contains( $orphan_html, 'aria-label="نوع ایراد فنی"' ) ], [ true, true, true ] );
+// خط «اطلاع» زیر نمره و فیلتر lvl=info (SEO 3.8.8، طرح تأییدشده کاربر)
+$_GET      = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
+$info_pg   = hodima_seo_advisor_overview_build();
+$info_n    = hodima_seo_advisor_info_counts( $info_pg );
+$info_real = 0;
+foreach ( $info_pg as $info_p ) {
+	foreach ( $info_p['items'] as $info_i ) {
+		$info_real += 'crawl' === $info_i['src'] && 'info' === $info_i['level'] ? 1 : 0;
+	}
+}
+hodima_ad( 'شمار اطلاع‌ها = آیتم‌های crawl سطح info فهرست؛ صفحه‌ها ≤ آیتم‌ها؛ داده آزمون دست‌کم یکی دارد', [ $info_n['items'], $info_n['pages'] <= $info_n['items'], $info_n['items'] > 0 ], [ $info_real, true, true ] );
+$info_html = $cap( static fn() => hodima_seo_advisor_render_overview() );
+hodima_ad( 'خط «اطلاع» زیر نمره با شمار، صفحه‌ها و پیوند lvl=info؛ با نمره کمتر از ۱۰۰ جمله «نمره ۱۰۰ یعنی» نیست', [ str_contains( $info_html, 'hodima-advisor__sc-info' ), str_contains( $info_html, sprintf( '%s پیشنهاد «اطلاع» روی %s صفحه', number_format_i18n( $info_n['items'] ), number_format_i18n( $info_n['pages'] ) ) ), str_contains( $info_html, 'lvl=info' ), str_contains( $info_html, 'نمره ۱۰۰ یعنی' ) || 100 === ( hodima_seo_advisor_score( hodima_seo_advisor_crawl_issues(), hodima_seo_advisor_crawl_status()['pages'] )['score'] ?? 0 ) ], [ true, true, true, false ] );
+$score_only = static fn( array $issues, array $info ): string => $cap( static fn() => hodima_seo_advisor_render_score( $issues, 10, '', $info ) );
+$sc100 = $score_only( [], [ 'items' => 63, 'pages' => 41 ] );
+$sc0   = $score_only( [], [ 'items' => 0, 'pages' => 0 ] );
+hodima_ad( 'نمره ۱۰۰ با ۶۳ اطلاع ← «نمره ۱۰۰ یعنی هیچ ایراد قرمز یا کهربایی نیست»؛ بدون اطلاع ← خط نمی‌آید', [ str_contains( $sc100, 'نمره ۱۰۰ یعنی هیچ ایراد قرمز یا کهربایی نیست.' ) || str_contains( $sc100, 'نمره 100 یعنی' ), str_contains( $sc100, 'روی 41 صفحه' ) || str_contains( $sc100, 'روی ۴۱ صفحه' ), str_contains( $sc0, 'hodima-advisor__sc-info' ) ], [ true, true, false ] );
+$_GET['lvl'] = 'info';
+$lvl_html    = $cap( static fn() => hodima_seo_advisor_render_overview() );
+hodima_ad( 'فیلتر lvl=info: فقط برچسب اطلاع، پیام «فقط نمایش» و «برداشتن فیلتر»؛ مقدار ناشناخته نادیده', [ substr_count( $lvl_html, 'hds-pill hds-pill--info' ) > 0, substr_count( $lvl_html, 'hds-pill hds-pill--warn' ) + substr_count( $lvl_html, 'hds-pill hds-pill--error' ), str_contains( $lvl_html, 'فقط نمایش: پیشنهادهای «اطلاع»' ), str_contains( $cap( static function () { $_GET['lvl'] = 'x'; hodima_seo_advisor_render_overview(); } ), 'فقط نمایش: پیشنهادهای «اطلاع»' ) ], [ true, 0, true, false ] );
 $_GET = [];
 
 // پاک کردن داده جدول‌های خزش را هم پاک می‌کند
