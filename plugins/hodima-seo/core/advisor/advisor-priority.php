@@ -38,16 +38,6 @@ const HODIMA_SEO_ADVISOR_CONFIDENCE = [
 	'unseen' => 0.6,
 ];
 
-/** سختی رفع پیشنهادهای گوگل بر اساس قاعده (پیش‌فرض ۲). */
-const HODIMA_SEO_ADVISOR_OPP_EFFORT = [
-	'low_ctr'          => 1,
-	'missing_headings' => 1,
-	'missing_content'  => 2,
-	'near_first'       => 2,
-	'weak_query'       => 3,
-	'cannibal'         => 3,
-	'decline'          => 3,
-];
 
 /**
  * فروش ۹۰ روز اخیر هر محصول: مسیر صفحه ← مبلغ. فقط می‌خواند (جدول wc_order_product_lookup ووکامرس)؛ بدون ووکامرس یا بدون آن
@@ -133,7 +123,7 @@ function hodima_seo_advisor_item_effort( array $item ): int {
 	}
 
 	if ( 'opp' === $src ) {
-		return HODIMA_SEO_ADVISOR_OPP_EFFORT[ (string) strtok( (string) ( $item['mark'] ?? '' ), '|' ) ] ?? 2;
+		return HODIMA_SEO_ADVISOR_SUGGEST_RULES[ (string) strtok( (string) ( $item['mark'] ?? '' ), '|' ) ]['effort'] ?? 2; // سختی هر پیشنهاد از فهرست مرکزی (SEO 3.8.2؛ قبلا ثابت جدای OPP_EFFORT)
 	}
 
 	return 'index' === $src ? 1 : 2;

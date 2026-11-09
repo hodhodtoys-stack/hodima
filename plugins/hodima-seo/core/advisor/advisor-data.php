@@ -217,6 +217,54 @@ function hodima_seo_advisor_url( string $path ): string {
 }
 
 /**
+ * ارقام فارسی در متن راهنما (SEO 3.7.0؛ از ۳.۸.۲ در advisor-data.php تا کرون و ایجکس هم داشته باشند): عددهای محاسبه‌شده با number_format_i18n رقم لاتین می‌آمدند («7,821»، «3,25٪») کنار
+ * عددهای ثابت فارسی متن («۲۰ نتیجه اول»). فقط واژه‌هایی که حرف لاتین، «/» یا «=» ندارند عوض می‌شوند (و «:» جداکننده واژه است) تا آدرس، «H1» و «http://»
+ * دست نخورند. جداکننده بین رقم‌ها: سه رقم بعدش = هزارگان «٬»، وگرنه اعشار «٫» (عدد اعشاری دستار حداکثر دو رقم دارد).
+ */
+function hodima_seo_advisor_fa_digits( string $text ): string {
+
+	return (string) preg_replace_callback(
+		'/[^\s«»()،؛:]+/u', // «:» جداکننده است (از ۳.۸.۲): «از 3:» و «23:00» هم فارسی شوند؛ «http://» با «/» باز کنار می‌ماند
+		static function ( array $m ): string {
+			$word = $m[0];
+			if ( 1 !== preg_match( '/\d/', $word ) || 1 === preg_match( '#[A-Za-z/:=]#', $word ) ) {
+				return $word;
+			}
+			$word = (string) preg_replace_callback( '/(?<=\d)[,.٬٫](?=(\d+))/u', static fn( array $s ): string => 3 === strlen( $s[1] ) ? '٬' : '٫', $word );
+			return strtr( $word, [ '0' => '۰', '1' => '۱', '2' => '۲', '3' => '۳', '4' => '۴', '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸', '9' => '۹' ] );
+		},
+		$text
+	);
+}
+
+/**
+ * ارقام فارسی در متن یک تکه HTML (SEO 3.8.2، تب «خزش و داده»): فقط متن بین تگ‌ها، نه ویژگی‌ها (style، aria-valuenow) و نه
+ * داخل code/script/style (دستور کرون)؛ موجودیت‌های HTML (&#8211;) دست نمی‌خورند. تا ۳.۸.۱ عددهای number_format_i18n و
+ * human_time_diff لاتین می‌آمدند کنار عددهای ثابت فارسی («گام ۲ از ۳: 2 از 3 آدرس»).
+ */
+function hodima_seo_advisor_fa_digits_html( string $html ): string {
+
+	$out  = '';
+	$skip = 0;
+
+	foreach ( (array) preg_split( '/(<[^>]*>)/u', $html, -1, PREG_SPLIT_DELIM_CAPTURE ) as $part ) {
+		$part = (string) $part;
+		if ( str_starts_with( $part, '<' ) ) {
+			if ( 1 === preg_match( '#^<(code|script|style|textarea|pre)\b#i', $part ) ) {
+				++$skip;
+			} elseif ( 1 === preg_match( '#^</(code|script|style|textarea|pre)\b#i', $part ) ) {
+				$skip = max( 0, $skip - 1 );
+			}
+			$out .= $part;
+			continue;
+		}
+		$out .= $skip > 0 ? $part : implode( '', array_map( static fn( string $bit ): string => str_starts_with( $bit, '&' ) ? $bit : hodima_seo_advisor_fa_digits( $bit ), (array) preg_split( '/(&#?\w+;)/u', $part, -1, PREG_SPLIT_DELIM_CAPTURE ) ) );
+	}
+
+	return $out;
+}
+
+/**
  * آدرس صفحه (از سرچ کنسول) ← مسیر یکسان‌شده، یا null (دامنه دیگر، بلندتر از ستون).
  *
  *   https://www.example.com/Hair/#toc-1 ← /hair/

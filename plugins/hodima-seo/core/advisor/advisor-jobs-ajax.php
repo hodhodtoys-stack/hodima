@@ -31,7 +31,7 @@ function hodima_seo_advisor_job_facts( string $job ): array {
 	foreach ( hodima_seo_advisor_cron_health()['jobs'] as $row ) {
 		if ( $row['key'] === $job ) {
 			$pill = $pills[ $row['level'] ] ?? $pills['ok'];
-			return [ 'last' => $row['last'], 'expect' => $row['expect'], 'level' => $row['level'], 'pill' => $pill[0], 'pill_class' => $pill[1] ];
+			return [ 'last' => hodima_seo_advisor_fa_digits( $row['last'] ), 'expect' => hodima_seo_advisor_fa_digits( $row['expect'] ), 'level' => $row['level'], 'pill' => $pill[0], 'pill_class' => $pill[1] ];
 		}
 	}
 
@@ -78,7 +78,7 @@ function hodima_seo_advisor_ajax_job_run(): void {
 			[ $type, $html ] = [ 'success', '<strong>خزش خودکار:</strong> خزش همین حالا شروع شد.' ];
 	}
 
-	wp_send_json_success( [ 'type' => $type, 'html' => wp_kses_post( $html ), 'facts' => hodima_seo_advisor_job_facts( $job ), 'progress' => hodima_seo_advisor_progress_get( $job ) ] );
+	wp_send_json_success( [ 'type' => $type, 'html' => hodima_seo_advisor_fa_digits_html( wp_kses_post( $html ) ), 'facts' => hodima_seo_advisor_job_facts( $job ), 'progress' => hodima_seo_advisor_progress_get( $job ) ] );
 }
 
 /** وضعیت زندهٔ یک کار (فقط می‌خواند). */

@@ -22,6 +22,11 @@ description: «دستار سئو» (advisor) افزونه Hodima SEO — قان�
 5. **آزمون:** مورد «دارد/ندارد» در `$cases` فایل `tools/wp-harness/advisor-checks-tests.php`؛ داده در `advisor-issues-golden.php` (`--save` عمدی)؛ باگ پارسر ← `advisor-accuracy.php`؛ UI ← `advisor-tests.php`. بعد قانون‌نامه (`docs/seo-advisor-rulebook.md`) را به‌روز کن.
 دروازه: `bash bin/lint.sh`؛ آزمون‌ها زیر.
 
+## افزودن یا تغییر یک پیشنهاد گوگل (داده Search Console)
+همان قانون ایرادها: رکورد در `HODIMA_SEO_ADVISOR_SUGGEST_RULES` (`advisor-suggest.php`: `label`، `effort` ۱..۳، `ref` = `google:<صفحه>` یا `own`؛ نام منو، فیلتر و اولویت از همین) + تابع خالص `hodima_seo_advisor_suggest_<نام>( array $in ): array` (`$in` = row، queries، text، competitors، site، meta، links، cfg؛ بدون دیتابیس) + ردیف در `HODIMA_SEO_ADVISOR_SUGGEST_RUN` (`codes`، `cap`، `outside`) + «دارد/ندارد» در `$sg_cases` (`advisor-checks-tests.php`) + جدول قانون‌نامه. `hodima_seo_advisor_suggestions()` فقط ترتیب، سقف و ادغام «نیست در تیتر» با «نزدیک صفحه اول» است. عکس مرجع: `advisor-suggest-golden.php --check tools/wp-harness/golden/advisor-suggest.json` (تغییر عمدی خروجی = `--save` و گفتن در گزارش). متن‌های جدای هر قاعده: «چرا» `hodima_seo_advisor_rule_guide` (advisor-help.php)، پیوند جزئیات `HODIMA_SEO_ADVISOR_STEPS_HINTS`، سنجش اثر `HODIMA_SEO_ADVISOR_VERIFY_RULES` (آزمون: فقط قاعده ثبت‌شده).
+
+**ارقام:** متن نمایشی با `hodima_seo_advisor_fa_digits()` (`advisor-data.php`) یا برای یک تکه HTML `hodima_seo_advisor_fa_digits_html()` (فقط متن، نه ویژگی/`<code>`)؛ تب «خزش و داده» کامل از دومی رد می‌شود و پیشرفت و ایجکس از اولی.
+
 **«گزارش» باکس‌دار (۳.۷.۹، طرح تأییدشده کاربر):** «چه دیدیم» در پیشخوان «گزارش» است. هر پیشنهاد گوگل کنار `seen` کلید `report` دارد (`boxes`: label/value/sub/tone=warn/bar ۰..۱/chips [[bool, متن]]؛ `pages`: کارت رقیب badge/win/me/path/…؛ `note`: tone/title/text؛ `intro`؛ `foot`) که در JSON پیشنهاد ذخیره و با `hodima_seo_advisor_render_report()` کشیده می‌شود؛ کار رقابت یکی‌شده report را از گروه هم‌کلمه می‌سازد. قاعده تازه پیشنهاد گوگل باید report هم بسازد (آزمون «گزارش باکس‌دار»). report هم دستور ندارد.
 
 **راهنمای «کارها» برای منبع‌های غیرخزنده (۳.۷.۰):** پیشنهاد گوگل `seen` + `todo` (نه `steps`: آن کلید گام‌های ساخت‌یافته کادر ویرایش است و در جدول ذخیره نمی‌شود) کنار `detail` (متن کامل کادر ویرایش؛ دست نزن)؛ ایندکس `hodima_seo_advisor_inspect_state_guide()`؛ هم‌کلمه `hodima_seo_advisor_competition_guide()`؛ رندر مشترک `hodima_seo_advisor_render_guide()` با ارقام فارسی (`hodima_seo_advisor_fa_digits`). «چه دیدیم» فعل امری ندارد (آزمون).
@@ -35,6 +40,7 @@ php tools/wp-harness/advisor-tests.php                      # ~۸۹۶ آزمون
 php tools/wp-harness/advisor-checks-tests.php               # ~۱۹۰ آزمون: «دارد/ندارد» هر ایراد، ساختار کاتالوگ، قانون ثابت مرجع، ثابت پیش‌نویس
 php tools/wp-harness/advisor-issues-golden.php --check tools/wp-harness/golden/advisor-issues.json   # عکس مرجع (--save = عمدی)
 php tools/wp-harness/advisor-accuracy.php                   # دقت پارسر روی HTML نمونه
+php tools/wp-harness/advisor-suggest-golden.php --check tools/wp-harness/golden/advisor-suggest.json   # عکس مرجع پیشنهادهای گوگل
 tools/wp-harness/zip-install-check.sh                       # بعد از bin/build.sh؛ بعدش link.sh و (در صورت لزوم) rm .ht.sqlite + HARNESS_WC=1 php fixtures.php
 ```
 همه در `ci-check.sh` (GitHub Actions). `HODIMA_GOLDEN_KEEP=1` داده ساختگی را برای عکس نگه می‌دارد؛ رندر پیشخوان: `admin-render.php` با ثابت `HODIMA_SEO_ADVISOR_SERVICE_ACCOUNT_JSON` (`php -d auto_prepend_file`) — داده گوگل ندارد، «کارها» خالی است.
@@ -44,7 +50,7 @@ tools/wp-harness/zip-install-check.sh                       # بعد از bin/bu
 داده واقعی اول (کاربر «خزش همین حالا» + عکس) ← بازتولید روی ابزار تست با HTML نمونه ← ریشه نه نشانه ← یک آزمون برای هر مثبت کاذب ← **هر ایراد مدرک بدهد** (چه/کجا/چرا/دقیقا چه کنم) ← صادق در گزارش (سایت واقعی دیده نشد) ← انتشار یک پله (`/release`) ← کاربر عکس می‌فرستد ← باگ بعدی. تغییر **ظاهر** پیشخوان (کادر/چیدمان): اسکیل `hodima-admin-ui` (طرح قبل/بعد و تأیید)؛ تغییر فقط متن/منطق/سطح طرح نمی‌خواهد.
 
 ## کارهای باقی‌مانده (با خواست کاربر)
-- **برنامه ۸ انتشاری تأییدشده (AUDIT بخش ۴۱۶):** ۳.۸.۱ انجام شد؛ بعدی ۳.۸.۲ تقسیم `hodima_seo_advisor_suggestions()` به تابع جدا با مرجع و آزمون (خروجی بی‌تغییر)، بعد ۳.۸.۳ تا ۳.۸.۸ به ترتیب همان بخش.
+- **برنامه ۸ انتشاری تأییدشده (AUDIT بخش ۴۱۶):** ۳.۸.۱ و ۳.۸.۲ انجام شد؛ بعدی ۳.۸.۳ گام‌های دقیق «چه کنم» بقیه پیشنهادهای گوگل (پیش از کد تأیید کاربر)، بعد ۳.۸.۴ تا ۳.۸.۸ به ترتیب همان بخش.
 - **مانده از گفتگوی ۱۴ آبان ۱۴۰۵ (SEO ۳.۸.۰):** (۱) باکس‌های «گزارش» روی سایت زنده بعد از دریافت تازه داده گوگل دیده نشده؛ منتظر عکس کاربر. (۲) گام‌های «دقیقا چه کنم» بقیه پیشنهادهای گوگل (نرخ کلیک کم، کلمه در متن/تیتر نیست، نزدیک صفحه اول، افت) هم مثل رقابت (`competition_guide`، ۳.۸.۰) از داده خزش دقیق شوند و گام انجام‌شده نیاید (پیشنهاد داده شد، کاربر هنوز تأیید نکرده). (۳) «۰ آدرس بررسی شد» رفع شد (۳.۸.۱: خطای گوگل دیگر پنهان نمی‌ماند)؛ بعد از نصب، پیام تازه تب «خزش و داده» علت واقعی سایت زنده را نشان می‌دهد. (۴) کلیک دوم «جزئیات و پیش‌نویس» با بازتولید دوبارکلیک رفع شد (۳.۷.۷)؛ علت دقیق سایت زنده دیده نشد.
 - ~~فهرست‌های «تازه»~~ انجام شد (۳.۷.۳: تکراری‌ها، http با ستون `http_list`، پیشنهاد لینک orphan با کلمه مشترک عنوان). مانده: صفحه‌هایی که به آدرس ریدایرکت‌شده لینک داده‌اند؛ پیشنهاد لینک بر پایه متن صفحه (نه فقط عنوان). دکمه‌های کار: فقط «انجام دادم» سبز و «لازم نیست» نارنجی (`doing` فقط برای داده قدیمی).
 - **نمره ۱۰۰ با ۶۳ ایراد اطلاع در فهرست گمراه‌کننده است** (اطلاع در نمره نیست): یک خط «N پیشنهاد اطلاع» کنار نمره پیشنهاد می‌شود (UI ← طرح و تأیید).

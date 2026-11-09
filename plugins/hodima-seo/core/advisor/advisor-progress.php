@@ -122,10 +122,10 @@ function hodima_seo_advisor_progress_get( string $job ): array {
 		'running' => ! empty( $entry['running'] ) && time() - $at <= HODIMA_SEO_ADVISOR_PROGRESS_STALE,
 		'step'    => (int) ( $entry['step'] ?? 0 ),
 		'total'   => (int) ( $entry['total'] ?? 0 ),
-		'label'   => (string) ( $entry['label'] ?? '' ),
+		'label'   => hodima_seo_advisor_fa_digits( (string) ( $entry['label'] ?? '' ) ), // ارقام فارسی مثل بقیه تب (SEO 3.8.2)
 		'percent' => (int) ( $entry['percent'] ?? 0 ),
 		'at'      => $at,
-		'text'    => (string) ( $entry['text'] ?? '' ),
+		'text'    => hodima_seo_advisor_fa_digits( (string) ( $entry['text'] ?? '' ) ),
 		'error'   => ! empty( $entry['error'] ),
 	];
 }

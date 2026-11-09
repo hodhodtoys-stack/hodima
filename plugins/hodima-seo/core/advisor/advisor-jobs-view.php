@@ -46,6 +46,7 @@ function hodima_seo_advisor_render_jobs(): void {
 	$bad    = $health['problems'] > 0;
 	$total  = count( array_filter( $health['jobs'], static fn( array $job ): bool => 'off' !== $job['level'] ) );
 	$mode   = $health['server_cron'] ? 'کرون سرور فعال است.' : 'کرون وردپرس: فقط با بازدید سایت اجرا می‌شود.';
+	ob_start(); // همه متن تب با ارقام فارسی (SEO 3.8.2؛ کاربر: «گام ۲ از ۳: 2 از 3 آدرس»)
 	?>
 	<div id="hodima-advisor-cron" class="hodima-advisor__jobs">
 		<section class="hds-card hodima-advisor__jobs-status" aria-label="وضعیت کارهای خودکار">
@@ -86,6 +87,7 @@ function hodima_seo_advisor_render_jobs(): void {
 		?>
 	</div>
 	<?php
+	echo hodima_seo_advisor_fa_digits_html( (string) ob_get_clean() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده بالا؛ فقط رقم‌های متن عوض می‌شوند
 }
 
 /**
@@ -251,7 +253,7 @@ function hodima_seo_advisor_render_crawler_settings_form( string $back ): void {
 
 	$settings = hodima_seo_advisor_crawler_settings();
 	$n        = static fn( int|float $value ): string => number_format_i18n( $value );
-	$hour     = static fn( int $h ): string => $n( $h ) . ':۰۰';
+	$hour     = static fn( int $h ): string => hodima_seo_advisor_fa_digits( $n( $h ) ) . ':۰۰'; // «:» جلوی تبدیل خودکار را می‌گیرد
 	?>
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="hodima-advisor__crawler-form">
 		<input type="hidden" name="action" value="hodima_advisor_crawler_settings">

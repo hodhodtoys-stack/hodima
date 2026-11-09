@@ -13,7 +13,7 @@
 #   - آزمون‌های فرم تلفن (phone-tests.php) رد شوند؛
 #   - آزمون‌های پنل کاربری (panel-tests.php) رد شوند؛
 #   - آزمون‌های دستار سئو (advisor-tests.php)، دقت خواندن صفحه خزنده (advisor-accuracy.php)، قاعده‌های ایراد (advisor-checks-tests.php)
-#     یا عکس مرجع ایرادها (advisor-issues-golden.php) رد شوند.
+#     یا عکس مرجع ایرادها (advisor-issues-golden.php) یا پیشنهادها (advisor-suggest-golden.php) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
 #   ci-check.sh [ref]
@@ -136,6 +136,13 @@ if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-issues-golden.php" --check 
 	head -1 "$out/advisor-issues-golden.txt" | sed 's/^/  /'
 else
 	head -40 "$out/advisor-issues-golden.txt" | sed 's/^/  /'; fail=1
+fi
+
+echo "=== عکس مرجع پیشنهادهای گوگل دستار (advisor-suggest-golden.php --check: خروجی با golden/advisor-suggest.json یکی باشد)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-suggest-golden.php" --check "$here/golden/advisor-suggest.json" > "$out/advisor-suggest-golden.txt" 2>&1; then
+	head -1 "$out/advisor-suggest-golden.txt" | sed 's/^/  /'
+else
+	head -40 "$out/advisor-suggest-golden.txt" | sed 's/^/  /'; fail=1
 fi
 
 # آخرِ آزمون‌ها: این آزمون Hodima Panel را خودش فعال می‌کند (در داده آزمایشی بقیه فعال نیست)

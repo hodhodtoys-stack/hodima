@@ -61,6 +61,19 @@
 
 **شمار:** قرمز ۱، زرد ۱۴، اطلاع ۱۷.
 
+## پیشنهادهای گوگل (داده Search Console؛ SEO ۳.۸.۲)
+مرجع اجرایی: `HODIMA_SEO_ADVISOR_SUGGEST_RULES` در `advisor-suggest.php` + آزمون «قانون ثابت پیشنهادهای گوگل» (`advisor-checks-tests.php`). پیشنهادها سطح قرمز/کهربایی ندارند (همه «پیشنهاد گوگل»؛ اولویت از کلیک بالقوه و سختی)؛ مرجع فقط نشان می‌دهد توصیه از کجاست. نقل‌قول‌ها در این دور از وب دوباره خوانده نشد.
+
+| قاعده | مرجع | مبنا |
+|---|---|---|
+| `low_ctr` | `google:title-link,snippet` | راهنمای عنوان و خلاصه نتیجه: عنوان یگانه، روشن و توصیفی؛ توضیح متا خلاصه دقیق صفحه |
+| `missing_headings`، `missing_content` | `google:seo-starter-guide` | «کلمه‌هایی که مردم جستجو می‌کنند» در عنوان، تیتر و متن |
+| `near_first` | `google:seo-starter-guide,links-crawlable` | همان، به‌علاوه لینک داخلی با متن لینک توصیفی |
+| `decline` | `google:traffic-drops` | «Debugging drops in Google Search traffic»: جدا کردن رتبه، نمایش و نرخ کلیک |
+| `weak_query`، `cannibal` | `own` | حساب خود دستار؛ گوگل «رقابت داخلی» را مشکل نمی‌نامد |
+
+نشانی صفحه‌های گوگل (developers.google.com/search/docs/…): `title-link` = appearance/title-link، `snippet` = appearance/snippet، `seo-starter-guide` = fundamentals/seo-starter-guide، `links-crawlable` = crawling-indexing/links-crawlable، `traffic-drops` = monitor-debug/debugging-search-traffic-drops.
+
 ## کشفیات جانبی
 - **باگ پوشش:** خزنده ما `//link[rel=canonical]` را از هر جای سند می‌خواند؛ گوگل canonical داخل body را نمی‌پذیرد.
 - **ایده ارزشمند برای مغازه:** «توضیح محصول کپی از تولیدکننده» (thin affiliate در سیاست اسپم) برای عمده‌فروشی احتمال دارد؛ فعلاً برنامه نیست.

@@ -47,6 +47,7 @@ require_once __DIR__ . '/advisor-score.php';
 require_once __DIR__ . '/advisor-live.php';
 require_once __DIR__ . '/advisor-inspect.php';
 require_once __DIR__ . '/advisor-rules.php';
+require_once __DIR__ . '/advisor-suggest.php'; // قاعده‌های پیشنهاد گوگل: هر قاعده یک تابع + فهرست مرکزی (SEO 3.8.2)
 require_once __DIR__ . '/advisor-steps.php';
 require_once __DIR__ . '/advisor-drafts.php';
 require_once __DIR__ . '/advisor-priority.php';

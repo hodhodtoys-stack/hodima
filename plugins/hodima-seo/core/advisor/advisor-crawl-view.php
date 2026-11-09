@@ -127,7 +127,7 @@ function hodima_seo_advisor_ajax_crawler_step(): void {
 
 	[ $level, $label, $info, $running ] = hodima_seo_advisor_crawler_status_view();
 
-	wp_send_json_success( [ 'level' => $level, 'label' => $label, 'text' => $info, 'running' => $running, 'finished' => $finished, 'delay' => $drive ? 1500 : 8000, 'percent' => hodima_seo_advisor_crawler_percent( hodima_seo_advisor_crawler_status() ) ] );
+	wp_send_json_success( [ 'level' => $level, 'label' => hodima_seo_advisor_fa_digits( $label ), 'text' => hodima_seo_advisor_fa_digits( $info ), 'running' => $running, 'finished' => $finished, 'delay' => $drive ? 1500 : 8000, 'percent' => hodima_seo_advisor_crawler_percent( hodima_seo_advisor_crawler_status() ) ] );
 }
 
 /**

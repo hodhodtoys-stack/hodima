@@ -73,18 +73,9 @@ function hodima_seo_advisor_page_url( array $args = [] ): string {
 	return add_query_arg( array_filter( [ 'page' => HODIMA_SEO_ADVISOR_PAGE ] + $args, static fn( mixed $v ): bool => '' !== $v && null !== $v ), admin_url( 'admin.php' ) );
 }
 
-/** نام فارسی قاعده. */
+/** نام فارسی قاعده (از فهرست مرکزی پیشنهادها، advisor-suggest.php). */
 function hodima_seo_advisor_rule_label( string $rule ): string {
-	return match ( $rule ) {
-		'low_ctr'          => 'نرخ کلیک کم',
-		'near_first'       => 'کلمه نزدیک صفحه اول',
-		'missing_headings' => 'کلمه در تیترها نیست',
-		'missing_content'  => 'کلمه در متن نیست',
-		'cannibal'         => 'رقابت داخلی',
-		'weak_query'       => 'کلمه بدون صفحه اختصاصی',
-		'decline'          => 'افت کلیک',
-		default            => $rule,
-	};
+	return HODIMA_SEO_ADVISOR_SUGGEST_RULES[ $rule ]['label'] ?? $rule;
 }
 
 /** نام فارسی نوع شیء. */
@@ -987,7 +978,7 @@ function hodima_seo_advisor_render_list( array $status ): void {
 			<span class="screen-reader-text">نوع پیشنهاد</span>
 			<select name="rule" class="hds-input">
 				<option value="">همه پیشنهادها</option>
-				<?php foreach ( [ 'low_ctr', 'near_first', 'missing_headings', 'missing_content', 'weak_query', 'cannibal', 'decline' ] as $rule ) : ?>
+				<?php foreach ( array_keys( HODIMA_SEO_ADVISOR_SUGGEST_RULES ) as $rule ) : ?>
 					<option value="<?php echo esc_attr( $rule ); ?>"<?php selected( $filters['rule'], $rule ); ?>><?php echo esc_html( hodima_seo_advisor_rule_label( $rule ) ); ?></option>
 				<?php endforeach; ?>
 			</select>

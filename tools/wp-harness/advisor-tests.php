@@ -4289,6 +4289,13 @@ $pg_html = $cap( static fn() => hodima_seo_advisor_render_jobs() );
 hodima_ad( 'تب خزش و داده: چهار ردیف، چهار دکمه تنظیمات، بدون شبکه دوستونه و بدون details', [ substr_count( $pg_html, 'class="hodima-advisor__job-row"' ), substr_count( $pg_html, 'data-hdsa-job-toggle' ), str_contains( $pg_html, 'jobs-grid' ), str_contains( $pg_html, '<details class="hodima-advisor__job-set"' ) ], [ 4, 4, false, false ] );
 hodima_ad( 'کار در جریان: ردیف قاب‌دار، ۳۸٪، پیمایش زنده؛ بقیه نوار پنهان', [ str_contains( $pg_html, 'data-job="pipeline"' ) && str_contains( $pg_html, 'data-running="1"' ), str_contains( $pg_html, 'aria-valuenow="38"' ), str_contains( $pg_html, 'data-hdsa-job-poll="1"' ), substr_count( $pg_html, 'data-hdsa-job-prog hidden' ) ], [ true, true, true, 3 ] );
 hodima_ad( 'فیلد بازه دریافت داده با ویژگی form به فرم اجرا وصل است (فرم یکی، پنل جدا)', [ str_contains( $pg_html, 'form="hodima-advisor-job-form-refresh"' ), substr_count( $pg_html, 'name="days"' ) ], [ true, 3 ] );
+// ارقام فارسی تب «خزش و داده» (SEO 3.8.2؛ عکس کاربر: «گام ۲ از ۳: 2 از 3 آدرس»، «10 دقیقه پیش» کنار «۴۸ ساعت»)
+$pg_text   = (string) preg_replace( [ '#<code\b.*?</code>#su', '#<[^>]*>#u', '#&\#?\w+;#u' ], ' ', $pg_html );
+$pg_latin  = preg_match_all( '#(?<![A-Za-z/=_-])[0-9]+(?![A-Za-z/_-])#u', $pg_text, $pg_m ) ? array_slice( $pg_m[0], 0, 8 ) : [];
+hodima_ad( 'تب خزش و داده: متن بی‌رقم لاتین (جز دستور کرون)؛ ویژگی‌ها (aria-valuenow، عرض نوار) لاتین می‌مانند؛ ساعت‌های فرم خزش فارسی', [ $pg_latin, str_contains( $pg_html, 'aria-valuenow="38"' ), str_contains( $pg_html, 'inline-size: 38%' ), str_contains( $pg_html, '>۲۳:۰۰<' ) ], [ [], true, true, true ] );
+hodima_ad( 'fa_digits_html: متن فارسی، ویژگی/موجودیت/کد دست‌نخورده', hodima_seo_advisor_fa_digits_html( '<p data-n="12" style="inline-size: 3%">گام 2 از 3: 10 دقیقه &#8211; 1,250 <code>*/5 * * * * wget</code> http://a.test/2/</p>' ), '<p data-n="12" style="inline-size: 3%">گام ۲ از ۳: ۱۰ دقیقه &#8211; ۱٬۲۵۰ <code>*/5 * * * * wget</code> http://a.test/2/</p>' );
+hodima_seo_advisor_progress_set( 'inspect', 2, 3, '2 از 3 آدرس پرسیده می‌شود' );
+hodima_ad( 'پیشرفت (ایجکس وضعیت): برچسب با ارقام فارسی', hodima_seo_advisor_progress_get( 'inspect' )['label'], '۲ از ۳ آدرس پرسیده می‌شود' );
 $_GET = [];
 delete_option( HODIMA_SEO_ADVISOR_PROGRESS_OPTION );
 

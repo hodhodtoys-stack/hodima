@@ -469,6 +469,108 @@ $unscored = array_values( array_diff( $catalog, $scored ) );
 echo '  ℹ کدهای بی‌بخش نمره: ' . ( $unscored ? implode( '، ', $unscored ) : 'هیچ' ) . "\n";
 hodima_ck( 'کد تازه بی‌بخش نمره نیست (جز img_empty عمدی)', [] === array_diff( $unscored, [ 'img_empty' ] ), implode( '، ', $unscored ) );
 
+echo "=== قانون ثابت پیشنهادهای گوگل (SEO 3.8.2): هر قاعده رکورد، مرجع، تابع خالص و آزمون «دارد/ندارد» دارد\n";
+$sg_pages   = [ ...$google_pages, 'traffic-drops' ]; // نشانی‌ها: docs/seo-advisor-rulebook.md بخش «پیشنهادهای گوگل»
+$sg_bad     = [];
+$sg_codes   = array_merge( ...array_column( HODIMA_SEO_ADVISOR_SUGGEST_RUN, 'codes' ) );
+foreach ( HODIMA_SEO_ADVISOR_SUGGEST_RULES as $code => $record ) {
+	$ref = (string) ( $record['ref'] ?? '' );
+	if ( '' === (string) ( $record['label'] ?? '' ) || ! in_array( $record['effort'] ?? 0, [ 1, 2, 3 ], true ) ) {
+		$sg_bad[] = "{$code}: نام یا سختی نامعتبر";
+	}
+	foreach ( '' === $ref ? [ '' ] : explode( '|', $ref ) as $part ) {
+		if ( str_starts_with( $part, 'google:' ) ) {
+			$unknown = array_diff( array_filter( explode( ',', substr( $part, 7 ) ) ), $sg_pages );
+			if ( $unknown || 'google:' === $part ) {
+				$sg_bad[] = "{$code}: صفحه گوگل ناشناخته " . implode( ',', $unknown );
+			}
+		} elseif ( 'own' !== $part && ! str_starts_with( $part, 'refs:' ) ) {
+			$sg_bad[] = "{$code}: مرجع نامعتبر «{$part}»";
+		}
+	}
+	if ( ! in_array( $code, $sg_codes, true ) ) {
+		$sg_bad[] = "{$code}: هیچ تابعی آن را نمی‌سازد";
+	}
+}
+foreach ( HODIMA_SEO_ADVISOR_SUGGEST_RUN as $key => $run ) {
+	if ( ! function_exists( $run['fn'] ) ) {
+		$sg_bad[] = "{$key}: تابع {$run['fn']} نیست";
+	}
+	foreach ( array_diff( $run['codes'], array_keys( HODIMA_SEO_ADVISOR_SUGGEST_RULES ) ) as $code ) {
+		$sg_bad[] = "{$key}: کد بی‌رکورد {$code}";
+	}
+}
+hodima_ck( 'هر پیشنهاد گوگل نام، سختی ۱ تا ۳، مرجع (صفحه شناخته‌شده گوگل یا own) و تابع سازنده دارد؛ هر کد تابع رکورد دارد', [] === $sg_bad, implode( ' | ', $sg_bad ) );
+// فهرست‌های متنی جدا (راهنما، پیوند جزئیات، سنجش اثر) فقط به قاعده ثبت‌شده اشاره کنند
+foreach ( [ 'advisor-detail-view.php', 'advisor-help.php' ] as $sg_file ) { // فقط در پیشخوان لود می‌شوند
+	require_once HODIMA_SEO_DIR . '/core/advisor/' . $sg_file;
+}
+$sg_lists = [ 'STEPS_HINTS' => array_keys( HODIMA_SEO_ADVISOR_STEPS_HINTS ), 'VERIFY_RULES' => HODIMA_SEO_ADVISOR_VERIFY_RULES ];
+$sg_stray = [];
+foreach ( $sg_lists as $name => $keys ) {
+	foreach ( array_diff( $keys, array_keys( HODIMA_SEO_ADVISOR_SUGGEST_RULES ) ) as $code ) {
+		$sg_stray[] = "{$name}:{$code}";
+	}
+}
+if ( function_exists( 'hodima_seo_advisor_rule_guide' ) ) {
+	foreach ( array_keys( HODIMA_SEO_ADVISOR_SUGGEST_RULES ) as $code ) {
+		if ( '' === hodima_seo_advisor_rule_guide( $code )['why'] ) {
+			$sg_stray[] = "rule_guide:{$code} بی‌توضیح";
+		}
+	}
+}
+hodima_ck( 'فهرست‌های راهنما و سنجش فقط قاعده ثبت‌شده دارند و هر قاعده «چرا» دارد', [] === $sg_stray, implode( '، ', $sg_stray ) );
+
+// «دارد/ندارد» هر تابع (خالص: فقط ورودی؛ جدول نرخ کلیک عمومی)
+$sg_ctr = get_option( HODIMA_SEO_ADVISOR_CTR_OPTION, null );
+delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION );
+$sg_q   = static fn( string $term, int $impressions, float $position, int $clicks = 0 ): array => [ 'term' => $term, 'clicks' => $clicks, 'impressions' => $impressions, 'position' => $position ];
+$sg_in  = static fn( array $over = [] ): array => $over + [ 'row' => [ 'path' => '/sg/', 'clicks' => 10, 'impressions' => 500, 'position' => 30.0, 'prev_clicks' => 0 ], 'queries' => [], 'text' => null, 'competitors' => [], 'site' => null, 'meta' => null, 'links' => null, 'cfg' => hodima_seo_advisor_config() ];
+$sg_row = static fn( array $over ): array => $over + [ 'path' => '/sg/', 'clicks' => 10, 'impressions' => 500, 'position' => 30.0, 'prev_clicks' => 0 ];
+$sg_cases = [
+	[ 'نرخ کلیک کم: ۵۰۰۰ نمایش، رتبه ۶، ۵ کلیک ← low_ctr', 'low_ctr', [ 'row' => $sg_row( [ 'clicks' => 5, 'impressions' => 5000, 'position' => 6.0 ] ) ], [ 'low_ctr' ] ],
+	[ 'نرخ کلیک خوب (۳۰۰ کلیک) ← هیچ', 'low_ctr', [ 'row' => $sg_row( [ 'clicks' => 300, 'impressions' => 5000, 'position' => 6.0 ] ) ], [] ],
+	[ 'زیر حداقل نمایش صفحه ← هیچ', 'low_ctr', [ 'row' => $sg_row( [ 'clicks' => 0, 'impressions' => 900, 'position' => 6.0 ] ) ], [] ],
+	[ 'کلمه در متن، نه در تیتر ← missing_headings', 'missing', [ 'queries' => [ $sg_q( 'کش مو', 800, 5.0 ) ], 'text' => [ 'title_headings' => 'دیگر', 'content' => 'کش مو' ] ], [ 'missing_headings' ] ],
+	[ 'کلمه در متن هم نیست ← missing_content', 'missing', [ 'queries' => [ $sg_q( 'کش مو', 800, 5.0 ) ], 'text' => [ 'title_headings' => 'دیگر', 'content' => 'دیگر' ] ], [ 'missing_content' ] ],
+	[ 'کلمه در تیتر هست ← هیچ', 'missing', [ 'queries' => [ $sg_q( 'کش مو', 800, 5.0 ) ], 'text' => [ 'title_headings' => 'کش مو', 'content' => '' ] ], [] ],
+	[ 'متن صفحه ناشناخته ← هیچ', 'missing', [ 'queries' => [ $sg_q( 'کش مو', 800, 5.0 ) ] ], [] ],
+	[ 'کلمه رتبه ۳۰ (عقب‌تر از صفحه دوم) ← missing نه', 'missing', [ 'queries' => [ $sg_q( 'کش مو', 800, 30.0 ) ], 'text' => [ 'title_headings' => '', 'content' => '' ] ], [] ],
+	[ 'رتبه ۱۲ ← near_first', 'near_first', [ 'queries' => [ $sg_q( 'گیره', 900, 12.0 ) ] ], [ 'near_first' ] ],
+	[ 'رتبه ۵ (صفحه اول) ← near_first نه', 'near_first', [ 'queries' => [ $sg_q( 'گیره', 900, 5.0 ) ] ], [] ],
+	[ 'کلمه کم‌نمایش (۲۰۰) ← near_first نه', 'near_first', [ 'queries' => [ $sg_q( 'گیره', 200, 12.0 ) ] ], [] ],
+	[ 'رتبه ۳۵ ← weak_query', 'weak_query', [ 'queries' => [ $sg_q( 'تل', 700, 35.0 ) ] ], [ 'weak_query' ] ],
+	[ 'رتبه ۷۰ (بیش از سقف ۶۰) ← هیچ', 'weak_query', [ 'queries' => [ $sg_q( 'تل', 700, 70.0 ) ] ], [] ],
+	[ 'کلمه برندی ← هیچ', 'weak_query', [ 'queries' => [ $sg_q( strtolower( (string) get_bloginfo( 'name' ) ) . ' تل', 700, 35.0 ) ] ], [] ],
+	[ 'صفحه دیگر برای همان کلمه ← cannibal', 'cannibal', [ 'queries' => [ $sg_q( 'کش مو', 400, 25.0 ) ], 'competitors' => [ hodima_seo_advisor_term_key( 'کش مو' ) => [ [ 'path' => '/a/', 'impressions' => 9 ] ] ] ], [ 'cannibal' ] ],
+	[ 'بی رقیب ← هیچ', 'cannibal', [ 'queries' => [ $sg_q( 'کش مو', 400, 25.0 ) ] ], [] ],
+	[ 'افت ۸۰٪ کلیک با رتبه بدتر ← decline', 'decline', [ 'row' => $sg_row( [ 'clicks' => 20, 'prev_clicks' => 100, 'impressions' => 900, 'prev_impressions' => 950, 'position' => 15.0, 'prev_position' => 8.0 ] ) ], [ 'decline' ] ],
+	[ 'افت ۱۰٪ ← هیچ', 'decline', [ 'row' => $sg_row( [ 'clicks' => 90, 'prev_clicks' => 100, 'impressions' => 900, 'position' => 8.0 ] ) ], [] ],
+	[ 'کل سایت همان‌قدر افت کرده ← هیچ', 'decline', [ 'row' => $sg_row( [ 'clicks' => 40, 'prev_clicks' => 100, 'impressions' => 1000, 'prev_impressions' => 1000, 'position' => 8.2, 'prev_position' => 8.0 ] ), 'site' => [ 'clicks_ratio' => 0.45, 'impressions_ratio' => 0.9 ] ], [] ],
+];
+$sg_tested = [];
+foreach ( $sg_cases as [ $name, $key, $over, $expect ] ) {
+	$got = array_column( ( HODIMA_SEO_ADVISOR_SUGGEST_RUN[ $key ]['fn'] )( $sg_in( $over ) ), 'rule' );
+	hodima_ck( $name, $expect === $got, 'انتظار ' . implode( ',', $expect ) . ' ← ' . implode( ',', $got ) );
+	$sg_tested[ $key ][ $expect ? 'has' : 'not' ] = true;
+	foreach ( $expect as $code ) {
+		$sg_tested[ 'code:' . $code ] = true;
+	}
+}
+$sg_gap = [];
+foreach ( HODIMA_SEO_ADVISOR_SUGGEST_RUN as $key => $run ) {
+	if ( empty( $sg_tested[ $key ]['has'] ) || empty( $sg_tested[ $key ]['not'] ) ) {
+		$sg_gap[] = $key;
+	}
+}
+foreach ( array_keys( HODIMA_SEO_ADVISOR_SUGGEST_RULES ) as $code ) {
+	if ( empty( $sg_tested[ 'code:' . $code ] ) ) {
+		$sg_gap[] = 'code:' . $code;
+	}
+}
+hodima_ck( 'هر تابع پیشنهاد دست‌کم یک «دارد» و یک «ندارد» و هر کد دست‌کم یک «دارد» دارد', [] === $sg_gap, implode( '، ', $sg_gap ) );
+null === $sg_ctr ? delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CTR_OPTION, $sg_ctr, false );
+
 echo "\n";
 if ( $failed ) {
 	echo "✘ {$failed} آزمون رد شد ({$passed} قبول)\n";
