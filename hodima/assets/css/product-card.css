@@ -5,16 +5,6 @@
  * پایین آورده نمی‌شود (HODIMA-AUDIT.md ۶۳).
  * ========================================================================= */
 
-/* آیکن ستاره‌ها فونت `star` ووکامرس است؛ هر قانون فونت دیگری (سراسری !important هم) نباید آن را بشکند */
-.woocommerce .star-rating,
-.woocommerce .star-rating::before,
-.woocommerce .star-rating span::before,
-.product-card-scope .star-rating,
-.product-card-scope .star-rating::before,
-.product-card-scope .star-rating span::before {
-	font-family: star !important;
-}
-
 .product-card-scope {
 	--brand-primary: var(--hodima-primary, #25316a);
 	--brand-dark: var(--hodima-text-dark, #111111);

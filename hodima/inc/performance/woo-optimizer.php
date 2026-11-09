@@ -47,7 +47,7 @@ function hodima_woo_lean_css(): bool {
 /*
  * اولویت ۹ (پیش از ووکامرس و افزونه‌ها در ۱۰): woo-base.css همان جای فایل‌های ووکامرس در
  * صف چاپ می‌نشیند (پیش از CSS افزونه‌ها و قالب) تا آبشار CSS مثل قبل بماند.
- * فونت آیکن ووکامرس (ستاره‌ها، آیکن پیام‌ها) و علامت بارگذاری آدرس افزونه را لازم دارند،
+ * فونت آیکن ووکامرس (آیکن پیام‌ها) و علامت بارگذاری آدرس افزونه را لازم دارند،
  * پس از PHP کنار همان فایل چاپ می‌شوند.
  */
 add_action( 'wp_enqueue_scripts', static function (): void {
@@ -59,11 +59,14 @@ add_action( 'wp_enqueue_scripts', static function (): void {
         return;
     }
     $assets = untrailingslashit( plugins_url( '', (string) WC_PLUGIN_FILE ) ) . '/assets';
-    $font   = esc_url_raw( $assets . '/fonts/WooCommerce.woff2' );
-    $css    = '';
-    foreach ( [ 'star', 'WooCommerce' ] as $family ) {
-        $css .= '@font-face{font-family:' . $family . ';src:url("' . $font . '") format("woff2");font-weight:400;font-style:normal;font-display:swap}';
-    }
+    /*
+     * فقط خانواده WooCommerce (آیکن پیام‌ها و علامت بارگذاری)؛ ستاره‌ها از 4.1.4 SVG‌اند و خانواده
+     * star دیگر نیست. unicode-range = نویسه‌های اختصاصی آیکن‌ها (U+E000–E9FF)، تا متنی که همین
+     * خانواده را می‌گیرد ولی آیکن نیست (★ فرم «امتیاز شما»ی قالب) فونت را بی‌دلیل دانلود نکند
+     * (PageSpeed: زنجیره صفحه ← WooCommerce.woff2، ≈۳ثانیه در صفحه دسته).
+     */
+    $font = esc_url_raw( $assets . '/fonts/WooCommerce.woff2' );
+    $css  = '@font-face{font-family:WooCommerce;src:url("' . $font . '") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+E000-E9FF}';
     $css .= ':root{--hodima-woo-loader:url("' . esc_url_raw( $assets . '/images/icons/loader.svg' ) . '")}';
     wp_add_inline_style( 'hodima-woo-base', $css );
 }, 9 );

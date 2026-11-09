@@ -11,7 +11,7 @@
  * وزن ووکامرس تا آبشار CSS قالب مثل قبل بماند (سنجش: استایل محاسبه‌شده همه
  * عنصرها قبل/بعد در ووکامرس واقعی، ۳۹۰/۸۲۰/۱۳۰۰، راست‌به‌چپ).
  * رنگ‌های ووکامرس (بنفش، زیتونی، خاکستری) با توکن‌های برند عوض شدند.
- * @font-face فونت آیکن ووکامرس (star، WooCommerce) آدرس افزونه را لازم دارد و
+ * @font-face فونت آیکن ووکامرس (WooCommerce؛ ستاره‌ها SVG‌اند) آدرس افزونه را لازم دارد و
  * از PHP کنار همین فایل چاپ می‌شود.
  * ========================================================================= */
 
@@ -413,8 +413,20 @@
 		}
 	}
 
-	/* --- ستاره‌های امتیاز (فونت star؛ product-card.css خانواده فونت را قفل می‌کند) --- */
+	/*
+	 * --- ستاره‌های امتیاز (قالب 4.1.4): SVG ماسک به‌جای فونت آیکن ووکامرس ---
+	 * چرا: فونت WooCommerce.woff2 فقط برای ستاره‌های بالای صفحه دسته/فروشگاه دانلود می‌شد و
+	 * PageSpeed آن را در زنجیره درخواست‌های حیاتی (صفحه ← فونت، ≈۳ثانیه) نشان می‌داد.
+	 * شکل‌ها همان گلیف‌های «s» (ستاره توخالی) و «S» (ستاره پر) خود فونت ووکامرس‌اند
+	 * (fontTools؛ واحد فونت ۱۰۲۴، پیشروی ۱۰۷۸ ← هر ستاره 1.0527em، خط پایه 960)، پس اندازه و
+	 * جای ستاره‌ها همان قبلی است. رنگ همان color (currentColor): خالی --hodima-third، پر رنگ
+	 * ستاره‌های قالب (--hodima-star-color / --star-color). در RTL از راست پر می‌شود (مثل قبل).
+	 */
 	& .star-rating {
+		--hodima-star-tile: 1.0527em 1em;
+		--hodima-star-empty: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 1078 1024'%3E%3Cpath transform='scale(1 -1)' fill-rule='evenodd' d='M538 912 372 575 0 521 269 259 206 -109 538 64 869 -109 806 259 1075 521 704 575ZM538 763 662 516 941 475 739 282 788 10 538 139 288 10 336 282 134 475 414 516Z'/%3E%3C/svg%3E");
+		--hodima-star-full: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 1078 1024'%3E%3Cpath transform='scale(1 -1)' d='M538 915 704 578 1076 524 808 262 871 -109 538 66 205 -109 269 262 0 524 372 578Z'/%3E%3C/svg%3E");
+
 		/* stylelint-disable-next-line csstools/use-logical -- ستاره‌های هر نظر کنار نام (مقدار RTL ووکامرس؛ float منطقی در مرورگرهای هدف نیست) */
 		float: left;
 		overflow: hidden;
@@ -423,15 +435,21 @@
 		line-height: 1;
 		font-size: 1em;
 		width: 5.4em;
-		/* stylelint-disable-next-line font-family-no-missing-generic-family-keyword -- فونت آیکن ووکامرس؛ فونت جایگزین حرف «s» را به‌جای ستاره نشان می‌داد */
-		font-family: WooCommerce;
 
-		&::before {
-			content: "sssss";
-			color: var(--hodima-third, #b6c2f3);
+		&::before,
+		& span::before {
+			content: "";
 			position: absolute;
 			inset-block-start: 0;
 			inset-inline-start: 0;
+			width: 5.2637em;
+			height: 1em;
+			background-color: currentColor;
+		}
+
+		&::before {
+			color: var(--hodima-third, #b6c2f3);
+			mask: var(--hodima-star-empty) 0 0 / var(--hodima-star-tile) repeat-x;
 		}
 
 		& span {
@@ -442,10 +460,7 @@
 			padding-top: 1.5em;
 
 			&::before {
-				content: "SSSSS";
-				position: absolute;
-				inset-block-start: 0;
-				inset-inline-start: 0;
+				mask: var(--hodima-star-full) 0 0 / var(--hodima-star-tile) repeat-x;
 			}
 		}
 	}
