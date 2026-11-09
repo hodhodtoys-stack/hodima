@@ -338,7 +338,7 @@ function hodima_seo_advisor_render_guide( array $guide, ?callable $between = nul
 		hodima_seo_advisor_render_report( $guide['report'] );
 	} elseif ( '' !== $guide['seen'] ) {
 		// آدرس وسط جمله فارسی لینک چپ‌به‌راست جدا (bdi) می‌شود؛ با esc_html اسلش آخر آدرس به اولش می‌پرید (عکس کاربر، SEO 3.7.1)
-		printf( '<p class="hodima-advisor__seen"><strong>%1$s</strong> %2$s</p>', esc_html( 'گزارش:' ), hodima_seo_advisor_text_html( $guide['seen'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html
+		printf( '<p class="hodima-advisor__seen">%s</p>', hodima_seo_advisor_text_html( $guide['seen'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_text_html؛ پیشوند «گزارش:» از ۳.۸.۹ در ردیف برچسب‌هاست
 	}
 
 	if ( null !== $between ) {
@@ -399,11 +399,10 @@ function hodima_seo_advisor_render_report( array $report ): void {
 	$note  = is_array( $report['note'] ?? null ) ? $report['note'] : null;
 
 	echo '<div class="hodima-advisor__report">';
-	printf(
-		'<p class="hodima-advisor__report-head"><span class="dashicons dashicons-chart-bar" aria-hidden="true"></span>%1$s%2$s</p>',
-		esc_html( 'گزارش' ),
-		'' !== (string) ( $report['intro'] ?? '' ) ? ' <span class="hodima-advisor__report-intro">' . esc_html( $fa( (string) $report['intro'] ) ) . '</span>' : ''
-	);
+	// عنوان «گزارش» از SEO 3.8.9 در ردیف برچسب‌های همان کار است (طرح تأییدشده کاربر)؛ اینجا فقط جمله مقدمه
+	if ( '' !== (string) ( $report['intro'] ?? '' ) ) {
+		printf( '<p class="hodima-advisor__report-intro">%s</p>', esc_html( $fa( (string) $report['intro'] ) ) );
+	}
 
 	if ( $boxes ) {
 		echo '<div class="hodima-advisor__report-boxes">';
@@ -742,12 +741,21 @@ function hodima_seo_advisor_render_overview(): void {
 			}
 			?>
 			<article class="hodima-advisor__ov-row" id="<?php echo esc_attr( hodima_seo_advisor_row_anchor( $page['path'] ) ); ?>">
+				<?php // هر صفحه یک کارت کامل (SEO 3.8.9، طرح تأییدشده کاربر): سربرگ نوار بالای کارت (نام و آدرس در یک ردیف، نشان‌های نمایش/فروش/شمار کار، دکمه ویرایش)؛ تا ۳.۸.۸ سربرگ بیرون از قاب کارها بود ?>
 				<div class="hodima-advisor__ov-head">
-					<strong><?php echo esc_html( $name ); ?></strong>
-					<?php echo hodima_seo_advisor_url_copy( $page['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
-					<?php if ( $page['impressions'] > 0 || $page['sales'] > 0 ) : ?>
-						<span class="hodima-advisor__ov-meta"><?php echo esc_html( implode( ' · ', array_filter( [ $page['impressions'] > 0 ? sprintf( '%s نمایش', $n( $page['impressions'] ) ) : '', $page['sales'] > 0 ? 'فروش ' . hodima_seo_advisor_money_label( $page['sales'] ) : '' ] ) ) ); ?></span>
-					<?php endif; ?>
+					<div class="hodima-advisor__ov-id">
+						<strong class="hodima-advisor__ov-name"><?php echo esc_html( $name ); ?></strong>
+						<?php echo hodima_seo_advisor_url_copy( $page['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+					</div>
+					<span class="hodima-advisor__ov-meta">
+						<?php if ( $page['impressions'] > 0 ) : ?>
+							<span class="hodima-advisor__ov-fact"><?php echo esc_html( sprintf( '%s نمایش', $n( $page['impressions'] ) ) ); ?></span>
+						<?php endif; ?>
+						<?php if ( $page['sales'] > 0 ) : ?>
+							<span class="hodima-advisor__ov-fact"><?php echo esc_html( 'فروش ' . hodima_seo_advisor_money_label( $page['sales'] ) ); ?></span>
+						<?php endif; ?>
+						<span class="hodima-advisor__ov-fact hodima-advisor__ov-fact--count"><?php echo esc_html( sprintf( '%s کار', $n( count( $page['items'] ) ) ) ); ?></span>
+					</span>
 					<?php echo hodima_seo_advisor_action( $link[0], $link[1], $link[2] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
 				</div>
 				<ul class="hodima-advisor__ov-list">
@@ -771,7 +779,8 @@ function hodima_seo_advisor_render_overview(): void {
 								}
 								?>
 								<div class="hodima-advisor__ov-labels">
-									<?php // ترتیب (SEO 3.7.8، خواست کاربر): کلمه ← نام کار ← اولویت ← دو دکمه؛ نشان «بهتر است رفع شود» برداشته شد چون رنگ نام کار همان سطح را می‌گوید ?>
+									<?php // ترتیب (SEO 3.7.8، خواست کاربر): «گزارش» (۳.۸.۹: از ردیف جدا به همین ردیف) ← کلمه ← نام کار ← اولویت ← دو دکمه ?>
+									<span class="hodima-advisor__ov-report"><span class="dashicons dashicons-chart-bar" aria-hidden="true"></span>گزارش</span>
 									<?php if ( '' !== (string) ( $item['rule_term'] ?? '' ) ) : ?>
 										<span class="hodima-advisor__ov-term">کلمه: «<?php echo esc_html( (string) $item['rule_term'] ); ?>»</span>
 									<?php endif; ?>

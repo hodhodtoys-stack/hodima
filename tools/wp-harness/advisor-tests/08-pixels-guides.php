@@ -223,7 +223,7 @@ $rp_ctr = array_values( array_filter( $g7_all, static fn( array $x ): bool => 'l
 ob_start();
 hodima_seo_advisor_render_report( (array) $rp_ctr );
 $rp_html = (string) ob_get_clean();
-hodima_ad( 'گزارش نرخ کلیک: عنوان «گزارش»، باکس نارنجی نرخ کلیک با نوار، ارقام فارسی؛ متن «چه دیدیم» نیست', [ str_contains( $rp_html, '>گزارش' ), str_contains( $rp_html, 'hodima-advisor__rbox--warn' ) && str_contains( $rp_html, 'hodima-advisor__rbox-bar' ), 1 === preg_match( '/[۰-۹]/u', $rp_html ), str_contains( $rp_html, 'چه دیدیم' ) ], [ true, true, true, false ] );
+hodima_ad( 'گزارش نرخ کلیک: بدون عنوان «گزارش» درون گزارش (از SEO 3.8.9 در ردیف برچسب‌های کار؛ طرح تأییدشده)، باکس نارنجی نرخ کلیک با نوار، ارقام فارسی؛ متن «چه دیدیم» نیست', [ ! str_contains( $rp_html, 'hodima-advisor__report-head' ), str_contains( $rp_html, 'hodima-advisor__rbox--warn' ) && str_contains( $rp_html, 'hodima-advisor__rbox-bar' ), 1 === preg_match( '/[۰-۹]/u', $rp_html ), str_contains( $rp_html, 'چه دیدیم' ) ], [ true, true, true, false ] );
 $g7_low = array_values( array_filter( $g7_all, static fn( array $x ): bool => 'low_ctr' === $x['rule'] ) );
 hodima_ad( 'نرخ کلیک کم: گام اول نام کلمه و «عنوان سئو» با جای «ویرایش»؛ «طبق خزش» در «چه دیدیم»؛ detail همان متن کامل قبلی', [ str_contains( $g7_low[0]['todo'][0], '«{where}»' ) && str_contains( $g7_low[0]['todo'][0], '«عنوان سئو»' ), str_contains( $g7_low[2]['seen'] ?? '', 'طبق خزش: توضیح متا ندارد' ), str_contains( $g7_low[0]['detail'], 'آن را ابتدای عنوان بیاورید' ) ], [ true, true, true ] );
 $g7_dc = hodima_seo_advisor_decline_cause( [ 'clicks' => 40, 'impressions' => 9000, 'position' => 9.0, 'prev_clicks' => 200, 'prev_impressions' => 9000, 'prev_position' => 4.0 ], null );

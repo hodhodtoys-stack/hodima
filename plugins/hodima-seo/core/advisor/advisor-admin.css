@@ -2676,29 +2676,85 @@
 }
 
 /* نمای «همه ایرادها» (SEO 3.2.9): هر صفحه یک ردیف با برچسب ایرادها و اولین کار */
+/* SEO 3.8.9 (طرح تأییدشده کاربر «کارت هر صفحه در کارها»): هر صفحه یک کارت کامل؛ سربرگ نوار کم‌رنگ بالای کارت، کارها داخل همان قاب.
+   تا ۳.۸.۸ سربرگ صفحه بیرون از قاب کارها بود و معلوم نبود کار مال کدام صفحه است. */
 .hodima-advisor .hodima-advisor__ov {
 	display: grid;
-	gap: 0;
+	gap: 1.25rem;
+	margin-block-start: 0.75rem;
 }
 
 .hodima-advisor .hodima-advisor__ov-row {
 	display: grid;
-	gap: 0.5rem;
-	padding-block: 0.875rem;
-	border-block-start: 1px solid var(--hds-line, #dfe3ee);
+	grid-template-columns: minmax(0, 1fr);
+	border: 1px solid var(--hd-border, #dfe3ee);
+	border-radius: 1rem;
+	background: var(--hd-surface, #fff);
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--hd-primary) 6%, transparent);
+	overflow: clip;
 }
 
 .hodima-advisor .hodima-advisor__ov-head {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 0.25rem 0.75rem;
+	gap: 0.5rem 1rem;
+	padding: 0.875rem 1.25rem;
+	border-block-end: 1px solid var(--hd-border, #dfe3ee);
+	background: var(--hd-surface-2, #f6f8fd);
+}
+
+/* نام و آدرس در یک ردیف (خواست کاربر: «فضای خالی الکی نداشته باشیم»)؛ آدرس بلند خودش به خط بعد می‌رود */
+.hodima-advisor .hodima-advisor__ov-id {
+	display: flex;
+	flex: 1 1 20rem;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.875rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__ov-name {
+	font-size: 1rem;
+	font-weight: 800;
 }
 
 .hodima-advisor .hodima-advisor__ov-meta {
-	margin-inline-start: auto;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.hodima-advisor .hodima-advisor__ov-fact {
+	padding: 0.375rem 0.75rem;
+	border: 1px solid var(--hd-border, #dfe3ee);
+	border-radius: 999px;
+	background: var(--hd-surface, #fff);
+	color: var(--hd-primary);
 	font-size: 0.8125rem;
-	color: var(--hds-muted, #5b6478);
+}
+
+.hodima-advisor .hodima-advisor__ov-fact--count {
+	border-color: var(--hd-primary);
+	background: var(--hd-primary);
+	color: #fff;
+	font-weight: 700;
+}
+
+/* «گزارش» در ردیف برچسب‌های کار (SEO 3.8.9) */
+.hodima-advisor .hodima-advisor__ov-report {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	color: var(--hd-primary);
+	font-size: 0.875rem;
+	font-weight: 800;
+
+	& .dashicons {
+		inline-size: 1.125rem;
+		block-size: 1.125rem;
+		font-size: 1.125rem;
+	}
 }
 
 .hodima-advisor .hodima-advisor__ov-tags,
@@ -4028,18 +4084,15 @@
 	}
 }
 
-/* SEO 3.7.7 (خواست کاربر): کارهای یک صفحه یک فهرست قاب‌دار با خط جداکننده زیر سربرگ همان صفحه (تا ۳.۷.۶ هر کار کارت خاکستری
-   جدا بود و کار دوم شبیه ردیف صفحه دیگری دیده می‌شد)؛ نام ایراد، کلمه، لازم است؟، اولویت و دو دکمه در یک ردیف و یک اندازه */
+/* SEO 3.7.7 (خواست کاربر): کارهای یک صفحه با خط جداکننده؛ نام ایراد، کلمه، اولویت و دو دکمه در یک ردیف و یک اندازه. از ۳.۸.۹ قاب
+   فهرست همان قاب کارت صفحه است (بدون قاب دوم) */
 .hodima-advisor .hodima-advisor__ov-list {
 	gap: 0;
-	border: 1px solid var(--hd-border);
-	border-radius: 0.75rem;
-	overflow: clip;
 }
 
 .hodima-advisor .hodima-advisor__ov-item {
 	display: block;
-	padding: 0.75rem 1rem;
+	padding: 1.125rem 1.25rem;
 	border-radius: 0;
 	background: var(--hd-surface, #fff);
 }
@@ -4092,7 +4145,24 @@
 
 @media (max-width: 40rem) {
 	.hodima-advisor .hodima-advisor__ov-item {
-		padding: 0.75rem;
+		padding: 1rem;
+	}
+
+	/* موبایل: سربرگ کارت زیر هم و دکمه ویرایش تمام‌عرض (هدف لمسی ≥ ۴۴px) */
+	.hodima-advisor .hodima-advisor__ov-head {
+		flex-direction: column;
+		align-items: stretch;
+		padding: 0.875rem 1rem;
+	}
+
+	/* ستونی: پایه ۲۰rem ردیف نام ارتفاع می‌شد و جای خالی بزرگ زیر نام می‌ساخت (عکس ۳۹۰ همین انتشار) */
+	.hodima-advisor .hodima-advisor__ov-id {
+		flex: 0 0 auto;
+	}
+
+	.hodima-advisor .hodima-advisor__ov-head > .hodima-advisor__act {
+		justify-content: center;
+		min-block-size: 2.75rem;
 	}
 
 	/* موبایل: برچسب‌ها می‌شکنند و دو دکمه ردیف کامل خودشان را می‌گیرند (هدف لمسی ≥ ۴۰px) */
@@ -4115,27 +4185,10 @@
 	margin-block: 0.25rem 0.5rem;
 }
 
-.hodima-advisor .hodima-advisor__report-head {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 0.25rem 0.375rem;
-	margin: 0;
-	color: var(--hd-primary);
-	font-size: 0.8125rem;
-	font-weight: 800;
-}
-
-.hodima-advisor .hodima-advisor__report-head .dashicons {
-	inline-size: 1.125rem;
-	block-size: 1.125rem;
-	font-size: 1.125rem;
-}
-
 .hodima-advisor .hodima-advisor__report-intro {
+	margin: 0;
 	color: var(--hd-muted);
-	font-size: 0.75rem;
-	font-weight: 400;
+	font-size: 0.8125rem;
 }
 
 .hodima-advisor .hodima-advisor__report-boxes,
