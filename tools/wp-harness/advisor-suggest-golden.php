@@ -39,9 +39,10 @@ $text_body = static fn( string $content ): array => [ 'title_headings' => 'سر�
 $healthy   = [ 'healthy' => true, 'title_px' => 450, 'meta_px' => 820, 'problems' => [] ];
 $unhealthy = [ 'healthy' => false, 'title_px' => 640, 'meta_px' => 300, 'problems' => [ 'عنوان بلند است (۶۴۰ پیکسل)', 'توضیح متا کوتاه است (۳۰۰ پیکسل)' ] ];
 $links_few  = [ 'total' => 1, 'text' => 0, 'score' => 0.1, 'depth' => 4, 'anchors' => [] ];
+$page      = static fn( array $over = [] ): array => $over + [ 'title' => 'کش مو فنری | هدهد', 'h1' => 'کش مو فنری', 'h2' => [ 'مشخصات', 'نحوه ارسال' ], 'words' => 400, 'meta_len' => 120, 'index' => null ];
 $links_well = [ 'total' => 40, 'text' => 12, 'score' => 3.0, 'depth' => 1, 'anchors' => [ [ 'anchor' => 'کش مو', 'count' => 6 ], [ 'anchor' => 'گیره', 'count' => 2 ] ] ];
 
-/** نام ← [row, queries, text, competitors, site, meta, links] */
+/** نام ← [row, queries, text, competitors, site, meta, links, page?] */
 $cases = [
 	'low_ctr: صفحه با میانگین رتبه (بی کلمه)'          => [ $row( [ 'clicks' => 5, 'impressions' => 5000, 'position' => 6.0 ] ), [], null, [], null, null, null ],
 	'low_ctr: با کلمه‌ها (gap) و طول ناشناخته'          => [ $row( [ 'clicks' => 20, 'impressions' => 9000, 'position' => 9.0 ] ), [ $q( 'کش مو', 5, 4000, 4.0 ), $q( 'گیره سر', 3, 3000, 7.0 ), $q( 'تل مو', 1, 900, 12.0 ) ], null, [], null, null, null ],
@@ -70,6 +71,18 @@ $cases = [
 	'decline: سایت کمی افت، صفحه بیشتر'                 => [ $row( [ 'clicks' => 20, 'prev_clicks' => 100, 'impressions' => 1000, 'prev_impressions' => 1100, 'position' => 8.5, 'prev_position' => 8.0 ] ), [], null, [], [ 'clicks_ratio' => 0.8, 'impressions_ratio' => 0.95 ], null, null ],
 	'صفحه‌بندی ← هیچ'                                    => [ $row( [ 'path' => '/shop/page/2/', 'clicks' => 5, 'impressions' => 5000, 'position' => 6.0 ] ), [], null, [], null, null, null ],
 	'کلمه برندی کنار می‌ماند'                            => [ $row(), [ $q( strtolower( (string) get_bloginfo( 'name' ) ) . ' کش', 0, 900, 11.0 ) ], $text_none, [], null, null, null ],
+	// گام‌های «دقیقا چه کنم» با واقعیت‌های خزش و بررسی ایندکس (SEO 3.8.3، طرح تأییدشده کاربر)
+	'خزش: نرخ کلیک، کلمه وسط عنوان، متا خالی'            => [ $row( [ 'clicks' => 20, 'impressions' => 9000, 'position' => 9.0 ] ), [ $q( 'کش مو فنری', 5, 4000, 4.0 ) ], null, [], null, $unhealthy, null, $page( [ 'title' => 'خرید عمده کش مو فنری رنگی | هدهد', 'meta_len' => 0 ] ) ],
+	'خزش: نرخ کلیک، عنوان با کلمه شروع می‌شود'          => [ $row( [ 'clicks' => 20, 'impressions' => 9000, 'position' => 9.0 ] ), [ $q( 'کش مو فنری', 5, 4000, 4.0 ) ], null, [], null, null, null, $page( [ 'title' => 'کش مو فنری رنگی | هدهد' ] ) ],
+	'خزش: نرخ کلیک، کلمه در عنوان نیست، طول سالم'       => [ $row( [ 'clicks' => 20, 'impressions' => 9000, 'position' => 9.0 ] ), [ $q( 'کش مو فنری', 5, 4000, 4.0 ) ], null, [], null, $healthy, null, $page( [ 'title' => 'گیره سر | هدهد' ] ) ],
+	'خزش: کلمه در متن نیست، متن کم، محصول'              => [ $row( [ 'kind' => 'product' ] ), [ $q( 'کش مو بچگانه', 2, 800, 5.0 ) ], $text_none, [], null, null, null, $page( [ 'words' => 60 ] ) ],
+	'خزش: کلمه در متن هست، تیتر ۲ ندارد'               => [ $row(), [ $q( 'کش مو', 2, 800, 5.0 ) ], $text_body( 'کش مو' ), [], null, null, null, $page( [ 'h2' => [] ] ) ],
+	'خزش: نزدیک صفحه اول، کلمه در عنوان، لینک بی‌کلمه' => [ $row(), [ $q( 'کش مو فنری', 2, 900, 11.0 ) ], [ 'title_headings' => 'کش مو فنری', 'content' => 'کش مو فنری' ], [], null, null, [ 'total' => 4, 'text' => 4, 'score' => 0.5, 'depth' => 2, 'anchors' => [ [ 'anchor' => 'اینجا', 'count' => 2 ], [ 'anchor' => 'مشاهده محصول', 'count' => 1 ] ] ], $page( [ 'title' => 'کش مو فنری رنگی | هدهد' ] ) ],
+	'خزش: نزدیک صفحه اول، تیتر ۲ با کلمه'              => [ $row(), [ $q( 'مشخصات', 2, 900, 11.0 ) ], [ 'title_headings' => 'مشخصات', 'content' => 'مشخصات' ], [], null, null, null, $page() ],
+	'خزش: افت نمایش، ایندکس سالم'                       => [ $row( [ 'clicks' => 20, 'prev_clicks' => 100, 'impressions' => 300, 'prev_impressions' => 1200, 'position' => 8.2, 'prev_position' => 8.0 ] ), [], null, [], null, null, null, $page( [ 'index' => [ 'state' => 'indexed', 'days' => 3, 'coverage' => 'Submitted and indexed', 'google_canonical' => '', 'mismatch' => false ] ] ) ],
+	'خزش: افت نمایش، ایندکس نشده'                       => [ $row( [ 'clicks' => 20, 'prev_clicks' => 100, 'impressions' => 300, 'prev_impressions' => 1200, 'position' => 8.2, 'prev_position' => 8.0 ] ), [], null, [], null, null, null, $page( [ 'index' => [ 'state' => 'crawled_not_indexed', 'days' => 0, 'coverage' => 'Crawled - currently not indexed', 'google_canonical' => '', 'mismatch' => false ] ] ) ],
+	'خزش: افت نمایش، canonical گوگل دیگر'               => [ $row( [ 'clicks' => 20, 'prev_clicks' => 100, 'impressions' => 300, 'prev_impressions' => 1200, 'position' => 8.2, 'prev_position' => 8.0 ] ), [], null, [], null, null, null, $page( [ 'index' => [ 'state' => 'indexed', 'days' => 5, 'coverage' => 'Submitted and indexed', 'google_canonical' => 'https://hodima.test/a/', 'mismatch' => true ] ] ) ],
+	'خزش: افت رتبه (ایندکس بی‌اثر)'                     => [ $row( [ 'clicks' => 20, 'prev_clicks' => 100, 'impressions' => 900, 'prev_impressions' => 950, 'position' => 15.0, 'prev_position' => 8.0 ] ), [], null, [], null, null, null, $page( [ 'index' => [ 'state' => 'indexed', 'days' => 3, 'coverage' => '', 'google_canonical' => '', 'mismatch' => false ] ] ) ],
 ];
 
 $out = [];

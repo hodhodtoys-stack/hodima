@@ -490,16 +490,17 @@ function hodima_seo_advisor_ctr_gap( array $queries, int $page_impressions, floa
  * @param array{clicks_ratio: float|null, impressions_ratio: float|null}|null $site تغییر کل سایت نسبت به بازه قبل (hodima_seo_advisor_site_change)؛ null = ناشناخته
  * @param array{healthy: bool, title_px: int, meta_px: int, problems: list<string>}|null $meta طول عنوان و متا طبق خزش (hodima_seo_advisor_crawl_meta_health)؛ null = ناشناخته
  * @param array{total: int, text: int, score: float, depth: int, anchors: list<array{anchor: string, count: int}>}|null $links لینک‌های ورودی طبق خزش (hodima_seo_advisor_crawl_links_info)؛ null = ناشناخته
+ * @param array<string, mixed>|null $page واقعیت‌های صفحه برای گام‌های «دقیقا چه کنم» (hodima_seo_advisor_suggest_page_facts، SEO 3.8.3)؛ null = ناشناخته (گام کلی)
  * @return list<array{rule: string, term: string, title: string, detail: string, seen?: string, todo?: list<string>, potential: int}> detail = متن کامل (کادر ویرایش)؛ seen/todo (کلید steps مال گام‌های کادر ویرایش است) = راهنمای پنج‌بخشی «کارها»؛ `{where}` در گام‌ها هنگام نمایش جایگزین می‌شود (SEO 3.7.0)
  */
-function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $text, array $competitors = [], ?array $site = null, ?array $meta = null, ?array $links = null ): array {
+function hodima_seo_advisor_suggestions( array $row, array $queries, ?array $text, array $competitors = [], ?array $site = null, ?array $meta = null, ?array $links = null, ?array $page = null ): array {
 
 	if ( 1 === preg_match( '#/page/\d+/?$#', $row['path'] ) ) {
 		return []; // صفحه‌بندی آرشیو: پیشنهاد جدا ندارد
 	}
 
 	// هر قاعده یک تابع خالص با رکورد و مرجع در فهرست مرکزی (advisor-suggest.php، SEO 3.8.2)؛ اینجا فقط ترتیب، سقف‌ها و ادغام
-	$in     = [ 'row' => $row, 'queries' => $queries, 'text' => $text, 'competitors' => $competitors, 'site' => $site, 'meta' => $meta, 'links' => $links, 'cfg' => hodima_seo_advisor_config() ];
+	$in     = [ 'row' => $row, 'queries' => $queries, 'text' => $text, 'competitors' => $competitors, 'site' => $site, 'meta' => $meta, 'links' => $links, 'page' => $page, 'cfg' => hodima_seo_advisor_config() ];
 	$groups = [];
 	foreach ( HODIMA_SEO_ADVISOR_SUGGEST_RUN as $key => $run ) {
 		$groups[ $key ] = ( $run['fn'] )( $in );
@@ -606,7 +607,7 @@ function hodima_seo_advisor_analyze( string $path, bool $with_steps = false ): ?
 		$text['rendered']        = [ 'title' => $rendered['title'], 'h1' => $rendered['h1'] ];
 	}
 
-	$suggestions = hodima_seo_advisor_suggestions( $row, $queries, $text, hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change(), hodima_seo_advisor_crawl_meta_health( $row['path'] ), hodima_seo_advisor_crawl_links_info( $row['path'] ) );
+	$suggestions = hodima_seo_advisor_suggestions( $row, $queries, $text, hodima_seo_advisor_competitors( $row['path'], $queries ), hodima_seo_advisor_site_change(), hodima_seo_advisor_crawl_meta_health( $row['path'] ), hodima_seo_advisor_crawl_links_info( $row['path'] ), hodima_seo_advisor_suggest_page_facts( $row['path'] ) );
 
 	if ( $with_steps ) {
 		$suggestions = hodima_seo_advisor_enrich( $suggestions, $row, $queries );

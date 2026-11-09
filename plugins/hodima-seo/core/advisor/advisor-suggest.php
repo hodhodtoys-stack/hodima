@@ -8,8 +8,9 @@
  * تا SEO ۳.۸.۱ همه پیشنهادها در یک تابع ۲۸۰ خطی (hodima_seo_advisor_suggestions) بودند و نام، سختی و فهرست قاعده‌ها
  * در سه فایل جدا تکرار می‌شد. خروجی با عکس مرجع tools/wp-harness/golden/advisor-suggest.json یکی ماند.
  *
- * ورودی هر قاعده ($in): row، queries، text، competitors، site، meta، links (همان پارامترهای
- * hodima_seo_advisor_suggestions) + cfg (hodima_seo_advisor_config). خروجی: فهرست پیشنهاد با کلیدهای
+ * ورودی هر قاعده ($in): row، queries، text، competitors، site، meta، links، page (همان پارامترهای
+ * hodima_seo_advisor_suggestions) + cfg (hodima_seo_advisor_config). page = واقعیت‌های آخرین خزش و بررسی ایندکس برای گام‌های
+ * «دقیقا چه کنم» (SEO 3.8.3، طرح تأییدشده کاربر): گامی که طبق خزش انجام شده نمی‌آید؛ بی‌خزش همان گام کلی قبلی. خروجی: فهرست پیشنهاد با کلیدهای
  * rule، term، title، detail، seen، report، todo، potential (افت: cause هم).
  */
 
@@ -66,6 +67,71 @@ function hodima_seo_advisor_ctr_pct( int $clicks, int $impressions ): float {
 }
 
 /**
+ * واقعیت‌های یک صفحه برای گام‌های «دقیقا چه کنم» (SEO 3.8.3): عنوان، H1، دو تیتر ۲ اول، شمار کلمه و طول متا طبق آخرین خزش،
+ * و نتیجه آخرین بررسی ایندکس گوگل (حداکثر ۳۰ روز پیش). null = صفحه خزیده نشده یا سالم نیست (گام‌ها کلی می‌مانند).
+ * تنها تابع این فایل که می‌خواند؛ قاعده‌ها فقط خروجی آن را می‌گیرند.
+ *
+ * @return array{title: string, h1: string, h2: list<string>, words: int, meta_len: int, index: array{state: string, days: int, coverage: string, google_canonical: string, mismatch: bool}|null}|null
+ */
+function hodima_seo_advisor_suggest_page_facts( string $path ): ?array {
+
+	$r = hodima_seo_advisor_crawl_row( $path );
+
+	if ( null === $r || 200 !== $r['status'] ) {
+		return null;
+	}
+
+	$index  = null;
+	$record = function_exists( 'hodima_seo_advisor_inspections' ) ? ( hodima_seo_advisor_inspections()[ $path ] ?? null ) : null;
+	$age    = null === $record ? -1 : time() - (int) ( $record['checked'] ?? 0 );
+
+	if ( null !== $record && $age >= 0 && $age <= 30 * DAY_IN_SECONDS ) {
+		$index = [
+			'state'            => hodima_seo_advisor_inspect_state( $record ),
+			'days'             => (int) floor( $age / DAY_IN_SECONDS ),
+			'coverage'         => (string) ( $record['coverage'] ?? '' ),
+			'google_canonical' => (string) ( $record['google_canonical'] ?? '' ),
+			'mismatch'         => hodima_seo_advisor_inspect_canonical_mismatch( $record ),
+		];
+	}
+
+	return [
+		'title'    => $r['title'],
+		'h1'       => $r['h1'],
+		'h2'       => array_values( array_filter( array_map( 'trim', explode( ' | ', $r['h2'] ) ) ) ),
+		'words'    => $r['words'],
+		'meta_len' => $r['meta_len'],
+		'index'    => $index,
+	];
+}
+
+/** عنوان (یا متن) با کلمه شروع می‌شود؟ هر دو یکسان‌سازی می‌شوند (ی/ک، نیم‌فاصله، ارقام). */
+function hodima_seo_advisor_starts_with_term( string $text, string $term ): bool {
+	return '' !== $term && str_starts_with( hodima_seo_advisor_normalize( $text ), hodima_seo_advisor_normalize( $term ) );
+}
+
+/** «چند روز پیش» ساده برای گام‌ها. */
+function hodima_seo_advisor_days_ago( int $days ): string {
+	return $days <= 0 ? 'امروز' : sprintf( '%s روز پیش', hodima_seo_advisor_num( $days ) );
+}
+
+/**
+ * گام «تیتر ۲» با تیترهای فعلی خزش: دو تیتر ۲ اول صفحه نام برده می‌شوند (خزش فقط همین دو را نگه می‌دارد).
+ *
+ * @param array<string, mixed>|null $page
+ */
+function hodima_seo_advisor_suggest_h2_step( ?array $page, string $term, string $fallback ): string {
+
+	if ( null === $page ) {
+		return $fallback;
+	}
+
+	return $page['h2']
+		? sprintf( 'کنار تیترهای ۲ فعلی صفحه («%1$s») یک تیتر ۲ با «%2$s» اضافه کنید.', implode( '»، «', $page['h2'] ), $term )
+		: sprintf( 'صفحه تیتر ۲ ندارد؛ در ویرایشگر یک تیتر ۲ با «%s» بسازید.', $term );
+}
+
+/**
  * کلمه‌ای که قاعده‌های کلمه (نیست در تیتر/متن، نزدیک صفحه اول، رتبه عقب) رویش اجرا می‌شوند: کلیک بالقوه و جمله «N نمایش با رتبه R».
  * null = کم‌نمایش، برندی (نرخ کلیکش از جدول عمومی بالاتر است و عدد گمراه‌کننده می‌شود) یا بی‌کلیک بالقوه.
  *
@@ -94,6 +160,7 @@ function hodima_seo_advisor_suggest_query_base( array $query, array $cfg ): ?arr
 function hodima_seo_advisor_suggest_low_ctr( array $in ): array {
 
 	[ $row, $queries, $meta, $cfg ] = [ $in['row'], $in['queries'], $in['meta'], $in['cfg'] ];
+	$page                           = $in['page'] ?? null;
 
 	$top      = $queries[0]['term'] ?? '';
 	$position = $row['position'];
@@ -141,11 +208,19 @@ function hodima_seo_advisor_suggest_low_ctr( array $in ): array {
 	$focus_term = null !== $worst ? $worst['term'] : $top;
 	$seen       = $lead . ( $learned ? ' (این نرخ معمول از داده خود سایت تنظیم شده)' : '' ) . '.'
 		. ( null !== $worst ? sprintf( ' مهم‌ترین کلمه کم‌کلیک «%1$s» است (رتبه %2$s، نرخ کلیک %3$s٪ به‌جای حدود %4$s٪).', $worst['term'], hodima_seo_advisor_num( $worst['position'], 1 ), hodima_seo_advisor_num( $worst['ctr'], 2 ), hodima_seo_advisor_num( $worst['expected_ctr'], 1 ) ) : ( '' !== $top ? ' مهم‌ترین کلمه این صفحه «' . $top . '» است.' : '' ) );
-	$steps      = [
-		'«{where}» را بزنید؛ در کادر «سئو (SeoBox)» ← «عنوان سئو»' . ( '' !== $focus_term ? ' کلمه «' . $focus_term . '» را ابتدای عنوان بیاورید' : ' عنوان را جذاب‌تر و دقیق‌تر بنویسید' ) . '.',
-		'در «توضیحات متا» یک دلیل روشن برای کلیک بنویسید (مثلا قیمت عمده، ارسال، تنوع رنگ) تا نوار شمارنده سبز شود.',
-		'ذخیره کنید.',
-	];
+	$title_step = '«{where}» را بزنید؛ در کادر «سئو (SeoBox)» ← «عنوان سئو»' . ( '' !== $focus_term ? ' کلمه «' . $focus_term . '» را ابتدای عنوان بیاورید' : ' عنوان را جذاب‌تر و دقیق‌تر بنویسید' ) . '.';
+	// با عنوان واقعی خزش (SEO 3.8.3): اگر عنوان همین حالا با کلمه شروع می‌شود این گام نمی‌آید؛ وگرنه عنوان فعلی را نام می‌برد
+	if ( null !== $page && '' !== $page['title'] && '' !== $focus_term ) {
+		$title_step = hodima_seo_advisor_starts_with_term( $page['title'], $focus_term )
+			? ''
+			: ( hodima_seo_advisor_text_has( $page['title'], $focus_term )
+				? '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: عنوان فعلی «' . $page['title'] . '» کلمه «' . $focus_term . '» را دارد ولی در ابتدا نیست؛ آن را به ابتدای عنوان ببرید.'
+				: '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: عنوان فعلی «' . $page['title'] . '» کلمه «' . $focus_term . '» را ندارد؛ آن را ابتدای عنوان بیاورید.' );
+	}
+	$meta_step = null !== $page && 0 === $page['meta_len']
+		? '«توضیحات متا» این صفحه خالی است و گوگل خودش تکه‌ای از متن را نشان می‌دهد؛ یک جمله با دلیل کلیک بنویسید (قیمت عمده، ارسال، تنوع رنگ).'
+		: 'در «توضیحات متا» یک دلیل روشن برای کلیک بنویسید (مثلا قیمت عمده، ارسال، تنوع رنگ) تا نوار شمارنده سبز شود.';
+	$steps     = array_values( array_filter( [ $title_step, $meta_step, 'ذخیره کنید.' ] ) );
 
 	if ( null !== $meta && $meta['healthy'] ) {
 		// طبق خزش طول عنوان و متا سالم است؛ بازنویسی طولی کمکی نمی‌کند و تخمین کلیک بالقوه کم‌اطمینان‌تر است
@@ -160,13 +235,15 @@ function hodima_seo_advisor_suggest_low_ctr( array $in ): array {
 		$seen   = sprintf( '%1$s. طبق خزش، عنوان %2$s پیکسل و توضیح متا %3$s پیکسل است و طولشان ایرادی ندارد؛ پس مشکل احتمالا طول نیست.', $lead, hodima_seo_advisor_num( $meta['title_px'] ), hodima_seo_advisor_num( $meta['meta_px'] ) );
 		$steps  = [
 			'کلمه اصلی این صفحه' . ( '' !== $focus_term ? ' («' . $focus_term . '»)' : '' ) . ' را در گوگل جستجو کنید و نتیجه خودتان را با رقبا مقایسه کنید.',
-			'اگر عنوان شما شبیه رقباست: «{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو» را با مزیت خودتان (عمده، تنوع، ارسال) متفاوت کنید و ذخیره کنید.',
+			'اگر عنوان شما شبیه رقباست: «{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»' . ( null !== $page && '' !== $page['title'] ? ' (الان «' . $page['title'] . '»)' : '' ) . ' را با مزیت خودتان (عمده، تنوع، ارسال) متفاوت کنید و ذخیره کنید.',
 			'اگر بالای نتیجه شما تصویر، ویدیو یا نتیجه‌های ویژه گوگل است، از عنوان کاری برنمی‌آید؛ «لازم نیست» را بزنید.',
 		];
 	} elseif ( null !== $meta ) {
 		$detail  .= ' طبق خزش: ' . implode( '؛ ', $meta['problems'] ) . '.';
 		$seen    .= ' طبق خزش: ' . implode( '؛ ', $meta['problems'] ) . '.';
-		$steps[1] = 'در «توضیحات متا» یک دلیل روشن برای کلیک بنویسید (مثلا قیمت عمده، ارسال، تنوع رنگ) و طول عنوان و متا را درست کنید تا هر دو نوار شمارنده سبز شوند.';
+		if ( null === $page || 0 !== $page['meta_len'] ) {
+			$steps[ count( $steps ) - 2 ] = 'در «توضیحات متا» یک دلیل روشن برای کلیک بنویسید (مثلا قیمت عمده، ارسال، تنوع رنگ) و طول عنوان و متا را درست کنید تا هر دو نوار شمارنده سبز شوند.';
+		}
 	}
 
 	$report = [
@@ -212,6 +289,8 @@ function hodima_seo_advisor_suggest_low_ctr( array $in ): array {
 function hodima_seo_advisor_suggest_missing( array $in ): array {
 
 	[ $text, $cfg ] = [ $in['text'], $in['cfg'] ];
+	$page           = $in['page'] ?? null;
+	$body           = 'product' === (string) ( $in['row']['kind'] ?? '' ) ? 'متن «توضیحات محصول»' : 'متن صفحه';
 
 	if ( null === $text ) {
 		return [];
@@ -243,14 +322,45 @@ function hodima_seo_advisor_suggest_missing( array $in ): array {
 				],
 				'note'  => isset( $text['rendered'] ) ? [ 'tone' => 'info', 'title' => 'طبق خزش', 'text' => sprintf( 'عنوان فعلی «%1$s» و H1 «%2$s» است.', $text['rendered']['title'], $text['rendered']['h1'] ) ] : null,
 			],
-			'todo'      => $in_content
-				? [ '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: کلمه «' . $query['term'] . '» را در عنوان بیاورید.', 'یا در ویرایشگر یک تیتر (تیتر ۲) با همین کلمه بسازید.', 'ذخیره کنید.' ]
-				: [ '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: کلمه «' . $query['term'] . '» را در عنوان بیاورید.', 'در متن صفحه یک تیتر ۲ و پاراگراف اول با همین کلمه بنویسید (یا یک بخش پرسش‌های متداول درباره آن).', 'ذخیره کنید.' ],
+			'todo'      => hodima_seo_advisor_suggest_missing_todo( $query['term'], $in_content, $page, $body ),
 			'potential' => $base['gain'],
 		];
 	}
 
 	return $out;
+}
+
+/**
+ * گام‌های «کلمه در تیتر/متن نیست» با واقعیت‌های خزش (SEO 3.8.3): عنوان فعلی، شمار کلمه متن و تیترهای ۲ فعلی؛ بی‌خزش همان گام‌های قبلی.
+ *
+ * @param array<string, mixed>|null $page
+ * @return list<string>
+ */
+function hodima_seo_advisor_suggest_missing_todo( string $term, bool $in_content, ?array $page, string $body ): array {
+
+	if ( null === $page ) {
+		return $in_content
+			? [ '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: کلمه «' . $term . '» را در عنوان بیاورید.', 'یا در ویرایشگر یک تیتر (تیتر ۲) با همین کلمه بسازید.', 'ذخیره کنید.' ]
+			: [ '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: کلمه «' . $term . '» را در عنوان بیاورید.', 'در متن صفحه یک تیتر ۲ و پاراگراف اول با همین کلمه بنویسید (یا یک بخش پرسش‌های متداول درباره آن).', 'ذخیره کنید.' ];
+	}
+
+	$title = '' !== $page['title'] ? 'عنوان فعلی «' . $page['title'] . '» است' : 'عنوان سئو خالی است';
+	$steps = [
+		$in_content
+			? '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: ' . $title . '؛ کلمه «' . $term . '» را به آن اضافه کنید.'
+			: '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: ' . $title . '؛ اگر این صفحه واقعا درباره «' . $term . '» است، آن را به عنوان اضافه کنید. اگر نیست، «لازم نیست» را بزنید.',
+	];
+
+	if ( ! $in_content ) {
+		$steps[] = $page['words'] >= 0 && $page['words'] < 300
+			? sprintf( '%1$s فقط %2$s کلمه است؛ یک پاراگراف دست‌کم ۵۰ کلمه درباره «%3$s» بنویسید (جنس، اندازه، کاربرد).', $body, hodima_seo_advisor_num( $page['words'] ), $term )
+			: sprintf( 'در %1$s یک پاراگراف درباره «%2$s» بنویسید (یا یک بخش پرسش‌های متداول درباره آن).', $body, $term );
+	}
+
+	$steps[] = hodima_seo_advisor_suggest_h2_step( $page, $term, '' );
+	$steps[] = 'ذخیره کنید.';
+
+	return $steps;
 }
 
 /**
@@ -262,6 +372,7 @@ function hodima_seo_advisor_suggest_missing( array $in ): array {
 function hodima_seo_advisor_suggest_near_first( array $in ): array {
 
 	[ $links, $cfg ] = [ $in['links'], $in['cfg'] ];
+	$page            = $in['page'] ?? null;
 
 	$box = 'hodima_seo_advisor_report_box';
 	$out = [];
@@ -287,12 +398,39 @@ function hodima_seo_advisor_suggest_near_first( array $in ): array {
 				],
 				'note'  => $evidence['seen'] ? [ 'tone' => 'info', 'title' => 'لینک‌های ورودی (طبق خزش)', 'text' => trim( implode( '', $evidence['seen'] ) ) ] : null,
 			],
-			'todo'      => [ '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: کلمه «' . $query['term'] . '» را در عنوان بیاورید (اگر نیست).', 'در متن صفحه یک تیتر ۲ و پاراگراف اول با همین کلمه بنویسید و ذخیره کنید.', ...( $evidence['steps'] ?: ( $evidence['well'] ? [] : [ 'از ۲ تا ۳ صفحه مرتبط (دسته، مقاله) با متن لینک «' . $query['term'] . '» به این صفحه لینک بدهید.' ] ) ) ],
+			'todo'      => [ ...hodima_seo_advisor_suggest_near_todo( $query['term'], $page ), ...( $evidence['steps'] ?: ( $evidence['well'] ? [] : [ 'از ۲ تا ۳ صفحه مرتبط (دسته، مقاله) با متن لینک «' . $query['term'] . '» به این صفحه لینک بدهید.' ] ) ) ],
 			'potential' => $base['gain'],
 		];
 	}
 
 	return $out;
+}
+
+/**
+ * گام‌های عنوان و تیتر «نزدیک صفحه اول» با خزش (SEO 3.8.3): کلمه در عنوان هست ← گام عنوان نمی‌آید؛ تیتر ۲ با کلمه هست ← فقط پاراگراف اول.
+ *
+ * @param array<string, mixed>|null $page
+ * @return list<string>
+ */
+function hodima_seo_advisor_suggest_near_todo( string $term, ?array $page ): array {
+
+	if ( null === $page ) {
+		return [ '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: کلمه «' . $term . '» را در عنوان بیاورید (اگر نیست).', 'در متن صفحه یک تیتر ۲ و پاراگراف اول با همین کلمه بنویسید و ذخیره کنید.' ];
+	}
+
+	$steps = [];
+	if ( '' === $page['title'] || ! hodima_seo_advisor_text_has( $page['title'], $term ) ) {
+		$steps[] = '«{where}» ← کادر «سئو (SeoBox)» ← «عنوان سئو»: ' . ( '' !== $page['title'] ? 'عنوان فعلی «' . $page['title'] . '» کلمه «' . $term . '» را ندارد؛ آن را در عنوان بیاورید.' : 'عنوان سئو خالی است؛ عنوانی با «' . $term . '» بنویسید.' );
+	}
+
+	$with = array_filter( $page['h2'], static fn( string $h ): bool => hodima_seo_advisor_text_has( $h, $term ) );
+	if ( $with ) {
+		$steps[] = 'تیتر ۲ «' . reset( $with ) . '» همین کلمه را دارد؛ پاراگراف اول متن را هم با «' . $term . '» شروع کنید و ذخیره کنید.';
+	} else {
+		$steps[] = 'در متن صفحه یک تیتر ۲ با «' . $term . '» بسازید' . ( $page['h2'] ? ' (تیترهای ۲ فعلی: «' . implode( '»، «', $page['h2'] ) . '»)' : '' ) . ' و پاراگراف اول را با همین کلمه شروع کنید؛ ذخیره کنید.';
+	}
+
+	return $steps;
 }
 
 /**
@@ -375,6 +513,44 @@ function hodima_seo_advisor_suggest_cannibal( array $in ): array {
 	return $out;
 }
 
+/** گام پایانی وقتی علت افت ایندکس است. */
+const HODIMA_SEO_ADVISOR_SUGGEST_REINDEX = 'بعد از رفع، در Search Console همین آدرس را «بررسی آدرس» کنید و «درخواست ایندکس» بزنید.';
+
+/**
+ * افت با علت «نمایش کمتر» + نتیجه آخرین بررسی ایندکس گوگل (SEO 3.8.3): ایندکس سالم ← گام «فیلتر ایندکس را ببینید» نمی‌آید و جایش
+ * جستجوی کلمه و «هم‌کلمه» می‌آید؛ ایندکس‌نشده یا canonical دیگر ← همان علت با گفته گوگل اول می‌آید.
+ *
+ * @param array{cause: string, text: string, seen: string, todo: list<string>} $diagnosis
+ * @param array<string, mixed>|null                                             $index
+ * @return array{cause: string, text: string, seen: string, todo: list<string>}
+ */
+function hodima_seo_advisor_suggest_decline_index( array $diagnosis, ?array $index ): array {
+
+	if ( 'impressions' !== $diagnosis['cause'] || null === $index ) {
+		return $diagnosis;
+	}
+
+	$when = hodima_seo_advisor_days_ago( (int) $index['days'] );
+
+	if ( 'indexed' === $index['state'] && ! $index['mismatch'] ) {
+		$diagnosis['seen'] .= sprintf( ' طبق بررسی ایندکس گوگل (%s) این صفحه ایندکس است.', $when );
+		$diagnosis['todo']  = [
+			sprintf( 'طبق بررسی ایندکس گوگل (%s)، این صفحه ایندکس است و canonical همان خودش است؛ پس مشکل ایندکس نیست.', $when ),
+			$diagnosis['todo'][0],
+			'وگرنه کلمه اصلی را در گوگل جستجو کنید؛ اگر صفحه دیگری از سایت (مثلا دسته) جای این صفحه آمده، آن را در فیلتر «هم‌کلمه» در «کارها» ببینید.',
+		];
+	} elseif ( 'indexed' === $index['state'] ) {
+		$diagnosis['seen'] .= sprintf( ' طبق بررسی ایندکس گوگل (%s) گوگل صفحه دیگری را نسخه اصلی این صفحه گرفته است.', $when );
+		// گام‌های کلی («فصلی است؟»، «ببینید ایندکس است») با علت معلوم تناقض داشتند؛ فقط علت و درخواست ایندکس
+		$diagnosis['todo'] = [ sprintf( 'طبق بررسی ایندکس گوگل (%1$s)، گوگل نسخه اصلی (canonical) این صفحه را %2$s گرفته است؛ علت افت احتمالا همین است. راهنمای «تکراری / canonical دیگر» در فیلتر «ایندکس» در «کارها» همین را درست می‌کند.', $when, rawurldecode( (string) $index['google_canonical'] ) ), HODIMA_SEO_ADVISOR_SUGGEST_REINDEX ];
+	} else {
+		$diagnosis['seen'] .= sprintf( ' طبق بررسی ایندکس گوگل (%s) این صفحه ایندکس نیست.', $when );
+		$diagnosis['todo'] = [ sprintf( 'طبق بررسی ایندکس گوگل (%1$s)، این صفحه ایندکس نیست (گوگل: «%2$s»)؛ علت افت همین است. راهنمای همین وضعیت در فیلتر «ایندکس» در «کارها» است.', $when, '' !== $index['coverage'] ? $index['coverage'] : $index['state'] ), HODIMA_SEO_ADVISOR_SUGGEST_REINDEX ];
+	}
+
+	return $diagnosis;
+}
+
 /**
  * ۶. افت کلیک نسبت به انتظار: اگر کل سایت هم افت کرده باشد، انتظار همراه آن پایین می‌آید و فقط افت اضافه این صفحه پیشنهاد می‌شود
  * (افتی که کل سایت دارد علت مخصوص این صفحه ندارد).
@@ -394,7 +570,7 @@ function hodima_seo_advisor_suggest_decline( array $in ): array {
 	}
 
 	$box       = 'hodima_seo_advisor_report_box';
-	$diagnosis = hodima_seo_advisor_decline_cause( $row, $site );
+	$diagnosis = hodima_seo_advisor_suggest_decline_index( hodima_seo_advisor_decline_cause( $row, $site ), $in['page']['index'] ?? null );
 	$drop      = hodima_seo_advisor_num( ( 1 - $row['clicks'] / $row['prev_clicks'] ) * 100 );
 
 	return [

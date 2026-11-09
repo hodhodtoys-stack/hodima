@@ -55,16 +55,16 @@ function hodima_seo_advisor_robots_no_snippet( string ...$values ): bool {
 /* ── نقشه خزش و صفحه‌های حل‌شده (برای رقابت و قاعده نرخ کلیک) ── */
 
 /** ستون‌های جدول خزش که نقشه و ردیف تک از آن می‌خوانند. */
-const HODIMA_SEO_ADVISOR_CRAWL_COLUMNS = 'path, status, indexable, reason, title_len, meta_len, title_px, meta_px, inlinks, text_links, depth, score, title, h1, h2';
+const HODIMA_SEO_ADVISOR_CRAWL_COLUMNS = 'path, status, indexable, reason, title_len, meta_len, title_px, meta_px, inlinks, text_links, depth, score, title, h1, h2, words';
 
 /**
  * ردیف خام جدول خزش ← آرایه با نوع‌های درست.
  *
  * @param array<string, mixed> $r
- * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, title_px: int, meta_px: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}
+ * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, title_px: int, meta_px: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string, words: int}
  */
 function hodima_seo_advisor_crawl_map_row( array $r ): array {
-	return [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'], 'title_px' => (int) $r['title_px'], 'meta_px' => (int) $r['meta_px'], 'inlinks' => (int) $r['inlinks'], 'text_links' => (int) $r['text_links'], 'depth' => (int) $r['depth'], 'score' => (float) $r['score'], 'title' => (string) $r['title'], 'h1' => (string) $r['h1'], 'h2' => (string) $r['h2'] ];
+	return [ 'status' => (int) $r['status'], 'indexable' => 1 === (int) $r['indexable'], 'reason' => (string) $r['reason'], 'title_len' => (int) $r['title_len'], 'meta_len' => (int) $r['meta_len'], 'title_px' => (int) $r['title_px'], 'meta_px' => (int) $r['meta_px'], 'inlinks' => (int) $r['inlinks'], 'text_links' => (int) $r['text_links'], 'depth' => (int) $r['depth'], 'score' => (float) $r['score'], 'title' => (string) $r['title'], 'h1' => (string) $r['h1'], 'h2' => (string) $r['h2'], 'words' => (int) ( $r['words'] ?? -1 ) ]; // words: گام «متن کم است» پیشنهادها (SEO 3.8.3)
 }
 
 /**
@@ -73,7 +73,7 @@ function hodima_seo_advisor_crawl_map_row( array $r ): array {
  * `$only`: فقط همین آدرس (کادر ویرایش یک صفحه): اگر نقشه کامل هنوز خوانده نشده، فقط یک ردیف خوانده می‌شود
  * (تا SEO 2.9.8 باز کردن کادر ویرایش هر صفحه کل جدول خزش را در حافظه می‌آورد).
  *
- * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, title_px: int, meta_px: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}>
+ * @return array<string, array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, title_px: int, meta_px: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string, words: int}>
  */
 function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null ): array {
 
@@ -117,7 +117,7 @@ function hodima_seo_advisor_crawl_map( bool $reset = false, ?string $only = null
 /**
  * وضعیت خزش یک صفحه، یا null اگر در خزش نیست.
  *
- * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, title_px: int, meta_px: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string}|null
+ * @return array{status: int, indexable: bool, reason: string, title_len: int, meta_len: int, title_px: int, meta_px: int, inlinks: int, text_links: int, depth: int, score: float, title: string, h1: string, h2: string, words: int}|null
  */
 function hodima_seo_advisor_crawl_row( string $path ): ?array {
 	return hodima_seo_advisor_crawl_map( false, $path )[ $path ] ?? null;
@@ -390,8 +390,12 @@ function hodima_seo_advisor_links_evidence_parts( ?array $links, string $term ):
 	$steps      = [];
 
 	if ( 0 === $term_links ) {
-		$seen[]  = sprintf( ' هیچ لینک متنی با عبارت «%s» به آن نیست.', $term );
-		$steps[] = sprintf( 'لینک‌های موجود به این صفحه را با متن «%1$s» بنویسید و از ۲ تا ۳ صفحه مرتبط لینک تازه با همین متن بدهید.', $term );
+		$seen[] = sprintf( ' هیچ لینک متنی با عبارت «%s» به آن نیست.', $term );
+		// متن لینک‌های فعلی را نام می‌برد تا مدیر بداند کدام را عوض کند (SEO 3.8.3؛ قبلا «لینک‌های موجود» بی‌نام)
+		$now     = array_slice( array_values( array_filter( array_map( static fn( array $a ): string => (string) $a['anchor'], $links['anchors'] ) ) ), 0, 2 );
+		$steps[] = $now
+			? sprintf( 'این صفحه %1$s لینک ورودی از متن دارد ولی متن هیچ‌کدام «%2$s» نیست (مثلا «%3$s»)؛ متن همین لینک‌ها را «%2$s» کنید و از ۲ تا ۳ صفحه مرتبط لینک تازه با همین متن بدهید.', $num( $links['text'] ), $term, implode( '»، «', $now ) )
+			: sprintf( 'لینک‌های موجود به این صفحه را با متن «%1$s» بنویسید و از ۲ تا ۳ صفحه مرتبط لینک تازه با همین متن بدهید.', $term );
 	} else {
 		$seen[] = sprintf( ' %1$s لینک با متن «%2$s» دارد.', $num( $term_links ), $term );
 		if ( $links['text'] <= 3 ) {

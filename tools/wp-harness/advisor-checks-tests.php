@@ -569,6 +569,39 @@ foreach ( array_keys( HODIMA_SEO_ADVISOR_SUGGEST_RULES ) as $code ) {
 	}
 }
 hodima_ck( 'هر تابع پیشنهاد دست‌کم یک «دارد» و یک «ندارد» و هر کد دست‌کم یک «دارد» دارد', [] === $sg_gap, implode( '، ', $sg_gap ) );
+
+echo "=== گام‌های «دقیقا چه کنم» با خزش (SEO 3.8.3): گامی که انجام شده نمی‌آید\n";
+$sg_page  = static fn( array $over = [] ): array => $over + [ 'title' => 'کش مو فنری | هدهد', 'h1' => 'کش مو فنری', 'h2' => [ 'مشخصات', 'نحوه ارسال' ], 'words' => 400, 'meta_len' => 120, 'index' => null ];
+$sg_todo  = static fn( string $key, array $over ): array => array_merge( ...array_map( static fn( array $i ): array => $i['todo'], ( HODIMA_SEO_ADVISOR_SUGGEST_RUN[ $key ]['fn'] )( $sg_in( $over ) ) ) );
+$sg_has   = static fn( array $todo, string $needle ): bool => (bool) array_filter( $todo, static fn( string $t ): bool => str_contains( $t, $needle ) );
+$sg_ctr_r = $sg_row( [ 'clicks' => 20, 'impressions' => 9000, 'position' => 9.0 ] );
+$sg_ctr_q = [ $sg_q( 'کش مو فنری', 4000, 4.0, 5 ) ];
+hodima_ck( 'نرخ کلیک: عنوان با کلمه شروع می‌شود ← گام «عنوان سئو» نمی‌آید', ! $sg_has( $sg_todo( 'low_ctr', [ 'row' => $sg_ctr_r, 'queries' => $sg_ctr_q, 'page' => $sg_page( [ 'title' => 'کش مو فنری رنگی' ] ) ] ), 'عنوان سئو' ) );
+hodima_ck( 'نرخ کلیک: کلمه وسط عنوان ← عنوان فعلی نام برده و «به ابتدای عنوان ببرید»', $sg_has( $sg_todo( 'low_ctr', [ 'row' => $sg_ctr_r, 'queries' => $sg_ctr_q, 'page' => $sg_page( [ 'title' => 'خرید کش مو فنری' ] ) ] ), 'عنوان فعلی «خرید کش مو فنری» کلمه «کش مو فنری» را دارد ولی در ابتدا نیست' ) );
+hodima_ck( 'نرخ کلیک: متای خالی طبق خزش ← «توضیحات متا» این صفحه خالی است', $sg_has( $sg_todo( 'low_ctr', [ 'row' => $sg_ctr_r, 'queries' => $sg_ctr_q, 'page' => $sg_page( [ 'meta_len' => 0 ] ) ] ), 'این صفحه خالی است' ) );
+$sg_near = static fn( array $page, array $links = null ): array => $sg_todo( 'near_first', [ 'queries' => [ $sg_q( 'کش مو فنری', 900, 11.0 ) ], 'page' => $page, 'links' => $links ] );
+hodima_ck( 'نزدیک صفحه اول: کلمه در عنوان ← گام عنوان نمی‌آید', ! $sg_has( $sg_near( $sg_page() ), 'عنوان سئو' ) );
+hodima_ck( 'نزدیک صفحه اول: تیتر ۲ با کلمه هست ← «تیتر ۲ بسازید» نمی‌آید', ! $sg_has( $sg_near( $sg_page( [ 'h2' => [ 'چرا کش مو فنری؟' ] ] ) ), 'تیتر ۲ با «کش مو فنری» بسازید' ) );
+hodima_ck( 'نزدیک صفحه اول: لینک‌های بی‌کلمه ← متن لینک‌های فعلی نام برده می‌شود', $sg_has( $sg_near( $sg_page(), [ 'total' => 4, 'text' => 4, 'score' => 0.5, 'depth' => 2, 'anchors' => [ [ 'anchor' => 'اینجا', 'count' => 2 ] ] ] ), '(مثلا «اینجا»)' ) );
+hodima_ck( 'کلمه در متن نیست: متن کم طبق خزش ← شمار کلمه و «دست‌کم ۵۰ کلمه»', $sg_has( $sg_todo( 'missing', [ 'queries' => [ $sg_q( 'کش مو بچگانه', 800, 5.0 ) ], 'text' => [ 'title_headings' => '', 'content' => '' ], 'page' => $sg_page( [ 'words' => 60 ] ) ] ), 'دست‌کم ۵۰ کلمه' ) );
+$sg_dec = static fn( array $index ): array => $sg_todo( 'decline', [ 'row' => $sg_row( [ 'clicks' => 20, 'prev_clicks' => 100, 'impressions' => 300, 'prev_impressions' => 1200, 'position' => 8.2, 'prev_position' => 8.0 ] ), 'page' => $sg_page( [ 'index' => $index ] ) ] );
+hodima_ck( 'افت نمایش: ایندکس سالم ← «فیلتر ایندکس را ببینید» نمی‌آید و «مشکل ایندکس نیست» می‌آید', ! $sg_has( $sg_dec( [ 'state' => 'indexed', 'days' => 3, 'coverage' => '', 'google_canonical' => '', 'mismatch' => false ] ), 'فیلتر «ایندکس» را ببینید' ) && $sg_has( $sg_dec( [ 'state' => 'indexed', 'days' => 3, 'coverage' => '', 'google_canonical' => '', 'mismatch' => false ] ), 'مشکل ایندکس نیست' ) );
+hodima_ck( 'افت نمایش: ایندکس‌نشده ← علت با گفته گوگل، بی گام متناقض «فصلی است؟»', [ true, false ] === [ $sg_has( $sg_dec( [ 'state' => 'crawled_not_indexed', 'days' => 0, 'coverage' => 'Crawled - currently not indexed', 'google_canonical' => '', 'mismatch' => false ] ), 'Crawled - currently not indexed' ), $sg_has( $sg_dec( [ 'state' => 'crawled_not_indexed', 'days' => 0, 'coverage' => 'x', 'google_canonical' => '', 'mismatch' => false ] ), 'فصلی' ) ] );
+
+// خواندن واقعیت‌ها از جدول خزش و بررسی ایندکس (تنها بخش ناخالص)
+global $wpdb;
+$sg_t   = hodima_seo_advisor_table( 'crawl_pages' );
+$wpdb->delete( $sg_t, [ 'path' => '/sg-facts/' ] );
+$wpdb->insert( $sg_t, [ 'path' => '/sg-facts/', 'status' => 200, 'indexable' => 1, 'title' => 'کش مو | هدهد', 'h1' => 'کش مو', 'h2' => 'مشخصات | ارسال', 'words' => 75, 'meta_len' => 0 ] );
+hodima_seo_advisor_crawl_map( true );
+$sg_ins = get_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, null );
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/sg-facts/' => [ 'verdict' => 'PASS', 'coverage' => 'Submitted and indexed', 'robots' => '', 'indexing' => '', 'fetch' => '', 'last_crawl' => '', 'google_canonical' => '', 'user_canonical' => '', 'crawled_as' => '', 'checked' => time() - 2 * DAY_IN_SECONDS - 60 ] ], false );
+$sg_f = hodima_seo_advisor_suggest_page_facts( '/sg-facts/' );
+hodima_ck( 'واقعیت‌های صفحه از خزش و بررسی ایندکس: عنوان، تیترهای ۲، کلمه، متا، ایندکس ۲ روز پیش', [ 'کش مو | هدهد', [ 'مشخصات', 'ارسال' ], 75, 0, 'indexed', 2 ] === [ $sg_f['title'] ?? null, $sg_f['h2'] ?? null, $sg_f['words'] ?? null, $sg_f['meta_len'] ?? null, $sg_f['index']['state'] ?? null, $sg_f['index']['days'] ?? null ], wp_json_encode( $sg_f, JSON_UNESCAPED_UNICODE ) );
+hodima_ck( 'صفحه خزیده‌نشده ← null (گام کلی)', null === hodima_seo_advisor_suggest_page_facts( '/sg-none/' ) );
+$wpdb->delete( $sg_t, [ 'path' => '/sg-facts/' ] );
+hodima_seo_advisor_crawl_map( true );
+null === $sg_ins ? delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION ) : update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $sg_ins, false );
 null === $sg_ctr ? delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CTR_OPTION, $sg_ctr, false );
 
 echo "\n";
