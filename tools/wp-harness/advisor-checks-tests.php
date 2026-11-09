@@ -64,6 +64,9 @@ function hodima_ck_row( array $over = [] ): array {
 			'img_empty'   => 0,
 			'notext_links' => 0,
 			'js_links'     => 0,
+			'soft404'      => '',
+			'ld_count'     => 1,
+			'ld_errors'    => '',
 			'impressions' => 0,
 			'kind'        => 'page',
 		],
@@ -181,6 +184,15 @@ $cases = [
 	[ 'یک لینک onclick ← link_js', 'link_js', [ 'js_links' => 1, 'js_list' => '[["/x/","مشاهده"]]' ], [], [ 'link_js' ] ],
 	[ 'بدون لینک جاوااسکریپتی ← هیچ', 'link_js', [], [], [] ],
 	[ 'ردیف خزش قدیمی (-1) ← link_js نمی‌دهد', 'link_js', [ 'js_links' => -1 ], [], [] ],
+	// ── Soft 404 و داده ساختاریافته خراب (SEO 3.8.6)
+	[ 'H1 «محتوایی یافت نشد!» با کد ۲۰۰ ← soft_404', 'soft_404', [ 'soft404' => 'title|یافت نشد' ], [], [ 'soft_404' ] ],
+	[ 'دسته بی‌محصول (پیام ووکامرس) ← soft_404', 'soft_404', [ 'soft404' => 'empty|woocommerce-no-products-found' ], [], [ 'soft_404' ] ],
+	[ 'صفحه عادی ← هیچ', 'soft_404', [], [], [] ],
+	[ 'soft 404 در صفحه سیستمی (/cart/) ← هیچ', 'soft_404', [ 'path' => '/cart/', 'soft404' => 'empty|x' ], [], [] ],
+	[ 'JSON-LD خوانده نمی‌شود ← ld_invalid', 'ld_invalid', [ 'ld_errors' => '[["json","Syntax error"]]' ], [], [ 'ld_invalid' ] ],
+	[ 'گره بی @type ← ld_invalid', 'ld_invalid', [ 'ld_errors' => '[["type","#x"]]' ], [], [ 'ld_invalid' ] ],
+	[ 'JSON-LD سالم ← هیچ', 'ld_invalid', [], [], [] ],
+	[ 'ردیف قدیمی (ld_count = -1) ← ld_invalid نمی‌دهد', 'ld_invalid', [ 'ld_count' => -1, 'ld_errors' => '[["json","x"]]' ], [], [] ],
 	// ── وضعیت (ریدایرکت، خطا، noindex)
 	[ 'ریدایرکت با لینک داخلی ← redirect', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 2 ], [], [ 'redirect' ] ],
 	[ 'ریدایرکت بی‌لینک داخلی ← هیچ (فقط نمایش گوگل ایراد نیست)', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 0 ], [], [] ],
@@ -288,6 +300,22 @@ hodima_ck( 'لینک جاوااسکریپتی: onclick location، javascript: ب
 $lk_row = $row_of( $lk );
 hodima_ck( 'ردیف صفحه: شمار و فهرست JSON هر دو؛ صفحه بی‌لینک ← ۰ (نه -1)', [ 1, 3, true, 0, 0 ] === [ $lk_row['notext_links'], $lk_row['js_links'], str_contains( $lk_row['js_list'], '/js-a/' ), $row_of( $p_none )['notext_links'], $row_of( $p_none )['js_links'] ] );
 
+echo "=== خزنده: Soft 404 و داده ساختاریافته (SEO 3.8.6)\n";
+$sf = static fn( string $title, string $body ): string => $doc( '', $body )['soft404'] ?? 'x';
+hodima_ck( 'Soft 404: H1 قالب «محتوایی یافت نشد!» ← title', str_starts_with( (string) $doc( '', '<main><div class="hodima-empty"><h1 class="hodima-empty__title">محتوایی یافت نشد!</h1></div></main>' )['soft404'], 'title|' ) );
+hodima_ck( 'Soft 404: پیام ووکامرس دسته خالی ← empty', 'empty|woocommerce-no-products-found' === $sf( '', '<main><h1>گیره مو</h1><div class="woocommerce-no-products-found"><div class="woocommerce-info">No products were found matching your selection.</div></div></main>' ) );
+hodima_ck( 'Soft 404: «هیچ مقاله‌ای یافت نشد.» آرشیو مقاله ← empty', 'empty|blog-page-empty' === $sf( '', '<main><h1>وبلاگ</h1><p class="blog-page-empty">هیچ مقاله‌ای یافت نشد.</p></main>' ) );
+hodima_ck( 'Soft 404: صفحه عادی، و «ناموجود» در متن محصول ← هیچ', '' === $sf( '', '<main><h1>کش مو فنری</h1><p>این رنگ فعلا ناموجود است.</p></main>' ) );
+hodima_ck( 'Soft 404: عنوان «404» ← title|404', 'title|404' === hodima_seo_advisor_crawler_parse( '<html><head><title>404 | هدهد</title></head><body><main><p>x</p></main></body></html>', 'https://hodima.test/p/' )['soft404'] );
+$ldp = static fn( string $head ): array => $doc( $head );
+$ld_ok   = $ldp( '<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"#w"},{"@type":"Organization","@id":"#o"}]}</script>' );
+$ld_bad  = $ldp( '<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product",}</script>' );
+$ld_mix  = $ldp( '<script type="application/ld+json">{"@type":"Product","name":"x"}</script><script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@id":"#n"}]}</script>' );
+hodima_ck( 'JSON-LD سالم (@graph با @type) ← ۱ اسکریپت، بی ایراد', [ 1, [] ] === [ $ld_ok['ld_count'], $ld_ok['ld_errors'] ] );
+hodima_ck( 'JSON-LD با ویرگول اضافه ← json', [ 1, 'json' ] === [ $ld_bad['ld_count'], $ld_bad['ld_errors'][0][0] ?? '' ], wp_json_encode( $ld_bad['ld_errors'] ) );
+hodima_ck( 'بی @context و گره @graph بی @type ← context و type', [ 2, [ 'context', 'type' ] ] === [ $ld_mix['ld_count'], array_column( $ld_mix['ld_errors'], 0 ) ], wp_json_encode( $ld_mix['ld_errors'], JSON_UNESCAPED_UNICODE ) );
+hodima_ck( 'صفحه بی JSON-LD ← ۰ اسکریپت (ردیف: ld_count ۰، نه -1)', [ 0, 0, '' ] === [ $p_none['ld_count'], $row_of( $p_none )['ld_count'], $row_of( $p_none )['ld_errors'] ] );
+
 echo "=== ریدایرکت: کدام صفحه‌ها هنوز به آدرس ریدایرکت‌شده لینک داده‌اند (SEO 3.8.4)\n";
 $rd_from = hodima_seo_advisor_redirect_sources( [ '/src-a/' => [ 'link_redirect' => [ [ 'path' => '/old/', 'note' => 'می‌رود به /new/؛ متن لینک «کش مو»' ] ] ], '/src-b/' => [ 'link_redirect' => [ [ 'path' => '/old/', 'note' => 'ریدایرکت می‌شود؛ بدون متن لینک' ] ], 'link_broken' => [ [ 'path' => '/x/', 'note' => '' ] ] ] ] );
 hodima_ck( 'وارونه لینک به ریدایرکت: مقصد ← مبدأها با متن لینک؛ لینک خراب جدا', [ '/old/' => [ [ 'path' => '/src-a/', 'note' => 'متن لینک «کش مو»' ], [ 'path' => '/src-b/', 'note' => 'بدون متن لینک' ] ] ] === $rd_from, wp_json_encode( $rd_from, JSON_UNESCAPED_UNICODE ) );
@@ -308,20 +336,20 @@ hodima_ck( 'نقشه سایت: canonical به صفحه دیگر ← sitemap_bad 
 $cs_n = $cs_one( 'sitemap_bad', [ 'indexable' => 0, 'reason' => 'Noindex' ], [ 'sitemap' => [ '/ck-page/' => true ] ] );
 hodima_ck( 'نقشه سایت: noindex ← بی آدرس پیشنهادی', [ 'noindex', '' ] === [ $cs_n['detail'] ?? '', $cs_n['url'] ?? 'x' ] );
 
-echo "=== مهاجرت جدول (DB 1.14.0): ستون‌های تازه بعد از حذف دوباره ساخته می‌شوند\n";
+echo "=== مهاجرت جدول (DB 1.14.0 و 1.15.0): ستون‌های تازه بعد از حذف دوباره ساخته می‌شوند\n";
 global $wpdb;
 $mg_t = hodima_seo_advisor_table( 'crawl_pages' );
-foreach ( [ 'notext_links', 'notext_list', 'js_links', 'js_list' ] as $mg_c ) {
+foreach ( [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors' ] as $mg_c ) {
 	$wpdb->query( "ALTER TABLE {$mg_t} DROP COLUMN {$mg_c}" ); // phpcs:ignore WordPress.DB
 }
-$mg_before = array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list' ], (array) $wpdb->get_col( "SELECT * FROM {$mg_t} LIMIT 0" ) ?: array_column( (array) $wpdb->get_results( "PRAGMA table_info({$mg_t})", ARRAY_A ), 'name' ) );
+$mg_before = array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors' ], (array) $wpdb->get_col( "SELECT * FROM {$mg_t} LIMIT 0" ) ?: array_column( (array) $wpdb->get_results( "PRAGMA table_info({$mg_t})", ARRAY_A ), 'name' ) );
 update_option( HODIMA_SEO_ADVISOR_VERSION_OPTION, '1.13.0', false );
 hodima_seo_advisor_ensure_tables();
 $mg_cols = array_column( (array) $wpdb->get_results( "PRAGMA table_info({$mg_t})", ARRAY_A ), 'name' );
 if ( ! $mg_cols ) {
 	$mg_cols = array_column( (array) $wpdb->get_results( "SHOW COLUMNS FROM {$mg_t}", ARRAY_A ), 'Field' );
 }
-hodima_ck( 'ensure_tables بعد از حذف ستون‌ها: هر چهار ستون دوباره هست و نسخه ۱.۱۴.۰', [ [], [ 'notext_links', 'notext_list', 'js_links', 'js_list' ], HODIMA_SEO_ADVISOR_DB_VERSION ] === [ array_values( $mg_before ), array_values( array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list' ], $mg_cols ) ), get_option( HODIMA_SEO_ADVISOR_VERSION_OPTION ) ], wp_json_encode( [ $mg_before, $mg_cols ] ) );
+hodima_ck( 'ensure_tables بعد از حذف ستون‌ها: هر هفت ستون تازه (۱.۱۴.۰ و ۱.۱۵.۰) دوباره هست', [ [], [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors' ], HODIMA_SEO_ADVISOR_DB_VERSION ] === [ array_values( $mg_before ), array_values( array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors' ], $mg_cols ) ), get_option( HODIMA_SEO_ADVISOR_VERSION_OPTION ) ], wp_json_encode( [ $mg_before, $mg_cols ] ) );
 
 echo "=== ثابت‌ها (invariant): پیش‌نویس باید از تشخیص همان ایراد رد شود\n";
 $limit = hodima_seo_px_limit( 'title' );
@@ -371,7 +399,7 @@ hodima_ck( 'classify(آدرس ناشناخته) ← خالی', [ '', 0 ] === arr
 
 echo "=== قانون ثابت دستار: هر ایراد رکورد، مرجع و سطح هم‌خوان دارد (docs/seo-advisor.md)\n";
 // صفحه‌های رسمی Google Search Central که مرجع می‌توانند باشند (نشانی کامل در docs/seo-advisor-rulebook.md)
-$google_pages = [ 'title-link', 'snippet', 'seo-starter-guide', 'consolidate-duplicate-urls', 'robots-meta-tag', 'http-network-errors', 'build-sitemap', 'links-crawlable', 'spam-policies' ];
+$google_pages = [ 'title-link', 'snippet', 'seo-starter-guide', 'consolidate-duplicate-urls', 'robots-meta-tag', 'http-network-errors', 'build-sitemap', 'links-crawlable', 'spam-policies', 'sd-policies' ];
 $ref_bad      = [];
 foreach ( hodima_seo_advisor_issue_catalog() as $code => $record ) {
 	$ref   = (string) ( $record['ref'] ?? '' );

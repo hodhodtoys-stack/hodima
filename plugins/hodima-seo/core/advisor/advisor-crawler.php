@@ -310,6 +310,87 @@ function hodima_seo_advisor_crawler_inside( DOMNode $node, array $tags ): bool {
 	return false;
 }
 
+/**
+ * نشانه‌های عبارت «یافت نشد» در عنوان/H1 (یکسان‌شده؛ عدد ۴۰۴ به‌تنهایی هم). قالب هدیما برای آرشیو خالی H1 «محتوایی یافت نشد!» دارد.
+ */
+const HODIMA_SEO_ADVISOR_SOFT404_PHRASES = [ 'یافت نشد', 'پیدا نشد', 'not found', 'وجود ندارد', 'صفحه مورد نظر' ];
+
+/** کلاس پیام «چیزی نیست» آرشیو خالی: ووکامرس (دسته بی‌محصول) و قالب هدیما (مقاله، ویدیو، آرشیو عمومی). */
+const HODIMA_SEO_ADVISOR_SOFT404_MARKERS = [ 'woocommerce-no-products-found', 'blog-page-empty', 'videos-page-empty', 'hodima-empty' ];
+
+/**
+ * Soft 404 (SEO 3.8.6؛ گوگل: صفحه‌ای که «یافت نشد» یا خالی است ولی کد ۲۰۰ می‌دهد): عنوان یا H1 با عبارت «یافت نشد»، یا پیام آرشیو خالی
+ * (ووکامرس/قالب). خروجی «title|عبارت» یا «empty|کلاس»؛ خالی = نیست. پیام «نتیجه‌ای پیدا نشد» جستجو کلاس نشانه ندارد و آدرس جستجو خزیده نمی‌شود.
+ */
+function hodima_seo_advisor_crawler_soft404( string $title, string $h1, DOMXPath $xpath ): string {
+
+	foreach ( [ $h1, $title ] as $text ) {
+		$norm = hodima_seo_advisor_normalize( $text );
+		if ( 1 === preg_match( '/(?:^|\s)404(?:$|\s)/u', $norm ) ) {
+			return 'title|404';
+		}
+		foreach ( HODIMA_SEO_ADVISOR_SOFT404_PHRASES as $phrase ) {
+			if ( '' !== $norm && str_contains( $norm, hodima_seo_advisor_normalize( $phrase ) ) ) {
+				return 'title|' . $phrase;
+			}
+		}
+	}
+
+	foreach ( HODIMA_SEO_ADVISOR_SOFT404_MARKERS as $marker ) {
+		$found = $xpath->query( "//*[contains(concat(' ', normalize-space(@class), ' '), ' {$marker} ')]" );
+		if ( false !== $found && $found->length > 0 ) {
+			return 'empty|' . $marker;
+		}
+	}
+
+	return '';
+}
+
+/**
+ * داده ساختاریافته JSON-LD صفحه (SEO 3.8.6؛ گوگل: داده‌ای که خوانده نمی‌شود یا @type ندارد نادیده گرفته می‌شود): شمار اسکریپت‌ها و
+ * تا ۵ ایراد [نوع، توضیح]: json (خوانده نمی‌شود)، context (بی @context schema.org)، type (گره بی @type).
+ *
+ * @return array{count: int, errors: list<array{0: string, 1: string}>}
+ */
+function hodima_seo_advisor_crawler_jsonld( DOMXPath $xpath ): array {
+
+	$list   = $xpath->query( "//script[translate(normalize-space(@type),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='application/ld+json']" );
+	$count  = 0;
+	$errors = [];
+	$add    = static function ( string $kind, string $text ) use ( &$errors ): void {
+		if ( count( $errors ) < 5 ) {
+			$errors[] = [ $kind, mb_substr( $text, 0, 120 ) ];
+		}
+	};
+
+	foreach ( false === $list ? [] : $list as $node ) {
+		++$count;
+		$raw  = trim( (string) $node->textContent );
+		$data = '' === $raw ? null : json_decode( $raw, true );
+		if ( ! is_array( $data ) ) {
+			$add( 'json', '' === $raw ? 'اسکریپت خالی' : json_last_error_msg() );
+			continue;
+		}
+		$tops = array_is_list( $data ) ? $data : [ $data ];
+		foreach ( $tops as $top ) {
+			if ( ! is_array( $top ) ) {
+				$add( 'type', 'مقدار بی‌ساختار' );
+				continue;
+			}
+			if ( ! str_contains( strtolower( (string) wp_json_encode( $top['@context'] ?? '' ) ), 'schema.org' ) ) {
+				$add( 'context', (string) ( $top['@type'] ?? $top['@id'] ?? 'بی‌نام' ) );
+			}
+			foreach ( isset( $top['@graph'] ) && is_array( $top['@graph'] ) ? $top['@graph'] : [ $top ] as $item ) {
+				if ( ! is_array( $item ) || empty( $item['@type'] ) ) {
+					$add( 'type', is_array( $item ) ? (string) ( $item['@id'] ?? implode( '، ', array_slice( array_keys( $item ), 0, 3 ) ) ) : 'مقدار بی‌ساختار' );
+				}
+			}
+		}
+	}
+
+	return [ 'count' => $count, 'errors' => $errors ];
+}
+
 /** نزدیک‌ترین نیای <a> با href واقعی (دکمه/آیکون داخل لینک معمولی، لینک جاوااسکریپتی جدا نیست)؛ null = ندارد. */
 function hodima_seo_advisor_crawler_closest_href( DOMElement $el ): ?DOMElement {
 
@@ -557,7 +638,7 @@ function hodima_seo_advisor_crawler_scan_images( DOMXPath $xpath, callable $clea
 /**
  * HTML یک صفحه ← عنوان، متا، تیترها، robots، canonical و لینک‌های داخلی.
  *
- * @return array{title: string, meta: string, robots: string, canonical: string, canonical_body: bool, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_empty: int, img_list: list<array{u: string, s: string, c: string}>, http_links: int, http_list: list<array{0: string, 1: string}>, notext_links: int, notext_list: list<array{0: string, 1: string}>, js_links: int, js_list: list<array{0: string, 1: string}>, links: list<array{0: string, 1: string, 2: string, 3: int}>}
+ * @return array{title: string, meta: string, robots: string, canonical: string, canonical_body: bool, h1: string, h1_count: int, h2: string, words: int, img_noalt: int, img_empty: int, img_list: list<array{u: string, s: string, c: string}>, http_links: int, http_list: list<array{0: string, 1: string}>, notext_links: int, notext_list: list<array{0: string, 1: string}>, js_links: int, js_list: list<array{0: string, 1: string}>, soft404: string, ld_count: int, ld_errors: list<array{0: string, 1: string}>, links: list<array{0: string, 1: string, 2: string, 3: int}>}
  */
 function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
@@ -728,14 +809,20 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 		}
 	}
 	$h1_pick = $h1_content ?: $h1_all;
+	$title   = $first( $xpath, '/html/head/title' );
+	$h1_text = $h1_pick ? $clean( $h1_pick[0]->textContent ) : '';
+	$ld      = hodima_seo_advisor_crawler_jsonld( $xpath );
 
 	return [
-		'title'      => $first( $xpath, '/html/head/title' ),
+		'title'      => $title,
+		'soft404'    => hodima_seo_advisor_crawler_soft404( $title, $h1_text, $xpath ), // SEO 3.8.6
+		'ld_count'   => $ld['count'],
+		'ld_errors'  => $ld['errors'],
 		'meta'       => $metas( $xpath, 'description' )[0] ?? '',
 		'robots'     => implode( ', ', [ ...$metas( $xpath, 'robots' ), ...$metas( $xpath, 'googlebot' ) ] ), // googlebot هم noindex/nosnippet را می‌رساند (SEO 3.4.7)
 		'canonical'  => $canonical,
 		'canonical_body' => $canonical_body,
-		'h1'         => $h1_pick ? $clean( $h1_pick[0]->textContent ) : '',
+		'h1'         => $h1_text,
 		'h1_count'   => count( $h1_pick ),
 		'h2'         => implode( ' | ', $h2s ),
 		'words'      => $words,
@@ -879,6 +966,9 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'notext_list'  => empty( $parsed['notext_list'] ) ? '' : (string) wp_json_encode( array_values( (array) $parsed['notext_list'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ),
 		'js_links'     => (int) ( $parsed['js_links'] ?? -1 ),
 		'js_list'      => empty( $parsed['js_list'] ) ? '' : (string) wp_json_encode( array_values( (array) $parsed['js_list'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ),
+		'soft404'      => mb_substr( (string) ( $parsed['soft404'] ?? '' ), 0, 64 ), // SEO 3.8.6: «title|عبارت» یا «empty|نشانه»؛ خالی = نیست
+		'ld_count'     => (int) ( $parsed['ld_count'] ?? -1 ),
+		'ld_errors'    => empty( $parsed['ld_errors'] ) ? '' : (string) wp_json_encode( array_values( (array) $parsed['ld_errors'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ),
 	];
 }
 
@@ -978,8 +1068,8 @@ function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $
 
 	hodima_seo_advisor_ensure_tables(); // ستون تازه img_list (DB 1.9.0) پیش از اولین نوشتن بعد از به‌روزرسانی
 
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty, meta_hash, http_list, notext_links, notext_list, js_links, js_list';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d,%s,%s,%d,%s,%d,%s)';
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty, meta_hash, http_list, notext_links, notext_list, js_links, js_list, soft404, ld_count, ld_errors';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d,%s,%s,%d,%s,%d,%s,%s,%d,%s)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
 

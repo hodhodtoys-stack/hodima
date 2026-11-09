@@ -54,6 +54,8 @@
 | noindex | info | اطلاع | تعریف گوگل؛ ایراد فقط اگر در سایت‌مپ/نمایش باشد |
 | link_redirect / link_noindex | warn/info | اطلاع | تابع بالا |
 | link_no_text (۳.۸.۴) | — | زرد | گوگل («Make your links crawlable»): «Write good link text»؛ متن لینک (یا alt تصویر لینک) موضوع مقصد را می‌گوید. فقط متن صفحه و فقط مقصدی که لینک متن‌دار دیگری در همان صفحه ندارد |
+| soft_404 (۳.۸.۶) | — | زرد | گوگل (http-network-errors، «Soft 404 errors»): صفحه‌ای که وجود ندارد باید ۴۰۴ بدهد و صفحه خالی محتوا داشته باشد. نشانه: عنوان/H1 «یافت نشد/پیدا نشد/not found/۴۰۴…» یا پیام آرشیو خالی (`woocommerce-no-products-found`، `blog-page-empty`، `videos-page-empty`، `hodima-empty`) |
+| ld_invalid (۳.۸.۶) | — | زرد | گوگل (`sd-policies` = appearance/structured-data/sd-policies): داده باید در قالب پشتیبانی‌شده و معتبر باشد؛ JSON خوانده‌نشدنی، بی @context schema.org یا گره بی @type نادیده گرفته می‌شود |
 | link_js (۳.۸.۴) | — | زرد | گوگل: فقط `<a>` با `href` دنبال می‌شود؛ onclick/‏`javascript:`/‏data-href با آدرس داخلی. onclick بدون جابه‌جایی (آمار) و عنصر داخل `<a href>` ایراد نیست |
 | img_empty | info | اطلاع | — |
 | thin | info | اطلاع | گوگل: بدون حداقل کلمه |

@@ -539,7 +539,7 @@ const HODIMA_SEO_ADVISOR_OVERVIEW_CRAWL_TYPES = [
 	'redirect' => 'ریدایرکت یا noindex',
 	'linkfix'  => 'لینک اشتباه',
 	'content'  => 'تصویر و محتوا',
-	'tech'     => 'canonical و نقشه سایت',
+	'tech'     => 'canonical، نقشه سایت و اسکیما', // «اسکیما» از SEO 3.8.6 (ایراد داده ساختاریافته خراب)
 	'links'    => 'لینک ورودی کم',
 	'orphan'   => 'بدون لینک ورودی',
 ];

@@ -528,6 +528,52 @@ function hodima_seo_advisor_check_link_js( array $r, array $ctx ): array {
 }
 
 /**
+ * Soft 404 (SEO 3.8.6): صفحه سالم (۲۰۰) که عنوان/H1 «یافت نشد» دارد یا پیام آرشیو خالی نشان می‌دهد. صفحه‌های سیستمی (جستجو، حساب) کنار.
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_soft_404( array $r, array $ctx ): array {
+
+	$soft = (string) ( $r['soft404'] ?? '' );
+
+	if ( '' === $soft || hodima_seo_advisor_is_system_path( (string) $r['path'] ) ) {
+		return [];
+	}
+
+	[ $kind, $sign ] = array_pad( explode( '|', $soft, 2 ), 2, '' );
+
+	return [ hodima_seo_advisor_issue( 'soft_404', 'empty' === $kind ? 'پیام «چیزی یافت نشد» نشان می‌دهد (دسته یا آرشیو خالی)' : sprintf( 'عنوان یا تیتر اصلی‌اش «%s» دارد', $sign ) ) ];
+}
+
+/**
+ * داده ساختاریافته (JSON-LD) خراب (SEO 3.8.6): خوانده نمی‌شود، بی @context schema.org، یا گره بی @type. ردیف قدیمی (-1) سنجیده نمی‌شود.
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_ld_invalid( array $r, array $ctx ): array {
+
+	$errors = json_decode( (string) ( $r['ld_errors'] ?? '' ), true );
+
+	if ( (int) ( $r['ld_count'] ?? -1 ) < 0 || ! is_array( $errors ) || ! $errors ) {
+		return [];
+	}
+
+	$names = [ 'json' => 'خوانده نمی‌شود (%s)', 'context' => '@context به schema.org ندارد (%s)', 'type' => 'نوع (@type) ندارد (%s)' ];
+	$parts = [];
+	foreach ( $errors as $error ) {
+		if ( is_array( $error ) && isset( $names[ (string) ( $error[0] ?? '' ) ] ) ) {
+			$parts[] = sprintf( $names[ (string) $error[0] ], (string) ( $error[1] ?? '' ) );
+		}
+	}
+
+	return $parts ? [ hodima_seo_advisor_issue( 'ld_invalid', implode( '؛ ', array_unique( $parts ) ) ) ] : [];
+}
+
+/**
  * بدون canonical.
  *
  * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
@@ -813,6 +859,8 @@ function hodima_seo_advisor_checks(): array {
 		'http_link'      => [ 'when' => 'known', 'codes' => [ 'http_link' ], 'fn' => 'hodima_seo_advisor_check_http_link' ],
 		'link_no_text'   => [ 'when' => 'known', 'codes' => [ 'link_no_text' ], 'fn' => 'hodima_seo_advisor_check_link_no_text' ],
 		'link_js'        => [ 'when' => 'known', 'codes' => [ 'link_js' ], 'fn' => 'hodima_seo_advisor_check_link_js' ],
+		'soft_404'       => [ 'when' => 'known', 'codes' => [ 'soft_404' ], 'fn' => 'hodima_seo_advisor_check_soft_404' ],
+		'ld_invalid'     => [ 'when' => 'known', 'codes' => [ 'ld_invalid' ], 'fn' => 'hodima_seo_advisor_check_ld_invalid' ],
 		'no_canonical'   => [ 'when' => 'known', 'codes' => [ 'no_canonical' ], 'fn' => 'hodima_seo_advisor_check_no_canonical' ],
 		'canonical_in_body' => [ 'when' => 'known', 'codes' => [ 'canonical_in_body' ], 'fn' => 'hodima_seo_advisor_check_canonical_in_body' ],
 		'thin'           => [ 'when' => 'known', 'codes' => [ 'thin' ], 'fn' => 'hodima_seo_advisor_check_thin' ],

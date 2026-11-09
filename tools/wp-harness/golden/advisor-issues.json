@@ -432,6 +432,27 @@
             ]
         },
         {
+            "path": "/g-ld/",
+            "impressions": 0,
+            "position": 0,
+            "inlinks": 9,
+            "text_links": 5,
+            "issues": [
+                {
+                    "code": "ld_invalid",
+                    "detail": "خوانده نمی‌شود (Syntax error)؛ نوع (@type) ندارد (#n)",
+                    "url": "",
+                    "items": []
+                },
+                {
+                    "code": "not_in_sitemap",
+                    "detail": "",
+                    "url": "",
+                    "items": []
+                }
+            ]
+        },
+        {
             "path": "/g-linker/",
             "impressions": 0,
             "position": 0,
@@ -978,6 +999,27 @@
                 {
                     "code": "slow",
                     "detail": "پاسخ سرور 3.0 ثانیه",
+                    "url": "",
+                    "items": []
+                },
+                {
+                    "code": "not_in_sitemap",
+                    "detail": "",
+                    "url": "",
+                    "items": []
+                }
+            ]
+        },
+        {
+            "path": "/g-soft404/",
+            "impressions": 0,
+            "position": 0,
+            "inlinks": 9,
+            "text_links": 5,
+            "issues": [
+                {
+                    "code": "soft_404",
+                    "detail": "پیام «چیزی یافت نشد» نشان می‌دهد (دسته یا آرشیو خالی)",
                     "url": "",
                     "items": []
                 },

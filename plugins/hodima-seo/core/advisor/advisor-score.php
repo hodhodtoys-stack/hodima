@@ -45,12 +45,12 @@ const HODIMA_SEO_ADVISOR_SCORE_CATEGORIES = [
 	'cat-content'   => [
 		'label'  => 'تیتر و محتوا',
 		'weight' => 20,
-		'codes'  => [ 'no_h1', 'multi_h1', 'dup_h1', 'img_alt', 'thin' ],
+		'codes'  => [ 'no_h1', 'multi_h1', 'dup_h1', 'img_alt', 'thin', 'soft_404' ],
 	],
 	'cat-structure' => [
 		'label'  => 'ساختار و نقشه سایت',
 		'weight' => 15,
-		'codes'  => [ 'site_hidden', 'orphan', 'island', 'low_inlinks', 'deep', 'no_canonical', 'canonical_in_body', 'not_in_sitemap', 'noindex', 'canonicalised' ],
+		'codes'  => [ 'site_hidden', 'ld_invalid', 'orphan', 'island', 'low_inlinks', 'deep', 'no_canonical', 'canonical_in_body', 'not_in_sitemap', 'noindex', 'canonicalised' ],
 	],
 	'cat-speed'     => [
 		'label'  => 'سرعت',
