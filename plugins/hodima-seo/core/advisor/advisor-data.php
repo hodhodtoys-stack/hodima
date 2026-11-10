@@ -21,7 +21,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /** نسخه ساختار جدول‌ها (با تغییر جدول بالا برود). */
-const HODIMA_SEO_ADVISOR_DB_VERSION = '1.15.0'; // 1.15.0 (SEO 3.8.6): ستون‌های soft404 و ld_count/ld_errors (داده ساختاریافته)؛ 1.14.0 (SEO 3.8.4): ستون‌های notext_links/notext_list (لینک بی‌متن) و js_links/js_list (لینک جاوااسکریپتی)؛ 1.13.0 (SEO 3.7.3): ستون http_list (کدام لینک‌ها http‌اند)؛ 1.12.0 (SEO 3.6.5): ستون meta_hash (توضیح متای تکراری)؛ 1.11.0 (SEO 3.5.4): ستون‌های title_px و meta_px (خط‌کش پیکسلی مشترک با سئوباکس)؛ 1.10.0 (SEO 3.4.9): ستون img_empty؛ img_list از این‌جا JSON است
+const HODIMA_SEO_ADVISOR_DB_VERSION = '1.16.0'; // 1.16.0 (SEO 3.9.3): ستون canonical_url (آدرس canonical دامنه دیگر یا با http/پارامتر)؛ 1.15.0 (SEO 3.8.6): ستون‌های soft404 و ld_count/ld_errors (داده ساختاریافته)؛ 1.14.0 (SEO 3.8.4): ستون‌های notext_links/notext_list (لینک بی‌متن) و js_links/js_list (لینک جاوااسکریپتی)؛ 1.13.0 (SEO 3.7.3): ستون http_list (کدام لینک‌ها http‌اند)؛ 1.12.0 (SEO 3.6.5): ستون meta_hash (توضیح متای تکراری)؛ 1.11.0 (SEO 3.5.4): ستون‌های title_px و meta_px (خط‌کش پیکسلی مشترک با سئوباکس)؛ 1.10.0 (SEO 3.4.9): ستون img_empty؛ img_list از این‌جا JSON است
 
 const HODIMA_SEO_ADVISOR_VERSION_OPTION  = 'hodima_advisor_db_version';
 const HODIMA_SEO_ADVISOR_SETTINGS_OPTION = 'hodima_advisor_settings';
@@ -176,6 +176,7 @@ function hodima_seo_advisor_install_tables(): void {
 		soft404 varchar(64) NOT NULL DEFAULT '',
 		ld_count smallint(6) NOT NULL DEFAULT -1,
 		ld_errors text NULL,
+		canonical_url varchar(300) NOT NULL DEFAULT '',
 		PRIMARY KEY (path)
 		) {$charset};"
 	);
@@ -300,6 +301,49 @@ function hodima_seo_advisor_path_key( string $url ): ?string {
 	}
 
 	return mb_strlen( $path ) > HODIMA_SEO_ADVISOR_KEY_LENGTH ? null : $path;
+}
+
+/**
+ * آدرس به دامنه‌ای غیر از سایت اشاره می‌کند؟ (آدرس نسبی و دامنه خودمان، با یا بی www، «نه»؛ SEO 3.9.3.) `path_key` برای دامنه دیگر و
+ * برای مسیر بلندتر از ستون هر دو null می‌دهد؛ این تابع این دو را از هم جدا می‌کند.
+ */
+function hodima_seo_advisor_url_is_external( string $url ): bool {
+
+	$host = (string) wp_parse_url( trim( $url ), PHP_URL_HOST );
+
+	if ( '' === $host ) {
+		return false;
+	}
+
+	$bare = static fn( string $name ): string => (string) preg_replace( '/^www\./', '', strtolower( $name ) );
+
+	return $bare( $host ) !== $bare( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+}
+
+/**
+ * canonical هم‌دامنه که شکلش با آدرس واقعی صفحه فرق دارد (SEO 3.9.3): `scheme` (http در سایت https یا برعکس)، `host` (با www در سایت
+ * بی‌www یا برعکس)، `param` (پارامتر ?…). «» = همان شکل درست. `$site` = [scheme, host] سایت (تابع خالص می‌ماند). `path_key` پروتکل،
+ * www و پارامتر را دور می‌ریزد و این‌ها «همان صفحه» حساب می‌شدند؛ مقایسه فقط مسیر بود.
+ *
+ * @param array{0: string, 1: string} $site
+ */
+function hodima_seo_advisor_canonical_variant( string $canonical, array $site ): string {
+
+	$parts = wp_parse_url( trim( $canonical ) );
+
+	if ( ! is_array( $parts ) ) {
+		return '';
+	}
+
+	$scheme = strtolower( (string) ( $parts['scheme'] ?? '' ) );
+	$host   = strtolower( (string) ( $parts['host'] ?? '' ) );
+
+	return match ( true ) {
+		'' !== $scheme && '' !== $site[0] && $scheme !== $site[0] => 'scheme',
+		'' !== $host && '' !== $site[1] && $host !== $site[1]     => 'host',
+		isset( $parts['query'] ) && '' !== $parts['query']        => 'param',
+		default                                                   => '',
+	};
 }
 
 /**

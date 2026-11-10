@@ -52,6 +52,35 @@ function hodima_seo_advisor_robots_no_snippet( string ...$values ): bool {
 	return 1 === preg_match( '/(?:^|[\s,;])(?:nosnippet|max-snippet\s*:\s*0)(?![\d])/i', implode( ',', $values ) );
 }
 
+/**
+ * دستورهای هدر X-Robots-Tag که برای گوگل معتبرند: دستور بی‌نام یا «googlebot: …» (SEO 3.9.3).
+ * فرمت گوگل: «[نام ربات:] دستور، دستور، …»؛ اسم ربات تا اسم بعدی روی دستورهای پشت سرش اثر دارد (مثلا
+ * «bingbot: noindex, googlebot: nosnippet»). باگ قبلی: کل هدر خام به متای robots چسبانده می‌شد و «bingbot: noindex»
+ * صفحه سالم را برای گوگل «ایندکس‌نشدنی» می‌کرد. دستورهای دارای دونقطه (unavailable_after و max-*) نام ربات نیستند.
+ *
+ * @return string دستورها با ویرگول جدا شده؛ خالی = برای گوگل چیزی نیست
+ */
+function hodima_seo_advisor_robots_for_google( string $header ): string {
+
+	$agent = '';
+	$out   = [];
+
+	foreach ( explode( ',', strtolower( $header ) ) as $segment ) {
+		$segment = trim( $segment );
+
+		if ( 1 === preg_match( '/^([a-z][a-z0-9_\-]*)\s*:\s*(.*)$/', $segment, $m ) && ! in_array( $m[1], [ 'unavailable_after', 'max-snippet', 'max-image-preview', 'max-video-preview' ], true ) ) {
+			$agent   = $m[1];
+			$segment = trim( $m[2] );
+		}
+
+		if ( '' !== $segment && ( '' === $agent || 'googlebot' === $agent ) ) {
+			$out[] = $segment;
+		}
+	}
+
+	return implode( ', ', $out );
+}
+
 /* ── نقشه خزش و صفحه‌های حل‌شده (برای رقابت و قاعده نرخ کلیک) ── */
 
 /** ستون‌های جدول خزش که نقشه و ردیف تک از آن می‌خوانند. */
@@ -480,7 +509,7 @@ const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
 	'redirect' => [ 'redirect', 'noindex', 'canonicalised', 'broken', 'server_error' ],
 	'linkfix'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'link_no_text', 'link_js', 'redirect_chain', 'redirect_loop' ],
 	'content'  => [ 'img_alt', 'img_empty', 'thin', 'soft_404' ], // img_empty تا SEO ۳.۸.۰ بی‌گروه بود و در فیلتر چیپ‌های «کارها» دیده نمی‌شد
-	'tech'     => [ 'site_hidden', 'ld_invalid', 'canonical_bad', 'canonical_in_body', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
+	'tech'     => [ 'site_hidden', 'ld_invalid', 'canonical_bad', 'canonical_external', 'canonical_variant', 'canonical_in_body', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
 	'links'    => [ 'low_inlinks' ],
 	'orphan'   => [ 'orphan', 'island' ],
 ];

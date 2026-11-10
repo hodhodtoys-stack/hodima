@@ -29,13 +29,26 @@ const HODIMA_SEO_ADVISOR_SCORE_WEIGHTS = [ 'bad' => 2.0, 'warn' => 1.0, 'info' =
 const HODIMA_SEO_ADVISOR_SCORE_CODE_CAP = 25.0;
 
 /**
+ * سقف نمره کل وقتی ایراد سراسری یا ایراد صفحه اصلی هست (SEO 3.9.3). باگ قبلی: کسر هر ایراد به نسبت شمار صفحه‌هاست، پس «سایت از گوگل
+ * پنهان است» (فقط روی صفحه اصلی ثبت می‌شود) روی سایت ۳۰۰ صفحه‌ای فقط ≈ ۰٫۷ امتیاز کم می‌کرد و نمره کل ۱۰۰ می‌ماند؛ خطای ۵۰۰ صفحه اصلی هم همین‌طور.
+ * سقف روی نمره کل است (نه بخش): بخش «ساختار» وزن ۱۵٪ دارد و کسر ثابت در آن نمره کل را فقط ۶ امتیاز پایین می‌آورد.
+ */
+const HODIMA_SEO_ADVISOR_SCORE_SITE_CAP = 40;
+
+/** ایرادهایی که با هر صفحه‌ای (ایراد سراسری) نمره را به سقف می‌رسانند. */
+const HODIMA_SEO_ADVISOR_SCORE_CAP_ANYWHERE = [ 'site_hidden' ];
+
+/** ایرادهایی که فقط روی صفحه اصلی (`/`) نمره را به سقف می‌رسانند: صفحه اصلی خراب یا ایندکس‌نشدنی یعنی ورودی کل سایت از کار افتاده. */
+const HODIMA_SEO_ADVISOR_SCORE_CAP_HOME = [ 'server_error', 'broken', 'redirect_loop', 'noindex', 'canonical_external' ];
+
+/**
  * بخش‌های نمره: کلید فیلتر جدول ایرادها (cf)، برچسب، وزن در نمره کل و کدهای ایرادش.
  */
 const HODIMA_SEO_ADVISOR_SCORE_CATEGORIES = [
 	'cat-links'     => [
 		'label'  => 'لینک‌ها و آدرس‌ها',
 		'weight' => 30,
-		'codes'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'link_no_text', 'link_js', 'redirect_chain', 'redirect_loop', 'broken', 'server_error', 'redirect', 'canonical_bad', 'sitemap_bad', 'http_link' ],
+		'codes'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'link_no_text', 'link_js', 'redirect_chain', 'redirect_loop', 'broken', 'server_error', 'redirect', 'canonical_bad', 'canonical_external', 'canonical_variant', 'sitemap_bad', 'http_link' ],
 	],
 	'cat-meta'      => [
 		'label'  => 'عنوان و متا',
@@ -87,7 +100,7 @@ function hodima_seo_advisor_score_grade( int $score ): array {
  *
  * @param list<array<string, mixed>> $issues  خروجی hodima_seo_advisor_crawl_issues() (بدون فیلتر علامت‌ها: نمره وضعیت واقعی سایت است)
  * @param int                        $crawled شمار صفحه‌های خزش‌شده
- * @return array{score: int, categories: array<string, array{label: string, score: int, pages: int}>, top: list<array{code: string, pages: int, closed: int, penalty: float}>}|null null = خزشی نیست
+ * @return array{score: int, categories: array<string, array{label: string, score: int, pages: int}>, top: list<array{code: string, pages: int, closed: int, penalty: float}>, cap: string}|null null = خزشی نیست؛ cap = کد ایرادی که نمره را به سقف رسانده (خالی = سقفی نیست)
  */
 function hodima_seo_advisor_score( array $issues, int $crawled ): ?array {
 
@@ -137,12 +150,30 @@ function hodima_seo_advisor_score( array $issues, int $crawled ): ?array {
 		$weights           += $category['weight'];
 	}
 
+	// سقف نمره: ایراد سراسری یا ایراد صفحه اصلی (SEO 3.9.3). فقط ایراد قرمز/کهربایی همان صفحه حساب می‌شود (علامت «اطلاع» نه)
+	$cap = '';
+	foreach ( [ ...HODIMA_SEO_ADVISOR_SCORE_CAP_ANYWHERE, ...HODIMA_SEO_ADVISOR_SCORE_CAP_HOME ] as $code ) {
+		$levels = $pages[ $code ] ?? [];
+		$hit    = in_array( $code, HODIMA_SEO_ADVISOR_SCORE_CAP_ANYWHERE, true ) ? $levels : array_intersect_key( $levels, [ '/' => true ] );
+		if ( array_filter( $hit, static fn( string $level ): bool => 'info' !== $level ) ) {
+			$cap = $code;
+			break;
+		}
+	}
+
+	if ( '' !== $cap && isset( $penalties[ $cap ] ) ) {
+		$penalties[ $cap ]['penalty'] = max( $penalties[ $cap ]['penalty'], 100.0 - HODIMA_SEO_ADVISOR_SCORE_SITE_CAP ); // در «بیشترین کسرها» اول بیاید
+	}
+
 	usort( $penalties, static fn( array $a, array $b ): int => $b['penalty'] <=> $a['penalty'] );
 
+	$score = (int) round( $total / max( 1, $weights ) );
+
 	return [
-		'score'      => (int) round( $total / max( 1, $weights ) ),
+		'score'      => '' !== $cap ? min( $score, HODIMA_SEO_ADVISOR_SCORE_SITE_CAP ) : $score,
 		'categories' => $categories,
 		'top'        => array_slice( $penalties, 0, 3 ),
+		'cap'        => $cap,
 	];
 }
 

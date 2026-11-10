@@ -252,7 +252,8 @@ function hodima_seo_advisor_word_in( string $haystack, string $word ): bool {
 /** آیا همه کلمه‌های عبارت در متن (از پیش یکسان‌شده) هستند؟ عبارت بدون کلمه قابل‌سنجش «هست» حساب می‌شود (پیشنهاد نمی‌دهیم). */
 function hodima_seo_advisor_text_has( string $haystack, string $term ): bool {
 
-	$tokens = array_filter( explode( ' ', hodima_seo_advisor_normalize( $term ) ), static fn( string $t ): bool => mb_strlen( $t ) >= 2 );
+	$connectors = array_map( 'hodima_seo_advisor_normalize', HODIMA_SEO_ADVISOR_CONNECTORS ); // «برای/با/در…» معنی جستجو را نمی‌سازد و در عنوان نیامدنش ایراد نیست (SEO 3.9.3)
+	$tokens     = array_filter( explode( ' ', hodima_seo_advisor_normalize( $term ) ), static fn( string $t ): bool => mb_strlen( $t ) >= 2 && ! in_array( $t, $connectors, true ) );
 
 	foreach ( $tokens as $token ) {
 		if ( ! hodima_seo_advisor_word_in( $haystack, $token ) ) {
@@ -264,8 +265,10 @@ function hodima_seo_advisor_text_has( string $haystack, string $term ): bool {
 }
 
 /**
- * واژه‌های نام سایت (برند): نام سایت و بخش اول دامنه. کلمه‌ای که برند را دارد نرخ کلیک بسیار بالاتر از
- * جدول عمومی دارد و برایش «کلیک بالقوه» ساختن گمراه‌کننده است. با فیلتر hodima_seo_advisor_brand_terms عوض می‌شود.
+ * واژه‌های برند: بخش اول دامنه و **واژه اول** نام سایت (SEO 3.9.3). باگ قبلی: همه واژه‌های ≥۴ حرفی نام سایت برند حساب می‌شدند؛ با نام
+ * «هدهدلی | عمده فروشی اکسسوری مو» کلمه‌های «عمده»، «فروشی» و «اکسسوری» هم برند می‌شدند و جستجوهایی مثل «اکسسوری مو عمده» از همه
+ * پیشنهادها کنار می‌رفتند. کلمه‌ای که برند را دارد نرخ کلیک بسیار بالاتر از جدول عمومی دارد و برایش «کلیک بالقوه» ساختن گمراه‌کننده
+ * است. واژه‌های دیگر برند (نام دوکلمه‌ای، نام لاتین…) با فیلتر hodima_seo_advisor_brand_terms افزوده می‌شود.
  *
  * @return list<string>
  */
@@ -273,8 +276,9 @@ function hodima_seo_advisor_brand_terms(): array {
 
 	$host  = (string) wp_parse_url( home_url(), PHP_URL_HOST );
 	$label = explode( '.', (string) preg_replace( '/^www\./', '', $host ) )[0];
-	$words = array_merge( explode( ' ', hodima_seo_advisor_normalize( (string) get_bloginfo( 'name' ) ) ), [ hodima_seo_advisor_normalize( $label ) ] );
-	$words = array_filter( $words, static fn( string $w ): bool => mb_strlen( $w ) >= 4 );
+	$name  = trim( (string) preg_split( '/\s*[|\-–—:·•«»]\s*/u', hodima_seo_advisor_normalize( (string) get_bloginfo( 'name' ) ) )[0] ); // بخش پیش از اولین جداکننده («هدهدلی | عمده فروشی…» ← «هدهدلی»)
+	$words = [ explode( ' ', $name )[0], hodima_seo_advisor_normalize( $label ) ];
+	$words = array_filter( $words, static fn( string $w ): bool => mb_strlen( $w ) >= 3 );
 
 	return array_values( array_unique( array_map( 'strval', (array) apply_filters( 'hodima_seo_advisor_brand_terms', $words ) ) ) );
 }

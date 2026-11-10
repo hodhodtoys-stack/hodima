@@ -522,7 +522,7 @@ hodima_ad( 'دور کامل در یک نوبت تمام شد؛ صفحه‌ها: 
 hodima_ad( 'درخواست‌ها فقط برای آدرس‌های داخلی بدون پارامتر و فایل (هر آدرس یک‌بار)', [ count( $cw_requested ), count( array_unique( $cw_requested ) ) ], [ 6, 6 ] );
 hodima_ad( 'وضعیت‌ها: ۲۰۰، noindex، canonical دیگر، ریدایرکت ۳۰۱ به /b/، ۴۰۴', [ array_map( static fn( string $p ): array => [ (int) $cw_rows[ $p ]['status'], (int) $cw_rows[ $p ]['indexable'], $cw_rows[ $p ]['reason'], $cw_rows[ $p ]['redirect_to'] ], [ '/', '/a/', '/b/', '/old/', '/c/' ] ) ], [ [ [ 200, 1, '', '' ], [ 200, 0, 'Noindex', '' ], [ 200, 0, 'Canonicalised', '' ], [ 301, 0, 'Redirected', '/b/' ], [ 404, 0, '', '' ] ] ] );
 hodima_ad( 'عنوان و متا و H1 خانه ذخیره شد', [ $cw_rows['/']['title_len'] > 30, (int) $cw_rows['/']['meta_len'], $cw_rows['/']['h1'] ], [ true, 5, 'خانه' ] );
-hodima_ad( 'لینک ورودی یکتا: /b/ از خانه و آ (۲)، /c/ از خانه و آ (۲؛ یکی nofollow)، /a/ از خانه و ب', [ (int) $cw_rows['/b/']['inlinks'], (int) $cw_rows['/c/']['inlinks'], (int) $cw_rows['/a/']['inlinks'] ], [ 2, 2, 2 ] );
+hodima_ad( 'لینک ورودی یکتا: /b/ از خانه و آ (۲)، /c/ فقط از خانه (۱؛ لینک nofollow آ از ۳.۹.۳ حساب نمی‌شود)، /a/ از خانه و ب', [ (int) $cw_rows['/b/']['inlinks'], (int) $cw_rows['/c/']['inlinks'], (int) $cw_rows['/a/']['inlinks'] ], [ 2, 1, 2 ] );
 hodima_ad( 'لینک متنی (محتوا و follow): /b/ دو، /c/ یکی (فقط از خانه؛ آ nofollow)، /a/ دو (از ب و از لینک پارامتری «/a/?x=1» خانه که به همان صفحه می‌رسد؛ لینک منوی خانه حساب نمی‌شود)', [ (int) $cw_rows['/b/']['text_links'], (int) $cw_rows['/c/']['text_links'], (int) $cw_rows['/a/']['text_links'] ], [ 2, 1, 2 ] );
 hodima_ad( 'عمق: خانه ۰؛ آ، ب، قدیمی، ث، درباره ۱', array_map( static fn( string $p ): int => (int) $cw_rows[ $p ]['depth'], [ '/', '/a/', '/b/', '/old/', '/c/', '/about/' ] ), [ 0, 1, 1, 1, 1, 1 ] );
 $cw_after = hodima_seo_advisor_crawler_state();
@@ -615,6 +615,92 @@ hodima_ad( 'throttle_seconds: ۴۲۹ بی Retry-After ← نیم‌ساعت؛ ۵
 $cw_e5 = $cw_throttle( 'error503' );
 hodima_ad( '۵۰۳ بدون Retry-After: مثل قبل ذخیره می‌شود (خطای سرور) و مکث از «درخواست زیاد» نیست', [ $cw_e5['status'], $cw_e5['view']['throttled'] ], [ 503, false ] );
 $cw_mode = 'site';
+
+// SEO 3.9.3: ۵۰۲/۵۰۴ گذرا یک بار دوباره خوانده می‌شود (قبلا فقط خطای اتصال)؛ ۴۰۴ و ۵۰۳ با Retry-After دوباره خوانده نمی‌شوند
+$cw_calls  = [];
+$cw_retry  = static function ( mixed $pre, array $args, string $url ) use ( &$cw_calls, $cw_site ): mixed {
+	if ( ! str_starts_with( $url, $cw_site . '/retry-' ) ) {
+		return $pre;
+	}
+	$name              = (string) wp_parse_url( $url, PHP_URL_PATH );
+	$cw_calls[ $name ] = ( $cw_calls[ $name ] ?? 0 ) + 1;
+	return match ( $name ) {
+		'/retry-flaky/'  => $cw_calls[ $name ] < 2 ? [ 'response' => [ 'code' => 502 ], 'headers' => [], 'body' => '' ] : [ 'response' => [ 'code' => 200 ], 'headers' => [ 'content-type' => 'text/html' ], 'body' => '<html></html>' ],
+		'/retry-dead/'   => [ 'response' => [ 'code' => 504 ], 'headers' => [], 'body' => '' ],
+		'/retry-after/'  => [ 'response' => [ 'code' => 503 ], 'headers' => [ 'retry-after' => '120' ], 'body' => '' ],
+		default          => [ 'response' => [ 'code' => 404 ], 'headers' => [], 'body' => '' ],
+	};
+};
+add_filter( 'pre_http_request', $cw_retry, 20, 3 ); // بعد از فیلتر سایت ساختگی (اولویت ۱۰) که برای مسیر ناشناخته ۴۰۴ می‌دهد
+add_filter( 'hodima_seo_advisor_crawler_retry_delay', '__return_zero' );
+$cw_f1 = hodima_seo_advisor_crawler_fetch_checked( $cw_site . '/retry-flaky/' );
+$cw_f2 = hodima_seo_advisor_crawler_fetch_checked( $cw_site . '/retry-dead/' );
+$cw_f3 = hodima_seo_advisor_crawler_fetch_checked( $cw_site . '/retry-after/' );
+$cw_f4 = hodima_seo_advisor_crawler_fetch_checked( $cw_site . '/retry-gone/' );
+remove_filter( 'pre_http_request', $cw_retry, 20 );
+remove_filter( 'hodima_seo_advisor_crawler_retry_delay', '__return_zero' );
+hodima_ad( '۵۰۲ گذرا: بار دوم ۲۰۰ می‌شود و همان ثبت می‌شود (دو درخواست)', [ $cw_f1['status'] ?? 0, $cw_calls['/retry-flaky/'] ?? 0 ], [ 200, 2 ] );
+hodima_ad( '۵۰۴ ماندگار: یک تلاش دوباره، بعد همان ۵۰۴ (دو درخواست، نه بیشتر)', [ $cw_f2['status'] ?? 0, $cw_calls['/retry-dead/'] ?? 0 ], [ 504, 2 ] );
+hodima_ad( '۵۰۳ با Retry-After و ۴۰۴: تلاش دوباره ندارند (یک درخواست)', [ $cw_calls['/retry-after/'] ?? 0, $cw_calls['/retry-gone/'] ?? 0, $cw_f3['status'] ?? 0, $cw_f4['status'] ?? 0 ], [ 1, 1, 503, 404 ] );
+
+// SEO 3.9.3: «خزش همین حالا» وسط مکث: ادامه زنجیره برای بعد از پایان مکث زمان‌بندی می‌شود (قبلا نه، و با خزنده شبانه خاموش خزش نیمه‌کاره می‌ماند)
+$cw_m                = hodima_seo_advisor_crawler_state();
+$cw_m['status']      = 'running';
+$cw_m['manual']      = true;
+$cw_m['seed']        = [];
+$cw_m['queue']       = [];
+$cw_m['seen']        = [];
+hodima_seo_advisor_crawler_enqueue( $cw_m, $cw_site . '/a/', true );
+$cw_m['pause_until'] = 0;
+$cw_m['throttled']   = 0;
+$cw_m['errors']      = 0;
+hodima_seo_advisor_crawler_save( $cw_m );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_CRAWLER_CRON );
+$cw_mode = 'throttle';
+hodima_seo_advisor_crawler_tick( true );
+$cw_pm   = hodima_seo_advisor_crawler_state();
+$cw_next = wp_next_scheduled( HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ (int) $cw_pm['pause_until'] + 5 ] );
+hodima_ad( 'مکث وسط «خزش همین حالا»: ادامه ۵ ثانیه بعد از پایان مکث زمان‌بندی می‌شود', [ $cw_pm['pause_until'] > time(), (int) $cw_pm['pause_until'] + 5 === $cw_next ], [ true, true ] );
+wp_clear_scheduled_hook( HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ (int) $cw_pm['pause_until'] + 5 ] );
+$cw_pm['manual'] = false;
+$cw_pm['pause_until'] = 0;
+hodima_seo_advisor_crawler_save( $cw_pm );
+$cw_mode = 'site';
+
+// SEO 3.9.3: نقشه سایت خراب بی‌صدا نیست؛ gzip باز می‌شود
+$cw_sm_urlset = static fn( string $loc ): string => '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>' . $loc . '</loc></url></urlset>';
+$cw_sm        = static function ( mixed $pre, array $args, string $url ) use ( $cw_site, $cw_sm_urlset ): mixed {
+	if ( ! str_starts_with( $url, $cw_site . '/sm-' ) ) {
+		return $pre;
+	}
+	$body = match ( (string) wp_parse_url( $url, PHP_URL_PATH ) ) {
+		'/sm-bad.xml'   => '<urlset><url><loc>https://x',
+		'/sm-empty.xml' => '',
+		'/sm-big.xml'   => $cw_sm_urlset( $cw_site . '/big/' ) . str_repeat( ' ', 2 * MB_IN_BYTES ),
+		'/sm-gz.xml.gz' => (string) gzencode( $cw_sm_urlset( $cw_site . '/gz-page/' ) ),
+		default         => $cw_sm_urlset( $cw_site . '/ok-page/' ),
+	};
+	return [ 'response' => [ 'code' => 200 ], 'headers' => [ 'content-type' => 'application/xml' ], 'body' => $body ];
+};
+add_filter( 'pre_http_request', $cw_sm, 20, 3 );
+$cw_smk = static function ( string $name ) use ( $cw_site ): array {
+	$st                     = hodima_seo_advisor_crawler_state();
+	$st['maps']             = 0;
+	$st['sitemap']          = [];
+	$st['sitemap_problems'] = [];
+	hodima_seo_advisor_crawler_sitemap( $cw_site . $name, $st );
+	return [ 'kinds' => array_column( $st['sitemap_problems'], 'k' ), 'paths' => array_keys( $st['sitemap'] ) ];
+};
+$cw_sm_bad = $cw_smk( '/sm-bad.xml' );
+$cw_sm_emp = $cw_smk( '/sm-empty.xml' );
+$cw_sm_big = $cw_smk( '/sm-big.xml' );
+$cw_sm_gz  = $cw_smk( '/sm-gz.xml.gz' );
+$cw_sm_ok  = $cw_smk( '/sm-ok.xml' );
+remove_filter( 'pre_http_request', $cw_sm, 20 );
+hodima_ad( 'نقشه سایت: XML نامعتبر و فایل خالی ← مشکل «invalid» و بدون آدرس؛ بیشتر از ۲ مگابایت ← «big»', [ $cw_sm_bad, $cw_sm_emp, $cw_sm_big ], [ [ 'kinds' => [ 'invalid' ], 'paths' => [] ], [ 'kinds' => [ 'invalid' ], 'paths' => [] ], [ 'kinds' => [ 'big' ], 'paths' => [] ] ] );
+hodima_ad( 'نقشه سایت: فایل gzip باز و خوانده می‌شود (بدون مشکل)؛ فایل سالم بدون مشکل', [ $cw_sm_gz, $cw_sm_ok ], [ [ 'kinds' => [], 'paths' => [ '/gz-page/' ] ], [ 'kinds' => [], 'paths' => [ '/ok-page/' ] ] ] );
+$cw_q = hodima_seo_advisor_sitemap_problems_clean( [ [ 'u' => '/a.xml', 'k' => 'invalid' ], [ 'u' => '/b.xml', 'k' => 'big' ], [ 'u' => '/c.xml', 'k' => 'zzz' ] ] );
+hodima_ad( 'تمیزکاری مشکل‌های نقشه: «invalid» و «big» پذیرفته، نوع ناشناخته رد', array_column( $cw_q, 'k' ), [ 'invalid', 'big' ] );
 
 update_option( HODIMA_SEO_ADVISOR_CRAWLER_SETTINGS, [ 'enabled' => false, 'start' => 2, 'end' => 8, 'interval' => 7 ], false );
 $cw_s                = hodima_seo_advisor_crawler_state();

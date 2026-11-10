@@ -81,6 +81,17 @@ function hodima_seo_advisor_render_score( array $issues, int $crawled, string $c
 				<a href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'lvl' => 'info' ] ) ); ?>">دیدن در فهرست ←</a>
 			</div>
 		<?php endif; ?>
+		<?php
+		// سقف نمره (SEO 3.9.3): ایراد سراسری یا صفحه اصلی؛ بدون این جمله نمره ۴۰ بی‌دلیل به‌نظر می‌رسید
+		if ( '' !== $result['cap'] ) :
+			$cap_cf = (string) array_key_first( array_filter( HODIMA_SEO_ADVISOR_SCORE_CATEGORIES, static fn( array $category ): bool => in_array( $result['cap'], $category['codes'], true ) ) );
+			?>
+			<div class="hodima-advisor__sc-info">
+				<span class="dashicons dashicons-warning" aria-hidden="true"></span>
+				<p><?php echo esc_html( sprintf( 'نمره تا رفع «%1$s» بیشتر از %2$s نمی‌شود؛ این ایراد کل سایت یا صفحه اصلی را از گوگل می‌اندازد و کارهای دیگر در برابر آن کوچک‌اند.', hodima_seo_advisor_crawl_issue_info( $result['cap'] )['label'], $n( HODIMA_SEO_ADVISOR_SCORE_SITE_CAP ) ) ); ?></p>
+				<a href="<?php echo esc_url( hodima_seo_advisor_page_url( [ 'cf' => $cap_cf ] ) ); ?>">دیدن در فهرست ←</a>
+			</div>
+		<?php endif; ?>
 		<ul class="hodima-advisor__sc-cats" aria-label="نمره بخش‌ها">
 			<?php foreach ( $result['categories'] as $key => $category ) : ?>
 				<li>
@@ -95,7 +106,7 @@ function hodima_seo_advisor_render_score( array $issues, int $crawled, string $c
 	</div>
 	<details class="hodima-advisor__sc-how">
 		<summary>نمره چطور حساب می‌شود؟</summary>
-		<p>هر ایراد قرمز یا کهربایی نمره بخش خودش را به نسبت شمار صفحه‌هایی که آن را دارند کم می‌کند: قرمز ضریب ۲ و کهربایی ۱؛ مثلا اگر ۵٪ صفحه‌ها یک ایراد قرمز داشته باشند ۱۰ امتیاز کم می‌شود. ایراد آبی («اطلاع») در نمره نمی‌آید، چون گوگل آن‌ها را مشکل نمی‌داند. کسر هر ایراد حداکثر ۲۵ امتیاز است تا یک ایراد فراگیر (مثلا باگ قالب روی همه صفحه‌ها) کل یک بخش را صفر نکند. نمره کل میانگین وزنی بخش‌هاست؛ بعد از هر دور کامل خزش ثبت می‌شود تا با دور قبل مقایسه شود.</p>
+		<p>هر ایراد قرمز یا کهربایی نمره بخش خودش را به نسبت شمار صفحه‌هایی که آن را دارند کم می‌کند: قرمز ضریب ۲ و کهربایی ۱؛ مثلا اگر ۵٪ صفحه‌ها یک ایراد قرمز داشته باشند ۱۰ امتیاز کم می‌شود. ایراد آبی («اطلاع») در نمره نمی‌آید، چون گوگل آن‌ها را مشکل نمی‌داند. کسر هر ایراد حداکثر ۲۵ امتیاز است تا یک ایراد فراگیر (مثلا باگ قالب روی همه صفحه‌ها) کل یک بخش را صفر نکند. استثنا: اگر کل سایت از گوگل پنهان باشد، یا صفحه اصلی خطا بدهد، ایندکس‌نشدنی باشد یا به سایت دیگری واگذار شده باشد، نمره کل بیشتر از ۴۰ نمی‌شود. نمره کل میانگین وزنی بخش‌هاست؛ بعد از هر دور کامل خزش ثبت می‌شود تا با دور قبل مقایسه شود.</p>
 		<table>
 			<thead><tr><th scope="col">بخش</th><th scope="col">وزن</th></tr></thead>
 			<tbody>

@@ -312,27 +312,46 @@ function hodima_seo_advisor_crawler_inside( DOMNode $node, array $tags ): bool {
 }
 
 /**
- * نشانه‌های عبارت «یافت نشد» در عنوان/H1 (یکسان‌شده؛ عدد ۴۰۴ به‌تنهایی هم). قالب هدیما برای آرشیو خالی H1 «محتوایی یافت نشد!» دارد.
+ * عبارت‌های «صفحه نیست» در عنوان/H1 (یکسان‌شده). فقط جمله‌هایی که خودِ «صفحه» را نیست می‌دانند (SEO 3.9.3). باگ قبلی: «وجود ندارد» و
+ * «صفحه مورد نظر» تنها کافی بود و مقاله «چرا … وجود ندارد» را Soft 404 می‌کرد. «۴۰۴» هم فقط وقتی کل عنوان/H1 همان است
+ * (HODIMA_SEO_ADVISOR_SOFT404_CODE) و نه هر جا که عددش آمده («گیره مو کد ۴۰۴»). «محتوایی یافت نشد» H1 آرشیو خالی قالب هدیماست.
  */
-const HODIMA_SEO_ADVISOR_SOFT404_PHRASES = [ 'یافت نشد', 'پیدا نشد', 'not found', 'وجود ندارد', 'صفحه مورد نظر' ];
+const HODIMA_SEO_ADVISOR_SOFT404_PHRASES = [
+	'صفحه یافت نشد', 'صفحه پیدا نشد', 'صفحه مورد نظر یافت نشد', 'صفحه مورد نظر پیدا نشد', 'صفحه مورد نظر وجود ندارد', 'صفحه وجود ندارد',
+	'محتوایی یافت نشد', 'page not found', '404 not found',
+];
+
+/** «۴۰۴» تنها یا با کلمه خطا در کل عنوان/H1، پیش یا پس از نام سایت («خطای ۴۰۴ | هدهدلی»). */
+const HODIMA_SEO_ADVISOR_SOFT404_CODE = '/^(?:(?:خطای|ارور|error|code|کد)\s+)?404(?:\s+(?:error|خطا))?$/u';
+
+/** صفحه‌ای که متن چندانی ندارد؛ بیشتر از این کلمه با عبارت «یافت نشد» در عنوان هم صفحه واقعی است (مقاله، محصول). */
+const HODIMA_SEO_ADVISOR_SOFT404_MAX_WORDS = 250;
 
 /** کلاس پیام «چیزی نیست» آرشیو خالی: ووکامرس (دسته بی‌محصول) و قالب هدیما (مقاله، ویدیو، آرشیو عمومی). */
 const HODIMA_SEO_ADVISOR_SOFT404_MARKERS = [ 'woocommerce-no-products-found', 'blog-page-empty', 'videos-page-empty', 'hodima-empty' ];
 
 /**
- * Soft 404 (SEO 3.8.6؛ گوگل: صفحه‌ای که «یافت نشد» یا خالی است ولی کد ۲۰۰ می‌دهد): عنوان یا H1 با عبارت «یافت نشد»، یا پیام آرشیو خالی
- * (ووکامرس/قالب). خروجی «title|عبارت» یا «empty|کلاس»؛ خالی = نیست. پیام «نتیجه‌ای پیدا نشد» جستجو کلاس نشانه ندارد و آدرس جستجو خزیده نمی‌شود.
+ * Soft 404 (SEO 3.8.6؛ گوگل: صفحه‌ای که «یافت نشد» یا خالی است ولی کد ۲۰۰ می‌دهد): عبارت «صفحه نیست» در عنوان یا H1 **همراه متن کم**
+ * (کمتر از HODIMA_SEO_ADVISOR_SOFT404_MAX_WORDS کلمه؛ SEO 3.9.3)، یا پیام آرشیو خالی (ووکامرس/قالب). خروجی «title|عبارت» یا
+ * «empty|کلاس»؛ خالی = نیست. پیام «نتیجه‌ای پیدا نشد» جستجو کلاس نشانه ندارد و آدرس جستجو خزیده نمی‌شود.
  */
-function hodima_seo_advisor_crawler_soft404( string $title, string $h1, DOMXPath $xpath ): string {
+function hodima_seo_advisor_crawler_soft404( string $title, string $h1, DOMXPath $xpath, int $words = 0 ): string {
 
-	foreach ( [ $h1, $title ] as $text ) {
-		$norm = hodima_seo_advisor_normalize( $text );
-		if ( 1 === preg_match( '/(?:^|\s)404(?:$|\s)/u', $norm ) ) {
-			return 'title|404';
-		}
-		foreach ( HODIMA_SEO_ADVISOR_SOFT404_PHRASES as $phrase ) {
-			if ( '' !== $norm && str_contains( $norm, hodima_seo_advisor_normalize( $phrase ) ) ) {
-				return 'title|' . $phrase;
+	if ( $words < HODIMA_SEO_ADVISOR_SOFT404_MAX_WORDS ) {
+		foreach ( [ $h1, $title ] as $text ) {
+			$norm = hodima_seo_advisor_normalize( $text );
+			if ( '' === $norm ) {
+				continue;
+			}
+			// نام سایت پشت عنوان («خطای ۴۰۴ | هدهدلی») کد را از کل بودن نمی‌اندازد: فقط بخش اول پیش از جداکننده سنجیده می‌شود
+			$head = trim( (string) preg_split( '/\s[|\-–—·»«]\s/u', $norm )[0] );
+			if ( 1 === preg_match( HODIMA_SEO_ADVISOR_SOFT404_CODE, $head ) ) {
+				return 'title|404';
+			}
+			foreach ( HODIMA_SEO_ADVISOR_SOFT404_PHRASES as $phrase ) {
+				if ( str_contains( $norm, hodima_seo_advisor_normalize( $phrase ) ) ) {
+					return 'title|' . $phrase;
+				}
 			}
 		}
 	}
@@ -650,6 +669,15 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 	libxml_use_internal_errors( $previous );
 
 	$xpath = new DOMXPath( $dom );
+
+	// <base href> (SEO 3.9.3): لینک و تصویر نسبی نسبت به آن حل می‌شود نه آدرس صفحه (مرورگر و گوگل همین کار را می‌کنند). تا ۳.۹.۲ خوانده
+	// نمی‌شد و لینک نسبی به آدرس غلط می‌رفت و «لینک خراب» ساختگی می‌ساخت. فقط اولین base داخل head و فقط با href معتبر http(s) پذیرفته می‌شود.
+	$base_list = $xpath->query( '//head//base[@href]' );
+	$base_node = false === $base_list ? null : $base_list->item( 0 );
+	if ( $base_node instanceof DOMElement ) {
+		$resolved_base = hodima_seo_advisor_crawler_resolve( $base_node->getAttribute( 'href' ), $url );
+		$url           = null === $resolved_base ? $url : $resolved_base;
+	}
 	$lower = static fn( string $attr ): string => "translate({$attr},'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')";
 	$clean = static fn( string $text ): string => trim( (string) preg_replace( '/\s+/u', ' ', $text ) );
 	$first = static function ( DOMXPath $xp, string $query ) use ( $clean ): string {
@@ -816,7 +844,7 @@ function hodima_seo_advisor_crawler_parse( string $html, string $url ): array {
 
 	return [
 		'title'      => $title,
-		'soft404'    => hodima_seo_advisor_crawler_soft404( $title, $h1_text, $xpath ), // SEO 3.8.6
+		'soft404'    => hodima_seo_advisor_crawler_soft404( $title, $h1_text, $xpath, $words ), // SEO 3.8.6؛ 3.9.3: با شمار کلمه
 		'ld_count'   => $ld['count'],
 		'ld_errors'  => $ld['errors'],
 		'meta'       => $metas( $xpath, 'description' )[0] ?? '',
@@ -924,6 +952,19 @@ function hodima_seo_advisor_crawler_fetch_checked( string $url ): ?array {
 		return hodima_seo_advisor_crawler_fetch( $url );
 	}
 
+	// خطای ۵xx گذرا (SEO 3.9.3): قطعی کوتاه هاست یا بکاپ شبانه ۵۰۰/۵۰۲/۵۰۳/۵۰۴ می‌دهد و بدون تلاش دوباره یک ایراد قرمز «خطای سرور» می‌ساخت.
+	// ۵۰۳ با Retry-After نگهداری رسمی است و جداگانه (مکث خزنده) مدیریت می‌شود؛ اینجا نیست.
+	if ( in_array( $fetched['status'], [ 500, 502, 503, 504 ], true ) && '' === trim( (string) ( $fetched['retry'] ?? '' ) ) ) {
+		$pause = (float) apply_filters( 'hodima_seo_advisor_crawler_retry_delay', 2.0 );
+		if ( $pause > 0 ) {
+			usleep( (int) round( $pause * 1000000 ) );
+		}
+		$again = hodima_seo_advisor_crawler_fetch( $url );
+		if ( null !== $again ) {
+			return $again; // پاسخ تازه‌تر (سالم شده یا هنوز ۵xx)
+		}
+	}
+
 	if ( 200 === $fetched['status'] && $fetched['ms'] >= HODIMA_SEO_ADVISOR_CRAWL_SLOW_MS ) {
 		$again = hodima_seo_advisor_crawler_fetch( $url );
 		if ( null !== $again && 200 === $again['status'] && $again['ms'] < $fetched['ms'] ) {
@@ -942,10 +983,14 @@ function hodima_seo_advisor_crawler_fetch_checked( string $url ): ?array {
  */
 function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms, ?array $parsed, string $redirect_to, string $x_robots ): array {
 
+	$x_robots  = hodima_seo_advisor_robots_for_google( $x_robots ); // فقط دستورهای گوگل (باگ قبلی: «bingbot: noindex» صفحه را noindex می‌کرد)
 	$robots    = strtolower( (string) ( $parsed['robots'] ?? '' ) . ', ' . $x_robots );
 	$noindex   = str_contains( $robots, 'noindex' ) || 1 === preg_match( '/(?:^|[\s,])none(?:$|[\s,])/', $robots );
 	$canonical = (string) ( $parsed['canonical'] ?? '' );
 	$can_path  = '' === $canonical ? null : hodima_seo_advisor_path_key( $canonical );
+	$can_ext   = '' !== $canonical && null === $can_path && hodima_seo_advisor_url_is_external( $canonical ); // path_key برای مسیر بلند هم null می‌دهد؛ «سایت دیگر» فقط دامنه متفاوت است (SEO 3.9.3)
+	$home      = (array) wp_parse_url( home_url() );
+	$can_url   = $can_ext || ( null !== $can_path && '' !== hodima_seo_advisor_canonical_variant( $canonical, [ strtolower( (string) ( $home['scheme'] ?? '' ) ), strtolower( (string) ( $home['host'] ?? '' ) ) ] ) ) ? mb_substr( $canonical, 0, 300 ) : '';
 	$reason    = '';
 
 	if ( 200 !== $status ) {
@@ -982,7 +1027,7 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'h1_count'   => (int) ( $parsed['h1_count'] ?? -1 ),
 		'img_noalt'  => (int) ( $parsed['img_noalt'] ?? -1 ),
 		'http_links' => (int) ( $parsed['http_links'] ?? -1 ),
-		'canonical'  => '' === $canonical ? ( ! empty( $parsed['canonical_body'] ) ? '!body' : '' ) : ( null === $can_path ? '!ext' : $can_path ), // !body = فقط در body (گوگل نادیده می‌گیرد)، !ext = دامنه دیگر
+		'canonical'  => '' === $canonical ? ( ! empty( $parsed['canonical_body'] ) ? '!body' : '' ) : ( null === $can_path ? ( $can_ext ? '!ext' : '!long' ) : $can_path ), // !body = فقط در body (گوگل نادیده می‌گیرد)، !ext = دامنه دیگر، !long = مسیر بلندتر از ستون (تا ۳.۹.۲ آن هم !ext بود)
 		'img_list'   => hodima_seo_advisor_img_list_encode( (array) ( $parsed['img_list'] ?? [] ) ), // JSON تصویرها: آدرس، وضعیت alt، جایگاه (SEO 3.4.9؛ پیش‌تر یک آدرس در هر خط)
 		'img_empty'  => (int) ( $parsed['img_empty'] ?? -1 ),
 		'meta_hash'  => '' === trim( $meta ) ? '' : substr( md5( hodima_seo_advisor_normalize( $meta ) ), 0, 12 ), // برای «توضیح متای تکراری» (SEO 3.6.5)؛ خالی = بدون متا یا ردیف قدیمی
@@ -994,6 +1039,7 @@ function hodima_seo_advisor_crawler_page_row( string $path, int $status, int $ms
 		'soft404'      => mb_substr( (string) ( $parsed['soft404'] ?? '' ), 0, 64 ), // SEO 3.8.6: «title|عبارت» یا «empty|نشانه»؛ خالی = نیست
 		'ld_count'     => (int) ( $parsed['ld_count'] ?? -1 ),
 		'ld_errors'    => empty( $parsed['ld_errors'] ) ? '' : (string) wp_json_encode( array_values( (array) $parsed['ld_errors'] ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ),
+		'canonical_url' => $can_url, // SEO 3.9.3: آدرس کامل canonical وقتی دامنه دیگر یا با http/www/پارامتر است
 	];
 }
 
@@ -1101,8 +1147,8 @@ function hodima_seo_advisor_crawler_store_page( string $key, array $row, array $
 
 	hodima_seo_advisor_ensure_tables(); // ستون تازه img_list (DB 1.9.0) پیش از اولین نوشتن بعد از به‌روزرسانی
 
-	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty, meta_hash, http_list, notext_links, notext_list, js_links, js_list, soft404, ld_count, ld_errors';
-	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d,%s,%s,%d,%s,%d,%s,%s,%d,%s)';
+	$columns = 'path, status, indexable, reason, title, title_len, meta_len, title_px, meta_px, h1, h2, resp_ms, inlinks, text_links, depth, score, redirect_to, no_snippet, words, h1_count, img_noalt, http_links, canonical, img_list, img_empty, meta_hash, http_list, notext_links, notext_list, js_links, js_list, soft404, ld_count, ld_errors, canonical_url';
+	$format  = '(%s,%d,%d,%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%f,%s,%d,%d,%d,%d,%d,%s,%s,%d,%s,%s,%d,%s,%d,%s,%s,%d,%s,%s)';
 	$page_t  = hodima_seo_advisor_table( 'crawl_pages' );
 	$link_t  = hodima_seo_advisor_table( 'crawl_links' );
 
@@ -1321,20 +1367,34 @@ function hodima_seo_advisor_crawler_sitemap( string $url, array &$state ): ?int 
 		hodima_seo_advisor_crawler_sitemap_problem( $state, [ 'u' => $origin, 's' => $first, 't' => $target, 'k' => 'redirect' ] );
 	}
 
-	if ( 200 !== $fetched['status'] || '' === $fetched['body'] ) {
-		if ( 200 !== $fetched['status'] ) {
-			hodima_seo_advisor_crawler_sitemap_problem( $state, [ 'u' => '' !== $target ? $target : $origin, 's' => $fetched['status'], 't' => '', 'k' => 'error' ] );
-		}
+	$where = '' !== $target ? $target : $origin;
+
+	if ( 200 !== $fetched['status'] ) {
+		hodima_seo_advisor_crawler_sitemap_problem( $state, [ 'u' => $where, 's' => $fetched['status'], 't' => '', 'k' => 'error' ] );
+		return $fetched['ms'];
+	}
+
+	// SEO 3.9.3: نقشه خراب دیگر بی‌صدا رد نمی‌شود. باگ قبلی: فایل خالی، بزرگ‌تر از ۲ مگابایت، فشرده (.gz) یا XML نامعتبر هیچ پیامی نمی‌داد
+	// و ایرادهای نقشه سایت فقط ناپدید می‌شدند. فایل gzip (گوگل می‌پذیرد) باز می‌شود؛ بریده‌شدن در سقف ۲ مگابایتی و XML خراب گزارش می‌شود.
+	$body = $fetched['body'];
+
+	if ( str_starts_with( $body, "\x1f\x8b" ) ) {
+		$body = function_exists( 'gzdecode' ) ? (string) gzdecode( $body, 20 * MB_IN_BYTES ) : '';
+	}
+
+	if ( strlen( $fetched['body'] ) >= 2 * MB_IN_BYTES ) {
+		hodima_seo_advisor_crawler_sitemap_problem( $state, [ 'u' => $where, 's' => 200, 't' => '', 'k' => 'big' ] );
 		return $fetched['ms'];
 	}
 
 	$previous = libxml_use_internal_errors( true );
 	$dom      = new DOMDocument();
-	$loaded   = $dom->loadXML( $fetched['body'], LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR );
+	$loaded   = '' !== $body && $dom->loadXML( $body, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR );
 	libxml_clear_errors();
 	libxml_use_internal_errors( $previous );
 
 	if ( ! $loaded || null === $dom->documentElement ) {
+		hodima_seo_advisor_crawler_sitemap_problem( $state, [ 'u' => $where, 's' => 200, 't' => '', 'k' => 'invalid' ] );
 		return $fetched['ms'];
 	}
 
@@ -1375,7 +1435,7 @@ function hodima_seo_advisor_sitemap_problems_clean( mixed $raw ): array {
 	$out = [];
 
 	foreach ( is_array( $raw ) ? $raw : [] as $item ) {
-		if ( is_array( $item ) && isset( $item['u'], $item['k'] ) && in_array( $item['k'], [ 'redirect', 'error' ], true ) ) {
+		if ( is_array( $item ) && isset( $item['u'], $item['k'] ) && in_array( $item['k'], [ 'redirect', 'error', 'invalid', 'big' ], true ) ) {
 			$out[] = [ 'u' => mb_substr( (string) $item['u'], 0, 191 ), 's' => (int) ( $item['s'] ?? 0 ), 't' => mb_substr( (string) ( $item['t'] ?? '' ), 0, 191 ), 'k' => (string) $item['k'] ];
 		}
 	}
@@ -1509,7 +1569,9 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE source_path IN ({$marks})", $link_t, ...$chunk ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
 	}
 
-	// لینک ورودی یکتا، لینک متنی (محتوا و follow) و عمق (کمترین کلیک از صفحه اصلی). SEO 3.3.8: شمارش و پیمایش در خود پایگاه داده
+	// لینک ورودی یکتا، لینک متنی (محتوا و follow) و عمق (کمترین کلیک از صفحه اصلی). SEO 3.9.3: لینک nofollow در لینک ورودی و عمق نمی‌آید
+	// (باگ قبلی: صفحه‌ای که فقط لینک nofollow داشت «سالم» دیده می‌شد، ولی گوگل آن لینک را دنبال نمی‌کند) و لینک به آدرس ریدایرکت‌شده برای مقصد
+	// نهایی هم شمرده می‌شود (باگ قبلی: لینک به /old/ که به /new/ می‌رود برای /new/ حساب نمی‌شد). SEO 3.3.8: شمارش و پیمایش در خود پایگاه داده
 	// (یک ردیف برای هر صفحه) نه با بار کردن همه لینک‌ها در حافظه PHP؛ با ۳٬۰۰۰ صفحه و ۱۲۰٬۰۰۰ لینک پیک حافظه ≈ ۹۱ مگابایت بود و
 	// روی سایت بزرگ‌تر یا هاست ۱۲۸ مگابایتی دور را نیمه‌کاره می‌کشت.
 	$wpdb->query( $wpdb->prepare( 'UPDATE %i SET inlinks = 0, text_links = 0, depth = 0', $page_t ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -1517,7 +1579,7 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	$by_count = [];
 	foreach ( (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->prepare(
-			"SELECT dest_path, COUNT(DISTINCT source_path), COUNT(DISTINCT CASE WHEN link_position = 'content' AND is_follow = 1 THEN source_path END) FROM %i GROUP BY dest_path",
+			"SELECT dest_path, COUNT(DISTINCT CASE WHEN is_follow = 1 THEN source_path END), COUNT(DISTINCT CASE WHEN link_position = 'content' AND is_follow = 1 THEN source_path END) FROM %i GROUP BY dest_path",
 			$link_t
 		),
 		ARRAY_N
@@ -1534,6 +1596,38 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 	}
 	unset( $by_count );
 
+	// مقصد نهایی هر آدرس ریدایرکت‌شده (تا ۵ پرش؛ حلقه کنار)؛ لینک به آدرس قدیمی برای مقصد هم لینک ورودی است
+	$redirect_map = [];
+	foreach ( (array) $wpdb->get_results( $wpdb->prepare( 'SELECT path, redirect_to FROM %i WHERE status >= 300 AND status < 400 AND redirect_to <> %s', $page_t, '' ), ARRAY_N ) as $pair ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$redirect_map[ (string) $pair[0] ] = (string) $pair[1];
+	}
+
+	$redirect_final = [];
+	foreach ( $redirect_map as $from => $to ) {
+		for ( $hops = 0; $hops < 5 && isset( $redirect_map[ $to ] ) && $to !== $from; ++$hops ) {
+			$to = $redirect_map[ $to ];
+		}
+		if ( $to !== $from && ! isset( $redirect_map[ $to ] ) ) {
+			$redirect_final[ (string) $from ] = $to;
+		}
+	}
+
+	$via = [];
+	foreach ( $redirect_final as $from => $to ) {
+		$via[ $to ][] = (string) $from;
+	}
+
+	foreach ( $via as $final => $froms ) {
+		$final = (string) $final;
+		$marks = implode( ',', array_fill( 0, count( $froms ) + 1, '%s' ) );
+		$both  = (array) $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(DISTINCT source_path), COUNT(DISTINCT CASE WHEN link_position = 'content' THEN source_path END) FROM %i WHERE is_follow = 1 AND source_path <> %s AND dest_path IN ({$marks})", $link_t, $final, $final, ...$froms ), ARRAY_N ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
+		$have  = (array) $wpdb->get_row( $wpdb->prepare( 'SELECT inlinks, text_links FROM %i WHERE path = %s', $page_t, $final ), ARRAY_N ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		if ( $have && $both ) {
+			$wpdb->query( $wpdb->prepare( 'UPDATE %i SET inlinks = %d, text_links = %d WHERE path = %s', $page_t, max( (int) $have[0], (int) $both[0] ), max( (int) $have[1], (int) $both[1] ), $final ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		}
+	}
+	unset( $via );
+
 	// عمق: پیمایش سطح‌به‌سطح؛ هر سطح یک یا چند پرسش با فهرست مبدأها (حافظه فقط به اندازه شمار صفحه‌ها)
 	$depth    = [ '/' => 0 ];
 	$frontier = [ '/' ];
@@ -1544,11 +1638,16 @@ function hodima_seo_advisor_crawler_finalize( array &$state ): void {
 		$next = [];
 		foreach ( array_chunk( $frontier, 300 ) as $chunk ) {
 			$marks = implode( ',', array_fill( 0, count( $chunk ), '%s' ) );
-			foreach ( (array) $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT dest_path FROM %i WHERE source_path IN ({$marks})", $link_t, ...$chunk ) ) as $to ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
+			foreach ( (array) $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT dest_path FROM %i WHERE is_follow = 1 AND source_path IN ({$marks})", $link_t, ...$chunk ) ) as $to ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- placeholderهای هم‌اندازه
 				$to = (string) $to;
 				if ( ! isset( $depth[ $to ] ) ) {
 					$depth[ $to ] = $level;
 					$next[]       = $to;
+				}
+				$final = $redirect_final[ $to ] ?? ''; // ریدایرکت یک کلیک اضافه نیست: مقصد نهایی همان عمق را می‌گیرد
+				if ( '' !== $final && ! isset( $depth[ $final ] ) ) {
+					$depth[ $final ] = $level;
+					$next[]          = $final;
 				}
 			}
 		}
@@ -1732,8 +1831,12 @@ function hodima_seo_advisor_crawler_tick( bool $force = false ): array {
 	hodima_seo_advisor_crawler_save( $state );
 	hodima_seo_advisor_unlock( HODIMA_SEO_ADVISOR_CRAWLER_LOCK );
 
-	if ( $state['manual'] && 'running' === $state['status'] && $state['pause_until'] <= time() ) {
-		wp_schedule_single_event( time() + 10, HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ $state['done'] ] ); // ادامه زنجیره بدون انتظار برای کرون ۵ دقیقه‌ای (آرگومان متفاوت: وردپرس رویداد هم‌نام نزدیک را تکراری می‌داند)
+	if ( $state['manual'] && 'running' === $state['status'] ) {
+		// ادامه زنجیره بدون انتظار برای کرون ۵ دقیقه‌ای (آرگومان متفاوت: وردپرس رویداد هم‌نام نزدیک را تکراری می‌داند).
+		// SEO 3.9.3: باگ قبلی: وسط خزش مکث (کندی یا ۴۲۹) زنجیره را قطع می‌کرد؛ وقتی خزنده شبانه خاموش است کرون ۵ دقیقه‌ای هم نیست و
+		// خزش نیمه‌کاره می‌ماند. حالا ادامه برای ۵ ثانیه بعد از پایان مکث زمان‌بندی می‌شود.
+		$resume = max( time() + 10, (int) $state['pause_until'] + 5 );
+		wp_schedule_single_event( $resume, HODIMA_SEO_ADVISOR_CRAWLER_CRON, [ $resume ] );
 	}
 
 	return [ 'ran' => $ran, 'finished' => $finished ];

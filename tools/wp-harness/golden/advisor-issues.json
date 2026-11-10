@@ -158,6 +158,27 @@
             ]
         },
         {
+            "path": "/g-canext/",
+            "impressions": 0,
+            "position": 0,
+            "inlinks": 9,
+            "text_links": 5,
+            "issues": [
+                {
+                    "code": "canonical_external",
+                    "detail": "به آدرسی در سایت دیگر اشاره می‌کند (زیر).",
+                    "url": "https://other.example/g-canext/",
+                    "items": []
+                },
+                {
+                    "code": "not_in_sitemap",
+                    "detail": "",
+                    "url": "",
+                    "items": []
+                }
+            ]
+        },
+        {
             "path": "/g-canon-other/",
             "impressions": 0,
             "position": 0,
@@ -189,6 +210,27 @@
                     "code": "canonical_bad",
                     "detail": "به /g-redir/ اشاره می‌کند که خودش ریدایرکت می‌شود (کد 301)؛ آدرس درست احتمالا مقصد آن است (زیر)",
                     "url": "/g-ok/",
+                    "items": []
+                },
+                {
+                    "code": "not_in_sitemap",
+                    "detail": "",
+                    "url": "",
+                    "items": []
+                }
+            ]
+        },
+        {
+            "path": "/g-canvar/",
+            "impressions": 0,
+            "position": 0,
+            "inlinks": 9,
+            "text_links": 5,
+            "issues": [
+                {
+                    "code": "canonical_variant",
+                    "detail": "پارامتر دارد (?color=red).",
+                    "url": "https://hodima.test/g-canvar/?color=red",
                     "items": []
                 },
                 {

@@ -94,7 +94,11 @@ function hodima_seo_advisor_quality(): array {
 	if ( $map['problems'] || $map['urls'] > 0 ) {
 		$redirects = array_values( array_filter( $map['problems'], static fn( array $p ): bool => 'redirect' === $p['k'] ) );
 		$errors    = array_values( array_filter( $map['problems'], static fn( array $p ): bool => 'error' === $p['k'] ) );
+		$invalid   = array_values( array_filter( $map['problems'], static fn( array $p ): bool => 'invalid' === $p['k'] ) );
+		$big       = array_values( array_filter( $map['problems'], static fn( array $p ): bool => 'big' === $p['k'] ) );
 		$notes     = array_filter( [
+			$invalid ? sprintf( '%1$s فایل نقشه سایت خالی یا XML نامعتبر است، مثلا %2$s؛ آدرس‌های آن در بررسی نقشه سایت نیستند.', $n( count( $invalid ) ), rawurldecode( $invalid[0]['u'] ) ) : '',
+			$big ? sprintf( '%1$s فایل نقشه سایت از ۲ مگابایت بزرگ‌تر است (مثلا %2$s) و کامل خوانده نشد؛ نقشه را به چند فایل تقسیم کنید.', $n( count( $big ) ), rawurldecode( $big[0]['u'] ) ) : '',
 			$redirects ? sprintf( '%1$s فایل نقشه سایت با ریدایرکت (کد %2$s) باز می‌شود، مثلا %3$s ← %4$s. نقشه باید مستقیم ۲۰۰ بدهد؛ در «ابزارهای هدیما ← نقشه سایت» آدرس نقشه را بررسی کنید.', $n( count( $redirects ) ), $n( $redirects[0]['s'] ), rawurldecode( $redirects[0]['u'] ), rawurldecode( $redirects[0]['t'] ) ) : '',
 			$errors ? sprintf( '%1$s فایل نقشه سایت خوانده نشد (کد %2$s)، مثلا %3$s؛ آدرس‌های آن در بررسی نقشه سایت نیستند.', $n( count( $errors ) ), $n( $errors[0]['s'] ), rawurldecode( $errors[0]['u'] ) ) : '',
 		] );

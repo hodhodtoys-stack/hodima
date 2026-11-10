@@ -214,6 +214,18 @@ $cases = [
 	[ 'noindex در /my-account/ ← هیچ', 'status', [ 'path' => '/my-account/', 'indexable' => 0, 'reason' => 'Noindex' ], [], [] ],
 	[ 'noindex در /cart/ ← هیچ', 'status', [ 'path' => '/cart/', 'indexable' => 0, 'reason' => 'Noindex' ], [], [] ],
 	[ 'noindex در صفحه عادی ← noindex', 'status', [ 'path' => '/my-accounting-guide/', 'indexable' => 0, 'reason' => 'Noindex' ], [], [ 'noindex' ] ],
+	// ── SEO 3.9.3: canonical دامنه دیگر / شکل دیگر
+	[ 'canonical به سایت دیگر (!ext) ← canonical_external', 'canonical_external', [ 'canonical' => '!ext', 'canonical_url' => 'https://other.example/p/' ], [], [ 'canonical_external' ] ],
+	[ 'canonical به سایت دیگر در ردیف قدیمی بی‌آدرس ← باز هم canonical_external', 'canonical_external', [ 'canonical' => '!ext' ], [], [ 'canonical_external' ] ],
+	[ 'canonical به خودش ← canonical_external نمی‌دهد', 'canonical_external', [], [], [] ],
+	[ 'canonical مسیر بلند (!long) ← «سایت دیگر» نیست', 'canonical_external', [ 'canonical' => '!long' ], [], [] ],
+	[ 'canonical سایت دیگر در صفحه سیستمی (/cart/) ← هیچ', 'canonical_external', [ 'path' => '/cart/', 'canonical' => '!ext' ], [], [] ],
+	[ 'canonical با http:// در سایت https ← canonical_variant', 'canonical_variant', [ 'canonical_url' => 'http://hodima.test/ck-page/' ], [ 'site' => [ 'https', 'hodima.test' ] ], [ 'canonical_variant' ] ],
+	[ 'canonical با پارامتر ?color=red ← canonical_variant', 'canonical_variant', [ 'canonical_url' => 'https://hodima.test/ck-page/?color=red' ], [ 'site' => [ 'https', 'hodima.test' ] ], [ 'canonical_variant' ] ],
+	[ 'canonical با www در سایت بی‌www ← canonical_variant', 'canonical_variant', [ 'canonical_url' => 'https://www.hodima.test/ck-page/' ], [ 'site' => [ 'https', 'hodima.test' ] ], [ 'canonical_variant' ] ],
+	[ 'canonical https بدون پارامتر ← canonical_variant نمی‌دهد (ستون خالی)', 'canonical_variant', [], [ 'site' => [ 'https', 'hodima.test' ] ], [] ],
+	[ 'canonical_url پر ولی شکل درست (ردیف از سایت دیگری با همان دامنه) ← هیچ', 'canonical_variant', [ 'canonical_url' => 'https://hodima.test/ck-page/' ], [ 'site' => [ 'https', 'hodima.test' ] ], [] ],
+	[ 'canonical سایت دیگر ← canonical_variant جداست و نمی‌دهد', 'canonical_variant', [ 'canonical' => '!ext', 'canonical_url' => 'https://other.example/p/' ], [ 'site' => [ 'https', 'hodima.test' ] ], [] ],
 ];
 
 echo "=== «دارد» و «ندارد» برای هر ایراد\n";
@@ -307,6 +319,14 @@ hodima_ck( 'Soft 404: پیام ووکامرس دسته خالی ← empty', 'emp
 hodima_ck( 'Soft 404: «هیچ مقاله‌ای یافت نشد.» آرشیو مقاله ← empty', 'empty|blog-page-empty' === $sf( '', '<main><h1>وبلاگ</h1><p class="blog-page-empty">هیچ مقاله‌ای یافت نشد.</p></main>' ) );
 hodima_ck( 'Soft 404: صفحه عادی، و «ناموجود» در متن محصول ← هیچ', '' === $sf( '', '<main><h1>کش مو فنری</h1><p>این رنگ فعلا ناموجود است.</p></main>' ) );
 hodima_ck( 'Soft 404: عنوان «404» ← title|404', 'title|404' === hodima_seo_advisor_crawler_parse( '<html><head><title>404 | هدهد</title></head><body><main><p>x</p></main></body></html>', 'https://hodima.test/p/' )['soft404'] );
+// SEO 3.9.3: عبارت‌های دقیق‌تر و شرط متن کم (باگ‌های واقعی: «گیره مو کد 404» و «چرا … وجود ندارد» Soft 404 می‌شدند)
+$sf_t = static fn( string $title, string $h1, string $body = '<p>x</p>' ): string => hodima_seo_advisor_crawler_parse( '<!doctype html><html><head><title>' . $title . '</title></head><body><main><h1>' . $h1 . '</h1>' . $body . '</main></body></html>', 'https://hodima.test/p/' )['soft404'] ?? 'x'; // $doc عنوان «t» خودش را دارد؛ اینجا عنوان باید واقعی باشد
+hodima_ck( 'Soft 404 (۳.۹.۳): محصول «گیره مو کد 404» ← هیچ (عدد وسط نام محصول)', '' === $sf_t( 'گیره مو کد 404 | هدهد', 'گیره مو کد 404' ) );
+hodima_ck( 'Soft 404 (۳.۹.۳): مقاله «چرا این محصول وجود ندارد؟» ← هیچ (عبارت «وجود ندارد» تنها کافی نیست)', '' === $sf_t( 'چرا این محصول وجود ندارد؟', 'چرا این محصول وجود ندارد؟' ) );
+hodima_ck( 'Soft 404 (۳.۹.۳): «صفحه مورد نظر شما» در عنوان مقاله ← هیچ', '' === $sf_t( 'صفحه مورد نظر شما برای سفارش', 'راهنمای سفارش' ) );
+hodima_ck( 'Soft 404 (۳.۹.۳): «خطای ۴۰۴ | هدهد» با رقم فارسی ← title|404', 'title|404' === $sf_t( 'خطای ۴۰۴ | هدهد', 'ای وای' ) );
+hodima_ck( 'Soft 404 (۳.۹.۳): «صفحه یافت نشد» با متن کم ← title', str_starts_with( $sf_t( 'صفحه یافت نشد', 'صفحه یافت نشد' ), 'title|' ) );
+hodima_ck( 'Soft 404 (۳.۹.۳): «صفحه یافت نشد» ولی ۳۰۰ کلمه متن ← هیچ (صفحه واقعی)', '' === $sf_t( 'صفحه یافت نشد', 'صفحه یافت نشد', '<p>' . str_repeat( 'کلمه ', 300 ) . '</p>' ) );
 $ldp = static fn( string $head ): array => $doc( $head );
 $ld_ok   = $ldp( '<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"#w"},{"@type":"Organization","@id":"#o"}]}</script>' );
 $ld_bad  = $ldp( '<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product",}</script>' );
@@ -336,20 +356,20 @@ hodima_ck( 'نقشه سایت: canonical به صفحه دیگر ← sitemap_bad 
 $cs_n = $cs_one( 'sitemap_bad', [ 'indexable' => 0, 'reason' => 'Noindex' ], [ 'sitemap' => [ '/ck-page/' => true ] ] );
 hodima_ck( 'نقشه سایت: noindex ← بی آدرس پیشنهادی', [ 'noindex', '' ] === [ $cs_n['detail'] ?? '', $cs_n['url'] ?? 'x' ] );
 
-echo "=== مهاجرت جدول (DB 1.14.0 و 1.15.0): ستون‌های تازه بعد از حذف دوباره ساخته می‌شوند\n";
+echo "=== مهاجرت جدول (DB 1.14.0 تا 1.16.0): ستون‌های تازه بعد از حذف دوباره ساخته می‌شوند\n";
 global $wpdb;
 $mg_t = hodima_seo_advisor_table( 'crawl_pages' );
-foreach ( [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors' ] as $mg_c ) {
+foreach ( [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors', 'canonical_url' ] as $mg_c ) {
 	$wpdb->query( "ALTER TABLE {$mg_t} DROP COLUMN {$mg_c}" ); // phpcs:ignore WordPress.DB
 }
-$mg_before = array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors' ], (array) $wpdb->get_col( "SELECT * FROM {$mg_t} LIMIT 0" ) ?: array_column( (array) $wpdb->get_results( "PRAGMA table_info({$mg_t})", ARRAY_A ), 'name' ) );
+$mg_before = array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors', 'canonical_url' ], (array) $wpdb->get_col( "SELECT * FROM {$mg_t} LIMIT 0" ) ?: array_column( (array) $wpdb->get_results( "PRAGMA table_info({$mg_t})", ARRAY_A ), 'name' ) );
 update_option( HODIMA_SEO_ADVISOR_VERSION_OPTION, '1.13.0', false );
 hodima_seo_advisor_ensure_tables();
 $mg_cols = array_column( (array) $wpdb->get_results( "PRAGMA table_info({$mg_t})", ARRAY_A ), 'name' );
 if ( ! $mg_cols ) {
 	$mg_cols = array_column( (array) $wpdb->get_results( "SHOW COLUMNS FROM {$mg_t}", ARRAY_A ), 'Field' );
 }
-hodima_ck( 'ensure_tables بعد از حذف ستون‌ها: هر هفت ستون تازه (۱.۱۴.۰ و ۱.۱۵.۰) دوباره هست', [ [], [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors' ], HODIMA_SEO_ADVISOR_DB_VERSION ] === [ array_values( $mg_before ), array_values( array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors' ], $mg_cols ) ), get_option( HODIMA_SEO_ADVISOR_VERSION_OPTION ) ], wp_json_encode( [ $mg_before, $mg_cols ] ) );
+hodima_ck( 'ensure_tables بعد از حذف ستون‌ها: هر هشت ستون تازه (۱.۱۴.۰ تا ۱.۱۶.۰) دوباره هست', [ [], [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors', 'canonical_url' ], HODIMA_SEO_ADVISOR_DB_VERSION ] === [ array_values( $mg_before ), array_values( array_intersect( [ 'notext_links', 'notext_list', 'js_links', 'js_list', 'soft404', 'ld_count', 'ld_errors', 'canonical_url' ], $mg_cols ) ), get_option( HODIMA_SEO_ADVISOR_VERSION_OPTION ) ], wp_json_encode( [ $mg_before, $mg_cols ] ) );
 
 echo "=== ثابت‌ها (invariant): پیش‌نویس باید از تشخیص همان ایراد رد شود\n";
 $limit = hodima_seo_px_limit( 'title' );
@@ -694,6 +714,72 @@ $wpdb->delete( $sg_t, [ 'path' => '/sg-facts/' ] );
 hodima_seo_advisor_crawl_map( true );
 null === $sg_ins ? delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION ) : update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $sg_ins, false );
 null === $sg_ctr ? delete_option( HODIMA_SEO_ADVISOR_CTR_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CTR_OPTION, $sg_ctr, false );
+
+echo "=== SEO 3.9.3: باگ‌های گزارش دستار (هدر robots ربات دیگر، نمره سراسری، نقشه سایت، برند، کلمه ربط، base)\n";
+
+// باگ ۳: X-Robots-Tag مخصوص ربات دیگر
+$rg = static fn( string $h ): string => hodima_seo_advisor_robots_for_google( $h );
+hodima_ck( 'X-Robots-Tag: «bingbot: noindex» برای گوگل چیزی نیست', '' === $rg( 'bingbot: noindex' ) );
+hodima_ck( 'X-Robots-Tag: دستور بی‌نام و «googlebot: noindex» برای گوگل است', 'noindex' === $rg( 'noindex' ) && 'noindex' === $rg( 'googlebot: noindex' ) );
+hodima_ck( 'X-Robots-Tag: اسم ربات تا اسم بعدی اثر دارد («bingbot: noindex, nofollow, googlebot: nosnippet» ← فقط nosnippet)', 'nosnippet' === $rg( 'bingbot: noindex, nofollow, googlebot: nosnippet' ), $rg( 'bingbot: noindex, nofollow, googlebot: nosnippet' ) );
+hodima_ck( 'X-Robots-Tag: max-snippet:0 و unavailable_after نام ربات حساب نمی‌شوند', str_contains( $rg( 'max-snippet:0' ), 'max-snippet:0' ) && str_contains( $rg( 'unavailable_after: 25 Jun 2030 15:00:00 PST' ), 'unavailable_after' ) );
+$rg_row = static fn( string $x ): array => hodima_seo_advisor_crawler_page_row( '/p/', 200, 100, hodima_seo_advisor_crawler_parse( '<html><head><title>t</title></head><body><main><h1>x</h1></main></body></html>', 'https://hodima.test/p/' ), '', $x );
+hodima_ck( 'ردیف صفحه: هدر «bingbot: noindex» صفحه را ایندکس‌پذیر نگه می‌دارد (باگ قبلی: noindex گوگل حساب می‌شد)', 1 === $rg_row( 'bingbot: noindex' )['indexable'] && '' === $rg_row( 'bingbot: noindex' )['reason'] );
+hodima_ck( 'ردیف صفحه: هدر بی‌نام و googlebot هنوز noindex می‌کند', [ 0, 0 ] === [ $rg_row( 'noindex' )['indexable'], $rg_row( 'googlebot: noindex' )['indexable'] ] );
+
+// باگ ۴ و ۵: ردیف صفحه canonical_url
+$cv_row = static fn( string $canonical ): array => hodima_seo_advisor_crawler_page_row( '/p/', 200, 100, hodima_seo_advisor_crawler_parse( '<html><head><title>t</title><link rel="canonical" href="' . $canonical . '"></head><body><main><h1>x</h1></main></body></html>', 'https://hodima.test/p/' ), '', '' );
+$cv_ext = $cv_row( 'https://other.example/p/' );
+$cv_var = $cv_row( 'http://hodima.test/p/' );
+$cv_prm = $cv_row( 'https://hodima.test/p/?color=red' );
+$cv_ok  = $cv_row( 'https://hodima.test/p/' );
+hodima_ck( 'خزنده: canonical دامنه دیگر ← «!ext» و آدرس کامل در canonical_url', '!ext' === $cv_ext['canonical'] && 'https://other.example/p/' === $cv_ext['canonical_url'], wp_json_encode( [ $cv_ext['canonical'], $cv_ext['canonical_url'] ] ) );
+hodima_ck( 'خزنده: canonical با http و با پارامتر ← مسیر /p/ ولی canonical_url پر؛ canonical درست ← canonical_url خالی', '/p/' === $cv_var['canonical'] && 'http://hodima.test/p/' === $cv_var['canonical_url'] && 'https://hodima.test/p/?color=red' === $cv_prm['canonical_url'] && '' === $cv_ok['canonical_url'] );
+hodima_ck( 'خزنده: canonical مسیر بلندتر از ستون در همین سایت ← «!long» (قبلا «!ext» و «سایت دیگر» می‌شد)', '!long' === $cv_row( 'https://hodima.test/' . str_repeat( 'a', 250 ) . '/' )['canonical'] );
+$cv_ctx = [ 'site' => [ 'https', 'hodima.test' ] ];
+$cv_e2e = hodima_seo_advisor_checks_run( hodima_ck_row( $cv_prm + [ 'inlinks' => 9, 'impressions' => 0, 'kind' => 'page', 'canonical_url' => $cv_prm['canonical_url'] ] ), hodima_ck_ctx( $cv_ctx ) );
+hodima_ck( 'زنجیره کامل: ردیف خزنده با canonical پارامتری ← canonical_variant در خروجی checks_run', in_array( 'canonical_variant', array_column( $cv_e2e, 'code' ), true ), wp_json_encode( array_column( $cv_e2e, 'code' ) ) );
+
+// باگ ۱: سقف نمره
+$cap_site = hodima_seo_advisor_score( array_merge( [ [ 'path' => '/', 'issues' => [ [ 'code' => 'site_hidden' ] ] ] ], array_map( static fn( int $i ): array => $sc_row2( $i, [ 'title_short' ] ), range( 1, 299 ) ) ), 300 );
+hodima_ck( 'نمره: سایت ۳۰۰ صفحه‌ای پنهان از گوگل (site_hidden) نمره کل ≤ ۴۰ می‌گیرد (قبلا ۱۰۰ «عالی»)', $cap_site['score'] <= 40 && 'site_hidden' === $cap_site['cap'] && 'site_hidden' === ( $cap_site['top'][0]['code'] ?? '' ), wp_json_encode( $cap_site ) );
+$cap_home = hodima_seo_advisor_score( [ [ 'path' => '/', 'issues' => [ [ 'code' => 'server_error' ] ] ] ], 300 );
+hodima_ck( 'نمره: خطای ۵۰۰ صفحه اصلی نمره را به ۴۰ می‌رساند (قبلا ۱۰۰)', 40 === $cap_home['score'] && 'server_error' === $cap_home['cap'], wp_json_encode( $cap_home ) );
+$cap_other = hodima_seo_advisor_score( [ [ 'path' => '/other/', 'issues' => [ [ 'code' => 'server_error' ] ] ] ], 300 );
+hodima_ck( 'نمره: همان خطای ۵۰۰ روی صفحه دیگر نمره را به سقف نمی‌رساند (متناسب می‌ماند)', '' === $cap_other['cap'] && $cap_other['score'] > 90, wp_json_encode( $cap_other ) );
+$cap_info = hodima_seo_advisor_score( [ [ 'path' => '/', 'issues' => [ [ 'code' => 'site_hidden', 'level' => 'info' ] ] ] ], 300 );
+hodima_ck( 'نمره: ایراد سراسری با level=info (علامت‌خورده) سقف نمی‌گذارد', '' === $cap_info['cap'] && 100 === $cap_info['score'] );
+
+// باگ ۸: ایراد خطا برای صفحه‌ای که فقط در نقشه سایت است
+$dead_row = hodima_ck_row( [ 'path' => '/ghost/', 'status' => 500, 'indexable' => 0, 'inlinks' => 0, 'impressions' => 0 ] );
+hodima_ck( 'خطای ۵۰۰ نوشته بی‌لینک و بی‌نمایش ولی در نقشه سایت ← server_error (باگ قبلی: بی‌صدا)', in_array( 'server_error', array_column( hodima_seo_advisor_checks_run( $dead_row, hodima_ck_ctx( [ 'sitemap' => [ '/ghost/' => true ] ] ) ), 'code' ), true ) );
+hodima_ck( 'همان خطا بی‌لینک، بی‌نمایش، بیرون از نقشه سایت ← هنوز بی‌ایراد (ردیف مانده از دور قبل)', ! in_array( 'server_error', array_column( hodima_seo_advisor_checks_run( $dead_row, hodima_ck_ctx() ), 'code' ), true ) );
+
+// باگ ۶: کلمه ربط
+$norm = 'hodima_seo_advisor_normalize';
+hodima_ck( '«کش مو برای عروس» در عنوان «خرید عمده کش مو عروس» هست (باگ قبلی: «برای» نیامده بود)', hodima_seo_advisor_text_has( $norm( 'خرید عمده کش مو عروس' ), 'کش مو برای عروس' ) );
+hodima_ck( 'کلمه معنی‌دار نبودن هنوز تشخیص داده می‌شود («کش مو برای عروس» در «خرید عمده کش مو» نیست)', ! hodima_seo_advisor_text_has( $norm( 'خرید عمده کش مو' ), 'کش مو برای عروس' ) );
+hodima_ck( 'فهرست ربط‌ها یکی است: عنوان مشابه همان را می‌خواند', [] === array_diff( HODIMA_SEO_ADVISOR_CONNECTORS, HODIMA_SEO_ADVISOR_SIMILAR_STOP ) );
+
+// باگ ۷: کلمه برند
+$bn_old = get_option( 'blogname' );
+update_option( 'blogname', 'هدهدلی | عمده فروشی اکسسوری مو' );
+$bn_terms = hodima_seo_advisor_brand_terms();
+hodima_ck( 'برند: از نام «هدهدلی | عمده فروشی اکسسوری مو» فقط «هدهدلی» (و دامنه) برند است', in_array( 'هدهدلی', $bn_terms, true ) && ! array_intersect( [ 'عمده', 'فروشی', 'اکسسوری' ], $bn_terms ), wp_json_encode( $bn_terms, JSON_UNESCAPED_UNICODE ) );
+hodima_ck( 'برند: «اکسسوری مو عمده» برندی نیست ولی «هدهدلی اکسسوری» برندی است', ! hodima_seo_advisor_is_brand( 'اکسسوری مو عمده' ) && hodima_seo_advisor_is_brand( 'هدهدلی اکسسوری' ) );
+update_option( 'blogname', 'هدهدلی' );
+hodima_ck( 'برند: نام ساده «هدهدلی» ← همان واژه', in_array( 'هدهدلی', hodima_seo_advisor_brand_terms(), true ) );
+update_option( 'blogname', $bn_old );
+
+// باگ ۹: <base href>
+$bs_html = '<html><head><title>t</title><base href="https://hodima.test/shop/"></head><body><main><h1>x</h1><a href="item/">آ</a> <a href="/abs/">ب</a> <img src="pic.jpg" alt="ع"></main></body></html>';
+$bs      = hodima_seo_advisor_crawler_parse( $bs_html, 'https://hodima.test/blog/post/' );
+$bs_dest = array_map( static fn( array $l ): ?string => hodima_seo_advisor_path_key( $l[0] ), $bs['links'] );
+hodima_ck( '<base href>: لینک نسبی نسبت به base حل می‌شود (/shop/item/ نه /blog/post/item/) و لینک مطلق دست‌نخورده', [ '/shop/item/', '/abs/' ] === $bs_dest, wp_json_encode( $bs_dest ) );
+$bs_none = hodima_seo_advisor_crawler_parse( str_replace( '<base href="https://hodima.test/shop/">', '', $bs_html ), 'https://hodima.test/blog/post/' );
+hodima_ck( 'بدون <base>: همان رفتار قبلی (نسبت به آدرس صفحه)', '/blog/post/item/' === hodima_seo_advisor_path_key( $bs_none['links'][0][0] ) );
+$bs_bad = hodima_seo_advisor_crawler_parse( str_replace( 'https://hodima.test/shop/', 'javascript:void(0)', $bs_html ), 'https://hodima.test/blog/post/' );
+hodima_ck( '<base> نامعتبر نادیده گرفته می‌شود', '/blog/post/item/' === hodima_seo_advisor_path_key( $bs_bad['links'][0][0] ) );
 
 echo "\n";
 if ( $failed ) {

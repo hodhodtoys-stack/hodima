@@ -72,6 +72,7 @@ $base = static fn( string $path ): array => [
 	'soft404'      => '',
 	'ld_count'     => 1,
 	'ld_errors'    => '',
+	'canonical_url' => '',
 ];
 
 $cases = [
@@ -101,6 +102,8 @@ $cases = [
 	'/g-ld/'        => [ 'ld_count' => 2, 'ld_errors' => '[["json","Syntax error"],["type","#n"]]' ], // SEO 3.8.6: JSON-LD خراب
 	'/g-nocanon/'   => [ 'canonical' => '' ],
 	'/g-canbad/'    => [ 'canonical' => '/g-gone/' ],
+	'/g-canext/'    => [ 'canonical' => '!ext', 'canonical_url' => 'https://other.example/g-canext/' ], // SEO 3.9.3: canonical به سایت دیگر
+	'/g-canvar/'    => [ 'canonical_url' => 'https://hodima.test/g-canvar/?color=red' ], // SEO 3.9.3: canonical با پارامتر
 	'/g-canredir/'  => [ 'canonical' => '/g-redir/' ], // SEO 3.8.5: canonical به ریدایرکت ← آدرس پیشنهادی مقصد نهایی /g-ok/
 	'/g-gone/'      => [ 'status' => 404, 'inlinks' => 2 ],
 	'/g-redir/'     => [ 'status' => 301, 'inlinks' => 2, 'redirect_to' => '/g-redir2/' ],

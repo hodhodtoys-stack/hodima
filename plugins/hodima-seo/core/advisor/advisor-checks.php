@@ -146,6 +146,7 @@ function hodima_seo_advisor_checks_context( array $rows ): array {
 		'by_path' => $by_path,
 		'sitemap' => hodima_seo_advisor_sitemap_paths(),
 		'bad'     => $bad,
+		'site'    => [ strtolower( (string) wp_parse_url( home_url(), PHP_URL_SCHEME ) ), strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) ], // [پروتکل، دامنه] برای canonical با شکل دیگر (SEO 3.9.3)
 		'hidden'  => '0' === (string) get_option( 'blog_public', '1' ), // «تنظیمات ← خواندن ← از موتورهای جستجو بخواه ایندکس نکند» (SEO 3.6.7)
 		// تابع‌های ایراد خالص‌اند (بدون دیتابیس/وردپرس)؛ تا SEO ۳.۸.۰ check_thin خودش classify و taxonomy_exists را صدا می‌زد
 		'kinds'      => $kinds,
@@ -574,6 +575,62 @@ function hodima_seo_advisor_check_ld_invalid( array $r, array $ctx ): array {
 }
 
 /**
+ * canonical به سایت دیگر (SEO 3.9.3): گوگل می‌گوید این صفحه را کنار می‌گذارد و سایت مقصد را نمایش می‌دهد. تا ۳.۹.۲ ردیف
+ * ایندکس‌پذیر می‌ماند و هیچ ایرادی نمی‌ساخت (canonical_bad آدرس دامنه دیگر را اصلا نمی‌سنجید). صفحه‌های سیستمی کنار.
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_canonical_external( array $r, array $ctx ): array {
+
+	if ( 200 !== (int) $r['status'] || '!ext' !== (string) $r['canonical'] || hodima_seo_advisor_is_system_path( (string) $r['path'] ) ) {
+		return [];
+	}
+
+	$url = (string) ( $r['canonical_url'] ?? '' ); // ردیف قدیمی آدرس را ندارد؛ ایراد همچنان می‌آید
+
+	return [ hodima_seo_advisor_issue( 'canonical_external', '' !== $url ? 'به آدرسی در سایت دیگر اشاره می‌کند (زیر).' : 'به سایتی غیر از این سایت اشاره می‌کند.', $url ) ];
+}
+
+/**
+ * canonical با شکل غیرمعمول (SEO 3.9.3): پروتکل دیگر (http در سایت https)، دامنه دیگر (با www در سایت بی‌www) یا پارامتر (?color=red).
+ * تا ۳.۹.۲ فقط مسیر مقایسه می‌شد و این‌ها «همان صفحه» حساب می‌شدند، پس canonical غلط دیده نمی‌شد. canonical به دامنه کاملا دیگر ایراد
+ * جدا دارد (canonical_external).
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_canonical_variant( array $r, array $ctx ): array {
+
+	$url = (string) ( $r['canonical_url'] ?? '' );
+
+	if ( 200 !== (int) $r['status'] || '' === $url || '!ext' === (string) $r['canonical'] || hodima_seo_advisor_is_system_path( (string) $r['path'] ) ) {
+		return [];
+	}
+
+	$kind = hodima_seo_advisor_canonical_variant( $url, $ctx['site'] ?? [ '', '' ] );
+
+	if ( '' === $kind ) {
+		return [];
+	}
+
+	$why = [
+		'scheme' => 'با پروتکل دیگری از سایت نوشته شده (سایت %s است).',
+		'host'   => 'با دامنه‌ای نوشته شده که با دامنه اصلی سایت (%s) فرق دارد.',
+		'param'  => 'پارامتر دارد (%s).',
+	][ $kind ];
+	$arg = match ( $kind ) {
+		'scheme' => ( $ctx['site'][0] ?? '' ) . '://',
+		'host'   => (string) ( $ctx['site'][1] ?? '' ),
+		default  => '?' . (string) wp_parse_url( $url, PHP_URL_QUERY ),
+	};
+
+	return [ hodima_seo_advisor_issue( 'canonical_variant', sprintf( $why, $arg ), $url ) ];
+}
+
+/**
  * بدون canonical.
  *
  * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
@@ -843,6 +900,8 @@ function hodima_seo_advisor_checks(): array {
 		'site_hidden'    => [ 'when' => 'always', 'codes' => [ 'site_hidden' ], 'fn' => 'hodima_seo_advisor_check_site_hidden' ],
 		'sitemap_bad'    => [ 'when' => 'always', 'codes' => [ 'sitemap_bad' ], 'fn' => 'hodima_seo_advisor_check_sitemap_bad' ],
 		'canonical_bad'  => [ 'when' => 'always', 'codes' => [ 'canonical_bad' ], 'fn' => 'hodima_seo_advisor_check_canonical_bad' ],
+		'canonical_external' => [ 'when' => 'always', 'codes' => [ 'canonical_external' ], 'fn' => 'hodima_seo_advisor_check_canonical_external' ],
+		'canonical_variant'  => [ 'when' => 'always', 'codes' => [ 'canonical_variant' ], 'fn' => 'hodima_seo_advisor_check_canonical_variant' ],
 		'title'          => [ 'when' => 'live', 'codes' => [ 'no_title', 'title_short', 'title_long' ], 'fn' => 'hodima_seo_advisor_check_title' ],
 		'no_meta'        => [ 'when' => 'live', 'codes' => [ 'no_meta' ], 'fn' => 'hodima_seo_advisor_check_no_meta' ],
 		'no_snippet'     => [ 'when' => 'live', 'codes' => [ 'no_snippet' ], 'fn' => 'hodima_seo_advisor_check_no_snippet' ],
@@ -881,7 +940,9 @@ function hodima_seo_advisor_checks_run( array $r, array $ctx ): array {
 
 	$live  = 200 === (int) $r['status'] && 1 === (int) $r['indexable'];
 	$known = (int) $r['words'] >= 0; // ردیف قدیمی پیش از خزنده داخلی ستون‌های تازه را ندارد (-1)
-	$seen  = (int) ( $r['impressions'] ?? 0 ) > 0 || (int) $r['inlinks'] > 0;
+	// صفحه‌ای که سایت خودش در نقشه سایت معرفی کرده «شناخته‌شده» است (SEO 3.9.3). باگ قبلی: نوشته منتشرشده‌ای که ۵۰۰ یا ۴۰۴ می‌داد ولی
+	// نمایش گوگل و لینک ورودی نداشت، بی‌صدا می‌ماند؛ نقشه سایت همه منتشرشده‌های فعال را دارد.
+	$seen  = (int) ( $r['impressions'] ?? 0 ) > 0 || (int) $r['inlinks'] > 0 || isset( $ctx['sitemap'][ (string) $r['path'] ] );
 	$out   = [];
 
 	foreach ( hodima_seo_advisor_checks() as $check ) {

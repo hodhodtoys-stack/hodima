@@ -27,10 +27,31 @@ foreach ( (array) $GLOBALS['wpdb']->get_results( $GLOBALS['wpdb']->prepare( 'SEL
 	$fz_rows[ $fz_r['path'] ] = [ (int) $fz_r['inlinks'], (int) $fz_r['text_links'], (int) $fz_r['depth'] ];
 }
 hodima_ad(
-	'پایان دور با شمارش در پایگاه داده: لینک ورودی یکتا، لینک متنی follow، عمق؛ جزیره = نارسیده',
+	'پایان دور با شمارش در پایگاه داده: لینک ورودی یکتا follow (۳.۹.۳: لینک nofollow از a به c حساب نمی‌شود؛ قبلا c دو لینک ورودی داشت)، لینک متنی follow، عمق؛ جزیره = نارسیده',
 	$fz_rows,
-	[ '/' => [ 0, 0, 0 ], '/a/' => [ 1, 1, 1 ], '/b/' => [ 1, 0, 1 ], '/c/' => [ 2, 1, 2 ], '/d/' => [ 1, 1, 3 ], '/e/' => [ 0, 0, HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ], '/f/' => [ 1, 1, HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ] ]
+	[ '/' => [ 0, 0, 0 ], '/a/' => [ 1, 1, 1 ], '/b/' => [ 1, 0, 1 ], '/c/' => [ 1, 1, 2 ], '/d/' => [ 1, 1, 3 ], '/e/' => [ 0, 0, HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ], '/f/' => [ 1, 1, HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ] ]
 );
+// SEO 3.9.3: لینک فقط‌nofollow و لینک از راه ریدایرکت. / ← /old/ (۳۰۱ به /new/)، / ← /nf/ فقط با nofollow؛ /new/ و /nf/ خزیده‌اند.
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_pt ) );
+$GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_lt ) );
+foreach ( [ '/', '/old/', '/new/', '/nf/', '/other/' ] as $fz_p ) {
+	$GLOBALS['wpdb']->insert( $fz_pt, [ 'path' => $fz_p, 'status' => '/old/' === $fz_p ? 301 : 200, 'indexable' => '/old/' === $fz_p ? 0 : 1, 'redirect_to' => '/old/' === $fz_p ? '/new/' : '', 'title' => 'عنوان ' . $fz_p, 'title_len' => 50, 'meta_len' => 100, 'h1' => 'تیتر ' . $fz_p, 'words' => 300, 'h1_count' => 1, 'canonical' => $fz_p ] );
+}
+foreach ( [ [ '/', '/old/', 'content', 1 ], [ '/', '/nf/', 'content', 0 ], [ '/other/', '/new/', 'content', 1 ], [ '/', '/other/', 'content', 1 ] ] as [ $fz_s, $fz_d, $fz_pos, $fz_fol ] ) {
+	$GLOBALS['wpdb']->insert( $fz_lt, [ 'source_path' => $fz_s, 'dest_path' => $fz_d, 'link_position' => $fz_pos, 'anchor' => 'x', 'is_follow' => $fz_fol ] );
+}
+$fz_state['seen'] = array_fill_keys( [ '/', '/old/', '/new/', '/nf/', '/other/' ], 1 );
+hodima_seo_advisor_crawler_finalize( $fz_state );
+$fz_rows2 = [];
+foreach ( (array) $GLOBALS['wpdb']->get_results( $GLOBALS['wpdb']->prepare( 'SELECT path, inlinks, text_links, depth FROM %i ORDER BY path', $fz_pt ), ARRAY_A ) as $fz_r ) {
+	$fz_rows2[ $fz_r['path'] ] = [ (int) $fz_r['inlinks'], (int) $fz_r['text_links'], (int) $fz_r['depth'] ];
+}
+hodima_ad(
+	'لینک فقط‌nofollow ← /nf/ بدون لینک ورودی و جزیره؛ لینک به /old/ (ریدایرکت به /new/) برای /new/ هم لینک ورودی است (از / و /other/ = ۲) با عمق ۱ (ریدایرکت کلیک اضافه نیست)',
+	$fz_rows2,
+	[ '/' => [ 0, 0, 0 ], '/new/' => [ 2, 2, 1 ], '/nf/' => [ 0, 0, HODIMA_SEO_ADVISOR_CRAWL_UNREACHABLE ], '/old/' => [ 1, 1, 1 ], '/other/' => [ 1, 1, 1 ] ]
+);
+
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_pt ) );
 $GLOBALS['wpdb']->query( $GLOBALS['wpdb']->prepare( 'DELETE FROM %i', $fz_lt ) );
 hodima_seo_advisor_crawl_map( true );

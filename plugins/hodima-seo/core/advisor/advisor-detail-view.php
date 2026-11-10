@@ -188,8 +188,8 @@ function hodima_seo_advisor_render_issue_detail( array $item, string $path ): vo
 	}
 
 	// مقصد ریدایرکت (تا ۳.۶.۵ فقط «به این آدرس می‌رود:» بدون آدرس چاپ می‌شد): آدرس با دکمه کپی
-	if ( in_array( $code, [ 'redirect', 'redirect_chain', 'redirect_loop', 'canonical_bad', 'sitemap_bad' ], true ) && '' !== (string) ( $item['url'] ?? '' ) ) {
-		hodima_seo_advisor_render_link_list( [ [ 'path' => (string) $item['url'], 'note' => '' ] ], [ 'redirect' => 'مقصد ریدایرکت', 'redirect_chain' => 'مقصد نهایی', 'redirect_loop' => 'ریدایرکت بعدی', 'canonical_bad' => 'آدرس پیشنهادی برای canonical', 'sitemap_bad' => 'آدرسی که باید در نقشه سایت باشد' ][ $code ], 'مقصد' ); // canonical_bad و sitemap_bad از SEO 3.8.5
+	if ( in_array( $code, [ 'redirect', 'redirect_chain', 'redirect_loop', 'canonical_bad', 'canonical_external', 'canonical_variant', 'sitemap_bad' ], true ) && '' !== (string) ( $item['url'] ?? '' ) ) {
+		hodima_seo_advisor_render_link_list( [ [ 'path' => (string) $item['url'], 'note' => '' ] ], [ 'redirect' => 'مقصد ریدایرکت', 'redirect_chain' => 'مقصد نهایی', 'redirect_loop' => 'ریدایرکت بعدی', 'canonical_bad' => 'آدرس پیشنهادی برای canonical', 'canonical_external' => 'آدرس canonical فعلی', 'canonical_variant' => 'آدرس canonical فعلی', 'sitemap_bad' => 'آدرسی که باید در نقشه سایت باشد' ][ $code ], 'مقصد' ); // canonical_bad و sitemap_bad از SEO 3.8.5
 	}
 
 	if ( 'near_dup' === $code ) {
