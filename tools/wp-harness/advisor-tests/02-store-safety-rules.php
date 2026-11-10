@@ -566,7 +566,7 @@ hodima_ad( 'هر قاعده «چرا مهم است» و «از کجا بفهمم
 hodima_ad( 'راهنمای «کارها»: آدرس وسط «چه دیدیم» و گام‌ها لینک چپ‌به‌راست جدا (bdi) است، نه متن ساده که اسلشش جابه‌جا شود (SEO 3.7.1)', ( static function (): array { ob_start(); hodima_seo_advisor_render_guide( [ 'seen' => 'بیشترین سهم با https://e.test/a-b/ (۶۰٪) است.', 'need' => 'rec', 'steps' => [ 'به https://e.test/c/ لینک بدهید.' ], 'verify' => '', 'why' => '' ] ); $h = (string) ob_get_clean(); return [ substr_count( $h, 'dir="ltr"><bdi>' ), str_contains( $h, '</a> (۶۰٪)' ) ]; } )(), [ 2, true ] );
 hodima_ad( '«کارهای انجام‌شده» ← «منتظر نتیجه»: بدون پیوند برگشت (خودش تب است)، کار «انجام دادم» با سه گام (انجام دادید، منتظر بررسی ایندکس، منتظر نتیجه با سنجش ۱۴ روزه)', [ ! str_contains( $done_html, 'برگشت به فهرست کارها' ), substr_count( $done_html, 'class="hodima-advisor__task"' ), substr_count( $done_html, 'class="hodima-advisor__step"' ), str_contains( $done_html, 'منتظر بررسی ایندکس' ), str_contains( $done_html, 'همان‌قدر روز پیش از آن مقایسه می‌شود' ), str_contains( $done_html, 'کلمه نزدیک صفحه اول' ) ], [ true, 1, 3, true, true, false ] );
 hodima_ad(
-	'کارت «کارهای انجام‌شده» (SEO 3.9.0، طرح تأییدشده): نوار سربرگ صفحه، عنوان H3 و نشان کوتاه کهربایی، گام‌شمار (✓ انجام، «الان اینجاست» با aria-current، بعدی شماره‌دار با نوار روزشمار)، ارقام فارسی، دکمه آبی کم‌رنگ و «پاک کردن» بی‌قاب؛ بی نارنجی پر',
+	'کارت «کارهای انجام‌شده» (SEO 3.9.0، طرح تأییدشده): نوار سربرگ صفحه، عنوان H3 و نشان کوتاه کهربایی، گام‌شمار (✓ انجام، «الان اینجاست» با aria-current، بعدی شماره‌دار با نوار روزشمار)، ارقام فارسی، دکمه آبی کم‌رنگ و «پاک کردن» بی‌قاب؛ بی نارنجی پر؛ نوار روزشمار زیر متن گام با برچسب روز (SEO 3.9.1)',
 	[
 		substr_count( $done_html, 'class="hodima-advisor__task-bar"' ),
 		(bool) preg_match( '~<h3 class="hodima-advisor__task-title">[^<]+</h3>~u', $done_html ),
@@ -576,8 +576,9 @@ hodima_ad(
 		substr_count( $done_html, 'class="hodima-advisor__step-bar"' ),
 		str_contains( $done_html, 'hodima-advisor__task-btn--reject' ) && str_contains( $done_html, 'hodima-advisor__task-btn--quiet' ) && str_contains( $done_html, 'dashicons-trash' ),
 		str_contains( $done_html, 'hodima-advisor__mark-reject' ),
+		(bool) preg_match( '~class="hodima-advisor__step-text">[^<]*</span>\s*<span class="hodima-advisor__step-progress">\s*<span class="hodima-advisor__step-bar"[^>]*><i[^>]*></i></span>\s*<small>۰ از ۱۴ روز</small>~u', $done_html ),
 	],
-	[ 1, true, true, false, [ 1, 1, 1 ], 1, true, false ]
+	[ 1, true, true, false, [ 1, 1, 1 ], 1, true, false, true ]
 );
 hodima_ad(
 	'نشان کوتاه و رنگ وضعیت: «انجام شد · » و «؛ قدم بعدی را ببینید» حذف، پرانتز پیشرفت با « · »؛ منتظر کهربایی، بی‌اثر قرمز، برطرف سبز',

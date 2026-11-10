@@ -1042,10 +1042,24 @@
 	color: var(--hd-muted);
 }
 
+/* نوار روزشمار زیر متن گام، کوتاه و با برچسب روز تا با خط وصل گام‌ها اشتباه نشود (SEO 3.9.1) */
+.hodima-advisor .hodima-advisor__step-progress {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	margin-block-start: 0.25rem;
+}
+
+.hodima-advisor .hodima-advisor__step-progress small {
+	flex: 0 0 auto;
+	color: color-mix(in srgb, var(--hd-warn) 80%, #000);
+	font-weight: 700;
+}
+
 .hodima-advisor .hodima-advisor__step-bar {
 	display: block;
+	flex: 0 1 8rem;
 	block-size: 6px;
-	margin-block: 0.25rem;
 	border-radius: 99px;
 	background: color-mix(in srgb, var(--hd-border) 50%, #fff);
 	overflow: hidden;
@@ -1116,7 +1130,8 @@
 	border-block-start: 1px solid color-mix(in srgb, var(--hd-border) 60%, #fff);
 }
 
-/* دکمه‌های تب «کارهای انجام‌شده» (خواست کاربر): «لازم نیست» آبی کم‌رنگ، «دوباره انجام دادم» سبز کم‌رنگ، «پاک کردن» بی‌قاب با سطل */
+/* دکمه‌های تب «کارهای انجام‌شده» (خواست کاربر): «لازم نیست» آبی کم‌رنگ، «دوباره انجام دادم» سبز کم‌رنگ، «پاک کردن» قرمز بی‌قاب با سطل
+   (SEO 3.9.1، خواست کاربر: «رنگ قرمز استاندارد»؛ در ۳.۹.۰ خاکستری بود) */
 .hodima-advisor .hodima-advisor__task-btn {
 	display: inline-flex;
 	gap: 0.375rem;
@@ -1151,12 +1166,12 @@
 
 .hodima-advisor .hodima-advisor__task-btn--quiet {
 	background: transparent;
-	color: var(--hd-muted);
+	color: var(--hd-error);
 }
 
 .hodima-advisor .hodima-advisor__task-btn--quiet:hover {
-	background: var(--hd-soft);
-	color: var(--hd-primary);
+	background: color-mix(in srgb, var(--hd-error) 9%, #fff);
+	color: color-mix(in srgb, var(--hd-error) 85%, #000);
 }
 
 .hodima-advisor .hodima-advisor__task-btn .dashicons {
