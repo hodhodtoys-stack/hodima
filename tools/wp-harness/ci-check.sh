@@ -7,6 +7,7 @@
 #   - قواعد اسکیما (schema-rules.py: گراف واحد، هویت، تاریخ، آدرس، محصول، …) رد شوند؛
 #   - آزمون‌های خودکار سیستم رسانه و Google Discover (media-tests.php) رد شوند؛
 #   - آزمون‌های ماژول استوری (stories-tests.php) رد شوند؛
+#   - آزمون اسکیمای AEO (aeo-tests.php: FAQPage پنل AEO بی فیلتر در JSON-LD نیست) رد شود؛
 #   - آزمون‌های ماژول اعلان‌ها (notification-tests.php) رد شوند؛
 #   - آزمون‌های آمار ویدیوها (video-watch-tests.php) رد شوند؛
 #   - آزمون‌های Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس) رد شوند؛
@@ -59,6 +60,13 @@ if HARNESS=1 HODIMA_WP="$base/wp" php "$here/media-tests.php" > "$out/media-test
 	tail -1 "$out/media-tests.txt" | sed 's/^/  /'
 else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/media-tests.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
+
+echo "=== آزمون اسکیمای AEO (aeo-tests.php: FAQPage پنل AEO بی فیلتر در JSON-LD نیست، با فیلتر برمی‌گردد)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/aeo-tests.php" > "$out/aeo-tests.txt" 2>&1; then
+	tail -1 "$out/aeo-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/aeo-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
 echo "=== آزمون اعلان‌ها (notification-tests.php: کش، ذخیره، ستون وضعیت، خروجی)"

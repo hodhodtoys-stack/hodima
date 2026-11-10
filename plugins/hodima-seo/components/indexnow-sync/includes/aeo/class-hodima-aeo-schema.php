@@ -99,7 +99,17 @@ final class Hodima_AEO_Schema {
         $faqs_en = json_decode( (string) $get_meta('_h_ai_en_faqs') ?: '[]', true );
         if ( ! is_array( $faqs_fa ) ) $faqs_fa = [];
         if ( ! is_array( $faqs_en ) ) $faqs_en = [];
-        $all_faqs = array_merge($faqs_en, $faqs_fa);
+
+        /*
+         * SEO 3.9.7 (تصمیم کاربر): پرسش‌های پنل AEO دیگر به‌عنوان FAQPage در JSON-LD صفحه نمی‌روند. این پرسش‌ها در متن صفحه دیده
+         * نمی‌شدند (نیمی انگلیسی در صفحه فارسی) و گوگل (sd-policies) می‌گوید «Don't mark up content that is not visible to readers of the
+         * page»؛ نمایش ویژه FAQ هم از ۷ مه ۲۰۲۶ در گوگل برداشته شده. داده پنل و فایل‌های هوش مصنوعی (llms.txt، ai-feed، /fa/…md از
+         * class-hodima-aeo-generator.php) دست‌نخورده‌اند؛ فقط خروجی اسکیما خاموش شد. برگشت: فیلتر hodima_seo_aeo_faq_schema ← true
+         * (باید همراه نمایش همان پرسش‌ها در متن صفحه باشد وگرنه ایراد «سؤالات متداول فقط در اسکیماست» دستار برمی‌گردد).
+         * بدون FAQ، متن AEO مثل صفحه‌های بی‌FAQ فقط به نود #webpage می‌چسبد.
+         */
+        $faq_schema = (bool) apply_filters( 'hodima_seo_aeo_faq_schema', false, $id, $type );
+        $all_faqs   = $faq_schema ? array_merge( $faqs_en, $faqs_fa ) : [];
 
         $context_en = (string) $get_meta('_h_ai_en_context');
         $context_fa = (string) $get_meta('_h_ai_text');
