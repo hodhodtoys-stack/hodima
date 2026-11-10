@@ -84,6 +84,7 @@ delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
 $f_all = hodima_seo_advisor_inspect_batch( 10 );
 $f_job = get_option( HODIMA_SEO_ADVISOR_PROGRESS_OPTION, [] )['inspect'] ?? [];
 hodima_ad( 'همه آدرس‌ها ۴۰۳: بعد از ۳ خطای پی‌درپی می‌ایستد؛ خطا (نه «۰ آدرس بررسی شد») با کد، پیام گوگل و راهنمای property', [ $f_all['checked'], $f_all['failed'], count( $in_calls ), str_contains( $f_all['error'], 'هیچ آدرسی بررسی نشد' ), str_contains( $f_all['error'], '۴۰۳' ) || str_contains( $f_all['error'], '403' ), str_contains( $f_all['error'], 'not part of this property' ), str_contains( $f_all['error'], 'property انتخاب‌شده' ), str_contains( (string) ( $f_job['text'] ?? '' ), 'هیچ آدرسی بررسی نشد' ), ! empty( $f_job['error'] ) ], [ 0, 3, 3, true, true, true, true, true, true ] );
+hodima_ad( 'همه ۴۰۳ (مشکل از دسترسی property است): خطای هر آدرس ثبت نمی‌شود تا کارت‌های ساختگی «بررسی نشد» نیاید (SEO 3.9.4)', hodima_seo_advisor_inspect_failures(), [] );
 [ $f_type, $f_html ] = hodima_seo_advisor_do_inspect();
 hodima_ad( 'دکمه «اجرا همین حالا» با همه ۴۰۳: پیام خطا، نه موفق', [ $f_type, str_contains( $f_html, '۰ آدرس بررسی شد' ) || str_contains( $f_html, '0 آدرس بررسی شد' ) ], [ 'error', false ] );
 $GLOBALS['inspect_fail'] = 'one';
@@ -91,13 +92,76 @@ $in_calls = [];
 delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
 $f_part = hodima_seo_advisor_inspect_batch( 10 );
 hodima_ad( 'یک آدرس ۴۰۳ و بقیه سالم: بقیه بررسی و ذخیره می‌شوند، خطا نیست ولی پیام شمار خطا را می‌گوید', [ $f_part['checked'], $f_part['failed'], $f_part['error'], str_contains( hodima_seo_advisor_inspect_message( $f_part ), 'گوگل برای ۱ آدرس خطا داد' ) || str_contains( hodima_seo_advisor_inspect_message( $f_part ), 'گوگل برای 1 آدرس خطا داد' ) ], [ 3, 1, '', true ] );
+$f_fails = hodima_seo_advisor_inspect_failures();
+hodima_ad( 'یک آدرس ۴۰۳ و بقیه سالم: خطای همان آدرس با متن گوگل ذخیره می‌شود (پیش‌تر بی‌صدا رد می‌شد)', [ array_keys( $f_fails ), str_contains( $f_fails['/q/c/']['text'] ?? '', 'You do not own this site' ), ( $f_fails['/q/c/']['at'] ?? 0 ) > time() - 60 ], [ [ '/q/c/' ], true, true ] );
 [ $f_type ] = hodima_seo_advisor_do_inspect(); // صف حالا خالی است (همه تازه بررسی شده‌اند یا /q/c/ دوباره ۴۰۳)
 remove_filter( 'pre_http_request', $in_fail, 30 );
 $f_empty = hodima_seo_advisor_inspect_batch( 10 );
 $f_empty_q = hodima_seo_advisor_inspect_queue( 10 );
 hodima_ad( 'صف خالی (همه در ۱۴ روز اخیر بررسی شده): پیام «آدرسی برای پرسیدن نبود»، نه «۰ آدرس بررسی شد»', [ $f_empty_q, $f_empty['queued'] > 0 || str_contains( hodima_seo_advisor_inspect_message( $f_empty ), 'آدرسی برای پرسیدن نبود' ) ], [ [], true ] );
+hodima_ad( 'بعد از پاسخ درست گوگل برای همان آدرس، خطای ذخیره‌شده‌اش پاک می‌شود', hodima_seo_advisor_inspect_failures(), [] );
 hodima_ad( 'پیام صف خالی', str_starts_with( hodima_seo_advisor_inspect_message( [ 'checked' => 0, 'error' => '', 'quota' => false, 'failed' => 0, 'queued' => 0, 'fail' => '' ] ), 'آدرسی برای پرسیدن نبود: همه آدرس‌ها در ' ), true );
 unset( $GLOBALS['inspect_fail'] );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+
+// SEO 3.9.4: «حافظه خطا» و «noindex قدیمی» (صفحه‌ای که گوگل نسخه ۱۴ ماه پیشش را با noindex نگه داشته بود و الان ایندکس‌پذیر است؛ دستار فقط
+// می‌گفت «noindex را بردارید» و برای آدرسی که پرسشش خطا داده بود هیچ نشانه‌ای نبود)
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_FAIL_OPTION );
+$st_crawler = get_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, false );
+$st_health  = get_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, false );
+$st_ct      = hodima_seo_advisor_table( 'crawl_pages' );
+$GLOBALS['wpdb']->query( "DELETE FROM {$st_ct} WHERE path LIKE '/st-%'" );
+foreach ( [ '/st-stale/' => 1, '/st-off/' => 0, '/st-real/' => 1 ] as $st_path => $st_ok ) {
+	$GLOBALS['wpdb']->insert( $st_ct, [ 'path' => $st_path, 'status' => 200, 'indexable' => $st_ok ] );
+}
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, array_merge( (array) $st_crawler, [ 'finished' => (int) strtotime( '2026-11-05T10:00:00Z' ) ] ), false );
+$st_noindex = $ins( "Excluded by 'noindex' tag" ); // آخرین خزش گوگل: ۱ اکتبر
+$st_recs    = [
+	'/st-stale/' => $st_noindex,                                                       // گوگل پیش از خزش ما و ما ایندکس‌پذیر می‌بینیم ← قدیمی
+	'/st-real/'  => array_merge( $st_noindex, [ 'last_crawl' => '2026-11-06T10:00:00Z' ] ), // گوگل بعد از ما هم noindex دیده ← قدیمی نیست
+	'/st-off/'   => $st_noindex,                                                       // خودمان هم noindex می‌بینیم
+	'/st-none/'  => $st_noindex,                                                       // هنوز خزیده نشده
+	'/st-idx/'   => $ins( 'Submitted and indexed', 'PASS' ),
+];
+hodima_ad( 'noindex قدیمی: فقط وقتی گوگل پیش از خزش ما خزیده و خزنده ما صفحه را ایندکس‌پذیر می‌بیند؛ بقیه حالت‌ها همان وضعیت قبلی', hodima_seo_advisor_inspect_effective_states( $st_recs ), [ '/st-stale/' => 'noindex_stale', '/st-real/' => 'noindex', '/st-off/' => 'noindex', '/st-none/' => 'noindex', '/st-idx/' => 'indexed' ] );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, array_merge( (array) $st_crawler, [ 'finished' => 0 ] ), false );
+hodima_ad( 'خزنده هیچ‌وقت کامل نشده: noindex همان noindex می‌ماند', hodima_seo_advisor_inspect_effective_states( [ '/st-stale/' => $st_noindex ] )['/st-stale/'], 'noindex' );
+update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, array_merge( (array) $st_crawler, [ 'finished' => (int) strtotime( '2026-11-05T10:00:00Z' ) ] ), false );
+
+update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $st_recs + [ '/st-unseen-idx/' => $ins( 'Submitted and indexed', 'PASS' ) ], false );
+update_option( HODIMA_SEO_ADVISOR_INSPECT_FAIL_OPTION, [ '/st-fail/' => [ 'at' => time(), 'text' => 'کد 403؛ پیام گوگل: «x»' ] ], false );
+update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, [ 'computed' => time(), 'router' => true, 'dead' => [], 'total' => 10, 'seen' => 5, 'fresh' => 0, 'unseen' => [
+	[ 'id' => 1, 'path' => '/st-unseen/', 'title' => 'پد', 'type' => 'product', 'days' => 285 ],
+	[ 'id' => 2, 'path' => '/st-unseen-idx/', 'title' => 'پد دو', 'type' => 'product', 'days' => 100 ],
+	[ 'id' => 3, 'path' => '/st-fail/', 'title' => 'پد سه', 'type' => 'product', 'days' => 90 ],
+	[ 'id' => 4, 'path' => '/st-idx/', 'title' => 'پد چهار', 'type' => 'product', 'days' => 80 ],
+] ], false );
+$st_over = array_column( hodima_seo_advisor_overview_build(), 'items', 'path' );
+$st_item = static function ( string $path, string $label ) use ( $st_over ): array {
+	foreach ( $st_over[ $path ] ?? [] as $item ) {
+		if ( $label === $item['label'] ) {
+			return [ $item['level'], $item['guide']['seen'], implode( ' ', $item['guide']['steps'] ), $item['guide']['need'] ];
+		}
+	}
+	return [];
+};
+$st_stale = $st_item( '/st-stale/', 'ایندکس: noindex قدیمی در گوگل' );
+hodima_ad( 'کارها: «noindex قدیمی» کهربایی با تاریخ آخرین خزش گوگل و گام «Request indexing» (نه «noindex را بردارید»)', [ $st_stale[0] ?? '', str_contains( $st_stale[1] ?? '', 'آخرین خزش گوگل' ), str_contains( $st_stale[2] ?? '', 'Request indexing' ), str_contains( $st_stale[2] ?? '', 'ایندکس / نوایندکس' ), $st_stale[3] ?? '' ], [ 'warn', true, true, false, 'rec' ] );
+hodima_ad( 'کارها: noindex واقعی (گوگل بعد از ما هم دیده) با راهنمای قبلی می‌ماند و «قدیمی» نمی‌شود', [ array_keys( array_filter( [ '/st-real/' => $st_item( '/st-real/', 'ایندکس: noindex' ), '/st-off/' => $st_item( '/st-off/', 'ایندکس: noindex' ), '/st-stale/' => $st_item( '/st-stale/', 'ایندکس: noindex' ) ] ) ) ], [ [ '/st-real/', '/st-off/' ] ] );
+$st_fail = $st_item( '/st-fail/', 'ایندکس: بررسی ایندکس خطا داد' );
+hodima_ad( 'کارها: آدرس خطادار کارت اطلاع (نه کهربایی) با متن خطای گوگل دارد', [ $st_fail[0] ?? '', str_contains( $st_fail[1] ?? '', 'کد 403' ), $st_fail[3] ?? '' ], [ 'info', true, 'opt' ] );
+hodima_ad( 'کارها: «بدون نمایش» که هنوز پرسیده نشده می‌گوید پرسیده نشده؛ ایندکس‌شده می‌گوید ایندکس است؛ خطادار و مشکل‌دار جمله اضافه ندارند', [ str_contains( $st_item( '/st-unseen/', 'بدون نمایش در گوگل' )[1] ?? '', 'هنوز از گوگل پرسیده نشده' ), str_contains( $st_item( '/st-unseen-idx/', 'بدون نمایش در گوگل' )[1] ?? '', 'ایندکس کرده' ), str_contains( $st_item( '/st-fail/', 'بدون نمایش در گوگل' )[1] ?? '', 'پرسیده نشده' ), str_contains( $st_item( '/st-idx/', 'بدون نمایش در گوگل' )[1] ?? '', 'ایندکس کرده' ) ], [ true, true, false, true ] );
+hodima_ad( 'جمله وضعیت ایندکس: مشکل‌دار و خطادار ← خالی (کارت جدا دارند)', [ hodima_seo_advisor_inspect_note( '/st-stale/' ), hodima_seo_advisor_inspect_note( '/st-fail/' ) ], [ '', '' ] );
+hodima_ad( '«انجام دادم» روی کارت خطادار کار می‌سازد (بدون رکورد هم) تا آدرس اول صف برود', array_column( hodima_seo_advisor_mark_items( 'indexing', '/st-fail/', [], '' ), 'rule' ), [ 'index_problem' ] );
+hodima_ad( '«انجام دادم» روی noindex قدیمی عنوان «noindex قدیمی» می‌گیرد', array_column( hodima_seo_advisor_mark_items( 'indexing', '/st-stale/', [], '' ), 'title' ), [ 'ایندکس: noindex قدیمی در گوگل' ] );
+delete_option( HODIMA_SEO_ADVISOR_INSPECT_FAIL_OPTION );
+add_filter( 'hodima_seo_advisor_inspect_enabled', '__return_false' );
+hodima_ad( 'بررسی ایندکس خاموش (فیلتر): جمله «هنوز پرسیده نشده» نمی‌آید', hodima_seo_advisor_inspect_note( '/st-unseen/' ), '' );
+remove_filter( 'hodima_seo_advisor_inspect_enabled', '__return_false' );
+$GLOBALS['wpdb']->query( "DELETE FROM {$st_ct} WHERE path LIKE '/st-%'" );
+false === $st_crawler ? delete_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION ) : update_option( HODIMA_SEO_ADVISOR_CRAWLER_OPTION, $st_crawler, false );
+false === $st_health ? delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION ) : update_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION, $st_health, false );
 delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
 
 // ذخیره تدریجی (SEO 3.4.6): قطع شدن وسط دسته نتیجه ۱۰ آدرس پرسیده‌شده را از دست نمی‌دهد
@@ -134,7 +198,8 @@ $in_html = (string) ob_get_clean();
 hodima_ad( 'تب ایندکس: ۴ کارت آمار، دکمه با nonce، مشکل‌دارها (خزیده ولی ایندکس نشد و canonical دیگر) و دستورشان', [ substr_count( $in_html, 'class="hds-stat"' ), str_contains( $in_html, 'name="action" value="hodima_advisor_inspect_now"' ), str_contains( $in_html, 'خزیده شد ولی ایندکس نشد' ), str_contains( $in_html, 'تکراری / canonical دیگر' ), str_contains( $in_html, '/q/a/' ), str_contains( $in_html, 'درخواست ایندکس' ), str_contains( $in_html, 'برگشت به فهرست کارها' ) ], [ 4, true, true, true, true, true, true ] );
 $_GET = [];
 remove_filter( 'pre_http_request', $in_filter, 20 );
-hodima_ad( 'پاک کردن داده‌های مشاور نتیجه بررسی ایندکس را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), hodima_seo_advisor_inspections() ], [ true, [] ] );
+update_option( HODIMA_SEO_ADVISOR_INSPECT_FAIL_OPTION, [ '/x/' => [ 'at' => 1, 'text' => 't' ] ], false );
+hodima_ad( 'پاک کردن داده‌های مشاور نتیجه بررسی ایندکس و خطاهای ثبت‌شده را هم پاک می‌کند', [ hodima_seo_advisor_clear_data(), hodima_seo_advisor_inspections(), hodima_seo_advisor_inspect_failures() ], [ true, [], [] ] );
 add_filter( 'hodima_seo_advisor_inspect_enabled', '__return_false' );
 delete_option( 'hodima_discover_sc_key' );
 

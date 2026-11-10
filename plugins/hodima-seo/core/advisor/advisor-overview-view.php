@@ -131,8 +131,9 @@ function hodima_seo_advisor_overview_build(): array {
 			continue;
 		}
 		$pages[ $path ]['title'] ??= (string) $row['title'];
+		$note = hodima_seo_advisor_inspect_note( $path ); // «ایندکس شده» یا «هنوز پرسیده نشده» (SEO 3.9.4): بدون آن مدیر نمی‌دانست بی‌نمایشی از ایندکس‌نشدن است یا نه
 		$add( $path, [ 'src' => 'unseen', 'label' => 'بدون نمایش در گوگل', 'text' => sprintf( 'این صفحه %s روز است در گوگل نمایش نگرفته. از صفحه‌های مرتبط به آن لینک بدهید و عنوان و متنش را به یک جستجوی مشخص نزدیک کنید.', number_format_i18n( (int) $row['days'] ) ), 'level' => 'warn', 'source' => 'health', 'mark' => 'unseen', 'term' => '', 'guide' => hodima_seo_advisor_overview_guide(
-			sprintf( 'این صفحه %s روز است در گوگل حتی یک بار نمایش نگرفته.', number_format_i18n( (int) $row['days'] ) ),
+			trim( sprintf( 'این صفحه %s روز است در گوگل حتی یک بار نمایش نگرفته.', number_format_i18n( (int) $row['days'] ) ) . ' ' . $note ),
 			'opt',
 			[ 'اگر این صفحه برایتان مهم نیست، کاری لازم نیست؛ «لازم نیست» را بزنید.', 'از ۲ تا ۳ صفحه مرتبط (دسته، مقاله) به آن لینک بدهید.', '«ویرایش» ← کادر «سئو (SeoBox)» ← «عنوان سئو» را به یک جستجوی مشخص نزدیک کنید (همان کلمه‌ای که مردم واقعا می‌نویسند).' ],
 			'',
@@ -142,13 +143,26 @@ function hodima_seo_advisor_overview_build(): array {
 	}
 
 	// وضعیت ایندکس
-	foreach ( hodima_seo_advisor_inspections() as $path => $record ) {
-		$state = hodima_seo_advisor_inspect_state( $record );
+	$records = hodima_seo_advisor_inspections();
+	foreach ( hodima_seo_advisor_inspect_effective_states( $records ) as $path => $state ) {
 		if ( 'indexed' === $state || null !== hodima_seo_advisor_task_closed( (string) $path, 'index_problem' ) ) {
 			continue;
 		}
 		$info = hodima_seo_advisor_inspect_state_info( $state );
-		$add( (string) $path, [ 'src' => 'index', 'label' => 'ایندکس: ' . $info['label'], 'text' => $info['advice'], 'level' => 'warn', 'source' => 'indexing', 'mark' => '', 'term' => '', 'guide' => hodima_seo_advisor_overview_guide( (string) ( $info['seen'] ?? $info['advice'] ), 'info' === ( $info['need'] ?? '' ) ? 'opt' : 'rec', (array) ( $info['steps'] ?? [] ), '', 'بعد از تغییر «انجام دادم» را بزنید؛ با بررسی ایندکس بعدی گوگل (روزانه) نتیجه همین‌جا می‌آید.', (string) ( $info['why'] ?? '' ) ) ] );
+		$seen = (string) ( $info['seen'] ?? $info['advice'] );
+		if ( 'noindex_stale' === $state && '' !== (string) $records[ $path ]['last_crawl'] ) {
+			$seen .= ' (آخرین خزش گوگل: ' . wp_date( 'Y/m/d', (int) strtotime( (string) $records[ $path ]['last_crawl'] ) ) . ')';
+		}
+		$add( (string) $path, [ 'src' => 'index', 'label' => 'ایندکس: ' . $info['label'], 'text' => $info['advice'], 'level' => (string) ( $info['level'] ?? 'warn' ), 'source' => 'indexing', 'mark' => '', 'term' => '', 'guide' => hodima_seo_advisor_overview_guide( $seen, 'info' === ( $info['need'] ?? '' ) ? 'opt' : 'rec', (array) ( $info['steps'] ?? [] ), '', 'بعد از تغییر «انجام دادم» را بزنید؛ با بررسی ایندکس بعدی گوگل (روزانه) نتیجه همین‌جا می‌آید.', (string) ( $info['why'] ?? '' ) ) ] );
+	}
+
+	// آدرس‌هایی که گوگل برای پرسش وضعیتشان خطا داد و هنوز پاسخ درست ندارند (SEO 3.9.4؛ پیش‌تر بی‌صدا بودند)
+	foreach ( hodima_seo_advisor_inspect_failures() as $path => $fail ) {
+		if ( isset( $records[ $path ] ) || null !== hodima_seo_advisor_task_closed( (string) $path, 'index_problem' ) ) {
+			continue;
+		}
+		$info = hodima_seo_advisor_inspect_state_info( 'check_failed' );
+		$add( (string) $path, [ 'src' => 'index', 'label' => 'ایندکس: ' . $info['label'], 'text' => $info['advice'], 'level' => (string) ( $info['level'] ?? 'warn' ), 'source' => 'indexing', 'mark' => '', 'term' => '', 'guide' => hodima_seo_advisor_overview_guide( trim( (string) $info['seen'] . ( '' !== $fail['text'] ? ' پیام گوگل: ' . $fail['text'] : '' ) ), 'opt', (array) ( $info['steps'] ?? [] ), '', 'بعد از بررسی دوباره، «انجام دادم» را بزنید؛ دستار همان آدرس را اول صف می‌گذارد.', (string) ( $info['why'] ?? '' ) ) ] );
 	}
 
 	$out = [];

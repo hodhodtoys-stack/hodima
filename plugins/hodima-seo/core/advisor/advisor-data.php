@@ -1114,6 +1114,7 @@ function hodima_seo_advisor_clear_data(): bool|WP_Error {
 		delete_option( HODIMA_SEO_ADVISOR_TREND_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_HEALTH_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION );
+		delete_option( HODIMA_SEO_ADVISOR_INSPECT_FAIL_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_PIPELINE_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_ANALYSIS_OPTION );
 		delete_option( HODIMA_SEO_ADVISOR_REANALYZE_OPTION );

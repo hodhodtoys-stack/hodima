@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * برچسب، رنگ نشان، اولویت و دستور هر وضعیت ایندکس؛ از SEO 3.7.0 همراه راهنمای پنج‌بخشی «کارها» (seen، steps، why، need).
  *
- * @return array{label: string, class: string, weight: int, advice: string, seen?: string, steps?: list<string>, why?: string, need?: string}
+ * @return array{label: string, class: string, weight: int, advice: string, seen?: string, steps?: list<string>, why?: string, need?: string, level?: string}
  */
 function hodima_seo_advisor_inspect_state_info( string $state ): array {
 
@@ -29,7 +29,7 @@ function hodima_seo_advisor_inspect_state_info( string $state ): array {
 /**
  * راهنمای هر وضعیت ایندکس برای یک صفحه (SEO 3.7.0؛ قبلا یک جمله کلی: «noindex را در سئوباکس یا تنظیمات همان صفحه بردارید»).
  *
- * @return array<string, array{seen: string, steps: list<string>, why: string, need?: string}>
+ * @return array<string, array{seen: string, steps: list<string>, why: string, need?: string, level?: string}>
  */
 function hodima_seo_advisor_inspect_state_guide(): array {
 
@@ -52,6 +52,18 @@ function hodima_seo_advisor_inspect_state_guide(): array {
 			'steps' => [ 'اگر عمدی است (صفحه آزمایشی، تشکر از خرید): «لازم نیست».', 'وگرنه: «{where}» ← ' . $seobox . ' ← تب «ایندکس / نوایندکس» ← «ایندکس» را انتخاب و ذخیره کنید.', 'اگر آنجا «ایندکس» است و باز همین وضعیت ماند: ' . $claude ],
 			'why'   => 'صفحه noindex هرگز در گوگل دیده نمی‌شود؛ فقط باید مطمئن شوید عمدی است.',
 			'need'  => 'info',
+		],
+		'noindex_stale'          => [
+			'seen'  => 'گوگل آخرین بار که این صفحه را خواند noindex دید، ولی خزنده دستار الان همین صفحه را ایندکس‌پذیر می‌بیند؛ یعنی گوگل نسخه قدیمی را نگه داشته و هنوز دوباره نیامده.',
+			'steps' => [ 'در Search Console بالای صفحه آدرس را در نوار جستجو بزنید («بررسی آدرس») و «Test live URL» را بزنید؛ «URL is available to Google» یعنی صفحه مشکلی ندارد.', 'اگر عنوان یا متن صفحه ایراد دارد (املا، متای ناقص) اول آن را درست کنید تا گوگل نسخه درست را بخواند.', 'بعد «Request indexing» را بزنید (سهمیه روزانه حدود ۱۰ آدرس است؛ اول صفحه‌های مهم‌تر).' ],
+			'why'   => 'تا گوگل صفحه را دوباره نخواند همان نسخه noindex قدیمی را نگه می‌دارد و صفحه هرگز در نتیجه‌ها نمی‌آید.',
+		],
+		'check_failed'           => [
+			'seen'  => 'پرسش وضعیت ایندکس این صفحه از گوگل خطا داد؛ پس هنوز معلوم نیست ایندکس شده یا نه.',
+			'steps' => [ 'تب «ایندکس» ← «بررسی … آدرس بعدی» را دوباره بزنید؛ خطا ممکن است لحظه‌ای بوده باشد.', 'اگر دوباره خطا داد: همین آدرس را در Search Console دستی «بررسی آدرس» کنید و وضعیتش را ببینید.', 'اگر پیام گوگل «۴۰۳» است، آدرس سایت (با www یا بی‌www، http یا https) باید با property سرچ کنسول یکی باشد.' ],
+			'why'   => 'بدون وضعیت ایندکس نمی‌شود فهمید چرا صفحه نمایش ندارد.',
+			'need'  => 'info',
+			'level' => 'info',
 		],
 		'robots'                 => [
 			'seen'  => 'robots.txt سایت به گوگل اجازه خواندن این آدرس را نمی‌دهد.',
@@ -113,6 +125,8 @@ function hodima_seo_advisor_inspect_state_base( string $state ): array {
 		'crawled_not_indexed'    => [ 'label' => 'خزیده شد ولی ایندکس نشد', 'class' => $warn, 'weight' => 0, 'advice' => 'گوگل این صفحه‌ها را دیده ولی ارزش ایندکس ندیده است. محتوا را کامل‌تر و منحصربه‌فردتر کنید، دست‌کم از ۲ تا ۳ صفحه مرتبط لینک داخلی بدهید، صفحه‌های تکراری را ادغام کنید؛ بعد در Search Console «درخواست ایندکس» بزنید.' ],
 		'discovered_not_indexed' => [ 'label' => 'کشف شد ولی خزیده نشده', 'class' => $warn, 'weight' => 1, 'advice' => 'گوگل از وجود این صفحه‌ها خبر دارد ولی هنوز سراغشان نرفته. از صفحه‌های قوی سایت لینک داخلی بدهید، مطمئن شوید در سایت‌مپ‌اند و سرعت سرور خوب است؛ کمی صبر هم لازم است.' ],
 		'noindex'                => [ 'label' => 'noindex', 'class' => $warn, 'weight' => 2, 'advice' => 'این صفحه‌ها noindex دارند. اگر نباید باشند، گزینه noindex را در سئوباکس یا تنظیمات همان صفحه بردارید.' ],
+		'noindex_stale'          => [ 'label' => 'noindex قدیمی در گوگل', 'class' => $warn, 'weight' => 1, 'advice' => 'گوگل نسخه قدیمی این صفحه (با noindex) را نگه داشته ولی خزنده دستار الان آن را ایندکس‌پذیر می‌بیند. در Search Console «درخواست ایندکس» (Request indexing) بزنید.' ],
+		'check_failed'           => [ 'label' => 'بررسی ایندکس خطا داد', 'class' => $info, 'weight' => 7, 'advice' => 'پرسش وضعیت ایندکس این صفحه از گوگل خطا داد؛ دوباره بررسی کنید.' ],
 		'robots'                 => [ 'label' => 'بسته با robots.txt', 'class' => $warn, 'weight' => 2, 'advice' => 'robots.txt اجازه خزش این آدرس‌ها را نمی‌دهد. اگر نباید بسته باشند، قانون را در «robots.txt» بردارید.' ],
 		'soft404'                => [ 'label' => '۴۰۴ نرم', 'class' => $warn, 'weight' => 3, 'advice' => 'گوگل این صفحه‌ها را شبیه صفحه خالی یا ۴۰۴ می‌بیند. محتوای واقعی بگذارید، یا اگر ارزشی ندارند ۴۰۴ یا ریدایرکت کنید.' ],
 		'not_found'              => [ 'label' => '۴۰۴', 'class' => $warn, 'weight' => 3, 'advice' => 'این آدرس‌ها در سایت ۴۰۴ هستند؛ اگر جایگزین دارند در «ریدایرکت‌ها» با ۳۰۱ ببرید.' ],
@@ -134,10 +148,9 @@ function hodima_seo_advisor_render_indexing(): void {
 	$n       = static fn( int|float $value ): string => number_format_i18n( $value );
 	$empty   = ! $records;
 
-	$states   = [];
+	$states   = hodima_seo_advisor_inspect_effective_states( $records ); // با «noindex قدیمی» (SEO 3.9.4)
 	$mismatch = 0;
-	foreach ( $records as $path => $record ) {
-		$states[ $path ] = hodima_seo_advisor_inspect_state( $record );
+	foreach ( $records as $record ) {
 		if ( hodima_seo_advisor_inspect_canonical_mismatch( $record ) ) {
 			++$mismatch;
 		}

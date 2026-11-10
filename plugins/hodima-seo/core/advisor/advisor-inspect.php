@@ -23,6 +23,14 @@ const HODIMA_SEO_ADVISOR_INSPECT_BATCH  = 20;
 const HODIMA_SEO_ADVISOR_INSPECT_KEEP   = 600;
 const HODIMA_SEO_ADVISOR_INSPECT_RECHECK_DAYS = 14;
 
+/**
+ * خطای آخرین پرسش هر آدرس از گوگل (مسیر ← [at، text]).
+ * تا SEO ۳.۹.۴ خطای یک آدرس فقط شمارنده را بالا می‌برد و `continue` می‌شد: آدرس رکوردی نمی‌گرفت و کارت صفحه (مثلا «بدون
+ * نمایش») هیچ نشانه‌ای نداشت که وضعیت ایندکسش هنوز معلوم نیست. autoload خاموش؛ با «پاک کردن داده‌های دستار» پاک می‌شود.
+ */
+const HODIMA_SEO_ADVISOR_INSPECT_FAIL_OPTION = 'hodima_advisor_inspect_fail';
+const HODIMA_SEO_ADVISOR_INSPECT_FAIL_KEEP   = 200;
+
 /** قفل بررسی ایندکس: کلیک دستی و کرون هم‌زمان هر کدام کل گزینه نتیجه را می‌خواندند و می‌نوشتند و نتیجه یکی گم می‌شد. */
 const HODIMA_SEO_ADVISOR_INSPECT_LOCK = 'hodima_advisor_inspect_lock';
 
@@ -114,6 +122,84 @@ function hodima_seo_advisor_inspect_canonical_mismatch( array $record ): bool {
 function hodima_seo_advisor_inspections(): array {
 	$stored = get_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [] );
 	return is_array( $stored ) ? array_filter( $stored, 'is_array' ) : [];
+}
+
+/**
+ * آدرس‌هایی که آخرین پرسش‌شان از گوگل خطا داد و بعدش پاسخ درست نگرفته‌اند.
+ *
+ * @return array<string, array{at: int, text: string}>
+ */
+function hodima_seo_advisor_inspect_failures(): array {
+
+	$stored = get_option( HODIMA_SEO_ADVISOR_INSPECT_FAIL_OPTION, [] );
+	$out    = [];
+
+	foreach ( is_array( $stored ) ? $stored : [] as $path => $row ) {
+		if ( is_array( $row ) && is_string( $path ) && '' !== $path ) {
+			$out[ $path ] = [ 'at' => (int) ( $row['at'] ?? 0 ), 'text' => (string) ( $row['text'] ?? '' ) ];
+		}
+	}
+
+	return $out;
+}
+
+/**
+ * جمله کوتاه «وضعیت ایندکس» برای کارت صفحه‌ای که ایراد ایندکسی ندارد (مثلا «بدون نمایش»): ایندکس‌شده، یا هنوز پرسیده‌نشده.
+ * آدرس مشکل‌دار یا خطادار کارت جدای خودش را دارد؛ پس برای آن‌ها رشته خالی. بدون کلید Search Console یا با بررسی خاموش (فیلتر hodima_seo_advisor_inspect_enabled) هم خالی: پرسیدنی در کار نیست.
+ */
+function hodima_seo_advisor_inspect_note( string $path ): string {
+
+	if ( ! (bool) apply_filters( 'hodima_seo_advisor_inspect_enabled', true ) || ! function_exists( 'hodima_seo_sc_key_json' ) || '' === hodima_seo_sc_key_json( HODIMA_SEO_SC_ADVISOR ) ) {
+		return '';
+	}
+
+	$record = hodima_seo_advisor_inspections()[ $path ] ?? null;
+
+	if ( null !== $record ) {
+		return 'indexed' === hodima_seo_advisor_inspect_state( $record ) ? 'گوگل این صفحه را ایندکس کرده؛ پس بی‌نمایش بودنش از ایندکس‌نشدن نیست.' : '';
+	}
+
+	if ( isset( hodima_seo_advisor_inspect_failures()[ $path ] ) ) {
+		return '';
+	}
+
+	return 'وضعیت ایندکس این صفحه هنوز از گوگل پرسیده نشده (تب «ایندکس» ← «بررسی … آدرس بعدی»).';
+}
+
+/**
+ * وضعیت هر رکورد با در نظر گرفتن خزنده خودمان: «noindex» گوگل وقتی خزنده دستار همین صفحه را الان ایندکس‌پذیر می‌بیند و آخرین
+ * خزش گوگل پیش از آخرین خزش ماست، یعنی گوگل نسخه قدیمی را نگه داشته (`noindex_stale`)؛ راهش «Request indexing» است نه «noindex را بردارید».
+ * اگر گوگل بعد از خزش ما هم noindex دیده، قدیمی نیست (مثلا هدر یا کش فقط برای گوگل) و همان `noindex` می‌ماند.
+ * وضعیت‌های دیگر دست نمی‌خورند.
+ *
+ * @param array<string, array<string, mixed>> $records مسیر ← رکورد
+ * @return array<string, string> مسیر ← وضعیت
+ */
+function hodima_seo_advisor_inspect_effective_states( array $records ): array {
+
+	global $wpdb;
+
+	$states  = array_map( 'hodima_seo_advisor_inspect_state', $records );
+	$noindex = array_keys( array_filter( $states, static fn( string $s ): bool => 'noindex' === $s ) );
+	$crawled = function_exists( 'hodima_seo_advisor_crawler_status' ) ? (int) hodima_seo_advisor_crawler_status()['finished'] : 0;
+
+	if ( ! $noindex || $crawled <= 0 ) {
+		return $states;
+	}
+
+	$marks = implode( ',', array_fill( 0, count( $noindex ), '%s' ) ); // تعداد %s هم‌اندازه مسیرها
+	$live  = (array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare( "SELECT path FROM %i WHERE indexable = 1 AND path IN ({$marks})", hodima_seo_advisor_table( 'crawl_pages' ), ...$noindex ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+	);
+
+	foreach ( $live as $path ) {
+		$google = '' !== (string) ( $records[ $path ]['last_crawl'] ?? '' ) ? (int) strtotime( (string) $records[ $path ]['last_crawl'] ) : 0;
+		if ( $google > 0 && $google < $crawled - DAY_IN_SECONDS ) {
+			$states[ $path ] = 'noindex_stale';
+		}
+	}
+
+	return $states;
 }
 
 /** فاصله بررسی دوباره آدرس کار «انجام دادم» تا وقتی خزش بعد از تغییر دیده شود (روز). */
@@ -285,10 +371,12 @@ function hodima_seo_advisor_inspect_message( array $summary ): string {
 function hodima_seo_advisor_inspect_run( string $property, int $limit, array $summary ): array {
 
 	$summary += [ 'failed' => 0, 'queued' => -1, 'fail' => '' ];
-	$stored   = hodima_seo_advisor_inspections();
-	$queue    = hodima_seo_advisor_inspect_queue( $limit );
-	$count  = count( $queue );
-	$streak = 0;
+	$stored     = hodima_seo_advisor_inspections();
+	$queue      = hodima_seo_advisor_inspect_queue( $limit );
+	$count      = count( $queue );
+	$streak     = 0;
+	$fails      = hodima_seo_advisor_inspect_failures();
+	$failed_now = [];
 
 	$summary['queued'] = $count;
 
@@ -309,6 +397,7 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 			++$summary['failed'];
 			++$streak;
 			$summary['fail'] = hodima_seo_advisor_inspect_fail_text( $result );
+			$failed_now[ $path ] = [ 'at' => time(), 'text' => $summary['fail'] ];
 			if ( 0 === $summary['checked'] && $streak >= HODIMA_SEO_ADVISOR_INSPECT_FAIL_STREAK ) {
 				break;
 			}
@@ -317,6 +406,7 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 
 		$streak          = 0;
 		$stored[ $path ] = hodima_seo_advisor_inspect_parse( $result );
+		unset( $fails[ $path ] );
 		++$summary['checked'];
 
 		// هر ۱۰ آدرس ذخیره می‌شود (SEO 3.4.6): تا ۳.۴.۵ فقط آخر کار نوشته می‌شد و قطع شدن وسط ۱۸۰ ثانیه (مهلت، سهمیه، هاست)
@@ -332,6 +422,15 @@ function hodima_seo_advisor_inspect_run( string $property, int $limit, array $su
 	}
 
 	update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, $stored, false );
+
+	// خطای هر آدرس فقط وقتی ثبت می‌شود که دست‌کم یک آدرس همین دسته پاسخ درست گرفته: وقتی همه خطا می‌دهند (۴۰۳ property) مشکل از
+	// دسترسی است نه از آدرس‌ها، و پیام بالای صفحه همان را می‌گوید؛ سه کارت ساختگی «بررسی نشد» فقط شلوغی بود.
+	if ( $summary['checked'] > 0 ) {
+		$fails = array_merge( $fails, $failed_now );
+		uasort( $fails, static fn( array $a, array $b ): int => $b['at'] <=> $a['at'] );
+		update_option( HODIMA_SEO_ADVISOR_INSPECT_FAIL_OPTION, array_slice( $fails, 0, HODIMA_SEO_ADVISOR_INSPECT_FAIL_KEEP, true ), false );
+	}
+
 	hodima_seo_advisor_run_mark( 'inspect' ); // زمان آخرین اجرای واقعی (کرون یا دکمه)؛ کارت «کارهای خودکار» از همین می‌خواند
 
 	if ( $summary['checked'] > 0 ) {

@@ -351,9 +351,11 @@ function hodima_seo_advisor_mark_items( string $source, string $path, array $ite
 		case 'indexing':
 			$record = hodima_seo_advisor_inspections()[ $path ] ?? null;
 			if ( null !== $record ) {
-				$state  = hodima_seo_advisor_inspect_state( $record );
+				$state  = hodima_seo_advisor_inspect_effective_states( [ $path => $record ] )[ $path ];
 				$label  = function_exists( 'hodima_seo_advisor_inspect_state_info' ) ? hodima_seo_advisor_inspect_state_info( $state )['label'] : $state;
 				$out[]  = [ 'rule' => 'index_problem', 'term' => '', 'title' => sprintf( 'ایندکس: %s', $label ) ];
+			} elseif ( isset( hodima_seo_advisor_inspect_failures()[ $path ] ) ) { // کارت «بررسی ایندکس خطا داد» (SEO 3.9.4): رکوردی نیست ولی «انجام دادم» باید کار بسازد تا آدرس اول صف برود
+				$out[] = [ 'rule' => 'index_problem', 'term' => '', 'title' => sprintf( 'ایندکس: %s', hodima_seo_advisor_inspect_state_info( 'check_failed' )['label'] ) ];
 			}
 			break;
 	}
