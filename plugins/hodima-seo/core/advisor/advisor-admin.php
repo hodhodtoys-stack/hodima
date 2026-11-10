@@ -695,7 +695,7 @@ function hodima_seo_advisor_render_admin(): void {
 			'health'    => hodima_seo_advisor_render_health( $status ),
 			'overview'  => hodima_seo_advisor_echo_fa( 'hodima_seo_advisor_render_overview' ), // ارقام فارسی «کارها» (SEO 3.8.5؛ عکس کاربر: «249 ایراد باز روی 202 صفحه»)
 			'indexing'  => hodima_seo_advisor_render_indexing(),
-			'tasks'     => hodima_seo_advisor_render_tasks(),
+			'tasks'     => hodima_seo_advisor_echo_fa( 'hodima_seo_advisor_render_tasks' ), // ارقام فارسی «کارهای انجام‌شده» (SEO 3.9.0؛ عکس کاربر: «0 از 14» و شمار چیپ‌ها لاتین)
 			default     => hodima_seo_advisor_render_competition( $status ),
 		};
 		if ( 'competition' === $tab ) {

@@ -340,7 +340,7 @@ $p3_d1 = $cap( static fn() => hodima_seo_advisor_render_admin() );
 hodima_ad( '«کارها» ← «برطرف شد»: ردیف چیپ «از کدام بخش» و «همه» حذف (SEO 3.5.5: منو فقط وقتی دو بخش هر کدام ≥۳ کار دارند)؛ فیلتر ایرادهای فنی فقط کار خزش؛ گام «صفحه دوباره از سایت خوانده شد»', [ str_contains( $p3_d0, 'aria-label="از کدام بخش"' ), str_contains( $p3_d0, 'tsource=competition' ), str_contains( $p3_d1, 'رقابت صفحه‌ها برای' ), str_contains( $p3_d1, 'بدون تیتر اصلی (H1)' ), str_contains( $p3_d1, 'صفحه دوباره از سایت خوانده شد' ) ], [ false, false, false, true, true ] );
 $_GET  = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'tab' => 'tasks' ];
 $p3_d2 = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( 'در دست انجام: «هنوز خراب است» با قدم بعدی و «دوباره انجام دادم»؛ نشان تب مبدأ', [ str_contains( $p3_d2, 'هنوز خراب است' ), str_contains( $p3_d2, 'قانون ۳۰۱ بگذارید' ), str_contains( $p3_d2, 'دوباره انجام دادم' ), str_contains( $p3_d2, '<span class="hds-pill hds-pill--info">آدرس‌های خراب</span>' ) ], [ true, true, true, true ] );
+hodima_ad( 'در دست انجام: «هنوز خراب است» با قدم بعدی و «دوباره انجام دادم»؛ نشان تب مبدأ', [ str_contains( $p3_d2, 'هنوز خراب است' ), str_contains( $p3_d2, 'قانون ۳۰۱ بگذارید' ), str_contains( $p3_d2, 'دوباره انجام دادم' ), str_contains( $p3_d2, '<span class="hodima-advisor__task-src">آدرس‌های خراب</span>' ) ], [ true, true, true, true ] );
 delete_option( 'hodima_discover_sc_key' );
 $_GET = [];
 

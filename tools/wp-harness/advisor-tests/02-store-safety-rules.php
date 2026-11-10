@@ -565,6 +565,25 @@ hodima_ad( 'راهنما: فهرست «اصطلاح‌ها به زبان ساد�
 hodima_ad( 'هر قاعده «چرا مهم است» و «از کجا بفهمم درست شد» دارد؛ متنی ← همان لحظه ذخیره، آماری ← ۱۴ روز و تب «کارهای انجام‌شده» (SEO 3.7.1؛ نتیجه سنجش آنجا می‌آید)', [ array_filter( array_map( static fn( string $r ): bool => '' === hodima_seo_advisor_rule_guide( $r )['why'] || '' === hodima_seo_advisor_rule_guide( $r )['verify'], [ 'low_ctr', 'near_first', 'missing_headings', 'missing_content', 'weak_query', 'cannibal', 'decline' ] ) ), str_contains( hodima_seo_advisor_rule_guide( 'missing_content' )['verify'], 'همان لحظه ذخیره' ), str_contains( hodima_seo_advisor_rule_guide( 'low_ctr' )['verify'], '«کارهای انجام‌شده»' ) ], [ [], true, true ] );
 hodima_ad( 'راهنمای «کارها»: آدرس وسط «چه دیدیم» و گام‌ها لینک چپ‌به‌راست جدا (bdi) است، نه متن ساده که اسلشش جابه‌جا شود (SEO 3.7.1)', ( static function (): array { ob_start(); hodima_seo_advisor_render_guide( [ 'seen' => 'بیشترین سهم با https://e.test/a-b/ (۶۰٪) است.', 'need' => 'rec', 'steps' => [ 'به https://e.test/c/ لینک بدهید.' ], 'verify' => '', 'why' => '' ] ); $h = (string) ob_get_clean(); return [ substr_count( $h, 'dir="ltr"><bdi>' ), str_contains( $h, '</a> (۶۰٪)' ) ]; } )(), [ 2, true ] );
 hodima_ad( '«کارهای انجام‌شده» ← «منتظر نتیجه»: بدون پیوند برگشت (خودش تب است)، کار «انجام دادم» با سه گام (انجام دادید، منتظر بررسی ایندکس، منتظر نتیجه با سنجش ۱۴ روزه)', [ ! str_contains( $done_html, 'برگشت به فهرست کارها' ), substr_count( $done_html, 'class="hodima-advisor__task"' ), substr_count( $done_html, 'class="hodima-advisor__step"' ), str_contains( $done_html, 'منتظر بررسی ایندکس' ), str_contains( $done_html, 'همان‌قدر روز پیش از آن مقایسه می‌شود' ), str_contains( $done_html, 'کلمه نزدیک صفحه اول' ) ], [ true, 1, 3, true, true, false ] );
+hodima_ad(
+	'کارت «کارهای انجام‌شده» (SEO 3.9.0، طرح تأییدشده): نوار سربرگ صفحه، عنوان H3 و نشان کوتاه کهربایی، گام‌شمار (✓ انجام، «الان اینجاست» با aria-current، بعدی شماره‌دار با نوار روزشمار)، ارقام فارسی، دکمه آبی کم‌رنگ و «پاک کردن» بی‌قاب؛ بی نارنجی پر',
+	[
+		substr_count( $done_html, 'class="hodima-advisor__task-bar"' ),
+		(bool) preg_match( '~<h3 class="hodima-advisor__task-title">[^<]+</h3>~u', $done_html ),
+		(bool) preg_match( '~data-tone="wait">منتظر داده گوگل · ۰ از ۱۴ روز</span>~u', $done_html ),
+		str_contains( $done_html, 'انجام شد · منتظر' ),
+		[ substr_count( $done_html, 'data-mode="ok"' ), substr_count( $done_html, 'data-mode="now" aria-current="step"' ), substr_count( $done_html, 'data-mode="next"' ) ],
+		substr_count( $done_html, 'class="hodima-advisor__step-bar"' ),
+		str_contains( $done_html, 'hodima-advisor__task-btn--reject' ) && str_contains( $done_html, 'hodima-advisor__task-btn--quiet' ) && str_contains( $done_html, 'dashicons-trash' ),
+		str_contains( $done_html, 'hodima-advisor__mark-reject' ),
+	],
+	[ 1, true, true, false, [ 1, 1, 1 ], 1, true, false ]
+);
+hodima_ad(
+	'نشان کوتاه و رنگ وضعیت: «انجام شد · » و «؛ قدم بعدی را ببینید» حذف، پرانتز پیشرفت با « · »؛ منتظر کهربایی، بی‌اثر قرمز، برطرف سبز',
+	[ hodima_seo_advisor_task_short_label( 'انجام شد · منتظر داده گوگل (3 از 14 روز)' ), hodima_seo_advisor_task_short_label( 'اثر نداشت؛ قدم بعدی را ببینید' ), hodima_seo_advisor_task_short_label( 'انجام شد؛ هنوز دیده می‌شود' ), hodima_seo_advisor_task_short_label( 'برطرف شد' ), hodima_seo_advisor_task_tone( 'waiting' ), hodima_seo_advisor_task_tone( 'no_effect' ), hodima_seo_advisor_task_tone( 'fixed' ), hodima_seo_advisor_task_tone( 'rejected' ) ],
+	[ 'منتظر داده گوگل · 3 از 14 روز', 'اثر نداشت', 'هنوز دیده می‌شود', 'برطرف شد', 'wait', 'bad', 'ok', 'info' ]
+);
 $kb_at   = hodima_seo_advisor_task( '/k/b/', 'low_ctr', '' )['at'];
 $ins_old = get_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, false );
 update_option( HODIMA_SEO_ADVISOR_INSPECT_OPTION, [ '/k/b/' => [ 'verdict' => 'PASS', 'coverage' => 'Submitted and indexed', 'last_crawl' => gmdate( 'c', $kb_at - 5 * DAY_IN_SECONDS ), 'checked' => time() - 3 * DAY_IN_SECONDS ] ], false );

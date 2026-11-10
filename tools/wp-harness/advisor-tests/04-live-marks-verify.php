@@ -221,7 +221,7 @@ ob_start();
 hodima_seo_advisor_render_tasks();
 $vf_done = (string) ob_get_clean();
 $_GET = [];
-hodima_ad( '«کارها» ← «نیاز به کار»: «اثر نداشت» با قدم بعدی و دکمه «دوباره انجام دادم» (status=done_redo در همان فرم؛ SEO 3.5.5)؛ گام سوم کار «اثر داشت» سبز؛ فیلتر «برطرف شد» کار باز را نشان نمی‌دهد', [ str_contains( $vf_html, 'اثر نداشت؛ قدم بعدی را ببینید' ), str_contains( $vf_html, 'دوباره انجام دادم' ) && str_contains( $vf_html, 'name="status" value="done_redo"' ) && ! str_contains( $vf_html, 'name="redo"' ), hodima_seo_advisor_task_timeline( $vf_low )[2]['label'] . '/' . hodima_seo_advisor_task_timeline( $vf_low )[2]['state'], str_contains( $vf_done, 'اثر نداشت؛ قدم بعدی' ) ], [ true, true, 'اثر داشت/ok', false ] );
+hodima_ad( '«کارها» ← «نیاز به کار»: «اثر نداشت» (نشان کوتاه از SEO 3.9.0) با یادداشت «قدم بعدی:» و دکمه «دوباره انجام دادم» (status=done_redo در همان فرم؛ SEO 3.5.5)؛ گام سوم کار «اثر داشت» سبز؛ فیلتر «برطرف شد» کار باز را نشان نمی‌دهد', [ str_contains( $vf_html, 'data-tone="bad">اثر نداشت</span>' ) && str_contains( $vf_html, '<b>قدم بعدی:</b>' ), str_contains( $vf_html, 'دوباره انجام دادم' ) && str_contains( $vf_html, 'name="status" value="done_redo"' ) && ! str_contains( $vf_html, 'name="redo"' ), hodima_seo_advisor_task_timeline( $vf_low )[2]['label'] . '/' . hodima_seo_advisor_task_timeline( $vf_low )[2]['state'], str_contains( $vf_done, '>اثر نداشت</span>' ) ], [ true, true, 'اثر داشت/ok', false ] );
 // بی‌کار: چهار کارت آمار «—» نمی‌آید، فقط حالت خالی (SEO 3.1.2)
 $ec_tasks = get_option( HODIMA_SEO_ADVISOR_TASKS_OPTION, false );
 delete_option( HODIMA_SEO_ADVISOR_TASKS_OPTION );

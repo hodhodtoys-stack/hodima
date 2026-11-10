@@ -283,14 +283,106 @@ function hodima_seo_advisor_render_task_form( array $task, string $state ): void
 		<?php endforeach; ?>
 		<?php foreach ( $buttons as [ $value, $label, $kind ] ) : ?>
 			<button type="submit" name="status" value="<?php echo esc_attr( $value ); ?>" class="<?php echo esc_attr( match ( $kind ) {
+				// تب «کارهای انجام‌شده» (SEO 3.9.0، خواست کاربر): «لازم نیست» آبی کم‌رنگ، «دوباره انجام دادم/انجام دادم» سبز کم‌رنگ،
+				// «پاک کردن» بی‌قاب با آیکون سطل؛ تا ۳.۸.۹ هر دو نارنجی پر بودند. «کارها» همان سبز/نارنجی پر خودش را دارد
 				'done'    => 'hds-btn hodima-advisor__mark-done',
-				'reject'  => 'hds-btn hds-btn--outline hodima-advisor__mark-reject', // «لازم نیست» نارنجی پر (SEO 3.7.3، خواست کاربر)
-				'quiet'   => 'hds-btn hds-btn--outline hodima-advisor__mark-reject',
+				'reject'  => 'hds-btn hds-btn--outline hodima-advisor__task-btn hodima-advisor__task-btn--reject',
+				'quiet'   => 'hds-btn hds-btn--outline hodima-advisor__task-btn hodima-advisor__task-btn--quiet',
 				'outline' => 'hds-btn hds-btn--outline',
-				default   => 'hds-btn',
-			} ); ?>" aria-label="<?php echo esc_attr( $label . ': ' . $name ); ?>"><?php echo esc_html( $label ); ?></button>
+				default   => 'hds-btn hodima-advisor__task-btn hodima-advisor__task-btn--redo',
+			} ); ?>" aria-label="<?php echo esc_attr( $label . ': ' . $name ); ?>"><?php echo 'quiet' === $kind ? '<span class="dashicons dashicons-trash" aria-hidden="true"></span>' : ''; ?><?php echo esc_html( $label ); ?></button>
 		<?php endforeach; ?>
 	</form>
+	<?php
+}
+
+/**
+ * رنگ نشان وضعیت و یادداشت قدم بعدی (SEO 3.9.0): wait کهربایی، bad قرمز ملایم، ok سبز، info آبی.
+ */
+function hodima_seo_advisor_task_tone( string $state ): string {
+	return match ( $state ) {
+		'waiting', 'doing'                        => 'wait',
+		'no_effect', 'back', 'still', 'unseen'    => 'bad',
+		'fixed'                                   => 'ok',
+		default                                   => 'info',
+	};
+}
+
+/**
+ * برچسب کوتاه نشان وضعیت در تب «کارهای انجام‌شده» (SEO 3.9.0): «انجام شد · » تکرار گام اول است و پرانتز پیشرفت با « · » می‌آید؛
+ * «اثر نداشت؛ قدم بعدی را ببینید» فقط «اثر نداشت» چون قدم بعدی همان زیر است. برچسب کامل جای دیگر (نشان کار در تب‌ها) همان می‌ماند.
+ */
+function hodima_seo_advisor_task_short_label( string $label ): string {
+	return (string) preg_replace( [ '/^انجام شد\s*[·؛]\s*/u', '/\s*\(([^()]+)\)$/u', '/؛ قدم بعدی را ببینید$/u' ], [ '', ' · $1', '' ], $label );
+}
+
+/**
+ * پیشرفت روزشمار سنجش یک کار انجام‌شده: [روز گذشته، روز لازم] یا null وقتی روزشمار ندارد یا تمام شده.
+ *
+ * @param array{rule: string, status: string, at: int, check: array<string, mixed>} $task
+ * @return array{0: int, 1: int}|null
+ */
+function hodima_seo_advisor_task_progress( array $task ): ?array {
+
+	if ( 'done' !== $task['status'] ) {
+		return null;
+	}
+
+	if ( 'competition' === hodima_seo_advisor_task_source( $task['rule'] ) ) {
+		$days  = (int) floor( ( time() - $task['at'] ) / DAY_IN_SECONDS );
+		$total = HODIMA_SEO_ADVISOR_MARK_COMPETITION_DAYS;
+	} elseif ( function_exists( 'hodima_seo_advisor_verify_dates' ) && in_array( $task['rule'], HODIMA_SEO_ADVISOR_VERIFY_RULES, true ) && 'low_data' !== ( $task['check']['verdict'] ?? '' ) ) {
+		$days  = hodima_seo_advisor_verify_dates( $task )['after_days'];
+		$total = HODIMA_SEO_ADVISOR_VERIFY_MIN_DAYS;
+	} else {
+		return null;
+	}
+
+	return $days < $total ? [ max( 0, $days ), $total ] : null;
+}
+
+/**
+ * گام‌شمار کار انجام‌شده (SEO 3.9.0، طرح تأییدشده کاربر): سه گام کنار هم با دایره و خط وصل؛ انجام‌شده ✓ سبز، اولین گام منتظر
+ * «الان اینجاست» (حلقه کهربایی)، گام‌های بعدی شماره خاکستری، ناموفق ✕. روی گوشی ستونی. گام نتیجه نوار روزشمار سنجش دارد.
+ * تا ۳.۸.۹ سه جعبه پرمتن هم‌وزن بود و معلوم نبود کار الان کجاست (عکس کاربر).
+ *
+ * @param array{rule: string, status: string, at: int, check: array<string, mixed>} $task
+ * @param list<array{state: string, label: string, detail: string}> $steps خروجی hodima_seo_advisor_task_timeline()
+ */
+function hodima_seo_advisor_render_task_steps( array $task, array $steps ): void {
+
+	$progress = hodima_seo_advisor_task_progress( $task );
+	$last     = array_key_last( $steps );
+	$current  = null !== $last && 'wait' !== $steps[ $last ]['state']; // نتیجه آمده (اثر نداشت، هنوز مانده…): گام منتظر قبلی دیگر «الان اینجاست» نیست
+	?>
+	<ol class="hodima-advisor__timeline" aria-label="مراحل این کار">
+		<?php foreach ( $steps as $i => $step ) : ?>
+			<?php
+			$mode = $step['state'];
+			if ( 'wait' === $mode ) {
+				$mode    = $current ? 'next' : 'now';
+				$current = true;
+			}
+			[ $mark, $sr ] = match ( $mode ) {
+				'ok'    => [ '✓', 'انجام شد: ' ],
+				'bad'   => [ '✕', 'ناموفق: ' ],
+				'now'   => [ '', 'مرحله فعلی: ' ],
+				default => [ number_format_i18n( $i + 1 ), 'بعدی: ' ],
+			};
+			?>
+			<li class="hodima-advisor__step" data-state="<?php echo esc_attr( $step['state'] ); ?>" data-mode="<?php echo esc_attr( $mode ); ?>"<?php echo 'now' === $mode ? ' aria-current="step"' : ''; ?>>
+				<span class="hodima-advisor__step-mark" aria-hidden="true"><span class="hodima-advisor__step-dot"><?php echo esc_html( $mark ); ?></span></span>
+				<strong><span class="screen-reader-text"><?php echo esc_html( $sr ); ?></span><?php echo esc_html( $step['label'] ); ?></strong>
+				<?php if ( $i === $last && 'wait' === $step['state'] && null !== $progress ) : ?>
+					<span class="hodima-advisor__step-bar" aria-hidden="true"><i style="inline-size: <?php echo esc_attr( (string) max( 2, (int) round( 100 * $progress[0] / max( 1, $progress[1] ) ) ) ); ?>%"></i></span>
+				<?php endif; ?>
+				<?php $detail = 'bad' === $step['state'] ? trim( (string) preg_replace( '/\s*قدم بعدی:.*$/us', '', $step['detail'] ) ) : $step['detail']; // قدم بعدی یادداشت جدای زیر گام‌هاست ?>
+				<?php if ( '' !== $detail ) : ?>
+					<span class="hodima-advisor__step-text"><?php echo esc_html( $detail ); ?></span>
+				<?php endif; ?>
+			</li>
+		<?php endforeach; ?>
+	</ol>
 	<?php
 }
 
@@ -533,41 +625,39 @@ function hodima_seo_advisor_render_tasks(): void {
 			'still'     => hodima_seo_advisor_task_still_text( $task['rule'] ),
 			default     => 'وقتی کار تمام شد «انجام دادم» را بزنید.',
 		};
+		// کارت هر کار (SEO 3.9.0، طرح تأییدشده کاربر): نوار سربرگ صفحه مثل «کارها» (نام و آدرس یک ردیف، بخش مبدأ، دکمه ویرایش)،
+		// بدنه با عنوان کار و نشان وضعیت، گام‌شمار افقی و ردیف دکمه‌ها. تا ۳.۸.۹ سه جعبه پرمتن هم‌وزن بود و معلوم نبود الان کجای کار است
+		$name = '' !== $title ? $title : rawurldecode( (string) $task['path'] );
+		if ( 'edit' === $link[2] && null !== $page ) {
+			$where   = hodima_seo_advisor_issue_where( $task['path'], (string) ( $page['kind'] ?? '' ) );
+			$link[1] = '' !== $where ? $where : $link[1]; // «ویرایش محصول»، «ویرایش دسته» مثل «کارها»
+		}
 		?>
-		<li class="hodima-advisor__task">
-			<div class="hodima-advisor__task-main">
-				<span class="hodima-advisor__task-head">
-					<span class="hds-pill hds-pill--info"><?php echo esc_html( hodima_seo_advisor_task_sources()[ $source ] ); ?></span>
-					<strong><?php echo esc_html( '' !== $task['title'] ? $task['title'] : hodima_seo_advisor_rule_label( $task['rule'] ) ); ?></strong>
-				</span>
-				<span class="hodima-advisor__task-page">
-					<?php echo esc_html( $title ); // بدون عنوان فقط خود آدرس (قبلا مسیر دو بار می‌آمد) ?>
-					<?php echo hodima_seo_advisor_url_link( (string) $task['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده در hodima_seo_advisor_url_link ?>
-					<?php echo hodima_seo_advisor_action( $link[0], $link[1], $link[2], 'external' === $link[2] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
-				</span>
+		<li class="hodima-advisor__task" data-state="<?php echo esc_attr( $view['state'] ); ?>">
+			<div class="hodima-advisor__task-bar">
+				<div class="hodima-advisor__ov-id">
+					<strong class="hodima-advisor__ov-name"><?php echo esc_html( $name ); ?></strong>
+					<?php echo hodima_seo_advisor_url_copy( (string) $task['path'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده ?>
+				</div>
+				<span class="hodima-advisor__task-src"><?php echo esc_html( hodima_seo_advisor_task_sources()[ $source ] ); ?></span>
+				<?php echo hodima_seo_advisor_action( $link[0], $link[1], $link[2], 'external' === $link[2] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML امن‌شده در hodima_seo_advisor_action ?>
 			</div>
-			<div class="hodima-advisor__task-state">
-				<span class="<?php echo esc_attr( $view['class'] ); ?>"><?php echo esc_html( $view['label'] ); ?></span>
-				<small><?php echo esc_html( hodima_seo_advisor_task_date( $view['time'] ) ); ?></small>
+			<div class="hodima-advisor__task-body">
+				<div class="hodima-advisor__task-head">
+					<h3 class="hodima-advisor__task-title"><?php echo esc_html( '' !== $task['title'] ? $task['title'] : hodima_seo_advisor_rule_label( $task['rule'] ) ); ?></h3>
+					<span class="hodima-advisor__task-pill" data-tone="<?php echo esc_attr( hodima_seo_advisor_task_tone( $view['state'] ) ); ?>"><?php echo esc_html( hodima_seo_advisor_task_short_label( $view['label'] ) ); ?></span>
+					<small class="hodima-advisor__task-date"><?php echo esc_html( hodima_seo_advisor_task_date( $view['time'] ) ); ?></small>
+				</div>
+				<?php if ( 'done' === $task['status'] && 'fixed' === $view['state'] ) : ?>
+					<?php hodima_seo_advisor_render_task_line( hodima_seo_advisor_task_timeline( $task ) ); ?>
+				<?php elseif ( 'done' === $task['status'] ) : ?>
+					<?php hodima_seo_advisor_render_task_steps( $task, hodima_seo_advisor_task_timeline( $task ) ); ?>
+				<?php endif; ?>
+				<?php if ( '' !== $hint ) : ?>
+					<p class="hodima-advisor__task-effect" data-tone="<?php echo esc_attr( hodima_seo_advisor_task_tone( $view['state'] ) ); ?>"><?php echo in_array( $view['state'], [ 'no_effect', 'back', 'still', 'unseen' ], true ) ? '<b>قدم بعدی:</b> ' : ''; ?><?php echo esc_html( preg_replace( '/^.*?قدم بعدی:\s*/us', '', $hint ) ?? $hint ); ?></p>
+				<?php endif; ?>
+				<?php hodima_seo_advisor_render_task_form( $task, $view['state'] ); ?>
 			</div>
-			<?php if ( 'done' === $task['status'] && 'fixed' === $view['state'] ) : ?>
-				<?php hodima_seo_advisor_render_task_line( hodima_seo_advisor_task_timeline( $task ) ); ?>
-			<?php elseif ( 'done' === $task['status'] ) : ?>
-				<ol class="hodima-advisor__timeline">
-					<?php foreach ( hodima_seo_advisor_task_timeline( $task ) as $step ) : ?>
-						<li class="hodima-advisor__step" data-state="<?php echo esc_attr( $step['state'] ); ?>">
-							<strong><?php echo esc_html( $step['label'] ); ?></strong>
-							<?php if ( '' !== $step['detail'] ) : ?>
-								<span><?php echo esc_html( $step['detail'] ); ?></span>
-							<?php endif; ?>
-						</li>
-					<?php endforeach; ?>
-				</ol>
-			<?php endif; ?>
-			<?php if ( '' !== $hint ) : ?>
-				<p class="hodima-advisor__task-effect"><?php echo esc_html( $hint ); ?></p>
-			<?php endif; ?>
-			<?php hodima_seo_advisor_render_task_form( $task, $view['state'] ); ?>
 		</li>
 		<?php
 	}
