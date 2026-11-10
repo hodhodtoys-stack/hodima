@@ -193,6 +193,13 @@ $cases = [
 	[ 'گره بی @type ← ld_invalid', 'ld_invalid', [ 'ld_errors' => '[["type","#x"]]' ], [], [ 'ld_invalid' ] ],
 	[ 'JSON-LD سالم ← هیچ', 'ld_invalid', [], [], [] ],
 	[ 'ردیف قدیمی (ld_count = -1) ← ld_invalid نمی‌دهد', 'ld_invalid', [ 'ld_count' => -1, 'ld_errors' => '[["json","x"]]' ], [], [] ],
+	// ── FAQPage اسکیما (SEO 3.9.4)
+	[ 'پرسش‌هایی که در صفحه نیستند ← faq_schema', 'faq_schema', [ 'ld_errors' => '[["faq_hidden","10 از 20 پرسش در متن صفحه دیده نمی‌شود"]]' ], [], [ 'faq_schema' ] ],
+	[ 'پاسخ برابر پرسش ← faq_schema', 'faq_schema', [ 'ld_errors' => '[["faq_same","1 پاسخ فقط خود پرسش را تکرار می‌کند"]]' ], [], [ 'faq_schema' ] ],
+	[ 'FAQ سالم (بی ایراد در ld_errors) ← هیچ', 'faq_schema', [ 'ld_errors' => '' ], [], [] ],
+	[ 'ایراد دیگر JSON-LD (json) ← faq_schema نمی‌دهد', 'faq_schema', [ 'ld_errors' => '[["json","Syntax error"]]' ], [], [] ],
+	[ 'ردیف قدیمی (ld_count = -1) ← faq_schema نمی‌دهد', 'faq_schema', [ 'ld_count' => -1, 'ld_errors' => '[["faq_hidden","x"]]' ], [], [] ],
+	[ 'ایراد FAQ ← ld_invalid نمی‌دهد (دو ایراد جدا)', 'ld_invalid', [ 'ld_errors' => '[["faq_hidden","x"]]' ], [], [] ],
 	// ── وضعیت (ریدایرکت، خطا، noindex)
 	[ 'ریدایرکت با لینک داخلی ← redirect', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 2 ], [], [ 'redirect' ] ],
 	[ 'ریدایرکت بی‌لینک داخلی ← هیچ (فقط نمایش گوگل ایراد نیست)', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 0 ], [], [] ],
@@ -334,6 +341,19 @@ $ld_mix  = $ldp( '<script type="application/ld+json">{"@type":"Product","name":"
 hodima_ck( 'JSON-LD سالم (@graph با @type) ← ۱ اسکریپت، بی ایراد', [ 1, [] ] === [ $ld_ok['ld_count'], $ld_ok['ld_errors'] ] );
 hodima_ck( 'JSON-LD با ویرگول اضافه ← json', [ 1, 'json' ] === [ $ld_bad['ld_count'], $ld_bad['ld_errors'][0][0] ?? '' ], wp_json_encode( $ld_bad['ld_errors'] ) );
 hodima_ck( 'بی @context و گره @graph بی @type ← context و type', [ 2, [ 'context', 'type' ] ] === [ $ld_mix['ld_count'], array_column( $ld_mix['ld_errors'], 0 ) ], wp_json_encode( $ld_mix['ld_errors'], JSON_UNESCAPED_UNICODE ) );
+// SEO 3.9.4: FAQPage فقط در اسکیما (همان وضع واقعی صفحه محصول سایت: ۱۰ پرسش انگلیسی + ۱۰ فارسی در اسکیما و هیچ‌کدام در صفحه)
+$faq_ld = static fn( array $qa ): string => '<script type="application/ld+json">' . wp_json_encode( [ '@context' => 'https://schema.org', '@graph' => [ [ '@type' => 'FAQPage', '@id' => '#faq', 'mainEntity' => array_map( static fn( array $x ): array => [ '@type' => 'Question', 'name' => $x[0], 'acceptedAnswer' => [ '@type' => 'Answer', 'text' => $x[1] ] ], $qa ) ] ] ], JSON_UNESCAPED_UNICODE ) . '</script>';
+$faq_p  = static fn( array $qa, string $body ): array => $doc( $faq_ld( $qa ), '<main><h1>پد پنکک</h1>' . $body . '</main>' )['ld_errors'];
+$faq_in = [ [ 'جنس پد پنکک دوتایی چیست؟', 'جنس محصول اسفنج فومی نرم است.' ], [ 'سایز چقدر است؟', 'سایز ۵ سانتی است.' ] ];
+hodima_ck( 'FAQ در صفحه هم هست (با «؟» فارسی و بی «؟» در اسکیما/صفحه) ← بی ایراد', [] === $faq_p( $faq_in, '<h2>سوالات متداول</h2><h3>جنس پد پنکک دوتایی چیست</h3><p>جنس محصول اسفنج فومی نرم است.</p><h3>سایز چقدر است؟</h3><p>سایز ۵ سانتی است.</p>' ), wp_json_encode( $faq_p( $faq_in, '<h3>جنس پد پنکک دوتایی چیست</h3><h3>سایز چقدر است؟</h3>' ), JSON_UNESCAPED_UNICODE ) );
+hodima_ck( 'FAQ در اسکیماست ولی در صفحه نیست ← faq_hidden با شمار «۲ از ۲»', [ [ 'faq_hidden', '2 از 2 پرسش در متن صفحه دیده نمی‌شود' ] ] === $faq_p( $faq_in, '<p>متن دیگر</p>' ), wp_json_encode( $faq_p( $faq_in, '<p>متن دیگر</p>' ), JSON_UNESCAPED_UNICODE ) );
+hodima_ck( 'یکی از دو پرسش در صفحه است ← «۱ از ۲»', [ [ 'faq_hidden', '1 از 2 پرسش در متن صفحه دیده نمی‌شود' ] ] === $faq_p( $faq_in, '<h3>سایز چقدر است؟</h3>' ) );
+$faq_mix = [ [ 'What material is it?', 'Foam.' ], [ 'جنس چیست؟', 'جنس چیست؟' ] ];
+hodima_ck( 'پرسش انگلیسی در صفحه فارسی و پاسخ برابر پرسش ← faq_hidden با «(۱ انگلیسی)» و faq_same', [ [ 'faq_hidden', '1 از 2 پرسش در متن صفحه دیده نمی‌شود (1 انگلیسی)' ], [ 'faq_same', '1 پاسخ فقط خود پرسش را تکرار می‌کند' ] ] === $faq_p( $faq_mix, '<h3>جنس چیست؟</h3>' ), wp_json_encode( $faq_p( $faq_mix, '<h3>جنس چیست؟</h3>' ), JSON_UNESCAPED_UNICODE ) );
+hodima_ck( 'پرسش فقط داخل script/template/noscript صفحه ← دیده‌نشدنی (faq_hidden)', 'faq_hidden' === ( $faq_p( $faq_in, '<script>var q="جنس پد پنکک دوتایی چیست؟ سایز چقدر است؟"</script><template>جنس پد پنکک دوتایی چیست</template><noscript>سایز چقدر است</noscript>' )[0][0] ?? '' ) );
+hodima_ck( 'ارقام و املا یکسان‌سازی می‌شود (۵ و 5؛ «ي» عربی)', [] === $faq_p( [ [ 'سايز ۵ سانتي چيست؟', 'x' ] ], '<h3>سایز 5 سانتی چیست</h3>' ) );
+hodima_ck( 'صفحه بی FAQPage ← هیچ ایراد FAQ (فقط سایر JSON-LD)', [] === $ld_ok['ld_errors'] );
+hodima_ck( 'صفحه با FAQ و JSON خراب هم ایراد json را نگه می‌دارد و کار می‌کند', 'json' === ( $doc( '<script type="application/ld+json">{bad}</script>' . $faq_ld( $faq_in ), '<p>x</p>' )['ld_errors'][0][0] ?? '' ) );
 hodima_ck( 'صفحه بی JSON-LD ← ۰ اسکریپت (ردیف: ld_count ۰، نه -1)', [ 0, 0, '' ] === [ $p_none['ld_count'], $row_of( $p_none )['ld_count'], $row_of( $p_none )['ld_errors'] ] );
 
 echo "=== ریدایرکت: کدام صفحه‌ها هنوز به آدرس ریدایرکت‌شده لینک داده‌اند (SEO 3.8.4)\n";

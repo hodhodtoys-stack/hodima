@@ -575,6 +575,32 @@ function hodima_seo_advisor_check_ld_invalid( array $r, array $ctx ): array {
 }
 
 /**
+ * FAQPage اسکیما که در صفحه دیده نمی‌شود یا پاسخ کاملی ندارد (SEO 3.9.4). نشانه‌ها را خزنده در ld_errors می‌گذارد
+ * (faq_hidden، faq_same)؛ ردیف قدیمی (ld_count = -1) یا پیش از ۳.۹.۴ این نشانه را ندارد و تا خزش بعدی ایراد نمی‌دهد.
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_faq_schema( array $r, array $ctx ): array {
+
+	$errors = json_decode( (string) ( $r['ld_errors'] ?? '' ), true );
+
+	if ( (int) ( $r['ld_count'] ?? -1 ) < 0 || ! is_array( $errors ) ) {
+		return [];
+	}
+
+	$parts = [];
+	foreach ( $errors as $error ) {
+		if ( is_array( $error ) && in_array( (string) ( $error[0] ?? '' ), [ 'faq_hidden', 'faq_same' ], true ) ) {
+			$parts[] = (string) ( $error[1] ?? '' );
+		}
+	}
+
+	return $parts ? [ hodima_seo_advisor_issue( 'faq_schema', implode( '؛ ', $parts ) ) ] : [];
+}
+
+/**
  * canonical به سایت دیگر (SEO 3.9.3): گوگل می‌گوید این صفحه را کنار می‌گذارد و سایت مقصد را نمایش می‌دهد. تا ۳.۹.۲ ردیف
  * ایندکس‌پذیر می‌ماند و هیچ ایرادی نمی‌ساخت (canonical_bad آدرس دامنه دیگر را اصلا نمی‌سنجید). صفحه‌های سیستمی کنار.
  *
@@ -920,6 +946,7 @@ function hodima_seo_advisor_checks(): array {
 		'link_js'        => [ 'when' => 'known', 'codes' => [ 'link_js' ], 'fn' => 'hodima_seo_advisor_check_link_js' ],
 		'soft_404'       => [ 'when' => 'known', 'codes' => [ 'soft_404' ], 'fn' => 'hodima_seo_advisor_check_soft_404' ],
 		'ld_invalid'     => [ 'when' => 'known', 'codes' => [ 'ld_invalid' ], 'fn' => 'hodima_seo_advisor_check_ld_invalid' ],
+		'faq_schema'     => [ 'when' => 'known', 'codes' => [ 'faq_schema' ], 'fn' => 'hodima_seo_advisor_check_faq_schema' ],
 		'no_canonical'   => [ 'when' => 'known', 'codes' => [ 'no_canonical' ], 'fn' => 'hodima_seo_advisor_check_no_canonical' ],
 		'canonical_in_body' => [ 'when' => 'known', 'codes' => [ 'canonical_in_body' ], 'fn' => 'hodima_seo_advisor_check_canonical_in_body' ],
 		'thin'           => [ 'when' => 'known', 'codes' => [ 'thin' ], 'fn' => 'hodima_seo_advisor_check_thin' ],

@@ -367,8 +367,65 @@ function hodima_seo_advisor_crawler_soft404( string $title, string $h1, DOMXPath
 }
 
 /**
+ * کلید مقایسه پرسش/پاسخ FAQ با متن صفحه: یکسان‌سازی املا و ارقام (hodima_seo_advisor_normalize) و حذف نشانه‌ها («؟» و «?» و ...) تا
+ * فرق نشانه‌گذاری «پرسش در اسکیما» و «پرسش در صفحه» را ایراد حساب نکند.
+ */
+function hodima_seo_advisor_faq_key( string $text ): string {
+	return trim( (string) preg_replace( '/\s+/u', ' ', (string) preg_replace( '/[^\p{L}\p{N}\s]+/u', ' ', hodima_seo_advisor_normalize( $text ) ) ) );
+}
+
+/**
+ * مشکل‌های FAQPage اسکیما (SEO 3.9.4): گوگل (sd-policies) می‌گوید داده ساختاریافته نباید چیزی باشد که بازدیدکننده در صفحه نمی‌بیند، و
+ * پاسخ باید «پاسخ کامل» باشد (faqpage). دو نشانه: «faq_hidden» پرسشی که در متن دیده‌شونده صفحه (بدون script/style/template) نیست
+ * (پرسش انگلیسی در صفحه فارسی هم همین‌جاست)، «faq_same» پاسخی که عین پرسش است.
+ *
+ * @param list<array{0: string, 1: string}> $items [پرسش، پاسخ]
+ * @return list<array{0: string, 1: string}> [نوع، توضیح]
+ */
+function hodima_seo_advisor_crawler_faq_problems( array $items, DOMXPath $xpath ): array {
+
+	$texts = $xpath->query( '//body//text()[not(ancestor::script or ancestor::style or ancestor::noscript or ancestor::template)]' );
+	$plain = '';
+	foreach ( false === $texts ? [] : $texts as $node ) {
+		$plain .= ' ' . $node->textContent;
+	}
+	$page  = hodima_seo_advisor_faq_key( $plain );
+	$total = 0;
+	$hide  = 0;
+	$latin = 0;
+	$same  = 0;
+
+	foreach ( $items as [ $question, $answer ] ) {
+		$key = hodima_seo_advisor_faq_key( $question );
+		if ( '' === $key ) {
+			continue;
+		}
+		++$total;
+		if ( ! str_contains( $page, $key ) ) {
+			++$hide;
+			$latin += 1 === preg_match( '/[\x{0600}-\x{06FF}]/u', $question ) ? 0 : 1;
+		}
+		if ( hodima_seo_advisor_faq_key( $answer ) === $key ) {
+			++$same;
+		}
+	}
+
+	$out = [];
+	if ( $hide > 0 ) {
+		$out[] = [ 'faq_hidden', sprintf( '%1$d از %2$d پرسش در متن صفحه دیده نمی‌شود%3$s', $hide, $total, $latin > 0 ? sprintf( ' (%d انگلیسی)', $latin ) : '' ) ];
+	}
+	if ( $same > 0 ) {
+		$out[] = [ 'faq_same', sprintf( '%d پاسخ فقط خود پرسش را تکرار می‌کند', $same ) ];
+	}
+
+	return $out;
+}
+
+/**
  * داده ساختاریافته JSON-LD صفحه (SEO 3.8.6؛ گوگل: داده‌ای که خوانده نمی‌شود یا @type ندارد نادیده گرفته می‌شود): شمار اسکریپت‌ها و
- * تا ۵ ایراد [نوع، توضیح]: json (خوانده نمی‌شود)، context (بی @context schema.org)، type (گره بی @type).
+ * تا ۵ ایراد [نوع، توضیح]: json (خوانده نمی‌شود)، context (بی @context schema.org)، type (گره بی @type). SEO 3.9.4: مشکل‌های FAQPage
+ * (faq_hidden، faq_same؛ hodima_seo_advisor_crawler_faq_problems) هم در همین فهرست می‌آیند (دو ایراد بیشتر از سقف)؛ ایراد خراب‌بودن
+ * (ld_invalid) فقط سه نوع اول را می‌خواند و ایراد FAQ را faq_schema.
  *
  * @return array{count: int, errors: list<array{0: string, 1: string}>}
  */
@@ -377,6 +434,7 @@ function hodima_seo_advisor_crawler_jsonld( DOMXPath $xpath ): array {
 	$list   = $xpath->query( "//script[translate(normalize-space(@type),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='application/ld+json']" );
 	$count  = 0;
 	$errors = [];
+	$faqs   = [];
 	$add    = static function ( string $kind, string $text ) use ( &$errors ): void {
 		if ( count( $errors ) < 5 ) {
 			$errors[] = [ $kind, mb_substr( $text, 0, 120 ) ];
@@ -404,8 +462,18 @@ function hodima_seo_advisor_crawler_jsonld( DOMXPath $xpath ): array {
 				if ( ! is_array( $item ) || empty( $item['@type'] ) ) {
 					$add( 'type', is_array( $item ) ? (string) ( $item['@id'] ?? implode( '، ', array_slice( array_keys( $item ), 0, 3 ) ) ) : 'مقدار بی‌ساختار' );
 				}
+				if ( is_array( $item ) && in_array( 'FAQPage', array_map( 'strval', (array) ( $item['@type'] ?? [] ) ), true ) ) {
+					foreach ( (array) ( $item['mainEntity'] ?? [] ) as $entity ) {
+						$answer  = is_array( $entity ) && is_array( $entity['acceptedAnswer'] ?? null ) ? $entity['acceptedAnswer'] : [];
+						$faqs[]  = [ is_array( $entity ) ? (string) ( $entity['name'] ?? '' ) : '', (string) ( $answer['text'] ?? '' ) ];
+					}
+				}
 			}
 		}
+	}
+
+	if ( $faqs ) {
+		$errors = array_merge( $errors, hodima_seo_advisor_crawler_faq_problems( $faqs, $xpath ) );
 	}
 
 	return [ 'count' => $count, 'errors' => $errors ];

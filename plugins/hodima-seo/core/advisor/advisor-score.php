@@ -63,7 +63,7 @@ const HODIMA_SEO_ADVISOR_SCORE_CATEGORIES = [
 	'cat-structure' => [
 		'label'  => 'ساختار و نقشه سایت',
 		'weight' => 15,
-		'codes'  => [ 'site_hidden', 'ld_invalid', 'orphan', 'island', 'low_inlinks', 'deep', 'no_canonical', 'canonical_in_body', 'not_in_sitemap', 'noindex', 'canonicalised' ],
+		'codes'  => [ 'site_hidden', 'ld_invalid', 'faq_schema', 'orphan', 'island', 'low_inlinks', 'deep', 'no_canonical', 'canonical_in_body', 'not_in_sitemap', 'noindex', 'canonicalised' ],
 	],
 	'cat-speed'     => [
 		'label'  => 'سرعت',

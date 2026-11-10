@@ -26,7 +26,7 @@ defined( 'ABSPATH' ) || exit;
 const HODIMA_SEO_ADVISOR_MARK_LIVE_CODES = [ 'no_meta', 'no_snippet', 'no_h1', 'no_title', 'title_short', 'title_long', 'dup_title', 'dup_h1', 'noindex', 'canonicalised' ];
 
 /** ایرادهای صفحه‌محور که با خزش دوباره همان یک صفحه (خزنده داخلی) همان لحظه سنجیده می‌شوند. */
-const HODIMA_SEO_ADVISOR_MARK_RECRAWL_CODES = [ 'link_broken', 'link_redirect', 'link_noindex', 'link_no_text', 'link_js', 'soft_404', 'ld_invalid', 'multi_h1', 'img_alt', 'img_empty', 'http_link', 'thin', 'no_canonical', 'canonical_in_body', 'canonical_bad', 'canonical_external', 'canonical_variant', 'dup_meta', 'near_dup' ];
+const HODIMA_SEO_ADVISOR_MARK_RECRAWL_CODES = [ 'link_broken', 'link_redirect', 'link_noindex', 'link_no_text', 'link_js', 'soft_404', 'ld_invalid', 'faq_schema', 'multi_h1', 'img_alt', 'img_empty', 'http_link', 'thin', 'no_canonical', 'canonical_in_body', 'canonical_bad', 'canonical_external', 'canonical_variant', 'dup_meta', 'near_dup' ];
 
 /** روزهای انتظار پیش از حکم «هنوز مانده» (رقابت با داده ۹۰ روزه دیر عوض می‌شود؛ صفحه تازه ایندکس دیر نمایش می‌گیرد). */
 const HODIMA_SEO_ADVISOR_MARK_COMPETITION_DAYS = 14;

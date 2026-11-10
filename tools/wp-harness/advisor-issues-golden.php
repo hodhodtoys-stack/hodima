@@ -100,6 +100,7 @@ $cases = [
 	'/g-js/'        => [ 'js_links' => 1, 'js_list' => '[["/g-ok/","مشاهده"]]' ], // SEO 3.8.4: لینک جاوااسکریپتی
 	'/g-soft404/'   => [ 'soft404' => 'empty|woocommerce-no-products-found' ], // SEO 3.8.6: دسته خالی
 	'/g-ld/'        => [ 'ld_count' => 2, 'ld_errors' => '[["json","Syntax error"],["type","#n"]]' ], // SEO 3.8.6: JSON-LD خراب
+	'/g-faq/'       => [ 'ld_count' => 1, 'ld_errors' => '[["faq_hidden","10 از 20 پرسش در متن صفحه دیده نمی‌شود (10 انگلیسی)"],["faq_same","1 پاسخ فقط خود پرسش را تکرار می‌کند"]]' ], // SEO 3.9.4: FAQ فقط در اسکیما
 	'/g-nocanon/'   => [ 'canonical' => '' ],
 	'/g-canbad/'    => [ 'canonical' => '/g-gone/' ],
 	'/g-canext/'    => [ 'canonical' => '!ext', 'canonical_url' => 'https://other.example/g-canext/' ], // SEO 3.9.3: canonical به سایت دیگر
