@@ -150,6 +150,77 @@ function hodima_seo_advisor_suggest_query_base( array $query, array $cfg ): ?arr
 	return $gain > 0 ? [ 'gain' => $gain, 'info' => sprintf( '%1$s نمایش با رتبه %2$s.', hodima_seo_advisor_num( $query['impressions'] ), hodima_seo_advisor_num( $query['position'], 1 ) ) ] : null;
 }
 
+/** نشانه‌های «خرید عمده» در عبارت جستجو (یکسان‌شده)؛ فیلتر hodima_seo_advisor_intent_cues. فقط برای تشخیص جفت «کلمه» و «کلمه + عمده». */
+const HODIMA_SEO_ADVISOR_INTENT_CUES = [ 'عمده', 'پخش', 'وارد کننده', 'واردکننده', 'بنکدار' ];
+
+/** جفت «با عمده» معتبر: دست‌کم این‌قدر نمایش، و نرخ کلیکی دست‌کم این درصد و دست‌کم ۵ برابر نرخ کلمه بی‌نشانه. */
+const HODIMA_SEO_ADVISOR_INTENT_TWIN_MIN_IMPRESSIONS = 20;
+const HODIMA_SEO_ADVISOR_INTENT_TWIN_MIN_CTR         = 10.0;
+const HODIMA_SEO_ADVISOR_INTENT_RATIO                = 5.0;
+
+/**
+ * شاهد «نیت جستجو» برای کارت نرخ کلیک کم (SEO 3.9.9، تابع خالص): کلمه‌ای از همین صفحه که نشانه «عمده» ندارد، نمایش زیاد و نرخ کلیکی
+ * کمتر از نصف معمول رتبه‌اش دارد، در حالی که همان کلمه + نشانه عمده (در همان صفحه) نرخ کلیک بسیار بالاتری دارد. داده واقعی سایت
+ * (۳ ماه Search Console): «کلیپس» ۰٫۹۸٪ در برابر «کلیپس عمده» ۳۱٪. این یک فرضیه از آمار خود سایت است، نه مرجع رسمی گوگل؛ فقط توضیح
+ * «احتمالا چرا» می‌دهد و سطح پیشنهاد را عوض نمی‌کند. فقط کلمه‌های همان صفحه (نه کل سایت) مقایسه می‌شوند.
+ *
+ * @param list<array{term: string, clicks: int, impressions: int, position: float}> $queries
+ * @param array<string, mixed>                                                      $cfg     hodima_seo_advisor_config()
+ * @return array{head: array{term: string, impressions: int, ctr: float, expected: float}, twin: array{term: string, impressions: int, ctr: float}}|null
+ */
+function hodima_seo_advisor_intent_gap( array $queries, array $cfg ): ?array {
+
+	$cues    = array_map( 'hodima_seo_advisor_normalize', array_map( 'strval', (array) apply_filters( 'hodima_seo_advisor_intent_cues', HODIMA_SEO_ADVISOR_INTENT_CUES ) ) );
+	$has_cue = static function ( string $norm ) use ( $cues ): bool {
+		foreach ( $cues as $cue ) {
+			if ( '' !== $cue && hodima_seo_advisor_word_in( $norm, $cue ) ) {
+				return true;
+			}
+		}
+		return false;
+	};
+	$best    = null;
+
+	foreach ( $queries as $head ) {
+		$norm = hodima_seo_advisor_normalize( $head['term'] );
+
+		if ( $head['position'] <= 0 || $head['position'] > $cfg['near_first_max'] || $head['impressions'] < $cfg['min_impressions'] || hodima_seo_advisor_is_brand( $head['term'] ) || $has_cue( $norm ) ) {
+			continue;
+		}
+
+		$ctr      = $head['clicks'] / $head['impressions'] * 100;
+		$expected = hodima_seo_advisor_expected_ctr( $head['position'] );
+
+		if ( $ctr >= $expected * 0.5 ) {
+			continue;
+		}
+
+		$twin = null;
+		foreach ( $queries as $other ) {
+			$other_norm = hodima_seo_advisor_normalize( $other['term'] );
+			$other_ctr  = $other['impressions'] > 0 ? $other['clicks'] / $other['impressions'] * 100 : 0.0;
+
+			if ( $other_norm === $norm || $other['impressions'] < HODIMA_SEO_ADVISOR_INTENT_TWIN_MIN_IMPRESSIONS || hodima_seo_advisor_is_brand( $other['term'] ) || ! $has_cue( $other_norm ) || ! hodima_seo_advisor_text_has( $other_norm, $head['term'] ) ) {
+				continue;
+			}
+			if ( $other_ctr < max( HODIMA_SEO_ADVISOR_INTENT_TWIN_MIN_CTR, HODIMA_SEO_ADVISOR_INTENT_RATIO * $ctr ) ) {
+				continue;
+			}
+			if ( null === $twin || $other['impressions'] > $twin['impressions'] ) {
+				$twin = [ 'term' => $other['term'], 'impressions' => $other['impressions'], 'ctr' => $other_ctr ];
+			}
+		}
+
+		$miss = $head['impressions'] * $expected / 100 - $head['clicks'];
+
+		if ( null !== $twin && ( null === $best || $miss > $best['miss'] ) ) {
+			$best = [ 'miss' => $miss, 'head' => [ 'term' => $head['term'], 'impressions' => $head['impressions'], 'ctr' => $ctr, 'expected' => $expected ], 'twin' => $twin ];
+		}
+	}
+
+	return null === $best ? null : [ 'head' => $best['head'], 'twin' => $best['twin'] ];
+}
+
 /**
  * ۱. نرخ کلیک کمتر از حد معمول رتبه. اگر کلمه‌های ذخیره‌شده کافی‌اند، هر کلمه با نرخ معمول رتبه خودش سنجیده می‌شود، نه کل صفحه با
  * میانگین رتبه (صفحه‌ای با رتبه ۱ برای یک کلمه و ۴۰ برای ده‌ها کلمه میانگین ۱۰ دارد ولی نرخ کلیکش ذاتا از «معمولِ رتبه ۱۰» کمتر است).
@@ -247,6 +318,27 @@ function hodima_seo_advisor_suggest_low_ctr( array $in ): array {
 		}
 	}
 
+	// نیت جستجو (SEO 3.9.9): کلمه عمومی با نرخ کلیک کم در برابر همان کلمه + «عمده» با نرخ بالا ← گام روشن‌کردن مخاطب
+	$intent = hodima_seo_advisor_intent_gap( $queries, $cfg );
+	$intro  = '';
+	if ( null !== $intent ) {
+		$intro = sprintf(
+			'کلمه «%1$s» %2$s نمایش و نرخ کلیک %3$s٪ دارد؛ همان کلمه با نشانه خرید عمده («%4$s») %5$s نمایش و نرخ کلیک %6$s٪. احتمالا بخشی از جستجوگران «%1$s» خریدار تکی‌اند و عنوان و متای شما برایشان «عمده‌فروشی» به نظر می‌رسد (فرضیه از آمار خود سایت شما، نه مرجع رسمی گوگل).',
+			$intent['head']['term'],
+			hodima_seo_advisor_num( $intent['head']['impressions'] ),
+			hodima_seo_advisor_num( $intent['head']['ctr'], 2 ),
+			$intent['twin']['term'],
+			hodima_seo_advisor_num( $intent['twin']['impressions'] ),
+			hodima_seo_advisor_num( $intent['twin']['ctr'], 1 )
+		);
+		$seen .= ' ' . $intro;
+		array_unshift( $steps, 'اگر فقط عمده می‌فروشید: در جمله اول «توضیحات متا» (و در «عنوان سئو») صریح بنویسید فروش عمده است و حداقل سفارش چقدر است؛ تا جستجوگر تکی بی‌خود کلیک نکند و خریدار عمده مطمئن شود.' );
+		$has_skip = [] !== array_filter( $steps, static fn( string $step ): bool => str_contains( $step, '«لازم نیست»' ) );
+		if ( ! $has_skip ) {
+			array_splice( $steps, max( 0, count( $steps ) - 1 ), 0, [ 'اگر این کلمه برایتان مهم نیست چون تکی نمی‌فروشید: «لازم نیست».' ] );
+		}
+	}
+
 	$report = [
 		'boxes' => [
 			null !== $gap
@@ -259,6 +351,9 @@ function hodima_seo_advisor_suggest_low_ctr( array $in ): array {
 		],
 		'foot'  => $learned ? '«انتظار» از آمار خود سایت شما برای همین رتبه‌ها حساب شده است.' : '',
 	];
+	if ( '' !== $intro ) {
+		$report['intro'] = $intro;
+	}
 	if ( null !== $meta && $meta['healthy'] ) {
 		$report['note'] = [ 'tone' => 'info', 'title' => 'طبق خزش', 'text' => sprintf( 'عنوان %1$s پیکسل و توضیح متا %2$s پیکسل است و طولشان ایرادی ندارد؛ پس مشکل احتمالا طول نیست.', hodima_seo_advisor_num( $meta['title_px'] ), hodima_seo_advisor_num( $meta['meta_px'] ) ) ];
 	} elseif ( null !== $meta && $meta['problems'] ) {

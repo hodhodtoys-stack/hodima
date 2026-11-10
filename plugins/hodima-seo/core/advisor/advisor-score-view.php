@@ -39,8 +39,8 @@ function hodima_seo_advisor_render_score( array $issues, int $crawled, string $c
 	$crawl_status = hodima_seo_advisor_crawl_status();
 
 	hodima_seo_ui_card_open(
-		'سلامت سایت',
-		sprintf( 'نمره از روی %1$s صفحه خزش‌شده%2$s حساب می‌شود. هر بخش را بزنید تا ایرادهایش در فهرست «کارها» پایین فیلتر شود.', $n( $crawled ), $crawl_status['imported'] > 0 ? sprintf( ' (آخرین خزش %s پیش)', human_time_diff( $crawl_status['imported'] ) ) : '' ),
+		'سلامت فنی سایت',
+		sprintf( 'این نمره فقط ایرادهای فنی خزش را می‌سنجد، از روی %1$s صفحه خزش‌شده%2$s؛ پیشنهادهای گوگل، وضعیت ایندکس و صفحه‌های بدون نمایش در آن نیست و جدا در فهرست «کارها» می‌آیند. هر بخش را بزنید تا ایرادهایش در همان فهرست فیلتر شود.', $n( $crawled ), $crawl_status['imported'] > 0 ? sprintf( ' (آخرین خزش %s پیش)', human_time_diff( $crawl_status['imported'] ) ) : '' ),
 		'',
 		'data-hdsa-score-card'
 	);
@@ -73,7 +73,7 @@ function hodima_seo_advisor_render_score( array $issues, int $crawled, string $c
 				<p>
 					<?php
 					echo esc_html(
-						( 100 === $result['score'] ? 'نمره ۱۰۰ یعنی هیچ ایراد قرمز یا کهربایی نیست. ' : '' )
+						( 100 === $result['score'] ? 'نمره ۱۰۰ یعنی هیچ ایراد فنی قرمز یا کهربایی در خزش نیست؛ این یعنی کار دیگری باقی نمانده، نه اینکه صفحه‌ها بی‌ایراد باشند. ' : '' )
 						. sprintf( '%1$s پیشنهاد «اطلاع» روی %2$s صفحه در نمره حساب نمی‌شود؛ گوگل آن‌ها را مشکل نمی‌داند و رفعشان اختیاری است.', $n( $info['items'] ), $n( $info['pages'] ) )
 					);
 					?>

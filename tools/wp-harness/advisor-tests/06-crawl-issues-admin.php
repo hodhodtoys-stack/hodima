@@ -370,7 +370,7 @@ update_option( HODIMA_SEO_SC_ADVISOR_KEY_OPTION, $key_json, false );
 wp_set_current_user( 1 );
 $_GET = [ 'page' => HODIMA_SEO_ADVISOR_PAGE ];
 $sc_html = $cap( static fn() => hodima_seo_advisor_render_admin() );
-hodima_ad( 'نوار سلامت سایت بالای «کارها» (SEO 3.5.8): عنوان، نمره با برچسب، ۵ بخش با پیوند فیلتر، بدون «سه کار اول» (تکرار ۵ کار مهم امروز)، «نمره چطور حساب می‌شود؟»', [ str_contains( $sc_html, '>سلامت سایت<' ), 1 === substr_count( $sc_html, 'hodima-advisor__sc-gauge ' ), substr_count( $sc_html, 'class="hodima-advisor__sc-cat"' ), str_contains( $sc_html, 'cf=cat-meta' ), str_contains( $sc_html, 'سه کار اول برای بالا بردن نمره' ), str_contains( $sc_html, 'نمره چطور حساب می‌شود؟' ) ], [ true, true, 5, true, false, true ] );
+hodima_ad( 'نوار سلامت سایت بالای «کارها» (SEO 3.5.8؛ عنوان «سلامت فنی سایت» از 3.9.9): عنوان، نمره با برچسب، ۵ بخش با پیوند فیلتر، بدون «سه کار اول» (تکرار ۵ کار مهم امروز)، «نمره چطور حساب می‌شود؟»', [ str_contains( $sc_html, '>سلامت فنی سایت<' ), 1 === substr_count( $sc_html, 'hodima-advisor__sc-gauge ' ), substr_count( $sc_html, 'class="hodima-advisor__sc-cat"' ), str_contains( $sc_html, 'cf=cat-meta' ), str_contains( $sc_html, 'سه کار اول برای بالا بردن نمره' ), str_contains( $sc_html, 'نمره چطور حساب می‌شود؟' ) ], [ true, true, 5, true, false, true ] );
 hodima_ad( 'نمره نسبت به دور قبل: «بدتر» با اختلاف', str_contains( $sc_html, 'امتیاز بدتر از دور قبل' ) || str_contains( $sc_html, 'امتیاز بهتر از دور قبل' ) || str_contains( $sc_html, 'بدون تغییر نسبت به دور قبل' ), true );
 $_GET    = [ 'page' => HODIMA_SEO_ADVISOR_PAGE, 'cf' => 'cat-meta' ];
 $sc_meta = $cap( static fn() => hodima_seo_advisor_render_admin() );
