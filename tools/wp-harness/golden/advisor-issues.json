@@ -345,7 +345,7 @@
             "issues": [
                 {
                     "code": "faq_schema",
-                    "detail": "10 از 20 پرسش در متن صفحه دیده نمی‌شود (10 انگلیسی)؛ 1 پاسخ فقط خود پرسش را تکرار می‌کند",
+                    "detail": "10 از 20 پرسش در متن صفحه دیده نمی‌شود (10 انگلیسی)",
                     "url": "",
                     "items": []
                 },
@@ -921,6 +921,27 @@
                 {
                     "code": "no_meta",
                     "detail": "",
+                    "url": "",
+                    "items": []
+                },
+                {
+                    "code": "not_in_sitemap",
+                    "detail": "",
+                    "url": "",
+                    "items": []
+                }
+            ]
+        },
+        {
+            "path": "/g-prod/",
+            "impressions": 0,
+            "position": 0,
+            "inlinks": 9,
+            "text_links": 5,
+            "issues": [
+                {
+                    "code": "product_schema",
+                    "detail": "اسکیمای Product این فیلدها را ندارد: قیمت (offers.price)، ارز (priceCurrency)",
                     "url": "",
                     "items": []
                 },

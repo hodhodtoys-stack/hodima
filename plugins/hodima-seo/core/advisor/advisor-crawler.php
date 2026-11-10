@@ -375,9 +375,10 @@ function hodima_seo_advisor_faq_key( string $text ): string {
 }
 
 /**
- * مشکل‌های FAQPage اسکیما (SEO 3.9.4): گوگل (sd-policies) می‌گوید داده ساختاریافته نباید چیزی باشد که بازدیدکننده در صفحه نمی‌بیند، و
- * پاسخ باید «پاسخ کامل» باشد (faqpage). دو نشانه: «faq_hidden» پرسشی که در متن دیده‌شونده صفحه (بدون script/style/template) نیست
- * (پرسش انگلیسی در صفحه فارسی هم همین‌جاست)، «faq_same» پاسخی که عین پرسش است.
+ * پرسش‌های FAQPage اسکیما که در صفحه دیده نمی‌شوند (SEO 3.9.5). گوگل (sd-policies، «Content guidelines»): «Don't mark up content that
+ * is not visible to readers of the page» و داده ساختاریافته باید «a true representation of the page content» باشد. نشانه: `faq_hidden`
+ * = پرسشی که در متن دیده‌شونده صفحه (بدون script/style/noscript/template) نیست؛ پرسش انگلیسی در صفحه فارسی هم همین‌جاست.
+ * «پاسخ عین پرسش» عمدا ایراد نیست: مرجعش (صفحه faqpage گوگل) برداشته شده و بی مرجع رسمی ایرادی ثبت نمی‌شود.
  *
  * @param list<array{0: string, 1: string}> $items [پرسش، پاسخ]
  * @return list<array{0: string, 1: string}> [نوع، توضیح]
@@ -393,9 +394,8 @@ function hodima_seo_advisor_crawler_faq_problems( array $items, DOMXPath $xpath 
 	$total = 0;
 	$hide  = 0;
 	$latin = 0;
-	$same  = 0;
 
-	foreach ( $items as [ $question, $answer ] ) {
+	foreach ( $items as [ $question ] ) {
 		$key = hodima_seo_advisor_faq_key( $question );
 		if ( '' === $key ) {
 			continue;
@@ -405,27 +405,67 @@ function hodima_seo_advisor_crawler_faq_problems( array $items, DOMXPath $xpath 
 			++$hide;
 			$latin += 1 === preg_match( '/[\x{0600}-\x{06FF}]/u', $question ) ? 0 : 1;
 		}
-		if ( hodima_seo_advisor_faq_key( $answer ) === $key ) {
-			++$same;
+	}
+
+	return $hide > 0 ? [ [ 'faq_hidden', sprintf( '%1$d از %2$d پرسش در متن صفحه دیده نمی‌شود%3$s', $hide, $total, $latin > 0 ? sprintf( ' (%d انگلیسی)', $latin ) : '' ) ] ] : [];
+}
+
+/**
+ * مشکل‌های Product اسکیمای «صفحه محصول» (SEO 3.9.5). گوگل: «Product snippets» نام و یکی از امتیاز/قیمت را لازم دارد و «Merchant listings»
+ * نام، تصویر، قیمت (offers.price) و ارز (priceCurrency) را؛ بدونشان صفحه نتیجه ویژه محصول نمی‌گیرد. فقط برای صفحه‌ای که خودش محصول
+ * است (کلاس بدنه `single-product` یا `og:type` برابر product)؛ گره Product در آرشیو و دسته‌ها (فقط نام و آدرس) ایراد نیست. صفحه
+ * محصول بی هیچ Product ← `product_missing`؛ وگرنه اگر هیچ گره‌ای کامل نباشد ← `product_fields` با نام فیلدهای کم. قیمت باید بزرگ‌تر از صفر باشد
+ * (گوگل: merchant listing «price greater than zero»). AggregateOffer (محصول متغیر) عمدا ایراد نیست: Product snippets آن را می‌پذیرد.
+ *
+ * @param list<array<string, mixed>> $products گره‌های Product این صفحه
+ * @return list<array{0: string, 1: string}> [نوع، توضیح]
+ */
+function hodima_seo_advisor_crawler_product_problems( array $products, bool $is_product ): array {
+
+	if ( ! $is_product ) {
+		return [];
+	}
+
+	if ( ! $products ) {
+		return [ [ 'product_missing', 'صفحه محصول است ولی هیچ داده ساختاریافته Product ندارد' ] ];
+	}
+
+	$positive = static fn( mixed $value ): bool => is_numeric( $value ) ? (float) $value > 0 : '' !== trim( is_scalar( $value ) ? (string) $value : '' ); // Merchant listings: «price greater than zero»
+	$filled   = static fn( mixed $value ): bool => is_array( $value ) ? [] !== array_filter( $value, static fn( mixed $v ): bool => is_array( $v ) ? [] !== $v : '' !== trim( (string) $v ) ) : '' !== trim( (string) $value );
+	$best   = null;
+
+	foreach ( $products as $product ) {
+		$offers  = $product['offers'] ?? [];
+		$offers  = is_array( $offers ) && array_is_list( $offers ) ? $offers : [ $offers ];
+		$price   = false;
+		$cur     = false;
+		foreach ( $offers as $offer ) {
+			if ( is_array( $offer ) ) {
+				$spec  = is_array( $offer['priceSpecification'] ?? null ) ? $offer['priceSpecification'] : [];
+				$price = $price || $positive( $offer['price'] ?? '' ) || $positive( $offer['lowPrice'] ?? '' ) || $positive( $spec['price'] ?? '' );
+				$cur   = $cur || $filled( $offer['priceCurrency'] ?? '' ) || $filled( $spec['priceCurrency'] ?? '' );
+			}
 		}
+		$missing = [];
+		foreach ( [ 'نام (name)' => $filled( $product['name'] ?? '' ), 'تصویر (image)' => $filled( $product['image'] ?? '' ), 'قیمت (offers.price)' => $price, 'ارز (priceCurrency)' => $cur ] as $label => $ok ) {
+			if ( ! $ok ) {
+				$missing[] = $label;
+			}
+		}
+		if ( ! $missing ) {
+			return [];
+		}
+		$best = null === $best || count( $missing ) < count( $best ) ? $missing : $best;
 	}
 
-	$out = [];
-	if ( $hide > 0 ) {
-		$out[] = [ 'faq_hidden', sprintf( '%1$d از %2$d پرسش در متن صفحه دیده نمی‌شود%3$s', $hide, $total, $latin > 0 ? sprintf( ' (%d انگلیسی)', $latin ) : '' ) ];
-	}
-	if ( $same > 0 ) {
-		$out[] = [ 'faq_same', sprintf( '%d پاسخ فقط خود پرسش را تکرار می‌کند', $same ) ];
-	}
-
-	return $out;
+	return [ [ 'product_fields', 'اسکیمای Product این فیلدها را ندارد: ' . implode( '، ', (array) $best ) ] ];
 }
 
 /**
  * داده ساختاریافته JSON-LD صفحه (SEO 3.8.6؛ گوگل: داده‌ای که خوانده نمی‌شود یا @type ندارد نادیده گرفته می‌شود): شمار اسکریپت‌ها و
  * تا ۵ ایراد [نوع، توضیح]: json (خوانده نمی‌شود)، context (بی @context schema.org)، type (گره بی @type). SEO 3.9.4: مشکل‌های FAQPage
- * (faq_hidden، faq_same؛ hodima_seo_advisor_crawler_faq_problems) هم در همین فهرست می‌آیند (دو ایراد بیشتر از سقف)؛ ایراد خراب‌بودن
- * (ld_invalid) فقط سه نوع اول را می‌خواند و ایراد FAQ را faq_schema.
+ * (faq_hidden؛ hodima_seo_advisor_crawler_faq_problems) و Product صفحه محصول (product_missing، product_fields) هم در همین
+ * فهرست می‌آیند (بیشتر از سقف)؛ ایراد خراب‌بودن (ld_invalid) فقط سه نوع اول را می‌خواند، FAQ را faq_schema و Product را product_schema.
  *
  * @return array{count: int, errors: list<array{0: string, 1: string}>}
  */
@@ -435,6 +475,7 @@ function hodima_seo_advisor_crawler_jsonld( DOMXPath $xpath ): array {
 	$count  = 0;
 	$errors = [];
 	$faqs   = [];
+	$prods  = [];
 	$add    = static function ( string $kind, string $text ) use ( &$errors ): void {
 		if ( count( $errors ) < 5 ) {
 			$errors[] = [ $kind, mb_substr( $text, 0, 120 ) ];
@@ -462,6 +503,9 @@ function hodima_seo_advisor_crawler_jsonld( DOMXPath $xpath ): array {
 				if ( ! is_array( $item ) || empty( $item['@type'] ) ) {
 					$add( 'type', is_array( $item ) ? (string) ( $item['@id'] ?? implode( '، ', array_slice( array_keys( $item ), 0, 3 ) ) ) : 'مقدار بی‌ساختار' );
 				}
+				if ( is_array( $item ) && in_array( 'Product', array_map( 'strval', (array) ( $item['@type'] ?? [] ) ), true ) ) {
+					$prods[] = $item;
+				}
 				if ( is_array( $item ) && in_array( 'FAQPage', array_map( 'strval', (array) ( $item['@type'] ?? [] ) ), true ) ) {
 					foreach ( (array) ( $item['mainEntity'] ?? [] ) as $entity ) {
 						$answer  = is_array( $entity ) && is_array( $entity['acceptedAnswer'] ?? null ) ? $entity['acceptedAnswer'] : [];
@@ -475,6 +519,10 @@ function hodima_seo_advisor_crawler_jsonld( DOMXPath $xpath ): array {
 	if ( $faqs ) {
 		$errors = array_merge( $errors, hodima_seo_advisor_crawler_faq_problems( $faqs, $xpath ) );
 	}
+
+	// صفحه محصول: کلاس بدنه ووکامرس یا og:type (هر دو را قالب هدیما می‌گذارد)
+	$is_product = $xpath->query( '//body[contains(concat(" ", normalize-space(@class), " "), " single-product ")] | //meta[@property="og:type" and translate(@content,"PRODUCT","product")="product"]' );
+	$errors     = array_merge( $errors, hodima_seo_advisor_crawler_product_problems( $prods, false !== $is_product && $is_product->length > 0 ) );
 
 	return [ 'count' => $count, 'errors' => $errors ];
 }

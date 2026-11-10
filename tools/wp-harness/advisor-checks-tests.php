@@ -195,11 +195,17 @@ $cases = [
 	[ 'ردیف قدیمی (ld_count = -1) ← ld_invalid نمی‌دهد', 'ld_invalid', [ 'ld_count' => -1, 'ld_errors' => '[["json","x"]]' ], [], [] ],
 	// ── FAQPage اسکیما (SEO 3.9.4)
 	[ 'پرسش‌هایی که در صفحه نیستند ← faq_schema', 'faq_schema', [ 'ld_errors' => '[["faq_hidden","10 از 20 پرسش در متن صفحه دیده نمی‌شود"]]' ], [], [ 'faq_schema' ] ],
-	[ 'پاسخ برابر پرسش ← faq_schema', 'faq_schema', [ 'ld_errors' => '[["faq_same","1 پاسخ فقط خود پرسش را تکرار می‌کند"]]' ], [], [ 'faq_schema' ] ],
+	[ 'نشانه ناشناخته (faq_same قدیمی) ← faq_schema نمی‌دهد: بی مرجع رسمی ایراد نیست', 'faq_schema', [ 'ld_errors' => '[["faq_same","x"]]' ], [], [] ],
 	[ 'FAQ سالم (بی ایراد در ld_errors) ← هیچ', 'faq_schema', [ 'ld_errors' => '' ], [], [] ],
 	[ 'ایراد دیگر JSON-LD (json) ← faq_schema نمی‌دهد', 'faq_schema', [ 'ld_errors' => '[["json","Syntax error"]]' ], [], [] ],
 	[ 'ردیف قدیمی (ld_count = -1) ← faq_schema نمی‌دهد', 'faq_schema', [ 'ld_count' => -1, 'ld_errors' => '[["faq_hidden","x"]]' ], [], [] ],
 	[ 'ایراد FAQ ← ld_invalid نمی‌دهد (دو ایراد جدا)', 'ld_invalid', [ 'ld_errors' => '[["faq_hidden","x"]]' ], [], [] ],
+	// ── اسکیمای محصول ناقص (SEO 3.9.5)
+	[ 'صفحه محصول بی Product ← product_schema', 'product_schema', [ 'ld_errors' => '[["product_missing","x"]]' ], [], [ 'product_schema' ] ],
+	[ 'Product بی قیمت ← product_schema', 'product_schema', [ 'ld_errors' => '[["product_fields","اسکیمای Product این فیلدها را ندارد: قیمت (offers.price)"]]' ], [], [ 'product_schema' ] ],
+	[ 'Product کامل (بی ایراد) ← هیچ', 'product_schema', [ 'ld_errors' => '' ], [], [] ],
+	[ 'ایراد FAQ ← product_schema نمی‌دهد', 'product_schema', [ 'ld_errors' => '[["faq_hidden","x"]]' ], [], [] ],
+	[ 'ردیف قدیمی (ld_count = -1) ← product_schema نمی‌دهد', 'product_schema', [ 'ld_count' => -1, 'ld_errors' => '[["product_missing","x"]]' ], [], [] ],
 	// ── وضعیت (ریدایرکت، خطا، noindex)
 	[ 'ریدایرکت با لینک داخلی ← redirect', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 2 ], [], [ 'redirect' ] ],
 	[ 'ریدایرکت بی‌لینک داخلی ← هیچ (فقط نمایش گوگل ایراد نیست)', 'status', [ 'status' => 301, 'redirect_to' => '/x/', 'inlinks' => 0 ], [], [] ],
@@ -349,11 +355,28 @@ hodima_ck( 'FAQ در صفحه هم هست (با «؟» فارسی و بی «؟»
 hodima_ck( 'FAQ در اسکیماست ولی در صفحه نیست ← faq_hidden با شمار «۲ از ۲»', [ [ 'faq_hidden', '2 از 2 پرسش در متن صفحه دیده نمی‌شود' ] ] === $faq_p( $faq_in, '<p>متن دیگر</p>' ), wp_json_encode( $faq_p( $faq_in, '<p>متن دیگر</p>' ), JSON_UNESCAPED_UNICODE ) );
 hodima_ck( 'یکی از دو پرسش در صفحه است ← «۱ از ۲»', [ [ 'faq_hidden', '1 از 2 پرسش در متن صفحه دیده نمی‌شود' ] ] === $faq_p( $faq_in, '<h3>سایز چقدر است؟</h3>' ) );
 $faq_mix = [ [ 'What material is it?', 'Foam.' ], [ 'جنس چیست؟', 'جنس چیست؟' ] ];
-hodima_ck( 'پرسش انگلیسی در صفحه فارسی و پاسخ برابر پرسش ← faq_hidden با «(۱ انگلیسی)» و faq_same', [ [ 'faq_hidden', '1 از 2 پرسش در متن صفحه دیده نمی‌شود (1 انگلیسی)' ], [ 'faq_same', '1 پاسخ فقط خود پرسش را تکرار می‌کند' ] ] === $faq_p( $faq_mix, '<h3>جنس چیست؟</h3>' ), wp_json_encode( $faq_p( $faq_mix, '<h3>جنس چیست؟</h3>' ), JSON_UNESCAPED_UNICODE ) );
+hodima_ck( 'پرسش انگلیسی در صفحه فارسی ← faq_hidden با «(۱ انگلیسی)»؛ پاسخ برابر پرسش ایراد نیست', [ [ 'faq_hidden', '1 از 2 پرسش در متن صفحه دیده نمی‌شود (1 انگلیسی)' ] ] === $faq_p( $faq_mix, '<h3>جنس چیست؟</h3>' ), wp_json_encode( $faq_p( $faq_mix, '<h3>جنس چیست؟</h3>' ), JSON_UNESCAPED_UNICODE ) );
 hodima_ck( 'پرسش فقط داخل script/template/noscript صفحه ← دیده‌نشدنی (faq_hidden)', 'faq_hidden' === ( $faq_p( $faq_in, '<script>var q="جنس پد پنکک دوتایی چیست؟ سایز چقدر است؟"</script><template>جنس پد پنکک دوتایی چیست</template><noscript>سایز چقدر است</noscript>' )[0][0] ?? '' ) );
 hodima_ck( 'ارقام و املا یکسان‌سازی می‌شود (۵ و 5؛ «ي» عربی)', [] === $faq_p( [ [ 'سايز ۵ سانتي چيست؟', 'x' ] ], '<h3>سایز 5 سانتی چیست</h3>' ) );
 hodima_ck( 'صفحه بی FAQPage ← هیچ ایراد FAQ (فقط سایر JSON-LD)', [] === $ld_ok['ld_errors'] );
 hodima_ck( 'صفحه با FAQ و JSON خراب هم ایراد json را نگه می‌دارد و کار می‌کند', 'json' === ( $doc( '<script type="application/ld+json">{bad}</script>' . $faq_ld( $faq_in ), '<p>x</p>' )['ld_errors'][0][0] ?? '' ) );
+// SEO 3.9.5: اسکیمای Product ناقص فقط در صفحه محصول (کلاس بدنه single-product یا og:type)
+$pr_doc  = static fn( string $json, string $body_class = 'single-product woocommerce', string $head = '' ): array => hodima_seo_advisor_crawler_parse( '<!doctype html><html><head><title>t</title>' . $head . ( '' === $json ? '' : '<script type="application/ld+json">' . $json . '</script>' ) . '</head><body class="' . $body_class . '"><main><h1>پد</h1><p>x</p></main></body></html>', 'https://hodima.test/p/' )['ld_errors'];
+$pr_full = static fn( array $over = [] ): string => (string) wp_json_encode( [ '@context' => 'https://schema.org', '@graph' => [ array_merge( [ '@type' => 'Product', 'name' => 'پد پنکک', 'image' => [ 'https://hodima.test/a.webp' ], 'offers' => [ '@type' => 'Offer', 'price' => '308000', 'priceCurrency' => 'IRR', 'availability' => 'https://schema.org/InStock' ] ], $over ) ] ], JSON_UNESCAPED_UNICODE );
+hodima_ck( 'محصول کامل (نام، تصویر، قیمت، ارز) ← بی ایراد', [] === $pr_doc( $pr_full() ), wp_json_encode( $pr_doc( $pr_full() ), JSON_UNESCAPED_UNICODE ) );
+hodima_ck( 'محصول بی قیمت و ارز ← product_fields با نام هر دو فیلد', [ [ 'product_fields', 'اسکیمای Product این فیلدها را ندارد: قیمت (offers.price)، ارز (priceCurrency)' ] ] === $pr_doc( $pr_full( [ 'offers' => [ '@type' => 'Offer', 'availability' => 'x' ] ] ) ), wp_json_encode( $pr_doc( $pr_full( [ 'offers' => [ '@type' => 'Offer' ] ] ) ), JSON_UNESCAPED_UNICODE ) );
+hodima_ck( 'قیمت صفر (merchant listing: بزرگ‌تر از صفر) ← قیمت کم است؛ قیمت رشته‌ای «308000» درست', [ 'اسکیمای Product این فیلدها را ندارد: قیمت (offers.price)', [] ] === [ $pr_doc( $pr_full( [ 'offers' => [ '@type' => 'Offer', 'price' => '0', 'priceCurrency' => 'IRR' ] ] ) )[0][1] ?? '', $pr_doc( $pr_full() ) ] );
+hodima_ck( 'محصول بی تصویر و بی offers ← تصویر، قیمت و ارز', [ [ 'product_fields', 'اسکیمای Product این فیلدها را ندارد: تصویر (image)، قیمت (offers.price)، ارز (priceCurrency)' ] ] === $pr_doc( $pr_full( [ 'image' => '', 'offers' => [] ] ) ) );
+hodima_ck( 'صفحه محصول بی هیچ Product (فقط FAQ/WebPage) ← product_missing', 'product_missing' === ( $pr_doc( '{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"#w"}]}' )[0][0] ?? '' ) );
+hodima_ck( 'صفحه محصول بی هیچ JSON-LD ← product_missing', 'product_missing' === ( $pr_doc( '' )[0][0] ?? '' ) );
+hodima_ck( 'همان بی‌Product در صفحه عادی (مقاله) ← هیچ', [] === $pr_doc( '{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"#w"}]}', 'single-post' ) );
+hodima_ck( 'Product ناقص (فقط نام و آدرس) در صفحه دسته/آرشیو ← هیچ', [] === $pr_doc( $pr_full( [ 'image' => '', 'offers' => [] ] ), 'archive tax-product_cat woocommerce' ) );
+hodima_ck( 'تشخیص محصول با og:type=product بدون کلاس بدنه', 'product_missing' === ( $pr_doc( '', 'single', '<meta property="og:type" content="product">' )[0][0] ?? '' ) );
+hodima_ck( 'AggregateOffer با lowPrice و priceCurrency (محصول متغیر) ← بی ایراد', [] === $pr_doc( $pr_full( [ 'offers' => [ '@type' => 'AggregateOffer', 'lowPrice' => '10', 'priceCurrency' => 'IRR' ] ] ) ) );
+hodima_ck( 'چند offer که یکی قیمت و ارز دارد ← بی ایراد', [] === $pr_doc( $pr_full( [ 'offers' => [ [ '@type' => 'Offer', 'availability' => 'x' ], [ '@type' => 'Offer', 'price' => '5', 'priceCurrency' => 'IRR' ] ] ] ) ) );
+hodima_ck( 'دو گره Product: یکی ناقص و یکی کامل ← بی ایراد', [] === $pr_doc( (string) wp_json_encode( [ '@context' => 'https://schema.org', '@graph' => [ [ '@type' => 'Product', 'name' => 'x' ], json_decode( $pr_full(), true )['@graph'][0] ] ] ) ) );
+hodima_ck( 'Product با @type آرایه (Product + Thing) هم شمرده می‌شود', [] === $pr_doc( $pr_full( [ '@type' => [ 'Product', 'Thing' ] ] ) ) );
+hodima_ck( 'priceSpecification (price + priceCurrency) هم قیمت حساب می‌شود', [] === $pr_doc( $pr_full( [ 'offers' => [ '@type' => 'Offer', 'priceSpecification' => [ 'price' => '9', 'priceCurrency' => 'IRR' ] ] ] ) ) );
 hodima_ck( 'صفحه بی JSON-LD ← ۰ اسکریپت (ردیف: ld_count ۰، نه -1)', [ 0, 0, '' ] === [ $p_none['ld_count'], $row_of( $p_none )['ld_count'], $row_of( $p_none )['ld_errors'] ] );
 
 echo "=== ریدایرکت: کدام صفحه‌ها هنوز به آدرس ریدایرکت‌شده لینک داده‌اند (SEO 3.8.4)\n";
@@ -439,7 +462,7 @@ hodima_ck( 'classify(آدرس ناشناخته) ← خالی', [ '', 0 ] === arr
 
 echo "=== قانون ثابت دستار: هر ایراد رکورد، مرجع و سطح هم‌خوان دارد (docs/seo-advisor.md)\n";
 // صفحه‌های رسمی Google Search Central که مرجع می‌توانند باشند (نشانی کامل در docs/seo-advisor-rulebook.md)
-$google_pages = [ 'title-link', 'snippet', 'seo-starter-guide', 'consolidate-duplicate-urls', 'robots-meta-tag', 'http-network-errors', 'build-sitemap', 'links-crawlable', 'spam-policies', 'sd-policies' ];
+$google_pages = [ 'title-link', 'snippet', 'seo-starter-guide', 'consolidate-duplicate-urls', 'robots-meta-tag', 'http-network-errors', 'build-sitemap', 'links-crawlable', 'spam-policies', 'sd-policies', 'product-snippet', 'merchant-listing' ];
 $ref_bad      = [];
 foreach ( hodima_seo_advisor_issue_catalog() as $code => $record ) {
 	$ref   = (string) ( $record['ref'] ?? '' );

@@ -509,7 +509,7 @@ const HODIMA_SEO_ADVISOR_CRAWL_GROUPS = [
 	'redirect' => [ 'redirect', 'noindex', 'canonicalised', 'broken', 'server_error' ],
 	'linkfix'  => [ 'link_broken', 'link_redirect', 'link_noindex', 'link_no_text', 'link_js', 'redirect_chain', 'redirect_loop' ],
 	'content'  => [ 'img_alt', 'img_empty', 'thin', 'soft_404' ], // img_empty تا SEO ۳.۸.۰ بی‌گروه بود و در فیلتر چیپ‌های «کارها» دیده نمی‌شد
-	'tech'     => [ 'site_hidden', 'ld_invalid', 'faq_schema', 'canonical_bad', 'canonical_external', 'canonical_variant', 'canonical_in_body', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
+	'tech'     => [ 'site_hidden', 'ld_invalid', 'faq_schema', 'product_schema', 'canonical_bad', 'canonical_external', 'canonical_variant', 'canonical_in_body', 'no_canonical', 'http_link', 'sitemap_bad', 'not_in_sitemap', 'deep' ],
 	'links'    => [ 'low_inlinks' ],
 	'orphan'   => [ 'orphan', 'island' ],
 ];

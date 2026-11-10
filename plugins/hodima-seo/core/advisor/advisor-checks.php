@@ -575,8 +575,7 @@ function hodima_seo_advisor_check_ld_invalid( array $r, array $ctx ): array {
 }
 
 /**
- * FAQPage اسکیما که در صفحه دیده نمی‌شود یا پاسخ کاملی ندارد (SEO 3.9.4). نشانه‌ها را خزنده در ld_errors می‌گذارد
- * (faq_hidden، faq_same)؛ ردیف قدیمی (ld_count = -1) یا پیش از ۳.۹.۴ این نشانه را ندارد و تا خزش بعدی ایراد نمی‌دهد.
+ * FAQPage اسکیما که در صفحه دیده نمی‌شود (SEO 3.9.5). نشانه را خزنده در ld_errors می‌گذارد (faq_hidden)؛ ردیف قدیمی (ld_count = -1) یا پیش از ۳.۹.۴ این نشانه را ندارد و تا خزش بعدی ایراد نمی‌دهد.
  *
  * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
  * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
@@ -592,12 +591,37 @@ function hodima_seo_advisor_check_faq_schema( array $r, array $ctx ): array {
 
 	$parts = [];
 	foreach ( $errors as $error ) {
-		if ( is_array( $error ) && in_array( (string) ( $error[0] ?? '' ), [ 'faq_hidden', 'faq_same' ], true ) ) {
+		if ( is_array( $error ) && 'faq_hidden' === (string) ( $error[0] ?? '' ) ) {
 			$parts[] = (string) ( $error[1] ?? '' );
 		}
 	}
 
 	return $parts ? [ hodima_seo_advisor_issue( 'faq_schema', implode( '؛ ', $parts ) ) ] : [];
+}
+
+/**
+ * اسکیمای Product ناقص در صفحه محصول (SEO 3.9.5). نشانه را خزنده در ld_errors می‌گذارد (product_missing، product_fields)؛ ردیف قدیمی
+ * (ld_count = -1) یا پیش از ۳.۹.۵ تا خزش بعدی ایراد نمی‌دهد.
+ *
+ * @param array<string, mixed> $r   ردیف جدول خزش (+ impressions، kind)
+ * @param array<string, mixed> $ctx زمینه hodima_seo_advisor_checks_context()
+ * @return list<array<string, mixed>>
+ */
+function hodima_seo_advisor_check_product_schema( array $r, array $ctx ): array {
+
+	$errors = json_decode( (string) ( $r['ld_errors'] ?? '' ), true );
+
+	if ( (int) ( $r['ld_count'] ?? -1 ) < 0 || ! is_array( $errors ) ) {
+		return [];
+	}
+
+	foreach ( $errors as $error ) {
+		if ( is_array( $error ) && in_array( (string) ( $error[0] ?? '' ), [ 'product_missing', 'product_fields' ], true ) ) {
+			return [ hodima_seo_advisor_issue( 'product_schema', (string) ( $error[1] ?? '' ) ) ];
+		}
+	}
+
+	return [];
 }
 
 /**
@@ -947,6 +971,7 @@ function hodima_seo_advisor_checks(): array {
 		'soft_404'       => [ 'when' => 'known', 'codes' => [ 'soft_404' ], 'fn' => 'hodima_seo_advisor_check_soft_404' ],
 		'ld_invalid'     => [ 'when' => 'known', 'codes' => [ 'ld_invalid' ], 'fn' => 'hodima_seo_advisor_check_ld_invalid' ],
 		'faq_schema'     => [ 'when' => 'known', 'codes' => [ 'faq_schema' ], 'fn' => 'hodima_seo_advisor_check_faq_schema' ],
+		'product_schema' => [ 'when' => 'known', 'codes' => [ 'product_schema' ], 'fn' => 'hodima_seo_advisor_check_product_schema' ],
 		'no_canonical'   => [ 'when' => 'known', 'codes' => [ 'no_canonical' ], 'fn' => 'hodima_seo_advisor_check_no_canonical' ],
 		'canonical_in_body' => [ 'when' => 'known', 'codes' => [ 'canonical_in_body' ], 'fn' => 'hodima_seo_advisor_check_canonical_in_body' ],
 		'thin'           => [ 'when' => 'known', 'codes' => [ 'thin' ], 'fn' => 'hodima_seo_advisor_check_thin' ],
