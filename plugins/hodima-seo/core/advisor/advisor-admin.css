@@ -1042,12 +1042,19 @@
 	color: var(--hd-muted);
 }
 
-/* نوار روزشمار زیر متن گام، کوتاه و با برچسب روز تا با خط وصل گام‌ها اشتباه نشود (SEO 3.9.1) */
+/* نوار روزشمار گام نتیجه در ردیف دایره‌ها، جای خط وصل شفاف گام آخر و هم‌تراز خط‌های وصل (SEO 3.9.2، عکس کاربر: «خط پایین افتاده»).
+   نسخه --below فقط برای گوشی (گام‌های ستونی) */
 .hodima-advisor .hodima-advisor__step-progress {
 	display: flex;
+	flex: 1 1 auto;
 	gap: 0.5rem;
 	align-items: center;
-	margin-block-start: 0.25rem;
+	min-inline-size: 0;
+}
+
+.hodima-advisor .hodima-advisor__step-mark--progress::after,
+.hodima-advisor .hodima-advisor__step-progress--below {
+	display: none;
 }
 
 .hodima-advisor .hodima-advisor__step-progress small {
@@ -1058,10 +1065,10 @@
 
 .hodima-advisor .hodima-advisor__step-bar {
 	display: block;
-	flex: 0 1 8rem;
-	block-size: 6px;
+	flex: 1 1 auto;
+	block-size: 3px;
 	border-radius: 99px;
-	background: color-mix(in srgb, var(--hd-border) 50%, #fff);
+	background: var(--hd-border); /* همان رنگ خط وصل گام‌ها */
 	overflow: hidden;
 }
 
@@ -1104,6 +1111,21 @@
 		inline-size: 3px;
 		block-size: auto;
 		min-block-size: 1rem;
+	}
+
+	/* گوشی: نوار از ردیف دایره به زیر متن گام (ستون دایره‌ها جا ندارد) */
+	.hodima-advisor .hodima-advisor__step-mark .hodima-advisor__step-progress {
+		display: none;
+	}
+
+	.hodima-advisor .hodima-advisor__step-progress--below {
+		display: flex;
+		margin-block-start: 0.25rem;
+	}
+
+	.hodima-advisor .hodima-advisor__step-progress--below .hodima-advisor__step-bar {
+		flex: 0 1 8rem;
+		block-size: 6px;
 	}
 }
 

@@ -369,23 +369,26 @@ function hodima_seo_advisor_render_task_steps( array $task, array $steps ): void
 				'now'   => [ '', 'مرحله فعلی: ' ],
 				default => [ number_format_i18n( $i + 1 ), 'بعدی: ' ],
 			};
+			// نوار روزشمار گام نتیجه (SEO 3.9.2، عکس کاربر از سایت: «خط پایین افتاده، تراز نیست»): در ردیف دایره‌ها، جای خط وصل شفاف گام
+			// آخر، هم‌تراز خط‌های وصل دو گام دیگر؛ ۳.۹.۰ بین عنوان و متن و ۳.۹.۱ زیر متن بود و خطی پایین‌تر از خط گام‌ها دیده می‌شد.
+			// گوشی (گام‌ها ستونی) همان نسخه زیر متن را نشان می‌دهد. متن روز در نشان وضعیت و متن گام هم هست؛ نوار فقط تصویری است
+			$bar = $i === $last && 'wait' === $step['state'] && null !== $progress
+				? sprintf(
+					'<span class="hodima-advisor__step-bar"><i style="inline-size: %1$s%%"></i></span><small>%2$s</small>',
+					esc_attr( (string) max( 2, (int) round( 100 * $progress[0] / max( 1, $progress[1] ) ) ) ),
+					esc_html( sprintf( '%1$s از %2$s روز', number_format_i18n( $progress[0] ), number_format_i18n( $progress[1] ) ) )
+				)
+				: '';
 			?>
 			<li class="hodima-advisor__step" data-state="<?php echo esc_attr( $step['state'] ); ?>" data-mode="<?php echo esc_attr( $mode ); ?>"<?php echo 'now' === $mode ? ' aria-current="step"' : ''; ?>>
-				<span class="hodima-advisor__step-mark" aria-hidden="true"><span class="hodima-advisor__step-dot"><?php echo esc_html( $mark ); ?></span></span>
+				<span class="hodima-advisor__step-mark<?php echo '' !== $bar ? ' hodima-advisor__step-mark--progress' : ''; ?>" aria-hidden="true"><span class="hodima-advisor__step-dot"><?php echo esc_html( $mark ); ?></span><?php if ( '' !== $bar ) : ?><span class="hodima-advisor__step-progress"><?php echo $bar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده همین بالا ?></span><?php endif; ?></span>
 				<strong><span class="screen-reader-text"><?php echo esc_html( $sr ); ?></span><?php echo esc_html( $step['label'] ); ?></strong>
 				<?php $detail = 'bad' === $step['state'] ? trim( (string) preg_replace( '/\s*قدم بعدی:.*$/us', '', $step['detail'] ) ) : $step['detail']; // قدم بعدی یادداشت جدای زیر گام‌هاست ?>
 				<?php if ( '' !== $detail ) : ?>
 					<span class="hodima-advisor__step-text"><?php echo esc_html( $detail ); ?></span>
 				<?php endif; ?>
-				<?php
-				// نوار روزشمار زیر متن گام با برچسب روز (SEO 3.9.1، عکس کاربر از سایت): در ۳.۹.۰ بین عنوان و متن بود، متن گام سوم پایین‌تر از
-				// دو گام دیگر می‌افتاد و نوار بی‌برچسب شبیه خط وصل افتاده دیده می‌شد
-				if ( $i === $last && 'wait' === $step['state'] && null !== $progress ) :
-					?>
-					<span class="hodima-advisor__step-progress">
-						<span class="hodima-advisor__step-bar" aria-hidden="true"><i style="inline-size: <?php echo esc_attr( (string) max( 2, (int) round( 100 * $progress[0] / max( 1, $progress[1] ) ) ) ); ?>%"></i></span>
-						<small><?php echo esc_html( sprintf( '%1$s از %2$s روز', number_format_i18n( $progress[0] ), number_format_i18n( $progress[1] ) ) ); ?></small>
-					</span>
+				<?php if ( '' !== $bar ) : ?>
+					<span class="hodima-advisor__step-progress hodima-advisor__step-progress--below" aria-hidden="true"><?php echo $bar; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML ساخته‌شده و escape‌شده همین بالا ?></span>
 				<?php endif; ?>
 			</li>
 		<?php endforeach; ?>
