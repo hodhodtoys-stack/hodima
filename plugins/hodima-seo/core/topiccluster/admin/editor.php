@@ -76,11 +76,14 @@ final class Editor {
 			return;
 		}
 
-		wp_enqueue_style( 'hodima-tc-admin', TOPICCLUSTER_URL . 'assets/admin.css', [], TOPICCLUSTER_VERSION );
+		// نسخه + زمان تغییر فایل: admin.js تازه (setItems برای «ورود بسته»، SEO 4.0.0) با ?ver ثابت از کش قدیمی اجرا می‌شد
+		$ver = static fn( string $file ): string => is_file( TOPICCLUSTER_DIR . $file ) ? TOPICCLUSTER_VERSION . '.' . filemtime( TOPICCLUSTER_DIR . $file ) : TOPICCLUSTER_VERSION;
+
+		wp_enqueue_style( 'hodima-tc-admin', TOPICCLUSTER_URL . 'assets/admin.css', [], $ver( 'assets/admin.css' ) );
 
 		if ( $editor || $module ) {
 			// بدون jQuery (قانون پروژه: JavaScript خالص)
-			wp_enqueue_script( 'hodima-tc-admin-js', TOPICCLUSTER_URL . 'assets/admin.js', [], TOPICCLUSTER_VERSION, true );
+			wp_enqueue_script( 'hodima-tc-admin-js', TOPICCLUSTER_URL . 'assets/admin.js', [], $ver( 'assets/admin.js' ), true );
 			wp_add_inline_script( 'hodima-tc-admin-js', 'window.hodimaTcConfig = ' . wp_json_encode( [
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( self::AJAX_NONCE ),

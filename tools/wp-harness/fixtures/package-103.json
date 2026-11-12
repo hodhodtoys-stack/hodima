@@ -16,8 +16,9 @@
       "en_entity": "Metal Hair Claw Clip 103", "fa_aliases": "کلیپس فلزی، گیره فلزی مو", "en_aliases": "Metal Claw Clip", "fa_intent": "خرید عمده کلیپس فلزی", "en_intent": "Wholesale metal hair clips",
       "fa_context": "کلیپس فلزی طرح ۱۰۳ برای عمده‌فروشی.", "en_context": "Model 103 metal claw clip for wholesale.", "fa_usecases": "مهمانی", "en_usecases": "Parties", "fa_audience": "فروشگاه‌های اکسسوری", "en_audience": "Accessory shops",
       "fa_comparison": "", "en_comparison": "", "fa_embedding": "کلیپس فلزی عمده", "en_embedding": "Wholesale metal claw clip",
-      "biz_model": "tier_a",
-      "tier_a": {"price": null, "fa_basis": "کارتن", "en_basis": "Carton", "fa_sale_unit": "کارتن ۱۲ عددی", "en_sale_unit": "12-piece carton", "fa_packaging": "کارتن", "en_packaging": "Carton", "fa_moq": "۱ کارتن", "en_moq": "1 carton"},
+      "biz_model": "both",
+      "tier_a": {"price": null, "fa_basis": "عدد", "en_basis": "Piece", "fa_sale_unit": "عدد", "en_sale_unit": "Piece", "fa_packaging": "بسته ۱۰۰ عددی", "en_packaging": "Pack of 100", "fa_moq": "1000 عدد", "en_moq": "1000 Pieces"},
+      "tier_b": {"price": 12000, "fa_basis": "کارت", "en_basis": "Card", "fa_sale_unit": "کارت ۱۲ عددی", "en_sale_unit": "Card of 12", "fa_packaging": "کارت", "en_packaging": "Card", "fa_moq": "10 کارت", "en_moq": "10 Cards"},
       "en_specs": [{"k": "Material", "v": "Metal"}],
       "fa_faqs": [{"q": "جنس چیست؟", "a": "فلز."}], "fa_prompts": ["کلیپس فلزی عمده از کجا بخرم؟"],
       "en_faqs": [{"q": "What material?", "a": "Metal."}], "en_prompts": ["Where to buy wholesale metal claw clips?", "Model 103 clip"]

@@ -453,9 +453,9 @@ final class Admin {
 		}
 
 		$base = HODIMA_SEO_URL . '/inc/manual_related_link/assets/';
-		wp_enqueue_style( 'hodima-rl-admin', $base . 'admin.css', [ 'dashicons' ], VERSION );
+		wp_enqueue_style( 'hodima-rl-admin', $base . 'admin.css', [ 'dashicons' ], self::asset_version( 'admin.css' ) );
 		// بدون کتابخانه رسانه (wp_enqueue_media): از ۲.۴ انتخاب تصویر دلخواه نیست.
-		wp_enqueue_script( 'hodima-rl-admin', $base . 'admin.js', [], VERSION, [ 'in_footer' => true ] );
+		wp_enqueue_script( 'hodima-rl-admin', $base . 'admin.js', [], self::asset_version( 'admin.js' ), [ 'in_footer' => true ] );
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- فقط شناسه صفحه جاری
 		$self_id  = $is_post ? absint( $_GET['post'] ?? get_the_ID() ) : absint( $_GET['tag_ID'] ?? 0 );
@@ -475,6 +475,16 @@ final class Admin {
 				'unsaved'     => 'برای اعمال، صفحه را ذخیره/به‌روزرسانی کنید.',
 			],
 		] );
+	}
+
+	/**
+	 * نسخه فایل پیشخوان برای ?ver=: نسخه ماژول + زمان تغییر خود فایل. تا SEO 4.0.0 فقط
+	 * VERSION بود و admin.js تازه (گیرنده «ورود بسته») با همان ?ver=2.4.2 از کش مرورگر
+	 * قدیمی اجرا می‌شد؛ حالا هر تغییر فایل آدرس را عوض می‌کند، حتی اگر VERSION بالا نرود.
+	 */
+	private static function asset_version( string $file ): string {
+		$path = dirname( __DIR__ ) . '/assets/' . $file;
+		return is_file( $path ) ? VERSION . '.' . filemtime( $path ) : VERSION;
 	}
 
 	/**

@@ -88,8 +88,11 @@ final class Hodima_AEO_Admin {
         $fa_pod_title = (string) $get_meta('_h_ai_fa_pod_title');
 
         // محدودیت گزینه‌ها به ۴ مورد درخواستی شما
-        $units_fa = ['کیلوگرم', 'کارتن', 'بسته', 'جین'];
-        $units_en = ['kg', 'Carton', 'Pack', 'Dozen'];
+        // «عدد» و «کارت» برای محصولی که قیمت تکش برای هر عدد/کارت است (SEO 4.0.1)؛ بدون آن‌ها
+        // فایل .md و Offer «قیمت هر بسته = قیمت یک عدد» می‌نوشتند. فقط افزوده شد: مقدار ذخیره‌شده قبلی
+        // همان گزینه می‌ماند. همین فهرست در ورود بسته: hodima_seo_pkg_aeo_units().
+        $units_fa = ['کیلوگرم', 'کارتن', 'بسته', 'جین', 'عدد', 'کارت'];
+        $units_en = ['kg', 'Carton', 'Pack', 'Dozen', 'Piece', 'Card'];
         ?>
         <div class="hodima-aeo-metabox" style="background:#f8fafc; padding:20px; direction:rtl; text-align:right; border-radius:4px; border:1px solid #b6c2f3;">
 

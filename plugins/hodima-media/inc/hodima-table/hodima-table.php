@@ -167,16 +167,26 @@ if ( ! class_exists( 'Hodima_Dynamic_Table' ) ) {
 				'hodima-table-admin-css',
 				HODIMA_MEDIA_URL . '/inc/hodima-table/hodima-admin.css',
 				[ 'dashicons' ],
-				self::VERSION
+				self::asset_version( 'hodima-admin.css' )
 			);
 
 			wp_enqueue_script(
 				'hodima-table-admin-js',
 				HODIMA_MEDIA_URL . '/inc/hodima-table/hodima-admin.js',
 				[],
-				self::VERSION,
+				self::asset_version( 'hodima-admin.js' ),
 				[ 'in_footer' => true, 'strategy' => 'defer' ]
 			);
+		}
+
+		/**
+		 * نسخه فایل پیشخوان برای ?ver=: VERSION + زمان تغییر خود فایل. Media 2.2.8 گیرنده «ورود بسته»
+		 * را به hodima-admin.js اضافه کرد ولی ?ver=3.1.0 ثابت ماند و مرورگر نسخه کش‌شده قدیمی را اجرا
+		 * می‌کرد؛ حالا هر تغییر فایل آدرس را عوض می‌کند (همان روش hodima_media_asset_version).
+		 */
+		private static function asset_version( string $file ): string {
+			$path = __DIR__ . '/' . $file;
+			return is_file( $path ) ? self::VERSION . '.' . filemtime( $path ) : self::VERSION;
 		}
 
 		/**

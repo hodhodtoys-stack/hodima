@@ -143,14 +143,14 @@ function hodima_seo_pkg_aeo_tier_name( string $base, string $tier ): string {
 }
 
 /**
- * گزینه‌های مجاز «مبنای قیمت» (همان فهرست بسته پنل AEO).
+ * گزینه‌های مجاز «مبنای قیمت» (همان فهرست $units_fa/$units_en پنل AEO در class-hodima-aeo-admin.php؛ هر دو با هم عوض شوند).
  *
  * @return array{fa: list<string>, en: list<string>}
  */
 function hodima_seo_pkg_aeo_units(): array {
 	return [
-		'fa' => [ 'کیلوگرم', 'کارتن', 'بسته', 'جین' ],
-		'en' => [ 'kg', 'Carton', 'Pack', 'Dozen' ],
+		'fa' => [ 'کیلوگرم', 'کارتن', 'بسته', 'جین', 'عدد', 'کارت' ],
+		'en' => [ 'kg', 'Carton', 'Pack', 'Dozen', 'Piece', 'Card' ],
 	];
 }
 

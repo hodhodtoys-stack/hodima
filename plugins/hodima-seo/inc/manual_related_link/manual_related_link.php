@@ -30,7 +30,7 @@ defined( 'ABSPATH' ) || exit;
 
 if ( ! defined( __NAMESPACE__ . '\VERSION' ) ) {
 
-	define( __NAMESPACE__ . '\VERSION', '2.4.2' );
+	define( __NAMESPACE__ . '\VERSION', '2.4.3' );
 
 	require_once __DIR__ . '/includes/group.php';
 	require_once __DIR__ . '/includes/store.php';

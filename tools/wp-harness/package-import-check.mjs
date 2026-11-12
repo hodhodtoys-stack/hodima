@@ -255,7 +255,7 @@ log( /مهمانی و روزمره/.test( filled.table || '' ), 'جدول تکم
 log( filled.faq.length === 2 && /حداقل سفارش/.test( filled.faq[ 0 ][ 0 ] ), 'پرسش‌های رسانه پر شد' );
 log( filled.rl.filter( ( s ) => s[ 0 ] ).length >= 3, 'لینک‌های مرتبط پر شد', JSON.stringify( filled.rl ) );
 log( JSON.stringify( filled.tc ) === '[false,["22"]]', 'خوشه‌بندی: والد دسته پیلار', JSON.stringify( filled.tc ) );
-log( filled.aeo[ 0 ] === 'Metal Hair Claw Clip 103' && filled.aeo[ 1 ] === '' && filled.aeo[ 2 ] === 'کارتن' && filled.aeo[ 3 ] === 'tier_a', 'پنل AEO: متن، قیمت null=خالی، مبنا، پلن', JSON.stringify( filled.aeo.slice( 0, 4 ) ) );
+log( filled.aeo[ 0 ] === 'Metal Hair Claw Clip 103' && filled.aeo[ 1 ] === '' && filled.aeo[ 2 ] === 'عدد' && filled.aeo[ 3 ] === 'both', 'پنل AEO: متن، قیمت null=خالی، مبنای «عدد»، پلن', JSON.stringify( filled.aeo.slice( 0, 4 ) ) );
 log( filled.aeo[ 6 ] === 1 && /Material/.test( filled.aeo[ 4 ] ), 'پنل AEO: فهرست‌های پرسش و مشخصات از نو کشیده شد' );
 log( filled.seo[ 0 ] === 'خرید عمده کلیپس فلزی طرح ۱۰۳ | هدهدلی', 'سئوباکس پر شد' );
 log( JSON.stringify( savedMeta() ) === JSON.stringify( before ), 'پر کردن چیزی ذخیره نکرد' );
@@ -284,9 +284,27 @@ log( after.table?.rows?.length === 3 && after.table.headers[ 1 ] === 'توضیح
 log( after.faq?.length === 2, 'ذخیره: پرسش‌های رسانه', JSON.stringify( after.faq ) );
 log( JSON.stringify( after.rl?.products ) === '[24,28]' && JSON.stringify( after.rl?.article ) === '[1]', 'ذخیره: لینک‌های مرتبط (۲ خانه خرید + ۱ مقاله)', JSON.stringify( after.rl ) );
 log( JSON.stringify( after.parents ).includes( '22' ), 'ذخیره: والد خوشه', JSON.stringify( after.parents ) );
-log( after.aeo[ 0 ] === 'Metal Hair Claw Clip 103' && after.aeo[ 1 ] === '' && after.aeo[ 3 ] === 'tier_a' && /Material/.test( after.aeo[ 4 ] ) && after.aeo[ 6 ].split( '\n' ).length === 2, 'ذخیره: پنل AEO', JSON.stringify( after.aeo ) );
+log( after.aeo[ 0 ] === 'Metal Hair Claw Clip 103' && after.aeo[ 1 ] === '' && after.aeo[ 2 ] === 'عدد' && after.aeo[ 3 ] === 'both' && /Material/.test( after.aeo[ 4 ] ) && after.aeo[ 6 ].split( '\n' ).length === 2, 'ذخیره: پنل AEO', JSON.stringify( after.aeo ) );
 log( after.seo[ 0 ] === 'خرید عمده کلیپس فلزی طرح ۱۰۳ | هدهدلی' && after.seo[ 1 ] !== '', 'ذخیره: سئوباکس', JSON.stringify( after.seo ) );
 log( ! page.errors.length, 'بدون خطای جاوااسکریپت هدیما', page.errors.join( ' ; ' ) );
+
+// خروجی .md و Offer پنل AEO با مبنای «عدد / Piece» (پلن A) و «کارت / Card» (پلن B)
+const md = phpJson( `
+	return [
+		'fa' => class_exists( 'Hodima_AEO_Generator' ) ? Hodima_AEO_Generator::generate_markdown( ${ PRODUCT }, 'post', 'fa' ) : '',
+		'en' => class_exists( 'Hodima_AEO_Generator' ) ? Hodima_AEO_Generator::generate_markdown( ${ PRODUCT }, 'post', 'en' ) : '',
+		'basis_t2' => get_post_meta( ${ PRODUCT }, '_h_ai_fa_price_basis_t2', true ),
+	];
+` );
+log( after.aeo[ 2 ] === 'عدد' && md.basis_t2 === 'کارت', 'ذخیره: مبنای پلن A «عدد» و پلن B «کارت»', `${ after.aeo[ 2 ] } / ${ md.basis_t2 }` );
+log( /به ازای هر ۱ عدد/.test( md.fa ) && /به ازای هر ۱ کارت/.test( md.fa ), '.md فارسی: «به ازای هر ۱ عدد» و «… ۱ کارت»' );
+log( /"unitText":\s*"عدد"/.test( md.fa ) && /"unitText":\s*"کارت"/.test( md.fa ), 'Offer فارسی: unitText «عدد» و «کارت»' );
+log( /per 1 Piece/.test( md.en ) && /per 1 Card/.test( md.en ) && /"unitText":\s*"Piece"/.test( md.en ) && /"unitText":\s*"Card"/.test( md.en ), '.md و Offer انگلیسی: Piece و Card' );
+if ( ! /به ازای هر ۱ عدد/.test( md.fa ) ) console.log( md.fa.split( '\n' ).filter( ( l ) => /مبنا|unitText/.test( l ) ).join( '\n' ) );
+
+// نسخه ?ver= اسکریپت کادرهای گیرنده «ورود بسته» با هر تغییر فایل عوض شود (کش مرورگر؛ SEO 4.0.1)
+const vers = await page.evaluate( () => Object.fromEntries( [ 'hodima-rl-admin-js', 'hodima-tc-admin-js-js', 'hodima-table-admin-js-js', 'hodima-media-admin-js', 'hodima-seo-pkg-js' ].map( ( id ) => [ id, new URL( document.getElementById( id )?.src || 'https://x/?ver=' ).searchParams.get( 'ver' ) ] ) ) );
+log( Object.values( vers ).every( ( v ) => /\d{9,}$/.test( v || '' ) ), 'نسخه اسکریپت همه کادرهای گیرنده زمان تغییر فایل را دارد', JSON.stringify( vers ) );
 
 // همان بسته بعد از ذخیره: کادرها «بدون تغییر» (جز متن که وردپرس شکلش را عوض می‌کند)
 await openAndCheck( page, pkgText );
