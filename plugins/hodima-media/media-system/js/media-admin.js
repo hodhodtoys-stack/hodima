@@ -198,6 +198,26 @@
 		button.focus();
 	}
 
+	/*
+	 * «ورود بسته» (Hodima SEO، core/package-import): کل فهرست سوالات از بیرون جایگزین می‌شود
+	 * (detail.value = [{q, a}]) با همان قالب ردیف تازه؛ ذخیره فقط با «به‌روزرسانی».
+	 */
+	document.addEventListener('hodima:fill', (e) => {
+		const list = e.target;
+		if (!list.matches?.('[data-hodima-faqs]')) return;
+		const tpl = list.closest('.hodima-mb__body')?.querySelector('[data-hodima-faq-template]');
+		if (!tpl) return;
+		list.replaceChildren();
+		(Array.isArray(e.detail?.value) ? e.detail.value : []).forEach((item) => {
+			list.insertAdjacentHTML('beforeend', tpl.innerHTML.replaceAll('__i__', `n${faqCounter++}`));
+			const row = list.lastElementChild;
+			row.querySelector('input').value = String(item?.q ?? '');
+			row.querySelector('textarea').value = String(item?.a ?? '');
+		});
+		list.closest('details')?.setAttribute('open', '');
+		e.detail.done = true;
+	});
+
 	/* ── فهرست‌های تکرارشونده دیگر (ویدیوهای بیشتر) ── */
 	function addRow(button) {
 		const name = button.dataset.hodimaAdd;

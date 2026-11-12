@@ -1,0 +1,28 @@
+{
+  "format": "hodima-package/1",
+  "url": "https://hodima.test/103/",
+  "type": "product",
+  "date": "2026-11-12",
+  "note": "بسته آزمایشی ابزار تست: همه کادرهای نسخه ۱، با چند هشدار عمدی.",
+  "boxes": {
+    "body": {"html": "<h2>خرید عمده کلیپس فلزی طرح ۱۰۳</h2>\n<p>کلیپس فلزی طرح ۱۰۳ برای فروشگاه‌های اکسسوری مو. PKG-BODY-MARKER</p>\n<h3>مشخصات</h3>\n[hodima_table]\n<h4>نکته نگهداری</h4>\n<p>تماس: <a href=\"tel:09124093140\">۰۹۱۲۴۰۹۳۱۴۰</a> و <a href=\"tel:02100000000\">۰۲۱۰۰۰۰۰۰۰۰</a></p>\n[hook_faq]"},
+    "upsells": {"urls": ["https://hodima.test/kesh-rangi/", "https://hodima.test/pin-out/", "https://hodima.test/999/"]},
+    "cross_sells": {"urls": []},
+    "table": {"headers": ["ویژگی", "توضیحات"], "rows": [["کاربرد", "مهمانی و روزمره"], ["بسته‌بندی", "کارتن ۱۲ عددی"], ["مناسب", "موی بلند و متوسط"]]},
+    "faq": [{"q": "حداقل سفارش عمده چند عدد است؟", "a": "یک کارتن ۱۲ عددی."}, {"q": "ارسال به شهرستان دارید؟", "a": "بله، با باربری یا پست."}],
+    "related_links": {"products": ["https://hodima.test/kesh-rangi/", "https://hodima.test/tel-sale/", "https://hodima.test/sample-1/"], "articles": ["https://hodima.test/hello-world/"]},
+    "topic_cluster": {"pillar": false, "exclude": false, "parent_term": "https://hodima.test/hair/", "parent_post_url": "https://hodima.test/hello-world/"},
+    "aeo": {
+      "en_entity": "Metal Hair Claw Clip 103", "fa_aliases": "کلیپس فلزی، گیره فلزی مو", "en_aliases": "Metal Claw Clip", "fa_intent": "خرید عمده کلیپس فلزی", "en_intent": "Wholesale metal hair clips",
+      "fa_context": "کلیپس فلزی طرح ۱۰۳ برای عمده‌فروشی.", "en_context": "Model 103 metal claw clip for wholesale.", "fa_usecases": "مهمانی", "en_usecases": "Parties", "fa_audience": "فروشگاه‌های اکسسوری", "en_audience": "Accessory shops",
+      "fa_comparison": "", "en_comparison": "", "fa_embedding": "کلیپس فلزی عمده", "en_embedding": "Wholesale metal claw clip",
+      "biz_model": "tier_a",
+      "tier_a": {"price": null, "fa_basis": "کارتن", "en_basis": "Carton", "fa_sale_unit": "کارتن ۱۲ عددی", "en_sale_unit": "12-piece carton", "fa_packaging": "کارتن", "en_packaging": "Carton", "fa_moq": "۱ کارتن", "en_moq": "1 carton"},
+      "en_specs": [{"k": "Material", "v": "Metal"}],
+      "fa_faqs": [{"q": "جنس چیست؟", "a": "فلز."}], "fa_prompts": ["کلیپس فلزی عمده از کجا بخرم؟"],
+      "en_faqs": [{"q": "What material?", "a": "Metal."}], "en_prompts": ["Where to buy wholesale metal claw clips?", "Model 103 clip"]
+    },
+    "seobox": {"title": "خرید عمده کلیپس فلزی طرح ۱۰۳ | هدهدلی", "description": "کلیپس فلزی طرح ۱۰۳ را عمده و کارتنی بخرید."},
+    "discover": {"title": "در نسخه ۱ نیست"}
+  }
+}

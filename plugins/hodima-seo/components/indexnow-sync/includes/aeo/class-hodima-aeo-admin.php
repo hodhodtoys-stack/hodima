@@ -446,6 +446,13 @@ final class Hodima_AEO_Admin {
                     input.value = JSON.stringify(data);
                 }
                 btn.addEventListener('click', function () { data.push({ q: '', a: '' }); draw(); });
+                // «ورود بسته» (core/package-import): JSON تازه در فیلد مخفی گذاشته شده؛ فهرست از نو کشیده شود
+                input.addEventListener('hodima:fill', function (e) {
+                    try { data = JSON.parse(input.value || '[]'); } catch (err) { data = []; }
+                    if (!Array.isArray(data)) data = [];
+                    draw();
+                    if (e.detail) e.detail.done = true;
+                });
                 draw();
             }
 
@@ -486,6 +493,12 @@ final class Hodima_AEO_Admin {
                     input.value = JSON.stringify(data);
                 }
                 btn.addEventListener('click', function () { data.push({ k: '', v: '' }); draw(); });
+                input.addEventListener('hodima:fill', function (e) {
+                    try { data = JSON.parse(input.value || '[]'); } catch (err) { data = []; }
+                    if (!Array.isArray(data)) data = [];
+                    draw();
+                    if (e.detail) e.detail.done = true;
+                });
                 draw();
             }
 

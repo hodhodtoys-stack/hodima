@@ -1,0 +1,551 @@
+/*
+ * «ورود بسته» — کادر بالای ویرایش محصول (core/package-import)
+ * نوار وضعیت، نشان، دکمه و فیلد از کیت UI همین افزونه (ui/ui-kit.css، ریشه .hds-ui که توکن‌ها
+ * را هم دارد)؛ اینجا فقط اجزای خود این کادر: گام‌ها، قفل آدرس، ردیف «فعلی ← جدید» هر کادر.
+ * چیدمان با عرض خود کادر (container query)، نه عرض صفحه. بدون nesting و بدون بنفش.
+ */
+
+.hds-ui.hodima-pkg {
+	container-type: inline-size;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 0.875rem;
+	margin-block: 0.75rem 1.25rem;
+	padding: 1rem 1.125rem;
+	border: 1px solid var(--hd-border);
+	border-radius: var(--hd-radius);
+	background: var(--hd-surface);
+	box-shadow: var(--hd-shadow);
+	color: var(--hd-text);
+	font-size: 0.8125rem;
+	line-height: 1.8;
+}
+
+/* کیت به بعضی اجزا display می‌دهد؛ hidden همیشه برنده باشد */
+.hds-ui.hodima-pkg[hidden],
+.hds-ui.hodima-pkg [hidden] {
+	display: none;
+}
+
+/* نوار وضعیت داخل کادر خودش قاب ندارد (کادر قاب دارد) */
+.hds-ui.hodima-pkg .hodima-pkg__head {
+	padding: 0;
+	border: 0;
+	box-shadow: none;
+}
+
+.hds-ui.hodima-pkg .hds-statusbar__title {
+	margin: 0;
+	padding: 0;
+	color: var(--hd-primary);
+	font-size: 1rem;
+	font-weight: 700;
+	line-height: 1.7;
+}
+
+.hds-ui.hodima-pkg[data-tone="ok"] .hds-statusbar__icon {
+	background: var(--hd-ok);
+}
+
+.hds-ui.hodima-pkg[data-tone="error"] .hds-statusbar__icon {
+	background: var(--hd-error);
+}
+
+.hds-ui.hodima-pkg .hds-pill {
+	white-space: normal;
+}
+
+.hds-ui.hodima-pkg .hds-btn {
+	min-block-size: 2.5rem;
+	padding-inline: 1.125rem;
+}
+
+.hodima-pkg__body {
+	display: grid;
+	gap: 0.875rem;
+	min-inline-size: 0;
+}
+
+/* گام‌ها: ۱ چسباندن ← ۲ بررسی ← ۳ پر کردن ← ۴ به‌روزرسانی */
+.hodima-pkg__steps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.hodima-pkg__steps li {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	margin: 0;
+	padding: 0.125rem 0.625rem 0.125rem 0.75rem;
+	border-radius: 999px;
+	background: var(--hd-soft);
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+.hodima-pkg__dot {
+	display: grid;
+	place-items: center;
+	inline-size: 1.125rem;
+	block-size: 1.125rem;
+	border-radius: 50%;
+	background: var(--hd-border);
+	color: var(--hd-muted);
+	font-size: 0.6875rem;
+	line-height: 1;
+}
+
+.hodima-pkg__steps li[data-state="current"] {
+	background: var(--hd-primary);
+	color: #fff;
+	font-weight: 700;
+}
+
+.hodima-pkg__steps li[data-state="current"] .hodima-pkg__dot {
+	background: #fff;
+	color: var(--hd-primary);
+}
+
+.hodima-pkg__steps li[data-state="done"] {
+	background: color-mix(in srgb, var(--hd-ok) 12%, #fff);
+	color: var(--hd-ok);
+}
+
+.hodima-pkg__steps li[data-state="done"] .hodima-pkg__dot {
+	background: var(--hd-ok);
+	color: #fff;
+}
+
+.hodima-pkg__steps li[data-state="bad"] {
+	background: color-mix(in srgb, var(--hd-error) 10%, #fff);
+	color: var(--hd-error);
+}
+
+.hodima-pkg__steps li[data-state="bad"] .hodima-pkg__dot {
+	background: var(--hd-error);
+	color: #fff;
+}
+
+/* چسباندن */
+.hodima-pkg__paste {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.hodima-pkg__label {
+	font-weight: 700;
+}
+
+.hds-ui .hodima-pkg__json {
+	inline-size: 100%;
+	min-block-size: 9rem;
+	padding: 0.625rem 0.75rem;
+	background: var(--hd-soft);
+	font-family: ui-monospace, Consolas, monospace;
+	font-size: 0.75rem;
+	line-height: 1.6;
+	text-align: start;
+	resize: vertical;
+}
+
+.hodima-pkg__actions,
+.hodima-pkg__fillbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 0.75rem;
+}
+
+.hodima-pkg__hint {
+	margin: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hodima-pkg__fillbar .hodima-pkg__hint {
+	flex: 1 1 14rem;
+}
+
+.hodima-pkg__error {
+	margin: 0;
+	color: var(--hd-error);
+	font-weight: 700;
+}
+
+/* بسته بررسی‌شده */
+.hodima-pkg__loaded {
+	display: grid;
+	gap: 0.625rem;
+}
+
+.hodima-pkg__info {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25rem 0.75rem;
+	padding: 0.375rem 0.75rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.625rem;
+	background: var(--hd-soft);
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+.hds-ui .hodima-pkg__edit {
+	min-block-size: 2.5rem;
+	margin-inline-start: auto;
+	color: var(--hd-primary);
+	font-size: 0.75rem;
+}
+
+.hodima-pkg__lock {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.625rem;
+	padding: 0.625rem 0.75rem;
+	border: 1px solid color-mix(in srgb, var(--hd-ok) 30%, #fff);
+	border-radius: 0.625rem;
+	background: color-mix(in srgb, var(--hd-ok) 9%, #fff);
+}
+
+.hodima-pkg__lock .dashicons {
+	flex: none;
+	color: var(--hd-ok);
+}
+
+.hodima-pkg__lock-title {
+	color: var(--hd-ok);
+}
+
+.hodima-pkg__lock[data-state="error"] {
+	border-color: color-mix(in srgb, var(--hd-error) 30%, #fff);
+	background: color-mix(in srgb, var(--hd-error) 8%, #fff);
+}
+
+.hodima-pkg__lock[data-state="error"] .dashicons,
+.hodima-pkg__lock[data-state="error"] .hodima-pkg__lock-title {
+	color: var(--hd-error);
+}
+
+.hodima-pkg__lock-body {
+	min-inline-size: 0;
+}
+
+.hodima-pkg__lock p {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.hodima-pkg__lock bdi {
+	color: var(--hd-primary);
+}
+
+.hodima-pkg__errors,
+.hodima-pkg__ignored {
+	margin: 0;
+	padding-inline-start: 1.25rem;
+}
+
+.hodima-pkg__errors {
+	color: var(--hd-error);
+	font-weight: 600;
+}
+
+.hodima-pkg__ignored {
+	margin-block-start: 0.5rem;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+}
+
+[data-pkg-review] {
+	display: grid;
+	gap: 0.625rem;
+}
+
+.hodima-pkg__note {
+	margin: 0;
+	padding: 0.5rem 0.75rem;
+	border-radius: 0.625rem;
+	background: var(--hd-soft);
+}
+
+.hodima-pkg__note strong {
+	color: var(--hd-muted);
+	font-weight: 600;
+}
+
+.hodima-pkg__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.375rem;
+}
+
+/* ردیف هر کادر: نشانه ← نام ← «فعلی ← جدید» ← برچسب */
+.hodima-pkg__rows {
+	margin: 0;
+	padding: 0;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.625rem;
+	list-style: none;
+	overflow: hidden;
+}
+
+.hodima-pkg__row {
+	margin: 0;
+}
+
+.hodima-pkg__row + .hodima-pkg__row {
+	border-block-start: 1px solid color-mix(in srgb, var(--hd-border) 60%, #fff);
+}
+
+.hds-ui .hodima-pkg__row-head {
+	display: grid;
+	grid-template-columns: 1.375rem minmax(0, 13rem) minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 0.25rem 0.625rem;
+	inline-size: 100%;
+	min-block-size: 2.75rem;
+	padding: 0.5rem 0.75rem;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.hds-ui .hodima-pkg__row-head:disabled {
+	cursor: default;
+}
+
+.hds-ui .hodima-pkg__row-head:focus-visible {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: -2px;
+}
+
+.hds-ui .hodima-pkg__row-head:hover:not(:disabled),
+.hodima-pkg__row-head[aria-expanded="true"] {
+	background: var(--hd-soft);
+}
+
+.hodima-pkg__mark {
+	display: grid;
+	place-items: center;
+	inline-size: 1.375rem;
+	block-size: 1.375rem;
+	border-radius: 50%;
+	background: color-mix(in srgb, var(--hd-third) 30%, #fff);
+	color: var(--hd-primary);
+	font-size: 0.75rem;
+	font-weight: 700;
+}
+
+.hodima-pkg__name {
+	font-weight: 700;
+}
+
+.hodima-pkg__change {
+	min-inline-size: 0;
+	color: var(--hd-muted);
+	font-size: 0.75rem;
+	overflow-wrap: anywhere;
+}
+
+.hodima-pkg__change strong {
+	color: var(--hd-text);
+	font-weight: 600;
+}
+
+.hodima-pkg__arrow {
+	color: var(--hd-secondary);
+}
+
+.hodima-pkg__tag {
+	justify-self: end;
+	padding: 0 0.625rem;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--hd-third) 30%, #fff);
+	color: var(--hd-primary);
+	font-size: 0.6875rem;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.hodima-pkg__row[data-warn="1"] .hodima-pkg__mark {
+	background: color-mix(in srgb, var(--hd-warn) 13%, #fff);
+	color: var(--hd-warn);
+}
+
+.hodima-pkg__row[data-state="same"] .hodima-pkg__mark,
+.hodima-pkg__row[data-state="same"] .hodima-pkg__tag,
+.hodima-pkg__row[data-state="missing"] .hodima-pkg__mark,
+.hodima-pkg__row[data-state="missing"] .hodima-pkg__tag {
+	background: #f1f2f6;
+	color: var(--hd-muted);
+}
+
+.hodima-pkg__row[data-state="empty"] .hodima-pkg__tag {
+	background: color-mix(in srgb, var(--hd-warn) 13%, #fff);
+	color: var(--hd-warn);
+}
+
+.hodima-pkg__row[data-state="filled"] .hodima-pkg__mark {
+	background: var(--hd-ok);
+	color: #fff;
+}
+
+.hodima-pkg__row[data-state="filled"] .hodima-pkg__tag {
+	background: color-mix(in srgb, var(--hd-ok) 12%, #fff);
+	color: var(--hd-ok);
+}
+
+.hodima-pkg__row[data-state="failed"] .hodima-pkg__mark,
+.hodima-pkg__row[data-state="failed"] .hodima-pkg__tag {
+	background: color-mix(in srgb, var(--hd-error) 10%, #fff);
+	color: var(--hd-error);
+}
+
+.hodima-pkg__warns {
+	margin: 0;
+	padding: 0 2.75rem 0.5rem 0.75rem;
+	color: var(--hd-warn);
+	font-size: 0.75rem;
+	list-style: none;
+}
+
+.hodima-pkg__warns li {
+	margin: 0;
+}
+
+.hodima-pkg__warns li::before {
+	content: "⚠\FE0E  ";
+}
+
+.hodima-pkg__detail {
+	margin: 0 0.75rem 0.625rem;
+	border: 1px solid var(--hd-border);
+	border-radius: 0.5rem;
+	background: var(--hd-surface);
+	overflow: hidden;
+}
+
+.hodima-pkg__field {
+	display: grid;
+	grid-template-columns: 7rem minmax(0, 1fr) minmax(0, 1.4fr);
+	gap: 0.25rem 0.625rem;
+	padding: 0.5rem 0.625rem;
+	font-size: 0.75rem;
+}
+
+.hodima-pkg__field + .hodima-pkg__field {
+	border-block-start: 1px solid color-mix(in srgb, var(--hd-border) 60%, #fff);
+}
+
+.hodima-pkg__flabel {
+	color: var(--hd-muted);
+	font-weight: 700;
+	overflow-wrap: anywhere;
+}
+
+.hodima-pkg__from {
+	color: var(--hd-muted);
+	overflow-wrap: anywhere;
+}
+
+.hodima-pkg__to {
+	overflow-wrap: anywhere;
+}
+
+.hodima-pkg__field small {
+	font-size: 0.6875rem;
+}
+
+.hodima-pkg__to small {
+	color: var(--hd-ok);
+	font-weight: 700;
+}
+
+.hodima-pkg__note-px {
+	display: block;
+	color: var(--hd-muted);
+	font-size: 0.6875rem;
+}
+
+.hodima-pkg__fillbar {
+	padding-block-start: 0.75rem;
+	border-block-start: 1px solid var(--hd-border);
+}
+
+.hodima-pkg__done {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 0.75rem;
+	padding: 0.75rem;
+	border: 1px solid color-mix(in srgb, var(--hd-ok) 30%, #fff);
+	border-radius: 0.625rem;
+	background: color-mix(in srgb, var(--hd-ok) 9%, #fff);
+}
+
+.hodima-pkg__done:focus-visible {
+	outline: 2px solid var(--hd-accent-light);
+	outline-offset: 2px;
+}
+
+.hodima-pkg__done p {
+	flex: 1 1 16rem;
+	margin: 0;
+	color: color-mix(in srgb, var(--hd-ok) 75%, #000);
+}
+
+.hds-ui .hodima-pkg__undo {
+	border-color: var(--hd-ok);
+	color: var(--hd-ok);
+}
+
+/* کادر باریک (گوشی یا ستون تنگ): نام و برچسب بالا، «فعلی ← جدید» زیرش؛ دکمه‌ها تمام‌عرض */
+@container (max-width: 34rem) {
+	.hds-ui .hodima-pkg__row-head {
+		grid-template-columns: 1.375rem minmax(0, 1fr) auto;
+	}
+
+	.hodima-pkg__change {
+		grid-row: 2;
+		grid-column: 2 / 4;
+	}
+
+	.hodima-pkg__tag {
+		grid-row: 1;
+		grid-column: 3;
+	}
+
+	.hodima-pkg__field {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.hodima-pkg__warns {
+		padding-inline-end: 0.75rem;
+	}
+
+	.hds-ui.hodima-pkg .hds-btn {
+		inline-size: 100%;
+		min-block-size: 2.75rem;
+	}
+
+	.hds-ui.hodima-pkg .hds-statusbar__aside {
+		flex: 1 1 100%;
+		flex-wrap: wrap;
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.hds-ui .hodima-pkg__row-head {
+		transition: background-color 0.2s;
+	}
+}

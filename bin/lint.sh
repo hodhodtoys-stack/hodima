@@ -46,6 +46,8 @@ phone="plugins/hodima-commerce/components/phone"
 panel="plugins/hodima-panel/assets"
 # کیت UI مشترک پیشخوان (منبع واحد؛ بدون baseline)
 uikit="tools/ui-kit"
+# ورود بسته Hodima SEO (بدون baseline)
+pkgimport="plugins/hodima-seo/core/package-import"
 
 fail=0
 need() {
@@ -107,7 +109,7 @@ fi
 if want css; then
 	echo "== CSS"
 	if need node_modules/.bin/stylelint Stylelint "npm ci"; then
-		node_modules/.bin/stylelint "hodima/**/*.css" "$stories/**/*.css" "$expandable/*.css" "$notification/**/*.css" "$videowatch_css" "$phone/*.css" "$panel/css/*.css" "$uikit/*.css" -f json > /dev/null 2> "$tmp/stylelint.json"
+		node_modules/.bin/stylelint "hodima/**/*.css" "$stories/**/*.css" "$expandable/*.css" "$notification/**/*.css" "$videowatch_css" "$phone/*.css" "$panel/css/*.css" "$uikit/*.css" "$pkgimport/*.css" -f json > /dev/null 2> "$tmp/stylelint.json"
 		ratchet stylelint "$tmp/stylelint.json" "$base/stylelint.json"
 	fi
 	if need node_modules/lightningcss "Lightning CSS" "npm ci"; then
@@ -123,7 +125,7 @@ if want js; then
 	echo "== JS"
 	if need node_modules/.bin/eslint ESLint "npm ci"; then
 		# shellcheck disable=SC2086 # دو مسیر جدا
-		node_modules/.bin/eslint hodima "$stories" "$expandable" "$notification" $videowatch_js "$phone/phone-script.js" "$panel/js" "$uikit/ui-kit.js" -f json > "$tmp/eslint.json" 2> "$tmp/eslint.err"
+		node_modules/.bin/eslint hodima "$stories" "$expandable" "$notification" $videowatch_js "$phone/phone-script.js" "$panel/js" "$uikit/ui-kit.js" "$pkgimport/package-import.js" -f json > "$tmp/eslint.json" 2> "$tmp/eslint.err"
 		ratchet eslint "$tmp/eslint.json" "$base/eslint.json"
 	fi
 fi

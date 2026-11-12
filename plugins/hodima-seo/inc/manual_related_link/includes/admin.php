@@ -395,6 +395,17 @@ final class Admin {
 	}
 
 	/**
+	 * یک نوشته به شکل نتیجه جستجوی همین کادر (عنوان، تصویر، نوع، هشدار) برای «ورود بسته»
+	 * (core/package-import)؛ همان سازنده جستجو، تا کارت پرشده با کارت انتخاب دستی یکی باشد.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	public static function package_item( int $post_id, int $self_id ): ?array {
+		$result = self::result( [ 'kind' => 'post', 'id' => $post_id, 'url' => '', 'title' => '', 'img_id' => 0 ], [ $self_id, 'post' ] );
+		return $result && ! in_array( 'self', $result['problems'], true ) ? $result : null;
+	}
+
+	/**
 	 * @param array<string, mixed>      $item
 	 * @param array{0:int, 1:string}    $self
 	 * @return array<string, mixed>|null

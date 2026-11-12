@@ -51,6 +51,10 @@ HARNESS=1 php tools/wp-harness/phone-tests.php
 # صفحه «شماره‌های تماس» پیشخوان با ورود واقعی مدیر در Chromium (php -S؛ فهرست، کارها، پنجره تأیید، کپی، جزئیات، ریدایرکت، نگهداری، CSV، axe، عکس ۱۳۰۰/۳۹۰؛ چند دقیقه؛ در ci-check نیست)
 tools/wp-harness/phone-admin-check.sh   # عکس‌ها: /tmp/hodima-harness/phone-admin
 
+# «ورود بسته» Hodima SEO روی ویرایش محصول با ووکامرس واقعی و اسکریپت‌های واقعی پیشخوان (TinyMCE، select2؛ از wordpress-6.7.zip رسمی): بررسی سرور،
+# قفل آدرس، پیش‌نمایش، پر کردن، بازگرداندن، «به‌روزرسانی» و متاهای ذخیره‌شده، axe، عکس ۱۰۰۰/۳۹۰ (چند دقیقه؛ در ci-check نیست)
+tools/wp-harness/package-import-check.sh   # عکس‌ها: /tmp/hodima-harness-wc/package-import
+
 # صفحه‌های پیشخوان (دسترسی، عنوان، منوی فعال، هشدار PHP)
 tools/wp-harness/admin-check.sh . /tmp/adm                 # صفحه‌های پیش‌فرض
 tools/wp-harness/admin-check.sh . /tmp/adm hodima-hub-seo  # صفحه‌های دلخواه

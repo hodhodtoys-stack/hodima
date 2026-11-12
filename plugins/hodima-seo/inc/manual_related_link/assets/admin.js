@@ -24,7 +24,7 @@
 	};
 
 	/* ── انتخاب مقصد ── */
-	const setTarget = (slot, item) => {
+	const setTarget = (slot, item, focus = true) => {
 		field(slot, 'kind').value = item.kind;
 		field(slot, 'id').value = item.kind === 'url' ? '' : String(item.id);
 		field(slot, 'url').value = item.kind === 'url' ? item.url : '';
@@ -56,14 +56,16 @@
 		});
 
 		// آدرس دلخواه بدون عنوان نمایش داده نمی‌شود: بخش عنوان باز شود
-		if (item.kind === 'url') {
+		if (!focus) {
+			// پر شدن از «ورود بسته»: فوکوس جای مدیر بماند
+		} else if (item.kind === 'url') {
 			field(slot, 'title').focus();
 		} else {
 			target.querySelector('.hodima-rl-clear').focus();
 		}
 	};
 
-	const clearTarget = (slot) => {
+	const clearTarget = (slot, focus = true) => {
 		// عنوان دلخواه و تصویر قدیمی ذخیره‌شده هم پاک می‌شوند تا روی مقصد بعدی نمانند
 		['kind', 'id', 'url', 'title', 'img_id'].forEach((name) => { field(slot, name).value = ''; });
 		slot.querySelector('.hodima-rl-target').hidden = true;
@@ -71,7 +73,7 @@
 		picker.hidden = false;
 		slot.dataset.filled = '0';
 		markUnsaved(slot);
-		picker.querySelector('.hodima-rl-search').focus();
+		if (focus) picker.querySelector('.hodima-rl-search').focus();
 	};
 
 	/* ── جستجو ── */
@@ -211,10 +213,33 @@
 		slot.querySelector('.hodima-rl-clear').addEventListener('click', () => clearTarget(slot));
 	};
 
+	/*
+	 * «ورود بسته» (Hodima SEO، core/package-import): کل گروه از بیرون جایگزین می‌شود.
+	 * detail.value = همان شکل نتیجه جستجو (+ custom = عنوان دلخواه، img_id)؛ مورد بیشتر از
+	 * خانه‌ها پر نمی‌شود (detail.used). ذخیره همچنان فقط با «به‌روزرسانی».
+	 */
+	const fillGroup = (group, event) => {
+		const items = Array.isArray(event.detail?.value) ? event.detail.value : [];
+		const slots = [...group.querySelectorAll(':scope > .hodima-rl-slots > .hodima-rl-slot')];
+		slots.forEach((slot, i) => {
+			const item = items[i];
+			if (item) {
+				setTarget(slot, item, false);
+				field(slot, 'title').value = item.custom ?? '';
+				field(slot, 'img_id').value = item.img_id ? String(item.img_id) : '';
+			} else if (slot.dataset.filled === '1') {
+				clearTarget(slot, false);
+			}
+		});
+		event.detail.done = true;
+		event.detail.used = Math.min(items.length, slots.length);
+	};
+
 	/* ── راه‌اندازی ── */
 	const init = () => {
 		document.querySelectorAll('.hodima-rl-group').forEach((group) => {
 			group.querySelectorAll(':scope > .hodima-rl-slots > .hodima-rl-slot').forEach((slot) => setupSlot(slot, group));
+			group.addEventListener('hodima:fill', (event) => fillGroup(group, event));
 		});
 
 		document.querySelectorAll('.hodima-rl-copy').forEach((button) => {

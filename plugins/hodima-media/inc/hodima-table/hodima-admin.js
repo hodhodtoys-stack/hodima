@@ -596,6 +596,22 @@
 		rebuild(fit(headerRow), bodyRows.slice(0, maxRows).map(fit));
 	});
 
+	// ---------- «ورود بسته» (Hodima SEO، core/package-import) ----------
+
+	/*
+	 * جایگزینی کامل جدول از بیرون با همان rebuild ورود CSV؛ detail.value = {headers, rows}.
+	 * فقط فرم پر می‌شود (فیلد JSON با changed/sync)؛ ذخیره همچنان فقط با «به‌روزرسانی».
+	 */
+	root.addEventListener('hodima:fill', (event) => {
+		const value = event.detail?.value ?? {};
+		const headers = Array.isArray(value.headers) ? value.headers : [];
+		const rows = (Array.isArray(value.rows) ? value.rows : []).filter(Array.isArray).slice(0, maxRows);
+		const width = Math.min(maxCols, Math.max(2, headers.length, ...rows.map((r) => r.length)));
+		const fit = (r) => Array.from({ length: width }, (_, c) => String(r[c] ?? ''));
+		rebuild(fit(headers), rows.map(fit));
+		event.detail.done = true;
+	});
+
 	// ---------- شروع ----------
 
 	root.closest('form')?.addEventListener('submit', sync);

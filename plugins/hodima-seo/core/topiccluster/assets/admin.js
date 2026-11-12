@@ -281,6 +281,14 @@
             this.#select.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
+        /** جایگزینی کامل انتخاب‌ها از بیرون («ورود بسته» Hodima SEO): [{id, title}]. */
+        setItems(items) {
+            this.#selected = new Map((items ?? []).map((item) => [String(item.id), String(item.title)]));
+            this.#renderTokens();
+            this.#sync();
+            this.#loaded = false;
+        }
+
         clear() {
             this.#selected.clear();
             this.#renderTokens();
