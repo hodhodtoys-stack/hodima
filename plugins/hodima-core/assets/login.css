@@ -1,0 +1,395 @@
+/*
+ * Hodima Core — ظاهر صفحه ورود پیشخوان (wp-login.php)
+ * Path: plugins/hodima-core/assets/login.css
+ *
+ * طرح تأییدشده کاربر. فقط زیر body.hodima-login (هیچ قانون سراسری، هیچ :root)؛
+ * پالت برند و سبز تأکید؛ بدون بنفش (قانون پیشخوان). مقدارهای لوگو و حرف اول
+ * نام سایت را login.php به‌صورت متغیر روی body.login می‌گذارد:
+ *   --hd-login-logo (url)، --hd-login-logo-h، --hd-login-letter
+ * فونت (Vazirmatn) را login.php با @font-face چاپ می‌کند.
+ */
+
+body.hodima-login {
+	--hd-primary: #25316a;
+	--hd-secondary: #607bbd;
+	--hd-third: #b6c2f3;
+	--hd-ok: #1f7a4d;
+	--hd-error: #b3261e;
+	--hd-bg: #f4f6fb;
+	--hd-surface: #ffffff;
+	--hd-text: #1d2340;
+	--hd-muted: #5d6785;
+	--hd-border: color-mix(in srgb, var(--hd-third) 55%, #ffffff);
+
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	min-block-size: 100dvh;
+	margin: 0;
+	background: var(--hd-bg);
+	color: var(--hd-text);
+	font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+	font-size: 1rem;
+	line-height: 1.8;
+
+	@media (width >= 64rem) {
+		grid-template-columns: minmax(0, 1fr) 30rem;
+	}
+
+	/* عناصر پایان صفحه وردپرس که نباید ردیف گرید بسازند */
+	& > .clear,
+	& > .language-switcher {
+		grid-column: 1;
+	}
+
+	& > .clear {
+		display: none;
+	}
+
+	/* ── ستون فرم ─────────────────────────────────────────────── */
+	& #login {
+		grid-column: 1;
+		grid-row: 1;
+		align-self: center;
+		justify-self: center;
+		inline-size: min(26.25rem, 100%);
+		box-sizing: border-box;
+		margin: 0;
+		padding: 2rem 1rem;
+	}
+
+	/* ── سربرگ: لوگو یا حرف اول + نام سایت ─────────────────────── */
+	& #login h1 {
+		margin: 0 0 1.5rem;
+	}
+
+	& #login h1 a {
+		display: block;
+		inline-size: 100%;
+		block-size: auto;
+		margin: 0;
+		background: none;
+		color: var(--hd-primary);
+		font-size: 1.125rem;
+		font-weight: 700;
+		line-height: 1.5;
+		text-indent: 0;
+		text-decoration: none;
+		overflow: visible;
+	}
+
+	&.hodima-login--logo #login h1 a {
+		/* لوگو از آدرس تنظیمات؛ متن فقط برای صفحه‌خوان */
+		block-size: var(--hd-login-logo-h, 3rem);
+		/* باگ قبلی: «start» مقدار معتبر background-position نیست و کل اعلان را باطل می‌کرد */
+		background: var(--hd-login-logo, none) no-repeat left center / contain;
+		font-size: 0;
+		text-indent: -9999px;
+		overflow: hidden;
+
+		&:dir(rtl) {
+			background-position: right center;
+		}
+	}
+
+	&.hodima-login--letter #login h1 a {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		column-gap: 0.75rem;
+		align-items: center;
+
+		&::before {
+			content: var(--hd-login-letter, "ه");
+			grid-row: 1 / span 2;
+			display: grid;
+			place-items: center;
+			inline-size: 3rem;
+			block-size: 3rem;
+			border-radius: 0.875rem;
+			background: var(--hd-primary);
+			color: #ffffff;
+			font-size: 1.25rem;
+			font-weight: 700;
+		}
+
+		&::after {
+			content: "پیشخوان مدیریت";
+			grid-column: 2;
+			color: var(--hd-muted);
+			font-size: 0.8125rem;
+			font-weight: 400;
+		}
+	}
+
+	/* ── کارت فرم ─────────────────────────────────────────────── */
+	& #login form {
+		margin: 0;
+		padding: 2rem;
+		overflow: visible;
+		border: 1px solid var(--hd-border);
+		border-radius: 1rem;
+		background: var(--hd-surface);
+		box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--hd-primary) 7%, transparent);
+
+		@media (width < 30rem) {
+			padding: 1.5rem 1.25rem;
+		}
+	}
+
+	& #loginform::before {
+		content: "ورود به پیشخوان";
+		display: block;
+		margin-block-end: 1.25rem;
+		color: var(--hd-text);
+		font-size: 1.5rem;
+		font-weight: 700;
+		line-height: 1.5;
+	}
+
+	& label {
+		color: var(--hd-text);
+		font-size: 0.875rem;
+		font-weight: 500;
+	}
+
+	& form .input,
+	& input[type="text"],
+	& input[type="password"],
+	& input[type="email"] {
+		box-sizing: border-box;
+		inline-size: 100%;
+		block-size: 3rem;
+		margin: 0.375rem 0 0;
+		padding-block: 0;
+		padding-inline: 0.875rem;
+		border: 1px solid var(--hd-third);
+		border-radius: 0.625rem;
+		background: #ffffff;
+		color: var(--hd-text);
+		font-family: inherit;
+		font-size: 1rem;
+		text-align: right;
+		box-shadow: none;
+	}
+
+	/* فاصله هر گروه فیلد؛ باگ قبلی: فاصله دوبل (margin پاراگراف وردپرس + margin فیلد) */
+	& #loginform p:not(.submit),
+	& .user-pass-wrap {
+		margin: 0 0 1rem;
+	}
+
+	& .user-pass-wrap .wp-pwd {
+		position: relative;
+	}
+
+	& .wp-pwd input[type="password"],
+	& .wp-pwd input[type="text"] {
+		padding-inline-end: 3.25rem;
+	}
+
+	/* دکمه نمایش رمز: جای آن را خودمان تعیین می‌کنیم (روی فیلد، سمت انتهای خط) تا به CSS هسته وردپرس تکیه نکند */
+	& .wp-pwd .button.wp-hide-pw {
+		position: absolute;
+		inset-block-start: 0.5rem;
+		inset-inline: auto 0.25rem;
+		display: grid;
+		place-items: center;
+		inline-size: 2.75rem;
+		block-size: 2.75rem;
+		min-inline-size: 2.75rem;
+		min-block-size: 2.75rem;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 0.5rem;
+		background: transparent;
+		box-shadow: none;
+		color: var(--hd-primary);
+		cursor: pointer;
+
+		&:hover {
+			background: color-mix(in srgb, var(--hd-third) 30%, transparent);
+		}
+	}
+
+	& input:focus-visible,
+	& .button:focus-visible,
+	& a:focus-visible,
+	& input[type="checkbox"]:focus-visible {
+		outline: 3px solid var(--hd-secondary);
+		outline-offset: 2px;
+		box-shadow: none;
+		border-color: var(--hd-secondary);
+	}
+
+	& .forgetmenot {
+		float: none;
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		min-block-size: 2.75rem;
+		margin: 0 0 0.5rem;
+
+		& input[type="checkbox"] {
+			inline-size: 1.25rem;
+			block-size: 1.25rem;
+			margin: 0;
+			accent-color: var(--hd-ok);
+		}
+	}
+
+	& p.submit {
+		float: none;
+		margin: 0.5rem 0 0;
+	}
+
+	& .button-primary,
+	& .button-primary:hover,
+	& .button-primary:focus {
+		float: none;
+		inline-size: 100%;
+		block-size: 3.25rem;
+		border: 0;
+		border-radius: 0.75rem;
+		background: var(--hd-primary);
+		color: #ffffff;
+		font-family: inherit;
+		font-size: 1rem;
+		font-weight: 700;
+		text-shadow: none;
+		box-shadow: none;
+	}
+
+	& .button-primary:hover {
+		background: color-mix(in srgb, var(--hd-primary) 88%, #000000);
+	}
+
+	/* ── پیام‌ها ──────────────────────────────────────────────── */
+	& .message,
+	& #login_error,
+	& .notice {
+		margin: 0 0 1rem;
+		padding: 0.875rem 1rem;
+		border: 1px solid var(--hd-border);
+		border-inline-start-width: 4px;
+		border-radius: 0.75rem;
+		background: var(--hd-surface);
+		color: var(--hd-text);
+		font-size: 0.875rem;
+		line-height: 1.9;
+		box-shadow: none;
+	}
+
+	& #login_error {
+		border-color: color-mix(in srgb, var(--hd-error) 45%, #ffffff);
+		background: color-mix(in srgb, var(--hd-error) 7%, #ffffff);
+		color: #6f1812;
+	}
+
+	& .message,
+	& .notice-info {
+		border-inline-start-color: var(--hd-secondary);
+	}
+
+	& .notice-success {
+		border-inline-start-color: var(--hd-ok);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		& .shake {
+			animation: none;
+		}
+	}
+
+	/* ── پیوندهای زیر کارت ───────────────────────────────────── */
+	& #nav,
+	& #backtoblog {
+		margin: 0;
+		padding: 0;
+		font-size: 0.875rem;
+	}
+
+	& #nav {
+		margin-block-start: 1rem;
+	}
+
+	& #nav a,
+	& #backtoblog a,
+	& .privacy-policy-page-link a {
+		display: inline-flex;
+		align-items: center;
+		min-block-size: 2.75rem;
+		color: var(--hd-primary);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+
+		&:hover {
+			color: var(--hd-ok);
+		}
+	}
+
+	& .privacy-policy-page-link {
+		margin: 0;
+		text-align: start;
+	}
+
+	/* ── نوار کناری رنگی (فقط دسکتاپ) ─────────────────────────── */
+	& .hodima-login-aside {
+		display: none;
+	}
+
+	@media (width >= 64rem) {
+		& .hodima-login-aside {
+			grid-column: 2;
+			grid-row: 1;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			gap: 2rem;
+			padding: 4rem 3rem;
+			background: linear-gradient(160deg, var(--hd-primary) 0%, var(--hd-secondary) 100%);
+			color: #ffffff;
+		}
+	}
+
+	& .hodima-login-aside__eyebrow {
+		margin: 0;
+		color: #dbe3ff;
+		font-size: 0.875rem;
+	}
+
+	& .hodima-login-aside__title {
+		margin: 0.5rem 0 0;
+		color: #ffffff;
+		font-size: 2rem;
+		font-weight: 700;
+		line-height: 1.5;
+	}
+
+	& .hodima-login-aside__points {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.9375rem;
+		line-height: 1.8;
+
+		& li {
+			display: flex;
+			align-items: flex-start;
+			gap: 0.75rem;
+			margin: 0;
+
+			&::before {
+				content: "";
+				flex: none;
+				inline-size: 0.5rem;
+				block-size: 0.5rem;
+				margin-block-start: 0.6rem;
+				border-radius: 50%;
+				background: #7be0a8;
+			}
+		}
+	}
+}

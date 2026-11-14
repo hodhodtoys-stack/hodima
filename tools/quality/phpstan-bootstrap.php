@@ -14,6 +14,11 @@ define( 'hodima_URI', 'https://example.test/wp-content/themes/hodima' );
 define( 'hodima_DIR', '/tmp/wordpress/wp-content/themes/hodima' );
 define( 'HODIMA_USER_PANEL_ENABLED', false );
 
+// Hodima Core: hodima-core.php (ورود و امنیت)
+define( 'HODIMA_CORE_PLUGIN_URL', 'https://example.test/wp-content/plugins/hodima-core' );
+define( 'HODIMA_CORE_PLUGIN_DIR', '/tmp/wordpress/wp-content/plugins/hodima-core' );
+define( 'HODIMA_CORE_PLUGIN_VERSION', '0.0.0' );
+
 // Hodima Media: hodima-media.php (ماژول استوری، بخش ۱۲۷)
 define( 'HODIMA_MEDIA_URL', 'https://example.test/wp-content/plugins/hodima-media' );
 define( 'HODIMA_MEDIA_DIR', '/tmp/wordpress/wp-content/plugins/hodima-media' );

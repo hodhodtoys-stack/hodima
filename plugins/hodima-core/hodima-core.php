@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima Core
  * Plugin URI:        https://hodima.com
  * Description:       کتابخانه مشترک افزونه‌های هدیما: تشخیص IP واقعی (سازگار با Cloudflare)، محدودیت نرخ، تشخیص ربات موتور جستجو، موتور Canonical، گراف واحد اسکیما (JSON-LD) و بررسی محتوای محافظت‌شده. پیش‌نیاز Hodima SEO، Hodima Commerce و Hodima Media.
- * Version:           1.3.5
+ * Version:           1.3.6
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Author:            آرین فتحی
@@ -17,7 +17,7 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 // پیشوند HODIMA_CORE_PLUGIN_ چون HODIMA_CORE_* قبلا در ماژول IndexNow (افزونه SEO) استفاده شده است.
-const HODIMA_CORE_PLUGIN_VERSION = '1.3.5';
+const HODIMA_CORE_PLUGIN_VERSION = '1.3.6';
 define( 'HODIMA_CORE_PLUGIN_FILE', __FILE__ );
 define( 'HODIMA_CORE_PLUGIN_DIR', __DIR__ );
 define( 'HODIMA_CORE_PLUGIN_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -117,10 +117,14 @@ require_once HODIMA_CORE_PLUGIN_DIR . '/includes/hardening.php';
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/wp-cleanup.php';
 require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-font.php';
 
+// ورود و امنیت: ظاهر صفحه ورود پیشخوان و بستن راه‌های شناسایی نام کاربری (SEO/Commerce بی‌خبرند)
+require_once HODIMA_CORE_PLUGIN_DIR . '/includes/login.php';
+
 // پنل «ابزارهای هدیما» در پیشخوان: وضعیت، روشن/خاموش کردن ماژول‌ها و
 // سیستم طراحی مشترک همه صفحه‌های افزونه‌ها (هدر، تب‌ها، فوتر، عرض ۹۵٪)
 if ( is_admin() ) {
 	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-hub.php';
 	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-ui.php';
 	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-term-box.php';
+	require_once HODIMA_CORE_PLUGIN_DIR . '/includes/admin-login.php';
 }

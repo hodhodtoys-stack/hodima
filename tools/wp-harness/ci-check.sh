@@ -12,6 +12,7 @@
 #   - آزمون‌های آمار ویدیوها (video-watch-tests.php) رد شوند؛
 #   - آزمون‌های Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس) رد شوند؛
 #   - آزمون‌های فرم تلفن (phone-tests.php) رد شوند؛
+#   - آزمون‌های ورود و امنیت Core (login-tests.php) رد شوند؛
 #   - آزمون‌های پنل کاربری (panel-tests.php) رد شوند؛
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
@@ -107,6 +108,13 @@ if HARNESS=1 HODIMA_WP="$base/wp" php "$here/privacy-tests.php" > "$out/privacy-
 	tail -1 "$out/privacy-tests.txt" | sed 's/^/  /'
 else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/privacy-tests.txt" | head -30 | sed 's/^/  /'; fail=1
+fi
+
+echo "=== آزمون ورود و امنیت (login-tests.php: آدرس لوگو بی‌تزریق CSS، پیام خطای یکسان، ?author=N، فهرست کاربران REST، هدرها)"
+if HARNESS=1 HODIMA_WP="$base/wp" php "$here/login-tests.php" > "$out/login-tests.txt" 2>&1; then
+	tail -1 "$out/login-tests.txt" | sed 's/^/  /'
+else
+	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/login-tests.txt" | head -30 | sed 's/^/  /'; fail=1
 fi
 
 echo "=== آزمون فرم تلفن (phone-tests.php: شماره، توکن امضاشده، نرخ و تکراری، ذخیره، تاریخچه، CSV)"

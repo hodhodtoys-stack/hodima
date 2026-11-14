@@ -14,6 +14,8 @@ parameters:
 		# اسکیمای افزونه‌ها (همان مسیرهای phpcs.xml.dist)
 		- plugins/hodima-core/includes/schema-graph.php
 		- plugins/hodima-core/includes/jalali.php
+		- plugins/hodima-core/includes/login.php
+		- plugins/hodima-core/includes/admin-login.php
 		- plugins/hodima-commerce/core/time-jalali
 		- plugins/hodima-seo/schema
 		- plugins/hodima-seo/inc/product-price.php

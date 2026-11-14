@@ -19,6 +19,9 @@
 	<file>hodima</file>
 	<file>plugins/hodima-core/includes/schema-graph.php</file>
 	<file>plugins/hodima-core/includes/jalali.php</file>
+	<!-- ورود و امنیت Core (بدون baseline) -->
+	<file>plugins/hodima-core/includes/login.php</file>
+	<file>plugins/hodima-core/includes/admin-login.php</file>
 	<file>plugins/hodima-commerce/core/time-jalali</file>
 	<file>plugins/hodima-seo/schema</file>
 	<!-- قیمت و نام ترب (بخش ۱۰۱) -->
