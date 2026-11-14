@@ -13,8 +13,6 @@
 #   - آزمون‌های Commerce (commerce-tests.php: تاریخ شمسی، شهرها، فرم آدرس) رد شوند؛
 #   - آزمون‌های فرم تلفن (phone-tests.php) رد شوند؛
 #   - آزمون‌های پنل کاربری (panel-tests.php) رد شوند؛
-#   - آزمون‌های دستار سئو (advisor-tests.php)، دقت خواندن صفحه خزنده (advisor-accuracy.php)، قاعده‌های ایراد (advisor-checks-tests.php)
-#     یا عکس مرجع ایرادها (advisor-issues-golden.php) یا پیشنهادها (advisor-suggest-golden.php) رد شوند.
 # با [ref] (مثلا HEAD^) تفاوت اسکیما با آن commit را فقط گزارش می‌کند (رد نمی‌کند):
 # تغییر اسکیما ممکن است عمدی باشد و تصمیمش با انسان است.
 #   ci-check.sh [ref]
@@ -116,41 +114,6 @@ if HARNESS=1 HODIMA_WP="$base/wp" php "$here/phone-tests.php" > "$out/phone-test
 	tail -1 "$out/phone-tests.txt" | sed 's/^/  /'
 else
 	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/phone-tests.txt" | head -30 | sed 's/^/  /'; fail=1
-fi
-
-echo "=== آزمون دستار سئو (advisor-tests.php: یکسان‌سازی آدرس، دریافت با پاسخ ساختگی گوگل، ذخیره/خواندن، شکست بدون خراب‌کردن داده)"
-if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-tests.php" > "$out/advisor-tests.txt" 2>&1; then
-	tail -1 "$out/advisor-tests.txt" | sed 's/^/  /'
-else
-	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/advisor-tests.txt" | head -30 | sed 's/^/  /'; fail=1
-fi
-
-echo "=== دقت خواندن صفحه توسط خزنده دستار (advisor-accuracy.php: قالب‌های واقعی با جواب درست معلوم)"
-if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-accuracy.php" > "$out/advisor-accuracy.txt" 2>&1; then
-	tail -1 "$out/advisor-accuracy.txt" | sed 's/^/  /'
-else
-	grep -E "✘|واقعی|Fatal|Error" "$out/advisor-accuracy.txt" | head -30 | sed 's/^/  /'; fail=1
-fi
-
-echo "=== قاعده‌های ایراد فنی دستار (advisor-checks-tests.php: «دارد/ندارد» برای هر ایراد + ساختار کاتالوگ)"
-if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-checks-tests.php" > "$out/advisor-checks-tests.txt" 2>&1; then
-	tail -1 "$out/advisor-checks-tests.txt" | sed 's/^/  /'
-else
-	grep -E "✘|انتظار|واقعی|Fatal|Error" "$out/advisor-checks-tests.txt" | head -30 | sed 's/^/  /'; fail=1
-fi
-
-echo "=== عکس مرجع ایرادهای دستار (advisor-issues-golden.php --check: خروجی با golden/advisor-issues.json یکی باشد)"
-if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-issues-golden.php" --check "$here/golden/advisor-issues.json" > "$out/advisor-issues-golden.txt" 2>&1; then
-	head -1 "$out/advisor-issues-golden.txt" | sed 's/^/  /'
-else
-	head -40 "$out/advisor-issues-golden.txt" | sed 's/^/  /'; fail=1
-fi
-
-echo "=== عکس مرجع پیشنهادهای گوگل دستار (advisor-suggest-golden.php --check: خروجی با golden/advisor-suggest.json یکی باشد)"
-if HARNESS=1 HODIMA_WP="$base/wp" php "$here/advisor-suggest-golden.php" --check "$here/golden/advisor-suggest.json" > "$out/advisor-suggest-golden.txt" 2>&1; then
-	head -1 "$out/advisor-suggest-golden.txt" | sed 's/^/  /'
-else
-	head -40 "$out/advisor-suggest-golden.txt" | sed 's/^/  /'; fail=1
 fi
 
 # آخرِ آزمون‌ها: این آزمون Hodima Panel را خودش فعال می‌کند (در داده آزمایشی بقیه فعال نیست)

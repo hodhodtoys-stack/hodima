@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           4.0.2
+ * Version:           4.0.3
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '4.0.2';
+const HODIMA_SEO_VERSION = '4.0.3';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -118,21 +118,12 @@ function hodima_seo_modules(): array {
 		],
 		'discover' => [
 			'title'       => 'گوگل دیسکاور',
-			'description' => 'عنوان و تصویر دیسکاور نوشته‌ها، برگه‌ها، محصولات و دسته‌های محصول، سه برش ۱۶:۹ / ۴:۳ / ۱:۱ (عرض ۱۲۰۰)، og:image و og:title بزرگ، فید RSS نوشته‌ها و محصولات با تصویر برای «دنبال کردن»، موضوعات با ویکی‌داده و معرفی نویسنده در اسکیما، گزارش آمادگی همه صفحه‌ها با ساخت برش برای همه، فرصت‌های بهتر شدن، و آمار واقعی دیسکاور از سرچ کنسول با نمودار روزانه، مقایسه ۲۸ روز قبل، تاریخچه بلندمدت ماه به ماه، نقطه تمرکز برش‌ها و ثبت اثر تغییر عنوان و تصویر کارت.',
+			'description' => 'عنوان و تصویر دیسکاور نوشته‌ها (مقاله‌ها)، سه برش ۱۶:۹ / ۴:۳ / ۱:۱ (عرض ۱۲۰۰)، og:image و og:title بزرگ، فید RSS نوشته‌ها با تصویر برای «دنبال کردن»، موضوعات با ویکی‌داده و معرفی نویسنده در اسکیما، گزارش آمادگی همه صفحه‌ها با ساخت برش برای همه، فرصت‌های بهتر شدن، و آمار واقعی دیسکاور از سرچ کنسول با نمودار روزانه، مقایسه ۲۸ روز قبل، تاریخچه بلندمدت ماه به ماه، نقطه تمرکز برش‌ها و ثبت اثر تغییر عنوان و تصویر کارت.',
 			'files'       => [ 'core/discover/discover-init.php' ],
 			'settings'    => 'admin.php?page=hodima-discover',
 			'warning'     => 'کادر گوگل دیسکاور از ویرایش نوشته برداشته می‌شود و عنوان/تصویر دیسکاور، برش‌های تصویر و تصویر فید دیگر اعمال نمی‌شوند (اطلاعات پاک نمی‌شود).',
 			'recommends'  => [ 'seobox', 'schema' ],
 			'icon'        => 'dashicons-visibility',
-		],
-		'advisor' => [
-			'title'       => 'دستار سئو',
-			'description' => 'با داده Search Console همین سایت برای هر صفحه می‌گوید چه کاری بیشترین کلیک اضافه را می‌آورد: عنوان و توضیح متا، کلمه‌های نزدیک صفحه اول، کلمه‌ای که در تیترها نیست. فقط پیشنهاد می‌دهد و چیزی را خودکار عوض نمی‌کند؛ روزی یک بار داده را از سرچ کنسول می‌گیرد (کلید همان «گوگل دیسکاور ← آمار سرچ کنسول» است).',
-			'files'       => [ 'core/advisor/advisor-init.php' ],
-			'settings'    => 'admin.php?page=hodima-advisor',
-			'warning'     => 'دریافت روزانه داده سرچ کنسول متوقف می‌شود (داده ذخیره‌شده پاک نمی‌شود).',
-			'recommends'  => [ 'seobox' ],
-			'icon'        => 'dashicons-chart-line',
 		],
 		'package-import' => [
 			'title'       => 'ورود بسته',
@@ -226,11 +217,13 @@ add_action( 'plugins_loaded', static function (): void {
 				}
 			}
 		}
-		// ماژول دستار سئو خاموش: رویداد روزانه دریافت داده یتیم نماند
-		if ( is_admin() && ! \Hodima\Core\Modules::is_loaded( 'seo', 'advisor' ) && ( wp_next_scheduled( 'hodima_advisor_refresh' ) || wp_next_scheduled( 'hodima_advisor_inspect' ) || wp_next_scheduled( 'hodima_advisor_stage' ) ) ) {
-			wp_clear_scheduled_hook( 'hodima_advisor_refresh' );
-			wp_clear_scheduled_hook( 'hodima_advisor_inspect' );
-			wp_clear_scheduled_hook( 'hodima_advisor_stage' );
+		// دستار سئو حذف شده (SEO 4.0.3): رویدادهای یتیم کران آن (دریافت داده، بررسی ایندکس، خزنده، بررسی زنده) پاک شوند
+		if ( is_admin() ) {
+			foreach ( [ 'hodima_advisor_refresh', 'hodima_advisor_inspect', 'hodima_advisor_stage', 'hodima_advisor_crawler_tick', 'hodima_advisor_live_check' ] as $hodima_seo_cron ) {
+				if ( wp_next_scheduled( $hodima_seo_cron ) ) {
+					wp_clear_scheduled_hook( $hodima_seo_cron );
+				}
+			}
 		}
 		return;
 	}
@@ -266,4 +259,6 @@ register_deactivation_hook( __FILE__, static function (): void {
 	wp_clear_scheduled_hook( 'hodima_advisor_refresh' ); // دریافت روزانه داده دستار سئو
 	wp_clear_scheduled_hook( 'hodima_advisor_inspect' ); // بررسی ایندکس دستار سئو
 	wp_clear_scheduled_hook( 'hodima_advisor_stage' ); // ادامه نوبت‌های دریافت داده دستار سئو
+	wp_clear_scheduled_hook( 'hodima_advisor_crawler_tick' ); // خزنده دستار سئو (حذف‌شده؛ برای سایت‌هایی که هنوز رویدادش را دارند)
+	wp_clear_scheduled_hook( 'hodima_advisor_live_check' );
 } );
