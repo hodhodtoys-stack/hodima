@@ -197,23 +197,26 @@ function hodima_seo_discover_provided_by_media(): bool {
  * ===================================================================== */
 
 /**
- * نوع‌های نوشته‌ای که دیسکاور دارند: نوشته، برگه و (از SEO 1.17.0) محصول.
+ * نوع‌های نوشته‌ای که دیسکاور دارند: فقط نوشته (مقاله).
+ * دیسکاور برای محتوای مقاله‌ای است؛ محصول (SEO 1.17.0 تا 4.0.1) و برگه کاربردی
+ * نداشتند و کادر، گزارش و تصویر og/اسکیمای آن‌ها را بی‌دلیل شلوغ می‌کردند.
+ * متاهای ذخیره‌شده محصول/برگه پاک نشده‌اند (قانون ۵)؛ با این فیلتر برمی‌گردند.
  * نام فیلتر همان نسخه‌های قبلی است تا کد سفارشی سایت کار کند.
  *
  * @return list<string>
  */
 function hodima_seo_discover_post_types(): array {
-	return array_values( array_map( 'strval', (array) apply_filters( 'hook_modern_seo_post_types', [ 'post', 'page', 'product' ] ) ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- نام فیلتر قبلی سیستم رسانه؛ کد سفارشی سایت از آن استفاده می‌کند
+	return array_values( array_map( 'strval', (array) apply_filters( 'hook_modern_seo_post_types', [ 'post' ] ) ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- نام فیلتر قبلی سیستم رسانه؛ کد سفارشی سایت از آن استفاده می‌کند
 }
 
 /**
- * تکسونومی‌هایی که دیسکاور دارند: دسته محصول (صفحه‌اش را قالب با تصویر و
- * متن معرفی کامل نمایش می‌دهد). دسته‌های وبلاگ نه.
+ * تکسونومی‌هایی که دیسکاور دارند: هیچ‌کدام (دسته محصول تا 4.0.1 داشت؛ صفحه
+ * دسته‌بندی در دیسکاور کاربرد ندارد). متای ترم‌ها پاک نشده؛ با این فیلتر برمی‌گردد.
  *
  * @return list<string>
  */
 function hodima_seo_discover_taxonomies(): array {
-	return array_values( array_map( 'strval', (array) apply_filters( 'hodima_seo_discover_taxonomies', [ 'product_cat' ] ) ) );
+	return array_values( array_map( 'strval', (array) apply_filters( 'hodima_seo_discover_taxonomies', [] ) ) );
 }
 
 /**

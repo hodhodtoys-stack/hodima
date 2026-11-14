@@ -146,8 +146,9 @@ if ( function_exists( 'hodima_seo_discover_entity_items' ) ) {
 	hodima_t( 'برش ۱۶:۹ از ۱۶۰۰×۱۰۰۰', hodima_seo_discover_crop_size( 1600, 1000, 16, 9 ), [ 1200, 675 ] );
 	hodima_t( 'برش خیلی کوچک', hodima_seo_discover_crop_size( 200, 100, 1, 1 ), [ 0, 0 ] );
 	hodima_t( 'کلید آدرس Search Console', hodima_seo_discover_url_key( 'https://hodima.test/%D8%AA%D8%B3%D8%AA/' ), '/تست' );
-	hodima_t( 'Discover برای محصول روشن', in_array( 'product', hodima_seo_discover_post_types(), true ), true );
-	hodima_t( 'Discover برای دسته محصول روشن', in_array( 'product_cat', hodima_seo_discover_taxonomies(), true ), true );
+	// تصمیم کاربر (SEO 4.0.2): دیسکاور فقط مقاله؛ محصول، برگه و دسته محصول خاموش
+	hodima_t( 'Discover فقط برای نوشته', hodima_seo_discover_post_types(), [ 'post' ] );
+	hodima_t( 'Discover برای دسته محصول خاموش', hodima_seo_discover_taxonomies(), [] );
 	hodima_t( 'کلید متای ترم', hodima_seo_discover_meta_key( 'title', 'term' ), 'hook_discover_title' );
 	hodima_t( 'کلید متای نوشته (همان قبلی)', hodima_seo_discover_meta_key( 'entities', 'post' ), '_hook_key_entities' );
 	hodima_t( 'امتیاز آمادگی', hodima_seo_discover_score( [ [ 'status' => 'ok' ], [ 'status' => 'warn' ], [ 'status' => 'ok' ] ] ), [ 2, 3 ] );
