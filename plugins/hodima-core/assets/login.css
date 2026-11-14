@@ -2,7 +2,7 @@
  * Hodima Core — ظاهر صفحه ورود پیشخوان (wp-login.php)
  * Path: plugins/hodima-core/assets/login.css
  *
- * طرح تأییدشده کاربر. فقط زیر body.hodima-login (هیچ قانون سراسری، هیچ :root)؛
+ * طرح تأییدشده کاربر (نوار آبی کناری بعد از دیدن سایت زنده حذف شد). فقط زیر body.hodima-login (هیچ قانون سراسری، هیچ :root)؛
  * پالت برند و سبز تأکید؛ بدون بنفش (قانون پیشخوان). مقدارهای لوگو و حرف اول
  * نام سایت را login.php به‌صورت متغیر روی body.login می‌گذارد:
  *   --hd-login-logo (url)، --hd-login-logo-h، --hd-login-letter
@@ -21,8 +21,10 @@ body.hodima-login {
 	--hd-muted: #5d6785;
 	--hd-border: color-mix(in srgb, var(--hd-third) 55%, #ffffff);
 
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
 	min-block-size: 100dvh;
 	margin: 0;
 	background: var(--hd-bg);
@@ -31,26 +33,13 @@ body.hodima-login {
 	font-size: 1rem;
 	line-height: 1.8;
 
-	@media (width >= 64rem) {
-		grid-template-columns: minmax(0, 1fr) 30rem;
-	}
-
-	/* عناصر پایان صفحه وردپرس که نباید ردیف گرید بسازند */
-	& > .clear,
-	& > .language-switcher {
-		grid-column: 1;
-	}
-
+	/* عناصر پایان صفحه وردپرس که نباید جا بگیرند */
 	& > .clear {
 		display: none;
 	}
 
 	/* ── ستون فرم ─────────────────────────────────────────────── */
 	& #login {
-		grid-column: 1;
-		grid-row: 1;
-		align-self: center;
-		justify-self: center;
 		inline-size: min(26.25rem, 100%);
 		box-sizing: border-box;
 		margin: 0;
@@ -330,66 +319,5 @@ body.hodima-login {
 	& .privacy-policy-page-link {
 		margin: 0;
 		text-align: start;
-	}
-
-	/* ── نوار کناری رنگی (فقط دسکتاپ) ─────────────────────────── */
-	& .hodima-login-aside {
-		display: none;
-	}
-
-	@media (width >= 64rem) {
-		& .hodima-login-aside {
-			grid-column: 2;
-			grid-row: 1;
-			display: flex;
-			flex-direction: column;
-			justify-content: space-between;
-			gap: 2rem;
-			padding: 4rem 3rem;
-			background: linear-gradient(160deg, var(--hd-primary) 0%, var(--hd-secondary) 100%);
-			color: #ffffff;
-		}
-	}
-
-	& .hodima-login-aside__eyebrow {
-		margin: 0;
-		color: #dbe3ff;
-		font-size: 0.875rem;
-	}
-
-	& .hodima-login-aside__title {
-		margin: 0.5rem 0 0;
-		color: #ffffff;
-		font-size: 2rem;
-		font-weight: 700;
-		line-height: 1.5;
-	}
-
-	& .hodima-login-aside__points {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		font-size: 0.9375rem;
-		line-height: 1.8;
-
-		& li {
-			display: flex;
-			align-items: flex-start;
-			gap: 0.75rem;
-			margin: 0;
-
-			&::before {
-				content: "";
-				flex: none;
-				inline-size: 0.5rem;
-				block-size: 0.5rem;
-				margin-block-start: 0.6rem;
-				border-radius: 50%;
-				background: #7be0a8;
-			}
-		}
 	}
 }

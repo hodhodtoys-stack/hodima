@@ -3,7 +3,7 @@
  * روی وردپرس ابزار تست (php -S، نه HTML ازپیش‌ساخته).
  *   tools/wp-harness/login-check.sh        (این فایل را راه می‌اندازد)
  *
- * می‌سنجد: ظاهر قبل (ظاهر خاموش) و بعد (دسکتاپ ۱۳۰۰ و موبایل ۳۹۰) با عکس؛ نوار کناری فقط دسکتاپ؛ حرف اول
+ * می‌سنجد: ظاهر قبل (ظاهر خاموش) و بعد (دسکتاپ ۱۳۰۰ و موبایل ۳۹۰) با عکس؛ نبودن نوار کناری و وسط‌چین بودن کارت؛ حرف اول
  * نام سایت و لوگوی آدرسی؛ بدون سرریز افقی؛ اندازه فیلد و دکمه؛ فوکوس صفحه‌کلید؛ axe (WCAG 2.2 AA)؛ پیام خطای
  * یکسان برای کاربر نامعتبر و رمز غلط؛ ?author=1 و /wp-json/wp/v2/users؛ هدر nosniff؛ صفحه تنظیمات (پیش‌نمایش
  * زنده، ذخیره، آدرس نادرست = لوگوی قبلی نگه داشته شود، کلید خاموش) و نبودن رنگ بنفش.
@@ -118,13 +118,13 @@ const purpleScan = ( page ) => page.evaluate( () => {
 
 const metrics = ( page ) => page.evaluate( () => {
 	const box = ( sel ) => { const e = document.querySelector( sel ); if ( ! e ) return null; const r = e.getBoundingClientRect(); return { w: Math.round( r.width ), h: Math.round( r.height ), x: Math.round( r.x ) }; };
-	const aside = document.querySelector( '.hodima-login-aside' );
 	return {
 		overflow: document.documentElement.scrollWidth - window.innerWidth,
 		bodyClass: document.body.className,
 		dir: document.documentElement.dir,
 		user: box( '#user_login' ), pass: box( '#user_pass' ), submit: box( '#wp-submit' ), card: box( '#loginform' ),
-		asideShown: !! aside && getComputedStyle( aside ).display !== 'none',
+		asideCount: document.querySelectorAll( '.hodima-login-aside' ).length,
+		centered: Math.abs( ( document.querySelector( '#login' ).getBoundingClientRect().x + document.querySelector( '#login' ).getBoundingClientRect().width / 2 ) - window.innerWidth / 2 ) < 2,
 		logoBg: getComputedStyle( document.querySelector( '#login h1 a' ) ).backgroundImage,
 		logoH: Math.round( document.querySelector( '#login h1 a' ).getBoundingClientRect().height ),
 		letter: getComputedStyle( document.querySelector( '#login h1 a' ), '::before' ).content,
@@ -162,7 +162,8 @@ for ( const width of [ 1300, 390 ] ) {
 	log( m.overflow <= 0, `بدون سرریز افقی ${ w }`, `${ m.overflow }px` );
 	log( ( m.user?.h ?? 0 ) >= 44 && ( m.pass?.h ?? 0 ) >= 44, `فیلدها دست‌کم ۴۴px ${ w }`, `${ m.user?.h }/${ m.pass?.h }` );
 	log( ( m.submit?.h ?? 0 ) >= 48, `دکمه ورود دست‌کم ۴۸px ${ w }`, `${ m.submit?.h }` );
-	log( m.asideShown === ( width >= 1024 ), `نوار کناری فقط دسکتاپ ${ w }`, String( m.asideShown ) );
+	log( m.asideCount === 0, `نوار آبی کناری نیست ${ w }`, String( m.asideCount ) );
+	log( m.centered, `کارت ورود وسط صفحه است ${ w }` );
 	log( m.letter.includes( 'ه' ), `حرف اول نام سایت ${ w }`, m.letter );
 	log( m.font.includes( 'Vazirmatn' ), `فونت وزیرمتن ${ w }`, m.font );
 	log( ( res?.headers()[ 'x-content-type-options' ] ?? '' ) === 'nosniff', `هدر nosniff روی صفحه ورود ${ w }` );

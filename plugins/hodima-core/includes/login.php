@@ -7,7 +7,8 @@
  * افزونه دیگری (مثلا پنل کاربری) از بین برود (قانون «قالب فقط نمایش است»).
  *
  * این فایل (انتشار ۱) دو کار می‌کند:
- *  ۱) ظاهر تازه صفحه ورود (CSS فقط زیر body.login، لوگو از «آدرس لوگو» در
+ *  ۱) ظاهر تازه صفحه ورود (CSS فقط زیر body.login؛ کارت ورود وسط‌چین و تک‌ستونه،
+ *     بدون نوار کناری — تصمیم کاربر بعد از دیدن سایت زنده؛ لوگو از «آدرس لوگو» در
  *     تنظیمات «ابزارهای هدیما ← ورود و امنیت»؛ خالی = حرف اول نام سایت).
  *  ۲) بستن راه‌های شناسایی نام کاربری: پیام خطای یکسان، ?author=N، فهرست
  *     کاربران REST برای بازدیدکننده بی‌ورود، و دو هدر امنیتی ساده.
@@ -193,34 +194,6 @@ add_filter( 'login_title', static function ( $title, $page ) {
 		? sprintf( '%s ‹ %s', (string) $page, (string) get_bloginfo( 'name', 'display' ) )
 		: $title;
 }, 10, 2 );
-
-/**
- * نوار کناری رنگی (فقط دسکتاپ؛ CSS در موبایل پنهانش می‌کند).
- * جمله‌ها فقط چیزهایی‌اند که همین ماژول واقعا انجام می‌دهد.
- */
-add_action( 'login_footer', static function (): void {
-
-	if ( ! hodima_core_login_look_active() ) {
-		return;
-	}
-
-	$aside = (array) apply_filters( 'hodima_core_login_aside', [
-		'eyebrow' => (string) get_bloginfo( 'name', 'display' ),
-		'title'   => 'مدیریت سایت، امن و ساده',
-		'points'  => [
-			'پیام خطای ورود، نام کاربری را لو نمی‌دهد.',
-			'فهرست کاربران سایت از بیرون بسته است.',
-			'حدس نام کاربری از راه آدرس نویسنده بسته است.',
-		],
-	] );
-
-	echo '<aside class="hodima-login-aside"><p class="hodima-login-aside__eyebrow">' . esc_html( (string) ( $aside['eyebrow'] ?? '' ) ) . '</p>';
-	echo '<h2 class="hodima-login-aside__title">' . esc_html( (string) ( $aside['title'] ?? '' ) ) . '</h2><ul class="hodima-login-aside__points">';
-	foreach ( (array) ( $aside['points'] ?? [] ) as $point ) {
-		echo '<li>' . esc_html( (string) $point ) . '</li>';
-	}
-	echo '</ul></aside>' . "\n";
-}, 5 );
 
 /* =====================================================================
  * امنیت: افشا نشدن نام کاربری
