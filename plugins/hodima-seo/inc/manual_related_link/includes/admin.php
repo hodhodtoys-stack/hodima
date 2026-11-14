@@ -400,8 +400,8 @@ final class Admin {
 	 *
 	 * @return array<string, mixed>|null
 	 */
-	public static function package_item( int $post_id, int $self_id ): ?array {
-		$result = self::result( [ 'kind' => 'post', 'id' => $post_id, 'url' => '', 'title' => '', 'img_id' => 0 ], [ $self_id, 'post' ] );
+	public static function package_item( int $post_id, int $self_id, string $self_context = 'post' ): ?array {
+		$result = self::result( [ 'kind' => 'post', 'id' => $post_id, 'url' => '', 'title' => '', 'img_id' => 0 ], [ $self_id, 'term' === $self_context ? 'term' : 'post' ] );
 		return $result && ! in_array( 'self', $result['problems'], true ) ? $result : null;
 	}
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# آزمون «ورود بسته» Hodima SEO (core/package-import) در Chromium با ورود واقعی مدیر و ووکامرس واقعی — راهنما: package-import-check.mjs
+# آزمون «ورود بسته» Hodima SEO (core/package-import) در Chromium با ورود واقعی مدیر و ووکامرس واقعی — راهنما: package-import-check.mjs (محصول) و package-import-types-check.mjs (دسته، مقاله، ویدیو)
 #   package-import-check.sh [src-root]       (پیش‌فرض: همین مخزن؛ چند دقیقه)
 # نسخه ووکامرس ابزار تست (wc-setup.sh) را با php -S بالا می‌آورد. بسته playground اسکریپت‌ها و CSS پیشخوان
 # (jQuery، TinyMCE، select2) را ندارد: یک بار wordpress-6.7.zip رسمی در ~/.cache/hodima/wpfull گرفته و فقط
@@ -16,9 +16,13 @@ if [ ! -f "$full/wp-includes/js/jquery/jquery.min.js" ]; then
 	mkdir -p "$(dirname "$full")"
 	curl -fsSL --max-time 300 -o "$full.zip" https://downloads.wordpress.org/release/wordpress-6.7.zip && ( cd "$(dirname "$full")" && unzip -qo wordpress.zip ) && rm -f "$full.zip"
 fi
-for d in wp-admin/css wp-admin/js wp-admin/images wp-includes/js wp-includes/css wp-includes/fonts wp-includes/images; do
-	mkdir -p "$HODIMA_WP/$d" && cp -r --update=none "$full/$d/." "$HODIMA_WP/$d/"
-done
+# هسته کامل وردپرس 6.7 (PHP و JS با هم): بسته playground نسخه 6.7-alpha است و JS ویرایشگر بلوکی 6.7 روی PHP
+# آن خطای «The editor has encountered an unexpected error» می‌داد. wp-content و wp-config.php دست نمی‌خورند.
+if ! grep -q "wp_version = '6.7';" "$HODIMA_WP/wp-includes/version.php" 2>/dev/null; then
+	( cd "$full" && for f in *.php; do [ "$f" = wp-config-sample.php ] || cp -f "$f" "$HODIMA_WP/$f"; done )
+	rm -rf "$HODIMA_WP/wp-admin" "$HODIMA_WP/wp-includes"
+	cp -r "$full/wp-admin" "$full/wp-includes" "$HODIMA_WP/"
+fi
 
 HODIMA_HARNESS="$base" "$here/link.sh" "$repo" >/dev/null
 rm -f "$HODIMA_WP/wp-content/mu-plugins/harness-wc-stub.php" "$HODIMA_WP/wp-content/database/.ht.sqlite" "$HODIMA_WP/debug.log"
@@ -29,6 +33,7 @@ add_action( 'init', static function () { if ( is_admin() && isset( $GLOBALS['wp_
 PHP
 php "$here/wc-fixtures.php" install >/dev/null 2>&1
 php "$here/wc-fixtures.php" data >/dev/null 2>&1
+php "$here/wp-eval.php" 'require_once ABSPATH . "wp-admin/includes/upgrade.php"; wp_upgrade();' >/dev/null 2>&1
 
 router="$base/pkg-router.php"
 cat > "$router" <<'PHP'
@@ -52,5 +57,7 @@ trap 'kill $srv 2>/dev/null' EXIT
 for _ in $(seq 1 40); do curl -sf -o /dev/null "http://127.0.0.1:$port/wp-login.php" && break; sleep 0.5; done
 ( cd "$repo" && node "$here/package-import-check.mjs" )
 rc=$?
+# نسخه ۲: دسته محصول، مقاله و ویدیو (ویرایشگر بلوکی)
+( cd "$repo" && node "$here/package-import-types-check.mjs" ) || rc=1
 [ -s "$HODIMA_WP/debug.log" ] && { echo "debug.log (PHP، جز هشدار افزونه SQLite):"; grep -h "PHP " "$HODIMA_WP/debug.log" | grep -v sqlite-database-integration | sed 's/^\[[^]]*\] //' | cut -c1-200 | sort | uniq -c | head; }
 exit $rc

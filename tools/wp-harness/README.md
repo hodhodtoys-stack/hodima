@@ -54,6 +54,7 @@ tools/wp-harness/login-check.sh         # صفحه ورود wp-login.php و تن
 
 # «ورود بسته» Hodima SEO روی ویرایش محصول با ووکامرس واقعی و اسکریپت‌های واقعی پیشخوان (TinyMCE، select2؛ از wordpress-6.7.zip رسمی): بررسی سرور،
 # قفل آدرس، پیش‌نمایش، پر کردن، بازگرداندن، «به‌روزرسانی» و متاهای ذخیره‌شده، axe، عکس ۱۰۰۰/۳۹۰ (چند دقیقه؛ در ci-check نیست)
+# محصول (package-import-check.mjs) + دسته محصول، مقاله و ویدیو با ویرایشگر بلوکی (package-import-types-check.mjs)؛ هسته کامل وردپرس 6.7 را روی نسخه ووکامرس ابزار تست می‌گذارد
 tools/wp-harness/package-import-check.sh   # عکس‌ها: /tmp/hodima-harness-wc/package-import
 
 # صفحه‌های پیشخوان (دسترسی، عنوان، منوی فعال، هشدار PHP)

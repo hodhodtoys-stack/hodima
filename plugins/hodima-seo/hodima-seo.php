@@ -3,7 +3,7 @@
  * Plugin Name:       Hodima SEO
  * Plugin URI:        https://hodima.com
  * Description:       سئوی فنی هدیما: متاباکس سئو، اسکیمای JSON-LD، سایت‌مپ XML، robots.txt، ریدایرکت‌ها، آدرس تمیز بدون پایه، خوشه‌های موضوعی، لینک‌سازی داخلی، IndexNow، Google Indexing API، گوگل دیسکاور و نسخه‌های ماشین‌خوان (llms.txt).
- * Version:           4.0.3
+ * Version:           4.0.4
  * Requires at least: 6.5
  * Requires PHP:      8.4
  * Requires Plugins:  hodima-core
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-const HODIMA_SEO_VERSION = '4.0.3';
+const HODIMA_SEO_VERSION = '4.0.4';
 define( 'HODIMA_SEO_FILE', __FILE__ );
 define( 'HODIMA_SEO_DIR', __DIR__ );
 define( 'HODIMA_SEO_URL', untrailingslashit( plugin_dir_url( __FILE__ ) ) );
@@ -127,9 +127,9 @@ function hodima_seo_modules(): array {
 		],
 		'package-import' => [
 			'title'       => 'ورود بسته',
-			'description' => 'کادر «ورود بسته» بالای ویرایش محصول: یک بسته JSON سئو را بچسبانید، پیش‌نمایش «فعلی ← جدید» هر کادر (متن، محصولات پیوند شده، جدول، پرسش‌ها، لینک‌های مرتبط، خوشه‌بندی، پنل AEO، سئوباکس) را ببینید و با یک دکمه خانه‌های فرم را پر کنید. قفل آدرس دارد و هیچ‌چیز خودکار ذخیره نمی‌شود؛ ذخیره فقط با «به‌روزرسانی».',
+			'description' => 'کادر «ورود بسته» در ویرایش محصول، دسته محصول، مقاله و ویدیو: یک بسته JSON سئو را بچسبانید، پیش‌نمایش «فعلی ← جدید» هر کادر (متن، متن معرفی، توضیحات دسته، ویدیو و پادکست، محصولات پیوند شده، جدول، پرسش‌ها، لینک‌های مرتبط، خوشه‌بندی، دیسکاور مقاله، پنل AEO، کارت‌های ویدیو، سئوباکس) را ببینید و با یک دکمه خانه‌های فرم را پر کنید. قفل آدرس دارد و هیچ‌چیز خودکار ذخیره نمی‌شود؛ ذخیره فقط با «به‌روزرسانی».',
 			'files'       => [ 'core/package-import/package-import.php' ],
-			'warning'     => 'کادر «ورود بسته» از ویرایش محصول برداشته می‌شود (هیچ داده‌ای پاک نمی‌شود).',
+			'warning'     => 'کادر «ورود بسته» از ویرایش محصول، دسته، مقاله و ویدیو برداشته می‌شود (هیچ داده‌ای پاک نمی‌شود).',
 			'recommends'  => [ 'seobox', 'manual-links', 'topic-cluster' ],
 			'icon'        => 'dashicons-download',
 		],

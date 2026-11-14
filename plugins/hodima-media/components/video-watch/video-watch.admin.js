@@ -266,6 +266,55 @@
 			} );
 		};
 
+		/*
+		 * «ورود بسته» (Hodima SEO، core/package-import): کل کارت‌های «ویدیوهای مرتبط» از بیرون
+		 * جایگزین می‌شوند (detail.value = [{title, url, cover}]). ردیف‌ها با همان دکمه «افزودن» کیت
+		 * ساخته می‌شوند تا نام، شناسه و شماره‌گذاری همان کیت باشد؛ ذخیره فقط با «به‌روزرسانی».
+		 */
+		root.querySelector( '[data-hdm-repeat]' )?.addEventListener( 'hodima:fill', ( event ) => {
+			const repeat = event.currentTarget;
+			if ( event.target !== repeat ) {
+				return;
+			}
+			const rowsBox = repeat.querySelector( '[data-hdm-rows]' );
+			const addBtn = repeat.querySelector( '[data-hdm-add]' );
+			if ( ! rowsBox || ! addBtn ) {
+				return;
+			}
+			const active = document.activeElement;
+			rowsBox.replaceChildren();
+			( Array.isArray( event.detail?.value ) ? event.detail.value : [] ).forEach( ( card ) => {
+				addBtn.disabled = false;
+				addBtn.click();
+				const row = rowsBox.lastElementChild;
+				const set = ( suffix, value ) => {
+					const input = row?.querySelector( `input[name$="[${ suffix }]"]` );
+					if ( input ) {
+						input.value = String( value ?? '' );
+						input.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+					}
+				};
+				set( 'title', card?.title );
+				set( 'url', card?.url );
+				set( 'cover', card?.cover );
+			} );
+			// دکمه «افزودن» کیت فوکوس را به ردیف تازه می‌برد؛ فوکوس جای مدیر بماند
+			active?.focus?.();
+			repeat.querySelector( '[data-hdm-undo]' )?.replaceChildren();
+			// بدون کارت، کیت شمارش و «خالی» را تازه نمی‌کند (reindex فقط با افزودن/حذف)
+			const n = rowsBox.children.length;
+			const empty = repeat.querySelector( '[data-hdm-empty]' );
+			if ( empty ) {
+				empty.hidden = n > 0;
+			}
+			const count = repeat.querySelector( '[data-hdm-count]' );
+			if ( count ) {
+				count.textContent = ( repeat.dataset.hdmCountText || '%s' ).replace( '%s', new Intl.NumberFormat( 'fa-IR' ).format( n ) );
+			}
+			repeat.dispatchEvent( new CustomEvent( 'hdm:repeat-change', { bubbles: true } ) );
+			event.detail.done = true;
+		} );
+
 		/* ── رویدادها (تغییر فیلد، لیست کارت‌ها، انتخاب کاور؛ همه حباب‌دار) ── */
 		root.addEventListener( 'input', update );
 		root.addEventListener( 'change', update );

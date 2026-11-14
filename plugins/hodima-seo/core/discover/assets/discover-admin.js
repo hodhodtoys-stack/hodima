@@ -763,6 +763,14 @@
 	function init() {
 		document.querySelectorAll('[data-hodima-dc]').forEach((box) => {
 			setupBox(box);
+			// «ورود بسته» (core/package-import): موضوعات از بیرون جایگزین شوند (detail.value = خط‌ها، «نام» یا «نام آدرس»)
+			box.addEventListener('hodima:fill', (e) => {
+				if (!e.target.matches?.('[data-hodima-dc-entities]')) return;
+				box.querySelectorAll('.hodima-dc__chip').forEach((chip) => chip.remove());
+				(Array.isArray(e.detail?.value) ? e.detail.value : []).forEach((line) => addTopic(box, String(line)));
+				syncTopics(box);
+				e.detail.done = true;
+			});
 			if (box.dataset.context !== 'post') return; // دسته محصول: با ذخیره، صفحه کامل بارگذاری می‌شود
 			// ویرایشگر بلوکی: هماهنگی زنده + تازه شدن بعد از ذخیره؛ کلاسیک/محصول با ذخیره دوباره بارگذاری می‌شود
 			if (isBlockEditor()) watchBlockEditor();

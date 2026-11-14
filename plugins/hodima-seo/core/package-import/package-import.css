@@ -21,6 +21,19 @@
 	line-height: 1.8;
 }
 
+/* ویرایشگر بلوکی: داخل کادر خود وردپرس (قاب و عنوان را همان دارد) */
+.hds-ui.hodima-pkg.hodima-pkg--block {
+	margin: 0;
+	padding: 0.25rem 0;
+	border: 0;
+	box-shadow: none;
+}
+
+/* صفحه ویرایش دسته: فرم ترم عرض محدود ندارد؛ کادر هم‌عرض جدول فرم */
+.hds-ui.hodima-pkg.hodima-pkg--term {
+	max-inline-size: 60rem;
+}
+
 /* کیت به بعضی اجزا display می‌دهد؛ hidden همیشه برنده باشد */
 .hds-ui.hodima-pkg[hidden],
 .hds-ui.hodima-pkg [hidden] {

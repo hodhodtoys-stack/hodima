@@ -14,12 +14,12 @@ declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
 
 /**
- * بررسی کامل یک بسته برای یک نوشته.
+ * بررسی کامل یک بسته برای یک شیء (نوشته یا ترم).
  *
  * @param array{title?: string, description?: string} $current مقدار فعلی فرم سئوباکس (برای سنجش پیکسلی «فعلی»)
  * @return array{ok: bool, errors: list<string>, meta: array<string, string>, lock: array<string, mixed>, boxes: array<string, array{value: mixed, warnings: list<string>}>, ignored: list<string>}
  */
-function hodima_seo_pkg_check( string $json, WP_Post $post, array $current = [] ): array {
+function hodima_seo_pkg_check( string $json, WP_Post|WP_Term $subject, array $current = [] ): array {
 
 	$out = [ 'ok' => false, 'errors' => [], 'meta' => [], 'lock' => [], 'boxes' => [], 'ignored' => [] ];
 
@@ -52,22 +52,27 @@ function hodima_seo_pkg_check( string $json, WP_Post $post, array $current = [] 
 		'note'   => is_string( $data['note'] ?? null ) ? sanitize_textarea_field( $data['note'] ) : '',
 	];
 
-	if ( HODIMA_SEO_PKG_FORMAT !== $format ) {
-		$out['errors'][] = sprintf( 'قالب بسته «%s» نیست (در بسته: «%s»).', HODIMA_SEO_PKG_FORMAT, $format );
+	$types     = hodima_seo_pkg_types();
+	$page_type = hodima_seo_pkg_type_for_object( $subject );
+	$spec      = null !== $page_type ? $types[ $page_type ] : null;
+
+	if ( ! in_array( $format, [ HODIMA_SEO_PKG_FORMAT, HODIMA_SEO_PKG_FORMAT_V2 ], true ) ) {
+		$out['errors'][] = sprintf( 'قالب بسته «%s» یا «%s» نیست (در بسته: «%s»).', HODIMA_SEO_PKG_FORMAT_V2, HODIMA_SEO_PKG_FORMAT, $format );
+	} elseif ( null !== $spec && $type === $page_type && ! in_array( $format, $spec['formats'], true ) ) {
+		$out['errors'][] = sprintf( 'نوع «%s» فقط با قالب «%s» می‌آید (در بسته: «%s»).', $type, HODIMA_SEO_PKG_FORMAT_V2, $format );
 	}
 
-	$page_type = hodima_seo_pkg_type_for( $post->post_type );
-	if ( null === $page_type || $type !== $page_type ) {
-		$out['errors'][] = sprintf( 'نوع بسته «%s» است ولی این صفحه «%s» است.', $type, null !== $page_type ? hodima_seo_pkg_types()[ $page_type ]['label'] : $post->post_type );
+	if ( null === $spec || $type !== $page_type ) {
+		$out['errors'][] = sprintf( 'نوع بسته «%s» است ولی این صفحه «%s» (%s) است.', $type, null !== $spec ? $spec['label'] : '—', (string) $page_type );
 	}
 
 	// قفل آدرس: بسته یک صفحه دیگر هرگز این صفحه را پر نکند
-	$page_url     = hodima_seo_pkg_page_url( $post );
-	$out['lock']  = [
+	$page_url    = hodima_seo_pkg_page_url( $subject );
+	$out['lock'] = [
 		'package' => $url,
 		'page'    => $page_url,
-		'id'      => $post->ID,
-		'match'   => '' !== $url && hodima_seo_pkg_url_key( $url ) === hodima_seo_pkg_url_key( $page_url ),
+		'id'      => $subject instanceof WP_Term ? $subject->term_id : $subject->ID,
+		'match'   => '' !== $url && '' !== $page_url && hodima_seo_pkg_url_key( $url ) === hodima_seo_pkg_url_key( $page_url ),
 	];
 	if ( '' === $url ) {
 		$out['errors'][] = 'بسته کلید "url" ندارد.';
@@ -80,25 +85,25 @@ function hodima_seo_pkg_check( string $json, WP_Post $post, array $current = [] 
 		$out['errors'][] = 'بسته کلید "boxes" (شیء کادرها) ندارد.';
 	}
 
-	if ( $out['errors'] ) {
+	if ( $out['errors'] || null === $spec ) {
 		return $out;
 	}
 
-	$known  = null !== $page_type ? hodima_seo_pkg_types()[ $page_type ]['boxes'] : [];
-	$labels = hodima_seo_pkg_box_labels();
-	$skip   = hodima_seo_pkg_out_of_scope();
+	$known  = $spec['boxes'];
+	$labels = hodima_seo_pkg_box_labels( (string) $page_type );
+	$skip   = hodima_seo_pkg_out_of_scope( (string) $page_type );
 
 	foreach ( (array) $boxes as $key => $value ) {
 		$key = (string) $key;
-		if ( ! in_array( $key, $known, true ) ) {
+		if ( ! isset( $known[ $key ] ) ) {
 			$out['ignored'][] = isset( $skip[ $key ] )
-				? sprintf( '«%s» (%s) در نسخه ۱ ورود بسته نیست؛ دست نخورد.', $skip[ $key ], $key )
-				: sprintf( 'کادر «%s» شناخته نشد؛ دست نخورد.', $key );
+				? sprintf( '«%s» (%s) برای %s در ورود بسته نیست؛ دست نخورد.', $skip[ $key ], $key, $spec['label'] )
+				: sprintf( 'کادر «%s» برای %s شناخته نشد؛ دست نخورد.', $key, $spec['label'] );
 			continue;
 		}
 
 		$warnings = [];
-		$normal   = hodima_seo_pkg_box( $key, $value, $post, $warnings, $current );
+		$normal   = hodima_seo_pkg_box( $known[ $key ], $value, $subject, $warnings, $current );
 
 		if ( null === $normal ) {
 			$out['ignored'][] = sprintf( 'مقدار «%s» شکل درستی ندارد؛ این کادر دست نخورد.', $labels[ $key ] ?? $key );
@@ -113,29 +118,43 @@ function hodima_seo_pkg_check( string $json, WP_Post $post, array $current = [] 
 }
 
 /**
- * نرمال‌ساز یک کادر. null یعنی شکل مقدار نامعتبر است (کادر دست نمی‌خورد).
+ * نرمال‌ساز یک کادر (با نام آداپتور). null یعنی شکل مقدار نامعتبر است (کادر دست نمی‌خورد).
  * آرایه خالی [] برای هر کادر یعنی «خالی کن».
  *
  * @param list<string>                                 $warnings
  * @param array{title?: string, description?: string} $current
  */
-function hodima_seo_pkg_box( string $key, mixed $value, WP_Post $post, array &$warnings, array $current ): mixed {
+function hodima_seo_pkg_box( string $adapter, mixed $value, WP_Post|WP_Term $subject, array &$warnings, array $current ): mixed {
+
+	// متن‌های HTML (بدنه هم) و دکمه محصول می‌توانند رشته ساده یا null هم باشند
+	if ( in_array( $adapter, [ 'body', 'intro_html', 'description_html' ], true ) && ( is_string( $value ) || null === $value ) ) {
+		$value = [ 'html' => (string) $value ];
+	}
+	if ( 'product_button' === $adapter && ( is_string( $value ) || null === $value ) ) {
+		$value = '' === trim( (string) $value ) ? [] : [ 'url' => (string) $value ];
+	}
 
 	if ( ! is_array( $value ) ) {
 		return null;
 	}
 
-	return match ( $key ) {
-		'body'          => hodima_seo_pkg_body( $value, $warnings ),
-		'upsells'       => hodima_seo_pkg_products( $value, $post, $warnings, 6 ),
-		'cross_sells'   => hodima_seo_pkg_products( $value, $post, $warnings, 0 ),
-		'table'         => hodima_seo_pkg_table( $value, $warnings ),
-		'faq'           => hodima_seo_pkg_qa_list( $value, $warnings, 'پرسش' ),
-		'related_links' => hodima_seo_pkg_related( $value, $post, $warnings ),
-		'topic_cluster' => hodima_seo_pkg_cluster( $value, $post, $warnings ),
-		'aeo'           => hodima_seo_pkg_aeo( $value, $warnings ),
-		'seobox'        => hodima_seo_pkg_seobox( $value, $warnings, $current ),
-		default         => null,
+	return match ( $adapter ) {
+		'body', 'intro_html', 'description_html' => hodima_seo_pkg_body( $value, $warnings ),
+		'upsells'        => $subject instanceof WP_Post ? hodima_seo_pkg_products( $value, $subject, $warnings, 6 ) : null,
+		'cross_sells'    => $subject instanceof WP_Post ? hodima_seo_pkg_products( $value, $subject, $warnings, 0 ) : null,
+		'table'          => hodima_seo_pkg_table( $value, $warnings ),
+		'faq'            => hodima_seo_pkg_qa_list( $value, $warnings, 'پرسش' ),
+		'related_links'  => hodima_seo_pkg_related( $value, $subject, $warnings ),
+		'topic_cluster'  => hodima_seo_pkg_cluster( $value, $subject, $warnings ),
+		'aeo'            => hodima_seo_pkg_aeo( $value, $warnings, $subject instanceof WP_Term ),
+		'seobox'         => hodima_seo_pkg_seobox( $value, $warnings, $current ),
+		'video'          => hodima_seo_pkg_fields( $value, $warnings, HODIMA_SEO_PKG_MEDIA_VIDEO ),
+		'podcast'        => hodima_seo_pkg_fields( $value, $warnings, HODIMA_SEO_PKG_MEDIA_PODCAST ),
+		'video_watch'    => hodima_seo_pkg_fields( $value, $warnings, HODIMA_SEO_PKG_VIDEO_WATCH ),
+		'discover'       => hodima_seo_pkg_discover( $value, $warnings ),
+		'suggestions'    => hodima_seo_pkg_suggestions( $value, $warnings ),
+		'product_button' => hodima_seo_pkg_product_button( $value, $warnings ),
+		default          => null,
 	};
 }
 
@@ -143,15 +162,20 @@ function hodima_seo_pkg_box( string $key, mixed $value, WP_Post $post, array &$w
  * آدرس‌ها
  * ===================================================================== */
 
-/** آدرس فعلی صفحه؛ پیش‌نویس هنوز آدرس نهایی ندارد، پس آدرس نمونه همان نامک. */
-function hodima_seo_pkg_page_url( WP_Post $post ): string {
+/** آدرس فعلی صفحه؛ پیش‌نویس هنوز آدرس نهایی ندارد، پس آدرس نمونه همان نامک. ترم: آدرس دسته. */
+function hodima_seo_pkg_page_url( WP_Post|WP_Term $subject ): string {
 
-	if ( in_array( $post->post_status, [ 'draft', 'pending', 'auto-draft', 'future' ], true ) && function_exists( 'get_sample_permalink' ) ) {
-		[ $template, $name ] = get_sample_permalink( $post->ID );
+	if ( $subject instanceof WP_Term ) {
+		$link = get_term_link( $subject );
+		return is_string( $link ) ? $link : '';
+	}
+
+	if ( in_array( $subject->post_status, [ 'draft', 'pending', 'auto-draft', 'future' ], true ) && function_exists( 'get_sample_permalink' ) ) {
+		[ $template, $name ] = get_sample_permalink( $subject->ID );
 		return str_replace( [ '%pagename%', '%postname%' ], (string) $name, (string) $template );
 	}
 
-	return (string) get_permalink( $post );
+	return (string) get_permalink( $subject );
 }
 
 /**
@@ -239,8 +263,8 @@ function hodima_seo_pkg_url_list( mixed $urls, array &$warnings ): array {
  * ===================================================================== */
 
 /**
- * متن اصلی: HTML بدنه با شورت‌کدها. هشدار (نه توقف): لینک tel: غیر از شماره‌های سایت و
- * سرتیترهای H1، H4، H5، H6.
+ * متن HTML (بدنه، متن معرفی، توضیحات دسته) با شورت‌کدها. هشدار (نه توقف): لینک tel: غیر از
+ * شماره‌های سایت، سرتیترهای H1، H4، H5، H6 و لینک به سایت دیگر. HTML (مثل <details>) دست نمی‌خورد.
  *
  * @param array<mixed> $value
  * @param list<string> $warnings
@@ -265,11 +289,39 @@ function hodima_seo_pkg_body( array $value, array &$warnings ): ?array {
 		$counts = array_count_values( $m[1] );
 		ksort( $counts );
 		foreach ( $counts as $level => $count ) {
-			$warnings[] = sprintf( 'سرتیتر H%d در متن (%s مورد)؛ برای متن محصول فقط H2 و H3 پیشنهاد می‌شود.', $level, number_format_i18n( $count ) );
+			$warnings[] = sprintf( 'سرتیتر H%d در متن (%s مورد)؛ برای متن صفحه فقط H2 و H3 پیشنهاد می‌شود.', $level, number_format_i18n( $count ) );
 		}
 	}
 
+	$external = hodima_seo_pkg_external_hosts( $html );
+	if ( $external ) {
+		$warnings[] = sprintf( 'لینک به سایت دیگر: %s.', implode( '، ', $external ) );
+	}
+
 	return [ 'html' => $html ];
+}
+
+/**
+ * میزبان‌های لینک‌های بیرونی متن (href با http/https که مال همین سایت نیست؛ هر میزبان یک بار).
+ *
+ * @return list<string>
+ */
+function hodima_seo_pkg_external_hosts( string $html ): array {
+
+	if ( ! preg_match_all( '/<a\b[^>]*\bhref\s*=\s*["\']\s*(https?:\/\/[^"\'\s>]+)/iu', $html, $m ) ) {
+		return [];
+	}
+
+	$hosts = [];
+	foreach ( $m[1] as $href ) {
+		if ( ! hodima_seo_pkg_is_internal( $href ) ) {
+			$host = strtolower( (string) wp_parse_url( $href, PHP_URL_HOST ) );
+			if ( '' !== $host ) {
+				$hosts[ $host ] = true;
+			}
+		}
+	}
+	return array_keys( $hosts );
 }
 
 /**
@@ -395,9 +447,19 @@ function hodima_seo_pkg_table( array $value, array &$warnings ): ?array {
 		$clean      = array_slice( $clean, 0, 100 );
 	}
 
-	$fit = static fn( array $r ): array => array_map( static fn( int $c ): string => $r[ $c ] ?? '', range( 0, $width - 1 ) );
+	$fit  = static fn( array $r ): array => array_map( static fn( int $c ): string => $r[ $c ] ?? '', range( 0, $width - 1 ) );
+	$rows = array_map( $fit, $clean );
 
-	return [ 'headers' => $fit( $headers ), 'rows' => array_map( $fit, $clean ) ];
+	$seen = [];
+	foreach ( $rows as $i => $row ) {
+		$key = mb_strtolower( trim( implode( '|', $row ) ) );
+		if ( '|' !== $key && '' !== trim( $key, '|' ) && isset( $seen[ $key ] ) ) {
+			$warnings[] = sprintf( 'ردیف %s جدول تکرار ردیف %s است.', number_format_i18n( $i + 1 ), number_format_i18n( $seen[ $key ] + 1 ) );
+		}
+		$seen[ $key ] ??= $i;
+	}
+
+	return [ 'headers' => $fit( $headers ), 'rows' => $rows ];
 }
 
 /**
@@ -415,6 +477,7 @@ function hodima_seo_pkg_qa_list( mixed $value, array &$warnings, string $label )
 	}
 
 	$list = [];
+	$seen = [];
 	foreach ( $value as $i => $item ) {
 		if ( ! is_array( $item ) ) {
 			$warnings[] = sprintf( '%s %s شکل {q, a} ندارد و کنار گذاشته شد.', $label, number_format_i18n( $i + 1 ) );
@@ -424,6 +487,14 @@ function hodima_seo_pkg_qa_list( mixed $value, array &$warnings, string $label )
 		$a = is_scalar( $item['a'] ?? null ) ? trim( (string) $item['a'] ) : '';
 		if ( '' === $q || '' === $a ) {
 			$warnings[] = sprintf( '%s %s پرسش یا پاسخ خالی دارد؛ هنگام ذخیره نگه داشته نمی‌شود.', $label, number_format_i18n( $i + 1 ) );
+		}
+		$key = mb_strtolower( (string) preg_replace( '/[\s؟?!.،,]+/u', '', $q ) );
+		if ( '' !== $key && isset( $seen[ $key ] ) ) {
+			$warnings[] = sprintf( '%s %s تکرار %s %s است.', $label, number_format_i18n( $i + 1 ), $label, number_format_i18n( $seen[ $key ] + 1 ) );
+		}
+		$seen[ $key ] ??= $i;
+		foreach ( hodima_seo_pkg_bad_phones( $a ) as $phone ) {
+			$warnings[] = sprintf( 'پاسخ %s %s: شماره tel:%s جزو شماره‌های سایت نیست.', $label, number_format_i18n( $i + 1 ), $phone );
 		}
 		$list[] = [ 'q' => $q, 'a' => $a ];
 	}
@@ -438,7 +509,7 @@ function hodima_seo_pkg_qa_list( mixed $value, array &$warnings, string $label )
  * @param list<string> $warnings
  * @return array{products: list<array<string, mixed>>, article: list<array<string, mixed>>}
  */
-function hodima_seo_pkg_related( array $value, WP_Post $post, array &$warnings ): array {
+function hodima_seo_pkg_related( array $value, WP_Post|WP_Term $subject, array &$warnings ): array {
 
 	if ( ! class_exists( \Hodima\RelatedLinks\Admin::class ) ) {
 		$warnings[] = 'ماژول «لینک‌های مرتبط دستی» روشن نیست؛ این کادر پر نمی‌شود.';
@@ -458,7 +529,13 @@ function hodima_seo_pkg_related( array $value, WP_Post $post, array &$warnings )
 				$warnings[] = sprintf( '%s برای «%s» پیدا نشد؛ فقط همین مورد کنار گذاشته شد.', $url, $enum->label() );
 				continue;
 			}
-			$item = \Hodima\RelatedLinks\Admin::package_item( $target['id'], $post->ID );
+			if ( in_array( $target['id'], array_column( $out[ $group ], 'id' ), true ) ) {
+				$warnings[] = sprintf( '%s در «%s» تکراری بود؛ یک بار آمد.', $url, $enum->label() );
+				continue;
+			}
+			$item = $subject instanceof WP_Term
+				? \Hodima\RelatedLinks\Admin::package_item( $target['id'], $subject->term_id, 'term' )
+				: \Hodima\RelatedLinks\Admin::package_item( $target['id'], $subject->ID );
 			if ( null === $item ) {
 				$warnings[] = sprintf( '%s را نمی‌شود لینک داد؛ کنار گذاشته شد.', $url );
 				continue;
@@ -471,23 +548,29 @@ function hodima_seo_pkg_related( array $value, WP_Post $post, array &$warnings )
 }
 
 /**
- * خوشه‌بندی محتوا: پیلار، خارج از خوشه و دسته پیلار والد. parent_term null یعنی خالی (والد
- * خودکار از دسته اصلی). محصول والد نوشته‌ای (مقاله) نمی‌گیرد، پس parent_post_url فقط هشدار.
+ * خوشه‌بندی محتوا: پیلار، خارج از خوشه، دسته پیلار والد (parent_term) و برای مقاله «محتوای
+ * ستون» (parent_post_url: مقاله یا برگه پیلار). null یعنی خالی (والد خودکار). محصول و دسته
+ * والد نوشته‌ای ندارند، پس آنجا parent_post_url فقط هشدار.
  *
  * @param array<mixed> $value
  * @param list<string> $warnings
- * @return array{pillar: bool, exclude: bool, parents: list<array{id: int, title: string}>}
+ * @return array{pillar: bool, exclude: bool, parents: list<array{id: int, title: string}>, post_parents: list<array{id: int, title: string}>}
  */
-function hodima_seo_pkg_cluster( array $value, WP_Post $post, array &$warnings ): array {
+function hodima_seo_pkg_cluster( array $value, WP_Post|WP_Term $subject, array &$warnings ): array {
 
-	$out = [ 'pillar' => ! empty( $value['pillar'] ), 'exclude' => ! empty( $value['exclude'] ), 'parents' => [] ];
+	$out = [ 'pillar' => ! empty( $value['pillar'] ), 'exclude' => ! empty( $value['exclude'] ), 'parents' => [], 'post_parents' => [] ];
 
 	if ( ! class_exists( \Hodima\TopicCluster\Graph::class ) ) {
 		$warnings[] = 'ماژول «خوشه‌های موضوعی» روشن نیست؛ این کادر پر نمی‌شود.';
 		return $out;
 	}
 
-	$taxonomy = \Hodima\TopicCluster\Graph::parent_taxonomy_for( $post->post_type );
+	$is_term  = $subject instanceof WP_Term;
+	$ref      = $is_term ? \Hodima\TopicCluster\Ref::term( $subject->term_id ) : \Hodima\TopicCluster\Ref::post( $subject->ID );
+	$taxonomy = $is_term ? $subject->taxonomy : \Hodima\TopicCluster\Graph::parent_taxonomy_for( $subject->post_type );
+	$label    = static fn( \Hodima\TopicCluster\Ref $r, string $title ): string => class_exists( \Hodima\TopicCluster\Admin\Editor::class )
+		? \Hodima\TopicCluster\Admin\Editor::label_for( $r, $title )
+		: $title;
 	$term_url = $value['parent_term'] ?? null;
 
 	if ( is_string( $term_url ) && '' !== trim( $term_url ) ) {
@@ -495,25 +578,38 @@ function hodima_seo_pkg_cluster( array $value, WP_Post $post, array &$warnings )
 		$term   = $target && 'term' === $target['kind'] ? get_term( $target['id'] ) : null;
 
 		if ( ! $term instanceof WP_Term || $term->taxonomy !== $taxonomy ) {
-			$warnings[] = sprintf( 'دسته والد %s پیدا نشد؛ والد خالی ماند (خودکار از دسته اصلی).', $term_url );
+			$warnings[] = sprintf( 'دسته والد %s پیدا نشد؛ والد خالی ماند (خودکار).', $term_url );
+		} elseif ( $is_term && $term->term_id === $subject->term_id ) {
+			$warnings[] = 'دسته نمی‌تواند والد خودش باشد؛ والد خالی ماند.';
 		} elseif ( ! \Hodima\TopicCluster\Graph::is_pillar( \Hodima\TopicCluster\Ref::term( $term->term_id ) ) ) {
 			$warnings[] = sprintf( 'دسته «%s» پیلار نیست و والد نمی‌شود؛ والد خالی ماند.', $term->name );
 		} else {
-			$title = class_exists( \Hodima\TopicCluster\Admin\Editor::class )
-				? \Hodima\TopicCluster\Admin\Editor::label_for( \Hodima\TopicCluster\Ref::term( $term->term_id ), $term->name )
-				: $term->name;
-			$out['parents'][] = [ 'id' => (int) $term->term_id, 'title' => $title ];
+			$out['parents'][] = [ 'id' => (int) $term->term_id, 'title' => $label( \Hodima\TopicCluster\Ref::term( $term->term_id ), $term->name ) ];
 		}
 	} elseif ( null !== $term_url && ! is_string( $term_url ) ) {
 		$warnings[] = 'parent_term باید آدرس دسته یا null باشد؛ والد خالی ماند.';
 	}
 
 	$post_url = $value['parent_post_url'] ?? null;
-	if ( is_string( $post_url ) && '' !== trim( $post_url ) && ! \Hodima\TopicCluster\Graph::accepts_post_parents( \Hodima\TopicCluster\Ref::post( $post->ID ) ) ) {
-		$warnings[] = 'محصول والد مقاله‌ای (parent_post_url) نمی‌گیرد؛ این مورد نادیده گرفته شد.';
+	if ( is_string( $post_url ) && '' !== trim( $post_url ) ) {
+		if ( $is_term || ! \Hodima\TopicCluster\Graph::accepts_post_parents( $ref ) ) {
+			$warnings[] = sprintf( '%s والد مقاله‌ای (parent_post_url) نمی‌گیرد؛ این مورد نادیده گرفته شد.', $is_term ? 'دسته' : 'محصول' );
+		} else {
+			$target = hodima_seo_pkg_resolve( $post_url );
+			$id     = $target && 'post' === $target['kind'] ? $target['id'] : 0;
+			if ( ! $id || ! in_array( get_post_type( $id ), \Hodima\TopicCluster\Graph::post_pillar_types(), true ) ) {
+				$warnings[] = sprintf( 'مقاله پیلار والد %s پیدا نشد؛ «محتوای ستون» خالی ماند.', $post_url );
+			} elseif ( $id === $subject->ID ) {
+				$warnings[] = 'مقاله نمی‌تواند والد خودش باشد؛ «محتوای ستون» خالی ماند.';
+			} elseif ( ! \Hodima\TopicCluster\Graph::is_pillar( \Hodima\TopicCluster\Ref::post( $id ) ) ) {
+				$warnings[] = sprintf( '«%s» پیلار نیست و والد نمی‌شود؛ «محتوای ستون» خالی ماند.', get_the_title( $id ) );
+			} else {
+				$out['post_parents'][] = [ 'id' => $id, 'title' => $label( \Hodima\TopicCluster\Ref::post( $id ), get_the_title( $id ) ) ];
+			}
+		}
 	}
 
-	if ( $out['exclude'] && $out['parents'] ) {
+	if ( $out['exclude'] && ( $out['parents'] || $out['post_parents'] ) ) {
 		$warnings[] = '«خارج از خوشه» روشن است؛ والد ذخیره می‌شود ولی اثری ندارد.';
 	}
 
@@ -528,7 +624,7 @@ function hodima_seo_pkg_cluster( array $value, WP_Post $post, array &$warnings )
  * @param list<string> $warnings
  * @return array<string, mixed>
  */
-function hodima_seo_pkg_aeo( array $value, array &$warnings ): array {
+function hodima_seo_pkg_aeo( array $value, array &$warnings, bool $is_term = false ): array {
 
 	$text   = static fn( mixed $v ): string => is_scalar( $v ) ? trim( (string) $v ) : '';
 	$fields = [];
@@ -537,7 +633,8 @@ function hodima_seo_pkg_aeo( array $value, array &$warnings ): array {
 		$fields[ $name ] = $text( $value[ $key ] ?? '' );
 	}
 
-	$model = $text( $value['biz_model'] ?? 'both' );
+	$before = count( $warnings ); // هشدارهای بخش فروش؛ برای دسته که این بخش را ندارد برداشته می‌شوند
+	$model  = $text( $value['biz_model'] ?? 'both' );
 	if ( ! in_array( $model, [ 'both', 'tier_a', 'tier_b' ], true ) ) {
 		$warnings[] = sprintf( 'biz_model «%s» معتبر نیست (both، tier_a یا tier_b)؛ «هر دو پلن» گذاشته شد.', $model );
 		$model      = 'both';
@@ -567,6 +664,20 @@ function hodima_seo_pkg_aeo( array $value, array &$warnings ): array {
 				}
 			}
 			$fields[ $name ] = $val;
+		}
+	}
+
+	if ( $is_term ) {
+		// پنل AEO دسته بخش «اطلاعات فروش» (پلن A/B و قیمت) ندارد؛ آن خانه‌ها در فرم ترم نیستند
+		array_splice( $warnings, $before );
+		$sales = [ 'h_ai_biz_model' ];
+		foreach ( hodima_seo_pkg_aeo_tier_fields() as $spec ) {
+			$sales[] = hodima_seo_pkg_aeo_tier_name( $spec['field'], 'a' );
+			$sales[] = hodima_seo_pkg_aeo_tier_name( $spec['field'], 'b' );
+		}
+		$fields = array_diff_key( $fields, array_flip( $sales ) );
+		if ( array_intersect_key( $value, array_flip( [ 'biz_model', 'tier_a', 'tier_b' ] ) ) ) {
+			$warnings[] = 'اطلاعات فروش (biz_model، tier_a، tier_b) برای دسته در پنل AEO نیست؛ نادیده گرفته شد.';
 		}
 	}
 
@@ -623,4 +734,161 @@ function hodima_seo_pkg_seobox( array $value, array &$warnings, array $current )
 	}
 
 	return [ 'title' => $title, 'description' => $desc, 'px' => $px ];
+}
+
+/* =====================================================================
+ * کادرهای چندخانه‌ای ساده (ویدیو و پادکست «تنظیمات رسانه»، «تنظیمات ویدیو»)
+ * ===================================================================== */
+
+/** ویدیوی «تنظیمات رسانه» (مقاله و دسته): کلید بسته ← نام خانه فرم. کاور (عکس) بیرون از ابزار است. */
+const HODIMA_SEO_PKG_MEDIA_VIDEO = [
+	'url'         => 'hodima_media[video_url]',
+	'title'       => 'hodima_media[video_title]',
+	'description' => 'hodima_media[video_description]',
+	'duration'    => 'hodima_media[video_duration]',
+	'chapters'    => 'hodima_media[video_chapters]',
+	'transcript'  => 'hodima_media[video_transcript]',
+];
+
+/** پادکست «تنظیمات رسانه». */
+const HODIMA_SEO_PKG_MEDIA_PODCAST = [
+	'url'        => 'hodima_media[voice_url]',
+	'title'      => 'hodima_media[voice_title]',
+	'duration'   => 'hodima_media[voice_duration]',
+	'transcript' => 'hodima_media[voice_transcript]',
+];
+
+/** کادر «تنظیمات ویدیو» صفحه ویدیو (Media، components/video-watch). */
+const HODIMA_SEO_PKG_VIDEO_WATCH = [
+	'url'        => 'hod_video_url',
+	'cover'      => 'hod_video_thumbnail',
+	'duration'   => 'hod_video_duration',
+	'chapters'   => 'hod_video_chapters',
+	'transcript' => 'hod_video_transcript',
+];
+
+/**
+ * کادر چندخانه‌ای: کل کادر جایگزین می‌شود (کلید نیامده = خانه خالی). فصل‌ها می‌توانند آرایه
+ * خط‌ها باشند. خروجی: نام خانه فرم ← مقدار.
+ *
+ * @param array<mixed>          $value
+ * @param list<string>          $warnings
+ * @param array<string, string> $map کلید بسته ← نام خانه
+ * @return array<string, string>
+ */
+function hodima_seo_pkg_fields( array $value, array &$warnings, array $map ): array {
+
+	$out = [];
+	foreach ( $map as $key => $name ) {
+		$raw = $value[ $key ] ?? '';
+		if ( is_array( $raw ) ) {
+			$raw = implode( "\n", array_map( static fn( mixed $l ): string => is_scalar( $l ) ? trim( (string) $l ) : '', $raw ) );
+		}
+		$val = is_scalar( $raw ) ? trim( (string) $raw ) : '';
+
+		if ( in_array( $key, [ 'url', 'cover' ], true ) && '' !== $val && ! preg_match( '#^https?://#i', $val ) ) {
+			$warnings[] = sprintf( '«%s» آدرس کامل (http/https) نیست؛ خالی ماند.', $key );
+			$val        = '';
+		}
+		$out[ $name ] = $val;
+	}
+
+	$extra = array_diff( array_keys( $value ), array_keys( $map ) );
+	if ( $extra ) {
+		$warnings[] = sprintf( 'کلیدهای %s شناخته نشدند (مجاز: %s).', implode( '، ', $extra ), implode( '، ', array_keys( $map ) ) );
+	}
+
+	return $out;
+}
+
+/**
+ * گوگل دیسکاور (فقط مقاله): عنوان کارت، موضوعات (نام، یا «نام آدرس‌ویکی‌داده») و «برای دیسکاور
+ * نیست». تصویر و نقطه تمرکز بیرون از ابزارند.
+ *
+ * @param array<mixed> $value
+ * @param list<string> $warnings
+ * @return array{title: string, topics: list<string>, skip: bool}
+ */
+function hodima_seo_pkg_discover( array $value, array &$warnings ): array {
+
+	$topics = [];
+	foreach ( is_array( $value['topics'] ?? null ) ? $value['topics'] : [] as $topic ) {
+		$line = is_array( $topic )
+			? trim( ( is_scalar( $topic['name'] ?? null ) ? (string) $topic['name'] : '' ) . ' ' . ( is_scalar( $topic['url'] ?? null ) ? (string) $topic['url'] : '' ) )
+			: ( is_scalar( $topic ) ? trim( (string) $topic ) : '' );
+		if ( '' !== $line && ! in_array( $line, $topics, true ) ) {
+			$topics[] = $line;
+		}
+	}
+
+	$title = is_scalar( $value['title'] ?? null ) ? trim( (string) $value['title'] ) : '';
+	if ( function_exists( 'hodima_seo_discover_clickbait_match' ) && '' !== $title ) {
+		$bait = hodima_seo_discover_clickbait_match( $title );
+		if ( '' !== (string) $bait ) {
+			$warnings[] = sprintf( 'عنوان دیسکاور واژه طعمه کلیک دارد: «%s».', (string) $bait );
+		}
+	}
+
+	return [ 'title' => $title, 'topics' => $topics, 'skip' => ! empty( $value['skip'] ) ];
+}
+
+/**
+ * کارت‌های «ویدیوهای مرتبط» زیر ویدیو: [{title, url, cover?}]. کارت بی‌عنوان یا بی‌آدرس را کد
+ * ذخیره کادر نگه نمی‌دارد (هشدار)؛ آدرس داخلی پیدانشده هشدار می‌گیرد ولی پر می‌شود (کارت دستی است).
+ *
+ * @param array<mixed> $value
+ * @param list<string> $warnings
+ * @return list<array{title: string, url: string, cover: string}>|null
+ */
+function hodima_seo_pkg_suggestions( array $value, array &$warnings ): ?array {
+
+	if ( [] !== $value && ! array_is_list( $value ) ) {
+		return null;
+	}
+
+	$out  = [];
+	$seen = [];
+	foreach ( $value as $i => $card ) {
+		$n = number_format_i18n( $i + 1 );
+		if ( ! is_array( $card ) ) {
+			$warnings[] = sprintf( 'کارت %s شکل {title, url} ندارد و کنار گذاشته شد.', $n );
+			continue;
+		}
+		$title = is_scalar( $card['title'] ?? null ) ? trim( (string) $card['title'] ) : '';
+		$url   = is_scalar( $card['url'] ?? null ) ? trim( (string) $card['url'] ) : '';
+		$cover = is_scalar( $card['cover'] ?? null ) ? trim( (string) $card['cover'] ) : '';
+
+		if ( '' === $title || '' === $url ) {
+			$warnings[] = sprintf( 'کارت %s عنوان یا آدرس ندارد؛ هنگام ذخیره نگه داشته نمی‌شود.', $n );
+		} elseif ( hodima_seo_pkg_is_internal( $url ) && null === hodima_seo_pkg_resolve( $url ) ) {
+			$warnings[] = sprintf( 'کارت %s: %s در سایت پیدا نشد.', $n, $url );
+		}
+		$key = hodima_seo_pkg_url_key( $url );
+		if ( '' !== $url && isset( $seen[ $key ] ) ) {
+			$warnings[] = sprintf( 'کارت %s تکرار کارت %s است.', $n, number_format_i18n( $seen[ $key ] + 1 ) );
+		}
+		$seen[ $key ] ??= $i;
+		$out[] = [ 'title' => $title, 'url' => $url, 'cover' => $cover ];
+	}
+	return $out;
+}
+
+/**
+ * دکمه محصول زیر ویدیو: آدرس محصول یا دسته (یا null/"" = خاموش).
+ *
+ * @param array<mixed> $value
+ * @param list<string> $warnings
+ * @return array{url: string}
+ */
+function hodima_seo_pkg_product_button( array $value, array &$warnings ): array {
+
+	$url = is_scalar( $value['url'] ?? null ) ? trim( (string) $value['url'] ) : '';
+	if ( '' !== $url ) {
+		$target = hodima_seo_pkg_is_internal( $url ) ? hodima_seo_pkg_resolve( $url ) : null;
+		$ok     = $target && ( 'term' === $target['kind'] || 'product' === get_post_type( $target['id'] ) );
+		if ( ! $ok ) {
+			$warnings[] = sprintf( '%s محصول یا دسته‌ای از همین سایت نیست؛ دکمه همین آدرس را باز می‌کند.', $url );
+		}
+	}
+	return [ 'url' => $url ];
 }

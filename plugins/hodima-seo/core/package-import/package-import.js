@@ -25,6 +25,9 @@
 	const fa = (n) => Number(n).toLocaleString('fa-IR');
 	const labels = cfg.labels ?? {};
 	const aeoKeys = cfg.aeoKeys ?? {};
+	const fieldMaps = cfg.fieldMaps ?? {};
+	// کلید بسته ← آداپتور (نسخه ۱ فهرست بود: کلید = آداپتور)
+	const boxMap = Array.isArray(cfg.boxes) ? Object.fromEntries(cfg.boxes.map((k) => [k, k])) : (cfg.boxes ?? {});
 
 	const el = {
 		icon: $('[data-pkg-icon]'),
@@ -96,10 +99,123 @@
 	 * آداپتور هر کادر
 	 * ================================================================= */
 
-	const tinymceEditor = () => {
-		const ed = window.tinymce?.get?.('content');
+	/** ویرایشگر کلاسیک وردپرس با شناسه (TinyMCE دیداری یا حالت «کد»). */
+	const visualEditor = (id) => {
+		const ed = window.tinymce?.get?.(id);
 		return ed && !ed.isHidden() ? ed : null;
 	};
+
+	const htmlSummary = (v) => {
+		if (!plain(v.html) && !v.html.trim()) return 'خالی';
+		const s = htmlStats(v.html);
+		return `${fa(s.words)} کلمه، ${fa(s.heads)} تیتر${s.codes ? `، ${fa(s.codes)} شورت‌کد` : ''}`;
+	};
+
+	// وردپرس هنگام ذخیره پاراگراف‌ها و فاصله‌ها را از نو می‌چیند؛ مقایسه بی‌اثر از آن‌ها
+	const htmlKey = (v) => v.html.replace(/<\/?p>|<br\s*\/?>/giu, '').replace(/\s+/gu, '');
+
+	/**
+	 * خانه HTML با ویرایشگر کلاسیک (بدنه محصول، «متن معرفی» تنظیمات رسانه، «توضیحات» دسته).
+	 * HTML (مثل <details>) همان‌طور که هست گذاشته می‌شود؛ فقط «پاراگراف خودکار» وردپرس مثل باز شدن صفحه.
+	 */
+	const editorAdapter = (id) => ({
+		present: () => !!document.getElementById(id),
+		read: () => ({ html: visualEditor(id)?.getContent() ?? document.getElementById(id).value }),
+		fill({ html }) {
+			const area = document.getElementById(id);
+			const ed = visualEditor(id);
+			if (ed) {
+				const autop = ed.getParam?.('wpautop') && window.wp?.editor?.autop;
+				ed.setContent(autop ? window.wp.editor.autop(html) : html);
+				ed.undoManager?.add();
+				ed.setDirty(true);
+				ed.save();
+			} else {
+				area.value = html;
+				// TinyMCE پنهان (حالت «کد») هنگام برگشت به «دیداری» از همین textarea می‌خواند
+				announce(area);
+			}
+			return true;
+		},
+		key: htmlKey,
+		summary: htmlSummary,
+		details: () => [],
+	});
+
+	/**
+	 * بدنه در ویرایشگر بلوکی (مقاله و ویدیو): از wp.data خوانده و با resetEditorBlocks گذاشته
+	 * می‌شود. HTML بسته بلوک‌بندی‌نشده یک بلوک «کلاسیک» می‌شود و دست نمی‌خورد؛ بدنه‌ای که بلوک
+	 * دارد (برای «بازگرداندن») همان بلوک‌ها را پس می‌گیرد.
+	 */
+	const blockBody = {
+		editor: () => window.wp?.data?.select?.('core/editor'),
+		present() { return !!(this.editor() && window.wp?.blocks?.parse); },
+		read() {
+			// بلوک‌های فعلی هم نگه داشته می‌شوند تا «بازگرداندن» دقیقا همان بلوک‌ها (نه HTML تبدیل‌شده) را برگرداند
+			const blocks = window.wp.data.select('core/block-editor')?.getBlocks?.() ?? null;
+			return { html: this.editor().getEditedPostContent(), blocks };
+		},
+		fill({ html, blocks }) {
+			window.wp.data.dispatch('core/editor').resetEditorBlocks(Array.isArray(blocks) ? blocks : window.wp.blocks.parse(html));
+			return true;
+		},
+		key: (v) => htmlKey({ html: v.html.replace(/<!--\s*\/?wp:[^>]*-->/gu, '') }),
+		summary: (v) => htmlSummary({ html: v.html.replace(/<!--\s*\/?wp:[^>]*-->/gu, '') }),
+		details: () => [],
+	};
+
+	/** خانه با name (input/textarea/select)؛ چند خانه با هم (ویدیو، پادکست، کادر «تنظیمات ویدیو»). */
+	const byName = (name) => document.querySelector(`[name="${CSS.escape(name)}"]`);
+
+	const fieldsAdapter = (map, label) => ({
+		names() { return Object.values(map).filter((n) => byName(n)); },
+		present() { return this.names().length > 0; },
+		read() {
+			const out = {};
+			this.names().forEach((n) => { out[n] = byName(n).value; });
+			// شناسه پیوست کنار آدرس (انتخاب از کتابخانه) برای «بازگرداندن»
+			this.names().forEach((n) => {
+				const id = byName(n.replace(/\]$/u, '_id]'));
+				if (n.endsWith(']') && id) out[`${n}#id`] = id.value;
+			});
+			return out;
+		},
+		fill(v) {
+			Object.entries(v).forEach(([name, value]) => {
+				if (name.endsWith('#id')) {
+					const id = byName(name.slice(0, -3).replace(/\]$/u, '_id]'));
+					if (id) id.value = String(value);
+					return;
+				}
+				const input = byName(name);
+				if (!input) return;
+				if (input.value !== String(value)) {
+					// آدرس تازه: پیوست کتابخانه قبلی دیگر مال این خانه نیست
+					const id = name.endsWith(']') ? byName(name.replace(/\]$/u, '_id]')) : null;
+					if (id && !(`${name}#id` in v)) id.value = '';
+				}
+				input.value = String(value);
+				announce(input);
+				announce(input, 'change');
+			});
+			return true;
+		},
+		key(v) {
+			const out = {};
+			this.names().forEach((n) => { out[n] = String(v[n] ?? '').trim(); });
+			return out;
+		},
+		changed(cur, next) { return this.names().filter((n) => String(cur[n] ?? '').trim() !== String(next[n] ?? '').trim()); },
+		summary(v) {
+			const filled = this.names().filter((n) => String(v[n] ?? '').trim() !== '').length;
+			return filled ? `${fa(filled)} از ${fa(this.names().length)} خانه پر` : 'خالی';
+		},
+		details(cur, next) {
+			const short = (x) => { const t = String(x ?? '').trim(); return t ? (t.length > 80 ? `${t.slice(0, 80)}…` : t) : '—'; };
+			const nameOf = Object.fromEntries(Object.entries(map).map(([k, n]) => [n, `${label}.${k}`]));
+			return this.changed(cur, next).map((n) => ({ label: nameOf[n] ?? n, from: short(cur[n]), to: short(next[n]) }));
+		},
+	});
 
 	const productSelect = (id) => ({
 		select: () => document.getElementById(id),
@@ -148,33 +264,96 @@
 	const AEO_JSON = ['h_ai_en_specs', 'h_ai_faqs', 'h_ai_en_faqs'];
 
 	const adapters = {
-		body: {
-			present: () => !!document.getElementById('content'),
-			read: () => ({ html: tinymceEditor()?.getContent() ?? document.getElementById('content').value }),
-			fill({ html }) {
-				const area = document.getElementById('content');
-				const ed = tinymceEditor();
-				if (ed) {
-					// ویرایشگر دیداری با «پاراگراف خودکار» وردپرس: همان کاری که هنگام باز شدن صفحه می‌کند
-					const autop = ed.getParam?.('wpautop') && window.wp?.editor?.autop;
-					ed.setContent(autop ? window.wp.editor.autop(html) : html);
-					ed.undoManager?.add();
-					ed.setDirty(true);
-					ed.save();
-				} else {
-					area.value = html;
-					announce(area);
+		body: cfg.editor === 'block' ? blockBody : editorAdapter('content'),
+		intro_html: {
+			...editorAdapter('hookcontent'),
+			warn() {
+				const on = document.querySelector('input[name="hodima_media[enabled]"]');
+				const show = document.querySelector('input[name="hodima_media[show_parts][]"][value="intro"]');
+				if (on && !on.checked) return ['«تنظیمات رسانه» خاموش است؛ متن معرفی در سایت دیده نمی‌شود (کلید بالای همان کادر).'];
+				return show && !show.checked ? ['بخش «متن معرفی» در سایت پنهان است (کلید «نمایش این بخش در سایت»).'] : [];
+			},
+		},
+		description_html: editorAdapter('category_description_edit'),
+		video: fieldsAdapter(fieldMaps.video ?? {}, 'video'),
+		podcast: fieldsAdapter(fieldMaps.podcast ?? {}, 'podcast'),
+		video_watch: fieldsAdapter(fieldMaps.video_watch ?? {}, 'video'),
+
+		discover: {
+			box: () => document.querySelector('[data-hodima-dc-entities]')?.closest('.hodima-dc, [data-hodima-dc]') ?? document,
+			present: () => !!byName('hodima_discover[title]'),
+			read() {
+				const topics = (document.querySelector('[data-hodima-dc-entities]')?.value ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
+				return { title: byName('hodima_discover[title]').value, topics, skip: !!byName('hodima_discover[skip]')?.checked };
+			},
+			fill(v) {
+				const title = byName('hodima_discover[title]');
+				title.value = v.title;
+				announce(title);
+				const skip = byName('hodima_discover[skip]');
+				if (skip && skip.checked !== !!v.skip) {
+					skip.checked = !!v.skip;
+					announce(skip, 'change');
+				}
+				const entities = document.querySelector('[data-hodima-dc-entities]');
+				if (!entities) return true;
+				entities.value = v.topics.join('\n');
+				return send(entities, v.topics);
+			},
+			key: (v) => [v.title.trim(), v.topics, !!v.skip],
+			summary: (v) => (v.title || v.topics.length ? `عنوان ${v.title ? 'دارد' : 'خالی'}، ${fa(v.topics.length)} موضوع${v.skip ? '، «برای دیسکاور نیست»' : ''}` : 'خالی'),
+			details: (cur, next) => [
+				{ label: 'عنوان کارت', from: cur.title || '(خالی)', to: next.title || '(خالی)' },
+				{ label: 'موضوعات', from: cur.topics.join('، ') || '—', to: next.topics.join('، ') || '—' },
+			],
+		},
+
+		suggestions: {
+			root: () => document.querySelector('[data-hdm-repeat][data-hdm-name="hod_related_links"]'),
+			present() { return !!this.root(); },
+			read() {
+				return [...this.root().querySelectorAll('[data-hdm-rows] > [data-hdm-row]')].map((row) => ({
+					title: row.querySelector('input[name$="[title]"]')?.value ?? '',
+					url: row.querySelector('input[name$="[url]"]')?.value ?? '',
+					cover: row.querySelector('input[name$="[cover]"]')?.value ?? '',
+				}));
+			},
+			fill(v) { return send(this.root(), v); },
+			key: (v) => v.map((c) => [c.title.trim(), c.url.trim(), c.cover.trim()]),
+			summary: (v) => (v.length ? `${fa(v.length)} کارت` : 'بدون کارت'),
+			details: (cur, next) => [{ label: 'کارت‌ها', from: listText(cur), to: listText(next) }],
+		},
+
+		product_button: {
+			input: () => document.getElementById('hod_related_product_url'),
+			present() { return !!this.input(); },
+			read() { return { url: this.input().value }; },
+			fill(v) {
+				/*
+				 * کلید کارت «دکمه محصول» (hd-opt هسته): روشن کردن، «آخرین مقدار» خانه را برمی‌گرداند و
+				 * خانه خالی کلید را دوباره خاموش می‌کند؛ پس روشن = اول آدرس (input تا «آخرین مقدار» شود)
+				 * بعد کلید، و خاموش = فقط کلید (خانه را خالی می‌کند).
+				 */
+				const sw = document.getElementById('hvw-product-switch');
+				const input = this.input();
+				const on = v.url.trim() !== '';
+				if (on) {
+					input.value = v.url;
+					announce(input);
+				}
+				if (sw && sw.checked !== on) {
+					sw.checked = on;
+					announce(sw, 'change');
+				}
+				if (!sw || !on) {
+					input.value = v.url;
+					announce(input);
 				}
 				return true;
 			},
-			// وردپرس هنگام ذخیره پاراگراف‌ها و فاصله‌ها را از نو می‌چیند؛ مقایسه بی‌اثر از آن‌ها
-			key: (v) => v.html.replace(/<\/?p>|<br\s*\/?>/giu, '').replace(/\s+/gu, ''),
-			summary(v) {
-				if (!plain(v.html) && !v.html.trim()) return 'خالی';
-				const s = htmlStats(v.html);
-				return `${fa(s.words)} کلمه، ${fa(s.heads)} تیتر${s.codes ? `، ${fa(s.codes)} شورت‌کد` : ''}`;
-			},
-			details: () => [],
+			key: (v) => v.url.trim(),
+			summary: (v) => (v.url.trim() ? 'روشن' : 'خاموش'),
+			details: (cur, next) => [{ label: 'لینک محصول', from: cur.url || '—', to: next.url || '—' }],
 		},
 
 		upsells: productSelect('upsell_ids'),
@@ -263,14 +442,17 @@
 					pillar: box.querySelector('input[name="hodima_is_pillar"]'),
 					exclude: box.querySelector('input[name="hodima_tc_exclude"]'),
 					select: box.querySelector('select[name="hodima_pillar_id[]"]'),
+					postSelect: box.querySelector('select[name="hodima_pillar_post_id[]"]'),
 				};
 			},
 			read() {
 				const p = this.parts();
+				const opts = (sel) => (sel ? [...sel.selectedOptions].map((o) => ({ id: Number(o.value), title: o.textContent.trim() })) : []);
 				return {
 					pillar: !!p.pillar?.checked,
 					exclude: !!p.exclude?.checked,
-					parents: p.select ? [...p.select.selectedOptions].map((o) => ({ id: Number(o.value), title: o.textContent.trim() })) : [],
+					parents: opts(p.select),
+					post_parents: opts(p.postSelect),
 				};
 			},
 			fill(v) {
@@ -281,20 +463,25 @@
 						announce(box, 'change');
 					}
 				});
-				if (p.select) {
-					if (p.select.hodimaMultiSelect?.setItems) {
-						p.select.hodimaMultiSelect.setItems(v.parents);
+				[[p.select, v.parents], [p.postSelect, v.post_parents ?? []]].forEach(([sel, items]) => {
+					if (!sel) return;
+					if (sel.hodimaMultiSelect?.setItems) {
+						sel.hodimaMultiSelect.setItems(items);
 					} else {
-						p.select.replaceChildren(...v.parents.map((i) => new Option(i.title, String(i.id), true, true)));
-						announce(p.select, 'change');
+						sel.replaceChildren(...items.map((i) => new Option(i.title, String(i.id), true, true)));
+						announce(sel, 'change');
 					}
-				}
+				});
 				return true;
 			},
-			key: (v) => [v.pillar, v.exclude, v.parents.map((i) => i.id)],
+			key(v) {
+				const k = [v.pillar, v.exclude, v.parents.map((i) => i.id)];
+				return this.parts().postSelect ? [...k, (v.post_parents ?? []).map((i) => i.id)] : k;
+			},
 			summary(v) {
 				const role = v.exclude ? 'خارج از خوشه' : (v.pillar ? 'پیلار' : 'عضو');
-				return `${role}، ${v.parents.length ? `والد: ${listText(v.parents, 'title', 2)}` : 'والد خودکار'}`;
+				const parents = [...v.parents, ...(v.post_parents ?? [])];
+				return `${role}، ${parents.length ? `والد: ${listText(parents, 'title', 2)}` : 'والد خودکار'}`;
 			},
 			details: () => [],
 		},
@@ -467,7 +654,8 @@
 
 	const infoText = (meta) => {
 		const parts = [`بسته ${meta.format || '—'}`];
-		if (meta.type) parts.push(meta.type === 'product' ? 'محصول' : meta.type);
+		const typeNames = { product: 'محصول', category: 'دسته محصول', article: 'مقاله', video: 'ویدیو' };
+		if (meta.type) parts.push(typeNames[meta.type] ?? meta.type);
 		if (meta.date) parts.push(meta.date);
 		parts.push(`${fa(Math.max(1, Math.round(new Blob([el.json.value]).size / 1024)))} کیلوبایت`);
 		return parts.join(' — ');
@@ -580,9 +768,9 @@
 	};
 
 	const buildPlan = (data) => {
-		const order = cfg.boxes ?? Object.keys(data.boxes);
+		const order = Object.keys(boxMap).length ? Object.keys(boxMap) : Object.keys(data.boxes);
 		return order.filter((key) => data.boxes[key]).map((key) => {
-			const adapter = adapters[key];
+			const adapter = adapters[boxMap[key] ?? key];
 			const box = data.boxes[key];
 			const present = !!adapter?.present();
 			const next = box.value;
@@ -592,13 +780,13 @@
 			const curPx = px ? { title: px.title_current, description: px.description_current } : null;
 			const changed = !same(adapter.key(cur), adapter.key(next));
 			const warnings = [...box.warnings, ...(adapter.warn?.(next) ?? [])];
-			let to = key === 'aeo'
+			let to = adapter.changed
 				? `${fa(adapter.changed(cur, next).length)} خانه عوض می‌شود`
 				: adapter.summary(next, px);
 			if (!changed) to = 'همان';
 			return {
 				key, adapter, present, cur, next, px, changed, warnings,
-				empty: changed && ['خالی', 'بدون پرسش'].includes(adapter.summary(next, px)),
+				empty: changed && ['خالی', 'بدون پرسش', 'بدون کارت', 'خاموش'].includes(adapter.summary(next, px)),
 				from: adapter.summary(cur, curPx),
 				to,
 			};
@@ -639,7 +827,9 @@
 		const body = new FormData();
 		body.append('action', 'hodima_seo_pkg_check');
 		body.append('nonce', cfg.nonce);
-		body.append('post_id', String(cfg.postId));
+		body.append('object_type', cfg.objectType ?? 'post');
+		body.append('object_id', String(cfg.objectId ?? cfg.postId));
+		body.append('post_id', String(cfg.postId ?? 0));
 		body.append('package', text);
 		body.append('current_title', document.getElementById('seobox_title')?.value ?? '');
 		body.append('current_description', document.getElementById('seobox_description')?.value ?? '');
@@ -673,13 +863,27 @@
 			// تا «به‌روزرسانی» نخورده، ترک صفحه هشدار بدهد (پر کردن هنوز ذخیره نشده)
 			guard = (e) => { e.preventDefault(); e.returnValue = ''; };
 			window.addEventListener('beforeunload', guard);
-			document.getElementById('post')?.addEventListener('submit', () => window.removeEventListener('beforeunload', guard), { once: true });
+			const release = () => window.removeEventListener('beforeunload', guard);
+			// فرم کلاسیک (نوشته) یا فرم ترم؛ ویرایشگر بلوکی بدون submit با REST ذخیره می‌کند
+			(document.getElementById('post') ?? document.getElementById('edittag'))?.addEventListener('submit', release, { once: true });
+			if (cfg.editor === 'block' && window.wp?.data?.subscribe) {
+				let saving = false;
+				const stop = window.wp.data.subscribe(() => {
+					const ed = window.wp.data.select('core/editor');
+					const now = ed.isSavingPost() && !ed.isAutosavingPost();
+					if (saving && !now) {
+						release();
+						stop();
+					}
+					saving = now;
+				});
+			}
 		}
 	};
 
 	const undo = () => {
 		if (!snapshot) return;
-		Object.entries(snapshot).forEach(([key, value]) => adapters[key]?.fill(value));
+		Object.entries(snapshot).forEach(([key, value]) => adapters[boxMap[key] ?? key]?.fill(value));
 		snapshot = null;
 		window.removeEventListener('beforeunload', guard);
 		guard = null;
