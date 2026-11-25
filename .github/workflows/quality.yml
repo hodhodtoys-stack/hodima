@@ -108,6 +108,9 @@ jobs:
           composer install --no-interaction --no-progress
           npm ci --no-audit --no-fund
 
+      - name: Install Chromium for CSS equivalence check
+        run: npx playwright-core install --with-deps chromium
+
       - name: Build ZIP packages and update release metadata
         run: |
           bash bin/build.sh
