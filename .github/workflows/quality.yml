@@ -67,3 +67,72 @@ jobs:
           ref=""
           git rev-parse -q --verify HEAD^ >/dev/null && ref="HEAD^"
           tools/wp-harness/ci-check.sh $ref
+
+  package:
+    name: Build installable packages and publish release files
+    needs: [lint, render]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/claude/hodima'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Confirm branch has not moved
+        run: |
+          git fetch origin claude/hodima
+          if [ "$(git rev-parse origin/claude/hodima)" != "$GITHUB_SHA" ]; then
+            echo "Branch moved after Quality started; refusing to publish stale packages."
+            exit 1
+          fi
+          git checkout -B claude/hodima "$GITHUB_SHA"
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          extensions: zip
+          tools: composer:v2
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install build and release-check tools
+        run: |
+          composer install --no-interaction --no-progress
+          npm ci --no-audit --no-fund
+
+      - name: Build ZIP packages and update release metadata
+        run: |
+          bash bin/build.sh
+          python3 tools/eol.py
+          python3 bin/release-check.py
+
+      - name: Upload installable packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: hodima-packages-${{ github.sha }}
+          path: |
+            dist/*.zip
+            release/*.zip
+            release/*.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Commit generated release files
+        run: |
+          git add release/*.zip release/*.json
+          if git diff --cached --quiet; then
+            echo "Release files already match the current source."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Release: build packages for ${GITHUB_SHA:0:7}"
+            git push origin HEAD:claude/hodima
+          fi
